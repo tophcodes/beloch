@@ -88,6 +88,37 @@ let test_vertex_dedup () =
   Alcotest.(check int) "dup returns 0" 0 k;
   Alcotest.(check int) "two vertices total" 2 (Dynarray.length st.State.verts)
 
+let eval_src s = Eval.eval (Beloch.parse ~filename:"t.bel" s)
+
+let expect_error msg_substr thunk =
+  try
+    ignore (thunk ());
+    Alcotest.fail ("expected error containing: " ^ msg_substr)
+  with Error.Beloch_error (_, m) ->
+    Alcotest.(check bool) ("error mentions " ^ msg_substr) true
+      (try ignore (Str.search_forward (Str.regexp_string msg_substr) m 0); true
+       with Not_found -> false)
+
+let test_eval_counts_creases () =
+  let cs = eval_src "paper square\n--d1: through .a .c\nfold .b to .d\n" in
+  Alcotest.(check int) "two creases" 2 (List.length cs)
+
+let test_eval_cross_ok () =
+  let cs =
+    eval_src "paper square\n--d1: through .a .c\n--d2: through .b .d\n.m: cross --d1 --d2\nfold .a to .m\n"
+  in
+  Alcotest.(check int) "three creases" 3 (List.length cs)
+
+let test_eval_identical_points () =
+  expect_error "distinct" (fun () -> eval_src "paper square\nthrough .a .a\n")
+
+let test_eval_undefined_point () =
+  expect_error "undefined" (fun () -> eval_src "paper square\nfold .a to .z\n")
+
+let test_eval_parallel_cross () =
+  expect_error "parallel"
+    (fun () -> eval_src "paper square\n--h1: through .a .b\n--h2: through .d .c\n.x: cross --h1 --h2\n")
+
 let () =
   Alcotest.run "beloch"
     [ ("error", [ Alcotest.test_case "span format" `Quick test_error_roundtrip ]);
@@ -102,4 +133,10 @@ let () =
       ("parse",
        [ Alcotest.test_case "named and anonymous" `Quick test_parse_named_and_anon;
          Alcotest.test_case "syntax error" `Quick test_parse_syntax_error ]);
-      ("state", [ Alcotest.test_case "vertex dedup" `Quick test_vertex_dedup ]) ]
+      ("state", [ Alcotest.test_case "vertex dedup" `Quick test_vertex_dedup ]);
+      ("eval",
+       [ Alcotest.test_case "count creases" `Quick test_eval_counts_creases;
+         Alcotest.test_case "cross ok" `Quick test_eval_cross_ok;
+         Alcotest.test_case "identical points" `Quick test_eval_identical_points;
+         Alcotest.test_case "undefined point" `Quick test_eval_undefined_point;
+         Alcotest.test_case "parallel cross" `Quick test_eval_parallel_cross ]) ]
