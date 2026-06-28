@@ -15,7 +15,7 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.0** (minimal core).
+Current version: **v0.0** (minimal core) — implemented; `beloch fold` runs end to end.
 
 ---
 
