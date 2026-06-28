@@ -155,6 +155,25 @@ let test_emit_fields () =
   Alcotest.(check int) "vertices_coords length" 4
     (json |> member "vertices_coords" |> to_list |> List.length)
 
+let read_example name =
+  In_channel.with_open_text ("../../../examples/" ^ name) In_channel.input_all
+
+let test_e2e_diagonals () =
+  let src = read_example "diagonals.bel" in
+  let json = Beloch.fold_string ~filename:"diagonals.bel" src in
+  let open Yojson.Safe.Util in
+  (* 4 corners + center = 5 vertices; 4 boundary + 4 crease halves = 8 edges *)
+  Alcotest.(check int) "vertices" 5 (json |> member "vertices_coords" |> to_list |> List.length);
+  Alcotest.(check int) "edges" 8 (json |> member "edges_vertices" |> to_list |> List.length)
+
+let test_e2e_anti_parallel () =
+  expect_error "parallel" (fun () ->
+      Beloch.fold_string ~filename:"parallel.bel" (read_example "parallel.bel"))
+
+let test_e2e_anti_dup () =
+  expect_error "distinct" (fun () ->
+      Beloch.fold_string ~filename:"dup-point.bel" (read_example "dup-point.bel"))
+
 let () =
   Alcotest.run "beloch"
     [ ("error", [ Alcotest.test_case "span format" `Quick test_error_roundtrip ]);
@@ -179,4 +198,8 @@ let () =
       ("planarize",
        [ Alcotest.test_case "two diagonals split" `Quick test_planarize_two_diagonals;
          Alcotest.test_case "single crease" `Quick test_planarize_single_crease ]);
-      ("emit", [ Alcotest.test_case "fold fields" `Quick test_emit_fields ]) ]
+      ("emit", [ Alcotest.test_case "fold fields" `Quick test_emit_fields ]);
+      ("e2e",
+       [ Alcotest.test_case "diagonals" `Quick test_e2e_diagonals;
+         Alcotest.test_case "anti parallel" `Quick test_e2e_anti_parallel;
+         Alcotest.test_case "anti dup point" `Quick test_e2e_anti_dup ]) ]
