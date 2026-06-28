@@ -206,6 +206,19 @@ let test_signed_area () =
   Alcotest.(check bool) "cw negative (=-1)" true
     (Q.equal (Geom.signed_area cw) (Q.neg Q.one))
 
+let test_faces_square () =
+  let st = Planarize.run (eval_src "paper square\n") in
+  match Faces.extract st with
+  | [ f ] -> Alcotest.(check int) "single face has 4 vertices" 4 (Array.length f)
+  | fs -> Alcotest.failf "expected one face, got %d" (List.length fs)
+
+let test_faces_two_diagonals () =
+  let st = Planarize.run (eval_src "paper square\nthrough .a .c\nthrough .b .d\n") in
+  let fs = Faces.extract st in
+  Alcotest.(check int) "four bounded faces" 4 (List.length fs);
+  Alcotest.(check bool) "each face is a triangle" true
+    (List.for_all (fun f -> Array.length f = 3) fs)
+
 let () =
   Alcotest.run "beloch"
     [ ("error", [ Alcotest.test_case "span format" `Quick test_error_roundtrip ]);
@@ -239,4 +252,7 @@ let () =
          Alcotest.test_case "anti dup point" `Quick test_e2e_anti_dup ]);
       ("geom2",
        [ Alcotest.test_case "ccw order" `Quick test_ccw_order;
-         Alcotest.test_case "signed area" `Quick test_signed_area ]) ]
+         Alcotest.test_case "signed area" `Quick test_signed_area ]);
+      ("faces",
+       [ Alcotest.test_case "square is one face" `Quick test_faces_square;
+         Alcotest.test_case "two diagonals -> 4 triangles" `Quick test_faces_two_diagonals ]) ]
