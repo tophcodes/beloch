@@ -7,3 +7,5 @@
     [decisions/0007-evaluator-not-compiler.md]. *)
 
 let version = "0.0.0-dev"
+
+module Error = Error
