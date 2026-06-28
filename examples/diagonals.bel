@@ -1,0 +1,4 @@
+; status: works — both diagonals of the square
+paper square
+through .a .c
+through .b .d

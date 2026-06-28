@@ -18,6 +18,9 @@ let parse ~(filename : string) (src : string) : Ast.program =
     let start, finish = Sedlexing.lexing_positions lexbuf in
     Error.fail (start, finish) "syntax error"
 
+let fold_string ~(filename : string) (src : string) : Yojson.Safe.t =
+  parse ~filename src |> Eval.eval |> Planarize.run |> Fold_emit.to_json
+
 module Error = Error
 module Geom = Geom
 module Ast = Ast
