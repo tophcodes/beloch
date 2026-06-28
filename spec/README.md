@@ -1,23 +1,17 @@
-# Beloch language specification
+# Specification
 
-Human-readable specification of the Beloch language. Grows one increment at a
-time alongside the implementation — **never spec further than what's implemented,
-never implement further than what's spec'd** (see
-[decision 0003](../decisions/0003-restart-from-minimal-core.md)).
+There is **one living specification**: [`SPECIFICATION.md`](SPECIFICATION.md).
+It always describes the language as it currently is, grows as each
+implementation slice lands, and carries source citations inline (keys resolve in
+[`../paper/references.bib`](../paper/references.bib)).
 
-## Planned files (added as each increment lands)
+Division of artifacts:
 
-- `00-overview.md` — what Beloch is, the evaluator model, artifact pipeline.
-- `10-core-v0.md` — the minimal core: paper model, axiom 1, crease line type,
-  FOLD-extended output. (The first thing to write; nothing else exists until
-  this is solid.)
-- `20-axioms.md` — the seven Huzita-Justin axioms as primitives, with
-  multi-solution disambiguation for axioms 5 and 6.
-- `30-folded-state.md` — folded state and face/layer partial ordering (the hard
-  one).
-- `40-grammar.md` — the formal grammar (mirrors the Menhir grammar).
-- `fold-extensions.md` — the `beloch:*` FOLD extension fields.
-- `instructions-schema.md` — the custom JSON schema for YR-style step diagrams.
+- **`SPECIFICATION.md`** — *what* the language is (syntax, semantics, output
+  contract). Durable source of truth.
+- **`../decisions/`** (ADRs) — *why* a choice was made. Point-in-time.
+- **Implementation plan** (per slice, disposable) — *how* a slice is built. Lives
+  outside `spec/`; obsolete once the slice has landed and the spec reflects it.
 
-Each increment carries: formal grammar fragment, type rules, operational
-semantics, and worked examples that the implementation must satisfy.
+Do not reintroduce per-increment spec files; fold each slice's language-facing
+content into `SPECIFICATION.md` under a *(since vX.Y)* tag.
