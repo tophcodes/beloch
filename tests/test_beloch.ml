@@ -35,6 +35,31 @@ let test_in_unit_square () =
     (Geom.in_unit_square { Geom.x = Q.of_ints 1 2; y = Q.of_ints 1 2 });
   Alcotest.(check bool) "outside" false (Geom.in_unit_square (pt 2 2))
 
+let test_clip_diagonal () =
+  let l = Geom.line_through (pt 0 0) (pt 1 1) in
+  match Geom.clip_to_unit_square l with
+  | Some (p, q) ->
+      let has a = Geom.point_equal p a || Geom.point_equal q a in
+      Alcotest.(check bool) "endpoints are the two corners" true (has (pt 0 0) && has (pt 1 1))
+  | None -> Alcotest.fail "diagonal should clip to a segment"
+
+let test_segment_intersection_center () =
+  let s1 = (pt 0 0, pt 1 1) in
+  let s2 = (pt 1 0, pt 0 1) in
+  match Geom.segment_intersection s1 s2 with
+  | Some p ->
+      Alcotest.(check bool) "cross at center" true
+        (Geom.point_equal p { Geom.x = Q.of_ints 1 2; y = Q.of_ints 1 2 })
+  | None -> Alcotest.fail "segments cross at center"
+
+let test_segment_no_touch () =
+  (* two boundary edges that share no interior point: bottom and top *)
+  let s1 = (pt 0 0, pt 1 0) in
+  let s2 = (pt 0 1, pt 1 1) in
+  (match Geom.segment_intersection s1 s2 with
+   | None -> ()
+   | Some _ -> Alcotest.fail "parallel edges must not intersect")
+
 let () =
   Alcotest.run "beloch"
     [ ("error", [ Alcotest.test_case "span format" `Quick test_error_roundtrip ]);
@@ -42,4 +67,7 @@ let () =
        [ Alcotest.test_case "diagonals meet at center" `Quick test_diagonals_intersect_center;
          Alcotest.test_case "perpendicular bisector" `Quick test_bisector_of_bottom_edge;
          Alcotest.test_case "parallel lines" `Quick test_parallel_lines;
-         Alcotest.test_case "point in unit square" `Quick test_in_unit_square ]) ]
+         Alcotest.test_case "point in unit square" `Quick test_in_unit_square;
+         Alcotest.test_case "clip diagonal" `Quick test_clip_diagonal;
+         Alcotest.test_case "segment intersection" `Quick test_segment_intersection_center;
+         Alcotest.test_case "segments do not touch" `Quick test_segment_no_touch ]) ]
