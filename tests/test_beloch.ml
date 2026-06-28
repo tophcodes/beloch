@@ -190,6 +190,18 @@ let test_e2e_anti_dup () =
   expect_error "distinct" (fun () ->
       Beloch.fold_string ~filename:"dup-point.bel" (read_example "dup-point.bel"))
 
+let test_e2e_square_one_face () =
+  let json = Beloch.fold_string ~filename:"square.bel" (read_example "square.bel") in
+  let open Yojson.Safe.Util in
+  Alcotest.(check int) "one face" 1 (json |> member "faces_vertices" |> to_list |> List.length);
+  Alcotest.(check int) "face has four vertices" 4
+    (json |> member "faces_vertices" |> to_list |> List.hd |> to_list |> List.length)
+
+let test_e2e_diagonals_four_faces () =
+  let json = Beloch.fold_string ~filename:"diagonals.bel" (read_example "diagonals.bel") in
+  let open Yojson.Safe.Util in
+  Alcotest.(check int) "four faces" 4 (json |> member "faces_vertices" |> to_list |> List.length)
+
 let test_ccw_order () =
   let o = pt 0 0 in
   (* East before North before West before South, going CCW *)
@@ -248,7 +260,9 @@ let () =
       ("e2e",
        [ Alcotest.test_case "diagonals" `Quick test_e2e_diagonals;
          Alcotest.test_case "anti parallel" `Quick test_e2e_anti_parallel;
-         Alcotest.test_case "anti dup point" `Quick test_e2e_anti_dup ]);
+         Alcotest.test_case "anti dup point" `Quick test_e2e_anti_dup;
+         Alcotest.test_case "square one face" `Quick test_e2e_square_one_face;
+         Alcotest.test_case "diagonals four faces" `Quick test_e2e_diagonals_four_faces ]);
       ("geom2",
        [ Alcotest.test_case "ccw order" `Quick test_ccw_order;
          Alcotest.test_case "signed area" `Quick test_signed_area ]);
