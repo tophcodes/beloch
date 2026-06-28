@@ -84,3 +84,30 @@ let segment_intersection (s1 : segment) (s2 : segment) : point option =
         Q.sign t >= 0 && Q.compare t Q.one <= 0
       in
       if on s1 && on s2 && in_unit_square r then Some r else None
+
+(* Half-plane of a direction (dx,dy): 0 for angles in [0,180) — i.e. dy>0, or
+   on the +x axis; 1 for [180,360). Used to make CCW ordering total. *)
+let direction_half (dx : Q.t) (dy : Q.t) : int =
+  if Q.sign dy > 0 || (Q.equal dy Q.zero && Q.sign dx > 0) then 0 else 1
+
+(* Order points a, b by the CCW angle of (a-center), (b-center), from +x axis. *)
+let ccw_compare ~(center : point) (a : point) (b : point) : int =
+  let dax = Q.sub a.x center.x and day = Q.sub a.y center.y in
+  let dbx = Q.sub b.x center.x and dby = Q.sub b.y center.y in
+  let ha = direction_half dax day and hb = direction_half dbx dby in
+  if ha <> hb then compare ha hb
+  else
+    (* same half-plane: a before b iff a is clockwise of b, i.e. cross(a,b) > 0 *)
+    let cross = Q.sub (Q.mul dax dby) (Q.mul dbx day) in
+    let s = Q.sign cross in
+    if s > 0 then -1 else if s < 0 then 1 else 0
+
+(* Shoelace signed area; sign encodes orientation (CCW > 0). *)
+let signed_area (pts : point array) : Q.t =
+  let n = Array.length pts in
+  let s = ref Q.zero in
+  for i = 0 to n - 1 do
+    let p = pts.(i) and q = pts.((i + 1) mod n) in
+    s := Q.add !s (Q.sub (Q.mul p.x q.y) (Q.mul q.x p.y))
+  done;
+  Q.div !s (Q.of_int 2)
