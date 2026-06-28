@@ -60,6 +60,24 @@ let test_segment_no_touch () =
    | None -> ()
    | Some _ -> Alcotest.fail "parallel edges must not intersect")
 
+let test_parse_named_and_anon () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n--d1: through .a .c\nfold .b to .d\n.center: cross --d1 --d2\n"
+  in
+  Alcotest.(check int) "three statements" 3 (List.length prog);
+  match prog with
+  | [ Ast.Crease (Some "d1", Ast.Through _, _);
+      Ast.Crease (None, Ast.FoldOnto _, _);
+      Ast.Point ("center", Ast.Cross _, _) ] -> ()
+  | _ -> Alcotest.fail "unexpected AST shape"
+
+let test_parse_syntax_error () =
+  try
+    ignore (Beloch.parse ~filename:"t.bel" "paper square\nfold .a\n");
+    Alcotest.fail "expected a syntax error"
+  with Error.Beloch_error (_, _) -> ()
+
 let () =
   Alcotest.run "beloch"
     [ ("error", [ Alcotest.test_case "span format" `Quick test_error_roundtrip ]);
@@ -70,4 +88,7 @@ let () =
          Alcotest.test_case "point in unit square" `Quick test_in_unit_square;
          Alcotest.test_case "clip diagonal" `Quick test_clip_diagonal;
          Alcotest.test_case "segment intersection" `Quick test_segment_intersection_center;
-         Alcotest.test_case "segments do not touch" `Quick test_segment_no_touch ]) ]
+         Alcotest.test_case "segments do not touch" `Quick test_segment_no_touch ]);
+      ("parse",
+       [ Alcotest.test_case "named and anonymous" `Quick test_parse_named_and_anon;
+         Alcotest.test_case "syntax error" `Quick test_parse_syntax_error ]) ]
