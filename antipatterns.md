@@ -58,12 +58,9 @@ work, including things inherited as warnings from the 2018 attempt.)
 
 ## Known v0.0 limitations (follow-ups, from the whole-branch review)
 
-- **No edge-level dedup in `planarize`.** Coincident creases (e.g. `through .a .c`
-  twice, or a crease collinear with a boundary edge) emit duplicate/overlapping
-  edges — the graph is vertex-deduped but not simple. The v0.0 spec §7 only
-  promises vertex dedup, so this is within contract, but some FOLD consumers
-  dislike non-simple graphs. Fix when operations that make collinear creases
-  common arrive: dedup by sorted `(min v0 v1, max v0 v1)`.
+- ~~**No edge-level dedup in `planarize`.**~~ RESOLVED in v0.1 (Task 2): planarize
+  now dedups edges by sorted `(min v0 v1, max v0 v1)` and planarizes the boundary
+  uniformly, producing a simple graph.
 - **Corner set / boundary winding duplicated** between `Eval.corners` and
   `Planarize`. Fine for the single square shape; consolidate into one paper
   abstraction when a second shape lands.
