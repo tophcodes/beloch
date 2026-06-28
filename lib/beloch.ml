@@ -24,3 +24,4 @@ module Ast = Ast
 module Lexer = Lexer
 module Parser = Parser
 module State = State
+module Eval = Eval
