@@ -139,6 +139,22 @@ let test_planarize_single_crease () =
   Alcotest.(check int) "four corners" 4 (Dynarray.length st.State.verts);
   Alcotest.(check int) "4 boundary + 1 crease" 5 (Dynarray.length st.State.edges)
 
+let test_emit_fields () =
+  let cs = eval_src "paper square\nthrough .a .c\n" in
+  let json = Fold_emit.to_json (Planarize.run cs) in
+  let open Yojson.Safe.Util in
+  Alcotest.(check string) "creator" "beloch 0.0.0-dev"
+    (json |> member "file_creator" |> to_string);
+  Alcotest.(check int) "frame_classes is creasePattern" 1
+    (json |> member "frame_classes" |> to_list |> List.length);
+  let assigns =
+    json |> member "edges_assignment" |> to_list |> List.map to_string
+  in
+  Alcotest.(check bool) "has a U crease" true (List.mem "U" assigns);
+  Alcotest.(check bool) "has a B boundary" true (List.mem "B" assigns);
+  Alcotest.(check int) "vertices_coords length" 4
+    (json |> member "vertices_coords" |> to_list |> List.length)
+
 let () =
   Alcotest.run "beloch"
     [ ("error", [ Alcotest.test_case "span format" `Quick test_error_roundtrip ]);
@@ -162,4 +178,5 @@ let () =
          Alcotest.test_case "parallel cross" `Quick test_eval_parallel_cross ]);
       ("planarize",
        [ Alcotest.test_case "two diagonals split" `Quick test_planarize_two_diagonals;
-         Alcotest.test_case "single crease" `Quick test_planarize_single_crease ]) ]
+         Alcotest.test_case "single crease" `Quick test_planarize_single_crease ]);
+      ("emit", [ Alcotest.test_case "fold fields" `Quick test_emit_fields ]) ]
