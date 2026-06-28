@@ -9,3 +9,4 @@
 let version = "0.0.0-dev"
 
 module Error = Error
+module Geom = Geom
