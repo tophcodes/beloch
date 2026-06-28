@@ -1,2 +1,11 @@
 scratch/
 
+# OCaml / dune
+_build/
+*.install
+.merlin
+
+# nix / direnv
+.direnv/
+result
+result-*
