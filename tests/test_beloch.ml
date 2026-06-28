@@ -174,6 +174,21 @@ let test_e2e_anti_dup () =
   expect_error "distinct" (fun () ->
       Beloch.fold_string ~filename:"dup-point.bel" (read_example "dup-point.bel"))
 
+let test_ccw_order () =
+  let o = pt 0 0 in
+  (* East before North before West before South, going CCW *)
+  Alcotest.(check int) "E before N" (-1) (Geom.ccw_compare ~center:o (pt 1 0) (pt 0 1));
+  Alcotest.(check int) "N before W" (-1) (Geom.ccw_compare ~center:o (pt 0 1) (pt (-1) 0));
+  Alcotest.(check int) "W before S" (-1) (Geom.ccw_compare ~center:o (pt (-1) 0) (pt 0 (-1)));
+  Alcotest.(check int) "S after E" 1 (Geom.ccw_compare ~center:o (pt 0 (-1)) (pt 1 0))
+
+let test_signed_area () =
+  let ccw = [| pt 0 0; pt 1 0; pt 1 1; pt 0 1 |] in
+  let cw = [| pt 0 0; pt 0 1; pt 1 1; pt 1 0 |] in
+  Alcotest.(check bool) "ccw positive (=1)" true (Q.equal (Geom.signed_area ccw) Q.one);
+  Alcotest.(check bool) "cw negative (=-1)" true
+    (Q.equal (Geom.signed_area cw) (Q.neg Q.one))
+
 let () =
   Alcotest.run "beloch"
     [ ("error", [ Alcotest.test_case "span format" `Quick test_error_roundtrip ]);
@@ -202,4 +217,7 @@ let () =
       ("e2e",
        [ Alcotest.test_case "diagonals" `Quick test_e2e_diagonals;
          Alcotest.test_case "anti parallel" `Quick test_e2e_anti_parallel;
-         Alcotest.test_case "anti dup point" `Quick test_e2e_anti_dup ]) ]
+         Alcotest.test_case "anti dup point" `Quick test_e2e_anti_dup ]);
+      ("geom2",
+       [ Alcotest.test_case "ccw order" `Quick test_ccw_order;
+         Alcotest.test_case "signed area" `Quick test_signed_area ]) ]
