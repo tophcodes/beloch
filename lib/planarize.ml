@@ -10,31 +10,31 @@ let dedup_points (ps : Geom.point list) : Geom.point list =
 
 let run (creases : Eval.crease list) : State.t =
   let st = State.create () in
-  (* boundary, counter-clockwise *)
-  let a = corner "a" and b = corner "b"
-  and c = corner "c" and d = corner "d" in
-  let ia = State.add_vertex st a and ib = State.add_vertex st b in
-  let ic = State.add_vertex st c and id = State.add_vertex st d in
-  let boundary v0 v1 =
-    State.add_edge st { State.v0; v1; assign = State.Boundary; prov = None }
+  let a = corner "a" and b = corner "b" and c = corner "c" and d = corner "d" in
+  (* every segment to planarize: 4 boundary edges + clipped creases *)
+  let boundary =
+    [ ((a, b), State.Boundary, None);
+      ((b, c), State.Boundary, None);
+      ((c, d), State.Boundary, None);
+      ((d, a), State.Boundary, None) ]
   in
-  boundary ia ib; boundary ib ic; boundary ic id; boundary id ia;
-  (* clip each crease to a segment, dropping any that miss the paper *)
-  let segs =
+  let crease_segs =
     List.filter_map
       (fun (cr : Eval.crease) ->
         match Geom.clip_to_unit_square cr.line with
-        | Some s -> Some (s, cr.prov)
+        | Some s -> Some (s, State.Crease, Some cr.prov)
         | None -> None)
       creases
   in
-  (* split each segment at intersections with the others, then add sub-edges *)
+  let segs = boundary @ crease_segs in
+  (* split each segment at intersections with every other; dedup edges by index pair *)
+  let seen = Hashtbl.create 64 in
   List.iter
-    (fun (seg, prov) ->
+    (fun (seg, assign, prov) ->
       let p, q = seg in
       let pts = ref [ p; q ] in
       List.iter
-        (fun (other, _) ->
+        (fun (other, _, _) ->
           (* physical inequality: skip self-comparison while catching equal-valued siblings;
              coincident lines yield no intersection (det=0), so no spurious splits *)
           if other != seg then
@@ -50,8 +50,11 @@ let run (creases : Eval.crease list) : State.t =
       let rec link = function
         | x :: (y :: _ as rest) ->
             let ix = State.add_vertex st x and iy = State.add_vertex st y in
-            State.add_edge st
-              { State.v0 = ix; v1 = iy; assign = State.Crease; prov = Some prov };
+            let key = (min ix iy, max ix iy) in
+            if not (Hashtbl.mem seen key) then begin
+              Hashtbl.replace seen key ();
+              State.add_edge st { State.v0 = ix; v1 = iy; assign; prov }
+            end;
             link rest
         | _ -> ()
       in
