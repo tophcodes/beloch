@@ -48,6 +48,16 @@ reproducibility/parametricity example in a future paper.
 The JSON interchange format for origami; the natural IR target. Beloch emits
 FOLD with `beloch:*` extension fields. See [decision 0002](decisions/0002-fold-extended-as-output.md).
 
+### Rabbit Ear (Robby Kraft) — https://rabbitear.org
+The closest existing work and the natural consumer/backend. A mature JavaScript
+origami **library**: seven axioms as functions, FOLD manipulation, crease-pattern
+math, SVG/WebGL rendering, folding simulation, face population. *Not* a standalone
+declarative source language — you program against it in JS. Beloch positions as
+the language layer above it; RE is the rendering/folding backend (it accepts
+faces-less FOLD and computes faces itself). See
+[decision 0009](decisions/0009-relationship-to-rabbit-ear.md). Must be cited and
+positioned against honestly in the paper.
+
 ## To read / track
 
 - Justin (1986) — first complete statement of the seven axioms ("Huzita-Justin"
