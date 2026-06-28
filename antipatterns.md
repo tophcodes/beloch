@@ -56,6 +56,20 @@ work, including things inherited as warnings from the 2018 attempt.)
   sync with `Beloch.version` by hand. Same trap applies to any sibling that
   wants the version.
 
+## Known v0.0 limitations (follow-ups, from the whole-branch review)
+
+- **No edge-level dedup in `planarize`.** Coincident creases (e.g. `through .a .c`
+  twice, or a crease collinear with a boundary edge) emit duplicate/overlapping
+  edges — the graph is vertex-deduped but not simple. The v0.0 spec §7 only
+  promises vertex dedup, so this is within contract, but some FOLD consumers
+  dislike non-simple graphs. Fix when operations that make collinear creases
+  common arrive: dedup by sorted `(min v0 v1, max v0 v1)`.
+- **Corner set / boundary winding duplicated** between `Eval.corners` and
+  `Planarize`. Fine for the single square shape; consolidate into one paper
+  abstraction when a second shape lands.
+- **e2e test fixture path** (`../../../examples/`) is a brittle sandbox-relative
+  climb; harden with a dune `deps` stanza if the layout ever shifts.
+
 ## Rejected approaches (this attempt)
 
 _(none yet — append as they happen)_
