@@ -13,9 +13,34 @@
       let
         pkgs = import nixpkgs { inherit system; };
         ocamlPkgs = pkgs.ocamlPackages;
+
+        beloch = ocamlPkgs.buildDunePackage {
+          pname = "beloch";
+          version = "0.0.0-dev";
+          src = ./.;
+          duneVersion = "3";
+          nativeBuildInputs = [ ocamlPkgs.menhir ];
+          buildInputs = [
+            ocamlPkgs.zarith
+            ocamlPkgs.yojson
+            ocamlPkgs.sedlex
+            ocamlPkgs.menhirLib
+          ];
+          checkInputs = [ ocamlPkgs.alcotest ];
+          doCheck = true;
+        };
       in
       {
+        packages.default = beloch;
+        packages.beloch = beloch;
+
+        apps.default = {
+          type = "app";
+          program = "${beloch}/bin/beloch";
+        };
+
         devShells.default = pkgs.mkShell {
+          inputsFrom = [ beloch ];
           packages = [
             ocamlPkgs.ocaml
             ocamlPkgs.dune_3
@@ -26,7 +51,6 @@
             ocamlPkgs.yojson
             ocamlPkgs.zarith
             ocamlPkgs.alcotest
-            ocamlPkgs.ppx_deriving
             # tooling
             ocamlPkgs.ocaml-lsp
             ocamlPkgs.ocamlformat
