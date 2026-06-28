@@ -119,6 +119,26 @@ let test_eval_parallel_cross () =
   expect_error "parallel"
     (fun () -> eval_src "paper square\n--h1: through .a .b\n--h2: through .d .c\n.x: cross --h1 --h2\n")
 
+let test_planarize_two_diagonals () =
+  let cs = eval_src "paper square\nthrough .a .c\nthrough .b .d\n" in
+  let st = Planarize.run cs in
+  (* 4 corners + center = 5 vertices *)
+  Alcotest.(check int) "five vertices" 5 (Dynarray.length st.State.verts);
+  (* 4 boundary edges + each diagonal split into 2 = 4 crease edges = 8 *)
+  Alcotest.(check int) "eight edges" 8 (Dynarray.length st.State.edges);
+  let boundary =
+    Dynarray.fold_left
+      (fun acc e -> if e.State.assign = State.Boundary then acc + 1 else acc)
+      0 st.State.edges
+  in
+  Alcotest.(check int) "four boundary edges" 4 boundary
+
+let test_planarize_single_crease () =
+  let cs = eval_src "paper square\nthrough .a .c\n" in
+  let st = Planarize.run cs in
+  Alcotest.(check int) "four corners" 4 (Dynarray.length st.State.verts);
+  Alcotest.(check int) "4 boundary + 1 crease" 5 (Dynarray.length st.State.edges)
+
 let () =
   Alcotest.run "beloch"
     [ ("error", [ Alcotest.test_case "span format" `Quick test_error_roundtrip ]);
@@ -139,4 +159,7 @@ let () =
          Alcotest.test_case "cross ok" `Quick test_eval_cross_ok;
          Alcotest.test_case "identical points" `Quick test_eval_identical_points;
          Alcotest.test_case "undefined point" `Quick test_eval_undefined_point;
-         Alcotest.test_case "parallel cross" `Quick test_eval_parallel_cross ]) ]
+         Alcotest.test_case "parallel cross" `Quick test_eval_parallel_cross ]);
+      ("planarize",
+       [ Alcotest.test_case "two diagonals split" `Quick test_planarize_two_diagonals;
+         Alcotest.test_case "single crease" `Quick test_planarize_single_crease ]) ]
