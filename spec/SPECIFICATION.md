@@ -9,8 +9,11 @@ and not a design doc.
   (`../decisions/`); how a slice is built lives in its (disposable) implementation
   plan. This file is the durable source of truth for syntax, semantics, and the
   output contract.
-- Citations like `[hull2020, §1.5]` reference `../paper/references.bib`; full
-  texts are in `../refs/` (gitignored).
+- Citations are clickable links to the [References](#references) section below;
+  machine-readable entries live in
+  [`../paper/references.bib`](../paper/references.bib). A locator such as §1.5
+  points to a section *in that cited source*, not in this document. Full texts
+  are in `../refs/` (gitignored).
 
 Current version: **v0.0** (minimal core).
 
@@ -23,18 +26,20 @@ Beloch is a declarative language for origami. A `.bel` program is **evaluated**
 for v0.0, a flat crease pattern emitted as FOLD. See
 [ADR 0007](../decisions/0007-evaluator-not-compiler.md).
 
-The language is built on the Huzita-Justin fold axioms [justin1986], using them
-as primitive operations.
+The language is built on the Huzita-Justin fold axioms
+[[justin1986]](#ref-justin1986), using them as primitive operations.
 
 ### A note on axiom numbering
 
 Beloch uses the **classic Huzita-Justin numbering** of the fold axioms (the
-numbering used by [justin1986] and most origami-math references), where:
+numbering used by [[justin1986]](#ref-justin1986) and most origami-math
+references), where:
 
 - **axiom 1** = the fold through two given points;
 - **axiom 2** = the fold placing one point onto another.
 
-Beware: Hull's *Basic Origami Operations* list [hull2020, §1.5] uses a
+Beware: Hull's *Basic Origami Operations* list
+[[hull2020]](#ref-hull2020) §1.5 uses a
 **different** numbering — it inserts "locate the intersection of two lines" as
 its O2, so Hull's O3 is the classic axiom 2. When this spec writes "axiom 2" it
 means the classic one (point-onto-point), i.e. Hull's O3. This discrepancy is
@@ -86,8 +91,8 @@ through .x .y
 ```
 
 The unique fold line passing through points `.x` and `.y`
-[justin1986], [hull2020, §1.5 (O1)]. **Error** if `.x` and `.y` are the same
-point (no unique line).
+[[justin1986]](#ref-justin1986), [[hull2020]](#ref-hull2020) §1.5 (O1).
+**Error** if `.x` and `.y` are the same point (no unique line).
 
 ### 4.2 Axiom 2 — fold one point onto another *(since v0.0)*
 
@@ -96,7 +101,8 @@ fold .x to .y
 ```
 
 The fold that places `.x` onto `.y`: the perpendicular bisector of the segment
-`x–y` [justin1986], [hull2020, §1.5 (O3 in Hull's numbering; see §1)].
+`x–y` [[justin1986]](#ref-justin1986),
+[[hull2020]](#ref-hull2020) §1.5 (O3 in Hull's numbering; see §1).
 **Error** if `.x` and `.y` are the same point.
 
 ### 4.3 Construction — intersection of two creases *(since v0.0)*
@@ -107,7 +113,7 @@ cross --c1 --c2
 
 The point where the two creases' lines meet. This is a point *construction*, not
 a fold axiom, in the classic numbering; it is Hull's basic operation O2
-[hull2020, §1.5 (O2)]. **Errors:**
+[[hull2020]](#ref-hull2020) §1.5 (O2). **Errors:**
 
 - the two lines are **parallel** (no intersection);
 - the intersection point is **not on the paper** — decided by an exact
@@ -157,7 +163,7 @@ cubic roots; handling that is a future decision, not part of v0.0.)
 ## 7. Output: the FOLD contract *(since v0.0)*
 
 `beloch fold FILE.bel` emits a [FOLD](https://github.com/edemaine/fold) file
-[foldformat] describing the flat crease pattern.
+[[foldformat]](#ref-foldformat) describing the flat crease pattern.
 
 Each crease line is clipped to the paper polygon to a segment. All on-paper
 crease-crease intersections are computed and the segments are split there, with
@@ -172,11 +178,11 @@ Emitted fields:
   decimal at serialization (non-terminating rationals are rounded *in the output
   only*; internal values stay exact).
 - `edges_vertices` — `[v0, v1]` index pairs
-- `edges_assignment` [foldformat, §`edges_assignment`] — `"B"` for the four
+- `edges_assignment` ([[foldformat]](#ref-foldformat) §"Edge information") — `"B"` for the four
   paper-boundary edges; **`"U"`** (unassigned) for every crease. v0.0 does not
   model fold direction (mountain/valley), so `"U"` is the honest label; claiming
   `"V"` would assert an uncomputed direction.
-- `beloch:edges` — custom property [foldformat, §Custom Properties] carrying, per
+- `beloch:edges` — custom property ([[foldformat]](#ref-foldformat) §"Custom Properties") carrying, per
   crease edge, its originating operation (`"axiom1"` / `"axiom2"`), the source
   point/crease names, and the source span. Used for provenance and source
   mapping.
@@ -221,3 +227,33 @@ Deferred, in rough order of likely arrival: folded state · mountain/valley
 direction · faces · axioms 3–7 · regions · parts/imports · `step` blocks ·
 `flip`/`rotate` · YR diagrams. These are not part of the language until a slice
 lands and this spec is extended.
+
+---
+
+## References
+
+Machine-readable entries: [`../paper/references.bib`](../paper/references.bib).
+Each entry links to a public source where one exists, and to the local full text
+in `../refs/` (gitignored — local checkout only).
+
+<a id="ref-hull2020"></a>
+**[hull2020]** Thomas C. Hull. *Origametry: Mathematical Methods in Paper
+Folding.* Cambridge University Press, 2020.
+[doi.org/10.1017/9781108778633](https://doi.org/10.1017/9781108778633) ·
+[local PDF](../refs/hull2020.pdf).
+The fold axioms and Hull's Basic Origami Operations are in §1.5 "The Basic
+Origami Operations".
+
+<a id="ref-justin1986"></a>
+**[justin1986]** Jacques Justin. *Résolution par le pliage de l'équation du
+troisième degré et applications géométriques.* L'Ouvert, no. 42 (March 1986),
+pp. 9–19. [local PDF](../refs/justin1986.pdf).
+First complete statement of the seven fold axioms (classic numbering).
+
+<a id="ref-foldformat"></a>
+**[foldformat]** Erik D. Demaine, Jason S. Ku, Robert J. Lang. *FOLD File Format
+Specification* (v1.2).
+[github.com/edemaine/fold](https://github.com/edemaine/fold) ·
+[local copy](../refs/foldformat.md).
+Relevant sections: "Edge information: `edges_...`" (edge assignments) and
+"Custom Properties" (the `namespace:key` convention used by `beloch:*`).
