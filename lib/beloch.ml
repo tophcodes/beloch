@@ -30,3 +30,4 @@ module State = State
 module Eval = Eval
 module Planarize = Planarize
 module Fold_emit = Fold_emit
+module Faces = Faces
