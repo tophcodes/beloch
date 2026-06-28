@@ -26,6 +26,22 @@ work, including things inherited as warnings from the 2018 attempt.)
   axiom 5 has up to 2 solutions, axiom 6 up to 3. Disambiguation must be
   first-class and ergonomic, not an afterthought.
 
+## Watch-points & traps
+
+- **Hull's BOO numbering ≠ classic Huzita-Justin numbering.** Hull [hull2020,
+  §1.5] inserts "locate the intersection of two lines" as his O2, so his O3 is
+  the classic axiom 2 (point-onto-point). Beloch uses the *classic* numbering.
+  Do not cite "Hull O2" for Beloch's axiom 2 — that would be wrong (Hull's O2 is
+  line intersection, which Beloch exposes as the `cross` construction). Caught
+  during the v0.0 spec write by checking `refs/hull2020.txt` instead of trusting
+  memory.
+- **ℚ stops being closed at axioms 5/6.** Exact rational arithmetic
+  ([ADR 0008](decisions/0008-exact-rational-arithmetic.md)) covers axioms 1–2
+  and line intersection perfectly, but square roots (axiom 5) and cubic roots
+  (axiom 6) leave ℚ. Don't assume the rational engine extends to the full axiom
+  set — that boundary needs a constructible/algebraic number representation,
+  decided when those axioms land.
+
 ## Rejected approaches (this attempt)
 
 _(none yet — append as they happen)_
