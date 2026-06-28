@@ -1,5 +1,8 @@
 scratch/
 
+# Full-text sources (copyrighted books/papers) — metadata lives in paper/references.bib
+refs/
+
 # OCaml / dune
 _build/
 *.install
