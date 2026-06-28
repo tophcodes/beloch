@@ -78,6 +78,16 @@ let test_parse_syntax_error () =
     Alcotest.fail "expected a syntax error"
   with Error.Beloch_error (_, _) -> ()
 
+let test_vertex_dedup () =
+  let st = State.create () in
+  let i = State.add_vertex st (pt 0 0) in
+  let j = State.add_vertex st (pt 1 1) in
+  let k = State.add_vertex st (pt 0 0) in
+  Alcotest.(check int) "first index 0" 0 i;
+  Alcotest.(check int) "second index 1" 1 j;
+  Alcotest.(check int) "dup returns 0" 0 k;
+  Alcotest.(check int) "two vertices total" 2 (Dynarray.length st.State.verts)
+
 let () =
   Alcotest.run "beloch"
     [ ("error", [ Alcotest.test_case "span format" `Quick test_error_roundtrip ]);
@@ -91,4 +101,5 @@ let () =
          Alcotest.test_case "segments do not touch" `Quick test_segment_no_touch ]);
       ("parse",
        [ Alcotest.test_case "named and anonymous" `Quick test_parse_named_and_anon;
-         Alcotest.test_case "syntax error" `Quick test_parse_syntax_error ]) ]
+         Alcotest.test_case "syntax error" `Quick test_parse_syntax_error ]);
+      ("state", [ Alcotest.test_case "vertex dedup" `Quick test_vertex_dedup ]) ]
