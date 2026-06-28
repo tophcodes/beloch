@@ -167,12 +167,14 @@ cubic roots; handling that is a future decision, not part of v0.0.)
 
 Each crease line is clipped to the paper polygon to a segment. All on-paper
 crease-crease intersections are computed and the segments are split there, with
-vertices deduplicated, producing a planar graph of vertices and edges.
-(Faces — `faces_vertices` — are **not** emitted in v0.0.)
+vertices deduplicated and duplicate/coincident edges removed, producing a
+**simple** planar graph of vertices and edges. *(since v0.1)* The bounded faces
+of that graph — the paper regions enclosed by creases and the boundary — are
+extracted by exact planar face traversal and emitted as `faces_vertices`.
 
 Emitted fields:
 
-- `file_spec`, `file_creator: "beloch 0.0.0-dev"`,
+- `file_spec`, `file_creator: "beloch 0.1.0-dev"`,
   `frame_classes: ["creasePattern"]`
 - `vertices_coords` — `[x, y]` per vertex. Exact ℚ values are rendered to JSON
   decimal at serialization (non-terminating rationals are rounded *in the output
@@ -182,6 +184,9 @@ Emitted fields:
   paper-boundary edges; **`"U"`** (unassigned) for every crease. v0.0 does not
   model fold direction (mountain/valley), so `"U"` is the honest label; claiming
   `"V"` would assert an uncomputed direction.
+- `faces_vertices` *(since v0.1)* — for each bounded face, its vertex indices in
+  counter-clockwise order. The unbounded outer face is excluded. A program with
+  no creases yields the single square face `[[0, 1, 2, 3]]`.
 - `beloch:edges` — custom property ([[foldformat]](#ref-foldformat) §"Custom Properties") carrying, per
   crease edge, its originating operation (`"axiom1"` / `"axiom2"`), the source
   point/crease names, and the source span. Used for provenance and source
@@ -223,10 +228,13 @@ CREASE_NAME := "--" ident
 
 ## Appendix B — not yet in the language
 
-Deferred, in rough order of likely arrival: folded state · mountain/valley
-direction · faces · axioms 3–7 · regions · parts/imports · `step` blocks ·
-`flip`/`rotate` · YR diagrams. These are not part of the language until a slice
-lands and this spec is extended.
+Deferred, in rough order of likely arrival: **axiom 3** (`fold` line onto line —
+the next slice) · folded state · mountain/valley direction · axioms 4–7 ·
+regions · parts/imports · `step` blocks · `flip`/`rotate` · YR diagrams. These
+are not part of the language until a slice lands and this spec is extended.
+
+(Faces landed in v0.1; mountain/valley direction is still deferred, so a folding
+simulator can load the crease pattern but not yet fold it.)
 
 ---
 
