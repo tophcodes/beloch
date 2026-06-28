@@ -1,0 +1,10 @@
+{
+  // direnv extension loads the flake devShell environment into VSCode,
+  // so ocamllsp / dune / ocamlformat from the shell are found automatically.
+  "direnv.restart.automatic": true,
+  // OCaml Platform: use the environment direnv provides (the global opam
+  // sandbox), not a project-local opam switch we don't have.
+  "ocaml.sandbox": {
+    "kind": "global"
+  }
+}
