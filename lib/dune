@@ -1,2 +1,9 @@
 (library
- (name beloch))
+ (name beloch)
+ (libraries zarith yojson sedlex menhirLib)
+ (preprocess
+  (pps sedlex.ppx)))
+
+(menhir
+ (modules parser)
+ (flags --explain))

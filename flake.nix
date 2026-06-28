@@ -21,8 +21,11 @@
             ocamlPkgs.dune_3
             ocamlPkgs.findlib
             ocamlPkgs.menhir
+            ocamlPkgs.menhirLib
             ocamlPkgs.sedlex
             ocamlPkgs.yojson
+            ocamlPkgs.zarith
+            ocamlPkgs.alcotest
             ocamlPkgs.ppx_deriving
             # tooling
             ocamlPkgs.ocaml-lsp
