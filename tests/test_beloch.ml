@@ -158,19 +158,18 @@ let test_planarize_edge_dedup () =
 
 let test_emit_fields () =
   let cs = eval_src "paper square\nthrough .a .c\n" in
-  let json = Fold_emit.to_json (Planarize.run cs) in
+  let st = Planarize.run cs in
+  let json = Fold_emit.to_json st (Faces.extract st) in
   let open Yojson.Safe.Util in
-  Alcotest.(check string) "creator" "beloch 0.0.0-dev"
+  Alcotest.(check string) "creator" "beloch 0.1.0-dev"
     (json |> member "file_creator" |> to_string);
   Alcotest.(check int) "frame_classes is creasePattern" 1
     (json |> member "frame_classes" |> to_list |> List.length);
-  let assigns =
-    json |> member "edges_assignment" |> to_list |> List.map to_string
-  in
+  let assigns = json |> member "edges_assignment" |> to_list |> List.map to_string in
   Alcotest.(check bool) "has a U crease" true (List.mem "U" assigns);
   Alcotest.(check bool) "has a B boundary" true (List.mem "B" assigns);
-  Alcotest.(check int) "vertices_coords length" 4
-    (json |> member "vertices_coords" |> to_list |> List.length)
+  (* one diagonal cuts the square into two faces *)
+  Alcotest.(check int) "two faces" 2 (json |> member "faces_vertices" |> to_list |> List.length)
 
 let read_example name =
   In_channel.with_open_text ("../../../examples/" ^ name) In_channel.input_all
