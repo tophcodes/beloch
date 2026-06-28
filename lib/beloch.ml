@@ -25,3 +25,4 @@ module Lexer = Lexer
 module Parser = Parser
 module State = State
 module Eval = Eval
+module Planarize = Planarize
