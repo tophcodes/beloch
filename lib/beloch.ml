@@ -6,7 +6,7 @@
     [decisions/0003-restart-from-minimal-core.md] and
     [decisions/0007-evaluator-not-compiler.md]. *)
 
-let version = "0.0.0-dev"
+let version = "0.1.0-dev"
 
 let parse ~(filename : string) (src : string) : Ast.program =
   let lexbuf = Sedlexing.Utf8.from_string src in
@@ -19,7 +19,8 @@ let parse ~(filename : string) (src : string) : Ast.program =
     Error.fail (start, finish) "syntax error"
 
 let fold_string ~(filename : string) (src : string) : Yojson.Safe.t =
-  parse ~filename src |> Eval.eval |> Planarize.run |> Fold_emit.to_json
+  let st = parse ~filename src |> Eval.eval |> Planarize.run in
+  Fold_emit.to_json st (Faces.extract st)
 
 module Error = Error
 module Geom = Geom
