@@ -42,6 +42,20 @@ work, including things inherited as warnings from the 2018 attempt.)
   set — that boundary needs a constructible/algebraic number representation,
   decided when those axioms land.
 
+## Build/toolchain gotchas (v0.0 implementation)
+
+- **Dune wrapped-library facade needs explicit re-exports.** The library is
+  named `beloch` and there is a `lib/beloch.ml`, so dune treats it as the main
+  module and does NOT auto-expose sibling modules to external code (tests, the
+  CLI). Each new `lib/<mod>.ml` must be re-exported via `module Mod = Mod` in
+  `lib/beloch.ml`, and external code reaches it as `Beloch.Mod` (tests `open
+  Beloch`). Inside the library, siblings see each other by bare name as usual.
+- **`fold_emit` must not reference `Beloch.version`.** `lib/beloch.ml` re-exports
+  `Fold_emit`, so `fold_emit.ml` referencing the `Beloch` facade is a module
+  cycle. The `file_creator` string is a literal `"beloch 0.0.0-dev"` kept in
+  sync with `Beloch.version` by hand. Same trap applies to any sibling that
+  wants the version.
+
 ## Rejected approaches (this attempt)
 
 _(none yet — append as they happen)_
