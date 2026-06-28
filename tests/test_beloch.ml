@@ -139,6 +139,23 @@ let test_planarize_single_crease () =
   Alcotest.(check int) "four corners" 4 (Dynarray.length st.State.verts);
   Alcotest.(check int) "4 boundary + 1 crease" 5 (Dynarray.length st.State.edges)
 
+let test_planarize_boundary_split () =
+  (* x-midpoint: bisector a->center hits bottom at (1/2,0) and left at (0,1/2),
+     splitting two boundary edges; full planarization => 8 vertices, 13 edges *)
+  let cs =
+    eval_src "paper square\n--d1: through .a .c\n--d2: through .b .d\n.m: cross --d1 --d2\nfold .a to .m\n"
+  in
+  let st = Planarize.run cs in
+  Alcotest.(check int) "eight vertices" 8 (Dynarray.length st.State.verts);
+  Alcotest.(check int) "thirteen edges" 13 (Dynarray.length st.State.edges)
+
+let test_planarize_edge_dedup () =
+  (* the same diagonal twice must not produce a duplicate edge:
+     4 boundary + 1 diagonal = 5 edges, not 6 *)
+  let cs = eval_src "paper square\nthrough .a .c\nthrough .a .c\n" in
+  let st = Planarize.run cs in
+  Alcotest.(check int) "no duplicate edge" 5 (Dynarray.length st.State.edges)
+
 let test_emit_fields () =
   let cs = eval_src "paper square\nthrough .a .c\n" in
   let json = Fold_emit.to_json (Planarize.run cs) in
@@ -212,7 +229,9 @@ let () =
          Alcotest.test_case "parallel cross" `Quick test_eval_parallel_cross ]);
       ("planarize",
        [ Alcotest.test_case "two diagonals split" `Quick test_planarize_two_diagonals;
-         Alcotest.test_case "single crease" `Quick test_planarize_single_crease ]);
+         Alcotest.test_case "single crease" `Quick test_planarize_single_crease;
+         Alcotest.test_case "boundary split" `Quick test_planarize_boundary_split;
+         Alcotest.test_case "edge dedup" `Quick test_planarize_edge_dedup ]);
       ("emit", [ Alcotest.test_case "fold fields" `Quick test_emit_fields ]);
       ("e2e",
        [ Alcotest.test_case "diagonals" `Quick test_e2e_diagonals;
