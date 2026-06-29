@@ -4,7 +4,8 @@ let test_error_roundtrip () =
   let pos = { Lexing.pos_fname = "x.bel"; pos_lnum = 3; pos_bol = 10; pos_cnum = 14 } in
   Alcotest.(check string) "span format" "x.bel:3:5" (Beloch.Error.span_to_string (pos, pos))
 
-let q = Q.of_int
+let q = Num.of_int
+let half = Num.of_q (Q.of_ints 1 2)
 let pt x y = { Geom.x = q x; y = q y }
 
 let test_diagonals_intersect_center () =
@@ -13,15 +14,15 @@ let test_diagonals_intersect_center () =
   match Geom.intersection l1 l2 with
   | Some p ->
       Alcotest.(check bool) "center is (1/2,1/2)" true
-        (Geom.point_equal p { Geom.x = Q.of_ints 1 2; y = Q.of_ints 1 2 })
+        (Geom.point_equal p { Geom.x = half; y = half })
   | None -> Alcotest.fail "expected an intersection"
 
 let test_bisector_of_bottom_edge () =
   (* perpendicular bisector of a=(0,0) and b=(1,0) is the vertical line x=1/2 *)
   let l = Geom.perpendicular_bisector (pt 0 0) (pt 1 0) in
-  let on p = Q.equal (Q.add (Q.mul l.Geom.a p.Geom.x) (Q.mul l.Geom.b p.Geom.y)) l.Geom.c in
-  Alcotest.(check bool) "(1/2,0) on bisector" true (on { Geom.x = Q.of_ints 1 2; y = q 0 });
-  Alcotest.(check bool) "(1/2,1) on bisector" true (on { Geom.x = Q.of_ints 1 2; y = q 1 })
+  let on p = Num.equal (Num.add (Num.mul l.Geom.a p.Geom.x) (Num.mul l.Geom.b p.Geom.y)) l.Geom.c in
+  Alcotest.(check bool) "(1/2,0) on bisector" true (on { Geom.x = half; y = q 0 });
+  Alcotest.(check bool) "(1/2,1) on bisector" true (on { Geom.x = half; y = q 1 })
 
 let test_perpendicular_through () =
   (* diagonal a-c is the line x = y; the perpendicular through b=(1,0) is the
@@ -29,13 +30,13 @@ let test_perpendicular_through () =
   let l = Geom.line_through (pt 0 0) (pt 1 1) in
   let m = Geom.perpendicular_through l (pt 1 0) in
   let on ln p =
-    Q.equal (Q.add (Q.mul ln.Geom.a p.Geom.x) (Q.mul ln.Geom.b p.Geom.y)) ln.Geom.c
+    Num.equal (Num.add (Num.mul ln.Geom.a p.Geom.x) (Num.mul ln.Geom.b p.Geom.y)) ln.Geom.c
   in
   Alcotest.(check bool) "passes through P=(1,0)" true (on m (pt 1 0));
   Alcotest.(check bool) "passes through (0,1)" true (on m (pt 0 1));
   (* perpendicular: the two lines' normals are orthogonal *)
   Alcotest.(check bool) "normals orthogonal" true
-    (Q.equal (Q.add (Q.mul l.Geom.a m.Geom.a) (Q.mul l.Geom.b m.Geom.b)) Q.zero)
+    (Num.equal (Num.add (Num.mul l.Geom.a m.Geom.a) (Num.mul l.Geom.b m.Geom.b)) Num.zero)
 
 let test_parallel_lines () =
   let l1 = Geom.line_through (pt 0 0) (pt 1 0) in
@@ -46,7 +47,7 @@ let test_parallel_lines () =
 let test_in_unit_square () =
   Alcotest.(check bool) "center inside" true (Geom.in_unit_square (pt 0 0));
   Alcotest.(check bool) "corner inside (boundary)" true
-    (Geom.in_unit_square { Geom.x = Q.of_ints 1 2; y = Q.of_ints 1 2 });
+    (Geom.in_unit_square { Geom.x = half; y = half });
   Alcotest.(check bool) "outside" false (Geom.in_unit_square (pt 2 2))
 
 let test_clip_diagonal () =
@@ -63,7 +64,7 @@ let test_segment_intersection_center () =
   match Geom.segment_intersection s1 s2 with
   | Some p ->
       Alcotest.(check bool) "cross at center" true
-        (Geom.point_equal p { Geom.x = Q.of_ints 1 2; y = Q.of_ints 1 2 })
+        (Geom.point_equal p { Geom.x = half; y = half })
   | None -> Alcotest.fail "segments cross at center"
 
 let test_segment_no_touch () =
@@ -193,7 +194,7 @@ let test_emit_fields () =
   let st = Planarize.run cs in
   let json = Fold_emit.to_json st (Faces.extract st) in
   let open Yojson.Safe.Util in
-  Alcotest.(check string) "creator" "beloch 0.2.0-dev"
+  Alcotest.(check string) "creator" "beloch 0.3.0-dev"
     (json |> member "file_creator" |> to_string);
   Alcotest.(check int) "frame_classes is creasePattern" 1
     (json |> member "frame_classes" |> to_list |> List.length);
@@ -260,9 +261,9 @@ let test_ccw_order () =
 let test_signed_area () =
   let ccw = [| pt 0 0; pt 1 0; pt 1 1; pt 0 1 |] in
   let cw = [| pt 0 0; pt 0 1; pt 1 1; pt 1 0 |] in
-  Alcotest.(check bool) "ccw positive (=1)" true (Q.equal (Geom.signed_area ccw) Q.one);
+  Alcotest.(check bool) "ccw positive (=1)" true (Num.equal (Geom.signed_area ccw) Num.one);
   Alcotest.(check bool) "cw negative (=-1)" true
-    (Q.equal (Geom.signed_area cw) (Q.neg Q.one))
+    (Num.equal (Geom.signed_area cw) (Num.neg Num.one))
 
 let test_faces_square () =
   let st = Planarize.run (eval_src "paper square\n") in
@@ -355,6 +356,99 @@ let test_num_to_float () =
   Alcotest.(check bool) "to_float sqrt2 ≈ 1.41421" true
     (Float.abs (Num.to_float (Num.sqrt (n 2)) -. 1.4142135623) < 1e-6)
 
+let test_angle_bisectors () =
+  (* l1 = x-axis (y=0), l2 = y=x. The 22.5° bisector through the origin has
+     slope √2−1: the point (1, √2−1) lies on bis_opp (d1=−d2). *)
+  let l1 = Geom.line_through (pt 0 0) (pt 1 0) in
+  let l2 = Geom.line_through (pt 0 0) (pt 1 1) in
+  match Geom.angle_bisectors l1 l2 with
+  | None -> Alcotest.fail "intersecting lines must have bisectors"
+  | Some (_, bis_opp) ->
+      let s2m1 = Num.sub (Num.sqrt (q 2)) Num.one in   (* √2 − 1 *)
+      let p = { Geom.x = q 1; y = s2m1 } in
+      let on l =
+        Num.sign
+          (Num.sub (Num.add (Num.mul l.Geom.a p.Geom.x) (Num.mul l.Geom.b p.Geom.y))
+             l.Geom.c)
+      in
+      Alcotest.(check int) "(1,√2−1) on the 22.5° bisector" 0 (on bis_opp)
+
+let test_parallel_midline () =
+  (* left edge x=0 and right edge x=1 -> midline x=1/2 *)
+  let l = Geom.line_through (pt 0 0) (pt 0 1) in
+  let r = Geom.line_through (pt 1 0) (pt 1 1) in
+  let m = Geom.parallel_midline l r in
+  let on px py =
+    Num.sign (Num.sub (Num.add (Num.mul m.Geom.a px) (Num.mul m.Geom.b py)) m.Geom.c)
+  in
+  Alcotest.(check int) "(1/2,0) on midline" 0 (on half (q 0));
+  Alcotest.(check int) "(1/2,1) on midline" 0 (on half (q 1))
+
+let test_parse_bisect () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n--v: fold .a to .b\n--h: fold .b to .c\nbisect --v --h toward .a\n"
+  in
+  match prog with
+  | [ _; _; Ast.Crease (None, Ast.Bisect ({ cname = "v"; _ }, { cname = "h"; _ }, Some { name = "a"; _ }), _) ] -> ()
+  | _ -> Alcotest.fail "unexpected AST shape for bisect"
+
+let test_eval_bisect_select () =
+  (* v: x=1/2, h: y=1/2 (perpendicular, cross at centre). toward .a vs .b pick
+     the two different diagonals through the centre -> different crease lines. *)
+  let prog s = eval_src ("paper square\n--v: fold .a to .b\n--h: fold .b to .c\n" ^ s) in
+  let line_of cs = (List.nth cs 2).Eval.line in
+  let prog_a = prog "bisect --v --h toward .a" in
+  let prog_b = prog "bisect --v --h toward .b" in
+  let la = line_of prog_a in
+  let lb = line_of prog_b in
+  (* the two creases differ: they are not the same line (compare a-coefficient sign pattern) *)
+  Alcotest.(check bool) "toward .a and .b give different bisectors" false
+    (Num.equal la.Geom.a lb.Geom.a && Num.equal la.Geom.b lb.Geom.b
+     && Num.equal la.Geom.c lb.Geom.c);
+  (* Helper to check if a point lies exactly on a line: a·Px + b·Py = c *)
+  let on l p =
+    Num.sign (Num.sub (Num.add (Num.mul l.Geom.a p.Geom.x) (Num.mul l.Geom.b p.Geom.y)) l.Geom.c)
+  in
+  (* toward .a must select a-c diagonal: passes through (0,0) and (1,1) *)
+  Alcotest.(check int) "toward .a line through .a=(0,0)" 0 (on la (pt 0 0));
+  Alcotest.(check int) "toward .a line through .c=(1,1)" 0 (on la (pt 1 1));
+  (* toward .b must select b-d diagonal: passes through (1,0) and (0,1) *)
+  Alcotest.(check int) "toward .b line through .b=(1,0)" 0 (on lb (pt 1 0));
+  Alcotest.(check int) "toward .b line through .d=(0,1)" 0 (on lb (pt 0 1));
+  let perp = List.nth prog_a 2 in
+  Alcotest.(check string) "axiom5 provenance" "axiom5" perp.Eval.prov.State.axiom;
+  Alcotest.(check (list string)) "sources" [ "--v"; "--h"; ".a" ] perp.Eval.prov.State.sources
+
+let test_eval_bisect_errors () =
+  expect_error "identical"
+    (fun () -> eval_src "paper square\n--x: through .a .c\n--y: through .a .c\nbisect --x --y toward .b\n");
+  expect_error "ambiguous"
+    (fun () -> eval_src "paper square\n--v: fold .a to .b\n--h: fold .b to .c\nbisect --v --h\n");
+  expect_error "on a fold line"
+    (fun () -> eval_src "paper square\n--d: through .a .c\n--h: fold .b to .c\nbisect --d --h toward .a\n")
+
+let test_e2e_bisect_select () =
+  let open Yojson.Safe.Util in
+  let creases json =
+    json |> member "beloch:edges" |> to_list
+    |> List.filter_map (function `Null -> None | e -> Some (e |> member "axiom" |> to_string))
+  in
+  let ja = Beloch.fold_string ~filename:"bisect-a.bel" (read_example "bisect-a.bel") in
+  let jb = Beloch.fold_string ~filename:"bisect-b.bel" (read_example "bisect-b.bel") in
+  Alcotest.(check bool) "a has an axiom5 crease" true (List.mem "axiom5" (creases ja));
+  Alcotest.(check bool) "b has an axiom5 crease" true (List.mem "axiom5" (creases jb));
+  (* same config, different selector -> the FOLD outputs differ *)
+  Alcotest.(check bool) "toward .a and .b produce different FOLD" false
+    (Yojson.Safe.equal (ja |> member "vertices_coords") (jb |> member "vertices_coords")
+     && Yojson.Safe.equal (ja |> member "edges_vertices") (jb |> member "edges_vertices"))
+
+let test_e2e_bisect_parallel () =
+  let json = Beloch.fold_string ~filename:"bisect-parallel.bel" (read_example "bisect-parallel.bel") in
+  let open Yojson.Safe.Util in
+  (* midline x=1/2 splits the square into two faces *)
+  Alcotest.(check int) "two faces" 2 (json |> member "faces_vertices" |> to_list |> List.length)
+
 let () =
   Alcotest.run "beloch"
     [ ("error", [ Alcotest.test_case "span format" `Quick test_error_roundtrip ]);
@@ -370,7 +464,8 @@ let () =
       ("parse",
        [ Alcotest.test_case "named and anonymous" `Quick test_parse_named_and_anon;
          Alcotest.test_case "syntax error" `Quick test_parse_syntax_error;
-         Alcotest.test_case "perp parses" `Quick test_parse_perp ]);
+         Alcotest.test_case "perp parses" `Quick test_parse_perp;
+         Alcotest.test_case "bisect parses" `Quick test_parse_bisect ]);
       ("state", [ Alcotest.test_case "vertex dedup" `Quick test_vertex_dedup ]);
       ("eval",
        [ Alcotest.test_case "count creases" `Quick test_eval_counts_creases;
@@ -379,7 +474,9 @@ let () =
          Alcotest.test_case "undefined point" `Quick test_eval_undefined_point;
          Alcotest.test_case "parallel cross" `Quick test_eval_parallel_cross;
          Alcotest.test_case "perp provenance" `Quick test_eval_perp_provenance;
-         Alcotest.test_case "crease name in provenance" `Quick test_eval_crease_name ]);
+         Alcotest.test_case "crease name in provenance" `Quick test_eval_crease_name;
+         Alcotest.test_case "bisect selection + provenance" `Quick test_eval_bisect_select;
+         Alcotest.test_case "bisect errors" `Quick test_eval_bisect_errors ]);
       ("planarize",
        [ Alcotest.test_case "two diagonals split" `Quick test_planarize_two_diagonals;
          Alcotest.test_case "single crease" `Quick test_planarize_single_crease;
@@ -394,7 +491,9 @@ let () =
          Alcotest.test_case "anti dup point" `Quick test_e2e_anti_dup;
          Alcotest.test_case "square one face" `Quick test_e2e_square_one_face;
          Alcotest.test_case "diagonals four faces" `Quick test_e2e_diagonals_four_faces;
-         Alcotest.test_case "perp end-to-end" `Quick test_e2e_perp ]);
+         Alcotest.test_case "perp end-to-end" `Quick test_e2e_perp;
+         Alcotest.test_case "bisect selector" `Quick test_e2e_bisect_select;
+         Alcotest.test_case "bisect parallel midline" `Quick test_e2e_bisect_parallel ]);
       ("geom2",
        [ Alcotest.test_case "ccw order" `Quick test_ccw_order;
          Alcotest.test_case "signed area" `Quick test_signed_area ]);
@@ -410,4 +509,7 @@ let () =
          Alcotest.test_case "inv roundtrip" `Quick test_num_inv_roundtrip;
          Alcotest.test_case "nested radical" `Quick test_num_nested_radical;
          Alcotest.test_case "termination guard" `Quick test_num_termination_guard;
-         Alcotest.test_case "to_float" `Quick test_num_to_float ]) ]
+         Alcotest.test_case "to_float" `Quick test_num_to_float ]);
+      ("bisect",
+       [ Alcotest.test_case "angle bisectors" `Quick test_angle_bisectors;
+         Alcotest.test_case "parallel midline" `Quick test_parallel_midline ]) ]

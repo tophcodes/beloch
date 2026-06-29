@@ -99,11 +99,13 @@ let sqrt (x : t) : t =
 (* 1/(a+b√d) = (a − b√d) / (a² − b²d); the norm a²−b²d lies one extension below
    √d, so [inv] recurses on a structurally simpler value. *)
 let rec inv (x : t) : t =
-  match x with
-  | Rat q -> Rat (Q.inv q)
-  | Ext (a, b, d) ->
-      let norm = sub (mul a a) (mul (mul b b) d) in
-      mul (ext a (neg b) d) (inv norm)
+  if sign x = 0 then invalid_arg "Num.inv: zero"
+  else
+    match x with
+    | Rat q -> Rat (Q.inv q)
+    | Ext (a, b, d) ->
+        let norm = sub (mul a a) (mul (mul b b) d) in
+        mul (ext a (neg b) d) (inv norm)
 
 let div (x : t) (y : t) : t = mul x (inv y)
 

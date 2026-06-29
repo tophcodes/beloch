@@ -15,7 +15,7 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.2** (axiom 3 — perpendicular through a point) — implemented; **v0.1** (faces); **v0.0** (minimal core).
+Current version: **v0.3-dev** (axiom 5 — angle bisector) — in progress; **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
 
 ---
 
@@ -149,6 +149,29 @@ the meaningful construction. We deliberately ignore the trivial solution,
 assuming the program wants the meaningful variant. Consequently `perp` has **no
 geometric precondition and never errors** (beyond undefined-name errors).
 
+### 4.5 Axiom 5 — fold one line onto another *(since v0.3-dev)*
+
+```
+bisect --l1 --l2 toward .p
+```
+
+The fold placing line `--l1` onto line `--l2`: the **angle bisector**
+[[justin1986]](#ref-justin1986) §8.1 (operation ⑤), [[hull2020]](#ref-hull2020)
+§1.5 (O4 in Hull's numbering; see §1). Two intersecting lines have **two**
+bisectors (perpendicular to each other); the optional `toward .p` selector picks
+the one whose angular sector contains `.p`. Two **parallel** lines have a single
+**midline**, and `toward` is ignored.
+
+**Errors:** the two lines are the **same line**; the lines intersect and
+`toward` is **omitted** (ambiguous); `.p` lies **on** `--l1` or `--l2`
+(ambiguous).
+
+This is the first axiom whose result leaves ℚ — the bisector of two rational
+lines is generally irrational (slope `√2−1` for `y=0` and `y=x`). All geometry is
+now computed over exact **constructible reals** (`Num`; see
+[ADR 0010](../decisions/0010-constructible-real-numbers.md) and §6), so equality,
+parallelism, and on-paper tests stay exact.
+
 ---
 
 ## 5. Naming and program structure *(since v0.0)*
@@ -176,18 +199,25 @@ line comment.
 
 ## 6. Exactness *(since v0.0)*
 
-All coordinates and line coefficients are exact rationals (ℚ; implemented with
-`zarith` — see [ADR 0008](../decisions/0008-exact-rational-arithmetic.md)). A
-line is `a·x + b·y = c` with `a, b, c ∈ ℚ`.
+All coordinates and line coefficients are exact **constructible reals** (`Num`;
+see [ADR 0010](../decisions/0010-constructible-real-numbers.md)). A line is
+`a·x + b·y = c` with `a, b, c ∈ Num.t`.
 
-For axioms 1, 2, and 3 over rational inputs, ℚ is **closed**: the perpendicular
-bisector of two rational points is a rational line, the perpendicular to a
-rational line through a rational point is a rational line, and the intersection
-of two rational lines is a rational point. Therefore equality, parallelism, and
-point-in-polygon are **exact** — no epsilon, no tolerance, no sampling.
+`Num.t` is a recursive tower of quadratic extensions over ℚ: `Rat of Q.t` at the
+base and `Ext(a, b, d)` = a + b√d for the irrational levels. The ℚ **fast-path**
+applies for all values produced by axioms 1–4: their results stay in `Rat`, so
+those operations pay no overhead over the previous ℚ representation. The `Ext`
+constructor is introduced only by `sqrt`, which is first needed at axiom 5.
 
-(The closure breaks only at axioms 5 and 6, which introduce square roots and
-cubic roots; handling that is a future decision, not part of v0.0.)
+Axioms 1–4 over rational inputs remain **closed in ℚ**: no square roots arise.
+At axiom 5 (the angle bisector) the result generally requires square roots —
+degree-2-or-less extensions of the base field per [[hull2020]](#ref-hull2020)
+§3.2. Cube roots do not arise until axiom 6 (the Beloch fold).
+
+Equality, parallelism, and point-in-polygon are therefore **exact throughout** —
+no epsilon, no tolerance, no sampling. The only place a `float` appears is
+`to_float` in the serialisation of `vertices_coords` to FOLD JSON; internal
+values are never truncated.
 
 ---
 
@@ -254,6 +284,7 @@ point_stmt  := POINT_NAME ":" point_expr
 axiom       := "through" point_ref point_ref      ; axiom 1
              | "fold" point_ref "to" point_ref    ; axiom 2
              | "perp" crease_ref "through" point_ref ; axiom 3
+             | "bisect" crease_ref crease_ref [ "toward" point_ref ]   ; axiom 5
 point_expr  := "cross" CREASE_NAME CREASE_NAME    ; line intersection
 crease_ref  := CREASE_NAME
 point_ref   := POINT_NAME
@@ -265,14 +296,14 @@ CREASE_NAME := "--" ident
 
 ## Appendix B — not yet in the language
 
-Deferred, in rough order of likely arrival: **axiom 5** (`fold` line onto line —
-the angle bisector; first axiom to leave ℚ) · folded state · mountain/valley
+Deferred, in rough order of likely arrival: folded state · mountain/valley
 direction · axioms 4, 6, 7 · regions · parts/imports · `step` blocks ·
 `flip`/`rotate` · YR diagrams. These are not part of the language until a slice
 lands and this spec is extended.
 
-(Axiom 3 — perpendicular through a point — landed in v0.2. Faces landed in v0.1;
-mountain/valley direction is still deferred.)
+(Axiom 5 — angle bisector — landed in v0.3-dev. Axiom 3 — perpendicular through a
+point — landed in v0.2. Faces landed in v0.1; mountain/valley direction is still
+deferred.)
 
 ---
 
