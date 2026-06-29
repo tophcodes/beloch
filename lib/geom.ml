@@ -181,3 +181,41 @@ let in_convex_polygon (poly : point array) (p : point) : bool =
     if Num.sign cross < 0 then ok := false
   done;
   !ok
+
+(* p collinear with segment (a,b) and within it (endpoints included). *)
+let on_segment ((a, b) : segment) (p : point) : bool =
+  let cross =
+    Num.sub
+      (Num.mul (Num.sub b.x a.x) (Num.sub p.y a.y))
+      (Num.mul (Num.sub b.y a.y) (Num.sub p.x a.x))
+  in
+  if Num.sign cross <> 0 then false
+  else
+    let t = seg_param (a, b) p in
+    Num.sign t >= 0 && Num.compare t Num.one <= 0
+
+(* Two convex polygons share positive area? Separating-axis test over the edge
+   normals of both: separated (no positive overlap) iff some axis's projections
+   are disjoint or merely touching. *)
+let convex_overlap (p : point array) (q : point array) : bool =
+  let normals poly =
+    let n = Array.length poly in
+    List.init n (fun i ->
+        let a = poly.(i) and b = poly.((i + 1) mod n) in
+        (Num.sub a.y b.y, Num.sub b.x a.x))
+  in
+  let project poly (nx, ny) =
+    let v i = Num.add (Num.mul nx poly.(i).x) (Num.mul ny poly.(i).y) in
+    let lo = ref (v 0) and hi = ref (v 0) in
+    for i = 1 to Array.length poly - 1 do
+      let vi = v i in
+      if Num.compare vi !lo < 0 then lo := vi;
+      if Num.compare vi !hi > 0 then hi := vi
+    done;
+    (!lo, !hi)
+  in
+  let separated (nx, ny) =
+    let alo, ahi = project p (nx, ny) and blo, bhi = project q (nx, ny) in
+    Num.compare ahi blo <= 0 || Num.compare bhi alo <= 0
+  in
+  not (List.exists separated (normals p @ normals q))
