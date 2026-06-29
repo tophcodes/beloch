@@ -34,7 +34,8 @@ let to_json (st : State.t) (faces : int array list) : Yojson.Safe.t =
             `Assoc
               [ ("axiom", `String pr.State.axiom);
                 ("sources", `List (List.map (fun s -> `String s) pr.State.sources));
-                ("span", `String (Error.span_to_string pr.State.span)) ])
+                ("span", `String (Error.span_to_string pr.State.span));
+                ("name", match pr.State.name with Some n -> `String n | None -> `Null) ])
       edges
   in
   `Assoc
