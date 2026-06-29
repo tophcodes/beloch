@@ -77,3 +77,13 @@ work, including things inherited as warnings from the 2018 attempt.)
 ## Rejected approaches (this attempt)
 
 _(none yet — append as they happen)_
+
+## Axiom 3 is the perpendicular-through-a-point, not the angle bisector
+
+An early journal note (`notes/2026-06-28-3.md`) labelled "axiom 3" as the
+angle bisector (line onto line). That is wrong. The authoritative classic table
+is [justin1986] §8.1: operation ③ `(P → P, D → D)` is "Perpendiculaire menée de
+P à D" — the fold through a point perpendicular to a line (Hull's O5). The angle
+bisector is operation ⑤ `(D → D')` (Hull's O4), and it is the first axiom whose
+result leaves ℚ (square roots). Don't re-conflate them: axiom 3 = perpendicular
+through a point (rational, landed v0.2); axiom 5 = angle bisector (irrational).

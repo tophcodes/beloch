@@ -15,7 +15,7 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.0** (minimal core) — implemented; `beloch fold` runs end to end.
+Current version: **v0.2** (axiom 3 — perpendicular through a point) — implemented; **v0.1** (faces); **v0.0** (minimal core).
 
 ---
 
@@ -44,6 +44,15 @@ Beware: Hull's *Basic Origami Operations* list
 its O2, so Hull's O3 is the classic axiom 2. When this spec writes "axiom 2" it
 means the classic one (point-onto-point), i.e. Hull's O3. This discrepancy is
 recorded in [antipatterns.md](../antipatterns.md) so it isn't re-conflated.
+
+For reference, the classic operations relevant so far
+[[justin1986]](#ref-justin1986) §8.1: ① line through two points; ② point onto
+point (perpendicular bisector); **③ the fold through a point perpendicular to a
+line** (Hull's O5); ④ projection of a point onto a line parallel to another; **⑤
+the fold placing one line onto another (the angle bisector; Hull's O4)**. Note
+that the angle bisector is **axiom 5**, not axiom 3 — and it is the first axiom
+whose result leaves ℚ (square roots). See
+[antipatterns.md](../antipatterns.md).
 
 ---
 
@@ -119,6 +128,27 @@ a fold axiom, in the classic numbering; it is Hull's basic operation O2
 - the intersection point is **not on the paper** — decided by an exact
   point-in-polygon test; the boundary counts as on the paper.
 
+### 4.4 Axiom 3 — perpendicular through a point *(since v0.2)*
+
+```
+perp --l through .p
+```
+
+The fold line through point `.p`, perpendicular to crease `--l`
+[[justin1986]](#ref-justin1986) §8.1 (operation ③), [[hull2020]](#ref-hull2020)
+§1.5 (O5 in Hull's numbering; see §1). This is the first axiom taking a **crease**
+as an operand.
+
+**On the number of solutions.** Operation ③ admits *two* fold lines exactly when
+`.p` lies **on** `--l`: the perpendicular through `.p`, and `--l` itself (a
+reflection maps a line onto itself either across a perpendicular or across the
+line itself; both pass through `.p` only when `.p ∈ --l`). The second is the
+**trivial, identity-like** solution — re-creasing the existing line, producing no
+new geometry. Beloch always returns the **perpendicular**: it is unique and is
+the meaningful construction. We deliberately ignore the trivial solution,
+assuming the program wants the meaningful variant. Consequently `perp` has **no
+geometric precondition and never errors** (beyond undefined-name errors).
+
 ---
 
 ## 5. Naming and program structure *(since v0.0)*
@@ -150,9 +180,10 @@ All coordinates and line coefficients are exact rationals (ℚ; implemented with
 `zarith` — see [ADR 0008](../decisions/0008-exact-rational-arithmetic.md)). A
 line is `a·x + b·y = c` with `a, b, c ∈ ℚ`.
 
-For axioms 1 and 2 over rational inputs, ℚ is **closed**: the perpendicular
-bisector of two rational points is a rational line, and the intersection of two
-rational lines is a rational point. Therefore equality, parallelism, and
+For axioms 1, 2, and 3 over rational inputs, ℚ is **closed**: the perpendicular
+bisector of two rational points is a rational line, the perpendicular to a
+rational line through a rational point is a rational line, and the intersection
+of two rational lines is a rational point. Therefore equality, parallelism, and
 point-in-polygon are **exact** — no epsilon, no tolerance, no sampling.
 
 (The closure breaks only at axioms 5 and 6, which introduce square roots and
@@ -218,7 +249,9 @@ crease_stmt := [ CREASE_NAME ":" ] axiom
 point_stmt  := POINT_NAME ":" point_expr
 axiom       := "through" point_ref point_ref      ; axiom 1
              | "fold" point_ref "to" point_ref    ; axiom 2
+             | "perp" crease_ref "through" point_ref ; axiom 3
 point_expr  := "cross" CREASE_NAME CREASE_NAME    ; line intersection
+crease_ref  := CREASE_NAME
 point_ref   := POINT_NAME
 POINT_NAME  := "." ident
 CREASE_NAME := "--" ident
@@ -228,13 +261,14 @@ CREASE_NAME := "--" ident
 
 ## Appendix B — not yet in the language
 
-Deferred, in rough order of likely arrival: **axiom 3** (`fold` line onto line —
-the next slice) · folded state · mountain/valley direction · axioms 4–7 ·
-regions · parts/imports · `step` blocks · `flip`/`rotate` · YR diagrams. These
-are not part of the language until a slice lands and this spec is extended.
+Deferred, in rough order of likely arrival: **axiom 5** (`fold` line onto line —
+the angle bisector; first axiom to leave ℚ) · folded state · mountain/valley
+direction · axioms 4, 6, 7 · regions · parts/imports · `step` blocks ·
+`flip`/`rotate` · YR diagrams. These are not part of the language until a slice
+lands and this spec is extended.
 
-(Faces landed in v0.1; mountain/valley direction is still deferred, so a folding
-simulator can load the crease pattern but not yet fold it.)
+(Axiom 3 — perpendicular through a point — landed in v0.2. Faces landed in v0.1;
+mountain/valley direction is still deferred.)
 
 ---
 

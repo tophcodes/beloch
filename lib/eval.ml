@@ -37,6 +37,12 @@ let eval (prog : Ast.program) : crease list =
         if Geom.point_equal pp qq then
           Error.fail span "axiom 2 needs two distinct points";
         (Geom.perpendicular_bisector pp qq, "axiom2", [ "." ^ p.name; "." ^ q.name ])
+    | Ast.Perp (p, l) ->
+        let pp = lookup_point p in
+        let ll = lookup_crease l in
+        ( Geom.perpendicular_through ll pp,
+          "axiom3",
+          [ "." ^ p.name; "--" ^ l.cname ] )
   in
   List.iter
     (fun stmt ->

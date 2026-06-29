@@ -42,7 +42,7 @@ let to_json (st : State.t) (faces : int array list) : Yojson.Safe.t =
       (* literal, NOT Beloch.version: fold_emit is re-exported by the beloch.ml
          facade, so referencing Beloch here would be a module cycle. Keep in
          sync with Beloch.version. *)
-      ("file_creator", `String "beloch 0.1.0-dev");
+      ("file_creator", `String "beloch 0.2.0-dev");
       ("frame_classes", `List [ `String "creasePattern" ]);
       ("vertices_coords", `List verts);
       ("edges_vertices", `List edges_vertices);

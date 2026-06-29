@@ -6,6 +6,7 @@ type crease_ref = { cname : string; cspan : Error.span }
 type axiom =
   | Through of point_ref * point_ref   (* axiom 1: line through two points *)
   | FoldOnto of point_ref * point_ref  (* axiom 2: place .x onto .y *)
+  | Perp of point_ref * crease_ref     (* axiom 3: through .p, perpendicular to --l *)
 
 type point_expr = Cross of crease_ref * crease_ref  (* intersection of two creases *)
 

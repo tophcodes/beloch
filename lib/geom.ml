@@ -26,6 +26,14 @@ let perpendicular_bisector (p : point) (q : point) : line =
   let c = Q.add (Q.mul a mx) (Q.mul b my) in
   { a; b; c }
 
+(* axiom 3: the line through point p, perpendicular to line l. A line
+   perpendicular to a·x+b·y=c has its normal along l's direction (b,−a), so it
+   has the form b·x − a·y = k; fix k by passing through p. Exact over ℚ. *)
+let perpendicular_through (l : line) (p : point) : line =
+  let a = l.b and b = Q.neg l.a in
+  let c = Q.add (Q.mul a p.x) (Q.mul b p.y) in
+  { a; b; c }
+
 let parallel (l1 : line) (l2 : line) : bool =
   Q.equal (Q.sub (Q.mul l1.a l2.b) (Q.mul l2.a l1.b)) Q.zero
 
