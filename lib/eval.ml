@@ -37,7 +37,7 @@ let eval (prog : Ast.program) : crease list =
         if Geom.point_equal pp qq then
           Error.fail span "axiom 1 needs two distinct points";
         (Geom.line_through pp qq, "axiom1", [ "." ^ p.name; "." ^ q.name ])
-    | Ast.FoldOnto (p, q) ->
+    | Ast.MapPoints (p, q) ->
         let pp = lookup_point p and qq = lookup_point q in
         if Geom.point_equal pp qq then
           Error.fail span "axiom 2 needs two distinct points";
@@ -50,7 +50,7 @@ let eval (prog : Ast.program) : crease list =
         ( Geom.perpendicular_through ll pp,
           "axiom3",
           [ "." ^ p.name; "--" ^ l.cname ] )
-    | Ast.Bisect (c1, c2, p_opt) -> (
+    | Ast.MapLines (c1, c2, p_opt) -> (
         let l1 = lookup_crease c1 and l2 = lookup_crease c2 in
         let base = [ "--" ^ c1.cname; "--" ^ c2.cname ] in
         let eval_at (l : Geom.line) (pt : Geom.point) : Num.t =
@@ -84,7 +84,10 @@ let eval (prog : Ast.program) : crease list =
   List.iter
     (fun stmt ->
       match stmt with
-      | Ast.Crease (name_opt, ax, span) ->
+      | Ast.Crease (name_opt, ax, fold_opt, span) ->
+          (match fold_opt with
+          | Some _ -> Error.fail span "folding (@) is not yet implemented"
+          | None -> ());
           let line, axiom, sources = eval_axiom span ax in
           (match name_opt with
           | Some n -> Hashtbl.replace creases n line

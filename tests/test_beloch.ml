@@ -104,14 +104,14 @@ let test_parse_named_and_anon () =
     Beloch.parse ~filename:"t.bel"
       "paper square\n\
        --d1: through .a .c\n\
-       fold .b to .d\n\
+       map .b onto .d\n\
        .center: cross --d1 --d2\n"
   in
   Alcotest.(check int) "three statements" 3 (List.length prog);
   match prog with
   | [
-   Ast.Crease (Some "d1", Ast.Through _, _);
-   Ast.Crease (None, Ast.FoldOnto _, _);
+   Ast.Crease (Some "d1", Ast.Through _, _, _);
+   Ast.Crease (None, Ast.MapPoints _, _, _);
    Ast.Point ("center", Ast.Cross _, _);
   ] ->
       ()
@@ -119,7 +119,7 @@ let test_parse_named_and_anon () =
 
 let test_parse_syntax_error () =
   try
-    ignore (Beloch.parse ~filename:"t.bel" "paper square\nfold .a\n");
+    ignore (Beloch.parse ~filename:"t.bel" "paper square\nmap .a\n");
     Alcotest.fail "expected a syntax error"
   with Error.Beloch_error (_, _) -> ()
 
@@ -130,8 +130,8 @@ let test_parse_perp () =
   in
   match prog with
   | [
-   Ast.Crease (Some "d", Ast.Through _, _);
-   Ast.Crease (None, Ast.Perp ({ name = "b"; _ }, { cname = "d"; _ }), _);
+   Ast.Crease (Some "d", Ast.Through _, _, _);
+   Ast.Crease (None, Ast.Perp ({ name = "b"; _ }, { cname = "d"; _ }), _, _);
   ] ->
       ()
   | _ -> Alcotest.fail "unexpected AST shape for perp"
@@ -162,7 +162,7 @@ let expect_error msg_substr thunk =
        with Not_found -> false)
 
 let test_eval_counts_creases () =
-  let cs = eval_src "paper square\n--d1: through .a .c\nfold .b to .d\n" in
+  let cs = eval_src "paper square\n--d1: through .a .c\nmap .b onto .d\n" in
   Alcotest.(check int) "two creases" 2 (List.length cs)
 
 let test_eval_cross_ok () =
@@ -172,7 +172,7 @@ let test_eval_cross_ok () =
        --d1: through .a .c\n\
        --d2: through .b .d\n\
        .m: cross --d1 --d2\n\
-       fold .a to .m\n"
+       map .a onto .m\n"
   in
   Alcotest.(check int) "three creases" 3 (List.length cs)
 
@@ -180,7 +180,7 @@ let test_eval_identical_points () =
   expect_error "distinct" (fun () -> eval_src "paper square\nthrough .a .a\n")
 
 let test_eval_undefined_point () =
-  expect_error "undefined" (fun () -> eval_src "paper square\nfold .a to .z\n")
+  expect_error "undefined" (fun () -> eval_src "paper square\nmap .a onto .z\n")
 
 let test_eval_parallel_cross () =
   expect_error "parallel" (fun () ->
@@ -232,7 +232,7 @@ let test_planarize_boundary_split () =
        --d1: through .a .c\n\
        --d2: through .b .d\n\
        .m: cross --d1 --d2\n\
-       fold .a to .m\n"
+       map .a onto .m\n"
   in
   let st = Planarize.run cs in
   Alcotest.(check int) "eight vertices" 8 (Dynarray.length st.State.verts);
@@ -499,9 +499,9 @@ let test_parse_bisect () =
   let prog =
     Beloch.parse ~filename:"t.bel"
       "paper square\n\
-       --v: fold .a to .b\n\
-       --h: fold .b to .c\n\
-       bisect --v --h toward .a\n"
+       --v: map .a onto .b\n\
+       --h: map .b onto .c\n\
+       map --v onto --h toward .a\n"
   in
   match prog with
   | [
@@ -509,8 +509,9 @@ let test_parse_bisect () =
    _;
    Ast.Crease
      ( None,
-       Ast.Bisect
+       Ast.MapLines
          ({ cname = "v"; _ }, { cname = "h"; _ }, Some { name = "a"; _ }),
+       _,
        _ );
   ] ->
       ()
@@ -520,11 +521,11 @@ let test_eval_bisect_select () =
   (* v: x=1/2, h: y=1/2 (perpendicular, cross at centre). toward .a vs .b pick
      the two different diagonals through the centre -> different crease lines. *)
   let prog s =
-    eval_src ("paper square\n--v: fold .a to .b\n--h: fold .b to .c\n" ^ s)
+    eval_src ("paper square\n--v: map .a onto .b\n--h: map .b onto .c\n" ^ s)
   in
   let line_of cs = (List.nth cs 2).Eval.line in
-  let prog_a = prog "bisect --v --h toward .a" in
-  let prog_b = prog "bisect --v --h toward .b" in
+  let prog_a = prog "map --v onto --h toward .a" in
+  let prog_b = prog "map --v onto --h toward .b" in
   let la = line_of prog_a in
   let lb = line_of prog_b in
   (* the two creases differ: they are not the same line (compare a-coefficient sign pattern) *)
@@ -552,22 +553,61 @@ let test_eval_bisect_select () =
   Alcotest.(check (list string))
     "sources" [ "--v"; "--h"; ".a" ] perp.Eval.prov.State.sources
 
+let test_parse_fold_action () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n@map .a onto .c moving .a mountain\n"
+  in
+  match prog with
+  | [
+   Ast.Crease
+     ( None,
+       Ast.MapPoints _,
+       Some { moving = Some { name = "a"; _ }; direction = Ast.Mountain },
+       _ );
+  ] ->
+      ()
+  | _ -> Alcotest.fail "unexpected AST for @map fold action"
+
+let test_parse_fold_valley_default () =
+  let prog = Beloch.parse ~filename:"t.bel" "paper square\n@map .a onto .c\n" in
+  match prog with
+  | [
+   Ast.Crease
+     (None, Ast.MapPoints _, Some { moving = None; direction = Ast.Valley }, _);
+  ] ->
+      ()
+  | _ -> Alcotest.fail "default fold is valley with no moving"
+
+let test_parse_precrease_no_foldspec () =
+  let prog = Beloch.parse ~filename:"t.bel" "paper square\nmap .a onto .c\n" in
+  match prog with
+  | [ Ast.Crease (None, Ast.MapPoints _, None, _) ] -> ()
+  | _ -> Alcotest.fail "bare axiom must carry no fold_spec"
+
+let test_eval_fold_not_implemented () =
+  expect_error "not yet implemented" (fun () ->
+      eval_src "paper square\n@map .a onto .c\n")
+
 let test_eval_bisect_errors () =
   expect_error "identical" (fun () ->
       eval_src
         "paper square\n\
          --x: through .a .c\n\
          --y: through .a .c\n\
-         bisect --x --y toward .b\n");
+         map --x onto --y toward .b\n");
   expect_error "ambiguous" (fun () ->
       eval_src
-        "paper square\n--v: fold .a to .b\n--h: fold .b to .c\nbisect --v --h\n");
+        "paper square\n\
+         --v: map .a onto .b\n\
+         --h: map .b onto .c\n\
+         map --v onto --h\n");
   expect_error "on a fold line" (fun () ->
       eval_src
         "paper square\n\
          --d: through .a .c\n\
-         --h: fold .b to .c\n\
-         bisect --d --h toward .a\n")
+         --h: map .b onto .c\n\
+         map --d onto --h toward .a\n")
 
 let test_e2e_bisect_select () =
   let open Yojson.Safe.Util in
@@ -637,6 +677,11 @@ let () =
           Alcotest.test_case "syntax error" `Quick test_parse_syntax_error;
           Alcotest.test_case "perp parses" `Quick test_parse_perp;
           Alcotest.test_case "bisect parses" `Quick test_parse_bisect;
+          Alcotest.test_case "fold action parses" `Quick test_parse_fold_action;
+          Alcotest.test_case "fold valley default" `Quick
+            test_parse_fold_valley_default;
+          Alcotest.test_case "bare axiom has no fold_spec" `Quick
+            test_parse_precrease_no_foldspec;
         ] );
       ("state", [ Alcotest.test_case "vertex dedup" `Quick test_vertex_dedup ]);
       ( "eval",
@@ -653,6 +698,8 @@ let () =
           Alcotest.test_case "bisect selection + provenance" `Quick
             test_eval_bisect_select;
           Alcotest.test_case "bisect errors" `Quick test_eval_bisect_errors;
+          Alcotest.test_case "fold not yet implemented" `Quick
+            test_eval_fold_not_implemented;
         ] );
       ( "planarize",
         [
