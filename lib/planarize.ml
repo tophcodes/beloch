@@ -5,7 +5,8 @@ let corner (n : string) : Geom.point = List.assoc n Eval.corners
 
 let dedup_points (ps : Geom.point list) : Geom.point list =
   List.fold_left
-    (fun acc p -> if List.exists (Geom.point_equal p) acc then acc else p :: acc)
+    (fun acc p ->
+      if List.exists (Geom.point_equal p) acc then acc else p :: acc)
     [] ps
 
 let run (creases : Eval.crease list) : State.t =
@@ -13,10 +14,12 @@ let run (creases : Eval.crease list) : State.t =
   let a = corner "a" and b = corner "b" and c = corner "c" and d = corner "d" in
   (* every segment to planarize: 4 boundary edges + clipped creases *)
   let boundary =
-    [ ((a, b), State.Boundary, None);
+    [
+      ((a, b), State.Boundary, None);
       ((b, c), State.Boundary, None);
       ((c, d), State.Boundary, None);
-      ((d, a), State.Boundary, None) ]
+      ((d, a), State.Boundary, None);
+    ]
   in
   let crease_segs =
     List.filter_map
@@ -45,7 +48,7 @@ let run (creases : Eval.crease list) : State.t =
       let sorted =
         dedup_points !pts
         |> List.sort (fun r1 r2 ->
-               Num.compare (Geom.seg_param seg r1) (Geom.seg_param seg r2))
+            Num.compare (Geom.seg_param seg r1) (Geom.seg_param seg r2))
       in
       let rec link = function
         | x :: (y :: _ as rest) ->
