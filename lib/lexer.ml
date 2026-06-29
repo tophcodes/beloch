@@ -14,6 +14,7 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "square" -> SQUARE
   | "through" -> THROUGH
   | "fold" -> FOLD
+  | "perp" -> PERP
   | "to" -> TO
   | "cross" -> CROSS
   | ':' -> COLON

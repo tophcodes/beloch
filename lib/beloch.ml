@@ -6,7 +6,7 @@
     [decisions/0003-restart-from-minimal-core.md] and
     [decisions/0007-evaluator-not-compiler.md]. *)
 
-let version = "0.1.0-dev"
+let version = "0.2.0-dev"
 
 let parse ~(filename : string) (src : string) : Ast.program =
   let lexbuf = Sedlexing.Utf8.from_string src in
