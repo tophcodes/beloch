@@ -2,7 +2,7 @@
 open Ast
 %}
 
-%token PAPER SQUARE THROUGH FOLD TO CROSS COLON EOF PERP BISECT TOWARD
+%token PAPER SQUARE THROUGH MAP ONTO CROSS COLON EOF PERP TOWARD AT MOVING MOUNTAIN
 %token <string> POINT
 %token <string> CREASE
 
@@ -18,16 +18,26 @@ stmts:
   | stmt stmts { $1 :: $2 }
 
 stmt:
-  | CREASE COLON axiom    { Crease (Some $1, $3, $loc) }
-  | axiom                 { Crease (None, $1, $loc) }
+  | CREASE COLON axiom_stmt { let (a, fs) = $3 in Crease (Some $1, a, fs, $loc) }
+  | axiom_stmt             { let (a, fs) = $1 in Crease (None, a, fs, $loc) }
   | POINT COLON point_expr { Point ($1, $3, $loc) }
 
+axiom_stmt:
+  | axiom                 { ($1, None) }
+  | AT axiom fold_clauses { ($2, Some $3) }
+
+fold_clauses:
+  |                           { { moving = None; direction = Valley } }
+  | MOVING point_ref          { { moving = Some $2; direction = Valley } }
+  | MOUNTAIN                  { { moving = None; direction = Mountain } }
+  | MOVING point_ref MOUNTAIN { { moving = Some $2; direction = Mountain } }
+
 axiom:
-  | THROUGH point_ref point_ref  { Through ($2, $3) }
-  | FOLD point_ref TO point_ref  { FoldOnto ($2, $4) }
+  | THROUGH point_ref point_ref       { Through ($2, $3) }
+  | MAP point_ref ONTO point_ref      { MapPoints ($2, $4) }
   | PERP crease_ref THROUGH point_ref { Perp ($4, $2) }
-  | BISECT crease_ref crease_ref         { Bisect ($2, $3, None) }
-  | BISECT crease_ref crease_ref TOWARD point_ref  { Bisect ($2, $3, Some $5) }
+  | MAP crease_ref ONTO crease_ref                  { MapLines ($2, $4, None) }
+  | MAP crease_ref ONTO crease_ref TOWARD point_ref { MapLines ($2, $4, Some $6) }
 
 point_ref:
   | POINT { { name = $1; span = $loc } }

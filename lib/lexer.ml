@@ -13,13 +13,15 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "paper" -> PAPER
   | "square" -> SQUARE
   | "through" -> THROUGH
-  | "fold" -> FOLD
+  | "map" -> MAP
+  | "onto" -> ONTO
   | "perp" -> PERP
-  | "bisect" -> BISECT
   | "toward" -> TOWARD
-  | "to" -> TO
+  | "moving" -> MOVING
+  | "mountain" -> MOUNTAIN
   | "cross" -> CROSS
   | ':' -> COLON
+  | '@' -> AT
   | "--", id ->
       let s = Sedlexing.Utf8.lexeme buf in
       CREASE (String.sub s 2 (String.length s - 2))

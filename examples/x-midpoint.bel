@@ -1,6 +1,6 @@
-; status: works — two diagonals, name their crossing, fold a corner to it
+; status: works — two diagonals, name their crossing, map a corner onto it
 paper square
 --d1: through .a .c
 --d2: through .b .d
 .center: cross --d1 --d2
-fold .a to .center
+map .a onto .center

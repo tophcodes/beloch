@@ -1,5 +1,5 @@
-; status: works — bisect of two parallel edges is their midline (no toward)
+; status: works — mapping two parallel edges onto each other yields their midline (no toward)
 paper square
 --l: through .a .d       ; left edge x = 0
 --r: through .b .c       ; right edge x = 1
-bisect --l --r
+map --l onto --r

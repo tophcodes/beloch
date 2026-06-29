@@ -106,13 +106,15 @@ The unique fold line passing through points `.x` and `.y`
 ### 4.2 Axiom 2 — fold one point onto another *(since v0.0)*
 
 ```
-fold .x to .y
+map .x onto .y
 ```
 
 The fold that places `.x` onto `.y`: the perpendicular bisector of the segment
 `x–y` [[justin1986]](#ref-justin1986),
 [[hull2020]](#ref-hull2020) §1.5 (O3 in Hull's numbering; see §1).
 **Error** if `.x` and `.y` are the same point.
+
+*(since v0.6-dev: verb is `map … onto …`; was `fold … to …`.)*
 
 ### 4.3 Construction — intersection of two creases *(since v0.0)*
 
@@ -152,7 +154,7 @@ geometric precondition and never errors** (beyond undefined-name errors).
 ### 4.5 Axiom 5 — fold one line onto another *(since v0.3-dev)*
 
 ```
-bisect --l1 --l2 toward .p
+map --l1 onto --l2 toward .p
 ```
 
 The fold placing line `--l1` onto line `--l2`: the **angle bisector**
@@ -172,6 +174,8 @@ now computed over exact **constructible reals** (`Num`; see
 [ADR 0010](../decisions/0010-constructible-real-numbers.md) and §6), so equality,
 parallelism, and on-paper tests stay exact.
 
+*(since v0.6-dev: verb is `map … onto …`; was `bisect …`.)*
+
 ---
 
 ## 5. Naming and program structure *(since v0.0)*
@@ -182,7 +186,7 @@ name must be defined before it is used.
 - **Crease statement** — binds a crease, or is anonymous:
   ```
   --d1: through .a .c     ; named
-  fold .a to .c           ; anonymous
+  map .a onto .c          ; anonymous
   ```
 - **Point statement** — binds a derived point:
   ```
@@ -268,7 +272,8 @@ and the process exits non-zero:
 - axiom 1 or 2 with two identical points;
 - `cross` on parallel creases;
 - `cross` whose intersection lies off the paper;
-- reference to an undefined point or crease name.
+- reference to an undefined point or crease name;
+- `@` fold statement — folding is not yet implemented.
 
 ---
 
@@ -279,12 +284,12 @@ The Menhir grammar is authoritative once written; this sketch is a guide.
 ```
 program     := "paper" "square" stmt*
 stmt        := crease_stmt | point_stmt
-crease_stmt := [ CREASE_NAME ":" ] axiom
+crease_stmt := [ CREASE_NAME ":" ] [ "@" ] axiom [ "moving" point_ref ] [ "mountain" ]
 point_stmt  := POINT_NAME ":" point_expr
-axiom       := "through" point_ref point_ref      ; axiom 1
-             | "fold" point_ref "to" point_ref    ; axiom 2
-             | "perp" crease_ref "through" point_ref ; axiom 3
-             | "bisect" crease_ref crease_ref [ "toward" point_ref ]   ; axiom 5
+axiom       := "through" point_ref point_ref            ; axiom 1
+             | "map" point_ref "onto" point_ref         ; axiom 2
+             | "perp" crease_ref "through" point_ref     ; axiom 3
+             | "map" crease_ref "onto" crease_ref [ "toward" point_ref ]  ; axiom 5
 point_expr  := "cross" CREASE_NAME CREASE_NAME    ; line intersection
 crease_ref  := CREASE_NAME
 point_ref   := POINT_NAME
@@ -292,18 +297,25 @@ POINT_NAME  := "." ident
 CREASE_NAME := "--" ident
 ```
 
+A bare statement is a *precrease* (computes a crease line, paper stays flat). The `@` prefix marks an actual fold (`moving`/`mountain` describe it); fold **evaluation** is not yet implemented — `@` statements currently raise a compile error.
+
 ---
 
 ## Appendix B — not yet in the language
 
-Deferred, in rough order of likely arrival: folded state · mountain/valley
-direction · axioms 4, 6, 7 · regions · parts/imports · `step` blocks ·
-`flip`/`rotate` · YR diagrams. These are not part of the language until a slice
-lands and this spec is extended.
+Deferred, in rough order of likely arrival: folded state · axioms 4, 6, 7 ·
+regions · parts/imports · `step` blocks · `flip`/`rotate` · YR diagrams. These
+are not part of the language until a slice lands and this spec is extended.
 
 (Axiom 5 — angle bisector — landed in v0.3-dev. Axiom 3 — perpendicular through a
-point — landed in v0.2. Faces landed in v0.1; mountain/valley direction is still
-deferred.)
+point — landed in v0.2. Faces landed in v0.1.)
+
+*(since v0.6-dev)* The `map … onto …` verb (axioms 2 and 5) and the `@` fold
+modifier (`moving`/`mountain`) surface have landed; see
+[ADR 0011](../decisions/0011-action-model.md). Mountain/valley direction is now
+*derived* from fold actions (see the action-model design doc) rather than being a
+separate annotation pass. The folded-state runtime (`foldedForm`, derived M/V,
+dual FOLD output) is deferred to a later plan.
 
 ---
 
