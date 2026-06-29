@@ -52,7 +52,7 @@ let eval (prog : Ast.program) : crease list =
           (match name_opt with
            | Some n -> Hashtbl.replace creases n line
            | None -> ());
-          out := { line; prov = { State.axiom; sources; span } } :: !out
+          out := { line; prov = { State.axiom; sources; span; name = name_opt } } :: !out
       | Ast.Point (n, Ast.Cross (c1, c2), span) ->
           let l1 = lookup_crease c1 and l2 = lookup_crease c2 in
           (match Geom.intersection l1 l2 with

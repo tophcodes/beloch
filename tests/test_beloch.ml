@@ -277,6 +277,26 @@ let test_faces_two_diagonals () =
   Alcotest.(check bool) "each face is a triangle" true
     (List.for_all (fun f -> Array.length f = 3) fs)
 
+let test_eval_crease_name () =
+  let cs = eval_src "paper square\n--d1: through .a .c\nthrough .b .d\n" in
+  let named = List.nth cs 0 and anon = List.nth cs 1 in
+  Alcotest.(check (option string)) "named crease carries its name"
+    (Some "d1") named.Eval.prov.State.name;
+  Alcotest.(check (option string)) "anonymous crease has no name"
+    None anon.Eval.prov.State.name
+
+let test_emit_crease_name () =
+  let cs = eval_src "paper square\n--d1: through .a .c\n" in
+  let st = Planarize.run cs in
+  let json = Fold_emit.to_json st (Faces.extract st) in
+  let open Yojson.Safe.Util in
+  let names =
+    json |> member "beloch:edges" |> to_list
+    |> List.filter_map (function `Null -> None | e -> Some (e |> member "name"))
+  in
+  Alcotest.(check bool) "a crease entry carries name \"d1\"" true
+    (List.exists (fun n -> n = `String "d1") names)
+
 let n = Num.of_int
 
 let test_num_rational () =
@@ -358,13 +378,16 @@ let () =
          Alcotest.test_case "identical points" `Quick test_eval_identical_points;
          Alcotest.test_case "undefined point" `Quick test_eval_undefined_point;
          Alcotest.test_case "parallel cross" `Quick test_eval_parallel_cross;
-         Alcotest.test_case "perp provenance" `Quick test_eval_perp_provenance ]);
+         Alcotest.test_case "perp provenance" `Quick test_eval_perp_provenance;
+         Alcotest.test_case "crease name in provenance" `Quick test_eval_crease_name ]);
       ("planarize",
        [ Alcotest.test_case "two diagonals split" `Quick test_planarize_two_diagonals;
          Alcotest.test_case "single crease" `Quick test_planarize_single_crease;
          Alcotest.test_case "boundary split" `Quick test_planarize_boundary_split;
          Alcotest.test_case "edge dedup" `Quick test_planarize_edge_dedup ]);
-      ("emit", [ Alcotest.test_case "fold fields" `Quick test_emit_fields ]);
+      ("emit",
+       [ Alcotest.test_case "fold fields" `Quick test_emit_fields;
+         Alcotest.test_case "crease name in emit" `Quick test_emit_crease_name ]);
       ("e2e",
        [ Alcotest.test_case "diagonals" `Quick test_e2e_diagonals;
          Alcotest.test_case "anti parallel" `Quick test_e2e_anti_parallel;

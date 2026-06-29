@@ -72,12 +72,42 @@ V.forEach((p) => {
     out.push(`<text x="${tx(p[0]) + ox}" y="${ty(p[1]) + oy}" font-size="17" font-weight="600" fill="#0f172a">.${lab}</text>`);
   }
 });
+// crease-name labels: one per NAMED crease, on the line ~18% in from one end,
+// with a white halo so it reads over creases and never collides with corners.
+const B_EPS = 1e-6;
+const onB = (p) =>
+  Math.abs(p[0] - minX) < B_EPS || Math.abs(p[0] - maxX) < B_EPS ||
+  Math.abs(p[1] - minY) < B_EPS || Math.abs(p[1] - maxY) < B_EPS;
+const creases = {};
+E.forEach((e, i) => {
+  const nm = prov[i] && prov[i].name;
+  if (!nm) return;
+  if (!creases[nm]) creases[nm] = { vs: new Set(), col: eColor(i) };
+  creases[nm].vs.add(e[0]);
+  creases[nm].vs.add(e[1]);
+});
+for (const [nm, { vs, col }] of Object.entries(creases)) {
+  const list = [...vs];
+  // the crease's two ends. Normally its two boundary exits; if fewer than two
+  // verts lie on the boundary (interior fallback), use the two farthest apart.
+  let ends = list.filter((j) => onB(V[j]));
+  if (ends.length < 2) {
+    let best = [list[0], list[0]], bd = -1;
+    for (const a of list) for (const b of list) {
+      const d = (V[a][0] - V[b][0]) ** 2 + (V[a][1] - V[b][1]) ** 2;
+      if (d > bd) { bd = d; best = [a, b]; }
+    }
+    ends = best;
+  }
+  const A = V[ends[0]], C = V[ends[1]], t = 0.18; // 18% in from one end
+  const px = tx(A[0] + (C[0] - A[0]) * t), py = ty(A[1] + (C[1] - A[1]) * t);
+  out.push(`<text x="${px}" y="${py}" font-size="13" font-weight="600" fill="${col}" stroke="white" stroke-width="3" paint-order="stroke" text-anchor="middle" dominant-baseline="middle">--${nm}</text>`);
+}
 // title
 if (title) out.push(`<text x="${PAD}" y="28" font-size="16" font-weight="700" fill="#0f172a">${title}</text>`);
 // legend (axioms present in this diagram)
 const present = [...new Set(prov.filter(Boolean).map((p) => p.axiom))].filter((a) => AX[a]);
 present.forEach((ax, k) => {
-  const ly = H - PAD + 22 + k * 0; // single row
   const lx = PAD + k * 150;
   out.push(`<line x1="${lx}" y1="${H - 22}" x2="${lx + 22}" y2="${H - 22}" stroke="${AX[ax].c}" stroke-width="3" stroke-linecap="round"/>`);
   out.push(`<text x="${lx + 28}" y="${H - 17}" font-size="13" fill="#334155">${AX[ax].n}</text>`);

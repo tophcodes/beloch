@@ -205,7 +205,7 @@ extracted by exact planar face traversal and emitted as `faces_vertices`.
 
 Emitted fields:
 
-- `file_spec`, `file_creator: "beloch 0.1.0-dev"`,
+- `file_spec`, `file_creator: "beloch 0.2.0-dev"`,
   `frame_classes: ["creasePattern"]`
 - `vertices_coords` — `[x, y]` per vertex. Exact ℚ values are rendered to JSON
   decimal at serialization (non-terminating rationals are rounded *in the output
@@ -220,8 +220,12 @@ Emitted fields:
   no creases yields the single square face `[[0, 1, 2, 3]]`.
 - `beloch:edges` — custom property ([[foldformat]](#ref-foldformat) §"Custom Properties") carrying, per
   crease edge, its originating operation (`"axiom1"` / `"axiom2"`), the source
-  point/crease names, and the source span. Used for provenance and source
-  mapping.
+  point/crease names, the source span, and the bound **`"name"`** — the crease
+  name as a string (e.g. `"d1"`) if the statement was named (`--d1: …`), or
+  `null` for an anonymous crease. This field is additive: stock FOLD consumers
+  ignore unknown keys. `tools/fold2svg.mjs` uses it to label named creases on
+  the diagram (on the line, ~18% in from one end, with a white halo to avoid
+  colliding with corner labels). Used for provenance and source mapping.
 
 ---
 

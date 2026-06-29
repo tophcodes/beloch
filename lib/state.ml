@@ -2,7 +2,7 @@
 
 type assignment = Boundary | Crease
 
-type provenance = { axiom : string; sources : string list; span : Error.span }
+type provenance = { axiom : string; sources : string list; span : Error.span; name : string option }
 
 type edge = { v0 : int; v1 : int; assign : assignment; prov : provenance option }
 
