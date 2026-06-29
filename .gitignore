@@ -12,3 +12,6 @@ _build/
 .direnv/
 result
 result-*
+
+# Node tooling (tools/) — deps reproduced via bun install
+node_modules/

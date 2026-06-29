@@ -55,6 +55,8 @@
             ocamlPkgs.ocaml-lsp
             ocamlPkgs.ocamlformat
             ocamlPkgs.utop
+            # FOLD -> SVG/PNG rendering via Rabbit Ear (tools/fold2svg.mjs)
+            pkgs.bun
           ];
         };
       }
