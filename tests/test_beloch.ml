@@ -397,6 +397,40 @@ let test_emit_crease_name () =
     "a crease entry carries name \"d1\"" true
     (List.exists (fun n -> n = `String "d1") names)
 
+let test_isometry_basics () =
+  let i = Isometry.identity in
+  Alcotest.(check bool)
+    "identity fixes a point" true
+    (Geom.point_equal (Isometry.apply_point i (pt 3 4)) (pt 3 4));
+  Alcotest.(check int) "identity det +1" 1 (Isometry.det_sign i)
+
+let test_isometry_reflection () =
+  let l = { Geom.a = q 1; b = q 0; c = half } in
+  let r = Isometry.reflect_across_line l in
+  (* agrees with Geom.reflect_point *)
+  Alcotest.(check bool)
+    "reflection isometry matches reflect_point" true
+    (Geom.point_equal
+       (Isometry.apply_point r (pt 0 0))
+       (Geom.reflect_point l (pt 0 0)));
+  Alcotest.(check int) "a reflection has det -1" (-1) (Isometry.det_sign r);
+  (* two reflections compose to a direct isometry *)
+  let rr = Isometry.compose r r in
+  Alcotest.(check int) "reflection twice has det +1" 1 (Isometry.det_sign rr);
+  Alcotest.(check bool)
+    "reflection twice is identity on a point" true
+    (Geom.point_equal (Isometry.apply_point rr (pt 0 0)) (pt 0 0))
+
+let test_isometry_inverse () =
+  let l = { Geom.a = q 1; b = q 1; c = q 1 } in
+  (* x + y = 1, a slanted mirror *)
+  let r = Isometry.reflect_across_line l in
+  let inv = Isometry.inverse r in
+  let p = pt 2 5 in
+  Alcotest.(check bool)
+    "inverse undoes apply" true
+    (Geom.point_equal (Isometry.apply_point inv (Isometry.apply_point r p)) p)
+
 let n = Num.of_int
 
 let test_num_rational () =
@@ -494,6 +528,69 @@ let test_parallel_midline () =
   in
   Alcotest.(check int) "(1/2,0) on midline" 0 (on half (q 0));
   Alcotest.(check int) "(1/2,1) on midline" 0 (on half (q 1))
+
+let test_reflect_point () =
+  (* mirror line x = 1/2 is a=1,b=0,c=1/2 *)
+  let l = { Geom.a = q 1; b = q 0; c = half } in
+  Alcotest.(check bool)
+    "(0,0) -> (1,0)" true
+    (Geom.point_equal (Geom.reflect_point l (pt 0 0)) (pt 1 0));
+  Alcotest.(check bool)
+    "reflection is an involution" true
+    (Geom.point_equal
+       (Geom.reflect_point l (Geom.reflect_point l (pt 0 0)))
+       (pt 0 0));
+  Alcotest.(check bool)
+    "a point on the line is fixed" true
+    (Geom.point_equal
+       (Geom.reflect_point l { Geom.x = half; y = q 7 })
+       { Geom.x = half; y = q 7 })
+
+let test_side_of_line () =
+  let l = { Geom.a = q 1; b = q 0; c = half } in
+  Alcotest.(check int) "right of x=1/2 is +1" 1 (Geom.side_of_line l (pt 1 0));
+  Alcotest.(check int) "left of x=1/2 is -1" (-1) (Geom.side_of_line l (pt 0 0));
+  Alcotest.(check int)
+    "on x=1/2 is 0" 0
+    (Geom.side_of_line l { Geom.x = half; y = q 9 })
+
+let test_clip_halfplane () =
+  let sq = [| pt 0 0; pt 1 0; pt 1 1; pt 0 1 |] in
+  let l = { Geom.a = q 1; b = q 0; c = half } in
+  (* x = 1/2 *)
+  let right = Geom.clip_convex_halfplane l 1 sq in
+  let left = Geom.clip_convex_halfplane l (-1) sq in
+  Alcotest.(check int) "right half has 4 vertices" 4 (Array.length right);
+  Alcotest.(check int) "left half has 4 vertices" 4 (Array.length left);
+  Alcotest.(check bool)
+    "right half area = 1/2" true
+    (Num.equal (Geom.signed_area right) half);
+  Alcotest.(check bool)
+    "left half area = 1/2" true
+    (Num.equal (Geom.signed_area left) half)
+
+let test_clip_halfplane_all_or_nothing () =
+  let sq = [| pt 0 0; pt 1 0; pt 1 1; pt 0 1 |] in
+  let l = { Geom.a = q 1; b = q 0; c = q 2 } in
+  (* x = 2, misses the square *)
+  Alcotest.(check int)
+    "whole square on the -1 side" 4
+    (Array.length (Geom.clip_convex_halfplane l (-1) sq));
+  Alcotest.(check int)
+    "nothing on the +1 side" 0
+    (Array.length (Geom.clip_convex_halfplane l 1 sq))
+
+let test_in_convex_polygon () =
+  let sq = [| pt 0 0; pt 1 0; pt 1 1; pt 0 1 |] in
+  Alcotest.(check bool)
+    "center inside" true
+    (Geom.in_convex_polygon sq { Geom.x = half; y = half });
+  Alcotest.(check bool)
+    "corner on boundary counts" true
+    (Geom.in_convex_polygon sq (pt 0 0));
+  Alcotest.(check bool)
+    "outside is outside" false
+    (Geom.in_convex_polygon sq (pt 2 2))
 
 let test_parse_bisect () =
   let prog =
@@ -650,6 +747,56 @@ let test_e2e_bisect_parallel () =
     "two faces" 2
     (json |> member "faces_vertices" |> to_list |> List.length)
 
+let fs_pt = pt (* reuse existing helper *)
+
+let test_fold_state_init () =
+  let st = Fold_state.init_square in
+  Alcotest.(check int) "one face" 1 (Array.length st.Fold_state.faces);
+  Alcotest.(check int) "one layer" 1 (Array.length st.Fold_state.layers);
+  Alcotest.(check bool)
+    "corner .a at (0,0) on the table" true
+    (Geom.point_equal (Fold_state.table_position st (fs_pt 0 0)) (fs_pt 0 0))
+
+let test_fold_state_half () =
+  (* fold the right half of the square onto the left, valley, along x = 1/2.
+     map .b (1,0) onto .a (0,0): axis is x = 1/2; moving side is .b's side (+1). *)
+  let st = Fold_state.init_square in
+  let axis = { Geom.a = q 1; b = q 0; c = half } in
+  let st = Fold_state.simple_fold st ~axis ~move_side:1 ~valley:true in
+  Alcotest.(check int)
+    "two faces after one fold" 2
+    (Array.length st.Fold_state.faces);
+  Alcotest.(check int) "two layers" 2 (Array.length st.Fold_state.layers);
+  (* the material point .b = (1,0) now lands exactly on .a = (0,0) *)
+  Alcotest.(check bool)
+    ".b maps onto .a" true
+    (Geom.point_equal (Fold_state.table_position st (fs_pt 1 0)) (fs_pt 0 0));
+  (* both faces' table footprints lie in the left half (x ≤ 1/2) *)
+  let all_left =
+    Array.for_all
+      (fun i ->
+        Array.for_all
+          (fun p -> Num.compare p.Geom.x half <= 0)
+          (Fold_state.table_polygon st i))
+      [| 0; 1 |]
+  in
+  Alcotest.(check bool) "folded footprint is the left half" true all_left
+
+let test_fold_state_layer_order () =
+  (* valley fold: the moved face is the top layer (last in `layers`). The moved
+     face is the one whose isometry is a reflection (det -1). *)
+  let st = Fold_state.init_square in
+  let axis = { Geom.a = q 1; b = q 0; c = half } in
+  let st = Fold_state.simple_fold st ~axis ~move_side:1 ~valley:true in
+  let top = st.Fold_state.layers.(Array.length st.Fold_state.layers - 1) in
+  Alcotest.(check int)
+    "top layer is the moved (reflected) face" (-1)
+    (Isometry.det_sign st.Fold_state.faces.(top).Fold_state.iso);
+  let bottom = st.Fold_state.layers.(0) in
+  Alcotest.(check int)
+    "bottom layer is stationary (det +1)" 1
+    (Isometry.det_sign st.Fold_state.faces.(bottom).Fold_state.iso)
+
 let () =
   Alcotest.run "beloch"
     [
@@ -669,6 +816,14 @@ let () =
             test_segment_intersection_center;
           Alcotest.test_case "segments do not touch" `Quick
             test_segment_no_touch;
+        ] );
+      ( "fold_clip",
+        [
+          Alcotest.test_case "half-plane clip" `Quick test_clip_halfplane;
+          Alcotest.test_case "clip all or nothing" `Quick
+            test_clip_halfplane_all_or_nothing;
+          Alcotest.test_case "point in convex polygon" `Quick
+            test_in_convex_polygon;
         ] );
       ( "parse",
         [
@@ -756,5 +911,23 @@ let () =
         [
           Alcotest.test_case "angle bisectors" `Quick test_angle_bisectors;
           Alcotest.test_case "parallel midline" `Quick test_parallel_midline;
+        ] );
+      ( "fold_geom",
+        [
+          Alcotest.test_case "reflect point" `Quick test_reflect_point;
+          Alcotest.test_case "side of line" `Quick test_side_of_line;
+        ] );
+      ( "isometry",
+        [
+          Alcotest.test_case "basics" `Quick test_isometry_basics;
+          Alcotest.test_case "reflection" `Quick test_isometry_reflection;
+          Alcotest.test_case "inverse" `Quick test_isometry_inverse;
+        ] );
+      ( "fold_state",
+        [
+          Alcotest.test_case "init square" `Quick test_fold_state_init;
+          Alcotest.test_case "half fold geometry" `Quick test_fold_state_half;
+          Alcotest.test_case "valley layer order" `Quick
+            test_fold_state_layer_order;
         ] );
     ]
