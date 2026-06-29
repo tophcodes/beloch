@@ -6,7 +6,7 @@ let to_json (st : State.t) (faces : int array list) : Yojson.Safe.t =
   let verts =
     Dynarray.to_list st.State.verts
     |> List.map (fun (p : Geom.point) ->
-           `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ])
+        `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ])
   in
   let edges = Dynarray.to_list st.State.edges in
   let edges_vertices =
@@ -32,14 +32,20 @@ let to_json (st : State.t) (faces : int array list) : Yojson.Safe.t =
         | None -> `Null
         | Some pr ->
             `Assoc
-              [ ("axiom", `String pr.State.axiom);
-                ("sources", `List (List.map (fun s -> `String s) pr.State.sources));
+              [
+                ("axiom", `String pr.State.axiom);
+                ( "sources",
+                  `List (List.map (fun s -> `String s) pr.State.sources) );
                 ("span", `String (Error.span_to_string pr.State.span));
-                ("name", match pr.State.name with Some n -> `String n | None -> `Null) ])
+                ( "name",
+                  match pr.State.name with Some n -> `String n | None -> `Null
+                );
+              ])
       edges
   in
   `Assoc
-    [ ("file_spec", `Float 1.1);
+    [
+      ("file_spec", `Float 1.1);
       (* literal, NOT Beloch.version: fold_emit is re-exported by the beloch.ml
          facade, so referencing Beloch here would be a module cycle. Keep in
          sync with Beloch.version. *)
@@ -49,4 +55,5 @@ let to_json (st : State.t) (faces : int array list) : Yojson.Safe.t =
       ("edges_vertices", `List edges_vertices);
       ("edges_assignment", `List edges_assignment);
       ("faces_vertices", `List faces_vertices);
-      ("beloch:edges", `List beloch_edges) ]
+      ("beloch:edges", `List beloch_edges);
+    ]

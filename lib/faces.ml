@@ -17,7 +17,9 @@ let extract (st : State.t) : int array list =
   let adj =
     Array.mapi
       (fun i ns ->
-        List.sort (fun x y -> Geom.ccw_compare ~center:(pos i) (pos x) (pos y)) ns)
+        List.sort
+          (fun x y -> Geom.ccw_compare ~center:(pos i) (pos x) (pos y))
+          ns)
       adj
   in
   let index_in lst u =

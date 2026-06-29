@@ -48,7 +48,9 @@ type segment = point * point
 
 let seg_param ((p, q) : segment) (r : point) : Num.t =
   let dx = Num.sub q.x p.x and dy = Num.sub q.y p.y in
-  let num = Num.add (Num.mul (Num.sub r.x p.x) dx) (Num.mul (Num.sub r.y p.y) dy) in
+  let num =
+    Num.add (Num.mul (Num.sub r.x p.x) dx) (Num.mul (Num.sub r.y p.y) dy)
+  in
   let den = Num.add (Num.mul dx dx) (Num.mul dy dy) in
   Num.div num den
 
@@ -74,7 +76,7 @@ let clip_to_unit_square (l : line) : segment option =
   | _ -> None
 
 let segment_intersection (s1 : segment) (s2 : segment) : point option =
-  let (p1, q1) = s1 and (p2, q2) = s2 in
+  let p1, q1 = s1 and p2, q2 = s2 in
   match intersection (line_through p1 q1) (line_through p2 q2) with
   | None -> None
   | Some r ->
@@ -118,9 +120,11 @@ let angle_bisectors (l1 : line) (l2 : line) : (line * line) option =
     let n2 = Num.sqrt (Num.add (Num.mul l2.a l2.a) (Num.mul l2.b l2.b)) in
     let mk add_sign =
       let comb u v = if add_sign then Num.add u v else Num.sub u v in
-      { a = comb (Num.mul n2 l1.a) (Num.mul n1 l2.a);
+      {
+        a = comb (Num.mul n2 l1.a) (Num.mul n1 l2.a);
         b = comb (Num.mul n2 l1.b) (Num.mul n1 l2.b);
-        c = comb (Num.mul n2 l1.c) (Num.mul n1 l2.c) }
+        c = comb (Num.mul n2 l1.c) (Num.mul n1 l2.c);
+      }
     in
     Some (mk false, mk true)
 

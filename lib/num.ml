@@ -1,10 +1,10 @@
-(** Exact constructible reals: a tower of quadratic extensions over ℚ.
-    [t] is [Rat q] or [Ext (a, b, d)] meaning [a + b·√d] with [d > 0].
-    Canonical invariant (held by routing all [Ext] building through [ext]):
-    in [Ext (a, b, d)] the generator [√d] is strictly greater — by the purely
-    syntactic order [compare_struct] — than every generator in [a] and [b].
-    That invariant is what makes [sign] terminate (it recurses on [a²−b²d],
-    which sits one extension below [√d]). Equality needs no canonical form:
+(** Exact constructible reals: a tower of quadratic extensions over ℚ. [t] is
+    [Rat q] or [Ext (a, b, d)] meaning [a + b·√d] with [d > 0]. Canonical
+    invariant (held by routing all [Ext] building through [ext]): in
+    [Ext (a, b, d)] the generator [√d] is strictly greater — by the purely
+    syntactic order [compare_struct] — than every generator in [a] and [b]. That
+    invariant is what makes [sign] terminate (it recurses on [a²−b²d], which
+    sits one extension below [√d]). Equality needs no canonical form:
     [equal x y] is [sign (sub x y) = 0]. Float appears only in [to_float]. *)
 
 type t = Rat of Q.t | Ext of t * t * t
@@ -12,7 +12,7 @@ type t = Rat of Q.t | Ext of t * t * t
 (* A total order on terms, used to choose the outer (maximal) generator and to
    recognise identical generators. Any fixed total order works. *)
 let rec compare_struct (x : t) (y : t) : int =
-  match x, y with
+  match (x, y) with
   | Rat a, Rat b -> Q.compare a b
   | Rat _, Ext _ -> -1
   | Ext _, Rat _ -> 1
@@ -51,7 +51,7 @@ and ext (a : t) (b : t) (d : t) : t =
   if sign b = 0 || sign d = 0 then a else Ext (a, b, d)
 
 and add (x : t) (y : t) : t =
-  match x, y with
+  match (x, y) with
   | Rat a, Rat b -> Rat (Q.add a b)
   | Rat _, Ext (a, b, d) -> ext (add x a) b d
   | Ext (a, b, d), Rat _ -> ext (add a y) b d
@@ -64,7 +64,7 @@ and add (x : t) (y : t) : t =
 and sub (x : t) (y : t) : t = add x (neg y)
 
 and mul (x : t) (y : t) : t =
-  match x, y with
+  match (x, y) with
   | Rat a, Rat b -> Rat (Q.mul a b)
   | Rat _, Ext (a, b, d) -> ext (mul x a) (mul x b) d
   | Ext (a, b, d), Rat _ -> ext (mul a y) (mul b y) d

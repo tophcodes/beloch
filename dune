@@ -1,0 +1,10 @@
+; Project-wide build profiles.
+; dev: warnings are fatal so quality regressions can't land silently.
+; release: keep warnings non-fatal so a stray warning never blocks a build.
+
+(env
+ (dev
+  (flags
+   (:standard -w +a-4-40-42-44-45-70 -warn-error +a)))
+ (release
+  (flags (:standard))))
