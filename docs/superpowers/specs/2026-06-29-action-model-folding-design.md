@@ -67,7 +67,7 @@ thick-panel claims are *not* grounded in `refs/` — drop sources in before form
 | Runtime state | Faces (flat-coordinate polygons) + per-face exact isometry into 3D + an **addressable, insert-anywhere layer stack** |
 | Mountain/valley | **Derived** from the action (rotation direction) + accumulated flips — never annotated |
 | Fold ladder | Stufe 1 simple fold → Stufe 2 layer selection / landing / validity check → Stufe 3 unfold → named maneuvers as sugar |
-| Syntax | `axiom` = precrease (flat line, today's behavior); `@axiom` = also fold. `moving .p` clause (defaulted for point-moving axioms), `mountain` keyword (default valley) |
+| Syntax | `axiom` = precrease (flat line); `@axiom` = also fold. Verb set `through` · `perp` · `map … onto …` (superposition axioms 2 & 5 unified, type-dispatched — renames `fold`/`bisect`). `moving .p` clause (defaulted for point-moving axioms), `mountain` keyword (default valley) |
 | References | **Material-persistent** points; flap = "the flap containing `.p`"; `cross` generalized to line × line (crease *or* paper edge) |
 | Output | Dual FOLD: `creasePattern` frame + `foldedForm` frame |
 | Program structure | Imperative — statements evaluated in order, state threads through (bare precreases commute until the first fold) |
@@ -146,15 +146,15 @@ once arbitrary layer selection + insertion can express impossible moves.
 ### 4.1 Precrease vs. fold
 
 A bare axiom statement is a **precrease**: it computes a crease *line*, marks it, the
-paper stays flat. This is exactly v0.0–v0.4 behavior — fully backward compatible.
+paper stays flat. (Behavior is v0.0–v0.4's; the *verbs* change — see 4.2.)
 
 A `@`-prefixed statement also **folds**:
 
 ```
---m: bisect --l1 --l2 toward .p        # precrease only: line, paper stays flat
-@fold .a to .c                         # fold: valley, flap containing .a rotates over
-@fold .a to .c moving .a mountain      # explicit moving side + direction
-@bisect --l1 --l2 toward .p moving .a  # construction axiom: moving side required
+--m: map --l1 onto --l2 toward .p      # precrease only: line, paper stays flat (axiom 5)
+@map .a onto .b                        # fold: valley, flap containing .a rotates over (axiom 2)
+@map .a onto .b moving .a mountain     # explicit moving side + direction
+@map --l1 onto --l2 toward .p moving .a # line-onto-line fold: moving side required
 ```
 
 - **`@` prefix** marks "and keep folded." Chosen as a sigil (consistent with Beloch's
@@ -167,10 +167,29 @@ A `@`-prefixed statement also **folds**:
   line-construction axioms (`through` / `perp` / `bisect`) which have no natural default.
 - **`mountain`** sets rotation direction; default is **valley** (toward viewer).
 
-### 4.2 Naming collision
+### 4.2 Verb set (renamed) — `map … onto …`
 
-`fold` is already axiom 2's verb (`fold .a to .b`). The `@` modifier disambiguates
-(`@fold` = perform axiom-2 fold *and* keep folded). No verb rename needed.
+Because a bare statement is a *precrease* (it does not fold), the verb must name the
+**geometric operation**, not the physical act. `fold` (axiom 2) is therefore renamed:
+the superposition axioms — a reflection placing one object **onto** another — unify under
+one verb, dispatched by operand type:
+
+- `map .a onto .b` — point onto point → **axiom 2** (perpendicular bisector). Unique.
+- `map --l1 onto --l2 toward .p` — line onto line → **axiom 5** (angle bisector). `toward`
+  picks the sector (two solutions).
+
+This mirrors the spec's own wording ("fold one point/line **onto** another", §4.2/§4.5) and
+**generalizes forward**: future point-onto-line folds become `map .p onto --l through .q`
+etc. — one `map` family instead of a per-axiom verb zoo. Axiom *numbers* move to reference
+docs; the surface is intent-driven. (Exact numbering of the point-onto-line axioms: see the
+6/7 numbering watch-point in `antipatterns.md`.)
+
+The non-superposition axioms keep their own verbs — they are not "X onto Y": `through .a .b`
+(axiom 1, incidence) and `perp --l through .p` (axiom 3, perpendicular). Verb set is thus
+`through` · `perp` · `map … onto …`.
+
+**Breaking change:** renames `fold`→`map …onto…` and `bisect`→`map …onto…`. Acceptable
+under the pivot's version bump; existing examples/tests are migrated in the slice.
 
 ## 5. Output — FOLD as intermediate format
 
@@ -227,7 +246,8 @@ interpolates.
 
 **In:**
 - Imperative evaluation; state threads through statements.
-- Precrease axioms reused unchanged (now order-sensitive once paper is folded).
+- Precrease axioms (semantics reused; verbs renamed to `map … onto …`, now order-sensitive
+  once paper is folded; existing examples/tests migrated).
 - `@` fold modifier — **simple flat fold** (±180°): all layers on the moving side, valley
   default / `mountain`; `moving .p` with point-axiom default.
 - Folded-state runtime: faces + exact reflection isometries + addressable layer stack
