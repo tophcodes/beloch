@@ -133,3 +133,51 @@ let parallel_midline (l1 : line) (l2 : line) : line =
   let k = if Num.sign l1.a <> 0 then Num.div l2.a l1.a else Num.div l2.b l1.b in
   let c = Num.div (Num.add l1.c (Num.div l2.c k)) (Num.of_int 2) in
   { a = l1.a; b = l1.b; c }
+
+(* signed side of a point: sign (a·px + b·py − c). 0 means on the line. *)
+let side_of_line (l : line) (p : point) : int =
+  Num.sign (Num.sub (Num.add (Num.mul l.a p.x) (Num.mul l.b p.y)) l.c)
+
+(* reflect p across a·x + b·y = c:  p − 2·(a·px+b·py−c)/(a²+b²)·(a,b). Exact, no sqrt. *)
+let reflect_point (l : line) (p : point) : point =
+  let n2 = Num.add (Num.mul l.a l.a) (Num.mul l.b l.b) in
+  let d = Num.sub (Num.add (Num.mul l.a p.x) (Num.mul l.b p.y)) l.c in
+  let k = Num.div (Num.mul (Num.of_int 2) d) n2 in
+  { x = Num.sub p.x (Num.mul k l.a); y = Num.sub p.y (Num.mul k l.b) }
+
+(* Keep the part of convex CCW [poly] on the side where [side_of_line l = keep]
+   (vertices on the line are kept). Sutherland–Hodgman against one half-plane;
+   preserves convexity and CCW order. Returns [||] if no area remains. *)
+let clip_convex_halfplane (l : line) (keep : int) (poly : point array) :
+    point array =
+  let n = Array.length poly in
+  if n = 0 then [||]
+  else begin
+    let out = ref [] in
+    for i = 0 to n - 1 do
+      let cur = poly.(i) and nxt = poly.((i + 1) mod n) in
+      let sc = side_of_line l cur and sn = side_of_line l nxt in
+      if sc = keep || sc = 0 then out := cur :: !out;
+      if sc <> 0 && sn <> 0 && sc <> sn then
+        match intersection l (line_through cur nxt) with
+        | Some r -> out := r :: !out
+        | None -> ()
+    done;
+    let pts = List.rev !out in
+    if List.length pts < 3 then [||] else Array.of_list pts
+  end
+
+(* p inside or on the boundary of convex CCW [poly]: left-of-or-on every edge. *)
+let in_convex_polygon (poly : point array) (p : point) : bool =
+  let n = Array.length poly in
+  let ok = ref true in
+  for i = 0 to n - 1 do
+    let a = poly.(i) and b = poly.((i + 1) mod n) in
+    let cross =
+      Num.sub
+        (Num.mul (Num.sub b.x a.x) (Num.sub p.y a.y))
+        (Num.mul (Num.sub b.y a.y) (Num.sub p.x a.x))
+    in
+    if Num.sign cross < 0 then ok := false
+  done;
+  !ok
