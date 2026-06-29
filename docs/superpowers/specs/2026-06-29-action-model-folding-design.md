@@ -62,7 +62,7 @@ thick-panel claims are *not* grounded in `refs/` — drop sources in before form
 | Topic | Decision |
 |---|---|
 | Model | Action model (imperative folding) — CP construction becomes the precrease sub-layer |
-| Exactness | Exact 3D, **constructible targets**; `Num` carries the folded geometry |
+| Exactness | Exact 3D for constructible/geometric targets; **arbitrary numeric & animated angles** via **constructible-rational approximation** (stays in `Num`, drift-free; float is *never* used for representation, only — optionally — inside the rendering client) |
 | Thickness | Zero-thickness model; thickness is a display-only ε layer offset; engineering/rigid-panel origami **out of scope** |
 | Runtime state | Faces (flat-coordinate polygons) + per-face exact isometry into 3D + an **addressable, insert-anywhere layer stack** |
 | Mountain/valley | **Derived** from the action (rotation direction) + accumulated flips — never annotated |
@@ -93,12 +93,29 @@ interpenetrate — `faceOrders` exists precisely to say which is on top. This is
 standard origami-math / FOLD idealization (`refs/foldformat.md`; ground exact loci in
 `demaine2007` / `hull2020` when writing the ADR).
 
-### 3.2 Exactness
+### 3.2 Exactness and the fold angle
 
-A flat fold (±180°) is a reflection; the rest position stays exact in `Num`. Constructible
-3D angles (±90°, ±60°, ±120°, ±45°, …) are also exact because their `sin`/`cos` are
-constructible — so "exact 3D" is reachable (Stufe 1.x+), but **Slice 1 is flat-only**.
-Animation between rest states needs arbitrary-angle trig → floating point, **display only**.
+The fold angle of a crease is a **first-class `Num` value per crease**. It arises two ways:
+
+- **Target-derived** — "fold flat" (±180°), "fold edge onto edge", "fold to reference X".
+  The angle falls out of the geometry and is **exact-constructible by construction**.
+  A flat fold is a reflection; the rest position stays exact in `Num`. Other constructible
+  angles (±90°, ±60°, ±120°, ±45°, …) are exact too because their `sin`/`cos` are
+  constructible.
+- **Given / parameterized** — an explicit angle, possibly a *named, animatable parameter*
+  (e.g. a crane's wings at an arbitrary display angle, or a wing-flap animation that drives
+  the dihedral back and forth). Arbitrary real angles are generally **not** constructible
+  (`cos 50°` is not), so they are snapped to a **constructible-rational approximation**.
+
+The constructible reals are dense in ℝ, so any angle is approximable to any tolerance.
+Crucially, snapping to a *constructible* (not float) value keeps the whole downstream
+geometry in the `Num` tower and **composes drift-free** across many folds — exact rationals
+do not accumulate floating-point error the way a float chain would. The exact core therefore
+**never falls back to float for representation**; float, if used at all, lives only inside
+the rendering client's frame interpolation.
+
+**Slice 1 is flat-only** (±180°). Given/parameterized non-flat angles are an architecture
+goal reserved here and a near follow-slice — the isometry-based state already carries them.
 
 ### 3.3 Reference model (material-persistent)
 
@@ -155,17 +172,56 @@ A `@`-prefixed statement also **folds**:
 `fold` is already axiom 2's verb (`fold .a to .b`). The `@` modifier disambiguates
 (`@fold` = perform axiom-2 fold *and* keep folded). No verb rename needed.
 
-## 5. Output
+## 5. Output — FOLD as intermediate format
 
-The same run emits a FOLD file with two frames:
+FOLD is the intermediate artifact; both representations live in **one file** via FOLD's
+multi-frame mechanism (`refs/foldformat.md`):
 
-- **`creasePattern`** — the flat CP, as today (`vertices_coords`, `edges_vertices`,
-  `edges_assignment`, `faces_vertices`, `beloch:edges`).
-- **`foldedForm`** — 3D `vertices_coords`, `faceOrders`, and `edges_foldAngle`
-  (sign matches derived `edges_assignment` M/V per `refs/foldformat.md`).
+- **Frame 0 (key frame) = `creasePattern`** — the flat CP, as today (`vertices_coords`,
+  `edges_vertices`, `edges_assignment`, `faces_vertices`, `beloch:edges`). Chosen as the
+  key frame because multi-frame support is *optional* in FOLD — a dumb consumer that
+  ignores `file_frames` then still sees a sensible flat pattern.
+- **`foldedForm` frame** (in `file_frames`) — 3D `vertices_coords`, `faceOrders`, and
+  `edges_foldAngle` (sign matches derived `edges_assignment` M/V). Uses `frame_parent` +
+  `frame_inherit` to inherit topology from the CP frame and override only coordinates —
+  one combinatorial complex, two geometries.
 
 `edges_assignment` M/V is **computed** from each fold's rotation direction and the face's
 accumulated orientation parity (front/back), not annotated.
+
+The action-model semantics that generic FOLD tools don't understand ride in a **`beloch:`
+custom namespace** (as `beloch:edges` already does): material-point identity, fold-action
+provenance, moving flap, step grouping, and the (possibly parameterized) fold-angle target.
+Generic tools ignore these; Beloch's own client reads them.
+
+### 5.1 Rendering & animation — own client engine
+
+Two-tier consumer story (this is the existing architecture: ADR 0001 core/edge, ADR 0002
+FOLD-extended output, ADR 0009 Rabbit Ear):
+
+- **Generic FOLD tools** (Origami Simulator, Rabbit Ear) consume the standard fields — used
+  only as a free **correctness check / fallback viewer**, *not* the product renderer.
+- **Beloch's own rendering/animation engine** (the TS/web edge, to be built later) is the
+  product renderer: **style-controllable**, consuming FOLD + `beloch:` metadata, targeting
+  tutorials, blog, and store ("look what you can fold") with an automatically generated fold
+  sequence and animation in a chosen visual style.
+
+Motion has two regimes, both handled by the *own* engine, both display-only / approximate:
+
+- **Rigid-rotation motion** — a simple fold's flap, or a parameterized angle sweep (e.g. a
+  crane flapping its wings), is a rigid rotation about the crease; exact (or constructible)
+  per frame, easy. This covers Slice 1 and parameterized-angle animation.
+- **Deforming (cloth-like) motion** — pocket maneuvers (reverse/squash/sink/petal) are
+  generally *not* rigidly foldable mid-motion: the paper must transiently bend, and tucking
+  into a pocket is a self-collision / layer-reorder event. Animating these needs face
+  **tessellation + relaxation** (mass-spring / constraint), the hard part of the future
+  engine. Rest states stay rigid and exact regardless. (Rigid-foldability: `demaine2007`;
+  the relaxation mechanic mirrors Origami Simulator / Ghassaei 2018, **not** in `refs/` —
+  add before formalizing the animation layer.)
+
+Animation is **never baked as float keyframes into the exact artifact**: emit exact CP +
+exact rest `foldedForm` + `beloch:` action metadata (order, flap, angle target); the engine
+interpolates.
 
 ## 6. Slice 1 — scope
 
@@ -184,9 +240,13 @@ accumulated orientation parity (front/back), not annotated.
 - Layer selection / insert-between / validity check (Stufe 2).
 - `unfold` (Stufe 3).
 - Named maneuvers — reverse / squash / sink / petal — as sugar (Stufe 3+).
-- Non-flat constructible 3D angles ("fold until edge meets…") — immediate follow-slice.
+- Non-flat angles — both target-derived ("fold until edge meets…") and given/parameterized
+  (arbitrary, constructible-rational-approximated; animatable, e.g. wing-flap) — near
+  follow-slice; isometry state already carries them.
 - `flip` / `rotate` whole-sheet isometries — fast follow.
-- Folding *animation* (angle interpolation) — tooling concern.
+- The **own rendering/animation engine** (TS/web edge): style-controllable tutorial/blog/
+  store output, rigid-rotation then later deforming (cloth-like) motion. A separate
+  build; the OCaml core only emits FOLD + `beloch:` metadata for it to consume.
 
 **Success criteria:**
 - A `.bel` program that precreases and then `@`-folds produces a FOLD file whose
