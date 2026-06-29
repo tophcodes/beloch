@@ -22,6 +22,7 @@ let fold_string ~(filename : string) (src : string) : Yojson.Safe.t =
   let st = parse ~filename src |> Eval.eval |> Planarize.run in
   Fold_emit.to_json st (Faces.extract st)
 
+module Num = Num
 module Error = Error
 module Geom = Geom
 module Ast = Ast

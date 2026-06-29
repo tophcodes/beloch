@@ -277,6 +277,64 @@ let test_faces_two_diagonals () =
   Alcotest.(check bool) "each face is a triangle" true
     (List.for_all (fun f -> Array.length f = 3) fs)
 
+let n = Num.of_int
+
+let test_num_rational () =
+  Alcotest.(check bool) "2+3=5" true (Num.equal (Num.add (n 2) (n 3)) (n 5));
+  Alcotest.(check bool) "2*3=6" true (Num.equal (Num.mul (n 2) (n 3)) (n 6));
+  Alcotest.(check int) "sign(-2)" (-1) (Num.sign (n (-2)));
+  Alcotest.(check int) "sign(0)" 0 (Num.sign Num.zero)
+
+let test_num_sqrt () =
+  Alcotest.(check bool) "sqrt2*sqrt2=2" true
+    (Num.equal (Num.mul (Num.sqrt (n 2)) (Num.sqrt (n 2))) (n 2));
+  Alcotest.(check bool) "sqrt4=2 (collapses)" true (Num.equal (Num.sqrt (n 4)) (n 2));
+  Alcotest.(check bool) "sqrt of negative raises" true
+    (try ignore (Num.sqrt (n (-1))); false with Invalid_argument _ -> true)
+
+let test_num_sign_mixed () =
+  let r2 = Num.sqrt (n 2) in
+  Alcotest.(check int) "sqrt2 - 1 > 0" 1 (Num.sign (Num.sub r2 Num.one));
+  Alcotest.(check int) "1 - sqrt2 < 0" (-1) (Num.sign (Num.sub Num.one r2));
+  Alcotest.(check int) "1 < sqrt2" (-1) (Num.compare Num.one r2)
+
+let test_num_equal_rewrites () =
+  (* sqrt8 = 2*sqrt2, and sqrt8 - 2*sqrt2 = 0 exactly *)
+  let lhs = Num.sqrt (n 8) and rhs = Num.mul (n 2) (Num.sqrt (n 2)) in
+  Alcotest.(check bool) "sqrt8 = 2 sqrt2" true (Num.equal lhs rhs);
+  Alcotest.(check int) "sqrt8 - 2 sqrt2 = 0" 0 (Num.sign (Num.sub lhs rhs))
+
+let test_num_distributive () =
+  (* a*(b+c) = a*b + a*c with a=sqrt2, b=sqrt3, c=1 — exercises cross-generator mul *)
+  let a = Num.sqrt (n 2) and b = Num.sqrt (n 3) and c = Num.one in
+  Alcotest.(check bool) "distributive" true
+    (Num.equal (Num.mul a (Num.add b c))
+       (Num.add (Num.mul a b) (Num.mul a c)))
+
+let test_num_inv_roundtrip () =
+  let x = Num.sub (Num.sqrt (n 2)) (n 3) in   (* √2 − 3, nonzero *)
+  Alcotest.(check bool) "x * (1/x) = 1" true
+    (Num.equal (Num.mul x (Num.div Num.one x)) Num.one);
+  Alcotest.(check bool) "x / x = 1" true (Num.equal (Num.div x x) Num.one)
+
+let test_num_nested_radical () =
+  (* a = √(1 + √2); a² must equal 1 + √2 exactly *)
+  let inner = Num.add Num.one (Num.sqrt (n 2)) in
+  let a = Num.sqrt inner in
+  Alcotest.(check bool) "(√(1+√2))² = 1+√2" true (Num.equal (Num.mul a a) inner)
+
+let test_num_termination_guard () =
+  (* a deliberately deep nesting; sign must return (no infinite recursion) *)
+  let deep =
+    Num.sqrt (Num.add Num.one
+      (Num.sqrt (Num.add Num.one (Num.sqrt (n 2)))))
+  in
+  Alcotest.(check int) "deep nest is positive" 1 (Num.sign deep)
+
+let test_num_to_float () =
+  Alcotest.(check bool) "to_float sqrt2 ≈ 1.41421" true
+    (Float.abs (Num.to_float (Num.sqrt (n 2)) -. 1.4142135623) < 1e-6)
+
 let () =
   Alcotest.run "beloch"
     [ ("error", [ Alcotest.test_case "span format" `Quick test_error_roundtrip ]);
@@ -319,4 +377,14 @@ let () =
          Alcotest.test_case "signed area" `Quick test_signed_area ]);
       ("faces",
        [ Alcotest.test_case "square is one face" `Quick test_faces_square;
-         Alcotest.test_case "two diagonals -> 4 triangles" `Quick test_faces_two_diagonals ]) ]
+         Alcotest.test_case "two diagonals -> 4 triangles" `Quick test_faces_two_diagonals ]);
+      ("num",
+       [ Alcotest.test_case "rational arithmetic" `Quick test_num_rational;
+         Alcotest.test_case "sqrt" `Quick test_num_sqrt;
+         Alcotest.test_case "sign mixed" `Quick test_num_sign_mixed;
+         Alcotest.test_case "equal rewrites" `Quick test_num_equal_rewrites;
+         Alcotest.test_case "distributive" `Quick test_num_distributive;
+         Alcotest.test_case "inv roundtrip" `Quick test_num_inv_roundtrip;
+         Alcotest.test_case "nested radical" `Quick test_num_nested_radical;
+         Alcotest.test_case "termination guard" `Quick test_num_termination_guard;
+         Alcotest.test_case "to_float" `Quick test_num_to_float ]) ]
