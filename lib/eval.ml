@@ -4,7 +4,7 @@
 type crease = { line : Geom.line; prov : State.provenance }
 
 let corners : (string * Geom.point) list =
-  let q = Q.of_int in
+  let q = Num.of_int in
   [ ("a", { Geom.x = q 0; y = q 0 });
     ("b", { Geom.x = q 1; y = q 0 });
     ("c", { Geom.x = q 1; y = q 1 });
@@ -43,6 +43,35 @@ let eval (prog : Ast.program) : crease list =
         ( Geom.perpendicular_through ll pp,
           "axiom3",
           [ "." ^ p.name; "--" ^ l.cname ] )
+    | Ast.Bisect (c1, c2, p_opt) ->
+        let l1 = lookup_crease c1 and l2 = lookup_crease c2 in
+        let base = [ "--" ^ c1.cname; "--" ^ c2.cname ] in
+        let eval_at (l : Geom.line) (pt : Geom.point) : Num.t =
+          Num.sub
+            (Num.add (Num.mul l.Geom.a pt.Geom.x) (Num.mul l.Geom.b pt.Geom.y))
+            l.Geom.c
+        in
+        (match Geom.angle_bisectors l1 l2 with
+         | None ->
+             (* parallel: identical line -> error, else the midline *)
+             let k =
+               if Num.sign l1.Geom.a <> 0 then Num.div l2.Geom.a l1.Geom.a
+               else Num.div l2.Geom.b l1.Geom.b
+             in
+             if Num.equal l2.Geom.c (Num.mul k l1.Geom.c) then
+               Error.fail span "lines are identical";
+             (Geom.parallel_midline l1 l2, "axiom5", base)
+         | Some (bis_eq, bis_opp) ->
+             (match p_opt with
+              | None -> Error.fail span "bisector is ambiguous; add `toward .p`"
+              | Some pr ->
+                  let p = lookup_point pr in
+                  let s1 = Num.sign (eval_at l1 p)
+                  and s2 = Num.sign (eval_at l2 p) in
+                  if s1 = 0 || s2 = 0 then
+                    Error.fail span "reference point on a fold line; bisector ambiguous";
+                  let bis = if s1 = s2 then bis_eq else bis_opp in
+                  (bis, "axiom5", base @ [ "." ^ pr.name ])))
   in
   List.iter
     (fun stmt ->

@@ -56,7 +56,7 @@ let extract (st : State.t) : int array list =
             done;
             let verts = Array.of_list (List.rev !cycle) in
             let pts = Array.map pos verts in
-            if Q.sign (Geom.signed_area pts) > 0 then faces := verts :: !faces
+            if Num.sign (Geom.signed_area pts) > 0 then faces := verts :: !faces
           end)
         [ (e.State.v0, e.State.v1); (e.State.v1, e.State.v0) ])
     st.State.edges;

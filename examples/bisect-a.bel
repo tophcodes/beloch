@@ -1,0 +1,5 @@
+; status: works — bisect two perpendicular midlines, selecting toward corner a
+paper square
+--v: fold .a to .b      ; vertical midline x = 1/2
+--h: fold .b to .c      ; horizontal midline y = 1/2
+bisect --v --h toward .a

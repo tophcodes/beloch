@@ -45,7 +45,7 @@ let run (creases : Eval.crease list) : State.t =
       let sorted =
         dedup_points !pts
         |> List.sort (fun r1 r2 ->
-               Q.compare (Geom.seg_param seg r1) (Geom.seg_param seg r2))
+               Num.compare (Geom.seg_param seg r1) (Geom.seg_param seg r2))
       in
       let rec link = function
         | x :: (y :: _ as rest) ->
