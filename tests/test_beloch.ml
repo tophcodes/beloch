@@ -749,6 +749,74 @@ let test_e2e_bisect_parallel () =
 
 let fs_pt = pt (* reuse existing helper *)
 
+let count_assign a recs =
+  List.length
+    (List.filter
+       (fun (r : Fold_state.crease_record) -> r.Fold_state.assign = a)
+       recs)
+
+let test_fold_subdivide () =
+  (* precrease the flat square along x=1/2: 2 faces, 1 crease record, assign U *)
+  let axis = { Geom.a = q 1; b = q 0; c = half } in
+  let st, recs = Fold_state.subdivide Fold_state.init_square axis in
+  Alcotest.(check int)
+    "two faces after subdivide" 2
+    (Array.length st.Fold_state.faces);
+  Alcotest.(check int) "one crease record" 1 (List.length recs);
+  Alcotest.(check int)
+    "subdivide records are U" 1
+    (count_assign Fold_state.U recs)
+
+let test_fold_records_valley () =
+  (* half fold valley: one V crease record *)
+  let axis = { Geom.a = q 1; b = q 0; c = half } in
+  let _, recs =
+    Fold_state.fold_with_records Fold_state.init_square ~axis ~move_side:1
+      ~valley:true
+  in
+  Alcotest.(check int) "one record" 1 (List.length recs);
+  Alcotest.(check int)
+    "the half fold is a valley" 1
+    (count_assign Fold_state.V recs);
+  Alcotest.(check int) "no mountain" 0 (count_assign Fold_state.M recs)
+
+let test_fold_records_accordion () =
+  (* quarter fold: fold 1 (x=1/2) gives a stay face (det +1) and a moved face
+     (det -1) both in the left half; fold 2 (y=1/2) cuts both -> one V and one M *)
+  let axis1 = { Geom.a = q 1; b = q 0; c = half } in
+  let st1 =
+    Fold_state.simple_fold Fold_state.init_square ~axis:axis1 ~move_side:1
+      ~valley:true
+  in
+  let axis2 = { Geom.a = q 0; b = q 1; c = half } in
+  let _, recs2 =
+    Fold_state.fold_with_records st1 ~axis:axis2 ~move_side:1 ~valley:true
+  in
+  Alcotest.(check int)
+    "two crease records from the second fold" 2 (List.length recs2);
+  Alcotest.(check int)
+    "one valley (accordion)" 1
+    (count_assign Fold_state.V recs2);
+  Alcotest.(check int)
+    "one mountain (accordion)" 1
+    (count_assign Fold_state.M recs2)
+
+let test_fold_paper_preimages () =
+  (* flat: a table point in the square has exactly one paper preimage.
+     after a half fold, a point in the (overlapping) left half has two. *)
+  let flat = Fold_state.paper_preimages Fold_state.init_square (fs_pt 1 0) in
+  Alcotest.(check int) "one preimage when flat" 1 (List.length flat);
+  let axis = { Geom.a = q 1; b = q 0; c = half } in
+  let st =
+    Fold_state.simple_fold Fold_state.init_square ~axis ~move_side:1
+      ~valley:true
+  in
+  let folded =
+    Fold_state.paper_preimages st { Geom.x = Num.of_q (Q.of_ints 1 4); y = q 0 }
+  in
+  Alcotest.(check int)
+    "two preimages in the folded overlap" 2 (List.length folded)
+
 let test_fold_state_init () =
   let st = Fold_state.init_square in
   Alcotest.(check int) "one face" 1 (Array.length st.Fold_state.faces);
@@ -796,6 +864,45 @@ let test_fold_state_layer_order () =
   Alcotest.(check int)
     "bottom layer is stationary (det +1)" 1
     (Isometry.det_sign st.Fold_state.faces.(bottom).Fold_state.iso)
+
+let test_convex_overlap () =
+  let unit = [| pt 0 0; pt 1 0; pt 1 1; pt 0 1 |] in
+  let shifted_overlap = [| pt 0 0; pt 2 0; pt 2 2; pt 0 2 |] in
+  (* the right half overlaps the unit square in positive area *)
+  let right_half =
+    [| { Geom.x = half; y = q 0 }; pt 1 0; pt 1 1; { Geom.x = half; y = q 1 } |]
+  in
+  Alcotest.(check bool)
+    "unit overlaps a bigger square covering it" true
+    (Geom.convex_overlap unit shifted_overlap);
+  Alcotest.(check bool)
+    "unit overlaps its right half" true
+    (Geom.convex_overlap unit right_half);
+  (* a square fully to the right (x in [2,3]) is disjoint *)
+  let far = [| pt 2 0; pt 3 0; pt 3 1; pt 2 1 |] in
+  Alcotest.(check bool)
+    "disjoint squares do not overlap" false
+    (Geom.convex_overlap unit far);
+  (* a square sharing only the edge x=1 touches but has no positive overlap *)
+  let touching = [| pt 1 0; pt 2 0; pt 2 1; pt 1 1 |] in
+  Alcotest.(check bool)
+    "edge-touching is not overlap" false
+    (Geom.convex_overlap unit touching)
+
+let test_on_segment () =
+  let s = (pt 0 0, pt 2 2) in
+  Alcotest.(check bool)
+    "midpoint is on the segment" true
+    (Geom.on_segment s (pt 1 1));
+  Alcotest.(check bool)
+    "endpoint is on the segment" true
+    (Geom.on_segment s (pt 0 0));
+  Alcotest.(check bool)
+    "collinear but outside is not on" false
+    (Geom.on_segment s (pt 3 3));
+  Alcotest.(check bool)
+    "off the line is not on" false
+    (Geom.on_segment s (pt 1 0))
 
 let () =
   Alcotest.run "beloch"
@@ -929,5 +1036,16 @@ let () =
           Alcotest.test_case "half fold geometry" `Quick test_fold_state_half;
           Alcotest.test_case "valley layer order" `Quick
             test_fold_state_layer_order;
+          Alcotest.test_case "subdivide" `Quick test_fold_subdivide;
+          Alcotest.test_case "fold records valley" `Quick
+            test_fold_records_valley;
+          Alcotest.test_case "fold records accordion" `Quick
+            test_fold_records_accordion;
+          Alcotest.test_case "paper preimages" `Quick test_fold_paper_preimages;
+        ] );
+      ( "fold_geom2",
+        [
+          Alcotest.test_case "convex overlap" `Quick test_convex_overlap;
+          Alcotest.test_case "on segment" `Quick test_on_segment;
         ] );
     ]
