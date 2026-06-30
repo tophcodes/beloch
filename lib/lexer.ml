@@ -13,6 +13,7 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "paper" -> PAPER
   | "square" -> SQUARE
   | "through" -> THROUGH
+  | "and" -> AND
   | "map" -> MAP
   | "onto" -> ONTO
   | "perp" -> PERP

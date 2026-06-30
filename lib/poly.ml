@@ -157,6 +157,20 @@ let squarefree_part (p : t) : t =
     let g = gcd p (derivative p) in
     monic (fst (divmod p g))
 
+(* inverse of a modulo m, where m is irreducible over ℚ and a ≢ 0 (mod m):
+   the unique u with deg u < deg m and u·a ≡ 1 (mod m). Extended Euclid:
+   maintain (r, s) with s·a ≡ r (mod m); gcd is a nonzero constant since m is
+   irreducible and a ≢ 0. *)
+let inv_mod (a : t) (m : t) : t =
+  let rec ext r0 s0 r1 s1 =
+    if is_zero r1 then (r0, s0)
+    else
+      let q, r = divmod r0 r1 in
+      ext r1 s1 r (sub s0 (mul q s1))
+  in
+  let g, s = ext m zero a (of_list [ Q.one ]) in
+  rem (scale (Q.inv (leading g)) s) m
+
 let sign_at (p : t) (x : Q.t) : int = Q.sign (eval p x)
 
 (* Standard Sturm chain: s0 = p, s1 = p', s_{k+1} = -rem(s_{k-1}, s_k). *)

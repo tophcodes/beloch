@@ -183,6 +183,62 @@ let eval_folded (prog : Ast.program) : folded =
                 (* unreachable: this arm only runs with ≥2 creases, so the
                    fold over a non-empty list always yields [Some]. *)
                 | None -> assert false))
+    | Ast.MapBoth (p, d, q, e, x_opt) -> (
+        let pp = table_of p and dd = resolve_line d in
+        let qq = table_of q and ee = resolve_line e in
+        let base = [ pstr p; lstr d; pstr q; lstr e ] in
+        (* degeneracy guards *)
+        if Geom.side_of_line ee qq = 0 then
+          Error.fail span
+            (Printf.sprintf
+               "map %s onto %s and %s onto %s: %s already lies on %s — use \
+                axiom 6 (fold %s onto %s through a point) then axiom 4"
+               (pstr p) (lstr d) (pstr q) (lstr e) (pstr q) (lstr e) (pstr p)
+               (lstr d));
+        if Geom.parallel dd ee then
+          Error.fail span
+            (Printf.sprintf
+               "map %s onto %s and %s onto %s: %s and %s are parallel — \
+                degenerate, no general cubic fold"
+               (pstr p) (lstr d) (pstr q) (lstr e) (lstr d) (lstr e));
+        match Geom.beloch7_creases pp dd qq ee with
+        | [] ->
+            Error.fail span
+              (Printf.sprintf
+                 "cannot fold %s onto %s and %s onto %s: out of reach (no \
+                  common tangent)"
+                 (pstr p) (lstr d) (pstr q) (lstr e))
+        | [ c ] -> (c, "axiom7", base)
+        | creases -> (
+            match x_opt with
+            | None ->
+                Error.fail span
+                  (Printf.sprintf
+                     "%d folds place %s onto %s and %s onto %s; add 'toward \
+                      .x'"
+                     (List.length creases) (pstr p) (lstr d) (pstr q) (lstr e))
+            | Some xo ->
+                let xt = table_of xo in
+                (* nearest landing of the first point p, exact squared distance *)
+                let dist2 (c : Geom.line) =
+                  let im = Geom.reflect_point c pp in
+                  let ex = Num.sub im.Geom.x xt.Geom.x
+                  and ey = Num.sub im.Geom.y xt.Geom.y in
+                  Num.add (Num.mul ex ex) (Num.mul ey ey)
+                in
+                let best =
+                  List.fold_left
+                    (fun acc c ->
+                      match acc with
+                      | None -> Some c
+                      | Some b ->
+                          if Num.compare (dist2 c) (dist2 b) < 0 then Some c
+                          else acc)
+                    None creases
+                in
+                match best with
+                | Some c -> (c, "axiom7", base @ [ pstr xo ])
+                | None -> assert false))
   in
   List.iter
     (fun stmt ->
@@ -210,7 +266,9 @@ let eval_folded (prog : Ast.program) : folded =
                     s
                 | None -> (
                     match ax with
-                    | Ast.MapPoints (p, _) | Ast.MapThrough (p, _, _, _) ->
+                    | Ast.MapPoints (p, _)
+                    | Ast.MapThrough (p, _, _, _)
+                    | Ast.MapBoth (p, _, _, _, _) ->
                         let s = Geom.side_of_line axis (table_of p) in
                         if s = 0 then
                           Error.fail span

@@ -2,7 +2,7 @@
 open Ast
 %}
 
-%token PAPER SQUARE THROUGH MAP ONTO CROSS COLON EOF PERP TOWARD AT MOVING MOUNTAIN FLIP LINE_OPEN POINT_OPEN RPAREN
+%token PAPER SQUARE THROUGH MAP ONTO CROSS COLON EOF PERP TOWARD AT MOVING MOUNTAIN FLIP LINE_OPEN POINT_OPEN RPAREN AND
 %token <string> POINT
 %token <string> CREASE
 
@@ -41,6 +41,10 @@ axiom:
       { MapThrough ($2, $4, $6, None) }
   | MAP point_operand ONTO line_operand THROUGH point_operand TOWARD point_operand
       { MapThrough ($2, $4, $6, Some $8) }
+  | MAP point_operand ONTO line_operand AND point_operand ONTO line_operand
+      { MapBoth ($2, $4, $6, $8, None) }
+  | MAP point_operand ONTO line_operand AND point_operand ONTO line_operand TOWARD point_operand
+      { MapBoth ($2, $4, $6, $8, Some $10) }
   | PERP line_operand THROUGH point_operand   { Perp ($4, $2) }
   | MAP line_operand ONTO line_operand                  { MapLines ($2, $4, None) }
   | MAP line_operand ONTO line_operand TOWARD point_operand { MapLines ($2, $4, Some $6) }
