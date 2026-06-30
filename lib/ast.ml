@@ -23,5 +23,6 @@ type point_expr =
 type stmt =
   | Crease of string option * axiom * fold_spec option * Error.span
   | Point of string * point_expr * Error.span
+  | Flip of Error.span
 
 type program = stmt list

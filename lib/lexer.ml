@@ -20,6 +20,7 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "moving" -> MOVING
   | "mountain" -> MOUNTAIN
   | "cross" -> CROSS
+  | "flip" -> FLIP
   | ':' -> COLON
   | '@' -> AT
   | "--", id ->

@@ -2,7 +2,7 @@
 open Ast
 %}
 
-%token PAPER SQUARE THROUGH MAP ONTO CROSS COLON EOF PERP TOWARD AT MOVING MOUNTAIN
+%token PAPER SQUARE THROUGH MAP ONTO CROSS COLON EOF PERP TOWARD AT MOVING MOUNTAIN FLIP
 %token <string> POINT
 %token <string> CREASE
 
@@ -21,6 +21,7 @@ stmt:
   | CREASE COLON axiom_stmt { let (a, fs) = $3 in Crease (Some $1, a, fs, $loc) }
   | axiom_stmt             { let (a, fs) = $1 in Crease (None, a, fs, $loc) }
   | POINT COLON point_expr { Point ($1, $3, $loc) }
+  | FLIP { Flip $loc }
 
 axiom_stmt:
   | axiom                 { ($1, None) }
