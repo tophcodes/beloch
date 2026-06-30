@@ -22,12 +22,17 @@ Current version: **v0.3-dev** (axiom 5 — angle bisector) — in progress; **v0
 ## 1. Overview *(since v0.0)*
 
 Beloch is a declarative language for origami. A `.bel` program is **evaluated**
-(not compiled to an executable) into a data artifact describing a paper state —
-for v0.0, a flat crease pattern emitted as FOLD. See
-[ADR 0007](../decisions/0007-evaluator-not-compiler.md).
+(not compiled to an executable) into a data artifact describing a paper state,
+emitted as FOLD. See [ADR 0007](../decisions/0007-evaluator-not-compiler.md).
 
 The language is built on the Huzita-Justin fold axioms
-[[justin1986]](#ref-justin1986), using them as primitive operations.
+[[justin1986]](#ref-justin1986), using them as primitive operations. *(since
+v0.7-dev)* It is an **action model**: a program is an imperative sequence of
+folding actions on a stateful sheet (§4.6). The axioms locate *where* a crease
+goes; the `@` modifier actually folds. A program evaluates to a folded state,
+emitted as a dual-frame FOLD file — the flat **crease pattern** and the
+**folded form** (§7). The flat crease pattern (no `@` folds) is the special case.
+See [ADR 0011](../decisions/0011-action-model.md).
 
 ### A note on axiom numbering
 
@@ -85,7 +90,8 @@ Two kinds of value, distinguished by sigil:
 - **Point** — `.name`. The four corners, plus any point derived by a
   construction (§4.3).
 - **Crease / line** — `--name`. The geometric value of a fold: an (infinite)
-  line. For output it is clipped to the paper (§7).
+  line. On output it appears as the edges of the folded state's faces (§7), and
+  with `@` it actually folds the paper (§4.6).
 
 All geometry is exact (§6).
 
@@ -124,11 +130,17 @@ cross --c1 --c2
 
 The point where the two creases' lines meet. This is a point *construction*, not
 a fold axiom, in the classic numbering; it is Hull's basic operation O2
-[[hull2020]](#ref-hull2020) §1.5 (O2). **Errors:**
+[[hull2020]](#ref-hull2020) §1.5 (O2).
+
+*(since v0.7-dev)* The intersection is a table-space point; it resolves to the
+**material point on the topmost layer** covering that spot (`Q2-B`). On the flat,
+unfolded sheet there is exactly one layer, so this is just the point itself;
+after folding, where several layers overlap, the visible top layer is taken —
+the one your hand would touch. **Errors:**
 
 - the two lines are **parallel** (no intersection);
-- the intersection point is **not on the paper** — decided by an exact
-  point-in-polygon test; the boundary counts as on the paper.
+- the intersection point is **off the paper** — no layer covers it (exact
+  point-in-polygon test; the boundary counts as on the paper).
 
 ### 4.4 Axiom 3 — perpendicular through a point *(since v0.2)*
 
@@ -176,6 +188,52 @@ parallelism, and on-paper tests stay exact.
 
 *(since v0.6-dev: verb is `map … onto …`; was `bisect …`.)*
 
+### 4.6 Folding: `@` *(since v0.7-dev)*
+
+A bare axiom is a **precrease**: it computes a crease line and marks it; the
+paper stays flat. Prefixing it with `@` **performs the fold**:
+
+```
+@map .a onto .c moving .a            ; fold the flap containing .a, valley
+@map .a onto .c moving .a mountain   ; ... as a mountain
+@perp --l through .p moving .q        ; line-construction folds need `moving`
+```
+
+- **`moving .p`** picks the side that moves — the flap containing material point
+  `.p`. For `@map .x onto .y` it defaults to `.x` (the moved point); the
+  line-construction folds (`@through`, `@perp`, `@map --l onto --m`) have no
+  natural default and **require** `moving`.
+- **`mountain`** sets the fold direction; the default is **valley** (toward the
+  viewer). Mountain/valley is not annotated — it is *derived* (see below).
+
+**Folded state.** The paper is a stack of flat **faces** — each a convex polygon
+in paper coordinates plus a rigid isometry placing it on the table — ordered
+bottom→top (the layer stack). A flat fold (±180°) keeps everything in the table
+plane, so the only "depth" is this stacking order. A simple fold reflects every
+layer on the moving side of the crease line across it (an exact reflection — no
+`sqrt`) and restacks: the moved flap, reversed, goes on top (valley) or
+underneath (mountain). "Fold through all layers" is automatic.
+
+**Derived mountain/valley.** Each crease's assignment is
+`valley XOR (the cutting face is back-up)`, fixed when the fold runs. Because
+stacked layers alternate front/back, one fold through a stack yields the correct
+**alternating** M/V across layers (the accordion). Earlier creases keep their
+assignment (material facts).
+
+### 4.7 `flip` — turn the sheet over *(since v0.7-dev)*
+
+```
+flip
+```
+
+Turns the whole sheet over: every face's orientation inverts and the layer stack
+reverses (so the previously bottom layer becomes reachable on top). Because
+orientation inverts, a *subsequent* valley command is derived as a **mountain**
+relative to the original front — i.e. "mountain = turn over, then valley." `flip`
+takes no axis: with named points, where the sheet lands is irrelevant, so the
+reflection uses an internal canonical axis (the footprint's vertical centerline).
+A direction argument may be added later when the animation renderer needs it.
+
 ---
 
 ## 5. Naming and program structure *(since v0.0)*
@@ -183,14 +241,20 @@ parallelism, and on-paper tests stay exact.
 A program is `paper square` followed by statements, executed top to bottom. A
 name must be defined before it is used.
 
-- **Crease statement** — binds a crease, or is anonymous:
+- **Crease statement** — binds a crease, or is anonymous; with `@` it also folds
+  (§4.6):
   ```
-  --d1: through .a .c     ; named
-  map .a onto .c          ; anonymous
+  --d1: through .a .c              ; named precrease
+  map .a onto .c                   ; anonymous precrease
+  @map .a onto .c moving .a        ; fold (valley)
   ```
 - **Point statement** — binds a derived point:
   ```
   .center: cross --d1 --d2
+  ```
+- **Flip statement** *(since v0.7-dev)* — turns the sheet over (§4.7):
+  ```
+  flip
   ```
 
 Derived points and named creases are usable in any later statement. `;` begins a
@@ -225,41 +289,56 @@ values are never truncated.
 
 ---
 
-## 7. Output: the FOLD contract *(since v0.0)*
+## 7. Output: the FOLD contract *(since v0.0; dual-frame since v0.7-dev)*
 
 `beloch fold FILE.bel` emits a [FOLD](https://github.com/edemaine/fold) file
-[[foldformat]](#ref-foldformat) describing the flat crease pattern.
+[[foldformat]](#ref-foldformat) with **two frames** built from the folded state's
+faces: the flat **crease pattern** (frame 0, the top-level dictionary) and the
+**folded form** (`file_frames[0]`). A program with no `@` folds still emits both;
+the folded form then coincides with the flat sheet.
 
-Each crease line is clipped to the paper polygon to a segment. All on-paper
-crease-crease intersections are computed and the segments are split there, with
-vertices deduplicated and duplicate/coincident edges removed, producing a
-**simple** planar graph of vertices and edges. *(since v0.1)* The bounded faces
-of that graph — the paper regions enclosed by creases and the boundary — are
-extracted by exact planar face traversal and emitted as `faces_vertices`.
+The planar graph is the face set: vertices are deduplicated by paper coordinate
+(vertices shared across faces along a crease coincide), each face is one polygon,
+edges are the deduplicated polygon edges. Square-boundary edges are `"B"`; an
+internal edge is a crease.
 
-Emitted fields:
+**Frame 0 — `creasePattern`:**
 
-- `file_spec`, `file_creator: "beloch 0.2.0-dev"`,
+- `file_spec`, `file_creator: "beloch 0.3.0-dev"`,
   `frame_classes: ["creasePattern"]`
-- `vertices_coords` — `[x, y]` per vertex. Exact ℚ values are rendered to JSON
-  decimal at serialization (non-terminating rationals are rounded *in the output
-  only*; internal values stay exact).
-- `edges_vertices` — `[v0, v1]` index pairs
-- `edges_assignment` ([[foldformat]](#ref-foldformat) §"Edge information") — `"B"` for the four
-  paper-boundary edges; **`"U"`** (unassigned) for every crease. v0.0 does not
-  model fold direction (mountain/valley), so `"U"` is the honest label; claiming
-  `"V"` would assert an uncomputed direction.
-- `faces_vertices` *(since v0.1)* — for each bounded face, its vertex indices in
-  counter-clockwise order. The unbounded outer face is excluded. A program with
-  no creases yields the single square face `[[0, 1, 2, 3]]`.
-- `beloch:edges` — custom property ([[foldformat]](#ref-foldformat) §"Custom Properties") carrying, per
-  crease edge, its originating operation (`"axiom1"` / `"axiom2"`), the source
-  point/crease names, the source span, and the bound **`"name"`** — the crease
-  name as a string (e.g. `"d1"`) if the statement was named (`--d1: …`), or
-  `null` for an anonymous crease. This field is additive: stock FOLD consumers
-  ignore unknown keys. `tools/fold2svg.mjs` uses it to label named creases on
-  the diagram (on the line, ~18% in from one end, with a white halo to avoid
-  colliding with corner labels). Used for provenance and source mapping.
+- `vertices_coords` — `[x, y]` per vertex, in **paper** coordinates. Exact values
+  are rendered to JSON decimal at serialization (non-terminating reals rounded
+  *in the output only*; internal values stay exact).
+- `edges_vertices` — `[v0, v1]` index pairs.
+- `edges_assignment` ([[foldformat]](#ref-foldformat) §"Edge information") — `"B"`
+  for paper-boundary edges, **derived `"M"`/`"V"`** for folded creases (§4.6),
+  and `"U"` for an unfolded precrease (a crease line with no fold yet). One
+  physical fold through several layers can yield different M/V per layer (the
+  accordion), since each crease edge carries its own derived assignment.
+- `faces_vertices` — each face's vertex indices, counter-clockwise. A program
+  with no creases yields the single square face `[[0, 1, 2, 3]]`.
+- `beloch:edges` — custom property ([[foldformat]](#ref-foldformat) §"Custom
+  Properties") carrying, per crease edge, its originating operation (`"axiom1"`,
+  `"axiom2"`, `"axiom3"`, `"axiom5"`), the source point/crease names, the source
+  span, and the bound **`"name"`** (e.g. `"d1"` for `--d1: …`, else `null`).
+  Additive: stock FOLD consumers ignore it; `tools/fold2svg.mjs` uses it to
+  colour/label creases.
+
+**`file_frames[0]` — `foldedForm`** (`frame_parent: 0`, `frame_inherit: true`, so
+it inherits the topology and overrides only the coordinates):
+
+- `vertices_coords` — the same vertices in **table** (folded) coordinates: each
+  face's paper polygon through its isometry. Flat folds stay in the plane, so
+  these are 2D; stacking is conveyed by `faceOrders`, not a z-offset.
+- `edges_foldAngle` — `+180` for valley, `−180` for mountain, `0` otherwise; the
+  sign matches `edges_assignment`.
+- `faceOrders` — `[f, g, s]` layer-ordering triples for face pairs whose table
+  footprints **overlap**; `s = +1` if `f` is above `g` (toward `g`'s normal),
+  `−1` below ([[foldformat]](#ref-foldformat) §"Layer information"). Emitted only
+  for overlapping pairs (empty when nothing overlaps, e.g. a flat program).
+
+The renderer/animation client is a separate consumer; `tools/fold2svg.mjs` draws
+frame 0 by default and the folded form with `--folded`.
 
 ---
 
@@ -269,11 +348,15 @@ Every error is a compile error with a source span; the first matching error wins
 and the process exits non-zero:
 
 - parse error;
-- axiom 1 or 2 with two identical points;
-- `cross` on parallel creases;
-- `cross` whose intersection lies off the paper;
-- reference to an undefined point or crease name;
-- `@` fold statement — folding is not yet implemented.
+- axiom 1 or 2 whose two points are at the **same place** (coincident — which can
+  also happen *after* folds bring two material points together);
+- `cross` on parallel creases (no intersection);
+- `cross` whose intersection is **off the paper** (no layer covers it);
+- `map --l1 onto --l2` (axiom 5) that is ambiguous — intersecting lines with no
+  `toward`, or a `toward` point lying on a fold line;
+- a `@` fold on a line-construction axiom (`@through`, `@perp`, `@map --l onto --m`)
+  with no `moving`, or a `moving` point lying on the fold axis (no side);
+- reference to an undefined point or crease name.
 
 ---
 
@@ -283,9 +366,10 @@ The Menhir grammar is authoritative once written; this sketch is a guide.
 
 ```
 program     := "paper" "square" stmt*
-stmt        := crease_stmt | point_stmt
+stmt        := crease_stmt | point_stmt | flip_stmt
 crease_stmt := [ CREASE_NAME ":" ] [ "@" ] axiom [ "moving" point_ref ] [ "mountain" ]
 point_stmt  := POINT_NAME ":" point_expr
+flip_stmt   := "flip"
 axiom       := "through" point_ref point_ref            ; axiom 1
              | "map" point_ref "onto" point_ref         ; axiom 2
              | "perp" crease_ref "through" point_ref     ; axiom 3
@@ -297,25 +381,28 @@ POINT_NAME  := "." ident
 CREASE_NAME := "--" ident
 ```
 
-A bare statement is a *precrease* (computes a crease line, paper stays flat). The `@` prefix marks an actual fold (`moving`/`mountain` describe it); fold **evaluation** is not yet implemented — `@` statements currently raise a compile error.
+A bare axiom statement is a *precrease* (computes a crease line, paper stays
+flat). The `@` prefix performs the fold (§4.6); `moving`/`mountain` describe it.
+`flip` turns the whole sheet over (§4.7).
 
 ---
 
 ## Appendix B — not yet in the language
 
-Deferred, in rough order of likely arrival: folded state · axioms 4, 6, 7 ·
-regions · parts/imports · `step` blocks · `flip`/`rotate` · YR diagrams. These
-are not part of the language until a slice lands and this spec is extended.
+Deferred, in rough order of likely arrival: inline anonymous operands
+`--(.a .b)` / `.(--a --b)` · non-flat (constructible-angle) folds · `rotate` ·
+fold maneuvers (reverse/squash/sink/petal, via `unfold` + layer selection) ·
+axioms 4, 6, 7 · regions · parts/imports · `step` blocks · a dedicated
+render/animation engine · YR diagrams. These are not part of the language until a
+slice lands and this spec is extended.
 
-(Axiom 5 — angle bisector — landed in v0.3-dev. Axiom 3 — perpendicular through a
-point — landed in v0.2. Faces landed in v0.1.)
-
-*(since v0.6-dev)* The `map … onto …` verb (axioms 2 and 5) and the `@` fold
-modifier (`moving`/`mountain`) surface have landed; see
-[ADR 0011](../decisions/0011-action-model.md). Mountain/valley direction is now
-*derived* from fold actions (see the action-model design doc) rather than being a
-separate annotation pass. The folded-state runtime (`foldedForm`, derived M/V,
-dual FOLD output) is deferred to a later plan.
+**Landed:** faces (v0.1); axiom 3 — perpendicular (v0.2); axiom 5 — angle
+bisector (v0.3-dev); the `map … onto …` verb and the `@` fold modifier
+(v0.6-dev); and *(v0.7-dev)* the **action model** — `@` fold execution, the
+folded-state runtime, derived mountain/valley, the dual `creasePattern` +
+`foldedForm` FOLD output, and `flip`. See
+[ADR 0011](../decisions/0011-action-model.md). Mountain/valley is *derived* from
+fold actions, not a separate annotation pass.
 
 ---
 
