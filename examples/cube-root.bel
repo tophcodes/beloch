@@ -1,0 +1,26 @@
+; status: works — Peter Messer's cube-root-of-two construction [messer1986;
+; hull2020 §2.3], axiom 7 (the cubic Beloch fold) in its folded state.
+;
+; A square is divided into three equal vertical strips by PQ (x=1/3) and RS
+; (x=2/3). It is then folded so that corner .c lands on edge AB while the top of
+; RS, the point .s=(2/3,1), lands on PQ — a single simultaneous fold, which is
+; axiom 7. The landing point divides AB in the ratio AC/CB = ∛2, the side of a
+; cube of twice the volume. Its position is the root of a cubic and is irrational
+; (constructible by folding, not by ruler and compass); the shared-field kernel
+; folds it exactly in milliseconds. Render --folded to see Messer's Figure 2.
+;
+; The thirds are built first with rational scaffolding (midlines + crossings),
+; then the cubic fold is the last line.
+
+paper square
+--vm: map .a onto .b               ; vertical midline x=1/2 (axiom 2)
+.mb: cross --vm --(.a .b)          ; (1/2, 0)
+.mt: cross --vm --(.d .c)          ; (1/2, 1)
+.pq1: cross --(.d .mb) --(.a .c)   ; (1/3, 1/3)
+.pq2: cross --(.a .mt) --(.d .b)   ; (1/3, 2/3)
+--pq: through .pq1 .pq2            ; left third line PQ : x = 1/3
+.rs1: cross --(.c .mb) --(.d .b)   ; (2/3, 1/3)
+.rs2: cross --(.b .mt) --(.a .c)   ; (2/3, 2/3)
+--rs: through .rs1 .rs2            ; right third line RS : x = 2/3
+.s: cross --rs --(.d .c)           ; S = (2/3, 1), top of RS
+@map .c onto --(.a .b) and .s onto --pq   ; fold C onto AB, S onto PQ → AC/CB = ∛2

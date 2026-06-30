@@ -87,6 +87,58 @@ let beloch_creases (p : point) (d : line) (p' : point) : line list =
   |> List.filter (fun q -> not (point_equal q p))
   |> List.map (fun q -> perpendicular_bisector p q)
 
+(* axiom 7 (Justin ⑦): the crease(s) that simultaneously fold p onto line d and
+   q onto line e — a common tangent to the two parabolas (focus p, directrix d)
+   and (focus q, directrix e). Parametrize p's landing along d by t; the
+   "lands q on e" condition is a cubic F(t); each real root is a crease (the
+   perpendicular bisector of p and its landing). 0, 1, or 3 creases.
+   [justin1986 §2–3; hull2020 §2.4] *)
+let beloch7_creases (p : point) (d : line) (q : point) (e : line) : line list =
+  (* polynomials in t as Num.t arrays, low-first *)
+  let padd a b =
+    let n = max (Array.length a) (Array.length b) in
+    Array.init n (fun i ->
+        let x = if i < Array.length a then a.(i) else Num.zero in
+        let y = if i < Array.length b then b.(i) else Num.zero in
+        Num.add x y)
+  in
+  let pscale (s : Num.t) a = Array.map (fun c -> Num.mul s c) a in
+  let pmul a b =
+    let r = Array.make (Array.length a + Array.length b - 1) Num.zero in
+    Array.iteri
+      (fun i ca -> Array.iteri (fun j cb -> r.(i + j) <- Num.add r.(i + j) (Num.mul ca cb)) b)
+      a;
+    r
+  in
+  let psub a b = padd a (pscale (Num.of_int (-1)) b) in
+  let n2 = Num.add (Num.mul d.a d.a) (Num.mul d.b d.b) in
+  let d0x = Num.div (Num.mul d.a d.c) n2 and d0y = Num.div (Num.mul d.b d.c) n2 in
+  let two = Num.of_int 2 in
+  (* p*(t) = (d0x + t·d.b, d0y − t·d.a) *)
+  (* A(t) = p*.x − p.x = (d0x − p.x) + t·d.b *)
+  let aA = [| Num.sub d0x p.x; d.b |] in
+  (* B(t) = p*.y − p.y = (d0y − p.y) + t·(−d.a) *)
+  let bB = [| Num.sub d0y p.y; Num.neg d.a |] in
+  (* mx(t) = (p.x + p*.x)/2,  my(t) = (p.y + p*.y)/2 *)
+  let mx = [| Num.div (Num.add p.x d0x) two; Num.div d.b two |] in
+  let my = [| Num.div (Num.add p.y d0y) two; Num.div (Num.neg d.a) two |] in
+  (* C(t) = A·mx + B·my *)
+  let cC = padd (pmul aA mx) (pmul bB my) in
+  (* n2c(t) = A² + B² *)
+  let n2c = padd (pmul aA aA) (pmul bB bB) in
+  (* dd(t) = A·q.x + B·q.y − C *)
+  let dd = psub (padd (pscale q.x aA) (pscale q.y bB)) cC in
+  (* L(t) = e.a·A + e.b·B *)
+  let lL = padd (pscale e.a aA) (pscale e.b bB) in
+  (* S = e.a·q.x + e.b·q.y − e.c   (constant) *)
+  let s = Num.sub (Num.add (Num.mul e.a q.x) (Num.mul e.b q.y)) e.c in
+  (* F(t) = S·n2c − 2·dd·L *)
+  let fF = psub (pscale s n2c) (pscale two (pmul dd lL)) in
+  Num.real_roots fF
+  |> List.map (fun t ->
+         let pstar = { x = Num.add d0x (Num.mul t d.b); y = Num.sub d0y (Num.mul t d.a) } in
+         perpendicular_bisector p pstar)
+
 let in_unit_square (p : point) : bool =
   Num.sign p.x >= 0
   && Num.compare p.x Num.one <= 0

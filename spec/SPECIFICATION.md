@@ -15,7 +15,7 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
+Current version: **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line; shared-field RUR kernel); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
 
 ---
 
@@ -226,12 +226,8 @@ map .p onto --d through .p' toward .x    # 2 solutions: pick the landing nearer 
 `--d`; `.p''` is therefore an intersection of the circle (centre `.p'`, radius
 `|p'p|`) with `--d` — up to two of them, hence up to two creases (each the
 perpendicular bisector of `.p` and its landing). Second-degree: square roots
-only, so `Num` is unchanged — **cube roots still do not arise** (they wait for
-axiom 7, the cubic Beloch fold ⑦). See "A note on axiom numbering" in §1.
-As of the real-algebraic kernel (ADR 0012), `Num` represents arbitrary real
-algebraic numbers (cube roots and the casus-irreducibilis cubics included);
-axioms 1–6 are unchanged in behaviour. The axiom 7 statement surface itself is
-the next slice.
+only. Cube roots do not arise here; they first appear at axiom 7 (§4.5c). See
+"A note on axiom numbering" in §1.
 
 `through` is the same verb as in axiom 3 (`perp --l through .p`): the crease
 passes through the named point. `toward` is the same selector as axiom 5.
@@ -241,6 +237,51 @@ reach*; two solutions without `toward` raises an ambiguity error naming the
 selector; `.p` and `.p'` being the same point raises *no fold exists*. When `.p`
 already lies on `--d`, the identity landing is dropped and the mirror landing
 gives the crease.
+
+### 4.5c Axiom 7 — cubic Beloch fold (two points, two lines) *(since v0.9-dev)*
+
+Justin operation ⑦: simultaneously fold point `.p` onto line `--d` **and** point
+`.q` onto line `--e`, with a single straight crease.
+
+```
+map .p onto --d and .q onto --e              # 1 or 3 solutions; error if ambiguous
+map .p onto --d and .q onto --e toward .x    # pick the solution whose first folded
+                                             # point lands nearest .x (exact)
+```
+
+**Geometry.** Each constraint (fold `.p` onto `--d`) traces a parabola with focus
+`.p` and directrix `--d`; the crease must be a common tangent to both parabolas.
+Common tangents satisfy a cubic — the *landing-parameter* polynomial in the
+foot-on-`--d` parameter — with up to three real solutions, hence up to three
+creases [[justin1986]](#ref-justin1986) §2, [[hull2020]](#ref-hull2020) §2.3–2.4.
+This is the operation that **doubles the cube and trisects angles**
+[[hull2020]](#ref-hull2020) §2.3 — it is strictly more powerful than
+ruler-and-compass. The crease is in general irrational (a real cube root), so
+the shared-field kernel is essential (§6).
+
+**Solutions and `toward`.** When the cubic has three real solutions (`toward` is
+required); when it has one real solution, `toward` is ignored. `toward .x` picks
+the solution whose first folded point (the image of `.p` on `--d`) lands nearest
+`.x`, measured by exact squared distance.
+
+**Errors:**
+
+- `.q` **already lies on `--e`** — the second constraint is vacuous; the fold
+  reduces to axiom 6 or axiom 4 depending on the remaining constraint. Beloch
+  raises an error naming the appropriate axiom.
+- `--d` and `--e` are **parallel** — the cubic degenerates and the system is
+  ill-defined; Beloch raises an error.
+- Three solutions and **`toward` omitted** — ambiguous; Beloch raises an
+  ambiguity error naming the selector.
+
+**Provenance.** Each crease edge carries `"axiom": "axiom7"` in `beloch:edges`.
+
+**Number theory.** The landing-parameter cubic generically has no rational root,
+so its real roots are irrational — they live in `ℚ(α)` for an algebraic `α` of
+degree 3. The shared-field kernel (`Field of {gen; coords}` in `Num.t`) keeps all
+crease coordinates in that same `ℚ(α)`, so subsequent operations (reflect, fold,
+cross) stay bounded-degree and fast. See §6 and
+[ADR 0012](../decisions/0012-real-algebraic-number-kernel.md).
 
 ### 4.6 Folding: `@` *(since v0.7-dev)*
 
@@ -325,16 +366,31 @@ All coordinates and line coefficients are exact **constructible reals** (`Num`;
 see [ADR 0010](../decisions/0010-constructible-real-numbers.md)). A line is
 `a·x + b·y = c` with `a, b, c ∈ Num.t`.
 
-`Num.t` is a recursive tower of quadratic extensions over ℚ: `Rat of Q.t` at the
-base and `Ext(a, b, d)` = a + b√d for the irrational levels. The ℚ **fast-path**
-applies for all values produced by axioms 1–4: their results stay in `Rat`, so
-those operations pay no overhead over the previous ℚ representation. The `Ext`
-constructor is introduced only by `sqrt`, which is first needed at axiom 5.
+`Num.t` has three constructors:
+
+- `Rat of Q.t` — exact rational; all axioms 1–4 results stay here.
+- `Ext(a, b, d)` = a + b√d — a quadratic extension; introduced by `sqrt` at
+  axiom 5. `Ext` forms a tower: a and b may themselves be `Ext`.
+- `Field of {gen; coords}` = `coords(α)`, where `α` is a real algebraic number
+  with a fixed irreducible minimal polynomial `gen` (of degree ≥ 2). All
+  coordinates of an axiom-7 crease share the same `α` (the Rational Univariate
+  Representative of the solution field [[bpr2006]](#ref-bpr2006) §12.4), so
+  subsequent arithmetic — reflection, fold, cross — stays inside `ℚ(α)`:
+  bounded degree, fast zero-test (syntactic), inversion always succeeds. This
+  **shared-field kernel** is what makes the doubling-the-cube fold finish in
+  milliseconds rather than multi-minute resultant chains
+  ([ADR 0012](../decisions/0012-real-algebraic-number-kernel.md)).
+
+The ℚ **fast-path** applies for all values produced by axioms 1–4: they stay in
+`Rat`, paying no overhead over a plain ℚ representation. The `Ext` constructor is
+introduced only by `sqrt`, first needed at axiom 5. The `Field` constructor is
+introduced only by axiom 7 (the cubic Beloch fold).
 
 Axioms 1–4 over rational inputs remain **closed in ℚ**: no square roots arise.
 At axiom 5 (the angle bisector) the result generally requires square roots —
 degree-2-or-less extensions of the base field per [[hull2020]](#ref-hull2020)
-§3.2. Cube roots do not arise until axiom 6 (the Beloch fold).
+§3.2. Cube roots first arise at axiom 7 (the cubic Beloch fold); axioms 1–6 stay
+in the quadratic tower.
 
 Equality, parallelism, and point-in-polygon are therefore **exact throughout** —
 no epsilon, no tolerance, no sampling. The only place a `float` appears is
@@ -431,6 +487,9 @@ axiom         := "through" point_operand point_operand          ; axiom 1
                | "map" line_operand "onto" line_operand [ "toward" point_operand ]  ; axiom 5
                | "map" point_operand "onto" line_operand "through" point_operand
                      [ "toward" point_operand ]                                  ; axiom 6
+               | "map" point_operand "onto" line_operand
+                     "and" point_operand "onto" line_operand
+                     [ "toward" point_operand ]                                  ; axiom 7
 point_expr    := "cross" line_operand line_operand              ; line intersection (binding RHS)
 point_operand := POINT_NAME | ".(" line_operand line_operand ")"     ; named, or inline cross
 line_operand  := CREASE_NAME | "--(" point_operand point_operand ")" ; named, or inline through
@@ -452,10 +511,9 @@ only as operands, never as a binding right-hand side.
 
 Deferred, in rough order of likely arrival: non-flat (constructible-angle) folds ·
 `rotate` · fold maneuvers (reverse/squash/sink/petal, via `unfold` + layer
-selection) · axiom 7 (cubic Beloch fold, needs real-algebraic number kernel) ·
-regions · parts/imports · `step` blocks · a dedicated render/animation engine ·
-YR diagrams. These are not part of the language until a slice lands and this spec
-is extended.
+selection) · regions · parts/imports · `step` blocks · a dedicated
+render/animation engine · YR diagrams. These are not part of the language until a
+slice lands and this spec is extended.
 
 **Landed:** faces (v0.1); axiom 3 — perpendicular (v0.2); axiom 4 — projection (v0.4-dev); axiom 5 — angle
 bisector (v0.3-dev); the `map … onto …` verb and the `@` fold modifier
@@ -466,7 +524,11 @@ folded-state runtime, derived mountain/valley, the dual `creasePattern` +
 [ADR 0011](../decisions/0011-action-model.md). Mountain/valley is *derived* from
 fold actions, not a separate annotation pass. *(v0.8-dev)* axiom 6 — fold a
 point onto a line with the crease through a fixed point (`map .p onto --d through
-.p'`, optional `toward` for disambiguation).
+.p'`, optional `toward` for disambiguation). *(v0.9-dev)* axiom 7 — the cubic
+Beloch fold (`map .p onto --d and .q onto --e`, optional `toward`); the
+**shared-field RUR kernel** (`Field` in `Num.t`) that keeps irrational crease
+arithmetic bounded-degree and fast (see §6 and
+[ADR 0012](../decisions/0012-real-algebraic-number-kernel.md)).
 
 ---
 
@@ -489,6 +551,15 @@ Origami Operations".
 troisième degré et applications géométriques.* L'Ouvert, no. 42 (March 1986),
 pp. 9–19. [local PDF](../refs/justin1986.pdf).
 First complete statement of the seven fold axioms (classic numbering).
+
+<a id="ref-bpr2006"></a>
+**[bpr2006]** Saugata Basu, Richard Pollack, Marie-Françoise Roy. *Algorithms in
+Real Algebraic Geometry.* 2nd ed. Springer, 2006.
+[doi.org/10.1007/3-540-33099-2](https://doi.org/10.1007/3-540-33099-2) ·
+[local PDF](../refs/bpr2006.pdf).
+Separation/Cauchy bounds (§10.1–10.2); sign-at-roots certification in a real
+closed field (§10.4); Rational Univariate Representation (§12.4); doubly-exponential
+blowup of naive multivariate arithmetic (§12).
 
 <a id="ref-foldformat"></a>
 **[foldformat]** Erik D. Demaine, Jason S. Ku, Robert J. Lang. *FOLD File Format
