@@ -1,6 +1,6 @@
 # 0010 — Constructible real numbers for the irrational axioms
 
-**Status:** Accepted
+**Status:** Superseded by [0012](0012-real-algebraic-number-kernel.md)
 
 ## Context
 

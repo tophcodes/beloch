@@ -1337,6 +1337,117 @@ let test_clip_on_vertex () =
     "upper triangle has 3 vertices" 3
     (Array.length (Geom.clip_convex_halfplane diag (-1) sq))
 
+(* ---- Poly: core arithmetic ---- *)
+let qp l = Poly.of_list (List.map Q.of_int l)
+
+let test_poly_eval () =
+  (* p = 1 + 2x + 3x²; p(2) = 1 + 4 + 12 = 17 *)
+  Alcotest.(check bool) "eval" true (Q.equal (Poly.eval (qp [1;2;3]) (Q.of_int 2)) (Q.of_int 17))
+
+let test_poly_add_mul () =
+  let p = qp [1;1] and q = qp [-1;1] in       (* (x+1)(x-1) = x²-1 *)
+  Alcotest.(check bool) "mul" true (Poly.eval (Poly.mul p q) (Q.of_int 3) |> Q.equal (Q.of_int 8));
+  Alcotest.(check bool) "add" true (Poly.eval (Poly.add p q) (Q.of_int 5) |> Q.equal (Q.of_int 10));
+  Alcotest.(check int) "degree of x²-1" 2 (Poly.degree (Poly.mul p q))
+
+let test_poly_derivative () =
+  (* d/dx (1 + 2x + 3x²) = 2 + 6x *)
+  let d = Poly.derivative (qp [1;2;3]) in
+  Alcotest.(check bool) "deriv@1=8" true (Q.equal (Poly.eval d Q.one) (Q.of_int 8))
+
+let test_poly_compose () =
+  (* a = x², g = x+1; a∘g = (x+1)² ; (a∘g)(2) = 9 *)
+  let a = qp [0;0;1] and g = qp [1;1] in
+  Alcotest.(check bool) "compose" true (Q.equal (Poly.eval (Poly.compose a g) (Q.of_int 2)) (Q.of_int 9))
+
+let test_poly_normalize_zero () =
+  Alcotest.(check int) "zero degree -1" (-1) (Poly.degree Poly.zero);
+  Alcotest.(check bool) "trailing zeros trimmed" true (Poly.degree (qp [1;2;0;0]) = 1)
+
+(* ---- Poly: division / resultant / squarefree ---- *)
+let test_poly_divmod () =
+  (* (x²-1) / (x-1) = x+1, remainder 0 *)
+  let q, r = Poly.divmod (qp [-1;0;1]) (qp [-1;1]) in
+  Alcotest.(check bool) "quotient x+1" true (Poly.eval q (Q.of_int 4) |> Q.equal (Q.of_int 5));
+  Alcotest.(check bool) "remainder 0" true (Poly.is_zero r)
+
+let test_poly_resultant () =
+  (* Res(x²-2, x²-3) = ∏(±√2 ∓ √3) = 1 ; Res(P,P) = 0 *)
+  Alcotest.(check bool) "Res(x²-2,x²-3)=1" true (Q.equal (Poly.resultant (qp [-2;0;1]) (qp [-3;0;1])) Q.one);
+  Alcotest.(check bool) "Res(P,P)=0" true (Q.equal (Poly.resultant (qp [-2;0;1]) (qp [-2;0;1])) Q.zero)
+
+let test_poly_squarefree () =
+  (* (x-1)²(x+2) -> squarefree (x-1)(x+2) = x²+x-2 ; root multiplicity gone *)
+  let p = Poly.mul (qp [1;-2;1]) (qp [2;1]) in   (* (x-1)² * (x+2) *)
+  let s = Poly.squarefree_part p in
+  Alcotest.(check int) "squarefree degree 2" 2 (Poly.degree s);
+  Alcotest.(check bool) "monic" true (Q.equal (Poly.leading s) Q.one);
+  Alcotest.(check bool) "still vanishes at 1" true (Q.equal (Poly.eval s Q.one) Q.zero)
+
+(* ---- Poly: Sturm / isolation ---- *)
+let test_poly_sturm_count () =
+  (* x³ - 3x - 1 has 3 real roots (≈ -1.532, -0.347, 1.879) *)
+  let p = qp [-1;-3;0;1] in
+  let seq = Poly.sturm_sequence p in
+  Alcotest.(check int) "3 real roots in (-10,10]" 3 (Poly.count_roots_in seq (Q.of_int (-10)) (Q.of_int 10));
+  (* x² + 1 has none *)
+  let seq2 = Poly.sturm_sequence (qp [1;0;1]) in
+  Alcotest.(check int) "0 real roots" 0 (Poly.count_roots_in seq2 (Q.of_int (-10)) (Q.of_int 10))
+
+let test_poly_isolate () =
+  let p = qp [-1;-3;0;1] in                 (* x³ - 3x - 1 *)
+  let iv = Poly.isolate_roots p in
+  Alcotest.(check int) "three isolating intervals" 3 (List.length iv);
+  (* each interval brackets a sign change of p *)
+  List.iter
+    (fun (lo, hi) ->
+      Alcotest.(check bool) "sign change in interval" true
+        (Poly.sign_at p lo * Poly.sign_at p hi <= 0))
+    iv;
+  (* intervals are ascending and disjoint *)
+  let rec ordered = function
+    | (_, h1) :: ((l2, _) :: _ as r) -> Q.compare h1 l2 <= 0 && ordered r
+    | _ -> true
+  in
+  Alcotest.(check bool) "ascending disjoint" true (ordered iv)
+
+(* ---- Num: real-algebraic kernel ---- *)
+let test_num_real_roots_cubic () =
+  (* x³ - 3x - 1 : three real roots ≈ -1.532, -0.347, 1.879, ascending *)
+  let coeffs = [| Num.of_int (-1); Num.of_int (-3); Num.zero; Num.one |] in
+  let roots = Num.real_roots coeffs in
+  Alcotest.(check int) "three real roots" 3 (List.length roots);
+  (* ascending *)
+  let rec asc = function
+    | a :: (b :: _ as r) -> Num.compare a b < 0 && asc r
+    | _ -> true
+  in
+  Alcotest.(check bool) "ascending" true (asc roots);
+  (* each is an actual root: evaluating x³-3x-1 gives 0 *)
+  List.iter
+    (fun x ->
+      let v =
+        Num.sub
+          (Num.sub (Num.mul x (Num.mul x x)) (Num.mul (Num.of_int 3) x))
+          Num.one
+      in
+      Alcotest.(check int) "root vanishes" 0 (Num.sign v))
+    roots;
+  (* float check on the largest root *)
+  let largest = List.nth roots 2 in
+  Alcotest.(check bool) "largest ≈ 1.8794" true
+    (Float.abs (Num.to_float largest -. 1.8793852) < 1e-6)
+
+let test_num_casus_irreducibilis_distinct () =
+  (* the three roots are pairwise distinct (sign of differences nonzero) *)
+  let coeffs = [| Num.of_int (-1); Num.of_int (-3); Num.zero; Num.one |] in
+  match Num.real_roots coeffs with
+  | [ a; b; c ] ->
+      Alcotest.(check bool) "a≠b" false (Num.equal a b);
+      Alcotest.(check bool) "b≠c" false (Num.equal b c);
+      Alcotest.(check bool) "a≠c" false (Num.equal a c)
+  | _ -> Alcotest.fail "expected three roots"
+
 let () =
   Alcotest.run "beloch"
     [
@@ -1452,6 +1563,9 @@ let () =
           Alcotest.test_case "termination guard" `Quick
             test_num_termination_guard;
           Alcotest.test_case "to_float" `Quick test_num_to_float;
+          Alcotest.test_case "real roots cubic" `Quick test_num_real_roots_cubic;
+          Alcotest.test_case "casus irreducibilis distinct" `Quick
+            test_num_casus_irreducibilis_distinct;
         ] );
       ( "bisect",
         [
@@ -1512,5 +1626,18 @@ let () =
           Alcotest.test_case "dual frames" `Quick test_emit_folded_frames;
           Alcotest.test_case "crease name preserved" `Quick
             test_emit_folded_crease_name;
+        ] );
+      ( "poly",
+        [
+          Alcotest.test_case "eval" `Quick test_poly_eval;
+          Alcotest.test_case "add/mul" `Quick test_poly_add_mul;
+          Alcotest.test_case "derivative" `Quick test_poly_derivative;
+          Alcotest.test_case "compose" `Quick test_poly_compose;
+          Alcotest.test_case "normalize zero" `Quick test_poly_normalize_zero;
+          Alcotest.test_case "divmod" `Quick test_poly_divmod;
+          Alcotest.test_case "resultant" `Quick test_poly_resultant;
+          Alcotest.test_case "squarefree" `Quick test_poly_squarefree;
+          Alcotest.test_case "sturm count" `Quick test_poly_sturm_count;
+          Alcotest.test_case "isolate roots" `Quick test_poly_isolate;
         ] );
     ]

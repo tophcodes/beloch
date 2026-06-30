@@ -42,6 +42,14 @@ resist in the core). Relevant for: related-work framing; the "compile-to-
 computational-origami" spin-off idea; Figure 18 (Rule 110 cell) as a potential
 reproducibility/parametricity example in a future paper.
 
+### Basu, Pollack & Roy — *Algorithms in Real Algebraic Geometry* (Springer, 2006)
+The canonical reference for real-algebraic computation: resultants and
+subresultants (Ch. 4, 8), Sturm sequences and real-root counting (Ch. 2, 9),
+real-root isolation via signed Sturm sequences and binary search (Ch. 10).
+Grounds ADR 0012 (`lib/poly.ml`): the isolating-interval representation, the
+numeric Sylvester resultant, and the interval-refinement comparisons. **The
+number-theory foundation of Beloch's algebraic kernel.**
+
 ## Formats / tools
 
 ### FOLD format (Demaine, Ku, Lang)
