@@ -153,6 +153,7 @@ let eval_folded (prog : Ast.program) : folded =
                   (* Q2-B: resolve to the TOP layer at that table point — the
                      point on the visible topmost layer, the one your hand would
                      touch. paper_preimages is bottom->top, so take the last. *)
-                  Hashtbl.replace points n (List.nth ps (List.length ps - 1)))))
+                  Hashtbl.replace points n (List.nth ps (List.length ps - 1))))
+      | Ast.Flip _ -> state := Fold_state.flip !state)
     prog;
   { state = !state; creases = !recs }

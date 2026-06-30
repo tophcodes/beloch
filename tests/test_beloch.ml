@@ -586,6 +586,49 @@ let count_assign a recs =
        (fun (r : Fold_state.crease_record) -> r.Fold_state.assign = a)
        recs)
 
+let test_parse_flip () =
+  match Beloch.parse ~filename:"t.bel" "paper square\nflip\n" with
+  | [ Ast.Flip _ ] -> ()
+  | _ -> Alcotest.fail "expected a single Flip statement"
+
+let test_e2e_flip_mountain () =
+  (* turn the blank sheet over, then a valley command folds a MOUNTAIN *)
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\nflip\n@map .a onto .b moving .a\n")
+  in
+  Alcotest.(check int)
+    "fold after flip is a mountain" 1
+    (count_assign Fold_state.M fd.Eval.creases);
+  Alcotest.(check int)
+    "and not a valley" 0
+    (count_assign Fold_state.V fd.Eval.creases);
+  (* without the flip the same fold is a valley *)
+  let fd2 =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\n@map .a onto .b moving .a\n")
+  in
+  Alcotest.(check int)
+    "without flip it is a valley" 1
+    (count_assign Fold_state.V fd2.Eval.creases)
+
+let test_e2e_flip_cp_counts () =
+  (* flip alone leaves the crease pattern geometrically unchanged: same
+     vertex/edge/face counts (emit order may differ, so compare counts) *)
+  let open Yojson.Safe.Util in
+  let counts s =
+    let j = Beloch.fold_string ~filename:"t.bel" s in
+    ( List.length (member "vertices_coords" j |> to_list),
+      List.length (member "edges_vertices" j |> to_list),
+      List.length (member "faces_vertices" j |> to_list) )
+  in
+  Alcotest.(check bool)
+    "flip preserves the crease-pattern size" true
+    (counts "paper square\n--c: map .a onto .b\n"
+    = counts "paper square\n--c: map .a onto .b\nflip\n")
+
 let test_fold_subdivide () =
   (* precrease the flat square along x=1/2: 2 faces, 1 crease record, assign U *)
   let axis = { Geom.a = q 1; b = q 0; c = half } in
@@ -994,6 +1037,7 @@ let () =
             test_parse_fold_valley_default;
           Alcotest.test_case "bare axiom has no fold_spec" `Quick
             test_parse_precrease_no_foldspec;
+          Alcotest.test_case "flip parses" `Quick test_parse_flip;
         ] );
       ( "eval",
         [
@@ -1018,6 +1062,10 @@ let () =
           Alcotest.test_case "fold half end-to-end" `Quick test_e2e_fold_half;
           Alcotest.test_case "fold quarter accordion" `Quick
             test_e2e_fold_quarter;
+          Alcotest.test_case "flip makes a mountain" `Quick
+            test_e2e_flip_mountain;
+          Alcotest.test_case "flip keeps the CP size" `Quick
+            test_e2e_flip_cp_counts;
         ] );
       ( "geom2",
         [
