@@ -10,9 +10,8 @@ import ear from "rabbit-ear";
 const args = process.argv.slice(2);
 const titleIdx = args.indexOf("--title");
 const title = titleIdx >= 0 ? args[titleIdx + 1] : "";
-const FLAGS = new Set(["--folded", "--exploded"]);
 const positional = args.filter(
-  (a, i) => a !== "--title" && !FLAGS.has(a) && args[i - 1] !== "--title"
+  (a, i) => a !== "--title" && a !== "--folded" && args[i - 1] !== "--title"
 );
 const [inPath, outPath] = positional;
 
@@ -24,13 +23,10 @@ ear.graph(fold); // throws if the FOLD is not loadable — keep this as a check
 // crease pattern (frame 0). The folded frame inherits topology (edges/faces/
 // assignment) from the parent and overrides only vertices_coords, so pull the
 // folded coords and keep everything else from the parent frame.
-// `--exploded` is `--folded` plus a small per-layer offset so the stack of
-// otherwise-coincident flat layers is visible.
-const exploded = args.includes("--exploded");
-const wantFolded = args.includes("--folded") || exploded;
+const wantFolded = args.includes("--folded");
 const ff = wantFolded ? (fold.file_frames || [])[0] : undefined;
 if (wantFolded && !ff) {
-  console.error("fold2svg: --folded/--exploded given but the FOLD has no foldedForm frame");
+  console.error("fold2svg: --folded given but the FOLD has no foldedForm frame");
   process.exit(1);
 }
 const frame = ff ? { ...fold, ...ff } : fold;
@@ -70,47 +66,6 @@ const cornerLabel = (p) => (CORNER.find(([x, y]) => near(p, x, y)) || [])[2];
 const out = [];
 out.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="ui-sans-serif, system-ui, sans-serif">`);
 out.push(`<rect width="${W}" height="${H}" fill="white"/>`);
-if (exploded) {
-  // exploded view: draw each face (= one layer) offset by its stacking index so
-  // the otherwise-coincident flat layers separate and the stack is legible.
-  // Beloch emits faces bottom->top, so the face index is the layer. The per-vertex
-  // dots/labels are skipped (a corner appears on several layers here).
-  const STEP = 9;
-  const key = (a, b) => (a < b ? `${a}_${b}` : `${b}_${a}`);
-  const emap = {};
-  E.forEach((e, i) => { emap[key(e[0], e[1])] = { c: eColor(i), bd: A[i] === "B" }; });
-  const wx = (i, l) => tx(V[i][0]) + l * STEP, wy = (i, l) => ty(V[i][1]) - l * STEP;
-  // which layers touch each edge (by its global vertex pair)
-  const efaces = {};
-  F.forEach((f, layer) => {
-    for (let k = 0; k < f.length; k++) {
-      const kk = key(f[k], f[(k + 1) % f.length]);
-      (efaces[kk] = efaces[kk] || []).push(layer);
-    }
-  });
-  // the offset sheets, bottom -> top
-  F.forEach((f, layer) => {
-    const ox = layer * STEP, oy = -layer * STEP;
-    const X = (i) => tx(V[i][0]) + ox, Y = (i) => ty(V[i][1]) + oy;
-    out.push(`<polygon points="${f.map((i) => `${X(i)},${Y(i)}`).join(" ")}" fill="#f8fafc" fill-opacity="0.8" stroke="none"/>`);
-    for (let k = 0; k < f.length; k++) {
-      const a = f[k], b = f[(k + 1) % f.length];
-      const m = emap[key(a, b)] || { c: CREASE, bd: false };
-      out.push(`<line x1="${X(a)}" y1="${Y(a)}" x2="${X(b)}" y2="${Y(b)}" stroke="${m.c}" stroke-width="${m.bd ? 2.5 : 2}" stroke-linecap="round"/>`);
-    }
-  });
-  // fold "webs" on top: a crease shared by two layers is one physical hinge.
-  // Connect its two offset copies with a translucent crease-coloured gusset so
-  // the stack reads as one folded strip (accordion), not loose sheets.
-  E.forEach((e, i) => {
-    if (A[i] !== "M" && A[i] !== "V") return; // only true folds are hinges
-    const ls = efaces[key(e[0], e[1])];
-    if (!ls || ls.length !== 2) return;
-    const [li, lj] = ls, [a, b] = e, c = eColor(i);
-    out.push(`<polygon points="${wx(a, li)},${wy(a, li)} ${wx(b, li)},${wy(b, li)} ${wx(b, lj)},${wy(b, lj)} ${wx(a, lj)},${wy(a, lj)}" fill="${c}" fill-opacity="0.22" stroke="${c}" stroke-width="1" stroke-opacity="0.5"/>`);
-  });
-  out.push(`<text x="${PAD}" y="50" font-size="12" fill="#64748b">exploded — ${F.length} layers offset for visibility</text>`);
-} else {
 // faces (very light fill so regions read)
 for (const f of F) {
   const pts = f.map((i) => `${tx(V[i][0])},${ty(V[i][1])}`).join(" ");
@@ -161,7 +116,6 @@ for (const [nm, { vs, col }] of Object.entries(creases)) {
   const A = V[ends[0]], C = V[ends[1]], t = 0.18; // 18% in from one end
   const px = tx(A[0] + (C[0] - A[0]) * t), py = ty(A[1] + (C[1] - A[1]) * t);
   out.push(`<text x="${px}" y="${py}" font-size="13" font-weight="600" fill="${col}" stroke="white" stroke-width="3" paint-order="stroke" text-anchor="middle" dominant-baseline="middle">--${nm}</text>`);
-}
 }
 // title
 if (title) out.push(`<text x="${PAD}" y="28" font-size="16" font-weight="700" fill="#0f172a">${title}</text>`);
