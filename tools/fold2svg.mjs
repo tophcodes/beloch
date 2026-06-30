@@ -50,6 +50,7 @@ const AX = {
   axiom1: { c: "#2563eb", n: "axiom 1 · through" },
   axiom2: { c: "#16a34a", n: "axiom 2 · map onto" },
   axiom3: { c: "#db2777", n: "axiom 3 · perp" },
+  axiom4: { c: "#ea580c", n: "axiom 4 · project" },
   axiom5: { c: "#9333ea", n: "axiom 5 · map onto" },
 };
 const CREASE = "#f59e0b";

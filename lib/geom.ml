@@ -38,6 +38,21 @@ let intersection (l1 : line) (l2 : line) : point option =
     let y = Num.div (Num.sub (Num.mul l1.a l2.c) (Num.mul l2.a l1.c)) det in
     Some { x; y }
 
+(* axiom 4: the crease that projects p onto l1 with the crease perpendicular to
+   l2 — p moves parallel to l2 until it lands on l1. None when l1 ∥ l2 (then
+   the move never meets l1, or — if p ∈ l1 — meets it everywhere). Exact, no
+   sqrt: every operation stays in ℚ. [justin1986 §8.1 operation ④] *)
+let project_crease (p : point) (l1 : line) (l2 : line) : line option =
+  if parallel l1 l2 then None
+  else
+    (* m: the line through p parallel to l2 (same normal, shifted to pass through p) *)
+    let m = { a = l2.a; b = l2.b; c = Num.add (Num.mul l2.a p.x) (Num.mul l2.b p.y) } in
+    match intersection m l1 with
+    | None -> None (* unreachable: l1 ∦ l2 ⟹ l1 ∦ m *)
+    | Some q ->
+        if point_equal p q then Some (perpendicular_through l2 p)
+        else Some (perpendicular_bisector p q)
+
 let in_unit_square (p : point) : bool =
   Num.sign p.x >= 0
   && Num.compare p.x Num.one <= 0

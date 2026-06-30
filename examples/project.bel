@@ -1,0 +1,15 @@
+; status: works — axiom 4: project a corner onto a slanted line, crease ⊥ another line
+; .c is folded onto --l1 moving along the direction of --l2; the crease ends up
+; perpendicular to --l2. Render folded (`fold2svg --folded`) to watch the corner
+; land on --l1; render the crease pattern to see the crease sit perpendicular to --l2.
+paper square
+; scaffold: two midlines give the non-corner points .tm and .rm
+--vmid: map .a onto .b              ; x = 1/2
+--hmid: map .a onto .d              ; y = 1/2
+.tm: cross --vmid --(.d .c)         ; midpoint of the top edge,   (1/2, 1)
+.rm: cross --hmid --(.b .c)         ; midpoint of the right edge, (1, 1/2)
+; two generic slanted lines — slopes 1/2 and 2, neither a diagonal
+--l1: through .a .rm                ; the line .c lands on
+--l2: through .a .tm                ; the crease is forced perpendicular to this
+; fold corner .c onto --l1, crease perpendicular to --l2
+@map .c onto --l1 perp --l2 moving .c
