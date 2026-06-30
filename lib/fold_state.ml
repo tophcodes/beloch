@@ -160,3 +160,32 @@ let paper_preimages (st : t) (tp : Geom.point) : Geom.point list =
 let simple_fold (st : t) ~(axis : Geom.line) ~(move_side : int) ~(valley : bool)
     : t =
   fst (fold_with_records st ~axis ~move_side ~valley ~prov:None)
+
+(* Turn the whole sheet over. Reflect every face across the footprint's vertical
+   centerline (x = (minX+maxX)/2 over all face table vertices) — an internal,
+   cosmetic axis: which line is irrelevant to the user (named points), only the
+   substantive effect matters. The reflection flips each face's det_sign
+   (front<->back); reversing the face array turns the stack top<->bottom. *)
+let flip (st : t) : t =
+  let n = Array.length st.faces in
+  if n = 0 then st
+  else begin
+    let p0 = (table_polygon st 0).(0) in
+    let lo = ref p0.Geom.x and hi = ref p0.Geom.x in
+    Array.iteri
+      (fun i _ ->
+        Array.iter
+          (fun (q : Geom.point) ->
+            if Num.compare q.Geom.x !lo < 0 then lo := q.Geom.x;
+            if Num.compare q.Geom.x !hi > 0 then hi := q.Geom.x)
+          (table_polygon st i))
+      st.faces;
+    let cx = Num.div (Num.add !lo !hi) (Num.of_int 2) in
+    let axis = { Geom.a = Num.one; b = Num.zero; c = cx } in
+    let refl = Isometry.reflect_across_line axis in
+    let flipped =
+      Array.map (fun f -> { f with iso = Isometry.compose refl f.iso }) st.faces
+    in
+    let rev = Array.init n (fun i -> flipped.(n - 1 - i)) in
+    { faces = rev; layers = Array.init n (fun i -> i) }
+  end

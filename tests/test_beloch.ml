@@ -682,6 +682,45 @@ let test_fold_state_half () =
   in
   Alcotest.(check bool) "folded footprint is the left half" true all_left
 
+let test_fold_state_flip () =
+  (* fold the right half over (valley) -> 2 faces; flipping the sheet inverts
+     every face's orientation and reverses the layer order *)
+  let st =
+    Fold_state.simple_fold Fold_state.init_square
+      ~axis:{ Geom.a = q 1; b = q 0; c = half }
+      ~move_side:1 ~valley:true
+  in
+  let n = Array.length st.Fold_state.faces in
+  let det_before =
+    Array.map
+      (fun (f : Fold_state.face) -> Isometry.det_sign f.Fold_state.iso)
+      st.Fold_state.faces
+  in
+  let fl = Fold_state.flip st in
+  Alcotest.(check int)
+    "face count preserved" n
+    (Array.length fl.Fold_state.faces);
+  Array.iteri
+    (fun i (f : Fold_state.face) ->
+      Alcotest.(check int)
+        "det flipped and order reversed"
+        (-det_before.(n - 1 - i))
+        (Isometry.det_sign f.Fold_state.iso))
+    fl.Fold_state.faces
+
+let test_fold_state_flip_involution () =
+  let st =
+    Fold_state.simple_fold Fold_state.init_square
+      ~axis:{ Geom.a = q 1; b = q 0; c = half }
+      ~move_side:1 ~valley:true
+  in
+  let twice = Fold_state.flip (Fold_state.flip st) in
+  Alcotest.(check bool)
+    "flip twice restores .a's table position" true
+    (Geom.point_equal
+       (Fold_state.table_position st (pt 0 0))
+       (Fold_state.table_position twice (pt 0 0)))
+
 let test_fold_state_layer_order () =
   (* valley fold: the moved face is the top layer (last in `layers`). The moved
      face is the one whose isometry is a reflection (det -1). *)
@@ -1028,6 +1067,10 @@ let () =
           Alcotest.test_case "fold records accordion" `Quick
             test_fold_records_accordion;
           Alcotest.test_case "paper preimages" `Quick test_fold_paper_preimages;
+          Alcotest.test_case "flip det + layer reversal" `Quick
+            test_fold_state_flip;
+          Alcotest.test_case "flip is an involution" `Quick
+            test_fold_state_flip_involution;
         ] );
       ( "fold_geom2",
         [
