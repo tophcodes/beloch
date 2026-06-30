@@ -3,22 +3,28 @@
 type point_ref = { name : string; span : Error.span }
 type crease_ref = { cname : string; cspan : Error.span }
 
+(* Operands are mutually recursive: a named leaf, or an inline construction.
+   PCross = inline `cross` (point at two creases); LThrough = inline `through`
+   (line through two points). A plain `.a` is PNamed; a plain `--l` is LNamed. *)
+type point_operand =
+  | PNamed of point_ref
+  | PCross of line_operand * line_operand * Error.span
+
+and line_operand =
+  | LNamed of crease_ref
+  | LThrough of point_operand * point_operand * Error.span
+
 type axiom =
-  | Through of point_ref * point_ref (* axiom 1: line through two points *)
-  | MapPoints of
-      point_ref * point_ref (* axiom 2: place point .x onto point .y *)
-  | Perp of
-      point_ref * crease_ref (* axiom 3: through .p, perpendicular to --l *)
-  | MapLines of
-      crease_ref * crease_ref * point_ref option (* axiom 5: line onto line *)
+  | Through of point_operand * point_operand (* axiom 1 *)
+  | MapPoints of point_operand * point_operand (* axiom 2 *)
+  | Perp of point_operand * line_operand (* axiom 3: through .p, perp to --l *)
+  | MapLines of line_operand * line_operand * point_operand option (* axiom 5 *)
 
 type direction = Valley | Mountain
-
-(* present iff the statement was prefixed with `@` (perform the fold, keep folded) *)
-type fold_spec = { moving : point_ref option; direction : direction }
+type fold_spec = { moving : point_operand option; direction : direction }
 
 type point_expr =
-  | Cross of crease_ref * crease_ref (* intersection of two creases *)
+  | Cross of line_operand * line_operand (* the `.name:` binding RHS *)
 
 type stmt =
   | Crease of string option * axiom * fold_spec option * Error.span

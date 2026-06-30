@@ -1,0 +1,3 @@
+; status: works — inline line + cross: fold .a onto the centre, no named bindings
+paper square
+map .a onto .( --(.a .c) --(.b .d) )

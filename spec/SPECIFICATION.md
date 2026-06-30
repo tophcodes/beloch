@@ -365,42 +365,46 @@ and the process exits non-zero:
 The Menhir grammar is authoritative once written; this sketch is a guide.
 
 ```
-program     := "paper" "square" stmt*
-stmt        := crease_stmt | point_stmt | flip_stmt
-crease_stmt := [ CREASE_NAME ":" ] [ "@" ] axiom [ "moving" point_ref ] [ "mountain" ]
-point_stmt  := POINT_NAME ":" point_expr
-flip_stmt   := "flip"
-axiom       := "through" point_ref point_ref            ; axiom 1
-             | "map" point_ref "onto" point_ref         ; axiom 2
-             | "perp" crease_ref "through" point_ref     ; axiom 3
-             | "map" crease_ref "onto" crease_ref [ "toward" point_ref ]  ; axiom 5
-point_expr  := "cross" CREASE_NAME CREASE_NAME    ; line intersection
-crease_ref  := CREASE_NAME
-point_ref   := POINT_NAME
-POINT_NAME  := "." ident
-CREASE_NAME := "--" ident
+program       := "paper" "square" stmt*
+stmt          := crease_stmt | point_stmt | flip_stmt
+crease_stmt   := [ CREASE_NAME ":" ] [ "@" ] axiom [ "moving" point_operand ] [ "mountain" ]
+point_stmt    := POINT_NAME ":" point_expr
+flip_stmt     := "flip"
+axiom         := "through" point_operand point_operand          ; axiom 1
+               | "map" point_operand "onto" point_operand       ; axiom 2
+               | "perp" line_operand "through" point_operand     ; axiom 3
+               | "map" line_operand "onto" line_operand [ "toward" point_operand ]  ; axiom 5
+point_expr    := "cross" line_operand line_operand              ; line intersection (binding RHS)
+point_operand := POINT_NAME | ".(" line_operand line_operand ")"     ; named, or inline cross
+line_operand  := CREASE_NAME | "--(" point_operand point_operand ")" ; named, or inline through
+POINT_NAME    := "." ident
+CREASE_NAME   := "--" ident
 ```
 
 A bare axiom statement is a *precrease* (computes a crease line, paper stays
 flat). The `@` prefix performs the fold (§4.6); `moving`/`mountain` describe it.
-`flip` turns the whole sheet over (§4.7).
+`flip` turns the whole sheet over (§4.7). *(since v0.7-dev)* Any operand may be an
+**inline anonymous construction** — `--(.a .b)` is the line through two points,
+`.(--a --b)` the point where two creases meet; these nest freely and coexist with
+the `cross`/`through` keywords (which remain for named bindings). Brackets appear
+only as operands, never as a binding right-hand side.
 
 ---
 
 ## Appendix B — not yet in the language
 
-Deferred, in rough order of likely arrival: inline anonymous operands
-`--(.a .b)` / `.(--a --b)` · non-flat (constructible-angle) folds · `rotate` ·
-fold maneuvers (reverse/squash/sink/petal, via `unfold` + layer selection) ·
-axioms 4, 6, 7 · regions · parts/imports · `step` blocks · a dedicated
-render/animation engine · YR diagrams. These are not part of the language until a
-slice lands and this spec is extended.
+Deferred, in rough order of likely arrival: non-flat (constructible-angle) folds ·
+`rotate` · fold maneuvers (reverse/squash/sink/petal, via `unfold` + layer
+selection) · axioms 4, 6, 7 · regions · parts/imports · `step` blocks · a
+dedicated render/animation engine · YR diagrams. These are not part of the
+language until a slice lands and this spec is extended.
 
 **Landed:** faces (v0.1); axiom 3 — perpendicular (v0.2); axiom 5 — angle
 bisector (v0.3-dev); the `map … onto …` verb and the `@` fold modifier
 (v0.6-dev); and *(v0.7-dev)* the **action model** — `@` fold execution, the
 folded-state runtime, derived mountain/valley, the dual `creasePattern` +
-`foldedForm` FOLD output, and `flip`. See
+`foldedForm` FOLD output, `flip`, and inline anonymous operands
+(`--(.a .b)` / `.(--a --b)`). See
 [ADR 0011](../decisions/0011-action-model.md). Mountain/valley is *derived* from
 fold actions, not a separate annotation pass.
 

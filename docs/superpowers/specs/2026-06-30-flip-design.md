@@ -30,7 +30,7 @@ Consequences:
 
 - **Proper mountain/valley.** A crease's assignment is `valley XOR (det_sign(cutting face) < 0)`, recorded when the fold runs (unchanged by this slice). Because `flip` flips every `det_sign`, a *subsequent* valley fold is recorded as a **mountain** relative to the original front — i.e. "mountain = turn over, then valley." Creases made *before* the flip keep their assignment (material facts). The `mountain` keyword stays as a direct shortcut alongside `flip`.
 - **Layer access.** The previously bottom layer is now on top, so the next fold can act on what was the underside — something a front-only model cannot reach.
-- **Output.** `flip` alone leaves the `creasePattern` frame **unchanged** (it is in paper coordinates; `flip` only changes the per-face isometries / table placement). The `foldedForm` frame is mirrored across the axis with its layer order reversed, and `faceOrders` is re-derived from the new order at emit time. M/V of *later* folds differs as above.
+- **Output.** `flip` alone leaves the `creasePattern` frame **geometrically unchanged** — same vertices, edges, creases and assignments (it is in paper coordinates; `flip` only changes the per-face isometries / table placement). The emit *order* of `faces_vertices` (and hence vertex indices) may differ, because `flip` reverses the face array; so it is geometrically equal, not byte-identical. The `foldedForm` frame is mirrored across the axis with its layer order reversed, and `faceOrders` is re-derived from the new order at emit time. M/V of *later* folds differs as above.
 
 ## 3. Components
 
@@ -48,7 +48,7 @@ None — `flip` is a bare statement with no operand.
 
 - `Fold_state.flip`: on a one-fold state, `flip` flips `det_sign` of every face and reverses the layer array (top↔bottom); applying `flip` twice returns the original face orientations and order (involution up to the canonical axis).
 - Proper M/V end-to-end: a program that folds, then `flip`, then `@map … onto … moving …` (a valley by command) emits that later crease as **`M`** (mountain) — because the flip inverted the parity.
-- `flip` alone leaves the `creasePattern` frame byte-identical to the same program without the flip (paper coords unchanged); the `foldedForm` differs (mirrored + reversed).
+- `flip` alone leaves the `creasePattern` frame geometrically unchanged — same vertex/edge/face *counts* and same assignment multiset as the program without the flip (order may differ since flip reverses the face array); the `foldedForm` differs (mirrored + reversed).
 - Regression: all existing programs (no `flip`) unchanged.
 
 ## 6. Follow-ups
