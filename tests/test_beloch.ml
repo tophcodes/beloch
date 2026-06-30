@@ -161,45 +161,27 @@ let expect_error msg_substr thunk =
          true
        with Not_found -> false)
 
-let test_eval_counts_creases () =
-  let cs = eval_src "paper square\n--d1: through .a .c\nmap .b onto .d\n" in
-  Alcotest.(check int) "two creases" 2 (List.length cs)
-
-let test_eval_cross_ok () =
-  let cs =
-    eval_src
-      "paper square\n\
-       --d1: through .a .c\n\
-       --d2: through .b .d\n\
-       .m: cross --d1 --d2\n\
-       map .a onto .m\n"
-  in
-  Alcotest.(check int) "three creases" 3 (List.length cs)
-
 let test_eval_identical_points () =
-  expect_error "distinct" (fun () -> eval_src "paper square\nthrough .a .a\n")
+  expect_error "same place" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel" "paper square\nthrough .a .a\n")))
 
 let test_eval_undefined_point () =
-  expect_error "undefined" (fun () -> eval_src "paper square\nmap .a onto .z\n")
+  expect_error "undefined" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel" "paper square\nmap .a onto .z\n")))
 
 let test_eval_parallel_cross () =
   expect_error "parallel" (fun () ->
-      eval_src
-        "paper square\n\
-         --h1: through .a .b\n\
-         --h2: through .d .c\n\
-         .x: cross --h1 --h2\n")
-
-let test_eval_perp_provenance () =
-  let cs = eval_src "paper square\n--d: through .a .c\nperp --d through .b\n" in
-  Alcotest.(check int) "two creases" 2 (List.length cs);
-  let perp =
-    List.find (fun (c : Eval.crease) -> c.Eval.prov.State.axiom = "axiom3") cs
-  in
-  Alcotest.(check string)
-    "axiom3 provenance" "axiom3" perp.Eval.prov.State.axiom;
-  Alcotest.(check (list string))
-    "mixed point+crease sources" [ ".b"; "--d" ] perp.Eval.prov.State.sources
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n\
+               --h1: through .a .b\n\
+               --h2: through .d .c\n\
+               .x: cross --h1 --h2\n")))
 
 let test_planarize_two_diagonals () =
   let cs = eval_src "paper square\nthrough .a .c\nthrough .b .d\n" in
@@ -245,27 +227,6 @@ let test_planarize_edge_dedup () =
   let st = Planarize.run cs in
   Alcotest.(check int) "no duplicate edge" 5 (Dynarray.length st.State.edges)
 
-let test_emit_fields () =
-  let cs = eval_src "paper square\nthrough .a .c\n" in
-  let st = Planarize.run cs in
-  let json = Fold_emit.to_json st (Faces.extract st) in
-  let open Yojson.Safe.Util in
-  Alcotest.(check string)
-    "creator" "beloch 0.3.0-dev"
-    (json |> member "file_creator" |> to_string);
-  Alcotest.(check int)
-    "frame_classes is creasePattern" 1
-    (json |> member "frame_classes" |> to_list |> List.length);
-  let assigns =
-    json |> member "edges_assignment" |> to_list |> List.map to_string
-  in
-  Alcotest.(check bool) "has a U crease" true (List.mem "U" assigns);
-  Alcotest.(check bool) "has a B boundary" true (List.mem "B" assigns);
-  (* one diagonal cuts the square into two faces *)
-  Alcotest.(check int)
-    "two faces" 2
-    (json |> member "faces_vertices" |> to_list |> List.length)
-
 let read_example name =
   In_channel.with_open_text ("../../../examples/" ^ name) In_channel.input_all
 
@@ -286,7 +247,7 @@ let test_e2e_anti_parallel () =
       Beloch.fold_string ~filename:"parallel.bel" (read_example "parallel.bel"))
 
 let test_e2e_anti_dup () =
-  expect_error "distinct" (fun () ->
+  expect_error "same place" (fun () ->
       Beloch.fold_string ~filename:"dup-point.bel"
         (read_example "dup-point.bel"))
 
@@ -373,29 +334,6 @@ let test_faces_two_diagonals () =
   Alcotest.(check bool)
     "each face is a triangle" true
     (List.for_all (fun f -> Array.length f = 3) fs)
-
-let test_eval_crease_name () =
-  let cs = eval_src "paper square\n--d1: through .a .c\nthrough .b .d\n" in
-  let named = List.nth cs 0 and anon = List.nth cs 1 in
-  Alcotest.(check (option string))
-    "named crease carries its name" (Some "d1") named.Eval.prov.State.name;
-  Alcotest.(check (option string))
-    "anonymous crease has no name" None anon.Eval.prov.State.name
-
-let test_emit_crease_name () =
-  let cs = eval_src "paper square\n--d1: through .a .c\n" in
-  let st = Planarize.run cs in
-  let json = Fold_emit.to_json st (Faces.extract st) in
-  let open Yojson.Safe.Util in
-  let names =
-    json |> member "beloch:edges" |> to_list
-    |> List.filter_map (function
-      | `Null -> None
-      | e -> Some (e |> member "name"))
-  in
-  Alcotest.(check bool)
-    "a crease entry carries name \"d1\"" true
-    (List.exists (fun n -> n = `String "d1") names)
 
 let test_isometry_basics () =
   let i = Isometry.identity in
@@ -614,42 +552,6 @@ let test_parse_bisect () =
       ()
   | _ -> Alcotest.fail "unexpected AST shape for bisect"
 
-let test_eval_bisect_select () =
-  (* v: x=1/2, h: y=1/2 (perpendicular, cross at centre). toward .a vs .b pick
-     the two different diagonals through the centre -> different crease lines. *)
-  let prog s =
-    eval_src ("paper square\n--v: map .a onto .b\n--h: map .b onto .c\n" ^ s)
-  in
-  let line_of cs = (List.nth cs 2).Eval.line in
-  let prog_a = prog "map --v onto --h toward .a" in
-  let prog_b = prog "map --v onto --h toward .b" in
-  let la = line_of prog_a in
-  let lb = line_of prog_b in
-  (* the two creases differ: they are not the same line (compare a-coefficient sign pattern) *)
-  Alcotest.(check bool)
-    "toward .a and .b give different bisectors" false
-    (Num.equal la.Geom.a lb.Geom.a
-    && Num.equal la.Geom.b lb.Geom.b
-    && Num.equal la.Geom.c lb.Geom.c);
-  (* Helper to check if a point lies exactly on a line: a·Px + b·Py = c *)
-  let on l p =
-    Num.sign
-      (Num.sub
-         (Num.add (Num.mul l.Geom.a p.Geom.x) (Num.mul l.Geom.b p.Geom.y))
-         l.Geom.c)
-  in
-  (* toward .a must select a-c diagonal: passes through (0,0) and (1,1) *)
-  Alcotest.(check int) "toward .a line through .a=(0,0)" 0 (on la (pt 0 0));
-  Alcotest.(check int) "toward .a line through .c=(1,1)" 0 (on la (pt 1 1));
-  (* toward .b must select b-d diagonal: passes through (1,0) and (0,1) *)
-  Alcotest.(check int) "toward .b line through .b=(1,0)" 0 (on lb (pt 1 0));
-  Alcotest.(check int) "toward .b line through .d=(0,1)" 0 (on lb (pt 0 1));
-  let perp = List.nth prog_a 2 in
-  Alcotest.(check string)
-    "axiom5 provenance" "axiom5" perp.Eval.prov.State.axiom;
-  Alcotest.(check (list string))
-    "sources" [ "--v"; "--h"; ".a" ] perp.Eval.prov.State.sources
-
 let test_parse_fold_action () =
   let prog =
     Beloch.parse ~filename:"t.bel"
@@ -682,29 +584,31 @@ let test_parse_precrease_no_foldspec () =
   | [ Ast.Crease (None, Ast.MapPoints _, None, _) ] -> ()
   | _ -> Alcotest.fail "bare axiom must carry no fold_spec"
 
-let test_eval_fold_not_implemented () =
-  expect_error "not yet implemented" (fun () ->
-      eval_src "paper square\n@map .a onto .c\n")
-
 let test_eval_bisect_errors () =
   expect_error "identical" (fun () ->
-      eval_src
-        "paper square\n\
-         --x: through .a .c\n\
-         --y: through .a .c\n\
-         map --x onto --y toward .b\n");
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n\
+               --x: through .a .c\n\
+               --y: through .a .c\n\
+               map --x onto --y toward .b\n")));
   expect_error "ambiguous" (fun () ->
-      eval_src
-        "paper square\n\
-         --v: map .a onto .b\n\
-         --h: map .b onto .c\n\
-         map --v onto --h\n");
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n\
+               --v: map .a onto .b\n\
+               --h: map .b onto .c\n\
+               map --v onto --h\n")));
   expect_error "on a fold line" (fun () ->
-      eval_src
-        "paper square\n\
-         --d: through .a .c\n\
-         --h: map .b onto .c\n\
-         map --d onto --h toward .a\n")
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n\
+               --d: through .a .c\n\
+               --h: map .b onto .c\n\
+               map --d onto --h toward .a\n")))
 
 let test_e2e_bisect_select () =
   let open Yojson.Safe.Util in
@@ -758,7 +662,7 @@ let count_assign a recs =
 let test_fold_subdivide () =
   (* precrease the flat square along x=1/2: 2 faces, 1 crease record, assign U *)
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let st, recs = Fold_state.subdivide Fold_state.init_square axis in
+  let st, recs = Fold_state.subdivide Fold_state.init_square axis ~prov:None in
   Alcotest.(check int)
     "two faces after subdivide" 2
     (Array.length st.Fold_state.faces);
@@ -772,7 +676,7 @@ let test_fold_records_valley () =
   let axis = { Geom.a = q 1; b = q 0; c = half } in
   let _, recs =
     Fold_state.fold_with_records Fold_state.init_square ~axis ~move_side:1
-      ~valley:true
+      ~valley:true ~prov:None
   in
   Alcotest.(check int) "one record" 1 (List.length recs);
   Alcotest.(check int)
@@ -791,6 +695,7 @@ let test_fold_records_accordion () =
   let axis2 = { Geom.a = q 0; b = q 1; c = half } in
   let _, recs2 =
     Fold_state.fold_with_records st1 ~axis:axis2 ~move_side:1 ~valley:true
+      ~prov:None
   in
   Alcotest.(check int)
     "two crease records from the second fold" 2 (List.length recs2);
@@ -904,6 +809,184 @@ let test_on_segment () =
     "off the line is not on" false
     (Geom.on_segment s (pt 1 0))
 
+let test_eval_folded_half () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\n@map .b onto .a moving .b\n")
+  in
+  Alcotest.(check int)
+    "two faces" 2
+    (Array.length fd.Eval.state.Fold_state.faces);
+  Alcotest.(check int)
+    "one valley record" 1
+    (count_assign Fold_state.V fd.Eval.creases);
+  (* .b lands exactly on .a = (0,0) *)
+  Alcotest.(check bool)
+    ".b maps onto .a" true
+    (Geom.point_equal
+       (Fold_state.table_position fd.Eval.state (pt 1 0))
+       (pt 0 0))
+
+let test_eval_folded_precrease () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel" "paper square\nmap .a onto .c\n")
+  in
+  Alcotest.(check int)
+    "two faces" 2
+    (Array.length fd.Eval.state.Fold_state.faces);
+  Alcotest.(check int)
+    "one U record" 1
+    (count_assign Fold_state.U fd.Eval.creases)
+
+let test_eval_folded_moving_required () =
+  expect_error "moving" (fun () ->
+      Eval.eval_folded
+        (Beloch.parse ~filename:"t.bel"
+           "paper square\n--d: through .a .c\n@perp --d through .b\n"))
+
+let test_eval_folded_quarter_accordion () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\n@map .b onto .a moving .b\n@map .d onto .a moving .d\n")
+  in
+  Alcotest.(check int)
+    "four faces after quarter fold" 4
+    (Array.length fd.Eval.state.Fold_state.faces);
+  (* second fold cuts two layers of alternating orientation -> one V, one M *)
+  Alcotest.(check int)
+    "an accordion mountain appears" 1
+    (count_assign Fold_state.M fd.Eval.creases)
+
+let test_eval_folded_cross_topmost () =
+  (* Q2-B: after the diagonal fold the lower-left triangle is 2-layer; crossing
+     two precrease lines there must resolve to the top layer, not error *)
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\n\
+          @map .c onto .a moving .c\n\
+          --b: through .a .b\n\
+          --v: map .b onto .a\n\
+          .mid: cross --b --v\n")
+  in
+  (* eval completed without an ambiguity error; the --v precrease subdivided
+     both layers of the diagonally-folded triangle, so four faces remain *)
+  Alcotest.(check int)
+    "cross in a folded overlap resolves to the top layer" 4
+    (Array.length fd.Eval.state.Fold_state.faces)
+
+let test_emit_folded_frames () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\n@map .b onto .a moving .b\n")
+  in
+  let json = Fold_emit.to_json_folded fd in
+  let open Yojson.Safe.Util in
+  Alcotest.(check string)
+    "frame 0 is creasePattern" "creasePattern"
+    (json |> member "frame_classes" |> to_list |> List.hd |> to_string);
+  let frames = json |> member "file_frames" |> to_list in
+  Alcotest.(check int) "one extra frame" 1 (List.length frames);
+  let folded = List.hd frames in
+  Alcotest.(check string)
+    "extra frame is foldedForm" "foldedForm"
+    (folded |> member "frame_classes" |> to_list |> List.hd |> to_string);
+  Alcotest.(check bool)
+    "folded frame inherits" true
+    (folded |> member "frame_inherit" |> to_bool);
+  (* the single crease is a valley *)
+  let assigns =
+    json |> member "edges_assignment" |> to_list |> List.map to_string
+  in
+  Alcotest.(check bool) "has a V crease" true (List.mem "V" assigns);
+  Alcotest.(check bool) "has B boundary" true (List.mem "B" assigns);
+  (* two overlapping faces -> one faceOrders triple *)
+  Alcotest.(check int)
+    "one faceOrders triple" 1
+    (folded |> member "faceOrders" |> to_list |> List.length)
+
+let test_emit_folded_crease_name () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel" "paper square\n--m: map .a onto .c\n")
+  in
+  let json = Fold_emit.to_json_folded fd in
+  let open Yojson.Safe.Util in
+  let names =
+    json |> member "beloch:edges" |> to_list
+    |> List.filter_map (function
+      | `Null -> None
+      | e -> Some (e |> member "name"))
+  in
+  Alcotest.(check bool)
+    "crease carries name m" true
+    (List.exists (fun n -> n = `String "m") names)
+
+let test_e2e_fold_half () =
+  let json =
+    Beloch.fold_string ~filename:"fold-half.bel" (read_example "fold-half.bel")
+  in
+  let open Yojson.Safe.Util in
+  Alcotest.(check string)
+    "frame 0 creasePattern" "creasePattern"
+    (json |> member "frame_classes" |> to_list |> List.hd |> to_string);
+  Alcotest.(check int)
+    "a foldedForm frame is present" 1
+    (json |> member "file_frames" |> to_list |> List.length);
+  let assigns =
+    json |> member "edges_assignment" |> to_list |> List.map to_string
+  in
+  Alcotest.(check bool)
+    "the fold crease is a valley" true (List.mem "V" assigns)
+
+let test_e2e_fold_quarter () =
+  let json =
+    Beloch.fold_string ~filename:"fold-quarter.bel"
+      (read_example "fold-quarter.bel")
+  in
+  let open Yojson.Safe.Util in
+  let folded = json |> member "file_frames" |> to_list |> List.hd in
+  (* four layers -> overlapping pairs -> several faceOrders triples *)
+  Alcotest.(check bool)
+    "faceOrders present for the folded stack" true
+    (List.length (folded |> member "faceOrders" |> to_list) > 0);
+  let assigns =
+    json |> member "edges_assignment" |> to_list |> List.map to_string
+  in
+  Alcotest.(check bool)
+    "accordion produced a mountain crease" true (List.mem "M" assigns)
+
+let test_isometry_inverse_rotation () =
+  (* compose two distinct reflections -> a rotation (det +1, not self-inverse);
+     inverse must still undo it *)
+  let r1 = Isometry.reflect_across_line { Geom.a = q 1; b = q 0; c = half } in
+  let r2 = Isometry.reflect_across_line { Geom.a = q 0; b = q 1; c = half } in
+  let rot = Isometry.compose r1 r2 in
+  let inv = Isometry.inverse rot in
+  Alcotest.(check int)
+    "composed reflections give a rotation" 1 (Isometry.det_sign rot);
+  Alcotest.(check bool)
+    "inverse undoes the rotation" true
+    (Geom.point_equal
+       (Isometry.apply_point inv (Isometry.apply_point rot (pt 3 5)))
+       (pt 3 5))
+
+let test_clip_on_vertex () =
+  (* clip the unit square by its own diagonal a-c (x = y): the line passes
+     exactly through two vertices; each half is a triangle of 3 vertices *)
+  let sq = [| pt 0 0; pt 1 0; pt 1 1; pt 0 1 |] in
+  let diag = Geom.line_through (pt 0 0) (pt 1 1) in
+  Alcotest.(check int)
+    "lower triangle has 3 vertices" 3
+    (Array.length (Geom.clip_convex_halfplane diag 1 sq));
+  Alcotest.(check int)
+    "upper triangle has 3 vertices" 3
+    (Array.length (Geom.clip_convex_halfplane diag (-1) sq))
+
 let () =
   Alcotest.run "beloch"
     [
@@ -931,6 +1014,7 @@ let () =
             test_clip_halfplane_all_or_nothing;
           Alcotest.test_case "point in convex polygon" `Quick
             test_in_convex_polygon;
+          Alcotest.test_case "clip through vertices" `Quick test_clip_on_vertex;
         ] );
       ( "parse",
         [
@@ -948,20 +1032,11 @@ let () =
       ("state", [ Alcotest.test_case "vertex dedup" `Quick test_vertex_dedup ]);
       ( "eval",
         [
-          Alcotest.test_case "count creases" `Quick test_eval_counts_creases;
-          Alcotest.test_case "cross ok" `Quick test_eval_cross_ok;
           Alcotest.test_case "identical points" `Quick
             test_eval_identical_points;
           Alcotest.test_case "undefined point" `Quick test_eval_undefined_point;
           Alcotest.test_case "parallel cross" `Quick test_eval_parallel_cross;
-          Alcotest.test_case "perp provenance" `Quick test_eval_perp_provenance;
-          Alcotest.test_case "crease name in provenance" `Quick
-            test_eval_crease_name;
-          Alcotest.test_case "bisect selection + provenance" `Quick
-            test_eval_bisect_select;
           Alcotest.test_case "bisect errors" `Quick test_eval_bisect_errors;
-          Alcotest.test_case "fold not yet implemented" `Quick
-            test_eval_fold_not_implemented;
         ] );
       ( "planarize",
         [
@@ -971,11 +1046,6 @@ let () =
           Alcotest.test_case "boundary split" `Quick
             test_planarize_boundary_split;
           Alcotest.test_case "edge dedup" `Quick test_planarize_edge_dedup;
-        ] );
-      ( "emit",
-        [
-          Alcotest.test_case "fold fields" `Quick test_emit_fields;
-          Alcotest.test_case "crease name in emit" `Quick test_emit_crease_name;
         ] );
       ( "e2e",
         [
@@ -989,6 +1059,9 @@ let () =
           Alcotest.test_case "bisect selector" `Quick test_e2e_bisect_select;
           Alcotest.test_case "bisect parallel midline" `Quick
             test_e2e_bisect_parallel;
+          Alcotest.test_case "fold half end-to-end" `Quick test_e2e_fold_half;
+          Alcotest.test_case "fold quarter accordion" `Quick
+            test_e2e_fold_quarter;
         ] );
       ( "geom2",
         [
@@ -1029,6 +1102,8 @@ let () =
           Alcotest.test_case "basics" `Quick test_isometry_basics;
           Alcotest.test_case "reflection" `Quick test_isometry_reflection;
           Alcotest.test_case "inverse" `Quick test_isometry_inverse;
+          Alcotest.test_case "inverse of a rotation" `Quick
+            test_isometry_inverse_rotation;
         ] );
       ( "fold_state",
         [
@@ -1047,5 +1122,23 @@ let () =
         [
           Alcotest.test_case "convex overlap" `Quick test_convex_overlap;
           Alcotest.test_case "on segment" `Quick test_on_segment;
+        ] );
+      ( "eval_folded",
+        [
+          Alcotest.test_case "half fold" `Quick test_eval_folded_half;
+          Alcotest.test_case "precrease subdivide" `Quick
+            test_eval_folded_precrease;
+          Alcotest.test_case "moving required" `Quick
+            test_eval_folded_moving_required;
+          Alcotest.test_case "quarter accordion" `Quick
+            test_eval_folded_quarter_accordion;
+          Alcotest.test_case "cross resolves to top layer" `Quick
+            test_eval_folded_cross_topmost;
+        ] );
+      ( "emit_folded",
+        [
+          Alcotest.test_case "dual frames" `Quick test_emit_folded_frames;
+          Alcotest.test_case "crease name preserved" `Quick
+            test_emit_folded_crease_name;
         ] );
     ]

@@ -21,7 +21,14 @@ nix develop --command dune exec beloch -- fold examples/bisect-a.bel \
 
 # or from a .fold file; omit the output path for SVG on stdout
 bun tools/fold2svg.mjs out.fold out.svg
+
+# render the FOLDED state (the foldedForm frame) instead of the crease pattern
+dune exec beloch -- fold examples/fold-corner.bel \
+  | bun tools/fold2svg.mjs - corner-folded.png --folded
 ```
 
-Output is a 512×512 image (unit-square viewBox); boundary edges are black,
-creases (currently all unassigned) are coloured by Rabbit Ear.
+By default fold2svg draws **frame 0 — the crease pattern** (the flat sheet with
+its crease lines). Pass `--folded` to draw the **`foldedForm` frame** instead —
+the paper in its folded position (e.g. `fold-corner.bel` folds to a triangle).
+Note: flat folds stack layers in the same plane, so the folded render shows the
+silhouette, not the individual layers (no per-layer offset yet).

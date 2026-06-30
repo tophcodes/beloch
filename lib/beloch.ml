@@ -21,8 +21,7 @@ let parse ~(filename : string) (src : string) : Ast.program =
     Error.fail (start, finish) "syntax error"
 
 let fold_string ~(filename : string) (src : string) : Yojson.Safe.t =
-  let st = parse ~filename src |> Eval.eval |> Planarize.run in
-  Fold_emit.to_json st (Faces.extract st)
+  parse ~filename src |> Eval.eval_folded |> Fold_emit.to_json_folded
 
 module Num = Num
 module Error = Error

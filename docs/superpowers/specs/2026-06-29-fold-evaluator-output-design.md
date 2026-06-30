@@ -12,19 +12,19 @@ Make `@` folds actually fold: thread a `Fold_state` through evaluation, execute 
 **In:**
 - One unified evaluation path through `Fold_state` (decision **C**): every program — folded or not — produces its output from the face set.
 - `@` fold execution (simple flat fold) and bare-axiom precrease subdivision.
-- Reference resolution against the current state, with the single-face rule for derived points (decision **Q2-A**).
+- Reference resolution against the current state, with the topmost-layer rule for derived points (decision **Q2-B**; superseded Q2-A — see §2).
 - Dual FOLD output, both frames derived from the faces.
 - Derived mountain/valley per crease edge (the accordion effect handled).
 
 **Out (deferred):**
 - `flip` / `rotate`; `unfold`; named maneuvers; non-flat / constructible-angle folds.
-- The "topmost layer" reference semantics for points in overlapping regions (Q2-A errors instead).
+- An explicit "which layer" selector for derived points (Q2-B picks the top layer by default).
 - Re-projecting a named crease through later folds; folded (kinked) creases as operands.
 
 ## 2. Decisions locked in brainstorming
 
 - **C — unified face-based pipeline.** The old crease-line `Planarize`/`Faces.extract` path is dropped from the emit path; the CP is built directly from the `Fold_state` faces. Existing regression tests are re-baselined to the new (geometrically equivalent) output.
-- **Q2-A — single-face rule.** Corners, named precrease axes, and `cross`/derived points resolve against the current state; a derived point whose table location lies under more than one overlapping layer is a compile error ("ambiguous reference in a folded region"). Pre-fold `cross` works (one layer); post-fold `cross` works only in non-overlapping regions.
+- **Q2-B — topmost-layer rule** (revised 2026-06-30; originally Q2-A, the single-face/error rule). Corners, named precrease axes, and `cross`/derived points resolve against the current state; a derived point whose table location lies under several overlapping layers binds to the **topmost** (visible) layer's material point — the one your hand would touch. Only an off-paper crossing errors. (Q2-A erroring on overlap proved too strict: a reference point on an already-folded stack is a normal workflow. An explicit per-layer selector is a later addition.)
 - **M/V in B-2** (not deferred), via a per-crease-edge parity rule (§5).
 
 ## 3. Evaluation pipeline (unified, decision C)
@@ -33,7 +33,7 @@ The evaluator threads a `Fold_state` (start `init_square`) and a name environmen
 
 - **Bare axiom** (precrease): compute the straight table-space axis from the axiom on current positions; **subdivide** the face set along it (split every crossing face into two faces, both keeping their isometry — no reflection, no restack). A `--name:` binds the table-space axis line. The crease edges this creates are unfolded → assignment `U`.
 - **`@` axiom** (fold): compute the axis and the moving side; **fold** — split, reflect the moving side, restack (the `simple_fold` mechanism from B-1, extended per §5 to also return the crease records with derived M/V).
-- **Point binding** (`cross`): intersect two table-space axis lines → a table point; resolve to a material paper coordinate via the *single* face containing it (error if zero or >1 distinct containing layers — Q2-A). Corners `.a`–`.d` are the fixed paper coordinates.
+- **Point binding** (`cross`): intersect two table-space axis lines → a table point; resolve to the material paper coordinate of the **topmost** face covering it (Q2-B; `Fold_state.paper_preimages` returns layers bottom→top, so take the last). Only an off-paper crossing errors. Corners `.a`–`.d` are the fixed paper coordinates.
 - **Reference resolution:** a point name → its stored paper coordinate → `Fold_state.table_position` (current). `moving .p` → `Geom.side_of_line axis (table_position p)`; error if `0` (on the axis). `moving` is required for the line-construction folds (`@map --l onto --m`, `@perp`, `@through`); for `@map .a onto .b` it defaults to the side of `.a`.
 
 `subdivide` is new in B-2 (B-1 only has `simple_fold`); it is the no-reflect, no-restack split that precreases use to register crease edges for the CP.
@@ -79,7 +79,7 @@ assignment = if (valley XOR (det_sign F < 0)) then Valley else Mountain
 
 - `moving` required for a line-construction `@` fold.
 - `moving .p` resolves onto the fold axis (no side).
-- `cross`/derived point in an overlapping (multi-layer) region (Q2-A).
+- `cross` whose crossing point is off the paper. (A multi-layer crossing no longer errors — Q2-B binds the top layer.)
 
 ## 8. Testing
 
@@ -94,4 +94,4 @@ assignment = if (valley XOR (det_sign F < 0)) then Valley else Mountain
 
 ## 9. Follow-ups (later slices)
 
-`flip` / `rotate`; `unfold` + layer selection + validity check → maneuvers as sugar; non-flat constructible angles; the topmost-layer reference semantics; the bespoke style-controllable animation client; unifying/removing the now-unused crease-line `Planarize` path.
+`flip` / `rotate`; `unfold` + layer selection + validity check → maneuvers as sugar; non-flat constructible angles; an explicit per-layer selector for derived points (Q2-B defaults to topmost); the bespoke style-controllable animation client; unifying/removing the now-unused crease-line `Planarize` path.
