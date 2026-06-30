@@ -136,18 +136,6 @@ let test_parse_perp () =
       ()
   | _ -> Alcotest.fail "unexpected AST shape for perp"
 
-let test_vertex_dedup () =
-  let st = State.create () in
-  let i = State.add_vertex st (pt 0 0) in
-  let j = State.add_vertex st (pt 1 1) in
-  let k = State.add_vertex st (pt 0 0) in
-  Alcotest.(check int) "first index 0" 0 i;
-  Alcotest.(check int) "second index 1" 1 j;
-  Alcotest.(check int) "dup returns 0" 0 k;
-  Alcotest.(check int) "two vertices total" 2 (Dynarray.length st.State.verts)
-
-let eval_src s = Eval.eval (Beloch.parse ~filename:"t.bel" s)
-
 let expect_error msg_substr thunk =
   try
     ignore (thunk ());
@@ -182,50 +170,6 @@ let test_eval_parallel_cross () =
                --h1: through .a .b\n\
                --h2: through .d .c\n\
                .x: cross --h1 --h2\n")))
-
-let test_planarize_two_diagonals () =
-  let cs = eval_src "paper square\nthrough .a .c\nthrough .b .d\n" in
-  let st = Planarize.run cs in
-  (* 4 corners + center = 5 vertices *)
-  Alcotest.(check int) "five vertices" 5 (Dynarray.length st.State.verts);
-  (* 4 boundary edges + each diagonal split into 2 = 4 crease edges = 8 *)
-  Alcotest.(check int) "eight edges" 8 (Dynarray.length st.State.edges);
-  let boundary =
-    Dynarray.fold_left
-      (fun acc e -> if e.State.assign = State.Boundary then acc + 1 else acc)
-      0 st.State.edges
-  in
-  Alcotest.(check int) "four boundary edges" 4 boundary
-
-let test_planarize_single_crease () =
-  let cs = eval_src "paper square\nthrough .a .c\n" in
-  let st = Planarize.run cs in
-  Alcotest.(check int) "four corners" 4 (Dynarray.length st.State.verts);
-  Alcotest.(check int)
-    "4 boundary + 1 crease" 5
-    (Dynarray.length st.State.edges)
-
-let test_planarize_boundary_split () =
-  (* x-midpoint: bisector a->center hits bottom at (1/2,0) and left at (0,1/2),
-     splitting two boundary edges; full planarization => 8 vertices, 13 edges *)
-  let cs =
-    eval_src
-      "paper square\n\
-       --d1: through .a .c\n\
-       --d2: through .b .d\n\
-       .m: cross --d1 --d2\n\
-       map .a onto .m\n"
-  in
-  let st = Planarize.run cs in
-  Alcotest.(check int) "eight vertices" 8 (Dynarray.length st.State.verts);
-  Alcotest.(check int) "thirteen edges" 13 (Dynarray.length st.State.edges)
-
-let test_planarize_edge_dedup () =
-  (* the same diagonal twice must not produce a duplicate edge:
-     4 boundary + 1 diagonal = 5 edges, not 6 *)
-  let cs = eval_src "paper square\nthrough .a .c\nthrough .a .c\n" in
-  let st = Planarize.run cs in
-  Alcotest.(check int) "no duplicate edge" 5 (Dynarray.length st.State.edges)
 
 let read_example name =
   In_channel.with_open_text ("../../../examples/" ^ name) In_channel.input_all
@@ -317,23 +261,6 @@ let test_signed_area () =
   Alcotest.(check bool)
     "cw negative (=-1)" true
     (Num.equal (Geom.signed_area cw) (Num.neg Num.one))
-
-let test_faces_square () =
-  let st = Planarize.run (eval_src "paper square\n") in
-  match Faces.extract st with
-  | [ f ] ->
-      Alcotest.(check int) "single face has 4 vertices" 4 (Array.length f)
-  | fs -> Alcotest.failf "expected one face, got %d" (List.length fs)
-
-let test_faces_two_diagonals () =
-  let st =
-    Planarize.run (eval_src "paper square\nthrough .a .c\nthrough .b .d\n")
-  in
-  let fs = Faces.extract st in
-  Alcotest.(check int) "four bounded faces" 4 (List.length fs);
-  Alcotest.(check bool)
-    "each face is a triangle" true
-    (List.for_all (fun f -> Array.length f = 3) fs)
 
 let test_isometry_basics () =
   let i = Isometry.identity in
@@ -1029,7 +956,6 @@ let () =
           Alcotest.test_case "bare axiom has no fold_spec" `Quick
             test_parse_precrease_no_foldspec;
         ] );
-      ("state", [ Alcotest.test_case "vertex dedup" `Quick test_vertex_dedup ]);
       ( "eval",
         [
           Alcotest.test_case "identical points" `Quick
@@ -1037,15 +963,6 @@ let () =
           Alcotest.test_case "undefined point" `Quick test_eval_undefined_point;
           Alcotest.test_case "parallel cross" `Quick test_eval_parallel_cross;
           Alcotest.test_case "bisect errors" `Quick test_eval_bisect_errors;
-        ] );
-      ( "planarize",
-        [
-          Alcotest.test_case "two diagonals split" `Quick
-            test_planarize_two_diagonals;
-          Alcotest.test_case "single crease" `Quick test_planarize_single_crease;
-          Alcotest.test_case "boundary split" `Quick
-            test_planarize_boundary_split;
-          Alcotest.test_case "edge dedup" `Quick test_planarize_edge_dedup;
         ] );
       ( "e2e",
         [
@@ -1067,12 +984,6 @@ let () =
         [
           Alcotest.test_case "ccw order" `Quick test_ccw_order;
           Alcotest.test_case "signed area" `Quick test_signed_area;
-        ] );
-      ( "faces",
-        [
-          Alcotest.test_case "square is one face" `Quick test_faces_square;
-          Alcotest.test_case "two diagonals -> 4 triangles" `Quick
-            test_faces_two_diagonals;
         ] );
       ( "num",
         [

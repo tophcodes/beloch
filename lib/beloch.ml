@@ -32,7 +32,5 @@ module Lexer = Lexer
 module Parser = Parser
 module State = State
 module Eval = Eval
-module Planarize = Planarize
 module Fold_emit = Fold_emit
-module Faces = Faces
 module Fold_state = Fold_state
