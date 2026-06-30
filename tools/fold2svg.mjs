@@ -52,6 +52,7 @@ const AX = {
   axiom3: { c: "#db2777", n: "axiom 3 · perp" },
   axiom4: { c: "#ea580c", n: "axiom 4 · project" },
   axiom5: { c: "#9333ea", n: "axiom 5 · map onto" },
+  axiom6: { c: "#0d9488", n: "axiom 6 · map through" },
 };
 const CREASE = "#f59e0b";
 const eColor = (i) => {

@@ -20,6 +20,9 @@ type axiom =
   | Perp of point_operand * line_operand (* axiom 3: through .p, perp to --l *)
   | MapOntoLine of point_operand * line_operand * line_operand (* axiom 4 *)
   | MapLines of line_operand * line_operand * point_operand option (* axiom 5 *)
+  | MapThrough of
+      point_operand * line_operand * point_operand * point_operand option
+    (* axiom 6: fold .p onto --d, crease through .p', optional `toward` selector *)
 
 type direction = Valley | Mountain
 type fold_spec = { moving : point_operand option; direction : direction }

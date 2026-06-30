@@ -53,6 +53,40 @@ let project_crease (p : point) (l1 : line) (l2 : line) : line option =
         if point_equal p q then Some (perpendicular_through l2 p)
         else Some (perpendicular_bisector p q)
 
+(* circle (centre c, radius² r2) ∩ line a·x+b·y=e : 0, 1, or 2 points. The foot
+   of the perpendicular from c to the line is c − (s/n2)·(a,b) with
+   s = a·cx+b·cy−e and n2 = a²+b²; the half-chord² is (r2·n2 − s²)/n2, so the
+   sign of r2·n2 − s² decides the count without dividing. The chord runs along
+   the line direction (b,−a); the offset magnitude is √(r2·n2−s²)/n2. The only
+   sqrt — stays in the quadratic tower. [justin1986 §8.2c] *)
+let circle_line_intersection (c : point) (r2 : Num.t) (l : line) : point list =
+  let n2 = Num.add (Num.mul l.a l.a) (Num.mul l.b l.b) in
+  let s = Num.sub (Num.add (Num.mul l.a c.x) (Num.mul l.b c.y)) l.c in
+  let t = Num.div s n2 in
+  let foot = { x = Num.sub c.x (Num.mul t l.a); y = Num.sub c.y (Num.mul t l.b) } in
+  let disc = Num.sub (Num.mul r2 n2) (Num.mul s s) in
+  match Num.sign disc with
+  | n when n < 0 -> []
+  | 0 -> [ foot ]
+  | _ ->
+      let k = Num.div (Num.sqrt disc) n2 in
+      [
+        { x = Num.add foot.x (Num.mul l.b k); y = Num.sub foot.y (Num.mul l.a k) };
+        { x = Num.sub foot.x (Num.mul l.b k); y = Num.add foot.y (Num.mul l.a k) };
+      ]
+
+(* axiom 6 (Justin ⑥): the crease(s) folding p onto line d with a crease through
+   the fixed point p'. p' is on the crease, so it is equidistant from p and the
+   image q of p, putting q on the circle (centre p', radius |p'p|) ∩ d; the
+   crease is the perpendicular bisector of p and q. 0, 1, or 2 creases. A
+   landing q = p is the identity (no fold) and is dropped. Square roots only. *)
+let beloch_creases (p : point) (d : line) (p' : point) : line list =
+  let dx = Num.sub p.x p'.x and dy = Num.sub p.y p'.y in
+  let r2 = Num.add (Num.mul dx dx) (Num.mul dy dy) in
+  circle_line_intersection p' r2 d
+  |> List.filter (fun q -> not (point_equal q p))
+  |> List.map (fun q -> perpendicular_bisector p q)
+
 let in_unit_square (p : point) : bool =
   Num.sign p.x >= 0
   && Num.compare p.x Num.one <= 0

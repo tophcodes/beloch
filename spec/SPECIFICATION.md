@@ -15,7 +15,7 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
+Current version: **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
 
 ---
 
@@ -212,6 +212,32 @@ perpendicular to `--l2` through `.p` (one solution).
 The result stays in ℚ — no square roots
 [[justin1986]](#ref-justin1986) §8.2(a).
 
+### 4.5b Axiom 6 — fold a point onto a line, crease through a fixed point *(since v0.8-dev)*
+
+Justin operation ⑥ `(P → D, P' → P')`: fold `.p` onto line `--d` with a single
+crease that keeps `.p'` fixed.
+
+```
+map .p onto --d through .p'              # ≤1 solution
+map .p onto --d through .p' toward .x    # 2 solutions: pick the landing nearer .x
+```
+
+`.p'` lies on the crease, so it is equidistant from `.p` and the image `.p''` on
+`--d`; `.p''` is therefore an intersection of the circle (centre `.p'`, radius
+`|p'p|`) with `--d` — up to two of them, hence up to two creases (each the
+perpendicular bisector of `.p` and its landing). Second-degree: square roots
+only, so `Num` is unchanged — **cube roots still do not arise** (they wait for
+axiom 7, the cubic Beloch fold ⑦). See "A note on axiom numbering" in §1.
+
+`through` is the same verb as in axiom 3 (`perp --l through .p`): the crease
+passes through the named point. `toward` is the same selector as axiom 5.
+
+Errors: the lines/points being out of reach (`dist(p',D) > |p'p|`) raises *out of
+reach*; two solutions without `toward` raises an ambiguity error naming the
+selector; `.p` and `.p'` being the same point raises *no fold exists*. When `.p`
+already lies on `--d`, the identity landing is dropped and the mirror landing
+gives the crease.
+
 ### 4.6 Folding: `@` *(since v0.7-dev)*
 
 A bare axiom is a **precrease**: it computes a crease line and marks it; the
@@ -399,6 +425,8 @@ axiom         := "through" point_operand point_operand          ; axiom 1
                | "perp" line_operand "through" point_operand     ; axiom 3
                | "map" point_operand "onto" line_operand "perp" line_operand  ; axiom 4
                | "map" line_operand "onto" line_operand [ "toward" point_operand ]  ; axiom 5
+               | "map" point_operand "onto" line_operand "through" point_operand
+                     [ "toward" point_operand ]                                  ; axiom 6
 point_expr    := "cross" line_operand line_operand              ; line intersection (binding RHS)
 point_operand := POINT_NAME | ".(" line_operand line_operand ")"     ; named, or inline cross
 line_operand  := CREASE_NAME | "--(" point_operand point_operand ")" ; named, or inline through
@@ -420,9 +448,10 @@ only as operands, never as a binding right-hand side.
 
 Deferred, in rough order of likely arrival: non-flat (constructible-angle) folds ·
 `rotate` · fold maneuvers (reverse/squash/sink/petal, via `unfold` + layer
-selection) · axioms 6, 7 · regions · parts/imports · `step` blocks · a
-dedicated render/animation engine · YR diagrams. These are not part of the
-language until a slice lands and this spec is extended.
+selection) · axiom 7 (cubic Beloch fold, needs real-algebraic number kernel) ·
+regions · parts/imports · `step` blocks · a dedicated render/animation engine ·
+YR diagrams. These are not part of the language until a slice lands and this spec
+is extended.
 
 **Landed:** faces (v0.1); axiom 3 — perpendicular (v0.2); axiom 4 — projection (v0.4-dev); axiom 5 — angle
 bisector (v0.3-dev); the `map … onto …` verb and the `@` fold modifier
@@ -431,7 +460,9 @@ folded-state runtime, derived mountain/valley, the dual `creasePattern` +
 `foldedForm` FOLD output, `flip`, and inline anonymous operands
 (`--(.a .b)` / `.(--a --b)`). See
 [ADR 0011](../decisions/0011-action-model.md). Mountain/valley is *derived* from
-fold actions, not a separate annotation pass.
+fold actions, not a separate annotation pass. *(v0.8-dev)* axiom 6 — fold a
+point onto a line with the crease through a fixed point (`map .p onto --d through
+.p'`, optional `toward` for disambiguation).
 
 ---
 

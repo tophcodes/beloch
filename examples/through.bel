@@ -1,0 +1,17 @@
+; status: works — axiom 6 (Justin ⑥): fold a point onto a line with the crease
+; pinned through a second, fixed point. Scaffolded so the crease is a genuine
+; slanted line, not a trivial diagonal/midline.
+;
+; Two midlines give the sheet centre .ctr. We then fold .ctr down onto the
+; bottom edge with the crease forced through the corner .b. The circle centred
+; at .b through .ctr meets the bottom edge in two places, so `toward .a` picks
+; the landing nearer .a — an irrational (constructible) point at (1 − 1/√2, 0),
+; which is why the crease is a slanted line through .b rather than an axis-
+; aligned one. Render the crease pattern to see the slant; render folded
+; (`fold2svg --folded`) to watch the centre swing onto the bottom edge.
+paper square
+--vmid: map .a onto .b              ; x = 1/2
+--hmid: map .a onto .d              ; y = 1/2
+.ctr: cross --vmid --hmid           ; sheet centre, (1/2, 1/2)
+; fold the centre onto the bottom edge, crease through corner .b
+@map .ctr onto --(.a .b) through .b toward .a
