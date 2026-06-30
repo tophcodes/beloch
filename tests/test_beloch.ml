@@ -56,6 +56,45 @@ let test_perpendicular_through () =
        (Num.add (Num.mul l.Geom.a m.Geom.a) (Num.mul l.Geom.b m.Geom.b))
        Num.zero)
 
+let test_project_basic () =
+  (* project P=(0,1) onto l1 = x-axis (y=0) with crease ⊥ l2 = y-axis (x=0).
+     Crease ⊥ y-axis ⟹ horizontal; P moves vertically (∥ y-axis) onto y=0,
+     landing Q=(0,0). Crease = perp-bisector of (0,1)-(0,0) = line y=1/2. *)
+  let l1 = Geom.line_through (pt 0 0) (pt 1 0) in
+  let l2 = Geom.line_through (pt 0 0) (pt 0 1) in
+  match Geom.project_crease (pt 0 1) l1 l2 with
+  | None -> Alcotest.fail "expected a crease"
+  | Some c ->
+      let on l (p : Geom.point) =
+        Num.equal (Num.add (Num.mul l.Geom.a p.Geom.x) (Num.mul l.Geom.b p.Geom.y)) l.Geom.c
+      in
+      Alcotest.(check bool) "crease through (0,1/2)" true (on c { Geom.x = q 0; y = half });
+      Alcotest.(check bool) "crease through (1,1/2)" true (on c { Geom.x = q 1; y = half });
+      (* crease ⊥ l2: dot of normals (c.a,c.b)·(l2.a,l2.b) = 0 *)
+      Alcotest.(check bool) "crease ⊥ l2" true
+        (Num.sign (Num.add (Num.mul c.Geom.a l2.Geom.a) (Num.mul c.Geom.b l2.Geom.b)) = 0)
+
+let test_project_parallel_none () =
+  (* l1 (y=0) ∥ l2 (y=1): no fold exists *)
+  let l1 = Geom.line_through (pt 0 0) (pt 1 0) in
+  let l2 = Geom.line_through (pt 0 1) (pt 1 1) in
+  Alcotest.(check bool) "parallel ⟹ None" true (Geom.project_crease (pt 0 2) l1 l2 = None)
+
+let test_project_on_l1 () =
+  (* P=(0,0) already on l1 (y=0), l2 = y-axis (x=0), not parallel.
+     Q = P ⟹ degenerate bisector; crease = perpendicular to l2 through P,
+     i.e. the line y=0 (horizontal through the origin). *)
+  let l1 = Geom.line_through (pt 0 0) (pt 1 0) in
+  let l2 = Geom.line_through (pt 0 0) (pt 0 1) in
+  match Geom.project_crease (pt 0 0) l1 l2 with
+  | None -> Alcotest.fail "expected a crease"
+  | Some c ->
+      let expected = Geom.perpendicular_through l2 (pt 0 0) in
+      (* same line: cross-products of (a,b,c) vanish *)
+      Alcotest.(check bool) "crease = perp-through-l2 at P" true
+        (Num.sign (Num.sub (Num.mul c.Geom.a expected.Geom.b) (Num.mul expected.Geom.a c.Geom.b)) = 0
+         && Num.sign (Num.sub (Num.mul c.Geom.a expected.Geom.c) (Num.mul expected.Geom.a c.Geom.c)) = 0)
+
 let test_parallel_lines () =
   let l1 = Geom.line_through (pt 0 0) (pt 1 0) in
   let l2 = Geom.line_through (pt 0 1) (pt 1 1) in
@@ -526,6 +565,37 @@ let test_in_convex_polygon () =
     "outside is outside" false
     (Geom.in_convex_polygon sq (pt 2 2))
 
+let test_parse_map_onto_line () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n--l1: through .a .b\n--l2: through .a .d\nmap .c onto --l1 perp --l2\n"
+  in
+  match prog with
+  | [
+   Ast.Crease (Some "l1", Ast.Through _, _, _);
+   Ast.Crease (Some "l2", Ast.Through _, _, _);
+   Ast.Crease
+     ( None,
+       Ast.MapOntoLine
+         (Ast.PNamed { name = "c"; _ }, Ast.LNamed { cname = "l1"; _ }, Ast.LNamed { cname = "l2"; _ }),
+       _, _ );
+  ] ->
+      ()
+  | _ -> Alcotest.fail "unexpected AST shape for map-onto-line"
+
+let test_parse_map_onto_line_inline () =
+  match
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n--l2: through .a .d\nmap .c onto --(.a .b) perp --l2\n"
+  with
+  | [
+   _;
+   Ast.Crease
+     (None, Ast.MapOntoLine (Ast.PNamed { name = "c"; _ }, Ast.LThrough _, Ast.LNamed { cname = "l2"; _ }), _, _);
+  ] ->
+      ()
+  | _ -> Alcotest.fail "expected an inline target line in map-onto-line"
+
 let test_parse_bisect () =
   let prog =
     Beloch.parse ~filename:"t.bel"
@@ -944,6 +1014,48 @@ let test_eval_folded_quarter_accordion () =
     "an accordion mountain appears" 1
     (count_assign Fold_state.M fd.Eval.creases)
 
+let test_eval_map_onto_line_parallel () =
+  (* l1 = bottom edge (a-b), l2 = top edge (d-c): parallel ⟹ no fold *)
+  expect_error "parallel" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n\
+               --l1: through .a .b\n\
+               --l2: through .d .c\n\
+               map .c onto --l1 perp --l2\n")))
+
+let test_eval_map_onto_line_ok () =
+  (* l1 = bottom edge (y=0), l2 = left edge (x=0); project corner c=(1,1).
+     c moves parallel to l2 (vertically) onto y=0 ⟹ Q=(1,0);
+     crease = perp-bisector of (1,1)-(1,0) = line y=1/2.
+     Smoke-test the eval path, then verify the crease geometry. *)
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\n\
+          --l1: through .a .b\n\
+          --l2: through .a .d\n\
+          map .c onto --l1 perp --l2\n")
+  in
+  (* The crease record's endpoints lie on the crease line; reconstruct and test
+     that (0,1/2) and (1,1/2) are on it. *)
+  match fd.Eval.creases with
+  | [] -> Alcotest.fail "expected at least one crease record"
+  | cr :: _ ->
+      let c = Geom.line_through cr.Fold_state.ra cr.Fold_state.rb in
+      let on (p : Geom.point) =
+        Num.equal
+          (Num.add (Num.mul c.Geom.a p.Geom.x) (Num.mul c.Geom.b p.Geom.y))
+          c.Geom.c
+      in
+      Alcotest.(check bool)
+        "axiom-4 crease passes through (0,1/2)" true
+        (on { Geom.x = q 0; y = half });
+      Alcotest.(check bool)
+        "axiom-4 crease passes through (1,1/2)" true
+        (on { Geom.x = q 1; y = half })
+
 let test_eval_folded_cross_topmost () =
   (* Q2-B: after the diagonal fold the lower-left triangle is 2-layer; crossing
      two precrease lines there must resolve to the top layer, not error *)
@@ -1083,6 +1195,9 @@ let () =
             test_bisector_of_bottom_edge;
           Alcotest.test_case "perpendicular through a point" `Quick
             test_perpendicular_through;
+          Alcotest.test_case "project onto line" `Quick test_project_basic;
+          Alcotest.test_case "project parallel none" `Quick test_project_parallel_none;
+          Alcotest.test_case "project point on l1" `Quick test_project_on_l1;
           Alcotest.test_case "parallel lines" `Quick test_parallel_lines;
           Alcotest.test_case "point in unit square" `Quick test_in_unit_square;
           Alcotest.test_case "clip diagonal" `Quick test_clip_diagonal;
@@ -1113,6 +1228,8 @@ let () =
           Alcotest.test_case "bare axiom has no fold_spec" `Quick
             test_parse_precrease_no_foldspec;
           Alcotest.test_case "flip parses" `Quick test_parse_flip;
+          Alcotest.test_case "parse map onto line" `Quick test_parse_map_onto_line;
+          Alcotest.test_case "parse map onto line inline" `Quick test_parse_map_onto_line_inline;
           Alcotest.test_case "inline line operand" `Quick test_parse_inline_line;
           Alcotest.test_case "nested inline operand" `Quick
             test_parse_inline_point_nested;
@@ -1217,6 +1334,8 @@ let () =
             test_eval_folded_quarter_accordion;
           Alcotest.test_case "cross resolves to top layer" `Quick
             test_eval_folded_cross_topmost;
+          Alcotest.test_case "map onto line parallel error" `Quick test_eval_map_onto_line_parallel;
+          Alcotest.test_case "map onto line evaluates" `Quick test_eval_map_onto_line_ok;
         ] );
       ( "emit_folded",
         [

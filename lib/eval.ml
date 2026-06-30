@@ -98,6 +98,14 @@ let eval_folded (prog : Ast.program) : folded =
         ( Geom.perpendicular_through (resolve_line l) (table_of p),
           "axiom3",
           [ pstr p; lstr l ] )
+    | Ast.MapOntoLine (p, l1, l2) -> (
+        let pp = table_of p and ll1 = resolve_line l1 and ll2 = resolve_line l2 in
+        match Geom.project_crease pp ll1 ll2 with
+        | None ->
+            Error.fail span
+              (Printf.sprintf "map %s onto %s perp %s: lines are parallel, no fold exists"
+                 (pstr p) (lstr l1) (lstr l2))
+        | Some crease -> (crease, "axiom4", [ pstr p; lstr l1; lstr l2 ]))
     | Ast.MapLines (l1, l2, p_opt) -> (
         let la = resolve_line l1 and lb = resolve_line l2 in
         let base = [ lstr l1; lstr l2 ] in

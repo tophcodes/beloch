@@ -18,6 +18,7 @@ type axiom =
   | Through of point_operand * point_operand (* axiom 1 *)
   | MapPoints of point_operand * point_operand (* axiom 2 *)
   | Perp of point_operand * line_operand (* axiom 3: through .p, perp to --l *)
+  | MapOntoLine of point_operand * line_operand * line_operand (* axiom 4 *)
   | MapLines of line_operand * line_operand * point_operand option (* axiom 5 *)
 
 type direction = Valley | Mountain

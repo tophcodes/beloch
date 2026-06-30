@@ -15,7 +15,7 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.3-dev** (axiom 5 — angle bisector) — in progress; **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
+Current version: **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
 
 ---
 
@@ -187,6 +187,30 @@ now computed over exact **constructible reals** (`Num`; see
 parallelism, and on-paper tests stay exact.
 
 *(since v0.6-dev: verb is `map … onto …`; was `bisect …`.)*
+
+### 4.5a Axiom 4 — project a point onto a line *(since v0.4-dev)*
+
+```
+map .p onto --l1 perp --l2
+```
+
+The fold that places point `.p` onto line `--l1` with a crease **perpendicular
+to** `--l2`. Equivalently, `.p` is moved **parallel to** `--l2` until it lands on
+`--l1` — the *projection of `.p` onto `--l1` parallel to `--l2`*
+[[justin1986]](#ref-justin1986) §8.1 (operation ④). At most **one** solution, so
+there is no `toward` selector.
+
+**Numbering.** This is classic Justin **axiom 4**, which is Wikipedia's
+Huzita-Hatori **O7** — *not* Wikipedia's O4 (that is Beloch's axiom 3,
+perpendicular-through-a-point). See §1 and `antipatterns.md`.
+
+**Errors:** `--l1` and `--l2` are **parallel** — no fold exists (zero solutions;
+or, when `.p` lies on `--l1`, infinitely many — forbidden either way). When `.p`
+already lies on `--l1` and the lines are not parallel, the crease is the
+perpendicular to `--l2` through `.p` (one solution).
+
+The result stays in ℚ — no square roots
+[[justin1986]](#ref-justin1986) §8.2(a).
 
 ### 4.6 Folding: `@` *(since v0.7-dev)*
 
@@ -373,6 +397,7 @@ flip_stmt     := "flip"
 axiom         := "through" point_operand point_operand          ; axiom 1
                | "map" point_operand "onto" point_operand       ; axiom 2
                | "perp" line_operand "through" point_operand     ; axiom 3
+               | "map" point_operand "onto" line_operand "perp" line_operand  ; axiom 4
                | "map" line_operand "onto" line_operand [ "toward" point_operand ]  ; axiom 5
 point_expr    := "cross" line_operand line_operand              ; line intersection (binding RHS)
 point_operand := POINT_NAME | ".(" line_operand line_operand ")"     ; named, or inline cross
@@ -395,11 +420,11 @@ only as operands, never as a binding right-hand side.
 
 Deferred, in rough order of likely arrival: non-flat (constructible-angle) folds ·
 `rotate` · fold maneuvers (reverse/squash/sink/petal, via `unfold` + layer
-selection) · axioms 4, 6, 7 · regions · parts/imports · `step` blocks · a
+selection) · axioms 6, 7 · regions · parts/imports · `step` blocks · a
 dedicated render/animation engine · YR diagrams. These are not part of the
 language until a slice lands and this spec is extended.
 
-**Landed:** faces (v0.1); axiom 3 — perpendicular (v0.2); axiom 5 — angle
+**Landed:** faces (v0.1); axiom 3 — perpendicular (v0.2); axiom 4 — projection (v0.4-dev); axiom 5 — angle
 bisector (v0.3-dev); the `map … onto …` verb and the `@` fold modifier
 (v0.6-dev); and *(v0.7-dev)* the **action model** — `@` fold execution, the
 folded-state runtime, derived mountain/valley, the dual `creasePattern` +
