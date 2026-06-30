@@ -95,6 +95,62 @@ let test_project_on_l1 () =
         (Num.sign (Num.sub (Num.mul c.Geom.a expected.Geom.b) (Num.mul expected.Geom.a c.Geom.b)) = 0
          && Num.sign (Num.sub (Num.mul c.Geom.a expected.Geom.c) (Num.mul expected.Geom.a c.Geom.c)) = 0)
 
+(* axiom 6: circle (centre (0,0), r²=1) ∩ x-axis (y=0) = (1,0) and (-1,0). *)
+let test_circle_line_two () =
+  let d = Geom.line_through (pt 0 0) (pt 1 0) in
+  let pts = Geom.circle_line_intersection (pt 0 0) (q 1) d in
+  Alcotest.(check int) "two intersections" 2 (List.length pts);
+  let has px py =
+    List.exists (fun (p : Geom.point) -> Geom.point_equal p (pt px py)) pts
+  in
+  Alcotest.(check bool) "(1,0) present" true (has 1 0);
+  Alcotest.(check bool) "(-1,0) present" true (has (-1) 0)
+
+(* axiom 6 two-solution case: fold p=(0,1) onto d=(y=0) through p'=(0,0).
+   Landings (1,0),(-1,0); creases y=x and y=-x, both through the origin. *)
+let test_beloch_two_solutions () =
+  let d = Geom.line_through (pt 0 0) (pt 1 0) in
+  let creases = Geom.beloch_creases (pt 0 1) d (pt 0 0) in
+  Alcotest.(check int) "two creases" 2 (List.length creases);
+  List.iter
+    (fun c ->
+      (* each crease passes through the pivot p'=(0,0) *)
+      Alcotest.(check int) "crease through pivot" 0
+        (Geom.side_of_line c (pt 0 0));
+      (* reflecting p across the crease lands it on d (y=0) *)
+      Alcotest.(check int) "landing on d" 0
+        (Geom.side_of_line d (Geom.reflect_point c (pt 0 1))))
+    creases
+
+(* tangent: fold p=(1,0) onto d=(y=1) through p'=(0,0). Circle r=1 touches y=1
+   at (0,1)≠p ⟹ exactly one crease (y=x). *)
+let test_beloch_tangent () =
+  let d = Geom.line_through (pt 0 1) (pt 1 1) in
+  let creases = Geom.beloch_creases (pt 1 0) d (pt 0 0) in
+  Alcotest.(check int) "one crease" 1 (List.length creases);
+  (match creases with
+   | [ c ] ->
+       Alcotest.(check int) "crease through pivot" 0 (Geom.side_of_line c (pt 0 0));
+       Alcotest.(check int) "landing on d" 0
+         (Geom.side_of_line d (Geom.reflect_point c (pt 1 0)))
+   | _ -> Alcotest.fail "expected exactly one crease")
+
+(* out of reach: d=(y=2) is distance 2 from p'=(0,0) but r=1 ⟹ no crease. *)
+let test_beloch_out_of_reach () =
+  let d = Geom.line_through (pt 0 2) (pt 1 2) in
+  Alcotest.(check int) "no creases" 0
+    (List.length (Geom.beloch_creases (pt 1 0) d (pt 0 0)))
+
+(* p already on d: landing q=p is the identity and is dropped; the mirror
+   landing (-1,0) survives ⟹ exactly one crease (x=0). *)
+let test_beloch_p_on_line_dropped () =
+  let d = Geom.line_through (pt 0 0) (pt 1 0) in
+  let creases = Geom.beloch_creases (pt 1 0) d (pt 0 0) in
+  Alcotest.(check int) "identity landing dropped" 1 (List.length creases);
+  (match creases with
+   | [ c ] -> Alcotest.(check int) "crease through pivot" 0 (Geom.side_of_line c (pt 0 0))
+   | _ -> Alcotest.fail "expected exactly one crease")
+
 let test_parallel_lines () =
   let l1 = Geom.line_through (pt 0 0) (pt 1 0) in
   let l2 = Geom.line_through (pt 0 1) (pt 1 1) in
@@ -620,6 +676,61 @@ let test_parse_bisect () =
       ()
   | _ -> Alcotest.fail "unexpected AST shape for bisect"
 
+let test_parse_map_through () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n--d: through .a .b\nmap .c onto --d through .a\n"
+  in
+  match prog with
+  | [
+   Ast.Crease (Some "d", Ast.Through _, _, _);
+   Ast.Crease
+     ( None,
+       Ast.MapThrough
+         (Ast.PNamed { name = "c"; _ }, Ast.LNamed { cname = "d"; _ },
+          Ast.PNamed { name = "a"; _ }, None),
+       _, _ );
+  ] ->
+      ()
+  | _ -> Alcotest.fail "unexpected AST shape for map-through"
+
+let test_parse_map_through_toward () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n--d: through .a .b\nmap .c onto --d through .a toward .b\n"
+  in
+  match prog with
+  | [
+   Ast.Crease (Some "d", Ast.Through _, _, _);
+   Ast.Crease
+     ( None,
+       Ast.MapThrough
+         (Ast.PNamed { name = "c"; _ }, Ast.LNamed { cname = "d"; _ },
+          Ast.PNamed { name = "a"; _ }, Some (Ast.PNamed { name = "b"; _ })),
+       _, _ );
+  ] ->
+      ()
+  | _ -> Alcotest.fail "unexpected AST shape for map-through-toward"
+
+(* spec Test 7: axiom 6 composes with an inline line operand --(.a .b) *)
+let test_parse_map_through_inline () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\nmap .c onto --(.a .b) through .d\n"
+  in
+  match prog with
+  | [
+   Ast.Crease
+     ( None,
+       Ast.MapThrough
+         ( Ast.PNamed { name = "c"; _ },
+           Ast.LThrough (Ast.PNamed { name = "a"; _ }, Ast.PNamed { name = "b"; _ }, _),
+           Ast.PNamed { name = "d"; _ }, None ),
+       _, _ );
+  ] ->
+      ()
+  | _ -> Alcotest.fail "unexpected AST shape for map-through inline operand"
+
 let test_parse_fold_action () =
   let prog =
     Beloch.parse ~filename:"t.bel"
@@ -1056,6 +1167,49 @@ let test_eval_map_onto_line_ok () =
         "axiom-4 crease passes through (1,1/2)" true
         (on { Geom.x = q 1; y = half })
 
+(* axiom 6 e2e: fold .d=(0,1) onto bottom edge (y=0) through pivot .a=(0,0).
+   Landings (1,0) and (-1,0); `toward .b` selects (1,0) ⟹ crease y=x (the main
+   diagonal), passing through (0,0) and (1,1). *)
+let test_eval_map_through_toward () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\n\
+          --bottom: through .a .b\n\
+          map .d onto --bottom through .a toward .b\n")
+  in
+  match fd.Eval.creases with
+  | [] -> Alcotest.fail "expected at least one crease record"
+  | cr :: _ ->
+      let c = Geom.line_through cr.Fold_state.ra cr.Fold_state.rb in
+      let on (p : Geom.point) =
+        Num.equal
+          (Num.add (Num.mul c.Geom.a p.Geom.x) (Num.mul c.Geom.b p.Geom.y))
+          c.Geom.c
+      in
+      Alcotest.(check bool) "axiom-6 crease through (0,0)" true (on (pt 0 0));
+      Alcotest.(check bool) "axiom-6 crease through (1,1)" true (on (pt 1 1))
+
+(* two solutions without `toward` ⟹ ambiguity error mentioning the selector *)
+let test_eval_map_through_ambiguous () =
+  expect_error "toward" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n\
+               --bottom: through .a .b\n\
+               map .d onto --bottom through .a\n")))
+
+(* p = p' (here both .a, which lies on the line) ⟹ no fold exists *)
+let test_eval_map_through_same_point () =
+  expect_error "same point" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n\
+               --bottom: through .a .b\n\
+               map .a onto --bottom through .a\n")))
+
 let test_eval_folded_cross_topmost () =
   (* Q2-B: after the diagonal fold the lower-left triangle is 2-layer; crossing
      two precrease lines there must resolve to the top layer, not error *)
@@ -1205,6 +1359,11 @@ let () =
             test_segment_intersection_center;
           Alcotest.test_case "segments do not touch" `Quick
             test_segment_no_touch;
+          Alcotest.test_case "circle line two" `Quick test_circle_line_two;
+          Alcotest.test_case "beloch two solutions" `Quick test_beloch_two_solutions;
+          Alcotest.test_case "beloch tangent" `Quick test_beloch_tangent;
+          Alcotest.test_case "beloch out of reach" `Quick test_beloch_out_of_reach;
+          Alcotest.test_case "beloch p on line" `Quick test_beloch_p_on_line_dropped;
         ] );
       ( "fold_clip",
         [
@@ -1230,6 +1389,11 @@ let () =
           Alcotest.test_case "flip parses" `Quick test_parse_flip;
           Alcotest.test_case "parse map onto line" `Quick test_parse_map_onto_line;
           Alcotest.test_case "parse map onto line inline" `Quick test_parse_map_onto_line_inline;
+          Alcotest.test_case "parse map through" `Quick test_parse_map_through;
+          Alcotest.test_case "parse map through toward" `Quick
+            test_parse_map_through_toward;
+          Alcotest.test_case "parse map through inline" `Quick
+            test_parse_map_through_inline;
           Alcotest.test_case "inline line operand" `Quick test_parse_inline_line;
           Alcotest.test_case "nested inline operand" `Quick
             test_parse_inline_point_nested;
@@ -1241,6 +1405,10 @@ let () =
           Alcotest.test_case "undefined point" `Quick test_eval_undefined_point;
           Alcotest.test_case "parallel cross" `Quick test_eval_parallel_cross;
           Alcotest.test_case "bisect errors" `Quick test_eval_bisect_errors;
+          Alcotest.test_case "map through ambiguous" `Quick
+            test_eval_map_through_ambiguous;
+          Alcotest.test_case "map through same point" `Quick
+            test_eval_map_through_same_point;
         ] );
       ( "e2e",
         [
@@ -1254,6 +1422,8 @@ let () =
           Alcotest.test_case "bisect selector" `Quick test_e2e_bisect_select;
           Alcotest.test_case "bisect parallel midline" `Quick
             test_e2e_bisect_parallel;
+          Alcotest.test_case "map through toward selects diagonal" `Quick
+            test_eval_map_through_toward;
           Alcotest.test_case "fold half end-to-end" `Quick test_e2e_fold_half;
           Alcotest.test_case "fold quarter accordion" `Quick
             test_e2e_fold_quarter;

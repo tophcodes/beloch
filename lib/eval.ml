@@ -136,6 +136,53 @@ let eval_folded (prog : Ast.program) : folded =
                 ( (if s1 = s2 then bis_eq else bis_opp),
                   "axiom5",
                   base @ [ pstr po ] )))
+    | Ast.MapThrough (p, d, p', x_opt) -> (
+        let pp = table_of p and dd = resolve_line d and pp' = table_of p' in
+        if Geom.point_equal pp pp' then
+          Error.fail span
+            (Printf.sprintf
+               "map %s onto %s through %s: %s and %s are the same point, so no \
+                fold exists"
+               (pstr p) (lstr d) (pstr p') (pstr p) (pstr p'));
+        let base = [ pstr p; lstr d; pstr p' ] in
+        match Geom.beloch_creases pp dd pp' with
+        | [] ->
+            Error.fail span
+              (Printf.sprintf "cannot fold %s onto %s through %s: out of reach"
+                 (pstr p) (lstr d) (pstr p'))
+        | [ c ] -> (c, "axiom6", base)
+        | creases -> (
+            match x_opt with
+            | None ->
+                Error.fail span
+                  (Printf.sprintf
+                     "two folds place %s onto %s through %s; add 'toward .x'"
+                     (pstr p) (lstr d) (pstr p'))
+            | Some xo ->
+                let xt = table_of xo in
+                (* pick the crease whose landing (the reflection of p across it)
+                   is nearest x; exact squared-distance comparison *)
+                let dist2 (c : Geom.line) =
+                  let im = Geom.reflect_point c pp in
+                  let ex = Num.sub im.Geom.x xt.Geom.x
+                  and ey = Num.sub im.Geom.y xt.Geom.y in
+                  Num.add (Num.mul ex ex) (Num.mul ey ey)
+                in
+                let best =
+                  List.fold_left
+                    (fun acc c ->
+                      match acc with
+                      | None -> Some c
+                      | Some b ->
+                          if Num.compare (dist2 c) (dist2 b) < 0 then Some c
+                          else acc)
+                    None creases
+                in
+                match best with
+                | Some c -> (c, "axiom6", base @ [ pstr xo ])
+                (* unreachable: this arm only runs with ≥2 creases, so the
+                   fold over a non-empty list always yields [Some]. *)
+                | None -> assert false))
   in
   List.iter
     (fun stmt ->
@@ -163,7 +210,7 @@ let eval_folded (prog : Ast.program) : folded =
                     s
                 | None -> (
                     match ax with
-                    | Ast.MapPoints (p, _) ->
+                    | Ast.MapPoints (p, _) | Ast.MapThrough (p, _, _, _) ->
                         let s = Geom.side_of_line axis (table_of p) in
                         if s = 0 then
                           Error.fail span

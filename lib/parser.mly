@@ -37,6 +37,10 @@ axiom:
   | THROUGH point_operand point_operand       { Through ($2, $3) }
   | MAP point_operand ONTO point_operand      { MapPoints ($2, $4) }
   | MAP point_operand ONTO line_operand PERP line_operand   { MapOntoLine ($2, $4, $6) }
+  | MAP point_operand ONTO line_operand THROUGH point_operand
+      { MapThrough ($2, $4, $6, None) }
+  | MAP point_operand ONTO line_operand THROUGH point_operand TOWARD point_operand
+      { MapThrough ($2, $4, $6, Some $8) }
   | PERP line_operand THROUGH point_operand   { Perp ($4, $2) }
   | MAP line_operand ONTO line_operand                  { MapLines ($2, $4, None) }
   | MAP line_operand ONTO line_operand TOWARD point_operand { MapLines ($2, $4, Some $6) }
