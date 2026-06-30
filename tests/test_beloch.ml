@@ -131,7 +131,11 @@ let test_parse_perp () =
   match prog with
   | [
    Ast.Crease (Some "d", Ast.Through _, _, _);
-   Ast.Crease (None, Ast.Perp ({ name = "b"; _ }, { cname = "d"; _ }), _, _);
+   Ast.Crease
+     ( None,
+       Ast.Perp (Ast.PNamed { name = "b"; _ }, Ast.LNamed { cname = "d"; _ }),
+       _,
+       _ );
   ] ->
       ()
   | _ -> Alcotest.fail "unexpected AST shape for perp"
@@ -148,6 +152,35 @@ let expect_error msg_substr thunk =
          ignore (Str.search_forward (Str.regexp_string msg_substr) m 0);
          true
        with Not_found -> false)
+
+let test_parse_inline_line () =
+  match
+    Beloch.parse ~filename:"t.bel" "paper square\nperp --(.a .b) through .c\n"
+  with
+  | [
+   Ast.Crease
+     (None, Ast.Perp (Ast.PNamed { name = "c"; _ }, Ast.LThrough _), _, _);
+  ] ->
+      ()
+  | _ -> Alcotest.fail "expected an inline-line Perp operand"
+
+let test_parse_inline_point_nested () =
+  (* nested: a line through an inline cross-point and a named point *)
+  match
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n\
+       --d1: through .a .c\n\
+       --d2: through .b .d\n\
+       perp --( .(--d1 --d2) .a ) through .b\n"
+  with
+  | [
+   _;
+   _;
+   Ast.Crease
+     (None, Ast.Perp (_, Ast.LThrough (Ast.PCross _, Ast.PNamed _, _)), _, _);
+  ] ->
+      ()
+  | _ -> Alcotest.fail "expected a nested inline operand"
 
 let test_eval_identical_points () =
   expect_error "same place" (fun () ->
@@ -173,6 +206,42 @@ let test_eval_parallel_cross () =
 
 let read_example name =
   In_channel.with_open_text ("../../../examples/" ^ name) In_channel.input_all
+
+let test_e2e_inline_equiv () =
+  (* inline operands produce the same crease geometry as the named-binding
+     equivalent; beloch:edges sources differ (name vs inline text) so we
+     compare only the structural FOLD fields *)
+  let geom j =
+    let open Yojson.Safe.Util in
+    ( j |> member "vertices_coords",
+      j |> member "edges_vertices",
+      j |> member "edges_assignment",
+      j |> member "faces_vertices" )
+  in
+  let named =
+    Beloch.fold_string ~filename:"t.bel"
+      "paper square\n\
+       --d1: through .a .c\n\
+       --d2: through .b .d\n\
+       .m: cross --d1 --d2\n\
+       map .a onto .m\n"
+  in
+  let inline =
+    Beloch.fold_string ~filename:"t.bel"
+      "paper square\n\
+       --d1: through .a .c\n\
+       --d2: through .b .d\n\
+       map .a onto .(--d1 --d2)\n"
+  in
+  Alcotest.(check bool)
+    "inline cross-point matches the named binding" true
+    (geom named = geom inline)
+
+let test_e2e_inline_error () =
+  (* an inline line through one repeated point has no direction *)
+  expect_error "same place" (fun () ->
+      Beloch.fold_string ~filename:"t.bel"
+        "paper square\nperp --(.a .a) through .b\n")
 
 let test_e2e_diagonals () =
   let src = read_example "diagonals.bel" in
@@ -472,7 +541,9 @@ let test_parse_bisect () =
    Ast.Crease
      ( None,
        Ast.MapLines
-         ({ cname = "v"; _ }, { cname = "h"; _ }, Some { name = "a"; _ }),
+         ( Ast.LNamed { cname = "v"; _ },
+           Ast.LNamed { cname = "h"; _ },
+           Some (Ast.PNamed { name = "a"; _ }) ),
        _,
        _ );
   ] ->
@@ -489,7 +560,11 @@ let test_parse_fold_action () =
    Ast.Crease
      ( None,
        Ast.MapPoints _,
-       Some { moving = Some { name = "a"; _ }; direction = Ast.Mountain },
+       Some
+         {
+           moving = Some (Ast.PNamed { name = "a"; _ });
+           direction = Ast.Mountain;
+         },
        _ );
   ] ->
       ()
@@ -1038,6 +1113,9 @@ let () =
           Alcotest.test_case "bare axiom has no fold_spec" `Quick
             test_parse_precrease_no_foldspec;
           Alcotest.test_case "flip parses" `Quick test_parse_flip;
+          Alcotest.test_case "inline line operand" `Quick test_parse_inline_line;
+          Alcotest.test_case "nested inline operand" `Quick
+            test_parse_inline_point_nested;
         ] );
       ( "eval",
         [
@@ -1066,6 +1144,9 @@ let () =
             test_e2e_flip_mountain;
           Alcotest.test_case "flip keeps the CP size" `Quick
             test_e2e_flip_cp_counts;
+          Alcotest.test_case "inline equals named" `Quick test_e2e_inline_equiv;
+          Alcotest.test_case "inline off-paper errors" `Quick
+            test_e2e_inline_error;
         ] );
       ( "geom2",
         [

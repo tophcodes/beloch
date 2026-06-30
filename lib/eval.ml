@@ -25,15 +25,53 @@ let eval_folded (prog : Ast.program) : folded =
         Error.fail pr.Ast.span
           (Printf.sprintf "undefined point .%s" pr.Ast.name)
   in
-  let table_of (pr : Ast.point_ref) : Geom.point =
-    Fold_state.table_position !state (lookup_point pr)
-  in
   let lookup_crease (cr : Ast.crease_ref) : Geom.line =
     match Hashtbl.find_opt creases_env cr.Ast.cname with
     | Some l -> l
     | None ->
         Error.fail cr.Ast.cspan
           (Printf.sprintf "undefined crease --%s" cr.Ast.cname)
+  in
+  (* render an operand back to source text for provenance + error messages *)
+  let rec pstr (po : Ast.point_operand) : string =
+    match po with
+    | Ast.PNamed pr -> "." ^ pr.Ast.name
+    | Ast.PCross (l1, l2, _) -> Printf.sprintf ".(%s %s)" (lstr l1) (lstr l2)
+  and lstr (lo : Ast.line_operand) : string =
+    match lo with
+    | Ast.LNamed cr -> "--" ^ cr.Ast.cname
+    | Ast.LThrough (p1, p2, _) -> Printf.sprintf "--(%s %s)" (pstr p1) (pstr p2)
+  in
+  (* resolve a point operand to its material PAPER coordinate, a line operand to
+     its TABLE-space line; mutually recursive for nesting. *)
+  let rec resolve_point (po : Ast.point_operand) : Geom.point =
+    match po with
+    | Ast.PNamed pr -> lookup_point pr
+    | Ast.PCross (l1, l2, span) -> (
+        let a = resolve_line l1 and b = resolve_line l2 in
+        match Geom.intersection a b with
+        | None -> Error.fail span "creases are parallel; no intersection"
+        | Some tp -> (
+            match Fold_state.paper_preimages !state tp with
+            | [] ->
+                Error.fail span (Printf.sprintf "%s is off the paper" (pstr po))
+            | ps -> List.nth ps (List.length ps - 1)))
+  and resolve_line (lo : Ast.line_operand) : Geom.line =
+    match lo with
+    | Ast.LNamed cr -> lookup_crease cr
+    | Ast.LThrough (p1, p2, span) ->
+        let pp = Fold_state.table_position !state (resolve_point p1)
+        and qq = Fold_state.table_position !state (resolve_point p2) in
+        if Geom.point_equal pp qq then
+          Error.fail span
+            (Printf.sprintf
+               "%s and %s are at the same place, so there is no line through \
+                them"
+               (pstr p1) (pstr p2));
+        Geom.line_through pp qq
+  in
+  let table_of (po : Ast.point_operand) : Geom.point =
+    Fold_state.table_position !state (resolve_point po)
   in
   (* axis line + provenance (axiom tag, source names), evaluated against the
      current table positions *)
@@ -45,55 +83,51 @@ let eval_folded (prog : Ast.program) : folded =
         if Geom.point_equal pp qq then
           Error.fail span
             (Printf.sprintf
-               ".%s and .%s are at the same place, so there is no line through \
+               "%s and %s are at the same place, so there is no line through \
                 them"
-               p.Ast.name q.Ast.name);
-        ( Geom.line_through pp qq,
-          "axiom1",
-          [ "." ^ p.Ast.name; "." ^ q.Ast.name ] )
+               (pstr p) (pstr q));
+        (Geom.line_through pp qq, "axiom1", [ pstr p; pstr q ])
     | Ast.MapPoints (p, q) ->
         let pp = table_of p and qq = table_of q in
         if Geom.point_equal pp qq then
           Error.fail span
-            (Printf.sprintf ".%s and .%s are already at the same place"
-               p.Ast.name q.Ast.name);
-        ( Geom.perpendicular_bisector pp qq,
-          "axiom2",
-          [ "." ^ p.Ast.name; "." ^ q.Ast.name ] )
+            (Printf.sprintf "%s and %s are already at the same place" (pstr p)
+               (pstr q));
+        (Geom.perpendicular_bisector pp qq, "axiom2", [ pstr p; pstr q ])
     | Ast.Perp (p, l) ->
-        ( Geom.perpendicular_through (lookup_crease l) (table_of p),
+        ( Geom.perpendicular_through (resolve_line l) (table_of p),
           "axiom3",
-          [ "." ^ p.Ast.name; "--" ^ l.Ast.cname ] )
-    | Ast.MapLines (c1, c2, p_opt) -> (
-        let l1 = lookup_crease c1 and l2 = lookup_crease c2 in
-        let base = [ "--" ^ c1.Ast.cname; "--" ^ c2.Ast.cname ] in
+          [ pstr p; lstr l ] )
+    | Ast.MapLines (l1, l2, p_opt) -> (
+        let la = resolve_line l1 and lb = resolve_line l2 in
+        let base = [ lstr l1; lstr l2 ] in
         let eval_at (l : Geom.line) (pt : Geom.point) : Num.t =
           Num.sub
             (Num.add (Num.mul l.Geom.a pt.Geom.x) (Num.mul l.Geom.b pt.Geom.y))
             l.Geom.c
         in
-        match Geom.angle_bisectors l1 l2 with
+        match Geom.angle_bisectors la lb with
         | None ->
             let k =
-              if Num.sign l1.Geom.a <> 0 then Num.div l2.Geom.a l1.Geom.a
-              else Num.div l2.Geom.b l1.Geom.b
+              if Num.sign la.Geom.a <> 0 then Num.div lb.Geom.a la.Geom.a
+              else Num.div lb.Geom.b la.Geom.b
             in
-            if Num.equal l2.Geom.c (Num.mul k l1.Geom.c) then
+            if Num.equal lb.Geom.c (Num.mul k la.Geom.c) then
               Error.fail span "lines are identical";
-            (Geom.parallel_midline l1 l2, "axiom5", base)
+            (Geom.parallel_midline la lb, "axiom5", base)
         | Some (bis_eq, bis_opp) -> (
             match p_opt with
             | None -> Error.fail span "bisector is ambiguous; add `toward .p`"
-            | Some pr ->
-                let p = table_of pr in
-                let s1 = Num.sign (eval_at l1 p)
-                and s2 = Num.sign (eval_at l2 p) in
+            | Some po ->
+                let p = table_of po in
+                let s1 = Num.sign (eval_at la p)
+                and s2 = Num.sign (eval_at lb p) in
                 if s1 = 0 || s2 = 0 then
                   Error.fail span
                     "reference point on a fold line; bisector ambiguous";
                 ( (if s1 = s2 then bis_eq else bis_opp),
                   "axiom5",
-                  base @ [ "." ^ pr.Ast.name ] )))
+                  base @ [ pstr po ] )))
   in
   List.iter
     (fun stmt ->
@@ -114,8 +148,8 @@ let eval_folded (prog : Ast.program) : folded =
           | Some fs ->
               let move_side =
                 match fs.Ast.moving with
-                | Some pr ->
-                    let s = Geom.side_of_line axis (table_of pr) in
+                | Some po ->
+                    let s = Geom.side_of_line axis (table_of po) in
                     if s = 0 then
                       Error.fail span "the moving point lies on the fold axis";
                     s
@@ -138,22 +172,8 @@ let eval_folded (prog : Ast.program) : folded =
               in
               state := st;
               recs := rs @ !recs)
-      | Ast.Point (n, Ast.Cross (c1, c2), span) -> (
-          let l1 = lookup_crease c1 and l2 = lookup_crease c2 in
-          match Geom.intersection l1 l2 with
-          | None -> Error.fail span "creases are parallel; no intersection"
-          | Some tp -> (
-              match Fold_state.paper_preimages !state tp with
-              | [] ->
-                  Error.fail span
-                    (Printf.sprintf
-                       ".%s: where --%s and --%s cross is off the paper" n
-                       c1.Ast.cname c2.Ast.cname)
-              | ps ->
-                  (* Q2-B: resolve to the TOP layer at that table point — the
-                     point on the visible topmost layer, the one your hand would
-                     touch. paper_preimages is bottom->top, so take the last. *)
-                  Hashtbl.replace points n (List.nth ps (List.length ps - 1))))
+      | Ast.Point (n, Ast.Cross (l1, l2), span) ->
+          Hashtbl.replace points n (resolve_point (Ast.PCross (l1, l2, span)))
       | Ast.Flip _ -> state := Fold_state.flip !state)
     prog;
   { state = !state; creases = !recs }

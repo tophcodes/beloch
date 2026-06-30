@@ -23,6 +23,9 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "flip" -> FLIP
   | ':' -> COLON
   | '@' -> AT
+  | "--(" -> LINE_OPEN
+  | ".(" -> POINT_OPEN
+  | ')' -> RPAREN
   | "--", id ->
       let s = Sedlexing.Utf8.lexeme buf in
       CREASE (String.sub s 2 (String.length s - 2))
