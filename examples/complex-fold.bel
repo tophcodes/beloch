@@ -1,0 +1,7 @@
+; status: works — build the bottom-edge midpoint (.mid = cross of two precreases), then fold it onto .d
+paper square
+
+--b: through .a .b
+--v: map .b onto .a
+.mid: cross --b --v
+@map .mid onto .d moving .mid

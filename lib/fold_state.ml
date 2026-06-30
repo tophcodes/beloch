@@ -6,7 +6,13 @@
 type face = { paper : Geom.point array; iso : Isometry.t }
 type t = { faces : face array; layers : int array }
 type assign = M | V | U
-type crease_record = { ra : Geom.point; rb : Geom.point; assign : assign }
+
+type crease_record = {
+  ra : Geom.point;
+  rb : Geom.point;
+  assign : assign;
+  prov : State.provenance option;
+}
 
 let init_square : t =
   let p x y = { Geom.x = Num.of_int x; y = Num.of_int y } in
@@ -63,7 +69,8 @@ let axis_segment_in_face (f : face) (axis : Geom.line) :
 (* Split every face crossing [axis] into its two halves (both keep their
    isometry; nothing moves). Returns the new state and one U crease record per
    face actually cut. *)
-let subdivide (st : t) (axis : Geom.line) : t * crease_record list =
+let subdivide (st : t) (axis : Geom.line) ~(prov : State.provenance option) :
+    t * crease_record list =
   let out =
     ref []
     (* faces, accumulated top->bottom via prepend *)
@@ -84,7 +91,7 @@ let subdivide (st : t) (axis : Geom.line) : t * crease_record list =
       (match (plus, minus) with
       | Some _, Some _ -> (
           match axis_segment_in_face f axis with
-          | Some (a, b) -> recs := { ra = a; rb = b; assign = U } :: !recs
+          | Some (a, b) -> recs := { ra = a; rb = b; assign = U; prov } :: !recs
           | None -> ())
       | _ -> ());
       List.iter
@@ -97,7 +104,8 @@ let subdivide (st : t) (axis : Geom.line) : t * crease_record list =
 (* Like [simple_fold] but also returns the crease records created, each with its
    derived mountain/valley from the orientation-parity rule. *)
 let fold_with_records (st : t) ~(axis : Geom.line) ~(move_side : int)
-    ~(valley : bool) : t * crease_record list =
+    ~(valley : bool) ~(prov : State.provenance option) : t * crease_record list
+    =
   let refl = Isometry.reflect_across_line axis in
   let stay = ref [] and mov = ref [] in
   let recs = ref [] in
@@ -121,7 +129,7 @@ let fold_with_records (st : t) ~(axis : Geom.line) ~(move_side : int)
               let assign =
                 if valley <> (Isometry.det_sign f.iso < 0) then V else M
               in
-              recs := { ra = a; rb = b; assign } :: !recs
+              recs := { ra = a; rb = b; assign; prov } :: !recs
           | None -> ())
       | _ -> ());
       (match s with Some face -> stay := face :: !stay | None -> ());
@@ -151,4 +159,4 @@ let paper_preimages (st : t) (tp : Geom.point) : Geom.point list =
    then restack. valley → moved parts (reversed) on top; mountain → underneath. *)
 let simple_fold (st : t) ~(axis : Geom.line) ~(move_side : int) ~(valley : bool)
     : t =
-  fst (fold_with_records st ~axis ~move_side ~valley)
+  fst (fold_with_records st ~axis ~move_side ~valley ~prov:None)

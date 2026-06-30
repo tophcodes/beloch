@@ -10,18 +10,32 @@ import ear from "rabbit-ear";
 const args = process.argv.slice(2);
 const titleIdx = args.indexOf("--title");
 const title = titleIdx >= 0 ? args[titleIdx + 1] : "";
-const positional = args.filter((a, i) => a !== "--title" && args[i - 1] !== "--title");
+const positional = args.filter(
+  (a, i) => a !== "--title" && a !== "--folded" && args[i - 1] !== "--title"
+);
 const [inPath, outPath] = positional;
 
 const raw = !inPath || inPath === "-" ? await Bun.stdin.text() : await Bun.file(inPath).text();
 const fold = JSON.parse(raw);
 ear.graph(fold); // throws if the FOLD is not loadable — keep this as a check
 
-const V = fold.vertices_coords;
-const E = fold.edges_vertices || [];
-const F = fold.faces_vertices || [];
-const A = fold.edges_assignment || [];
-const prov = fold["beloch:edges"] || [];
+// `--folded` renders the foldedForm frame (file_frames[0]) instead of the
+// crease pattern (frame 0). The folded frame inherits topology (edges/faces/
+// assignment) from the parent and overrides only vertices_coords, so pull the
+// folded coords and keep everything else from the parent frame.
+const wantFolded = args.includes("--folded");
+const ff = wantFolded ? (fold.file_frames || [])[0] : undefined;
+if (wantFolded && !ff) {
+  console.error("fold2svg: --folded given but the FOLD has no foldedForm frame");
+  process.exit(1);
+}
+const frame = ff ? { ...fold, ...ff } : fold;
+
+const V = frame.vertices_coords;
+const E = frame.edges_vertices || [];
+const F = frame.faces_vertices || [];
+const A = frame.edges_assignment || [];
+const prov = frame["beloch:edges"] || [];
 
 // layout: unit-ish coords -> a padded px canvas, y flipped (math up -> svg down)
 const PAD = 56, SZ = 460, W = SZ + 2 * PAD, H = SZ + 2 * PAD;
