@@ -228,6 +228,10 @@ map .p onto --d through .p' toward .x    # 2 solutions: pick the landing nearer 
 perpendicular bisector of `.p` and its landing). Second-degree: square roots
 only, so `Num` is unchanged — **cube roots still do not arise** (they wait for
 axiom 7, the cubic Beloch fold ⑦). See "A note on axiom numbering" in §1.
+As of the real-algebraic kernel (ADR 0012), `Num` represents arbitrary real
+algebraic numbers (cube roots and the casus-irreducibilis cubics included);
+axioms 1–6 are unchanged in behaviour. The axiom 7 statement surface itself is
+the next slice.
 
 `through` is the same verb as in axiom 3 (`perp --l through .p`): the crease
 passes through the named point. `toward` is the same selector as axiom 5.
