@@ -151,6 +151,7 @@ if (import.meta.main) {
   const out = [];
   out.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="ui-sans-serif, system-ui, sans-serif">`);
   out.push(`<rect width="${W}" height="${H}" fill="white"/>`);
+  out.push(`<defs><filter id="layerShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="1.1" flood-color="#0f172a" flood-opacity="0.18"/></filter></defs>`);
 
   if (viewFlag) {
     // ---- occlusion view: paint faces bottom->top, opaque -----------------
@@ -166,7 +167,7 @@ if (import.meta.main) {
       const poly = face.map((i) => V[i]);
       const fill = sideUp(poly) === "front" ? FRONT : BACK;
       const pts = face.map((i) => `${mx(V[i][0])},${ty(V[i][1])}`).join(" ");
-      out.push(`<polygon points="${pts}" fill="${fill}" stroke="none"/>`);
+      out.push(`<polygon points="${pts}" fill="${fill}" stroke="none" filter="url(#layerShadow)"/>`);
       for (let k = 0; k < face.length; k++) {
         const a = face[k], b = face[(k + 1) % face.length];
         const ei = edgeIx.get(a < b ? `${a}-${b}` : `${b}-${a}`);
@@ -247,14 +248,20 @@ if (import.meta.main) {
   }
 
   // title
-  if (title) out.push(`<text x="${PAD}" y="28" font-size="16" font-weight="700" fill="#0f172a">${title}</text>`);
-  // legend (axioms present in this diagram)
+  if (title) {
+    out.push(`<rect x="${PAD - 10}" y="10" width="${title.length * 9 + 20}" height="26" rx="6" fill="#f1f5f9"/>`);
+    out.push(`<text x="${PAD}" y="28" font-size="16" font-weight="700" fill="#0f172a">${title}</text>`);
+  }
+  // legend (axioms present in this diagram) with a soft backing panel
   const present = [...new Set(prov.filter(Boolean).map((p) => p.axiom))].filter((a) => AX[a]);
-  present.forEach((ax, k) => {
-    const lx = PAD + k * 150;
-    out.push(`<line x1="${lx}" y1="${H - 22}" x2="${lx + 22}" y2="${H - 22}" stroke="${AX[ax].c}" stroke-width="3" stroke-linecap="round"/>`);
-    out.push(`<text x="${lx + 28}" y="${H - 17}" font-size="13" fill="#334155">${AX[ax].n}</text>`);
-  });
+  if (present.length) {
+    out.push(`<rect class="legend-panel" x="${PAD - 12}" y="${H - 38}" width="${present.length * 150 + 4}" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>`);
+    present.forEach((ax, k) => {
+      const lx = PAD + k * 150;
+      out.push(`<line x1="${lx}" y1="${H - 25}" x2="${lx + 22}" y2="${H - 25}" stroke="${AX[ax].c}" stroke-width="3" stroke-linecap="round"/>`);
+      out.push(`<text x="${lx + 28}" y="${H - 20}" font-size="13" fill="#334155">${AX[ax].n}</text>`);
+    });
+  }
   out.push(`</svg>`);
   let svg = out.join("\n");
 
