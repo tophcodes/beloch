@@ -27,12 +27,17 @@
             ocamlPkgs.menhirLib
           ];
           checkInputs = [ ocamlPkgs.alcotest ];
-          doCheck = true;
+          # Tests run in the `checks` output (nix flake check / CI), not on every
+          # `nix build .#` — the number-kernel suite (Sturm/resultant/RUR) is slow.
+          doCheck = false;
         };
       in
       {
         packages.default = beloch;
         packages.beloch = beloch;
+
+        # `nix flake check` builds this — same derivation, tests enabled.
+        checks.default = beloch.overrideAttrs (_: { doCheck = true; });
 
         apps.default = {
           type = "app";
