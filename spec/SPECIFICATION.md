@@ -36,28 +36,39 @@ See [ADR 0011](../decisions/0011-action-model.md).
 
 ### A note on axiom numbering
 
-Beloch uses the **classic Huzita-Justin numbering** of the fold axioms (the
-numbering used by [[justin1986]](#ref-justin1986) and most origami-math
-references), where:
+Beloch uses the **classic Huzita-Justin numbering** [[justin1986]](#ref-justin1986)
+§8.1 — the numbering used by most origami-*math* references. It is chosen
+deliberately: Justin ordered the seven axioms **by algebraic power**, so the
+axiom number is also the rung on the number-kernel ladder (ℚ → √ → ∛; see §3).
+Two rival schemes exist and **do not** line up with ours; the table below is the
+authoritative cross-map so they are never re-conflated.
 
-- **axiom 1** = the fold through two given points;
-- **axiom 2** = the fold placing one point onto another.
+| Beloch / Justin | The fold | Degree | Sols | Huzita-Hatori (Wikipedia) | Hull §1.5 |
+|:---:|---|:---:|:---:|:---:|:---:|
+| **①** | line through two points | 1 | 1 | 1 | O1 |
+| **②** | one point onto another (⟂ bisector) | 1 | 1 | 2 | O3 |
+| **③** | perpendicular through a point | 1 | 1,2 | 4 | O5 |
+| **④** | project a point onto a line (∥ another) | 1 | 0,1 | 7 | O8 |
+| **⑤** | one line onto another (angle bisector) | 2 | 1,2 | 3 | O4 |
+| **⑥** | point onto line, crease through a point | 2 | 0,1,2 | 5 | O6 |
+| **⑦** | two points each onto a line (cubic Beloch fold) | 3 | 0,1,2,3 | 6 | O7 |
+| — | *locate line ∩ line (not a fold)* | — | — | — | O2 |
 
-Beware: Hull's *Basic Origami Operations* list
-[[hull2020]](#ref-hull2020) §1.5 uses a
-**different** numbering — it inserts "locate the intersection of two lines" as
-its O2, so Hull's O3 is the classic axiom 2. When this spec writes "axiom 2" it
-means the classic one (point-onto-point), i.e. Hull's O3. This discrepancy is
-recorded in [antipatterns.md](../antipatterns.md) so it isn't re-conflated.
+Three traps this table defuses:
 
-For reference, the classic operations relevant so far
-[[justin1986]](#ref-justin1986) §8.1: ① line through two points; ② point onto
-point (perpendicular bisector); **③ the fold through a point perpendicular to a
-line** (Hull's O5); ④ projection of a point onto a line parallel to another; **⑤
-the fold placing one line onto another (the angle bisector; Hull's O4)**. Note
-that the angle bisector is **axiom 5**, not axiom 3 — and it is the first axiom
-whose result leaves ℚ (square roots). See
-[antipatterns.md](../antipatterns.md).
+- **The Wikipedia clash.** Huzita-Hatori numbers the **cubic fold as axiom 6**;
+  Beloch numbers it **7**. Anyone cross-referencing Wikipedia will trip here.
+  When this spec says "axiom 7" it means the cubic Beloch fold — Wikipedia's O6.
+- **Hull's shift.** Hull inserts a non-fold ("locate the intersection of two
+  lines") as his **O2** and reorders 3/4/5, so his numbering matches *neither*
+  other scheme. When this spec writes "axiom 2" it means point-onto-point =
+  Hull's **O3**, and the angle bisector is **axiom 5** (Hull's O4), *not* axiom 3.
+- **Degree, not position, drives the kernel.** Axioms ①–④ are degree 1 and stay
+  in ℚ; **⑤** (bisector) is the first to require square roots (leaves ℚ); **⑦** is
+  the first to require cube roots. Justin's own §8.1: ①–④ give dyadic rationals,
+  ①–⑤ the field K₁, ①–⑥ = ruler-and-compass (K₂), ①–⑦ the larger K₃.
+
+This discrepancy set is also recorded in [antipatterns.md](../antipatterns.md).
 
 ---
 
