@@ -86,6 +86,18 @@ test("--hidden dashed emits a dashed stroke; hide does not", async () => {
   expect((await hide).includes("stroke-dasharray")).toBe(false);
 });
 
+test("--hidden dashed x-rays occluded paper-edge (B) edges, not just creases", async () => {
+  // fold-occlude has 3 occluded boundary edges under the top face plus 1 crease;
+  // the old blanket B-skip dashed only the crease. Guard that paper edges show.
+  const p = Bun.spawn(
+    ["bun", "tools/fold2svg.mjs", "tools/test/fixtures/fold-occlude.fold", "--view", "top", "--hidden", "dashed"],
+    { stdout: "pipe" }
+  );
+  const svg = await new Response(p.stdout).text();
+  const dashedCount = (svg.match(/stroke-dasharray/g) || []).length;
+  expect(dashedCount).toBeGreaterThan(1); // more than the single interior crease
+});
+
 test("occlusion view defines a soft layer shadow and a legend panel", async () => {
   const p = Bun.spawn(
     ["bun", "tools/fold2svg.mjs", "tools/test/fixtures/fold-quarter.fold", "--view", "top", "--title", "q"],
