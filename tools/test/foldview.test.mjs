@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { linearExtension, foldedFrame, signedArea, sideUp, pointInPolygon, edgeCovered } from "../fold2svg.mjs";
+import { linearExtension, foldedFrame, signedArea, sideUp, pointInPolygon, segInsideIntervals, coveredIntervals } from "../fold2svg.mjs";
 
 const quarter = JSON.parse(
   await Bun.file(new URL("./fixtures/fold-quarter.fold", import.meta.url)).text()
@@ -53,22 +53,38 @@ test("pointInPolygon: inside vs outside a unit square", () => {
   expect(pointInPolygon([1.5, 0.5], sq)).toBe(false);
 });
 
-test("edgeCovered: a point under a higher face is covered", () => {
-  // faces: 0 = lower square, 1 = higher square overlapping it
-  const F = [[0, 1, 2, 3], [0, 1, 2, 3]];
-  const V = [[0, 0], [1, 0], [1, 1], [0, 1]];
-  const order = [0, 1]; // 1 is above 0
-  expect(edgeCovered([0.5, 0.5], 0, order, F, V)).toBe(true);  // face 1 above pos 0
-  expect(edgeCovered([0.5, 0.5], 1, order, F, V)).toBe(false); // nothing above pos 1
+test("segInsideIntervals: partial crossing yields the inside sub-interval", () => {
+  const sq = [[0, 0], [1, 0], [1, 1], [0, 1]];
+  const iv = segInsideIntervals([-1, 0.5], [2, 0.5], sq); // crosses x=0..1
+  expect(iv.length).toBe(1);
+  expect(iv[0][0]).toBeCloseTo(1 / 3, 5); // enters at x=0
+  expect(iv[0][1]).toBeCloseTo(2 / 3, 5); // exits at x=1
 });
 
-test("edgeCovered below-rule: a point over a lower face is covered from beneath", () => {
-  const F = [[0, 1, 2, 3], [0, 1, 2, 3]];
-  const V = [[0, 0], [1, 0], [1, 1], [0, 1]];
-  const order = [0, 1]; // 0 below 1
-  // from below (bottom view), the occluder is a face at a LOWER position
-  expect(edgeCovered([0.5, 0.5], 1, order, F, V, true)).toBe(true);  // face 0 below pos 1
-  expect(edgeCovered([0.5, 0.5], 0, order, F, V, true)).toBe(false); // nothing below pos 0
+test("segInsideIntervals: endpoint-inside, fully-in and fully-out cases", () => {
+  const sq = [[0, 0], [1, 0], [1, 1], [0, 1]];
+  const half = segInsideIntervals([0.5, 0.5], [2, 0.5], sq); // starts inside
+  expect(half.length).toBe(1);
+  expect(half[0][0]).toBeCloseTo(0, 5);
+  expect(half[0][1]).toBeCloseTo(1 / 3, 5); // 0.5 + 1.5t = 1 -> t = 1/3
+  expect(segInsideIntervals([0.2, 0.5], [0.8, 0.5], sq)).toEqual([[0, 1]]); // fully inside
+  expect(segInsideIntervals([2, 2], [3, 3], sq)).toEqual([]); // fully outside
+});
+
+test("coveredIntervals: only the sub-segment under a higher face is covered", () => {
+  // face 0 = wide lower strip; face 1 = unit square (higher) covering x∈[0,1]
+  const F = [[0, 1, 2, 3], [4, 5, 6, 7]];
+  const V = [
+    [-1, 0], [2, 0], [2, 1], [-1, 1], // face 0 (wide)
+    [0, 0], [1, 0], [1, 1], [0, 1],   // face 1 (unit square)
+  ];
+  const order = [0, 1]; // 1 above 0
+  const cov = coveredIntervals([-1, 0.5], [2, 0.5], order, 0, F, V); // edge of face 0
+  expect(cov.length).toBe(1);
+  expect(cov[0][0]).toBeCloseTo(1 / 3, 5); // x=0
+  expect(cov[0][1]).toBeCloseTo(2 / 3, 5); // x=1
+  // below-rule: face 0 lies below pos 1 and fully spans the segment
+  expect(coveredIntervals([-1, 0.5], [2, 0.5], order, 1, F, V, true)).toEqual([[0, 1]]);
 });
 
 test("--hidden dashed emits a dashed stroke; hide does not", async () => {
