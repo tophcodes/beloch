@@ -68,6 +68,28 @@ export function sideUp(poly) {
   return signedArea(poly) >= 0 ? "front" : "back";
 }
 
+// Ray-casting point-in-polygon (boundary counts as inside is not required here).
+export function pointInPolygon(pt, poly) {
+  const [x, y] = pt;
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i], [xj, yj] = poly[j];
+    const hit = (yi > y) !== (yj > y) &&
+      x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+    if (hit) inside = !inside;
+  }
+  return inside;
+}
+
+// Is `mid` covered by a face strictly above `incidentMaxPos` in the stack order?
+export function edgeCovered(mid, incidentMaxPos, order, F, V) {
+  for (let pos = incidentMaxPos + 1; pos < order.length; pos++) {
+    const fi = order[pos];
+    if (pointInPolygon(mid, F[fi].map((i) => V[i]))) return true;
+  }
+  return false;
+}
+
 // ---- CLI ------------------------------------------------------------------
 
 if (import.meta.main) {
@@ -78,6 +100,7 @@ if (import.meta.main) {
   };
   const title = flagVal("--title") || "";
   const viewFlag = args.includes("--folded") ? "top" : flagVal("--view"); // top|bottom
+  const hidden = flagVal("--hidden") || "hide"; // dashed | hide
   const FLAGS = new Set(["--title", "--view", "--hidden"]);
   const positional = args.filter(
     (a, i) => !a.startsWith("--") && !FLAGS.has(args[i - 1])
@@ -151,6 +174,29 @@ if (import.meta.main) {
         const wgt = ei !== undefined && A[ei] === "B" ? 2.5 : 2;
         out.push(`<line x1="${mx(V[a][0])}" y1="${ty(V[a][1])}" x2="${mx(V[b][0])}" y2="${ty(V[b][1])}" stroke="${col}" stroke-width="${wgt}" stroke-linecap="round"/>`);
       }
+    }
+    // x-ray: redraw occluded creases dashed over the paper
+    if (hidden === "dashed") {
+      const pos = new Map(order.map((f, i) => [f, i]));
+      // incident faces per edge: faces whose outline contains the edge
+      const incident = E.map(() => []);
+      F.forEach((face, fi) => {
+        for (let k = 0; k < face.length; k++) {
+          const a = face[k], b = face[(k + 1) % face.length];
+          const ei = edgeIx.get(a < b ? `${a}-${b}` : `${b}-${a}`);
+          if (ei !== undefined) incident[ei].push(fi);
+        }
+      });
+      E.forEach((e, i) => {
+        if (A[i] === "B") return; // boundary edges are always on the silhouette
+        const faces = incident[i];
+        if (!faces.length) return;
+        const maxPos = Math.max(...faces.map((fi) => pos.get(fi)));
+        const [a, b] = e;
+        const mid = [(V[a][0] + V[b][0]) / 2, (V[a][1] + V[b][1]) / 2];
+        if (!edgeCovered(mid, maxPos, order, F, V)) return; // visible already
+        out.push(`<line x1="${mx(V[a][0])}" y1="${ty(V[a][1])}" x2="${mx(V[b][0])}" y2="${ty(V[b][1])}" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 3" stroke-linecap="round"/>`);
+      });
     }
   } else {
     // ---- crease-pattern (frame 0): unchanged -----------------------------
