@@ -294,6 +294,20 @@ let even_poly_half (pa : Poly.t) : Poly.t option =
     end
   end
 
+(* Cross-field fallback logging. When two Field values with different generators
+   (or a Field and a foreign Alg) meet in +/*, we demote both to Alg and pay the
+   slow resultant path — the documented shared-field limitation. Log each such
+   event to stderr with operand degrees so it can be profiled on real .bel input. *)
+let describe_operand (x : t) : string =
+  match x with
+  | Rat _ -> "rat"
+  | Alg a -> Printf.sprintf "alg(deg %d)" (Poly.degree a.poly)
+  | Field f -> Printf.sprintf "field(deg %d)" (Poly.degree f.gen.mu)
+
+let log_alg_fallback (op : string) (x : t) (y : t) : unit =
+  Printf.eprintf "beloch: Num.%s cross-field fallback to Alg (%s, %s)\n%!" op
+    (describe_operand x) (describe_operand y)
+
 let rec add (x : t) (y : t) : t =
   match (x, y) with
   | Rat a, Rat b -> Rat (Q.add a b)
@@ -301,7 +315,9 @@ let rec add (x : t) (y : t) : t =
       mk_field a.gen (Poly.add a.coords b.coords)
   | Field a, Rat q | Rat q, Field a ->
       mk_field a.gen (Poly.add a.coords (Poly.const q))
-  | (Field _, _) | (_, Field _) -> add (to_alg x) (to_alg y)
+  | (Field _, _) | (_, Field _) ->
+      log_alg_fallback "add" x y;
+      add (to_alg x) (to_alg y)
   | Alg a, Rat q | Rat q, Alg a -> shift_alg a.poly a.lo a.hi q
   | Alg _, Alg _ ->
       let r = defpoly_sum x y in
@@ -330,7 +346,9 @@ and mul (x : t) (y : t) : t =
   | Field a, Field b when same_gen a.gen b.gen ->
       mk_field a.gen (Poly.rem (Poly.mul a.coords b.coords) a.gen.mu)
   | Field a, Rat q | Rat q, Field a -> mk_field a.gen (Poly.scale q a.coords)
-  | (Field _, _) | (_, Field _) -> mul (to_alg x) (to_alg y)
+  | (Field _, _) | (_, Field _) ->
+      log_alg_fallback "mul" x y;
+      mul (to_alg x) (to_alg y)
   | Alg a, Rat q | Rat q, Alg a -> scale_alg a.poly a.lo a.hi q
   | Alg ax, Alg ay
     when ax.poly == ay.poly
