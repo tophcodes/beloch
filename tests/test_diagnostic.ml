@@ -40,6 +40,24 @@ let test_top_of_file () =
   Alcotest.(check bool) "line 1 shown" true (contains out "1 | line one");
   Alcotest.(check bool) "header" true (contains out "error: boom")
 
+(* a real evaluator error carries a real span through fold_string; render it *)
+let test_integration () =
+  let source = "paper square\n--l: through .a .a\n" in
+  let rendered =
+    try
+      ignore (Beloch.fold_string ~filename:"t.bel" source);
+      "NO ERROR"
+    with Error.Beloch_error (span, msg) ->
+      Diagnostic.render ~source ~span ~msg
+  in
+  Alcotest.(check bool) "renders an error block" true (contains rendered "error:");
+  Alcotest.(check bool)
+    "has a location arrow" true
+    (contains rendered "--> t.bel:");
+  Alcotest.(check bool) "has a caret" true (contains rendered "^");
+  Alcotest.(check bool) "shows the offending line" true
+    (contains rendered "through .a .a")
+
 let () =
   Alcotest.run "diagnostic"
     [
@@ -47,5 +65,6 @@ let () =
         [
           Alcotest.test_case "basic block" `Quick test_basic;
           Alcotest.test_case "top of file" `Quick test_top_of_file;
+          Alcotest.test_case "integration via fold_string" `Quick test_integration;
         ] );
     ]
