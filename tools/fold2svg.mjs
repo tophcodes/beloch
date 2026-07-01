@@ -19,13 +19,20 @@ export function foldedFrame(fold) {
 
 // Topologically sort faces into a bottom->top order consistent with faceOrders.
 // [f,g,s]: s=+1 => f above g (edge g->f), s=-1 => f below g (edge f->g).
-export function linearExtension(faceOrders, nFaces) {
+export function linearExtension(faceOrders, nFaces, faceUp) {
   const adj = Array.from({ length: nFaces }, () => []);
   const indeg = new Array(nFaces).fill(0);
   const addEdge = (lo, hi) => { adj[lo].push(hi); indeg[hi]++; }; // lo below hi
+  // FOLD's faceOrders sign is relative to g's NORMAL, not global +z:
+  // [f,g,+1] means f lies on the side g's normal points to. So f is globally
+  // BELOW g iff (s < 0) === gUp, where gUp = g faces up (front side up, i.e.
+  // det_sign > 0 ⇔ folded winding CCW). faceUp[g] carries that; when omitted
+  // (all faces up) the sign reads as plain global order.
   for (const [f, g, s] of faceOrders || []) {
-    if (s === 1) addEdge(g, f);
-    else if (s === -1) addEdge(f, g);
+    if (s === 0) continue;
+    const gUp = faceUp ? faceUp[g] : true;
+    if ((s < 0) === gUp) addEdge(f, g); // f below g
+    else addEdge(g, f);                 // g below f
   }
   const queue = [];
   for (let i = 0; i < nFaces; i++) if (indeg[i] === 0) queue.push(i);
@@ -82,10 +89,16 @@ export function pointInPolygon(pt, poly) {
 }
 
 // Is `mid` covered by a face strictly above `incidentMaxPos` in the stack order?
-export function edgeCovered(mid, incidentMaxPos, order, F, V) {
-  for (let pos = incidentMaxPos + 1; pos < order.length; pos++) {
-    const fi = order[pos];
-    if (pointInPolygon(mid, F[fi].map((i) => V[i]))) return true;
+export function edgeCovered(mid, incidentPos, order, F, V, below = false) {
+  if (below) {
+    // bottom view: the occluder is a face at a LOWER stack position
+    for (let pos = incidentPos - 1; pos >= 0; pos--) {
+      if (pointInPolygon(mid, F[order[pos]].map((i) => V[i]))) return true;
+    }
+  } else {
+    for (let pos = incidentPos + 1; pos < order.length; pos++) {
+      if (pointInPolygon(mid, F[order[pos]].map((i) => V[i]))) return true;
+    }
   }
   return false;
 }
@@ -159,13 +172,17 @@ if (import.meta.main) {
     const bottom = viewFlag === "bottom";
     // bottom view: look from below => reverse the stack and mirror x
     const mx = (x) => (bottom ? W - tx(x) : tx(x));
-    const order = linearExtension(frame.faceOrders || [], F.length);
+    // decode the true global stack: faceOrders sign is keyed to each g's normal
+    const faceUp = F.map((f) => sideUp(f.map((i) => V[i])) === "front");
+    const order = linearExtension(frame.faceOrders || [], F.length, faceUp);
     const paint = bottom ? [...order].reverse() : order;
     const edgeIx = faceEdgeIndex(E);
     for (const fi of paint) {
       const face = F[fi];
       const poly = face.map((i) => V[i]);
-      const fill = sideUp(poly) === "front" ? FRONT : BACK;
+      // the bottom view looks at each face's underside, so its side flips
+      const showFront = (sideUp(poly) === "front") !== bottom;
+      const fill = showFront ? FRONT : BACK;
       const pts = face.map((i) => `${mx(V[i][0])},${ty(V[i][1])}`).join(" ");
       out.push(`<polygon points="${pts}" fill="${fill}" stroke="none" filter="url(#layerShadow)"/>`);
       for (let k = 0; k < face.length; k++) {
@@ -176,13 +193,9 @@ if (import.meta.main) {
         out.push(`<line x1="${mx(V[a][0])}" y1="${ty(V[a][1])}" x2="${mx(V[b][0])}" y2="${ty(V[b][1])}" stroke="${col}" stroke-width="${wgt}" stroke-linecap="round"/>`);
       }
     }
-    // x-ray: redraw occluded creases dashed over the paper.
-    // NOTE: occlusion here is computed for the TOP view (a crease is hidden if a
-    // face strictly ABOVE its incident faces covers it). For --view bottom the
-    // fills/edges are correct (paint order is reversed), but this dashed overlay
-    // still uses the top-view rule, so `--view bottom --hidden dashed` marks the
-    // wrong creases. Bottom-view x-ray is out of scope (see the design doc); the
-    // default --hidden hide is correct in both views.
+    // x-ray: redraw occluded creases dashed over the paper. View-aware: the top
+    // view hides a crease when a face ABOVE its incident faces covers it; the
+    // bottom view (seen from beneath) hides one when a face BELOW does.
     if (hidden === "dashed") {
       const pos = new Map(order.map((f, i) => [f, i]));
       // incident faces per edge: faces whose outline contains the edge
@@ -198,10 +211,12 @@ if (import.meta.main) {
         if (A[i] === "B") return; // boundary edges are always on the silhouette
         const faces = incident[i];
         if (!faces.length) return;
-        const maxPos = Math.max(...faces.map((fi) => pos.get(fi)));
+        const refPos = bottom
+          ? Math.min(...faces.map((fi) => pos.get(fi)))
+          : Math.max(...faces.map((fi) => pos.get(fi)));
         const [a, b] = e;
         const mid = [(V[a][0] + V[b][0]) / 2, (V[a][1] + V[b][1]) / 2];
-        if (!edgeCovered(mid, maxPos, order, F, V)) return; // visible already
+        if (!edgeCovered(mid, refPos, order, F, V, bottom)) return; // visible already
         out.push(`<line x1="${mx(V[a][0])}" y1="${ty(V[a][1])}" x2="${mx(V[b][0])}" y2="${ty(V[b][1])}" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 3" stroke-linecap="round"/>`);
       });
     }

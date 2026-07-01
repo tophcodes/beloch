@@ -5,18 +5,24 @@ const quarter = JSON.parse(
   await Bun.file(new URL("./fixtures/fold-quarter.fold", import.meta.url)).text()
 );
 
-test("linearExtension respects every faceOrders pair", () => {
+test("linearExtension yields the true global bottom→top stack (honours g's normal)", () => {
   const ff = foldedFrame(quarter);
-  const nF = (quarter.faces_vertices || []).length;
-  const order = linearExtension(ff.faceOrders, nF);
+  const V = ff.vertices_coords;
+  const F = quarter.faces_vertices || [];
+  const faceUp = F.map((f) => sideUp(f.map((i) => V[i])) === "front");
+  const order = linearExtension(ff.faceOrders, F.length, faceUp);
   // bottom->top: every face appears exactly once
-  expect([...order].sort((a, b) => a - b)).toEqual(
-    Array.from({ length: nF }, (_, i) => i)
-  );
+  expect([...order].sort((a, b) => a - b)).toEqual(F.map((_, i) => i));
+  // golden: the quarter fold stacks in face-index order — root-cause regression
+  // guard (a naive read of the sign scrambled this to [3,1,0,2]).
+  expect(order).toEqual([0, 1, 2, 3]);
   const pos = new Map(order.map((f, i) => [f, i]));
   for (const [f, g, s] of ff.faceOrders) {
-    if (s === 1) expect(pos.get(f)).toBeGreaterThan(pos.get(g)); // f above g
-    if (s === -1) expect(pos.get(f)).toBeLessThan(pos.get(g)); // f below g
+    if (s === 0) continue;
+    // FOLD sign is relative to g's normal: f is globally below g iff (s<0)===gUp
+    const fBelowG = (s < 0) === faceUp[g];
+    if (fBelowG) expect(pos.get(f)).toBeLessThan(pos.get(g));
+    else expect(pos.get(f)).toBeGreaterThan(pos.get(g));
   }
 });
 
@@ -54,6 +60,15 @@ test("edgeCovered: a point under a higher face is covered", () => {
   const order = [0, 1]; // 1 is above 0
   expect(edgeCovered([0.5, 0.5], 0, order, F, V)).toBe(true);  // face 1 above pos 0
   expect(edgeCovered([0.5, 0.5], 1, order, F, V)).toBe(false); // nothing above pos 1
+});
+
+test("edgeCovered below-rule: a point over a lower face is covered from beneath", () => {
+  const F = [[0, 1, 2, 3], [0, 1, 2, 3]];
+  const V = [[0, 0], [1, 0], [1, 1], [0, 1]];
+  const order = [0, 1]; // 0 below 1
+  // from below (bottom view), the occluder is a face at a LOWER position
+  expect(edgeCovered([0.5, 0.5], 1, order, F, V, true)).toBe(true);  // face 0 below pos 1
+  expect(edgeCovered([0.5, 0.5], 0, order, F, V, true)).toBe(false); // nothing below pos 0
 });
 
 test("--hidden dashed emits a dashed stroke; hide does not", async () => {

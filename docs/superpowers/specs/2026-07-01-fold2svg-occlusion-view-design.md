@@ -132,9 +132,17 @@ Lightweight — this is dev tooling, not the evaluator core.
 - Exact insertion-*depth* readout (top+bottom shows *which side* a flap is on and
   whether it is occluded, but not "tucked between layer 3 and 4"). A later
   cross-section annotation could add this.
-- **Bottom-view x-ray.** `--hidden dashed` computes occlusion for the top view (a
-  crease is hidden if a face strictly *above* it covers it). The fills and edges
-  of `--view bottom` are correct, but the dashed overlay still uses the top-view
-  rule, so `--view bottom --hidden dashed` dashes the wrong creases. The default
-  `--hidden hide` is correct in both views. Fix only if the pocket-tuck slice
-  needs bottom x-ray (occlusion test would flip to faces *below* from the back).
+
+## Layer-order decoding (important)
+
+FOLD's `faceOrders` triple `[f,g,s]` keys its sign to **g's normal**, not global
++z: `s=+1` means f lies on the side g's normal points to. So recovering the true
+global bottom→top stack requires g's facing: f is globally *below* g iff
+`(s<0) === gUp`, where `gUp` = g is front-side-up (folded winding CCW ⇔
+`det_sign>0`). Decoding the sign as plain global order scrambles the stack
+wherever back-facing faces appear. The viewer computes `gUp` from each folded
+face's winding and feeds it to the linear-extension topological sort.
+
+The **bottom view** is the model seen from beneath: reverse the paint order,
+mirror x, show each face's *underside* (front/back tint flips), and compute
+x-ray occlusion against faces *below* (not above).
