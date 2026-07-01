@@ -157,6 +157,22 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
         ("faceOrders", `List (List.rev !face_orders));
       ]
   in
+  let beloch_named_points =
+    `Assoc
+      (List.map
+         (fun (name, (p : Geom.point)) ->
+           (name, `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ]))
+         fd.Eval.named_points)
+  in
+  let beloch_named_lines =
+    `Assoc
+      (List.map
+         (fun (name, (l : Geom.line)) ->
+           ( name,
+             `List [ q_to_json l.Geom.a; q_to_json l.Geom.b; q_to_json l.Geom.c ]
+           ))
+         fd.Eval.named_lines)
+  in
   `Assoc
     [
       ("file_spec", `Float 1.1);
@@ -167,5 +183,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
       ("edges_assignment", `List edges_assignment);
       ("faces_vertices", `List faces_vertices);
       ("beloch:edges", `List beloch_edges);
+      ("beloch:named_points", beloch_named_points);
+      ("beloch:named_lines", beloch_named_lines);
       ("file_frames", `List [ folded_frame ]);
     ]

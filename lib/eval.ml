@@ -10,7 +10,12 @@ let corners : (string * Geom.point) list =
     ("d", { Geom.x = q 0; y = q 1 });
   ]
 
-type folded = { state : Fold_state.t; creases : Fold_state.crease_record list }
+type folded = {
+  state : Fold_state.t;
+  creases : Fold_state.crease_record list;
+  named_points : (string * Geom.point) list;
+  named_lines : (string * Geom.line) list;
+}
 
 let eval_folded (prog : Ast.program) : folded =
   let points : (string, Geom.point) Hashtbl.t = Hashtbl.create 16 in
@@ -289,4 +294,11 @@ let eval_folded (prog : Ast.program) : folded =
           Hashtbl.replace points n (resolve_point (Ast.PCross (l1, l2, span)))
       | Ast.Flip _ -> state := Fold_state.flip !state)
     prog;
-  { state = !state; creases = !recs }
+  let corner_names = List.map fst corners in
+  let named_points =
+    Hashtbl.fold
+      (fun k v acc -> if List.mem k corner_names then acc else (k, v) :: acc)
+      points []
+  in
+  let named_lines = Hashtbl.fold (fun k v acc -> (k, v) :: acc) creases_env [] in
+  { state = !state; creases = !recs; named_points; named_lines }
