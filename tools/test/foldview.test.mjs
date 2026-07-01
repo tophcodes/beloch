@@ -70,3 +70,13 @@ test("--hidden dashed emits a dashed stroke; hide does not", async () => {
   expect((await dashed).includes("stroke-dasharray")).toBe(true);
   expect((await hide).includes("stroke-dasharray")).toBe(false);
 });
+
+test("occlusion view defines a soft layer shadow and a legend panel", async () => {
+  const p = Bun.spawn(
+    ["bun", "tools/fold2svg.mjs", "tools/test/fixtures/fold-quarter.fold", "--view", "top", "--title", "q"],
+    { stdout: "pipe" }
+  );
+  const svg = await new Response(p.stdout).text();
+  expect(svg.includes('id="layerShadow"')).toBe(true); // drop-shadow filter defined
+  expect(svg.includes('class="legend-panel"')).toBe(true); // legend backing panel
+});
