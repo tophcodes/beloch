@@ -88,19 +88,57 @@ export function pointInPolygon(pt, poly) {
   return inside;
 }
 
-// Is `mid` covered by a face strictly above `incidentMaxPos` in the stack order?
-export function edgeCovered(mid, incidentPos, order, F, V, below = false) {
-  if (below) {
-    // bottom view: the occluder is a face at a LOWER stack position
-    for (let pos = incidentPos - 1; pos >= 0; pos--) {
-      if (pointInPolygon(mid, F[order[pos]].map((i) => V[i]))) return true;
-    }
-  } else {
-    for (let pos = incidentPos + 1; pos < order.length; pos++) {
-      if (pointInPolygon(mid, F[order[pos]].map((i) => V[i]))) return true;
+// Parameter sub-intervals [t0,t1] of segment a→b that lie inside `poly`.
+// Breakpoints are the segment's crossings of the polygon's edges; each gap is
+// classified inside/outside by its midpoint. Works for convex or non-convex,
+// CW or CCW polygons. Returns merged intervals in [0,1].
+export function segInsideIntervals(a, b, poly) {
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  const ts = [0, 1];
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const c = poly[j], d = poly[i];
+    const ex = d[0] - c[0], ey = d[1] - c[1];
+    const denom = dx * ey - dy * ex;
+    if (Math.abs(denom) < 1e-12) continue; // parallel/collinear
+    const wx = c[0] - a[0], wy = c[1] - a[1];
+    const t = (wx * ey - wy * ex) / denom; // along a→b
+    const u = (wx * dy - wy * dx) / denom; // along the polygon edge
+    if (t > 1e-9 && t < 1 - 1e-9 && u >= -1e-9 && u <= 1 + 1e-9) ts.push(t);
+  }
+  ts.sort((p, q) => p - q);
+  const out = [];
+  for (let k = 0; k < ts.length - 1; k++) {
+    const t0 = ts[k], t1 = ts[k + 1];
+    if (t1 - t0 < 1e-9) continue;
+    const tm = (t0 + t1) / 2;
+    if (pointInPolygon([a[0] + dx * tm, a[1] + dy * tm], poly)) {
+      const last = out[out.length - 1];
+      if (last && t0 - last[1] < 1e-9) last[1] = t1; // merge adjacent
+      else out.push([t0, t1]);
     }
   }
-  return false;
+  return out;
+}
+
+// Sub-intervals of segment a→b hidden by a face strictly above (or, for the
+// bottom view, below) `refPos` in the stack order — the union over all such
+// covering faces.
+export function coveredIntervals(a, b, order, refPos, F, V, below = false) {
+  const spans = [];
+  const from = below ? refPos - 1 : refPos + 1;
+  const step = below ? -1 : 1;
+  for (let pos = from; pos >= 0 && pos < order.length; pos += step) {
+    for (const iv of segInsideIntervals(a, b, F[order[pos]].map((i) => V[i]))) spans.push(iv);
+  }
+  if (!spans.length) return spans;
+  spans.sort((p, q) => p[0] - q[0]);
+  const merged = [spans[0].slice()];
+  for (let k = 1; k < spans.length; k++) {
+    const last = merged[merged.length - 1];
+    if (spans[k][0] <= last[1] + 1e-9) last[1] = Math.max(last[1], spans[k][1]);
+    else merged.push(spans[k].slice());
+  }
+  return merged;
 }
 
 // ---- CLI ------------------------------------------------------------------
@@ -208,19 +246,27 @@ if (import.meta.main) {
         }
       });
       E.forEach((e, i) => {
-        // Boundary (paper-edge) edges are included too: a tucked-under flap's
-        // outer edge is a "B" edge that IS occluded, so the visibility test —
-        // not the assignment — decides. The outer silhouette has nothing
-        // above/below it, so it stays solid.
+        // Boundary (paper-edge) edges are x-rayed too: a tucked-under flap's
+        // outer edge is a "B" edge that IS occluded. Only the covered SUB-
+        // segments are dashed — the visible part stays solid (painter's pass).
         const faces = incident[i];
         if (!faces.length) return;
         const refPos = bottom
           ? Math.min(...faces.map((fi) => pos.get(fi)))
           : Math.max(...faces.map((fi) => pos.get(fi)));
-        const [a, b] = e;
-        const mid = [(V[a][0] + V[b][0]) / 2, (V[a][1] + V[b][1]) / 2];
-        if (!edgeCovered(mid, refPos, order, F, V, bottom)) return; // visible already
-        out.push(`<line x1="${mx(V[a][0])}" y1="${ty(V[a][1])}" x2="${mx(V[b][0])}" y2="${ty(V[b][1])}" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 3" stroke-linecap="round"/>`);
+        const a0 = V[e[0]], b0 = V[e[1]];
+        const covered = coveredIntervals(a0, b0, order, refPos, F, V, bottom);
+        if (!covered.length) return; // fully visible
+        // paper edge reads darker + thicker + longer dashes than a crease
+        const isB = A[i] === "B";
+        const stroke = isB ? "#475569" : "#94a3b8";
+        const wgt = isB ? 2 : 1.2;
+        const dash = isB ? "6 3" : "4 3";
+        for (const [t0, t1] of covered) {
+          const p0 = [a0[0] + (b0[0] - a0[0]) * t0, a0[1] + (b0[1] - a0[1]) * t0];
+          const p1 = [a0[0] + (b0[0] - a0[0]) * t1, a0[1] + (b0[1] - a0[1]) * t1];
+          out.push(`<line x1="${mx(p0[0])}" y1="${ty(p0[1])}" x2="${mx(p1[0])}" y2="${ty(p1[1])}" stroke="${stroke}" stroke-width="${wgt}" stroke-dasharray="${dash}" stroke-linecap="round"/>`);
+        }
       });
     }
   } else {
