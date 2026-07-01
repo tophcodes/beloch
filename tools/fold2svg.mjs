@@ -176,7 +176,13 @@ if (import.meta.main) {
         out.push(`<line x1="${mx(V[a][0])}" y1="${ty(V[a][1])}" x2="${mx(V[b][0])}" y2="${ty(V[b][1])}" stroke="${col}" stroke-width="${wgt}" stroke-linecap="round"/>`);
       }
     }
-    // x-ray: redraw occluded creases dashed over the paper
+    // x-ray: redraw occluded creases dashed over the paper.
+    // NOTE: occlusion here is computed for the TOP view (a crease is hidden if a
+    // face strictly ABOVE its incident faces covers it). For --view bottom the
+    // fills/edges are correct (paint order is reversed), but this dashed overlay
+    // still uses the top-view rule, so `--view bottom --hidden dashed` marks the
+    // wrong creases. Bottom-view x-ray is out of scope (see the design doc); the
+    // default --hidden hide is correct in both views.
     if (hidden === "dashed") {
       const pos = new Map(order.map((f, i) => [f, i]));
       // incident faces per edge: faces whose outline contains the edge

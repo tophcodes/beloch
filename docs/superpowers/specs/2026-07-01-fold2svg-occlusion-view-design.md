@@ -132,3 +132,9 @@ Lightweight — this is dev tooling, not the evaluator core.
 - Exact insertion-*depth* readout (top+bottom shows *which side* a flap is on and
   whether it is occluded, but not "tucked between layer 3 and 4"). A later
   cross-section annotation could add this.
+- **Bottom-view x-ray.** `--hidden dashed` computes occlusion for the top view (a
+  crease is hidden if a face strictly *above* it covers it). The fills and edges
+  of `--view bottom` are correct, but the dashed overlay still uses the top-view
+  rule, so `--view bottom --hidden dashed` dashes the wrong creases. The default
+  `--hidden hide` is correct in both views. Fix only if the pocket-tuck slice
+  needs bottom x-ray (occlusion test would flip to faces *below* from the back).
