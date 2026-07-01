@@ -208,7 +208,10 @@ if (import.meta.main) {
         }
       });
       E.forEach((e, i) => {
-        if (A[i] === "B") return; // boundary edges are always on the silhouette
+        // Boundary (paper-edge) edges are included too: a tucked-under flap's
+        // outer edge is a "B" edge that IS occluded, so the visibility test —
+        // not the assignment — decides. The outer silhouette has nothing
+        // above/below it, so it stays solid.
         const faces = incident[i];
         if (!faces.length) return;
         const refPos = bottom
