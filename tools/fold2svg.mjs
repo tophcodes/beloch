@@ -54,6 +54,20 @@ export function faceEdgeIndex(edgesVertices) {
   return m;
 }
 
+// Shoelace signed area; >0 = CCW (front side up in folded coords).
+export function signedArea(poly) {
+  let s = 0;
+  for (let i = 0; i < poly.length; i++) {
+    const [x1, y1] = poly[i], [x2, y2] = poly[(i + 1) % poly.length];
+    s += x1 * y2 - x2 * y1;
+  }
+  return s / 2;
+}
+
+export function sideUp(poly) {
+  return signedArea(poly) >= 0 ? "front" : "back";
+}
+
 // ---- CLI ------------------------------------------------------------------
 
 if (import.meta.main) {
@@ -117,20 +131,25 @@ if (import.meta.main) {
 
   if (viewFlag) {
     // ---- occlusion view: paint faces bottom->top, opaque -----------------
+    const FRONT = "#fafaf7", BACK = "#dbe4ee"; // paper front / back tint
+    const bottom = viewFlag === "bottom";
+    // bottom view: look from below => reverse the stack and mirror x
+    const mx = (x) => (bottom ? W - tx(x) : tx(x));
     const order = linearExtension(frame.faceOrders || [], F.length);
+    const paint = bottom ? [...order].reverse() : order;
     const edgeIx = faceEdgeIndex(E);
-    for (const fi of order) {
+    for (const fi of paint) {
       const face = F[fi];
-      const pts = face.map((i) => `${tx(V[i][0])},${ty(V[i][1])}`).join(" ");
-      // opaque paper fill (single tone this task; front/back tint = Task 2)
-      out.push(`<polygon points="${pts}" fill="#f8fafc" stroke="none"/>`);
-      // this face's outline edges, coloured by their FOLD edge assignment
+      const poly = face.map((i) => V[i]);
+      const fill = sideUp(poly) === "front" ? FRONT : BACK;
+      const pts = face.map((i) => `${mx(V[i][0])},${ty(V[i][1])}`).join(" ");
+      out.push(`<polygon points="${pts}" fill="${fill}" stroke="none"/>`);
       for (let k = 0; k < face.length; k++) {
         const a = face[k], b = face[(k + 1) % face.length];
         const ei = edgeIx.get(a < b ? `${a}-${b}` : `${b}-${a}`);
         const col = ei === undefined ? CREASE : eColor(ei);
         const wgt = ei !== undefined && A[ei] === "B" ? 2.5 : 2;
-        out.push(`<line x1="${tx(V[a][0])}" y1="${ty(V[a][1])}" x2="${tx(V[b][0])}" y2="${ty(V[b][1])}" stroke="${col}" stroke-width="${wgt}" stroke-linecap="round"/>`);
+        out.push(`<line x1="${mx(V[a][0])}" y1="${ty(V[a][1])}" x2="${mx(V[b][0])}" y2="${ty(V[b][1])}" stroke="${col}" stroke-width="${wgt}" stroke-linecap="round"/>`);
       }
     }
   } else {
