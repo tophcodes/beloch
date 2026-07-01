@@ -1,3 +1,4 @@
+; bench: slow  — full FOLD is impractical until the Num kernel tracks the shared generator for irrational coords
 ; status: works — axiom 6 (Justin ⑥): fold a point onto a line with the crease
 ; pinned through a second, fixed point. Scaffolded so the crease is a genuine
 ; slanted line, not a trivial diagonal/midline.

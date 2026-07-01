@@ -1,3 +1,19 @@
 (test
- (name test_beloch)
+ (name test_num)
+ (libraries beloch alcotest zarith))
+
+(test
+ (name test_geom)
+ (libraries beloch alcotest zarith))
+
+(test
+ (name test_parse)
+ (libraries beloch alcotest str))
+
+(test
+ (name test_eval)
+ (libraries beloch alcotest zarith str))
+
+(test
+ (name test_e2e)
  (libraries beloch alcotest yojson zarith str))
