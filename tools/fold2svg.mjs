@@ -152,7 +152,8 @@ if (import.meta.main) {
   const title = flagVal("--title") || "";
   const viewFlag = args.includes("--folded") ? "top" : flagVal("--view"); // top|bottom
   const hidden = flagVal("--hidden") || "hide"; // dashed | hide
-  const FLAGS = new Set(["--title", "--view", "--hidden"]);
+  const constructionsRaw = flagVal("--constructions") || "";
+  const FLAGS = new Set(["--title", "--view", "--hidden", "--constructions"]);
   const positional = args.filter(
     (a, i) => !a.startsWith("--") && !FLAGS.has(args[i - 1])
   );
@@ -314,6 +315,51 @@ if (import.meta.main) {
       const P = V[ends[0]], C = V[ends[1]], t = 0.18;
       const px = tx(P[0] + (C[0] - P[0]) * t), py = ty(P[1] + (C[1] - P[1]) * t);
       out.push(`<text x="${px}" y="${py}" font-size="13" font-weight="600" fill="${col}" stroke="white" stroke-width="3" paint-order="stroke" text-anchor="middle" dominant-baseline="middle">--${nm}</text>`);
+    }
+  }
+
+  // ---- construction overlay -----------------------------------------------
+  if (constructionsRaw) {
+    const namedPoints = fold["beloch:named_points"] || {};
+    const namedLines = fold["beloch:named_lines"] || {};
+    const CON_PT = "#6366f1", CON_LN = "#6366f1";
+    // clip line ax+by=c to [minX,maxX]×[minY,maxY]; returns two [x,y] or null
+    const clipLine = (a, b, c) => {
+      const eps = 1e-9;
+      const pts = [];
+      const tryX = (x) => {
+        if (Math.abs(b) > eps) { const y = (c - a * x) / b; if (y >= minY - eps && y <= maxY + eps) pts.push([x, y]); }
+      };
+      const tryY = (y) => {
+        if (Math.abs(a) > eps) { const x = (c - b * y) / a; if (x >= minX - eps && x <= maxX + eps) pts.push([x, y]); }
+      };
+      tryX(minX); tryX(maxX); tryY(minY); tryY(maxY);
+      // dedup
+      const uniq = pts.filter((p, i) => !pts.slice(0, i).some(q => Math.abs(p[0]-q[0]) < eps && Math.abs(p[1]-q[1]) < eps));
+      return uniq.length >= 2 ? [uniq[0], uniq[uniq.length - 1]] : null;
+    };
+    for (const sel of constructionsRaw.split(",").map(s => s.trim()).filter(Boolean)) {
+      if (sel.startsWith("--")) {
+        const name = sel.slice(2);
+        const l = namedLines[name];
+        if (!l) continue;
+        const [la, lb, lc] = l;
+        const seg = clipLine(la, lb, lc);
+        if (!seg) continue;
+        const [[x1, y1], [x2, y2]] = seg;
+        out.push(`<line x1="${tx(x1)}" y1="${ty(y1)}" x2="${tx(x2)}" y2="${ty(y2)}" stroke="${CON_LN}" stroke-width="1.5" stroke-dasharray="6 3" opacity="0.8"/>`);
+        const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+        out.push(`<text x="${tx(mx)}" y="${ty(my) - 6}" font-size="12" font-weight="600" fill="${CON_LN}" stroke="white" stroke-width="2.5" paint-order="stroke" text-anchor="middle">--${name}</text>`);
+      } else if (sel.startsWith(".")) {
+        const name = sel.slice(1);
+        const p = namedPoints[name];
+        if (!p) continue;
+        const [px, py] = p;
+        out.push(`<circle cx="${tx(px)}" cy="${ty(py)}" r="4.5" fill="${CON_PT}" opacity="0.85"/>`);
+        const ox = px < (minX + maxX) / 2 ? -14 : 10;
+        const oy = py < (minY + maxY) / 2 ? 16 : -7;
+        out.push(`<text x="${tx(px) + ox}" y="${ty(py) + oy}" font-size="13" font-weight="600" fill="${CON_PT}" stroke="white" stroke-width="2.5" paint-order="stroke">.${name}</text>`);
+      }
     }
   }
 
