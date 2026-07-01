@@ -17,3 +17,7 @@
 (test
  (name test_e2e)
  (libraries beloch alcotest yojson zarith str))
+
+(test
+ (name test_diagnostic)
+ (libraries beloch alcotest str))
