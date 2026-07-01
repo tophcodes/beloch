@@ -19,17 +19,17 @@ let todo name =
   exit 1
 
 let run_fold file =
-  try
-    let src = In_channel.with_open_text file In_channel.input_all in
-    let json = Beloch.fold_string ~filename:file src in
-    print_endline (Yojson.Safe.pretty_to_string json)
-  with
-  | Error.Beloch_error (span, msg) ->
-      Printf.eprintf "%s: %s\n" (Error.span_to_string span) msg;
-      exit 1
-  | Sys_error msg ->
+  match In_channel.with_open_text file In_channel.input_all with
+  | exception Sys_error msg ->
       Printf.eprintf "%s\n" msg;
       exit 1
+  | src -> (
+      try
+        let json = Beloch.fold_string ~filename:file src in
+        print_endline (Yojson.Safe.pretty_to_string json)
+      with Error.Beloch_error (span, msg) ->
+        prerr_string (Diagnostic.render ~source:src ~span ~msg);
+        exit 1)
 
 let () =
   match Array.to_list Sys.argv with
