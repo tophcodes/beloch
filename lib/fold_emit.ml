@@ -126,21 +126,24 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
               ])
       edges
   in
-  (* faceOrders for overlapping face pairs; faces array index = layer (bottom->top) *)
-  let table_poly i =
-    Array.map
-      (Isometry.apply_point faces.(i).Fold_state.iso)
-      faces.(i).Fold_state.paper
-  in
+  (* faceOrders read directly from the folded state's partial order. For a pair
+     (fi < gi) that overlaps, sign follows FOLD's convention keyed to gi's normal
+     (its det_sign): a "below" relation with gi facing up is -1, etc. *)
+  let order = fd.Eval.state.Fold_state.order in
   let nf = Array.length faces in
   let face_orders = ref [] in
   for fi = 0 to nf - 1 do
     for gi = fi + 1 to nf - 1 do
-      if Geom.convex_overlap (table_poly fi) (table_poly gi) then begin
-        let g_up = Isometry.det_sign faces.(gi).Fold_state.iso > 0 in
-        let s = if fi > gi = g_up then 1 else -1 in
-        face_orders := `List [ `Int fi; `Int gi; `Int s ] :: !face_orders
-      end
+      match order.(fi).(gi) with
+      | Fold_state.Apart -> ()
+      | rel ->
+          let g_up = Isometry.det_sign faces.(gi).Fold_state.iso > 0 in
+          let fi_below = rel = Fold_state.Below in
+          let s =
+            if fi_below then if g_up then -1 else 1
+            else if g_up then 1 else -1
+          in
+          face_orders := `List [ `Int fi; `Int gi; `Int s ] :: !face_orders
     done
   done;
   let folded_frame =
