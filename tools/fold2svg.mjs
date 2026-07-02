@@ -323,44 +323,81 @@ if (import.meta.main) {
     const namedPoints = fold["beloch:named_points"] || {};
     const namedLines = fold["beloch:named_lines"] || {};
     const CON_PT = "#6366f1", CON_LN = "#6366f1";
-    // lines are in paper space; clip to paper bounds (root frame), not table bounds
     const rootV = fold.vertices_coords || [];
     const pxs = rootV.map(p => p[0]), pys = rootV.map(p => p[1]);
     const [pMinX, pMaxX] = [Math.min(...pxs), Math.max(...pxs)];
     const [pMinY, pMaxY] = [Math.min(...pys), Math.max(...pys)];
-    // clip line ax+by=c to [x0,x1]×[y0,y1]; returns two [x,y] or null
-    const clipLine = (a, b, c, x0, x1, y0, y1) => {
-      const eps = 1e-9;
-      const pts = [];
-      const tryX = (x) => {
-        if (Math.abs(b) > eps) { const y = (c - a * x) / b; if (y >= y0 - eps && y <= y1 + eps) pts.push([x, y]); }
-      };
-      const tryY = (y) => {
-        if (Math.abs(a) > eps) { const x = (c - b * y) / a; if (x >= x0 - eps && x <= x1 + eps) pts.push([x, y]); }
-      };
+
+    // clip line ax+by=c to bounding box
+    const clipLineBox = (a, b, c, x0, x1, y0, y1) => {
+      const eps = 1e-9, pts = [];
+      const tryX = (x) => { if (Math.abs(b) > eps) { const y = (c-a*x)/b; if (y >= y0-eps && y <= y1+eps) pts.push([x,y]); } };
+      const tryY = (y) => { if (Math.abs(a) > eps) { const x = (c-b*y)/a; if (x >= x0-eps && x <= x1+eps) pts.push([x,y]); } };
       tryX(x0); tryX(x1); tryY(y0); tryY(y1);
-      // dedup
-      const uniq = pts.filter((p, i) => !pts.slice(0, i).some(q => Math.abs(p[0]-q[0]) < eps && Math.abs(p[1]-q[1]) < eps));
-      return uniq.length >= 2 ? [uniq[0], uniq[uniq.length - 1]] : null;
+      const uniq = pts.filter((p,i) => !pts.slice(0,i).some(q => Math.abs(p[0]-q[0])<eps && Math.abs(p[1]-q[1])<eps));
+      return uniq.length >= 2 ? [uniq[0], uniq[uniq.length-1]] : null;
     };
+    // clip line ax+by=c to a convex polygon [[x,y],...]; returns [p1,p2] in paper space or null
+    const clipLineToPoly = (a, b, c, poly) => {
+      const eps = 1e-9, n = poly.length, pts = [];
+      for (let i = 0; i < n; i++) {
+        const [x1,y1] = poly[i], [x2,y2] = poly[(i+1)%n];
+        const d = a*(x2-x1) + b*(y2-y1);
+        if (Math.abs(d) < eps) continue;
+        const t = (c - a*x1 - b*y1) / d;
+        if (t >= -eps && t <= 1+eps) pts.push([x1+t*(x2-x1), y1+t*(y2-y1)]);
+      }
+      const uniq = pts.filter((p,i) => !pts.slice(0,i).some(q => Math.hypot(p[0]-q[0],p[1]-q[1]) < 1e-8));
+      return uniq.length >= 2 ? [uniq[0], uniq[uniq.length-1]] : null;
+    };
+    // shoelace signed area of [[x,y],...] polygon
+    const sa2 = (poly) => { let s = 0; for (let i = 0; i < poly.length; i++) { const [x1,y1]=poly[i],[x2,y2]=poly[(i+1)%poly.length]; s+=x1*y2-x2*y1; } return s; };
+    // map paper point [px,py] to table space via face isometry (paper→table vertex pairs)
+    const applyIso = (papPoly, tabPoly, px, py) => {
+      const [px1,py1]=papPoly[0],[px2,py2]=papPoly[1],[tx1,ty1]=tabPoly[0],[tx2,ty2]=tabPoly[1];
+      const edx=px2-px1, edy=py2-py1, len2=edx*edx+edy*edy;
+      if (len2 < 1e-18) return [tx1,ty1];
+      const tEdx=tx2-tx1, tEdy=ty2-ty1;
+      const refl = (sa2(papPoly) >= 0) !== (sa2(tabPoly) >= 0);
+      const dx=px-px1, dy=py-py1;
+      const u=(dx*edx+dy*edy)/len2, v=(-dx*edy+dy*edx)/len2;
+      return refl ? [tx1+u*tEdx+v*tEdy, ty1+u*tEdy-v*tEdx]
+                  : [tx1+u*tEdx-v*tEdy, ty1+u*tEdy+v*tEdx];
+    };
+
     for (const sel of constructionsRaw.split(",").map(s => s.trim()).filter(Boolean)) {
       if (sel.startsWith("--")) {
         const name = sel.slice(2);
         const l = namedLines[name];
         if (!l) continue;
         const [la, lb, lc] = l;
-        // clip in paper space; render using current tx/ty (paper coords when flat, approx when folded)
-        const seg = clipLine(la, lb, lc, pMinX, pMaxX, pMinY, pMaxY);
-        if (!seg) continue;
-        const [[x1, y1], [x2, y2]] = seg;
-        out.push(`<line x1="${tx(x1)}" y1="${ty(y1)}" x2="${tx(x2)}" y2="${ty(y2)}" stroke="${CON_LN}" stroke-width="1.5" stroke-dasharray="6 3" opacity="0.8"/>`);
-        const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-        out.push(`<text x="${tx(mx)}" y="${ty(my) - 6}" font-size="12" font-weight="600" fill="${CON_LN}" stroke="white" stroke-width="2.5" paint-order="stroke" text-anchor="middle">--${name}</text>`);
+        if (viewFlag) {
+          // folded view: clip to each face's paper polygon, transform to table space
+          const drawn = [];
+          for (const face of F) {
+            const papPoly = face.map(vi => rootV[vi]);
+            const tabPoly = face.map(vi => V[vi]);
+            const seg = clipLineToPoly(la, lb, lc, papPoly);
+            if (!seg) continue;
+            const [t1, t2] = seg.map(([ppx,ppy]) => applyIso(papPoly, tabPoly, ppx, ppy));
+            out.push(`<line x1="${tx(t1[0])}" y1="${ty(t1[1])}" x2="${tx(t2[0])}" y2="${ty(t2[1])}" stroke="${CON_LN}" stroke-width="1.5" stroke-dasharray="6 3" opacity="0.8"/>`);
+            drawn.push([t1, t2]);
+          }
+          if (drawn.length > 0) {
+            const [[x1,y1],[x2,y2]] = drawn[0];
+            out.push(`<text x="${tx((x1+x2)/2)}" y="${ty((y1+y2)/2) - 6}" font-size="12" font-weight="600" fill="${CON_LN}" stroke="white" stroke-width="2.5" paint-order="stroke" text-anchor="middle">--${name}</text>`);
+          }
+        } else {
+          const seg = clipLineBox(la, lb, lc, pMinX, pMaxX, pMinY, pMaxY);
+          if (!seg) continue;
+          const [[x1,y1],[x2,y2]] = seg;
+          out.push(`<line x1="${tx(x1)}" y1="${ty(y1)}" x2="${tx(x2)}" y2="${ty(y2)}" stroke="${CON_LN}" stroke-width="1.5" stroke-dasharray="6 3" opacity="0.8"/>`);
+          out.push(`<text x="${tx((x1+x2)/2)}" y="${ty((y1+y2)/2) - 6}" font-size="12" font-weight="600" fill="${CON_LN}" stroke="white" stroke-width="2.5" paint-order="stroke" text-anchor="middle">--${name}</text>`);
+        }
       } else if (sel.startsWith(".")) {
         const name = sel.slice(1);
         const entry = namedPoints[name];
         if (!entry) continue;
-        // new format: {paper:[x,y], table:[x,y]}; old format: [x,y] fallback
         const coords = Array.isArray(entry) ? entry : (viewFlag ? entry.table : entry.paper);
         if (!coords) continue;
         const [px, py] = coords;
