@@ -339,6 +339,7 @@ if (import.meta.main) {
       return uniq.length >= 2 ? [uniq[0], uniq[uniq.length - 1]] : null;
     };
     for (const sel of constructionsRaw.split(",").map(s => s.trim()).filter(Boolean)) {
+      if (sel.startsWith("--") && viewFlag) continue; // lines bend across folds; skip in folded view
       if (sel.startsWith("--")) {
         const name = sel.slice(2);
         const l = namedLines[name];
@@ -352,9 +353,12 @@ if (import.meta.main) {
         out.push(`<text x="${tx(mx)}" y="${ty(my) - 6}" font-size="12" font-weight="600" fill="${CON_LN}" stroke="white" stroke-width="2.5" paint-order="stroke" text-anchor="middle">--${name}</text>`);
       } else if (sel.startsWith(".")) {
         const name = sel.slice(1);
-        const p = namedPoints[name];
-        if (!p) continue;
-        const [px, py] = p;
+        const entry = namedPoints[name];
+        if (!entry) continue;
+        // new format: {paper:[x,y], table:[x,y]}; old format: [x,y] fallback
+        const coords = Array.isArray(entry) ? entry : (viewFlag ? entry.table : entry.paper);
+        if (!coords) continue;
+        const [px, py] = coords;
         out.push(`<circle cx="${tx(px)}" cy="${ty(py)}" r="4.5" fill="${CON_PT}" opacity="0.85"/>`);
         const ox = px < (minX + maxX) / 2 ? -14 : 10;
         const oy = py < (minY + maxY) / 2 ? 16 : -7;
