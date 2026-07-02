@@ -152,9 +152,24 @@ $outer = step {
 ; --pq now in root scope
 ```
 
-### 5.5 Shadowing is an error
+### 5.5 Shadowing requires `!`
 
-Exporting a name that already exists in the enclosing scope is an error. Use `as` to rename:
+Exporting a name that already exists in the enclosing scope requires an explicit `!` marker:
+
+```beloch
+export { --pq! } step { ... }   ; intentional shadow — --pq existed, now replaced
+```
+
+`!` is validated both ways:
+
+| Name exists in enclosing scope | `!` | Result |
+|---|---|---|
+| no | no | OK — new binding |
+| yes | yes | OK — intentional shadow |
+| yes | no | Error — "name exists, use `!` to shadow" |
+| no | yes | Error — "nothing to shadow, remove `!`" |
+
+To keep both the old and new value, use `as` to rename the export instead:
 
 ```beloch
 export { --rs as --thirds-rs } step { ... }
