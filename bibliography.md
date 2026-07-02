@@ -50,6 +50,24 @@ Grounds ADR 0012 (`lib/poly.ml`): the isolating-interval representation, the
 numeric Sylvester resultant, and the interval-refinement comparisons. **The
 number-theory foundation of Beloch's algebraic kernel.**
 
+### Della Dora, Dicrescenzo & Duval — "About a New Method for Computing in Algebraic Number Fields" (EUROCAL '85, LNCS 204)
+The founding "D5" paper — a two-page extended abstract (pp. 289–290; that *is*
+the complete published text). States Lazard's remark: for squarefree `P` and any
+`A`, `A` is zero modulo `gcd(P,A)` and invertible modulo `P/gcd(P,A)` — so one
+can compute in `ℚ[X]/P(X)` without factorization or primitive-element
+computation, letting representations split lazily during computation. Grounds
+the kernel's squarefree-generator `Field` invariant (zero-test via gcd,
+generator splitting on inversion). `refs/ddd1985.md` is a transcription of the
+scan (no text layer).
+
+### Duval — "Algebraic Numbers: An Example of Dynamic Evaluation" (*J. Symbolic Computation* 18, 1994)
+Tutorial companion to ddd1985 (received 1989, from an ISSAC '89 invited talk):
+names the technique *dynamic evaluation* ("automatic case discussion"), works
+the algebraic-number case in detail (§2–3), and discusses implementation (§5).
+The readable exposition of what the D5 abstract compresses into two pages.
+OCR'd text in `refs/duval1994.txt` (scanned original; math notation mangled,
+prose searchable).
+
 ### Messer — "Problem 1054" (*Crux Mathematicorum* 12(10), 1986)
 The canonical paper-folding construction of ∛2. A square is divided into three
 equal vertical strips by lines `PQ` (x=1/3) and `RS` (x=2/3); folding corner `C`
