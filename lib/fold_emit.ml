@@ -161,7 +161,13 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
     `Assoc
       (List.map
          (fun (name, (p : Geom.point)) ->
-           (name, `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ]))
+           let t = Fold_state.table_position fd.Eval.state p in
+           ( name,
+             `Assoc
+               [
+                 ("paper", `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ]);
+                 ("table", `List [ q_to_json t.Geom.x; q_to_json t.Geom.y ]);
+               ] ))
          fd.Eval.named_points)
   in
   let beloch_named_lines =
