@@ -57,10 +57,10 @@ let eval_folded (prog : Ast.program) : folded =
         match Geom.intersection a b with
         | None -> Error.fail span "creases are parallel; no intersection"
         | Some tp -> (
-            match Fold_state.paper_preimages !state tp with
-            | [] ->
+            match Fold_state.topmost_preimage !state tp with
+            | None ->
                 Error.fail span (Printf.sprintf "%s is off the paper" (pstr po))
-            | ps -> List.nth ps (List.length ps - 1)))
+            | Some pp -> pp))
   and resolve_line (lo : Ast.line_operand) : Geom.line =
     match lo with
     | Ast.LNamed cr -> lookup_crease cr

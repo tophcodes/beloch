@@ -280,6 +280,50 @@ let test_fold_paper_preimages () =
   in
   Alcotest.(check int) "two preimages in the folded overlap" 2 (List.length folded)
 
+(* #27: folding along a precrease (subdivide, then fold on the same axis) must
+   upgrade the abutting U crease to M/V — the fold cuts nothing, so the record
+   comes from the abut case, not from a cut. *)
+let test_fold_precrease_upgrade () =
+  let axis = { Geom.a = q 1; b = q 0; c = half } in
+  let st1, _ = Fold_state.subdivide Fold_state.init_square axis ~prov:None in
+  let _, recs =
+    Fold_state.fold_with_records st1 ~axis ~move_side:1 ~valley:true ~prov:None
+  in
+  Alcotest.(check int) "folding a precrease yields one valley record" 1
+    (count_assign Fold_state.V recs);
+  Alcotest.(check int) "the fold emits no stale U" 0
+    (count_assign Fold_state.U recs)
+
+(* #25: two fully-overlapping unit squares; face 0 is Above face 1 in `order`
+   but comes first in the array, so array-position resolution would pick the
+   bottom. topmost_preimage must consult `order` and return face 0's point. *)
+let test_topmost_preimage_order () =
+  let vline c = { Geom.a = Num.one; b = Num.zero; c = q c } in
+  (* x -> x - 10, y unchanged: two reflections across vertical lines *)
+  let tr10 =
+    Isometry.compose
+      (Isometry.reflect_across_line (vline (-5)))
+      (Isometry.reflect_across_line (vline 0))
+  in
+  let unit_at dx = [| pt dx 0; pt (dx + 1) 0; pt (dx + 1) 1; pt dx 1 |] in
+  let face0 = { Fold_state.paper = unit_at 0; iso = Isometry.identity } in
+  let face1 = { Fold_state.paper = unit_at 10; iso = tr10 } in
+  let st =
+    {
+      Fold_state.faces = [| face0; face1 |];
+      order =
+        [|
+          [| Fold_state.Apart; Fold_state.Above |];
+          [| Fold_state.Below; Fold_state.Apart |];
+        |];
+    }
+  in
+  match Fold_state.topmost_preimage st { Geom.x = half; y = half } with
+  | Some p ->
+      Alcotest.(check bool) "topmost is face 0 (paper x < 1)" true
+        (Geom.point_equal p { Geom.x = half; y = half })
+  | None -> Alcotest.fail "expected a preimage"
+
 let test_fold_state_flip () =
   let st =
     Fold_state.simple_fold Fold_state.init_square
@@ -482,6 +526,10 @@ let () =
           Alcotest.test_case "fold records accordion" `Quick
             test_fold_records_accordion;
           Alcotest.test_case "paper preimages" `Quick test_fold_paper_preimages;
+          Alcotest.test_case "precrease upgrades U to V" `Quick
+            test_fold_precrease_upgrade;
+          Alcotest.test_case "topmost preimage via order" `Quick
+            test_topmost_preimage_order;
           Alcotest.test_case "flip det + layer reversal" `Quick test_fold_state_flip;
           Alcotest.test_case "flip is an involution" `Quick
             test_fold_state_flip_involution;

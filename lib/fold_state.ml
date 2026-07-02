@@ -197,14 +197,34 @@ let fold_with_records (st : t) ~(axis : Geom.line) ~(move_side : int)
       in
       let s = part (-move_side) f.iso in
       let m = part move_side (Isometry.compose refl f.iso) in
+      let assign_of () = if valley <> (Isometry.det_sign f.iso < 0) then V else M in
+      (* the face's edge lying on [axis], in paper coords, if any — for a face
+         that abuts the axis rather than being cut by it (a precrease) *)
+      let abut_edge () : (Geom.point * Geom.point) option =
+        let n = Array.length f.paper in
+        let rec loop k =
+          if k >= n then None
+          else
+            let pa = f.paper.(k) and pb = f.paper.((k + 1) mod n) in
+            if
+              Geom.side_of_line axis (Isometry.apply_point f.iso pa) = 0
+              && Geom.side_of_line axis (Isometry.apply_point f.iso pb) = 0
+            then Some (pa, pb)
+            else loop (k + 1)
+        in
+        loop 0
+      in
       (match (s, m) with
       | Some _, Some _ -> (
           match axis_segment_in_face f axis with
-          | Some (a, b) ->
-              let assign =
-                if valley <> (Isometry.det_sign f.iso < 0) then V else M
-              in
-              recs := { ra = a; rb = b; assign; prov } :: !recs
+          | Some (a, b) -> recs := { ra = a; rb = b; assign = assign_of (); prov } :: !recs
+          | None -> ())
+      | None, Some _ -> (
+          (* whole face on the moving side: if it abuts the axis along an edge,
+             that edge is a precrease now being folded — emit its M/V, which
+             wins over the stale U from the earlier subdivide (#27) *)
+          match abut_edge () with
+          | Some (a, b) -> recs := { ra = a; rb = b; assign = assign_of (); prov } :: !recs
           | None -> ())
       | _ -> ());
       (match s with Some face -> stay := (face, fi) :: !stay | None -> ());
@@ -257,6 +277,26 @@ let paper_preimages (st : t) (tp : Geom.point) : Geom.point list =
       then acc := pp :: !acc)
     st.faces;
   List.rev !acc
+
+(* The paper coordinate on the topmost layer covering table point [tp] (None if
+   [tp] is off the paper). "Topmost" is decided by the order matrix, not array
+   position: among the faces covering [tp] — which pairwise overlap at [tp], so
+   [order] restricted to them is total — the top one is above (never below) all
+   the others. #25: array index carries no z-meaning, so we must consult
+   [order] rather than taking the last preimage. *)
+let topmost_preimage (st : t) (tp : Geom.point) : Geom.point option =
+  let covering = ref [] in
+  Array.iteri
+    (fun i f ->
+      let pp = Isometry.apply_point (Isometry.inverse f.iso) tp in
+      if Geom.in_convex_polygon f.paper pp then covering := (i, pp) :: !covering)
+    st.faces;
+  let is_top (i, _) =
+    List.for_all (fun (j, _) -> i = j || st.order.(i).(j) <> Below) !covering
+  in
+  match List.find_opt is_top !covering with
+  | Some (_, pp) -> Some pp
+  | None -> None
 
 (* simple flat fold: reflect every layer-part on [move_side] of [axis] across it,
    then restack. valley → moved parts (reversed) on top; mountain → underneath. *)

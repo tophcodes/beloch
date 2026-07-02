@@ -322,6 +322,22 @@ let test_emit_folded_crease_name () =
   Alcotest.(check bool) "crease carries name m" true
     (List.exists (fun n -> n = `String "m") names)
 
+(* #27: mark a precrease, then fold on it. The emitted FOLD must carry V/180 on
+   that crease, never the stale U/0 from the precrease's subdivide. *)
+let test_e2e_precrease_fold_emits_v () =
+  let open Yojson.Safe.Util in
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\nmap .b onto .a\n@map .b onto .a moving .b\n")
+  in
+  let j = Fold_emit.to_json_folded fd in
+  let assigns = j |> member "edges_assignment" |> to_list |> filter_string in
+  Alcotest.(check bool) "no U assignment after folding a precrease" false
+    (List.mem "U" assigns);
+  Alcotest.(check bool) "the precrease folds as a valley" true
+    (List.mem "V" assigns)
+
 let () =
   Alcotest.run "beloch-e2e"
     [
@@ -352,6 +368,8 @@ let () =
           Alcotest.test_case "inline off-paper errors" `Quick test_e2e_inline_error;
           Alcotest.test_case "axiom7 rational crease fold emit" `Quick
             test_e2e_axiom7_rational_crease;
+          Alcotest.test_case "precrease then fold emits V not U" `Quick
+            test_e2e_precrease_fold_emits_v;
         ] );
       ( "emit_folded",
         [
