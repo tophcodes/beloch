@@ -27,3 +27,13 @@ need to be recovered from a line that was kept but whose inputs weren't exported
 `apply $step(args)` with dynamic scoping makes steps re-applicable. Useful
 patterns would need `repeat n { ... }` or `foreach .p in [...] { ... }`.
 Requires its own design — conditions, iteration over paper elements, etc.
+
+## Degree compression via subfields (post-#33, only if needed)
+
+If the #33 benchmarks show degree creep in long models (values carrying ambient
+degree though they live in a proper subfield — e.g. √2·√5 = √10 at degree 4
+instead of 2), add a demotion pass: compute the element's own minimal polynomial
+(one resultant Res_x(gen(x), y − coords(x)) + gcd trick) and re-home it in the
+smaller field. Full subfield enumeration (Szutkoski & van Hoeij, principal
+subfields) is overkill for this; pull that reference in only if per-element
+demotion proves insufficient.
