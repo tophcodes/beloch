@@ -87,3 +87,22 @@ P à D" — the fold through a point perpendicular to a line (Hull's O5). The an
 bisector is operation ⑤ `(D → D')` (Hull's O4), and it is the first axiom whose
 result leaves ℚ (square roots). Don't re-conflate them: axiom 3 = perpendicular
 through a point (rational, landed v0.2); axiom 5 = angle bisector (irrational).
+
+## The fused `step` construct (2026-07-02, first step/macro spec)
+
+The first approved step/macro spec made one `step` construct carry scoping
+*and* diagram grouping, and gave `$name` three meanings at once: display
+label (evaluated immediately, scope discarded), stored macro (deferred),
+retained namespace (needed by post-hoc `export`). Consequences, per the
+review in #29: post-hoc `export { --pq } $thirds` either failed or re-ran
+the body — physically double-folding the paper; a parameter list silently
+switched the evaluation model; the spec's own flagship example was
+undefined under its own scope rule; several examples didn't parse.
+Nine commits on `worktree-feat+step-macros` implement this design.
+
+Fix (revised spec, same date): one construct per meaning — `def` (never
+runs) / `apply` (only execution form, yields retained instance) / `export`
+(reads, never runs) / `step` (panel marker, display only) — and one sigil
+per meaning: bare identifiers for defs, `$` only for instances. Don't
+re-fuse the axes: display grouping and scoping always come apart under
+pressure ("group without hiding" and "hide without grouping" both exist).

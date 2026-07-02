@@ -6,11 +6,11 @@ has been tried and found wanting; these are just parked.
 
 ---
 
-## Step interface / pub-priv
+## Def interface / pub-priv
 
-Caller-side `export { .foo } from apply $step(args)` already handles namespace
+Caller-side `export { .foo } $inst` plus `_`-temps already handle namespace
 control sufficiently for single-author use. Author-side interface declaration —
-a `pub { .foo --bar }` block at the end of a step, or a `priv` modifier per
+a `pub { .foo --bar }` block at the end of a def, or a `priv` modifier per
 binding — would let library authors lock down implementation details.
 
 Revisit when shared `.bel` libraries / distribution is on the table.
@@ -24,9 +24,23 @@ need to be recovered from a line that was kept but whose inputs weren't exported
 
 ## Looping primitives
 
-`apply $step(args)` with dynamic scoping makes steps re-applicable. Useful
-patterns would need `repeat n { ... }` or `foreach .p in [...] { ... }`.
-Requires its own design — conditions, iteration over paper elements, etc.
+`apply name(args)` makes defs re-applicable (closed scope: parameters +
+earlier defs only). Useful patterns would need `repeat n { ... }` or
+`foreach .p in [...] { ... }`. Requires its own design — conditions,
+iteration over paper elements, etc.
+
+## Nested defs & namespace chaining
+
+Defs are top-level only; instances hold points/lines, not other instances.
+If real programs want structured sub-results (`.[$bird $petal tip]`), that
+needs nested defs plus chained qualified access. Deferred until a concrete
+model demands it.
+
+## Re-export cascades
+
+The revised spec has no nested scopes, so lifting an export "one more
+level" is meaningless. Becomes relevant only together with nested defs or
+module/file namespacing.
 
 ## Degree compression via subfields (post-#33, only if needed)
 
