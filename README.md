@@ -18,19 +18,17 @@ paper square
 --d1: through .a .c
 --d2: through .b .d
 .center: cross --d1 --d2
-map .a onto .center
+@map .a onto .center
 ```
 
-Two diagonals, a named crossing, one fold — `.a` maps onto `.center` along the
-crease axiom 2 derives. Run it and render the crease pattern with the named
-constructions overlaid:
+Two diagonals, a named crossing, one fold — `@` actually folds `.a` onto
+`.center` (a bare `map` would just mark the crease) along the crease axiom 2
+derives. That program produces a [FOLD][fold-spec] file, which renders into
+this — crease pattern and folded state, named constructions overlaid:
 
-```sh
-dune exec beloch -- fold examples/x-midpoint.bel \
-  | bun tools/fold2svg.mjs - x-midpoint.svg --constructions .center
-```
-
-![x-midpoint.bel rendered as a crease pattern: two diagonals --d1 and --d2, their crossing labelled .center, and the fold crease from .a to .center](examples/x-midpoint.svg)
+| crease pattern | folded |
+| --- | --- |
+| ![x-midpoint.bel rendered as a crease pattern: two diagonals --d1 and --d2, their crossing labelled .center, and the fold crease from .a to .center](examples/x-midpoint-cp.svg) | ![x-midpoint.bel folded: the corner .a flap reflected onto .center](examples/x-midpoint-folded.svg) |
 
 More programs, from simple midline folds to Messer's cube-root-of-two
 construction (axiom 7), are in [`examples/`](examples/).
