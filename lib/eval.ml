@@ -294,11 +294,8 @@ let eval_folded (prog : Ast.program) : folded =
           Hashtbl.replace points n (resolve_point (Ast.PCross (l1, l2, span)))
       | Ast.Flip _ -> state := Fold_state.flip !state)
     prog;
-  let corner_names = List.map fst corners in
   let named_points =
-    Hashtbl.fold
-      (fun k v acc -> if List.mem k corner_names then acc else (k, v) :: acc)
-      points []
+    Hashtbl.fold (fun k v acc -> (k, v) :: acc) points []
   in
   let named_lines = Hashtbl.fold (fun k v acc -> (k, v) :: acc) creases_env [] in
   { state = !state; creases = !recs; named_points; named_lines }

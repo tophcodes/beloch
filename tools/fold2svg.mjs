@@ -323,29 +323,34 @@ if (import.meta.main) {
     const namedPoints = fold["beloch:named_points"] || {};
     const namedLines = fold["beloch:named_lines"] || {};
     const CON_PT = "#6366f1", CON_LN = "#6366f1";
-    // clip line ax+by=c to [minX,maxX]×[minY,maxY]; returns two [x,y] or null
-    const clipLine = (a, b, c) => {
+    // lines are in paper space; clip to paper bounds (root frame), not table bounds
+    const rootV = fold.vertices_coords || [];
+    const pxs = rootV.map(p => p[0]), pys = rootV.map(p => p[1]);
+    const [pMinX, pMaxX] = [Math.min(...pxs), Math.max(...pxs)];
+    const [pMinY, pMaxY] = [Math.min(...pys), Math.max(...pys)];
+    // clip line ax+by=c to [x0,x1]×[y0,y1]; returns two [x,y] or null
+    const clipLine = (a, b, c, x0, x1, y0, y1) => {
       const eps = 1e-9;
       const pts = [];
       const tryX = (x) => {
-        if (Math.abs(b) > eps) { const y = (c - a * x) / b; if (y >= minY - eps && y <= maxY + eps) pts.push([x, y]); }
+        if (Math.abs(b) > eps) { const y = (c - a * x) / b; if (y >= y0 - eps && y <= y1 + eps) pts.push([x, y]); }
       };
       const tryY = (y) => {
-        if (Math.abs(a) > eps) { const x = (c - b * y) / a; if (x >= minX - eps && x <= maxX + eps) pts.push([x, y]); }
+        if (Math.abs(a) > eps) { const x = (c - b * y) / a; if (x >= x0 - eps && x <= x1 + eps) pts.push([x, y]); }
       };
-      tryX(minX); tryX(maxX); tryY(minY); tryY(maxY);
+      tryX(x0); tryX(x1); tryY(y0); tryY(y1);
       // dedup
       const uniq = pts.filter((p, i) => !pts.slice(0, i).some(q => Math.abs(p[0]-q[0]) < eps && Math.abs(p[1]-q[1]) < eps));
       return uniq.length >= 2 ? [uniq[0], uniq[uniq.length - 1]] : null;
     };
     for (const sel of constructionsRaw.split(",").map(s => s.trim()).filter(Boolean)) {
-      if (sel.startsWith("--") && viewFlag) continue; // lines bend across folds; skip in folded view
       if (sel.startsWith("--")) {
         const name = sel.slice(2);
         const l = namedLines[name];
         if (!l) continue;
         const [la, lb, lc] = l;
-        const seg = clipLine(la, lb, lc);
+        // clip in paper space; render using current tx/ty (paper coords when flat, approx when folded)
+        const seg = clipLine(la, lb, lc, pMinX, pMaxX, pMinY, pMaxY);
         if (!seg) continue;
         const [[x1, y1], [x2, y2]] = seg;
         out.push(`<line x1="${tx(x1)}" y1="${ty(y1)}" x2="${tx(x2)}" y2="${ty(y2)}" stroke="${CON_LN}" stroke-width="1.5" stroke-dasharray="6 3" opacity="0.8"/>`);
