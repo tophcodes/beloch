@@ -1,7 +1,7 @@
 # Beloch — Defs, Instances & Steps (Design)
 
 - **Date:** 2026-07-02
-- **Status:** Draft — rewrite of the previously approved spec, per findings in #29; #24 folded in.
+- **Status:** Approved — rewrite of the previous spec, per findings in #29; #24 folded in.
 - **Replaces:** the fused `step`/`export`/`inline` design (see `antipatterns.md`).
 
 ## 1. Motivation
