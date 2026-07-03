@@ -4,8 +4,16 @@ let q = Num.of_int
 let[@warning "-32"] half = Num.of_q (Q.of_ints 1 2)
 let pt x y = { Geom.x = q x; y = q y }
 
+(* Anchor to the source root of *this* build context. dune sets
+   DUNE_SOURCEROOT to the absolute workspace root, so an in-repo worktree
+   reads its own examples/ rather than the main checkout's (#37). *)
+let examples_dir =
+  match Sys.getenv_opt "DUNE_SOURCEROOT" with
+  | Some root -> Filename.concat root "examples"
+  | None -> "../../../examples"
+
 let read_example name =
-  In_channel.with_open_text ("../../../examples/" ^ name) In_channel.input_all
+  In_channel.with_open_text (Filename.concat examples_dir name) In_channel.input_all
 
 let expect_error msg_substr thunk =
   try

@@ -420,17 +420,12 @@ let skip_example _name path =
   has "; bench: slow" || has "; status: anti"
 
 let examples_dir () =
-  (* When run by dune (runtest / exec), the binary sits in
-     _build/default/tests/test_eval.exe and dune sets cwd to
-     _build/default/tests/ — so ../../../examples reaches the repo root.
-     When invoked directly from the repo root the relative path is wrong; use
-     Sys.argv.(0) to locate the binary and derive the repo root from it. *)
-  let via_cwd = "../../../examples" in
-  if Sys.file_exists via_cwd then via_cwd
-  else
-    let bin = Sys.argv.(0) in
-    let build_dir = Filename.dirname (Filename.dirname (Filename.dirname bin)) in
-    Filename.concat build_dir "examples"
+  (* Anchor to the source root of *this* build context. dune sets
+     DUNE_SOURCEROOT to the absolute workspace root, so an in-repo worktree
+     reads its own examples/ rather than the main checkout's (#37). *)
+  match Sys.getenv_opt "DUNE_SOURCEROOT" with
+  | Some root -> Filename.concat root "examples"
+  | None -> "../../../examples"
 
 let test_layer_all_examples_valid () =
   let dir = examples_dir () in
