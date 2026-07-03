@@ -3,9 +3,11 @@
     Sylvester-resultant elimination of each algebraic coefficient's generator, a
     ℚ-polynomial in the root variable whose real roots are a SUPERSET of the true
     roots (spurious conjugate roots are removed later by exact evaluation). Only
-    the root set matters, so sign/constant factors are not tracked. Determinants
-    use division-free Laplace expansion (the ring is not a field).
-    Algorithms: [bpr2006 §4.2]. *)
+    the root set matters, so sign/constant factors are not tracked. The
+    Sylvester resultant is computed by evaluation + interpolation: each
+    specialized Sylvester determinant is a numeric Gaussian elimination over ℚ
+    (Poly.det), and the multivariate result is recovered by Lagrange
+    interpolation. Algorithms: [bpr2006 §4.2]. *)
 
 type mono = int array (* exponents, length = nvars *)
 type t = (mono * Q.t) list (* unique monomials, no zero coeffs *)
@@ -88,29 +90,37 @@ let coeffs_in (p : t) (v : int) : t array =
     p;
   out
 
-(* determinant of a square matrix of Mpoly by Laplace expansion along row 0.
-   Division-free: valid over the (non-field) polynomial ring. n is small here. *)
-let rec det (mat : t array array) : t =
-  let n = Array.length mat in
-  if n = 0 then [] (* unused *)
-  else if n = 1 then mat.(0).(0)
-  else begin
-    let acc = ref zero in
-    for j = 0 to n - 1 do
-      let minor =
-        Array.init (n - 1) (fun r ->
-            Array.init (n - 1) (fun c ->
-                mat.(r + 1).(if c < j then c else c + 1)))
-      in
-      let term = mul mat.(0).(j) (det minor) in
-      acc := if j land 1 = 0 then add !acc term else sub !acc term
-    done;
-    !acc
-  end
+(* substitute values for the variables in [point] (all variables except v
+   must be covered); returns the univariate ℚ-coefficient array of x_v,
+   low-first, length degree_in p v + 1 (fixed generic length — substitution
+   can only zero leading entries, never change the array shape). *)
+let specialize (p : t) (v : int) (point : (int * Q.t) list) : Q.t array =
+  let d = degree_in p v in
+  let arr = Array.make (d + 1) Q.zero in
+  List.iter
+    (fun (m, c) ->
+      let value = ref c in
+      List.iter
+        (fun (i, x) ->
+          for _ = 1 to m.(i) do
+            value := Q.mul !value x
+          done)
+        point;
+      arr.(m.(v)) <- Q.add arr.(m.(v)) !value)
+    p;
+  arr
 
-(* Sylvester resultant of a and b with respect to variable v. Mirrors the dense
-   Sylvester layout of Poly.resultant, but matrix entries are Mpoly (in the
-   remaining variables). Result has exponent 0 in v. *)
+(* Sylvester resultant of a and b with respect to variable v, by evaluation +
+   interpolation: the Sylvester matrix layout is fixed by the generic
+   v-degrees (da, db), so specializing the remaining variables commutes with
+   taking the determinant — even where leading coefficients vanish at a
+   sample point. Each specialized determinant is a numeric Gaussian
+   elimination over ℚ (Poly.det), and the multivariate result is recovered
+   by tensor-grid Lagrange interpolation, one variable at a time. Degree
+   bound in each remaining variable x: db·deg_x(a) + da·deg_x(b) (every
+   determinant term multiplies db entries from a-rows and da from b-rows).
+   Replaces the division-free Laplace expansion, which was factorial in the
+   matrix size [bpr2006 §4.2 for the Sylvester construction]. *)
 let resultant (a : t) (b : t) (v : int) : t =
   let ca = coeffs_in a v and cb = coeffs_in b v in
   let da = Array.length ca - 1 and db = Array.length cb - 1 in
@@ -118,21 +128,63 @@ let resultant (a : t) (b : t) (v : int) : t =
   else if da = 0 then pow ca.(0) db
   else if db = 0 then pow cb.(0) da
   else begin
-    let n = da + db in
-    (* ca/cb are low-first; Poly.resultant indexes high-first as p.(dp - j) *)
-    let hi (c : t array) (deg : int) (k : int) : t = c.(deg - k) in
-    let m = Array.make_matrix n n zero in
-    for i = 0 to db - 1 do
-      for j = 0 to da do
-        m.(i).(i + j) <- hi ca da j
-      done
-    done;
-    for i = 0 to da - 1 do
-      for j = 0 to db do
-        m.(db + i).(i + j) <- hi cb db j
-      done
-    done;
-    det m
+    let nvars =
+      match (a, b) with
+      | (m, _) :: _, _ | _, (m, _) :: _ -> Array.length m
+      | [], [] -> 0
+    in
+    let others =
+      List.filter
+        (fun i -> i <> v && (degree_in a i > 0 || degree_in b i > 0))
+        (List.init nvars (fun i -> i))
+    in
+    let bound i = (db * degree_in a i) + (da * degree_in b i) in
+    let det_at (point : (int * Q.t) list) : Q.t =
+      let sa = specialize a v point and sb = specialize b v point in
+      let n = da + db in
+      let m = Array.make_matrix n n Q.zero in
+      for i = 0 to db - 1 do
+        for j = 0 to da do
+          m.(i).(i + j) <- sa.(da - j)
+        done
+      done;
+      for i = 0 to da - 1 do
+        for j = 0 to db do
+          m.(db + i).(i + j) <- sb.(db - j)
+        done
+      done;
+      Poly.det m
+    in
+    (* interpolate over the remaining variables, innermost-first *)
+    let rec interp (vars : int list) (point : (int * Q.t) list) : t =
+      match vars with
+      | [] -> const nvars (det_at point)
+      | x :: rest ->
+          let d = bound x in
+          let samples =
+            List.init (d + 1) (fun k ->
+                let xk = Q.of_int k in
+                (xk, interp rest ((x, xk) :: point)))
+          in
+          List.fold_left
+            (fun acc (xi, ri) ->
+              (* Lagrange basis L_i(x) = ∏_{j≠i} (x − xj)/(xi − xj), as Mpoly *)
+              let li =
+                List.fold_left
+                  (fun p (xj, _) ->
+                    if Q.equal xj xi then p
+                    else
+                      let denom = Q.sub xi xj in
+                      mul p
+                        (add
+                           (mul (const nvars (Q.inv denom)) (var nvars x))
+                           (const nvars (Q.div (Q.neg xj) denom))))
+                  (one_of nvars) samples
+              in
+              add acc (mul ri li))
+            zero samples
+    in
+    interp others []
   end
 
 (* Extract the univariate ℚ-polynomial in variable v; every other variable must

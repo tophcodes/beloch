@@ -36,4 +36,5 @@ module Fold_emit = Fold_emit
 module Fold_state = Fold_state
 module Poly = Poly
 module Mpoly = Mpoly
+module Qqbar = Qqbar
 module Diagnostic = Diagnostic
