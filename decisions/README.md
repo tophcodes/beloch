@@ -33,3 +33,4 @@ See also: `../notes/` (design journal), `../antipatterns.md` (dead ends),
 - [0011](0011-action-model.md) — Action model
 - [0012](0012-real-algebraic-number-kernel.md) — Real-algebraic number kernel
 - [0013](0013-flint-qqbar-backend.md) — FLINT qqbar backend for irrational values
+- [0015](0015-flat-folded-states-only.md) — Flat folded states only; 3D is a goal, not carried

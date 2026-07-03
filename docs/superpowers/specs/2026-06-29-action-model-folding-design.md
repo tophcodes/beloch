@@ -62,9 +62,9 @@ thick-panel claims are *not* grounded in `refs/` — drop sources in before form
 | Topic | Decision |
 |---|---|
 | Model | Action model (imperative folding) — CP construction becomes the precrease sub-layer |
-| Exactness | Exact 3D for constructible/geometric targets; **arbitrary numeric & animated angles** via **constructible-rational approximation** (stays in `Num`, drift-free; float is *never* used for representation, only — optionally — inside the rendering client) |
+| Exactness | Exact geometry for constructible/geometric targets (planar today; exact 3D is the goal once non-flat lands); **arbitrary numeric & animated angles** via **constructible-rational approximation** (stays in `Num`, drift-free; float is *never* used for representation, only — optionally — inside the rendering client) |
 | Thickness | Zero-thickness model; thickness is a display-only ε layer offset; engineering/rigid-panel origami **out of scope** |
-| Runtime state | Faces (flat-coordinate polygons) + per-face exact isometry into 3D + an **addressable, insert-anywhere layer stack** |
+| Runtime state | Faces (flat-coordinate polygons) + per-face exact isometry (planar 2×2 + translation today; 3D isometry is the goal once non-flat lands) + an **addressable, insert-anywhere layer stack** |
 | Mountain/valley | **Derived** from the action (rotation direction) + accumulated flips — never annotated |
 | Fold ladder | Stufe 1 simple fold → Stufe 2 layer selection / landing / validity check → Stufe 3 unfold → named maneuvers as sugar |
 | Syntax | `axiom` = precrease (flat line); `@axiom` = also fold. Verb set `through` · `perp` · `map … onto …` (superposition axioms 2 & 5 unified, type-dispatched — renames `fold`/`bisect`). `moving .p` clause (defaulted for point-moving axioms), `mountain` keyword (default valley) |
@@ -80,9 +80,10 @@ The paper between actions is the standard FOLD `foldedForm`:
 
 - **Faces** — polygons in flat (unfolded) paper coordinates. Construction stays
   *intrinsic*: creases are always expressed in flat coordinates.
-- **Per-face isometry** — a rigid map placing each face into 3D, built as a composition
-  of reflections (flat folds) / rotations. For flat folds these are reflections, so
-  coordinates stay in the constructible field (`Num`).
+- **Per-face isometry** — a rigid map placing each face. Today it is planar (2×2
+  orthogonal + translation in `Num`) and every fold is a reflection, so all coordinates
+  stay in the constructible field. Generalizing to 3D (rotations for non-flat folds) is
+  the goal, not a present capability — see 3.2 and ADR 0015.
 - **Layer ordering** — an addressable, ordered stack supporting insert-at-position.
   Stufe-1 *behavior* is simple ("the moved flap lands on top"), but the *representation*
   must already allow inserting layers at arbitrary positions, because reverse/petal/sink
@@ -114,8 +115,9 @@ do not accumulate floating-point error the way a float chain would. The exact co
 **never falls back to float for representation**; float, if used at all, lives only inside
 the rendering client's frame interpolation.
 
-**Slice 1 is flat-only** (±180°). Given/parameterized non-flat angles are an architecture
-goal reserved here and a near follow-slice — the isometry-based state already carries them.
+**Slice 1 is flat-only** (±180°). Non-flat angles are an intended goal, but reaching them
+is a type-level rework — 3D isometries, 3D `Geom.point`, per-(face,vertex) coordinates —
+**not a capability the current 2D state already carries**. See ADR 0015.
 
 ### 3.3 Reference model (material-persistent)
 
@@ -261,8 +263,9 @@ interpolates.
 - `unfold` (Stufe 3).
 - Named maneuvers — reverse / squash / sink / petal — as sugar (Stufe 3+).
 - Non-flat angles — both target-derived ("fold until edge meets…") and given/parameterized
-  (arbitrary, constructible-rational-approximated; animatable, e.g. wing-flap) — near
-  follow-slice; isometry state already carries them.
+  (arbitrary, constructible-rational-approximated; animatable, e.g. wing-flap). An intended
+  goal, but a type-level rework (3D isometries + geometry), not carried by the 2D state.
+  See ADR 0015.
 - `flip` / `rotate` whole-sheet isometries — fast follow.
 - The **own rendering/animation engine** (TS/web edge): style-controllable tutorial/blog/
   store output, rigid-rotation then later deforming (cloth-like) motion. A separate
