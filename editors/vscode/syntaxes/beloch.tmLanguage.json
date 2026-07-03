@@ -2,5 +2,81 @@
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "name": "Beloch",
   "scopeName": "source.beloch",
-  "patterns": []
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#definitions" },
+    { "include": "#openers" },
+    { "include": "#keywords" },
+    { "include": "#entities" },
+    { "include": "#operators" },
+    { "include": "#punctuation" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "match": ";.*$",
+          "name": "comment.line.semicolon.beloch"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        { "match": "\\b(map|perp|cross|through)\\b", "name": "keyword.control.fold.beloch" },
+        { "match": "\\b(flip)\\b", "name": "keyword.control.flip.beloch" },
+        { "match": "\\b(onto|and|toward|moving)\\b", "name": "keyword.operator.word.beloch" },
+        { "match": "\\b(mountain)\\b", "name": "keyword.other.direction.beloch" },
+        { "match": "\\b(paper)\\b", "name": "keyword.control.paper.beloch" },
+        { "match": "\\b(square)\\b", "name": "constant.language.shape.beloch" },
+        { "match": "\\b(apply|export|as)\\b", "name": "keyword.control.import.beloch" },
+        { "match": "\\b(def|step)\\b", "name": "storage.type.beloch" }
+      ]
+    },
+    "openers": {
+      "patterns": [
+        { "match": "--\\(", "name": "punctuation.section.line.begin.beloch" },
+        { "match": "--\\[", "name": "punctuation.section.member.begin.beloch" },
+        { "match": "\\.\\(", "name": "punctuation.section.point.begin.beloch" },
+        { "match": "\\.\\[", "name": "punctuation.section.member.begin.beloch" }
+      ]
+    },
+    "entities": {
+      "patterns": [
+        { "match": "\\$[A-Za-z0-9_]+", "name": "variable.other.instance.beloch" },
+        { "match": "--[A-Za-z0-9_]+", "name": "variable.other.crease.beloch" },
+        { "match": "\\.(_[A-Za-z0-9_]+)", "name": "variable.other.point.temp.beloch" },
+        { "match": "\\.[A-Za-z0-9_]+", "name": "variable.other.point.beloch" }
+      ]
+    },
+    "definitions": {
+      "patterns": [
+        {
+          "match": "\\b(def)\\s+([A-Za-z0-9_]+)",
+          "captures": {
+            "1": { "name": "storage.type.beloch" },
+            "2": { "name": "entity.name.function.beloch" }
+          }
+        },
+        {
+          "match": "\\b(step)\\s+([A-Za-z0-9_]+)",
+          "captures": {
+            "1": { "name": "storage.type.beloch" },
+            "2": { "name": "entity.name.section.beloch" }
+          }
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        { "match": "@", "name": "keyword.control.fold.commit.beloch" },
+        { "match": "!", "name": "keyword.operator.shadow.beloch" },
+        { "match": "=", "name": "keyword.operator.assignment.beloch" }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        { "match": "[(){}\\]]", "name": "punctuation.section.group.beloch" }
+      ]
+    }
+  }
 }

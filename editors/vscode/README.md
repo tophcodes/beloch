@@ -32,3 +32,6 @@ it to resolve the project.
 - `bun install`
 - `bun run compile` (or `bun run watch`)
 - `bun test`
+
+Subsystems may extend `devDependencies` and `scripts` additively (each needs its
+own test tooling); only the `contributes` blocks are frozen.

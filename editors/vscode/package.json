@@ -47,14 +47,16 @@
   "scripts": {
     "compile": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
-    "test": "bun test"
+    "test": "bun test",
+    "test:grammar": "vscode-tmgrammar-test -g syntaxes/beloch.tmLanguage.json \"test/grammar/**/*.bel\""
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/vscode": "^1.90.0",
     "bun-types": "^1.3.14",
     "esbuild": "^0.24.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "vscode-tmgrammar-test": "^0.1.3"
   },
   "dependencies": {
     "vscode-languageclient": "^9.0.1"
