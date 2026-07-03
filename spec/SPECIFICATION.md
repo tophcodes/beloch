@@ -15,7 +15,7 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`, `step` panels; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line; shared-field RUR kernel); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
+Current version: **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`, `step` panels; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
 
 ---
 
@@ -192,10 +192,9 @@ the one whose angular sector contains `.p`. Two **parallel** lines have a single
 (ambiguous).
 
 This is the first axiom whose result leaves ℚ — the bisector of two rational
-lines is generally irrational (slope `√2−1` for `y=0` and `y=x`). All geometry is
-now computed over exact **constructible reals** (`Num`; see
-[ADR 0010](../decisions/0010-constructible-real-numbers.md) and §6), so equality,
-parallelism, and on-paper tests stay exact.
+lines is generally irrational (slope `√2−1` for `y=0` and `y=x`). Results are
+therefore reals beyond ℚ, but equality, parallelism, and on-paper tests stay
+**exact** (§6).
 
 *(since v0.6-dev: verb is `map … onto …`; was `bisect …`.)*
 
@@ -267,8 +266,8 @@ foot-on-`--d` parameter — with up to three real solutions, hence up to three
 creases [[justin1986]](#ref-justin1986) §2, [[hull2020]](#ref-hull2020) §2.3–2.4.
 This is the operation that **doubles the cube and trisects angles**
 [[hull2020]](#ref-hull2020) §2.3 — it is strictly more powerful than
-ruler-and-compass. The crease is in general irrational (a real cube root), so
-the shared-field kernel is essential (§6).
+ruler-and-compass. The crease is in general irrational (a real cube root); its
+coordinates must still be compared exactly (§6).
 
 **Solutions and `toward`.** When the cubic has three real solutions (`toward` is
 required); when it has one real solution, `toward` is ignored. `toward .x` picks
@@ -289,10 +288,7 @@ the solution whose first folded point (the image of `.p` on `--d`) lands nearest
 
 **Number theory.** The landing-parameter cubic generically has no rational root,
 so its real roots are irrational — they live in `ℚ(α)` for an algebraic `α` of
-degree 3. The shared-field kernel (`Field of {gen; coords}` in `Num.t`) keeps all
-crease coordinates in that same `ℚ(α)`, so subsequent operations (reflect, fold,
-cross) stay bounded-degree and fast. See §6 and
-[ADR 0012](../decisions/0012-real-algebraic-number-kernel.md).
+degree 3. All coordinates of one axiom-7 crease lie in that same `ℚ(α)`. See §6.
 
 ### 4.6 Folding: `@` *(since v0.7-dev)*
 
@@ -532,40 +528,36 @@ landings: **a name without a `_` prefix is bound at most once per scope.**
 
 ## 6. Exactness *(since v0.0)*
 
-All coordinates and line coefficients are exact **constructible reals** (`Num`;
-see [ADR 0010](../decisions/0010-constructible-real-numbers.md)). A line is
-`a·x + b·y = c` with `a, b, c ∈ Num.t`.
+All coordinates and line coefficients are **real numbers**; a line is
+`a·x + b·y = c`.
 
-`Num.t` has three constructors:
+**Geometric decisions MUST be exact.** A conforming implementation MUST decide
+every geometric predicate — equality of points and lines, parallelism,
+incidence, orientation, point-in-polygon — as if computed over the exact reals.
+No epsilon, no tolerance, no sampling. These decisions are **observable**: they
+fix vertex identity, layer membership, and on-paper tests, and therefore the
+emitted crease pattern and folded form (§7). Two implementations that agree on a
+program's predicates emit the same FOLD graph.
 
-- `Rat of Q.t` — exact rational; all axioms 1–4 results stay here.
-- `Ext(a, b, d)` = a + b√d — a quadratic extension; introduced by `sqrt` at
-  axiom 5. `Ext` forms a tower: a and b may themselves be `Ext`.
-- `Field of {gen; coords}` = `coords(α)`, where `α` is a real algebraic number
-  with a fixed irreducible minimal polynomial `gen` (of degree ≥ 2). All
-  coordinates of an axiom-7 crease share the same `α` (the Rational Univariate
-  Representative of the solution field [[bpr2006]](#ref-bpr2006) §12.4), so
-  subsequent arithmetic — reflection, fold, cross — stays inside `ℚ(α)`:
-  bounded degree, fast zero-test (syntactic), inversion always succeeds. This
-  **shared-field kernel** is what makes the doubling-the-cube fold finish in
-  milliseconds rather than multi-minute resultant chains
-  ([ADR 0012](../decisions/0012-real-algebraic-number-kernel.md)).
+The requirement is on the **decisions, not the number representation**. Exact
+arithmetic over the algebraic reals is one sufficient strategy; an
+exact-geometric-computation approach in the style of CGAL — interval arithmetic
+with an exact fallback only when an interval is inconclusive — is equally
+conforming. The spec constrains *what must be decided correctly*, never *how*.
 
-The ℚ **fast-path** applies for all values produced by axioms 1–4: they stay in
-`Rat`, paying no overhead over a plain ℚ representation. The `Ext` constructor is
-introduced only by `sqrt`, first needed at axiom 5. The `Field` constructor is
-introduced only by axiom 7 (the cubic Beloch fold).
+**Algebraic degree** *(informational).* The constructions bound how irrational a
+coordinate can become, which tells an implementation what field its decisions
+must cover:
 
-Axioms 1–4 over rational inputs remain **closed in ℚ**: no square roots arise.
-At axiom 5 (the angle bisector) the result generally requires square roots —
-degree-2-or-less extensions of the base field per [[hull2020]](#ref-hull2020)
-§3.2. Cube roots first arise at axiom 7 (the cubic Beloch fold); axioms 1–6 stay
-in the quadratic tower.
+- Axioms 1–4 over rational inputs stay **rational** — no roots arise.
+- Axiom 5 (angle bisector) introduces **square roots**: degree-≤2 extensions of
+  the base field [[hull2020]](#ref-hull2020) §3.2.
+- Axiom 7 (the cubic Beloch fold) introduces **cube roots**; axioms 1–6 stay in
+  the quadratic tower.
 
-Equality, parallelism, and point-in-polygon are therefore **exact throughout** —
-no epsilon, no tolerance, no sampling. The only place a `float` appears is
-`to_float` in the serialisation of `vertices_coords` to FOLD JSON; internal
-values are never truncated.
+**Serialization is the only inexact step.** `vertices_coords` in the FOLD output
+(§7) is rendered to JSON decimal; non-terminating reals are rounded *in the
+output only*. No internal decision is ever taken on a truncated value.
 
 ---
 
@@ -721,10 +713,8 @@ folded-state runtime, derived mountain/valley, the dual `creasePattern` +
 fold actions, not a separate annotation pass. *(v0.8-dev)* axiom 6 — fold a
 point onto a line with the crease through a fixed point (`map .p onto --d through
 .p'`, optional `toward` for disambiguation). *(v0.9-dev)* axiom 7 — the cubic
-Beloch fold (`map .p onto --d and .q onto --e`, optional `toward`); the
-**shared-field RUR kernel** (`Field` in `Num.t`) that keeps irrational crease
-arithmetic bounded-degree and fast (see §6 and
-[ADR 0012](../decisions/0012-real-algebraic-number-kernel.md)). *(v0.16-dev)*
+Beloch fold (`map .p onto --d and .q onto --e`, optional `toward`); irrational
+crease coordinates compared exactly (§6). *(v0.16-dev)*
 `=` replaces `:` as the binding separator; shorthand inline-construction RHS;
 `def`/`apply`/instances with closed-scope bodies; qualified member access
 (`.[$inst m]` / `--[$inst m]`); `export` with shadow/rename validation;
