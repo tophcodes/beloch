@@ -2,7 +2,7 @@
 paper square
 
 @map .c onto .a moving .c
---b: through .a .b
---v: @map .b onto .a
-.mid: cross --b --v
+--b = through .a .b
+--v = @map .b onto .a
+.mid = cross --b --v
 map .d onto .mid

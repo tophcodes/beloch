@@ -65,48 +65,55 @@ let refine_alg (poly : Poly.t) (lo : Q.t) (hi : Q.t) : Q.t * Q.t =
   else if sl * sm < 0 then (lo, m)
   else (m, hi)
 
-(* integer divisors of |n| (n ≠ 0). *)
-let divisors (n : Z.t) : Z.t list =
-  let n = Z.abs n in
-  let rec go i acc =
-    if Z.gt (Z.mul i i) n then acc
+(* Simplest rational (smallest denominator; among those, closest to 0) in the
+   closed interval [lo, hi], lo ≤ hi. Continued-fraction / Stern–Brocot
+   descent: strip the integer part, recurse on the inverted fractional part.
+   Terminates in the continued-fraction depth of the endpoints. *)
+let rec simplest_in (lo : Q.t) (hi : Q.t) : Q.t =
+  if Q.compare lo hi > 0 then invalid_arg "Num.simplest_in: lo > hi"
+  else if Q.sign lo <= 0 && Q.sign hi >= 0 then Q.zero
+  else if Q.sign hi < 0 then Q.neg (simplest_in (Q.neg hi) (Q.neg lo))
+  else begin
+    (* 0 < lo ≤ hi *)
+    let fl = Z.fdiv (Q.num lo) (Q.den lo) in
+    if Q.equal (Q.of_bigint fl) lo then lo
+    else if Q.compare (Q.of_bigint (Z.succ fl)) hi <= 0 then
+      Q.of_bigint (Z.succ fl)
     else
-      let acc =
-        if Z.equal (Z.rem n i) Z.zero then
-          let j = Z.div n i in
-          if Z.equal i j then i :: acc else i :: j :: acc
-        else acc
-      in
-      go (Z.succ i) acc
-  in
-  go Z.one []
+      let lo' = Q.sub lo (Q.of_bigint fl) and hi' = Q.sub hi (Q.of_bigint fl) in
+      Q.add (Q.of_bigint fl) (Q.inv (simplest_in (Q.inv hi') (Q.inv lo')))
+  end
 
-(* rational roots of a ℚ-polynomial lying in [lo,hi], via the rational-root
-   theorem after clearing denominators to ℤ. *)
+(* Rational roots of a ℚ-polynomial lying in [lo,hi]. A rational root in
+   lowest terms has denominator dividing the integer-cleared leading
+   coefficient aₙ, and two distinct rationals with denominators ≤ aₙ differ
+   by at least 1/aₙ². So: isolate the real roots, bisect each isolating
+   interval below that separation — then at most one rational with
+   denominator ≤ aₙ remains inside, and it is the simplest rational there.
+   Verify by exact evaluation. Replaces divisor enumeration by trial
+   division, the #23 real_roots wall. *)
 let rational_roots_in (p : Poly.t) (lo : Q.t) (hi : Q.t) : Q.t list =
   if Poly.degree p < 1 then []
   else begin
-    (* clear denominators: multiply by lcm of all denominators *)
-    let l = Array.fold_left (fun acc c -> Z.lcm acc (Q.den c)) Z.one p in
-    let ip = Array.map (fun c -> Q.num (Q.mul c (Q.of_bigint l))) p in
-    let a0 = ip.(0) and an = ip.(Array.length ip - 1) in
-    let cand =
-      if Z.equal a0 Z.zero then [ Q.zero ]
-      else
-        let ps = divisors a0 and qs = divisors an in
-        List.concat_map
-          (fun pnum ->
-            List.concat_map
-              (fun qden ->
-                let r = Q.make pnum qden in
-                [ r; Q.neg r ])
-              qs)
-          ps
-    in
-    List.filter
-      (fun r ->
-        Q.compare lo r <= 0 && Q.compare r hi <= 0 && Q.equal (Poly.eval p r) Q.zero)
-      cand
+    let s = Poly.squarefree_part p in
+    let l = Array.fold_left (fun acc c -> Z.lcm acc (Q.den c)) Z.one s in
+    let an = Z.abs (Q.num (Q.mul (Poly.leading s) (Q.of_bigint l))) in
+    let sep = Q.make Z.one (Z.mul an an) in
+    Poly.isolate_roots s
+    |> List.filter_map (fun (a, b) ->
+           (* endpoints of isolating intervals are never roots; the single
+              root inside is bracketed by a sign change of s. *)
+           let rec refine a b =
+             if Q.compare (Q.sub b a) sep < 0 then simplest_in a b
+             else
+               let m = Q.div (Q.add a b) two_q in
+               if Poly.sign_at s m = 0 then m
+               else if Poly.sign_at s a * Poly.sign_at s m < 0 then refine a m
+               else refine m b
+           in
+           let r = refine a b in
+           if Q.equal (Poly.eval s r) Q.zero then Some r else None)
+    |> List.filter (fun r -> Q.compare lo r <= 0 && Q.compare r hi <= 0)
     |> List.sort_uniq Q.compare
   end
 
@@ -208,30 +215,29 @@ let rec enclosure_tight (x : t) (w : Q.t) : Q.t * Q.t =
       go lo hi
 
 (* Given the result's defining polynomial R and a procedure that returns an
-   arbitrarily tight rational enclosure of the true result value, select the
-   matching root of R and return the value. *)
+   arbitrarily tight rational enclosure of the true result value, refine the
+   enclosure until it overlaps exactly one isolating interval of R's
+   squarefree part, then build the value there. A rational value — including
+   0 — collapses to Rat inside [make]; there is no separate zero shortcut
+   (#23: a fixed-width straddle test collapsed distinct close values to 0).
+   Terminates because distinct roots have positive separation.
+   Note: squarefree_part is re-applied idempotently down the chain (isolate_roots, make, rational_roots_in) — harmless at current degrees, consolidate if profiling ever shows it. *)
 let select_root (r : Poly.t) (enclose : Q.t -> Q.t * Q.t) : t =
   let s = Poly.squarefree_part r in
-  (* 0 is the value iff s(0)=0 and the enclosure straddles 0 *)
-  let lo0, hi0 = enclose Q.one in
-  if Poly.sign_at s Q.zero = 0 && Q.compare lo0 Q.zero <= 0 && Q.compare Q.zero hi0 <= 0
-  then zero
-  else begin
-    let intervals = Poly.isolate_roots s in
-    let two = Q.of_int 2 in
-    let rec pick width =
-      let lo, hi = enclose width in
-      let hits =
-        List.filter (fun (a, b) -> Q.compare a hi < 0 && Q.compare lo b < 0) intervals
-      in
-      match hits with
-      | [ (a, b) ] ->
-          let lo = Q.max lo a and hi = Q.min hi b in
-          make s lo hi
-      | _ -> pick (Q.div width two)
+  let intervals = Poly.isolate_roots s in
+  let two = Q.of_int 2 in
+  let rec pick width =
+    let lo, hi = enclose width in
+    let hits =
+      List.filter (fun (a, b) -> Q.compare a hi < 0 && Q.compare lo b < 0) intervals
     in
-    pick (Q.of_int 1)
-  end
+    match hits with
+    | [ (a, b) ] ->
+        let lo = Q.max lo a and hi = Q.min hi b in
+        make s lo hi
+    | _ -> pick (Q.div width two)
+  in
+  pick (Q.of_int 1)
 
 (* Resultant_y(A(x−y), B(y)) as a ℚ[x]-polynomial, by evaluation+interpolation:
    sample at x = 0..D, take numeric resultants, Lagrange-interpolate. *)
@@ -504,7 +510,10 @@ let real_roots (coeffs : t array) : t list =
     (* rational fast path (unchanged behaviour) *)
     let q_of = function Rat q -> q | Alg _ | Field _ -> assert false in
     let p = Poly.of_list (Array.to_list (Array.map q_of coeffs)) in
-    Poly.isolate_roots p |> List.map (fun (lo, hi) -> make p lo hi) |> List.sort compare
+    (* isolate_roots returns ascending disjoint intervals and make keeps each
+       root inside its interval, so the list is already sorted — an exact
+       compare-based sort here would refine close roots for nothing (#23). *)
+    Poly.isolate_roots p |> List.map (fun (lo, hi) -> make p lo hi)
     |> List.map upgrade
   end
   else begin
@@ -718,7 +727,7 @@ let real_roots (coeffs : t array) : t list =
       Poly.isolate_roots r
       |> List.filter_map (fun (lo, hi) ->
              if certify coeffs r lo hi b then Some (make r lo hi) else None)
-      |> List.sort compare
+      (* already ascending — see the rational path above *)
       |> List.map upgrade
     end
   end

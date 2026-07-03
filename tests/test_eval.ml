@@ -43,9 +43,9 @@ let test_eval_parallel_cross () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               --h1: through .a .b\n\
-               --h2: through .d .c\n\
-               .x: cross --h1 --h2\n")))
+               --h1 = through .a .b\n\
+               --h2 = through .d .c\n\
+               .x = cross --h1 --h2\n")))
 
 let test_eval_bisect_errors () =
   expect_error "identical" (fun () ->
@@ -53,24 +53,24 @@ let test_eval_bisect_errors () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               --x: through .a .c\n\
-               --y: through .a .c\n\
+               --x = through .a .c\n\
+               --y = through .a .c\n\
                map --x onto --y toward .b\n")));
   expect_error "ambiguous" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               --v: map .a onto .b\n\
-               --h: map .b onto .c\n\
+               --v = map .a onto .b\n\
+               --h = map .b onto .c\n\
                map --v onto --h\n")));
   expect_error "on a fold line" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               --d: through .a .c\n\
-               --h: map .b onto .c\n\
+               --d = through .a .c\n\
+               --h = map .b onto .c\n\
                map --d onto --h toward .a\n")))
 
 let test_eval_map_onto_line_parallel () =
@@ -79,8 +79,8 @@ let test_eval_map_onto_line_parallel () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               --l1: through .a .b\n\
-               --l2: through .d .c\n\
+               --l1 = through .a .b\n\
+               --l2 = through .d .c\n\
                map .c onto --l1 perp --l2\n")))
 
 let test_eval_map_onto_line_ok () =
@@ -88,8 +88,8 @@ let test_eval_map_onto_line_ok () =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
          "paper square\n\
-          --l1: through .a .b\n\
-          --l2: through .a .d\n\
+          --l1 = through .a .b\n\
+          --l2 = through .a .d\n\
           map .c onto --l1 perp --l2\n")
   in
   match fd.Eval.creases with
@@ -114,7 +114,7 @@ let test_eval_map_through_ambiguous () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               --bottom: through .a .b\n\
+               --bottom = through .a .b\n\
                map .d onto --bottom through .a\n")))
 
 let test_eval_map_through_same_point () =
@@ -123,7 +123,7 @@ let test_eval_map_through_same_point () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               --bottom: through .a .b\n\
+               --bottom = through .a .b\n\
                map .a onto --bottom through .a\n")))
 
 let test_axiom7_error_q_on_e () =
@@ -132,8 +132,8 @@ let test_axiom7_error_q_on_e () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               --top: through .d .c\n\
-               --bot: through .a .b\n\
+               --top = through .d .c\n\
+               --bot = through .a .b\n\
                map .a onto --bot and .d onto --top\n")))
 
 let test_axiom7_error_parallel_directrices () =
@@ -142,8 +142,8 @@ let test_axiom7_error_parallel_directrices () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               --bot: through .a .b\n\
-               --top: through .d .c\n\
+               --bot = through .a .b\n\
+               --top = through .d .c\n\
                map .a onto --bot and .b onto --top\n")))
 
 (* ---- Fold_state ---- *)
@@ -465,7 +465,7 @@ let test_eval_folded_moving_required () =
   expect_error "moving" (fun () ->
       Eval.eval_folded
         (Beloch.parse ~filename:"t.bel"
-           "paper square\n--d: through .a .c\n@perp --d through .b\n"))
+           "paper square\n--d = through .a .c\n@perp --d through .b\n"))
 
 let test_eval_folded_quarter_accordion () =
   let fd =
@@ -484,12 +484,295 @@ let test_eval_folded_cross_topmost () =
       (Beloch.parse ~filename:"t.bel"
          "paper square\n\
           @map .c onto .a moving .c\n\
-          --b: through .a .b\n\
-          --v: map .b onto .a\n\
-          .mid: cross --b --v\n")
+          --b = through .a .b\n\
+          --v = map .b onto .a\n\
+          .mid = cross --b --v\n")
   in
   Alcotest.(check int) "cross in a folded overlap resolves to the top layer" 4
     (Array.length fd.Eval.state.Fold_state.faces)
+
+let test_scope_basic_lookup () =
+  let r = Eval.eval_folded (Beloch.parse ~filename:"t.bel"
+    "paper square\n\
+     --d = through .a .c\n\
+     .m = cross --d --(.a .b)\n") in
+  let has_d = List.assoc_opt "d" r.Eval.named_lines <> None in
+  let has_m = List.assoc_opt "m" r.Eval.named_points <> None in
+  Alcotest.(check bool) "d defined" true has_d;
+  Alcotest.(check bool) "m defined" true has_m
+
+let eval_src src =
+  Eval.eval_folded (Beloch.parse ~filename:"t.bel" ("paper square\n" ^ src))
+
+let test_eval_dup_crease_error () =
+  expect_error "already bound" (fun () ->
+      eval_src "--x = through .a .b\n--x = through .a .c\n")
+
+let test_eval_dup_point_error () =
+  expect_error "already bound" (fun () ->
+      eval_src
+        "--h = through .a .b\n--v = through .a .d\n.x = cross --h --v\n\
+         .x = cross --h --v\n")
+
+let test_eval_corner_rebind_error () =
+  expect_error "already bound" (fun () ->
+      eval_src "--h = through .a .b\n--v = through .a .d\n.a = cross --h --v\n")
+
+let test_eval_temp_rebind_ok () =
+  let fd =
+    eval_src
+      "--h = through .a .b\n--v = through .a .d\n._x = cross --h --v\n\
+       ._x = cross --v --h\n"
+  in
+  Alcotest.(check bool)
+    "temp not in named_points" true
+    (not (List.mem_assoc "_x" fd.Eval.named_points))
+
+let test_eval_temp_crease_unnamed () =
+  let fd = eval_src "--_t = through .a .c\n" in
+  Alcotest.(check bool)
+    "temp line not in named_lines" true
+    (not (List.mem_assoc "_t" fd.Eval.named_lines));
+  Alcotest.(check bool)
+    "temp crease provenance unnamed" true
+    (List.for_all
+       (fun (r : Fold_state.crease_record) ->
+         match r.Fold_state.prov with
+         | Some p -> p.State.name = None
+         | None -> true)
+       fd.Eval.creases)
+
+let test_eval_def_never_runs () =
+  let fd = eval_src "def bad() {\n  --x = through .a .a\n}\n" in
+  Alcotest.(check int) "no creases" 0 (List.length fd.Eval.creases)
+
+let test_eval_apply_closed_scope () =
+  expect_error "undefined point .a" (fun () ->
+      eval_src "def d() {\n  --x = through .a .b\n}\napply d()\n")
+
+let test_eval_apply_binds_params () =
+  let fd =
+    eval_src
+      "def diag(.p .q) {\n  --d = through .p .q\n}\n$i = apply diag(.a .c)\n"
+  in
+  Alcotest.(check int) "one crease" 1 (List.length fd.Eval.creases)
+
+let test_eval_apply_arity_error () =
+  expect_error "argument" (fun () ->
+      eval_src "def diag(.p .q) {\n  --d = through .p .q\n}\napply diag(.a)\n")
+
+let test_eval_apply_kind_error () =
+  expect_error "point argument" (fun () ->
+      eval_src
+        "def d(.p) {\n  --x = perp --(.a .b) through .p\n}\n\
+         apply d(--(.a .b))\n")
+
+let test_eval_apply_undefined_def () =
+  expect_error "undefined def" (fun () -> eval_src "apply nope()\n")
+
+let test_eval_dup_def_error () =
+  expect_error "already defined" (fun () ->
+      eval_src "def d() {\n}\ndef d() {\n}\n")
+
+let test_eval_dup_param_error () =
+  expect_error "duplicate parameter" (fun () ->
+      eval_src "def d(.p .p) {\n}\n")
+
+let test_eval_dup_instance_error () =
+  expect_error "already bound" (fun () ->
+      eval_src
+        "def d(.p .q) {\n  --x = through .p .q\n}\n\
+         $i = apply d(.a .c)\n$i = apply d(.b .d)\n")
+
+let prov_names fd =
+  List.filter_map
+    (fun (r : Fold_state.crease_record) ->
+      match r.Fold_state.prov with Some p -> p.State.name | None -> None)
+    fd.Eval.creases
+
+let test_eval_instance_fold_names () =
+  let fd =
+    eval_src "def d(.p .q) {\n  --x = through .p .q\n}\n$i = apply d(.a .c)\n"
+  in
+  Alcotest.(check bool) "crease named i.x" true
+    (List.mem "i.x" (prov_names fd))
+
+let test_eval_naked_apply_unnamed () =
+  let fd =
+    eval_src "def d(.p .q) {\n  --x = through .p .q\n}\napply d(.a .c)\n"
+  in
+  Alcotest.(check int) "no named provenance" 0 (List.length (prov_names fd))
+
+let test_eval_temp_instance_unnamed () =
+  let fd =
+    eval_src "def d(.p .q) {\n  --x = through .p .q\n}\n$_i = apply d(.a .c)\n"
+  in
+  Alcotest.(check int) "no named provenance" 0 (List.length (prov_names fd))
+
+let test_eval_nested_instance_names () =
+  let fd =
+    eval_src
+      "def inner(.p .q) {\n  --pq = through .p .q\n}\n\
+       def outer(.p .q) {\n  $in = apply inner(.p .q)\n}\n\
+       $o = apply outer(.a .c)\n"
+  in
+  Alcotest.(check bool) "nested name o.in.pq" true
+    (List.mem "o.in.pq" (prov_names fd))
+
+let test_eval_self_recursion_rejected () =
+  expect_error "not defined before" (fun () ->
+      eval_src "def d() {\n  apply d()\n}\napply d()\n")
+
+let test_eval_later_def_invisible () =
+  expect_error "not defined before" (fun () ->
+      eval_src
+        "def outer() {\n  apply inner()\n}\n\
+         def inner(.p) {\n}\n\
+         apply outer()\n")
+
+let test_eval_earlier_def_visible () =
+  let fd =
+    eval_src
+      "def inner(.p .q) {\n  --l = through .p .q\n}\n\
+       def outer(.p .q) {\n  apply inner(.p .q)\n}\n\
+       apply outer(.a .c)\n"
+  in
+  Alcotest.(check int) "one crease" 1 (List.length fd.Eval.creases)
+
+let test_eval_member_point_access () =
+  let fd =
+    eval_src
+      "--h = through .a .b\n\
+       def d(.p .q --base) {\n\
+      \  --l = through .p .q\n\
+      \  .m = cross --l --base\n\
+       }\n\
+       $i = apply d(.d .b --h)\n\
+       --thru = through .[$i m] .c\n"
+  in
+  Alcotest.(check bool) "crease thru exists" true
+    (List.mem_assoc "thru" fd.Eval.named_lines)
+
+let test_eval_member_line_access () =
+  let fd =
+    eval_src
+      "def d(.p .q) {\n  --l = through .p .q\n}\n\
+       $i = apply d(.a .c)\n\
+       .x = cross --[$i l] --(.a .b)\n"
+  in
+  Alcotest.(check bool) "point x exists" true
+    (List.mem_assoc "x" fd.Eval.named_points)
+
+let prov_steps fd =
+  List.filter_map
+    (fun (r : Fold_state.crease_record) ->
+      match r.Fold_state.prov with Some p -> p.State.step | None -> None)
+    fd.Eval.creases
+
+let test_eval_panel_tags_creases () =
+  let fd =
+    eval_src
+      "step first\n--x = through .a .c\nstep second\n--y = through .b .d\n"
+  in
+  Alcotest.(check bool) "first tagged" true (List.mem "first" (prov_steps fd));
+  Alcotest.(check bool) "second tagged" true
+    (List.mem "second" (prov_steps fd))
+
+(* one crease stmt can yield several records (one per crossed face) — assert tag partition, not counts *)
+let test_eval_before_first_panel_untagged () =
+  let fd = eval_src "--x = through .a .c\nstep p\n--y = through .b .d\n" in
+  let tagged = prov_steps fd in
+  Alcotest.(check bool) "all tagged with p" true
+    (tagged <> [] && List.for_all (fun s -> s = "p") tagged);
+  let untagged =
+    List.filter
+      (fun (r : Fold_state.crease_record) ->
+        match r.Fold_state.prov with
+        | Some p -> p.State.step = None
+        | None -> true)
+      fd.Eval.creases
+  in
+  Alcotest.(check bool) "some untagged (before first step)" true
+    (untagged <> [])
+
+let test_eval_dup_panel_error () =
+  expect_error "already used" (fun () -> eval_src "step a\nstep a\n")
+
+let test_eval_apply_folds_land_in_panel () =
+  let fd =
+    eval_src
+      "def d(.p .q) {\n  --l = through .p .q\n}\n\
+       step body\n$i = apply d(.a .c)\n"
+  in
+  Alcotest.(check bool) "tagged body" true (List.mem "body" (prov_steps fd))
+
+let test_eval_member_unknown () =
+  expect_error "no point member" (fun () ->
+      eval_src
+        "def d(.p .q) {\n  --l = through .p .q\n}\n\
+         $i = apply d(.a .c)\n--z = through .[$i nope] .b\n")
+
+let test_eval_member_kind_mismatch () =
+  expect_error "no point member" (fun () ->
+      eval_src
+        "def d(.p .q) {\n  --l = through .p .q\n}\n\
+         $i = apply d(.a .c)\n--z = through .[$i l] .b\n")
+
+let test_eval_member_undefined_instance () =
+  expect_error "undefined instance" (fun () ->
+      eval_src "--z = through .[$ghost m] .b\n")
+
+let def_d =
+  "def d(.p .q .r) {\n\
+  \  --l1 = through .p .q\n\
+  \  --l2 = through .p .r\n\
+  \  .m = cross --l1 --(.q .r)\n\
+   }\n\
+   $i = apply d(.a .c .b)\n"
+
+let test_eval_export_selective () =
+  let fd = eval_src (def_d ^ "export { .m --l1 } $i\n") in
+  Alcotest.(check bool) "m landed" true
+    (List.mem_assoc "m" fd.Eval.named_points);
+  Alcotest.(check bool) "l1 landed" true
+    (List.mem_assoc "l1" fd.Eval.named_lines);
+  Alcotest.(check bool) "l2 not landed" true
+    (not (List.mem_assoc "l2" fd.Eval.named_lines))
+
+let test_eval_export_all () =
+  let fd = eval_src (def_d ^ "export $i\n") in
+  Alcotest.(check bool) "l2 landed too" true
+    (List.mem_assoc "l2" fd.Eval.named_lines)
+
+let test_eval_export_rename () =
+  let fd = eval_src (def_d ^ "export { .m as .mid } $i\n") in
+  Alcotest.(check bool) "mid landed" true
+    (List.mem_assoc "mid" fd.Eval.named_points);
+  Alcotest.(check bool) "m not landed" true
+    (not (List.mem_assoc "m" fd.Eval.named_points))
+
+let test_eval_export_collision_needs_bang () =
+  expect_error "use ! to shadow" (fun () ->
+      eval_src ("--l1 = through .a .b\n" ^ def_d ^ "export { --l1 } $i\n"))
+
+let test_eval_export_bang_shadows () =
+  let fd =
+    eval_src ("--l1 = through .a .b\n" ^ def_d ^ "export { --l1! } $i\n")
+  in
+  Alcotest.(check bool) "l1 present" true
+    (List.mem_assoc "l1" fd.Eval.named_lines)
+
+let test_eval_export_bang_without_conflict () =
+  expect_error "nothing to shadow" (fun () ->
+      eval_src (def_d ^ "export { --l1! } $i\n"))
+
+let test_eval_export_unknown_member () =
+  expect_error "no point member" (fun () ->
+      eval_src (def_d ^ "export { .ghost } $i\n"))
+
+let test_eval_export_all_collision () =
+  expect_error "use ! to shadow" (fun () ->
+      eval_src (def_d ^ "$j = apply d(.a .c .b)\nexport $i\nexport $j\n"))
 
 let () =
   Alcotest.run "beloch-eval"
@@ -548,5 +831,77 @@ let () =
             test_eval_folded_quarter_accordion;
           Alcotest.test_case "cross resolves to top layer" `Quick
             test_eval_folded_cross_topmost;
+          Alcotest.test_case "scope basic lookup" `Quick test_scope_basic_lookup;
+          Alcotest.test_case "dup crease errors" `Quick
+            test_eval_dup_crease_error;
+          Alcotest.test_case "dup point errors" `Quick test_eval_dup_point_error;
+          Alcotest.test_case "corner rebind errors" `Quick
+            test_eval_corner_rebind_error;
+          Alcotest.test_case "temp point rebind ok" `Quick
+            test_eval_temp_rebind_ok;
+          Alcotest.test_case "temp crease unnamed" `Quick
+            test_eval_temp_crease_unnamed;
+          Alcotest.test_case "def never runs" `Quick test_eval_def_never_runs;
+          Alcotest.test_case "apply closed scope" `Quick
+            test_eval_apply_closed_scope;
+          Alcotest.test_case "apply binds params" `Quick
+            test_eval_apply_binds_params;
+          Alcotest.test_case "apply arity error" `Quick
+            test_eval_apply_arity_error;
+          Alcotest.test_case "apply kind error" `Quick
+            test_eval_apply_kind_error;
+          Alcotest.test_case "apply undefined def" `Quick
+            test_eval_apply_undefined_def;
+          Alcotest.test_case "dup def errors" `Quick test_eval_dup_def_error;
+          Alcotest.test_case "dup param errors" `Quick
+            test_eval_dup_param_error;
+          Alcotest.test_case "dup instance errors" `Quick
+            test_eval_dup_instance_error;
+          Alcotest.test_case "instance fold names" `Quick
+            test_eval_instance_fold_names;
+          Alcotest.test_case "naked apply unnamed" `Quick
+            test_eval_naked_apply_unnamed;
+          Alcotest.test_case "temp instance unnamed" `Quick
+            test_eval_temp_instance_unnamed;
+          Alcotest.test_case "nested instance names" `Quick
+            test_eval_nested_instance_names;
+          Alcotest.test_case "self recursion rejected" `Quick
+            test_eval_self_recursion_rejected;
+          Alcotest.test_case "later def invisible" `Quick
+            test_eval_later_def_invisible;
+          Alcotest.test_case "earlier def visible" `Quick
+            test_eval_earlier_def_visible;
+          Alcotest.test_case "member point access" `Quick
+            test_eval_member_point_access;
+          Alcotest.test_case "member line access" `Quick
+            test_eval_member_line_access;
+          Alcotest.test_case "member unknown" `Quick
+            test_eval_member_unknown;
+          Alcotest.test_case "member kind mismatch" `Quick
+            test_eval_member_kind_mismatch;
+          Alcotest.test_case "member undefined instance" `Quick
+            test_eval_member_undefined_instance;
+          Alcotest.test_case "export selective" `Quick
+            test_eval_export_selective;
+          Alcotest.test_case "export all" `Quick test_eval_export_all;
+          Alcotest.test_case "export rename" `Quick test_eval_export_rename;
+          Alcotest.test_case "export collision needs bang" `Quick
+            test_eval_export_collision_needs_bang;
+          Alcotest.test_case "export bang shadows" `Quick
+            test_eval_export_bang_shadows;
+          Alcotest.test_case "export bang without conflict" `Quick
+            test_eval_export_bang_without_conflict;
+          Alcotest.test_case "export unknown member" `Quick
+            test_eval_export_unknown_member;
+          Alcotest.test_case "export all collision" `Quick
+            test_eval_export_all_collision;
+          Alcotest.test_case "panel tags creases" `Quick
+            test_eval_panel_tags_creases;
+          Alcotest.test_case "before first panel untagged" `Quick
+            test_eval_before_first_panel_untagged;
+          Alcotest.test_case "dup panel error" `Quick
+            test_eval_dup_panel_error;
+          Alcotest.test_case "apply folds land in panel" `Quick
+            test_eval_apply_folds_land_in_panel;
         ] );
     ]

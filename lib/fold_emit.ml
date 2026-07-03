@@ -123,6 +123,9 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
                 ( "name",
                   match pr.State.name with Some n -> `String n | None -> `Null
                 );
+                ( "step",
+                  match pr.State.step with Some s -> `String s | None -> `Null
+                );
               ])
       edges
   in

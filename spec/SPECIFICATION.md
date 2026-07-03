@@ -15,7 +15,7 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line; shared-field RUR kernel); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
+Current version: **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`, `step` panels; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line; shared-field RUR kernel); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
 
 ---
 
@@ -350,13 +350,13 @@ name must be defined before it is used.
 - **Crease statement** — binds a crease, or is anonymous; with `@` it also folds
   (§4.6):
   ```
-  --d1: through .a .c              ; named precrease
+  --d1 = through .a .c             ; named precrease
   map .a onto .c                   ; anonymous precrease
   @map .a onto .c moving .a        ; fold (valley)
   ```
 - **Point statement** — binds a derived point:
   ```
-  .center: cross --d1 --d2
+  .center = cross --d1 --d2
   ```
 - **Flip statement** *(since v0.7-dev)* — turns the sheet over (§4.7):
   ```
@@ -366,8 +366,167 @@ name must be defined before it is used.
 Derived points and named creases are usable in any later statement. `;` begins a
 line comment.
 
+*(since v0.16-dev)* The binding separator is `=` (was `:` before v0.16-dev; see
+`antipatterns.md`). Non-temp bindings are single-assignment: rebinding a
+non-temp name in the same scope is an error, **except** temp names (§5a.6).
+There is no `:=`.
+
+**Shorthand RHS** *(since v0.16-dev)*: the inline anonymous-construction forms
+(Appendix A) are also valid directly as a binding's right-hand side, as sugar
+for the equivalent named construction:
+
+```
+.s  = .(--rs --(.d .c))    ; sugar for: .s = cross --rs --(.d .c)
+--e = --(.p1 .p2)          ; sugar for: --e = through .p1 .p2
+```
+
+**Identifiers** *(since v0.16-dev)* are `[a-zA-Z0-9_]+` — underscore, never
+`-`; kebab-case is reserved so it doesn't foreclose future numeric/arithmetic
+syntax (`repeat n`, ratios) or create whitespace ambiguity next to the `--`
+sigil.
+
 > Concrete syntax (keywords, sigils) is stable as of v0.0 but may still be
 > revised before v1.0.
+
+---
+
+## 5a. Defs, instances, steps *(since v0.16-dev)*
+
+Four constructs extend program structure beyond flat top-to-bottom bindings.
+They share **one evaluation path**: `def` never runs (it only records a
+deferred body); `apply` is the *only* execution form — it folds immediately
+and yields a retained instance; `export` only reads from an instance, never
+re-runs anything; `step` is display metadata with no execution effect at all.
+Full design rationale is in
+[`docs/superpowers/specs/2026-07-02-step-macros-design.md`](../docs/superpowers/specs/2026-07-02-step-macros-design.md).
+
+### 5a.1 Temp names: `_`
+
+A name whose identifier starts with `_` (`._mb`, `--_helper`) is a **temp**:
+it may be rebound in the same scope (each rebinding is legal, and the `_`
+marker makes it visible at every use site), and it is invisible from outside
+its scope — not reachable via qualified access (§5a.4), not copied by
+`export` (naming a temp in an export list is an error), and never named in
+FOLD output (§7). A fold bound to a temp crease still physically happens; it
+just appears unnamed in FOLD. This rule is uniform across scopes: root scope
+and `def` bodies both follow it.
+
+### 5a.2 `def`
+
+```
+def petal(.p .q --base) {
+  @map .p onto .q moving .p
+  .tip = cross --(.p .q) --base
+}
+```
+
+- Bare identifier, no sigil — a def name is never an operand, so it needs no
+  kind sigil. Def names live in their own namespace; defining the same name
+  twice is an error.
+- Top level only.
+- Parameters are sigil-typed (`.name` point, `--name` crease); the parameter
+  list only changes arity, never the evaluation model. Zero parameters is
+  written `def name() { … }` — the parentheses are always present.
+- **Closed scope.** A body sees exactly its parameters and defs defined
+  textually earlier — nothing else. In particular the corners `.a`–`.d` are
+  **not** visible (their referents are state-dependent after earlier folds);
+  a body that needs a corner takes it as a parameter. Because a body only
+  sees earlier defs, recursion is structurally impossible.
+- Allowed body statements: bindings, fold/construction actions, `flip`,
+  `apply`, `export`. Not allowed inside a body: `def`, `step`.
+- The body never runs at `def` time — only `apply` runs it (§5a.3).
+
+### 5a.3 `apply` and instances
+
+```
+$p1 = apply petal(.k1 .k2 --(.k1 .k3))   ; folds now; instance retained
+apply petal(.k2 .k4 --(.k2 .k1))          ; folds now; namespace discarded
+```
+
+- `$name` is the **instance** sigil — its only use. `apply` is the only RHS
+  a `$`-binding accepts; instances cannot be aliased or constructed any
+  other way.
+- Arguments are ordinary point/crease operands (named or inline forms),
+  matched to parameters by position; sigils must agree.
+- `apply` always executes the body immediately, against the current folded
+  state — a bare `apply name(args)` (no `$name =`) still folds; it just
+  discards the resulting namespace instead of retaining it.
+- The result is an **instance**: a namespace holding every non-temp binding
+  the body created.
+
+### 5a.4 Qualified access
+
+```
+@map .[$p1 tip] onto .[$p2 tip]
+--d = through .[$p1 tip] .[$p2 tip]
+.x  = cross --[$p1 pq] --[$p2 pq]
+```
+
+- `.[$inst member]` is a point operand; `--[$inst member]` is a crease
+  operand. The outer sigil declares the kind being read; the member name is
+  bare. Valid anywhere an operand of that kind is valid (including inside
+  inline shorthand forms).
+- **Errors:** unknown member, member/sigil kind mismatch, or the member is a
+  temp (temps are never reachable through an instance).
+
+### 5a.5 `export`
+
+```
+export { .tip --pq } $t              ; selective
+export { .tip as .left_tip } $t      ; rename on landing
+export { .s! } $t                    ; intentional shadow
+export $t                            ; all non-temp members
+```
+
+- `export` copies members of an instance into the current scope; it never
+  executes anything.
+- Names in the export list carry their sigils; `as` needs a sigiled landing
+  name.
+- `export $t` (export-all) lands every non-temp member of `$t` and
+  validates **each landed name individually**, exactly like selective
+  export — two export-alls from two applies of the same `def` will collide
+  on every member name unless disambiguated with selective `as` or read via
+  qualified access instead.
+- `!` marks an intentional shadow and is validated both ways: binding an
+  existing name **without** `!` is an error ("name exists, use `!` to
+  shadow"); using `!` when the name does **not** already exist is an error
+  ("nothing to shadow, remove `!`").
+
+### 5a.6 `step` — diagram panels
+
+```
+step thirds
+._mb = .(--vm --(.a .b))
+--pq = through ._pq1 ._pq2
+
+step beloch_fold
+@map .c onto --(.a .b) and .s onto --pq
+```
+
+- `step ident` opens a display panel that runs until the next `step` or end
+  of file; actions before the first `step` are flat/ungrouped, as before
+  v0.16-dev.
+- The identifier binds nothing — zero namespace footprint. It is a stable
+  anchor for the FOLD `"step"` provenance field (§7) and for future
+  instruction-JSON / i18n label output; duplicate panel identifiers are an
+  error.
+- Top level only (not allowed inside a `def` body). Folds produced by an
+  `apply` land in whichever panel is open at the `apply` site.
+
+### 5a.7 Rebinding rules
+
+One invariant, uniform across root scope, `def` bodies, and `export`
+landings: **a name without a `_` prefix is bound at most once per scope.**
+
+| Situation | Result |
+|---|---|
+| non-temp name bound twice in the same scope (root or `def` body) | error |
+| rebinding a corner `.a`–`.d` at root | error |
+| `def` name reused | error |
+| `step` panel id reused | error |
+| `export` lands an existing name without `!` | error |
+| `export` lands `!` onto a name that doesn't exist | error |
+| `._x = …` (temp) bound more than once | OK — temps are rebindable (§5a.1) |
 
 ---
 
@@ -441,9 +600,16 @@ internal edge is a crease.
 - `beloch:edges` — custom property ([[foldformat]](#ref-foldformat) §"Custom
   Properties") carrying, per crease edge, its originating operation (`"axiom1"`,
   `"axiom2"`, `"axiom3"`, `"axiom5"`), the source point/crease names, the source
-  span, and the bound **`"name"`** (e.g. `"d1"` for `--d1: …`, else `null`).
-  Additive: stock FOLD consumers ignore it; `tools/fold2svg.mjs` uses it to
-  colour/label creases.
+  span, and the bound **`"name"`** (e.g. `"d1"` for `--d1 = …`, else `null`).
+  *(since v0.16-dev)* A crease bound inside a retained instance carries its
+  **qualified name** — `--pq` bound inside `$p1 = apply …` is named `"p1.pq"`,
+  collision-free across repeated `apply`s of the same `def`. `"name"` is
+  `null` for creases bound to a `_`-temp (§5a.1) and for creases produced by a
+  naked (unbound) `apply`. *(since v0.16-dev)* Each entry also carries
+  **`"step"`** — the identifier of the `step` panel (§5a.6) open when the
+  crease was produced, or `null` if it precedes the first `step` in the
+  program. Additive: stock FOLD consumers ignore both fields;
+  `tools/fold2svg.mjs` uses `"name"` to colour/label creases.
 
 **`file_frames[0]` — `foldedForm`** (`frame_parent: 0`, `frame_inherit: true`, so
 it inherits the topology and overrides only the coordinates):
@@ -488,8 +654,10 @@ The Menhir grammar is authoritative once written; this sketch is a guide.
 ```
 program       := "paper" "square" stmt*
 stmt          := crease_stmt | point_stmt | flip_stmt
-crease_stmt   := [ CREASE_NAME ":" ] [ "@" ] axiom [ "moving" point_operand ] [ "mountain" ]
-point_stmt    := POINT_NAME ":" point_expr
+              | def_stmt | instance_stmt | apply_stmt | export_stmt | step_stmt   ; since v0.16-dev
+crease_stmt   := CREASE_NAME "=" "--(" point_operand point_operand ")"                      ; named, inline through (no fold)
+               | [ CREASE_NAME "=" ] [ "@" ] axiom [ "moving" point_operand ] [ "mountain" ] ; named or anonymous, axiom-based (fold only with @)
+point_stmt    := POINT_NAME "=" point_expr
 flip_stmt     := "flip"
 axiom         := "through" point_operand point_operand          ; axiom 1
                | "map" point_operand "onto" point_operand       ; axiom 2
@@ -502,10 +670,24 @@ axiom         := "through" point_operand point_operand          ; axiom 1
                      "and" point_operand "onto" line_operand
                      [ "toward" point_operand ]                                  ; axiom 7
 point_expr    := "cross" line_operand line_operand              ; line intersection (binding RHS)
+               | ".(" line_operand line_operand ")"              ; inline cross (binding RHS)
 point_operand := POINT_NAME | ".(" line_operand line_operand ")"     ; named, or inline cross
+               | ".[" INSTANCE_NAME ident "]"                        ; qualified member (since v0.16-dev)
 line_operand  := CREASE_NAME | "--(" point_operand point_operand ")" ; named, or inline through
+               | "--[" INSTANCE_NAME ident "]"                       ; qualified member (since v0.16-dev)
 POINT_NAME    := "." ident
 CREASE_NAME   := "--" ident
+INSTANCE_NAME := "$" ident
+
+; since v0.16-dev — §5a
+def_stmt      := "def" ident "(" param* ")" "{" body_stmt* "}"
+param         := POINT_NAME | CREASE_NAME
+body_stmt     := stmt minus ( def_stmt | step_stmt )
+instance_stmt := INSTANCE_NAME "=" "apply" ident "(" operand* ")"
+apply_stmt    := "apply" ident "(" operand* ")"
+export_stmt   := "export" ( "{" export_entry+ "}" )? INSTANCE_NAME
+export_entry  := ( POINT_NAME | CREASE_NAME ) "!"? ( "as" ( POINT_NAME | CREASE_NAME ) )?
+step_stmt     := "step" ident
 ```
 
 A bare axiom statement is a *precrease* (computes a crease line, paper stays
@@ -513,8 +695,9 @@ flat). The `@` prefix performs the fold (§4.6); `moving`/`mountain` describe it
 `flip` turns the whole sheet over (§4.7). *(since v0.7-dev)* Any operand may be an
 **inline anonymous construction** — `--(.a .b)` is the line through two points,
 `.(--a --b)` the point where two creases meet; these nest freely and coexist with
-the `cross`/`through` keywords (which remain for named bindings). Brackets appear
-only as operands, never as a binding right-hand side.
+the `cross`/`through` keywords (which remain for named bindings). *(since
+v0.16-dev)* These inline forms are also valid directly as a binding's
+right-hand side — see the shorthand RHS note in §5.
 
 ---
 
@@ -522,9 +705,11 @@ only as operands, never as a binding right-hand side.
 
 Deferred, in rough order of likely arrival: non-flat (constructible-angle) folds ·
 `rotate` · fold maneuvers (reverse/squash/sink/petal, via `unfold` + layer
-selection) · regions · parts/imports · `step` blocks · a dedicated
-render/animation engine · YR diagrams. These are not part of the language until a
-slice lands and this spec is extended.
+selection) · regions · parts/imports · nested `def`s and namespace chaining
+(`.[$b1 $d tip]`) · re-export cascades · string labels in source (i18n stays
+external) · `pub`/`priv` interfaces · looping primitives · module/file-level
+namespacing · a dedicated render/animation engine · YR diagrams. These are not
+part of the language until a slice lands and this spec is extended.
 
 **Landed:** faces (v0.1); axiom 3 — perpendicular (v0.2); axiom 4 — projection (v0.4-dev); axiom 5 — angle
 bisector (v0.3-dev); the `map … onto …` verb and the `@` fold modifier
@@ -539,7 +724,11 @@ point onto a line with the crease through a fixed point (`map .p onto --d throug
 Beloch fold (`map .p onto --d and .q onto --e`, optional `toward`); the
 **shared-field RUR kernel** (`Field` in `Num.t`) that keeps irrational crease
 arithmetic bounded-degree and fast (see §6 and
-[ADR 0012](../decisions/0012-real-algebraic-number-kernel.md)).
+[ADR 0012](../decisions/0012-real-algebraic-number-kernel.md)). *(v0.16-dev)*
+`=` replaces `:` as the binding separator; shorthand inline-construction RHS;
+`def`/`apply`/instances with closed-scope bodies; qualified member access
+(`.[$inst m]` / `--[$inst m]`); `export` with shadow/rename validation;
+`step` diagram panels; the uniform rebinding rule (see §5, §5a).
 
 ---
 

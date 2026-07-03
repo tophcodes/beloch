@@ -29,9 +29,9 @@ let test_parse_named_and_anon () =
   let prog =
     Beloch.parse ~filename:"t.bel"
       "paper square\n\
-       --d1: through .a .c\n\
+       --d1 = through .a .c\n\
        map .b onto .d\n\
-       .center: cross --d1 --d2\n"
+       .center = cross --d1 --d2\n"
   in
   Alcotest.(check int) "three statements" 3 (List.length prog);
   match prog with
@@ -52,7 +52,7 @@ let test_parse_syntax_error () =
 let test_parse_perp () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n--d: through .a .c\nperp --d through .b\n"
+      "paper square\n--d = through .a .c\nperp --d through .b\n"
   in
   match prog with
   | [
@@ -81,8 +81,8 @@ let test_parse_inline_point_nested () =
   match
     Beloch.parse ~filename:"t.bel"
       "paper square\n\
-       --d1: through .a .c\n\
-       --d2: through .b .d\n\
+       --d1 = through .a .c\n\
+       --d2 = through .b .d\n\
        perp --( .(--d1 --d2) .a ) through .b\n"
   with
   | [
@@ -97,7 +97,7 @@ let test_parse_inline_point_nested () =
 let test_parse_map_onto_line () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n--l1: through .a .b\n--l2: through .a .d\nmap .c onto --l1 perp --l2\n"
+      "paper square\n--l1 = through .a .b\n--l2 = through .a .d\nmap .c onto --l1 perp --l2\n"
   in
   match prog with
   | [
@@ -116,7 +116,7 @@ let test_parse_map_onto_line () =
 let test_parse_map_onto_line_inline () =
   match
     Beloch.parse ~filename:"t.bel"
-      "paper square\n--l2: through .a .d\nmap .c onto --(.a .b) perp --l2\n"
+      "paper square\n--l2 = through .a .d\nmap .c onto --(.a .b) perp --l2\n"
   with
   | [
    _;
@@ -132,8 +132,8 @@ let test_parse_bisect () =
   let prog =
     Beloch.parse ~filename:"t.bel"
       "paper square\n\
-       --v: map .a onto .b\n\
-       --h: map .b onto .c\n\
+       --v = map .a onto .b\n\
+       --h = map .b onto .c\n\
        map --v onto --h toward .a\n"
   in
   match prog with
@@ -155,7 +155,7 @@ let test_parse_bisect () =
 let test_parse_map_through () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n--d: through .a .b\nmap .c onto --d through .a\n"
+      "paper square\n--d = through .a .b\nmap .c onto --d through .a\n"
   in
   match prog with
   | [
@@ -173,7 +173,7 @@ let test_parse_map_through () =
 let test_parse_map_through_toward () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n--d: through .a .b\nmap .c onto --d through .a toward .b\n"
+      "paper square\n--d = through .a .b\nmap .c onto --d through .a toward .b\n"
   in
   match prog with
   | [
@@ -269,6 +269,187 @@ let test_parse_flip () =
   | [ Ast.Flip _ ] -> ()
   | _ -> Alcotest.fail "expected a single Flip statement"
 
+let test_parse_eq_binding () =
+  let prog = Beloch.parse ~filename:"t.bel"
+    "paper square\n--d1 = through .a .c\n" in
+  Alcotest.(check int) "one statement" 1 (List.length prog)
+
+let test_parse_shorthand_rhs () =
+  let prog = Beloch.parse ~filename:"t.bel"
+    "paper square\n\
+     --d = through .a .c\n\
+     .m = .(--d --(.a .b))\n\
+     --e = --(.a .c)\n" in
+  Alcotest.(check int) "three statements" 3 (List.length prog);
+  match prog with
+  | [
+      Ast.Crease (Some "d", Ast.Through _, _, _);
+      Ast.Point ("m", Ast.Cross _, _);
+      Ast.Crease (Some "e", Ast.Through _, _, _);
+    ] -> ()
+  | _ -> Alcotest.fail "unexpected AST shape"
+
+(* ---- Def ---- *)
+
+let test_parse_def () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n\
+       def petal(.p .q --base) {\n\
+      \  @map .p onto .q moving .p\n\
+      \  .tip = cross --(.p .q) --base\n\
+       }\n"
+  in
+  match prog with
+  | [ Ast.Def ("petal", params, body, _) ] ->
+      Alcotest.(check int) "3 params" 3 (List.length params);
+      Alcotest.(check int) "2 body stmts" 2 (List.length body);
+      let p0 = List.nth params 0 and p2 = List.nth params 2 in
+      Alcotest.(check string) "p0 name" "p" p0.Ast.pname;
+      Alcotest.(check bool) "p0 is point" true (p0.Ast.pkind = `Point);
+      Alcotest.(check bool) "p2 is line" true (p2.Ast.pkind = `Line)
+  | _ -> Alcotest.fail "expected a single Def"
+
+let test_parse_def_zero_params () =
+  match
+    Beloch.parse ~filename:"t.bel"
+      "paper square\ndef thirds() {\n  --pq = through .x .y\n}\n"
+  with
+  | [ Ast.Def ("thirds", [], [ _ ], _) ] -> ()
+  | _ -> Alcotest.fail "expected zero-param Def"
+
+let test_parse_def_in_def_rejected () =
+  expect_error "syntax error" (fun () ->
+      Beloch.parse ~filename:"t.bel"
+        "paper square\ndef a() {\n  def b() {\n  }\n}\n")
+
+let test_parse_step_in_body_rejected () =
+  expect_error "syntax error" (fun () ->
+      Beloch.parse ~filename:"t.bel" "paper square\ndef a() {\n  step x\n}\n")
+
+let test_parse_kebab_rejected () =
+  expect_error "unexpected character" (fun () ->
+      Beloch.parse ~filename:"t.bel"
+        "paper square\n--foo-bar = through .a .b\n")
+
+(* ---- Apply ---- *)
+
+let test_parse_apply_bound () =
+  match
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n$p1 = apply petal(.b .d --(.a .c))\n"
+  with
+  | [ Ast.Apply (Some "p1", "petal", [ _; _; _ ], _) ] -> ()
+  | _ -> Alcotest.fail "expected bound Apply with 3 args"
+
+let test_parse_apply_naked () =
+  match Beloch.parse ~filename:"t.bel" "paper square\napply thirds()\n" with
+  | [ Ast.Apply (None, "thirds", [], _) ] -> ()
+  | _ -> Alcotest.fail "expected naked zero-arg Apply"
+
+let test_parse_member_operands () =
+  match
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n\
+       @map .[$p1 tip] onto .[$p2 tip]\n\
+       .x = cross --[$p1 pq] --[$p2 pq]\n"
+  with
+  | [
+      Ast.Crease (None, Ast.MapPoints (Ast.PMember ("p1", "tip", _), _), _, _);
+      Ast.Point ("x", Ast.Cross (Ast.LMember ("p1", "pq", _), _), _);
+    ] ->
+      ()
+  | _ -> Alcotest.fail "expected member operands"
+
+(* ---- Export ---- *)
+
+let test_parse_export_selective () =
+  match
+    Beloch.parse ~filename:"t.bel"
+      "paper square\nexport { .tip as .left_tip --pq .s! } $t\n"
+  with
+  | [ Ast.Export (Some [ e1; e2; e3 ], "t", _) ] ->
+      Alcotest.(check string) "e1 src" "tip" e1.Ast.esrc;
+      Alcotest.(check bool) "e1 renamed" true (e1.Ast.erename = Some "left_tip");
+      Alcotest.(check bool) "e2 is line" true (e2.Ast.ekind = `Line);
+      Alcotest.(check bool) "e3 shadow" true e3.Ast.eshadow
+  | _ -> Alcotest.fail "expected selective Export with 3 entries"
+
+let test_parse_export_all () =
+  match Beloch.parse ~filename:"t.bel" "paper square\nexport $t\n" with
+  | [ Ast.Export (None, "t", _) ] -> ()
+  | _ -> Alcotest.fail "expected export-all"
+
+let test_parse_export_kind_mismatch_rename () =
+  expect_error "keep the kind" (fun () ->
+      Beloch.parse ~filename:"t.bel"
+        "paper square\nexport { .m as --m2 } $t\n")
+
+(* ---- Step ---- *)
+
+let test_parse_step_marker () =
+  match Beloch.parse ~filename:"t.bel" "paper square\nstep thirds\nflip\n" with
+  | [ Ast.StepMark ("thirds", _); Ast.Flip _ ] -> ()
+  | _ -> Alcotest.fail "expected StepMark then Flip"
+
+(* ---- Spec corpus ---- *)
+
+let spec_corpus =
+  [
+    ( "01_eq_binding",
+      "paper square\n--rs = through .rs1 .rs2\n.s   = cross --rs --(.d .c)\n" );
+    ( "02_shorthand_rhs",
+      "paper square\n.s  = .(--rs --(.d .c))\n--e = --(.p1 .p2)\n" );
+    ( "03_def_petal",
+      "paper square\ndef petal(.p .q --base) {\n\
+      \  @map .p onto .q moving .p\n\
+      \  .tip = cross --(.p .q) --base\n\
+       }\n" );
+    ( "04_apply",
+      "paper square\n$p1 = apply petal(.k1 .k2 --(.k1 .k3))\n\
+       apply petal(.k2 .k4 --(.k2 .k1))\n" );
+    ( "05_qualified",
+      "paper square\n@map .[$p1 tip] onto .[$p2 tip]\n\
+       --d = through .[$p1 tip] .[$p2 tip]\n\
+       .x  = cross --[$p1 pq] --[$p2 pq]\n" );
+    ( "06_export",
+      "paper square\nexport { .tip --pq } $t\n\
+       export { .tip as .left_tip } $t\nexport { .s! } $t\nexport $t\n" );
+    ( "07_panels",
+      "paper square\nstep thirds\n._mb = .(--vm --(.a .b))\n\
+       --pq = through ._pq1 ._pq2\n\nstep beloch_fold\n\
+       @map .c onto --(.a .b) and .s onto --pq\n" );
+    ( "08_cube_root",
+      "paper square\n\nstep vertical_middle\n--vm = map .a onto .b\n\n\
+       step thirds\n._mb  = .(--vm --(.a .b))\n._mt  = .(--vm --(.d .c))\n\
+       ._pq1 = cross --(.d ._mb) --(.a .c)\n\
+       ._pq2 = cross --(.a ._mt) --(.d .b)\n--pq  = through ._pq1 ._pq2\n\
+       ._rs1 = cross --(.c ._mb) --(.d .b)\n\
+       ._rs2 = cross --(.b ._mt) --(.a .c)\n--rs  = through ._rs1 ._rs2\n\
+       .s    = .(--rs --(.d .c))\n\nstep beloch_fold\n\
+       @map .c onto --(.a .b) and .s onto --pq\n" );
+    ( "09_petal_full",
+      "paper square\n\ndef petal(.p .q --base) {\n\
+      \  @map .p onto .q moving .p\n\
+      \  .tip = cross --(.p .q) --base\n\
+       }\n\nstep petal_folds\n$left  = apply petal(.a .c --(.b .d))\n\
+       $right = apply petal(.b .d --(.a .c))\n\nstep join\n\
+       @map .[$left tip] onto .[$right tip]\n" );
+    ( "10_zero_params",
+      "paper square\ndef thirds() {\n\
+      \  ._mb = .(--vm --(.a .b))\n\
+      \  --pq = through ._mb .x\n\
+       }\n$t = apply thirds()\nexport $t\n" );
+  ]
+
+let test_parse_spec_corpus () =
+  List.iter
+    (fun (name, src) ->
+      try ignore (Beloch.parse ~filename:(name ^ ".bel") src)
+      with Error.Beloch_error (_, m) ->
+        Alcotest.fail (Printf.sprintf "%s failed to parse: %s" name m))
+    spec_corpus
+
 let () =
   Alcotest.run "beloch-parse"
     [
@@ -300,5 +481,35 @@ let () =
           Alcotest.test_case "inline line operand" `Quick test_parse_inline_line;
           Alcotest.test_case "nested inline operand" `Quick
             test_parse_inline_point_nested;
+          Alcotest.test_case "eq binding separator" `Quick test_parse_eq_binding;
+          Alcotest.test_case "shorthand RHS .(l1 l2) and --(p1 p2)" `Quick
+            test_parse_shorthand_rhs;
+          Alcotest.test_case "parse def" `Quick test_parse_def;
+          Alcotest.test_case "parse def zero params" `Quick test_parse_def_zero_params;
+          Alcotest.test_case "parse def in def rejected" `Quick test_parse_def_in_def_rejected;
+          Alcotest.test_case "parse step in body rejected" `Quick test_parse_step_in_body_rejected;
+          Alcotest.test_case "parse kebab rejected" `Quick test_parse_kebab_rejected;
+        ] );
+      ( "export",
+        [
+          Alcotest.test_case "selective export" `Quick test_parse_export_selective;
+          Alcotest.test_case "export all" `Quick test_parse_export_all;
+          Alcotest.test_case "export kind mismatch rename" `Quick
+            test_parse_export_kind_mismatch_rename;
+        ] );
+      ( "apply",
+        [
+          Alcotest.test_case "apply bound" `Quick test_parse_apply_bound;
+          Alcotest.test_case "apply naked" `Quick test_parse_apply_naked;
+          Alcotest.test_case "member operands" `Quick test_parse_member_operands;
+        ] );
+      ( "step",
+        [
+          Alcotest.test_case "step marker" `Quick test_parse_step_marker;
+        ] );
+      ( "spec_corpus",
+        [
+          Alcotest.test_case "all 10 spec examples parse" `Quick
+            test_parse_spec_corpus;
         ] );
     ]
