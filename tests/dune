@@ -1,6 +1,6 @@
 (test
  (name test_num)
- (libraries beloch alcotest zarith))
+ (libraries beloch alcotest zarith unix))
 
 (test
  (name test_geom)

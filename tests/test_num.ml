@@ -218,6 +218,29 @@ let test_poly_isolate () =
   in
   Alcotest.(check bool) "ascending disjoint" true (ordered iv)
 
+let test_poly_sign_variations () =
+  Alcotest.(check int) "x²-3x+2 has 2 variations" 2
+    (Poly.sign_variations (qp [ 2; -3; 1 ]));
+  Alcotest.(check int) "x²+x+1 has 0 variations" 0
+    (Poly.sign_variations (qp [ 1; 1; 1 ]));
+  Alcotest.(check int) "zeros skipped: x³-1" 1
+    (Poly.sign_variations (qp [ -1; 0; 0; 1 ]))
+
+let test_poly_descartes_test () =
+  (* p = (x−1)(x−2) on various intervals *)
+  let p = qp [ 2; -3; 1 ] in
+  Alcotest.(check int) "no root in (3,4)" 0
+    (Poly.descartes_test p (Q.of_int 3) (Q.of_int 4));
+  Alcotest.(check int) "one root in (1/2,3/2)" 1
+    (Poly.descartes_test p (Q.of_string "1/2") (Q.of_string "3/2"))
+
+let test_poly_isolate_close_roots () =
+  (* ε-quartic at the hardest rung: two roots ~3·10⁻¹⁰ apart *)
+  let eps = Q.of_string "1/20000000000000000000" in
+  let p = Poly.of_list [ eps; Q.zero; Q.of_int (-5); Q.zero; Q.one ] in
+  let iv = Poly.isolate_roots p in
+  Alcotest.(check int) "four isolated roots" 4 (List.length iv)
+
 (* ---- Mpoly ---- *)
 
 let test_mpoly_resultant_constant_free () =
@@ -331,6 +354,99 @@ let test_axiom7_trisection_cubic () =
     Alcotest.(check bool) "root of t³−3t²−3t+1" true (Num.equal f Num.zero))
     roots
 
+let test_num_close_roots_distinct () =
+  (* #23 repro: x⁴ − 5x² + ε with ε = 5·10⁻⁸ has two roots ≈ ±10⁻⁴.
+     They are distinct; equal/compare must say so. *)
+  let eps = Num.of_q (Q.of_string "1/20000000") in
+  let coeffs = [| eps; Num.zero; Num.of_int (-5); Num.zero; Num.one |] in
+  match Num.real_roots coeffs with
+  | [ _; y; x; _ ] ->
+      Alcotest.(check bool) "close roots not equal" false (Num.equal x y);
+      Alcotest.(check int) "compare x y = 1" 1 (Num.compare x y);
+      Alcotest.(check int) "compare y x = -1" (-1) (Num.compare y x)
+  | roots -> Alcotest.failf "expected 4 roots, got %d" (List.length roots)
+
+let test_simplest_in () =
+  let q = Q.of_string in
+  Alcotest.(check bool) "1/2 in [2/5, 3/5]" true
+    (Q.equal (Num.simplest_in (q "2/5") (q "3/5")) (q "1/2"));
+  Alcotest.(check bool) "0 in [-1/3, 1/4]" true
+    (Q.equal (Num.simplest_in (q "-1/3") (q "1/4")) Q.zero);
+  Alcotest.(check bool) "3 in [5/2, 7/2]" true
+    (Q.equal (Num.simplest_in (q "5/2") (q "7/2")) (Q.of_int 3));
+  Alcotest.(check bool) "-1/2 in [-3/5, -2/5]" true
+    (Q.equal (Num.simplest_in (q "-3/5") (q "-2/5")) (q "-1/2"));
+  Alcotest.(check bool) "point interval" true
+    (Q.equal (Num.simplest_in (q "3/7") (q "3/7")) (q "3/7"))
+
+let test_rational_roots_big_denominator () =
+  (* the #23 wall: integer-cleared leading coefficient ~2·10¹⁹; the old
+     divisor enumeration trial-divided to √(2·10¹⁹). Must now be instant. *)
+  let eps = Q.of_string "1/20000000000000000000" in
+  let p = Poly.of_list [ eps; Q.zero; Q.of_int (-5); Q.zero; Q.one ] in
+  let t0 = Unix.gettimeofday () in
+  let roots = Num.rational_roots_in p (Q.of_int (-3)) (Q.of_int 3) in
+  let dt = Unix.gettimeofday () -. t0 in
+  Alcotest.(check int) "quartic has no rational roots" 0 (List.length roots);
+  Alcotest.(check bool) (Printf.sprintf "under 1s (took %.2fs)" dt) true (dt < 1.0)
+
+let test_rational_roots_finds_roots () =
+  (* (7x − 3)(x − 2)(x² − 2) : rational roots 3/7 and 2, irrational ±√2 *)
+  let p =
+    Poly.mul
+      (Poly.mul
+         (Poly.of_list [ Q.of_int (-3); Q.of_int 7 ])
+         (Poly.of_list [ Q.of_int (-2); Q.one ]))
+      (Poly.of_list [ Q.of_int (-2); Q.zero; Q.one ])
+  in
+  let roots = Num.rational_roots_in p (Q.of_int (-3)) (Q.of_int 3) in
+  Alcotest.(check int) "two rational roots" 2 (List.length roots);
+  Alcotest.(check bool) "3/7 found" true
+    (List.exists (Q.equal (Q.of_string "3/7")) roots);
+  Alcotest.(check bool) "2 found" true
+    (List.exists (Q.equal (Q.of_int 2)) roots);
+  (* range clipping: only 3/7 within [0, 1] *)
+  let clipped = Num.rational_roots_in p Q.zero Q.one in
+  Alcotest.(check int) "clipped to [0,1]" 1 (List.length clipped);
+  (* negative rational root through the full pipeline, and a root exactly
+     at the query boundary (closed interval: must be included) *)
+  let pneg =
+    Poly.mul
+      (Poly.of_list [ Q.of_string "1/2"; Q.one ])   (* root -1/2 *)
+      (Poly.of_list [ Q.of_int (-2); Q.one ])        (* root 2 *)
+  in
+  let nroots = Num.rational_roots_in pneg (Q.of_string "-1/2") (Q.of_int 1) in
+  Alcotest.(check int) "boundary root -1/2 included, 2 excluded" 1
+    (List.length nroots);
+  Alcotest.(check bool) "-1/2 found" true
+    (List.exists (Q.equal (Q.of_string "-1/2")) nroots)
+
+let test_real_roots_epsilon_ladder () =
+  (* #23: previously 0.07s → 0.39s → 3.47s → >150s down this ladder. *)
+  let rec strictly_ascending = function
+    | a :: (b :: _ as r) -> Num.compare a b < 0 && strictly_ascending r
+    | _ -> true
+  in
+  List.iter
+    (fun (name, eps) ->
+      let coeffs =
+        [| Num.of_q (Q.of_string eps); Num.zero; Num.of_int (-5);
+           Num.zero; Num.one |]
+      in
+      let t0 = Unix.gettimeofday () in
+      let roots = Num.real_roots coeffs in
+      let dt = Unix.gettimeofday () -. t0 in
+      Alcotest.(check int) (name ^ ": four roots") 4 (List.length roots);
+      Alcotest.(check bool) (name ^ ": strictly ascending") true
+        (strictly_ascending roots);
+      Alcotest.(check bool)
+        (Printf.sprintf "%s: under 1s (took %.2fs)" name dt)
+        true (dt < 1.0))
+    [ ("eps=5e-8", "1/20000000");
+      ("eps=5e-12", "1/200000000000");
+      ("eps=5e-16", "1/2000000000000000");
+      ("eps=5e-20", "1/20000000000000000000") ]
+
 let () =
   Alcotest.run "beloch-num"
     [
@@ -360,6 +476,15 @@ let () =
             test_real_roots_affine_shared_field;
           Alcotest.test_case "axiom7 trisection cubic" `Quick
             test_axiom7_trisection_cubic;
+          Alcotest.test_case "close roots distinct (#23)" `Quick
+            test_num_close_roots_distinct;
+          Alcotest.test_case "simplest rational in interval" `Quick test_simplest_in;
+          Alcotest.test_case "rational roots: big denominator fast (#23)" `Quick
+            test_rational_roots_big_denominator;
+          Alcotest.test_case "rational roots: found and clipped" `Quick
+            test_rational_roots_finds_roots;
+          Alcotest.test_case "real_roots epsilon ladder (#23)" `Slow
+            test_real_roots_epsilon_ladder;
         ] );
       ( "poly",
         [
@@ -373,6 +498,10 @@ let () =
           Alcotest.test_case "squarefree" `Quick test_poly_squarefree;
           Alcotest.test_case "sturm count" `Quick test_poly_sturm_count;
           Alcotest.test_case "isolate roots" `Quick test_poly_isolate;
+          Alcotest.test_case "sign variations" `Quick test_poly_sign_variations;
+          Alcotest.test_case "descartes 0/1 test" `Quick test_poly_descartes_test;
+          Alcotest.test_case "isolate close roots (#23)" `Quick
+            test_poly_isolate_close_roots;
         ] );
       ( "mpoly",
         [

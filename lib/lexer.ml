@@ -22,17 +22,33 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "mountain" -> MOUNTAIN
   | "cross" -> CROSS
   | "flip" -> FLIP
-  | ':' -> COLON
+  | "def" -> DEF
+  | "apply" -> APPLY
+  | "export" -> EXPORT
+  | "step" -> STEP
+  | "as" -> AS
+  | '=' -> EQ
   | '@' -> AT
+  | '!' -> BANG
+  | '{' -> LBRACE
+  | '}' -> RBRACE
+  | '(' -> LPAREN
+  | ']' -> RBRACKET
   | "--(" -> LINE_OPEN
   | ".(" -> POINT_OPEN
+  | "--[" -> LINE_MEMBER_OPEN
+  | ".[" -> POINT_MEMBER_OPEN
   | ')' -> RPAREN
+  | '$', id ->
+      let s = Sedlexing.Utf8.lexeme buf in
+      INSTANCE (String.sub s 1 (String.length s - 1))
   | "--", id ->
       let s = Sedlexing.Utf8.lexeme buf in
       CREASE (String.sub s 2 (String.length s - 2))
   | '.', id ->
       let s = Sedlexing.Utf8.lexeme buf in
       POINT (String.sub s 1 (String.length s - 1))
+  | id -> IDENT (Sedlexing.Utf8.lexeme buf)
   | eof -> EOF
   | _ ->
       let start, finish = Sedlexing.lexing_positions buf in

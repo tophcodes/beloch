@@ -1,5 +1,5 @@
 ; status: works — map two perpendicular midlines onto each other, selecting toward corner a
 paper square
---v: map .a onto .b      ; vertical midline x = 1/2
---h: map .b onto .c      ; horizontal midline y = 1/2
+--v = map .a onto .b      ; vertical midline x = 1/2
+--h = map .b onto .c      ; horizontal midline y = 1/2
 map --v onto --h toward .a

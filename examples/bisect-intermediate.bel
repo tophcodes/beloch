@@ -3,12 +3,12 @@
 ; selects the a–c diagonal — which does NOT pass through .int. Any point in that
 ; sector would give the same crease.
 paper square
---v: map .a onto .b      ; vertical midline x = 1/2
---h: map .b onto .c      ; horizontal midline y = 1/2
+--v = map .a onto .b      ; vertical midline x = 1/2
+--h = map .b onto .c      ; horizontal midline y = 1/2
 
---left: through .a .d
---bottom: through .a .b
---quartered: map --v onto --left
-.int: cross --quartered --bottom
+--left = through .a .d
+--bottom = through .a .b
+--quartered = map --v onto --left
+.int = cross --quartered --bottom
 
 map --v onto --h toward .int

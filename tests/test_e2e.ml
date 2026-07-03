@@ -39,16 +39,16 @@ let test_e2e_inline_equiv () =
   let named =
     Beloch.fold_string ~filename:"t.bel"
       "paper square\n\
-       --d1: through .a .c\n\
-       --d2: through .b .d\n\
-       .m: cross --d1 --d2\n\
+       --d1 = through .a .c\n\
+       --d2 = through .b .d\n\
+       .m = cross --d1 --d2\n\
        map .a onto .m\n"
   in
   let inline =
     Beloch.fold_string ~filename:"t.bel"
       "paper square\n\
-       --d1: through .a .c\n\
-       --d2: through .b .d\n\
+       --d1 = through .a .c\n\
+       --d2 = through .b .d\n\
        map .a onto .(--d1 --d2)\n"
   in
   Alcotest.(check bool)
@@ -124,6 +124,29 @@ let test_e2e_cube_root () =
   in
   Alcotest.(check bool) "an axiom7 crease is present" true (List.mem "axiom7" axioms)
 
+let test_e2e_cube_root_restructured () =
+  ignore
+    (Beloch.fold_string ~filename:"cube-root.bel"
+       (read_example "cube-root.bel"))
+
+let test_e2e_def_diagonals () =
+  let json =
+    Beloch.fold_string ~filename:"def-diagonals.bel"
+      (read_example "def-diagonals.bel")
+  in
+  let open Yojson.Safe.Util in
+  let pts = json |> member "beloch:named_points" |> to_assoc in
+  Alcotest.(check bool) "centre named" true (List.mem_assoc "m" pts)
+
+let test_e2e_cube_root_temps_hidden () =
+  let json =
+    Beloch.fold_string ~filename:"cube-root.bel" (read_example "cube-root.bel")
+  in
+  let open Yojson.Safe.Util in
+  let pts = json |> member "beloch:named_points" |> to_assoc in
+  Alcotest.(check bool) "no temp points in FOLD" true
+    (not (List.exists (fun (k, _) -> String.length k > 0 && k.[0] = '_') pts))
+
 let test_e2e_bisect_select () =
   let open Yojson.Safe.Util in
   let creases json =
@@ -164,7 +187,7 @@ let test_eval_map_through_toward () =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
          "paper square\n\
-          --bottom: through .a .b\n\
+          --bottom = through .a .b\n\
           map .d onto --bottom through .a toward .b\n")
   in
   match fd.Eval.creases with
@@ -236,8 +259,8 @@ let test_e2e_flip_cp_counts () =
   in
   Alcotest.(check bool)
     "flip preserves the crease-pattern size" true
-    (counts "paper square\n--c: map .a onto .b\n"
-    = counts "paper square\n--c: map .a onto .b\nflip\n")
+    (counts "paper square\n--c = map .a onto .b\n"
+    = counts "paper square\n--c = map .a onto .b\nflip\n")
 
 let test_faceorders_stable_fold_quarter () =
   let json =
@@ -265,8 +288,8 @@ let test_faceorders_stable_fold_quarter () =
 let test_e2e_axiom7_rational_crease () =
   let src =
     "paper square\n\
-     --diag: through .a .c\n\
-     --anti: through .b .d\n\
+     --diag = through .a .c\n\
+     --anti = through .b .d\n\
      map .a onto --anti and .d onto --diag toward .b\n"
   in
   let json = Beloch.fold_string ~filename:"t.bel" src in
@@ -309,7 +332,7 @@ let test_emit_folded_frames () =
 let test_emit_folded_crease_name () =
   let fd =
     Eval.eval_folded
-      (Beloch.parse ~filename:"t.bel" "paper square\n--m: map .a onto .c\n")
+      (Beloch.parse ~filename:"t.bel" "paper square\n--m = map .a onto .c\n")
   in
   let json = Fold_emit.to_json_folded fd in
   let open Yojson.Safe.Util in
@@ -352,6 +375,11 @@ let () =
           Alcotest.test_case "perp end-to-end" `Quick test_e2e_perp;
           Alcotest.test_case "cube-root (Messer) axiom7 end-to-end" `Quick
             test_e2e_cube_root;
+          Alcotest.test_case "cube-root restructured (panels + temps)" `Quick
+            test_e2e_cube_root_restructured;
+          Alcotest.test_case "def diagonals demo" `Quick test_e2e_def_diagonals;
+          Alcotest.test_case "cube-root temps hidden from FOLD" `Quick
+            test_e2e_cube_root_temps_hidden;
           Alcotest.test_case "bisect selector" `Quick test_e2e_bisect_select;
           Alcotest.test_case "bisect parallel midline" `Quick
             test_e2e_bisect_parallel;

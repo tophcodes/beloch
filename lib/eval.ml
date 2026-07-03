@@ -17,56 +17,132 @@ type folded = {
   named_lines : (string * Geom.line) list;
 }
 
+(* ---- Scope-stack context ---- *)
+
+type instance = {
+  ipoints : (string, Geom.point) Hashtbl.t;
+  ilines : (string, Geom.line) Hashtbl.t;
+}
+
+type scope = {
+  points    : (string, Geom.point) Hashtbl.t;
+  lines     : (string, Geom.line) Hashtbl.t;
+  instances : (string, instance) Hashtbl.t;
+}
+
+let make_scope () = {
+  points    = Hashtbl.create 8;
+  lines     = Hashtbl.create 8;
+  instances = Hashtbl.create 4;
+}
+
+type name_ctx = Root | InInstance of string | Anon
+
+type ctx = {
+  mutable scopes : scope list;  (* head = innermost *)
+  mutable name_ctx : name_ctx;
+  mutable cur_def_idx : int option; (* Some k while running def k's body *)
+  mutable next_def_idx : int;
+  defs : (string, int * Ast.param list * Ast.stmt list) Hashtbl.t;
+  state : Fold_state.t ref;
+  recs  : Fold_state.crease_record list ref;
+  mutable panel : string option;
+  panels : (string, unit) Hashtbl.t;
+}
+
+let lookup_point (ctx : ctx) (pr : Ast.point_ref) : Geom.point =
+  match List.find_map (fun s -> Hashtbl.find_opt s.points pr.Ast.name) ctx.scopes with
+  | Some p -> p
+  | None   -> Error.fail pr.Ast.span (Printf.sprintf "undefined point .%s" pr.Ast.name)
+
+let lookup_crease (ctx : ctx) (cr : Ast.crease_ref) : Geom.line =
+  match List.find_map (fun s -> Hashtbl.find_opt s.lines cr.Ast.cname) ctx.scopes with
+  | Some l -> l
+  | None   -> Error.fail cr.Ast.cspan (Printf.sprintf "undefined crease --%s" cr.Ast.cname)
+
+let lookup_instance (ctx : ctx) (name : string) (span : Error.span) : instance =
+  match
+    List.find_map (fun s -> Hashtbl.find_opt s.instances name) ctx.scopes
+  with
+  | Some i -> i
+  | None -> Error.fail span (Printf.sprintf "undefined instance $%s" name)
+
+let is_temp (n : string) = String.length n > 0 && n.[0] = '_'
+
+let bind_point (ctx : ctx) (name : string) (span : Error.span) (p : Geom.point)
+    =
+  let s = List.hd ctx.scopes in
+  if (not (is_temp name)) && Hashtbl.mem s.points name then
+    Error.fail span
+      (Printf.sprintf "point .%s is already bound; only _-prefixed temps rebind"
+         name);
+  Hashtbl.replace s.points name p
+
+let bind_crease (ctx : ctx) (name : string) (span : Error.span) (l : Geom.line)
+    =
+  let s = List.hd ctx.scopes in
+  if (not (is_temp name)) && Hashtbl.mem s.lines name then
+    Error.fail span
+      (Printf.sprintf
+         "crease --%s is already bound; only _-prefixed temps rebind" name);
+  Hashtbl.replace s.lines name l
+
+
+(* ---- Evaluator ---- *)
+
 let eval_folded (prog : Ast.program) : folded =
-  let points : (string, Geom.point) Hashtbl.t = Hashtbl.create 16 in
-  List.iter (fun (n, p) -> Hashtbl.replace points n p) corners;
-  let creases_env : (string, Geom.line) Hashtbl.t = Hashtbl.create 16 in
-  let state = ref Fold_state.init_square in
-  let recs = ref [] in
-  let lookup_point (pr : Ast.point_ref) : Geom.point =
-    match Hashtbl.find_opt points pr.Ast.name with
-    | Some p -> p
-    | None ->
-        Error.fail pr.Ast.span
-          (Printf.sprintf "undefined point .%s" pr.Ast.name)
-  in
-  let lookup_crease (cr : Ast.crease_ref) : Geom.line =
-    match Hashtbl.find_opt creases_env cr.Ast.cname with
-    | Some l -> l
-    | None ->
-        Error.fail cr.Ast.cspan
-          (Printf.sprintf "undefined crease --%s" cr.Ast.cname)
-  in
+  let root_scope = make_scope () in
+  List.iter (fun (n, p) -> Hashtbl.replace root_scope.points n p) corners;
+  let ctx = {
+    scopes = [root_scope];
+    name_ctx = Root;
+    cur_def_idx = None;
+    next_def_idx = 0;
+    defs = Hashtbl.create 4;
+    state  = ref Fold_state.init_square;
+    recs   = ref [];
+    panel = None;
+    panels = Hashtbl.create 4;
+  } in
   (* render an operand back to source text for provenance + error messages *)
   let rec pstr (po : Ast.point_operand) : string =
     match po with
     | Ast.PNamed pr -> "." ^ pr.Ast.name
     | Ast.PCross (l1, l2, _) -> Printf.sprintf ".(%s %s)" (lstr l1) (lstr l2)
+    | Ast.PMember (i, m, _) -> Printf.sprintf ".[$%s %s]" i m
   and lstr (lo : Ast.line_operand) : string =
     match lo with
     | Ast.LNamed cr -> "--" ^ cr.Ast.cname
     | Ast.LThrough (p1, p2, _) -> Printf.sprintf "--(%s %s)" (pstr p1) (pstr p2)
+    | Ast.LMember (i, m, _) -> Printf.sprintf "--[$%s %s]" i m
   in
   (* resolve a point operand to its material PAPER coordinate, a line operand to
      its TABLE-space line; mutually recursive for nesting. *)
   let rec resolve_point (po : Ast.point_operand) : Geom.point =
     match po with
-    | Ast.PNamed pr -> lookup_point pr
+    | Ast.PNamed pr -> lookup_point ctx pr
     | Ast.PCross (l1, l2, span) -> (
         let a = resolve_line l1 and b = resolve_line l2 in
         match Geom.intersection a b with
         | None -> Error.fail span "creases are parallel; no intersection"
         | Some tp -> (
-            match Fold_state.topmost_preimage !state tp with
+            match Fold_state.topmost_preimage !(ctx.state) tp with
             | None ->
                 Error.fail span (Printf.sprintf "%s is off the paper" (pstr po))
             | Some pp -> pp))
+    | Ast.PMember (iname, mem, span) -> (
+        let inst = lookup_instance ctx iname span in
+        match Hashtbl.find_opt inst.ipoints mem with
+        | Some p -> p
+        | None ->
+            Error.fail span
+              (Printf.sprintf "instance $%s has no point member %s" iname mem))
   and resolve_line (lo : Ast.line_operand) : Geom.line =
     match lo with
-    | Ast.LNamed cr -> lookup_crease cr
+    | Ast.LNamed cr -> lookup_crease ctx cr
     | Ast.LThrough (p1, p2, span) ->
-        let pp = Fold_state.table_position !state (resolve_point p1)
-        and qq = Fold_state.table_position !state (resolve_point p2) in
+        let pp = Fold_state.table_position !(ctx.state) (resolve_point p1)
+        and qq = Fold_state.table_position !(ctx.state) (resolve_point p2) in
         if Geom.point_equal pp qq then
           Error.fail span
             (Printf.sprintf
@@ -74,9 +150,16 @@ let eval_folded (prog : Ast.program) : folded =
                 them"
                (pstr p1) (pstr p2));
         Geom.line_through pp qq
+    | Ast.LMember (iname, mem, span) -> (
+        let inst = lookup_instance ctx iname span in
+        match Hashtbl.find_opt inst.ilines mem with
+        | Some l -> l
+        | None ->
+            Error.fail span
+              (Printf.sprintf "instance $%s has no line member %s" iname mem))
   in
   let table_of (po : Ast.point_operand) : Geom.point =
-    Fold_state.table_position !state (resolve_point po)
+    Fold_state.table_position !(ctx.state) (resolve_point po)
   in
   (* axis line + provenance (axiom tag, source names), evaluated against the
      current table positions *)
@@ -245,57 +328,205 @@ let eval_folded (prog : Ast.program) : folded =
                 | Some c -> (c, "axiom7", base @ [ pstr xo ])
                 | None -> assert false))
   in
-  List.iter
-    (fun stmt ->
-      match stmt with
-      | Ast.Crease (name_opt, ax, fold_opt, span) -> (
-          let axis, axiom, sources = axis_of span ax in
-          (match name_opt with
-          | Some n -> Hashtbl.replace creases_env n axis
-          | None -> ());
-          let prov : State.provenance option =
-            Some { State.axiom; sources; span; name = name_opt }
-          in
-          match fold_opt with
-          | None ->
-              let st, rs = Fold_state.subdivide !state axis ~prov in
-              state := st;
-              recs := rs @ !recs
-          | Some fs ->
-              let move_side =
-                match fs.Ast.moving with
-                | Some po ->
-                    let s = Geom.side_of_line axis (table_of po) in
-                    if s = 0 then
-                      Error.fail span "the moving point lies on the fold axis";
-                    s
-                | None -> (
-                    match ax with
-                    | Ast.MapPoints (p, _)
-                    | Ast.MapThrough (p, _, _, _)
-                    | Ast.MapBoth (p, _, _, _, _) ->
-                        let s = Geom.side_of_line axis (table_of p) in
-                        if s = 0 then
-                          Error.fail span
-                            "the moving point lies on the fold axis";
-                        s
-                    | _ ->
+  let rec eval_stmt (stmt : Ast.stmt) =
+    match stmt with
+    | Ast.Crease (name_opt, ax, fold_opt, span) -> (
+        let axis, axiom, sources = axis_of span ax in
+        (match name_opt with
+        | Some n -> bind_crease ctx n span axis
+        | None -> ());
+        let prov_name =
+          match name_opt with
+          | Some n when not (is_temp n) -> (
+              match ctx.name_ctx with
+              | Root -> Some n
+              | InInstance i -> Some (i ^ "." ^ n)
+              | Anon -> None)
+          | _ -> None
+        in
+        let prov : State.provenance option =
+          Some { State.axiom; sources; span; name = prov_name; step = ctx.panel }
+        in
+        match fold_opt with
+        | None ->
+            let st, rs = Fold_state.subdivide !(ctx.state) axis ~prov in
+            ctx.state := st;
+            ctx.recs := rs @ !(ctx.recs)
+        | Some fs ->
+            let move_side =
+              match fs.Ast.moving with
+              | Some po ->
+                  let s = Geom.side_of_line axis (table_of po) in
+                  if s = 0 then
+                    Error.fail span "the moving point lies on the fold axis";
+                  s
+              | None -> (
+                  match ax with
+                  | Ast.MapPoints (p, _)
+                  | Ast.MapThrough (p, _, _, _)
+                  | Ast.MapBoth (p, _, _, _, _) ->
+                      let s = Geom.side_of_line axis (table_of p) in
+                      if s = 0 then
                         Error.fail span
-                          "this fold needs `moving .p` to choose the side")
-              in
-              let valley = fs.Ast.direction = Ast.Valley in
-              let st, rs =
-                Fold_state.fold_with_records !state ~axis ~move_side ~valley
-                  ~prov
-              in
-              state := st;
-              recs := rs @ !recs)
-      | Ast.Point (n, Ast.Cross (l1, l2), span) ->
-          Hashtbl.replace points n (resolve_point (Ast.PCross (l1, l2, span)))
-      | Ast.Flip _ -> state := Fold_state.flip !state)
-    prog;
-  let named_points =
-    Hashtbl.fold (fun k v acc -> (k, v) :: acc) points []
+                          "the moving point lies on the fold axis";
+                      s
+                  | _ ->
+                      Error.fail span
+                        "this fold needs `moving .p` to choose the side")
+            in
+            let valley = fs.Ast.direction = Ast.Valley in
+            let st, rs =
+              Fold_state.fold_with_records !(ctx.state) ~axis ~move_side ~valley
+                ~prov
+            in
+            ctx.state := st;
+            ctx.recs := rs @ !(ctx.recs))
+    | Ast.Point (n, Ast.Cross (l1, l2), span) ->
+        bind_point ctx n span (resolve_point (Ast.PCross (l1, l2, span)))
+    | Ast.Flip _ -> ctx.state := Fold_state.flip !(ctx.state)
+    | Ast.Def (name, params, body, span) ->
+        if Hashtbl.mem ctx.defs name then
+          Error.fail span (Printf.sprintf "def %s is already defined" name);
+        let seen = Hashtbl.create 4 in
+        List.iter
+          (fun (p : Ast.param) ->
+            if Hashtbl.mem seen p.Ast.pname then
+              Error.fail p.Ast.pspan
+                (Printf.sprintf "duplicate parameter %s" p.Ast.pname);
+            Hashtbl.replace seen p.Ast.pname ())
+          params;
+        Hashtbl.replace ctx.defs name (ctx.next_def_idx, params, body);
+        ctx.next_def_idx <- ctx.next_def_idx + 1
+    | Ast.Apply (bind_opt, defname, args, span) ->
+        let def_idx, params, body =
+          match Hashtbl.find_opt ctx.defs defname with
+          | Some d -> d
+          | None -> Error.fail span (Printf.sprintf "undefined def %s" defname)
+        in
+        (match ctx.cur_def_idx with
+        | Some k when def_idx >= k ->
+            Error.fail span
+              (Printf.sprintf "def %s is not defined before this body" defname)
+        | _ -> ());
+        if List.length args <> List.length params then
+          Error.fail span
+            (Printf.sprintf "def %s takes %d argument(s), got %d" defname
+               (List.length params) (List.length args));
+        (* resolve args in the CALLER scope, then swap in the closed scope *)
+        let body_scope = make_scope () in
+        List.iter2
+          (fun (p : Ast.param) (a : Ast.arg) ->
+            match (p.Ast.pkind, a) with
+            | `Point, Ast.APoint po ->
+                Hashtbl.replace body_scope.points p.Ast.pname (resolve_point po)
+            | `Line, Ast.ALine lo ->
+                Hashtbl.replace body_scope.lines p.Ast.pname (resolve_line lo)
+            | `Point, Ast.ALine _ ->
+                Error.fail span
+                  (Printf.sprintf "parameter .%s of %s needs a point argument"
+                     p.Ast.pname defname)
+            | `Line, Ast.APoint _ ->
+                Error.fail span
+                  (Printf.sprintf "parameter --%s of %s needs a line argument"
+                     p.Ast.pname defname))
+          params args;
+        let saved_scopes = ctx.scopes
+        and saved_nctx = ctx.name_ctx
+        and saved_def_idx = ctx.cur_def_idx in
+        ctx.scopes <- [ body_scope ];
+        ctx.cur_def_idx <- Some def_idx;
+        (ctx.name_ctx <-
+           (match (bind_opt, saved_nctx) with
+           | None, _ -> Anon
+           | Some i, _ when is_temp i -> Anon
+           | Some _, Anon -> Anon
+           | Some i, Root -> InInstance i
+           | Some i, InInstance outer -> InInstance (outer ^ "." ^ i)));
+        List.iter eval_stmt body;
+        ctx.scopes <- saved_scopes;
+        ctx.name_ctx <- saved_nctx;
+        ctx.cur_def_idx <- saved_def_idx;
+        (match bind_opt with
+        | None -> ()
+        | Some iname ->
+            let cur = List.hd ctx.scopes in
+            if (not (is_temp iname)) && Hashtbl.mem cur.instances iname then
+              Error.fail span
+                (Printf.sprintf
+                   "instance $%s is already bound; only _-prefixed temps rebind"
+                   iname);
+            let inst = { ipoints = Hashtbl.create 8; ilines = Hashtbl.create 8 } in
+            Hashtbl.iter
+              (fun k v -> if not (is_temp k) then Hashtbl.replace inst.ipoints k v)
+              body_scope.points;
+            Hashtbl.iter
+              (fun k v -> if not (is_temp k) then Hashtbl.replace inst.ilines k v)
+              body_scope.lines;
+            Hashtbl.replace cur.instances iname inst)
+    | Ast.Export (entries_opt, iname, span) ->
+        let inst = lookup_instance ctx iname span in
+        let cur = List.hd ctx.scopes in
+        let land_name ~(kind : [ `Point | `Line ]) ~(shadow : bool)
+            ~(espan : Error.span) (src : string) (target : string) =
+          let target_exists, sigil =
+            match kind with
+            | `Point -> (Hashtbl.mem cur.points target, ".")
+            | `Line -> (Hashtbl.mem cur.lines target, "--")
+          in
+          (if not (is_temp target) then
+             match (target_exists, shadow) with
+             | true, false ->
+                 Error.fail espan
+                   (Printf.sprintf "%s%s exists; use ! to shadow" sigil target)
+             | false, true ->
+                 Error.fail espan
+                   (Printf.sprintf "nothing to shadow with %s%s; remove !" sigil
+                      target)
+             | _ -> ());
+          match kind with
+          | `Point -> (
+              match Hashtbl.find_opt inst.ipoints src with
+              | Some v -> Hashtbl.replace cur.points target v
+              | None ->
+                  Error.fail espan
+                    (Printf.sprintf "instance $%s has no point member %s" iname src))
+          | `Line -> (
+              match Hashtbl.find_opt inst.ilines src with
+              | Some v -> Hashtbl.replace cur.lines target v
+              | None ->
+                  Error.fail espan
+                    (Printf.sprintf "instance $%s has no line member %s" iname src))
+        in
+        (match entries_opt with
+        | Some entries ->
+            List.iter
+              (fun (e : Ast.export_entry) ->
+                land_name ~kind:e.Ast.ekind ~shadow:e.Ast.eshadow ~espan:e.Ast.espan
+                  e.Ast.esrc
+                  (Option.value e.Ast.erename ~default:e.Ast.esrc))
+              entries
+        | None ->
+            Hashtbl.iter
+              (fun k _ -> land_name ~kind:`Point ~shadow:false ~espan:span k k)
+              inst.ipoints;
+            Hashtbl.iter
+              (fun k _ -> land_name ~kind:`Line ~shadow:false ~espan:span k k)
+              inst.ilines)
+    | Ast.StepMark (id, span) ->
+        if Hashtbl.mem ctx.panels id then
+          Error.fail span (Printf.sprintf "step id %s is already used" id);
+        Hashtbl.replace ctx.panels id ();
+        ctx.panel <- Some id
   in
-  let named_lines = Hashtbl.fold (fun k v acc -> (k, v) :: acc) creases_env [] in
-  { state = !state; creases = !recs; named_points; named_lines }
+  List.iter eval_stmt prog;
+  let named_points =
+    Hashtbl.fold
+      (fun k v acc -> if is_temp k then acc else (k, v) :: acc)
+      root_scope.points []
+  in
+  let named_lines =
+    Hashtbl.fold
+      (fun k v acc -> if is_temp k then acc else (k, v) :: acc)
+      root_scope.lines []
+  in
+  { state = !(ctx.state); creases = !(ctx.recs); named_points; named_lines }

@@ -15,9 +15,9 @@ Beloch, named after [Margherita Piazzola Beloch][mpb], is a declarative language
 
 ```
 paper square
---d1: through .a .c
---d2: through .b .d
-.center: cross --d1 --d2
+--d1 = through .a .c
+--d2 = through .b .d
+.center = cross --d1 --d2
 @map .a onto .center
 ```
 

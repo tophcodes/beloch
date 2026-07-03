@@ -205,25 +205,55 @@ let cauchy_bound (p : t) : Q.t =
   let m = Array.fold_left (fun acc c -> Q.max acc (Q.abs c)) Q.zero p in
   Q.add Q.one (Q.div m an)
 
+(* Number of sign variations in the coefficient sequence, zeros skipped.
+   Descartes' law of signs: bounds the number of positive real roots and
+   agrees with it modulo 2 [bpr2006, Ch. 2]. *)
+let sign_variations (p : t) : int =
+  let last = ref 0 and count = ref 0 in
+  Array.iter
+    (fun c ->
+      let s = Q.sign c in
+      if s <> 0 then begin
+        if !last <> 0 && s <> !last then incr count;
+        last := s
+      end)
+    p;
+  !count
+
+(* Coefficient reversal: x^n · p(1/x) for p of degree n. *)
+let reverse (p : t) : t =
+  let n = Array.length p in
+  normalize (Array.init n (fun i -> p.(n - 1 - i)))
+
+(* Descartes/VCA test for the open interval (a,b), a < b, neither endpoint a
+   root: the sign-variation count of (1+x)^n · q(1/(1+x)) where q maps (0,1)
+   to (a,b). Result 0 means no root in (a,b); 1 means exactly one; ≥ 2 means
+   undecided (split further) [bpr2006, Ch. 10].
+   Not incremental: each node re-composes from the original polynomial; revisit if Slice-2 join degrees make isolation hot. *)
+let descartes_test (p : t) (a : Q.t) (b : Q.t) : int =
+  let q = compose p (of_list [ a; Q.sub b a ]) in
+  sign_variations (compose (reverse q) (of_list [ Q.one; Q.one ]))
+
 (* Disjoint open intervals each holding exactly one simple real root, ascending.
-   Works on the squarefree part so every root is simple. *)
+   Works on the squarefree part so every root is simple. Descartes/VCA
+   bisection: the 0/1 sign-variation test decides leaf intervals without
+   building Sturm chains. *)
 let isolate_roots (p : t) : (Q.t * Q.t) list =
   let p = squarefree_part p in
   if degree p < 1 then []
   else begin
-    let seq = sturm_sequence p in
     let b = cauchy_bound p in
     let two = Q.of_int 2 in
     let rec go lo hi acc =
-      match count_roots_in seq lo hi with
+      match descartes_test p lo hi with
       | 0 -> acc
       | 1 -> (lo, hi) :: acc
       | _ ->
           let m = Q.div (Q.add lo hi) two in
-          (* a rational root exactly at m would sit in (lo,m]; nudge so each
-             reported interval is open around a single root. squarefree => the
-             midpoint is a root only finitely often; perturb when it happens. *)
-          let m = if sign_at p m = 0 then Q.div (Q.add lo m) two else m in
+          (* a root exactly at the split point would be lost to both halves;
+             nudge, as before (squarefree ⇒ finitely many roots). *)
+          let rec nudge m = if sign_at p m = 0 then nudge (Q.div (Q.add lo m) two) else m in
+          let m = nudge m in
           go lo m (go m hi acc)
     in
     go (Q.neg b) b []

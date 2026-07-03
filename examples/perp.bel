@@ -1,4 +1,4 @@
 ; status: works — perpendicular from a corner onto a diagonal
 paper square
---diag: through .a .c
+--diag = through .a .c
 perp --diag through .b
