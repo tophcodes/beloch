@@ -791,6 +791,15 @@ let test_eval_export_all_collision () =
   expect_error "use ! to shadow" (fun () ->
       eval_src (def_d ^ "$j = apply d(.a .c .b)\nexport $i\nexport $j\n"))
 
+(* A temp landing name rebinds freely: no [!] needed and no collision even
+   when exported onto twice; the landed temp stays unnamed in output (§5a.5). *)
+let test_eval_export_temp_target () =
+  let fd =
+    eval_src (def_d ^ "export { .m as ._t } $i\nexport { .m as ._t } $i\n")
+  in
+  Alcotest.(check bool) "temp target not named" true
+    (not (List.mem_assoc "_t" fd.Eval.named_points))
+
 let () =
   Alcotest.run "beloch-eval"
     [
@@ -912,6 +921,8 @@ let () =
             test_eval_export_unknown_member;
           Alcotest.test_case "export all collision" `Quick
             test_eval_export_all_collision;
+          Alcotest.test_case "export temp target" `Quick
+            test_eval_export_temp_target;
           Alcotest.test_case "panel tags creases" `Quick
             test_eval_panel_tags_creases;
           Alcotest.test_case "before first panel untagged" `Quick
