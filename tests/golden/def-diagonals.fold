@@ -1,0 +1,74 @@
+{
+  "file_spec": 1.1,
+  "file_creator": "beloch 0.3.0-dev",
+  "frame_classes": [ "creasePattern" ],
+  "vertices_coords": [
+    [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.5, 0.5 ], [ 0.0, 0.0 ], [ 0.0, 1.0 ]
+  ],
+  "edges_vertices": [
+    [ 0, 1 ],
+    [ 1, 2 ],
+    [ 2, 0 ],
+    [ 3, 0 ],
+    [ 2, 3 ],
+    [ 1, 4 ],
+    [ 4, 2 ],
+    [ 4, 3 ]
+  ],
+  "edges_assignment": [ "B", "U", "U", "B", "U", "B", "U", "B" ],
+  "faces_vertices": [ [ 0, 1, 2 ], [ 3, 0, 2 ], [ 2, 1, 4 ], [ 3, 2, 4 ] ],
+  "beloch:edges": [
+    null,
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p", ".q" ],
+      "span": "def-diagonals.bel:6:3",
+      "name": "d1.d",
+      "step": "diagonals"
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p", ".q" ],
+      "span": "def-diagonals.bel:6:3",
+      "name": "d2.d",
+      "step": "diagonals"
+    },
+    null,
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p", ".q" ],
+      "span": "def-diagonals.bel:6:3",
+      "name": "d1.d",
+      "step": "diagonals"
+    },
+    null,
+    {
+      "axiom": "axiom1",
+      "sources": [ ".p", ".q" ],
+      "span": "def-diagonals.bel:6:3",
+      "name": "d2.d",
+      "step": "diagonals"
+    },
+    null
+  ],
+  "beloch:named_points": {
+    "c": { "paper": [ 1.0, 1.0 ], "table": [ 1.0, 1.0 ] },
+    "m": { "paper": [ 0.5, 0.5 ], "table": [ 0.5, 0.5 ] },
+    "b": { "paper": [ 1.0, 0.0 ], "table": [ 1.0, 0.0 ] },
+    "d": { "paper": [ 0.0, 1.0 ], "table": [ 0.0, 1.0 ] },
+    "a": { "paper": [ 0.0, 0.0 ], "table": [ 0.0, 0.0 ] }
+  },
+  "beloch:named_lines": {},
+  "file_frames": [
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": true,
+      "vertices_coords": [
+        [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.5, 0.5 ], [ 0.0, 0.0 ], [ 0.0, 1.0 ]
+      ],
+      "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
+      "faceOrders": []
+    }
+  ]
+}

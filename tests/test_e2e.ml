@@ -20,11 +20,10 @@ let expect_error msg_substr thunk =
          true
        with Not_found -> false)
 
-let count_assign a recs =
-  List.length
-    (List.filter
-       (fun (r : Fold_state.crease_record) -> r.Fold_state.assign = a)
-       recs)
+let count_assign a (st : Fold_state.t) =
+  Array.to_list st.Fold_state.edges
+  |> List.filter (fun (e : Fold_state.edge) -> e.Fold_state.eassign = a)
+  |> List.length
 
 (* ---- E2e ---- *)
 
@@ -190,10 +189,10 @@ let test_eval_map_through_toward () =
           --bottom = through .a .b\n\
           map .d onto --bottom through .a toward .b\n")
   in
-  match fd.Eval.creases with
-  | [] -> Alcotest.fail "expected at least one crease record"
+  match Array.to_list fd.Eval.state.Fold_state.edges with
+  | [] -> Alcotest.fail "expected at least one crease edge"
   | cr :: _ ->
-      let c = Geom.line_through cr.Fold_state.ra cr.Fold_state.rb in
+      let c = Geom.line_through cr.Fold_state.ea cr.Fold_state.eb in
       let on (p : Geom.point) =
         Num.equal
           (Num.add (Num.mul c.Geom.a p.Geom.x) (Num.mul c.Geom.b p.Geom.y))
@@ -238,16 +237,16 @@ let test_e2e_flip_mountain () =
          "paper square\nflip\n@map .a onto .b moving .a\n")
   in
   Alcotest.(check int) "fold after flip is a mountain" 1
-    (count_assign Fold_state.M fd.Eval.creases);
+    (count_assign Fold_state.M fd.Eval.state);
   Alcotest.(check int) "and not a valley" 0
-    (count_assign Fold_state.V fd.Eval.creases);
+    (count_assign Fold_state.V fd.Eval.state);
   let fd2 =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
          "paper square\n@map .a onto .b moving .a\n")
   in
   Alcotest.(check int) "without flip it is a valley" 1
-    (count_assign Fold_state.V fd2.Eval.creases)
+    (count_assign Fold_state.V fd2.Eval.state)
 
 let test_e2e_flip_cp_counts () =
   let open Yojson.Safe.Util in

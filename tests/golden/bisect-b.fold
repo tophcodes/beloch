@@ -1,0 +1,124 @@
+{
+  "file_spec": 1.1,
+  "file_creator": "beloch 0.3.0-dev",
+  "frame_classes": [ "creasePattern" ],
+  "vertices_coords": [
+    [ 1.0, 0.5 ],
+    [ 1.0, 1.0 ],
+    [ 0.5, 1.0 ],
+    [ 0.5, 0.5 ],
+    [ 1.0, 0.0 ],
+    [ 0.5, 0.0 ],
+    [ 0.0, 1.0 ],
+    [ 0.0, 0.5 ],
+    [ 0.0, 0.0 ]
+  ],
+  "edges_vertices": [
+    [ 0, 1 ],
+    [ 1, 2 ],
+    [ 2, 3 ],
+    [ 3, 0 ],
+    [ 4, 0 ],
+    [ 3, 4 ],
+    [ 5, 4 ],
+    [ 3, 5 ],
+    [ 2, 6 ],
+    [ 6, 3 ],
+    [ 6, 7 ],
+    [ 7, 3 ],
+    [ 8, 5 ],
+    [ 7, 8 ]
+  ],
+  "edges_assignment": [
+    "B", "B", "U", "U", "B", "U", "B", "U", "B", "U", "B", "U", "B", "B"
+  ],
+  "faces_vertices": [
+    [ 0, 1, 2, 3 ],
+    [ 4, 0, 3 ],
+    [ 5, 4, 3 ],
+    [ 3, 2, 6 ],
+    [ 3, 6, 7 ],
+    [ 8, 5, 3, 7 ]
+  ],
+  "beloch:edges": [
+    null,
+    null,
+    {
+      "axiom": "axiom2",
+      "sources": [ ".a", ".b" ],
+      "span": "bisect-b.bel:3:1",
+      "name": "v",
+      "step": null
+    },
+    {
+      "axiom": "axiom2",
+      "sources": [ ".b", ".c" ],
+      "span": "bisect-b.bel:4:1",
+      "name": "h",
+      "step": null
+    },
+    null,
+    {
+      "axiom": "axiom5",
+      "sources": [ "--v", "--h", ".b" ],
+      "span": "bisect-b.bel:5:1",
+      "name": null,
+      "step": null
+    },
+    null,
+    {
+      "axiom": "axiom2",
+      "sources": [ ".a", ".b" ],
+      "span": "bisect-b.bel:3:1",
+      "name": "v",
+      "step": null
+    },
+    null,
+    {
+      "axiom": "axiom5",
+      "sources": [ "--v", "--h", ".b" ],
+      "span": "bisect-b.bel:5:1",
+      "name": null,
+      "step": null
+    },
+    null,
+    {
+      "axiom": "axiom2",
+      "sources": [ ".b", ".c" ],
+      "span": "bisect-b.bel:4:1",
+      "name": "h",
+      "step": null
+    },
+    null,
+    null
+  ],
+  "beloch:named_points": {
+    "c": { "paper": [ 1.0, 1.0 ], "table": [ 1.0, 1.0 ] },
+    "b": { "paper": [ 1.0, 0.0 ], "table": [ 1.0, 0.0 ] },
+    "d": { "paper": [ 0.0, 1.0 ], "table": [ 0.0, 1.0 ] },
+    "a": { "paper": [ 0.0, 0.0 ], "table": [ 0.0, 0.0 ] }
+  },
+  "beloch:named_lines": { "v": [ 1.0, 0.0, 0.5 ], "h": [ 0.0, 1.0, 0.5 ] },
+  "file_frames": [
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": true,
+      "vertices_coords": [
+        [ 1.0, 0.5 ],
+        [ 1.0, 1.0 ],
+        [ 0.5, 1.0 ],
+        [ 0.5, 0.5 ],
+        [ 1.0, 0.0 ],
+        [ 0.5, 0.0 ],
+        [ 0.0, 1.0 ],
+        [ 0.0, 0.5 ],
+        [ 0.0, 0.0 ]
+      ],
+      "edges_foldAngle": [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+      ],
+      "faceOrders": []
+    }
+  ]
+}
