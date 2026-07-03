@@ -4,11 +4,10 @@ open Beloch
 let examples_dir = "../../../examples/"
 let golden_dir = "golden/"
 
-(* through.bel is excluded: its irrational Field coords make convex_overlap
-   non-terminate at full-FOLD (pre-existing, out of scope for this PR — see the
-   roadmap note "through.bel full FOLD still hangs"). Excluding it is a logged
-   cap, not a silent one. *)
-let excluded = [ "through.bel" ]
+(* No exclusions: through.bel's historical full-FOLD hang (irrational coords
+   in convex_overlap) was fixed by the FLINT qqbar kernel (#41) — it folds in
+   well under a second now. *)
+let excluded : string list = []
 
 (* every .bel in examples/ that is a full program (skip README + excluded) *)
 let example_names () =
