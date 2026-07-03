@@ -1,0 +1,14 @@
+; SYNTAX TEST "source.beloch"
+
+--pq through ._mb .s
+; <- variable.other.crease.beloch
+;            ^^^^ variable.other.point.temp.beloch
+;                 ^^ variable.other.point.beloch
+
+.x .(--vm --(.a .b))
+; <- variable.other.point.beloch
+;  ^^ punctuation.section.point.begin.beloch
+;         ^^^ punctuation.section.line.begin.beloch
+
+apply $t
+;     ^^ variable.other.instance.beloch

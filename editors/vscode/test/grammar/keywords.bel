@@ -1,0 +1,18 @@
+; SYNTAX TEST "source.beloch"
+
+paper square
+; <- keyword.control.paper.beloch
+;     ^^^^^^ constant.language.shape.beloch
+
+map perp cross through flip
+; <- keyword.control.fold.beloch
+;   ^^^^ keyword.control.fold.beloch
+;                       ^^^^ keyword.control.flip.beloch
+
+onto and toward moving mountain
+; <- keyword.operator.word.beloch
+;               ^^^^^^ keyword.operator.word.beloch
+;                      ^^^^^^^^ keyword.other.direction.beloch
+
+apply export as
+; <- keyword.control.import.beloch

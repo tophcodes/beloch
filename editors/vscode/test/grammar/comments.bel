@@ -1,0 +1,4 @@
+; SYNTAX TEST "source.beloch"
+
+; a comment line
+; <- comment.line.semicolon.beloch

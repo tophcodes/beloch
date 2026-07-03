@@ -1,0 +1,15 @@
+; SYNTAX TEST "source.beloch"
+
+def diagonals
+; <- storage.type.beloch
+;   ^^^^^^^^^ entity.name.function.beloch
+
+step thirds
+; <- storage.type.beloch
+;    ^^^^^^ entity.name.section.beloch
+
+@map .a onto .b
+; <- keyword.control.fold.commit.beloch
+
+export { .s! } $t
+;          ^ keyword.operator.shadow.beloch
