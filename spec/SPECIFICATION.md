@@ -720,7 +720,10 @@ right-hand side — see the shorthand RHS note in §5.
 
 Deferred, in rough order of likely arrival: non-flat (constructible-angle) folds ·
 `rotate` · fold maneuvers (reverse/squash/sink/petal, via `unfold` + layer
-selection) · regions · parts/imports · nested `def`s and namespace chaining
+selection) · crease-segment referencing (a crease name is a *bundle* of segments;
+select one with an `at` operator, create one with `pinch`; supersedes the
+`--( --d #(...) )` escape hatch — [ADR 0014](../decisions/0014-crease-is-a-bundle-of-segments.md)) ·
+regions · parts/imports · nested `def`s and namespace chaining
 (`.[$b1 $d tip]`) · re-export cascades · string labels in source (i18n stays
 external) · `pub`/`priv` interfaces · looping primitives · module/file-level
 namespacing · a dedicated render/animation engine · YR diagrams. These are not

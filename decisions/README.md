@@ -33,4 +33,5 @@ See also: `../notes/` (design journal), `../antipatterns.md` (dead ends),
 - [0011](0011-action-model.md) — Action model
 - [0012](0012-real-algebraic-number-kernel.md) — Real-algebraic number kernel
 - [0013](0013-flint-qqbar-backend.md) — FLINT qqbar backend for irrational values
+- [0014](0014-crease-is-a-bundle-of-segments.md) — A crease is a bundle of segments
 - [0015](0015-flat-folded-states-only.md) — Flat folded states only; 3D is a goal, not carried
