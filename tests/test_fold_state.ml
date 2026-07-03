@@ -143,6 +143,41 @@ let test_precrease_upgrades_in_place () =
            |> List.filter (fun (e:Fold_state.edge) -> e.Fold_state.eassign = Fold_state.U) in
   Alcotest.(check int) "no stale U crease left on the fold line" 0 (List.length us)
 
+(* a diagonal precrease is straight; after flip it tracks to the OTHER diagonal *)
+let test_crease_axis_flat_and_flip () =
+  let pt x y = { Geom.x = Num.of_int x; y = Num.of_int y } in
+  let l_orig = Geom.line_through (pt 0 0) (pt 1 1) in  (* diagonal a-c *)
+  let cid = Fold_state.fresh_crease_id () in
+  let st = Fold_state.subdivide Fold_state.init_square l_orig ~crease_id:cid ~prov:None in
+  (match Fold_state.crease_axis st cid l_orig with
+   | `Line l ->
+       Alcotest.(check bool) "flat crease returns its own line"
+         true (Geom.side_of_line l (pt 0 0) = 0 && Geom.side_of_line l (pt 1 1) = 0)
+   | _ -> Alcotest.fail "flat crease should resolve to a line");
+  let stf = Fold_state.flip st in
+  (match Fold_state.crease_axis stf cid l_orig with
+   | `Line l ->
+       (* the flipped diagonal passes through b(1,0) and d(0,1), not a(0,0)/c(1,1) *)
+       Alcotest.(check bool) "flip tracked crease to the other diagonal"
+         true (Geom.side_of_line l (pt 1 0) = 0 && Geom.side_of_line l (pt 0 1) = 0)
+   | _ -> Alcotest.fail "flipped flat crease should still resolve to a line")
+
+(* flap_of_points: the a-c split square has triangles; {a,b,c} picks exactly one *)
+let test_flap_of_points_unique_zero_multi () =
+  let pt x y = { Geom.x = Num.of_int x; y = Num.of_int y } in
+  let l = Geom.line_through (pt 0 0) (pt 1 1) in
+  let cid = Fold_state.fresh_crease_id () in
+  let st = Fold_state.subdivide Fold_state.init_square l ~crease_id:cid ~prov:None in
+  (match Fold_state.flap_of_points st [ pt 0 0; pt 1 0; pt 1 1 ] with
+   | `Face _ -> ()
+   | _ -> Alcotest.fail "{a,b,c} should pick a unique flap");
+  (match Fold_state.flap_of_points st [ pt 0 0; pt 1 1 ] with
+   | `Ambiguous -> ()  (* both triangles contain the shared diagonal endpoints *)
+   | _ -> Alcotest.fail "{a,c} lie on both flaps → ambiguous");
+  (match Fold_state.flap_of_points st [ pt 1 0; pt 0 1 ] with
+   | `Zero -> ()  (* b and d are on opposite triangles → no single flap *)
+   | _ -> Alcotest.fail "{b,d} share no flap → zero")
+
 let () =
   Alcotest.run "fold_state"
     [
@@ -160,5 +195,12 @@ let () =
             test_flip_reindexes_edge;
           Alcotest.test_case "precrease upgrades in place (#27)" `Quick
             test_precrease_upgrades_in_place;
+        ] );
+      ( "material-creases",
+        [
+          Alcotest.test_case "crease_axis flat + flip tracking" `Quick
+            test_crease_axis_flat_and_flip;
+          Alcotest.test_case "flap_of_points unique/zero/ambiguous" `Quick
+            test_flap_of_points_unique_zero_multi;
         ] );
     ]

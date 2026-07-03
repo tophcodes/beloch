@@ -25,6 +25,11 @@ and line_operand =
   | LNamed of crease_ref
   | LThrough of point_operand * point_operand * Error.span
   | LMember of string * string * Error.span  (* instance, member *)
+  | LRestrict of crease_ref * flap_operand * Error.span
+    (* --( --d #(.a .b .c) ): the straight piece of crease --d on the flap *)
+
+and flap_operand = FByPoints of point_operand list * Error.span
+  (* #(.a .b .c): the unique current flat flap containing all listed points *)
 
 type arg = APoint of point_operand | ALine of line_operand
 

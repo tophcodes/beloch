@@ -344,6 +344,49 @@ let test_emit_folded_crease_name () =
   Alcotest.(check bool) "crease carries name m" true
     (List.exists (fun n -> n = `String "m") names)
 
+(* #28: bare reuse of a crease that's been bent by a subsequent fold must
+   error, with a hint toward the #(...) flap escape hatch. *)
+let test_bent_crease_bare_reuse_errors () =
+  let src =
+    "paper square\n\
+     --b = through .a .c\n\
+     --v = @map .c onto .b moving .c\n\
+     .mid = cross --b --v\n"
+    (* bare reuse of the now-bent --b *)
+  in
+  match Beloch.fold_string ~filename:"t.bel" src with
+  | exception Error.Beloch_error (_, msg) ->
+      Alcotest.(check bool)
+        "mentions no longer straight" true
+        (let re = Str.regexp_string "no longer straight" in
+         try
+           ignore (Str.search_forward re msg 0);
+           true
+         with Not_found -> false);
+      Alcotest.(check bool)
+        "hints the flap escape hatch" true
+        (let re = Str.regexp_string "#(" in
+         try
+           ignore (Str.search_forward re msg 0);
+           true
+         with Not_found -> false)
+  | _ -> Alcotest.fail "expected a bent-crease error"
+
+(* #28: naming the folded-flap piece of a bent crease via #(...) resolves and
+   folds without error. *)
+let test_flap_restriction_resolves () =
+  let src =
+    "paper square\n\
+     --b = through .a .c\n\
+     --v = @map .c onto .b moving .c\n\
+     .mid = cross --( --b #(.c .d) ) --v\n"
+    (* the folded-flap piece of --b *)
+  in
+  match Beloch.fold_string ~filename:"t.bel" src with
+  | exception Error.Beloch_error (_, msg) ->
+      Alcotest.failf "restriction should resolve, got error: %s" msg
+  | _ -> ()
+
 (* #27: mark a precrease, then fold on it. The emitted FOLD must carry V/180 on
    that crease, never the stale U/0 from the precrease's subdivide. *)
 let test_e2e_precrease_fold_emits_v () =
@@ -397,6 +440,10 @@ let () =
             test_e2e_axiom7_rational_crease;
           Alcotest.test_case "precrease then fold emits V not U" `Quick
             test_e2e_precrease_fold_emits_v;
+          Alcotest.test_case "bent crease bare reuse errors" `Quick
+            test_bent_crease_bare_reuse_errors;
+          Alcotest.test_case "flap restriction resolves" `Quick
+            test_flap_restriction_resolves;
         ] );
       ( "emit_folded",
         [

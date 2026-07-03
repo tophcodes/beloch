@@ -392,6 +392,21 @@ let test_parse_step_marker () =
   | [ Ast.StepMark ("thirds", _); Ast.Flip _ ] -> ()
   | _ -> Alcotest.fail "expected StepMark then Flip"
 
+let test_flap_restrict_parses () =
+  let src =
+    "paper square\n--d = through .a .c\nperp --( --d #(.a .c .b) ) through .b\n"
+  in
+  match Beloch.parse ~filename:"t.bel" src with
+  | [ _;
+      Ast.Crease
+        ( None,
+          Ast.Perp (_, Ast.LRestrict (cr, Ast.FByPoints (pts, _), _)),
+          None,
+          _ ) ] ->
+      Alcotest.(check string) "restricted crease name" "d" cr.Ast.cname;
+      Alcotest.(check int) "flap point count" 3 (List.length pts)
+  | _ -> Alcotest.fail "expected a Perp axiom carrying LRestrict/FByPoints"
+
 (* ---- Spec corpus ---- *)
 
 let spec_corpus =
@@ -489,6 +504,8 @@ let () =
           Alcotest.test_case "parse def in def rejected" `Quick test_parse_def_in_def_rejected;
           Alcotest.test_case "parse step in body rejected" `Quick test_parse_step_in_body_rejected;
           Alcotest.test_case "parse kebab rejected" `Quick test_parse_kebab_rejected;
+          Alcotest.test_case "flap-restricted crease parses" `Quick
+            test_flap_restrict_parses;
         ] );
       ( "export",
         [

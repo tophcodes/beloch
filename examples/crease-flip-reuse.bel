@@ -1,0 +1,6 @@
+; status: works — precrease a diagonal, flip the paper, then reuse the crease:
+; material tracking means --q resolves to the FLIPPED diagonal, not the original (#28)
+paper square
+--q = through .a .c
+flip
+perp --q through .b
