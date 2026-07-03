@@ -65,6 +65,28 @@ let test_num_to_float () =
     "to_float sqrt2 ≈ 1.41421" true
     (Float.abs (Num.to_float (Num.sqrt (n 2)) -. 1.4142135623) < 1e-6)
 
+let test_num_cross_field_fast () =
+  (* the former >120s cliff: cbrt2 meets sqrt2 (spike: FLINT does this in ~0s) *)
+  let cbrt2 =
+    match Num.real_roots [| n (-2); Num.zero; Num.zero; Num.one |] with
+    | [ r ] -> r
+    | _ -> Alcotest.fail "expected one real root for x^3-2"
+  in
+  let s2 = Num.sqrt (n 2) in
+  let t0 = Unix.gettimeofday () in
+  let g = Num.add cbrt2 s2 in
+  let g2 = Num.mul g g in
+  Alcotest.(check int) "g2 > g" 1 (Num.compare g2 g);
+  let d = Num.sub g s2 in
+  Alcotest.(check bool) "(g - sqrt2)^3 = 2 exactly" true
+    (Num.equal (Num.mul (Num.mul d d) d) (n 2));
+  Alcotest.(check bool) "1/g * g = 1" true
+    (Num.equal (Num.mul (Num.inv g) g) Num.one);
+  let dt = Unix.gettimeofday () -. t0 in
+  Alcotest.(check bool)
+    (Printf.sprintf "cross-field sequence under 1s (took %.3fs)" dt)
+    true (dt < 1.0)
+
 (* ---- Num: real_roots ---- *)
 
 let test_num_real_roots_cubic () =
@@ -447,6 +469,62 @@ let test_real_roots_epsilon_ladder () =
       ("eps=5e-16", "1/2000000000000000");
       ("eps=5e-20", "1/20000000000000000000") ]
 
+let test_num_sqrt2_sqrt5_identities () =
+  let s2 = Num.sqrt (n 2) and s5 = Num.sqrt (n 5) and s10 = Num.sqrt (n 10) in
+  let x = Num.add s2 s5 in
+  Alcotest.(check bool) "(sqrt2+sqrt5)^2 = 7 + 2*sqrt10" true
+    (Num.equal (Num.mul x x) (Num.add (n 7) (Num.mul (n 2) s10)));
+  Alcotest.(check bool) "1/(sqrt2+sqrt5) = (sqrt5 - sqrt2)/3" true
+    (Num.equal (Num.inv x) (Num.div (Num.sub s5 s2) (n 3)));
+  Alcotest.(check bool) "sqrt2*sqrt5 = sqrt10" true
+    (Num.equal (Num.mul s2 s5) s10)
+
+let test_num_deg27_smoke () =
+  let cbrt k =
+    match Num.real_roots [| n (-k); Num.zero; Num.zero; Num.one |] with
+    | [ r ] -> r
+    | _ -> Alcotest.fail "expected one real cube root"
+  in
+  let t0 = Unix.gettimeofday () in
+  let x = Num.add (Num.add (cbrt 2) (cbrt 3)) (cbrt 5) in
+  let x' = Num.add (cbrt 2) (Num.add (cbrt 3) (cbrt 5)) in
+  Alcotest.(check bool) "associativity holds exactly (deg 27)" true
+    (Num.equal x x');
+  Alcotest.(check int) "x^2 > x (x > 1)" 1 (Num.compare (Num.mul x x) x);
+  Alcotest.(check bool) "1/x * x = 1" true
+    (Num.equal (Num.mul (Num.inv x) x) Num.one);
+  let dt = Unix.gettimeofday () -. t0 in
+  Alcotest.(check bool)
+    (Printf.sprintf "deg-27 smoke under 1s (took %.3fs)" dt) true (dt < 1.0)
+
+let test_num_axiom7_style_algebraic_cubic_fast () =
+  (* cubic with coefficients in Q(sqrt2, sqrt3) — degree-4 coefficient field;
+     was ~28s via generator elimination, FLINT 3.6 roots-first target < 1s *)
+  let s2 = Num.sqrt (n 2) and s3 = Num.sqrt (n 3) in
+  let gamma = Num.div (Num.add s2 s3) (n 8) in
+  let coeffs =
+    [| Num.div (n (-1)) (n 3); Num.div gamma (n 2); Num.neg gamma; Num.one |]
+  in
+  let t0 = Unix.gettimeofday () in
+  let roots = Num.real_roots coeffs in
+  let dt = Unix.gettimeofday () -. t0 in
+  Alcotest.(check bool) "at least one real root" true (List.length roots >= 1);
+  List.iter
+    (fun r ->
+      (* verify exactly: r^3 + a2 r^2 + a1 r + a0 = 0 *)
+      let v =
+        Num.add
+          (Num.add
+             (Num.mul (Num.mul r r) (Num.add r coeffs.(2)))
+             (Num.mul r coeffs.(1)))
+          coeffs.(0)
+      in
+      Alcotest.(check bool) "root verifies exactly" true (Num.equal v Num.zero))
+    roots;
+  Alcotest.(check bool)
+    (Printf.sprintf "under 1s (took %.3fs)" dt)
+    true (dt < 1.0)
+
 let () =
   Alcotest.run "beloch-num"
     [
@@ -461,6 +539,8 @@ let () =
           Alcotest.test_case "nested radical" `Quick test_num_nested_radical;
           Alcotest.test_case "termination guard" `Quick test_num_termination_guard;
           Alcotest.test_case "to_float" `Quick test_num_to_float;
+          Alcotest.test_case "cross-field via qqbar fast" `Quick
+            test_num_cross_field_fast;
           Alcotest.test_case "real roots cubic" `Quick test_num_real_roots_cubic;
           Alcotest.test_case "casus irreducibilis distinct" `Quick
             test_num_casus_irreducibilis_distinct;
@@ -485,6 +565,12 @@ let () =
             test_rational_roots_finds_roots;
           Alcotest.test_case "real_roots epsilon ladder (#23)" `Slow
             test_real_roots_epsilon_ladder;
+          Alcotest.test_case "sqrt2/sqrt5 identities" `Quick
+            test_num_sqrt2_sqrt5_identities;
+          Alcotest.test_case "deg-27 smoke (cubic extensions)" `Quick
+            test_num_deg27_smoke;
+          Alcotest.test_case "axiom7-style algebraic cubic fast (flint 3.6)"
+            `Quick test_num_axiom7_style_algebraic_cubic_fast;
         ] );
       ( "poly",
         [

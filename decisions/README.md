@@ -17,3 +17,19 @@ Format per record:
 
 See also: `../notes/` (design journal), `../antipatterns.md` (dead ends),
 `../spec/` (the language specification these decisions shape).
+
+## Index
+
+- [0001](0001-ocaml-core-typescript-edge.md) — OCaml core, TypeScript edge
+- [0002](0002-fold-extended-as-output.md) — Fold Extended as output format
+- [0003](0003-restart-from-minimal-core.md) — Restart from minimal core
+- [0004](0004-menhir-then-treesitter.md) — Menhir then TreeSitter parsing
+- [0005](0005-name-beloch.md) — Name: Beloch
+- [0006](0006-permissive-license-mit.md) — MIT license
+- [0007](0007-evaluator-not-compiler.md) — Evaluator, not compiler
+- [0008](0008-exact-rational-arithmetic.md) — Exact rational arithmetic
+- [0009](0009-relationship-to-rabbit-ear.md) — Relationship to Rabbit Ear
+- [0010](0010-constructible-real-numbers.md) — Constructible real numbers
+- [0011](0011-action-model.md) — Action model
+- [0012](0012-real-algebraic-number-kernel.md) — Real-algebraic number kernel
+- [0013](0013-flint-qqbar-backend.md) — FLINT qqbar backend for irrational values

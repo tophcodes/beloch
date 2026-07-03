@@ -30,3 +30,7 @@
  (name test_golden)
  (libraries beloch alcotest yojson zarith str)
  (deps (glob_files ../examples/*.bel) (glob_files golden/*.fold)))
+
+(test
+ (name test_qqbar)
+ (libraries beloch alcotest zarith))

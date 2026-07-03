@@ -1,6 +1,6 @@
 # 0012 — Real-algebraic number kernel
 
-**Status:** Accepted (supersedes [0010](0010-constructible-real-numbers.md))
+**Status:** Accepted (supersedes [0010](0010-constructible-real-numbers.md); `Alg` representation superseded by [0013](0013-flint-qqbar-backend.md))
 
 ## Context
 

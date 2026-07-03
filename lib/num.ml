@@ -1,16 +1,16 @@
-(** Exact real algebraic numbers. A value is either an exact rational [Rat q]
-    (fast-path: axioms 1–4 never leave ℚ) or [Alg {poly; lo; hi}] — the unique
-    real root of the squarefree ℚ-polynomial [poly] inside the open interval
-    [(lo, hi)]. Invariants for [Alg]: [poly] is squarefree, has exactly one root
-    in [(lo, hi)], and that root is irrational (so it is never 0). Arithmetic
-    builds the result's defining polynomial by resultant-via-interpolation and
-    re-isolates; sign/compare refine the interval; [equal x y] is
-    [sign (sub x y) = 0]. [to_float] is the only float, output-only.
-    Algorithms: [bpr2006]. Field theory: [justin1986 §8.4d], [hull2020]. *)
+(** Exact real algebraic numbers. A value is an exact rational [Rat q]
+    (fast path: axioms 1–4 never leave ℚ), an element of a single quadratic/
+    cubic extension [Field {gen; coords}] = coords(α) with α the root of the
+    monic irreducible [gen.mu] isolated in [(gen.lo, gen.hi)] (fast path for
+    axiom-5/6/7 roots, [bpr2006 §12.4]), or a general real algebraic number
+    [Qq] backed by FLINT's qqbar (canonical minimal polynomial + certified
+    ball; cross-field arithmetic, composite extensions). Invariant: [Qq] is
+    irrational — rationals collapse to [Rat]. [to_float] is the only float,
+    output-only. See decisions/0013-flint-qqbar-backend.md. *)
 
 type t =
   | Rat of Q.t
-  | Alg of { poly : Poly.t; lo : Q.t; hi : Q.t }
+  | Qq of Qqbar.t
   | Field of { gen : gen; coords : Poly.t }
 
 and gen = { mu : Poly.t; lo : Q.t; hi : Q.t }
@@ -39,25 +39,35 @@ let mk_field (gen : gen) (coords : Poly.t) : t =
   | 0 -> Rat c.(0)
   | _ -> Field { gen; coords = c }
 
-(* Forward reference so that defpoly / enclosure / enclosure_tight / to_float /
-   sqrt can all call to_alg without being inside the arithmetic rec group. *)
-let to_alg_ref : (t -> t) ref = ref (fun x -> x)
+(* collapse a qqbar value into canonical representation (Qq iff irrational) *)
+let of_qq (q : Qqbar.t) : t =
+  match Qqbar.to_q q with Some r -> Rat r | None -> Qq q
 
-(* defining polynomial of a value (x − q for a rational). *)
-let rec defpoly (x : t) : Poly.t =
+(* the field generator α as a qqbar value: the unique real root of mu
+   inside (lo, hi) *)
+let qq_of_gen (g : gen) : Qqbar.t =
+  let inside r =
+    Qqbar.cmp_re r (Qqbar.of_q g.lo) > 0
+    && Qqbar.cmp_re r (Qqbar.of_q g.hi) < 0
+  in
+  match List.filter inside (Qqbar.real_roots_of_poly g.mu) with
+  | [ r ] -> r
+  | _ -> invalid_arg "Num: generator interval does not isolate a root"
+
+let to_qq (x : t) : Qqbar.t =
   match x with
-  | Rat q -> Poly.of_list [ Q.neg q; Q.one ]
-  | Alg a -> a.poly
-  | Field _ -> defpoly (!to_alg_ref x)
+  | Rat q -> Qqbar.of_q q
+  | Qq q -> q
+  | Field { gen; coords } ->
+      (* Horner: coords(α) *)
+      let alpha = qq_of_gen gen in
+      let acc = ref (Qqbar.of_q Q.zero) in
+      for i = Poly.degree coords downto 0 do
+        acc := Qqbar.add (Qqbar.mul !acc alpha) (Qqbar.of_q coords.(i))
+      done;
+      !acc
 
-(* a rational enclosure [lo,hi] of the value; tight for rationals. *)
-let rec enclosure (x : t) : Q.t * Q.t =
-  match x with
-  | Rat q -> (q, q)
-  | Alg a -> (a.lo, a.hi)
-  | Field _ -> enclosure (!to_alg_ref x)
-
-(* refine an Alg interval once, keeping the unique root by the sign change. *)
+(* refine a generator's isolating interval once, keeping the unique root by the sign change. *)
 let refine_alg (poly : Poly.t) (lo : Q.t) (hi : Q.t) : Q.t * Q.t =
   let m = Q.div (Q.add lo hi) two_q in
   let sl = Poly.sign_at poly lo and sm = Poly.sign_at poly m in
@@ -121,7 +131,7 @@ let rational_roots_in (p : Poly.t) (lo : Q.t) (hi : Q.t) : Q.t list =
    (lo,hi), when it can be produced elementarily: divide out rational-root linear
    factors; what remains, if degree 2 or 3 with no rational root, is irreducible
    (a quadratic/cubic with no rational root has no ℚ-factorization). Returns None
-   for a composite remainder of degree ≥ 4 (caller keeps the root as Alg). *)
+   for a composite remainder of degree ≥ 4 (caller keeps the root as Qq). *)
 let minimal_poly_in (p : Poly.t) (_lo : Q.t) (_hi : Q.t) : Poly.t option =
   let b = Poly.cauchy_bound p in
   let rats = rational_roots_in p (Q.neg b) b in
@@ -134,15 +144,17 @@ let minimal_poly_in (p : Poly.t) (_lo : Q.t) (_hi : Q.t) : Poly.t option =
   let d = Poly.degree rest in
   if d = 2 || d = 3 then Some rest else None
 
-(* Build a value from a defining polynomial and an interval that brackets the
-   intended root. Collapses to Rat when the root is rational (critically, 0). *)
+(* Build a value from a defining polynomial and an interval bracketing the
+   intended root. Rational roots collapse to Rat; a root whose irreducible
+   minimal polynomial is elementarily available at degree 2/3
+   (minimal_poly_in) becomes a Field (single-generator fast path); anything
+   else becomes a FLINT-backed Qq. *)
 let make (poly : Poly.t) (lo : Q.t) (hi : Q.t) : t =
   let s = Poly.squarefree_part poly in
   match rational_roots_in s lo hi with
   | r :: _ -> Rat r
   | [] ->
-      (* refine until the interval isolates exactly one root of s and excludes
-         0 (the value is irrational here, so this terminates). *)
+      (* irrational: tighten until (lo,hi) isolates exactly one root of s *)
       let seq = Poly.sturm_sequence s in
       let rec tighten lo hi =
         if Poly.count_roots_in seq lo hi <= 1 then (lo, hi)
@@ -152,7 +164,40 @@ let make (poly : Poly.t) (lo : Q.t) (hi : Q.t) : t =
           else tighten m hi
       in
       let lo, hi = tighten lo hi in
-      Alg { poly = s; lo; hi }
+      (match minimal_poly_in s lo hi with
+      | Some mu ->
+          Field { gen = { mu; lo; hi }; coords = Poly.of_list [ Q.zero; Q.one ] }
+      | None ->
+          let inside r =
+            Qqbar.cmp_re r (Qqbar.of_q lo) > 0
+            && Qqbar.cmp_re r (Qqbar.of_q hi) < 0
+          in
+          (match List.filter inside (Qqbar.real_roots_of_poly s) with
+          | [ r ] -> Qq r
+          | _ ->
+              (* tighten isolated exactly one root of s in (lo,hi) *)
+              assert false))
+
+(* Upgrade an irrational Qq of degree ≤ 3 to the Field fast path: FLINT's
+   canonical minimal polynomial is irreducible; refine the certified
+   enclosure until it isolates this root of mu (rational endpoints are
+   never roots of an irreducible deg-≥2 mu). Deterministic per value. *)
+let field_upgrade (x : t) : t =
+  match x with
+  | Qq q when Qqbar.degree q <= 3 ->
+      let mu = Qqbar.minpoly q in
+      let seq = Poly.sturm_sequence mu in
+      let rec go prec =
+        let lo, hi = Qqbar.enclosure q ~prec in
+        if
+          Poly.count_roots_in seq lo hi = 1
+          && Poly.sign_at mu lo <> 0
+          && Poly.sign_at mu hi <> 0
+        then Field { gen = { mu; lo; hi }; coords = Poly.of_list [ Q.zero; Q.one ] }
+        else go (2 * prec)
+      in
+      go 64
+  | x -> x
 
 (* rational enclosure of p over x ∈ [lo,hi], by interval Horner. *)
 let poly_interval (p : Poly.t) (lo : Q.t) (hi : Q.t) : Q.t * Q.t =
@@ -168,9 +213,10 @@ let poly_interval (p : Poly.t) (lo : Q.t) (hi : Q.t) : Q.t * Q.t =
   done;
   !acc
 
-let rec sign (x : t) : int =
+let sign (x : t) : int =
   match x with
   | Rat q -> Q.sign q
+  | Qq q -> Qqbar.sign_re q
   | Field { gen; coords } ->
       let rec go lo hi =
         let vlo, vhi = poly_interval coords lo hi in
@@ -179,315 +225,82 @@ let rec sign (x : t) : int =
         else let lo, hi = refine_alg gen.mu lo hi in go lo hi
       in
       go gen.lo gen.hi
-  | Alg { poly; lo; hi } ->
-      if Q.sign lo > 0 then 1
-      else if Q.sign hi < 0 then -1
-      else
-        let lo, hi = refine_alg poly lo hi in
-        sign (Alg { poly; lo; hi })
 
 let neg (x : t) : t =
   match x with
   | Rat q -> Rat (Q.neg q)
+  | Qq q -> Qq (Qqbar.neg q) (* neg of an irrational is irrational *)
   | Field { gen; coords } -> mk_field gen (Poly.neg coords)
-  | Alg { poly; lo; hi } ->
-      (* root of poly(−x); interval is the reflection *)
-      let n = Array.length poly in
-      let p' =
-        Poly.of_list
-          (List.init n (fun i ->
-               if i mod 2 = 0 then poly.(i) else Q.neg poly.(i)))
-      in
-      make p' (Q.neg hi) (Q.neg lo)
 
 (* enclosure refined to width < w *)
-let rec enclosure_tight (x : t) (w : Q.t) : Q.t * Q.t =
+let enclosure_tight (x : t) (w : Q.t) : Q.t * Q.t =
   match x with
   | Rat q -> (q, q)
-  | Field _ -> enclosure_tight (!to_alg_ref x) w
-  | Alg { poly; lo; hi } ->
-      let rec go lo hi =
-        if Q.compare (Q.sub hi lo) w < 0 then (lo, hi)
-        else
-          let lo, hi = refine_alg poly lo hi in
-          go lo hi
+  | Qq q ->
+      let rec go prec =
+        let lo, hi = Qqbar.enclosure q ~prec in
+        if Q.compare (Q.sub hi lo) w < 0 then (lo, hi) else go (2 * prec)
       in
-      go lo hi
+      go 64
+  | Field { gen; coords } ->
+      let rec go lo hi =
+        let vlo, vhi = poly_interval coords lo hi in
+        if Q.compare (Q.sub vhi vlo) w < 0 then (vlo, vhi)
+        else let lo, hi = refine_alg gen.mu lo hi in go lo hi
+      in
+      go gen.lo gen.hi
 
-(* Given the result's defining polynomial R and a procedure that returns an
-   arbitrarily tight rational enclosure of the true result value, refine the
-   enclosure until it overlaps exactly one isolating interval of R's
-   squarefree part, then build the value there. A rational value — including
-   0 — collapses to Rat inside [make]; there is no separate zero shortcut
-   (#23: a fixed-width straddle test collapsed distinct close values to 0).
-   Terminates because distinct roots have positive separation.
-   Note: squarefree_part is re-applied idempotently down the chain (isolate_roots, make, rational_roots_in) — harmless at current degrees, consolidate if profiling ever shows it. *)
-let select_root (r : Poly.t) (enclose : Q.t -> Q.t * Q.t) : t =
-  let s = Poly.squarefree_part r in
-  let intervals = Poly.isolate_roots s in
-  let two = Q.of_int 2 in
-  let rec pick width =
-    let lo, hi = enclose width in
-    let hits =
-      List.filter (fun (a, b) -> Q.compare a hi < 0 && Q.compare lo b < 0) intervals
-    in
-    match hits with
-    | [ (a, b) ] ->
-        let lo = Q.max lo a and hi = Q.min hi b in
-        make s lo hi
-    | _ -> pick (Q.div width two)
-  in
-  pick (Q.of_int 1)
-
-(* Resultant_y(A(x−y), B(y)) as a ℚ[x]-polynomial, by evaluation+interpolation:
-   sample at x = 0..D, take numeric resultants, Lagrange-interpolate. *)
-let res_interp (combine : Q.t -> Poly.t) (b : Poly.t) (dbound : int) : Poly.t =
-  let pts =
-    List.init (dbound + 1) (fun k ->
-        let xk = Q.of_int k in
-        (xk, Poly.resultant (combine xk) b))
-  in
-  Poly.interpolate pts
-
-let defpoly_sum (a : t) (b : t) : Poly.t =
-  let pa = defpoly a and pb = defpoly b in
-  let d = Poly.degree pa * Poly.degree pb in
-  (* A(x−y) at x=k is A(k−y): compose A with (k − y) *)
-  let combine k = Poly.compose pa (Poly.of_list [ k; Q.neg Q.one ]) in
-  res_interp combine pb d
-
-let defpoly_prod (a : t) (b : t) : Poly.t =
-  let pa = defpoly a and pb = defpoly b in
-  let da = Poly.degree pa in
-  let d = da * Poly.degree pb in
-  (* y^{da} · A(k/y) at x=k : coefficient a_i k^i sits on y^{da−i} *)
-  let combine k =
-    Poly.of_list
-      (List.init (da + 1) (fun j ->
-           let i = da - j in
-           Q.mul pa.(i) (Poly.qpow k i)))
-  in
-  res_interp combine pb d
-
-(* fast path: shift an Alg by a rational — poly(x−q), interval shifted. *)
-let shift_alg (poly : Poly.t) (lo : Q.t) (hi : Q.t) (q : Q.t) : t =
-  let p' = Poly.compose poly (Poly.of_list [ Q.neg q; Q.one ]) in
-  make p' (Q.add lo q) (Q.add hi q)
-
-(* fast path: scale an Alg by a nonzero rational — poly(x/q), interval scaled. *)
-let scale_alg (poly : Poly.t) (lo : Q.t) (hi : Q.t) (q : Q.t) : t =
-  let p' = Poly.compose poly (Poly.of_list [ Q.zero; Q.inv q ]) in
-  if Q.sign q > 0 then make p' (Q.mul q lo) (Q.mul q hi)
-  else make p' (Q.mul q hi) (Q.mul q lo)
-
-(* Squaring shortcut for even polys: if pa(x) = r(x²), then if a has defpoly pa,
-   a² has defpoly r (since pa(a)=0 ↔ r(a²)=0). Extract r by taking even-indexed
-   coefficients: r.(i) = pa.(2*i). Only valid when all odd-indexed coeffs are 0. *)
-let even_poly_half (pa : Poly.t) : Poly.t option =
-  let n = Array.length pa in
-  if n = 0 then Some Poly.zero
-  else begin
-    (* check all odd-indexed coefficients are 0 *)
-    let ok = ref true in
-    for i = 0 to n - 1 do
-      if i mod 2 = 1 && not (Q.equal pa.(i) Q.zero) then ok := false
-    done;
-    if not !ok then None
-    else begin
-      (* r.(i) = pa.(2*i) for i = 0, 1, ..., floor((n-1)/2) *)
-      let m = (n + 1) / 2 in
-      Some (Poly.of_list (List.init m (fun i -> pa.(2 * i))))
-    end
-  end
-
-(* Cross-field fallback logging. When two Field values with different generators
-   (or a Field and a foreign Alg) meet in +/*, we demote both to Alg and pay the
-   slow resultant path — the documented shared-field limitation. Log each such
-   event to stderr with operand degrees so it can be profiled on real .bel input. *)
-let describe_operand (x : t) : string =
+let to_float (x : t) : float =
   match x with
-  | Rat _ -> "rat"
-  | Alg a -> Printf.sprintf "alg(deg %d)" (Poly.degree a.poly)
-  | Field f -> Printf.sprintf "field(deg %d)" (Poly.degree f.gen.mu)
+  | Rat q -> Q.to_float q
+  | Qq q -> Qqbar.to_float q
+  | Field _ ->
+      let w = Q.of_ints 1 1000000000000 in
+      let lo, hi = enclosure_tight x w in
+      Q.to_float (Q.div (Q.add lo hi) two_q)
 
-let log_alg_fallback (op : string) (x : t) (y : t) : unit =
-  Printf.eprintf "beloch: Num.%s cross-field fallback to Alg (%s, %s)\n%!" op
-    (describe_operand x) (describe_operand y)
-
-let rec add (x : t) (y : t) : t =
+let add (x : t) (y : t) : t =
   match (x, y) with
   | Rat a, Rat b -> Rat (Q.add a b)
   | Field a, Field b when same_gen a.gen b.gen ->
       mk_field a.gen (Poly.add a.coords b.coords)
   | Field a, Rat q | Rat q, Field a ->
       mk_field a.gen (Poly.add a.coords (Poly.const q))
-  | (Field _, _) | (_, Field _) ->
-      log_alg_fallback "add" x y;
-      add (to_alg x) (to_alg y)
-  | Alg a, Rat q | Rat q, Alg a -> shift_alg a.poly a.lo a.hi q
-  | Alg _, Alg _ ->
-      let r = defpoly_sum x y in
-      let enclose w =
-        let xl, xh = enclosure_tight x (Q.div w two_q) in
-        let yl, yh = enclosure_tight y (Q.div w two_q) in
-        (Q.add xl yl, Q.add xh yh)
-      in
-      select_root r enclose
+  | _ -> of_qq (Qqbar.add (to_qq x) (to_qq y))
 
-and sub (x : t) (y : t) : t = add x (neg y)
+let sub (x : t) (y : t) : t = add x (neg y)
 
-and mul (x : t) (y : t) : t =
-  (* Enclosure of a product from tightened operand enclosures (sign-aware):
-     lo/hi = min/max of the four corner products. *)
-  let product_enclose x y w =
-    let xl, xh = enclosure_tight x w in
-    let yl, yh = enclosure_tight y w in
-    let prods = [ Q.mul xl yl; Q.mul xl yh; Q.mul xh yl; Q.mul xh yh ] in
-    ( List.fold_left Q.min (List.hd prods) (List.tl prods),
-      List.fold_left Q.max (List.hd prods) (List.tl prods) )
-  in
+let mul (x : t) (y : t) : t =
   match (x, y) with
   | Rat a, Rat b -> Rat (Q.mul a b)
   | _ when sign x = 0 || sign y = 0 -> zero
   | Field a, Field b when same_gen a.gen b.gen ->
       mk_field a.gen (Poly.rem (Poly.mul a.coords b.coords) a.gen.mu)
   | Field a, Rat q | Rat q, Field a -> mk_field a.gen (Poly.scale q a.coords)
-  | (Field _, _) | (_, Field _) ->
-      log_alg_fallback "mul" x y;
-      mul (to_alg x) (to_alg y)
-  | Alg a, Rat q | Rat q, Alg a -> scale_alg a.poly a.lo a.hi q
-  | Alg ax, Alg ay
-    when ax.poly == ay.poly
-         && Q.equal ax.lo ay.lo
-         && Q.equal ax.hi ay.hi ->
-      (* Squaring shortcut: x and y are provably the same Alg root.
-         Guard: physically-equal poly array + identical interval endpoints.
-         Two distinct roots of the same polynomial cannot share both endpoints,
-         so this is a sound same-value test regardless of how Alg values are
-         constructed (e.g. if a future change copies a record with {a with …}).
-         If the guard does not fire, mul falls through to the exact resultant
-         path below, which is correct but slower — so mis-firing is the only risk.
-         If pa is even (pa(x)=r(x²)), then a² has defpoly r, with a² ∈ (lo²,hi²). *)
-      (match even_poly_half ax.poly with
-      | Some r ->
-          let lo_sq = Q.mul ax.lo ax.lo and hi_sq = Q.mul ax.hi ax.hi in
-          (* lo and hi both > 0 (irrational algebraic roots from sqrt are positive
-             when lo > 0; if straddling 0, fall back). *)
-          if Q.sign ax.lo > 0 then make r lo_sq hi_sq
-          else
-            (* fall back: use the full resultant path *)
-            let r_full = defpoly_prod x y in
-            select_root r_full (product_enclose x y)
-      | None ->
-          (* Not even; fall through to the general path *)
-          let r_full = defpoly_prod x y in
-          select_root r_full (product_enclose x y))
-  | _ ->
-      let r = defpoly_prod x y in
-      select_root r (product_enclose x y)
+  | _ -> of_qq (Qqbar.mul (to_qq x) (to_qq y))
 
-and inv (x : t) : t =
+let inv (x : t) : t =
   match x with
-  | Rat q -> if Q.equal q Q.zero then invalid_arg "Num.inv: zero" else Rat (Q.inv q)
+  | Rat q ->
+      if Q.equal q Q.zero then invalid_arg "Num.inv: zero" else Rat (Q.inv q)
   | Field { gen; coords } -> mk_field gen (Poly.inv_mod coords gen.mu)
-  | Alg _ ->
-      if sign x = 0 then invalid_arg "Num.inv: zero";
-      (* root of the reversed polynomial; enclosure is 1/[lo,hi] *)
-      let p = defpoly x in
-      let rev = Poly.of_list (List.rev (Array.to_list p)) in
-      let enclose w =
-        let lo, hi = enclosure_tight x w in
-        (* x is bounded away from 0 (sign≠0); both ends share its sign *)
-        (Q.inv hi, Q.inv lo)
-      in
-      select_root rev enclose
+  | Qq q -> Qq (Qqbar.inv q) (* Qq is irrational hence nonzero; inv stays irrational *)
 
-and div (x : t) (y : t) : t = mul x (inv y)
-
-(* Field → Alg: evaluate coords at α (an Alg built from μ + interval) using the
-   existing resultant arithmetic. The slow fallback; correctness baseline. *)
-and to_alg (x : t) : t =
-  match x with
-  | Field { gen; coords } ->
-      let alpha = make gen.mu gen.lo gen.hi in
-      let acc = ref zero in
-      for i = Poly.degree coords downto 0 do
-        acc := add (mul !acc alpha) (of_q coords.(i))
-      done;
-      !acc
-  | _ -> x
-
-let () = to_alg_ref := to_alg
+let div (x : t) (y : t) : t = mul x (inv y)
 
 let compare (x : t) (y : t) : int = sign (sub x y)
 let equal (x : t) (y : t) : bool = sign (sub x y) = 0
 
-(* Interval-arithmetic evaluation of Σ coeffs.(i)·zⁱ at a rational interval
-   [lz,hz] for z, with each coefficient's enclosure supplied by [enclose_c].
-   Returns the interval [la, ha] containing the polynomial's value.
-   Uses Horner with interval coefficients over ℚ. *)
-let poly_value_interval (coeffs : t array) (enclose_c : t -> Q.t * Q.t)
-    (lz : Q.t) (hz : Q.t) : Q.t * Q.t =
-  (* interval multiplication [la,ha]·[lb,hb] *)
-  let imul la ha lb hb =
-    let products = [Q.mul la lb; Q.mul la hb; Q.mul ha lb; Q.mul ha hb] in
-    List.fold_left Q.min (List.hd products) (List.tl products),
-    List.fold_left Q.max (List.hd products) (List.tl products)
-  in
-  (* interval addition *)
-  let iadd la ha lb hb = Q.add la lb, Q.add ha hb in
-  let n = Array.length coeffs in
-  let la = ref Q.zero and ha = ref Q.zero in
-  for i = n - 1 downto 0 do
-    (* acc := acc * z + coeffs.(i) *)
-    let lm, hm = imul !la !ha lz hz in
-    let lc, hc = enclose_c coeffs.(i) in
-    let lr, hr = iadd lm hm lc hc in
-    la := lr; ha := hr
-  done;
-  (!la, !ha)
-
-(* Certify that candidate root z₀ (given as polynomial r and rational enclosure
-   [lz,hz]) is a genuine root of P (with coefficients [coeffs]).
-   Uses rational interval arithmetic with a proven separation bound b: any nonzero
-   value of P at a root of R has |P(z₀)| ≥ b (Cauchy bound on nonzero roots of H).
-   Hence if the interval [la,ha] around P(z₀) contains 0 and has width < b, then
-   |P(z₀)| < b, which forces P(z₀) = 0 → genuine root.
-   Terminates: spurious roots eventually have their interval exclude 0; genuine roots
-   shrink below b. *)
-let certify (coeffs : t array) (r : Poly.t) (lz : Q.t) (hz : Q.t)
-    (b : Q.t) : bool =
-  let z0 = make r lz hz in
-  let width = ref (Q.sub hz lz) in
-  let two_q_local = Q.of_int 2 in
-  let rec loop () =
-    let lz_t, hz_t = enclosure_tight z0 !width in
-    let enclose_c c = enclosure_tight c !width in
-    let la, ha = poly_value_interval coeffs enclose_c lz_t hz_t in
-    if Q.sign ha < 0 || Q.sign la > 0 then
-      (* Interval excludes 0: P(actual_coeff, z₀) ≠ 0 → spurious root. *)
-      false
-    else if Q.compare (Q.sub ha la) b < 0 then
-      (* Interval width < b and 0 ∈ [la,ha]: |P(z₀)| < b impossible for a nonzero
-         value, so P(z₀) = 0 → genuine root. *)
-      true
-    else begin
-      width := Q.div !width two_q_local;
-      loop ()
-    end
-  in
-  loop ()
-
 (* real roots, ascending, of Σ coeffs.(i)·zⁱ. Rational-coefficient fast path
-   keeps axioms 1–6 cheap. For algebraic (Alg) coefficients: manufacture a
-   ℚ-superset polynomial R(z) by eliminating each distinct Alg coefficient's
-   generator with a Sylvester resultant (Mpoly), isolate R's real roots, then
-   keep only those that are genuine roots of the original polynomial — certified
-   by rational interval evaluation before falling back to exact Num arithmetic.
-   [bpr2006 §§4.2, 10.2–10.3] *)
+   keeps axioms 1–6 cheap. For algebraic (Qq) coefficients: manufacture a
+   ℚ-superset polynomial R(z) by eliminating each distinct Qq coefficient's
+   generator with a Sylvester resultant (Mpoly), then keep only R's roots that
+   evaluate P to exactly zero in qqbar (ADR 0013). *)
 let real_roots (coeffs : t array) : t list =
-  (* normalize Field coefficients to Alg so the rest of the function only sees Rat/Alg *)
-  let coeffs = Array.map (function Field _ as x -> to_alg x | x -> x) coeffs in
+  (* normalize Field coefficients to Qq so the rest of the function only sees Rat/Qq *)
+  let coeffs =
+    Array.map (function Field _ as x -> Qq (to_qq x) | x -> x) coeffs
+  in
   (* drop leading zero coefficients to find the true degree *)
   let n = ref (Array.length coeffs) in
   while !n > 0 && sign coeffs.(!n - 1) = 0 do
@@ -495,29 +308,77 @@ let real_roots (coeffs : t array) : t list =
   done;
   let coeffs = Array.sub coeffs 0 !n in
   let n = Array.length coeffs in
-  (* Upgrade an irrational Alg root to Field when its irreducible minimal
-     polynomial can be produced elementarily (degree 2 or 3 with no rational root). *)
-  let upgrade (v : t) : t =
-    match v with
-    | Alg { poly; lo; hi } -> (
-        match minimal_poly_in poly lo hi with
-        | Some mu -> Field { gen = { mu; lo; hi }; coords = Poly.of_list [ Q.zero; Q.one ] }
-        | None -> v)
-    | _ -> v
-  in
   if n <= 1 then [] (* zero polynomial or nonzero constant: no isolated roots *)
-  else if Array.for_all (function Rat _ -> true | Alg _ | Field _ -> false) coeffs then begin
+  else if Array.for_all (function Rat _ -> true | _ -> false) coeffs then begin
     (* rational fast path (unchanged behaviour) *)
-    let q_of = function Rat q -> q | Alg _ | Field _ -> assert false in
+    let q_of = function Rat q -> q | _ -> assert false in
     let p = Poly.of_list (Array.to_list (Array.map q_of coeffs)) in
     (* isolate_roots returns ascending disjoint intervals and make keeps each
        root inside its interval, so the list is already sorted — an exact
        compare-based sort here would refine close roots for nothing (#23). *)
     Poly.isolate_roots p |> List.map (fun (lo, hi) -> make p lo hi)
-    |> List.map upgrade
   end
   else begin
-    (* Assign generator variables to distinct algebraic numbers in the coefficient
+    let coeffs_qq = Array.map to_qq coeffs in
+    let eval_p (z : Qqbar.t) : Qqbar.t =
+      let acc = ref (Qqbar.of_q Q.zero) in
+      for i = Array.length coeffs_qq - 1 downto 0 do
+        acc := Qqbar.add (Qqbar.mul !acc z) coeffs_qq.(i)
+      done;
+      !acc
+    in
+    (* FLINT 3.6 fast path: _qqbar_roots_poly_squarefree solves degree <= 3
+       coefficient-field cubics (axiom 6/7) in ~ms instead of the Mpoly
+       elimination's ~28s (ADR 0013). The primitive requires P squarefree —
+       for degree <= 3 that's exactly "discriminant nonzero", checked exactly
+       in qqbar — and its own degree/bits limits reject fields it can't
+       handle (returns None instantly). Every candidate is re-verified with
+       the exact eval_p zero check, so a wrong FLINT result can never leak;
+       the only fallback risk is a missed root, foreclosed by the
+       discriminant guard. *)
+    let flint_first () : t list option =
+      let d = n - 1 in
+      if d > 3 then None
+      else begin
+        let disc_nonzero =
+          match d with
+          | 1 -> true
+          | 2 ->
+              let a = coeffs_qq.(2) and b = coeffs_qq.(1) and c = coeffs_qq.(0) in
+              not
+                (Qqbar.is_zero
+                   (Qqbar.sub (Qqbar.mul b b)
+                      (Qqbar.mul (Qqbar.of_q (Q.of_int 4)) (Qqbar.mul a c))))
+          | 3 ->
+              let a = coeffs_qq.(3) and b = coeffs_qq.(2) and c = coeffs_qq.(1)
+              and d0 = coeffs_qq.(0) in
+              let k n = Qqbar.of_q (Q.of_int n) in
+              let ( * ) = Qqbar.mul and ( - ) = Qqbar.sub and ( + ) = Qqbar.add in
+              let disc =
+                (k 18 * a * b * c * d0) - (k 4 * b * b * b * d0)
+                + (b * b * c * c) - (k 4 * a * c * c * c)
+                - (k 27 * a * a * d0 * d0)
+              in
+              not (Qqbar.is_zero disc)
+          | _ -> false
+        in
+        if not disc_nonzero then None
+        else
+          match Qqbar.real_roots_of_qqbar_poly coeffs_qq with
+          | None -> None
+          | Some candidates ->
+              (* exact filter: every kept value is provably a root of P *)
+              Some
+                (candidates
+                |> List.filter (fun z -> Qqbar.is_zero (eval_p z))
+                |> List.map (fun z -> field_upgrade (of_qq z)))
+      end
+    in
+    match flint_first () with
+    | Some roots -> roots
+    | None ->
+    (* fallback: generator elimination (Mpoly) + exact verification.
+       Assign generator variables to distinct algebraic numbers in the coefficient
        set. Variable 0 is z; generators are 1.. .
        Key optimisation: if c = a + q·gen for rationals a,q (affine combination),
        express the coefficient as const(a) + const(q)·gen_var rather than allocating
@@ -534,14 +395,7 @@ let real_roots (coeffs : t array) : t list =
          To confirm the sign of q (not just q²), we check against the enclosures.
        Falls through to a fresh generator for higher-degree or non-monic cases. *)
     (* Table: (gen_value, var_index, gen_minpoly) in discovery order *)
-    let gens = ref [] in
-    (* Check structural identity of two Alg values. *)
-    let alg_equal (x : Poly.t * Q.t * Q.t) (y : Poly.t * Q.t * Q.t) =
-      let px, lx, hx = x and py, ly, hy = y in
-      Q.equal lx ly && Q.equal hx hy
-      && Array.length px = Array.length py
-      && Array.for_all2 Q.equal px py
-    in
+    let gens : (Qqbar.t * int * Poly.t) list ref = ref [] in
     (* Try to express q as an exact rational from disc_c / disc_gen.
        disc must be a perfect square in ℚ: disc = (p/q)² → num/den both perfect int squares. *)
     let rational_sqrt_q (r : Q.t) : Q.t option =
@@ -557,93 +411,70 @@ let real_roots (coeffs : t array) : t list =
         else None
       end
     in
-    (* For Alg c, try to find an existing generator gen such that c = a + q·gen
-       for rationals a, q. Return Some (v, a, q) if found.
-       Strategy:
-         1. Exact structural identity → (v, 0, 1).
-         2. Affine/scalar (degree-2 generators, pure rational poly arithmetic):
-            compute disc_c, disc_gen; if disc_c/disc_gen is a perfect rational square,
-            extract q from q²=disc_c/disc_gen (disambiguate sign via enclosures),
-            then a = (-p_c + q·p_g)/2. Verify that a is indeed rational (always is if
-            the discriminants match, but we double-check the expression).
-       Returns None if c is not in ℚ(gen) or gen/c are not monic degree exactly 2. *)
-    let find_affine_combination (c : t) : (int * Q.t * Q.t) option =
-      match c with
-      | Rat _ | Field _ -> None
-      | Alg ac ->
-          List.find_map
-            (fun (gen, v, _minpoly) ->
-              match gen with
-              | Rat _ | Field _ -> None
-              | Alg ag ->
-                  (* Fast path: structurally identical → a=0, q=1 *)
-                  if alg_equal (ag.poly, ag.lo, ag.hi) (ac.poly, ac.lo, ac.hi) then
-                    Some (v, Q.zero, Q.one)
-                  else if Array.length ag.poly <> 3 || Array.length ac.poly <> 3 then
-                    None
-                  else begin
-                    (* Both are monic degree-2: gen.poly = [s_g; p_g; 1], c.poly = [s_c; p_c; 1] *)
-                    let p_g = ag.poly.(1) and s_g = ag.poly.(0) in
-                    let p_c = ac.poly.(1) and s_c = ac.poly.(0) in
-                    let disc_g = Q.sub (Q.mul p_g p_g) (Q.mul (Q.of_int 4) s_g) in
-                    let disc_c = Q.sub (Q.mul p_c p_c) (Q.mul (Q.of_int 4) s_c) in
-                    if Q.sign disc_g = 0 then None  (* gen would be rational — shouldn't happen *)
-                    else
-                      (* q² = disc_c / disc_g must be a perfect rational square *)
-                      let q_sq = Q.div disc_c disc_g in
-                      match rational_sqrt_q q_sq with
-                      | None -> None  (* disc_c/disc_g is not a perfect square → different fields *)
-                      | Some q_abs ->
-                          if Q.sign q_abs = 0 then None  (* c would be rational — handled above *)
-                          else begin
-                            (* a = (-p_c + q·p_g) / 2 (exact ℚ computation, always rational) *)
-                            let two = Q.of_int 2 in
-                            let try_q q_signed =
-                              let a_signed = Q.div (Q.add (Q.neg p_c) (Q.mul q_signed p_g)) two in
-                              (* Exact check: c = a + q·gen iff c − a − q·gen = 0.
-                                 sub c (add (of_q a) (scale_alg gen q)) collapses to Rat 0
-                                 when c truly equals a + q·gen.
-                                 For the wrong sign this is 2·q·gen (irrational). *)
-                              let candidate = add (of_q a_signed) (scale_alg ag.poly ag.lo ag.hi q_signed) in
-                              if sign (sub c candidate) = 0 then
-                                Some (v, a_signed, q_signed)
-                              else None
-                            in
-                            match try_q q_abs with
-                            | Some _ as r -> r
-                            | None -> try_q (Q.neg q_abs)
-                          end
-                  end)
-            !gens
+    (* For irrational c, try to find an existing generator g with
+       c = a + q·g for rationals a, q. Exact identity via Qqbar.equal;
+       the degree-2 affine extraction reads the monic minimal polynomials
+       (disc_c/disc_g must be a perfect rational square), and candidates
+       are verified exactly in qqbar. *)
+    let find_affine_combination (c : Qqbar.t) : (int * Q.t * Q.t) option =
+      List.find_map
+        (fun (g, v, mu_g) ->
+          if Qqbar.equal g c then Some (v, Q.zero, Q.one)
+          else if Qqbar.degree g <> 2 || Qqbar.degree c <> 2 then None
+          else begin
+            let mu_c = Qqbar.minpoly c in
+            let p_g = mu_g.(1) and s_g = mu_g.(0) in
+            let p_c = mu_c.(1) and s_c = mu_c.(0) in
+            let disc_g = Q.sub (Q.mul p_g p_g) (Q.mul (Q.of_int 4) s_g) in
+            let disc_c = Q.sub (Q.mul p_c p_c) (Q.mul (Q.of_int 4) s_c) in
+            if Q.sign disc_g = 0 then None
+            else
+              match rational_sqrt_q (Q.div disc_c disc_g) with
+              | None -> None
+              | Some q_abs when Q.sign q_abs = 0 -> None
+              | Some q_abs ->
+                  let try_q q_signed =
+                    let a_signed =
+                      Q.div (Q.add (Q.neg p_c) (Q.mul q_signed p_g)) two_q
+                    in
+                    let candidate =
+                      Qqbar.add (Qqbar.of_q a_signed)
+                        (Qqbar.mul (Qqbar.of_q q_signed) g)
+                    in
+                    if Qqbar.equal c candidate then Some (v, a_signed, q_signed)
+                    else None
+                  in
+                  (match try_q q_abs with
+                  | Some _ as r -> r
+                  | None -> try_q (Q.neg q_abs))
+          end)
+        !gens
     in
     (* For each distinct algebraic number (not an affine combination of an existing
        generator), add a new generator. *)
     Array.iter
       (fun c ->
         match c with
-        | Rat _ | Field _ -> ()
-        | Alg a ->
-            let affine = find_affine_combination c in
-            if affine = None then
-              gens := !gens @ [ (c, 1 + List.length !gens, a.poly) ])
+        | Rat _ -> ()
+        | Field _ -> assert false (* normalized at entry *)
+        | Qq cq ->
+            if find_affine_combination cq = None then
+              gens := !gens @ [ (cq, 1 + List.length !gens, Qqbar.minpoly cq) ])
       coeffs;
     let nvars = 1 + List.length !gens in
-    (* Build P as an Mpoly in [nvars] variables (var 0 = z, vars 1..nvars-1 = gens).
-       Also build it in [nvars_y = nvars+1] space for the H(Y) construction,
-       where var [nvars] will be Y. *)
-    let build_p_mpoly nv =
-      let zv = Mpoly.var nv 0 in
+    (* Build P as an Mpoly in [nvars] variables (var 0 = z, vars 1..nvars-1 = gens). *)
+    let build_p_mpoly () =
+      let zv = Mpoly.var nvars 0 in
       let cm c =
         match c with
-        | Rat q -> Mpoly.const nv q
-        | Field _ -> assert false (* converted to Alg at real_roots entry *)
-        | Alg _ ->
-            (match find_affine_combination c with
+        | Rat q -> Mpoly.const nvars q
+        | Field _ -> assert false (* normalized at entry *)
+        | Qq cq ->
+            (match find_affine_combination cq with
             | Some (v, a, q) ->
-                (* c = a + q·gen_v  →  const(a) + const(q)·var(v) *)
-                Mpoly.add (Mpoly.const nv a)
-                  (Mpoly.mul (Mpoly.const nv q) (Mpoly.var nv v))
-            | None -> assert false)
+                Mpoly.add (Mpoly.const nvars a)
+                  (Mpoly.mul (Mpoly.const nvars q) (Mpoly.var nvars v))
+            | None -> assert false (* every Qq coefficient was registered *))
       in
       let pm = ref Mpoly.zero in
       for i = 0 to n - 1 do
@@ -651,155 +482,44 @@ let real_roots (coeffs : t array) : t list =
       done;
       !pm
     in
-    (* Build a min-poly Mpoly for generator at variable v, in [nv]-variable space. *)
-    let build_minpoly_mpoly nv v minpoly =
+    (* Build a min-poly Mpoly for generator at variable v, in nvars-variable space. *)
+    let build_minpoly_mpoly v minpoly =
       let m = ref Mpoly.zero in
       Array.iteri
         (fun k q ->
           m := Mpoly.add !m
-            (Mpoly.mul (Mpoly.const nv q) (Mpoly.pow (Mpoly.var nv v) k)))
+            (Mpoly.mul (Mpoly.const nvars q) (Mpoly.pow (Mpoly.var nvars v) k)))
         minpoly;
       !m
     in
     (* Build R: eliminate generators from P in nvars-variable space → ℚ[z]. *)
-    let p_mpoly = build_p_mpoly nvars in
+    let p_mpoly = build_p_mpoly () in
     let w = ref p_mpoly in
     List.iter
       (fun (_, v, minpoly) ->
-        w := Mpoly.resultant !w (build_minpoly_mpoly nvars v minpoly) v)
+        w := Mpoly.resultant !w (build_minpoly_mpoly v minpoly) v)
       !gens;
     let r = Mpoly.to_poly_in !w 0 in
     if Poly.degree r < 1 then []
     else begin
-      (* Build H(Y) ∈ ℚ[Y]: the polynomial whose roots include all values
-         {P(ζ) : ζ a root of R}.  Y is variable index [nvars] in a
-         (nvars+1)-variable space. *)
-      let nvars_y = nvars + 1 in
-      let y_var = nvars in         (* index of Y in nvars_y-space *)
-      let p_mpoly_y = build_p_mpoly nvars_y in
-      (* W_h = Y - P(z, gens) *)
-      let w_h = ref (Mpoly.sub (Mpoly.var nvars_y y_var) p_mpoly_y) in
-      (* Eliminate each generator from W_h. *)
-      List.iter
-        (fun (_, v, minpoly) ->
-          w_h := Mpoly.resultant !w_h (build_minpoly_mpoly nvars_y v minpoly) v)
-        !gens;
-      (* Lift R (∈ ℚ[z]) into the nvars_y-variable space, then eliminate z. *)
-      let r_mpoly_y =
-        let zv = Mpoly.var nvars_y 0 in
-        let rm = ref Mpoly.zero in
-        Array.iteri
-          (fun k q ->
-            rm := Mpoly.add !rm
-              (Mpoly.mul (Mpoly.const nvars_y q) (Mpoly.pow zv k)))
-          r;
-        !rm
-      in
-      w_h := Mpoly.resultant !w_h r_mpoly_y 0;
-      (* Extract H as a ℚ[Y] polynomial. *)
-      let h = Mpoly.to_poly_in !w_h y_var in
-      (* Soundness invariant: H is never the zero polynomial. real_roots returns []
-         before this point when Poly.degree r < 1, so R has at least one root,
-         meaning P evaluated at that root yields a value, making H nontrivial. *)
-      assert (Array.length h > 0);
-      (* Cauchy lower bound on the smallest nonzero |root| of H.
-         Strip leading zero-power factors (corresponding to genuine zero values):
-         find the smallest k with h.(k) ≠ 0. Then B = |h0| / (|h0| + max_{i>k}|h.(i)|).
-         Any nonzero root Y of H satisfies |Y| ≥ B. *)
-      let hlen = Array.length h in
-      let k = ref 0 in
-      while !k < hlen && Q.equal h.(!k) Q.zero do incr k done;
-      let b =
-        if !k >= hlen - 1 then
-          (* H is zero or a monomial in Y: no nonzero roots, any positive B works. *)
-          Q.one
-        else begin
-          let h0 = Q.abs h.(!k) in
-          let m = ref Q.zero in
-          for i = !k + 1 to hlen - 1 do
-            m := Q.max !m (Q.abs h.(i))
-          done;
-          (* B = |h0| / (|h0| + m); guaranteed > 0 since |h0| > 0 *)
-          Q.div h0 (Q.add h0 !m)
-        end
-      in
-      (* isolate R's real roots; keep those that are genuine roots of P *)
-      Poly.isolate_roots r
-      |> List.filter_map (fun (lo, hi) ->
-             if certify coeffs r lo hi b then Some (make r lo hi) else None)
-      (* already ascending — see the rational path above *)
-      |> List.map upgrade
+      (* R is a ℚ-superset: every true root of P is among R's roots. Get the
+         candidates exactly from FLINT and keep those where P evaluates to
+         exactly zero in qqbar — no separation bound, no H(Y) construction,
+         no interval refinement (the former certify pipeline's Mpoly Laplace
+         resultants were the measured 48s/900s wall; ADR 0013). coeffs_qq and
+         eval_p are defined above, shared with flint_first. *)
+      (* FLINT handles the non-squarefree superset R directly; the naive
+         ℚ-gcd squarefree pass on a fat deg-81 R was a measured wall. Repeated
+         roots produce duplicate entries, which real_roots_of_poly deduplicates
+         exactly (cmp_re = 0 iff equal). *)
+      Qqbar.real_roots_of_poly r
+      |> List.filter (fun z -> Qqbar.is_zero (eval_p z))
+      |> List.map (fun z -> field_upgrade (of_qq z))
     end
   end
 
-(* sign of m² − x purely via rational bisection of x's defining interval.
-   This avoids creating new Num.t values in the inner loop of sqrt. *)
-let cmp_sq_rat (poly : Poly.t) (lo : Q.t) (hi : Q.t) (m : Q.t) : int =
-  let m2 = Q.mul m m in
-  (* Narrow x's interval until m² is outside [lo, hi]. Since m is rational and x
-     is irrational (Alg invariant), m² ≠ x, so this terminates. *)
-  let rec narrow lo hi =
-    if Q.compare m2 lo < 0 then -1
-    else if Q.compare m2 hi > 0 then 1
-    else
-      let lo', hi' = refine_alg poly lo hi in
-      narrow lo' hi'
-  in
-  narrow lo hi
-
-(* √x, exact for rational *and* algebraic x: √x is a root of x's defining
-   polynomial composed with (·)², i.e. poly(y²); the positive one is bracketed by
-   exact sign tests of (m² − x). No dependency on real_roots. *)
+(* √x, exact: rational results collapse (√4 = 2); irrational square roots
+   stay Qq (see the "results stay Qq" note in this task's interface block). *)
 let sqrt (x : t) : t =
-  let x = match x with Field _ -> to_alg x | _ -> x in
   if sign x < 0 then invalid_arg "Num.sqrt: negative argument";
-  if sign x = 0 then zero
-  else begin
-    let p = defpoly x in
-    let p2 = Poly.compose p (Poly.of_list [ Q.zero; Q.zero; Q.one ]) in
-    let lo_x, hi_x = enclosure x in
-    (* cmp_sq m = sign of (m² - x): negative if m < √x, positive if m > √x. *)
-    let cmp_sq =
-      match x with
-      | Rat q ->
-          fun m -> Q.compare (Q.mul m m) q
-      | Field _ -> assert false (* converted to Alg above *)
-      | Alg { poly = xpoly; lo = xlo; hi = xhi } ->
-          (* Use pure rational comparison, avoiding Num.t arithmetic. *)
-          fun m -> cmp_sq_rat xpoly xlo xhi m
-    in
-    (* bracket √x in (lo_s, hi_s), narrowing until the squared bracket sits
-       strictly inside x's rational isolating window. *)
-    let rec go lo_s hi_s =
-      let m = Q.div (Q.add lo_s hi_s) two_q in
-      let lo_s, hi_s = if cmp_sq m <= 0 then (m, hi_s) else (lo_s, m) in
-      let inside =
-        Q.compare (Q.mul lo_s lo_s) lo_x >= 0
-        && Q.compare (Q.mul hi_s hi_s) hi_x <= 0
-      in
-      (* The width floor is a termination safety-valve, not a correctness boundary:
-         make p2 lo_s hi_s re-isolates and re-validates from whatever bracket. *)
-      if inside || Q.compare (Q.sub hi_s lo_s) (Q.of_ints 1 1000000000) < 0 then
-        (lo_s, hi_s)
-      else go lo_s hi_s
-    in
-    let _, hi_enc = enclosure x in
-    let lo_s, hi_s = go Q.zero (Q.add hi_enc Q.one) in
-    make p2 lo_s hi_s
-  end
-
-let to_float (x : t) : float =
-  match x with
-  | Rat q -> Q.to_float q
-  | Field { gen; coords } ->
-      let w = Q.of_ints 1 1000000000000 in
-      let rec narrow lo hi =
-        if Q.compare (Q.sub hi lo) w < 0 then (lo, hi)
-        else let lo, hi = refine_alg gen.mu lo hi in narrow lo hi
-      in
-      let lo, hi = narrow gen.lo gen.hi in
-      Q.to_float (Poly.eval coords (Q.div (Q.add lo hi) two_q))
-  | Alg { poly; lo; hi } ->
-      let w = Q.of_ints 1 1000000000000 in
-      let lo, hi = enclosure_tight (Alg { poly; lo; hi }) w in
-      Q.to_float (Q.div (Q.add lo hi) two_q)
+  if sign x = 0 then zero else of_qq (Qqbar.sqrt (to_qq x))
