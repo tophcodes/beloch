@@ -18,14 +18,18 @@ type folded = {
 
 (* ---- Scope-stack context ---- *)
 
+type crease_val =
+  | Material of int * Geom.line
+  | Frozen of Geom.line
+
 type instance = {
   ipoints : (string, Geom.point) Hashtbl.t;
-  ilines : (string, Geom.line) Hashtbl.t;
+  ilines : (string, crease_val) Hashtbl.t;
 }
 
 type scope = {
   points    : (string, Geom.point) Hashtbl.t;
-  lines     : (string, Geom.line) Hashtbl.t;
+  lines     : (string, crease_val) Hashtbl.t;
   instances : (string, instance) Hashtbl.t;
 }
 
@@ -53,10 +57,10 @@ let lookup_point (ctx : ctx) (pr : Ast.point_ref) : Geom.point =
   | Some p -> p
   | None   -> Error.fail pr.Ast.span (Printf.sprintf "undefined point .%s" pr.Ast.name)
 
-let lookup_crease (ctx : ctx) (cr : Ast.crease_ref) : Geom.line =
+let lookup_crease (ctx : ctx) (cr : Ast.crease_ref) : crease_val =
   match List.find_map (fun s -> Hashtbl.find_opt s.lines cr.Ast.cname) ctx.scopes with
-  | Some l -> l
-  | None   -> Error.fail cr.Ast.cspan (Printf.sprintf "undefined crease --%s" cr.Ast.cname)
+  | Some cv -> cv
+  | None -> Error.fail cr.Ast.cspan (Printf.sprintf "undefined crease --%s" cr.Ast.cname)
 
 let lookup_instance (ctx : ctx) (name : string) (span : Error.span) : instance =
   match
@@ -76,14 +80,13 @@ let bind_point (ctx : ctx) (name : string) (span : Error.span) (p : Geom.point)
          name);
   Hashtbl.replace s.points name p
 
-let bind_crease (ctx : ctx) (name : string) (span : Error.span) (l : Geom.line)
-    =
+let bind_crease (ctx : ctx) (name : string) (span : Error.span) (cv : crease_val) =
   let s = List.hd ctx.scopes in
   if (not (is_temp name)) && Hashtbl.mem s.lines name then
     Error.fail span
-      (Printf.sprintf
-         "crease --%s is already bound; only _-prefixed temps rebind" name);
-  Hashtbl.replace s.lines name l
+      (Printf.sprintf "crease --%s is already bound; only _-prefixed temps rebind"
+         name);
+  Hashtbl.replace s.lines name cv
 
 
 (* ---- Evaluator ---- *)
@@ -112,6 +115,27 @@ let eval_folded (prog : Ast.program) : folded =
     | Ast.LNamed cr -> "--" ^ cr.Ast.cname
     | Ast.LThrough (p1, p2, _) -> Printf.sprintf "--(%s %s)" (pstr p1) (pstr p2)
     | Ast.LMember (i, m, _) -> Printf.sprintf "--[$%s %s]" i m
+    | Ast.LRestrict (cr, Ast.FByPoints (pts, _), _) ->
+        Printf.sprintf "--( --%s #(%s) )" cr.Ast.cname
+          (String.concat " " (List.map pstr pts))
+  in
+  let materialize_crease ~(name : string) (span : Error.span) (cv : crease_val) :
+      Geom.line =
+    match cv with
+    | Frozen l -> l
+    | Material (cid, l_orig) -> (
+        match Fold_state.crease_axis !(ctx.state) cid l_orig with
+        | `Line l -> l
+        (* a crease that cut no face (e.g. lies on the paper boundary) has no
+           material pieces but is still flat at its original line — byte-stable
+           and lets reference-only boundary creases resolve *)
+        | `Empty -> l_orig
+        | `Bent ->
+            Error.fail span
+              (Printf.sprintf
+                 "--%s is no longer straight after folding; pick a flap, e.g. \
+                  --( --%s #(.a .b .c) )"
+                 name name))
   in
   (* resolve a point operand to its material PAPER coordinate, a line operand to
      its TABLE-space line; mutually recursive for nesting. *)
@@ -136,7 +160,7 @@ let eval_folded (prog : Ast.program) : folded =
               (Printf.sprintf "instance $%s has no point member %s" iname mem))
   and resolve_line (lo : Ast.line_operand) : Geom.line =
     match lo with
-    | Ast.LNamed cr -> lookup_crease ctx cr
+    | Ast.LNamed cr -> materialize_crease ~name:cr.Ast.cname cr.Ast.cspan (lookup_crease ctx cr)
     | Ast.LThrough (p1, p2, span) ->
         let pp = Fold_state.table_position !(ctx.state) (resolve_point p1)
         and qq = Fold_state.table_position !(ctx.state) (resolve_point p2) in
@@ -150,10 +174,29 @@ let eval_folded (prog : Ast.program) : folded =
     | Ast.LMember (iname, mem, span) -> (
         let inst = lookup_instance ctx iname span in
         match Hashtbl.find_opt inst.ilines mem with
-        | Some l -> l
+        | Some cv -> materialize_crease ~name:mem span cv
         | None ->
             Error.fail span
               (Printf.sprintf "instance $%s has no line member %s" iname mem))
+    | Ast.LRestrict (cr, Ast.FByPoints (pts, _), span) -> (
+        let cid =
+          match lookup_crease ctx cr with
+          | Material (cid, _) -> cid
+          | Frozen _ ->
+              Error.fail span
+                (Printf.sprintf "--%s is not a physical crease, so it has no flaps"
+                   cr.Ast.cname)
+        in
+        let paper_pts = List.map resolve_point pts in
+        match Fold_state.flap_of_points !(ctx.state) paper_pts with
+        | `Zero -> Error.fail span "those points aren't all on one flap"
+        | `Ambiguous -> Error.fail span "ambiguous flap; add another point"
+        | `Face fi -> (
+            match Fold_state.crease_piece_on_face !(ctx.state) cid fi with
+            | Some l -> l
+            | None ->
+                Error.fail span
+                  (Printf.sprintf "--%s does not lie on that flap" cr.Ast.cname)))
   in
   let table_of (po : Ast.point_operand) : Geom.point =
     Fold_state.table_position !(ctx.state) (resolve_point po)
@@ -329,9 +372,7 @@ let eval_folded (prog : Ast.program) : folded =
     match stmt with
     | Ast.Crease (name_opt, ax, fold_opt, span) -> (
         let axis, axiom, sources = axis_of span ax in
-        (match name_opt with
-        | Some n -> bind_crease ctx n span axis
-        | None -> ());
+        let cid = Fold_state.fresh_crease_id () in
         let prov_name =
           match name_opt with
           | Some n when not (is_temp n) -> (
@@ -344,17 +385,14 @@ let eval_folded (prog : Ast.program) : folded =
         let prov : State.provenance option =
           Some { State.axiom; sources; span; name = prov_name; step = ctx.panel }
         in
-        match fold_opt with
-        | None ->
-            let st = Fold_state.subdivide !(ctx.state) axis ~prov in
-            ctx.state := st
+        (match fold_opt with
+        | None -> ctx.state := Fold_state.subdivide !(ctx.state) axis ~crease_id:cid ~prov
         | Some fs ->
             let move_side =
               match fs.Ast.moving with
               | Some po ->
                   let s = Geom.side_of_line axis (table_of po) in
-                  if s = 0 then
-                    Error.fail span "the moving point lies on the fold axis";
+                  if s = 0 then Error.fail span "the moving point lies on the fold axis";
                   s
               | None -> (
                   match ax with
@@ -362,20 +400,17 @@ let eval_folded (prog : Ast.program) : folded =
                   | Ast.MapThrough (p, _, _, _)
                   | Ast.MapBoth (p, _, _, _, _) ->
                       let s = Geom.side_of_line axis (table_of p) in
-                      if s = 0 then
-                        Error.fail span
-                          "the moving point lies on the fold axis";
+                      if s = 0 then Error.fail span "the moving point lies on the fold axis";
                       s
-                  | _ ->
-                      Error.fail span
-                        "this fold needs `moving .p` to choose the side")
+                  | _ -> Error.fail span "this fold needs `moving .p` to choose the side")
             in
             let valley = fs.Ast.direction = Ast.Valley in
-            let st =
+            ctx.state :=
               Fold_state.fold_with_records !(ctx.state) ~axis ~move_side ~valley
-                ~prov
-            in
-            ctx.state := st)
+                ~crease_id:cid ~prov);
+        match name_opt with
+        | Some n -> bind_crease ctx n span (Material (cid, axis))
+        | None -> ())
     | Ast.Point (n, Ast.Cross (l1, l2), span) ->
         bind_point ctx n span (resolve_point (Ast.PCross (l1, l2, span)))
     | Ast.Flip _ -> ctx.state := Fold_state.flip !(ctx.state)
@@ -415,7 +450,7 @@ let eval_folded (prog : Ast.program) : folded =
             | `Point, Ast.APoint po ->
                 Hashtbl.replace body_scope.points p.Ast.pname (resolve_point po)
             | `Line, Ast.ALine lo ->
-                Hashtbl.replace body_scope.lines p.Ast.pname (resolve_line lo)
+                Hashtbl.replace body_scope.lines p.Ast.pname (Frozen (resolve_line lo))
             | `Point, Ast.ALine _ ->
                 Error.fail span
                   (Printf.sprintf "parameter .%s of %s needs a point argument"
@@ -521,7 +556,12 @@ let eval_folded (prog : Ast.program) : folded =
   in
   let named_lines =
     Hashtbl.fold
-      (fun k v acc -> if is_temp k then acc else (k, v) :: acc)
+      (fun k cv acc ->
+        if is_temp k then acc
+        else
+          match cv with
+          | Frozen l -> (k, l) :: acc
+          | Material (_, l_orig) -> (k, l_orig) :: acc)
       root_scope.lines []
   in
   { state = !(ctx.state); named_points; named_lines }

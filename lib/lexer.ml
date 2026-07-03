@@ -36,6 +36,7 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | ']' -> RBRACKET
   | "--(" -> LINE_OPEN
   | ".(" -> POINT_OPEN
+  | "#(" -> FLAP_OPEN
   | "--[" -> LINE_MEMBER_OPEN
   | ".[" -> POINT_MEMBER_OPEN
   | ')' -> RPAREN

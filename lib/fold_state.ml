@@ -138,6 +138,60 @@ let neighbors (st : t) (i : int) : int list =
       else acc)
     [] st.edges
 
+(* table-space endpoints of every piece of crease [cid] (via each piece's
+   [left] face isometry; endpoints live in the shared paper frame). *)
+let crease_table_endpoints (st : t) (cid : int) : Geom.point list =
+  Array.fold_left
+    (fun acc e ->
+      if e.crease_id = cid then
+        let iso = st.faces.(e.left).iso in
+        Isometry.apply_point iso e.ea :: Isometry.apply_point iso e.eb :: acc
+      else acc)
+    [] st.edges
+
+let crease_axis (st : t) (cid : int) (l_orig : Geom.line) :
+    [ `Line of Geom.line | `Bent | `Empty ] =
+  match crease_table_endpoints st cid with
+  | [] -> `Empty
+  | pts ->
+      if List.for_all (fun p -> Geom.side_of_line l_orig p = 0) pts then
+        `Line l_orig (* unmoved: byte-stable, common case *)
+      else
+        (* find two distinct endpoints to define the current line *)
+        let rec pick = function
+          | a :: rest -> (
+              match List.find_opt (fun b -> not (Geom.point_equal a b)) rest with
+              | Some b -> Some (a, b)
+              | None -> pick rest)
+          | [] -> None
+        in
+        (match pick pts with
+         | None -> `Empty
+         | Some (a, b) ->
+             let l = Geom.line_through a b in
+             if List.for_all (fun p -> Geom.side_of_line l p = 0) pts then `Line l
+             else `Bent)
+
+let flap_of_points (st : t) (pts : Geom.point list) :
+    [ `Face of int | `Zero | `Ambiguous ] =
+  let contains i =
+    List.for_all (fun p -> Geom.in_convex_polygon st.faces.(i).paper p) pts
+  in
+  let hits = ref [] in
+  Array.iteri (fun i _ -> if contains i then hits := i :: !hits) st.faces;
+  match !hits with [ i ] -> `Face i | [] -> `Zero | _ -> `Ambiguous
+
+let crease_piece_on_face (st : t) (cid : int) (fi : int) : Geom.line option =
+  Array.find_map
+    (fun e ->
+      if e.crease_id = cid && (e.left = fi || e.right = fi) then
+        let iso = st.faces.(fi).iso in
+        let a = Isometry.apply_point iso e.ea
+        and b = Isometry.apply_point iso e.eb in
+        if Geom.point_equal a b then None else Some (Geom.line_through a b)
+      else None)
+    st.edges
+
 let table_polygon (st : t) (i : int) : Geom.point array =
   Array.map (Isometry.apply_point st.faces.(i).iso) st.faces.(i).paper
 
@@ -183,8 +237,9 @@ let axis_segment_in_face (f : face) (axis : Geom.line) :
 (* Split every face crossing [axis] into its two halves (both keep their
    isometry; nothing moves). Returns the new state; one U edge is created per
    face actually cut. *)
-let subdivide (st : t) (axis : Geom.line) ~(prov : State.provenance option) : t
-    =
+let subdivide ?crease_id (st : t) (axis : Geom.line)
+    ~(prov : State.provenance option) : t =
+  let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
   let out = ref [] (* (child_face, parent_index), accumulated via prepend *) in
   (* seeds: (parent_index, a, b, crease_id) — one per face actually cut; the two
      children straddling the axis are the two entries of [parent] equal to
@@ -205,7 +260,7 @@ let subdivide (st : t) (axis : Geom.line) ~(prov : State.provenance option) : t
       | Some _, Some _ -> (
           match axis_segment_in_face f axis with
           | Some (a, b) ->
-              edge_seeds := (fi, a, b, fresh_crease_id ()) :: !edge_seeds
+              edge_seeds := (fi, a, b, cid) :: !edge_seeds
           | None -> ())
       | _ -> ());
       List.iter
@@ -277,8 +332,10 @@ let subdivide (st : t) (axis : Geom.line) ~(prov : State.provenance option) : t
 
 (* Like [simple_fold] but on-axis edges get their derived mountain/valley from
    the orientation-parity rule. *)
-let fold_with_records (st : t) ~(axis : Geom.line) ~(move_side : int)
-    ~(valley : bool) ~(prov : State.provenance option) : t =
+let fold_with_records ?crease_id (st : t) ~(axis : Geom.line)
+    ~(move_side : int) ~(valley : bool) ~(prov : State.provenance option) : t
+    =
+  let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
   let refl = Isometry.reflect_across_line axis in
   let stay = ref [] and mov = ref [] in
   (* each elt: (child_face, parent_index) *)
@@ -304,7 +361,7 @@ let fold_with_records (st : t) ~(axis : Geom.line) ~(move_side : int)
       | Some _, Some _ -> (
           match axis_segment_in_face f axis with
           | Some (a, b) ->
-              edge_seeds := (fi, a, b, assign_of (), fresh_crease_id ()) :: !edge_seeds
+              edge_seeds := (fi, a, b, assign_of (), cid) :: !edge_seeds
           | None -> ())
       | _ -> ());
       (match s with Some face -> stay := (face, fi) :: !stay | None -> ());
