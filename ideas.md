@@ -51,3 +51,15 @@ instead of 2), add a demotion pass: compute the element's own minimal polynomial
 smaller field. Full subfield enumeration (Szutkoski & van Hoeij, principal
 subfields) is overkill for this; pull that reference in only if per-element
 demotion proves insufficient.
+
+## Approx mode? (--sacrifice-correctness discussion, 2026-07-03)
+
+If #33 shows real models hitting the 3^k degree ceiling: do NOT add a raw
+float kernel. Origami is dense in engineered coincidences (fold puts a point
+exactly on a line; cross/validity ask "exactly zero?") — float+ε misclassifies
+precisely those, yielding silently wrong topology instead of slowness. Instead:
+(1) floating-point interval FILTER over the exact kernel (CGAL/LEDA recipe):
+float-fast for generic sign queries, exact only when the interval straddles —
+no guarantee sacrificed; (2) honest degree budget with a clear error naming the
+offending fold, rather than a silent-wrong mode; (3) rendering stays float via
+to_float as today. Revisit only with #33 benchmark data.
