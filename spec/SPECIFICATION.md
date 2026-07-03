@@ -486,7 +486,10 @@ export $t                            ; all non-temp members
 - `!` marks an intentional shadow and is validated both ways: binding an
   existing name **without** `!` is an error ("name exists, use `!` to
   shadow"); using `!` when the name does **not** already exist is an error
-  ("nothing to shadow, remove `!`").
+  ("nothing to shadow, remove `!`"). Shadow validation applies only to
+  non-temp landing names: exporting onto a temp target (`export { .m as ._t }
+  $i`) rebinds it freely and needs no `!`, since temps are single-scope and
+  rebindable (§5a.1, §5a.7). Temps remain barred as export *sources*.
 
 ### 5a.6 `step` — diagram panels
 
@@ -523,6 +526,7 @@ landings: **a name without a `_` prefix is bound at most once per scope.**
 | `export` lands an existing name without `!` | error |
 | `export` lands `!` onto a name that doesn't exist | error |
 | `._x = …` (temp) bound more than once | OK — temps are rebindable (§5a.1) |
+| `export` lands onto a temp target (`… as ._x`), with or without `!` | OK — temps rebind freely; no shadow check |
 
 ---
 
