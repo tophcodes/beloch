@@ -4,7 +4,6 @@ let q_to_json (x : Num.t) : Yojson.Safe.t = `Float (Num.to_float x)
 
 let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
   let faces = fd.Eval.state.Fold_state.faces in
-  let creases = fd.Eval.creases in
   (* dedup vertices by paper coord; remember paper + table coords per vertex.
      INVARIANT: a paper vertex shared by several faces gets its table coord from
      whichever face introduces it first. This is consistent only because every
@@ -39,14 +38,6 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
     || (Num.equal a.Geom.y z && Num.equal b.Geom.y z)
     || (Num.equal a.Geom.y o && Num.equal b.Geom.y o)
   in
-  let record_of (a : Geom.point) (b : Geom.point) :
-      Fold_state.crease_record option =
-    List.find_opt
-      (fun (r : Fold_state.crease_record) ->
-        Geom.on_segment (r.Fold_state.ra, r.Fold_state.rb) a
-        && Geom.on_segment (r.Fold_state.ra, r.Fold_state.rb) b)
-      creases
-  in
   (* collect unique edges with (assignment string, provenance) *)
   let edge_tbl = Hashtbl.create 64 in
   let edges = ref [] in
@@ -64,15 +55,15 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
           let assign, prov =
             if on_unit_boundary pa pb then ("B", None)
             else
-              match record_of pa pb with
-              | Some r ->
+              match Fold_state.edge_between fd.Eval.state fi pa pb with
+              | Some (e : Fold_state.edge) ->
                   let a =
-                    match r.Fold_state.assign with
+                    match e.Fold_state.eassign with
                     | Fold_state.M -> "M"
                     | Fold_state.V -> "V"
                     | Fold_state.U -> "U"
                   in
-                  (a, r.Fold_state.prov)
+                  (a, e.Fold_state.eprov)
               | None -> ("U", None)
           in
           edges := (ia, ib, assign, prov) :: !edges

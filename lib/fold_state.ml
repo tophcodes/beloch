@@ -6,8 +6,33 @@
 
 type face = { paper : Geom.point array; iso : Isometry.t }
 type rel = Above | Below | Apart
-type t = { faces : face array; order : rel array array }
 type assign = M | V | U
+
+(* A first-class crease edge between two faces. [ea]/[eb] are the segment
+   endpoints in the [left] face's paper coordinates. [right] is [-1] when the
+   edge lies on the paper boundary (no face on the other side). [crease_id] is
+   internal identity only — never serialized, need only be unique within one
+   state. *)
+type edge = {
+  ea : Geom.point;
+  eb : Geom.point;
+  left : int;
+  right : int;
+  eassign : assign;
+  crease_id : int;
+  eprov : State.provenance option;
+}
+
+type t = { faces : face array; order : rel array array; edges : edge array }
+
+(* Mints internal crease ids. Unique within a state; not deterministic across
+   eval calls and never serialized. *)
+let next_id = ref 0
+
+let fresh_crease_id () =
+  let id = !next_id in
+  incr next_id;
+  id
 
 let negate = function Above -> Below | Below -> Above | Apart -> Apart
 
@@ -83,20 +108,35 @@ let validity_error (st : t) : string option =
       done;
       !bad
 
-type crease_record = {
-  ra : Geom.point;
-  rb : Geom.point;
-  assign : assign;
-  prov : State.provenance option;
-}
-
 let init_square : t =
   let p x y = { Geom.x = Num.of_int x; y = Num.of_int y } in
   {
     faces =
       [| { paper = [| p 0 0; p 1 0; p 1 1; p 0 1 |]; iso = Isometry.identity } |];
     order = [| [| Apart |] |];
+    edges = [||];
   }
+
+(* The edge incident to face [i] whose endpoints equal (pa,pb) in either order.
+   Endpoints live in the global material (unfolded-paper) frame shared by every
+   face, so equality against a face's paper polygon side is well defined. *)
+let edge_between (st : t) (i : int) (pa : Geom.point) (pb : Geom.point) :
+    edge option =
+  Array.find_opt
+    (fun e ->
+      (e.left = i || e.right = i)
+      && ((Geom.point_equal e.ea pa && Geom.point_equal e.eb pb)
+         || (Geom.point_equal e.ea pb && Geom.point_equal e.eb pa)))
+    st.edges
+
+(* Face ids sharing an edge with face [i]. *)
+let neighbors (st : t) (i : int) : int list =
+  Array.fold_left
+    (fun acc e ->
+      if e.left = i && e.right >= 0 then e.right :: acc
+      else if e.right = i then e.left :: acc
+      else acc)
+    [] st.edges
 
 let table_polygon (st : t) (i : int) : Geom.point array =
   Array.map (Isometry.apply_point st.faces.(i).iso) st.faces.(i).paper
@@ -141,12 +181,15 @@ let axis_segment_in_face (f : face) (axis : Geom.line) :
   | _ -> None
 
 (* Split every face crossing [axis] into its two halves (both keep their
-   isometry; nothing moves). Returns the new state and one U crease record per
+   isometry; nothing moves). Returns the new state; one U edge is created per
    face actually cut. *)
-let subdivide (st : t) (axis : Geom.line) ~(prov : State.provenance option) :
-    t * crease_record list =
+let subdivide (st : t) (axis : Geom.line) ~(prov : State.provenance option) : t
+    =
   let out = ref [] (* (child_face, parent_index), accumulated via prepend *) in
-  let recs = ref [] in
+  (* seeds: (parent_index, a, b, crease_id) — one per face actually cut; the two
+     children straddling the axis are the two entries of [parent] equal to
+     parent_index, resolved after the final face order is fixed *)
+  let edge_seeds = ref [] in
   Array.iteri
     (fun fi f ->
       let table = Array.map (Isometry.apply_point f.iso) f.paper in
@@ -161,7 +204,8 @@ let subdivide (st : t) (axis : Geom.line) ~(prov : State.provenance option) :
       (match (plus, minus) with
       | Some _, Some _ -> (
           match axis_segment_in_face f axis with
-          | Some (a, b) -> recs := { ra = a; rb = b; assign = U; prov } :: !recs
+          | Some (a, b) ->
+              edge_seeds := (fi, a, b, fresh_crease_id ()) :: !edge_seeds
           | None -> ())
       | _ -> ());
       List.iter
@@ -171,20 +215,78 @@ let subdivide (st : t) (axis : Geom.line) ~(prov : State.provenance option) :
   let arr = Array.of_list (List.rev !out) in
   let faces = Array.map fst arr in
   let parent = Array.map snd arr in
+  (* the (up to two) child indices descended from parent [fi], in face order *)
+  let children_of fi =
+    let acc = ref [] in
+    Array.iteri (fun k p -> if p = fi then acc := k :: !acc) parent;
+    List.rev !acc
+  in
+  let new_edges =
+    List.rev_map
+      (fun (fi, a, b, cid) ->
+        let left, right =
+          match children_of fi with
+          | l :: r :: _ -> (l, r)
+          | [ l ] -> (l, -1)
+          | [] -> (-1, -1)
+        in
+        { ea = a; eb = b; left; right; eassign = U; crease_id = cid; eprov = prov })
+      !edge_seeds
+  in
+  (* the child of parent [p] on side [s] of [axis]; a face split into two keeps
+     its plus-side child (children_of order) for s>0 and minus for s<0; an
+     uncut face has a single child returned for either side. *)
+  let child_on p s =
+    if p < 0 then -1
+    else
+      match children_of p with
+      | [ c ] -> c
+      | c_plus :: c_minus :: _ -> if s >= 0 then c_plus else c_minus
+      | [] -> -1
+  in
+  let carried =
+    List.concat_map
+      (fun e ->
+        let iso_l = st.faces.(e.left).iso in
+        let a = Isometry.apply_point iso_l e.ea in
+        let b = Isometry.apply_point iso_l e.eb in
+        let sa = Geom.side_of_line axis a and sb = Geom.side_of_line axis b in
+        if sa * sb >= 0 then
+          (* wholly one side (or touching the axis): one child per incident face *)
+          let s = if sa <> 0 then sa else sb in
+          [ { e with left = child_on e.left s; right = child_on e.right s } ]
+        else
+          (* crosses the axis: split at the intersection into two collinear
+             sub-edges sharing crease_id/eassign/eprov (#26 identity invariant) *)
+          let p =
+            match Geom.intersection axis (Geom.line_through a b) with
+            | Some r -> Isometry.apply_point (Isometry.inverse iso_l) r
+            | None -> e.ea
+          in
+          [
+            { e with eb = p; left = child_on e.left sa; right = child_on e.right sa };
+            { e with ea = p; left = child_on e.left sb; right = child_on e.right sb };
+          ])
+      (Array.to_list st.edges)
+  in
+  let edges = Array.of_list (new_edges @ carried) in
   let order =
     build_order faces (fun i j -> st.order.(parent.(i)).(parent.(j)))
   in
-  ({ faces; order }, !recs)
+  { faces; order; edges }
 
-(* Like [simple_fold] but also returns the crease records created, each with its
-   derived mountain/valley from the orientation-parity rule. *)
+(* Like [simple_fold] but on-axis edges get their derived mountain/valley from
+   the orientation-parity rule. *)
 let fold_with_records (st : t) ~(axis : Geom.line) ~(move_side : int)
-    ~(valley : bool) ~(prov : State.provenance option) : t * crease_record list
-    =
+    ~(valley : bool) ~(prov : State.provenance option) : t =
   let refl = Isometry.reflect_across_line axis in
   let stay = ref [] and mov = ref [] in
   (* each elt: (child_face, parent_index) *)
-  let recs = ref [] in
+  (* seeds: (parent_index, a, b, crease_id) — one per face cut by the axis; the
+     two straddling children (one stationary, one moved) are the two [parent]
+     entries equal to parent_index, told apart by [moved_flag] once the final
+     face order is fixed *)
+  let edge_seeds = ref [] in
   Array.iteri
     (fun fi f ->
       let table = Array.map (Isometry.apply_point f.iso) f.paper in
@@ -198,33 +300,11 @@ let fold_with_records (st : t) ~(axis : Geom.line) ~(move_side : int)
       let s = part (-move_side) f.iso in
       let m = part move_side (Isometry.compose refl f.iso) in
       let assign_of () = if valley <> (Isometry.det_sign f.iso < 0) then V else M in
-      (* the face's edge lying on [axis], in paper coords, if any — for a face
-         that abuts the axis rather than being cut by it (a precrease) *)
-      let abut_edge () : (Geom.point * Geom.point) option =
-        let n = Array.length f.paper in
-        let rec loop k =
-          if k >= n then None
-          else
-            let pa = f.paper.(k) and pb = f.paper.((k + 1) mod n) in
-            if
-              Geom.side_of_line axis (Isometry.apply_point f.iso pa) = 0
-              && Geom.side_of_line axis (Isometry.apply_point f.iso pb) = 0
-            then Some (pa, pb)
-            else loop (k + 1)
-        in
-        loop 0
-      in
       (match (s, m) with
       | Some _, Some _ -> (
           match axis_segment_in_face f axis with
-          | Some (a, b) -> recs := { ra = a; rb = b; assign = assign_of (); prov } :: !recs
-          | None -> ())
-      | None, Some _ -> (
-          (* whole face on the moving side: if it abuts the axis along an edge,
-             that edge is a precrease now being folded — emit its M/V, which
-             wins over the stale U from the earlier subdivide (#27) *)
-          match abut_edge () with
-          | Some (a, b) -> recs := { ra = a; rb = b; assign = assign_of (); prov } :: !recs
+          | Some (a, b) ->
+              edge_seeds := (fi, a, b, assign_of (), fresh_crease_id ()) :: !edge_seeds
           | None -> ())
       | _ -> ());
       (match s with Some face -> stay := (face, fi) :: !stay | None -> ());
@@ -251,8 +331,96 @@ let fold_with_records (st : t) ~(axis : Geom.line) ~(move_side : int)
     | true, false -> if valley then Above else Below (* moved i over/under stationary j *)
     | false, true -> if valley then Below else Above
   in
+  (* left = the stationary child of a cut parent, right = its moved child *)
+  let new_edges =
+    List.rev_map
+      (fun (fi, a, b, ea_assign, cid) ->
+        let stationary_child = ref (-1) and moved_child = ref (-1) in
+        Array.iteri
+          (fun k p ->
+            if p = fi then
+              if moved_flag.(k) then moved_child := k else stationary_child := k)
+          parent;
+        {
+          ea = a;
+          eb = b;
+          left = !stationary_child;
+          right = !moved_child;
+          eassign = ea_assign;
+          crease_id = cid;
+          eprov = prov;
+        })
+      !edge_seeds
+  in
+  (* the child of parent [p] on side [s] of [axis]: the moved child sits on
+     [move_side], the stationary child on [-move_side]; an uncut face has a
+     single child returned for either side. *)
+  let child_on p s =
+    if p < 0 then -1
+    else begin
+      let sc = ref (-1) and mc = ref (-1) in
+      Array.iteri
+        (fun k pp ->
+          if pp = p then if moved_flag.(k) then mc := k else sc := k)
+        parent;
+      if s = move_side then if !mc >= 0 then !mc else !sc
+      else if !sc >= 0 then !sc
+      else !mc
+    end
+  in
+  (* the fold's live M/V from a parent face's orientation parity (#27: this
+     supersedes the stale U minted when a precrease was first scored) *)
+  let assign_of_parent p =
+    if valley <> (Isometry.det_sign st.faces.(p).iso < 0) then V else M
+  in
+  let has_moved_child p =
+    let r = ref false in
+    Array.iteri (fun k pp -> if pp = p && moved_flag.(k) then r := true) parent;
+    !r
+  in
+  let carried =
+    List.concat_map
+      (fun e ->
+        let iso_l = st.faces.(e.left).iso in
+        let a = Isometry.apply_point iso_l e.ea in
+        let b = Isometry.apply_point iso_l e.eb in
+        let sa = Geom.side_of_line axis a and sb = Geom.side_of_line axis b in
+        if sa = 0 && sb = 0 then begin
+          (* the edge lies on the fold axis: this precrease is being folded now.
+             Neither incident face is cut, so each maps to its single child; the
+             assignment upgrades to the moving side's live M/V. *)
+          let moving =
+            if has_moved_child e.left then e.left
+            else if e.right >= 0 && has_moved_child e.right then e.right
+            else e.left
+          in
+          [
+            {
+              e with
+              left = child_on e.left sa;
+              right = child_on e.right sa;
+              eassign = assign_of_parent moving;
+            };
+          ]
+        end
+        else if sa * sb >= 0 then
+          let s = if sa <> 0 then sa else sb in
+          [ { e with left = child_on e.left s; right = child_on e.right s } ]
+        else
+          let p =
+            match Geom.intersection axis (Geom.line_through a b) with
+            | Some r -> Isometry.apply_point (Isometry.inverse iso_l) r
+            | None -> e.ea
+          in
+          [
+            { e with eb = p; left = child_on e.left sa; right = child_on e.right sa };
+            { e with ea = p; left = child_on e.left sb; right = child_on e.right sb };
+          ])
+      (Array.to_list st.edges)
+  in
+  let edges = Array.of_list (new_edges @ carried) in
   let order = build_order faces rel_of in
-  let st' = { faces; order } in
+  let st' = { faces; order; edges } in
   (match validity_error st' with
   | Some msg ->
       let span =
@@ -262,7 +430,7 @@ let fold_with_records (st : t) ~(axis : Geom.line) ~(move_side : int)
       in
       Error.fail span msg
   | None -> ());
-  (st', !recs)
+  st'
 
 (* Distinct paper coordinates whose current table position is [tp] (one per
    overlapping layer covering that table point). *)
@@ -302,7 +470,7 @@ let topmost_preimage (st : t) (tp : Geom.point) : Geom.point option =
    then restack. valley → moved parts (reversed) on top; mountain → underneath. *)
 let simple_fold (st : t) ~(axis : Geom.line) ~(move_side : int) ~(valley : bool)
     : t =
-  fst (fold_with_records st ~axis ~move_side ~valley ~prov:None)
+  fold_with_records st ~axis ~move_side ~valley ~prov:None
 
 (* Turn the whole sheet over. Reflect every face across the footprint's vertical
    centerline (x = (minX+maxX)/2 over all face table vertices) — an internal,
@@ -336,5 +504,15 @@ let flip (st : t) : t =
         order.(i).(j) <- negate st.order.(n - 1 - i).(n - 1 - j)
       done
     done;
-    { faces = rev; order }
+    let edges =
+      Array.map
+        (fun e ->
+          {
+            e with
+            left = n - 1 - e.left;
+            right = (if e.right >= 0 then n - 1 - e.right else -1);
+          })
+        st.edges
+    in
+    { faces = rev; order; edges }
   end

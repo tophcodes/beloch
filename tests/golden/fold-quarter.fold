@@ -1,0 +1,110 @@
+{
+  "file_spec": 1.1,
+  "file_creator": "beloch 0.3.0-dev",
+  "frame_classes": [ "creasePattern" ],
+  "vertices_coords": [
+    [ 0.0, 0.0 ],
+    [ 0.5, 0.0 ],
+    [ 0.5, 0.5 ],
+    [ 0.0, 0.5 ],
+    [ 1.0, 0.0 ],
+    [ 1.0, 0.5 ],
+    [ 1.0, 1.0 ],
+    [ 0.5, 1.0 ],
+    [ 0.0, 1.0 ]
+  ],
+  "edges_vertices": [
+    [ 0, 1 ],
+    [ 1, 2 ],
+    [ 2, 3 ],
+    [ 3, 0 ],
+    [ 1, 4 ],
+    [ 4, 5 ],
+    [ 5, 2 ],
+    [ 5, 6 ],
+    [ 6, 7 ],
+    [ 7, 2 ],
+    [ 7, 8 ],
+    [ 8, 3 ]
+  ],
+  "edges_assignment": [
+    "B", "V", "V", "B", "B", "B", "M", "B", "B", "V", "B", "B"
+  ],
+  "faces_vertices": [
+    [ 0, 1, 2, 3 ], [ 1, 4, 5, 2 ], [ 5, 6, 7, 2 ], [ 2, 7, 8, 3 ]
+  ],
+  "beloch:edges": [
+    null,
+    {
+      "axiom": "axiom2",
+      "sources": [ ".b", ".a" ],
+      "span": "fold-quarter.bel:3:1",
+      "name": null,
+      "step": null
+    },
+    {
+      "axiom": "axiom2",
+      "sources": [ ".d", ".a" ],
+      "span": "fold-quarter.bel:4:1",
+      "name": null,
+      "step": null
+    },
+    null,
+    null,
+    null,
+    {
+      "axiom": "axiom2",
+      "sources": [ ".d", ".a" ],
+      "span": "fold-quarter.bel:4:1",
+      "name": null,
+      "step": null
+    },
+    null,
+    null,
+    {
+      "axiom": "axiom2",
+      "sources": [ ".b", ".a" ],
+      "span": "fold-quarter.bel:3:1",
+      "name": null,
+      "step": null
+    },
+    null,
+    null
+  ],
+  "beloch:named_points": {
+    "c": { "paper": [ 1.0, 1.0 ], "table": [ 0.0, 0.0 ] },
+    "b": { "paper": [ 1.0, 0.0 ], "table": [ 0.0, 0.0 ] },
+    "d": { "paper": [ 0.0, 1.0 ], "table": [ 0.0, 0.0 ] },
+    "a": { "paper": [ 0.0, 0.0 ], "table": [ 0.0, 0.0 ] }
+  },
+  "beloch:named_lines": {},
+  "file_frames": [
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": true,
+      "vertices_coords": [
+        [ 0.0, 0.0 ],
+        [ 0.5, 0.0 ],
+        [ 0.5, 0.5 ],
+        [ 0.0, 0.5 ],
+        [ 0.0, 0.0 ],
+        [ 0.0, 0.5 ],
+        [ 0.0, 0.0 ],
+        [ 0.5, 0.0 ],
+        [ 0.0, 0.0 ]
+      ],
+      "edges_foldAngle": [
+        0.0, 180.0, 180.0, 0.0, 0.0, 0.0, -180.0, 0.0, 0.0, 180.0, 0.0, 0.0
+      ],
+      "faceOrders": [
+        [ 0, 1, 1 ],
+        [ 0, 2, -1 ],
+        [ 0, 3, 1 ],
+        [ 1, 2, -1 ],
+        [ 1, 3, 1 ],
+        [ 2, 3, 1 ]
+      ]
+    }
+  ]
+}

@@ -12,7 +12,6 @@ let corners : (string * Geom.point) list =
 
 type folded = {
   state : Fold_state.t;
-  creases : Fold_state.crease_record list;
   named_points : (string * Geom.point) list;
   named_lines : (string * Geom.line) list;
 }
@@ -45,7 +44,6 @@ type ctx = {
   mutable next_def_idx : int;
   defs : (string, int * Ast.param list * Ast.stmt list) Hashtbl.t;
   state : Fold_state.t ref;
-  recs  : Fold_state.crease_record list ref;
   mutable panel : string option;
   panels : (string, unit) Hashtbl.t;
 }
@@ -100,7 +98,6 @@ let eval_folded (prog : Ast.program) : folded =
     next_def_idx = 0;
     defs = Hashtbl.create 4;
     state  = ref Fold_state.init_square;
-    recs   = ref [];
     panel = None;
     panels = Hashtbl.create 4;
   } in
@@ -349,9 +346,8 @@ let eval_folded (prog : Ast.program) : folded =
         in
         match fold_opt with
         | None ->
-            let st, rs = Fold_state.subdivide !(ctx.state) axis ~prov in
-            ctx.state := st;
-            ctx.recs := rs @ !(ctx.recs)
+            let st = Fold_state.subdivide !(ctx.state) axis ~prov in
+            ctx.state := st
         | Some fs ->
             let move_side =
               match fs.Ast.moving with
@@ -375,12 +371,11 @@ let eval_folded (prog : Ast.program) : folded =
                         "this fold needs `moving .p` to choose the side")
             in
             let valley = fs.Ast.direction = Ast.Valley in
-            let st, rs =
+            let st =
               Fold_state.fold_with_records !(ctx.state) ~axis ~move_side ~valley
                 ~prov
             in
-            ctx.state := st;
-            ctx.recs := rs @ !(ctx.recs))
+            ctx.state := st)
     | Ast.Point (n, Ast.Cross (l1, l2), span) ->
         bind_point ctx n span (resolve_point (Ast.PCross (l1, l2, span)))
     | Ast.Flip _ -> ctx.state := Fold_state.flip !(ctx.state)
@@ -529,4 +524,4 @@ let eval_folded (prog : Ast.program) : folded =
       (fun k v acc -> if is_temp k then acc else (k, v) :: acc)
       root_scope.lines []
   in
-  { state = !(ctx.state); creases = !(ctx.recs); named_points; named_lines }
+  { state = !(ctx.state); named_points; named_lines }

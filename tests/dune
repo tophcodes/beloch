@@ -7,6 +7,10 @@
  (libraries beloch alcotest zarith))
 
 (test
+ (name test_fold_state)
+ (libraries beloch alcotest zarith))
+
+(test
  (name test_parse)
  (libraries beloch alcotest str))
 
@@ -21,3 +25,8 @@
 (test
  (name test_diagnostic)
  (libraries beloch alcotest str))
+
+(test
+ (name test_golden)
+ (libraries beloch alcotest yojson zarith str)
+ (deps (glob_files ../examples/*.bel) (glob_files golden/*.fold)))

@@ -17,11 +17,10 @@ let expect_error msg_substr thunk =
          true
        with Not_found -> false)
 
-let count_assign a recs =
-  List.length
-    (List.filter
-       (fun (r : Fold_state.crease_record) -> r.Fold_state.assign = a)
-       recs)
+let count_assign a (st : Fold_state.t) =
+  Array.to_list st.Fold_state.edges
+  |> List.filter (fun (e : Fold_state.edge) -> e.Fold_state.eassign = a)
+  |> List.length
 
 (* ---- Eval: error cases ---- *)
 
@@ -92,10 +91,10 @@ let test_eval_map_onto_line_ok () =
           --l2 = through .a .d\n\
           map .c onto --l1 perp --l2\n")
   in
-  match fd.Eval.creases with
-  | [] -> Alcotest.fail "expected at least one crease record"
+  match Array.to_list fd.Eval.state.Fold_state.edges with
+  | [] -> Alcotest.fail "expected at least one crease edge"
   | cr :: _ ->
-      let c = Geom.line_through cr.Fold_state.ra cr.Fold_state.rb in
+      let c = Geom.line_through cr.Fold_state.ea cr.Fold_state.eb in
       let on (p : Geom.point) =
         Num.equal
           (Num.add (Num.mul c.Geom.a p.Geom.x) (Num.mul c.Geom.b p.Geom.y))
@@ -231,23 +230,40 @@ let test_layer_fold_quarter_reversal () =
 
 let test_fold_subdivide () =
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let st, recs = Fold_state.subdivide Fold_state.init_square axis ~prov:None in
+  let st = Fold_state.subdivide Fold_state.init_square axis ~prov:None in
   Alcotest.(check int) "two faces after subdivide" 2
     (Array.length st.Fold_state.faces);
-  Alcotest.(check int) "one crease record" 1 (List.length recs);
-  Alcotest.(check int) "subdivide records are U" 1
-    (count_assign Fold_state.U recs)
+  Alcotest.(check int) "one crease edge" 1 (Array.length st.Fold_state.edges);
+  Alcotest.(check int) "subdivide edges are U" 1 (count_assign Fold_state.U st)
 
 let test_fold_records_valley () =
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let _, recs =
+  let st =
     Fold_state.fold_with_records Fold_state.init_square ~axis ~move_side:1
       ~valley:true ~prov:None
   in
-  Alcotest.(check int) "one record" 1 (List.length recs);
+  Alcotest.(check int) "one edge" 1 (Array.length st.Fold_state.edges);
   Alcotest.(check int) "the half fold is a valley" 1
-    (count_assign Fold_state.V recs);
-  Alcotest.(check int) "no mountain" 0 (count_assign Fold_state.M recs)
+    (count_assign Fold_state.V st);
+  Alcotest.(check int) "no mountain" 0 (count_assign Fold_state.M st)
+
+(* Edges accumulate across folds (#26): to isolate the creases freshly cut by
+   the second fold (as opposed to the first fold's crease carried/split
+   forward), filter st2's edges to those whose crease_id wasn't already
+   present in st1 — fresh cuts mint a fresh crease_id, carried/split edges
+   keep their parent's. *)
+let new_edges_since (before : Fold_state.t) (after : Fold_state.t) =
+  let old_ids =
+    Array.to_list before.Fold_state.edges
+    |> List.map (fun (e : Fold_state.edge) -> e.Fold_state.crease_id)
+  in
+  Array.to_list after.Fold_state.edges
+  |> List.filter (fun (e : Fold_state.edge) ->
+         not (List.mem e.Fold_state.crease_id old_ids))
+
+let count_assign_in a edges =
+  List.length
+    (List.filter (fun (e : Fold_state.edge) -> e.Fold_state.eassign = a) edges)
 
 let test_fold_records_accordion () =
   let axis1 = { Geom.a = q 1; b = q 0; c = half } in
@@ -256,16 +272,17 @@ let test_fold_records_accordion () =
       ~valley:true
   in
   let axis2 = { Geom.a = q 0; b = q 1; c = half } in
-  let _, recs2 =
+  let st2 =
     Fold_state.fold_with_records st1 ~axis:axis2 ~move_side:1 ~valley:true
       ~prov:None
   in
-  Alcotest.(check int) "two crease records from the second fold" 2
-    (List.length recs2);
+  let fresh = new_edges_since st1 st2 in
+  Alcotest.(check int) "two crease edges from the second fold" 2
+    (List.length fresh);
   Alcotest.(check int) "one valley (accordion)" 1
-    (count_assign Fold_state.V recs2);
+    (count_assign_in Fold_state.V fresh);
   Alcotest.(check int) "one mountain (accordion)" 1
-    (count_assign Fold_state.M recs2)
+    (count_assign_in Fold_state.M fresh)
 
 let test_fold_paper_preimages () =
   let flat = Fold_state.paper_preimages Fold_state.init_square (pt 1 0) in
@@ -281,18 +298,18 @@ let test_fold_paper_preimages () =
   Alcotest.(check int) "two preimages in the folded overlap" 2 (List.length folded)
 
 (* #27: folding along a precrease (subdivide, then fold on the same axis) must
-   upgrade the abutting U crease to M/V — the fold cuts nothing, so the record
-   comes from the abut case, not from a cut. *)
+   upgrade the abutting U crease to M/V — the fold cuts nothing, so the
+   upgrade comes from the carried on-axis edge, not from a new cut. *)
 let test_fold_precrease_upgrade () =
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let st1, _ = Fold_state.subdivide Fold_state.init_square axis ~prov:None in
-  let _, recs =
+  let st1 = Fold_state.subdivide Fold_state.init_square axis ~prov:None in
+  let st2 =
     Fold_state.fold_with_records st1 ~axis ~move_side:1 ~valley:true ~prov:None
   in
-  Alcotest.(check int) "folding a precrease yields one valley record" 1
-    (count_assign Fold_state.V recs);
+  Alcotest.(check int) "folding a precrease yields one valley edge" 1
+    (count_assign Fold_state.V st2);
   Alcotest.(check int) "the fold emits no stale U" 0
-    (count_assign Fold_state.U recs)
+    (count_assign Fold_state.U st2)
 
 (* #25: two fully-overlapping unit squares; face 0 is Above face 1 in `order`
    but comes first in the array, so array-position resolution would pick the
@@ -316,6 +333,7 @@ let test_topmost_preimage_order () =
           [| Fold_state.Apart; Fold_state.Above |];
           [| Fold_state.Below; Fold_state.Apart |];
         |];
+      edges = [||];
     }
   in
   match Fold_state.topmost_preimage st { Geom.x = half; y = half } with
@@ -444,8 +462,8 @@ let test_eval_folded_half () =
   in
   Alcotest.(check int) "two faces" 2
     (Array.length fd.Eval.state.Fold_state.faces);
-  Alcotest.(check int) "one valley record" 1
-    (count_assign Fold_state.V fd.Eval.creases);
+  Alcotest.(check int) "one valley edge" 1
+    (count_assign Fold_state.V fd.Eval.state);
   Alcotest.(check bool) ".b maps onto .a" true
     (Geom.point_equal
        (Fold_state.table_position fd.Eval.state (pt 1 0))
@@ -458,8 +476,8 @@ let test_eval_folded_precrease () =
   in
   Alcotest.(check int) "two faces" 2
     (Array.length fd.Eval.state.Fold_state.faces);
-  Alcotest.(check int) "one U record" 1
-    (count_assign Fold_state.U fd.Eval.creases)
+  Alcotest.(check int) "one U edge" 1
+    (count_assign Fold_state.U fd.Eval.state)
 
 let test_eval_folded_moving_required () =
   expect_error "moving" (fun () ->
@@ -476,7 +494,7 @@ let test_eval_folded_quarter_accordion () =
   Alcotest.(check int) "four faces after quarter fold" 4
     (Array.length fd.Eval.state.Fold_state.faces);
   Alcotest.(check int) "an accordion mountain appears" 1
-    (count_assign Fold_state.M fd.Eval.creases)
+    (count_assign Fold_state.M fd.Eval.state)
 
 let test_eval_folded_cross_topmost () =
   let fd =
@@ -535,16 +553,16 @@ let test_eval_temp_crease_unnamed () =
     (not (List.mem_assoc "_t" fd.Eval.named_lines));
   Alcotest.(check bool)
     "temp crease provenance unnamed" true
-    (List.for_all
-       (fun (r : Fold_state.crease_record) ->
-         match r.Fold_state.prov with
+    (Array.for_all
+       (fun (e : Fold_state.edge) ->
+         match e.Fold_state.eprov with
          | Some p -> p.State.name = None
          | None -> true)
-       fd.Eval.creases)
+       fd.Eval.state.Fold_state.edges)
 
 let test_eval_def_never_runs () =
   let fd = eval_src "def bad() {\n  --x = through .a .a\n}\n" in
-  Alcotest.(check int) "no creases" 0 (List.length fd.Eval.creases)
+  Alcotest.(check int) "no edges" 0 (Array.length fd.Eval.state.Fold_state.edges)
 
 let test_eval_apply_closed_scope () =
   expect_error "undefined point .a" (fun () ->
@@ -555,7 +573,8 @@ let test_eval_apply_binds_params () =
     eval_src
       "def diag(.p .q) {\n  --d = through .p .q\n}\n$i = apply diag(.a .c)\n"
   in
-  Alcotest.(check int) "one crease" 1 (List.length fd.Eval.creases)
+  Alcotest.(check int) "one crease" 1
+    (Array.length fd.Eval.state.Fold_state.edges)
 
 let test_eval_apply_arity_error () =
   expect_error "argument" (fun () ->
@@ -584,11 +603,10 @@ let test_eval_dup_instance_error () =
         "def d(.p .q) {\n  --x = through .p .q\n}\n\
          $i = apply d(.a .c)\n$i = apply d(.b .d)\n")
 
-let prov_names fd =
-  List.filter_map
-    (fun (r : Fold_state.crease_record) ->
-      match r.Fold_state.prov with Some p -> p.State.name | None -> None)
-    fd.Eval.creases
+let prov_names (fd : Eval.folded) =
+  Array.to_list fd.Eval.state.Fold_state.edges
+  |> List.filter_map (fun (e : Fold_state.edge) ->
+         match e.Fold_state.eprov with Some p -> p.State.name | None -> None)
 
 let test_eval_instance_fold_names () =
   let fd =
@@ -637,7 +655,8 @@ let test_eval_earlier_def_visible () =
        def outer(.p .q) {\n  apply inner(.p .q)\n}\n\
        apply outer(.a .c)\n"
   in
-  Alcotest.(check int) "one crease" 1 (List.length fd.Eval.creases)
+  Alcotest.(check int) "one crease" 1
+    (Array.length fd.Eval.state.Fold_state.edges)
 
 let test_eval_member_point_access () =
   let fd =
@@ -663,11 +682,10 @@ let test_eval_member_line_access () =
   Alcotest.(check bool) "point x exists" true
     (List.mem_assoc "x" fd.Eval.named_points)
 
-let prov_steps fd =
-  List.filter_map
-    (fun (r : Fold_state.crease_record) ->
-      match r.Fold_state.prov with Some p -> p.State.step | None -> None)
-    fd.Eval.creases
+let prov_steps (fd : Eval.folded) =
+  Array.to_list fd.Eval.state.Fold_state.edges
+  |> List.filter_map (fun (e : Fold_state.edge) ->
+         match e.Fold_state.eprov with Some p -> p.State.step | None -> None)
 
 let test_eval_panel_tags_creases () =
   let fd =
@@ -685,12 +703,11 @@ let test_eval_before_first_panel_untagged () =
   Alcotest.(check bool) "all tagged with p" true
     (tagged <> [] && List.for_all (fun s -> s = "p") tagged);
   let untagged =
-    List.filter
-      (fun (r : Fold_state.crease_record) ->
-        match r.Fold_state.prov with
-        | Some p -> p.State.step = None
-        | None -> true)
-      fd.Eval.creases
+    Array.to_list fd.Eval.state.Fold_state.edges
+    |> List.filter (fun (e : Fold_state.edge) ->
+           match e.Fold_state.eprov with
+           | Some p -> p.State.step = None
+           | None -> true)
   in
   Alcotest.(check bool) "some untagged (before first step)" true
     (untagged <> [])
