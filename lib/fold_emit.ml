@@ -2,8 +2,12 @@
 
 let q_to_json (x : Num.t) : Yojson.Safe.t = `Float (Num.to_float x)
 
-let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
-  let faces = fd.Eval.state.Fold_state.faces in
+(* Build one self-contained foldedForm frame for a given state. Its topology is
+   this state's faces (earlier steps have fewer faces than the final CP, so the
+   frame cannot inherit the parent's vertex/face set — frame_inherit is false). *)
+let folded_frame_of_state (state : Fold_state.t) (step : string option) :
+    Yojson.Safe.t =
+  let faces = state.Fold_state.faces in
   (* dedup vertices by paper coord; remember paper + table coords per vertex.
      INVARIANT: a paper vertex shared by several faces gets its table coord from
      whichever face introduces it first. This is consistent only because every
@@ -55,6 +59,124 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
           let assign, prov =
             if on_unit_boundary pa pb then ("B", None)
             else
+              match Fold_state.edge_between state fi pa pb with
+              | Some (e : Fold_state.edge) ->
+                  let a =
+                    match e.Fold_state.eassign with
+                    | Fold_state.M -> "M"
+                    | Fold_state.V -> "V"
+                    | Fold_state.U -> "U"
+                  in
+                  (a, e.Fold_state.eprov)
+              | None -> ("U", None)
+          in
+          edges := (ia, ib, assign, prov) :: !edges
+        end
+      done)
+    faces;
+  let edges = List.rev !edges in
+  let verts_table =
+    Dynarray.to_list vtable
+    |> List.map (fun (p : Geom.point) ->
+        `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ])
+  in
+  let edges_vertices =
+    List.map (fun (a, b, _, _) -> `List [ `Int a; `Int b ]) edges
+  in
+  let edges_assignment = List.map (fun (_, _, a, _) -> `String a) edges in
+  let edges_fold_angle =
+    List.map
+      (fun (_, _, a, _) ->
+        match a with
+        | "V" -> `Float 180.0
+        | "M" -> `Float (-180.0)
+        | _ -> `Float 0.0)
+      edges
+  in
+  let faces_vertices =
+    Array.to_list face_idx
+    |> List.map (fun idxs ->
+        `List (Array.to_list (Array.map (fun i -> `Int i) idxs)))
+  in
+  (* faceOrders read directly from the folded state's partial order. For a pair
+     (fi < gi) that overlaps, sign follows FOLD's convention keyed to gi's normal
+     (its det_sign): a "below" relation with gi facing up is -1, etc. *)
+  let order = state.Fold_state.order in
+  let nf = Array.length faces in
+  let face_orders = ref [] in
+  for fi = 0 to nf - 1 do
+    for gi = fi + 1 to nf - 1 do
+      match Layer_order.get order fi gi with
+      | Fold_state.Apart -> ()
+      | rel ->
+          let g_up = Isometry.det_sign faces.(gi).Fold_state.iso > 0 in
+          let fi_below = rel = Fold_state.Below in
+          let s =
+            if fi_below then if g_up then -1 else 1
+            else if g_up then 1 else -1
+          in
+          face_orders := `List [ `Int fi; `Int gi; `Int s ] :: !face_orders
+    done
+  done;
+  `Assoc
+    [
+      ("frame_classes", `List [ `String "foldedForm" ]);
+      ("frame_parent", `Int 0);
+      ("frame_inherit", `Bool false);
+      ("vertices_coords", `List verts_table);
+      ("edges_vertices", `List edges_vertices);
+      ("edges_assignment", `List edges_assignment);
+      ("edges_foldAngle", `List edges_fold_angle);
+      ("faces_vertices", `List faces_vertices);
+      ("faceOrders", `List (List.rev !face_orders));
+      ("beloch:step", (match step with Some s -> `String s | None -> `Null));
+    ]
+
+let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
+  let faces = fd.Eval.state.Fold_state.faces in
+  (* dedup vertices by paper coord; remember paper coord per vertex, for the
+     top-level crease-pattern frame (built from the final state). *)
+  let vpaper = Dynarray.create () in
+  let vindex (p : Geom.point) : int =
+    let n = Dynarray.length vpaper in
+    let rec find i =
+      if i >= n then -1
+      else if Geom.point_equal p (Dynarray.get vpaper i) then i
+      else find (i + 1)
+    in
+    let i = find 0 in
+    if i >= 0 then i
+    else begin
+      Dynarray.add_last vpaper p;
+      n
+    end
+  in
+  let face_idx = Array.map (fun f -> Array.map vindex f.Fold_state.paper) faces in
+  (* edge classification *)
+  let on_unit_boundary (a : Geom.point) (b : Geom.point) : bool =
+    let z = Num.zero and o = Num.one in
+    (Num.equal a.Geom.x z && Num.equal b.Geom.x z)
+    || (Num.equal a.Geom.x o && Num.equal b.Geom.x o)
+    || (Num.equal a.Geom.y z && Num.equal b.Geom.y z)
+    || (Num.equal a.Geom.y o && Num.equal b.Geom.y o)
+  in
+  (* collect unique edges with (assignment string, provenance) *)
+  let edge_tbl = Hashtbl.create 64 in
+  let edges = ref [] in
+  Array.iteri
+    (fun fi f ->
+      let idxs = face_idx.(fi) in
+      let m = Array.length idxs in
+      for k = 0 to m - 1 do
+        let ia = idxs.(k) and ib = idxs.((k + 1) mod m) in
+        let key = (min ia ib, max ia ib) in
+        if not (Hashtbl.mem edge_tbl key) then begin
+          Hashtbl.replace edge_tbl key ();
+          let pa = f.Fold_state.paper.(k)
+          and pb = f.Fold_state.paper.((k + 1) mod m) in
+          let assign, prov =
+            if on_unit_boundary pa pb then ("B", None)
+            else
               match Fold_state.edge_between fd.Eval.state fi pa pb with
               | Some (e : Fold_state.edge) ->
                   let a =
@@ -76,24 +198,10 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
     |> List.map (fun (p : Geom.point) ->
         `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ])
   in
-  let verts_table =
-    Dynarray.to_list vtable
-    |> List.map (fun (p : Geom.point) ->
-        `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ])
-  in
   let edges_vertices =
     List.map (fun (a, b, _, _) -> `List [ `Int a; `Int b ]) edges
   in
   let edges_assignment = List.map (fun (_, _, a, _) -> `String a) edges in
-  let edges_fold_angle =
-    List.map
-      (fun (_, _, a, _) ->
-        match a with
-        | "V" -> `Float 180.0
-        | "M" -> `Float (-180.0)
-        | _ -> `Float 0.0)
-      edges
-  in
   let faces_vertices =
     Array.to_list face_idx
     |> List.map (fun idxs ->
@@ -119,37 +227,6 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
                 );
               ])
       edges
-  in
-  (* faceOrders read directly from the folded state's partial order. For a pair
-     (fi < gi) that overlaps, sign follows FOLD's convention keyed to gi's normal
-     (its det_sign): a "below" relation with gi facing up is -1, etc. *)
-  let order = fd.Eval.state.Fold_state.order in
-  let nf = Array.length faces in
-  let face_orders = ref [] in
-  for fi = 0 to nf - 1 do
-    for gi = fi + 1 to nf - 1 do
-      match Layer_order.get order fi gi with
-      | Fold_state.Apart -> ()
-      | rel ->
-          let g_up = Isometry.det_sign faces.(gi).Fold_state.iso > 0 in
-          let fi_below = rel = Fold_state.Below in
-          let s =
-            if fi_below then if g_up then -1 else 1
-            else if g_up then 1 else -1
-          in
-          face_orders := `List [ `Int fi; `Int gi; `Int s ] :: !face_orders
-    done
-  done;
-  let folded_frame =
-    `Assoc
-      [
-        ("frame_classes", `List [ `String "foldedForm" ]);
-        ("frame_parent", `Int 0);
-        ("frame_inherit", `Bool true);
-        ("vertices_coords", `List verts_table);
-        ("edges_foldAngle", `List edges_fold_angle);
-        ("faceOrders", `List (List.rev !face_orders));
-      ]
   in
   let beloch_named_points =
     `Assoc
@@ -185,5 +262,9 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
       ("beloch:edges", `List beloch_edges);
       ("beloch:named_points", beloch_named_points);
       ("beloch:named_lines", beloch_named_lines);
-      ("file_frames", `List [ folded_frame ]);
+      ( "file_frames",
+        `List
+          (List.map
+             (fun (step, st) -> folded_frame_of_state st step)
+             fd.Eval.frames) );
     ]

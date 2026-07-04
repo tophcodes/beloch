@@ -123,3 +123,70 @@ test("occlusion view defines a soft layer shadow and a legend panel", async () =
   expect(svg.includes('id="layerShadow"')).toBe(true); // drop-shadow filter defined
   expect(svg.includes('class="legend-panel"')).toBe(true); // legend backing panel
 });
+
+test("fold2svg tags creases with data-step and constructions with data-construction", async () => {
+  // x-midpoint.fold carries beloch:edges provenance (creases d1/d2, each
+  // step: null) and beloch:named_points/named_lines (a, b, c, d, center /
+  // d1, d2) — enough to exercise both hook kinds without a --constructions
+  // opt-in (Task 3: constructions are always emitted; a webview toggles
+  // visibility via CSS, it doesn't ask the renderer to omit them).
+  const p = Bun.spawn(
+    ["bun", "tools/fold2svg.mjs", "tools/test/fixtures/x-midpoint.fold"],
+    { stdout: "pipe" }
+  );
+  const svg = await new Response(p.stdout).text();
+  expect(svg).toContain("data-step=");
+  expect(svg).toContain('class="construction"');
+  expect(svg).toContain("data-construction=");
+});
+
+test("construction overlay renders only auxiliary constructions, not crease/corner duplicates", async () => {
+  // x-midpoint.bel has both kinds: .center is a genuine auxiliary point (the
+  // cross of --d1 --d2, not on the paper), while d1/d2 are named creases
+  // (already drawn as solid crease lines with --d1/--d2 labels) and a/b/c/d
+  // are the unit-square corners (already dotted+labelled by the CP view).
+  // Overlaying the latter two would double-draw the same geometry+label.
+  const p = Bun.spawn(
+    ["bun", "tools/fold2svg.mjs", "tools/test/fixtures/x-midpoint.fold"],
+    { stdout: "pipe" }
+  );
+  const svg = await new Response(p.stdout).text();
+  expect(svg).toContain('data-construction="center"'); // auxiliary point: kept
+  expect(svg).not.toContain('data-construction="d1"'); // crease-duplicate: skipped
+  expect(svg).not.toContain('data-construction="d2"'); // crease-duplicate: skipped
+  expect(svg).not.toContain('data-construction="a"'); // corner-duplicate: skipped
+  expect(svg).not.toContain('data-construction="b"'); // corner-duplicate: skipped
+  expect(svg).not.toContain('data-construction="c"'); // corner-duplicate: skipped
+  expect(svg).not.toContain('data-construction="d"'); // corner-duplicate: skipped
+});
+
+test("each crease element carries a crease-M/V/U class alongside data-step", async () => {
+  const p = Bun.spawn(
+    ["bun", "tools/fold2svg.mjs", "tools/test/fixtures/x-midpoint.fold"],
+    { stdout: "pipe" }
+  );
+  const svg = await new Response(p.stdout).text();
+  expect(svg).toMatch(/class="crease-[MVU]"/);
+});
+
+test("--step selects the matching file_frames entry; default falls back to the last frame", async () => {
+  // cube-root.fold has 3 named-step frames of strictly growing size
+  // (vertical_middle < thirds < beloch_fold) — a clean signal that --step
+  // actually swaps which frame gets rendered, not just re-rendering the same one.
+  const run = (extra) =>
+    new Promise((res) => {
+      const p = Bun.spawn(
+        ["bun", "tools/fold2svg.mjs", "tools/test/fixtures/cube-root.fold", "--view", "top", ...extra],
+        { stdout: "pipe" }
+      );
+      res(new Response(p.stdout).text());
+    });
+  const lineCount = (svg) => (svg.match(/<line/g) || []).length;
+  const vm = await run(["--step", "vertical_middle"]);
+  const thirds = await run(["--step", "thirds"]);
+  const final = await run(["--step", "beloch_fold"]);
+  const dflt = await run([]);
+  expect(lineCount(vm)).toBeLessThan(lineCount(thirds));
+  expect(lineCount(thirds)).toBeLessThan(lineCount(final));
+  expect(dflt).toBe(final); // no --step -> last frame
+});

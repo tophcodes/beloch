@@ -14,6 +14,7 @@ type folded = {
   state : Fold_state.t;
   named_points : (string * Geom.point) list;
   named_lines : (string * Geom.line) list;
+  frames : (string option * Fold_state.t) list;
 }
 
 (* ---- Scope-stack context ---- *)
@@ -50,6 +51,7 @@ type ctx = {
   state : Fold_state.t ref;
   mutable panel : string option;
   panels : (string, unit) Hashtbl.t;
+  mutable frames_rev : (string option * Fold_state.t) list;
 }
 
 let lookup_point (ctx : ctx) (pr : Ast.point_ref) : Geom.point =
@@ -103,6 +105,7 @@ let eval_folded (prog : Ast.program) : folded =
     state  = ref Fold_state.init_square;
     panel = None;
     panels = Hashtbl.create 4;
+    frames_rev = [];
   } in
   (* render an operand back to source text for provenance + error messages *)
   let rec pstr (po : Ast.point_operand) : string =
@@ -546,6 +549,7 @@ let eval_folded (prog : Ast.program) : folded =
         if Hashtbl.mem ctx.panels id then
           Error.fail span (Printf.sprintf "step id %s is already used" id);
         Hashtbl.replace ctx.panels id ();
+        ctx.frames_rev <- (ctx.panel, !(ctx.state)) :: ctx.frames_rev;
         ctx.panel <- Some id
   in
   List.iter eval_stmt prog;
@@ -564,4 +568,6 @@ let eval_folded (prog : Ast.program) : folded =
           | Material (_, l_orig) -> (k, l_orig) :: acc)
       root_scope.lines []
   in
-  { state = !(ctx.state); named_points; named_lines }
+  ctx.frames_rev <- (ctx.panel, !(ctx.state)) :: ctx.frames_rev;
+  let frames = List.rev ctx.frames_rev in
+  { state = !(ctx.state); named_points; named_lines; frames }

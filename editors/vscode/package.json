@@ -9,6 +9,10 @@
     "vscode": "^1.90.0"
   },
   "categories": ["Programming Languages"],
+  "repository": {
+    "type": "git",
+    "url": "https://git.toph.so/toph/beloch"
+  },
   "main": "./dist/extension.js",
   "activationEvents": ["onLanguage:beloch"],
   "contributes": {
@@ -48,11 +52,15 @@
     "compile": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
     "test": "bun test",
-    "test:grammar": "vscode-tmgrammar-test -g syntaxes/beloch.tmLanguage.json \"test/grammar/**/*.bel\""
+    "test:grammar": "vscode-tmgrammar-test -g syntaxes/beloch.tmLanguage.json \"test/grammar/**/*.bel\"",
+    "vscode:prepublish": "bun run compile",
+    "package": "vsce package --no-dependencies -o beloch.vsix",
+    "dogfood": "bun run package && code --install-extension beloch.vsix --force"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.9.2",
     "bun-types": "^1.3.14",
     "esbuild": "^0.24.0",
     "typescript": "^5.5.0",

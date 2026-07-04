@@ -792,6 +792,24 @@ let test_eval_export_temp_target () =
   Alcotest.(check bool) "temp target not named" true
     (not (List.mem_assoc "_t" fd.Eval.named_points))
 
+let test_step_frames () =
+  let src =
+    "paper square\n\
+     step a\n\
+     --v = map .a onto .b\n\
+     step b\n\
+     map .d onto .c\n"
+  in
+  let prog = Beloch.parse ~filename:"t" src in
+  let fd = Beloch.Eval.eval_folded prog in
+  let tags = List.map fst fd.Beloch.Eval.frames in
+  (* baseline (None) + step a + step b *)
+  Alcotest.(check (list (option string))) "step tags"
+    [ None; Some "a"; Some "b" ] tags;
+  (* last frame state is the final state *)
+  Alcotest.(check bool) "last frame is final" true
+    (snd (List.nth fd.frames (List.length fd.frames - 1)) == fd.state)
+
 let () =
   Alcotest.run "beloch-eval"
     [
@@ -923,5 +941,6 @@ let () =
             test_eval_dup_panel_error;
           Alcotest.test_case "apply folds land in panel" `Quick
             test_eval_apply_folds_land_in_panel;
+          Alcotest.test_case "step frames" `Quick test_step_frames;
         ] );
     ]

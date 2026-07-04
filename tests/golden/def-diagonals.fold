@@ -63,12 +63,66 @@
     {
       "frame_classes": [ "foldedForm" ],
       "frame_parent": 0,
-      "frame_inherit": true,
+      "frame_inherit": false,
+      "vertices_coords": [
+        [ 0.0, 0.0 ], [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.0, 1.0 ]
+      ],
+      "edges_vertices": [ [ 0, 1 ], [ 1, 2 ], [ 2, 3 ], [ 3, 0 ] ],
+      "edges_assignment": [ "B", "B", "B", "B" ],
+      "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0 ],
+      "faces_vertices": [ [ 0, 1, 2, 3 ] ],
+      "faceOrders": [],
+      "beloch:step": null
+    },
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": false,
       "vertices_coords": [
         [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.5, 0.5 ], [ 0.0, 0.0 ], [ 0.0, 1.0 ]
       ],
+      "edges_vertices": [
+        [ 0, 1 ],
+        [ 1, 2 ],
+        [ 2, 0 ],
+        [ 3, 0 ],
+        [ 2, 3 ],
+        [ 1, 4 ],
+        [ 4, 2 ],
+        [ 4, 3 ]
+      ],
+      "edges_assignment": [ "B", "U", "U", "B", "U", "B", "U", "B" ],
       "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
-      "faceOrders": []
+      "faces_vertices": [
+        [ 0, 1, 2 ], [ 3, 0, 2 ], [ 2, 1, 4 ], [ 3, 2, 4 ]
+      ],
+      "faceOrders": [],
+      "beloch:step": "diagonals"
+    },
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": false,
+      "vertices_coords": [
+        [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.5, 0.5 ], [ 0.0, 0.0 ], [ 0.0, 1.0 ]
+      ],
+      "edges_vertices": [
+        [ 0, 1 ],
+        [ 1, 2 ],
+        [ 2, 0 ],
+        [ 3, 0 ],
+        [ 2, 3 ],
+        [ 1, 4 ],
+        [ 4, 2 ],
+        [ 4, 3 ]
+      ],
+      "edges_assignment": [ "B", "U", "U", "B", "U", "B", "U", "B" ],
+      "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
+      "faces_vertices": [
+        [ 0, 1, 2 ], [ 3, 0, 2 ], [ 2, 1, 4 ], [ 3, 2, 4 ]
+      ],
+      "faceOrders": [],
+      "beloch:step": "centre"
     }
   ]
 }

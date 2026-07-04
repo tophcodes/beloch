@@ -43,14 +43,14 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "x-midpoint.bel:3:1",
+      "span": "examples/x-midpoint.bel:3:1",
       "name": "d1",
       "step": null
     },
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".d" ],
-      "span": "x-midpoint.bel:4:1",
+      "span": "examples/x-midpoint.bel:4:1",
       "name": "d2",
       "step": null
     },
@@ -58,14 +58,14 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "x-midpoint.bel:3:1",
+      "span": "examples/x-midpoint.bel:3:1",
       "name": "d1",
       "step": null
     },
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".center" ],
-      "span": "x-midpoint.bel:6:1",
+      "span": "examples/x-midpoint.bel:6:1",
       "name": null,
       "step": null
     },
@@ -73,7 +73,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".d" ],
-      "span": "x-midpoint.bel:4:1",
+      "span": "examples/x-midpoint.bel:4:1",
       "name": "d2",
       "step": null
     },
@@ -81,14 +81,14 @@
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".center" ],
-      "span": "x-midpoint.bel:6:1",
+      "span": "examples/x-midpoint.bel:6:1",
       "name": null,
       "step": null
     },
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "x-midpoint.bel:3:1",
+      "span": "examples/x-midpoint.bel:3:1",
       "name": "d1",
       "step": null
     },
