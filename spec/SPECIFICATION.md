@@ -565,13 +565,14 @@ output only*. No internal decision is ever taken on a truncated value.
 
 ---
 
-## 7. Output: the FOLD contract *(since v0.0; dual-frame since v0.7-dev)*
+## 7. Output: the FOLD contract *(since v0.0; dual-frame since v0.7-dev; multi-frame since v0.16-dev)*
 
 `beloch fold FILE.bel` emits a [FOLD](https://github.com/edemaine/fold) file
-[[foldformat]](#ref-foldformat) with **two frames** built from the folded state's
-faces: the flat **crease pattern** (frame 0, the top-level dictionary) and the
-**folded form** (`file_frames[0]`). A program with no `@` folds still emits both;
-the folded form then coincides with the flat sheet.
+[[foldformat]](#ref-foldformat) with **two or more frames** built from the
+folded state's faces: the flat **crease pattern** (frame 0, the top-level
+dictionary) and one or more **folded form** frames (`file_frames`). A program
+with no `@` folds still emits at least one folded-form frame; it then
+coincides with the flat sheet.
 
 The planar graph is the face set: vertices are deduplicated by paper coordinate
 (vertices shared across faces along a crease coincide), each face is one polygon,
@@ -607,21 +608,39 @@ internal edge is a crease.
   program. Additive: stock FOLD consumers ignore both fields;
   `tools/fold2svg.mjs` uses `"name"` to colour/label creases.
 
-**`file_frames[0]` — `foldedForm`** (`frame_parent: 0`, `frame_inherit: true`, so
-it inherits the topology and overrides only the coordinates):
+**`file_frames` — one `foldedForm` frame per `step` panel snapshot**
+*(since v0.16-dev)*: a baseline frame (`"beloch:step": null`) for the state
+before the first `step` (or the final state, for a program with no `step`
+panels at all), followed by one frame per `step` (§5a.6), in program order.
+Each frame is **self-contained** (`frame_parent: 0`, `frame_inherit: false`)
+rather than inheriting the parent's topology — an earlier step's state has
+fewer faces than the final crease pattern, so it cannot share the parent's
+vertex/face indexing. Each frame carries its own:
 
-- `vertices_coords` — the same vertices in **table** (folded) coordinates: each
-  face's paper polygon through its isometry. Flat folds stay in the plane, so
-  these are 2D; stacking is conveyed by `faceOrders`, not a z-offset.
+- `vertices_coords` — this state's vertices in **table** (folded) coordinates:
+  each face's paper polygon through its isometry. Flat folds stay in the plane,
+  so these are 2D; stacking is conveyed by `faceOrders`, not a z-offset.
+- `edges_vertices`, `edges_assignment`, `faces_vertices` — this state's own
+  topology (indices are local to the frame, not shared with frame 0 or other
+  folded-form frames).
 - `edges_foldAngle` — `+180` for valley, `−180` for mountain, `0` otherwise; the
   sign matches `edges_assignment`.
 - `faceOrders` — `[f, g, s]` layer-ordering triples for face pairs whose table
   footprints **overlap**; `s = +1` if `f` is above `g` (toward `g`'s normal),
   `−1` below ([[foldformat]](#ref-foldformat) §"Layer information"). Emitted only
   for overlapping pairs (empty when nothing overlaps, e.g. a flat program).
+- `"beloch:step"` — the step identifier this frame snapshots, or `null` for the
+  baseline frame. A consumer can map a crease to the frame(s) it appears in via
+  `beloch:edges[].step` (§ above) against each frame's `"beloch:step"`.
+
+The top-level frame (frame 0) is always the final, cumulative crease pattern —
+it does not change with the number of `step` panels. A program with no `step`
+panels emits exactly one folded-form frame (`"beloch:step": null`), matching
+the pre-v0.16-dev dual-frame shape except that the frame is now self-contained
+rather than `frame_inherit: true`.
 
 The renderer/animation client is a separate consumer; `tools/fold2svg.mjs` draws
-frame 0 by default and the folded form with `--folded`.
+frame 0 by default and a folded form with `--folded`.
 
 ---
 

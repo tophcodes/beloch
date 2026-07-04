@@ -63,14 +63,14 @@
     {
       "axiom": "axiom7",
       "sources": [ ".c", "--(.a .b)", ".s", "--pq" ],
-      "span": "cube-root.bel:32:1",
+      "span": "examples/cube-root.bel:32:1",
       "name": null,
       "step": "beloch_fold"
     },
     {
       "axiom": "axiom1",
       "sources": [ "._rs1", "._rs2" ],
-      "span": "cube-root.bel:28:1",
+      "span": "examples/cube-root.bel:28:1",
       "name": "rs",
       "step": "thirds"
     },
@@ -78,14 +78,14 @@
     {
       "axiom": "axiom7",
       "sources": [ ".c", "--(.a .b)", ".s", "--pq" ],
-      "span": "cube-root.bel:32:1",
+      "span": "examples/cube-root.bel:32:1",
       "name": null,
       "step": "beloch_fold"
     },
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".b" ],
-      "span": "cube-root.bel:18:1",
+      "span": "examples/cube-root.bel:18:1",
       "name": "vm",
       "step": "vertical_middle"
     },
@@ -93,14 +93,14 @@
     {
       "axiom": "axiom7",
       "sources": [ ".c", "--(.a .b)", ".s", "--pq" ],
-      "span": "cube-root.bel:32:1",
+      "span": "examples/cube-root.bel:32:1",
       "name": null,
       "step": "beloch_fold"
     },
     {
       "axiom": "axiom1",
       "sources": [ "._pq1", "._pq2" ],
-      "span": "cube-root.bel:25:1",
+      "span": "examples/cube-root.bel:25:1",
       "name": "pq",
       "step": "thirds"
     },
@@ -108,7 +108,7 @@
     {
       "axiom": "axiom7",
       "sources": [ ".c", "--(.a .b)", ".s", "--pq" ],
-      "span": "cube-root.bel:32:1",
+      "span": "examples/cube-root.bel:32:1",
       "name": null,
       "step": "beloch_fold"
     },
@@ -116,7 +116,7 @@
     {
       "axiom": "axiom1",
       "sources": [ "._pq1", "._pq2" ],
-      "span": "cube-root.bel:25:1",
+      "span": "examples/cube-root.bel:25:1",
       "name": "pq",
       "step": "thirds"
     },
@@ -125,7 +125,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".b" ],
-      "span": "cube-root.bel:18:1",
+      "span": "examples/cube-root.bel:18:1",
       "name": "vm",
       "step": "vertical_middle"
     },
@@ -133,7 +133,7 @@
     {
       "axiom": "axiom1",
       "sources": [ "._rs1", "._rs2" ],
-      "span": "cube-root.bel:28:1",
+      "span": "examples/cube-root.bel:28:1",
       "name": "rs",
       "step": "thirds"
     },

@@ -10,10 +10,15 @@ import ear from "rabbit-ear";
 
 // ---- pure helpers (exported for tests) ------------------------------------
 
-// Merge the foldedForm frame (file_frames[0]) over its parent: the folded frame
-// overrides vertices_coords + faceOrders and inherits topology from the parent.
-export function foldedFrame(fold) {
-  const ff = (fold.file_frames || [])[0];
+// Merge a foldedForm frame over its parent (the top-level crease pattern):
+// the folded frame overrides vertices_coords/edges/faces/faceOrders. Selects
+// the file_frames entry whose "beloch:step" matches `step`; falls back to the
+// LAST frame (the final folded state) if `step` is omitted or matches none.
+export function foldedFrame(fold, step) {
+  const frames = fold.file_frames || [];
+  const ff =
+    (step !== undefined && frames.find((f) => f["beloch:step"] === step)) ||
+    frames[frames.length - 1];
   return ff ? { ...fold, ...ff } : fold;
 }
 
@@ -152,8 +157,9 @@ if (import.meta.main) {
   const title = flagVal("--title") || "";
   const viewFlag = args.includes("--folded") ? "top" : flagVal("--view"); // top|bottom
   const hidden = flagVal("--hidden") || "hide"; // dashed | hide
-  const constructionsRaw = flagVal("--constructions") || "";
-  const FLAGS = new Set(["--title", "--view", "--hidden", "--constructions"]);
+  const constructionsFlag = flagVal("--constructions"); // undefined = show all
+  const stepFlag = flagVal("--step"); // which file_frames entry to render (folded view only)
+  const FLAGS = new Set(["--title", "--view", "--hidden", "--constructions", "--step"]);
   const positional = args.filter(
     (a, i) => !a.startsWith("--") && !FLAGS.has(args[i - 1])
   );
@@ -164,7 +170,7 @@ if (import.meta.main) {
   const fold = JSON.parse(raw);
   ear.graph(fold); // throws if the FOLD is not loadable — keep this as a check
 
-  const frame = viewFlag ? foldedFrame(fold) : fold;
+  const frame = viewFlag ? foldedFrame(fold, stepFlag) : fold;
   const V = frame.vertices_coords;
   const E = frame.edges_vertices || [];
   const F = frame.faces_vertices || [];
@@ -228,8 +234,10 @@ if (import.meta.main) {
         const a = face[k], b = face[(k + 1) % face.length];
         const ei = edgeIx.get(a < b ? `${a}-${b}` : `${b}-${a}`);
         const col = ei === undefined ? CREASE : eColor(ei);
+        const assignment = ei === undefined ? "U" : A[ei];
+        const step = (ei !== undefined && prov[ei] && prov[ei].step) || "";
         const wgt = ei !== undefined && A[ei] === "B" ? 2.5 : 2;
-        out.push(`<line x1="${mx(V[a][0])}" y1="${ty(V[a][1])}" x2="${mx(V[b][0])}" y2="${ty(V[b][1])}" stroke="${col}" stroke-width="${wgt}" stroke-linecap="round"/>`);
+        out.push(`<line class="crease-${assignment}" data-step="${step}" x1="${mx(V[a][0])}" y1="${ty(V[a][1])}" x2="${mx(V[b][0])}" y2="${ty(V[b][1])}" stroke="${col}" stroke-width="${wgt}" stroke-linecap="round"/>`);
       }
     }
     // x-ray: redraw occluded creases dashed over the paper. View-aware: the top
@@ -263,10 +271,11 @@ if (import.meta.main) {
         const stroke = isB ? "#475569" : "#94a3b8";
         const wgt = isB ? 2 : 1.2;
         const dash = isB ? "6 3" : "4 3";
+        const step = (prov[i] && prov[i].step) || "";
         for (const [t0, t1] of covered) {
           const p0 = [a0[0] + (b0[0] - a0[0]) * t0, a0[1] + (b0[1] - a0[1]) * t0];
           const p1 = [a0[0] + (b0[0] - a0[0]) * t1, a0[1] + (b0[1] - a0[1]) * t1];
-          out.push(`<line x1="${mx(p0[0])}" y1="${ty(p0[1])}" x2="${mx(p1[0])}" y2="${ty(p1[1])}" stroke="${stroke}" stroke-width="${wgt}" stroke-dasharray="${dash}" stroke-linecap="round"/>`);
+          out.push(`<line class="crease-${A[i]}" data-step="${step}" x1="${mx(p0[0])}" y1="${ty(p0[1])}" x2="${mx(p1[0])}" y2="${ty(p1[1])}" stroke="${stroke}" stroke-width="${wgt}" stroke-dasharray="${dash}" stroke-linecap="round"/>`);
         }
       });
     }
@@ -279,7 +288,8 @@ if (import.meta.main) {
     E.forEach((e, i) => {
       const [a, b] = e;
       const boundary = A[i] === "B";
-      out.push(`<line x1="${tx(V[a][0])}" y1="${ty(V[a][1])}" x2="${tx(V[b][0])}" y2="${ty(V[b][1])}" stroke="${eColor(i)}" stroke-width="${boundary ? 2.5 : 2}" stroke-linecap="round"/>`);
+      const step = (prov[i] && prov[i].step) || "";
+      out.push(`<line class="crease-${A[i]}" data-step="${step}" x1="${tx(V[a][0])}" y1="${ty(V[a][1])}" x2="${tx(V[b][0])}" y2="${ty(V[b][1])}" stroke="${eColor(i)}" stroke-width="${boundary ? 2.5 : 2}" stroke-linecap="round"/>`);
     });
     V.forEach((p) => {
       out.push(`<circle cx="${tx(p[0])}" cy="${ty(p[1])}" r="3" fill="#0f172a"/>`);
@@ -319,9 +329,28 @@ if (import.meta.main) {
   }
 
   // ---- construction overlay -----------------------------------------------
-  if (constructionsRaw) {
+  // Every AUXILIARY named construction gets a data-construction hook so a
+  // webview can toggle visibility by CSS/DOM; --constructions (if given)
+  // narrows which names are rendered at all, but omitting it renders all
+  // auxiliary ones. "Auxiliary" excludes constructions already drawn
+  // elsewhere in the diagram: named lines that are creases (drawn with a
+  // solid stroke + --name label) and named points that sit on a paper corner
+  // (drawn as a dotted .a/.b/.c/.d corner) — overlaying those would double-
+  // draw the same geometry with a second label.
+  {
     const namedPoints = fold["beloch:named_points"] || {};
     const namedLines = fold["beloch:named_lines"] || {};
+    const creaseLineNames = new Set(
+      (fold["beloch:edges"] || []).filter(Boolean).map((e) => e.name).filter(Boolean)
+    );
+    const isCornerPoint = (p) => CORNER.some(([x, y]) => near(p, x, y));
+    const selection =
+      constructionsFlag !== undefined
+        ? constructionsFlag.split(",").map((s) => s.trim()).filter(Boolean)
+        : [
+            ...Object.keys(namedLines).map((n) => `--${n}`),
+            ...Object.keys(namedPoints).map((n) => `.${n}`),
+          ];
     const CON_PT = "#6366f1", CON_LN = "#6366f1";
     const rootV = fold.vertices_coords || [];
     const pxs = rootV.map(p => p[0]), pys = rootV.map(p => p[1]);
@@ -365,12 +394,14 @@ if (import.meta.main) {
                   : [tx1+u*tEdx-v*tEdy, ty1+u*tEdy+v*tEdx];
     };
 
-    for (const sel of constructionsRaw.split(",").map(s => s.trim()).filter(Boolean)) {
+    for (const sel of selection) {
       if (sel.startsWith("--")) {
         const name = sel.slice(2);
         const l = namedLines[name];
         if (!l) continue;
+        if (creaseLineNames.has(name)) continue; // crease-duplicate: already drawn as a crease
         const [la, lb, lc] = l;
+        const g = [];
         if (viewFlag) {
           // folded view: clip to each face's paper polygon, transform to table space
           const drawn = [];
@@ -380,31 +411,38 @@ if (import.meta.main) {
             const seg = clipLineToPoly(la, lb, lc, papPoly);
             if (!seg) continue;
             const [t1, t2] = seg.map(([ppx,ppy]) => applyIso(papPoly, tabPoly, ppx, ppy));
-            out.push(`<line x1="${tx(t1[0])}" y1="${ty(t1[1])}" x2="${tx(t2[0])}" y2="${ty(t2[1])}" stroke="${CON_LN}" stroke-width="1.5" stroke-dasharray="6 3" opacity="0.8"/>`);
+            g.push(`<line x1="${tx(t1[0])}" y1="${ty(t1[1])}" x2="${tx(t2[0])}" y2="${ty(t2[1])}" stroke="${CON_LN}" stroke-width="1.5" stroke-dasharray="6 3" opacity="0.8"/>`);
             drawn.push([t1, t2]);
           }
           if (drawn.length > 0) {
             const [[x1,y1],[x2,y2]] = drawn[0];
-            out.push(`<text x="${tx((x1+x2)/2)}" y="${ty((y1+y2)/2) - 6}" font-size="12" font-weight="600" fill="${CON_LN}" stroke="white" stroke-width="2.5" paint-order="stroke" text-anchor="middle">--${name}</text>`);
+            g.push(`<text x="${tx((x1+x2)/2)}" y="${ty((y1+y2)/2) - 6}" font-size="12" font-weight="600" fill="${CON_LN}" stroke="white" stroke-width="2.5" paint-order="stroke" text-anchor="middle">--${name}</text>`);
           }
         } else {
           const seg = clipLineBox(la, lb, lc, pMinX, pMaxX, pMinY, pMaxY);
           if (!seg) continue;
           const [[x1,y1],[x2,y2]] = seg;
-          out.push(`<line x1="${tx(x1)}" y1="${ty(y1)}" x2="${tx(x2)}" y2="${ty(y2)}" stroke="${CON_LN}" stroke-width="1.5" stroke-dasharray="6 3" opacity="0.8"/>`);
-          out.push(`<text x="${tx((x1+x2)/2)}" y="${ty((y1+y2)/2) - 6}" font-size="12" font-weight="600" fill="${CON_LN}" stroke="white" stroke-width="2.5" paint-order="stroke" text-anchor="middle">--${name}</text>`);
+          g.push(`<line x1="${tx(x1)}" y1="${ty(y1)}" x2="${tx(x2)}" y2="${ty(y2)}" stroke="${CON_LN}" stroke-width="1.5" stroke-dasharray="6 3" opacity="0.8"/>`);
+          g.push(`<text x="${tx((x1+x2)/2)}" y="${ty((y1+y2)/2) - 6}" font-size="12" font-weight="600" fill="${CON_LN}" stroke="white" stroke-width="2.5" paint-order="stroke" text-anchor="middle">--${name}</text>`);
         }
+        if (g.length) out.push(`<g class="construction" data-construction="${name}">${g.join("")}</g>`);
       } else if (sel.startsWith(".")) {
         const name = sel.slice(1);
         const entry = namedPoints[name];
         if (!entry) continue;
+        const paper = Array.isArray(entry) ? entry : entry.paper;
+        if (paper && isCornerPoint(paper)) continue; // corner-duplicate: already dotted+labelled
         const coords = Array.isArray(entry) ? entry : (viewFlag ? entry.table : entry.paper);
         if (!coords) continue;
         const [px, py] = coords;
-        out.push(`<circle cx="${tx(px)}" cy="${ty(py)}" r="4.5" fill="${CON_PT}" opacity="0.85"/>`);
         const ox = px < (minX + maxX) / 2 ? -14 : 10;
         const oy = py < (minY + maxY) / 2 ? 16 : -7;
-        out.push(`<text x="${tx(px) + ox}" y="${ty(py) + oy}" font-size="13" font-weight="600" fill="${CON_PT}" stroke="white" stroke-width="2.5" paint-order="stroke">.${name}</text>`);
+        out.push(
+          `<g class="construction" data-construction="${name}">` +
+          `<circle cx="${tx(px)}" cy="${ty(py)}" r="4.5" fill="${CON_PT}" opacity="0.85"/>` +
+          `<text x="${tx(px) + ox}" y="${ty(py) + oy}" font-size="13" font-weight="600" fill="${CON_PT}" stroke="white" stroke-width="2.5" paint-order="stroke">.${name}</text>` +
+          `</g>`
+        );
       }
     }
   }

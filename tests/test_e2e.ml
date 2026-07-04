@@ -326,7 +326,7 @@ let test_emit_folded_frames () =
   let folded = List.hd frames in
   Alcotest.(check string) "extra frame is foldedForm" "foldedForm"
     (folded |> member "frame_classes" |> to_list |> List.hd |> to_string);
-  Alcotest.(check bool) "folded frame inherits" true
+  Alcotest.(check bool) "folded frame is self-contained, not inherited" false
     (folded |> member "frame_inherit" |> to_bool);
   let assigns =
     json |> member "edges_assignment" |> to_list |> List.map to_string
@@ -395,6 +395,31 @@ let test_flap_restriction_resolves () =
       Alcotest.failf "restriction should resolve, got error: %s" msg
   | _ -> ()
 
+(* #42: one self-contained foldedForm frame per step snapshot, baseline
+   included, each step-tagged. *)
+let test_multiframe () =
+  let src =
+    "paper square\n\
+     step a\n\
+     --v = map .a onto .b\n\
+     step b\n\
+     map .d onto .c\n"
+  in
+  let json = Beloch.fold_string ~filename:"t" src in
+  let frames =
+    match json with
+    | `Assoc kv -> (match List.assoc "file_frames" kv with `List l -> l | _ -> [])
+    | _ -> []
+  in
+  Alcotest.(check int) "one folded frame per step (baseline+a+b)" 3
+    (List.length frames);
+  let step_of = function
+    | `Assoc kv -> (match List.assoc "beloch:step" kv with `String s -> Some s | _ -> None)
+    | _ -> None
+  in
+  Alcotest.(check (list (option string))) "frame step tags"
+    [ None; Some "a"; Some "b" ] (List.map step_of frames)
+
 (* #27: mark a precrease, then fold on it. The emitted FOLD must carry V/180 on
    that crease, never the stale U/0 from the precrease's subdivide. *)
 let test_e2e_precrease_fold_emits_v () =
@@ -452,6 +477,8 @@ let () =
             test_bent_crease_bare_reuse_errors;
           Alcotest.test_case "flap restriction resolves" `Quick
             test_flap_restriction_resolves;
+          Alcotest.test_case "one folded frame per step" `Quick
+            test_multiframe;
         ] );
       ( "emit_folded",
         [
