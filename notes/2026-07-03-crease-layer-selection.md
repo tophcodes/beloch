@@ -3,8 +3,8 @@
 Companion to `2026-07-03-crease-segment-at-operator.md`. That note covers
 *referencing* a segment (`at`, a bundle → length-1 bundle projection). This one is
 the **creation-time** side: when a crease is laid across a stack, how much of it
-materialises. **Open design — insight + a proposed primitive, not fully
-converged.**
+materialises. **Converged 2026-07-04** — the mark-vs-fold pass below closed the
+last open questions; `pinch` is now spec-ready (see *Resolved* at the end).
 
 ## No `crease` keyword
 
@@ -76,20 +76,42 @@ and the reopened sigil question). Deliberately deferred; revisit only if it prov
 common. No `top`/`bottom`/`all` scope vocabulary — reality is binary (bind = all,
 `pinch` = one) with subsets parked.
 
-## Open questions
+## Resolved (2026-07-04)
 
-- **Does `pinch` fold, or only mark?** Intuition: `pinch` is mark-only
-  (subdivide one face, no fold); actual folding stays with `@`. Confirm `pinch` is
-  never combined with `@`, or define what `@pinch` would mean.
-- **Interaction with `@` / `moving` / `mountain` (§4.6).** A flap *is* a layer, and
-  `moving .p` already picks a flap; make sure `pinch`'s layer selection and the
-  fold model's side selection don't become two ways to say one thing.
-- **Absent layers.** A line need not cross every layer; bind over a stack simply
-  cuts the faces it meets. Fine for bind; for `pinch`, an `at` selector that hits
-  no segment is already the companion note's 0-match error.
+The focused mark-vs-fold pass closed every open question. Four decisions:
 
-## Not deciding yet
+1. **Flat, never folds.** `pinch` is a creation-time mark: it `subdivide`s one
+   face and leaves the paper flat. It does **not** reflect, does **not** leave a
+   side standing up, and does **not** fall through to the layers beneath the
+   selected one. `@pinch` is meaningless — a parse/semantic **error**. All folding
+   stays with `@`; `pinch` only lays reference geometry.
 
-Left open: whether `pinch` is strictly mark-only, the `@`/`moving` reconciliation,
-and the exact `pinch` statement grammar. Next step is a focused pass on the
-mark-vs-fold boundary once the `at` reference side is settled.
+2. **Layer chosen by `at`, not `moving`.** `pinch` reuses the companion note's
+   `at` keyword to pick which face materialises — it does **not** borrow the fold
+   model's `moving`. `moving` selects a side to *move*; `pinch` moves nothing, so
+   `moving` would be meaningless here. One keyword (`at`), two incidence contexts:
+   selecting a segment of an existing bundle (companion note) and selecting the
+   face a fresh `pinch` line cuts. Selector kinds:
+   - `at .c` — the face carrying material point `.c`. **All points are material**
+     (there are no table-space points; `.a`–`.d` especially so), so a point
+     selector always identifies a layer — the ADR's "table-space selector can't
+     disambiguate" caveat simply does not arise at creation.
+   - `at #(…)` — the flap's face.
+   - Flat single sheet: the line meets one face → `at` optional. Stack → required.
+     A selector that hits no face is the companion note's **0-match error**.
+
+3. **Full-chord subdivide (model (a)), shortness is display-only.** `pinch` cuts
+   the **full chord** of its face and splits it in two, exactly as the *Material
+   vs. display* section above describes — no new geometry kind, the #26 invariant
+   (every edge is a face boundary or the paper edge) stays intact. The two halves
+   are coplanar and flat, so the extra face + `Layer_order` entry are semantically
+   inert. Rejected: a non-splitting "reference edge" that isn't a face boundary —
+   it would push a special-case edge type through the whole topology and emit path
+   for no real gain.
+
+4. **Grammar.** `pinch <line> [at <selector>]`, a statement, optionally bound to
+   `--name`; the result is a length-1 bundle usable anywhere `at` output is. The
+   `at` selector is unambiguous for simple lines (`through .a .b` takes exactly two
+   points), so parens are optional there; **parenthesise the line once it carries
+   its own axis selectors** — `pinch (perp --l through .p) at .c` — so `at` binds
+   to the `pinch`, not the inner axiom.
