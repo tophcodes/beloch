@@ -12,6 +12,7 @@
 #include <flint/fmpz_poly.h>
 #include <flint/arb.h>
 #include <flint/qqbar.h>
+#include <flint/fmpq_poly.h>
 
 #define Qqbar_val(v) ((qqbar_ptr) Data_custom_val(v))
 
@@ -138,6 +139,42 @@ CAMLprim value ml_qqbar_minpoly(value a) {
     Store_field(res, i, tmp);
   }
   CAMLreturn(res);
+}
+
+/* x as a fmpq_poly in gen, low-first "num/den" strings, or None if
+   x ∉ ℚ(gen) or the LLL search precision is too low. The OCaml `max_bits`
+   arg drives prec (passed as 4*mb); FLINT 3.6 ignores its own max_bits
+   parameter (FLINT_UNUSED), so prec is the only tunable here. flags=0.
+   A returned poly is always FLINT-certified (res(gen)==x exactly). */
+CAMLprim value ml_qqbar_express_in_field(value gen, value x, value max_bits) {
+  CAMLparam3(gen, x, max_bits);
+  CAMLlocal3(res, some, tmp);
+  slong mb = Long_val(max_bits);
+  fmpq_poly_t p;
+  fmpq_poly_init(p);
+  int ok = qqbar_express_in_field(p, Qqbar_val(gen), Qqbar_val(x), mb, 0, 4 * mb);
+  if (!ok) {
+    fmpq_poly_clear(p);
+    CAMLreturn(Val_int(0)); /* None */
+  }
+  slong len = fmpq_poly_length(p);
+  res = caml_alloc(len, 0);
+  {
+    fmpq_t c;
+    fmpq_init(c);
+    for (slong i = 0; i < len; i++) {
+      fmpq_poly_get_coeff_fmpq(c, p, i);
+      char *s = fmpq_get_str(NULL, 10, c);
+      tmp = caml_copy_string(s);
+      flint_free(s);
+      Store_field(res, i, tmp);
+    }
+    fmpq_clear(c);
+  }
+  fmpq_poly_clear(p);
+  some = caml_alloc(1, 0);
+  Store_field(some, 0, res);
+  CAMLreturn(some);
 }
 
 /* exact dyadic enclosure of the (real) value at precision prec:

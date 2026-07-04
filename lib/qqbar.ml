@@ -22,6 +22,8 @@ external sign_re : t -> int = "ml_qqbar_sgn_re"
 external degree : t -> int = "ml_qqbar_degree"
 external to_float : t -> float = "ml_qqbar_get_d"
 external minpoly_strs : t -> string array = "ml_qqbar_minpoly"
+external express_in_field_raw : t -> t -> int -> string array option
+  = "ml_qqbar_express_in_field"
 external enclosure_strs : t -> int -> string * string * string
   = "ml_qqbar_enclosure"
 external real_roots_strs : string array -> t array = "ml_qqbar_real_roots"
@@ -48,6 +50,20 @@ let minpoly (x : t) : Poly.t =
     Array.map (fun s -> Q.of_bigint (Z.of_string s)) (minpoly_strs x)
   in
   Poly.monic (Poly.normalize coeffs)
+
+(* x as a ℚ-polynomial (low-first) in gen, exactly, or None if x ∉ ℚ(gen)
+   or the search precision is too low (one retry at a higher bound). The int
+   arg drives FLINT's LLL search precision (the C stub passes it as prec);
+   a too-low value can only yield a false None, never a wrong polynomial —
+   FLINT re-verifies res(gen) = x exactly before reporting success. *)
+let express_over ~(gen : t) (x : t) : Poly.t option =
+  let parse a = Poly.of_list (Array.to_list (Array.map Q.of_string a)) in
+  match express_in_field_raw gen x 4096 with
+  | Some a -> Some (parse a)
+  | None -> (
+      match express_in_field_raw gen x 65536 with
+      | Some a -> Some (parse a)
+      | None -> None)
 
 let enclosure (x : t) ~(prec : int) : Q.t * Q.t =
   let a, b, e = enclosure_strs x prec in

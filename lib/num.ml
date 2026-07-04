@@ -374,9 +374,66 @@ let real_roots (coeffs : t array) : t list =
                 |> List.map (fun z -> field_upgrade (of_qq z)))
       end
     in
-    match flint_first () with
+    let max_deg =
+      Array.fold_left (fun m c -> max m (Qqbar.degree c)) 0 coeffs_qq
+    in
+    let pe_tier () : t list option =
+      match Field_merge.merge_generators coeffs_qq with
+      | None -> None
+      | Some (mu, coords) ->
+          let r = Field_merge.resultant_superset ~coords ~mu in
+          if Poly.degree r < 1 then None
+          else begin
+            (* Cheap rigorous pre-screen before the exact eval_p check. R is a
+               superset, so many candidates are extraneous; evaluating P at a
+               high-degree candidate in qqbar is the dominant cost (~seconds
+               each). A rational-interval enclosure of P(z) — from FLINT's
+               rigorous qqbar enclosures, via interval Horner — that excludes 0
+               proves z is NOT a root, rejecting it without any exact qqbar
+               arithmetic. A true root (P(z)=0, interval straddles 0) is never
+               rejected; an inconclusive interval falls through to the exact
+               check. Purely an optimization: the exact eval_p still decides
+               every kept root, so the returned set is identical. *)
+            let prec = 128 in
+            let qmin a b = if Q.compare a b <= 0 then a else b in
+            let qmax a b = if Q.compare a b >= 0 then a else b in
+            let coeff_encl = Array.map (fun c -> Qqbar.enclosure c ~prec) coeffs_qq in
+            let interval_excludes_zero (z : Qqbar.t) : bool =
+              let iadd (a, b) (c, d) = (Q.add a c, Q.add b d) in
+              let imul (a, b) (c, d) =
+                let p1 = Q.mul a c and p2 = Q.mul a d
+                and p3 = Q.mul b c and p4 = Q.mul b d in
+                (qmin (qmin p1 p2) (qmin p3 p4), qmax (qmax p1 p2) (qmax p3 p4))
+              in
+              let zi = Qqbar.enclosure z ~prec in
+              let acc = ref (Q.zero, Q.zero) in
+              for i = Array.length coeff_encl - 1 downto 0 do
+                acc := iadd (imul !acc zi) coeff_encl.(i)
+              done;
+              let lo, hi = !acc in
+              Q.compare lo Q.zero > 0 || Q.compare hi Q.zero < 0
+            in
+            Some
+              (Qqbar.real_roots_of_poly r
+              |> List.filter (fun z ->
+                     if interval_excludes_zero z then false
+                     else Qqbar.is_zero (eval_p z))
+              |> List.map (fun z -> field_upgrade (of_qq z)))
+          end
+    in
+    (* Gate: max_deg is the PER-COEFFICIENT degree, not the compositum degree
+       [ℚ(γ):ℚ] — a deliberate perf choice, never a correctness one. It only
+       decides which tier runs first; every tier ends in the exact eval_p
+       filter with the Mpoly path as terminal fallback, so a "wrong" gate can
+       at worst pick a slower path. flint_first's own d>3 guard independently
+       routes quartics-plus to pe_tier regardless of this threshold. *)
+    let tier12 = if max_deg < 5 then flint_first () else None in
+    match tier12 with
     | Some roots -> roots
-    | None ->
+    | None -> (
+        match pe_tier () with
+        | Some roots -> roots
+        | None ->
     (* fallback: generator elimination (Mpoly) + exact verification.
        Assign generator variables to distinct algebraic numbers in the coefficient
        set. Variable 0 is z; generators are 1.. .
@@ -515,7 +572,7 @@ let real_roots (coeffs : t array) : t list =
       Qqbar.real_roots_of_poly r
       |> List.filter (fun z -> Qqbar.is_zero (eval_p z))
       |> List.map (fun z -> field_upgrade (of_qq z))
-    end
+    end)
   end
 
 (* √x, exact: rational results collapse (√4 = 2); irrational square roots

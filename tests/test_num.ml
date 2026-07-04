@@ -525,6 +525,95 @@ let test_num_axiom7_style_algebraic_cubic_fast () =
     (Printf.sprintf "under 1s (took %.3fs)" dt)
     true (dt < 1.0)
 
+let test_real_roots_independent_folds () =
+  (* a cubic whose coefficients combine two INDEPENDENT prior folds:
+     sqrt2 and cbrt2. Coefficient field is Q(sqrt2, cbrt2), degree 6.
+     t^3 + (cbrt2)·t - sqrt2 = 0 — one real root, verified exactly. *)
+  let s2 = Num.sqrt (n 2) in
+  let c2 = Num.real_roots [| n (-2); n 0; n 0; n 1 |] |> List.hd in (* cbrt2 *)
+  let coeffs = [| Num.neg s2; c2; n 0; n 1 |] in
+  let roots = Num.real_roots coeffs in
+  Alcotest.(check bool) "≥1 real root" true (List.length roots >= 1);
+  List.iter
+    (fun r ->
+      let v =
+        Num.add (Num.add (Num.mul (Num.mul r r) r) (Num.mul c2 r)) (Num.neg s2)
+      in
+      Alcotest.(check bool) "root verifies exactly" true (Num.equal v Num.zero))
+    roots
+
+(* Horner eval shared by the pe_tier-routing tests below. *)
+let eval_num (coeffs : Num.t array) (r : Num.t) : Num.t =
+  let acc = ref Num.zero in
+  for i = Array.length coeffs - 1 downto 0 do
+    acc := Num.add (Num.mul !acc r) coeffs.(i)
+  done;
+  !acc
+
+let test_real_roots_quartic_independent_folds () =
+  (* Quartic (degree-in-z = 4 > 3) trips flint_first's own guard, so it
+     returns None regardless of max_deg, and control falls through to
+     pe_tier. Coefficients combine two INDEPENDENT prior folds — sqrt2 and
+     cbrt2 — so the coefficient field is the compositum Q(sqrt2, cbrt2)
+     (degree 6): x^4 + cbrt2*x^2 - sqrt2*x - 1. At x=0 the value is -1 and
+     the quartic -> +inf as x -> +-inf, so a real root is guaranteed. *)
+  let s2 = Num.sqrt (n 2) in
+  let c2 = Num.real_roots [| n (-2); n 0; n 0; n 1 |] |> List.hd in
+  (* cbrt2 *)
+  let coeffs = [| n (-1); Num.neg s2; c2; n 0; n 1 |] in
+  let roots = Num.real_roots coeffs in
+  Alcotest.(check bool) "≥1 real root" true (List.length roots >= 1);
+  List.iter
+    (fun r ->
+      Alcotest.(check bool)
+        "root verifies exactly" true
+        (Num.equal (eval_num coeffs r) Num.zero))
+    roots
+
+let test_real_roots_degree5_coefficient () =
+  (* Cubic with a coefficient of individual Qqbar.degree 5 — the real root
+     of the irreducible quintic x^5 - x - 1 — pushes max_deg to 5, so the
+     `max_deg < 5` gate skips flint_first entirely (it is never called) and
+     goes straight to pe_tier: x^3 + quint*x - 2. At x=0 the value is -2 and
+     the cubic -> +inf as x -> +inf, so a real root is guaranteed. *)
+  let quint =
+    Num.real_roots [| n (-1); n (-1); n 0; n 0; n 0; n 1 |] |> List.hd
+  in
+  let coeffs = [| n (-2); quint; n 0; n 1 |] in
+  let roots = Num.real_roots coeffs in
+  Alcotest.(check bool) "≥1 real root" true (List.length roots >= 1);
+  List.iter
+    (fun r ->
+      Alcotest.(check bool)
+        "root verifies exactly" true
+        (Num.equal (eval_num coeffs r) Num.zero))
+    roots
+
+let test_real_roots_deep_stack_fast () =
+  (* Cubic with a single coefficient of qqbar-degree 8: g = sqrt(sqrt2 +
+     sqrt3). sqrt2+sqrt3 is degree 4 (Q(sqrt2,sqrt3) compositum), and its
+     square root doubles that to degree 8. max_deg = 8 >= 5, so the gate
+     skips flint_first entirely and routes through pe_tier — the case the
+     spike measured at ~9s via qqbar-native elimination vs ~0.2s via PE.
+     x^3 + g*x - 2: at x=0 the value is -2 and the cubic -> +inf as x ->
+     +inf, so a real root is guaranteed. *)
+  let s2 = Num.sqrt (n 2) and s3 = Num.sqrt (n 3) in
+  let g = Num.sqrt (Num.add s2 s3) in
+  let coeffs = [| n (-2); g; n 0; n 1 |] in
+  let t0 = Unix.gettimeofday () in
+  let roots = Num.real_roots coeffs in
+  let dt = Unix.gettimeofday () -. t0 in
+  Alcotest.(check bool) "≥1 real root" true (List.length roots >= 1);
+  List.iter
+    (fun r ->
+      Alcotest.(check bool)
+        "root verifies exactly" true
+        (Num.equal (eval_num coeffs r) Num.zero))
+    roots;
+  Alcotest.(check bool)
+    (Printf.sprintf "under 2s (took %.3fs)" dt)
+    true (dt < 2.0)
+
 let () =
   Alcotest.run "beloch-num"
     [
@@ -571,6 +660,14 @@ let () =
             test_num_deg27_smoke;
           Alcotest.test_case "axiom7-style algebraic cubic fast (flint 3.6)"
             `Quick test_num_axiom7_style_algebraic_cubic_fast;
+          Alcotest.test_case "real roots independent folds (compositum)" `Quick
+            test_real_roots_independent_folds;
+          Alcotest.test_case "real roots quartic independent folds (pe_tier)"
+            `Quick test_real_roots_quartic_independent_folds;
+          Alcotest.test_case "real roots degree-5 coefficient (pe_tier)" `Quick
+            test_real_roots_degree5_coefficient;
+          Alcotest.test_case "real roots deep stack fast (#33)" `Slow
+            test_real_roots_deep_stack_fast;
         ] );
       ( "poly",
         [
