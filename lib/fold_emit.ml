@@ -118,6 +118,15 @@ let folded_frame_of_state (state : Fold_state.t) (step : string option) :
           face_orders := `List [ `Int fi; `Int gi; `Int s ] :: !face_orders
     done
   done;
+  let beloch_faces_matrix =
+    Array.to_list faces
+    |> List.map (fun (f : Fold_state.face) ->
+        let i = f.Fold_state.iso in
+        `List
+          [ q_to_json i.Isometry.m00; q_to_json i.Isometry.m01;
+            q_to_json i.Isometry.m10; q_to_json i.Isometry.m11;
+            q_to_json i.Isometry.tx;  q_to_json i.Isometry.ty ])
+  in
   `Assoc
     [
       ("frame_classes", `List [ `String "foldedForm" ]);
@@ -128,6 +137,7 @@ let folded_frame_of_state (state : Fold_state.t) (step : string option) :
       ("edges_assignment", `List edges_assignment);
       ("edges_foldAngle", `List edges_fold_angle);
       ("faces_vertices", `List faces_vertices);
+      ("beloch:faces_matrix", `List beloch_faces_matrix);
       ("faceOrders", `List (List.rev !face_orders));
       ("beloch:step", (match step with Some s -> `String s | None -> `Null));
     ]
@@ -262,6 +272,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
       ("beloch:edges", `List beloch_edges);
       ("beloch:named_points", beloch_named_points);
       ("beloch:named_lines", beloch_named_lines);
+      ("beloch:named_lines_frame", `String "creasePattern");
       ( "file_frames",
         `List
           (List.map

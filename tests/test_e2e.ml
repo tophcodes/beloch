@@ -420,6 +420,25 @@ let test_multiframe () =
   Alcotest.(check (list (option string))) "frame step tags"
     [ None; Some "a"; Some "b" ] (List.map step_of frames)
 
+let test_e2e_faces_matrix_and_frame () =
+  let json =
+    Beloch.fold_string ~filename:"square.bel" (read_example "square.bel")
+  in
+  let open Yojson.Safe.Util in
+  (* named-line frame is declared, always *)
+  Alcotest.(check string) "named-line frame"
+    "creasePattern"
+    (json |> member "beloch:named_lines_frame" |> to_string);
+  (* the one folded frame carries one isometry row, the identity *)
+  let rows =
+    json |> member "file_frames" |> to_list |> List.hd
+    |> member "beloch:faces_matrix" |> to_list
+  in
+  Alcotest.(check int) "one isometry row" 1 (List.length rows);
+  Alcotest.(check (list (float 1e-9))) "identity isometry"
+    [ 1.; 0.; 0.; 1.; 0.; 0. ]
+    (List.hd rows |> to_list |> List.map to_float)
+
 (* #27: mark a precrease, then fold on it. The emitted FOLD must carry V/180 on
    that crease, never the stale U/0 from the precrease's subdivide. *)
 let test_e2e_precrease_fold_emits_v () =
@@ -479,6 +498,8 @@ let () =
             test_flap_restriction_resolves;
           Alcotest.test_case "one folded frame per step" `Quick
             test_multiframe;
+          Alcotest.test_case "e2e faces_matrix + frame" `Quick
+            test_e2e_faces_matrix_and_frame;
         ] );
       ( "emit_folded",
         [

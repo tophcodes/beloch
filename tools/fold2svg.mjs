@@ -66,6 +66,17 @@ export function faceEdgeIndex(edgesVertices) {
   return m;
 }
 
+// Pull a paper-frame line a·x+b·y=c back into a face's table frame, given the
+// face's paper→table isometry row [m00,m01,m10,m11,tx,ty]. M is orthogonal, so
+// the table-frame line is [A,B,C] with A=a·m00+b·m01, B=a·m10+b·m11,
+// C=c+A·tx+B·ty. Clipping this against the face's own table polygon needs no
+// per-point mapping and never touches the crease-pattern vertex indices.
+export const lineToFace = ([m00, m01, m10, m11, tx, ty], a, b, c) => {
+  const A = a * m00 + b * m01;
+  const B = a * m10 + b * m11;
+  return [A, B, c + A * tx + B * ty];
+};
+
 // Shoelace signed area; >0 = CCW (front side up in folded coords).
 export function signedArea(poly) {
   let s = 0;
@@ -353,6 +364,7 @@ if (import.meta.main) {
           ];
     const CON_PT = "#6366f1", CON_LN = "#6366f1";
     const rootV = fold.vertices_coords || [];
+    const FM = frame["beloch:faces_matrix"] || [];
     const pxs = rootV.map(p => p[0]), pys = rootV.map(p => p[1]);
     const [pMinX, pMaxX] = [Math.min(...pxs), Math.max(...pxs)];
     const [pMinY, pMaxY] = [Math.min(...pys), Math.max(...pys)];
@@ -379,21 +391,6 @@ if (import.meta.main) {
       const uniq = pts.filter((p,i) => !pts.slice(0,i).some(q => Math.hypot(p[0]-q[0],p[1]-q[1]) < 1e-8));
       return uniq.length >= 2 ? [uniq[0], uniq[uniq.length-1]] : null;
     };
-    // shoelace signed area of [[x,y],...] polygon
-    const sa2 = (poly) => { let s = 0; for (let i = 0; i < poly.length; i++) { const [x1,y1]=poly[i],[x2,y2]=poly[(i+1)%poly.length]; s+=x1*y2-x2*y1; } return s; };
-    // map paper point [px,py] to table space via face isometry (paper→table vertex pairs)
-    const applyIso = (papPoly, tabPoly, px, py) => {
-      const [px1,py1]=papPoly[0],[px2,py2]=papPoly[1],[tx1,ty1]=tabPoly[0],[tx2,ty2]=tabPoly[1];
-      const edx=px2-px1, edy=py2-py1, len2=edx*edx+edy*edy;
-      if (len2 < 1e-18) return [tx1,ty1];
-      const tEdx=tx2-tx1, tEdy=ty2-ty1;
-      const refl = (sa2(papPoly) >= 0) !== (sa2(tabPoly) >= 0);
-      const dx=px-px1, dy=py-py1;
-      const u=(dx*edx+dy*edy)/len2, v=(-dx*edy+dy*edx)/len2;
-      return refl ? [tx1+u*tEdx+v*tEdy, ty1+u*tEdy-v*tEdx]
-                  : [tx1+u*tEdx-v*tEdy, ty1+u*tEdy+v*tEdx];
-    };
-
     for (const sel of selection) {
       if (sel.startsWith("--")) {
         const name = sel.slice(2);
@@ -405,12 +402,14 @@ if (import.meta.main) {
         if (viewFlag) {
           // folded view: clip to each face's paper polygon, transform to table space
           const drawn = [];
-          for (const face of F) {
-            const papPoly = face.map(vi => rootV[vi]);
-            const tabPoly = face.map(vi => V[vi]);
-            const seg = clipLineToPoly(la, lb, lc, papPoly);
+          for (let fi = 0; fi < F.length; fi++) {
+            const M = FM[fi];
+            if (!M) continue;
+            const tabPoly = F[fi].map(vi => V[vi]);
+            const [ta, tb, tc] = lineToFace(M, la, lb, lc);
+            const seg = clipLineToPoly(ta, tb, tc, tabPoly);
             if (!seg) continue;
-            const [t1, t2] = seg.map(([ppx,ppy]) => applyIso(papPoly, tabPoly, ppx, ppy));
+            const [t1, t2] = seg;
             g.push(`<line x1="${tx(t1[0])}" y1="${ty(t1[1])}" x2="${tx(t2[0])}" y2="${ty(t2[1])}" stroke="${CON_LN}" stroke-width="1.5" stroke-dasharray="6 3" opacity="0.8"/>`);
             drawn.push([t1, t2]);
           }

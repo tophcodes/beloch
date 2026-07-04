@@ -1,0 +1,4 @@
+(executable
+ (name regen)
+ (modules regen)
+ (libraries beloch))
