@@ -206,6 +206,96 @@ let test_layer_scaling_subquadratic () =
     (Printf.sprintf "subdivide 400 (%.3fs) < 6x subdivide 200 (%.3fs)" t2 t1)
     true (t2 < 6.0 *. t1 +. 0.05)
 
+(* --- taco-taco / taco-tortilla validity checks (#47) ---------------------- *)
+
+let contains hay needle =
+  let hl = String.length hay and nl = String.length needle in
+  let rec go i = i + nl <= hl && (String.sub hay i nl = needle || go (i + 1)) in
+  nl = 0 || go 0
+
+let pt a b = { Geom.x = q a; y = q b }
+let mkface poly = { Fold_state.paper = poly; iso = Isometry.identity }
+
+let mkedge ~ea ~eb ~left ~right ~cid =
+  {
+    Fold_state.ea;
+    eb;
+    left;
+    right;
+    eassign = Fold_state.U;
+    crease_id = cid;
+    eprov = None;
+  }
+
+(* Build a state from identity-placed faces (paper = table), explicit edges, and
+   a top→bottom rank per face (higher rank = higher in the stack). *)
+let mk_state faces edges ranks =
+  let rel_of i j =
+    if ranks.(i) > ranks.(j) then Fold_state.Above else Fold_state.Below
+  in
+  { Fold_state.faces; order = Fold_state.build_order faces rel_of; edges }
+
+let expect_violation label needle st =
+  match Fold_state.validity_error st with
+  | Some msg ->
+      Alcotest.(check bool) (label ^ ": " ^ msg) true (contains msg needle)
+  | None -> Alcotest.fail (label ^ ": expected a violation, got None")
+
+let expect_ok label st =
+  Alcotest.(check (option string)) label None (Fold_state.validity_error st)
+
+(* A taco a|b (both filling the same square, hinged at the bottom edge y=0) with
+   a third face c straddling the crease line. When c is stacked between a and b,
+   the crease passes through c and c is sandwiched between the two hinged faces —
+   physically impossible: taco-tortilla. *)
+let taco_tortilla_faces () =
+  [|
+    mkface [| pt 0 0; pt 4 0; pt 4 4; pt 0 4 |] (* a *);
+    mkface [| pt 0 0; pt 4 0; pt 4 4; pt 0 4 |] (* b *);
+    mkface [| pt 1 (-2); pt 3 (-2); pt 3 2; pt 1 2 |] (* c straddles y=0 *);
+  |]
+
+let taco_tortilla_edges () =
+  [| mkedge ~ea:(pt 0 0) ~eb:(pt 4 0) ~left:0 ~right:1 ~cid:100 |]
+
+let test_taco_tortilla_fires () =
+  (* a > c > b : c is sandwiched between the taco's two faces *)
+  let st = mk_state (taco_tortilla_faces ()) (taco_tortilla_edges ()) [| 2; 0; 1 |] in
+  expect_violation "taco-tortilla when c between a and b" "taco-tortilla" st
+
+let test_taco_tortilla_ok_when_not_between () =
+  (* a > b > c : c crosses the crease but sits below the whole taco — allowed *)
+  let st = mk_state (taco_tortilla_faces ()) (taco_tortilla_edges ()) [| 2; 1; 0 |] in
+  expect_ok "no taco-tortilla when c is outside the taco" st
+
+(* Two creases e1 (a|b) and e2 (c|d) that coincide on the table (both the left
+   edge x=0 of the same square) but hinge disjoint face pairs. The four faces all
+   overlap; whether they cross depends only on the stacking order. *)
+let taco_taco_faces () =
+  let sq () = [| pt 0 0; pt 2 0; pt 2 2; pt 0 2 |] in
+  [| mkface (sq ()); mkface (sq ()); mkface (sq ()); mkface (sq ()) |]
+
+let taco_taco_edges () =
+  [|
+    mkedge ~ea:(pt 0 0) ~eb:(pt 0 2) ~left:0 ~right:1 ~cid:100;
+    mkedge ~ea:(pt 0 0) ~eb:(pt 0 2) ~left:2 ~right:3 ~cid:200;
+  |]
+
+let test_taco_taco_fires () =
+  (* a > c > b > d : the two hinged pairs interleave (chords cross) *)
+  let st = mk_state (taco_taco_faces ()) (taco_taco_edges ()) [| 3; 1; 2; 0 |] in
+  expect_violation "taco-taco when the creases interleave" "taco-taco" st
+
+let test_taco_taco_ok_nested () =
+  (* a > c > d > b : taco (c|d) nests inside taco (a|b) — allowed *)
+  let st = mk_state (taco_taco_faces ()) (taco_taco_edges ()) [| 3; 0; 2; 1 |] in
+  expect_ok "no taco-taco when one taco nests in the other" st
+
+let test_taco_taco_ok_separated () =
+  (* a > b > c > d : taco (a|b) entirely above taco (c|d) — allowed *)
+  let st = mk_state (taco_taco_faces ()) (taco_taco_edges ()) [| 3; 2; 1; 0 |] in
+  expect_ok "no taco-taco when one taco is entirely above the other" st
+
 let () =
   Alcotest.run "fold_state"
     [
@@ -235,5 +325,18 @@ let () =
         [
           Alcotest.test_case "layer scaling: sparse order build vs. old dense scan"
             `Slow test_layer_scaling_subquadratic;
+        ] );
+      ( "taco-checks",
+        [
+          Alcotest.test_case "taco-tortilla fires when a face is sandwiched"
+            `Quick test_taco_tortilla_fires;
+          Alcotest.test_case "taco-tortilla silent when face is outside the taco"
+            `Quick test_taco_tortilla_ok_when_not_between;
+          Alcotest.test_case "taco-taco fires when creases interleave" `Quick
+            test_taco_taco_fires;
+          Alcotest.test_case "taco-taco silent when tacos nest" `Quick
+            test_taco_taco_ok_nested;
+          Alcotest.test_case "taco-taco silent when tacos are separated" `Quick
+            test_taco_taco_ok_separated;
         ] );
     ]

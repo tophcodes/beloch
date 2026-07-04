@@ -48,12 +48,149 @@ let build_order (faces : face array) (rel_of : int -> int -> rel) : Layer_order.
     =
   Layer_order.build (Array.map table_poly_of faces) rel_of
 
+(* table-space segment of crease edge [e], via its [left] face's isometry. The
+   endpoints live in the shared paper frame, so either bordering face's isometry
+   places them on the same table segment. *)
+let edge_table_segment (st : t) (e : edge) : Geom.point * Geom.point =
+  let iso = st.faces.(e.left).iso in
+  (Isometry.apply_point iso e.ea, Isometry.apply_point iso e.eb)
+
+(* Does segment [pa]-[pb] pass through the *interior* of convex CCW [poly]? True
+   iff the portion of the segment inside [poly] has positive length and its
+   midpoint is strictly interior — a segment lying along a boundary edge (a crease
+   bordering the face, i.e. a taco-taco situation) is excluded. Exact throughout:
+   clip the parameter t∈[0,1] to every interior half-plane, then sign-test the
+   midpoint. *)
+let segment_crosses_interior ((pa, pb) : Geom.point * Geom.point)
+    (poly : Geom.point array) : bool =
+  if Geom.point_equal pa pb then false
+  else begin
+    let dx = Num.sub pb.Geom.x pa.Geom.x and dy = Num.sub pb.Geom.y pa.Geom.y in
+    let n = Array.length poly in
+    let lo = ref Num.zero and hi = ref Num.one and empty = ref false in
+    for i = 0 to n - 1 do
+      let e1 = poly.(i) and e2 = poly.((i + 1) mod n) in
+      let ex = Num.sub e2.Geom.x e1.Geom.x and ey = Num.sub e2.Geom.y e1.Geom.y in
+      (* interior of a CCW polygon is left of each edge: cross(e1→e2, p−e1) ≥ 0.
+         Along the segment this is affine in t: f(t) = f0 + t·fd. *)
+      let f0 =
+        Num.sub
+          (Num.mul ex (Num.sub pa.Geom.y e1.Geom.y))
+          (Num.mul ey (Num.sub pa.Geom.x e1.Geom.x))
+      in
+      let fd = Num.sub (Num.mul ex dy) (Num.mul ey dx) in
+      match Num.sign fd with
+      | 0 -> if Num.sign f0 < 0 then empty := true
+      | s ->
+          let t = Num.div (Num.neg f0) fd in
+          if s > 0 then (if Num.compare t !lo > 0 then lo := t)
+          else if Num.compare t !hi < 0 then hi := t
+    done;
+    if !empty || Num.compare !lo !hi >= 0 then false
+    else begin
+      let tm = Num.div (Num.add !lo !hi) (Num.of_int 2) in
+      let m =
+        { Geom.x = Num.add pa.Geom.x (Num.mul tm dx);
+          y = Num.add pa.Geom.y (Num.mul tm dy) }
+      in
+      let strict = ref true in
+      for i = 0 to n - 1 do
+        let a = poly.(i) and b = poly.((i + 1) mod n) in
+        let cross =
+          Num.sub
+            (Num.mul (Num.sub b.Geom.x a.Geom.x) (Num.sub m.Geom.y a.Geom.y))
+            (Num.mul (Num.sub b.Geom.y a.Geom.y) (Num.sub m.Geom.x a.Geom.x))
+        in
+        if Num.sign cross <= 0 then strict := false
+      done;
+      !strict
+    end
+  end
+
+(* Do two table segments coincide over a sub-segment of positive length (i.e. the
+   two creases strictly overlap under the folding map)? Collinear + overlapping
+   parameter ranges. *)
+let segments_overlap_collinear ((p1, q1) : Geom.point * Geom.point)
+    ((p2, q2) : Geom.point * Geom.point) : bool =
+  if Geom.point_equal p1 q1 || Geom.point_equal p2 q2 then false
+  else
+    let l = Geom.line_through p1 q1 in
+    if Geom.side_of_line l p2 <> 0 || Geom.side_of_line l q2 <> 0 then false
+    else
+      let ta = Geom.seg_param (p1, q1) p2 and tb = Geom.seg_param (p1, q1) q2 in
+      let tlo = if Num.compare ta tb <= 0 then ta else tb in
+      let thi = if Num.compare ta tb <= 0 then tb else ta in
+      let olo = if Num.compare tlo Num.zero > 0 then tlo else Num.zero in
+      let ohi = if Num.compare thi Num.one < 0 then thi else Num.one in
+      Num.compare olo ohi < 0
+
+(* Is face [y] stacked strictly between faces [x] and [z]? *)
+let between (st : t) x y z : bool =
+  (Layer_order.get st.order x y = Above && Layer_order.get st.order y z = Above)
+  || (Layer_order.get st.order z y = Above && Layer_order.get st.order y x = Above)
+
+(* Taco-tortilla (face-crease non-crossing): for a folded taco a|b (its two faces
+   strictly overlap on the table), no other face may both cross the crease through
+   its interior and lie between a and b. [hullzakharevich2023, §2.1]. *)
+let taco_tortilla_error (st : t) : string option =
+  let n = Array.length st.faces in
+  let result = ref None in
+  Array.iter
+    (fun e ->
+      if !result = None && e.left >= 0 && e.right >= 0
+         && Layer_order.get st.order e.left e.right <> Apart then begin
+        let a = e.left and b = e.right in
+        let seg = edge_table_segment st e in
+        for c = 0 to n - 1 do
+          if !result = None && c <> a && c <> b
+             && segment_crosses_interior seg (table_poly_of st.faces.(c))
+             && between st a c b
+          then
+            result :=
+              Some
+                (Printf.sprintf
+                   "layer ordering: face %d would pass through crease (%d|%d) — \
+                    taco-tortilla violation" c a b)
+        done
+      end)
+    st.edges;
+  !result
+
+(* Taco-taco (crease-crease non-crossing): when two distinct creases coincide on
+   the table and hinge disjoint face pairs {a,b} and {c,d}, the pairs must not
+   interleave in the stack — exactly one of c,d lying between a,b is a crossing.
+   [hullzakharevich2023, §2.1]. *)
+let taco_taco_error (st : t) : string option =
+  let m = Array.length st.edges in
+  let result = ref None in
+  for i = 0 to m - 1 do
+    for j = i + 1 to m - 1 do
+      if !result = None then begin
+        let e1 = st.edges.(i) and e2 = st.edges.(j) in
+        let a = e1.left and b = e1.right and c = e2.left and d = e2.right in
+        if a >= 0 && b >= 0 && c >= 0 && d >= 0 && e1.crease_id <> e2.crease_id
+           && a <> c && a <> d && b <> c && b <> d
+           && Layer_order.get st.order a b <> Apart
+           && Layer_order.get st.order c d <> Apart
+           && segments_overlap_collinear (edge_table_segment st e1)
+                (edge_table_segment st e2)
+           && between st a c b <> between st a d b
+        then
+          result :=
+            Some
+              (Printf.sprintf
+                 "layer ordering: creases (%d|%d) and (%d|%d) cross — taco-taco \
+                  violation" a b c d)
+      end
+    done
+  done;
+  !result
+
 (* Acyclicity of the [Above] relation over overlapping faces, then a check that
    every overlapping pair is decided (tortilla-tortilla: two strictly-overlapping
-   uncreased faces must have one entirely above the other). Returns the first
-   violation as a message, or None. Taco-tortilla and taco-taco are deferred to
-   the pocket slice (they need persistent crease-adjacency and cannot fire for
-   simple folds). *)
+   uncreased faces must have one entirely above the other), then the two crease
+   non-crossing guards (taco-tortilla, taco-taco). Returns the first violation as
+   a message, or None. *)
 let validity_error (st : t) : string option =
   let n = Array.length st.faces in
   let color = Array.make n 0 (* 0 white, 1 gray, 2 black *) in
@@ -85,7 +222,12 @@ let validity_error (st : t) : string option =
               (Printf.sprintf
                  "layer ordering: faces %d and %d overlap but have no order \
                   (tortilla-tortilla)" i j));
-      !bad
+      (match !bad with
+       | Some _ -> !bad
+       | None -> (
+           match taco_tortilla_error st with
+           | Some _ as t -> t
+           | None -> taco_taco_error st))
 
 let init_square : t =
   let p x y = { Geom.x = Num.of_int x; y = Num.of_int y } in
