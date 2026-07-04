@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { linearExtension, foldedFrame, signedArea, sideUp, pointInPolygon, segInsideIntervals, coveredIntervals } from "../fold2svg.mjs";
+import { linearExtension, foldedFrame, signedArea, sideUp, pointInPolygon, segInsideIntervals, coveredIntervals, lineToFace } from "../fold2svg.mjs";
 
 const quarter = JSON.parse(
   await Bun.file(new URL("./fixtures/fold-quarter.fold", import.meta.url)).text()
@@ -24,6 +24,12 @@ test("linearExtension yields the true global bottom→top stack (honours g's nor
     if (fBelowG) expect(pos.get(f)).toBeLessThan(pos.get(g));
     else expect(pos.get(f)).toBeGreaterThan(pos.get(g));
   }
+});
+
+test("lineToFace pulls a paper line into a face's table frame", () => {
+  expect(lineToFace([1, 0, 0, 1, 0, 0], 1, 0, 5)).toEqual([1, 0, 5]);   // identity: x=5 unchanged
+  expect(lineToFace([1, 0, 0, 1, 2, 3], 1, 0, 5)).toEqual([1, 0, 7]);   // +2 in x: x=5 → x=7
+  expect(lineToFace([0, -1, 1, 0, 0, 0], 1, 0, 5)).toEqual([0, 1, 5]);  // 90° rotation: x=5 → y=5
 });
 
 test("signedArea is positive for a CCW square, negative reversed", () => {

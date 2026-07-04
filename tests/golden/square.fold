@@ -16,6 +16,7 @@
     "a": { "paper": [ 0.0, 0.0 ], "table": [ 0.0, 0.0 ] }
   },
   "beloch:named_lines": {},
+  "beloch:named_lines_frame": "creasePattern",
   "file_frames": [
     {
       "frame_classes": [ "foldedForm" ],
@@ -28,6 +29,7 @@
       "edges_assignment": [ "B", "B", "B", "B" ],
       "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0 ],
       "faces_vertices": [ [ 0, 1, 2, 3 ] ],
+      "beloch:faces_matrix": [ [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ] ],
       "faceOrders": [],
       "beloch:step": null
     }

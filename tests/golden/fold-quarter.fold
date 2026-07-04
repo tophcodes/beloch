@@ -78,6 +78,7 @@
     "a": { "paper": [ 0.0, 0.0 ], "table": [ 0.0, 0.0 ] }
   },
   "beloch:named_lines": {},
+  "beloch:named_lines_frame": "creasePattern",
   "file_frames": [
     {
       "frame_classes": [ "foldedForm" ],
@@ -116,6 +117,12 @@
       ],
       "faces_vertices": [
         [ 0, 1, 2, 3 ], [ 1, 4, 5, 2 ], [ 5, 6, 7, 2 ], [ 2, 7, 8, 3 ]
+      ],
+      "beloch:faces_matrix": [
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
+        [ -1.0, 0.0, 0.0, 1.0, 1.0, 0.0 ],
+        [ -1.0, 0.0, 0.0, -1.0, 1.0, 1.0 ],
+        [ 1.0, 0.0, 0.0, -1.0, 0.0, 1.0 ]
       ],
       "faceOrders": [
         [ 0, 1, 1 ],
