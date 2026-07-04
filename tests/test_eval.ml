@@ -145,6 +145,48 @@ let test_axiom7_error_parallel_directrices () =
                --top = through .d .c\n\
                map .a onto --bot and .b onto --top\n")))
 
+(* the migrated crease-flap-restrict scenario: select --b's piece on the upper
+   flap with `at #(.c .d)` and cross it with --v — must evaluate cleanly. *)
+let test_eval_at_flap () =
+  ignore
+    (Eval.eval_folded
+       (Beloch.parse ~filename:"t.bel"
+          "paper square\n\
+           --b = through .a .c\n\
+           --v = @map .c onto .b moving .c\n\
+           .mid = cross --b at #(.c .d) --v\n\
+           map .d onto .mid\n"))
+
+(* a bare bent bundle still errors — that is what `at` exists to fix *)
+let test_eval_bent_bundle_errors () =
+  expect_error "no longer straight" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n\
+               --b = through .a .c\n\
+               --v = @map .c onto .b moving .c\n\
+               .mid = cross --b --v\n\
+               map .d onto .mid\n")))
+
+(* a selector that lands on no segment of the bundle is the 0-match error.
+   NOTE: deviates from the brief's literal source, which selected --b at .b
+   after folding .c onto .b — since that fold maps .c's endpoint of the
+   diagonal exactly onto .b's table position, the selector coincidentally DID
+   match (verified: it evaluates cleanly, .mid lands at (0.5,0.5)). .b is
+   never on the unfolded diagonal --b = through .a .c (it's off that line
+   entirely), so this source reaches the same code path without the
+   coincidental fold. *)
+let test_eval_at_no_match () =
+  expect_error "no segment" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n\
+               --b = through .a .c\n\
+               --w = through .b .d\n\
+               .mid = cross --b at .b --w\n")))
+
 (* ---- Fold_state ---- *)
 
 let test_fold_state_init () =
@@ -831,6 +873,12 @@ let () =
             test_eval_map_onto_line_parallel;
           Alcotest.test_case "map onto line evaluates" `Quick
             test_eval_map_onto_line_ok;
+          Alcotest.test_case "at operator selects flap piece" `Quick
+            test_eval_at_flap;
+          Alcotest.test_case "bent bundle without at errors" `Quick
+            test_eval_bent_bundle_errors;
+          Alcotest.test_case "at operator no match errors" `Quick
+            test_eval_at_no_match;
         ] );
       ( "fold_state",
         [

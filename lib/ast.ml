@@ -25,8 +25,14 @@ and line_operand =
   | LNamed of crease_ref
   | LThrough of point_operand * point_operand * Error.span
   | LMember of string * string * Error.span  (* instance, member *)
-  | LRestrict of crease_ref * flap_operand * Error.span
-    (* --( --d #(.a .b .c) ): the straight piece of crease --d on the flap *)
+  | LAt of crease_ref * selector list * Error.span
+    (* --l at S | --l at (S1 and S2): the unique segment of bundle --l
+       incident to every selector (singleton-target rule) *)
+
+and selector =
+  | SelPoint of point_operand
+  | SelLine of line_operand   (* grammar produces only LNamed / LThrough here *)
+  | SelFlap of flap_operand
 
 and flap_operand = FByPoints of point_operand list * Error.span
   (* #(.a .b .c): the unique current flat flap containing all listed points *)

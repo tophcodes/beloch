@@ -392,20 +392,29 @@ let test_parse_step_marker () =
   | [ Ast.StepMark ("thirds", _); Ast.Flip _ ] -> ()
   | _ -> Alcotest.fail "expected StepMark then Flip"
 
-let test_flap_restrict_parses () =
-  let src =
-    "paper square\n--d = through .a .c\nperp --( --d #(.a .c .b) ) through .b\n"
+let test_parse_at_one_selector () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n--b = through .a .c\nperp --b at .a through .c\n"
   in
-  match Beloch.parse ~filename:"t.bel" src with
+  match prog with
+  | [ Ast.Crease (Some "b", _, _, _);
+      Ast.Crease
+        (None, Ast.Perp (_, Ast.LAt (_, [ Ast.SelPoint _ ], _)), _, _) ] -> ()
+  | _ -> Alcotest.fail "expected LAt with one point selector"
+
+let test_parse_at_two_selectors () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n--b = through .a .c\nperp --b at (.a and --b) through .c\n"
+  in
+  match prog with
   | [ _;
       Ast.Crease
         ( None,
-          Ast.Perp (_, Ast.LRestrict (cr, Ast.FByPoints (pts, _), _)),
-          None,
-          _ ) ] ->
-      Alcotest.(check string) "restricted crease name" "d" cr.Ast.cname;
-      Alcotest.(check int) "flap point count" 3 (List.length pts)
-  | _ -> Alcotest.fail "expected a Perp axiom carrying LRestrict/FByPoints"
+          Ast.Perp (_, Ast.LAt (_, [ Ast.SelPoint _; Ast.SelLine _ ], _)),
+          _, _ ) ] -> ()
+  | _ -> Alcotest.fail "expected LAt with two selectors"
 
 (* ---- Spec corpus ---- *)
 
@@ -504,8 +513,10 @@ let () =
           Alcotest.test_case "parse def in def rejected" `Quick test_parse_def_in_def_rejected;
           Alcotest.test_case "parse step in body rejected" `Quick test_parse_step_in_body_rejected;
           Alcotest.test_case "parse kebab rejected" `Quick test_parse_kebab_rejected;
-          Alcotest.test_case "flap-restricted crease parses" `Quick
-            test_flap_restrict_parses;
+          Alcotest.test_case "at operator, one selector" `Quick
+            test_parse_at_one_selector;
+          Alcotest.test_case "at operator, two selectors" `Quick
+            test_parse_at_two_selectors;
         ] );
       ( "export",
         [

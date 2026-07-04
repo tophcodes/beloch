@@ -244,6 +244,19 @@ let expect_violation label needle st =
 let expect_ok label st =
   Alcotest.(check (option string)) label None (Fold_state.validity_error st)
 
+let test_crease_segments_diagonal () =
+  let cid = Fold_state.fresh_crease_id () in
+  let axis = Geom.line_through (pt 0 0) (pt 1 1) in
+  let st = Fold_state.subdivide ~crease_id:cid Fold_state.init_square axis ~prov:None in
+  match Fold_state.crease_segments st cid with
+  | [ s ] ->
+      let a = s.Fold_state.ta and b = s.Fold_state.tb in
+      Alcotest.(check bool)
+        "segment endpoints are the (0,0)-(1,1) diagonal" true
+        ((Geom.point_equal a (pt 0 0) && Geom.point_equal b (pt 1 1))
+        || (Geom.point_equal a (pt 1 1) && Geom.point_equal b (pt 0 0)))
+  | other -> Alcotest.failf "expected exactly 1 segment, got %d" (List.length other)
+
 (* A taco a|b (both filling the same square, hinged at the bottom edge y=0) with
    a third face c straddling the crease line. When c is stacked between a and b,
    the crease passes through c and c is sandwiched between the two hinged faces —
@@ -316,6 +329,8 @@ let () =
         ] );
       ( "material-creases",
         [
+          Alcotest.test_case "crease_segments diagonal" `Quick
+            test_crease_segments_diagonal;
           Alcotest.test_case "crease_axis flat + flip tracking" `Quick
             test_crease_axis_flat_and_flip;
           Alcotest.test_case "flap_of_points unique/zero/ambiguous" `Quick

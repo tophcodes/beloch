@@ -15,7 +15,7 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`, `step` panels; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
+Current version: **v0.17-dev** (crease-segment selection — the `at` operator: a crease name is a bundle, projected to one segment by incidence); **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`, `step` panels; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
 
 ---
 
@@ -335,6 +335,35 @@ relative to the original front — i.e. "mountain = turn over, then valley." `fl
 takes no axis: with named points, where the sheet lands is irrelevant, so the
 reflection uses an internal canonical axis (the footprint's vertical centerline).
 A direction argument may be added later when the animation renderer needs it.
+
+### 4.8 Selecting a crease segment: `at` *(since v0.17-dev)*
+
+A crease name is a **bundle**: one crease realised as a set of segments — one per
+layer the crease line crossed, further split by later creases. The segments are
+collinear only in the folded moment of creation; once (un)folding scatters them
+they point every which way in the crease pattern. So a crease name is not a single
+line.
+
+`--l at <selector>` projects the bundle down to the **one** segment incident to the
+selector, and yields that segment's current supporting line (usable anywhere a line
+operand is). Selectors, by incidence:
+
+- `--l at .p` — the segment the point `.p` lies on.
+- `--l at --a` — the segment whose span contains `--a`'s crossing of `--l`.
+- `--l at #(.a .b …)` — the segment lying on that flap.
+
+Selection is **incidence**, distinct from `toward`'s proximity (§4): `at` picks the
+segment the selector is *on*; `toward` picks the construction nearer a point off the
+result. `at` binds tighter than the axiom keywords: `perp --l at --a through .b`
+reads as `perp (--l at --a) through .b`.
+
+The result must be a **single** segment. No match is an error ("no segment of `--l`
+matches …"); more than one is an error asking for a second selector. When one point
+sits on a crease crossing (two adjacent segments share it), disambiguate with the
+two-selector form `--l at (.p and --a)` — the unique segment incident to *both*.
+
+`at` supersedes the earlier `--( --l #(…) )` restrict form. Creating a single
+segment (rather than selecting one) is `pinch`, still forthcoming (Appendix B).
 
 ---
 
@@ -690,6 +719,10 @@ point_operand := POINT_NAME | ".(" line_operand line_operand ")"     ; named, or
                | ".[" INSTANCE_NAME ident "]"                        ; qualified member (since v0.16-dev)
 line_operand  := CREASE_NAME | "--(" point_operand point_operand ")" ; named, or inline through
                | "--[" INSTANCE_NAME ident "]"                       ; qualified member (since v0.16-dev)
+               | CREASE_NAME "at" selector                            ; crease segment by incidence (since v0.17-dev)
+               | CREASE_NAME "at" "(" selector "and" selector ")"     ; two-selector disambiguation
+selector      := point_operand | CREASE_NAME
+               | "--(" point_operand point_operand ")" | "#(" point_operand+ ")"
 POINT_NAME    := "." ident
 CREASE_NAME   := "--" ident
 INSTANCE_NAME := "$" ident
@@ -720,9 +753,8 @@ right-hand side — see the shorthand RHS note in §5.
 
 Deferred, in rough order of likely arrival: non-flat (constructible-angle) folds ·
 `rotate` · fold maneuvers (reverse/squash/sink/petal, via `unfold` + layer
-selection) · crease-segment referencing (a crease name is a *bundle* of segments;
-select one with an `at` operator, create one with `pinch`; supersedes the
-`--( --d #(...) )` escape hatch — [ADR 0014](../decisions/0014-crease-is-a-bundle-of-segments.md)) ·
+selection) · crease-segment *creation* (`pinch` — materialise one segment; the `at` selection
+operator landed in v0.17-dev, [ADR 0014](../decisions/0014-crease-is-a-bundle-of-segments.md)) ·
 regions · parts/imports · nested `def`s and namespace chaining
 (`.[$b1 $d tip]`) · re-export cascades · string labels in source (i18n stays
 external) · `pub`/`priv` interfaces · looping primitives · module/file-level
