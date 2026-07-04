@@ -49,6 +49,23 @@ Every fold has four ingredients:
   needed.
 - **Exactly one flap**: `up to` the anchor itself — `@map .a onto .c up to .a`.
 
+**Validity — outer-contiguous prefix.** A `@`/`@fold` statement is a *simple
+fold* [demaine2007, §14.1]: a rigid 180° rotation of layers under the crease
+segment, collision-free throughout the motion. The static shadow of that
+constraint: the moving set must be a contiguous prefix of the layer order **in
+the crease region**, counted from the outside — top for valley, bottom for
+mountain. A buried anchor (a stationary flap covering it in the crease region)
+is an error: its material would pierce the covering layer during rotation, no
+matter how valid the end state looks. The all-layers default satisfies the
+prefix trivially. Depth may vary along the crease (Demaine's "different depth
+of layers along different portions"), which the per-flap face sets give us for
+free.
+
+*Motion note:* the prefix rule is necessary, not sufficient — collisions
+outside the crease region (e.g. the moving flap sits inside a pocket) are not
+checked. Full motion validation is out of scope; it becomes relevant with the
+3D viewer (#31/#61), which wants animatable folds.
+
 ### Operand type: flap
 
 `moving` and `up to` are both flap-typed (ADR 0016):
@@ -94,14 +111,28 @@ Non-moving layers keep their flat crease mark; moving ones fold. Matches paper.
 - Flap operand resolution: 0-match / multi-match with candidates (ADR 0016).
 - `up to` target not on the anchor's side, or not reachable in the stack walk
   over the crease region → error.
+- Moving set is not an outer-contiguous prefix in the crease region (buried
+  anchor / stationary flap above a valley range, below a mountain range) →
+  error suggesting to include the covering flaps — or, someday, a non-simple
+  verb.
 - Anchor flap's material lies on the axis → existing error.
 - Physically unfoldable scope (collision) → existing taco checks (#47).
 - `@fold` across a bent crease → existing PR2 error.
 
 ## Out of scope / deferred
 
-- Non-contiguous flap sets (matches "subset deferred" in
-  `notes/2026-07-03-crease-layer-selection.md`).
+- **Non-contiguous flap sets — a model boundary, not deferred syntax.** They
+  are physically impossible as one simple fold: a buried flap cannot rotate
+  past a stationary covering one. End states like "fold F1 and F3, keep F2"
+  are reachable only by non-simple moves, for which origami has its own verbs
+  (tuck, reverse fold, sink). If Beloch ever grows those, they are separate
+  statements — not a flap-set syntax on `fold`. `and` stays constraint
+  conjunction, never a set builder. (Sequential same-axis folds compose into
+  *wrapping*, which stays contiguous — the boundary is clean.)
+- Segment subsets (>1, not all) of a bundle stay deferred as in
+  `notes/2026-07-03-crease-layer-selection.md` — and get less likely to ever
+  be needed: scope is chosen in flaps, hinge segments follow per face
+  (ADR 0016: segments are never operands).
 - Keyword bikeshed: `up to` is the working choice; `to`/`taking` are
   alternatives. `through` is taken (axiom keyword).
 - Renaming `@map` to `@fold` for axiom folds — `@fold` here is reserved for
