@@ -14,6 +14,7 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "square" -> SQUARE
   | "through" -> THROUGH
   | "and" -> AND
+  | "at" -> AT_KW
   | "map" -> MAP
   | "onto" -> ONTO
   | "perp" -> PERP

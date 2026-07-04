@@ -2,7 +2,7 @@
 open Ast
 %}
 
-%token PAPER SQUARE THROUGH MAP ONTO CROSS EQ EOF PERP TOWARD AT MOVING MOUNTAIN FLIP LINE_OPEN POINT_OPEN FLAP_OPEN RPAREN AND
+%token PAPER SQUARE THROUGH MAP ONTO CROSS EQ EOF PERP TOWARD AT MOVING MOUNTAIN FLIP LINE_OPEN POINT_OPEN FLAP_OPEN RPAREN AND AT_KW
 %token DEF APPLY EXPORT STEP AS BANG LBRACE RBRACE LPAREN RBRACKET
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN
 %token <string> POINT
@@ -103,8 +103,15 @@ crease_ref:
 line_operand:
   | crease_ref { LNamed $1 }
   | LINE_OPEN point_operand point_operand RPAREN { LThrough ($2, $3, $loc) }
-  | LINE_OPEN crease_ref flap_operand RPAREN     { LRestrict ($2, $3, $loc) }
+  | crease_ref AT_KW selector { LAt ($1, [ $3 ], $loc) }
+  | crease_ref AT_KW LPAREN selector AND selector RPAREN { LAt ($1, [ $4; $6 ], $loc) }
   | LINE_MEMBER_OPEN INSTANCE IDENT RBRACKET     { LMember ($2, $3, $loc) }
+
+selector:
+  | point_operand { SelPoint $1 }
+  | crease_ref    { SelLine (LNamed $1) }
+  | LINE_OPEN point_operand point_operand RPAREN { SelLine (LThrough ($2, $3, $loc)) }
+  | flap_operand  { SelFlap $1 }
 
 flap_operand:
   | FLAP_OPEN point_operand_list RPAREN { FByPoints ($2, $loc) }

@@ -270,6 +270,24 @@ let crease_table_endpoints (st : t) (cid : int) : Geom.point list =
       else acc)
     [] st.edges
 
+type crease_segment = { faces : int * int; ta : Geom.point; tb : Geom.point }
+
+(* Every material segment of crease [cid], in table space. One entry per edge
+   tagged [cid] with a real left face; endpoints via the left face isometry
+   (the two faces coincide along the crease, so left is canonical). Degenerate
+   edges are dropped. *)
+let crease_segments (st : t) (cid : int) : crease_segment list =
+  Array.fold_left
+    (fun acc e ->
+      if e.crease_id = cid && e.left >= 0 then
+        let iso = st.faces.(e.left).iso in
+        let ta = Isometry.apply_point iso e.ea
+        and tb = Isometry.apply_point iso e.eb in
+        if Geom.point_equal ta tb then acc
+        else { faces = (e.left, e.right); ta; tb } :: acc
+      else acc)
+    [] st.edges
+
 let crease_axis (st : t) (cid : int) (l_orig : Geom.line) :
     [ `Line of Geom.line | `Bent | `Empty ] =
   match crease_table_endpoints st cid with
@@ -301,17 +319,6 @@ let flap_of_points (st : t) (pts : Geom.point list) :
   let hits = ref [] in
   Array.iteri (fun i _ -> if contains i then hits := i :: !hits) st.faces;
   match !hits with [ i ] -> `Face i | [] -> `Zero | _ -> `Ambiguous
-
-let crease_piece_on_face (st : t) (cid : int) (fi : int) : Geom.line option =
-  Array.find_map
-    (fun e ->
-      if e.crease_id = cid && (e.left = fi || e.right = fi) then
-        let iso = st.faces.(fi).iso in
-        let a = Isometry.apply_point iso e.ea
-        and b = Isometry.apply_point iso e.eb in
-        if Geom.point_equal a b then None else Some (Geom.line_through a b)
-      else None)
-    st.edges
 
 let table_polygon (st : t) (i : int) : Geom.point array =
   Array.map (Isometry.apply_point st.faces.(i).iso) st.faces.(i).paper

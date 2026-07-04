@@ -380,20 +380,28 @@ let test_bent_crease_bare_reuse_errors () =
          with Not_found -> false)
   | _ -> Alcotest.fail "expected a bent-crease error"
 
-(* #28: naming the folded-flap piece of a bent crease via #(...) resolves and
-   folds without error. *)
-let test_flap_restriction_resolves () =
-  let src =
-    "paper square\n\
-     --b = through .a .c\n\
-     --v = @map .c onto .b moving .c\n\
-     .mid = cross --( --b #(.c .d) ) --v\n"
-    (* the folded-flap piece of --b *)
+(* #50: `at #(...)` selects one segment of a bent crease bundle. Two different
+   flaps pick two different segments, so the resulting perp axis genuinely
+   differs — the selection is load-bearing, not vacuous. *)
+let test_at_selects_bent_segment () =
+  let prog sel =
+    Printf.sprintf
+      "paper square\n\
+       --b = through .a .c\n\
+       --v = @map .c onto .b\n\
+       --q = perp --b at %s through .a\n"
+      sel
   in
-  match Beloch.fold_string ~filename:"t.bel" src with
-  | exception Error.Beloch_error (_, msg) ->
-      Alcotest.failf "restriction should resolve, got error: %s" msg
-  | _ -> ()
+  let q_axis src =
+    let open Yojson.Safe.Util in
+    match Beloch.fold_string ~filename:"t.bel" src with
+    | exception Error.Beloch_error (_, msg) ->
+        Alcotest.failf "at should resolve, got error: %s" msg
+    | j -> j |> member "beloch:named_lines" |> member "q" |> to_list
+  in
+  Alcotest.(check bool)
+    "different flaps select different --q axes (at is load-bearing)" true
+    (q_axis (prog "#(.c .d)") <> q_axis (prog "#(.a .b)"))
 
 (* #42: one self-contained foldedForm frame per step snapshot, baseline
    included, each step-tagged. *)
@@ -494,8 +502,8 @@ let () =
             test_e2e_precrease_fold_emits_v;
           Alcotest.test_case "bent crease bare reuse errors" `Quick
             test_bent_crease_bare_reuse_errors;
-          Alcotest.test_case "flap restriction resolves" `Quick
-            test_flap_restriction_resolves;
+          Alcotest.test_case "at selects bent segment" `Quick
+            test_at_selects_bent_segment;
           Alcotest.test_case "one folded frame per step" `Quick
             test_multiframe;
           Alcotest.test_case "e2e faces_matrix + frame" `Quick
