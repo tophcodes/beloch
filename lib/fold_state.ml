@@ -1,11 +1,12 @@
 (** The folded state of the paper as a stack of flat faces. Each face is a
     convex CCW polygon in paper coordinates plus the isometry placing it on the
-    table. [order] is a per-face partial order: order.(i).(j) says whether face
-    i is Above/Below face j when folded, or Apart if they do not overlap on the
-    table. Array index carries no z-meaning — all stacking lives in [order]. *)
+    table. [order] is a sparse per-face partial order (a [Layer_order.t], queried
+    with [Layer_order.get]): it says whether face i is Above/Below face j when
+    folded, or Apart if they do not overlap on the table. Array index carries no
+    z-meaning — all stacking lives in [order]. *)
 
 type face = { paper : Geom.point array; iso : Isometry.t }
-type rel = Above | Below | Apart
+type rel = Layer_order.rel = Above | Below | Apart
 type assign = M | V | U
 
 (* A first-class crease edge between two faces. [ea]/[eb] are the segment
@@ -23,7 +24,7 @@ type edge = {
   eprov : State.provenance option;
 }
 
-type t = { faces : face array; order : rel array array; edges : edge array }
+type t = { faces : face array; order : Layer_order.t; edges : edge array }
 
 (* Mints internal crease ids. Unique within a state; not deterministic across
    eval calls and never serialized. *)
@@ -34,28 +35,18 @@ let fresh_crease_id () =
   incr next_id;
   id
 
-let negate = function Above -> Below | Below -> Above | Apart -> Apart
+let negate = Layer_order.negate
 
 (* table-space polygon of a face *)
 let table_poly_of (f : face) : Geom.point array =
   Array.map (Isometry.apply_point f.iso) f.paper
 
-(* Build an n×n order matrix. [rel_of i j] is consulted only for i<j pairs whose
-   table polygons overlap; everything else stays Apart. *)
-let build_order (faces : face array) (rel_of : int -> int -> rel) : rel array array =
-  let n = Array.length faces in
-  let order = Array.make_matrix n n Apart in
-  for i = 0 to n - 1 do
-    for j = i + 1 to n - 1 do
-      if Geom.convex_overlap (table_poly_of faces.(i)) (table_poly_of faces.(j))
-      then begin
-        let r = rel_of i j in
-        order.(i).(j) <- r;
-        order.(j).(i) <- negate r
-      end
-    done
-  done;
-  order
+(* Build the sparse order over table-space polygons. [rel_of i j] is consulted
+   only for i<j pairs whose table polygons overlap; everything else stays
+   Apart. *)
+let build_order (faces : face array) (rel_of : int -> int -> rel) : Layer_order.t
+    =
+  Layer_order.build (Array.map table_poly_of faces) rel_of
 
 (* Acyclicity of the [Above] relation over overlapping faces, then a check that
    every overlapping pair is decided (tortilla-tortilla: two strictly-overlapping
@@ -64,23 +55,21 @@ let build_order (faces : face array) (rel_of : int -> int -> rel) : rel array ar
    the pocket slice (they need persistent crease-adjacency and cannot fire for
    simple folds). *)
 let validity_error (st : t) : string option =
-  let order = st.order in
-  let n = Array.length order in
+  let n = Array.length st.faces in
   let color = Array.make n 0 (* 0 white, 1 gray, 2 black *) in
   let cycle = ref None in
   let rec dfs i =
     color.(i) <- 1;
-    for j = 0 to n - 1 do
-      if order.(i).(j) = Above && !cycle = None then
-        if color.(j) = 1 then
-          cycle :=
-            Some
+    List.iter
+      (fun j ->
+        if !cycle = None then
+          if color.(j) = 1 then
+            cycle := Some
               (Printf.sprintf
                  "layer ordering: stacking cycle through faces %d and %d (paper \
-                  through paper)"
-                 i j)
-        else if color.(j) = 0 then dfs j
-    done;
+                  through paper)" i j)
+          else if color.(j) = 0 then dfs j)
+      (Layer_order.above_neighbors st.order i);
     color.(i) <- 2
   in
   for i = 0 to n - 1 do
@@ -90,22 +79,12 @@ let validity_error (st : t) : string option =
   | Some _ as c -> c
   | None ->
       let bad = ref None in
-      for i = 0 to n - 1 do
-        for j = i + 1 to n - 1 do
-          if
-            !bad = None
-            && Geom.convex_overlap (table_poly_of st.faces.(i))
-                 (table_poly_of st.faces.(j))
-            && order.(i).(j) = Apart
-          then
-            bad :=
-              Some
-                (Printf.sprintf
-                   "layer ordering: faces %d and %d overlap but have no order \
-                    (tortilla-tortilla)"
-                   i j)
-        done
-      done;
+      Layer_order.iter st.order (fun i j r ->
+          if !bad = None && r = Apart then
+            bad := Some
+              (Printf.sprintf
+                 "layer ordering: faces %d and %d overlap but have no order \
+                  (tortilla-tortilla)" i j));
       !bad
 
 let init_square : t =
@@ -113,7 +92,7 @@ let init_square : t =
   {
     faces =
       [| { paper = [| p 0 0; p 1 0; p 1 1; p 0 1 |]; iso = Isometry.identity } |];
-    order = [| [| Apart |] |];
+    order = Layer_order.build [| [| p 0 0; p 1 0; p 1 1; p 0 1 |] |] (fun _ _ -> Apart);
     edges = [||];
   }
 
@@ -326,7 +305,7 @@ let subdivide ?crease_id (st : t) (axis : Geom.line)
   in
   let edges = Array.of_list (new_edges @ carried) in
   let order =
-    build_order faces (fun i j -> st.order.(parent.(i)).(parent.(j)))
+    build_order faces (fun i j -> Layer_order.get st.order parent.(i) parent.(j))
   in
   { faces; order; edges }
 
@@ -383,8 +362,8 @@ let fold_with_records ?crease_id (st : t) ~(axis : Geom.line)
   let rel_of i j =
     let pi = parent.(i) and pj = parent.(j) in
     match (moved_flag.(i), moved_flag.(j)) with
-    | false, false -> st.order.(pi).(pj) (* stationary vs stationary: preserved *)
-    | true, true -> negate st.order.(pi).(pj) (* moved vs moved: reversed *)
+    | false, false -> Layer_order.get st.order pi pj (* stationary vs stationary: preserved *)
+    | true, true -> negate (Layer_order.get st.order pi pj) (* moved vs moved: reversed *)
     | true, false -> if valley then Above else Below (* moved i over/under stationary j *)
     | false, true -> if valley then Below else Above
   in
@@ -517,7 +496,7 @@ let topmost_preimage (st : t) (tp : Geom.point) : Geom.point option =
       if Geom.in_convex_polygon f.paper pp then covering := (i, pp) :: !covering)
     st.faces;
   let is_top (i, _) =
-    List.for_all (fun (j, _) -> i = j || st.order.(i).(j) <> Below) !covering
+    List.for_all (fun (j, _) -> i = j || Layer_order.get st.order i j <> Below) !covering
   in
   match List.find_opt is_top !covering with
   | Some (_, pp) -> Some pp
@@ -555,12 +534,7 @@ let flip (st : t) : t =
       Array.map (fun f -> { f with iso = Isometry.compose refl f.iso }) st.faces
     in
     let rev = Array.init n (fun i -> flipped.(n - 1 - i)) in
-    let order = Array.make_matrix n n Apart in
-    for i = 0 to n - 1 do
-      for j = 0 to n - 1 do
-        order.(i).(j) <- negate st.order.(n - 1 - i).(n - 1 - j)
-      done
-    done;
+    let order = Layer_order.flip st.order n in
     let edges =
       Array.map
         (fun e ->

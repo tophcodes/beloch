@@ -8,7 +8,7 @@
 
 (test
  (name test_fold_state)
- (libraries beloch alcotest zarith))
+ (libraries beloch alcotest zarith unix))
 
 (test
  (name test_parse)
@@ -37,4 +37,8 @@
 
 (test
  (name test_field_merge)
+ (libraries beloch alcotest zarith))
+
+(test
+ (name test_layer_order)
  (libraries beloch alcotest zarith))

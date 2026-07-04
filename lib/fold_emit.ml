@@ -128,7 +128,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
   let face_orders = ref [] in
   for fi = 0 to nf - 1 do
     for gi = fi + 1 to nf - 1 do
-      match order.(fi).(gi) with
+      match Layer_order.get order fi gi with
       | Fold_state.Apart -> ()
       | rel ->
           let g_up = Isometry.det_sign faces.(gi).Fold_state.iso > 0 in
