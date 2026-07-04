@@ -59,6 +59,34 @@ let test_minpoly_enclosure () =
   Alcotest.(check bool) "enclosure is tight at prec 64" true
     (Q.compare (Q.sub hi lo) (q "1/1000000") < 0)
 
+let test_express_over () =
+  let q = Q.of_string in
+  let s2 = Qqbar.sqrt (Qqbar.of_q (q "2")) in
+  (* sqrt2 over itself: c(x) = x, so c(s2) = s2 exactly *)
+  (match Qqbar.express_over ~gen:s2 s2 with
+   | Some c ->
+       let reconstructed =
+         Array.fold_right
+           (fun coeff acc -> Qqbar.add (Qqbar.of_q coeff) (Qqbar.mul acc s2))
+           c (Qqbar.of_q Q.zero)
+       in
+       Alcotest.(check bool) "s2 reconstructs to s2 via c(s2)" true
+         (Qqbar.equal reconstructed s2)
+   | None -> Alcotest.fail "s2 should be expressible over s2");
+  (* 3 + 5*sqrt2 over sqrt2: c = [3; 5] *)
+  let v = Qqbar.add (Qqbar.of_q (q "3"))
+            (Qqbar.mul (Qqbar.of_q (q "5")) s2) in
+  (match Qqbar.express_over ~gen:s2 v with
+   | Some c ->
+       Alcotest.(check bool) "reconstructs 3+5x at x=s2" true
+         (Qqbar.equal
+            (Qqbar.add (Qqbar.of_q c.(0)) (Qqbar.mul (Qqbar.of_q c.(1)) s2)) v)
+   | None -> Alcotest.fail "3+5*sqrt2 in Q(sqrt2)");
+  (* cbrt2 NOT in Q(sqrt2): None *)
+  let c2 = List.hd (Qqbar.real_roots_of_poly (Poly.of_list (List.map q ["-2";"0";"0";"1"]))) in
+  Alcotest.(check bool) "cbrt2 not in Q(sqrt2)" true
+    (Qqbar.express_over ~gen:s2 c2 = None)
+
 let () =
   Alcotest.run "beloch-qqbar"
     [
@@ -68,5 +96,6 @@ let () =
           Alcotest.test_case "arithmetic" `Quick test_arithmetic;
           Alcotest.test_case "real roots" `Quick test_real_roots;
           Alcotest.test_case "minpoly + enclosure" `Quick test_minpoly_enclosure;
+          Alcotest.test_case "express_over" `Quick test_express_over;
         ] );
     ]

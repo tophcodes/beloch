@@ -34,3 +34,7 @@
 (test
  (name test_qqbar)
  (libraries beloch alcotest zarith))
+
+(test
+ (name test_field_merge)
+ (libraries beloch alcotest zarith))
