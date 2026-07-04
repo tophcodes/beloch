@@ -185,7 +185,7 @@ let test_layer_valley_moved_above () =
   let st = Fold_state.simple_fold st ~axis ~move_side:1 ~valley:true in
   let mv = face_with_det st (-1) and stt = face_with_det st 1 in
   Alcotest.(check bool) "moved face is Above stationary" true
-    (st.Fold_state.order.(mv).(stt) = Fold_state.Above)
+    (Layer_order.get st.Fold_state.order mv stt = Fold_state.Above)
 
 let test_layer_mountain_moved_below () =
   let st = Fold_state.init_square in
@@ -193,18 +193,16 @@ let test_layer_mountain_moved_below () =
   let st = Fold_state.simple_fold st ~axis ~move_side:1 ~valley:false in
   let mv = face_with_det st (-1) and stt = face_with_det st 1 in
   Alcotest.(check bool) "moved face is Below stationary" true
-    (st.Fold_state.order.(mv).(stt) = Fold_state.Below)
+    (Layer_order.get st.Fold_state.order mv stt = Fold_state.Below)
 
 let test_layer_antisymmetry () =
   let st = Fold_state.init_square in
   let axis = { Geom.a = q 1; b = q 0; c = half } in
   let st = Fold_state.simple_fold st ~axis ~move_side:1 ~valley:true in
   let ok = ref true in
-  Array.iteri (fun i row ->
-      Array.iteri (fun j r ->
-          if st.Fold_state.order.(j).(i) <> Fold_state.negate r then ok := false)
-        row)
-    st.Fold_state.order;
+  Layer_order.iter st.Fold_state.order (fun i j r ->
+      if Layer_order.get st.Fold_state.order j i <> Fold_state.negate r then
+        ok := false);
   Alcotest.(check bool) "order is negation-symmetric" true !ok
 
 let test_layer_fold_quarter_reversal () =
@@ -222,7 +220,7 @@ let test_layer_fold_quarter_reversal () =
         Geom.convex_overlap
           (Fold_state.table_polygon st i)
           (Fold_state.table_polygon st j)
-        && st.Fold_state.order.(i).(j) = Fold_state.Apart
+        && Layer_order.get st.Fold_state.order i j = Fold_state.Apart
       then bad := true
     done
   done;
@@ -329,10 +327,9 @@ let test_topmost_preimage_order () =
     {
       Fold_state.faces = [| face0; face1 |];
       order =
-        [|
-          [| Fold_state.Apart; Fold_state.Above |];
-          [| Fold_state.Below; Fold_state.Apart |];
-        |];
+        Layer_order.build
+          [| Fold_state.table_poly_of face0; Fold_state.table_poly_of face1 |]
+          (fun _ _ -> Fold_state.Above);
       edges = [||];
     }
   in

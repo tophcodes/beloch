@@ -178,6 +178,34 @@ let test_flap_of_points_unique_zero_multi () =
    | `Zero -> ()  (* b and d are on opposite triangles → no single flap *)
    | _ -> Alcotest.fail "{b,d} share no flap → zero")
 
+let test_layer_scaling_subquadratic () =
+  (* precrease N well-separated vertical creases via subdivide (grows faces
+     linearly, overlaps stay local) and time it for N and 2N.
+     This loop's own cost isn't literally sub-quadratic in N: each subdivide
+     call reprocesses the full current face array, so the O(n) calls sum to
+     ~O(n^2 log n) even with a sparse order build. What the sweep-and-prune
+     broad phase (Layer_order.build) removes is the *dense* O(m^2) pairwise
+     convex_overlap scan the old build_order did per call (no spatial culling
+     at all), which sums to O(n^3) across n calls — an 8x cost for doubling N.
+     Measured: new algorithm is ~4.3-4.7x for 200->400 (matches ~O(n^2 log n));
+     6x cleanly separates that from the old ~8x, catching a regression to the
+     dense per-call scan without chasing float noise. *)
+  let build n =
+    let st = ref Fold_state.init_square in
+    for k = 1 to n do
+      let x = Q.make (Z.of_int k) (Z.of_int (n + 1)) in
+      let axis = { Geom.a = Num.one; b = Num.zero; c = Num.of_q x } in
+      st := Fold_state.subdivide !st axis ~prov:None
+    done;
+    !st
+  in
+  let time f = let t0 = Unix.gettimeofday () in ignore (f ()); Unix.gettimeofday () -. t0 in
+  let t1 = time (fun () -> build 200) in
+  let t2 = time (fun () -> build 400) in
+  Alcotest.(check bool)
+    (Printf.sprintf "subdivide 400 (%.3fs) < 6x subdivide 200 (%.3fs)" t2 t1)
+    true (t2 < 6.0 *. t1 +. 0.05)
+
 let () =
   Alcotest.run "fold_state"
     [
@@ -202,5 +230,10 @@ let () =
             test_crease_axis_flat_and_flip;
           Alcotest.test_case "flap_of_points unique/zero/ambiguous" `Quick
             test_flap_of_points_unique_zero_multi;
+        ] );
+      ( "scaling",
+        [
+          Alcotest.test_case "layer scaling: sparse order build vs. old dense scan"
+            `Slow test_layer_scaling_subquadratic;
         ] );
     ]
