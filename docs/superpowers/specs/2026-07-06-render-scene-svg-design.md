@@ -22,8 +22,12 @@ custom element. Decisions locked in during brainstorming:
   later.
 
 **This slice builds only the first two packages**: the dependency-free scene
-model and the SVG backend. Everything else is explicitly out of scope but the
-package boundaries are drawn so the rest can attach without rework.
+model and the SVG backend. The goal is **parity with what we render today
+(fold2svg) under our own library** — CP and folded form, no Rabbit Ear.
+**YR diagrams are the next slice**, not a distant goal: the scene model's step
+timeline and the SVG backend's layering must not preclude multi-panel step
+layout and arrow annotations, but neither is built now. Everything further out
+(3D, interaction, element) attaches later without rework.
 
 ## Package layout
 
@@ -102,6 +106,8 @@ Visual scope of this slice (feature 1 of the brainstorm):
 - Named points highlighted, named lines drawn; both labeled.
 - Folded-form silhouette honoring `faceOrders` (parity target: what
   `tools/fold2svg.mjs --folded` shows today).
+- Axiom colour legend with current verbs, as fold2svg draws it — parity means
+  the docs/PR-screenshot pipeline loses nothing in the switch.
 
 Styling: default theme as CSS custom properties + classes embedded in a
 `<style>` element; callers override via `opts.theme` or external CSS in DOM
@@ -129,8 +135,16 @@ part of this slice.
   one PNG smoke test (resvg runs, non-empty output).
 - Runner: `bun test`.
 
-## Non-goals (future slices)
+## Next slice: YR diagrams
+
+Immediately after this slice: multi-panel step layout (one panel per
+`beloch:step`) plus arrow/annotation primitives, rendered by the same SVG
+backend from the same scene model. This slice prepares for it by keeping the
+step timeline in `@beloch/scene` and by structuring `SvgDoc` output in layers
+(paper / creases / annotations) so arrows slot in without restructuring.
+
+## Non-goals (later slices)
 
 three.js backend (`@beloch/render-3d`), interaction layer
-(`@beloch/interact`), `<beloch-view>` element, YR diagram arrows/step layout,
-GIF/animation export, fold2svg.mjs deletion.
+(`@beloch/interact`), `<beloch-view>` element, GIF/animation export,
+fold2svg.mjs deletion.
