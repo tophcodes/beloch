@@ -668,13 +668,14 @@ error as they do for `at` elsewhere.
 | 8 | segments don't all share one strictly-interior common endpoint O | `no common interior vertex` |
 | 9 | element count is odd, or exactly 2 | `` count (hint: use `@fold` for n = 2) `` |
 | 10 | a segment's far endpoint is not on the paper boundary (would leave a degree-1 vertex mid-sheet) | `crease ends inside the sheet` |
-| 11 | Kawasaki fails — the reflection composition around O does not close (exact) [[hull2020]](#ref-hull2020) ch. 5 | `vertex not flat-foldable (angles)` |
-| 12 | Maekawa fails — \|M − V\| ≠ 2 **over the n rays**, not the lines they lie on: a straight line through O contributes two independent rays, each with its own material crease [[hull2020]](#ref-hull2020) ch. 5 | `Maekawa violated by the stated assignment` |
-| 13 | every Kawasaki/Maekawa-satisfying stacking still forces the paper to self-intersect | `assignment forces self-intersection` |
-| 14 | `over` clauses rule out every remaining valid stacking | `` contradictory `over` `` |
-| 15 | more than one valid stacking survives | `ambiguous stacking (<k> orders)` |
+| 11 | two elements resolve to the same ray — the same direction from O, a zero-width sector whose doubled reflection cancels out of the closure product and would otherwise slip past checks 9 and 12–13 | `duplicate ray in collapse` |
+| 12 | Kawasaki fails — the reflection composition around O does not close (exact) [[hull2020]](#ref-hull2020) ch. 5 | `vertex not flat-foldable (angles)` |
+| 13 | Maekawa fails — \|M − V\| ≠ 2 **over the n rays**, not the lines they lie on: a straight line through O contributes two independent rays, each with its own material crease [[hull2020]](#ref-hull2020) ch. 5 | `Maekawa violated by the stated assignment` |
+| 14 | every Kawasaki/Maekawa-satisfying stacking still forces the paper to self-intersect | `assignment forces self-intersection` |
+| 15 | `over` clauses rule out every remaining valid stacking | `` contradictory `over` `` |
+| 16 | more than one valid stacking survives | `ambiguous stacking (<k> orders)` |
 
-Checks 8–13 run against **rays**: a bundle already split at O by the material
+Checks 8–14 run against **rays**: a bundle already split at O by the material
 `cross` machinery (v0.19), so each side of a through-vertex line is an
 independent element with its own mountain/valley.
 
@@ -682,10 +683,12 @@ independent element with its own mountain/valley.
 is the composition of reflections across the rays bounding sectors `0..i`, in
 CCW order from a fixed sector 0 — exact, the standard single-vertex fan
 construction. There is **no `moving` clause on `@collapse` in v1**: the
-stayer — the sector left at the identity isometry — is always the
-table-contact sector, the unique face at the bottom of the solved stack (top
-under `flip`, §4.7, as with any other fold). It is fully determined once the
-layer order is solved. The kernel enumerates every stacking consistent with
+stayer — the sector left at the identity isometry — is the **lowest
+face-up** sector of the solved stack (sector parities alternate around O, so
+one always exists). Anchoring on an orientation-preserving sector keeps the
+emitted state on the declared side: an orientation-reversing anchor would
+mirror every face's front/back and emit the M/V mirror of the stated
+collapse. The stayer is fully determined once the layer order is solved. The kernel enumerates every stacking consistent with
 the per-ray hinge directions and a layer-collision check (no two layers
 occupy the same space), then keeps only the stackings distinguishable by
 their overlapping-face order. Exactly one → done; several → `over` picks
