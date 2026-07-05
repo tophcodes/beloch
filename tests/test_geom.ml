@@ -407,6 +407,65 @@ let test_on_segment () =
     (Geom.on_segment s (pt 3 3));
   Alcotest.(check bool) "off the line is not on" false (Geom.on_segment s (pt 1 0))
 
+(* ---- Fold_geom3: line ∩ convex polygon clipping and the strict fold test ---- *)
+
+let unit_sq = [| pt 0 0; pt 1 0; pt 1 1; pt 0 1 |]
+
+let check_segment name expected_p expected_q = function
+  | None -> Alcotest.failf "%s: expected a segment, got None" name
+  | Some (p, q) ->
+      let matches =
+        (Geom.point_equal p expected_p && Geom.point_equal q expected_q)
+        || (Geom.point_equal p expected_q && Geom.point_equal q expected_p)
+      in
+      Alcotest.(check bool) name true matches
+
+let test_clip_line_diagonal () =
+  let l = Geom.line_through (pt 0 0) (pt 1 1) in
+  check_segment "diagonal clips to (0,0)-(1,1)" (pt 0 0) (pt 1 1)
+    (Geom.clip_line_to_convex l unit_sq)
+
+let test_clip_line_miss () =
+  let l = { Geom.a = q 1; b = q 0; c = q 2 } in
+  Alcotest.(check bool) "x=2 misses the unit square" true
+    (Geom.clip_line_to_convex l unit_sq = None)
+
+let test_clip_line_corner_touch () =
+  let l = { Geom.a = q 1; b = q 1; c = q 2 } in
+  Alcotest.(check bool) "x+y=2 touches only the (1,1) corner: zero length" true
+    (Geom.clip_line_to_convex l unit_sq = None)
+
+let test_clip_line_edge_collinear () =
+  let l = Geom.line_through (pt 0 0) (pt 1 0) in
+  check_segment "y=0 clips to the bottom edge (0,0)-(1,0)" (pt 0 0) (pt 1 0)
+    (Geom.clip_line_to_convex l unit_sq)
+
+let test_clip_line_horizontal () =
+  let l = { Geom.a = q 0; b = q 1; c = half } in
+  check_segment "y=1/2 clips to (0,1/2)-(1,1/2)" { Geom.x = q 0; y = half }
+    { Geom.x = q 1; y = half }
+    (Geom.clip_line_to_convex l unit_sq)
+
+let test_line_cuts_polygon_true () =
+  let l = { Geom.a = q 0; b = q 1; c = half } in
+  Alcotest.(check bool) "y=1/2 cuts the square" true
+    (Geom.line_cuts_polygon l unit_sq)
+
+let test_line_cuts_polygon_edge_false () =
+  let l = Geom.line_through (pt 0 0) (pt 1 0) in
+  Alcotest.(check bool) "y=0 (an edge) does not cut" false
+    (Geom.line_cuts_polygon l unit_sq)
+
+let test_line_cuts_polygon_corner_false () =
+  let l = { Geom.a = q 1; b = q 1; c = q 2 } in
+  Alcotest.(check bool) "x+y=2 (corner touch) does not cut" false
+    (Geom.line_cuts_polygon l unit_sq)
+
+let test_line_cuts_polygon_miss_false () =
+  let l = { Geom.a = q 1; b = q 0; c = q 2 } in
+  Alcotest.(check bool) "x=2 (misses) does not cut" false
+    (Geom.line_cuts_polygon l unit_sq)
+
 let () =
   Alcotest.run "beloch-geom"
     [
@@ -475,5 +534,24 @@ let () =
         [
           Alcotest.test_case "convex overlap" `Quick test_convex_overlap;
           Alcotest.test_case "on segment" `Quick test_on_segment;
+        ] );
+      ( "fold_geom3",
+        [
+          Alcotest.test_case "clip line: diagonal" `Quick test_clip_line_diagonal;
+          Alcotest.test_case "clip line: miss" `Quick test_clip_line_miss;
+          Alcotest.test_case "clip line: corner touch is zero length" `Quick
+            test_clip_line_corner_touch;
+          Alcotest.test_case "clip line: edge-collinear" `Quick
+            test_clip_line_edge_collinear;
+          Alcotest.test_case "clip line: horizontal" `Quick
+            test_clip_line_horizontal;
+          Alcotest.test_case "line cuts polygon: true" `Quick
+            test_line_cuts_polygon_true;
+          Alcotest.test_case "line cuts polygon: edge is not a cut" `Quick
+            test_line_cuts_polygon_edge_false;
+          Alcotest.test_case "line cuts polygon: corner touch is not a cut" `Quick
+            test_line_cuts_polygon_corner_false;
+          Alcotest.test_case "line cuts polygon: miss is not a cut" `Quick
+            test_line_cuts_polygon_miss_false;
         ] );
     ]

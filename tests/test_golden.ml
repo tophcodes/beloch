@@ -17,12 +17,22 @@ let golden_dir = "golden/"
    well under a second now. *)
 let excluded : string list = []
 
-(* every .bel in examples/ that is a full program (skip README + excluded) *)
+(* every .bel in examples/ (recursively) that is a full program (skip README +
+   excluded). Names are relative paths (e.g. "syntax/bisect-a.bel") so the
+   golden path can mirror the directory — needed because two different
+   examples are both named multiple-folds.bel (top-level vs syntax/). *)
 let example_names () =
-  Sys.readdir examples_dir |> Array.to_list
-  |> List.filter (fun n -> Filename.check_suffix n ".bel")
-  |> List.filter (fun n -> not (List.mem n excluded))
-  |> List.sort compare
+  let rec walk prefix =
+    let dir = examples_dir ^ prefix in
+    Sys.readdir dir |> Array.to_list
+    |> List.concat_map (fun entry ->
+           let rel = prefix ^ entry in
+           if Sys.is_directory (dir ^ entry) then walk (rel ^ "/")
+           else if Filename.check_suffix entry ".bel" && not (List.mem rel excluded)
+           then [ rel ]
+           else [])
+  in
+  walk "" |> List.sort compare
 
 let read path = In_channel.with_open_text path In_channel.input_all
 
@@ -31,7 +41,12 @@ let read path = In_channel.with_open_text path In_channel.input_all
    error behavior, not only successful FOLD output. *)
 let fold_of name =
   let src = read (examples_dir ^ name) in
-  try Yojson.Safe.pretty_to_string (Beloch.fold_string ~filename:name src)
+  (* Spans in goldens are basename-relative (e.g. "bisect-a.bel:3:1"); pass the
+     basename here even though `name` (used for reading + golden lookup) is a
+     relative path with subdirectory, or golden bytes would drift. *)
+  try
+    Yojson.Safe.pretty_to_string
+      (Beloch.fold_string ~filename:(Filename.basename name) src)
   with Error.Beloch_error (_, msg) -> "ERROR: " ^ msg
 
 let golden_path name = golden_dir ^ Filename.chop_suffix name ".bel" ^ ".fold"

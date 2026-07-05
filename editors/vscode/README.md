@@ -54,7 +54,7 @@ folder loaded — re-run `bun run compile` after edits, there's no
 code --extensionDevelopmentPath=$(pwd)
 ```
 
-In the new window, open a `.bel` file (e.g. `examples/cube-root.bel`).
+In the new window, open a `.bel` file (e.g. `examples/syntax/cube-root.bel`).
 
 ### Dogfooding (stable, installed)
 
@@ -84,7 +84,7 @@ The dogfooded extension needs a `beloch` binary. Either:
 
 ## Manual smoke test
 
-Run the extension (dev-host or dogfooded), open `examples/cube-root.bel`, run
+Run the extension (dev-host or dogfooded), open `examples/syntax/cube-root.bel`, run
 **Beloch: Show Preview**, and verify:
 
 - the folded diagram appears;

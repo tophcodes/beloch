@@ -16,14 +16,14 @@ Use:
 
 ```sh
 # a .bel straight to a PNG
-nix develop --command dune exec beloch -- fold examples/bisect-a.bel \
+nix develop --command dune exec beloch -- fold examples/syntax/bisect-a.bel \
   | bun tools/fold2svg.mjs - bisect-a.png
 
 # or from a .fold file; omit the output path for SVG on stdout
 bun tools/fold2svg.mjs out.fold out.svg
 
 # render the FOLDED state (the foldedForm frame) instead of the crease pattern
-dune exec beloch -- fold examples/fold-quarter.bel \
+dune exec beloch -- fold examples/syntax/fold-quarter.bel \
   | bun tools/fold2svg.mjs - folded.png --folded
 ```
 

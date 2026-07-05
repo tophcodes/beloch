@@ -23,6 +23,26 @@ type crease_val =
   | Material of int * Geom.line
   | Frozen of Geom.line
 
+(* axiom-5 (`map --l1 onto --l2`) needs its candidate bisectors selected against
+   the current fold state (material of l1, paper incidence, `toward` direction),
+   so [axis_of] defers that: intersecting lines yield [Ax5], everything else a
+   fully-resolved [Axis]. *)
+type ax5_pending = {
+  la : Geom.line;
+  lb : Geom.line;
+  cands : Geom.line * Geom.line;   (* angle bisectors of la, lb *)
+  toward : Geom.point option;      (* table space, already checked off la *)
+  l1_op : Ast.line_operand;        (* for the l1-material lookup *)
+  l1_str : string;
+  l2_str : string;
+  toward_str : string option;
+  sources : string list;           (* provenance, includes toward when present *)
+}
+
+type axis_result =
+  | Axis of Geom.line * string * string list
+  | Ax5 of ax5_pending
+
 type instance = {
   ipoints : (string, Geom.point) Hashtbl.t;
   ilines : (string, crease_val) Hashtbl.t;
@@ -415,30 +435,39 @@ let eval_folded (prog : Ast.program) : folded =
                  (fstr fa) (List.length many)))
   in
   (* which side of [axis] a flap anchor moves; point sugar keeps the existing
-     side-of-the-point semantics (and its on-axis error) *)
-  let side_of_flap_arg (axis : Geom.line) (fa : Ast.flap_arg)
-      (span : Error.span) : int =
+     side-of-the-point semantics. Resolution failures (point off paper, ambiguous
+     flap) raise WITHIN — they are candidate-independent; only the on-axis /
+     straddle verdicts are returned so axiom-5 selection can reject a candidate
+     without erroring. *)
+  let side_of_flap_arg_res (axis : Geom.line) (fa : Ast.flap_arg)
+      (span : Error.span) : (int, [ `OnAxis | `Straddles ]) result =
     match fa with
     | Ast.FlapPoint po ->
         let s = Geom.side_of_line axis (table_of po) in
-        if s = 0 then Error.fail span "the moving point lies on the fold axis";
-        s
+        if s = 0 then Error `OnAxis else Ok s
     | _ -> (
         let fi = resolve_flap_face fa span in
         let poly = Fold_state.table_polygon !(ctx.state) fi in
         let pos = Array.exists (fun p -> Geom.side_of_line axis p > 0) poly in
         let neg = Array.exists (fun p -> Geom.side_of_line axis p < 0) poly in
         match (pos, neg) with
-        | true, true ->
-            Error.fail span
-              (Printf.sprintf
-                 "%s straddles the fold axis; anchor with a point instead"
-                 (fstr fa))
-        | true, false -> 1
-        | false, true -> -1
-        | false, false ->
-            Error.fail span
-              (Printf.sprintf "%s lies on the fold axis" (fstr fa)))
+        | true, true -> Error `Straddles
+        | true, false -> Ok 1
+        | false, true -> Ok (-1)
+        | false, false -> Error `OnAxis)
+  in
+  let side_of_flap_arg (axis : Geom.line) (fa : Ast.flap_arg)
+      (span : Error.span) : int =
+    match side_of_flap_arg_res axis fa span with
+    | Ok s -> s
+    | Error `Straddles ->
+        Error.fail span
+          (Printf.sprintf
+             "%s straddles the fold axis; anchor with a point instead" (fstr fa))
+    | Error `OnAxis -> (
+        match fa with
+        | Ast.FlapPoint _ -> Error.fail span "the moving point lies on the fold axis"
+        | _ -> Error.fail span (Printf.sprintf "%s lies on the fold axis" (fstr fa)))
   in
   let target_of (fa : Ast.flap_arg) (span : Error.span) :
       Fold_state.scope_target =
@@ -479,8 +508,7 @@ let eval_folded (prog : Ast.program) : folded =
   in
   (* axis line + provenance (axiom tag, source names), evaluated against the
      current table positions *)
-  let axis_of (span : Error.span) (ax : Ast.axiom) :
-      Geom.line * string * string list =
+  let axis_of (span : Error.span) (ax : Ast.axiom) : axis_result =
     match ax with
     | Ast.Through (p, q) ->
         let pp = table_of p and qq = table_of q in
@@ -490,18 +518,19 @@ let eval_folded (prog : Ast.program) : folded =
                "%s and %s are at the same place, so there is no line through \
                 them"
                (pstr p) (pstr q));
-        (Geom.line_through pp qq, "axiom1", [ pstr p; pstr q ])
+        Axis (Geom.line_through pp qq, "axiom1", [ pstr p; pstr q ])
     | Ast.MapPoints (p, q) ->
         let pp = table_of p and qq = table_of q in
         if Geom.point_equal pp qq then
           Error.fail span
             (Printf.sprintf "%s and %s are already at the same place" (pstr p)
                (pstr q));
-        (Geom.perpendicular_bisector pp qq, "axiom2", [ pstr p; pstr q ])
+        Axis (Geom.perpendicular_bisector pp qq, "axiom2", [ pstr p; pstr q ])
     | Ast.Perp (p, l) ->
-        ( Geom.perpendicular_through (resolve_line l) (table_of p),
-          "axiom3",
-          [ pstr p; lstr l ] )
+        Axis
+          ( Geom.perpendicular_through (resolve_line l) (table_of p),
+            "axiom3",
+            [ pstr p; lstr l ] )
     | Ast.MapOntoLine (p, l1, l2) -> (
         let pp = table_of p and ll1 = resolve_line l1 and ll2 = resolve_line l2 in
         match Geom.project_crease pp ll1 ll2 with
@@ -509,37 +538,50 @@ let eval_folded (prog : Ast.program) : folded =
             Error.fail span
               (Printf.sprintf "map %s onto %s perp %s: lines are parallel, no fold exists"
                  (pstr p) (lstr l1) (lstr l2))
-        | Some crease -> (crease, "axiom4", [ pstr p; lstr l1; lstr l2 ]))
+        | Some crease -> Axis (crease, "axiom4", [ pstr p; lstr l1; lstr l2 ]))
     | Ast.MapLines (l1, l2, p_opt) -> (
         let la = resolve_line l1 and lb = resolve_line l2 in
-        let base = [ lstr l1; lstr l2 ] in
-        let eval_at (l : Geom.line) (pt : Geom.point) : Num.t =
-          Num.sub
-            (Num.add (Num.mul l.Geom.a pt.Geom.x) (Num.mul l.Geom.b pt.Geom.y))
-            l.Geom.c
-        in
+        let l1_str = lstr l1 and l2_str = lstr l2 in
         match Geom.angle_bisectors la lb with
         | None ->
+            (* parallel: unique midline, `toward` has no meaning here *)
             let k =
               if Num.sign la.Geom.a <> 0 then Num.div lb.Geom.a la.Geom.a
               else Num.div lb.Geom.b la.Geom.b
             in
             if Num.equal lb.Geom.c (Num.mul k la.Geom.c) then
               Error.fail span "lines are identical";
-            (Geom.parallel_midline la lb, "axiom5", base)
-        | Some (bis_eq, bis_opp) -> (
-            match p_opt with
-            | None -> Error.fail span "bisector is ambiguous; add `toward .p`"
-            | Some po ->
-                let p = table_of po in
-                let s1 = Num.sign (eval_at la p)
-                and s2 = Num.sign (eval_at lb p) in
-                if s1 = 0 || s2 = 0 then
-                  Error.fail span
-                    "reference point on a fold line; bisector ambiguous";
-                ( (if s1 = s2 then bis_eq else bis_opp),
-                  "axiom5",
-                  base @ [ pstr po ] )))
+            Axis (Geom.parallel_midline la lb, "axiom5", [ l1_str; l2_str ])
+        | Some cands ->
+            (* intersecting: defer bisector choice to the fold state. `toward`
+               names where the fold goes, so a point on l1 is meaningless (E1);
+               a point on l2 is fine. *)
+            let toward = Option.map table_of p_opt in
+            let toward_str = Option.map pstr p_opt in
+            (match toward with
+            | Some x when Geom.side_of_line la x = 0 ->
+                Error.fail span
+                  (Printf.sprintf
+                     "`toward %s` lies on %s; `toward` names where the fold \
+                      goes — pick a point off %s"
+                     (Option.get toward_str) l1_str l1_str)
+            | _ -> ());
+            let sources =
+              [ l1_str; l2_str ]
+              @ (match toward_str with Some s -> [ s ] | None -> [])
+            in
+            Ax5
+              {
+                la;
+                lb;
+                cands;
+                toward;
+                l1_op = l1;
+                l1_str;
+                l2_str;
+                toward_str;
+                sources;
+              })
     | Ast.MapThrough (p, d, p', x_opt) -> (
         let pp = table_of p and dd = resolve_line d and pp' = table_of p' in
         if Geom.point_equal pp pp' then
@@ -554,7 +596,7 @@ let eval_folded (prog : Ast.program) : folded =
             Error.fail span
               (Printf.sprintf "cannot fold %s onto %s through %s: out of reach"
                  (pstr p) (lstr d) (pstr p'))
-        | [ c ] -> (c, "axiom6", base)
+        | [ c ] -> Axis (c, "axiom6", base)
         | creases -> (
             match x_opt with
             | None ->
@@ -583,7 +625,7 @@ let eval_folded (prog : Ast.program) : folded =
                     None creases
                 in
                 match best with
-                | Some c -> (c, "axiom6", base @ [ pstr xo ])
+                | Some c -> Axis (c, "axiom6", base @ [ pstr xo ])
                 (* unreachable: this arm only runs with ≥2 creases, so the
                    fold over a non-empty list always yields [Some]. *)
                 | None -> assert false))
@@ -612,7 +654,7 @@ let eval_folded (prog : Ast.program) : folded =
                  "cannot fold %s onto %s and %s onto %s: out of reach (no \
                   common tangent)"
                  (pstr p) (lstr d) (pstr q) (lstr e))
-        | [ c ] -> (c, "axiom7", base)
+        | [ c ] -> Axis (c, "axiom7", base)
         | creases -> (
             match x_opt with
             | None ->
@@ -641,21 +683,31 @@ let eval_folded (prog : Ast.program) : folded =
                     None creases
                 in
                 match best with
-                | Some c -> (c, "axiom7", base @ [ pstr xo ])
+                | Some c -> Axis (c, "axiom7", base @ [ pstr xo ])
                 | None -> assert false))
   in
   let run_fold_checked ~(span : Error.span) ~(axis : Geom.line)
       ~(fs : Ast.fold_spec) ~(implied : Ast.point_operand option)
-      ~(crease_id : int) ~(prov : State.provenance option)
+      ~(side_override : int option) ~(crease_id : int)
+      ~(prov : State.provenance option)
       ~(check : ((int -> bool) -> unit) option) : unit =
+    (* [side_override] fixes the moving side (axiom-5 derived direction), so the
+       anchor is only needed to scope an `up to` range *)
     let anchor_arg =
       match (fs.Ast.moving, implied) with
-      | Some fa, _ -> fa
-      | None, Some p -> Ast.FlapPoint p
-      | None, None ->
-          Error.fail span "this fold needs `moving .p` to choose the side"
+      | Some fa, _ -> Some fa
+      | None, Some p -> Some (Ast.FlapPoint p)
+      | None, None -> None
     in
-    let move_side = side_of_flap_arg axis anchor_arg span in
+    let move_side =
+      match side_override with
+      | Some s -> s
+      | None -> (
+          match anchor_arg with
+          | Some fa -> side_of_flap_arg axis fa span
+          | None ->
+              Error.fail span "this fold needs `moving .p` to choose the side")
+    in
     let valley = fs.Ast.direction = Ast.Valley in
     match fs.Ast.up_to with
     | None ->
@@ -673,7 +725,12 @@ let eval_folded (prog : Ast.program) : folded =
           Fold_state.fold_with_records !(ctx.state) ~axis ~move_side ~valley
             ~crease_id ~prov
     | Some tgt -> (
-        let anchor = resolve_flap_face anchor_arg span in
+        let anchor =
+          match anchor_arg with
+          | Some fa -> resolve_flap_face fa span
+          | None ->
+              Error.fail span "`up to` needs `moving` to anchor the moving flaps"
+        in
         let target = target_of tgt span in
         match
           Fold_state.select_scope !(ctx.state) ~axis ~move_side ~valley ~anchor
@@ -689,14 +746,204 @@ let eval_folded (prog : Ast.program) : folded =
                 ~move_side ~valley ~crease_id ~prov)
   in
   let run_fold ~(span : Error.span) ~(axis : Geom.line) ~(fs : Ast.fold_spec)
-      ~(implied : Ast.point_operand option) ~(crease_id : int)
-      ~(prov : State.provenance option) : unit =
-    run_fold_checked ~span ~axis ~fs ~implied ~crease_id ~prov ~check:None
+      ~(implied : Ast.point_operand option) ~(side_override : int option)
+      ~(crease_id : int) ~(prov : State.provenance option) : unit =
+    run_fold_checked ~span ~axis ~fs ~implied ~side_override ~crease_id ~prov
+      ~check:None
+  in
+  (* ---- axiom-5 bisector selection (direction + paper incidence) ---- *)
+  (* l1's swinging material as table-space segments *)
+  let ax5_material (p : ax5_pending) : (Geom.point * Geom.point) list =
+    let of_material cid =
+      List.map
+        (fun (s : Fold_state.crease_segment) -> (s.Fold_state.ta, s.Fold_state.tb))
+        (Fold_state.crease_segments !(ctx.state) cid)
+    in
+    match p.l1_op with
+    | Ast.LNamed cr -> (
+        match lookup_crease ctx cr with
+        | Material (cid, _) -> of_material cid
+        | Frozen _ -> Fold_state.line_material_segments !(ctx.state) p.la)
+    | Ast.LMember (iname, mem, mspan) -> (
+        let inst = lookup_instance ctx iname mspan in
+        match Hashtbl.find_opt inst.ilines mem with
+        | Some (Material (cid, _)) -> of_material cid
+        | Some (Frozen _) -> Fold_state.line_material_segments !(ctx.state) p.la
+        | None ->
+            Error.fail mspan
+              (Printf.sprintf "instance $%s has no line member %s" iname mem))
+    | Ast.LAt (cr, sels, aspan) -> (
+        let _cid, matches = at_matches cr sels aspan in
+        match matches with
+        | [ s ] -> [ (s.Fold_state.ta, s.Fold_state.tb) ]
+        | [] ->
+            Error.fail aspan
+              (Printf.sprintf "no segment of --%s matches %s" cr.Ast.cname
+                 (selstr sels))
+        | many ->
+            Error.fail aspan
+              (Printf.sprintf
+                 "--%s at %s is ambiguous: %d segments match; add a selector"
+                 cr.Ast.cname (selstr sels) (List.length many)))
+    | Ast.LThrough _ -> Fold_state.line_material_segments !(ctx.state) p.la
+  in
+  (* viability core (shared by bind and fold): one material endpoint strictly on
+     side [s] of candidate [b] is a representative of the swinging half; its
+     image under reflection lands on [xside] of la iff the fold moves that half
+     toward the target. The image is never clipped — a sign suffices. *)
+  let swing_rep mat (b : Geom.line) (s : int) : Geom.point option =
+    List.find_map
+      (fun (u, v) ->
+        if Geom.side_of_line b u = s then Some u
+        else if Geom.side_of_line b v = s then Some v
+        else None)
+      mat
+  in
+  let viable ~(la : Geom.line) ~(xside : int) mat (b : Geom.line) (s : int) : bool
+      =
+    match swing_rep mat b s with
+    | None -> false
+    | Some q -> Geom.side_of_line la (Geom.reflect_point b q) = xside
+  in
+  (* paper-incidence filter for omitted `toward`: keep only bisectors that crease
+     the sheet *)
+  let ax5_filter (p : ax5_pending) : Geom.line list =
+    let b1, b2 = p.cands in
+    List.filter (Fold_state.line_cuts_paper !(ctx.state)) [ b1; b2 ]
+  in
+  let e2 (p : ax5_pending) =
+    Printf.sprintf
+      "map %s onto %s is ambiguous: both bisectors land on the paper; add \
+       `toward .p` to pick the direction"
+      p.l1_str p.l2_str
+  in
+  let e3 (p : ax5_pending) =
+    Printf.sprintf
+      "map %s onto %s: neither bisector lands on the paper — no fold to make"
+      p.l1_str p.l2_str
+  in
+  let e5_head (p : ax5_pending) (x : string) =
+    Printf.sprintf
+      "map %s onto %s toward %s is ambiguous: %s straddles the crossing, so \
+       both bisectors move material toward %s"
+      p.l1_str p.l2_str x p.l1_str x
+  in
+  let select_axiom5_bind (span : Error.span) (p : ax5_pending) : Geom.line =
+    let b1, b2 = p.cands in
+    match p.toward with
+    | None -> (
+        match ax5_filter p with
+        | [ b ] -> b
+        | [ _; _ ] -> Error.fail span (e2 p)
+        | _ -> Error.fail span (e3 p))
+    | Some x ->
+        let xside = Geom.side_of_line p.la x in
+        let mat = ax5_material p in
+        let xs = Option.get p.toward_str in
+        let viable_c b = viable ~la:p.la ~xside mat b 1 || viable ~la:p.la ~xside mat b (-1) in
+        (match List.filter viable_c [ b1; b2 ] with
+        | [ b ] -> b
+        | [] ->
+            Error.fail span
+              (Printf.sprintf "no fold of %s onto %s moves its material toward %s"
+                 p.l1_str p.l2_str xs)
+        | _ ->
+            Error.fail span
+              (e5_head p xs
+              ^ Printf.sprintf "; select the swinging segment of %s with `at`"
+                  p.l1_str))
+  in
+  (* returns the chosen axis + an optional move-side override (Some when the
+     direction is derived, not read off an explicit `moving`) *)
+  let select_axiom5_fold (span : Error.span) (p : ax5_pending)
+      ~(fs : Ast.fold_spec) : Geom.line * int option =
+    let b1, b2 = p.cands in
+    match p.toward with
+    | None -> (
+        let b =
+          match ax5_filter p with
+          | [ b ] -> b
+          | [ _; _ ] -> Error.fail span (e2 p)
+          | _ -> Error.fail span (e3 p)
+        in
+        match fs.Ast.moving with
+        | Some _ -> (b, None) (* explicit moving: side read off the anchor *)
+        | None ->
+            (* implied moving: l1's material swings; the side it sits on decides *)
+            let mat = ax5_material p in
+            if mat = [] then
+              Error.fail span
+                (Printf.sprintf "%s has no material on the paper to fold" p.l1_str);
+            let on s = swing_rep mat b s <> None in
+            (match (on 1, on (-1)) with
+            | true, false -> (b, Some 1)
+            | false, true -> (b, Some (-1))
+            | true, true ->
+                Error.fail span
+                  (Printf.sprintf
+                     "%s straddles the fold line; add `moving` to pick the \
+                      swinging flap"
+                     p.l1_str)
+            | false, false ->
+                Error.fail span
+                  (Printf.sprintf "%s has no material on the paper to fold"
+                     p.l1_str)))
+    | Some x ->
+        let xside = Geom.side_of_line p.la x in
+        let mat = ax5_material p in
+        let xs = Option.get p.toward_str in
+        if mat = [] then
+          Error.fail span
+            (Printf.sprintf "%s has no material on the paper to fold" p.l1_str);
+        (match fs.Ast.moving with
+        | None ->
+            (* geometry guarantees ≤1 viable side per candidate *)
+            let cand_side b =
+              if viable ~la:p.la ~xside mat b 1 then Some 1
+              else if viable ~la:p.la ~xside mat b (-1) then Some (-1)
+              else None
+            in
+            let viables =
+              List.filter_map
+                (fun b -> Option.map (fun s -> (b, s)) (cand_side b))
+                [ b1; b2 ]
+            in
+            (match viables with
+            | [ (b, s) ] -> (b, Some s)
+            | [] ->
+                Error.fail span
+                  (Printf.sprintf
+                     "no fold of %s onto %s moves its material toward %s"
+                     p.l1_str p.l2_str xs)
+            | _ ->
+                Error.fail span
+                  (e5_head p xs ^ "; add `moving` to pick the swinging flap"))
+        | Some fa ->
+            (* the anchor's side of each candidate names the swinging half; a
+               candidate is viable iff that half moves toward x. On-axis /
+               straddling anchors just reject the candidate. *)
+            let viable_c b =
+              match side_of_flap_arg_res b fa span with
+              | Ok s -> viable ~la:p.la ~xside mat b s
+              | Error _ -> false
+            in
+            (match List.filter viable_c [ b1; b2 ] with
+            | [ b ] -> (b, None) (* side resolved normally via the anchor *)
+            | [] ->
+                Error.fail span
+                  (Printf.sprintf "no fold of %s onto %s moves %s toward %s"
+                     p.l1_str p.l2_str (fstr fa) xs)
+            | _ ->
+                Error.fail span
+                  (Printf.sprintf
+                     "map %s onto %s toward %s is ambiguous even with `moving \
+                      %s`: it lies in both swinging flaps; anchor with a point \
+                      in only one flap"
+                     p.l1_str p.l2_str xs (fstr fa))))
   in
   let rec eval_stmt (stmt : Ast.stmt) =
     match stmt with
     | Ast.Crease (name_opt, ax, fold_opt, span) -> (
-        let axis, axiom, sources = axis_of span ax in
         let cid = Fold_state.fresh_crease_id () in
         let prov_name =
           match name_opt with
@@ -706,6 +953,19 @@ let eval_folded (prog : Ast.program) : folded =
               | InInstance i -> Some (i ^ "." ^ n)
               | Anon -> None)
           | _ -> None
+        in
+        (* axiom 5 defers bisector choice to the fold state (direction / paper
+           incidence); every other axiom resolves its axis up front *)
+        let axis, axiom, sources, side_override =
+          match axis_of span ax with
+          | Axis (axis, axiom, sources) -> (axis, axiom, sources, None)
+          | Ax5 p ->
+              let axis, so =
+                match fold_opt with
+                | None -> (select_axiom5_bind span p, None)
+                | Some fs -> select_axiom5_fold span p ~fs
+              in
+              (axis, "axiom5", p.sources, so)
         in
         let prov : State.provenance option =
           Some { State.axiom; sources; span; name = prov_name; step = ctx.panel }
@@ -721,7 +981,7 @@ let eval_folded (prog : Ast.program) : folded =
                   Some p
               | _ -> None
             in
-            run_fold ~span ~axis ~fs ~implied ~crease_id:cid ~prov);
+            run_fold ~span ~axis ~fs ~implied ~side_override ~crease_id:cid ~prov);
         match name_opt with
         | Some n -> bind_crease ctx n span (Material (cid, axis))
         | None -> ())
@@ -914,8 +1174,8 @@ let eval_folded (prog : Ast.program) : folded =
               step = ctx.panel;
             }
         in
-        run_fold_checked ~span ~axis ~fs ~implied:None ~crease_id:cid ~prov
-          ~check:(Some check_straight)
+        run_fold_checked ~span ~axis ~fs ~implied:None ~side_override:None
+          ~crease_id:cid ~prov ~check:(Some check_straight)
   in
   List.iter eval_stmt prog;
   let named_points =
