@@ -187,6 +187,89 @@ let test_eval_at_no_match () =
                --w = through .b .d\n\
                .mid = cross --b at .b --w\n")))
 
+(* @fold --d ≡ re-stating the axiom: same faces, same M/V, no stale U (#27) *)
+let test_fold_along_matches_restatement () =
+  let via_fold =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\n--d = map .b onto .a\n@fold --d moving .b\n")
+  in
+  let via_axiom =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\nmap .b onto .a\n@map .b onto .a moving .b\n")
+  in
+  Alcotest.(check int) "same face count"
+    (Array.length via_axiom.Eval.state.Fold_state.faces)
+    (Array.length via_fold.Eval.state.Fold_state.faces);
+  Alcotest.(check int) "same V count"
+    (count_assign Fold_state.V via_axiom.Eval.state)
+    (count_assign Fold_state.V via_fold.Eval.state);
+  Alcotest.(check int) "no stale U" 0
+    (count_assign Fold_state.U via_fold.Eval.state)
+
+(* crease all layers, @fold some: the unmoved layer keeps its flat U mark *)
+let test_crease_all_fold_some () =
+  let scoped =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\n\
+          @map .d onto .a\n\
+          --m = map .c onto .d\n\
+          @fold --m moving .c up to .c\n")
+  in
+  Alcotest.(check int) "unmoved layer keeps U" 1
+    (count_assign Fold_state.U scoped.Eval.state);
+  Alcotest.(check int) "4 faces" 4
+    (Array.length scoped.Eval.state.Fold_state.faces);
+  let all_layers =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\n\
+          @map .d onto .a\n\
+          --m = map .c onto .d\n\
+          @fold --m moving .c\n")
+  in
+  Alcotest.(check int) "all-layers upgrades every U" 0
+    (count_assign Fold_state.U all_layers.Eval.state)
+
+let test_fold_along_needs_moving () =
+  expect_error "needs `moving" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n--d = map .b onto .a\n@fold --d\n")))
+
+let test_fold_along_not_material () =
+  expect_error "existing crease" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n@fold --(.a .c) moving .b\n")))
+
+(* globally bent bundle without `at` → the existing PR2/at error *)
+let test_fold_along_bent () =
+  expect_error "no longer straight" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n\
+               --b = through .a .c\n\
+               --v = @map .c onto .b\n\
+               @fold --b moving .a\n")))
+
+(* bent under the moving set: axis picked via `at`, but a moving flap carries
+   an off-axis segment of the same bundle *)
+let test_fold_along_bent_under_moving () =
+  expect_error "bent under" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n\
+               --b = through .a .c\n\
+               --v = @map .c onto .b\n\
+               @fold --b at #(.c .d) moving .a\n")))
+
 (* ---- Fold_state ---- *)
 
 let test_fold_state_init () =
@@ -834,6 +917,99 @@ let test_eval_export_temp_target () =
   Alcotest.(check bool) "temp target not named" true
     (not (List.mem_assoc "_t" fd.Eval.named_points))
 
+(* up to = anchor: only the top flap of a 2-layer stack folds → 3 faces *)
+let test_eval_up_to_top_flap () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\n@map .d onto .a\n@map .c onto .d up to .c\n")
+  in
+  Alcotest.(check int) "3 faces" 3 (Array.length fd.Eval.state.Fold_state.faces)
+
+(* same fold without up to: all-layers cuts both → 4 faces *)
+let test_eval_all_layers_differs () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\n@map .d onto .a\n@map .c onto .d\n")
+  in
+  Alcotest.(check int) "4 faces" 4 (Array.length fd.Eval.state.Fold_state.faces)
+
+(* four-layer stack, fold the top two: 6 faces (all-layers would be 8).
+   --l/--bot are boundary reference creases and MUST be bound before the folds
+   (afterwards .a/.b and .a/.d coincide on the table → "same place" error) *)
+let quarter_stack_prefix =
+  "paper square\n\
+   --l = through .a .d\n\
+   --bot = through .a .b\n\
+   --v = @map .b onto .a\n\
+   --h = @map .d onto .a\n\
+   .p = cross --l --h\n\
+   .q = cross --v --bot\n"
+
+let test_eval_up_to_range () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         (quarter_stack_prefix ^ "@through .p .q moving .d up to .c\n"))
+  in
+  Alcotest.(check int) "6 faces" 6 (Array.length fd.Eval.state.Fold_state.faces)
+
+(* anchoring below a covering flap is a buried-anchor error *)
+let test_eval_buried_anchor () =
+  expect_error "cover" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              (quarter_stack_prefix ^ "@through .p .q moving .c up to .b\n"))))
+
+(* target flap entirely off the moving side *)
+let test_eval_up_to_wrong_side () =
+  expect_error "not on the moving side" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n\
+               --h = @map .d onto .a\n\
+               --v = @map .c onto .d up to .c\n\
+               --bot = through .a .b\n\
+               .m = cross --v --bot\n\
+               @map .b onto .m up to .c\n")))
+
+(* up to --crease with no reachable hinged flap *)
+let test_eval_up_to_crease_unreachable () =
+  expect_error "no flap hinged" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n--l = through .a .d\n@map .d onto .a up to --l\n")))
+
+(* up to --crease: the anchor itself is hinged on it → range = anchor alone *)
+let test_eval_up_to_crease_target () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         (quarter_stack_prefix ^ "@through .p .q moving .d up to --h\n"))
+  in
+  Alcotest.(check int) "5 faces (top flap only)" 5
+    (Array.length fd.Eval.state.Fold_state.faces)
+
+(* moving --d: a hinge has two sides → multi-match error *)
+let test_eval_moving_line_multimatch () =
+  expect_error "flaps" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n--d = map .b onto .a\n@through .a .c moving --d\n")))
+
+(* an explicit flap that straddles the axis cannot anchor *)
+let test_eval_moving_flap_straddles () =
+  expect_error "straddles" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n@map .b onto .a moving #(.a .b)\n")))
+
 let test_step_frames () =
   let src =
     "paper square\n\
@@ -879,6 +1055,18 @@ let () =
             test_eval_bent_bundle_errors;
           Alcotest.test_case "at operator no match errors" `Quick
             test_eval_at_no_match;
+          Alcotest.test_case "@fold matches axiom restatement" `Quick
+            test_fold_along_matches_restatement;
+          Alcotest.test_case "crease all layers, @fold some" `Quick
+            test_crease_all_fold_some;
+          Alcotest.test_case "@fold needs moving" `Quick
+            test_fold_along_needs_moving;
+          Alcotest.test_case "@fold requires a material crease" `Quick
+            test_fold_along_not_material;
+          Alcotest.test_case "@fold on a globally bent bundle" `Quick
+            test_fold_along_bent;
+          Alcotest.test_case "@fold bent under the moving flaps" `Quick
+            test_fold_along_bent_under_moving;
         ] );
       ( "fold_state",
         [
@@ -990,5 +1178,23 @@ let () =
           Alcotest.test_case "apply folds land in panel" `Quick
             test_eval_apply_folds_land_in_panel;
           Alcotest.test_case "step frames" `Quick test_step_frames;
+          Alcotest.test_case "up to = anchor: top flap only" `Quick
+            test_eval_up_to_top_flap;
+          Alcotest.test_case "all-layers differs from up-to" `Quick
+            test_eval_all_layers_differs;
+          Alcotest.test_case "up to range: fold top two of four" `Quick
+            test_eval_up_to_range;
+          Alcotest.test_case "buried anchor errors" `Quick
+            test_eval_buried_anchor;
+          Alcotest.test_case "up to wrong side errors" `Quick
+            test_eval_up_to_wrong_side;
+          Alcotest.test_case "up to crease unreachable errors" `Quick
+            test_eval_up_to_crease_unreachable;
+          Alcotest.test_case "up to crease target" `Quick
+            test_eval_up_to_crease_target;
+          Alcotest.test_case "moving line multimatch errors" `Quick
+            test_eval_moving_line_multimatch;
+          Alcotest.test_case "moving flap straddles errors" `Quick
+            test_eval_moving_flap_straddles;
         ] );
     ]

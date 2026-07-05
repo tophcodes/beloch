@@ -53,7 +53,21 @@ type axiom =
     (* axiom 7: fold .p onto --d AND .q onto --e simultaneously, optional toward *)
 
 type direction = Valley | Mountain
-type fold_spec = { moving : point_operand option; direction : direction }
+
+(* A flap-typed operand slot (ADR 0016). A point is sugar for "the flap
+   carrying the point"; a line for "the flap hinged on the crease/segment"
+   (usually a multi-match for `moving`, resolvable for `up to`); #(...) lists
+   explicit incidence constraints. *)
+type flap_arg =
+  | FlapPoint of point_operand
+  | FlapLine of line_operand
+  | FlapSpec of flap_operand
+
+type fold_spec = {
+  moving : flap_arg option;
+  up_to : flap_arg option;
+  direction : direction;
+}
 
 type point_expr =
   | Cross of line_operand * line_operand (* the `.name:` binding RHS *)
@@ -69,5 +83,8 @@ type stmt =
   | Export of export_entry list option * string * Error.span
       (* None = export-all; the string is the instance name *)
   | StepMark of string * Error.span
+  | FoldAlong of line_operand * fold_spec * Error.span
+      (* @fold <crease> [moving f] [up to f] [mountain]: fold along existing
+         material; the operand must resolve to a material crease *)
 
 type program = stmt list

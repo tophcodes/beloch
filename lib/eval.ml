@@ -129,6 +129,12 @@ let eval_folded (prog : Ast.program) : folded =
     match sels with
     | [ s ] -> one s
     | ss -> Printf.sprintf "(%s)" (String.concat " and " (List.map one ss))
+  and fstr (fa : Ast.flap_arg) : string =
+    match fa with
+    | Ast.FlapPoint po -> pstr po
+    | Ast.FlapLine lo -> lstr lo
+    | Ast.FlapSpec (Ast.FByPoints (pts, _)) ->
+        Printf.sprintf "#(%s)" (String.concat " " (List.map pstr pts))
   in
   let materialize_crease ~(name : string) (span : Error.span) (cv : crease_val) :
       Geom.line =
@@ -189,65 +195,197 @@ let eval_folded (prog : Ast.program) : folded =
         | None ->
             Error.fail span
               (Printf.sprintf "instance $%s has no line member %s" iname mem))
-    | Ast.LAt (cr, sels, span) ->
-        let cid =
-          match lookup_crease ctx cr with
-          | Material (cid, _) -> cid
-          | Frozen _ ->
-              Error.fail cr.Ast.cspan
-                (Printf.sprintf
-                   "--%s is not a physical crease, so it has no segments to \
-                    select" cr.Ast.cname)
-        in
-        let segs = Fold_state.crease_segments !(ctx.state) cid in
-        let seg_line (s : Fold_state.crease_segment) =
-          Geom.line_through s.Fold_state.ta s.Fold_state.tb
-        in
-        let point_on_seg (tp : Geom.point) (s : Fold_state.crease_segment) =
-          Geom.side_of_line (seg_line s) tp = 0
-          &&
-          let t = Geom.seg_param (s.Fold_state.ta, s.Fold_state.tb) tp in
-          Num.compare t Num.zero >= 0 && Num.compare t Num.one <= 0
-        in
-        let incident (sel : Ast.selector) (s : Fold_state.crease_segment) : bool =
-          match sel with
-          | Ast.SelPoint po ->
-              point_on_seg
-                (Fold_state.table_position !(ctx.state) (resolve_point po)) s
-          | Ast.SelLine lo -> (
-              match Geom.intersection (resolve_line lo) (seg_line s) with
-              | Some ip -> point_on_seg ip s
-              | None -> false)
-          | Ast.SelFlap (Ast.FByPoints (pts, fspan)) -> (
-              match
-                Fold_state.flap_of_points !(ctx.state)
-                  (List.map resolve_point pts)
-              with
-              | `Face fi ->
-                  let l, r = s.Fold_state.faces in
-                  l = fi || r = fi
-              | `Zero -> Error.fail fspan "those points aren't all on one flap"
-              | `Ambiguous -> Error.fail fspan "ambiguous flap; add another point")
-        in
-        let matches =
-          List.filter
-            (fun s -> List.for_all (fun sel -> incident sel s) sels)
-            segs
-        in
-        (match matches with
-         | [ s ] -> seg_line s
-         | [] ->
-             Error.fail span
-               (Printf.sprintf "no segment of --%s matches %s" cr.Ast.cname
-                  (selstr sels))
-         | many ->
-             Error.fail span
-               (Printf.sprintf
-                  "--%s at %s is ambiguous: %d segments match; add a selector"
-                  cr.Ast.cname (selstr sels) (List.length many)))
+    | Ast.LAt (cr, sels, span) -> (
+        let _cid, matches = at_matches cr sels span in
+        match matches with
+        | [ s ] -> Geom.line_through s.Fold_state.ta s.Fold_state.tb
+        | [] ->
+            Error.fail span
+              (Printf.sprintf "no segment of --%s matches %s" cr.Ast.cname
+                 (selstr sels))
+        | many ->
+            Error.fail span
+              (Printf.sprintf
+                 "--%s at %s is ambiguous: %d segments match; add a selector"
+                 cr.Ast.cname (selstr sels) (List.length many)))
+  and material_cid (cr : Ast.crease_ref) : int =
+    match lookup_crease ctx cr with
+    | Material (cid, _) -> cid
+    | Frozen _ ->
+        Error.fail cr.Ast.cspan
+          (Printf.sprintf
+             "--%s is not a physical crease, so it has no segments to select"
+             cr.Ast.cname)
+  and at_matches (cr : Ast.crease_ref) (sels : Ast.selector list)
+      (_span : Error.span) : int * Fold_state.crease_segment list =
+    let cid = material_cid cr in
+    let segs = Fold_state.crease_segments !(ctx.state) cid in
+    let seg_line (s : Fold_state.crease_segment) =
+      Geom.line_through s.Fold_state.ta s.Fold_state.tb
+    in
+    let point_on_seg (tp : Geom.point) (s : Fold_state.crease_segment) =
+      Geom.side_of_line (seg_line s) tp = 0
+      &&
+      let t = Geom.seg_param (s.Fold_state.ta, s.Fold_state.tb) tp in
+      Num.compare t Num.zero >= 0 && Num.compare t Num.one <= 0
+    in
+    let incident (sel : Ast.selector) (s : Fold_state.crease_segment) : bool =
+      match sel with
+      | Ast.SelPoint po ->
+          point_on_seg
+            (Fold_state.table_position !(ctx.state) (resolve_point po)) s
+      | Ast.SelLine lo -> (
+          match Geom.intersection (resolve_line lo) (seg_line s) with
+          | Some ip -> point_on_seg ip s
+          | None -> false)
+      | Ast.SelFlap (Ast.FByPoints (pts, fspan)) -> (
+          match
+            Fold_state.flap_of_points !(ctx.state) (List.map resolve_point pts)
+          with
+          | `Face fi ->
+              let l, r = s.Fold_state.faces in
+              l = fi || r = fi
+          | `Zero -> Error.fail fspan "those points aren't all on one flap"
+          | `Ambiguous -> Error.fail fspan "ambiguous flap; add another point")
+    in
+    (cid, List.filter (fun s -> List.for_all (fun sel -> incident sel s) sels) segs)
   in
   let table_of (po : Ast.point_operand) : Geom.point =
     Fold_state.table_position !(ctx.state) (resolve_point po)
+  in
+  (* faces whose PAPER polygon contains material point [pp] *)
+  let faces_containing (pp : Geom.point) : int list =
+    let st = !(ctx.state) in
+    let acc = ref [] in
+    Array.iteri
+      (fun i (f : Fold_state.face) ->
+        if Geom.in_convex_polygon f.Fold_state.paper pp then acc := i :: !acc)
+      st.Fold_state.faces;
+    List.rev !acc
+  in
+  (* resolve a flap operand to the unique current face (ADR 0016: slots demand
+     uniqueness, errors name the candidates) *)
+  let resolve_flap_face (fa : Ast.flap_arg) (span : Error.span) : int =
+    match fa with
+    | Ast.FlapPoint po -> (
+        match faces_containing (resolve_point po) with
+        | [ i ] -> i
+        | [] ->
+            Error.fail span (Printf.sprintf "%s is not on the paper" (fstr fa))
+        | many ->
+            Error.fail span
+              (Printf.sprintf
+                 "%s lies on a crease shared by %d flaps; name the flap with \
+                  #(...)"
+                 (fstr fa) (List.length many)))
+    | Ast.FlapSpec (Ast.FByPoints (pts, fspan)) -> (
+        match
+          Fold_state.flap_of_points !(ctx.state) (List.map resolve_point pts)
+        with
+        | `Face fi -> fi
+        | `Zero -> Error.fail fspan "those points aren't all on one flap"
+        | `Ambiguous -> Error.fail fspan "ambiguous flap; add another point")
+    | Ast.FlapLine lo -> (
+        let candidates =
+          match lo with
+          | Ast.LAt (cr, sels, aspan) -> (
+              match at_matches cr sels aspan with
+              | _, [ s ] ->
+                  let l, r = s.Fold_state.faces in
+                  l :: (if r >= 0 then [ r ] else [])
+              | _, [] ->
+                  Error.fail aspan
+                    (Printf.sprintf "no segment of --%s matches %s"
+                       cr.Ast.cname (selstr sels))
+              | _, many ->
+                  Error.fail aspan
+                    (Printf.sprintf
+                       "--%s at %s is ambiguous: %d segments match; add a \
+                        selector"
+                       cr.Ast.cname (selstr sels) (List.length many)))
+          | Ast.LNamed cr ->
+              let cid = material_cid cr in
+              Fold_state.crease_segments !(ctx.state) cid
+              |> List.concat_map (fun (s : Fold_state.crease_segment) ->
+                     let l, r = s.Fold_state.faces in
+                     l :: (if r >= 0 then [ r ] else []))
+              |> List.sort_uniq compare
+          | _ ->
+              Error.fail span
+                (Printf.sprintf
+                   "%s is not a physical crease, so it names no flap" (lstr lo))
+        in
+        match candidates with
+        | [ i ] -> i
+        | [] ->
+            Error.fail span (Printf.sprintf "%s touches no flap" (fstr fa))
+        | many ->
+            Error.fail span
+              (Printf.sprintf "%s touches %d flaps; add a point, e.g. #(.p)"
+                 (fstr fa) (List.length many)))
+  in
+  (* which side of [axis] a flap anchor moves; point sugar keeps the existing
+     side-of-the-point semantics (and its on-axis error) *)
+  let side_of_flap_arg (axis : Geom.line) (fa : Ast.flap_arg)
+      (span : Error.span) : int =
+    match fa with
+    | Ast.FlapPoint po ->
+        let s = Geom.side_of_line axis (table_of po) in
+        if s = 0 then Error.fail span "the moving point lies on the fold axis";
+        s
+    | _ -> (
+        let fi = resolve_flap_face fa span in
+        let poly = Fold_state.table_polygon !(ctx.state) fi in
+        let pos = Array.exists (fun p -> Geom.side_of_line axis p > 0) poly in
+        let neg = Array.exists (fun p -> Geom.side_of_line axis p < 0) poly in
+        match (pos, neg) with
+        | true, true ->
+            Error.fail span
+              (Printf.sprintf
+                 "%s straddles the fold axis; anchor with a point instead"
+                 (fstr fa))
+        | true, false -> 1
+        | false, true -> -1
+        | false, false ->
+            Error.fail span
+              (Printf.sprintf "%s lies on the fold axis" (fstr fa)))
+  in
+  let target_of (fa : Ast.flap_arg) (span : Error.span) :
+      Fold_state.scope_target =
+    match fa with
+    | Ast.FlapPoint _ | Ast.FlapSpec _ ->
+        Fold_state.TargetFace (resolve_flap_face fa span)
+    | Ast.FlapLine lo -> (
+        match lo with
+        | Ast.LNamed cr ->
+            let cid = material_cid cr in
+            let st = !(ctx.state) in
+            Fold_state.TargetHinged
+              (fun f ->
+                Array.exists
+                  (fun (e : Fold_state.edge) ->
+                    e.Fold_state.crease_id = cid
+                    && (e.Fold_state.left = f || e.Fold_state.right = f))
+                  st.Fold_state.edges)
+        | Ast.LAt (cr, sels, aspan) -> (
+            match at_matches cr sels aspan with
+            | _, [ s ] ->
+                let l, r = s.Fold_state.faces in
+                Fold_state.TargetHinged (fun f -> f = l || f = r)
+            | _, [] ->
+                Error.fail aspan
+                  (Printf.sprintf "no segment of --%s matches %s" cr.Ast.cname
+                     (selstr sels))
+            | _, many ->
+                Error.fail aspan
+                  (Printf.sprintf
+                     "--%s at %s is ambiguous: %d segments match; add a \
+                      selector"
+                     cr.Ast.cname (selstr sels) (List.length many)))
+        | _ ->
+            Error.fail span
+              (Printf.sprintf
+                 "%s is not a physical crease, so it names no flap" (lstr lo)))
   in
   (* axis line + provenance (axiom tag, source names), evaluated against the
      current table positions *)
@@ -416,6 +554,55 @@ let eval_folded (prog : Ast.program) : folded =
                 | Some c -> (c, "axiom7", base @ [ pstr xo ])
                 | None -> assert false))
   in
+  let run_fold_checked ~(span : Error.span) ~(axis : Geom.line)
+      ~(fs : Ast.fold_spec) ~(implied : Ast.point_operand option)
+      ~(crease_id : int) ~(prov : State.provenance option)
+      ~(check : ((int -> bool) -> unit) option) : unit =
+    let anchor_arg =
+      match (fs.Ast.moving, implied) with
+      | Some fa, _ -> fa
+      | None, Some p -> Ast.FlapPoint p
+      | None, None ->
+          Error.fail span "this fold needs `moving .p` to choose the side"
+    in
+    let move_side = side_of_flap_arg axis anchor_arg span in
+    let valley = fs.Ast.direction = Ast.Valley in
+    match fs.Ast.up_to with
+    | None ->
+        (match check with
+        | Some k ->
+            (* default scope: a face moves iff it has a piece on move_side *)
+            let st = !(ctx.state) in
+            k (fun fi ->
+                Array.length
+                  (Geom.clip_convex_halfplane axis move_side
+                     (Fold_state.table_polygon st fi))
+                >= 3)
+        | None -> ());
+        ctx.state :=
+          Fold_state.fold_with_records !(ctx.state) ~axis ~move_side ~valley
+            ~crease_id ~prov
+    | Some tgt -> (
+        let anchor = resolve_flap_face anchor_arg span in
+        let target = target_of tgt span in
+        match
+          Fold_state.select_scope !(ctx.state) ~axis ~move_side ~valley ~anchor
+            ~target
+        with
+        | Error msg -> Error.fail span msg
+        | Ok moving_parents ->
+            (match check with
+            | Some k -> k (fun fi -> moving_parents.(fi))
+            | None -> ());
+            ctx.state :=
+              Fold_state.fold_with_records !(ctx.state) ~moving_parents ~axis
+                ~move_side ~valley ~crease_id ~prov)
+  in
+  let run_fold ~(span : Error.span) ~(axis : Geom.line) ~(fs : Ast.fold_spec)
+      ~(implied : Ast.point_operand option) ~(crease_id : int)
+      ~(prov : State.provenance option) : unit =
+    run_fold_checked ~span ~axis ~fs ~implied ~crease_id ~prov ~check:None
+  in
   let rec eval_stmt (stmt : Ast.stmt) =
     match stmt with
     | Ast.Crease (name_opt, ax, fold_opt, span) -> (
@@ -436,26 +623,15 @@ let eval_folded (prog : Ast.program) : folded =
         (match fold_opt with
         | None -> ctx.state := Fold_state.subdivide !(ctx.state) axis ~crease_id:cid ~prov
         | Some fs ->
-            let move_side =
-              match fs.Ast.moving with
-              | Some po ->
-                  let s = Geom.side_of_line axis (table_of po) in
-                  if s = 0 then Error.fail span "the moving point lies on the fold axis";
-                  s
-              | None -> (
-                  match ax with
-                  | Ast.MapPoints (p, _)
-                  | Ast.MapThrough (p, _, _, _)
-                  | Ast.MapBoth (p, _, _, _, _) ->
-                      let s = Geom.side_of_line axis (table_of p) in
-                      if s = 0 then Error.fail span "the moving point lies on the fold axis";
-                      s
-                  | _ -> Error.fail span "this fold needs `moving .p` to choose the side")
+            let implied =
+              match ax with
+              | Ast.MapPoints (p, _)
+              | Ast.MapThrough (p, _, _, _)
+              | Ast.MapBoth (p, _, _, _, _) ->
+                  Some p
+              | _ -> None
             in
-            let valley = fs.Ast.direction = Ast.Valley in
-            ctx.state :=
-              Fold_state.fold_with_records !(ctx.state) ~axis ~move_side ~valley
-                ~crease_id:cid ~prov);
+            run_fold ~span ~axis ~fs ~implied ~crease_id:cid ~prov);
         match name_opt with
         | Some n -> bind_crease ctx n span (Material (cid, axis))
         | None -> ())
@@ -596,6 +772,45 @@ let eval_folded (prog : Ast.program) : folded =
         Hashtbl.replace ctx.panels id ();
         ctx.frames_rev <- (ctx.panel, !(ctx.state)) :: ctx.frames_rev;
         ctx.panel <- Some id
+    | Ast.FoldAlong (lo, fs, span) ->
+        let cid =
+          match lo with
+          | Ast.LNamed cr | Ast.LAt (cr, _, _) -> material_cid cr
+          | _ ->
+              Error.fail span
+                "@fold folds along an existing crease; give a crease name, \
+                 e.g. @fold --d or @fold --d at .p"
+        in
+        let axis = resolve_line lo in
+        (* per-flap material check: every segment of the bundle carried by a
+           moving flap must lie on the axis — a crease bent under the moving
+           set cannot fold (#28) *)
+        let check_straight (moves : int -> bool) =
+          List.iter
+            (fun (s : Fold_state.crease_segment) ->
+              let l, r = s.Fold_state.faces in
+              if
+                (moves l || (r >= 0 && moves r))
+                && (Geom.side_of_line axis s.Fold_state.ta <> 0
+                   || Geom.side_of_line axis s.Fold_state.tb <> 0)
+              then
+                Error.fail span
+                  "the crease is bent under the moving flaps; select a \
+                   straight segment with `at` or move fewer flaps")
+            (Fold_state.crease_segments !(ctx.state) cid)
+        in
+        let prov : State.provenance option =
+          Some
+            {
+              State.axiom = "fold";
+              sources = [ lstr lo ];
+              span;
+              name = None;
+              step = ctx.panel;
+            }
+        in
+        run_fold_checked ~span ~axis ~fs ~implied:None ~crease_id:cid ~prov
+          ~check:(Some check_straight)
   in
   List.iter eval_stmt prog;
   let named_points =

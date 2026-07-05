@@ -2,7 +2,7 @@
 open Ast
 %}
 
-%token PAPER SQUARE THROUGH MAP ONTO CROSS EQ EOF PERP TOWARD AT MOVING MOUNTAIN FLIP LINE_OPEN POINT_OPEN FLAP_OPEN RPAREN AND AT_KW
+%token PAPER SQUARE THROUGH MAP ONTO CROSS EQ EOF PERP TOWARD AT MOVING MOUNTAIN FLIP LINE_OPEN POINT_OPEN FLAP_OPEN RPAREN AND AT_KW UP TO FOLD_KW
 %token DEF APPLY EXPORT STEP AS BANG LBRACE RBRACE LPAREN RBRACKET
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN
 %token <string> POINT
@@ -42,6 +42,7 @@ body_stmt:
   | APPLY IDENT LPAREN args RPAREN             { Apply (None, $2, $4, $loc) }
   | EXPORT LBRACE export_entries RBRACE INSTANCE { Export (Some $3, $5, $loc) }
   | EXPORT INSTANCE                              { Export (None, $2, $loc) }
+  | AT FOLD_KW line_operand fold_clauses         { FoldAlong ($3, $4, $loc) }
 
 params:
   | { [] }
@@ -64,10 +65,26 @@ axiom_stmt:
   | AT axiom fold_clauses { ($2, Some $3) }
 
 fold_clauses:
-  |                               { { moving = None; direction = Valley } }
-  | MOVING point_operand          { { moving = Some $2; direction = Valley } }
-  | MOUNTAIN                      { { moving = None; direction = Mountain } }
-  | MOVING point_operand MOUNTAIN { { moving = Some $2; direction = Mountain } }
+  | moving_opt upto_opt mountain_opt
+      { { moving = $1; up_to = $2;
+          direction = (if $3 then Mountain else Valley) } }
+
+moving_opt:
+  |                 { None }
+  | MOVING flap_arg { Some $2 }
+
+upto_opt:
+  |                { None }
+  | UP TO flap_arg { Some $3 }
+
+mountain_opt:
+  |          { false }
+  | MOUNTAIN { true }
+
+flap_arg:
+  | point_operand { FlapPoint $1 }
+  | line_operand  { FlapLine $1 }
+  | flap_operand  { FlapSpec $1 }
 
 axiom:
   | THROUGH point_operand point_operand       { Through ($2, $3) }

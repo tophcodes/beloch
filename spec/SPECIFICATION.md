@@ -15,7 +15,7 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.17-dev** (crease-segment selection — the `at` operator: a crease name is a bundle, projected to one segment by incidence); **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`, `step` panels; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
+Current version: **v0.18-dev** (fold scope — flap-typed `moving`, `up to` for some-layers simple folds, `@fold` along material creases); **v0.17-dev** (crease-segment selection — the `at` operator: a crease name is a bundle, projected to one segment by incidence); **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`, `step` panels; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
 
 ---
 
@@ -301,26 +301,116 @@ paper stays flat. Prefixing it with `@` **performs the fold**:
 @perp --l through .p moving .q        ; line-construction folds need `moving`
 ```
 
-- **`moving .p`** picks the side that moves — the flap containing material point
-  `.p`. For `@map .x onto .y` it defaults to `.x` (the moved point); the
-  line-construction folds (`@through`, `@perp`, `@map --l onto --m`) have no
-  natural default and **require** `moving`.
-- **`mountain`** sets the fold direction; the default is **valley** (toward the
-  viewer). Mountain/valley is not annotated — it is *derived* (see below).
+*(since v0.18-dev)* Every fold has four ingredients:
+
+| Ingredient | What | Source |
+| --- | --- | --- |
+| axis | the fold line | an axiom, or an existing material crease (`@fold`, below) |
+| anchor | the flap that starts the moving set | implied on map folds, or `moving` |
+| scope | which flaps move | default: all layers on the anchor's side; or `up to` |
+| direction | valley/mountain | `mountain` keyword; default valley |
+
+**Anchor.** `moving` takes a **flap operand** (ADR 0016) — a point, a line, or
+`#(...)`, the same three forms `at` (§4.8) resolves by incidence:
+
+- a **point** — the flap carrying it. No flap contains it → error (`.p is not
+  on the paper`); the point sits on a crease shared by several flaps → error
+  naming the count and pointing at `#(...)` (`.p lies on a crease shared by 2
+  flaps; name the flap with #(...)`).
+- a **line** — the flap hinged on it. Usually ambiguous, since a hinge has two
+  sides (`--d touches 2 flaps; add a point, e.g. #(.p)`); resolves only when
+  exactly one flap touches it.
+- **`#(...)`** — explicit incidence constraints: the unique flap containing
+  every listed point (`moving #(.b .c)`), same resolution rule as `at`'s
+  `#(...)` selector.
+
+**Map folds** (`@map .a onto .c`) imply the anchor from the moved point when
+`moving` is omitted — here, `.a`'s flap; `moving <flap>` overrides it (e.g.
+`moving .c` folds the other side instead). **Line-construction folds**
+(`@through`, `@perp`, `@map --l onto --m`) and **`@fold`** (below) have no
+natural anchor, so `moving` is **required** — the existing "this fold needs
+`moving .p` to choose the side" error. A line- or `#(...)`-flap anchor that
+straddles the fold axis, or a `moving` point exactly on the axis, is also an
+error (no side to pick); a point anchor disambiguates the side by itself, even
+when its flap straddles the axis.
+
+**Scope.**
+
+- **No `up to`** (default): every layer on the anchor's side moves — the
+  all-layers simple fold, unchanged from before `up to` existed. Existing
+  examples keep their meaning.
+- **`up to <flap>`**: the contiguous range of flaps from the anchor through the
+  target flap, **inclusive**, walked in the stack order **over the crease
+  region** (depth may vary along a crease, so the walk compares only the
+  overlapping pieces):
+  ```
+  @map .d onto .a
+  @map .c onto .d up to .c   ; up to the anchor itself: exactly one flap moves
+  ```
+  A line target (`up to --d`) resolves even though `moving --d` alone usually
+  wouldn't: the anchor fixes the walk direction, so the first flap hinged on a
+  segment of `--d` reached from the anchor ends the range (ADR 0016, slot
+  context counts toward uniqueness). A target not reachable by the walk, or
+  not on the anchor's side, is an error.
+
+**Validity — outer-contiguous prefix.** A `@`/`@fold` statement is a **simple
+fold** [demaine2007, §14.1]: a rigid 180° rotation of the moving layers under
+the crease segment, collision-free throughout the motion. The static shadow of
+that constraint: the moving set must be a **contiguous prefix of the layer
+order in the crease region**, counted from the outside — top for valley,
+bottom for mountain. A **buried anchor** — a stationary flap covering it in the
+crease region — is an error regardless of how the end state looks (its material
+would pierce the covering layer mid-rotation): "a simple fold cannot move a
+buried flap: face *N* covers the anchor in the crease region — include the
+covering flap (anchor the fold there) or fold less." The all-layers default
+satisfies the prefix trivially. Motion outside the crease region is not
+checked — full motion validation is out of scope until an animatable (3D)
+viewer needs it.
 
 **Folded state.** The paper is a stack of flat **faces** — each a convex polygon
 in paper coordinates plus a rigid isometry placing it on the table — ordered
 bottom→top (the layer stack). A flat fold (±180°) keeps everything in the table
 plane, so the only "depth" is this stacking order. A simple fold reflects every
-layer on the moving side of the crease line across it (an exact reflection — no
-`sqrt`) and restacks: the moved flap, reversed, goes on top (valley) or
-underneath (mountain). "Fold through all layers" is automatic.
+layer in the moving set across the crease line (an exact reflection — no
+`sqrt`) and restacks: the moved layers, reversed, go on top (valley) or
+underneath (mountain). The default scope is every layer on the anchor's side —
+"fold through all layers" — automatic unless narrowed by `up to`.
 
 **Derived mountain/valley.** Each crease's assignment is
 `valley XOR (the cutting face is back-up)`, fixed when the fold runs. Because
 stacked layers alternate front/back, one fold through a stack yields the correct
 **alternating** M/V across layers (the accordion). Earlier creases keep their
 assignment (material facts).
+
+**`@fold` — fold along existing material** *(since v0.18-dev)*:
+
+```
+@fold <crease-operand> [moving <flap>] [up to <flap>] [mountain]
+```
+
+Folds along a crease already on the paper (a bundle, §4.8) instead of
+re-stating the axiom that produced it. `moving` is **always required** — a
+material crease implies no side. Material resolution is per flap, as for any
+crease reference (§4.8): a crease **bent** under the moving set is an error
+("the crease is bent under the moving flaps; select a straight segment with
+`at` or move fewer flaps") — select a straight segment with `--d at ...`
+instead. `@fold` composes with `up to` to crease every layer while folding
+only some — the motivating case, *crease all, fold some*:
+
+```
+--d = map .b onto .a          ; bare bind: subdivides ALL layers
+@fold --d moving .b up to .c  ; fold only flaps .b through .c along it
+```
+
+Non-moving layers keep their flat crease mark (`"U"` in FOLD output, §7);
+moving ones fold (their mark upgrades to `"M"`/`"V"`).
+
+See [ADR 0016](../decisions/0016-typed-operands-bundle-values-singleton-slots.md)
+(typed operands: bundle values vs. singleton slots — the resolution rules
+behind `moving`, `up to`, and `#(...)`) and
+[ADR 0014](../decisions/0014-crease-is-a-bundle-of-segments.md) (a crease is a
+bundle of segments — why `@fold` checks for a bent crease and why `at`
+selection exists).
 
 ### 4.7 `flip` — turn the sheet over *(since v0.7-dev)*
 
@@ -700,7 +790,8 @@ program       := "paper" "square" stmt*
 stmt          := crease_stmt | point_stmt | flip_stmt
               | def_stmt | instance_stmt | apply_stmt | export_stmt | step_stmt   ; since v0.16-dev
 crease_stmt   := CREASE_NAME "=" "--(" point_operand point_operand ")"                      ; named, inline through (no fold)
-               | [ CREASE_NAME "=" ] [ "@" ] axiom [ "moving" point_operand ] [ "mountain" ] ; named or anonymous, axiom-based (fold only with @)
+               | [ CREASE_NAME "=" ] [ "@" ] axiom [ fold_spec ]                             ; named or anonymous, axiom-based (fold only with @)
+               | "@" "fold" line_operand fold_spec                                           ; fold along existing material (since v0.18-dev)
 point_stmt    := POINT_NAME "=" point_expr
 flip_stmt     := "flip"
 axiom         := "through" point_operand point_operand          ; axiom 1
@@ -713,6 +804,8 @@ axiom         := "through" point_operand point_operand          ; axiom 1
                | "map" point_operand "onto" line_operand
                      "and" point_operand "onto" line_operand
                      [ "toward" point_operand ]                                  ; axiom 7
+fold_spec     := [ "moving" flap_operand ] [ "up" "to" flap_operand ] [ "mountain" ]  ; since v0.18-dev
+flap_operand  := point_operand | line_operand | "#(" point_operand+ ")"              ; since v0.18-dev
 point_expr    := "cross" line_operand line_operand              ; line intersection (binding RHS)
                | ".(" line_operand line_operand ")"              ; inline cross (binding RHS)
 point_operand := POINT_NAME | ".(" line_operand line_operand ")"     ; named, or inline cross
@@ -739,8 +832,10 @@ step_stmt     := "step" ident
 ```
 
 A bare axiom statement is a *precrease* (computes a crease line, paper stays
-flat). The `@` prefix performs the fold (§4.6); `moving`/`mountain` describe it.
-`flip` turns the whole sheet over (§4.7). *(since v0.7-dev)* Any operand may be an
+flat). The `@` prefix performs the fold (§4.6); `moving` anchors it, `up to`
+scopes it, `mountain` sets its direction. `@fold` folds along an existing
+crease instead of an axiom (§4.6). `flip` turns the whole sheet over (§4.7).
+*(since v0.7-dev)* Any operand may be an
 **inline anonymous construction** — `--(.a .b)` is the line through two points,
 `.(--a --b)` the point where two creases meet; these nest freely and coexist with
 the `cross`/`through` keywords (which remain for named bindings). *(since
@@ -776,7 +871,12 @@ crease coordinates compared exactly (§6). *(v0.16-dev)*
 `=` replaces `:` as the binding separator; shorthand inline-construction RHS;
 `def`/`apply`/instances with closed-scope bodies; qualified member access
 (`.[$inst m]` / `--[$inst m]`); `export` with shadow/rename validation;
-`step` diagram panels; the uniform rebinding rule (see §5, §5a).
+`step` diagram panels; the uniform rebinding rule (see §5, §5a). *(v0.17-dev)*
+crease-segment selection — the `at` operator, projecting a crease name (a
+bundle of segments) to one segment by incidence (ADR 0014). *(v0.18-dev)* fold
+scope — flap-typed `moving` (point/line/`#(...)` anchor operands, ADR 0016),
+`up to` for some-layers simple folds, and `@fold` along an existing material
+crease.
 
 ---
 

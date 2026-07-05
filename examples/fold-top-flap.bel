@@ -1,0 +1,5 @@
+; status: works — `up to` the anchor folds exactly one flap: the bottom layer
+; stays uncut (3 faces; the all-layers default would cut it too: 4)
+paper square
+@map .d onto .a
+@map .c onto .d up to .c
