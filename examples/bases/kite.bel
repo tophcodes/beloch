@@ -1,15 +1,6 @@
 paper square
 
 --ac = --(.a .c)
-.mid = .(--(.b .d) --ac)
-
-step stupid_constructions ; why is this entire step needed. stupid
---_d1 = map .d onto .mid
---_b1 = map .b onto .mid
-.d_help = .(--_d1 --(.c .d))
-.b_help = .(--_b1 --(.b .c))
-
-
-step finish_kite
-@map --(.d .a) onto --ac toward .d_help moving .d ; "moving .d" should not be necessary. implied
-@map --(.b .a) onto --ac toward .b_help moving .b
+@map --(.d .a) onto --ac
+@map --(.b .a) onto --ac
+; status: works — incidence filter: only one candidate bisector per fold cuts the paper; moving is derived from l1's own material

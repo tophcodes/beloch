@@ -180,6 +180,20 @@ let test_e2e_bisect_select () =
          (ja |> member "edges_vertices")
          (jb |> member "edges_vertices"))
 
+let test_e2e_kite () =
+  let open Yojson.Safe.Util in
+  let json =
+    Beloch.fold_string ~filename:"kite.bel" (read_example "bases/kite.bel")
+  in
+  let axioms =
+    json |> member "beloch:edges" |> to_list
+    |> List.filter_map (function
+      | `Null -> None
+      | e -> Some (e |> member "axiom" |> to_string))
+  in
+  Alcotest.(check int) "two axiom5 creases" 2
+    (List.length (List.filter (( = ) "axiom5") axioms))
+
 let test_e2e_bisect_parallel () =
   let json =
     Beloch.fold_string ~filename:"bisect-parallel.bel"
@@ -486,6 +500,8 @@ let () =
           Alcotest.test_case "bisect selector" `Quick test_e2e_bisect_select;
           Alcotest.test_case "bisect parallel midline" `Quick
             test_e2e_bisect_parallel;
+          Alcotest.test_case "kite base: two axiom5 creases, folds cleanly"
+            `Quick test_e2e_kite;
           Alcotest.test_case "map through toward selects diagonal" `Quick
             test_eval_map_through_toward;
           Alcotest.test_case "fold half end-to-end" `Quick test_e2e_fold_half;
