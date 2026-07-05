@@ -1,0 +1,8 @@
+; status: works — diagonal fold then a half fold, then cross two creases on the folded stack (resolves on the top layer)
+paper square
+
+@map .c onto .a moving .c
+--b = through .a .b
+--v = @map .b onto .a
+.mid = cross --b --v
+map .d onto .mid
