@@ -69,6 +69,10 @@ type fold_spec = {
   direction : direction;
 }
 
+(* A single crease in a `@collapse` statement, with its own fold direction
+   (ADR pending: collapse = simultaneous multi-crease fold). *)
+type collapse_elem = { cline : line_operand; cdir : direction }
+
 type point_expr =
   | Cross of line_operand * line_operand (* the `.name:` binding RHS *)
 
@@ -86,5 +90,11 @@ type stmt =
   | FoldAlong of line_operand * fold_spec * Error.span
       (* @fold <crease> [moving f] [up to f] [mountain]: fold along existing
          material; the operand must resolve to a material crease *)
+  | Collapse of collapse_elem list * (flap_arg * flap_arg) list
+                * flap_arg option * Error.span
+      (* @collapse <elements> [over-pairs] [standing]: simultaneous multi-
+         crease fold. elements = the creases folded, each with its own
+         direction; over-pairs = (upper flap, lower flap) layer-order
+         constraints; standing = the flap that stays upright (unfolded). *)
 
 type program = stmt list

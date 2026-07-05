@@ -521,6 +521,62 @@ let test_parse_fold_along () =
       ()
   | _ -> Alcotest.fail "expected an @fold statement"
 
+(* ---- Collapse ---- *)
+
+let test_parse_collapse_basic () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n@collapse --a and --b and --c and --e mountain\n"
+  in
+  match prog with
+  | [ Ast.Collapse (elems, [], None, _) ] ->
+      Alcotest.(check int) "4 elements" 4 (List.length elems);
+      let dirs = List.map (fun (e : Ast.collapse_elem) -> e.Ast.cdir) elems in
+      Alcotest.(check bool) "last is mountain, first is valley"
+        true
+        (List.nth dirs 3 = Ast.Mountain && List.nth dirs 0 = Ast.Valley)
+  | _ -> Alcotest.fail "expected Collapse"
+
+let test_parse_collapse_parens_at_over_standing () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n\
+       @collapse --a at .a and (--e at (.o and --(.a .b)) mountain) \
+       and .b over .d and standing .m\n"
+  in
+  match prog with
+  | [ Ast.Collapse ([ _; e2 ], [ (_, _) ], Some _, _) ] ->
+      Alcotest.(check bool) "parenthesized elem is mountain"
+        true (e2.Ast.cdir = Ast.Mountain)
+  | _ -> Alcotest.fail "expected Collapse with over + standing"
+
+let test_parse_collapse_followed_by_stmt () =
+  (* regression: a bare @collapse must not swallow the next statement's
+     leading .point/--crease as a phantom over clause *)
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n@collapse --a and --b mountain\n.x = cross --a --b\n"
+  in
+  match prog with
+  | [ Ast.Collapse ([ _; _ ], [], None, _); Ast.Point ("x", _, _) ] -> ()
+  | _ -> Alcotest.fail "expected Collapse then Point"
+
+let test_parse_collapse_mixed_order () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n@collapse --a and .p over .q and --b and standing .r\n"
+  in
+  match prog with
+  | [ Ast.Collapse (elems, overs, Some (Ast.FlapPoint _), _) ] ->
+      Alcotest.(check int) "2 elements" 2 (List.length elems);
+      Alcotest.(check int) "1 over pair" 1 (List.length overs)
+  | _ -> Alcotest.fail "expected Collapse with interleaved items"
+
+let test_parse_collapse_double_standing_rejected () =
+  expect_error "only one standing" (fun () ->
+      Beloch.parse ~filename:"t.bel"
+        "paper square\n@collapse --a and standing .p and standing .q\n")
+
 let test_parse_spec_corpus () =
   List.iter
     (fun (name, src) ->
@@ -575,6 +631,15 @@ let () =
           Alcotest.test_case "up to fold_spec" `Quick test_parse_up_to;
           Alcotest.test_case "flap operand forms" `Quick test_parse_flap_forms;
           Alcotest.test_case "@fold statement" `Quick test_parse_fold_along;
+          Alcotest.test_case "collapse basic" `Quick test_parse_collapse_basic;
+          Alcotest.test_case "collapse parens/at/over/standing" `Quick
+            test_parse_collapse_parens_at_over_standing;
+          Alcotest.test_case "collapse followed by stmt" `Quick
+            test_parse_collapse_followed_by_stmt;
+          Alcotest.test_case "collapse mixed item order" `Quick
+            test_parse_collapse_mixed_order;
+          Alcotest.test_case "collapse double standing rejected" `Quick
+            test_parse_collapse_double_standing_rejected;
         ] );
       ( "export",
         [

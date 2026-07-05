@@ -1176,6 +1176,8 @@ let eval_folded (prog : Ast.program) : folded =
         in
         run_fold_checked ~span ~axis ~fs ~implied:None ~side_override:None
           ~crease_id:cid ~prov ~check:(Some check_straight)
+    | Ast.Collapse (_, _, _, span) ->
+        Error.fail span "@collapse is not yet implemented"
   in
   List.iter eval_stmt prog;
   let named_points =
