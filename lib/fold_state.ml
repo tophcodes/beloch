@@ -41,6 +41,19 @@ let negate = Layer_order.negate
 let table_poly_of (f : face) : Geom.point array =
   Array.map (Isometry.apply_point f.iso) f.paper
 
+let table_polygon (st : t) (i : int) : Geom.point array = table_poly_of st.faces.(i)
+
+(* table_polygon is CCW only when face i's placing isometry is proper (paper
+   is always CCW); a fold reflects the moving side (det_sign < 0), reversing
+   its table-space winding to CW. [clip_line_to_convex]/[line_cuts_polygon]/
+   [segment_crosses_interior] require CCW input, so restore it here before
+   calling into them. *)
+let table_polygon_ccw (st : t) (i : int) : Geom.point array =
+  let tp = table_polygon st i in
+  if Isometry.det_sign st.faces.(i).iso < 0 then
+    Array.of_list (List.rev (Array.to_list tp))
+  else tp
+
 (* Build the sparse order over table-space polygons. [rel_of i j] is consulted
    only for i<j pairs whose table polygons overlap; everything else stays
    Apart. *)
@@ -143,7 +156,7 @@ let taco_tortilla_error (st : t) : string option =
         let seg = edge_table_segment st e in
         for c = 0 to n - 1 do
           if !result = None && c <> a && c <> b
-             && segment_crosses_interior seg (table_poly_of st.faces.(c))
+             && segment_crosses_interior seg (table_polygon_ccw st c)
              && between st a c b
           then
             result :=
@@ -345,8 +358,21 @@ let flap_of_points (st : t) (pts : Geom.point list) :
   Array.iteri (fun i _ -> if contains i then hits := i :: !hits) st.faces;
   match !hits with [ i ] -> `Face i | [] -> `Zero | _ -> `Ambiguous
 
-let table_polygon (st : t) (i : int) : Geom.point array =
-  Array.map (Isometry.apply_point st.faces.(i).iso) st.faces.(i).paper
+(* on-paper material of a table-space line: its positive-length
+   intersection with each face, table space. Stacked layers yield
+   duplicate segments — fine for existence/sign tests, any future
+   measure-based use must dedupe. *)
+let line_material_segments (st : t) (l : Geom.line) :
+    (Geom.point * Geom.point) list =
+  List.filter_map
+    (fun i -> Geom.clip_line_to_convex l (table_polygon_ccw st i))
+    (List.init (Array.length st.faces) Fun.id)
+
+(* the line actually creases some face (strict interior cut) *)
+let line_cuts_paper (st : t) (l : Geom.line) : bool =
+  List.exists
+    (fun i -> Geom.line_cuts_polygon l (table_polygon_ccw st i))
+    (List.init (Array.length st.faces) Fun.id)
 
 type scope_target = TargetFace of int | TargetHinged of (int -> bool)
 

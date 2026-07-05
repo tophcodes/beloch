@@ -1,0 +1,3 @@
+paper square
+@map --(.a .c) onto --(.b .d) toward .b moving .c
+; status: works — straddle: hinge mid-material, `moving .c` picks which half of the diagonal swings toward .b
