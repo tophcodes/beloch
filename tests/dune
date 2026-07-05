@@ -29,7 +29,7 @@
 (test
  (name test_golden)
  (libraries beloch alcotest yojson zarith str)
- (deps (glob_files ../examples/*.bel) (glob_files golden/*.fold)))
+ (deps (source_tree ../examples) (source_tree golden)))
 
 (test
  (name test_qqbar)
