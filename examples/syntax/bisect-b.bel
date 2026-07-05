@@ -1,5 +1,4 @@
-; status: works — map two perpendicular midlines onto each other, selecting toward corner b
 paper square
 --v = map .a onto .b      ; vertical midline x = 1/2
---h = map .b onto .c      ; horizontal midline y = 1/2
-map --v onto --h toward .b
+map --v onto --(.a .b) toward .b
+; status: works — direction pick: hinge at (1/2,0), toward .b selects the crease toward the b-corner; .b lies on --(.a .b) itself, legal under direction semantics
