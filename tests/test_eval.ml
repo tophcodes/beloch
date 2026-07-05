@@ -157,17 +157,23 @@ let test_eval_at_flap () =
            .mid = cross --b at #(.c .d) --v\n\
            map .d onto .mid\n"))
 
-(* a bare bent bundle still errors — that is what `at` exists to fix *)
-let test_eval_bent_bundle_errors () =
-  expect_error "no longer straight" (fun () ->
-      ignore
-        (Eval.eval_folded
-           (Beloch.parse ~filename:"t.bel"
-              "paper square\n\
-               --b = through .a .c\n\
-               --v = @map .c onto .b moving .c\n\
-               .mid = cross --b --v\n\
-               map .d onto .mid\n")))
+(* cross is material: a crease bent on the TABLE by a later fold is still one
+   straight scar in the paper, so the bare bundle crosses fine — no `at` *)
+let test_eval_cross_table_bent_scar_ok () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\n\
+          --b = through .a .c\n\
+          --v = @map .c onto .b moving .c\n\
+          .mid = cross --b --v\n\
+          map .d onto .mid\n")
+  in
+  match List.assoc_opt "mid" fd.Eval.named_points with
+  | Some p ->
+      Alcotest.(check bool) "mid is the material centre" true
+        (Geom.point_equal p { Geom.x = half; y = half })
+  | None -> Alcotest.fail "expected .mid"
 
 (* a selector that lands on no segment of the bundle is the 0-match error.
    NOTE: deviates from the brief's literal source, which selected --b at .b
@@ -434,36 +440,6 @@ let test_fold_precrease_upgrade () =
   Alcotest.(check int) "the fold emits no stale U" 0
     (count_assign Fold_state.U st2)
 
-(* #25: two fully-overlapping unit squares; face 0 is Above face 1 in `order`
-   but comes first in the array, so array-position resolution would pick the
-   bottom. topmost_preimage must consult `order` and return face 0's point. *)
-let test_topmost_preimage_order () =
-  let vline c = { Geom.a = Num.one; b = Num.zero; c = q c } in
-  (* x -> x - 10, y unchanged: two reflections across vertical lines *)
-  let tr10 =
-    Isometry.compose
-      (Isometry.reflect_across_line (vline (-5)))
-      (Isometry.reflect_across_line (vline 0))
-  in
-  let unit_at dx = [| pt dx 0; pt (dx + 1) 0; pt (dx + 1) 1; pt dx 1 |] in
-  let face0 = { Fold_state.paper = unit_at 0; iso = Isometry.identity } in
-  let face1 = { Fold_state.paper = unit_at 10; iso = tr10 } in
-  let st =
-    {
-      Fold_state.faces = [| face0; face1 |];
-      order =
-        Layer_order.build
-          [| Fold_state.table_poly_of face0; Fold_state.table_poly_of face1 |]
-          (fun _ _ -> Fold_state.Above);
-      edges = [||];
-    }
-  in
-  match Fold_state.topmost_preimage st { Geom.x = half; y = half } with
-  | Some p ->
-      Alcotest.(check bool) "topmost is face 0 (paper x < 1)" true
-        (Geom.point_equal p { Geom.x = half; y = half })
-  | None -> Alcotest.fail "expected a preimage"
-
 let test_fold_state_flip () =
   let st =
     Fold_state.simple_fold Fold_state.init_square
@@ -613,18 +589,45 @@ let test_eval_folded_quarter_accordion () =
   Alcotest.(check int) "an accordion mountain appears" 1
     (count_assign Fold_state.M fd.Eval.state)
 
-let test_eval_folded_cross_topmost () =
+(* a crease scored through two layers marks two DIFFERENT lines in the paper
+   (mirror-image scars) — bare cross must refuse and point at `at` *)
+let test_eval_cross_multilayer_needs_at () =
+  expect_error "different lines" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n\
+               @map .c onto .a moving .c\n\
+               --v = map .b onto .a\n\
+               .mid = cross --v --(.a .b)\n")))
+
+(* same setup, `at #(.a)` picks the bottom layer's scar: the crossing is the
+   material point (1/2, 0), independent of the folded state *)
+let test_eval_cross_multilayer_with_at () =
   let fd =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
          "paper square\n\
           @map .c onto .a moving .c\n\
-          --b = through .a .b\n\
           --v = map .b onto .a\n\
-          .mid = cross --b --v\n")
+          .mid = cross --v at #(.a) --(.a .b)\n")
   in
-  Alcotest.(check int) "cross in a folded overlap resolves to the top layer" 4
-    (Array.length fd.Eval.state.Fold_state.faces)
+  match List.assoc_opt "mid" fd.Eval.named_points with
+  | Some p ->
+      Alcotest.(check bool) "mid is the bottom scar's foot" true
+        (Geom.point_equal p { Geom.x = half; y = q 0 })
+  | None -> Alcotest.fail "expected .mid"
+
+(* paper is opaque: lines crossing beyond the marks' extent is not a crossing *)
+let test_eval_cross_mark_does_not_reach () =
+  expect_error "does not reach" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n\
+               @map .c onto .a moving .c\n\
+               --v = map .b onto .a\n\
+               .x = cross --v at #(.a) --(.d .c)\n")))
 
 let test_scope_basic_lookup () =
   let r = Eval.eval_folded (Beloch.parse ~filename:"t.bel"
@@ -963,17 +966,20 @@ let test_eval_buried_anchor () =
            (Beloch.parse ~filename:"t.bel"
               (quarter_stack_prefix ^ "@through .p .q moving .c up to .b\n"))))
 
-(* target flap entirely off the moving side *)
+(* target flap entirely off the moving side. --m0 is precreased flat so
+   .m = (1/2, 0) is a material crossing (the scar of the later --v fold lives
+   only on the top flap and never reaches the bottom edge). *)
 let test_eval_up_to_wrong_side () =
   expect_error "not on the moving side" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
+               --m0 = map .b onto .a\n\
                --h = @map .d onto .a\n\
                --v = @map .c onto .d up to .c\n\
                --bot = through .a .b\n\
-               .m = cross --v --bot\n\
+               .m = cross --m0 --bot\n\
                @map .b onto .m up to .c\n")))
 
 (* up to --crease with no reachable hinged flap *)
@@ -1051,8 +1057,8 @@ let () =
             test_eval_map_onto_line_ok;
           Alcotest.test_case "at operator selects flap piece" `Quick
             test_eval_at_flap;
-          Alcotest.test_case "bent bundle without at errors" `Quick
-            test_eval_bent_bundle_errors;
+          Alcotest.test_case "cross on table-bent scar works bare" `Quick
+            test_eval_cross_table_bent_scar_ok;
           Alcotest.test_case "at operator no match errors" `Quick
             test_eval_at_no_match;
           Alcotest.test_case "@fold matches axiom restatement" `Quick
@@ -1083,8 +1089,6 @@ let () =
           Alcotest.test_case "paper preimages" `Quick test_fold_paper_preimages;
           Alcotest.test_case "precrease upgrades U to V" `Quick
             test_fold_precrease_upgrade;
-          Alcotest.test_case "topmost preimage via order" `Quick
-            test_topmost_preimage_order;
           Alcotest.test_case "flip det + layer reversal" `Quick test_fold_state_flip;
           Alcotest.test_case "flip is an involution" `Quick
             test_fold_state_flip_involution;
@@ -1101,8 +1105,12 @@ let () =
             test_eval_folded_moving_required;
           Alcotest.test_case "quarter accordion" `Quick
             test_eval_folded_quarter_accordion;
-          Alcotest.test_case "cross resolves to top layer" `Quick
-            test_eval_folded_cross_topmost;
+          Alcotest.test_case "cross on multilayer crease needs at" `Quick
+            test_eval_cross_multilayer_needs_at;
+          Alcotest.test_case "cross multilayer with at" `Quick
+            test_eval_cross_multilayer_with_at;
+          Alcotest.test_case "cross beyond the marks errors" `Quick
+            test_eval_cross_mark_does_not_reach;
           Alcotest.test_case "scope basic lookup" `Quick test_scope_basic_lookup;
           Alcotest.test_case "dup crease errors" `Quick
             test_eval_dup_crease_error;

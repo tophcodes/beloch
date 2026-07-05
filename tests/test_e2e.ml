@@ -352,21 +352,22 @@ let test_emit_folded_crease_name () =
   Alcotest.(check bool) "crease carries name m" true
     (List.exists (fun n -> n = `String "m") names)
 
-(* #28: bare reuse of a crease that's been bent by a subsequent fold must
-   error, with a hint toward the #(...) flap escape hatch. *)
-let test_bent_crease_bare_reuse_errors () =
+(* cross is material: a crease scored through several layers marks different
+   lines in the paper, so bare cross must error — with a hint toward the
+   #(...) flap escape hatch. (A merely table-bent scar crosses fine bare;
+   see test_eval_cross_table_bent_scar_ok.) *)
+let test_multilayer_crease_bare_cross_errors () =
   let src =
     "paper square\n\
-     --b = through .a .c\n\
-     --v = @map .c onto .b moving .c\n\
-     .mid = cross --b --v\n"
-    (* bare reuse of the now-bent --b *)
+     @map .c onto .a moving .c\n\
+     --v = map .b onto .a\n\
+     .mid = cross --v --(.a .b)\n"
   in
   match Beloch.fold_string ~filename:"t.bel" src with
   | exception Error.Beloch_error (_, msg) ->
       Alcotest.(check bool)
-        "mentions no longer straight" true
-        (let re = Str.regexp_string "no longer straight" in
+        "mentions different lines" true
+        (let re = Str.regexp_string "different lines" in
          try
            ignore (Str.search_forward re msg 0);
            true
@@ -378,7 +379,7 @@ let test_bent_crease_bare_reuse_errors () =
            ignore (Str.search_forward re msg 0);
            true
          with Not_found -> false)
-  | _ -> Alcotest.fail "expected a bent-crease error"
+  | _ -> Alcotest.fail "expected a multilayer-crease error"
 
 (* #50: `at #(...)` selects one segment of a bent crease bundle. Two different
    flaps pick two different segments, so the resulting perp axis genuinely
@@ -500,8 +501,8 @@ let () =
             test_e2e_axiom7_rational_crease;
           Alcotest.test_case "precrease then fold emits V not U" `Quick
             test_e2e_precrease_fold_emits_v;
-          Alcotest.test_case "bent crease bare reuse errors" `Quick
-            test_bent_crease_bare_reuse_errors;
+          Alcotest.test_case "multilayer crease bare cross errors" `Quick
+            test_multilayer_crease_bare_cross_errors;
           Alcotest.test_case "at selects bent segment" `Quick
             test_at_selects_bent_segment;
           Alcotest.test_case "one folded frame per step" `Quick
