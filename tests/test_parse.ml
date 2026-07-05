@@ -240,7 +240,8 @@ let test_parse_fold_action () =
        Ast.MapPoints _,
        Some
          {
-           moving = Some (Ast.PNamed { name = "a"; _ });
+           moving = Some (Ast.FlapPoint (Ast.PNamed { name = "a"; _ }));
+           up_to = None;
            direction = Ast.Mountain;
          },
        _ );
@@ -253,7 +254,9 @@ let test_parse_fold_valley_default () =
   match prog with
   | [
    Ast.Crease
-     (None, Ast.MapPoints _, Some { moving = None; direction = Ast.Valley }, _);
+     ( None, Ast.MapPoints _,
+       Some { moving = None; up_to = None; direction = Ast.Valley },
+       _ );
   ] ->
       ()
   | _ -> Alcotest.fail "default fold is valley with no moving"
@@ -466,6 +469,58 @@ let spec_corpus =
        }\n$t = apply thirds()\nexport $t\n" );
   ]
 
+(* ---- Fold scope: up to / flap operands / @fold ---- *)
+
+let test_parse_up_to () =
+  match
+    Beloch.parse ~filename:"t.bel" "paper square\n@map .c onto .d up to .c\n"
+  with
+  | [
+   Ast.Crease
+     ( None,
+       Ast.MapPoints _,
+       Some
+         {
+           moving = None;
+           up_to = Some (Ast.FlapPoint (Ast.PNamed { name = "c"; _ }));
+           direction = Ast.Valley;
+         },
+       _ );
+  ] ->
+      ()
+  | _ -> Alcotest.fail "expected an up-to fold_spec"
+
+let test_parse_flap_forms () =
+  match
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n@perp --d through .p moving #(.a .b) up to --d mountain\n"
+  with
+  | [
+   Ast.Crease
+     ( None,
+       Ast.Perp _,
+       Some
+         {
+           moving = Some (Ast.FlapSpec _);
+           up_to = Some (Ast.FlapLine (Ast.LNamed { cname = "d"; _ }));
+           direction = Ast.Mountain;
+         },
+       _ );
+  ] ->
+      ()
+  | _ -> Alcotest.fail "expected flap-spec moving + crease up-to + mountain"
+
+let test_parse_fold_along () =
+  match Beloch.parse ~filename:"t.bel" "paper square\n@fold --m moving .c\n" with
+  | [
+   Ast.FoldAlong
+     ( Ast.LNamed { cname = "m"; _ },
+       { moving = Some (Ast.FlapPoint _); up_to = None; direction = Ast.Valley },
+       _ );
+  ] ->
+      ()
+  | _ -> Alcotest.fail "expected an @fold statement"
+
 let test_parse_spec_corpus () =
   List.iter
     (fun (name, src) ->
@@ -517,6 +572,9 @@ let () =
             test_parse_at_one_selector;
           Alcotest.test_case "at operator, two selectors" `Quick
             test_parse_at_two_selectors;
+          Alcotest.test_case "up to fold_spec" `Quick test_parse_up_to;
+          Alcotest.test_case "flap operand forms" `Quick test_parse_flap_forms;
+          Alcotest.test_case "@fold statement" `Quick test_parse_fold_along;
         ] );
       ( "export",
         [

@@ -323,6 +323,118 @@ let flap_of_points (st : t) (pts : Geom.point list) :
 let table_polygon (st : t) (i : int) : Geom.point array =
   Array.map (Isometry.apply_point st.faces.(i).iso) st.faces.(i).paper
 
+type scope_target = TargetFace of int | TargetHinged of (int -> bool)
+
+(* Moving-set selection for a scoped ("up to") simple fold: the outer-contiguous
+   prefix of layers over the crease region ending at the target — the static
+   shadow of a collision-free 180° rotation [demaine2007, §14.1]. "Outer" is
+   top for valley, bottom for mountain. Candidates are the faces with a piece
+   on the moving side; overlap is judged between those pieces (depth may vary
+   along the crease). Errors are messages; the caller attaches the span. *)
+let select_scope (st : t) ~(axis : Geom.line) ~(move_side : int)
+    ~(valley : bool) ~(anchor : int) ~(target : scope_target) :
+    (bool array, string) result =
+  let n = Array.length st.faces in
+  let piece =
+    Array.init n (fun i ->
+        let sub =
+          Geom.clip_convex_halfplane axis move_side (table_polygon st i)
+        in
+        if Array.length sub >= 3 then Some sub else None)
+  in
+  let cand i = piece.(i) <> None in
+  let overlap i j =
+    match (piece.(i), piece.(j)) with
+    | Some a, Some b -> Geom.convex_overlap a b
+    | _ -> false
+  in
+  (* i lies strictly outside j over the crease region *)
+  let outer i j =
+    overlap i j
+    && Layer_order.get st.order i j = (if valley then Above else Below)
+  in
+  if not (cand anchor) then
+    Error "the moving flap has no material on the moving side of the fold axis"
+  else
+  let find_targets () : (int list, string) result =
+    match target with
+    | TargetFace t ->
+        if not (cand t) then
+          Error "`up to`: the target flap is not on the moving side of the fold"
+        else Ok [ t ]
+    | TargetHinged pred ->
+        if pred anchor then Ok [ anchor ]
+        else begin
+          (* walk inward from the anchor, one stack level at a time; the first
+             level containing a hinged flap ends the range (inclusive) *)
+          let visited = Array.make n false in
+          visited.(anchor) <- true;
+          let result = ref None in
+          while !result = None do
+            let frontier = ref [] in
+            for g = 0 to n - 1 do
+              if (not visited.(g)) && cand g then begin
+                let inward = ref false in
+                for v = 0 to n - 1 do
+                  if visited.(v) && outer v g then inward := true
+                done;
+                if !inward then frontier := g :: !frontier
+              end
+            done;
+            match List.filter pred !frontier with
+            | [] ->
+                if !frontier = [] then
+                  result :=
+                    Some
+                      (Error
+                         "`up to`: no flap hinged on that crease is reachable \
+                          from the anchor over the crease region")
+                else List.iter (fun g -> visited.(g) <- true) !frontier
+            | hits -> result := Some (Ok hits)
+          done;
+          Option.get !result
+        end
+  in
+  match find_targets () with
+  | Error e -> Error e
+  | Ok targets ->
+      let inm = Array.make n false in
+      List.iter (fun t -> inm.(t) <- true) targets;
+      (* closure: any candidate outside a moving flap over the region must
+         move too — the moving set is an outer prefix by construction *)
+      let changed = ref true in
+      while !changed do
+        changed := false;
+        for g = 0 to n - 1 do
+          if (not inm.(g)) && cand g then
+            for m = 0 to n - 1 do
+              if inm.(m) && (not inm.(g)) && outer g m then begin
+                inm.(g) <- true;
+                changed := true
+              end
+            done
+        done
+      done;
+      if not inm.(anchor) then
+        Error
+          "`up to`: the target is not reachable from the anchor over the \
+           crease region"
+      else begin
+        let buried = ref None in
+        for m = 0 to n - 1 do
+          if !buried = None && inm.(m) && m <> anchor && outer m anchor then
+            buried := Some m
+        done;
+        match !buried with
+        | Some m ->
+            Error
+              (Printf.sprintf
+                 "a simple fold cannot move a buried flap: face %d covers the \
+                  anchor in the crease region — include the covering flap \
+                  (anchor the fold there) or fold less" m)
+        | None -> Ok inm
+      end
+
 (* current table position of a material paper point: find the face whose paper
    polygon contains it, apply that face's isometry. Faces partition the paper,
    and isometries agree on shared crease edges, so any containing face works. *)
@@ -460,11 +572,14 @@ let subdivide ?crease_id (st : t) (axis : Geom.line)
 
 (* Like [simple_fold] but on-axis edges get their derived mountain/valley from
    the orientation-parity rule. *)
-let fold_with_records ?crease_id (st : t) ~(axis : Geom.line)
+let fold_with_records ?crease_id ?moving_parents (st : t) ~(axis : Geom.line)
     ~(move_side : int) ~(valley : bool) ~(prov : State.provenance option) : t
     =
   let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
   let refl = Isometry.reflect_across_line axis in
+  let moves fi =
+    match moving_parents with None -> true | Some m -> m.(fi)
+  in
   let stay = ref [] and mov = ref [] in
   (* each elt: (child_face, parent_index) *)
   (* seeds: (parent_index, a, b, crease_id) — one per face cut by the axis; the
@@ -474,26 +589,29 @@ let fold_with_records ?crease_id (st : t) ~(axis : Geom.line)
   let edge_seeds = ref [] in
   Array.iteri
     (fun fi f ->
-      let table = Array.map (Isometry.apply_point f.iso) f.paper in
-      let inv = Isometry.inverse f.iso in
-      let part keep iso =
-        let sub = Geom.clip_convex_halfplane axis keep table in
-        if Array.length sub >= 3 then
-          Some { paper = Array.map (Isometry.apply_point inv) sub; iso }
-        else None
-      in
-      let s = part (-move_side) f.iso in
-      let m = part move_side (Isometry.compose refl f.iso) in
-      let assign_of () = if valley <> (Isometry.det_sign f.iso < 0) then V else M in
-      (match (s, m) with
-      | Some _, Some _ -> (
-          match axis_segment_in_face f axis with
-          | Some (a, b) ->
-              edge_seeds := (fi, a, b, assign_of (), cid) :: !edge_seeds
-          | None -> ())
-      | _ -> ());
-      (match s with Some face -> stay := (face, fi) :: !stay | None -> ());
-      match m with Some face -> mov := (face, fi) :: !mov | None -> ())
+      if not (moves fi) then stay := (f, fi) :: !stay
+      else begin
+        let table = Array.map (Isometry.apply_point f.iso) f.paper in
+        let inv = Isometry.inverse f.iso in
+        let part keep iso =
+          let sub = Geom.clip_convex_halfplane axis keep table in
+          if Array.length sub >= 3 then
+            Some { paper = Array.map (Isometry.apply_point inv) sub; iso }
+          else None
+        in
+        let s = part (-move_side) f.iso in
+        let m = part move_side (Isometry.compose refl f.iso) in
+        let assign_of () = if valley <> (Isometry.det_sign f.iso < 0) then V else M in
+        (match (s, m) with
+        | Some _, Some _ -> (
+            match axis_segment_in_face f axis with
+            | Some (a, b) ->
+                edge_seeds := (fi, a, b, assign_of (), cid) :: !edge_seeds
+            | None -> ())
+        | _ -> ());
+        (match s with Some face -> stay := (face, fi) :: !stay | None -> ());
+        match m with Some face -> mov := (face, fi) :: !mov | None -> ()
+      end)
     st.faces;
   let stationary = List.rev !stay in
   let moved = !mov in
@@ -573,20 +691,26 @@ let fold_with_records ?crease_id (st : t) ~(axis : Geom.line)
         if sa = 0 && sb = 0 then begin
           (* the edge lies on the fold axis: this precrease is being folded now.
              Neither incident face is cut, so each maps to its single child; the
-             assignment upgrades to the moving side's live M/V. *)
-          let moving =
-            if has_moved_child e.left then e.left
-            else if e.right >= 0 && has_moved_child e.right then e.right
-            else e.left
+             assignment upgrades to the moving side's live M/V — but only if
+             something incident actually moved (scoped folds can leave an
+             on-axis precrease untouched, keeping its U). *)
+          let moving_face =
+            if has_moved_child e.left then Some e.left
+            else if e.right >= 0 && has_moved_child e.right then Some e.right
+            else None
           in
-          [
-            {
-              e with
-              left = child_on e.left sa;
-              right = child_on e.right sa;
-              eassign = assign_of_parent moving;
-            };
-          ]
+          match moving_face with
+          | Some mf ->
+              [
+                {
+                  e with
+                  left = child_on e.left sa;
+                  right = child_on e.right sa;
+                  eassign = assign_of_parent mf;
+                };
+              ]
+          | None ->
+              [ { e with left = child_on e.left sa; right = child_on e.right sa } ]
         end
         else if sa * sb >= 0 then
           let s = if sa <> 0 then sa else sb in

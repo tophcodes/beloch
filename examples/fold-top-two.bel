@@ -1,0 +1,12 @@
+; status: works — a some-layers simple fold: on a four-layer stack, fold the
+; top two flaps (anchor .d, up to .c); the bottom two stay uncut.
+; --l/--bot are boundary reference creases, bound before the folds collapse
+; the corners onto each other
+paper square
+--l = through .a .d
+--bot = through .a .b
+--v = @map .b onto .a
+--h = @map .d onto .a
+.p = cross --l --h
+.q = cross --v --bot
+@through .p .q moving .d up to .c

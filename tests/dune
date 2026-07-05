@@ -8,7 +8,7 @@
 
 (test
  (name test_fold_state)
- (libraries beloch alcotest zarith unix))
+ (libraries beloch alcotest zarith unix str))
 
 (test
  (name test_parse)

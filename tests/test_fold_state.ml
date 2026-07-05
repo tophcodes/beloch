@@ -309,6 +309,77 @@ let test_taco_taco_ok_separated () =
   let st = mk_state (taco_taco_faces ()) (taco_taco_edges ()) [| 3; 2; 1; 0 |] in
   expect_ok "no taco-taco when one taco is entirely above the other" st
 
+(* --- scoped fold ("up to") machinery (#65 Task 2) ------------------------- *)
+
+(* two-layer stack: unit square valley-folded along y=1/2, top half moved down *)
+let two_layer () =
+  Fold_state.simple_fold Fold_state.init_square
+    ~axis:{ Geom.a = Num.zero; b = Num.one; c = Num.of_q (Q.of_ints 1 2) }
+    ~move_side:1 ~valley:true
+
+let vline_half = { Geom.a = Num.one; b = Num.zero; c = Num.of_q (Q.of_ints 1 2) }
+
+(* the top face of the 2-layer stack = the moved one (index found via order) *)
+let top_face (st : Fold_state.t) =
+  let n = Array.length st.Fold_state.faces in
+  let is_top i =
+    List.for_all
+      (fun j -> i = j || Layer_order.get st.Fold_state.order i j <> Layer_order.Below)
+      (List.init n Fun.id)
+  in
+  match List.find_opt is_top (List.init n Fun.id) with
+  | Some i -> i
+  | None -> Alcotest.fail "no top face"
+
+let test_select_scope_top_only () =
+  let st = two_layer () in
+  let top = top_face st in
+  match
+    Fold_state.select_scope st ~axis:vline_half ~move_side:1 ~valley:true
+      ~anchor:top ~target:(Fold_state.TargetFace top)
+  with
+  | Ok m ->
+      Alcotest.(check int) "exactly one moving parent" 1
+        (Array.fold_left (fun a b -> if b then a + 1 else a) 0 m);
+      Alcotest.(check bool) "it is the top face" true m.(top)
+  | Error e -> Alcotest.fail e
+
+let test_select_scope_buried_anchor () =
+  let st = two_layer () in
+  let top = top_face st in
+  let bottom = 1 - top in
+  match
+    Fold_state.select_scope st ~axis:vline_half ~move_side:1 ~valley:true
+      ~anchor:bottom ~target:(Fold_state.TargetFace bottom)
+  with
+  | Ok _ -> Alcotest.fail "expected a buried-anchor error"
+  | Error e ->
+      Alcotest.(check bool) "mentions covering" true
+        (try
+           ignore (Str.search_forward (Str.regexp_string "cover") e 0);
+           true
+         with Not_found -> false)
+
+let test_scoped_fold_leaves_others_uncut () =
+  let st = two_layer () in
+  let top = top_face st in
+  let m = Array.init (Array.length st.Fold_state.faces) (fun i -> i = top) in
+  let st' =
+    Fold_state.fold_with_records st ~moving_parents:m ~axis:vline_half
+      ~move_side:1 ~valley:true ~prov:None
+  in
+  (* top face splits in two, bottom stays whole: 3 faces, not 4 *)
+  Alcotest.(check int) "three faces" 3 (Array.length st'.Fold_state.faces)
+
+let test_unscoped_fold_unchanged () =
+  let st = two_layer () in
+  let st' =
+    Fold_state.fold_with_records st ~axis:vline_half ~move_side:1 ~valley:true
+      ~prov:None
+  in
+  Alcotest.(check int) "all-layers cuts both: four faces" 4
+    (Array.length st'.Fold_state.faces)
+
 let () =
   Alcotest.run "fold_state"
     [
@@ -353,5 +424,16 @@ let () =
             test_taco_taco_ok_nested;
           Alcotest.test_case "taco-taco silent when tacos are separated" `Quick
             test_taco_taco_ok_separated;
+        ] );
+      ( "scoped-fold",
+        [
+          Alcotest.test_case "select_scope: target is the sole moving parent"
+            `Quick test_select_scope_top_only;
+          Alcotest.test_case "select_scope: buried anchor errors" `Quick
+            test_select_scope_buried_anchor;
+          Alcotest.test_case "scoped fold leaves non-moving faces uncut" `Quick
+            test_scoped_fold_leaves_others_uncut;
+          Alcotest.test_case "unscoped fold unchanged (status quo)" `Quick
+            test_unscoped_fold_unchanged;
         ] );
     ]
