@@ -88,7 +88,7 @@ Renders a `FoldScene` to SVG. Two entry points:
 
 ```ts
 renderCP(scene, opts)      // crease pattern: creases by class, named points/lines
-renderFolded(step, opts)   // folded silhouette with faceOrders occlusion
+renderFolded(scene, opts)  // folded occlusion view; opts.step picks the frame
 ```
 
 Both return an `SvgDoc` with two serializations from one code path:
@@ -109,9 +109,12 @@ Visual scope of this slice (feature 1 of the brainstorm):
 - Axiom colour legend with current verbs, as fold2svg draws it — parity means
   the docs/PR-screenshot pipeline loses nothing in the switch.
 
-Styling: default theme as CSS custom properties + classes embedded in a
-`<style>` element; callers override via `opts.theme` or external CSS in DOM
-mode. No YR arrows, no step-sequence layout in this slice.
+Styling: presentation as inline SVG attributes (safe for resvg, whose CSS
+support is limited) driven by a TS theme object (defaults = current fold2svg
+palette), overridable via `opts.theme`. Semantic classes (`crease-M` etc.)
+stay on the elements so DOM-mode CSS can restyle later; CSS-first theming
+arrives with the interaction slice. No YR arrows, no step-sequence layout in
+this slice.
 
 ### PNG export + CLI
 
