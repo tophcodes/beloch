@@ -12,6 +12,9 @@ paper square
 --h  = map .a onto .d     ; horizontal midline, y = 1/2
 --v  = map .a onto .b     ; vertical midline, x = 1/2
 
+; the emitted FOLD edges_assignment is GLOBAL-frame M/V — the kernel's parity
+; rule inverts face-down regions, so declared valley/mountain above differs
+; from the golden letters on the four edge-midpoint rays (--h and --v).
 @collapse --ac at .a and --ac at .c and --bd at .b and --bd at .d
   and --h at --(.b .c)
   and (--h at --(.a .d) mountain)
