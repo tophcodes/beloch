@@ -270,12 +270,18 @@ let crease_table_endpoints (st : t) (cid : int) : Geom.point list =
       else acc)
     [] st.edges
 
-type crease_segment = { faces : int * int; ta : Geom.point; tb : Geom.point }
+type crease_segment = {
+  faces : int * int;
+  ta : Geom.point;
+  tb : Geom.point;
+  pa : Geom.point;
+  pb : Geom.point;
+}
 
-(* Every material segment of crease [cid], in table space. One entry per edge
-   tagged [cid] with a real left face; endpoints via the left face isometry
-   (the two faces coincide along the crease, so left is canonical). Degenerate
-   edges are dropped. *)
+(* Every material segment of crease [cid]. [ta]/[tb] in table space via the
+   left face isometry (the two faces coincide along the crease, so left is
+   canonical); [pa]/[pb] in the shared paper frame. One entry per edge tagged
+   [cid] with a real left face. Degenerate edges are dropped. *)
 let crease_segments (st : t) (cid : int) : crease_segment list =
   Array.fold_left
     (fun acc e ->
@@ -284,9 +290,17 @@ let crease_segments (st : t) (cid : int) : crease_segment list =
         let ta = Isometry.apply_point iso e.ea
         and tb = Isometry.apply_point iso e.eb in
         if Geom.point_equal ta tb then acc
-        else { faces = (e.left, e.right); ta; tb } :: acc
+        else { faces = (e.left, e.right); ta; tb; pa = e.ea; pb = e.eb } :: acc
       else acc)
     [] st.edges
+
+(* find two distinct points to define a line *)
+let rec pick_two_distinct = function
+  | a :: rest -> (
+      match List.find_opt (fun b -> not (Geom.point_equal a b)) rest with
+      | Some b -> Some (a, b)
+      | None -> pick_two_distinct rest)
+  | [] -> None
 
 let crease_axis (st : t) (cid : int) (l_orig : Geom.line) :
     [ `Line of Geom.line | `Bent | `Empty ] =
@@ -295,21 +309,32 @@ let crease_axis (st : t) (cid : int) (l_orig : Geom.line) :
   | pts ->
       if List.for_all (fun p -> Geom.side_of_line l_orig p = 0) pts then
         `Line l_orig (* unmoved: byte-stable, common case *)
-      else
-        (* find two distinct endpoints to define the current line *)
-        let rec pick = function
-          | a :: rest -> (
-              match List.find_opt (fun b -> not (Geom.point_equal a b)) rest with
-              | Some b -> Some (a, b)
-              | None -> pick rest)
-          | [] -> None
-        in
-        (match pick pts with
-         | None -> `Empty
-         | Some (a, b) ->
-             let l = Geom.line_through a b in
-             if List.for_all (fun p -> Geom.side_of_line l p = 0) pts then `Line l
-             else `Bent)
+      else (
+        match pick_two_distinct pts with
+        | None -> `Empty
+        | Some (a, b) ->
+            let l = Geom.line_through a b in
+            if List.for_all (fun p -> Geom.side_of_line l p = 0) pts then `Line l
+            else `Bent)
+
+(* The single PAPER-space line carrying every material segment of [cid], if
+   one exists. Segments born on different layers are mirror-image scars on
+   different paper lines -> [`Bent]; segments merely subdivided by later folds
+   stay collinear in the paper. Endpoints live in the shared paper frame, so
+   no isometry is involved. *)
+let crease_paper_axis (st : t) (cid : int) :
+    [ `Line of Geom.line | `Bent | `Empty ] =
+  let pts =
+    Array.fold_left
+      (fun acc e -> if e.crease_id = cid then e.ea :: e.eb :: acc else acc)
+      [] st.edges
+  in
+  match pick_two_distinct pts with
+  | None -> `Empty
+  | Some (a, b) ->
+      let l = Geom.line_through a b in
+      if List.for_all (fun p -> Geom.side_of_line l p = 0) pts then `Line l
+      else `Bent
 
 let flap_of_points (st : t) (pts : Geom.point list) :
     [ `Face of int | `Zero | `Ambiguous ] =
@@ -755,25 +780,10 @@ let paper_preimages (st : t) (tp : Geom.point) : Geom.point list =
     st.faces;
   List.rev !acc
 
-(* The paper coordinate on the topmost layer covering table point [tp] (None if
-   [tp] is off the paper). "Topmost" is decided by the order matrix, not array
-   position: among the faces covering [tp] — which pairwise overlap at [tp], so
-   [order] restricted to them is total — the top one is above (never below) all
-   the others. #25: array index carries no z-meaning, so we must consult
-   [order] rather than taking the last preimage. *)
-let topmost_preimage (st : t) (tp : Geom.point) : Geom.point option =
-  let covering = ref [] in
-  Array.iteri
-    (fun i f ->
-      let pp = Isometry.apply_point (Isometry.inverse f.iso) tp in
-      if Geom.in_convex_polygon f.paper pp then covering := (i, pp) :: !covering)
-    st.faces;
-  let is_top (i, _) =
-    List.for_all (fun (j, _) -> i = j || Layer_order.get st.order i j <> Below) !covering
-  in
-  match List.find_opt is_top !covering with
-  | Some (_, pp) -> Some pp
-  | None -> None
+(* Material point [pp] lies on the sheet: the faces partition the paper, so
+   one of their paper polygons contains it (boundary counts). *)
+let on_paper (st : t) (pp : Geom.point) : bool =
+  Array.exists (fun f -> Geom.in_convex_polygon f.paper pp) st.faces
 
 (* simple flat fold: reflect every layer-part on [move_side] of [axis] across it,
    then restack. valley → moved parts (reversed) on top; mountain → underneath. *)

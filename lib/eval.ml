@@ -154,20 +154,73 @@ let eval_folded (prog : Ast.program) : folded =
                   with `at`, e.g. --%s at #(.a .b .c) or --%s at .p"
                  name name name))
   in
+  (* a cross operand resolved to PAPER space: the one material line carrying
+     the crease's marks, plus those marks' paper chords (None when the operand
+     is a constructed line / boundary reference with no marks) *)
+  let paper_line_of_crease ~(name : string) (span : Error.span) (cv : crease_val)
+      : Geom.line * (Geom.point * Geom.point) list option =
+    match cv with
+    | Frozen _ ->
+        Error.fail span
+          (Printf.sprintf
+             "--%s is not a physical crease, so it has no material mark to \
+              cross" name)
+    | Material (cid, l_orig) -> (
+        match Fold_state.crease_paper_axis !(ctx.state) cid with
+        | `Line l ->
+            let chords =
+              List.map
+                (fun (s : Fold_state.crease_segment) ->
+                  (s.Fold_state.pa, s.Fold_state.pb))
+                (Fold_state.crease_segments !(ctx.state) cid)
+            in
+            (l, Some chords)
+        (* a crease that cut no face (e.g. lies on the paper boundary) has no
+           material marks; fall back to its birth line, as materialize_crease
+           does for reference-only boundary creases *)
+        | `Empty -> (l_orig, None)
+        | `Bent ->
+            Error.fail span
+              (Printf.sprintf
+                 "--%s marks different lines on different layers; select a \
+                  segment with `at`, e.g. --%s at #(.a .b .c)"
+                 name name))
+  in
   (* resolve a point operand to its material PAPER coordinate, a line operand to
-     its TABLE-space line; mutually recursive for nesting. *)
+     its TABLE-space line (fold axes align current table positions). `cross` is
+     the exception: it is a material construction, so its operands resolve to
+     PAPER-space lines via resolve_paper_line — folding never moves a mark
+     within the sheet, so the crossing is fold-state-independent. *)
   let rec resolve_point (po : Ast.point_operand) : Geom.point =
     match po with
     | Ast.PNamed pr -> lookup_point ctx pr
     | Ast.PCross (l1, l2, span) -> (
-        let a = resolve_line l1 and b = resolve_line l2 in
-        match Geom.intersection a b with
+        let la, ma = resolve_paper_line l1 and lb, mb = resolve_paper_line l2 in
+        match Geom.intersection la lb with
         | None -> Error.fail span "creases are parallel; no intersection"
-        | Some tp -> (
-            match Fold_state.topmost_preimage !(ctx.state) tp with
-            | None ->
-                Error.fail span (Printf.sprintf "%s is off the paper" (pstr po))
-            | Some pp -> pp))
+        | Some pp ->
+            (* the crossing must be real: paper is opaque, so the marks must
+               actually meet — [pp] on a chord of each crease that has marks,
+               and on the sheet in any case *)
+            let on_chord (a, b) =
+              let t = Geom.seg_param (a, b) pp in
+              Num.compare t Num.zero >= 0 && Num.compare t Num.one <= 0
+            in
+            let check lo = function
+              | Some chords ->
+                  if not (List.exists on_chord chords) then
+                    Error.fail span
+                      (Printf.sprintf
+                         "%s: the mark of %s does not reach the crossing"
+                         (pstr po) (lstr lo))
+              | None ->
+                  if not (Fold_state.on_paper !(ctx.state) pp) then
+                    Error.fail span
+                      (Printf.sprintf "%s is off the paper" (pstr po))
+            in
+            check l1 ma;
+            check l2 mb;
+            pp)
     | Ast.PMember (iname, mem, span) -> (
         let inst = lookup_instance ctx iname span in
         match Hashtbl.find_opt inst.ipoints mem with
@@ -199,6 +252,43 @@ let eval_folded (prog : Ast.program) : folded =
         let _cid, matches = at_matches cr sels span in
         match matches with
         | [ s ] -> Geom.line_through s.Fold_state.ta s.Fold_state.tb
+        | [] ->
+            Error.fail span
+              (Printf.sprintf "no segment of --%s matches %s" cr.Ast.cname
+                 (selstr sels))
+        | many ->
+            Error.fail span
+              (Printf.sprintf
+                 "--%s at %s is ambiguous: %d segments match; add a selector"
+                 cr.Ast.cname (selstr sels) (List.length many)))
+  and resolve_paper_line (lo : Ast.line_operand) :
+      Geom.line * (Geom.point * Geom.point) list option =
+    match lo with
+    | Ast.LNamed cr ->
+        paper_line_of_crease ~name:cr.Ast.cname cr.Ast.cspan
+          (lookup_crease ctx cr)
+    | Ast.LThrough (p1, p2, span) ->
+        let pp = resolve_point p1 and qq = resolve_point p2 in
+        if Geom.point_equal pp qq then
+          Error.fail span
+            (Printf.sprintf
+               "%s and %s are at the same place, so there is no line through \
+                them"
+               (pstr p1) (pstr p2));
+        (Geom.line_through pp qq, None)
+    | Ast.LMember (iname, mem, span) -> (
+        let inst = lookup_instance ctx iname span in
+        match Hashtbl.find_opt inst.ilines mem with
+        | Some cv -> paper_line_of_crease ~name:mem span cv
+        | None ->
+            Error.fail span
+              (Printf.sprintf "instance $%s has no line member %s" iname mem))
+    | Ast.LAt (cr, sels, span) -> (
+        let _cid, matches = at_matches cr sels span in
+        match matches with
+        | [ s ] ->
+            ( Geom.line_through s.Fold_state.pa s.Fold_state.pb,
+              Some [ (s.Fold_state.pa, s.Fold_state.pb) ] )
         | [] ->
             Error.fail span
               (Printf.sprintf "no segment of --%s matches %s" cr.Ast.cname
@@ -674,7 +764,22 @@ let eval_folded (prog : Ast.program) : folded =
             | `Point, Ast.APoint po ->
                 Hashtbl.replace body_scope.points p.Ast.pname (resolve_point po)
             | `Line, Ast.ALine lo ->
-                Hashtbl.replace body_scope.lines p.Ast.pname (Frozen (resolve_line lo))
+                (* a named crease argument stays material inside the body
+                   (cross needs its marks); only constructed lines freeze *)
+                let cv =
+                  match lo with
+                  | Ast.LNamed cr -> lookup_crease ctx cr
+                  | Ast.LMember (iname, mem, mspan) -> (
+                      let inst = lookup_instance ctx iname mspan in
+                      match Hashtbl.find_opt inst.ilines mem with
+                      | Some cv -> cv
+                      | None ->
+                          Error.fail mspan
+                            (Printf.sprintf "instance $%s has no line member %s"
+                               iname mem))
+                  | Ast.LThrough _ | Ast.LAt _ -> Frozen (resolve_line lo)
+                in
+                Hashtbl.replace body_scope.lines p.Ast.pname cv
             | `Point, Ast.ALine _ ->
                 Error.fail span
                   (Printf.sprintf "parameter .%s of %s needs a point argument"
