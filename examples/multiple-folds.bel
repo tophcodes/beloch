@@ -1,8 +1,11 @@
-; status: works — diagonal fold then a half fold, then cross two creases on the folded stack (resolves on the top layer)
+; status: works — diagonal fold then a half fold. The half fold scores both
+; layers, so --v marks two different lines in the paper; `at #(.a)` picks the
+; bottom layer's scar to cross with the bottom edge (crossings are material —
+; paper space, never table space)
 paper square
 
 @map .c onto .a moving .c
 --b = through .a .b
 --v = @map .b onto .a
-.mid = cross --b --v
+.mid = cross --b --v at #(.a)
 map .d onto .mid
