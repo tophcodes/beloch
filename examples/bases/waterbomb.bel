@@ -1,0 +1,19 @@
+; status: works — the waterbomb base [hull2020, ch. 5]. Both diagonals and both
+; center lines meet at the square's center; the 8 rays there need |M-V|=2
+; (Maekawa) to be realizable. tests/test_collapse.ml empirically verified the
+; contiguous 5-valley/3-mountain pattern below (corners + one edge-midpoint
+; ray valley, the other three edge-midpoint rays mountain) folds to a UNIQUE
+; layer order — no `over` needed.
+
+paper square
+
+--ac = map .b onto .d     ; diagonal a-c
+--bd = map .a onto .c     ; diagonal b-d
+--h  = map .a onto .d     ; horizontal midline, y = 1/2
+--v  = map .a onto .b     ; vertical midline, x = 1/2
+
+@collapse --ac at .a and --ac at .c and --bd at .b and --bd at .d
+  and --h at --(.b .c)
+  and (--h at --(.a .d) mountain)
+  and (--v at --(.d .c) mountain)
+  and (--v at --(.a .b) mountain)
