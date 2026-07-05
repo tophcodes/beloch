@@ -320,3 +320,85 @@ let convex_overlap (p : point array) (q : point array) : bool =
     Num.compare ahi blo <= 0 || Num.compare bhi alo <= 0
   in
   not (List.exists separated (normals p @ normals q))
+
+(* Cyrus–Beck, exact: line [l] ∩ convex CCW [poly] as a segment. Parametrize
+   the line p(t) = p0 + t·dir with dir = (b,−a) and p0 the foot of the
+   perpendicular from the origin, ((a·c)/(a²+b²), (b·c)/(a²+b²)) — no sqrt.
+   Each CCW edge (e_a,e_b) demands cross(e_b−e_a, p(t)−e_a) ≥ 0, linear in t;
+   intersecting these half-line constraints gives [tmin,tmax]. An edge whose
+   t-coefficient is zero and whose constant term is negative rules out the
+   whole line (it runs parallel to that edge, on the wrong side) — early
+   [None]. CLOSED semantics: [Some] iff tmin < tmax (strict — zero length is
+   no segment), so a line collinear with an edge clips to that edge. This is
+   the "which material is here" question; see [line_cuts_polygon] for the
+   stricter "does this actually fold the face" test. *)
+let clip_line_to_convex (l : line) (poly : point array) : (point * point) option =
+  let n = Array.length poly in
+  if n < 3 then None
+  else
+    let n2 = Num.add (Num.mul l.a l.a) (Num.mul l.b l.b) in
+    let dirx = l.b and diry = Num.neg l.a in
+    let p0 =
+      { x = Num.div (Num.mul l.a l.c) n2; y = Num.div (Num.mul l.b l.c) n2 }
+    in
+    let tmin = ref None and tmax = ref None in
+    let infeasible = ref false in
+    for i = 0 to n - 1 do
+      if not !infeasible then begin
+        let ea = poly.(i) and eb = poly.((i + 1) mod n) in
+        let ex = Num.sub eb.x ea.x and ey = Num.sub eb.y ea.y in
+        let denom = Num.sub (Num.mul ex diry) (Num.mul ey dirx) in
+        let numer0 =
+          Num.sub (Num.mul ex (Num.sub p0.y ea.y)) (Num.mul ey (Num.sub p0.x ea.x))
+        in
+        match Num.sign denom with
+        | 0 -> if Num.sign numer0 < 0 then infeasible := true
+        | s ->
+            let t = Num.div (Num.neg numer0) denom in
+            if s > 0 then
+              tmin :=
+                Some (match !tmin with
+                      | None -> t
+                      | Some cur -> if Num.compare t cur > 0 then t else cur)
+            else
+              tmax :=
+                Some (match !tmax with
+                      | None -> t
+                      | Some cur -> if Num.compare t cur < 0 then t else cur)
+      end
+    done;
+    if !infeasible then None
+    else
+      match (!tmin, !tmax) with
+      | Some ta, Some tb when Num.compare ta tb < 0 ->
+          let at t = { x = Num.add p0.x (Num.mul t dirx); y = Num.add p0.y (Num.mul t diry) } in
+          Some (at ta, at tb)
+      | _ -> None
+
+(* Does line [l] actually fold convex CCW [poly] — i.e. cut strictly through
+   its interior, not just graze along an edge? Deliberately STRICTER than
+   [clip_line_to_convex]'s closed semantics: a line collinear with a polygon
+   edge clips to that edge (positive length ⇒ Some there), but a crease lying
+   on the paper's own edge folds nothing (ADR 0014: an empty crease bundle is
+   not a fold). Test: clip, then check the segment's midpoint strictly inside
+   every edge (cross > 0, not ≥ 0) — the midpoint suffices because the
+   polygon's interior is convex, so if it holds there it holds on the whole
+   open segment. *)
+let line_cuts_polygon (l : line) (poly : point array) : bool =
+  match clip_line_to_convex l poly with
+  | None -> false
+  | Some (p, r) ->
+      let two = Num.of_int 2 in
+      let mid = { x = Num.div (Num.add p.x r.x) two; y = Num.div (Num.add p.y r.y) two } in
+      let n = Array.length poly in
+      let strictly_inside = ref true in
+      for i = 0 to n - 1 do
+        let a = poly.(i) and b = poly.((i + 1) mod n) in
+        let cross =
+          Num.sub
+            (Num.mul (Num.sub b.x a.x) (Num.sub mid.y a.y))
+            (Num.mul (Num.sub b.y a.y) (Num.sub mid.x a.x))
+        in
+        if Num.sign cross <= 0 then strictly_inside := false
+      done;
+      !strictly_inside
