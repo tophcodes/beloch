@@ -327,6 +327,36 @@ let test_taco_tortilla_ok_when_not_between () =
   let st = mk_state (taco_tortilla_faces ()) (taco_tortilla_edges ()) [| 2; 1; 0 |] in
   expect_ok "no taco-tortilla when c is outside the taco" st
 
+(* Same physical configuration as [taco_tortilla_faces], but c is placed by a
+   REFLECTED isometry (det -1) rather than identity — the same footprint,
+   reached the way a genuinely folded face would be. Reflecting c's paper
+   square across its own vertical midline (x=2) fixes the two side edges in
+   place but swaps the corners, so table_poly_of's un-normalized winding comes
+   out CW. segment_crosses_interior assumes CCW input ("interior is left of
+   each edge"); fed a CW polygon it silently reports no interior crossing, so
+   the taco-tortilla violation must still fire here or the check is blind on
+   every reflected face — i.e. on most real folded states. *)
+let taco_tortilla_faces_reflected () =
+  let refl = Isometry.reflect_across_line (line 1 0 2) (* x = 2 *) in
+  [|
+    mkface [| pt 0 0; pt 4 0; pt 4 4; pt 0 4 |] (* a *);
+    mkface [| pt 0 0; pt 4 0; pt 4 4; pt 0 4 |] (* b *);
+    { Fold_state.paper = [| pt 1 (-2); pt 3 (-2); pt 3 2; pt 1 2 |]; iso = refl }
+    (* c straddles y=0, placed by a reflection: table footprint identical to
+       [taco_tortilla_faces]'s c, but table_poly_of winds it CW *);
+  |]
+
+let test_taco_tortilla_fires_on_reflected_face () =
+  (* a > c > b : c is sandwiched between the taco's two faces, same as
+     [test_taco_tortilla_fires], but c is a reflected (CW) face. *)
+  let st =
+    mk_state (taco_tortilla_faces_reflected ()) (taco_tortilla_edges ()) [| 2; 0; 1 |]
+  in
+  Alcotest.(check int) "sanity: c is indeed reflected" (-1)
+    (Isometry.det_sign st.Fold_state.faces.(2).Fold_state.iso);
+  expect_violation "taco-tortilla when reflected c is between a and b"
+    "taco-tortilla" st
+
 (* Two creases e1 (a|b) and e2 (c|d) that coincide on the table (both the left
    edge x=0 of the same square) but hinge disjoint face pairs. The four faces all
    overlap; whether they cross depends only on the stacking order. *)
@@ -475,6 +505,8 @@ let () =
             `Quick test_taco_tortilla_fires;
           Alcotest.test_case "taco-tortilla silent when face is outside the taco"
             `Quick test_taco_tortilla_ok_when_not_between;
+          Alcotest.test_case "taco-tortilla fires on a reflected (CW) sandwiched face"
+            `Quick test_taco_tortilla_fires_on_reflected_face;
           Alcotest.test_case "taco-taco fires when creases interleave" `Quick
             test_taco_taco_fires;
           Alcotest.test_case "taco-taco silent when tacos nest" `Quick
