@@ -54,9 +54,13 @@ body_stmt:
   | EXPORT INSTANCE                              { Export (None, $2, $loc) }
   | AT FOLD_KW line_operand fold_clauses         { FoldAlong ($3, $4, $loc) }
   | AT COLLAPSE collapse_items
-      { let elems, overs, standing =
-          List.fold_right
-            (fun item (es, os, st) ->
+      { (* fold_left over source order so a duplicate `standing` is detected
+           at its own (second-occurrence) span, not the first's; elems/overs
+           are accumulated reversed and restored with List.rev to keep their
+           original source order. *)
+        let elems_rev, overs_rev, standing =
+          List.fold_left
+            (fun (es, os, st) item ->
               match item with
               | CElem e -> (e :: es, os, st)
               | COver (u, l) -> (es, (u, l) :: os, st)
@@ -65,9 +69,9 @@ body_stmt:
                   | Some _ ->
                       Error.fail sp "only one standing clause per @collapse"
                   | None -> (es, os, Some f)))
-            $3 ([], [], None)
+            ([], [], None) $3
         in
-        Collapse (elems, overs, standing, $loc) }
+        Collapse (List.rev elems_rev, List.rev overs_rev, standing, $loc) }
 
 params:
   | { [] }

@@ -567,15 +567,40 @@ let test_parse_collapse_mixed_order () =
       "paper square\n@collapse --a and .p over .q and --b and standing .r\n"
   in
   match prog with
-  | [ Ast.Collapse (elems, overs, Some (Ast.FlapPoint _), _) ] ->
-      Alcotest.(check int) "2 elements" 2 (List.length elems);
-      Alcotest.(check int) "1 over pair" 1 (List.length overs)
-  | _ -> Alcotest.fail "expected Collapse with interleaved items"
+  | [
+   Ast.Collapse
+     ( [
+         { Ast.cline = Ast.LNamed { cname = "a"; _ }; _ };
+         { Ast.cline = Ast.LNamed { cname = "b"; _ }; _ };
+       ],
+       [
+         ( Ast.FlapPoint (Ast.PNamed { name = "p"; _ }),
+           Ast.FlapPoint (Ast.PNamed { name = "q"; _ }) );
+       ],
+       Some (Ast.FlapPoint (Ast.PNamed { name = "r"; _ })),
+       _ );
+  ] ->
+      ()
+  | _ ->
+      Alcotest.fail
+        "expected Collapse with elems [a;b] in source order, over (.p, .q) \
+         not swapped, standing .r"
 
 let test_parse_collapse_double_standing_rejected () =
-  expect_error "only one standing" (fun () ->
-      Beloch.parse ~filename:"t.bel"
-        "paper square\n@collapse --a and standing .p and standing .q\n")
+  let src = "paper square\n@collapse --a and standing .p and standing .q\n" in
+  expect_error "only one standing" (fun () -> Beloch.parse ~filename:"t.bel" src);
+  (* the error must point at the duplicate (second, source-order) `standing`,
+     not the first *)
+  let first_standing = Str.search_forward (Str.regexp_string "standing") src 0 in
+  let second_standing =
+    Str.search_forward (Str.regexp_string "standing") src (first_standing + 1)
+  in
+  match Beloch.parse ~filename:"t.bel" src with
+  | _ -> Alcotest.fail "expected duplicate-standing error"
+  | exception Error.Beloch_error ((start, _), _) ->
+      Alcotest.(check int)
+        "span points at the second `standing`, not the first"
+        second_standing start.Lexing.pos_cnum
 
 let test_parse_spec_corpus () =
   List.iter
