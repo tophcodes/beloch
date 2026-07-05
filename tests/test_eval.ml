@@ -63,7 +63,7 @@ let test_eval_bisect_errors () =
                --v = map .a onto .b\n\
                --h = map .b onto .c\n\
                map --v onto --h\n")));
-  expect_error "on a fold line" (fun () ->
+  expect_error "names where the fold goes" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
@@ -1016,6 +1016,102 @@ let test_eval_moving_flap_straddles () =
            (Beloch.parse ~filename:"t.bel"
               "paper square\n@map .b onto .a moving #(.a .b)\n")))
 
+(* ---- axiom 5: `toward` = direction semantics + paper-incidence filter ----
+   Square corners a=(0,0), b=(1,0), c=(1,1), d=(0,1). *)
+
+(* kite: left edge onto the a–c diagonal, no `toward`, no `moving` — the paper
+   filter drops the −22.5° candidate (it only touches corner .a); .d lands at
+   (√2⁄2, √2⁄2) via the 67.5° crease *)
+let test_ax5_kite_filter () =
+  let fd = eval_src "@map --(.d .a) onto --(.a .c)\n" in
+  let p = Fold_state.table_position fd.Eval.state (pt 0 1) in
+  Alcotest.(check bool) ".d lands on the diagonal (x=y)" true
+    (Num.equal p.Geom.x p.Geom.y);
+  Alcotest.(check bool) ".d lands at x^2 = 1/2" true
+    (Num.equal (Num.mul p.Geom.x p.Geom.x) half)
+
+(* same kite selected by `toward .b`, with and without `moving .d` — both must
+   land .d at the same place as the filtered fold above *)
+let test_ax5_kite_toward () =
+  let landing src =
+    Fold_state.table_position (eval_src src).Eval.state (pt 0 1)
+  in
+  let p1 = landing "@map --(.d .a) onto --(.a .c) toward .b\n" in
+  let p2 = landing "@map --(.d .a) onto --(.a .c) toward .b moving .d\n" in
+  Alcotest.(check bool) "toward and toward+moving agree" true
+    (Geom.point_equal p1 p2);
+  Alcotest.(check bool) ".d lands at x=y, x^2=1/2" true
+    (Num.equal p1.Geom.x p1.Geom.y
+    && Num.equal (Num.mul p1.Geom.x p1.Geom.x) half)
+
+(* straddle (diagonal onto anti-diagonal, hinge = sheet centre): `moving .c`
+   disambiguates to the horizontal crease; .c swings onto (1,0) *)
+let test_ax5_straddle_moving_unique () =
+  let fd = eval_src "@map --(.a .c) onto --(.b .d) toward .b moving .c\n" in
+  Alcotest.(check bool) ".c lands on (1,0)" true
+    (Geom.point_equal (Fold_state.table_position fd.Eval.state (pt 1 1)) (pt 1 0))
+
+(* .d lies in both swinging flaps of the straddle → genuinely ambiguous *)
+let test_ax5_straddle_moving_both () =
+  expect_error "both swinging flaps" (fun () ->
+      eval_src "@map --(.a .c) onto --(.b .d) toward .b moving .d\n")
+
+(* straddle without `moving`: both bisectors move material toward .b *)
+let test_ax5_straddle_no_moving () =
+  expect_error "straddles the crossing" (fun () ->
+      eval_src "@map --(.a .c) onto --(.b .d) toward .b\n")
+
+(* moving .b: neither candidate swings .b's flap toward .b *)
+let test_ax5_no_viable () =
+  expect_error "no fold of" (fun () ->
+      eval_src "@map --(.a .c) onto --(.b .d) toward .b moving .b\n")
+
+(* `toward .b` names a point ON l2 (bottom edge) — legal now; --k binds the
+   y=x diagonal (through a and c, off the (1,0) corner) *)
+let test_ax5_bind_x_on_l2 () =
+  let fd = eval_src "--k = map --(.a .d) onto --(.a .b) toward .b\n" in
+  match List.assoc_opt "k" fd.Eval.named_lines with
+  | Some k ->
+      Alcotest.(check bool) "--k passes through (0,0)" true
+        (Geom.side_of_line k (pt 0 0) = 0);
+      Alcotest.(check bool) "--k passes through (1,1)" true
+        (Geom.side_of_line k (pt 1 1) = 0);
+      Alcotest.(check bool) "--k misses (1,0)" true
+        (Geom.side_of_line k (pt 1 0) <> 0)
+  | None -> Alcotest.fail "expected --k"
+
+(* hinge at a segment endpoint: `toward .a` and `toward .b` bind different
+   creases (x+y=1/2 vs x−y=1/2 — opposite sides of (1,1)) *)
+let test_ax5_bind_endpoint_directions () =
+  let k src =
+    match List.assoc_opt "k" (eval_src src).Eval.named_lines with
+    | Some k -> k
+    | None -> Alcotest.fail "expected --k"
+  in
+  let ka = k "--v = map .a onto .b\n--k = map --v onto --(.a .b) toward .a\n" in
+  let kb = k "--v = map .a onto .b\n--k = map --v onto --(.a .b) toward .b\n" in
+  Alcotest.(check bool) "toward .a and toward .b differ" true
+    (Geom.side_of_line ka (pt 1 1) <> Geom.side_of_line kb (pt 1 1))
+
+(* bind, hinge at the sheet centre (two midlines crossing): both candidates
+   swing material toward .b → E5-bind, hinting `at` *)
+let test_ax5_bind_center_ambiguous () =
+  expect_error "with `at`" (fun () ->
+      eval_src
+        "--v = map .a onto .b\n\
+         --h = map .b onto .c\n\
+         --k = map --v onto --h toward .b\n")
+
+(* `toward .c` names a point ON l1 (the a–c diagonal) → E1 *)
+let test_ax5_toward_on_l1 () =
+  expect_error "names where the fold goes" (fun () ->
+      eval_src "@map --(.a .c) onto --(.b .d) toward .c\n")
+
+(* NOTE: E3 (no bisector lands on the paper) and E7 (implied-moving material
+   straddles the crease) are geometrically unreachable on the flat square —
+   both need an off-paper hinge — so they have no positive test here; the
+   branches stay in eval.ml as defensive guards. *)
+
 let test_step_frames () =
   let src =
     "paper square\n\
@@ -1073,6 +1169,26 @@ let () =
             test_fold_along_bent;
           Alcotest.test_case "@fold bent under the moving flaps" `Quick
             test_fold_along_bent_under_moving;
+          Alcotest.test_case "ax5 kite paper-incidence filter" `Quick
+            test_ax5_kite_filter;
+          Alcotest.test_case "ax5 kite toward + moving agree" `Quick
+            test_ax5_kite_toward;
+          Alcotest.test_case "ax5 straddle moving unique" `Quick
+            test_ax5_straddle_moving_unique;
+          Alcotest.test_case "ax5 straddle moving both flaps" `Quick
+            test_ax5_straddle_moving_both;
+          Alcotest.test_case "ax5 straddle no moving" `Quick
+            test_ax5_straddle_no_moving;
+          Alcotest.test_case "ax5 no viable candidate" `Quick
+            test_ax5_no_viable;
+          Alcotest.test_case "ax5 bind toward point on l2" `Quick
+            test_ax5_bind_x_on_l2;
+          Alcotest.test_case "ax5 bind endpoint hinge directions" `Quick
+            test_ax5_bind_endpoint_directions;
+          Alcotest.test_case "ax5 bind centre ambiguous" `Quick
+            test_ax5_bind_center_ambiguous;
+          Alcotest.test_case "ax5 toward point on l1" `Quick
+            test_ax5_toward_on_l1;
         ] );
       ( "fold_state",
         [
