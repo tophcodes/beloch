@@ -1,8 +1,0 @@
-; status: works — a diagonal precrease then a half fold that BENDS it (#28).
-; Bare --b would error "no longer straight"; name its folded-flap PIECE
-; (upper flap, corners .c/.d) via the flap operand and cross that with --v.
-paper square
---b = through .a .c
---v = @map .c onto .b
-.mid = cross --( --b #(.c .d) ) --v
-map .d onto .mid

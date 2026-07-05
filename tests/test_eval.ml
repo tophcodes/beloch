@@ -1107,10 +1107,32 @@ let test_ax5_toward_on_l1 () =
   expect_error "names where the fold goes" (fun () ->
       eval_src "@map --(.a .c) onto --(.b .d) toward .c\n")
 
+(* kite, `up to` with no `moving` and no implied anchor (axiom-5 folds have no
+   implied anchor point — only line operands): the paper-incidence filter
+   picks the one viable candidate silently, but `up to` still needs an
+   explicit `moving` to anchor the flap range *)
+let test_ax5_up_to_needs_moving () =
+  expect_error "needs `moving" (fun () ->
+      eval_src
+        "--ac = --(.a .c)\n@map --(.d .a) onto --ac up to .c\n")
+
 (* NOTE: E3 (no bisector lands on the paper) and E7 (implied-moving material
    straddles the crease) are geometrically unreachable on the flat square —
    both need an off-paper hinge — so they have no positive test here; the
-   branches stay in eval.ml as defensive guards. *)
+   branches stay in eval.ml as defensive guards.
+
+   The `toward`-given, `moving`-omitted "no fold ... moves its material
+   toward" branch (the empty-viables case in select_axiom5_fold's `Some x`
+   arm) is also unreachable here: the two candidate bisectors of an
+   intersecting `l1`/`l2` pair always send l1's material to *opposite* rays
+   of l2 (one bisector preserves the traversal order from the hinge, the
+   other reverses it), and those two rays sit on opposite sides of l1. So for
+   any off-l1 `toward` target, exactly one candidate always matches — the
+   branch would need a degenerate hinge (material grazing a bisector exactly,
+   side 0) to fire, which — like E3/E7 — needs geometry off the flat square.
+   Confirmed by brute-force CLI sweep over all edge/diagonal l1×l2 pairs and
+   corner `toward` targets (including derived bisector lines as l1/l2): no
+   combination reached this branch. *)
 
 let test_step_frames () =
   let src =
@@ -1189,6 +1211,8 @@ let () =
             test_ax5_bind_center_ambiguous;
           Alcotest.test_case "ax5 toward point on l1" `Quick
             test_ax5_toward_on_l1;
+          Alcotest.test_case "ax5 up to needs moving" `Quick
+            test_ax5_up_to_needs_moving;
         ] );
       ( "fold_state",
         [
