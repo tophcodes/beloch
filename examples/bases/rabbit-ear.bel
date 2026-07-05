@@ -17,8 +17,9 @@ step ear
 ; four creases through O: the a- and b-bisectors, the spine above O (third
 ; bisector, valley), and the altitude below O (the ear, mountain). `at` splits
 ; each material line at O into the one ray that reaches the vertex.
-; the emitted FOLD edges_assignment is GLOBAL-frame M/V — the kernel's parity
-; rule inverts face-down regions, so declared valley/mountain above can differ
-; from the golden letters on the two --v rays.
+; the emitted FOLD edges_assignment is GLOBAL-frame M/V (spec §4.6, derived
+; assignment = valley XOR the cutting face is back-up): the two --v rays lie
+; on back-up sectors, so their golden letters invert (spine valley → M, ear
+; mountain → V); --ba and --bb keep their declared letters.
 @collapse --ba at .a and --bb at .b
   and --v at .m and (--v at --(.a .b) mountain)
