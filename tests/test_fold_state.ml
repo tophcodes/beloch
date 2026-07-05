@@ -257,6 +257,52 @@ let test_crease_segments_diagonal () =
         || (Geom.point_equal a (pt 1 1) && Geom.point_equal b (pt 0 0)))
   | other -> Alcotest.failf "expected exactly 1 segment, got %d" (List.length other)
 
+(* --- line_material_segments / line_cuts_paper ----------------------------- *)
+
+let test_line_material_segments_flat_square () =
+  let l = { Geom.a = Num.zero; b = Num.one; c = qf 1 2 } (* y = 1/2 *) in
+  match Fold_state.line_material_segments Fold_state.init_square l with
+  | [ (a, b) ] ->
+      Alcotest.(check bool)
+        "segment is (0,1/2)-(1,1/2)" true
+        ((Geom.point_equal a { Geom.x = q 0; y = qf 1 2 }
+          && Geom.point_equal b { Geom.x = q 1; y = qf 1 2 })
+        || (Geom.point_equal a { Geom.x = q 1; y = qf 1 2 }
+           && Geom.point_equal b { Geom.x = q 0; y = qf 1 2 }))
+  | other -> Alcotest.failf "expected exactly 1 segment, got %d" (List.length other)
+
+let test_line_cuts_paper_flat_square () =
+  let mid = { Geom.a = Num.zero; b = Num.one; c = qf 1 2 } (* y = 1/2 *) in
+  let outside = { Geom.a = Num.one; b = Num.zero; c = q 2 } (* x = 2 *) in
+  let edge = { Geom.a = Num.one; b = Num.zero; c = q 0 } (* x = 0, on the boundary *) in
+  Alcotest.(check bool) "y=1/2 cuts the square" true
+    (Fold_state.line_cuts_paper Fold_state.init_square mid);
+  Alcotest.(check bool) "x=2 misses the square" false
+    (Fold_state.line_cuts_paper Fold_state.init_square outside);
+  Alcotest.(check bool) "x=0 only grazes the boundary (closed-vs-strict)" false
+    (Fold_state.line_cuts_paper Fold_state.init_square edge)
+
+(* unit square valley-folded along x=1/2, right half moved onto the left:
+   table space becomes [0,1/2]x[0,1], 2 faces stacked *)
+let two_layer_x () =
+  Fold_state.simple_fold Fold_state.init_square
+    ~axis:{ Geom.a = Num.one; b = Num.zero; c = qf 1 2 }
+    ~move_side:1 ~valley:true
+
+let test_line_material_segments_folded () =
+  let st = two_layer_x () in
+  let l = { Geom.a = Num.zero; b = Num.one; c = qf 1 2 } (* y = 1/2 *) in
+  match Fold_state.line_material_segments st l with
+  | [ _; _ ] -> ()
+  | other -> Alcotest.failf "expected 2 segments (one per layer), got %d" (List.length other)
+
+let test_line_cuts_paper_folded () =
+  let st = two_layer_x () in
+  let l = { Geom.a = Num.one; b = Num.zero; c = qf 3 4 } (* x = 3/4 *) in
+  Alcotest.(check bool)
+    "x=3/4 misses the folded material (now confined to [0,1/2])" false
+    (Fold_state.line_cuts_paper st l)
+
 (* A taco a|b (both filling the same square, hinged at the bottom edge y=0) with
    a third face c straddling the crease line. When c is stacked between a and b,
    the crease passes through c and c is sandwiched between the two hinged faces —
@@ -406,6 +452,17 @@ let () =
             test_crease_axis_flat_and_flip;
           Alcotest.test_case "flap_of_points unique/zero/ambiguous" `Quick
             test_flap_of_points_unique_zero_multi;
+        ] );
+      ( "line-material",
+        [
+          Alcotest.test_case "line_material_segments: flat square, 1 segment"
+            `Quick test_line_material_segments_flat_square;
+          Alcotest.test_case "line_cuts_paper: flat square (mid/outside/edge)"
+            `Quick test_line_cuts_paper_flat_square;
+          Alcotest.test_case "line_material_segments: folded, 2 segments"
+            `Quick test_line_material_segments_folded;
+          Alcotest.test_case "line_cuts_paper: folded, off-material line misses"
+            `Quick test_line_cuts_paper_folded;
         ] );
       ( "scaling",
         [
