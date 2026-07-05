@@ -213,9 +213,10 @@ bisectors, perpendicular to each other. Two **parallel** lines have a single
 **Intersecting, `toward` omitted — paper-incidence filter.** *(since
 v0.19-dev)* A bisector is not a fold if it never touches the sheet — it is a
 construction line on the abstract plane with nothing to crease. Beloch clips
-each candidate to the paper and keeps only those with a positive-length
-segment on it (ADR 0014: a crease is a bundle of segments; a candidate with an
-empty bundle creases nothing):
+each candidate to the paper and keeps only the candidates that cut through
+some face's interior — a line grazing an edge or corner creases nothing (ADR
+0014: a crease is a bundle of segments; a candidate with an empty bundle
+creases nothing):
 
 - **one candidate survives** — taken silently, no `toward` needed;
 - **two survive** — genuinely ambiguous (e.g. diagonal onto diagonal: both

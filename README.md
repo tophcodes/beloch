@@ -28,7 +28,7 @@ this — crease pattern and folded state, named constructions overlaid:
 
 | crease pattern | folded |
 | --- | --- |
-| ![x-midpoint.bel rendered as a crease pattern: two diagonals --d1 and --d2, their crossing labelled .center, and the fold crease from .a to .center](examples/x-midpoint-cp.svg) | ![x-midpoint.bel folded: the corner .a flap reflected onto .center](examples/x-midpoint-folded.svg) |
+| ![x-midpoint.bel rendered as a crease pattern: two diagonals --d1 and --d2, their crossing labelled .center, and the fold crease from .a to .center](examples/syntax/x-midpoint-cp.svg) | ![x-midpoint.bel folded: the corner .a flap reflected onto .center](examples/syntax/x-midpoint-folded.svg) |
 
 More programs, from simple midline folds to Messer's cube-root-of-two
 construction (axiom 7), are in [`examples/`](examples/).

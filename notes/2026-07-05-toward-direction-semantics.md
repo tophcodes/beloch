@@ -82,7 +82,7 @@ residual case.
   present. Kite needs no `toward` at all once the filter lands.
 - **Spec impact**: §4.5 error list ("`.p` lies on `--l1` or `--l2`") is
   wrong under this model — becomes "X lies on `--l1`" plus the straddle
-  error. Rewrite when the slice happens.
+  error. Rewrite when the slice happens. (done: v0.19-dev slice)
 
 ## Follow-up (separate topic, raised at the end of the session)
 

@@ -73,7 +73,7 @@ The canonical paper-folding construction of ∛2. A square is divided into three
 equal vertical strips by lines `PQ` (x=1/3) and `RS` (x=2/3); folding corner `C`
 onto edge `AB` while `S` (the top of `RS`) lands on `PQ` is a single axiom-7 fold,
 and the corner divides `AB` in ratio `AC/CB = ∛2`. Shipped as
-`examples/cube-root.bel`, kernel-verified `(AC/CB)³ = 2` exactly. Note: neither
+`examples/syntax/cube-root.bel`, kernel-verified `(AC/CB)³ = 2` exactly. Note: neither
 Messer nor Hull §2.3 derives *why* the thirds — they are a given; the construction
 is validated by the cube-root identity, not by re-deriving the subdivision. The
 first axiom-7 example that actually folds (uses `@`), exercising the shared-field
