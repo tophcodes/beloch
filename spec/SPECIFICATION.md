@@ -15,7 +15,7 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.18-dev** (fold scope — flap-typed `moving`, `up to` for some-layers simple folds, `@fold` along material creases); **v0.17-dev** (crease-segment selection — the `at` operator: a crease name is a bundle, projected to one segment by incidence); **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`, `step` panels; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
+Current version: **v0.19-dev** (material `cross` — crossings live in paper space, on the marks; no table-space point values); **v0.18-dev** (fold scope — flap-typed `moving`, `up to` for some-layers simple folds, `@fold` along material creases); **v0.17-dev** (crease-segment selection — the `at` operator: a crease name is a bundle, projected to one segment by incidence); **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`, `step` panels; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
 
 ---
 
@@ -139,19 +139,42 @@ The fold that places `.x` onto `.y`: the perpendicular bisector of the segment
 cross --c1 --c2
 ```
 
-The point where the two creases' lines meet. This is a point *construction*, not
-a fold axiom, in the classic numbering; it is Hull's basic operation O2
-[[hull2020]](#ref-hull2020) §1.5 (O2).
+The point where the two creases' **material marks** cross on the sheet. This is
+a point *construction*, not a fold axiom, in the classic numbering; it is Hull's
+basic operation O2 [[hull2020]](#ref-hull2020) §1.5 (O2).
 
-*(since v0.7-dev)* The intersection is a table-space point; it resolves to the
-**material point on the topmost layer** covering that spot (`Q2-B`). On the flat,
-unfolded sheet there is exactly one layer, so this is just the point itself;
-after folding, where several layers overlap, the visible top layer is taken —
-the one your hand would touch. **Errors:**
+*(since v0.19-dev)* The crossing is computed in **paper space**: a crease is a
+scar in the material, and two scars cross (or don't) independently of how the
+sheet happens to be folded. There are no table-space point values in the
+language — paper is opaque, so a "crossing" seen only because layers overlap on
+the table is not a crossing at all: no layer shows both marks. (This replaces
+the v0.7-dev rule that resolved a table-space intersection to the topmost
+covering layer, `Q2-B`.) Consequences:
+
+- Each operand must carry a **single material line**. A crease bent on the
+  table by later folds still qualifies bare — its scar is one straight line in
+  the paper. A crease scored through several layers marks **different lines on
+  different layers** (mirror images) and must be projected to one segment with
+  `at` (§4.8).
+- The crossing must lie **on the marks**: for each crease operand, on one of
+  its segments (endpoints count). Two supporting lines meeting beyond the
+  marks' extent is an error — there is nothing to see there on the sheet.
+- A constructed line operand (`--(.p .q)`) is the paper-space line through the
+  two material points; for it the crossing must merely lie on the paper. The
+  same holds for a reference-only boundary crease (one that cut no face).
+- `cross` is therefore **fold-state-independent**: folding never moves a mark
+  within the sheet. Only name resolution (the `at` projection) reads the
+  folded state.
+
+**Errors:**
 
 - the two lines are **parallel** (no intersection);
-- the intersection point is **off the paper** — no layer covers it (exact
-  point-in-polygon test; the boundary counts as on the paper).
+- a crease operand marks **different lines on different layers** (select a
+  segment with `at`);
+- the marks **do not reach** the crossing (supporting lines meet beyond a
+  crease's segments);
+- the intersection is **off the paper** (constructed-line / boundary-reference
+  operands; exact point-in-polygon test; the boundary counts as on the paper).
 
 ### 4.4 Axiom 3 — perpendicular through a point *(since v0.2)*
 
@@ -436,7 +459,8 @@ line.
 
 `--l at <selector>` projects the bundle down to the **one** segment incident to the
 selector, and yields that segment's current supporting line (usable anywhere a line
-operand is). Selectors, by incidence:
+operand is; as a fold axis that is its table-space line, in `cross` its material
+paper-space mark — §4.3). Selectors, by incidence:
 
 - `--l at .p` — the segment the point `.p` lies on.
 - `--l at --a` — the segment whose span contains `--a`'s crossing of `--l`.
@@ -563,6 +587,10 @@ apply petal(.k2 .k4 --(.k2 .k1))          ; folds now; namespace discarded
   other way.
 - Arguments are ordinary point/crease operands (named or inline forms),
   matched to parameters by position; sigils must agree.
+- A named-crease argument passes the **crease itself** — its material identity,
+  not a snapshot of its line — so the body can `cross` it or fold along it as
+  the sheet evolves. Inline constructed lines (`--(…)`, `at` projections) pass
+  as fixed lines *(since v0.19-dev)*.
 - `apply` always executes the body immediately, against the current folded
   state — a bare `apply name(args)` (no `$name =`) still folds; it just
   discards the resulting namespace instead of retaining it.
@@ -772,7 +800,10 @@ and the process exits non-zero:
 - axiom 1 or 2 whose two points are at the **same place** (coincident — which can
   also happen *after* folds bring two material points together);
 - `cross` on parallel creases (no intersection);
-- `cross` whose intersection is **off the paper** (no layer covers it);
+- `cross` on a crease that marks **different lines on different layers**
+  (project to one segment with `at`);
+- `cross` whose marks **do not reach** the crossing, or whose intersection is
+  **off the paper**;
 - `map --l1 onto --l2` (axiom 5) that is ambiguous — intersecting lines with no
   `toward`, or a `toward` point lying on a fold line;
 - a `@` fold on a line-construction axiom (`@through`, `@perp`, `@map --l onto --m`)
