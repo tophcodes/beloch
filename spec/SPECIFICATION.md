@@ -15,7 +15,7 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.19-dev** (material `cross` — crossings live in paper space, on the marks; no table-space point values); **v0.18-dev** (fold scope — flap-typed `moving`, `up to` for some-layers simple folds, `@fold` along material creases); **v0.17-dev** (crease-segment selection — the `at` operator: a crease name is a bundle, projected to one segment by incidence); **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`, `step` panels; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
+Current version: **v0.19-dev** (material `cross` — crossings live in paper space, on the marks; no table-space point values; axiom 5 `toward` is a fold direction, not a sector, with a paper-incidence filter for the omitted case and a derived `moving`); **v0.18-dev** (fold scope — flap-typed `moving`, `up to` for some-layers simple folds, `@fold` along material creases); **v0.17-dev** (crease-segment selection — the `at` operator: a crease name is a bundle, projected to one segment by incidence); **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`, `step` panels; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
 
 ---
 
@@ -200,19 +200,106 @@ geometric precondition and never errors** (beyond undefined-name errors).
 ### 4.5 Axiom 5 — fold one line onto another *(since v0.3-dev)*
 
 ```
+map --l1 onto --l2
 map --l1 onto --l2 toward .p
 ```
 
 The fold placing line `--l1` onto line `--l2`: the **angle bisector**
 [[justin1986]](#ref-justin1986) §8.1 (operation ⑤), [[hull2020]](#ref-hull2020)
 §1.5 (O4 in Hull's numbering; see §1). Two intersecting lines have **two**
-bisectors (perpendicular to each other); the optional `toward .p` selector picks
-the one whose angular sector contains `.p`. Two **parallel** lines have a single
-**midline**, and `toward` is ignored.
+bisectors, perpendicular to each other. Two **parallel** lines have a single
+**midline**, and `toward` is ignored (unchanged: a midline needs no selector).
 
-**Errors:** the two lines are the **same line**; the lines intersect and
-`toward` is **omitted** (ambiguous); `.p` lies **on** `--l1` or `--l2`
-(ambiguous).
+**Intersecting, `toward` omitted — paper-incidence filter.** *(since
+v0.19-dev)* A bisector is not a fold if it never touches the sheet — it is a
+construction line on the abstract plane with nothing to crease. Beloch clips
+each candidate to the paper and keeps only those with a positive-length
+segment on it (ADR 0014: a crease is a bundle of segments; a candidate with an
+empty bundle creases nothing):
+
+- **one candidate survives** — taken silently, no `toward` needed;
+- **two survive** — genuinely ambiguous (e.g. diagonal onto diagonal: both
+  midlines cross the interior) — `toward` is required;
+- **none survive** — no fold exists.
+
+[[justin1986]](#ref-justin1986) §8.1 frames the elementary operations as
+*faire un pli puis déplier* — "make a fold, then unfold": a pli that creases
+nothing is not one. The kite base is the motivating case: folding an edge onto
+the long diagonal has one candidate bisector crossing the paper's interior and
+one meeting it only at a corner point (zero-length incidence):
+
+```
+--ac = --(.a .c)
+@map --(.d .a) onto --ac   ; one candidate has zero paper incidence — the other is taken silently
+```
+
+(worked through in `examples/bases/kite.bel`)
+
+**Intersecting, `toward X` given — direction, not sector.** *(since
+v0.19-dev)* `--l1` divides the sheet into two sides; `X` names the **target
+side**. Beloch picks the candidate bisector `b` such that reflecting the
+**swinging material** of `--l1` — its ADR-0014 segments, clipped to the paper
+— across `b` lands it on `X`'s side of `--l1`. This needs to know *which*
+material swings, so `toward` couples to fold scope (§4.6), not to bisector
+geometry alone. `X` may be any point off `--l1`, including a point on `--l2`
+(now legal). `X` **on `--l1`** is an error: `toward` names where the fold
+*goes*, not where it comes from.
+
+The kite again, this time with `toward` naming a corner that neither the old
+sector reading nor a nearest-bisector reading would pick correctly — the
+rejected candidate is both in that corner's angular sector *and* the
+angularly closer of the two:
+
+```
+@map --(.d .a) onto --ac toward .b
+```
+
+**The straddle case.** If the crossing point lies in the **interior** of
+`--l1`'s material (not at an endpoint — e.g. diagonal onto diagonal, crossing
+at the sheet's center), the two candidates swing *different* halves of
+`--l1`, and both send their half to `X`'s side — `toward X` alone cannot
+break the tie. `moving` (§4.6) can, since it names which half swings:
+
+```
+@map --(.a .c) onto --(.b .d) toward .b moving .c
+```
+
+(`examples/syntax/bisect-straddle.bel`) Without `moving` — or with a `moving`
+point that sits in both candidates' halves — the straddle is a hard error.
+This is not a regression: sector semantics (the corners lie exactly on the
+bisectors here) and nearest-bisector semantics (the corners are equidistant)
+both fail on this same configuration too.
+
+**`moving` on axiom-5 folds is now optional.** *(since v0.19-dev)* `@map --l1
+onto --l2` derives its anchor from `--l1`'s own swinging material — the side
+of the (chosen) axis that material sits on — the same way a map fold on
+points implies the anchor from the moved point (§4.6). `moving` still
+overrides it, and is still required to break a straddle or to scope an
+`up to` range.
+
+**Errors:**
+
+- the two lines are the **same line** ("lines are identical");
+- intersecting, `toward` omitted, both surviving candidates land on the paper
+  — ambiguous ("map --l1 onto --l2 is ambiguous: both bisectors land on the
+  paper; add `toward .p` to pick the direction");
+- intersecting, `toward` omitted, no candidate lands on the paper ("map --l1
+  onto --l2: neither bisector lands on the paper — no fold to make");
+- `toward .p` names a point **on `--l1`** ("`toward .p` lies on --l1; `toward`
+  names where the fold goes — pick a point off --l1");
+- `toward` given, no candidate moves the swinging material that way ("no fold
+  of --l1 onto --l2 moves its material toward .p"; with an explicit
+  `moving .c` anchor, "no fold of --l1 onto --l2 moves .c toward .p");
+- the straddle case, both candidates viable ("map --l1 onto --l2 toward .p is
+  ambiguous: --l1 straddles the crossing, so both bisectors move material
+  toward .p"), extended with a fix-it clause — "select the swinging segment
+  of --l1 with `at`" for a bind, "add `moving` to pick the swinging flap" for
+  a fold, or, when an explicit `moving` anchor still sits in both flaps,
+  "anchor with a point in only one flap";
+- a fold whose `--l1` has no material on the paper at all ("--l1 has no
+  material on the paper to fold"), or (no `toward`, no explicit `moving`)
+  whose material straddles the axis ("--l1 straddles the fold line; add
+  `moving` to pick the swinging flap").
 
 This is the first axiom whose result leaves ℚ — the bisector of two rational
 lines is generally irrational (slope `√2−1` for `y=0` and `y=x`). Results are
@@ -220,6 +307,8 @@ therefore reals beyond ℚ, but equality, parallelism, and on-paper tests stay
 **exact** (§6).
 
 *(since v0.6-dev: verb is `map … onto …`; was `bisect …`.)*
+*(since v0.19-dev: `toward` is a direction, not a sector; paper-incidence
+filter for the omitted case; `moving` is derived, not required.)*
 
 ### 4.5a Axiom 4 — project a point onto a line *(since v0.4-dev)*
 
@@ -263,7 +352,11 @@ only. Cube roots do not arise here; they first appear at axiom 7 (§4.5c). See
 "A note on axiom numbering" in §1.
 
 `through` is the same verb as in axiom 3 (`perp --l through .p`): the crease
-passes through the named point. `toward` is the same selector as axiom 5.
+passes through the named point. `toward` here is **metric** — it picks the
+landing nearest `.x` — and *(since v0.19-dev)* that is unaffected by axiom 5's
+`toward`, which now names a target direction rather than a proximity (§4.5);
+whether axioms 6/7 get the same direction reading is a separate, unstarted
+pass.
 
 Errors: the lines/points being out of reach (`dist(p',D) > |p'p|`) raises *out of
 reach*; two solutions without `toward` raises an ambiguity error naming the
@@ -295,7 +388,10 @@ coordinates must still be compared exactly (§6).
 **Solutions and `toward`.** When the cubic has three real solutions (`toward` is
 required); when it has one real solution, `toward` is ignored. `toward .x` picks
 the solution whose first folded point (the image of `.p` on `--d`) lands nearest
-`.x`, measured by exact squared distance.
+`.x`, measured by exact squared distance. This is the same metric proximity
+selector as axiom 6, and *(since v0.19-dev)* it is unaffected by axiom 5's
+`toward`, which now names a direction rather than a proximity (§4.5); a
+direction reading for axioms 6/7 remains a separate, unstarted pass.
 
 **Errors:**
 
@@ -349,10 +445,14 @@ paper stays flat. Prefixing it with `@` **performs the fold**:
 
 **Map folds** (`@map .a onto .c`) imply the anchor from the moved point when
 `moving` is omitted — here, `.a`'s flap; `moving <flap>` overrides it (e.g.
-`moving .c` folds the other side instead). **Line-construction folds**
-(`@through`, `@perp`, `@map --l onto --m`) and **`@fold`** (below) have no
-natural anchor, so `moving` is **required** — the existing "this fold needs
-`moving .p` to choose the side" error. A line- or `#(...)`-flap anchor that
+`moving .c` folds the other side instead). *(since v0.19-dev)* `@map --l1
+onto --l2` (axiom 5) similarly derives its anchor — from `--l1`'s own
+swinging material, not a moved point (§4.5); `moving` still overrides it, and
+is still required when that material straddles the axis, or to scope an
+`up to` range. **Line-construction folds** (`@through`, `@perp`) and
+**`@fold`** (below) have no natural anchor at all, so `moving` is
+**required** — the existing "this fold needs `moving .p` to choose the side"
+error. A line- or `#(...)`-flap anchor that
 straddles the fold axis, or a `moving` point exactly on the axis, is also an
 error (no side to pick); a point anchor disambiguates the side by itself, even
 when its flap straddles the axis.
@@ -466,9 +566,11 @@ paper-space mark — §4.3). Selectors, by incidence:
 - `--l at --a` — the segment whose span contains `--a`'s crossing of `--l`.
 - `--l at #(.a .b …)` — the segment lying on that flap.
 
-Selection is **incidence**, distinct from `toward`'s proximity (§4): `at` picks the
-segment the selector is *on*; `toward` picks the construction nearer a point off the
-result. `at` binds tighter than the axiom keywords: `perp --l at --a through .b`
+Selection is **incidence**: `at` picks the segment the selector is *on*. This is
+distinct from `toward` (§4), whose meaning now varies by axiom: axioms 6/7
+still use it for **proximity** (the construction landing nearest a point,
+§4.5b, §4.5c); axiom 5 uses it for **direction** (§4.5) — the target side of a
+fold, not a nearness measure. `at` binds tighter than the axiom keywords: `perp --l at --a through .b`
 reads as `perp (--l at --a) through .b`.
 
 The result must be a **single** segment. No match is an error ("no segment of `--l`
@@ -804,10 +906,14 @@ and the process exits non-zero:
   (project to one segment with `at`);
 - `cross` whose marks **do not reach** the crossing, or whose intersection is
   **off the paper**;
-- `map --l1 onto --l2` (axiom 5) that is ambiguous — intersecting lines with no
-  `toward`, or a `toward` point lying on a fold line;
-- a `@` fold on a line-construction axiom (`@through`, `@perp`, `@map --l onto --m`)
-  with no `moving`, or a `moving` point lying on the fold axis (no side);
+- `map --l1 onto --l2` (axiom 5): with `toward` omitted, both surviving
+  bisectors land on the paper (ambiguous) or neither does (no fold to make); a
+  `toward` point lying on `--l1`; with `toward` given, no candidate moves the
+  swinging material that way, or the straddle case, where both do (§4.5);
+- a `@` fold on a line-construction axiom (`@through`, `@perp`) with no
+  `moving`, or a `moving` point lying on the fold axis (no side); an axiom-5
+  fold (`@map --l1 onto --l2`) whose `up to` range has no explicit `moving`
+  to anchor it (`moving` is otherwise derived, §4.5);
 - reference to an undefined point or crease name.
 
 ---
