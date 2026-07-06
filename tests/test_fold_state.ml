@@ -162,21 +162,47 @@ let test_crease_axis_flat_and_flip () =
          true (Geom.side_of_line l (pt 1 0) = 0 && Geom.side_of_line l (pt 0 1) = 0)
    | _ -> Alcotest.fail "flipped flat crease should still resolve to a line")
 
-(* flap_of_points: the a-c split square has triangles; {a,b,c} picks exactly one *)
+(* flap_of_points: the a-c split square has two triangle FACES, but the split
+   is a bare U precrease (nothing folded), so both triangles are the SAME
+   coplanar cluster (ADR 0017). Every point-set below now resolves to that one
+   `Cluster, including {b,d} and {a,c} which used to be `Zero/`Ambiguous under
+   the old per-face semantics — "still flat ⇒ still one flap". *)
 let test_flap_of_points_unique_zero_multi () =
   let pt x y = { Geom.x = Num.of_int x; y = Num.of_int y } in
   let l = Geom.line_through (pt 0 0) (pt 1 1) in
   let cid = Fold_state.fresh_crease_id () in
   let st = Fold_state.subdivide Fold_state.init_square l ~crease_id:cid ~prov:None in
   (match Fold_state.flap_of_points st [ pt 0 0; pt 1 0; pt 1 1 ] with
-   | `Face _ -> ()
-   | _ -> Alcotest.fail "{a,b,c} should pick a unique flap");
+   | `Cluster _ -> ()
+   | _ -> Alcotest.fail "{a,b,c}: unfolded precrease is one cluster");
   (match Fold_state.flap_of_points st [ pt 0 0; pt 1 1 ] with
-   | `Ambiguous -> ()  (* both triangles contain the shared diagonal endpoints *)
-   | _ -> Alcotest.fail "{a,c} lie on both flaps → ambiguous");
+   | `Cluster _ -> ()  (* both triangles are the same still-flat cluster *)
+   | _ -> Alcotest.fail "{a,c}: unfolded precrease is one cluster");
   (match Fold_state.flap_of_points st [ pt 1 0; pt 0 1 ] with
-   | `Zero -> ()  (* b and d are on opposite triangles → no single flap *)
-   | _ -> Alcotest.fail "{b,d} share no flap → zero")
+   | `Cluster _ -> ()  (* b and d sit on opposite triangles, same cluster *)
+   | _ -> Alcotest.fail "{b,d}: unfolded precrease is one cluster")
+
+(* coplanar_clusters: a single unfolded face is its own (only) cluster. *)
+let test_coplanar_clusters_flat_square () =
+  Alcotest.(check (list int)) "one face -> one cluster" [ 0 ]
+    (Array.to_list (Fold_state.coplanar_clusters Fold_state.init_square))
+
+(* Once a crease is actually FOLDED (U -> M/V), the flap splits there: the two
+   faces land in different clusters, and a point-set spanning both (off the
+   crease) no longer shares a flap. *)
+let test_cluster_split_on_fold () =
+  let pt x y = { Geom.x = Num.of_int x; y = Num.of_int y } in
+  let st =
+    Fold_state.simple_fold Fold_state.init_square
+      ~axis:{ Geom.a = Num.zero; b = Num.one; c = Num.of_q (Q.of_ints 1 2) }
+      ~move_side:1 ~valley:true
+  in
+  let cl = Fold_state.coplanar_clusters st in
+  Alcotest.(check bool) "folded faces land in different clusters" true
+    (cl.(0) <> cl.(1));
+  match Fold_state.flap_of_points st [ pt 0 0; pt 0 1 ] with
+  | `Zero -> () (* a (face 0) and d (face 1), off the now-folded crease *)
+  | _ -> Alcotest.fail "points on opposite folded faces should share no flap"
 
 let test_layer_scaling_subquadratic () =
   (* precrease N well-separated vertical creases via subdivide (grows faces
@@ -456,6 +482,35 @@ let test_unscoped_fold_unchanged () =
   Alcotest.(check int) "all-layers cuts both: four faces" 4
     (Array.length st'.Fold_state.faces)
 
+(* Cohesion (ADR 0017 defect 2): a coplanar cluster (U-adjacent faces) must
+   move as a unit even when its members never geometrically overlap each
+   other, so the existing `outer`/overlap closure can't see the link. Two
+   side-by-side top-layer siblings (topA, topB) share a U edge and both sit
+   above a bottom face; the fold axis is placed off to the side so every face
+   is fully a candidate (the axis does NOT cut the cluster). Anchored at
+   topA with `up to` itself (the minimal scope), the OLD closure — overlap-only
+   — never reaches topB (they don't overlap; they're side by side), leaving a
+   still-flat neighbour behind. Cohesion must pull topB in anyway. *)
+let test_select_scope_cohesion_pulls_in_u_sibling () =
+  let bot = mkface [| pt 0 0; pt 4 0; pt 4 4; pt 0 4 |] in
+  let top_a = mkface [| pt 0 0; pt 2 0; pt 2 4; pt 0 4 |] in
+  let top_b = mkface [| pt 2 0; pt 4 0; pt 4 4; pt 2 4 |] in
+  let edges = [| mkedge ~ea:(pt 2 0) ~eb:(pt 2 4) ~left:1 ~right:2 ~cid:300 |] in
+  let st = mk_state [| bot; top_a; top_b |] edges [| 0; 5; 5 |] in
+  (* axis far to the left: every face is entirely on move_side=1, so the axis
+     never cuts the cluster — this is not the "legitimate tear" case *)
+  let axis = { Geom.a = Num.one; b = Num.zero; c = Num.of_int (-100) } in
+  match
+    Fold_state.select_scope st ~axis ~move_side:1 ~valley:true ~anchor:1
+      ~target:(Fold_state.TargetFace 1)
+  with
+  | Error e -> Alcotest.fail e
+  | Ok m ->
+      Alcotest.(check bool) "anchor (topA) moves" true m.(1);
+      Alcotest.(check bool) "U-adjacent sibling (topB) moves too (cohesion)"
+        true m.(2);
+      Alcotest.(check bool) "bottom face does not move" false m.(0)
+
 let () =
   Alcotest.run "fold_state"
     [
@@ -482,6 +537,10 @@ let () =
             test_crease_axis_flat_and_flip;
           Alcotest.test_case "flap_of_points unique/zero/ambiguous" `Quick
             test_flap_of_points_unique_zero_multi;
+          Alcotest.test_case "coplanar_clusters: flat square is one cluster"
+            `Quick test_coplanar_clusters_flat_square;
+          Alcotest.test_case "coplanar_clusters: fold splits the cluster"
+            `Quick test_cluster_split_on_fold;
         ] );
       ( "line-material",
         [
@@ -524,5 +583,8 @@ let () =
             test_scoped_fold_leaves_others_uncut;
           Alcotest.test_case "unscoped fold unchanged (status quo)" `Quick
             test_unscoped_fold_unchanged;
+          Alcotest.test_case
+            "cohesion: U-adjacent sibling moves with its cluster (ADR 0017)"
+            `Quick test_select_scope_cohesion_pulls_in_u_sibling;
         ] );
     ]

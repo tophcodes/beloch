@@ -206,6 +206,28 @@ let eval_folded (prog : Ast.program) : folded =
                   segment with `at`, e.g. --%s at #(.a .b .c)"
                  name name))
   in
+  (* the unique FACE (the fine ADR-0014 partition, not a flap/coplanar
+     cluster) whose paper polygon contains every point in [pts]. Unlike
+     `moving`/`up to`'s flap operand (ADR 0017: coarsened to a coplanar
+     cluster so a still-flat neighbourhood is one flap), `at`'s `#(...)`
+     incidence check and `@collapse`'s `over`/`under` sector clause both need
+     FACE precision even on a still-flat, multiply-precreased sheet: they
+     disambiguate BETWEEN a crease bundle's own segments / a vertex's own
+     sectors, which are still distinct faces while every one of them is the
+     SAME flap (nothing has folded yet). Coarsening these to "the whole flap"
+     would make every segment/sector match at once. *)
+  let face_of_points (pts : Geom.point list) :
+      [ `Face of int | `Zero | `Ambiguous ] =
+    let st = !(ctx.state) in
+    let contains i =
+      List.for_all
+        (fun p -> Geom.in_convex_polygon st.Fold_state.faces.(i).Fold_state.paper p)
+        pts
+    in
+    let hits = ref [] in
+    Array.iteri (fun i _ -> if contains i then hits := i :: !hits) st.Fold_state.faces;
+    match !hits with [ i ] -> `Face i | [] -> `Zero | _ -> `Ambiguous
+  in
   (* resolve a point operand to its material PAPER coordinate, a line operand to
      its TABLE-space line (fold axes align current table positions). `cross` is
      the exception: it is a material construction, so its operands resolve to
@@ -349,9 +371,7 @@ let eval_folded (prog : Ast.program) : folded =
           | Some ip -> point_on_seg ip s
           | None -> false)
       | Ast.SelFlap (Ast.FByPoints (pts, fspan)) -> (
-          match
-            Fold_state.flap_of_points !(ctx.state) (List.map resolve_point pts)
-          with
+          match face_of_points (List.map resolve_point pts) with
           | `Face fi ->
               let l, r = s.Fold_state.faces in
               l = fi || r = fi
@@ -373,26 +393,32 @@ let eval_folded (prog : Ast.program) : folded =
       st.Fold_state.faces;
     List.rev !acc
   in
-  (* resolve a flap operand to the unique current face (ADR 0016: slots demand
-     uniqueness, errors name the candidates) *)
-  let resolve_flap_face (fa : Ast.flap_arg) (span : Error.span) : int =
+  (* resolve a flap operand to its unique current flap — a coplanar cluster of
+     faces (ADR 0017: two faces joined only by a still-unfolded U edge are the
+     same flap). Slots demand uniqueness at cluster granularity; errors name
+     the candidate flaps. *)
+  let resolve_flap_cluster (fa : Ast.flap_arg) (span : Error.span) : int list =
     match fa with
     | Ast.FlapPoint po -> (
         match faces_containing (resolve_point po) with
-        | [ i ] -> i
         | [] ->
             Error.fail span (Printf.sprintf "%s is not on the paper" (fstr fa))
-        | many ->
-            Error.fail span
-              (Printf.sprintf
-                 "%s lies on a crease shared by %d flaps; name the flap with \
-                  #(...)"
-                 (fstr fa) (List.length many)))
+        | faces -> (
+            let cl = Fold_state.coplanar_clusters !(ctx.state) in
+            let n = Array.length !(ctx.state).Fold_state.faces in
+            match List.sort_uniq compare (List.map (fun f -> cl.(f)) faces) with
+            | [ id ] -> List.filter (fun f -> cl.(f) = id) (List.init n Fun.id)
+            | ids ->
+                Error.fail span
+                  (Printf.sprintf
+                     "%s lies on a crease shared by %d flaps; name the flap \
+                      with #(...)"
+                     (fstr fa) (List.length ids))))
     | Ast.FlapSpec (Ast.FByPoints (pts, fspan)) -> (
         match
           Fold_state.flap_of_points !(ctx.state) (List.map resolve_point pts)
         with
-        | `Face fi -> fi
+        | `Cluster fs -> fs
         | `Zero -> Error.fail fspan "those points aren't all on one flap"
         | `Ambiguous -> Error.fail fspan "ambiguous flap; add another point")
     | Ast.FlapLine lo -> (
@@ -426,13 +452,48 @@ let eval_folded (prog : Ast.program) : folded =
                    "%s is not a physical crease, so it names no flap" (lstr lo))
         in
         match candidates with
+        | [] -> Error.fail span (Printf.sprintf "%s touches no flap" (fstr fa))
+        | _ -> (
+            let cl = Fold_state.coplanar_clusters !(ctx.state) in
+            let n = Array.length !(ctx.state).Fold_state.faces in
+            let cluster_ids =
+              List.sort_uniq compare (List.map (fun f -> cl.(f)) candidates)
+            in
+            match cluster_ids with
+            | [ id ] -> List.filter (fun f -> cl.(f) = id) (List.init n Fun.id)
+            | many ->
+                Error.fail span
+                  (Printf.sprintf
+                     "%s touches %d flaps; add a point, e.g. #(.p)" (fstr fa)
+                     (List.length many))))
+  in
+  (* face-precise resolution for @collapse's `over`/`under`: a sector around a
+     collapse vertex is always one FACE (ADR 0017 non-goal — over/under
+     stacking order is not lifted to clusters), unlike `moving`/`up to`'s flap
+     operand. Mirrors resolve_flap_cluster's FlapPoint/FlapSpec branches but
+     via face_of_points, not the cluster-coarsened flap_of_points. *)
+  let resolve_sector_face (fa : Ast.flap_arg) (span : Error.span) : int =
+    match fa with
+    | Ast.FlapPoint po -> (
+        match faces_containing (resolve_point po) with
         | [ i ] -> i
         | [] ->
-            Error.fail span (Printf.sprintf "%s touches no flap" (fstr fa))
+            Error.fail span (Printf.sprintf "%s is not on the paper" (fstr fa))
         | many ->
             Error.fail span
-              (Printf.sprintf "%s touches %d flaps; add a point, e.g. #(.p)"
+              (Printf.sprintf
+                 "%s lies on a crease shared by %d flaps; name the flap with \
+                  #(...)"
                  (fstr fa) (List.length many)))
+    | Ast.FlapSpec (Ast.FByPoints (pts, fspan)) -> (
+        match face_of_points (List.map resolve_point pts) with
+        | `Face fi -> fi
+        | `Zero -> Error.fail fspan "those points aren't all on one flap"
+        | `Ambiguous -> Error.fail fspan "ambiguous flap; add another point")
+    | Ast.FlapLine _ ->
+        (* over_flap's grammar never produces FlapLine *)
+        Error.fail span
+          (Printf.sprintf "%s cannot name an over/under sector" (fstr fa))
   in
   (* which side of [axis] a flap anchor moves; point sugar keeps the existing
      side-of-the-point semantics. Resolution failures (point off paper, ambiguous
@@ -446,10 +507,10 @@ let eval_folded (prog : Ast.program) : folded =
         let s = Geom.side_of_line axis (table_of po) in
         if s = 0 then Error `OnAxis else Ok s
     | _ -> (
-        let fi = resolve_flap_face fa span in
-        let poly = Fold_state.table_polygon !(ctx.state) fi in
-        let pos = Array.exists (fun p -> Geom.side_of_line axis p > 0) poly in
-        let neg = Array.exists (fun p -> Geom.side_of_line axis p < 0) poly in
+        let cluster = resolve_flap_cluster fa span in
+        let polys = List.map (Fold_state.table_polygon !(ctx.state)) cluster in
+        let pos = List.exists (Array.exists (fun p -> Geom.side_of_line axis p > 0)) polys in
+        let neg = List.exists (Array.exists (fun p -> Geom.side_of_line axis p < 0)) polys in
         match (pos, neg) with
         | true, true -> Error `Straddles
         | true, false -> Ok 1
@@ -473,7 +534,8 @@ let eval_folded (prog : Ast.program) : folded =
       Fold_state.scope_target =
     match fa with
     | Ast.FlapPoint _ | Ast.FlapSpec _ ->
-        Fold_state.TargetFace (resolve_flap_face fa span)
+        let cluster = resolve_flap_cluster fa span in
+        Fold_state.TargetHinged (fun f -> List.mem f cluster)
     | Ast.FlapLine lo -> (
         match lo with
         | Ast.LNamed cr ->
@@ -727,7 +789,20 @@ let eval_folded (prog : Ast.program) : folded =
     | Some tgt -> (
         let anchor =
           match anchor_arg with
-          | Some fa -> resolve_flap_face fa span
+          | Some fa ->
+              let st = !(ctx.state) in
+              let cluster = resolve_flap_cluster fa span in
+              (match
+                 List.find_opt
+                   (fun f ->
+                     Array.length
+                       (Geom.clip_convex_halfplane axis move_side
+                          (Fold_state.table_polygon st f))
+                     >= 3)
+                   cluster
+               with
+              | Some f -> f
+              | None -> List.hd cluster)
           | None ->
               Error.fail span "`up to` needs `moving` to anchor the moving flaps"
         in
@@ -1265,7 +1340,7 @@ let eval_folded (prog : Ast.program) : folded =
           es;
         let over =
           List.map
-            (fun (u, l) -> (resolve_flap_face u span, resolve_flap_face l span))
+            (fun (u, l) -> (resolve_sector_face u span, resolve_sector_face l span))
             overs
         in
         (match Collapse.collapse !(ctx.state) es ~over with

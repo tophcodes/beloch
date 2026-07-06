@@ -121,9 +121,14 @@ list, or a representative + membership — whatever the call sites need; see C).
 
 ### C. Call sites → clusters — `lib/eval.ml` (~306–476)
 
-- **`at_matches` `SelFlap` (line 351)** — a segment is incident to the flap iff
-  *either* of its faces (`s.faces = (l, r)`) is in the cluster, not just equals a
-  single face index. `Zero`/`Ambiguous` errors unchanged in wording.
+- **`at_matches` `SelFlap` (line 351)** — resolves at **face** granularity, not
+  flap. `#(...)` is a region-disambiguation operator; here it names *which
+  segment* of a crease bundle, so it denotes the face that segment lives on —
+  not the coplanar flap (on a flat sheet that would be the whole sheet, naming
+  every segment; cf. `examples/syntax/collapse-midpaper.bel`). Backed by
+  `face_of_points`, unchanged from today. Only `moving` / `up to #(...)` — the
+  *scope* operands — resolve `#(...)` to a flap. See ADR 0017 *What `#(...)`
+  denotes*.
 - **`resolve_flap_face` (line 378)** — currently returns one face index. It now
   resolves the operand to a **cluster**. Downstream consumers differ:
   - `target_of` / `select_scope` anchor & target want a **face predicate or
