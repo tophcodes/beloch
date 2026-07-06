@@ -34,6 +34,44 @@ let test_dim_tty () =
 let test_dim_no_tty () =
   Alcotest.(check string) "plain" "hint" (dim ~is_tty:false "hint")
 
+let test_wants_help_flag () =
+  Alcotest.(check bool) "--help" true (wants_help [ "--help" ]);
+  Alcotest.(check bool) "-h" true (wants_help [ "-h" ]);
+  Alcotest.(check bool)
+    "mixed with other args" true
+    (wants_help [ "f.bel"; "--legend"; "--help" ])
+
+let test_wants_help_absent () =
+  Alcotest.(check bool) "no help flag" false (wants_help [ "f.bel"; "--legend" ])
+
+let contains_substring ~needle haystack =
+  let nlen = String.length needle and hlen = String.length haystack in
+  let rec loop i =
+    if i + nlen > hlen then false
+    else if String.sub haystack i nlen = needle then true
+    else loop (i + 1)
+  in
+  nlen = 0 || loop 0
+
+let test_render_help_mentions_flags () =
+  List.iter
+    (fun sub ->
+      Alcotest.(check bool)
+        (Printf.sprintf "render_help mentions %s" sub)
+        true
+        (contains_substring ~needle:sub render_help))
+    [
+      "beloch render";
+      "--view cp|folded";
+      "--flip";
+      "--legend";
+      "--step NAME|N";
+      "--constructions";
+      "--format svg|png";
+      "--width";
+      "--open";
+    ]
+
 let () =
   Alcotest.run "render_cli"
     [
@@ -46,5 +84,16 @@ let () =
         [
           Alcotest.test_case "tty wraps in ANSI dim" `Quick test_dim_tty;
           Alcotest.test_case "non-tty passes through" `Quick test_dim_no_tty;
+        ] );
+      ( "wants_help",
+        [
+          Alcotest.test_case "recognizes --help/-h" `Quick test_wants_help_flag;
+          Alcotest.test_case "false without a help flag" `Quick
+            test_wants_help_absent;
+        ] );
+      ( "render_help",
+        [
+          Alcotest.test_case "mentions every flag" `Quick
+            test_render_help_mentions_flags;
         ] );
     ]
