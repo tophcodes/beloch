@@ -1,5 +1,7 @@
-// Constructions overlay, title and legend — shared by renderCP and
-// renderFolded. Ported verbatim from tools/fold2svg.mjs:342-463.
+// Labels overlay (named points/lines), title and legend — shared by renderCP
+// and renderFolded. Originally ported verbatim from tools/fold2svg.mjs:342-463;
+// the auto-all/dedup behavior from that port has since been replaced by an
+// explicit opt-in list (see appendConstructions below).
 import type { Assignment, FoldScene, Frame, Vec2 } from "@beloch/scene";
 import { el, SvgDoc, SvgNode } from "./svgdoc";
 import { clipLineBox, clipLineToPoly, lineToFace } from "./geometry";
@@ -7,12 +9,14 @@ import { PAD } from "./layout";
 import type { Layout } from "./layout";
 import type { Theme } from "./theme";
 
-// Same hardcoded unit-square corners as fold2svg.mjs:217 — named points live
-// in normalized paper space regardless of the CP's world bbox.
-const CORNER: Vec2[] = [[0, 0], [1, 0], [1, 1], [0, 1]];
-const near = (p: Vec2, x: number, y: number) =>
-  Math.abs(p[0] - x) < 1e-6 && Math.abs(p[1] - y) < 1e-6;
-const isCornerPoint = (p: Vec2) => CORNER.some(([x, y]) => near(p, x, y));
+// A named line that's also a real crease highlights in that crease's own
+// assignment color (bolder, dashed on top) rather than a separate hue — the
+// overlay marks WHICH line, it doesn't invent a new line-type color. Pure
+// constructions (never folded, no assignment) fall back to theme.construction.
+function creaseColor(frame: Frame, name: string, theme: Theme): string | undefined {
+  const i = frame.edgesProvenance.findIndex((p) => p?.name === name);
+  return i === -1 ? undefined : theme.lineStyle(frame.edgesAssignment[i]!, theme).stroke;
+}
 
 export function appendConstructions(
   doc: SvgDoc,
@@ -25,19 +29,10 @@ export function appendConstructions(
   const annotations = doc.layer("annotations");
   const { tx, ty, minX, maxX, minY, maxY } = layout;
 
-  // "Auxiliary" excludes constructions already drawn elsewhere: named lines
-  // that are creases (drawn with a solid stroke + --name label) and named
-  // points that sit on a paper corner (drawn as a dotted .a/.b/.c/.d corner).
-  const creaseLineNames = new Set(
-    scene.cp.edgesProvenance
-      .filter((p): p is NonNullable<typeof p> => !!p && !!p.name)
-      .map((p) => p.name!),
-  );
-
-  const sel = selection ?? [
-    ...scene.namedLines.map((l) => `--${l.name}`),
-    ...scene.namedPoints.map((p) => `.${p.name}`),
-  ];
+  // No `--labels` flag => no overlay at all. An explicit list always draws
+  // exactly what's named, even a line/point also drawn elsewhere (a named
+  // crease, a paper corner) — the caller asked for it, so show it.
+  const sel = selection ?? [];
 
   // fold2svg.mjs:366-370 — the box-clip for the CP-mode line construction
   // always uses the root/CP vertex bbox, regardless of view.
@@ -51,10 +46,10 @@ export function appendConstructions(
       const name = s.slice(2);
       const line = scene.namedLines.find((l) => l.name === name);
       if (!line) continue;
-      if (creaseLineNames.has(name)) continue; // crease-duplicate
       const [la, lb, lc] = line.coeffs;
       const g: SvgNode[] = [];
       if (folded) {
+        const color = creaseColor(folded.frame, name, theme) ?? theme.construction;
         const F = folded.frame.facesVertices;
         const V = folded.frame.vertices;
         const FM = folded.frame.facesMatrix ?? [];
@@ -69,7 +64,7 @@ export function appendConstructions(
           const [t1, t2] = seg;
           g.push(el("line", {
             x1: tx(t1[0]), y1: ty(t1[1]), x2: tx(t2[0]), y2: ty(t2[1]),
-            stroke: theme.construction, "stroke-width": 1.5,
+            stroke: color, "stroke-width": 3,
             "stroke-dasharray": "6 3", opacity: 0.8,
           }));
           drawn.push([t1, t2]);
@@ -78,23 +73,24 @@ export function appendConstructions(
           const [[x1, y1], [x2, y2]] = drawn[0]!;
           g.push(el("text", {
             x: tx((x1 + x2) / 2), y: ty((y1 + y2) / 2) - 6,
-            "font-size": 12, "font-weight": 600, fill: theme.construction,
+            "font-size": 12, "font-weight": 600, fill: color,
             stroke: "white", "stroke-width": 2.5, "paint-order": "stroke",
             "text-anchor": "middle",
           }, [], `--${name}`));
         }
       } else {
+        const color = creaseColor(scene.cp, name, theme) ?? theme.construction;
         const seg = clipLineBox(la, lb, lc, pMinX, pMaxX, pMinY, pMaxY);
         if (!seg) continue;
         const [[x1, y1], [x2, y2]] = seg;
         g.push(el("line", {
           x1: tx(x1), y1: ty(y1), x2: tx(x2), y2: ty(y2),
-          stroke: theme.construction, "stroke-width": 1.5,
+          stroke: color, "stroke-width": 3,
           "stroke-dasharray": "6 3", opacity: 0.8,
         }));
         g.push(el("text", {
           x: tx((x1 + x2) / 2), y: ty((y1 + y2) / 2) - 6,
-          "font-size": 12, "font-weight": 600, fill: theme.construction,
+          "font-size": 12, "font-weight": 600, fill: color,
           stroke: "white", "stroke-width": 2.5, "paint-order": "stroke",
           "text-anchor": "middle",
         }, [], `--${name}`));
@@ -109,7 +105,6 @@ export function appendConstructions(
       const name = s.slice(1);
       const pt = scene.namedPoints.find((p) => p.name === name);
       if (!pt) continue;
-      if (isCornerPoint(pt.paper)) continue; // corner-duplicate
       const [px, py] = folded ? pt.table : pt.paper;
       const ox = px < (minX + maxX) / 2 ? -14 : 10;
       const oy = py < (minY + maxY) / 2 ? 16 : -7;
@@ -117,10 +112,10 @@ export function appendConstructions(
         class: "construction", "data-construction": name,
         "data-kind": "point", "data-name": name,
       }, [
-        el("circle", { cx: tx(px), cy: ty(py), r: 4.5, fill: theme.construction, opacity: 0.85 }),
+        el("circle", { cx: tx(px), cy: ty(py), r: 4.5, fill: theme.ink, opacity: 0.85 }),
         el("text", {
           x: tx(px) + ox, y: ty(py) + oy,
-          "font-size": 13, "font-weight": 600, fill: theme.construction,
+          "font-size": 13, "font-weight": 600, fill: theme.ink,
           stroke: "white", "stroke-width": 2.5, "paint-order": "stroke",
         }, [], `.${name}`),
       ]));

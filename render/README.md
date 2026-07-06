@@ -23,7 +23,7 @@ Rabbit Ear load-check — the OCaml emitter's own tests own FOLD validity):
 ```
 bun render/render-svg/bin/fold2svg.ts <in.fold|-> [out.svg|out.png]
   [--title "..."] [--view cp|folded] [--flip] [--hidden dashed|hide]
-  [--constructions "--v,.e"] [--step <label|N>] [--legend]
+  [--labels "--v,.e"] [--step <label|N>] [--legend]
 ```
 
 `-`/missing input reads stdin; missing output writes SVG to stdout; a

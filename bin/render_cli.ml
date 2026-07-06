@@ -41,9 +41,11 @@ step selection (--view folded only):
                             folded state). Errors if NAME/N doesn't exist,
                             listing the named steps that do.
 
-constructions (named points/lines):
-  --constructions a,b,c     only render these named constructions
-                            (comma-separated). Default: render all.
+labels (named points/lines):
+  --labels a,b,c            draw these named points/lines as labelled overlay
+                            (comma-separated). Draws exactly what's named,
+                            even a point on a paper corner or a line that's
+                            also a crease. Default: no overlay.
 
 display options:
   --legend                  show the M/V/B/U crease-type legend (default: off)

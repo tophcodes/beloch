@@ -30,27 +30,28 @@ if (viewFlag !== undefined && viewFlag !== "cp" && viewFlag !== "folded") {
 }
 const flip = args.includes("--flip");
 const hidden = (flagVal("--hidden") || "hide") as "dashed" | "hide";
-const constructionsFlag = flagVal("--constructions"); // undefined = show all
+const labelsFlag = flagVal("--labels"); // undefined = show none
 const legend = args.includes("--legend");
 const step = flagVal("--step");
 const formatFlag = flagVal("--format"); // "svg"|"png", overrides outPath extension
 const widthFlag = flagVal("--width"); // PNG output width in px; default = doc width
 const FLAGS = new Set([
-  "--title", "--view", "--hidden", "--constructions", "--step", "--format", "--width",
+  "--title", "--view", "--hidden", "--labels", "--step", "--format", "--width",
 ]);
 const positional = args.filter((a, i) => !a.startsWith("--") && !FLAGS.has(args[i - 1]!));
 const [inPath, outPath] = positional;
 const format = formatFlag ?? (outPath?.endsWith(".png") ? "png" : "svg");
 
-// undefined = show all (fold2svg.mjs:360); "" splits to [] = show none.
-const constructions = constructionsFlag !== undefined
-  ? constructionsFlag.split(",").map((s) => s.trim()).filter(Boolean)
+// undefined = show none; an explicit list renders exactly those named
+// points/lines, even if also drawn elsewhere (a crease, a paper corner).
+const labels = labelsFlag !== undefined
+  ? labelsFlag.split(",").map((s) => s.trim()).filter(Boolean)
   : undefined;
 
 try {
   const raw = !inPath || inPath === "-" ? await Bun.stdin.text() : await Bun.file(inPath).text();
   const scene = parseFold(raw);
-  const opts = { title, constructions, legend };
+  const opts = { title, labels, legend };
   const doc = viewFlag === "folded"
     ? renderFolded(scene, { ...opts, view: flip ? "bottom" : "top", hidden, step })
     : renderCP(scene, opts);
