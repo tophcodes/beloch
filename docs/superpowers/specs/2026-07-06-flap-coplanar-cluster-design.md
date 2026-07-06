@@ -121,9 +121,13 @@ list, or a representative + membership — whatever the call sites need; see C).
 
 ### C. Call sites → clusters — `lib/eval.ml` (~306–476)
 
-- **`at_matches` `SelFlap` (line 351)** — a segment is incident to the flap iff
-  *either* of its faces (`s.faces = (l, r)`) is in the cluster, not just equals a
-  single face index. `Zero`/`Ambiguous` errors unchanged in wording.
+- **`at_matches` `SelFlap` (line 351)** — ⚠️ **superseded in implementation.**
+  Planned as cluster-valued, but `at #(...)` is a *segment address*, not a
+  physical-flap operand: on a flat sheet the whole sheet is one cluster, so a
+  cluster-valued `#(...)` names every segment and breaks
+  `examples/syntax/collapse-midpaper.bel`. `at #(...)` therefore **stays
+  face-fine** (`face_of_points`), unchanged from today. See ADR 0017 *Granularity
+  split*. Only `moving` / `up to #(...)` became cluster-valued.
 - **`resolve_flap_face` (line 378)** — currently returns one face index. It now
   resolves the operand to a **cluster**. Downstream consumers differ:
   - `target_of` / `select_scope` anchor & target want a **face predicate or

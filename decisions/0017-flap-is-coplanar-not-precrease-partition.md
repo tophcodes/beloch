@@ -1,7 +1,12 @@
 # 0017 — A flap is a coplanar cluster of faces, not a single precrease polygon
 
 ## Status
-Proposed (2026-07-06)
+Accepted (2026-07-06) — implemented in
+[docs/superpowers/specs/2026-07-06-flap-coplanar-cluster-design.md]. Acceptance
+refined one point: `#(...)` is cluster-valued only where it names a **physical
+flap** (`moving`, `up to`); as a **segment/sector address** (`at #(...)`,
+`@collapse over/under #(...)`) it stays **face-fine** — see *Granularity split*
+below. Originally filed Proposed (2026-07-06).
 
 This is the repository's first `Proposed` ADR (0001–0016 are all `Accepted`).
 It records a design change that came out of a live debugging session on
@@ -106,12 +111,12 @@ What changes, all to operate on coplanar-clusters instead of raw face indices:
   (coplanar cluster) containing every point." Points that fall on adjacent faces
   joined by a `U` edge now resolve to one flap. `Zero`/`Ambiguous` keep their
   meaning at cluster granularity.
-- **`SelFlap` / `resolve_flap_face` call sites (`lib/eval.ml` ~306–435)** — the
-  `#(...)` flap selector, `moving`'s point/line/`#(...)` sugar, and the
-  face-index each resolves to become **cluster**-valued. Callers that today hold
-  a single face index (e.g. to pick a fold side, or to look up a point's
-  position) hold a cluster (a set of faces) instead, or the representative the
-  lookup needs.
+- **`#(...)` as a physical-flap operand (`resolve_flap_cluster`, `lib/eval.ml`)**
+  — `moving`'s point/line/`#(...)` sugar and the `up to` anchor/target become
+  **cluster**-valued. Callers that today hold a single face index (to pick a fold
+  side, or the scope anchor) hold a cluster (a set of faces), or a representative
+  the lookup needs. **`at #(...)` and `@collapse over/under #(...)` do NOT** —
+  they stay face-fine (`face_of_points` / `resolve_sector_face`); see below.
 - **`moving` and `up to`** — the anchor and range are chosen among **flaps**
   (clusters), then expanded to the constituent faces for the actual reflection.
   A point/line/`#(...)` operand resolves to the cluster it is incident to; the
@@ -134,6 +139,33 @@ The split rule makes the "crease all, fold some" case (fold-scope design, and
 spec §4.6) fall out cleanly: a bare bind creases all layers (`U` edges — same
 flap, no split); `@fold … up to …` folds some (those edges become `M/V` — the
 flap splits there, and only there).
+
+### Granularity split: clusters for scope, faces for addressing
+
+Implementation surfaced a real conflict this ADR originally glossed: `#(...)`
+serves two purposes with **opposite** granularity needs on a still-flat sheet.
+
+- As a **physical-flap operand** (`moving`, `up to`) it means "this coplanar
+  region" → wants the **coarse cluster**. A flat sheet is one flap: correct.
+- As a **segment/sector address** (`at #(...)`, `@collapse over/under #(...)`) it
+  disambiguates *which* segment of a crease bundle, or *which* stacked sector,
+  by naming the face it belongs to → wants the **fine face**. On a flat sheet
+  the whole sheet is one cluster, so a cluster-valued `#(...)` would name
+  *everything* and could no longer pick one of several coplanar segments.
+
+The load-bearing counterexample is `examples/syntax/collapse-midpaper.bel`:
+`--h at #(.q .tm)` selects one of two coplanar segments of `--h` by naming a
+flap; under clusters both segments share the one flat flap and the selection
+becomes ambiguous. So the two uses **must** resolve at different granularities.
+
+Decision: `#(...)` is cluster-valued **only** in `moving` / `up to`
+(`resolve_flap_cluster`). `at #(...)` and `@collapse over/under #(...)` keep the
+old face-fine resolution (`face_of_points` / `resolve_sector_face`). Consequence:
+this ADR's Context example `--bb at #(.a .d)` — an `at`-address — deliberately
+stays face-fine and still errors on a fully-flat sheet with `.a`/`.d` on distinct
+faces; the flat-sheet resolution win applies to the *scope* uses, which was the
+functionally load-bearing case (defects 1 and 2 both arose in `moving`/`up to`
+resolution). `pinch` and `crease_segments` were already face-fine and unchanged.
 
 ## Alternatives considered
 

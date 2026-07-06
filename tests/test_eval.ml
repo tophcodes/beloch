@@ -1017,9 +1017,14 @@ let test_eval_buried_anchor () =
 
 (* target flap entirely off the moving side. --m0 is precreased flat so
    .m = (1/2, 0) is a material crossing (the scar of the later --v fold lives
-   only on the top flap and never reaches the bottom edge). *)
+   only on the top flap and never reaches the bottom edge). Under ADR 0017 the
+   point/flap target resolves through TargetHinged (a flap is a coplanar
+   cluster, possibly several faces), so the walk-based "no flap hinged ...
+   reachable" message now covers this case too — same message used when a
+   `--crease` target can't be reached (test_eval_up_to_crease_unreachable) —
+   rather than the old TargetFace-only "not on the moving side" wording. *)
 let test_eval_up_to_wrong_side () =
-  expect_error "not on the moving side" (fun () ->
+  expect_error "no flap hinged" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
@@ -1049,13 +1054,22 @@ let test_eval_up_to_crease_target () =
   Alcotest.(check int) "5 faces (top flap only)" 5
     (Array.length fd.Eval.state.Fold_state.faces)
 
-(* moving --d: a hinge has two sides → multi-match error *)
+(* moving --d: a hinge has two sides → multi-match error. Under ADR 0017,
+   --d's two faces must be GENUINELY different flaps (different coplanar
+   clusters) to be ambiguous — a bare precrease alone no longer suffices,
+   since both faces would still be one still-flat flap. So fold ON --d's own
+   line first (`@map .b onto .a moving .b`), upgrading its edge U -> V and
+   splitting the two faces into different clusters, before testing the
+   multi-flap error on a second, unrelated fold. *)
 let test_eval_moving_line_multimatch () =
   expect_error "flaps" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
-              "paper square\n--d = map .b onto .a\n@through .a .c moving --d\n")))
+              "paper square\n\
+               --d = map .b onto .a\n\
+               @map .b onto .a moving .b\n\
+               @through .a .c moving --d\n")))
 
 (* an explicit flap that straddles the axis cannot anchor *)
 let test_eval_moving_flap_straddles () =
