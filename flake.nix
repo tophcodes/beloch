@@ -89,7 +89,7 @@
             mkdir -p "$root/.direnv/bin"
             cat > "$root/.direnv/bin/beloch" <<EOF
 #!/usr/bin/env bash
-exec dune exec --root "$root" beloch -- "\$@"
+exec dune exec --display=quiet --root "$root" beloch -- "\$@"
 EOF
             chmod +x "$root/.direnv/bin/beloch"
             export PATH="$root/.direnv/bin:$PATH"
