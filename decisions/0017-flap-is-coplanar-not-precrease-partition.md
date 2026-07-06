@@ -166,12 +166,25 @@ flap splits there, and only there).
   wholly inside or wholly outside any fold's moving set, so its owning face after
   a fold is unambiguous.
 - **New implementation machinery: a live coplanar-connected-components
-  computation.** Most naturally a union-find over faces joined by `U`-assigned
+  computation.** Most naturally: a graph over faces joined by `U`-assigned
   interior edges, giving each face a flap (cluster) id. It must reflect the
-  current `Fold_state.t` at every resolution point — recomputed from scratch when
-  a flap is resolved, or maintained incrementally as folds flip edges `U → M/V`
-  (a fold only ever *splits* clusters, never merges, so incremental maintenance
-  is a union-find that never unions after init — a possible simplification).
+  current `Fold_state.t` at every resolution point.
+  **Folds don't only split clusters — `unfold` is on the roadmap
+  (spec Appendix B: "fold maneuvers (reverse/squash/sink/petal, via `unfold` +
+  layer selection)"), and unfolding a crease (`M`/`V` reverting to `U`) merges
+  two flaps back together.** Today's evaluator has no `unfold` yet, so within
+  the *current* language a fold only ever splits (this ADR's scope) — but that
+  is a fact about today's operation set, not a property of the model, and it
+  will stop holding the moment `unfold` ships. Note also that this cuts the
+  other way for the data structure, not just the direction of change:
+  union-find is efficient at *merging* (`union`) and has no native support for
+  *splitting* — so a plain union-find is actually the wrong fit for the split
+  a fold does today, and would only become a good fit for the merge `unfold`
+  will eventually do. The robust choice either way is to recompute connected
+  components from the current `U`-edge set on resolution (or incrementally
+  maintain them by re-flooding just the affected component on a split, and
+  unioning on a future `unfold`), not to bake in an assumption that the
+  relation only ever coarsens or only ever fractures.
 - **Face addressing is untouched.** `at`, `pinch`, `crease_segments`, `crease_id`
   tagging, and the FOLD `U`/`M`/`V` edge output all keep working on faces exactly
   as today. Only `moving` / `up to` / `#(...)` change referent.
