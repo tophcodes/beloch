@@ -1,4 +1,10 @@
 (executable
  (name main)
  (public_name beloch)
- (libraries beloch unix))
+ (libraries beloch render_cli unix)
+ (modules main))
+
+(library
+ (name render_cli)
+ (libraries unix)
+ (modules render_cli))
