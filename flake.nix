@@ -6,12 +6,14 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs =
-    { nixpkgs, flake-utils, ... }:
+  outputs = {
+    nixpkgs,
+    flake-utils,
+    ...
+  }:
     flake-utils.lib.eachDefaultSystem (
-      system:
-      let
-        pkgs = import nixpkgs { inherit system; };
+      system: let
+        pkgs = import nixpkgs {inherit system;};
         ocamlPkgs = pkgs.ocamlPackages;
 
         # nixpkgs is still on flint 3.5.0; override to 3.6.0 for
@@ -29,7 +31,7 @@
           version = "0.0.0-dev";
           src = ./.;
           duneVersion = "3";
-          nativeBuildInputs = [ ocamlPkgs.menhir ];
+          nativeBuildInputs = [ocamlPkgs.menhir];
           buildInputs = [
             ocamlPkgs.zarith
             ocamlPkgs.yojson
@@ -37,18 +39,17 @@
             ocamlPkgs.menhirLib
             flint
           ];
-          checkInputs = [ ocamlPkgs.alcotest ];
+          checkInputs = [ocamlPkgs.alcotest];
           # Tests run in the `checks` output (nix flake check / CI), not on every
           # `nix build .#` — the number-kernel suite (Sturm/resultant/RUR) is slow.
           doCheck = false;
         };
-      in
-      {
+      in {
         packages.default = beloch;
         packages.beloch = beloch;
 
         # `nix flake check` builds this — same derivation, tests enabled.
-        checks.default = beloch.overrideAttrs (_: { doCheck = true; });
+        checks.default = beloch.overrideAttrs (_: {doCheck = true;});
 
         apps.default = {
           type = "app";
@@ -56,7 +57,8 @@
         };
 
         devShells.default = pkgs.mkShell {
-          inputsFrom = [ beloch ];
+          name = "beloch";
+          inputsFrom = [beloch];
           packages = [
             ocamlPkgs.ocaml
             ocamlPkgs.dune_3
@@ -78,7 +80,7 @@
           # Link @beloch/render-svg's `beloch-render` bin globally so the
           # OCaml `beloch render` subcommand (bin/main.ml) can execvp it.
           shellHook = ''
-            export PATH="$(bun pm bin -g):$PATH"
+            export PATH="$(bun pm bin -g 2>/dev/null):$PATH"
             root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
             ( cd "$root/render" && bun install --silent ) >/dev/null 2>&1
             ( cd "$root/render/render-svg" && bun link --silent ) >/dev/null 2>&1
