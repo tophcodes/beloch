@@ -1,0 +1,25 @@
+; status: works — the rabbit-ear base [hull2020, Thm 8.5]. Three angle bisectors
+; of a triangle meet at the incenter O; folding them plus the altitude from O to
+; the base flat-collapses the single vertex (Kawasaki + Maekawa hold there).
+
+paper square
+
+; isoceles triangle a, b, m — m is the midpoint of the top edge
+--v = map .a onto .b          ; x = 1/2: perp bisector of the base, also the spine
+.m = .(--v --(.d .c))         ; apex (1/2, 1)
+
+step precrease
+--ba = map --(.a .b) onto --(.a .m)   ; angle bisector at a (interior — filter picks it)
+--bb = map --(.b .a) onto --(.b .m)   ; angle bisector at b
+.o = .(--ba --bb)                     ; incenter — the collapse vertex
+
+step ear
+; four creases through O: the a- and b-bisectors, the spine above O (third
+; bisector, valley), and the altitude below O (the ear, mountain). `at` splits
+; each material line at O into the one ray that reaches the vertex.
+; the emitted FOLD edges_assignment is GLOBAL-frame M/V (spec §4.6, derived
+; assignment = valley XOR the cutting face is back-up): the two --v rays lie
+; on back-up sectors, so their golden letters invert (spine valley → M, ear
+; mountain → V); --ba and --bb keep their declared letters.
+@collapse --ba at .a and --bb at .b
+  and --v at .m and (--v at --(.a .b) mountain)

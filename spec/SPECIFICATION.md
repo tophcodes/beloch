@@ -15,7 +15,11 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.19-dev** (material `cross` — crossings live in paper space, on the marks; no table-space point values; axiom 5 `toward` is a fold direction, not a sector, with a paper-incidence filter for the omitted case and a derived `moving`); **v0.18-dev** (fold scope — flap-typed `moving`, `up to` for some-layers simple folds, `@fold` along material creases); **v0.17-dev** (crease-segment selection — the `at` operator: a crease name is a bundle, projected to one segment by incidence); **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`, `step` panels; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
+Current version: **v0.20-dev** (`@collapse` — single-vertex collapse: n ≥ 4
+material creases sharing one interior vertex fold straight to the flat end
+state in one step — rabbit ear, waterbomb — checked by Kawasaki/Maekawa/local
+validity, `over` disambiguates the layer order, `standing` is reserved
+syntax the evaluator does not yet implement); **v0.19-dev** (material `cross` — crossings live in paper space, on the marks; no table-space point values; axiom 5 `toward` is a fold direction, not a sector, with a paper-incidence filter for the omitted case and a derived `moving`); **v0.18-dev** (fold scope — flap-typed `moving`, `up to` for some-layers simple folds, `@fold` along material creases); **v0.17-dev** (crease-segment selection — the `at` operator: a crease name is a bundle, projected to one segment by incidence); **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`, `step` panels; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
 
 ---
 
@@ -582,6 +586,176 @@ two-selector form `--l at (.p and --a)` — the unique segment incident to *both
 `at` supersedes the earlier `--( --l #(…) )` restrict form. Creating a single
 segment (rather than selecting one) is `pinch`, still forthcoming (Appendix B).
 
+### 4.9 `@collapse` — single-vertex collapse *(since v0.20-dev)*
+
+Every other fold in the language performs one simple fold at a time. Some flat
+end states are not reachable that way: three angle bisectors of a triangle
+meet at the incenter O, and — with the altitude from O added — the vertex is
+flat-foldable (**Rabbit-Ear Theorem**, [[hull2020]](#ref-hull2020) Thm 8.5),
+but no *sequence* of single simple folds reaches that end state; flat-foldable
+and simple-foldable are different classes [demaine2007, §14.1.1]. `@collapse`
+jumps straight from the precreased flat sheet to the flat end state of several
+creases folded at once, all meeting at one point.
+
+**Scope: one vertex per statement.** Deciding flat-foldability for a sheet
+with many interacting vertices is NP-hard
+([[hull2020]](#ref-hull2020) §6.6, Thm 6.17 — Bern–Hayes); the single-vertex
+case is exactly decidable and already covers rabbit ear, waterbomb/preliminary
+bases, and — later, at boundary vertices — squash-type moves. Multi-vertex
+collapse (e.g. bird base in one step) is deferred (Appendix B).
+
+**Syntax:**
+
+```
+collapse_stmt := "@collapse" collapse_item ("and" collapse_item)*
+collapse_item := collapse_elem
+               | over_flap "over" over_flap
+               | "standing" flap_operand
+collapse_elem := "(" collapse_elem ")" | line_operand ["mountain"]
+over_flap     := point_operand | "#(" point_operand+ ")"
+```
+
+One flat `and`-separated list — `over` pairs and `standing` are **items in the
+list**, not trailing clauses, and may appear in any position or be
+interleaved with elements:
+
+```
+@collapse --ba at .a and --bb at .b and (--e mountain) and .p over .q and standing .r
+```
+
+- `collapse_elem`'s `line_operand` must resolve to a material crease — the
+  same operand forms `@fold` accepts (`--name`, `--name at <selector>`,
+  §4.8); an inline construction is syntactically a `line_operand` too but
+  errors at resolution (below). `mountain` binds to the immediately
+  preceding element, default valley.
+- `over_flap` deliberately excludes bare crease names: that is what makes the
+  first token after `and` classify the item unambiguously — a crease-name
+  start is an element, a point/`#(...)` start followed by `over` is a
+  stacking pair, `standing` is keyword-first. `standing`'s own operand is the
+  full `flap_operand` (point, line, or `#(...)`, as `moving` takes, §4.6).
+- A duplicate `standing` clause in one `@collapse` is a **parse error** at the
+  second occurrence ("only one standing clause per @collapse").
+
+Rabbit ear, concretely — the collapse statement from
+[`examples/bases/rabbit-ear.bel`](../examples/bases/rabbit-ear.bel) (triangle
+`.a .b .m` inscribed in the square, bisectors `--ba --bb`, spine `--v`,
+incenter `.o`):
+
+```
+@collapse --ba at .a and --bb at .b
+  and --v at .m and (--v at --(.a .b) mountain)
+```
+
+**Resolution.** Each element resolves to exactly **one** material crease
+segment, by the same per-flap material resolution `@fold` uses (§4.6, §4.8).
+An operand that is not an existing material crease (an inline construction
+like `--(.a .c)`, for instance) errors: *"collapse folds along existing
+creases; `<operand>` is not a material crease."* From there, resolution
+follows `at`'s own rules (§4.8) — no matching segment, or more than one, both
+error as they do for `at` elsewhere.
+
+**Checks, in the order the evaluator runs them:**
+
+| # | check | shipped error text |
+|---|---|---|
+| 1 | `standing` present (reserved, unimplemented) | `standing folds are not yet supported` |
+| 2 | element is not a material crease | `collapse folds along existing creases; <operand> is not a material crease` |
+| 3 | `at` selector matches no segment | `no segment of --<name> matches <selector>` |
+| 4 | `at` selector matches more than one segment | `--<name> at <selector> is ambiguous: <k> segments match; add a selector` |
+| 5 | bare crease name has no material segment | `--<name> has no material segment` |
+| 6 | bare crease name has more than one segment | `` --<name> has <k> segments; select one with `at` `` |
+| 7 | a layer under the collapse region doesn't carry an element's crease on the same line (all-layers rule, below) | `collapse through unaligned layers` |
+| 8 | segments don't all share one strictly-interior common endpoint O | `no common interior vertex` |
+| 9 | element count is odd, or exactly 2 | `` count (hint: use `@fold` for n = 2) `` |
+| 10 | a segment's far endpoint is not on the paper boundary (would leave a degree-1 vertex mid-sheet) | `crease ends inside the sheet` |
+| 11 | two elements resolve to the same ray — the same direction from O, a zero-width sector whose doubled reflection cancels out of the closure product and would otherwise slip past checks 9 and 12–13 | `duplicate ray in collapse` |
+| 12 | Kawasaki fails — the reflection composition around O does not close (exact) [[hull2020]](#ref-hull2020) ch. 5 | `vertex not flat-foldable (angles)` |
+| 13 | Maekawa fails — \|M − V\| ≠ 2 **over the n rays**, not the lines they lie on: a straight line through O contributes two independent rays, each with its own material crease [[hull2020]](#ref-hull2020) ch. 5 | `Maekawa violated by the stated assignment` |
+| 14 | every Kawasaki/Maekawa-satisfying stacking still forces the paper to self-intersect | `assignment forces self-intersection` |
+| 15 | `over` clauses rule out every remaining valid stacking | `` contradictory `over` `` |
+| 16 | more than one valid stacking survives | `ambiguous stacking (<k> orders)` |
+
+Checks 8–14 run against **rays**: a bundle already split at O by the material
+`cross` machinery (v0.19), so each side of a through-vertex line is an
+independent element with its own mountain/valley.
+
+**State construction.** Faces are the sectors around O. Sector *i*'s isometry
+is the composition of reflections across the rays bounding sectors `0..i`, in
+CCW order from a fixed sector 0 — exact, the standard single-vertex fan
+construction. There is **no `moving` clause on `@collapse` in v1**: the
+stayer — the sector left at the identity isometry — is the **lowest
+face-up** sector of the solved stack (sector parities alternate around O, so
+one always exists). Anchoring on an orientation-preserving sector keeps the
+emitted state on the declared side: an orientation-reversing anchor would
+mirror every face's front/back and emit the M/V mirror of the stated
+collapse. The stayer is fully determined once the layer order is solved. The kernel enumerates every stacking consistent with
+the per-ray hinge directions and a layer-collision check (no two layers
+occupy the same space), then keeps only the stackings distinguishable by
+their overlapping-face order. Exactly one → done; several → `over` picks
+among them or the statement errors ambiguous.
+
+**v1 enumeration limitation.** Valid stackings only ever move whole
+*sector-blocks* relative to each other — a sector cannot be tucked *between*
+two layers belonging to another sector's block. This covers rabbit ear and
+the waterbomb base; forms that need one sector interleaved inside another's
+stack are a follow-up (Appendix B).
+
+**Clauses.**
+
+- **`<flap> over <flap>`** (repeatable): flap operands are a point or
+  `#(...)` (a point denotes its sector). Orders the two sectors in the final
+  stacking. Redundant `over` — already true in every surviving stacking — is
+  a silent no-op, not an error (a future lint hint, same category as other
+  implied-clause lints); `over` that rules out every surviving stacking
+  errors `` contradictory `over` ``.
+- **`standing <flap>`** (reserved): the language defines both the flat *and*
+  the standing end state from day one — the named flap stays unflattened, in
+  the symmetric position of the residual one-degree-of-freedom mechanism
+  (rabbit ear: the doubled wedge stands perpendicular, its mountain crease
+  unfolded). The evaluator, v1, unconditionally rejects it: `standing folds
+  are not yet supported`. Carrying a standing state exactly needs the 3D
+  isometry rework ([ADR 0015](../decisions/0015-flat-folded-states-only.md));
+  no retrofit is expected once it lands.
+
+**Material and layers.** `@collapse` is an **all-layers** move, like the
+default `@fold`/`@map`: the whole stack under the collapse region folds as
+one unit. Every element's crease must be material, on the same line, in
+every layer the collapse region passes through; a layer where it is bent or
+absent errors `collapse through unaligned layers` (check 7, above).
+Single-layer paper trivially satisfies this.
+
+**Output.** *(since v0.20-dev)* The `edges_assignment` (§7) a `@collapse`
+produces is **global-frame** M/V: because a sector's isometry can be
+orientation-reversing, the kernel's parity rule inverts the stated
+mountain/valley on face-down sectors, so the M/V letters in the FOLD output
+can differ, ray by ray, from what was written in source — see the caveat
+comments in both shipped examples.
+
+**Examples.**
+[`examples/bases/rabbit-ear.bel`](../examples/bases/rabbit-ear.bel) (n = 4,
+off-center vertex) is above.
+[`examples/bases/waterbomb.bel`](../examples/bases/waterbomb.bel) (n = 8,
+center vertex — both diagonals and both midlines) shows n > 4:
+
+```
+@collapse --ac at .a and --ac at .c and --bd at .b and --bd at .d
+  and --h at --(.b .c)
+  and (--h at --(.a .d) mountain)
+  and (--v at --(.d .c) mountain)
+  and (--v at --(.a .b) mountain)
+```
+
+The 5-valley/3-mountain assignment shown satisfies Maekawa (\|5 − 3\| = 2)
+over the 8 independent rays and — empirically, verified by the kernel's exact
+enumeration, not asserted from memory — folds to a **unique** layer order, so
+no `over` clause is needed here.
+
+See [ADR 0016](../decisions/0016-typed-operands-bundle-values-singleton-slots.md)
+(flap operands) and
+[ADR 0014](../decisions/0014-crease-is-a-bundle-of-segments.md) (crease
+bundles, rays split at a crossing) — the same machinery `@fold` and `at`
+build on.
+
 ---
 
 ## 5. Naming and program structure *(since v0.0)*
@@ -925,7 +1099,7 @@ The Menhir grammar is authoritative once written; this sketch is a guide.
 
 ```
 program       := "paper" "square" stmt*
-stmt          := crease_stmt | point_stmt | flip_stmt
+stmt          := crease_stmt | point_stmt | flip_stmt | collapse_stmt
               | def_stmt | instance_stmt | apply_stmt | export_stmt | step_stmt   ; since v0.16-dev
 crease_stmt   := CREASE_NAME "=" "--(" point_operand point_operand ")"                      ; named, inline through (no fold)
                | [ CREASE_NAME "=" ] [ "@" ] axiom [ fold_spec ]                             ; named or anonymous, axiom-based (fold only with @)
@@ -958,6 +1132,14 @@ POINT_NAME    := "." ident
 CREASE_NAME   := "--" ident
 INSTANCE_NAME := "$" ident
 
+; since v0.20-dev — §4.9
+collapse_stmt := "@" "collapse" collapse_item ( "and" collapse_item )*
+collapse_item := collapse_elem
+               | over_flap "over" over_flap
+               | "standing" flap_operand
+collapse_elem := "(" collapse_elem ")" | line_operand [ "mountain" ]
+over_flap     := point_operand | "#(" point_operand+ ")"
+
 ; since v0.16-dev — §5a
 def_stmt      := "def" ident "(" param* ")" "{" body_stmt* "}"
 param         := POINT_NAME | CREASE_NAME
@@ -988,6 +1170,13 @@ Deferred, in rough order of likely arrival: non-flat (constructible-angle) folds
 `rotate` · fold maneuvers (reverse/squash/sink/petal, via `unfold` + layer
 selection) · crease-segment *creation* (`pinch` — materialise one segment; the `at` selection
 operator landed in v0.17-dev, [ADR 0014](../decisions/0014-crease-is-a-bundle-of-segments.md)) ·
+`standing` implementation for `@collapse` (the 3D isometry rework, ADR 0015) ·
+multi-vertex collapse (fish/bird base in one action) · boundary-vertex
+collapse (squash/petal preparation) · sector-block interleaving in
+`@collapse`'s stacking enumeration (a sector tucked between another sector's
+layers) · a `paper triangle` shape (a nicer rabbit-ear demo than the
+inscribed-triangle workaround) · `rabbitear` sugar `def` (intent-style,
+`toward`, inferring M/V) ·
 regions · parts/imports · nested `def`s and namespace chaining
 (`.[$b1 $d tip]`) · re-export cascades · string labels in source (i18n stays
 external) · `pub`/`priv` interfaces · looping primitives · module/file-level
@@ -1014,7 +1203,10 @@ crease-segment selection — the `at` operator, projecting a crease name (a
 bundle of segments) to one segment by incidence (ADR 0014). *(v0.18-dev)* fold
 scope — flap-typed `moving` (point/line/`#(...)` anchor operands, ADR 0016),
 `up to` for some-layers simple folds, and `@fold` along an existing material
-crease.
+crease. *(v0.20-dev)* `@collapse` — single-vertex flat collapse: n ≥ 4
+material creases sharing one interior vertex, checked by Kawasaki, Maekawa,
+and layer-order validity, with `over` for stacking ties; `standing` parses
+but is not yet implemented (§4.9).
 
 ---
 

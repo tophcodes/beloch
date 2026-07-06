@@ -1,9 +1,19 @@
 %{
 open Ast
+
+(* @collapse: one flat `and`-separated chain; the statement action partitions
+   it. over_flap is restricted to point/flap operands so the first token of
+   each item is unambiguous: elements are `--`/`--(`/`(`-first, over pairs
+   `.`/`.(`/`#(`-first, standing keyword-first. *)
+type collapse_item =
+  | CElem of collapse_elem
+  | COver of flap_arg * flap_arg
+  | CStanding of flap_arg * Error.span
 %}
 
 %token PAPER SQUARE THROUGH MAP ONTO CROSS EQ EOF PERP TOWARD AT MOVING MOUNTAIN FLIP LINE_OPEN POINT_OPEN FLAP_OPEN RPAREN AND AT_KW UP TO FOLD_KW
 %token DEF APPLY EXPORT STEP AS BANG LBRACE RBRACE LPAREN RBRACKET
+%token COLLAPSE OVER STANDING
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN
 %token <string> POINT
 %token <string> CREASE
@@ -43,6 +53,25 @@ body_stmt:
   | EXPORT LBRACE export_entries RBRACE INSTANCE { Export (Some $3, $5, $loc) }
   | EXPORT INSTANCE                              { Export (None, $2, $loc) }
   | AT FOLD_KW line_operand fold_clauses         { FoldAlong ($3, $4, $loc) }
+  | AT COLLAPSE collapse_items
+      { (* fold_left over source order so a duplicate `standing` is detected
+           at its own (second-occurrence) span, not the first's; elems/overs
+           are accumulated reversed and restored with List.rev to keep their
+           original source order. *)
+        let elems_rev, overs_rev, standing =
+          List.fold_left
+            (fun (es, os, st) item ->
+              match item with
+              | CElem e -> (e :: es, os, st)
+              | COver (u, l) -> (es, (u, l) :: os, st)
+              | CStanding (f, sp) -> (
+                  match st with
+                  | Some _ ->
+                      Error.fail sp "only one standing clause per @collapse"
+                  | None -> (es, os, Some f)))
+            ([], [], None) $3
+        in
+        Collapse (List.rev elems_rev, List.rev overs_rev, standing, $loc) }
 
 params:
   | { [] }
@@ -136,6 +165,25 @@ flap_operand:
 point_operand_list:
   | point_operand                    { [ $1 ] }
   | point_operand point_operand_list { $1 :: $2 }
+
+collapse_items:
+  | collapse_item                     { [ $1 ] }
+  | collapse_item AND collapse_items  { $1 :: $3 }
+
+collapse_item:
+  | collapse_elem            { CElem $1 }
+  | over_flap OVER over_flap { COver ($1, $3) }
+  | STANDING flap_arg        { CStanding ($2, $loc) }
+
+collapse_elem:
+  | LPAREN collapse_elem RPAREN { $2 }
+  | line_operand mountain_opt
+      { { cline = $1; cdir = (if $2 then Mountain else Valley) } }
+
+(* points and #(...) only — bare crease names would collide with elements *)
+over_flap:
+  | point_operand { FlapPoint $1 }
+  | flap_operand  { FlapSpec $1 }
 
 export_entries:
   | export_entry                { [ $1 ] }

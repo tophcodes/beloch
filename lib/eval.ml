@@ -1176,6 +1176,101 @@ let eval_folded (prog : Ast.program) : folded =
         in
         run_fold_checked ~span ~axis ~fs ~implied:None ~side_override:None
           ~crease_id:cid ~prov ~check:(Some check_straight)
+    | Ast.Collapse (elems, overs, standing_opt, span) ->
+        (match standing_opt with
+        | Some _ -> Error.fail span "standing folds are not yet supported"
+        | None -> ());
+        (* each element must resolve to exactly ONE material segment — same
+           machinery as @fold's material resolution *)
+        let resolve_elem (el : Ast.collapse_elem) : Collapse.elem =
+          let fail_not_material () =
+            Error.fail span
+              (Printf.sprintf
+                 "collapse folds along existing creases; %s is not a \
+                  material crease" (lstr el.Ast.cline))
+          in
+          match el.Ast.cline with
+          | Ast.LAt (cr, sels, aspan) -> (
+              match at_matches cr sels aspan with
+              | cid, [ s ] ->
+                  {
+                    Collapse.cid;
+                    ea = s.Fold_state.ta;
+                    eb = s.Fold_state.tb;
+                    valley = el.Ast.cdir = Ast.Valley;
+                  }
+              | _, [] ->
+                  Error.fail aspan
+                    (Printf.sprintf "no segment of --%s matches %s"
+                       cr.Ast.cname (selstr sels))
+              | _, many ->
+                  Error.fail aspan
+                    (Printf.sprintf
+                       "--%s at %s is ambiguous: %d segments match; add a \
+                        selector"
+                       cr.Ast.cname (selstr sels) (List.length many)))
+          | Ast.LNamed cr -> (
+              let cid = material_cid cr in
+              match Fold_state.crease_segments !(ctx.state) cid with
+              | [ s ] ->
+                  {
+                    Collapse.cid;
+                    ea = s.Fold_state.ta;
+                    eb = s.Fold_state.tb;
+                    valley = el.Ast.cdir = Ast.Valley;
+                  }
+              | [] ->
+                  Error.fail span
+                    (Printf.sprintf "--%s has no material segment"
+                       cr.Ast.cname)
+              | segs ->
+                  Error.fail span
+                    (Printf.sprintf
+                       "--%s has %d segments; select one with `at`"
+                       cr.Ast.cname (List.length segs)))
+          | _ -> fail_not_material ()
+        in
+        let es = List.map resolve_elem elems in
+        (* all-layers congruence guard: every layer under the collapse region
+           folds as one unit (spec §Semantics: "Material / layers"). For each
+           element's infinite table-space line, any face it actually cuts
+           (not just grazes an edge of) must already carry THAT element's
+           crease lying on that same line — otherwise the bundle is bent or
+           missing on some layer under the vertex and collapsing it as one
+           unit is unsound. On today's all-layer precreases this never fires
+           (every face the line touches borders an edge of the same cid on
+           that line); it guards future partial-crease states. *)
+        List.iter
+          (fun (el : Collapse.elem) ->
+            let st = !(ctx.state) in
+            let line = Geom.line_through el.Collapse.ea el.Collapse.eb in
+            let aligned_faces =
+              Fold_state.crease_segments st el.Collapse.cid
+              |> List.concat_map (fun (s : Fold_state.crease_segment) ->
+                     if
+                       Geom.side_of_line line s.Fold_state.ta = 0
+                       && Geom.side_of_line line s.Fold_state.tb = 0
+                     then
+                       let l, r = s.Fold_state.faces in
+                       l :: (if r >= 0 then [ r ] else [])
+                     else [])
+            in
+            Array.iteri
+              (fun i _ ->
+                if
+                  Geom.line_cuts_polygon line (Fold_state.table_polygon_ccw st i)
+                  && not (List.mem i aligned_faces)
+                then Error.fail span "collapse through unaligned layers")
+              st.Fold_state.faces)
+          es;
+        let over =
+          List.map
+            (fun (u, l) -> (resolve_flap_face u span, resolve_flap_face l span))
+            overs
+        in
+        (match Collapse.collapse !(ctx.state) es ~over with
+        | Ok st -> ctx.state := st
+        | Error msg -> Error.fail span msg)
   in
   List.iter eval_stmt prog;
   let named_points =
