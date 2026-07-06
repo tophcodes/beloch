@@ -63,3 +63,15 @@ test("scene without folded steps throws SceneError", async () => {
     expect(() => renderFolded(empty)).toThrow(SceneError);
   }
 });
+
+test("legend hidden by default", async () => {
+  const scene = parseFold(await golden("syntax/fold-quarter.fold"));
+  const s = renderFolded(scene).toString();
+  expect(s).not.toContain('class="legend-panel"');
+});
+
+test("legend: true shows the legend panel", async () => {
+  const scene = parseFold(await golden("syntax/fold-quarter.fold"));
+  const s = renderFolded(scene, { legend: true }).toString();
+  expect(s).toContain('class="legend-panel"');
+});
