@@ -855,8 +855,8 @@ internal edge is a crease.
   naked (unbound) `apply`. *(since v0.16-dev)* Each entry also carries
   **`"step"`** — the identifier of the `step` panel (§5a.6) open when the
   crease was produced, or `null` if it precedes the first `step` in the
-  program. Additive: stock FOLD consumers ignore both fields;
-  `tools/fold2svg.mjs` uses `"name"` to colour/label creases.
+  program. Additive: stock FOLD consumers ignore both fields; `render/render-svg`
+  uses `"name"` to colour/label creases.
 
 **`file_frames` — one `foldedForm` frame per `step` panel snapshot**
 *(since v0.16-dev)*: a baseline frame (`"beloch:step": null`) for the state
@@ -889,7 +889,7 @@ panels emits exactly one folded-form frame (`"beloch:step": null`), matching
 the pre-v0.16-dev dual-frame shape except that the frame is now self-contained
 rather than `frame_inherit: true`.
 
-The renderer/animation client is a separate consumer; `tools/fold2svg.mjs` draws
+The renderer/animation client is a separate consumer; `render/render-svg` draws
 frame 0 by default and a folded form with `--folded`.
 
 ---
