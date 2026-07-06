@@ -18,6 +18,8 @@ test("bisect-a CP: faces, colored creases, named constructions, legend", async (
   // named crease edge carries its name; unassigned color from the default palette
   expect(s).toContain('data-name="v"');
   expect(s).toContain("#f59e0b");
+  // named crease "v" has no step provenance -> null step serializes as data-step=""
+  expect(s).toContain('data-step=""');
   // crease label text --v, corner labels .a
   expect(s).toContain(">--v</text>");
   expect(s).toContain(">.a</text>");
@@ -59,4 +61,11 @@ test("theme override changes crease color", async () => {
 test("bisect-a CP golden snapshot", async () => {
   const scene = parseFold(await golden("syntax/bisect-a.fold"));
   expect(renderCP(scene).toString()).toMatchSnapshot();
+});
+
+test("crease lines carry a crease-M/crease-V class per assignment", async () => {
+  const scene = parseFold(await golden("syntax/fold-quarter.fold"));
+  const s = renderCP(scene).toString();
+  expect(s).toContain('class="crease-M"');
+  expect(s).toContain('class="crease-V"');
 });

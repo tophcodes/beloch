@@ -20,7 +20,7 @@ import {
 } from "../src/geometry";
 
 const quarterRaw = await Bun.file(
-  new URL("../../../tools/test/fixtures/fold-quarter.fold", import.meta.url),
+  new URL("./fixtures/fold-quarter.fold", import.meta.url),
 ).text();
 const quarterScene = parseFold(quarterRaw);
 

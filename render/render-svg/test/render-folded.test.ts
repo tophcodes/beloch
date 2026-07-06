@@ -5,7 +5,7 @@ import { renderFolded } from "@beloch/render-svg";
 const golden = (p: string) =>
   Bun.file(new URL(`../../../tests/golden/${p}`, import.meta.url)).text();
 const occlude = () =>
-  Bun.file(new URL("../../../tools/test/fixtures/fold-occlude.fold", import.meta.url)).text();
+  Bun.file(new URL("./fixtures/fold-occlude.fold", import.meta.url)).text();
 
 test("fold-quarter top view paints all faces bottom→top", async () => {
   const scene = parseFold(await golden("syntax/fold-quarter.fold"));
