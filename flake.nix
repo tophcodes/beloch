@@ -72,7 +72,7 @@
             ocamlPkgs.ocamlformat
             ocamlPkgs.utop
             flint
-            # FOLD -> SVG/PNG rendering via Rabbit Ear (tools/fold2svg.mjs)
+            # FOLD -> SVG/PNG rendering (render/render-svg)
             pkgs.bun
           ];
         };

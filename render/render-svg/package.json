@@ -1,0 +1,11 @@
+{
+  "name": "@beloch/render-svg",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@beloch/scene": "workspace:*",
+    "@resvg/resvg-js": "^2.6.2"
+  },
+  "devDependencies": { "@xmldom/xmldom": "^0.9.10" }
+}

@@ -108,7 +108,13 @@ At O, with sectors s0..s(n-1) between consecutive rays:
   (standard construction, exact). The stayer sector — the one keeping the
   identity isometry — is the table-contact sector: the unique face at the
   bottom of the solved stack (top under `flip` semantics, as with `@fold`).
-  Deterministic once the layer order is solved. There is **no `moving`
+  Deterministic once the layer order is solved.
+  **Deviation (shipped, 2026-07-06):** "bottom of the stack" was wrong — a
+  lowest-rank sector with an improper (det<0) transform mirrors the whole
+  model (M/V flip). Shipped rule: anchor = lowest-rank *orientation-preserving*
+  sector; sector 0 is always identity so one exists. See `SPECIFICATION.md`
+  §4.9 (living spec) + final-review finding C2.
+  There is **no `moving`
   clause in v1**; if absolute-placement control turns out to be needed
   (holding a different sector fixed), an optional `moving <flap>` can be
   added later without breaking this default.

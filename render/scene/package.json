@@ -1,0 +1,6 @@
+{
+  "name": "@beloch/scene",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts"
+}
