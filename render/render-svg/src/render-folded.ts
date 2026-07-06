@@ -209,6 +209,6 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
 
   appendConstructions(doc, scene, layout, theme, opts.constructions, { frame });
   if (opts.title) appendTitle(doc, theme, opts.title);
-  appendLegend(doc, layout, theme, frame);
+  if (opts.legend) appendLegend(doc, layout, theme, frame);
   return doc;
 }

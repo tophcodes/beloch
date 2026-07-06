@@ -7,7 +7,7 @@ const golden = (p: string) =>
 
 test("bisect-a CP: faces, colored creases, named constructions, legend", async () => {
   const scene = parseFold(await golden("syntax/bisect-a.fold"));
-  const s = renderCP(scene).toString();
+  const s = renderCP(scene, { legend: true }).toString();
   // layers in order
   expect(s.indexOf('data-layer="paper"')).toBeLessThan(s.indexOf('data-layer="creases"'));
   expect(s.indexOf('data-layer="creases"')).toBeLessThan(s.indexOf('data-layer="annotations"'));
@@ -68,4 +68,16 @@ test("crease lines carry a crease-M/crease-V class per assignment", async () => 
   const s = renderCP(scene).toString();
   expect(s).toContain('class="crease-M"');
   expect(s).toContain('class="crease-V"');
+});
+
+test("legend hidden by default", async () => {
+  const scene = parseFold(await golden("syntax/bisect-a.fold"));
+  const s = renderCP(scene).toString();
+  expect(s).not.toContain('class="legend-panel"');
+});
+
+test("legend: true shows the legend panel", async () => {
+  const scene = parseFold(await golden("syntax/bisect-a.fold"));
+  const s = renderCP(scene, { legend: true }).toString();
+  expect(s).toContain('class="legend-panel"');
 });

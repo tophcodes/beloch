@@ -10,6 +10,7 @@ export interface RenderOptions {
   title?: string;
   constructions?: string[];             // ["--v", ".e"]; undefined = all auxiliary
   theme?: Partial<Theme>;
+  legend?: boolean;                     // default false
 }
 
 // fold2svg.mjs:217 — hardcoded unit-square corners, normalized paper space.
@@ -130,6 +131,6 @@ export function renderCP(scene: FoldScene, opts: RenderOptions = {}): SvgDoc {
 
   appendConstructions(doc, scene, layout, theme, opts.constructions, null);
   if (opts.title) appendTitle(doc, theme, opts.title);
-  appendLegend(doc, layout, theme, frame);
+  if (opts.legend) appendLegend(doc, layout, theme, frame);
   return doc;
 }
