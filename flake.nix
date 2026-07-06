@@ -78,12 +78,21 @@
             pkgs.bun
           ];
           # Link @beloch/render-svg's `beloch-render` bin globally so the
-          # OCaml `beloch render` subcommand (bin/main.ml) can execvp it.
+          # OCaml `beloch render` subcommand (bin/main.ml) can execvp it, and
+          # shim a bare `beloch` onto PATH that always runs the freshly
+          # built binary (not a stale Nix-store copy) via `dune exec`.
           shellHook = ''
             export PATH="$(bun pm bin -g 2>/dev/null):$PATH"
             root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
             ( cd "$root/render" && bun install --silent ) >/dev/null 2>&1
             ( cd "$root/render/render-svg" && bun link --silent ) >/dev/null 2>&1
+            mkdir -p "$root/.direnv/bin"
+            cat > "$root/.direnv/bin/beloch" <<EOF
+#!/usr/bin/env bash
+exec dune exec --root "$root" beloch -- "\$@"
+EOF
+            chmod +x "$root/.direnv/bin/beloch"
+            export PATH="$root/.direnv/bin:$PATH"
           '';
         };
       }
