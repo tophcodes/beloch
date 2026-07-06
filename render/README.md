@@ -22,13 +22,14 @@ Rabbit Ear load-check — the OCaml emitter's own tests own FOLD validity):
 
 ```
 bun render/render-svg/bin/fold2svg.ts <in.fold|-> [out.svg|out.png]
-  [--title "..."] [--folded] [--view top|bottom] [--hidden dashed|hide]
-  [--constructions "--v,.e"] [--step <label>]
+  [--title "..."] [--view cp|folded] [--flip] [--hidden dashed|hide]
+  [--constructions "--v,.e"] [--step <label|N>] [--legend]
 ```
 
 `-`/missing input reads stdin; missing output writes SVG to stdout; a
 `.png` output suffix renders via `@resvg/resvg-js` (white background,
-fit-to-width). `--folded` is shorthand for `--view top`.
+fit-to-width). `--view folded` renders the folded state (2D); `--flip`
+views it from the other side.
 
 ## Status
 

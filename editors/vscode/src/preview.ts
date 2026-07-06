@@ -99,8 +99,8 @@ function extractConstructions(svg: string): string[] {
  * `fold2svg --step <id>` selects a frame by matching `beloch:step` against a
  * CLI string, so it can pick any *named* step directly. The baseline frame's
  * `beloch:step` is JSON `null`, which no CLI string can match — `--step`
- * would silently fall back to the *last* frame instead (fold2svg's documented
- * fallback). To render the baseline correctly, the baseline case sends a
+ * now throws a step-not-found error instead of silently rendering the wrong
+ * frame. To render the baseline correctly, the baseline case sends a
  * trimmed FOLD (`file_frames: [thatFrame]`) so the frame is both first and
  * last and needs no `--step` match at all.
  */
@@ -118,9 +118,9 @@ function renderPayload(fold: Record<string, unknown>, cwd: string): HostToWebvie
     const key = stepId ?? "";
     if (stepId == null) {
       const baselineJson = JSON.stringify({ ...fold, file_frames: [frame] });
-      foldedSvgByStep[key] = runFold2svg(["-", "--view", "top"], baselineJson, cwd);
+      foldedSvgByStep[key] = runFold2svg(["-", "--view", "folded"], baselineJson, cwd);
     } else {
-      foldedSvgByStep[key] = runFold2svg(["-", "--view", "top", "--step", stepId], foldJson, cwd);
+      foldedSvgByStep[key] = runFold2svg(["-", "--view", "folded", "--step", stepId], foldJson, cwd);
     }
   }
 
