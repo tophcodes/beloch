@@ -3,10 +3,12 @@
 ## Status
 Accepted (2026-07-06) — implemented in
 [docs/superpowers/specs/2026-07-06-flap-coplanar-cluster-design.md]. Acceptance
-refined one point: `#(...)` is cluster-valued only where it names a **physical
-flap** (`moving`, `up to`); as a **segment/sector address** (`at #(...)`,
-`@collapse over/under #(...)`) it stays **face-fine** — see *Granularity split*
-below. Originally filed Proposed (2026-07-06).
+clarified what `#(...)` *is*: a **region-disambiguation operator** ("pick out
+the region here"), not a value of fixed granularity. The region it denotes is
+the finest unit the **enclosing** operator addresses — a **flap** (coplanar
+cluster) for a scope operand (`moving`, `up to`), a **face** for a segment/
+sector address (`at #(...)`, `@collapse over/under #(...)`). See *What `#(...)`
+denotes* below. Originally filed Proposed (2026-07-06).
 
 This is the repository's first `Proposed` ADR (0001–0016 are all `Accepted`).
 It records a design change that came out of a live debugging session on
@@ -140,32 +142,33 @@ spec §4.6) fall out cleanly: a bare bind creases all layers (`U` edges — same
 flap, no split); `@fold … up to …` folds some (those edges become `M/V` — the
 flap splits there, and only there).
 
-### Granularity split: clusters for scope, faces for addressing
+### What `#(...)` denotes
 
-Implementation surfaced a real conflict this ADR originally glossed: `#(...)`
-serves two purposes with **opposite** granularity needs on a still-flat sheet.
+`#(...)` is a **region-disambiguation operator** — "pick out the region here" —
+not a data type with a single fixed granularity. The region it denotes is the
+finest unit the **enclosing** operator addresses:
 
-- As a **physical-flap operand** (`moving`, `up to`) it means "this coplanar
-  region" → wants the **coarse cluster**. A flat sheet is one flap: correct.
-- As a **segment/sector address** (`at #(...)`, `@collapse over/under #(...)`) it
-  disambiguates *which* segment of a crease bundle, or *which* stacked sector,
-  by naming the face it belongs to → wants the **fine face**. On a flat sheet
-  the whole sheet is one cluster, so a cluster-valued `#(...)` would name
-  *everything* and could no longer pick one of several coplanar segments.
+- A **scope** operand (`moving`, `up to`) acts on a physical flap → `#(...)`
+  denotes a **flap** (coplanar cluster). A flat sheet is one flap: correct.
+- A **segment/sector address** (`at #(...)`, `@collapse over/under #(...)`)
+  picks *which* segment of a crease bundle, or *which* stacked sector → `#(...)`
+  denotes the **face** that segment/sector lives on. On a flat sheet the whole
+  sheet is one flap, so resolving these at flap granularity would name
+  *everything* and lose the ability to pick one of several coplanar segments.
 
-The load-bearing counterexample is `examples/syntax/collapse-midpaper.bel`:
-`--h at #(.q .tm)` selects one of two coplanar segments of `--h` by naming a
-flap; under clusters both segments share the one flat flap and the selection
-becomes ambiguous. So the two uses **must** resolve at different granularities.
+So the same operator resolves at different granularities in different positions —
+by design, because it names "the region the surrounding operator cares about,"
+and those operators care about different-sized regions. `examples/syntax/
+collapse-midpaper.bel` makes the address case concrete: `--h at #(.q .tm)` picks
+one of two coplanar segments of `--h`; that only works at face granularity.
 
-Decision: `#(...)` is cluster-valued **only** in `moving` / `up to`
-(`resolve_flap_cluster`). `at #(...)` and `@collapse over/under #(...)` keep the
-old face-fine resolution (`face_of_points` / `resolve_sector_face`). Consequence:
-this ADR's Context example `--bb at #(.a .d)` — an `at`-address — deliberately
-stays face-fine and still errors on a fully-flat sheet with `.a`/`.d` on distinct
-faces; the flat-sheet resolution win applies to the *scope* uses, which was the
-functionally load-bearing case (defects 1 and 2 both arose in `moving`/`up to`
-resolution). `pinch` and `crease_segments` were already face-fine and unchanged.
+Implementation: `resolve_flap_cluster` (flap-valued) backs `moving` / `up to`;
+`face_of_points` / `resolve_sector_face` (face-valued) back `at` / `@collapse`.
+Consequence: this ADR's Context example `--bb at #(.a .d)` is an *address*, so it
+resolves at face granularity and still errors on a fully-flat sheet with
+`.a`/`.d` on distinct faces — as it should; the flat-sheet win is for the *scope*
+uses, which is where both defects arose. `pinch` and `crease_segments` were
+already face-granular and unchanged.
 
 ## Alternatives considered
 
