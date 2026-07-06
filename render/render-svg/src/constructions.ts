@@ -1,6 +1,6 @@
 // Constructions overlay, title and legend — shared by renderCP and
 // renderFolded. Ported verbatim from tools/fold2svg.mjs:342-463.
-import type { FoldScene, Frame, Vec2 } from "@beloch/scene";
+import type { Assignment, FoldScene, Frame, Vec2 } from "@beloch/scene";
 import { el, SvgDoc, SvgNode } from "./svgdoc";
 import { clipLineBox, clipLineToPoly, lineToFace } from "./geometry";
 import { PAD } from "./layout";
@@ -139,30 +139,34 @@ export function appendTitle(doc: SvgDoc, theme: Theme, title: string): void {
   }, [], title));
 }
 
-// fold2svg.mjs:455-463 — axioms present in this diagram, from the given
-// frame's edge provenance.
+// fold2svg.mjs:455-463 — assignments (M/V/B/U/F) present in this diagram,
+// styled the same as the creases themselves via theme.lineStyle.
+const ASSIGNMENT_LABEL: Record<Assignment, string> = {
+  B: "boundary", M: "mountain", V: "valley", F: "flat", U: "unassigned",
+};
+const ASSIGNMENT_ORDER: Assignment[] = ["B", "M", "V", "F", "U"];
+
 export function appendLegend(doc: SvgDoc, layout: Layout, theme: Theme, frame: Frame): void {
-  const present = [...new Set(
-    frame.edgesProvenance
-      .filter((p): p is NonNullable<typeof p> => !!p)
-      .map((p) => p.axiom),
-  )].filter((a): a is string => !!a && !!theme.axioms[a]);
+  const seen = new Set(frame.edgesAssignment);
+  const present = ASSIGNMENT_ORDER.filter((a) => seen.has(a));
   if (!present.length) return;
   const hud = doc.layer("hud");
   const { H } = layout;
   hud.children.push(el("rect", {
-    class: "legend-panel", x: PAD - 12, y: H - 38, width: present.length * 150 + 4,
+    class: "legend-panel", x: PAD - 12, y: H - 38, width: present.length * 110 + 4,
     height: 26, rx: 6, fill: "#f8fafc", stroke: "#e2e8f0",
   }));
-  present.forEach((ax, k) => {
-    const lx = PAD + k * 150;
-    const info = theme.axioms[ax]!;
-    hud.children.push(el("line", {
-      x1: lx, y1: H - 25, x2: lx + 22, y2: H - 25, stroke: info.color,
-      "stroke-width": 3, "stroke-linecap": "round",
-    }));
+  present.forEach((a, k) => {
+    const lx = PAD + k * 110;
+    const style = theme.lineStyle(a, theme);
+    const attrs: Record<string, string | number> = {
+      x1: lx, y1: H - 25, x2: lx + 22, y2: H - 25, stroke: style.stroke,
+      "stroke-width": style.strokeWidth, "stroke-linecap": "round",
+    };
+    if (style.dasharray) attrs["stroke-dasharray"] = style.dasharray;
+    hud.children.push(el("line", attrs));
     hud.children.push(el("text", {
       x: lx + 28, y: H - 20, "font-size": 13, fill: "#334155",
-    }, [], info.label));
+    }, [], ASSIGNMENT_LABEL[a]));
   });
 }

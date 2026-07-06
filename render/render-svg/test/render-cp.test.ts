@@ -15,15 +15,15 @@ test("bisect-a CP: faces, colored creases, named constructions, legend", async (
   expect((s.match(/data-kind="face"/g) ?? []).length).toBe(3);
   // 9 edges as crease lines
   expect((s.match(/data-kind="crease"/g) ?? []).length).toBe(9);
-  // named crease edge carries its name; axiom-2 color from the default palette
+  // named crease edge carries its name; unassigned color from the default palette
   expect(s).toContain('data-name="v"');
-  expect(s).toContain("#16a34a");
+  expect(s).toContain("#f59e0b");
   // crease label text --v, corner labels .a
   expect(s).toContain(">--v</text>");
   expect(s).toContain(">.a</text>");
-  // legend lists axiom 2 and axiom 5
-  expect(s).toContain("axiom 2");
-  expect(s).toContain("axiom 5");
+  // legend lists assignments present (boundary + unassigned), not axiom provenance
+  expect(s).toContain("boundary");
+  expect(s).toContain("unassigned");
 });
 
 test("constructions: unnamed-crease line drawn dashed, corner points skipped", async () => {

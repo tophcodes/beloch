@@ -4,7 +4,7 @@
 import type { FoldScene } from "@beloch/scene";
 import { pickStep, SceneError } from "@beloch/scene";
 import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
-import { DEFAULT_THEME, edgeColor, Theme } from "./theme";
+import { DEFAULT_THEME, Theme } from "./theme";
 import { makeLayout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
 import { coveredIntervals, faceEdgeIndex, linearExtension, sideUp } from "./geometry";
@@ -21,10 +21,7 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
   if (!step) throw new SceneError("no foldedForm frames in scene");
   const frame = step.frame;
 
-  const theme: Theme = {
-    ...DEFAULT_THEME, ...opts.theme,
-    axioms: { ...DEFAULT_THEME.axioms, ...(opts.theme?.axioms ?? {}) },
-  };
+  const theme: Theme = { ...DEFAULT_THEME, ...opts.theme };
   const layout = makeLayout(frame.vertices);
   const { tx, ty } = layout;
   const doc = createDoc(layout.W, layout.H);
@@ -112,10 +109,9 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
     const faces = incident[i]!;
     if (!faces.length) return; // not on any face outline — nothing to paint
     const assignment = A[i]!;
-    const col = edgeColor(theme, assignment, prov[i]?.axiom ?? null);
+    const style = theme.lineStyle(assignment, theme);
     const name = prov[i]?.name;
     const edgeStep = prov[i]?.step || "";
-    const wgt = assignment === "B" ? 2.5 : 2;
     const a0 = V[e[0]]!, b0 = V[e[1]]!;
     const refPos = bottom
       ? Math.min(...faces.map((fi) => pos.get(fi)!))
@@ -139,8 +135,9 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
         "data-kind": "crease",
         "data-step": edgeStep,
         x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
-        stroke: col, "stroke-width": wgt, "stroke-linecap": "round",
+        stroke: style.stroke, "stroke-width": style.strokeWidth, "stroke-linecap": "round",
       };
+      if (style.dasharray) attrs["stroke-dasharray"] = style.dasharray;
       if (name) attrs["data-name"] = name;
       creases.children.push(el("line", attrs));
     }
@@ -189,7 +186,7 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
         "data-kind": "crease",
         "data-step": "",
         x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
-        stroke: theme.crease, "stroke-width": 2, "stroke-linecap": "round",
+        stroke: theme.unassigned, "stroke-width": 2, "stroke-linecap": "round",
       }));
     }
 

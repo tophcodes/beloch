@@ -2,7 +2,7 @@
 // (root defs) and :293-339 (CP branch), restructured onto SvgDoc layers.
 import type { FoldScene, Vec2 } from "@beloch/scene";
 import { createDoc, el, SvgDoc } from "./svgdoc";
-import { DEFAULT_THEME, edgeColor, Theme } from "./theme";
+import { DEFAULT_THEME, Theme } from "./theme";
 import { makeLayout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
 
@@ -22,10 +22,7 @@ const cornerLabel = (p: Vec2): string | undefined =>
   CORNER.find(([x, y]) => near(p, x, y))?.[2];
 
 export function renderCP(scene: FoldScene, opts: RenderOptions = {}): SvgDoc {
-  const theme: Theme = {
-    ...DEFAULT_THEME, ...opts.theme,
-    axioms: { ...DEFAULT_THEME.axioms, ...(opts.theme?.axioms ?? {}) },
-  };
+  const theme: Theme = { ...DEFAULT_THEME, ...opts.theme };
   const frame = scene.cp;
   const layout = makeLayout(frame.vertices);
   const { tx, ty, minX, maxX, minY, maxY } = layout;
@@ -61,19 +58,20 @@ export function renderCP(scene: FoldScene, opts: RenderOptions = {}): SvgDoc {
   const creases = doc.layer("creases");
   E.forEach(([a, b], i) => {
     const assignment = A[i]!;
-    const boundary = assignment === "B";
     const step = prov[i]?.step ?? "";
     const name = prov[i]?.name;
+    const style = theme.lineStyle(assignment, theme);
     const attrs: Record<string, string | number> = {
       class: `crease-${assignment}`,
       "data-kind": "crease",
       "data-step": step,
       x1: tx(V[a]![0]), y1: ty(V[a]![1]),
       x2: tx(V[b]![0]), y2: ty(V[b]![1]),
-      stroke: edgeColor(theme, assignment, prov[i]?.axiom ?? null),
-      "stroke-width": boundary ? 2.5 : 2,
+      stroke: style.stroke,
+      "stroke-width": style.strokeWidth,
       "stroke-linecap": "round",
     };
+    if (style.dasharray) attrs["stroke-dasharray"] = style.dasharray;
     if (name) attrs["data-name"] = name;
     creases.children.push(el("line", attrs));
   });
@@ -103,7 +101,7 @@ export function renderCP(scene: FoldScene, opts: RenderOptions = {}): SvgDoc {
     const nm = prov[i]?.name;
     if (!nm) return;
     if (!creaseGroups.has(nm)) {
-      creaseGroups.set(nm, { vs: new Set(), col: edgeColor(theme, A[i]!, prov[i]?.axiom ?? null) });
+      creaseGroups.set(nm, { vs: new Set(), col: theme.lineStyle(A[i]!, theme).stroke });
     }
     const grp = creaseGroups.get(nm)!;
     grp.vs.add(a);
