@@ -45,9 +45,9 @@ sites:
 
 - `usage()`: the `render` line gets a trailing
   `[unavailable: beloch-render not on PATH]` when `which "beloch-render"` is
-  `None`. Dimmed (`\027[2m...\027[0m`) when `Unix.isatty Unix.stdout`, plain
-  text otherwise (redirected output, CI logs — raw escape codes there would
-  just be noise).
+  `None`. Dimmed (`\027[2m...\027[0m`) when `Unix.isatty Unix.stderr` (`usage()`
+  writes to stderr, so that's the stream that matters), plain text otherwise
+  (redirected output, CI logs — raw escape codes there would just be noise).
 - `run_render`: checks `which` first and prints the same hint before
   attempting anything, rather than discovering the gap only after a failed
   `exec`/`create_process` (ENOENT).
