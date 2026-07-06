@@ -478,6 +478,51 @@ let test_e2e_precrease_fold_emits_v () =
   Alcotest.(check bool) "the precrease folds as a valley" true
     (List.mem "V" assigns)
 
+(* ADR 0017 defect 1: on a still-flat sheet, two points that land on
+   DIFFERENT (but still-coplanar, U-joined) faces resolve to the one flap
+   spanning them, instead of erroring "those points aren't all on one flap".
+   --diag = map .b onto .d precreases the b-d diagonal (bare bind, U edge),
+   splitting the square into triangles abd/bcd; .a and .c sit on opposite
+   triangles. `up to #(.a .c)` resolves that pair through
+   resolve_flap_cluster (the `moving`/`up to` operand path) — this is the
+   call site defect 1 actually manifests on; see the deviation note below on
+   why `at`'s `#(...)` selector keeps face-precise semantics instead. *)
+let test_e2e_flap_cluster_spans_precrease_split () =
+  ignore
+    (Beloch.fold_string ~filename:"t.bel"
+       "paper square\n\
+        --diag = map .b onto .d\n\
+        @map .a onto .c moving .a up to #(.a .c)\n")
+
+(* ADR 0017 defect 2: a scoped self-fold must move its entire still-flat
+   coplanar cluster, not just the face nearest the anchor. --v/--h precrease
+   the square into 4 quadrants (BL,BR,TL,TR), all ONE flap (bare binds, U
+   edges only). The self-scoped fold at x=1/4 (anchor .a, up to .a) is a
+   candidate on both BL and TL (each has material on the move side, x<1/4),
+   but BL and TL never geometrically overlap — they're side by side, not
+   stacked — so the pre-cohesion `outer` closure alone leaves TL out even
+   though it's BL's still-flat neighbour. Without cohesion, TL never enters
+   the moving set, and .d (uniquely inside TL) keeps its stale flat-sheet
+   table position (0,1). With cohesion, TL moves with BL and .d reflects to
+   (1/2,1) — verified exactly (not just "differs"), confirmed empirically
+   against the running evaluator before this test was written. *)
+let test_e2e_cohesion_moves_coplanar_sibling () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\n\
+          --v = map .a onto .b\n\
+          --h = map .a onto .d\n\
+          .m0 = .(--v --(.a .b))\n\
+          @map .a onto .m0 moving .a up to .a\n")
+  in
+  let d_pos = Fold_state.table_position fd.Eval.state (pt 0 1) in
+  Alcotest.(check bool)
+    "d's sibling flap (TL) moved with the anchor's flap (BL): (1/2,1), not \
+     the stale (0,1)"
+    true
+    (Geom.point_equal d_pos { Geom.x = half; y = Num.of_int 1 })
+
 let () =
   Alcotest.run "beloch-e2e"
     [
@@ -525,6 +570,12 @@ let () =
             test_multiframe;
           Alcotest.test_case "e2e faces_matrix + frame" `Quick
             test_e2e_faces_matrix_and_frame;
+          Alcotest.test_case
+            "ADR 0017 defect 1: flap cluster spans a precrease split" `Quick
+            test_e2e_flap_cluster_spans_precrease_split;
+          Alcotest.test_case
+            "ADR 0017 defect 2: cohesion moves a coplanar sibling" `Quick
+            test_e2e_cohesion_moves_coplanar_sibling;
         ] );
       ( "emit_folded",
         [

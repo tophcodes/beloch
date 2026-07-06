@@ -349,14 +349,64 @@ let crease_paper_axis (st : t) (cid : int) :
       if List.for_all (fun p -> Geom.side_of_line l p = 0) pts then `Line l
       else `Bent
 
-let flap_of_points (st : t) (pts : Geom.point list) :
-    [ `Face of int | `Zero | `Ambiguous ] =
-  let contains i =
-    List.for_all (fun p -> Geom.in_convex_polygon st.faces.(i).paper p) pts
+(* Component id per face: the graph whose nodes are faces and whose edges are
+   interior adjacencies still assignment U (unfolded, physically coplanar).
+   Two faces separated only by a U edge are the same flap; the instant that
+   edge folds (U -> M/V) the flap splits there, exactly and only there
+   (ADR 0017). Recomputed from the current U-edge set on every call — no
+   incremental cache, so a future `unfold` (which merges clusters) needs no
+   extra bookkeeping. O(faces + edges) per call. *)
+let coplanar_clusters (st : t) : int array =
+  let n = Array.length st.faces in
+  let parent = Array.init n Fun.id in
+  let rec find i = if parent.(i) = i then i else (
+    let r = find parent.(i) in
+    parent.(i) <- r;
+    r)
   in
-  let hits = ref [] in
-  Array.iteri (fun i _ -> if contains i then hits := i :: !hits) st.faces;
-  match !hits with [ i ] -> `Face i | [] -> `Zero | _ -> `Ambiguous
+  let union a b =
+    let ra = find a and rb = find b in
+    if ra <> rb then parent.(ra) <- rb
+  in
+  Array.iter
+    (fun (e : edge) ->
+      if e.left >= 0 && e.right >= 0 && e.eassign = U then union e.left e.right)
+    st.edges;
+  Array.init n (fun i -> find i)
+
+(* The unique flap (coplanar cluster, as its face-index list) whose union of
+   paper polygons contains every point in [pts]. A point on a shared U edge
+   belongs to both incident faces, but they're the same cluster, so that's
+   still one id. `Zero if no cluster contains every point, `Ambiguous if more
+   than one does. *)
+let cluster_of_points (st : t) (pts : Geom.point list) :
+    [ `Cluster of int list | `Zero | `Ambiguous ] =
+  let cl = coplanar_clusters st in
+  let n = Array.length st.faces in
+  let ids_of_point p =
+    let s = ref [] in
+    for i = 0 to n - 1 do
+      if Geom.in_convex_polygon st.faces.(i).paper p && not (List.mem cl.(i) !s)
+      then s := cl.(i) :: !s
+    done;
+    !s
+  in
+  match pts with
+  | [] -> `Zero
+  | p0 :: rest ->
+      let common =
+        List.fold_left
+          (fun acc p -> List.filter (fun id -> List.mem id (ids_of_point p)) acc)
+          (ids_of_point p0) rest
+      in
+      (match common with
+       | [ id ] -> `Cluster (List.filter (fun i -> cl.(i) = id) (List.init n Fun.id))
+       | [] -> `Zero
+       | _ -> `Ambiguous)
+
+let flap_of_points (st : t) (pts : Geom.point list) :
+    [ `Cluster of int list | `Zero | `Ambiguous ] =
+  cluster_of_points st pts
 
 (* on-paper material of a table-space line: its positive-length
    intersection with each face, table space. Stacked layers yield
@@ -386,6 +436,7 @@ let select_scope (st : t) ~(axis : Geom.line) ~(move_side : int)
     ~(valley : bool) ~(anchor : int) ~(target : scope_target) :
     (bool array, string) result =
   let n = Array.length st.faces in
+  let cl = coplanar_clusters st in
   let piece =
     Array.init n (fun i ->
         let sub =
@@ -453,13 +504,19 @@ let select_scope (st : t) ~(axis : Geom.line) ~(move_side : int)
       List.iter (fun t -> inm.(t) <- true) targets;
       (* closure: any candidate outside a moving flap over the region must
          move too — the moving set is an outer prefix by construction *)
+      (* the moving set is closed under BOTH the existing outer-prefix rule
+         AND cohesion: a candidate g in the same still-coplanar cluster as a
+         moving m must move too — a fold may never tear a U-adjacent
+         neighbourhood (ADR 0017, defect 2). The `cand g` guard is unchanged,
+         so a face with no material on the moving side (the axis genuinely
+         cuts the cluster there) is correctly left out. *)
       let changed = ref true in
       while !changed do
         changed := false;
         for g = 0 to n - 1 do
           if (not inm.(g)) && cand g then
             for m = 0 to n - 1 do
-              if inm.(m) && (not inm.(g)) && outer g m then begin
+              if inm.(m) && (not inm.(g)) && (outer g m || cl.(g) = cl.(m)) then begin
                 inm.(g) <- true;
                 changed := true
               end
