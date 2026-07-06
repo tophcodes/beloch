@@ -1,27 +1,35 @@
-# `beloch render` help screen, `--legend` opt-in, step validation
+# `beloch render` help screen, `--view` redesign, `--legend` opt-in, step validation
 
 ## Context
 
 `beloch render FILE [...args]` (`bin/main.ml`) forwards its args straight
 through to `beloch-render` (the `@beloch/render-svg` CLI, `render/render-svg/bin/fold2svg.ts`).
-Three gaps make the command hard to discover and easy to misuse silently:
+Four gaps make the command hard to discover and easy to misuse silently:
 
 1. **No dedicated help.** `beloch render` has no `--help`/`-h` handling at all
    — the top-level `usage()` gives it one line. `beloch render --help` today
    just forwards `--help` to `beloch-render`, which ignores it.
-2. **Legend is always on.** `appendLegend` is called unconditionally in both
+2. **`--view`/`--folded` is two overlapping ways to say the same thing.**
+   `--view top|bottom` picks the folded-view side; `--folded` is a
+   boolean shorthand for `--view top`; CP is whatever's left when neither is
+   given. Three flags for two axes (what to render vs. which side) that
+   aren't actually independent in how they're spelled.
+3. **Legend is always on.** `appendLegend` is called unconditionally in both
    `renderCP` and `renderFolded` (`render-cp.ts`, `render-folded.ts`) — no way
    to turn it off.
-3. **Step selection fails silently.** `pickStep` (`render/scene/src/parse.ts`)
+4. **Step selection fails silently.** `pickStep` (`render/scene/src/parse.ts`)
    falls back to the last step when the given `--step` label doesn't match
    anything, with no error. There's also no way to select a step by ordinal
    position — only by its declared `step <name>` label from the `.bel`
    source.
 
-Goal: a good `beloch render --help` screen, `--legend` as an explicit opt-in
-flag (default off), and `--step` that accepts either a name or a 1-based
-ordinal index, erroring clearly (with the available named steps listed) when
-it doesn't match.
+Goal: a good `beloch render --help` screen; `--view cp|folded` replacing the
+`--view top|bottom` / `--folded` overlap, with a separate `--flip` for the
+folded-view side; `--legend` as an explicit opt-in flag (default off); and
+`--step` that accepts either a name or a 1-based ordinal index, erroring
+clearly (with the available named steps listed) when it doesn't match.
+3D folded views are a known future direction but explicitly out of scope
+here — `--view folded` stays 2D.
 
 ## Decision
 
@@ -44,11 +52,13 @@ file selection:
                              --format is set. Omit OUT to write to stdout.
 
 what gets rendered:
-  (default)                 crease pattern (CP) — the flat, unfolded state
-  --view top|bottom         folded state, viewed from the given side
-  --folded                  shorthand for --view top
+  --view cp|folded            cp (default): crease pattern, the flat unfolded
+                             state. folded: the folded state (2D; 3D planned
+                             for later, not this release).
+  --flip                     view the folded state from the other side
+                             (ignored/no-op with --view cp)
 
-step selection (folded state only):
+step selection (--view folded only):
   --step NAME|N              NAME = a declared `step <name>` label from the
                              .bel source; N = 1-based ordinal position among
                              declared steps. Default: last step (final
@@ -61,26 +71,60 @@ constructions (named points/lines):
 
 display options:
   --legend                   show the M/V/B/U crease-type legend (default: off)
-  --title TEXT                caption drawn in the top-left corner
-  --hidden dashed|hide        how occluded creases are drawn in folded view
+  --title TEXT               caption drawn in the top-left corner
+  --hidden dashed|hide       how occluded creases are drawn in folded view
                              (default: hide)
 
 output options:
-  --format svg|png            overrides the format implied by OUT's extension
+  --format svg|png           overrides the format implied by OUT's extension
                              (default: svg)
-  --width N                    PNG output width in px (default: document width)
-  --open                      render to a temp file and open it (xdg-open)
+  --width N                  PNG output width in px (default: document width)
+  --open                     render to a temp file and open it (xdg-open)
 
 examples:
   beloch render kite.bel
-  beloch render kite.bel --folded out.png
+  beloch render kite.bel --view folded out.png
+  beloch render kite.bel --view folded --flip out.png
   beloch render kite.bel --step precrease --open
 ```
 
 `usage()`'s existing one-liner for `render` gains a
 `(see beloch render --help)` pointer.
 
-### 2. `--legend` opt-in (`render-cp.ts`, `render-folded.ts`, `fold2svg.ts`)
+### 2. `--view cp|folded` + `--flip` replace `--view top|bottom` / `--folded` (`fold2svg.ts`)
+
+`fold2svg.ts` flag parsing changes:
+
+```ts
+const viewFlag = flagVal("--view"); // undefined | "cp" | "folded"
+if (viewFlag !== undefined && viewFlag !== "cp" && viewFlag !== "folded") {
+  console.error(`beloch-render: unknown --view value '${viewFlag}' — expected cp or folded`);
+  process.exit(1);
+}
+const flip = args.includes("--flip");
+const FLAGS = new Set([
+  "--title", "--view", "--hidden", "--constructions", "--step", "--format",
+  "--width", "--legend", "--flip",
+]);
+...
+const doc = viewFlag === "folded"
+  ? renderFolded(scene, { ...opts, view: flip ? "bottom" : "top", hidden, step })
+  : renderCP(scene, opts);
+```
+
+`renderFolded`'s own `FoldedOptions.view` field stays `"top" | "bottom"`
+internally (`render-folded.ts` is unchanged) — `--flip` is purely a CLI-level
+translation of that internal side, same as before. `--folded` and
+`--view top|bottom` are removed; there is no backwards-compat shim (pre-1.0,
+no external consumers besides this repo).
+
+Two in-repo consumers need updating to match:
+
+- `editors/vscode/src/preview.ts:121,123` — `runFold2svg(["-", "--view", "top", ...])`
+  → `runFold2svg(["-", "--view", "folded", ...])`.
+- `render/README.md:25,31` — flag synopsis and the `--folded` shorthand note.
+
+### 3. `--legend` opt-in (`render-cp.ts`, `render-folded.ts`, `fold2svg.ts`)
 
 `RenderOptions` (declared in `render-cp.ts`, shared via `FoldedOptions extends
 RenderOptions` in `render-folded.ts`) gains `legend?: boolean` (default
@@ -95,7 +139,7 @@ legend panel unless `--legend` is passed. Golden snapshot tests for
 `render-cp.test.ts`/`render-folded.test.ts` get re-recorded without it, plus
 one new test per file asserting `legend: true` still renders the panel.
 
-### 3. Step selection: name or ordinal, explicit error (`render/scene/src/parse.ts`)
+### 4. Step selection: name or ordinal, explicit error (`render/scene/src/parse.ts`)
 
 `pickStep(scene, label)`:
 
@@ -141,7 +185,7 @@ list (they can still be reached by ordinal, just not shown by name — nothing
 to show). `available[].index` is 0-based internally but rendered 1-based
 (`index + 1`), matching the same ordinal `--step N` accepts.
 
-### 4. CLI error surface (`fold2svg.ts`)
+### 5. CLI error surface (`fold2svg.ts`)
 
 Currently an uncaught `SceneError` (e.g. "no foldedForm frames in scene")
 prints a raw stack trace. Wrap the parse+render call in a top-level
@@ -173,6 +217,8 @@ function, independently testable for its plain (non-colored) form.
 
 - `beloch render --help` works without `beloch-render` on PATH (checked
   before the `which` lookup).
+- Unknown `--view` value: exit 1, plain `beloch-render: unknown --view value
+  '<value>' — expected cp or folded`.
 - Step name/ordinal mismatch: exit 1, message lists count + named steps with
   their ordinal position. No fallback to the last step anymore (behavior
   change, intentional).
@@ -194,10 +240,14 @@ function, independently testable for its plain (non-colored) form.
   `render-folded.test.ts`: re-record snapshots without the legend by
   default; add one `legend: true` test per file asserting the panel is
   present.
-- `render/render-svg/test/cli.test.ts`: add a case for `--legend` producing
-  the legend panel, and a case for an unmatched `--step` exiting 1 with the
-  expected stderr message (non-TTY, so plain text — `Bun.spawn` pipes
-  aren't a tty).
+- `render/render-svg/test/cli.test.ts`: update the existing `--folded` test
+  to `--view folded`; add cases for `--view folded --flip` (bottom-view
+  output), unknown `--view` value exiting 1, `--legend` producing the legend
+  panel, and an unmatched `--step` exiting 1 with the expected stderr
+  message (non-TTY, so plain text — `Bun.spawn` pipes aren't a tty).
 - `tests/test_render_cli.ml` (OCaml): add a case asserting `beloch render
   --help` exits 0, prints to stdout, and works without requiring
   `beloch-render` on PATH.
+- No test coverage needed for `editors/vscode/src/preview.ts` or
+  `render/README.md` — mechanical updates to match the new flag, verified by
+  reading the diff.
