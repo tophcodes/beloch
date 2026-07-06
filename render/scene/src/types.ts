@@ -1,0 +1,44 @@
+export type Vec2 = [number, number];
+export type Assignment = "B" | "M" | "V" | "F" | "U";
+export type LineCoeffs = [number, number, number];           // a·x + b·y = c
+export type Isometry = [number, number, number, number, number, number]; // [m00,m01,m10,m11,tx,ty]
+export type FaceOrder = [number, number, number];            // [f, g, s], FOLD faceOrders
+
+export interface EdgeProvenance {                            // one beloch:edges entry
+  axiom: string | null;
+  sources: string[];
+  span: string | null;
+  name: string | null;                                       // crease name (bundle) this edge belongs to
+  step: string | null;                                       // step-macro label
+}
+
+export interface Frame {
+  vertices: Vec2[];
+  edgesVertices: [number, number][];
+  edgesAssignment: Assignment[];
+  edgesProvenance: (EdgeProvenance | null)[];                // same length as edgesVertices
+  facesVertices: number[][];
+  faceOrders: FaceOrder[];                                   // [] on the CP frame
+  facesMatrix: Isometry[] | null;                            // beloch:faces_matrix; null on the CP frame
+}
+
+export interface Step {
+  index: number;                                             // position in file_frames
+  label: string | null;                                      // beloch:step
+  frame: Frame;                                              // self-contained (merged over root)
+}
+
+export interface NamedPoint { name: string; paper: Vec2; table: Vec2; }
+export interface NamedLine  { name: string; coeffs: LineCoeffs; }
+export interface CreaseSegment { edgeIndex: number; a: Vec2; b: Vec2; }
+export interface Crease { name: string; segments: CreaseSegment[]; }
+
+export interface FoldScene {
+  cp: Frame;
+  steps: Step[];                                             // one per foldedForm frame, file order
+  namedPoints: NamedPoint[];
+  namedLines: NamedLine[];
+  creases: Crease[];                                         // grouped by provenance name on the CP frame
+}
+
+export class SceneError extends Error {}
