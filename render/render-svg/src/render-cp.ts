@@ -8,7 +8,7 @@ import { appendConstructions, appendLegend, appendTitle } from "./constructions"
 
 export interface RenderOptions {
   title?: string;
-  constructions?: string[];             // ["--v", ".e"]; undefined = all auxiliary
+  labels?: string[];                    // ["--v", ".e"]; undefined = none
   theme?: Partial<Theme>;
   legend?: boolean;                     // default false
 }
@@ -129,7 +129,7 @@ export function renderCP(scene: FoldScene, opts: RenderOptions = {}): SvgDoc {
     }, [], `--${nm}`));
   }
 
-  appendConstructions(doc, scene, layout, theme, opts.constructions, null);
+  appendConstructions(doc, scene, layout, theme, opts.labels, null);
   if (opts.title) appendTitle(doc, theme, opts.title);
   if (opts.legend) appendLegend(doc, layout, theme, frame);
   return doc;

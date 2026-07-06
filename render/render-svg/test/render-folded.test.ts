@@ -49,9 +49,15 @@ test("step option selects an intermediate folded state", async () => {
   expect(mid).not.toBe(fin);
 });
 
-test("folded view renders named-point constructions", async () => {
+test("no --labels: folded view renders no overlay", async () => {
   const scene = parseFold(await golden("syntax/cube-root.fold"));
-  expect(renderFolded(scene).toString()).toContain('data-construction="s"');
+  expect(renderFolded(scene).toString()).not.toContain('class="construction"');
+});
+
+test("explicit --labels renders the named point in folded view", async () => {
+  const scene = parseFold(await golden("syntax/cube-root.fold"));
+  const s = renderFolded(scene, { labels: [".s"] }).toString();
+  expect(s).toContain('data-construction="s"');
 });
 
 test("scene without folded steps throws SceneError", async () => {

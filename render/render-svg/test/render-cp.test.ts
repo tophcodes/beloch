@@ -28,22 +28,26 @@ test("bisect-a CP: faces, colored creases, named constructions, legend", async (
   expect(s).toContain("unassigned");
 });
 
-test("constructions: unnamed-crease line drawn dashed, corner points skipped", async () => {
+test("no --labels: no overlay at all, even for named creases/corners", async () => {
   const scene = parseFold(await golden("syntax/bisect-a.fold"));
   const s = renderCP(scene).toString();
-  // named line "v" IS a crease → not double-drawn as construction
-  expect(s).not.toContain('data-construction="v"');
-  // corner named points (a-d on corners) are skipped as constructions
-  expect(s).not.toContain('data-construction="a"');
+  expect(s).not.toContain('class="construction"');
 });
 
-test("constructions selection narrows rendering", async () => {
+test("explicit --labels draws exactly what's named, even a crease-duplicate or a corner", async () => {
+  const scene = parseFold(await golden("syntax/bisect-a.fold"));
+  const s = renderCP(scene, { labels: ["--v", ".a"] }).toString();
+  // "v" IS a crease and "a" IS a paper corner — explicit request still draws both
+  expect(s).toContain('data-construction="v"');
+  expect(s).toContain('data-construction="a"');
+});
+
+test("labels selection narrows rendering", async () => {
   const scene = parseFold(await golden("syntax/x-midpoint.fold"));
-  const all = renderCP(scene).toString();
-  const none = renderCP(scene, { constructions: [] }).toString();
+  const none = renderCP(scene).toString();
+  const some = renderCP(scene, { labels: ["--d1"] }).toString();
   expect((none.match(/class="construction"/g) ?? []).length).toBe(0);
-  // x-midpoint renders exactly 1 construction by default
-  expect((all.match(/class="construction"/g) ?? []).length).toBeGreaterThan(0);
+  expect((some.match(/class="construction"/g) ?? []).length).toBeGreaterThan(0);
 });
 
 test("title renders in hud layer", async () => {

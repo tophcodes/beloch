@@ -66,7 +66,7 @@ let test_render_help_mentions_flags () =
       "--flip";
       "--legend";
       "--step NAME|N";
-      "--constructions";
+      "--labels";
       "--format svg|png";
       "--width";
       "--open";
