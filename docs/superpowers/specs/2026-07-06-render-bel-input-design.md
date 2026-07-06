@@ -45,8 +45,9 @@ sites:
 
 - `usage()`: the `render` line gets a trailing
   `[unavailable: beloch-render not on PATH]` when `which "beloch-render"` is
-  `None`. Plain text — no ANSI dimming/TTY detection, that's more machinery
-  than this is worth.
+  `None`. Dimmed (`\027[2m...\027[0m`) when `Unix.isatty Unix.stdout`, plain
+  text otherwise (redirected output, CI logs — raw escape codes there would
+  just be noise).
 - `run_render`: checks `which` first and prints the same hint before
   attempting anything, rather than discovering the gap only after a failed
   `exec`/`create_process` (ENOENT).
@@ -62,7 +63,6 @@ plumbing.
 
 - No change to `render/render-svg` (TypeScript side) — it keeps only knowing
   FOLD.
-- No ANSI/color graying of the `--help` line.
 - No caching/memoization of the `which` lookup across the two call sites
   (usage + dispatch run at most once per process invocation each — not worth
   it).
@@ -70,9 +70,10 @@ plumbing.
 ## Testing
 
 - Manual: `beloch render foo.bel out.svg` and `beloch render foo.fold out.svg`
-  both produce SVG; `PATH= beloch --help` shows the `[unavailable: ...]` hint
-  on the render line; `PATH= beloch render foo.fold out.svg` fails with the
-  hint instead of a raw ENOENT.
+  both produce SVG; `PATH= beloch --help` shows the dimmed `[unavailable: ...]`
+  hint on the render line in a terminal, plain text when piped
+  (`PATH= beloch --help | cat`); `PATH= beloch render foo.fold out.svg` fails
+  with the hint instead of a raw ENOENT.
 - `dune test`: a case exercising the `.bel` dispatch path end-to-end if
   `beloch-render` is resolvable in the test environment; skip cleanly if not
   (CI/sandbox may not have the Nix devShell's `PATH`).
