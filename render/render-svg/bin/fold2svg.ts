@@ -21,9 +21,14 @@ const viewFlag = args.includes("--folded") ? "top" : flagVal("--view"); // top|b
 const hidden = (flagVal("--hidden") || "hide") as "dashed" | "hide";
 const constructionsFlag = flagVal("--constructions"); // undefined = show all
 const step = flagVal("--step");
-const FLAGS = new Set(["--title", "--view", "--hidden", "--constructions", "--step"]);
+const formatFlag = flagVal("--format"); // "svg"|"png", overrides outPath extension
+const widthFlag = flagVal("--width"); // PNG output width in px; default = doc width
+const FLAGS = new Set([
+  "--title", "--view", "--hidden", "--constructions", "--step", "--format", "--width",
+]);
 const positional = args.filter((a, i) => !a.startsWith("--") && !FLAGS.has(args[i - 1]!));
 const [inPath, outPath] = positional;
+const format = formatFlag ?? (outPath?.endsWith(".png") ? "png" : "svg");
 
 // undefined = show all (fold2svg.mjs:360); "" splits to [] = show none.
 const constructions = constructionsFlag !== undefined
@@ -38,11 +43,13 @@ const doc = viewFlag
   : renderCP(scene, opts);
 const svg = doc.toString();
 
-if (outPath?.endsWith(".png")) {
+if (format === "png") {
   const { Resvg } = await import("@resvg/resvg-js");
-  const png = new Resvg(svg, { background: "white", fitTo: { mode: "width", value: doc.width } })
+  const width = widthFlag ? Number(widthFlag) : doc.width;
+  const png = new Resvg(svg, { background: "white", fitTo: { mode: "width", value: width } })
     .render().asPng();
-  await Bun.write(outPath, png);
+  if (outPath) await Bun.write(outPath, png);
+  else process.stdout.write(png);
 } else if (outPath) {
   await Bun.write(outPath, svg);
 } else {
