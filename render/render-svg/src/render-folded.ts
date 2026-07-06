@@ -3,7 +3,7 @@
 // SvgDoc layers.
 import type { FoldScene } from "@beloch/scene";
 import { pickStep, SceneError } from "@beloch/scene";
-import { createDoc, el, SvgDoc } from "./svgdoc";
+import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
 import { DEFAULT_THEME, edgeColor, Theme } from "./theme";
 import { makeLayout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
@@ -100,9 +100,14 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
   });
   const pos = new Map(order.map((f, i) => [f, i]));
 
-  // fold2svg.mjs:236-253 (outline color/width) + :254-292 (x-ray dashed):
-  // one pass per FOLD edge — draw the uncovered sub-interval(s) solid, and
-  // (hidden === "dashed") the covered sub-interval(s) dashed on top.
+  // fold2svg.mjs:236-253 (outline color/width) + :254-292 (x-ray dashed): the
+  // x-ray overlay is a separate pass drawn strictly after ALL solid edges
+  // (fold2svg.mjs:257, after the full bottom->top face+outline paint loop) —
+  // so it stays on top regardless of which face's solid outline is painted
+  // last. Collect dashed segments here and flush them after both edge passes
+  // below, rather than interleaving per-edge, to preserve that draw order.
+  const dashedLines: SvgNode[] = [];
+
   E.forEach((e, i) => {
     const faces = incident[i]!;
     if (!faces.length) return; // not on any face outline — nothing to paint
@@ -157,7 +162,7 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
           stroke, "stroke-width": dashWgt, "stroke-dasharray": dash, "stroke-linecap": "round",
         };
         if (name) attrs["data-name"] = name;
-        creases.children.push(el("line", attrs));
+        dashedLines.push(el("line", attrs));
       }
     }
   });
@@ -191,7 +196,7 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
     if (opts.hidden === "dashed") {
       for (const [t0, t1] of covered) {
         const p0 = lerp(t0), p1 = lerp(t1);
-        creases.children.push(el("line", {
+        dashedLines.push(el("line", {
           class: "crease-U",
           "data-kind": "crease",
           "data-step": "",
@@ -202,6 +207,8 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
       }
     }
   }
+
+  creases.children.push(...dashedLines);
 
   appendConstructions(doc, scene, layout, theme, opts.constructions, { frame });
   if (opts.title) appendTitle(doc, layout, theme, opts.title);
