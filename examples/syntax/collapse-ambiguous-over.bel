@@ -1,0 +1,23 @@
+; status: works — collapse-ambiguous.bel resolved. The same non-contiguous
+; 5-valley/3-mountain center vertex has three valid layer orders; one `over`
+; clause picks one. `#(.b .rm)` names the lower-right sector-flap (between corner
+; b and the right edge-midpoint), `#(.c .tm)` the upper sector-flap by corner c;
+; stacking the first above the second leaves exactly one order, so it folds.
+
+paper square
+
+--ac = map .b onto .d     ; diagonal a-c
+--bd = map .a onto .c     ; diagonal b-d
+--h  = map .a onto .d     ; horizontal midline, y = 1/2
+--v  = map .a onto .b     ; vertical midline, x = 1/2
+
+.rm = .(--h --(.b .c))    ; right edge midpoint (1, 1/2)
+.tm = .(--v --(.d .c))    ; top edge midpoint (1/2, 1)
+
+@collapse (--ac at .c mountain) and --ac at .a
+  and (--bd at .d mountain) and --bd at .b
+  and (--h at --(.b .c) mountain)
+  and --h at --(.a .d)
+  and --v at --(.d .c)
+  and --v at --(.a .b)
+  and #(.b .rm) over #(.c .tm)
