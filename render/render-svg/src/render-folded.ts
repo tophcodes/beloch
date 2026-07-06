@@ -85,16 +85,17 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
 
   // incident faces per edge: faces whose outline contains the edge. Face
   // outline segments with no matching FOLD edge (malformed/defensive
-  // fallback, fold2svg.mjs:247-248) can't be occlusion-tested and are drawn
-  // unconditionally below, once per occurrence — same as fold2svg.
+  // fallback, believed unreachable for well-formed evaluator output) are
+  // occlusion-tested below against their OWNING face's stack position, same
+  // as a real edge.
   const incident: number[][] = E.map(() => []);
-  const phantom: { a: number; b: number }[] = [];
+  const phantom: { a: number; b: number; fi: number }[] = [];
   F.forEach((face, fi) => {
     for (let k = 0; k < face.length; k++) {
       const a = face[k]!, b = face[(k + 1) % face.length]!;
       const ei = edgeIx.get(a < b ? `${a}-${b}` : `${b}-${a}`);
       if (ei !== undefined) incident[ei]!.push(fi);
-      else phantom.push({ a, b });
+      else phantom.push({ a, b, fi });
     }
   });
   const pos = new Map(order.map((f, i) => [f, i]));
@@ -161,14 +162,45 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
     }
   });
 
-  for (const { a, b } of phantom) {
-    creases.children.push(el("line", {
-      class: "crease-U",
-      "data-kind": "crease",
-      "data-step": "",
-      x1: mx(V[a]![0]), y1: ty(V[a]![1]), x2: mx(V[b]![0]), y2: ty(V[b]![1]),
-      stroke: theme.crease, "stroke-width": 2, "stroke-linecap": "round",
-    }));
+  for (const { a, b, fi } of phantom) {
+    const a0 = V[a]!, b0 = V[b]!;
+    const refPos = pos.get(fi)!;
+    const covered = coveredIntervals(a0, b0, order, refPos, F, V, bottom);
+    const lerp = (t: number): [number, number] =>
+      [a0[0] + (b0[0] - a0[0]) * t, a0[1] + (b0[1] - a0[1]) * t];
+
+    const visible: [number, number][] = [];
+    let cursor = 0;
+    for (const [c0, c1] of covered) {
+      if (c0 - cursor > 1e-9) visible.push([cursor, c0]);
+      cursor = Math.max(cursor, c1);
+    }
+    if (1 - cursor > 1e-9) visible.push([cursor, 1]);
+
+    for (const [t0, t1] of visible) {
+      const p0 = lerp(t0), p1 = lerp(t1);
+      creases.children.push(el("line", {
+        class: "crease-U",
+        "data-kind": "crease",
+        "data-step": "",
+        x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
+        stroke: theme.crease, "stroke-width": 2, "stroke-linecap": "round",
+      }));
+    }
+
+    if (opts.hidden === "dashed") {
+      for (const [t0, t1] of covered) {
+        const p0 = lerp(t0), p1 = lerp(t1);
+        creases.children.push(el("line", {
+          class: "crease-U",
+          "data-kind": "crease",
+          "data-step": "",
+          "data-occluded": "true",
+          x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
+          stroke: "#94a3b8", "stroke-width": 1.2, "stroke-dasharray": "4 3", "stroke-linecap": "round",
+        }));
+      }
+    }
   }
 
   appendConstructions(doc, scene, layout, theme, opts.constructions, { frame });

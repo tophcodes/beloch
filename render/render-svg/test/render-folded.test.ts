@@ -37,6 +37,11 @@ test("fold-quarter folded golden snapshot", async () => {
   expect(renderFolded(scene, { hidden: "dashed" }).toString()).toMatchSnapshot();
 });
 
+test("fold-occlude dashed golden snapshot", async () => {
+  const scene = parseFold(await occlude());
+  expect(renderFolded(scene, { hidden: "dashed" }).toString()).toMatchSnapshot();
+});
+
 test("scene without folded steps throws SceneError", async () => {
   const scene = parseFold(await golden("syntax/square.fold"));
   if (scene.steps.length === 0) {
