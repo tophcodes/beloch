@@ -49,9 +49,15 @@ grouping that sits on top of faces for scope and incidence.
 
 ADR 0017 flags one open question as the most important to settle: lifting
 `select_scope`'s per-face **depth-along-crease** reasoning (per-face `piece` /
-`overlap` / outer-prefix, `demaine2007 §14.1`) to clusters risks breaking it —
-a multi-face cluster can sit at different stack depths over different portions of
-one crease, so a cluster-to-cluster "outer" relation may be ill-defined.
+`overlap` / outer-prefix) to clusters risks breaking it — a multi-face cluster
+can sit at different stack depths over different portions of one crease, so a
+cluster-to-cluster "outer" relation may be ill-defined. This is not incidental:
+scoped `up to` implements Demaine & O'Rourke's **some-layers simple fold**
+(`demaine2007 §14.1`, class 3), whose defining clause is verbatim *"Folds some
+layers beneath the creasing segment, perhaps a different depth of layers along
+different portions of the crease."* The per-face granularity exists precisely to
+honour that clause; coarsening the *depth* reasoning to clusters would violate the
+source model.
 
 **We do not lift that machinery to clusters.** We keep `select_scope`'s per-face
 `piece` / `overlap` / `outer` / buried-check *exactly as today*, and add a single
