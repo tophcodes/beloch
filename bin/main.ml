@@ -34,18 +34,22 @@ let render_unavailable_msg =
      render/render-svg && bun link`)\n"
     render_bin
 
-(* .bel -> evaluate to FOLD JSON, no temp file: piped straight into
-   beloch-render's stdin over a real Unix.pipe. *)
-let eval_to_fold_json file =
+(* Shared by `run_fold` and `.bel` render dispatch: read + evaluate a .bel
+   file, rendering evaluator errors as source-context diagnostics. *)
+let eval_bel_file file =
   match In_channel.with_open_text file In_channel.input_all with
   | exception Sys_error msg ->
       Printf.eprintf "%s\n" msg;
       exit 1
   | src -> (
-      try Yojson.Safe.to_string (Beloch.fold_string ~filename:file src)
+      try Beloch.fold_string ~filename:file src
       with Error.Beloch_error (span, msg) ->
         prerr_string (Diagnostic.render ~source:src ~span ~msg);
         exit 1)
+
+(* .bel -> FOLD JSON string, no temp file: piped straight into
+   beloch-render's stdin over a real Unix.pipe. *)
+let eval_to_fold_json file = Yojson.Safe.to_string (eval_bel_file file)
 
 let run_render_piped prog json_str rest =
   let read_fd, write_fd = Unix.pipe ~cloexec:false () in
@@ -77,17 +81,7 @@ let run_render args =
       | _ -> Unix.execv resolved (Array.of_list (render_bin :: args)))
 
 let run_fold file =
-  match In_channel.with_open_text file In_channel.input_all with
-  | exception Sys_error msg ->
-      Printf.eprintf "%s\n" msg;
-      exit 1
-  | src -> (
-      try
-        let json = Beloch.fold_string ~filename:file src in
-        print_endline (Yojson.Safe.pretty_to_string json)
-      with Error.Beloch_error (span, msg) ->
-        prerr_string (Diagnostic.render ~source:src ~span ~msg);
-        exit 1)
+  print_endline (Yojson.Safe.pretty_to_string (eval_bel_file file))
 
 let () =
   match Array.to_list Sys.argv with
