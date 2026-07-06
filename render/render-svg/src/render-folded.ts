@@ -211,7 +211,7 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
   creases.children.push(...dashedLines);
 
   appendConstructions(doc, scene, layout, theme, opts.constructions, { frame });
-  if (opts.title) appendTitle(doc, layout, theme, opts.title);
+  if (opts.title) appendTitle(doc, theme, opts.title);
   appendLegend(doc, layout, theme, frame);
   return doc;
 }

@@ -131,7 +131,7 @@ export function renderCP(scene: FoldScene, opts: RenderOptions = {}): SvgDoc {
   }
 
   appendConstructions(doc, scene, layout, theme, opts.constructions, null);
-  if (opts.title) appendTitle(doc, layout, theme, opts.title);
+  if (opts.title) appendTitle(doc, theme, opts.title);
   appendLegend(doc, layout, theme, frame);
   return doc;
 }

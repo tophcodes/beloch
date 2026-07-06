@@ -40,8 +40,8 @@ test("constructions selection narrows rendering", async () => {
   const all = renderCP(scene).toString();
   const none = renderCP(scene, { constructions: [] }).toString();
   expect((none.match(/class="construction"/g) ?? []).length).toBe(0);
-  expect((all.match(/class="construction"/g) ?? []).length)
-    .toBeGreaterThanOrEqual((none.match(/class="construction"/g) ?? []).length);
+  // x-midpoint renders exactly 1 construction by default
+  expect((all.match(/class="construction"/g) ?? []).length).toBeGreaterThan(0);
 });
 
 test("title renders in hud layer", async () => {

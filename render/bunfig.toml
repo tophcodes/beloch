@@ -1,2 +1,5 @@
 [install]
+# bun's default "isolated" linker leaves workspace-internal packages
+# (e.g. @beloch/scene) unresolvable from their own test dirs, since
+# nothing at the workspace root depends on them.
 linker = "hoisted"

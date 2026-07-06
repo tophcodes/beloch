@@ -45,9 +45,14 @@ test("pickStep: undefined or unmatched label falls back to last step", async () 
 });
 
 test("multi-step file keeps file order and labels", async () => {
-  const scene = parseFold(await golden("syntax/precrease-fold.fold"));
-  expect(scene.steps.length).toBeGreaterThanOrEqual(1);
-  // labels are string|null, indices strictly increasing
+  const scene = parseFold(await golden("syntax/cube-root.fold"));
+  expect(scene.steps.length).toBe(4);
+  expect(scene.steps.map((s) => s.label)).toEqual([
+    null, "vertical_middle", "thirds", "beloch_fold",
+  ]);
+  // "thirds" is the 3rd foldedForm frame => file_frames position 2
+  expect(pickStep(scene, "thirds")!.index).toBe(2);
+  // indices strictly increasing (file order preserved)
   const idx = scene.steps.map((s) => s.index);
   expect([...idx].sort((a, b) => a - b)).toEqual(idx);
 });

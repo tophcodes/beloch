@@ -129,7 +129,7 @@ export function appendConstructions(
 }
 
 // fold2svg.mjs:450-453
-export function appendTitle(doc: SvgDoc, layout: Layout, theme: Theme, title: string): void {
+export function appendTitle(doc: SvgDoc, theme: Theme, title: string): void {
   const hud = doc.layer("hud");
   hud.children.push(el("rect", {
     x: PAD - 10, y: 10, width: title.length * 9 + 20, height: 26, rx: 6, fill: "#f1f5f9",

@@ -42,6 +42,18 @@ test("fold-occlude dashed golden snapshot", async () => {
   expect(renderFolded(scene, { hidden: "dashed" }).toString()).toMatchSnapshot();
 });
 
+test("step option selects an intermediate folded state", async () => {
+  const scene = parseFold(await golden("syntax/cube-root.fold"));
+  const mid = renderFolded(scene, { step: "vertical_middle" }).toString();
+  const fin = renderFolded(scene).toString();
+  expect(mid).not.toBe(fin);
+});
+
+test("folded view renders named-point constructions", async () => {
+  const scene = parseFold(await golden("syntax/cube-root.fold"));
+  expect(renderFolded(scene).toString()).toContain('data-construction="s"');
+});
+
 test("scene without folded steps throws SceneError", async () => {
   const scene = parseFold(await golden("syntax/square.fold"));
   if (scene.steps.length === 0) {
