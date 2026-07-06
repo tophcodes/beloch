@@ -68,8 +68,25 @@ let run_render_piped prog json_str rest =
   output_string oc json_str;
   close_out oc;
   match Unix.waitpid [] pid with
-  | _, Unix.WEXITED code -> exit code
-  | _, (Unix.WSIGNALED _ | Unix.WSTOPPED _) -> exit 1
+  | _, Unix.WEXITED code -> code
+  | _, (Unix.WSIGNALED _ | Unix.WSTOPPED _) -> 1
+
+(* `--format` value from already-parsed rest args, defaulting to svg -
+   used to pick the temp file extension for `--open`. *)
+let format_ext rest =
+  let rec find = function
+    | "--format" :: v :: _ -> v
+    | _ :: tl -> find tl
+    | [] -> "svg"
+  in
+  if find rest = "png" then ".png" else ".svg"
+
+let xdg_open path =
+  match Render_cli.which "xdg-open" with
+  | None ->
+      Printf.eprintf "beloch render: xdg-open not found on PATH (file saved: %s)\n" path;
+      exit 1
+  | Some xdg -> ignore (Unix.create_process xdg [| "xdg-open"; path |] Unix.stdin Unix.stdout Unix.stderr)
 
 (* `beloch render` hands off to `beloch-render`, the @beloch/render-svg CLI
    (linked onto PATH by the Nix devShell) — see render/README.md. `.fold`
@@ -81,10 +98,26 @@ let run_render args =
       prerr_string render_unavailable_msg;
       exit 1
   | Some resolved -> (
+      let open_flag = List.mem "--open" args in
+      let args = List.filter (fun a -> a <> "--open") args in
       match args with
       | file :: rest when Filename.check_suffix file ".bel" ->
           let json_str = eval_to_fold_json file in
-          run_render_piped resolved json_str rest
+          if open_flag then begin
+            let out_path = Filename.temp_file "beloch-render" (format_ext rest) in
+            let code = run_render_piped resolved json_str (out_path :: rest) in
+            if code <> 0 then exit code;
+            xdg_open out_path
+          end
+          else exit (run_render_piped resolved json_str rest)
+      | file :: rest when open_flag ->
+          let out_path = Filename.temp_file "beloch-render" (format_ext rest) in
+          let argv = Array.of_list (render_bin :: file :: out_path :: rest) in
+          let pid = Unix.create_process resolved argv Unix.stdin Unix.stdout Unix.stderr in
+          (match Unix.waitpid [] pid with
+          | _, Unix.WEXITED 0 -> xdg_open out_path
+          | _, Unix.WEXITED code -> exit code
+          | _, (Unix.WSIGNALED _ | Unix.WSTOPPED _) -> exit 1)
       | _ -> Unix.execv resolved (Array.of_list (render_bin :: args)))
 
 let run_fold file =
