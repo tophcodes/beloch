@@ -1,0 +1,17 @@
+; status: errors — a collapse element whose crease ends INSIDE the sheet. The
+; horizontal midline is cut at (3/4, 1/2) by the extra crease --q (x = 3/4), so
+; `--h at #(.q .tm)` selects only the stub from the center O to that interior
+; crossing. A crease that stops mid-sheet would leave a degree-1 vertex there, so
+; the collapse is rejected before any flat-foldability check.
+
+paper square
+
+--h = map .a onto .d       ; horizontal midline, y = 1/2
+--v = map .a onto .b       ; vertical midline, x = 1/2
+--q = map --v onto --(.b .c)   ; vertical crease at x = 3/4
+
+.q  = .(--h --q)           ; interior crossing (3/4, 1/2)
+.tm = .(--v --(.d .c))     ; top edge midpoint (1/2, 1)
+
+@collapse --h at #(.q .tm) and --h at --(.a .d)
+  and --v at --(.d .c) and --v at --(.a .b)

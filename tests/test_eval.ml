@@ -276,6 +276,55 @@ let test_fold_along_bent_under_moving () =
                --v = @map .c onto .b\n\
                @fold --b at #(.c .d) moving .a\n")))
 
+(* ---- @collapse ---- *)
+
+let test_collapse_standing_unsupported () =
+  expect_error "standing folds are not yet supported" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n\
+               --d = --(.a .c)\n\
+               @collapse --d and standing .a\n")))
+
+(* n = 2: two diagonals through the same center point, each named as a single
+   `at`-selected segment — a real fold, not a collapse; hint toward @fold *)
+let test_collapse_count_two () =
+  expect_error "use `@fold`" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n\
+               --d1 = through .a .c\n\
+               --d2 = through .b .d\n\
+               @collapse --d1 at .a and --d2 at .b\n")))
+
+let test_collapse_not_material () =
+  expect_error "collapse folds along existing creases" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel" "paper square\n@collapse --(.a .c)\n")))
+
+(* all-layers congruence guard, happy path: a single flat sheet precreased
+   along both perpendicular bisectors (the classic "+" vertex, same shape as
+   test_collapse.ml's eassign-parity fixture, reached through named corners
+   via #(...) flap selectors instead of raw coordinates). Every face the
+   guard inspects borders an edge of the very crease it's checking, so it
+   must stay silent; the 3-mountain/1-valley assignment is the one the
+   kernel fixture already proved folds to a unique order. *)
+let test_collapse_all_layers_ok () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\n\
+          --h = map .a onto .d\n\
+          --v = map .a onto .b\n\
+          @collapse --h at #(.b) mountain and --v at #(.c) and --h at #(.d) \
+          mountain and --v at #(.a) mountain\n")
+  in
+  Alcotest.(check int) "vertex collapse leaves 4 sector faces" 4
+    (Array.length fd.Eval.state.Fold_state.faces)
+
 (* ---- Fold_state ---- *)
 
 let test_fold_state_init () =
@@ -1191,6 +1240,14 @@ let () =
             test_fold_along_bent;
           Alcotest.test_case "@fold bent under the moving flaps" `Quick
             test_fold_along_bent_under_moving;
+          Alcotest.test_case "@collapse standing not yet supported" `Quick
+            test_collapse_standing_unsupported;
+          Alcotest.test_case "@collapse n=2 hints @fold" `Quick
+            test_collapse_count_two;
+          Alcotest.test_case "@collapse requires a material crease" `Quick
+            test_collapse_not_material;
+          Alcotest.test_case "@collapse all-layers guard happy path" `Quick
+            test_collapse_all_layers_ok;
           Alcotest.test_case "ax5 kite paper-incidence filter" `Quick
             test_ax5_kite_filter;
           Alcotest.test_case "ax5 kite toward + moving agree" `Quick
