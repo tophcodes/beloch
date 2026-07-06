@@ -19,7 +19,7 @@ usage:
   beloch fold   FILE.bel              evaluate and emit FOLD (stdout)
   beloch check  FILE.bel              parse and type-check only        (not yet implemented)
   beloch lsp                          run as an LSP server             (not yet implemented)
-  beloch render FILE.fold|FILE.bel    render to a visual output (SVG/PNG)%s
+  beloch render FILE.fold|FILE.bel    render to a visual output (SVG/PNG) — see `beloch render --help`%s
   beloch --version
 |}
     (render_hint ())
@@ -93,6 +93,10 @@ let xdg_open path =
    inputs pass straight through; `.bel` inputs are evaluated here first and
    the resulting FOLD JSON is piped into beloch-render's stdin. *)
 let run_render args =
+  if Render_cli.wants_help args then begin
+    print_string Render_cli.render_help;
+    exit 0
+  end;
   match Render_cli.which render_bin with
   | None ->
       prerr_string render_unavailable_msg;
