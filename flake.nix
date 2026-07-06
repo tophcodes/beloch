@@ -75,6 +75,14 @@
             # FOLD -> SVG/PNG rendering (render/render-svg)
             pkgs.bun
           ];
+          # Link @beloch/render-svg's `beloch-render` bin globally so the
+          # OCaml `beloch render` subcommand (bin/main.ml) can execvp it.
+          shellHook = ''
+            export PATH="$(bun pm bin -g):$PATH"
+            root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+            ( cd "$root/render" && bun install --silent ) >/dev/null 2>&1
+            ( cd "$root/render/render-svg" && bun link --silent ) >/dev/null 2>&1
+          '';
         };
       }
     );

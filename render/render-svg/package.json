@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "main": "src/index.ts",
+  "bin": { "beloch-render": "./bin/fold2svg.ts" },
   "dependencies": {
     "@beloch/scene": "workspace:*",
     "@resvg/resvg-js": "^2.6.2"
