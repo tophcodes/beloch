@@ -58,6 +58,13 @@ let run_render_piped prog json_str rest =
   let pid = Unix.create_process prog argv read_fd Unix.stdout Unix.stderr in
   Unix.close read_fd;
   let oc = Unix.out_channel_of_descr write_fd in
+  (* Accepted risk for v0.0: this write happens before `waitpid`, so a
+     FOLD payload bigger than the pipe buffer (~64KiB on Linux) blocks
+     here if beloch-render hasn't started reading yet, and a child that
+     exits without draining stdin delivers SIGPIPE (uncaught -> process
+     death, no diagnostic). Real .bel inputs today are far under that
+     size. Forward fix if it ever bites: ignore SIGPIPE and catch EPIPE
+     around this write, or move it to a background writer thread. *)
   output_string oc json_str;
   close_out oc;
   match Unix.waitpid [] pid with
