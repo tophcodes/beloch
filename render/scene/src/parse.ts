@@ -1,6 +1,6 @@
 import {
   Assignment, Crease, EdgeProvenance, FoldScene, Frame, LineCoeffs,
-  NamedLine, NamedPoint, SceneError, Step, Vec2,
+  NamedLine, NamedPoint, SceneError, Step, StepNotFoundError, Vec2,
 } from "./types";
 
 function frameFrom(raw: Record<string, unknown>): Frame {
@@ -60,9 +60,15 @@ export function parseFold(input: string | object): FoldScene {
 }
 
 export function pickStep(scene: FoldScene, label?: string): Step | undefined {
-  if (label !== undefined) {
-    const hit = scene.steps.find((s) => s.label === label);
-    if (hit) return hit;
+  if (label === undefined) return scene.steps[scene.steps.length - 1];
+  const byName = scene.steps.find((s) => s.label === label);
+  if (byName) return byName;
+  if (/^\d+$/.test(label)) {
+    const idx = Number(label) - 1;
+    if (idx >= 0 && idx < scene.steps.length) return scene.steps[idx];
   }
-  return scene.steps[scene.steps.length - 1];
+  throw new StepNotFoundError(
+    label,
+    scene.steps.map((s, i) => ({ index: i, label: s.label })),
+  );
 }

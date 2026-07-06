@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { parseFold, pickStep, SceneError } from "@beloch/scene";
+import { parseFold, pickStep, SceneError, StepNotFoundError } from "@beloch/scene";
 
 const golden = (p: string) =>
   Bun.file(new URL(`../../../tests/golden/${p}`, import.meta.url)).text();
@@ -38,10 +38,47 @@ test("parses fold-quarter: foldedForm step inherits root fields", async () => {
   expect(step.frame.facesMatrix!.length).toBe(step.frame.facesVertices.length);
 });
 
-test("pickStep: undefined or unmatched label falls back to last step", async () => {
+test("pickStep: no label falls back to last step", async () => {
   const scene = parseFold(await golden("syntax/fold-quarter.fold"));
   expect(pickStep(scene)).toBe(scene.steps[scene.steps.length - 1]);
-  expect(pickStep(scene, "no-such-step")).toBe(scene.steps[scene.steps.length - 1]);
+});
+
+test("pickStep: unmatched label throws StepNotFoundError listing named steps", async () => {
+  const scene = parseFold(await golden("syntax/cube-root.fold"));
+  expect(() => pickStep(scene, "no-such-step")).toThrow(StepNotFoundError);
+  try {
+    pickStep(scene, "no-such-step");
+    throw new Error("expected pickStep to throw");
+  } catch (err) {
+    expect(err).toBeInstanceOf(StepNotFoundError);
+    expect((err as Error).message).toBe(
+      "step 'no-such-step' not found — 4 step(s) available. " +
+        "named steps are vertical_middle (2), thirds (3), beloch_fold (4)",
+    );
+  }
+});
+
+test("pickStep: numeric label selects by 1-based ordinal", async () => {
+  const scene = parseFold(await golden("syntax/cube-root.fold"));
+  expect(pickStep(scene, "2")!.label).toBe("vertical_middle");
+  expect(pickStep(scene, "1")!.label).toBeNull();
+});
+
+test("pickStep: out-of-range ordinal throws StepNotFoundError", async () => {
+  const scene = parseFold(await golden("syntax/cube-root.fold"));
+  expect(() => pickStep(scene, "10")).toThrow(StepNotFoundError);
+});
+
+test("StepNotFoundError.render: no named steps omits the list", () => {
+  expect(StepNotFoundError.render("x", [{ index: 0, label: null }], (s) => s)).toBe(
+    "step 'x' not found — 1 step(s) available",
+  );
+});
+
+test("StepNotFoundError.render: applies the given style to names only", () => {
+  const available = [{ index: 0, label: null }, { index: 1, label: "a" }];
+  const styled = StepNotFoundError.render("x", available, (s) => `[${s}]`);
+  expect(styled).toBe("step 'x' not found — 2 step(s) available. named steps are [a] (2)");
 });
 
 test("multi-step file keeps file order and labels", async () => {

@@ -42,3 +42,27 @@ export interface FoldScene {
 }
 
 export class SceneError extends Error {}
+
+export class StepNotFoundError extends SceneError {
+  constructor(
+    readonly label: string,
+    readonly available: { index: number; label: string | null }[],
+  ) {
+    super(StepNotFoundError.render(label, available, (s) => s));
+  }
+
+  static render(
+    label: string,
+    available: { index: number; label: string | null }[],
+    style: (s: string) => string,
+  ): string {
+    const named = available
+      .filter((s) => s.label !== null)
+      .map((s) => `${style(s.label!)} (${s.index + 1})`)
+      .join(", ");
+    return (
+      `step '${label}' not found — ${available.length} step(s) available` +
+      (named ? `. named steps are ${named}` : "")
+    );
+  }
+}
