@@ -85,7 +85,7 @@ examples:
   beloch render kite.bel
   beloch render kite.bel --view folded out.png
   beloch render kite.bel --view folded --flip out.png
-  beloch render kite.bel --step precrease --open
+  beloch render kite.bel --view folded --step precrease --open
 ```
 
 `usage()`'s existing one-liner for `render` gains a

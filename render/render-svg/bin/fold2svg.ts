@@ -19,6 +19,10 @@ const flagVal = (name: string): string | undefined => {
 const title = flagVal("--title") || "";
 const viewFlag = flagVal("--view"); // undefined | "cp" | "folded"
 if (viewFlag !== undefined && viewFlag !== "cp" && viewFlag !== "folded") {
+  // process.stderr.write, not console.error — Bun's console.error unconditionally
+  // ANSI-colors its argument even when stderr is piped (non-TTY), which would break
+  // the plain-text stderr assertions below and this CLI's own TTY-conditional styling
+  // (see the step-not-found case below).
   process.stderr.write(
     `beloch-render: unknown --view value '${viewFlag}' — expected cp or folded\n`,
   );
@@ -68,6 +72,9 @@ try {
   if (err instanceof StepNotFoundError) {
     const tty = process.stderr.isTTY;
     const style = tty ? (s: string) => `\x1b[1;36m${s}\x1b[0m` : (s: string) => s;
+    // process.stderr.write, not console.error — see comment near --view parsing above.
+    // Using console.error here specifically would defeat the TTY check just above:
+    // it would always color the step name, even for piped/non-TTY output.
     process.stderr.write(
       `beloch-render: ${StepNotFoundError.render(err.label, err.available, style)}\n`,
     );
