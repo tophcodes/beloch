@@ -1,0 +1,22 @@
+; status: works — the collapse 002/003 were reaching for
+
+paper square
+
+--v = map .a onto .b          ; x = 1/2: perp bisector of the base, also the spine
+.m = .(--v --(.d .c))         ; apex (1/2, 1)
+
+step precrease
+--ba = map --(.a .b) onto --(.a .m)   ; bisector at a, full chord a—o—rm
+--bb = map --(.b .a) onto --(.b .m)   ; bisector at b, full chord b—o—rl
+.o = .(--ba --bb)                     ; incenter — the collapse vertex
+
+step constructions
+.rl = .(--bb --(.a .d))
+.rm = .(--ba --(.b .c))
+.bm = .(--v --(.a .b))
+
+; the ray o→rm and o→rl I insisted on ARE foldable — the missing 4th ray was
+; never a "new" crease, it is the spine o→m (the OTHER half of --v). --v is two
+; rays; 002 used only o→base, 003 invented --new to replace o→m. Both times: add
+; the spine.
+@collapse --ba at .rm and --bb at .rl and (--v at .m mountain) and --v at .bm
