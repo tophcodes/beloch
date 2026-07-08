@@ -1215,6 +1215,20 @@ let test_step_frames () =
   Alcotest.(check bool) "last frame is final" true
     (snd (List.nth fd.frames (List.length fd.frames - 1)) == fd.state)
 
+(* the prelude paper-edge name --ab folds to the same GEOMETRY as the old
+   --(.a .b) operand (mirrors the shipped bisect-a.bel, status: works). Only
+   the operand's provenance string differs, so normalize it before comparing. *)
+let test_edge_prelude_equiv () =
+  let base = "paper square\n--v = map .a onto .b\n" in
+  let fold body =
+    let j = Yojson.Safe.to_string (Beloch.fold_string ~filename:"t.bel" body) in
+    Str.global_replace (Str.regexp_string "--(.a .b)") "EDGE"
+      (Str.global_replace (Str.regexp_string "--ab") "EDGE" j)
+  in
+  Alcotest.(check string) "--ab folds identically to --(.a .b)"
+    (fold (base ^ "map --v onto --(.a .b) toward .a\n"))
+    (fold (base ^ "map --v onto --ab toward .a\n"))
+
 let () =
   Alcotest.run "beloch-eval"
     [
@@ -1415,5 +1429,7 @@ let () =
             test_eval_moving_line_multimatch;
           Alcotest.test_case "moving flap straddles errors" `Quick
             test_eval_moving_flap_straddles;
+          Alcotest.test_case "prelude edge --ab == --(.a .b)" `Quick
+            test_edge_prelude_equiv;
         ] );
     ]

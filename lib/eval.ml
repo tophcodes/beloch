@@ -25,6 +25,9 @@ type crease_val =
   | Bundle of Ast.line_operand
       (* a named crease bundle (--x = --l & .c | [--a --b]); resolves lazily as
          its expression, so the name behaves exactly like inlining it *)
+  | Edge of string * string
+      (* a paper boundary edge, named by its two corners; resolves live (the
+         edge moves under folding) through the current corner positions *)
 
 (* axiom-5 (`map --l1 onto --l2`) needs its candidate bisectors selected against
    the current fold state (material of l1, paper incidence, `toward` direction),
@@ -119,6 +122,9 @@ let bind_crease (ctx : ctx) (name : string) (span : Error.span) (cv : crease_val
 let eval_folded (prog : Ast.program) : folded =
   let root_scope = make_scope () in
   List.iter (fun (n, p) -> Hashtbl.replace root_scope.points n p) corners;
+  List.iter
+    (fun (n, a, b) -> Hashtbl.replace root_scope.lines n (Edge (a, b)))
+    [ ("ab", "a", "b"); ("bc", "b", "c"); ("cd", "c", "d"); ("da", "d", "a") ];
   let ctx = {
     scopes = [root_scope];
     name_ctx = Root;
@@ -162,6 +168,11 @@ let eval_folded (prog : Ast.program) : folded =
     | Ast.FlapSpec (Ast.FByPoints (pts, _)) ->
         Printf.sprintf "#(%s)" (String.concat " " (List.map pstr pts))
   in
+  let corner_point (n : string) : Geom.point =
+    match List.assoc_opt n corners with
+    | Some p -> p
+    | None -> assert false (* Edge is only ever built from a,b,c,d *)
+  in
   let materialize_crease ~(name : string) (span : Error.span) (cv : crease_val) :
       Geom.line =
     match cv with
@@ -169,6 +180,10 @@ let eval_folded (prog : Ast.program) : folded =
         Error.fail span
           (Printf.sprintf
              "--%s is a bundle; restrict it to one segment with & or \\" name)
+    | Edge (a, b) ->
+        let pa = Fold_state.table_position !(ctx.state) (corner_point a)
+        and pb = Fold_state.table_position !(ctx.state) (corner_point b) in
+        Geom.line_through pa pb
     | Frozen l -> l
     | Material (cid, l_orig) -> (
         match Fold_state.crease_axis !(ctx.state) cid l_orig with
@@ -199,6 +214,8 @@ let eval_folded (prog : Ast.program) : folded =
           (Printf.sprintf
              "--%s is not a physical crease, so it has no material mark to \
               cross" name)
+    | Edge (a, b) ->
+        (Geom.line_through (corner_point a) (corner_point b), None)
     | Material (cid, l_orig) -> (
         match Fold_state.crease_paper_axis !(ctx.state) cid with
         | `Line l ->
@@ -377,6 +394,10 @@ let eval_folded (prog : Ast.program) : folded =
         Error.fail cr.Ast.cspan
           (Printf.sprintf
              "--%s is not a physical crease, so it has no segments to select"
+             cr.Ast.cname)
+    | Edge _ ->
+        Error.fail cr.Ast.cspan
+          (Printf.sprintf "--%s is a paper edge, not a crease with segments"
              cr.Ast.cname)
   and seg_line (s : Fold_state.crease_segment) =
     Geom.line_through s.Fold_state.ta s.Fold_state.tb
@@ -926,6 +947,7 @@ let eval_folded (prog : Ast.program) : folded =
               (fun (s : Fold_state.crease_segment) ->
                 (s.Fold_state.ta, s.Fold_state.tb))
               (snd (bundle_segments (Ast.LNamed cr)))
+        | Edge _ -> Fold_state.line_material_segments !(ctx.state) p.la
         | Frozen _ -> Fold_state.line_material_segments !(ctx.state) p.la)
     | Ast.LMember (iname, mem, mspan) -> (
         let inst = lookup_instance ctx iname mspan in
@@ -935,6 +957,9 @@ let eval_folded (prog : Ast.program) : folded =
             Error.fail mspan
               (Printf.sprintf "instance $%s member %s is a bundle" iname mem)
         | Some (Frozen _) -> Fold_state.line_material_segments !(ctx.state) p.la
+        | Some (Edge _) ->
+            Error.fail mspan
+              (Printf.sprintf "instance $%s member %s is a paper edge" iname mem)
         | None ->
             Error.fail mspan
               (Printf.sprintf "instance $%s has no line member %s" iname mem))
@@ -1461,8 +1486,10 @@ let eval_folded (prog : Ast.program) : folded =
           | Frozen l -> (k, l) :: acc
           | Material (_, l_orig) -> (k, l_orig) :: acc
           (* a bundle is not a single line; it is not emitted in the
-             one-line-per-name overlay map *)
-          | Bundle _ -> acc)
+             one-line-per-name overlay map. the prelude paper edges are
+             implicit, not user-declared construction lines, so they are
+             likewise not emitted. *)
+          | Bundle _ | Edge _ -> acc)
       root_scope.lines []
   in
   ctx.frames_rev <- (ctx.panel, !(ctx.state)) :: ctx.frames_rev;
