@@ -147,6 +147,12 @@ which acts on the paper.
   slots.
 - **No construct-vs-select marker** on brackets — the sigil (`.`/`#`/`--`) and the
   operator already carry found-vs-made.
+- **`()` is freed for pure grouping.** Retiring `.(`, `--(`, `#(` removes the
+  maximal-munch sigil-paren openers (`POINT_OPEN`/`LINE_OPEN`/`FLAP_OPEN`), so `(`
+  can no longer be shadowed by a preceding sigil — `(--a * --b)` can never munch
+  into `.(…)`. This is what makes the precedence grouping above (`(--l & .p) * --s`)
+  unambiguously writable; the churn doesn't just free the parens, it enables the
+  precedence story.
 
 ## Migration (pre-1.0 churn, acceptable)
 
