@@ -180,6 +180,12 @@ stale).
 - **Precedence** — `&`/`\` bind tighter than `*` (a filtered crease resolves to
   one line before meet consumes it: `(--l & .p) * --s`). Pinned at
   implementation.
+- **Two future primitives sorted by the law**, captured in
+  `notes/2026-07-08-partial-creases-and-rational-landmarks.md`: *partial creases*
+  (a write — keyword — that reopens the #26 face-boundary invariant `pinch`
+  avoided) and *rational landmarks* (`3/4 along --l`, a read — operator — exact via
+  the kernel, just underived). Each their own slice; both validate the read/write
+  split.
 
 ## References
 
