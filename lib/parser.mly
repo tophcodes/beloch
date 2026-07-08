@@ -45,6 +45,7 @@ body_stmt:
   | CREASE EQ LINE_OPEN point_operand point_operand RPAREN
       { Crease (Some $1, Ast.Through ($4, $5), None, $loc) }
   | CREASE EQ axiom_stmt { let (a, fs) = $3 in Crease (Some $1, a, fs, $loc) }
+  | CREASE EQ bundle_expr { BindBundle ($1, $3, $loc) }
   | axiom_stmt           { let (a, fs) = $1 in Crease (None, a, fs, $loc) }
   | POINT EQ point_expr  { Point ($1, $3, $loc) }
   | FLIP                 { Flip $loc }
@@ -161,6 +162,16 @@ line_operand:
 line_list:
   | line_operand           { [ $1 ] }
   | line_operand line_list { $1 :: $2 }
+
+(* the RHS of a bundle binding: a named crease, a union, or either filtered.
+   Excludes the `--(` through-sugar and bare axioms (those are Crease binds)
+   so `--x = …` stays unambiguous. *)
+bundle_expr:
+  | crease_ref { LNamed $1 }
+  | LINE_MEMBER_OPEN INSTANCE IDENT RBRACKET { LMember ($2, $3, $loc) }
+  | LBRACKET line_list RBRACKET     { LUnion ($2, $loc) }
+  | bundle_expr AMP selector        { LFilter ($1, Keep $3, $loc) }
+  | bundle_expr BACKSLASH selector  { LFilter ($1, Drop $3, $loc) }
 
 selector:
   | point_operand { SelPoint $1 }

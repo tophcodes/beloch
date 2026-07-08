@@ -22,6 +22,9 @@ type folded = {
 type crease_val =
   | Material of int * Geom.line
   | Frozen of Geom.line
+  | Bundle of Ast.line_operand
+      (* a named crease bundle (--x = --l & .c | [--a --b]); resolves lazily as
+         its expression, so the name behaves exactly like inlining it *)
 
 (* axiom-5 (`map --l1 onto --l2`) needs its candidate bisectors selected against
    the current fold state (material of l1, paper incidence, `toward` direction),
@@ -162,6 +165,10 @@ let eval_folded (prog : Ast.program) : folded =
   let materialize_crease ~(name : string) (span : Error.span) (cv : crease_val) :
       Geom.line =
     match cv with
+    | Bundle _ ->
+        Error.fail span
+          (Printf.sprintf
+             "--%s is a bundle; restrict it to one segment with & or \\" name)
     | Frozen l -> l
     | Material (cid, l_orig) -> (
         match Fold_state.crease_axis !(ctx.state) cid l_orig with
@@ -183,6 +190,10 @@ let eval_folded (prog : Ast.program) : folded =
   let paper_line_of_crease ~(name : string) (span : Error.span) (cv : crease_val)
       : Geom.line * (Geom.point * Geom.point) list option =
     match cv with
+    | Bundle _ ->
+        Error.fail span
+          (Printf.sprintf
+             "--%s is a bundle; restrict it to one segment with & or \\" name)
     | Frozen _ ->
         Error.fail span
           (Printf.sprintf
@@ -275,7 +286,10 @@ let eval_folded (prog : Ast.program) : folded =
               (Printf.sprintf "instance $%s has no point member %s" iname mem))
   and resolve_line (lo : Ast.line_operand) : Geom.line =
     match lo with
-    | Ast.LNamed cr -> materialize_crease ~name:cr.Ast.cname cr.Ast.cspan (lookup_crease ctx cr)
+    | Ast.LNamed cr -> (
+        match lookup_crease ctx cr with
+        | Bundle expr -> resolve_line expr
+        | cv -> materialize_crease ~name:cr.Ast.cname cr.Ast.cspan cv)
     | Ast.LThrough (p1, p2, span) ->
         let pp = Fold_state.table_position !(ctx.state) (resolve_point p1)
         and qq = Fold_state.table_position !(ctx.state) (resolve_point p2) in
@@ -312,9 +326,10 @@ let eval_folded (prog : Ast.program) : folded =
   and resolve_paper_line (lo : Ast.line_operand) :
       Geom.line * (Geom.point * Geom.point) list option =
     match lo with
-    | Ast.LNamed cr ->
-        paper_line_of_crease ~name:cr.Ast.cname cr.Ast.cspan
-          (lookup_crease ctx cr)
+    | Ast.LNamed cr -> (
+        match lookup_crease ctx cr with
+        | Bundle expr -> resolve_paper_line expr
+        | cv -> paper_line_of_crease ~name:cr.Ast.cname cr.Ast.cspan cv)
     | Ast.LThrough (p1, p2, span) ->
         let pp = resolve_point p1 and qq = resolve_point p2 in
         if Geom.point_equal pp qq then
@@ -353,6 +368,11 @@ let eval_folded (prog : Ast.program) : folded =
   and material_cid (cr : Ast.crease_ref) : int =
     match lookup_crease ctx cr with
     | Material (cid, _) -> cid
+    | Bundle _ ->
+        Error.fail cr.Ast.cspan
+          (Printf.sprintf
+             "--%s is a bundle, not a single crease; restrict it with & or \\"
+             cr.Ast.cname)
     | Frozen _ ->
         Error.fail cr.Ast.cspan
           (Printf.sprintf
@@ -400,9 +420,12 @@ let eval_folded (prog : Ast.program) : folded =
   and bundle_segments (lo : Ast.line_operand) :
       int option * Fold_state.crease_segment list =
     match lo with
-    | Ast.LNamed cr ->
-        let cid = material_cid cr in
-        (Some cid, Fold_state.crease_segments !(ctx.state) cid)
+    | Ast.LNamed cr -> (
+        match lookup_crease ctx cr with
+        | Bundle expr -> bundle_segments expr
+        | _ ->
+            let cid = material_cid cr in
+            (Some cid, Fold_state.crease_segments !(ctx.state) cid))
     | Ast.LAt (cr, sels, _) ->
         let cid = material_cid cr in
         ( Some cid,
@@ -898,11 +921,19 @@ let eval_folded (prog : Ast.program) : folded =
     | Ast.LNamed cr -> (
         match lookup_crease ctx cr with
         | Material (cid, _) -> of_material cid
+        | Bundle _ ->
+            List.map
+              (fun (s : Fold_state.crease_segment) ->
+                (s.Fold_state.ta, s.Fold_state.tb))
+              (snd (bundle_segments (Ast.LNamed cr)))
         | Frozen _ -> Fold_state.line_material_segments !(ctx.state) p.la)
     | Ast.LMember (iname, mem, mspan) -> (
         let inst = lookup_instance ctx iname mspan in
         match Hashtbl.find_opt inst.ilines mem with
         | Some (Material (cid, _)) -> of_material cid
+        | Some (Bundle _) ->
+            Error.fail mspan
+              (Printf.sprintf "instance $%s member %s is a bundle" iname mem)
         | Some (Frozen _) -> Fold_state.line_material_segments !(ctx.state) p.la
         | None ->
             Error.fail mspan
@@ -1083,6 +1114,8 @@ let eval_folded (prog : Ast.program) : folded =
   in
   let rec eval_stmt (stmt : Ast.stmt) =
     match stmt with
+    | Ast.BindBundle (name, expr, span) ->
+        bind_crease ctx name span (Bundle expr)
     | Ast.Crease (name_opt, ax, fold_opt, span) -> (
         let cid = Fold_state.fresh_crease_id () in
         let prov_name =
@@ -1426,7 +1459,10 @@ let eval_folded (prog : Ast.program) : folded =
         else
           match cv with
           | Frozen l -> (k, l) :: acc
-          | Material (_, l_orig) -> (k, l_orig) :: acc)
+          | Material (_, l_orig) -> (k, l_orig) :: acc
+          (* a bundle is not a single line; it is not emitted in the
+             one-line-per-name overlay map *)
+          | Bundle _ -> acc)
       root_scope.lines []
   in
   ctx.frames_rev <- (ctx.panel, !(ctx.state)) :: ctx.frames_rev;

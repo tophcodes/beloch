@@ -443,6 +443,26 @@ let test_bundle_ops_equiv_at () =
   Alcotest.(check bool) "\\ #[.a .b] selects the same (upper) segment" true
     (q_axis (base "\\ #[.a .b]") = at)
 
+(* a bound bundle behaves exactly like inlining its expression *)
+let test_bind_bundle_roundtrip () =
+  let q_axis src =
+    let open Yojson.Safe.Util in
+    match Beloch.fold_string ~filename:"t.bel" src with
+    | exception Error.Beloch_error (_, msg) ->
+        Alcotest.failf "should resolve, got error: %s" msg
+    | j -> j |> member "beloch:named_lines" |> member "q" |> to_list
+  in
+  let inline =
+    "paper square\n--b = through .a .c\n--v = @map .c onto .b\n\
+     --q = perp --b & #[.c .d] through .a\n"
+  in
+  let bound =
+    "paper square\n--b = through .a .c\n--v = @map .c onto .b\n\
+     --seg = --b & #[.c .d]\n--q = perp --seg through .a\n"
+  in
+  Alcotest.(check bool) "bound bundle == inline" true
+    (q_axis inline = q_axis bound)
+
 (* #42: one self-contained foldedForm frame per step snapshot, baseline
    included, each step-tagged. *)
 let test_multiframe () =
@@ -593,6 +613,8 @@ let () =
             test_at_selects_bent_segment;
           Alcotest.test_case "& / \\ pick the same bent segment as at" `Quick
             test_bundle_ops_equiv_at;
+          Alcotest.test_case "bound bundle == inline" `Quick
+            test_bind_bundle_roundtrip;
           Alcotest.test_case "one folded frame per step" `Quick
             test_multiframe;
           Alcotest.test_case "e2e faces_matrix + frame" `Quick

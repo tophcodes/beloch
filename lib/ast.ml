@@ -85,6 +85,9 @@ type point_expr =
 
 type stmt =
   | Crease of string option * axiom * fold_spec option * Error.span
+  | BindBundle of string * line_operand * Error.span
+      (* --x = <bundle expr>: name a crease bundle (union/filter of existing
+         creases). Resolves lazily as its expression; slots coerce to one. *)
   | Point of string * point_expr * Error.span
   | Flip of Error.span
   | Def of string * param list * stmt list * Error.span

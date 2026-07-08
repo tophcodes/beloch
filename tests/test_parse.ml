@@ -573,6 +573,16 @@ let test_parse_union () =
         (Ast.LUnion ([ Ast.LNamed _; Ast.LNamed _ ], _))); _ }, _) ] -> ()
   | _ -> Alcotest.fail "expected up to [--x --y] (LUnion of 2)"
 
+let test_parse_bind_bundle () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n--l = through .a .b\n--seg = --l & .c\n"
+  in
+  match List.rev prog with
+  | Ast.BindBundle ("seg", Ast.LFilter (Ast.LNamed _, Ast.Keep _, _), _) :: _ ->
+      ()
+  | _ -> Alcotest.fail "expected --seg = --l & .c (BindBundle LFilter)"
+
 let test_parse_fold_along () =
   match Beloch.parse ~filename:"t.bel" "paper square\n@fold --m moving .c\n" with
   | [
@@ -726,6 +736,7 @@ let () =
           Alcotest.test_case "filter chain & " `Quick test_parse_filter_chain;
           Alcotest.test_case "diff \\" `Quick test_parse_diff;
           Alcotest.test_case "union []" `Quick test_parse_union;
+          Alcotest.test_case "bind bundle" `Quick test_parse_bind_bundle;
           Alcotest.test_case "@fold statement" `Quick test_parse_fold_along;
           Alcotest.test_case "collapse basic" `Quick test_parse_collapse_basic;
           Alcotest.test_case "collapse parens/at/over/standing" `Quick
