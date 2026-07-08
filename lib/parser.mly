@@ -162,7 +162,8 @@ selector:
   | flap_operand  { SelFlap $1 }
 
 flap_operand:
-  | FLAP_OPEN point_operand_list RPAREN { FByPoints ($2, $loc) }
+  | FLAP_OPEN point_operand_list RPAREN      { FByPoints ($2, $loc) }
+  | FLAP_BRACKET point_operand_list RBRACKET { FByPoints ($2, $loc) }
 
 point_operand_list:
   | point_operand                    { [ $1 ] }

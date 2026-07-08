@@ -531,6 +531,16 @@ let test_parse_flap_forms () =
       ()
   | _ -> Alcotest.fail "expected flap-spec moving + crease up-to + mountain"
 
+let test_parse_flap_bracket () =
+  match
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n@perp --d through .p moving #[.a .b]\n"
+  with
+  | [ Ast.Crease (None, Ast.Perp _,
+        Some { moving = Some (Ast.FlapSpec (Ast.FByPoints (pts, _))); _ }, _) ] ->
+      Alcotest.(check int) "two constraint points" 2 (List.length pts)
+  | _ -> Alcotest.fail "expected moving #[.a .b]"
+
 let test_parse_fold_along () =
   match Beloch.parse ~filename:"t.bel" "paper square\n@fold --m moving .c\n" with
   | [
@@ -680,6 +690,7 @@ let () =
             test_parse_meet_inline;
           Alcotest.test_case "up to fold_spec" `Quick test_parse_up_to;
           Alcotest.test_case "flap operand forms" `Quick test_parse_flap_forms;
+          Alcotest.test_case "flap bracket #[]" `Quick test_parse_flap_bracket;
           Alcotest.test_case "@fold statement" `Quick test_parse_fold_along;
           Alcotest.test_case "collapse basic" `Quick test_parse_collapse_basic;
           Alcotest.test_case "collapse parens/at/over/standing" `Quick
