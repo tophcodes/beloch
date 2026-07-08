@@ -31,7 +31,7 @@ let test_parse_named_and_anon () =
       "paper square\n\
        --d1 = through .a .c\n\
        map .b onto .d\n\
-       .center = cross --d1 --d2\n"
+       .center = --d1 * --d2\n"
   in
   Alcotest.(check int) "three statements" 3 (List.length prog);
   match prog with
@@ -66,34 +66,6 @@ let test_parse_perp () =
       ()
   | _ -> Alcotest.fail "unexpected AST shape for perp"
 
-let test_parse_inline_line () =
-  match
-    Beloch.parse ~filename:"t.bel" "paper square\nperp --(.a .b) through .c\n"
-  with
-  | [
-   Ast.Crease
-     (None, Ast.Perp (Ast.PNamed { name = "c"; _ }, Ast.LThrough _), _, _);
-  ] ->
-      ()
-  | _ -> Alcotest.fail "expected an inline-line Perp operand"
-
-let test_parse_inline_point_nested () =
-  match
-    Beloch.parse ~filename:"t.bel"
-      "paper square\n\
-       --d1 = through .a .c\n\
-       --d2 = through .b .d\n\
-       perp --( .(--d1 --d2) .a ) through .b\n"
-  with
-  | [
-   _;
-   _;
-   Ast.Crease
-     (None, Ast.Perp (_, Ast.LThrough (Ast.PSelect _, Ast.PNamed _, _)), _, _);
-  ] ->
-      ()
-  | _ -> Alcotest.fail "expected a nested inline operand"
-
 let test_parse_map_onto_line () =
   let prog =
     Beloch.parse ~filename:"t.bel"
@@ -112,21 +84,6 @@ let test_parse_map_onto_line () =
   ] ->
       ()
   | _ -> Alcotest.fail "unexpected AST shape for map-onto-line"
-
-let test_parse_map_onto_line_inline () =
-  match
-    Beloch.parse ~filename:"t.bel"
-      "paper square\n--l2 = through .a .d\nmap .c onto --(.a .b) perp --l2\n"
-  with
-  | [
-   _;
-   Ast.Crease
-     (None,
-      Ast.MapOntoLine (Ast.PNamed { name = "c"; _ }, Ast.LThrough _,
-                       Ast.LNamed { cname = "l2"; _ }), _, _);
-  ] ->
-      ()
-  | _ -> Alcotest.fail "expected an inline target line in map-onto-line"
 
 let test_parse_bisect () =
   let prog =
@@ -187,24 +144,6 @@ let test_parse_map_through_toward () =
   ] ->
       ()
   | _ -> Alcotest.fail "unexpected AST shape for map-through-toward"
-
-let test_parse_map_through_inline () =
-  let prog =
-    Beloch.parse ~filename:"t.bel"
-      "paper square\nmap .c onto --(.a .b) through .d\n"
-  in
-  match prog with
-  | [
-   Ast.Crease
-     ( None,
-       Ast.MapThrough
-         ( Ast.PNamed { name = "c"; _ },
-           Ast.LThrough (Ast.PNamed { name = "a"; _ }, Ast.PNamed { name = "b"; _ }, _),
-           Ast.PNamed { name = "d"; _ }, None ),
-       _, _ );
-  ] ->
-      ()
-  | _ -> Alcotest.fail "unexpected AST shape for map-through inline operand"
 
 let test_parse_map_both () =
   let prog =
@@ -281,8 +220,8 @@ let test_parse_shorthand_rhs () =
   let prog = Beloch.parse ~filename:"t.bel"
     "paper square\n\
      --d = through .a .c\n\
-     .m = .(--d --(.a .b))\n\
-     --e = --(.a .c)\n" in
+     .m = --d * --ab\n\
+     --e = through .a .c\n" in
   Alcotest.(check int) "three statements" 3 (List.length prog);
   match prog with
   | [
@@ -300,7 +239,7 @@ let test_parse_def () =
       "paper square\n\
        def petal(.p .q --base) {\n\
       \  @map .p onto .q moving .p\n\
-      \  .tip = cross --(.p .q) --base\n\
+      \  .tip = .p * .q * --base\n\
        }\n"
   in
   match prog with
@@ -340,7 +279,7 @@ let test_parse_kebab_rejected () =
 let test_parse_apply_bound () =
   match
     Beloch.parse ~filename:"t.bel"
-      "paper square\n$p1 = apply petal(.b .d --(.a .c))\n"
+      "paper square\n$p1 = apply petal(.b .d .a * .c)\n"
   with
   | [ Ast.Apply (Some "p1", "petal", [ _; _; _ ], _) ] -> ()
   | _ -> Alcotest.fail "expected bound Apply with 3 args"
@@ -349,20 +288,6 @@ let test_parse_apply_naked () =
   match Beloch.parse ~filename:"t.bel" "paper square\napply thirds()\n" with
   | [ Ast.Apply (None, "thirds", [], _) ] -> ()
   | _ -> Alcotest.fail "expected naked zero-arg Apply"
-
-let test_parse_member_operands () =
-  match
-    Beloch.parse ~filename:"t.bel"
-      "paper square\n\
-       @map .[$p1 tip] onto .[$p2 tip]\n\
-       .x = cross --[$p1 pq] --[$p2 pq]\n"
-  with
-  | [
-      Ast.Crease (None, Ast.MapPoints (Ast.PMember ("p1", "tip", _), _), _, _);
-      Ast.Point ("x", Ast.PsExpr (Ast.PSelect ([ Ast.LMember ("p1", "pq", _); _ ], _)), _);
-    ] ->
-      ()
-  | _ -> Alcotest.fail "expected member operands"
 
 (* ---- Export ---- *)
 
@@ -398,26 +323,31 @@ let test_parse_step_marker () =
 let test_parse_at_one_selector () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n--b = through .a .c\nperp --b at .a through .c\n"
+      "paper square\n--b = through .a .c\nperp --b & .a through .c\n"
   in
   match prog with
   | [ Ast.Crease (Some "b", _, _, _);
       Ast.Crease
-        (None, Ast.Perp (_, Ast.LAt (_, [ Ast.SelPoint _ ], _)), _, _) ] -> ()
-  | _ -> Alcotest.fail "expected LAt with one point selector"
+        (None, Ast.Perp (_, Ast.LFilter (Ast.LNamed _, Ast.Keep (Ast.SelPoint _), _)),
+         _, _) ] -> ()
+  | _ -> Alcotest.fail "expected --b & .a (LFilter, one point selector)"
 
 let test_parse_at_two_selectors () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n--b = through .a .c\nperp --b at (.a and --b) through .c\n"
+      "paper square\n--b = through .a .c\nperp --b & .a & --b through .c\n"
   in
   match prog with
   | [ _;
       Ast.Crease
         ( None,
-          Ast.Perp (_, Ast.LAt (_, [ Ast.SelPoint _; Ast.SelLine _ ], _)),
+          Ast.Perp
+            (_,
+             Ast.LFilter
+               (Ast.LFilter (Ast.LNamed _, Ast.Keep (Ast.SelPoint _), _),
+                Ast.Keep (Ast.SelLine _), _)),
           _, _ ) ] -> ()
-  | _ -> Alcotest.fail "expected LAt with two selectors"
+  | _ -> Alcotest.fail "expected --b & .a & --b (nested LFilter)"
 
 let test_parse_meet_stmt () =
   let prog =
@@ -445,47 +375,55 @@ let test_parse_meet_inline () =
 let spec_corpus =
   [
     ( "01_eq_binding",
-      "paper square\n--rs = through .rs1 .rs2\n.s   = cross --rs --(.d .c)\n" );
+      "paper square\n--rs = through .rs1 .rs2\n.s   = --rs * --cd\n" );
     ( "02_shorthand_rhs",
-      "paper square\n.s  = .(--rs --(.d .c))\n--e = --(.p1 .p2)\n" );
+      "paper square\n.s  = --rs * --cd\n--e = through .p1 .p2\n" );
     ( "03_def_petal",
       "paper square\ndef petal(.p .q --base) {\n\
       \  @map .p onto .q moving .p\n\
-      \  .tip = cross --(.p .q) --base\n\
+      \  .tip = .p * .q * --base\n\
        }\n" );
     ( "04_apply",
-      "paper square\n$p1 = apply petal(.k1 .k2 --(.k1 .k3))\n\
-       apply petal(.k2 .k4 --(.k2 .k1))\n" );
+      "paper square\n$p1 = apply petal(.k1 .k2 .k1 * .k3)\n\
+       apply petal(.k2 .k4 .k2 * .k1)\n" );
     ( "05_qualified",
-      "paper square\n@map .[$p1 tip] onto .[$p2 tip]\n\
-       --d = through .[$p1 tip] .[$p2 tip]\n\
-       .x  = cross --[$p1 pq] --[$p2 pq]\n" );
+      "paper square\n\
+       export { .tip as .p1tip --pq as --p1pq } $p1\n\
+       export { .tip as .p2tip --pq as --p2pq } $p2\n\
+       @map .p1tip onto .p2tip\n\
+       --d = through .p1tip .p2tip\n\
+       .x  = --p1pq * --p2pq\n" );
     ( "06_export",
       "paper square\nexport { .tip --pq } $t\n\
        export { .tip as .left_tip } $t\nexport { .s! } $t\nexport $t\n" );
     ( "07_panels",
-      "paper square\nstep thirds\n._mb = .(--vm --(.a .b))\n\
+      "paper square\nstep thirds\n._mb = --vm * --ab\n\
        --pq = through ._pq1 ._pq2\n\nstep beloch_fold\n\
-       @map .c onto --(.a .b) and .s onto --pq\n" );
+       @map .c onto --ab and .s onto --pq\n" );
     ( "08_cube_root",
       "paper square\n\nstep vertical_middle\n--vm = map .a onto .b\n\n\
-       step thirds\n._mb  = .(--vm --(.a .b))\n._mt  = .(--vm --(.d .c))\n\
-       ._pq1 = cross --(.d ._mb) --(.a .c)\n\
-       ._pq2 = cross --(.a ._mt) --(.d .b)\n--pq  = through ._pq1 ._pq2\n\
-       ._rs1 = cross --(.c ._mb) --(.d .b)\n\
-       ._rs2 = cross --(.b ._mt) --(.a .c)\n--rs  = through ._rs1 ._rs2\n\
-       .s    = .(--rs --(.d .c))\n\nstep beloch_fold\n\
-       @map .c onto --(.a .b) and .s onto --pq\n" );
+       step thirds\n._mb  = --vm * --ab\n._mt  = --vm * --cd\n\
+       --ac = through .a .c\n--db = through .d .b\n\
+       --d_mb = through .d ._mb\n--a_mt = through .a ._mt\n\
+       --c_mb = through .c ._mb\n--b_mt = through .b ._mt\n\
+       ._pq1 = --d_mb * --ac\n\
+       ._pq2 = --a_mt * --db\n--pq  = through ._pq1 ._pq2\n\
+       ._rs1 = --c_mb * --db\n\
+       ._rs2 = --b_mt * --ac\n--rs  = through ._rs1 ._rs2\n\
+       .s    = --rs * --cd\n\nstep beloch_fold\n\
+       @map .c onto --ab and .s onto --pq\n" );
     ( "09_petal_full",
       "paper square\n\ndef petal(.p .q --base) {\n\
       \  @map .p onto .q moving .p\n\
-      \  .tip = cross --(.p .q) --base\n\
-       }\n\nstep petal_folds\n$left  = apply petal(.a .c --(.b .d))\n\
-       $right = apply petal(.b .d --(.a .c))\n\nstep join\n\
-       @map .[$left tip] onto .[$right tip]\n" );
+      \  .tip = .p * .q * --base\n\
+       }\n\nstep petal_folds\n$left  = apply petal(.a .c .b * .d)\n\
+       $right = apply petal(.b .d .a * .c)\n\nstep join\n\
+       export { .tip as .lefttip } $left\n\
+       export { .tip as .righttip } $right\n\
+       @map .lefttip onto .righttip\n" );
     ( "10_zero_params",
       "paper square\ndef thirds() {\n\
-      \  ._mb = .(--vm --(.a .b))\n\
+      \  ._mb = --vm * --ab\n\
       \  --pq = through ._mb .x\n\
        }\n$t = apply thirds()\nexport $t\n" );
   ]
@@ -514,7 +452,7 @@ let test_parse_up_to () =
 let test_parse_flap_forms () =
   match
     Beloch.parse ~filename:"t.bel"
-      "paper square\n@perp --d through .p moving #(.a .b) up to --d mountain\n"
+      "paper square\n@perp --d through .p moving #[.a .b] up to --d mountain\n"
   with
   | [
    Ast.Crease
@@ -614,7 +552,7 @@ let test_parse_collapse_parens_at_over_standing () =
   let prog =
     Beloch.parse ~filename:"t.bel"
       "paper square\n\
-       @collapse --a at .a and (--e at (.o and --(.a .b)) mountain) \
+       @collapse --a & .a and (--e & .o & --ab mountain) \
        and .b over .d and standing .m\n"
   in
   match prog with
@@ -628,7 +566,7 @@ let test_parse_collapse_followed_by_stmt () =
      leading .point/--crease as a phantom over clause *)
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n@collapse --a and --b mountain\n.x = cross --a --b\n"
+      "paper square\n@collapse --a and --b mountain\n.x = --a * --b\n"
   in
   match prog with
   | [ Ast.Collapse ([ _; _ ], [], None, _); Ast.Point ("x", _, _) ] -> ()
@@ -734,6 +672,20 @@ let test_parse_join_star () =
       ()
   | _ -> Alcotest.fail "expected up to .a * .b (LSelect join of 2 points)"
 
+(* & binds tighter than * : --l & .a * --s parses as (--l & .a) * --s, so the
+   filtered crease resolves to one line before meet consumes it *)
+let test_parse_filter_binds_before_meet () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n--l = through .a .c\n--s = through .b .d\n.o = --l & .a * --s\n"
+  in
+  match List.rev prog with
+  | Ast.Point
+      ("o", Ast.PsExpr (Ast.PSelect ([ Ast.LFilter _; Ast.LNamed _ ], _)), _)
+    :: _ ->
+      ()
+  | _ -> Alcotest.fail "expected (--l & .a) * --s : PSelect[LFilter, LNamed]"
+
 let () =
   Alcotest.run "beloch-parse"
     [
@@ -752,19 +704,12 @@ let () =
             test_parse_precrease_no_foldspec;
           Alcotest.test_case "flip parses" `Quick test_parse_flip;
           Alcotest.test_case "parse map onto line" `Quick test_parse_map_onto_line;
-          Alcotest.test_case "parse map onto line inline" `Quick
-            test_parse_map_onto_line_inline;
           Alcotest.test_case "parse map through" `Quick test_parse_map_through;
           Alcotest.test_case "parse map through toward" `Quick
             test_parse_map_through_toward;
-          Alcotest.test_case "parse map through inline" `Quick
-            test_parse_map_through_inline;
           Alcotest.test_case "parse map both" `Quick test_parse_map_both;
           Alcotest.test_case "parse map both toward" `Quick
             test_parse_map_both_toward;
-          Alcotest.test_case "inline line operand" `Quick test_parse_inline_line;
-          Alcotest.test_case "nested inline operand" `Quick
-            test_parse_inline_point_nested;
           Alcotest.test_case "eq binding separator" `Quick test_parse_eq_binding;
           Alcotest.test_case "shorthand RHS .(l1 l2) and --(p1 p2)" `Quick
             test_parse_shorthand_rhs;
@@ -810,12 +755,13 @@ let () =
         [
           Alcotest.test_case "apply bound" `Quick test_parse_apply_bound;
           Alcotest.test_case "apply naked" `Quick test_parse_apply_naked;
-          Alcotest.test_case "member operands" `Quick test_parse_member_operands;
           Alcotest.test_case "line select --[.a .b]" `Quick
             test_parse_line_select;
           Alcotest.test_case "point select .[--x --y]" `Quick
             test_parse_point_select;
           Alcotest.test_case "join .a * .b" `Quick test_parse_join_star;
+          Alcotest.test_case "& binds tighter than *" `Quick
+            test_parse_filter_binds_before_meet;
         ] );
       ( "step",
         [

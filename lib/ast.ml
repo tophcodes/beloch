@@ -13,24 +13,18 @@ type export_entry = {
   espan : Error.span;
 }
 
-(* Operands are mutually recursive: a named leaf, or an inline construction.
-   PSelect = meet (`--x * --y` / `.[l+]`), a point on the listed lines;
-   LThrough = inline `through` (line through two points). A plain `.a` is
-   PNamed; a plain `--l` is LNamed. *)
+(* Operands are mutually recursive: a named leaf, or a selection over existing
+   geometry. PSelect = meet (`--x * --y` / `.[l+]`), a point on the listed lines;
+   LSelect = join/select (`--[c+]` / `.a * .b`), an existing crease/edge. A plain
+   `.a` is PNamed; a plain `--l` is LNamed. *)
 type point_operand =
   | PNamed of point_ref
-  | PMember of string * string * Error.span  (* instance, member *)
   | PSelect of line_operand list * Error.span
     (* .[l+] and --x * --y: the point incident to all listed lines (n-ary
        meet; the lines must be concurrent) *)
 
 and line_operand =
   | LNamed of crease_ref
-  | LThrough of point_operand * point_operand * Error.span
-  | LMember of string * string * Error.span  (* instance, member *)
-  | LAt of crease_ref * selector list * Error.span
-    (* --l at S | --l at (S1 and S2): the unique segment of bundle --l
-       incident to every selector (singleton-target rule) *)
   | LFilter of line_operand * filter_elt * Error.span
     (* bundle & sel (Keep) | bundle \ sel (Drop): the segments of the bundle
        incident / not incident to sel. Chains left-to-right. *)
@@ -44,7 +38,7 @@ and filter_elt = Keep of selector | Drop of selector
 
 and selector =
   | SelPoint of point_operand
-  | SelLine of line_operand   (* grammar produces only LNamed / LThrough here *)
+  | SelLine of line_operand   (* grammar produces only LNamed here *)
   | SelFlap of flap_operand
 
 and flap_operand = FByPoints of point_operand list * Error.span

@@ -14,7 +14,6 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "square" -> SQUARE
   | "through" -> THROUGH
   | "and" -> AND
-  | "at" -> AT_KW
   | "map" -> MAP
   | "onto" -> ONTO
   | "perp" -> PERP
@@ -24,7 +23,6 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "up" -> UP
   | "to" -> TO
   | "fold" -> FOLD_KW
-  | "cross" -> CROSS
   | "flip" -> FLIP
   | "def" -> DEF
   | "apply" -> APPLY
@@ -45,12 +43,9 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | '&' -> AMP
   | '\\' -> BACKSLASH
   | '*' -> STAR
-  | "--(" -> LINE_OPEN
-  | ".(" -> POINT_OPEN
-  | "#(" -> FLAP_OPEN
   | "#[" -> FLAP_BRACKET
-  | "--[" -> LINE_MEMBER_OPEN
-  | ".[" -> POINT_MEMBER_OPEN
+  | "--[" -> LINE_MEMBER_OPEN   (* now the --[c+] line-select opener *)
+  | ".[" -> POINT_MEMBER_OPEN   (* now the .[l+] point-select opener *)
   | ')' -> RPAREN
   | '$', id ->
       let s = Sedlexing.Utf8.lexeme buf in

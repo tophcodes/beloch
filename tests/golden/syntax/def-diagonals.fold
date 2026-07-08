@@ -22,14 +22,14 @@
     {
       "axiom": "axiom1",
       "sources": [ ".p", ".q" ],
-      "span": "def-diagonals.bel:6:3",
+      "span": "def-diagonals.bel:7:3",
       "name": "d1.d",
       "step": "diagonals"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".p", ".q" ],
-      "span": "def-diagonals.bel:6:3",
+      "span": "def-diagonals.bel:7:3",
       "name": "d2.d",
       "step": "diagonals"
     },
@@ -37,7 +37,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".p", ".q" ],
-      "span": "def-diagonals.bel:6:3",
+      "span": "def-diagonals.bel:7:3",
       "name": "d1.d",
       "step": "diagonals"
     },
@@ -45,7 +45,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".p", ".q" ],
-      "span": "def-diagonals.bel:6:3",
+      "span": "def-diagonals.bel:7:3",
       "name": "d2.d",
       "step": "diagonals"
     },
@@ -58,7 +58,10 @@
     "d": { "paper": [ 0.0, 1.0 ], "table": [ 0.0, 1.0 ] },
     "a": { "paper": [ 0.0, 0.0 ], "table": [ 0.0, 0.0 ] }
   },
-  "beloch:named_lines": {},
+  "beloch:named_lines": {
+    "d2d": [ 1.0, 1.0, 1.0 ],
+    "d1d": [ 1.0, -1.0, 0.0 ]
+  },
   "beloch:named_lines_frame": "creasePattern",
   "file_frames": [
     {
