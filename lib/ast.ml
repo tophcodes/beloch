@@ -28,6 +28,13 @@ and line_operand =
   | LAt of crease_ref * selector list * Error.span
     (* --l at S | --l at (S1 and S2): the unique segment of bundle --l
        incident to every selector (singleton-target rule) *)
+  | LFilter of line_operand * filter_elt * Error.span
+    (* bundle & sel (Keep) | bundle \ sel (Drop): the segments of the bundle
+       incident / not incident to sel. Chains left-to-right. *)
+  | LUnion of line_operand list * Error.span
+    (* [a b …]: union of same-typed crease bundles *)
+
+and filter_elt = Keep of selector | Drop of selector
 
 and selector =
   | SelPoint of point_operand

@@ -541,6 +541,38 @@ let test_parse_flap_bracket () =
       Alcotest.(check int) "two constraint points" 2 (List.length pts)
   | _ -> Alcotest.fail "expected moving #[.a .b]"
 
+let test_parse_filter_chain () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n--l = through .a .b\n@map .p onto .q up to --l & .c & --m\n"
+  in
+  match prog with
+  | [ _; Ast.Crease (None, _, Some { up_to = Some (Ast.FlapLine
+        (Ast.LFilter (Ast.LFilter (Ast.LNamed _, Ast.Keep (Ast.SelPoint _), _),
+                      Ast.Keep (Ast.SelLine _), _))); _ }, _) ] -> ()
+  | _ -> Alcotest.fail "expected up to --l & .c & --m (nested LFilter, Keep)"
+
+let test_parse_diff () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n--l = through .a .b\n@map .p onto .q up to --l \\ .c\n"
+  in
+  match prog with
+  | [ _; Ast.Crease (None, _, Some { up_to = Some (Ast.FlapLine
+        (Ast.LFilter (Ast.LNamed _, Ast.Drop _, _))); _ }, _) ] -> ()
+  | _ -> Alcotest.fail "expected up to --l \\ .c (LFilter Drop)"
+
+let test_parse_union () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n--x = through .a .b\n--y = through .c .d\n\
+       @map .p onto .q up to [--x --y]\n"
+  in
+  match prog with
+  | [ _; _; Ast.Crease (None, _, Some { up_to = Some (Ast.FlapLine
+        (Ast.LUnion ([ Ast.LNamed _; Ast.LNamed _ ], _))); _ }, _) ] -> ()
+  | _ -> Alcotest.fail "expected up to [--x --y] (LUnion of 2)"
+
 let test_parse_fold_along () =
   match Beloch.parse ~filename:"t.bel" "paper square\n@fold --m moving .c\n" with
   | [
@@ -691,6 +723,9 @@ let () =
           Alcotest.test_case "up to fold_spec" `Quick test_parse_up_to;
           Alcotest.test_case "flap operand forms" `Quick test_parse_flap_forms;
           Alcotest.test_case "flap bracket #[]" `Quick test_parse_flap_bracket;
+          Alcotest.test_case "filter chain & " `Quick test_parse_filter_chain;
+          Alcotest.test_case "diff \\" `Quick test_parse_diff;
+          Alcotest.test_case "union []" `Quick test_parse_union;
           Alcotest.test_case "@fold statement" `Quick test_parse_fold_along;
           Alcotest.test_case "collapse basic" `Quick test_parse_collapse_basic;
           Alcotest.test_case "collapse parens/at/over/standing" `Quick

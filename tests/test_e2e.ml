@@ -418,6 +418,31 @@ let test_at_selects_bent_segment () =
     "different flaps select different --q axes (at is load-bearing)" true
     (q_axis (prog "#(.c .d)") <> q_axis (prog "#(.a .b)"))
 
+(* the new filter/diff operators must pick the same bent segment as `at`:
+   `& #[.c .d]` keeps the upper segment; `\ #[.a .b]` drops the lower one,
+   leaving the same upper segment. Both must equal `at #(.c .d)`. *)
+let test_bundle_ops_equiv_at () =
+  let base sel =
+    Printf.sprintf
+      "paper square\n\
+       --b = through .a .c\n\
+       --v = @map .c onto .b\n\
+       --q = perp --b %s through .a\n"
+      sel
+  in
+  let q_axis src =
+    let open Yojson.Safe.Util in
+    match Beloch.fold_string ~filename:"t.bel" src with
+    | exception Error.Beloch_error (_, msg) ->
+        Alcotest.failf "should resolve, got error: %s" msg
+    | j -> j |> member "beloch:named_lines" |> member "q" |> to_list
+  in
+  let at = q_axis (base "at #(.c .d)") in
+  Alcotest.(check bool) "& #[.c .d] == at #(.c .d)" true
+    (q_axis (base "& #[.c .d]") = at);
+  Alcotest.(check bool) "\\ #[.a .b] selects the same (upper) segment" true
+    (q_axis (base "\\ #[.a .b]") = at)
+
 (* #42: one self-contained foldedForm frame per step snapshot, baseline
    included, each step-tagged. *)
 let test_multiframe () =
@@ -566,6 +591,8 @@ let () =
             test_multilayer_crease_bare_cross_errors;
           Alcotest.test_case "at selects bent segment" `Quick
             test_at_selects_bent_segment;
+          Alcotest.test_case "& / \\ pick the same bent segment as at" `Quick
+            test_bundle_ops_equiv_at;
           Alcotest.test_case "one folded frame per step" `Quick
             test_multiframe;
           Alcotest.test_case "e2e faces_matrix + frame" `Quick

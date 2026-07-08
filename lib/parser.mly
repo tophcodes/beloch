@@ -154,6 +154,13 @@ line_operand:
   | crease_ref AT_KW selector { LAt ($1, [ $3 ], $loc) }
   | crease_ref AT_KW LPAREN selector AND selector RPAREN { LAt ($1, [ $4; $6 ], $loc) }
   | LINE_MEMBER_OPEN INSTANCE IDENT RBRACKET     { LMember ($2, $3, $loc) }
+  | line_operand AMP selector       { LFilter ($1, Keep $3, $loc) }
+  | line_operand BACKSLASH selector { LFilter ($1, Drop $3, $loc) }
+  | LBRACKET line_list RBRACKET     { LUnion ($2, $loc) }
+
+line_list:
+  | line_operand           { [ $1 ] }
+  | line_operand line_list { $1 :: $2 }
 
 selector:
   | point_operand { SelPoint $1 }
