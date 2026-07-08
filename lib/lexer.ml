@@ -41,9 +41,14 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | '}' -> RBRACE
   | '(' -> LPAREN
   | ']' -> RBRACKET
+  | '[' -> LBRACKET
+  | '&' -> AMP
+  | '\\' -> BACKSLASH
+  | '*' -> STAR
   | "--(" -> LINE_OPEN
   | ".(" -> POINT_OPEN
   | "#(" -> FLAP_OPEN
+  | "#[" -> FLAP_BRACKET
   | "--[" -> LINE_MEMBER_OPEN
   | ".[" -> POINT_MEMBER_OPEN
   | ')' -> RPAREN
