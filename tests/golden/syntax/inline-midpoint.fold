@@ -3,31 +3,96 @@
   "file_creator": "beloch 0.3.0-dev",
   "frame_classes": [ "creasePattern" ],
   "vertices_coords": [
-    [ 0.5, 0.0 ],
     [ 1.0, 0.0 ],
     [ 1.0, 1.0 ],
+    [ 0.5, 0.5 ],
+    [ 0.5, 0.0 ],
+    [ 0.25, 0.25 ],
+    [ 0.0, 0.0 ],
     [ 0.0, 1.0 ],
-    [ 0.0, 0.5 ],
-    [ 0.0, 0.0 ]
+    [ 0.0, 0.5 ]
   ],
   "edges_vertices": [
-    [ 0, 1 ], [ 1, 2 ], [ 2, 3 ], [ 3, 4 ], [ 4, 0 ], [ 5, 0 ], [ 4, 5 ]
+    [ 0, 1 ],
+    [ 1, 2 ],
+    [ 2, 0 ],
+    [ 3, 0 ],
+    [ 2, 4 ],
+    [ 4, 3 ],
+    [ 5, 3 ],
+    [ 4, 5 ],
+    [ 1, 6 ],
+    [ 6, 2 ],
+    [ 6, 7 ],
+    [ 7, 4 ],
+    [ 7, 5 ]
   ],
-  "edges_assignment": [ "B", "B", "B", "B", "U", "B", "B" ],
-  "faces_vertices": [ [ 0, 1, 2, 3, 4 ], [ 5, 0, 4 ] ],
+  "edges_assignment": [
+    "B", "U", "U", "B", "U", "U", "B", "U", "B", "U", "B", "U", "B"
+  ],
+  "faces_vertices": [
+    [ 0, 1, 2 ],
+    [ 3, 0, 2, 4 ],
+    [ 5, 3, 4 ],
+    [ 2, 1, 6 ],
+    [ 4, 2, 6, 7 ],
+    [ 5, 4, 7 ]
+  ],
   "beloch:edges": [
     null,
-    null,
-    null,
+    {
+      "axiom": "axiom1",
+      "sources": [ ".a", ".c" ],
+      "span": "inline-midpoint.bel:4:1",
+      "name": "ac",
+      "step": null
+    },
+    {
+      "axiom": "axiom1",
+      "sources": [ ".b", ".d" ],
+      "span": "inline-midpoint.bel:5:1",
+      "name": "bd",
+      "step": null
+    },
     null,
     {
+      "axiom": "axiom1",
+      "sources": [ ".a", ".c" ],
+      "span": "inline-midpoint.bel:4:1",
+      "name": "ac",
+      "step": null
+    },
+    {
       "axiom": "axiom2",
-      "sources": [ ".a", ".[--(.a .c) --(.b .d)]" ],
-      "span": "inline-midpoint.bel:3:1",
+      "sources": [ ".a", ".[--ac --bd]" ],
+      "span": "inline-midpoint.bel:6:1",
       "name": null,
       "step": null
     },
     null,
+    {
+      "axiom": "axiom1",
+      "sources": [ ".a", ".c" ],
+      "span": "inline-midpoint.bel:4:1",
+      "name": "ac",
+      "step": null
+    },
+    null,
+    {
+      "axiom": "axiom1",
+      "sources": [ ".b", ".d" ],
+      "span": "inline-midpoint.bel:5:1",
+      "name": "bd",
+      "step": null
+    },
+    null,
+    {
+      "axiom": "axiom2",
+      "sources": [ ".a", ".[--ac --bd]" ],
+      "span": "inline-midpoint.bel:6:1",
+      "name": null,
+      "step": null
+    },
     null
   ],
   "beloch:named_points": {
@@ -36,7 +101,7 @@
     "d": { "paper": [ 0.0, 1.0 ], "table": [ 0.0, 1.0 ] },
     "a": { "paper": [ 0.0, 0.0 ], "table": [ 0.0, 0.0 ] }
   },
-  "beloch:named_lines": {},
+  "beloch:named_lines": { "ac": [ 1.0, -1.0, 0.0 ], "bd": [ 1.0, 1.0, 1.0 ] },
   "beloch:named_lines_frame": "creasePattern",
   "file_frames": [
     {
@@ -44,21 +109,51 @@
       "frame_parent": 0,
       "frame_inherit": false,
       "vertices_coords": [
-        [ 0.5, 0.0 ],
         [ 1.0, 0.0 ],
         [ 1.0, 1.0 ],
+        [ 0.5, 0.5 ],
+        [ 0.5, 0.0 ],
+        [ 0.25, 0.25 ],
+        [ 0.0, 0.0 ],
         [ 0.0, 1.0 ],
-        [ 0.0, 0.5 ],
-        [ 0.0, 0.0 ]
+        [ 0.0, 0.5 ]
       ],
       "edges_vertices": [
-        [ 0, 1 ], [ 1, 2 ], [ 2, 3 ], [ 3, 4 ], [ 4, 0 ], [ 5, 0 ], [ 4, 5 ]
+        [ 0, 1 ],
+        [ 1, 2 ],
+        [ 2, 0 ],
+        [ 3, 0 ],
+        [ 2, 4 ],
+        [ 4, 3 ],
+        [ 5, 3 ],
+        [ 4, 5 ],
+        [ 1, 6 ],
+        [ 6, 2 ],
+        [ 6, 7 ],
+        [ 7, 4 ],
+        [ 7, 5 ]
       ],
-      "edges_assignment": [ "B", "B", "B", "B", "U", "B", "B" ],
-      "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
-      "faces_vertices": [ [ 0, 1, 2, 3, 4 ], [ 5, 0, 4 ] ],
+      "edges_assignment": [
+        "B", "U", "U", "B", "U", "U", "B", "U", "B", "U", "B", "U", "B"
+      ],
+      "edges_foldAngle": [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+      ],
+      "faces_vertices": [
+        [ 0, 1, 2 ],
+        [ 3, 0, 2, 4 ],
+        [ 5, 3, 4 ],
+        [ 2, 1, 6 ],
+        [ 4, 2, 6, 7 ],
+        [ 5, 4, 7 ]
+      ],
       "beloch:faces_matrix": [
-        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ], [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ]
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ]
       ],
       "faceOrders": [],
       "beloch:step": null
