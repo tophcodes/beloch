@@ -136,15 +136,17 @@ point_ref:
   | POINT { { name = $1; span = $loc } }
 
 point_expr:
-  | CROSS line_operand line_operand               { Cross ($2, $3) }
-  | POINT_OPEN line_operand line_operand RPAREN   { Cross ($2, $3) }
-  | line_operand STAR line_operand                { Cross ($1, $3) }
+  | CROSS line_operand line_operand               { PsExpr (PCross ($2, $3, $loc)) }
+  | POINT_OPEN line_operand line_operand RPAREN   { PsExpr (PCross ($2, $3, $loc)) }
+  | line_operand STAR line_operand                { PsExpr (PCross ($1, $3, $loc)) }
+  | POINT_MEMBER_OPEN line_operand_list RBRACKET  { PsExpr (PSelect ($2, $loc)) }
 
 point_operand:
   | point_ref { PNamed $1 }
   | POINT_OPEN line_operand line_operand RPAREN { PCross ($2, $3, $loc) }
   | LPAREN line_operand STAR line_operand RPAREN { PCross ($2, $4, $loc) }
   | POINT_MEMBER_OPEN INSTANCE IDENT RBRACKET   { PMember ($2, $3, $loc) }
+  | POINT_MEMBER_OPEN line_operand_list RBRACKET { PSelect ($2, $loc) }
 
 crease_ref:
   | CREASE { { cname = $1; cspan = $loc } }
@@ -155,6 +157,7 @@ line_operand:
   | crease_ref AT_KW selector { LAt ($1, [ $3 ], $loc) }
   | crease_ref AT_KW LPAREN selector AND selector RPAREN { LAt ($1, [ $4; $6 ], $loc) }
   | LINE_MEMBER_OPEN INSTANCE IDENT RBRACKET     { LMember ($2, $3, $loc) }
+  | LINE_MEMBER_OPEN select_constraints RBRACKET { LSelect ($2, $loc) }
   | line_operand AMP selector       { LFilter ($1, Keep $3, $loc) }
   | line_operand BACKSLASH selector { LFilter ($1, Drop $3, $loc) }
   | LBRACKET line_list RBRACKET     { LUnion ($2, $loc) }
@@ -162,6 +165,14 @@ line_operand:
 line_list:
   | line_operand           { [ $1 ] }
   | line_operand line_list { $1 :: $2 }
+
+select_constraints:
+  | selector                    { [ $1 ] }
+  | selector select_constraints { $1 :: $2 }
+
+line_operand_list:
+  | line_operand                   { [ $1 ] }
+  | line_operand line_operand_list { $1 :: $2 }
 
 (* the RHS of a bundle binding: a named crease, a union, or either filtered.
    Excludes the `--(` through-sugar and bare axioms (those are Crease binds)

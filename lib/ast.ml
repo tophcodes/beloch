@@ -20,6 +20,9 @@ type point_operand =
   | PNamed of point_ref
   | PCross of line_operand * line_operand * Error.span
   | PMember of string * string * Error.span  (* instance, member *)
+  | PSelect of line_operand list * Error.span
+    (* .[l+] and --x * --y: the point incident to all listed lines (n-ary
+       meet; the lines must be concurrent) *)
 
 and line_operand =
   | LNamed of crease_ref
@@ -33,6 +36,9 @@ and line_operand =
        incident / not incident to sel. Chains left-to-right. *)
   | LUnion of line_operand list * Error.span
     (* [a b …]: union of same-typed crease bundles *)
+  | LSelect of selector list * Error.span
+    (* --[c+] and .a * .b: the unique existing crease/edge incident to all
+       constraints; errors on none or ambiguity (no sight-lines) *)
 
 and filter_elt = Keep of selector | Drop of selector
 
@@ -81,7 +87,7 @@ type fold_spec = {
 type collapse_elem = { cline : line_operand; cdir : direction }
 
 type point_expr =
-  | Cross of line_operand * line_operand (* the `.name:` binding RHS *)
+  | PsExpr of point_operand (* the `.name = …` binding RHS: a meet/select/named point *)
 
 type stmt =
   | Crease of string option * axiom * fold_spec option * Error.span

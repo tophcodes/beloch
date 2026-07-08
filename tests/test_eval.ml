@@ -1229,6 +1229,26 @@ let test_edge_prelude_equiv () =
     (fold (base ^ "map --v onto --(.a .b) toward .a\n"))
     (fold (base ^ "map --v onto --ab toward .a\n"))
 
+(* the join selector --[.a .b] finds the same bottom edge as the prelude --ab *)
+let test_select_edge () =
+  let base = "paper square\n--v = map .a onto .b\n" in
+  let fold body =
+    let j = Yojson.Safe.to_string (Beloch.fold_string ~filename:"t.bel" body) in
+    Str.global_replace (Str.regexp_string "--[.a .b]") "EDGE"
+      (Str.global_replace (Str.regexp_string "--ab") "EDGE" j)
+  in
+  Alcotest.(check string) "--[.a .b] == --ab"
+    (fold (base ^ "map --v onto --ab toward .a\n"))
+    (fold (base ^ "map --v onto --[.a .b] toward .a\n"))
+
+(* --[.a .c] names the diagonal, on which no crease or edge exists → error
+   (no sight-lines) *)
+let test_select_no_sightline () =
+  expect_error "incident" (fun () ->
+      ignore
+        (Beloch.fold_string ~filename:"t.bel"
+           "paper square\n--v = map .a onto .b\nmap --v onto --[.a .c] toward .a\n"))
+
 let () =
   Alcotest.run "beloch-eval"
     [
@@ -1431,5 +1451,8 @@ let () =
             test_eval_moving_flap_straddles;
           Alcotest.test_case "prelude edge --ab == --(.a .b)" `Quick
             test_edge_prelude_equiv;
+          Alcotest.test_case "select --[.a .b] == --ab" `Quick test_select_edge;
+          Alcotest.test_case "select diagonal errors (no sight-line)" `Quick
+            test_select_no_sightline;
         ] );
     ]
