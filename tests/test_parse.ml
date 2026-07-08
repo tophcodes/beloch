@@ -419,6 +419,27 @@ let test_parse_at_two_selectors () =
           _, _ ) ] -> ()
   | _ -> Alcotest.fail "expected LAt with two selectors"
 
+let test_parse_meet_stmt () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n--d1 = through .a .b\n--d2 = through .c .d\n.o = --d1 * --d2\n"
+  in
+  match List.rev prog with
+  | Ast.Point ("o", Ast.Cross (Ast.LNamed a, Ast.LNamed b), _) :: _ ->
+      Alcotest.(check string) "lhs" "d1" a.Ast.cname;
+      Alcotest.(check string) "rhs" "d2" b.Ast.cname
+  | _ -> Alcotest.fail "expected .o = Cross(d1, d2)"
+
+let test_parse_meet_inline () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n--d1 = through .a .b\n--d2 = through .c .d\n\
+       map (--d1 * --d2) onto .e\n"
+  in
+  match List.rev prog with
+  | Ast.Crease (None, Ast.MapPoints (Ast.PCross _, Ast.PNamed _), _, _) :: _ -> ()
+  | _ -> Alcotest.fail "expected map (PCross) onto .e"
+
 (* ---- Spec corpus ---- *)
 
 let spec_corpus =
@@ -653,6 +674,10 @@ let () =
             test_parse_at_one_selector;
           Alcotest.test_case "at operator, two selectors" `Quick
             test_parse_at_two_selectors;
+          Alcotest.test_case "meet operator, statement" `Quick
+            test_parse_meet_stmt;
+          Alcotest.test_case "meet operator, inline" `Quick
+            test_parse_meet_inline;
           Alcotest.test_case "up to fold_spec" `Quick test_parse_up_to;
           Alcotest.test_case "flap operand forms" `Quick test_parse_flap_forms;
           Alcotest.test_case "@fold statement" `Quick test_parse_fold_along;

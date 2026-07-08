@@ -137,10 +137,12 @@ point_ref:
 point_expr:
   | CROSS line_operand line_operand               { Cross ($2, $3) }
   | POINT_OPEN line_operand line_operand RPAREN   { Cross ($2, $3) }
+  | line_operand STAR line_operand                { Cross ($1, $3) }
 
 point_operand:
   | point_ref { PNamed $1 }
   | POINT_OPEN line_operand line_operand RPAREN { PCross ($2, $3, $loc) }
+  | LPAREN line_operand STAR line_operand RPAREN { PCross ($2, $4, $loc) }
   | POINT_MEMBER_OPEN INSTANCE IDENT RBRACKET   { PMember ($2, $3, $loc) }
 
 crease_ref:
