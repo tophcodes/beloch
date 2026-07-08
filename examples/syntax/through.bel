@@ -12,6 +12,6 @@
 paper square
 --vmid = map .a onto .b              ; x = 1/2
 --hmid = map .a onto .d              ; y = 1/2
-.ctr = cross --vmid --hmid           ; sheet centre, (1/2, 1/2)
+.ctr = --vmid * --hmid               ; sheet centre, (1/2, 1/2)
 ; fold the centre onto the bottom edge, crease through corner .b
-@map .ctr onto --(.a .b) through .b toward .a
+@map .ctr onto --ab through .b toward .a

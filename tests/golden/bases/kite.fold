@@ -26,7 +26,7 @@
   "beloch:edges": [
     {
       "axiom": "axiom5",
-      "sources": [ "--(.b .a)", "--ac" ],
+      "sources": [ "--ab", "--ac" ],
       "span": "kite.bel:5:1",
       "name": null,
       "step": null
@@ -42,7 +42,7 @@
     null,
     {
       "axiom": "axiom5",
-      "sources": [ "--(.d .a)", "--ac" ],
+      "sources": [ "--da", "--ac" ],
       "span": "kite.bel:4:1",
       "name": null,
       "step": null

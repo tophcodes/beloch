@@ -9,5 +9,5 @@ paper square
 --h = map .a onto .d      ; horizontal midline, y = 1/2
 --v = map .a onto .b      ; vertical midline, x = 1/2
 
-@collapse --h at --(.b .c) and (--h at --(.b .c) mountain)
-  and --v at --(.d .c) and (--v at --(.a .b) mountain)
+@collapse --h & --bc and (--h & --bc mountain)
+  and --v & --cd and (--v & --ab mountain)

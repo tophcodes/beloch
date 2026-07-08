@@ -9,8 +9,10 @@
 ; (constructible by folding, not by ruler and compass); the shared-field kernel
 ; folds it exactly in milliseconds. Render --folded to see Messer's Figure 2.
 ;
-; The thirds are built first with rational scaffolding (midlines + crossings),
-; then the cubic fold is the last line.
+; The thirds are built first with rational scaffolding. NOTE: the landmark
+; scaffolding lines are TODO(pinch) — scored as full creases here for now, so the
+; crease pattern carries extra diagonals until pinch marks replace them; the
+; folded landing (AC/CB = ∛2) is unaffected.
 
 paper square
 
@@ -18,15 +20,21 @@ step vertical_middle
 --vm = map .a onto .b                ; vertical midline x=1/2 (axiom 2)
 
 step thirds
-._mb  = .(--vm --(.a .b))            ; (1/2, 0)
-._mt  = .(--vm --(.d .c))            ; (1/2, 1)
-._pq1 = cross --(.d ._mb) --(.a .c)  ; (1/3, 1/3)
-._pq2 = cross --(.a ._mt) --(.d .b)  ; (1/3, 2/3)
+._mb = --vm * --ab                   ; (1/2, 0)
+._mt = --vm * --cd                   ; (1/2, 1)
+--ac   = through .a .c               ; TODO(pinch): landmark diagonal
+--db   = through .d .b               ; TODO(pinch): landmark diagonal
+--d_mb = through .d ._mb             ; TODO(pinch): landmark
+--a_mt = through .a ._mt             ; TODO(pinch): landmark
+--c_mb = through .c ._mb             ; TODO(pinch): landmark
+--b_mt = through .b ._mt             ; TODO(pinch): landmark
+._pq1 = --d_mb * --ac                ; (1/3, 1/3)
+._pq2 = --a_mt * --db                ; (1/3, 2/3)
 --pq  = through ._pq1 ._pq2          ; left third line PQ : x = 1/3
-._rs1 = cross --(.c ._mb) --(.d .b)  ; (2/3, 1/3)
-._rs2 = cross --(.b ._mt) --(.a .c)  ; (2/3, 2/3)
+._rs1 = --c_mb * --db                ; (2/3, 1/3)
+._rs2 = --b_mt * --ac                ; (2/3, 2/3)
 --rs  = through ._rs1 ._rs2          ; right third line RS : x = 2/3
-.s    = .(--rs --(.d .c))            ; S = (2/3, 1), top of RS
+.s    = --rs * --cd                  ; S = (2/3, 1), top of RS
 
 step beloch_fold
-@map .c onto --(.a .b) and .s onto --pq   ; fold C onto AB, S onto PQ → AC/CB = ∛2
+@map .c onto --ab and .s onto --pq   ; fold C onto AB, S onto PQ → AC/CB = ∛2
