@@ -14,11 +14,11 @@ type export_entry = {
 }
 
 (* Operands are mutually recursive: a named leaf, or an inline construction.
-   PCross = inline `cross` (point at two creases); LThrough = inline `through`
-   (line through two points). A plain `.a` is PNamed; a plain `--l` is LNamed. *)
+   PSelect = meet (`--x * --y` / `.[l+]`), a point on the listed lines;
+   LThrough = inline `through` (line through two points). A plain `.a` is
+   PNamed; a plain `--l` is LNamed. *)
 type point_operand =
   | PNamed of point_ref
-  | PCross of line_operand * line_operand * Error.span
   | PMember of string * string * Error.span  (* instance, member *)
   | PSelect of line_operand list * Error.span
     (* .[l+] and --x * --y: the point incident to all listed lines (n-ary

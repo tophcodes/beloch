@@ -38,7 +38,7 @@ let test_parse_named_and_anon () =
   | [
    Ast.Crease (Some "d1", Ast.Through _, _, _);
    Ast.Crease (None, Ast.MapPoints _, _, _);
-   Ast.Point ("center", Ast.PsExpr (Ast.PCross _), _);
+   Ast.Point ("center", Ast.PsExpr (Ast.PSelect _), _);
   ] ->
       ()
   | _ -> Alcotest.fail "unexpected AST shape"
@@ -89,7 +89,7 @@ let test_parse_inline_point_nested () =
    _;
    _;
    Ast.Crease
-     (None, Ast.Perp (_, Ast.LThrough (Ast.PCross _, Ast.PNamed _, _)), _, _);
+     (None, Ast.Perp (_, Ast.LThrough (Ast.PSelect _, Ast.PNamed _, _)), _, _);
   ] ->
       ()
   | _ -> Alcotest.fail "expected a nested inline operand"
@@ -287,7 +287,7 @@ let test_parse_shorthand_rhs () =
   match prog with
   | [
       Ast.Crease (Some "d", Ast.Through _, _, _);
-      Ast.Point ("m", Ast.PsExpr (Ast.PCross _), _);
+      Ast.Point ("m", Ast.PsExpr (Ast.PSelect _), _);
       Ast.Crease (Some "e", Ast.Through _, _, _);
     ] -> ()
   | _ -> Alcotest.fail "unexpected AST shape"
@@ -359,7 +359,7 @@ let test_parse_member_operands () =
   with
   | [
       Ast.Crease (None, Ast.MapPoints (Ast.PMember ("p1", "tip", _), _), _, _);
-      Ast.Point ("x", Ast.PsExpr (Ast.PCross (Ast.LMember ("p1", "pq", _), _, _)), _);
+      Ast.Point ("x", Ast.PsExpr (Ast.PSelect ([ Ast.LMember ("p1", "pq", _); _ ], _)), _);
     ] ->
       ()
   | _ -> Alcotest.fail "expected member operands"
@@ -425,7 +425,7 @@ let test_parse_meet_stmt () =
       "paper square\n--d1 = through .a .b\n--d2 = through .c .d\n.o = --d1 * --d2\n"
   in
   match List.rev prog with
-  | Ast.Point ("o", Ast.PsExpr (Ast.PCross (Ast.LNamed a, Ast.LNamed b, _)), _) :: _ ->
+  | Ast.Point ("o", Ast.PsExpr (Ast.PSelect ([ Ast.LNamed a; Ast.LNamed b ], _)), _) :: _ ->
       Alcotest.(check string) "lhs" "d1" a.Ast.cname;
       Alcotest.(check string) "rhs" "d2" b.Ast.cname
   | _ -> Alcotest.fail "expected .o = Cross(d1, d2)"
@@ -437,8 +437,8 @@ let test_parse_meet_inline () =
        map (--d1 * --d2) onto .e\n"
   in
   match List.rev prog with
-  | Ast.Crease (None, Ast.MapPoints (Ast.PCross _, Ast.PNamed _), _, _) :: _ -> ()
-  | _ -> Alcotest.fail "expected map (PCross) onto .e"
+  | Ast.Crease (None, Ast.MapPoints (Ast.PSelect _, Ast.PNamed _), _, _) :: _ -> ()
+  | _ -> Alcotest.fail "expected map (PSelect) onto .e"
 
 (* ---- Spec corpus ---- *)
 
@@ -715,6 +715,25 @@ let test_parse_point_select () =
       ()
   | _ -> Alcotest.fail "expected .o = .[--x --y] (PSelect of 2 lines)"
 
+let test_parse_join_star () =
+  let prog =
+    Beloch.parse ~filename:"t.bel" "paper square\n@map .d onto .a up to .a * .b\n"
+  in
+  match prog with
+  | [
+      Ast.Crease
+        ( None, _,
+          Some
+            { up_to =
+                Some
+                  (Ast.FlapLine
+                     (Ast.LSelect ([ Ast.SelPoint _; Ast.SelPoint _ ], _)));
+              _ },
+          _ );
+    ] ->
+      ()
+  | _ -> Alcotest.fail "expected up to .a * .b (LSelect join of 2 points)"
+
 let () =
   Alcotest.run "beloch-parse"
     [
@@ -796,6 +815,7 @@ let () =
             test_parse_line_select;
           Alcotest.test_case "point select .[--x --y]" `Quick
             test_parse_point_select;
+          Alcotest.test_case "join .a * .b" `Quick test_parse_join_star;
         ] );
       ( "step",
         [

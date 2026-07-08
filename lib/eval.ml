@@ -140,7 +140,6 @@ let eval_folded (prog : Ast.program) : folded =
   let rec pstr (po : Ast.point_operand) : string =
     match po with
     | Ast.PNamed pr -> "." ^ pr.Ast.name
-    | Ast.PCross (l1, l2, _) -> Printf.sprintf ".(%s %s)" (lstr l1) (lstr l2)
     | Ast.PMember (i, m, _) -> Printf.sprintf ".[$%s %s]" i m
     | Ast.PSelect (los, _) ->
         Printf.sprintf ".[%s]" (String.concat " " (List.map lstr los))
@@ -272,33 +271,6 @@ let eval_folded (prog : Ast.program) : folded =
   let rec resolve_point (po : Ast.point_operand) : Geom.point =
     match po with
     | Ast.PNamed pr -> lookup_point ctx pr
-    | Ast.PCross (l1, l2, span) -> (
-        let la, ma = resolve_paper_line l1 and lb, mb = resolve_paper_line l2 in
-        match Geom.intersection la lb with
-        | None -> Error.fail span "creases are parallel; no intersection"
-        | Some pp ->
-            (* the crossing must be real: paper is opaque, so the marks must
-               actually meet — [pp] on a chord of each crease that has marks,
-               and on the sheet in any case *)
-            let on_chord (a, b) =
-              let t = Geom.seg_param (a, b) pp in
-              Num.compare t Num.zero >= 0 && Num.compare t Num.one <= 0
-            in
-            let check lo = function
-              | Some chords ->
-                  if not (List.exists on_chord chords) then
-                    Error.fail span
-                      (Printf.sprintf
-                         "%s: the mark of %s does not reach the crossing"
-                         (pstr po) (lstr lo))
-              | None ->
-                  if not (Fold_state.on_paper !(ctx.state) pp) then
-                    Error.fail span
-                      (Printf.sprintf "%s is off the paper" (pstr po))
-            in
-            check l1 ma;
-            check l2 mb;
-            pp)
     | Ast.PMember (iname, mem, span) -> (
         let inst = lookup_instance ctx iname span in
         match Hashtbl.find_opt inst.ipoints mem with

@@ -136,15 +136,15 @@ point_ref:
   | POINT { { name = $1; span = $loc } }
 
 point_expr:
-  | CROSS line_operand line_operand               { PsExpr (PCross ($2, $3, $loc)) }
-  | POINT_OPEN line_operand line_operand RPAREN   { PsExpr (PCross ($2, $3, $loc)) }
-  | line_operand STAR line_operand                { PsExpr (PCross ($1, $3, $loc)) }
+  | CROSS line_operand line_operand               { PsExpr (PSelect ([ $2; $3 ], $loc)) }
+  | POINT_OPEN line_operand line_operand RPAREN   { PsExpr (PSelect ([ $2; $3 ], $loc)) }
+  | line_operand STAR line_operand                { PsExpr (PSelect ([ $1; $3 ], $loc)) }
   | POINT_MEMBER_OPEN line_operand_list RBRACKET  { PsExpr (PSelect ($2, $loc)) }
 
 point_operand:
   | point_ref { PNamed $1 }
-  | POINT_OPEN line_operand line_operand RPAREN { PCross ($2, $3, $loc) }
-  | LPAREN line_operand STAR line_operand RPAREN { PCross ($2, $4, $loc) }
+  | POINT_OPEN line_operand line_operand RPAREN { PSelect ([ $2; $3 ], $loc) }
+  | LPAREN line_operand STAR line_operand RPAREN { PSelect ([ $2; $4 ], $loc) }
   | POINT_MEMBER_OPEN INSTANCE IDENT RBRACKET   { PMember ($2, $3, $loc) }
   | POINT_MEMBER_OPEN line_operand_list RBRACKET { PSelect ($2, $loc) }
 
@@ -158,6 +158,7 @@ line_operand:
   | crease_ref AT_KW LPAREN selector AND selector RPAREN { LAt ($1, [ $4; $6 ], $loc) }
   | LINE_MEMBER_OPEN INSTANCE IDENT RBRACKET     { LMember ($2, $3, $loc) }
   | LINE_MEMBER_OPEN select_constraints RBRACKET { LSelect ($2, $loc) }
+  | point_operand STAR point_operand { LSelect ([ SelPoint $1; SelPoint $3 ], $loc) }
   | line_operand AMP selector       { LFilter ($1, Keep $3, $loc) }
   | line_operand BACKSLASH selector { LFilter ($1, Drop $3, $loc) }
   | LBRACKET line_list RBRACKET     { LUnion ($2, $loc) }
