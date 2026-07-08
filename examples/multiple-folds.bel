@@ -7,5 +7,5 @@ paper square
 @map .c onto .a moving .c
 --b = through .a .b
 --v = @map .b onto .a
-.mid = cross --b --v at #(.a)
+.mid = --b * --v & #[.a]
 map .d onto .mid

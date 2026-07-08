@@ -1433,10 +1433,17 @@ let eval_folded (prog : Ast.program) : folded =
         let cid =
           match lo with
           | Ast.LNamed cr | Ast.LAt (cr, _, _) -> material_cid cr
+          | Ast.LFilter _ | Ast.LUnion _ -> (
+              match fst (bundle_segments lo) with
+              | Some c -> c
+              | None ->
+                  Error.fail span
+                    "@fold folds along one existing crease; a union spans \
+                     several")
           | _ ->
               Error.fail span
                 "@fold folds along an existing crease; give a crease name, \
-                 e.g. @fold --d or @fold --d at .p"
+                 e.g. @fold --d or @fold --d & .p"
         in
         let axis = resolve_line lo in
         (* per-flap material check: every segment of the bundle carried by a
@@ -1518,8 +1525,29 @@ let eval_folded (prog : Ast.program) : folded =
               | segs ->
                   Error.fail span
                     (Printf.sprintf
-                       "--%s has %d segments; select one with `at`"
+                       "--%s has %d segments; select one with & "
                        cr.Ast.cname (List.length segs)))
+          | (Ast.LFilter _ | Ast.LUnion _) as lo -> (
+              match bundle_segments lo with
+              | Some cid, [ s ] ->
+                  {
+                    Collapse.cid;
+                    ea = s.Fold_state.ta;
+                    eb = s.Fold_state.tb;
+                    valley = el.Ast.cdir = Ast.Valley;
+                  }
+              | _, [] ->
+                  Error.fail span
+                    (Printf.sprintf "no segment of %s matches" (lstr lo))
+              | _, (_ :: _ :: _ as many) ->
+                  Error.fail span
+                    (Printf.sprintf
+                       "%s is ambiguous: %d segments match; add a constraint"
+                       (lstr lo) (List.length many))
+              | None, [ _ ] ->
+                  (* a single segment but from a cross-crease union: no one cid
+                     to fold along *)
+                  fail_not_material ())
           | _ -> fail_not_material ()
         in
         let es = List.map resolve_elem elems in
