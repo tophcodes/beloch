@@ -19,7 +19,11 @@ Current version: **v0.20-dev** (`@collapse` — single-vertex collapse: n ≥ 4
 material creases sharing one interior vertex fold straight to the flat end
 state in one step — rabbit ear, waterbomb — checked by Kawasaki/Maekawa/local
 validity, `over` disambiguates the layer order, `standing` is reserved
-syntax the evaluator does not yet implement); **v0.19-dev** (material `cross` — crossings live in paper space, on the marks; no table-space point values; axiom 5 `toward` is a fold direction, not a sector, with a paper-incidence filter for the omitted case and a derived `moving`); **v0.18-dev** (fold scope — flap-typed `moving`, `up to` for some-layers simple folds, `@fold` along material creases); **v0.17-dev** (crease-segment selection — the `at` operator: a crease name is a bundle, projected to one segment by incidence); **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`, `step` panels; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
+syntax the evaluator does not yet implement; **notation cutover** — reads are
+operators (meet `*`, filter `&`, drop `\`, union `[]`, the incident-to-all
+selectors `.[] --[] #[]`), the one write is the keyword `through`; see
+[`docs/superpowers/specs/2026-07-08-notation-by-state-change-design.md`](../docs/superpowers/specs/2026-07-08-notation-by-state-change-design.md));
+**v0.19-dev** (material crossings live in paper space, on the marks; no table-space point values; axiom 5 `toward` is a fold direction, not a sector, with a paper-incidence filter for the omitted case and a derived `moving`); **v0.18-dev** (fold scope — flap-typed `moving`, `up to` for some-layers simple folds, `@fold` along material creases); **v0.17-dev** (crease-segment selection — the `&` filter: a crease name is a bundle, projected to one segment by incidence); **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`, `step` panels; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
 
 ---
 
@@ -137,15 +141,19 @@ The fold that places `.x` onto `.y`: the perpendicular bisector of the segment
 
 *(since v0.6-dev: verb is `map … onto …`; was `fold … to …`.)*
 
-### 4.3 Construction — intersection of two creases *(since v0.0)*
+### 4.3 Meet — where two lines cross: `*` and `.[…]` *(since v0.0)*
 
 ```
-cross --c1 --c2
+--c1 * --c2        ; the meet point   ≡  .[--c1 --c2]
 ```
 
-The point where the two creases' **material marks** cross on the sheet. This is
-a point *construction*, not a fold axiom, in the classic numbering; it is Hull's
-basic operation O2 [[hull2020]](#ref-hull2020) §1.5 (O2).
+The point where the two creases' **material marks** cross on the sheet. Meet is
+a **read** (§4.10): the operator names existing geometry — a crossing — and
+scores nothing. `*` is the binary sugar; the n-ary form is the bracket `.[l+]`,
+the point incident to *all* the listed lines (concurrent lines → their common
+point), so `--x * --y` ≡ `.[--x --y]`. This is a point *construction*, not a
+fold axiom, in the classic numbering; it is Hull's basic operation O2
+[[hull2020]](#ref-hull2020) §1.5 (O2).
 
 *(since v0.19-dev)* The crossing is computed in **paper space**: a crease is a
 scar in the material, and two scars cross (or don't) independently of how the
@@ -159,25 +167,25 @@ covering layer, `Q2-B`.) Consequences:
   table by later folds still qualifies bare — its scar is one straight line in
   the paper. A crease scored through several layers marks **different lines on
   different layers** (mirror images) and must be projected to one segment with
-  `at` (§4.8).
+  `&` (§4.8).
 - The crossing must lie **on the marks**: for each crease operand, on one of
   its segments (endpoints count). Two supporting lines meeting beyond the
   marks' extent is an error — there is nothing to see there on the sheet.
-- A constructed line operand (`--(.p .q)`) is the paper-space line through the
-  two material points; for it the crossing must merely lie on the paper. The
-  same holds for a reference-only boundary crease (one that cut no face).
-- `cross` is therefore **fold-state-independent**: folding never moves a mark
-  within the sheet. Only name resolution (the `at` projection) reads the
-  folded state.
+- A paper-edge operand (a prelude edge `--ab`, or a `--[.a .b]` selection) is a
+  boundary line; for it the crossing must merely lie on the paper. The same
+  holds for a reference-only boundary crease (one that cut no face).
+- The meet is therefore **fold-state-independent**: folding never moves a mark
+  within the sheet. Only name resolution (the `&` filter) reads the folded
+  state.
 
 **Errors:**
 
 - the two lines are **parallel** (no intersection);
 - a crease operand marks **different lines on different layers** (select a
-  segment with `at`);
+  segment with `&`);
 - the marks **do not reach** the crossing (supporting lines meet beyond a
   crease's segments);
-- the intersection is **off the paper** (constructed-line / boundary-reference
+- the intersection is **off the paper** (paper-edge / boundary-reference
   operands; exact point-in-polygon test; the boundary counts as on the paper).
 
 ### 4.4 Axiom 3 — perpendicular through a point *(since v0.2)*
@@ -234,8 +242,8 @@ the long diagonal has one candidate bisector crossing the paper's interior and
 one meeting it only at a corner point (zero-length incidence):
 
 ```
---ac = --(.a .c)
-@map --(.d .a) onto --ac   ; one candidate has zero paper incidence — the other is taken silently
+--ac = through .a .c
+@map --da onto --ac   ; one candidate has zero paper incidence — the other is taken silently
 ```
 
 (worked through in `examples/bases/kite.bel`)
@@ -256,7 +264,7 @@ rejected candidate is both in that corner's angular sector *and* the
 angularly closer of the two:
 
 ```
-@map --(.d .a) onto --ac toward .b
+@map --da onto --ac toward .b
 ```
 
 **The straddle case.** If the crossing point lies in the **interior** of
@@ -266,7 +274,9 @@ at the sheet's center), the two candidates swing *different* halves of
 break the tie. `moving` (§4.6) can, since it names which half swings:
 
 ```
-@map --(.a .c) onto --(.b .d) toward .b moving .c
+--ac = through .a .c
+--bd = through .b .d
+@map --ac onto --bd toward .b moving .c
 ```
 
 (`examples/syntax/bisect-straddle.bel`) Without `moving` — or with a `moving`
@@ -298,7 +308,7 @@ overrides it, and is still required to break a straddle or to scope an
 - the straddle case, both candidates viable ("map --l1 onto --l2 toward .p is
   ambiguous: --l1 straddles the crossing, so both bisectors move material
   toward .p"), extended with a fix-it clause — "select the swinging segment
-  of --l1 with `at`" for a bind, "add `moving` to pick the swinging flap" for
+  of --l1 with `&`" for a bind, "add `moving` to pick the swinging flap" for
   a fold, or, when an explicit `moving` anchor still sits in both flaps,
   "anchor with a point in only one flap";
 - a fold whose `--l1` has no material on the paper at all ("--l1 has no
@@ -435,18 +445,18 @@ paper stays flat. Prefixing it with `@` **performs the fold**:
 | direction | valley/mountain | `mountain` keyword; default valley |
 
 **Anchor.** `moving` takes a **flap operand** (ADR 0016) — a point, a line, or
-`#(...)`, the same three forms `at` (§4.8) resolves by incidence:
+`#[...]`, the same three forms `&` (§4.8) resolves by incidence:
 
 - a **point** — the flap carrying it. No flap contains it → error (`.p is not
   on the paper`); the point sits on a crease shared by several flaps → error
-  naming the count and pointing at `#(...)` (`.p lies on a crease shared by 2
-  flaps; name the flap with #(...)`).
+  naming the count and pointing at `#[...]` (`.p lies on a crease shared by 2
+  flaps; name the flap with #[...]`).
 - a **line** — the flap hinged on it. Usually ambiguous, since a hinge has two
-  sides (`--d touches 2 flaps; add a point, e.g. #(.p)`); resolves only when
+  sides (`--d touches 2 flaps; add a point, e.g. #[.p]`); resolves only when
   exactly one flap touches it.
-- **`#(...)`** — explicit incidence constraints: the unique flap containing
-  every listed point (`moving #(.b .c)`), same resolution rule as `at`'s
-  `#(...)` selector.
+- **`#[...]`** — explicit incidence constraints: the unique flap containing
+  every listed point (`moving #[.b .c]`), same resolution rule as `&`'s
+  `#[...]` selector.
 
 **Map folds** (`@map .a onto .c`) imply the anchor from the moved point when
 `moving` is omitted — here, `.a`'s flap; `moving <flap>` overrides it (e.g.
@@ -457,7 +467,7 @@ is still required when that material straddles the axis, or to scope an
 `up to` range. **Line-construction folds** (`@through`, `@perp`) and
 **`@fold`** (below) have no natural anchor at all, so `moving` is
 **required** — the existing "this fold needs `moving .p` to choose the side"
-error. A line- or `#(...)`-flap anchor that
+error. A line- or `#[...]`-flap anchor that
 straddles the fold axis, or a `moving` point exactly on the axis, is also an
 error (no side to pick); a point anchor disambiguates the side by itself, even
 when its flap straddles the axis.
@@ -521,7 +531,7 @@ re-stating the axiom that produced it. `moving` is **always required** — a
 material crease implies no side. Material resolution is per flap, as for any
 crease reference (§4.8): a crease **bent** under the moving set is an error
 ("the crease is bent under the moving flaps; select a straight segment with
-`at` or move fewer flaps") — select a straight segment with `--d at ...`
+`&` or move fewer flaps") — select a straight segment with `--d & ...`
 instead. `@fold` composes with `up to` to crease every layer while folding
 only some — the motivating case, *crease all, fold some*:
 
@@ -535,9 +545,9 @@ moving ones fold (their mark upgrades to `"M"`/`"V"`).
 
 See [ADR 0016](../decisions/0016-typed-operands-bundle-values-singleton-slots.md)
 (typed operands: bundle values vs. singleton slots — the resolution rules
-behind `moving`, `up to`, and `#(...)`) and
+behind `moving`, `up to`, and `#[...]`) and
 [ADR 0014](../decisions/0014-crease-is-a-bundle-of-segments.md) (a crease is a
-bundle of segments — why `@fold` checks for a bent crease and why `at`
+bundle of segments — why `@fold` checks for a bent crease and why `&`
 selection exists).
 
 ### 4.7 `flip` — turn the sheet over *(since v0.7-dev)*
@@ -554,7 +564,7 @@ takes no axis: with named points, where the sheet lands is irrelevant, so the
 reflection uses an internal canonical axis (the footprint's vertical centerline).
 A direction argument may be added later when the animation renderer needs it.
 
-### 4.8 Selecting a crease segment: `at` *(since v0.17-dev)*
+### 4.8 Filtering a crease bundle: `&` (and `\`, `[]`) *(since v0.17-dev)*
 
 A crease name is a **bundle**: one crease realised as a set of segments — one per
 layer the crease line crossed, further split by later creases. The segments are
@@ -562,29 +572,35 @@ collinear only in the folded moment of creation; once (un)folding scatters them
 they point every which way in the crease pattern. So a crease name is not a single
 line.
 
-`--l at <selector>` projects the bundle down to the **one** segment incident to the
-selector, and yields that segment's current supporting line (usable anywhere a line
-operand is; as a fold axis that is its table-space line, in `cross` its material
-paper-space mark — §4.3). Selectors, by incidence:
+`--l & <constraint>` **filters** the bundle to the segments incident to the
+constraint. At a singleton slot (one that wants exactly one line, ADR 0016) it
+projects to the **one** segment and yields that segment's current supporting line
+(usable anywhere a line operand is; as a fold axis that is its table-space line,
+in a meet (`*`) its material paper-space mark — §4.3). Constraints, by incidence:
 
-- `--l at .p` — the segment the point `.p` lies on.
-- `--l at --a` — the segment whose span contains `--a`'s crossing of `--l`.
-- `--l at #(.a .b …)` — the segment lying on that flap.
+- `--l & .p` — the segment the point `.p` lies on.
+- `--l & --a` — the segment whose span contains `--a`'s crossing of `--l`.
+- `--l & #[.a .b …]` — the segment lying on that flap.
 
-Selection is **incidence**: `at` picks the segment the selector is *on*. This is
+Filtering is **incidence**: `&` keeps the segments the constraint is *on*. This is
 distinct from `toward` (§4), whose meaning now varies by axiom: axioms 6/7
 still use it for **proximity** (the construction landing nearest a point,
 §4.5b, §4.5c); axiom 5 uses it for **direction** (§4.5) — the target side of a
-fold, not a nearness measure. `at` binds tighter than the axiom keywords: `perp --l at --a through .b`
-reads as `perp (--l at --a) through .b`.
+fold, not a nearness measure. `&` binds tighter than the axiom keywords: `perp --l & --a through .b`
+reads as `perp (--l & --a) through .b`.
 
-The result must be a **single** segment. No match is an error ("no segment of `--l`
-matches …"); more than one is an error asking for a second selector. When one point
-sits on a crease crossing (two adjacent segments share it), disambiguate with the
-two-selector form `--l at (.p and --a)` — the unique segment incident to *both*.
+Chaining conjoins: when one point sits on a crease crossing (two adjacent
+segments share it), pin the unique segment incident to *both* constraints by
+chaining — `--l & .p & --a`. Two related read operators complete the family:
+`\` is the **negated** filter (`--l \ .p` keeps the segments *not* through `.p`
+— e.g. the ray away from a split vertex), and `[a b …]` is the **union** of
+same-typed bundles (`[--x --y] & .p`). At a singleton slot the result must be a
+**single** segment: no match is an error ("no segment of `--l` matches …"); more
+than one is an error asking for a further constraint.
 
-`at` supersedes the earlier `--( --l #(…) )` restrict form. Creating a single
-segment (rather than selecting one) is `pinch`, still forthcoming (Appendix B).
+`&` supersedes the earlier `--( --l #(…) )` restrict form (and the `at` operator
+it replaced). Creating a single segment (rather than selecting one) is `pinch`,
+still forthcoming (Appendix B).
 
 ### 4.9 `@collapse` — single-vertex collapse *(since v0.20-dev)*
 
@@ -612,7 +628,7 @@ collapse_item := collapse_elem
                | over_flap "over" over_flap
                | "standing" flap_operand
 collapse_elem := "(" collapse_elem ")" | line_operand ["mountain"]
-over_flap     := point_operand | "#(" point_operand+ ")"
+over_flap     := point_operand | "#[" point_operand+ "]"
 ```
 
 One flat `and`-separated list — `over` pairs and `standing` are **items in the
@@ -620,19 +636,19 @@ list**, not trailing clauses, and may appear in any position or be
 interleaved with elements:
 
 ```
-@collapse --ba at .a and --bb at .b and (--e mountain) and .p over .q and standing .r
+@collapse --ba & .a and --bb & .b and (--e mountain) and .p over .q and standing .r
 ```
 
 - `collapse_elem`'s `line_operand` must resolve to a material crease — the
-  same operand forms `@fold` accepts (`--name`, `--name at <selector>`,
-  §4.8); an inline construction is syntactically a `line_operand` too but
-  errors at resolution (below). `mountain` binds to the immediately
-  preceding element, default valley.
+  same operand forms `@fold` accepts (`--name`, `--name & <constraint>`,
+  §4.8); a paper edge or a non-material selected line is syntactically a
+  `line_operand` too but errors at resolution (below). `mountain` binds to the
+  immediately preceding element, default valley.
 - `over_flap` deliberately excludes bare crease names: that is what makes the
   first token after `and` classify the item unambiguously — a crease-name
-  start is an element, a point/`#(...)` start followed by `over` is a
+  start is an element, a point/`#[...]` start followed by `over` is a
   stacking pair, `standing` is keyword-first. `standing`'s own operand is the
-  full `flap_operand` (point, line, or `#(...)`, as `moving` takes, §4.6).
+  full `flap_operand` (point, line, or `#[...]`, as `moving` takes, §4.6).
 - A duplicate `standing` clause in one `@collapse` is a **parse error** at the
   second occurrence ("only one standing clause per @collapse").
 
@@ -642,17 +658,17 @@ Rabbit ear, concretely — the collapse statement from
 incenter `.o`):
 
 ```
-@collapse --ba at .a and --bb at .b
-  and --v at .m and (--v at --(.a .b) mountain)
+@collapse --ba & .a and --bb & .b
+  and --v & .m and (--v & --ab mountain)
 ```
 
 **Resolution.** Each element resolves to exactly **one** material crease
 segment, by the same per-flap material resolution `@fold` uses (§4.6, §4.8).
-An operand that is not an existing material crease (an inline construction
-like `--(.a .c)`, for instance) errors: *"collapse folds along existing
+An operand that is not an existing material crease (a paper edge like `--ab`,
+for instance) errors: *"collapse folds along existing
 creases; `<operand>` is not a material crease."* From there, resolution
-follows `at`'s own rules (§4.8) — no matching segment, or more than one, both
-error as they do for `at` elsewhere.
+follows `&`'s own rules (§4.8) — no matching segment, or more than one, both
+error as they do for `&` elsewhere.
 
 **Checks, in the order the evaluator runs them:**
 
@@ -660,10 +676,10 @@ error as they do for `at` elsewhere.
 |---|---|---|
 | 1 | `standing` present (reserved, unimplemented) | `standing folds are not yet supported` |
 | 2 | element is not a material crease | `collapse folds along existing creases; <operand> is not a material crease` |
-| 3 | `at` selector matches no segment | `no segment of --<name> matches <selector>` |
-| 4 | `at` selector matches more than one segment | `--<name> at <selector> is ambiguous: <k> segments match; add a selector` |
+| 3 | `&` constraint matches no segment | `no segment of --<name> matches <constraint>` |
+| 4 | `&` constraint matches more than one segment | `--<name> & <constraint> is ambiguous: <k> segments match; add a constraint` |
 | 5 | bare crease name has no material segment | `--<name> has no material segment` |
-| 6 | bare crease name has more than one segment | `` --<name> has <k> segments; select one with `at` `` |
+| 6 | bare crease name has more than one segment | `` --<name> has <k> segments; select one with `&` `` |
 | 7 | a layer under the collapse region doesn't carry an element's crease on the same line (all-layers rule, below) | `collapse through unaligned layers` |
 | 8 | segments don't all share one strictly-interior common endpoint O | `no common interior vertex` |
 | 9 | element count is odd, or exactly 2 | `` count (hint: use `@fold` for n = 2) `` |
@@ -676,7 +692,7 @@ error as they do for `at` elsewhere.
 | 16 | more than one valid stacking survives | `ambiguous stacking (<k> orders)` |
 
 Checks 8–14 run against **rays**: a bundle already split at O by the material
-`cross` machinery (v0.19), so each side of a through-vertex line is an
+crossing machinery (v0.19), so each side of a through-vertex line is an
 independent element with its own mountain/valley.
 
 **State construction.** Faces are the sectors around O. Sector *i*'s isometry
@@ -703,7 +719,7 @@ stack are a follow-up (Appendix B).
 **Clauses.**
 
 - **`<flap> over <flap>`** (repeatable): flap operands are a point or
-  `#(...)` (a point denotes its sector). Orders the two sectors in the final
+  `#[...]` (a point denotes its sector). Orders the two sectors in the final
   stacking. Redundant `over` — already true in every surviving stacking — is
   a silent no-op, not an error (a future lint hint, same category as other
   implied-clause lints); `over` that rules out every surviving stacking
@@ -738,11 +754,11 @@ off-center vertex) is above.
 center vertex — both diagonals and both midlines) shows n > 4:
 
 ```
-@collapse --ac at .a and --ac at .c and --bd at .b and --bd at .d
-  and --h at --(.b .c)
-  and (--h at --(.a .d) mountain)
-  and (--v at --(.d .c) mountain)
-  and (--v at --(.a .b) mountain)
+@collapse --ac & .a and --ac & .c and --bd & .b and --bd & .d
+  and --h & --bc
+  and (--h & --da mountain)
+  and (--v & --cd mountain)
+  and (--v & --ab mountain)
 ```
 
 The 5-valley/3-mountain assignment shown satisfies Maekawa (\|5 − 3\| = 2)
@@ -753,8 +769,33 @@ no `over` clause is needed here.
 See [ADR 0016](../decisions/0016-typed-operands-bundle-values-singleton-slots.md)
 (flap operands) and
 [ADR 0014](../decisions/0014-crease-is-a-bundle-of-segments.md) (crease
-bundles, rays split at a crossing) — the same machinery `@fold` and `at`
+bundles, rays split at a crossing) — the same machinery `@fold` and `&`
 build on.
+
+### 4.10 The read/write law — keywords write, operators read *(since v0.20-dev)*
+
+One law governs the surface syntax: **an operation that mutates paper state —
+scores a crease, folds, and thereby re-segments existing references (ADR 0014)
+— is a keyword verb, sequenced in program order; an operation that only reads
+the current state is a pure read, and is an operator or bracket.** Keywords are
+commits to the versioned sheet; reads are checkout queries against it. The
+physical asymmetry the law encodes: *finding* where two creases cross is free,
+*making* a crease costs a fold, so the notation looks different for the two.
+
+The **reads** are all symbols/brackets: meet `*` and `.[l+]`, join `--[c+]`,
+flap `#[c+]`, filter `&`, drop `\`, union `[…]`. They **select existing
+geometry** and error on no-match — meet `*`/`.[]` names an existing crossing, and
+the join `--[.a .b]` (or its `.a * .b` sugar) resolves to a **real** crease or
+paper edge through the two points, never conjuring a "sight-line." The one
+**write** is the keyword **`through`** (Huzita axiom 1): it scores a *new* line
+where none exists (`--e = through .a .b`). Meet and join look identical because
+both only read; `through` looks different because it writes. Full derivation:
+[`docs/superpowers/specs/2026-07-08-notation-by-state-change-design.md`](../docs/superpowers/specs/2026-07-08-notation-by-state-change-design.md).
+
+Point-locating landmark constructions (a bisector foot, a reference apex) are
+currently scored as full `through` creases — an interim that adds real geometry
+and moves the golden — pending the future `pinch` primitive that will mark a
+single segment without a full crease (Appendix B).
 
 ---
 
@@ -772,7 +813,7 @@ name must be defined before it is used.
   ```
 - **Point statement** — binds a derived point:
   ```
-  .center = cross --d1 --d2
+  .center = --d1 * --d2            ; meet of two creases
   ```
 - **Flip statement** *(since v0.7-dev)* — turns the sheet over (§4.7):
   ```
@@ -787,13 +828,13 @@ line comment.
 non-temp name in the same scope is an error, **except** temp names (§5a.6).
 There is no `:=`.
 
-**Shorthand RHS** *(since v0.16-dev)*: the inline anonymous-construction forms
-(Appendix A) are also valid directly as a binding's right-hand side, as sugar
-for the equivalent named construction:
+**Reads and `through` as RHS** *(since v0.16-dev)*: the read operators (§4.3,
+§4.8, §4.10) are values, usable directly as a binding's right-hand side; the one
+construction keyword `through` (§4.10) likewise binds the new line it scores:
 
 ```
-.s  = .(--rs --(.d .c))    ; sugar for: .s = cross --rs --(.d .c)
---e = --(.p1 .p2)          ; sugar for: --e = through .p1 .p2
+.s  = --rs * --cd          ; meet — a read (names an existing crossing)
+--e = through .p1 .p2      ; a new crease — the one write
 ```
 
 **Identifiers** *(since v0.16-dev)* are `[a-zA-Z0-9_]+` — underscore, never
@@ -832,7 +873,8 @@ and `def` bodies both follow it.
 ```
 def petal(.p .q --base) {
   @map .p onto .q moving .p
-  .tip = cross --(.p .q) --base
+  --pq = through .p .q
+  .tip = --pq * --base
 }
 ```
 
@@ -855,8 +897,8 @@ def petal(.p .q --base) {
 ### 5a.3 `apply` and instances
 
 ```
-$p1 = apply petal(.k1 .k2 --(.k1 .k3))   ; folds now; instance retained
-apply petal(.k2 .k4 --(.k2 .k1))          ; folds now; namespace discarded
+$p1 = apply petal(.k1 .k2 --[.k1 .k3])   ; folds now; instance retained
+apply petal(.k2 .k4 --[.k2 .k1])          ; folds now; namespace discarded
 ```
 
 - `$name` is the **instance** sigil — its only use. `apply` is the only RHS
@@ -865,8 +907,8 @@ apply petal(.k2 .k4 --(.k2 .k1))          ; folds now; namespace discarded
 - Arguments are ordinary point/crease operands (named or inline forms),
   matched to parameters by position; sigils must agree.
 - A named-crease argument passes the **crease itself** — its material identity,
-  not a snapshot of its line — so the body can `cross` it or fold along it as
-  the sheet evolves. Inline constructed lines (`--(…)`, `at` projections) pass
+  not a snapshot of its line — so the body can meet it (`*`) or fold along it as
+  the sheet evolves. Selected lines (`--[…]` joins, `&` projections) pass
   as fixed lines *(since v0.19-dev)*.
 - `apply` always executes the body immediately, against the current folded
   state — a bare `apply name(args)` (no `$name =`) still folds; it just
@@ -874,20 +916,24 @@ apply petal(.k2 .k4 --(.k2 .k1))          ; folds now; namespace discarded
 - The result is an **instance**: a namespace holding every non-temp binding
   the body created.
 
-### 5a.4 Qualified access
+### 5a.4 Cross-instance access
+
+Cross-instance access is through `export` (§5a.5) only. The bracket
+member-access operators `.[$inst m]` / `--[$inst m]` are **removed** — the
+`--[…]` and `.[…]` brackets are now the join and meet selectors (§4.3, §4.8),
+which cannot also mean "read a member." To use an instance's members, `export`
+them into the current scope (renaming with `as` where names would collide) and
+then reference the landed names:
 
 ```
-@map .[$p1 tip] onto .[$p2 tip]
---d = through .[$p1 tip] .[$p2 tip]
-.x  = cross --[$p1 pq] --[$p2 pq]
+export { .tip as .tip1 } $p1
+export { .tip as .tip2 } $p2
+@map .tip1 onto .tip2
 ```
 
-- `.[$inst member]` is a point operand; `--[$inst member]` is a crease
-  operand. The outer sigil declares the kind being read; the member name is
-  bare. Valid anywhere an operand of that kind is valid (including inside
-  inline shorthand forms).
-- **Errors:** unknown member, member/sigil kind mismatch, or the member is a
-  temp (temps are never reachable through an instance).
+`export` only reads from the instance — it never re-runs the body — so it is
+still a pure read of already-folded geometry; naming a **temp** member in an
+export list is an error (temps are never reachable through an instance).
 
 ### 5a.5 `export`
 
@@ -905,8 +951,7 @@ export $t                            ; all non-temp members
 - `export $t` (export-all) lands every non-temp member of `$t` and
   validates **each landed name individually**, exactly like selective
   export — two export-alls from two applies of the same `def` will collide
-  on every member name unless disambiguated with selective `as` or read via
-  qualified access instead.
+  on every member name unless disambiguated with selective `as`.
 - `!` marks an intentional shadow and is validated both ways: binding an
   existing name **without** `!` is an error ("name exists, use `!` to
   shadow"); using `!` when the name does **not** already exist is an error
@@ -919,11 +964,11 @@ export $t                            ; all non-temp members
 
 ```
 step thirds
-._mb = .(--vm --(.a .b))
+._mb = --vm * --ab
 --pq = through ._pq1 ._pq2
 
 step beloch_fold
-@map .c onto --(.a .b) and .s onto --pq
+@map .c onto --ab and .s onto --pq
 ```
 
 - `step ident` opens a display panel that runs until the next `step` or end
@@ -1076,10 +1121,10 @@ and the process exits non-zero:
 - parse error;
 - axiom 1 or 2 whose two points are at the **same place** (coincident — which can
   also happen *after* folds bring two material points together);
-- `cross` on parallel creases (no intersection);
-- `cross` on a crease that marks **different lines on different layers**
-  (project to one segment with `at`);
-- `cross` whose marks **do not reach** the crossing, or whose intersection is
+- meet (`*` / `.[]`) on parallel creases (no intersection);
+- meet (`*` / `.[]`) on a crease that marks **different lines on different layers**
+  (project to one segment with `&`);
+- meet (`*` / `.[]`) whose marks **do not reach** the crossing, or whose intersection is
   **off the paper**;
 - `map --l1 onto --l2` (axiom 5): with `toward` omitted, both surviving
   bisectors land on the paper (ambiguous) or neither does (no fold to make); a
@@ -1101,12 +1146,11 @@ The Menhir grammar is authoritative once written; this sketch is a guide.
 program       := "paper" "square" stmt*
 stmt          := crease_stmt | point_stmt | flip_stmt | collapse_stmt
               | def_stmt | instance_stmt | apply_stmt | export_stmt | step_stmt   ; since v0.16-dev
-crease_stmt   := CREASE_NAME "=" "--(" point_operand point_operand ")"                      ; named, inline through (no fold)
-               | [ CREASE_NAME "=" ] [ "@" ] axiom [ fold_spec ]                             ; named or anonymous, axiom-based (fold only with @)
+crease_stmt   := [ CREASE_NAME "=" ] [ "@" ] axiom [ fold_spec ]                             ; named or anonymous, axiom-based (fold only with @)
                | "@" "fold" line_operand fold_spec                                           ; fold along existing material (since v0.18-dev)
-point_stmt    := POINT_NAME "=" point_expr
+point_stmt    := POINT_NAME "=" point_operand
 flip_stmt     := "flip"
-axiom         := "through" point_operand point_operand          ; axiom 1
+axiom         := "through" point_operand point_operand          ; axiom 1 — the one construction keyword (write)
                | "map" point_operand "onto" point_operand       ; axiom 2
                | "perp" line_operand "through" point_operand     ; axiom 3
                | "map" point_operand "onto" line_operand "perp" line_operand  ; axiom 4
@@ -1117,17 +1161,17 @@ axiom         := "through" point_operand point_operand          ; axiom 1
                      "and" point_operand "onto" line_operand
                      [ "toward" point_operand ]                                  ; axiom 7
 fold_spec     := [ "moving" flap_operand ] [ "up" "to" flap_operand ] [ "mountain" ]  ; since v0.18-dev
-flap_operand  := point_operand | line_operand | "#(" point_operand+ ")"              ; since v0.18-dev
-point_expr    := "cross" line_operand line_operand              ; line intersection (binding RHS)
-               | ".(" line_operand line_operand ")"              ; inline cross (binding RHS)
-point_operand := POINT_NAME | ".(" line_operand line_operand ")"     ; named, or inline cross
-               | ".[" INSTANCE_NAME ident "]"                        ; qualified member (since v0.16-dev)
-line_operand  := CREASE_NAME | "--(" point_operand point_operand ")" ; named, or inline through
-               | "--[" INSTANCE_NAME ident "]"                       ; qualified member (since v0.16-dev)
-               | CREASE_NAME "at" selector                            ; crease segment by incidence (since v0.17-dev)
-               | CREASE_NAME "at" "(" selector "and" selector ")"     ; two-selector disambiguation
-selector      := point_operand | CREASE_NAME
-               | "--(" point_operand point_operand ")" | "#(" point_operand+ ")"
+flap_operand  := point_operand | line_operand | "#[" point_operand+ "]"              ; since v0.18-dev
+point_operand := POINT_NAME                                      ; named
+               | line_operand "*" line_operand                   ; meet (binary): the point where two lines cross — a read
+               | ".[" line_operand+ "]"                          ; meet (n-ary): the point on all listed lines
+line_operand  := CREASE_NAME                                     ; named crease, or a prelude edge (--ab --bc --cd --da)
+               | point_operand "*" point_operand                 ; join (binary): the existing crease/edge through two points — a read
+               | "--[" constraint+ "]"                           ; join / line selector: crease/edge segments incident to all constraints
+               | line_operand "&" constraint                     ; filter to incident segments (since v0.17-dev)
+               | line_operand "\" constraint                     ; drop incident segments
+               | "[" line_operand+ "]"                           ; union of same-typed bundles
+constraint    := point_operand | line_operand | "#[" point_operand+ "]"
 POINT_NAME    := "." ident
 CREASE_NAME   := "--" ident
 INSTANCE_NAME := "$" ident
@@ -1138,7 +1182,7 @@ collapse_item := collapse_elem
                | over_flap "over" over_flap
                | "standing" flap_operand
 collapse_elem := "(" collapse_elem ")" | line_operand [ "mountain" ]
-over_flap     := point_operand | "#(" point_operand+ ")"
+over_flap     := point_operand | "#[" point_operand+ "]"
 
 ; since v0.16-dev — §5a
 def_stmt      := "def" ident "(" param* ")" "{" body_stmt* "}"
@@ -1155,12 +1199,15 @@ A bare axiom statement is a *precrease* (computes a crease line, paper stays
 flat). The `@` prefix performs the fold (§4.6); `moving` anchors it, `up to`
 scopes it, `mountain` sets its direction. `@fold` folds along an existing
 crease instead of an axiom (§4.6). `flip` turns the whole sheet over (§4.7).
-*(since v0.7-dev)* Any operand may be an
-**inline anonymous construction** — `--(.a .b)` is the line through two points,
-`.(--a --b)` the point where two creases meet; these nest freely and coexist with
-the `cross`/`through` keywords (which remain for named bindings). *(since
-v0.16-dev)* These inline forms are also valid directly as a binding's
-right-hand side — see the shorthand RHS note in §5.
+*(since v0.7-dev)* Any operand may be an **inline read** (§4.10): `--x * --y`
+(or `.[--x --y]`) is the point where two lines meet; `.a * .b` (or `--[.a .b]`)
+is the existing crease/edge through two points; `--l & c` / `--l \ c` filter a
+bundle; `[…]` unions bundles. These select existing geometry — they never score
+a crease — and nest freely; the polymorphic `*` reads as a meet when its
+operands are lines and a join when they are points. The one construction that
+*writes* a new line is the keyword `through` (§4.10); it is not an operator.
+These read forms are also valid directly as a binding's right-hand side — see
+the RHS note in §5.
 
 ---
 
@@ -1168,8 +1215,8 @@ right-hand side — see the shorthand RHS note in §5.
 
 Deferred, in rough order of likely arrival: non-flat (constructible-angle) folds ·
 `rotate` · fold maneuvers (reverse/squash/sink/petal, via `unfold` + layer
-selection) · crease-segment *creation* (`pinch` — materialise one segment; the `at` selection
-operator landed in v0.17-dev, [ADR 0014](../decisions/0014-crease-is-a-bundle-of-segments.md)) ·
+selection) · crease-segment *creation* (`pinch` — materialise one segment; the `&` selection
+filter landed in v0.17-dev, [ADR 0014](../decisions/0014-crease-is-a-bundle-of-segments.md)) ·
 `standing` implementation for `@collapse` (the 3D isometry rework, ADR 0015) ·
 multi-vertex collapse (fish/bird base in one action) · boundary-vertex
 collapse (squash/petal preparation) · sector-block interleaving in
@@ -1178,7 +1225,8 @@ layers) · a `paper triangle` shape (a nicer rabbit-ear demo than the
 inscribed-triangle workaround) · `rabbitear` sugar `def` (intent-style,
 `toward`, inferring M/V) ·
 regions · parts/imports · nested `def`s and namespace chaining
-(`.[$b1 $d tip]`) · re-export cascades · string labels in source (i18n stays
+(deeper cross-instance access, spelling TBD now the brackets are selectors) ·
+re-export cascades · string labels in source (i18n stays
 external) · `pub`/`priv` interfaces · looping primitives · module/file-level
 namespacing · a dedicated render/animation engine · YR diagrams. These are not
 part of the language until a slice lands and this spec is extended.
@@ -1187,26 +1235,31 @@ part of the language until a slice lands and this spec is extended.
 bisector (v0.3-dev); the `map … onto …` verb and the `@` fold modifier
 (v0.6-dev); and *(v0.7-dev)* the **action model** — `@` fold execution, the
 folded-state runtime, derived mountain/valley, the dual `creasePattern` +
-`foldedForm` FOLD output, `flip`, and inline anonymous operands
-(`--(.a .b)` / `.(--a --b)`). See
+`foldedForm` FOLD output, `flip`, and inline anonymous read operands
+(`.a * .b` join / `--x * --y` meet — spelled `--(.a .b)` / `.(--a --b)` before
+the v0.20-dev cutover). See
 [ADR 0011](../decisions/0011-action-model.md). Mountain/valley is *derived* from
 fold actions, not a separate annotation pass. *(v0.8-dev)* axiom 6 — fold a
 point onto a line with the crease through a fixed point (`map .p onto --d through
 .p'`, optional `toward` for disambiguation). *(v0.9-dev)* axiom 7 — the cubic
 Beloch fold (`map .p onto --d and .q onto --e`, optional `toward`); irrational
 crease coordinates compared exactly (§6). *(v0.16-dev)*
-`=` replaces `:` as the binding separator; shorthand inline-construction RHS;
-`def`/`apply`/instances with closed-scope bodies; qualified member access
-(`.[$inst m]` / `--[$inst m]`); `export` with shadow/rename validation;
+`=` replaces `:` as the binding separator; read-operator RHS;
+`def`/`apply`/instances with closed-scope bodies; `export` with shadow/rename
+validation (cross-instance access; the earlier bracket member access was
+removed in the v0.20-dev notation cutover, §5a.4);
 `step` diagram panels; the uniform rebinding rule (see §5, §5a). *(v0.17-dev)*
-crease-segment selection — the `at` operator, projecting a crease name (a
+crease-segment selection — the `&` filter, projecting a crease name (a
 bundle of segments) to one segment by incidence (ADR 0014). *(v0.18-dev)* fold
-scope — flap-typed `moving` (point/line/`#(...)` anchor operands, ADR 0016),
+scope — flap-typed `moving` (point/line/`#[...]` anchor operands, ADR 0016),
 `up to` for some-layers simple folds, and `@fold` along an existing material
 crease. *(v0.20-dev)* `@collapse` — single-vertex flat collapse: n ≥ 4
 material creases sharing one interior vertex, checked by Kawasaki, Maekawa,
 and layer-order validity, with `over` for stacking ties; `standing` parses
-but is not yet implemented (§4.9).
+but is not yet implemented (§4.9); the **notation cutover** — reads become
+operators (`*` meet/join, `&` filter, `\` drop, `[]` union, the `.[] --[] #[]`
+selectors), the one write is the keyword `through`, and bracket member access
+retires in favour of `export` (§4.10, design doc).
 
 ---
 

@@ -65,7 +65,7 @@
     null,
     {
       "axiom": "axiom3",
-      "sources": [ ".a", "--b at #(.c .d)" ],
+      "sources": [ ".a", "--b & #[.c .d]" ],
       "span": "crease-at-flap.bel:12:1",
       "name": "q",
       "step": null

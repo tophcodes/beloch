@@ -48,7 +48,7 @@ let test_e2e_inline_equiv () =
       "paper square\n\
        --d1 = through .a .c\n\
        --d2 = through .b .d\n\
-       .m = cross --d1 --d2\n\
+       .m = --d1 * --d2\n\
        map .a onto .m\n"
   in
   let inline =
@@ -56,7 +56,7 @@ let test_e2e_inline_equiv () =
       "paper square\n\
        --d1 = through .a .c\n\
        --d2 = through .b .d\n\
-       map .a onto .(--d1 --d2)\n"
+       map .a onto .[--d1 --d2]\n"
   in
   Alcotest.(check bool)
     "inline cross-point matches the named binding" true
@@ -65,7 +65,7 @@ let test_e2e_inline_equiv () =
 let test_e2e_inline_error () =
   expect_error "same place" (fun () ->
       Beloch.fold_string ~filename:"t.bel"
-        "paper square\nperp --(.a .a) through .b\n")
+        "paper square\n--aa = through .a .a\nperp --aa through .b\n")
 
 let test_e2e_diagonals () =
   let src = read_example "syntax/diagonals.bel" in
@@ -375,7 +375,7 @@ let test_multilayer_crease_bare_cross_errors () =
     "paper square\n\
      @map .c onto .a moving .c\n\
      --v = map .b onto .a\n\
-     .mid = cross --v --(.a .b)\n"
+     .mid = --v * --ab\n"
   in
   match Beloch.fold_string ~filename:"t.bel" src with
   | exception Error.Beloch_error (_, msg) ->
@@ -404,7 +404,7 @@ let test_at_selects_bent_segment () =
       "paper square\n\
        --b = through .a .c\n\
        --v = @map .c onto .b\n\
-       --q = perp --b at %s through .a\n"
+       --q = perp --b & %s through .a\n"
       sel
   in
   let q_axis src =
@@ -416,7 +416,51 @@ let test_at_selects_bent_segment () =
   in
   Alcotest.(check bool)
     "different flaps select different --q axes (at is load-bearing)" true
-    (q_axis (prog "#(.c .d)") <> q_axis (prog "#(.a .b)"))
+    (q_axis (prog "#[.c .d]") <> q_axis (prog "#[.a .b]"))
+
+(* the new filter/diff operators must pick the same bent segment as `at`:
+   `& #[.c .d]` keeps the upper segment; `\ #[.a .b]` drops the lower one,
+   leaving the same upper segment. Both must equal `at #(.c .d)`. *)
+let test_bundle_ops_equiv_at () =
+  let base sel =
+    Printf.sprintf
+      "paper square\n\
+       --b = through .a .c\n\
+       --v = @map .c onto .b\n\
+       --q = perp --b %s through .a\n"
+      sel
+  in
+  let q_axis src =
+    let open Yojson.Safe.Util in
+    match Beloch.fold_string ~filename:"t.bel" src with
+    | exception Error.Beloch_error (_, msg) ->
+        Alcotest.failf "should resolve, got error: %s" msg
+    | j -> j |> member "beloch:named_lines" |> member "q" |> to_list
+  in
+  let seg = q_axis (base "& #[.c .d]") in
+  Alcotest.(check bool) "\\ #[.a .b] selects the same (upper) segment as & #[.c .d]"
+    true
+    (q_axis (base "\\ #[.a .b]") = seg)
+
+(* a bound bundle behaves exactly like inlining its expression *)
+let test_bind_bundle_roundtrip () =
+  let q_axis src =
+    let open Yojson.Safe.Util in
+    match Beloch.fold_string ~filename:"t.bel" src with
+    | exception Error.Beloch_error (_, msg) ->
+        Alcotest.failf "should resolve, got error: %s" msg
+    | j -> j |> member "beloch:named_lines" |> member "q" |> to_list
+  in
+  let inline =
+    "paper square\n--b = through .a .c\n--v = @map .c onto .b\n\
+     --q = perp --b & #[.c .d] through .a\n"
+  in
+  let bound =
+    "paper square\n--b = through .a .c\n--v = @map .c onto .b\n\
+     --seg = --b & #[.c .d]\n--q = perp --seg through .a\n"
+  in
+  Alcotest.(check bool) "bound bundle == inline" true
+    (q_axis inline = q_axis bound)
 
 (* #42: one self-contained foldedForm frame per step snapshot, baseline
    included, each step-tagged. *)
@@ -492,7 +536,7 @@ let test_e2e_flap_cluster_spans_precrease_split () =
     (Beloch.fold_string ~filename:"t.bel"
        "paper square\n\
         --diag = map .b onto .d\n\
-        @map .a onto .c moving .a up to #(.a .c)\n")
+        @map .a onto .c moving .a up to #[.a .c]\n")
 
 (* ADR 0017 defect 2: a scoped self-fold must move its entire still-flat
    coplanar cluster, not just the face nearest the anchor. --v/--h precrease
@@ -513,7 +557,7 @@ let test_e2e_cohesion_moves_coplanar_sibling () =
          "paper square\n\
           --v = map .a onto .b\n\
           --h = map .a onto .d\n\
-          .m0 = .(--v --(.a .b))\n\
+          .m0 = --v * --ab\n\
           @map .a onto .m0 moving .a up to .a\n")
   in
   let d_pos = Fold_state.table_position fd.Eval.state (pt 0 1) in
@@ -566,6 +610,10 @@ let () =
             test_multilayer_crease_bare_cross_errors;
           Alcotest.test_case "at selects bent segment" `Quick
             test_at_selects_bent_segment;
+          Alcotest.test_case "& / \\ pick the same bent segment as at" `Quick
+            test_bundle_ops_equiv_at;
+          Alcotest.test_case "bound bundle == inline" `Quick
+            test_bind_bundle_roundtrip;
           Alcotest.test_case "one folded frame per step" `Quick
             test_multiframe;
           Alcotest.test_case "e2e faces_matrix + frame" `Quick

@@ -9,4 +9,4 @@
 paper square
 --b = through .a .c
 --v = @map .c onto .b
---q = perp --b at #(.c .d) through .a
+--q = perp --b & #[.c .d] through .a

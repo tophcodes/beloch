@@ -13,25 +13,32 @@ type export_entry = {
   espan : Error.span;
 }
 
-(* Operands are mutually recursive: a named leaf, or an inline construction.
-   PCross = inline `cross` (point at two creases); LThrough = inline `through`
-   (line through two points). A plain `.a` is PNamed; a plain `--l` is LNamed. *)
+(* Operands are mutually recursive: a named leaf, or a selection over existing
+   geometry. PSelect = meet (`--x * --y` / `.[l+]`), a point on the listed lines;
+   LSelect = join/select (`--[c+]` / `.a * .b`), an existing crease/edge. A plain
+   `.a` is PNamed; a plain `--l` is LNamed. *)
 type point_operand =
   | PNamed of point_ref
-  | PCross of line_operand * line_operand * Error.span
-  | PMember of string * string * Error.span  (* instance, member *)
+  | PSelect of line_operand list * Error.span
+    (* .[l+] and --x * --y: the point incident to all listed lines (n-ary
+       meet; the lines must be concurrent) *)
 
 and line_operand =
   | LNamed of crease_ref
-  | LThrough of point_operand * point_operand * Error.span
-  | LMember of string * string * Error.span  (* instance, member *)
-  | LAt of crease_ref * selector list * Error.span
-    (* --l at S | --l at (S1 and S2): the unique segment of bundle --l
-       incident to every selector (singleton-target rule) *)
+  | LFilter of line_operand * filter_elt * Error.span
+    (* bundle & sel (Keep) | bundle \ sel (Drop): the segments of the bundle
+       incident / not incident to sel. Chains left-to-right. *)
+  | LUnion of line_operand list * Error.span
+    (* [a b …]: union of same-typed crease bundles *)
+  | LSelect of selector list * Error.span
+    (* --[c+] and .a * .b: the unique existing crease/edge incident to all
+       constraints; errors on none or ambiguity (no sight-lines) *)
+
+and filter_elt = Keep of selector | Drop of selector
 
 and selector =
   | SelPoint of point_operand
-  | SelLine of line_operand   (* grammar produces only LNamed / LThrough here *)
+  | SelLine of line_operand   (* grammar produces only LNamed here *)
   | SelFlap of flap_operand
 
 and flap_operand = FByPoints of point_operand list * Error.span
@@ -74,10 +81,13 @@ type fold_spec = {
 type collapse_elem = { cline : line_operand; cdir : direction }
 
 type point_expr =
-  | Cross of line_operand * line_operand (* the `.name:` binding RHS *)
+  | PsExpr of point_operand (* the `.name = …` binding RHS: a meet/select/named point *)
 
 type stmt =
   | Crease of string option * axiom * fold_spec option * Error.span
+  | BindBundle of string * line_operand * Error.span
+      (* --x = <bundle expr>: name a crease bundle (union/filter of existing
+         creases). Resolves lazily as its expression; slots coerce to one. *)
   | Point of string * point_expr * Error.span
   | Flip of Error.span
   | Def of string * param list * stmt list * Error.span

@@ -1,3 +1,6 @@
-; status: works — inline line + cross: fold .a onto the centre, no named bindings
+; status: works — fold .a onto the centre (crossing of the two diagonals).
+; TODO(pinch): the diagonals are scored as full creases here; pinch marks later.
 paper square
-map .a onto .( --(.a .c) --(.b .d) )
+--ac = through .a .c          ; TODO(pinch): landmark diagonal
+--bd = through .b .d          ; TODO(pinch): landmark diagonal
+map .a onto (--ac * --bd)
