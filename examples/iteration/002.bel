@@ -3,22 +3,24 @@
 paper square
 
 --v = map .a onto .b          ; x = 1/2: perp bisector of the base, also the spine
-.m = .(--v --(.d .c))         ; apex (1/2, 1)
+.m = --v * --cd               ; apex (1/2, 1)
 
 step precrease
---ba = map --(.a .b) onto --(.a .m)   ; angle bisector at a (interior — filter picks it)
---bb = map --(.b .a) onto --(.b .m)   ; angle bisector at b
-.o = .(--ba --bb)                     ; incenter — the collapse vertex
+--am = through .a .m          ; TODO(pinch): landmark — replace with pinch when shipped
+--bm = through .b .m          ; TODO(pinch): landmark — replace with pinch when shipped
+--ba = map --ab onto --am     ; angle bisector at a (interior — filter picks it)
+--bb = map --ab onto --bm     ; angle bisector at b
+.o = --ba * --bb              ; incenter — the collapse vertex
 
 step constructions
-.rl = .(--bb --(.a .d))
-.rm = .(--ba --(.b .c))
-.bm = .(--v --(.a .b))
+.rl = --bb * --da
+.rm = --ba * --bc
+.bm = --v * --ab
 
-@collapse --ba at .rm and --bb at .rl and --v at .bm mountain
+@collapse --ba & .rm and --bb & .rl and --v & .bm mountain
 ; I would expect this, or something similar, to work but it does not.
 ; maybe I expect sugar like "rabbit ear" to be a single fold, but I don't even
 ; understand the primitive.
 ;
 ; It should fold the same parts of the flap, that 001.bel folds, with the area
-; #(.a .b .c) collapsed somehow
+; #[.a .b .c] collapsed somehow

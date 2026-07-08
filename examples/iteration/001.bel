@@ -3,20 +3,22 @@
 paper square
 
 --v = map .a onto .b          ; x = 1/2: perp bisector of the base, also the spine
-.m = .(--v --(.d .c))         ; apex (1/2, 1)
+.m = --v * --cd               ; apex (1/2, 1)
 
 step precrease
---ba = map --(.a .b) onto --(.a .m)   ; angle bisector at a (interior — filter picks it)
---bb = map --(.b .a) onto --(.b .m)   ; angle bisector at b
-.o = .(--ba --bb)                     ; incenter — the collapse vertex
+--am = through .a .m          ; TODO(pinch): landmark — replace with pinch when shipped
+--bm = through .b .m          ; TODO(pinch): landmark — replace with pinch when shipped
+--ba = map --ab onto --am     ; angle bisector at a (interior — filter picks it)
+--bb = map --ab onto --bm     ; angle bisector at b
+.o = --ba * --bb              ; incenter — the collapse vertex
 
 @fold --bb moving .a ; fold 1
 
 step constructions
-.rl = .(--bb --(.a .d))
-.rm = .(--ba --(.b .c))
+.rl = --bb * --da
+.rm = --ba * --bc
 
---crease = --(.o .rm)
+--crease = through .o .rm
 
 ; 3 options for fold 2:
 
@@ -24,8 +26,8 @@ step constructions
 ; @fold --crease moving .b
 
 ; works
-@fold --ba at #(.rm .b) moving .b
+@fold --ba & #[.rm .b] moving .b
 
 ; does not work, but also specifies what I think is the same flap
-; defined by #(.b .c .d .rl)
-; @fold --ba at #(.d .b) moving .b
+; defined by #[.b .c .d .rl]
+; @fold --ba & #[.d .b] moving .b

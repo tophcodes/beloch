@@ -4,14 +4,14 @@ paper square
 
 --v = map .a onto .b          ; x = 1/2: perp bisector of the base, also the spine
 --h = map .a onto .d          ; y = 1/2
-.m = .(--v --(.d .c))         ; apex (1/2, 1)
+.m = --v * --cd               ; apex (1/2, 1)
 
-._lm = .(--h --(.a .d))
-._rm = .(--h --(.b .c))
+._lm = --h * --da
+._rm = --h * --bc
 
 --_tl = map .a onto ._lm
---_td = map .c onto .(--v --_tl)
---h2 = perp --(.b .c) through .(--_td --(.b .c))
+--_td = map .c onto (--v * --_tl)
+--h2 = perp --bc through (--_td * --bc)
 
---ba = through .(--h2 --(.b .c)) .a
---bb = through .(--h2 --(.a .d)) .b
+--ba = through (--h2 * --bc) .a
+--bb = through (--h2 * --da) .b

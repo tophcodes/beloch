@@ -128,7 +128,7 @@
     },
     {
       "axiom": "axiom3",
-      "sources": [ ".[--_td --(.b .c)]", "--(.b .c)" ],
+      "sources": [ ".[--_td --bc]", "--bc" ],
       "span": "005.bel:14:1",
       "name": "h2",
       "step": null
@@ -149,7 +149,7 @@
     },
     {
       "axiom": "axiom1",
-      "sources": [ ".[--h2 --(.b .c)]", ".a" ],
+      "sources": [ ".[--h2 --bc]", ".a" ],
       "span": "005.bel:16:1",
       "name": "ba",
       "step": null
@@ -186,7 +186,7 @@
     },
     {
       "axiom": "axiom1",
-      "sources": [ ".[--h2 --(.b .c)]", ".a" ],
+      "sources": [ ".[--h2 --bc]", ".a" ],
       "span": "005.bel:16:1",
       "name": "ba",
       "step": null
@@ -194,7 +194,7 @@
     null,
     {
       "axiom": "axiom1",
-      "sources": [ ".[--h2 --(.a .d)]", ".b" ],
+      "sources": [ ".[--h2 --da]", ".b" ],
       "span": "005.bel:17:1",
       "name": "bb",
       "step": null
@@ -234,14 +234,14 @@
     },
     {
       "axiom": "axiom1",
-      "sources": [ ".[--h2 --(.a .d)]", ".b" ],
+      "sources": [ ".[--h2 --da]", ".b" ],
       "span": "005.bel:17:1",
       "name": "bb",
       "step": null
     },
     {
       "axiom": "axiom3",
-      "sources": [ ".[--_td --(.b .c)]", "--(.b .c)" ],
+      "sources": [ ".[--_td --bc]", "--bc" ],
       "span": "005.bel:14:1",
       "name": "h2",
       "step": null
@@ -256,14 +256,14 @@
     null,
     {
       "axiom": "axiom1",
-      "sources": [ ".[--h2 --(.b .c)]", ".a" ],
+      "sources": [ ".[--h2 --bc]", ".a" ],
       "span": "005.bel:16:1",
       "name": "ba",
       "step": null
     },
     {
       "axiom": "axiom1",
-      "sources": [ ".[--h2 --(.a .d)]", ".b" ],
+      "sources": [ ".[--h2 --da]", ".b" ],
       "span": "005.bel:17:1",
       "name": "bb",
       "step": null
