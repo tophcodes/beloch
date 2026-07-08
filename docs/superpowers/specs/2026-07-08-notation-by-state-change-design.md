@@ -4,10 +4,18 @@
 
 Proposed (2026-07-08). **Supersedes** `2026-07-07-bundle-algebra-selection-design.md`:
 it adopts that doc's `&` filter, `\` diff, `[…]` union and `#[…]` flap bracket,
-but **reverses** its `--(…) → --[…]` rename and its "keep `.()`" decision, and it
-resolves that doc's open Q1 (filter symbol) as **`&`**. The reversal is driven by
-a governing law that document did not state; this document states it and derives
-the whole surface from it.
+reverses its "keep `.()`" decision, and resolves its open Q1 (filter symbol) as
+**`&`**. The reversal is driven by a governing law that document did not state;
+this document states it and derives the whole surface from it.
+
+**Revised 2026-07-08 (join).** An earlier draft of this doc killed `--[…]` and
+made *every* line through two points the `through` keyword. The corpus refuted
+that: ~72 `--(.a .b)` operand uses are pure **reads** — references to lines that
+already exist (mostly paper edges). So `--[.a .b]` returns, but as the bundle
+algebra always meant it (a **selector** over existing lines), *not* the
+constructor the superseded doc proposed. `through` remains the write. See *Join*
+and *The asymmetry*. Instance member access (`--[$inst m]`/`.[$inst m]`) is
+removed to free the bracket.
 
 ## The law
 
@@ -38,10 +46,20 @@ two, and under this law it does.
 | bundle union (same-typed) | read | `[--x --y]` |
 | flap selection | read | `#[.a .b]` (context-typed granularity) |
 | point from two lines (meet) | read | `--x * --y` |
-| line from two points | **write** (score) | the axiom keyword — **no operator, no bracket** |
+| the **existing** line through two points (join) | read | `--[.a .b]` (selects a crease or edge; errors if none) |
+| a **new** line through two points | **write** (score) | the axiom keyword (`through`) |
 
-Reads are now *all* symbols (`* & \ #[] []`); writes are *all* keyword verbs. The
+Reads are symbols/brackets (`* & \ #[] [] --[]`); writes are keyword verbs. The
 law is legible in the glyphs.
+
+**Join and through are different operations, not two spellings of one.**
+`--[.a .b]` *selects* a line that already exists (a crease, or a paper edge) by
+its incidence to two points — a pure read, dual to `#[.a .b]` (flap) and `*`
+(meet). `through .a .b` *scores a new crease* — a write. The old inline
+`--(.a .b)` operand conflated them: it produced a geometric line with no backing
+crease (a "sight-line"). **Sight-lines are abolished** — every line you name is
+either a real crease/edge (select with `--[]`) or one you deliberately score
+(`through`). See *Sight-lines* below.
 
 ## Surface syntax
 
@@ -106,41 +124,75 @@ crossing scores nothing). It is the **only** spelling: the `.(--x --y)` bracket
 
 ```
 .o = --ba * --bb
-.tip = --r * --e         ; --e a named crease, not an inline construction
+.tip = --r * --[.a .b]   ; --[.a .b] the existing edge/crease through a,b
 ```
 
-Operands must be lines that *exist* — a scored/named crease or a paper edge —
-because inline line-construction is gone (below). `.a * .b` (two points) is a type
-error: meet is lines→point.
+Operands must be lines that *exist* — a crease or a paper edge — because
+sight-lines are gone (below). `.a * .b` (two points) is a type error: meet is
+lines→point.
 
-### Line from two points — the axiom keyword only
+### Join — `--[.a .b]` (the existing line through two points)
 
-There is **no `--[…]`** and no inline `--(…)`. A line through two points is
-Huzita axiom 1; it scores the sheet; by the law it is the keyword (`through`,
-pending rename), never a lookup bracket:
+`--[.a .b]` selects the line — a crease **or a paper edge** — that passes through
+both points. A pure read (selection), dual to `#[.a .b]` and `*`. It **errors if
+no such line exists** (`no crease or edge passes through .a and .b`): it never
+conjures a sight-line. This replaces every *operand* use of the old `--(.a .b)`.
 
 ```
---e = through .a .b       ; scores; bind to name it
+map --[.a .b] onto --diag     ; fold the a–b edge onto a named crease
+.tip = --r * --[.a .b]        ; meet of --r with the a–b line
 ```
 
-This is the reversal of the superseded doc, which added `--[.a .b]`.
+**Paper edges are selectable lines.** The four boundary edges resolve through
+their corner points, and the prelude also names them for convenience:
+
+```
+--ab  --bc  --cd  --da        ; prelude: the four paper edges
+```
+
+so `--[.a .b]` and `--ab` denote the same bottom edge; prefer the prelude name.
+
+### Constructing a new line — the axiom keyword (`through`)
+
+`through .a .b` (Huzita axiom 1) **scores a new crease** — a write, a keyword.
+Use it when the line you need is *not* already there. This is the only way to add
+a line; there is no operator for it.
+
+```
+--e = through .a .b       ; scores a fresh crease; bind to name it
+```
 
 ## The asymmetry, stated
 
-Meet is a read-operator (`*`); line-from-points is a write-keyword. The two dual
-constructions of projective geometry get **deliberately unequal** notation,
-because they are physically unequal: the crossing point is already there to be
-read; the joining line has to be creased into being. The notation is honest about
-which acts on the paper.
+Meet (`*`, lines→point) and join (`--[]`, points→existing-line) are **both
+reads** — dual selections over geometry that already exists, neither touching the
+paper. `through` (points→new-line) is the odd one out: a **write**, and the only
+one, because scoring a crease is the only act here that changes the sheet. The
+notation is honest about which touches the paper: brackets/operators read, the
+keyword writes.
 
 ## Consequences
 
-- **Inline unscored line-construction is gone.** Every line operand is a
-  scored/named crease or a paper edge. `.tip = .(--r --(.a .b))` becomes: score
-  the crease (`--e = through .a .b`), then `.tip = --r * --e`. This restores the
-  read-a-program-as-folds model — a reader never has to guess whether a nested
-  `--(…)` scores (it did in statement position, `eval.ml:1049`) or not (operand
-  position, `eval.ml:285`); that positional overload no longer exists.
+- **Sight-lines are abolished.** The old `--(.a .b)` *operand* produced a
+  geometric line with no backing crease/edge; it neither scored (as an operand,
+  `eval.ml:285`) nor existed physically. Every line you name is now either real
+  (`--[.a .b]` selects an existing crease/edge, or a prelude edge name) or
+  deliberately scored (`through`). A reader never has to guess whether a nested
+  `--(…)` scores (statement position did, `eval.ml:1049`; operand position did
+  not) — the positional overload is gone, and so is the physically-impossible
+  "fold onto an uncreased line."
+- **Instance member access is removed** (`--[$inst m]`, `.[$inst m]`, the
+  `PMember`/`LMember` AST). It collided with the freed `--[`/`.[` brackets and
+  only ever returned one member; cross-instance access goes through `export`
+  instead. Frees `--[` for join and `.[` for future point selection.
+- **Corpus rework, not just migration.** Examples that referenced a sight-line
+  (a diagonal used as a fold target, a corner-to-apex line) must now **construct
+  that line first** with `through` — a real crease that adds geometry and moves
+  the golden. Affected: the `iteration/*` set (corner-to-apex bisector
+  constructions) and a few `syntax/*` (diagonal fold targets:
+  `inline-midpoint`, `bisect-b`, `bisect-straddle`). This is honest — you cannot
+  physically fold onto an uncreased line — but it is per-example design work, not
+  a sed.
 - **Filter/diff results bind** as bundles (`--seg = --l & .p`), a multi-match
   binding a multi-element bundle. Motivating case: pre-selecting a crease to
   reference in a later render op. Coercion to one line fires only at singleton
@@ -156,25 +208,39 @@ which acts on the paper.
 
 ## Migration (pre-1.0 churn, acceptable)
 
-Mechanical, per the selector map:
+The **read-selector** rows are mechanical; the **sight-line** rows are per-example
+rework (they move goldens).
 
-| from | to | files |
-|---|---|---|
-| `--l at <sel>` | `--l & <sel>` | 14 |
-| `--l at (S1 and S2)` | `--l & S1 & S2` | 0 real (comments/tests only) |
-| `#(…)` | `#[…]` | 6 |
-| `.(--x --y)` | `--x * --y` | 9 |
-| `cross --x --y` | `--x * --y` | (keyword sites) |
-| `--(.a .b)` operand | name the crease, then `*` / reference | subset of 20 |
-| `--(.a .b)` statement | `through .a .b` (renamed) | subset of 20 |
+| from | to | kind | files |
+|---|---|---|---|
+| `--l at <sel>` | `--l & <sel>` | mechanical | 18 |
+| `--l at (S1 and S2)` | `--l & S1 & S2` | mechanical | 0 real (comments/tests) |
+| `#(…)` | `#[…]` | mechanical | 6 |
+| `.(--x --y)` | `--x * --y` | mechanical | 9 |
+| `cross --x --y` | `--x * --y` | mechanical | 9 |
+| `--(.a .b)` operand, **edge** | `--[.a .b]` or prelude `--ab`/… | mechanical | ~71 uses |
+| `--(.a .b)` operand, **sight-line** | `through .a .b` first, then reference it | **rework** (moves golden) | ~16 uses |
+| `--(.a .b)` statement bind | `through .a .b` | mechanical | 1 (`iteration/001`) |
+
+Counts from the corpus survey (2026-07-08): of ~72 `--(` operand uses, ~71 are
+paper edges (safe → `--[]`/prelude), ~16 are sight-lines needing construction (8
+diagonals-as-targets, 8 corner-to-apex).
 
 Lexer/parser deltas: **remove** `AT_KW`, `LINE_OPEN` (`--(`), `POINT_OPEN`
-(`.(`), `CROSS`, and the `at (… and …)` production; **add** tokens `&`, `\`, `*`,
-`[`, `]`, and redefine `FLAP_OPEN` as `#[`. AST: `LAt` → an n-ary filter node
-(`Keep`/`Drop` of selector); `Cross`/`PCross` reached via `*`; `LThrough` inline
-form dropped (the bound-statement axiom path stays). Tree-sitter grammar is
-regenerated regardless (it lives only in the docs-site worktree and is already
-stale).
+(`.(`), `CROSS`, `LINE_MEMBER_OPEN`/`POINT_MEMBER_OPEN` (instance access), and the
+`at (… and …)` production; **add** tokens `&`, `\`, `*`, `[`, and `#[`; repurpose
+`--[` as the **join selector** (`--[.a .b]`) now that instance access is gone. AST:
+`LAt` → an n-ary filter node; `Cross`/`PCross` reached via `*`; `LThrough`
+dropped; **new** `LJoin`-style node for `--[.a .b]` (select the existing
+crease/edge through two points); `PMember`/`LMember` removed. New prelude binds
+`--ab`/`--bc`/`--cd`/`--da`. `#[…]` uses `#[`, `--[…]` reuses `LINE_MEMBER_OPEN`'s
+freed `--[`. Tree-sitter grammar regenerated regardless.
+
+**Status:** the additive read operators (`* & \ #[] []` + bundle binding) are
+**shipped** (Tasks 1–5 of the plan). The join selector `--[.a .b]`, prelude edges,
+instance-access removal, sight-line rework, and old-syntax removal are **not yet
+built** — they are the next slice, deliberately staged because the sight-line
+rework changes example outputs.
 
 ## Parked (not this slice)
 

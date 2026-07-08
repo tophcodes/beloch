@@ -1,5 +1,14 @@
 # Notation-by-state-change Implementation Plan
 
+> **STATUS (2026-07-08):** Tasks 1–5 (additive read operators `* & \ #[] []` +
+> bundle binding) are **implemented and committed**. Tasks 6–8 (migration + old-
+> syntax removal) are **superseded** — executing Task 6 surfaced that ~72
+> `--(.a .b)` operand uses are *reads* (references to existing lines, mostly
+> edges), which the spec now handles with a `--[.a .b]` **join selector**, prelude
+> edge names, instance-access removal, and per-example **sight-line rework** (see
+> the revised design doc's *Join*, *Migration*, and *Status* sections). A fresh
+> plan for that slice is needed; the Task 6–8 steps below are stale.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace Beloch's selector/construction notation so reads are symbols
