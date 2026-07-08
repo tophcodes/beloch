@@ -13,9 +13,13 @@ made *every* line through two points the `through` keyword. The corpus refuted
 that: ~72 `--(.a .b)` operand uses are pure **reads** — references to lines that
 already exist (mostly paper edges). So `--[.a .b]` returns, but as the bundle
 algebra always meant it (a **selector** over existing lines), *not* the
-constructor the superseded doc proposed. `through` remains the write. See *Join*
-and *The asymmetry*. Instance member access (`--[$inst m]`/`.[$inst m]`) is
-removed to free the bracket.
+constructor the superseded doc proposed. `through` remains the write.
+
+The selectors then unify into **one rule over three sigils** — `.[l+]` (point),
+`--[c+]` (line), `#[c+]` (flap) = the geometry incident to all constraints — with
+`*` as **polymorphic binary sugar** (`--x * --y` → meet point, `.a * .b` → join
+line). See *The selector family* and *The asymmetry*. Instance member access
+(`--[$inst m]`/`.[$inst m]`) is removed to free both brackets.
 
 ## The law
 
@@ -41,25 +45,60 @@ two, and under this law it does.
 |---|---|---|
 | axioms (`through`→rename, `perp`, `map`, `bisect`, …) | **write** (score) | keyword verb |
 | `@fold`, `pinch` | **write** (fold/score) | keyword verb |
-| segment filter | read | `--l & .p`  (n-ary chain: `--l & .p & --d`) |
-| negated filter / opposite ray | read | `--l \ .a` |
-| bundle union (same-typed) | read | `[--x --y]` |
-| flap selection | read | `#[.a .b]` (context-typed granularity) |
-| point from two lines (meet) | read | `--x * --y` |
-| the **existing** line through two points (join) | read | `--[.a .b]` (selects a crease or edge; errors if none) |
-| a **new** line through two points | **write** (score) | the axiom keyword (`through`) |
+| select geometry incident to all constraints | read | `.[l+]` (point) · `--[c+]` (line/segments) · `#[c+]` (flap) |
+| binary meet/join sugar | read | `--x * --y` → point · `.a * .b` → line |
+| filter / exclude a **named** base bundle | read | `--l & c` · `--l \ c` |
+| union same-typed bundles | read | `[--x --y]` |
+| a **new** line through two points | **write** (score) | `through .a .b` |
 
-Reads are symbols/brackets (`* & \ #[] [] --[]`); writes are keyword verbs. The
-law is legible in the glyphs.
+Reads are symbols/brackets (`.[] --[] #[] * & \ []`); the one write is a keyword.
+The law is legible in the glyphs.
 
 **Join and through are different operations, not two spellings of one.**
-`--[.a .b]` *selects* a line that already exists (a crease, or a paper edge) by
-its incidence to two points — a pure read, dual to `#[.a .b]` (flap) and `*`
-(meet). `through .a .b` *scores a new crease* — a write. The old inline
+`--[.a .b]` *selects* a line that already exists (a crease, or a paper edge). `through .a .b` *scores a new crease* — a write. The old inline
 `--(.a .b)` operand conflated them: it produced a geometric line with no backing
 crease (a "sight-line"). **Sight-lines are abolished** — every line you name is
-either a real crease/edge (select with `--[]`) or one you deliberately score
+either a real crease/edge (select with `--[]`/`*`) or one you deliberately score
 (`through`). See *Sight-lines* below.
+
+## The selector family — one rule, three sigils
+
+> **`SIGIL[c₁ c₂ … cₙ]` = the SIGIL-typed geometry incident to *all* the
+> constraints.** The bracket supplies the universe (all points / all
+> creases+edges / all flaps); the constraints conjoin.
+
+| form | selects | constraints |
+|---|---|---|
+| `.[l+]` | the **point** on all the listed lines (n-ary meet; concurrent → their common point) | lines |
+| `--[c+]` | the crease/edge **segments** incident to all c's (a bundle → coerce at slot) | points and/or lines |
+| `#[c+]` | the **flap** incident to all c's (singular) | points (and/or lines) |
+
+Incidence is type-directed: a line *through* a point / *crossing* a line; a point
+*on* a line; a flap *containing* a point. So `--[.a --d]` = the line through a
+that crosses d; `.[--x --y]` = where x and y cross; `#[.a .b]` = the flap holding
+a and b. A point-constraint on a point selector is degenerate (`.[.a .b]` is
+meaningless — the point sigil takes lines).
+
+Errors if nothing (or, where a singular result is demanded, more than one) is
+incident to all constraints — `--[]`/`.[]` never conjure geometry that isn't
+there (no sight-lines).
+
+**`*` is the binary sugar for the two-argument case, polymorphic on operand
+type:**
+
+```
+--x * --y     ; two lines  → their meet point   ≡ .[--x --y]
+.a * .b       ; two points → their join line     ≡ --[.a .b]
+```
+
+Both are reads (the operator names existing geometry; it scores nothing). `*`
+covers the overwhelmingly-common binary meet/join; the brackets cover n-ary and
+mixed-constraint selection. `#[…]` has no `*` sugar (a flap isn't a dual pair).
+
+`&` / `\` then *restrict* a **named** base bundle that isn't a bracket
+(`--l & c` / `--l \ c`); inside a bracket `&` would be redundant (`--[a b]` ≡
+`--[a] & b`), and `\` (exclusion) is the one thing the positive-conjunction
+bracket can't express, so it stays an operator. `[ … ]` unions same-typed bundles.
 
 ## Surface syntax
 
@@ -116,32 +155,23 @@ cluster (ADR 0017) in `moving`/scope slots. No `face[]`/`flap[]` split in this
 slice. (The discomfort with the face-vs-cluster distinction itself is logged as a
 separate ADR-0017 concern — see *Parked*.)
 
-### Meet — `*` (replaces `.(…)` and the `cross` keyword)
+### Meet & join — `.[]` / `--[]` and the `*` sugar (replace `.(…)`, `cross`, `--(…)`)
 
-`--x * --y` is the point where two lines cross — a pure read (naming an existing
-crossing scores nothing). It is the **only** spelling: the `.(--x --y)` bracket
-**and** the `cross` keyword both retire.
-
-```
-.o = --ba * --bb
-.tip = --r * --[.a .b]   ; --[.a .b] the existing edge/crease through a,b
-```
-
-Operands must be lines that *exist* — a crease or a paper edge — because
-sight-lines are gone (below). `.a * .b` (two points) is a type error: meet is
-lines→point.
-
-### Join — `--[.a .b]` (the existing line through two points)
-
-`--[.a .b]` selects the line — a crease **or a paper edge** — that passes through
-both points. A pure read (selection), dual to `#[.a .b]` and `*`. It **errors if
-no such line exists** (`no crease or edge passes through .a and .b`): it never
-conjures a sight-line. This replaces every *operand* use of the old `--(.a .b)`.
+Per the family rule above, `.[l+]` is the point on all listed lines (meet) and
+`--[c+]` is the crease/edge segments incident to all constraints (join). `*` is
+the binary sugar, polymorphic on operand type:
 
 ```
-map --[.a .b] onto --diag     ; fold the a–b edge onto a named crease
-.tip = --r * --[.a .b]        ; meet of --r with the a–b line
+.o   = --ba * --bb        ; two lines  → meet point   ≡ .[--ba --bb]
+--e  = .a * .b            ; two points → join line     ≡ --[.a .b]
+.tip = --r * --[.a .b]    ; meet of --r with the a–b line
 ```
+
+Both directions are reads — the operator names existing geometry (a crossing, a
+crease/edge) and scores nothing. Join operands must resolve to a **real** line (a
+crease or paper edge); if no crease/edge passes through the points it **errors**
+— it never conjures a sight-line. `.(--x --y)`, `cross`, and the `--(…)` operand
+all retire into this.
 
 **Paper edges are selectable lines.** The four boundary edges resolve through
 their corner points, and the prelude also names them for convenience:
@@ -150,7 +180,7 @@ their corner points, and the prelude also names them for convenience:
 --ab  --bc  --cd  --da        ; prelude: the four paper edges
 ```
 
-so `--[.a .b]` and `--ab` denote the same bottom edge; prefer the prelude name.
+so `--[.a .b]`, `.a * .b`, and `--ab` all denote the bottom edge; prefer `--ab`.
 
 ### Constructing a new line — the axiom keyword (`through`)
 
@@ -164,12 +194,15 @@ a line; there is no operator for it.
 
 ## The asymmetry, stated
 
-Meet (`*`, lines→point) and join (`--[]`, points→existing-line) are **both
-reads** — dual selections over geometry that already exists, neither touching the
-paper. `through` (points→new-line) is the odd one out: a **write**, and the only
-one, because scoring a crease is the only act here that changes the sheet. The
-notation is honest about which touches the paper: brackets/operators read, the
-keyword writes.
+Read/write classifies **operators**, not geometry. A meet point and a join line
+are just a point and a line — facts, neither read nor write. The *operators* that
+name them are the reads: the `.[] --[] #[]` selectors and their `*` sugar — pure
+selections over geometry that already exists, neither touching the paper.
+`through` (points→**new** line) is the odd operator out: a **write**, and the only
+one, because scoring a crease is the only act here that changes the sheet. Meet
+and join look identical (`*`, or a bracket) precisely because both only *read*;
+`through` looks different (a keyword) precisely because it *writes*. The notation
+is honest about which touches the paper.
 
 ## Consequences
 
@@ -228,13 +261,16 @@ diagonals-as-targets, 8 corner-to-apex).
 
 Lexer/parser deltas: **remove** `AT_KW`, `LINE_OPEN` (`--(`), `POINT_OPEN`
 (`.(`), `CROSS`, `LINE_MEMBER_OPEN`/`POINT_MEMBER_OPEN` (instance access), and the
-`at (… and …)` production; **add** tokens `&`, `\`, `*`, `[`, and `#[`; repurpose
-`--[` as the **join selector** (`--[.a .b]`) now that instance access is gone. AST:
-`LAt` → an n-ary filter node; `Cross`/`PCross` reached via `*`; `LThrough`
-dropped; **new** `LJoin`-style node for `--[.a .b]` (select the existing
-crease/edge through two points); `PMember`/`LMember` removed. New prelude binds
-`--ab`/`--bc`/`--cd`/`--da`. `#[…]` uses `#[`, `--[…]` reuses `LINE_MEMBER_OPEN`'s
-freed `--[`. Tree-sitter grammar regenerated regardless.
+`at (… and …)` production; **add** tokens `&`, `\`, `*`, `[`, `#[`; repurpose the
+freed `--[` and `.[` as the **line** and **point** selectors (`--[c+]`, `.[l+]`)
+now that instance access is gone. AST: `LAt` → an n-ary filter node; a **single
+`Select`-style node per sigil** (point/line/flap incident-to-all); `LThrough`
+and `Cross`/`PCross` dropped in favour of it; `PMember`/`LMember` removed. `*` is
+**polymorphic binary sugar**: `line * line` → the point node (meet), `point *
+point` → the line node (join) — one `STAR` production over both operand types,
+disambiguated by the operand sigil (watch for an LR conflict; the operands'
+leading `--`/`.` tokens should separate the two). New prelude binds
+`--ab`/`--bc`/`--cd`/`--da`. Tree-sitter grammar regenerated regardless.
 
 **Status:** the additive read operators (`* & \ #[] []` + bundle binding) are
 **shipped** (Tasks 1–5 of the plan). The join selector `--[.a .b]`, prelude edges,
