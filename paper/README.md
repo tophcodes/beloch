@@ -19,9 +19,13 @@ Publication strategy (see also [decision 0006](../decisions/0006-permissive-lice
 2. **JOSS** — low-friction, real citation; review is "is this useful, documented,
    tested?", a two-page paper. Underrated for this.
 3. **Bridges / JCDCG³** as friendly in-between venues.
-4. **9OSME** (~2028; runs ~every 4 years, 8OSME was July 2024). The "Computation"
-   track explicitly welcomes system/language papers — no need to pose as a math
-   paper. By then: mature artifact, maybe real users, measurable results.
+4. **9OSME** — Xi'an, China, August 2027 (8OSME was July 2024; runs ~every 4
+   years). Call for papers to be formally announced by 2026-08-01 (see
+   https://osme.info) — that's an announcement date, not the submission
+   deadline; expect the real deadline months later, closer to the conference.
+   The "Computation" track explicitly welcomes system/language papers — no
+   need to pose as a math paper. By then: mature artifact, maybe real users,
+   measurable results.
 
 Affiliation: "Aleph Garden" or "Independent researcher" is most accurate (the
 work isn't FU coursework/advised); "FernUniversität in Hagen" is also factually
