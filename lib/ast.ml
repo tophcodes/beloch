@@ -83,8 +83,20 @@ type collapse_elem = { cline : line_operand; cdir : direction }
 type point_expr =
   | PsExpr of point_operand (* the `.name = …` binding RHS: a meet/select/named point *)
 
+(* a thing that can be creased/folded: a fresh motion, or an existing line *)
+type markable =
+  | MMotion of axiom          (* map/through/perp — a fresh crease line *)
+  | MLine of line_operand     (* an existing material crease or bound value *)
+
 type stmt =
-  | Crease of string option * axiom * fold_spec option * Error.span
+  | BindLine of string * axiom * Error.span
+      (* --l = map .a onto .b : bind a pure line VALUE; no material effect *)
+  | Mark of string option * markable * Error.span
+      (* mark <motion|--l> [= motion] : flat crease (subdivide, emits F).
+         name_opt Some = `mark --l = <motion>` bind-and-materialise. *)
+  | Fold of string option * markable * fold_spec * Error.span
+      (* fold <motion|--l> [moving][up to][mountain] : fold. On a motion,
+         subdivide+fold; on an existing --l, fold along it. *)
   | BindBundle of string * line_operand * Error.span
       (* --x = <bundle expr>: name a crease bundle (union/filter of existing
          creases). Resolves lazily as its expression; slots coerce to one. *)
@@ -97,9 +109,6 @@ type stmt =
   | Export of export_entry list option * string * Error.span
       (* None = export-all; the string is the instance name *)
   | StepMark of string * Error.span
-  | FoldAlong of line_operand * fold_spec * Error.span
-      (* @fold <crease> [moving f] [up to f] [mountain]: fold along existing
-         material; the operand must resolve to a material crease *)
   | Collapse of collapse_elem list * (flap_arg * flap_arg) list
                 * flap_arg option * Error.span
       (* @collapse <elements> [over-pairs] [standing]: simultaneous multi-

@@ -42,17 +42,22 @@ body_stmts:
   | body_stmt body_stmts { $1 :: $2 }
 
 body_stmt:
-  | CREASE EQ axiom_stmt { let (a, fs) = $3 in Crease (Some $1, a, fs, $loc) }
+  (* value binding: pure geometry, no material *)
+  | CREASE EQ axiom      { BindLine ($1, $3, $loc) }
   | CREASE EQ bundle_expr { BindBundle ($1, $3, $loc) }
-  | axiom_stmt           { let (a, fs) = $1 in Crease (None, a, fs, $loc) }
+  (* mark: flat crease (subdivide only) *)
+  | MARK markable                        { Mark (None, $2, $loc) }
+  | MARK CREASE EQ axiom                 { Mark (Some $2, MMotion $4, $loc) }
+  (* fold: motion-fold or fold-along an existing material crease *)
+  | FOLD_KW markable fold_clauses        { Fold (None, $2, $3, $loc) }
+  | FOLD_KW CREASE EQ axiom fold_clauses { Fold (Some $2, MMotion $4, $5, $loc) }
   | POINT EQ point_expr  { Point ($1, $3, $loc) }
   | FLIP                 { Flip $loc }
   | INSTANCE EQ APPLY IDENT LPAREN args RPAREN { Apply (Some $1, $4, $6, $loc) }
   | APPLY IDENT LPAREN args RPAREN             { Apply (None, $2, $4, $loc) }
   | EXPORT LBRACE export_entries RBRACE INSTANCE { Export (Some $3, $5, $loc) }
   | EXPORT INSTANCE                              { Export (None, $2, $loc) }
-  | AT FOLD_KW line_operand fold_clauses         { FoldAlong ($3, $4, $loc) }
-  | AT COLLAPSE collapse_items
+  | COLLAPSE collapse_items
       { (* fold_left over source order so a duplicate `standing` is detected
            at its own (second-occurrence) span, not the first's; elems/overs
            are accumulated reversed and restored with List.rev to keep their
@@ -68,9 +73,13 @@ body_stmt:
                   | Some _ ->
                       Error.fail sp "only one standing clause per @collapse"
                   | None -> (es, os, Some f)))
-            ([], [], None) $3
+            ([], [], None) $2
         in
         Collapse (List.rev elems_rev, List.rev overs_rev, standing, $loc) }
+
+markable:
+  | axiom        { MMotion $1 }
+  | line_operand { MLine $1 }
 
 params:
   | { [] }
@@ -87,10 +96,6 @@ args:
 arg:
   | point_operand { APoint $1 }
   | line_operand  { ALine $1 }
-
-axiom_stmt:
-  | axiom                 { ($1, None) }
-  | AT axiom fold_clauses { ($2, Some $3) }
 
 fold_clauses:
   | moving_opt upto_opt mountain_opt

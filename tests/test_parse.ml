@@ -36,8 +36,8 @@ let test_parse_named_and_anon () =
   Alcotest.(check int) "three statements" 3 (List.length prog);
   match prog with
   | [
-   Ast.Crease (Some "d1", Ast.Through _, _, _);
-   Ast.Crease (None, Ast.MapPoints _, _, _);
+   Ast.BindLine ("d1", Ast.Through _, _);
+   Ast.Mark (None, Ast.MMotion (Ast.MapPoints _), _);
    Ast.Point ("center", Ast.PsExpr (Ast.PSelect _), _);
   ] ->
       ()
@@ -56,11 +56,11 @@ let test_parse_perp () =
   in
   match prog with
   | [
-   Ast.Crease (Some "d", Ast.Through _, _, _);
-   Ast.Crease
+   Ast.BindLine ("d", Ast.Through _, _);
+   Ast.Mark
      ( None,
-       Ast.Perp (Ast.PNamed { name = "b"; _ }, Ast.LNamed { cname = "d"; _ }),
-       _,
+       Ast.MMotion
+         (Ast.Perp (Ast.PNamed { name = "b"; _ }, Ast.LNamed { cname = "d"; _ })),
        _ );
   ] ->
       ()
@@ -73,14 +73,15 @@ let test_parse_map_onto_line () =
   in
   match prog with
   | [
-   Ast.Crease (Some "l1", Ast.Through _, _, _);
-   Ast.Crease (Some "l2", Ast.Through _, _, _);
-   Ast.Crease
+   Ast.BindLine ("l1", Ast.Through _, _);
+   Ast.BindLine ("l2", Ast.Through _, _);
+   Ast.Mark
      ( None,
-       Ast.MapOntoLine
-         (Ast.PNamed { name = "c"; _ }, Ast.LNamed { cname = "l1"; _ },
-          Ast.LNamed { cname = "l2"; _ }),
-       _, _ );
+       Ast.MMotion
+         (Ast.MapOntoLine
+            (Ast.PNamed { name = "c"; _ }, Ast.LNamed { cname = "l1"; _ },
+             Ast.LNamed { cname = "l2"; _ })),
+       _ );
   ] ->
       ()
   | _ -> Alcotest.fail "unexpected AST shape for map-onto-line"
@@ -97,13 +98,13 @@ let test_parse_bisect () =
   | [
    _;
    _;
-   Ast.Crease
+   Ast.Mark
      ( None,
-       Ast.MapLines
-         ( Ast.LNamed { cname = "v"; _ },
-           Ast.LNamed { cname = "h"; _ },
-           Some (Ast.PNamed { name = "a"; _ }) ),
-       _,
+       Ast.MMotion
+         (Ast.MapLines
+            ( Ast.LNamed { cname = "v"; _ },
+              Ast.LNamed { cname = "h"; _ },
+              Some (Ast.PNamed { name = "a"; _ }) )),
        _ );
   ] ->
       ()
@@ -116,13 +117,14 @@ let test_parse_map_through () =
   in
   match prog with
   | [
-   Ast.Crease (Some "d", Ast.Through _, _, _);
-   Ast.Crease
+   Ast.BindLine ("d", Ast.Through _, _);
+   Ast.Mark
      ( None,
-       Ast.MapThrough
-         (Ast.PNamed { name = "c"; _ }, Ast.LNamed { cname = "d"; _ },
-          Ast.PNamed { name = "a"; _ }, None),
-       _, _ );
+       Ast.MMotion
+         (Ast.MapThrough
+            (Ast.PNamed { name = "c"; _ }, Ast.LNamed { cname = "d"; _ },
+             Ast.PNamed { name = "a"; _ }, None)),
+       _ );
   ] ->
       ()
   | _ -> Alcotest.fail "unexpected AST shape for map-through"
@@ -134,13 +136,14 @@ let test_parse_map_through_toward () =
   in
   match prog with
   | [
-   Ast.Crease (Some "d", Ast.Through _, _, _);
-   Ast.Crease
+   Ast.BindLine ("d", Ast.Through _, _);
+   Ast.Mark
      ( None,
-       Ast.MapThrough
-         (Ast.PNamed { name = "c"; _ }, Ast.LNamed { cname = "d"; _ },
-          Ast.PNamed { name = "a"; _ }, Some (Ast.PNamed { name = "b"; _ })),
-       _, _ );
+       Ast.MMotion
+         (Ast.MapThrough
+            (Ast.PNamed { name = "c"; _ }, Ast.LNamed { cname = "d"; _ },
+             Ast.PNamed { name = "a"; _ }, Some (Ast.PNamed { name = "b"; _ }))),
+       _ );
   ] ->
       ()
   | _ -> Alcotest.fail "unexpected AST shape for map-through-toward"
@@ -151,11 +154,11 @@ let test_parse_map_both () =
       "paper square\nmap .a onto --d and .c onto --e\n"
   in
   match prog with
-  | [ Ast.Crease (None, Ast.MapBoth (Ast.PNamed { name = "a"; _ },
+  | [ Ast.Mark (None, Ast.MMotion (Ast.MapBoth (Ast.PNamed { name = "a"; _ },
                                       Ast.LNamed { cname = "d"; _ },
                                       Ast.PNamed { name = "c"; _ },
                                       Ast.LNamed { cname = "e"; _ },
-                                      None), None, _) ] -> ()
+                                      None)), _) ] -> ()
   | _ -> Alcotest.fail "expected MapBoth without toward"
 
 let test_parse_map_both_toward () =
@@ -164,7 +167,7 @@ let test_parse_map_both_toward () =
       "paper square\nmap .a onto --d and .c onto --e toward .b\n"
   in
   match prog with
-  | [ Ast.Crease (None, Ast.MapBoth (_, _, _, _, Some _), None, _) ] -> ()
+  | [ Ast.Mark (None, Ast.MMotion (Ast.MapBoth (_, _, _, _, Some _)), _) ] -> ()
   | _ -> Alcotest.fail "expected MapBoth with toward"
 
 let test_parse_fold_action () =
@@ -174,15 +177,14 @@ let test_parse_fold_action () =
   in
   match prog with
   | [
-   Ast.Crease
+   Ast.Fold
      ( None,
-       Ast.MapPoints _,
-       Some
-         {
-           moving = Some (Ast.FlapPoint (Ast.PNamed { name = "a"; _ }));
-           up_to = None;
-           direction = Ast.Mountain;
-         },
+       Ast.MMotion (Ast.MapPoints _),
+       {
+         moving = Some (Ast.FlapPoint (Ast.PNamed { name = "a"; _ }));
+         up_to = None;
+         direction = Ast.Mountain;
+       },
        _ );
   ] ->
       ()
@@ -192,9 +194,9 @@ let test_parse_fold_valley_default () =
   let prog = Beloch.parse ~filename:"t.bel" "paper square\n@map .a onto .c\n" in
   match prog with
   | [
-   Ast.Crease
-     ( None, Ast.MapPoints _,
-       Some { moving = None; up_to = None; direction = Ast.Valley },
+   Ast.Fold
+     ( None, Ast.MMotion (Ast.MapPoints _),
+       { moving = None; up_to = None; direction = Ast.Valley },
        _ );
   ] ->
       ()
@@ -203,7 +205,7 @@ let test_parse_fold_valley_default () =
 let test_parse_precrease_no_foldspec () =
   let prog = Beloch.parse ~filename:"t.bel" "paper square\nmap .a onto .c\n" in
   match prog with
-  | [ Ast.Crease (None, Ast.MapPoints _, None, _) ] -> ()
+  | [ Ast.Mark (None, Ast.MMotion (Ast.MapPoints _), _) ] -> ()
   | _ -> Alcotest.fail "bare axiom must carry no fold_spec"
 
 let test_parse_flip () =
@@ -225,9 +227,9 @@ let test_parse_shorthand_rhs () =
   Alcotest.(check int) "three statements" 3 (List.length prog);
   match prog with
   | [
-      Ast.Crease (Some "d", Ast.Through _, _, _);
+      Ast.BindLine ("d", Ast.Through _, _);
       Ast.Point ("m", Ast.PsExpr (Ast.PSelect _), _);
-      Ast.Crease (Some "e", Ast.Through _, _, _);
+      Ast.BindLine ("e", Ast.Through _, _);
     ] -> ()
   | _ -> Alcotest.fail "unexpected AST shape"
 
@@ -326,10 +328,10 @@ let test_parse_at_one_selector () =
       "paper square\n--b = through .a .c\nperp --b & .a through .c\n"
   in
   match prog with
-  | [ Ast.Crease (Some "b", _, _, _);
-      Ast.Crease
-        (None, Ast.Perp (_, Ast.LFilter (Ast.LNamed _, Ast.Keep (Ast.SelPoint _), _)),
-         _, _) ] -> ()
+  | [ Ast.BindLine ("b", _, _);
+      Ast.Mark
+        (None, Ast.MMotion (Ast.Perp (_, Ast.LFilter (Ast.LNamed _, Ast.Keep (Ast.SelPoint _), _))),
+         _) ] -> ()
   | _ -> Alcotest.fail "expected --b & .a (LFilter, one point selector)"
 
 let test_parse_at_two_selectors () =
@@ -339,14 +341,15 @@ let test_parse_at_two_selectors () =
   in
   match prog with
   | [ _;
-      Ast.Crease
+      Ast.Mark
         ( None,
-          Ast.Perp
-            (_,
-             Ast.LFilter
-               (Ast.LFilter (Ast.LNamed _, Ast.Keep (Ast.SelPoint _), _),
-                Ast.Keep (Ast.SelLine _), _)),
-          _, _ ) ] -> ()
+          Ast.MMotion
+            (Ast.Perp
+               (_,
+                Ast.LFilter
+                  (Ast.LFilter (Ast.LNamed _, Ast.Keep (Ast.SelPoint _), _),
+                   Ast.Keep (Ast.SelLine _), _))),
+          _ ) ] -> ()
   | _ -> Alcotest.fail "expected --b & .a & --b (nested LFilter)"
 
 let test_parse_meet_stmt () =
@@ -367,7 +370,7 @@ let test_parse_meet_inline () =
        map (--d1 * --d2) onto .e\n"
   in
   match List.rev prog with
-  | Ast.Crease (None, Ast.MapPoints (Ast.PSelect _, Ast.PNamed _), _, _) :: _ -> ()
+  | Ast.Mark (None, Ast.MMotion (Ast.MapPoints (Ast.PSelect _, Ast.PNamed _)), _) :: _ -> ()
   | _ -> Alcotest.fail "expected map (PSelect) onto .e"
 
 (* ---- Spec corpus ---- *)
@@ -435,15 +438,14 @@ let test_parse_up_to () =
     Beloch.parse ~filename:"t.bel" "paper square\n@map .c onto .d up to .c\n"
   with
   | [
-   Ast.Crease
+   Ast.Fold
      ( None,
-       Ast.MapPoints _,
-       Some
-         {
-           moving = None;
-           up_to = Some (Ast.FlapPoint (Ast.PNamed { name = "c"; _ }));
-           direction = Ast.Valley;
-         },
+       Ast.MMotion (Ast.MapPoints _),
+       {
+         moving = None;
+         up_to = Some (Ast.FlapPoint (Ast.PNamed { name = "c"; _ }));
+         direction = Ast.Valley;
+       },
        _ );
   ] ->
       ()
@@ -455,15 +457,14 @@ let test_parse_flap_forms () =
       "paper square\n@perp --d through .p moving #[.a .b] up to --d mountain\n"
   with
   | [
-   Ast.Crease
+   Ast.Fold
      ( None,
-       Ast.Perp _,
-       Some
-         {
-           moving = Some (Ast.FlapSpec _);
-           up_to = Some (Ast.FlapLine (Ast.LNamed { cname = "d"; _ }));
-           direction = Ast.Mountain;
-         },
+       Ast.MMotion (Ast.Perp _),
+       {
+         moving = Some (Ast.FlapSpec _);
+         up_to = Some (Ast.FlapLine (Ast.LNamed { cname = "d"; _ }));
+         direction = Ast.Mountain;
+       },
        _ );
   ] ->
       ()
@@ -474,8 +475,8 @@ let test_parse_flap_bracket () =
     Beloch.parse ~filename:"t.bel"
       "paper square\n@perp --d through .p moving #[.a .b]\n"
   with
-  | [ Ast.Crease (None, Ast.Perp _,
-        Some { moving = Some (Ast.FlapSpec (Ast.FByPoints (pts, _))); _ }, _) ] ->
+  | [ Ast.Fold (None, Ast.MMotion (Ast.Perp _),
+        { moving = Some (Ast.FlapSpec (Ast.FByPoints (pts, _))); _ }, _) ] ->
       Alcotest.(check int) "two constraint points" 2 (List.length pts)
   | _ -> Alcotest.fail "expected moving #[.a .b]"
 
@@ -485,7 +486,7 @@ let test_parse_filter_chain () =
       "paper square\n--l = through .a .b\n@map .p onto .q up to --l & .c & --m\n"
   in
   match prog with
-  | [ _; Ast.Crease (None, _, Some { up_to = Some (Ast.FlapLine
+  | [ _; Ast.Fold (None, _, { up_to = Some (Ast.FlapLine
         (Ast.LFilter (Ast.LFilter (Ast.LNamed _, Ast.Keep (Ast.SelPoint _), _),
                       Ast.Keep (Ast.SelLine _), _))); _ }, _) ] -> ()
   | _ -> Alcotest.fail "expected up to --l & .c & --m (nested LFilter, Keep)"
@@ -496,7 +497,7 @@ let test_parse_diff () =
       "paper square\n--l = through .a .b\n@map .p onto .q up to --l \\ .c\n"
   in
   match prog with
-  | [ _; Ast.Crease (None, _, Some { up_to = Some (Ast.FlapLine
+  | [ _; Ast.Fold (None, _, { up_to = Some (Ast.FlapLine
         (Ast.LFilter (Ast.LNamed _, Ast.Drop _, _))); _ }, _) ] -> ()
   | _ -> Alcotest.fail "expected up to --l \\ .c (LFilter Drop)"
 
@@ -507,7 +508,7 @@ let test_parse_union () =
        @map .p onto .q up to [--x --y]\n"
   in
   match prog with
-  | [ _; _; Ast.Crease (None, _, Some { up_to = Some (Ast.FlapLine
+  | [ _; _; Ast.Fold (None, _, { up_to = Some (Ast.FlapLine
         (Ast.LUnion ([ Ast.LNamed _; Ast.LNamed _ ], _))); _ }, _) ] -> ()
   | _ -> Alcotest.fail "expected up to [--x --y] (LUnion of 2)"
 
@@ -524,8 +525,8 @@ let test_parse_bind_bundle () =
 let test_parse_fold_along () =
   match Beloch.parse ~filename:"t.bel" "paper square\n@fold --m moving .c\n" with
   | [
-   Ast.FoldAlong
-     ( Ast.LNamed { cname = "m"; _ },
+   Ast.Fold
+     ( None, Ast.MLine (Ast.LNamed { cname = "m"; _ }),
        { moving = Some (Ast.FlapPoint _); up_to = None; direction = Ast.Valley },
        _ );
   ] ->
@@ -628,9 +629,8 @@ let test_parse_line_select () =
   in
   match prog with
   | [
-      Ast.Crease
+      Ast.Fold
         ( None, _,
-          Some
             { up_to =
                 Some
                   (Ast.FlapLine
@@ -659,9 +659,8 @@ let test_parse_join_star () =
   in
   match prog with
   | [
-      Ast.Crease
+      Ast.Fold
         ( None, _,
-          Some
             { up_to =
                 Some
                   (Ast.FlapLine
@@ -685,6 +684,93 @@ let test_parse_filter_binds_before_meet () =
     :: _ ->
       ()
   | _ -> Alcotest.fail "expected (--l & .a) * --s : PSelect[LFilter, LNamed]"
+
+(* ---- Notation cutover: mark/fold/collapse verbs replace @/bare-axiom (#24) ---- *)
+
+let test_parse_new_value_binding () =
+  match Beloch.parse ~filename:"t.bel" "paper square\n--l = map .a onto .c\n" with
+  | [ Ast.BindLine ("l", Ast.MapPoints _, _) ] -> ()
+  | _ -> Alcotest.fail "expected --l = map .a onto .c : BindLine"
+
+let test_parse_new_mark_bare () =
+  match Beloch.parse ~filename:"t.bel" "paper square\nmark map .a onto .c\n" with
+  | [ Ast.Mark (None, Ast.MMotion (Ast.MapPoints _), _) ] -> ()
+  | _ -> Alcotest.fail "expected mark map .a onto .c : Mark (None, MMotion)"
+
+let test_parse_new_mark_named () =
+  match
+    Beloch.parse ~filename:"t.bel" "paper square\nmark --d = map .a onto .c\n"
+  with
+  | [ Ast.Mark (Some "d", Ast.MMotion (Ast.MapPoints _), _) ] -> ()
+  | _ -> Alcotest.fail "expected mark --d = map .a onto .c : Mark (Some \"d\", MMotion)"
+
+let test_parse_new_fold_motion () =
+  match
+    Beloch.parse ~filename:"t.bel"
+      "paper square\nfold map .a onto .c moving .a\n"
+  with
+  | [
+   Ast.Fold
+     ( None,
+       Ast.MMotion (Ast.MapPoints _),
+       { moving = Some (Ast.FlapPoint (Ast.PNamed { name = "a"; _ }));
+         up_to = None; direction = Ast.Valley },
+       _ );
+  ] ->
+      ()
+  | _ -> Alcotest.fail "expected fold map .a onto .c moving .a : Fold (None, MMotion, _)"
+
+let test_parse_new_fold_named () =
+  match
+    Beloch.parse ~filename:"t.bel"
+      "paper square\nfold --d = map .a onto .c moving .a\n"
+  with
+  | [
+   Ast.Fold
+     ( Some "d",
+       Ast.MMotion (Ast.MapPoints _),
+       { moving = Some (Ast.FlapPoint (Ast.PNamed { name = "a"; _ }));
+         up_to = None; direction = Ast.Valley },
+       _ );
+  ] ->
+      ()
+  | _ -> Alcotest.fail "expected fold --d = map .a onto .c moving .a : Fold (Some \"d\", MMotion, _)"
+
+let test_parse_new_fold_along () =
+  match
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n--d = map .a onto .c\nmark --d\nfold --d moving .a\n"
+  with
+  | [
+   Ast.BindLine ("d", Ast.MapPoints _, _);
+   Ast.Mark (None, Ast.MLine (Ast.LNamed { cname = "d"; _ }), _);
+   Ast.Fold
+     ( None,
+       Ast.MLine (Ast.LNamed { cname = "d"; _ }),
+       { moving = Some (Ast.FlapPoint (Ast.PNamed { name = "a"; _ }));
+         up_to = None; direction = Ast.Valley },
+       _ );
+  ] ->
+      ()
+  | _ -> Alcotest.fail "expected --d = ...; mark --d; fold --d moving .a"
+
+let test_parse_new_collapse_no_at () =
+  match
+    Beloch.parse ~filename:"t.bel"
+      "paper square\ncollapse --a and --b and --c and --e mountain\n"
+  with
+  | [ Ast.Collapse (elems, [], None, _) ] ->
+      Alcotest.(check int) "4 elements" 4 (List.length elems)
+  | _ -> Alcotest.fail "expected collapse (no @) to parse as Ast.Collapse"
+
+let test_parse_at_retired () =
+  expect_error "syntax error" (fun () ->
+      Beloch.parse ~filename:"t.bel"
+        "paper square\n@map .a onto .c moving .a\n");
+  expect_error "syntax error" (fun () ->
+      Beloch.parse ~filename:"t.bel" "paper square\n@fold --d moving .a\n");
+  expect_error "syntax error" (fun () ->
+      Beloch.parse ~filename:"t.bel" "paper square\n@collapse --a and --b\n")
 
 let () =
   Alcotest.run "beloch-parse"
@@ -743,6 +829,20 @@ let () =
             test_parse_collapse_mixed_order;
           Alcotest.test_case "collapse double standing rejected" `Quick
             test_parse_collapse_double_standing_rejected;
+        ] );
+      ( "notation_cutover",
+        [
+          Alcotest.test_case "value binding --l = <motion>" `Quick
+            test_parse_new_value_binding;
+          Alcotest.test_case "mark bare motion" `Quick test_parse_new_mark_bare;
+          Alcotest.test_case "mark named" `Quick test_parse_new_mark_named;
+          Alcotest.test_case "fold motion" `Quick test_parse_new_fold_motion;
+          Alcotest.test_case "fold named" `Quick test_parse_new_fold_named;
+          Alcotest.test_case "fold along existing crease" `Quick
+            test_parse_new_fold_along;
+          Alcotest.test_case "collapse without @" `Quick
+            test_parse_new_collapse_no_at;
+          Alcotest.test_case "@ is retired" `Quick test_parse_at_retired;
         ] );
       ( "export",
         [
