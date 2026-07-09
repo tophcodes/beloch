@@ -4,7 +4,7 @@
 paper square
 
 def diagonal(.p .q) {
-  --d = through .p .q
+  mark --d = through .p .q
 }
 
 step diagonals

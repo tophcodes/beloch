@@ -3,8 +3,8 @@
 
 paper square
 
---ac = map .b onto .d     ; diagonal a–c
---bd = map .a onto .c     ; diagonal b–d
+mark --ac = map .b onto .d     ; diagonal a–c
+mark --bd = map .a onto .c     ; diagonal b–d
 
-@collapse --ac & .a and --ac & .c and --bd & .b and --bd & .d
+collapse --ac & .a and --ac & .c and --bd & .b and --bd & .d
   and standing .a

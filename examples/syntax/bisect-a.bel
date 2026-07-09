@@ -1,4 +1,4 @@
 paper square
---v = map .a onto .b      ; vertical midline x = 1/2
-map --v onto --ab toward .a
+mark --v = map .a onto .b      ; vertical midline x = 1/2
+mark map --v onto --ab toward .a
 ; status: works — direction pick: hinge at (1/2,0), toward .a selects the crease toward the a-corner

@@ -1,5 +1,5 @@
 ; status: works — precrease, then fold along the material crease itself:
 ; no axiom re-statement (compare precrease-fold.bel), the U mark upgrades to V
 paper square
---d = map .b onto .a
-@fold --d moving .b
+mark --d = map .b onto .a
+fold --d moving .b

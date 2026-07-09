@@ -3,10 +3,10 @@
 ; --l/--bot are boundary reference creases, bound before the folds collapse
 ; the corners onto each other
 paper square
---l = through .a .d
---bot = through .a .b
---v = @map .b onto .a
---h = @map .d onto .a
+mark --l = through .a .d
+mark --bot = through .a .b
+fold --v = map .b onto .a
+fold --h = map .d onto .a
 .p = --l * --h
 .q = --v * --bot
-@through .p .q moving .d up to .c
+fold through .p .q moving .d up to .c

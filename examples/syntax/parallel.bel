@@ -1,5 +1,5 @@
 ; status: anti — bottom and top edges are parallel, so cross has no solution
 paper square
---h1 = through .a .b
---h2 = through .d .c
+mark --h1 = through .a .b
+mark --h2 = through .d .c
 .x = --h1 * --h2

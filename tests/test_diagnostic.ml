@@ -42,7 +42,7 @@ let test_top_of_file () =
 
 (* a real evaluator error carries a real span through fold_string; render it *)
 let test_integration () =
-  let source = "paper square\n--l = through .a .a\n" in
+  let source = "paper square\nmark --l = through .a .a\n" in
   let rendered =
     try
       ignore (Beloch.fold_string ~filename:"t.bel" source);
