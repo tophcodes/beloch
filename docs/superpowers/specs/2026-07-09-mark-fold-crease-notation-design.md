@@ -259,32 +259,41 @@ from it:
   **algebraic** even though the arc θ is transcendental. Algebraic reals are
   closed under composition, so any incidence-driven fold sequence stays exact —
   same kernel. **Exact 2D and exact 3D are one regime.**
+- *Angle unit — decided: `1 = π = 180° = one flat fold* (the half-turn). So
+  `fold --l 1/2` = 90°, `3/4` = 135°, `1` = flat-folded. This unit (a) matches
+  FOLD `edges_foldAngle` (0…±180° ↔ 0…±1), (b) is folder-intuitive (1 = a whole
+  fold), and (c) *is* radians/π — the "radians feel natural" instinct, made exact.
 - *Rational angles are exact* (correcting an earlier draft that called `cos 50°`
-  transcendental — it is not). A rational number of degrees is a rational fraction
-  of a **turn**, i.e. a rational multiple of π, so its cos/sin is **algebraic**:
-  `e^{iπp/q}` is a root of unity, hence `cos(πp/q)` is an algebraic number (root
-  of a Chebyshev/cyclotomic polynomial), exact in qqbar. `1/4 turn` = 90° (cos 0,
-  rational), `1/12` = 30° (√3/2), `5/36` = 50° (algebraic degree 6) are all exact.
-  The **flat fold is the `1/2`-turn special case** — the current 2D reflection is
-  the shadow of a 3D half-turn, the bridge from the reflection model to 3D
-  rotation.
-- *The only transcendental trap is radians.* A rational number of *radians* is a
-  rational (not a rational multiple of π), so its cos is transcendental
-  (Lindemann). So the angle unit is **turns** (or degrees), never raw radians;
-  raw-radian input, if ever offered, is the explicit inexact float escape hatch.
-- *Two exact ways to name an angle:* **rational turns** `p/q` give named angles
-  exactly (cos/sin algebraic, degree ~φ(q)/2); **rational `tan(θ/2)`** — the
-  unit-circle point `((1−t²)/(1+t²), 2t/(1+t²))` — gives *arbitrary* angles with
-  **rational** (degree-1, cheapest) cos/sin, unnamed. A smooth curl = a sequence
-  of small `tan`-parametrised rotations along a subdivided crease: exact,
-  approximating the curve as finely as the subdivision. Cost: the turn denominator
-  drives the algebraic degree — small denominators cheap, `1/360` (1°) degree 48,
-  large ones hit the known kernel walls (exact but slow).
+  transcendental — it is not). A rational count of half-turns is a rational
+  multiple of π, so its cos/sin is **algebraic**: `e^{iπp/q}` is a root of unity,
+  hence `cos(πp/q)` is an algebraic number (root of a Chebyshev/cyclotomic
+  polynomial), exact in qqbar. `1/2` = 90° (cos 0), `1/6` = 30° (√3/2), `5/18` =
+  50° (algebraic degree 6) — all exact. The **flat fold is the `1` special case**:
+  the current 2D reflection is the shadow of a 3D half-turn — the bridge from the
+  reflection model to 3D rotation.
+- *The only transcendental trap is raw radians.* The exactness comes from **π
+  being baked into the unit** (half-turn = π, degree = π/180). A rational count of
+  *raw radians* is a rational — not a multiple of π — so its cos is transcendental
+  (Lindemann). Raw-radian input, if ever offered, is the explicit inexact float
+  escape hatch. Degrees are exact sugar (`× 1/180`).
+- *Arbitrary angles for the curl.* `tan(θ/2)` rational — the unit-circle point
+  `((1−t²)/(1+t²), 2t/(1+t²))` — gives *any* angle with **rational** (degree-1,
+  cheapest) cos/sin. A smooth curl = a sequence of small `tan`-parametrised
+  rotations along a subdivided crease: exact, approximating the curve as finely as
+  the subdivision. Named half-turn angles cost more: the denominator drives the
+  degree (~φ(2q)/2) — `1/2` trivial, `1/180` (1°) degree 48, large ones hit the
+  known kernel walls (exact but slow).
 - *Numeric literals are `Rat` only.* Source literals are rational (`3/7`, `0.1` =
   exactly `1/10`, decimal is exact-rational sugar); algebraic irrationals arise
-  from construction, never from a literal. Exactness comes from construction, not
-  from input. (These literals are also the foundation for parametric tessellation
-  — `repeat`/coordinate arithmetic.)
+  from construction, never a literal — exactness comes from construction, not
+  input. One literal foundation, three users: **(1)** fold angles (half-turns,
+  above); **(2)** a point at a rational fraction along a segment —
+  `.p = 0.1 along .a .b` = `(1−t)·.a + t·.b`, an exact affine combination, a pure
+  reference read (like a motion is a line read), origami-constructible (ℚ ⊂ the
+  origami field), `t` may exceed `[0,1]` to extrapolate along the line; **(3)**
+  parametric tessellation (`repeat` / coordinate arithmetic). This is the general
+  "numbers enter the language" layer — not 3D-specific — that 3D co-motivates; it
+  earns its own design pass.
 - *Honest costs* (work, not exactness loss): `Geom`/`Isometry` generalise 2D→3D
   (numbers stay algebraic). Deeply nested single folds can still hit the known
   kernel degree walls (#33/#41/#56) — but that is an intrinsic *per-fold* cost
