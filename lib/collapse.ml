@@ -8,7 +8,7 @@ type elem = { cid : int; ea : Geom.point; eb : Geom.point; valley : bool }
 
 (* --- error strings: spec §Errors table, verbatim ------------------------- *)
 let e_no_vertex = "no common interior vertex"
-let e_count = "count (hint: use `@fold` for n = 2)"
+let e_count = "count (hint: use `fold` for n = 2)"
 let e_midpaper = "crease ends inside the sheet"
 let e_kawasaki = "vertex not flat-foldable (angles)"
 let e_maekawa = "Maekawa violated by the stated assignment"

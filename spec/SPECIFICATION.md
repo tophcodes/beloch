@@ -15,13 +15,21 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.20-dev** (`@collapse` — single-vertex collapse: n ≥ 4
+Current version: **v0.21-dev** (**mark/fold notation** — `map`/`through`/`perp`
+motions are pure reads: bindable line values, touching nothing; the writes are
+the keyword verbs **`mark`** (crease and leave flat, FOLD `F`) and **`fold`**
+(crease and fold, FOLD `M`/`V`), alongside `collapse` and `flip`; `@` is
+retired entirely from the grammar — this completes the read/write law begun
+in the v0.20-dev cutover (through was its one write; now it too is a read);
+see
+[`docs/superpowers/specs/2026-07-09-mark-fold-crease-notation-design.md`](../docs/superpowers/specs/2026-07-09-mark-fold-crease-notation-design.md));
+**v0.20-dev** (`@collapse` — single-vertex collapse: n ≥ 4
 material creases sharing one interior vertex fold straight to the flat end
 state in one step — rabbit ear, waterbomb — checked by Kawasaki/Maekawa/local
 validity, `over` disambiguates the layer order, `standing` is reserved
 syntax the evaluator does not yet implement; **notation cutover** — reads are
 operators (meet `*`, filter `&`, drop `\`, union `[]`, the incident-to-all
-selectors `.[] --[] #[]`), the one write is the keyword `through`; see
+selectors `.[] --[] #[]`), the one write was the keyword `through`; see
 [`docs/superpowers/specs/2026-07-08-notation-by-state-change-design.md`](../docs/superpowers/specs/2026-07-08-notation-by-state-change-design.md));
 **v0.19-dev** (material crossings live in paper space, on the marks; no table-space point values; axiom 5 `toward` is a fold direction, not a sector, with a paper-incidence filter for the omitted case and a derived `moving`); **v0.18-dev** (fold scope — flap-typed `moving`, `up to` for some-layers simple folds, `@fold` along material creases); **v0.17-dev** (crease-segment selection — the `&` filter: a crease name is a bundle, projected to one segment by incidence); **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`, `step` panels; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
 
@@ -36,10 +44,12 @@ emitted as FOLD. See [ADR 0007](../decisions/0007-evaluator-not-compiler.md).
 The language is built on the Huzita-Justin fold axioms
 [[justin1986]](#ref-justin1986), using them as primitive operations. *(since
 v0.7-dev)* It is an **action model**: a program is an imperative sequence of
-folding actions on a stateful sheet (§4.6). The axioms locate *where* a crease
-goes; the `@` modifier actually folds. A program evaluates to a folded state,
-emitted as a dual-frame FOLD file — the flat **crease pattern** and the
-**folded form** (§7). The flat crease pattern (no `@` folds) is the special case.
+marking/folding actions on a stateful sheet (§4.6). The axioms (`map`,
+`through`, `perp`) locate *where* a crease could go — a pure read; `mark` and
+`fold` actually act on the paper (§4.10). A program evaluates to a folded
+state, emitted as a dual-frame FOLD file — the flat **crease pattern** and the
+**folded form** (§7). The flat crease pattern (a program with no `fold`
+actions) is the special case.
 See [ADR 0011](../decisions/0011-action-model.md).
 
 ### A note on axiom numbering
@@ -109,8 +119,8 @@ Two kinds of value, distinguished by sigil:
 - **Point** — `.name`. The four corners, plus any point derived by a
   construction (§4.3).
 - **Crease / line** — `--name`. The geometric value of a fold: an (infinite)
-  line. On output it appears as the edges of the folded state's faces (§7), and
-  with `@` it actually folds the paper (§4.6).
+  line. On output it appears as the edges of the folded state's faces (§7);
+  `mark`/`fold` (§4.6) act on the paper with it.
 
 All geometry is exact (§6).
 
@@ -242,8 +252,8 @@ the long diagonal has one candidate bisector crossing the paper's interior and
 one meeting it only at a corner point (zero-length incidence):
 
 ```
---ac = through .a .c
-@map --da onto --ac   ; one candidate has zero paper incidence — the other is taken silently
+mark --ac = through .a .c
+fold map --da onto --ac   ; one candidate has zero paper incidence — the other is taken silently
 ```
 
 (worked through in `examples/bases/kite.bel`)
@@ -264,7 +274,7 @@ rejected candidate is both in that corner's angular sector *and* the
 angularly closer of the two:
 
 ```
-@map --da onto --ac toward .b
+fold map --da onto --ac toward .b
 ```
 
 **The straddle case.** If the crossing point lies in the **interior** of
@@ -274,9 +284,9 @@ at the sheet's center), the two candidates swing *different* halves of
 break the tie. `moving` (§4.6) can, since it names which half swings:
 
 ```
---ac = through .a .c
---bd = through .b .d
-@map --ac onto --bd toward .b moving .c
+mark --ac = through .a .c
+mark --bd = through .b .d
+fold map --ac onto --bd toward .b moving .c
 ```
 
 (`examples/syntax/bisect-straddle.bel`) Without `moving` — or with a `moving`
@@ -285,8 +295,8 @@ This is not a regression: sector semantics (the corners lie exactly on the
 bisectors here) and nearest-bisector semantics (the corners are equidistant)
 both fail on this same configuration too.
 
-**`moving` on axiom-5 folds is now optional.** *(since v0.19-dev)* `@map --l1
-onto --l2` derives its anchor from `--l1`'s own swinging material — the side
+**`moving` on axiom-5 folds is now optional.** *(since v0.19-dev)* `fold map
+--l1 onto --l2` derives its anchor from `--l1`'s own swinging material — the side
 of the (chosen) axis that material sits on — the same way a map fold on
 points implies the anchor from the moved point (§4.6). `moving` still
 overrides it, and is still required to break a straddle or to scope an
@@ -424,22 +434,34 @@ direction reading for axioms 6/7 remains a separate, unstarted pass.
 so its real roots are irrational — they live in `ℚ(α)` for an algebraic `α` of
 degree 3. All coordinates of one axiom-7 crease lie in that same `ℚ(α)`. See §6.
 
-### 4.6 Folding: `@` *(since v0.7-dev)*
+### 4.6 Marking and folding: `mark` / `fold` *(since v0.7-dev; `mark`/`fold` verbs since v0.21-dev)*
 
-A bare axiom is a **precrease**: it computes a crease line and marks it; the
-paper stays flat. Prefixing it with `@` **performs the fold**:
+A motion (`map`/`through`/`perp`, §4.1–§4.5c) is a pure read: it computes a
+line and touches nothing. `--l = map .a onto .b` binds a value; on its own it
+scores nothing. Acting on the paper needs one of two disposition keywords
+(§4.10):
+
+- **`mark`** — crease the line and leave the sheet **flat**: subdivides the
+  layers it crosses into flaps, but moves nothing. Emits FOLD `F` — present,
+  not folded (§7) — carrying an M/V *intent* in the crease-pattern frame.
+- **`fold`** — crease the line **and fold it**: subdivides and moves layers.
+  Emits FOLD `M`/`V` in both frames.
 
 ```
-@map .a onto .c moving .a            ; fold the flap containing .a, valley
-@map .a onto .c moving .a mountain   ; ... as a mountain
-@perp --l through .p moving .q        ; line-construction folds need `moving`
+mark map .a onto .b                   ; crease, stays flat (valley intent)
+mark --d = through .a .c              ; named crease, stays flat
+fold map .a onto .c moving .a         ; fold the flap containing .a, valley
+fold map .a onto .c moving .a mountain ; ... as a mountain
+fold perp --l through .p moving .q    ; line-construction folds need `moving`
 ```
 
-*(since v0.18-dev)* Every fold has four ingredients:
+`@` is retired: there is no fold marker distinct from the verb itself.
+
+*(since v0.18-dev)* Every `fold` has four ingredients:
 
 | Ingredient | What | Source |
 | --- | --- | --- |
-| axis | the fold line | an axiom, or an existing material crease (`@fold`, below) |
+| axis | the fold line | a motion, or an existing material crease (`fold --d` with no motion, below) |
 | anchor | the flap that starts the moving set | implied on map folds, or `moving` |
 | scope | which flaps move | default: all layers on the anchor's side; or `up to` |
 | direction | valley/mountain | `mountain` keyword; default valley |
@@ -458,15 +480,15 @@ paper stays flat. Prefixing it with `@` **performs the fold**:
   every listed point (`moving #[.b .c]`), same resolution rule as `&`'s
   `#[...]` selector.
 
-**Map folds** (`@map .a onto .c`) imply the anchor from the moved point when
-`moving` is omitted — here, `.a`'s flap; `moving <flap>` overrides it (e.g.
-`moving .c` folds the other side instead). *(since v0.19-dev)* `@map --l1
-onto --l2` (axiom 5) similarly derives its anchor — from `--l1`'s own
+**Map folds** (`fold map .a onto .c`) imply the anchor from the moved point
+when `moving` is omitted — here, `.a`'s flap; `moving <flap>` overrides it
+(e.g. `moving .c` folds the other side instead). *(since v0.19-dev)* `fold
+map --l1 onto --l2` (axiom 5) similarly derives its anchor — from `--l1`'s own
 swinging material, not a moved point (§4.5); `moving` still overrides it, and
 is still required when that material straddles the axis, or to scope an
-`up to` range. **Line-construction folds** (`@through`, `@perp`) and
-**`@fold`** (below) have no natural anchor at all, so `moving` is
-**required** — the existing "this fold needs `moving .p` to choose the side"
+`up to` range. **Line-construction folds** (`fold through`, `fold perp`) and
+**folding along existing material** (below) have no natural anchor at all, so
+`moving` is **required** — the existing "this fold needs `moving .p` to choose the side"
 error. A line- or `#[...]`-flap anchor that
 straddles the fold axis, or a `moving` point exactly on the axis, is also an
 error (no side to pick); a point anchor disambiguates the side by itself, even
@@ -482,8 +504,8 @@ when its flap straddles the axis.
   region** (depth may vary along a crease, so the walk compares only the
   overlapping pieces):
   ```
-  @map .d onto .a
-  @map .c onto .d up to .c   ; up to the anchor itself: exactly one flap moves
+  fold map .d onto .a
+  fold map .c onto .d up to .c   ; up to the anchor itself: exactly one flap moves
   ```
   A line target (`up to --d`) resolves even though `moving --d` alone usually
   wouldn't: the anchor fixes the walk direction, so the first flap hinged on a
@@ -491,7 +513,7 @@ when its flap straddles the axis.
   context counts toward uniqueness). A target not reachable by the walk, or
   not on the anchor's side, is an error.
 
-**Validity — outer-contiguous prefix.** A `@`/`@fold` statement is a **simple
+**Validity — outer-contiguous prefix.** A `fold` statement is a **simple
 fold** [demaine2007, §14.1]: a rigid 180° rotation of the moving layers under
 the crease segment, collision-free throughout the motion. The static shadow of
 that constraint: the moving set must be a **contiguous prefix of the layer
@@ -520,35 +542,38 @@ stacked layers alternate front/back, one fold through a stack yields the correct
 **alternating** M/V across layers (the accordion). Earlier creases keep their
 assignment (material facts).
 
-**`@fold` — fold along existing material** *(since v0.18-dev)*:
+**Folding along existing material** — `fold` with no motion *(since
+v0.18-dev)*:
 
 ```
-@fold <crease-operand> [moving <flap>] [up to <flap>] [mountain]
+fold <crease-operand> [moving <flap>] [up to <flap>] [mountain]
 ```
 
 Folds along a crease already on the paper (a bundle, §4.8) instead of
-re-stating the axiom that produced it. `moving` is **always required** — a
-material crease implies no side. Material resolution is per flap, as for any
-crease reference (§4.8): a crease **bent** under the moving set is an error
-("the crease is bent under the moving flaps; select a straight segment with
-`&` or move fewer flaps") — select a straight segment with `--d & ...`
-instead. `@fold` composes with `up to` to crease every layer while folding
-only some — the motivating case, *crease all, fold some*:
+re-stating the motion that produced it (§4.1–§4.5c). `moving` is **always
+required** — a material crease implies no side. Material resolution is per
+flap, as for any crease reference (§4.8): a crease **bent** under the moving
+set is an error ("the crease is bent under the moving flaps; select a
+straight segment with `&` or move fewer flaps") — select a straight segment
+with `--d & ...` instead. `fold` (with no motion) composes with `up to` to
+crease every layer while folding only some — the motivating case, *crease
+all, fold some*:
 
 ```
---d = map .b onto .a          ; bare bind: subdivides ALL layers
-@fold --d moving .b up to .c  ; fold only flaps .b through .c along it
+mark --d = map .b onto .a     ; mark: subdivides ALL layers, stays flat
+fold --d moving .b up to .c   ; fold only flaps .b through .c along it
 ```
 
-Non-moving layers keep their flat crease mark (`"U"` in FOLD output, §7);
-moving ones fold (their mark upgrades to `"M"`/`"V"`).
+Non-moving layers keep their flat crease mark (`"F"` in FOLD output, §7, since
+v0.21-dev — was `"U"` before); moving ones fold (their mark upgrades to
+`"M"`/`"V"`).
 
 See [ADR 0016](../decisions/0016-typed-operands-bundle-values-singleton-slots.md)
 (typed operands: bundle values vs. singleton slots — the resolution rules
 behind `moving`, `up to`, and `#[...]`) and
 [ADR 0014](../decisions/0014-crease-is-a-bundle-of-segments.md) (a crease is a
-bundle of segments — why `@fold` checks for a bent crease and why `&`
-selection exists).
+bundle of segments — why folding along existing material checks for a bent
+crease and why `&` selection exists).
 
 ### 4.7 `flip` — turn the sheet over *(since v0.7-dev)*
 
@@ -602,14 +627,14 @@ than one is an error asking for a further constraint.
 it replaced). Creating a single segment (rather than selecting one) is `pinch`,
 still forthcoming (Appendix B).
 
-### 4.9 `@collapse` — single-vertex collapse *(since v0.20-dev)*
+### 4.9 `collapse` — single-vertex collapse *(since v0.20-dev; `@` dropped v0.21-dev)*
 
 Every other fold in the language performs one simple fold at a time. Some flat
 end states are not reachable that way: three angle bisectors of a triangle
 meet at the incenter O, and — with the altitude from O added — the vertex is
 flat-foldable (**Rabbit-Ear Theorem**, [[hull2020]](#ref-hull2020) Thm 8.5),
 but no *sequence* of single simple folds reaches that end state; flat-foldable
-and simple-foldable are different classes [demaine2007, §14.1.1]. `@collapse`
+and simple-foldable are different classes [demaine2007, §14.1.1]. `collapse`
 jumps straight from the precreased flat sheet to the flat end state of several
 creases folded at once, all meeting at one point.
 
@@ -623,7 +648,7 @@ collapse (e.g. bird base in one step) is deferred (Appendix B).
 **Syntax:**
 
 ```
-collapse_stmt := "@collapse" collapse_item ("and" collapse_item)*
+collapse_stmt := "collapse" collapse_item ("and" collapse_item)*
 collapse_item := collapse_elem
                | over_flap "over" over_flap
                | "standing" flap_operand
@@ -636,21 +661,21 @@ list**, not trailing clauses, and may appear in any position or be
 interleaved with elements:
 
 ```
-@collapse --ba & .a and --bb & .b and (--e mountain) and .p over .q and standing .r
+collapse --ba & .a and --bb & .b and (--e mountain) and .p over .q and standing .r
 ```
 
 - `collapse_elem`'s `line_operand` must resolve to a material crease — the
-  same operand forms `@fold` accepts (`--name`, `--name & <constraint>`,
-  §4.8); a paper edge or a non-material selected line is syntactically a
-  `line_operand` too but errors at resolution (below). `mountain` binds to the
-  immediately preceding element, default valley.
+  same operand forms `fold` (with no motion) accepts (`--name`, `--name &
+  <constraint>`, §4.8); a paper edge or a non-material selected line is
+  syntactically a `line_operand` too but errors at resolution (below).
+  `mountain` binds to the immediately preceding element, default valley.
 - `over_flap` deliberately excludes bare crease names: that is what makes the
   first token after `and` classify the item unambiguously — a crease-name
   start is an element, a point/`#[...]` start followed by `over` is a
   stacking pair, `standing` is keyword-first. `standing`'s own operand is the
   full `flap_operand` (point, line, or `#[...]`, as `moving` takes, §4.6).
-- A duplicate `standing` clause in one `@collapse` is a **parse error** at the
-  second occurrence ("only one standing clause per @collapse").
+- A duplicate `standing` clause in one `collapse` statement is a **parse
+  error** at the second occurrence.
 
 Rabbit ear, concretely — the collapse statement from
 [`examples/bases/rabbit-ear.bel`](../examples/bases/rabbit-ear.bel) (triangle
@@ -658,12 +683,12 @@ Rabbit ear, concretely — the collapse statement from
 incenter `.o`):
 
 ```
-@collapse --ba & .a and --bb & .b
+collapse --ba & .a and --bb & .b
   and --v & .m and (--v & --ab mountain)
 ```
 
 **Resolution.** Each element resolves to exactly **one** material crease
-segment, by the same per-flap material resolution `@fold` uses (§4.6, §4.8).
+segment, by the same per-flap material resolution `fold` uses (§4.6, §4.8).
 An operand that is not an existing material crease (a paper edge like `--ab`,
 for instance) errors: *"collapse folds along existing
 creases; `<operand>` is not a material crease."* From there, resolution
@@ -682,7 +707,7 @@ error as they do for `&` elsewhere.
 | 6 | bare crease name has more than one segment | `` --<name> has <k> segments; select one with `&` `` |
 | 7 | a layer under the collapse region doesn't carry an element's crease on the same line (all-layers rule, below) | `collapse through unaligned layers` |
 | 8 | segments don't all share one strictly-interior common endpoint O | `no common interior vertex` |
-| 9 | element count is odd, or exactly 2 | `` count (hint: use `@fold` for n = 2) `` |
+| 9 | element count is odd, or exactly 2 | `` count (hint: use `fold` for n = 2) `` |
 | 10 | a segment's far endpoint is not on the paper boundary (would leave a degree-1 vertex mid-sheet) | `crease ends inside the sheet` |
 | 11 | two elements resolve to the same ray — the same direction from O, a zero-width sector whose doubled reflection cancels out of the closure product and would otherwise slip past checks 9 and 12–13 | `duplicate ray in collapse` |
 | 12 | Kawasaki fails — the reflection composition around O does not close (exact) [[hull2020]](#ref-hull2020) ch. 5 | `vertex not flat-foldable (angles)` |
@@ -698,7 +723,7 @@ independent element with its own mountain/valley.
 **State construction.** Faces are the sectors around O. Sector *i*'s isometry
 is the composition of reflections across the rays bounding sectors `0..i`, in
 CCW order from a fixed sector 0 — exact, the standard single-vertex fan
-construction. There is **no `moving` clause on `@collapse` in v1**: the
+construction. There is **no `moving` clause on `collapse` in v1**: the
 stayer — the sector left at the identity isometry — is the **lowest
 face-up** sector of the solved stack (sector parities alternate around O, so
 one always exists). Anchoring on an orientation-preserving sector keeps the
@@ -733,14 +758,14 @@ stack are a follow-up (Appendix B).
   isometry rework ([ADR 0015](../decisions/0015-flat-folded-states-only.md));
   no retrofit is expected once it lands.
 
-**Material and layers.** `@collapse` is an **all-layers** move, like the
-default `@fold`/`@map`: the whole stack under the collapse region folds as
+**Material and layers.** `collapse` is an **all-layers** move, like the
+default `fold`: the whole stack under the collapse region folds as
 one unit. Every element's crease must be material, on the same line, in
 every layer the collapse region passes through; a layer where it is bent or
 absent errors `collapse through unaligned layers` (check 7, above).
 Single-layer paper trivially satisfies this.
 
-**Output.** *(since v0.20-dev)* The `edges_assignment` (§7) a `@collapse`
+**Output.** *(since v0.20-dev)* The `edges_assignment` (§7) a `collapse`
 produces is **global-frame** M/V: because a sector's isometry can be
 orientation-reversing, the kernel's parity rule inverts the stated
 mountain/valley on face-down sectors, so the M/V letters in the FOLD output
@@ -754,7 +779,7 @@ off-center vertex) is above.
 center vertex — both diagonals and both midlines) shows n > 4:
 
 ```
-@collapse --ac & .a and --ac & .c and --bd & .b and --bd & .d
+collapse --ac & .a and --ac & .c and --bd & .b and --bd & .d
   and --h & --bc
   and (--h & --da mountain)
   and (--v & --cd mountain)
@@ -769,33 +794,56 @@ no `over` clause is needed here.
 See [ADR 0016](../decisions/0016-typed-operands-bundle-values-singleton-slots.md)
 (flap operands) and
 [ADR 0014](../decisions/0014-crease-is-a-bundle-of-segments.md) (crease
-bundles, rays split at a crossing) — the same machinery `@fold` and `&`
+bundles, rays split at a crossing) — the same machinery `fold` and `&`
 build on.
 
-### 4.10 The read/write law — keywords write, operators read *(since v0.20-dev)*
+### 4.10 The read/write law — motions read, `mark`/`fold`/`collapse` write *(since v0.20-dev; completed v0.21-dev)*
 
 One law governs the surface syntax: **an operation that mutates paper state —
 scores a crease, folds, and thereby re-segments existing references (ADR 0014)
 — is a keyword verb, sequenced in program order; an operation that only reads
-the current state is a pure read, and is an operator or bracket.** Keywords are
-commits to the versioned sheet; reads are checkout queries against it. The
-physical asymmetry the law encodes: *finding* where two creases cross is free,
-*making* a crease costs a fold, so the notation looks different for the two.
+the current state, or only describes a geometric line without touching the
+paper, is a pure read, and is an operator, bracket, or motion.** Keywords are
+commits to the versioned sheet; reads are checkout queries against it, or (for
+motions) descriptions not yet committed. The physical asymmetry the law
+encodes: *finding* where two creases cross is free, *describing* a line is
+free, *making* a crease costs a fold, so the notation looks different for the
+two.
 
-The **reads** are all symbols/brackets: meet `*` and `.[l+]`, join `--[c+]`,
-flap `#[c+]`, filter `&`, drop `\`, union `[…]`. They **select existing
-geometry** and error on no-match — meet `*`/`.[]` names an existing crossing, and
-the join `--[.a .b]` (or its `.a * .b` sugar) resolves to a **real** crease or
-paper edge through the two points, never conjuring a "sight-line." The one
-**write** is the keyword **`through`** (Huzita axiom 1): it scores a *new* line
-where none exists (`--e = through .a .b`). Meet and join look identical because
-both only read; `through` looks different because it writes. Full derivation:
+The **reads** are:
+
+- the symbols/brackets — meet `*` and `.[l+]`, join `--[c+]`, flap `#[c+]`,
+  filter `&`, drop `\`, union `[…]` — which **select existing geometry** and
+  error on no-match: meet `*`/`.[]` names an existing crossing, and the join
+  `--[.a .b]` (or its `.a * .b` sugar) resolves to a **real** crease or paper
+  edge through the two points, never conjuring a "sight-line."
+- the **motions** — `map … onto …`, `through … …`, `perp … through …`
+  (§4.1–§4.5c) — which compute a line without touching the paper. `--l = map
+  .a onto .b` binds a value; on its own it scores nothing. *(since v0.21-dev)*
+  `through` (Huzita axiom 1) joins this side too: it used to be the sole
+  write, but it is no reflection, only a description — "the line through two
+  points" is exactly as inert as any other motion until a disposition verb
+  acts on it.
+
+The **writes** are the disposition keyword verbs (§4.6, §4.9):
+
+- **`mark`** — crease a motion (or an inline line) flat: subdivides the
+  sheet, emits FOLD `F`.
+- **`fold`** — crease a motion (or an existing material crease) and fold it:
+  subdivides *and* moves layers, emits FOLD `M`/`V`.
+- **`collapse`** — fold several existing material creases sharing one vertex
+  straight to the flat end state (§4.9).
+
+`@` is retired entirely: it is no longer a marker anywhere in the grammar —
+the verb itself (`mark`/`fold`/`collapse`) carries the write. Full derivation:
+[`docs/superpowers/specs/2026-07-09-mark-fold-crease-notation-design.md`](../docs/superpowers/specs/2026-07-09-mark-fold-crease-notation-design.md),
+completing the design begun in
 [`docs/superpowers/specs/2026-07-08-notation-by-state-change-design.md`](../docs/superpowers/specs/2026-07-08-notation-by-state-change-design.md).
 
 Point-locating landmark constructions (a bisector foot, a reference apex) are
-currently scored as full `through` creases — an interim that adds real geometry
-and moves the golden — pending the future `pinch` primitive that will mark a
-single segment without a full crease (Appendix B).
+currently scored as full `mark … = through …` creases — an interim that adds
+real geometry and moves the golden — pending the future `pinch` primitive
+that will mark a single segment without a full crease (Appendix B).
 
 ---
 
@@ -804,12 +852,13 @@ single segment without a full crease (Appendix B).
 A program is `paper square` followed by statements, executed top to bottom. A
 name must be defined before it is used.
 
-- **Crease statement** — binds a crease, or is anonymous; with `@` it also folds
-  (§4.6):
+- **Crease statement** — a motion binds a line value, named or anonymous,
+  scoring nothing; `mark`/`fold` (§4.6) act on the paper:
   ```
-  --d1 = through .a .c             ; named precrease
-  map .a onto .c                   ; anonymous precrease
-  @map .a onto .c moving .a        ; fold (valley)
+  --d1 = through .a .c             ; geometry only — scores nothing
+  mark --d2 = through .b .d        ; named crease, stays flat
+  mark map .a onto .c              ; anonymous crease, stays flat
+  fold map .a onto .c moving .a    ; fold (valley)
   ```
 - **Point statement** — binds a derived point:
   ```
@@ -828,13 +877,15 @@ line comment.
 non-temp name in the same scope is an error, **except** temp names (§5a.6).
 There is no `:=`.
 
-**Reads and `through` as RHS** *(since v0.16-dev)*: the read operators (§4.3,
-§4.8, §4.10) are values, usable directly as a binding's right-hand side; the one
-construction keyword `through` (§4.10) likewise binds the new line it scores:
+**Reads and motions as RHS** *(since v0.16-dev; motions since v0.21-dev)*: the
+read operators (§4.3, §4.8) and the motions (§4.1–§4.5c: `map`/`through`/
+`perp`) are all values, usable directly as a binding's right-hand side — none
+of them touch the paper:
 
 ```
 .s  = --rs * --cd          ; meet — a read (names an existing crossing)
---e = through .p1 .p2      ; a new crease — the one write
+--e = through .p1 .p2      ; a motion — a line value; needs `mark --e` or
+                           ; `fold --e` to actually score it
 ```
 
 **Identifiers** *(since v0.16-dev)* are `[a-zA-Z0-9_]+` — underscore, never
@@ -872,7 +923,7 @@ and `def` bodies both follow it.
 
 ```
 def petal(.p .q --base) {
-  @map .p onto .q moving .p
+  fold map .p onto .q moving .p
   --pq = through .p .q
   .tip = --pq * --base
 }
@@ -928,7 +979,7 @@ then reference the landed names:
 ```
 export { .tip as .tip1 } $p1
 export { .tip as .tip2 } $p2
-@map .tip1 onto .tip2
+fold map .tip1 onto .tip2
 ```
 
 `export` only reads from the instance — it never re-runs the body — so it is
@@ -968,7 +1019,7 @@ step thirds
 --pq = through ._pq1 ._pq2
 
 step beloch_fold
-@map .c onto --ab and .s onto --pq
+fold map .c onto --ab and .s onto --pq
 ```
 
 - `step ident` opens a display panel that runs until the next `step` or end
@@ -1040,7 +1091,7 @@ output only*. No internal decision is ever taken on a truncated value.
 [[foldformat]](#ref-foldformat) with **two or more frames** built from the
 folded state's faces: the flat **crease pattern** (frame 0, the top-level
 dictionary) and one or more **folded form** frames (`file_frames`). A program
-with no `@` folds still emits at least one folded-form frame; it then
+with no `fold` actions still emits at least one folded-form frame; it then
 coincides with the flat sheet.
 
 The planar graph is the face set: vertices are deduplicated by paper coordinate
@@ -1058,9 +1109,12 @@ internal edge is a crease.
 - `edges_vertices` — `[v0, v1]` index pairs.
 - `edges_assignment` ([[foldformat]](#ref-foldformat) §"Edge information") — `"B"`
   for paper-boundary edges, **derived `"M"`/`"V"`** for folded creases (§4.6),
-  and `"U"` for an unfolded precrease (a crease line with no fold yet). One
-  physical fold through several layers can yield different M/V per layer (the
-  accordion), since each crease edge carries its own derived assignment.
+  and *(since v0.21-dev)* `"F"` — present but not folded — for a `mark`ed
+  crease (a crease line with no fold yet); its M/V *intent* still lives in the
+  crease-pattern frame. `"U"` is never emitted: Beloch always knows a crease's
+  disposition. One physical fold through several layers can yield different
+  M/V per layer (the accordion), since each crease edge carries its own
+  derived assignment.
 - `faces_vertices` — each face's vertex indices, counter-clockwise. A program
   with no creases yields the single square face `[[0, 1, 2, 3]]`.
 - `beloch:edges` — custom property ([[foldformat]](#ref-foldformat) §"Custom
@@ -1130,9 +1184,9 @@ and the process exits non-zero:
   bisectors land on the paper (ambiguous) or neither does (no fold to make); a
   `toward` point lying on `--l1`; with `toward` given, no candidate moves the
   swinging material that way, or the straddle case, where both do (§4.5);
-- a `@` fold on a line-construction axiom (`@through`, `@perp`) with no
+- a `fold` on a line-construction motion (`fold through`, `fold perp`) with no
   `moving`, or a `moving` point lying on the fold axis (no side); an axiom-5
-  fold (`@map --l1 onto --l2`) whose `up to` range has no explicit `moving`
+  fold (`fold map --l1 onto --l2`) whose `up to` range has no explicit `moving`
   to anchor it (`moving` is otherwise derived, §4.5);
 - reference to an undefined point or crease name.
 
@@ -1146,11 +1200,15 @@ The Menhir grammar is authoritative once written; this sketch is a guide.
 program       := "paper" "square" stmt*
 stmt          := crease_stmt | point_stmt | flip_stmt | collapse_stmt
               | def_stmt | instance_stmt | apply_stmt | export_stmt | step_stmt   ; since v0.16-dev
-crease_stmt   := [ CREASE_NAME "=" ] [ "@" ] axiom [ fold_spec ]                             ; named or anonymous, axiom-based (fold only with @)
-               | "@" "fold" line_operand fold_spec                                           ; fold along existing material (since v0.18-dev)
+crease_stmt   := CREASE_NAME "=" axiom                            ; a read — binds a line value, scores nothing
+               | "mark" markable                                  ; crease flat (anonymous motion, or an existing line, since v0.21-dev)
+               | "mark" CREASE_NAME "=" axiom                      ; crease flat, named (since v0.21-dev)
+               | "fold" markable fold_spec                        ; crease and fold (a motion, or existing material — since v0.21-dev)
+               | "fold" CREASE_NAME "=" axiom fold_spec            ; crease and fold, named (since v0.21-dev)
+markable      := axiom | line_operand                             ; since v0.21-dev
 point_stmt    := POINT_NAME "=" point_operand
 flip_stmt     := "flip"
-axiom         := "through" point_operand point_operand          ; axiom 1 — the one construction keyword (write)
+axiom         := "through" point_operand point_operand          ; axiom 1 — a read (motion, since v0.21-dev)
                | "map" point_operand "onto" point_operand       ; axiom 2
                | "perp" line_operand "through" point_operand     ; axiom 3
                | "map" point_operand "onto" line_operand "perp" line_operand  ; axiom 4
@@ -1176,8 +1234,8 @@ POINT_NAME    := "." ident
 CREASE_NAME   := "--" ident
 INSTANCE_NAME := "$" ident
 
-; since v0.20-dev — §4.9
-collapse_stmt := "@" "collapse" collapse_item ( "and" collapse_item )*
+; since v0.20-dev — §4.9; `@` dropped v0.21-dev
+collapse_stmt := "collapse" collapse_item ( "and" collapse_item )*
 collapse_item := collapse_elem
                | over_flap "over" over_flap
                | "standing" flap_operand
@@ -1195,18 +1253,20 @@ export_entry  := ( POINT_NAME | CREASE_NAME ) "!"? ( "as" ( POINT_NAME | CREASE_
 step_stmt     := "step" ident
 ```
 
-A bare axiom statement is a *precrease* (computes a crease line, paper stays
-flat). The `@` prefix performs the fold (§4.6); `moving` anchors it, `up to`
-scopes it, `mountain` sets its direction. `@fold` folds along an existing
-crease instead of an axiom (§4.6). `flip` turns the whole sheet over (§4.7).
-*(since v0.7-dev)* Any operand may be an **inline read** (§4.10): `--x * --y`
-(or `.[--x --y]`) is the point where two lines meet; `.a * .b` (or `--[.a .b]`)
-is the existing crease/edge through two points; `--l & c` / `--l \ c` filter a
-bundle; `[…]` unions bundles. These select existing geometry — they never score
-a crease — and nest freely; the polymorphic `*` reads as a meet when its
-operands are lines and a join when they are points. The one construction that
-*writes* a new line is the keyword `through` (§4.10); it is not an operator.
-These read forms are also valid directly as a binding's right-hand side — see
+A motion (`through`/`map`/`perp`) is a pure read: it computes a line but
+touches nothing (§4.10). `mark` creases it flat; `fold` creases and folds it
+— `moving` anchors the fold, `up to` scopes it, `mountain` sets its
+direction (§4.6). Either verb, given a `line_operand` instead of a motion,
+acts on an existing material crease instead of computing a new line. `flip`
+turns the whole sheet over (§4.7). *(since v0.7-dev)* Any operand may be an
+**inline read** (§4.10): `--x * --y` (or `.[--x --y]`) is the point where two
+lines meet; `.a * .b` (or `--[.a .b]`) is the existing crease/edge through two
+points; `--l & c` / `--l \ c` filter a bundle; `[…]` unions bundles. These
+select existing geometry — they never score a crease — and nest freely; the
+polymorphic `*` reads as a meet when its operands are lines and a join when
+they are points. *(since v0.21-dev)* `@` is retired entirely: writing to the
+paper always goes through `mark`, `fold`, or `collapse`. These read forms —
+and motions — are also valid directly as a binding's right-hand side — see
 the RHS note in §5.
 
 ---
@@ -1217,10 +1277,10 @@ Deferred, in rough order of likely arrival: non-flat (constructible-angle) folds
 `rotate` · fold maneuvers (reverse/squash/sink/petal, via `unfold` + layer
 selection) · crease-segment *creation* (`pinch` — materialise one segment; the `&` selection
 filter landed in v0.17-dev, [ADR 0014](../decisions/0014-crease-is-a-bundle-of-segments.md)) ·
-`standing` implementation for `@collapse` (the 3D isometry rework, ADR 0015) ·
+`standing` implementation for `collapse` (the 3D isometry rework, ADR 0015) ·
 multi-vertex collapse (fish/bird base in one action) · boundary-vertex
 collapse (squash/petal preparation) · sector-block interleaving in
-`@collapse`'s stacking enumeration (a sector tucked between another sector's
+`collapse`'s stacking enumeration (a sector tucked between another sector's
 layers) · a `paper triangle` shape (a nicer rabbit-ear demo than the
 inscribed-triangle workaround) · `rabbitear` sugar `def` (intent-style,
 `toward`, inferring M/V) ·
@@ -1258,8 +1318,14 @@ material creases sharing one interior vertex, checked by Kawasaki, Maekawa,
 and layer-order validity, with `over` for stacking ties; `standing` parses
 but is not yet implemented (§4.9); the **notation cutover** — reads become
 operators (`*` meet/join, `&` filter, `\` drop, `[]` union, the `.[] --[] #[]`
-selectors), the one write is the keyword `through`, and bracket member access
-retires in favour of `export` (§4.10, design doc).
+selectors), the one write was the keyword `through`, and bracket member access
+retires in favour of `export` (§4.10, design doc). *(v0.21-dev)* the
+**mark/fold notation cutover** — `map`/`through`/`perp` motions become pure
+reads (joining the v0.20-dev operators); the writes are the keyword verbs
+`mark` (crease flat, FOLD `F`) and `fold` (crease and fold, FOLD `M`/`V`);
+`@collapse` is renamed `collapse`; `@` is retired entirely from the grammar;
+`U` is no longer emitted (§7). See
+[`docs/superpowers/specs/2026-07-09-mark-fold-crease-notation-design.md`](../docs/superpowers/specs/2026-07-09-mark-fold-crease-notation-design.md).
 
 ---
 
