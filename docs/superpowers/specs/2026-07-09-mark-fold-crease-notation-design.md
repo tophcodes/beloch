@@ -259,16 +259,32 @@ from it:
   **algebraic** even though the arc θ is transcendental. Algebraic reals are
   closed under composition, so any incidence-driven fold sequence stays exact —
   same kernel. **Exact 2D and exact 3D are one regime.**
-- *The one break* is a free arc angle (`fold … 50 degrees`): `cos 50°` is
-  transcendental → inexact, quarantined as a float display/target layer like
-  display-ε.
-- *Arbitrary angles without transcendence (the curl case):* approximate any angle
-  by a **rational point on the unit circle** — `(cos, sin) = ((1−t²)/(1+t²),
-  2t/(1+t²))` for rational `t` — giving an exact (even rational) rotation
-  arbitrarily close to any target. A smooth curl = a sequence of small such
-  rotations along a subdivided crease, exact-algebraic, approximating the curve as
-  finely as the subdivision. This is how developable curling is discretised
-  anyway. So "curl toward one side" is exact, not transcendental.
+- *Rational angles are exact* (correcting an earlier draft that called `cos 50°`
+  transcendental — it is not). A rational number of degrees is a rational fraction
+  of a **turn**, i.e. a rational multiple of π, so its cos/sin is **algebraic**:
+  `e^{iπp/q}` is a root of unity, hence `cos(πp/q)` is an algebraic number (root
+  of a Chebyshev/cyclotomic polynomial), exact in qqbar. `1/4 turn` = 90° (cos 0,
+  rational), `1/12` = 30° (√3/2), `5/36` = 50° (algebraic degree 6) are all exact.
+  The **flat fold is the `1/2`-turn special case** — the current 2D reflection is
+  the shadow of a 3D half-turn, the bridge from the reflection model to 3D
+  rotation.
+- *The only transcendental trap is radians.* A rational number of *radians* is a
+  rational (not a rational multiple of π), so its cos is transcendental
+  (Lindemann). So the angle unit is **turns** (or degrees), never raw radians;
+  raw-radian input, if ever offered, is the explicit inexact float escape hatch.
+- *Two exact ways to name an angle:* **rational turns** `p/q` give named angles
+  exactly (cos/sin algebraic, degree ~φ(q)/2); **rational `tan(θ/2)`** — the
+  unit-circle point `((1−t²)/(1+t²), 2t/(1+t²))` — gives *arbitrary* angles with
+  **rational** (degree-1, cheapest) cos/sin, unnamed. A smooth curl = a sequence
+  of small `tan`-parametrised rotations along a subdivided crease: exact,
+  approximating the curve as finely as the subdivision. Cost: the turn denominator
+  drives the algebraic degree — small denominators cheap, `1/360` (1°) degree 48,
+  large ones hit the known kernel walls (exact but slow).
+- *Numeric literals are `Rat` only.* Source literals are rational (`3/7`, `0.1` =
+  exactly `1/10`, decimal is exact-rational sugar); algebraic irrationals arise
+  from construction, never from a literal. Exactness comes from construction, not
+  from input. (These literals are also the foundation for parametric tessellation
+  — `repeat`/coordinate arithmetic.)
 - *Honest costs* (work, not exactness loss): `Geom`/`Isometry` generalise 2D→3D
   (numbers stay algebraic). Deeply nested single folds can still hit the known
   kernel degree walls (#33/#41/#56) — but that is an intrinsic *per-fold* cost
