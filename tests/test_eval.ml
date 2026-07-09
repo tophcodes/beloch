@@ -290,7 +290,7 @@ let test_collapse_standing_unsupported () =
 (* n = 2: two diagonals through the same center point, each named as a single
    `at`-selected segment — a real fold, not a collapse; hint toward @fold *)
 let test_collapse_count_two () =
-  expect_error "use `@fold`" (fun () ->
+  expect_error "use `fold`" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
