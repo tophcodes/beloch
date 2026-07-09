@@ -1296,6 +1296,21 @@ let test_new_collapse_no_at () =
 let test_new_at_is_gone () =
   expect_error "syntax error" (fun () -> eval_src "@map .a onto .c moving .a\n")
 
+(* `mark --ab` on a prelude edge must NOT promote it to Material: that would
+   leak the boundary edge into beloch:named_lines (violating the documented
+   invariant that prelude edges are never emitted) and give it stale-snapshot
+   semantics. promote_crease is guarded to fire only on a prior Frozen
+   binding (from `--d = <motion>`), never on Edge/Bundle/Material. *)
+let test_new_mark_edge_does_not_leak () =
+  let j =
+    Beloch.fold_string ~filename:"t.bel"
+      "paper square\nmark --ab\nmark map .a onto .b\n"
+  in
+  let open Yojson.Safe.Util in
+  let named_lines = j |> member "beloch:named_lines" |> to_assoc in
+  Alcotest.(check bool) "--ab is not promoted into named_lines" false
+    (List.mem_assoc "ab" named_lines)
+
 let () =
   Alcotest.run "beloch-eval"
     [
@@ -1509,5 +1524,7 @@ let () =
           Alcotest.test_case "collapse: without @" `Quick
             test_new_collapse_no_at;
           Alcotest.test_case "@ is retired" `Quick test_new_at_is_gone;
+          Alcotest.test_case "mark on prelude edge does not leak" `Quick
+            test_new_mark_edge_does_not_leak;
         ] );
     ]

@@ -1162,7 +1162,15 @@ let eval_folded (prog : Ast.program) : folded =
             ctx.state :=
               Fold_state.subdivide !(ctx.state) axis ~crease_id:cid ~prov:None;
             (match lo with
-            | Ast.LNamed cr -> promote_crease ctx cr.Ast.cname (Material (cid, axis))
+            | Ast.LNamed cr -> (
+                (* only promote a pure Frozen value (from `--d = <motion>`);
+                   prelude edges, bundles, and already-material creases keep
+                   their existing binding (#see finding: unguarded promotion
+                   leaked prelude edges into beloch:named_lines) *)
+                match lookup_crease ctx cr with
+                | Frozen _ ->
+                    promote_crease ctx cr.Ast.cname (Material (cid, axis))
+                | Material _ | Bundle _ | Edge _ -> ())
             | _ -> ()))
     | Ast.Fold (name_opt, m, fs, span) -> (
         match resolve_markable span name_opt (Some fs) m with
