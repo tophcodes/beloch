@@ -116,6 +116,15 @@ let bind_crease (ctx : ctx) (name : string) (span : Error.span) (cv : crease_val
          name);
   Hashtbl.replace s.lines name cv
 
+(* `mark --d` on an already-bound name (e.g. a pure `--d = <motion>` value)
+   promotes its binding in place to the freshly materialised crease, so a
+   later `fold --d` can find it. Not a user-facing rebind (no dup check): the
+   name already resolved to [lo], we're just upgrading what it points to. *)
+let promote_crease (ctx : ctx) (name : string) (cv : crease_val) =
+  match List.find_opt (fun s -> Hashtbl.mem s.lines name) ctx.scopes with
+  | Some s -> Hashtbl.replace s.lines name cv
+  | None -> ()
+
 
 (* ---- Evaluator ---- *)
 
@@ -1078,11 +1087,15 @@ let eval_folded (prog : Ast.program) : folded =
                       in only one flap"
                      p.l1_str p.l2_str xs (fstr fa))))
   in
-  let rec eval_stmt (stmt : Ast.stmt) =
-    match stmt with
-    | Ast.BindBundle (name, expr, span) ->
-        bind_crease ctx name span (Bundle expr)
-    | Ast.Crease (name_opt, ax, fold_opt, span) -> (
+  (* Resolve a markable to either a fresh motion (axis + provenance + the
+     axiom-5 side override / implied-anchor, mirroring the old Crease arm) or
+     an existing line to fold/mark along. [fold_opt] is [Some fs] only when
+     called from a `fold` statement (axiom-5 direction resolution differs
+     between bind/mark and fold). *)
+  let resolve_markable (span : Error.span) (name_opt : string option)
+      (fold_opt : Ast.fold_spec option) (m : Ast.markable) =
+    match m with
+    | Ast.MMotion ax ->
         let cid = Fold_state.fresh_crease_id () in
         let prov_name =
           match name_opt with
@@ -1109,21 +1122,102 @@ let eval_folded (prog : Ast.program) : folded =
         let prov : State.provenance option =
           Some { State.axiom; sources; span; name = prov_name; step = ctx.panel }
         in
-        (match fold_opt with
-        | None -> ctx.state := Fold_state.subdivide !(ctx.state) axis ~crease_id:cid ~prov
-        | Some fs ->
-            let implied =
-              match ax with
-              | Ast.MapPoints (p, _)
-              | Ast.MapThrough (p, _, _, _)
-              | Ast.MapBoth (p, _, _, _, _) ->
-                  Some p
-              | _ -> None
+        let implied =
+          match ax with
+          | Ast.MapPoints (p, _)
+          | Ast.MapThrough (p, _, _, _)
+          | Ast.MapBoth (p, _, _, _, _) ->
+              Some p
+          | _ -> None
+        in
+        `Fresh (cid, axis, prov, side_override, implied)
+    | Ast.MLine lo -> `Existing lo
+  in
+  let rec eval_stmt (stmt : Ast.stmt) =
+    match stmt with
+    | Ast.BindBundle (name, expr, span) ->
+        bind_crease ctx name span (Bundle expr)
+    | Ast.BindLine (n, ax, span) ->
+        (* pure value: resolve the axiom to a line, bind Frozen, no subdivide *)
+        let axis =
+          match axis_of span ax with
+          | Axis (axis, _, _) -> axis
+          | Ax5 p -> select_axiom5_bind span p
+        in
+        bind_crease ctx n span (Frozen axis)
+    | Ast.Mark (name_opt, m, span) -> (
+        match resolve_markable span name_opt None m with
+        | `Fresh (cid, axis, prov, _side_override, _implied) ->
+            ctx.state :=
+              Fold_state.subdivide !(ctx.state) axis ~crease_id:cid ~prov;
+            (match name_opt with
+            | Some n -> bind_crease ctx n span (Material (cid, axis))
+            | None -> ())
+        | `Existing lo ->
+            (* mark an already-bound value line: subdivide along it. If it
+               names a crease directly, promote that binding from a pure
+               value to material so a later `fold --d` can find it. *)
+            let axis = resolve_line lo in
+            let cid = Fold_state.fresh_crease_id () in
+            ctx.state :=
+              Fold_state.subdivide !(ctx.state) axis ~crease_id:cid ~prov:None;
+            (match lo with
+            | Ast.LNamed cr -> promote_crease ctx cr.Ast.cname (Material (cid, axis))
+            | _ -> ()))
+    | Ast.Fold (name_opt, m, fs, span) -> (
+        match resolve_markable span name_opt (Some fs) m with
+        | `Fresh (cid, axis, prov, side_override, implied) ->
+            run_fold ~span ~axis ~fs ~implied ~side_override ~crease_id:cid ~prov;
+            (match name_opt with
+            | Some n -> bind_crease ctx n span (Material (cid, axis))
+            | None -> ())
+        | `Existing lo ->
+            (* fold along an existing material crease (the old FoldAlong path) *)
+            let cid =
+              match lo with
+              | Ast.LNamed cr -> material_cid cr
+              | Ast.LFilter _ | Ast.LUnion _ -> (
+                  match fst (bundle_segments lo) with
+                  | Some c -> c
+                  | None ->
+                      Error.fail span
+                        "fold folds along one existing crease; a union spans \
+                         several")
+              | _ ->
+                  Error.fail span
+                    "fold folds along an existing crease; give a crease \
+                     name, e.g. fold --d or fold --d & .p"
             in
-            run_fold ~span ~axis ~fs ~implied ~side_override ~crease_id:cid ~prov);
-        match name_opt with
-        | Some n -> bind_crease ctx n span (Material (cid, axis))
-        | None -> ())
+            let axis = resolve_line lo in
+            (* per-flap material check: every segment of the bundle carried by
+               a moving flap must lie on the axis — a crease bent under the
+               moving set cannot fold (#28) *)
+            let check_straight (moves : int -> bool) =
+              List.iter
+                (fun (s : Fold_state.crease_segment) ->
+                  let l, r = s.Fold_state.faces in
+                  if
+                    (moves l || (r >= 0 && moves r))
+                    && (Geom.side_of_line axis s.Fold_state.ta <> 0
+                       || Geom.side_of_line axis s.Fold_state.tb <> 0)
+                  then
+                    Error.fail span
+                      "the crease is bent under the moving flaps; select a \
+                       straight segment with `at` or move fewer flaps")
+                (Fold_state.crease_segments !(ctx.state) cid)
+            in
+            let prov : State.provenance option =
+              Some
+                {
+                  State.axiom = "fold";
+                  sources = [ lstr lo ];
+                  span;
+                  name = None;
+                  step = ctx.panel;
+                }
+            in
+            run_fold_checked ~span ~axis ~fs ~implied:None ~side_override:None
+              ~crease_id:cid ~prov ~check:(Some check_straight))
     | Ast.Point (n, Ast.PsExpr po, span) ->
         bind_point ctx n span (resolve_point po)
     | Ast.Flip _ -> ctx.state := Fold_state.flip !(ctx.state)
@@ -1269,52 +1363,6 @@ let eval_folded (prog : Ast.program) : folded =
         Hashtbl.replace ctx.panels id ();
         ctx.frames_rev <- (ctx.panel, !(ctx.state)) :: ctx.frames_rev;
         ctx.panel <- Some id
-    | Ast.FoldAlong (lo, fs, span) ->
-        let cid =
-          match lo with
-          | Ast.LNamed cr -> material_cid cr
-          | Ast.LFilter _ | Ast.LUnion _ -> (
-              match fst (bundle_segments lo) with
-              | Some c -> c
-              | None ->
-                  Error.fail span
-                    "@fold folds along one existing crease; a union spans \
-                     several")
-          | _ ->
-              Error.fail span
-                "@fold folds along an existing crease; give a crease name, \
-                 e.g. @fold --d or @fold --d & .p"
-        in
-        let axis = resolve_line lo in
-        (* per-flap material check: every segment of the bundle carried by a
-           moving flap must lie on the axis — a crease bent under the moving
-           set cannot fold (#28) *)
-        let check_straight (moves : int -> bool) =
-          List.iter
-            (fun (s : Fold_state.crease_segment) ->
-              let l, r = s.Fold_state.faces in
-              if
-                (moves l || (r >= 0 && moves r))
-                && (Geom.side_of_line axis s.Fold_state.ta <> 0
-                   || Geom.side_of_line axis s.Fold_state.tb <> 0)
-              then
-                Error.fail span
-                  "the crease is bent under the moving flaps; select a \
-                   straight segment with `at` or move fewer flaps")
-            (Fold_state.crease_segments !(ctx.state) cid)
-        in
-        let prov : State.provenance option =
-          Some
-            {
-              State.axiom = "fold";
-              sources = [ lstr lo ];
-              span;
-              name = None;
-              step = ctx.panel;
-            }
-        in
-        run_fold_checked ~span ~axis ~fs ~implied:None ~side_override:None
-          ~crease_id:cid ~prov ~check:(Some check_straight)
     | Ast.Collapse (elems, overs, standing_opt, span) ->
         (match standing_opt with
         | Some _ -> Error.fail span "standing folds are not yet supported"

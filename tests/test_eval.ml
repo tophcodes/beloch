@@ -1239,6 +1239,63 @@ let test_select_no_sightline () =
         (Beloch.fold_string ~filename:"t.bel"
            "paper square\n--v = map .a onto .b\nmap --v onto --[.a .c] toward .a\n"))
 
+(* ---- Notation cutover: mark/fold/collapse verbs replace @/bare-axiom (#24) ---- *)
+
+(* --l = <motion> is a pure value binding: no subdivide, no material *)
+let test_new_value_binding_no_material () =
+  let fd = eval_src "--l = map .a onto .c\n" in
+  Alcotest.(check int) "one face: no subdivide happened" 1
+    (Array.length fd.Eval.state.Fold_state.faces);
+  Alcotest.(check int) "no edges: no material crease" 0
+    (Array.length fd.Eval.state.Fold_state.edges)
+
+let test_new_mark_precrease () =
+  let fd = eval_src "mark map .a onto .c\n" in
+  Alcotest.(check int) "two faces" 2
+    (Array.length fd.Eval.state.Fold_state.faces);
+  Alcotest.(check int) "one F edge" 1 (count_assign Fold_state.F fd.Eval.state)
+
+let test_new_mark_named () =
+  let fd = eval_src "mark --d = map .a onto .c\n" in
+  Alcotest.(check bool) "named crease bound" true
+    (List.mem_assoc "d" fd.Eval.named_lines);
+  Alcotest.(check int) "one F edge" 1 (count_assign Fold_state.F fd.Eval.state)
+
+let test_new_fold_motion () =
+  let fd = eval_src "fold map .b onto .a moving .b\n" in
+  Alcotest.(check int) "two faces" 2
+    (Array.length fd.Eval.state.Fold_state.faces);
+  Alcotest.(check int) "one valley edge" 1 (count_assign Fold_state.V fd.Eval.state)
+
+let test_new_fold_named () =
+  let fd = eval_src "fold --d = map .b onto .a moving .b\n" in
+  Alcotest.(check bool) "named crease bound" true
+    (List.mem_assoc "d" fd.Eval.named_lines);
+  Alcotest.(check int) "one valley edge" 1 (count_assign Fold_state.V fd.Eval.state)
+
+(* fold along an existing material crease: --d = <motion> (value) then mark
+   it (materialise), then fold along it (the old @fold path) *)
+let test_new_fold_along () =
+  let fd = eval_src "--d = map .b onto .a\nmark --d\nfold --d moving .b\n" in
+  Alcotest.(check int) "one valley edge" 1 (count_assign Fold_state.V fd.Eval.state)
+
+(* collapse without @, same "+" vertex fixture as test_collapse_all_layers_ok,
+   with the two supporting creases materialised via `mark` instead of the
+   old bare-axiom precrease *)
+let test_new_collapse_no_at () =
+  let fd =
+    eval_src
+      "mark --h = map .a onto .d\n\
+       mark --v = map .a onto .b\n\
+       collapse --h & #[.b] mountain and --v & #[.c] and --h & #[.d] \
+       mountain and --v & #[.a] mountain\n"
+  in
+  Alcotest.(check int) "vertex collapse leaves 4 sector faces" 4
+    (Array.length fd.Eval.state.Fold_state.faces)
+
+let test_new_at_is_gone () =
+  expect_error "syntax error" (fun () -> eval_src "@map .a onto .c moving .a\n")
+
 let () =
   Alcotest.run "beloch-eval"
     [
@@ -1438,5 +1495,19 @@ let () =
           Alcotest.test_case "select --[.a .b] == --ab" `Quick test_select_edge;
           Alcotest.test_case "select diagonal errors (no sight-line)" `Quick
             test_select_no_sightline;
+        ] );
+      ( "notation_cutover",
+        [
+          Alcotest.test_case "value binding: no material" `Quick
+            test_new_value_binding_no_material;
+          Alcotest.test_case "mark: precrease" `Quick test_new_mark_precrease;
+          Alcotest.test_case "mark: named" `Quick test_new_mark_named;
+          Alcotest.test_case "fold: motion" `Quick test_new_fold_motion;
+          Alcotest.test_case "fold: named" `Quick test_new_fold_named;
+          Alcotest.test_case "fold: along existing crease" `Quick
+            test_new_fold_along;
+          Alcotest.test_case "collapse: without @" `Quick
+            test_new_collapse_no_at;
+          Alcotest.test_case "@ is retired" `Quick test_new_at_is_gone;
         ] );
     ]
