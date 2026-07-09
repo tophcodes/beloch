@@ -31,6 +31,7 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "collapse" -> COLLAPSE
   | "over" -> OVER
   | "standing" -> STANDING
+  | "mark" -> MARK
   | "as" -> AS
   | '=' -> EQ
   | '@' -> AT
