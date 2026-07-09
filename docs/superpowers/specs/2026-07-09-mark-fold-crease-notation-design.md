@@ -270,9 +270,20 @@ from it:
   finely as the subdivision. This is how developable curling is discretised
   anyway. So "curl toward one side" is exact, not transcendental.
 - *Honest costs* (work, not exactness loss): `Geom`/`Isometry` generalise 2D→3D
-  (numbers stay algebraic); multi-vertex rigid states are coupled polynomial
-  systems (algebraic but possibly high-degree — the known kernel scaling walls);
-  target reachability becomes a solvability question.
+  (numbers stay algebraic). Deeply nested single folds can still hit the known
+  kernel degree walls (#33/#41/#56) — but that is an intrinsic *per-fold* cost
+  already present in 2D, not new to 3D.
+- *Non-goal: rigid-state solving.* Beloch is **forward** (the action model, ADR
+  0011): each fold's isometry is fixed by its *own* spec and applied in program
+  order — we never solve a whole pattern's folded configuration at once. So the
+  coupled multi-vertex polynomial systems and global reachability search of
+  rigid-origami solvers **do not arise**. The only solving is local and bounded:
+  per-fold axiom (one incidence, already algebraic) and single-vertex `@collapse`
+  (exactly decidable). "Reachability" is only ever the per-fold "does this axiom
+  have a real solution" check, already handled. Complexity in Beloch comes from
+  **composition** (subdivision + isometries + parametric loops + 3D), not from a
+  solver — the inverse static-pattern / flat-foldability search (NP-hard,
+  Turing-complete via Rule 110) is deliberately out of scope.
 
 When 3D starts, the algebraic-vs-transcendental line gets its own ADR.
 
