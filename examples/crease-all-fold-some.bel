@@ -1,4 +1,4 @@
-; status: works — the bare bind creases BOTH layers flat; @fold with `up to`
+; status: works — the bare bind creases BOTH layers flat; fold with `up to`
 ; folds only the top-right flap, the bottom layer keeps its flat U mark
 paper square
 fold map .d onto .a

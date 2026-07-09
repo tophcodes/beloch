@@ -250,7 +250,7 @@ let eval_folded (prog : Ast.program) : folded =
      cluster) whose paper polygon contains every point in [pts]. Unlike
      `moving`/`up to`'s flap operand (ADR 0017: coarsened to a coplanar
      cluster so a still-flat neighbourhood is one flap), `at`'s `#(...)`
-     incidence check and `@collapse`'s `over`/`under` sector clause both need
+     incidence check and `collapse`'s `over`/`under` sector clause both need
      FACE precision even on a still-flat, multiply-precreased sheet: they
      disambiguate BETWEEN a crease bundle's own segments / a vertex's own
      sectors, which are still distinct faces while every one of them is the
@@ -559,7 +559,7 @@ let eval_folded (prog : Ast.program) : folded =
                      "%s touches %d flaps; add a point, e.g. #(.p)" (fstr fa)
                      (List.length many))))
   in
-  (* face-precise resolution for @collapse's `over`/`under`: a sector around a
+  (* face-precise resolution for collapse's `over`/`under`: a sector around a
      collapse vertex is always one FACE (ADR 0017 non-goal — over/under
      stacking order is not lifted to clusters), unlike `moving`/`up to`'s flap
      operand. Mirrors resolve_flap_cluster's FlapPoint/FlapSpec branches but
@@ -1376,7 +1376,7 @@ let eval_folded (prog : Ast.program) : folded =
         | Some _ -> Error.fail span "standing folds are not yet supported"
         | None -> ());
         (* each element must resolve to exactly ONE material segment — same
-           machinery as @fold's material resolution *)
+           machinery as fold's material resolution *)
         let resolve_elem (el : Ast.collapse_elem) : Collapse.elem =
           let fail_not_material () =
             Error.fail span
