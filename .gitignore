@@ -26,3 +26,6 @@ lib/parser.conflicts
 /*.fold
 /*.svg
 /*.png
+
+# Snapshot directories for notation-cutover slices
+tests/golden/_pre_slice1/
