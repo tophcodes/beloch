@@ -169,7 +169,7 @@ let precreased_plus () =
        the XOR flips M into a stored V.
    So the vertical crease carries one V and one M; the horizontal crease carries
    two V. This is exactly what the parity rule predicts and no folded crease
-   stays U. *)
+   stays F. *)
 let test_eassign_parity () =
   let st, cidh, cidv, rays = precreased_plus () in
   let es = elems_of rays [| false; true; false; false |] in
@@ -188,10 +188,10 @@ let test_eassign_parity () =
         (List.sort compare (assigns cidv) = [ Fold_state.M; Fold_state.V ]);
       let has_u =
         Array.exists
-          (fun (e : Fold_state.edge) -> e.Fold_state.eassign = Fold_state.U)
+          (fun (e : Fold_state.edge) -> e.Fold_state.eassign = Fold_state.F)
           s.Fold_state.edges
       in
-      Alcotest.(check bool) "no folded crease left as U" false has_u
+      Alcotest.(check bool) "no folded crease left as F" false has_u
 
 (* -- C1: duplicate ray (zero-width sector) ---------------------------------- *)
 
@@ -251,7 +251,7 @@ let test_intrinsic_convention_pin () =
                match e.Fold_state.eassign with
                | Fold_state.V -> Some true
                | Fold_state.M -> Some false
-               | Fold_state.U -> None)
+               | Fold_state.F -> None)
       in
       Alcotest.(check bool)
         (Printf.sprintf "trivial %s: stored letter matches"
@@ -315,7 +315,7 @@ let collapse_letters valleys ~flip =
              match e.Fold_state.eassign with
              | Fold_state.V -> Some true
              | Fold_state.M -> Some false
-             | Fold_state.U -> None)
+             | Fold_state.F -> None)
 
 (* spec §4.7: "mountain = turn over, then valley." A prior [flip] leaves every
    pre-collapse face back-up, so the derived-M/V rule (spec §4.6,

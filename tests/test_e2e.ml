@@ -567,6 +567,19 @@ let test_e2e_cohesion_moves_coplanar_sibling () =
     true
     (Geom.point_equal d_pos { Geom.x = half; y = Num.of_int 1 })
 
+(* Task 2: a bare precrease (still flat, unfolded) emits FOLD assignment "F",
+   never "U" — U is dropped from the codebase entirely (design/mark-fold-notation). *)
+let test_e2e_bare_precrease_emits_f () =
+  let open Yojson.Safe.Util in
+  let json =
+    Beloch.fold_string ~filename:"t.bel" "paper square\nmap .a onto .c\n"
+  in
+  let assigns =
+    json |> member "edges_assignment" |> to_list |> List.map to_string
+  in
+  Alcotest.(check bool) "no U in output" false (List.mem "U" assigns);
+  Alcotest.(check bool) "has an F crease" true (List.mem "F" assigns)
+
 let () =
   Alcotest.run "beloch-e2e"
     [
@@ -624,6 +637,8 @@ let () =
           Alcotest.test_case
             "ADR 0017 defect 2: cohesion moves a coplanar sibling" `Quick
             test_e2e_cohesion_moves_coplanar_sibling;
+          Alcotest.test_case "bare precrease emits F not U" `Quick
+            test_e2e_bare_precrease_emits_f;
         ] );
       ( "emit_folded",
         [

@@ -193,7 +193,7 @@ let test_eval_at_no_match () =
                --w = through .b .d\n\
                .mid = --b & .b * --w\n")))
 
-(* @fold --d ≡ re-stating the axiom: same faces, same M/V, no stale U (#27) *)
+(* @fold --d ≡ re-stating the axiom: same faces, same M/V, no stale F (#27) *)
 let test_fold_along_matches_restatement () =
   let via_fold =
     Eval.eval_folded
@@ -211,10 +211,10 @@ let test_fold_along_matches_restatement () =
   Alcotest.(check int) "same V count"
     (count_assign Fold_state.V via_axiom.Eval.state)
     (count_assign Fold_state.V via_fold.Eval.state);
-  Alcotest.(check int) "no stale U" 0
-    (count_assign Fold_state.U via_fold.Eval.state)
+  Alcotest.(check int) "no stale F" 0
+    (count_assign Fold_state.F via_fold.Eval.state)
 
-(* crease all layers, @fold some: the unmoved layer keeps its flat U mark *)
+(* crease all layers, @fold some: the unmoved layer keeps its flat F mark *)
 let test_crease_all_fold_some () =
   let scoped =
     Eval.eval_folded
@@ -224,8 +224,8 @@ let test_crease_all_fold_some () =
           --m = map .c onto .d\n\
           @fold --m moving .c up to .c\n")
   in
-  Alcotest.(check int) "unmoved layer keeps U" 1
-    (count_assign Fold_state.U scoped.Eval.state);
+  Alcotest.(check int) "unmoved layer keeps F" 1
+    (count_assign Fold_state.F scoped.Eval.state);
   Alcotest.(check int) "4 faces" 4
     (Array.length scoped.Eval.state.Fold_state.faces);
   let all_layers =
@@ -236,8 +236,8 @@ let test_crease_all_fold_some () =
           --m = map .c onto .d\n\
           @fold --m moving .c\n")
   in
-  Alcotest.(check int) "all-layers upgrades every U" 0
-    (count_assign Fold_state.U all_layers.Eval.state)
+  Alcotest.(check int) "all-layers upgrades every F" 0
+    (count_assign Fold_state.F all_layers.Eval.state)
 
 let test_fold_along_needs_moving () =
   expect_error "needs `moving" (fun () ->
@@ -412,7 +412,7 @@ let test_fold_subdivide () =
   Alcotest.(check int) "two faces after subdivide" 2
     (Array.length st.Fold_state.faces);
   Alcotest.(check int) "one crease edge" 1 (Array.length st.Fold_state.edges);
-  Alcotest.(check int) "subdivide edges are U" 1 (count_assign Fold_state.U st)
+  Alcotest.(check int) "subdivide edges are F" 1 (count_assign Fold_state.F st)
 
 let test_fold_records_valley () =
   let axis = { Geom.a = q 1; b = q 0; c = half } in
@@ -476,7 +476,7 @@ let test_fold_paper_preimages () =
   Alcotest.(check int) "two preimages in the folded overlap" 2 (List.length folded)
 
 (* #27: folding along a precrease (subdivide, then fold on the same axis) must
-   upgrade the abutting U crease to M/V — the fold cuts nothing, so the
+   upgrade the abutting F crease to M/V — the fold cuts nothing, so the
    upgrade comes from the carried on-axis edge, not from a new cut. *)
 let test_fold_precrease_upgrade () =
   let axis = { Geom.a = q 1; b = q 0; c = half } in
@@ -486,8 +486,8 @@ let test_fold_precrease_upgrade () =
   in
   Alcotest.(check int) "folding a precrease yields one valley edge" 1
     (count_assign Fold_state.V st2);
-  Alcotest.(check int) "the fold emits no stale U" 0
-    (count_assign Fold_state.U st2)
+  Alcotest.(check int) "the fold emits no stale F" 0
+    (count_assign Fold_state.F st2)
 
 let test_fold_state_flip () =
   let st =
@@ -618,8 +618,8 @@ let test_eval_folded_precrease () =
   in
   Alcotest.(check int) "two faces" 2
     (Array.length fd.Eval.state.Fold_state.faces);
-  Alcotest.(check int) "one U edge" 1
-    (count_assign Fold_state.U fd.Eval.state)
+  Alcotest.(check int) "one F edge" 1
+    (count_assign Fold_state.F fd.Eval.state)
 
 let test_eval_folded_moving_required () =
   expect_error "moving" (fun () ->
@@ -1048,7 +1048,7 @@ let test_eval_up_to_crease_target () =
    --d's two faces must be GENUINELY different flaps (different coplanar
    clusters) to be ambiguous — a bare precrease alone no longer suffices,
    since both faces would still be one still-flat flap. So fold ON --d's own
-   line first (`@map .b onto .a moving .b`), upgrading its edge U -> V and
+   line first (`@map .b onto .a moving .b`), upgrading its edge F -> V and
    splitting the two faces into different clusters, before testing the
    multi-flap error on a second, unrelated fold. *)
 let test_eval_moving_line_multimatch () =
@@ -1322,7 +1322,7 @@ let () =
           Alcotest.test_case "fold records accordion" `Quick
             test_fold_records_accordion;
           Alcotest.test_case "paper preimages" `Quick test_fold_paper_preimages;
-          Alcotest.test_case "precrease upgrades U to V" `Quick
+          Alcotest.test_case "precrease upgrades F to V" `Quick
             test_fold_precrease_upgrade;
           Alcotest.test_case "flip det + layer reversal" `Quick test_fold_state_flip;
           Alcotest.test_case "flip is an involution" `Quick

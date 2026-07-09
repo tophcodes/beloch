@@ -34,7 +34,7 @@
     [ 10, 7 ]
   ],
   "edges_assignment": [
-    "B", "V", "U", "B", "V", "B", "U", "U", "B", "U", "B", "B", "B", "U",
+    "B", "V", "F", "B", "V", "B", "F", "F", "B", "F", "B", "B", "B", "F",
     "B", "B"
   ],
   "faces_vertices": [
@@ -157,7 +157,7 @@
         [ 10, 7 ]
       ],
       "edges_assignment": [
-        "B", "V", "U", "B", "V", "B", "U", "U", "B", "U", "B", "B", "B", "U",
+        "B", "V", "F", "B", "V", "B", "F", "F", "B", "F", "B", "B", "B", "F",
         "B", "B"
       ],
       "edges_foldAngle": [

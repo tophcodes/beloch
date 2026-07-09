@@ -15,7 +15,7 @@
     [ 4, 2 ],
     [ 4, 3 ]
   ],
-  "edges_assignment": [ "B", "U", "U", "B", "U", "B", "U", "B" ],
+  "edges_assignment": [ "B", "F", "F", "B", "F", "B", "F", "B" ],
   "faces_vertices": [ [ 0, 1, 2 ], [ 3, 0, 2 ], [ 2, 1, 4 ], [ 3, 2, 4 ] ],
   "beloch:edges": [
     null,
@@ -77,7 +77,7 @@
         [ 4, 2 ],
         [ 4, 3 ]
       ],
-      "edges_assignment": [ "B", "U", "U", "B", "U", "B", "U", "B" ],
+      "edges_assignment": [ "B", "F", "F", "B", "F", "B", "F", "B" ],
       "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
       "faces_vertices": [
         [ 0, 1, 2 ], [ 3, 0, 2 ], [ 2, 1, 4 ], [ 3, 2, 4 ]
