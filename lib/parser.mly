@@ -11,10 +11,10 @@ type collapse_item =
   | CStanding of flap_arg * Error.span
 %}
 
-%token PAPER SQUARE THROUGH MAP ONTO CROSS EQ EOF PERP TOWARD AT MOVING MOUNTAIN FLIP LINE_OPEN POINT_OPEN FLAP_OPEN RPAREN AND AT_KW UP TO FOLD_KW
-%token DEF APPLY EXPORT STEP AS BANG LBRACE RBRACE LPAREN RBRACKET
+%token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD AT MOVING MOUNTAIN FLIP RPAREN AND UP TO FOLD_KW
+%token DEF APPLY EXPORT STEP AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
 %token COLLAPSE OVER STANDING
-%token LINE_MEMBER_OPEN POINT_MEMBER_OPEN
+%token LINE_MEMBER_OPEN POINT_MEMBER_OPEN  (* --[ / .[ : the line/point select openers *)
 %token <string> POINT
 %token <string> CREASE
 %token <string> INSTANCE
@@ -42,9 +42,8 @@ body_stmts:
   | body_stmt body_stmts { $1 :: $2 }
 
 body_stmt:
-  | CREASE EQ LINE_OPEN point_operand point_operand RPAREN
-      { Crease (Some $1, Ast.Through ($4, $5), None, $loc) }
   | CREASE EQ axiom_stmt { let (a, fs) = $3 in Crease (Some $1, a, fs, $loc) }
+  | CREASE EQ bundle_expr { BindBundle ($1, $3, $loc) }
   | axiom_stmt           { let (a, fs) = $1 in Crease (None, a, fs, $loc) }
   | POINT EQ point_expr  { Point ($1, $3, $loc) }
   | FLIP                 { Flip $loc }
@@ -135,32 +134,52 @@ point_ref:
   | POINT { { name = $1; span = $loc } }
 
 point_expr:
-  | CROSS line_operand line_operand               { Cross ($2, $3) }
-  | POINT_OPEN line_operand line_operand RPAREN   { Cross ($2, $3) }
+  | line_operand STAR line_operand                { PsExpr (PSelect ([ $1; $3 ], $loc)) }
+  | POINT_MEMBER_OPEN line_operand_list RBRACKET  { PsExpr (PSelect ($2, $loc)) }
 
 point_operand:
   | point_ref { PNamed $1 }
-  | POINT_OPEN line_operand line_operand RPAREN { PCross ($2, $3, $loc) }
-  | POINT_MEMBER_OPEN INSTANCE IDENT RBRACKET   { PMember ($2, $3, $loc) }
+  | LPAREN line_operand STAR line_operand RPAREN { PSelect ([ $2; $4 ], $loc) }
+  | POINT_MEMBER_OPEN line_operand_list RBRACKET { PSelect ($2, $loc) }
 
 crease_ref:
   | CREASE { { cname = $1; cspan = $loc } }
 
 line_operand:
   | crease_ref { LNamed $1 }
-  | LINE_OPEN point_operand point_operand RPAREN { LThrough ($2, $3, $loc) }
-  | crease_ref AT_KW selector { LAt ($1, [ $3 ], $loc) }
-  | crease_ref AT_KW LPAREN selector AND selector RPAREN { LAt ($1, [ $4; $6 ], $loc) }
-  | LINE_MEMBER_OPEN INSTANCE IDENT RBRACKET     { LMember ($2, $3, $loc) }
+  | LINE_MEMBER_OPEN select_constraints RBRACKET { LSelect ($2, $loc) }
+  | point_operand STAR point_operand { LSelect ([ SelPoint $1; SelPoint $3 ], $loc) }
+  | line_operand AMP selector       { LFilter ($1, Keep $3, $loc) }
+  | line_operand BACKSLASH selector { LFilter ($1, Drop $3, $loc) }
+  | LBRACKET line_list RBRACKET     { LUnion ($2, $loc) }
+
+line_list:
+  | line_operand           { [ $1 ] }
+  | line_operand line_list { $1 :: $2 }
+
+select_constraints:
+  | selector                    { [ $1 ] }
+  | selector select_constraints { $1 :: $2 }
+
+line_operand_list:
+  | line_operand                   { [ $1 ] }
+  | line_operand line_operand_list { $1 :: $2 }
+
+(* the RHS of a bundle binding: a named crease, a union, or either filtered.
+   Excludes bare axioms (those are Crease binds) so `--x = …` stays unambiguous. *)
+bundle_expr:
+  | crease_ref { LNamed $1 }
+  | LBRACKET line_list RBRACKET     { LUnion ($2, $loc) }
+  | bundle_expr AMP selector        { LFilter ($1, Keep $3, $loc) }
+  | bundle_expr BACKSLASH selector  { LFilter ($1, Drop $3, $loc) }
 
 selector:
   | point_operand { SelPoint $1 }
   | crease_ref    { SelLine (LNamed $1) }
-  | LINE_OPEN point_operand point_operand RPAREN { SelLine (LThrough ($2, $3, $loc)) }
   | flap_operand  { SelFlap $1 }
 
 flap_operand:
-  | FLAP_OPEN point_operand_list RPAREN { FByPoints ($2, $loc) }
+  | FLAP_BRACKET point_operand_list RBRACKET { FByPoints ($2, $loc) }
 
 point_operand_list:
   | point_operand                    { [ $1 ] }

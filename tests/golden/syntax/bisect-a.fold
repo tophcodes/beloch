@@ -39,7 +39,7 @@
     null,
     {
       "axiom": "axiom5",
-      "sources": [ "--v", "--(.a .b)", ".a" ],
+      "sources": [ "--v", "--ab", ".a" ],
       "span": "bisect-a.bel:3:1",
       "name": null,
       "step": null

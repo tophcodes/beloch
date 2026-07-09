@@ -17,8 +17,8 @@ paper square
 ; rays (--h and --v) lie on back-up sectors, so their golden letters invert
 ; (the .b.c ray valley → M, the other three mountains → V); the four diagonal
 ; rays keep their declared valleys.
-@collapse --ac at .a and --ac at .c and --bd at .b and --bd at .d
-  and --h at --(.b .c)
-  and (--h at --(.a .d) mountain)
-  and (--v at --(.d .c) mountain)
-  and (--v at --(.a .b) mountain)
+@collapse --ac & .a and --ac & .c and --bd & .b and --bd & .d
+  and --h & --bc
+  and (--h & --da mountain)
+  and (--v & --cd mountain)
+  and (--v & --ab mountain)

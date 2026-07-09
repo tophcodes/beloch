@@ -11,13 +11,13 @@ paper square
 --h  = map .a onto .d     ; horizontal midline, y = 1/2
 --v  = map .a onto .b     ; vertical midline, x = 1/2
 
-.rm = .(--h --(.b .c))    ; right edge midpoint (1, 1/2)
-.tm = .(--v --(.d .c))    ; top edge midpoint (1/2, 1)
+.rm = --h * --bc          ; right edge midpoint (1, 1/2)
+.tm = --v * --cd          ; top edge midpoint (1/2, 1)
 
-@collapse (--ac at .c mountain) and --ac at .a
-  and (--bd at .d mountain) and --bd at .b
-  and (--h at --(.b .c) mountain)
-  and --h at --(.a .d)
-  and --v at --(.d .c)
-  and --v at --(.a .b)
-  and #(.b .rm) over #(.c .tm)
+@collapse (--ac & .c mountain) and --ac & .a
+  and (--bd & .d mountain) and --bd & .b
+  and (--h & --bc mountain)
+  and --h & --da
+  and --v & --cd
+  and --v & --ab
+  and #[.b .rm] over #[.c .tm]
