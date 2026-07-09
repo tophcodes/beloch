@@ -7,7 +7,7 @@
 
 type face = { paper : Geom.point array; iso : Isometry.t }
 type rel = Layer_order.rel = Above | Below | Apart
-type assign = M | V | U
+type assign = M | V | F
 
 (* A first-class crease edge between two faces. [ea]/[eb] are the segment
    endpoints in the [left] face's paper coordinates. [right] is [-1] when the
@@ -359,12 +359,12 @@ let crease_paper_axis (st : t) (cid : int) :
       else `Bent
 
 (* Component id per face: the graph whose nodes are faces and whose edges are
-   interior adjacencies still assignment U (unfolded, physically coplanar).
-   Two faces separated only by a U edge are the same flap; the instant that
-   edge folds (U -> M/V) the flap splits there, exactly and only there
-   (ADR 0017). Recomputed from the current U-edge set on every call — no
-   incremental cache, so a future `unfold` (which merges clusters) needs no
-   extra bookkeeping. O(faces + edges) per call. *)
+   interior adjacencies still assignment F (flat, unfolded). Two faces
+   separated only by an F edge are the same flap; the instant that edge folds
+   (F -> M/V) the flap splits there, exactly and only there (ADR 0017).
+   Recomputed from the current F-edge set on every call — no incremental
+   cache, so a future `unfold` (which merges clusters) needs no extra
+   bookkeeping. O(faces + edges) per call. *)
 let coplanar_clusters (st : t) : int array =
   let n = Array.length st.faces in
   let parent = Array.init n Fun.id in
@@ -379,12 +379,12 @@ let coplanar_clusters (st : t) : int array =
   in
   Array.iter
     (fun (e : edge) ->
-      if e.left >= 0 && e.right >= 0 && e.eassign = U then union e.left e.right)
+      if e.left >= 0 && e.right >= 0 && e.eassign = F then union e.left e.right)
     st.edges;
   Array.init n (fun i -> find i)
 
 (* The unique flap (coplanar cluster, as its face-index list) whose union of
-   paper polygons contains every point in [pts]. A point on a shared U edge
+   paper polygons contains every point in [pts]. A point on a shared F edge
    belongs to both incident faces, but they're the same cluster, so that's
    still one id. `Zero if no cluster contains every point, `Ambiguous if more
    than one does. *)
@@ -515,7 +515,7 @@ let select_scope (st : t) ~(axis : Geom.line) ~(move_side : int)
          move too — the moving set is an outer prefix by construction *)
       (* the moving set is closed under BOTH the existing outer-prefix rule
          AND cohesion: a candidate g in the same still-coplanar cluster as a
-         moving m must move too — a fold may never tear a U-adjacent
+         moving m must move too — a fold may never tear an F-adjacent
          neighbourhood (ADR 0017, defect 2). The `cand g` guard is unchanged,
          so a face with no material on the moving side (the axis genuinely
          cuts the cluster there) is correctly left out. *)
@@ -592,7 +592,7 @@ let axis_segment_in_face (f : face) (axis : Geom.line) :
   | _ -> None
 
 (* Split every face crossing [axis] into its two halves (both keep their
-   isometry; nothing moves). Returns the new state; one U edge is created per
+   isometry; nothing moves). Returns the new state; one F edge is created per
    face actually cut. *)
 let subdivide ?crease_id (st : t) (axis : Geom.line)
     ~(prov : State.provenance option) : t =
@@ -642,7 +642,7 @@ let subdivide ?crease_id (st : t) (axis : Geom.line)
           | [ l ] -> (l, -1)
           | [] -> (-1, -1)
         in
-        { ea = a; eb = b; left; right; eassign = U; crease_id = cid; eprov = prov })
+        { ea = a; eb = b; left; right; eassign = F; crease_id = cid; eprov = prov })
       !edge_seeds
   in
   (* the child of parent [p] on side [s] of [axis]; a face split into two keeps
@@ -789,7 +789,7 @@ let fold_with_records ?crease_id ?moving_parents (st : t) ~(axis : Geom.line)
     end
   in
   (* the fold's live M/V from a parent face's orientation parity (#27: this
-     supersedes the stale U minted when a precrease was first scored) *)
+     supersedes the stale F minted when a precrease was first scored) *)
   let assign_of_parent p =
     if valley <> (Isometry.det_sign st.faces.(p).iso < 0) then V else M
   in
@@ -810,7 +810,7 @@ let fold_with_records ?crease_id ?moving_parents (st : t) ~(axis : Geom.line)
              Neither incident face is cut, so each maps to its single child; the
              assignment upgrades to the moving side's live M/V — but only if
              something incident actually moved (scoped folds can leave an
-             on-axis precrease untouched, keeping its U). *)
+             on-axis precrease untouched, keeping its F). *)
           let moving_face =
             if has_moved_child e.left then Some e.left
             else if e.right >= 0 && has_moved_child e.right then Some e.right

@@ -486,7 +486,7 @@ let eval_folded (prog : Ast.program) : folded =
     List.rev !acc
   in
   (* resolve a flap operand to its unique current flap — a coplanar cluster of
-     faces (ADR 0017: two faces joined only by a still-unfolded U edge are the
+     faces (ADR 0017: two faces joined only by a still-unfolded F edge are the
      same flap). Slots demand uniqueness at cluster granularity; errors name
      the candidate flaps. *)
   let resolve_flap_cluster (fa : Ast.flap_arg) (span : Error.span) : int list =

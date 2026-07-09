@@ -98,7 +98,7 @@ let test_edge_left_right_orientation () =
   Alcotest.(check int) "mountain: right=0 (moved now at position 0)" 0
     stm.Fold_state.edges.(0).Fold_state.right
 
-(* A bare subdivide (no movement) produces a single U edge between its two
+(* A bare subdivide (no movement) produces a single F edge between its two
    children, left/right being those two children. *)
 let test_subdivide_produces_u_edge () =
   let axis = { Geom.a = Num.one; b = Num.zero; c = qf 1 2 } in
@@ -106,8 +106,8 @@ let test_subdivide_produces_u_edge () =
   Alcotest.(check int) "subdivide: two faces" 2 (Array.length st'.Fold_state.faces);
   Alcotest.(check int) "subdivide: one edge" 1 (Array.length st'.Fold_state.edges);
   let e = st'.Fold_state.edges.(0) in
-  Alcotest.(check bool) "subdivide: eassign = U" true
-    (e.Fold_state.eassign = Fold_state.U);
+  Alcotest.(check bool) "subdivide: eassign = F" true
+    (e.Fold_state.eassign = Fold_state.F);
   Alcotest.(check int) "subdivide: left = child 0" 0 e.Fold_state.left;
   Alcotest.(check int) "subdivide: right = child 1" 1 e.Fold_state.right
 
@@ -130,7 +130,7 @@ let test_flip_reindexes_edge () =
   Alcotest.(check int) "flip: right reindexed via n-1-i" (n - 1 - right0)
     e'.Fold_state.right
 
-(* #27: a precrease (mark) that is later folded on must have its carried U
+(* #27: a precrease (mark) that is later folded on must have its carried F
    edge upgraded to V in place, not left stale or duplicated. *)
 let test_precrease_upgrades_in_place () =
   let src = "paper square\nmap .b onto .a\n@map .b onto .a moving .b\n" in
@@ -140,8 +140,8 @@ let test_precrease_upgrades_in_place () =
            |> List.filter (fun (e:Fold_state.edge) -> e.Fold_state.eassign = Fold_state.V) in
   Alcotest.(check int) "precrease folded to a single V edge" 1 (List.length vs);
   let us = Array.to_list edges
-           |> List.filter (fun (e:Fold_state.edge) -> e.Fold_state.eassign = Fold_state.U) in
-  Alcotest.(check int) "no stale U crease left on the fold line" 0 (List.length us)
+           |> List.filter (fun (e:Fold_state.edge) -> e.Fold_state.eassign = Fold_state.F) in
+  Alcotest.(check int) "no stale F crease left on the fold line" 0 (List.length us)
 
 (* a diagonal precrease is straight; after flip it tracks to the OTHER diagonal *)
 let test_crease_axis_flat_and_flip () =
@@ -163,7 +163,7 @@ let test_crease_axis_flat_and_flip () =
    | _ -> Alcotest.fail "flipped flat crease should still resolve to a line")
 
 (* flap_of_points: the a-c split square has two triangle FACES, but the split
-   is a bare U precrease (nothing folded), so both triangles are the SAME
+   is a bare F precrease (nothing folded), so both triangles are the SAME
    coplanar cluster (ADR 0017). Every point-set below now resolves to that one
    `Cluster, including {b,d} and {a,c} which used to be `Zero/`Ambiguous under
    the old per-face semantics — "still flat ⇒ still one flap". *)
@@ -187,7 +187,7 @@ let test_coplanar_clusters_flat_square () =
   Alcotest.(check (list int)) "one face -> one cluster" [ 0 ]
     (Array.to_list (Fold_state.coplanar_clusters Fold_state.init_square))
 
-(* Once a crease is actually FOLDED (U -> M/V), the flap splits there: the two
+(* Once a crease is actually FOLDED (F -> M/V), the flap splits there: the two
    faces land in different clusters, and a point-set spanning both (off the
    crease) no longer shares a flap. *)
 let test_cluster_split_on_fold () =
@@ -248,7 +248,7 @@ let mkedge ~ea ~eb ~left ~right ~cid =
     eb;
     left;
     right;
-    eassign = Fold_state.U;
+    eassign = Fold_state.F;
     crease_id = cid;
     eprov = None;
   }
@@ -482,10 +482,10 @@ let test_unscoped_fold_unchanged () =
   Alcotest.(check int) "all-layers cuts both: four faces" 4
     (Array.length st'.Fold_state.faces)
 
-(* Cohesion (ADR 0017 defect 2): a coplanar cluster (U-adjacent faces) must
+(* Cohesion (ADR 0017 defect 2): a coplanar cluster (F-adjacent faces) must
    move as a unit even when its members never geometrically overlap each
    other, so the existing `outer`/overlap closure can't see the link. Two
-   side-by-side top-layer siblings (topA, topB) share a U edge and both sit
+   side-by-side top-layer siblings (topA, topB) share an F edge and both sit
    above a bottom face; the fold axis is placed off to the side so every face
    is fully a candidate (the axis does NOT cut the cluster). Anchored at
    topA with `up to` itself (the minimal scope), the OLD closure — overlap-only
@@ -507,7 +507,7 @@ let test_select_scope_cohesion_pulls_in_u_sibling () =
   | Error e -> Alcotest.fail e
   | Ok m ->
       Alcotest.(check bool) "anchor (topA) moves" true m.(1);
-      Alcotest.(check bool) "U-adjacent sibling (topB) moves too (cohesion)"
+      Alcotest.(check bool) "F-adjacent sibling (topB) moves too (cohesion)"
         true m.(2);
       Alcotest.(check bool) "bottom face does not move" false m.(0)
 
@@ -522,7 +522,7 @@ let () =
             `Quick test_disambiguates_second_fold_touching_one_face;
           Alcotest.test_case "left/right orientation (valley & mountain)"
             `Quick test_edge_left_right_orientation;
-          Alcotest.test_case "subdivide produces U edge" `Quick
+          Alcotest.test_case "subdivide produces F edge" `Quick
             test_subdivide_produces_u_edge;
           Alcotest.test_case "flip reindexes edge left/right" `Quick
             test_flip_reindexes_edge;
@@ -584,7 +584,7 @@ let () =
           Alcotest.test_case "unscoped fold unchanged (status quo)" `Quick
             test_unscoped_fold_unchanged;
           Alcotest.test_case
-            "cohesion: U-adjacent sibling moves with its cluster (ADR 0017)"
+            "cohesion: F-adjacent sibling moves with its cluster (ADR 0017)"
             `Quick test_select_scope_cohesion_pulls_in_u_sibling;
         ] );
     ]

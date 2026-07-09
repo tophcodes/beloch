@@ -65,10 +65,10 @@ let folded_frame_of_state (state : Fold_state.t) (step : string option) :
                     match e.Fold_state.eassign with
                     | Fold_state.M -> "M"
                     | Fold_state.V -> "V"
-                    | Fold_state.U -> "U"
+                    | Fold_state.F -> "F"
                   in
                   (a, e.Fold_state.eprov)
-              | None -> ("U", None)
+              | None -> ("F", None)
           in
           edges := (ia, ib, assign, prov) :: !edges
         end
@@ -193,10 +193,10 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
                     match e.Fold_state.eassign with
                     | Fold_state.M -> "M"
                     | Fold_state.V -> "V"
-                    | Fold_state.U -> "U"
+                    | Fold_state.F -> "F"
                   in
                   (a, e.Fold_state.eprov)
-              | None -> ("U", None)
+              | None -> ("F", None)
           in
           edges := (ia, ib, assign, prov) :: !edges
         end
