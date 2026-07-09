@@ -76,7 +76,7 @@ type fold_spec = {
   direction : direction;
 }
 
-(* A single crease in a `@collapse` statement, with its own fold direction
+(* A single crease in a `collapse` statement, with its own fold direction
    (ADR pending: collapse = simultaneous multi-crease fold). *)
 type collapse_elem = { cline : line_operand; cdir : direction }
 
@@ -111,7 +111,7 @@ type stmt =
   | StepMark of string * Error.span
   | Collapse of collapse_elem list * (flap_arg * flap_arg) list
                 * flap_arg option * Error.span
-      (* @collapse <elements> [over-pairs] [standing]: simultaneous multi-
+      (* collapse <elements> [over-pairs] [standing]: simultaneous multi-
          crease fold. elements = the creases folded, each with its own
          direction; over-pairs = (upper flap, lower flap) layer-order
          constraints; standing = the flap that stays upright (unfolded). *)

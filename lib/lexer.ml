@@ -34,7 +34,6 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "mark" -> MARK
   | "as" -> AS
   | '=' -> EQ
-  | '@' -> AT
   | '!' -> BANG
   | '{' -> LBRACE
   | '}' -> RBRACE

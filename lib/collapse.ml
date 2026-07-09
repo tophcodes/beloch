@@ -229,7 +229,7 @@ let collapse (st : Fold_state.t) (es : elem list) ~(over : (int * int) list) :
             (* a representative pre-collapse face iso per sector — its
                orientation (front-up vs flipped) feeds the parity helper so a
                prior `flip` inverts M/V. All layers of a sector share one
-               orientation in the states @collapse accepts (single-layer or a
+               orientation in the states collapse accepts (single-layer or a
                uniformly-flipped stack). *)
             let sector_iso = Array.make n Isometry.identity in
             let sector_seen = Array.make n false in

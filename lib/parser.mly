@@ -1,7 +1,7 @@
 %{
 open Ast
 
-(* @collapse: one flat `and`-separated chain; the statement action partitions
+(* collapse: one flat `and`-separated chain; the statement action partitions
    it. over_flap is restricted to point/flap operands so the first token of
    each item is unambiguous: elements are `--`/`--(`/`(`-first, over pairs
    `.`/`.(`/`#(`-first, standing keyword-first. *)
@@ -11,7 +11,7 @@ type collapse_item =
   | CStanding of flap_arg * Error.span
 %}
 
-%token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD AT MOVING MOUNTAIN FLIP RPAREN AND UP TO FOLD_KW
+%token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD MOVING MOUNTAIN FLIP RPAREN AND UP TO FOLD_KW
 %token DEF APPLY EXPORT STEP AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
 %token COLLAPSE OVER STANDING MARK
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN  (* --[ / .[ : the line/point select openers *)
@@ -71,7 +71,7 @@ body_stmt:
               | CStanding (f, sp) -> (
                   match st with
                   | Some _ ->
-                      Error.fail sp "only one standing clause per @collapse"
+                      Error.fail sp "only one standing clause per collapse"
                   | None -> (es, os, Some f)))
             ([], [], None) $2
         in

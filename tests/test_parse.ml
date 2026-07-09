@@ -764,12 +764,14 @@ let test_parse_new_collapse_no_at () =
   | _ -> Alcotest.fail "expected collapse (no @) to parse as Ast.Collapse"
 
 let test_parse_at_retired () =
-  expect_error "syntax error" (fun () ->
+  (* `@` is no longer a token at all (AT retired): it's an unrecognised
+     character, so the lexer rejects it before the parser ever sees it. *)
+  expect_error "unexpected character" (fun () ->
       Beloch.parse ~filename:"t.bel"
         "paper square\n@map .a onto .c moving .a\n");
-  expect_error "syntax error" (fun () ->
+  expect_error "unexpected character" (fun () ->
       Beloch.parse ~filename:"t.bel" "paper square\n@fold --d moving .a\n");
-  expect_error "syntax error" (fun () ->
+  expect_error "unexpected character" (fun () ->
       Beloch.parse ~filename:"t.bel" "paper square\n@collapse --a and --b\n")
 
 let () =

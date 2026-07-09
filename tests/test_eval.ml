@@ -1294,7 +1294,10 @@ let test_new_collapse_no_at () =
     (Array.length fd.Eval.state.Fold_state.faces)
 
 let test_new_at_is_gone () =
-  expect_error "syntax error" (fun () -> eval_src "@map .a onto .c moving .a\n")
+  (* `@` is no longer a token (AT retired): unrecognised character, rejected
+     by the lexer before the parser runs. *)
+  expect_error "unexpected character" (fun () ->
+      eval_src "@map .a onto .c moving .a\n")
 
 (* `mark --ab` on a prelude edge must NOT promote it to Material: that would
    leak the boundary edge into beloch:named_lines (violating the documented
