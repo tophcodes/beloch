@@ -46,17 +46,17 @@ let test_e2e_inline_equiv () =
   let named =
     Beloch.fold_string ~filename:"t.bel"
       "paper square\n\
-       --d1 = through .a .c\n\
-       --d2 = through .b .d\n\
+       mark --d1 = through .a .c\n\
+       mark --d2 = through .b .d\n\
        .m = --d1 * --d2\n\
-       map .a onto .m\n"
+       mark map .a onto .m\n"
   in
   let inline =
     Beloch.fold_string ~filename:"t.bel"
       "paper square\n\
-       --d1 = through .a .c\n\
-       --d2 = through .b .d\n\
-       map .a onto .[--d1 --d2]\n"
+       mark --d1 = through .a .c\n\
+       mark --d2 = through .b .d\n\
+       mark map .a onto .[--d1 --d2]\n"
   in
   Alcotest.(check bool)
     "inline cross-point matches the named binding" true
@@ -65,7 +65,7 @@ let test_e2e_inline_equiv () =
 let test_e2e_inline_error () =
   expect_error "same place" (fun () ->
       Beloch.fold_string ~filename:"t.bel"
-        "paper square\n--aa = through .a .a\nperp --aa through .b\n")
+        "paper square\nmark --aa = through .a .a\nmark perp --aa through .b\n")
 
 let test_e2e_diagonals () =
   let src = read_example "syntax/diagonals.bel" in
@@ -208,8 +208,8 @@ let test_eval_map_through_toward () =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
          "paper square\n\
-          --bottom = through .a .b\n\
-          map .d onto --bottom through .a toward .b\n")
+          mark --bottom = through .a .b\n\
+          mark map .d onto --bottom through .a toward .b\n")
   in
   match Array.to_list fd.Eval.state.Fold_state.edges with
   | [] -> Alcotest.fail "expected at least one crease edge"
@@ -256,7 +256,7 @@ let test_e2e_flip_mountain () =
   let fd =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
-         "paper square\nflip\n@map .a onto .b moving .a\n")
+         "paper square\nflip\nfold map .a onto .b moving .a\n")
   in
   Alcotest.(check int) "fold after flip is a mountain" 1
     (count_assign Fold_state.M fd.Eval.state);
@@ -265,7 +265,7 @@ let test_e2e_flip_mountain () =
   let fd2 =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
-         "paper square\n@map .a onto .b moving .a\n")
+         "paper square\nfold map .a onto .b moving .a\n")
   in
   Alcotest.(check int) "without flip it is a valley" 1
     (count_assign Fold_state.V fd2.Eval.state)
@@ -280,8 +280,8 @@ let test_e2e_flip_cp_counts () =
   in
   Alcotest.(check bool)
     "flip preserves the crease-pattern size" true
-    (counts "paper square\n--c = map .a onto .b\n"
-    = counts "paper square\n--c = map .a onto .b\nflip\n")
+    (counts "paper square\nmark --c = map .a onto .b\n"
+    = counts "paper square\nmark --c = map .a onto .b\nflip\n")
 
 let test_faceorders_stable_fold_quarter () =
   let json =
@@ -309,9 +309,9 @@ let test_faceorders_stable_fold_quarter () =
 let test_e2e_axiom7_rational_crease () =
   let src =
     "paper square\n\
-     --diag = through .a .c\n\
-     --anti = through .b .d\n\
-     map .a onto --anti and .d onto --diag toward .b\n"
+     mark --diag = through .a .c\n\
+     mark --anti = through .b .d\n\
+     mark map .a onto --anti and .d onto --diag toward .b\n"
   in
   let json = Beloch.fold_string ~filename:"t.bel" src in
   let open Yojson.Safe.Util in
@@ -329,7 +329,7 @@ let test_emit_folded_frames () =
   let fd =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
-         "paper square\n@map .b onto .a moving .b\n")
+         "paper square\nfold map .b onto .a moving .b\n")
   in
   let json = Fold_emit.to_json_folded fd in
   let open Yojson.Safe.Util in
@@ -353,7 +353,7 @@ let test_emit_folded_frames () =
 let test_emit_folded_crease_name () =
   let fd =
     Eval.eval_folded
-      (Beloch.parse ~filename:"t.bel" "paper square\n--m = map .a onto .c\n")
+      (Beloch.parse ~filename:"t.bel" "paper square\nmark --m = map .a onto .c\n")
   in
   let json = Fold_emit.to_json_folded fd in
   let open Yojson.Safe.Util in
@@ -373,8 +373,8 @@ let test_emit_folded_crease_name () =
 let test_multilayer_crease_bare_cross_errors () =
   let src =
     "paper square\n\
-     @map .c onto .a moving .c\n\
-     --v = map .b onto .a\n\
+     fold map .c onto .a moving .c\n\
+     mark --v = map .b onto .a\n\
      .mid = --v * --ab\n"
   in
   match Beloch.fold_string ~filename:"t.bel" src with
@@ -402,9 +402,9 @@ let test_at_selects_bent_segment () =
   let prog sel =
     Printf.sprintf
       "paper square\n\
-       --b = through .a .c\n\
-       --v = @map .c onto .b\n\
-       --q = perp --b & %s through .a\n"
+       mark --b = through .a .c\n\
+       fold --v = map .c onto .b\n\
+       mark --q = perp --b & %s through .a\n"
       sel
   in
   let q_axis src =
@@ -425,9 +425,9 @@ let test_bundle_ops_equiv_at () =
   let base sel =
     Printf.sprintf
       "paper square\n\
-       --b = through .a .c\n\
-       --v = @map .c onto .b\n\
-       --q = perp --b %s through .a\n"
+       mark --b = through .a .c\n\
+       fold --v = map .c onto .b\n\
+       mark --q = perp --b %s through .a\n"
       sel
   in
   let q_axis src =
@@ -452,12 +452,12 @@ let test_bind_bundle_roundtrip () =
     | j -> j |> member "beloch:named_lines" |> member "q" |> to_list
   in
   let inline =
-    "paper square\n--b = through .a .c\n--v = @map .c onto .b\n\
-     --q = perp --b & #[.c .d] through .a\n"
+    "paper square\nmark --b = through .a .c\nfold --v = map .c onto .b\n\
+     mark --q = perp --b & #[.c .d] through .a\n"
   in
   let bound =
-    "paper square\n--b = through .a .c\n--v = @map .c onto .b\n\
-     --seg = --b & #[.c .d]\n--q = perp --seg through .a\n"
+    "paper square\nmark --b = through .a .c\nfold --v = map .c onto .b\n\
+     --seg = --b & #[.c .d]\nmark --q = perp --seg through .a\n"
   in
   Alcotest.(check bool) "bound bundle == inline" true
     (q_axis inline = q_axis bound)
@@ -468,9 +468,9 @@ let test_multiframe () =
   let src =
     "paper square\n\
      step a\n\
-     --v = map .a onto .b\n\
+     mark --v = map .a onto .b\n\
      step b\n\
-     map .d onto .c\n"
+     mark map .d onto .c\n"
   in
   let json = Beloch.fold_string ~filename:"t" src in
   let frames =
@@ -513,7 +513,7 @@ let test_e2e_precrease_fold_emits_v () =
   let fd =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
-         "paper square\nmap .b onto .a\n@map .b onto .a moving .b\n")
+         "paper square\nmark map .b onto .a\nfold map .b onto .a moving .b\n")
   in
   let j = Fold_emit.to_json_folded fd in
   let assigns = j |> member "edges_assignment" |> to_list |> filter_string in
@@ -535,8 +535,8 @@ let test_e2e_flap_cluster_spans_precrease_split () =
   ignore
     (Beloch.fold_string ~filename:"t.bel"
        "paper square\n\
-        --diag = map .b onto .d\n\
-        @map .a onto .c moving .a up to #[.a .c]\n")
+        mark --diag = map .b onto .d\n\
+        fold map .a onto .c moving .a up to #[.a .c]\n")
 
 (* ADR 0017 defect 2: a scoped self-fold must move its entire still-flat
    coplanar cluster, not just the face nearest the anchor. --v/--h precrease
@@ -555,10 +555,10 @@ let test_e2e_cohesion_moves_coplanar_sibling () =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
          "paper square\n\
-          --v = map .a onto .b\n\
-          --h = map .a onto .d\n\
+          mark --v = map .a onto .b\n\
+          mark --h = map .a onto .d\n\
           .m0 = --v * --ab\n\
-          @map .a onto .m0 moving .a up to .a\n")
+          fold map .a onto .m0 moving .a up to .a\n")
   in
   let d_pos = Fold_state.table_position fd.Eval.state (pt 0 1) in
   Alcotest.(check bool)
@@ -572,7 +572,7 @@ let test_e2e_cohesion_moves_coplanar_sibling () =
 let test_e2e_bare_precrease_emits_f () =
   let open Yojson.Safe.Util in
   let json =
-    Beloch.fold_string ~filename:"t.bel" "paper square\nmap .a onto .c\n"
+    Beloch.fold_string ~filename:"t.bel" "paper square\nmark map .a onto .c\n"
   in
   let assigns =
     json |> member "edges_assignment" |> to_list |> List.map to_string

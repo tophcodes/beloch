@@ -7,17 +7,17 @@
 
 paper square
 
---ac = map .b onto .d     ; diagonal a-c
---bd = map .a onto .c     ; diagonal b-d
---h  = map .a onto .d     ; horizontal midline, y = 1/2
---v  = map .a onto .b     ; vertical midline, x = 1/2
+mark --ac = map .b onto .d     ; diagonal a-c
+mark --bd = map .a onto .c     ; diagonal b-d
+mark --h  = map .a onto .d     ; horizontal midline, y = 1/2
+mark --v  = map .a onto .b     ; vertical midline, x = 1/2
 
 ; the emitted FOLD edges_assignment is GLOBAL-frame M/V (spec §4.6, derived
 ; assignment = valley XOR the cutting face is back-up): the four edge-midpoint
 ; rays (--h and --v) lie on back-up sectors, so their golden letters invert
 ; (the .b.c ray valley → M, the other three mountains → V); the four diagonal
 ; rays keep their declared valleys.
-@collapse --ac & .a and --ac & .c and --bd & .b and --bd & .d
+collapse --ac & .a and --ac & .c and --bd & .b and --bd & .d
   and --h & --bc
   and (--h & --da mountain)
   and (--v & --cd mountain)

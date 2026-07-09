@@ -1,4 +1,4 @@
 ; status: works — fold to a quarter; the second fold accordions across two layers
 paper square
-@map .b onto .a moving .b
-@map .d onto .a moving .d
+fold map .b onto .a moving .b
+fold map .d onto .a moving .d

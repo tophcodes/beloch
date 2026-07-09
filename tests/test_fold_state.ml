@@ -133,7 +133,7 @@ let test_flip_reindexes_edge () =
 (* #27: a precrease (mark) that is later folded on must have its carried F
    edge upgraded to V in place, not left stale or duplicated. *)
 let test_precrease_upgrades_in_place () =
-  let src = "paper square\nmap .b onto .a\n@map .b onto .a moving .b\n" in
+  let src = "paper square\nmark map .b onto .a\nfold map .b onto .a moving .b\n" in
   let fd = Eval.eval_folded (Beloch.parse ~filename:"t.bel" src) in
   let edges = fd.Eval.state.Fold_state.edges in
   let vs = Array.to_list edges

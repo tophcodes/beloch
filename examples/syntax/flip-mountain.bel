@@ -1,4 +1,4 @@
 ; status: works — turn the blank sheet over, then a valley command folds a mountain
 paper square
 flip
-@map .a onto .b moving .a
+fold map .a onto .b moving .a

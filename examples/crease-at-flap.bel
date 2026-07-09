@@ -7,6 +7,6 @@
 ; instead would be vacuous: both segments meet --v at the same bend point.)
 ; No `moving`: folding the .c side is the default for `map .c onto …`.
 paper square
---b = through .a .c
---v = @map .c onto .b
---q = perp --b & #[.c .d] through .a
+mark --b = through .a .c
+fold --v = map .c onto .b
+mark --q = perp --b & #[.c .d] through .a

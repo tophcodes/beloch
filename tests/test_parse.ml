@@ -30,7 +30,7 @@ let test_parse_named_and_anon () =
     Beloch.parse ~filename:"t.bel"
       "paper square\n\
        --d1 = through .a .c\n\
-       map .b onto .d\n\
+       mark map .b onto .d\n\
        .center = --d1 * --d2\n"
   in
   Alcotest.(check int) "three statements" 3 (List.length prog);
@@ -45,14 +45,14 @@ let test_parse_named_and_anon () =
 
 let test_parse_syntax_error () =
   try
-    ignore (Beloch.parse ~filename:"t.bel" "paper square\nmap .a\n");
+    ignore (Beloch.parse ~filename:"t.bel" "paper square\nmark map .a\n");
     Alcotest.fail "expected a syntax error"
   with Error.Beloch_error (_, _) -> ()
 
 let test_parse_perp () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n--d = through .a .c\nperp --d through .b\n"
+      "paper square\n--d = through .a .c\nmark perp --d through .b\n"
   in
   match prog with
   | [
@@ -69,7 +69,7 @@ let test_parse_perp () =
 let test_parse_map_onto_line () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n--l1 = through .a .b\n--l2 = through .a .d\nmap .c onto --l1 perp --l2\n"
+      "paper square\n--l1 = through .a .b\n--l2 = through .a .d\nmark map .c onto --l1 perp --l2\n"
   in
   match prog with
   | [
@@ -92,7 +92,7 @@ let test_parse_bisect () =
       "paper square\n\
        --v = map .a onto .b\n\
        --h = map .b onto .c\n\
-       map --v onto --h toward .a\n"
+       mark map --v onto --h toward .a\n"
   in
   match prog with
   | [
@@ -113,7 +113,7 @@ let test_parse_bisect () =
 let test_parse_map_through () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n--d = through .a .b\nmap .c onto --d through .a\n"
+      "paper square\n--d = through .a .b\nmark map .c onto --d through .a\n"
   in
   match prog with
   | [
@@ -132,7 +132,7 @@ let test_parse_map_through () =
 let test_parse_map_through_toward () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n--d = through .a .b\nmap .c onto --d through .a toward .b\n"
+      "paper square\n--d = through .a .b\nmark map .c onto --d through .a toward .b\n"
   in
   match prog with
   | [
@@ -151,7 +151,7 @@ let test_parse_map_through_toward () =
 let test_parse_map_both () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\nmap .a onto --d and .c onto --e\n"
+      "paper square\nmark map .a onto --d and .c onto --e\n"
   in
   match prog with
   | [ Ast.Mark (None, Ast.MMotion (Ast.MapBoth (Ast.PNamed { name = "a"; _ },
@@ -164,7 +164,7 @@ let test_parse_map_both () =
 let test_parse_map_both_toward () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\nmap .a onto --d and .c onto --e toward .b\n"
+      "paper square\nmark map .a onto --d and .c onto --e toward .b\n"
   in
   match prog with
   | [ Ast.Mark (None, Ast.MMotion (Ast.MapBoth (_, _, _, _, Some _)), _) ] -> ()
@@ -173,7 +173,7 @@ let test_parse_map_both_toward () =
 let test_parse_fold_action () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n@map .a onto .c moving .a mountain\n"
+      "paper square\nfold map .a onto .c moving .a mountain\n"
   in
   match prog with
   | [
@@ -191,7 +191,7 @@ let test_parse_fold_action () =
   | _ -> Alcotest.fail "unexpected AST for @map fold action"
 
 let test_parse_fold_valley_default () =
-  let prog = Beloch.parse ~filename:"t.bel" "paper square\n@map .a onto .c\n" in
+  let prog = Beloch.parse ~filename:"t.bel" "paper square\nfold map .a onto .c\n" in
   match prog with
   | [
    Ast.Fold
@@ -203,7 +203,7 @@ let test_parse_fold_valley_default () =
   | _ -> Alcotest.fail "default fold is valley with no moving"
 
 let test_parse_precrease_no_foldspec () =
-  let prog = Beloch.parse ~filename:"t.bel" "paper square\nmap .a onto .c\n" in
+  let prog = Beloch.parse ~filename:"t.bel" "paper square\nmark map .a onto .c\n" in
   match prog with
   | [ Ast.Mark (None, Ast.MMotion (Ast.MapPoints _), _) ] -> ()
   | _ -> Alcotest.fail "bare axiom must carry no fold_spec"
@@ -240,7 +240,7 @@ let test_parse_def () =
     Beloch.parse ~filename:"t.bel"
       "paper square\n\
        def petal(.p .q --base) {\n\
-      \  @map .p onto .q moving .p\n\
+      \  fold map .p onto .q moving .p\n\
       \  .tip = .p * .q * --base\n\
        }\n"
   in
@@ -325,7 +325,7 @@ let test_parse_step_marker () =
 let test_parse_at_one_selector () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n--b = through .a .c\nperp --b & .a through .c\n"
+      "paper square\n--b = through .a .c\nmark perp --b & .a through .c\n"
   in
   match prog with
   | [ Ast.BindLine ("b", _, _);
@@ -337,7 +337,7 @@ let test_parse_at_one_selector () =
 let test_parse_at_two_selectors () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n--b = through .a .c\nperp --b & .a & --b through .c\n"
+      "paper square\n--b = through .a .c\nmark perp --b & .a & --b through .c\n"
   in
   match prog with
   | [ _;
@@ -367,7 +367,7 @@ let test_parse_meet_inline () =
   let prog =
     Beloch.parse ~filename:"t.bel"
       "paper square\n--d1 = through .a .b\n--d2 = through .c .d\n\
-       map (--d1 * --d2) onto .e\n"
+       mark map (--d1 * --d2) onto .e\n"
   in
   match List.rev prog with
   | Ast.Mark (None, Ast.MMotion (Ast.MapPoints (Ast.PSelect _, Ast.PNamed _)), _) :: _ -> ()
@@ -383,7 +383,7 @@ let spec_corpus =
       "paper square\n.s  = --rs * --cd\n--e = through .p1 .p2\n" );
     ( "03_def_petal",
       "paper square\ndef petal(.p .q --base) {\n\
-      \  @map .p onto .q moving .p\n\
+      \  fold map .p onto .q moving .p\n\
       \  .tip = .p * .q * --base\n\
        }\n" );
     ( "04_apply",
@@ -393,7 +393,7 @@ let spec_corpus =
       "paper square\n\
        export { .tip as .p1tip --pq as --p1pq } $p1\n\
        export { .tip as .p2tip --pq as --p2pq } $p2\n\
-       @map .p1tip onto .p2tip\n\
+       fold map .p1tip onto .p2tip\n\
        --d = through .p1tip .p2tip\n\
        .x  = --p1pq * --p2pq\n" );
     ( "06_export",
@@ -402,7 +402,7 @@ let spec_corpus =
     ( "07_panels",
       "paper square\nstep thirds\n._mb = --vm * --ab\n\
        --pq = through ._pq1 ._pq2\n\nstep beloch_fold\n\
-       @map .c onto --ab and .s onto --pq\n" );
+       fold map .c onto --ab and .s onto --pq\n" );
     ( "08_cube_root",
       "paper square\n\nstep vertical_middle\n--vm = map .a onto .b\n\n\
        step thirds\n._mb  = --vm * --ab\n._mt  = --vm * --cd\n\
@@ -414,16 +414,16 @@ let spec_corpus =
        ._rs1 = --c_mb * --db\n\
        ._rs2 = --b_mt * --ac\n--rs  = through ._rs1 ._rs2\n\
        .s    = --rs * --cd\n\nstep beloch_fold\n\
-       @map .c onto --ab and .s onto --pq\n" );
+       fold map .c onto --ab and .s onto --pq\n" );
     ( "09_petal_full",
       "paper square\n\ndef petal(.p .q --base) {\n\
-      \  @map .p onto .q moving .p\n\
+      \  fold map .p onto .q moving .p\n\
       \  .tip = .p * .q * --base\n\
        }\n\nstep petal_folds\n$left  = apply petal(.a .c .b * .d)\n\
        $right = apply petal(.b .d .a * .c)\n\nstep join\n\
        export { .tip as .lefttip } $left\n\
        export { .tip as .righttip } $right\n\
-       @map .lefttip onto .righttip\n" );
+       fold map .lefttip onto .righttip\n" );
     ( "10_zero_params",
       "paper square\ndef thirds() {\n\
       \  ._mb = --vm * --ab\n\
@@ -435,7 +435,7 @@ let spec_corpus =
 
 let test_parse_up_to () =
   match
-    Beloch.parse ~filename:"t.bel" "paper square\n@map .c onto .d up to .c\n"
+    Beloch.parse ~filename:"t.bel" "paper square\nfold map .c onto .d up to .c\n"
   with
   | [
    Ast.Fold
@@ -454,7 +454,7 @@ let test_parse_up_to () =
 let test_parse_flap_forms () =
   match
     Beloch.parse ~filename:"t.bel"
-      "paper square\n@perp --d through .p moving #[.a .b] up to --d mountain\n"
+      "paper square\nfold perp --d through .p moving #[.a .b] up to --d mountain\n"
   with
   | [
    Ast.Fold
@@ -473,7 +473,7 @@ let test_parse_flap_forms () =
 let test_parse_flap_bracket () =
   match
     Beloch.parse ~filename:"t.bel"
-      "paper square\n@perp --d through .p moving #[.a .b]\n"
+      "paper square\nfold perp --d through .p moving #[.a .b]\n"
   with
   | [ Ast.Fold (None, Ast.MMotion (Ast.Perp _),
         { moving = Some (Ast.FlapSpec (Ast.FByPoints (pts, _))); _ }, _) ] ->
@@ -483,7 +483,7 @@ let test_parse_flap_bracket () =
 let test_parse_filter_chain () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n--l = through .a .b\n@map .p onto .q up to --l & .c & --m\n"
+      "paper square\n--l = through .a .b\nfold map .p onto .q up to --l & .c & --m\n"
   in
   match prog with
   | [ _; Ast.Fold (None, _, { up_to = Some (Ast.FlapLine
@@ -494,7 +494,7 @@ let test_parse_filter_chain () =
 let test_parse_diff () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n--l = through .a .b\n@map .p onto .q up to --l \\ .c\n"
+      "paper square\n--l = through .a .b\nfold map .p onto .q up to --l \\ .c\n"
   in
   match prog with
   | [ _; Ast.Fold (None, _, { up_to = Some (Ast.FlapLine
@@ -505,7 +505,7 @@ let test_parse_union () =
   let prog =
     Beloch.parse ~filename:"t.bel"
       "paper square\n--x = through .a .b\n--y = through .c .d\n\
-       @map .p onto .q up to [--x --y]\n"
+       fold map .p onto .q up to [--x --y]\n"
   in
   match prog with
   | [ _; _; Ast.Fold (None, _, { up_to = Some (Ast.FlapLine
@@ -523,7 +523,7 @@ let test_parse_bind_bundle () =
   | _ -> Alcotest.fail "expected --seg = --l & .c (BindBundle LFilter)"
 
 let test_parse_fold_along () =
-  match Beloch.parse ~filename:"t.bel" "paper square\n@fold --m moving .c\n" with
+  match Beloch.parse ~filename:"t.bel" "paper square\nfold --m moving .c\n" with
   | [
    Ast.Fold
      ( None, Ast.MLine (Ast.LNamed { cname = "m"; _ }),
@@ -538,7 +538,7 @@ let test_parse_fold_along () =
 let test_parse_collapse_basic () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n@collapse --a and --b and --c and --e mountain\n"
+      "paper square\ncollapse --a and --b and --c and --e mountain\n"
   in
   match prog with
   | [ Ast.Collapse (elems, [], None, _) ] ->
@@ -553,7 +553,7 @@ let test_parse_collapse_parens_at_over_standing () =
   let prog =
     Beloch.parse ~filename:"t.bel"
       "paper square\n\
-       @collapse --a & .a and (--e & .o & --ab mountain) \
+       collapse --a & .a and (--e & .o & --ab mountain) \
        and .b over .d and standing .m\n"
   in
   match prog with
@@ -567,7 +567,7 @@ let test_parse_collapse_followed_by_stmt () =
      leading .point/--crease as a phantom over clause *)
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n@collapse --a and --b mountain\n.x = --a * --b\n"
+      "paper square\ncollapse --a and --b mountain\n.x = --a * --b\n"
   in
   match prog with
   | [ Ast.Collapse ([ _; _ ], [], None, _); Ast.Point ("x", _, _) ] -> ()
@@ -576,7 +576,7 @@ let test_parse_collapse_followed_by_stmt () =
 let test_parse_collapse_mixed_order () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n@collapse --a and .p over .q and --b and standing .r\n"
+      "paper square\ncollapse --a and .p over .q and --b and standing .r\n"
   in
   match prog with
   | [
@@ -599,7 +599,7 @@ let test_parse_collapse_mixed_order () =
          not swapped, standing .r"
 
 let test_parse_collapse_double_standing_rejected () =
-  let src = "paper square\n@collapse --a and standing .p and standing .q\n" in
+  let src = "paper square\ncollapse --a and standing .p and standing .q\n" in
   expect_error "only one standing" (fun () -> Beloch.parse ~filename:"t.bel" src);
   (* the error must point at the duplicate (second, source-order) `standing`,
      not the first *)
@@ -625,7 +625,7 @@ let test_parse_spec_corpus () =
 let test_parse_line_select () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\n@map .d onto .a up to --[.a .b]\n"
+      "paper square\nfold map .d onto .a up to --[.a .b]\n"
   in
   match prog with
   | [
@@ -655,7 +655,7 @@ let test_parse_point_select () =
 
 let test_parse_join_star () =
   let prog =
-    Beloch.parse ~filename:"t.bel" "paper square\n@map .d onto .a up to .a * .b\n"
+    Beloch.parse ~filename:"t.bel" "paper square\nfold map .d onto .a up to .a * .b\n"
   in
   match prog with
   | [

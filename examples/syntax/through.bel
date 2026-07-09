@@ -10,8 +10,8 @@
 ; aligned one. Render the crease pattern to see the slant; render folded
 ; (`fold2svg --folded`) to watch the centre swing onto the bottom edge.
 paper square
---vmid = map .a onto .b              ; x = 1/2
---hmid = map .a onto .d              ; y = 1/2
+mark --vmid = map .a onto .b              ; x = 1/2
+mark --hmid = map .a onto .d              ; y = 1/2
 .ctr = --vmid * --hmid               ; sheet centre, (1/2, 1/2)
 ; fold the centre onto the bottom edge, crease through corner .b
-@map .ctr onto --ab through .b toward .a
+fold map .ctr onto --ab through .b toward .a

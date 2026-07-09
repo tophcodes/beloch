@@ -4,8 +4,8 @@
 
 paper square
 
---ac = map .b onto .d     ; diagonal a–c
---v  = map .a onto .b     ; vertical midline x = 1/2
+mark --ac = map .b onto .d     ; diagonal a–c
+mark --v  = map .a onto .b     ; vertical midline x = 1/2
 
-@collapse --ac & .a and --ac & .c
+collapse --ac & .a and --ac & .c
   and --v & --cd and --v & --ab

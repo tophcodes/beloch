@@ -5,14 +5,14 @@
 paper square
 
 ; isoceles triangle a, b, m — m is the midpoint of the top edge
---v = map .a onto .b          ; x = 1/2: perp bisector of the base, also the spine
+mark --v = map .a onto .b     ; x = 1/2: perp bisector of the base, also the spine
 .m = --v * --cd               ; apex (1/2, 1)
 
 step precrease
---am = through .a .m          ; TODO(pinch): landmark — replace with pinch when shipped
---bm = through .b .m          ; TODO(pinch): landmark — replace with pinch when shipped
---ba = map --ab onto --am     ; angle bisector at a (interior — filter picks it)
---bb = map --ab onto --bm     ; angle bisector at b
+mark --am = through .a .m     ; TODO(pinch): landmark — replace with pinch when shipped
+mark --bm = through .b .m     ; TODO(pinch): landmark — replace with pinch when shipped
+mark --ba = map --ab onto --am ; angle bisector at a (interior — filter picks it)
+mark --bb = map --ab onto --bm ; angle bisector at b
 .o = --ba * --bb              ; incenter — the collapse vertex
 
 step ear
@@ -23,5 +23,5 @@ step ear
 ; assignment = valley XOR the cutting face is back-up): the two --v rays lie
 ; on back-up sectors, so their golden letters invert (spine valley → M, ear
 ; mountain → V); --ba and --bb keep their declared letters.
-@collapse --ba & .a and --bb & .b
+collapse --ba & .a and --bb & .b
   and --v & .m and (--v & --ab mountain)

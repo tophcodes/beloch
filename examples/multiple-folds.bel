@@ -4,8 +4,8 @@
 ; paper space, never table space)
 paper square
 
-@map .c onto .a moving .c
---b = through .a .b
---v = @map .b onto .a
+fold map .c onto .a moving .c
+mark --b = through .a .b
+fold --v = map .b onto .a
 .mid = --b * --v & #[.a]
-map .d onto .mid
+mark map .d onto .mid
