@@ -2,6 +2,12 @@
 
 ## Status
 
+**Superseded (2026-07-08)** by `2026-07-08-notation-by-state-change-design.md`,
+which keeps this doc's `&`/`\`/`[…]`/`#[…]` but reverses the `--(…) → --[…]`
+rename and the "keep `.()`" decision, resolves the `@`-vs-`&` choice as `&`, and
+derives the whole surface from a state-change law. Read that doc; this one is
+kept for the reasoning history.
+
 Proposed (2026-07-07). Companion to the `@flatten` design (whose surface
 selectors adopt this). One open symbol choice (`@` vs `&`) is coupled to a
 separate action-model revision — see *Open questions*.

@@ -7,6 +7,6 @@ paper square
 --bot = through .a .b
 --v = @map .b onto .a
 --h = @map .d onto .a
-.p = cross --l --h
-.q = cross --v --bot
+.p = --l * --h
+.q = --v * --bot
 @through .p .q moving .d up to .c

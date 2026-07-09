@@ -6,4 +6,4 @@ paper square
 --ac = map .b onto .d     ; diagonal a–c (folds b onto d)
 --bd = map .a onto .c     ; diagonal b–d
 
-@collapse --ac at .a and --ac at .c and --bd at .b and --bd at .d
+@collapse --ac & .a and --ac & .c and --bd & .b and --bd & .d

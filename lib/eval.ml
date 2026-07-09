@@ -22,6 +22,12 @@ type folded = {
 type crease_val =
   | Material of int * Geom.line
   | Frozen of Geom.line
+  | Bundle of Ast.line_operand
+      (* a named crease bundle (--x = --l & .c | [--a --b]); resolves lazily as
+         its expression, so the name behaves exactly like inlining it *)
+  | Edge of string * string
+      (* a paper boundary edge, named by its two corners; resolves live (the
+         edge moves under folding) through the current corner positions *)
 
 (* axiom-5 (`map --l1 onto --l2`) needs its candidate bisectors selected against
    the current fold state (material of l1, paper incidence, `toward` direction),
@@ -116,6 +122,9 @@ let bind_crease (ctx : ctx) (name : string) (span : Error.span) (cv : crease_val
 let eval_folded (prog : Ast.program) : folded =
   let root_scope = make_scope () in
   List.iter (fun (n, p) -> Hashtbl.replace root_scope.points n p) corners;
+  List.iter
+    (fun (n, a, b) -> Hashtbl.replace root_scope.lines n (Edge (a, b)))
+    [ ("ab", "a", "b"); ("bc", "b", "c"); ("cd", "c", "d"); ("da", "d", "a") ];
   let ctx = {
     scopes = [root_scope];
     name_ctx = Root;
@@ -131,20 +140,23 @@ let eval_folded (prog : Ast.program) : folded =
   let rec pstr (po : Ast.point_operand) : string =
     match po with
     | Ast.PNamed pr -> "." ^ pr.Ast.name
-    | Ast.PCross (l1, l2, _) -> Printf.sprintf ".(%s %s)" (lstr l1) (lstr l2)
-    | Ast.PMember (i, m, _) -> Printf.sprintf ".[$%s %s]" i m
+    | Ast.PSelect (los, _) ->
+        Printf.sprintf ".[%s]" (String.concat " " (List.map lstr los))
   and lstr (lo : Ast.line_operand) : string =
     match lo with
     | Ast.LNamed cr -> "--" ^ cr.Ast.cname
-    | Ast.LThrough (p1, p2, _) -> Printf.sprintf "--(%s %s)" (pstr p1) (pstr p2)
-    | Ast.LMember (i, m, _) -> Printf.sprintf "--[$%s %s]" i m
-    | Ast.LAt (cr, sels, _) -> Printf.sprintf "--%s at %s" cr.Ast.cname (selstr sels)
+    | Ast.LFilter (b, Ast.Keep s, _) -> Printf.sprintf "%s & %s" (lstr b) (selstr [ s ])
+    | Ast.LFilter (b, Ast.Drop s, _) -> Printf.sprintf "%s \\ %s" (lstr b) (selstr [ s ])
+    | Ast.LUnion (bs, _) -> Printf.sprintf "[%s]" (String.concat " " (List.map lstr bs))
+    | Ast.LSelect (sels, _) ->
+        Printf.sprintf "--[%s]"
+          (String.concat " " (List.map (fun s -> selstr [ s ]) sels))
   and selstr (sels : Ast.selector list) : string =
     let one = function
       | Ast.SelPoint po -> pstr po
       | Ast.SelLine lo -> lstr lo
       | Ast.SelFlap (Ast.FByPoints (pts, _)) ->
-          Printf.sprintf "#(%s)" (String.concat " " (List.map pstr pts))
+          Printf.sprintf "#[%s]" (String.concat " " (List.map pstr pts))
     in
     match sels with
     | [ s ] -> one s
@@ -154,11 +166,24 @@ let eval_folded (prog : Ast.program) : folded =
     | Ast.FlapPoint po -> pstr po
     | Ast.FlapLine lo -> lstr lo
     | Ast.FlapSpec (Ast.FByPoints (pts, _)) ->
-        Printf.sprintf "#(%s)" (String.concat " " (List.map pstr pts))
+        Printf.sprintf "#[%s]" (String.concat " " (List.map pstr pts))
+  in
+  let corner_point (n : string) : Geom.point =
+    match List.assoc_opt n corners with
+    | Some p -> p
+    | None -> assert false (* Edge is only ever built from a,b,c,d *)
   in
   let materialize_crease ~(name : string) (span : Error.span) (cv : crease_val) :
       Geom.line =
     match cv with
+    | Bundle _ ->
+        Error.fail span
+          (Printf.sprintf
+             "--%s is a bundle; restrict it to one segment with & or \\" name)
+    | Edge (a, b) ->
+        let pa = Fold_state.table_position !(ctx.state) (corner_point a)
+        and pb = Fold_state.table_position !(ctx.state) (corner_point b) in
+        Geom.line_through pa pb
     | Frozen l -> l
     | Material (cid, l_orig) -> (
         match Fold_state.crease_axis !(ctx.state) cid l_orig with
@@ -180,11 +205,17 @@ let eval_folded (prog : Ast.program) : folded =
   let paper_line_of_crease ~(name : string) (span : Error.span) (cv : crease_val)
       : Geom.line * (Geom.point * Geom.point) list option =
     match cv with
+    | Bundle _ ->
+        Error.fail span
+          (Printf.sprintf
+             "--%s is a bundle; restrict it to one segment with & or \\" name)
     | Frozen _ ->
         Error.fail span
           (Printf.sprintf
              "--%s is not a physical crease, so it has no material mark to \
               cross" name)
+    | Edge (a, b) ->
+        (Geom.line_through (corner_point a) (corner_point b), None)
     | Material (cid, l_orig) -> (
         match Fold_state.crease_paper_axis !(ctx.state) cid with
         | `Line l ->
@@ -236,149 +267,210 @@ let eval_folded (prog : Ast.program) : folded =
   let rec resolve_point (po : Ast.point_operand) : Geom.point =
     match po with
     | Ast.PNamed pr -> lookup_point ctx pr
-    | Ast.PCross (l1, l2, span) -> (
-        let la, ma = resolve_paper_line l1 and lb, mb = resolve_paper_line l2 in
-        match Geom.intersection la lb with
-        | None -> Error.fail span "creases are parallel; no intersection"
-        | Some pp ->
-            (* the crossing must be real: paper is opaque, so the marks must
-               actually meet — [pp] on a chord of each crease that has marks,
-               and on the sheet in any case *)
-            let on_chord (a, b) =
-              let t = Geom.seg_param (a, b) pp in
-              Num.compare t Num.zero >= 0 && Num.compare t Num.one <= 0
-            in
-            let check lo = function
-              | Some chords ->
-                  if not (List.exists on_chord chords) then
-                    Error.fail span
-                      (Printf.sprintf
-                         "%s: the mark of %s does not reach the crossing"
-                         (pstr po) (lstr lo))
-              | None ->
-                  if not (Fold_state.on_paper !(ctx.state) pp) then
-                    Error.fail span
-                      (Printf.sprintf "%s is off the paper" (pstr po))
-            in
-            check l1 ma;
-            check l2 mb;
-            pp)
-    | Ast.PMember (iname, mem, span) -> (
-        let inst = lookup_instance ctx iname span in
-        match Hashtbl.find_opt inst.ipoints mem with
-        | Some p -> p
-        | None ->
-            Error.fail span
-              (Printf.sprintf "instance $%s has no point member %s" iname mem))
+    | Ast.PSelect (los, span) -> select_point los span
   and resolve_line (lo : Ast.line_operand) : Geom.line =
     match lo with
-    | Ast.LNamed cr -> materialize_crease ~name:cr.Ast.cname cr.Ast.cspan (lookup_crease ctx cr)
-    | Ast.LThrough (p1, p2, span) ->
-        let pp = Fold_state.table_position !(ctx.state) (resolve_point p1)
-        and qq = Fold_state.table_position !(ctx.state) (resolve_point p2) in
-        if Geom.point_equal pp qq then
-          Error.fail span
-            (Printf.sprintf
-               "%s and %s are at the same place, so there is no line through \
-                them"
-               (pstr p1) (pstr p2));
-        Geom.line_through pp qq
-    | Ast.LMember (iname, mem, span) -> (
-        let inst = lookup_instance ctx iname span in
-        match Hashtbl.find_opt inst.ilines mem with
-        | Some cv -> materialize_crease ~name:mem span cv
-        | None ->
-            Error.fail span
-              (Printf.sprintf "instance $%s has no line member %s" iname mem))
-    | Ast.LAt (cr, sels, span) -> (
-        let _cid, matches = at_matches cr sels span in
-        match matches with
-        | [ s ] -> Geom.line_through s.Fold_state.ta s.Fold_state.tb
-        | [] ->
-            Error.fail span
-              (Printf.sprintf "no segment of --%s matches %s" cr.Ast.cname
-                 (selstr sels))
-        | many ->
-            Error.fail span
-              (Printf.sprintf
-                 "--%s at %s is ambiguous: %d segments match; add a selector"
-                 cr.Ast.cname (selstr sels) (List.length many)))
+    | Ast.LNamed cr -> (
+        match lookup_crease ctx cr with
+        | Bundle expr -> resolve_line expr
+        | cv -> materialize_crease ~name:cr.Ast.cname cr.Ast.cspan cv)
+    | (Ast.LFilter _ | Ast.LUnion _) as b ->
+        let s = coerce_one_segment b in
+        Geom.line_through s.Fold_state.ta s.Fold_state.tb
+    | Ast.LSelect (sels, span) -> select_line sels span
   and resolve_paper_line (lo : Ast.line_operand) :
       Geom.line * (Geom.point * Geom.point) list option =
     match lo with
-    | Ast.LNamed cr ->
-        paper_line_of_crease ~name:cr.Ast.cname cr.Ast.cspan
-          (lookup_crease ctx cr)
-    | Ast.LThrough (p1, p2, span) ->
-        let pp = resolve_point p1 and qq = resolve_point p2 in
-        if Geom.point_equal pp qq then
-          Error.fail span
-            (Printf.sprintf
-               "%s and %s are at the same place, so there is no line through \
-                them"
-               (pstr p1) (pstr p2));
-        (Geom.line_through pp qq, None)
-    | Ast.LMember (iname, mem, span) -> (
-        let inst = lookup_instance ctx iname span in
-        match Hashtbl.find_opt inst.ilines mem with
-        | Some cv -> paper_line_of_crease ~name:mem span cv
-        | None ->
-            Error.fail span
-              (Printf.sprintf "instance $%s has no line member %s" iname mem))
-    | Ast.LAt (cr, sels, span) -> (
-        let _cid, matches = at_matches cr sels span in
-        match matches with
-        | [ s ] ->
-            ( Geom.line_through s.Fold_state.pa s.Fold_state.pb,
-              Some [ (s.Fold_state.pa, s.Fold_state.pb) ] )
-        | [] ->
-            Error.fail span
-              (Printf.sprintf "no segment of --%s matches %s" cr.Ast.cname
-                 (selstr sels))
-        | many ->
-            Error.fail span
-              (Printf.sprintf
-                 "--%s at %s is ambiguous: %d segments match; add a selector"
-                 cr.Ast.cname (selstr sels) (List.length many)))
+    | Ast.LNamed cr -> (
+        match lookup_crease ctx cr with
+        | Bundle expr -> resolve_paper_line expr
+        | cv -> paper_line_of_crease ~name:cr.Ast.cname cr.Ast.cspan cv)
+    | (Ast.LFilter _ | Ast.LUnion _) as b ->
+        let s = coerce_one_segment b in
+        ( Geom.line_through s.Fold_state.pa s.Fold_state.pb,
+          Some [ (s.Fold_state.pa, s.Fold_state.pb) ] )
+    | Ast.LSelect (sels, span) ->
+        let _, _, pl, pm = select_cand sels span in
+        (pl, pm)
   and material_cid (cr : Ast.crease_ref) : int =
     match lookup_crease ctx cr with
     | Material (cid, _) -> cid
+    | Bundle _ ->
+        Error.fail cr.Ast.cspan
+          (Printf.sprintf
+             "--%s is a bundle, not a single crease; restrict it with & or \\"
+             cr.Ast.cname)
     | Frozen _ ->
         Error.fail cr.Ast.cspan
           (Printf.sprintf
              "--%s is not a physical crease, so it has no segments to select"
              cr.Ast.cname)
-  and at_matches (cr : Ast.crease_ref) (sels : Ast.selector list)
-      (_span : Error.span) : int * Fold_state.crease_segment list =
-    let cid = material_cid cr in
-    let segs = Fold_state.crease_segments !(ctx.state) cid in
-    let seg_line (s : Fold_state.crease_segment) =
-      Geom.line_through s.Fold_state.ta s.Fold_state.tb
+    | Edge _ ->
+        Error.fail cr.Ast.cspan
+          (Printf.sprintf "--%s is a paper edge, not a crease with segments"
+             cr.Ast.cname)
+  and seg_line (s : Fold_state.crease_segment) =
+    Geom.line_through s.Fold_state.ta s.Fold_state.tb
+  and point_on_seg (tp : Geom.point) (s : Fold_state.crease_segment) =
+    Geom.side_of_line (seg_line s) tp = 0
+    &&
+    let t = Geom.seg_param (s.Fold_state.ta, s.Fold_state.tb) tp in
+    Num.compare t Num.zero >= 0 && Num.compare t Num.one <= 0
+  and seg_incident (sel : Ast.selector) (s : Fold_state.crease_segment) : bool =
+    match sel with
+    | Ast.SelPoint po ->
+        point_on_seg
+          (Fold_state.table_position !(ctx.state) (resolve_point po)) s
+    | Ast.SelLine lo -> (
+        match Geom.intersection (resolve_line lo) (seg_line s) with
+        | Some ip -> point_on_seg ip s
+        | None -> false)
+    | Ast.SelFlap (Ast.FByPoints (pts, fspan)) -> (
+        match face_of_points (List.map resolve_point pts) with
+        | `Face fi ->
+            let l, r = s.Fold_state.faces in
+            l = fi || r = fi
+        | `Zero -> Error.fail fspan "those points aren't all on one flap"
+        | `Ambiguous -> Error.fail fspan "ambiguous flap; add another point")
+  (* every existing straight line a --[…] selector may name: the four paper
+     edges plus each material crease segment (ADR 0014). Each candidate carries
+     a table-space line + endpoints (for incidence, which is checked in table
+     space like `at`) and a paper-space line + optional marks (for use as a
+     meet operand). Edges are markless (None). *)
+  and select_candidates () :
+      (Geom.line * (Geom.point * Geom.point)
+      * Geom.line * (Geom.point * Geom.point) list option) list =
+    let edges =
+      List.map
+        (fun (a, b) ->
+          let ca = corner_point a and cb = corner_point b in
+          let ta = Fold_state.table_position !(ctx.state) ca
+          and tb = Fold_state.table_position !(ctx.state) cb in
+          (Geom.line_through ta tb, (ta, tb), Geom.line_through ca cb, None))
+        [ ("a", "b"); ("b", "c"); ("c", "d"); ("d", "a") ]
     in
-    let point_on_seg (tp : Geom.point) (s : Fold_state.crease_segment) =
-      Geom.side_of_line (seg_line s) tp = 0
-      &&
-      let t = Geom.seg_param (s.Fold_state.ta, s.Fold_state.tb) tp in
-      Num.compare t Num.zero >= 0 && Num.compare t Num.one <= 0
+    let creases =
+      List.concat_map
+        (fun cid ->
+          List.map
+            (fun (s : Fold_state.crease_segment) ->
+              ( Geom.line_through s.Fold_state.ta s.Fold_state.tb,
+                (s.Fold_state.ta, s.Fold_state.tb),
+                Geom.line_through s.Fold_state.pa s.Fold_state.pb,
+                Some [ (s.Fold_state.pa, s.Fold_state.pb) ] ))
+            (Fold_state.crease_segments !(ctx.state) cid))
+        (Fold_state.all_crease_ids !(ctx.state))
     in
-    let incident (sel : Ast.selector) (s : Fold_state.crease_segment) : bool =
-      match sel with
-      | Ast.SelPoint po ->
-          point_on_seg
-            (Fold_state.table_position !(ctx.state) (resolve_point po)) s
-      | Ast.SelLine lo -> (
-          match Geom.intersection (resolve_line lo) (seg_line s) with
-          | Some ip -> point_on_seg ip s
-          | None -> false)
-      | Ast.SelFlap (Ast.FByPoints (pts, fspan)) -> (
-          match face_of_points (List.map resolve_point pts) with
-          | `Face fi ->
-              let l, r = s.Fold_state.faces in
-              l = fi || r = fi
-          | `Zero -> Error.fail fspan "those points aren't all on one flap"
-          | `Ambiguous -> Error.fail fspan "ambiguous flap; add another point")
-    in
-    (cid, List.filter (fun s -> List.for_all (fun sel -> incident sel s) sels) segs)
+    edges @ creases
+  and cand_incident (sel : Ast.selector) (_l, (ta, tb), _pl, _pm) : bool =
+    let on t = Num.compare t Num.zero >= 0 && Num.compare t Num.one <= 0 in
+    match sel with
+    | Ast.SelPoint po ->
+        let tp = Fold_state.table_position !(ctx.state) (resolve_point po) in
+        Geom.side_of_line _l tp = 0 && on (Geom.seg_param (ta, tb) tp)
+    | Ast.SelLine lo -> (
+        match Geom.intersection (resolve_line lo) _l with
+        | Some ip -> on (Geom.seg_param (ta, tb) ip)
+        | None -> false)
+    | Ast.SelFlap (Ast.FByPoints (_, fspan)) ->
+        Error.fail fspan
+          "a flap is not a valid --[…] constraint; use & to filter a crease"
+  and select_cand (sels : Ast.selector list) (span : Error.span) :
+      Geom.line * (Geom.point * Geom.point)
+      * Geom.line * (Geom.point * Geom.point) list option =
+    match
+      List.filter
+        (fun c -> List.for_all (fun s -> cand_incident s c) sels)
+        (select_candidates ())
+    with
+    | [ c ] -> c
+    | [] ->
+        Error.fail span
+          (Printf.sprintf "no crease or edge is incident to all of %s"
+             (selstr sels))
+    | many ->
+        Error.fail span
+          (Printf.sprintf
+             "--[…] is ambiguous: %d creases/edges match %s; add a constraint"
+             (List.length many) (selstr sels))
+  and select_line (sels : Ast.selector list) (span : Error.span) : Geom.line =
+    let l, _, _, _ = select_cand sels span in
+    l
+  and select_point (los : Ast.line_operand list) (span : Error.span) : Geom.point =
+    match los with
+    | [] | [ _ ] -> Error.fail span ".[…] needs at least two lines to meet"
+    | _ ->
+        let resolved = List.map (fun lo -> (lo, resolve_paper_line lo)) los in
+        let lines = List.map (fun (_, (l, _)) -> l) resolved in
+        let l1, l2 =
+          match lines with a :: b :: _ -> (a, b) | _ -> assert false
+        in
+        let pp =
+          match Geom.intersection l1 l2 with
+          | Some p -> p
+          | None -> Error.fail span "the lines are parallel; no meet point"
+        in
+        (* concurrency: every listed line passes through the crossing *)
+        List.iter
+          (fun l ->
+            if Geom.side_of_line l pp <> 0 then
+              Error.fail span "the lines are not concurrent; no common point")
+          lines;
+        (* the crossing must be physically real: each operand's mark must reach
+           it (marked creases), or it must be on the sheet (markless edges) *)
+        let on_chord (a, b) =
+          let t = Geom.seg_param (a, b) pp in
+          Num.compare t Num.zero >= 0 && Num.compare t Num.one <= 0
+        in
+        List.iter
+          (fun (lo, (_, marks)) ->
+            match marks with
+            | Some chords ->
+                if not (List.exists on_chord chords) then
+                  Error.fail span
+                    (Printf.sprintf "the mark of %s does not reach the crossing"
+                       (lstr lo))
+            | None ->
+                if not (Fold_state.on_paper !(ctx.state) pp) then
+                  Error.fail span
+                    (Printf.sprintf "%s is off the paper" (lstr lo)))
+          resolved;
+        pp
+  and span_of_line (lo : Ast.line_operand) : Error.span =
+    match lo with
+    | Ast.LNamed cr -> cr.Ast.cspan
+    | Ast.LFilter (_, _, s) | Ast.LUnion (_, s) | Ast.LSelect (_, s) -> s
+  and bundle_segments (lo : Ast.line_operand) :
+      int option * Fold_state.crease_segment list =
+    match lo with
+    | Ast.LNamed cr -> (
+        match lookup_crease ctx cr with
+        | Bundle expr -> bundle_segments expr
+        | _ ->
+            let cid = material_cid cr in
+            (Some cid, Fold_state.crease_segments !(ctx.state) cid))
+    | Ast.LFilter (b, elt, _) ->
+        let cid, segs = bundle_segments b in
+        let sel, keep =
+          match elt with Ast.Keep s -> (s, true) | Ast.Drop s -> (s, false)
+        in
+        (cid, List.filter (fun s -> seg_incident sel s = keep) segs)
+    | Ast.LUnion (los, _) ->
+        (None, List.concat_map (fun l -> snd (bundle_segments l)) los)
+    | Ast.LSelect _ ->
+        Error.fail (span_of_line lo)
+          "a --[…] result is a single line, not a segment bundle; filter a \
+           named crease with & instead"
+  and coerce_one_segment (lo : Ast.line_operand) : Fold_state.crease_segment =
+    match snd (bundle_segments lo) with
+    | [ s ] -> s
+    | [] ->
+        Error.fail (span_of_line lo)
+          (Printf.sprintf "no segment of %s matches" (lstr lo))
+    | many ->
+        Error.fail (span_of_line lo)
+          (Printf.sprintf "%s is ambiguous: %d segments match; add a selector"
+             (lstr lo) (List.length many))
   in
   let table_of (po : Ast.point_operand) : Geom.point =
     Fold_state.table_position !(ctx.state) (resolve_point po)
@@ -424,24 +516,15 @@ let eval_folded (prog : Ast.program) : folded =
     | Ast.FlapLine lo -> (
         let candidates =
           match lo with
-          | Ast.LAt (cr, sels, aspan) -> (
-              match at_matches cr sels aspan with
-              | _, [ s ] ->
-                  let l, r = s.Fold_state.faces in
-                  l :: (if r >= 0 then [ r ] else [])
-              | _, [] ->
-                  Error.fail aspan
-                    (Printf.sprintf "no segment of --%s matches %s"
-                       cr.Ast.cname (selstr sels))
-              | _, many ->
-                  Error.fail aspan
-                    (Printf.sprintf
-                       "--%s at %s is ambiguous: %d segments match; add a \
-                        selector"
-                       cr.Ast.cname (selstr sels) (List.length many)))
           | Ast.LNamed cr ->
               let cid = material_cid cr in
               Fold_state.crease_segments !(ctx.state) cid
+              |> List.concat_map (fun (s : Fold_state.crease_segment) ->
+                     let l, r = s.Fold_state.faces in
+                     l :: (if r >= 0 then [ r ] else []))
+              |> List.sort_uniq compare
+          | (Ast.LFilter _ | Ast.LUnion _) as b ->
+              snd (bundle_segments b)
               |> List.concat_map (fun (s : Fold_state.crease_segment) ->
                      let l, r = s.Fold_state.faces in
                      l :: (if r >= 0 then [ r ] else []))
@@ -548,21 +631,10 @@ let eval_folded (prog : Ast.program) : folded =
                     e.Fold_state.crease_id = cid
                     && (e.Fold_state.left = f || e.Fold_state.right = f))
                   st.Fold_state.edges)
-        | Ast.LAt (cr, sels, aspan) -> (
-            match at_matches cr sels aspan with
-            | _, [ s ] ->
-                let l, r = s.Fold_state.faces in
-                Fold_state.TargetHinged (fun f -> f = l || f = r)
-            | _, [] ->
-                Error.fail aspan
-                  (Printf.sprintf "no segment of --%s matches %s" cr.Ast.cname
-                     (selstr sels))
-            | _, many ->
-                Error.fail aspan
-                  (Printf.sprintf
-                     "--%s at %s is ambiguous: %d segments match; add a \
-                      selector"
-                     cr.Ast.cname (selstr sels) (List.length many)))
+        | (Ast.LFilter _ | Ast.LUnion _) as b ->
+            let s = coerce_one_segment b in
+            let l, r = s.Fold_state.faces in
+            Fold_state.TargetHinged (fun f -> f = l || f = r)
         | _ ->
             Error.fail span
               (Printf.sprintf
@@ -838,29 +910,19 @@ let eval_folded (prog : Ast.program) : folded =
     | Ast.LNamed cr -> (
         match lookup_crease ctx cr with
         | Material (cid, _) -> of_material cid
+        | Bundle _ ->
+            List.map
+              (fun (s : Fold_state.crease_segment) ->
+                (s.Fold_state.ta, s.Fold_state.tb))
+              (snd (bundle_segments (Ast.LNamed cr)))
+        | Edge _ -> Fold_state.line_material_segments !(ctx.state) p.la
         | Frozen _ -> Fold_state.line_material_segments !(ctx.state) p.la)
-    | Ast.LMember (iname, mem, mspan) -> (
-        let inst = lookup_instance ctx iname mspan in
-        match Hashtbl.find_opt inst.ilines mem with
-        | Some (Material (cid, _)) -> of_material cid
-        | Some (Frozen _) -> Fold_state.line_material_segments !(ctx.state) p.la
-        | None ->
-            Error.fail mspan
-              (Printf.sprintf "instance $%s has no line member %s" iname mem))
-    | Ast.LAt (cr, sels, aspan) -> (
-        let _cid, matches = at_matches cr sels aspan in
-        match matches with
-        | [ s ] -> [ (s.Fold_state.ta, s.Fold_state.tb) ]
-        | [] ->
-            Error.fail aspan
-              (Printf.sprintf "no segment of --%s matches %s" cr.Ast.cname
-                 (selstr sels))
-        | many ->
-            Error.fail aspan
-              (Printf.sprintf
-                 "--%s at %s is ambiguous: %d segments match; add a selector"
-                 cr.Ast.cname (selstr sels) (List.length many)))
-    | Ast.LThrough _ -> Fold_state.line_material_segments !(ctx.state) p.la
+    | Ast.LSelect _ -> Fold_state.line_material_segments !(ctx.state) p.la
+    | (Ast.LFilter _ | Ast.LUnion _) as b ->
+        List.map
+          (fun (s : Fold_state.crease_segment) ->
+            (s.Fold_state.ta, s.Fold_state.tb))
+          (snd (bundle_segments b))
   in
   (* viability core (shared by bind and fold): one material endpoint strictly on
      side [s] of candidate [b] is a representative of the swinging half; its
@@ -1018,6 +1080,8 @@ let eval_folded (prog : Ast.program) : folded =
   in
   let rec eval_stmt (stmt : Ast.stmt) =
     match stmt with
+    | Ast.BindBundle (name, expr, span) ->
+        bind_crease ctx name span (Bundle expr)
     | Ast.Crease (name_opt, ax, fold_opt, span) -> (
         let cid = Fold_state.fresh_crease_id () in
         let prov_name =
@@ -1060,8 +1124,8 @@ let eval_folded (prog : Ast.program) : folded =
         match name_opt with
         | Some n -> bind_crease ctx n span (Material (cid, axis))
         | None -> ())
-    | Ast.Point (n, Ast.Cross (l1, l2), span) ->
-        bind_point ctx n span (resolve_point (Ast.PCross (l1, l2, span)))
+    | Ast.Point (n, Ast.PsExpr po, span) ->
+        bind_point ctx n span (resolve_point po)
     | Ast.Flip _ -> ctx.state := Fold_state.flip !(ctx.state)
     | Ast.Def (name, params, body, span) ->
         if Hashtbl.mem ctx.defs name then
@@ -1104,15 +1168,8 @@ let eval_folded (prog : Ast.program) : folded =
                 let cv =
                   match lo with
                   | Ast.LNamed cr -> lookup_crease ctx cr
-                  | Ast.LMember (iname, mem, mspan) -> (
-                      let inst = lookup_instance ctx iname mspan in
-                      match Hashtbl.find_opt inst.ilines mem with
-                      | Some cv -> cv
-                      | None ->
-                          Error.fail mspan
-                            (Printf.sprintf "instance $%s has no line member %s"
-                               iname mem))
-                  | Ast.LThrough _ | Ast.LAt _ -> Frozen (resolve_line lo)
+                  | Ast.LFilter _ | Ast.LUnion _ | Ast.LSelect _ ->
+                      Frozen (resolve_line lo)
                 in
                 Hashtbl.replace body_scope.lines p.Ast.pname cv
             | `Point, Ast.ALine _ ->
@@ -1215,11 +1272,18 @@ let eval_folded (prog : Ast.program) : folded =
     | Ast.FoldAlong (lo, fs, span) ->
         let cid =
           match lo with
-          | Ast.LNamed cr | Ast.LAt (cr, _, _) -> material_cid cr
+          | Ast.LNamed cr -> material_cid cr
+          | Ast.LFilter _ | Ast.LUnion _ -> (
+              match fst (bundle_segments lo) with
+              | Some c -> c
+              | None ->
+                  Error.fail span
+                    "@fold folds along one existing crease; a union spans \
+                     several")
           | _ ->
               Error.fail span
                 "@fold folds along an existing crease; give a crease name, \
-                 e.g. @fold --d or @fold --d at .p"
+                 e.g. @fold --d or @fold --d & .p"
         in
         let axis = resolve_line lo in
         (* per-flap material check: every segment of the bundle carried by a
@@ -1265,25 +1329,6 @@ let eval_folded (prog : Ast.program) : folded =
                   material crease" (lstr el.Ast.cline))
           in
           match el.Ast.cline with
-          | Ast.LAt (cr, sels, aspan) -> (
-              match at_matches cr sels aspan with
-              | cid, [ s ] ->
-                  {
-                    Collapse.cid;
-                    ea = s.Fold_state.ta;
-                    eb = s.Fold_state.tb;
-                    valley = el.Ast.cdir = Ast.Valley;
-                  }
-              | _, [] ->
-                  Error.fail aspan
-                    (Printf.sprintf "no segment of --%s matches %s"
-                       cr.Ast.cname (selstr sels))
-              | _, many ->
-                  Error.fail aspan
-                    (Printf.sprintf
-                       "--%s at %s is ambiguous: %d segments match; add a \
-                        selector"
-                       cr.Ast.cname (selstr sels) (List.length many)))
           | Ast.LNamed cr -> (
               let cid = material_cid cr in
               match Fold_state.crease_segments !(ctx.state) cid with
@@ -1301,8 +1346,29 @@ let eval_folded (prog : Ast.program) : folded =
               | segs ->
                   Error.fail span
                     (Printf.sprintf
-                       "--%s has %d segments; select one with `at`"
+                       "--%s has %d segments; select one with & "
                        cr.Ast.cname (List.length segs)))
+          | (Ast.LFilter _ | Ast.LUnion _) as lo -> (
+              match bundle_segments lo with
+              | Some cid, [ s ] ->
+                  {
+                    Collapse.cid;
+                    ea = s.Fold_state.ta;
+                    eb = s.Fold_state.tb;
+                    valley = el.Ast.cdir = Ast.Valley;
+                  }
+              | _, [] ->
+                  Error.fail span
+                    (Printf.sprintf "no segment of %s matches" (lstr lo))
+              | _, (_ :: _ :: _ as many) ->
+                  Error.fail span
+                    (Printf.sprintf
+                       "%s is ambiguous: %d segments match; add a constraint"
+                       (lstr lo) (List.length many))
+              | None, [ _ ] ->
+                  (* a single segment but from a cross-crease union: no one cid
+                     to fold along *)
+                  fail_not_material ())
           | _ -> fail_not_material ()
         in
         let es = List.map resolve_elem elems in
@@ -1360,7 +1426,12 @@ let eval_folded (prog : Ast.program) : folded =
         else
           match cv with
           | Frozen l -> (k, l) :: acc
-          | Material (_, l_orig) -> (k, l_orig) :: acc)
+          | Material (_, l_orig) -> (k, l_orig) :: acc
+          (* a bundle is not a single line; it is not emitted in the
+             one-line-per-name overlay map. the prelude paper edges are
+             implicit, not user-declared construction lines, so they are
+             likewise not emitted. *)
+          | Bundle _ | Edge _ -> acc)
       root_scope.lines []
   in
   ctx.frames_rev <- (ctx.panel, !(ctx.state)) :: ctx.frames_rev;

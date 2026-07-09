@@ -295,6 +295,15 @@ type crease_segment = {
    left face isometry (the two faces coincide along the crease, so left is
    canonical); [pa]/[pb] in the shared paper frame. One entry per edge tagged
    [cid] with a real left face. Degenerate edges are dropped. *)
+(* the distinct crease ids present in the current state (for selectors that must
+   scan every existing crease, not one named bundle) *)
+let all_crease_ids (st : t) : int list =
+  let seen = Hashtbl.create 16 in
+  Array.iter
+    (fun e -> if e.crease_id >= 0 then Hashtbl.replace seen e.crease_id ())
+    st.edges;
+  Hashtbl.fold (fun k () acc -> k :: acc) seen []
+
 let crease_segments (st : t) (cid : int) : crease_segment list =
   Array.fold_left
     (fun acc e ->

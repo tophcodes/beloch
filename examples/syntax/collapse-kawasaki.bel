@@ -7,5 +7,5 @@ paper square
 --ac = map .b onto .d     ; diagonal a–c
 --v  = map .a onto .b     ; vertical midline x = 1/2
 
-@collapse --ac at .a and --ac at .c
-  and --v at --(.d .c) and --v at --(.a .b)
+@collapse --ac & .a and --ac & .c
+  and --v & --cd and --v & --ab

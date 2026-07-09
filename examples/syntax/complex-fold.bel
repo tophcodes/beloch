@@ -3,5 +3,5 @@ paper square
 
 --b = through .a .b
 --v = map .b onto .a
-.mid = cross --b --v
+.mid = --b * --v
 @map .mid onto .d moving .mid

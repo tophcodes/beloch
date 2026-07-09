@@ -6,8 +6,8 @@ paper square
 ; scaffold: two midlines give the non-corner points .tm and .rm
 --vmid = map .a onto .b              ; x = 1/2
 --hmid = map .a onto .d              ; y = 1/2
-.tm = cross --vmid --(.d .c)         ; midpoint of the top edge,   (1/2, 1)
-.rm = cross --hmid --(.b .c)         ; midpoint of the right edge, (1, 1/2)
+.tm = --vmid * --cd                  ; midpoint of the top edge,   (1/2, 1)
+.rm = --hmid * --bc                  ; midpoint of the right edge, (1, 1/2)
 ; two generic slanted lines — slopes 1/2 and 2, neither a diagonal
 --l1 = through .a .rm                ; the line .c lands on
 --l2 = through .a .tm                ; the crease is forced perpendicular to this

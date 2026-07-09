@@ -1,3 +1,5 @@
 paper square
-@map --(.a .c) onto --(.b .d) toward .b moving .c
+--ac = through .a .c          ; TODO(pinch): landmark — replace with pinch when shipped
+--bd = through .b .d          ; TODO(pinch): landmark — replace with pinch when shipped
+@map --ac onto --bd toward .b moving .c
 ; status: works — straddle: hinge mid-material, `moving .c` picks which half of the diagonal swings toward .b
