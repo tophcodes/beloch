@@ -201,7 +201,15 @@ let eval_folded (prog : Ast.program) : folded =
         and pb = Fold_state.table_position !(ctx.state) (corner_point b) in
         Geom.line_through pa pb
     | Frozen l -> l
-    | Mark (_cid, line) -> line
+    | Mark (cid, line) -> (
+        match Fold_state.mark_axis_current !(ctx.state) cid with
+        | `Line l -> l
+        | `Empty -> line
+        | `Bent ->
+            Error.fail span
+              (Printf.sprintf
+                 "--%s is bent by a fold; select a segment with `at`, e.g. \
+                  --%s at #(.a .b .c)" name name))
     | Material (cid, l_orig) -> (
         match Fold_state.crease_axis !(ctx.state) cid l_orig with
         | `Line l -> l
@@ -325,7 +333,7 @@ let eval_folded (prog : Ast.program) : folded =
                  span = cr.Ast.cspan; name = None; step = ctx.panel }
         in
         ctx.state :=
-          Fold_state.subdivide !(ctx.state) line ~crease_id:cid ~prov;
+          Fold_state.subdivide_paper !(ctx.state) line ~crease_id:cid ~prov;
         promote_crease ctx cr.Ast.cname (Material (cid, line));
         cid
     | Bundle _ ->
