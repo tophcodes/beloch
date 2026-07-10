@@ -190,7 +190,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
               match Fold_state.edge_between fd.Eval.state fi pa pb with
               | Some (e : Fold_state.edge) ->
                   let a =
-                    match e.Fold_state.eassign with
+                    match e.Fold_state.eintent with
                     | Fold_state.M -> "M"
                     | Fold_state.V -> "V"
                     | Fold_state.F -> "F"

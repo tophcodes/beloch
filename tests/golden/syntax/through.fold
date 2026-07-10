@@ -34,7 +34,7 @@
     [ 10, 7 ]
   ],
   "edges_assignment": [
-    "B", "V", "F", "B", "V", "B", "F", "F", "B", "F", "B", "B", "B", "F",
+    "B", "V", "V", "B", "V", "B", "V", "V", "B", "V", "B", "B", "B", "V",
     "B", "B"
   ],
   "faces_vertices": [

@@ -568,15 +568,25 @@ let test_e2e_cohesion_moves_coplanar_sibling () =
     (Geom.point_equal d_pos { Geom.x = half; y = Num.of_int 1 })
 
 (* Task 2: a bare precrease (still flat, unfolded) emits FOLD assignment "F",
-   never "U" — U is dropped from the codebase entirely (design/mark-fold-notation). *)
-let test_e2e_bare_precrease_emits_f () =
+   never "U" — U is dropped from the codebase entirely (design/mark-fold-notation).
+   Task 6 splits the CP colour (eintent, defaults V) from the folded-form
+   dihedral (eassign) — the "flat, never U" invariant lives in the folded
+   frame, since the top-level creasePattern frame now legitimately shows the
+   mark's (default) M/V intent instead. *)
+let json_cp_assignments (json : Yojson.Safe.t) : string list =
   let open Yojson.Safe.Util in
+  json |> member "edges_assignment" |> to_list |> List.map to_string
+
+let json_folded_assignments (json : Yojson.Safe.t) : string list =
+  let open Yojson.Safe.Util in
+  json |> member "file_frames" |> index 0 |> member "edges_assignment"
+  |> to_list |> List.map to_string
+
+let test_e2e_bare_precrease_emits_f () =
   let json =
     Beloch.fold_string ~filename:"t.bel" "paper square\nmark map .a onto .c\n"
   in
-  let assigns =
-    json |> member "edges_assignment" |> to_list |> List.map to_string
-  in
+  let assigns = json_folded_assignments json in
   Alcotest.(check bool) "no U in output" false (List.mem "U" assigns);
   Alcotest.(check bool) "has an F crease" true (List.mem "F" assigns)
 
@@ -638,6 +648,16 @@ let test_mark_cmixed_cuts_only_boundary_face () =
     (edges_of setup + 1) (edges_of full);
   Alcotest.(check int) "the dangling stub is recorded as a mark"
     (marks_of setup + 1) (marks_of full)
+
+let test_mark_mountain_cp_intent () =
+  (* map .a onto .d = horizontal midline y=1/2, full chord (boundary-to-
+     boundary -> subdivides), marked mountain. *)
+  let src = "paper square\nmark map .a onto .d mountain\n" in
+  let json = Beloch.fold_string ~filename:"t.bel" src in
+  Alcotest.(check bool) "CP frame colours the mark M" true
+    (json_cp_assignments json |> List.mem "M");
+  Alcotest.(check bool) "folded frame keeps the mark F" true
+    (json_folded_assignments json |> List.mem "F")
 
 (* full mark (no extent clause) keeps subdividing, unchanged from before this
    task; a full mark never records. *)
@@ -786,6 +806,8 @@ let () =
             test_mark_point_records_no_edge;
           Alcotest.test_case "CMixed cuts only the boundary face, records stub"
             `Quick test_mark_cmixed_cuts_only_boundary_face;
+          Alcotest.test_case "mark mountain: CP frame M, folded frame F"
+            `Quick test_mark_mountain_cp_intent;
           Alcotest.test_case "full mark still subdivides" `Quick
             test_mark_full_still_subdivides;
           Alcotest.test_case "between extent crossing a fold errors" `Quick

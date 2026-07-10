@@ -1258,7 +1258,7 @@ let eval_folded (prog : Ast.program) : folded =
           | Fold_state.CSubdivide _ ->
               ctx.state :=
                 Fold_state.subdivide !(ctx.state) table_axis ~crease_id:cid
-                  ~prov;
+                  ~prov ~intent;
               bind_material cid table_axis
           | Fold_state.CRecord g ->
               ctx.state :=
@@ -1275,7 +1275,7 @@ let eval_folded (prog : Ast.program) : folded =
                  dangling stub [g] stays a pure record (never an edge). *)
               ctx.state :=
                 Fold_state.subdivide !(ctx.state) table_axis ~crease_id:cid
-                  ~prov ~only_faces:cut_faces;
+                  ~prov ~only_faces:cut_faces ~intent;
               ctx.state :=
                 Fold_state.add_mark !(ctx.state)
                   {
@@ -1311,7 +1311,7 @@ let eval_folded (prog : Ast.program) : folded =
             | `Full ->
                 ctx.state :=
                   Fold_state.subdivide !(ctx.state) table_axis ~crease_id:cid
-                    ~prov;
+                    ~prov ~intent;
                 bind_material cid table_axis
             | `Partial (extent_geom, rep, paper_axis) ->
                 let flap = resolve_mark_flap layer_opt rep span in
@@ -1342,7 +1342,7 @@ let eval_folded (prog : Ast.program) : folded =
             | `Full ->
                 ctx.state :=
                   Fold_state.subdivide !(ctx.state) table_axis ~crease_id:cid
-                    ~prov:None
+                    ~prov:None ~intent
             | `Partial (extent_geom, rep, paper_axis) ->
                 let flap = resolve_mark_flap layer_opt rep span in
                 dispatch_partial ~cid ~table_axis ~prov:None ~flap

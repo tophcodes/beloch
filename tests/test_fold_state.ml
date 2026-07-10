@@ -249,6 +249,7 @@ let mkedge ~ea ~eb ~left ~right ~cid =
     left;
     right;
     eassign = Fold_state.F;
+    eintent = Fold_state.F;
     crease_id = cid;
     eprov = None;
   }
