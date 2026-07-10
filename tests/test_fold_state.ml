@@ -534,6 +534,89 @@ let test_marks_carry_through_fold () =
   Alcotest.(check bool) "mark_face resolves to a face"
     true (Fold_state.mark_face st' m' <> None)
 
+(* --- classify_mark_extent (#partial marks / pinch, Task 3) ---------------- *)
+
+let flap0 = [ 0 ]
+
+let test_classify_interior_segment_records () =
+  let pt a b c d = { Geom.x = qf a b; y = qf c d } in
+  let a = pt 1 4 1 4 and b = pt 1 2 1 2 in
+  let axis = Geom.line_through a b in
+  match
+    Fold_state.classify_mark_extent Fold_state.init_square ~flap:flap0 ~axis
+      ~extent_geom:(Fold_state.MSeg (a, b))
+  with
+  | Fold_state.CRecord (Fold_state.MSeg _) -> ()
+  | _ -> Alcotest.fail "interior segment should record"
+
+let test_classify_boundary_to_boundary_subdivides () =
+  let pt a b c d = { Geom.x = qf a b; y = qf c d } in
+  let a = pt 0 1 1 2 and b = pt 1 1 1 2 in
+  (* left edge (0,1/2) to right edge (1,1/2) *)
+  let axis = Geom.line_through a b in
+  match
+    Fold_state.classify_mark_extent Fold_state.init_square ~flap:flap0 ~axis
+      ~extent_geom:(Fold_state.MSeg (a, b))
+  with
+  | Fold_state.CSubdivide _ -> ()
+  | _ -> Alcotest.fail "chord should subdivide"
+
+let test_classify_point_records () =
+  let pt a b c d = { Geom.x = qf a b; y = qf c d } in
+  let p = pt 1 3 1 3 in
+  let axis = Geom.line_through p (pt 2 3 1 3) in
+  match
+    Fold_state.classify_mark_extent Fold_state.init_square ~flap:flap0 ~axis
+      ~extent_geom:(Fold_state.MPoint p)
+  with
+  | Fold_state.CRecord (Fold_state.MPoint _) -> ()
+  | _ -> Alcotest.fail "point should record"
+
+let test_classify_crosses_fold () =
+  (* fold at x=1/2 -> 2 faces in DIFFERENT coplanar clusters, joined by a V
+     edge. A horizontal extent (1/4,1/2)->(3/4,1/2) leaves the left flap
+     across it. *)
+  let pt a b c d = { Geom.x = qf a b; y = qf c d } in
+  let axis = { Geom.a = Num.one; b = Num.zero; c = qf 1 2 } in
+  let st =
+    Fold_state.fold_with_records Fold_state.init_square ~axis ~move_side:1
+      ~valley:true ~prov:None
+  in
+  let left =
+    Option.get
+      (Fold_state.mark_face st
+         {
+           Fold_state.mgeom = Fold_state.MPoint (pt 1 4 1 4);
+           mline = axis;
+           mintent = Fold_state.V;
+           mcrease_id = 0;
+         })
+  in
+  let a = pt 1 4 1 2 and b = pt 3 4 1 2 in
+  match
+    Fold_state.classify_mark_extent st ~flap:[ left ]
+      ~axis:(Geom.line_through a b) ~extent_geom:(Fold_state.MSeg (a, b))
+  with
+  | Fold_state.CCrossesFold _ -> ()
+  | _ -> Alcotest.fail "extent across a folded crease must be CCrossesFold"
+
+let test_classify_mixed () =
+  (* subdivide along y=1/2 (an F edge; the halves stay ONE coplanar cluster).
+     Vertical extent (1/2,1) [top boundary] -> (1/2,1/4) [interior of lower
+     half] subdivides the upper part and records the dangling stub. *)
+  let pt a b c d = { Geom.x = qf a b; y = qf c d } in
+  let mid = Geom.line_through (pt 0 1 1 2) (pt 1 1 1 2) in
+  let st = Fold_state.subdivide Fold_state.init_square mid ~prov:None in
+  let flap = List.init (Array.length st.Fold_state.faces) Fun.id in
+  (* one F-joined cluster *)
+  let a = pt 1 2 1 1 and b = pt 1 2 1 4 in
+  match
+    Fold_state.classify_mark_extent st ~flap ~axis:(Geom.line_through a b)
+      ~extent_geom:(Fold_state.MSeg (a, b))
+  with
+  | Fold_state.CMixed (_, _, Fold_state.MSeg _) -> ()
+  | _ -> Alcotest.fail "boundary->interior across an F edge must be CMixed"
+
 let () =
   Alcotest.run "fold_state"
     [
@@ -614,5 +697,17 @@ let () =
         [
           Alcotest.test_case "marks carry through fold unchanged" `Quick
             test_marks_carry_through_fold;
+        ] );
+      ( "classify_mark_extent",
+        [
+          Alcotest.test_case "interior segment records" `Quick
+            test_classify_interior_segment_records;
+          Alcotest.test_case "boundary-to-boundary chord subdivides" `Quick
+            test_classify_boundary_to_boundary_subdivides;
+          Alcotest.test_case "point records" `Quick test_classify_point_records;
+          Alcotest.test_case "extent across a folded crease errors" `Quick
+            test_classify_crosses_fold;
+          Alcotest.test_case "boundary->interior across F edge is mixed"
+            `Quick test_classify_mixed;
         ] );
     ]
