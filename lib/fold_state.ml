@@ -631,13 +631,18 @@ let axis_segment_in_face (f : face) (axis : Geom.line) :
    it lives on: does it subdivide the flap (boundary-to-boundary, only ever
    crossing F edges), merely record (wholly mid-face), do both (one end
    dangles mid-face, the other reaches the boundary — [CMixed]'s stub is
-   recorded, its subdividing part handled like [CSubdivide]), or is it
-   illegal because it would leave the flap across a folded (M/V) crease? *)
+   recorded, its subdividing part handled like [CSubdivide]), is it illegal
+   because it would leave the flap across a folded (M/V) crease, or does it
+   dangle mid-face at BOTH ends across an internal (F) crease into a
+   different face of the same flap — [CSpansCrease] — which [mark_class] has
+   no double-stub constructor to represent (a caller must reject it; see
+   classify_seg's doc)? *)
 type mark_class =
   | CSubdivide of Geom.point * Geom.point
   | CRecord of mark_geom
   | CMixed of Geom.point * Geom.point * mark_geom
   | CCrossesFold of Geom.point * Geom.point
+  | CSpansCrease of Geom.point * Geom.point
 
 (* true iff point [p] lies on some edge (endpoints included) of convex CCW
    [poly]. *)
@@ -761,17 +766,16 @@ let classify_seg (st : t) ~(flap : int list) ~(axis : Geom.line)
     | false, false -> (
         (* both mid-face: same face records outright; different faces would
            need two dangling stubs, which [mark_class] has no constructor for
-           (see classify_mark_extent's doc). *)
+           — reject as [CSpansCrease] instead of raising (see
+           classify_mark_extent's doc; a raw exception must never reach a
+           Beloch program, so the eval-level caller turns this into a
+           diagnostic). *)
         match
           ( strictly_interior_to_flap_face st flap a,
             strictly_interior_to_flap_face st flap b )
         with
         | Some fa, Some fb when fa = fb -> CRecord (MSeg (a, b))
-        | _ ->
-            invalid_arg
-              "classify_mark_extent: extent dangles mid-face at both ends \
-               across an internal flat edge; mark_class has no double-stub \
-               constructor for this")
+        | _ -> CSpansCrease (a, b))
     | true, false ->
         let x =
           match List.rev segs with
@@ -802,7 +806,10 @@ let classify_seg (st : t) ~(flap : int list) ~(axis : Geom.line)
    flap's true boundary (a bare paper edge or an M/V crease, never an F edge)
    subdivides; both endpoints strictly mid-face in the *same* face records;
    one boundary and one mid-face is the mixed case, split at the last (resp.
-   first) internal F crossing before (resp. after) the mid-face end. *)
+   first) internal F crossing before (resp. after) the mid-face end; both
+   endpoints strictly mid-face but in DIFFERENT faces (the extent dangles
+   across an internal F crease at both ends) has no representation in
+   [mark_class] — [CSpansCrease], for the caller to reject. *)
 let classify_mark_extent (st : t) ~(flap : int list) ~(axis : Geom.line)
     ~(extent_geom : mark_geom) : mark_class =
   match extent_geom with

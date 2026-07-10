@@ -580,6 +580,85 @@ let test_e2e_bare_precrease_emits_f () =
   Alcotest.(check bool) "no U in output" false (List.mem "U" assigns);
   Alcotest.(check bool) "has an F crease" true (List.mem "F" assigns)
 
+(* ---- Task 4: mark extent dispatch (partial marks / pinch, #50 slice 2) --- *)
+
+let eval_bel src = Eval.eval_folded (Beloch.parse ~filename:"t.bel" src)
+let edges_of src = Array.length (eval_bel src).Eval.state.Fold_state.edges
+let marks_of src = Array.length (eval_bel src).Eval.state.Fold_state.marks
+
+(* an interior POINT mark records and adds no edge; comparing edges_of before
+   and after isolates what the point mark itself contributes (the two named
+   midlines --vm/--hm needed for the `.ctr` meet must themselves be marked
+   -- i.e. materialized -- since `*` cannot meet a plain, non-physical value
+   line; see paper_line_of_crease's Frozen case). *)
+let test_mark_point_records_no_edge () =
+  let base =
+    "paper square\nmark --vm = map .a onto .b\nmark --hm = map .a onto .d\n\
+     .ctr = --vm * --hm\n"
+  in
+  (* reuse the already-material --vm as the extent's axis (rather than a
+     fresh, unnamed `--pt`, which the grammar has no bind-and-write form for
+     without a motion of its own) *)
+  let with_point_mark = base ^ "mark --vm at .ctr\n" in
+  Alcotest.(check int) "point mark adds no edge" (edges_of base)
+    (edges_of with_point_mark);
+  Alcotest.(check int) "no marks recorded yet" 0 (marks_of base);
+  Alcotest.(check int) "one mark recorded" 1 (marks_of with_point_mark)
+
+(* full mark (no extent clause) keeps subdividing, unchanged from before this
+   task; a full mark never records. *)
+let test_mark_full_still_subdivides () =
+  let src = "paper square\nmark map .a onto .b\n" in
+  Alcotest.(check int) "full mark subdivides (one edge)" 1 (edges_of src);
+  Alcotest.(check int) "no record" 0 (marks_of src)
+
+(* fold the left half onto the right (valley crease x=1/2; .a/.d move, .b/.c
+   don't). --hm = map .b onto .c is the y=1/2 line built from the two
+   STATIONARY corners, so it still reads y=1/2 after the fold. Its `between`
+   extent from the left edge to the right edge spans across the now-folded
+   (V) crease at x=1/2 -- the left half's flap only carries paper x in
+   [0,1/2], so the extent leaves it partway across. *)
+let test_mark_crosses_fold_errors () =
+  let src =
+    "paper square\n\
+     fold map .a onto .b moving .a\n\
+     mark --hm = map .b onto .c\n\
+     .p = --hm * --da\n\
+     .q = --hm * --bc\n\
+     mark --hm between .p .q\n"
+  in
+  expect_error "crosses a folded crease" (fun () ->
+      Beloch.fold_string ~filename:"t.bel" src)
+
+(* Task 3 review finding, end to end: a `between` extent whose ends are both
+   non-boundary but sit in different faces of the same (never-folded, still
+   all-F) flap must be a clean Beloch error, not a raw OCaml exception (it
+   used to `Invalid_argument` at fold_state.ml, see fold_state's
+   test_classify_spans_crease_both_interior_different_faces for the same
+   shape tested directly against classify_mark_extent). The extent's own axis
+   (the .a-.c diagonal) must be FRESH here -- never previously subdivided
+   boundary-to-boundary -- so it crosses face interiors rather than running
+   along an existing crease; --bd/--vm/--cut1/--q2/--r1/--r2 are all
+   transversal to it, used only to name .p1=(1/4,1/4) and .p2=(3/4,3/4) as
+   the meets that pin the diagonal down without ever marking it themselves. *)
+let test_mark_spans_crease_errors () =
+  let src =
+    "paper square\n\
+     mark --bd = through .b .d\n\
+     mark --vm = map .a onto .b\n\
+     .ctr = --vm * --bd\n\
+     .vmb = --vm * --ab\n\
+     mark --cut1 = map .a onto .vmb\n\
+     mark --q2 = map .b onto .vmb\n\
+     mark --r1 = map .a onto .ctr\n\
+     mark --r2 = map .c onto .ctr\n\
+     .p1 = --cut1 * --r1\n\
+     .p2 = --q2 * --r2\n\
+     mark through .a .c between .p1 .p2\n"
+  in
+  expect_error "spans an internal crease" (fun () ->
+      Beloch.fold_string ~filename:"t.bel" src)
+
 let () =
   Alcotest.run "beloch-e2e"
     [
@@ -639,6 +718,15 @@ let () =
             test_e2e_cohesion_moves_coplanar_sibling;
           Alcotest.test_case "bare precrease emits F not U" `Quick
             test_e2e_bare_precrease_emits_f;
+          Alcotest.test_case "interior point mark records, no edge" `Quick
+            test_mark_point_records_no_edge;
+          Alcotest.test_case "full mark still subdivides" `Quick
+            test_mark_full_still_subdivides;
+          Alcotest.test_case "between extent crossing a fold errors" `Quick
+            test_mark_crosses_fold_errors;
+          Alcotest.test_case
+            "between extent spanning an internal crease errors cleanly"
+            `Quick test_mark_spans_crease_errors;
         ] );
       ( "emit_folded",
         [

@@ -617,6 +617,36 @@ let test_classify_mixed () =
   | Fold_state.CMixed (_, _, Fold_state.MSeg _) -> ()
   | _ -> Alcotest.fail "boundary->interior across an F edge must be CMixed"
 
+(* Task 3 review finding: both extent endpoints strictly interior but in
+   DIFFERENT flap faces has no double-stub [mark_class] constructor, and used
+   to `invalid_arg`. Three F-joined faces along one flap — cut the square at
+   x=1/4 and x=1/2, giving [0,1/4]x[0,1], [1/4,1/2]x[0,1], [1/2,1]x[0,1] — with
+   a horizontal extent at y=1/2 whose ends sit strictly inside the outer two
+   faces (never touching x=1/4 or x=1/2) must come back as [CSpansCrease],
+   not raise. *)
+let test_classify_spans_crease_both_interior_different_faces () =
+  let pt a b c d = { Geom.x = qf a b; y = qf c d } in
+  let cut1 = Geom.line_through (pt 1 4 0 1) (pt 1 4 1 1) in
+  let cut2 = Geom.line_through (pt 1 2 0 1) (pt 1 2 1 1) in
+  let st =
+    Fold_state.subdivide
+      (Fold_state.subdivide Fold_state.init_square cut1 ~prov:None)
+      cut2 ~prov:None
+  in
+  Alcotest.(check int) "three faces" 3 (Array.length st.Fold_state.faces);
+  let flap = List.init (Array.length st.Fold_state.faces) Fun.id in
+  (* (1/8,1/2) strictly inside [0,1/4]x[0,1]; (3/4,1/2) strictly inside
+     [1/2,1]x[0,1] — different faces, neither touching x=1/4 or x=1/2. *)
+  let a = pt 1 8 1 2 and b = pt 3 4 1 2 in
+  match
+    Fold_state.classify_mark_extent st ~flap ~axis:(Geom.line_through a b)
+      ~extent_geom:(Fold_state.MSeg (a, b))
+  with
+  | Fold_state.CSpansCrease _ -> ()
+  | _ ->
+      Alcotest.fail
+        "both-interior-different-faces extent must be CSpansCrease, not raise"
+
 let () =
   Alcotest.run "fold_state"
     [
@@ -709,5 +739,8 @@ let () =
             test_classify_crosses_fold;
           Alcotest.test_case "boundary->interior across F edge is mixed"
             `Quick test_classify_mixed;
+          Alcotest.test_case
+            "both interior in different faces -> CSpansCrease, not raise"
+            `Quick test_classify_spans_crease_both_interior_different_faces;
         ] );
     ]
