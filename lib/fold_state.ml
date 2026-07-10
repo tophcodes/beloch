@@ -23,6 +23,7 @@ type mark = {
   mline : Geom.line;
   mintent : assign;
   mcrease_id : int;
+  mprov : State.provenance option;
 }
 
 (* A first-class crease edge between two faces. [ea]/[eb] are the segment
@@ -591,6 +592,36 @@ let mark_rep_point (m : mark) : Geom.point =
 let add_mark (st : t) (m : mark) : t =
   { st with marks = Array.append st.marks [| m |] }
 
+(* Paper-space chords (segment endpoints) of every MSeg mark carrying [cid].
+   Point marks (MPoint) contribute no chord. Used by the meet operator to test
+   that a marked line physically reaches a crossing. *)
+let mark_chords (st : t) (cid : int) : (Geom.point * Geom.point) list =
+  Array.to_list st.marks
+  |> List.filter_map (fun m ->
+         if m.mcrease_id = cid then
+           match m.mgeom with MSeg (a, b) -> Some (a, b) | MPoint _ -> None
+         else None)
+
+(* The mark [cid]'s current TABLE-space axis, tracking folds/flips (its paper
+   geometry is fold-invariant, so the current line is the paper chord mapped to
+   the table). [`Bent] if a fold has bent the chord (its paper midpoint no
+   longer maps onto the straight table chord) — the caller must pick a flap. *)
+let mark_axis_current (st : t) (cid : int) :
+    [ `Line of Geom.line | `Bent | `Empty ] =
+  match mark_chords st cid with
+  | [] -> `Empty
+  | (a, b) :: _ ->
+      let ta = table_position st a and tb = table_position st b in
+      if Geom.point_equal ta tb then `Empty
+      else
+        let mid =
+          { Geom.x = Num.div (Num.add a.Geom.x b.Geom.x) (Num.of_int 2);
+            y = Num.div (Num.add a.Geom.y b.Geom.y) (Num.of_int 2) }
+        in
+        let tm = table_position st mid in
+        let l = Geom.line_through ta tb in
+        if Geom.side_of_line l tm = 0 then `Line l else `Bent
+
 (* the face whose PAPER polygon contains the mark's representative point; paper
    coordinates partition the sheet, so this is unique in the interior (a point on
    a shared boundary may match several — first match wins, callers disambiguate). *)
@@ -879,6 +910,88 @@ let subdivide ?crease_id ?(intent = V) (st : t) (axis : Geom.line)
           let p =
             match Geom.intersection axis (Geom.line_through a b) with
             | Some r -> Isometry.apply_point (Isometry.inverse iso_l) r
+            | None -> e.ea
+          in
+          [
+            { e with eb = p; left = child_on e.left sa; right = child_on e.right sa };
+            { e with ea = p; left = child_on e.left sb; right = child_on e.right sb };
+          ])
+      (Array.to_list st.edges)
+  in
+  let edges = Array.of_list (new_edges @ carried) in
+  let order =
+    build_order faces (fun i j -> Layer_order.get st.order parent.(i) parent.(j))
+  in
+  { faces; order; edges; marks = st.marks }
+
+(* Like [subdivide] but the cutting line is given in PAPER space and every face
+   is clipped by its own paper polygon directly (no isometry) — so a line that
+   bends across folds cuts each flap correctly in the material frame. Used to
+   materialize a mark (fold-invariant paper geometry) into real creases on an
+   already-folded sheet. *)
+let subdivide_paper ?crease_id ?(intent = V) (st : t) (paper_axis : Geom.line)
+    ~(prov : State.provenance option) : t =
+  let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
+  let out = ref [] in
+  let edge_seeds = ref [] in
+  Array.iteri
+    (fun fi f ->
+      let part keep =
+        let sub = Geom.clip_convex_halfplane paper_axis keep f.paper in
+        if Array.length sub >= 3 then Some { paper = sub; iso = f.iso } else None
+      in
+      let plus = part 1 and minus = part (-1) in
+      (match (plus, minus) with
+      | Some _, Some _ -> (
+          match Geom.clip_line_to_convex paper_axis f.paper with
+          | Some (a, b) -> edge_seeds := (fi, a, b) :: !edge_seeds
+          | None -> ())
+      | _ -> ());
+      List.iter
+        (function Some fc -> out := (fc, fi) :: !out | None -> ())
+        [ plus; minus ])
+    st.faces;
+  let arr = Array.of_list (List.rev !out) in
+  let faces = Array.map fst arr in
+  let parent = Array.map snd arr in
+  let children_of fi =
+    let acc = ref [] in
+    Array.iteri (fun k p -> if p = fi then acc := k :: !acc) parent;
+    List.rev !acc
+  in
+  let new_edges =
+    List.rev_map
+      (fun (fi, a, b) ->
+        let left, right =
+          match children_of fi with
+          | l :: r :: _ -> (l, r)
+          | [ l ] -> (l, -1)
+          | [] -> (-1, -1)
+        in
+        { ea = a; eb = b; left; right; eassign = F; eintent = intent;
+          crease_id = cid; eprov = prov })
+      !edge_seeds
+  in
+  let child_on p s =
+    if p < 0 then -1
+    else
+      match children_of p with
+      | [ c ] -> c
+      | c_plus :: c_minus :: _ -> if s >= 0 then c_plus else c_minus
+      | [] -> -1
+  in
+  let carried =
+    List.concat_map
+      (fun e ->
+        let sa = Geom.side_of_line paper_axis e.ea
+        and sb = Geom.side_of_line paper_axis e.eb in
+        if sa * sb >= 0 then
+          let s = if sa <> 0 then sa else sb in
+          [ { e with left = child_on e.left s; right = child_on e.right s } ]
+        else
+          let p =
+            match Geom.intersection paper_axis (Geom.line_through e.ea e.eb) with
+            | Some r -> r
             | None -> e.ea
           in
           [

@@ -4,47 +4,35 @@
   "frame_classes": [ "creasePattern" ],
   "vertices_coords": [
     [ 0.0, 0.0 ],
-    [ 1.0, 0.0 ],
-    [ 1.0, 0.5 ],
     [ 0.5, 0.5 ],
     [ 0.0, 0.5 ],
+    [ 1.0, 0.0 ],
+    [ 1.0, 0.5 ],
     [ 1.0, 1.0 ],
     [ 0.0, 1.0 ]
   ],
   "edges_vertices": [
     [ 0, 1 ],
     [ 1, 2 ],
-    [ 2, 3 ],
-    [ 3, 0 ],
+    [ 2, 0 ],
+    [ 0, 3 ],
     [ 3, 4 ],
-    [ 4, 0 ],
-    [ 3, 5 ],
+    [ 4, 1 ],
     [ 5, 6 ],
-    [ 6, 3 ],
-    [ 6, 4 ],
-    [ 2, 5 ]
+    [ 6, 2 ],
+    [ 1, 5 ],
+    [ 4, 5 ]
   ],
-  "edges_assignment": [
-    "B", "B", "V", "V", "V", "B", "V", "B", "V", "B", "B"
-  ],
+  "edges_assignment": [ "V", "V", "B", "B", "B", "V", "B", "B", "V", "B" ],
   "faces_vertices": [
-    [ 0, 1, 2, 3 ], [ 0, 3, 4 ], [ 3, 5, 6 ], [ 3, 6, 4 ], [ 2, 5, 3 ]
+    [ 0, 1, 2 ], [ 0, 3, 4, 1 ], [ 5, 6, 2, 1 ], [ 4, 5, 1 ]
   ],
   "beloch:edges": [
-    null,
-    null,
     {
-      "axiom": "axiom2",
-      "sources": [ ".c", ".b" ],
-      "span": "crease-at-flap.bel:11:1",
-      "name": "v",
-      "step": null
-    },
-    {
-      "axiom": "axiom1",
-      "sources": [ ".a", ".c" ],
-      "span": "crease-at-flap.bel:10:1",
-      "name": "b",
+      "axiom": "mark",
+      "sources": [ "--b" ],
+      "span": "crease-at-flap.bel:12:17",
+      "name": null,
       "step": null
     },
     {
@@ -55,22 +43,24 @@
       "step": null
     },
     null,
+    null,
+    null,
     {
-      "axiom": "axiom1",
-      "sources": [ ".a", ".c" ],
-      "span": "crease-at-flap.bel:10:1",
-      "name": "b",
+      "axiom": "axiom2",
+      "sources": [ ".c", ".b" ],
+      "span": "crease-at-flap.bel:11:1",
+      "name": "v",
       "step": null
     },
     null,
+    null,
     {
-      "axiom": "axiom3",
-      "sources": [ ".a", "--b & #[.c .d]" ],
-      "span": "crease-at-flap.bel:12:1",
-      "name": "q",
+      "axiom": "mark",
+      "sources": [ "--b" ],
+      "span": "crease-at-flap.bel:12:17",
+      "name": null,
       "step": null
     },
-    null,
     null
   ],
   "beloch:named_points": {
@@ -81,8 +71,8 @@
   },
   "beloch:named_lines": {
     "v": [ 0.0, -1.0, -0.5 ],
-    "b": [ 1.0, -1.0, 0.0 ],
-    "q": [ 0.5, -0.5, 0.0 ]
+    "b": [ -1.0, 1.0, 0.0 ],
+    "q": [ -0.5, 0.5, 0.0 ]
   },
   "beloch:named_lines_frame": "creasePattern",
   "beloch:marks": [],
@@ -93,43 +83,41 @@
       "frame_inherit": false,
       "vertices_coords": [
         [ 0.0, 0.0 ],
-        [ 1.0, 0.0 ],
-        [ 1.0, 0.5 ],
         [ 0.5, 0.5 ],
         [ 0.0, 0.5 ],
+        [ 1.0, 0.0 ],
+        [ 1.0, 0.5 ],
         [ 1.0, 0.0 ],
         [ 0.0, 0.0 ]
       ],
       "edges_vertices": [
         [ 0, 1 ],
         [ 1, 2 ],
-        [ 2, 3 ],
-        [ 3, 0 ],
+        [ 2, 0 ],
+        [ 0, 3 ],
         [ 3, 4 ],
-        [ 4, 0 ],
-        [ 3, 5 ],
+        [ 4, 1 ],
         [ 5, 6 ],
-        [ 6, 3 ],
-        [ 6, 4 ],
-        [ 2, 5 ]
+        [ 6, 2 ],
+        [ 1, 5 ],
+        [ 4, 5 ]
       ],
       "edges_assignment": [
-        "B", "B", "V", "F", "V", "B", "F", "B", "F", "B", "B"
+        "F", "V", "B", "B", "B", "V", "B", "B", "F", "B"
       ],
       "edges_foldAngle": [
-        0.0, 0.0, 180.0, 0.0, 180.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+        0.0, 180.0, 0.0, 0.0, 0.0, 180.0, 0.0, 0.0, 0.0, 0.0
       ],
       "faces_vertices": [
-        [ 0, 1, 2, 3 ], [ 0, 3, 4 ], [ 3, 5, 6 ], [ 3, 6, 4 ], [ 2, 5, 3 ]
+        [ 0, 1, 2 ], [ 0, 3, 4, 1 ], [ 5, 6, 2, 1 ], [ 4, 5, 1 ]
       ],
       "beloch:faces_matrix": [
         [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
         [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
         [ 1.0, 0.0, 0.0, -1.0, 0.0, 1.0 ],
-        [ 1.0, 0.0, 0.0, -1.0, 0.0, 1.0 ],
         [ 1.0, 0.0, 0.0, -1.0, 0.0, 1.0 ]
       ],
-      "faceOrders": [ [ 0, 2, 1 ], [ 0, 4, 1 ], [ 1, 3, 1 ] ],
+      "faceOrders": [ [ 0, 2, 1 ], [ 1, 2, 1 ], [ 1, 3, 1 ] ],
       "beloch:step": null
     }
   ]
