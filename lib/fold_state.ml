@@ -631,27 +631,16 @@ let axis_segment_in_face (f : face) (axis : Geom.line) :
   | _ -> None
 
 (* A mark's paper-space extent, classified against the flap (coplanar cluster)
-   it lives on: does it subdivide the flap (boundary-to-boundary, only ever
-   crossing F edges), merely record (wholly mid-face), do both (one end
-   dangles mid-face, the other reaches the boundary — [CMixed]'s stub is
-   recorded, its subdividing part handled like [CSubdivide]), is it illegal
-   because it would leave the flap across a folded (M/V) crease, or does it
-   dangle mid-face at BOTH ends across an internal (F) crease into a
-   different face of the same flap — [CSpansCrease] — which [mark_class] has
-   no double-stub constructor to represent (a caller must reject it; see
-   classify_seg's doc)? *)
+   it lives on: does it subdivide the flap (a FULL CHORD — both endpoints on
+   the flap's outer boundary, crossing only F edges in between), merely
+   record (ANY endpoint strictly mid-face — the whole contiguous extent
+   becomes one non-subdividing record, splitting nothing, even where it
+   crosses face-to-face in the middle), or is it illegal because it would
+   leave the flap across a folded (M/V) crease? *)
 type mark_class =
   | CSubdivide of Geom.point * Geom.point
   | CRecord of mark_geom
-  | CMixed of Geom.point * Geom.point * mark_geom * int list
-      (* [CMixed (a, x, stub, cut_faces)]: the boundary portion [a,x] (across
-         [cut_faces], each spanned boundary-to-boundary) subdivides; the
-         dangling [stub] is recorded. [cut_faces] is exactly the faces the
-         boundary portion covers — never the stub's face — so the eval caller
-         can restrict [subdivide ~only_faces] and leave the stub a pure
-         record. *)
   | CCrossesFold of Geom.point * Geom.point
-  | CSpansCrease of Geom.point * Geom.point
 
 (* true iff point [p] lies on some edge (endpoints included) of convex CCW
    [poly]. *)
@@ -770,42 +759,12 @@ let classify_seg (st : t) ~(flap : int list) ~(axis : Geom.line)
   else
     let a_boundary = endpoint_is_flap_boundary st flap a in
     let b_boundary = endpoint_is_flap_boundary st flap b in
-    match (a_boundary, b_boundary) with
-    | true, true -> CSubdivide (a, b)
-    | false, false -> (
-        (* both mid-face: same face records outright; different faces would
-           need two dangling stubs, which [mark_class] has no constructor for
-           — reject as [CSpansCrease] instead of raising (see
-           classify_mark_extent's doc; a raw exception must never reach a
-           Beloch program, so the eval-level caller turns this into a
-           diagnostic). *)
-        match
-          ( strictly_interior_to_flap_face st flap a,
-            strictly_interior_to_flap_face st flap b )
-        with
-        | Some fa, Some fb when fa = fb -> CRecord (MSeg (a, b))
-        | _ -> CSpansCrease (a, b))
-    | true, false ->
-        (* [a] boundary, [b] mid-face: [b]'s face is the LAST seg (highest lo);
-           the boundary portion [a,x] spans every earlier seg's face, cut at
-           the internal F edge [x] where the extent enters [b]'s face. *)
-        let x, cut_faces =
-          match List.rev segs with
-          | (_, lolast, _) :: rest ->
-              (point_at lolast, List.rev_map (fun (fi, _, _) -> fi) rest)
-          | [] -> assert false
-        in
-        CMixed (a, x, MSeg (x, b), cut_faces)
-    | false, true ->
-        (* [b] boundary, [a] mid-face: [a]'s face is the FIRST seg; the
-           boundary portion [b,x] spans every later seg's face. *)
-        let x, cut_faces =
-          match segs with
-          | (_, _, hifirst) :: rest ->
-              (point_at hifirst, List.map (fun (fi, _, _) -> fi) rest)
-          | [] -> assert false
-        in
-        CMixed (b, x, MSeg (x, a), cut_faces)
+    if a_boundary && b_boundary then CSubdivide (a, b)
+    else
+      (* at least one endpoint strictly mid-face: the whole contiguous extent
+         records as one stub, splitting nothing — even the faces it crosses
+         boundary-to-boundary in the middle. *)
+      CRecord (MSeg (a, b))
 
 (* Does a mark's paper-space [extent_geom] subdivide [flap] (the coplanar
    cluster it lives on), merely record onto it, do both, or illegally cross a
@@ -820,12 +779,10 @@ let classify_seg (st : t) ~(flap : int list) ~(axis : Geom.line)
    internal crossing over a non-F edge, means the extent leaves the flap
    (illegal — [CCrossesFold]); full coverage plus both endpoints on the
    flap's true boundary (a bare paper edge or an M/V crease, never an F edge)
-   subdivides; both endpoints strictly mid-face in the *same* face records;
-   one boundary and one mid-face is the mixed case, split at the last (resp.
-   first) internal F crossing before (resp. after) the mid-face end; both
-   endpoints strictly mid-face but in DIFFERENT faces (the extent dangles
-   across an internal F crease at both ends) has no representation in
-   [mark_class] — [CSpansCrease], for the caller to reject. *)
+   subdivides (a full chord); full coverage with at least one endpoint
+   strictly mid-face records the whole contiguous extent as one stub,
+   splitting nothing — even faces it crosses boundary-to-boundary in the
+   middle. *)
 let classify_mark_extent (st : t) ~(flap : int list) ~(axis : Geom.line)
     ~(extent_geom : mark_geom) : mark_class =
   match extent_geom with
@@ -834,17 +791,10 @@ let classify_mark_extent (st : t) ~(flap : int list) ~(axis : Geom.line)
 
 (* Split every face crossing [axis] into its two halves (both keep their
    isometry; nothing moves). Returns the new state; one F edge is created per
-   face actually cut. [only_faces], when given, restricts the cut to those
-   face indices — any face NOT in the set passes through whole even where the
-   infinite [axis] crosses it. Used by the mark [CMixed] path to cut only the
-   boundary portion's face(s), never the dangling stub's face (which must stay
-   a record, not gain a subdividing edge — "marks are not edges"). *)
-let subdivide ?crease_id ?only_faces ?(intent = V) (st : t) (axis : Geom.line)
+   face actually cut. *)
+let subdivide ?crease_id ?(intent = V) (st : t) (axis : Geom.line)
     ~(prov : State.provenance option) : t =
   let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
-  let cut_ok fi =
-    match only_faces with None -> true | Some s -> List.mem fi s
-  in
   let out = ref [] (* (child_face, parent_index), accumulated via prepend *) in
   (* seeds: (parent_index, a, b, crease_id) — one per face actually cut; the two
      children straddling the axis are the two entries of [parent] equal to
@@ -852,27 +802,24 @@ let subdivide ?crease_id ?only_faces ?(intent = V) (st : t) (axis : Geom.line)
   let edge_seeds = ref [] in
   Array.iteri
     (fun fi f ->
-      if not (cut_ok fi) then out := (f, fi) :: !out
-      else begin
-        let table = Array.map (Isometry.apply_point f.iso) f.paper in
-        let inv = Isometry.inverse f.iso in
-        let part keep =
-          let sub = Geom.clip_convex_halfplane axis keep table in
-          if Array.length sub >= 3 then
-            Some { paper = Array.map (Isometry.apply_point inv) sub; iso = f.iso }
-          else None
-        in
-        let plus = part 1 and minus = part (-1) in
-        (match (plus, minus) with
-        | Some _, Some _ -> (
-            match axis_segment_in_face f axis with
-            | Some (a, b) -> edge_seeds := (fi, a, b, cid) :: !edge_seeds
-            | None -> ())
-        | _ -> ());
-        List.iter
-          (function Some fc -> out := (fc, fi) :: !out | None -> ())
-          [ plus; minus ]
-      end)
+      let table = Array.map (Isometry.apply_point f.iso) f.paper in
+      let inv = Isometry.inverse f.iso in
+      let part keep =
+        let sub = Geom.clip_convex_halfplane axis keep table in
+        if Array.length sub >= 3 then
+          Some { paper = Array.map (Isometry.apply_point inv) sub; iso = f.iso }
+        else None
+      in
+      let plus = part 1 and minus = part (-1) in
+      (match (plus, minus) with
+      | Some _, Some _ -> (
+          match axis_segment_in_face f axis with
+          | Some (a, b) -> edge_seeds := (fi, a, b, cid) :: !edge_seeds
+          | None -> ())
+      | _ -> ());
+      List.iter
+        (function Some fc -> out := (fc, fi) :: !out | None -> ())
+        [ plus; minus ])
     st.faces;
   let arr = Array.of_list (List.rev !out) in
   let faces = Array.map fst arr in
