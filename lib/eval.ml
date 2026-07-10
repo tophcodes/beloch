@@ -1153,7 +1153,11 @@ let eval_folded (prog : Ast.program) : folded =
       [ `Full | `Partial of Fold_state.mark_geom * Geom.point * Geom.line ] =
     let on_axis (po : Ast.point_operand) : Geom.point =
       let p = resolve_point po in
-      if Geom.side_of_line table_axis (table_of po) <> 0 then
+      if
+        Geom.side_of_line table_axis
+          (Fold_state.table_position !(ctx.state) p)
+        <> 0
+      then
         Error.fail span
           (Printf.sprintf "%s is not on the mark's line" (pstr po));
       p
@@ -1266,10 +1270,12 @@ let eval_folded (prog : Ast.program) : folded =
                     mcrease_id = cid;
                   };
               bind_material cid table_axis
-          | Fold_state.CMixed (_, _, g) ->
+          | Fold_state.CMixed (_, _, g, cut_faces) ->
+              (* only the boundary portion's face(s) may subdivide; the
+                 dangling stub [g] stays a pure record (never an edge). *)
               ctx.state :=
                 Fold_state.subdivide !(ctx.state) table_axis ~crease_id:cid
-                  ~prov;
+                  ~prov ~only_faces:cut_faces;
               ctx.state :=
                 Fold_state.add_mark !(ctx.state)
                   {

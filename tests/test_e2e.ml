@@ -585,6 +585,7 @@ let test_e2e_bare_precrease_emits_f () =
 let eval_bel src = Eval.eval_folded (Beloch.parse ~filename:"t.bel" src)
 let edges_of src = Array.length (eval_bel src).Eval.state.Fold_state.edges
 let marks_of src = Array.length (eval_bel src).Eval.state.Fold_state.marks
+let faces_of src = Array.length (eval_bel src).Eval.state.Fold_state.faces
 
 (* an interior POINT mark records and adds no edge; comparing edges_of before
    and after isolates what the point mark itself contributes (the two named
@@ -604,6 +605,39 @@ let test_mark_point_records_no_edge () =
     (edges_of with_point_mark);
   Alcotest.(check int) "no marks recorded yet" 0 (marks_of base);
   Alcotest.(check int) "one mark recorded" 1 (marks_of with_point_mark)
+
+(* CMixed through the EVAL arm: a `between` extent that starts on a boundary
+   and dangles mid-face across an internal F edge subdivides ONLY the boundary
+   portion's face and records the stub -- the stub's face must NOT gain a
+   subdividing edge (the "marks are not edges" invariant; the pre-fix bug cut
+   every face the infinite axis crossed, including the stub's).
+
+   Setup builds an F crease at y=1/2 (--hm) plus material x=1/2, x=3/4, y=3/4
+   lines only to *name* the interior point .end=(3/4,3/4); the mark's own axis
+   is the FRESH .a-.c diagonal (never materialized, so it crosses face
+   interiors transversally). Extent .a(0,0) [bottom boundary] -> .end(3/4,3/4)
+   [interior of the middle x/y in [1/2,3/4] face], crossing the F edge cluster
+   at (1/2,1/2): boundary portion = one face (cut), stub = the .end face
+   (recorded, not cut). Asserted as a delta against the same program without
+   the final mark, so the many setup subdivisions cancel out. *)
+let test_mark_cmixed_cuts_only_boundary_face () =
+  let setup =
+    "paper square\n\
+     mark --hm = map .a onto .d\n\
+     mark --vm = map .a onto .b\n\
+     .bm = --vm * --ab\n\
+     mark --v34 = map .b onto .bm\n\
+     .lm = --hm * --da\n\
+     mark --h34 = map .d onto .lm\n\
+     .end = --v34 * --h34\n"
+  in
+  let full = setup ^ "mark through .a .c between .a .end\n" in
+  Alcotest.(check int) "CMixed cuts exactly the boundary face (one new face)"
+    (faces_of setup + 1) (faces_of full);
+  Alcotest.(check int) "CMixed adds exactly one edge (stub face NOT cut)"
+    (edges_of setup + 1) (edges_of full);
+  Alcotest.(check int) "the dangling stub is recorded as a mark"
+    (marks_of setup + 1) (marks_of full)
 
 (* full mark (no extent clause) keeps subdividing, unchanged from before this
    task; a full mark never records. *)
@@ -720,6 +754,8 @@ let () =
             test_e2e_bare_precrease_emits_f;
           Alcotest.test_case "interior point mark records, no edge" `Quick
             test_mark_point_records_no_edge;
+          Alcotest.test_case "CMixed cuts only the boundary face, records stub"
+            `Quick test_mark_cmixed_cuts_only_boundary_face;
           Alcotest.test_case "full mark still subdivides" `Quick
             test_mark_full_still_subdivides;
           Alcotest.test_case "between extent crossing a fold errors" `Quick
