@@ -61,6 +61,13 @@ type axiom =
 
 type direction = Valley | Mountain
 
+(* mark extent (spec §4). Full = the motion's whole chord (subdivides as before);
+   Between/At are partial — record iff they end mid-face. *)
+type extent =
+  | Full
+  | Between of point_operand * point_operand
+  | At of point_operand
+
 (* A flap-typed operand slot (ADR 0016). A point is sugar for "the flap
    carrying the point"; a line for "the flap hinged on the crease/segment"
    (usually a multi-match for `moving`, resolvable for `up to`); #(...) lists
@@ -91,9 +98,10 @@ type markable =
 type stmt =
   | BindLine of string * axiom * Error.span
       (* --l = map .a onto .b : bind a pure line VALUE; no material effect *)
-  | Mark of string option * markable * Error.span
-      (* mark <motion|--l> [= motion] : flat crease (subdivide, emits F).
-         name_opt Some = `mark --l = <motion>` bind-and-materialise. *)
+  | Mark of string option * markable * extent * direction * flap_operand option * Error.span
+      (* mark <motion|--l> [between .a .b | at .p] [mountain] [#[..]] ;
+         flat crease. name_opt Some = `mark --l = <motion>` bind-and-materialise.
+         Full extent subdivides (emits F); a mid-face extent records (no subdivide). *)
   | Fold of string option * markable * fold_spec * Error.span
       (* fold <motion|--l> [moving][up to][mountain] : fold. On a motion,
          subdivide+fold; on an existing --l, fold along it. *)

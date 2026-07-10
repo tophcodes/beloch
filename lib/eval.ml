@@ -1145,7 +1145,7 @@ let eval_folded (prog : Ast.program) : folded =
           | Ax5 p -> select_axiom5_bind span p
         in
         bind_crease ctx n span (Frozen axis)
-    | Ast.Mark (name_opt, m, span) -> (
+    | Ast.Mark (name_opt, m, _ext, _dir, _lay, span) -> (
         match resolve_markable span name_opt None m with
         | `Fresh (cid, axis, prov, _side_override, _implied) ->
             ctx.state :=

@@ -32,6 +32,8 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "over" -> OVER
   | "standing" -> STANDING
   | "mark" -> MARK
+  | "between" -> BETWEEN
+  | "at" -> AT
   | "as" -> AS
   | '=' -> EQ
   | '!' -> BANG
