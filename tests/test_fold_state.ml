@@ -259,7 +259,7 @@ let mk_state faces edges ranks =
   let rel_of i j =
     if ranks.(i) > ranks.(j) then Fold_state.Above else Fold_state.Below
   in
-  { Fold_state.faces; order = Fold_state.build_order faces rel_of; edges }
+  { Fold_state.faces; order = Fold_state.build_order faces rel_of; edges; marks = [||] }
 
 let expect_violation label needle st =
   match Fold_state.validity_error st with
@@ -511,6 +511,29 @@ let test_select_scope_cohesion_pulls_in_u_sibling () =
         true m.(2);
       Alcotest.(check bool) "bottom face does not move" false m.(0)
 
+(* add a dangling point mark at (1/4,1/4), fold the square in half along
+   x=1/2, and assert the mark survives unchanged (paper coords fold-invariant).
+   Local [pt] here is the rational 4-arg form (a/b, c/d), distinct from the
+   top-level 2-arg int [pt] used elsewhere in this file. *)
+let test_marks_carry_through_fold () =
+  let pt a b c d = { Geom.x = qf a b; y = qf c d } in
+  let p = pt 1 4 1 4 in
+  let m =
+    { Fold_state.mgeom = Fold_state.MPoint p;
+      mline = Geom.line_through p (pt 3 4 1 4);
+      mintent = Fold_state.V; mcrease_id = 999 }
+  in
+  let st = Fold_state.add_mark Fold_state.init_square m in
+  let axis = { Geom.a = Num.one; b = Num.zero; c = qf 1 2 } in  (* x = 1/2, as elsewhere in this file *)
+  let st' = Fold_state.fold_with_records st ~axis ~move_side:1 ~valley:true ~prov:None in
+  Alcotest.(check int) "one mark preserved" 1 (Array.length st'.Fold_state.marks);
+  let m' = st'.Fold_state.marks.(0) in
+  (match m'.Fold_state.mgeom with
+   | Fold_state.MPoint qp -> Alcotest.(check bool) "paper coord unchanged" true (Geom.point_equal p qp)
+   | _ -> Alcotest.fail "geom kind changed");
+  Alcotest.(check bool) "mark_face resolves to a face"
+    true (Fold_state.mark_face st' m' <> None)
+
 let () =
   Alcotest.run "fold_state"
     [
@@ -586,5 +609,10 @@ let () =
           Alcotest.test_case
             "cohesion: F-adjacent sibling moves with its cluster (ADR 0017)"
             `Quick test_select_scope_cohesion_pulls_in_u_sibling;
+        ] );
+      ( "marks",
+        [
+          Alcotest.test_case "marks carry through fold unchanged" `Quick
+            test_marks_carry_through_fold;
         ] );
     ]

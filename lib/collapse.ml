@@ -282,6 +282,7 @@ let collapse (st : Fold_state.t) (es : elem list) ~(over : (int * int) list) :
                       Fold_state.faces = folded;
                       order;
                       edges = st.Fold_state.edges;
+                      marks = st.Fold_state.marks;
                     }
                   in
                   Fold_state.validity_error cand = None)
@@ -410,6 +411,7 @@ let collapse (st : Fold_state.t) (es : elem list) ~(over : (int * int) list) :
                         Fold_state.faces = faces_final;
                         order;
                         edges = edges_final;
+                        marks = st.Fold_state.marks;
                       }
               end
             end
