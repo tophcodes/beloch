@@ -1245,10 +1245,10 @@ let eval_folded (prog : Ast.program) : folded =
           | None -> ()
         in
         (* Behaviour 4: dispatch a partial extent's classification. Only
-           `Ast.Between` can ever yield [CCrossesFold]/[CSpansCrease] (an
-           `At` extent's [MPoint] always records, see
-           Fold_state.classify_mark_extent), so those two branches recover
-           the operand spellings for the message straight from [ext]. *)
+           `Ast.Between` can ever yield [CCrossesFold] (an `At` extent's
+           [MPoint] always records, see Fold_state.classify_mark_extent), so
+           that branch recovers the operand spellings for the message
+           straight from [ext]. *)
         let dispatch_partial ~cid ~table_axis ~prov ~flap ~extent_geom
             ~paper_axis =
           match
@@ -1270,21 +1270,6 @@ let eval_folded (prog : Ast.program) : folded =
                     mcrease_id = cid;
                   };
               bind_material cid table_axis
-          | Fold_state.CMixed (_, _, g, cut_faces) ->
-              (* only the boundary portion's face(s) may subdivide; the
-                 dangling stub [g] stays a pure record (never an edge). *)
-              ctx.state :=
-                Fold_state.subdivide !(ctx.state) table_axis ~crease_id:cid
-                  ~prov ~only_faces:cut_faces ~intent;
-              ctx.state :=
-                Fold_state.add_mark !(ctx.state)
-                  {
-                    Fold_state.mgeom = g;
-                    mline = paper_axis;
-                    mintent = intent;
-                    mcrease_id = cid;
-                  };
-              bind_material cid table_axis
           | Fold_state.CCrossesFold _ ->
               let a, b =
                 match ext with Ast.Between (a, b) -> (a, b) | _ -> assert false
@@ -1293,16 +1278,6 @@ let eval_folded (prog : Ast.program) : folded =
                 (Printf.sprintf
                    "the mark's extent from %s to %s crosses a folded crease \
                     (it leaves its flap)"
-                   (pstr a) (pstr b))
-          | Fold_state.CSpansCrease _ ->
-              let a, b =
-                match ext with Ast.Between (a, b) -> (a, b) | _ -> assert false
-              in
-              Error.fail span
-                (Printf.sprintf
-                   "the mark's extent from %s to %s spans an internal crease \
-                    with both ends mid-face; anchor an endpoint to a \
-                    boundary or use two marks"
                    (pstr a) (pstr b))
         in
         match resolve_markable span name_opt None m with

@@ -637,21 +637,21 @@ let test_mark_point_records_no_edge () =
   Alcotest.(check int) "no marks recorded yet" 0 (marks_of base);
   Alcotest.(check int) "one mark recorded" 1 (marks_of with_point_mark)
 
-(* CMixed through the EVAL arm: a `between` extent that starts on a boundary
-   and dangles mid-face across an internal F edge subdivides ONLY the boundary
-   portion's face and records the stub -- the stub's face must NOT gain a
-   subdividing edge (the "marks are not edges" invariant; the pre-fix bug cut
-   every face the infinite axis crossed, including the stub's).
+(* Under the new mark-classification model (partial marks / pinch, slice 2
+   refinement), a `between` extent with one boundary endpoint and one
+   mid-face endpoint is no longer split into a subdividing boundary portion
+   plus a recorded stub -- ANY mid-face endpoint makes the WHOLE contiguous
+   extent a single non-subdividing record. Nothing gets cut, not even the
+   boundary-to-boundary faces the extent crosses in the middle.
 
    Setup builds an F crease at y=1/2 (--hm) plus material x=1/2, x=3/4, y=3/4
    lines only to *name* the interior point .end=(3/4,3/4); the mark's own axis
    is the FRESH .a-.c diagonal (never materialized, so it crosses face
    interiors transversally). Extent .a(0,0) [bottom boundary] -> .end(3/4,3/4)
-   [interior of the middle x/y in [1/2,3/4] face], crossing the F edge cluster
-   at (1/2,1/2): boundary portion = one face (cut), stub = the .end face
-   (recorded, not cut). Asserted as a delta against the same program without
-   the final mark, so the many setup subdivisions cancel out. *)
-let test_mark_cmixed_cuts_only_boundary_face () =
+   [interior of the middle x/y in [1/2,3/4] face] now records outright.
+   Asserted as a delta against the same program without the final mark, so
+   the many setup subdivisions cancel out. *)
+let test_mark_boundary_to_interior_records () =
   let setup =
     "paper square\n\
      mark --hm = map .a onto .d\n\
@@ -663,11 +663,11 @@ let test_mark_cmixed_cuts_only_boundary_face () =
      .end = --v34 * --h34\n"
   in
   let full = setup ^ "mark through .a .c between .a .end\n" in
-  Alcotest.(check int) "CMixed cuts exactly the boundary face (one new face)"
-    (faces_of setup + 1) (faces_of full);
-  Alcotest.(check int) "CMixed adds exactly one edge (stub face NOT cut)"
-    (edges_of setup + 1) (edges_of full);
-  Alcotest.(check int) "the dangling stub is recorded as a mark"
+  Alcotest.(check int) "recording splits no face" (faces_of setup)
+    (faces_of full);
+  Alcotest.(check int) "recording adds no edge" (edges_of setup)
+    (edges_of full);
+  Alcotest.(check int) "the whole extent is recorded as one mark"
     (marks_of setup + 1) (marks_of full)
 
 let test_mark_mountain_cp_intent () =
@@ -705,19 +705,23 @@ let test_mark_crosses_fold_errors () =
   expect_error "crosses a folded crease" (fun () ->
       Beloch.fold_string ~filename:"t.bel" src)
 
-(* Task 3 review finding, end to end: a `between` extent whose ends are both
-   non-boundary but sit in different faces of the same (never-folded, still
-   all-F) flap must be a clean Beloch error, not a raw OCaml exception (it
-   used to `Invalid_argument` at fold_state.ml, see fold_state's
-   test_classify_spans_crease_both_interior_different_faces for the same
-   shape tested directly against classify_mark_extent). The extent's own axis
-   (the .a-.c diagonal) must be FRESH here -- never previously subdivided
-   boundary-to-boundary -- so it crosses face interiors rather than running
-   along an existing crease; --bd/--vm/--cut1/--q2/--r1/--r2 are all
-   transversal to it, used only to name .p1=(1/4,1/4) and .p2=(3/4,3/4) as
-   the meets that pin the diagonal down without ever marking it themselves. *)
-let test_mark_spans_crease_errors () =
-  let src =
+(* Task 3 review finding, end to end, now updated for the new classification
+   model: a `between` extent whose ends are both non-boundary but sit in
+   different faces of the same (never-folded, still all-F) flap used to
+   `Invalid_argument` at fold_state.ml, then errored as CSpansCrease; under
+   the new model ANY mid-face endpoint just records the whole extent as one
+   mark, so this must now SUCCEED with exactly one record and no edge change
+   (see fold_state's
+   test_classify_spans_crease_both_interior_different_faces_records for the
+   same shape tested directly against classify_mark_extent). The extent's own
+   axis (the .a-.c diagonal) must be FRESH here -- never previously
+   subdivided boundary-to-boundary -- so it crosses face interiors rather
+   than running along an existing crease; --bd/--vm/--cut1/--q2/--r1/--r2 are
+   all transversal to it, used only to name .p1=(1/4,1/4) and .p2=(3/4,3/4)
+   as the meets that pin the diagonal down without ever marking it
+   themselves. *)
+let test_mark_spans_internal_crease_records () =
+  let setup =
     "paper square\n\
      mark --bd = through .b .d\n\
      mark --vm = map .a onto .b\n\
@@ -728,11 +732,13 @@ let test_mark_spans_crease_errors () =
      mark --r1 = map .a onto .ctr\n\
      mark --r2 = map .c onto .ctr\n\
      .p1 = --cut1 * --r1\n\
-     .p2 = --q2 * --r2\n\
-     mark through .a .c between .p1 .p2\n"
+     .p2 = --q2 * --r2\n"
   in
-  expect_error "spans an internal crease" (fun () ->
-      Beloch.fold_string ~filename:"t.bel" src)
+  let full = setup ^ "mark through .a .c between .p1 .p2\n" in
+  Alcotest.(check int) "recording adds no edge" (edges_of setup)
+    (edges_of full);
+  Alcotest.(check int) "the whole extent is recorded as one mark"
+    (marks_of setup + 1) (marks_of full)
 
 (* ---- Task 5: exact-incidence snapping (#50 slice 2) ------------------- *)
 
@@ -825,8 +831,8 @@ let () =
             test_e2e_bare_precrease_emits_f;
           Alcotest.test_case "interior point mark records, no edge" `Quick
             test_mark_point_records_no_edge;
-          Alcotest.test_case "CMixed cuts only the boundary face, records stub"
-            `Quick test_mark_cmixed_cuts_only_boundary_face;
+          Alcotest.test_case "boundary->interior extent records, splits nothing"
+            `Quick test_mark_boundary_to_interior_records;
           Alcotest.test_case "mark mountain: CP frame M, folded frame F"
             `Quick test_mark_mountain_cp_intent;
           Alcotest.test_case "full mark still subdivides" `Quick
@@ -834,8 +840,8 @@ let () =
           Alcotest.test_case "between extent crossing a fold errors" `Quick
             test_mark_crosses_fold_errors;
           Alcotest.test_case
-            "between extent spanning an internal crease errors cleanly"
-            `Quick test_mark_spans_crease_errors;
+            "between extent spanning an internal crease records cleanly"
+            `Quick test_mark_spans_internal_crease_records;
           Alcotest.test_case
             "point mark endpoint incident to existing vertex (exact snap)"
             `Quick test_mark_endpoint_on_vertex_is_incident;
