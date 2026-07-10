@@ -3,22 +3,21 @@
   "file_creator": "beloch 0.3.0-dev",
   "frame_classes": [ "creasePattern" ],
   "vertices_coords": [
-    [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.5, 0.5 ], [ 0.0, 0.0 ], [ 0.0, 1.0 ]
+    [ 0.0, 0.0 ], [ 0.5, 0.5 ], [ 0.0, 1.0 ], [ 1.0, 1.0 ], [ 1.0, 0.0 ]
   ],
   "edges_vertices": [
     [ 0, 1 ],
     [ 1, 2 ],
     [ 2, 0 ],
-    [ 3, 0 ],
-    [ 2, 3 ],
-    [ 1, 4 ],
-    [ 4, 2 ],
+    [ 1, 3 ],
+    [ 3, 2 ],
+    [ 0, 4 ],
+    [ 4, 1 ],
     [ 4, 3 ]
   ],
-  "edges_assignment": [ "B", "V", "V", "B", "V", "B", "V", "B" ],
-  "faces_vertices": [ [ 0, 1, 2 ], [ 3, 0, 2 ], [ 2, 1, 4 ], [ 3, 2, 4 ] ],
+  "edges_assignment": [ "V", "V", "B", "V", "B", "B", "V", "B" ],
+  "faces_vertices": [ [ 0, 1, 2 ], [ 1, 3, 2 ], [ 0, 4, 1 ], [ 4, 3, 1 ] ],
   "beloch:edges": [
-    null,
     {
       "axiom": "axiom1",
       "sources": [ ".p", ".q" ],
@@ -41,6 +40,7 @@
       "name": "d1.d",
       "step": "diagonals"
     },
+    null,
     null,
     {
       "axiom": "axiom1",
@@ -59,8 +59,8 @@
     "a": { "paper": [ 0.0, 0.0 ], "table": [ 0.0, 0.0 ] }
   },
   "beloch:named_lines": {
-    "d2d": [ 1.0, 1.0, 1.0 ],
-    "d1d": [ 1.0, -1.0, 0.0 ]
+    "d2d": [ -1.0, -1.0, -1.0 ],
+    "d1d": [ -1.0, 1.0, 0.0 ]
   },
   "beloch:named_lines_frame": "creasePattern",
   "beloch:marks": [],
@@ -85,29 +85,13 @@
       "frame_parent": 0,
       "frame_inherit": false,
       "vertices_coords": [
-        [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.5, 0.5 ], [ 0.0, 0.0 ], [ 0.0, 1.0 ]
+        [ 0.0, 0.0 ], [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.0, 1.0 ]
       ],
-      "edges_vertices": [
-        [ 0, 1 ],
-        [ 1, 2 ],
-        [ 2, 0 ],
-        [ 3, 0 ],
-        [ 2, 3 ],
-        [ 1, 4 ],
-        [ 4, 2 ],
-        [ 4, 3 ]
-      ],
-      "edges_assignment": [ "B", "F", "F", "B", "F", "B", "F", "B" ],
-      "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
-      "faces_vertices": [
-        [ 0, 1, 2 ], [ 3, 0, 2 ], [ 2, 1, 4 ], [ 3, 2, 4 ]
-      ],
-      "beloch:faces_matrix": [
-        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
-        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
-        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
-        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ]
-      ],
+      "edges_vertices": [ [ 0, 1 ], [ 1, 2 ], [ 2, 3 ], [ 3, 0 ] ],
+      "edges_assignment": [ "B", "B", "B", "B" ],
+      "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0 ],
+      "faces_vertices": [ [ 0, 1, 2, 3 ] ],
+      "beloch:faces_matrix": [ [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ] ],
       "faceOrders": [],
       "beloch:step": "diagonals"
     },
@@ -116,29 +100,13 @@
       "frame_parent": 0,
       "frame_inherit": false,
       "vertices_coords": [
-        [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.5, 0.5 ], [ 0.0, 0.0 ], [ 0.0, 1.0 ]
+        [ 0.0, 0.0 ], [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.0, 1.0 ]
       ],
-      "edges_vertices": [
-        [ 0, 1 ],
-        [ 1, 2 ],
-        [ 2, 0 ],
-        [ 3, 0 ],
-        [ 2, 3 ],
-        [ 1, 4 ],
-        [ 4, 2 ],
-        [ 4, 3 ]
-      ],
-      "edges_assignment": [ "B", "F", "F", "B", "F", "B", "F", "B" ],
-      "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
-      "faces_vertices": [
-        [ 0, 1, 2 ], [ 3, 0, 2 ], [ 2, 1, 4 ], [ 3, 2, 4 ]
-      ],
-      "beloch:faces_matrix": [
-        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
-        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
-        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
-        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ]
-      ],
+      "edges_vertices": [ [ 0, 1 ], [ 1, 2 ], [ 2, 3 ], [ 3, 0 ] ],
+      "edges_assignment": [ "B", "B", "B", "B" ],
+      "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0 ],
+      "faces_vertices": [ [ 0, 1, 2, 3 ] ],
+      "beloch:faces_matrix": [ [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ] ],
       "faceOrders": [],
       "beloch:step": "centre"
     }

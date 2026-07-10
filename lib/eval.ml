@@ -1273,18 +1273,18 @@ let eval_folded (prog : Ast.program) : folded =
           | Some n -> bind_crease ctx n span (Mark (cid, line))
           | None -> ()
         in
-        let record cid mgeom paper_axis =
+        let record ~prov cid mgeom paper_axis =
           ctx.state :=
             Fold_state.add_mark !(ctx.state)
               { Fold_state.mgeom; mline = paper_axis; mintent = intent;
-                mcrease_id = cid };
+                mcrease_id = cid; mprov = prov };
           bind_mark cid paper_axis
         in
         (* A full mark is the whole line clipped to its flap; it records as a
            material chord (never subdivides). Resolve the flap (explicit #(...)
            wins; else the carrying flap of a rep point on the axis), then take
            the extreme endpoints of the per-face paper clips. *)
-        let record_full cid table_axis =
+        let record_full ~prov cid table_axis =
           let st = !(ctx.state) in
           let clips =
             Array.to_list st.Fold_state.faces
@@ -1308,20 +1308,20 @@ let eval_folded (prog : Ast.program) : folded =
           in
           match Geom.extreme_pair pts with
           | Some (a, b) ->
-              record cid (Fold_state.MSeg (a, b)) (Geom.line_through a b)
+              record ~prov cid (Fold_state.MSeg (a, b)) (Geom.line_through a b)
           | None -> Error.fail span "the mark's line does not cross its flap"
         in
         (* Behaviour 4: dispatch a partial extent's classification. Under the
            material-layer model NO mark subdivides — CSubdivide (a full chord
            between two boundary points) records exactly like CRecord. Only
            `Ast.Between` can ever yield [CCrossesFold]. *)
-        let dispatch_partial ~cid ~flap ~extent_geom ~paper_axis =
+        let dispatch_partial ~prov ~cid ~flap ~extent_geom ~paper_axis () =
           match
             Fold_state.classify_mark_extent !(ctx.state) ~flap ~axis:paper_axis
               ~extent_geom
           with
-          | Fold_state.CSubdivide (a, b) -> record cid (Fold_state.MSeg (a, b)) paper_axis
-          | Fold_state.CRecord g -> record cid g paper_axis
+          | Fold_state.CSubdivide (a, b) -> record ~prov cid (Fold_state.MSeg (a, b)) paper_axis
+          | Fold_state.CRecord g -> record ~prov cid g paper_axis
           | Fold_state.CCrossesFold _ ->
               let a, b =
                 match ext with Ast.Between (a, b) -> (a, b) | _ -> assert false
@@ -1333,12 +1333,12 @@ let eval_folded (prog : Ast.program) : folded =
                    (pstr a) (pstr b))
         in
         match resolve_markable span name_opt None m with
-        | `Fresh (cid, table_axis, _prov, _side_override, _implied) -> (
+        | `Fresh (cid, table_axis, prov, _side_override, _implied) -> (
             match resolve_mark_extent table_axis ext span with
-            | `Full -> record_full cid table_axis
+            | `Full -> record_full ~prov cid table_axis
             | `Partial (extent_geom, rep, paper_axis) ->
                 let flap = resolve_mark_flap layer_opt rep span in
-                dispatch_partial ~cid ~flap ~extent_geom ~paper_axis)
+                dispatch_partial ~prov ~cid ~flap ~extent_geom ~paper_axis ())
         | `Existing lo ->
             (* mark an already-bound value line: record a material chord. If it
                names a pure value (Frozen), promote its binding to Mark so a
@@ -1355,10 +1355,10 @@ let eval_folded (prog : Ast.program) : folded =
               | _ -> ()
             in
             (match resolve_mark_extent table_axis ext span with
-            | `Full -> record_full cid table_axis
+            | `Full -> record_full ~prov:None cid table_axis
             | `Partial (extent_geom, rep, paper_axis) ->
                 let flap = resolve_mark_flap layer_opt rep span in
-                dispatch_partial ~cid ~flap ~extent_geom ~paper_axis);
+                dispatch_partial ~prov:None ~cid ~flap ~extent_geom ~paper_axis ());
             promote ())
     | Ast.Fold (name_opt, m, fs, span) -> (
         match resolve_markable span name_opt (Some fs) m with

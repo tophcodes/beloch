@@ -23,6 +23,7 @@ type mark = {
   mline : Geom.line;
   mintent : assign;
   mcrease_id : int;
+  mprov : State.provenance option;
 }
 
 (* A first-class crease edge between two faces. [ea]/[eb] are the segment

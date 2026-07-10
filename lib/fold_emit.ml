@@ -166,24 +166,16 @@ let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
   let grad, kept =
     List.partition graduates (Array.to_list st.Fold_state.marks)
   in
-  let flat =
-    { st with
-      Fold_state.faces =
-        Array.map
-          (fun (f : Fold_state.face) ->
-            { f with Fold_state.iso = Isometry.identity })
-          st.Fold_state.faces }
-  in
   let disp =
     List.fold_left
       (fun s (m : Fold_state.mark) ->
         match m.Fold_state.mgeom with
         | Fold_state.MSeg (a, b) ->
-            Fold_state.subdivide s
+            Fold_state.subdivide_paper s
               (Geom.line_through a b)
-              ~intent:m.Fold_state.mintent ~prov:None
+              ~intent:m.Fold_state.mintent ~prov:m.Fold_state.mprov
         | Fold_state.MPoint _ -> s)
-      flat grad
+      st grad
   in
   (disp, kept)
 

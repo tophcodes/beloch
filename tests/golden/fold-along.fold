@@ -18,10 +18,10 @@
   "beloch:edges": [
     null,
     {
-      "axiom": "axiom2",
-      "sources": [ ".b", ".a" ],
-      "span": "fold-along.bel:4:1",
-      "name": "d",
+      "axiom": "fold",
+      "sources": [ "--d" ],
+      "span": "fold-along.bel:5:1",
+      "name": null,
       "step": null
     },
     null,
