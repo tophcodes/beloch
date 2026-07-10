@@ -1,6 +1,6 @@
 import {
   Assignment, Crease, EdgeProvenance, FoldScene, Frame, LineCoeffs,
-  NamedLine, NamedPoint, SceneError, Step, StepNotFoundError, Vec2,
+  Mark, NamedLine, NamedPoint, SceneError, Step, StepNotFoundError, Vec2,
 } from "./types";
 
 function frameFrom(raw: Record<string, unknown>): Frame {
@@ -34,6 +34,18 @@ function groupCreases(cp: Frame): Crease[] {
   return [...byName.values()];
 }
 
+function marksFrom(fold: Record<string, unknown>): Mark[] {
+  const raw = (fold["beloch:marks"] ?? []) as Record<string, unknown>[];
+  return raw.map((m): Mark => {
+    const line = m["line"] as LineCoeffs;
+    const intent = m["intent"] as Assignment;
+    const creaseId = m["crease_id"] as number;
+    return m["kind"] === "seg"
+      ? { kind: "seg", a: m["a"] as Vec2, b: m["b"] as Vec2, line, intent, creaseId }
+      : { kind: "point", p: m["p"] as Vec2, line, intent, creaseId };
+  });
+}
+
 export function parseFold(input: string | object): FoldScene {
   const fold = (typeof input === "string" ? JSON.parse(input) : input) as
     Record<string, unknown>;
@@ -56,7 +68,7 @@ export function parseFold(input: string | object): FoldScene {
   const namedLines: NamedLine[] = Object.entries(
     (fold["beloch:named_lines"] ?? {}) as Record<string, LineCoeffs>,
   ).map(([name, coeffs]) => ({ name, coeffs }));
-  return { cp, steps, namedPoints, namedLines, creases: groupCreases(cp) };
+  return { cp, steps, namedPoints, namedLines, creases: groupCreases(cp), marks: marksFrom(fold) };
 }
 
 export function pickStep(scene: FoldScene, label?: string): Step | undefined {

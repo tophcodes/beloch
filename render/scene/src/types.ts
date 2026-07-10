@@ -33,12 +33,31 @@ export interface NamedLine  { name: string; coeffs: LineCoeffs; }
 export interface CreaseSegment { edgeIndex: number; a: Vec2; b: Vec2; }
 export interface Crease { name: string; segments: CreaseSegment[]; }
 
+// beloch:marks — non-subdividing record marks (dangling segments + points);
+// see docs/superpowers/specs/2026-07-10-mark-fold-slice2-design.md §5.
+export interface SegMark {
+  kind: "seg";
+  a: Vec2; b: Vec2;
+  line: LineCoeffs;                                          // the mark's axis, for orientation/color context
+  intent: Assignment;                                         // "M" | "V" in practice
+  creaseId: number;
+}
+export interface PointMark {
+  kind: "point";
+  p: Vec2;
+  line: LineCoeffs;                                          // orients the display tick: dir = (line[1], -line[0])
+  intent: Assignment;
+  creaseId: number;
+}
+export type Mark = SegMark | PointMark;
+
 export interface FoldScene {
   cp: Frame;
   steps: Step[];                                             // one per foldedForm frame, file order
   namedPoints: NamedPoint[];
   namedLines: NamedLine[];
   creases: Crease[];                                         // grouped by provenance name on the CP frame
+  marks: Mark[];                                              // beloch:marks, paper-space, CP frame only
 }
 
 export class SceneError extends Error {}

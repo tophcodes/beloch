@@ -77,6 +77,46 @@ export function renderCP(scene: FoldScene, opts: RenderOptions = {}): SvgDoc {
     creases.children.push(el("line", attrs));
   });
 
+  // beloch:marks — non-subdividing record marks (Task 8, mark/fold slice 2):
+  // a "seg" is a thin reference line between two exact endpoints; a "point"
+  // is a short display-only tick centered on the point, oriented along its
+  // line ([a,b,c]; direction (b,-a) normalized). Both are paper-space, CP
+  // frame only, and drawn thin/dashed/translucent so they read as reference
+  // marks, never mistaken for a live F/M/V crease.
+  const MARK_TICK_LEN = 0.03; // sheet-relative; paper is nominally the unit square
+  scene.marks.forEach((m) => {
+    const lineStyle = theme.lineStyle(m.intent, theme);
+    const attrs: Record<string, string | number> = {
+      class: "mark",
+      "data-crease-id": m.creaseId,
+      stroke: lineStyle.stroke,
+      "stroke-width": Math.max(1, lineStyle.strokeWidth - 1),
+      "stroke-dasharray": "2 2",
+      "stroke-linecap": "round",
+      opacity: 0.7,
+    };
+    if (m.kind === "seg") {
+      creases.children.push(el("line", {
+        ...attrs,
+        "data-kind": "mark",
+        x1: tx(m.a[0]), y1: ty(m.a[1]),
+        x2: tx(m.b[0]), y2: ty(m.b[1]),
+      }));
+    } else {
+      const [la, lb] = m.line;
+      const norm = Math.hypot(lb, -la) || 1;
+      const dx = lb / norm, dy = -la / norm;
+      const p0: Vec2 = [m.p[0] - dx * MARK_TICK_LEN, m.p[1] - dy * MARK_TICK_LEN];
+      const p1: Vec2 = [m.p[0] + dx * MARK_TICK_LEN, m.p[1] + dy * MARK_TICK_LEN];
+      creases.children.push(el("line", {
+        ...attrs,
+        "data-kind": "mark-tick",
+        x1: tx(p0[0]), y1: ty(p0[1]),
+        x2: tx(p1[0]), y2: ty(p1[1]),
+      }));
+    }
+  });
+
   // fold2svg.mjs:305-312 — vertex dots + corner labels
   const annotations = doc.layer("annotations");
   V.forEach((p) => {

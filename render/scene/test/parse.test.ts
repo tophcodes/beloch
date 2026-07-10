@@ -98,3 +98,31 @@ test("malformed input throws SceneError naming the field", () => {
   expect(() => parseFold("{}")).toThrow(SceneError);
   expect(() => parseFold("{}")).toThrow(/vertices_coords/);
 });
+
+// Task 8 (mark/fold slice 2): beloch:marks — non-subdividing record marks.
+// Fixture generated via `dune exec bin/main.exe -- fold` on a program that
+// records exactly one seg mark (a between-clip stub dangling mid-face) and
+// one point mark (an `at .p` reference on --vm); see
+// render/render-svg/test/marks.test.ts for the full .bel source.
+const fixture = (p: string) =>
+  Bun.file(new URL(`../../render-svg/test/fixtures/${p}`, import.meta.url)).text();
+
+test("parses beloch:marks: seg + point records", async () => {
+  const scene = parseFold(await fixture("marks-demo.fold"));
+  expect(scene.marks.length).toBe(2);
+  const seg = scene.marks.find((m) => m.kind === "seg");
+  const point = scene.marks.find((m) => m.kind === "point");
+  expect(seg).toEqual({
+    kind: "seg", a: [0.5, 0.5], b: [0.75, 0.75],
+    line: [0.75, -0.75, 0.0], intent: "V", creaseId: 4,
+  });
+  expect(point).toEqual({
+    kind: "point", p: [0.5, 0.5],
+    line: [0.25, 0.0, 0.125], intent: "V", creaseId: 5,
+  });
+});
+
+test("no beloch:marks field parses to an empty marks array", async () => {
+  const scene = parseFold(await golden("syntax/bisect-a.fold"));
+  expect(scene.marks).toEqual([]);
+});
