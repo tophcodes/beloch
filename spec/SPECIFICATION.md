@@ -15,7 +15,18 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.21-dev** (**mark/fold notation** — `map`/`through`/`perp`
+Current version: **v0.22-dev** (**partial marks — the pinch** — `mark
+<motion> between .a .b` / `at .p` clip a mark's extent; an extent that ends
+mid-face is a non-subdividing *record* — splits no rays, can dangle mid-face —
+instead of subdividing everything it crosses, discriminated by
+boundary-incidence rather than which form was written; `mark … valley|mountain`
+sets a crease-pattern-frame M/V *intent* on records the same way it does on
+subdividing marks; `#[...]` picks the flap a record lands on; `mark --l =
+<motion> [extent] [dir] [#[...]]` combines bind-and-write; records emit into a
+`beloch:marks` FOLD custom field and `render-svg` draws them as a dashed
+reference line or short tick, distinct from live `F`/`M`/`V` edges; see
+[`docs/superpowers/specs/2026-07-10-mark-fold-slice2-design.md`](../docs/superpowers/specs/2026-07-10-mark-fold-slice2-design.md));
+**v0.21-dev** (**mark/fold notation** — `map`/`through`/`perp`
 motions are pure reads: bindable line values, touching nothing; the writes are
 the keyword verbs **`mark`** (crease and leave flat, FOLD `F`) and **`fold`**
 (crease and fold, FOLD `M`/`V`), alongside `collapse` and `flip`; `@` is
@@ -163,7 +174,10 @@ scores nothing. `*` is the binary sugar; the n-ary form is the bracket `.[l+]`,
 the point incident to *all* the listed lines (concurrent lines → their common
 point), so `--x * --y` ≡ `.[--x --y]`. This is a point *construction*, not a
 fold axiom, in the classic numbering; it is Hull's basic operation O2
-[[hull2020]](#ref-hull2020) §1.5 (O2).
+[[hull2020]](#ref-hull2020) §1.5 (O2). A pure value binding (`--l = <motion>`,
+§4.10) has no mark to cross — meet needs **material** operands, so a line used
+only to locate a crossing still has to be `mark`ed (a non-subdividing
+`between`/`at` record, §4.6, is enough; it need not subdivide anything).
 
 *(since v0.19-dev)* The crossing is computed in **paper space**: a crease is a
 scar in the material, and two scars cross (or don't) independently of how the
@@ -434,7 +448,7 @@ direction reading for axioms 6/7 remains a separate, unstarted pass.
 so its real roots are irrational — they live in `ℚ(α)` for an algebraic `α` of
 degree 3. All coordinates of one axiom-7 crease lie in that same `ℚ(α)`. See §6.
 
-### 4.6 Marking and folding: `mark` / `fold` *(since v0.7-dev; `mark`/`fold` verbs since v0.21-dev)*
+### 4.6 Marking and folding: `mark` / `fold` *(since v0.7-dev; `mark`/`fold` verbs since v0.21-dev; partial marks since v0.22-dev)*
 
 A motion (`map`/`through`/`perp`, §4.1–§4.5c) is a pure read: it computes a
 line and touches nothing. `--l = map .a onto .b` binds a value; on its own it
@@ -456,6 +470,85 @@ fold perp --l through .p moving .q    ; line-construction folds need `moving`
 ```
 
 `@` is retired: there is no fold marker distinct from the verb itself.
+
+**`mark`'s extent — full, `between`, `at`** *(since v0.22-dev)*. A `mark`
+statement optionally clips the motion's line before creasing:
+
+```
+mark <motion>                    ; full chord (default)
+mark <motion> between .a .b      ; clip to the segment [.a, .b]
+mark <motion> at .p              ; a single reference point on the line
+```
+
+`between`/`at` points must already lie **on the mark's line** — off-line is an
+error (`.p is not on the mark's line`). The discriminator for what happens next
+is **boundary-incidence, not which form was written**: an extent that runs
+**boundary-to-boundary** across the flap it lands on — the default full chord,
+or a `between` whose two points both sit on that flap's boundary — **subdivides**
+exactly like before, emitting a standard `F` edge. An extent that **ends
+mid-face** — an `at .p` with `.p` interior to a face, or a `between` with one or
+both ends interior — does **not** subdivide: the boundary-reaching part (if any)
+still creases and splits its faces, but the dangling stub from the last boundary
+crossing to the interior endpoint becomes a **non-subdividing record** — a
+pinch or reference crease that **splits no rays** and can dangle mid-face
+without touching the flap graph at all. A record mark still rides folds with
+its flap like any other material; it just never counts as a flap boundary.
+
+An extent that would have to **cross an already-folded (`M`/`V`) crease** to
+reach its endpoint is an error — it would leave its flap: "the mark's extent
+from `.a` to `.b` crosses a folded crease (it leaves its flap)". A `between`
+whose **both** endpoints dangle mid-face in *different* faces of the same flap —
+spanning an internal (`F`) crease with neither end anchored to a boundary — is
+also an error this slice: "the mark's extent from `.a` to `.b` spans an internal
+crease with both ends mid-face; anchor an endpoint to a boundary or use two
+marks." Anchor one end to a boundary, or split it into two marks, instead.
+
+**Direction on a record mark.** `mark … valley|mountain` (default valley) still
+applies to a record mark exactly as to a subdividing one: the mark is always
+`F` in the folded-form frame (nothing has moved), and its M/V **intent** colours
+the crease-pattern frame only — the same creasePattern/foldedForm split used
+for subdividing marks (§7).
+
+**Layer selection — `#[...]`.** `mark <motion> [extent] #[...]` chooses which
+flap the mark is written onto, same resolution as `&`'s `#[...]` (§4.8):
+the unique flap containing every listed point. Omitted, it defaults to the
+**carrying flap** — the flap holding the extent's own geometry (the material
+the points/line were built from); if that geometry sits on a boundary shared by
+several stacked flaps, it is ambiguous and errors, naming the flap count and
+pointing at `#[...]`.
+
+**Combined bind-and-write.** `mark --l = <motion> [extent] [dir] [#[...]]`
+binds the crease name and marks in one statement — equivalent to the
+two-statement `--l = <motion>` *(pure value, §4.10)* followed by `mark --l
+[extent] [dir] [#[...]]`.
+
+```
+mark --p = map .a onto .c between .a .m         ; segment record, anchored at .a
+mark --p = map .a onto .c at .m mountain        ; single reference point
+mark --q between .a .b #[.c]                    ; named crease, explicit flap
+```
+
+**FOLD emission.** A subdividing mark (full chord, or a boundary-to-boundary
+`between`) emits exactly as any other `mark` — a standard `F` edge in
+`edges_assignment` (§7). A record mark instead emits into the custom
+`beloch:marks` field (§7) — never a fake display-length edge in the standard
+arrays — and `render-svg`'s crease-pattern view draws it distinctly from live
+creases (a dashed reference line or a short tick), so it is never mistaken for
+an `F`/`M`/`V` edge.
+
+**Known limits.** Exact-incidence only: a mark endpoint snaps onto an existing
+vertex on exact rational equality, never by tolerance — no fuzzy/"close
+enough" snapping this slice. The "spans an internal crease, both ends
+mid-face" case above is a real gap, not a design choice: anchoring one end to a
+boundary (or writing two marks) always works around it. And a partial mark
+does **not** let a scaffold skip creasing entirely — the meet operator (`*` /
+`.[…]`, §4.3) requires a **material** (marked) operand on each side; a pure
+value-bound line (`--l = <motion>`, no `mark`) has no mark to cross (`--l is
+not a physical crease, so it has no material mark to cross`, §4.3). So a line
+used only to *locate* a meet point still must be `mark`ed — `between`/`at`
+only controls whether that mark subdivides its flap, not whether it exists.
+Lines that only feed a `fold … onto --l` (never a `*`) can stay pure values,
+since folding a line onto another needs no material crossing.
 
 *(since v0.18-dev)* Every `fold` has four ingredients:
 
@@ -1130,6 +1223,16 @@ internal edge is a crease.
   crease was produced, or `null` if it precedes the first `step` in the
   program. Additive: stock FOLD consumers ignore both fields; `render/render-svg`
   uses `"name"` to colour/label creases.
+- `beloch:marks` — custom property *(since v0.22-dev)* carrying the
+  **non-subdividing record marks** (§4.6) that a `between`/`at` extent ending
+  mid-face produces — reference/pinch creases that are not part of
+  `edges_vertices`/`edges_assignment` at all. A list of `{"kind": "seg", "a",
+  "b", "line", "intent", "crease_id"}` (a dangling segment, exact paper
+  coordinates) or `{"kind": "point", "p", "line", "intent", "crease_id"}` (a
+  single reference point); `"line"` is the mark's supporting line, for
+  orientation only. Additive: stock FOLD consumers ignore it; `render/render-svg`
+  draws `seg` entries as a thin dashed reference line and `point` entries as a
+  short tick along `"line"`, both visually distinct from live `F`/`M`/`V` edges.
 
 **`file_frames` — one `foldedForm` frame per `step` panel snapshot**
 *(since v0.16-dev)*: a baseline frame (`"beloch:step": null`) for the state
@@ -1188,6 +1291,10 @@ and the process exits non-zero:
   `moving`, or a `moving` point lying on the fold axis (no side); an axiom-5
   fold (`fold map --l1 onto --l2`) whose `up to` range has no explicit `moving`
   to anchor it (`moving` is otherwise derived, §4.5);
+- a `mark`'s `between`/`at` extent point not lying on the mark's line; an
+  extent that would cross an already-folded (`M`/`V`) crease to reach its
+  endpoint; a `between` extent dangling mid-face at **both** ends in different
+  faces of the same flap (§4.6);
 - reference to an undefined point or crease name.
 
 ---
