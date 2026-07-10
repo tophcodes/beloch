@@ -260,6 +260,41 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
            ))
          fd.Eval.named_lines)
   in
+  (* record marks (non-subdividing; see Fold_state.mark) — a mark's intent is
+     only ever M or V (never F: F is a folded-form dihedral, not a
+     crease-pattern colour), but match totally rather than special-casing. *)
+  let mark_assign_str = function
+    | Fold_state.M -> "M"
+    | Fold_state.V -> "V"
+    | Fold_state.F -> "F"
+  in
+  let beloch_marks =
+    Array.to_list fd.Eval.state.Fold_state.marks
+    |> List.map (fun (m : Fold_state.mark) ->
+        let line =
+          let l = m.Fold_state.mline in
+          `List [ q_to_json l.Geom.a; q_to_json l.Geom.b; q_to_json l.Geom.c ]
+        in
+        let common =
+          [
+            ("line", line);
+            ("intent", `String (mark_assign_str m.Fold_state.mintent));
+            ("crease_id", `Int m.Fold_state.mcrease_id);
+          ]
+        in
+        match m.Fold_state.mgeom with
+        | Fold_state.MSeg (a, b) ->
+            `Assoc
+              (("kind", `String "seg")
+              :: ("a", `List [ q_to_json a.Geom.x; q_to_json a.Geom.y ])
+              :: ("b", `List [ q_to_json b.Geom.x; q_to_json b.Geom.y ])
+              :: common)
+        | Fold_state.MPoint p ->
+            `Assoc
+              (("kind", `String "point")
+              :: ("p", `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ])
+              :: common))
+  in
   `Assoc
     [
       ("file_spec", `Float 1.1);
@@ -273,6 +308,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
       ("beloch:named_points", beloch_named_points);
       ("beloch:named_lines", beloch_named_lines);
       ("beloch:named_lines_frame", `String "creasePattern");
+      ("beloch:marks", `List beloch_marks);
       ( "file_frames",
         `List
           (List.map

@@ -63,6 +63,7 @@
     "d1d": [ 1.0, -1.0, 0.0 ]
   },
   "beloch:named_lines_frame": "creasePattern",
+  "beloch:marks": [],
   "file_frames": [
     {
       "frame_classes": [ "foldedForm" ],
