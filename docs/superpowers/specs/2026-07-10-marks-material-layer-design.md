@@ -1,10 +1,27 @@
 # Marks as a material non-subdividing layer — design (#26)
 
-**Status:** Design, approved in brainstorming 2026-07-10. Resolves
+**Status:** SHIPPED on `slice/marks-material-layer` (2026-07-11). Resolves
 [#26](https://github.com/tophcodes/beloch/issues/26) ("Marks cannot locate
 interior points"). Supersedes the Slice 2 rule that *full* marks subdivide.
-Next step: implementation plan (`writing-plans`). Branch:
-`slice/marks-material-layer` off `main`.
+
+**Discovered during implementation (beyond the original design):**
+
+- `@collapse`, `fold`, and `at`/`&` all consume marks *as creases*, so a mark
+  materializes into a real crease when a **folding-side** operation selects a
+  segment/ray of it (`material_cid`); pure-reference marks that are never
+  segment-selected stay records (the #26 win). `@collapse` materializes all its
+  creases up front so the shared vertex forms before ray selection.
+- Materialization and the CP/folded emit both graduate marks in **paper space**
+  (`subdivide_paper`, fold-invariant), so a mark bent by a later fold cuts each
+  flap correctly.
+- Marks carry provenance (`mprov`); graduated edges keep their step/name tags.
+- Both the crease-pattern frame *and* each folded frame graduate marks (emit
+  only — fold-time never sees them).
+
+**Deferred to [#27](https://github.com/tophcodes/beloch/issues/27):** a full mark
+on an already-folded (multilayer) sheet records only its carrying flap, not the
+full material extent across stacked layers. Five multilayer/bent-crease tests
+are parked pending #27.
 
 Context: parent design
 `docs/superpowers/specs/2026-07-09-mark-fold-crease-notation-design.md`, Slice 2
