@@ -313,11 +313,21 @@ let eval_folded (prog : Ast.program) : folded =
   and material_cid (cr : Ast.crease_ref) : int =
     match lookup_crease ctx cr with
     | Material (cid, _) -> cid
-    | Mark _ ->
-        Error.fail cr.Ast.cspan
-          (Printf.sprintf
-             "--%s is a mark, not a subdividing crease, so it has no segments \
-              to select" cr.Ast.cname)
+    | Mark (_, line) ->
+        (* selecting a segment/ray of a mark is a folding-side operation
+           (collapse `& .x`, fold-along, `at`): materialize the mark into a
+           real crease now (subdivide along its line), then treat it as
+           Material. Pure-reference marks — never segment-selected — never
+           reach here, so they stay non-subdividing records (#26). *)
+        let cid = Fold_state.fresh_crease_id () in
+        let prov : State.provenance option =
+          Some { State.axiom = "mark"; sources = [ "--" ^ cr.Ast.cname ];
+                 span = cr.Ast.cspan; name = None; step = ctx.panel }
+        in
+        ctx.state :=
+          Fold_state.subdivide !(ctx.state) line ~crease_id:cid ~prov;
+        promote_crease ctx cr.Ast.cname (Material (cid, line));
+        cid
     | Bundle _ ->
         Error.fail cr.Ast.cspan
           (Printf.sprintf
@@ -1566,6 +1576,19 @@ let eval_folded (prog : Ast.program) : folded =
         (match standing_opt with
         | Some _ -> Error.fail span "standing folds are not yet supported"
         | None -> ());
+        (* materialize every collapse crease FIRST (a mark subdivides on
+           segment-selection), so all of them cross and the shared collapse
+           vertex is fully formed before any ray is selected. Selecting rays
+           one-by-one would subdivide the first crease before the others exist,
+           leaving it unsplit at the vertex (`no common interior vertex`). *)
+        let rec force_material (lo : Ast.line_operand) =
+          match lo with
+          | Ast.LNamed cr -> ignore (material_cid cr)
+          | Ast.LFilter (b, _, _) -> force_material b
+          | Ast.LUnion (los, _) -> List.iter force_material los
+          | Ast.LSelect _ -> ()
+        in
+        List.iter (fun (el : Ast.collapse_elem) -> force_material el.Ast.cline) elems;
         (* each element must resolve to exactly ONE material segment — same
            machinery as fold's material resolution *)
         let resolve_elem (el : Ast.collapse_elem) : Collapse.elem =
