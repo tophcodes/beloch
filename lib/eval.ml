@@ -99,6 +99,9 @@ let lookup_instance (ctx : ctx) (name : string) (span : Error.span) : instance =
 
 let is_temp (n : string) = String.length n > 0 && n.[0] = '_'
 
+let intent_of (dir : Ast.direction) : Fold_state.assign =
+  match dir with Ast.Valley -> Fold_state.V | Ast.Mountain -> Fold_state.M
+
 let bind_point (ctx : ctx) (name : string) (span : Error.span) (p : Geom.point)
     =
   let s = List.hd ctx.scopes in
@@ -1133,6 +1136,91 @@ let eval_folded (prog : Ast.program) : folded =
         `Fresh (cid, axis, prov, side_override, implied)
     | Ast.MLine lo -> `Existing lo
   in
+  (* A mark's extent (spec §4), resolved to PAPER-space geometry and checked
+     against the motion's axis. [table_axis] is TABLE-space (as `resolve_line`
+     / `resolve_markable` produce — the current physical layout the fold acts
+     on), but `resolve_point` always yields the fold-invariant PAPER
+     coordinate, so the on-axis check goes through `table_of` to compare like
+     spaces. `Full` needs nothing further (today's subdivide-the-whole-axis
+     behaviour, unchanged). A partial extent also returns its PAPER-space
+     representative point (mark_rep_point's convention: the first point of a
+     segment, or the point itself) and the PAPER-space line it lies on:
+     Fold_state.classify_mark_extent and the resulting mark's [mline] both
+     need paper space, which need not equal [table_axis] once the carrying
+     flap has moved (see Fold_state.classify_mark_extent's doc). *)
+  let resolve_mark_extent (table_axis : Geom.line) (ext : Ast.extent)
+      (span : Error.span) :
+      [ `Full | `Partial of Fold_state.mark_geom * Geom.point * Geom.line ] =
+    let on_axis (po : Ast.point_operand) : Geom.point =
+      let p = resolve_point po in
+      if Geom.side_of_line table_axis (table_of po) <> 0 then
+        Error.fail span
+          (Printf.sprintf "%s is not on the mark's line" (pstr po));
+      p
+    in
+    match ext with
+    | Ast.Full -> `Full
+    | Ast.Between (a, b) ->
+        let pa = on_axis a and pb = on_axis b in
+        if Geom.point_equal pa pb then
+          Error.fail span "the mark's extent needs two distinct points";
+        `Partial (Fold_state.MSeg (pa, pb), pa, Geom.line_through pa pb)
+    | Ast.At p ->
+        let pp = on_axis p in
+        (* a lone point gives no second point to build its own paper-space
+           line from; project [table_axis] into paper space via whichever of
+           the point's own faces it actually crosses the interior of (within
+           one flap every face shares one isometry, so any works). Falls back
+           to the table-space axis itself if none do (an axis tangent to the
+           paper only at [pp] — believed unreachable via the grammar); [mline]
+           is display-only this slice (Task 6 owns CP-frame emission), so an
+           imprecise fallback here is not load-bearing yet. *)
+        let st = !(ctx.state) in
+        let rec paper_axis_via = function
+          | [] -> table_axis
+          | fi :: rest -> (
+              match
+                Fold_state.axis_segment_in_face st.Fold_state.faces.(fi)
+                  table_axis
+              with
+              | Some (p, q) when not (Geom.point_equal p q) ->
+                  Geom.line_through p q
+              | _ -> paper_axis_via rest)
+        in
+        `Partial (Fold_state.MPoint pp, pp, paper_axis_via (faces_containing pp))
+  in
+  (* Behaviour 3: the flap (coplanar cluster, as its face list) a partial
+     mark's extent is written onto. An explicit #(...) layer wins (mirrors
+     resolve_flap_cluster's FlapSpec branch); otherwise default to the
+     carrying flap — the cluster containing the extent's representative
+     paper point, erroring if that point sits on a boundary shared by several
+     flaps (ambiguous without a #(...) to disambiguate). *)
+  let resolve_mark_flap (layer_opt : Ast.flap_operand option)
+      (rep : Geom.point) (span : Error.span) : int list =
+    match layer_opt with
+    | Some (Ast.FByPoints (pts, fspan)) -> (
+        match
+          Fold_state.flap_of_points !(ctx.state) (List.map resolve_point pts)
+        with
+        | `Cluster fs -> fs
+        | `Zero -> Error.fail fspan "those points aren't all on one flap"
+        | `Ambiguous -> Error.fail fspan "ambiguous flap; add another point")
+    | None -> (
+        match faces_containing rep with
+        | [] -> Error.fail span "the mark's extent is not on the paper"
+        | faces -> (
+            let st = !(ctx.state) in
+            let cl = Fold_state.coplanar_clusters st in
+            let n = Array.length st.Fold_state.faces in
+            match List.sort_uniq compare (List.map (fun f -> cl.(f)) faces) with
+            | [ id ] -> List.filter (fun f -> cl.(f) = id) (List.init n Fun.id)
+            | ids ->
+                Error.fail span
+                  (Printf.sprintf
+                     "the mark's endpoint lies on a crease shared by %d \
+                      flaps; name the flap with #(...)"
+                     (List.length ids))))
+  in
   let rec eval_stmt (stmt : Ast.stmt) =
     match stmt with
     | Ast.BindBundle (name, expr, span) ->
@@ -1145,33 +1233,115 @@ let eval_folded (prog : Ast.program) : folded =
           | Ax5 p -> select_axiom5_bind span p
         in
         bind_crease ctx n span (Frozen axis)
-    | Ast.Mark (name_opt, m, _ext, _dir, _lay, span) -> (
+    | Ast.Mark (name_opt, m, ext, dir, layer_opt, span) -> (
+        let intent = intent_of dir in
+        let bind_material cid axis =
+          match name_opt with
+          | Some n -> bind_crease ctx n span (Material (cid, axis))
+          | None -> ()
+        in
+        (* Behaviour 4: dispatch a partial extent's classification. Only
+           `Ast.Between` can ever yield [CCrossesFold]/[CSpansCrease] (an
+           `At` extent's [MPoint] always records, see
+           Fold_state.classify_mark_extent), so those two branches recover
+           the operand spellings for the message straight from [ext]. *)
+        let dispatch_partial ~cid ~table_axis ~prov ~flap ~extent_geom
+            ~paper_axis =
+          match
+            Fold_state.classify_mark_extent !(ctx.state) ~flap ~axis:paper_axis
+              ~extent_geom
+          with
+          | Fold_state.CSubdivide _ ->
+              ctx.state :=
+                Fold_state.subdivide !(ctx.state) table_axis ~crease_id:cid
+                  ~prov;
+              bind_material cid table_axis
+          | Fold_state.CRecord g ->
+              ctx.state :=
+                Fold_state.add_mark !(ctx.state)
+                  {
+                    Fold_state.mgeom = g;
+                    mline = paper_axis;
+                    mintent = intent;
+                    mcrease_id = cid;
+                  };
+              bind_material cid table_axis
+          | Fold_state.CMixed (_, _, g) ->
+              ctx.state :=
+                Fold_state.subdivide !(ctx.state) table_axis ~crease_id:cid
+                  ~prov;
+              ctx.state :=
+                Fold_state.add_mark !(ctx.state)
+                  {
+                    Fold_state.mgeom = g;
+                    mline = paper_axis;
+                    mintent = intent;
+                    mcrease_id = cid;
+                  };
+              bind_material cid table_axis
+          | Fold_state.CCrossesFold _ ->
+              let a, b =
+                match ext with Ast.Between (a, b) -> (a, b) | _ -> assert false
+              in
+              Error.fail span
+                (Printf.sprintf
+                   "the mark's extent from %s to %s crosses a folded crease \
+                    (it leaves its flap)"
+                   (pstr a) (pstr b))
+          | Fold_state.CSpansCrease _ ->
+              let a, b =
+                match ext with Ast.Between (a, b) -> (a, b) | _ -> assert false
+              in
+              Error.fail span
+                (Printf.sprintf
+                   "the mark's extent from %s to %s spans an internal crease \
+                    with both ends mid-face; anchor an endpoint to a \
+                    boundary or use two marks"
+                   (pstr a) (pstr b))
+        in
         match resolve_markable span name_opt None m with
-        | `Fresh (cid, axis, prov, _side_override, _implied) ->
-            ctx.state :=
-              Fold_state.subdivide !(ctx.state) axis ~crease_id:cid ~prov;
-            (match name_opt with
-            | Some n -> bind_crease ctx n span (Material (cid, axis))
-            | None -> ())
+        | `Fresh (cid, table_axis, prov, _side_override, _implied) -> (
+            match resolve_mark_extent table_axis ext span with
+            | `Full ->
+                ctx.state :=
+                  Fold_state.subdivide !(ctx.state) table_axis ~crease_id:cid
+                    ~prov;
+                bind_material cid table_axis
+            | `Partial (extent_geom, rep, paper_axis) ->
+                let flap = resolve_mark_flap layer_opt rep span in
+                dispatch_partial ~cid ~table_axis ~prov ~flap ~extent_geom
+                  ~paper_axis)
         | `Existing lo ->
-            (* mark an already-bound value line: subdivide along it. If it
-               names a crease directly, promote that binding from a pure
-               value to material so a later `fold --d` can find it. *)
-            let axis = resolve_line lo in
+            (* mark an already-bound value line: subdivide along it (Full) or
+               classify+dispatch (partial). If it names a crease directly,
+               promote that binding from a pure value to material so a later
+               `fold --d` can find it. *)
+            let table_axis = resolve_line lo in
             let cid = Fold_state.fresh_crease_id () in
-            ctx.state :=
-              Fold_state.subdivide !(ctx.state) axis ~crease_id:cid ~prov:None;
-            (match lo with
-            | Ast.LNamed cr -> (
-                (* only promote a pure Frozen value (from `--d = <motion>`);
-                   prelude edges, bundles, and already-material creases keep
-                   their existing binding (#see finding: unguarded promotion
-                   leaked prelude edges into beloch:named_lines) *)
-                match lookup_crease ctx cr with
-                | Frozen _ ->
-                    promote_crease ctx cr.Ast.cname (Material (cid, axis))
-                | Material _ | Bundle _ | Edge _ -> ())
-            | _ -> ()))
+            let promote () =
+              match lo with
+              | Ast.LNamed cr -> (
+                  (* only promote a pure Frozen value (from `--d = <motion>`);
+                     prelude edges, bundles, and already-material creases keep
+                     their existing binding (#see finding: unguarded promotion
+                     leaked prelude edges into beloch:named_lines) *)
+                  match lookup_crease ctx cr with
+                  | Frozen _ ->
+                      promote_crease ctx cr.Ast.cname
+                        (Material (cid, table_axis))
+                  | Material _ | Bundle _ | Edge _ -> ())
+              | _ -> ()
+            in
+            (match resolve_mark_extent table_axis ext span with
+            | `Full ->
+                ctx.state :=
+                  Fold_state.subdivide !(ctx.state) table_axis ~crease_id:cid
+                    ~prov:None
+            | `Partial (extent_geom, rep, paper_axis) ->
+                let flap = resolve_mark_flap layer_opt rep span in
+                dispatch_partial ~cid ~table_axis ~prov:None ~flap
+                  ~extent_geom ~paper_axis);
+            promote ())
     | Ast.Fold (name_opt, m, fs, span) -> (
         match resolve_markable span name_opt (Some fs) m with
         | `Fresh (cid, axis, prov, side_override, implied) ->
