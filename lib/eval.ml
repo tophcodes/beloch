@@ -21,6 +21,10 @@ type folded = {
 
 type crease_val =
   | Material of int * Geom.line
+  | Mark of int * Geom.line
+      (* a materialized construction line backed by the mark layer: meetable
+         by `*` (its chords live in Fold_state.marks), never subdividing the
+         working arrangement. [int] is the mark's mcrease_id. *)
   | Frozen of Geom.line
   | Bundle of Ast.line_operand
       (* a named crease bundle (--x = --l & .c | [--a --b]); resolves lazily as
@@ -197,6 +201,7 @@ let eval_folded (prog : Ast.program) : folded =
         and pb = Fold_state.table_position !(ctx.state) (corner_point b) in
         Geom.line_through pa pb
     | Frozen l -> l
+    | Mark (_cid, line) -> line
     | Material (cid, l_orig) -> (
         match Fold_state.crease_axis !(ctx.state) cid l_orig with
         | `Line l -> l
@@ -226,6 +231,7 @@ let eval_folded (prog : Ast.program) : folded =
           (Printf.sprintf
              "--%s is not a physical crease, so it has no material mark to \
               cross" name)
+    | Mark (cid, line) -> (line, Some (Fold_state.mark_chords !(ctx.state) cid))
     | Edge (a, b) ->
         (Geom.line_through (corner_point a) (corner_point b), None)
     | Material (cid, l_orig) -> (
@@ -307,6 +313,11 @@ let eval_folded (prog : Ast.program) : folded =
   and material_cid (cr : Ast.crease_ref) : int =
     match lookup_crease ctx cr with
     | Material (cid, _) -> cid
+    | Mark _ ->
+        Error.fail cr.Ast.cspan
+          (Printf.sprintf
+             "--%s is a mark, not a subdividing crease, so it has no segments \
+              to select" cr.Ast.cname)
     | Bundle _ ->
         Error.fail cr.Ast.cspan
           (Printf.sprintf
@@ -928,7 +939,7 @@ let eval_folded (prog : Ast.program) : folded =
                 (s.Fold_state.ta, s.Fold_state.tb))
               (snd (bundle_segments (Ast.LNamed cr)))
         | Edge _ -> Fold_state.line_material_segments !(ctx.state) p.la
-        | Frozen _ -> Fold_state.line_material_segments !(ctx.state) p.la)
+        | Mark _ | Frozen _ -> Fold_state.line_material_segments !(ctx.state) p.la)
     | Ast.LSelect _ -> Fold_state.line_material_segments !(ctx.state) p.la
     | (Ast.LFilter _ | Ast.LUnion _) as b ->
         List.map
@@ -1308,9 +1319,8 @@ let eval_folded (prog : Ast.program) : folded =
                      leaked prelude edges into beloch:named_lines) *)
                   match lookup_crease ctx cr with
                   | Frozen _ ->
-                      promote_crease ctx cr.Ast.cname
-                        (Material (cid, table_axis))
-                  | Material _ | Bundle _ | Edge _ -> ())
+                      promote_crease ctx cr.Ast.cname (Mark (cid, table_axis))
+                  | Mark _ | Material _ | Bundle _ | Edge _ -> ())
               | _ -> ()
             in
             (match resolve_mark_extent table_axis ext span with
@@ -1633,6 +1643,7 @@ let eval_folded (prog : Ast.program) : folded =
         else
           match cv with
           | Frozen l -> (k, l) :: acc
+          | Mark (_, l) -> (k, l) :: acc
           | Material (_, l_orig) -> (k, l_orig) :: acc
           (* a bundle is not a single line; it is not emitted in the
              one-line-per-name overlay map. the prelude paper edges are

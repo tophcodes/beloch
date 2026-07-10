@@ -591,6 +591,16 @@ let mark_rep_point (m : mark) : Geom.point =
 let add_mark (st : t) (m : mark) : t =
   { st with marks = Array.append st.marks [| m |] }
 
+(* Paper-space chords (segment endpoints) of every MSeg mark carrying [cid].
+   Point marks (MPoint) contribute no chord. Used by the meet operator to test
+   that a marked line physically reaches a crossing. *)
+let mark_chords (st : t) (cid : int) : (Geom.point * Geom.point) list =
+  Array.to_list st.marks
+  |> List.filter_map (fun m ->
+         if m.mcrease_id = cid then
+           match m.mgeom with MSeg (a, b) -> Some (a, b) | MPoint _ -> None
+         else None)
+
 (* the face whose PAPER polygon contains the mark's representative point; paper
    coordinates partition the sheet, so this is unique in the interior (a point on
    a shared boundary may match several — first match wins, callers disambiguate). *)
