@@ -29,13 +29,16 @@ type mark = {
    endpoints in the [left] face's paper coordinates. [right] is [-1] when the
    edge lies on the paper boundary (no face on the other side). [crease_id] is
    internal identity only — never serialized, need only be unique within one
-   state. *)
+   state. [eassign] is the folded-form dihedral (F for a flat mark);
+   [eintent] is the crease-pattern colour (M/V even when flat) — for a real
+   fold the two agree. *)
 type edge = {
   ea : Geom.point;
   eb : Geom.point;
   left : int;
   right : int;
   eassign : assign;
+  eintent : assign;
   crease_id : int;
   eprov : State.provenance option;
 }
@@ -836,7 +839,7 @@ let classify_mark_extent (st : t) ~(flap : int list) ~(axis : Geom.line)
    infinite [axis] crosses it. Used by the mark [CMixed] path to cut only the
    boundary portion's face(s), never the dangling stub's face (which must stay
    a record, not gain a subdividing edge — "marks are not edges"). *)
-let subdivide ?crease_id ?only_faces (st : t) (axis : Geom.line)
+let subdivide ?crease_id ?only_faces ?(intent = V) (st : t) (axis : Geom.line)
     ~(prov : State.provenance option) : t =
   let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
   let cut_ok fi =
@@ -889,7 +892,16 @@ let subdivide ?crease_id ?only_faces (st : t) (axis : Geom.line)
           | [ l ] -> (l, -1)
           | [] -> (-1, -1)
         in
-        { ea = a; eb = b; left; right; eassign = F; crease_id = cid; eprov = prov })
+        {
+          ea = a;
+          eb = b;
+          left;
+          right;
+          eassign = F;
+          eintent = intent;
+          crease_id = cid;
+          eprov = prov;
+        })
       !edge_seeds
   in
   (* the child of parent [p] on side [s] of [axis]; a face split into two keeps
@@ -1014,6 +1026,7 @@ let fold_with_records ?crease_id ?moving_parents (st : t) ~(axis : Geom.line)
           left = !stationary_child;
           right = !moved_child;
           eassign = ea_assign;
+          eintent = ea_assign;
           crease_id = cid;
           eprov = prov;
         })
@@ -1071,6 +1084,7 @@ let fold_with_records ?crease_id ?moving_parents (st : t) ~(axis : Geom.line)
                   left = child_on e.left sa;
                   right = child_on e.right sa;
                   eassign = assign_of_parent mf;
+                  eintent = assign_of_parent mf;
                 };
               ]
           | None ->

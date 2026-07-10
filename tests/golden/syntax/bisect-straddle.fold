@@ -26,7 +26,7 @@
     [ 1, 6 ]
   ],
   "edges_assignment": [
-    "B", "V", "F", "B", "F", "V", "B", "F", "B", "F", "B", "B"
+    "B", "V", "V", "B", "V", "V", "B", "V", "B", "V", "B", "B"
   ],
   "faces_vertices": [
     [ 0, 1, 2 ],

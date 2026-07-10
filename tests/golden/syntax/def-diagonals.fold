@@ -15,7 +15,7 @@
     [ 4, 2 ],
     [ 4, 3 ]
   ],
-  "edges_assignment": [ "B", "F", "F", "B", "F", "B", "F", "B" ],
+  "edges_assignment": [ "B", "V", "V", "B", "V", "B", "V", "B" ],
   "faces_vertices": [ [ 0, 1, 2 ], [ 3, 0, 2 ], [ 2, 1, 4 ], [ 3, 2, 4 ] ],
   "beloch:edges": [
     null,

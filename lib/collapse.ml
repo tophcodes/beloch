@@ -399,7 +399,11 @@ let collapse (st : Fold_state.t) (es : elem list) ~(over : (int * int) list) :
                           done;
                           match !hit with
                           | Some j ->
-                              { e with Fold_state.eassign = ray_assign.(j) }
+                              {
+                                e with
+                                Fold_state.eassign = ray_assign.(j);
+                                eintent = ray_assign.(j);
+                              }
                           | None -> e)
                         st.Fold_state.edges
                     in
