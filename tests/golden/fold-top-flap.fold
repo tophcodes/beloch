@@ -68,6 +68,7 @@
   },
   "beloch:named_lines": {},
   "beloch:named_lines_frame": "creasePattern",
+  "beloch:marks": [],
   "file_frames": [
     {
       "frame_classes": [ "foldedForm" ],

@@ -366,6 +366,27 @@ let test_emit_folded_crease_name () =
   Alcotest.(check bool) "crease carries name m" true
     (List.exists (fun n -> n = `String "m") names)
 
+(* Task 7: record marks (from Fold_state.marks) are serialized into a
+   top-level "beloch:marks" custom field. Reuses the program from
+   test_mark_point_records_no_edge, already proven to record exactly one
+   interior POINT mark (the value-line --vm re-marked with a point extent at
+   .ctr, the meet of --vm and --hm). *)
+let test_beloch_marks_emitted () =
+  let src =
+    "paper square\nmark --vm = map .a onto .b\nmark --hm = map .a onto .d\n\
+     .ctr = --vm * --hm\nmark --vm at .ctr\n"
+  in
+  let fd = Eval.eval_folded (Beloch.parse ~filename:"t.bel" src) in
+  let json = Fold_emit.to_json_folded fd in
+  let open Yojson.Safe.Util in
+  match json |> member "beloch:marks" with
+  | `List [ one ] ->
+      Alcotest.(check string) "point kind" "point"
+        (one |> member "kind" |> to_string);
+      Alcotest.(check string) "valley default" "V"
+        (one |> member "intent" |> to_string)
+  | _ -> Alcotest.fail "expected exactly one point mark"
+
 (* cross is material: a crease scored through several layers marks different
    lines in the paper, so bare cross must error — with a hint toward the
    #(...) flap escape hatch. (A merely table-bent scar crosses fine bare;
@@ -824,5 +845,7 @@ let () =
           Alcotest.test_case "dual frames" `Quick test_emit_folded_frames;
           Alcotest.test_case "crease name preserved" `Quick
             test_emit_folded_crease_name;
+          Alcotest.test_case "beloch:marks emitted for record marks" `Quick
+            test_beloch_marks_emitted;
         ] );
     ]
