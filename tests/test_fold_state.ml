@@ -614,7 +614,11 @@ let test_classify_mixed () =
     Fold_state.classify_mark_extent st ~flap ~axis:(Geom.line_through a b)
       ~extent_geom:(Fold_state.MSeg (a, b))
   with
-  | Fold_state.CMixed (_, _, Fold_state.MSeg _) -> ()
+  | Fold_state.CMixed (_, _, Fold_state.MSeg _, cut_faces) ->
+      (* the boundary portion cuts exactly one face (the top half), never the
+         stub's (lower) face *)
+      Alcotest.(check int) "CMixed cuts exactly the boundary face" 1
+        (List.length cut_faces)
   | _ -> Alcotest.fail "boundary->interior across an F edge must be CMixed"
 
 (* Task 3 review finding: both extent endpoints strictly interior but in

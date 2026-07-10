@@ -640,7 +640,13 @@ let axis_segment_in_face (f : face) (axis : Geom.line) :
 type mark_class =
   | CSubdivide of Geom.point * Geom.point
   | CRecord of mark_geom
-  | CMixed of Geom.point * Geom.point * mark_geom
+  | CMixed of Geom.point * Geom.point * mark_geom * int list
+      (* [CMixed (a, x, stub, cut_faces)]: the boundary portion [a,x] (across
+         [cut_faces], each spanned boundary-to-boundary) subdivides; the
+         dangling [stub] is recorded. [cut_faces] is exactly the faces the
+         boundary portion covers — never the stub's face — so the eval caller
+         can restrict [subdivide ~only_faces] and leave the stub a pure
+         record. *)
   | CCrossesFold of Geom.point * Geom.point
   | CSpansCrease of Geom.point * Geom.point
 
@@ -777,19 +783,26 @@ let classify_seg (st : t) ~(flap : int list) ~(axis : Geom.line)
         | Some fa, Some fb when fa = fb -> CRecord (MSeg (a, b))
         | _ -> CSpansCrease (a, b))
     | true, false ->
-        let x =
+        (* [a] boundary, [b] mid-face: [b]'s face is the LAST seg (highest lo);
+           the boundary portion [a,x] spans every earlier seg's face, cut at
+           the internal F edge [x] where the extent enters [b]'s face. *)
+        let x, cut_faces =
           match List.rev segs with
-          | (_, lolast, _) :: _ -> point_at lolast
+          | (_, lolast, _) :: rest ->
+              (point_at lolast, List.rev_map (fun (fi, _, _) -> fi) rest)
           | [] -> assert false
         in
-        CMixed (a, x, MSeg (x, b))
+        CMixed (a, x, MSeg (x, b), cut_faces)
     | false, true ->
-        let x =
+        (* [b] boundary, [a] mid-face: [a]'s face is the FIRST seg; the
+           boundary portion [b,x] spans every later seg's face. *)
+        let x, cut_faces =
           match segs with
-          | (_, _, hifirst) :: _ -> point_at hifirst
+          | (_, _, hifirst) :: rest ->
+              (point_at hifirst, List.map (fun (fi, _, _) -> fi) rest)
           | [] -> assert false
         in
-        CMixed (b, x, MSeg (x, a))
+        CMixed (b, x, MSeg (x, a), cut_faces)
 
 (* Does a mark's paper-space [extent_geom] subdivide [flap] (the coplanar
    cluster it lives on), merely record onto it, do both, or illegally cross a
@@ -818,10 +831,17 @@ let classify_mark_extent (st : t) ~(flap : int list) ~(axis : Geom.line)
 
 (* Split every face crossing [axis] into its two halves (both keep their
    isometry; nothing moves). Returns the new state; one F edge is created per
-   face actually cut. *)
-let subdivide ?crease_id (st : t) (axis : Geom.line)
+   face actually cut. [only_faces], when given, restricts the cut to those
+   face indices — any face NOT in the set passes through whole even where the
+   infinite [axis] crosses it. Used by the mark [CMixed] path to cut only the
+   boundary portion's face(s), never the dangling stub's face (which must stay
+   a record, not gain a subdividing edge — "marks are not edges"). *)
+let subdivide ?crease_id ?only_faces (st : t) (axis : Geom.line)
     ~(prov : State.provenance option) : t =
   let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
+  let cut_ok fi =
+    match only_faces with None -> true | Some s -> List.mem fi s
+  in
   let out = ref [] (* (child_face, parent_index), accumulated via prepend *) in
   (* seeds: (parent_index, a, b, crease_id) — one per face actually cut; the two
      children straddling the axis are the two entries of [parent] equal to
@@ -829,25 +849,27 @@ let subdivide ?crease_id (st : t) (axis : Geom.line)
   let edge_seeds = ref [] in
   Array.iteri
     (fun fi f ->
-      let table = Array.map (Isometry.apply_point f.iso) f.paper in
-      let inv = Isometry.inverse f.iso in
-      let part keep =
-        let sub = Geom.clip_convex_halfplane axis keep table in
-        if Array.length sub >= 3 then
-          Some { paper = Array.map (Isometry.apply_point inv) sub; iso = f.iso }
-        else None
-      in
-      let plus = part 1 and minus = part (-1) in
-      (match (plus, minus) with
-      | Some _, Some _ -> (
-          match axis_segment_in_face f axis with
-          | Some (a, b) ->
-              edge_seeds := (fi, a, b, cid) :: !edge_seeds
-          | None -> ())
-      | _ -> ());
-      List.iter
-        (function Some fc -> out := (fc, fi) :: !out | None -> ())
-        [ plus; minus ])
+      if not (cut_ok fi) then out := (f, fi) :: !out
+      else begin
+        let table = Array.map (Isometry.apply_point f.iso) f.paper in
+        let inv = Isometry.inverse f.iso in
+        let part keep =
+          let sub = Geom.clip_convex_halfplane axis keep table in
+          if Array.length sub >= 3 then
+            Some { paper = Array.map (Isometry.apply_point inv) sub; iso = f.iso }
+          else None
+        in
+        let plus = part 1 and minus = part (-1) in
+        (match (plus, minus) with
+        | Some _, Some _ -> (
+            match axis_segment_in_face f axis with
+            | Some (a, b) -> edge_seeds := (fi, a, b, cid) :: !edge_seeds
+            | None -> ())
+        | _ -> ());
+        List.iter
+          (function Some fc -> out := (fc, fi) :: !out | None -> ())
+          [ plus; minus ]
+      end)
     st.faces;
   let arr = Array.of_list (List.rev !out) in
   let faces = Array.map fst arr in
