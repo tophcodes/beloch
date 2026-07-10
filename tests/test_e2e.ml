@@ -693,6 +693,36 @@ let test_mark_spans_crease_errors () =
   expect_error "spans an internal crease" (fun () ->
       Beloch.fold_string ~filename:"t.bel" src)
 
+(* ---- Task 5: exact-incidence snapping (#50 slice 2) ------------------- *)
+
+(* Two full diagonals subdivide the square into four faces meeting at the
+   centre (1/2,1/2); a point mark placed there ("at .ctr", reusing the
+   already-material --ac as its axis, same idiom as
+   test_mark_point_records_no_edge) must be incident to that shared vertex --
+   not a numerically distinct duplicate. Since resolve_point already yields
+   canonical rationals and Geom.point_equal is exact, this holds for free;
+   the test pins the behaviour as a regression guard (task-5-brief.md: no
+   tolerance/fuzzy logic, ever). *)
+let test_mark_endpoint_on_vertex_is_incident () =
+  let src =
+    "paper square\n\
+     mark --ac = through .a .c\n\
+     mark --bd = through .b .d\n\
+     .ctr = --ac * --bd\n\
+     mark --ac at .ctr\n"
+  in
+  let st = (eval_bel src).Eval.state in
+  let m = st.Fold_state.marks.(0) in
+  let p = Fold_state.mark_rep_point m in
+  let is_vertex =
+    Array.exists
+      (fun (f : Fold_state.face) ->
+        Array.exists (Geom.point_equal p) f.Fold_state.paper)
+      st.Fold_state.faces
+  in
+  Alcotest.(check bool) "point mark is incident to an existing vertex" true
+    is_vertex
+
 let () =
   Alcotest.run "beloch-e2e"
     [
@@ -763,6 +793,9 @@ let () =
           Alcotest.test_case
             "between extent spanning an internal crease errors cleanly"
             `Quick test_mark_spans_crease_errors;
+          Alcotest.test_case
+            "point mark endpoint incident to existing vertex (exact snap)"
+            `Quick test_mark_endpoint_on_vertex_is_incident;
         ] );
       ( "emit_folded",
         [
