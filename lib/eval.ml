@@ -21,6 +21,10 @@ type folded = {
 
 type crease_val =
   | Material of int * Geom.line
+  | Mark of int * Geom.line
+      (* a materialized construction line backed by the mark layer: meetable
+         by `*` (its chords live in Fold_state.marks), never subdividing the
+         working arrangement. [int] is the mark's mcrease_id. *)
   | Frozen of Geom.line
   | Bundle of Ast.line_operand
       (* a named crease bundle (--x = --l & .c | [--a --b]); resolves lazily as
@@ -197,6 +201,15 @@ let eval_folded (prog : Ast.program) : folded =
         and pb = Fold_state.table_position !(ctx.state) (corner_point b) in
         Geom.line_through pa pb
     | Frozen l -> l
+    | Mark (cid, line) -> (
+        match Fold_state.mark_axis_current !(ctx.state) cid with
+        | `Line l -> l
+        | `Empty -> line
+        | `Bent ->
+            Error.fail span
+              (Printf.sprintf
+                 "--%s is bent by a fold; select a segment with `at`, e.g. \
+                  --%s at #(.a .b .c)" name name))
     | Material (cid, l_orig) -> (
         match Fold_state.crease_axis !(ctx.state) cid l_orig with
         | `Line l -> l
@@ -226,6 +239,15 @@ let eval_folded (prog : Ast.program) : folded =
           (Printf.sprintf
              "--%s is not a physical crease, so it has no material mark to \
               cross" name)
+    | Mark (cid, line) ->
+        (* meet is a paper-space construction; a mark is always straight in the
+           material frame (folding only bends it in table space), so use its
+           paper chord line + chords directly *)
+        let chords = Fold_state.mark_chords !(ctx.state) cid in
+        let paper_line =
+          match chords with (a, b) :: _ -> Geom.line_through a b | [] -> line
+        in
+        (paper_line, Some chords)
     | Edge (a, b) ->
         (Geom.line_through (corner_point a) (corner_point b), None)
     | Material (cid, l_orig) -> (
@@ -307,6 +329,21 @@ let eval_folded (prog : Ast.program) : folded =
   and material_cid (cr : Ast.crease_ref) : int =
     match lookup_crease ctx cr with
     | Material (cid, _) -> cid
+    | Mark (_, line) ->
+        (* selecting a segment/ray of a mark is a folding-side operation
+           (collapse `& .x`, fold-along, `at`): materialize the mark into a
+           real crease now (subdivide along its line), then treat it as
+           Material. Pure-reference marks — never segment-selected — never
+           reach here, so they stay non-subdividing records (#26). *)
+        let cid = Fold_state.fresh_crease_id () in
+        let prov : State.provenance option =
+          Some { State.axiom = "mark"; sources = [ "--" ^ cr.Ast.cname ];
+                 span = cr.Ast.cspan; name = None; step = ctx.panel }
+        in
+        ctx.state :=
+          Fold_state.subdivide_paper !(ctx.state) line ~crease_id:cid ~prov;
+        promote_crease ctx cr.Ast.cname (Material (cid, line));
+        cid
     | Bundle _ ->
         Error.fail cr.Ast.cspan
           (Printf.sprintf
@@ -928,7 +965,7 @@ let eval_folded (prog : Ast.program) : folded =
                 (s.Fold_state.ta, s.Fold_state.tb))
               (snd (bundle_segments (Ast.LNamed cr)))
         | Edge _ -> Fold_state.line_material_segments !(ctx.state) p.la
-        | Frozen _ -> Fold_state.line_material_segments !(ctx.state) p.la)
+        | Mark _ | Frozen _ -> Fold_state.line_material_segments !(ctx.state) p.la)
     | Ast.LSelect _ -> Fold_state.line_material_segments !(ctx.state) p.la
     | (Ast.LFilter _ | Ast.LUnion _) as b ->
         List.map
@@ -1239,37 +1276,60 @@ let eval_folded (prog : Ast.program) : folded =
         bind_crease ctx n span (Frozen axis)
     | Ast.Mark (name_opt, m, ext, dir, layer_opt, span) -> (
         let intent = intent_of dir in
-        let bind_material cid axis =
+        let bind_mark cid line =
           match name_opt with
-          | Some n -> bind_crease ctx n span (Material (cid, axis))
+          | Some n -> bind_crease ctx n span (Mark (cid, line))
           | None -> ()
         in
-        (* Behaviour 4: dispatch a partial extent's classification. Only
-           `Ast.Between` can ever yield [CCrossesFold] (an `At` extent's
-           [MPoint] always records, see Fold_state.classify_mark_extent), so
-           that branch recovers the operand spellings for the message
-           straight from [ext]. *)
-        let dispatch_partial ~cid ~table_axis ~prov ~flap ~extent_geom
-            ~paper_axis =
+        let record ~prov cid mgeom paper_axis =
+          ctx.state :=
+            Fold_state.add_mark !(ctx.state)
+              { Fold_state.mgeom; mline = paper_axis; mintent = intent;
+                mcrease_id = cid; mprov = prov };
+          bind_mark cid paper_axis
+        in
+        (* A full mark is the whole line clipped to its flap; it records as a
+           material chord (never subdivides). Resolve the flap (explicit #(...)
+           wins; else the carrying flap of a rep point on the axis), then take
+           the extreme endpoints of the per-face paper clips. *)
+        let record_full ~prov cid table_axis =
+          let st = !(ctx.state) in
+          let clips =
+            Array.to_list st.Fold_state.faces
+            |> List.filter_map (fun (f : Fold_state.face) ->
+                   Fold_state.axis_segment_in_face f table_axis)
+          in
+          let rep =
+            match clips with
+            | (p, q) :: _ ->
+                { Geom.x = Num.div (Num.add p.Geom.x q.Geom.x) (Num.of_int 2);
+                  y = Num.div (Num.add p.Geom.y q.Geom.y) (Num.of_int 2) }
+            | [] -> Error.fail span "the mark's line does not cross the paper"
+          in
+          let flap = resolve_mark_flap layer_opt rep span in
+          let pts =
+            List.filter_map
+              (fun fi ->
+                Fold_state.axis_segment_in_face st.Fold_state.faces.(fi) table_axis)
+              flap
+            |> List.concat_map (fun (p, q) -> [ p; q ])
+          in
+          match Geom.extreme_pair pts with
+          | Some (a, b) ->
+              record ~prov cid (Fold_state.MSeg (a, b)) (Geom.line_through a b)
+          | None -> Error.fail span "the mark's line does not cross its flap"
+        in
+        (* Behaviour 4: dispatch a partial extent's classification. Under the
+           material-layer model NO mark subdivides — CSubdivide (a full chord
+           between two boundary points) records exactly like CRecord. Only
+           `Ast.Between` can ever yield [CCrossesFold]. *)
+        let dispatch_partial ~prov ~cid ~flap ~extent_geom ~paper_axis () =
           match
             Fold_state.classify_mark_extent !(ctx.state) ~flap ~axis:paper_axis
               ~extent_geom
           with
-          | Fold_state.CSubdivide _ ->
-              ctx.state :=
-                Fold_state.subdivide !(ctx.state) table_axis ~crease_id:cid
-                  ~prov ~intent;
-              bind_material cid table_axis
-          | Fold_state.CRecord g ->
-              ctx.state :=
-                Fold_state.add_mark !(ctx.state)
-                  {
-                    Fold_state.mgeom = g;
-                    mline = paper_axis;
-                    mintent = intent;
-                    mcrease_id = cid;
-                  };
-              bind_material cid table_axis
+          | Fold_state.CSubdivide (a, b) -> record ~prov cid (Fold_state.MSeg (a, b)) paper_axis
+          | Fold_state.CRecord g -> record ~prov cid g paper_axis
           | Fold_state.CCrossesFold _ ->
               let a, b =
                 match ext with Ast.Between (a, b) -> (a, b) | _ -> assert false
@@ -1283,45 +1343,30 @@ let eval_folded (prog : Ast.program) : folded =
         match resolve_markable span name_opt None m with
         | `Fresh (cid, table_axis, prov, _side_override, _implied) -> (
             match resolve_mark_extent table_axis ext span with
-            | `Full ->
-                ctx.state :=
-                  Fold_state.subdivide !(ctx.state) table_axis ~crease_id:cid
-                    ~prov ~intent;
-                bind_material cid table_axis
+            | `Full -> record_full ~prov cid table_axis
             | `Partial (extent_geom, rep, paper_axis) ->
                 let flap = resolve_mark_flap layer_opt rep span in
-                dispatch_partial ~cid ~table_axis ~prov ~flap ~extent_geom
-                  ~paper_axis)
+                dispatch_partial ~prov ~cid ~flap ~extent_geom ~paper_axis ())
         | `Existing lo ->
-            (* mark an already-bound value line: subdivide along it (Full) or
-               classify+dispatch (partial). If it names a crease directly,
-               promote that binding from a pure value to material so a later
-               `fold --d` can find it. *)
+            (* mark an already-bound value line: record a material chord. If it
+               names a pure value (Frozen), promote its binding to Mark so a
+               later `fold --d` can materialize a real crease along it. *)
             let table_axis = resolve_line lo in
             let cid = Fold_state.fresh_crease_id () in
             let promote () =
               match lo with
               | Ast.LNamed cr -> (
-                  (* only promote a pure Frozen value (from `--d = <motion>`);
-                     prelude edges, bundles, and already-material creases keep
-                     their existing binding (#see finding: unguarded promotion
-                     leaked prelude edges into beloch:named_lines) *)
                   match lookup_crease ctx cr with
                   | Frozen _ ->
-                      promote_crease ctx cr.Ast.cname
-                        (Material (cid, table_axis))
-                  | Material _ | Bundle _ | Edge _ -> ())
+                      promote_crease ctx cr.Ast.cname (Mark (cid, table_axis))
+                  | Mark _ | Material _ | Bundle _ | Edge _ -> ())
               | _ -> ()
             in
             (match resolve_mark_extent table_axis ext span with
-            | `Full ->
-                ctx.state :=
-                  Fold_state.subdivide !(ctx.state) table_axis ~crease_id:cid
-                    ~prov:None ~intent
+            | `Full -> record_full ~prov:None cid table_axis
             | `Partial (extent_geom, rep, paper_axis) ->
                 let flap = resolve_mark_flap layer_opt rep span in
-                dispatch_partial ~cid ~table_axis ~prov:None ~flap
-                  ~extent_geom ~paper_axis);
+                dispatch_partial ~prov:None ~cid ~flap ~extent_geom ~paper_axis ());
             promote ())
     | Ast.Fold (name_opt, m, fs, span) -> (
         match resolve_markable span name_opt (Some fs) m with
@@ -1330,6 +1375,38 @@ let eval_folded (prog : Ast.program) : folded =
             (match name_opt with
             | Some n -> bind_crease ctx n span (Material (cid, axis))
             | None -> ())
+        | `Existing (Ast.LNamed cr)
+          when (match lookup_crease ctx cr with Mark _ -> true | _ -> false) ->
+            (* fold along a MARK: marks never subdivide, so there is no existing
+               crease to fold along — materialize a fresh real crease on the
+               mark's line. At emit the coincident mark is superseded by this
+               crease. *)
+            let mark_cid, mark_line =
+              match lookup_crease ctx cr with
+              | Mark (c, line) -> (c, line)
+              | _ -> assert false
+            in
+            let axis =
+              match Fold_state.mark_axis_current !(ctx.state) mark_cid with
+              | `Line l -> l
+              | `Empty -> mark_line
+              | `Bent ->
+                  Error.fail span
+                    (Printf.sprintf
+                       "--%s is no longer straight after folding; select a \
+                        segment with `at`, e.g. --%s at #(.a .b .c)"
+                       cr.Ast.cname cr.Ast.cname)
+            in
+            let cid = Fold_state.fresh_crease_id () in
+            let prov : State.provenance option =
+              Some { State.axiom = "fold"; sources = [ "--" ^ cr.Ast.cname ];
+                     span; name = None; step = ctx.panel }
+            in
+            run_fold ~span ~axis ~fs ~implied:None ~side_override:None
+              ~crease_id:cid ~prov;
+            (match name_opt with
+            | Some n -> bind_crease ctx n span (Material (cid, axis))
+            | None -> promote_crease ctx cr.Ast.cname (Material (cid, axis)))
         | `Existing lo ->
             (* fold along an existing material crease (the old FoldAlong path) *)
             let cid =
@@ -1526,6 +1603,19 @@ let eval_folded (prog : Ast.program) : folded =
         (match standing_opt with
         | Some _ -> Error.fail span "standing folds are not yet supported"
         | None -> ());
+        (* materialize every collapse crease FIRST (a mark subdivides on
+           segment-selection), so all of them cross and the shared collapse
+           vertex is fully formed before any ray is selected. Selecting rays
+           one-by-one would subdivide the first crease before the others exist,
+           leaving it unsplit at the vertex (`no common interior vertex`). *)
+        let rec force_material (lo : Ast.line_operand) =
+          match lo with
+          | Ast.LNamed cr -> ignore (material_cid cr)
+          | Ast.LFilter (b, _, _) -> force_material b
+          | Ast.LUnion (los, _) -> List.iter force_material los
+          | Ast.LSelect _ -> ()
+        in
+        List.iter (fun (el : Ast.collapse_elem) -> force_material el.Ast.cline) elems;
         (* each element must resolve to exactly ONE material segment — same
            machinery as fold's material resolution *)
         let resolve_elem (el : Ast.collapse_elem) : Collapse.elem =
@@ -1633,6 +1723,7 @@ let eval_folded (prog : Ast.program) : folded =
         else
           match cv with
           | Frozen l -> (k, l) :: acc
+          | Mark (_, l) -> (k, l) :: acc
           | Material (_, l_orig) -> (k, l_orig) :: acc
           (* a bundle is not a single line; it is not emitted in the
              one-line-per-name overlay map. the prelude paper edges are

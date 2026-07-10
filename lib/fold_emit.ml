@@ -2,11 +2,51 @@
 
 let q_to_json (x : Num.t) : Yojson.Safe.t = `Float (Num.to_float x)
 
+(* Emit-time overlay (design §3.6). Graduates every mark whose MSeg endpoints
+   both lie on a face boundary (corner / paper edge / real crease — the old
+   CSubdivide test) into real creases by subdividing the state (in paper space,
+   fold-invariantly) along the mark's line. Returns the display state plus the
+   marks that stay records for `beloch:marks`. A mark coincident with a real
+   crease subdivides nothing, so it silently drops (the real crease supersedes).
+   Applied to BOTH the crease-pattern frame and each folded frame — fold-time
+   algorithms never see it (emit-only). Partial (mid-segment) graduation is
+   deferred: a whole mark graduates or it does not. *)
+let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
+  let material (p : Geom.point) =
+    Array.exists
+      (fun (f : Fold_state.face) ->
+        Fold_state.point_on_polygon_boundary f.Fold_state.paper p)
+      st.Fold_state.faces
+  in
+  let graduates (m : Fold_state.mark) =
+    match m.Fold_state.mgeom with
+    | Fold_state.MSeg (a, b) -> material a && material b
+    | Fold_state.MPoint _ -> false
+  in
+  let grad, kept =
+    List.partition graduates (Array.to_list st.Fold_state.marks)
+  in
+  let disp =
+    List.fold_left
+      (fun s (m : Fold_state.mark) ->
+        match m.Fold_state.mgeom with
+        | Fold_state.MSeg (a, b) ->
+            Fold_state.subdivide_paper s
+              (Geom.line_through a b)
+              ~intent:m.Fold_state.mintent ~prov:m.Fold_state.mprov
+        | Fold_state.MPoint _ -> s)
+      st grad
+  in
+  (disp, kept)
+
 (* Build one self-contained foldedForm frame for a given state. Its topology is
    this state's faces (earlier steps have fewer faces than the final CP, so the
    frame cannot inherit the parent's vertex/face set — frame_inherit is false). *)
 let folded_frame_of_state (state : Fold_state.t) (step : string option) :
     Yojson.Safe.t =
+  (* graduate marks into flat (F) creases for the folded diagram too, so a
+     scored precrease shows in the folded frame; emit-only, like the CP frame *)
+  let state, _ = cp_display state in
   let faces = state.Fold_state.faces in
   (* dedup vertices by paper coord; remember paper + table coords per vertex.
      INVARIANT: a paper vertex shared by several faces gets its table coord from
@@ -143,7 +183,8 @@ let folded_frame_of_state (state : Fold_state.t) (step : string option) :
     ]
 
 let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
-  let faces = fd.Eval.state.Fold_state.faces in
+  let disp, kept_marks = cp_display fd.Eval.state in
+  let faces = disp.Fold_state.faces in
   (* dedup vertices by paper coord; remember paper coord per vertex, for the
      top-level crease-pattern frame (built from the final state). *)
   let vpaper = Dynarray.create () in
@@ -187,7 +228,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
           let assign, prov =
             if on_unit_boundary pa pb then ("B", None)
             else
-              match Fold_state.edge_between fd.Eval.state fi pa pb with
+              match Fold_state.edge_between disp fi pa pb with
               | Some (e : Fold_state.edge) ->
                   let a =
                     match e.Fold_state.eintent with
@@ -269,7 +310,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
     | Fold_state.F -> "F"
   in
   let beloch_marks =
-    Array.to_list fd.Eval.state.Fold_state.marks
+    kept_marks
     |> List.map (fun (m : Fold_state.mark) ->
         let line =
           let l = m.Fold_state.mline in

@@ -1,0 +1,8 @@
+; The #26 headline: locate the square's centre by meeting two marked
+; diagonals. Under the material-layer model the marks do NOT subdivide the
+; working sheet (it stays one face while .ctr is located); they graduate to
+; F creases only at emit, so the crease pattern still shows the construction.
+paper square
+mark --ac = through .a .c
+mark --bd = through .b .d
+.ctr = --ac * --bd

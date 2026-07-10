@@ -522,7 +522,7 @@ let test_marks_carry_through_fold () =
   let m =
     { Fold_state.mgeom = Fold_state.MPoint p;
       mline = Geom.line_through p (pt 3 4 1 4);
-      mintent = Fold_state.V; mcrease_id = 999 }
+      mintent = Fold_state.V; mcrease_id = 999; mprov = None }
   in
   let st = Fold_state.add_mark Fold_state.init_square m in
   let axis = { Geom.a = Num.one; b = Num.zero; c = qf 1 2 } in  (* x = 1/2, as elsewhere in this file *)
@@ -591,6 +591,7 @@ let test_classify_crosses_fold () =
            mline = axis;
            mintent = Fold_state.V;
            mcrease_id = 0;
+           mprov = None;
          })
   in
   let a = pt 1 4 1 2 and b = pt 3 4 1 2 in

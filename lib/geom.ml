@@ -155,6 +155,28 @@ let seg_param ((p, q) : segment) (r : point) : Num.t =
   let den = Num.add (Num.mul dx dx) (Num.mul dy dy) in
   Num.div num den
 
+(* From a list of collinear points, the two that are farthest apart (a
+   segment's extreme endpoints). None if fewer than two distinct points. *)
+let extreme_pair (pts : point list) : (point * point) option =
+  let d2 a b =
+    let dx = Num.sub a.x b.x and dy = Num.sub a.y b.y in
+    Num.add (Num.mul dx dx) (Num.mul dy dy)
+  in
+  let best = ref None in
+  List.iter
+    (fun a ->
+      List.iter
+        (fun b ->
+          let d = d2 a b in
+          match !best with
+          | Some (_, _, bd) when Num.compare d bd <= 0 -> ()
+          | _ -> best := Some (a, b, d))
+        pts)
+    pts;
+  match !best with
+  | Some (a, b, d) when Num.sign d > 0 -> Some (a, b)
+  | _ -> None
+
 let clip_to_unit_square (l : line) : segment option =
   let z = Num.zero and o = Num.one in
   let cands = ref [] in
