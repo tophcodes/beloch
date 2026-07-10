@@ -9,6 +9,22 @@ type face = { paper : Geom.point array; iso : Isometry.t }
 type rel = Layer_order.rel = Above | Below | Apart
 type assign = M | V | F
 
+type mark_geom = MSeg of Geom.point * Geom.point | MPoint of Geom.point
+
+(* A non-subdividing reference/pinch crease. [mgeom] is PAPER-space and therefore
+   fold-invariant, so marks carry through subdivide/fold/flip unchanged; the
+   current table position is derived at emit time from the containing face's
+   isometry (see mark_face). [mline] is the underlying motion line, kept only to
+   orient a point-mark's display tick. [mintent] is the crease-pattern colour;
+   the mark is always flat (F) in the folded form. [mcrease_id] rides with the
+   name's bundle, mirroring edge.crease_id. *)
+type mark = {
+  mgeom : mark_geom;
+  mline : Geom.line;
+  mintent : assign;
+  mcrease_id : int;
+}
+
 (* A first-class crease edge between two faces. [ea]/[eb] are the segment
    endpoints in the [left] face's paper coordinates. [right] is [-1] when the
    edge lies on the paper boundary (no face on the other side). [crease_id] is
@@ -24,7 +40,7 @@ type edge = {
   eprov : State.provenance option;
 }
 
-type t = { faces : face array; order : Layer_order.t; edges : edge array }
+type t = { faces : face array; order : Layer_order.t; edges : edge array; marks : mark array }
 
 (* Mints internal crease ids. Unique within a state; not deterministic across
    eval calls and never serialized. *)
@@ -249,6 +265,7 @@ let init_square : t =
       [| { paper = [| p 0 0; p 1 0; p 1 1; p 0 1 |]; iso = Isometry.identity } |];
     order = Layer_order.build [| [| p 0 0; p 1 0; p 1 1; p 0 1 |] |] (fun _ _ -> Apart);
     edges = [||];
+    marks = [||];
   }
 
 (* The edge incident to face [i] whose endpoints equal (pa,pb) in either order.
@@ -565,6 +582,25 @@ let table_position (st : t) (paper : Geom.point) : Geom.point =
   in
   find 0
 
+let mark_rep_point (m : mark) : Geom.point =
+  match m.mgeom with MSeg (a, _) -> a | MPoint p -> p
+
+let add_mark (st : t) (m : mark) : t =
+  { st with marks = Array.append st.marks [| m |] }
+
+(* the face whose PAPER polygon contains the mark's representative point; paper
+   coordinates partition the sheet, so this is unique in the interior (a point on
+   a shared boundary may match several — first match wins, callers disambiguate). *)
+let mark_face (st : t) (m : mark) : int option =
+  let p = mark_rep_point m in
+  let n = Array.length st.faces in
+  let rec go i =
+    if i >= n then None
+    else if Geom.in_convex_polygon st.faces.(i).paper p then Some i
+    else go (i + 1)
+  in
+  go 0
+
 (* The segment where the table-space line [axis] crosses face [f]'s interior,
    returned in [f]'s paper coordinates. None if the axis misses the interior
    (touches at most one boundary point). *)
@@ -685,7 +721,7 @@ let subdivide ?crease_id (st : t) (axis : Geom.line)
   let order =
     build_order faces (fun i j -> Layer_order.get st.order parent.(i) parent.(j))
   in
-  { faces; order; edges }
+  { faces; order; edges; marks = st.marks }
 
 (* Like [simple_fold] but on-axis edges get their derived mountain/valley from
    the orientation-parity rule. *)
@@ -846,7 +882,7 @@ let fold_with_records ?crease_id ?moving_parents (st : t) ~(axis : Geom.line)
   in
   let edges = Array.of_list (new_edges @ carried) in
   let order = build_order faces rel_of in
-  let st' = { faces; order; edges } in
+  let st' = { faces; order; edges; marks = st.marks } in
   (match validity_error st' with
   | Some msg ->
       let span =
@@ -920,5 +956,5 @@ let flip (st : t) : t =
           })
         st.edges
     in
-    { faces = rev; order; edges }
+    { faces = rev; order; edges; marks = st.marks }
   end
