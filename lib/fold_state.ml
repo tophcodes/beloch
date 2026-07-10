@@ -627,6 +627,188 @@ let axis_segment_in_face (f : face) (axis : Geom.line) :
       Some (Isometry.apply_point inv p, Isometry.apply_point inv q)
   | _ -> None
 
+(* A mark's paper-space extent, classified against the flap (coplanar cluster)
+   it lives on: does it subdivide the flap (boundary-to-boundary, only ever
+   crossing F edges), merely record (wholly mid-face), do both (one end
+   dangles mid-face, the other reaches the boundary — [CMixed]'s stub is
+   recorded, its subdividing part handled like [CSubdivide]), or is it
+   illegal because it would leave the flap across a folded (M/V) crease? *)
+type mark_class =
+  | CSubdivide of Geom.point * Geom.point
+  | CRecord of mark_geom
+  | CMixed of Geom.point * Geom.point * mark_geom
+  | CCrossesFold of Geom.point * Geom.point
+
+(* true iff point [p] lies on some edge (endpoints included) of convex CCW
+   [poly]. *)
+let point_on_polygon_boundary (poly : Geom.point array) (p : Geom.point) : bool
+    =
+  let n = Array.length poly in
+  let rec go i =
+    if i >= n then false
+    else
+      let a = poly.(i) and b = poly.((i + 1) mod n) in
+      if Geom.on_segment (a, b) p then true else go (i + 1)
+  in
+  go 0
+
+(* The polygon edge (as its two vertices) of convex CCW [poly] that contains
+   point [p], assumed to lie on the boundary. First match wins — at a vertex
+   this picks one of the two incident edges arbitrarily, which is fine here:
+   every caller only needs the *no-crease vs M/V* status of whichever real
+   crease (if any) meets the flap at [p]. *)
+let polygon_edge_at (poly : Geom.point array) (p : Geom.point) :
+    (Geom.point * Geom.point) option =
+  let n = Array.length poly in
+  let rec go i =
+    if i >= n then None
+    else
+      let a = poly.(i) and b = poly.((i + 1) mod n) in
+      if Geom.on_segment (a, b) p then Some (a, b) else go (i + 1)
+  in
+  go 0
+
+(* Is the polygon edge of face [fi] passing through boundary point [p] a
+   genuine flap boundary — a bare paper edge (no crease recorded at all) or a
+   folded (M/V) crease? An F edge never counts: within one flap every internal
+   edge is F by construction (coplanar clusters are exactly the F-connected
+   components), so an F edge here always stays inside the flap. *)
+let is_flap_boundary_at (st : t) (fi : int) (p : Geom.point) : bool =
+  match polygon_edge_at st.faces.(fi).paper p with
+  | None -> false (* [p] isn't even on this face's boundary *)
+  | Some (v1, v2) -> (
+      match edge_between st fi v1 v2 with
+      | None -> true
+      | Some e -> e.eassign <> F)
+
+(* The flap face [p] is strictly interior to, if any. *)
+let strictly_interior_to_flap_face (st : t) (flap : int list) (p : Geom.point)
+    : int option =
+  List.find_opt
+    (fun fi ->
+      let poly = st.faces.(fi).paper in
+      Geom.in_convex_polygon poly p && not (point_on_polygon_boundary poly p))
+    flap
+
+(* [p] is "on the flap boundary" iff it is not strictly interior to any flap
+   face and it lies on a true boundary edge (paper edge or M/V crease) of some
+   flap face. *)
+let endpoint_is_flap_boundary (st : t) (flap : int list) (p : Geom.point) :
+    bool =
+  match strictly_interior_to_flap_face st flap p with
+  | Some _ -> false
+  | None -> List.exists (fun fi -> is_flap_boundary_at st fi p) flap
+
+(* For each face in [flap], the portion (as a parameter range over [a,b], with
+   t=0 at [a] and t=1 at [b]) of [axis] clipped to that face's paper polygon
+   AND to the extent [a,b] itself. Only positive-length overlaps are kept,
+   sorted by increasing [lo]. *)
+let flap_face_overlap (st : t) (flap : int list) (axis : Geom.line)
+    (a : Geom.point) (b : Geom.point) : (int * Num.t * Num.t) list =
+  List.filter_map
+    (fun fi ->
+      match Geom.clip_line_to_convex axis st.faces.(fi).paper with
+      | None -> None
+      | Some (p, q) ->
+          let tp = Geom.seg_param (a, b) p and tq = Geom.seg_param (a, b) q in
+          let lo = if Num.compare tp tq <= 0 then tp else tq in
+          let hi = if Num.compare tp tq <= 0 then tq else tp in
+          let lo' = if Num.compare lo Num.zero > 0 then lo else Num.zero in
+          let hi' = if Num.compare hi Num.one < 0 then hi else Num.one in
+          if Num.compare lo' hi' < 0 then Some (fi, lo', hi') else None)
+    flap
+  |> List.sort (fun (_, l1, _) (_, l2, _) -> Num.compare l1 l2)
+
+(* Classify a segment extent [a,b] with motion line [axis] against [flap]. See
+   [classify_mark_extent] below for the full algorithm; this is its [MSeg]
+   case, split out for readability. *)
+let classify_seg (st : t) ~(flap : int list) ~(axis : Geom.line)
+    (a : Geom.point) (b : Geom.point) : mark_class =
+  let point_at t =
+    {
+      Geom.x = Num.add a.Geom.x (Num.mul t (Num.sub b.Geom.x a.Geom.x));
+      y = Num.add a.Geom.y (Num.mul t (Num.sub b.Geom.y a.Geom.y));
+    }
+  in
+  let segs = flap_face_overlap st flap axis a b in
+  let fully_covers_axis =
+    match segs with
+    | [] -> false
+    | (_, lo0, _) :: _ when Num.sign lo0 <> 0 -> false
+    | _ ->
+        let rec walk = function
+          | (fi, _, hii) :: ((_fj, loj, _) :: _ as rest) ->
+              if Num.compare hii loj <> 0 then false
+              else begin
+                match polygon_edge_at st.faces.(fi).paper (point_at hii) with
+                | Some (v1, v2) -> (
+                    match edge_between st fi v1 v2 with
+                    | Some e when e.eassign <> F -> false
+                    | _ -> walk rest)
+                | None -> false
+              end
+          | [ (_, _, hilast) ] -> Num.compare hilast Num.one = 0
+          | [] -> false
+        in
+        walk segs
+  in
+  if not fully_covers_axis then CCrossesFold (a, b)
+  else
+    let a_boundary = endpoint_is_flap_boundary st flap a in
+    let b_boundary = endpoint_is_flap_boundary st flap b in
+    match (a_boundary, b_boundary) with
+    | true, true -> CSubdivide (a, b)
+    | false, false -> (
+        (* both mid-face: same face records outright; different faces would
+           need two dangling stubs, which [mark_class] has no constructor for
+           (see classify_mark_extent's doc). *)
+        match
+          ( strictly_interior_to_flap_face st flap a,
+            strictly_interior_to_flap_face st flap b )
+        with
+        | Some fa, Some fb when fa = fb -> CRecord (MSeg (a, b))
+        | _ ->
+            invalid_arg
+              "classify_mark_extent: extent dangles mid-face at both ends \
+               across an internal flat edge; mark_class has no double-stub \
+               constructor for this")
+    | true, false ->
+        let x =
+          match List.rev segs with
+          | (_, lolast, _) :: _ -> point_at lolast
+          | [] -> assert false
+        in
+        CMixed (a, x, MSeg (x, b))
+    | false, true ->
+        let x =
+          match segs with
+          | (_, _, hifirst) :: _ -> point_at hifirst
+          | [] -> assert false
+        in
+        CMixed (b, x, MSeg (x, a))
+
+(* Does a mark's paper-space [extent_geom] subdivide [flap] (the coplanar
+   cluster it lives on), merely record onto it, do both, or illegally cross a
+   folded (M/V) crease? [axis] is the extent's own paper-space motion line
+   (the line the segment/point lies on — e.g. the line a [between] extent was
+   cut from). A full-extent mark never reaches here (the caller handles that
+   as a plain [subdivide]).
+
+   [MPoint] never subdivides and has no span to cross a fold with, so it
+   always records. For [MSeg (a, b)]: walk the sub-segments of [axis] clipped
+   to each flap face's paper polygon and to [a,b] itself; a gap, or an
+   internal crossing over a non-F edge, means the extent leaves the flap
+   (illegal — [CCrossesFold]); full coverage plus both endpoints on the
+   flap's true boundary (a bare paper edge or an M/V crease, never an F edge)
+   subdivides; both endpoints strictly mid-face in the *same* face records;
+   one boundary and one mid-face is the mixed case, split at the last (resp.
+   first) internal F crossing before (resp. after) the mid-face end. *)
+let classify_mark_extent (st : t) ~(flap : int list) ~(axis : Geom.line)
+    ~(extent_geom : mark_geom) : mark_class =
+  match extent_geom with
+  | MPoint p -> CRecord (MPoint p)
+  | MSeg (a, b) -> classify_seg st ~flap ~axis a b
+
 (* Split every face crossing [axis] into its two halves (both keep their
    isometry; nothing moves). Returns the new state; one F edge is created per
    face actually cut. *)
