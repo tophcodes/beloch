@@ -239,7 +239,15 @@ let eval_folded (prog : Ast.program) : folded =
           (Printf.sprintf
              "--%s is not a physical crease, so it has no material mark to \
               cross" name)
-    | Mark (cid, line) -> (line, Some (Fold_state.mark_chords !(ctx.state) cid))
+    | Mark (cid, line) ->
+        (* meet is a paper-space construction; a mark is always straight in the
+           material frame (folding only bends it in table space), so use its
+           paper chord line + chords directly *)
+        let chords = Fold_state.mark_chords !(ctx.state) cid in
+        let paper_line =
+          match chords with (a, b) :: _ -> Geom.line_through a b | [] -> line
+        in
+        (paper_line, Some chords)
     | Edge (a, b) ->
         (Geom.line_through (corner_point a) (corner_point b), None)
     | Material (cid, l_orig) -> (
@@ -1373,10 +1381,21 @@ let eval_folded (prog : Ast.program) : folded =
                crease to fold along — materialize a fresh real crease on the
                mark's line. At emit the coincident mark is superseded by this
                crease. *)
-            let axis =
+            let mark_cid, mark_line =
               match lookup_crease ctx cr with
-              | Mark (_, line) -> line
+              | Mark (c, line) -> (c, line)
               | _ -> assert false
+            in
+            let axis =
+              match Fold_state.mark_axis_current !(ctx.state) mark_cid with
+              | `Line l -> l
+              | `Empty -> mark_line
+              | `Bent ->
+                  Error.fail span
+                    (Printf.sprintf
+                       "--%s is no longer straight after folding; select a \
+                        segment with `at`, e.g. --%s at #(.a .b .c)"
+                       cr.Ast.cname cr.Ast.cname)
             in
             let cid = Fold_state.fresh_crease_id () in
             let prov : State.provenance option =

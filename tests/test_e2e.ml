@@ -211,10 +211,18 @@ let test_eval_map_through_toward () =
           mark --bottom = through .a .b\n\
           mark map .d onto --bottom through .a toward .b\n")
   in
-  match Array.to_list fd.Eval.state.Fold_state.edges with
-  | [] -> Alcotest.fail "expected at least one crease edge"
-  | cr :: _ ->
-      let c = Geom.line_through cr.Fold_state.ea cr.Fold_state.eb in
+  (* the axiom-6 crease is a full mark: it records as a chord (no fold-time
+     edge), so read its line from the mark layer (the map crease is the last
+     mark, after --bottom) *)
+  match List.rev (Array.to_list fd.Eval.state.Fold_state.marks) with
+  | [] -> Alcotest.fail "expected at least one mark"
+  | m :: _ ->
+      let ca, cb =
+        match m.Fold_state.mgeom with
+        | Fold_state.MSeg (a, b) -> (a, b)
+        | Fold_state.MPoint _ -> Alcotest.fail "expected a segment mark"
+      in
+      let c = Geom.line_through ca cb in
       let on (p : Geom.point) =
         Num.equal
           (Num.add (Num.mul c.Geom.a p.Geom.x) (Num.mul c.Geom.b p.Geom.y))
@@ -634,8 +642,9 @@ let test_mark_point_records_no_edge () =
   let with_point_mark = base ^ "mark --vm at .ctr\n" in
   Alcotest.(check int) "point mark adds no edge" (edges_of base)
     (edges_of with_point_mark);
-  Alcotest.(check int) "no marks recorded yet" 0 (marks_of base);
-  Alcotest.(check int) "one mark recorded" 1 (marks_of with_point_mark)
+  (* the two full construction marks (--vm, --hm) already record *)
+  Alcotest.(check int) "two marks before point" 2 (marks_of base);
+  Alcotest.(check int) "point mark adds one record" 3 (marks_of with_point_mark)
 
 (* Under the new mark-classification model (partial marks / pinch, slice 2
    refinement), a `between` extent with one boundary endpoint and one
@@ -684,8 +693,10 @@ let test_mark_mountain_cp_intent () =
    task; a full mark never records. *)
 let test_mark_full_still_subdivides () =
   let src = "paper square\nmark map .a onto .b\n" in
-  Alcotest.(check int) "full mark subdivides (one edge)" 1 (edges_of src);
-  Alcotest.(check int) "no record" 0 (marks_of src)
+  (* a full mark records at fold-time (0 edges) and graduates to a crease only
+     at emit *)
+  Alcotest.(check int) "full mark records (no fold-time edge)" 0 (edges_of src);
+  Alcotest.(check int) "one record" 1 (marks_of src)
 
 (* fold the left half onto the right (valley crease x=1/2; .a/.d move, .b/.c
    don't). --hm = map .b onto .c is the y=1/2 line built from the two
