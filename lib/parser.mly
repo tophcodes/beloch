@@ -13,7 +13,7 @@ type collapse_item =
 
 %token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD MOVING MOUNTAIN FLIP RPAREN AND UP TO FOLD_KW
 %token DEF APPLY EXPORT STEP AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
-%token COLLAPSE OVER STANDING MARK
+%token COLLAPSE OVER STANDING MARK BETWEEN AT
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN  (* --[ / .[ : the line/point select openers *)
 %token <string> POINT
 %token <string> CREASE
@@ -45,9 +45,11 @@ body_stmt:
   (* value binding: pure geometry, no material *)
   | CREASE EQ axiom      { BindLine ($1, $3, $loc) }
   | CREASE EQ bundle_expr { BindBundle ($1, $3, $loc) }
-  (* mark: flat crease (subdivide only) *)
-  | MARK markable                        { Mark (None, $2, $loc) }
-  | MARK CREASE EQ axiom                 { Mark (Some $2, MMotion $4, $loc) }
+  (* mark: flat crease; Full subdivides, partial extent may record *)
+  | MARK markable mark_clauses
+      { let (ext, dir, lay) = $3 in Mark (None, $2, ext, dir, lay, $loc) }
+  | MARK CREASE EQ axiom mark_clauses
+      { let (ext, dir, lay) = $5 in Mark (Some $2, MMotion $4, ext, dir, lay, $loc) }
   (* fold: motion-fold or fold-along an existing material crease *)
   | FOLD_KW markable fold_clauses        { Fold (None, $2, $3, $loc) }
   | FOLD_KW CREASE EQ axiom fold_clauses { Fold (Some $2, MMotion $4, $5, $loc) }
@@ -113,6 +115,19 @@ upto_opt:
 mountain_opt:
   |          { false }
   | MOUNTAIN { true }
+
+mark_clauses:
+  | extent_opt mountain_opt layer_opt
+      { ($1, (if $2 then Mountain else Valley), $3) }
+
+extent_opt:
+  |                                     { Full }
+  | BETWEEN point_operand point_operand { Between ($2, $3) }
+  | AT point_operand                    { At $2 }
+
+layer_opt:
+  |              { None }
+  | flap_operand { Some $1 }
 
 flap_arg:
   | point_operand { FlapPoint $1 }
