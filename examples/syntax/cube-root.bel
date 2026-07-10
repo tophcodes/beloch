@@ -9,10 +9,19 @@
 ; (constructible by folding, not by ruler and compass); the shared-field kernel
 ; folds it exactly in milliseconds. Render --folded to see Messer's Figure 2.
 ;
-; The thirds are built first with rational scaffolding. NOTE: the landmark
-; scaffolding lines are TODO(pinch) — scored as full creases here for now, so the
-; crease pattern carries extra diagonals until pinch marks replace them; the
-; folded landing (AC/CB = ∛2) is unaffected.
+; The thirds are built first with rational scaffolding. --pq is a pure VALUE
+; binding (no `mark`): it only names the fold target below and scores
+; nothing, so the crease pattern no longer carries it. The six landmark
+; diagonals (--ac --db --d_mb --a_mt --c_mb --b_mt) still have to stay
+; `mark`ed, because a meet (`*`) requires both operand lines to already be
+; physical creases (`--l is not a physical crease, so it has no material
+; mark to cross`) — dropping `mark` there breaks ._pq1/._pq2/._rs1/._rs2.
+; --rs likewise stays a full mark: `.s = --rs * --cd` needs --rs's mark to
+; reach the top edge, but shrinking it to `between ._rs1 ._rs2` hits
+; "spans an internal crease" (both ends sit exactly on other landmarks'
+; crossings — classify_mark_extent has no representation yet for a mid-face
+; extent anchored at two different existing-crease vertices). The folded
+; landing (AC/CB = ∛2) is unaffected either way.
 
 paper square
 
@@ -22,18 +31,18 @@ mark --vm = map .a onto .b                ; vertical midline x=1/2 (axiom 2)
 step thirds
 ._mb = --vm * --ab                   ; (1/2, 0)
 ._mt = --vm * --cd                   ; (1/2, 1)
-mark --ac   = through .a .c               ; TODO(pinch): landmark diagonal
-mark --db   = through .d .b               ; TODO(pinch): landmark diagonal
-mark --d_mb = through .d ._mb             ; TODO(pinch): landmark
-mark --a_mt = through .a ._mt             ; TODO(pinch): landmark
-mark --c_mb = through .c ._mb             ; TODO(pinch): landmark
-mark --b_mt = through .b ._mt             ; TODO(pinch): landmark
+mark --ac   = through .a .c               ; landmark diagonal
+mark --db   = through .d .b               ; landmark diagonal
+mark --d_mb = through .d ._mb             ; landmark
+mark --a_mt = through .a ._mt             ; landmark
+mark --c_mb = through .c ._mb             ; landmark
+mark --b_mt = through .b ._mt             ; landmark
 ._pq1 = --d_mb * --ac                ; (1/3, 1/3)
 ._pq2 = --a_mt * --db                ; (1/3, 2/3)
-mark --pq  = through ._pq1 ._pq2          ; left third line PQ : x = 1/3
+--pq  = through ._pq1 ._pq2           ; left third line PQ : x = 1/3
 ._rs1 = --c_mb * --db                ; (2/3, 1/3)
 ._rs2 = --b_mt * --ac                ; (2/3, 2/3)
-mark --rs  = through ._rs1 ._rs2          ; right third line RS : x = 2/3
+mark --rs = through ._rs1 ._rs2           ; right third line RS : x = 2/3
 .s    = --rs * --cd                  ; S = (2/3, 1), top of RS
 
 step beloch_fold
