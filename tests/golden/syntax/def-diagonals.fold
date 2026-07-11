@@ -21,14 +21,14 @@
     {
       "axiom": "axiom1",
       "sources": [ ".p", ".q" ],
-      "span": "def-diagonals.bel:7:3",
+      "span": "def-diagonals.bel:7:3-27",
       "name": "d1.d",
       "step": "diagonals"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".p", ".q" ],
-      "span": "def-diagonals.bel:7:3",
+      "span": "def-diagonals.bel:7:3-27",
       "name": "d2.d",
       "step": "diagonals"
     },
@@ -36,7 +36,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".p", ".q" ],
-      "span": "def-diagonals.bel:7:3",
+      "span": "def-diagonals.bel:7:3-27",
       "name": "d1.d",
       "step": "diagonals"
     },
@@ -45,7 +45,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".p", ".q" ],
-      "span": "def-diagonals.bel:7:3",
+      "span": "def-diagonals.bel:7:3-27",
       "name": "d2.d",
       "step": "diagonals"
     },

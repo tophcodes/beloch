@@ -21,14 +21,14 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "square-centre.bel:6:1",
+      "span": "square-centre.bel:6:1-26",
       "name": "ac",
       "step": null
     },
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".d" ],
-      "span": "square-centre.bel:7:1",
+      "span": "square-centre.bel:7:1-26",
       "name": "bd",
       "step": null
     },
@@ -36,7 +36,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "square-centre.bel:6:1",
+      "span": "square-centre.bel:6:1-26",
       "name": "ac",
       "step": null
     },
@@ -45,7 +45,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".d" ],
-      "span": "square-centre.bel:7:1",
+      "span": "square-centre.bel:7:1-26",
       "name": "bd",
       "step": null
     },

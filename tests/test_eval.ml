@@ -1236,8 +1236,12 @@ let test_select_edge () =
   let base = "paper square\nmark --v = map .a onto .b\n" in
   let fold body =
     let j = Yojson.Safe.to_string (Beloch.fold_string ~filename:"t.bel" body) in
-    Str.global_replace (Str.regexp_string "--[.a .b]") "EDGE"
-      (Str.global_replace (Str.regexp_string "--ab") "EDGE" j)
+    (* the two spellings differ in source length, so their provenance spans end
+       at different columns — neutralize the span; this test is about which edge
+       gets selected, not source geometry *)
+    Str.global_replace (Str.regexp "\"span\":\"[^\"]*\"") "\"span\":\"S\""
+      (Str.global_replace (Str.regexp_string "--[.a .b]") "EDGE"
+         (Str.global_replace (Str.regexp_string "--ab") "EDGE" j))
   in
   Alcotest.(check string) "--[.a .b] == --ab"
     (fold (base ^ "mark map --v onto --ab toward .a\n"))

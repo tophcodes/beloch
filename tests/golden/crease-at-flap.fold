@@ -31,14 +31,14 @@
     {
       "axiom": "mark",
       "sources": [ "--b" ],
-      "span": "crease-at-flap.bel:12:17",
+      "span": "crease-at-flap.bel:12:17-20",
       "name": null,
       "step": null
     },
     {
       "axiom": "axiom2",
       "sources": [ ".c", ".b" ],
-      "span": "crease-at-flap.bel:11:1",
+      "span": "crease-at-flap.bel:11:1-26",
       "name": "v",
       "step": null
     },
@@ -48,7 +48,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".c", ".b" ],
-      "span": "crease-at-flap.bel:11:1",
+      "span": "crease-at-flap.bel:11:1-26",
       "name": "v",
       "step": null
     },
@@ -57,7 +57,7 @@
     {
       "axiom": "mark",
       "sources": [ "--b" ],
-      "span": "crease-at-flap.bel:12:17",
+      "span": "crease-at-flap.bel:12:17-20",
       "name": null,
       "step": null
     },

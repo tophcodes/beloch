@@ -29,7 +29,7 @@
     {
       "axiom": "axiom5",
       "sources": [ "--v", "--ab", ".a" ],
-      "span": "bisect-a.bel:3:1",
+      "span": "bisect-a.bel:3:1-33",
       "name": null,
       "step": null
     },
@@ -37,7 +37,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".b" ],
-      "span": "bisect-a.bel:2:1",
+      "span": "bisect-a.bel:2:1-26",
       "name": "v",
       "step": null
     },

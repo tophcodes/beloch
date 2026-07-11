@@ -39,14 +39,14 @@
     {
       "axiom": "axiom2",
       "sources": [ ".mid", ".d" ],
-      "span": "complex-fold.bel:7:1",
+      "span": "complex-fold.bel:7:1-34",
       "name": null,
       "step": null
     },
     {
       "axiom": "axiom2",
       "sources": [ ".b", ".a" ],
-      "span": "complex-fold.bel:5:1",
+      "span": "complex-fold.bel:5:1-26",
       "name": "v",
       "step": null
     },
@@ -55,7 +55,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".mid", ".d" ],
-      "span": "complex-fold.bel:7:1",
+      "span": "complex-fold.bel:7:1-34",
       "name": null,
       "step": null
     },
@@ -63,7 +63,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".b", ".a" ],
-      "span": "complex-fold.bel:5:1",
+      "span": "complex-fold.bel:5:1-26",
       "name": "v",
       "step": null
     },

@@ -20,7 +20,7 @@
     {
       "axiom": "axiom5",
       "sources": [ "--l", "--r" ],
-      "span": "bisect-parallel.bel:5:1",
+      "span": "bisect-parallel.bel:5:1-22",
       "name": null,
       "step": null
     },

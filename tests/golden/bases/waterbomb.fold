@@ -49,14 +49,14 @@
     {
       "axiom": "mark",
       "sources": [ "--ac" ],
-      "span": "waterbomb.bel:20:10",
+      "span": "waterbomb.bel:20:10-14",
       "name": null,
       "step": null
     },
     {
       "axiom": "mark",
       "sources": [ "--h" ],
-      "span": "waterbomb.bel:21:7",
+      "span": "waterbomb.bel:21:7-10",
       "name": null,
       "step": null
     },
@@ -64,7 +64,7 @@
     {
       "axiom": "mark",
       "sources": [ "--bd" ],
-      "span": "waterbomb.bel:20:38",
+      "span": "waterbomb.bel:20:38-42",
       "name": null,
       "step": null
     },
@@ -72,7 +72,7 @@
     {
       "axiom": "mark",
       "sources": [ "--v" ],
-      "span": "waterbomb.bel:23:8",
+      "span": "waterbomb.bel:23:8-11",
       "name": null,
       "step": null
     },
@@ -80,7 +80,7 @@
     {
       "axiom": "mark",
       "sources": [ "--ac" ],
-      "span": "waterbomb.bel:20:10",
+      "span": "waterbomb.bel:20:10-14",
       "name": null,
       "step": null
     },
@@ -89,7 +89,7 @@
     {
       "axiom": "mark",
       "sources": [ "--v" ],
-      "span": "waterbomb.bel:23:8",
+      "span": "waterbomb.bel:23:8-11",
       "name": null,
       "step": null
     },
@@ -97,7 +97,7 @@
     {
       "axiom": "mark",
       "sources": [ "--bd" ],
-      "span": "waterbomb.bel:20:38",
+      "span": "waterbomb.bel:20:38-42",
       "name": null,
       "step": null
     },
@@ -105,7 +105,7 @@
     {
       "axiom": "mark",
       "sources": [ "--h" ],
-      "span": "waterbomb.bel:21:7",
+      "span": "waterbomb.bel:21:7-10",
       "name": null,
       "step": null
     },

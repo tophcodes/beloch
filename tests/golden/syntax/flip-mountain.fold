@@ -22,7 +22,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".b" ],
-      "span": "flip-mountain.bel:4:1",
+      "span": "flip-mountain.bel:4:1-30",
       "name": null,
       "step": null
     },

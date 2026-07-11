@@ -20,7 +20,7 @@ let test_error_roundtrip () =
     { Lexing.pos_fname = "x.bel"; pos_lnum = 3; pos_bol = 10; pos_cnum = 14 }
   in
   Alcotest.(check string)
-    "span format" "x.bel:3:5"
+    "span format" "x.bel:3:5-5"
     (Beloch.Error.span_to_string (pos, pos))
 
 (* ---- Parse ---- *)

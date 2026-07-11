@@ -27,7 +27,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "kite.bel:3:1",
+      "span": "kite.bel:3:1-26",
       "name": "ac",
       "step": null
     },
@@ -35,14 +35,14 @@
     {
       "axiom": "axiom5",
       "sources": [ "--da", "--ac" ],
-      "span": "kite.bel:4:1",
+      "span": "kite.bel:4:1-24",
       "name": null,
       "step": null
     },
     {
       "axiom": "axiom5",
       "sources": [ "--ab", "--ac" ],
-      "span": "kite.bel:5:1",
+      "span": "kite.bel:5:1-24",
       "name": null,
       "step": null
     },

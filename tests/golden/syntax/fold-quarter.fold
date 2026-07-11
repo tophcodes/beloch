@@ -38,14 +38,14 @@
     {
       "axiom": "axiom2",
       "sources": [ ".b", ".a" ],
-      "span": "fold-quarter.bel:3:1",
+      "span": "fold-quarter.bel:3:1-30",
       "name": null,
       "step": null
     },
     {
       "axiom": "axiom2",
       "sources": [ ".d", ".a" ],
-      "span": "fold-quarter.bel:4:1",
+      "span": "fold-quarter.bel:4:1-30",
       "name": null,
       "step": null
     },
@@ -55,7 +55,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".d", ".a" ],
-      "span": "fold-quarter.bel:4:1",
+      "span": "fold-quarter.bel:4:1-30",
       "name": null,
       "step": null
     },
@@ -64,7 +64,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".b", ".a" ],
-      "span": "fold-quarter.bel:3:1",
+      "span": "fold-quarter.bel:3:1-30",
       "name": null,
       "step": null
     },
