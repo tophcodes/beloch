@@ -21,14 +21,14 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "crease-flip-reuse.bel:4:1",
+      "span": "crease-flip-reuse.bel:4:1-25",
       "name": "q",
       "step": null
     },
     {
       "axiom": "axiom3",
       "sources": [ ".b", "--q" ],
-      "span": "crease-flip-reuse.bel:6:1",
+      "span": "crease-flip-reuse.bel:6:1-25",
       "name": null,
       "step": null
     },
@@ -36,7 +36,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "crease-flip-reuse.bel:4:1",
+      "span": "crease-flip-reuse.bel:4:1-25",
       "name": "q",
       "step": null
     },
@@ -45,7 +45,7 @@
     {
       "axiom": "axiom3",
       "sources": [ ".b", "--q" ],
-      "span": "crease-flip-reuse.bel:6:1",
+      "span": "crease-flip-reuse.bel:6:1-25",
       "name": null,
       "step": null
     },

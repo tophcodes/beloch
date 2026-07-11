@@ -57,14 +57,14 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".m" ],
-      "span": "rabbit-ear.bel:12:1",
+      "span": "rabbit-ear.bel:12:1-26",
       "name": "am",
       "step": "precrease"
     },
     {
       "axiom": "mark",
       "sources": [ "--bb" ],
-      "span": "rabbit-ear.bel:26:24",
+      "span": "rabbit-ear.bel:26:24-28",
       "name": null,
       "step": "ear"
     },
@@ -72,14 +72,14 @@
     {
       "axiom": "mark",
       "sources": [ "--ba" ],
-      "span": "rabbit-ear.bel:26:10",
+      "span": "rabbit-ear.bel:26:10-14",
       "name": null,
       "step": "ear"
     },
     {
       "axiom": "mark",
       "sources": [ "--bb" ],
-      "span": "rabbit-ear.bel:26:24",
+      "span": "rabbit-ear.bel:26:24-28",
       "name": null,
       "step": "ear"
     },
@@ -88,35 +88,35 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".m" ],
-      "span": "rabbit-ear.bel:12:1",
+      "span": "rabbit-ear.bel:12:1-26",
       "name": "am",
       "step": "precrease"
     },
     {
       "axiom": "mark",
       "sources": [ "--v" ],
-      "span": "rabbit-ear.bel:27:7",
+      "span": "rabbit-ear.bel:27:7-10",
       "name": null,
       "step": "ear"
     },
     {
       "axiom": "mark",
       "sources": [ "--ba" ],
-      "span": "rabbit-ear.bel:26:10",
+      "span": "rabbit-ear.bel:26:10-14",
       "name": null,
       "step": "ear"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".m" ],
-      "span": "rabbit-ear.bel:13:1",
+      "span": "rabbit-ear.bel:13:1-26",
       "name": "bm",
       "step": "precrease"
     },
     {
       "axiom": "mark",
       "sources": [ "--ba" ],
-      "span": "rabbit-ear.bel:26:10",
+      "span": "rabbit-ear.bel:26:10-14",
       "name": null,
       "step": "ear"
     },
@@ -126,7 +126,7 @@
     {
       "axiom": "mark",
       "sources": [ "--v" ],
-      "span": "rabbit-ear.bel:27:7",
+      "span": "rabbit-ear.bel:27:7-10",
       "name": null,
       "step": "ear"
     },
@@ -134,14 +134,14 @@
     {
       "axiom": "mark",
       "sources": [ "--bb" ],
-      "span": "rabbit-ear.bel:26:24",
+      "span": "rabbit-ear.bel:26:24-28",
       "name": null,
       "step": "ear"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".m" ],
-      "span": "rabbit-ear.bel:13:1",
+      "span": "rabbit-ear.bel:13:1-26",
       "name": "bm",
       "step": "precrease"
     },

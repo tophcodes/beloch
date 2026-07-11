@@ -20,7 +20,7 @@
     {
       "axiom": "fold",
       "sources": [ "--d" ],
-      "span": "fold-along.bel:5:1",
+      "span": "fold-along.bel:5:1-19",
       "name": null,
       "step": null
     },

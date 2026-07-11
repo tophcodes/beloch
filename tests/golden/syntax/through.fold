@@ -50,14 +50,14 @@
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".b" ],
-      "span": "through.bel:13:1",
+      "span": "through.bel:13:1-29",
       "name": "vmid",
       "step": null
     },
     {
       "axiom": "axiom6",
       "sources": [ ".ctr", "--ab", ".b", ".a" ],
-      "span": "through.bel:17:1",
+      "span": "through.bel:17:1-45",
       "name": null,
       "step": null
     },
@@ -66,7 +66,7 @@
     {
       "axiom": "axiom6",
       "sources": [ ".ctr", "--ab", ".b", ".a" ],
-      "span": "through.bel:17:1",
+      "span": "through.bel:17:1-45",
       "name": null,
       "step": null
     },
@@ -74,14 +74,14 @@
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".b" ],
-      "span": "through.bel:13:1",
+      "span": "through.bel:13:1-29",
       "name": "vmid",
       "step": null
     },
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".d" ],
-      "span": "through.bel:14:1",
+      "span": "through.bel:14:1-29",
       "name": "hmid",
       "step": null
     },
@@ -90,7 +90,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".b" ],
-      "span": "through.bel:13:1",
+      "span": "through.bel:13:1-29",
       "name": "vmid",
       "step": null
     },
@@ -98,7 +98,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".d" ],
-      "span": "through.bel:14:1",
+      "span": "through.bel:14:1-29",
       "name": "hmid",
       "step": null
     },

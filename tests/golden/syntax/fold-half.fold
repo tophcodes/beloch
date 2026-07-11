@@ -20,7 +20,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".b", ".a" ],
-      "span": "fold-half.bel:3:1",
+      "span": "fold-half.bel:3:1-30",
       "name": null,
       "step": null
     },

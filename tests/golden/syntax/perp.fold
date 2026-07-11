@@ -21,14 +21,14 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "perp.bel:3:1",
+      "span": "perp.bel:3:1-28",
       "name": "diag",
       "step": null
     },
     {
       "axiom": "axiom3",
       "sources": [ ".b", "--diag" ],
-      "span": "perp.bel:4:1",
+      "span": "perp.bel:4:1-28",
       "name": null,
       "step": null
     },
@@ -36,7 +36,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "perp.bel:3:1",
+      "span": "perp.bel:3:1-28",
       "name": "diag",
       "step": null
     },
@@ -45,7 +45,7 @@
     {
       "axiom": "axiom3",
       "sources": [ ".b", "--diag" ],
-      "span": "perp.bel:4:1",
+      "span": "perp.bel:4:1-28",
       "name": null,
       "step": null
     },
