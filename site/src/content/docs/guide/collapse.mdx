@@ -1,8 +1,145 @@
 ---
 title: collapse
+description: Ein Scheitelpunkt, viele Kanten, gleichzeitig gefaltet — der flache Endzustand, den keine Folge einzelner Faltungen erreicht.
 ---
 
-`collapse` überführt eine markierte Faltung vom Faltbild in den gefalteten
-Zustand.
+import Playground from '../../../components/Playground.astro';
 
-Inhalt folgt.
+Ein Scheitelpunkt, viele Kanten, gleichzeitig gefaltet — der flache Endzustand, den keine *Abfolge* einfacher Faltungen erreicht.
+
+## 01 · Warum es das überhaupt gibt
+
+Jedes andere Verb in Beloch faltet **eine Kante nach der anderen**. Das reicht für die meisten Modelle — aber nicht jede flache Form ist so erreichbar.
+
+Nimm drei Winkelhalbierende eines Dreiecks, die sich im Inkreismittelpunkt treffen, plus die Höhe von diesem Punkt aus: Der Scheitelpunkt *ist* flach-faltbar (**Rabbit-Ear-Theorem**), aber keine geordnete Folge einzelner einfacher Faltungen erreicht je diesen Endzustand. Flach-faltbar und *einfach*-faltbar sind unterschiedliche Klassen. `collapse` überspringt den gesamten 3D-Zwischenzustand und springt direkt zum flachen Endzustand mehrerer Kanten, die alle an einem Punkt zusammentreffen — gemeinsam gefaltet.
+
+:::note[Geltungsbereich]
+Ein Scheitelpunkt pro Anweisung. Flach-Faltbarkeit für ein Blatt mit vielen interagierenden Scheitelpunkten zu entscheiden ist NP-schwer; der Einzelscheitelpunkt-Fall ist exakt entscheidbar — und deckt bereits das Rabbit Ear sowie die Waterbomb-/Preliminary-Basis ab.
+:::
+
+## 02 · Das mentale Modell
+
+Lies ein `collapse` als Pipeline. Alles, was später verwirrt, ist nur eine dieser fünf Stufen bei der Arbeit.
+
+| Stufe | Was passiert |
+| --- | --- |
+| **INPUT** — Kanten → ein Punkt | *n* markierte Linien, die alle durch einen einzigen Scheitelpunkt O verlaufen. |
+| **SPLIT** — Sektoren | die Strahlen zerschneiden das Papier um O in *n* Keile. |
+| **LABEL** — M/V pro Strahl | jeder Strahl ist Berg oder Tal (du deklarierst es). |
+| **GATE** — Kawasaki + Maekawa | Winkel müssen sich zu 180° abwechseln; \|M−V\| muss 2 sein. |
+| **STACK** — Lagenreihenfolge | gültige Reihenfolgen aufzählen; genau eine, oder mit `over` wählen. |
+
+Schlägt Kawasaki fehl, kann der Scheitelpunkt allein über die Winkel nicht flach liegen. Schlägt Maekawa fehl, können es die M/V-Label nicht. Überlebt mehr als eine Stapelreihenfolge, ist die Faltung mehrdeutig und muss disambiguiert werden. Das sind die drei Fehlerfamilien, auf die man stößt.
+
+## 03 · Das Faltbild
+
+Hier ist die Waterbomb-Basis: ein Quadrat `a b c d`, beide Diagonalen und beide Mittellinien durch das Zentrum `O`. Acht Strahlen, acht 45°-Sektoren. Die Farbe ist die *deklarierte* Zuweisung — was im Quelltext steht.
+
+<div style="display:flex; justify-content:center; margin: 1.5rem 0;">
+<svg viewBox="0 0 360 360" role="img" aria-label="Waterbomb-Faltbild: Quadrat mit acht Strahlen vom Zentrum, Tal oder Berg eingefärbt." style="max-width: 360px; width: 100%; height: auto;">
+  <rect x="40" y="40" width="280" height="280" rx="3" style="fill:var(--beloch-panel); stroke:var(--beloch-border); stroke-width:1.5;"/>
+  {/* diagonals (valley) */}
+  <line x1="180" y1="180" x2="40"  y2="320" style="stroke:var(--beloch-valley); stroke-width:3;"/>
+  <line x1="180" y1="180" x2="320" y2="40"  style="stroke:var(--beloch-valley); stroke-width:3;"/>
+  <line x1="180" y1="180" x2="320" y2="320" style="stroke:var(--beloch-valley); stroke-width:3;"/>
+  <line x1="180" y1="180" x2="40"  y2="40"  style="stroke:var(--beloch-valley); stroke-width:3;"/>
+  {/* right midline ray (valley) */}
+  <line x1="180" y1="180" x2="320" y2="180" style="stroke:var(--beloch-valley); stroke-width:3;"/>
+  {/* left, top, bottom midline rays (mountain) */}
+  <line x1="180" y1="180" x2="40"  y2="180" style="stroke:var(--beloch-mountain); stroke-width:3; stroke-dasharray:7 5;"/>
+  <line x1="180" y1="180" x2="180" y2="40"  style="stroke:var(--beloch-mountain); stroke-width:3; stroke-dasharray:7 5;"/>
+  <line x1="180" y1="180" x2="180" y2="320" style="stroke:var(--beloch-mountain); stroke-width:3; stroke-dasharray:7 5;"/>
+  <circle cx="180" cy="180" r="4.5" style="fill:var(--beloch-ink);"/>
+  <text x="26"  y="336" style="fill:var(--beloch-muted); font-size:13px; font-family: var(--sl-font-mono);">a</text>
+  <text x="322" y="336" style="fill:var(--beloch-muted); font-size:13px; font-family: var(--sl-font-mono);">b</text>
+  <text x="322" y="34"  style="fill:var(--beloch-muted); font-size:13px; font-family: var(--sl-font-mono);">c</text>
+  <text x="26"  y="34"  style="fill:var(--beloch-muted); font-size:13px; font-family: var(--sl-font-mono);">d</text>
+  <text x="190" y="176" style="fill:var(--beloch-ink); font-size:13px; font-weight:700; font-family: var(--sl-font-mono);">O</text>
+  <path d="M 210 180 A 30 30 0 0 0 201 159" style="fill:none; stroke:var(--beloch-faint); stroke-width:1;"/>
+  <text x="214" y="167" style="fill:var(--beloch-faint); font-size:10px; font-family: var(--sl-font-mono);">45°</text>
+</svg>
+</div>
+
+<div style="display:flex; gap:1.3rem; flex-wrap:wrap; justify-content:center; margin-top:0.4rem; font-size:0.86rem; color:var(--beloch-muted);">
+  <span><i style="display:inline-block; width:26px; height:0; border-top:3px solid var(--beloch-valley); vertical-align:middle; margin-right:0.4em;"></i>Tal (valley) — deklariert, faltet zu dir hin</span>
+  <span><i style="display:inline-block; width:26px; height:0; border-top:3px dashed var(--beloch-mountain); vertical-align:middle; margin-right:0.4em;"></i>Berg (mountain) — deklariert, faltet von dir weg</span>
+</div>
+
+<p style="text-align:center; font-size:0.86rem; color:var(--beloch-muted);">Der Quelltext deklariert <strong style="color:var(--beloch-valley);">5 Tal</strong> / <strong style="color:var(--beloch-mountain);">3 Berg</strong>. Behalte das im Kopf — die emittierte Datei widerspricht dem. <code>examples/bases/waterbomb.bel</code></p>
+
+Und hier live: derselbe Quelltext, ausgewertet im Browser.
+
+<Playground code={`paper square
+mark --ac = map .b onto .d
+mark --bd = map .a onto .c
+mark --h  = map .a onto .d
+mark --v  = map .a onto .b
+
+collapse --ac & .a and --ac & .c and --bd & .b and --bd & .d
+  and --h & --bc
+  and (--h & --da mountain)
+  and (--v & --cd mountain)
+  and (--v & --ab mountain)`} />
+
+## 04 · Die Syntax lesen
+
+Eine flache, durch `and` getrennte Liste. Jeder Eintrag benennt **einen Strahl** und optional seine Zuweisung. Der Trick: Ein Kantenname wie `--h` ist ein *Bündel* aus Segmenten — die ganze Mittellinie — also schneidest du mit `&` den einen gemeinten Strahl heraus.
+
+| Ausdruck | Bedeutung |
+| --- | --- |
+| `--ac & .a` | Diagonale `--ac`, das Segment *anliegend an Ecke* `.a` → der Strahl von O zur unteren linken Ecke. Standardzuweisung ist **Tal**. |
+| `--h & --bc` | Mittellinie `--h`, das Segment anliegend an *Kante* `--bc` → der Strahl von O zum rechten Kantenmittelpunkt. `&` nimmt einen Punkt *oder* eine Kante — was auch immer das Segment auf einen Singleton festnagelt. |
+| `… mountain` | Kippt diesen Strahl vom Standard **Tal** auf **Berg**. Klammere den Eintrag ein, wenn ihm ein Schlüsselwort folgt. |
+| `.p over .q` | Hier nicht gezeigt. Ein Tiebreaker für die Lagenreihenfolge: Klappe `.p` über `.q`. Es ist ein *Eintrag in der Liste*, keine nachgestellte Klausel — nur nutzbar, wenn Stufe 05 mehr als eine gültige Stapelung findet. |
+| `standing .r` | Verlangt, dass ein Flap *aufrecht* bleibt — ein nicht-flacher Endzustand. Der Kernel ist derzeit nur-flach, also schlägt das absichtlich fehl. |
+
+:::note[Warum überhaupt &]
+Eine Kante ist ein Name über vielen Segmenten — nur im gefalteten Moment kollinear, im Faltbild über das Blatt verstreut. Um *einen* Keil zu falten, muss man auf *ein* Segment verweisen. `&` ist der Singleton-Filter: `--h & --bc` ist eindeutig, `--h` allein ist achtfach mehrdeutig und wird abgelehnt.
+:::
+
+## 05 · Die Paritätsfalle
+
+Deklariert wurden **5V**/**3M**. Die emittierte `.fold`-Datei sagt **7V**/**1M**. Nichts ist kaputt — es werden zwei verschiedene Frames gelesen.
+
+Was man *schreibt*, ist die Zuweisung im **Faltbild-Frame** (crease-pattern frame): wie man die Kante auf dem flachen, ungefalteten Blatt markieren würde. Hier lebt Maekawa — 5−3 = 2. ✓
+
+Was *emittiert* wird, ist die Zuweisung im **globalen / Tisch-Frame** (table frame): wie Berg oder Tal aussieht, von direkt oben auf das gefaltete Modell betrachtet. Und ein Sektor, der **rückseitig oben** landet, zeigt jede Kante auf ihm invertiert — ein deklariertes Tal liest sich als Berg, und umgekehrt. In Beloch ist das eine Zeile:
+
+```ocaml
+(* lib/collapse.ml *)
+effective_valley valley sec_transform face_iso =
+  valley <> (det_sign (compose sec_transform face_iso) < 0)
+  (* emitted = declared  XOR  (dieser Sektor landete rückseitig oben) *)
+```
+
+Falten spiegelt jeden Sektor über die vorherige Kante, also **wechseln** die Orientierungen beim Umlauf um O — `det(Tₖ) = (−1)ᵏ`. Jeder zweite Sektor liegt rückseitig oben. Bei der Waterbomb trifft diese Parität genau die vier *Kantenmittelpunkt*-Strahlen: sie kippen. Die vier Diagonal-Strahlen sitzen auf vorderseitig-oben-Sektoren: sie behalten, was deklariert wurde.
+
+:::caution[Die Regel, in einem Satz]
+Man kontrolliert die Faltbild-Absicht. Der Evaluator leitet den Tisch-Frame-Buchstaben ab, indem er diese Absicht mit XOR gegen die Frage verknüpft, ob der Strahl-Sektor rückseitig gefaltet wurde. Quelltext-Buchstaben nicht direkt mit Golden-Buchstaben vergleichen — erst durch die Parität schicken.
+:::
+
+## 06 · Durchgerechnetes Beispiel — jeder Strahl
+
+Die ganze Lektion in einer Tabelle. Deklariert, dann ob der Sektor des Strahls rückseitig landet, dann der Buchstabe, den die Golden-Datei tatsächlich trägt — verifiziert gegen `tests/golden/bases/waterbomb.fold`.
+
+| Strahl (O →) | Selektor | deklariert | Sektor | emittiert |
+| --- | --- | :---: | :---: | :---: |
+| a · unten links | `--ac & .a` | <span style="color:var(--beloch-valley); font-weight:600;">V</span> | vorne | <span style="color:var(--beloch-valley); font-weight:600;">V</span> |
+| c · oben rechts | `--ac & .c` | <span style="color:var(--beloch-valley); font-weight:600;">V</span> | vorne | <span style="color:var(--beloch-valley); font-weight:600;">V</span> |
+| b · unten rechts | `--bd & .b` | <span style="color:var(--beloch-valley); font-weight:600;">V</span> | vorne | <span style="color:var(--beloch-valley); font-weight:600;">V</span> |
+| d · oben links | `--bd & .d` | <span style="color:var(--beloch-valley); font-weight:600;">V</span> | vorne | <span style="color:var(--beloch-valley); font-weight:600;">V</span> |
+| rechter Kantenmittelpunkt | `--h & --bc` | <span style="color:var(--beloch-valley); font-weight:600;">V</span> | hinten ↺ | <span style="color:var(--beloch-mountain); font-weight:600;">M</span> |
+| linker Kantenmittelpunkt | `--h & --da` | <span style="color:var(--beloch-mountain); font-weight:600;">M</span> | hinten ↺ | <span style="color:var(--beloch-valley); font-weight:600;">V</span> |
+| oberer Kantenmittelpunkt | `--v & --cd` | <span style="color:var(--beloch-mountain); font-weight:600;">M</span> | hinten ↺ | <span style="color:var(--beloch-valley); font-weight:600;">V</span> |
+| unterer Kantenmittelpunkt | `--v & --ab` | <span style="color:var(--beloch-mountain); font-weight:600;">M</span> | hinten ↺ | <span style="color:var(--beloch-valley); font-weight:600;">V</span> |
+| **Summe** | — | <span style="color:var(--beloch-valley); font-weight:600;">5V</span> / <span style="color:var(--beloch-mountain); font-weight:600;">3M</span> | — Parität — | <span style="color:var(--beloch-valley); font-weight:600;">7V</span> / <span style="color:var(--beloch-mountain); font-weight:600;">1M</span> |
+
+Beide Summen erfüllen ihren eigenen Frame. Deklariert 5−3 = 2 ist Maekawa im Faltbild-Frame. Das emittierte 7−1 = 6 ist *keine* Maekawa-Zahl — es ist eine Tisch-Frame-Projektion, bei der vier der Sektoren schlicht von einem weg zeigen.
+
+---
+
+**Quellen & Grundwahrheit**
+
+- Rabbit-Ear-Theorem, Kawasaki & Maekawa, Umdreh-M↔V-Gesetz — [hull2020, ch. 5 & Thm 8.5]
+- flach-faltbar ≠ einfach-faltbar — [demaine2007, §14.1.1]
+- im Repo: `spec/SPECIFICATION.md §4.9`, `lib/collapse.ml`, `examples/bases/waterbomb.bel`, `tests/golden/bases/waterbomb.fold`
