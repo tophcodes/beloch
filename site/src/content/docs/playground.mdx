@@ -2,6 +2,11 @@
 title: Playground
 ---
 
-Ein interaktiver Beloch-Editor mit Live-Vorschau folgt hier.
+import Playground from "../../components/Playground.astro";
 
-Inhalt folgt.
+Ein interaktiver Beloch-Editor mit Live-Vorschau. Die Auswertung läuft direkt im
+Browser (Web Worker) — der rationale Sprachkern (Reflexionen, Mittelpunkte,
+Punkt-auf-Punkt-Halbierende) wertet vollständig aus; Ausdrücke mit √/∛
+(Punkt-auf-Linie, Achse 6/7) brauchen die native Auswertung.
+
+<Playground code={`paper square\nmark --ac = map .b onto .d\nmark --bd = map .a onto .c\ncollapse --ac & .a and --ac & .c and --bd & .b and --bd & .d`} />
