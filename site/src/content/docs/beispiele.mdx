@@ -1,7 +1,87 @@
 ---
 title: Beispiele
+description: Eine Galerie funktionierender Beloch-Basen und Syntaxbeispiele — live im Browser oder als Hinweis auf die native Grenze.
 ---
 
-Beispielprogramme in Beloch.
+import Playground from '../../components/Playground.astro';
 
-Inhalt folgt.
+Eine Galerie aus `examples/`. Jedes Beispiel ist klassifiziert: läuft es vollständig im Browser (Web Worker, `js_of_ocaml`-Bundle), oder braucht es die native Auswertung? Der rationale Kern **und** feldalgebraische Programme (inklusive Achse-7-Kubikwurzeln) laufen im Browser; nur bestimmte Operationen, die einen FLINT-`Qqbar.t`-Rückfall erzwingen — etwa Achse-5-Winkelhalbierende und Achse-6-Konstruktionen —, brauchen den nativen Evaluator. Das ist keine Zahlenart-Grenze (ℚ vs. irrational), sondern eine Backend-Grenze im aktuellen Browser-Build; siehe [Playground](/playground/).
+
+## Basen
+
+### Waterbomb
+
+Acht Strahlen um ein Zentrum, ein `collapse`-Schritt. Läuft vollständig im Browser — rationaler Kern (nur Axiom-2-Punkt-auf-Punkt-Faltungen).
+
+<Playground code={`paper square
+
+; die Waterbomb-Basis: beide Diagonalen und beide Mittellinien treffen sich im
+; Zentrum. Acht Strahlen, |M-V|=2 (Maekawa) an jedem der acht Sektoren.
+mark --ac = map .b onto .d     ; Diagonale a-c
+mark --bd = map .a onto .c     ; Diagonale b-d
+mark --h  = map .a onto .d     ; horizontale Mittellinie, y = 1/2
+mark --v  = map .a onto .b     ; vertikale Mittellinie, x = 1/2
+
+collapse --ac & .a and --ac & .c and --bd & .b and --bd & .d
+  and --h & --bc
+  and (--h & --da mountain)
+  and (--v & --cd mountain)
+  and (--v & --ab mountain)`} />
+
+Das vollständig durchgerechnete Beispiel — jeder Strahl, deklariert gegen emittiert — steht in [collapse](/guide/collapse/).
+
+### Kite und Rabbit Ear — nativ
+
+`examples/bases/kite.bel` und `examples/bases/rabbit-ear.bel` funktionieren (`status: works` im jeweiligen Dateikopf), brauchen aber beide eine Achse-5-Winkelhalbierende (`fold map ... onto ...` auf zwei Linien) unter der Haube — das ist genau die Operation, die derzeit den nativen Evaluator erfordert. Sie sind hier deshalb nicht als Live-Playground eingebettet; render sie lokal mit `tools/fold2svg.mjs` oder über die native CLI.
+
+## Syntax-Beispiele
+
+### Kubikwurzel von 2 (Achse 7)
+
+Peter Messers Konstruktion [messer1986; hull2020, §2.3]: eine simultane Axiom-7-Faltung (zwei Punkte, je auf eine Linie) landet im Verhältnis AC/CB = ∛2 — eine Zahl vom Grad 3, in ℚ(α) für ein irrationales α, aber **feldalgebraisch** exakt darstellbar. Läuft vollständig im Browser.
+
+<Playground code={`; Peter Messers Konstruktion der Kubikwurzel von 2 [messer1986; hull2020
+; §2.3] — Axiom 7, die kubische Beloch-Faltung. Ein Quadrat wird durch zwei
+; Linien in drei gleiche vertikale Streifen geteilt; eine simultane Faltung
+; (Ecke .c auf Kante AB, Punkt .s auf die linke Drittel-Linie) landet im
+; Verhaeltnis AC/CB = Kubikwurzel(2) auf AB.
+
+paper square
+
+step vertical_middle
+mark --vm = map .a onto .b                ; vertikale Mittellinie x=1/2
+
+step thirds
+._mb = --vm * --ab
+._mt = --vm * --cd
+mark --ac   = through .a .c
+mark --db   = through .d .b
+mark --d_mb = through .d ._mb
+mark --a_mt = through .a ._mt
+mark --c_mb = through .c ._mb
+mark --b_mt = through .b ._mt
+._pq1 = --d_mb * --ac
+._pq2 = --a_mt * --db
+--pq  = through ._pq1 ._pq2                ; linke Drittel-Linie PQ: x = 1/3
+._rs1 = --c_mb * --db
+._rs2 = --b_mt * --ac
+mark --rs = through ._rs1 ._rs2            ; rechte Drittel-Linie RS: x = 2/3
+.s    = --rs * --cd                        ; S = (2/3, 1)
+
+step beloch_fold
+fold map .c onto --ab and .s onto --pq     ; C auf AB, S auf PQ -> AC/CB = Kubikwurzel(2)`} />
+
+### Achse 6 (`through`) — nativ
+
+`examples/syntax/through.bel` faltet einen Punkt auf eine Kante, mit der Kreuzung fixiert durch einen zweiten Punkt (Axiom ⑥, Justin ⑥). Die Landung ist ein Punkt vom Grad 2 (`1 − 1/√2`) — genau die Klasse, die im aktuellen Browser-Bundle den nativen Fallback auslöst. Kein Live-Playground; Quelltext zur Referenz:
+
+```beloch
+paper square
+mark --vmid = map .a onto .b              ; x = 1/2
+mark --hmid = map .a onto .d              ; y = 1/2
+.ctr = --vmid * --hmid                    ; Blattzentrum, (1/2, 1/2)
+; faltet das Zentrum auf die untere Kante, Kreuzung fest durch Ecke .b
+fold map .ctr onto --ab through .b toward .a
+```
+
+Ausgewertet im Browser meldet dieses Programm `kind: "native"` — ein ehrlicher Hinweis, keine stille Auslassung: dieselbe Meldung sieht man im Playground, wenn man diesen Quelltext dort einfügt und „Run" drückt.
