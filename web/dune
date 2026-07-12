@@ -7,6 +7,6 @@
 (executable
  (name beloch_web)
  (modes js)
- (libraries beloch zarith_stubs_js)
+ (libraries beloch zarith_stubs_js js_of_ocaml)
  (js_of_ocaml
   (javascript_files qqbar_shim.js)))
