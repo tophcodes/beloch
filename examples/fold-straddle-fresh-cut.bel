@@ -1,0 +1,11 @@
+; status: works — --ac is marked with only a half-diagonal extent (.a to the
+; centre .ctr), so its material never reaches .c; folding along it still
+; cuts a fresh crease across the WHOLE diagonal, well beyond that marked
+; extent ("axiom":"fold" provenance on freshly-cut material that straddles
+; past what --ac's own mark ever recorded)
+paper square
+mark --bd = through .b .d
+mark --v = map .a onto .b
+.ctr = --bd * --v
+mark --ac = through .a .c between .a .ctr
+fold --ac moving .b
