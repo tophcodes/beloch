@@ -148,6 +148,7 @@ let promote_crease (ctx : ctx) (name : string) (cv : crease_val) =
 (* ---- Evaluator ---- *)
 
 let eval_folded (prog : Ast.program) : folded =
+  Fold_state.reset_ids ();
   let root_scope = make_scope () in
   List.iter (fun (n, p) -> Hashtbl.replace root_scope.points n p) corners;
   List.iter
