@@ -395,6 +395,37 @@ let test_beloch_marks_emitted () =
         (one |> member "intent" |> to_string)
   | _ -> Alcotest.fail "expected exactly one point mark"
 
+(* #36: mcrease_id for a non-graduating point mark must be deterministic per
+   eval -- a function of the program alone, not of how many creases were
+   minted by earlier evals in the same process (Fold_state.next_id is a
+   process-lifetime global). Evaluate the point-mark program once for a
+   baseline id, then again after deliberately polluting the global counter
+   with unrelated real creases; the two ids must match. *)
+let mark_program =
+  "paper square\nmark --vm = map .a onto .b\nmark --hm = map .a onto .d\n\
+   .ctr = --vm * --hm\nmark --vm at .ctr\n"
+
+let point_mark_crease_id () =
+  let fd = Eval.eval_folded (Beloch.parse ~filename:"t.bel" mark_program) in
+  let json = Fold_emit.to_json_folded fd in
+  let open Yojson.Safe.Util in
+  match json |> member "beloch:marks" with
+  | `List [ one ] -> one |> member "crease_id" |> to_int
+  | _ -> Alcotest.fail "expected exactly one point mark"
+
+let test_beloch_marks_crease_id_deterministic () =
+  let baseline = point_mark_crease_id () in
+  (* pollute the global counter with unrelated real creases *)
+  ignore
+    (Eval.eval_folded
+       (Beloch.parse ~filename:"pollute.bel"
+          "paper square\nfold map .b onto .a moving .b\n\
+           fold map .d onto .a moving .d\n"));
+  let polluted = point_mark_crease_id () in
+  Alcotest.(check int)
+    "point mark crease_id is deterministic regardless of prior minting (#36)"
+    baseline polluted
+
 (* cross is material: a crease scored through several layers marks different
    lines in the paper, so bare cross must error — with a hint toward the
    #(...) flap escape hatch. (A merely table-bent scar crosses fine bare;
@@ -863,5 +894,8 @@ let () =
             test_emit_folded_crease_name;
           Alcotest.test_case "beloch:marks emitted for record marks" `Quick
             test_beloch_marks_emitted;
+          Alcotest.test_case
+            "point mark crease_id is deterministic per eval (#36)" `Quick
+            test_beloch_marks_crease_id_deterministic;
         ] );
     ]
