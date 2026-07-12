@@ -255,7 +255,7 @@ let to_float (x : t) : float =
   | Rat q -> Q.to_float q
   | Qq q -> Qqbar.to_float q
   | Field _ ->
-      let w = Q.of_ints 1 1000000000000 in
+      let w = Q.make Z.one (Z.of_string "1000000000000") in
       let lo, hi = enclosure_tight x w in
       Q.to_float (Q.div (Q.add lo hi) two_q)
 
