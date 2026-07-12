@@ -15,17 +15,20 @@ test("bisect-a CP: faces, colored creases, named constructions, legend", async (
   expect((s.match(/data-kind="face"/g) ?? []).length).toBe(3);
   // 9 edges as crease lines
   expect((s.match(/data-kind="crease"/g) ?? []).length).toBe(9);
-  // named crease edge carries its name; unassigned color from the default palette
+  // named crease edge carries its name; `mark --v = ...` defaults to valley
+  // (no `mountain` keyword — see lib/parser.mly mark_clauses), so it gets the
+  // valley class, not an "unassigned" one (bisect-a.bel has no F/U edges at
+  // all since the notation-cutover rewrite to mark/fold, commit 818ed9e).
   expect(s).toContain('data-name="v"');
-  expect(s).toContain("#f59e0b");
+  expect(s).toContain('class="crease-V"');
   // named crease "v" has no step provenance -> null step serializes as data-step=""
   expect(s).toContain('data-step=""');
   // crease label text --v, corner labels .a
   expect(s).toContain(">--v</text>");
   expect(s).toContain(">.a</text>");
-  // legend lists assignments present (boundary + unassigned), not axiom provenance
+  // legend lists assignments present (boundary + valley), not axiom provenance
   expect(s).toContain("boundary");
-  expect(s).toContain("unassigned");
+  expect(s).toContain("valley");
 });
 
 test("no --labels: no overlay at all, even for named creases/corners", async () => {
