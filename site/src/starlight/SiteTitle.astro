@@ -1,0 +1,65 @@
+---
+// Override: Beloch logo mark + version chip
+---
+
+<a href="/" class="beloch-site-title">
+  <!-- Origami mark: rotated square with corner dot -->
+  <span class="beloch-mark" aria-hidden="true">
+    <span class="beloch-mark-dot"></span>
+  </span>
+  <span class="beloch-wordmark">Beloch</span>
+  <span class="beloch-version-chip">v0.6 · alpha</span>
+</a>
+
+<style>
+  .beloch-site-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+    white-space: nowrap;
+  }
+
+  /* Rotated square — the origami mark */
+  .beloch-mark {
+    display: inline-block;
+    position: relative;
+    width: 26px;
+    height: 26px;
+    border: 2.4px solid var(--beloch-ink);
+    border-radius: 5px;
+    transform: rotate(45deg);
+    flex-shrink: 0;
+  }
+
+  /* Corner dot inside the mark */
+  .beloch-mark-dot {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 9px;
+    height: 9px;
+    background: var(--beloch-ink);
+    border-radius: 1px;
+  }
+
+  .beloch-wordmark {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 21px;
+    letter-spacing: -0.01em;
+    color: var(--beloch-ink);
+  }
+
+  .beloch-version-chip {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--beloch-muted);
+    background: var(--beloch-chip);
+    border: 1px solid var(--beloch-chip-border);
+    padding: 2px 7px;
+    border-radius: 20px;
+  }
+</style>

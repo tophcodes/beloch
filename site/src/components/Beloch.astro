@@ -1,0 +1,116 @@
+---
+// Highlighted-code card for .bel source in docs pages.
+//
+// NOTE: the upstream version of this component also rendered crease/folded SVG
+// diagrams via `renderBeloch()` (site/src/lib/beloch-render.ts), which shells out
+// to a native `beloch` binary at build time. That render pipeline is not ported
+// here — the real render + playground come later from the repo's render/scene +
+// render/render-svg packages via a js_of_ocaml bundle, evaluated client-side, not
+// at Astro build time. This component is stripped down to the code panel only.
+import { highlightBel } from "../lib/highlight-bel";
+
+interface Props {
+  src?: string;
+  title?: string;
+}
+const { src, title } = Astro.props;
+
+// inline source is passed as the default slot's text
+const inline = await Astro.slots.render("default").catch(() => "");
+const source = src ? undefined : stripHtml(inline);
+
+if (!src && (!source || source.trim() === "")) {
+  throw new Error("<Beloch>: provide either a src= path or inline .bel source");
+}
+
+function stripHtml(s: string): string {
+  return s
+    .replace(/<[^>]*>/g, "")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .trim();
+}
+
+const label = title ?? src ?? "inline";
+
+// Syntax highlighting via the shared tree-sitter grammar (emits .bel-* spans;
+// colored in theme.css for the navy code panel).
+const highlightedSource = await highlightBel((source ?? "").trim());
+---
+
+<figure class="beloch-card">
+  <div class="beloch-code-panel">
+    <div class="beloch-mac-bar">
+      <span class="mac-dot" style="background:#B5573C"></span>
+      <span class="mac-dot" style="background:#C9A24B"></span>
+      <span class="mac-dot" style="background:#5C8A5E"></span>
+      <span class="beloch-filename">{label}</span>
+    </div>
+    <pre class="beloch-pre"><code set:html={highlightedSource} /></pre>
+  </div>
+</figure>
+
+<style>
+  /* ── Card shell ─────────────────────────────────────────────────────────── */
+  .beloch-card {
+    display: grid;
+    margin: 1.5rem 0;
+    border: 1px solid var(--beloch-border);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--beloch-panel);
+  }
+
+  /* ── Code panel ─────────────────────────────────────────────────────────── */
+  .beloch-code-panel {
+    background: var(--beloch-code-bg);
+    padding: 18px 22px;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 13.5px;
+    line-height: 22px;
+    overflow-x: auto;
+  }
+
+  .beloch-mac-bar {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 14px;
+    font-size: 12px;
+    color: #6B7A90;
+  }
+
+  .mac-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .beloch-filename {
+    margin-left: 6px;
+    color: #6B7A90;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 12px;
+  }
+
+  .beloch-pre {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: #C9D2DE;
+    white-space: pre;
+  }
+
+  .beloch-pre code {
+    font-family: inherit;
+    font-size: inherit;
+    background: none;
+    padding: 0;
+  }
+</style>

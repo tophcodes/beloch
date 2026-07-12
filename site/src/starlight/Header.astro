@@ -1,0 +1,68 @@
+---
+// Override: wrap Starlight's default Header, inject nav pills to the right
+import Default from '@astrojs/starlight/components/Header.astro';
+---
+
+<div class="beloch-header-wrapper">
+  <Default {...Astro.props}><slot /></Default>
+  <nav class="beloch-nav-pills" aria-label="Main navigation">
+    <a href="/reference/verben/" class="beloch-pill">Referenz</a>
+    <a href="/beispiele/" class="beloch-pill">Beispiele</a>
+    <a href="/playground/" class="beloch-pill beloch-pill--accent">▸ Playground</a>
+  </nav>
+</div>
+
+<style>
+  /* Position the nav pills to the right inside the header */
+  .beloch-header-wrapper {
+    display: contents;
+  }
+
+  .beloch-nav-pills {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14.5px;
+    font-weight: 500;
+    /* Ensure pills sit in the header's right column */
+    grid-column: 3;
+    grid-row: 1;
+    align-self: center;
+  }
+
+  .beloch-pill {
+    padding: 7px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--beloch-ink-soft);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-weight: 500;
+    transition: background 0.12s;
+  }
+
+  .beloch-pill:hover {
+    background: var(--beloch-chip);
+  }
+
+  .beloch-pill--accent {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 15px;
+    border-radius: 9px;
+    background: var(--beloch-accent);
+    color: var(--beloch-accent-ink);
+    font-weight: 600;
+  }
+
+  .beloch-pill--accent:hover {
+    background: var(--beloch-accent-hover);
+  }
+
+  /* Hide pills on mobile (header doesn't have enough room) */
+  @media (max-width: 50rem) {
+    .beloch-nav-pills {
+      display: none;
+    }
+  }
+</style>
