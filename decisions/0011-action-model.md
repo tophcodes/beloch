@@ -23,12 +23,22 @@ actions on a stateful sheet. The flat crease pattern and mountain/valley become 
 outputs. The Huzita-Justin axioms remain the "where is the crease" primitive. Geometry
 stays exact (`Num`); arbitrary/animated fold angles use constructible-rational
 approximation. The folded state is the standard FOLD `foldedForm` (faces + per-face
-isometry + an addressable layer stack). Surface syntax: bare axiom = precrease;
-`@axiom [moving .p] [mountain]` = fold; superposition axioms 2 & 5 unify under
+isometry + an addressable layer stack). Superposition axioms 2 & 5 unify under
 `map … onto …`.
 
+Surface syntax: the original `@axiom [moving .p] [mountain]` marker was retired in
+the mark/fold revision (see the note below). A crease is now
+**motion × disposition × extent**: a *motion* (`map … onto …`, `through`, `perp`)
+is a pure read that produces a line value, and a *disposition* verb (`mark`,
+`fold`, `collapse`, `flip`) is the write that touches the paper. Fold direction is
+`toward` / implied `moving`; the segment filter is `&` and region sets are `#[…]`.
+
 Full design and the staged "ladder" (simple fold → layer selection → unfold/maneuvers):
-`docs/superpowers/specs/2026-06-29-action-model-folding-design.md`.
+`docs/superpowers/specs/2026-06-29-action-model-folding-design.md`. The surface-syntax
+revision that retired `@` is
+`docs/superpowers/specs/2026-07-09-mark-fold-crease-notation-design.md` (and the
+bundle-algebra selection design for `&` / `#[…]`); the deeper action-model questions
+it raised were tracked and resolved in #23.
 
 ## Consequences
 - Breaking syntax change (`fold`/`bisect` → `map … onto …`); acceptable pre-1.0.
