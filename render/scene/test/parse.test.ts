@@ -15,14 +15,19 @@ test("parses bisect-a: CP frame, provenance, named points/lines, creases", async
   expect(scene.cp.edgesProvenance[3]?.axiom).toBe("axiom2");
   expect(scene.cp.edgesProvenance[3]?.name).toBe("v");
   // named constructions
-  expect(scene.namedLines).toEqual([{ name: "v", coeffs: [1, 0, 0.5] }]);
+  // Beloch has no line sign convention (see lib/geom.ml): coeffs are whatever
+  // construction order produces. This "v" line comes from record_full's
+  // extreme_pair(a,b) over the face clip endpoints, which orders b=(0.5,1)
+  // before a=(0.5,0) here, giving [-1,0,-0.5] (same line as [1,0,0.5], sign
+  // flipped) — deterministic, matches the golden.
+  expect(scene.namedLines).toEqual([{ name: "v", coeffs: [-1, 0, -0.5] }]);
   expect(scene.namedPoints.map((p) => p.name).sort()).toEqual(["a", "b", "c", "d"]);
   expect(scene.namedPoints.find((p) => p.name === "a")).toEqual({
     name: "a", paper: [0, 0], table: [0, 0],
   });
-  // crease bundle: edge 3 = [v3,v0] = (0.5,1)→(0.5,0), named "v"
+  // crease bundle: edge 3 = [1,3] = (0.5,0)→(0.5,1), named "v"
   expect(scene.creases).toEqual([
-    { name: "v", segments: [{ edgeIndex: 3, a: [0.5, 1], b: [0.5, 0] }] },
+    { name: "v", segments: [{ edgeIndex: 3, a: [0.5, 0], b: [0.5, 1] }] },
   ]);
 });
 
