@@ -1,6 +1,8 @@
 import { test, expect } from "bun:test";
 import { parseFold, SceneError } from "@beloch/scene";
 import { renderFolded } from "@beloch/render-svg";
+import { makeLayout, PAD, SZ } from "../src/layout";
+import { pointInPolygon } from "../src/geometry";
 
 const golden = (p: string) =>
   Bun.file(new URL(`../../../tests/golden/${p}`, import.meta.url)).text();
@@ -58,6 +60,50 @@ test("explicit --labels renders the named point in folded view", async () => {
   const scene = parseFold(await golden("syntax/cube-root.fold"));
   const s = renderFolded(scene, { labels: [".s"] }).toString();
   expect(s).toContain('data-construction="s"');
+});
+
+// #9 — integration fixture for the folded auxiliary named-line overlay.
+// cube-root.fold's `--pq` (examples/syntax/cube-root.bel:42, `--pq = through
+// ._pq1 ._pq2`) is a pure VALUE binding, not `mark`-ed: it never subdivides
+// the mesh, so it names no edge in any frame — a genuine auxiliary line, not
+// a crease-duplicate (contrast the `.s` point test above, and every `mark`ed
+// name in this same file, which ARE creases). This exercises `lineToFace` +
+// `clipLineToPoly` end to end across three distinct --step frames, not just
+// the `lineToFace` unit.
+test("--pq (pure-value, non-crease named line) clips into folded faces across --step frames", async () => {
+  const scene = parseFold(await golden("syntax/cube-root.fold"));
+  for (const step of ["vertical_middle", "thirds", "beloch_fold"]) {
+    const found = scene.steps.find((s) => s.label === step);
+    expect(found).toBeDefined();
+    const { frame } = found!;
+
+    const s = renderFolded(scene, { step, labels: ["--pq"] }).toString();
+    const group = s.match(
+      /<g class="construction" data-construction="pq" data-kind="line" data-name="pq">[\s\S]*?<\/g>/,
+    );
+    expect(group).not.toBeNull();
+
+    const lines = [
+      ...group![0].matchAll(
+        /<line x1="([-\d.]+)" y1="([-\d.]+)" x2="([-\d.]+)" y2="([-\d.]+)"/g,
+      ),
+    ];
+    expect(lines.length).toBeGreaterThan(0); // at least one face was clipped against
+
+    // Invert the same screen transform renderFolded used (layout.ts) to get
+    // back to table coordinates, then confirm each drawn segment's midpoint
+    // actually landed inside one of this frame's face polygons — proving the
+    // clip ran geometrically, not just that a <line> tag was emitted.
+    const layout = makeLayout(frame.vertices);
+    const faces = frame.facesVertices.map((idxs) => idxs.map((i) => frame.vertices[i]!));
+    for (const [, x1, y1, x2, y2] of lines) {
+      const sx = (Number(x1) + Number(x2)) / 2;
+      const sy = (Number(y1) + Number(y2)) / 2;
+      const px = layout.minX + ((sx - PAD) / SZ) * layout.span;
+      const py = layout.minY + (1 - (sy - PAD) / SZ) * layout.span;
+      expect(faces.some((poly) => pointInPolygon([px, py], poly))).toBe(true);
+    }
+  }
 });
 
 test("scene without folded steps throws SceneError", async () => {
