@@ -1,8 +1,37 @@
 ---
 title: Die zwei Frames
+description: Faltbild-Frame vs. Tisch-Frame — warum deklariertes M/V nicht dasselbe ist wie emittiertes M/V.
 ---
 
-Beloch unterscheidet zwei Frames: das Faltbild (crease pattern) und den
-gefalteten Zustand (folded state).
+import Playground from '../../../components/Playground.astro';
 
-Inhalt folgt.
+Ein FOLD-Dokument, das eine Faltung beschreibt, trägt M/V-Zuweisungen in zwei verschiedenen **Frames**. Sie zu verwechseln ist die häufigste Verwirrung beim Lesen von Beloch-Ausgaben — hier ist der Unterschied.
+
+## Faltbild-Frame vs. Tisch-Frame
+
+Was man **schreibt** — `mark`/`fold ... mountain` oder der implizite Standard **Tal** — ist die Zuweisung im **Faltbild-Frame** (crease-pattern frame): wie man die Kante auf dem flachen, ungefalteten Blatt markieren würde. Maekawas Gesetz (\|M−V\| = 2 an jedem Scheitelpunkt) lebt in diesem Frame.
+
+Was **emittiert** wird, ist die Zuweisung im **globalen / Tisch-Frame** (table frame): wie Berg oder Tal aussieht, von direkt oben auf das fertig gefaltete Modell betrachtet. Eine Kante, deren tragende Fläche **rückseitig oben** liegt, zeigt sich invertiert — ein deklariertes Tal liest sich von oben als Berg, und umgekehrt.
+
+Die Regel ist eine XOR-Verknüpfung (`lib/collapse.ml`, ebenso zutreffend für `fold`s "Derived mountain/valley", `spec/SPECIFICATION.md §4.6`):
+
+```ocaml
+effective_valley valley sec_transform face_iso =
+  valley <> (det_sign (compose sec_transform face_iso) < 0)
+  (* emitted = declared  XOR  (diese Fläche landete rückseitig oben) *)
+```
+
+Bei mehreren Faltungen um denselben Scheitelpunkt wechselt die Ausrichtung der Sektoren mit jedem Schritt — geradzahlige Sektoren bleiben vorderseitig oben, ungeradzahlige landen rückseitig. Deshalb ist es normal, dass ein durchgefaltetes Modell mehr Berg- als Talkanten (oder umgekehrt) in seiner emittierten `.fold`-Datei zeigt, obwohl der Quelltext Maekawa im Faltbild-Frame exakt erfüllt.
+
+## Ein Beispiel, das beide Frames zeigt
+
+Vier Strahlen um ein Zentrum, zwei sich kreuzende Diagonalen. Deklariert wird `--ac` als Tal an beiden Enden, `--bd` als Tal an `.b` und Berg an `.d`:
+
+<Playground code={`paper square
+mark --ac = map .b onto .d
+mark --bd = map .a onto .c
+collapse --ac & .a and --ac & .c and --bd & .b and (--bd & .d mountain)`} />
+
+Ausgewertet emittiert dieses Programm `--ac` an **beiden** Enden als **Berg** (aus deklariertem Tal gekippt), während `--bd` an **beiden** Enden genau die deklarierten Buchstaben behält (Tal bleibt Tal, Berg bleibt Berg). Der Grund: `--ac`s beide Strahlen liegen zwei Sektoren auseinander — dieselbe Parität, also kippen beide gemeinsam; `--bd`s Strahlen liegen ebenfalls zwei Sektoren auseinander, aber in der jeweils anderen (unveränderten) Parität.
+
+Das ist dieselbe Mechanik in kleinerem Maßstab wie in [collapse](/guide/collapse/) §05–06 — dort steht die vollständige, gegen die Golden-Datei verifizierte Tabelle für die Waterbomb-Basis (deklariert 5V/3M → emittiert 7V/1M).
