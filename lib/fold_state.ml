@@ -46,9 +46,13 @@ type edge = {
 
 type t = { faces : face array; order : Layer_order.t; edges : edge array; marks : mark array }
 
-(* Mints internal crease ids. Unique within a state; not deterministic across
-   eval calls and never serialized. *)
+(* Mints internal crease ids. Unique within a state; reset per eval (see
+   [reset_ids]) so the id is a deterministic function of the program being
+   evaluated. Serialized as a per-mark handle (beloch:marks[].crease_id) for
+   downstream tooling -- see Fold_emit and render/scene/src/parse.ts. *)
 let next_id = ref 0
+
+let reset_ids () = next_id := 0
 
 let fresh_crease_id () =
   let id = !next_id in
