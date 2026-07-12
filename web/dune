@@ -1,0 +1,12 @@
+; js_of_ocaml spike — compiles the beloch evaluator to a Node-runnable JS
+; bundle for the pure-rational fragment. The qqbar C stubs (FLINT/Calcium)
+; can't compile to JS, so `qqbar_shim.js` provides JS stand-ins for every
+; `external ml_qqbar_*` in lib/qqbar.ml that raise a recognizable OCaml
+; exception instead of silently misbehaving. See lib/dune's
+; (foreign_stubs (names qqbar_stubs)) for the native counterpart.
+(executable
+ (name beloch_web)
+ (modes js)
+ (libraries beloch zarith_stubs_js)
+ (js_of_ocaml
+  (javascript_files qqbar_shim.js)))
