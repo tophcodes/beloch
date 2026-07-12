@@ -1,0 +1,253 @@
+---
+// Live Beloch playground: textarea editor -> Web Worker (eval-worker.js,
+// running the committed js_of_ocaml bundle) -> @beloch/scene + @beloch/render-svg
+// -> injected SVG. No framework island — a plain client <script type="module">
+// wires every `.beloch-playground` instance on the page (Astro dedupes and
+// hoists this script once even if the component is used multiple times, so
+// the wiring must be instance-scoped via querySelectorAll, not a singleton).
+//
+// Editor syntax highlighting (tree-sitter, via ../lib/highlight-bel.ts) is a
+// build-time-only pipeline today (see Beloch.astro) — wiring it onto a *live*
+// textarea (keystroke-driven re-highlight, usually an overlay <pre> synced to
+// the textarea's scroll position) is real work. Deferred; noted in the design
+// spec discussion. v1 ships a plain monospace textarea.
+interface Props {
+  code?: string;
+  height?: number;
+}
+const { code = "", height = 320 } = Astro.props;
+---
+
+<div class="beloch-playground" style={`--pg-height:${height}px`}>
+  <div class="pg-pane pg-editor">
+    <div class="pg-toolbar">
+      <span class="pg-label">quelle</span>
+      <button type="button" class="pg-run">Run</button>
+    </div>
+    <textarea class="pg-source" spellcheck="false" autocomplete="off" autocapitalize="off">{code}</textarea>
+  </div>
+  <div class="pg-pane pg-output">
+    <div class="pg-toolbar">
+      <span class="pg-label">ergebnis</span>
+    </div>
+    <div class="pg-result">
+      <p class="pg-notice pg-notice-info">„Run“ drücken, um auszuwerten.</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  .beloch-playground {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin: 1.5rem 0;
+    border: 1px solid var(--beloch-border);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--beloch-panel);
+  }
+  @media (max-width: 720px) {
+    .beloch-playground { grid-template-columns: 1fr; }
+  }
+
+  .pg-pane {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .pg-editor {
+    background: var(--beloch-code-bg);
+    border-right: 1px solid var(--beloch-border);
+  }
+  @media (max-width: 720px) {
+    .pg-editor { border-right: none; border-bottom: 1px solid var(--beloch-border); }
+  }
+
+  .pg-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 16px;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 12px;
+  }
+  .pg-editor .pg-toolbar {
+    color: #6B7A90;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .pg-output .pg-toolbar {
+    color: var(--beloch-muted);
+    border-bottom: 1px solid var(--beloch-border);
+  }
+  .pg-label {
+    letter-spacing: 0.02em;
+  }
+
+  .pg-run {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 7px;
+    border: 1px solid var(--beloch-valley);
+    background: transparent;
+    color: var(--beloch-valley);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .pg-run:hover:not(:disabled) {
+    background: var(--beloch-valley);
+    color: #fff;
+  }
+  .pg-run:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  .pg-source {
+    flex: 1;
+    min-height: var(--pg-height, 320px);
+    resize: vertical;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #C9D2DE;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 13.5px;
+    line-height: 22px;
+    padding: 14px 18px;
+    white-space: pre;
+    tab-size: 2;
+  }
+
+  .pg-output {
+    background: var(--beloch-panel);
+  }
+  .pg-result {
+    flex: 1;
+    min-height: var(--pg-height, 320px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    overflow: auto;
+  }
+  .pg-result :global(svg) {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .pg-notice {
+    margin: 0;
+    max-width: 32ch;
+    text-align: center;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  .pg-notice-info { color: var(--beloch-muted); }
+  .pg-notice-error { color: var(--beloch-mountain); }
+</style>
+
+<script>
+  import { parseFold } from "@beloch/scene";
+  import { renderCP, renderFolded } from "@beloch/render-svg";
+
+  const TIMEOUT_MS = 8000;
+
+  function escapeHtml(s: string): string {
+    return s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function setup(root: HTMLElement) {
+    const textarea = root.querySelector<HTMLTextAreaElement>(".pg-source");
+    const runBtn = root.querySelector<HTMLButtonElement>(".pg-run");
+    const result = root.querySelector<HTMLDivElement>(".pg-result");
+    if (!textarea || !runBtn || !result) return;
+
+    let worker = new Worker("/beloch/eval-worker.js");
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const showInfo = (message: string) => {
+      result.innerHTML = `<p class="pg-notice pg-notice-info">${escapeHtml(message)}</p>`;
+    };
+    const showError = (message: string) => {
+      result.innerHTML = `<p class="pg-notice pg-notice-error">${escapeHtml(message)}</p>`;
+    };
+    const showSvg = (svg: string) => {
+      result.innerHTML = svg;
+    };
+
+    function finish(handler: () => void) {
+      if (timer !== null) clearTimeout(timer);
+      timer = null;
+      runBtn!.disabled = false;
+      handler();
+    }
+
+    function renderResult(raw: string) {
+      let parsed: { ok: boolean; fold?: unknown; kind?: string; message?: string };
+      try {
+        parsed = JSON.parse(raw);
+      } catch (err) {
+        showError(`Ungültige Antwort vom Auswerter: ${String(err)}`);
+        return;
+      }
+      if (parsed.ok) {
+        try {
+          const scene = parseFold(parsed.fold as object);
+          const doc = scene.steps.length > 0 ? renderFolded(scene) : renderCP(scene);
+          showSvg(doc.toString());
+        } catch (err) {
+          showError(`Render-Fehler: ${err instanceof Error ? err.message : String(err)}`);
+        }
+        return;
+      }
+      if (parsed.kind === "native") {
+        showInfo(
+          "Dieser Ausdruck braucht die native Auswertung (irrationale Zahl über √/∛ jenseits des Browser-Fragments).",
+        );
+        return;
+      }
+      showError(parsed.message ?? "Unbekannter Fehler.");
+    }
+
+    function run() {
+      if (timer !== null) return; // guard against overlapping runs
+      runBtn!.disabled = true;
+      showInfo("wertet aus …");
+
+      timer = setTimeout(() => {
+        timer = null;
+        worker.terminate();
+        worker = new Worker("/beloch/eval-worker.js");
+        wireWorker();
+        runBtn!.disabled = false;
+        showError("Auswertung abgebrochen (Zeitüberschreitung).");
+      }, TIMEOUT_MS);
+
+      worker.postMessage(textarea!.value);
+    }
+
+    function wireWorker() {
+      worker.onmessage = (e: MessageEvent<{ raw: string }>) => {
+        finish(() => renderResult(e.data.raw));
+      };
+      worker.onerror = (e: ErrorEvent) => {
+        finish(() => showError(`Worker-Fehler: ${e.message}`));
+      };
+    }
+    wireWorker();
+
+    runBtn.addEventListener("click", run);
+
+    if (textarea.value.trim()) run();
+  }
+
+  document
+    .querySelectorAll<HTMLElement>(".beloch-playground")
+    .forEach(setup);
+</script>

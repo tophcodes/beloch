@@ -15,8 +15,33 @@ import remarkBel from './src/lib/remark-bel.ts';
 const repoRoot = join(fileURLToPath(import.meta.url), '..', '..');
 process.env.BELOCH_REPO_ROOT = repoRoot;
 
+// The render pipeline (render/scene, render/render-svg) is browser-safe TS
+// with no build step of its own (main: src/index.ts, no dist/). It isn't a
+// published package, so instead of a `file:` dependency (raw TS sitting in
+// node_modules usually isn't transpiled by the consumer's bundler), we alias
+// the package names straight to their source entrypoints and let Vite
+// transpile them like any other project source. render-svg's only Node-native
+// dependency (@resvg/resvg-js, for PNG rasterization) is a dynamic `import()`
+// confined to bin/fold2svg.ts — not reachable from src/index.ts — so it never
+// enters the client bundle.
+const sceneRoot = join(repoRoot, 'render', 'scene', 'src', 'index.ts');
+const renderSvgRoot = join(repoRoot, 'render', 'render-svg', 'src', 'index.ts');
+
 // https://astro.build/config
 export default defineConfig({
+	vite: {
+		resolve: {
+			alias: {
+				'@beloch/scene': sceneRoot,
+				'@beloch/render-svg': renderSvgRoot,
+			},
+		},
+		// render/ lives outside site/ (Vite's default project root), so the dev
+		// server needs explicit permission to read source files from there.
+		server: {
+			fs: { allow: [repoRoot] },
+		},
+	},
 	markdown: {
 		// Highlight ```beloch fences with the tree-sitter highlighter before
 		// Expressive Code sees them.
