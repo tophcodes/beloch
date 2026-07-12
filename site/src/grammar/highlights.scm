@@ -1,0 +1,10 @@
+(comment) @comment
+(keyword) @keyword
+(point) @point
+(point_open) @point
+(line) @line
+(line_open) @line
+(number) @number
+(fold) @fold
+(colon) @punct
+(rparen) @punct
