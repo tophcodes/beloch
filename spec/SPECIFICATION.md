@@ -620,10 +620,12 @@ satisfies the prefix trivially. Motion outside the crease region is not
 checked — full motion validation is out of scope until an animatable (3D)
 viewer needs it.
 
-**Folded state.** The paper is a stack of flat **faces** — each a convex polygon
-in paper coordinates plus a rigid isometry placing it on the table — ordered
-bottom→top (the layer stack). A flat fold (±180°) keeps everything in the table
-plane, so the only "depth" is this stacking order. A simple fold reflects every
+**Folded state.** The paper is a set of flat **faces** — each a convex polygon
+in paper coordinates plus a rigid isometry placing it on the table — carrying a
+**partial** stacking order: any two faces that overlap on the table are ordered
+above/below, while faces lying apart carry no relation (a sparse per-face poset,
+not a single bottom→top stack). A flat fold (±180°) keeps everything in the table
+plane, so the only "depth" is this per-overlap order. A simple fold reflects every
 layer in the moving set across the crease line (an exact reflection — no
 `sqrt`) and restacks: the moved layers, reversed, go on top (valley) or
 underneath (mountain). The default scope is every layer on the anchor's side —
@@ -674,8 +676,9 @@ crease and why `&` selection exists).
 flip
 ```
 
-Turns the whole sheet over: every face's orientation inverts and the layer stack
-reverses (so the previously bottom layer becomes reachable on top). Because
+Turns the whole sheet over: every face's orientation inverts and the stacking
+order reverses — every above/below relation negates, so a face previously at the
+bottom of its overlap column becomes reachable on top. Because
 orientation inverts, a *subsequent* valley command is derived as a **mountain**
 relative to the original front — i.e. "mountain = turn over, then valley." `flip`
 takes no axis: with named points, where the sheet lands is irrelevant, so the
