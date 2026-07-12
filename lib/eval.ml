@@ -106,6 +106,18 @@ let is_temp (n : string) = String.length n > 0 && n.[0] = '_'
 let intent_of (dir : Ast.direction) : Fold_state.assign =
   match dir with Ast.Valley -> Fold_state.V | Ast.Mountain -> Fold_state.M
 
+(* Shared failure text for every "points must land on exactly one flap/face"
+   lookup (FByPoints resolution): callers narrow their own success variant
+   (`Face of int, `Cluster of int list, ...) to `Found and pass through their
+   `Zero/`Ambiguous as-is, so the 0-match/multi-match wording lives here once
+   instead of being copied at each call site. *)
+let flap_lookup_result (span : Error.span)
+    (r : [ `Found of 'a | `Zero | `Ambiguous ]) : 'a =
+  match r with
+  | `Found v -> v
+  | `Zero -> Error.fail span "those points aren't all on one flap"
+  | `Ambiguous -> Error.fail span "ambiguous flap; add another point"
+
 let bind_point (ctx : ctx) (name : string) (span : Error.span) (p : Geom.point)
     =
   let s = List.hd ctx.scopes in
@@ -374,13 +386,13 @@ let eval_folded (prog : Ast.program) : folded =
         match Geom.intersection (resolve_line lo) (seg_line s) with
         | Some ip -> point_on_seg ip s
         | None -> false)
-    | Ast.SelFlap (Ast.FByPoints (pts, fspan)) -> (
-        match face_of_points (List.map resolve_point pts) with
-        | `Face fi ->
-            let l, r = s.Fold_state.faces in
-            l = fi || r = fi
-        | `Zero -> Error.fail fspan "those points aren't all on one flap"
-        | `Ambiguous -> Error.fail fspan "ambiguous flap; add another point")
+    | Ast.SelFlap (Ast.FByPoints (pts, fspan)) ->
+        flap_lookup_result fspan
+          (match face_of_points (List.map resolve_point pts) with
+          | `Face fi ->
+              let l, r = s.Fold_state.faces in
+              `Found (l = fi || r = fi)
+          | (`Zero | `Ambiguous) as bad -> bad)
   (* every existing straight line a --[…] selector may name: the four paper
      edges plus each material crease segment (ADR 0014). Each candidate carries
      a table-space line + endpoints (for incidence, which is checked in table
@@ -555,13 +567,13 @@ let eval_folded (prog : Ast.program) : folded =
                      "%s lies on a crease shared by %d flaps; name the flap \
                       with #(...)"
                      (fstr fa) (List.length ids))))
-    | Ast.FlapSpec (Ast.FByPoints (pts, fspan)) -> (
-        match
-          Fold_state.flap_of_points !(ctx.state) (List.map resolve_point pts)
-        with
-        | `Cluster fs -> fs
-        | `Zero -> Error.fail fspan "those points aren't all on one flap"
-        | `Ambiguous -> Error.fail fspan "ambiguous flap; add another point")
+    | Ast.FlapSpec (Ast.FByPoints (pts, fspan)) ->
+        flap_lookup_result fspan
+          (match
+             Fold_state.flap_of_points !(ctx.state) (List.map resolve_point pts)
+           with
+          | `Cluster fs -> `Found fs
+          | (`Zero | `Ambiguous) as bad -> bad)
     | Ast.FlapLine lo -> (
         let candidates =
           match lo with
@@ -617,11 +629,11 @@ let eval_folded (prog : Ast.program) : folded =
                  "%s lies on a crease shared by %d flaps; name the flap with \
                   #(...)"
                  (fstr fa) (List.length many)))
-    | Ast.FlapSpec (Ast.FByPoints (pts, fspan)) -> (
-        match face_of_points (List.map resolve_point pts) with
-        | `Face fi -> fi
-        | `Zero -> Error.fail fspan "those points aren't all on one flap"
-        | `Ambiguous -> Error.fail fspan "ambiguous flap; add another point")
+    | Ast.FlapSpec (Ast.FByPoints (pts, fspan)) ->
+        flap_lookup_result fspan
+          (match face_of_points (List.map resolve_point pts) with
+          | `Face fi -> `Found fi
+          | (`Zero | `Ambiguous) as bad -> bad)
     | Ast.FlapLine _ ->
         (* over_flap's grammar never produces FlapLine *)
         Error.fail span

@@ -71,10 +71,11 @@ checked. Full motion validation is out of scope; it becomes relevant with the
 `moving` and `up to` are both flap-typed (ADR 0016):
 
 ```
-fold_spec    := ["moving" flap_operand] ["up" "to" flap_operand] ["mountain"]
-flap_operand := point            ; sugar: the flap carrying the point
+fold_spec    := ["moving" flap_arg] ["up" "to" flap_arg] ["mountain"]
+flap_arg     := point            ; sugar: the flap carrying the point
               | line             ; sugar: #(--d) — resolves iff unique
-              | "#(" ... ")"     ; explicit incidence constraints (PR2 operand)
+              | flap_operand     ; explicit incidence constraints (PR2 operand)
+flap_operand := "#(" ... ")"
 ```
 
 Resolution follows the ADR: incidence constraints, uniqueness required, error
@@ -148,7 +149,7 @@ Non-moving layers keep their flat crease mark; moving ones fold. Matches paper.
 
 ## Implementation sketch
 
-1. AST/parser: `fold_spec` gains `up_to`; `moving` becomes `flap_operand`;
+1. AST/parser: `fold_spec` gains `up_to`; `moving` becomes `flap_arg`;
    new `@fold` statement.
 2. Evaluator: flap resolution (incidence over faces), stack-walk range
    selection, scope-restricted reflection + restack (today's fold reflects the
