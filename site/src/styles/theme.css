@@ -1,0 +1,261 @@
+/* Beloch / Oru design theme — palette + fonts
+ *
+ * Accent identity: valley (blue) / mountain (red) fold semantics, matching the
+ * collapse-explainer's crease coloring. Full light + dark support.
+ */
+
+/* ── Google Fonts ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+/* ── Design tokens — dark (default) ──────────────────────────────────────── */
+:root,
+:root[data-theme='dark'] {
+	/* Surface / paper — cool-neutral slate, not pure grey/black */
+	--beloch-paper:    #12151C;
+	--beloch-panel:    #171B24;
+	--beloch-panel-2:  #1D2230;
+	--beloch-chip:     #232939;
+	--beloch-chip-border: #2E3547;
+
+	/* Ink */
+	--beloch-ink:      #E7EAF2;
+	--beloch-ink-soft: #C4C9D6;
+	--beloch-muted:    #8D93A6;
+	--beloch-faint:    #656B7E;
+
+	/* Borders */
+	--beloch-border:   #2A3040;
+	--beloch-border-2: #333A4D;
+
+	/* Accent — valley (blue) primary, mountain (red) secondary */
+	--beloch-valley:   #6f9bff;
+	--beloch-mountain: #ff7d5e;
+	--beloch-accent:      #23335A;
+	--beloch-accent-hover:#2C3E6E;
+	--beloch-accent-ink:  #DCE6FF;
+
+	/* Selection */
+	--beloch-selection-bg:   #2C3E6E;
+	--beloch-selection-text: #E7EAF2;
+
+	/* Code panel (always dark, in both themes) */
+	--beloch-code-bg: #101C2E;
+
+	/* Sigil / fold tokens (tree-sitter highlight classes, on the dark code panel) */
+	--beloch-point:     #D69A6B;
+	--beloch-line:      #6E9AAE;
+	--beloch-at:        #C9A24B;
+	--beloch-keyword:   #AFC07A;
+	--beloch-reference: #A9A993;
+	--beloch-guide:     #6E9AAE;
+
+	/* ── Starlight font variables ───────────────────────────────────────── */
+	--sl-font:      'IBM Plex Sans', system-ui, sans-serif;
+	--sl-font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+/* ── Starlight dark theme overrides ──────────────────────────────────────── */
+:root,
+:root[data-theme='dark'] {
+	--sl-color-white: #E7EAF2;
+	--sl-color-gray-1: #C4C9D6;
+	--sl-color-gray-2: #8D93A6;
+	--sl-color-gray-3: #656B7E;
+	--sl-color-gray-4: #2A3040;
+	--sl-color-gray-5: #232939;
+	--sl-color-gray-6: #1D2230;
+	--sl-color-gray-7: #171B24;
+	--sl-color-black:  #12151C;
+
+	--sl-color-accent-low:  #1D2A4D;
+	--sl-color-accent:      #6f9bff;
+	--sl-color-accent-high: #DCE6FF;
+
+	--sl-color-text:        #E7EAF2;
+	--sl-color-text-accent: #DCE6FF;
+	--sl-color-text-invert: #12151C;
+
+	--sl-color-bg:            #12151C;
+	--sl-color-bg-nav:        #171B24;
+	--sl-color-bg-sidebar:    #171B24;
+	--sl-color-bg-inline-code: #232939;
+	--sl-color-bg-accent:     #6f9bff;
+
+	--sl-color-hairline-light: #333A4D;
+	--sl-color-hairline:       #2A3040;
+	--sl-color-hairline-shade: #2E3547;
+
+	--sl-color-backdrop-overlay: hsla(222, 30%, 4%, 0.65);
+}
+
+/* ── Design tokens + Starlight overrides — light ─────────────────────────── */
+:root[data-theme='light'] {
+	/* Surface / paper — cool-neutral (blue-grey), not warm/pure grey */
+	--beloch-paper:    #EEF1F5;
+	--beloch-panel:    #F7F9FB;
+	--beloch-panel-2:  #F1F4F8;
+	--beloch-chip:     #E4E9F0;
+	--beloch-chip-border: #D3DAE3;
+
+	/* Ink */
+	--beloch-ink:      #171A21;
+	--beloch-ink-soft: #3C4453;
+	--beloch-muted:    #5B6478;
+	--beloch-faint:    #8891A3;
+
+	/* Borders */
+	--beloch-border:   #D8DEE7;
+	--beloch-border-2: #E3E7EE;
+
+	/* Accent — valley (blue) primary, mountain (red) secondary */
+	--beloch-valley:   #2f5fd0;
+	--beloch-mountain: #cf4327;
+	--beloch-accent:      #D7E3FA;
+	--beloch-accent-hover:#C3D5F5;
+	--beloch-accent-ink:  #1B2A4D;
+
+	/* Selection */
+	--beloch-selection-bg:   #D7E3FA;
+	--beloch-selection-text: #171A21;
+
+	/* Code panel (always dark, in both themes) */
+	--beloch-code-bg: #101C2E;
+
+	/* Sigil / fold tokens (tree-sitter highlight classes, on the dark code panel) */
+	--beloch-point:     #D69A6B;
+	--beloch-line:      #6E9AAE;
+	--beloch-at:        #C9A24B;
+	--beloch-keyword:   #AFC07A;
+	--beloch-reference: #A9A993;
+	--beloch-guide:     #6E9AAE;
+
+	/* Gray scale mapped to cool paper tones (light → dark) */
+	--sl-color-white: #171A21;
+	--sl-color-gray-1: #3C4453;
+	--sl-color-gray-2: #5B6478;
+	--sl-color-gray-3: #8891A3;
+	--sl-color-gray-4: #D8DEE7;
+	--sl-color-gray-5: #E3E7EE;
+	--sl-color-gray-6: #F1F4F8;
+	--sl-color-gray-7: #F7F9FB;
+	--sl-color-black:  #EEF1F5;
+
+	--sl-color-accent-low:  #E4E9F0;
+	--sl-color-accent:      #2f5fd0;
+	--sl-color-accent-high: #1B2A4D;
+
+	--sl-color-text:        #171A21;
+	--sl-color-text-accent: #1B2A4D;
+	--sl-color-text-invert: #EEF1F5;
+
+	--sl-color-bg:            #EEF1F5;
+	--sl-color-bg-nav:        #F7F9FB;
+	--sl-color-bg-sidebar:    #F7F9FB;
+	--sl-color-bg-inline-code: #E4E9F0;
+	--sl-color-bg-accent:     #2f5fd0;
+
+	--sl-color-hairline-light: #E3E7EE;
+	--sl-color-hairline:       #D8DEE7;
+	--sl-color-hairline-shade: #D3DAE3;
+
+	--sl-color-backdrop-overlay: hsla(215, 30%, 20%, 0.45);
+
+	/* Light-mode shadows (softer) */
+	--sl-shadow-sm: 0px 1px 1px hsla(215, 20%, 20%, 0.06), 0px 2px 1px hsla(215, 20%, 20%, 0.06);
+	--sl-shadow-md: 0px 8px 4px hsla(215, 20%, 20%, 0.03), 0px 5px 2px hsla(215, 20%, 20%, 0.03),
+		0px 3px 2px hsla(215, 20%, 20%, 0.05), 0px 1px 1px hsla(215, 20%, 20%, 0.06);
+	--sl-shadow-lg: 0px 25px 7px hsla(215, 20%, 20%, 0.01), 0px 16px 6px hsla(215, 20%, 20%, 0.03),
+		0px 9px 5px hsla(215, 20%, 20%, 0.07), 0px 4px 4px hsla(215, 20%, 20%, 0.14),
+		0px 4px 2px hsla(215, 20%, 20%, 0.04);
+}
+
+/* ── Global rules ─────────────────────────────────────────────────────────── */
+body {
+	background: var(--beloch-paper);
+}
+
+/* Selection */
+::selection {
+	background: var(--beloch-selection-bg);
+	color: var(--beloch-selection-text);
+}
+
+/* Scrollbar (webkit) */
+::-webkit-scrollbar {
+	width: 9px;
+	height: 9px;
+}
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+::-webkit-scrollbar-thumb {
+	background: var(--beloch-chip-border);
+	border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+	background: var(--beloch-faint);
+}
+
+/* ── Heading font ─────────────────────────────────────────────────────────── */
+/*
+ * Starlight uses --sl-font for the base font but doesn't have a separate
+ * heading-font variable. Override headings explicitly.
+ */
+h1, h2, h3, h4, h5, h6,
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.sl-markdown-content h4,
+.sl-markdown-content h5,
+.sl-markdown-content h6 {
+	font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Layout: no right "On this page" sidebar (overridden away in
+ * TwoColumnContent.astro), wider readable content.
+ * ────────────────────────────────────────────────────────────────────────── */
+:root {
+	/* Wider than Starlight's 45rem default; the right TOC column is gone. */
+	--sl-content-width: 52rem;
+}
+
+/* Let the <Beloch> card break out of the prose column and run wider, centered
+ * on the content column. */
+.sl-markdown-content .beloch-card {
+	width: min(1120px, 94vw);
+	max-width: none;
+	margin-left: 50%;
+	transform: translateX(-50%);
+	margin-block: 2rem;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Beloch syntax highlighting (tree-sitter) — token classes on the navy panel.
+ * ────────────────────────────────────────────────────────────────────────── */
+.bel-comment { color: #7E8C73; font-style: italic; }
+.bel-keyword { color: var(--beloch-keyword); }
+.bel-point   { color: var(--beloch-point); }
+.bel-line    { color: var(--beloch-line); }
+.bel-number  { color: #D08C70; }
+.bel-fold    { color: #E0A85C; }
+.bel-punct   { color: #7E889A; }
+
+/* Beloch fenced code blocks (```beloch) highlighted by the remark plugin. */
+.bel-block {
+	background: var(--beloch-code-bg);
+	color: #C9D2DE;
+	padding: 16px 20px;
+	border-radius: 12px;
+	overflow-x: auto;
+	margin: 1.25rem 0;
+	font-family: 'IBM Plex Mono', ui-monospace, monospace;
+	font-size: 13.5px;
+	line-height: 22px;
+}
+.bel-block code {
+	font-family: inherit;
+	background: none;
+	padding: 0;
+	white-space: pre;
+}
