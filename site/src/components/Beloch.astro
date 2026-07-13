@@ -1,26 +1,27 @@
 ---
-// Highlighted-code card for .bel source in docs pages.
+// Code + statically-rendered SVG card for inline .bel source.
 //
-// NOTE: the upstream version of this component also rendered crease/folded SVG
-// diagrams via `renderBeloch()` (site/src/lib/beloch-render.ts), which shells out
-// to a native `beloch` binary at build time. That render pipeline is not ported
-// here — the real render + playground come later from the repo's render/scene +
-// render/render-svg packages via a js_of_ocaml bundle, evaluated client-side, not
-// at Astro build time. This component is stripped down to the code panel only.
+// The inline source (default slot) is evaluated at BUILD TIME with the native
+// `beloch` binary (see ../lib/eval-bel.ts) into a FOLD object, then rendered to
+// SVG via the pure-TS render pipeline. The FOLD is also embedded as a JSON
+// <script> so a later hydration island (Slice 2) can drive CP↔folded + hover
+// without changing this component's contract. No client JS in this slice.
 import { highlightBel } from "../lib/highlight-bel";
+import { evalBelToFold } from "../lib/eval-bel";
+import { parseFold } from "@beloch/scene";
+import { renderCP } from "@beloch/render-svg";
 
 interface Props {
-  src?: string;
   title?: string;
 }
-const { src, title } = Astro.props;
+const { title } = Astro.props;
 
 // inline source is passed as the default slot's text
 const inline = await Astro.slots.render("default").catch(() => "");
-const source = src ? undefined : stripHtml(inline);
+const source = stripHtml(inline);
 
-if (!src && (!source || source.trim() === "")) {
-  throw new Error("<Beloch>: provide either a src= path or inline .bel source");
+if (!source || source.trim() === "") {
+  throw new Error("<Beloch>: provide inline .bel source");
 }
 
 function stripHtml(s: string): string {
@@ -32,11 +33,17 @@ function stripHtml(s: string): string {
     .trim();
 }
 
-const label = title ?? src ?? "inline";
+const label = title ?? "inline";
+const trimmed = source.trim();
 
-// Syntax highlighting via the shared tree-sitter grammar (emits .bel-* spans;
-// colored in theme.css for the navy code panel).
-const highlightedSource = await highlightBel((source ?? "").trim());
+// Syntax highlighting via the shared tree-sitter grammar (emits .bel-* spans).
+const highlightedSource = await highlightBel(trimmed);
+
+// Build-time evaluation + render. Any failure throws → the Astro build fails
+// with beloch's diagnostic (drift guard).
+const fold = evalBelToFold(trimmed);
+const svg = renderCP(parseFold(fold as object)).toString();
+const foldJson = JSON.stringify(fold);
 ---
 
 <figure class="beloch-card">
@@ -49,17 +56,23 @@ const highlightedSource = await highlightBel((source ?? "").trim());
     </div>
     <pre class="beloch-pre"><code set:html={highlightedSource} /></pre>
   </div>
+  <div class="beloch-diagram" set:html={svg}></div>
+  <script type="application/json" class="beloch-fold" set:html={foldJson}></script>
 </figure>
 
 <style>
   /* ── Card shell ─────────────────────────────────────────────────────────── */
   .beloch-card {
     display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     margin: 1.5rem 0;
     border: 1px solid var(--beloch-border);
     border-radius: 14px;
     overflow: hidden;
     background: var(--beloch-panel);
+  }
+  @media (max-width: 720px) {
+    .beloch-card { grid-template-columns: 1fr; }
   }
 
   /* ── Code panel ─────────────────────────────────────────────────────────── */
@@ -112,5 +125,19 @@ const highlightedSource = await highlightBel((source ?? "").trim());
     font-size: inherit;
     background: none;
     padding: 0;
+  }
+
+  /* ── Diagram panel ──────────────────────────────────────────────────────── */
+  .beloch-diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px 22px;
+    background: var(--beloch-panel);
+    overflow: auto;
+  }
+  .beloch-diagram :global(svg) {
+    max-width: 100%;
+    height: auto;
   }
 </style>
