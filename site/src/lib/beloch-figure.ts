@@ -88,6 +88,7 @@ class BelochFigure extends HTMLElement {
   private toggleSelect(name: string) {
     if (this.selected.has(name)) {
       this.selected.delete(name);
+      this.colorOf.delete(name);
     } else {
       this.selected.add(name);
       if (!this.colorOf.has(name))
