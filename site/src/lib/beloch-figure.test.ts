@@ -100,15 +100,29 @@ test("hover adds and removes .bel-hover", async () => {
 });
 
 test("selection survives a re-render (view switch)", async () => {
+  // x-midpoint's folded SVG emits data-bel-name for its named creases/points
+  // (confirmed: "d2", "d1", "d", "center", "c", "b", "a"). Select one via the
+  // code panel, switch to the folded view — this replaces .beloch-diagram's
+  // innerHTML wholesale with a brand-new SVG — then assert the *freshly
+  // rendered* element (not the code-panel token, which render() never
+  // touches) regained .bel-selected + a live --bel-sel style. That only
+  // happens if afterRender re-applies selection after the diagram swap; if
+  // the `this.afterRender = () => this.applySelection()` wiring in
+  // wireInteraction() were removed, this assertion fails (verified manually).
   await import("./beloch-figure");
   const el = mountCard(foldJson);
   el.querySelector(".beloch-code-panel")!.innerHTML =
-    '<span class="bel-point" data-bel-name="center">.center</span>';
+    '<span class="bel-crease" data-bel-name="d1">.d1</span>';
   (el as any).hydrate();
-  const token = el.querySelector('[data-bel-name="center"]') as HTMLElement;
+  const token = el.querySelector('.beloch-code-panel [data-bel-name="d1"]') as HTMLElement;
   token.click();
-  expect(token.classList.contains("bel-selected")).toBe(true);
-  (el.querySelector('[data-view="folded"]') as HTMLElement).click();   // triggers render()
-  expect(token.classList.contains("bel-selected")).toBe(true);          // still selected post-render
-  expect((el as any).selected.has("center")).toBe(true);
+  expect((el as any).selected.has("d1")).toBe(true);
+
+  (el.querySelector('[data-view="folded"]') as HTMLElement).click();   // triggers render() → new SVG
+
+  const diagram = el.querySelector(".beloch-diagram")!;
+  const svgEl = diagram.querySelector('[data-bel-name="d1"]') as HTMLElement;
+  expect(svgEl).not.toBeNull();
+  expect(svgEl.classList.contains("bel-selected")).toBe(true);
+  expect(svgEl.style.getPropertyValue("--bel-sel")).not.toBe("");
 });
