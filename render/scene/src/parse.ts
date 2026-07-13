@@ -11,11 +11,16 @@ function frameFrom(raw: Record<string, unknown>): Frame {
   const edgesAssignment = (raw["edges_assignment"] ??
     Array(n).fill("U")) as Assignment[];
   const prov = (raw["beloch:edges"] ?? []) as (EdgeProvenance | null)[];
+  const vnames = (raw["beloch:vertices_names"] ?? []) as (string | null)[];
   return {
     vertices,
     edgesVertices,
     edgesAssignment,
     edgesProvenance: Array.from({ length: n }, (_, i) => prov[i] ?? null),
+    verticesNames: Array.from(
+      { length: vertices.length },
+      (_, i) => vnames[i] ?? null,
+    ),
     facesVertices: (raw["faces_vertices"] ?? []) as number[][],
     faceOrders: (raw["faceOrders"] ?? []) as Frame["faceOrders"],
     facesMatrix: (raw["beloch:faces_matrix"] ?? null) as Frame["facesMatrix"],

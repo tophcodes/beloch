@@ -17,6 +17,7 @@ export interface Frame {
   edgesVertices: [number, number][];
   edgesAssignment: Assignment[];
   edgesProvenance: (EdgeProvenance | null)[];                // same length as edgesVertices
+  verticesNames: (string | null)[];                          // beloch:vertices_names, per vertex
   facesVertices: number[][];
   faceOrders: FaceOrder[];                                   // [] on the CP frame
   facesMatrix: Isometry[] | null;                            // beloch:faces_matrix; null on the CP frame
