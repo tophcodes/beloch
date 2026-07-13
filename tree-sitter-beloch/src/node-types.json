@@ -1,0 +1,257 @@
+[
+  {
+    "type": "keyword",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "operator",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "punct",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "source_file",
+    "named": true,
+    "root": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "comment",
+          "named": true
+        },
+        {
+          "type": "crease",
+          "named": true
+        },
+        {
+          "type": "crease_bracket",
+          "named": true
+        },
+        {
+          "type": "flap_bracket",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "instance",
+          "named": true
+        },
+        {
+          "type": "keyword",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "operator",
+          "named": true
+        },
+        {
+          "type": "point",
+          "named": true
+        },
+        {
+          "type": "point_bracket",
+          "named": true
+        },
+        {
+          "type": "punct",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "!",
+    "named": false
+  },
+  {
+    "type": "&",
+    "named": false
+  },
+  {
+    "type": "(",
+    "named": false
+  },
+  {
+    "type": ")",
+    "named": false
+  },
+  {
+    "type": "*",
+    "named": false
+  },
+  {
+    "type": "=",
+    "named": false
+  },
+  {
+    "type": "[",
+    "named": false
+  },
+  {
+    "type": "\\",
+    "named": false
+  },
+  {
+    "type": "]",
+    "named": false
+  },
+  {
+    "type": "and",
+    "named": false
+  },
+  {
+    "type": "apply",
+    "named": false
+  },
+  {
+    "type": "as",
+    "named": false
+  },
+  {
+    "type": "at",
+    "named": false
+  },
+  {
+    "type": "between",
+    "named": false
+  },
+  {
+    "type": "collapse",
+    "named": false
+  },
+  {
+    "type": "comment",
+    "named": true
+  },
+  {
+    "type": "crease",
+    "named": true
+  },
+  {
+    "type": "crease_bracket",
+    "named": true
+  },
+  {
+    "type": "def",
+    "named": false
+  },
+  {
+    "type": "export",
+    "named": false
+  },
+  {
+    "type": "flap_bracket",
+    "named": true
+  },
+  {
+    "type": "flip",
+    "named": false
+  },
+  {
+    "type": "fold",
+    "named": false
+  },
+  {
+    "type": "identifier",
+    "named": true
+  },
+  {
+    "type": "instance",
+    "named": true
+  },
+  {
+    "type": "map",
+    "named": false
+  },
+  {
+    "type": "mark",
+    "named": false
+  },
+  {
+    "type": "mountain",
+    "named": false
+  },
+  {
+    "type": "moving",
+    "named": false
+  },
+  {
+    "type": "number",
+    "named": true
+  },
+  {
+    "type": "onto",
+    "named": false
+  },
+  {
+    "type": "over",
+    "named": false
+  },
+  {
+    "type": "paper",
+    "named": false
+  },
+  {
+    "type": "perp",
+    "named": false
+  },
+  {
+    "type": "point",
+    "named": true
+  },
+  {
+    "type": "point_bracket",
+    "named": true
+  },
+  {
+    "type": "square",
+    "named": false
+  },
+  {
+    "type": "standing",
+    "named": false
+  },
+  {
+    "type": "step",
+    "named": false
+  },
+  {
+    "type": "through",
+    "named": false
+  },
+  {
+    "type": "to",
+    "named": false
+  },
+  {
+    "type": "toward",
+    "named": false
+  },
+  {
+    "type": "up",
+    "named": false
+  },
+  {
+    "type": "{",
+    "named": false
+  },
+  {
+    "type": "}",
+    "named": false
+  }
+]

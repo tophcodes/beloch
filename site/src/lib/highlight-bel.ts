@@ -7,7 +7,8 @@
  *
  * Captures (see tree-sitter-beloch/queries/highlights.scm) → CSS classes:
  *   comment→bel-comment keyword→bel-keyword point→bel-point line→bel-line
- *   number→bel-number fold→bel-fold punct→bel-punct
+ *   instance→bel-instance number→bel-number operator→bel-operator
+ *   punct→bel-punct
  */
 import { Parser, Language, Query } from "web-tree-sitter";
 import { readFileSync } from "node:fs";
