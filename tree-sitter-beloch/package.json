@@ -1,0 +1,7 @@
+{
+  "name": "tree-sitter-beloch",
+  "version": "0.0.1",
+  "description": "Ad-hoc tree-sitter grammar for the Beloch origami language (syntax highlighting)",
+  "type": "commonjs",
+  "private": true
+}

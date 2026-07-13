@@ -1,10 +1,11 @@
 (comment) @comment
 (keyword) @keyword
 (point) @point
-(point_open) @point
-(line) @line
-(line_open) @line
+(point_bracket) @point
+(crease) @line
+(crease_bracket) @line
+(instance) @instance
 (number) @number
-(fold) @fold
-(colon) @punct
-(rparen) @punct
+(operator) @operator
+(punct) @punct
+(flap_bracket) @punct
