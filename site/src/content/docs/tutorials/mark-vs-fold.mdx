@@ -1,0 +1,53 @@
+---
+title: "mark vs. fold"
+description: Compare mark and fold on the same crease expression to see the difference between recording a crease and actually folding the paper.
+---
+
+import Beloch from "../../../components/Beloch.astro";
+
+Every crease so far has used `mark`. This tutorial puts the same crease
+expression under two different verbs so you can see exactly what each one
+does.
+
+## mark: record the crease
+
+<Beloch title="mark.bel">
+paper square
+mark map .a onto .b
+</Beloch>
+
+`map .a onto .b` is the same expression from the last tutorial — the crease
+that carries the bottom-left corner onto the bottom-right corner, straight
+down the middle of the sheet. Under `mark`, Beloch records that line onto the
+paper and stops there. The paper stays flat: one face, with a crease drawn
+across it. Toggle the card to its folded view and nothing changes — there is
+nothing folded yet to show. `mark` is for laying down reference and
+construction creases you build other things from, without disturbing the
+sheet itself.
+
+## fold: move the paper
+
+<Beloch title="fold.bel">
+paper square
+fold map .a onto .b
+</Beloch>
+
+Same expression, `map .a onto .b`, but now the verb is `fold`. Beloch still
+computes the same crease — but this time it also carries the paper along it:
+`.a` lands exactly on `.b`, and the sheet becomes two stacked layers, front
+and back. The folded result has 2 faces, where the `mark` version had one.
+Toggle this card to its folded view and you'll see the paper actually folded
+over, not just a line drawn on a flat sheet.
+
+## What you learned
+
+- `mark` and `fold` take the same crease expressions — `map ... onto ...`,
+  `through ...`, and the rest all work under either verb.
+- `mark <crease>` records the line without moving the paper: the result stays
+  flat, one face.
+- `fold <crease>` moves the material along that line: the result is a folded
+  state, here with 2 faces.
+- The verb, not the expression, decides whether the paper actually moves.
+
+Next, we'll look at how those layers stack and in what order:
+[Layers & Ordering](/tutorials/layers/).
