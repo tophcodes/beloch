@@ -52,12 +52,6 @@ export default defineConfig({
 			title: "Beloch",
 			description: "A declarative language for origami, built on the Huzita–Justin axioms.",
 			social: [{ icon: "github", label: "GitHub", href: "https://github.com/tophcodes/beloch" }],
-			components: {
-				SiteTitle: './src/starlight/SiteTitle.astro',
-				Header: './src/starlight/Header.astro',
-				Sidebar: './src/starlight/Sidebar.astro',
-				TwoColumnContent: './src/starlight/TwoColumnContent.astro',
-			},
 			sidebar: [
 				{
 					label: "Einstieg",
