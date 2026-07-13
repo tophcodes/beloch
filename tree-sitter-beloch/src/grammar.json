@@ -1,0 +1,321 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/grammar.schema.json",
+  "name": "beloch",
+  "rules": {
+    "source_file": {
+      "type": "REPEAT",
+      "content": {
+        "type": "SYMBOL",
+        "name": "_token"
+      }
+    },
+    "_token": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "comment"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "keyword"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "instance"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "crease"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "point"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "point_bracket"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "crease_bracket"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "flap_bracket"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "number"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "operator"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "punct"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "identifier"
+        }
+      ]
+    },
+    "comment": {
+      "type": "TOKEN",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": ";"
+          },
+          {
+            "type": "PATTERN",
+            "value": "[^\\n]*"
+          }
+        ]
+      }
+    },
+    "keyword": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "paper"
+        },
+        {
+          "type": "STRING",
+          "value": "square"
+        },
+        {
+          "type": "STRING",
+          "value": "mark"
+        },
+        {
+          "type": "STRING",
+          "value": "fold"
+        },
+        {
+          "type": "STRING",
+          "value": "collapse"
+        },
+        {
+          "type": "STRING",
+          "value": "flip"
+        },
+        {
+          "type": "STRING",
+          "value": "def"
+        },
+        {
+          "type": "STRING",
+          "value": "apply"
+        },
+        {
+          "type": "STRING",
+          "value": "export"
+        },
+        {
+          "type": "STRING",
+          "value": "step"
+        },
+        {
+          "type": "STRING",
+          "value": "through"
+        },
+        {
+          "type": "STRING",
+          "value": "map"
+        },
+        {
+          "type": "STRING",
+          "value": "onto"
+        },
+        {
+          "type": "STRING",
+          "value": "perp"
+        },
+        {
+          "type": "STRING",
+          "value": "toward"
+        },
+        {
+          "type": "STRING",
+          "value": "and"
+        },
+        {
+          "type": "STRING",
+          "value": "moving"
+        },
+        {
+          "type": "STRING",
+          "value": "up"
+        },
+        {
+          "type": "STRING",
+          "value": "to"
+        },
+        {
+          "type": "STRING",
+          "value": "mountain"
+        },
+        {
+          "type": "STRING",
+          "value": "over"
+        },
+        {
+          "type": "STRING",
+          "value": "standing"
+        },
+        {
+          "type": "STRING",
+          "value": "between"
+        },
+        {
+          "type": "STRING",
+          "value": "at"
+        },
+        {
+          "type": "STRING",
+          "value": "as"
+        }
+      ]
+    },
+    "crease": {
+      "type": "TOKEN",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "--"
+          },
+          {
+            "type": "PATTERN",
+            "value": "[A-Za-z0-9_]+"
+          }
+        ]
+      }
+    },
+    "point": {
+      "type": "TOKEN",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "."
+          },
+          {
+            "type": "PATTERN",
+            "value": "[A-Za-z0-9_]+"
+          }
+        ]
+      }
+    },
+    "instance": {
+      "type": "TOKEN",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "$"
+          },
+          {
+            "type": "PATTERN",
+            "value": "[A-Za-z0-9_]+"
+          }
+        ]
+      }
+    },
+    "crease_bracket": {
+      "type": "STRING",
+      "value": "--["
+    },
+    "point_bracket": {
+      "type": "STRING",
+      "value": ".["
+    },
+    "flap_bracket": {
+      "type": "STRING",
+      "value": "#["
+    },
+    "number": {
+      "type": "PATTERN",
+      "value": "[0-9]+(\\/[0-9]+)?"
+    },
+    "operator": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "="
+        },
+        {
+          "type": "STRING",
+          "value": "!"
+        },
+        {
+          "type": "STRING",
+          "value": "&"
+        },
+        {
+          "type": "STRING",
+          "value": "\\"
+        },
+        {
+          "type": "STRING",
+          "value": "*"
+        }
+      ]
+    },
+    "punct": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "{"
+        },
+        {
+          "type": "STRING",
+          "value": "}"
+        },
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        },
+        {
+          "type": "STRING",
+          "value": "["
+        },
+        {
+          "type": "STRING",
+          "value": "]"
+        }
+      ]
+    },
+    "identifier": {
+      "type": "PATTERN",
+      "value": "[A-Za-z0-9_]+"
+    }
+  },
+  "extras": [
+    {
+      "type": "PATTERN",
+      "value": "[ \\t\\r\\n]+"
+    }
+  ],
+  "conflicts": [],
+  "precedences": [],
+  "externals": [],
+  "inline": [],
+  "supertypes": [],
+  "reserved": {}
+}

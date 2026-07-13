@@ -233,13 +233,14 @@ h1, h2, h3, h4, h5, h6,
 /* ──────────────────────────────────────────────────────────────────────────
  * Beloch syntax highlighting (tree-sitter) — token classes on the navy panel.
  * ────────────────────────────────────────────────────────────────────────── */
-.bel-comment { color: #7E8C73; font-style: italic; }
-.bel-keyword { color: var(--beloch-keyword); }
-.bel-point   { color: var(--beloch-point); }
-.bel-line    { color: var(--beloch-line); }
-.bel-number  { color: #D08C70; }
-.bel-fold    { color: #E0A85C; }
-.bel-punct   { color: #7E889A; }
+.bel-comment  { color: #7E8C73; font-style: italic; }
+.bel-keyword  { color: var(--beloch-keyword); }
+.bel-point    { color: var(--beloch-point); }
+.bel-line     { color: var(--beloch-line); }
+.bel-instance { color: var(--beloch-reference); }
+.bel-number   { color: #D08C70; }
+.bel-operator { color: var(--beloch-at); }
+.bel-punct    { color: #7E889A; }
 
 /* Beloch fenced code blocks (```beloch) highlighted by the remark plugin. */
 .bel-block {
