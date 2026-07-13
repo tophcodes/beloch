@@ -88,3 +88,10 @@ test("legend: true shows the legend panel", async () => {
   const s = renderCP(scene, { legend: true }).toString();
   expect(s).toContain('class="legend-panel"');
 });
+
+test("CP stamps data-bel-name on named creases and named vertex dots", async () => {
+  const scene = parseFold(await golden("syntax/x-midpoint.fold"));
+  const s = renderCP(scene).toString();
+  expect(s).toContain('data-bel-name="center"');            // the named crossing vertex
+  expect(s).toMatch(/data-bel-name="d1"|data-bel-name="d2"/); // a named diagonal crease
+});
