@@ -1,47 +1,9 @@
 ---
-title: Einführung
-description: Was Beloch ist — eine deklarative Origami-Sprache auf den Huzita–Justin-Axiomen, mit exaktem Kern und leserlicher Oberfläche.
+title: Beloch
+description: Eine deklarative Sprache für Origami, gebaut auf den Huzita–Justin-Axiomen.
 ---
 
-Beloch ist eine deklarative Sprache für Origami, gebaut auf den
-Huzita–Justin-Axiomen. Ein `.bel`-Programm beschreibt Punkte, Linien und
-Faltungen auf einem Blatt Papier; Beloch **wertet** es aus (kompiliert es
-nicht) zu einem Faltbild (crease pattern) und einem gefalteten Zustand,
-emittiert als [FOLD](https://github.com/edemaine/fold).
+Beloch ist eine deklarative Sprache für Origami. Diese Dokumentation wird gerade
+neu aufgebaut — der Getting-Started-Guide folgt in Kürze.
 
-```beloch
-paper square
-mark --d = through .a .c
-fold map .a onto .c
-```
-
-## Zwei Schichten
-
-Beloch trennt zwei Ebenen bewusst:
-
-- **Fähigkeit (capability)** — alle sieben Huzita-Justin-Axiome, jedes exakt
-  ausgewertet über einen algebraischen Zahlenkern, der von ℚ bis zu
-  Kubikwurzeln reicht (ℚ → √ → ∛). Nichts, was axiomatisch faltbar ist,
-  bleibt der Sprache verschlossen.
-- **Oberflächen-Zucker (surface sugar)** — die kurzen, häufigen Verben
-  (`mark`, `fold`, `collapse`, `map … onto …`, `&`, …), die die alltäglichen
-  Faltungen leserlich machen. Die Oberfläche folgt der Falt*häufigkeit*, nicht
-  einer strikten Axiom-Rangfolge — ein bewusster Unterschied zur klassischen
-  Nummerierung.
-
-Jedes gültige Origami-Modell, das die Huzita-Justin-Axiome konstruieren
-können, ist damit in Beloch ausdrückbar; die Oberfläche macht dabei nur die
-gebräuchlichen Fälle kurz.
-
-## Wie man anfängt
-
-- [Das Faltmodell](/guide/das-faltmodell/) — Papier, Punkte, Linien, und die
-  zwei Dispositionen `mark`/`fold`.
-- [Die zwei Frames](/guide/zwei-frames/) — warum deklariertes und emittiertes
-  M/V nicht dasselbe sind.
-- [collapse](/guide/collapse/) — die Flaggschiff-Operation: mehrere Kanten an
-  einem Scheitelpunkt, gleichzeitig gefaltet.
-- [Verben](/reference/verben/) — Kurzreferenz aller Verben und Modifikatoren.
-- [Beispiele](/beispiele/) — eine Galerie funktionierender Basen.
-- [Playground](/playground/) — ein interaktiver Editor mit Live-Vorschau,
-  direkt im Browser.
+Bis dahin: probiere die Sprache direkt im [Playground](/playground/).

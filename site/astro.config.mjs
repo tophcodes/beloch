@@ -58,18 +58,6 @@ export default defineConfig({
 					items: [{ label: "Einführung", link: "/" }],
 				},
 				{
-					label: "Anleitung",
-					items: [{ autogenerate: { directory: "guide" } }],
-				},
-				{
-					label: "Referenz",
-					items: [{ autogenerate: { directory: "reference" } }],
-				},
-				{
-					label: "Beispiele",
-					items: [{ label: "Beispiele", link: "/beispiele/" }],
-				},
-				{
 					label: "Playground",
 					items: [{ label: "Playground", link: "/playground/" }],
 				},
