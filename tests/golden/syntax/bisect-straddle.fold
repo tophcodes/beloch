@@ -86,6 +86,7 @@
     },
     null
   ],
+  "beloch:vertices_names": [ "a", null, null, "b", null, "d", "c" ],
   "beloch:named_points": {
     "c": { "paper": [ 1.0, 1.0 ], "table": [ 1.0, 0.0 ] },
     "b": { "paper": [ 1.0, 0.0 ], "table": [ 1.0, 0.0 ] },
@@ -149,7 +150,58 @@
         [ 1.0, 0.0, 0.0, -1.0, 0.0, 1.0 ]
       ],
       "faceOrders": [ [ 0, 3, 1 ], [ 1, 4, 1 ], [ 2, 5, 1 ] ],
-      "beloch:step": null
+      "beloch:step": null,
+      "beloch:edges": [
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "bisect-straddle.bel:2:1-26",
+          "name": "ac",
+          "step": null
+        },
+        {
+          "axiom": "axiom5",
+          "sources": [ "--ac", "--bd", ".b" ],
+          "span": "bisect-straddle.bel:4:1-44",
+          "name": null,
+          "step": null
+        },
+        null,
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".b", ".d" ],
+          "span": "bisect-straddle.bel:3:1-26",
+          "name": "bd",
+          "step": null
+        },
+        null,
+        {
+          "axiom": "axiom5",
+          "sources": [ "--ac", "--bd", ".b" ],
+          "span": "bisect-straddle.bel:4:1-44",
+          "name": null,
+          "step": null
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".b", ".d" ],
+          "span": "bisect-straddle.bel:3:1-26",
+          "name": "bd",
+          "step": null
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "bisect-straddle.bel:2:1-26",
+          "name": "ac",
+          "step": null
+        },
+        null
+      ],
+      "beloch:vertices_names": [ "a", null, null, "b", null, "d", "c" ]
     }
   ]
 }

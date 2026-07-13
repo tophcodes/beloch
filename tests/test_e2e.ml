@@ -426,6 +426,38 @@ let test_beloch_marks_crease_id_deterministic () =
     "point mark crease_id is deterministic regardless of prior minting (#36)"
     baseline polluted
 
+(* render-card slice 2 task 1: folded frames must carry the same name/edge
+   provenance the CP frame already carries, so the render pipeline can
+   address elements by source name instead of by float coordinate. *)
+let test_folded_provenance () =
+  let src =
+    "paper square\n\
+     mark --d1 = through .a .c\n\
+     mark --d2 = through .b .d\n\
+     .center = --d1 * --d2\n\
+     fold map .a onto .center\n"
+  in
+  let json = Beloch.fold_string ~filename:"prov.bel" src in
+  let open Yojson.Safe.Util in
+  (* CP frame: vertices_names contains "center" *)
+  let cp_names = json |> member "beloch:vertices_names" |> to_list in
+  Alcotest.(check bool) "cp vertices_names has center" true
+    (List.exists (fun v -> v = `String "center") cp_names);
+  (* first foldedForm frame carries beloch:edges AND beloch:vertices_names *)
+  let frames = json |> member "file_frames" |> to_list in
+  let folded =
+    List.find
+      (fun f ->
+        f |> member "frame_classes" |> to_list
+        |> List.exists (fun c -> c = `String "foldedForm"))
+      frames
+  in
+  Alcotest.(check bool) "folded frame has beloch:edges" true
+    (match folded |> member "beloch:edges" with `Null -> false | _ -> true);
+  Alcotest.(check bool) "folded frame vertices_names has center" true
+    (folded |> member "beloch:vertices_names" |> to_list
+     |> List.exists (fun v -> v = `String "center"))
+
 (* cross is material: a crease scored through several layers marks different
    lines in the paper, so bare cross must error — with a hint toward the
    #(...) flap escape hatch. (A merely table-bent scar crosses fine bare;
@@ -897,5 +929,7 @@ let () =
           Alcotest.test_case
             "point mark crease_id is deterministic per eval (#36)" `Quick
             test_beloch_marks_crease_id_deterministic;
+          Alcotest.test_case "folded provenance" `Quick
+            test_folded_provenance;
         ] );
     ]

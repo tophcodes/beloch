@@ -86,6 +86,7 @@
     },
     null
   ],
+  "beloch:vertices_names": [ "a", "ctr", "d", null, "c", null, "b" ],
   "beloch:named_points": {
     "c": { "paper": [ 1.0, 1.0 ], "table": [ 1.0, 1.0 ] },
     "ctr": { "paper": [ 0.5, 0.5 ], "table": [ 0.5, 0.5 ] },
@@ -151,7 +152,58 @@
         [ 0.0, 1.0, 1.0, 0.0, 0.0, 0.0 ]
       ],
       "faceOrders": [ [ 0, 3, 1 ], [ 0, 4, 1 ], [ 1, 5, 1 ], [ 2, 5, 1 ] ],
-      "beloch:step": null
+      "beloch:step": null,
+      "beloch:edges": [
+        {
+          "axiom": "fold",
+          "sources": [ "--ac" ],
+          "span": "fold-straddle-fresh-cut.bel:11:1-20",
+          "name": null,
+          "step": null
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".b", ".d" ],
+          "span": "fold-straddle-fresh-cut.bel:7:1-26",
+          "name": "bd",
+          "step": null
+        },
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".b" ],
+          "span": "fold-straddle-fresh-cut.bel:8:1-26",
+          "name": "v",
+          "step": null
+        },
+        null,
+        {
+          "axiom": "fold",
+          "sources": [ "--ac" ],
+          "span": "fold-straddle-fresh-cut.bel:11:1-20",
+          "name": null,
+          "step": null
+        },
+        null,
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".b" ],
+          "span": "fold-straddle-fresh-cut.bel:8:1-26",
+          "name": "v",
+          "step": null
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".b", ".d" ],
+          "span": "fold-straddle-fresh-cut.bel:7:1-26",
+          "name": "bd",
+          "step": null
+        },
+        null
+      ],
+      "beloch:vertices_names": [ "a", "ctr", "d", null, "c", null, "b" ]
     }
   ]
 }

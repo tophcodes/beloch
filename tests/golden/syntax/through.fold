@@ -105,6 +105,9 @@
     null,
     null
   ],
+  "beloch:vertices_names": [
+    "a", null, null, null, "b", null, "ctr", null, "d", null, "c"
+  ],
   "beloch:named_points": {
     "c": {
       "paper": [ 1.0, 1.0 ],
@@ -194,7 +197,70 @@
         ]
       ],
       "faceOrders": [ [ 0, 2, 1 ], [ 0, 3, 1 ], [ 0, 4, 1 ], [ 1, 4, 1 ] ],
-      "beloch:step": null
+      "beloch:step": null,
+      "beloch:edges": [
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".b" ],
+          "span": "through.bel:13:1-29",
+          "name": "vmid",
+          "step": null
+        },
+        {
+          "axiom": "axiom6",
+          "sources": [ ".ctr", "--ab", ".b", ".a" ],
+          "span": "through.bel:17:1-45",
+          "name": null,
+          "step": null
+        },
+        null,
+        null,
+        {
+          "axiom": "axiom6",
+          "sources": [ ".ctr", "--ab", ".b", ".a" ],
+          "span": "through.bel:17:1-45",
+          "name": null,
+          "step": null
+        },
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".b" ],
+          "span": "through.bel:13:1-29",
+          "name": "vmid",
+          "step": null
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".d" ],
+          "span": "through.bel:14:1-29",
+          "name": "hmid",
+          "step": null
+        },
+        null,
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".b" ],
+          "span": "through.bel:13:1-29",
+          "name": "vmid",
+          "step": null
+        },
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".d" ],
+          "span": "through.bel:14:1-29",
+          "name": "hmid",
+          "step": null
+        },
+        null,
+        null
+      ],
+      "beloch:vertices_names": [
+        "a", null, null, null, "b", null, "ctr", null, "d", null, "c"
+      ]
     }
   ]
 }

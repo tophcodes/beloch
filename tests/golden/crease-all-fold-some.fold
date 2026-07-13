@@ -71,6 +71,9 @@
     null,
     null
   ],
+  "beloch:vertices_names": [
+    "a", null, null, null, "b", null, null, "d", "c"
+  ],
   "beloch:named_points": {
     "c": { "paper": [ 1.0, 1.0 ], "table": [ 0.0, 0.0 ] },
     "b": { "paper": [ 1.0, 0.0 ], "table": [ 1.0, 0.0 ] },
@@ -126,7 +129,48 @@
         [ -1.0, 0.0, 0.0, -1.0, 1.0, 1.0 ]
       ],
       "faceOrders": [ [ 0, 2, 1 ], [ 0, 3, -1 ], [ 2, 3, -1 ] ],
-      "beloch:step": null
+      "beloch:step": null,
+      "beloch:edges": [
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".c", ".d" ],
+          "span": "crease-all-fold-some.bel:5:1-26",
+          "name": "m",
+          "step": null
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".d", ".a" ],
+          "span": "crease-all-fold-some.bel:4:1-20",
+          "name": null,
+          "step": null
+        },
+        null,
+        null,
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".d", ".a" ],
+          "span": "crease-all-fold-some.bel:4:1-20",
+          "name": null,
+          "step": null
+        },
+        null,
+        null,
+        {
+          "axiom": "fold",
+          "sources": [ "--m" ],
+          "span": "crease-all-fold-some.bel:6:1-28",
+          "name": null,
+          "step": null
+        },
+        null,
+        null
+      ],
+      "beloch:vertices_names": [
+        "a", null, null, null, "b", null, null, "d", "c"
+      ]
     }
   ]
 }
