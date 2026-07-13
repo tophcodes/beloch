@@ -19,18 +19,17 @@ Here is a complete, valid Beloch program. One line.
 paper square
 </Beloch>
 
-`paper square` declares the sheet: a unit square, one edge long, with its
-bottom-left corner at the origin. Every program needs exactly one `paper`
-declaration, and it comes first. On the right you can see the result — right now
-it is just the outline, because we have not creased anything yet.
+`paper square` declares the sheet: a square. Every program needs exactly one
+`paper` declaration, and it comes first. On the right you can see the result —
+right now it is just the outline, because we have not creased anything yet.
 
 The square comes with its four corners already named, going counter-clockwise
-from the origin:
+from the bottom-left:
 
-- `.a` — bottom-left, at `(0, 0)`
-- `.b` — bottom-right, at `(1, 0)`
-- `.c` — top-right, at `(1, 1)`
-- `.d` — top-left, at `(0, 1)`
+- `.a` — bottom-left
+- `.b` — bottom-right
+- `.c` — top-right
+- `.d` — top-left
 
 The leading dot is how you write a **point** in Beloch. `.a` is not a variable
 you defined — it is a value the paper handed you. The four edges are named too,
@@ -48,8 +47,9 @@ mark through .a .c
 
 Read the new line as an English sentence: *mark a crease that goes through `.a`
 and `.c`.* `through .a .c` is an **expression** — it takes two points and
-produces a line, the unique line passing through both. `.a` is `(0, 0)` and `.c`
-is `(1, 1)`, so the line is the main diagonal, and it now shows up in the diagram.
+produces a line, the unique line passing through both. `.a` is the bottom-left
+corner and `.c` the top-right, so the line is the main diagonal, and it now shows
+up in the diagram.
 
 `mark` is the verb: it records the line onto the paper as a crease you can see.
 (We are only *marking* here, not folding anything — the difference between marking
@@ -57,7 +57,7 @@ and folding is the whole of a
 [later tutorial](/tutorials/mark-vs-fold/). For now, `mark` just means "draw this
 line so I can see it.")
 
-## The second line, and why it is exact
+## The second line
 
 Add the other diagonal the same way:
 
@@ -67,16 +67,8 @@ mark through .a .c
 mark through .b .d
 </Beloch>
 
-`through .b .d` connects `.b` at `(1, 0)` to `.d` at `(0, 1)` — the other
-diagonal. The two creases now cross in the middle of the sheet.
-
-Where exactly do they cross? At `(1/2, 1/2)`. Not `0.4999999`, not `0.5000001` —
-one half, exactly. This is the point of Beloch's number system: coordinates are
-**exact values**, not floating-point approximations. When you fold a corner to
-land on a diagonal, or intersect two creases built from earlier creases, the
-result is computed exactly, so it never drifts. You will lean on this hard once
-programs get deep — an intersection ten folds in is as precise as the first
-corner.
+`through .b .d` connects `.b` (bottom-right) to `.d` (top-left) — the other
+diagonal. The two creases cross right in the middle of the sheet.
 
 ## What you learned
 
@@ -85,7 +77,6 @@ corner.
 - A leading `.` writes a **point**; a leading `--` writes a **line**.
 - `through .p .q` is an expression that builds the line through two points.
 - `mark <line>` records a crease onto the sheet.
-- Every coordinate Beloch computes is **exact**.
 
 Next, we'll give our own names to points and lines so we can build creases out of
 earlier ones: [Naming Points & Lines](/tutorials/naming/).
