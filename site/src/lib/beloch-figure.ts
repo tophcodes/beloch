@@ -84,16 +84,19 @@ class BelochFigure extends HTMLElement {
   private render() {
     const diagram = this.querySelector(".beloch-diagram") as HTMLElement;
     if (!this.scene) return;
-    if (this.view === "cp") {
-      diagram.innerHTML = this.cpHTML || renderCP(this.scene).toString();
-    } else {
-      const step = this.scene.steps[this.step];
-      const label = step?.label ?? undefined;
-      diagram.innerHTML = renderFolded(this.scene, {
-        step: label, hidden: "dashed",
-      }).toString();
-      const lbl = this.querySelector(".beloch-step-label");
-      if (lbl) lbl.textContent = `${this.step + 1}/${this.scene.steps.length}`;
+    try {
+      if (this.view === "cp") {
+        diagram.innerHTML = this.cpHTML || renderCP(this.scene).toString();
+      } else {
+        diagram.innerHTML = renderFolded(this.scene, {
+          step: String(this.step + 1), hidden: "dashed",
+        }).toString();
+        const lbl = this.querySelector(".beloch-step-label");
+        if (lbl) lbl.textContent = `${this.step + 1}/${this.scene.steps.length}`;
+      }
+    } catch (err) {
+      console.warn("beloch-figure: render failed", err);
+      return;                              // graceful degradation: keep prior diagram
     }
     // (selection re-application hook — filled in Task 6)
     this.afterRender?.();
