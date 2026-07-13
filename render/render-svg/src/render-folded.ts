@@ -139,6 +139,7 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
       };
       if (style.dasharray) attrs["stroke-dasharray"] = style.dasharray;
       if (name) attrs["data-name"] = name;
+      if (name) attrs["data-bel-name"] = name;
       creases.children.push(el("line", attrs));
     }
 
@@ -159,6 +160,7 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
           stroke, "stroke-width": dashWgt, "stroke-dasharray": dash, "stroke-linecap": "round",
         };
         if (name) attrs["data-name"] = name;
+        if (name) attrs["data-bel-name"] = name;
         dashedLines.push(el("line", attrs));
       }
     }
@@ -206,6 +208,20 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
   }
 
   creases.children.push(...dashedLines);
+
+  // named-vertex dots (hover/selection targets in the folded view)
+  const annotations = doc.layer("annotations");
+  const fverts = frame.vertices;
+  frame.verticesNames.forEach((nm, i) => {
+    if (!nm) return;
+    const p = fverts[i]!;
+    annotations.children.push(
+      el("circle", {
+        cx: mx(p[0]), cy: ty(p[1]), r: 3, fill: theme.ink,
+        "data-bel-name": nm, "data-kind": "point",
+      }),
+    );
+  });
 
   appendConstructions(doc, scene, layout, theme, opts.labels, { frame });
   if (opts.title) appendTitle(doc, theme, opts.title);

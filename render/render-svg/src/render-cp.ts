@@ -74,6 +74,7 @@ export function renderCP(scene: FoldScene, opts: RenderOptions = {}): SvgDoc {
     };
     if (style.dasharray) attrs["stroke-dasharray"] = style.dasharray;
     if (name) attrs["data-name"] = name;
+    if (name) attrs["data-bel-name"] = name;
     creases.children.push(el("line", attrs));
   });
 
@@ -119,8 +120,13 @@ export function renderCP(scene: FoldScene, opts: RenderOptions = {}): SvgDoc {
 
   // fold2svg.mjs:305-312 — vertex dots + corner labels
   const annotations = doc.layer("annotations");
-  V.forEach((p) => {
-    annotations.children.push(el("circle", { cx: tx(p[0]), cy: ty(p[1]), r: 3, fill: theme.ink }));
+  V.forEach((p, i) => {
+    const nm = scene.cp.verticesNames[i];
+    const circleAttrs: Record<string, string | number> = {
+      cx: tx(p[0]), cy: ty(p[1]), r: 3, fill: theme.ink,
+    };
+    if (nm) { circleAttrs["data-bel-name"] = nm; circleAttrs["data-kind"] = "point"; }
+    annotations.children.push(el("circle", circleAttrs));
     const lab = cornerLabel(p);
     if (lab) {
       const ox = p[0] < 0.5 ? -16 : 10, oy = p[1] < 0.5 ? 18 : -8;

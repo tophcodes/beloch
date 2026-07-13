@@ -127,3 +127,10 @@ test("legend: true shows the legend panel", async () => {
   const s = renderFolded(scene, { legend: true }).toString();
   expect(s).toContain('class="legend-panel"');
 });
+
+test("folded stamps data-bel-name on named vertex dots and keeps occluded creases", async () => {
+  const scene = parseFold(await golden("syntax/x-midpoint.fold"));
+  const s = renderFolded(scene, { hidden: "dashed" }).toString();
+  expect(s).toContain('data-bel-name="center"');
+  expect(s).toContain('data-occluded="true"');               // occluded geometry retained
+});
