@@ -1,7 +1,11 @@
 {
   "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
-    "types": ["bun-types"]
+    "types": ["bun-types"],
+    "paths": {
+      "@beloch/scene": ["../render/scene/src/index.ts"],
+      "@beloch/render-svg": ["../render/render-svg/src/index.ts"]
+    }
   },
   "include": [".astro/types.d.ts", "**/*"],
   "exclude": ["dist"]
