@@ -46,6 +46,13 @@ export default defineConfig({
 		// Highlight ```beloch fences with the tree-sitter highlighter before
 		// Expressive Code sees them.
 		remarkPlugins: [remarkBel],
+		// SmartyPants (on by default) rewrites "--" to an en/em dash in prose.
+		// Beloch source uses "--" as the crease-name sigil (e.g. `--d1`), and
+		// <Beloch> slot children are markdown body text, not raw JS/JSX text —
+		// so without this, evalBelToFold() sees mangled source for any inline
+		// example that uses a crease name. Disabled site-wide rather than only
+		// inside .bel snippets: no separate hook point exists to scope it.
+		smartypants: false,
 	},
 	integrations: [
 		starlight({
