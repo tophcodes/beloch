@@ -68,3 +68,47 @@ test("stepper selects by index, not by (possibly null) step label", async () => 
   expect(lastIndex).toBeGreaterThan(0);         // sanity: fixture is multi-step
   expect(firstStepHTML).not.toBe(lastStepHTML);
 });
+
+test("clicking a code token toggles selection on both sides and persists over re-render", async () => {
+  await import("./beloch-figure");
+  const el = mountCard(foldJson);
+  // inject a code token so both sides exist
+  el.querySelector(".beloch-code-panel")!.innerHTML =
+    '<span class="bel-point" data-bel-name="center">.center</span>';
+  (el as any).hydrate();
+  const token = el.querySelector('.beloch-code-panel [data-bel-name="center"]') as HTMLElement;
+  token.click();
+  expect(token.classList.contains("bel-selected")).toBe(true);
+  // svg side (CP already has the dot from SSR? in the test svg is empty, so assert state instead)
+  expect((el as any).selected.has("center")).toBe(true);
+  token.click();                                   // toggle off
+  expect(token.classList.contains("bel-selected")).toBe(false);
+  expect((el as any).selected.has("center")).toBe(false);
+});
+
+test("hover adds and removes .bel-hover", async () => {
+  await import("./beloch-figure");
+  const el = mountCard(foldJson);
+  el.querySelector(".beloch-code-panel")!.innerHTML =
+    '<span class="bel-point" data-bel-name="center">.center</span>';
+  (el as any).hydrate();
+  const token = el.querySelector('[data-bel-name="center"]') as HTMLElement;
+  token.dispatchEvent(new Event("mouseenter", { bubbles: true }));
+  expect(el.querySelectorAll(".bel-hover").length).toBeGreaterThan(0);
+  token.dispatchEvent(new Event("mouseleave", { bubbles: true }));
+  expect(el.querySelectorAll(".bel-hover").length).toBe(0);
+});
+
+test("selection survives a re-render (view switch)", async () => {
+  await import("./beloch-figure");
+  const el = mountCard(foldJson);
+  el.querySelector(".beloch-code-panel")!.innerHTML =
+    '<span class="bel-point" data-bel-name="center">.center</span>';
+  (el as any).hydrate();
+  const token = el.querySelector('[data-bel-name="center"]') as HTMLElement;
+  token.click();
+  expect(token.classList.contains("bel-selected")).toBe(true);
+  (el.querySelector('[data-view="folded"]') as HTMLElement).click();   // triggers render()
+  expect(token.classList.contains("bel-selected")).toBe(true);          // still selected post-render
+  expect((el as any).selected.has("center")).toBe(true);
+});

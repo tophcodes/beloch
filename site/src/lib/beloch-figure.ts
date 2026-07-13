@@ -16,11 +16,15 @@ export function viewHasSteps(scene: FoldScene): boolean {
 type View = "cp" | "folded";
 
 class BelochFigure extends HTMLElement {
+  private static PALETTE = ["#e8a33d", "#3db0a8", "#a878e0", "#5fa85f", "#e06e9e", "#4aa8d8"];
+
   private scene: FoldScene | null = null;
   private view: View = "cp";
   private step = 0;
   private cpHTML = "";                 // cached SSR CP svg
   private hydrated = false;
+  selected = new Set<string>();
+  private colorOf = new Map<string, string>();
 
   connectedCallback() {
     // Lazy: hydrate when near the viewport.
@@ -48,6 +52,61 @@ class BelochFigure extends HTMLElement {
       this.step = this.scene.steps.length - 1;
       this.buildControls();
     }
+    this.wireInteraction();
+  }
+
+  // Bidirectional hover + persistent multi-selection, delegated on the whole
+  // card so it works for both the code panel's spans and the injected SVG's
+  // creases/vertex dots, and survives re-renders (view/step changes) via the
+  // afterRender hook (Task 5).
+  //
+  // NB: mouseenter/mouseleave (not mouseover/mouseout) — they don't bubble
+  // natively, so delegation needs the *capture* phase, which always sees
+  // every descendant's mouseenter/mouseleave regardless of the bubbles flag.
+  private wireInteraction() {
+    this.addEventListener("mouseenter", (e) => {
+      const n = (e.target as Element | null)?.closest?.("[data-bel-name]") as HTMLElement | null;
+      if (n) this.setHover(n.dataset.belName!, true);
+    }, true);
+    this.addEventListener("mouseleave", (e) => {
+      const n = (e.target as Element | null)?.closest?.("[data-bel-name]") as HTMLElement | null;
+      if (n) this.setHover(n.dataset.belName!, false);
+    }, true);
+    this.addEventListener("click", (e) => {
+      const n = (e.target as Element | null)?.closest?.("[data-bel-name]") as HTMLElement | null;
+      if (n) this.toggleSelect(n.dataset.belName!);
+    });
+    this.afterRender = () => this.applySelection();
+  }
+
+  private matches(name: string): HTMLElement[] {
+    return Array.from(this.querySelectorAll<HTMLElement>(`[data-bel-name="${CSS.escape(name)}"]`));
+  }
+  private setHover(name: string, on: boolean) {
+    this.matches(name).forEach((el) => el.classList.toggle("bel-hover", on));
+  }
+  private toggleSelect(name: string) {
+    if (this.selected.has(name)) {
+      this.selected.delete(name);
+    } else {
+      this.selected.add(name);
+      if (!this.colorOf.has(name))
+        this.colorOf.set(name, BelochFigure.PALETTE[this.colorOf.size % BelochFigure.PALETTE.length]!);
+    }
+    this.applySelection();
+  }
+  private applySelection() {
+    this.querySelectorAll(".bel-selected").forEach((el) => {
+      el.classList.remove("bel-selected");
+      (el as HTMLElement).style.removeProperty("--bel-sel");
+    });
+    this.selected.forEach((name) => {
+      const color = this.colorOf.get(name)!;
+      this.matches(name).forEach((el) => {
+        el.classList.add("bel-selected");
+        el.style.setProperty("--bel-sel", color);
+      });
+    });
   }
 
   private buildControls() {
@@ -98,11 +157,12 @@ class BelochFigure extends HTMLElement {
       console.warn("beloch-figure: render failed", err);
       return;                              // graceful degradation: keep prior diagram
     }
-    // (selection re-application hook — filled in Task 6)
+    // selection re-application — the diagram was just replaced wholesale, so
+    // any [data-bel-name] elements lost their .bel-selected/.bel-hover state.
     this.afterRender?.();
   }
 
-  afterRender?: () => void;             // Task 6 attaches selection re-apply here
+  afterRender?: () => void;             // set by wireInteraction() → re-applies selection
 }
 
 if (typeof customElements !== "undefined" && !customElements.get("beloch-figure")) {

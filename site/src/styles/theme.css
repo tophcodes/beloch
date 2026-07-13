@@ -84,3 +84,29 @@
 	padding: 0;
 	white-space: pre;
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * <beloch-figure> interaction — controls bar, hover, per-name selection.
+ * `.beloch-controls` is injected as a 3rd child into the 2-column
+ * `.beloch-card` grid (scoped in Beloch.astro); span both columns so it
+ * doesn't push the diagram panel into its own row.
+ * ────────────────────────────────────────────────────────────────────────── */
+.beloch-controls { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
+.beloch-tab { font: inherit; padding: 3px 10px; border-radius: 7px; border: 1px solid var(--beloch-border); background: transparent; color: var(--beloch-muted); cursor: pointer; }
+.beloch-tab.is-active { color: var(--beloch-ink); border-color: var(--beloch-valley); }
+.beloch-stepper { display: inline-flex; align-items: center; gap: 6px; color: var(--beloch-muted); }
+.beloch-stepper button { background: none; border: none; color: inherit; cursor: pointer; font-size: 13px; }
+
+/* hover — neutral, transient */
+[data-bel-name].bel-hover { outline: 2px solid var(--beloch-muted); outline-offset: 1px; }
+svg [data-bel-name].bel-hover { outline: none; filter: drop-shadow(0 0 3px var(--beloch-muted)); }
+
+/* selection — per-name colour via --bel-sel */
+.beloch-code-panel [data-bel-name].bel-selected {
+	background: color-mix(in srgb, var(--bel-sel) 32%, transparent);
+	border-radius: 4px; box-shadow: 0 0 0 1px var(--bel-sel);
+}
+svg line.bel-selected { stroke: var(--bel-sel) !important; stroke-width: 3 !important; }
+svg circle.bel-selected { fill: var(--bel-sel) !important; r: 4.5; }
+/* selected but occluded → ghosted, still dashed */
+svg [data-bel-name].bel-selected[data-occluded] { stroke: var(--bel-sel) !important; opacity: 0.25; }
