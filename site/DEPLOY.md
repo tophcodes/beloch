@@ -13,9 +13,9 @@ Cloudflare Pages project name: **`beloch-docs`** (see `site/wrangler.toml`).
 
 ## Status / prerequisites
 
-1. **Cloudflare Actions secrets** — `CLOUDFLARE_API_TOKEN` (Pages-scoped:
-   **Account → Cloudflare Pages → Edit**) and `CLOUDFLARE_ACCOUNT_ID` are set
-   as repo Actions secrets.
+1. **Cloudflare Actions secrets.** Set `CLOUDFLARE_API_TOKEN` (Pages-scoped:
+   **Account → Cloudflare Pages → Edit**) and `CLOUDFLARE_ACCOUNT_ID` as repo
+   Actions secrets.
 2. **DNS for `beloch.toph.so`.** The `toph.so` zone ("l") in
    `fleet/tofu/cloudflare` still has a `TODO_toph_so_zone_id`. Add a `CNAME`
    `beloch` → `beloch-docs.pages.dev` (via the CF dashboard, or complete the

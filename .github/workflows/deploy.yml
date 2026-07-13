@@ -21,8 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: DeterminateSystems/nix-installer-action@v16
+      # (no Nix build cache — first run compiles beloch cold; add FlakeHub Cache later if CI time hurts)
       - name: Build beloch (native)
         run: nix build .#beloch
       - name: Put beloch on PATH
