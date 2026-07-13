@@ -131,3 +131,16 @@ test("no beloch:marks field parses to an empty marks array", async () => {
   const scene = parseFold(await golden("syntax/bisect-a.fold"));
   expect(scene.marks).toEqual([]);
 });
+
+test("frame carries verticesNames from beloch:vertices_names", async () => {
+  const scene = parseFold(await golden("syntax/x-midpoint.fold"));
+  expect(scene.cp.verticesNames).toContain("center");
+  expect(scene.cp.verticesNames.length).toBe(scene.cp.vertices.length);
+});
+
+test("folded step frames carry crease provenance names", async () => {
+  const scene = parseFold(await golden("syntax/x-midpoint.fold"));
+  const step = scene.steps[scene.steps.length - 1]!;
+  const hasNamedCrease = step.frame.edgesProvenance.some((p) => p?.name);
+  expect(hasNamedCrease).toBe(true);
+});
