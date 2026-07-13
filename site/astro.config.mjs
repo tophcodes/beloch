@@ -61,12 +61,17 @@ export default defineConfig({
 			social: [{ icon: "github", label: "GitHub", href: "https://github.com/tophcodes/beloch" }],
 			sidebar: [
 				{
-					label: "Einstieg",
-					items: [{ label: "Einführung", link: "/" }],
+					label: "Getting Started",
+					items: [
+						{ label: "Introduction", link: "/" },
+						{ label: "Playground", link: "/playground/" },
+					],
 				},
 				{
-					label: "Playground",
-					items: [{ label: "Playground", link: "/playground/" }],
+					label: "Tutorials",
+					items: [
+						{ label: "Paper & Values", link: "/tutorials/paper-and-values/" },
+					],
 				},
 			],
 			customCss: ['./src/styles/theme.css'],
