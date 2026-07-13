@@ -22,7 +22,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@v16
-      # (no Nix build cache — first run compiles beloch cold; add FlakeHub Cache later if CI time hurts)
+      - name: Cache /nix/store
+        # The FLINT-3.6.0 override isn't on cache.nixos.org, so it recompiles from
+        # source on a cold store — this caches the built closure across runs.
+        # (Self-hosted attic on the fleet is the longer-term substituter.)
+        uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          gc-max-store-size-linux: 2G
       - name: Build beloch (native)
         run: nix build .#beloch
       - name: Put beloch on PATH
