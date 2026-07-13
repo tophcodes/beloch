@@ -1,0 +1,40 @@
+name: Deploy docs site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'render/**'
+      - 'lib/**'
+      - 'bin/**'
+      - 'flake.nix'
+      - 'flake.lock'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: Build beloch (native)
+        run: nix build .#beloch
+      - name: Put beloch on PATH
+        run: echo "$PWD/result/bin" >> "$GITHUB_PATH"
+      - uses: oven-sh/setup-bun@v2
+      - name: Build site
+        working-directory: site
+        run: bun install && bun run build
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: site
+          command: pages deploy dist --project-name=beloch-docs --branch=main

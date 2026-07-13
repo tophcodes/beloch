@@ -1,85 +1,61 @@
 # Deploying the Beloch docs site
 
-The site is a static Astro/Starlight build in `site/dist`. The in-browser
-evaluator (`site/public/beloch/beloch-eval.js`) is a **committed artifact** — CI
-does **not** need the OCaml/nix toolchain, only bun. Regenerate the bundle
-manually with `site/scripts/build-eval.sh` when the evaluator changes.
+The site is a static Astro/Starlight build in `site/dist`. Since the render-card
+work, `<Beloch>` evaluates inline `.bel` at build time by shelling the native
+`beloch` binary — the build now requires `beloch` on `PATH`, not just bun.
+`site/public/beloch/beloch-eval.js` (the in-browser evaluator for the live
+playground) remains a **committed artifact**; regenerate it manually with
+`site/scripts/build-eval.sh` when the evaluator changes.
 
-Build command (from repo root): `cd site && bun install && bun run build`
-→ output `site/dist`. Cloudflare Pages project name: **`beloch-docs`**
-(see `site/wrangler.toml`).
+Build command (from repo root, **inside `nix develop`** — see below):
+`cd site && bun install && bun run build` → output `site/dist`.
+Cloudflare Pages project name: **`beloch-docs`** (see `site/wrangler.toml`).
 
-## Status / prerequisites (not yet satisfied)
+## Status / prerequisites
 
-Wiring is prepared here but the deploy is **not live** — three things need your
-account, none of which the automation could do safely:
-
-1. **A Cloudflare token scoped for Pages.** The token in fleet
-   (`secrets/cloudflare.env.age`) is `Zone:DNS:Edit` only — enough for DNS,
-   **not** for `pages deploy`. Mint a token with **Account → Cloudflare Pages →
-   Edit** (and note the **Account ID**).
+1. **Cloudflare Actions secrets** — `CLOUDFLARE_API_TOKEN` (Pages-scoped:
+   **Account → Cloudflare Pages → Edit**) and `CLOUDFLARE_ACCOUNT_ID` are set
+   as repo Actions secrets.
 2. **DNS for `beloch.toph.so`.** The `toph.so` zone ("l") in
    `fleet/tofu/cloudflare` still has a `TODO_toph_so_zone_id`. Add a `CNAME`
    `beloch` → `beloch-docs.pages.dev` (via the CF dashboard, or complete the
    tofu records for that zone).
-3. **A `workflow`-scoped push** if you use the GitHub Actions path below — the
-   current `gh` tokens lack `workflow` scope, so a `.github/workflows/*` file
-   can't be pushed by the automation. Add it yourself, or connect the repo
-   directly (recommended, no workflow file needed).
+3. **A `workflow`-scoped push.** The current `gh` tokens lack `workflow`
+   scope, so `.github/workflows/deploy.yml` can't be pushed by automation —
+   push it yourself, or grant the scope.
 
-## Recommended: Cloudflare Pages Git integration (no secrets in repo)
+## Canonical: GitHub Actions + wrangler
 
-CF Pages → Create project → Connect to Git → `tophcodes/beloch`. Build settings:
+CF Pages' Git-integration builder is **bun-only** and cannot shell out to a
+native `beloch` binary — since the build now depends on `beloch` being on
+`PATH`, Git-integration is **no longer a viable deploy path**. GitHub Actions
+is the only supported route: it builds `beloch` from the flake with Nix, puts
+it on `PATH`, then runs the bun build and uploads `site/dist` via Wrangler.
 
-- **Production branch:** `main`
-- **Build command:** `cd site && bun install && bun run build`
-- **Build output directory:** `site/dist`
-- **Root directory:** repo root (leave default)
+The workflow lives at `.github/workflows/deploy.yml` and runs on every push to
+`main` that touches `site/**`, `render/**`, `lib/**`, `bin/**`, `flake.nix`,
+`flake.lock`, or the workflow file itself (also triggerable manually via
+`workflow_dispatch`). It uses the `CLOUDFLARE_API_TOKEN` /
+`CLOUDFLARE_ACCOUNT_ID` secrets from prerequisite 1.
 
-CF pulls the repo and builds on every push to `main`. Then map the custom domain
-`beloch.toph.so` in the project's **Custom domains** tab (creates/uses the CNAME
-from prerequisite 2).
+If a Cloudflare Pages project for this repo has Git-integration **connected**,
+**disconnect it** — otherwise CF will also try to build on push and fail (no
+`beloch` on its bun-only builder). Pages should only receive builds via the
+Wrangler upload in the Actions job. Map the custom domain `beloch.toph.so` in
+the Pages project's **Custom domains** tab (creates/uses the CNAME from
+prerequisite 2) — that mapping is independent of which build path pushes to
+the project.
 
-## Alternative: GitHub Actions + wrangler
-
-Requires GitHub Actions secrets `CLOUDFLARE_API_TOKEN` (the Pages-scoped token)
-and `CLOUDFLARE_ACCOUNT_ID`, and a `workflow`-scoped push. Drop this at
-`.github/workflows/deploy.yml`:
-
-```yaml
-name: Deploy docs site
-
-on:
-  push:
-    branches: [main]
-    paths: ['site/**', 'render/**', '.github/workflows/deploy.yml']
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - working-directory: site
-        run: bun install && bun run build
-      - uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: site
-          command: pages deploy dist --project-name=beloch-docs --branch=main
-```
+After first pushing the workflow file, trigger it once via `workflow_dispatch`
+(or a qualifying push) to confirm a green run and a live deploy.
 
 ## Manual one-off deploy (local)
 
-With a Pages-scoped token exported as `CLOUDFLARE_API_TOKEN` (and
-`CLOUDFLARE_ACCOUNT_ID`):
+Must run **inside `nix develop`** (for `beloch` on `PATH`) with a Pages-scoped
+token exported as `CLOUDFLARE_API_TOKEN` (and `CLOUDFLARE_ACCOUNT_ID`):
 
 ```sh
+nix develop
 cd site && bun run build
 bunx wrangler pages deploy dist --project-name=beloch-docs --branch=main
 ```
