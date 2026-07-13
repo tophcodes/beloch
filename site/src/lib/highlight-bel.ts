@@ -66,7 +66,17 @@ export async function highlightBel(source: string): Promise<string> {
     const { startIndex: s, endIndex: e } = c.node;
     if (s < pos) continue; // skip any overlap
     if (s > pos) out += esc(source.slice(pos, s));
-    out += `<span class="bel-${c.name}">${esc(source.slice(s, e))}</span>`;
+    const tokenText = source.slice(s, e);
+    let belName = "";
+    if (c.name === "point") {
+      const m = /^\.([A-Za-z_]\w*)$/.exec(tokenText); // .center — not .[
+      if (m) belName = m[1]!;
+    } else if (c.name === "line") {
+      const m = /^--([A-Za-z_]\w*)$/.exec(tokenText); // --d1 — not --[
+      if (m) belName = m[1]!;
+    }
+    const dataAttr = belName ? ` data-bel-name="${belName}"` : "";
+    out += `<span class="bel-${c.name}"${dataAttr}>${esc(tokenText)}</span>`;
     pos = e;
   }
   if (pos < source.length) out += esc(source.slice(pos));
