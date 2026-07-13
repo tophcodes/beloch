@@ -9,6 +9,7 @@
   "edges_assignment": [ "B", "B", "B", "B" ],
   "faces_vertices": [ [ 0, 1, 2, 3 ] ],
   "beloch:edges": [ null, null, null, null ],
+  "beloch:vertices_names": [ "a", "b", "c", "d" ],
   "beloch:named_points": {
     "c": { "paper": [ 1.0, 1.0 ], "table": [ 1.0, 1.0 ] },
     "b": { "paper": [ 1.0, 0.0 ], "table": [ 1.0, 0.0 ] },
@@ -32,7 +33,9 @@
       "faces_vertices": [ [ 0, 1, 2, 3 ] ],
       "beloch:faces_matrix": [ [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ] ],
       "faceOrders": [],
-      "beloch:step": null
+      "beloch:step": null,
+      "beloch:edges": [ null, null, null, null ],
+      "beloch:vertices_names": [ "a", "b", "c", "d" ]
     }
   ]
 }

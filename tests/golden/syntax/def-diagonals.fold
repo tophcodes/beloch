@@ -51,6 +51,7 @@
     },
     null
   ],
+  "beloch:vertices_names": [ "a", "m", "d", "c", "b" ],
   "beloch:named_points": {
     "c": { "paper": [ 1.0, 1.0 ], "table": [ 1.0, 1.0 ] },
     "m": { "paper": [ 0.5, 0.5 ], "table": [ 0.5, 0.5 ] },
@@ -78,7 +79,9 @@
       "faces_vertices": [ [ 0, 1, 2, 3 ] ],
       "beloch:faces_matrix": [ [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ] ],
       "faceOrders": [],
-      "beloch:step": null
+      "beloch:step": null,
+      "beloch:edges": [ null, null, null, null ],
+      "beloch:vertices_names": [ "a", "b", "c", "d" ]
     },
     {
       "frame_classes": [ "foldedForm" ],
@@ -109,7 +112,42 @@
         [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ]
       ],
       "faceOrders": [],
-      "beloch:step": "diagonals"
+      "beloch:step": "diagonals",
+      "beloch:edges": [
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p", ".q" ],
+          "span": "def-diagonals.bel:7:3-27",
+          "name": "d1.d",
+          "step": "diagonals"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p", ".q" ],
+          "span": "def-diagonals.bel:7:3-27",
+          "name": "d2.d",
+          "step": "diagonals"
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p", ".q" ],
+          "span": "def-diagonals.bel:7:3-27",
+          "name": "d1.d",
+          "step": "diagonals"
+        },
+        null,
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p", ".q" ],
+          "span": "def-diagonals.bel:7:3-27",
+          "name": "d2.d",
+          "step": "diagonals"
+        },
+        null
+      ],
+      "beloch:vertices_names": [ "a", "m", "d", "c", "b" ]
     },
     {
       "frame_classes": [ "foldedForm" ],
@@ -140,7 +178,42 @@
         [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ]
       ],
       "faceOrders": [],
-      "beloch:step": "centre"
+      "beloch:step": "centre",
+      "beloch:edges": [
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p", ".q" ],
+          "span": "def-diagonals.bel:7:3-27",
+          "name": "d1.d",
+          "step": "diagonals"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p", ".q" ],
+          "span": "def-diagonals.bel:7:3-27",
+          "name": "d2.d",
+          "step": "diagonals"
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p", ".q" ],
+          "span": "def-diagonals.bel:7:3-27",
+          "name": "d1.d",
+          "step": "diagonals"
+        },
+        null,
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".p", ".q" ],
+          "span": "def-diagonals.bel:7:3-27",
+          "name": "d2.d",
+          "step": "diagonals"
+        },
+        null
+      ],
+      "beloch:vertices_names": [ "a", "m", "d", "c", "b" ]
     }
   ]
 }

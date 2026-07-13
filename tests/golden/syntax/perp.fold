@@ -51,6 +51,7 @@
     },
     null
   ],
+  "beloch:vertices_names": [ "a", null, "d", "c", "b" ],
   "beloch:named_points": {
     "c": { "paper": [ 1.0, 1.0 ], "table": [ 1.0, 1.0 ] },
     "b": { "paper": [ 1.0, 0.0 ], "table": [ 1.0, 0.0 ] },
@@ -90,7 +91,42 @@
         [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ]
       ],
       "faceOrders": [],
-      "beloch:step": null
+      "beloch:step": null,
+      "beloch:edges": [
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "perp.bel:3:1-28",
+          "name": "diag",
+          "step": null
+        },
+        {
+          "axiom": "axiom3",
+          "sources": [ ".b", "--diag" ],
+          "span": "perp.bel:4:1-28",
+          "name": null,
+          "step": null
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "perp.bel:3:1-28",
+          "name": "diag",
+          "step": null
+        },
+        null,
+        null,
+        {
+          "axiom": "axiom3",
+          "sources": [ ".b", "--diag" ],
+          "span": "perp.bel:4:1-28",
+          "name": null,
+          "step": null
+        },
+        null
+      ],
+      "beloch:vertices_names": [ "a", null, "d", "c", "b" ]
     }
   ]
 }

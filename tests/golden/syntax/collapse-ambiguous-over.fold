@@ -111,6 +111,9 @@
     },
     null
   ],
+  "beloch:vertices_names": [
+    "a", null, null, "d", "tm", "c", null, "b", "rm"
+  ],
   "beloch:named_points": {
     "c": { "paper": [ 1.0, 1.0 ], "table": [ 0.0, 0.0 ] },
     "tm": { "paper": [ 0.5, 1.0 ], "table": [ 0.0, 0.5 ] },
@@ -219,7 +222,76 @@
         [ 5, 7, -1 ],
         [ 6, 7, -1 ]
       ],
-      "beloch:step": null
+      "beloch:step": null,
+      "beloch:edges": [
+        {
+          "axiom": "mark",
+          "sources": [ "--ac" ],
+          "span": "collapse-ambiguous-over.bel:17:11-15",
+          "name": null,
+          "step": null
+        },
+        {
+          "axiom": "mark",
+          "sources": [ "--h" ],
+          "span": "collapse-ambiguous-over.bel:19:8-11",
+          "name": null,
+          "step": null
+        },
+        null,
+        {
+          "axiom": "mark",
+          "sources": [ "--bd" ],
+          "span": "collapse-ambiguous-over.bel:18:8-12",
+          "name": null,
+          "step": null
+        },
+        null,
+        {
+          "axiom": "mark",
+          "sources": [ "--v" ],
+          "span": "collapse-ambiguous-over.bel:21:7-10",
+          "name": null,
+          "step": null
+        },
+        null,
+        {
+          "axiom": "mark",
+          "sources": [ "--ac" ],
+          "span": "collapse-ambiguous-over.bel:17:11-15",
+          "name": null,
+          "step": null
+        },
+        null,
+        null,
+        {
+          "axiom": "mark",
+          "sources": [ "--v" ],
+          "span": "collapse-ambiguous-over.bel:21:7-10",
+          "name": null,
+          "step": null
+        },
+        null,
+        {
+          "axiom": "mark",
+          "sources": [ "--bd" ],
+          "span": "collapse-ambiguous-over.bel:18:8-12",
+          "name": null,
+          "step": null
+        },
+        null,
+        {
+          "axiom": "mark",
+          "sources": [ "--h" ],
+          "span": "collapse-ambiguous-over.bel:19:8-11",
+          "name": null,
+          "step": null
+        },
+        null
+      ],
+      "beloch:vertices_names": [
+        "a", null, null, "d", "tm", "c", null, "b", "rm"
+      ]
     }
   ]
 }

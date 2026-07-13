@@ -425,6 +425,10 @@
     },
     null
   ],
+  "beloch:vertices_names": [
+    "a", null, null, null, null, null, null, null, null, null, null, null,
+    null, null, "b", null, null, null, null, null, "d", null, null, "s", "c"
+  ],
   "beloch:named_points": {
     "c": { "paper": [ 1.0, 1.0 ], "table": [ 0.5575066659758932, 0.0 ] },
     "s": {
@@ -465,7 +469,9 @@
       "faces_vertices": [ [ 0, 1, 2, 3 ] ],
       "beloch:faces_matrix": [ [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ] ],
       "faceOrders": [],
-      "beloch:step": null
+      "beloch:step": null,
+      "beloch:edges": [ null, null, null, null ],
+      "beloch:vertices_names": [ "a", "b", "c", "d" ]
     },
     {
       "frame_classes": [ "foldedForm" ],
@@ -489,7 +495,23 @@
         [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ], [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ]
       ],
       "faceOrders": [],
-      "beloch:step": "vertical_middle"
+      "beloch:step": "vertical_middle",
+      "beloch:edges": [
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".b" ],
+          "span": "cube-root.bel:29:1-27",
+          "name": "vm",
+          "step": "vertical_middle"
+        },
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "beloch:vertices_names": [ "a", null, null, "d", "b", "c" ]
     },
     {
       "frame_classes": [ "foldedForm" ],
@@ -600,7 +622,196 @@
         [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ]
       ],
       "faceOrders": [],
-      "beloch:step": "thirds"
+      "beloch:step": "thirds",
+      "beloch:edges": [
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", "._mt" ],
+          "span": "cube-root.bel:37:1-30",
+          "name": "a_mt",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".d", "._mb" ],
+          "span": "cube-root.bel:36:1-30",
+          "name": "d_mb",
+          "step": "thirds"
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "cube-root.bel:34:1-28",
+          "name": "ac",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".d", "._mb" ],
+          "span": "cube-root.bel:36:1-30",
+          "name": "d_mb",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".d", ".b" ],
+          "span": "cube-root.bel:35:1-28",
+          "name": "db",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", "._mt" ],
+          "span": "cube-root.bel:37:1-30",
+          "name": "a_mt",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "cube-root.bel:34:1-28",
+          "name": "ac",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".d", ".b" ],
+          "span": "cube-root.bel:35:1-28",
+          "name": "db",
+          "step": "thirds"
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", "._mt" ],
+          "span": "cube-root.bel:37:1-30",
+          "name": "a_mt",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".b" ],
+          "span": "cube-root.bel:29:1-27",
+          "name": "vm",
+          "step": "vertical_middle"
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".d", "._mb" ],
+          "span": "cube-root.bel:36:1-30",
+          "name": "d_mb",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".b" ],
+          "span": "cube-root.bel:29:1-27",
+          "name": "vm",
+          "step": "vertical_middle"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "cube-root.bel:34:1-28",
+          "name": "ac",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".b", "._mt" ],
+          "span": "cube-root.bel:39:1-30",
+          "name": "b_mt",
+          "step": "thirds"
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ "._rs1", "._rs2" ],
+          "span": "cube-root.bel:45:1-32",
+          "name": "rs",
+          "step": "thirds"
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "cube-root.bel:34:1-28",
+          "name": "ac",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".c", "._mb" ],
+          "span": "cube-root.bel:38:1-30",
+          "name": "c_mb",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".d", ".b" ],
+          "span": "cube-root.bel:35:1-28",
+          "name": "db",
+          "step": "thirds"
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ "._rs1", "._rs2" ],
+          "span": "cube-root.bel:45:1-32",
+          "name": "rs",
+          "step": "thirds"
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".d", ".b" ],
+          "span": "cube-root.bel:35:1-28",
+          "name": "db",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ "._rs1", "._rs2" ],
+          "span": "cube-root.bel:45:1-32",
+          "name": "rs",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".c", "._mb" ],
+          "span": "cube-root.bel:38:1-30",
+          "name": "c_mb",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".b", "._mt" ],
+          "span": "cube-root.bel:39:1-30",
+          "name": "b_mt",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".c", "._mb" ],
+          "span": "cube-root.bel:38:1-30",
+          "name": "c_mb",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".b", "._mt" ],
+          "span": "cube-root.bel:39:1-30",
+          "name": "b_mt",
+          "step": "thirds"
+        },
+        null
+      ],
+      "beloch:vertices_names": [
+        "a", null, "d", null, null, null, null, null, null, "s", "c", null,
+        null, "b", null
+      ]
     },
     {
       "frame_classes": [ "foldedForm" ],
@@ -840,7 +1051,318 @@
         [ 16, 26, 1 ],
         [ 16, 27, 1 ]
       ],
-      "beloch:step": "beloch_fold"
+      "beloch:step": "beloch_fold",
+      "beloch:edges": [
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", "._mt" ],
+          "span": "cube-root.bel:37:1-30",
+          "name": "a_mt",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".d", "._mb" ],
+          "span": "cube-root.bel:36:1-30",
+          "name": "d_mb",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom7",
+          "sources": [ ".c", "--ab", ".s", "--pq" ],
+          "span": "cube-root.bel:49:1-39",
+          "name": null,
+          "step": "beloch_fold"
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "cube-root.bel:34:1-28",
+          "name": "ac",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".d", "._mb" ],
+          "span": "cube-root.bel:36:1-30",
+          "name": "d_mb",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".d", ".b" ],
+          "span": "cube-root.bel:35:1-28",
+          "name": "db",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom7",
+          "sources": [ ".c", "--ab", ".s", "--pq" ],
+          "span": "cube-root.bel:49:1-39",
+          "name": null,
+          "step": "beloch_fold"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", "._mt" ],
+          "span": "cube-root.bel:37:1-30",
+          "name": "a_mt",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "cube-root.bel:34:1-28",
+          "name": "ac",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".d", ".b" ],
+          "span": "cube-root.bel:35:1-28",
+          "name": "db",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom7",
+          "sources": [ ".c", "--ab", ".s", "--pq" ],
+          "span": "cube-root.bel:49:1-39",
+          "name": null,
+          "step": "beloch_fold"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", "._mt" ],
+          "span": "cube-root.bel:37:1-30",
+          "name": "a_mt",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".b" ],
+          "span": "cube-root.bel:29:1-27",
+          "name": "vm",
+          "step": "vertical_middle"
+        },
+        {
+          "axiom": "axiom7",
+          "sources": [ ".c", "--ab", ".s", "--pq" ],
+          "span": "cube-root.bel:49:1-39",
+          "name": null,
+          "step": "beloch_fold"
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".d", "._mb" ],
+          "span": "cube-root.bel:36:1-30",
+          "name": "d_mb",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".b" ],
+          "span": "cube-root.bel:29:1-27",
+          "name": "vm",
+          "step": "vertical_middle"
+        },
+        {
+          "axiom": "axiom7",
+          "sources": [ ".c", "--ab", ".s", "--pq" ],
+          "span": "cube-root.bel:49:1-39",
+          "name": null,
+          "step": "beloch_fold"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "cube-root.bel:34:1-28",
+          "name": "ac",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".c", "._mb" ],
+          "span": "cube-root.bel:38:1-30",
+          "name": "c_mb",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".d", ".b" ],
+          "span": "cube-root.bel:35:1-28",
+          "name": "db",
+          "step": "thirds"
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ "._rs1", "._rs2" ],
+          "span": "cube-root.bel:45:1-32",
+          "name": "rs",
+          "step": "thirds"
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".d", ".b" ],
+          "span": "cube-root.bel:35:1-28",
+          "name": "db",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom7",
+          "sources": [ ".c", "--ab", ".s", "--pq" ],
+          "span": "cube-root.bel:49:1-39",
+          "name": null,
+          "step": "beloch_fold"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ "._rs1", "._rs2" ],
+          "span": "cube-root.bel:45:1-32",
+          "name": "rs",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom7",
+          "sources": [ ".c", "--ab", ".s", "--pq" ],
+          "span": "cube-root.bel:49:1-39",
+          "name": null,
+          "step": "beloch_fold"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".c", "._mb" ],
+          "span": "cube-root.bel:38:1-30",
+          "name": "c_mb",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".b", "._mt" ],
+          "span": "cube-root.bel:39:1-30",
+          "name": "b_mt",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom7",
+          "sources": [ ".c", "--ab", ".s", "--pq" ],
+          "span": "cube-root.bel:49:1-39",
+          "name": null,
+          "step": "beloch_fold"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".c", "._mb" ],
+          "span": "cube-root.bel:38:1-30",
+          "name": "c_mb",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".b", "._mt" ],
+          "span": "cube-root.bel:39:1-30",
+          "name": "b_mt",
+          "step": "thirds"
+        },
+        null,
+        {
+          "axiom": "axiom7",
+          "sources": [ ".c", "--ab", ".s", "--pq" ],
+          "span": "cube-root.bel:49:1-39",
+          "name": null,
+          "step": "beloch_fold"
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".d", "._mb" ],
+          "span": "cube-root.bel:36:1-30",
+          "name": "d_mb",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".d", ".b" ],
+          "span": "cube-root.bel:35:1-28",
+          "name": "db",
+          "step": "thirds"
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", "._mt" ],
+          "span": "cube-root.bel:37:1-30",
+          "name": "a_mt",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".b" ],
+          "span": "cube-root.bel:29:1-27",
+          "name": "vm",
+          "step": "vertical_middle"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "cube-root.bel:34:1-28",
+          "name": "ac",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".b", "._mt" ],
+          "span": "cube-root.bel:39:1-30",
+          "name": "b_mt",
+          "step": "thirds"
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ "._rs1", "._rs2" ],
+          "span": "cube-root.bel:45:1-32",
+          "name": "rs",
+          "step": "thirds"
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "cube-root.bel:34:1-28",
+          "name": "ac",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ "._rs1", "._rs2" ],
+          "span": "cube-root.bel:45:1-32",
+          "name": "rs",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".b", "._mt" ],
+          "span": "cube-root.bel:39:1-30",
+          "name": "b_mt",
+          "step": "thirds"
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".c", "._mb" ],
+          "span": "cube-root.bel:38:1-30",
+          "name": "c_mb",
+          "step": "thirds"
+        },
+        null
+      ],
+      "beloch:vertices_names": [
+        "a", null, null, null, null, null, null, null, null, null, null,
+        null, null, null, "b", null, null, null, null, null, "d", null, null,
+        "s", "c"
+      ]
     }
   ]
 }

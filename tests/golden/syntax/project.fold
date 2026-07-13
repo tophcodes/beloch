@@ -180,6 +180,10 @@
     null,
     null
   ],
+  "beloch:vertices_names": [
+    "a", null, null, null, null, null, null, null, "d", null, "rm", "b",
+    null, "tm", "c"
+  ],
   "beloch:named_points": {
     "c": {
       "paper": [ 1.0, 1.0 ],
@@ -288,7 +292,128 @@
       "faceOrders": [
         [ 3, 8, 1 ], [ 4, 9, 1 ], [ 4, 10, 1 ], [ 5, 10, 1 ], [ 7, 10, 1 ]
       ],
-      "beloch:step": null
+      "beloch:step": null,
+      "beloch:edges": [
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".tm" ],
+          "span": "project.bel:13:1-27",
+          "name": "l2",
+          "step": null
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".d" ],
+          "span": "project.bel:8:1-29",
+          "name": "hmid",
+          "step": null
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".rm" ],
+          "span": "project.bel:12:1-27",
+          "name": "l1",
+          "step": null
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".b" ],
+          "span": "project.bel:7:1-29",
+          "name": "vmid",
+          "step": null
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".d" ],
+          "span": "project.bel:8:1-29",
+          "name": "hmid",
+          "step": null
+        },
+        null,
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".b" ],
+          "span": "project.bel:7:1-29",
+          "name": "vmid",
+          "step": null
+        },
+        {
+          "axiom": "axiom4",
+          "sources": [ ".c", "--l1", "--l2" ],
+          "span": "project.bel:15:1-42",
+          "name": null,
+          "step": null
+        },
+        null,
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".tm" ],
+          "span": "project.bel:13:1-27",
+          "name": "l2",
+          "step": null
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".b" ],
+          "span": "project.bel:7:1-29",
+          "name": "vmid",
+          "step": null
+        },
+        {
+          "axiom": "axiom4",
+          "sources": [ ".c", "--l1", "--l2" ],
+          "span": "project.bel:15:1-42",
+          "name": null,
+          "step": null
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".d" ],
+          "span": "project.bel:8:1-29",
+          "name": "hmid",
+          "step": null
+        },
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".rm" ],
+          "span": "project.bel:12:1-27",
+          "name": "l1",
+          "step": null
+        },
+        null,
+        null,
+        null,
+        {
+          "axiom": "axiom4",
+          "sources": [ ".c", "--l1", "--l2" ],
+          "span": "project.bel:15:1-42",
+          "name": null,
+          "step": null
+        },
+        null,
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".tm" ],
+          "span": "project.bel:13:1-27",
+          "name": "l2",
+          "step": null
+        },
+        {
+          "axiom": "axiom2",
+          "sources": [ ".a", ".b" ],
+          "span": "project.bel:7:1-29",
+          "name": "vmid",
+          "step": null
+        },
+        null,
+        null
+      ],
+      "beloch:vertices_names": [
+        "a", null, null, null, null, null, null, null, "d", null, "rm", "b",
+        null, "tm", "c"
+      ]
     }
   ]
 }

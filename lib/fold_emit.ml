@@ -2,6 +2,43 @@
 
 let q_to_json (x : Num.t) : Yojson.Safe.t = `Float (Num.to_float x)
 
+(* name for each vertex, by exact paper-coord match against named points *)
+let vertices_names_json (vpaper : Geom.point Dynarray.t)
+    (named_points : (string * Geom.point) list) : Yojson.Safe.t =
+  `List
+    (Dynarray.to_list vpaper
+    |> List.map (fun (p : Geom.point) ->
+           match
+             List.find_opt (fun (_, q) -> Geom.point_equal p q) named_points
+           with
+           | Some (name, _) -> `String name
+           | None -> `Null))
+
+(* beloch:edges array from an (ia, ib, assign, prov) edge list *)
+let beloch_edges_json edges : Yojson.Safe.t =
+  `List
+    (List.map
+       (fun (_, _, _, prov) ->
+         match prov with
+         | None -> `Null
+         | Some (pr : State.provenance) ->
+             `Assoc
+               [
+                 ("axiom", `String pr.State.axiom);
+                 ( "sources",
+                   `List (List.map (fun s -> `String s) pr.State.sources) );
+                 ("span", `String (Error.span_to_string pr.State.span));
+                 ( "name",
+                   match pr.State.name with
+                   | Some n -> `String n
+                   | None -> `Null );
+                 ( "step",
+                   match pr.State.step with
+                   | Some s -> `String s
+                   | None -> `Null );
+               ])
+       edges)
+
 (* Emit-time overlay (design §3.6). Graduates every mark whose MSeg endpoints
    both lie on a face boundary (corner / paper edge / real crease — the old
    CSubdivide test) into real creases by subdividing the state (in paper space,
@@ -42,8 +79,8 @@ let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
 (* Build one self-contained foldedForm frame for a given state. Its topology is
    this state's faces (earlier steps have fewer faces than the final CP, so the
    frame cannot inherit the parent's vertex/face set — frame_inherit is false). *)
-let folded_frame_of_state (state : Fold_state.t) (step : string option) :
-    Yojson.Safe.t =
+let folded_frame_of_state (named_points : (string * Geom.point) list)
+    (state : Fold_state.t) (step : string option) : Yojson.Safe.t =
   (* graduate marks into flat (F) creases for the folded diagram too, so a
      scored precrease shows in the folded frame; emit-only, like the CP frame *)
   let state, _ = cp_display state in
@@ -115,6 +152,8 @@ let folded_frame_of_state (state : Fold_state.t) (step : string option) :
       done)
     faces;
   let edges = List.rev !edges in
+  let beloch_edges = beloch_edges_json edges in
+  let beloch_vertices_names = vertices_names_json vpaper named_points in
   let verts_table =
     Dynarray.to_list vtable
     |> List.map (fun (p : Geom.point) ->
@@ -180,6 +219,8 @@ let folded_frame_of_state (state : Fold_state.t) (step : string option) :
       ("beloch:faces_matrix", `List beloch_faces_matrix);
       ("faceOrders", `List (List.rev !face_orders));
       ("beloch:step", (match step with Some s -> `String s | None -> `Null));
+      ("beloch:edges", beloch_edges);
+      ("beloch:vertices_names", beloch_vertices_names);
     ]
 
 let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
@@ -258,27 +299,8 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
     |> List.map (fun idxs ->
         `List (Array.to_list (Array.map (fun i -> `Int i) idxs)))
   in
-  let beloch_edges =
-    List.map
-      (fun (_, _, _, prov) ->
-        match prov with
-        | None -> `Null
-        | Some (pr : State.provenance) ->
-            `Assoc
-              [
-                ("axiom", `String pr.State.axiom);
-                ( "sources",
-                  `List (List.map (fun s -> `String s) pr.State.sources) );
-                ("span", `String (Error.span_to_string pr.State.span));
-                ( "name",
-                  match pr.State.name with Some n -> `String n | None -> `Null
-                );
-                ( "step",
-                  match pr.State.step with Some s -> `String s | None -> `Null
-                );
-              ])
-      edges
-  in
+  let beloch_edges = beloch_edges_json edges in
+  let beloch_vertices_names = vertices_names_json vpaper fd.Eval.named_points in
   let beloch_named_points =
     `Assoc
       (List.map
@@ -345,7 +367,8 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
       ("edges_vertices", `List edges_vertices);
       ("edges_assignment", `List edges_assignment);
       ("faces_vertices", `List faces_vertices);
-      ("beloch:edges", `List beloch_edges);
+      ("beloch:edges", beloch_edges);
+      ("beloch:vertices_names", beloch_vertices_names);
       ("beloch:named_points", beloch_named_points);
       ("beloch:named_lines", beloch_named_lines);
       ("beloch:named_lines_frame", `String "creasePattern");
@@ -353,6 +376,6 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
       ( "file_frames",
         `List
           (List.map
-             (fun (step, st) -> folded_frame_of_state st step)
+             (fun (step, st) -> folded_frame_of_state fd.Eval.named_points st step)
              fd.Eval.frames) );
     ]

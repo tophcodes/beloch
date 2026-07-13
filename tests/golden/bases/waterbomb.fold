@@ -111,6 +111,9 @@
     },
     null
   ],
+  "beloch:vertices_names": [
+    "a", null, null, "d", null, "c", null, "b", null
+  ],
   "beloch:named_points": {
     "c": { "paper": [ 1.0, 1.0 ], "table": [ 1.0, 1.0 ] },
     "b": { "paper": [ 1.0, 0.0 ], "table": [ 1.0, 1.0 ] },
@@ -217,7 +220,76 @@
         [ 5, 7, 1 ],
         [ 6, 7, 1 ]
       ],
-      "beloch:step": null
+      "beloch:step": null,
+      "beloch:edges": [
+        {
+          "axiom": "mark",
+          "sources": [ "--ac" ],
+          "span": "waterbomb.bel:20:10-14",
+          "name": null,
+          "step": null
+        },
+        {
+          "axiom": "mark",
+          "sources": [ "--h" ],
+          "span": "waterbomb.bel:21:7-10",
+          "name": null,
+          "step": null
+        },
+        null,
+        {
+          "axiom": "mark",
+          "sources": [ "--bd" ],
+          "span": "waterbomb.bel:20:38-42",
+          "name": null,
+          "step": null
+        },
+        null,
+        {
+          "axiom": "mark",
+          "sources": [ "--v" ],
+          "span": "waterbomb.bel:23:8-11",
+          "name": null,
+          "step": null
+        },
+        null,
+        {
+          "axiom": "mark",
+          "sources": [ "--ac" ],
+          "span": "waterbomb.bel:20:10-14",
+          "name": null,
+          "step": null
+        },
+        null,
+        null,
+        {
+          "axiom": "mark",
+          "sources": [ "--v" ],
+          "span": "waterbomb.bel:23:8-11",
+          "name": null,
+          "step": null
+        },
+        null,
+        {
+          "axiom": "mark",
+          "sources": [ "--bd" ],
+          "span": "waterbomb.bel:20:38-42",
+          "name": null,
+          "step": null
+        },
+        null,
+        {
+          "axiom": "mark",
+          "sources": [ "--h" ],
+          "span": "waterbomb.bel:21:7-10",
+          "name": null,
+          "step": null
+        },
+        null
+      ],
+      "beloch:vertices_names": [
+        "a", null, null, "d", null, "c", null, "b", null
+      ]
     }
   ]
 }
