@@ -1,17 +1,20 @@
 ---
 title: Beloch
-description: Eine deklarative Sprache für Origami, gebaut auf den Huzita–Justin-Axiomen.
+description: A declarative language for origami, built on the Huzita–Justin axioms.
 ---
 
-Beloch ist eine deklarative Sprache für Origami. Diese Dokumentation wird gerade
-neu aufgebaut — der Getting-Started-Guide folgt in Kürze.
+Beloch is a declarative language for origami. You describe a sheet of paper and
+the creases you want in terms of the points and lines on it; Beloch works out the
+exact geometry and hands you back a crease pattern and a folded state.
 
-Bis dahin: probiere die Sprache direkt im [Playground](/playground/).
+New here? Start with the [tutorial](/tutorials/paper-and-values/) — it builds a
+small program up one line at a time. Or try the language right now in the
+[Playground](/playground/).
 
 import Beloch from "../../components/Beloch.astro";
 
-<Beloch title="diagonalen.bel">
+<Beloch title="diagonals.bel">
 paper square
-mark --d1 = through .a .c
-mark --d2 = through .b .d
+mark through .a .c
+mark through .b .d
 </Beloch>
