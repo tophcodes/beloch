@@ -4,8 +4,9 @@
 // The inline source (default slot) is evaluated at BUILD TIME with the native
 // `beloch` binary (see ../lib/eval-bel.ts) into a FOLD object, then rendered to
 // SVG via the pure-TS render pipeline. The FOLD is also embedded as a JSON
-// <script> so a later hydration island (Slice 2) can drive CP↔folded + hover
-// without changing this component's contract. No client JS in this slice.
+// <script> so the <beloch-figure> hydration island (../lib/beloch-figure.ts)
+// can drive CP↔folded + a per-step stepper without changing this component's
+// SSR contract.
 import { highlightBel } from "../lib/highlight-bel";
 import { evalBelToFold } from "../lib/eval-bel";
 import { parseFold } from "@beloch/scene";
@@ -46,19 +47,24 @@ const svg = renderCP(parseFold(fold as object)).toString();
 const foldJson = JSON.stringify(fold);
 ---
 
-<figure class="beloch-card">
-  <div class="beloch-code-panel">
-    <div class="beloch-mac-bar">
-      <span class="mac-dot" style="background:#B5573C"></span>
-      <span class="mac-dot" style="background:#C9A24B"></span>
-      <span class="mac-dot" style="background:#5C8A5E"></span>
-      <span class="beloch-filename">{label}</span>
+<beloch-figure>
+  <figure class="beloch-card">
+    <div class="beloch-code-panel">
+      <div class="beloch-mac-bar">
+        <span class="mac-dot" style="background:#B5573C"></span>
+        <span class="mac-dot" style="background:#C9A24B"></span>
+        <span class="mac-dot" style="background:#5C8A5E"></span>
+        <span class="beloch-filename">{label}</span>
+      </div>
+      <pre class="beloch-pre"><code set:html={highlightedSource} /></pre>
     </div>
-    <pre class="beloch-pre"><code set:html={highlightedSource} /></pre>
-  </div>
-  <div class="beloch-diagram" set:html={svg}></div>
-  <script type="application/json" class="beloch-fold" set:html={foldJson}></script>
-</figure>
+    <div class="beloch-diagram" set:html={svg}></div>
+    <script type="application/json" class="beloch-fold" set:html={foldJson}></script>
+  </figure>
+</beloch-figure>
+<script>
+  import "../lib/beloch-figure";
+</script>
 
 <style>
   /* ── Card shell ─────────────────────────────────────────────────────────── */
