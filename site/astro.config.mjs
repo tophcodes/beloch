@@ -71,6 +71,7 @@ export default defineConfig({
 					label: "Tutorials",
 					items: [
 						{ label: "Paper & Values", link: "/tutorials/paper-and-values/" },
+						{ label: "Naming Points & Lines", link: "/tutorials/naming/" },
 					],
 				},
 			],
