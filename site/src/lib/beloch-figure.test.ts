@@ -126,3 +126,38 @@ test("selection survives a re-render (view switch)", async () => {
   expect(svgEl.classList.contains("bel-selected")).toBe(true);
   expect(svgEl.style.getPropertyValue("--bel-sel")).not.toBe("");
 });
+
+test("deselecting a non-last name frees its colour slot instead of shifting into an active one", async () => {
+  // Reviewer's collision case: select A,B,C (colours P0,P1,P2 by insertion
+  // order), deselect B (a non-LIFO slot) — colorOf.size drops to 2 — then
+  // select D. Under the old `PALETTE[colorOf.size % PALETTE.length]` scheme,
+  // D would get PALETTE[2], which is still held by the active C, so C and D
+  // would render with an identical --bel-sel colour. The free-slot picker
+  // must instead notice PALETTE[1] (B's old slot) is free and hand it to D.
+  await import("./beloch-figure");
+  const el = mountCard(foldJson);
+  el.querySelector(".beloch-code-panel")!.innerHTML = `
+    <span class="bel-point" data-bel-name="a">.a</span>
+    <span class="bel-point" data-bel-name="b">.b</span>
+    <span class="bel-point" data-bel-name="c">.c</span>
+    <span class="bel-point" data-bel-name="d">.d</span>`;
+  (el as any).hydrate();
+  const tok = (name: string) =>
+    el.querySelector(`.beloch-code-panel [data-bel-name="${name}"]`) as HTMLElement;
+
+  tok("a").click();
+  tok("b").click();
+  tok("c").click();
+  tok("b").click();      // deselect b (frees its slot; not the last-inserted)
+  tok("d").click();      // select d — must not collide with still-active c
+
+  const colorA = tok("a").style.getPropertyValue("--bel-sel");
+  const colorC = tok("c").style.getPropertyValue("--bel-sel");
+  const colorD = tok("d").style.getPropertyValue("--bel-sel");
+
+  expect(colorC).not.toBe("");
+  expect(colorD).not.toBe("");
+  expect(colorC).not.toBe(colorD);   // the collision this test guards against
+  expect(colorA).not.toBe(colorC);
+  expect(colorA).not.toBe(colorD);
+});

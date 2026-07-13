@@ -85,6 +85,12 @@ class BelochFigure extends HTMLElement {
   private setHover(name: string, on: boolean) {
     this.matches(name).forEach((el) => el.classList.toggle("bel-hover", on));
   }
+  private pickColor(): string {
+    const used = new Set(this.colorOf.values());
+    for (const c of BelochFigure.PALETTE) if (!used.has(c)) return c;
+    // all palette slots active → unavoidable reuse, cycle by count
+    return BelochFigure.PALETTE[this.colorOf.size % BelochFigure.PALETTE.length]!;
+  }
   private toggleSelect(name: string) {
     if (this.selected.has(name)) {
       this.selected.delete(name);
@@ -92,7 +98,7 @@ class BelochFigure extends HTMLElement {
     } else {
       this.selected.add(name);
       if (!this.colorOf.has(name))
-        this.colorOf.set(name, BelochFigure.PALETTE[this.colorOf.size % BelochFigure.PALETTE.length]!);
+        this.colorOf.set(name, this.pickColor());
     }
     this.applySelection();
   }
