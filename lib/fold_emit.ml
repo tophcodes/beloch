@@ -311,11 +311,14 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
         `List (Array.to_list (Array.map (fun i -> `Int i) idxs)))
   in
   let beloch_edges = beloch_edges_json edges in
-  let beloch_vertices_names = vertices_names_json vpaper fd.Eval.named_points in
+  (* the step-annotated 3-tuple is only needed for beloch_named_points below;
+     everywhere else strips it to keep the 2-tuple helper signature. *)
+  let named_points_2 = List.map (fun (n, p, _step) -> (n, p)) fd.Eval.named_points in
+  let beloch_vertices_names = vertices_names_json vpaper named_points_2 in
   let beloch_named_points =
     `Assoc
       (List.map
-         (fun (name, (p : Geom.point)) ->
+         (fun (name, (p : Geom.point), _step) ->
            let t = Fold_state.table_position fd.Eval.state p in
            ( name,
              `Assoc
@@ -328,7 +331,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
   let beloch_named_lines =
     `Assoc
       (List.map
-         (fun (name, (l : Geom.line)) ->
+         (fun (name, (l : Geom.line), _step) ->
            ( name,
              `List [ q_to_json l.Geom.a; q_to_json l.Geom.b; q_to_json l.Geom.c ]
            ))
@@ -390,10 +393,10 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
            frame only — not counted as a fold (the `steps` assertion reads
            Eval.frames, which excludes it). *)
         `List
-          (folded_frame_of_state fd.Eval.named_points Fold_state.init_square
+          (folded_frame_of_state named_points_2 Fold_state.init_square
              None None
           :: List.map
                (fun (step, st, span) ->
-                 folded_frame_of_state fd.Eval.named_points st step span)
+                 folded_frame_of_state named_points_2 st step span)
                fd.Eval.frames) );
     ]

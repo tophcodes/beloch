@@ -105,6 +105,7 @@ type assertion =
   | AIncident of bool * value * value (* polarity; point operand; line|point target *)
   | AIs of string * assign_kw
   | ACount of string * int
+  | ANamedStep of value * int (* named-step .p / --l = <int>: creation step *)
   | AExpectError of string
 
 exception Harness_fail of string
@@ -181,6 +182,13 @@ let parse_assertion (toks : string list) : assertion =
   | "assert" :: "steps" :: "=" :: [ n ] -> (
       try ACount ("steps", int_of_string n)
       with _ -> harness_fail "expected an int, got %S" n)
+  | "assert" :: "named-step" :: rest -> (
+      let v, rest = parse_value rest in
+      match rest with
+      | "=" :: [ n ] -> (
+          try ANamedStep (v, int_of_string n)
+          with _ -> harness_fail "expected an int, got %S" n)
+      | _ -> harness_fail "malformed 'named-step' assertion (want: named-step <value> = <int>)")
   | "assert" :: rest -> (
       let v1, rest = parse_value rest in
       match rest with
@@ -243,15 +251,38 @@ let unit_boundary_lines : Geom.line list =
 let is_unit_boundary_line (l : Geom.line) : bool =
   List.exists (line_equal l) unit_boundary_lines
 
+(* Eval.named_points/named_lines are (name, value, step) triples (step = the
+   0-based creation step, task A1); look up by name, ignoring the step. *)
+let assoc3 (name : string) (l : (string * 'a * int) list) : 'a option =
+  List.find_map (fun (n, v, _) -> if n = name then Some v else None) l
+
 let lookup_point (fd : Eval.folded) (name : string) : Geom.point =
-  match List.assoc_opt name fd.Eval.named_points with
+  match assoc3 name fd.Eval.named_points with
   | Some p -> p
   | None -> harness_fail "unknown point .%s" name
 
 let lookup_line (fd : Eval.folded) (name : string) : Geom.line =
-  match List.assoc_opt name fd.Eval.named_lines with
+  match assoc3 name fd.Eval.named_lines with
   | Some l -> l
   | None -> harness_fail "unknown line --%s" name
+
+let lookup_named_step (fd : Eval.folded) (v : value) : string * int option =
+  match v with
+  | VPoint (name, _) ->
+      ( Printf.sprintf ".%s" name,
+        List.find_map (fun (n, _, s) -> if n = name then Some s else None)
+          fd.Eval.named_points )
+  | VLine name ->
+      ( Printf.sprintf "--%s" name,
+        List.find_map (fun (n, _, s) -> if n = name then Some s else None)
+          fd.Eval.named_lines )
+  | VLit _ -> harness_fail "'named-step' requires a point or line operand"
+
+let check_named_step (fd : Eval.folded) (v : value) (n : int) : unit =
+  let label, got = lookup_named_step fd v in
+  match got with
+  | None -> harness_fail "unknown name %s" label
+  | Some s -> if s <> n then harness_fail "named-step %s = %d, expected %d" label s n
 
 (* Table projection of a PAPER point: the face(s) whose paper polygon
    contains it, imaged through that face's isometry — the same idiom
@@ -361,6 +392,7 @@ let check_assertion (fd : Eval.folded) (a : assertion) : unit =
   | AIncident (polarity, v1, v2) -> check_incident fd polarity v1 v2
   | AIs (name, kw) -> check_is fd name kw
   | ACount (kind, n) -> check_count fd kind n
+  | ANamedStep (v, n) -> check_named_step fd v n
   | AExpectError _ -> assert false (* handled at the file level *)
 
 (* Substring test (like test_e2e.ml's expect_error, without pulling in Str). *)
