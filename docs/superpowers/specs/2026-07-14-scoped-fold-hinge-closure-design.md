@@ -29,17 +29,29 @@ cannot be folded from flat paper.
 
 ## Hinge-closure rule
 
-A scoped moving set is **hinge-closed** (validly foldable) iff every existing
-crease segment that separates a **moving** face from a **stationary** face lies
-on the fold axis. Formally, for every crease segment with faces `(l, r)`:
+A scoped fold clips each in-scope face at the axis: the face's **move_side**
+portion moves, its **stay_side** residual stays (`fold_with_records`). So
+`moving_parents` is a coarse *per-face* eligibility flag, not "this whole face
+moves." The tear condition must therefore look only at the hinge material that
+actually lifts off — the portion on the **move side** of the axis.
 
-    moves(l) ≠ moves(r)  ⇒  the segment lies on the fold axis
+A scoped moving set is **hinge-closed** (validly foldable) iff, for every
+existing crease segment with faces `(l, r)` where `moves(l) ≠ moves(r)`, no part
+of the segment lies strictly on the **move side** of the fold axis:
 
-An off-axis mover/stayer segment is a hinge the fold would have to tear → reject.
+    moves(l) ≠ moves(r)  ∧  (side(axis, ta) = move_side ∨ side(axis, tb) = move_side)
+      ⇒  TEAR (reject)
+
+Endpoint-check suffices: the move-side open halfplane is convex, so if neither
+endpoint is strictly on the move side, no interior point is. A hinge fully on
+the **stay** side contributes only stationary material (no tear); a hinge **on
+the axis** is a valid shared fold line.
 
 This is exact and layer-aware: two *stacked* faces that share no crease segment
-are independent layers (no constraint); only paper-connected faces (sharing a
-crease) constrain each other.
+are independent layers (no constraint); a hinge bordering only the stationary
+residual of an in-scope face is **not** a tear (the earlier, coarser "off-axis"
+rule wrongly rejected valid parallel-hinge folds — see the false-positive found
+in review).
 
 Default (non-scoped) folds partition by the axis halfplane, so their mover/
 stayer boundaries are on the axis by construction — the check is a no-op for
@@ -50,15 +62,16 @@ them and only bites scoped (`up to`) folds.
 ### `lib/fold_state.ml` — pure predicate
 ```
 val scoped_fold_hinge_closed :
-  t -> axis:Geom.line -> moving_parents:bool array ->
+  t -> axis:Geom.line -> move_side:int -> moving_parents:bool array ->
   (unit, Geom.point * Geom.point) result
 ```
 Iterate crease segments (over `all_crease_ids` → `crease_segments`, which
 already give `faces = (l, r)` and table endpoints `ta`/`tb`). For each segment
-with `moving_parents.(l) <> moving_parents.(r)` (guard `r >= 0`), require both
-endpoints on the axis (`Geom.side_of_line axis p = 0`). First violation →
-`Error (ta, tb)` (the offending off-axis hinge, for the message). All clear →
-`Ok ()`.
+with `moving_parents.(l) <> moving_parents.(r)` (guard `r >= 0`): let
+`sa = Geom.side_of_line axis ta`, `sb = Geom.side_of_line axis tb`. If
+`sa = move_side || sb = move_side` → `Error (ta, tb)` (a hinge whose material
+on the move side would tear). Else continue. All clear → `Ok ()`. `move_side`
+is the same value handed to `select_scope`/`fold_with_records` in this branch.
 
 ### `lib/eval.ml` — call site
 In the `up to` branch (`Some tgt`), after `select_scope` returns
