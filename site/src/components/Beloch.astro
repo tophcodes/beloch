@@ -9,6 +9,7 @@
 // SSR contract.
 import { highlightBel } from "../lib/highlight-bel";
 import { evalBelToFold } from "../lib/eval-bel";
+import { stripHtml } from "../lib/strip-html";
 import { parseFold } from "@beloch/scene";
 import { renderCP, renderScene } from "@beloch/render-svg";
 
@@ -32,15 +33,6 @@ const source = stripHtml(inline);
 
 if (!source || source.trim() === "") {
   throw new Error("<Beloch>: provide inline .bel source");
-}
-
-function stripHtml(s: string): string {
-  return s
-    .replace(/<[^>]*>/g, "")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&")
-    .trim();
 }
 
 const trimmed = source.trim();
