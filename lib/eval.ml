@@ -14,7 +14,7 @@ type folded = {
   state : Fold_state.t;
   named_points : (string * Geom.point * int) list;
       (* [int] is the 0-based creation step (index into [frames] at bind
-         time); see [ctx.name_step] *)
+         time); see [scope.steps] *)
   named_lines : (string * Geom.line * int) list;
   frames : (string option * Fold_state.t * Error.span option) list;
 }
@@ -58,18 +58,29 @@ type axis_result =
 type instance = {
   ipoints : (string, Geom.point) Hashtbl.t;
   ilines : (string, crease_val) Hashtbl.t;
+  isteps : (string, int) Hashtbl.t;
+      (* creation step of each member, copied from the def body's own
+         [scope.steps] at apply-time; see [scope.steps] *)
 }
 
 type scope = {
   points    : (string, Geom.point) Hashtbl.t;
   lines     : (string, crease_val) Hashtbl.t;
   instances : (string, instance) Hashtbl.t;
+  steps     : (string, int) Hashtbl.t;
+      (* creation step of each name bound in points/lines within THIS scope,
+         recorded at bind time by [bind_point]/[bind_crease] as
+         [List.length ctx.frames_rev]. Scoped per-entry so it saves/restores
+         across `apply` exactly like points/lines do — a def body's own
+         bindings never clobber an outer scope's already-recorded step for
+         the same name. *)
 }
 
 let make_scope () = {
   points    = Hashtbl.create 8;
   lines     = Hashtbl.create 8;
   instances = Hashtbl.create 4;
+  steps     = Hashtbl.create 8;
 }
 
 type name_ctx = Root | InInstance of string | Anon
@@ -87,9 +98,6 @@ type ctx = {
   mutable pending : bool;
       (* true when the current state hasn't been captured in a frame yet;
          drives the conditional final push (see eval_folded) *)
-  name_step : (string, int) Hashtbl.t;
-      (* creation step of each named point/line, recorded at bind time by
-         [bind_point]/[bind_crease] as [List.length ctx.frames_rev] *)
 }
 
 let lookup_point (ctx : ctx) (pr : Ast.point_ref) : Geom.point =
@@ -134,7 +142,7 @@ let bind_point (ctx : ctx) (name : string) (span : Error.span) (p : Geom.point)
       (Printf.sprintf "point .%s is already bound; only _-prefixed temps rebind"
          name);
   Hashtbl.replace s.points name p;
-  Hashtbl.replace ctx.name_step name (List.length ctx.frames_rev)
+  Hashtbl.replace s.steps name (List.length ctx.frames_rev)
 
 let bind_crease (ctx : ctx) (name : string) (span : Error.span) (cv : crease_val) =
   let s = List.hd ctx.scopes in
@@ -143,7 +151,7 @@ let bind_crease (ctx : ctx) (name : string) (span : Error.span) (cv : crease_val
       (Printf.sprintf "crease --%s is already bound; only _-prefixed temps rebind"
          name);
   Hashtbl.replace s.lines name cv;
-  Hashtbl.replace ctx.name_step name (List.length ctx.frames_rev)
+  Hashtbl.replace s.steps name (List.length ctx.frames_rev)
 
 (* `mark --d` on an already-bound name (e.g. a pure `--d = <motion>` value)
    promotes its binding in place to the freshly materialised crease, so a
@@ -175,7 +183,6 @@ let eval_folded (prog : Ast.program) : folded =
     panels = Hashtbl.create 4;
     frames_rev = [];
     pending = true;
-    name_step = Hashtbl.create 16;
   } in
   let push_frame (span : Error.span option) =
     ctx.frames_rev <- (ctx.panel, !(ctx.state), span) :: ctx.frames_rev;
@@ -1418,7 +1425,7 @@ let eval_folded (prog : Ast.program) : folded =
             run_fold ~span ~axis ~fs ~implied ~side_override ~crease_id:cid ~prov;
             (* push the frame BEFORE binding the name: a first-fold crease's
                creation step must count that fold (step 1), not the
-               pre-fold count (step 0) — see ctx.name_step. *)
+               pre-fold count (step 0) — see scope.steps. *)
             push_frame (Some span);
             (match name_opt with
             | Some n -> bind_crease ctx n span (Material (cid, axis))
@@ -1588,13 +1595,23 @@ let eval_folded (prog : Ast.program) : folded =
                 (Printf.sprintf
                    "instance $%s is already bound; only _-prefixed temps rebind"
                    iname);
-            let inst = { ipoints = Hashtbl.create 8; ilines = Hashtbl.create 8 } in
+            let inst =
+              { ipoints = Hashtbl.create 8; ilines = Hashtbl.create 8;
+                isteps = Hashtbl.create 8 }
+            in
             Hashtbl.iter
               (fun k v -> if not (is_temp k) then Hashtbl.replace inst.ipoints k v)
               body_scope.points;
             Hashtbl.iter
               (fun k v -> if not (is_temp k) then Hashtbl.replace inst.ilines k v)
               body_scope.lines;
+            (* carries each member's OWN creation step (recorded in the def
+               body's own scope) forward onto the instance, so a later
+               [export] can stamp the landed name with the source's real
+               step instead of defaulting to 0 (see [land_name]). *)
+            Hashtbl.iter
+              (fun k v -> if not (is_temp k) then Hashtbl.replace inst.isteps k v)
+              body_scope.steps;
             Hashtbl.replace cur.instances iname inst)
     | Ast.Export (entries_opt, iname, span) ->
         let inst = lookup_instance ctx iname span in
@@ -1616,16 +1633,26 @@ let eval_folded (prog : Ast.program) : folded =
                    (Printf.sprintf "nothing to shadow with %s%s; remove !" sigil
                       target)
              | _ -> ());
+          (* the landed name is the SAME geometric object as the source member
+             inside the def body: it carries the source's own creation step,
+             not a fresh one at export time (defaults to 0 if the source was
+             never routed through bind_point/bind_crease, e.g. a def
+             parameter passed straight through unmodified). *)
+          let step = Option.value (Hashtbl.find_opt inst.isteps src) ~default:0 in
           match kind with
           | `Point -> (
               match Hashtbl.find_opt inst.ipoints src with
-              | Some v -> Hashtbl.replace cur.points target v
+              | Some v ->
+                  Hashtbl.replace cur.points target v;
+                  Hashtbl.replace cur.steps target step
               | None ->
                   Error.fail espan
                     (Printf.sprintf "instance $%s has no point member %s" iname src))
           | `Line -> (
               match Hashtbl.find_opt inst.ilines src with
-              | Some v -> Hashtbl.replace cur.lines target v
+              | Some v ->
+                  Hashtbl.replace cur.lines target v;
+                  Hashtbl.replace cur.steps target step
               | None ->
                   Error.fail espan
                     (Printf.sprintf "instance $%s has no line member %s" iname src))
@@ -1775,9 +1802,11 @@ let eval_folded (prog : Ast.program) : folded =
   List.iter eval_stmt prog;
   (* corners and other names never routed through bind_point/bind_crease (the
      prelude corners/edges, set up directly via Hashtbl.replace above) have no
-     entry in name_step; they default to step 0. *)
+     entry in root_scope.steps; they default to step 0. Reads root_scope.steps
+     the same way named_points/named_lines below read root_scope.points/.lines
+     — a scoped table, saved/restored across `apply` exactly like those. *)
   let step_of n =
-    match Hashtbl.find_opt ctx.name_step n with Some s -> s | None -> 0
+    match Hashtbl.find_opt root_scope.steps n with Some s -> s | None -> 0
   in
   let named_points =
     Hashtbl.fold

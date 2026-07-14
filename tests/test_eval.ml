@@ -944,6 +944,34 @@ let test_eval_export_rename () =
   Alcotest.(check bool) "m not landed" true
     (not (mem_assoc3 "m" fd.Eval.named_points))
 
+(* A renamed export is the SAME geometric object as its source member: it
+   must carry the source's own creation step, not default to 0. Prepend a
+   `step` marker (bumps frames_rev via push_frame without touching any
+   geometry, unlike a real fold — which would collapse two of def_d's three
+   corner arguments together in table-space) so def_d's internal `.m` binds
+   at a non-zero, distinguishable step, then check the exported-renamed
+   `.mid` reports that same step, not a fresh/defaulted one. *)
+let test_eval_export_rename_step () =
+  let fd = eval_src ("step s1\n" ^ def_d ^ "export { .m as .mid } $i\n") in
+  match List.find_opt (fun (k, _, _) -> k = "mid") fd.Eval.named_points with
+  | Some (_, _, step) ->
+      Alcotest.(check int) "mid carries source m's creation step" 1 step
+  | None -> Alcotest.fail "mid not found in named_points"
+
+(* A def body binding a name already used at top level (`.m`) must NOT
+   corrupt the outer/top-level binding's already-recorded step: the def
+   body's `.m` lives in its own (discarded, unexported) scope. `.m` is NOT
+   exported from `$i` here, so the top-level `.m` (bound at step 0, before
+   any step marker) must still read back as step 0 even though def_d's own
+   internal `.m` binds at step 1 inside its own, separate body scope. *)
+let test_eval_def_local_name_reuse_step () =
+  let fd = eval_src (".m = --ab * --bc\n" ^ "step s1\n" ^ def_d) in
+  match List.find_opt (fun (k, _, _) -> k = "m") fd.Eval.named_points with
+  | Some (_, _, step) ->
+      Alcotest.(check int)
+        "outer .m's step unaffected by def-local .m reuse" 0 step
+  | None -> Alcotest.fail "m not found in named_points"
+
 let test_eval_export_collision_needs_bang () =
   expect_error "use ! to shadow" (fun () ->
       eval_src ("mark --l1 = through .a .b\n" ^ def_d ^ "export { --l1 } $i\n"))
@@ -1508,6 +1536,10 @@ let () =
             test_eval_export_selective;
           Alcotest.test_case "export all" `Quick test_eval_export_all;
           Alcotest.test_case "export rename" `Quick test_eval_export_rename;
+          Alcotest.test_case "export rename carries source step" `Quick
+            test_eval_export_rename_step;
+          Alcotest.test_case "def-local name reuse doesn't corrupt outer step"
+            `Quick test_eval_def_local_name_reuse_step;
           Alcotest.test_case "export collision needs bang" `Quick
             test_eval_export_collision_needs_bang;
           Alcotest.test_case "export bang shadows" `Quick
