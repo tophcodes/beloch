@@ -9,3 +9,8 @@ mark --b = through .a .b
 fold --v = map .b onto .a
 .mid = --b * --v & #[.a]
 mark map .d onto .mid
+
+; assert faces = 4
+; assert steps = 2
+; assert --v is valley
+; assert --b is boundary

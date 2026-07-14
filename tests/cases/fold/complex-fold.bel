@@ -5,3 +5,7 @@ mark --b = through .a .b
 mark --v = map .b onto .a
 .mid = --b * --v
 fold map .mid onto .d moving .mid
+
+; assert faces = 2
+; assert .mid paper = (1/2, 0)
+; assert --b is boundary

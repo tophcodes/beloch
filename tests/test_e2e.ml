@@ -15,6 +15,17 @@ let examples_dir =
 let read_example name =
   In_channel.with_open_text (Filename.concat examples_dir name) In_channel.input_all
 
+(* A few probes moved from examples/ into the inline-assertion corpus
+   (tests/cases/) but still carry an e2e assertion the inline grammar can't
+   express (identity isometry, axiom5 tag). Read those from tests/cases. *)
+let cases_dir =
+  match Sys.getenv_opt "DUNE_SOURCEROOT" with
+  | Some root -> Filename.concat root "tests/cases"
+  | None -> "../../../tests/cases"
+
+let read_case name =
+  In_channel.with_open_text (Filename.concat cases_dir name) In_channel.input_all
+
 let expect_error msg_substr thunk =
   try
     ignore (thunk ());
@@ -76,25 +87,6 @@ let test_e2e_diagonals () =
   Alcotest.(check int) "edges" 8
     (json |> member "edges_vertices" |> to_list |> List.length)
 
-let test_e2e_anti_parallel () =
-  expect_error "parallel" (fun () ->
-      Beloch.fold_string ~filename:"parallel.bel" (read_example "syntax/parallel.bel"))
-
-let test_e2e_anti_dup () =
-  expect_error "same place" (fun () ->
-      Beloch.fold_string ~filename:"dup-point.bel"
-        (read_example "syntax/dup-point.bel"))
-
-let test_e2e_square_one_face () =
-  let json =
-    Beloch.fold_string ~filename:"square.bel" (read_example "syntax/square.bel")
-  in
-  let open Yojson.Safe.Util in
-  Alcotest.(check int) "one face" 1
-    (json |> member "faces_vertices" |> to_list |> List.length);
-  Alcotest.(check int) "face has four vertices" 4
-    (json |> member "faces_vertices" |> to_list |> List.hd |> to_list |> List.length)
-
 let test_e2e_diagonals_four_faces () =
   let json =
     Beloch.fold_string ~filename:"diagonals.bel" (read_example "syntax/diagonals.bel")
@@ -136,15 +128,6 @@ let test_e2e_cube_root_restructured () =
     (Beloch.fold_string ~filename:"cube-root.bel"
        (read_example "syntax/cube-root.bel"))
 
-let test_e2e_def_diagonals () =
-  let json =
-    Beloch.fold_string ~filename:"def-diagonals.bel"
-      (read_example "syntax/def-diagonals.bel")
-  in
-  let open Yojson.Safe.Util in
-  let pts = json |> member "beloch:named_points" |> to_assoc in
-  Alcotest.(check bool) "centre named" true (List.mem_assoc "m" pts)
-
 let test_e2e_cube_root_temps_hidden () =
   let json =
     Beloch.fold_string ~filename:"cube-root.bel" (read_example "syntax/cube-root.bel")
@@ -166,7 +149,7 @@ let test_e2e_bisect_select () =
     Beloch.fold_string ~filename:"bisect-a.bel" (read_example "syntax/bisect-a.bel")
   in
   let jb =
-    Beloch.fold_string ~filename:"bisect-b.bel" (read_example "syntax/bisect-b.bel")
+    Beloch.fold_string ~filename:"bisect-b.bel" (read_case "mark/bisect-b.bel")
   in
   Alcotest.(check bool) "a has an axiom5 crease" true
     (List.mem "axiom5" (creases ja));
@@ -193,15 +176,6 @@ let test_e2e_kite () =
   in
   Alcotest.(check int) "two axiom5 creases" 2
     (List.length (List.filter (( = ) "axiom5") axioms))
-
-let test_e2e_bisect_parallel () =
-  let json =
-    Beloch.fold_string ~filename:"bisect-parallel.bel"
-      (read_example "syntax/bisect-parallel.bel")
-  in
-  let open Yojson.Safe.Util in
-  Alcotest.(check int) "two faces" 2
-    (json |> member "faces_vertices" |> to_list |> List.length)
 
 let test_eval_map_through_toward () =
   let fd =
@@ -230,20 +204,6 @@ let test_eval_map_through_toward () =
       in
       Alcotest.(check bool) "axiom-6 crease through (0,0)" true (on (pt 0 0));
       Alcotest.(check bool) "axiom-6 crease through (1,1)" true (on (pt 1 1))
-
-let test_e2e_fold_half () =
-  let json =
-    Beloch.fold_string ~filename:"fold-half.bel" (read_example "syntax/fold-half.bel")
-  in
-  let open Yojson.Safe.Util in
-  Alcotest.(check string) "frame 0 creasePattern" "creasePattern"
-    (json |> member "frame_classes" |> to_list |> List.hd |> to_string);
-  Alcotest.(check int) "a foldedForm frame is present" 1
-    (json |> member "file_frames" |> to_list |> List.length);
-  let assigns =
-    json |> member "edges_assignment" |> to_list |> List.map to_string
-  in
-  Alcotest.(check bool) "the fold crease is a valley" true (List.mem "V" assigns)
 
 let test_e2e_fold_quarter () =
   let json =
@@ -622,7 +582,7 @@ let test_multiframe () =
 
 let test_e2e_faces_matrix_and_frame () =
   let json =
-    Beloch.fold_string ~filename:"square.bel" (read_example "syntax/square.bel")
+    Beloch.fold_string ~filename:"square.bel" (read_case "mark/square.bel")
   in
   let open Yojson.Safe.Util in
   (* named-line frame is declared, always *)
@@ -891,9 +851,6 @@ let () =
       ( "e2e",
         [
           Alcotest.test_case "diagonals" `Quick test_e2e_diagonals;
-          Alcotest.test_case "anti parallel" `Quick test_e2e_anti_parallel;
-          Alcotest.test_case "anti dup point" `Quick test_e2e_anti_dup;
-          Alcotest.test_case "square one face" `Quick test_e2e_square_one_face;
           Alcotest.test_case "diagonals four faces" `Quick
             test_e2e_diagonals_four_faces;
           Alcotest.test_case "perp end-to-end" `Quick test_e2e_perp;
@@ -901,17 +858,13 @@ let () =
             test_e2e_cube_root;
           Alcotest.test_case "cube-root restructured (panels + temps)" `Quick
             test_e2e_cube_root_restructured;
-          Alcotest.test_case "def diagonals demo" `Quick test_e2e_def_diagonals;
           Alcotest.test_case "cube-root temps hidden from FOLD" `Quick
             test_e2e_cube_root_temps_hidden;
           Alcotest.test_case "bisect selector" `Quick test_e2e_bisect_select;
-          Alcotest.test_case "bisect parallel midline" `Quick
-            test_e2e_bisect_parallel;
           Alcotest.test_case "kite base: two axiom5 creases, folds cleanly"
             `Quick test_e2e_kite;
           Alcotest.test_case "map through toward selects diagonal" `Quick
             test_eval_map_through_toward;
-          Alcotest.test_case "fold half end-to-end" `Quick test_e2e_fold_half;
           Alcotest.test_case "fold quarter accordion" `Quick test_e2e_fold_quarter;
           Alcotest.test_case "fold-quarter faceOrders sign golden" `Quick
             test_faceorders_stable_fold_quarter;

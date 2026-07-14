@@ -7,3 +7,5 @@ mark --ac = map .b onto .d     ; diagonal a–c (folds b onto d)
 mark --bd = map .a onto .c     ; diagonal b–d
 
 collapse --ac & .a and --ac & .c and --bd & .b and --bd & .d
+
+; expect error "Maekawa"

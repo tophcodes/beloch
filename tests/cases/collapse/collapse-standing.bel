@@ -8,3 +8,5 @@ mark --bd = map .a onto .c     ; diagonal b–d
 
 collapse --ac & .a and --ac & .c and --bd & .b and --bd & .d
   and standing .a
+
+; expect error "standing"

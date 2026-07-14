@@ -17,3 +17,5 @@ collapse (--ac & .c mountain) and --ac & .a
   and --h & --da
   and --v & --cd
   and --v & --ab
+
+; expect error "ambiguous stacking"

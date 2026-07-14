@@ -3,3 +3,6 @@
 paper square
 mark --d = map .b onto .a
 fold --d moving .b
+
+; assert faces = 2
+; assert --d is valley

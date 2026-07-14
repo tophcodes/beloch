@@ -4,3 +4,5 @@ paper square
 mark --q = through .a .c
 flip
 mark perp --q through .b
+
+; assert faces = 1

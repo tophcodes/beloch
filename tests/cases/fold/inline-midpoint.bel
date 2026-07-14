@@ -4,3 +4,5 @@ paper square
 mark --ac = through .a .c          ; TODO(pinch): landmark diagonal
 mark --bd = through .b .d          ; TODO(pinch): landmark diagonal
 mark map .a onto (--ac * --bd)
+
+; assert faces = 1
