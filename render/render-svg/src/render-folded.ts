@@ -209,9 +209,11 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
 
   creases.children.push(...dashedLines);
 
-  // named-vertex dots (hover/selection targets in the folded view)
+  // named-vertex dots + labels (hover/selection targets in the folded view)
   const annotations = doc.layer("annotations");
   const fverts = frame.vertices;
+  const centreX = (layout.minX + layout.maxX) / 2;
+  const centreY = (layout.minY + layout.maxY) / 2;
   frame.verticesNames.forEach((nm, i) => {
     if (!nm) return;
     const p = fverts[i]!;
@@ -220,6 +222,14 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
         cx: mx(p[0]), cy: ty(p[1]), r: 3, fill: theme.ink,
         "data-bel-name": nm, "data-kind": "point",
       }),
+    );
+    const ox = p[0] < centreX ? -16 : 10, oy = p[1] < centreY ? 18 : -8;
+    annotations.children.push(
+      el("text", {
+        x: mx(p[0]) + ox, y: ty(p[1]) + oy,
+        "font-size": 17, "font-weight": 600, fill: theme.ink,
+        "data-bel-name": nm, "data-kind": "point-label",
+      }, [], `.${nm}`),
     );
   });
 
