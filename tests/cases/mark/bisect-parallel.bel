@@ -1,4 +1,3 @@
-; status: works — mapping two parallel edges onto each other yields their midline (no toward)
 paper square
 mark --l = through .a .d       ; left edge x = 0
 mark --r = through .b .c       ; right edge x = 1

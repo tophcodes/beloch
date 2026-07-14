@@ -1,9 +1,3 @@
-; status: errors — a collapse element whose crease ends INSIDE the sheet. The
-; horizontal midline is cut at (3/4, 1/2) by the extra crease --q (x = 3/4), so
-; `--h at #(.q .tm)` selects only the stub from the center O to that interior
-; crossing. A crease that stops mid-sheet would leave a degree-1 vertex there, so
-; the collapse is rejected before any flat-foldability check.
-
 paper square
 
 mark --h = map .a onto .d       ; horizontal midline, y = 1/2

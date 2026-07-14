@@ -1,9 +1,3 @@
-; status: works — collapse-ambiguous.bel resolved. The same non-contiguous
-; 5-valley/3-mountain center vertex has three valid layer orders; one `over`
-; clause picks one. `#(.b .rm)` names the lower-right sector-flap (between corner
-; b and the right edge-midpoint), `#(.c .tm)` the upper sector-flap by corner c;
-; stacking the first above the second leaves exactly one order, so it folds.
-
 paper square
 
 mark --ac = map .b onto .d     ; diagonal a-c
