@@ -40,6 +40,22 @@ fold goes through *every* layer beneath its crease — top and bottom alike. In
 the folded view you can see the result: 4 faces. Both layers from the first
 fold got creased by the second.
 
+It helps to see *where* that second crease falls before the paper moves. Here
+is the same second crease — named `--second` so we can point at it — ghosted
+onto the one-fold stack:
+
+<Beloch filename="two-folds.bel" isometry={1} textureUpTo={2}>
+paper square
+fold map .d onto .a
+fold --second = map .c onto .d
+</Beloch>
+
+The dotted line is `--second` projected onto the stack from the first fold. It
+runs straight down the middle, crossing *both* layers at once — which is why
+folding along it creases all of them into the 4 faces above. (This is a static
+"ghost" view: the geometry is the one-fold stack, the decoration is a crease
+from a later step.)
+
 ## `up to` limits the fold to one flap
 
 That second fold cut straight across the whole stack, so it swept up both

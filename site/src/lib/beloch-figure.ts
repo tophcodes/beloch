@@ -158,7 +158,8 @@ class BelochFigure extends HTMLElement {
           step: String(this.step), hidden: "dashed",
         }).toString();
         const lbl = this.querySelector(".beloch-step-label");
-        if (lbl) lbl.textContent = `${this.step + 1}/${this.scene.steps.length}`;
+        // 0-based: step 0 is the flat starting sheet, step k the k-th fold.
+        if (lbl) lbl.textContent = `Schritt ${this.step} / ${this.scene.steps.length - 1}`;
       }
     } catch (err) {
       console.warn("beloch-figure: render failed", err);
