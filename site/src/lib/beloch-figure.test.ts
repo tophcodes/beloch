@@ -9,8 +9,9 @@ const foldJson = await Bun.file(
   new URL("./fixtures/x-midpoint.fold", import.meta.url),
 ).text();
 
-// def-diagonals has 3 steps in file order [null, "diagonals", "centre"] — a
-// null-labeled non-final step exercises the index-vs-label stepper bug.
+// def-diagonals has 4 steps in file order [null, null, "diagonals", "centre"]
+// — step 0 is the flat sheet, and a null-labeled non-final step exercises the
+// index-vs-label stepper bug.
 const diagonalsFoldJson = await Bun.file(
   new URL("./fixtures/def-diagonals.fold", import.meta.url),
 ).text();
@@ -202,13 +203,14 @@ test("folded view highlights the active step's gutter line, tracks stepping, and
       (e) => (e as HTMLElement).dataset.line,
     );
 
-  // switch to folded view: last step (index 1) has sourceLine 4
+  // switch to folded view: last step (index 2, the 2nd fold) has sourceLine 4
   (el.querySelector('[data-view="folded"]') as HTMLElement).click();
   expect(highlighted()).toEqual(["4"]);
   expect(lineEl(4).classList.contains("bel-step-line")).toBe(true);
 
-  // step back: index 0 has sourceLine 3 — highlight moves, doesn't accumulate
-  (el as any).setStep(0);
+  // step back to the 1st fold (index 1) has sourceLine 3 — highlight moves,
+  // doesn't accumulate. (Index 0 is the flat sheet, no source line.)
+  (el as any).setStep(1);
   expect(highlighted()).toEqual(["3"]);
   expect(lineEl(4).classList.contains("bel-step-line")).toBe(false);
 

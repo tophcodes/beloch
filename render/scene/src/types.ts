@@ -79,7 +79,7 @@ export class StepNotFoundError extends SceneError {
   ): string {
     const named = available
       .filter((s) => s.label !== null)
-      .map((s) => `${style(s.label!)} (${s.index + 1})`)
+      .map((s) => `${style(s.label!)} (${s.index})`)
       .join(", ");
     return (
       `step '${label}' not found — ${available.length} step(s) available` +

@@ -155,7 +155,7 @@ class BelochFigure extends HTMLElement {
         diagram.innerHTML = this.cpHTML || renderCP(this.scene).toString();
       } else {
         diagram.innerHTML = renderFolded(this.scene, {
-          step: String(this.step + 1), hidden: "dashed",
+          step: String(this.step), hidden: "dashed",
         }).toString();
         const lbl = this.querySelector(".beloch-step-label");
         if (lbl) lbl.textContent = `${this.step + 1}/${this.scene.steps.length}`;

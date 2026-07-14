@@ -385,9 +385,15 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
       ("beloch:named_lines_frame", `String "creasePattern");
       ("beloch:marks", `List beloch_marks);
       ( "file_frames",
+        (* Step 0: the flat, unfolded sheet, so a folded-diagram stepper opens
+           on the starting paper rather than on the first fold. It is a viewing
+           frame only — not counted as a fold (the `steps` assertion reads
+           Eval.frames, which excludes it). *)
         `List
-          (List.map
-             (fun (step, st, span) ->
-               folded_frame_of_state fd.Eval.named_points st step span)
-             fd.Eval.frames) );
+          (folded_frame_of_state fd.Eval.named_points Fold_state.init_square
+             None None
+          :: List.map
+               (fun (step, st, span) ->
+                 folded_frame_of_state fd.Eval.named_points st step span)
+               fd.Eval.frames) );
     ]

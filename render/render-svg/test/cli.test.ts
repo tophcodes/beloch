@@ -63,7 +63,7 @@ test("CLI: unmatched --step exits 1 with the available named steps", async () =>
   const err = await new Response(p.stderr).text();
   expect(await p.exited).toBe(1);
   expect(err).toBe(
-    "beloch-render: step 'no-such-step' not found — 4 step(s) available. " +
+    "beloch-render: step 'no-such-step' not found — 5 step(s) available. " +
       "named steps are vertical_middle (2), thirds (3), beloch_fold (4)\n",
   );
 });

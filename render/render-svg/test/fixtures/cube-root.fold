@@ -123,21 +123,21 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", "._mt" ],
-      "span": "examples/syntax/cube-root.bel:37:1-30",
+      "span": "tests/cases/fold/cube-root.bel:37:1-30",
       "name": "a_mt",
       "step": "thirds"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".d", "._mb" ],
-      "span": "examples/syntax/cube-root.bel:36:1-30",
+      "span": "tests/cases/fold/cube-root.bel:36:1-30",
       "name": "d_mb",
       "step": "thirds"
     },
     {
       "axiom": "axiom7",
       "sources": [ ".c", "--ab", ".s", "--pq" ],
-      "span": "examples/syntax/cube-root.bel:49:1-39",
+      "span": "tests/cases/fold/cube-root.bel:49:1-39",
       "name": null,
       "step": "beloch_fold"
     },
@@ -145,77 +145,77 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "examples/syntax/cube-root.bel:34:1-28",
+      "span": "tests/cases/fold/cube-root.bel:34:1-28",
       "name": "ac",
       "step": "thirds"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".d", "._mb" ],
-      "span": "examples/syntax/cube-root.bel:36:1-30",
+      "span": "tests/cases/fold/cube-root.bel:36:1-30",
       "name": "d_mb",
       "step": "thirds"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".d", ".b" ],
-      "span": "examples/syntax/cube-root.bel:35:1-28",
+      "span": "tests/cases/fold/cube-root.bel:35:1-28",
       "name": "db",
       "step": "thirds"
     },
     {
       "axiom": "axiom7",
       "sources": [ ".c", "--ab", ".s", "--pq" ],
-      "span": "examples/syntax/cube-root.bel:49:1-39",
+      "span": "tests/cases/fold/cube-root.bel:49:1-39",
       "name": null,
       "step": "beloch_fold"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".a", "._mt" ],
-      "span": "examples/syntax/cube-root.bel:37:1-30",
+      "span": "tests/cases/fold/cube-root.bel:37:1-30",
       "name": "a_mt",
       "step": "thirds"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "examples/syntax/cube-root.bel:34:1-28",
+      "span": "tests/cases/fold/cube-root.bel:34:1-28",
       "name": "ac",
       "step": "thirds"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".d", ".b" ],
-      "span": "examples/syntax/cube-root.bel:35:1-28",
+      "span": "tests/cases/fold/cube-root.bel:35:1-28",
       "name": "db",
       "step": "thirds"
     },
     {
       "axiom": "axiom7",
       "sources": [ ".c", "--ab", ".s", "--pq" ],
-      "span": "examples/syntax/cube-root.bel:49:1-39",
+      "span": "tests/cases/fold/cube-root.bel:49:1-39",
       "name": null,
       "step": "beloch_fold"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".a", "._mt" ],
-      "span": "examples/syntax/cube-root.bel:37:1-30",
+      "span": "tests/cases/fold/cube-root.bel:37:1-30",
       "name": "a_mt",
       "step": "thirds"
     },
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".b" ],
-      "span": "examples/syntax/cube-root.bel:29:1-27",
+      "span": "tests/cases/fold/cube-root.bel:29:1-27",
       "name": "vm",
       "step": "vertical_middle"
     },
     {
       "axiom": "axiom7",
       "sources": [ ".c", "--ab", ".s", "--pq" ],
-      "span": "examples/syntax/cube-root.bel:49:1-39",
+      "span": "tests/cases/fold/cube-root.bel:49:1-39",
       "name": null,
       "step": "beloch_fold"
     },
@@ -223,42 +223,42 @@
     {
       "axiom": "axiom1",
       "sources": [ ".d", "._mb" ],
-      "span": "examples/syntax/cube-root.bel:36:1-30",
+      "span": "tests/cases/fold/cube-root.bel:36:1-30",
       "name": "d_mb",
       "step": "thirds"
     },
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".b" ],
-      "span": "examples/syntax/cube-root.bel:29:1-27",
+      "span": "tests/cases/fold/cube-root.bel:29:1-27",
       "name": "vm",
       "step": "vertical_middle"
     },
     {
       "axiom": "axiom7",
       "sources": [ ".c", "--ab", ".s", "--pq" ],
-      "span": "examples/syntax/cube-root.bel:49:1-39",
+      "span": "tests/cases/fold/cube-root.bel:49:1-39",
       "name": null,
       "step": "beloch_fold"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "examples/syntax/cube-root.bel:34:1-28",
+      "span": "tests/cases/fold/cube-root.bel:34:1-28",
       "name": "ac",
       "step": "thirds"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".c", "._mb" ],
-      "span": "examples/syntax/cube-root.bel:38:1-30",
+      "span": "tests/cases/fold/cube-root.bel:38:1-30",
       "name": "c_mb",
       "step": "thirds"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".d", ".b" ],
-      "span": "examples/syntax/cube-root.bel:35:1-28",
+      "span": "tests/cases/fold/cube-root.bel:35:1-28",
       "name": "db",
       "step": "thirds"
     },
@@ -266,7 +266,7 @@
     {
       "axiom": "axiom1",
       "sources": [ "._rs1", "._rs2" ],
-      "span": "examples/syntax/cube-root.bel:45:1-32",
+      "span": "tests/cases/fold/cube-root.bel:45:1-32",
       "name": "rs",
       "step": "thirds"
     },
@@ -274,63 +274,63 @@
     {
       "axiom": "axiom1",
       "sources": [ ".d", ".b" ],
-      "span": "examples/syntax/cube-root.bel:35:1-28",
+      "span": "tests/cases/fold/cube-root.bel:35:1-28",
       "name": "db",
       "step": "thirds"
     },
     {
       "axiom": "axiom7",
       "sources": [ ".c", "--ab", ".s", "--pq" ],
-      "span": "examples/syntax/cube-root.bel:49:1-39",
+      "span": "tests/cases/fold/cube-root.bel:49:1-39",
       "name": null,
       "step": "beloch_fold"
     },
     {
       "axiom": "axiom1",
       "sources": [ "._rs1", "._rs2" ],
-      "span": "examples/syntax/cube-root.bel:45:1-32",
+      "span": "tests/cases/fold/cube-root.bel:45:1-32",
       "name": "rs",
       "step": "thirds"
     },
     {
       "axiom": "axiom7",
       "sources": [ ".c", "--ab", ".s", "--pq" ],
-      "span": "examples/syntax/cube-root.bel:49:1-39",
+      "span": "tests/cases/fold/cube-root.bel:49:1-39",
       "name": null,
       "step": "beloch_fold"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".c", "._mb" ],
-      "span": "examples/syntax/cube-root.bel:38:1-30",
+      "span": "tests/cases/fold/cube-root.bel:38:1-30",
       "name": "c_mb",
       "step": "thirds"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".b", "._mt" ],
-      "span": "examples/syntax/cube-root.bel:39:1-30",
+      "span": "tests/cases/fold/cube-root.bel:39:1-30",
       "name": "b_mt",
       "step": "thirds"
     },
     {
       "axiom": "axiom7",
       "sources": [ ".c", "--ab", ".s", "--pq" ],
-      "span": "examples/syntax/cube-root.bel:49:1-39",
+      "span": "tests/cases/fold/cube-root.bel:49:1-39",
       "name": null,
       "step": "beloch_fold"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".c", "._mb" ],
-      "span": "examples/syntax/cube-root.bel:38:1-30",
+      "span": "tests/cases/fold/cube-root.bel:38:1-30",
       "name": "c_mb",
       "step": "thirds"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".b", "._mt" ],
-      "span": "examples/syntax/cube-root.bel:39:1-30",
+      "span": "tests/cases/fold/cube-root.bel:39:1-30",
       "name": "b_mt",
       "step": "thirds"
     },
@@ -338,7 +338,7 @@
     {
       "axiom": "axiom7",
       "sources": [ ".c", "--ab", ".s", "--pq" ],
-      "span": "examples/syntax/cube-root.bel:49:1-39",
+      "span": "tests/cases/fold/cube-root.bel:49:1-39",
       "name": null,
       "step": "beloch_fold"
     },
@@ -346,14 +346,14 @@
     {
       "axiom": "axiom1",
       "sources": [ ".d", "._mb" ],
-      "span": "examples/syntax/cube-root.bel:36:1-30",
+      "span": "tests/cases/fold/cube-root.bel:36:1-30",
       "name": "d_mb",
       "step": "thirds"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".d", ".b" ],
-      "span": "examples/syntax/cube-root.bel:35:1-28",
+      "span": "tests/cases/fold/cube-root.bel:35:1-28",
       "name": "db",
       "step": "thirds"
     },
@@ -361,28 +361,28 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", "._mt" ],
-      "span": "examples/syntax/cube-root.bel:37:1-30",
+      "span": "tests/cases/fold/cube-root.bel:37:1-30",
       "name": "a_mt",
       "step": "thirds"
     },
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".b" ],
-      "span": "examples/syntax/cube-root.bel:29:1-27",
+      "span": "tests/cases/fold/cube-root.bel:29:1-27",
       "name": "vm",
       "step": "vertical_middle"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "examples/syntax/cube-root.bel:34:1-28",
+      "span": "tests/cases/fold/cube-root.bel:34:1-28",
       "name": "ac",
       "step": "thirds"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".b", "._mt" ],
-      "span": "examples/syntax/cube-root.bel:39:1-30",
+      "span": "tests/cases/fold/cube-root.bel:39:1-30",
       "name": "b_mt",
       "step": "thirds"
     },
@@ -390,7 +390,7 @@
     {
       "axiom": "axiom1",
       "sources": [ "._rs1", "._rs2" ],
-      "span": "examples/syntax/cube-root.bel:45:1-32",
+      "span": "tests/cases/fold/cube-root.bel:45:1-32",
       "name": "rs",
       "step": "thirds"
     },
@@ -398,28 +398,28 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "examples/syntax/cube-root.bel:34:1-28",
+      "span": "tests/cases/fold/cube-root.bel:34:1-28",
       "name": "ac",
       "step": "thirds"
     },
     {
       "axiom": "axiom1",
       "sources": [ "._rs1", "._rs2" ],
-      "span": "examples/syntax/cube-root.bel:45:1-32",
+      "span": "tests/cases/fold/cube-root.bel:45:1-32",
       "name": "rs",
       "step": "thirds"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".b", "._mt" ],
-      "span": "examples/syntax/cube-root.bel:39:1-30",
+      "span": "tests/cases/fold/cube-root.bel:39:1-30",
       "name": "b_mt",
       "step": "thirds"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".c", "._mb" ],
-      "span": "examples/syntax/cube-root.bel:38:1-30",
+      "span": "tests/cases/fold/cube-root.bel:38:1-30",
       "name": "c_mb",
       "step": "thirds"
     },
@@ -479,6 +479,24 @@
       "frame_parent": 0,
       "frame_inherit": false,
       "vertices_coords": [
+        [ 0.0, 0.0 ], [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.0, 1.0 ]
+      ],
+      "edges_vertices": [ [ 0, 1 ], [ 1, 2 ], [ 2, 3 ], [ 3, 0 ] ],
+      "edges_assignment": [ "B", "B", "B", "B" ],
+      "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0 ],
+      "faces_vertices": [ [ 0, 1, 2, 3 ] ],
+      "beloch:faces_matrix": [ [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ] ],
+      "faceOrders": [],
+      "beloch:step": null,
+      "beloch:source_line": null,
+      "beloch:edges": [ null, null, null, null ],
+      "beloch:vertices_names": [ "a", "b", "c", "d" ]
+    },
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": false,
+      "vertices_coords": [
         [ 0.0, 0.0 ],
         [ 0.5, 0.0 ],
         [ 0.5, 1.0 ],
@@ -503,7 +521,7 @@
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".b" ],
-          "span": "examples/syntax/cube-root.bel:29:1-27",
+          "span": "tests/cases/fold/cube-root.bel:29:1-27",
           "name": "vm",
           "step": "vertical_middle"
         },
@@ -630,14 +648,14 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", "._mt" ],
-          "span": "examples/syntax/cube-root.bel:37:1-30",
+          "span": "tests/cases/fold/cube-root.bel:37:1-30",
           "name": "a_mt",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".d", "._mb" ],
-          "span": "examples/syntax/cube-root.bel:36:1-30",
+          "span": "tests/cases/fold/cube-root.bel:36:1-30",
           "name": "d_mb",
           "step": "thirds"
         },
@@ -645,42 +663,42 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "examples/syntax/cube-root.bel:34:1-28",
+          "span": "tests/cases/fold/cube-root.bel:34:1-28",
           "name": "ac",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".d", "._mb" ],
-          "span": "examples/syntax/cube-root.bel:36:1-30",
+          "span": "tests/cases/fold/cube-root.bel:36:1-30",
           "name": "d_mb",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".d", ".b" ],
-          "span": "examples/syntax/cube-root.bel:35:1-28",
+          "span": "tests/cases/fold/cube-root.bel:35:1-28",
           "name": "db",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".a", "._mt" ],
-          "span": "examples/syntax/cube-root.bel:37:1-30",
+          "span": "tests/cases/fold/cube-root.bel:37:1-30",
           "name": "a_mt",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "examples/syntax/cube-root.bel:34:1-28",
+          "span": "tests/cases/fold/cube-root.bel:34:1-28",
           "name": "ac",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".d", ".b" ],
-          "span": "examples/syntax/cube-root.bel:35:1-28",
+          "span": "tests/cases/fold/cube-root.bel:35:1-28",
           "name": "db",
           "step": "thirds"
         },
@@ -688,14 +706,14 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", "._mt" ],
-          "span": "examples/syntax/cube-root.bel:37:1-30",
+          "span": "tests/cases/fold/cube-root.bel:37:1-30",
           "name": "a_mt",
           "step": "thirds"
         },
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".b" ],
-          "span": "examples/syntax/cube-root.bel:29:1-27",
+          "span": "tests/cases/fold/cube-root.bel:29:1-27",
           "name": "vm",
           "step": "vertical_middle"
         },
@@ -703,28 +721,28 @@
         {
           "axiom": "axiom1",
           "sources": [ ".d", "._mb" ],
-          "span": "examples/syntax/cube-root.bel:36:1-30",
+          "span": "tests/cases/fold/cube-root.bel:36:1-30",
           "name": "d_mb",
           "step": "thirds"
         },
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".b" ],
-          "span": "examples/syntax/cube-root.bel:29:1-27",
+          "span": "tests/cases/fold/cube-root.bel:29:1-27",
           "name": "vm",
           "step": "vertical_middle"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "examples/syntax/cube-root.bel:34:1-28",
+          "span": "tests/cases/fold/cube-root.bel:34:1-28",
           "name": "ac",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".b", "._mt" ],
-          "span": "examples/syntax/cube-root.bel:39:1-30",
+          "span": "tests/cases/fold/cube-root.bel:39:1-30",
           "name": "b_mt",
           "step": "thirds"
         },
@@ -732,7 +750,7 @@
         {
           "axiom": "axiom1",
           "sources": [ "._rs1", "._rs2" ],
-          "span": "examples/syntax/cube-root.bel:45:1-32",
+          "span": "tests/cases/fold/cube-root.bel:45:1-32",
           "name": "rs",
           "step": "thirds"
         },
@@ -740,21 +758,21 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "examples/syntax/cube-root.bel:34:1-28",
+          "span": "tests/cases/fold/cube-root.bel:34:1-28",
           "name": "ac",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".c", "._mb" ],
-          "span": "examples/syntax/cube-root.bel:38:1-30",
+          "span": "tests/cases/fold/cube-root.bel:38:1-30",
           "name": "c_mb",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".d", ".b" ],
-          "span": "examples/syntax/cube-root.bel:35:1-28",
+          "span": "tests/cases/fold/cube-root.bel:35:1-28",
           "name": "db",
           "step": "thirds"
         },
@@ -762,7 +780,7 @@
         {
           "axiom": "axiom1",
           "sources": [ "._rs1", "._rs2" ],
-          "span": "examples/syntax/cube-root.bel:45:1-32",
+          "span": "tests/cases/fold/cube-root.bel:45:1-32",
           "name": "rs",
           "step": "thirds"
         },
@@ -770,42 +788,42 @@
         {
           "axiom": "axiom1",
           "sources": [ ".d", ".b" ],
-          "span": "examples/syntax/cube-root.bel:35:1-28",
+          "span": "tests/cases/fold/cube-root.bel:35:1-28",
           "name": "db",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ "._rs1", "._rs2" ],
-          "span": "examples/syntax/cube-root.bel:45:1-32",
+          "span": "tests/cases/fold/cube-root.bel:45:1-32",
           "name": "rs",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".c", "._mb" ],
-          "span": "examples/syntax/cube-root.bel:38:1-30",
+          "span": "tests/cases/fold/cube-root.bel:38:1-30",
           "name": "c_mb",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".b", "._mt" ],
-          "span": "examples/syntax/cube-root.bel:39:1-30",
+          "span": "tests/cases/fold/cube-root.bel:39:1-30",
           "name": "b_mt",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".c", "._mb" ],
-          "span": "examples/syntax/cube-root.bel:38:1-30",
+          "span": "tests/cases/fold/cube-root.bel:38:1-30",
           "name": "c_mb",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".b", "._mt" ],
-          "span": "examples/syntax/cube-root.bel:39:1-30",
+          "span": "tests/cases/fold/cube-root.bel:39:1-30",
           "name": "b_mt",
           "step": "thirds"
         },
@@ -1060,21 +1078,21 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", "._mt" ],
-          "span": "examples/syntax/cube-root.bel:37:1-30",
+          "span": "tests/cases/fold/cube-root.bel:37:1-30",
           "name": "a_mt",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".d", "._mb" ],
-          "span": "examples/syntax/cube-root.bel:36:1-30",
+          "span": "tests/cases/fold/cube-root.bel:36:1-30",
           "name": "d_mb",
           "step": "thirds"
         },
         {
           "axiom": "axiom7",
           "sources": [ ".c", "--ab", ".s", "--pq" ],
-          "span": "examples/syntax/cube-root.bel:49:1-39",
+          "span": "tests/cases/fold/cube-root.bel:49:1-39",
           "name": null,
           "step": "beloch_fold"
         },
@@ -1082,77 +1100,77 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "examples/syntax/cube-root.bel:34:1-28",
+          "span": "tests/cases/fold/cube-root.bel:34:1-28",
           "name": "ac",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".d", "._mb" ],
-          "span": "examples/syntax/cube-root.bel:36:1-30",
+          "span": "tests/cases/fold/cube-root.bel:36:1-30",
           "name": "d_mb",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".d", ".b" ],
-          "span": "examples/syntax/cube-root.bel:35:1-28",
+          "span": "tests/cases/fold/cube-root.bel:35:1-28",
           "name": "db",
           "step": "thirds"
         },
         {
           "axiom": "axiom7",
           "sources": [ ".c", "--ab", ".s", "--pq" ],
-          "span": "examples/syntax/cube-root.bel:49:1-39",
+          "span": "tests/cases/fold/cube-root.bel:49:1-39",
           "name": null,
           "step": "beloch_fold"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".a", "._mt" ],
-          "span": "examples/syntax/cube-root.bel:37:1-30",
+          "span": "tests/cases/fold/cube-root.bel:37:1-30",
           "name": "a_mt",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "examples/syntax/cube-root.bel:34:1-28",
+          "span": "tests/cases/fold/cube-root.bel:34:1-28",
           "name": "ac",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".d", ".b" ],
-          "span": "examples/syntax/cube-root.bel:35:1-28",
+          "span": "tests/cases/fold/cube-root.bel:35:1-28",
           "name": "db",
           "step": "thirds"
         },
         {
           "axiom": "axiom7",
           "sources": [ ".c", "--ab", ".s", "--pq" ],
-          "span": "examples/syntax/cube-root.bel:49:1-39",
+          "span": "tests/cases/fold/cube-root.bel:49:1-39",
           "name": null,
           "step": "beloch_fold"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".a", "._mt" ],
-          "span": "examples/syntax/cube-root.bel:37:1-30",
+          "span": "tests/cases/fold/cube-root.bel:37:1-30",
           "name": "a_mt",
           "step": "thirds"
         },
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".b" ],
-          "span": "examples/syntax/cube-root.bel:29:1-27",
+          "span": "tests/cases/fold/cube-root.bel:29:1-27",
           "name": "vm",
           "step": "vertical_middle"
         },
         {
           "axiom": "axiom7",
           "sources": [ ".c", "--ab", ".s", "--pq" ],
-          "span": "examples/syntax/cube-root.bel:49:1-39",
+          "span": "tests/cases/fold/cube-root.bel:49:1-39",
           "name": null,
           "step": "beloch_fold"
         },
@@ -1160,42 +1178,42 @@
         {
           "axiom": "axiom1",
           "sources": [ ".d", "._mb" ],
-          "span": "examples/syntax/cube-root.bel:36:1-30",
+          "span": "tests/cases/fold/cube-root.bel:36:1-30",
           "name": "d_mb",
           "step": "thirds"
         },
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".b" ],
-          "span": "examples/syntax/cube-root.bel:29:1-27",
+          "span": "tests/cases/fold/cube-root.bel:29:1-27",
           "name": "vm",
           "step": "vertical_middle"
         },
         {
           "axiom": "axiom7",
           "sources": [ ".c", "--ab", ".s", "--pq" ],
-          "span": "examples/syntax/cube-root.bel:49:1-39",
+          "span": "tests/cases/fold/cube-root.bel:49:1-39",
           "name": null,
           "step": "beloch_fold"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "examples/syntax/cube-root.bel:34:1-28",
+          "span": "tests/cases/fold/cube-root.bel:34:1-28",
           "name": "ac",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".c", "._mb" ],
-          "span": "examples/syntax/cube-root.bel:38:1-30",
+          "span": "tests/cases/fold/cube-root.bel:38:1-30",
           "name": "c_mb",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".d", ".b" ],
-          "span": "examples/syntax/cube-root.bel:35:1-28",
+          "span": "tests/cases/fold/cube-root.bel:35:1-28",
           "name": "db",
           "step": "thirds"
         },
@@ -1203,7 +1221,7 @@
         {
           "axiom": "axiom1",
           "sources": [ "._rs1", "._rs2" ],
-          "span": "examples/syntax/cube-root.bel:45:1-32",
+          "span": "tests/cases/fold/cube-root.bel:45:1-32",
           "name": "rs",
           "step": "thirds"
         },
@@ -1211,63 +1229,63 @@
         {
           "axiom": "axiom1",
           "sources": [ ".d", ".b" ],
-          "span": "examples/syntax/cube-root.bel:35:1-28",
+          "span": "tests/cases/fold/cube-root.bel:35:1-28",
           "name": "db",
           "step": "thirds"
         },
         {
           "axiom": "axiom7",
           "sources": [ ".c", "--ab", ".s", "--pq" ],
-          "span": "examples/syntax/cube-root.bel:49:1-39",
+          "span": "tests/cases/fold/cube-root.bel:49:1-39",
           "name": null,
           "step": "beloch_fold"
         },
         {
           "axiom": "axiom1",
           "sources": [ "._rs1", "._rs2" ],
-          "span": "examples/syntax/cube-root.bel:45:1-32",
+          "span": "tests/cases/fold/cube-root.bel:45:1-32",
           "name": "rs",
           "step": "thirds"
         },
         {
           "axiom": "axiom7",
           "sources": [ ".c", "--ab", ".s", "--pq" ],
-          "span": "examples/syntax/cube-root.bel:49:1-39",
+          "span": "tests/cases/fold/cube-root.bel:49:1-39",
           "name": null,
           "step": "beloch_fold"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".c", "._mb" ],
-          "span": "examples/syntax/cube-root.bel:38:1-30",
+          "span": "tests/cases/fold/cube-root.bel:38:1-30",
           "name": "c_mb",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".b", "._mt" ],
-          "span": "examples/syntax/cube-root.bel:39:1-30",
+          "span": "tests/cases/fold/cube-root.bel:39:1-30",
           "name": "b_mt",
           "step": "thirds"
         },
         {
           "axiom": "axiom7",
           "sources": [ ".c", "--ab", ".s", "--pq" ],
-          "span": "examples/syntax/cube-root.bel:49:1-39",
+          "span": "tests/cases/fold/cube-root.bel:49:1-39",
           "name": null,
           "step": "beloch_fold"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".c", "._mb" ],
-          "span": "examples/syntax/cube-root.bel:38:1-30",
+          "span": "tests/cases/fold/cube-root.bel:38:1-30",
           "name": "c_mb",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".b", "._mt" ],
-          "span": "examples/syntax/cube-root.bel:39:1-30",
+          "span": "tests/cases/fold/cube-root.bel:39:1-30",
           "name": "b_mt",
           "step": "thirds"
         },
@@ -1275,7 +1293,7 @@
         {
           "axiom": "axiom7",
           "sources": [ ".c", "--ab", ".s", "--pq" ],
-          "span": "examples/syntax/cube-root.bel:49:1-39",
+          "span": "tests/cases/fold/cube-root.bel:49:1-39",
           "name": null,
           "step": "beloch_fold"
         },
@@ -1283,14 +1301,14 @@
         {
           "axiom": "axiom1",
           "sources": [ ".d", "._mb" ],
-          "span": "examples/syntax/cube-root.bel:36:1-30",
+          "span": "tests/cases/fold/cube-root.bel:36:1-30",
           "name": "d_mb",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".d", ".b" ],
-          "span": "examples/syntax/cube-root.bel:35:1-28",
+          "span": "tests/cases/fold/cube-root.bel:35:1-28",
           "name": "db",
           "step": "thirds"
         },
@@ -1298,28 +1316,28 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", "._mt" ],
-          "span": "examples/syntax/cube-root.bel:37:1-30",
+          "span": "tests/cases/fold/cube-root.bel:37:1-30",
           "name": "a_mt",
           "step": "thirds"
         },
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".b" ],
-          "span": "examples/syntax/cube-root.bel:29:1-27",
+          "span": "tests/cases/fold/cube-root.bel:29:1-27",
           "name": "vm",
           "step": "vertical_middle"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "examples/syntax/cube-root.bel:34:1-28",
+          "span": "tests/cases/fold/cube-root.bel:34:1-28",
           "name": "ac",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".b", "._mt" ],
-          "span": "examples/syntax/cube-root.bel:39:1-30",
+          "span": "tests/cases/fold/cube-root.bel:39:1-30",
           "name": "b_mt",
           "step": "thirds"
         },
@@ -1327,7 +1345,7 @@
         {
           "axiom": "axiom1",
           "sources": [ "._rs1", "._rs2" ],
-          "span": "examples/syntax/cube-root.bel:45:1-32",
+          "span": "tests/cases/fold/cube-root.bel:45:1-32",
           "name": "rs",
           "step": "thirds"
         },
@@ -1335,28 +1353,28 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "examples/syntax/cube-root.bel:34:1-28",
+          "span": "tests/cases/fold/cube-root.bel:34:1-28",
           "name": "ac",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ "._rs1", "._rs2" ],
-          "span": "examples/syntax/cube-root.bel:45:1-32",
+          "span": "tests/cases/fold/cube-root.bel:45:1-32",
           "name": "rs",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".b", "._mt" ],
-          "span": "examples/syntax/cube-root.bel:39:1-30",
+          "span": "tests/cases/fold/cube-root.bel:39:1-30",
           "name": "b_mt",
           "step": "thirds"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".c", "._mb" ],
-          "span": "examples/syntax/cube-root.bel:38:1-30",
+          "span": "tests/cases/fold/cube-root.bel:38:1-30",
           "name": "c_mb",
           "step": "thirds"
         },

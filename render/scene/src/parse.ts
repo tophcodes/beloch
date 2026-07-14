@@ -82,7 +82,8 @@ export function pickStep(scene: FoldScene, label?: string): Step | undefined {
   const byName = scene.steps.find((s) => s.label === label);
   if (byName) return byName;
   if (/^\d+$/.test(label)) {
-    const idx = Number(label) - 1;
+    // 0-based: step 0 is the flat starting sheet, step k the k-th fold.
+    const idx = Number(label);
     if (idx >= 0 && idx < scene.steps.length) return scene.steps[idx];
   }
   throw new StepNotFoundError(
