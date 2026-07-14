@@ -97,7 +97,7 @@ test("--pq (pure-value, non-crease named line) clips into folded faces across --
     // back to table coordinates, then confirm each drawn segment's midpoint
     // actually landed inside one of this frame's face polygons — proving the
     // clip ran geometrically, not just that a <line> tag was emitted.
-    const layout = makeLayout(frame.vertices);
+    const layout = makeLayout(scene.cp.vertices);
     const faces = frame.facesVertices.map((idxs) => idxs.map((i) => frame.vertices[i]!));
     for (const [, x1, y1, x2, y2] of lines) {
       const sx = (Number(x1) + Number(x2)) / 2;
