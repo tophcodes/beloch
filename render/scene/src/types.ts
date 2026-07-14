@@ -30,8 +30,8 @@ export interface Step {
   frame: Frame;                                              // self-contained (merged over root)
 }
 
-export interface NamedPoint { name: string; paper: Vec2; table: Vec2; }
-export interface NamedLine  { name: string; coeffs: LineCoeffs; }
+export interface NamedPoint { name: string; paper: Vec2; table: Vec2; step: number; }
+export interface NamedLine  { name: string; coeffs: LineCoeffs; step: number; }
 export interface CreaseSegment { edgeIndex: number; a: Vec2; b: Vec2; }
 export interface Crease { name: string; segments: CreaseSegment[]; }
 
