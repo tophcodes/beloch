@@ -542,7 +542,7 @@ let[@warning "-32"] test_at_selects_bent_segment () =
     match Beloch.fold_string ~filename:"t.bel" src with
     | exception Error.Beloch_error (_, msg) ->
         Alcotest.failf "at should resolve, got error: %s" msg
-    | j -> j |> member "beloch:named_lines" |> member "q" |> to_list
+    | j -> j |> member "beloch:named_lines" |> member "q" |> member "coeffs" |> to_list
   in
   Alcotest.(check bool)
     "different flaps select different --q axes (at is load-bearing)" true
@@ -565,7 +565,7 @@ let test_bundle_ops_equiv_at () =
     match Beloch.fold_string ~filename:"t.bel" src with
     | exception Error.Beloch_error (_, msg) ->
         Alcotest.failf "should resolve, got error: %s" msg
-    | j -> j |> member "beloch:named_lines" |> member "q" |> to_list
+    | j -> j |> member "beloch:named_lines" |> member "q" |> member "coeffs" |> to_list
   in
   let seg = q_axis (base "& #[.c .d]") in
   Alcotest.(check bool) "\\ #[.a .b] selects the same (upper) segment as & #[.c .d]"
@@ -579,7 +579,7 @@ let test_bind_bundle_roundtrip () =
     match Beloch.fold_string ~filename:"t.bel" src with
     | exception Error.Beloch_error (_, msg) ->
         Alcotest.failf "should resolve, got error: %s" msg
-    | j -> j |> member "beloch:named_lines" |> member "q" |> to_list
+    | j -> j |> member "beloch:named_lines" |> member "q" |> member "coeffs" |> to_list
   in
   let inline =
     "paper square\nmark --b = through .a .c\nfold --v = map .c onto .b\n\

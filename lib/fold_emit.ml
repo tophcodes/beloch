@@ -318,23 +318,27 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
   let beloch_named_points =
     `Assoc
       (List.map
-         (fun (name, (p : Geom.point), _step) ->
+         (fun (name, (p : Geom.point), step) ->
            let t = Fold_state.table_position fd.Eval.state p in
            ( name,
              `Assoc
                [
                  ("paper", `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ]);
                  ("table", `List [ q_to_json t.Geom.x; q_to_json t.Geom.y ]);
+                 ("step", `Int step);
                ] ))
          fd.Eval.named_points)
   in
   let beloch_named_lines =
     `Assoc
       (List.map
-         (fun (name, (l : Geom.line), _step) ->
+         (fun (name, (l : Geom.line), step) ->
            ( name,
-             `List [ q_to_json l.Geom.a; q_to_json l.Geom.b; q_to_json l.Geom.c ]
-           ))
+             `Assoc
+               [
+                 ("coeffs", `List [ q_to_json l.Geom.a; q_to_json l.Geom.b; q_to_json l.Geom.c ]);
+                 ("step", `Int step);
+               ] ))
          fd.Eval.named_lines)
   in
   (* record marks (non-subdividing; see Fold_state.mark) — a mark's intent is
