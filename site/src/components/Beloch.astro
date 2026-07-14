@@ -11,7 +11,7 @@ import { highlightBel } from "../lib/highlight-bel";
 import { evalBelToFold } from "../lib/eval-bel";
 import { stripHtml } from "../lib/strip-html";
 import { parseFold } from "@beloch/scene";
-import { renderCP, renderScene } from "@beloch/render-svg";
+import { renderCP, renderScene, WEB_THEME } from "@beloch/render-svg";
 
 interface Props {
   filename?: string;
@@ -69,6 +69,7 @@ if (composed) {
     : ({ kind: "step", index: Number(isometry) } as const);
   const upToStep = textureUpTo === undefined ? "all" : Number(textureUpTo);
   svg = renderScene(scene, {
+    theme: WEB_THEME,
     isometry: iso,
     texture: {
       upToStep,
@@ -80,7 +81,7 @@ if (composed) {
     },
   }).toString();
 } else {
-  svg = renderCP(scene).toString();
+  svg = renderCP(scene, { theme: WEB_THEME }).toString();
 }
 // A composed figure is a static illustration: skip the FOLD embed so the
 // hydration island stays dormant (its CP tab would otherwise show the
