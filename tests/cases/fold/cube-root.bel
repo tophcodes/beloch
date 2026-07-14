@@ -47,3 +47,13 @@ mark --rs = through ._rs1 ._rs2           ; right third line RS : x = 2/3
 
 step beloch_fold
 fold map .c onto --ab and .s onto --pq   ; fold C onto AB, S onto PQ → AC/CB = ∛2
+
+; neither landing is assertable in v1: `incident` always resolves against
+; PAPER space (fixed, pre-fold — see test_bel_assert.ml's check_incident),
+; not the folded TABLE position, so it can't confirm .s landed on --pq; and
+; the TABLE landings are irrational in y (.c's x is a cubic root; .s's y a
+; related irrational), so no exact rational literal matches either. The
+; axiom7 tag and the no-temp-points invariant are covered externally by
+; test_e2e_cube_root / test_e2e_cube_root_temps_hidden (kept, repointed here)
+; assert faces = 2
+; assert steps = 4

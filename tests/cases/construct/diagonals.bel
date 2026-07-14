@@ -1,0 +1,12 @@
+; status: works — both diagonals of the square
+paper square
+mark through .a .c
+mark through .b .d
+; both marks are unnamed, so this v1 grammar can't reference the resulting
+; lines directly. `faces` here is the evaluator's crease-pattern state,
+; where unfolded marks don't subdivide (still 1 face); the emitted FOLD's
+; 4-face crease pattern (marks graduate to F creases at emit) is covered by
+; test_e2e_diagonals / test_e2e_diagonals_four_faces (kept, repointed here)
+
+; assert faces = 1
+; assert steps = 1

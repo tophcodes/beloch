@@ -1,0 +1,13 @@
+; status: works — perpendicular from a corner onto a diagonal
+paper square
+mark --diag = through .a .c
+mark perp --diag through .b
+
+; `faces` is the evaluator's crease-pattern state, where unfolded marks
+; don't subdivide (1 face); the emitted FOLD's 4-face crease pattern (marks
+; graduate to F creases at emit) is covered by test_e2e_perp (kept)
+; assert faces = 1
+; assert steps = 1
+; assert .a incident --diag
+; assert .c incident --diag
+; assert .b not incident --diag

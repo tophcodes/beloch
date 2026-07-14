@@ -15,3 +15,12 @@ mark --hmid = map .a onto .d              ; y = 1/2
 .ctr = --vmid * --hmid               ; sheet centre, (1/2, 1/2)
 ; fold the centre onto the bottom edge, crease through corner .b
 fold map .ctr onto --ab through .b toward .a
+
+; the landing point (1 − 1/√2, 0) is irrational, and bare --ab (the builtin
+; edge) has no material mark so it can't be resolved by this v1 grammar
+; either. `faces` is the evaluator's crease-pattern state: the one fold
+; subdivides to 2; --vmid/--hmid stay unfolded marks there (they graduate to
+; F creases, adding more faces, only in the emitted FOLD)
+; assert faces = 2
+; assert steps = 1
+; assert .ctr paper = (1/2, 1/2)

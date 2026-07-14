@@ -13,3 +13,10 @@ mark --l1 = through .a .rm                ; the line .c lands on
 mark --l2 = through .a .tm                ; the crease is forced perpendicular to this
 ; fold corner .c onto --l1, crease perpendicular to --l2
 fold map .c onto --l1 perp --l2 moving .c
+
+; `faces` is the evaluator's crease-pattern state: the one fold subdivides
+; to 2; --vmid/--hmid/--l1/--l2 stay unfolded marks there (they graduate to
+; F creases, adding more faces, only in the emitted FOLD)
+; assert faces = 2
+; assert steps = 1
+; assert .c = (2/3, 1/3)
