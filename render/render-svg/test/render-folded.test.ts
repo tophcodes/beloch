@@ -12,7 +12,10 @@ const occlude = () =>
 test("fold-quarter top view paints all faces bottom→top", async () => {
   const scene = parseFold(await golden("syntax/fold-quarter.fold"));
   const s = renderFolded(scene).toString();
-  const faces = scene.steps[0]!.frame.facesVertices.length;
+  // renderFolded with no --step defaults to the LAST frame (fully folded,
+  // both `fold` statements applied); fold-quarter.bel now has one frame per
+  // fold (Slice B, per-fold frames)
+  const faces = scene.steps[scene.steps.length - 1]!.frame.facesVertices.length;
   expect((s.match(/data-kind="face"/g) ?? []).length).toBe(faces);
   // both paper sides appear in a quarter fold
   expect(s).toContain("#fafaf7");
@@ -133,4 +136,11 @@ test("folded stamps data-bel-name on named vertex dots and keeps occluded crease
   const s = renderFolded(scene, { hidden: "dashed" }).toString();
   expect(s).toContain('data-bel-name="center"');
   expect(s).toContain('data-occluded="true"');               // occluded geometry retained
+});
+
+test("folded view stamps a text label (not just the dot) for a named vertex", async () => {
+  const scene = parseFold(await golden("syntax/x-midpoint.fold"));
+  const s = renderFolded(scene).toString();
+  const label = s.match(/<text[^>]*data-bel-name="center"[^>]*>\.center<\/text>/);
+  expect(label).not.toBeNull();
 });

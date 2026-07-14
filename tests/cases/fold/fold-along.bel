@@ -1,0 +1,8 @@
+; status: works — precrease, then fold along the material crease itself:
+; no axiom re-statement (compare precrease-fold.bel), the F mark upgrades to V
+paper square
+mark --d = map .b onto .a
+fold --d moving .b
+
+; assert faces = 2
+; assert --d is valley

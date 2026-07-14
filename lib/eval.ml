@@ -14,7 +14,7 @@ type folded = {
   state : Fold_state.t;
   named_points : (string * Geom.point) list;
   named_lines : (string * Geom.line) list;
-  frames : (string option * Fold_state.t) list;
+  frames : (string option * Fold_state.t * Error.span option) list;
 }
 
 (* ---- Scope-stack context ---- *)
@@ -81,7 +81,10 @@ type ctx = {
   state : Fold_state.t ref;
   mutable panel : string option;
   panels : (string, unit) Hashtbl.t;
-  mutable frames_rev : (string option * Fold_state.t) list;
+  mutable frames_rev : (string option * Fold_state.t * Error.span option) list;
+  mutable pending : bool;
+      (* true when the current state hasn't been captured in a frame yet;
+         drives the conditional final push (see eval_folded) *)
 }
 
 let lookup_point (ctx : ctx) (pr : Ast.point_ref) : Geom.point =
@@ -164,7 +167,12 @@ let eval_folded (prog : Ast.program) : folded =
     panel = None;
     panels = Hashtbl.create 4;
     frames_rev = [];
+    pending = true;
   } in
+  let push_frame (span : Error.span option) =
+    ctx.frames_rev <- (ctx.panel, !(ctx.state), span) :: ctx.frames_rev;
+    ctx.pending <- false
+  in
   (* render an operand back to source text for provenance + error messages *)
   let rec pstr (po : Ast.point_operand) : string =
     match po with
@@ -1466,10 +1474,13 @@ let eval_folded (prog : Ast.program) : folded =
                 }
             in
             run_fold_checked ~span ~axis ~fs ~implied:None ~side_override:None
-              ~crease_id:cid ~prov ~check:(Some check_straight))
+              ~crease_id:cid ~prov ~check:(Some check_straight));
+        push_frame (Some span)
     | Ast.Point (n, Ast.PsExpr po, span) ->
         bind_point ctx n span (resolve_point po)
-    | Ast.Flip _ -> ctx.state := Fold_state.flip !(ctx.state)
+    | Ast.Flip _ ->
+        ctx.state := Fold_state.flip !(ctx.state);
+        ctx.pending <- true
     | Ast.Def (name, params, body, span) ->
         if Hashtbl.mem ctx.defs name then
           Error.fail span (Printf.sprintf "def %s is already defined" name);
@@ -1610,7 +1621,16 @@ let eval_folded (prog : Ast.program) : folded =
         if Hashtbl.mem ctx.panels id then
           Error.fail span (Printf.sprintf "step id %s is already used" id);
         Hashtbl.replace ctx.panels id ();
-        ctx.frames_rev <- (ctx.panel, !(ctx.state)) :: ctx.frames_rev;
+        (* a step marker snapshots the crease-pattern built up so far (precrease
+           stages between which nothing folds). Push with the CURRENT panel
+           FIRST so the snapshot carries the prior label, THEN switch the active
+           label. A step marker has no single fold line → source_line None. *)
+        push_frame None;
+        (* the marker OPENS a new labeled step whose own end-state isn't captured
+           yet; flag pending so the final push captures it (e.g. def-diagonals'
+           trailing `centre` step, which only binds points/exports after the
+           marker). A trailing fold/collapse clears pending again → no dup. *)
+        ctx.pending <- true;
         ctx.panel <- Some id
     | Ast.Collapse (elems, overs, standing_opt, span) ->
         (match standing_opt with
@@ -1721,7 +1741,8 @@ let eval_folded (prog : Ast.program) : folded =
         in
         (match Collapse.collapse !(ctx.state) es ~over with
         | Ok st -> ctx.state := st
-        | Error msg -> Error.fail span msg)
+        | Error msg -> Error.fail span msg);
+        push_frame (Some span)
   in
   List.iter eval_stmt prog;
   let named_points =
@@ -1751,6 +1772,7 @@ let eval_folded (prog : Ast.program) : folded =
           | Bundle _ | Edge _ -> acc)
       root_scope.lines []
   in
-  ctx.frames_rev <- (ctx.panel, !(ctx.state)) :: ctx.frames_rev;
+  if ctx.pending then
+    ctx.frames_rev <- (ctx.panel, !(ctx.state), None) :: ctx.frames_rev;
   let frames = List.rev ctx.frames_rev in
   { state = !(ctx.state); named_points; named_lines; frames }

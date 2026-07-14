@@ -191,6 +191,7 @@
       ],
       "faceOrders": [],
       "beloch:step": null,
+      "beloch:source_line": null,
       "beloch:edges": [
         null,
         {
@@ -281,6 +282,7 @@
       ],
       "faceOrders": [],
       "beloch:step": "precrease",
+      "beloch:source_line": null,
       "beloch:edges": [
         {
           "axiom": "axiom1",
@@ -468,6 +470,7 @@
         [ 7, 8, 1 ]
       ],
       "beloch:step": "ear",
+      "beloch:source_line": 26,
       "beloch:edges": [
         {
           "axiom": "axiom1",

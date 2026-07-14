@@ -36,9 +36,10 @@ let example_names () =
 
 let read path = In_channel.with_open_text path In_channel.input_all
 
-(* Some examples (dup-point.bel, parallel.bel) intentionally error. Capture the
-   Beloch error message as the golden so the refactor is proven to preserve
-   error behavior, not only successful FOLD output. *)
+(* Should any example ever intentionally error, capture the Beloch error
+   message as the golden so the refactor is proven to preserve error behavior,
+   not only successful FOLD output. (The intentional-error probes now live in
+   tests/cases/ with `; expect error` assertions, not here.) *)
 let fold_of name =
   let src = read (examples_dir ^ name) in
   (* Spans in goldens are basename-relative (e.g. "bisect-a.bel:3:1"); pass the

@@ -130,10 +130,12 @@ export function renderCP(scene: FoldScene, opts: RenderOptions = {}): SvgDoc {
     const lab = cornerLabel(p);
     if (lab) {
       const ox = p[0] < 0.5 ? -16 : 10, oy = p[1] < 0.5 ? 18 : -8;
-      annotations.children.push(el("text", {
+      const labelAttrs: Record<string, string | number> = {
         x: tx(p[0]) + ox, y: ty(p[1]) + oy,
         "font-size": 17, "font-weight": 600, fill: theme.ink,
-      }, [], `.${lab}`));
+      };
+      if (nm) labelAttrs["data-bel-name"] = nm;
+      annotations.children.push(el("text", labelAttrs, [], `.${lab}`));
     }
   });
 

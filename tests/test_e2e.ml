@@ -15,6 +15,17 @@ let examples_dir =
 let read_example name =
   In_channel.with_open_text (Filename.concat examples_dir name) In_channel.input_all
 
+(* A few probes moved from examples/ into the inline-assertion corpus
+   (tests/cases/) but still carry an e2e assertion the inline grammar can't
+   express (identity isometry, axiom5 tag). Read those from tests/cases. *)
+let cases_dir =
+  match Sys.getenv_opt "DUNE_SOURCEROOT" with
+  | Some root -> Filename.concat root "tests/cases"
+  | None -> "../../../tests/cases"
+
+let read_case name =
+  In_channel.with_open_text (Filename.concat cases_dir name) In_channel.input_all
+
 let expect_error msg_substr thunk =
   try
     ignore (thunk ());
@@ -76,25 +87,6 @@ let test_e2e_diagonals () =
   Alcotest.(check int) "edges" 8
     (json |> member "edges_vertices" |> to_list |> List.length)
 
-let test_e2e_anti_parallel () =
-  expect_error "parallel" (fun () ->
-      Beloch.fold_string ~filename:"parallel.bel" (read_example "syntax/parallel.bel"))
-
-let test_e2e_anti_dup () =
-  expect_error "same place" (fun () ->
-      Beloch.fold_string ~filename:"dup-point.bel"
-        (read_example "syntax/dup-point.bel"))
-
-let test_e2e_square_one_face () =
-  let json =
-    Beloch.fold_string ~filename:"square.bel" (read_example "syntax/square.bel")
-  in
-  let open Yojson.Safe.Util in
-  Alcotest.(check int) "one face" 1
-    (json |> member "faces_vertices" |> to_list |> List.length);
-  Alcotest.(check int) "face has four vertices" 4
-    (json |> member "faces_vertices" |> to_list |> List.hd |> to_list |> List.length)
-
 let test_e2e_diagonals_four_faces () =
   let json =
     Beloch.fold_string ~filename:"diagonals.bel" (read_example "syntax/diagonals.bel")
@@ -136,15 +128,6 @@ let test_e2e_cube_root_restructured () =
     (Beloch.fold_string ~filename:"cube-root.bel"
        (read_example "syntax/cube-root.bel"))
 
-let test_e2e_def_diagonals () =
-  let json =
-    Beloch.fold_string ~filename:"def-diagonals.bel"
-      (read_example "syntax/def-diagonals.bel")
-  in
-  let open Yojson.Safe.Util in
-  let pts = json |> member "beloch:named_points" |> to_assoc in
-  Alcotest.(check bool) "centre named" true (List.mem_assoc "m" pts)
-
 let test_e2e_cube_root_temps_hidden () =
   let json =
     Beloch.fold_string ~filename:"cube-root.bel" (read_example "syntax/cube-root.bel")
@@ -166,7 +149,7 @@ let test_e2e_bisect_select () =
     Beloch.fold_string ~filename:"bisect-a.bel" (read_example "syntax/bisect-a.bel")
   in
   let jb =
-    Beloch.fold_string ~filename:"bisect-b.bel" (read_example "syntax/bisect-b.bel")
+    Beloch.fold_string ~filename:"bisect-b.bel" (read_case "mark/bisect-b.bel")
   in
   Alcotest.(check bool) "a has an axiom5 crease" true
     (List.mem "axiom5" (creases ja));
@@ -193,15 +176,6 @@ let test_e2e_kite () =
   in
   Alcotest.(check int) "two axiom5 creases" 2
     (List.length (List.filter (( = ) "axiom5") axioms))
-
-let test_e2e_bisect_parallel () =
-  let json =
-    Beloch.fold_string ~filename:"bisect-parallel.bel"
-      (read_example "syntax/bisect-parallel.bel")
-  in
-  let open Yojson.Safe.Util in
-  Alcotest.(check int) "two faces" 2
-    (json |> member "faces_vertices" |> to_list |> List.length)
 
 let test_eval_map_through_toward () =
   let fd =
@@ -230,20 +204,6 @@ let test_eval_map_through_toward () =
       in
       Alcotest.(check bool) "axiom-6 crease through (0,0)" true (on (pt 0 0));
       Alcotest.(check bool) "axiom-6 crease through (1,1)" true (on (pt 1 1))
-
-let test_e2e_fold_half () =
-  let json =
-    Beloch.fold_string ~filename:"fold-half.bel" (read_example "syntax/fold-half.bel")
-  in
-  let open Yojson.Safe.Util in
-  Alcotest.(check string) "frame 0 creasePattern" "creasePattern"
-    (json |> member "frame_classes" |> to_list |> List.hd |> to_string);
-  Alcotest.(check int) "a foldedForm frame is present" 1
-    (json |> member "file_frames" |> to_list |> List.length);
-  let assigns =
-    json |> member "edges_assignment" |> to_list |> List.map to_string
-  in
-  Alcotest.(check bool) "the fold crease is a valley" true (List.mem "V" assigns)
 
 let test_e2e_fold_quarter () =
   let json =
@@ -297,7 +257,10 @@ let test_faceorders_stable_fold_quarter () =
   in
   let orders =
     Yojson.Safe.Util.(
-      json |> member "file_frames" |> index 0 |> member "faceOrders")
+      (* one frame per fold now; the fully-folded state (both folds applied)
+         is the LAST frame, not the first *)
+      let frames = json |> member "file_frames" |> to_list in
+      List.nth frames (List.length frames - 1) |> member "faceOrders")
   in
   let expected =
     `List
@@ -357,6 +320,44 @@ let test_emit_folded_frames () =
   Alcotest.(check bool) "has B boundary" true (List.mem "B" assigns);
   Alcotest.(check int) "one faceOrders triple" 1
     (folded |> member "faceOrders" |> to_list |> List.length)
+
+(* Regression: a scoped ("up to") fold leaves the stationary layer and the
+   moving flap sharing a paper corner that is NOT on the fold axis. The folded
+   frame must give each face its own reflected copy of that corner. Deduping
+   vertices by paper coord alone collapses them onto the stationary layer's
+   table position, degenerating the moving face to zero area — the "diagonal
+   slash" render. Assert every folded-frame face has positive area. *)
+let test_emit_folded_scoped_fold_nondegenerate () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\nfold map .d onto .a\nfold map .c onto .d up to .c\n")
+  in
+  let json = Fold_emit.to_json_folded fd in
+  let open Yojson.Safe.Util in
+  let folded = json |> member "file_frames" |> to_list |> List.hd in
+  let coords =
+    folded |> member "vertices_coords" |> to_list
+    |> List.map (fun p ->
+           match p |> to_list with
+           | [ x; y ] -> (to_number x, to_number y)
+           | _ -> Alcotest.fail "vertex is not a pair")
+    |> Array.of_list
+  in
+  folded |> member "faces_vertices" |> to_list
+  |> List.iteri (fun fi f ->
+         let idxs = f |> to_list |> List.map to_int |> Array.of_list in
+         let n = Array.length idxs in
+         let area2 = ref 0.0 in
+         for k = 0 to n - 1 do
+           let x1, y1 = coords.(idxs.(k)) in
+           let x2, y2 = coords.(idxs.((k + 1) mod n)) in
+           area2 := !area2 +. ((x1 *. y2) -. (x2 *. y1))
+         done;
+         Alcotest.(check bool)
+           (Printf.sprintf "face %d has positive area" fi)
+           true
+           (Float.abs !area2 > 1e-9))
 
 let test_emit_folded_crease_name () =
   let fd =
@@ -581,7 +582,7 @@ let test_multiframe () =
 
 let test_e2e_faces_matrix_and_frame () =
   let json =
-    Beloch.fold_string ~filename:"square.bel" (read_example "syntax/square.bel")
+    Beloch.fold_string ~filename:"square.bel" (read_case "mark/square.bel")
   in
   let open Yojson.Safe.Util in
   (* named-line frame is declared, always *)
@@ -850,9 +851,6 @@ let () =
       ( "e2e",
         [
           Alcotest.test_case "diagonals" `Quick test_e2e_diagonals;
-          Alcotest.test_case "anti parallel" `Quick test_e2e_anti_parallel;
-          Alcotest.test_case "anti dup point" `Quick test_e2e_anti_dup;
-          Alcotest.test_case "square one face" `Quick test_e2e_square_one_face;
           Alcotest.test_case "diagonals four faces" `Quick
             test_e2e_diagonals_four_faces;
           Alcotest.test_case "perp end-to-end" `Quick test_e2e_perp;
@@ -860,17 +858,13 @@ let () =
             test_e2e_cube_root;
           Alcotest.test_case "cube-root restructured (panels + temps)" `Quick
             test_e2e_cube_root_restructured;
-          Alcotest.test_case "def diagonals demo" `Quick test_e2e_def_diagonals;
           Alcotest.test_case "cube-root temps hidden from FOLD" `Quick
             test_e2e_cube_root_temps_hidden;
           Alcotest.test_case "bisect selector" `Quick test_e2e_bisect_select;
-          Alcotest.test_case "bisect parallel midline" `Quick
-            test_e2e_bisect_parallel;
           Alcotest.test_case "kite base: two axiom5 creases, folds cleanly"
             `Quick test_e2e_kite;
           Alcotest.test_case "map through toward selects diagonal" `Quick
             test_eval_map_through_toward;
-          Alcotest.test_case "fold half end-to-end" `Quick test_e2e_fold_half;
           Alcotest.test_case "fold quarter accordion" `Quick test_e2e_fold_quarter;
           Alcotest.test_case "fold-quarter faceOrders sign golden" `Quick
             test_faceorders_stable_fold_quarter;
@@ -922,6 +916,8 @@ let () =
       ( "emit_folded",
         [
           Alcotest.test_case "dual frames" `Quick test_emit_folded_frames;
+          Alcotest.test_case "scoped fold folded faces non-degenerate" `Quick
+            test_emit_folded_scoped_fold_nondegenerate;
           Alcotest.test_case "crease name preserved" `Quick
             test_emit_folded_crease_name;
           Alcotest.test_case "beloch:marks emitted for record marks" `Quick

@@ -1,0 +1,59 @@
+---
+title: Naming Points & Lines
+description: Bind your own names to lines with --name = expression and reuse them to build new lines.
+---
+
+import Beloch from "../../../components/Beloch.astro";
+
+The previous tutorial used names Beloch gave you for free: `.a .b .c .d` for
+the square's corners, `--ab --bc --cd --da` for its edges. This tutorial shows
+how to give names to things *you* compute, so you can build on them without
+re-deriving the same line twice.
+
+## Naming a line
+
+Here is the diagonal from the last tutorial, but this time we name it.
+
+<Beloch filename="diagonal.bel">
+paper square
+mark --ac = through .a .c
+</Beloch>
+
+`--ac = through .a .c` is a **binding**: it evaluates the expression on the
+right (`through .a .c`, the line through `.a` and `.c`) and attaches the name
+`--ac` to the result. `.a` and `--ab` were names the paper handed you; `--ac`
+is a name you chose. `mark` still does the same job as before — it records
+the line as a visible crease — it just now also has a name attached to it.
+
+## Reusing a name
+
+The point of naming a line is that you can refer back to it later.
+
+<Beloch filename="perp.bel">
+paper square
+mark --ac = through .a .c
+mark perp --ac through .b
+</Beloch>
+
+`perp --ac through .b` is another expression: it builds the line
+perpendicular to `--ac`, passing through `.b`. It does not re-derive the
+diagonal — it looks up `--ac` by name and uses it directly. Without the name,
+this line would have to be written out as `perp (through .a .c) through .b`
+every time you needed it, and if the diagonal itself ever changed, you would
+have to find and update every place that spelled it out again.[^dry]
+
+[^dry]: This is the same reason you don't copy-paste a formula across a
+    spreadsheet instead of naming a cell — one definition, referenced
+    wherever it's needed.
+
+## What you learned
+
+- `--name = expression` binds a name to a computed line; `.name` works the
+  same way for points.
+- Names you bind are no different from names the paper gives you — `--ac` and
+  `--ab` both work anywhere a line is expected.
+- Naming lets you build new expressions, like `perp <line> through <point>`,
+  out of earlier results instead of re-deriving them.
+
+Next, we'll use a named line as an axis to fold the paper onto itself:
+[Reflecting: map onto](/tutorials/reflecting/).

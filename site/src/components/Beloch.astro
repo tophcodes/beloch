@@ -13,9 +13,9 @@ import { parseFold } from "@beloch/scene";
 import { renderCP } from "@beloch/render-svg";
 
 interface Props {
-  title?: string;
+  filename?: string;
 }
-const { title } = Astro.props;
+const { filename } = Astro.props;
 
 // inline source is passed as the default slot's text
 const inline = await Astro.slots.render("default").catch(() => "");
@@ -34,11 +34,27 @@ function stripHtml(s: string): string {
     .trim();
 }
 
-const label = title ?? "inline";
 const trimmed = source.trim();
 
+// The filename (if given) is shown as a leading `;` comment — the way beloch
+// itself names a file — NOT as window chrome. It's cosmetic only: the evaluator
+// below runs on `trimmed`, never on this display copy, so the build-eval /
+// drift-guard contract is untouched.
+const displaySource = filename ? `; ${filename}\n${trimmed}` : trimmed;
+
 // Syntax highlighting via the shared tree-sitter grammar (emits .bel-* spans).
-const highlightedSource = await highlightBel(trimmed);
+const highlightedSource = await highlightBel(displaySource);
+
+// Right-aligned numeric gutter, built at build time (we know the line count).
+// Rendered as a separate column (one <span data-line="N"> per line, so we
+// never split highlighted spans on `\n`, and Slice B can address a single
+// line for the active-step highlight).
+// Shown automatically — iff the CODE (excluding the injected filename
+// comment) has more than 2 lines.
+const codeLineCount = trimmed.split("\n").length;
+const showLines = codeLineCount > 2;
+const lineCount = displaySource.split("\n").length;
+const gutterLines = Array.from({ length: lineCount }, (_, i) => i + 1);
 
 // Build-time evaluation + render. Any failure throws → the Astro build fails
 // with beloch's diagnostic (drift guard).
@@ -47,16 +63,10 @@ const svg = renderCP(parseFold(fold as object)).toString();
 const foldJson = JSON.stringify(fold);
 ---
 
-<beloch-figure>
+<beloch-figure data-line-offset={filename ? 1 : 0}>
   <figure class="beloch-card">
     <div class="beloch-code-panel">
-      <div class="beloch-mac-bar">
-        <span class="mac-dot" style="background:#B5573C"></span>
-        <span class="mac-dot" style="background:#C9A24B"></span>
-        <span class="mac-dot" style="background:#5C8A5E"></span>
-        <span class="beloch-filename">{label}</span>
-      </div>
-      <pre class="beloch-pre"><code set:html={highlightedSource} /></pre>
+      <pre class={`beloch-pre${showLines ? " has-lines" : ""}`}>{showLines && <span class="beloch-gutter" aria-hidden="true">{gutterLines.map((n, i) => <>{i > 0 ? "\n" : ""}<span data-line={n}>{n}</span></>)}</span>}<code set:html={highlightedSource} /></pre>
     </div>
     <div class="beloch-diagram" set:html={svg}></div>
     <script type="application/json" class="beloch-fold" set:html={foldJson}></script>
@@ -91,29 +101,6 @@ const foldJson = JSON.stringify(fold);
     overflow-x: auto;
   }
 
-  .beloch-mac-bar {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    margin-bottom: 14px;
-    font-size: 12px;
-    color: #6B7A90;
-  }
-
-  .mac-dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .beloch-filename {
-    margin-left: 6px;
-    color: #6B7A90;
-    font-family: 'IBM Plex Mono', ui-monospace, monospace;
-    font-size: 12px;
-  }
-
   .beloch-pre {
     margin: 0;
     padding: 0;
@@ -131,6 +118,20 @@ const foldJson = JSON.stringify(fold);
     font-size: inherit;
     background: none;
     padding: 0;
+  }
+
+  /* ── Line-number gutter (automatic: code > 2 lines) ──────────────────────── */
+  .beloch-pre.has-lines {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 16px;
+  }
+
+  .beloch-gutter {
+    text-align: right;
+    color: #4A5A70;
+    user-select: none;
+    white-space: pre;
   }
 
   /* ── Diagram panel ──────────────────────────────────────────────────────── */

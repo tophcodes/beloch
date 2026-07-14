@@ -50,3 +50,8 @@
 (test
  (name test_render_cli)
  (libraries render_cli alcotest unix))
+
+(test
+ (name test_bel_assert)
+ (libraries beloch alcotest zarith)
+ (deps (source_tree cases)))

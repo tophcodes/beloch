@@ -116,12 +116,13 @@
       ],
       "faceOrders": [ [ 0, 2, 1 ], [ 1, 2, 1 ], [ 1, 3, 1 ] ],
       "beloch:step": null,
+      "beloch:source_line": 11,
       "beloch:edges": [
         {
-          "axiom": "mark",
-          "sources": [ "--b" ],
-          "span": "crease-at-flap.bel:12:17-20",
-          "name": null,
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "crease-at-flap.bel:10:1-25",
+          "name": "b",
           "step": null
         },
         {
@@ -144,10 +145,10 @@
         null,
         null,
         {
-          "axiom": "mark",
-          "sources": [ "--b" ],
-          "span": "crease-at-flap.bel:12:17-20",
-          "name": null,
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "crease-at-flap.bel:10:1-25",
+          "name": "b",
           "step": null
         },
         null
