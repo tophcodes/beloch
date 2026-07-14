@@ -20,10 +20,10 @@ test("parses bisect-a: CP frame, provenance, named points/lines, creases", async
   // extreme_pair(a,b) over the face clip endpoints, which orders b=(0.5,1)
   // before a=(0.5,0) here, giving [-1,0,-0.5] (same line as [1,0,0.5], sign
   // flipped) — deterministic, matches the golden.
-  expect(scene.namedLines).toEqual([{ name: "v", coeffs: [-1, 0, -0.5] }]);
+  expect(scene.namedLines).toEqual([{ name: "v", coeffs: [-1, 0, -0.5], step: 0 }]);
   expect(scene.namedPoints.map((p) => p.name).sort()).toEqual(["a", "b", "c", "d"]);
   expect(scene.namedPoints.find((p) => p.name === "a")).toEqual({
-    name: "a", paper: [0, 0], table: [0, 0],
+    name: "a", paper: [0, 0], table: [0, 0], step: 0,
   });
   // crease bundle: edge 3 = [1,3] = (0.5,0)→(0.5,1), named "v"
   expect(scene.creases).toEqual([

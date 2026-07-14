@@ -54,18 +54,20 @@
   ],
   "beloch:vertices_names": [ "a", "c", null, null, "d", "b" ],
   "beloch:named_points": {
-    "c": { "paper": [ 1.0, 1.0 ], "table": [ 1.0, 1.0 ] },
+    "c": { "paper": [ 1.0, 1.0 ], "table": [ 1.0, 1.0 ], "step": 0 },
     "b": {
       "paper": [ 1.0, 0.0 ],
-      "table": [ 0.7071067811865475, 0.7071067811865475 ]
+      "table": [ 0.7071067811865475, 0.7071067811865475 ],
+      "step": 0
     },
     "d": {
       "paper": [ 0.0, 1.0 ],
-      "table": [ 0.7071067811865475, 0.7071067811865475 ]
+      "table": [ 0.7071067811865475, 0.7071067811865475 ],
+      "step": 0
     },
-    "a": { "paper": [ 0.0, 0.0 ], "table": [ 0.0, 0.0 ] }
+    "a": { "paper": [ 0.0, 0.0 ], "table": [ 0.0, 0.0 ], "step": 0 }
   },
-  "beloch:named_lines": { "ac": [ -1.0, 1.0, 0.0 ] },
+  "beloch:named_lines": { "ac": { "coeffs": [ -1.0, 1.0, 0.0 ], "step": 0 } },
   "beloch:named_lines_frame": "creasePattern",
   "beloch:marks": [],
   "file_frames": [

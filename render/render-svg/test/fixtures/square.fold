@@ -11,10 +11,10 @@
   "beloch:edges": [ null, null, null, null ],
   "beloch:vertices_names": [ "a", "b", "c", "d" ],
   "beloch:named_points": {
-    "c": { "paper": [ 1.0, 1.0 ], "table": [ 1.0, 1.0 ] },
-    "b": { "paper": [ 1.0, 0.0 ], "table": [ 1.0, 0.0 ] },
-    "d": { "paper": [ 0.0, 1.0 ], "table": [ 0.0, 1.0 ] },
-    "a": { "paper": [ 0.0, 0.0 ], "table": [ 0.0, 0.0 ] }
+    "c": { "paper": [ 1.0, 1.0 ], "table": [ 1.0, 1.0 ], "step": 0 },
+    "b": { "paper": [ 1.0, 0.0 ], "table": [ 1.0, 0.0 ], "step": 0 },
+    "d": { "paper": [ 0.0, 1.0 ], "table": [ 0.0, 1.0 ], "step": 0 },
+    "a": { "paper": [ 0.0, 0.0 ], "table": [ 0.0, 0.0 ], "step": 0 }
   },
   "beloch:named_lines": {},
   "beloch:named_lines_frame": "creasePattern",
