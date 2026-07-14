@@ -2,7 +2,7 @@ import { test, expect } from "bun:test";
 import { SCHEMES, DEFAULT_ID, resolveScheme, schemeVars, headSyncScript } from "./paper-schemes";
 
 test("catalog has the four v1 schemes with the default first", () => {
-  expect(SCHEMES.map((s) => s.id)).toEqual(["weiss", "kraft", "washi", "indigo"]);
+  expect(SCHEMES.map((s) => s.id)).toEqual(["white", "kraft", "washi", "indigo"]);
   expect(SCHEMES[0].id).toBe(DEFAULT_ID);
 });
 
@@ -17,7 +17,7 @@ test("schemeVars sets ink vars for dark paper, clears them for light", () => {
   expect(indigo["--bel-ink"]).toBe("#e7eaf2");
   expect(indigo["--bel-boundary"]).toBe("#e7eaf2");
 
-  const white = schemeVars(resolveScheme("weiss"));
+  const white = schemeVars(resolveScheme("white"));
   expect(white["--bel-paper-front"]).toBe("#fafaf7");
   expect(white["--bel-ink"]).toBeNull();
   expect(white["--bel-boundary"]).toBeNull();

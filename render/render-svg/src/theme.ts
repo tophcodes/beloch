@@ -68,12 +68,12 @@ export const DEFAULT_THEME: Theme = {
   lineStyle: yrLineStyle,
 };
 
-// Web-Renderpfad (SSR-Cards + Live-Playground): Papier-, Ink- und Boundary-
-// Farben als CSS-Variablen mit Hex-Fallback. Ein Client-Script setzt die
-// Variablen auf :root aus localStorage → alle inline-SVGs (auch schon
-// gebackene SSR) repainten ohne Rebuild. Fallback = DEFAULT_THEME-Wert, damit
-// der headless resvg-Pfad (der var() NICHT auflöst) unverändert bleibt; dort
-// wird weiter DEFAULT_THEME benutzt.
+// Web render path (SSR cards + live Playground): paper, ink, and boundary
+// colors as CSS variables with a hex fallback. A client script sets the
+// variables on :root from localStorage, so every inline SVG (including
+// already-baked SSR) repaints without a rebuild. The fallback is the
+// DEFAULT_THEME value, so the headless resvg path (which does NOT resolve
+// var()) stays unchanged — it keeps using DEFAULT_THEME.
 export const WEB_THEME: Partial<Theme> = {
   paperFill: "var(--bel-paper-cp, #f8fafc)",
   front:     "var(--bel-paper-front, #fafaf7)",
