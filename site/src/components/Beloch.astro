@@ -14,9 +14,8 @@ import { renderCP } from "@beloch/render-svg";
 
 interface Props {
   filename?: string;
-  lineNumbers?: boolean;
 }
-const { filename, lineNumbers = false } = Astro.props;
+const { filename } = Astro.props;
 
 // inline source is passed as the default slot's text
 const inline = await Astro.slots.render("default").catch(() => "");
@@ -47,9 +46,15 @@ const displaySource = filename ? `; ${filename}\n${trimmed}` : trimmed;
 const highlightedSource = await highlightBel(displaySource);
 
 // Right-aligned numeric gutter, built at build time (we know the line count).
-// Rendered as a separate column so we never split highlighted spans on `\n`.
+// Rendered as a separate column (one <span data-line="N"> per line, so we
+// never split highlighted spans on `\n`, and Slice B can address a single
+// line for the active-step highlight).
+// Shown automatically — iff the CODE (excluding the injected filename
+// comment) has more than 2 lines.
+const codeLineCount = trimmed.split("\n").length;
+const showLines = codeLineCount > 2;
 const lineCount = displaySource.split("\n").length;
-const gutter = Array.from({ length: lineCount }, (_, i) => i + 1).join("\n");
+const gutterLines = Array.from({ length: lineCount }, (_, i) => i + 1);
 
 // Build-time evaluation + render. Any failure throws → the Astro build fails
 // with beloch's diagnostic (drift guard).
@@ -61,7 +66,7 @@ const foldJson = JSON.stringify(fold);
 <beloch-figure>
   <figure class="beloch-card">
     <div class="beloch-code-panel">
-      <pre class={`beloch-pre${lineNumbers ? " has-lines" : ""}`}>{lineNumbers && <span class="beloch-gutter" aria-hidden="true">{gutter}</span>}<code set:html={highlightedSource} /></pre>
+      <pre class={`beloch-pre${showLines ? " has-lines" : ""}`}>{showLines && <span class="beloch-gutter" aria-hidden="true">{gutterLines.map((n, i) => <>{i > 0 ? "\n" : ""}<span data-line={n}>{n}</span></>)}</span>}<code set:html={highlightedSource} /></pre>
     </div>
     <div class="beloch-diagram" set:html={svg}></div>
     <script type="application/json" class="beloch-fold" set:html={foldJson}></script>
@@ -115,7 +120,7 @@ const foldJson = JSON.stringify(fold);
     padding: 0;
   }
 
-  /* ── Line-number gutter (opt-in, author-set) ────────────────────────────── */
+  /* ── Line-number gutter (automatic: code > 2 lines) ──────────────────────── */
   .beloch-pre.has-lines {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);

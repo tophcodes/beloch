@@ -134,3 +134,10 @@ test("folded stamps data-bel-name on named vertex dots and keeps occluded crease
   expect(s).toContain('data-bel-name="center"');
   expect(s).toContain('data-occluded="true"');               // occluded geometry retained
 });
+
+test("folded view stamps a text label (not just the dot) for a named vertex", async () => {
+  const scene = parseFold(await golden("syntax/x-midpoint.fold"));
+  const s = renderFolded(scene).toString();
+  const label = s.match(/<text[^>]*data-bel-name="center"[^>]*>\.center<\/text>/);
+  expect(label).not.toBeNull();
+});
