@@ -50,3 +50,35 @@ export function signedArea(poly: Vec2[]): number {
 export function sideUp(poly: Vec2[]): "front" | "back" {
   return signedArea(poly) >= 0 ? "front" : "back";
 }
+
+// Physical layer height per face: the longest chain of overlapping faces below
+// it. faceOrders IS the overlap graph (a pair is recorded only for overlapping
+// faces), so this needs no polygon geometry. Faces are oriented below->above by
+// their position in linearExtension order (which already decodes faceOrders'
+// normal-relative sign). Flat single-layer regions get depth 0.
+export function computeFaceDepth(
+  facesVertices: number[][],
+  vertices: Vec2[],
+  faceOrders: FaceOrder[],
+): number[] {
+  const n = facesVertices.length;
+  if (n === 0) return [];
+  const faceUp = facesVertices.map((f) => sideUp(f.map((i) => vertices[i]!)) === "front");
+  const order = linearExtension(faceOrders, n, faceUp);
+  const pos = new Array<number>(n);
+  order.forEach((f, i) => { pos[f] = i; });
+  const belowOf: number[][] = Array.from({ length: n }, () => []);
+  for (const [f, g, s] of faceOrders) {
+    if (s === 0) continue;
+    const hi = pos[f]! < pos[g]! ? g : f;   // larger pos is above
+    const lo = pos[f]! < pos[g]! ? f : g;
+    belowOf[hi]!.push(lo);
+  }
+  const depth = new Array<number>(n).fill(0);
+  for (const f of order) {                  // ascending pos => below already done
+    let d = 0;
+    for (const b of belowOf[f]!) d = Math.max(d, depth[b]! + 1);
+    depth[f] = d;
+  }
+  return depth;
+}

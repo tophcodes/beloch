@@ -2,6 +2,7 @@ import {
   Assignment, Crease, EdgeProvenance, FoldScene, Frame, LineCoeffs,
   Mark, NamedLine, NamedPoint, SceneError, Step, StepNotFoundError, Vec2,
 } from "./types";
+import { computeFaceDepth } from "./topology";
 
 function frameFrom(raw: Record<string, unknown>): Frame {
   const vertices = raw["vertices_coords"] as Vec2[] | undefined;
@@ -12,6 +13,8 @@ function frameFrom(raw: Record<string, unknown>): Frame {
     Array(n).fill("U")) as Assignment[];
   const prov = (raw["beloch:edges"] ?? []) as (EdgeProvenance | null)[];
   const vnames = (raw["beloch:vertices_names"] ?? []) as (string | null)[];
+  const facesVertices = (raw["faces_vertices"] ?? []) as number[][];
+  const faceOrders = (raw["faceOrders"] ?? []) as Frame["faceOrders"];
   return {
     vertices,
     edgesVertices,
@@ -21,8 +24,9 @@ function frameFrom(raw: Record<string, unknown>): Frame {
       { length: vertices.length },
       (_, i) => vnames[i] ?? null,
     ),
-    facesVertices: (raw["faces_vertices"] ?? []) as number[][],
-    faceOrders: (raw["faceOrders"] ?? []) as Frame["faceOrders"],
+    facesVertices,
+    faceOrders,
+    faceDepth: computeFaceDepth(facesVertices, vertices, faceOrders),
     facesMatrix: (raw["beloch:faces_matrix"] ?? null) as Frame["facesMatrix"],
   };
 }

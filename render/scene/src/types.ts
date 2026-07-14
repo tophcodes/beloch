@@ -20,6 +20,7 @@ export interface Frame {
   verticesNames: (string | null)[];                          // beloch:vertices_names, per vertex
   facesVertices: number[][];
   faceOrders: FaceOrder[];                                   // [] on the CP frame
+  faceDepth: number[];                                       // layer height per face; parallel to facesVertices, 0 without faceOrders
   facesMatrix: Isometry[] | null;                            // beloch:faces_matrix; null on the CP frame
 }
 
