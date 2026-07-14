@@ -26,6 +26,14 @@ let cases_dir =
 let read_case name =
   In_channel.with_open_text (Filename.concat cases_dir name) In_channel.input_all
 
+(* file_frames now opens with a synthetic flat step-0 frame (the unfolded
+   sheet); the fully-folded state is the LAST frame. Tests that want "the
+   folded frame" take the last, not List.hd. *)
+let last_frame json =
+  let open Yojson.Safe.Util in
+  let l = json |> member "file_frames" |> to_list in
+  List.nth l (List.length l - 1)
+
 let expect_error msg_substr thunk =
   try
     ignore (thunk ());
@@ -211,7 +219,7 @@ let test_e2e_fold_quarter () =
       (read_case "fold/fold-quarter.bel")
   in
   let open Yojson.Safe.Util in
-  let folded = json |> member "file_frames" |> to_list |> List.hd in
+  let folded = last_frame json in
   Alcotest.(check bool) "faceOrders present for the folded stack" true
     (List.length (folded |> member "faceOrders" |> to_list) > 0);
   let assigns =
@@ -307,8 +315,8 @@ let test_emit_folded_frames () =
   Alcotest.(check string) "frame 0 is creasePattern" "creasePattern"
     (json |> member "frame_classes" |> to_list |> List.hd |> to_string);
   let frames = json |> member "file_frames" |> to_list in
-  Alcotest.(check int) "one extra frame" 1 (List.length frames);
-  let folded = List.hd frames in
+  Alcotest.(check int) "flat step-0 frame + one folded frame" 2 (List.length frames);
+  let folded = last_frame json in
   Alcotest.(check string) "extra frame is foldedForm" "foldedForm"
     (folded |> member "frame_classes" |> to_list |> List.hd |> to_string);
   Alcotest.(check bool) "folded frame is self-contained, not inherited" false
@@ -479,15 +487,9 @@ let test_folded_provenance () =
   let cp_names = json |> member "beloch:vertices_names" |> to_list in
   Alcotest.(check bool) "cp vertices_names has center" true
     (List.exists (fun v -> v = `String "center") cp_names);
-  (* first foldedForm frame carries beloch:edges AND beloch:vertices_names *)
-  let frames = json |> member "file_frames" |> to_list in
-  let folded =
-    List.find
-      (fun f ->
-        f |> member "frame_classes" |> to_list
-        |> List.exists (fun c -> c = `String "foldedForm"))
-      frames
-  in
+  (* the folded frame (last, fully folded) carries beloch:edges AND
+     beloch:vertices_names — the flat step-0 frame predates .center *)
+  let folded = last_frame json in
   Alcotest.(check bool) "folded frame has beloch:edges" true
     (match folded |> member "beloch:edges" with `Null -> false | _ -> true);
   Alcotest.(check bool) "folded frame vertices_names has center" true
@@ -606,14 +608,14 @@ let test_multiframe () =
     | `Assoc kv -> (match List.assoc "file_frames" kv with `List l -> l | _ -> [])
     | _ -> []
   in
-  Alcotest.(check int) "one folded frame per step (baseline+a+b)" 3
+  Alcotest.(check int) "flat step 0 + one folded frame per step (baseline+a+b)" 4
     (List.length frames);
   let step_of = function
     | `Assoc kv -> (match List.assoc "beloch:step" kv with `String s -> Some s | _ -> None)
     | _ -> None
   in
   Alcotest.(check (list (option string))) "frame step tags"
-    [ None; Some "a"; Some "b" ] (List.map step_of frames)
+    [ None; None; Some "a"; Some "b" ] (List.map step_of frames)
 
 let test_e2e_faces_matrix_and_frame () =
   let json =
@@ -707,7 +709,7 @@ let json_cp_assignments (json : Yojson.Safe.t) : string list =
 
 let json_folded_assignments (json : Yojson.Safe.t) : string list =
   let open Yojson.Safe.Util in
-  json |> member "file_frames" |> index 0 |> member "edges_assignment"
+  last_frame json |> member "edges_assignment"
   |> to_list |> List.map to_string
 
 let test_e2e_bare_precrease_emits_f () =
