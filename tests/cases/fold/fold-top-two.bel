@@ -1,7 +1,3 @@
-; status: works — a some-layers simple fold: on a four-layer stack, fold the
-; top two flaps (anchor .d, up to .c); the bottom two stay uncut.
-; --l/--bot are boundary reference creases, bound before the folds collapse
-; the corners onto each other
 paper square
 mark --l = through .a .d
 mark --bot = through .a .b

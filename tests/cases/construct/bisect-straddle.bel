@@ -2,10 +2,6 @@ paper square
 mark --ac = through .a .c          ; TODO(pinch): landmark — replace with pinch when shipped
 mark --bd = through .b .d          ; TODO(pinch): landmark — replace with pinch when shipped
 fold map --ac onto --bd toward .b moving .c
-; status: works — straddle: hinge mid-material, `moving .c` picks which half of the diagonal swings toward .b
-; `faces` is the evaluator's crease-pattern state: the one fold subdivides
-; to 2; --ac/--bd stay unfolded marks there (they graduate to F creases,
-; adding more faces, only in the emitted FOLD)
 
 ; assert faces = 2
 ; assert steps = 1

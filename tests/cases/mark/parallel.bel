@@ -1,4 +1,3 @@
-; status: anti — bottom and top edges are parallel, so cross has no solution
 paper square
 mark --h1 = through .a .b
 mark --h2 = through .d .c

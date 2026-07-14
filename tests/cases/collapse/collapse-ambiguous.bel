@@ -1,9 +1,3 @@
-; status: errors — a non-contiguous 5-valley/3-mountain vertex at the square's
-; center. Same 8 rays as the waterbomb base, but the three mountains (corner c,
-; corner d, and the right edge-midpoint) are scattered rather than contiguous, so
-; the kernel finds THREE distinct layer orders and cannot pick one on its own.
-; The fix is an `over` clause — see collapse-ambiguous-over.bel.
-
 paper square
 
 mark --ac = map .b onto .d     ; diagonal a-c
