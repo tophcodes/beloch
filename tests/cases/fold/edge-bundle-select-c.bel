@@ -1,0 +1,10 @@
+; status: works — a paper edge is a segment bundle just like a named crease
+; (ADR 0014): `--cd & .c` selects the boundary piece of the top edge
+; incident to corner .c. `--v` here is a flat (unfolded) mark, so the two
+; halves of --cd stay at their own distinct table positions — folding the
+; .c-side segment onto --v moves .c to the fold's mirror point.
+paper square
+mark --v = map .a onto .b
+fold map --cd & .c onto --v toward .a moving .c
+
+; assert .c = (1/2, 1/2)

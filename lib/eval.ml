@@ -541,6 +541,10 @@ let eval_folded (prog : Ast.program) : folded =
     | Ast.LNamed cr -> (
         match lookup_crease ctx cr with
         | Bundle expr -> bundle_segments expr
+        | Edge (a, b) ->
+            ( None,
+              Fold_state.edge_boundary_segments !(ctx.state)
+                (Geom.line_through (corner_point a) (corner_point b)) )
         | _ ->
             let cid = material_cid cr in
             (Some cid, Fold_state.crease_segments !(ctx.state) cid))

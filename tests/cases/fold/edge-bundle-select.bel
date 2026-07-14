@@ -1,0 +1,13 @@
+; status: legitimate error — a paper edge is a segment bundle (ADR 0014),
+; so --cd & .c now resolves segments instead of hard-rejecting ("--cd is a
+; paper edge, not a crease with segments"). This particular fold happens to
+; hit a DIFFERENT, honest error: `map .a onto .b` mirrors the square exactly
+; in half, so c and d land on the same table point and both halves of --cd
+; are incident to .c in table space — a real geometric ambiguity, not a gap
+; in edge support. See edge-bundle-select-c.bel / -d.bel for an unambiguous
+; case proving the selector discriminates.
+paper square
+fold --v = map .a onto .b
+fold map --cd & .c onto --v
+
+; expect error "ambiguous"
