@@ -6,13 +6,13 @@ beforeAll(() => { GlobalRegistrator.register(); });
 // x-midpoint folds → has steps; inline its FOLD by evaluating at test time is
 // heavy, so load a golden the render tests also use.
 const foldJson = await Bun.file(
-  new URL("../../../tests/golden/syntax/x-midpoint.fold", import.meta.url),
+  new URL("./fixtures/x-midpoint.fold", import.meta.url),
 ).text();
 
 // def-diagonals has 3 steps in file order [null, "diagonals", "centre"] — a
 // null-labeled non-final step exercises the index-vs-label stepper bug.
 const diagonalsFoldJson = await Bun.file(
-  new URL("../../../tests/golden/syntax/def-diagonals.fold", import.meta.url),
+  new URL("./fixtures/def-diagonals.fold", import.meta.url),
 ).text();
 
 // fold-quarter.bel is `; status …\npaper square\nfold …\nfold …\n` (4 lines) —
@@ -20,7 +20,7 @@ const diagonalsFoldJson = await Bun.file(
 // statements), a real multi-line-with-distinct-lines fixture for the gutter
 // highlight test.
 const foldQuarterJson = await Bun.file(
-  new URL("../../../tests/golden/syntax/fold-quarter.fold", import.meta.url),
+  new URL("./fixtures/fold-quarter.fold", import.meta.url),
 ).text();
 
 function mountCard(fold: string): HTMLElement {

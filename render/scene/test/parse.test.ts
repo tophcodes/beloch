@@ -2,10 +2,10 @@ import { test, expect } from "bun:test";
 import { parseFold, pickStep, SceneError, StepNotFoundError } from "@beloch/scene";
 
 const golden = (p: string) =>
-  Bun.file(new URL(`../../../tests/golden/${p}`, import.meta.url)).text();
+  Bun.file(new URL(`./fixtures/${p}`, import.meta.url)).text();
 
 test("parses bisect-a: CP frame, provenance, named points/lines, creases", async () => {
-  const scene = parseFold(await golden("syntax/bisect-a.fold"));
+  const scene = parseFold(await golden("bisect-a.fold"));
   expect(scene.cp.vertices.length).toBe(7);
   expect(scene.cp.edgesVertices.length).toBe(9);
   expect(scene.cp.edgesAssignment[0]).toBe("B");
@@ -32,7 +32,7 @@ test("parses bisect-a: CP frame, provenance, named points/lines, creases", async
 });
 
 test("parses fold-quarter: foldedForm step inherits root fields", async () => {
-  const scene = parseFold(await golden("syntax/fold-quarter.fold"));
+  const scene = parseFold(await golden("fold-quarter.fold"));
   // fold-quarter.bel has two `fold` statements and no step markers: one
   // frame per fold now (Slice B, per-fold frames), each carrying its
   // statement's source line
@@ -50,12 +50,12 @@ test("parses fold-quarter: foldedForm step inherits root fields", async () => {
 });
 
 test("pickStep: no label falls back to last step", async () => {
-  const scene = parseFold(await golden("syntax/fold-quarter.fold"));
+  const scene = parseFold(await golden("fold-quarter.fold"));
   expect(pickStep(scene)).toBe(scene.steps[scene.steps.length - 1]);
 });
 
 test("pickStep: unmatched label throws StepNotFoundError listing named steps", async () => {
-  const scene = parseFold(await golden("syntax/cube-root.fold"));
+  const scene = parseFold(await golden("cube-root.fold"));
   expect(() => pickStep(scene, "no-such-step")).toThrow(StepNotFoundError);
   try {
     pickStep(scene, "no-such-step");
@@ -70,13 +70,13 @@ test("pickStep: unmatched label throws StepNotFoundError listing named steps", a
 });
 
 test("pickStep: numeric label selects by 1-based ordinal", async () => {
-  const scene = parseFold(await golden("syntax/cube-root.fold"));
+  const scene = parseFold(await golden("cube-root.fold"));
   expect(pickStep(scene, "2")!.label).toBe("vertical_middle");
   expect(pickStep(scene, "1")!.label).toBeNull();
 });
 
 test("pickStep: out-of-range ordinal throws StepNotFoundError", async () => {
-  const scene = parseFold(await golden("syntax/cube-root.fold"));
+  const scene = parseFold(await golden("cube-root.fold"));
   expect(() => pickStep(scene, "10")).toThrow(StepNotFoundError);
 });
 
@@ -93,7 +93,7 @@ test("StepNotFoundError.render: applies the given style to names only", () => {
 });
 
 test("multi-step file keeps file order and labels", async () => {
-  const scene = parseFold(await golden("syntax/cube-root.fold"));
+  const scene = parseFold(await golden("cube-root.fold"));
   expect(scene.steps.length).toBe(4);
   expect(scene.steps.map((s) => s.label)).toEqual([
     null, "vertical_middle", "thirds", "beloch_fold",
@@ -134,18 +134,18 @@ test("parses beloch:marks: seg + point records", async () => {
 });
 
 test("no beloch:marks field parses to an empty marks array", async () => {
-  const scene = parseFold(await golden("syntax/bisect-a.fold"));
+  const scene = parseFold(await golden("bisect-a.fold"));
   expect(scene.marks).toEqual([]);
 });
 
 test("frame carries verticesNames from beloch:vertices_names", async () => {
-  const scene = parseFold(await golden("syntax/x-midpoint.fold"));
+  const scene = parseFold(await golden("x-midpoint.fold"));
   expect(scene.cp.verticesNames).toContain("center");
   expect(scene.cp.verticesNames.length).toBe(scene.cp.vertices.length);
 });
 
 test("folded step frames carry crease provenance names", async () => {
-  const scene = parseFold(await golden("syntax/x-midpoint.fold"));
+  const scene = parseFold(await golden("x-midpoint.fold"));
   const step = scene.steps[scene.steps.length - 1]!;
   const hasNamedCrease = step.frame.edgesProvenance.some((p) => p?.name);
   expect(hasNamedCrease).toBe(true);
