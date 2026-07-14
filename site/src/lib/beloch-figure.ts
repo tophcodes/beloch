@@ -167,6 +167,21 @@ class BelochFigure extends HTMLElement {
     // selection re-application — the diagram was just replaced wholesale, so
     // any [data-bel-name] elements lost their .bel-selected/.bel-hover state.
     this.afterRender?.();
+    this.highlightStepLine();
+  }
+
+  // Marks the gutter line number of the fold that produced the currently
+  // shown step (folded view only) so the reader can see which source line
+  // is "active". No-op (after clearing) in the CP view and for step-marker
+  // frames, which have no sourceLine.
+  private highlightStepLine() {
+    this.querySelectorAll(".bel-step-line").forEach((el) => el.classList.remove("bel-step-line"));
+    if (this.view !== "folded") return;
+    const sl = this.scene?.steps[this.step]?.sourceLine;
+    if (sl == null) return;
+    const offset = Number(this.dataset.lineOffset ?? 0);
+    const gutterLine = sl + offset;
+    this.querySelector(`.beloch-gutter [data-line="${gutterLine}"]`)?.classList.add("bel-step-line");
   }
 
   afterRender?: () => void;             // set by wireInteraction() → re-applies selection
