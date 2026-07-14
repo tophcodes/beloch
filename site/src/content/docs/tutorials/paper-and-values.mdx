@@ -1,0 +1,82 @@
+---
+title: Paper & Values
+description: Start a sheet, reference its corners, and see that every point Beloch computes is exact.
+---
+
+import Beloch from "../../../components/Beloch.astro";
+
+Every Beloch program starts the same way: with a sheet of paper. From there you
+name points and lines on that sheet, and Beloch computes where they land. This
+first tutorial builds the smallest possible program — a square with its two
+diagonals — and uses it to introduce the two ideas everything else rests on:
+**the paper** and **values**.
+
+## The sheet
+
+Here is a complete, valid Beloch program. One line.
+
+<Beloch filename="paper.bel">
+paper square
+</Beloch>
+
+`paper square` declares the sheet: a square. Every program needs exactly one
+`paper` declaration, and it comes first. On the right you can see the result —
+right now it is just the outline, because we have not creased anything yet.
+
+The square comes with its four corners already named, going counter-clockwise
+from the bottom-left:
+
+- `.a` — bottom-left
+- `.b` — bottom-right
+- `.c` — top-right
+- `.d` — top-left
+
+The leading dot is how you write a **point** in Beloch. `.a` is not a variable
+you defined — it is a value the paper handed you. The four edges are named too,
+by their endpoints: `--ab` is the bottom edge, `--bc` the right, `--cd` the top,
+`--da` the left. The `--` prefix is how you write a **line**.
+
+## The first line
+
+Let's draw a line across the sheet. We'll connect two opposite corners.
+
+<Beloch filename="diagonal.bel">
+paper square
+mark through .a .c
+</Beloch>
+
+Read the new line as an English sentence: *mark a crease that goes through `.a`
+and `.c`.* `through .a .c` is an **expression** — it takes two points and
+produces a line, the unique line passing through both. `.a` is the bottom-left
+corner and `.c` the top-right, so the line is the main diagonal, and it now shows
+up in the diagram.
+
+`mark` is the verb: it records the line onto the paper as a crease you can see.
+(We are only *marking* here, not folding anything — the difference between marking
+and folding is the whole of a
+[later tutorial](/tutorials/mark-vs-fold/). For now, `mark` just means "draw this
+line so I can see it.")
+
+## The second line
+
+Add the other diagonal the same way:
+
+<Beloch filename="diagonals.bel">
+paper square
+mark through .a .c
+mark through .b .d
+</Beloch>
+
+`through .b .d` connects `.b` (bottom-right) to `.d` (top-left) — the other
+diagonal. The two creases cross right in the middle of the sheet.
+
+## What you learned
+
+- Every program opens with `paper square`. It gives you a unit square with corners
+  `.a .b .c .d` and edges `--ab --bc --cd --da`.
+- A leading `.` writes a **point**; a leading `--` writes a **line**.
+- `through .p .q` is an expression that builds the line through two points.
+- `mark <line>` records a crease onto the sheet.
+
+Next, we'll give our own names to points and lines so we can build creases out of
+earlier ones: [Naming Points & Lines](/tutorials/naming/).

@@ -1,0 +1,5 @@
+; status: anti — .a and .a are at the same place (no line through one point)
+paper square
+mark through .a .a
+
+; expect error "same place"

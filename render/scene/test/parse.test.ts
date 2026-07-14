@@ -33,8 +33,14 @@ test("parses bisect-a: CP frame, provenance, named points/lines, creases", async
 
 test("parses fold-quarter: foldedForm step inherits root fields", async () => {
   const scene = parseFold(await golden("syntax/fold-quarter.fold"));
-  expect(scene.steps.length).toBe(1);
-  const step = scene.steps[0]!;
+  // fold-quarter.bel has two `fold` statements and no step markers: one
+  // frame per fold now (Slice B, per-fold frames), each carrying its
+  // statement's source line
+  expect(scene.steps.length).toBe(2);
+  expect(scene.steps.map((s) => s.sourceLine)).toEqual([3, 4]);
+  // the fully-folded state (both folds applied) is the LAST frame; its edge
+  // list matches the root creasePattern
+  const step = scene.steps[scene.steps.length - 1]!;
   expect(step.label).toBeNull();
   // frame has own vertices + faceOrders; edges_assignment merged from root
   expect(step.frame.faceOrders.length).toBeGreaterThan(0);

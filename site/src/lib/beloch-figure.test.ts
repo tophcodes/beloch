@@ -15,11 +15,39 @@ const diagonalsFoldJson = await Bun.file(
   new URL("../../../tests/golden/syntax/def-diagonals.fold", import.meta.url),
 ).text();
 
+// fold-quarter.bel is `; status …\npaper square\nfold …\nfold …\n` (4 lines) —
+// its two folded steps carry beloch:source_line 3 and 4 (the two `fold`
+// statements), a real multi-line-with-distinct-lines fixture for the gutter
+// highlight test.
+const foldQuarterJson = await Bun.file(
+  new URL("../../../tests/golden/syntax/fold-quarter.fold", import.meta.url),
+).text();
+
 function mountCard(fold: string): HTMLElement {
   document.body.innerHTML = `
     <beloch-figure>
       <figure class="beloch-card">
         <div class="beloch-code-panel"></div>
+        <div class="beloch-diagram"><svg></svg></div>
+        <script type="application/json" class="beloch-fold">${fold}</script>
+      </figure>
+    </beloch-figure>`;
+  return document.querySelector("beloch-figure") as HTMLElement;
+}
+
+// Like mountCard, but also builds a `.beloch-gutter` with one `[data-line]`
+// span per source line (mirroring Beloch.astro's real markup) and sets
+// `data-line-offset` on the <beloch-figure> host.
+function mountCardWithGutter(fold: string, lineCount: number, offset = 0): HTMLElement {
+  const gutter = Array.from({ length: lineCount }, (_, i) => i + 1)
+    .map((n) => `<span data-line="${n}">${n}</span>`)
+    .join("\n");
+  document.body.innerHTML = `
+    <beloch-figure data-line-offset="${offset}">
+      <figure class="beloch-card">
+        <div class="beloch-code-panel">
+          <pre class="beloch-pre has-lines"><span class="beloch-gutter" aria-hidden="true">${gutter}</span><code></code></pre>
+        </div>
         <div class="beloch-diagram"><svg></svg></div>
         <script type="application/json" class="beloch-fold">${fold}</script>
       </figure>
@@ -160,4 +188,31 @@ test("deselecting a non-last name frees its colour slot instead of shifting into
   expect(colorC).not.toBe(colorD);   // the collision this test guards against
   expect(colorA).not.toBe(colorC);
   expect(colorA).not.toBe(colorD);
+});
+
+test("folded view highlights the active step's gutter line, tracks stepping, and clears in CP view", async () => {
+  await import("./beloch-figure");
+  const el = mountCardWithGutter(foldQuarterJson, 4, 0);
+  (el as any).hydrate();                        // hydrate() selects the last step by default
+
+  const lineEl = (n: number) =>
+    el.querySelector(`.beloch-gutter [data-line="${n}"]`) as HTMLElement;
+  const highlighted = () =>
+    Array.from(el.querySelectorAll(".bel-step-line")).map(
+      (e) => (e as HTMLElement).dataset.line,
+    );
+
+  // switch to folded view: last step (index 1) has sourceLine 4
+  (el.querySelector('[data-view="folded"]') as HTMLElement).click();
+  expect(highlighted()).toEqual(["4"]);
+  expect(lineEl(4).classList.contains("bel-step-line")).toBe(true);
+
+  // step back: index 0 has sourceLine 3 — highlight moves, doesn't accumulate
+  (el as any).setStep(0);
+  expect(highlighted()).toEqual(["3"]);
+  expect(lineEl(4).classList.contains("bel-step-line")).toBe(false);
+
+  // back to CP view: highlight clears entirely
+  (el.querySelector('[data-view="cp"]') as HTMLElement).click();
+  expect(highlighted()).toEqual([]);
 });

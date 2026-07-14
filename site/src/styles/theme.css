@@ -97,6 +97,13 @@
 .beloch-stepper { display: inline-flex; align-items: center; gap: 6px; color: var(--beloch-muted); }
 .beloch-stepper button { background: none; border: none; color: inherit; cursor: pointer; font-size: 13px; }
 
+/* active step line — same accent already used for "active" state (see
+ * .beloch-tab.is-active above) rather than inventing a new colour. */
+.beloch-gutter [data-line].bel-step-line {
+	color: var(--beloch-valley, #e8a33d);
+	font-weight: 700;
+}
+
 /* hover — neutral, transient */
 [data-bel-name].bel-hover { outline: 2px solid var(--beloch-muted); outline-offset: 1px; }
 svg [data-bel-name].bel-hover { outline: none; filter: drop-shadow(0 0 3px var(--beloch-muted)); }
@@ -108,5 +115,7 @@ svg [data-bel-name].bel-hover { outline: none; filter: drop-shadow(0 0 3px var(-
 }
 svg line.bel-selected { stroke: var(--bel-sel) !important; stroke-width: 3 !important; }
 svg circle.bel-selected { fill: var(--bel-sel) !important; r: 4.5; }
+svg circle.bel-hover, svg circle.bel-selected { r: 5; }
+svg text.bel-selected { fill: var(--bel-sel) !important; }
 /* selected but occluded → ghosted, still dashed */
 svg [data-bel-name].bel-selected[data-occluded] { stroke: var(--bel-sel) !important; opacity: 0.25; }

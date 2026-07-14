@@ -1,0 +1,15 @@
+; status: errors — the same ray listed twice. Both `--h at --(.b .c)` elements
+; select the SAME segment (center O to the right edge), a zero-width sector. The
+; doubled reflection cancels in the closure product, so without its own guard
+; this would pass the count, Kawasaki, and Maekawa checks and emit a
+; self-contradictory folded state; the kernel rejects it outright instead.
+
+paper square
+
+mark --h = map .a onto .d      ; horizontal midline, y = 1/2
+mark --v = map .a onto .b      ; vertical midline, x = 1/2
+
+collapse --h & --bc and (--h & --bc mountain)
+  and --v & --cd and (--v & --ab mountain)
+
+; expect error "duplicate ray"

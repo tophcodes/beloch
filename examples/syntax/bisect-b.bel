@@ -1,4 +1,0 @@
-paper square
-mark --v = map .a onto .b      ; vertical midline x = 1/2
-mark map --v onto --ab toward .b
-; status: works — direction pick: hinge at (1/2,0), toward .b selects the crease toward the b-corner; .b lies on --ab itself, legal under direction semantics

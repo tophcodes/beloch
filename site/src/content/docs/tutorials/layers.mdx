@@ -1,0 +1,70 @@
+---
+title: Layers & Ordering
+description: Folding stacks the paper into layers, and up to <point> limits a fold to only the layers that reach a given anchor.
+---
+
+import Beloch from "../../../components/Beloch.astro";
+
+Every tutorial so far has folded at most once. This one folds twice, and shows
+what happens to the paper in between: it stacks. Once there is a stack, a new
+fold has to decide how far down it reaches — and `up to` is how you control
+that.
+
+## One fold, two layers
+
+Start with a single fold.
+
+<Beloch filename="one-fold.bel">
+paper square
+fold map .d onto .a
+</Beloch>
+
+`fold map .d onto .a` folds `.d` (top-left) onto `.a` (bottom-left) — the same
+kind of reflection from earlier tutorials, but this time it's a `fold`, not a
+`mark`, so the paper actually moves. Toggle to the folded view: the top half of
+the sheet is now lying on top of the bottom half. The paper is no longer one
+flat face — it is two stacked layers.
+
+## A second fold goes through the whole stack
+
+Fold again, along a new crease.
+
+<Beloch filename="two-folds.bel">
+paper square
+fold map .d onto .a
+fold map .c onto .d
+</Beloch>
+
+`fold map .c onto .d` creases a new line and folds along it. By default, a
+fold goes through *every* layer beneath its crease — top and bottom alike. In
+the folded view you can see the result: 4 faces. Both layers from the first
+fold got creased by the second.
+
+## `up to` limits the fold to one flap
+
+Add `up to .c` to that second fold.
+
+<Beloch filename="up-to.bel">
+paper square
+fold map .d onto .a
+fold map .c onto .d up to .c
+</Beloch>
+
+`up to .c` limits the fold to the flap that reaches the anchor point `.c` —
+here, just the top layer. The layer beneath is left uncreased. Toggle to the
+folded view and count faces: 3, not 4. One layer stayed flat.
+
+`up to <point>` is how you fold "just this flap" instead of dragging the whole
+stack along with it — essential once a model has more than one or two layers.
+
+## What you learned
+
+- Folding stacks the paper: after one fold you have layers, not a single flat
+  face.
+- By default, a fold passes through every layer under its crease — a second
+  fold on a two-layer stack creases both layers.
+- `up to <point>` restricts a fold to the flap(s) that reach that point,
+  leaving the other layers uncreased.
+
+Try adjusting the anchor in the [Playground](/playground/) to see which flap
+folds and which stays put.

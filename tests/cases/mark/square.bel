@@ -1,0 +1,4 @@
+; status: works — bare square, a single face
+paper square
+
+; assert faces = 1

@@ -1,0 +1,6 @@
+; status: works — fold the right half onto the left (valley), one crease
+paper square
+fold --half = map .b onto .a moving .b
+
+; assert faces = 2
+; assert --half is valley

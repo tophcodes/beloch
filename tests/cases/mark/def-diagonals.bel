@@ -1,0 +1,21 @@
+; status: works — def/apply demo: one def constructs the line between two
+; corners; applied twice, the diagonals cross in the centre. Cross-instance
+; access is via `export` (instance member brackets are gone).
+paper square
+
+def diagonal(.p .q) {
+  mark --d = through .p .q
+}
+
+step diagonals
+$d1 = apply diagonal(.a .c)
+$d2 = apply diagonal(.b .d)
+
+step centre
+export { --d as --d1d } $d1
+export { --d as --d2d } $d2
+.m = --d1d * --d2d
+
+; assert faces = 1
+; assert .m = (1/2, 1/2)
+; assert steps = 3

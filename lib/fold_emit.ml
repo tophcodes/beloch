@@ -80,31 +80,38 @@ let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
    this state's faces (earlier steps have fewer faces than the final CP, so the
    frame cannot inherit the parent's vertex/face set — frame_inherit is false). *)
 let folded_frame_of_state (named_points : (string * Geom.point) list)
-    (state : Fold_state.t) (step : string option) : Yojson.Safe.t =
+    (state : Fold_state.t) (step : string option)
+    (span : Error.span option) : Yojson.Safe.t =
   (* graduate marks into flat (F) creases for the folded diagram too, so a
      scored precrease shows in the folded frame; emit-only, like the CP frame *)
   let state, _ = cp_display state in
   let faces = state.Fold_state.faces in
-  (* dedup vertices by paper coord; remember paper + table coords per vertex.
-     INVARIANT: a paper vertex shared by several faces gets its table coord from
-     whichever face introduces it first. This is consistent only because every
-     flat fold cuts each face along its full chord, so shared paper vertices lie
-     on a shared crease where the adjacent faces' isometries agree. Partial or
-     non-flat folds (a later slice) would break this — re-key per (face,vertex)
-     or assert agreement then. *)
+  (* dedup vertices by (paper coord, table coord) together, remembering both per
+     vertex. Two faces sharing a paper corner merge only when their isometries
+     agree there (same table position) — the case of a shared crease on a
+     full-chord flat fold. A scoped ("up to") fold cuts only some layers, so the
+     stationary layer and the moving flap can share a paper corner OFF the fold
+     axis, where their isometries disagree; keying on table coord too gives each
+     face its own reflected copy instead of collapsing the moving flap onto the
+     stationary layer's position (which degenerated the moving face to zero area
+     — the "diagonal slash" render). *)
   let vpaper = Dynarray.create () and vtable = Dynarray.create () in
   let vindex (f : Fold_state.face) (p : Geom.point) : int =
+    let t = Isometry.apply_point f.Fold_state.iso p in
     let n = Dynarray.length vpaper in
     let rec find i =
       if i >= n then -1
-      else if Geom.point_equal p (Dynarray.get vpaper i) then i
+      else if
+        Geom.point_equal p (Dynarray.get vpaper i)
+        && Geom.point_equal t (Dynarray.get vtable i)
+      then i
       else find (i + 1)
     in
     let i = find 0 in
     if i >= 0 then i
     else begin
       Dynarray.add_last vpaper p;
-      Dynarray.add_last vtable (Isometry.apply_point f.Fold_state.iso p);
+      Dynarray.add_last vtable t;
       n
     end
   in
@@ -219,6 +226,10 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
       ("beloch:faces_matrix", `List beloch_faces_matrix);
       ("faceOrders", `List (List.rev !face_orders));
       ("beloch:step", (match step with Some s -> `String s | None -> `Null));
+      ("beloch:source_line",
+        (match span with
+        | Some (start, _) -> `Int start.Lexing.pos_lnum
+        | None -> `Null));
       ("beloch:edges", beloch_edges);
       ("beloch:vertices_names", beloch_vertices_names);
     ]
@@ -376,6 +387,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
       ( "file_frames",
         `List
           (List.map
-             (fun (step, st) -> folded_frame_of_state fd.Eval.named_points st step)
+             (fun (step, st, span) ->
+               folded_frame_of_state fd.Eval.named_points st step span)
              fd.Eval.frames) );
     ]

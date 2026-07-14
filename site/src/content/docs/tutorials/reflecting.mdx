@@ -1,0 +1,66 @@
+---
+title: "Reflecting: map onto"
+description: Use map to fold one point or line onto another, and toward to pick a crease when more than one candidate exists.
+---
+
+import Beloch from "../../../components/Beloch.astro";
+
+The last tutorial named a line so you could reuse it. This tutorial introduces
+`map` — the way you ask Beloch for the crease that carries one point or line onto
+another. It's the operation almost every fold is built from. (We're still just
+`mark`ing these creases; actually folding along them is the [next
+tutorial](/tutorials/mark-vs-fold/).)
+
+## Folding a point onto a point
+
+<Beloch filename="midline.bel">
+paper square
+mark --v = map .a onto .b
+</Beloch>
+
+`map .a onto .b` is an expression: it builds the crease that, if you folded
+along it, would carry `.a` exactly onto `.b`. `.a` is the bottom-left corner
+and `.b` the bottom-right corner, so the crease that maps one onto the other
+is the vertical line straight down the middle of the sheet. We name it `--v`
+and `mark` it, same as before.
+
+`map onto` is the single most-used building block in Beloch. Almost every
+crease you'll ever make is really an answer to the question "what fold
+carries this onto that?" — it's the fold itself, expressed as the two things
+it lines up.
+
+## Folding a line onto a line
+
+`map` isn't limited to points — it also works on lines.
+
+<Beloch filename="bisect.bel">
+paper square
+mark --v = map .a onto .b
+mark map --v onto --ab toward .a
+</Beloch>
+
+`map --v onto --ab` asks for the crease that carries the line `--v` onto the
+bottom edge `--ab` — in other words, the line that bisects the angle between
+them. But there are two lines that do that: one running toward the `.a`
+corner, and one running toward the mirror image of `.a` on the other
+side.[^bisectors] `map` alone can't tell which one you mean.
+
+`toward .a` resolves the ambiguity by naming a point on the side you want.
+Whenever a `map` expression has more than one crease that satisfies it,
+`toward <point>` is how you pick.
+
+[^bisectors]: Two lines crossing always make two angle bisectors, perpendicular
+    to each other — one for the angle on each side of the crossing.
+
+## What you learned
+
+- `map .p onto .q` is an expression that builds the crease which carries
+  point `.p` onto point `.q` by reflection.
+- `map` also takes lines: `map --l onto --m` builds the crease that carries
+  `--l` onto `--m`.
+- Some `map` expressions have more than one valid crease. `toward <point>`
+  disambiguates by choosing the one on that point's side.
+
+Next, we'll look at the difference between drawing a crease you can see and
+actually folding the paper along it:
+[mark vs. fold](/tutorials/mark-vs-fold/).
