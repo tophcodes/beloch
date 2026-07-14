@@ -7,7 +7,8 @@ import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
 import { DEFAULT_THEME, Theme } from "./theme";
 import { makeLayout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
-import { coveredIntervals, faceEdgeIndex, linearExtension, sideUp } from "./geometry";
+import { coveredIntervals, faceEdgeIndex, sideUp } from "./geometry";
+import { resolveIsometry } from "./isometry";
 import type { RenderOptions } from "./render-cp";
 
 export interface FoldedOptions extends RenderOptions {
@@ -54,8 +55,7 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
   const bottom = opts.view === "bottom";
   const mx = (x: number) => (bottom ? layout.W - tx(x) : tx(x));
   // decode the true global stack: faceOrders sign is keyed to each g's normal
-  const faceUp = F.map((f) => sideUp(f.map((i) => V[i]!)) === "front");
-  const order = linearExtension(frame.faceOrders, F.length, faceUp);
+  const { order } = resolveIsometry(scene, { kind: "step", index: step.index });
   const paint = bottom ? [...order].reverse() : order;
   const edgeIx = faceEdgeIndex(E);
 
