@@ -179,10 +179,10 @@
     "a": { "paper": [ 0.0, 0.0 ], "table": [ 0.0, 0.0 ] }
   },
   "beloch:named_lines": {
-    "v34": [ -0.5, 0.0, -0.375 ],
-    "hm": [ 0.0, 1.0, 0.5 ],
-    "vm": [ 1.0, 0.0, 0.5 ],
-    "h34": [ 0.0, -0.5, -0.375 ]
+    "v34": { "coeffs": [ -0.5, 0.0, -0.375 ], "step": 0 },
+    "hm": { "coeffs": [ 0.0, 1.0, 0.5 ], "step": 0 },
+    "vm": { "coeffs": [ 1.0, 0.0, 0.5 ], "step": 0 },
+    "h34": { "coeffs": [ 0.0, -0.5, -0.375 ], "step": 0 }
   },
   "beloch:named_lines_frame": "creasePattern",
   "beloch:marks": [
