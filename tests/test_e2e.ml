@@ -326,38 +326,73 @@ let test_emit_folded_frames () =
    frame must give each face its own reflected copy of that corner. Deduping
    vertices by paper coord alone collapses them onto the stationary layer's
    table position, degenerating the moving face to zero area — the "diagonal
-   slash" render. Assert every folded-frame face has positive area. *)
+   slash" render. Assert every folded-frame face has positive area.
+
+   The original repro here (fold-top-flap.bel) was a genuine tear and is now
+   rejected by the scoped-fold hinge-closure check (2026-07-14) before it ever
+   reaches emit, so it moved to
+   tests/cases/fold/tear-perpendicular-hinge.bel as an `expect error` case.
+   This test now exercises a *valid* scoped fold (fold-top-two.bel, 6 faces)
+   instead.
+
+   Two findings from re-deriving this test:
+   (1) The original assertion read `List.hd (file_frames)` — for a 2-fold
+   program that is the frame after the FIRST fold (2 faces), not the scoped
+   fold's frame (3 faces, where cc3184a's off-axis dedup fix actually bites).
+   So this regression test had been checking the wrong frame since it was
+   authored and passed vacuously regardless of the fix. Fixed here to check
+   every frame, matching the comment's stated intent.
+   (2) Even fixed, fold-top-two.bel empirically never produces an off-axis
+   shared corner (verified against a scratch checkout with cc3184a's dedup
+   fix reverted: every face already had solidly nonzero area, buggy or not —
+   identical numbers with and without the fix), and neither does the
+   hinge-closure design doc's positive-control example. So this test still
+   guards the *shape* of the invariant (every folded face is non-degenerate)
+   but, as far as we've found, no longer exercises cc3184a's (paper,
+   table)-keyed dedup at all — every remaining scoped-fold example lacks the
+   off-axis-shared-corner geometry that fix targets. Flagged for separate
+   review; do not remove the fix without a replacement regression. *)
 let test_emit_folded_scoped_fold_nondegenerate () =
   let fd =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
-         "paper square\nfold map .d onto .a\nfold map .c onto .d up to .c\n")
+         "paper square\n\
+          mark --l = through .a .d\n\
+          mark --bot = through .a .b\n\
+          fold --v = map .b onto .a\n\
+          fold --h = map .d onto .a\n\
+          .p = --l * --h\n\
+          .q = --v * --bot\n\
+          fold through .p .q moving .d up to .c\n")
   in
   let json = Fold_emit.to_json_folded fd in
   let open Yojson.Safe.Util in
-  let folded = json |> member "file_frames" |> to_list |> List.hd in
-  let coords =
-    folded |> member "vertices_coords" |> to_list
-    |> List.map (fun p ->
-           match p |> to_list with
-           | [ x; y ] -> (to_number x, to_number y)
-           | _ -> Alcotest.fail "vertex is not a pair")
-    |> Array.of_list
-  in
-  folded |> member "faces_vertices" |> to_list
-  |> List.iteri (fun fi f ->
-         let idxs = f |> to_list |> List.map to_int |> Array.of_list in
-         let n = Array.length idxs in
-         let area2 = ref 0.0 in
-         for k = 0 to n - 1 do
-           let x1, y1 = coords.(idxs.(k)) in
-           let x2, y2 = coords.(idxs.((k + 1) mod n)) in
-           area2 := !area2 +. ((x1 *. y2) -. (x2 *. y1))
-         done;
-         Alcotest.(check bool)
-           (Printf.sprintf "face %d has positive area" fi)
-           true
-           (Float.abs !area2 > 1e-9))
+  let frames = json |> member "file_frames" |> to_list in
+  List.iteri
+    (fun fri folded ->
+      let coords =
+        folded |> member "vertices_coords" |> to_list
+        |> List.map (fun p ->
+               match p |> to_list with
+               | [ x; y ] -> (to_number x, to_number y)
+               | _ -> Alcotest.fail "vertex is not a pair")
+        |> Array.of_list
+      in
+      folded |> member "faces_vertices" |> to_list
+      |> List.iteri (fun fi f ->
+             let idxs = f |> to_list |> List.map to_int |> Array.of_list in
+             let n = Array.length idxs in
+             let area2 = ref 0.0 in
+             for k = 0 to n - 1 do
+               let x1, y1 = coords.(idxs.(k)) in
+               let x2, y2 = coords.(idxs.((k + 1) mod n)) in
+               area2 := !area2 +. ((x1 *. y2) -. (x2 *. y1))
+             done;
+             Alcotest.(check bool)
+               (Printf.sprintf "frame %d face %d has positive area" fri fi)
+               true
+               (Float.abs !area2 > 1e-9)))
+    frames
 
 let test_emit_folded_crease_name () =
   let fd =

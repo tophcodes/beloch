@@ -970,16 +970,27 @@ let test_eval_export_temp_target () =
   Alcotest.(check bool) "temp target not named" true
     (not (List.mem_assoc "_t" fd.Eval.named_points))
 
-(* up to = anchor: only the top flap of a 2-layer stack folds → 3 faces *)
+(* up to = anchor: only the top flap of a 2-layer stack folds → 3 faces.
+   The fold's own hinge (--hinge) is parallel to the fold axis, so folding
+   .d back onto .h (a point ON --hinge) only lifts the material whose hinge
+   sits on the axis itself — hinge-closed, not a tear (contrast with the old
+   fold-top-flap.bel, whose second fold's axis was perpendicular to the
+   first fold's hinge; that program now lives in tests/cases/fold/ as an
+   `expect error "tear"` case). *)
 let test_eval_up_to_top_flap () =
   let fd =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
-         "paper square\nfold map .d onto .a\nfold map .c onto .d up to .c\n")
+         "paper square\n\
+          mark --left = through .a .d\n\
+          fold --hinge = map .d onto .a\n\
+          .h = --left * --hinge\n\
+          fold map .d onto .h up to .d\n")
   in
   Alcotest.(check int) "3 faces" 3 (Array.length fd.Eval.state.Fold_state.faces)
 
-(* same fold without up to: all-layers cuts both → 4 faces *)
+(* the original 2-fold stack without up to: all-layers cuts both → 4 faces
+   (contrast with test_eval_up_to_top_flap's scoped 3-face fold above) *)
 let test_eval_all_layers_differs () =
   let fd =
     Eval.eval_folded
@@ -1016,26 +1027,26 @@ let test_eval_buried_anchor () =
            (Beloch.parse ~filename:"t.bel"
               (quarter_stack_prefix ^ "fold through .p .q moving .c up to .b\n"))))
 
-(* target flap entirely off the moving side. --m0 is precreased flat so
-   .m = (1/2, 0) is a material crossing (the scar of the later --v fold lives
-   only on the top flap and never reaches the bottom edge). Under ADR 0017 the
-   point/flap target resolves through TargetHinged (a flap is a coplanar
-   cluster, possibly several faces), so the walk-based "no flap hinged ...
-   reachable" message now covers this case too — same message used when a
-   `--crease` target can't be reached (test_eval_up_to_crease_unreachable) —
-   rather than the old TargetFace-only "not on the moving side" wording. *)
+(* target flap entirely off the moving side, on the quarter-stack (4-layer,
+   all-full-fold) scaffold: `moving .a up to .c` walks inward from .a's flap
+   but never reaches a flap hinged on .c before the frontier runs dry. Under
+   ADR 0017 the point/flap target resolves through TargetHinged (a flap is a
+   coplanar cluster, possibly several faces), so the walk-based "no flap
+   hinged ... reachable" message covers this case — same message used when a
+   `--crease` target can't be reached (test_eval_up_to_crease_unreachable).
+   (The scaffold previously used here — two perpendicular folds where the
+   second was itself scoped `up to .c` — became a genuine tear once the
+   hinge-closure check landed, since that second fold's own axis crossed the
+   first fold's off-axis hinge; select_scope never even got to run. This
+   scaffold keeps both base folds full/unscoped, so their hinges sit on-axis
+   by construction and the tear check is a no-op — the "no flap hinged" error
+   comes from select_scope itself, before scoped_fold_hinge_closed runs.) *)
 let test_eval_up_to_wrong_side () =
   expect_error "no flap hinged" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
-              "paper square\n\
-               mark --m0 = map .b onto .a\n\
-               fold --h = map .d onto .a\n\
-               fold --v = map .c onto .d up to .c\n\
-               mark --bot = through .a .b\n\
-               .m = --m0 * --bot\n\
-               fold map .b onto .m up to .c\n")))
+              (quarter_stack_prefix ^ "fold through .p .q moving .a up to .c\n"))))
 
 (* up to --crease with no reachable hinged flap *)
 let test_eval_up_to_crease_unreachable () =

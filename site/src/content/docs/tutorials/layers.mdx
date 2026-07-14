@@ -42,20 +42,33 @@ fold got creased by the second.
 
 ## `up to` limits the fold to one flap
 
-Add `up to .c` to that second fold.
+That second fold cut straight across the whole stack, so it swept up both
+layers. To fold *just* the top layer, the new crease has to stay parallel to
+the one already separating the layers — otherwise lifting it would drag the
+bottom layer along too. Here's one that works: fold the top down as before,
+find the point where that hinge crosses the left edge, and fold `.d` back up
+onto it.
 
 <Beloch filename="up-to.bel">
 paper square
-fold map .d onto .a
-fold map .c onto .d up to .c
+mark --left = through .a .d
+fold --hinge = map .d onto .a
+.h = --left * --hinge
+fold map .d onto .h up to .d
 </Beloch>
 
-`up to .c` limits the fold to the flap that reaches the anchor point `.c` —
-here, just the top layer. The layer beneath is left uncreased. Toggle to the
-folded view and count faces: 3, not 4. One layer stayed flat.
+`--left * --hinge` is a **meet**: the point where two lines cross. `.h` sits
+exactly on the first fold's crease, so folding `.d` onto it makes a new crease
+parallel to that hinge — one that only cuts through the top layer to begin
+with. `up to .d` then scopes the fold to the flap `.d` is on, leaving the rest
+of the top layer, and the whole bottom layer, alone. Toggle to the folded
+view and count faces: 3, not 4.
 
 `up to <point>` is how you fold "just this flap" instead of dragging the whole
 stack along with it — essential once a model has more than one or two layers.
+(Not every second fold can be scoped this way: the flap you're lifting has to
+be free to move on its own, without a hinge to the rest of the paper getting
+in the way.)
 
 ## What you learned
 

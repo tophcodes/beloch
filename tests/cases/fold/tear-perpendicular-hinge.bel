@@ -3,3 +3,5 @@
 paper square
 fold map .d onto .a
 fold map .c onto .d up to .c
+
+; expect error "tear"
