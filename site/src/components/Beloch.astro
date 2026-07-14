@@ -10,7 +10,7 @@
 import { highlightBel } from "../lib/highlight-bel";
 import { evalBelToFold } from "../lib/eval-bel";
 import { parseFold } from "@beloch/scene";
-import { renderCP } from "@beloch/render-svg";
+import { renderCP, WEB_THEME } from "@beloch/render-svg";
 
 interface Props {
   filename?: string;
@@ -59,7 +59,7 @@ const gutterLines = Array.from({ length: lineCount }, (_, i) => i + 1);
 // Build-time evaluation + render. Any failure throws → the Astro build fails
 // with beloch's diagnostic (drift guard).
 const fold = evalBelToFold(trimmed);
-const svg = renderCP(parseFold(fold as object)).toString();
+const svg = renderCP(parseFold(fold as object), { theme: WEB_THEME }).toString();
 const foldJson = JSON.stringify(fold);
 ---
 
