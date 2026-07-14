@@ -115,16 +115,16 @@
     "a", null, null, "d", null, "c", null, "b", null
   ],
   "beloch:named_points": {
-    "c": { "paper": [ 1.0, 1.0 ], "table": [ 1.0, 1.0 ] },
-    "b": { "paper": [ 1.0, 0.0 ], "table": [ 1.0, 1.0 ] },
-    "d": { "paper": [ 0.0, 1.0 ], "table": [ 1.0, 1.0 ] },
-    "a": { "paper": [ 0.0, 0.0 ], "table": [ 1.0, 1.0 ] }
+    "c": { "paper": [ 1.0, 1.0 ], "table": [ 1.0, 1.0 ], "step": 0 },
+    "b": { "paper": [ 1.0, 0.0 ], "table": [ 1.0, 1.0 ], "step": 0 },
+    "d": { "paper": [ 0.0, 1.0 ], "table": [ 1.0, 1.0 ], "step": 0 },
+    "a": { "paper": [ 0.0, 0.0 ], "table": [ 1.0, 1.0 ], "step": 0 }
   },
   "beloch:named_lines": {
-    "ac": [ -1.0, 1.0, 0.0 ],
-    "v": [ 0.0, 0.5, 0.25 ],
-    "bd": [ -0.5, 0.5, 0.0 ],
-    "h": [ 0.0, -1.0, -0.5 ]
+    "ac": { "coeffs": [ -1.0, 1.0, 0.0 ], "step": 0 },
+    "v": { "coeffs": [ 0.0, 0.5, 0.25 ], "step": 0 },
+    "bd": { "coeffs": [ -0.5, 0.5, 0.0 ], "step": 0 },
+    "h": { "coeffs": [ 0.0, -1.0, -0.5 ], "step": 0 }
   },
   "beloch:named_lines_frame": "creasePattern",
   "beloch:marks": [],

@@ -53,15 +53,15 @@
   ],
   "beloch:vertices_names": [ "a", "m", "d", "c", "b" ],
   "beloch:named_points": {
-    "c": { "paper": [ 1.0, 1.0 ], "table": [ 1.0, 1.0 ] },
-    "m": { "paper": [ 0.5, 0.5 ], "table": [ 0.5, 0.5 ] },
-    "b": { "paper": [ 1.0, 0.0 ], "table": [ 1.0, 0.0 ] },
-    "d": { "paper": [ 0.0, 1.0 ], "table": [ 0.0, 1.0 ] },
-    "a": { "paper": [ 0.0, 0.0 ], "table": [ 0.0, 0.0 ] }
+    "c": { "paper": [ 1.0, 1.0 ], "table": [ 1.0, 1.0 ], "step": 0 },
+    "m": { "paper": [ 0.5, 0.5 ], "table": [ 0.5, 0.5 ], "step": 2 },
+    "b": { "paper": [ 1.0, 0.0 ], "table": [ 1.0, 0.0 ], "step": 0 },
+    "d": { "paper": [ 0.0, 1.0 ], "table": [ 0.0, 1.0 ], "step": 0 },
+    "a": { "paper": [ 0.0, 0.0 ], "table": [ 0.0, 0.0 ], "step": 0 }
   },
   "beloch:named_lines": {
-    "d2d": [ -1.0, -1.0, -1.0 ],
-    "d1d": [ -1.0, 1.0, 0.0 ]
+    "d2d": { "coeffs": [ -1.0, -1.0, -1.0 ], "step": 1 },
+    "d1d": { "coeffs": [ -1.0, 1.0, 0.0 ], "step": 1 }
   },
   "beloch:named_lines_frame": "creasePattern",
   "beloch:marks": [],
