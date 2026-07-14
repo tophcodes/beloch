@@ -7,12 +7,9 @@
 // are NOT ported here — they test CLI/SVG-generation behavior outside this
 // task's scope (pure geometry helpers), not the ported functions themselves.
 import { test, expect } from "bun:test";
-import { parseFold, pickStep } from "@beloch/scene";
+import { parseFold, pickStep, linearExtension, signedArea, sideUp } from "@beloch/scene";
 import type { Vec2 } from "@beloch/scene";
 import {
-  linearExtension,
-  signedArea,
-  sideUp,
   pointInPolygon,
   segInsideIntervals,
   coveredIntervals,

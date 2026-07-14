@@ -7,7 +7,8 @@ import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
 import { DEFAULT_THEME, Theme } from "./theme";
 import { makeLayout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
-import { coveredIntervals, faceEdgeIndex, linearExtension, sideUp } from "./geometry";
+import { coveredIntervals, faceEdgeIndex } from "./geometry";
+import { linearExtension, sideUp } from "@beloch/scene";
 import type { RenderOptions } from "./render-cp";
 
 export interface FoldedOptions extends RenderOptions {
