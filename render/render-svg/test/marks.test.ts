@@ -63,9 +63,7 @@ test("marks are visually distinct from live creases: thinner, dashed, translucen
 });
 
 test("a FOLD scene with no beloch:marks draws no mark elements", async () => {
-  const golden = (p: string) =>
-    Bun.file(new URL(`../../../tests/golden/${p}`, import.meta.url)).text();
-  const scene = parseFold(await golden("syntax/bisect-a.fold"));
+  const scene = parseFold(await fixture("bisect-a.fold"));
   const s = renderCP(scene).toString();
   expect(s).not.toContain('data-kind="mark"');
   expect(s).not.toContain('data-kind="mark-tick"');

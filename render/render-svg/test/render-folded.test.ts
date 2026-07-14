@@ -5,12 +5,12 @@ import { makeLayout, PAD, SZ } from "../src/layout";
 import { pointInPolygon } from "../src/geometry";
 
 const golden = (p: string) =>
-  Bun.file(new URL(`../../../tests/golden/${p}`, import.meta.url)).text();
+  Bun.file(new URL(`./fixtures/${p}`, import.meta.url)).text();
 const occlude = () =>
   Bun.file(new URL("./fixtures/fold-occlude.fold", import.meta.url)).text();
 
 test("fold-quarter top view paints all faces bottom→top", async () => {
-  const scene = parseFold(await golden("syntax/fold-quarter.fold"));
+  const scene = parseFold(await golden("fold-quarter.fold"));
   const s = renderFolded(scene).toString();
   // renderFolded with no --step defaults to the LAST frame (fully folded,
   // both `fold` statements applied); fold-quarter.bel now has one frame per
@@ -31,14 +31,14 @@ test("hidden=dashed draws occluded sub-segments, hide does not", async () => {
 });
 
 test("bottom view mirrors x", async () => {
-  const scene = parseFold(await golden("syntax/fold-quarter.fold"));
+  const scene = parseFold(await golden("fold-quarter.fold"));
   const top = renderFolded(scene, { view: "top" }).toString();
   const bottom = renderFolded(scene, { view: "bottom" }).toString();
   expect(bottom).not.toBe(top);
 });
 
 test("fold-quarter folded golden snapshot", async () => {
-  const scene = parseFold(await golden("syntax/fold-quarter.fold"));
+  const scene = parseFold(await golden("fold-quarter.fold"));
   expect(renderFolded(scene, { hidden: "dashed" }).toString()).toMatchSnapshot();
 });
 
@@ -48,19 +48,19 @@ test("fold-occlude dashed golden snapshot", async () => {
 });
 
 test("step option selects an intermediate folded state", async () => {
-  const scene = parseFold(await golden("syntax/cube-root.fold"));
+  const scene = parseFold(await golden("cube-root.fold"));
   const mid = renderFolded(scene, { step: "vertical_middle" }).toString();
   const fin = renderFolded(scene).toString();
   expect(mid).not.toBe(fin);
 });
 
 test("no --labels: folded view renders no overlay", async () => {
-  const scene = parseFold(await golden("syntax/cube-root.fold"));
+  const scene = parseFold(await golden("cube-root.fold"));
   expect(renderFolded(scene).toString()).not.toContain('class="construction"');
 });
 
 test("explicit --labels renders the named point in folded view", async () => {
-  const scene = parseFold(await golden("syntax/cube-root.fold"));
+  const scene = parseFold(await golden("cube-root.fold"));
   const s = renderFolded(scene, { labels: [".s"] }).toString();
   expect(s).toContain('data-construction="s"');
 });
@@ -74,7 +74,7 @@ test("explicit --labels renders the named point in folded view", async () => {
 // `clipLineToPoly` end to end across three distinct --step frames, not just
 // the `lineToFace` unit.
 test("--pq (pure-value, non-crease named line) clips into folded faces across --step frames", async () => {
-  const scene = parseFold(await golden("syntax/cube-root.fold"));
+  const scene = parseFold(await golden("cube-root.fold"));
   for (const step of ["vertical_middle", "thirds", "beloch_fold"]) {
     const found = scene.steps.find((s) => s.label === step);
     expect(found).toBeDefined();
@@ -110,7 +110,7 @@ test("--pq (pure-value, non-crease named line) clips into folded faces across --
 });
 
 test("scene without folded steps throws SceneError", async () => {
-  const scene = parseFold(await golden("syntax/square.fold"));
+  const scene = parseFold(await golden("square.fold"));
   if (scene.steps.length === 0) {
     expect(() => renderFolded(scene)).toThrow(SceneError);
   } else {
@@ -120,26 +120,26 @@ test("scene without folded steps throws SceneError", async () => {
 });
 
 test("legend hidden by default", async () => {
-  const scene = parseFold(await golden("syntax/fold-quarter.fold"));
+  const scene = parseFold(await golden("fold-quarter.fold"));
   const s = renderFolded(scene).toString();
   expect(s).not.toContain('class="legend-panel"');
 });
 
 test("legend: true shows the legend panel", async () => {
-  const scene = parseFold(await golden("syntax/fold-quarter.fold"));
+  const scene = parseFold(await golden("fold-quarter.fold"));
   const s = renderFolded(scene, { legend: true }).toString();
   expect(s).toContain('class="legend-panel"');
 });
 
 test("folded stamps data-bel-name on named vertex dots and keeps occluded creases", async () => {
-  const scene = parseFold(await golden("syntax/x-midpoint.fold"));
+  const scene = parseFold(await golden("x-midpoint.fold"));
   const s = renderFolded(scene, { hidden: "dashed" }).toString();
   expect(s).toContain('data-bel-name="center"');
   expect(s).toContain('data-occluded="true"');               // occluded geometry retained
 });
 
 test("folded view stamps a text label (not just the dot) for a named vertex", async () => {
-  const scene = parseFold(await golden("syntax/x-midpoint.fold"));
+  const scene = parseFold(await golden("x-midpoint.fold"));
   const s = renderFolded(scene).toString();
   const label = s.match(/<text[^>]*data-bel-name="center"[^>]*>\.center<\/text>/);
   expect(label).not.toBeNull();

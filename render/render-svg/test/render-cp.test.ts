@@ -3,10 +3,10 @@ import { parseFold } from "@beloch/scene";
 import { renderCP } from "@beloch/render-svg";
 
 const golden = (p: string) =>
-  Bun.file(new URL(`../../../tests/golden/${p}`, import.meta.url)).text();
+  Bun.file(new URL(`./fixtures/${p}`, import.meta.url)).text();
 
 test("bisect-a CP: faces, colored creases, named constructions, legend", async () => {
-  const scene = parseFold(await golden("syntax/bisect-a.fold"));
+  const scene = parseFold(await golden("bisect-a.fold"));
   const s = renderCP(scene, { legend: true }).toString();
   // layers in order
   expect(s.indexOf('data-layer="paper"')).toBeLessThan(s.indexOf('data-layer="creases"'));
@@ -32,13 +32,13 @@ test("bisect-a CP: faces, colored creases, named constructions, legend", async (
 });
 
 test("no --labels: no overlay at all, even for named creases/corners", async () => {
-  const scene = parseFold(await golden("syntax/bisect-a.fold"));
+  const scene = parseFold(await golden("bisect-a.fold"));
   const s = renderCP(scene).toString();
   expect(s).not.toContain('class="construction"');
 });
 
 test("explicit --labels draws exactly what's named, even a crease-duplicate or a corner", async () => {
-  const scene = parseFold(await golden("syntax/bisect-a.fold"));
+  const scene = parseFold(await golden("bisect-a.fold"));
   const s = renderCP(scene, { labels: ["--v", ".a"] }).toString();
   // "v" IS a crease and "a" IS a paper corner — explicit request still draws both
   expect(s).toContain('data-construction="v"');
@@ -46,7 +46,7 @@ test("explicit --labels draws exactly what's named, even a crease-duplicate or a
 });
 
 test("labels selection narrows rendering", async () => {
-  const scene = parseFold(await golden("syntax/x-midpoint.fold"));
+  const scene = parseFold(await golden("x-midpoint.fold"));
   const none = renderCP(scene).toString();
   const some = renderCP(scene, { labels: ["--d1"] }).toString();
   expect((none.match(/class="construction"/g) ?? []).length).toBe(0);
@@ -54,43 +54,43 @@ test("labels selection narrows rendering", async () => {
 });
 
 test("title renders in hud layer", async () => {
-  const scene = parseFold(await golden("syntax/bisect-a.fold"));
+  const scene = parseFold(await golden("bisect-a.fold"));
   const s = renderCP(scene, { title: "bisect-a.bel" }).toString();
   expect(s).toContain(">bisect-a.bel</text>");
 });
 
 test("theme override changes crease color", async () => {
-  const scene = parseFold(await golden("syntax/bisect-a.fold"));
+  const scene = parseFold(await golden("bisect-a.fold"));
   const s = renderCP(scene, { theme: { boundary: "#000001" } }).toString();
   expect(s).toContain("#000001");
 });
 
 test("bisect-a CP golden snapshot", async () => {
-  const scene = parseFold(await golden("syntax/bisect-a.fold"));
+  const scene = parseFold(await golden("bisect-a.fold"));
   expect(renderCP(scene).toString()).toMatchSnapshot();
 });
 
 test("crease lines carry a crease-M/crease-V class per assignment", async () => {
-  const scene = parseFold(await golden("syntax/fold-quarter.fold"));
+  const scene = parseFold(await golden("fold-quarter.fold"));
   const s = renderCP(scene).toString();
   expect(s).toContain('class="crease-M"');
   expect(s).toContain('class="crease-V"');
 });
 
 test("legend hidden by default", async () => {
-  const scene = parseFold(await golden("syntax/bisect-a.fold"));
+  const scene = parseFold(await golden("bisect-a.fold"));
   const s = renderCP(scene).toString();
   expect(s).not.toContain('class="legend-panel"');
 });
 
 test("legend: true shows the legend panel", async () => {
-  const scene = parseFold(await golden("syntax/bisect-a.fold"));
+  const scene = parseFold(await golden("bisect-a.fold"));
   const s = renderCP(scene, { legend: true }).toString();
   expect(s).toContain('class="legend-panel"');
 });
 
 test("CP stamps data-bel-name on named creases and named vertex dots", async () => {
-  const scene = parseFold(await golden("syntax/x-midpoint.fold"));
+  const scene = parseFold(await golden("x-midpoint.fold"));
   const s = renderCP(scene).toString();
   expect(s).toContain('data-bel-name="center"');            // the named crossing vertex
   expect(s).toMatch(/data-bel-name="d1"|data-bel-name="d2"/); // a named diagonal crease

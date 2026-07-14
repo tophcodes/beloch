@@ -1,8 +1,8 @@
 import { test, expect } from "bun:test";
 
 const CLI = new URL("../bin/fold2svg.ts", import.meta.url).pathname;
-const FIX = new URL("../../../tests/golden/syntax/fold-quarter.fold", import.meta.url).pathname;
-const CUBE_ROOT = new URL("../../../tests/golden/syntax/cube-root.fold", import.meta.url).pathname;
+const FIX = new URL("./fixtures/fold-quarter.fold", import.meta.url).pathname;
+const CUBE_ROOT = new URL("./fixtures/cube-root.fold", import.meta.url).pathname;
 
 test("CLI: fold → SVG on stdout", async () => {
   const p = Bun.spawn(["bun", CLI, FIX]);
