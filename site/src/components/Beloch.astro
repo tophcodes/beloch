@@ -9,13 +9,23 @@
 // SSR contract.
 import { highlightBel } from "../lib/highlight-bel";
 import { evalBelToFold } from "../lib/eval-bel";
+import { stripHtml } from "../lib/strip-html";
 import { parseFold } from "@beloch/scene";
-import { renderCP, WEB_THEME } from "@beloch/render-svg";
+import { renderCP, renderScene, WEB_THEME } from "@beloch/render-svg";
 
 interface Props {
   filename?: string;
+  // Opt-in composition (spec 2026-07-14 §Presets). Default (both unset) stays
+  // the interactive CP↔folded card. When either is set the card renders a
+  // STATIC composed illustration — `isometry` picks the geometry (flat sheet,
+  // or a folded step index), `textureUpTo` filters creases by creation step,
+  // giving progressive-flat (flat + a step) and ghosted-future (a step +
+  // a later upToStep) views.
+  isometry?: number | "flat";
+  textureUpTo?: number;
 }
-const { filename } = Astro.props;
+const { filename, isometry, textureUpTo } = Astro.props;
+const composed = isometry !== undefined || textureUpTo !== undefined;
 
 // inline source is passed as the default slot's text
 const inline = await Astro.slots.render("default").catch(() => "");
@@ -23,15 +33,6 @@ const source = stripHtml(inline);
 
 if (!source || source.trim() === "") {
   throw new Error("<Beloch>: provide inline .bel source");
-}
-
-function stripHtml(s: string): string {
-  return s
-    .replace(/<[^>]*>/g, "")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&")
-    .trim();
 }
 
 const trimmed = source.trim();
@@ -59,8 +60,33 @@ const gutterLines = Array.from({ length: lineCount }, (_, i) => i + 1);
 // Build-time evaluation + render. Any failure throws → the Astro build fails
 // with beloch's diagnostic (drift guard).
 const fold = evalBelToFold(trimmed);
-const svg = renderCP(parseFold(fold as object), { theme: WEB_THEME }).toString();
-const foldJson = JSON.stringify(fold);
+const scene = parseFold(fold as object);
+let svg: string;
+if (composed) {
+  const flat = isometry === undefined || isometry === "flat";
+  const iso = flat
+    ? ({ kind: "flat" } as const)
+    : ({ kind: "step", index: Number(isometry) } as const);
+  const upToStep = textureUpTo === undefined ? "all" : Number(textureUpTo);
+  svg = renderScene(scene, {
+    theme: WEB_THEME,
+    isometry: iso,
+    texture: {
+      upToStep,
+      creases: true,
+      marks: flat,
+      points: true,
+      lines: true,
+      faces: flat ? "outline" : "filled",
+    },
+  }).toString();
+} else {
+  svg = renderCP(scene, { theme: WEB_THEME }).toString();
+}
+// A composed figure is a static illustration: skip the FOLD embed so the
+// hydration island stays dormant (its CP tab would otherwise show the
+// crease-subset as if it were the full pattern).
+const foldJson = composed ? "" : JSON.stringify(fold);
 ---
 
 <beloch-figure data-line-offset={filename ? 1 : 0}>

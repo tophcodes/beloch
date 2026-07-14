@@ -1,0 +1,11 @@
+; status: works — companion to edge-bundle-select-c.bel: selecting the OTHER
+; boundary segment of --cd (`.d` instead of `.c`) folds the opposite half,
+; proving `&` discriminates between the two segments a paper edge is split
+; into rather than picking either/an arbitrary one. Here .d ends up on the
+; fold's mirror point instead, while .c (on the untouched half) stays put.
+paper square
+mark --v = map .a onto .b
+fold map --cd & .d onto --v toward .a moving .d
+
+; assert .d = (1/2, 1/2)
+; assert .c = (1, 1)

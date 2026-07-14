@@ -141,6 +141,13 @@ test("folded stamps data-bel-name on named vertex dots and keeps occluded crease
 test("folded view stamps a text label (not just the dot) for a named vertex", async () => {
   const scene = parseFold(await golden("x-midpoint.fold"));
   const s = renderFolded(scene).toString();
-  const label = s.match(/<text[^>]*data-bel-name="center"[^>]*>\.center<\/text>/);
-  expect(label).not.toBeNull();
+  // In x-midpoint, corner `a` folds onto `center` (both at 0.5,0.5), so the
+  // declutter primitive merges them into one label instead of stacking two on
+  // the same pixel. Assert the merged label carries center's name.
+  const labels = [...s.matchAll(/<text[^>]*data-kind="point-label"[^>]*>([^<]*)<\/text>/g)]
+    .map((m) => m[1]!);
+  expect(labels.some((t) => t.includes(".center"))).toBe(true);
+  // 5 named vertices (d, center, c, b, a) but a≡center fold onto one point →
+  // 4 labels, the overlap collapsed into a merged one.
+  expect(labels.length).toBe(4);
 });

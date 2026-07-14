@@ -324,6 +324,30 @@ reads step 0…N−1.
 
 ---
 
+## Shipped (2026-07-14) — deviations from the sketch above
+
+Slices B and C landed on `feat/render-scene-b-core`. Two deliberate deviations
+from the interface sketch, both to cut churn under structural-only test coverage:
+
+- **No `texture.ts` / `primitives/faces|lines|dots.ts` split.** The two legacy
+  draw paths were merged into a single `render-scene.ts` orchestrator under one
+  `occlude` branch instead of four primitive files. Same single-path goal; the
+  presets (`renderCP`/`renderFolded`) are byte-identical thin wrappers, proven
+  by the unchanged CP structural assertions + folded snapshots. `labels.ts`
+  (declutter) and `isometry.ts` (resolver) *did* land as their own modules.
+- **Crease step provenance for `texture.upToStep` is derived, not intrinsic.**
+  Edge `beloch:step` is a string macro-label, so numeric filtering maps a crease
+  to its named-line's numeric step (Slice A); boundary/unnamed creases default to
+  step 0 (always shown). Good enough for progressive-flat + ghost; a first-class
+  numeric edge step is a possible follow-up.
+- **Ghost projects only *named* future lines** (`--second`), reused via the
+  existing per-face `lineToFace`+`clipLineToPoly` pullback. Anonymous future
+  creases are not ghosted.
+- **C3 landed on `layers.mdx`, not `reflecting.mdx`.** Reflecting is now entirely
+  `mark`-based (no folded steps), so a composition figure there would not be
+  load-bearing. The two-fold section on the Layers page ghosts the second crease
+  onto the one-fold stack — a view the CP/folded stepper cannot produce.
+
 ## Self-review notes
 
 - Spec coverage: isometry×texture axes (B1/B2), 4 compositions (B6/C2), faces

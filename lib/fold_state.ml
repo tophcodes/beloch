@@ -341,6 +341,35 @@ let crease_segments (st : t) (cid : int) : crease_segment list =
       else acc)
     [] st.edges
 
+(* The boundary segments of a paper edge: [line] (paper space) is one of the
+   four sheet sides. Unlike an internal crease, a paper edge is never recorded
+   in [st.edges] (that array holds only crease cuts — [init_square] starts
+   with [edges = [||]]); the sheet boundary lives implicitly in each face's
+   [paper] polygon (mirrors the "B" classification in Fold_emit). So walk
+   every face's polygon sides, keeping the ones lying on [line] whose two
+   endpoints are not also an internal crease (i.e. not paired with a neighbor
+   face along that same segment) -- those are the boundary pieces the named
+   edge has been split into by subdivision. *)
+let edge_boundary_segments (st : t) (line : Geom.line) : crease_segment list =
+  let acc = ref [] in
+  Array.iteri
+    (fun fi (f : face) ->
+      let m = Array.length f.paper in
+      for k = 0 to m - 1 do
+        let pa = f.paper.(k) and pb = f.paper.((k + 1) mod m) in
+        if
+          Geom.side_of_line line pa = 0
+          && Geom.side_of_line line pb = 0
+          && edge_between st fi pa pb = None
+        then
+          let ta = Isometry.apply_point f.iso pa
+          and tb = Isometry.apply_point f.iso pb in
+          if not (Geom.point_equal ta tb) then
+            acc := { faces = (fi, -1); ta; tb; pa; pb } :: !acc
+      done)
+    st.faces;
+  List.rev !acc
+
 (* find two distinct points to define a line *)
 let rec pick_two_distinct = function
   | a :: rest -> (

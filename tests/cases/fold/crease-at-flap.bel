@@ -1,11 +1,3 @@
-; status: works — the `at` operator selecting one segment of a bent crease.
-; --b is a flat diagonal precrease; the half-fold --v bends it at (½,½) into two
-; segments on DIFFERENT lines — lower on y=x (flap .a .b), upper on x+y=1 (flap
-; .c .d). Bare --b is now "not straight" and errors; `at #(.c .d)` names the upper
-; segment, and perp-through-.a to it is a genuinely different axis than `at #(.a .b)`
-; would give — that divergence is the whole point of `at`. (Crossing --b with --v
-; instead would be vacuous: both segments meet --v at the same bend point.)
-; No `moving`: folding the .c side is the default for `map .c onto …`.
 paper square
 mark --b = through .a .c
 fold --v = map .c onto .b

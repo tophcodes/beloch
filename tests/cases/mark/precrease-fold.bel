@@ -1,4 +1,3 @@
-; status: works — mark a crease, then fold along it (#27: precrease → V/180, not U/0)
 paper square
 mark map .b onto .a
 fold map .b onto .a moving .b
