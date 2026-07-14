@@ -12,8 +12,10 @@ let corners : (string * Geom.point) list =
 
 type folded = {
   state : Fold_state.t;
-  named_points : (string * Geom.point) list;
-  named_lines : (string * Geom.line) list;
+  named_points : (string * Geom.point * int) list;
+      (* [int] is the 0-based creation step (index into [frames] at bind
+         time); see [ctx.name_step] *)
+  named_lines : (string * Geom.line * int) list;
   frames : (string option * Fold_state.t * Error.span option) list;
 }
 
@@ -85,6 +87,9 @@ type ctx = {
   mutable pending : bool;
       (* true when the current state hasn't been captured in a frame yet;
          drives the conditional final push (see eval_folded) *)
+  name_step : (string, int) Hashtbl.t;
+      (* creation step of each named point/line, recorded at bind time by
+         [bind_point]/[bind_crease] as [List.length ctx.frames_rev] *)
 }
 
 let lookup_point (ctx : ctx) (pr : Ast.point_ref) : Geom.point =
@@ -128,7 +133,8 @@ let bind_point (ctx : ctx) (name : string) (span : Error.span) (p : Geom.point)
     Error.fail span
       (Printf.sprintf "point .%s is already bound; only _-prefixed temps rebind"
          name);
-  Hashtbl.replace s.points name p
+  Hashtbl.replace s.points name p;
+  Hashtbl.replace ctx.name_step name (List.length ctx.frames_rev)
 
 let bind_crease (ctx : ctx) (name : string) (span : Error.span) (cv : crease_val) =
   let s = List.hd ctx.scopes in
@@ -136,7 +142,8 @@ let bind_crease (ctx : ctx) (name : string) (span : Error.span) (cv : crease_val
     Error.fail span
       (Printf.sprintf "crease --%s is already bound; only _-prefixed temps rebind"
          name);
-  Hashtbl.replace s.lines name cv
+  Hashtbl.replace s.lines name cv;
+  Hashtbl.replace ctx.name_step name (List.length ctx.frames_rev)
 
 (* `mark --d` on an already-bound name (e.g. a pure `--d = <motion>` value)
    promotes its binding in place to the freshly materialised crease, so a
@@ -168,6 +175,7 @@ let eval_folded (prog : Ast.program) : folded =
     panels = Hashtbl.create 4;
     frames_rev = [];
     pending = true;
+    name_step = Hashtbl.create 16;
   } in
   let push_frame (span : Error.span option) =
     ctx.frames_rev <- (ctx.panel, !(ctx.state), span) :: ctx.frames_rev;
@@ -1408,6 +1416,10 @@ let eval_folded (prog : Ast.program) : folded =
         match resolve_markable span name_opt (Some fs) m with
         | `Fresh (cid, axis, prov, side_override, implied) ->
             run_fold ~span ~axis ~fs ~implied ~side_override ~crease_id:cid ~prov;
+            (* push the frame BEFORE binding the name: a first-fold crease's
+               creation step must count that fold (step 1), not the
+               pre-fold count (step 0) — see ctx.name_step. *)
+            push_frame (Some span);
             (match name_opt with
             | Some n -> bind_crease ctx n span (Material (cid, axis))
             | None -> ())
@@ -1440,6 +1452,7 @@ let eval_folded (prog : Ast.program) : folded =
             in
             run_fold ~span ~axis ~fs ~implied:None ~side_override:None
               ~crease_id:cid ~prov;
+            push_frame (Some span);
             (match name_opt with
             | Some n -> bind_crease ctx n span (Material (cid, axis))
             | None -> promote_crease ctx cr.Ast.cname (Material (cid, axis)))
@@ -1489,8 +1502,8 @@ let eval_folded (prog : Ast.program) : folded =
                 }
             in
             run_fold_checked ~span ~axis ~fs ~implied:None ~side_override:None
-              ~crease_id:cid ~prov ~check:(Some check_straight));
-        push_frame (Some span)
+              ~crease_id:cid ~prov ~check:(Some check_straight);
+            push_frame (Some span))
     | Ast.Point (n, Ast.PsExpr po, span) ->
         bind_point ctx n span (resolve_point po)
     | Ast.Flip _ ->
@@ -1760,9 +1773,15 @@ let eval_folded (prog : Ast.program) : folded =
         push_frame (Some span)
   in
   List.iter eval_stmt prog;
+  (* corners and other names never routed through bind_point/bind_crease (the
+     prelude corners/edges, set up directly via Hashtbl.replace above) have no
+     entry in name_step; they default to step 0. *)
+  let step_of n =
+    match Hashtbl.find_opt ctx.name_step n with Some s -> s | None -> 0
+  in
   let named_points =
     Hashtbl.fold
-      (fun k v acc -> if is_temp k then acc else (k, v) :: acc)
+      (fun k v acc -> if is_temp k then acc else (k, v, step_of k) :: acc)
       root_scope.points []
   in
   let named_lines =
@@ -1771,11 +1790,11 @@ let eval_folded (prog : Ast.program) : folded =
         if is_temp k then acc
         else
           match cv with
-          | Frozen l -> (k, l) :: acc
-          | Mark (_, l) -> (k, l) :: acc
+          | Frozen l -> (k, l, step_of k) :: acc
+          | Mark (_, l) -> (k, l, step_of k) :: acc
           | Material (cid, l_orig) -> (
               match Fold_state.crease_axis !(ctx.state) cid l_orig with
-              | `Line l -> (k, l) :: acc
+              | `Line l -> (k, l, step_of k) :: acc
               (* bent by a later fold, or no material endpoints left: no
                  single current line to emit, so omit from the map rather
                  than emit the stale frozen original *)
