@@ -4,6 +4,12 @@ let q = Num.of_int
 let half = Num.of_q (Q.of_ints 1 2)
 let pt x y = { Geom.x = q x; y = q y }
 
+(* Eval.named_points/named_lines are (name, value, step) triples (step = the
+   0-based creation step, task A1); these tests don't care about the step, so
+   look up by name like the old 2-tuple assoc list did. *)
+let assoc3 k l = List.find_map (fun (k', v, _) -> if k' = k then Some v else None) l
+let mem_assoc3 k l = List.exists (fun (k', _, _) -> k' = k) l
+
 let expect_error msg_substr thunk =
   try
     ignore (thunk ());
@@ -176,7 +182,7 @@ let test_eval_cross_table_bent_scar_ok () =
           .mid = --b * --v\n\
           mark map .d onto .mid\n")
   in
-  match List.assoc_opt "mid" fd.Eval.named_points with
+  match assoc3 "mid" fd.Eval.named_points with
   | Some p ->
       Alcotest.(check bool) "mid is the material centre" true
         (Geom.point_equal p { Geom.x = half; y = half })
@@ -670,7 +676,7 @@ let test_eval_cross_multilayer_with_at () =
           mark --v = map .b onto .a\n\
           .mid = --v & #[.a] * --ab\n")
   in
-  match List.assoc_opt "mid" fd.Eval.named_points with
+  match assoc3 "mid" fd.Eval.named_points with
   | Some p ->
       Alcotest.(check bool) "mid is the bottom scar's foot" true
         (Geom.point_equal p { Geom.x = half; y = q 0 })
@@ -692,8 +698,8 @@ let test_scope_basic_lookup () =
     "paper square\n\
      mark --d = through .a .c\n\
      .m = --d * --ab\n") in
-  let has_d = List.assoc_opt "d" r.Eval.named_lines <> None in
-  let has_m = List.assoc_opt "m" r.Eval.named_points <> None in
+  let has_d = assoc3 "d" r.Eval.named_lines <> None in
+  let has_m = assoc3 "m" r.Eval.named_points <> None in
   Alcotest.(check bool) "d defined" true has_d;
   Alcotest.(check bool) "m defined" true has_m
 
@@ -722,13 +728,13 @@ let test_eval_temp_rebind_ok () =
   in
   Alcotest.(check bool)
     "temp not in named_points" true
-    (not (List.mem_assoc "_x" fd.Eval.named_points))
+    (not (mem_assoc3 "_x" fd.Eval.named_points))
 
 let test_eval_temp_crease_unnamed () =
   let fd = eval_src "mark --_t = through .a .c\n" in
   Alcotest.(check bool)
     "temp line not in named_lines" true
-    (not (List.mem_assoc "_t" fd.Eval.named_lines));
+    (not (mem_assoc3 "_t" fd.Eval.named_lines));
   Alcotest.(check bool)
     "temp crease provenance unnamed" true
     (Array.for_all
@@ -853,7 +859,7 @@ let test_eval_member_point_access () =
        mark --thru = through .im .c\n"
   in
   Alcotest.(check bool) "crease thru exists" true
-    (List.mem_assoc "thru" fd.Eval.named_lines)
+    (mem_assoc3 "thru" fd.Eval.named_lines)
 
 let test_eval_member_line_access () =
   let fd =
@@ -864,7 +870,7 @@ let test_eval_member_line_access () =
        .x = --il * --ab\n"
   in
   Alcotest.(check bool) "point x exists" true
-    (List.mem_assoc "x" fd.Eval.named_points)
+    (mem_assoc3 "x" fd.Eval.named_points)
 
 let prov_steps (fd : Eval.folded) =
   prov_of fd |> List.filter_map (fun (p : State.provenance) -> p.State.step)
@@ -920,23 +926,51 @@ let def_d =
 let test_eval_export_selective () =
   let fd = eval_src (def_d ^ "export { .m --l1 } $i\n") in
   Alcotest.(check bool) "m landed" true
-    (List.mem_assoc "m" fd.Eval.named_points);
+    (mem_assoc3 "m" fd.Eval.named_points);
   Alcotest.(check bool) "l1 landed" true
-    (List.mem_assoc "l1" fd.Eval.named_lines);
+    (mem_assoc3 "l1" fd.Eval.named_lines);
   Alcotest.(check bool) "l2 not landed" true
-    (not (List.mem_assoc "l2" fd.Eval.named_lines))
+    (not (mem_assoc3 "l2" fd.Eval.named_lines))
 
 let test_eval_export_all () =
   let fd = eval_src (def_d ^ "export $i\n") in
   Alcotest.(check bool) "l2 landed too" true
-    (List.mem_assoc "l2" fd.Eval.named_lines)
+    (mem_assoc3 "l2" fd.Eval.named_lines)
 
 let test_eval_export_rename () =
   let fd = eval_src (def_d ^ "export { .m as .mid } $i\n") in
   Alcotest.(check bool) "mid landed" true
-    (List.mem_assoc "mid" fd.Eval.named_points);
+    (mem_assoc3 "mid" fd.Eval.named_points);
   Alcotest.(check bool) "m not landed" true
-    (not (List.mem_assoc "m" fd.Eval.named_points))
+    (not (mem_assoc3 "m" fd.Eval.named_points))
+
+(* A renamed export is the SAME geometric object as its source member: it
+   must carry the source's own creation step, not default to 0. Prepend a
+   `step` marker (bumps frames_rev via push_frame without touching any
+   geometry, unlike a real fold — which would collapse two of def_d's three
+   corner arguments together in table-space) so def_d's internal `.m` binds
+   at a non-zero, distinguishable step, then check the exported-renamed
+   `.mid` reports that same step, not a fresh/defaulted one. *)
+let test_eval_export_rename_step () =
+  let fd = eval_src ("step s1\n" ^ def_d ^ "export { .m as .mid } $i\n") in
+  match List.find_opt (fun (k, _, _) -> k = "mid") fd.Eval.named_points with
+  | Some (_, _, step) ->
+      Alcotest.(check int) "mid carries source m's creation step" 1 step
+  | None -> Alcotest.fail "mid not found in named_points"
+
+(* A def body binding a name already used at top level (`.m`) must NOT
+   corrupt the outer/top-level binding's already-recorded step: the def
+   body's `.m` lives in its own (discarded, unexported) scope. `.m` is NOT
+   exported from `$i` here, so the top-level `.m` (bound at step 0, before
+   any step marker) must still read back as step 0 even though def_d's own
+   internal `.m` binds at step 1 inside its own, separate body scope. *)
+let test_eval_def_local_name_reuse_step () =
+  let fd = eval_src (".m = --ab * --bc\n" ^ "step s1\n" ^ def_d) in
+  match List.find_opt (fun (k, _, _) -> k = "m") fd.Eval.named_points with
+  | Some (_, _, step) ->
+      Alcotest.(check int)
+        "outer .m's step unaffected by def-local .m reuse" 0 step
+  | None -> Alcotest.fail "m not found in named_points"
 
 let test_eval_export_collision_needs_bang () =
   expect_error "use ! to shadow" (fun () ->
@@ -947,7 +981,7 @@ let test_eval_export_bang_shadows () =
     eval_src ("mark --l1 = through .a .b\n" ^ def_d ^ "export { --l1! } $i\n")
   in
   Alcotest.(check bool) "l1 present" true
-    (List.mem_assoc "l1" fd.Eval.named_lines)
+    (mem_assoc3 "l1" fd.Eval.named_lines)
 
 let test_eval_export_bang_without_conflict () =
   expect_error "nothing to shadow" (fun () ->
@@ -968,7 +1002,7 @@ let test_eval_export_temp_target () =
     eval_src (def_d ^ "export { .m as ._t } $i\nexport { .m as ._t } $i\n")
   in
   Alcotest.(check bool) "temp target not named" true
-    (not (List.mem_assoc "_t" fd.Eval.named_points))
+    (not (mem_assoc3 "_t" fd.Eval.named_points))
 
 (* up to = anchor: only the top flap of a 2-layer stack folds → 3 faces.
    The fold's own hinge (--hinge) is parallel to the fold axis, so folding
@@ -1158,7 +1192,7 @@ let test_ax5_no_viable () =
    y=x diagonal (through a and c, off the (1,0) corner) *)
 let test_ax5_bind_x_on_l2 () =
   let fd = eval_src "mark --k = map --da onto --ab toward .b\n" in
-  match List.assoc_opt "k" fd.Eval.named_lines with
+  match assoc3 "k" fd.Eval.named_lines with
   | Some k ->
       Alcotest.(check bool) "--k passes through (0,0)" true
         (Geom.side_of_line k (pt 0 0) = 0);
@@ -1172,7 +1206,7 @@ let test_ax5_bind_x_on_l2 () =
    creases (x+y=1/2 vs x−y=1/2 — opposite sides of (1,1)) *)
 let test_ax5_bind_endpoint_directions () =
   let k src =
-    match List.assoc_opt "k" (eval_src src).Eval.named_lines with
+    match assoc3 "k" (eval_src src).Eval.named_lines with
     | Some k -> k
     | None -> Alcotest.fail "expected --k"
   in
@@ -1288,7 +1322,7 @@ let test_new_mark_precrease () =
 let test_new_mark_named () =
   let fd = eval_src "mark --d = map .a onto .c\n" in
   Alcotest.(check bool) "named crease bound" true
-    (List.mem_assoc "d" fd.Eval.named_lines);
+    (mem_assoc3 "d" fd.Eval.named_lines);
   Alcotest.(check int) "one mark" 1 (Array.length fd.Eval.state.Fold_state.marks)
 
 let test_new_fold_motion () =
@@ -1300,7 +1334,7 @@ let test_new_fold_motion () =
 let test_new_fold_named () =
   let fd = eval_src "fold --d = map .b onto .a moving .b\n" in
   Alcotest.(check bool) "named crease bound" true
-    (List.mem_assoc "d" fd.Eval.named_lines);
+    (mem_assoc3 "d" fd.Eval.named_lines);
   Alcotest.(check int) "one valley edge" 1 (count_assign Fold_state.V fd.Eval.state)
 
 (* fold along an existing material crease: --d = <motion> (value) then mark
@@ -1502,6 +1536,10 @@ let () =
             test_eval_export_selective;
           Alcotest.test_case "export all" `Quick test_eval_export_all;
           Alcotest.test_case "export rename" `Quick test_eval_export_rename;
+          Alcotest.test_case "export rename carries source step" `Quick
+            test_eval_export_rename_step;
+          Alcotest.test_case "def-local name reuse doesn't corrupt outer step"
+            `Quick test_eval_def_local_name_reuse_step;
           Alcotest.test_case "export collision needs bang" `Quick
             test_eval_export_collision_needs_bang;
           Alcotest.test_case "export bang shadows" `Quick

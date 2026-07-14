@@ -1,0 +1,4 @@
+paper square
+fold --v = map .a onto .b
+; assert named-step .a = 0
+; assert named-step --v = 1

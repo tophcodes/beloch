@@ -1,0 +1,15 @@
+; M1 regression, export/land_name path: a line landed via `export` carries
+; its OWN creation step from inside the def body (here step 0, bound before
+; any fold), which must not be clobbered by a later point bound under the
+; SAME bare stem in the outer scope (`.m` at step 1, after the fold).
+paper square
+def diagonal(.p .q) {
+  mark --d = through .p .q
+}
+$d1 = apply diagonal(.a .c)
+fold --v = map .a onto .b
+export { --d as --m } $d1
+.m = --v * --m
+
+; assert named-step --m = 0
+; assert named-step .m = 1
