@@ -955,6 +955,21 @@ let eval_folded (prog : Ast.program) : folded =
         with
         | Error msg -> Error.fail span msg
         | Ok moving_parents ->
+            (match
+               Fold_state.scoped_fold_hinge_closed !(ctx.state) ~axis
+                 ~move_side ~moving_parents
+             with
+            | Ok () -> ()
+            | Error (ta, tb) ->
+                Error.fail span
+                  (Printf.sprintf
+                     "the moving flap is joined to a stationary layer along a \
+                      segment ((%g,%g)-(%g,%g)) that is not on the fold axis \
+                      — it cannot fold on its own without tearing the paper. \
+                      Move those layers too, or fold along a crease on the \
+                      axis."
+                     (Num.to_float ta.Geom.x) (Num.to_float ta.Geom.y)
+                     (Num.to_float tb.Geom.x) (Num.to_float tb.Geom.y)));
             (match check with
             | Some k -> k (fun fi -> moving_parents.(fi))
             | None -> ());

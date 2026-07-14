@@ -577,6 +577,44 @@ let select_scope (st : t) ~(axis : Geom.line) ~(move_side : int)
         | None -> Ok inm
       end
 
+(* A scoped moving set is hinge-closed (validly foldable) iff every existing
+   crease segment separating a moving face from a stationary face lies on the
+   fold axis (see docs/superpowers/specs/2026-07-14-scoped-fold-hinge-closure-design.md).
+   Default
+   (non-scoped) folds partition faces by the axis halfplane, so their
+   mover/stayer boundaries are on the axis by construction — this predicate is
+   only meaningful (and only called) for scoped `up to` folds. *)
+let scoped_fold_hinge_closed (st : t) ~(axis : Geom.line) ~(move_side : int)
+    ~(moving_parents : bool array) : (unit, Geom.point * Geom.point) result =
+  let n = Array.length moving_parents in
+  let rec check = function
+    | [] -> Ok ()
+    | cid :: rest ->
+        let rec check_segs = function
+          | [] -> check rest
+          | (s : crease_segment) :: more ->
+              let l, r = s.faces in
+              (* A face marked moving in [moving_parents] is only clipped at the
+                 new axis: its [move_side] portion moves, its stay-side residual
+                 stays put. So a mover/stayer hinge tears only where its material
+                 actually lifts — i.e. strictly on [move_side]. A hinge on the
+                 stay side (or on the axis itself, a valid shared fold line)
+                 borders only stationary material and does not tear. The segment
+                 is straight and the move_side open halfplane is convex, so an
+                 endpoint check is exact: if neither endpoint is strictly on the
+                 move side, no interior point is either. *)
+              if
+                l < n && r >= 0 && r < n
+                && moving_parents.(l) <> moving_parents.(r)
+                && (Geom.side_of_line axis s.ta = move_side
+                   || Geom.side_of_line axis s.tb = move_side)
+              then Error (s.ta, s.tb)
+              else check_segs more
+        in
+        check_segs (crease_segments st cid)
+  in
+  check (all_crease_ids st)
+
 (* current table position of a material paper point: find the face whose paper
    polygon contains it, apply that face's isometry. Faces partition the paper,
    and isometries agree on shared crease edges, so any containing face works. *)

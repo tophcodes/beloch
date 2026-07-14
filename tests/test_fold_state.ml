@@ -512,6 +512,47 @@ let test_select_scope_cohesion_pulls_in_u_sibling () =
         true m.(2);
       Alcotest.(check bool) "bottom face does not move" false m.(0)
 
+(* scoped_fold_hinge_closed: the two_layer() state has one crease segment (the
+   hinge at y=1/2 spanning x in [0,1]) separating the two faces. The predicate
+   only flags a mover/stayer hinge whose material actually lifts — i.e. lies
+   strictly on the new fold's [move_side]. A hinge sitting on the STAY side is
+   only stationary residual and does not tear.
+
+   OK case: fold axis y=3/4, move_side=1 (the y>3/4 sliver moves). The hinge at
+   y=1/2 is at side -1 (= stay side), off the axis. It borders only stationary
+   material -> Ok. This case is exactly the fix: under the OLD "side <> 0"
+   definition the off-axis hinge would have been flagged Error. *)
+let test_scoped_fold_hinge_closed_ok_stay_side () =
+  let st = two_layer () in
+  let axis = { Geom.a = Num.zero; b = Num.one; c = qf 3 4 } (* y = 3/4 *) in
+  match
+    Fold_state.scoped_fold_hinge_closed st ~axis ~move_side:1
+      ~moving_parents:[| false; true |]
+  with
+  | Ok () -> ()
+  | Error _ ->
+      Alcotest.fail
+        "expected Ok: the hinge is on the stay side, only stationary material"
+
+(* ERROR case: fold axis y=1/4, move_side=1 (everything y>1/4 moves). The hinge
+   at y=1/2 is at side +1 (= move side): its material lifts -> tear. *)
+let test_scoped_fold_hinge_closed_move_side () =
+  let st = two_layer () in
+  let axis = { Geom.a = Num.zero; b = Num.one; c = qf 1 4 } (* y = 1/4 *) in
+  match
+    Fold_state.scoped_fold_hinge_closed st ~axis ~move_side:1
+      ~moving_parents:[| false; true |]
+  with
+  | Error (ta, tb) ->
+      Alcotest.(check bool) "flags the (0,1/2)-(1,1/2) hinge" true
+        ((Geom.point_equal ta { Geom.x = q 0; y = qf 1 2 }
+          && Geom.point_equal tb { Geom.x = q 1; y = qf 1 2 })
+        || (Geom.point_equal ta { Geom.x = q 1; y = qf 1 2 }
+           && Geom.point_equal tb { Geom.x = q 0; y = qf 1 2 }))
+  | Ok () ->
+      Alcotest.fail
+        "expected Error: the hinge is on the move side, its material lifts"
+
 (* add a dangling point mark at (1/4,1/4), fold the square in half along
    x=1/2, and assert the mark survives unchanged (paper coords fold-invariant).
    Local [pt] here is the rational 4-arg form (a/b, c/d), distinct from the
@@ -727,6 +768,12 @@ let () =
           Alcotest.test_case
             "cohesion: F-adjacent sibling moves with its cluster (ADR 0017)"
             `Quick test_select_scope_cohesion_pulls_in_u_sibling;
+          Alcotest.test_case
+            "scoped_fold_hinge_closed: stay-side off-axis hinge -> Ok"
+            `Quick test_scoped_fold_hinge_closed_ok_stay_side;
+          Alcotest.test_case
+            "scoped_fold_hinge_closed: move-side hinge -> Error"
+            `Quick test_scoped_fold_hinge_closed_move_side;
         ] );
       ( "marks",
         [

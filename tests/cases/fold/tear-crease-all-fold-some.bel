@@ -4,3 +4,5 @@ paper square
 fold map .d onto .a
 mark --m = map .c onto .d
 fold --m moving .c up to .c
+
+; expect error "tear"
