@@ -223,6 +223,7 @@
         [ 6, 7, -1 ]
       ],
       "beloch:step": null,
+      "beloch:source_line": 17,
       "beloch:edges": [
         {
           "axiom": "mark",

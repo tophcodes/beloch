@@ -80,6 +80,7 @@
       "beloch:faces_matrix": [ [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ] ],
       "faceOrders": [],
       "beloch:step": null,
+      "beloch:source_line": null,
       "beloch:edges": [ null, null, null, null ],
       "beloch:vertices_names": [ "a", "b", "c", "d" ]
     },
@@ -113,6 +114,7 @@
       ],
       "faceOrders": [],
       "beloch:step": "diagonals",
+      "beloch:source_line": null,
       "beloch:edges": [
         {
           "axiom": "axiom1",
@@ -179,6 +181,7 @@
       ],
       "faceOrders": [],
       "beloch:step": "centre",
+      "beloch:source_line": null,
       "beloch:edges": [
         {
           "axiom": "axiom1",

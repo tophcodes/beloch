@@ -153,6 +153,7 @@
       ],
       "faceOrders": [ [ 0, 3, 1 ], [ 0, 4, 1 ], [ 1, 5, 1 ], [ 2, 5, 1 ] ],
       "beloch:step": null,
+      "beloch:source_line": 11,
       "beloch:edges": [
         {
           "axiom": "fold",

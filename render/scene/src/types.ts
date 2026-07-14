@@ -26,6 +26,7 @@ export interface Frame {
 export interface Step {
   index: number;                                             // position in file_frames
   label: string | null;                                      // beloch:step
+  sourceLine: number | null;                                 // beloch:source_line
   frame: Frame;                                              // self-contained (merged over root)
 }
 
