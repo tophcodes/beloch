@@ -21,3 +21,7 @@ collapse (--ac & .c mountain) and --ac & .a
   and --v & --cd
   and --v & --ab
   and #[.b .rm] over #[.c .tm]
+
+; assert faces = 8
+; assert .rm paper = (1, 1/2)
+; assert .tm paper = (1/2, 1)

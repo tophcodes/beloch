@@ -9,3 +9,5 @@ mark --v  = map .a onto .b     ; vertical midline x = 1/2
 
 collapse --ac & .a and --ac & .c
   and --v & --cd and --v & --ab
+
+; expect error "flat-foldable"

@@ -15,3 +15,5 @@ mark --q = map --v onto --bc    ; vertical crease at x = 3/4
 
 collapse --h & #[.q .tm] and --h & --da
   and --v & --cd and --v & --ab
+
+; expect error "Maekawa"

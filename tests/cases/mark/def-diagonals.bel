@@ -15,3 +15,7 @@ step centre
 export { --d as --d1d } $d1
 export { --d as --d2d } $d2
 .m = --d1d * --d2d
+
+; assert faces = 1
+; assert .m = (1/2, 1/2)
+; assert steps = 3

@@ -1,4 +1,7 @@
 ; status: works — turn the blank sheet over, then a valley command folds a mountain
 paper square
 flip
-fold map .a onto .b moving .a
+fold --m = map .a onto .b moving .a
+
+; assert faces = 2
+; assert --m is mountain

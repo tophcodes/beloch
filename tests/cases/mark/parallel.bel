@@ -3,3 +3,5 @@ paper square
 mark --h1 = through .a .b
 mark --h2 = through .d .c
 .x = --h1 * --h2
+
+; expect error "parallel"

@@ -9,3 +9,7 @@ mark --v = map .a onto .b
 .ctr = --bd * --v
 mark --ac = through .a .c between .a .ctr
 fold --ac moving .b
+
+; assert faces = 2
+; assert .ctr paper = (1/2, 1/2)
+; assert --ac is valley

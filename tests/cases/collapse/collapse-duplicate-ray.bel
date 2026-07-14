@@ -11,3 +11,5 @@ mark --v = map .a onto .b      ; vertical midline, x = 1/2
 
 collapse --h & --bc and (--h & --bc mountain)
   and --v & --cd and (--v & --ab mountain)
+
+; expect error "duplicate ray"
