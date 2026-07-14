@@ -64,6 +64,7 @@ export function parseFold(input: string | object): FoldScene {
       return {
         index,
         label: (f["beloch:step"] ?? null) as string | null,
+        sourceLine: (f["beloch:source_line"] ?? null) as number | null,
         frame: frameFrom(merged),
       };
     });

@@ -64,6 +64,7 @@
       ],
       "faceOrders": [ [ 0, 1, 1 ] ],
       "beloch:step": null,
+      "beloch:source_line": 3,
       "beloch:edges": [
         null,
         {

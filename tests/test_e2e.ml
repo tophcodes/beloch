@@ -297,7 +297,10 @@ let test_faceorders_stable_fold_quarter () =
   in
   let orders =
     Yojson.Safe.Util.(
-      json |> member "file_frames" |> index 0 |> member "faceOrders")
+      (* one frame per fold now; the fully-folded state (both folds applied)
+         is the LAST frame, not the first *)
+      let frames = json |> member "file_frames" |> to_list in
+      List.nth frames (List.length frames - 1) |> member "faceOrders")
   in
   let expected =
     `List

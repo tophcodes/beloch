@@ -151,6 +151,7 @@
       ],
       "faceOrders": [ [ 0, 3, 1 ], [ 1, 4, 1 ], [ 2, 5, 1 ] ],
       "beloch:step": null,
+      "beloch:source_line": 4,
       "beloch:edges": [
         {
           "axiom": "axiom1",

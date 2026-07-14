@@ -77,6 +77,57 @@
         [ 0.0, 0.0 ],
         [ 1.0, 1.0 ],
         [ 0.41421356237309503, 1.0 ],
+        [ 1.0, 0.0 ],
+        [ 0.7071067811865475, 0.7071067811865475 ]
+      ],
+      "edges_vertices": [
+        [ 0, 1 ], [ 1, 2 ], [ 2, 0 ], [ 0, 3 ], [ 3, 1 ], [ 2, 4 ], [ 4, 0 ]
+      ],
+      "edges_assignment": [ "F", "B", "V", "B", "B", "B", "B" ],
+      "edges_foldAngle": [ 0.0, 0.0, 180.0, 0.0, 0.0, 0.0, 0.0 ],
+      "faces_vertices": [ [ 0, 1, 2 ], [ 0, 3, 1 ], [ 0, 2, 4 ] ],
+      "beloch:faces_matrix": [
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
+        [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
+        [
+          -0.7071067811865475, 0.7071067811865475, 0.7071067811865475,
+          0.7071067811865475, 0.0, 0.0
+        ]
+      ],
+      "faceOrders": [ [ 0, 2, 1 ] ],
+      "beloch:step": null,
+      "beloch:source_line": 4,
+      "beloch:edges": [
+        {
+          "axiom": "axiom1",
+          "sources": [ ".a", ".c" ],
+          "span": "kite.bel:3:1-26",
+          "name": "ac",
+          "step": null
+        },
+        null,
+        {
+          "axiom": "axiom5",
+          "sources": [ "--da", "--ac" ],
+          "span": "kite.bel:4:1-24",
+          "name": null,
+          "step": null
+        },
+        null,
+        null,
+        null,
+        null
+      ],
+      "beloch:vertices_names": [ "a", "c", null, "b", "d" ]
+    },
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": false,
+      "vertices_coords": [
+        [ 0.0, 0.0 ],
+        [ 1.0, 1.0 ],
+        [ 0.41421356237309503, 1.0 ],
         [ 1.0, 0.41421356237309503 ],
         [ 0.7071067811865475, 0.7071067811865475 ],
         [ 0.7071067811865475, 0.7071067811865475 ]
@@ -111,6 +162,7 @@
       ],
       "faceOrders": [ [ 0, 2, 1 ], [ 1, 3, 1 ] ],
       "beloch:step": null,
+      "beloch:source_line": 5,
       "beloch:edges": [
         {
           "axiom": "axiom1",

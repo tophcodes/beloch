@@ -1223,13 +1223,14 @@ let test_step_frames () =
   in
   let prog = Beloch.parse ~filename:"t" src in
   let fd = Beloch.Eval.eval_folded prog in
-  let tags = List.map fst fd.Beloch.Eval.frames in
-  (* baseline (None) + step a + step b *)
+  let tags = List.map (fun (s, _, _) -> s) fd.Beloch.Eval.frames in
+  (* baseline (None) + step a + step b — step markers push their own frames,
+     the trailing mark rides the conditional final push *)
   Alcotest.(check (list (option string))) "step tags"
     [ None; Some "a"; Some "b" ] tags;
   (* last frame state is the final state *)
-  Alcotest.(check bool) "last frame is final" true
-    (snd (List.nth fd.frames (List.length fd.frames - 1)) == fd.state)
+  let _, last_state, _ = List.nth fd.frames (List.length fd.frames - 1) in
+  Alcotest.(check bool) "last frame is final" true (last_state == fd.state)
 
 (* the join selector --[.a .b] finds the same bottom edge as the prelude --ab *)
 let test_select_edge () =
