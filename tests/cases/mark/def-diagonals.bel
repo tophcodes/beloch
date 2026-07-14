@@ -1,6 +1,3 @@
-; status: works — def/apply demo: one def constructs the line between two
-; corners; applied twice, the diagonals cross in the centre. Cross-instance
-; access is via `export` (instance member brackets are gone).
 paper square
 
 def diagonal(.p .q) {

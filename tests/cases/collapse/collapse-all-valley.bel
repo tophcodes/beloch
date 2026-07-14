@@ -1,6 +1,3 @@
-; status: errors — Maekawa. Four rays meet at the centre (both diagonals), a
-; valid flat vertex by angles, but all-valley gives |M - V| = 4, not 2.
-
 paper square
 
 mark --ac = map .b onto .d     ; diagonal a–c (folds b onto d)

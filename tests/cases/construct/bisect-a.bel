@@ -1,10 +1,5 @@
 paper square
 mark --v = map .a onto .b      ; vertical midline x = 1/2
 mark map --v onto --ab toward .a
-; status: works — direction pick: hinge at (1/2,0), toward .a selects the crease toward the a-corner
-; the second mark is unnamed, so the v1 grammar (named operands only) has
-; nothing to check its geometry against directly; the toward .a vs toward .b
-; divergence is covered externally by test_e2e_bisect_select (companion:
-; mark/bisect-b.bel)
 
 ; assert faces = 1

@@ -1,6 +1,3 @@
-; status: errors — a `standing` clause asks to keep a flap upright (a non-flat
-; end state); the collapse kernel only produces flat states so far.
-
 paper square
 
 mark --ac = map .b onto .d     ; diagonal a–c
