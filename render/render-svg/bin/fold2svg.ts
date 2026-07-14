@@ -35,8 +35,9 @@ const legend = args.includes("--legend");
 const step = flagVal("--step");
 const formatFlag = flagVal("--format"); // "svg"|"png", overrides outPath extension
 const widthFlag = flagVal("--width"); // PNG output width in px; default = doc width
+const explodeFlag = flagVal("--explode"); // folded-only: per-layer offset px; 0 = flat
 const FLAGS = new Set([
-  "--title", "--view", "--hidden", "--labels", "--step", "--format", "--width",
+  "--title", "--view", "--hidden", "--labels", "--step", "--format", "--width", "--explode",
 ]);
 const positional = args.filter((a, i) => !a.startsWith("--") && !FLAGS.has(args[i - 1]!));
 const [inPath, outPath] = positional;
@@ -52,8 +53,9 @@ try {
   const raw = !inPath || inPath === "-" ? await Bun.stdin.text() : await Bun.file(inPath).text();
   const scene = parseFold(raw);
   const opts = { title, labels, legend };
+  const explode = explodeFlag !== undefined ? Number(explodeFlag) : undefined;
   const doc = viewFlag === "folded"
-    ? renderFolded(scene, { ...opts, view: flip ? "bottom" : "top", hidden, step })
+    ? renderFolded(scene, { ...opts, view: flip ? "bottom" : "top", hidden, step, explode })
     : renderCP(scene, opts);
   const svg = doc.toString();
 
