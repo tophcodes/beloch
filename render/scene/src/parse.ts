@@ -74,14 +74,8 @@ export function parseFold(input: string | object): FoldScene {
   ).map(([name, v]) => ({ name, paper: v.paper, table: v.table, step: v.step ?? 0 }));
   const namedLines: NamedLine[] = Object.entries(
     (fold["beloch:named_lines"] ?? {}) as
-      Record<string, LineCoeffs | { coeffs: LineCoeffs; step?: number }>,
-  ).map(([name, v]) =>
-    // pre-A2 fixtures store a bare [a,b,c] triple; current emitter wraps it
-    // as {coeffs, step}. Accept both so older .fold files still parse.
-    Array.isArray(v)
-      ? { name, coeffs: v, step: 0 }
-      : { name, coeffs: v.coeffs, step: v.step ?? 0 },
-  );
+      Record<string, { coeffs: LineCoeffs; step?: number }>,
+  ).map(([name, v]) => ({ name, coeffs: v.coeffs, step: v.step ?? 0 }));
   return { cp, steps, namedPoints, namedLines, creases: groupCreases(cp), marks: marksFrom(fold) };
 }
 
