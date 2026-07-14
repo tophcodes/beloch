@@ -6,3 +6,7 @@ paper square
 mark --ac = through .a .c
 mark --bd = through .b .d
 .ctr = --ac * --bd
+
+; assert faces = 1
+; assert .ctr = (1/2, 1/2)
+; assert steps = 1

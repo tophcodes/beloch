@@ -10,3 +10,9 @@ paper square
 mark --b = through .a .c
 fold --v = map .c onto .b
 mark --q = perp --b & #[.c .d] through .a
+
+; assert faces = 4
+; assert steps = 1
+; assert --v is valley
+; assert .a incident --q
+; assert .c incident --q

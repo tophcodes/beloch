@@ -1,6 +1,0 @@
-; status: works — two diagonals, name their crossing, fold a corner onto it
-paper square
-mark --d1 = through .a .c
-mark --d2 = through .b .d
-.center = --d1 * --d2
-fold map .a onto .center

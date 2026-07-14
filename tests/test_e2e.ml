@@ -79,7 +79,7 @@ let test_e2e_inline_error () =
         "paper square\nmark --aa = through .a .a\nmark perp --aa through .b\n")
 
 let test_e2e_diagonals () =
-  let src = read_example "syntax/diagonals.bel" in
+  let src = read_case "construct/diagonals.bel" in
   let json = Beloch.fold_string ~filename:"diagonals.bel" src in
   let open Yojson.Safe.Util in
   Alcotest.(check int) "vertices" 5
@@ -89,7 +89,7 @@ let test_e2e_diagonals () =
 
 let test_e2e_diagonals_four_faces () =
   let json =
-    Beloch.fold_string ~filename:"diagonals.bel" (read_example "syntax/diagonals.bel")
+    Beloch.fold_string ~filename:"diagonals.bel" (read_case "construct/diagonals.bel")
   in
   let open Yojson.Safe.Util in
   Alcotest.(check int) "four faces" 4
@@ -97,7 +97,7 @@ let test_e2e_diagonals_four_faces () =
 
 let test_e2e_perp () =
   let json =
-    Beloch.fold_string ~filename:"perp.bel" (read_example "syntax/perp.bel")
+    Beloch.fold_string ~filename:"perp.bel" (read_case "construct/perp.bel")
   in
   let open Yojson.Safe.Util in
   Alcotest.(check int) "four faces" 4
@@ -112,7 +112,7 @@ let test_e2e_perp () =
 
 let test_e2e_cube_root () =
   let json =
-    Beloch.fold_string ~filename:"cube-root.bel" (read_example "syntax/cube-root.bel")
+    Beloch.fold_string ~filename:"cube-root.bel" (read_case "fold/cube-root.bel")
   in
   let open Yojson.Safe.Util in
   let axioms =
@@ -126,11 +126,11 @@ let test_e2e_cube_root () =
 let test_e2e_cube_root_restructured () =
   ignore
     (Beloch.fold_string ~filename:"cube-root.bel"
-       (read_example "syntax/cube-root.bel"))
+       (read_case "fold/cube-root.bel"))
 
 let test_e2e_cube_root_temps_hidden () =
   let json =
-    Beloch.fold_string ~filename:"cube-root.bel" (read_example "syntax/cube-root.bel")
+    Beloch.fold_string ~filename:"cube-root.bel" (read_case "fold/cube-root.bel")
   in
   let open Yojson.Safe.Util in
   let pts = json |> member "beloch:named_points" |> to_assoc in
@@ -146,7 +146,7 @@ let test_e2e_bisect_select () =
       | e -> Some (e |> member "axiom" |> to_string))
   in
   let ja =
-    Beloch.fold_string ~filename:"bisect-a.bel" (read_example "syntax/bisect-a.bel")
+    Beloch.fold_string ~filename:"bisect-a.bel" (read_case "construct/bisect-a.bel")
   in
   let jb =
     Beloch.fold_string ~filename:"bisect-b.bel" (read_case "mark/bisect-b.bel")
@@ -208,7 +208,7 @@ let test_eval_map_through_toward () =
 let test_e2e_fold_quarter () =
   let json =
     Beloch.fold_string ~filename:"fold-quarter.bel"
-      (read_example "syntax/fold-quarter.bel")
+      (read_case "fold/fold-quarter.bel")
   in
   let open Yojson.Safe.Util in
   let folded = json |> member "file_frames" |> to_list |> List.hd in
@@ -253,7 +253,7 @@ let test_e2e_flip_cp_counts () =
 
 let test_faceorders_stable_fold_quarter () =
   let json =
-    Beloch.fold_string ~filename:"fq.bel" (read_example "syntax/fold-quarter.bel")
+    Beloch.fold_string ~filename:"fq.bel" (read_case "fold/fold-quarter.bel")
   in
   let orders =
     Yojson.Safe.Util.(

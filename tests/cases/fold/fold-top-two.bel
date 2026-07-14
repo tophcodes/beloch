@@ -10,3 +10,9 @@ fold --h = map .d onto .a
 .p = --l * --h
 .q = --v * --bot
 fold through .p .q moving .d up to .c
+
+; assert faces = 6
+; assert steps = 3
+; assert --l is boundary
+; assert --bot is boundary
+; assert --v is valley
