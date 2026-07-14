@@ -9,6 +9,7 @@ import { makeLayout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
 import { coveredIntervals, faceEdgeIndex, sideUp } from "./geometry";
 import { resolveIsometry } from "./isometry";
+import { placeLabels, type LabelAnchor } from "./primitives/labels";
 import type { RenderOptions } from "./render-cp";
 
 export interface FoldedOptions extends RenderOptions {
@@ -213,11 +214,17 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
 
   creases.children.push(...dashedLines);
 
-  // named-vertex dots + labels (hover/selection targets in the folded view)
+  // named-vertex dots + labels (hover/selection targets in the folded view).
+  // Dots stay per-vertex; labels route through the declutter primitive so that
+  // vertices collapsing onto one folded point (cube-root's .a/.b/.c/.d) merge
+  // into a single ".a,.b,.c,.d" label instead of stacking illegibly. The
+  // preferred (legacy) offset is tried first, so isolated labels keep their
+  // exact previous position.
   const annotations = doc.layer("annotations");
   const fverts = frame.vertices;
   const centreX = (layout.minX + layout.maxX) / 2;
   const centreY = (layout.minY + layout.maxY) / 2;
+  const labelAnchors: LabelAnchor[] = [];
   frame.verticesNames.forEach((nm, i) => {
     if (!nm) return;
     const p = fverts[i]!;
@@ -228,14 +235,18 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
       }),
     );
     const ox = p[0] < centreX ? -16 : 10, oy = p[1] < centreY ? 18 : -8;
-    annotations.children.push(
-      el("text", {
-        x: mx(p[0]) + ox, y: ty(p[1]) + oy,
-        "font-size": 17, "font-weight": 600, fill: theme.ink,
-        "data-bel-name": nm, "data-kind": "point-label",
-      }, [], `.${nm}`),
-    );
+    labelAnchors.push({
+      x: mx(p[0]), y: ty(p[1]), text: `.${nm}`, key: nm, preferOffset: [ox, oy],
+    });
   });
+  for (const lab of placeLabels(labelAnchors, { fontSize: 17 })) {
+    const attrs: Record<string, string | number> = {
+      x: lab.x, y: lab.y, "font-size": 17, "font-weight": 600, fill: theme.ink,
+      "data-bel-name": lab.keys[0]!, "data-kind": "point-label",
+    };
+    if (lab.anchor !== "start") attrs["text-anchor"] = lab.anchor;
+    annotations.children.push(el("text", attrs, [], lab.text));
+  }
 
   appendConstructions(doc, scene, layout, theme, opts.labels, { frame });
   if (opts.title) appendTitle(doc, theme, opts.title);
