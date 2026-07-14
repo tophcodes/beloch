@@ -63,7 +63,7 @@ const svg = renderCP(parseFold(fold as object)).toString();
 const foldJson = JSON.stringify(fold);
 ---
 
-<beloch-figure>
+<beloch-figure data-line-offset={filename ? 1 : 0}>
   <figure class="beloch-card">
     <div class="beloch-code-panel">
       <pre class={`beloch-pre${showLines ? " has-lines" : ""}`}>{showLines && <span class="beloch-gutter" aria-hidden="true">{gutterLines.map((n, i) => <>{i > 0 ? "\n" : ""}<span data-line={n}>{n}</span></>)}</span>}<code set:html={highlightedSource} /></pre>
