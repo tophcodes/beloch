@@ -1,0 +1,10 @@
+; M1 regression: point .m and line --m share a bare stem but live in
+; separate namespaces (`.` vs `--`), so they may be bound at DIFFERENT
+; steps without one clobbering the other's recorded creation step.
+paper square
+mark --m = through .a .c
+fold --v = map .a onto .b
+.m = --v * --m
+
+; assert named-step --m = 0
+; assert named-step .m = 1
