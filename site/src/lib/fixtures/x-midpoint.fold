@@ -43,21 +43,21 @@
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".center" ],
-      "span": "examples/syntax/x-midpoint.bel:6:1-25",
+      "span": "tests/cases/construct/x-midpoint.bel:6:1-25",
       "name": null,
       "step": null
     },
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "examples/syntax/x-midpoint.bel:3:1-26",
+      "span": "tests/cases/construct/x-midpoint.bel:3:1-26",
       "name": "d1",
       "step": null
     },
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".d" ],
-      "span": "examples/syntax/x-midpoint.bel:4:1-26",
+      "span": "tests/cases/construct/x-midpoint.bel:4:1-26",
       "name": "d2",
       "step": null
     },
@@ -65,7 +65,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "examples/syntax/x-midpoint.bel:3:1-26",
+      "span": "tests/cases/construct/x-midpoint.bel:3:1-26",
       "name": "d1",
       "step": null
     },
@@ -73,14 +73,14 @@
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".d" ],
-      "span": "examples/syntax/x-midpoint.bel:4:1-26",
+      "span": "tests/cases/construct/x-midpoint.bel:4:1-26",
       "name": "d2",
       "step": null
     },
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".center" ],
-      "span": "examples/syntax/x-midpoint.bel:6:1-25",
+      "span": "tests/cases/construct/x-midpoint.bel:6:1-25",
       "name": null,
       "step": null
     },
@@ -88,7 +88,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "examples/syntax/x-midpoint.bel:3:1-26",
+      "span": "tests/cases/construct/x-midpoint.bel:3:1-26",
       "name": "d1",
       "step": null
     },
@@ -110,6 +110,24 @@
   "beloch:named_lines_frame": "creasePattern",
   "beloch:marks": [],
   "file_frames": [
+    {
+      "frame_classes": [ "foldedForm" ],
+      "frame_parent": 0,
+      "frame_inherit": false,
+      "vertices_coords": [
+        [ 0.0, 0.0 ], [ 1.0, 0.0 ], [ 1.0, 1.0 ], [ 0.0, 1.0 ]
+      ],
+      "edges_vertices": [ [ 0, 1 ], [ 1, 2 ], [ 2, 3 ], [ 3, 0 ] ],
+      "edges_assignment": [ "B", "B", "B", "B" ],
+      "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0 ],
+      "faces_vertices": [ [ 0, 1, 2, 3 ] ],
+      "beloch:faces_matrix": [ [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ] ],
+      "faceOrders": [],
+      "beloch:step": null,
+      "beloch:source_line": null,
+      "beloch:edges": [ null, null, null, null ],
+      "beloch:vertices_names": [ "a", "b", "c", "d" ]
+    },
     {
       "frame_classes": [ "foldedForm" ],
       "frame_parent": 0,
@@ -169,21 +187,21 @@
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".center" ],
-          "span": "examples/syntax/x-midpoint.bel:6:1-25",
+          "span": "tests/cases/construct/x-midpoint.bel:6:1-25",
           "name": null,
           "step": null
         },
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "examples/syntax/x-midpoint.bel:3:1-26",
+          "span": "tests/cases/construct/x-midpoint.bel:3:1-26",
           "name": "d1",
           "step": null
         },
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".d" ],
-          "span": "examples/syntax/x-midpoint.bel:4:1-26",
+          "span": "tests/cases/construct/x-midpoint.bel:4:1-26",
           "name": "d2",
           "step": null
         },
@@ -191,7 +209,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "examples/syntax/x-midpoint.bel:3:1-26",
+          "span": "tests/cases/construct/x-midpoint.bel:3:1-26",
           "name": "d1",
           "step": null
         },
@@ -199,14 +217,14 @@
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".d" ],
-          "span": "examples/syntax/x-midpoint.bel:4:1-26",
+          "span": "tests/cases/construct/x-midpoint.bel:4:1-26",
           "name": "d2",
           "step": null
         },
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".center" ],
-          "span": "examples/syntax/x-midpoint.bel:6:1-25",
+          "span": "tests/cases/construct/x-midpoint.bel:6:1-25",
           "name": null,
           "step": null
         },
@@ -214,7 +232,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "examples/syntax/x-midpoint.bel:3:1-26",
+          "span": "tests/cases/construct/x-midpoint.bel:3:1-26",
           "name": "d1",
           "step": null
         },

@@ -34,10 +34,10 @@ test("parses bisect-a: CP frame, provenance, named points/lines, creases", async
 test("parses fold-quarter: foldedForm step inherits root fields", async () => {
   const scene = parseFold(await golden("fold-quarter.fold"));
   // fold-quarter.bel has two `fold` statements and no step markers: one
-  // frame per fold now (Slice B, per-fold frames), each carrying its
-  // statement's source line
-  expect(scene.steps.length).toBe(2);
-  expect(scene.steps.map((s) => s.sourceLine)).toEqual([3, 4]);
+  // frame per fold, each carrying its statement's source line, preceded by
+  // the synthetic flat step 0 (the unfolded sheet, no source span).
+  expect(scene.steps.length).toBe(3);
+  expect(scene.steps.map((s) => s.sourceLine)).toEqual([null, 3, 4]);
   // the fully-folded state (both folds applied) is the LAST frame; its edge
   // list matches the root creasePattern
   const step = scene.steps[scene.steps.length - 1]!;
@@ -63,16 +63,18 @@ test("pickStep: unmatched label throws StepNotFoundError listing named steps", a
   } catch (err) {
     expect(err).toBeInstanceOf(StepNotFoundError);
     expect((err as Error).message).toBe(
-      "step 'no-such-step' not found — 4 step(s) available. " +
+      "step 'no-such-step' not found — 5 step(s) available. " +
         "named steps are vertical_middle (2), thirds (3), beloch_fold (4)",
     );
   }
 });
 
-test("pickStep: numeric label selects by 1-based ordinal", async () => {
+test("pickStep: numeric label selects by 0-based ordinal", async () => {
   const scene = parseFold(await golden("cube-root.fold"));
-  expect(pickStep(scene, "2")!.label).toBe("vertical_middle");
+  // step 0 is the flat sheet, step k the k-th fold
+  expect(pickStep(scene, "0")!.label).toBeNull();
   expect(pickStep(scene, "1")!.label).toBeNull();
+  expect(pickStep(scene, "2")!.label).toBe("vertical_middle");
 });
 
 test("pickStep: out-of-range ordinal throws StepNotFoundError", async () => {
@@ -89,17 +91,17 @@ test("StepNotFoundError.render: no named steps omits the list", () => {
 test("StepNotFoundError.render: applies the given style to names only", () => {
   const available = [{ index: 0, label: null }, { index: 1, label: "a" }];
   const styled = StepNotFoundError.render("x", available, (s) => `[${s}]`);
-  expect(styled).toBe("step 'x' not found — 2 step(s) available. named steps are [a] (2)");
+  expect(styled).toBe("step 'x' not found — 2 step(s) available. named steps are [a] (1)");
 });
 
 test("multi-step file keeps file order and labels", async () => {
   const scene = parseFold(await golden("cube-root.fold"));
-  expect(scene.steps.length).toBe(4);
+  expect(scene.steps.length).toBe(5);
   expect(scene.steps.map((s) => s.label)).toEqual([
-    null, "vertical_middle", "thirds", "beloch_fold",
+    null, null, "vertical_middle", "thirds", "beloch_fold",
   ]);
-  // "thirds" is the 3rd foldedForm frame => file_frames position 2
-  expect(pickStep(scene, "thirds")!.index).toBe(2);
+  // flat step 0 + first fold are unlabelled; "thirds" is file_frames position 3
+  expect(pickStep(scene, "thirds")!.index).toBe(3);
   // indices strictly increasing (file order preserved)
   const idx = scene.steps.map((s) => s.index);
   expect([...idx].sort((a, b) => a - b)).toEqual(idx);
