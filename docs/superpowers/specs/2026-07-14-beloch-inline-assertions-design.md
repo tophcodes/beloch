@@ -100,11 +100,27 @@ Per file:
    result — named points (paper + table coords), named lines (coeffs), the
    final folded frame (faces), the frame list (steps), and crease assignments.
 
-Operand resolution draws on the evaluator's own state (named-point table with
-paper+table coords, named-line table, `Fold_state.t` edges/faces, the folded
-frames). The implementation plan confirms the exact accessors (e.g. whether
-corner names `a`–`d` are reachable through the named-point table or must come
-from `beloch:vertices_names`).
+Operand resolution draws on the evaluator's own state:
+`Eval.t.named_points : (string * Geom.point) list` is **paper**-space
+(construction landmarks, single coord each); `named_lines` likewise. The
+`Fold_state.t` carries the faces/edges/layer order and the folded frames.
+
+**Table projection.** A named point's `table` coord is not stored — it is
+computed exactly the way `fold_emit.folded_frame_of_state` does: find the
+face(s) whose paper polygon contains the point and apply that face's isometry
+(`Isometry.apply_point f.iso p`). v1 semantics:
+- point in exactly one face → that table image.
+- point on the fold axis / shared crease → all containing faces agree → that
+  image.
+- point genuinely under multiple layers with disagreeing images → harness
+  error: `"ambiguous table position (point lies in N layers); flap space is v2"`.
+This keeps v1 single-valued and honest; the multi-layer case is exactly what
+flap space (deferred) will address.
+
+The implementation plan confirms whether corner names `a`–`d` are reachable
+through `named_points` or must come from `beloch:vertices_names`, and factors
+the projection helper so the runner and `fold_emit` share it rather than
+duplicating the containing-face logic.
 
 `dune`: add `test_bel_assert` to the tests stanza with a `(source_tree cases)`
 dep so the cases ship into the sandbox.
