@@ -14,7 +14,7 @@ type folded = {
   state : Fold_state.t;
   named_points : (string * Geom.point * int) list;
       (* [int] is the 0-based creation step (index into [frames] at bind
-         time); see [scope.steps] *)
+         time); see [scope.point_steps]/[scope.line_steps] *)
   named_lines : (string * Geom.line * int) list;
   frames : (string option * Fold_state.t * Error.span option) list;
 }
@@ -58,29 +58,39 @@ type axis_result =
 type instance = {
   ipoints : (string, Geom.point) Hashtbl.t;
   ilines : (string, crease_val) Hashtbl.t;
-  isteps : (string, int) Hashtbl.t;
+  ipoint_steps : (string, int) Hashtbl.t;
+  iline_steps : (string, int) Hashtbl.t;
       (* creation step of each member, copied from the def body's own
-         [scope.steps] at apply-time; see [scope.steps] *)
+         [scope.point_steps]/[scope.line_steps] at apply-time; see those.
+         Points and lines are separate namespaces (distinct sigils `.`/`--`),
+         so a point and a line may share a stem — kept in separate tables
+         rather than one shared-key table so they can't clobber each
+         other's step. *)
 }
 
 type scope = {
   points    : (string, Geom.point) Hashtbl.t;
   lines     : (string, crease_val) Hashtbl.t;
   instances : (string, instance) Hashtbl.t;
-  steps     : (string, int) Hashtbl.t;
-      (* creation step of each name bound in points/lines within THIS scope,
-         recorded at bind time by [bind_point]/[bind_crease] as
-         [List.length ctx.frames_rev]. Scoped per-entry so it saves/restores
-         across `apply` exactly like points/lines do — a def body's own
-         bindings never clobber an outer scope's already-recorded step for
-         the same name. *)
+  point_steps : (string, int) Hashtbl.t;
+  line_steps  : (string, int) Hashtbl.t;
+      (* creation step of each name bound in points/lines (respectively)
+         within THIS scope, recorded at bind time by [bind_point]/
+         [bind_crease] as [List.length ctx.frames_rev]. Scoped per-entry so
+         it saves/restores across `apply` exactly like points/lines do — a
+         def body's own bindings never clobber an outer scope's already-
+         recorded step for the same name. Kept as two tables (not one keyed
+         by bare name) because points and lines are separate namespaces: a
+         point and a line may share a stem (`.m` / `--m`), and a single
+         shared-key table would let one clobber the other's step. *)
 }
 
 let make_scope () = {
-  points    = Hashtbl.create 8;
-  lines     = Hashtbl.create 8;
-  instances = Hashtbl.create 4;
-  steps     = Hashtbl.create 8;
+  points      = Hashtbl.create 8;
+  lines       = Hashtbl.create 8;
+  instances   = Hashtbl.create 4;
+  point_steps = Hashtbl.create 8;
+  line_steps  = Hashtbl.create 8;
 }
 
 type name_ctx = Root | InInstance of string | Anon
@@ -142,7 +152,7 @@ let bind_point (ctx : ctx) (name : string) (span : Error.span) (p : Geom.point)
       (Printf.sprintf "point .%s is already bound; only _-prefixed temps rebind"
          name);
   Hashtbl.replace s.points name p;
-  Hashtbl.replace s.steps name (List.length ctx.frames_rev)
+  Hashtbl.replace s.point_steps name (List.length ctx.frames_rev)
 
 let bind_crease (ctx : ctx) (name : string) (span : Error.span) (cv : crease_val) =
   let s = List.hd ctx.scopes in
@@ -151,7 +161,7 @@ let bind_crease (ctx : ctx) (name : string) (span : Error.span) (cv : crease_val
       (Printf.sprintf "crease --%s is already bound; only _-prefixed temps rebind"
          name);
   Hashtbl.replace s.lines name cv;
-  Hashtbl.replace s.steps name (List.length ctx.frames_rev)
+  Hashtbl.replace s.line_steps name (List.length ctx.frames_rev)
 
 (* `mark --d` on an already-bound name (e.g. a pure `--d = <motion>` value)
    promotes its binding in place to the freshly materialised crease, so a
@@ -1425,7 +1435,7 @@ let eval_folded (prog : Ast.program) : folded =
             run_fold ~span ~axis ~fs ~implied ~side_override ~crease_id:cid ~prov;
             (* push the frame BEFORE binding the name: a first-fold crease's
                creation step must count that fold (step 1), not the
-               pre-fold count (step 0) — see scope.steps. *)
+               pre-fold count (step 0) — see scope.line_steps. *)
             push_frame (Some span);
             (match name_opt with
             | Some n -> bind_crease ctx n span (Material (cid, axis))
@@ -1597,7 +1607,7 @@ let eval_folded (prog : Ast.program) : folded =
                    iname);
             let inst =
               { ipoints = Hashtbl.create 8; ilines = Hashtbl.create 8;
-                isteps = Hashtbl.create 8 }
+                ipoint_steps = Hashtbl.create 8; iline_steps = Hashtbl.create 8 }
             in
             Hashtbl.iter
               (fun k v -> if not (is_temp k) then Hashtbl.replace inst.ipoints k v)
@@ -1608,10 +1618,16 @@ let eval_folded (prog : Ast.program) : folded =
             (* carries each member's OWN creation step (recorded in the def
                body's own scope) forward onto the instance, so a later
                [export] can stamp the landed name with the source's real
-               step instead of defaulting to 0 (see [land_name]). *)
+               step instead of defaulting to 0 (see [land_name]). Points and
+               lines carried separately (see [scope.point_steps]/
+               [line_steps]) so a same-stem point/line pair can't clobber
+               each other's step. *)
             Hashtbl.iter
-              (fun k v -> if not (is_temp k) then Hashtbl.replace inst.isteps k v)
-              body_scope.steps;
+              (fun k v -> if not (is_temp k) then Hashtbl.replace inst.ipoint_steps k v)
+              body_scope.point_steps;
+            Hashtbl.iter
+              (fun k v -> if not (is_temp k) then Hashtbl.replace inst.iline_steps k v)
+              body_scope.line_steps;
             Hashtbl.replace cur.instances iname inst)
     | Ast.Export (entries_opt, iname, span) ->
         let inst = lookup_instance ctx iname span in
@@ -1637,22 +1653,29 @@ let eval_folded (prog : Ast.program) : folded =
              inside the def body: it carries the source's own creation step,
              not a fresh one at export time (defaults to 0 if the source was
              never routed through bind_point/bind_crease, e.g. a def
-             parameter passed straight through unmodified). *)
-          let step = Option.value (Hashtbl.find_opt inst.isteps src) ~default:0 in
+             parameter passed straight through unmodified). Looked up in the
+             kind-appropriate table (point vs line) so a same-stem point/line
+             pair can't clobber each other's step. *)
           match kind with
           | `Point -> (
+              let step =
+                Option.value (Hashtbl.find_opt inst.ipoint_steps src) ~default:0
+              in
               match Hashtbl.find_opt inst.ipoints src with
               | Some v ->
                   Hashtbl.replace cur.points target v;
-                  Hashtbl.replace cur.steps target step
+                  Hashtbl.replace cur.point_steps target step
               | None ->
                   Error.fail espan
                     (Printf.sprintf "instance $%s has no point member %s" iname src))
           | `Line -> (
+              let step =
+                Option.value (Hashtbl.find_opt inst.iline_steps src) ~default:0
+              in
               match Hashtbl.find_opt inst.ilines src with
               | Some v ->
                   Hashtbl.replace cur.lines target v;
-                  Hashtbl.replace cur.steps target step
+                  Hashtbl.replace cur.line_steps target step
               | None ->
                   Error.fail espan
                     (Printf.sprintf "instance $%s has no line member %s" iname src))
@@ -1802,15 +1825,22 @@ let eval_folded (prog : Ast.program) : folded =
   List.iter eval_stmt prog;
   (* corners and other names never routed through bind_point/bind_crease (the
      prelude corners/edges, set up directly via Hashtbl.replace above) have no
-     entry in root_scope.steps; they default to step 0. Reads root_scope.steps
-     the same way named_points/named_lines below read root_scope.points/.lines
-     — a scoped table, saved/restored across `apply` exactly like those. *)
-  let step_of n =
-    match Hashtbl.find_opt root_scope.steps n with Some s -> s | None -> 0
+     entry in root_scope.point_steps/.line_steps; they default to step 0.
+     Reads root_scope.point_steps/.line_steps the same way named_points/
+     named_lines below read root_scope.points/.lines — scoped tables, saved/
+     restored across `apply` exactly like those. Kept separate (not one
+     shared-key table) because points and lines are separate namespaces: a
+     point and a line may share a stem (`.m` / `--m`) without clobbering each
+     other's step. *)
+  let step_of_point n =
+    match Hashtbl.find_opt root_scope.point_steps n with Some s -> s | None -> 0
+  in
+  let step_of_line n =
+    match Hashtbl.find_opt root_scope.line_steps n with Some s -> s | None -> 0
   in
   let named_points =
     Hashtbl.fold
-      (fun k v acc -> if is_temp k then acc else (k, v, step_of k) :: acc)
+      (fun k v acc -> if is_temp k then acc else (k, v, step_of_point k) :: acc)
       root_scope.points []
   in
   let named_lines =
@@ -1819,11 +1849,11 @@ let eval_folded (prog : Ast.program) : folded =
         if is_temp k then acc
         else
           match cv with
-          | Frozen l -> (k, l, step_of k) :: acc
-          | Mark (_, l) -> (k, l, step_of k) :: acc
+          | Frozen l -> (k, l, step_of_line k) :: acc
+          | Mark (_, l) -> (k, l, step_of_line k) :: acc
           | Material (cid, l_orig) -> (
               match Fold_state.crease_axis !(ctx.state) cid l_orig with
-              | `Line l -> (k, l, step_of k) :: acc
+              | `Line l -> (k, l, step_of_line k) :: acc
               (* bent by a later fold, or no material endpoints left: no
                  single current line to emit, so omit from the map rather
                  than emit the stale frozen original *)
