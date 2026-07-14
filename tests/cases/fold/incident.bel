@@ -1,0 +1,8 @@
+paper square
+mark --v = map .b onto .a
+mark --l = through .a .b
+mark --r = through .b .c
+.p = --v * --l
+
+; assert .p incident --v
+; assert .p not incident --r

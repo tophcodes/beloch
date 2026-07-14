@@ -1,0 +1,7 @@
+paper square
+fold map .d onto .a
+
+; assert .d = .a
+; assert .d paper = (0, 1)
+; assert faces = 2
+; assert steps = 1

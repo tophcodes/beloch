@@ -1,0 +1,4 @@
+paper square
+mark through .a .a
+
+; expect error "same place"
