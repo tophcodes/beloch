@@ -71,37 +71,49 @@ scene — needless duplication.)*
 
 ### SVG backend — `render/render-svg/src/render-folded.ts`
 
+**Grounding — why not a whole-face offset.** A flat-folded stack's layers are
+coincident *in the plane*; thickness only shows at the exposed paper **edges**,
+where lower layers peek out beyond the top one. The side view in
+[hull2020, §8.1, Fig. 8.1] draws exactly this: `t`-separated **registered**
+layers (thickness "exaggerated for the purposes of illustration"), joined at
+rounded fold spines — the layers do **not** slide sideways. Translating a whole
+face by a fixed screen vector is a shear that corresponds to no real view of
+stacked paper; the first cut did this and looked wrong. (The FOLD spec,
+`foldformat.md`, reinforces it: layer order is *pointwise* and can even be
+*cyclic* — a single global per-face translation cannot represent it.)
+
+So faces stay **registered** (drawn at true coordinates, no translation).
+Thickness is a per-edge treatment.
+
 Add to `FoldedOptions`:
 
 ```ts
-explode?: number;   // per-layer offset in px; default 1.5
+thickness?: number;   // layer-edge thickness in px per stacked layer; default 1.5, 0 = flat
 ```
 
-**Default-on (1.5px).** This regenerates all existing folded goldens/snapshots
-(intended — the fanned view is the new default). `explode: 0` restores the exact
-previous byte-identical output.
+**Default-on (1.5px).** Regenerates the folded goldens/snapshots (intended).
+`thickness: 0` restores byte-identical flat output.
 
-When `explode > 0`:
-- Each face and its incident creases/edges shift by
-  `explode · faceDepth[fi] · (+1, −1)` — up-right, toward the shadow light so
-  stagger and shadow agree.
-- Implemented as a per-depth-band `<g transform="translate(dx, dy)">` wrapping
-  each depth level's faces + creases, so creases stay glued to their face rather
-  than detaching.
-- Occlusion (`coveredIntervals`, visible-interval clipping) is still computed in
-  **true (unshifted) coordinates**; at ε ≈ 1.5px the residual mismatch between
-  clipped geometry and shifted paint is sub-pixel and visually nil.
+When `thickness > 0`:
+- A **silhouette edge** (bounding exactly one face) is offset **perpendicular-
+  outward** from that face by `thickness · faceDepth[fi]`. Coincident boundary
+  edges of a deep stack thus fan into an outward rim — the edge of a ream of
+  paper. `faceDepth` sets how far out each layer's edge sits.
+- **Interior fold spines** (shared by two faces) get **no** offset — they stay
+  flat/registered.
+- Occlusion (`coveredIntervals`, visible-interval clipping) is computed in
+  **true coordinates**; the outward offset is added only to the emitted stroke.
 
-`layerShadow`: keep, but set `dy` 0 — the real ε-offset now carries depth; the
-shadow only softens edges.
+`layerShadow`: keep; `dy` gated on `thickness` (`> 0 → 0`, else `1`) so
+`thickness: 0` is byte-identical to the pre-feature render.
 
 ## Data flow
 
 ```
 OCaml evaluator → FOLD/JSON (faceOrders)
   → scene/parse.ts: Frame { ..., faceDepth[] }   ← depth computed here, once
-    → render-folded.ts: explode · faceDepth[fi] · (+1,−1)   ← 2D fan today
-    → (future) three.js: z = ε · faceDepth[fi]              ← same field, 3D later
+    → render-folded.ts: thickness · faceDepth[fi] · edge-outward-normal  ← 2D edge rim today
+    → (future) three.js: z = t · faceDepth[fi] along the face normal     ← same field, 3D later
 ```
 
 ## Testing

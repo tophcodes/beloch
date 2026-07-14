@@ -30,14 +30,14 @@ test("CLI: --view folded --flip renders a different SVG than unflipped", async (
   expect(topOut).not.toBe(bottomOut);
 });
 
-test("CLI: --explode 0 renders a different (un-fanned) SVG than the default", async () => {
-  const fanned = Bun.spawn(["bun", CLI, FIX, "--view", "folded"]);
-  const flat = Bun.spawn(["bun", CLI, FIX, "--view", "folded", "--explode", "0"]);
-  const fannedOut = await new Response(fanned.stdout).text();
+test("CLI: --thickness 0 renders a different (flat) SVG than the default", async () => {
+  const thick = Bun.spawn(["bun", CLI, FIX, "--view", "folded"]);
+  const flat = Bun.spawn(["bun", CLI, FIX, "--view", "folded", "--thickness", "0"]);
+  const thickOut = await new Response(thick.stdout).text();
   const flatOut = await new Response(flat.stdout).text();
-  expect(await fanned.exited).toBe(0);
+  expect(await thick.exited).toBe(0);
   expect(await flat.exited).toBe(0);
-  expect(fannedOut).not.toBe(flatOut);
+  expect(thickOut).not.toBe(flatOut);
 });
 
 test("CLI: unknown --view value exits 1 with a plain error", async () => {

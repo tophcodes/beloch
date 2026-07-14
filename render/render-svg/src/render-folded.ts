@@ -1,7 +1,7 @@
 // Folded occlusion view. Ported verbatim from tools/fold2svg.mjs:220-292
 // (root defs shared with renderCP, occlusion-view branch), restructured onto
 // SvgDoc layers.
-import type { FoldScene } from "@beloch/scene";
+import type { FoldScene, Vec2 } from "@beloch/scene";
 import { pickStep, SceneError } from "@beloch/scene";
 import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
 import { DEFAULT_THEME, Theme } from "./theme";
@@ -15,7 +15,7 @@ export interface FoldedOptions extends RenderOptions {
   view?: "top" | "bottom";     // default "top"
   hidden?: "dashed" | "hide";  // default "hide"
   step?: string;               // beloch:step label; undefined/unmatched → final state
-  explode?: number;            // per-layer ε-offset in px; default 1.5, 0 = flat
+  thickness?: number;            // layer-edge thickness in px per stacked layer; default 1.5, 0 = flat
 }
 
 export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc {
@@ -32,14 +32,14 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
   const { tx, ty } = layout;
   const doc = createDoc(layout.W, layout.H);
 
-  const explode = opts.explode ?? 1.5;
+  const thickness = opts.thickness ?? 1.5;
 
   // fold2svg.mjs:222-223 — background + shadow filter (shared with renderCP)
   doc.root.children.push(el("rect", { width: layout.W, height: layout.H, fill: "white" }));
   doc.root.children.push(el("defs", {}, [
     el("filter", { id: "layerShadow", x: "-20%", y: "-20%", width: "140%", height: "140%" }, [
       el("feDropShadow", {
-        dx: 0, dy: explode > 0 ? 0 : 1, stdDeviation: 1.1, "flood-color": "#0f172a", "flood-opacity": 0.18,
+        dx: 0, dy: thickness > 0 ? 0 : 1, stdDeviation: 1.1, "flood-color": "#0f172a", "flood-opacity": 0.18,
       }),
     ]),
   ]));
@@ -63,10 +63,30 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
   const paint = bottom ? [...order].reverse() : order;
   const edgeIx = faceEdgeIndex(E);
 
-  // up-right, toward the layerShadow light, so stagger and shadow agree
-  const shift = (fi: number): [number, number] => {
+  // Layer-thickness cue (see docs/superpowers/specs/2026-07-14-layer-epsilon-spacing-design.md,
+  // grounded in [hull2020, §8.1, Fig. 8.1]): a flat-folded stack's layers stay
+  // registered (coincident in the plane) — thickness only shows at the exposed
+  // paper EDGES, where lower layers peek out beyond the top one. So faces are NOT
+  // translated; instead each silhouette edge is offset perpendicular-OUTWARD by
+  // `thickness · faceDepth`, drawing the deeper layers' edges as an outward fan (a
+  // ream-of-paper edge). Interior fold spines (shared by two faces) stay flat.
+  // Screen-space outward-normal offset for edge `[a0,b0]` bounding single face `fi`.
+  const edgeThickness = (a0: Vec2, b0: Vec2, fi: number): [number, number] => {
+    if (thickness <= 0) return [0, 0];
+    const A: [number, number] = [mx(a0[0]), ty(a0[1])];
+    const B: [number, number] = [mx(b0[0]), ty(b0[1])];
+    let ex = B[0] - A[0], ey = B[1] - A[1];
+    const L = Math.hypot(ex, ey) || 1;
+    ex /= L; ey /= L;
+    const face = F[fi]!;
+    let cx = 0, cy = 0;
+    for (const vi of face) { cx += mx(V[vi]![0]); cy += ty(V[vi]![1]); }
+    cx /= face.length; cy /= face.length;
+    const midx = (A[0] + B[0]) / 2, midy = (A[1] + B[1]) / 2;
+    let nx = -ey, ny = ex;                       // one of the two edge normals…
+    if (nx * (midx - cx) + ny * (midy - cy) < 0) { nx = -nx; ny = -ny; } // …the outward one
     const d = frame.faceDepth[fi] ?? 0;
-    return [explode * d, -explode * d];
+    return [nx * thickness * d, ny * thickness * d];
   };
 
   // fold2svg.mjs:236-243 — opaque face painting front/back. fold2svg draws
@@ -87,8 +107,8 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
     // the bottom view looks at each face's underside, so its side flips
     const showFront = (sideUp(poly) === "front") !== bottom;
     const fill = showFront ? theme.front : theme.back;
-    const [dx, dy] = shift(fi);
-    const pts = face.map((i) => `${mx(V[i]![0]) + dx},${ty(V[i]![1]) + dy}`).join(" ");
+    // faces stay registered — thickness is drawn at the edges, not by translating fills
+    const pts = face.map((i) => `${mx(V[i]![0])},${ty(V[i]![1])}`).join(" ");
     paper.children.push(el("polygon", {
       points: pts, fill, stroke: "none", filter: "url(#layerShadow)",
       "data-kind": "face", "data-face-index": fi,
@@ -134,8 +154,8 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
     const covered = coveredIntervals(a0, b0, order, refPos, F, V, bottom);
     const lerp = (t: number): [number, number] =>
       [a0[0] + (b0[0] - a0[0]) * t, a0[1] + (b0[1] - a0[1]) * t];
-    const topFace = faces.reduce((p, q) => (frame.faceDepth[q]! > frame.faceDepth[p]! ? q : p));
-    const [edx, edy] = shift(topFace);
+    // thickness rim only on silhouette edges (one incident face); interior spines stay flat
+    const [edx, edy] = faces.length === 1 ? edgeThickness(a0, b0, faces[0]!) : [0, 0];
 
     const visible: [number, number][] = [];
     let cursor = 0;
@@ -186,7 +206,7 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
   for (const { a, b, fi } of phantom) {
     const a0 = V[a]!, b0 = V[b]!;
     const refPos = pos.get(fi)!;
-    const [pdx, pdy] = shift(fi);
+    const [pdx, pdy] = edgeThickness(a0, b0, fi);
     const covered = coveredIntervals(a0, b0, order, refPos, F, V, bottom);
     const lerp = (t: number): [number, number] =>
       [a0[0] + (b0[0] - a0[0]) * t, a0[1] + (b0[1] - a0[1]) * t];

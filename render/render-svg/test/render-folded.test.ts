@@ -145,31 +145,24 @@ test("folded view stamps a text label (not just the dot) for a named vertex", as
   expect(label).not.toBeNull();
 });
 
-test("explode offsets stacked faces up-right; explode:0 does not", async () => {
+test("thickness rims silhouette edges without translating faces (no shear)", async () => {
   const scene = parseFold(await golden("fold-quarter.fold"));
-  const frame = scene.steps[scene.steps.length - 1]!.frame;
-  const topFace = frame.faceDepth.indexOf(Math.max(...frame.faceDepth)); // deepest layer
+  // every face polygon, keyed by index, as it appears in the SVG
+  const facePolys = (svg: string) =>
+    [...svg.matchAll(/<polygon points="([^"]+)"[^>]*data-face-index="(\d+)"/g)]
+      .map((m) => `${m[2]}:${m[1]}`)
+      .sort();
 
-  const facePoints = (svg: string, fi: number): [number, number] => {
-    const m = svg.match(
-      new RegExp(`<polygon points="([^"]+)"[^>]*data-face-index="${fi}"`),
-    );
-    if (!m) throw new Error(`face ${fi} not found`);
-    const [x, y] = m[1]!.split(" ")[0]!.split(",").map(Number);
-    return [x!, y!];
-  };
+  const flat = renderFolded(scene, { thickness: 0 }).toString();
+  const thick = renderFolded(scene, { thickness: 3 }).toString();
 
-  const flat = renderFolded(scene, { explode: 0 }).toString();
-  const fanned = renderFolded(scene, { explode: 1.5 }).toString();
-
-  const [fx, fy] = facePoints(flat, topFace);
-  const [gx, gy] = facePoints(fanned, topFace);
-  const d = frame.faceDepth[topFace]!; // 3 for a quartered sheet
-  expect(gx - fx).toBeCloseTo(1.5 * d, 6);   // +x
-  expect(gy - fy).toBeCloseTo(-1.5 * d, 6);  // -y (up)
+  // thickness changes the render — silhouette edges gain outward rims
+  expect(thick).not.toBe(flat);
+  // …but faces are registered, NOT sheared: every face polygon is byte-identical
+  expect(facePolys(thick)).toEqual(facePolys(flat));
 });
 
-test("explode:0 reproduces the un-exploded baseline snapshot", async () => {
+test("thickness:0 reproduces the flat baseline snapshot", async () => {
   const scene = parseFold(await golden("fold-quarter.fold"));
-  expect(renderFolded(scene, { explode: 0 }).toString()).toMatchSnapshot();
+  expect(renderFolded(scene, { thickness: 0 }).toString()).toMatchSnapshot();
 });
