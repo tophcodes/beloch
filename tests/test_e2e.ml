@@ -358,6 +358,44 @@ let test_emit_folded_frames () =
   Alcotest.(check int) "one faceOrders triple" 1
     (folded |> member "faceOrders" |> to_list |> List.length)
 
+(* Regression: a scoped ("up to") fold leaves the stationary layer and the
+   moving flap sharing a paper corner that is NOT on the fold axis. The folded
+   frame must give each face its own reflected copy of that corner. Deduping
+   vertices by paper coord alone collapses them onto the stationary layer's
+   table position, degenerating the moving face to zero area — the "diagonal
+   slash" render. Assert every folded-frame face has positive area. *)
+let test_emit_folded_scoped_fold_nondegenerate () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\nfold map .d onto .a\nfold map .c onto .d up to .c\n")
+  in
+  let json = Fold_emit.to_json_folded fd in
+  let open Yojson.Safe.Util in
+  let folded = json |> member "file_frames" |> to_list |> List.hd in
+  let coords =
+    folded |> member "vertices_coords" |> to_list
+    |> List.map (fun p ->
+           match p |> to_list with
+           | [ x; y ] -> (to_number x, to_number y)
+           | _ -> Alcotest.fail "vertex is not a pair")
+    |> Array.of_list
+  in
+  folded |> member "faces_vertices" |> to_list
+  |> List.iteri (fun fi f ->
+         let idxs = f |> to_list |> List.map to_int |> Array.of_list in
+         let n = Array.length idxs in
+         let area2 = ref 0.0 in
+         for k = 0 to n - 1 do
+           let x1, y1 = coords.(idxs.(k)) in
+           let x2, y2 = coords.(idxs.((k + 1) mod n)) in
+           area2 := !area2 +. ((x1 *. y2) -. (x2 *. y1))
+         done;
+         Alcotest.(check bool)
+           (Printf.sprintf "face %d has positive area" fi)
+           true
+           (Float.abs !area2 > 1e-9))
+
 let test_emit_folded_crease_name () =
   let fd =
     Eval.eval_folded
@@ -922,6 +960,8 @@ let () =
       ( "emit_folded",
         [
           Alcotest.test_case "dual frames" `Quick test_emit_folded_frames;
+          Alcotest.test_case "scoped fold folded faces non-degenerate" `Quick
+            test_emit_folded_scoped_fold_nondegenerate;
           Alcotest.test_case "crease name preserved" `Quick
             test_emit_folded_crease_name;
           Alcotest.test_case "beloch:marks emitted for record marks" `Quick
