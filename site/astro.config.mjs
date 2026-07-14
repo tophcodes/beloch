@@ -4,6 +4,7 @@ import starlight from '@astrojs/starlight';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import remarkBel from './src/lib/remark-bel.ts';
+import { headSyncScript } from "./src/lib/paper-schemes.ts";
 
 // Anchor repo root to this file's location (site/astro.config.mjs → one level up).
 // Used by highlight-bel.ts to resolve the grammar wasm + web-tree-sitter runtime
@@ -79,6 +80,12 @@ export default defineConfig({
 				},
 			],
 			customCss: ['./src/styles/theme.css'],
+			head: [
+				{
+					tag: "script",
+					content: headSyncScript(),
+				},
+			],
 		}),
 	],
 });
