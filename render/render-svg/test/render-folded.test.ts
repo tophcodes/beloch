@@ -144,3 +144,32 @@ test("folded view stamps a text label (not just the dot) for a named vertex", as
   const label = s.match(/<text[^>]*data-bel-name="center"[^>]*>\.center<\/text>/);
   expect(label).not.toBeNull();
 });
+
+test("explode offsets stacked faces up-right; explode:0 does not", async () => {
+  const scene = parseFold(await golden("fold-quarter.fold"));
+  const frame = scene.steps[scene.steps.length - 1]!.frame;
+  const topFace = frame.faceDepth.indexOf(Math.max(...frame.faceDepth)); // deepest layer
+
+  const facePoints = (svg: string, fi: number): [number, number] => {
+    const m = svg.match(
+      new RegExp(`<polygon points="([^"]+)"[^>]*data-face-index="${fi}"`),
+    );
+    if (!m) throw new Error(`face ${fi} not found`);
+    const [x, y] = m[1]!.split(" ")[0]!.split(",").map(Number);
+    return [x!, y!];
+  };
+
+  const flat = renderFolded(scene, { explode: 0 }).toString();
+  const fanned = renderFolded(scene, { explode: 1.5 }).toString();
+
+  const [fx, fy] = facePoints(flat, topFace);
+  const [gx, gy] = facePoints(fanned, topFace);
+  const d = frame.faceDepth[topFace]!; // 3 for a quartered sheet
+  expect(gx - fx).toBeCloseTo(1.5 * d, 6);   // +x
+  expect(gy - fy).toBeCloseTo(-1.5 * d, 6);  // -y (up)
+});
+
+test("explode:0 reproduces the un-exploded baseline snapshot", async () => {
+  const scene = parseFold(await golden("fold-quarter.fold"));
+  expect(renderFolded(scene, { explode: 0 }).toString()).toMatchSnapshot();
+});

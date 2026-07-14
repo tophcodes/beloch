@@ -15,6 +15,7 @@ export interface FoldedOptions extends RenderOptions {
   view?: "top" | "bottom";     // default "top"
   hidden?: "dashed" | "hide";  // default "hide"
   step?: string;               // beloch:step label; undefined/unmatched → final state
+  explode?: number;            // per-layer ε-offset in px; default 1.5, 0 = flat
 }
 
 export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc {
@@ -36,7 +37,7 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
   doc.root.children.push(el("defs", {}, [
     el("filter", { id: "layerShadow", x: "-20%", y: "-20%", width: "140%", height: "140%" }, [
       el("feDropShadow", {
-        dx: 0, dy: 1, stdDeviation: 1.1, "flood-color": "#0f172a", "flood-opacity": 0.18,
+        dx: 0, dy: 0, stdDeviation: 1.1, "flood-color": "#0f172a", "flood-opacity": 0.18,
       }),
     ]),
   ]));
@@ -60,6 +61,13 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
   const paint = bottom ? [...order].reverse() : order;
   const edgeIx = faceEdgeIndex(E);
 
+  const explode = opts.explode ?? 1.5;
+  // up-right, toward the layerShadow light, so stagger and shadow agree
+  const shift = (fi: number): [number, number] => {
+    const d = frame.faceDepth[fi] ?? 0;
+    return [explode * d, -explode * d];
+  };
+
   // fold2svg.mjs:236-243 — opaque face painting front/back. fold2svg draws
   // each face's outline edges immediately after its polygon, so a higher
   // face's opaque fill (painted later) visually erases a lower face's crease
@@ -78,7 +86,8 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
     // the bottom view looks at each face's underside, so its side flips
     const showFront = (sideUp(poly) === "front") !== bottom;
     const fill = showFront ? theme.front : theme.back;
-    const pts = face.map((i) => `${mx(V[i]![0])},${ty(V[i]![1])}`).join(" ");
+    const [dx, dy] = shift(fi);
+    const pts = face.map((i) => `${mx(V[i]![0]) + dx},${ty(V[i]![1]) + dy}`).join(" ");
     paper.children.push(el("polygon", {
       points: pts, fill, stroke: "none", filter: "url(#layerShadow)",
       "data-kind": "face", "data-face-index": fi,
@@ -124,6 +133,8 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
     const covered = coveredIntervals(a0, b0, order, refPos, F, V, bottom);
     const lerp = (t: number): [number, number] =>
       [a0[0] + (b0[0] - a0[0]) * t, a0[1] + (b0[1] - a0[1]) * t];
+    const topFace = faces.reduce((p, q) => (frame.faceDepth[q]! > frame.faceDepth[p]! ? q : p));
+    const [edx, edy] = shift(topFace);
 
     const visible: [number, number][] = [];
     let cursor = 0;
@@ -139,7 +150,7 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
         class: `crease-${assignment}`,
         "data-kind": "crease",
         "data-step": edgeStep,
-        x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
+        x1: mx(p0[0]) + edx, y1: ty(p0[1]) + edy, x2: mx(p1[0]) + edx, y2: ty(p1[1]) + edy,
         stroke: style.stroke, "stroke-width": style.strokeWidth, "stroke-linecap": "round",
       };
       if (style.dasharray) attrs["stroke-dasharray"] = style.dasharray;
@@ -161,7 +172,7 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
           "data-kind": "crease",
           "data-step": edgeStep,
           "data-occluded": "true",
-          x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
+          x1: mx(p0[0]) + edx, y1: ty(p0[1]) + edy, x2: mx(p1[0]) + edx, y2: ty(p1[1]) + edy,
           stroke, "stroke-width": dashWgt, "stroke-dasharray": dash, "stroke-linecap": "round",
         };
         if (name) attrs["data-name"] = name;
@@ -174,6 +185,7 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
   for (const { a, b, fi } of phantom) {
     const a0 = V[a]!, b0 = V[b]!;
     const refPos = pos.get(fi)!;
+    const [pdx, pdy] = shift(fi);
     const covered = coveredIntervals(a0, b0, order, refPos, F, V, bottom);
     const lerp = (t: number): [number, number] =>
       [a0[0] + (b0[0] - a0[0]) * t, a0[1] + (b0[1] - a0[1]) * t];
@@ -192,7 +204,7 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
         class: "crease-U",
         "data-kind": "crease",
         "data-step": "",
-        x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
+        x1: mx(p0[0]) + pdx, y1: ty(p0[1]) + pdy, x2: mx(p1[0]) + pdx, y2: ty(p1[1]) + pdy,
         stroke: theme.unassigned, "stroke-width": 2, "stroke-linecap": "round",
       }));
     }
@@ -205,7 +217,7 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
           "data-kind": "crease",
           "data-step": "",
           "data-occluded": "true",
-          x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
+          x1: mx(p0[0]) + pdx, y1: ty(p0[1]) + pdy, x2: mx(p1[0]) + pdx, y2: ty(p1[1]) + pdy,
           stroke: "#94a3b8", "stroke-width": 1.2, "stroke-dasharray": "4 3", "stroke-linecap": "round",
         }));
       }
