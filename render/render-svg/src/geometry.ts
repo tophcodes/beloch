@@ -1,7 +1,7 @@
 // Pure geometry helpers ported from tools/fold2svg.mjs — logic unchanged
 // (same epsilons, same tie-breaks), typed. `foldedFrame` is deliberately not
 // ported: @beloch/scene's parseFold + pickStep replace it (Task 2).
-import type { FaceOrder, Isometry, LineCoeffs, Vec2 } from "@beloch/scene";
+import type { Isometry, LineCoeffs, Vec2 } from "@beloch/scene";
 
 // "a-b" key (sorted) -> edge index, for mapping a face outline segment to a
 // FOLD edge (to recover its colour/assignment).

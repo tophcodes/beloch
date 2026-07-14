@@ -32,12 +32,14 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
   const { tx, ty } = layout;
   const doc = createDoc(layout.W, layout.H);
 
+  const explode = opts.explode ?? 1.5;
+
   // fold2svg.mjs:222-223 — background + shadow filter (shared with renderCP)
   doc.root.children.push(el("rect", { width: layout.W, height: layout.H, fill: "white" }));
   doc.root.children.push(el("defs", {}, [
     el("filter", { id: "layerShadow", x: "-20%", y: "-20%", width: "140%", height: "140%" }, [
       el("feDropShadow", {
-        dx: 0, dy: 0, stdDeviation: 1.1, "flood-color": "#0f172a", "flood-opacity": 0.18,
+        dx: 0, dy: explode > 0 ? 0 : 1, stdDeviation: 1.1, "flood-color": "#0f172a", "flood-opacity": 0.18,
       }),
     ]),
   ]));
@@ -61,7 +63,6 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
   const paint = bottom ? [...order].reverse() : order;
   const edgeIx = faceEdgeIndex(E);
 
-  const explode = opts.explode ?? 1.5;
   // up-right, toward the layerShadow light, so stagger and shadow agree
   const shift = (fi: number): [number, number] => {
     const d = frame.faceDepth[fi] ?? 0;
