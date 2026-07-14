@@ -404,20 +404,24 @@ let eval_folded (prog : Ast.program) : folded =
         Error.fail cr.Ast.cspan
           (Printf.sprintf "--%s is a paper edge, not a crease with segments"
              cr.Ast.cname)
+  (* Incidence is a MATERIAL question, so it is checked in PAPER space, never
+     table space: all points are material (paper) identities, so a point
+     selector always names the one segment whose paper preimage it lies on —
+     even when folding has stacked several segments onto the same table locus
+     (notes/2026-07-03-crease-layer-selection.md; ADR 0014's "table-space
+     selector can't disambiguate" is why table space is wrong here). *)
   and seg_line (s : Fold_state.crease_segment) =
-    Geom.line_through s.Fold_state.ta s.Fold_state.tb
-  and point_on_seg (tp : Geom.point) (s : Fold_state.crease_segment) =
-    Geom.side_of_line (seg_line s) tp = 0
+    Geom.line_through s.Fold_state.pa s.Fold_state.pb
+  and point_on_seg (pp : Geom.point) (s : Fold_state.crease_segment) =
+    Geom.side_of_line (seg_line s) pp = 0
     &&
-    let t = Geom.seg_param (s.Fold_state.ta, s.Fold_state.tb) tp in
+    let t = Geom.seg_param (s.Fold_state.pa, s.Fold_state.pb) pp in
     Num.compare t Num.zero >= 0 && Num.compare t Num.one <= 0
   and seg_incident (sel : Ast.selector) (s : Fold_state.crease_segment) : bool =
     match sel with
-    | Ast.SelPoint po ->
-        point_on_seg
-          (Fold_state.table_position !(ctx.state) (resolve_point po)) s
+    | Ast.SelPoint po -> point_on_seg (resolve_point po) s
     | Ast.SelLine lo -> (
-        match Geom.intersection (resolve_line lo) (seg_line s) with
+        match Geom.intersection (fst (resolve_paper_line lo)) (seg_line s) with
         | Some ip -> point_on_seg ip s
         | None -> false)
     | Ast.SelFlap (Ast.FByPoints (pts, fspan)) ->
@@ -429,9 +433,10 @@ let eval_folded (prog : Ast.program) : folded =
           | (`Zero | `Ambiguous) as bad -> bad)
   (* every existing straight line a --[…] selector may name: the four paper
      edges plus each material crease segment (ADR 0014). Each candidate carries
-     a table-space line + endpoints (for incidence, which is checked in table
-     space like `at`) and a paper-space line + optional marks (for use as a
-     meet operand). Edges are markless (None). *)
+     a table-space line (for use as a fold axis, the returned value) plus
+     PAPER-space endpoints + line + optional marks — incidence is a material
+     question, checked in paper space like `seg_incident`, so folded-stacked
+     candidates stay distinct. Edges are markless (None). *)
   and select_candidates () :
       (Geom.line * (Geom.point * Geom.point)
       * Geom.line * (Geom.point * Geom.point) list option) list =
@@ -441,7 +446,7 @@ let eval_folded (prog : Ast.program) : folded =
           let ca = corner_point a and cb = corner_point b in
           let ta = Fold_state.table_position !(ctx.state) ca
           and tb = Fold_state.table_position !(ctx.state) cb in
-          (Geom.line_through ta tb, (ta, tb), Geom.line_through ca cb, None))
+          (Geom.line_through ta tb, (ca, cb), Geom.line_through ca cb, None))
         [ ("a", "b"); ("b", "c"); ("c", "d"); ("d", "a") ]
     in
     let creases =
@@ -450,22 +455,22 @@ let eval_folded (prog : Ast.program) : folded =
           List.map
             (fun (s : Fold_state.crease_segment) ->
               ( Geom.line_through s.Fold_state.ta s.Fold_state.tb,
-                (s.Fold_state.ta, s.Fold_state.tb),
+                (s.Fold_state.pa, s.Fold_state.pb),
                 Geom.line_through s.Fold_state.pa s.Fold_state.pb,
                 Some [ (s.Fold_state.pa, s.Fold_state.pb) ] ))
             (Fold_state.crease_segments !(ctx.state) cid))
         (Fold_state.all_crease_ids !(ctx.state))
     in
     edges @ creases
-  and cand_incident (sel : Ast.selector) (_l, (ta, tb), _pl, _pm) : bool =
+  and cand_incident (sel : Ast.selector) (_l, (pa, pb), _pl, _pm) : bool =
     let on t = Num.compare t Num.zero >= 0 && Num.compare t Num.one <= 0 in
     match sel with
     | Ast.SelPoint po ->
-        let tp = Fold_state.table_position !(ctx.state) (resolve_point po) in
-        Geom.side_of_line _l tp = 0 && on (Geom.seg_param (ta, tb) tp)
+        let pp = resolve_point po in
+        Geom.side_of_line _pl pp = 0 && on (Geom.seg_param (pa, pb) pp)
     | Ast.SelLine lo -> (
-        match Geom.intersection (resolve_line lo) _l with
-        | Some ip -> on (Geom.seg_param (ta, tb) ip)
+        match Geom.intersection (fst (resolve_paper_line lo)) _pl with
+        | Some ip -> on (Geom.seg_param (pa, pb) ip)
         | None -> false)
     | Ast.SelFlap (Ast.FByPoints (_, fspan)) ->
         Error.fail fspan

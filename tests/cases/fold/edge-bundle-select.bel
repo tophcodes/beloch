@@ -1,13 +1,13 @@
-; status: legitimate error — a paper edge is a segment bundle (ADR 0014),
-; so --cd & .c now resolves segments instead of hard-rejecting ("--cd is a
-; paper edge, not a crease with segments"). This particular fold happens to
-; hit a DIFFERENT, honest error: `map .a onto .b` mirrors the square exactly
-; in half, so c and d land on the same table point and both halves of --cd
-; are incident to .c in table space — a real geometric ambiguity, not a gap
-; in edge support. See edge-bundle-select-c.bel / -d.bel for an unambiguous
-; case proving the selector discriminates.
+; A paper edge is a segment bundle (ADR 0014), and incidence is checked in
+; PAPER space (material identity), so `--cd & .c` names the unique boundary
+; segment of the top edge whose paper preimage contains corner .c — the
+; right half (1,1)-(0.5,1) — even though `fold --v` has stacked both halves
+; onto the same table locus. (Before the paper-space incidence fix this
+; wrongly reported "ambiguous: 2 segments match", checking table space where
+; the folded halves coincide.)
 paper square
 fold --v = map .a onto .b
 fold map --cd & .c onto --v
 
-; expect error "ambiguous"
+; assert steps = 2
+; assert faces = 4
