@@ -22,7 +22,11 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
   const frame = step.frame;
 
   const theme: Theme = { ...DEFAULT_THEME, ...opts.theme };
-  const layout = makeLayout(frame.vertices);
+  // Scale every folded step to the paper (cp) footprint, not the step's own
+  // bbox — otherwise a quartered sheet re-fills the canvas and reads as full
+  // size. The folded silhouette shares the paper's coordinate origin and is a
+  // subset of it, so a quarter fold renders at half linear scale, in place.
+  const layout = makeLayout(scene.cp.vertices);
   const { tx, ty } = layout;
   const doc = createDoc(layout.W, layout.H);
 
