@@ -8,6 +8,7 @@ export interface LineStyle {
   stroke: string;
   strokeWidth: number;
   dasharray?: string;
+  opacity?: number;
 }
 
 // Pluggable per-assignment styling: callers can pass their own fn via
@@ -31,11 +32,11 @@ export interface Theme {
 // Colored: one solid color per assignment. Simple, no dash decoding required.
 export const colorLineStyle: LineStyleFn = (assignment, theme) => {
   switch (assignment) {
-    case "B": return { stroke: theme.boundary, strokeWidth: 2.5 };
+    case "B": return { stroke: theme.boundary, strokeWidth: 3 };
     case "M": return { stroke: theme.mountain, strokeWidth: 2 };
     case "V": return { stroke: theme.valley, strokeWidth: 2 };
-    case "F": return { stroke: theme.flat, strokeWidth: 2 };
-    default: return { stroke: theme.unassigned, strokeWidth: 2 };
+    case "F": return { stroke: theme.flat, strokeWidth: 2, opacity: 0.45 };
+    default: return { stroke: theme.unassigned, strokeWidth: 2, opacity: 0.55 };
   }
 };
 
@@ -46,11 +47,11 @@ export const colorLineStyle: LineStyleFn = (assignment, theme) => {
 // default (reads via `theme.ink`), default line style.
 export const yrLineStyle: LineStyleFn = (assignment, theme) => {
   switch (assignment) {
-    case "B": return { stroke: theme.boundary, strokeWidth: 2.5 };
+    case "B": return { stroke: theme.boundary, strokeWidth: 3 };
     case "M": return { stroke: theme.ink, strokeWidth: 2, dasharray: "8 2 1 2" };
     case "V": return { stroke: theme.ink, strokeWidth: 2, dasharray: "6 4" };
-    case "F": return { stroke: theme.ink, strokeWidth: 1.5, dasharray: "1 3" };
-    default: return { stroke: theme.unassigned, strokeWidth: 1.5, dasharray: "2 3" };
+    case "F": return { stroke: theme.ink, strokeWidth: 1.5, dasharray: "1 3", opacity: 0.45 };
+    default: return { stroke: theme.unassigned, strokeWidth: 1.5, dasharray: "2 3", opacity: 0.55 };
   }
 };
 
