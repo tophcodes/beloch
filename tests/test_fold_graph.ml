@@ -100,6 +100,41 @@ let test_rejects_disconnected () =
     (function Fold_graph.Disconnected _ -> true | _ -> false)
     ~faces:(single_fold_faces ()) ~hinges:[||] ~root:0 ~rank:[| 0; 1 |]
 
+let test_rejects_hinge_line_not_between () =
+  (* line x=1/2 cuts face0 instead of separating the faces *)
+  let hinges =
+    [| { Fold_graph.fa = 0; fb = 1;
+         line = { Geom.a = q 1; b = q 0; c = Num.of_q (Q.of_ints 1 2) };
+         angle = q 1 } |]
+  in
+  expect_error "line cuts a face"
+    (function Fold_graph.Hinge_not_shared 0 -> true | _ -> false)
+    ~faces:(single_fold_faces ()) ~hinges ~root:0 ~rank:[| 0; 1 |]
+
+let test_rejects_hinge_gap () =
+  (* faces [0,1]² and [2,3]²: opposite sides of x=3/2, but no shared edge *)
+  let faces = [| strip_face 0 1; strip_face 2 1 |] in
+  let hinges =
+    [| { Fold_graph.fa = 0; fb = 1;
+         line = { Geom.a = q 1; b = q 0; c = Num.of_q (Q.of_ints 3 2) };
+         angle = q 1 } |]
+  in
+  expect_error "faces do not touch the line"
+    (function Fold_graph.Hinge_not_shared 0 -> true | _ -> false)
+    ~faces ~hinges ~root:0 ~rank:[| 0; 1 |]
+
+let test_rejects_hinge_vertex_touch () =
+  (* [0,1]² and [1,2]×[1,2] share only the corner (1,1) on line x=1 *)
+  let faces =
+    [| strip_face 0 1; sq (gp 1 1) (gp 2 1) (gp 2 2) (gp 1 2) |]
+  in
+  let hinges =
+    [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = q 1 } |]
+  in
+  expect_error "zero-length shared boundary"
+    (function Fold_graph.Hinge_not_shared 0 -> true | _ -> false)
+    ~faces ~hinges ~root:0 ~rank:[| 0; 1 |]
+
 let () =
   Alcotest.run "fold_graph"
     [ ( "derive",
@@ -109,4 +144,10 @@ let () =
         [ Alcotest.test_case "bad angle" `Quick test_rejects_bad_angle;
           Alcotest.test_case "bad rank" `Quick test_rejects_bad_rank;
           Alcotest.test_case "bad index" `Quick test_rejects_bad_index;
-          Alcotest.test_case "disconnected" `Quick test_rejects_disconnected ] ) ]
+          Alcotest.test_case "disconnected" `Quick test_rejects_disconnected ] );
+      ( "make-adjacency",
+        [ Alcotest.test_case "line cuts a face" `Quick
+            test_rejects_hinge_line_not_between;
+          Alcotest.test_case "gap between faces" `Quick test_rejects_hinge_gap;
+          Alcotest.test_case "vertex touch only" `Quick
+            test_rejects_hinge_vertex_touch ] ) ]

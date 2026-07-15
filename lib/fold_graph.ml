@@ -97,6 +97,54 @@ let derive_isos ~(faces : face array) ~(hinges : hinge array) ~(root : int) :
   done;
   (iso, seen)
 
+(* Parameter of an on-line point along [l]'s direction (-b, a); monotone along
+   the line — used to order and intersect on-line vertex intervals. *)
+let line_param (l : Geom.line) (p : Geom.point) : Num.t =
+  Num.sub (Num.mul l.Geom.a p.Geom.y) (Num.mul l.Geom.b p.Geom.x)
+
+(* The positive-length sub-segment of [h.line] shared by the boundaries of
+   [h.fa] and [h.fb], provided the two faces lie in opposite closed half-planes
+   — i.e. [h] really hinges adjacent faces. Paper space. None otherwise. *)
+let hinge_shared_segment (faces : face array) (h : hinge) :
+    (Geom.point * Geom.point) option =
+  let fa = faces.(h.fa) and fb = faces.(h.fb) in
+  let sides f = Array.map (fun p -> Geom.side_of_line h.line p) f in
+  let sa = sides fa and sb = sides fb in
+  let all_ge s = Array.for_all (fun x -> x >= 0) s
+  and all_le s = Array.for_all (fun x -> x <= 0) s in
+  if not ((all_ge sa && all_le sb) || (all_le sa && all_ge sb)) then None
+  else
+    (* a convex face meets the line in at most one boundary edge: the interval
+       of its on-line vertices, ordered by [line_param] *)
+    let interval f =
+      let on =
+        Array.to_list f
+        |> List.filter (fun p -> Geom.side_of_line h.line p = 0)
+        |> List.map (fun p -> (line_param h.line p, p))
+      in
+      match on with
+      | [] | [ _ ] -> None
+      | tp :: tps ->
+          let lo =
+            List.fold_left
+              (fun a b -> if Num.compare (fst b) (fst a) < 0 then b else a)
+              tp tps
+          in
+          let hi =
+            List.fold_left
+              (fun a b -> if Num.compare (fst b) (fst a) > 0 then b else a)
+              tp tps
+          in
+          if Num.compare (fst lo) (fst hi) < 0 then Some (lo, hi) else None
+    in
+    match (interval fa, interval fb) with
+    | Some (la, ha), Some (lb, hb) ->
+        let lo = if Num.compare (fst la) (fst lb) >= 0 then la else lb in
+        let hi = if Num.compare (fst ha) (fst hb) <= 0 then ha else hb in
+        if Num.compare (fst lo) (fst hi) < 0 then Some (snd lo, snd hi)
+        else None
+    | _ -> None
+
 exception V of violation
 
 let check_structure ~(faces : face array) ~(hinges : hinge array) ~(root : int)
@@ -127,6 +175,17 @@ let make ~(faces : face array) ~(hinges : hinge array) ~(root : int)
     check_structure ~faces ~hinges ~root ~rank;
     let isos, seen = derive_isos ~faces ~hinges ~root in
     Array.iteri (fun i s -> if not s then raise (V (Disconnected i))) seen;
+    (* hinge adjacency: each hinge's line must carry a positive-length shared
+       boundary segment between its faces (paper space); the segments feed the
+       non-crossing checks (Task 6) *)
+    let (_ : (Geom.point * Geom.point) array) =
+      Array.mapi
+        (fun i h ->
+          match hinge_shared_segment faces h with
+          | Some s -> s
+          | None -> raise (V (Hinge_not_shared i)))
+        hinges
+    in
     Ok
       {
         faces = Array.copy faces;
