@@ -1,53 +1,112 @@
 open Beloch
+
 let q = Num.of_int
 let gp x y : Geom.point = { Geom.x = q x; y = q y }
 let sq a b c d : Fold_graph.face = [| a; b; c; d |]
+
 let i3eq (a : Isometry3.point) (b : Isometry3.point) =
   Num.equal a.Isometry3.x b.Isometry3.x
   && Num.equal a.Isometry3.y b.Isometry3.y
   && Num.equal a.Isometry3.z b.Isometry3.z
+
 let p3 x y z : Isometry3.point = { Isometry3.x = q x; y = q y; z = q z }
 
 (* line x = k : a=1,b=0,c=k *)
 let vline k : Geom.line = { Geom.a = q 1; b = q 0; c = q k }
+(* line y = k : a=0,b=1,c=k *)
+let[@warning "-32"] hline k : Geom.line = { Geom.a = q 0; b = q 1; c = q k }
 
-(* SINGLE FOLD: square split at x=1 into face0=[0,1]×[0,1], face1=[1,2]×[0,1];
-   one hinge at x=1, folded (angle=1). root=0. face1's placement = reflect across
-   x=1, so a face1 point (2,y) lands at (0,y). *)
+let mk ?(root = 0) ~faces ~hinges ~rank () =
+  match Fold_graph.make ~faces ~hinges ~root ~rank with
+  | Ok g -> g
+  | Error v -> Alcotest.failf "expected Ok, got: %s" (Fold_graph.violation_to_string v)
+
+let expect_error label pred ~faces ~hinges ~root ~rank =
+  match Fold_graph.make ~faces ~hinges ~root ~rank with
+  | Ok _ -> Alcotest.fail (label ^ ": expected a violation, got Ok")
+  | Error v ->
+      Alcotest.(check bool)
+        (label ^ ": " ^ Fold_graph.violation_to_string v)
+        true (pred v)
+
+(* strip of unit squares [k,k+1]x[0,1] *)
+let strip_face k w = sq (gp k 0) (gp (k + w) 0) (gp (k + w) 1) (gp k 1)
+
+(* SINGLE FOLD: square split at x=1; face1 folded across x=1 onto face0. *)
+let single_fold_faces () = [| strip_face 0 1; strip_face 1 1 |]
+let single_fold_hinges () =
+  [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = q 1 } |]
+
 let test_single_fold () =
-  let g = {
-    Fold_graph.root = 0;
-    faces = [| sq (gp 0 0) (gp 1 0) (gp 1 1) (gp 0 1);
-               sq (gp 1 0) (gp 2 0) (gp 2 1) (gp 1 1) |];
-    hinges = [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = q 1 } |];
-  } in
+  let g =
+    mk ~faces:(single_fold_faces ()) ~hinges:(single_fold_hinges ())
+      ~rank:[| 0; 1 |] ()
+  in
   let isos = Fold_graph.face_isos g in
   Alcotest.(check bool) "root at identity" true
     (i3eq (Isometry3.apply_point isos.(0) (p3 3 5 0)) (p3 3 5 0));
   Alcotest.(check bool) "face1 reflects across x=1" true
-    (i3eq (Isometry3.apply_point isos.(1) (p3 2 0 0)) (p3 0 0 0))
+    (i3eq (Isometry3.apply_point isos.(1) (p3 2 0 0)) (p3 0 0 0));
+  Alcotest.(check bool) "face1 above face0" true (Fold_graph.above g 1 0);
+  Alcotest.(check bool) "face0 not above face1" false (Fold_graph.above g 0 1)
 
-(* ACCORDION: strip [0,1],[1,2],[2,3]; hinges at x=1 and x=2, both folded.
-   root=0. A face2 point (2.5,y) → half_turn x=2 → (1.5,y) → half_turn x=1 →
-   (0.5,y). Proves the multi-hinge PATH product. *)
+(* ACCORDION: strip [0,1],[1,2],[2,3]; hinges at x=1 and x=2, both folded. *)
 let test_accordion () =
-  let g = {
-    Fold_graph.root = 0;
-    faces = [| sq (gp 0 0) (gp 1 0) (gp 1 1) (gp 0 1);
-               sq (gp 1 0) (gp 2 0) (gp 2 1) (gp 1 1);
-               sq (gp 2 0) (gp 3 0) (gp 3 1) (gp 2 1) |];
-    hinges = [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = q 1 };
-                { Fold_graph.fa = 1; fb = 2; line = vline 2; angle = q 1 } |];
-  } in
+  let faces = [| strip_face 0 1; strip_face 1 1; strip_face 2 1 |] in
+  let hinges =
+    [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = q 1 };
+       { Fold_graph.fa = 1; fb = 2; line = vline 2; angle = q 1 } |]
+  in
+  let g = mk ~faces ~hinges ~rank:[| 0; 1; 2 |] () in
   let isos = Fold_graph.face_isos g in
   let half = Num.of_q (Q.of_ints 1 2) in
   Alcotest.(check bool) "face2 folds back to x=1/2" true
-    (i3eq (Isometry3.apply_point isos.(2)
-             { Isometry3.x = Num.of_q (Q.of_ints 5 2); y = half; z = q 0 })
-          { Isometry3.x = half; y = half; z = q 0 })
+    (i3eq
+       (Isometry3.apply_point isos.(2)
+          { Isometry3.x = Num.of_q (Q.of_ints 5 2); y = half; z = q 0 })
+       { Isometry3.x = half; y = half; z = q 0 })
+
+let test_rejects_bad_angle () =
+  let hinges =
+    [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = Num.of_q (Q.of_ints 1 2) } |]
+  in
+  expect_error "angle 1/2 outside flat-first domain"
+    (function Fold_graph.Bad_angle 0 -> true | _ -> false)
+    ~faces:(single_fold_faces ()) ~hinges ~root:0 ~rank:[| 0; 1 |]
+
+let test_rejects_bad_rank () =
+  expect_error "duplicate rank"
+    (function Fold_graph.Bad_rank -> true | _ -> false)
+    ~faces:(single_fold_faces ()) ~hinges:(single_fold_hinges ())
+    ~root:0 ~rank:[| 0; 0 |];
+  expect_error "rank length mismatch"
+    (function Fold_graph.Bad_rank -> true | _ -> false)
+    ~faces:(single_fold_faces ()) ~hinges:(single_fold_hinges ())
+    ~root:0 ~rank:[| 0 |]
+
+let test_rejects_bad_index () =
+  expect_error "hinge face out of range"
+    (function Fold_graph.Bad_index _ -> true | _ -> false)
+    ~faces:(single_fold_faces ())
+    ~hinges:[| { Fold_graph.fa = 0; fb = 5; line = vline 1; angle = q 1 } |]
+    ~root:0 ~rank:[| 0; 1 |];
+  expect_error "root out of range"
+    (function Fold_graph.Bad_index _ -> true | _ -> false)
+    ~faces:(single_fold_faces ()) ~hinges:(single_fold_hinges ())
+    ~root:7 ~rank:[| 0; 1 |]
+
+let test_rejects_disconnected () =
+  expect_error "two faces, no hinges"
+    (function Fold_graph.Disconnected _ -> true | _ -> false)
+    ~faces:(single_fold_faces ()) ~hinges:[||] ~root:0 ~rank:[| 0; 1 |]
 
 let () =
   Alcotest.run "fold_graph"
-    [ ("derive",
-       [ Alcotest.test_case "single fold" `Quick test_single_fold;
-         Alcotest.test_case "accordion path" `Quick test_accordion ]) ]
+    [ ( "derive",
+        [ Alcotest.test_case "single fold" `Quick test_single_fold;
+          Alcotest.test_case "accordion path" `Quick test_accordion ] );
+      ( "make-structure",
+        [ Alcotest.test_case "bad angle" `Quick test_rejects_bad_angle;
+          Alcotest.test_case "bad rank" `Quick test_rejects_bad_rank;
+          Alcotest.test_case "bad index" `Quick test_rejects_bad_index;
+          Alcotest.test_case "disconnected" `Quick test_rejects_disconnected ] ) ]

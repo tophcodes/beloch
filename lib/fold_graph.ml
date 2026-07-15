@@ -12,7 +12,45 @@ type face = Geom.point array
 
 type hinge = { fa : int; fb : int; line : Geom.line; angle : Num.t }
 
-type t = { faces : face array; hinges : hinge array; root : int }
+type t = {
+  faces : face array;
+  hinges : hinge array;
+  root : int;
+  rank : int array;  (* stacking height per face, higher = above; permutation *)
+  isos : Isometry3.t array;  (* derived in [make] (memoized BFS); [t] abstract ⇒ cannot desync *)
+}
+
+type violation =
+  | Bad_index of string
+  | Bad_rank
+  | Bad_angle of int
+  | Disconnected of int
+  | Hinge_not_shared of int
+  | Hinge_not_closed of int
+  | Taco_tortilla of { tortilla : int; hinge : int }
+  | Taco_taco of int * int
+
+let violation_to_string = function
+  | Bad_index s -> "fold graph: index out of range: " ^ s
+  | Bad_rank -> "fold graph: rank is not a permutation of the faces"
+  | Bad_angle i ->
+      Printf.sprintf "fold graph: hinge %d angle outside {0, ±1} (flat-first)" i
+  | Disconnected i ->
+      Printf.sprintf "fold graph: face %d is not connected to the root" i
+  | Hinge_not_shared i ->
+      Printf.sprintf
+        "fold graph: hinge %d's line is not a shared edge of its two faces" i
+  | Hinge_not_closed i ->
+      Printf.sprintf "fold graph: hinge %d does not close — the sheet would tear"
+        i
+  | Taco_tortilla { tortilla; hinge } ->
+      Printf.sprintf
+        "layer ordering: face %d would pass through the crease of hinge %d — \
+         taco-tortilla violation" tortilla hinge
+  | Taco_taco (i, j) ->
+      Printf.sprintf
+        "layer ordering: creases of hinges %d and %d cross — taco-taco violation"
+        i j
 
 (* 3D motion a folded hinge applies (in the sheet frame): a half-turn about the
    crease line embedded in the z=0 plane. Flat crease (angle=0) → identity.
@@ -32,15 +70,17 @@ let hinge_motion (h : hinge) : I3.t =
 
 (* Derived placements: BFS from [root] over the hinge graph; crossing a hinge
    composes its motion onto the already-placed face's placement,
-   iso.(other) = compose iso.(fi) (hinge_motion h). half-turns are involutions,
-   so crossing a hinge either direction uses the same motion (flat-first). *)
-let face_isos (g : t) : I3.t array =
-  let n = Array.length g.faces in
+   iso.(other) = compose iso.(fi) (hinge_motion h). Half-turns are involutions,
+   so crossing a hinge either direction uses the same motion (flat-first).
+   [seen] doubles as the connectivity witness. *)
+let derive_isos ~(faces : face array) ~(hinges : hinge array) ~(root : int) :
+    I3.t array * bool array =
+  let n = Array.length faces in
   let iso = Array.make n I3.identity in
   let seen = Array.make n false in
   let queue = Queue.create () in
-  seen.(g.root) <- true;
-  Queue.push g.root queue;
+  seen.(root) <- true;
+  Queue.push root queue;
   while not (Queue.is_empty queue) do
     let fi = Queue.pop queue in
     Array.iter
@@ -53,8 +93,54 @@ let face_isos (g : t) : I3.t array =
           end
         in
         if h.fa = fi then step h.fb else if h.fb = fi then step h.fa)
-      g.hinges
+      hinges
   done;
-  iso
+  (iso, seen)
 
-let face_iso (g : t) (i : int) : I3.t = (face_isos g).(i)
+exception V of violation
+
+let check_structure ~(faces : face array) ~(hinges : hinge array) ~(root : int)
+    ~(rank : int array) : unit =
+  let n = Array.length faces in
+  if root < 0 || root >= n then
+    raise (V (Bad_index (Printf.sprintf "root %d" root)));
+  Array.iteri
+    (fun i (h : hinge) ->
+      if h.fa < 0 || h.fa >= n || h.fb < 0 || h.fb >= n || h.fa = h.fb then
+        raise (V (Bad_index (Printf.sprintf "hinge %d (%d|%d)" i h.fa h.fb)));
+      if
+        not
+          (Num.equal h.angle Num.zero || Num.equal h.angle Num.one
+          || Num.equal h.angle (Num.neg Num.one))
+      then raise (V (Bad_angle i)))
+    hinges;
+  if Array.length rank <> n then raise (V Bad_rank);
+  let hit = Array.make n false in
+  Array.iter
+    (fun r ->
+      if r < 0 || r >= n || hit.(r) then raise (V Bad_rank) else hit.(r) <- true)
+    rank
+
+let make ~(faces : face array) ~(hinges : hinge array) ~(root : int)
+    ~(rank : int array) : (t, violation) result =
+  try
+    check_structure ~faces ~hinges ~root ~rank;
+    let isos, seen = derive_isos ~faces ~hinges ~root in
+    Array.iteri (fun i s -> if not s then raise (V (Disconnected i))) seen;
+    Ok
+      {
+        faces = Array.copy faces;
+        hinges = Array.copy hinges;
+        root;
+        rank = Array.copy rank;
+        isos;
+      }
+  with V v -> Error v
+
+let faces (g : t) : face array = Array.copy g.faces
+let hinges (g : t) : hinge array = Array.copy g.hinges
+let root (g : t) : int = g.root
+let rank (g : t) : int array = Array.copy g.rank
+let above (g : t) (i : int) (j : int) : bool = g.rank.(i) > g.rank.(j)
+let face_isos (g : t) : I3.t array = Array.copy g.isos
+let face_iso (g : t) (i : int) : I3.t = g.isos.(i)
