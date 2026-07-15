@@ -13,6 +13,10 @@
 
 let e_infeasible = "vertex not flat-foldable toward that side"
 
+let e_toward_ambiguous =
+  "`toward` does not pick a side — the point is collinear with a crease through \
+   the vertex; aim it off the creases"
+
 (* The +1-eigenvector direction of a reflection's linear part. A reflection
    fixing the origin is a symmetric orthogonal matrix (m01 = m10), so either
    off-diagonal entry gives the eigenvector directly; a zero off-diagonal
@@ -52,6 +56,11 @@ let derive (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list)
     done;
     !acc
   in
+  (* Each candidate carries its emergent LINE *and* the actual emergent RAY
+     endpoint (the axis end that lands in its own gap). The ray direction is
+     geometrically fixed — chosen by [in_gap], a CCW test — unlike the
+     eigenvector's sign, which is arbitrary; so [toward] can select on the ray
+     rather than on the line's (arbitrarily-oriented) side. *)
   let candidates = ref [] in
   for j = 0 to k - 1 do
     let before = compose_range 0 j in
@@ -68,15 +77,19 @@ let derive (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list)
       let minus = { Geom.x = Num.sub o.Geom.x dx; y = Num.sub o.Geom.y dy } in
       let lo_far, _ = sorted.((j - 1 + k) mod k) in
       let hi_far, _ = sorted.(j mod k) in
-      if in_gap o lo_far hi_far plus || in_gap o lo_far hi_far minus then
-        candidates := Geom.line_through o plus :: !candidates
+      let ray =
+        if in_gap o lo_far hi_far plus then Some plus
+        else if in_gap o lo_far hi_far minus then Some minus
+        else None
+      in
+      match ray with
+      | Some r -> candidates := (Geom.line_through o r, r) :: !candidates
+      | None -> ()
     end
   done;
-  (* Dedup coincident candidates: the same emergent axis can be the closing
-     insertion for two different gaps (both its rays fill a gap), landing the
-     identical line in [candidates] twice. Left un-deduped, the exactly-one
-     [toward] filters below would see two copies and reject a perfectly good
-     line. Two lines coincide iff parallel and one shares the other's point. *)
+  (* Dedup coincident candidates by LINE: the same emergent axis can close two
+     different gaps (both its rays fill a gap), landing twice. Two lines
+     coincide iff parallel and one shares the other's point. *)
   let same (l1 : Geom.line) (l2 : Geom.line) =
     Geom.parallel l1 l2
     && Num.sign
@@ -84,18 +97,48 @@ let derive (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list)
     && Num.sign
          (Num.sub (Num.mul l1.Geom.b l2.Geom.c) (Num.mul l2.Geom.b l1.Geom.c)) = 0
   in
+  (* Drop candidates collinear with a GIVEN ray: those are the degenerate
+     "extend a line already drawn" completions (e.g. the spine's own axis), not
+     the genuine emergent crease. All lines pass through O, so parallel ⟹
+     coincident. *)
+  let given_lines =
+    Array.to_list
+      (Array.map (fun (far, _) -> Geom.line_through o far) sorted)
+  in
+  let genuine (l, _) = not (List.exists (fun g -> Geom.parallel l g) given_lines) in
   let uniq =
     List.fold_left
-      (fun acc l -> if List.exists (same l) acc then acc else l :: acc)
+      (fun acc (l, r) ->
+        if (not (genuine (l, r))) || List.exists (fun (l', _) -> same l l') acc
+        then acc
+        else (l, r) :: acc)
       [] !candidates
   in
   match uniq with
   | [] -> Error e_infeasible
-  | [ l ] -> Ok l
-  | ls -> (
-      match List.filter (fun l -> Geom.side_of_line l toward > 0) ls with
-      | [ l ] -> Ok l
-      | _ -> (
-          match List.filter (fun l -> Geom.side_of_line l toward < 0) ls with
-          | [ l ] -> Ok l
-          | _ -> Error e_infeasible))
+  | [ (l, _) ] -> Ok l
+  | cands ->
+      (* [toward] selects the completion whose emergent RAY points toward that
+         point: maximise (ray − O)·(toward − O). Exact and orientation-free —
+         `toward .c` (right corner) yields the right-swinging crease. If the top
+         two candidates TIE (equal dot), [toward] fails to pick a side — it lies
+         along a crease through the vertex (the candidates are mirror-symmetric
+         about it), so reject rather than choose arbitrarily. *)
+      let dot (_, r) =
+        Num.add
+          (Num.mul
+             (Num.sub r.Geom.x o.Geom.x)
+             (Num.sub toward.Geom.x o.Geom.x))
+          (Num.mul
+             (Num.sub r.Geom.y o.Geom.y)
+             (Num.sub toward.Geom.y o.Geom.y))
+      in
+      let scored =
+        List.map (fun c -> (dot c, fst c)) cands
+        |> List.sort (fun (d1, _) (d2, _) -> Num.compare d2 d1)
+      in
+      match scored with
+      | (d0, _) :: (d1, _) :: _ when Num.compare d0 d1 = 0 ->
+          Error e_toward_ambiguous
+      | (_, l) :: _ -> Ok l
+      | [] -> Error e_infeasible

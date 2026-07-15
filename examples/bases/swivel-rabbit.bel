@@ -28,4 +28,4 @@ step ear
 ; the fourth — the emergent "ear" crease, a mountain at ~320° from the vertex
 ; (meeting the base right of center), not parallel to any given line (verified:
 ; docs/superpowers/specs/2026-07-15-flatten-generalizes-collapse-design.md).
---ear = flatten (--ba \ .a) (--bb \ .b) (--v \ .m) toward .d
+--ear = flatten (--ba \ .a) (--bb \ .b) (--v \ .m) toward .c

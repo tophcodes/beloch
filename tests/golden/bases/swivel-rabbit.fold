@@ -60,10 +60,10 @@
     [ 16, 14 ],
     [ 0, 17 ],
     [ 17, 4 ],
+    [ 17, 18 ],
+    [ 18, 4 ],
     [ 18, 19 ],
     [ 19, 4 ],
-    [ 4, 18 ],
-    [ 17, 18 ],
     [ 19, 12 ],
     [ 19, 13 ],
     [ 19, 16 ]
@@ -71,7 +71,7 @@
   "edges_assignment": [
     "V", "V", "B", "V", "V", "V", "V", "V", "V", "B", "V", "B", "B", "V",
     "V", "V", "V", "V", "V", "V", "V", "V", "V", "M", "V", "M", "V", "B",
-    "B", "V", "M", "V", "B", "B", "M", "B", "V", "M", "B", "V", "V", "B"
+    "B", "V", "M", "V", "B", "B", "M", "B", "M", "B", "V", "V", "V", "B"
   ],
   "faces_vertices": [
     [ 0, 1, 2 ],
@@ -92,8 +92,8 @@
     [ 13, 16, 11 ],
     [ 16, 14, 11 ],
     [ 0, 17, 4 ],
-    [ 18, 19, 4 ],
     [ 17, 18, 4 ],
+    [ 18, 19, 4 ],
     [ 19, 12, 4 ],
     [ 19, 13, 12 ],
     [ 19, 16, 13 ]
@@ -102,14 +102,14 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".m" ],
-      "span": "swivel-rabbit.bel:13:1-27",
+      "span": "examples/bases/swivel-rabbit.bel:13:1-27",
       "name": null,
       "step": "precrease"
     },
     {
       "axiom": "mark",
       "sources": [ "--bb" ],
-      "span": "swivel-rabbit.bel:31:30-34",
+      "span": "examples/bases/swivel-rabbit.bel:31:30-34",
       "name": null,
       "step": "ear"
     },
@@ -117,42 +117,42 @@
     {
       "axiom": "axiom5",
       "sources": [ "--ab", "--_am" ],
-      "span": "swivel-rabbit.bel:15:1-33",
+      "span": "examples/bases/swivel-rabbit.bel:15:1-33",
       "name": null,
       "step": "precrease"
     },
     {
       "axiom": "mark",
       "sources": [ "--bb" ],
-      "span": "swivel-rabbit.bel:31:30-34",
+      "span": "examples/bases/swivel-rabbit.bel:31:30-34",
       "name": null,
       "step": "ear"
     },
     {
       "axiom": "mark",
       "sources": [ "--ba" ],
-      "span": "swivel-rabbit.bel:31:18-22",
+      "span": "examples/bases/swivel-rabbit.bel:31:18-22",
       "name": null,
       "step": "ear"
     },
     {
       "axiom": "mark",
       "sources": [ "--bb" ],
-      "span": "swivel-rabbit.bel:31:30-34",
+      "span": "examples/bases/swivel-rabbit.bel:31:30-34",
       "name": null,
       "step": "ear"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".m" ],
-      "span": "swivel-rabbit.bel:13:1-27",
+      "span": "examples/bases/swivel-rabbit.bel:13:1-27",
       "name": null,
       "step": "precrease"
     },
     {
       "axiom": "axiom3",
       "sources": [ ".lowerp", "--bc" ],
-      "span": "swivel-rabbit.bel:20:1-42",
+      "span": "examples/bases/swivel-rabbit.bel:20:1-42",
       "name": "lowerh",
       "step": "precrease"
     },
@@ -160,7 +160,7 @@
     {
       "axiom": "axiom5",
       "sources": [ "--ab", "--_bm" ],
-      "span": "swivel-rabbit.bel:16:1-33",
+      "span": "examples/bases/swivel-rabbit.bel:16:1-33",
       "name": null,
       "step": "precrease"
     },
@@ -169,98 +169,98 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".m" ],
-      "span": "swivel-rabbit.bel:13:1-27",
+      "span": "examples/bases/swivel-rabbit.bel:13:1-27",
       "name": null,
       "step": "precrease"
     },
     {
       "axiom": "axiom5",
       "sources": [ "--ab", "--_bm" ],
-      "span": "swivel-rabbit.bel:16:1-33",
+      "span": "examples/bases/swivel-rabbit.bel:16:1-33",
       "name": null,
       "step": "precrease"
     },
     {
       "axiom": "axiom5",
       "sources": [ "--ab", "--_am" ],
-      "span": "swivel-rabbit.bel:15:1-33",
+      "span": "examples/bases/swivel-rabbit.bel:15:1-33",
       "name": null,
       "step": "precrease"
     },
     {
       "axiom": "mark",
       "sources": [ "--v" ],
-      "span": "swivel-rabbit.bel:31:42-45",
+      "span": "examples/bases/swivel-rabbit.bel:31:42-45",
       "name": null,
       "step": "ear"
     },
     {
       "axiom": "axiom3",
       "sources": [ ".lowerp", "--bc" ],
-      "span": "swivel-rabbit.bel:20:1-42",
+      "span": "examples/bases/swivel-rabbit.bel:20:1-42",
       "name": "lowerh",
       "step": "precrease"
     },
     {
       "axiom": "mark",
       "sources": [ "--v" ],
-      "span": "swivel-rabbit.bel:31:42-45",
+      "span": "examples/bases/swivel-rabbit.bel:31:42-45",
       "name": null,
       "step": "ear"
     },
     {
       "axiom": "mark",
       "sources": [ "--v" ],
-      "span": "swivel-rabbit.bel:31:42-45",
+      "span": "examples/bases/swivel-rabbit.bel:31:42-45",
       "name": null,
       "step": "ear"
     },
     {
       "axiom": "axiom3",
       "sources": [ ".lowerp", "--bc" ],
-      "span": "swivel-rabbit.bel:20:1-42",
+      "span": "examples/bases/swivel-rabbit.bel:20:1-42",
       "name": "lowerh",
       "step": "precrease"
     },
     {
       "axiom": "axiom5",
       "sources": [ "--ab", "--_am" ],
-      "span": "swivel-rabbit.bel:15:1-33",
+      "span": "examples/bases/swivel-rabbit.bel:15:1-33",
       "name": null,
       "step": "precrease"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".m" ],
-      "span": "swivel-rabbit.bel:14:1-27",
+      "span": "examples/bases/swivel-rabbit.bel:14:1-27",
       "name": null,
       "step": "precrease"
     },
     {
       "axiom": "mark",
       "sources": [ "--ba" ],
-      "span": "swivel-rabbit.bel:31:18-22",
+      "span": "examples/bases/swivel-rabbit.bel:31:18-22",
       "name": null,
       "step": "ear"
     },
     {
       "axiom": "axiom5",
       "sources": [ "--ab", "--_bm" ],
-      "span": "swivel-rabbit.bel:16:1-33",
+      "span": "examples/bases/swivel-rabbit.bel:16:1-33",
       "name": null,
       "step": "precrease"
     },
     {
       "axiom": "mark",
       "sources": [ "--ba" ],
-      "span": "swivel-rabbit.bel:31:18-22",
+      "span": "examples/bases/swivel-rabbit.bel:31:18-22",
       "name": null,
       "step": "ear"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".m" ],
-      "span": "swivel-rabbit.bel:14:1-27",
+      "span": "examples/bases/swivel-rabbit.bel:14:1-27",
       "name": null,
       "step": "precrease"
     },
@@ -269,21 +269,21 @@
     {
       "axiom": "axiom5",
       "sources": [ "--ab", "--_am" ],
-      "span": "swivel-rabbit.bel:15:1-33",
+      "span": "examples/bases/swivel-rabbit.bel:15:1-33",
       "name": null,
       "step": "precrease"
     },
     {
       "axiom": "mark",
       "sources": [ "--ba" ],
-      "span": "swivel-rabbit.bel:31:18-22",
+      "span": "examples/bases/swivel-rabbit.bel:31:18-22",
       "name": null,
       "step": "ear"
     },
     {
       "axiom": "axiom3",
       "sources": [ ".lowerp", "--bc" ],
-      "span": "swivel-rabbit.bel:20:1-42",
+      "span": "examples/bases/swivel-rabbit.bel:20:1-42",
       "name": "lowerh",
       "step": "precrease"
     },
@@ -292,37 +292,37 @@
     {
       "axiom": "mark",
       "sources": [ "--v" ],
-      "span": "swivel-rabbit.bel:31:42-45",
+      "span": "examples/bases/swivel-rabbit.bel:31:42-45",
       "name": null,
       "step": "ear"
     },
     null,
-    {
-      "axiom": "mark",
-      "sources": [ "--bb" ],
-      "span": "swivel-rabbit.bel:31:30-34",
-      "name": null,
-      "step": "ear"
-    },
     {
       "axiom": "flatten",
       "sources": [],
-      "span": "swivel-rabbit.bel:31:1-61",
+      "span": "examples/bases/swivel-rabbit.bel:31:1-61",
       "name": null,
       "step": "ear"
     },
     null,
     {
+      "axiom": "mark",
+      "sources": [ "--bb" ],
+      "span": "examples/bases/swivel-rabbit.bel:31:30-34",
+      "name": null,
+      "step": "ear"
+    },
+    {
       "axiom": "axiom5",
       "sources": [ "--ab", "--_bm" ],
-      "span": "swivel-rabbit.bel:16:1-33",
+      "span": "examples/bases/swivel-rabbit.bel:16:1-33",
       "name": null,
       "step": "precrease"
     },
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".m" ],
-      "span": "swivel-rabbit.bel:14:1-27",
+      "span": "examples/bases/swivel-rabbit.bel:14:1-27",
       "name": null,
       "step": "precrease"
     },
@@ -414,7 +414,7 @@
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".b" ],
-          "span": "swivel-rabbit.bel:9:1-26",
+          "span": "examples/bases/swivel-rabbit.bel:9:1-26",
           "name": "v",
           "step": null
         },
@@ -558,14 +558,14 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".m" ],
-          "span": "swivel-rabbit.bel:13:1-27",
+          "span": "examples/bases/swivel-rabbit.bel:13:1-27",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".[--da --lowerh]" ],
-          "span": "swivel-rabbit.bel:23:1-40",
+          "span": "examples/bases/swivel-rabbit.bel:23:1-40",
           "name": "bb",
           "step": "precrease"
         },
@@ -573,21 +573,21 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".m" ],
-          "span": "swivel-rabbit.bel:13:1-27",
+          "span": "examples/bases/swivel-rabbit.bel:13:1-27",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "axiom3",
           "sources": [ ".lowerp", "--bc" ],
-          "span": "swivel-rabbit.bel:20:1-42",
+          "span": "examples/bases/swivel-rabbit.bel:20:1-42",
           "name": "lowerh",
           "step": "precrease"
         },
         {
           "axiom": "axiom5",
           "sources": [ "--ab", "--_bm" ],
-          "span": "swivel-rabbit.bel:16:1-33",
+          "span": "examples/bases/swivel-rabbit.bel:16:1-33",
           "name": null,
           "step": "precrease"
         },
@@ -595,7 +595,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".m" ],
-          "span": "swivel-rabbit.bel:13:1-27",
+          "span": "examples/bases/swivel-rabbit.bel:13:1-27",
           "name": null,
           "step": "precrease"
         },
@@ -604,70 +604,70 @@
         {
           "axiom": "axiom5",
           "sources": [ "--ab", "--_am" ],
-          "span": "swivel-rabbit.bel:15:1-33",
+          "span": "examples/bases/swivel-rabbit.bel:15:1-33",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".[--da --lowerh]" ],
-          "span": "swivel-rabbit.bel:23:1-40",
+          "span": "examples/bases/swivel-rabbit.bel:23:1-40",
           "name": "bb",
           "step": "precrease"
         },
         {
           "axiom": "axiom5",
           "sources": [ "--ab", "--_am" ],
-          "span": "swivel-rabbit.bel:15:1-33",
+          "span": "examples/bases/swivel-rabbit.bel:15:1-33",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "axiom5",
           "sources": [ "--ab", "--_bm" ],
-          "span": "swivel-rabbit.bel:16:1-33",
+          "span": "examples/bases/swivel-rabbit.bel:16:1-33",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".b" ],
-          "span": "swivel-rabbit.bel:9:1-26",
+          "span": "examples/bases/swivel-rabbit.bel:9:1-26",
           "name": "v",
           "step": null
         },
         {
           "axiom": "axiom3",
           "sources": [ ".lowerp", "--bc" ],
-          "span": "swivel-rabbit.bel:20:1-42",
+          "span": "examples/bases/swivel-rabbit.bel:20:1-42",
           "name": "lowerh",
           "step": "precrease"
         },
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".b" ],
-          "span": "swivel-rabbit.bel:9:1-26",
+          "span": "examples/bases/swivel-rabbit.bel:9:1-26",
           "name": "v",
           "step": null
         },
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".[--bc --lowerh]" ],
-          "span": "swivel-rabbit.bel:22:1-40",
+          "span": "examples/bases/swivel-rabbit.bel:22:1-40",
           "name": "ba",
           "step": "precrease"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".[--da --lowerh]" ],
-          "span": "swivel-rabbit.bel:23:1-40",
+          "span": "examples/bases/swivel-rabbit.bel:23:1-40",
           "name": "bb",
           "step": "precrease"
         },
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".b" ],
-          "span": "swivel-rabbit.bel:9:1-26",
+          "span": "examples/bases/swivel-rabbit.bel:9:1-26",
           "name": "v",
           "step": null
         },
@@ -675,42 +675,42 @@
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".b" ],
-          "span": "swivel-rabbit.bel:9:1-26",
+          "span": "examples/bases/swivel-rabbit.bel:9:1-26",
           "name": "v",
           "step": null
         },
         {
           "axiom": "axiom3",
           "sources": [ ".lowerp", "--bc" ],
-          "span": "swivel-rabbit.bel:20:1-42",
+          "span": "examples/bases/swivel-rabbit.bel:20:1-42",
           "name": "lowerh",
           "step": "precrease"
         },
         {
           "axiom": "axiom5",
           "sources": [ "--ab", "--_am" ],
-          "span": "swivel-rabbit.bel:15:1-33",
+          "span": "examples/bases/swivel-rabbit.bel:15:1-33",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".m" ],
-          "span": "swivel-rabbit.bel:14:1-27",
+          "span": "examples/bases/swivel-rabbit.bel:14:1-27",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "axiom5",
           "sources": [ "--ab", "--_bm" ],
-          "span": "swivel-rabbit.bel:16:1-33",
+          "span": "examples/bases/swivel-rabbit.bel:16:1-33",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".[--bc --lowerh]" ],
-          "span": "swivel-rabbit.bel:22:1-40",
+          "span": "examples/bases/swivel-rabbit.bel:22:1-40",
           "name": "ba",
           "step": "precrease"
         },
@@ -718,35 +718,35 @@
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".[--da --lowerh]" ],
-          "span": "swivel-rabbit.bel:23:1-40",
+          "span": "examples/bases/swivel-rabbit.bel:23:1-40",
           "name": "bb",
           "step": "precrease"
         },
         {
           "axiom": "axiom5",
           "sources": [ "--ab", "--_bm" ],
-          "span": "swivel-rabbit.bel:16:1-33",
+          "span": "examples/bases/swivel-rabbit.bel:16:1-33",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".m" ],
-          "span": "swivel-rabbit.bel:14:1-27",
+          "span": "examples/bases/swivel-rabbit.bel:14:1-27",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".[--bc --lowerh]" ],
-          "span": "swivel-rabbit.bel:22:1-40",
+          "span": "examples/bases/swivel-rabbit.bel:22:1-40",
           "name": "ba",
           "step": "precrease"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".m" ],
-          "span": "swivel-rabbit.bel:14:1-27",
+          "span": "examples/bases/swivel-rabbit.bel:14:1-27",
           "name": null,
           "step": "precrease"
         },
@@ -755,21 +755,21 @@
         {
           "axiom": "axiom5",
           "sources": [ "--ab", "--_am" ],
-          "span": "swivel-rabbit.bel:15:1-33",
+          "span": "examples/bases/swivel-rabbit.bel:15:1-33",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "axiom3",
           "sources": [ ".lowerp", "--bc" ],
-          "span": "swivel-rabbit.bel:20:1-42",
+          "span": "examples/bases/swivel-rabbit.bel:20:1-42",
           "name": "lowerh",
           "step": "precrease"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".[--bc --lowerh]" ],
-          "span": "swivel-rabbit.bel:22:1-40",
+          "span": "examples/bases/swivel-rabbit.bel:22:1-40",
           "name": "ba",
           "step": "precrease"
         },
@@ -843,10 +843,10 @@
         [ 16, 14 ],
         [ 0, 17 ],
         [ 17, 4 ],
+        [ 17, 18 ],
+        [ 18, 4 ],
         [ 18, 19 ],
         [ 19, 4 ],
-        [ 4, 18 ],
-        [ 17, 18 ],
         [ 19, 12 ],
         [ 19, 13 ],
         [ 19, 16 ]
@@ -854,13 +854,13 @@
       "edges_assignment": [
         "F", "V", "B", "F", "V", "F", "V", "F", "F", "B", "F", "B", "B", "F",
         "F", "F", "F", "F", "F", "F", "F", "F", "F", "M", "F", "M", "F", "B",
-        "B", "F", "M", "F", "B", "B", "M", "B", "F", "M", "B", "F", "F", "B"
+        "B", "F", "M", "F", "B", "B", "M", "B", "M", "B", "F", "F", "F", "B"
       ],
       "edges_foldAngle": [
         0.0, 180.0, 0.0, 0.0, 180.0, 0.0, 180.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -180.0, 0.0,
-        -180.0, 0.0, 0.0, 0.0, 0.0, -180.0, 0.0, 0.0, 0.0, -180.0, 0.0, 0.0,
-        -180.0, 0.0, 0.0, 0.0, 0.0
+        -180.0, 0.0, 0.0, 0.0, 0.0, -180.0, 0.0, 0.0, 0.0, -180.0, 0.0,
+        -180.0, 0.0, 0.0, 0.0, 0.0, 0.0
       ],
       "faces_vertices": [
         [ 0, 1, 2 ],
@@ -881,8 +881,8 @@
         [ 13, 16, 11 ],
         [ 16, 14, 11 ],
         [ 0, 17, 4 ],
-        [ 18, 19, 4 ],
         [ 17, 18, 4 ],
+        [ 18, 19, 4 ],
         [ 19, 12, 4 ],
         [ 19, 13, 12 ],
         [ 19, 16, 13 ]
@@ -919,12 +919,12 @@
           -0.6354401716853176, 0.3645598283146823, 0.7721501073033235
         ],
         [
-          0.6354401716853176, 0.7721501073033235, 0.7721501073033235,
-          -0.6354401716853176, 0.0, 0.0
-        ],
-        [
           -0.6354401716853176, -0.7721501073033235, 0.7721501073033235,
           -0.6354401716853176, 1.0, 0.0
+        ],
+        [
+          0.6354401716853176, 0.7721501073033235, 0.7721501073033235,
+          -0.6354401716853176, 0.0, 0.0
         ],
         [
           0.6354401716853176, 0.7721501073033235, 0.7721501073033235,
@@ -960,25 +960,25 @@
         [ 8, 17, 1 ],
         [ 9, 17, 1 ],
         [ 10, 17, 1 ],
-        [ 10, 18, 1 ],
-        [ 10, 19, -1 ],
+        [ 10, 18, -1 ],
+        [ 10, 19, 1 ],
         [ 10, 20, 1 ],
         [ 10, 21, 1 ],
         [ 11, 17, 1 ],
-        [ 11, 18, 1 ],
-        [ 11, 19, -1 ],
+        [ 11, 18, -1 ],
+        [ 11, 19, 1 ],
         [ 11, 20, 1 ],
         [ 11, 21, 1 ],
         [ 12, 17, 1 ],
-        [ 12, 18, 1 ],
-        [ 12, 19, -1 ],
+        [ 12, 18, -1 ],
+        [ 12, 19, 1 ],
         [ 12, 20, 1 ],
         [ 13, 17, 1 ],
-        [ 13, 18, 1 ],
-        [ 13, 19, -1 ],
+        [ 13, 18, -1 ],
+        [ 13, 19, 1 ],
         [ 13, 20, 1 ],
         [ 13, 21, 1 ],
-        [ 14, 18, 1 ],
+        [ 14, 19, 1 ],
         [ 14, 20, 1 ],
         [ 14, 21, 1 ],
         [ 14, 22, 1 ],
@@ -986,13 +986,13 @@
         [ 15, 22, 1 ],
         [ 16, 21, 1 ],
         [ 16, 22, 1 ],
-        [ 17, 18, -1 ],
-        [ 17, 19, 1 ],
+        [ 17, 18, 1 ],
+        [ 17, 19, -1 ],
         [ 17, 20, -1 ],
         [ 17, 21, -1 ],
         [ 18, 19, -1 ],
-        [ 19, 20, -1 ],
-        [ 19, 21, -1 ]
+        [ 18, 20, -1 ],
+        [ 18, 21, -1 ]
       ],
       "beloch:step": "ear",
       "beloch:source_line": 31,
@@ -1000,14 +1000,14 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".m" ],
-          "span": "swivel-rabbit.bel:13:1-27",
+          "span": "examples/bases/swivel-rabbit.bel:13:1-27",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "mark",
           "sources": [ "--bb" ],
-          "span": "swivel-rabbit.bel:31:30-34",
+          "span": "examples/bases/swivel-rabbit.bel:31:30-34",
           "name": null,
           "step": "ear"
         },
@@ -1015,42 +1015,42 @@
         {
           "axiom": "axiom5",
           "sources": [ "--ab", "--_am" ],
-          "span": "swivel-rabbit.bel:15:1-33",
+          "span": "examples/bases/swivel-rabbit.bel:15:1-33",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "mark",
           "sources": [ "--bb" ],
-          "span": "swivel-rabbit.bel:31:30-34",
+          "span": "examples/bases/swivel-rabbit.bel:31:30-34",
           "name": null,
           "step": "ear"
         },
         {
           "axiom": "mark",
           "sources": [ "--ba" ],
-          "span": "swivel-rabbit.bel:31:18-22",
+          "span": "examples/bases/swivel-rabbit.bel:31:18-22",
           "name": null,
           "step": "ear"
         },
         {
           "axiom": "mark",
           "sources": [ "--bb" ],
-          "span": "swivel-rabbit.bel:31:30-34",
+          "span": "examples/bases/swivel-rabbit.bel:31:30-34",
           "name": null,
           "step": "ear"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".m" ],
-          "span": "swivel-rabbit.bel:13:1-27",
+          "span": "examples/bases/swivel-rabbit.bel:13:1-27",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "axiom3",
           "sources": [ ".lowerp", "--bc" ],
-          "span": "swivel-rabbit.bel:20:1-42",
+          "span": "examples/bases/swivel-rabbit.bel:20:1-42",
           "name": "lowerh",
           "step": "precrease"
         },
@@ -1058,7 +1058,7 @@
         {
           "axiom": "axiom5",
           "sources": [ "--ab", "--_bm" ],
-          "span": "swivel-rabbit.bel:16:1-33",
+          "span": "examples/bases/swivel-rabbit.bel:16:1-33",
           "name": null,
           "step": "precrease"
         },
@@ -1067,98 +1067,98 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".m" ],
-          "span": "swivel-rabbit.bel:13:1-27",
+          "span": "examples/bases/swivel-rabbit.bel:13:1-27",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "axiom5",
           "sources": [ "--ab", "--_bm" ],
-          "span": "swivel-rabbit.bel:16:1-33",
+          "span": "examples/bases/swivel-rabbit.bel:16:1-33",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "axiom5",
           "sources": [ "--ab", "--_am" ],
-          "span": "swivel-rabbit.bel:15:1-33",
+          "span": "examples/bases/swivel-rabbit.bel:15:1-33",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "mark",
           "sources": [ "--v" ],
-          "span": "swivel-rabbit.bel:31:42-45",
+          "span": "examples/bases/swivel-rabbit.bel:31:42-45",
           "name": null,
           "step": "ear"
         },
         {
           "axiom": "axiom3",
           "sources": [ ".lowerp", "--bc" ],
-          "span": "swivel-rabbit.bel:20:1-42",
+          "span": "examples/bases/swivel-rabbit.bel:20:1-42",
           "name": "lowerh",
           "step": "precrease"
         },
         {
           "axiom": "mark",
           "sources": [ "--v" ],
-          "span": "swivel-rabbit.bel:31:42-45",
+          "span": "examples/bases/swivel-rabbit.bel:31:42-45",
           "name": null,
           "step": "ear"
         },
         {
           "axiom": "mark",
           "sources": [ "--v" ],
-          "span": "swivel-rabbit.bel:31:42-45",
+          "span": "examples/bases/swivel-rabbit.bel:31:42-45",
           "name": null,
           "step": "ear"
         },
         {
           "axiom": "axiom3",
           "sources": [ ".lowerp", "--bc" ],
-          "span": "swivel-rabbit.bel:20:1-42",
+          "span": "examples/bases/swivel-rabbit.bel:20:1-42",
           "name": "lowerh",
           "step": "precrease"
         },
         {
           "axiom": "axiom5",
           "sources": [ "--ab", "--_am" ],
-          "span": "swivel-rabbit.bel:15:1-33",
+          "span": "examples/bases/swivel-rabbit.bel:15:1-33",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".m" ],
-          "span": "swivel-rabbit.bel:14:1-27",
+          "span": "examples/bases/swivel-rabbit.bel:14:1-27",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "mark",
           "sources": [ "--ba" ],
-          "span": "swivel-rabbit.bel:31:18-22",
+          "span": "examples/bases/swivel-rabbit.bel:31:18-22",
           "name": null,
           "step": "ear"
         },
         {
           "axiom": "axiom5",
           "sources": [ "--ab", "--_bm" ],
-          "span": "swivel-rabbit.bel:16:1-33",
+          "span": "examples/bases/swivel-rabbit.bel:16:1-33",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "mark",
           "sources": [ "--ba" ],
-          "span": "swivel-rabbit.bel:31:18-22",
+          "span": "examples/bases/swivel-rabbit.bel:31:18-22",
           "name": null,
           "step": "ear"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".m" ],
-          "span": "swivel-rabbit.bel:14:1-27",
+          "span": "examples/bases/swivel-rabbit.bel:14:1-27",
           "name": null,
           "step": "precrease"
         },
@@ -1167,21 +1167,21 @@
         {
           "axiom": "axiom5",
           "sources": [ "--ab", "--_am" ],
-          "span": "swivel-rabbit.bel:15:1-33",
+          "span": "examples/bases/swivel-rabbit.bel:15:1-33",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "mark",
           "sources": [ "--ba" ],
-          "span": "swivel-rabbit.bel:31:18-22",
+          "span": "examples/bases/swivel-rabbit.bel:31:18-22",
           "name": null,
           "step": "ear"
         },
         {
           "axiom": "axiom3",
           "sources": [ ".lowerp", "--bc" ],
-          "span": "swivel-rabbit.bel:20:1-42",
+          "span": "examples/bases/swivel-rabbit.bel:20:1-42",
           "name": "lowerh",
           "step": "precrease"
         },
@@ -1190,37 +1190,37 @@
         {
           "axiom": "mark",
           "sources": [ "--v" ],
-          "span": "swivel-rabbit.bel:31:42-45",
+          "span": "examples/bases/swivel-rabbit.bel:31:42-45",
           "name": null,
           "step": "ear"
         },
         null,
-        {
-          "axiom": "mark",
-          "sources": [ "--bb" ],
-          "span": "swivel-rabbit.bel:31:30-34",
-          "name": null,
-          "step": "ear"
-        },
         {
           "axiom": "flatten",
           "sources": [],
-          "span": "swivel-rabbit.bel:31:1-61",
+          "span": "examples/bases/swivel-rabbit.bel:31:1-61",
           "name": null,
           "step": "ear"
         },
         null,
         {
+          "axiom": "mark",
+          "sources": [ "--bb" ],
+          "span": "examples/bases/swivel-rabbit.bel:31:30-34",
+          "name": null,
+          "step": "ear"
+        },
+        {
           "axiom": "axiom5",
           "sources": [ "--ab", "--_bm" ],
-          "span": "swivel-rabbit.bel:16:1-33",
+          "span": "examples/bases/swivel-rabbit.bel:16:1-33",
           "name": null,
           "step": "precrease"
         },
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".m" ],
-          "span": "swivel-rabbit.bel:14:1-27",
+          "span": "examples/bases/swivel-rabbit.bel:14:1-27",
           "name": null,
           "step": "precrease"
         },

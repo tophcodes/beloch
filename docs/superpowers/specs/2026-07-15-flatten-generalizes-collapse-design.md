@@ -88,10 +88,14 @@ construction**, no polynomial and no `real_roots`:
 Verified on the shipped `swivel-rabbit.bel` free-hinge construction: the flatten
 vertex `V = --ba * --bb = (½, √5−2) ≈ (0.5, 0.236)` (NOT the incenter `.o ≈
 (0.5, 0.309)`, which is only scaffolding), given `{--ba \ .a, --bb \ .b,
---v \ .m}`, the `toward .d` gap yields an emergent axis at ≈320.5° meeting the
-base at `x ≈ 0.787` (exact algebraic; `closure_ok` = true). `toward .c` gives the
-mirror completion (≈219.5°). See `tests/spike_flatten.ml` and the
-`test_flatten_derive_unit` test.
+--v \ .m}`, `toward .c` (top-right) yields the emergent ray pointing **toward
+.c** — down-right, ≈320.5°, meeting the base at `x ≈ 0.787` (exact algebraic;
+`closure_ok` = true). `toward .d` gives the down-left mirror (≈219.5°). The
+selection maximises `(emergent_ray − O)·(toward − O)`, so it is orientation-free
+and follows intuition (point right → crease right). If `toward` is **collinear
+with a crease through the vertex** (the candidates tie), it cannot pick a side
+and is rejected — e.g. a symmetric fold about an axis is not an off-axis swivel.
+See `tests/spike_flatten.ml` and the `test_flatten_derive_unit` test.
 
 `Num.real_roots` + the `Poly`/`Qqbar` kernel (ADR 0012/0013, axiom-7 pattern
 `lib/geom.ml:96-140`) is **not needed for the single-emergent case** — it is held
@@ -149,7 +153,7 @@ moving flap. `toward` picks the swivel side. No new keyword — this is the ship
 `&`/`\` selector algebra:
 
 ```
---ear = flatten (--ba \ .a) (--bb \ .b) (--v \ .m) toward .d
+--ear = flatten (--ba \ .a) (--bb \ .b) (--v \ .m) toward .c
 ```
 
 Here `--ba \ .a` / `--bb \ .b` are the two rays *away* from `.a` / `.b` — they
@@ -207,7 +211,7 @@ it is **bindable**. This matters most in derive mode: the emergent crease has no
 construction, so binding is its only name.
 
 ```
---ear = flatten (--ba \ .a) (--bb \ .b) (--v \ .m) toward .d
+--ear = flatten (--ba \ .a) (--bb \ .b) (--v \ .m) toward .c
 .tip  = .[--ear, --base]     ; the derived tip on the base, now selectable
 ```
 
