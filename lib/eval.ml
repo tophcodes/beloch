@@ -1826,6 +1826,10 @@ let eval_folded (prog : Ast.program) : folded =
             (fun (u, l) -> (resolve_sector_face u span, resolve_sector_face l span))
             overs
         in
+        (* DERIVE mode records the emergent crease's (id, line) here so the
+           name (if any) binds to it instead of the given rays; None in
+           validate mode and left None if unbound. *)
+        let emergent_bind = ref None in
         (match toward_opt with
         | None ->
             (match Collapse.collapse !(ctx.state) es ~over with
@@ -1943,39 +1947,55 @@ let eval_folded (prog : Ast.program) : folded =
                 (* closure doesn't depend on valley, so a wrong ray would fail
                    both valleys identically; Maekawa admits exactly one valley
                    for the right one. [Collapse.collapse] is the oracle. *)
+                (* pair each attempt with the (cid, far) it was built from, so
+                   the winning attempt tells us which crease id is the
+                   emergent one — [new_cid] when the ray was freshly
+                   materialized, but a PRE-EXISTING cid when the ray is
+                   collinear with an already-materialized given crease (the
+                   rabbit-ear up-spine no-op case; see the comment above
+                   [candidates]). *)
                 let attempts =
                   List.concat_map
                     (fun (cid, far) ->
                       [ true; false ]
                       |> List.map (fun valley ->
-                             { Collapse.cid; ea = o; eb = far; valley }))
+                             (cid, { Collapse.cid; ea = o; eb = far; valley })))
                     candidates
                 in
                 let results =
                   List.filter_map
-                    (fun (e : Collapse.elem) ->
+                    (fun (cid, (e : Collapse.elem)) ->
                       match Collapse.collapse !(ctx.state) (e :: es) ~over with
-                      | Ok st -> Some st
+                      | Ok st -> Some (st, cid)
                       | Error _ -> None)
                     attempts
                 in
                 (match results with
-                | [ st ] -> ctx.state := st
+                | [ (st, cid) ] ->
+                    ctx.state := st;
+                    emergent_bind := Some (cid, emergent_line)
                 | [] ->
                     Error.fail span
                       "the derived crease does not close the vertex"
                 | _ :: _ :: _ ->
                     Error.fail span
                       "the derived crease admits more than one closure")));
-        (* bind the name (if any) to a selectable bundle of the given rays;
-           validate mode only — the emergent-crease refinement is a later
-           task (#Task 6). *)
+        (* bind the name (if any): validate mode binds a selectable bundle of
+           the given rays; derive mode binds the EMERGENT crease instead (the
+           newly-completed vertex's own crease, not the rays that produced
+           it), so a meet-point selector against the name (e.g.
+           `.[--ear --ab]`) finds the emergent crease's tip. *)
         (match name_opt with
         | Some n ->
-            let bundle =
-              Ast.LUnion (List.map (fun (el : Ast.collapse_elem) -> el.Ast.cline) elems, span)
+            let cv =
+              match !emergent_bind with
+              | Some (cid, line) -> Material (cid, line)
+              | None ->
+                  Bundle
+                    (Ast.LUnion
+                       (List.map (fun (el : Ast.collapse_elem) -> el.Ast.cline) elems, span))
             in
-            bind_crease ctx n span (Bundle bundle)
+            bind_crease ctx n span cv
         | None -> ());
         push_frame (Some span)
   in
