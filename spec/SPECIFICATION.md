@@ -922,6 +922,7 @@ a full worked case where the emergent crease is genuinely non-constructible
 | condition | shipped error text |
 |---|---|
 | given ray count is even (already-complete, or simply wrong), or no axis closes the vertex toward any side | `vertex not flat-foldable toward that side` |
+| a symmetric vertex whose derived axis has two ray-ends that both close Kawasaki, and `toward` lands on neither side of the axis (or fails to separate them) so it cannot pick one | `` the derived crease is ambiguous; `toward` does not pick one ray `` |
 | a closing axis has a ray, but no valley/mountain assignment of it lets the completed set fold (checks 8–14 above all reject it) | `the derived crease does not close the vertex` |
 | more than one (ray, valley) combination on the closing axis folds successfully | `the derived crease admits more than one closure` |
 
