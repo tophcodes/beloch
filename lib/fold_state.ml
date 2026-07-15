@@ -893,8 +893,18 @@ let classify_mark_extent (st : t) ~(flap : int list) ~(axis : Geom.line)
 
 (* Split every face crossing [axis] into its two halves (both keep their
    isometry; nothing moves). Returns the new state; one F edge is created per
-   face actually cut. *)
-let subdivide ?crease_id ?(intent = V) (st : t) (axis : Geom.line)
+   face actually cut.
+
+   [keep_side] restricts the cut to ONE RAY of [axis]: a face is only split (and
+   an F edge only created) when its table-space centroid lies on side [keep] of
+   the given guard line — pass the line perpendicular to [axis] through the ray
+   origin, with [keep] the side the ray points to. Faces on the far side of the
+   guard are left whole, so [axis]'s opposite ray creases nothing. The guard is
+   perpendicular to [axis] through a point ON [axis], so any face [axis] cuts in
+   its interior sits wholly on one side of the guard (the cut point and the
+   face are on the same side), and edge/axis crossings never straddle the guard
+   — the carried-edge split below therefore stays consistent per face. *)
+let subdivide ?crease_id ?(intent = V) ?keep_side (st : t) (axis : Geom.line)
     ~(prov : State.provenance option) : t =
   let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
   let out = ref [] (* (child_face, parent_index), accumulated via prepend *) in
@@ -902,26 +912,53 @@ let subdivide ?crease_id ?(intent = V) (st : t) (axis : Geom.line)
      children straddling the axis are the two entries of [parent] equal to
      parent_index, resolved after the final face order is fixed *)
   let edge_seeds = ref [] in
+  (* faces the cut actually splits (indexed by parent fi): only these get an F
+     edge, and only their carried edges are split at the axis crossing. *)
+  let cut_parent = Array.make (Array.length st.faces) false in
+  let on_keep_side (f : face) : bool =
+    match keep_side with
+    | None -> true
+    | Some (guard, keep) ->
+        let n = Array.length f.paper in
+        let sx = ref Num.zero and sy = ref Num.zero in
+        Array.iter
+          (fun p ->
+            let tp = Isometry.apply_point f.iso p in
+            sx := Num.add !sx tp.Geom.x;
+            sy := Num.add !sy tp.Geom.y)
+          f.paper;
+        let c =
+          { Geom.x = Num.div !sx (Num.of_int n); y = Num.div !sy (Num.of_int n) }
+        in
+        Geom.side_of_line guard c = keep
+  in
   Array.iteri
     (fun fi f ->
-      let table = Array.map (Isometry.apply_point f.iso) f.paper in
-      let inv = Isometry.inverse f.iso in
-      let part keep =
-        let sub = Geom.clip_convex_halfplane axis keep table in
-        if Array.length sub >= 3 then
-          Some { paper = Array.map (Isometry.apply_point inv) sub; iso = f.iso }
-        else None
-      in
-      let plus = part 1 and minus = part (-1) in
-      (match (plus, minus) with
-      | Some _, Some _ -> (
-          match axis_segment_in_face f axis with
-          | Some (a, b) -> edge_seeds := (fi, a, b, cid) :: !edge_seeds
-          | None -> ())
-      | _ -> ());
-      List.iter
-        (function Some fc -> out := (fc, fi) :: !out | None -> ())
-        [ plus; minus ])
+      if not (on_keep_side f) then
+        (* guard excludes this ray: keep the face whole as a single child, no
+           split and no F edge, so [axis]'s opposite ray creases nothing *)
+        out := ({ paper = f.paper; iso = f.iso }, fi) :: !out
+      else begin
+        let table = Array.map (Isometry.apply_point f.iso) f.paper in
+        let inv = Isometry.inverse f.iso in
+        let part keep =
+          let sub = Geom.clip_convex_halfplane axis keep table in
+          if Array.length sub >= 3 then
+            Some { paper = Array.map (Isometry.apply_point inv) sub; iso = f.iso }
+          else None
+        in
+        let plus = part 1 and minus = part (-1) in
+        (match (plus, minus) with
+        | Some _, Some _ -> (
+            cut_parent.(fi) <- true;
+            match axis_segment_in_face f axis with
+            | Some (a, b) -> edge_seeds := (fi, a, b, cid) :: !edge_seeds
+            | None -> ())
+        | _ -> ());
+        List.iter
+          (function Some fc -> out := (fc, fi) :: !out | None -> ())
+          [ plus; minus ]
+      end)
     st.faces;
   let arr = Array.of_list (List.rev !out) in
   let faces = Array.map fst arr in
@@ -971,7 +1008,11 @@ let subdivide ?crease_id ?(intent = V) (st : t) (axis : Geom.line)
         let a = Isometry.apply_point iso_l e.ea in
         let b = Isometry.apply_point iso_l e.eb in
         let sa = Geom.side_of_line axis a and sb = Geom.side_of_line axis b in
-        if sa * sb >= 0 then
+        (* only split an edge at the axis crossing when its incident face was
+           actually cut there; a guard-excluded (whole-kept) face keeps its
+           edges whole even where [axis] passes through — no phantom crease *)
+        let face_cut = e.left >= 0 && cut_parent.(e.left) in
+        if (not face_cut) || sa * sb >= 0 then
           (* wholly one side (or touching the axis): one child per incident face *)
           let s = if sa <> 0 then sa else sb in
           [ { e with left = child_on e.left s; right = child_on e.right s } ]

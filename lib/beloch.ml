@@ -36,6 +36,7 @@ module Eval = Eval
 module Fold_emit = Fold_emit
 module Fold_state = Fold_state
 module Collapse = Collapse
+module Flatten = Flatten
 module Poly = Poly
 module Mpoly = Mpoly
 module Qqbar = Qqbar

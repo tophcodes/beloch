@@ -72,7 +72,24 @@ let derive (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list)
         candidates := Geom.line_through o plus :: !candidates
     end
   done;
-  match !candidates with
+  (* Dedup coincident candidates: the same emergent axis can be the closing
+     insertion for two different gaps (both its rays fill a gap), landing the
+     identical line in [candidates] twice. Left un-deduped, the exactly-one
+     [toward] filters below would see two copies and reject a perfectly good
+     line. Two lines coincide iff parallel and one shares the other's point. *)
+  let same (l1 : Geom.line) (l2 : Geom.line) =
+    Geom.parallel l1 l2
+    && Num.sign
+         (Num.sub (Num.mul l1.Geom.a l2.Geom.c) (Num.mul l2.Geom.a l1.Geom.c)) = 0
+    && Num.sign
+         (Num.sub (Num.mul l1.Geom.b l2.Geom.c) (Num.mul l2.Geom.b l1.Geom.c)) = 0
+  in
+  let uniq =
+    List.fold_left
+      (fun acc l -> if List.exists (same l) acc then acc else l :: acc)
+      [] !candidates
+  in
+  match uniq with
   | [] -> Error e_infeasible
   | [ l ] -> Ok l
   | ls -> (
