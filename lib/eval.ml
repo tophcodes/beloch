@@ -1719,7 +1719,7 @@ let eval_folded (prog : Ast.program) : folded =
            marker). A trailing fold/collapse clears pending again → no dup. *)
         ctx.pending <- true;
         ctx.panel <- Some id
-    | Ast.Flatten (elems, overs, standing_opt, span) ->
+    | Ast.Flatten (name_opt, elems, overs, standing_opt, span) ->
         (match standing_opt with
         | Some _ -> Error.fail span "standing folds are not yet supported"
         | None -> ());
@@ -1829,6 +1829,16 @@ let eval_folded (prog : Ast.program) : folded =
         (match Collapse.collapse !(ctx.state) es ~over with
         | Ok st -> ctx.state := st
         | Error msg -> Error.fail span msg);
+        (* bind the name (if any) to a selectable bundle of the given rays;
+           validate mode only — the emergent-crease refinement is a later
+           task (#Task 6). *)
+        (match name_opt with
+        | Some n ->
+            let bundle =
+              Ast.LUnion (List.map (fun (el : Ast.collapse_elem) -> el.Ast.cline) elems, span)
+            in
+            bind_crease ctx n span (Bundle bundle)
+        | None -> ());
         push_frame (Some span)
   in
   List.iter eval_stmt prog;

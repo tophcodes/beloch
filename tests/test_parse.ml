@@ -541,7 +541,7 @@ let test_parse_flatten_basic () =
       "paper square\nflatten (--a) (--b) (--c) (--e mountain)\n"
   in
   match prog with
-  | [ Ast.Flatten (elems, [], None, _) ] ->
+  | [ Ast.Flatten (None, elems, [], None, _) ] ->
       Alcotest.(check int) "4 elements" 4 (List.length elems);
       let dirs = List.map (fun (e : Ast.collapse_elem) -> e.Ast.cdir) elems in
       Alcotest.(check bool) "last is mountain, first is valley"
@@ -557,7 +557,7 @@ let test_parse_flatten_parens_at_over_standing () =
        (.b over .d) (standing .m)\n"
   in
   match prog with
-  | [ Ast.Flatten ([ _; e2 ], [ (_, _) ], Some _, _) ] ->
+  | [ Ast.Flatten (None, [ _; e2 ], [ (_, _) ], Some _, _) ] ->
       Alcotest.(check bool) "parenthesized elem is mountain"
         true (e2.Ast.cdir = Ast.Mountain)
   | _ -> Alcotest.fail "expected Flatten with over + standing"
@@ -570,7 +570,7 @@ let test_parse_flatten_followed_by_stmt () =
       "paper square\nflatten (--a) (--b mountain)\n.x = --a * --b\n"
   in
   match prog with
-  | [ Ast.Flatten ([ _; _ ], [], None, _); Ast.Point ("x", _, _) ] -> ()
+  | [ Ast.Flatten (None, [ _; _ ], [], None, _); Ast.Point ("x", _, _) ] -> ()
   | _ -> Alcotest.fail "expected Flatten then Point"
 
 let test_parse_flatten_mixed_order () =
@@ -581,7 +581,8 @@ let test_parse_flatten_mixed_order () =
   match prog with
   | [
    Ast.Flatten
-     ( [
+     ( None,
+       [
          { Ast.cline = Ast.LNamed { cname = "a"; _ }; _ };
          { Ast.cline = Ast.LNamed { cname = "b"; _ }; _ };
        ],
@@ -623,7 +624,7 @@ let test_parse_flatten_paren_items () =
        flatten (--ac & .a) (--ac & .c) (--bd & .b) (--bd & .d)\n"
   in
   match prog with
-  | [ Ast.Flatten (elems, [], None, _) ] ->
+  | [ Ast.Flatten (None, elems, [], None, _) ] ->
       Alcotest.(check int) "4 elements" 4 (List.length elems)
   | _ -> Alcotest.fail "expected Flatten with paren items"
 
@@ -800,7 +801,7 @@ let test_parse_new_flatten_no_at () =
     Beloch.parse ~filename:"t.bel"
       "paper square\nflatten (--a) (--b) (--c) (--e mountain)\n"
   with
-  | [ Ast.Flatten (elems, [], None, _) ] ->
+  | [ Ast.Flatten (None, elems, [], None, _) ] ->
       Alcotest.(check int) "4 elements" 4 (List.length elems)
   | _ -> Alcotest.fail "expected flatten (no @) to parse as Ast.Flatten"
 

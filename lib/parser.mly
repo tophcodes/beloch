@@ -11,6 +11,26 @@ type collapse_item =
   | CElem of collapse_elem
   | COver of flap_arg * flap_arg
   | CStanding of flap_arg * Error.span
+
+(* shared by the bound (`--r = flatten ...`) and unbound (`flatten ...`)
+   productions: partitions the item list and reports a duplicate `standing`
+   at its own (second-occurrence) span, not the first's. elems/overs are
+   accumulated reversed and restored with List.rev to keep source order. *)
+let mk_flatten (name : string option) (items : collapse_item list)
+    (span : Error.span) : stmt =
+  let elems_rev, overs_rev, standing =
+    List.fold_left
+      (fun (es, os, st) item ->
+        match item with
+        | CElem e -> (e :: es, os, st)
+        | COver (u, l) -> (es, (u, l) :: os, st)
+        | CStanding (f, sp) -> (
+            match st with
+            | Some _ -> Error.fail sp "only one standing clause per flatten"
+            | None -> (es, os, Some f)))
+      ([], [], None) items
+  in
+  Flatten (name, List.rev elems_rev, List.rev overs_rev, standing, span)
 %}
 
 %token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD MOVING MOUNTAIN FLIP RPAREN AND UP TO FOLD_KW
@@ -61,25 +81,8 @@ body_stmt:
   | APPLY IDENT LPAREN args RPAREN             { Apply (None, $2, $4, $loc) }
   | EXPORT LBRACE export_entries RBRACE INSTANCE { Export (Some $3, $5, $loc) }
   | EXPORT INSTANCE                              { Export (None, $2, $loc) }
-  | FLATTEN collapse_items
-      { (* fold_left over source order so a duplicate `standing` is detected
-           at its own (second-occurrence) span, not the first's; elems/overs
-           are accumulated reversed and restored with List.rev to keep their
-           original source order. *)
-        let elems_rev, overs_rev, standing =
-          List.fold_left
-            (fun (es, os, st) item ->
-              match item with
-              | CElem e -> (e :: es, os, st)
-              | COver (u, l) -> (es, (u, l) :: os, st)
-              | CStanding (f, sp) -> (
-                  match st with
-                  | Some _ ->
-                      Error.fail sp "only one standing clause per flatten"
-                  | None -> (es, os, Some f)))
-            ([], [], None) $2
-        in
-        Flatten (List.rev elems_rev, List.rev overs_rev, standing, $loc) }
+  | FLATTEN collapse_items         { mk_flatten None $2 $loc }
+  | CREASE EQ FLATTEN collapse_items { mk_flatten (Some $1) $4 $loc }
 
 markable:
   | axiom        { MMotion $1 }

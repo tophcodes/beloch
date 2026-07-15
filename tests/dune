@@ -48,6 +48,10 @@
  (libraries beloch alcotest zarith str))
 
 (test
+ (name test_flatten)
+ (libraries beloch alcotest zarith str))
+
+(test
  (name test_render_cli)
  (libraries render_cli alcotest unix))
 

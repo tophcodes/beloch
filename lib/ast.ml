@@ -117,11 +117,13 @@ type stmt =
   | Export of export_entry list option * string * Error.span
       (* None = export-all; the string is the instance name *)
   | StepMark of string * Error.span
-  | Flatten of collapse_elem list * (flap_arg * flap_arg) list
+  | Flatten of string option * collapse_elem list * (flap_arg * flap_arg) list
                 * flap_arg option * Error.span
-      (* flatten <elements> [over-pairs] [standing]: simultaneous multi-
-         crease fold. elements = the creases folded, each with its own
+      (* [--r =] flatten <elements> [over-pairs] [standing]: simultaneous
+         multi-crease fold. elements = the creases folded, each with its own
          direction; over-pairs = (upper flap, lower flap) layer-order
-         constraints; standing = the flap that stays upright (unfolded). *)
+         constraints; standing = the flap that stays upright (unfolded).
+         name_opt Some = `--r = flatten ...` binds --r to a selectable
+         bundle of the participating rays (validate mode: the given rays). *)
 
 type program = stmt list
