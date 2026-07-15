@@ -80,3 +80,9 @@ let half_turn_about_line ~(on : point) ~(dir : point) : t =
   let rz = (m20 * on.x) + (m21 * on.y) + (m22 * on.z) in
   { m00; m01; m02; m10; m11; m12; m20; m21; m22;
     tx = on.x - rx; ty = on.y - ry; tz = on.z - rz }
+
+let equal (a : t) (b : t) : bool =
+  Num.equal a.m00 b.m00 && Num.equal a.m01 b.m01 && Num.equal a.m02 b.m02
+  && Num.equal a.m10 b.m10 && Num.equal a.m11 b.m11 && Num.equal a.m12 b.m12
+  && Num.equal a.m20 b.m20 && Num.equal a.m21 b.m21 && Num.equal a.m22 b.m22
+  && Num.equal a.tx b.tx && Num.equal a.ty b.ty && Num.equal a.tz b.tz

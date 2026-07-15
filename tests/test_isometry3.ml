@@ -67,6 +67,17 @@ let test_det_sign_is_rotation () =
   Alcotest.(check int) "half-turn det = +1 (proper rotation)" 1
     (Isometry3.det_sign h)
 
+let test_equal () =
+  let h = Isometry3.half_turn_about_line ~on:(p 1 0 0) ~dir:(p 0 1 0) in
+  Alcotest.(check bool) "identity = identity" true
+    (Isometry3.equal Isometry3.identity Isometry3.identity);
+  Alcotest.(check bool) "half-turn <> identity" false
+    (Isometry3.equal h Isometry3.identity);
+  Alcotest.(check bool) "involution: h∘h = identity" true
+    (Isometry3.equal (Isometry3.compose h h) Isometry3.identity);
+  Alcotest.(check bool) "inverse round-trip via equal" true
+    (Isometry3.equal (Isometry3.compose h (Isometry3.inverse h)) Isometry3.identity)
+
 let () =
   Alcotest.run "isometry3"
     [ ("core",
@@ -78,4 +89,5 @@ let () =
       ("more",
        [ Alcotest.test_case "compose-order" `Quick test_compose_order;
          Alcotest.test_case "inverse-round-trip" `Quick test_inverse_round_trip;
-         Alcotest.test_case "det-sign" `Quick test_det_sign_is_rotation ]) ]
+         Alcotest.test_case "det-sign" `Quick test_det_sign_is_rotation;
+         Alcotest.test_case "equal" `Quick test_equal ]) ]
