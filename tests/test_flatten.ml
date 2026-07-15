@@ -235,6 +235,30 @@ let test_flatten_derive_registers_name () =
       Eval.eval_folded
         (Beloch.parse ~filename:"t.bel" (rabbit_ear_derive_src ^ "--ear = [--v]\n")))
 
+(* Task 6: the bound name in DERIVE mode must resolve to the EMERGENT crease,
+   not the given rays — so a meet-point selector against it (`.[--ear --da]`)
+   finds the tip where the emergent crease reaches the paper edge. For
+   rabbit_ear_derive_src's O = (1/2, (sqrt5-1)/4) ~= (0.5, 0.309017), the
+   emergent ray (the genuinely-new crease test_flatten_derive_e2e already
+   proves exists) runs to the LEFT edge --da (x=0), not the base --ab — a
+   `.[--ear --ab]` meet is off the mark's chord and errors, which is how this
+   was first verified. If --ear still bound the given rays (a Bundle of
+   --ba/--bb/--v), `.[--ear --da]` would be ambiguous (3 segments, none of
+   which reaches --da) instead of resolving to the one emergent tip. *)
+let test_flatten_tip () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         (rabbit_ear_derive_src ^ ".tip = .[--ear --da]\n"))
+  in
+  match List.find_opt (fun (n, _, _) -> n = "tip") fd.Eval.named_points with
+  | None -> Alcotest.fail ".tip was not bound"
+  | Some (_, p, _) ->
+      Alcotest.(check (float 0.001)) "tip lies on the left edge (x=0)" 0.0
+        (Num.to_float p.Geom.x);
+      Alcotest.(check (float 0.001)) "tip lands near y=0.059" 0.0590169944
+        (Num.to_float p.Geom.y)
+
 let () =
   Alcotest.run "flatten bind"
     [
@@ -259,5 +283,7 @@ let () =
             `Quick test_flatten_derive_e2e;
           Alcotest.test_case "--ear occupies the crease namespace" `Quick
             test_flatten_derive_registers_name;
+          Alcotest.test_case "--ear binds emergent crease; .tip meets base"
+            `Quick test_flatten_tip;
         ] );
     ]
