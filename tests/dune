@@ -55,3 +55,7 @@
  (name test_bel_assert)
  (libraries beloch alcotest zarith)
  (deps (source_tree cases)))
+
+(executable
+ (name spike_flatten)
+ (libraries beloch zarith))

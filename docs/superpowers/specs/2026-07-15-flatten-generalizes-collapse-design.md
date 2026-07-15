@@ -72,22 +72,28 @@ of reflections is a rotation; it is the identity **iff** the alternating angle
 sum ≡ 0 (mod 2π) — i.e. `closure_ok` *is* Kawasaki at O (as the code comment
 already states). This is the lever for the derive.
 
-**The solver.** Model the unknown emergent ray as a reflection across a line
-through `O` with unknown direction `(a, b)`. Form the closure product with that
-symbolic reflection inserted in ray order and require it to equal the identity.
-This yields a polynomial constraint in `(a, b)` (with `a² + b² = 1`); its real
-roots are the candidate emergent directions:
+**The solver (single-emergent case — VERIFIED, spike 2026-07-15).** For an
+**odd** set of fixed lines through `O`, the emergent crease is a **direct
+construction**, no polynomial and no `real_roots`:
 
-- Reuse **`Num.real_roots`** (`lib/num.ml:299`) and the whole
-  `Poly`/`Qqbar`/`Mpoly` real-algebraic kernel (ADR 0012/0013).
-- This is **exactly the axiom-7 pattern** (`lib/geom.ml:96-140`): build a
-  polynomial-in-a-parameter constraint → solve real roots exactly → map each
-  root to a crease line. Axiom 7 already ships this shape.
-- Disambiguate the surviving candidates by **side**: keep the root whose crease
-  swings the folding flap toward the `toward` point, via `Geom.side_of_line`
-  (`lib/geom.ml:261`) on the swing axis (the `toward` metric primitive axioms
-  5–7 use; the `ax5_pending`/`viable` code is a *pattern to imitate*, not a
-  drop-in — the emergent-ray case has no bisector candidate pair).
+- The product of the fixed reflections `P = R₁ ∘ … ∘ Rₖ` (k odd) has `det = −1`,
+  so `R_ear = P⁻¹` is itself a **reflection**; its **axis is the emergent
+  crease** (a line through `O`). Extract the axis from the reflection isometry
+  (midpoint of a probe and its image, both through `O`).
+- Enumerate the angular **gaps** between the sorted fixed rays; each insertion
+  position yields a conjugate `R_ear` (the *swivel-left / symmetric / right*
+  family). Keep the candidate whose axis direction falls in its own gap, and
+  pick among survivors by **`toward` side** (`Geom.side_of_line`, `lib/geom.ml`).
+
+Verified on the shipped (golden-ratio) `rabbit-ear.bel`: `V = (½, √5−2)`, given
+`{--ba, --bb, --v}`, the `toward .c` gap yields an emergent axis at ≈320.55°
+meeting the base at `x ≈ 0.787` (exact algebraic; `closure_ok` = true). See
+`tests/spike_flatten.ml`.
+
+`Num.real_roots` + the `Poly`/`Qqbar` kernel (ADR 0012/0013, axiom-7 pattern
+`lib/geom.ml:96-140`) is **not needed for the single-emergent case** — it is held
+in reserve only for the deferred multi-emergent / petal solve, where the
+completion is underdetermined and a genuine polynomial appears.
 
 Once the ray set is complete, the **existing collapse kernel runs unchanged** —
 `sector_isometries`, `effective_valley`, `linear_extensions`, layer-order
