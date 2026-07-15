@@ -1,10 +1,12 @@
 %{
 open Ast
 
-(* collapse: one flat `and`-separated chain; the statement action partitions
-   it. over_flap is restricted to point/flap operands so the first token of
-   each item is unambiguous: elements are `--`/`--(`/`(`-first, over pairs
-   `.`/`.(`/`#(`-first, standing keyword-first. *)
+(* collapse: one flat parenthesised-juxtaposition chain; the statement action
+   partitions it. Every item is `( ... )`-wrapped — required, not stylistic:
+   a bare (unparenthesised) item would make the item-list's CREASE/POINT
+   first-tokens collide with the first-tokens of the *next* statement (a
+   bind `--l = ...` or point binding `.p = ...`), which is a genuine
+   shift/reduce conflict at 1 token of lookahead, not just a style choice. *)
 type collapse_item =
   | CElem of collapse_elem
   | COver of flap_arg * flap_arg
@@ -206,18 +208,17 @@ point_operand_list:
   | point_operand point_operand_list { $1 :: $2 }
 
 collapse_items:
-  | collapse_item                     { [ $1 ] }
-  | collapse_item AND collapse_items  { $1 :: $3 }
+  | collapse_item                { [ $1 ] }
+  | collapse_item collapse_items { $1 :: $2 }
 
 collapse_item:
-  | collapse_elem            { CElem $1 }
+  | LPAREN collapse_item_inner RPAREN { $2 }
+
+collapse_item_inner:
+  | line_operand mountain_opt
+      { CElem { cline = $1; cdir = (if $2 then Mountain else Valley) } }
   | over_flap OVER over_flap { COver ($1, $3) }
   | STANDING flap_arg        { CStanding ($2, $loc) }
-
-collapse_elem:
-  | LPAREN collapse_elem RPAREN { $2 }
-  | line_operand mountain_opt
-      { { cline = $1; cdir = (if $2 then Mountain else Valley) } }
 
 (* points and #(...) only — bare crease names would collide with elements *)
 over_flap:

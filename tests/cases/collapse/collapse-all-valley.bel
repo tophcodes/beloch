@@ -3,6 +3,6 @@ paper square
 mark --ac = map .b onto .d     ; diagonal a–c (folds b onto d)
 mark --bd = map .a onto .c     ; diagonal b–d
 
-flatten --ac & .a and --ac & .c and --bd & .b and --bd & .d
+flatten (--ac & .a) (--ac & .c) (--bd & .b) (--bd & .d)
 
 ; expect error "Maekawa"
