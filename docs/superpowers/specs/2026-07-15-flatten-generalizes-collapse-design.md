@@ -85,10 +85,13 @@ construction**, no polynomial and no `real_roots`:
   family). Keep the candidate whose axis direction falls in its own gap, and
   pick among survivors by **`toward` side** (`Geom.side_of_line`, `lib/geom.ml`).
 
-Verified on the shipped (golden-ratio) `rabbit-ear.bel`: `V = (½, √5−2)`, given
-`{--ba, --bb, --v}`, the `toward .c` gap yields an emergent axis at ≈320.55°
-meeting the base at `x ≈ 0.787` (exact algebraic; `closure_ok` = true). See
-`tests/spike_flatten.ml`.
+Verified on the shipped `swivel-rabbit.bel` free-hinge construction: the flatten
+vertex `V = --ba * --bb = (½, √5−2) ≈ (0.5, 0.236)` (NOT the incenter `.o ≈
+(0.5, 0.309)`, which is only scaffolding), given `{--ba \ .a, --bb \ .b,
+--v \ .m}`, the `toward .d` gap yields an emergent axis at ≈320.5° meeting the
+base at `x ≈ 0.787` (exact algebraic; `closure_ok` = true). `toward .c` gives the
+mirror completion (≈219.5°). See `tests/spike_flatten.ml` and the
+`test_flatten_derive_unit` test.
 
 `Num.real_roots` + the `Poly`/`Qqbar` kernel (ADR 0012/0013, axiom-7 pattern
 `lib/geom.ml:96-140`) is **not needed for the single-emergent case** — it is held
@@ -146,7 +149,7 @@ moving flap. `toward` picks the swivel side. No new keyword — this is the ship
 `&`/`\` selector algebra:
 
 ```
---ear = flatten (--ba \ .a) (--bb \ .b) toward .c
+--ear = flatten (--ba \ .a) (--bb \ .b) (--v \ .m) toward .d
 ```
 
 Here `--ba \ .a` / `--bb \ .b` are the two rays *away* from `.a` / `.b` — they
@@ -204,7 +207,7 @@ it is **bindable**. This matters most in derive mode: the emergent crease has no
 construction, so binding is its only name.
 
 ```
---ear = flatten (--ba \ .a) (--bb \ .b) toward .c
+--ear = flatten (--ba \ .a) (--bb \ .b) (--v \ .m) toward .d
 .tip  = .[--ear, --base]     ; the derived tip on the base, now selectable
 ```
 
