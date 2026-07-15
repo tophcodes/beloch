@@ -10,7 +10,7 @@ import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
 import { DEFAULT_THEME, Theme, LineStyle } from "./theme";
 import { makeLayout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
-import { coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly } from "./geometry";
+import { coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly, pointCovered } from "./geometry";
 import { resolveIsometry, type Isometry } from "./isometry";
 import { placeLabels, type LabelAnchor } from "./primitives/labels";
 
@@ -288,28 +288,49 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       }
     }
 
-    // named-vertex dots + decluttered labels
+    // named-vertex dots + decluttered labels. Occluded like creases: a dot
+    // sitting under a higher face is greyed + flagged under hidden="dashed",
+    // and dropped entirely (dot + label) under "hide".
     const fverts = frame.vertices;
     const centreX = (minX + maxX) / 2;
     const centreY = (minY + maxY) / 2;
+    const vertexFaces: number[][] = fverts.map(() => []);
+    F.forEach((face, fi) => face.forEach((vi) => vertexFaces[vi]!.push(fi)));
+    const occludedPt = (i: number): boolean => {
+      const faces = vertexFaces[i]!;
+      if (!faces.length) return false;
+      const ps = faces.map((fi) => pos.get(fi)!);
+      const refPos = bottom ? Math.min(...ps) : Math.max(...ps);
+      return pointCovered(fverts[i]!, order, refPos, F, V, bottom);
+    };
+    const MUTED = "#94a3b8"; // matches occluded (non-boundary) crease grey
+    const occludedNames = new Set<string>();
     const labelAnchors: LabelAnchor[] = [];
     frame.verticesNames.forEach((nm, i) => {
       if (!nm) return;
       const p = fverts[i]!;
-      annotations.children.push(el("circle", {
-        cx: mx(p[0]), cy: ty(p[1]), r: 3, fill: theme.ink,
+      const buried = occludedPt(i);
+      if (buried && opts.hidden !== "dashed") return; // "hide": drop dot + label
+      if (buried) occludedNames.add(nm);
+      const circle: Record<string, string | number> = {
+        cx: mx(p[0]), cy: ty(p[1]), r: 3, fill: buried ? MUTED : theme.ink,
         "data-bel-name": nm, "data-kind": "point",
-      }));
+      };
+      if (buried) circle["data-occluded"] = "true";
+      annotations.children.push(el("circle", circle));
       const ox = p[0] < centreX ? -16 : 10, oy = p[1] < centreY ? 18 : -8;
       labelAnchors.push({
         x: mx(p[0]), y: ty(p[1]), text: `.${nm}`, key: nm, preferOffset: [ox, oy],
       });
     });
     for (const lab of placeLabels(labelAnchors, { fontSize: 17 })) {
+      const buried = occludedNames.has(lab.keys[0]!);
       const attrs: Record<string, string | number> = {
-        x: lab.x, y: lab.y, "font-size": 17, "font-weight": 600, fill: theme.ink,
+        x: lab.x, y: lab.y, "font-size": 17, "font-weight": 600,
+        fill: buried ? MUTED : theme.ink,
         "data-bel-name": lab.keys[0]!, "data-kind": "point-label",
       };
+      if (buried) attrs["data-occluded"] = "true";
       if (lab.anchor !== "start") attrs["text-anchor"] = lab.anchor;
       annotations.children.push(el("text", attrs, [], lab.text));
     }
