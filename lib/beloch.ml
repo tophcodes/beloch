@@ -27,6 +27,7 @@ module Num = Num
 module Error = Error
 module Geom = Geom
 module Isometry = Isometry
+module Isometry3 = Isometry3
 module Layer_order = Layer_order
 module Ast = Ast
 module Lexer = Lexer

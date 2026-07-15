@@ -3,6 +3,10 @@
  (libraries beloch alcotest zarith unix))
 
 (test
+ (name test_isometry3)
+ (libraries beloch alcotest zarith))
+
+(test
  (name test_geom)
  (libraries beloch alcotest zarith))
 
