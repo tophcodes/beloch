@@ -16,6 +16,8 @@ let e_selfint = "assignment forces self-intersection"
 let e_contra = "contradictory `over`"
 let e_dup_ray = "duplicate ray in collapse"
 let e_ambig k = Printf.sprintf "ambiguous stacking (%d orders)" k
+let e_out_of_paper =
+  "collapse folds a flap off the paper (no seating keeps it in the sheet)"
 
 (* --- small exact helpers -------------------------------------------------- *)
 
@@ -337,34 +339,63 @@ let collapse (st : Fold_state.t) (es : elem list) ~(over : (int * int) list) :
                 | [] -> Error e_selfint (* unreachable: filtered <> [] *)
                 | _ :: _ :: _ -> Error (e_ambig (List.length distinct))
                 | [ (_, rank) ] ->
-                    (* normalize: the LOWEST-RANKED orientation-PRESERVING
-                       sector keeps the identity (the lowest face-up sector
-                       sits identity on the table). Sector parities alternate
-                       around O (det tsec.(k) = (-1)^k), so a proper sector
-                       always exists — sector 0 (identity) at worst. Anchoring
-                       on a proper sector keeps tb_inv orientation-preserving,
-                       so the emitted geometry is NOT the global M/V mirror of
-                       the declared collapse (final-review C2). *)
-                    let b = ref (-1) in
-                    for s = 0 to n - 1 do
-                      if
-                        Isometry.det_sign tsec.(s) > 0
-                        && (!b < 0 || rank.(s) < rank.(!b))
-                      then b := s
-                    done;
-                    let tb_inv = Isometry.inverse tsec.(!b) in
-                    let faces_final =
+                    (* Anchor = the sector that stays put (identity on the
+                       table); everything else folds relative to it. It must be
+                       orientation-PRESERVING so the emitted geometry is front-up
+                       (not the global M/V mirror, final-review C2). Sector
+                       parities alternate around O (det tsec.(k) = (-1)^k), so a
+                       proper sector always exists.
+
+                       WHICH proper sector, though, is the fold-SENSE choice. The
+                       old rule (lowest-ranked proper sector) can seat the fold so
+                       a flap reflects OUTWARD, off the sheet — an inside-out
+                       fold whose physically-staying background sector happens to
+                       be orientation-reversing (the fish-base bug). Anchoring is
+                       a rigid motion about O, so it never changes the folded
+                       *shape*, only where it sits; a legitimate flat fold always
+                       admits a proper anchor that seats every layer back inside
+                       the paper silhouette (anchor the staying background). We
+                       therefore prefer such an in-bounds proper anchor, and if
+                       NONE exists the vertex has no front-up flat realisation
+                       here — reject rather than emit a flap hanging off the
+                       sheet (spec: half-plane containment per reflected region;
+                       the unit-square test is that containment against the four
+                       paper edges, quantified over anchors so big-over-narrow
+                       folds — which do have an in-bounds anchor — still pass). *)
+                    let faces_for_anchor bb =
+                      let tbi = Isometry.inverse tsec.(bb) in
                       Array.mapi
                         (fun i (f : Fold_state.face) ->
-                          {
-                            Fold_state.paper = f.Fold_state.paper;
-                            iso =
-                              Isometry.compose tb_inv
-                                (Isometry.compose tsec.(sec.(i))
-                                   f.Fold_state.iso);
-                          })
+                          { Fold_state.paper = f.Fold_state.paper;
+                            iso = Isometry.compose tbi
+                                    (Isometry.compose tsec.(sec.(i)) f.Fold_state.iso) })
                         st.Fold_state.faces
                     in
+                    let anchor_in_bounds bb =
+                      Array.for_all
+                        (fun f -> Array.for_all Geom.in_unit_square
+                                    (Fold_state.table_poly_of f))
+                        (faces_for_anchor bb)
+                    in
+                    (* proper sectors, lowest rank first (old deterministic order) *)
+                    let proper =
+                      List.filter (fun s -> Isometry.det_sign tsec.(s) > 0)
+                        (List.init n (fun s -> s))
+                      |> List.sort (fun a b -> compare rank.(a) rank.(b))
+                    in
+                    let default_b =
+                      match proper with s :: _ -> s | [] -> 0 (* unreachable *)
+                    in
+                    let chosen =
+                      (* keep the historical anchor when it already seats the fold
+                         in the sheet (validate mode + swivel-rabbit unchanged) *)
+                      if anchor_in_bounds default_b then Some default_b
+                      else List.find_opt anchor_in_bounds proper
+                    in
+                    (match chosen with
+                    | None -> Error e_out_of_paper
+                    | Some b ->
+                    let faces_final = faces_for_anchor b in
                     (* eassign upgrade: each elem's ray edges get V/M by the
                        hinge parity. Segments of the same bundle beyond the
                        ray keep their mark. *)
@@ -416,7 +447,7 @@ let collapse (st : Fold_state.t) (es : elem list) ~(over : (int * int) list) :
                         order;
                         edges = edges_final;
                         marks = st.Fold_state.marks;
-                      }
+                      })
               end
             end
           end

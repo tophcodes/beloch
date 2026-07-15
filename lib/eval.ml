@@ -1962,21 +1962,37 @@ let eval_folded (prog : Ast.program) : folded =
                              (cid, { Collapse.cid; ea = o; eb = far; valley })))
                     candidates
                 in
+                let outcomes =
+                  List.map
+                    (fun (cid, (e : Collapse.elem)) ->
+                      (Collapse.collapse !(ctx.state) (e :: es) ~over, cid))
+                    attempts
+                in
                 let results =
                   List.filter_map
-                    (fun (cid, (e : Collapse.elem)) ->
-                      match Collapse.collapse !(ctx.state) (e :: es) ~over with
-                      | Ok st -> Some (st, cid)
-                      | Error _ -> None)
-                    attempts
+                    (function (Ok st, cid) -> Some (st, cid) | _ -> None)
+                    outcomes
                 in
                 (match results with
                 | [ (st, cid) ] ->
                     ctx.state := st;
                     emergent_bind := Some (cid, emergent_line)
                 | [] ->
-                    Error.fail span
-                      "the derived crease does not close the vertex"
+                    (* Distinguish a genuine non-closure (Kawasaki fails for
+                       every attempt) from a vertex that closes but whose only
+                       flat realisation folds a flap off the sheet — the latter
+                       carries Collapse.e_out_of_paper and deserves that clearer
+                       message rather than "does not close". *)
+                    if
+                      List.exists
+                        (function
+                          | (Error msg, _) -> msg = Collapse.e_out_of_paper
+                          | _ -> false)
+                        outcomes
+                    then Error.fail span Collapse.e_out_of_paper
+                    else
+                      Error.fail span
+                        "the derived crease does not close the vertex"
                 | _ :: _ :: _ ->
                     Error.fail span
                       "the derived crease admits more than one closure")));

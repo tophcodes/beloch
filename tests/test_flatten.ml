@@ -262,6 +262,63 @@ let test_flatten_tip () =
       Alcotest.(check (float 0.001)) "tip lands near y=0.059" 0.0590169944
         (Num.to_float p.Geom.y)
 
+(* Anchor / fold-sense guard: a derive-mode vertex whose only flat realisation
+   folds a flap OFF the sheet must be REJECTED, not emitted with garbage
+   (negative) coordinates. fish-base's completed vertex is Kawasaki-valid but
+   its physically-staying background sector is orientation-reversing, so no
+   proper (front-up) anchor seats every layer inside the paper — collapse
+   returns [e_out_of_paper] and eval surfaces it (rather than the misleading
+   "does not close the vertex"). *)
+let fish_base_src =
+  "paper square\n\
+   mark --diag = map .a onto .c\n\
+   mark --ray = through .a .c\n\
+   step left\n\
+   mark --l1 = map --ab onto --diag\n\
+   mark --l2 = map --da onto --diag\n\
+   flatten (--l1 & .b) (--l2 & .d) (--ray & .a) toward .d\n"
+
+let test_flatten_derive_out_of_paper_rejected () =
+  expect_error Collapse.e_out_of_paper (fun () ->
+      Eval.eval_folded (Beloch.parse ~filename:"t.bel" fish_base_src))
+
+(* Conversely, a derive-mode vertex that DOES admit a proper in-bounds seating
+   (the swivel rabbit ear) folds correctly: every folded face lands inside the
+   unit-square paper silhouette. Guards the fix from over-rejecting and pins
+   the natural (on-paper) fold sense. *)
+let swivel_rabbit_src =
+  "paper square\n\
+   mark --v = map .a onto .b\n\
+   .m = --v * --cd\n\
+   step precrease\n\
+   mark --_am = through .a .m\n\
+   mark --_bm = through .b .m\n\
+   mark --_ba = map --ab onto --_am\n\
+   mark --_bb = map --ab onto --_bm\n\
+   .o = --_ba * --_bb\n\
+   .lowerp = --_ba * --_bm\n\
+   mark --lowerh = perp --bc through .lowerp\n\
+   mark --ba = through .a .[--bc --lowerh]\n\
+   mark --bb = through .b .[--da --lowerh]\n\
+   step ear\n\
+   --ear = flatten (--ba \\ .a) (--bb \\ .b) (--v \\ .m) toward .c\n"
+
+let test_flatten_derive_in_bounds () =
+  let fd =
+    Eval.eval_folded (Beloch.parse ~filename:"t.bel" swivel_rabbit_src)
+  in
+  Alcotest.(check (option string))
+    "swivel-rabbit derived vertex is a valid flat state" None
+    (Fold_state.validity_error fd.Eval.state);
+  let all_in =
+    Array.for_all
+      (fun (f : Fold_state.face) ->
+        Array.for_all Geom.in_unit_square (Fold_state.table_poly_of f))
+      fd.Eval.state.Fold_state.faces
+  in
+  Alcotest.(check bool)
+    "every folded face stays within the unit-square paper" true all_in
+
 let () =
   Alcotest.run "flatten bind"
     [
@@ -288,5 +345,9 @@ let () =
             test_flatten_derive_registers_name;
           Alcotest.test_case "--ear binds emergent crease; .tip meets base"
             `Quick test_flatten_tip;
+          Alcotest.test_case "derive off-paper fold is rejected (fish-base)"
+            `Quick test_flatten_derive_out_of_paper_rejected;
+          Alcotest.test_case "derive in-paper fold accepted (swivel-rabbit)"
+            `Quick test_flatten_derive_in_bounds;
         ] );
     ]
