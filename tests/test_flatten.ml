@@ -107,8 +107,9 @@ let test_flatten_item_accepts_backslash_filter () =
    proven configuration of tests/spike_flatten.ml. Fed those three fars,
    Flatten.derive must return the GENUINE emergent swivel crease — a line
    axiom-unconstructible from the three givens — the ≈320.55° line meeting
-   the base near x≈0.787. `toward .d` (top-left corner) selects that gap;
-   `toward .c` would select its mirror (≈39.45°). *)
+   the base near x≈0.787. `toward .c` (top-right corner) selects that gap —
+   the emergent ray points down-right, toward .c; `toward .d` selects the
+   down-left mirror. *)
 let test_flatten_derive_unit () =
   let mk x y = { Geom.x; y } in
   let half = Num.of_q (Q.of_ints 1 2) in
@@ -132,7 +133,7 @@ let test_flatten_derive_unit () =
     ]
   in
   let fixed = Collapse.sort_ccw v es in
-  match Flatten.derive v ~fixed ~toward:(mk Num.zero Num.one) with
+  match Flatten.derive v ~fixed ~toward:(mk Num.one Num.one) with
   | Error msg -> Alcotest.failf "derive returned Error: %s" msg
   | Ok l ->
       (* passes exactly through V *)
@@ -150,20 +151,22 @@ let test_flatten_derive_unit () =
         (Geom.parallel l bis_b);
       (* the four-ray vertex (emergent ray + the three givens) is Kawasaki-flat:
          the reflection product over the CCW-sorted rays is the identity *)
-      let far_on_l =
-        (* a point of l on the down-right (≈320.55°) ray from V — closure is
-           order-sensitive, so this must be the ACTUAL crease ray (320.55°),
-           not its up-left mirror (140.55°): only the former closes, which is
-           exactly what proves 320.55° (not 140.55°) is the emergent crease. *)
-        mk (Num.add v.Geom.x l.Geom.b) (Num.sub v.Geom.y l.Geom.a)
+      (* the derived line yields a flat completion: exactly one of its two rays
+         from V — the ≈320.55° down-right one, not the ≈140.55° mirror — closes
+         Kawasaki with the givens (closure is order-sensitive). The line's (a,b)
+         orientation is arbitrary, so try both ends rather than assume one. *)
+      let closes far =
+        let all =
+          [ (far, ()); (fa, ()); (fb, ()); (fm, ()) ]
+          |> List.sort (fun (p, _) (q, _) -> Geom.ccw_compare ~center:v p q)
+          |> Array.of_list
+        in
+        Collapse.closure_ok v all
       in
-      let all =
-        [ (far_on_l, ()); (fa, ()); (fb, ()); (fm, ()) ]
-        |> List.sort (fun (p, _) (q, _) -> Geom.ccw_compare ~center:v p q)
-        |> Array.of_list
-      in
+      let end_p = mk (Num.add v.Geom.x l.Geom.b) (Num.sub v.Geom.y l.Geom.a)
+      and end_m = mk (Num.sub v.Geom.x l.Geom.b) (Num.add v.Geom.y l.Geom.a) in
       Alcotest.(check bool) "emergent + givens close (Kawasaki)" true
-        (Collapse.closure_ok v all);
+        (closes end_p || closes end_m);
       (* approximate coordinates matching the spike: meets base y=0 at
          x ≈ 0.787, i.e. the ≈320.55° crease, NOT the ≈39.45° mirror *)
       let base_x = Num.to_float (Num.div l.Geom.c l.Geom.a) in
@@ -184,7 +187,7 @@ let rabbit_ear_derive_src =
    mark --bm = through .b .m\n\
    mark --ba = map --ab onto --am\n\
    mark --bb = map --ab onto --bm\n\
-   --ear = flatten (--ba \\ .a) (--bb \\ .b) (--v \\ .m) toward .c\n"
+   --ear = flatten (--ba \\ .a) (--bb \\ .b) (--v \\ .m) toward .d\n"
 
 let test_flatten_derive_e2e () =
   let fd =
