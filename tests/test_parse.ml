@@ -538,7 +538,7 @@ let test_parse_fold_along () =
 let test_parse_flatten_basic () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\nflatten --a and --b and --c and --e mountain\n"
+      "paper square\nflatten (--a) (--b) (--c) (--e mountain)\n"
   in
   match prog with
   | [ Ast.Flatten (elems, [], None, _) ] ->
@@ -553,8 +553,8 @@ let test_parse_flatten_parens_at_over_standing () =
   let prog =
     Beloch.parse ~filename:"t.bel"
       "paper square\n\
-       flatten --a & .a and (--e & .o & --ab mountain) \
-       and .b over .d and standing .m\n"
+       flatten (--a & .a) (--e & .o & --ab mountain) \
+       (.b over .d) (standing .m)\n"
   in
   match prog with
   | [ Ast.Flatten ([ _; e2 ], [ (_, _) ], Some _, _) ] ->
@@ -567,7 +567,7 @@ let test_parse_flatten_followed_by_stmt () =
      leading .point/--crease as a phantom over clause *)
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\nflatten --a and --b mountain\n.x = --a * --b\n"
+      "paper square\nflatten (--a) (--b mountain)\n.x = --a * --b\n"
   in
   match prog with
   | [ Ast.Flatten ([ _; _ ], [], None, _); Ast.Point ("x", _, _) ] -> ()
@@ -576,7 +576,7 @@ let test_parse_flatten_followed_by_stmt () =
 let test_parse_flatten_mixed_order () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\nflatten --a and .p over .q and --b and standing .r\n"
+      "paper square\nflatten (--a) (.p over .q) (--b) (standing .r)\n"
   in
   match prog with
   | [
@@ -599,7 +599,9 @@ let test_parse_flatten_mixed_order () =
          not swapped, standing .r"
 
 let test_parse_flatten_double_standing_rejected () =
-  let src = "paper square\nflatten --a and standing .p and standing .q\n" in
+  let src =
+    "paper square\nflatten (--a) (standing .p) (standing .q)\n"
+  in
   expect_error "only one standing" (fun () -> Beloch.parse ~filename:"t.bel" src);
   (* the error must point at the duplicate (second, source-order) `standing`,
      not the first *)
@@ -613,6 +615,17 @@ let test_parse_flatten_double_standing_rejected () =
       Alcotest.(check int)
         "span points at the second `standing`, not the first"
         second_standing start.Lexing.pos_cnum
+
+let test_parse_flatten_paren_items () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n\
+       flatten (--ac & .a) (--ac & .c) (--bd & .b) (--bd & .d)\n"
+  in
+  match prog with
+  | [ Ast.Flatten (elems, [], None, _) ] ->
+      Alcotest.(check int) "4 elements" 4 (List.length elems)
+  | _ -> Alcotest.fail "expected Flatten with paren items"
 
 let test_parse_spec_corpus () =
   List.iter
@@ -785,7 +798,7 @@ let test_parse_new_fold_along () =
 let test_parse_new_flatten_no_at () =
   match
     Beloch.parse ~filename:"t.bel"
-      "paper square\nflatten --a and --b and --c and --e mountain\n"
+      "paper square\nflatten (--a) (--b) (--c) (--e mountain)\n"
   with
   | [ Ast.Flatten (elems, [], None, _) ] ->
       Alcotest.(check int) "4 elements" 4 (List.length elems)
@@ -859,6 +872,8 @@ let () =
             test_parse_flatten_mixed_order;
           Alcotest.test_case "flatten double standing rejected" `Quick
             test_parse_flatten_double_standing_rejected;
+          Alcotest.test_case "flatten paren-juxtaposition items" `Quick
+            test_parse_flatten_paren_items;
         ] );
       ( "notation_cutover",
         [

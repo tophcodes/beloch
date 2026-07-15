@@ -298,7 +298,7 @@ let test_flatten_standing_unsupported () =
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
                mark --d = through .a .c\n\
-               flatten --d and standing .a\n")))
+               flatten (--d) (standing .a)\n")))
 
 (* n = 2: two diagonals through the same center point, each named as a single
    `at`-selected segment — a real fold, not a flatten; hint toward @fold *)
@@ -310,13 +310,13 @@ let test_flatten_count_two () =
               "paper square\n\
                mark --d1 = through .a .c\n\
                mark --d2 = through .b .d\n\
-               flatten --d1 & .a and --d2 & .b\n")))
+               flatten (--d1 & .a) (--d2 & .b)\n")))
 
 let test_flatten_not_material () =
   expect_error "collapse folds along existing creases" (fun () ->
       ignore
         (Eval.eval_folded
-           (Beloch.parse ~filename:"t.bel" "paper square\nflatten .a * .c\n")))
+           (Beloch.parse ~filename:"t.bel" "paper square\nflatten (.a * .c)\n")))
 
 (* all-layers congruence guard, happy path: a single flat sheet precreased
    along both perpendicular bisectors (the classic "+" vertex, same shape as
@@ -332,8 +332,8 @@ let test_flatten_all_layers_ok () =
          "paper square\n\
           mark --h = map .a onto .d\n\
           mark --v = map .a onto .b\n\
-          flatten --h & #[.b] mountain and --v & #[.c] and --h & #[.d] \
-          mountain and --v & #[.a] mountain\n")
+          flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
+          mountain) (--v & #[.a] mountain)\n")
   in
   Alcotest.(check int) "vertex flatten leaves 4 sector faces" 4
     (Array.length fd.Eval.state.Fold_state.faces)
@@ -1351,8 +1351,8 @@ let test_new_flatten_no_at () =
     eval_src
       "mark --h = map .a onto .d\n\
        mark --v = map .a onto .b\n\
-       flatten --h & #[.b] mountain and --v & #[.c] and --h & #[.d] \
-       mountain and --v & #[.a] mountain\n"
+       flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
+       mountain) (--v & #[.a] mountain)\n"
   in
   Alcotest.(check int) "vertex flatten leaves 4 sector faces" 4
     (Array.length fd.Eval.state.Fold_state.faces)

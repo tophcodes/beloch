@@ -8,13 +8,13 @@ mark --v  = map .a onto .b     ; vertical midline, x = 1/2
 .rm = --h * --bc          ; right edge midpoint (1, 1/2)
 .tm = --v * --cd          ; top edge midpoint (1/2, 1)
 
-flatten (--ac & .c mountain) and --ac & .a
-  and (--bd & .d mountain) and --bd & .b
-  and (--h & --bc mountain)
-  and --h & --da
-  and --v & --cd
-  and --v & --ab
-  and #[.b .rm] over #[.c .tm]
+flatten (--ac & .c mountain) (--ac & .a)
+  (--bd & .d mountain) (--bd & .b)
+  (--h & --bc mountain)
+  (--h & --da)
+  (--v & --cd)
+  (--v & --ab)
+  (#[.b .rm] over #[.c .tm])
 
 ; assert faces = 8
 ; assert .rm paper = (1, 1/2)

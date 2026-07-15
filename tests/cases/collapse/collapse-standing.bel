@@ -3,7 +3,7 @@ paper square
 mark --ac = map .b onto .d     ; diagonal a–c
 mark --bd = map .a onto .c     ; diagonal b–d
 
-flatten --ac & .a and --ac & .c and --bd & .b and --bd & .d
-  and standing .a
+flatten (--ac & .a) (--ac & .c) (--bd & .b) (--bd & .d)
+  (standing .a)
 
 ; expect error "standing"
