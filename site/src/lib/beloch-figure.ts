@@ -3,7 +3,7 @@
 // toggle and, when the fold has foldedForm steps, a per-step stepper —
 // re-rendering via the same pure-TS render pipeline used at build time.
 import { parseFold, type FoldScene } from "@beloch/scene";
-import { renderCP, renderFolded } from "@beloch/render-svg";
+import { renderCP, renderFolded, WEB_THEME } from "@beloch/render-svg";
 
 export function clampStep(i: number, n: number): number {
   if (n <= 0) return 0;
@@ -152,10 +152,10 @@ class BelochFigure extends HTMLElement {
     if (!this.scene) return;
     try {
       if (this.view === "cp") {
-        diagram.innerHTML = this.cpHTML || renderCP(this.scene).toString();
+        diagram.innerHTML = this.cpHTML || renderCP(this.scene, { theme: WEB_THEME }).toString();
       } else {
         diagram.innerHTML = renderFolded(this.scene, {
-          step: String(this.step), hidden: "dashed",
+          step: String(this.step), hidden: "dashed", theme: WEB_THEME,
         }).toString();
         const lbl = this.querySelector(".beloch-step-label");
         // 0-based: step 0 is the flat starting sheet, step k the k-th fold.
