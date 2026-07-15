@@ -28,6 +28,7 @@ module Error = Error
 module Geom = Geom
 module Isometry = Isometry
 module Isometry3 = Isometry3
+module Fold_graph = Fold_graph
 module Layer_order = Layer_order
 module Ast = Ast
 module Lexer = Lexer
