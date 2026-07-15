@@ -7,7 +7,7 @@
 // Spec: docs/superpowers/specs/2026-07-14-render-scene-unified-design.md
 import type { FoldScene, Vec2 } from "@beloch/scene";
 import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
-import { DEFAULT_THEME, Theme } from "./theme";
+import { DEFAULT_THEME, Theme, LineStyle } from "./theme";
 import { makeLayout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
 import { coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly } from "./geometry";
@@ -124,15 +124,48 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     const pos = new Map(order.map((f, i) => [f, i]));
     const dashedLines: SvgNode[] = [];
 
+    // A crease that has been folded stacks its two faces onto the SAME side of
+    // the crease line, so in projection the crease sits on the silhouette of the
+    // folded figure — physically a paper edge, and drawn solid black like one. A
+    // crease still lying flat keeps its faces on OPPOSITE sides (paper continues
+    // past it) and stays an on-paper crease, drawn dashed. Naked edges (<2 faces)
+    // are boundaries by definition.
+    const centroid = (fi: number): [number, number] => {
+      const vs = F[fi]!;
+      let sx = 0, sy = 0;
+      for (const vi of vs) { sx += V[vi]![0]; sy += V[vi]![1]; }
+      return [sx / vs.length, sy / vs.length];
+    };
+    const sideOf = (a0: number[], b0: number[], p: number[]): number =>
+      (b0[0] - a0[0]) * (p[1] - a0[1]) - (b0[1] - a0[1]) * (p[0] - a0[0]);
+    const onSilhouette = (a0: number[], b0: number[], faces: number[]): boolean => {
+      if (faces.length < 2) return true;
+      let pos = false, neg = false;
+      for (const fi of faces) {
+        const s = sideOf(a0, b0, centroid(fi));
+        if (s > 1e-9) pos = true;
+        else if (s < -1e-9) neg = true;
+      }
+      return !(pos && neg); // faces all on one side → boundary of the silhouette
+    };
+
     if (opts.texture.creases) {
       E.forEach((e, i) => {
         const faces = incident[i]!;
         if (!faces.length) return;
         const assignment = A[i]!;
-        const style = theme.lineStyle(assignment, theme);
         const name = prov[i]?.name;
         const edgeStep = prov[i]?.step || "";
         const a0 = V[e[0]]!, b0 = V[e[1]]!;
+        // Paper edges keep their bold solid style; other silhouette edges (folded
+        // creases now on the outline) also go solid black, just a touch lighter;
+        // only genuine on-paper creases keep the dashed assignment style.
+        const style: LineStyle =
+          assignment === "B"
+            ? theme.lineStyle("B", theme)
+            : onSilhouette(a0, b0, faces)
+              ? { stroke: theme.boundary, strokeWidth: 2 }
+              : theme.lineStyle(assignment, theme);
         const refPos = bottom
           ? Math.min(...faces.map((fi) => pos.get(fi)!))
           : Math.max(...faces.map((fi) => pos.get(fi)!));
