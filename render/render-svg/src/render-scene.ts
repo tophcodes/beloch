@@ -191,6 +191,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
             stroke: style.stroke, "stroke-width": style.strokeWidth, "stroke-linecap": "round",
           };
           if (style.dasharray) attrs["stroke-dasharray"] = style.dasharray;
+          if (style.opacity !== undefined) attrs["opacity"] = style.opacity;
           if (name) attrs["data-name"] = name;
           if (name) attrs["data-bel-name"] = name;
           creases.children.push(el("line", attrs));
@@ -344,6 +345,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
           "stroke-linecap": "round",
         };
         if (style.dasharray) attrs["stroke-dasharray"] = style.dasharray;
+        if (style.opacity !== undefined) attrs["opacity"] = style.opacity;
         if (name) attrs["data-name"] = name;
         if (name) attrs["data-bel-name"] = name;
         creases.children.push(el("line", attrs));
