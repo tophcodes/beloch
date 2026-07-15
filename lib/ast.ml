@@ -117,9 +117,9 @@ type stmt =
   | Export of export_entry list option * string * Error.span
       (* None = export-all; the string is the instance name *)
   | StepMark of string * Error.span
-  | Collapse of collapse_elem list * (flap_arg * flap_arg) list
+  | Flatten of collapse_elem list * (flap_arg * flap_arg) list
                 * flap_arg option * Error.span
-      (* collapse <elements> [over-pairs] [standing]: simultaneous multi-
+      (* flatten <elements> [over-pairs] [standing]: simultaneous multi-
          crease fold. elements = the creases folded, each with its own
          direction; over-pairs = (upper flap, lower flap) layer-order
          constraints; standing = the flap that stays upright (unfolded). *)

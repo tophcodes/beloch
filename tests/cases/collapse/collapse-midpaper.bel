@@ -7,7 +7,7 @@ mark --q = map --v onto --bc    ; vertical crease at x = 3/4
 .q  = --h * --q            ; interior crossing (3/4, 1/2)
 .tm = --v * --cd           ; top edge midpoint (1/2, 1)
 
-collapse --h & #[.q .tm] and --h & --da
+flatten --h & #[.q .tm] and --h & --da
   and --v & --cd and --v & --ab
 
 ; expect error "Maekawa"

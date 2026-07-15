@@ -5,7 +5,7 @@ mark --bd = map .a onto .c     ; diagonal b-d
 mark --h  = map .a onto .d     ; horizontal midline, y = 1/2
 mark --v  = map .a onto .b     ; vertical midline, x = 1/2
 
-collapse (--ac & .c mountain) and --ac & .a
+flatten (--ac & .c mountain) and --ac & .a
   and (--bd & .d mountain) and --bd & .b
   and (--h & --bc mountain)
   and --h & --da
