@@ -47,7 +47,19 @@ kernel/surface/example) are finalised against Task 1's finding. Tasks 2–4
 
 ---
 
-## Task 1: Math spike — resolve the emergent-ray algorithm (GATE)
+## Task 1: Math spike — resolve the emergent-ray algorithm (GATE) — ✅ VERIFIED 2026-07-15
+
+**Result:** the single-emergent (odd-given) derive is a **direct construction** —
+`R_ear = inverse(R_ba ∘ R_bb ∘ R_v)` is a reflection whose axis is the emergent
+crease. NO `real_roots`/polynomial needed. Confirmed on the golden-ratio
+`rabbit-ear.bel` (`V = (½, √5−2)`): the `toward .c` gap gives an emergent axis at
+≈320.55°, meeting the base at `x ≈ 0.787`, `det = −1`, fixes `V`, and the 4-line
+reflection product = identity (Kawasaki closure). Scratch verification lives in
+`tests/spike_flatten.ml` (+ a `tests/dune` executable stanza — remove or fold
+into `test_flatten.ml` during Task 5). `real_roots` is reserved for the deferred
+2-emergent/petal case only.
+
+Tasks 5–7 (kernel/surface/example) proceed on this confirmed algorithm.
 
 **Files:**
 - Create: `lib/flatten.ml`
