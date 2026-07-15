@@ -145,6 +145,26 @@ let hinge_shared_segment (faces : face array) (h : hinge) :
         else None
     | _ -> None
 
+let to3 (p : Geom.point) : I3.point = { I3.x = p.Geom.x; y = p.Geom.y; z = Num.zero }
+let to2 (p : I3.point) : Geom.point = { Geom.x = p.I3.x; y = p.I3.y }
+
+(* Flat projection of face [i] under its derived placement, normalized to CCW:
+   a reflected placement reverses the winding, and
+   [Geom.segment_crosses_interior] requires CCW input. *)
+let table_polygon_ccw (faces : face array) (isos : I3.t array) (i : int) :
+    Geom.point array =
+  let tp = Array.map (fun p -> to2 (I3.apply_point isos.(i) (to3 p))) faces.(i) in
+  if Num.sign (Geom.signed_area tp) < 0 then begin
+    let n = Array.length tp in
+    Array.init n (fun k -> tp.(n - 1 - k))
+  end
+  else tp
+
+(* Is [c]'s rank strictly between [a]'s and [b]'s? *)
+let rank_between (rank : int array) (a : int) (c : int) (b : int) : bool =
+  (rank.(a) < rank.(c) && rank.(c) < rank.(b))
+  || (rank.(b) < rank.(c) && rank.(c) < rank.(a))
+
 exception V of violation
 
 let check_structure ~(faces : face array) ~(hinges : hinge array) ~(root : int)
@@ -178,7 +198,7 @@ let make ~(faces : face array) ~(hinges : hinge array) ~(root : int)
     (* hinge adjacency: each hinge's line must carry a positive-length shared
        boundary segment between its faces (paper space); the segments feed the
        non-crossing checks (Task 6) *)
-    let (_ : (Geom.point * Geom.point) array) =
+    let segs =
       Array.mapi
         (fun i h ->
           match hinge_shared_segment faces h with
@@ -197,6 +217,50 @@ let make ~(faces : face array) ~(hinges : hinge array) ~(root : int)
             (I3.equal isos.(h.fb) (I3.compose isos.(h.fa) (hinge_motion h)))
         then raise (V (Hinge_not_closed i)))
       hinges;
+    (* Non-crossing [hull2020 §6.5; hullzakharevich2023 §2.1] over the flat
+       projection. Rank decides every pair, so tortilla-tortilla and stacking
+       cycles are unrepresentable; these two residual conditions remain. Rank
+       comparison is sound here because each check first establishes geometric
+       coincidence (interior crossing / collinear overlap), so the compared
+       faces genuinely overlap where they are compared. *)
+    let n = Array.length faces in
+    let tseg i =
+      let p, q = segs.(i) in
+      let place = isos.(hinges.(i).fa) in
+      (to2 (I3.apply_point place (to3 p)), to2 (I3.apply_point place (to3 q)))
+    in
+    (* taco-tortilla: a folded hinge's faces coincide after the fold (they
+       share the crease edge and fold to the same side), forming a taco; no
+       face ranked between them may cross the crease's interior *)
+    Array.iteri
+      (fun i h ->
+        if Num.sign h.angle <> 0 then begin
+          let seg = tseg i in
+          for c = 0 to n - 1 do
+            if
+              c <> h.fa && c <> h.fb
+              && rank_between rank h.fa c h.fb
+              && Geom.segment_crosses_interior seg
+                   (table_polygon_ccw faces isos c)
+            then raise (V (Taco_tortilla { tortilla = c; hinge = i }))
+          done
+        end)
+      hinges;
+    (* taco-taco: two folded hinges over disjoint face pairs whose crease
+       segments coincide on the table must not interleave in the stack *)
+    let m = Array.length hinges in
+    for i = 0 to m - 1 do
+      for j = i + 1 to m - 1 do
+        let h1 = hinges.(i) and h2 = hinges.(j) in
+        let a = h1.fa and b = h1.fb and c = h2.fa and d = h2.fb in
+        if
+          Num.sign h1.angle <> 0 && Num.sign h2.angle <> 0
+          && a <> c && a <> d && b <> c && b <> d
+          && Geom.segments_overlap_collinear (tseg i) (tseg j)
+          && rank_between rank a c b <> rank_between rank a d b
+        then raise (V (Taco_taco (i, j)))
+      done
+    done;
     Ok
       {
         faces = Array.copy faces;

@@ -169,6 +169,78 @@ let test_cycle_tear_rejected () =
     ~hinges:(quadrant_hinges ~last_angle:(q 0))
     ~root:0 ~rank:[| 0; 1; 2; 3 |]
 
+(* Wide-middle accordion: f0=[0,2] (double width), f1=[2,3], f2=[3,4]; both
+   hinges folded. Table: f0=[0,2], f1=[1,2], f2=[1,2]; hinge1's crease maps to
+   table x=1 — which f0 straddles. Whether f0 crosses it depends on the rank. *)
+let tortilla_faces () = [| strip_face 0 2; strip_face 2 1; strip_face 3 1 |]
+
+let tortilla_hinges () =
+  [| { Fold_graph.fa = 0; fb = 1; line = vline 2; angle = q 1 };
+     { Fold_graph.fa = 1; fb = 2; line = vline 3; angle = q 1 } |]
+
+let test_taco_tortilla_fires () =
+  (* f0 stacked between the taco (f1|f2) whose crease it straddles *)
+  expect_error "tortilla sandwiched in the taco"
+    (function
+      | Fold_graph.Taco_tortilla { tortilla = 0; hinge = 1 } -> true
+      | _ -> false)
+    ~faces:(tortilla_faces ()) ~hinges:(tortilla_hinges ())
+    ~root:0 ~rank:[| 1; 0; 2 |]
+
+let test_taco_tortilla_ok_outside () =
+  (* f0 below the whole taco — legal *)
+  let g =
+    mk ~faces:(tortilla_faces ()) ~hinges:(tortilla_hinges ())
+      ~rank:[| 0; 1; 2 |] ()
+  in
+  ignore g
+
+let test_taco_tortilla_fires_reflected_root () =
+  (* same geometry, root=1: f0 is now placed by a REFLECTION (CW table
+     winding). The check must normalize winding or it is blind on most real
+     folded states — regression for the CCW normalization. *)
+  expect_error "reflected tortilla sandwiched in the taco"
+    (function
+      | Fold_graph.Taco_tortilla { tortilla = 0; hinge = 1 } -> true
+      | _ -> false)
+    ~faces:(tortilla_faces ()) ~hinges:(tortilla_hinges ())
+    ~root:1 ~rank:[| 1; 0; 2 |]
+
+(* Fold-in-quarters strip: f0..f3 = [k,k+1]×[0,1], hinges at x=1,2,3, all
+   folded. All faces stack on [0,1]; hinge0's and hinge2's creases both map to
+   table x=1 — a taco-taco configuration decided by the rank. *)
+let quarters_faces () =
+  [| strip_face 0 1; strip_face 1 1; strip_face 2 1; strip_face 3 1 |]
+
+let quarters_hinges () =
+  [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = q 1 };
+     { Fold_graph.fa = 1; fb = 2; line = vline 2; angle = q 1 };
+     { Fold_graph.fa = 2; fb = 3; line = vline 3; angle = q 1 } |]
+
+let test_taco_taco_fires () =
+  (* f2 inside taco (f0|f1), f3 outside: the pairs interleave — the paper
+     would have to pass through itself at table x=1 *)
+  expect_error "interleaved tacos"
+    (function Fold_graph.Taco_taco (0, 2) -> true | _ -> false)
+    ~faces:(quarters_faces ()) ~hinges:(quarters_hinges ())
+    ~root:0 ~rank:[| 1; 3; 2; 0 |]
+
+let test_taco_taco_ok_nested () =
+  (* taco (f2|f3) nests entirely inside taco (f0|f1) — legal wrap *)
+  let g =
+    mk ~faces:(quarters_faces ()) ~hinges:(quarters_hinges ())
+      ~rank:[| 0; 3; 2; 1 |] ()
+  in
+  ignore g
+
+let test_taco_taco_ok_separated () =
+  (* zigzag accordion: taco (f0|f1) entirely below taco (f2|f3) — legal *)
+  let g =
+    mk ~faces:(quarters_faces ()) ~hinges:(quarters_hinges ())
+      ~rank:[| 0; 1; 2; 3 |] ()
+  in
+  ignore g
+
 let () =
   Alcotest.run "fold_graph"
     [ ( "derive",
@@ -189,4 +261,17 @@ let () =
         [ Alcotest.test_case "fold-in-quarters cycle closes" `Quick
             test_cycle_closes_fold_in_quarters;
           Alcotest.test_case "3-of-4 folded at a vertex tears" `Quick
-            test_cycle_tear_rejected ] ) ]
+            test_cycle_tear_rejected ] );
+      ( "non-crossing",
+        [ Alcotest.test_case "taco-tortilla fires when sandwiched" `Quick
+            test_taco_tortilla_fires;
+          Alcotest.test_case "taco-tortilla silent outside the taco" `Quick
+            test_taco_tortilla_ok_outside;
+          Alcotest.test_case "taco-tortilla fires on reflected (CW) tortilla"
+            `Quick test_taco_tortilla_fires_reflected_root;
+          Alcotest.test_case "taco-taco fires when pairs interleave" `Quick
+            test_taco_taco_fires;
+          Alcotest.test_case "taco-taco silent when nested" `Quick
+            test_taco_taco_ok_nested;
+          Alcotest.test_case "taco-taco silent when separated" `Quick
+            test_taco_taco_ok_separated ] ) ]
