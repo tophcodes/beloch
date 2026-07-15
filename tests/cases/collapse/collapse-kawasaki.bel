@@ -3,7 +3,7 @@ paper square
 mark --ac = map .b onto .d     ; diagonal a–c
 mark --v  = map .a onto .b     ; vertical midline x = 1/2
 
-collapse --ac & .a and --ac & .c
-  and --v & --cd and --v & --ab
+flatten (--ac & .a) (--ac & .c)
+  (--v & --cd) (--v & --ab)
 
 ; expect error "flat-foldable"

@@ -1,0 +1,31 @@
+; status: works — swivel rabbit ear, free hinges (not the incenter case,
+; contrast examples/bases/rabbit-ear.bel). The two hinge creases land at an
+; arbitrary height on the side edges rather than at the triangle's bisector
+; angles, so the crease that flattens the vertex is not constructible by any
+; Huzita axiom from the named points — `flatten`'s derive mode solves for it.
+
+paper square
+
+mark --v = map .a onto .b     ; x = 1/2: spine, also the fold's symmetry axis
+.m = --v * --cd               ; apex (1/2, 1)
+
+step precrease
+mark --_am = through .a .m    ; scaffolding — incenter only locates the hinge height
+mark --_bm = through .b .m
+mark --_ba = map --ab onto --_am
+mark --_bb = map --ab onto --_bm
+.o = --_ba * --_bb
+
+.lowerp = --_ba * --_bm
+mark --lowerh = perp --bc through .lowerp   ; a height off the incenter, not a bisector
+
+mark --ba = through .a .[--bc --lowerh]     ; hinge from a, free height (not through .o)
+mark --bb = through .b .[--da --lowerh]     ; hinge from b, same free height
+
+step ear
+; only THREE of the four rays at the hinge vertex are given (the away rays of
+; --ba, --bb, and the downward ray of the spine --v); flat-foldability forces
+; the fourth — the emergent "ear" crease, a mountain at ~320° from the vertex
+; (meeting the base right of center), not parallel to any given line (verified:
+; docs/superpowers/specs/2026-07-15-flatten-generalizes-collapse-design.md).
+--ear = flatten (--ba \ .a) (--bb \ .b) (--v \ .m) toward .d

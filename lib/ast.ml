@@ -117,11 +117,17 @@ type stmt =
   | Export of export_entry list option * string * Error.span
       (* None = export-all; the string is the instance name *)
   | StepMark of string * Error.span
-  | Collapse of collapse_elem list * (flap_arg * flap_arg) list
-                * flap_arg option * Error.span
-      (* collapse <elements> [over-pairs] [standing]: simultaneous multi-
-         crease fold. elements = the creases folded, each with its own
-         direction; over-pairs = (upper flap, lower flap) layer-order
-         constraints; standing = the flap that stays upright (unfolded). *)
+  | Flatten of string option * collapse_elem list * (flap_arg * flap_arg) list
+                * flap_arg option * point_operand option * Error.span
+      (* [--r =] flatten <elements> [over-pairs] [standing] [toward .p]:
+         simultaneous multi-crease fold. elements = the creases folded, each
+         with its own direction; over-pairs = (upper flap, lower flap)
+         layer-order constraints; standing = the flap that stays upright
+         (unfolded). name_opt Some = `--r = flatten ...` binds --r to a
+         selectable bundle of the participating rays (validate mode: the
+         given rays). toward Some = DERIVE mode: elements are an odd set of
+         given rays sharing one vertex; the emergent crease completing them
+         to a flat-foldable vertex is solved (Flatten.derive) on the `toward`
+         side, then the completed set is folded via Collapse.collapse. *)
 
 type program = stmt list

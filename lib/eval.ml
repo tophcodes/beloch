@@ -1719,7 +1719,7 @@ let eval_folded (prog : Ast.program) : folded =
            marker). A trailing fold/collapse clears pending again → no dup. *)
         ctx.pending <- true;
         ctx.panel <- Some id
-    | Ast.Collapse (elems, overs, standing_opt, span) ->
+    | Ast.Flatten (name_opt, elems, overs, standing_opt, toward_opt, span) ->
         (match standing_opt with
         | Some _ -> Error.fail span "standing folds are not yet supported"
         | None -> ());
@@ -1826,9 +1826,177 @@ let eval_folded (prog : Ast.program) : folded =
             (fun (u, l) -> (resolve_sector_face u span, resolve_sector_face l span))
             overs
         in
-        (match Collapse.collapse !(ctx.state) es ~over with
-        | Ok st -> ctx.state := st
-        | Error msg -> Error.fail span msg);
+        (* DERIVE mode records the emergent crease's (id, line) here so the
+           name (if any) binds to it instead of the given rays; None in
+           validate mode and left None if unbound. *)
+        let emergent_bind = ref None in
+        (match toward_opt with
+        | None ->
+            (match Collapse.collapse !(ctx.state) es ~over with
+            | Ok st -> ctx.state := st
+            | Error msg -> Error.fail span msg)
+        | Some toward_po ->
+            (* DERIVE mode: [elems] is an odd set of given rays sharing one
+               vertex O; solve the emergent crease completing them to a flat
+               vertex (Flatten.derive), materialize it as a real crease
+               (Fold_state.subdivide — the elems are already TABLE-space, so
+               the cutting axis is too, unlike a mark's paper-space line),
+               then fold the completed (now even) set exactly like the
+               validate path. *)
+            let o =
+              match Collapse.common_vertex es with
+              | Some o -> o
+              | None -> Error.fail span Collapse.e_no_vertex
+            in
+            let toward_pt = resolve_point toward_po in
+            let fixed = Collapse.sort_ccw o es in
+            (match Flatten.derive o ~fixed ~toward:toward_pt with
+            | Error msg -> Error.fail span msg
+            | Ok emergent_line ->
+                let given_fars =
+                  List.map (fun (e : Collapse.elem) -> Collapse.far_of o e) es
+                in
+                (* The emergent crease is ONE RAY of [emergent_line], not the
+                   whole line. Clip the line to the paper to get its two
+                   boundary tips (O lies between them); each is a candidate far.
+                   Drop a tip that merely re-names a given ray (the classic
+                   rabbit ear: the emergent up-spine tip is the opposite end of
+                   the given down-spine's own line). The genuine ray is the one
+                   whose four-ray vertex satisfies Kawasaki — [Collapse.closure_ok]
+                   settles it without needing the paper subdivided (closure is a
+                   function of the ray directions alone), so the wrong ray never
+                   gets materialized. *)
+                let candidate_fars =
+                  (match Geom.clip_to_unit_square emergent_line with
+                  | Some (p, q) -> [ p; q ]
+                  | None -> [])
+                  |> List.filter (fun f ->
+                         (not (Geom.point_equal f o))
+                         && not (List.exists (Geom.point_equal f) given_fars))
+                in
+                let closes far =
+                  (* closure_ok's reflection product is taken in CCW ray order
+                     (a cyclic rotation is conjugate, an arbitrary permutation
+                     is not), so sort the full four-ray set first. *)
+                  (far :: given_fars)
+                  |> List.map (fun f -> (f, ()))
+                  |> List.sort (fun (a, _) (b, _) -> Geom.ccw_compare ~center:o a b)
+                  |> Array.of_list
+                  |> Collapse.closure_ok o
+                in
+                let guard = Geom.perpendicular_through emergent_line o in
+                let ray_far =
+                  match List.filter closes candidate_fars with
+                  | [ f ] -> f
+                  | [] ->
+                      Error.fail span "the derived crease does not close the vertex"
+                  | fs -> (
+                      (* two rays of the line both close (a symmetric vertex):
+                         [toward] disambiguates — keep the ray pointing to
+                         [toward]'s side of the perpendicular through O. *)
+                      let ts = Geom.side_of_line guard toward_pt in
+                      match
+                        List.filter (fun f -> Geom.side_of_line guard f = ts) fs
+                      with
+                      | [ f ] -> f
+                      | _ ->
+                          Error.fail span
+                            "the derived crease is ambiguous; `toward` does not \
+                             pick one ray")
+                in
+                let keep = Geom.side_of_line guard ray_far in
+                let new_cid = Fold_state.fresh_crease_id () in
+                let prov : State.provenance option =
+                  Some
+                    { State.axiom = "flatten"; sources = []; span; name = None;
+                      step = ctx.panel }
+                in
+                (* Materialize ONLY the chosen ray: [keep_side] confines the cut
+                   to [ray_far]'s side of the guard, so the opposite ray creases
+                   nothing. When the ray runs collinear with an
+                   already-materialized given crease (the classic rabbit-ear
+                   up-spine), every face is already split along it and this is a
+                   no-op — the ray is then found below among the EXISTING crease
+                   segments, so the scan spans all crease ids, not just
+                   [new_cid]. *)
+                ctx.state :=
+                  Fold_state.subdivide !(ctx.state) emergent_line
+                    ~crease_id:new_cid ~keep_side:(guard, keep) ~prov;
+                let far_of_seg (s : Fold_state.crease_segment) =
+                  if Geom.point_equal s.Fold_state.ta o then s.Fold_state.tb
+                  else s.Fold_state.ta
+                in
+                (* the crease ray at O along [emergent_line] on the kept side —
+                   exactly one ray now exists there (new or pre-existing). *)
+                let candidates =
+                  Fold_state.all_crease_ids !(ctx.state)
+                  |> List.concat_map (fun cid ->
+                         Fold_state.crease_segments !(ctx.state) cid
+                         |> List.filter_map
+                              (fun (s : Fold_state.crease_segment) ->
+                                let far = far_of_seg s in
+                                if
+                                  (Geom.point_equal s.Fold_state.ta o
+                                  || Geom.point_equal s.Fold_state.tb o)
+                                  && Geom.side_of_line emergent_line far = 0
+                                  && Geom.side_of_line guard far = keep
+                                  && not (List.exists (Geom.point_equal far) given_fars)
+                                then Some (cid, far)
+                                else None))
+                in
+                (* closure doesn't depend on valley, so a wrong ray would fail
+                   both valleys identically; Maekawa admits exactly one valley
+                   for the right one. [Collapse.collapse] is the oracle. *)
+                (* pair each attempt with the (cid, far) it was built from, so
+                   the winning attempt tells us which crease id is the
+                   emergent one — [new_cid] when the ray was freshly
+                   materialized, but a PRE-EXISTING cid when the ray is
+                   collinear with an already-materialized given crease (the
+                   rabbit-ear up-spine no-op case; see the comment above
+                   [candidates]). *)
+                let attempts =
+                  List.concat_map
+                    (fun (cid, far) ->
+                      [ true; false ]
+                      |> List.map (fun valley ->
+                             (cid, { Collapse.cid; ea = o; eb = far; valley })))
+                    candidates
+                in
+                let results =
+                  List.filter_map
+                    (fun (cid, (e : Collapse.elem)) ->
+                      match Collapse.collapse !(ctx.state) (e :: es) ~over with
+                      | Ok st -> Some (st, cid)
+                      | Error _ -> None)
+                    attempts
+                in
+                (match results with
+                | [ (st, cid) ] ->
+                    ctx.state := st;
+                    emergent_bind := Some (cid, emergent_line)
+                | [] ->
+                    Error.fail span
+                      "the derived crease does not close the vertex"
+                | _ :: _ :: _ ->
+                    Error.fail span
+                      "the derived crease admits more than one closure")));
+        (* bind the name (if any): validate mode binds a selectable bundle of
+           the given rays; derive mode binds the EMERGENT crease instead (the
+           newly-completed vertex's own crease, not the rays that produced
+           it), so a meet-point selector against the name (e.g.
+           `.[--ear --ab]`) finds the emergent crease's tip. *)
+        (match name_opt with
+        | Some n ->
+            let cv =
+              match !emergent_bind with
+              | Some (cid, line) -> Material (cid, line)
+              | None ->
+                  Bundle
+                    (Ast.LUnion
+                       (List.map (fun (el : Ast.collapse_elem) -> el.Ast.cline) elems, span))
+            in
+            bind_crease ctx n span cv
+        | None -> ());
         push_frame (Some span)
   in
   List.iter eval_stmt prog;
