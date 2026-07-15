@@ -61,3 +61,22 @@ let inverse (i : t) : t =
     m10 = i.m01; m11 = i.m11; m12 = i.m21;
     m20 = i.m02; m21 = i.m12; m22 = i.m22;
     tx; ty; tz }
+
+let half_turn_about_line ~(on : point) ~(dir : point) : t =
+  let ( * ) = Num.mul and ( + ) = Num.add and ( - ) = Num.sub in
+  let dd = (dir.x * dir.x) + (dir.y * dir.y) + (dir.z * dir.z) in
+  (* R = 2 (d dᵀ)/(d·d) − I ; entry (i,j) = 2 d_i d_j / dd − [i=j] *)
+  let two = Num.of_int 2 in
+  let e di dj diag =
+    Num.sub (Num.div (Num.mul two (Num.mul di dj)) dd)
+      (if diag then Num.one else Num.zero)
+  in
+  let m00 = e dir.x dir.x true  and m01 = e dir.x dir.y false and m02 = e dir.x dir.z false
+  and m10 = e dir.y dir.x false and m11 = e dir.y dir.y true  and m12 = e dir.y dir.z false
+  and m20 = e dir.z dir.x false and m21 = e dir.z dir.y false and m22 = e dir.z dir.z true in
+  (* translation so [on] is fixed: t = on − R·on *)
+  let rx = (m00 * on.x) + (m01 * on.y) + (m02 * on.z) in
+  let ry = (m10 * on.x) + (m11 * on.y) + (m12 * on.z) in
+  let rz = (m20 * on.x) + (m21 * on.y) + (m22 * on.z) in
+  { m00; m01; m02; m10; m11; m12; m20; m21; m22;
+    tx = on.x - rx; ty = on.y - ry; tz = on.z - rz }
