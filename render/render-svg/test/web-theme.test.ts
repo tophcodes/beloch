@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
 import { parseFold } from "@beloch/scene";
-import { renderCP, WEB_THEME } from "@beloch/render-svg";
+import { renderCP, renderFolded, WEB_THEME } from "@beloch/render-svg";
 
 const golden = (p: string) =>
   Bun.file(new URL(`./fixtures/${p}`, import.meta.url)).text();
@@ -11,6 +11,21 @@ test("renderCP with WEB_THEME emits CSS-var paper + ink fills", async () => {
   expect(svg).toContain('fill="var(--bel-paper-cp, #f8fafc)"');
   expect(svg).toContain('fill="var(--bel-ink, #0f172a)"');
   expect(svg).toContain('stroke="var(--bel-boundary, #1f2937)"');
+});
+
+test("renderFolded with WEB_THEME emits CSS-var front/back paper fills", async () => {
+  const scene = parseFold(await golden("fold-quarter.fold"));
+  const svg = renderFolded(scene, { theme: WEB_THEME }).toString();
+  // the folded view fills faces with front/back paper — both must resolve to
+  // the runtime CSS vars, not hardcoded hex, so a chosen scheme recolors them.
+  expect(svg).toContain('fill="var(--bel-paper-front, #fafaf7)"');
+  expect(svg).toContain('fill="var(--bel-paper-back, #dbe4ee)"');
+});
+
+test("renderFolded without a theme keeps the concrete hex (headless-safe)", async () => {
+  const scene = parseFold(await golden("fold-quarter.fold"));
+  const svg = renderFolded(scene).toString();
+  expect(svg).not.toContain("var(--bel-");
 });
 
 test("renderCP without a theme keeps the concrete hex (headless-safe)", async () => {
