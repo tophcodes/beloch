@@ -155,6 +155,25 @@ export function coveredIntervals(
   return merged;
 }
 
+// True if point `p` is hidden by a face strictly above (or, for the bottom
+// view, below) `refPos` in the stack order — the point analogue of
+// coveredIntervals, used to occlude named-vertex dots and labels.
+export function pointCovered(
+  p: Vec2,
+  order: number[],
+  refPos: number,
+  F: number[][],
+  V: Vec2[],
+  below = false,
+): boolean {
+  const from = below ? refPos - 1 : refPos + 1;
+  const step = below ? -1 : 1;
+  for (let pos = from; pos >= 0 && pos < order.length; pos += step) {
+    if (pointInPolygon(p, F[order[pos]!]!.map((i) => V[i]!))) return true;
+  }
+  return false;
+}
+
 // clip line ax+by=c to bounding box
 export function clipLineBox(
   a: number,
