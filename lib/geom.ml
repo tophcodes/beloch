@@ -343,6 +343,72 @@ let convex_overlap (p : point array) (q : point array) : bool =
   in
   not (List.exists separated (normals p @ normals q))
 
+(* Does segment [pa]-[pb] pass through the *interior* of convex CCW [poly]? True
+   iff the portion of the segment inside [poly] has positive length and its
+   midpoint is strictly interior — a segment lying along a boundary edge (a crease
+   bordering the face, i.e. a taco-taco situation) is excluded. Exact throughout:
+   clip the parameter t∈[0,1] to every interior half-plane, then sign-test the
+   midpoint. *)
+let segment_crosses_interior ((pa, pb) : point * point) (poly : point array) :
+    bool =
+  if point_equal pa pb then false
+  else begin
+    let dx = Num.sub pb.x pa.x and dy = Num.sub pb.y pa.y in
+    let n = Array.length poly in
+    let lo = ref Num.zero and hi = ref Num.one and empty = ref false in
+    for i = 0 to n - 1 do
+      let e1 = poly.(i) and e2 = poly.((i + 1) mod n) in
+      let ex = Num.sub e2.x e1.x and ey = Num.sub e2.y e1.y in
+      (* interior of a CCW polygon is left of each edge: cross(e1→e2, p−e1) ≥ 0.
+         Along the segment this is affine in t: f(t) = f0 + t·fd. *)
+      let f0 =
+        Num.sub (Num.mul ex (Num.sub pa.y e1.y)) (Num.mul ey (Num.sub pa.x e1.x))
+      in
+      let fd = Num.sub (Num.mul ex dy) (Num.mul ey dx) in
+      match Num.sign fd with
+      | 0 -> if Num.sign f0 < 0 then empty := true
+      | s ->
+          let t = Num.div (Num.neg f0) fd in
+          if s > 0 then (if Num.compare t !lo > 0 then lo := t)
+          else if Num.compare t !hi < 0 then hi := t
+    done;
+    if !empty || Num.compare !lo !hi >= 0 then false
+    else begin
+      let tm = Num.div (Num.add !lo !hi) (Num.of_int 2) in
+      let m =
+        { x = Num.add pa.x (Num.mul tm dx); y = Num.add pa.y (Num.mul tm dy) }
+      in
+      let strict = ref true in
+      for i = 0 to n - 1 do
+        let a = poly.(i) and b = poly.((i + 1) mod n) in
+        let cross =
+          Num.sub
+            (Num.mul (Num.sub b.x a.x) (Num.sub m.y a.y))
+            (Num.mul (Num.sub b.y a.y) (Num.sub m.x a.x))
+        in
+        if Num.sign cross <= 0 then strict := false
+      done;
+      !strict
+    end
+  end
+
+(* Do two segments coincide over a sub-segment of positive length (i.e. the
+   two creases strictly overlap under the folding map)? Collinear + overlapping
+   parameter ranges. *)
+let segments_overlap_collinear ((p1, q1) : point * point)
+    ((p2, q2) : point * point) : bool =
+  if point_equal p1 q1 || point_equal p2 q2 then false
+  else
+    let l = line_through p1 q1 in
+    if side_of_line l p2 <> 0 || side_of_line l q2 <> 0 then false
+    else
+      let ta = seg_param (p1, q1) p2 and tb = seg_param (p1, q1) q2 in
+      let tlo = if Num.compare ta tb <= 0 then ta else tb in
+      let thi = if Num.compare ta tb <= 0 then tb else ta in
+      let olo = if Num.compare tlo Num.zero > 0 then tlo else Num.zero in
+      let ohi = if Num.compare thi Num.one < 0 then thi else Num.one in
+      Num.compare olo ohi < 0
+
 (* Cyrus–Beck, exact: line [l] ∩ convex CCW [poly] as a segment. Parametrize
    the line p(t) = p0 + t·dir with dir = (b,−a) and p0 the foot of the
    perpendicular from the origin, ((a·c)/(a²+b²), (b·c)/(a²+b²)) — no sqrt.
