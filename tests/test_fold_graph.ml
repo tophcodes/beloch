@@ -14,7 +14,7 @@ let p3 x y z : Isometry3.point = { Isometry3.x = q x; y = q y; z = q z }
 (* line x = k : a=1,b=0,c=k *)
 let vline k : Geom.line = { Geom.a = q 1; b = q 0; c = q k }
 (* line y = k : a=0,b=1,c=k *)
-let[@warning "-32"] hline k : Geom.line = { Geom.a = q 0; b = q 1; c = q k }
+let hline k : Geom.line = { Geom.a = q 0; b = q 1; c = q k }
 
 let mk ?(root = 0) ~faces ~hinges ~rank () =
   match Fold_graph.make ~faces ~hinges ~root ~rank with
@@ -135,6 +135,40 @@ let test_rejects_hinge_vertex_touch () =
     (function Fold_graph.Hinge_not_shared 0 -> true | _ -> false)
     ~faces ~hinges ~root:0 ~rank:[| 0; 1 |]
 
+(* Quadrants of [0,2]²: f0=[0,1]², f1=[1,2]×[0,1], f2=[1,2]×[1,2], f3=[0,1]×[1,2].
+   Hinges form a 4-cycle around the interior vertex (1,1). *)
+let quadrant_faces () =
+  [| sq (gp 0 0) (gp 1 0) (gp 1 1) (gp 0 1);
+     sq (gp 1 0) (gp 2 0) (gp 2 1) (gp 1 1);
+     sq (gp 1 1) (gp 2 1) (gp 2 2) (gp 1 2);
+     sq (gp 0 1) (gp 1 1) (gp 1 2) (gp 0 2) |]
+
+let quadrant_hinges ~last_angle =
+  [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = q 1 };
+     { Fold_graph.fa = 1; fb = 2; line = hline 1; angle = q 1 };
+     { Fold_graph.fa = 2; fb = 3; line = vline 1; angle = q 1 };
+     { Fold_graph.fa = 3; fb = 0; line = hline 1; angle = last_angle } |]
+
+let test_cycle_closes_fold_in_quarters () =
+  (* all four creases folded: reflections compose to identity around the
+     vertex — the classic fold-in-quarters; rank = physical stacking *)
+  let g =
+    mk ~faces:(quadrant_faces ()) ~hinges:(quadrant_hinges ~last_angle:(q 1))
+      ~rank:[| 0; 1; 2; 3 |] ()
+  in
+  let isos = Fold_graph.face_isos g in
+  Alcotest.(check bool) "far corner (2,2) lands on (0,0)" true
+    (i3eq (Isometry3.apply_point isos.(2) (p3 2 2 0)) (p3 0 0 0))
+
+let test_cycle_tear_rejected () =
+  (* only 3 of the 4 creases at an interior vertex folded: the cycle cannot
+     close — the sheet would tear along the remaining hinge *)
+  expect_error "3-of-4 folded tears"
+    (function Fold_graph.Hinge_not_closed _ -> true | _ -> false)
+    ~faces:(quadrant_faces ())
+    ~hinges:(quadrant_hinges ~last_angle:(q 0))
+    ~root:0 ~rank:[| 0; 1; 2; 3 |]
+
 let () =
   Alcotest.run "fold_graph"
     [ ( "derive",
@@ -150,4 +184,9 @@ let () =
             test_rejects_hinge_line_not_between;
           Alcotest.test_case "gap between faces" `Quick test_rejects_hinge_gap;
           Alcotest.test_case "vertex touch only" `Quick
-            test_rejects_hinge_vertex_touch ] ) ]
+            test_rejects_hinge_vertex_touch ] );
+      ( "make-closure",
+        [ Alcotest.test_case "fold-in-quarters cycle closes" `Quick
+            test_cycle_closes_fold_in_quarters;
+          Alcotest.test_case "3-of-4 folded at a vertex tears" `Quick
+            test_cycle_tear_rejected ] ) ]

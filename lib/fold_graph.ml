@@ -186,6 +186,17 @@ let make ~(faces : face array) ~(hinges : hinge array) ~(root : int)
           | None -> raise (V (Hinge_not_shared i)))
         hinges
     in
+    (* cycle closure: the BFS fixed a spanning tree; every hinge must agree
+       with the placements — for non-tree (cycle) hinges this is the real
+       tear check. Tree hinges hold by construction; checking all is uniform
+       (flat-first motions are involutions, so direction is irrelevant). *)
+    Array.iteri
+      (fun i h ->
+        if
+          not
+            (I3.equal isos.(h.fb) (I3.compose isos.(h.fa) (hinge_motion h)))
+        then raise (V (Hinge_not_closed i)))
+      hinges;
     Ok
       {
         faces = Array.copy faces;
