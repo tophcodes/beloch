@@ -48,6 +48,10 @@
  (libraries beloch alcotest zarith str))
 
 (test
+ (name test_flatten)
+ (libraries beloch alcotest zarith str))
+
+(test
  (name test_render_cli)
  (libraries render_cli alcotest unix))
 
@@ -55,3 +59,7 @@
  (name test_bel_assert)
  (libraries beloch alcotest zarith)
  (deps (source_tree cases)))
+
+(executable
+ (name spike_flatten)
+ (libraries beloch zarith))
