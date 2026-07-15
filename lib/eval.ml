@@ -1719,7 +1719,7 @@ let eval_folded (prog : Ast.program) : folded =
            marker). A trailing fold/collapse clears pending again → no dup. *)
         ctx.pending <- true;
         ctx.panel <- Some id
-    | Ast.Collapse (elems, overs, standing_opt, span) ->
+    | Ast.Flatten (elems, overs, standing_opt, span) ->
         (match standing_opt with
         | Some _ -> Error.fail span "standing folds are not yet supported"
         | None -> ());

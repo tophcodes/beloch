@@ -533,54 +533,54 @@ let test_parse_fold_along () =
       ()
   | _ -> Alcotest.fail "expected an @fold statement"
 
-(* ---- Collapse ---- *)
+(* ---- Flatten ---- *)
 
-let test_parse_collapse_basic () =
+let test_parse_flatten_basic () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\ncollapse --a and --b and --c and --e mountain\n"
+      "paper square\nflatten --a and --b and --c and --e mountain\n"
   in
   match prog with
-  | [ Ast.Collapse (elems, [], None, _) ] ->
+  | [ Ast.Flatten (elems, [], None, _) ] ->
       Alcotest.(check int) "4 elements" 4 (List.length elems);
       let dirs = List.map (fun (e : Ast.collapse_elem) -> e.Ast.cdir) elems in
       Alcotest.(check bool) "last is mountain, first is valley"
         true
         (List.nth dirs 3 = Ast.Mountain && List.nth dirs 0 = Ast.Valley)
-  | _ -> Alcotest.fail "expected Collapse"
+  | _ -> Alcotest.fail "expected Flatten"
 
-let test_parse_collapse_parens_at_over_standing () =
+let test_parse_flatten_parens_at_over_standing () =
   let prog =
     Beloch.parse ~filename:"t.bel"
       "paper square\n\
-       collapse --a & .a and (--e & .o & --ab mountain) \
+       flatten --a & .a and (--e & .o & --ab mountain) \
        and .b over .d and standing .m\n"
   in
   match prog with
-  | [ Ast.Collapse ([ _; e2 ], [ (_, _) ], Some _, _) ] ->
+  | [ Ast.Flatten ([ _; e2 ], [ (_, _) ], Some _, _) ] ->
       Alcotest.(check bool) "parenthesized elem is mountain"
         true (e2.Ast.cdir = Ast.Mountain)
-  | _ -> Alcotest.fail "expected Collapse with over + standing"
+  | _ -> Alcotest.fail "expected Flatten with over + standing"
 
-let test_parse_collapse_followed_by_stmt () =
-  (* regression: a bare @collapse must not swallow the next statement's
+let test_parse_flatten_followed_by_stmt () =
+  (* regression: a bare @flatten must not swallow the next statement's
      leading .point/--crease as a phantom over clause *)
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\ncollapse --a and --b mountain\n.x = --a * --b\n"
+      "paper square\nflatten --a and --b mountain\n.x = --a * --b\n"
   in
   match prog with
-  | [ Ast.Collapse ([ _; _ ], [], None, _); Ast.Point ("x", _, _) ] -> ()
-  | _ -> Alcotest.fail "expected Collapse then Point"
+  | [ Ast.Flatten ([ _; _ ], [], None, _); Ast.Point ("x", _, _) ] -> ()
+  | _ -> Alcotest.fail "expected Flatten then Point"
 
-let test_parse_collapse_mixed_order () =
+let test_parse_flatten_mixed_order () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\ncollapse --a and .p over .q and --b and standing .r\n"
+      "paper square\nflatten --a and .p over .q and --b and standing .r\n"
   in
   match prog with
   | [
-   Ast.Collapse
+   Ast.Flatten
      ( [
          { Ast.cline = Ast.LNamed { cname = "a"; _ }; _ };
          { Ast.cline = Ast.LNamed { cname = "b"; _ }; _ };
@@ -595,11 +595,11 @@ let test_parse_collapse_mixed_order () =
       ()
   | _ ->
       Alcotest.fail
-        "expected Collapse with elems [a;b] in source order, over (.p, .q) \
+        "expected Flatten with elems [a;b] in source order, over (.p, .q) \
          not swapped, standing .r"
 
-let test_parse_collapse_double_standing_rejected () =
-  let src = "paper square\ncollapse --a and standing .p and standing .q\n" in
+let test_parse_flatten_double_standing_rejected () =
+  let src = "paper square\nflatten --a and standing .p and standing .q\n" in
   expect_error "only one standing" (fun () -> Beloch.parse ~filename:"t.bel" src);
   (* the error must point at the duplicate (second, source-order) `standing`,
      not the first *)
@@ -685,7 +685,7 @@ let test_parse_filter_binds_before_meet () =
       ()
   | _ -> Alcotest.fail "expected (--l & .a) * --s : PSelect[LFilter, LNamed]"
 
-(* ---- Notation cutover: mark/fold/collapse verbs replace @/bare-axiom (#24) ---- *)
+(* ---- Notation cutover: mark/fold/flatten verbs replace @/bare-axiom (#24) ---- *)
 
 let test_parse_new_value_binding () =
   match Beloch.parse ~filename:"t.bel" "paper square\n--l = map .a onto .c\n" with
@@ -782,14 +782,14 @@ let test_parse_new_fold_along () =
       ()
   | _ -> Alcotest.fail "expected --d = ...; mark --d; fold --d moving .a"
 
-let test_parse_new_collapse_no_at () =
+let test_parse_new_flatten_no_at () =
   match
     Beloch.parse ~filename:"t.bel"
-      "paper square\ncollapse --a and --b and --c and --e mountain\n"
+      "paper square\nflatten --a and --b and --c and --e mountain\n"
   with
-  | [ Ast.Collapse (elems, [], None, _) ] ->
+  | [ Ast.Flatten (elems, [], None, _) ] ->
       Alcotest.(check int) "4 elements" 4 (List.length elems)
-  | _ -> Alcotest.fail "expected collapse (no @) to parse as Ast.Collapse"
+  | _ -> Alcotest.fail "expected flatten (no @) to parse as Ast.Flatten"
 
 let test_parse_at_retired () =
   (* `@` is no longer a token at all (AT retired): it's an unrecognised
@@ -800,7 +800,7 @@ let test_parse_at_retired () =
   expect_error "unexpected character" (fun () ->
       Beloch.parse ~filename:"t.bel" "paper square\n@fold --d moving .a\n");
   expect_error "unexpected character" (fun () ->
-      Beloch.parse ~filename:"t.bel" "paper square\n@collapse --a and --b\n")
+      Beloch.parse ~filename:"t.bel" "paper square\n@flatten --a and --b\n")
 
 let () =
   Alcotest.run "beloch-parse"
@@ -850,15 +850,15 @@ let () =
           Alcotest.test_case "union []" `Quick test_parse_union;
           Alcotest.test_case "bind bundle" `Quick test_parse_bind_bundle;
           Alcotest.test_case "@fold statement" `Quick test_parse_fold_along;
-          Alcotest.test_case "collapse basic" `Quick test_parse_collapse_basic;
-          Alcotest.test_case "collapse parens/at/over/standing" `Quick
-            test_parse_collapse_parens_at_over_standing;
-          Alcotest.test_case "collapse followed by stmt" `Quick
-            test_parse_collapse_followed_by_stmt;
-          Alcotest.test_case "collapse mixed item order" `Quick
-            test_parse_collapse_mixed_order;
-          Alcotest.test_case "collapse double standing rejected" `Quick
-            test_parse_collapse_double_standing_rejected;
+          Alcotest.test_case "flatten basic" `Quick test_parse_flatten_basic;
+          Alcotest.test_case "flatten parens/at/over/standing" `Quick
+            test_parse_flatten_parens_at_over_standing;
+          Alcotest.test_case "flatten followed by stmt" `Quick
+            test_parse_flatten_followed_by_stmt;
+          Alcotest.test_case "flatten mixed item order" `Quick
+            test_parse_flatten_mixed_order;
+          Alcotest.test_case "flatten double standing rejected" `Quick
+            test_parse_flatten_double_standing_rejected;
         ] );
       ( "notation_cutover",
         [
@@ -872,8 +872,8 @@ let () =
           Alcotest.test_case "fold named" `Quick test_parse_new_fold_named;
           Alcotest.test_case "fold along existing crease" `Quick
             test_parse_new_fold_along;
-          Alcotest.test_case "collapse without @" `Quick
-            test_parse_new_collapse_no_at;
+          Alcotest.test_case "flatten without @" `Quick
+            test_parse_new_flatten_no_at;
           Alcotest.test_case "@ is retired" `Quick test_parse_at_retired;
         ] );
       ( "export",

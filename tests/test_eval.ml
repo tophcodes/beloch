@@ -289,20 +289,20 @@ let test_fold_along_bent_under_moving () =
                fold --v = map .c onto .b\n\
                fold --b & #[.c .d] moving .a\n")))
 
-(* ---- @collapse ---- *)
+(* ---- @flatten ---- *)
 
-let test_collapse_standing_unsupported () =
+let test_flatten_standing_unsupported () =
   expect_error "standing folds are not yet supported" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
                mark --d = through .a .c\n\
-               collapse --d and standing .a\n")))
+               flatten --d and standing .a\n")))
 
 (* n = 2: two diagonals through the same center point, each named as a single
-   `at`-selected segment — a real fold, not a collapse; hint toward @fold *)
-let test_collapse_count_two () =
+   `at`-selected segment — a real fold, not a flatten; hint toward @fold *)
+let test_flatten_count_two () =
   expect_error "use `fold`" (fun () ->
       ignore
         (Eval.eval_folded
@@ -310,13 +310,13 @@ let test_collapse_count_two () =
               "paper square\n\
                mark --d1 = through .a .c\n\
                mark --d2 = through .b .d\n\
-               collapse --d1 & .a and --d2 & .b\n")))
+               flatten --d1 & .a and --d2 & .b\n")))
 
-let test_collapse_not_material () =
+let test_flatten_not_material () =
   expect_error "collapse folds along existing creases" (fun () ->
       ignore
         (Eval.eval_folded
-           (Beloch.parse ~filename:"t.bel" "paper square\ncollapse .a * .c\n")))
+           (Beloch.parse ~filename:"t.bel" "paper square\nflatten .a * .c\n")))
 
 (* all-layers congruence guard, happy path: a single flat sheet precreased
    along both perpendicular bisectors (the classic "+" vertex, same shape as
@@ -325,17 +325,17 @@ let test_collapse_not_material () =
    guard inspects borders an edge of the very crease it's checking, so it
    must stay silent; the 3-mountain/1-valley assignment is the one the
    kernel fixture already proved folds to a unique order. *)
-let test_collapse_all_layers_ok () =
+let test_flatten_all_layers_ok () =
   let fd =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
          "paper square\n\
           mark --h = map .a onto .d\n\
           mark --v = map .a onto .b\n\
-          collapse --h & #[.b] mountain and --v & #[.c] and --h & #[.d] \
+          flatten --h & #[.b] mountain and --v & #[.c] and --h & #[.d] \
           mountain and --v & #[.a] mountain\n")
   in
-  Alcotest.(check int) "vertex collapse leaves 4 sector faces" 4
+  Alcotest.(check int) "vertex flatten leaves 4 sector faces" 4
     (Array.length fd.Eval.state.Fold_state.faces)
 
 (* ---- Fold_state ---- *)
@@ -1301,7 +1301,7 @@ let test_select_no_sightline () =
         (Beloch.fold_string ~filename:"t.bel"
            "paper square\nmark --v = map .a onto .b\nmark map --v onto --[.a .c] toward .a\n"))
 
-(* ---- Notation cutover: mark/fold/collapse verbs replace @/bare-axiom (#24) ---- *)
+(* ---- Notation cutover: mark/fold/flatten verbs replace @/bare-axiom (#24) ---- *)
 
 (* --l = <motion> is a pure value binding: no subdivide, no material *)
 let test_new_value_binding_no_material () =
@@ -1343,18 +1343,18 @@ let test_new_fold_along () =
   let fd = eval_src "--d = map .b onto .a\nmark --d\nfold --d moving .b\n" in
   Alcotest.(check int) "one valley edge" 1 (count_assign Fold_state.V fd.Eval.state)
 
-(* collapse without @, same "+" vertex fixture as test_collapse_all_layers_ok,
+(* flatten without @, same "+" vertex fixture as test_flatten_all_layers_ok,
    with the two supporting creases materialised via `mark` instead of the
    old bare-axiom precrease *)
-let test_new_collapse_no_at () =
+let test_new_flatten_no_at () =
   let fd =
     eval_src
       "mark --h = map .a onto .d\n\
        mark --v = map .a onto .b\n\
-       collapse --h & #[.b] mountain and --v & #[.c] and --h & #[.d] \
+       flatten --h & #[.b] mountain and --v & #[.c] and --h & #[.d] \
        mountain and --v & #[.a] mountain\n"
   in
-  Alcotest.(check int) "vertex collapse leaves 4 sector faces" 4
+  Alcotest.(check int) "vertex flatten leaves 4 sector faces" 4
     (Array.length fd.Eval.state.Fold_state.faces)
 
 let test_new_at_is_gone () =
@@ -1418,14 +1418,14 @@ let () =
             test_fold_along_bent;
           Alcotest.test_case "@fold bent under the moving flaps" `Quick
             test_fold_along_bent_under_moving;
-          Alcotest.test_case "@collapse standing not yet supported" `Quick
-            test_collapse_standing_unsupported;
-          Alcotest.test_case "@collapse n=2 hints @fold" `Quick
-            test_collapse_count_two;
-          Alcotest.test_case "@collapse requires a material crease" `Quick
-            test_collapse_not_material;
-          Alcotest.test_case "@collapse all-layers guard happy path" `Quick
-            test_collapse_all_layers_ok;
+          Alcotest.test_case "@flatten standing not yet supported" `Quick
+            test_flatten_standing_unsupported;
+          Alcotest.test_case "@flatten n=2 hints @fold" `Quick
+            test_flatten_count_two;
+          Alcotest.test_case "@flatten requires a material crease" `Quick
+            test_flatten_not_material;
+          Alcotest.test_case "@flatten all-layers guard happy path" `Quick
+            test_flatten_all_layers_ok;
           Alcotest.test_case "ax5 kite paper-incidence filter" `Quick
             test_ax5_kite_filter;
           Alcotest.test_case "ax5 kite toward + moving agree" `Quick
@@ -1593,8 +1593,8 @@ let () =
           Alcotest.test_case "fold: named" `Quick test_new_fold_named;
           Alcotest.test_case "fold: along existing crease" `Quick
             test_new_fold_along;
-          Alcotest.test_case "collapse: without @" `Quick
-            test_new_collapse_no_at;
+          Alcotest.test_case "flatten: without @" `Quick
+            test_new_flatten_no_at;
           Alcotest.test_case "@ is retired" `Quick test_new_at_is_gone;
           Alcotest.test_case "mark on prelude edge does not leak" `Quick
             test_new_mark_edge_does_not_leak;

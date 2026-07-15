@@ -13,7 +13,7 @@ type collapse_item =
 
 %token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD MOVING MOUNTAIN FLIP RPAREN AND UP TO FOLD_KW
 %token DEF APPLY EXPORT STEP AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
-%token COLLAPSE OVER STANDING MARK BETWEEN AT
+%token FLATTEN OVER STANDING MARK BETWEEN AT
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN  (* --[ / .[ : the line/point select openers *)
 %token <string> POINT
 %token <string> CREASE
@@ -59,7 +59,7 @@ body_stmt:
   | APPLY IDENT LPAREN args RPAREN             { Apply (None, $2, $4, $loc) }
   | EXPORT LBRACE export_entries RBRACE INSTANCE { Export (Some $3, $5, $loc) }
   | EXPORT INSTANCE                              { Export (None, $2, $loc) }
-  | COLLAPSE collapse_items
+  | FLATTEN collapse_items
       { (* fold_left over source order so a duplicate `standing` is detected
            at its own (second-occurrence) span, not the first's; elems/overs
            are accumulated reversed and restored with List.rev to keep their
@@ -73,11 +73,11 @@ body_stmt:
               | CStanding (f, sp) -> (
                   match st with
                   | Some _ ->
-                      Error.fail sp "only one standing clause per collapse"
+                      Error.fail sp "only one standing clause per flatten"
                   | None -> (es, os, Some f)))
             ([], [], None) $2
         in
-        Collapse (List.rev elems_rev, List.rev overs_rev, standing, $loc) }
+        Flatten (List.rev elems_rev, List.rev overs_rev, standing, $loc) }
 
 markable:
   | axiom        { MMotion $1 }

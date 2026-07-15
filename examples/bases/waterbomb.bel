@@ -17,7 +17,7 @@ mark --v  = map .a onto .b     ; vertical midline, x = 1/2
 ; rays (--h and --v) lie on back-up sectors, so their golden letters invert
 ; (the .b.c ray valley → M, the other three mountains → V); the four diagonal
 ; rays keep their declared valleys.
-collapse --ac & .a and --ac & .c and --bd & .b and --bd & .d
+flatten --ac & .a and --ac & .c and --bd & .b and --bd & .d
   and --h & --bc
   and (--h & --da mountain)
   and (--v & --cd mountain)

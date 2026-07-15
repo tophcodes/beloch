@@ -8,7 +8,7 @@ mark --v  = map .a onto .b     ; vertical midline, x = 1/2
 .rm = --h * --bc          ; right edge midpoint (1, 1/2)
 .tm = --v * --cd          ; top edge midpoint (1/2, 1)
 
-collapse (--ac & .c mountain) and --ac & .a
+flatten (--ac & .c mountain) and --ac & .a
   and (--bd & .d mountain) and --bd & .b
   and (--h & --bc mountain)
   and --h & --da
