@@ -24,6 +24,7 @@ type violation =
   | Bad_index of string
   | Bad_rank
   | Bad_angle of int
+  | Bad_line of int
   | Disconnected of int
   | Hinge_not_shared of int
   | Hinge_not_closed of int
@@ -35,6 +36,8 @@ let violation_to_string = function
   | Bad_rank -> "fold graph: rank is not a permutation of the faces"
   | Bad_angle i ->
       Printf.sprintf "fold graph: hinge %d angle outside {0, ±1} (flat-first)" i
+  | Bad_line i ->
+      Printf.sprintf "fold graph: hinge %d has a degenerate line (a = b = 0)" i
   | Disconnected i ->
       Printf.sprintf "fold graph: face %d is not connected to the root" i
   | Hinge_not_shared i ->
@@ -180,7 +183,9 @@ let check_structure ~(faces : face array) ~(hinges : hinge array) ~(root : int)
         not
           (Num.equal h.angle Num.zero || Num.equal h.angle Num.one
           || Num.equal h.angle (Num.neg Num.one))
-      then raise (V (Bad_angle i)))
+      then raise (V (Bad_angle i));
+      if Num.sign h.line.Geom.a = 0 && Num.sign h.line.Geom.b = 0 then
+        raise (V (Bad_line i)))
     hinges;
   if Array.length rank <> n then raise (V Bad_rank);
   let hit = Array.make n false in
@@ -263,7 +268,7 @@ let make ~(faces : face array) ~(hinges : hinge array) ~(root : int)
     done;
     Ok
       {
-        faces = Array.copy faces;
+        faces = Array.map Array.copy faces;
         hinges = Array.copy hinges;
         root;
         rank = Array.copy rank;
@@ -271,7 +276,7 @@ let make ~(faces : face array) ~(hinges : hinge array) ~(root : int)
       }
   with V v -> Error v
 
-let faces (g : t) : face array = Array.copy g.faces
+let faces (g : t) : face array = Array.map Array.copy g.faces
 let hinges (g : t) : hinge array = Array.copy g.hinges
 let root (g : t) : int = g.root
 let rank (g : t) : int array = Array.copy g.rank

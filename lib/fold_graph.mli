@@ -20,6 +20,7 @@ type violation =
       (** root or a hinge's face index out of range, or fa = fb *)
   | Bad_rank  (** rank is not a permutation of 0..n-1 *)
   | Bad_angle of int  (** hinge i: angle outside {0, ±1} (flat-first) *)
+  | Bad_line of int  (** hinge i: line is degenerate (a = b = 0) *)
   | Disconnected of int  (** face i unreachable from the root via hinges *)
   | Hinge_not_shared of int
       (** hinge i: its line is not a positive-length shared boundary edge
@@ -44,9 +45,10 @@ val make :
   (t, violation) result
 (** The only constructor. [rank].(i) is face i's stacking height (higher =
     above), a permutation of 0..n-1. Checks in order: structure (indices,
-    rank, angle domain), connectivity, hinge adjacency (half-plane + shared
-    edge), cycle closure, then the non-crossing conditions (taco-tortilla,
-    taco-taco) over the flat projection. Input arrays are copied. *)
+    rank, angle domain, line non-degeneracy), connectivity, hinge adjacency
+    (half-plane + shared edge), cycle closure, then the non-crossing
+    conditions (taco-tortilla, taco-taco) over the flat projection. Input
+    arrays are copied. *)
 
 val faces : t -> face array
 val hinges : t -> hinge array

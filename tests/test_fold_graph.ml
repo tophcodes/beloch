@@ -241,6 +241,40 @@ let test_taco_taco_ok_separated () =
   in
   ignore g
 
+let test_faces_accessor_deep_copies () =
+  (* mutating the array returned by [faces] must not desync the state's
+     memoized isos from the geometry the caller can now see. *)
+  let g =
+    mk ~faces:(single_fold_faces ()) ~hinges:(single_fold_hinges ())
+      ~rank:[| 0; 1 |] ()
+  in
+  let returned = Fold_graph.faces g in
+  returned.(0).(0) <- gp 9 9;
+  let again = Fold_graph.faces g in
+  Alcotest.(check bool) "face 0 vertex 0 unchanged after external mutation" true
+    (Geom.point_equal again.(0).(0) (gp 0 0))
+
+let test_make_deep_copies_input_faces () =
+  (* mutating the input array's inner face after [make] returns must not
+     affect the constructed state's geometry. *)
+  let faces = single_fold_faces () in
+  let g =
+    mk ~faces ~hinges:(single_fold_hinges ()) ~rank:[| 0; 1 |] ()
+  in
+  faces.(0).(0) <- gp 9 9;
+  let seen = Fold_graph.faces g in
+  Alcotest.(check bool) "face 0 vertex 0 unchanged after mutating input" true
+    (Geom.point_equal seen.(0).(0) (gp 0 0))
+
+let test_rejects_degenerate_hinge_line () =
+  let hinges =
+    [| { Fold_graph.fa = 0; fb = 1;
+         line = { Geom.a = q 0; b = q 0; c = q 1 }; angle = q 1 } |]
+  in
+  expect_error "degenerate hinge line a=b=0"
+    (function Fold_graph.Bad_line 0 -> true | _ -> false)
+    ~faces:(single_fold_faces ()) ~hinges ~root:0 ~rank:[| 0; 1 |]
+
 let () =
   Alcotest.run "fold_graph"
     [ ( "derive",
@@ -250,7 +284,14 @@ let () =
         [ Alcotest.test_case "bad angle" `Quick test_rejects_bad_angle;
           Alcotest.test_case "bad rank" `Quick test_rejects_bad_rank;
           Alcotest.test_case "bad index" `Quick test_rejects_bad_index;
-          Alcotest.test_case "disconnected" `Quick test_rejects_disconnected ] );
+          Alcotest.test_case "disconnected" `Quick test_rejects_disconnected;
+          Alcotest.test_case "degenerate hinge line" `Quick
+            test_rejects_degenerate_hinge_line ] );
+      ( "sealing",
+        [ Alcotest.test_case "faces accessor deep-copies" `Quick
+            test_faces_accessor_deep_copies;
+          Alcotest.test_case "make deep-copies input faces" `Quick
+            test_make_deep_copies_input_faces ] );
       ( "make-adjacency",
         [ Alcotest.test_case "line cuts a face" `Quick
             test_rejects_hinge_line_not_between;
