@@ -60,6 +60,13 @@ kernel/surface/example) are finalised against Task 1's finding. Tasks 2–4
 
 **Hypothesis to verify (the single-emergent, odd-given case):** with fixed rays sorted CCW around O, for each angular gap insert the emergent ray; the product of the other reflections `P` must satisfy `R_emergent = P⁻¹`; `P⁻¹` is a reflection (det −1) iff the given count is odd; its axis (a line through O) is the emergent crease; keep only insertions where the axis direction actually falls in that gap; pick among survivors by `toward` side.
 
+**Ground-truth oracle (Toph's rabbit MV — the spike MUST reproduce it):**
+- given folding rays (odd, 3): `--ba \ .a` → **V**, `--bb \ .b` → **V**, `--v \ .m` (lower v) → **V**
+- derived: `--ear` → **M**
+- **not** a flatten element: `--v & .m` (upper v, the spine) stays **U** — it lies on the non-moving apex flap (spec §, "non-moving layers keep their flat mark").
+
+This assignment also probes the anchor rule: the apex flap that stays is the **large/reflex** region held flat by the U spine, **not** a convex sector. If the spike can only produce this by treating the stayer as reflex-held-flat, update the design's "Anchor rule" accordingly and STOP to report before Tasks 5–7.
+
 - [ ] **Step 1: Write the self-verifying failing test.** Build a concrete odd ray set from the rabbit — vertex O, the two corner hinges, and the spine (3 given rays) — omitting the ear; derive the ear; assert the completed 4-ray set closes flat.
 
 ```ocaml

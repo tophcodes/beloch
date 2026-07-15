@@ -150,9 +150,14 @@ swivels toward `.c`. The rays reference only **prior geometry** (`.a`, `.b`,
 forward reference, `#[…]` semantics untouched. Mode trigger: `toward` present.
 Without `toward`, two rays is just `n < 4` → validate error.
 
-**Anchor rule.** The stayer is always the convex (<180°) sector the two named
-rays bound; the reflex (>180°) side folds (07-07 forbids a reflex stayer). So
-naming the rays fixes the anchor unambiguously — no separate clause needed.
+**Anchor rule — UNDER QUESTION (spike resolves).** The 07-07 sketch said the
+stayer is the convex (<180°) sector and the reflex side folds. A worked rabbit
+(Toph's ground-truth MV) contradicts this: there the **apex flap stays** — the
+large, ~243° *reflex* region, kept internally flat by a U (unfolded) symmetry
+crease — while the **smaller lower region folds**. So the anchor may be the
+reflex side, held flat by an internal U crease, with the convex side folding.
+Task 1's spike settles the real rule against that MV assignment; do not treat
+"convex stays" as fixed.
 
 ### Constructed space vs solution space
 
