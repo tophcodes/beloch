@@ -36,6 +36,37 @@ let test_half_turn_is_involution () =
   Alcotest.(check bool) "h∘h = id on a point" true
     (peq (Isometry3.apply_point hh (p 5 7 (-3))) (p 5 7 (-3)))
 
+(* compose h1 h2 must apply as h1 (h2 p) — computed independently by nesting
+   apply_point — and two distinct half-turns must NOT commute. Axes must meet at
+   a non-right angle: half-turns about perpendicular axes (e.g. x- and y-axes)
+   are both diagonal and DO commute, so we use x-axis and a 45° in-plane axis. *)
+let test_compose_order () =
+  let h1 = Isometry3.half_turn_about_line ~on:(p 0 0 0) ~dir:(p 1 0 0) in
+  let h2 = Isometry3.half_turn_about_line ~on:(p 0 0 0) ~dir:(p 1 1 0) in
+  let src = p 1 2 3 in
+  let via_compose = Isometry3.apply_point (Isometry3.compose h1 h2) src in
+  let via_nesting = Isometry3.apply_point h1 (Isometry3.apply_point h2 src) in
+  let order_matters =
+    let r12 = Isometry3.apply_point (Isometry3.compose h1 h2) src in
+    let r21 = Isometry3.apply_point (Isometry3.compose h2 h1) src in
+    not (peq r12 r21)
+  in
+  Alcotest.(check bool) "compose h1 h2 = h1 ∘ h2, and non-commuting" true
+    (peq via_compose via_nesting && order_matters)
+
+let test_inverse_round_trip () =
+  let h = Isometry3.half_turn_about_line ~on:(p 1 1 0) ~dir:(p 1 2 0) in
+  let q3 = p 4 (-2) 5 in
+  let fwd = Isometry3.apply_point (Isometry3.compose h (Isometry3.inverse h)) q3 in
+  let bwd = Isometry3.apply_point (Isometry3.compose (Isometry3.inverse h) h) q3 in
+  Alcotest.(check bool) "h ∘ h⁻¹ = h⁻¹ ∘ h = id" true
+    (peq fwd q3 && peq bwd q3)
+
+let test_det_sign_is_rotation () =
+  let h = Isometry3.half_turn_about_line ~on:(p 0 0 0) ~dir:(p 1 2 0) in
+  Alcotest.(check int) "half-turn det = +1 (proper rotation)" 1
+    (Isometry3.det_sign h)
+
 let () =
   Alcotest.run "isometry3"
     [ ("core",
@@ -43,4 +74,8 @@ let () =
          Alcotest.test_case "compose" `Quick test_compose_is_apply_after ]);
       ("half_turn",
        [ Alcotest.test_case "reflection-equiv" `Quick test_half_turn_is_2d_reflection;
-         Alcotest.test_case "involution" `Quick test_half_turn_is_involution ]) ]
+         Alcotest.test_case "involution" `Quick test_half_turn_is_involution ]);
+      ("more",
+       [ Alcotest.test_case "compose-order" `Quick test_compose_order;
+         Alcotest.test_case "inverse-round-trip" `Quick test_inverse_round_trip;
+         Alcotest.test_case "det-sign" `Quick test_det_sign_is_rotation ]) ]
