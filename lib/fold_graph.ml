@@ -429,3 +429,185 @@ let paper_preimages (g : t) (tp : Geom.point) : Geom.point list =
 
 let on_paper (g : t) (pp : Geom.point) : bool =
   Array.exists (fun f -> Geom.in_convex_polygon f pp) g.faces
+
+(* ------------------------------------------------------------------ *)
+(* Construction operations (Plan 3a). Each op builds new arrays and    *)
+(* re-validates through [make]; a violation raises [Error.fail] at the *)
+(* provenance span. Faces never carry isometries — a fold only sets    *)
+(* hinge angles and the rank.                                          *)
+(* ------------------------------------------------------------------ *)
+
+let fail_of_violation (prov : State.provenance option) (v : violation) : 'a =
+  let span =
+    match prov with
+    | Some p -> p.State.span
+    | None -> (Lexing.dummy_pos, Lexing.dummy_pos)
+  in
+  Error.fail span (violation_to_string v)
+
+let init_square : t =
+  let p x y = { Geom.x = Num.of_int x; y = Num.of_int y } in
+  match
+    make ~faces:[| [| p 0 0; p 1 0; p 1 1; p 0 1 |] |] ~hinges:[||] ~root:0
+      ~rank:[| 0 |] ()
+  with
+  | Ok g -> g
+  | Error _ -> assert false
+
+(* The chord (in PAPER coordinates) where table-space [axis] crosses the
+   interior of face [i]; None if it misses (touches at most a point).
+   Port of the old Fold_state.axis_segment_in_face. *)
+let axis_chord_in_face (g : t) (i : int) (axis : Geom.line) :
+    (Geom.point * Geom.point) option =
+  let iso2 = face_iso2 g i in
+  let table = Array.map (Isometry.apply_point iso2) g.faces.(i) in
+  let n = Array.length table in
+  let pts = ref [] in
+  let add p =
+    if not (List.exists (Geom.point_equal p) !pts) then pts := p :: !pts
+  in
+  for k = 0 to n - 1 do
+    let a = table.(k) and b = table.((k + 1) mod n) in
+    let sa = Geom.side_of_line axis a and sb = Geom.side_of_line axis b in
+    if sa = 0 then add a
+    else if sb <> 0 && sa <> sb then
+      match Geom.intersection axis (Geom.line_through a b) with
+      | Some r -> add r
+      | None -> ()
+  done;
+  match !pts with
+  | [ p; q0 ] ->
+      (* Canonicalize the pair's order by position along [axis] (not the
+         arbitrary boundary-walk order they were found in): downstream,
+         [split_with_flat_hinges] rebuilds a line from this chord via
+         [Geom.line_through], whose sign follows the (a,b)->(b,a) order —
+         an inconsistent order here would flip which side is "plus" on a
+         per-face basis and desync the child face order from the old
+         model's (which always clips against the one fixed [axis]). *)
+      let lo, hi =
+        if Num.compare (line_param axis p) (line_param axis q0) <= 0 then
+          (p, q0)
+        else (q0, p)
+      in
+      let inv = Isometry.inverse iso2 in
+      Some (Isometry.apply_point inv lo, Isometry.apply_point inv hi)
+  | _ -> None
+
+(* Re-attach the old hinges over a face split. [children_of p] lists the child
+   indices of old face p (a single element when uncut). A candidate pair keeps
+   the hinge iff its line still carries a positive shared boundary segment
+   between the two children (D7) — degenerate pieces drop out here. *)
+let reattach_hinges ~(faces' : face array) ~(children_of : int -> int list)
+    (hinges : hinge array) : hinge list =
+  Array.to_list hinges
+  |> List.concat_map (fun h ->
+         List.concat_map
+           (fun cp ->
+             List.filter_map
+               (fun cq ->
+                 let h' = { h with fa = cp; fb = cq } in
+                 match hinge_shared_segment faces' h' with
+                 | Some _ -> Some h'
+                 | None -> None)
+               (children_of h.fb))
+           (children_of h.fa))
+
+(* Dense rank over the children: children inherit their parent's height;
+   within one parent, array order (plus-child first) breaks the tie. *)
+let densify_rank ~(old_rank : int array) ~(parent : int array) : int array =
+  let n' = Array.length parent in
+  let idx = Array.init n' Fun.id in
+  Array.sort
+    (fun i j -> compare (old_rank.(parent.(i)), i) (old_rank.(parent.(j)), j))
+    idx;
+  let rank' = Array.make n' 0 in
+  Array.iteri (fun h i -> rank'.(i) <- h) idx;
+  rank'
+
+(* Shared splitter for [subdivide] (table-space axis, optional ray guard) and
+   [subdivide_paper] (paper-space line). [cut_of i] gives the PAPER-space
+   chord to cut face i with, or None to keep it whole. Children order per
+   parent: plus side first, then minus (D9 — matches the old face order). *)
+let split_with_flat_hinges (g : t) ~(cid : int) ~(intent : assign)
+    ~(prov : State.provenance option)
+    ~(cut_of : int -> (Geom.point * Geom.point) option) : t =
+  let out = ref [] in (* (paper_poly, parent) — prepended, reversed at the end *)
+  let chords = ref [] in (* (parent, a, b) for each actually-cut face *)
+  Array.iteri
+    (fun fi f ->
+      match cut_of fi with
+      | None -> out := (f, fi) :: !out
+      | Some (a, b) ->
+          let line = Geom.line_through a b in
+          let part k =
+            let sub = Geom.clip_convex_halfplane line k f in
+            if Array.length sub >= 3 then Some sub else None
+          in
+          (match (part 1, part (-1)) with
+          | Some pp, Some pm ->
+              chords := (fi, a, b) :: !chords;
+              out := (pm, fi) :: (pp, fi) :: !out
+          | Some pp, None -> out := (pp, fi) :: !out
+          | None, Some pm -> out := (pm, fi) :: !out
+          | None, None -> out := (f, fi) :: !out))
+    g.faces;
+  let arr = Array.of_list (List.rev !out) in
+  let faces' = Array.map fst arr in
+  let parent = Array.map snd arr in
+  let children_of p =
+    let acc = ref [] in
+    Array.iteri (fun k pp -> if pp = p then acc := k :: !acc) parent;
+    List.rev !acc
+  in
+  let new_hinges =
+    List.rev_map
+      (fun (fi, a, b) ->
+        match children_of fi with
+        | [ cp; cm ] ->
+            { fa = cp; fb = cm; line = Geom.line_through a b; angle = Num.zero;
+              crease_id = cid; intent; prov }
+        | _ -> assert false)
+      !chords
+  in
+  let carried = reattach_hinges ~faces' ~children_of g.hinges in
+  let rank' = densify_rank ~old_rank:g.rank ~parent in
+  let root' = List.hd (children_of g.root) in
+  match
+    make ~base:g.base ~marks:g.marks ~faces:faces'
+      ~hinges:(Array.of_list (new_hinges @ carried)) ~root:root' ~rank:rank'
+      ()
+  with
+  | Ok g' -> g'
+  | Error v -> fail_of_violation prov v
+
+let subdivide ?crease_id ?(intent : assign = V) ?keep_side (g : t) (axis : Geom.line)
+    ~(prov : State.provenance option) : t =
+  let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
+  let on_keep_side fi =
+    match keep_side with
+    | None -> true
+    | Some (guard, keep) ->
+        (* table centroid of the face, old on_keep_side *)
+        let tp = table_polygon g fi in
+        let n = Array.length tp in
+        let sx = ref Num.zero and sy = ref Num.zero in
+        Array.iter
+          (fun (p : Geom.point) ->
+            sx := Num.add !sx p.Geom.x;
+            sy := Num.add !sy p.Geom.y)
+          tp;
+        let c =
+          { Geom.x = Num.div !sx (Num.of_int n); y = Num.div !sy (Num.of_int n) }
+        in
+        Geom.side_of_line guard c = keep
+  in
+  let cut_of fi =
+    if on_keep_side fi then axis_chord_in_face g fi axis else None
+  in
+  split_with_flat_hinges g ~cid ~intent ~prov ~cut_of
+
+let subdivide_paper ?crease_id ?(intent : assign = V) (g : t) (paper_axis : Geom.line)
+    ~(prov : State.provenance option) : t =
+  let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
+  let cut_of fi = Geom.clip_line_to_convex paper_axis g.faces.(fi) in
+  split_with_flat_hinges g ~cid ~intent ~prov ~cut_of

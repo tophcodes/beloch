@@ -514,6 +514,86 @@ let test_point_queries () =
   Alcotest.(check bool) "off paper" false
     (Fold_graph.on_paper g { Geom.x = q 5; y = q 5 })
 
+(* --- Plan 3a Task 3: subdivision ------------------------------------------ *)
+
+(* parity harness: compare a new state against an old Fold_state.t *)
+let check_parity label (g : Fold_graph.t) (st : Fold_state.t) =
+  let nf = Array.length (Fold_graph.faces g) in
+  Alcotest.(check int) (label ^ ": face count") (Array.length st.Fold_state.faces) nf;
+  for i = 0 to nf - 1 do
+    let fp = (Fold_graph.faces g).(i) in
+    let op = st.Fold_state.faces.(i).Fold_state.paper in
+    Alcotest.(check int) (label ^ ": paper verts") (Array.length op) (Array.length fp);
+    Array.iteri
+      (fun k p ->
+        Alcotest.(check bool)
+          (Printf.sprintf "%s: face %d paper %d" label i k) true
+          (Geom.point_equal p op.(k)))
+      fp;
+    let tp = Fold_graph.table_polygon g i in
+    let ot = Fold_state.table_polygon st i in
+    Array.iteri
+      (fun k p ->
+        Alcotest.(check bool)
+          (Printf.sprintf "%s: face %d table %d" label i k) true
+          (Geom.point_equal p ot.(k)))
+      tp
+  done;
+  for i = 0 to nf - 1 do
+    for j = 0 to nf - 1 do
+      let nr = Fold_graph.rel g i j in
+      let orl = Layer_order.get st.Fold_state.order i j in
+      let same =
+        match (nr, orl) with
+        | Fold_graph.Above, Fold_state.Above
+        | Fold_graph.Below, Fold_state.Below
+        | Fold_graph.Apart, Fold_state.Apart -> true
+        | _ -> false
+      in
+      Alcotest.(check bool) (Printf.sprintf "%s: rel %d %d" label i j) true same
+    done
+  done
+
+let test_subdivide_parity () =
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let diag = { Geom.a = q 1; b = q 1; c = q 1 } in  (* diagonal x+y=1 *)
+  let g = Fold_graph.subdivide Fold_graph.init_square diag ~prov:None in
+  let st = Fold_state.subdivide Fold_state.init_square diag ~prov:None in
+  check_parity "diag" g st;
+  (* the new F hinge exists and carries the id/intent *)
+  let hs = Fold_graph.hinges g in
+  Alcotest.(check int) "one hinge" 1 (Array.length hs);
+  Alcotest.(check bool) "flat" true (Num.sign hs.(0).Fold_graph.angle = 0)
+
+let test_subdivide_carried_split () =
+  (* two crossing subdivisions: the first crease's hinge splits into two *)
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let d1 = { Geom.a = q 1; b = q 1; c = q 1 } in
+  let d2 = { Geom.a = q 1; b = q (-1); c = q 0 } in
+  let g = Fold_graph.subdivide (Fold_graph.subdivide Fold_graph.init_square d1 ~prov:None) d2 ~prov:None in
+  let st = Fold_state.subdivide (Fold_state.subdivide Fold_state.init_square d1 ~prov:None) d2 ~prov:None in
+  check_parity "cross" g st;
+  (* 4 faces; first crease now two hinge pieces sharing crease_id 0 *)
+  let hs = Fold_graph.hinges g in
+  let pieces_of cid =
+    Array.to_list hs |> List.filter (fun h -> h.Fold_graph.crease_id = cid)
+  in
+  Alcotest.(check int) "crease 0 split in two" 2 (List.length (pieces_of 0));
+  Alcotest.(check int) "crease 1 in two" 2 (List.length (pieces_of 1))
+
+let test_subdivide_keep_side () =
+  (* guard: perpendicular through (1/2,1/2); only the y>1/2 ray creases *)
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let half = Num.div Num.one (Num.of_int 2) in
+  let axis = { Geom.a = q 1; b = q 0; c = half } in    (* x = 1/2 *)
+  let guard = { Geom.a = q 0; b = q 1; c = half } in   (* y = 1/2 *)
+  (* pre-split horizontally so the guard has faces on both sides *)
+  let base_new = Fold_graph.subdivide Fold_graph.init_square guard ~prov:None in
+  let base_old = Fold_state.subdivide Fold_state.init_square guard ~prov:None in
+  let g = Fold_graph.subdivide base_new axis ~keep_side:(guard, 1) ~prov:None in
+  let st = Fold_state.subdivide base_old axis ~keep_side:(guard, 1) ~prov:None in
+  check_parity "keep_side" g st
+
 let () =
   Alcotest.run "fold_graph"
     [ ( "derive",
@@ -583,4 +663,10 @@ let () =
           Alcotest.test_case "table polygon and rel" `Quick
             test_table_polygon_and_rel;
           Alcotest.test_case "hinge segments" `Quick test_hinge_segments;
-          Alcotest.test_case "point queries" `Quick test_point_queries ] ) ]
+          Alcotest.test_case "point queries" `Quick test_point_queries ] );
+      ( "task3-subdivide",
+        [ Alcotest.test_case "subdivide parity" `Quick test_subdivide_parity;
+          Alcotest.test_case "carried split parity" `Quick
+            test_subdivide_carried_split;
+          Alcotest.test_case "keep_side parity" `Quick
+            test_subdivide_keep_side ] ) ]

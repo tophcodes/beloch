@@ -176,3 +176,40 @@ val paper_preimages : t -> Geom.point -> Geom.point list
 
 val on_paper : t -> Geom.point -> bool
 (** Whether a paper-space point lies in some face. *)
+
+(** {1 Construction operations (Plan 3a)}
+
+    Each operation builds new faces/hinges and re-validates through [make]; a
+    violation raises {!Error.fail} at the given provenance span, since a
+    program-level construction step is never expected to produce an invalid
+    state — reaching [Error] here is a bug, not user input to report softly. *)
+
+val init_square : t
+(** The unit square [0,1]², a single flat face, no hinges. *)
+
+val subdivide :
+  ?crease_id:int ->
+  ?intent:assign ->
+  ?keep_side:Geom.line * int ->
+  t ->
+  Geom.line ->
+  prov:State.provenance option ->
+  t
+(** Split every face [axis] (a TABLE-space line) crosses into two, joined by
+    a new flat (angle 0) hinge; faces [axis] misses are left whole. Old
+    hinges over a split face are carried onto whichever child pair still
+    shares a positive-length boundary segment. [keep_side:(guard, keep)]
+    restricts the cut to the ray of [axis] on side [keep] of the
+    perpendicular [guard] line through the ray's origin — faces on the other
+    side are left uncut. [crease_id] defaults to a fresh id; [intent]
+    defaults to [V]. *)
+
+val subdivide_paper :
+  ?crease_id:int ->
+  ?intent:assign ->
+  t ->
+  Geom.line ->
+  prov:State.provenance option ->
+  t
+(** Like [subdivide], but [paper_axis] is a PAPER-space line: every face it
+    crosses is split, regardless of current table placement. *)
