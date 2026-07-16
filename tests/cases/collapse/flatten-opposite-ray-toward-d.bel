@@ -1,8 +1,10 @@
-; Same fish-base vertex as flatten-opposite-ray-toward-b.bel, but with the
-; toward point on the OTHER side of the spine (.d, left). Feasibility filters
-; BEFORE toward chooses: the 180-degree candidate this used to aim at is
-; infeasible (folds off the paper) and eliminated, so toward .d must yield
-; the SAME O -> c completion as toward .b — any off-spine point works.
+; Same fish-base vertex as flatten-opposite-ray-toward-b.bel (see its comment
+; for the full derivation) — `{toward .d}` picks the position class's other
+; side under the rank-dipole stage, giving the MIRROR realization of that
+; file: same face count, same table positions, opposite layer order (pinned
+; by tests/test_flatten.ml's test_flatten_derive_opposite_ray_fish_base,
+; which compares Fold_state.rank between the two toward points; `.bel`
+; assertions can't express stacking, so `faces = 6` is what this file pins).
 
 paper square
 
