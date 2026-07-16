@@ -1122,6 +1122,42 @@ let test_neighbors_hinge_between () =
     (Fold_graph.hinges g);
   ignore n
 
+(* --- Plan 3b Task 2: clusters/flaps ---------------------------------------- *)
+
+let test_clusters_parity () =
+  let g, st = pair_precrease_fold () in
+  let cn = Fold_graph.coplanar_clusters g in
+  let co = Fold_state.coplanar_clusters st in
+  (* cluster ids are representatives — compare the PARTITION, not the ids *)
+  let n = Array.length cn in
+  Alcotest.(check int) "length" (Array.length co) n;
+  for i = 0 to n - 1 do
+    for j = 0 to n - 1 do
+      Alcotest.(check bool) (Printf.sprintf "same-cluster %d %d" i j)
+        (co.(i) = co.(j)) (cn.(i) = cn.(j))
+    done
+  done
+
+let test_flap_of_points_parity () =
+  let g, st = pair_precrease_fold () in
+  let string_of = function
+    | `Cluster fs -> "cluster:" ^ String.concat "," (List.map string_of_int (List.sort compare fs))
+    | `Zero -> "zero"
+    | `Ambiguous -> "ambiguous"
+  in
+  let probe pts label =
+    Alcotest.(check string) label
+      (string_of (Fold_state.flap_of_points st pts))
+      (string_of (Fold_graph.flap_of_points g pts))
+  in
+  let quarter = Num.div Num.one (Num.of_int 4) in
+  let three_q = Num.div (Num.of_int 3) (Num.of_int 4) in
+  probe [ { Geom.x = quarter; y = quarter } ] "interior stationary";
+  probe [ { Geom.x = three_q; y = quarter } ] "interior moved flap";
+  probe [ { Geom.x = quarter; y = quarter }; { Geom.x = three_q; y = quarter } ]
+    "spanning two flaps";
+  probe [ { Geom.x = q 5; y = q 5 } ] "off paper"
+
 let () =
   Alcotest.run "fold_graph"
     [ ( "derive",
@@ -1233,5 +1269,10 @@ let () =
           Alcotest.test_case "boundary segments parity" `Quick
             test_boundary_segments_parity;
           Alcotest.test_case "neighbors and hinge_between" `Quick
-            test_neighbors_hinge_between ] )
+            test_neighbors_hinge_between ] );
+      ( "plan3b-task2-clusters",
+        [ Alcotest.test_case "coplanar clusters parity" `Quick
+            test_clusters_parity;
+          Alcotest.test_case "flap_of_points parity" `Quick
+            test_flap_of_points_parity ] )
     ]

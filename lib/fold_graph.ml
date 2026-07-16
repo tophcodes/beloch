@@ -977,3 +977,62 @@ let crease_paper_axis (g : t) (cid : int) :
       let l = Geom.line_through a b in
       if List.for_all (fun p -> Geom.side_of_line l p = 0) !pts then `Line l
       else `Bent
+
+(* Component id per face: F-adjacency (hinges with angle 0) union-find. Two
+   faces separated only by a flat (angle 0) hinge are the same flap; the
+   instant that hinge folds (angle -> ±1) the flap splits there, exactly and
+   only there (ADR 0017). Recomputed from the current hinge-angle set on
+   every call — no incremental cache, so a future `unfold` (which merges
+   clusters) needs no extra bookkeeping. O(faces + hinges) per call. *)
+let coplanar_clusters (g : t) : int array =
+  let n = Array.length g.faces in
+  let parent = Array.init n Fun.id in
+  let rec find i =
+    if parent.(i) = i then i
+    else begin
+      let r = find parent.(i) in
+      parent.(i) <- r;
+      r
+    end
+  in
+  let union a b =
+    let ra = find a and rb = find b in
+    if ra <> rb then parent.(ra) <- rb
+  in
+  Array.iter
+    (fun (h : hinge) -> if Num.sign h.angle = 0 then union h.fa h.fb)
+    g.hinges;
+  Array.init n (fun i -> find i)
+
+(* The unique flap (coplanar cluster, as its face-index list) whose union of
+   paper polygons contains every point in [pts]. A point on a shared flat
+   hinge belongs to both incident faces, but they're the same cluster, so
+   that's still one id. `Zero if no cluster contains every point, `Ambiguous
+   if more than one does. *)
+let cluster_of_points (g : t) (pts : Geom.point list) :
+    [ `Cluster of int list | `Zero | `Ambiguous ] =
+  let cl = coplanar_clusters g in
+  let n = Array.length g.faces in
+  let ids_of_point p =
+    let s = ref [] in
+    for i = 0 to n - 1 do
+      if Geom.in_convex_polygon g.faces.(i) p && not (List.mem cl.(i) !s) then
+        s := cl.(i) :: !s
+    done;
+    !s
+  in
+  match pts with
+  | [] -> `Zero
+  | p0 :: rest ->
+      let common =
+        List.fold_left
+          (fun acc p -> List.filter (fun id -> List.mem id (ids_of_point p)) acc)
+          (ids_of_point p0) rest
+      in
+      (match common with
+       | [ id ] ->
+           `Cluster (List.filter (fun i -> cl.(i) = id) (List.init n Fun.id))
+       | [] -> `Zero
+       | _ -> `Ambiguous)
+
+let flap_of_points = cluster_of_points

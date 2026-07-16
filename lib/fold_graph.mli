@@ -294,3 +294,19 @@ val crease_paper_axis : t -> int -> [ `Line of Geom.line | `Bent | `Empty ]
 (** The single PAPER-space line carrying every material segment of [cid], if
     one exists; [`Bent] if segments born on different layers are mirror-image
     scars on different paper lines, [`Empty] if the crease has no pieces. *)
+
+val coplanar_clusters : t -> int array
+(** Component id per face, over the graph of hinges with angle 0 (flat,
+    unfolded): two faces separated only by a flat hinge are the same flap.
+    Ids are union-find representatives — only same/different is meaningful,
+    never their numeric value or the order clusters appear in. *)
+
+val cluster_of_points : t -> Geom.point list -> [ `Cluster of int list | `Zero | `Ambiguous ]
+(** The unique coplanar cluster (flap) whose union of paper-space polygons
+    contains every point in the list, as its face-index list — ascending by
+    construction (built via [List.filter] over [List.init n Fun.id]).
+    [`Zero] if no single cluster contains every point, [`Ambiguous] if more
+    than one does (the empty point list is [`Zero]). *)
+
+val flap_of_points : t -> Geom.point list -> [ `Cluster of int list | `Zero | `Ambiguous ]
+(** Alias for {!cluster_of_points}: a "flap" is a coplanar cluster. *)
