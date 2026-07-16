@@ -908,6 +908,79 @@ let test_flip_nontrivial_base_parity () =
     (Isometry3.equal (Fold_graph.face_iso pre (Fold_graph.root pre))
        Isometry3.identity)
 
+(* --- Plan 3a Task 6: cross-op old-vs-new parity battery -------------------- *)
+
+type battery_op =
+  | OSub of Geom.line
+  | OSubPaper of Geom.line
+  | OFoldV of Geom.line * int
+  | OFoldM of Geom.line * int
+  | OFlip
+
+let replay ops =
+  Fold_graph.reset_ids ();
+  Fold_state.reset_ids ();
+  List.fold_left
+    (fun (g, st) op ->
+      match op with
+      | OSub l ->
+          ( Fold_graph.subdivide g l ~prov:None,
+            Fold_state.subdivide st l ~prov:None )
+      | OSubPaper l ->
+          ( Fold_graph.subdivide_paper g l ~prov:None,
+            Fold_state.subdivide_paper st l ~prov:None )
+      | OFoldV (l, s) ->
+          ( Fold_graph.fold g ~axis:l ~move_side:s ~valley:true ~prov:None,
+            Fold_state.fold_with_records st ~axis:l ~move_side:s ~valley:true
+              ~prov:None )
+      | OFoldM (l, s) ->
+          ( Fold_graph.fold g ~axis:l ~move_side:s ~valley:false ~prov:None,
+            Fold_state.fold_with_records st ~axis:l ~move_side:s ~valley:false
+              ~prov:None )
+      | OFlip -> (Fold_graph.flip g, Fold_state.flip st))
+    (Fold_graph.init_square, Fold_state.init_square)
+    ops
+
+let check_replay label ops =
+  let g, st = replay ops in
+  check_parity label g st;
+  check_assign_parity label g st
+
+let battery_frac a b = Num.div (Num.of_int a) (Num.of_int b)
+let battery_vl c : Geom.line = { Geom.a = Num.one; b = Num.zero; c }
+let battery_hl c : Geom.line = { Geom.a = Num.zero; b = Num.one; c }
+
+let test_battery () =
+  (* book fold + cross fold *)
+  check_replay "book+cross"
+    [ OFoldV (battery_vl (battery_frac 1 2), 1);
+      OFoldV (battery_hl (battery_frac 1 2), 1) ];
+  (* mountain pleat, three panels *)
+  check_replay "pleat3"
+    [ OFoldV (battery_vl (battery_frac 2 3), 1);
+      OFoldM (battery_vl (battery_frac 1 3), 1) ];
+  (* precrease both directions, then fold one of them *)
+  check_replay "precrease then fold"
+    [ OSub (battery_vl (battery_frac 1 2));
+      OSub (battery_hl (battery_frac 1 2));
+      OFoldV (battery_vl (battery_frac 1 2), 1) ];
+  (* flip sandwich: fold, flip, fold, flip *)
+  check_replay "flip sandwich"
+    [ OFoldV (battery_vl (battery_frac 1 2), 1);
+      OFlip;
+      OFoldV (battery_hl (battery_frac 1 2), 1);
+      OFlip ];
+  (* paper-space mark graduation path: subdivide_paper on a folded state *)
+  check_replay "subdivide_paper folded"
+    [ OFoldV (battery_vl (battery_frac 1 2), 1);
+      OSubPaper (battery_hl (battery_frac 1 4)) ];
+  (* diagonal on a folded packet *)
+  check_replay "diag on packet"
+    [ OFoldV (battery_vl (battery_frac 1 2), 1);
+      OFoldV
+        ( { Geom.a = Num.one; b = Num.one; c = battery_frac 1 2 },
+          1 ) ]
+
 let test_add_mark () =
   let m =
     { Fold_graph.mgeom = Fold_graph.MSeg (gp 0 0, gp 1 1);
@@ -1021,4 +1094,7 @@ let () =
             test_fold_after_flip_parity;
           Alcotest.test_case "flip nontrivial base parity" `Quick
             test_flip_nontrivial_base_parity;
-          Alcotest.test_case "add_mark" `Quick test_add_mark ] ) ]
+          Alcotest.test_case "add_mark" `Quick test_add_mark ] );
+      ( "task6-parity-battery",
+        [ Alcotest.test_case "cross-op parity battery" `Quick test_battery ] )
+    ]
