@@ -330,13 +330,12 @@ let eval_folded (prog : Ast.program) : folded =
   let face_of_points (pts : Geom.point list) :
       [ `Face of int | `Zero | `Ambiguous ] =
     let st = !(ctx.state) in
+    let faces_arr = Fold_state.faces st in
     let contains i =
-      List.for_all
-        (fun p -> Geom.in_convex_polygon st.Fold_state.faces.(i).Fold_state.paper p)
-        pts
+      List.for_all (fun p -> Geom.in_convex_polygon faces_arr.(i) p) pts
     in
     let hits = ref [] in
-    Array.iteri (fun i _ -> if contains i then hits := i :: !hits) st.Fold_state.faces;
+    Array.iteri (fun i _ -> if contains i then hits := i :: !hits) faces_arr;
     match !hits with [ i ] -> `Face i | [] -> `Zero | _ -> `Ambiguous
   in
   (* resolve a point operand to its material PAPER coordinate, a line operand to
@@ -584,9 +583,8 @@ let eval_folded (prog : Ast.program) : folded =
     let st = !(ctx.state) in
     let acc = ref [] in
     Array.iteri
-      (fun i (f : Fold_state.face) ->
-        if Geom.in_convex_polygon f.Fold_state.paper pp then acc := i :: !acc)
-      st.Fold_state.faces;
+      (fun i (f : Fold_state.face) -> if Geom.in_convex_polygon f pp then acc := i :: !acc)
+      (Fold_state.faces st);
     List.rev !acc
   in
   (* resolve a flap operand to its unique current flap — a coplanar cluster of
@@ -601,7 +599,7 @@ let eval_folded (prog : Ast.program) : folded =
             Error.fail span (Printf.sprintf "%s is not on the paper" (fstr fa))
         | faces -> (
             let cl = Fold_state.coplanar_clusters !(ctx.state) in
-            let n = Array.length !(ctx.state).Fold_state.faces in
+            let n = Array.length (Fold_state.faces !(ctx.state)) in
             match List.sort_uniq compare (List.map (fun f -> cl.(f)) faces) with
             | [ id ] -> List.filter (fun f -> cl.(f) = id) (List.init n Fun.id)
             | ids ->
@@ -642,7 +640,7 @@ let eval_folded (prog : Ast.program) : folded =
         | [] -> Error.fail span (Printf.sprintf "%s touches no flap" (fstr fa))
         | _ -> (
             let cl = Fold_state.coplanar_clusters !(ctx.state) in
-            let n = Array.length !(ctx.state).Fold_state.faces in
+            let n = Array.length (Fold_state.faces !(ctx.state)) in
             let cluster_ids =
               List.sort_uniq compare (List.map (fun f -> cl.(f)) candidates)
             in
@@ -731,10 +729,10 @@ let eval_folded (prog : Ast.program) : folded =
             Fold_state.TargetHinged
               (fun f ->
                 Array.exists
-                  (fun (e : Fold_state.edge) ->
-                    e.Fold_state.crease_id = cid
-                    && (e.Fold_state.left = f || e.Fold_state.right = f))
-                  st.Fold_state.edges)
+                  (fun (h : Fold_state.hinge) ->
+                    h.Fold_state.crease_id = cid
+                    && (h.Fold_state.fa = f || h.Fold_state.fb = f))
+                  (Fold_state.hinges st))
         | (Ast.LFilter _ | Ast.LUnion _) as b ->
             let s = coerce_one_segment b in
             let l, r = s.Fold_state.faces in
@@ -960,7 +958,7 @@ let eval_folded (prog : Ast.program) : folded =
                 >= 3)
         | None -> ());
         ctx.state :=
-          Fold_state.fold_with_records !(ctx.state) ~axis ~move_side ~valley
+          Fold_state.fold !(ctx.state) ~axis ~move_side ~valley
             ~crease_id ~prov
     | Some tgt -> (
         let anchor =
@@ -1008,7 +1006,7 @@ let eval_folded (prog : Ast.program) : folded =
             | Some k -> k (fun fi -> moving_parents.(fi))
             | None -> ());
             ctx.state :=
-              Fold_state.fold_with_records !(ctx.state) ~moving_parents ~axis
+              Fold_state.fold !(ctx.state) ~moving_parents ~axis
                 ~move_side ~valley ~crease_id ~prov)
   in
   let run_fold ~(span : Error.span) ~(axis : Geom.line) ~(fs : Ast.fold_spec)
@@ -1290,10 +1288,7 @@ let eval_folded (prog : Ast.program) : folded =
         let rec paper_axis_via = function
           | [] -> table_axis
           | fi :: rest -> (
-              match
-                Fold_state.axis_segment_in_face st.Fold_state.faces.(fi)
-                  table_axis
-              with
+              match Fold_state.axis_chord_in_face st fi table_axis with
               | Some (p, q) when not (Geom.point_equal p q) ->
                   Geom.line_through p q
               | _ -> paper_axis_via rest)
@@ -1322,7 +1317,7 @@ let eval_folded (prog : Ast.program) : folded =
         | faces -> (
             let st = !(ctx.state) in
             let cl = Fold_state.coplanar_clusters st in
-            let n = Array.length st.Fold_state.faces in
+            let n = Array.length (Fold_state.faces st) in
             match List.sort_uniq compare (List.map (fun f -> cl.(f)) faces) with
             | [ id ] -> List.filter (fun f -> cl.(f) = id) (List.init n Fun.id)
             | ids ->
@@ -1365,9 +1360,8 @@ let eval_folded (prog : Ast.program) : folded =
         let record_full ~prov cid table_axis =
           let st = !(ctx.state) in
           let clips =
-            Array.to_list st.Fold_state.faces
-            |> List.filter_map (fun (f : Fold_state.face) ->
-                   Fold_state.axis_segment_in_face f table_axis)
+            List.init (Array.length (Fold_state.faces st)) Fun.id
+            |> List.filter_map (fun fi -> Fold_state.axis_chord_in_face st fi table_axis)
           in
           let rep =
             match clips with
@@ -1379,8 +1373,7 @@ let eval_folded (prog : Ast.program) : folded =
           let flap = resolve_mark_flap layer_opt rep span in
           let pts =
             List.filter_map
-              (fun fi ->
-                Fold_state.axis_segment_in_face st.Fold_state.faces.(fi) table_axis)
+              (fun fi -> Fold_state.axis_chord_in_face st fi table_axis)
               flap
             |> List.concat_map (fun (p, q) -> [ p; q ])
           in
@@ -1819,7 +1812,7 @@ let eval_folded (prog : Ast.program) : folded =
                   Geom.line_cuts_polygon line (Fold_state.table_polygon_ccw st i)
                   && not (List.mem i aligned_faces)
                 then Error.fail span "collapse through unaligned layers")
-              st.Fold_state.faces)
+              (Fold_state.faces st))
           es;
         let over =
           List.map

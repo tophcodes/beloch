@@ -3,12 +3,16 @@
  (libraries beloch alcotest zarith unix))
 
 (test
- (name test_geom)
+ (name test_isometry3)
  (libraries beloch alcotest zarith))
 
 (test
  (name test_fold_state)
- (libraries beloch alcotest zarith unix str))
+ (libraries beloch alcotest zarith))
+
+(test
+ (name test_geom)
+ (libraries beloch alcotest zarith))
 
 (test
  (name test_parse)
@@ -37,10 +41,6 @@
 
 (test
  (name test_field_merge)
- (libraries beloch alcotest zarith))
-
-(test
- (name test_layer_order)
  (libraries beloch alcotest zarith))
 
 (test

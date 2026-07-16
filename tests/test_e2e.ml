@@ -48,8 +48,10 @@ let expect_error msg_substr thunk =
        with Not_found -> false)
 
 let count_assign a (st : Fold_state.t) =
-  Array.to_list st.Fold_state.edges
-  |> List.filter (fun (e : Fold_state.edge) -> e.Fold_state.eassign = a)
+  let hs = Fold_state.hinges st in
+  List.filter
+    (fun i -> Fold_state.mv st i = a)
+    (List.init (Array.length hs) Fun.id)
   |> List.length
 
 (* ---- E2e ---- *)
@@ -196,7 +198,7 @@ let test_eval_map_through_toward () =
   (* the axiom-6 crease is a full mark: it records as a chord (no fold-time
      edge), so read its line from the mark layer (the map crease is the last
      mark, after --bottom) *)
-  match List.rev (Array.to_list fd.Eval.state.Fold_state.marks) with
+  match List.rev (Array.to_list (Fold_state.marks fd.Eval.state)) with
   | [] -> Alcotest.fail "expected at least one mark"
   | m :: _ ->
       let ca, cb =
@@ -441,7 +443,8 @@ let test_beloch_marks_emitted () =
 
 (* #36: mcrease_id for a non-graduating point mark must be deterministic per
    eval -- a function of the program alone, not of how many creases were
-   minted by earlier evals in the same process (Fold_state.next_id is a
+   minted by earlier evals in the same process (Fold_state's internal
+   crease-id counter, reset per eval via [Fold_state.reset_ids], is otherwise a
    process-lifetime global). Evaluate the point-mark program once for a
    baseline id, then again after deliberately polluting the global counter
    with unrelated real creases; the two ids must match. *)
@@ -494,7 +497,26 @@ let test_folded_provenance () =
     (match folded |> member "beloch:edges" with `Null -> false | _ -> true);
   Alcotest.(check bool) "folded frame vertices_names has center" true
     (folded |> member "beloch:vertices_names" |> to_list
-     |> List.exists (fun v -> v = `String "center"))
+     |> List.exists (fun v -> v = `String "center"));
+  (* Plan 3c Task 6 prov spot check: at least one folded crease's
+     beloch:edges entry carries a non-null provenance record, and every one
+     of that record's axiom/sources/span fields is itself non-null (D14/D15
+     — beloch_edges_json in fold_emit.ml only omits `name`/`step`, never
+     these three). *)
+  let folded_edges = folded |> member "beloch:edges" |> to_list in
+  let has_full_prov =
+    List.exists
+      (function
+        | `Null -> false
+        | e ->
+            (match e |> member "axiom" with `Null -> false | _ -> true)
+            && (match e |> member "sources" with `Null -> false | _ -> true)
+            && (match e |> member "span" with `Null -> false | _ -> true))
+      folded_edges
+  in
+  Alcotest.(check bool)
+    "at least one folded crease has non-null axiom/sources/span" true
+    has_full_prov
 
 (* cross is material: a crease scored through several layers marks different
    lines in the paper, so bare cross must error — with a hint toward the
@@ -723,9 +745,9 @@ let test_e2e_bare_precrease_emits_f () =
 (* ---- Task 4: mark extent dispatch (partial marks / pinch, #50 slice 2) --- *)
 
 let eval_bel src = Eval.eval_folded (Beloch.parse ~filename:"t.bel" src)
-let edges_of src = Array.length (eval_bel src).Eval.state.Fold_state.edges
-let marks_of src = Array.length (eval_bel src).Eval.state.Fold_state.marks
-let faces_of src = Array.length (eval_bel src).Eval.state.Fold_state.faces
+let edges_of src = Array.length (Fold_state.hinges (eval_bel src).Eval.state)
+let marks_of src = Array.length (Fold_state.marks (eval_bel src).Eval.state)
+let faces_of src = Array.length (Fold_state.faces (eval_bel src).Eval.state)
 
 (* an interior POINT mark records and adds no edge; comparing edges_of before
    and after isolates what the point mark itself contributes (the two named
@@ -871,13 +893,12 @@ let test_mark_endpoint_on_vertex_is_incident () =
      mark --ac at .ctr\n"
   in
   let st = (eval_bel src).Eval.state in
-  let m = st.Fold_state.marks.(0) in
+  let m = (Fold_state.marks st).(0) in
   let p = Fold_state.mark_rep_point m in
   let is_vertex =
     Array.exists
-      (fun (f : Fold_state.face) ->
-        Array.exists (Geom.point_equal p) f.Fold_state.paper)
-      st.Fold_state.faces
+      (fun (f : Fold_state.face) -> Array.exists (Geom.point_equal p) f)
+      (Fold_state.faces st)
   in
   Alcotest.(check bool) "point mark is incident to an existing vertex" true
     is_vertex
