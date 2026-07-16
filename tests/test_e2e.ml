@@ -497,7 +497,26 @@ let test_folded_provenance () =
     (match folded |> member "beloch:edges" with `Null -> false | _ -> true);
   Alcotest.(check bool) "folded frame vertices_names has center" true
     (folded |> member "beloch:vertices_names" |> to_list
-     |> List.exists (fun v -> v = `String "center"))
+     |> List.exists (fun v -> v = `String "center"));
+  (* Plan 3c Task 6 prov spot check: at least one folded crease's
+     beloch:edges entry carries a non-null provenance record, and every one
+     of that record's axiom/sources/span fields is itself non-null (D14/D15
+     — beloch_edges_json in fold_emit.ml only omits `name`/`step`, never
+     these three). *)
+  let folded_edges = folded |> member "beloch:edges" |> to_list in
+  let has_full_prov =
+    List.exists
+      (function
+        | `Null -> false
+        | e ->
+            (match e |> member "axiom" with `Null -> false | _ -> true)
+            && (match e |> member "sources" with `Null -> false | _ -> true)
+            && (match e |> member "span" with `Null -> false | _ -> true))
+      folded_edges
+  in
+  Alcotest.(check bool)
+    "at least one folded crease has non-null axiom/sources/span" true
+    has_full_prov
 
 (* cross is material: a crease scored through several layers marks different
    lines in the paper, so bare cross must error — with a hint toward the
