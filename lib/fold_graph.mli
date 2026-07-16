@@ -411,4 +411,5 @@ val classify_mark_extent :
 val axis_chord_in_face : t -> int -> Geom.line -> (Geom.point * Geom.point) option
 (** The chord (in PAPER coordinates) where table-space [axis] crosses the
     interior of face [i]; [None] if it misses (touches at most a point). Port
-    of the old [Fold_state.axis_segment_in_face]. *)
+    of the old flat-record model's [axis_segment_in_face] (deleted, Plan 3c
+    Task 6). *)

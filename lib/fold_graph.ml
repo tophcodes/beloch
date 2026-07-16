@@ -388,7 +388,7 @@ type rel = Above | Below | Apart
 
 (* Layer relation of two faces: rank order where the flat projections overlap
    (Geom.convex_overlap is SAT-based, winding-independent, strict — touching
-   is not overlap, same as the old Layer_order), Apart otherwise. *)
+   is not overlap), Apart otherwise. *)
 let rel (g : t) (i : int) (j : int) : rel =
   if i = j then Apart
   else if Geom.convex_overlap (table_polygon g i) (table_polygon g j) then
@@ -497,7 +497,8 @@ let chord_of_table (table : Geom.point array) (inv : Isometry.t)
 
 (* The chord (in PAPER coordinates) where table-space [axis] crosses the
    interior of face [i]; None if it misses (touches at most a point).
-   Port of the old Fold_state.axis_segment_in_face. *)
+   Port of the old flat-record model's axis_segment_in_face (deleted, Plan 3c
+   Task 6). *)
 let axis_chord_in_face (g : t) (i : int) (axis : Geom.line) :
     (Geom.point * Geom.point) option =
   let iso2 = face_iso2 g i in
@@ -1063,9 +1064,10 @@ let line_cuts_paper (g : t) (l : Geom.line) : bool =
 
 type scope_target = TargetFace of int | TargetHinged of (int -> bool)
 
-(* Port of the old select_scope (see fold_state.ml:429-538 for the algorithm
-   commentary) with memoized table polygons: [tp] is built once; [rel_m]
-   replaces Layer_order.get. Error strings verbatim from the old module. *)
+(* Port of the old flat-record model's select_scope (deleted, Plan 3c Task
+   6 — see git history for the algorithm commentary) with memoized table
+   polygons: [tp] is built once; [rel_m] queries [rel] directly. Error
+   strings verbatim from the old module. *)
 let select_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
     ~(valley : bool) ~(anchor : int) ~(target : scope_target) :
     (bool array, string) result =

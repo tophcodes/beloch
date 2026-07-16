@@ -85,12 +85,13 @@ let sector_isometries (o : Geom.point) (rays : (Geom.point * 'a) array) :
 
 (* Effective valley of a crease whose LEFT (stayer) sector is placed by
    [sec_transform] over a stayer face already carrying [face_iso]. Mirrors
-   [Fold_state.fold_with_records]: a stored/effective valley is the user's
-   valley XORed with the parity of the stayer face's *final* orientation —
-   [sec_transform ∘ face_iso]. Folding in [face_iso] (not just the sector
-   transform) is what makes a prior `flip` invert M/V relative to the original
-   front (spec §4.7): every pre-collapse face is orientation-reversed, so every
-   effective valley flips. Shared by the hinge-constraint and eassign sites. *)
+   [Fold_graph.fold]'s CP-frame intent convention: a stored/effective valley is
+   the user's valley XORed with the parity of the stayer face's *final*
+   orientation — [sec_transform ∘ face_iso]. Folding in [face_iso] (not just
+   the sector transform) is what makes a prior `flip` invert M/V relative to
+   the original front (spec §4.7): every pre-collapse face is
+   orientation-reversed, so every effective valley flips. Shared by the
+   hinge-constraint and intent sites. *)
 let effective_valley (valley : bool) (sec_transform : Isometry.t)
     (face_iso : Isometry.t) : bool =
   valley <> (Isometry.det_sign (Isometry.compose sec_transform face_iso) < 0)
@@ -114,38 +115,6 @@ let closure_ok (o : Geom.point) (rays : (Geom.point * 'a) array) : bool =
       Isometry.identity rays
   in
   is_identity prod
-
-(* 4. sector membership of a face. Interior representative = vertex average
-   (convex ⇒ interior), placed on the table via the face iso. After closure
-   every sector angle < π, so p is in sector k iff (p−O) is strictly CCW of ray
-   k and strictly CW of ray k+1. Faces were subdivided along every ray, so a
-   representative is never exactly on a ray (asserted). *)
-let sector_of (o : Geom.point) (rays : (Geom.point * 'a) array)
-    (f : Fold_state.face) : int =
-  let n = Array.length rays in
-  let sumx = ref Num.zero and sumy = ref Num.zero in
-  Array.iter
-    (fun (p : Geom.point) ->
-      let tp = Isometry.apply_point f.Fold_state.iso p in
-      sumx := Num.add !sumx tp.Geom.x;
-      sumy := Num.add !sumy tp.Geom.y)
-    f.Fold_state.paper;
-  let m = Num.of_int (Array.length f.Fold_state.paper) in
-  let rep = { Geom.x = Num.div !sumx m; y = Num.div !sumy m } in
-  let ocoord = (o.Geom.x, o.Geom.y) in
-  let repc = (rep.Geom.x, rep.Geom.y) in
-  let found = ref (-1) in
-  for k = 0 to n - 1 do
-    let rk, _ = rays.(k) and rk1, _ = rays.((k + 1) mod n) in
-    let c0 = cross ocoord (rk.Geom.x, rk.Geom.y) repc in
-    let c1 = cross ocoord (rk1.Geom.x, rk1.Geom.y) repc in
-    (* strictly CCW of rk: cross(rk, rep) > 0; strictly CW of rk1:
-       cross(rk1, rep) < 0 *)
-    if Num.sign c0 > 0 && Num.sign c1 < 0 then found := k
-  done;
-  if !found < 0 then
-    invalid_arg "Collapse.sector_of: representative not strictly inside a sector";
-  !found
 
 (* --- boundary predicates (unit-square paper) ------------------------------ *)
 
@@ -202,272 +171,18 @@ let linear_extensions (n : int) (constraints : (int * int) list) :
   go 0;
   !results
 
-(* --- the kernel ----------------------------------------------------------- *)
+(* --- the kernel: single-vertex collapse on the hinge-graph core (Plan 3b
+   Task 5, issue #48; the old flat-record kernel this superseded was deleted
+   in Plan 3c Task 6). Hinge angles and a total face rank are set directly;
+   placements (and hence overlaps) are DERIVED by [Fold_graph.make], not
+   composed by hand, so there is no [folded]/[faces_for_anchor] analogue —
+   re-anchoring is just a different (root, base) into the same [make]. -- *)
 
-let collapse (st : Fold_state.t) (es : elem list) ~(over : (int * int) list) :
-    (Fold_state.t, string) result =
-  let n = List.length es in
-  match common_vertex es with
-  | None -> Error e_no_vertex
-  | Some o when not (strictly_interior o) -> Error e_no_vertex
-  | Some o ->
-      if n < 4 || n mod 2 = 1 then Error e_count
-      else if List.exists (fun e -> not (on_unit_boundary (far_of o e))) es then
-        Error e_midpaper
-      else begin
-        let rays = Array.of_list (sort_ccw o es) in
-        if has_duplicate_ray o rays then Error e_dup_ray
-        else if not (closure_ok o rays) then Error e_kawasaki
-        else begin
-          let nm = List.length (List.filter (fun e -> not e.valley) es) in
-          let nv = n - nm in
-          if abs (nm - nv) <> 2 then Error e_maekawa
-          else begin
-            let tsec = sector_isometries o rays in
-            (* sector of each face (fixed, independent of stacking) *)
-            let sec =
-              Array.map (fun f -> sector_of o rays f) st.Fold_state.faces
-            in
-            (* a representative pre-collapse face iso per sector — its
-               orientation (front-up vs flipped) feeds the parity helper so a
-               prior `flip` inverts M/V. All layers of a sector share one
-               orientation in the states collapse accepts (single-layer or a
-               uniformly-flipped stack). *)
-            let sector_iso = Array.make n Isometry.identity in
-            let sector_seen = Array.make n false in
-            Array.iteri
-              (fun i (f : Fold_state.face) ->
-                let s = sec.(i) in
-                if not sector_seen.(s) then begin
-                  sector_seen.(s) <- true;
-                  sector_iso.(s) <- f.Fold_state.iso
-                end)
-              st.Fold_state.faces;
-            (* folded faces: iso' = T_sector ∘ f.iso (fixed for all stackings) *)
-            let folded =
-              Array.mapi
-                (fun i (f : Fold_state.face) ->
-                  {
-                    Fold_state.paper = f.Fold_state.paper;
-                    iso = Isometry.compose tsec.(sec.(i)) f.Fold_state.iso;
-                  })
-                st.Fold_state.faces
-            in
-            (* hinge constraints. Crease at ray j separates left sector
-               l=(j-1) and right sector j. effective_valley accounts for the
-               left sector's placement parity (fold_with_records convention).
-               effective_valley ⇒ sector j Above sector l; else Below. *)
-            let constraints =
-              List.init n (fun j ->
-                  let l = (j - 1 + n) mod n in
-                  let _, e = rays.(j) in
-                  let eff = effective_valley e.valley tsec.(l) sector_iso.(l) in
-                  if eff then (j, l) else (l, j))
-            in
-            let stackings = linear_extensions n constraints in
-            (* build a candidate face-order relation for a rank array *)
-            let rel_of rank i j =
-              let si = sec.(i) and sj = sec.(j) in
-              if si = sj then
-                let base = Layer_order.get st.Fold_state.order i j in
-                if Isometry.det_sign tsec.(si) < 0 then Layer_order.negate base
-                else base
-              else if rank.(si) > rank.(sj) then Layer_order.Above
-              else Layer_order.Below
-            in
-            let valid =
-              List.filter
-                (fun rank ->
-                  let order = Fold_state.build_order folded (rel_of rank) in
-                  let cand =
-                    {
-                      Fold_state.faces = folded;
-                      order;
-                      edges = st.Fold_state.edges;
-                      marks = st.Fold_state.marks;
-                    }
-                  in
-                  Fold_state.validity_error cand = None)
-                stackings
-            in
-            if valid = [] then Error e_selfint
-            else begin
-              (* over filter: sector(upper) must be above sector(lower). Same
-                 sector → no-op (silently consistent). *)
-              let over_ok rank =
-                List.for_all
-                  (fun (up, lo) ->
-                    let su = sec.(up) and sl = sec.(lo) in
-                    su = sl || rank.(su) > rank.(sl))
-                  over
-              in
-              let filtered = List.filter over_ok valid in
-              if filtered = [] then Error e_contra
-              else begin
-                (* dedupe by observable signature: the Above/Below of every
-                   overlapping face pair. Distinct signatures = distinct
-                   solutions. *)
-                let overlaps =
-                  let n_f = Array.length folded in
-                  let acc = ref [] in
-                  for i = 0 to n_f - 1 do
-                    for j = i + 1 to n_f - 1 do
-                      if
-                        Geom.convex_overlap
-                          (Fold_state.table_poly_of folded.(i))
-                          (Fold_state.table_poly_of folded.(j))
-                      then acc := (i, j) :: !acc
-                    done
-                  done;
-                  List.rev !acc
-                in
-                let signature rank =
-                  List.map
-                    (fun (i, j) ->
-                      (i, j, rel_of rank i j = Layer_order.Above))
-                    overlaps
-                in
-                let distinct =
-                  List.fold_left
-                    (fun acc rank ->
-                      let s = signature rank in
-                      if List.exists (fun (s', _) -> s' = s) acc then acc
-                      else (s, rank) :: acc)
-                    [] filtered
-                in
-                match distinct with
-                | [] -> Error e_selfint (* unreachable: filtered <> [] *)
-                | _ :: _ :: _ -> Error (e_ambig (List.length distinct))
-                | [ (_, rank) ] ->
-                    (* Anchor = the sector that stays put (identity on the
-                       table); everything else folds relative to it. It must be
-                       orientation-PRESERVING so the emitted geometry is front-up
-                       (not the global M/V mirror, final-review C2). Sector
-                       parities alternate around O (det tsec.(k) = (-1)^k), so a
-                       proper sector always exists.
-
-                       WHICH proper sector, though, is the fold-SENSE choice. The
-                       old rule (lowest-ranked proper sector) can seat the fold so
-                       a flap reflects OUTWARD, off the sheet — an inside-out
-                       fold whose physically-staying background sector happens to
-                       be orientation-reversing (the fish-base bug). Anchoring is
-                       a rigid motion about O, so it never changes the folded
-                       *shape*, only where it sits; a legitimate flat fold always
-                       admits a proper anchor that seats every layer back inside
-                       the paper silhouette (anchor the staying background). We
-                       therefore prefer such an in-bounds proper anchor, and if
-                       NONE exists the vertex has no front-up flat realisation
-                       here — reject rather than emit a flap hanging off the
-                       sheet (spec: half-plane containment per reflected region;
-                       the unit-square test is that containment against the four
-                       paper edges, quantified over anchors so big-over-narrow
-                       folds — which do have an in-bounds anchor — still pass). *)
-                    let faces_for_anchor bb =
-                      let tbi = Isometry.inverse tsec.(bb) in
-                      Array.mapi
-                        (fun i (f : Fold_state.face) ->
-                          { Fold_state.paper = f.Fold_state.paper;
-                            iso = Isometry.compose tbi
-                                    (Isometry.compose tsec.(sec.(i)) f.Fold_state.iso) })
-                        st.Fold_state.faces
-                    in
-                    let anchor_in_bounds bb =
-                      Array.for_all
-                        (fun f -> Array.for_all Geom.in_unit_square
-                                    (Fold_state.table_poly_of f))
-                        (faces_for_anchor bb)
-                    in
-                    (* proper sectors, lowest rank first (old deterministic order) *)
-                    let proper =
-                      List.filter (fun s -> Isometry.det_sign tsec.(s) > 0)
-                        (List.init n (fun s -> s))
-                      |> List.sort (fun a b -> compare rank.(a) rank.(b))
-                    in
-                    let default_b =
-                      match proper with s :: _ -> s | [] -> 0 (* unreachable *)
-                    in
-                    let chosen =
-                      (* keep the historical anchor when it already seats the fold
-                         in the sheet (validate mode + swivel-rabbit unchanged) *)
-                      if anchor_in_bounds default_b then Some default_b
-                      else List.find_opt anchor_in_bounds proper
-                    in
-                    (match chosen with
-                    | None -> Error e_out_of_paper
-                    | Some b ->
-                    let faces_final = faces_for_anchor b in
-                    (* eassign upgrade: each elem's ray edges get V/M by the
-                       hinge parity. Segments of the same bundle beyond the
-                       ray keep their mark. *)
-                    let eff_of_ray j =
-                      let l = (j - 1 + n) mod n in
-                      let _, e = rays.(j) in
-                      effective_valley e.valley tsec.(l) sector_iso.(l)
-                    in
-                    let ray_assign =
-                      Array.init n (fun j ->
-                          if eff_of_ray j then Fold_state.V else Fold_state.M)
-                    in
-                    let edges_final =
-                      Array.map
-                        (fun (e : Fold_state.edge) ->
-                          if e.Fold_state.left < 0 then e
-                          else
-                          let iso_l =
-                            st.Fold_state.faces.(e.Fold_state.left).Fold_state
-                            .iso
-                          in
-                          let ta = Isometry.apply_point iso_l e.Fold_state.ea in
-                          let tb = Isometry.apply_point iso_l e.Fold_state.eb in
-                          let hit = ref None in
-                          for j = 0 to n - 1 do
-                            let far, elem = rays.(j) in
-                            if
-                              elem.cid = e.Fold_state.crease_id
-                              && Geom.on_segment (o, far) ta
-                              && Geom.on_segment (o, far) tb
-                            then hit := Some j
-                          done;
-                          match !hit with
-                          | Some j ->
-                              {
-                                e with
-                                Fold_state.eassign = ray_assign.(j);
-                                eintent = ray_assign.(j);
-                              }
-                          | None -> e)
-                        st.Fold_state.edges
-                    in
-                    let order =
-                      Fold_state.build_order faces_final (rel_of rank)
-                    in
-                    Ok
-                      {
-                        Fold_state.faces = faces_final;
-                        order;
-                        edges = edges_final;
-                        marks = st.Fold_state.marks;
-                      })
-              end
-            end
-          end
-        end
-      end
-
-(* --- collapse_graph: single-vertex collapse on the hinge-graph core
-   (Plan 3b Task 5, issue #48). Same algorithm as [collapse] above — the pure
-   helpers ([common_vertex], [far_of], [sort_ccw], [has_duplicate_ray],
-   [closure_ok], [linear_extensions], [effective_valley],
-   [sector_isometries], error strings) are reused as-is. The new core sets
-   hinge angles and a total face rank; placements (and hence overlaps) are
-   DERIVED by [Fold_graph.make], not composed by hand, so there is no
-   [folded]/[faces_for_anchor] analogue — re-anchoring is just a different
-   (root, base) into the same [make]. ------------------------------------- *)
-
-(* [sector_of], reworked to read a placed polygon (table-space) instead of a
-   [Fold_state.face] record: body identical to [sector_of], just parameterized
-   over (poly, iso2) so it also works against [Fold_graph.t]'s bare polygons +
-   derived 2D placements. *)
+(* Sector membership of a placed polygon. Interior representative = vertex
+   average (convex ⇒ interior), placed on the table via [iso2]. After closure
+   every sector angle < π, so p is in sector k iff (p−O) is strictly CCW of
+   ray k and strictly CW of ray k+1. Faces were subdivided along every ray,
+   so a representative is never exactly on a ray (asserted). *)
 let sector_of_poly (o : Geom.point) (rays : (Geom.point * 'a) array)
     ((poly, iso2) : Geom.point array * Isometry.t) : int =
   let n = Array.length rays in
@@ -494,7 +209,7 @@ let sector_of_poly (o : Geom.point) (rays : (Geom.point * 'a) array)
       "Collapse.sector_of_poly: representative not strictly inside a sector";
   !found
 
-let collapse_graph (g : Fold_graph.t) (es : elem list)
+let collapse (g : Fold_graph.t) (es : elem list)
     ~(over : (int * int) list) : (Fold_graph.t, string) result =
   let n = List.length es in
   match common_vertex es with
@@ -608,6 +323,10 @@ let collapse_graph (g : Fold_graph.t) (es : elem list)
                 if !found < 0 && Isometry.det_sign tsec.(sec.(i)) > 0 then
                   found := i
               done;
+              if !found < 0 then
+                invalid_arg
+                  "Collapse.collapse: no orientation-preserving sector \
+                   (unreachable — sector parities alternate around O)";
               !found
             in
             let valid_srank =
@@ -688,6 +407,12 @@ let collapse_graph (g : Fold_graph.t) (es : elem list)
                       for i = 0 to nf - 1 do
                         if !found < 0 && sec.(i) = bb then found := i
                       done;
+                      if !found < 0 then
+                        invalid_arg
+                          (Printf.sprintf
+                             "Collapse.collapse: sector %d has no faces \
+                              (unreachable — every sector holds >= 1 face)"
+                             bb);
                       !found
                     in
                     let candidate_for bb =

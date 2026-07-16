@@ -57,7 +57,7 @@ let test_odd_count_rejected () =
   let st, rays = precreased () in
   let es = elems_of rays (Array.make 8 true) in
   let seven = List.filteri (fun i _ -> i < 7) es in
-  match Collapse.collapse_graph st seven ~over:[] with
+  match Collapse.collapse st seven ~over:[] with
   | Ok _ -> Alcotest.fail "odd count must be rejected"
   | Error e -> Alcotest.(check bool) ("count error: " ^ e) true (prefix "count" e)
 
@@ -73,7 +73,7 @@ let test_no_common_vertex_rejected () =
       { Collapse.cid = 3; ea = pt (q 1) (q 0); eb = pt (q 0) (q 0); valley = false };
     ]
   in
-  match Collapse.collapse_graph st es ~over:[] with
+  match Collapse.collapse st es ~over:[] with
   | Ok _ -> Alcotest.fail "no common vertex must be rejected"
   | Error e ->
       Alcotest.(check bool) ("vertex error: " ^ e) true
@@ -101,7 +101,7 @@ let test_kawasaki_rejected () =
 let test_maekawa_rejected () =
   let st, rays = precreased () in
   let es = elems_of rays (Array.make 8 true) in
-  match Collapse.collapse_graph st es ~over:[] with
+  match Collapse.collapse st es ~over:[] with
   | Ok _ -> Alcotest.fail "all-valley must fail Maekawa"
   | Error e ->
       Alcotest.(check bool) ("Maekawa error: " ^ e) true (prefix "Maekawa" e)
@@ -129,7 +129,7 @@ let waterbomb_valleys = [| true; true; true; true; true; false; false; false |]
 let test_waterbomb_assignment () =
   let st, rays = precreased () in
   let es = elems_of rays waterbomb_valleys in
-  match Collapse.collapse_graph st es ~over:[] with
+  match Collapse.collapse st es ~over:[] with
   | Ok s ->
       (* the 8 sectors survive as 8 faces in the folded state *)
       Alcotest.(check int) "collapsed waterbomb has 8 faces" 8
@@ -140,6 +140,47 @@ let test_waterbomb_assignment () =
       Alcotest.(check bool)
         ("waterbomb assignment is realizable (Ok or ambiguous), got: " ^ e)
         true (prefix "ambiguous stacking" e)
+
+(* -- over resolves ambiguity (merged from test_collapse_graph.ml, Plan 3c
+   Task 6 — that file's old-vs-new parity harness is gone; this is its
+   new-side content) ---------------------------------------------------- *)
+
+(* The 8-ray cross, valley pattern [V;V;M;M;V;M;M;M]: |nm-nv| = |5-3| = 2
+   (Maekawa holds) but the stacking is ambiguous without `over`; over=[(3,4)]
+   (face 3 above face 4) resolves it to a unique Ok. Both facts were
+   originally verified against the certified old kernel (Plan 3b Task 5); the
+   old kernel is gone, so the exact resolved facts it proved are pinned here
+   as literals instead. *)
+let over_valleys = [| true; true; false; false; true; false; false; false |]
+
+let test_over_resolves_ambiguity () =
+  let st, rays = precreased () in
+  let es = elems_of rays over_valleys in
+  (match Collapse.collapse st es ~over:[] with
+  | Error e ->
+      Alcotest.(check bool) ("ambiguous without over: " ^ e) true
+        (prefix "ambiguous stacking" e)
+  | Ok _ -> Alcotest.fail "expected ambiguous stacking without `over`");
+  match Collapse.collapse st es ~over:[ (3, 4) ] with
+  | Error e -> Alcotest.fail ("expected Ok with over, got: " ^ e)
+  | Ok s ->
+      Alcotest.(check int) "over-resolved collapse keeps 8 faces" 8
+        (Array.length (Fold_graph.faces s));
+      let m, v =
+        Array.to_list (Fold_graph.hinges s)
+        |> List.mapi (fun i (h : Fold_graph.hinge) -> (i, h))
+        |> List.filter (fun (_, (h : Fold_graph.hinge)) ->
+               Num.sign h.Fold_graph.angle <> 0)
+        |> List.fold_left
+             (fun (m, v) (i, _) ->
+               match Fold_graph.mv s i with
+               | Fold_graph.M -> (m + 1, v)
+               | Fold_graph.V -> (m, v + 1)
+               | Fold_graph.F -> (m, v))
+             (0, 0)
+      in
+      Alcotest.(check int) "derived letters satisfy Maekawa (|M-V|=2)" 2
+        (abs (m - v))
 
 (* -- eassign parity hand-verify (fold_with_records convention) ------------- *)
 
@@ -164,17 +205,19 @@ let precreased_plus () =
    (no prior flip) the derived letter equals the raw declared valley/mountain
    for every ray. ADJUDICATED (Toph, 2026-07-16, Plan 3c Task 3b-5 / Task 4):
    the OLD stored `eassign` applied an extra per-ray-index parity correction
-   (`effective_valley`) that does not track the actual geometry — see
-   test_collapse_graph.ml's `test_old_eassign_divergence`, which pins the old
-   letter contradicting the old codebase's own `intrinsic_valley` probe on this
-   very fixture. Worked example, assignment [M;V;M;M] on the "+" vertex (ray
-   order right,up,left,down): all four rays' derived mv equal their raw
-   declared letter — right=M, up=V, left=M, down=M. So the horizontal crease
-   carries two M; the vertical crease carries one V (up) and one M (down). *)
+   (`effective_valley`) that did not track the actual geometry — it
+   contradicted the old codebase's own `intrinsic_valley` probe on this very
+   fixture (see [test_derived_mv_matches_declared] below, which pins the
+   adjudicated finding; the old kernel that exhibited the contradiction no
+   longer exists, per Plan 3c Task 6). Worked example, assignment
+   [M;V;M;M] on the "+" vertex (ray order right,up,left,down): all four rays'
+   derived mv equal their raw declared letter — right=M, up=V, left=M,
+   down=M. So the horizontal crease carries two M; the vertical crease
+   carries one V (up) and one M (down). *)
 let test_eassign_parity () =
   let st, cidh, cidv, rays = precreased_plus () in
   let es = elems_of rays [| false; true; false; false |] in
-  match Collapse.collapse_graph st es ~over:[] with
+  match Collapse.collapse st es ~over:[] with
   | Error e -> Alcotest.fail ("expected Ok, got: " ^ e)
   | Ok s ->
       let hs = Fold_graph.hinges s in
@@ -197,6 +240,53 @@ let test_eassign_parity () =
       in
       Alcotest.(check bool) "no folded crease left as F" false has_u
 
+(* Merged from test_collapse_graph.ml's `test_old_eassign_divergence` (Plan 3c
+   Task 6 — that file's old-vs-new parity harness is gone). Pins the Task 5
+   adjudication directly: on the "+" vertex with no prior flip, EVERY ray
+   hinge's derived [Fold_graph.mv] equals the raw user-declared letter — no
+   effective_valley-style parity correction applies to the derived letter
+   (the old kernel's stored `eassign` DID apply such a correction and, per
+   the Task 5 finding, contradicted its own intrinsic_valley probe on this
+   very fixture; that old kernel and probe no longer exist to re-run). This
+   duplicates [test_eassign_parity]'s per-crease check above via a per-ray
+   check instead — kept as its own test because it is the direct successor
+   of the merged file's divergence pin, not because the coverage is new. *)
+let test_derived_mv_matches_declared () =
+  let st, _, _, rays = precreased_plus () in
+  let valleys = [| false; true; false; false |] in
+  let es = elems_of rays valleys in
+  match Collapse.collapse st es ~over:[] with
+  | Error e -> Alcotest.fail ("expected Ok, got: " ^ e)
+  | Ok s ->
+      let hs = Fold_graph.hinges s in
+      let ray_of i =
+        let a, b = Fold_graph.hinge_segment s i in
+        let found = ref None in
+        List.iteri
+          (fun j (far, cid) ->
+            if
+              hs.(i).Fold_graph.crease_id = cid
+              && Geom.on_segment (o, far) a
+              && Geom.on_segment (o, far) b
+            then found := Some j)
+          rays;
+        !found
+      in
+      let checked = ref 0 in
+      Array.iteri
+        (fun i (h : Fold_graph.hinge) ->
+          if Num.sign h.Fold_graph.angle <> 0 then
+            match ray_of i with
+            | None -> Alcotest.failf "folded hinge %d matches no ray" i
+            | Some j ->
+                incr checked;
+                let expect = if valleys.(j) then Fold_graph.V else Fold_graph.M in
+                Alcotest.(check bool)
+                  (Printf.sprintf "derived mv equals raw declared letter (ray %d)" j)
+                  true (Fold_graph.mv s i = expect))
+        hs;
+      Alcotest.(check int) "all four ray hinges checked" 4 !checked
+
 (* -- C1: duplicate ray (zero-width sector) ---------------------------------- *)
 
 (* Two elements pointing the SAME direction from O fold a zero-width sector; the
@@ -217,7 +307,7 @@ let test_duplicate_ray_rejected () =
       { Collapse.cid = 1; ea = o; eb = pt half (q 0); valley = false };
     ]
   in
-  match Collapse.collapse_graph st es ~over:[] with
+  match Collapse.collapse st es ~over:[] with
   | Ok _ -> Alcotest.fail "duplicate ray must be rejected"
   | Error e ->
       Alcotest.(check bool)
@@ -282,7 +372,7 @@ let c2_valleys = [| true; true; true; false; false; false; false; false |]
 let test_c2_declared_mountain_intrinsic () =
   let st, rays = precreased () in
   let es = elems_of rays c2_valleys in
-  match Collapse.collapse_graph st es ~over:[] with
+  match Collapse.collapse st es ~over:[] with
   | Error e -> Alcotest.fail ("expected Ok, got: " ^ e)
   | Ok s ->
       (* recover face→sector from the ORIGINAL flat faces (collapse preserves
@@ -315,7 +405,7 @@ let collapse_letters valleys ~flip =
   let st, _, _, rays = precreased_plus () in
   let st = if flip then Fold_graph.flip st else st in
   let es = elems_of rays valleys in
-  match Collapse.collapse_graph st es ~over:[] with
+  match Collapse.collapse st es ~over:[] with
   | Error e -> Alcotest.fail ("expected Ok, got: " ^ e)
   | Ok s ->
       let hs = Fold_graph.hinges s in
@@ -386,10 +476,14 @@ let () =
         [
           Alcotest.test_case "empirical MV assignment is realizable" `Quick
             test_waterbomb_assignment;
+          Alcotest.test_case "over resolves ambiguity" `Quick
+            test_over_resolves_ambiguity;
         ] );
       ( "eassign",
         [
           Alcotest.test_case "parity flip on a worked +-vertex" `Quick
             test_eassign_parity;
+          Alcotest.test_case "derived mv matches declared (no prior flip)"
+            `Quick test_derived_mv_matches_declared;
         ] );
     ]

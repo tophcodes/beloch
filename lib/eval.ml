@@ -1825,7 +1825,7 @@ let eval_folded (prog : Ast.program) : folded =
         let emergent_bind = ref None in
         (match toward_opt with
         | None ->
-            (match Collapse.collapse_graph !(ctx.state) es ~over with
+            (match Collapse.collapse !(ctx.state) es ~over with
             | Ok st -> ctx.state := st
             | Error msg -> Error.fail span msg)
         | Some toward_po ->
@@ -1958,7 +1958,7 @@ let eval_folded (prog : Ast.program) : folded =
                 let outcomes =
                   List.map
                     (fun (cid, (e : Collapse.elem)) ->
-                      (Collapse.collapse_graph !(ctx.state) (e :: es) ~over, cid))
+                      (Collapse.collapse !(ctx.state) (e :: es) ~over, cid))
                     attempts
                 in
                 let results =

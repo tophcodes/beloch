@@ -390,8 +390,8 @@ let test_layer_mountain_moved_below () =
   Alcotest.(check bool) "moved face is Below stationary" true
     (Fold_graph.rel st mv stt = Fold_graph.Below)
 
-(* [Fold_graph.rel]'s own negation (old [Layer_order.negate], ported locally
-   per the dictionary — the new core has no standalone Layer_order module). *)
+(* [Fold_graph.rel]'s own negation, ported locally — the core has no
+   standalone sparse-order module; [rel] is derived directly from rank. *)
 let negate_rel = function
   | Fold_graph.Above -> Fold_graph.Below
   | Fold_graph.Below -> Fold_graph.Above

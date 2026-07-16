@@ -125,6 +125,7 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
     || (Num.equal a.Geom.y o && Num.equal b.Geom.y o)
   in
   (* collect unique edges with (assignment string, provenance) *)
+  let hs = Fold_graph.hinges state in
   let edge_tbl = Hashtbl.create 64 in
   let edges = ref [] in
   Array.iteri
@@ -148,7 +149,7 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
                     | Fold_graph.V -> "V"
                     | Fold_graph.F -> "F"
                   in
-                  (a, (Fold_graph.hinges state).(hi).Fold_graph.prov)
+                  (a, hs.(hi).Fold_graph.prov)
               | None -> ("F", None)
           in
           edges := (ia, ib, assign, prov) :: !edges
@@ -183,7 +184,7 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
   in
   (* faceOrders read directly from the folded state's partial order. For a pair
      (fi < gi) that overlaps, sign follows FOLD's convention keyed to gi's normal
-     (its det_sign): a "below" relation with gi facing up is -1, etc. *)
+     (its face_up-ness): a "below" relation with gi facing up is -1, etc. *)
   let nf = Array.length faces in
   let face_orders = ref [] in
   for fi = 0 to nf - 1 do
@@ -262,6 +263,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
     || (Num.equal a.Geom.y o && Num.equal b.Geom.y o)
   in
   (* collect unique edges with (assignment string, provenance) *)
+  let hs = Fold_graph.hinges disp in
   let edge_tbl = Hashtbl.create 64 in
   let edges = ref [] in
   Array.iteri
@@ -279,7 +281,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
             else
               match Fold_graph.hinge_between disp fi pa pb with
               | Some hi ->
-                  let h = (Fold_graph.hinges disp).(hi) in
+                  let h = hs.(hi) in
                   let a =
                     match h.Fold_graph.intent with
                     | Fold_graph.M -> "M"
