@@ -876,6 +876,38 @@ let test_fold_after_flip_parity () =
   check_parity "fold after flip" g st;
   check_assign_parity "fold after flip" g st
 
+let test_flip_nontrivial_base_parity () =
+  (* the final flip's base compose has a NON-identity right operand (the root
+     carries the first flip's reflection), and its axis (x=3/8) differs from
+     that reflection's axis (x=1/4): the two compose orders differ by a
+     translation, so this parity pins the composition order — the earlier
+     flip tests cannot (their root placement is the identity). *)
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let half = Num.div Num.one (Num.of_int 2) in
+  let quarter = Num.div Num.one (Num.of_int 4) in
+  let ax1 = { Geom.a = q 1; b = q 0; c = half } in
+  let ax2 = { Geom.a = q 1; b = q 0; c = quarter } in
+  let g = Fold_graph.flip
+      (Fold_graph.fold
+         (Fold_graph.flip (vfold_new Fold_graph.init_square ax1))
+         ~axis:ax2 ~move_side:(-1) ~valley:true ~prov:None) in
+  let st = Fold_state.flip
+      (Fold_state.fold_with_records
+         (Fold_state.flip (vfold_old Fold_state.init_square ax1))
+         ~axis:ax2 ~move_side:(-1) ~valley:true ~prov:None) in
+  check_parity "flip nontrivial base" g st;
+  check_assign_parity "flip nontrivial base" g st;
+  (* sanity: the pre-flip root placement really is non-identity — the guard
+     that makes this test order-sensitive; if this ever fails the test has
+     silently degenerated to the order-insensitive case *)
+  let pre =
+    Fold_graph.fold (Fold_graph.flip (vfold_new Fold_graph.init_square ax1))
+      ~axis:ax2 ~move_side:(-1) ~valley:true ~prov:None
+  in
+  Alcotest.(check bool) "pre-flip root placement non-identity" false
+    (Isometry3.equal (Fold_graph.face_iso pre (Fold_graph.root pre))
+       Isometry3.identity)
+
 let test_add_mark () =
   let m =
     { Fold_graph.mgeom = Fold_graph.MSeg (gp 0 0, gp 1 1);
@@ -987,4 +1019,6 @@ let () =
         [ Alcotest.test_case "flip parity" `Quick test_flip_parity;
           Alcotest.test_case "fold after flip parity" `Quick
             test_fold_after_flip_parity;
+          Alcotest.test_case "flip nontrivial base parity" `Quick
+            test_flip_nontrivial_base_parity;
           Alcotest.test_case "add_mark" `Quick test_add_mark ] ) ]
