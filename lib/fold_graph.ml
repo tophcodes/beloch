@@ -456,12 +456,13 @@ let init_square : t =
   | Error _ -> assert false
 
 (* The chord (in PAPER coordinates) where table-space [axis] crosses the
-   interior of face [i]; None if it misses (touches at most a point).
-   Port of the old Fold_state.axis_segment_in_face. *)
-let axis_chord_in_face (g : t) (i : int) (axis : Geom.line) :
-    (Geom.point * Geom.point) option =
-  let iso2 = face_iso2 g i in
-  let table = Array.map (Isometry.apply_point iso2) g.faces.(i) in
+   interior of an already-placed [table] polygon (face [i]'s table placement,
+   [inv] its inverse isometry back to paper); None if it misses (touches at
+   most a point). Factored out of [axis_chord_in_face] so a caller that has
+   already built [table]/[inv] (e.g. [subdivide]'s [cut_of]) need not rebuild
+   them — carry-in cleanup, pure equivalence. *)
+let chord_of_table (table : Geom.point array) (inv : Isometry.t)
+    (axis : Geom.line) : (Geom.point * Geom.point) option =
   let n = Array.length table in
   let pts = ref [] in
   let add p =
@@ -491,9 +492,17 @@ let axis_chord_in_face (g : t) (i : int) (axis : Geom.line) :
           (p, q0)
         else (q0, p)
       in
-      let inv = Isometry.inverse iso2 in
       Some (Isometry.apply_point inv lo, Isometry.apply_point inv hi)
   | _ -> None
+
+(* The chord (in PAPER coordinates) where table-space [axis] crosses the
+   interior of face [i]; None if it misses (touches at most a point).
+   Port of the old Fold_state.axis_segment_in_face. *)
+let axis_chord_in_face (g : t) (i : int) (axis : Geom.line) :
+    (Geom.point * Geom.point) option =
+  let iso2 = face_iso2 g i in
+  let table = Array.map (Isometry.apply_point iso2) g.faces.(i) in
+  chord_of_table table (Isometry.inverse iso2) axis
 
 (* Re-attach the old hinges over a face split. [children_of p] lists the child
    indices of old face p (a single element when uncut). A candidate pair keeps
@@ -620,7 +629,7 @@ let subdivide ?crease_id ?(intent : assign = V) ?keep_side (g : t) (axis : Geom.
       in
       match (part 1, part (-1)) with
       | Some tp, Some tm -> (
-          match axis_chord_in_face g fi axis with
+          match chord_of_table table inv axis with
           | Some (a, b) -> Some (map_back tp, map_back tm, (a, b))
           | None -> None)
       | _ -> None
@@ -800,7 +809,7 @@ let fold ?crease_id ?moving_parents (g : t) ~(axis : Geom.line)
   in
   match
     make ~base:base' ~marks:g.marks ~faces:faces'
-      ~hinges:(Array.of_list (List.rev_append (List.rev new_hinges) carried))
+      ~hinges:(Array.of_list (new_hinges @ carried))
       ~root:root' ~rank:rank' ()
   with
   | Ok g' -> g'
@@ -1036,3 +1045,153 @@ let cluster_of_points (g : t) (pts : Geom.point list) :
        | _ -> `Ambiguous)
 
 let flap_of_points = cluster_of_points
+
+(* on-paper material of a table-space line: its positive-length intersection
+   with each face, table space. Stacked layers yield duplicate segments —
+   fine for existence/sign tests, any future measure-based use must dedupe. *)
+let line_material_segments (g : t) (l : Geom.line) :
+    (Geom.point * Geom.point) list =
+  List.filter_map
+    (fun i -> Geom.clip_line_to_convex l (table_polygon_ccw g i))
+    (List.init (Array.length g.faces) Fun.id)
+
+(* the line actually creases some face (strict interior cut) *)
+let line_cuts_paper (g : t) (l : Geom.line) : bool =
+  List.exists
+    (fun i -> Geom.line_cuts_polygon l (table_polygon_ccw g i))
+    (List.init (Array.length g.faces) Fun.id)
+
+type scope_target = TargetFace of int | TargetHinged of (int -> bool)
+
+(* Port of the old select_scope (see fold_state.ml:429-538 for the algorithm
+   commentary) with memoized table polygons: [tp] is built once; [rel_m]
+   replaces Layer_order.get. Error strings verbatim from the old module. *)
+let select_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
+    ~(valley : bool) ~(anchor : int) ~(target : scope_target) :
+    (bool array, string) result =
+  let n = Array.length g.faces in
+  let cl = coplanar_clusters g in
+  let tp = Array.init n (table_polygon g) in
+  let rel_m i j =
+    if i = j then Apart
+    else if Geom.convex_overlap tp.(i) tp.(j) then
+      if g.rank.(i) > g.rank.(j) then Above else Below
+    else Apart
+  in
+  let piece =
+    Array.init n (fun i ->
+        let sub = Geom.clip_convex_halfplane axis move_side tp.(i) in
+        if Array.length sub >= 3 then Some sub else None)
+  in
+  let cand i = piece.(i) <> None in
+  let overlap i j =
+    match (piece.(i), piece.(j)) with
+    | Some a, Some b -> Geom.convex_overlap a b
+    | _ -> false
+  in
+  let outer i j =
+    overlap i j && rel_m i j = (if valley then Above else Below)
+  in
+  if not (cand anchor) then
+    Error "the moving flap has no material on the moving side of the fold axis"
+  else
+    let find_targets () : (int list, string) result =
+      match target with
+      | TargetFace t ->
+          if not (cand t) then
+            Error "`up to`: the target flap is not on the moving side of the fold"
+          else Ok [ t ]
+      | TargetHinged pred ->
+          if pred anchor then Ok [ anchor ]
+          else begin
+            let visited = Array.make n false in
+            visited.(anchor) <- true;
+            let result = ref None in
+            while !result = None do
+              let frontier = ref [] in
+              for gi = 0 to n - 1 do
+                if (not visited.(gi)) && cand gi then begin
+                  let inward = ref false in
+                  for v = 0 to n - 1 do
+                    if visited.(v) && outer v gi then inward := true
+                  done;
+                  if !inward then frontier := gi :: !frontier
+                end
+              done;
+              match List.filter pred !frontier with
+              | [] ->
+                  if !frontier = [] then
+                    result :=
+                      Some
+                        (Error
+                           "`up to`: no flap hinged on that crease is \
+                            reachable from the anchor over the crease region")
+                  else List.iter (fun gi -> visited.(gi) <- true) !frontier
+              | hits -> result := Some (Ok hits)
+            done;
+            Option.get !result
+          end
+    in
+    match find_targets () with
+    | Error e -> Error e
+    | Ok targets ->
+        let inm = Array.make n false in
+        List.iter (fun t -> inm.(t) <- true) targets;
+        let changed = ref true in
+        while !changed do
+          changed := false;
+          for gi = 0 to n - 1 do
+            if (not inm.(gi)) && cand gi then
+              for m = 0 to n - 1 do
+                if inm.(m) && (not inm.(gi)) && (outer gi m || cl.(gi) = cl.(m))
+                then begin
+                  inm.(gi) <- true;
+                  changed := true
+                end
+              done
+          done
+        done;
+        if not inm.(anchor) then
+          Error
+            "`up to`: the target is not reachable from the anchor over the \
+             crease region"
+        else begin
+          let buried = ref None in
+          for m = 0 to n - 1 do
+            if !buried = None && inm.(m) && m <> anchor && outer m anchor then
+              buried := Some m
+          done;
+          match !buried with
+          | Some m ->
+              Error
+                (Printf.sprintf
+                   "a simple fold cannot move a buried flap: face %d covers \
+                    the anchor in the crease region — include the covering \
+                    flap (anchor the fold there) or fold less" m)
+          | None -> Ok inm
+        end
+
+(* A scoped moving set is hinge-closed iff every crease segment separating a
+   moving face from a stationary face lies on the fold axis with no endpoint
+   strictly on the move side (see the old module's doc comment). *)
+let scoped_fold_hinge_closed (g : t) ~(axis : Geom.line) ~(move_side : int)
+    ~(moving_parents : bool array) : (unit, Geom.point * Geom.point) result =
+  let n = Array.length moving_parents in
+  let rec check = function
+    | [] -> Ok ()
+    | cid :: rest ->
+        let rec check_segs = function
+          | [] -> check rest
+          | (s : crease_segment) :: more ->
+              let l, r = s.faces in
+              if
+                l < n && r >= 0 && r < n
+                && moving_parents.(l) <> moving_parents.(r)
+                && (Geom.side_of_line axis s.ta = move_side
+                   || Geom.side_of_line axis s.tb = move_side)
+              then Error (s.ta, s.tb)
+              else check_segs more
+        in
+        check_segs (crease_segments g cid)
+  in
+  check (all_crease_ids g)

@@ -310,3 +310,50 @@ val cluster_of_points : t -> Geom.point list -> [ `Cluster of int list | `Zero |
 
 val flap_of_points : t -> Geom.point list -> [ `Cluster of int list | `Zero | `Ambiguous ]
 (** Alias for {!cluster_of_points}: a "flap" is a coplanar cluster. *)
+
+val line_material_segments : t -> Geom.line -> (Geom.point * Geom.point) list
+(** The positive-length intersection of table-space [l] with each face,
+    table space. Stacked layers yield duplicate segments — fine for
+    existence/sign tests; a future measure-based use must dedupe. *)
+
+val line_cuts_paper : t -> Geom.line -> bool
+(** Whether table-space [l] strictly cuts the interior of some face. *)
+
+type scope_target = TargetFace of int | TargetHinged of (int -> bool)
+(** The endpoint of a scoped ("up to") fold's moving range: a specific face,
+    or the first face (walking inward from the anchor) satisfying a
+    predicate — e.g. "hinged on crease [cid]". *)
+
+val select_scope :
+  t ->
+  axis:Geom.line ->
+  move_side:int ->
+  valley:bool ->
+  anchor:int ->
+  target:scope_target ->
+  (bool array, string) result
+(** Moving-set selection for a scoped ("up to") simple fold: the
+    outer-contiguous prefix of layers over the crease region ending at the
+    target — the static shadow of a collision-free 180° rotation
+    [demaine2007, §14.1]. "Outer" is top for valley, bottom for mountain.
+    Candidates are the faces with a piece on the moving side; overlap is
+    judged between those pieces (depth may vary along the crease). The
+    moving set is closed under both the outer-prefix rule and cohesion (a
+    candidate in the same coplanar cluster as a moving face must move too —
+    ADR 0017). Errors are user-facing messages; the caller attaches the
+    span. *)
+
+val scoped_fold_hinge_closed :
+  t ->
+  axis:Geom.line ->
+  move_side:int ->
+  moving_parents:bool array ->
+  (unit, Geom.point * Geom.point) result
+(** A scoped moving set is hinge-closed (validly foldable) iff every existing
+    crease segment separating a moving face from a stationary face lies on
+    the fold axis, with no endpoint strictly on [move_side] — i.e. a mover's
+    material actually lifts only where it's cut. [Error (a, b)] carries the
+    offending segment's table-space endpoints. Only meaningful (and only
+    called) for scoped `up to` folds; default folds partition by the axis
+    halfplane, so their mover/stayer boundaries are on the axis by
+    construction. *)

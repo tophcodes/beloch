@@ -1158,6 +1158,119 @@ let test_flap_of_points_parity () =
     "spanning two flaps";
   probe [ { Geom.x = q 5; y = q 5 } ] "off paper"
 
+(* --- Plan 3b Task 3: line material + scope ---------------------------------- *)
+
+let test_line_material_parity () =
+  let g, st = pair_precrease_fold () in
+  let l = { Geom.a = q 0; b = q 1; c = Num.div Num.one (Num.of_int 4) } in
+  let news = Fold_graph.line_material_segments g l in
+  let olds = Fold_state.line_material_segments st l in
+  Alcotest.(check int) "count" (List.length olds) (List.length news);
+  Alcotest.(check bool) "cuts" (Fold_state.line_cuts_paper st l)
+    (Fold_graph.line_cuts_paper g l)
+
+(* select_scope parity on a 3-layer state (pleat then check scoping) *)
+let test_select_scope_parity () =
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let frac a b = Num.div (Num.of_int a) (Num.of_int b) in
+  let vl c = { Geom.a = Num.one; b = Num.zero; c } in
+  (* book fold then fold the packet edge back: 3 overlapping layers on part
+     of the sheet *)
+  let g = Fold_graph.fold
+      (vfold_new Fold_graph.init_square (vl (frac 1 2)))
+      ~axis:(vl (frac 1 4)) ~move_side:(-1) ~valley:true ~prov:None in
+  let st = Fold_state.fold_with_records
+      (vfold_old Fold_state.init_square (vl (frac 1 2)))
+      ~axis:(vl (frac 1 4)) ~move_side:(-1) ~valley:true ~prov:None in
+  check_parity "scope pre" g st;
+  (* the top face over x in (1/4,1/2): this construction leaves all 4 faces
+     spanning EXACTLY [1/4,1/2] on the table (a book fold's two layers have
+     identical footprints, and cutting both again at 1/4 folds each one's
+     [0,1/4] piece exactly onto [1/4,1/2] too — verified: every face's table
+     polygon has vertices ONLY at x=1/4 and x=1/2, none strictly between).
+     The brief's vertex-based candidacy check (a vertex strictly inside the
+     open interval) therefore never matches ANY face and always yields
+     anchor=-1 — a test-construction bug, not a parity divergence (both
+     models crash identically on the out-of-range anchor). Judge candidacy
+     by positive-area overlap with the open strip instead: all 4 faces
+     qualify here, so this reduces to "the highest-ranked face", but stays
+     correct for a genuinely partial-overlap construction too. *)
+  let top =
+    let n = Array.length (Fold_graph.faces g) in
+    let strip_lo = { Geom.a = q 1; b = q 0; c = frac 1 4 } in
+    let strip_hi = { Geom.a = q 1; b = q 0; c = frac 1 2 } in
+    let has_material i =
+      let tp = Fold_graph.table_polygon g i in
+      let c1 = Geom.clip_convex_halfplane strip_lo 1 tp in
+      Array.length c1 >= 3
+      && Array.length (Geom.clip_convex_halfplane strip_hi (-1) c1) >= 3
+    in
+    let best = ref (-1) in
+    for i = 0 to n - 1 do
+      if has_material i then
+        if !best < 0 || Fold_graph.rel g i !best = Fold_graph.Above then best := i
+    done;
+    !best
+  in
+  let axis = vl (frac 3 8) in
+  let n = Fold_state.select_scope st ~axis ~move_side:(-1) ~valley:true
+      ~anchor:top ~target:(Fold_state.TargetFace top)
+  and m = Fold_graph.select_scope g ~axis ~move_side:(-1) ~valley:true
+      ~anchor:top ~target:(Fold_graph.TargetFace top) in
+  match (n, m) with
+  | Ok a, Ok b ->
+      Alcotest.(check (array bool)) "moving sets equal" a b
+  | Error e1, Error e2 -> Alcotest.(check string) "same error" e1 e2
+  | Ok _, Error e -> Alcotest.failf "new errored: %s" e
+  | Error e, Ok _ -> Alcotest.failf "old errored: %s" e
+
+let test_scoped_hinge_closed_parity () =
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let frac a b = Num.div (Num.of_int a) (Num.of_int b) in
+  let vl c = { Geom.a = Num.one; b = Num.zero; c } in
+  let g = vfold_new Fold_graph.init_square (vl (frac 1 2)) in
+  let st = vfold_old Fold_state.init_square (vl (frac 1 2)) in
+  let top = if Fold_graph.rel g 0 1 = Fold_graph.Above then 0 else 1 in
+  let moving = Array.make 2 false in
+  moving.(top) <- true;
+  (* legal: axis through the mover's free region *)
+  let ok_new = Fold_graph.scoped_fold_hinge_closed g ~axis:(vl (frac 1 4))
+      ~move_side:(-1) ~moving_parents:moving in
+  let ok_old = Fold_state.scoped_fold_hinge_closed st ~axis:(vl (frac 1 4))
+      ~move_side:(-1) ~moving_parents:moving in
+  Alcotest.(check bool) "legal both" (Result.is_ok ok_old) (Result.is_ok ok_new);
+  (* tear: moving the +1 side lifts the mover off its book hinge *)
+  let bad_new = Fold_graph.scoped_fold_hinge_closed g ~axis:(vl (frac 1 4))
+      ~move_side:1 ~moving_parents:moving in
+  let bad_old = Fold_state.scoped_fold_hinge_closed st ~axis:(vl (frac 1 4))
+      ~move_side:1 ~moving_parents:moving in
+  Alcotest.(check bool) "tear both" (Result.is_error bad_old) (Result.is_error bad_new)
+
+(* 3a carry-in: on-axis hinge with BOTH sides moving must NOT toggle (D8);
+   old model upgraded eassign here — accepted divergence, so assert the NEW
+   behaviour directly, no parity. Corrected book-fold construction (see
+   task-3-brief.md correction note — the original 4-face sketch does not
+   actually reach both-sides-moving). *)
+let test_both_sides_moving_no_toggle () =
+  Fold_graph.reset_ids ();
+  let frac a b = Num.div (Num.of_int a) (Num.of_int b) in
+  let vl c = { Geom.a = Num.one; b = Num.zero; c } in
+  let g1 = vfold_new Fold_graph.init_square (vl (frac 1 2)) in
+  let movers = Array.make (Array.length (Fold_graph.faces g1)) true in
+  let g = Fold_graph.fold g1 ~axis:(vl (frac 1 2)) ~move_side:(-1)
+      ~valley:true ~moving_parents:movers ~prov:None in
+  let hs = Fold_graph.hinges g in
+  Alcotest.(check int) "one hinge" 1 (Array.length hs);
+  Alcotest.(check bool) "still folded (no toggle)" true
+    (Num.sign hs.(0).Fold_graph.angle <> 0);
+  Array.iteri
+    (fun i _ ->
+      Alcotest.(check bool) (Printf.sprintf "face %d at x>=1/2" i) true
+        (Array.for_all
+           (fun (p : Geom.point) -> Num.compare p.Geom.x (frac 1 2) >= 0)
+           (Fold_graph.table_polygon g i)))
+    (Fold_graph.faces g)
+
 let () =
   Alcotest.run "fold_graph"
     [ ( "derive",
@@ -1274,5 +1387,14 @@ let () =
         [ Alcotest.test_case "coplanar clusters parity" `Quick
             test_clusters_parity;
           Alcotest.test_case "flap_of_points parity" `Quick
-            test_flap_of_points_parity ] )
+            test_flap_of_points_parity ] );
+      ( "plan3b-task3-scope",
+        [ Alcotest.test_case "line material parity" `Quick
+            test_line_material_parity;
+          Alcotest.test_case "select_scope parity" `Quick
+            test_select_scope_parity;
+          Alcotest.test_case "scoped hinge closed parity" `Quick
+            test_scoped_hinge_closed_parity;
+          Alcotest.test_case "both sides moving no toggle" `Quick
+            test_both_sides_moving_no_toggle ] )
     ]
