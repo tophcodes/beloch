@@ -478,12 +478,13 @@ let axis_chord_in_face (g : t) (i : int) (axis : Geom.line) :
   match !pts with
   | [ p; q0 ] ->
       (* Canonicalize the pair's order by position along [axis] (not the
-         arbitrary boundary-walk order they were found in): downstream,
-         [split_with_flat_hinges] rebuilds a line from this chord via
-         [Geom.line_through], whose sign follows the (a,b)->(b,a) order —
-         an inconsistent order here would flip which side is "plus" on a
-         per-face basis and desync the child face order from the old
-         model's (which always clips against the one fixed [axis]). *)
+         arbitrary boundary-walk order they were found in): the chord only
+         feeds the new hinge's line (via [Geom.line_through]) and
+         [reattach_hinges]'s adjacency check, both sign-invariant — but a
+         stable, deterministic order still matters so the same cut always
+         mints the same hinge-line representation. Child order (plus vs
+         minus) is decided upstream by clipping [axis] itself, not by this
+         chord. *)
       let lo, hi =
         if Num.compare (line_param axis p) (line_param axis q0) <= 0 then
           (p, q0)
@@ -525,31 +526,30 @@ let densify_rank ~(old_rank : int array) ~(parent : int array) : int array =
   rank'
 
 (* Shared splitter for [subdivide] (table-space axis, optional ray guard) and
-   [subdivide_paper] (paper-space line). [cut_of i] gives the PAPER-space
-   chord to cut face i with, or None to keep it whole. Children order per
-   parent: plus side first, then minus (D9 — matches the old face order). *)
+   [subdivide_paper] (paper-space line). [cut_of i] gives the PRE-CLIPPED
+   paper-space children plus the paper chord for face i, or None to keep it
+   whole (the caller decides: not cut, guard-excluded, or a degenerate part
+   with fewer than 3 vertices). Children order per parent: plus side first,
+   then minus (D9 — matches the old face order). Clipping the caller's
+   canonical line/axis directly (rather than reconstructing a line from the
+   chord via [Geom.line_through], whose sign depends on point order) is what
+   keeps child order in sync with the old model — see findings on commit
+   1f0436f. *)
 let split_with_flat_hinges (g : t) ~(cid : int) ~(intent : assign)
     ~(prov : State.provenance option)
-    ~(cut_of : int -> (Geom.point * Geom.point) option) : t =
+    ~(cut_of :
+       int ->
+       (Geom.point array * Geom.point array * (Geom.point * Geom.point))
+       option) : t =
   let out = ref [] in (* (paper_poly, parent) — prepended, reversed at the end *)
   let chords = ref [] in (* (parent, a, b) for each actually-cut face *)
   Array.iteri
     (fun fi f ->
       match cut_of fi with
       | None -> out := (f, fi) :: !out
-      | Some (a, b) ->
-          let line = Geom.line_through a b in
-          let part k =
-            let sub = Geom.clip_convex_halfplane line k f in
-            if Array.length sub >= 3 then Some sub else None
-          in
-          (match (part 1, part (-1)) with
-          | Some pp, Some pm ->
-              chords := (fi, a, b) :: !chords;
-              out := (pm, fi) :: (pp, fi) :: !out
-          | Some pp, None -> out := (pp, fi) :: !out
-          | None, Some pm -> out := (pm, fi) :: !out
-          | None, None -> out := (f, fi) :: !out))
+      | Some (pp, pm, (a, b)) ->
+          chords := (fi, a, b) :: !chords;
+          out := (pm, fi) :: (pp, fi) :: !out)
     g.faces;
   let arr = Array.of_list (List.rev !out) in
   let faces' = Array.map fst arr in
@@ -601,13 +601,47 @@ let subdivide ?crease_id ?(intent : assign = V) ?keep_side (g : t) (axis : Geom.
         in
         Geom.side_of_line guard c = keep
   in
+  (* PLUS child = axis side +1 IN TABLE SPACE (old-model convention): clip the
+     face's table placement by [axis] directly, then map each part back to
+     paper via the face's own [face_iso2] — never reconstruct a line from the
+     chord (its sign would depend on point order, see findings on commit
+     1f0436f). *)
   let cut_of fi =
-    if on_keep_side fi then axis_chord_in_face g fi axis else None
+    if not (on_keep_side fi) then None
+    else
+      let iso2 = face_iso2 g fi in
+      let inv = Isometry.inverse iso2 in
+      let map_back = Array.map (Isometry.apply_point inv) in
+      let table = Array.map (Isometry.apply_point iso2) g.faces.(fi) in
+      let part k =
+        let sub = Geom.clip_convex_halfplane axis k table in
+        if Array.length sub >= 3 then Some sub else None
+      in
+      match (part 1, part (-1)) with
+      | Some tp, Some tm -> (
+          match axis_chord_in_face g fi axis with
+          | Some (a, b) -> Some (map_back tp, map_back tm, (a, b))
+          | None -> None)
+      | _ -> None
   in
   split_with_flat_hinges g ~cid ~intent ~prov ~cut_of
 
 let subdivide_paper ?crease_id ?(intent : assign = V) (g : t) (paper_axis : Geom.line)
     ~(prov : State.provenance option) : t =
   let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
-  let cut_of fi = Geom.clip_line_to_convex paper_axis g.faces.(fi) in
+  (* PLUS child = paper_axis side +1 (old-model convention): clip the paper
+     polygon directly, no isometry. *)
+  let cut_of fi =
+    let f = g.faces.(fi) in
+    let part k =
+      let sub = Geom.clip_convex_halfplane paper_axis k f in
+      if Array.length sub >= 3 then Some sub else None
+    in
+    match (part 1, part (-1)) with
+    | Some pp, Some pm -> (
+        match Geom.clip_line_to_convex paper_axis f with
+        | Some (a, b) -> Some (pp, pm, (a, b))
+        | None -> None)
+    | _ -> None
+  in
   split_with_flat_hinges g ~cid ~intent ~prov ~cut_of

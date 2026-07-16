@@ -565,6 +565,29 @@ let test_subdivide_parity () =
   Alcotest.(check int) "one hinge" 1 (Array.length hs);
   Alcotest.(check bool) "flat" true (Num.sign hs.(0).Fold_graph.angle = 0)
 
+let test_subdivide_paper_parity () =
+  (* mirror of test_subdivide_parity, but through subdivide_paper: paper-space
+     clipping must still produce the old model's child order (D9). *)
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let diag = { Geom.a = q 1; b = q 1; c = q 1 } in  (* diagonal x+y=1 *)
+  let g = Fold_graph.subdivide_paper Fold_graph.init_square diag ~prov:None in
+  let st = Fold_state.subdivide_paper Fold_state.init_square diag ~prov:None in
+  check_parity "paper diag" g st;
+  let hs = Fold_graph.hinges g in
+  Alcotest.(check int) "one hinge" 1 (Array.length hs);
+  Alcotest.(check bool) "flat" true (Num.sign hs.(0).Fold_graph.angle = 0);
+  (* second cut, exercising carried-hinge re-attachment under paper clipping *)
+  let d2 = { Geom.a = q 1; b = q (-1); c = q 0 } in  (* x - y = 0 *)
+  let g2 = Fold_graph.subdivide_paper g d2 ~prov:None in
+  let st2 = Fold_state.subdivide_paper st d2 ~prov:None in
+  check_parity "paper cross" g2 st2;
+  let hs2 = Fold_graph.hinges g2 in
+  let pieces_of cid =
+    Array.to_list hs2 |> List.filter (fun h -> h.Fold_graph.crease_id = cid)
+  in
+  Alcotest.(check int) "crease 0 split in two" 2 (List.length (pieces_of 0));
+  Alcotest.(check int) "crease 1 in two" 2 (List.length (pieces_of 1))
+
 let test_subdivide_carried_split () =
   (* two crossing subdivisions: the first crease's hinge splits into two *)
   Fold_graph.reset_ids (); Fold_state.reset_ids ();
@@ -666,6 +689,8 @@ let () =
           Alcotest.test_case "point queries" `Quick test_point_queries ] );
       ( "task3-subdivide",
         [ Alcotest.test_case "subdivide parity" `Quick test_subdivide_parity;
+          Alcotest.test_case "subdivide_paper parity" `Quick
+            test_subdivide_paper_parity;
           Alcotest.test_case "carried split parity" `Quick
             test_subdivide_carried_split;
           Alcotest.test_case "keep_side parity" `Quick
