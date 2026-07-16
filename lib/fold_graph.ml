@@ -809,3 +809,43 @@ let fold ?crease_id ?moving_parents (g : t) ~(axis : Geom.line)
 let simple_fold (g : t) ~(axis : Geom.line) ~(move_side : int)
     ~(valley : bool) : t =
   fold g ~axis ~move_side ~valley ~prov:None
+
+(* Turn the whole sheet over: reflect across the footprint's vertical
+   centerline (cosmetic internal axis, as in the old model), reverse the face
+   array (D9 — emit order), reverse the stack. base absorbs the reflection —
+   the ONE whole-sheet motion. *)
+let flip (g : t) : t =
+  let n = Array.length g.faces in
+  if n = 0 then g
+  else begin
+    let p0 = (table_polygon g 0).(0) in
+    let lo = ref p0.Geom.x and hi = ref p0.Geom.x in
+    for i = 0 to n - 1 do
+      Array.iter
+        (fun (q0 : Geom.point) ->
+          if Num.compare q0.Geom.x !lo < 0 then lo := q0.Geom.x;
+          if Num.compare q0.Geom.x !hi > 0 then hi := q0.Geom.x)
+        (table_polygon g i)
+    done;
+    let cx = Num.div (Num.add !lo !hi) (Num.of_int 2) in
+    let axis = { Geom.a = Num.one; b = Num.zero; c = cx } in
+    let faces' = Array.init n (fun k -> g.faces.(n - 1 - k)) in
+    let hinges' =
+      Array.map
+        (fun h -> { h with fa = n - 1 - h.fa; fb = n - 1 - h.fb })
+        g.hinges
+    in
+    let rank' = Array.init n (fun k -> n - 1 - g.rank.(n - 1 - k)) in
+    let root' = n - 1 - g.root in
+    let base' = I3.compose (half_turn3_of_line axis) g.isos.(g.root) in
+    match
+      make ~base:base' ~marks:g.marks ~faces:faces' ~hinges:hinges'
+        ~root:root' ~rank:rank' ()
+    with
+    | Ok g' -> g'
+    | Error v -> fail_of_violation None v
+  end
+
+(* Marks carry no invariants; append without re-validation. *)
+let add_mark (g : t) (m : mark) : t =
+  { g with marks = Array.append g.marks [| m |] }

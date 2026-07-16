@@ -239,3 +239,14 @@ val fold :
 
 val simple_fold : t -> axis:Geom.line -> move_side:int -> valley:bool -> t
 (** [fold] with no [crease_id]/[moving_parents] override and no provenance. *)
+
+val flip : t -> t
+(** Turn the whole sheet over: reflects across the footprint's vertical
+    centerline (an internal, cosmetic axis — which line is irrelevant, only
+    the substantive effect matters), reverses the face array (D9 — emit
+    order) and the stack. The reflection is absorbed into [base] — the ONE
+    whole-sheet motion; no per-face isometry is stored. *)
+
+val add_mark : t -> mark -> t
+(** Append a paper-space mark. Marks carry no invariants, so this is a plain
+    record update — no re-validation through [make]. *)

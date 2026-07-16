@@ -772,7 +772,7 @@ let test_fold_unfold_toggle () =
   let moving = Array.make (Array.length (Fold_graph.faces g1)) false in
   moving.(top) <- true;
   (* the top layer's material lies on side -1 of the axis; folding it back *)
-  let g2 = Fold_graph.fold g1 ~axis:ax ~move_side:(-1) ~valley:false
+  let g2 = Fold_graph.fold g1 ~axis:ax ~move_side:(-1) ~valley:true
       ~moving_parents:moving ~prov:None in
   let hs2 = Fold_graph.hinges g2 in
   Alcotest.(check int) "still one hinge" 1 (Array.length hs2);
@@ -854,6 +854,40 @@ let test_fold_nothing_stationary_parity () =
       ~move_side:(-1) ~valley:true ~prov:None in
   check_parity "nothing stationary" g st;
   check_assign_parity "nothing stationary" g st
+
+(* --- Plan 3a Task 5: flip + add_mark -------------------------------------- *)
+
+let test_flip_parity () =
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let ax = { Geom.a = q 1; b = q 0; c = Num.div Num.one (Num.of_int 2) } in
+  let g = Fold_graph.flip (vfold_new Fold_graph.init_square ax) in
+  let st = Fold_state.flip (vfold_old Fold_state.init_square ax) in
+  check_parity "flip" g st;
+  check_assign_parity "flip" g st
+
+let test_fold_after_flip_parity () =
+  (* spec §4.7: a fold after flip inverts the letter relative to the front *)
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let half = Num.div Num.one (Num.of_int 2) in
+  let ax1 = { Geom.a = q 1; b = q 0; c = half } in
+  let ax2 = { Geom.a = q 0; b = q 1; c = half } in
+  let g = vfold_new (Fold_graph.flip (vfold_new Fold_graph.init_square ax1)) ax2 in
+  let st = vfold_old (Fold_state.flip (vfold_old Fold_state.init_square ax1)) ax2 in
+  check_parity "fold after flip" g st;
+  check_assign_parity "fold after flip" g st
+
+let test_add_mark () =
+  let m =
+    { Fold_graph.mgeom = Fold_graph.MSeg (gp 0 0, gp 1 1);
+      mline = { Geom.a = q 1; b = q (-1); c = q 0 };
+      mintent = Fold_graph.V; mcrease_id = 9; mprov = None }
+  in
+  let g = Fold_graph.add_mark Fold_graph.init_square m in
+  Alcotest.(check int) "one mark" 1 (Array.length (Fold_graph.marks g));
+  (* marks ride through a fold *)
+  let ax = { Geom.a = q 1; b = q 0; c = Num.div Num.one (Num.of_int 2) } in
+  let g' = Fold_graph.fold g ~axis:ax ~move_side:1 ~valley:true ~prov:None in
+  Alcotest.(check int) "mark carried" 1 (Array.length (Fold_graph.marks g'))
 
 let () =
   Alcotest.run "fold_graph"
@@ -948,4 +982,9 @@ let () =
           Alcotest.test_case "root moves parity" `Quick
             test_fold_root_moves_parity;
           Alcotest.test_case "nothing stationary parity" `Quick
-            test_fold_nothing_stationary_parity ] ) ]
+            test_fold_nothing_stationary_parity ] );
+      ( "task5-flip",
+        [ Alcotest.test_case "flip parity" `Quick test_flip_parity;
+          Alcotest.test_case "fold after flip parity" `Quick
+            test_fold_after_flip_parity;
+          Alcotest.test_case "add_mark" `Quick test_add_mark ] ) ]
