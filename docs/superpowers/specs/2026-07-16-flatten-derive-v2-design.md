@@ -36,12 +36,24 @@ pipeline:
      differentiation as today).
    - |S| = 1 → fold it. A disambiguator, if present, is redundant — allowed,
      never an error (redundancy is lint-territory, not error-territory).
-   - |S| > 1 → apply the **disambiguator** `{toward .p}`: keep the
-     realization maximizing `(centroid(final placement of MOVED faces) − O) ·
-     (toward − O)`, exact over `Num`. Moved faces = faces whose final
-     placement differs from their pre-flatten placement. Tie or no
-     disambiguator → ambiguous error naming what's missing ("N realizations;
-     add `{toward .x}`" / "aim it off the creases" on a tie).
+   - |S| > 1 → selection, in three exact stages (derived empirically against
+     the fish mirror pair + the swivel golden; see
+     `/…/toward-stacking-rule.md` analysis, 2026-07-16):
+     1. **Position stage** (class choice): placements depend only on ray
+        LINES, so realizations group into position classes; `{toward .p}`
+        picks the class maximizing the moved-material centroid dot
+        `(centroid(final MOVED faces) − O) · (toward − O)`.
+     2. **Min-mountain canon** (within the class): keep realizations with the
+        FEWEST mountains among the USER-GIVEN rays (emergent excluded) — the
+        least-forced pattern; alone it uniquely yields the swivel golden.
+     3. **Stacking stage**: if several remain, `{toward .p}` picks by the
+        centered-rank table dipole `S(R) = Σ_faces area · (rank − (n−1)/2) ·
+        ((table_centroid − O) · (toward − O))` — "the material that lies
+        toward p ends up on top." Exact over `Num`; mirror realizations score
+        ±equal, so off-axis toward points always decide.
+     Tie / toward on a reflective symmetry axis of the given rays → the
+     existing ambiguous error; no `{toward}` while |S| > 1 after stage 2 →
+     "N realizations; add `{toward .x}`".
    - Tier rule (364660f) applies before scoring: realizations on line-new
      emergent candidates outrank opposite-ray ones; the deciding set is
      tier 1 if non-empty.
