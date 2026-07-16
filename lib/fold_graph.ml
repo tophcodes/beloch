@@ -72,10 +72,12 @@ let hinge_motion (h : hinge) : I3.t =
     I3.half_turn_about_line ~on ~dir
 
 (* Derived placements: BFS from [root] over the hinge graph; crossing a hinge
-   composes its motion onto the already-placed face's placement,
-   iso.(other) = compose iso.(fi) (hinge_motion h). Half-turns are involutions,
-   so crossing a hinge either direction uses the same motion (flat-first).
-   [seen] doubles as the connectivity witness. *)
+   composes its motion onto the already-placed face's placement. [hinge_motion]
+   is oriented fa→fb (iso.(fb) = compose iso.(fa) (hinge_motion h)); crossing
+   fb→fa uses the inverse. Flat-first the two coincide (half-turns are
+   involutions), but the direction-awareness is what keeps this — and the
+   uniform closure check in [make] — valid for Stage B's non-involutive rπ
+   rotations. [seen] doubles as the connectivity witness. *)
 let derive_isos ~(faces : face array) ~(hinges : hinge array) ~(root : int) :
     I3.t array * bool array =
   let n = Array.length faces in
@@ -88,14 +90,15 @@ let derive_isos ~(faces : face array) ~(hinges : hinge array) ~(root : int) :
     let fi = Queue.pop queue in
     Array.iter
       (fun h ->
-        let step other =
+        let step other motion =
           if not seen.(other) then begin
             seen.(other) <- true;
-            iso.(other) <- I3.compose iso.(fi) (hinge_motion h);
+            iso.(other) <- I3.compose iso.(fi) motion;
             Queue.push other queue
           end
         in
-        if h.fa = fi then step h.fb else if h.fb = fi then step h.fa)
+        if h.fa = fi then step h.fb (hinge_motion h)
+        else if h.fb = fi then step h.fa (I3.inverse (hinge_motion h)))
       hinges
   done;
   (iso, seen)
@@ -213,8 +216,10 @@ let make ~(faces : face array) ~(hinges : hinge array) ~(root : int)
     in
     (* cycle closure: the BFS fixed a spanning tree; every hinge must agree
        with the placements — for non-tree (cycle) hinges this is the real
-       tear check. Tree hinges hold by construction; checking all is uniform
-       (flat-first motions are involutions, so direction is irrelevant). *)
+       tear check. Tree hinges hold by construction in both traversal
+       directions (a fb→fa step assigns iso.(fa) = iso.(fb) ∘ motion⁻¹, which
+       is equivalent to this fa→fb equation), so the uniform check does not
+       depend on motions being involutions. *)
     Array.iteri
       (fun i h ->
         if
