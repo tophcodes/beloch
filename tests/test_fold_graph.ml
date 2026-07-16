@@ -617,6 +617,140 @@ let test_subdivide_keep_side () =
   let st = Fold_state.subdivide base_old axis ~keep_side:(guard, 1) ~prov:None in
   check_parity "keep_side" g st
 
+(* --- Plan 3a Task 4: fold -------------------------------------------------- *)
+
+(* eassign parity: every folded hinge's derived mv must equal the old edge's
+   stored eassign for the edge with the same paper endpoints *)
+let check_assign_parity label (g : Fold_graph.t) (st : Fold_state.t) =
+  let hs = Fold_graph.hinges g in
+  Array.iteri
+    (fun i (h : Fold_graph.hinge) ->
+      let a, b = Fold_graph.hinge_segment g i in
+      match
+        Array.to_list st.Fold_state.edges
+        |> List.find_opt (fun (e : Fold_state.edge) ->
+               (Geom.point_equal e.Fold_state.ea a && Geom.point_equal e.Fold_state.eb b)
+               || (Geom.point_equal e.Fold_state.ea b && Geom.point_equal e.Fold_state.eb a))
+      with
+      | None -> Alcotest.failf "%s: hinge %d has no old edge" label i
+      | Some e ->
+          let old_a =
+            match e.Fold_state.eassign with
+            | Fold_state.M -> Fold_graph.M
+            | Fold_state.V -> Fold_graph.V
+            | Fold_state.F -> Fold_graph.F
+          in
+          Alcotest.(check bool)
+            (Printf.sprintf "%s: hinge %d assign (angle %s)" label i
+               (if Num.sign h.Fold_graph.angle = 0 then "0" else "1"))
+            true
+            (Fold_graph.mv g i = old_a))
+    hs
+
+let vfold_new g ax = Fold_graph.fold g ~axis:ax ~move_side:1 ~valley:true ~prov:None
+let vfold_old st ax = Fold_state.fold_with_records st ~axis:ax ~move_side:1 ~valley:true ~prov:None
+
+let test_fold_parity_single () =
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let ax = { Geom.a = q 1; b = q 0; c = Num.div Num.one (Num.of_int 2) } in
+  let g = vfold_new Fold_graph.init_square ax in
+  let st = vfold_old Fold_state.init_square ax in
+  check_parity "single fold" g st;
+  check_assign_parity "single fold" g st
+
+let test_fold_parity_mountain () =
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let ax = { Geom.a = q 1; b = q 0; c = Num.div Num.one (Num.of_int 2) } in
+  let g = Fold_graph.fold Fold_graph.init_square ~axis:ax ~move_side:1
+      ~valley:false ~prov:None in
+  let st = Fold_state.fold_with_records Fold_state.init_square ~axis:ax
+      ~move_side:1 ~valley:false ~prov:None in
+  check_parity "mountain" g st;
+  check_assign_parity "mountain" g st
+
+let test_fold_parity_pleat () =
+  (* second fold refolds the packet — movers include previously-moved AND
+     previously-stationary material, so carried folded hinges move as a block
+     (nontrivial base is exercised separately by the flip tests in Task 5) *)
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let quarter = Num.div Num.one (Num.of_int 4) in
+  let ax1 = { Geom.a = q 1; b = q 0; c = Num.div Num.one (Num.of_int 2) } in
+  let ax2 = { Geom.a = q 1; b = q 0; c = quarter } in
+  (* fold right half left over x=1/2, then fold everything right of x=1/4
+     back over x=1/4, moving the packet to the left *)
+  let g = vfold_new (vfold_new Fold_graph.init_square ax1) ax2 in
+  let st = vfold_old (vfold_old Fold_state.init_square ax1) ax2 in
+  check_parity "pleat" g st;
+  check_assign_parity "pleat" g st
+
+let test_fold_precrease_upgrade () =
+  (* subdivide (F) then fold on the same axis: the F hinge toggles to angle 1
+     and the intent letter upgrades (old #27 upgrade path) *)
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let ax = { Geom.a = q 1; b = q 0; c = Num.div Num.one (Num.of_int 2) } in
+  let g0 = Fold_graph.subdivide Fold_graph.init_square ax ~intent:Fold_graph.M ~prov:None in
+  let st0 = Fold_state.subdivide Fold_state.init_square ax ~intent:Fold_state.M ~prov:None in
+  let g = vfold_new g0 ax in
+  let st = vfold_old st0 ax in
+  check_parity "upgrade" g st;
+  check_assign_parity "upgrade" g st;
+  (* the upgraded hinge is folded and keeps its crease id 0 *)
+  let hs = Fold_graph.hinges g in
+  let folded =
+    Array.to_list hs |> List.filter (fun h -> Num.sign h.Fold_graph.angle <> 0)
+  in
+  Alcotest.(check int) "one folded hinge" 1 (List.length folded);
+  Alcotest.(check int) "kept id" 0 (List.hd folded).Fold_graph.crease_id
+
+let test_fold_scoped_parity () =
+  (* two layers via a book fold, then a scoped fold of ONLY the top layer's
+     free edge: fold the material LEFT of x=1/4 back to the right (move_side
+     -1). The mover's only hinge to the stationary material is the book crease
+     at table x=1/2 — on the stay side, so the scoped fold is hinge-closed
+     (folding the x>1/4 side instead would tear at that hinge). moving_parents
+     is computed by the OLD select_scope and fed verbatim to both models. *)
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let half = Num.div Num.one (Num.of_int 2) in
+  let ax1 = { Geom.a = q 1; b = q 0; c = half } in
+  let g1 = vfold_new Fold_graph.init_square ax1 in
+  let st1 = vfold_old Fold_state.init_square ax1 in
+  let quarter = Num.div Num.one (Num.of_int 4) in
+  let ax2 = { Geom.a = q 1; b = q 0; c = quarter } in
+  let top =
+    (* face with the highest rank among those overlapping face 0 *)
+    let n = Array.length (Fold_graph.faces g1) in
+    let best = ref 0 in
+    for i = 1 to n - 1 do
+      if Fold_graph.rel g1 i !best = Fold_graph.Above then best := i
+    done;
+    !best
+  in
+  match
+    Fold_state.select_scope st1 ~axis:ax2 ~move_side:(-1) ~valley:true
+      ~anchor:top ~target:(Fold_state.TargetFace top)
+  with
+  | Error e -> Alcotest.fail e
+  | Ok moving ->
+      let g = Fold_graph.fold g1 ~axis:ax2 ~move_side:(-1) ~valley:true
+          ~moving_parents:moving ~prov:None in
+      let st = Fold_state.fold_with_records st1 ~axis:ax2 ~move_side:(-1)
+          ~valley:true ~moving_parents:moving ~prov:None in
+      check_parity "scoped" g st;
+      check_assign_parity "scoped" g st
+
+let test_fold_then_subdivide_parity () =
+  (* subdivide with a TABLE-space axis on a state whose moved faces have
+     det -1 placements: child order must still match the old model *)
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let half = Num.div Num.one (Num.of_int 2) in
+  let ax = { Geom.a = q 1; b = q 0; c = half } in
+  let g1 = vfold_new Fold_graph.init_square ax in
+  let st1 = vfold_old Fold_state.init_square ax in
+  let diag = { Geom.a = q 1; b = q 1; c = half } in  (* cuts both layers *)
+  let g = Fold_graph.subdivide g1 diag ~prov:None in
+  let st = Fold_state.subdivide st1 diag ~prov:None in
+  check_parity "fold then subdivide" g st
+
 let () =
   Alcotest.run "fold_graph"
     [ ( "derive",
@@ -694,4 +828,13 @@ let () =
           Alcotest.test_case "carried split parity" `Quick
             test_subdivide_carried_split;
           Alcotest.test_case "keep_side parity" `Quick
-            test_subdivide_keep_side ] ) ]
+            test_subdivide_keep_side ] );
+      ( "task4-fold",
+        [ Alcotest.test_case "single fold parity" `Quick test_fold_parity_single;
+          Alcotest.test_case "mountain parity" `Quick test_fold_parity_mountain;
+          Alcotest.test_case "pleat parity" `Quick test_fold_parity_pleat;
+          Alcotest.test_case "precrease upgrade parity" `Quick
+            test_fold_precrease_upgrade;
+          Alcotest.test_case "scoped fold parity" `Quick test_fold_scoped_parity;
+          Alcotest.test_case "fold then subdivide parity" `Quick
+            test_fold_then_subdivide_parity ] ) ]

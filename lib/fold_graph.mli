@@ -213,3 +213,29 @@ val subdivide_paper :
   t
 (** Like [subdivide], but [paper_axis] is a PAPER-space line: every face it
     crosses is split, regardless of current table placement. *)
+
+val fold :
+  ?crease_id:int ->
+  ?moving_parents:bool array ->
+  t ->
+  axis:Geom.line ->
+  move_side:int ->
+  valley:bool ->
+  prov:State.provenance option ->
+  t
+(** Simple flat fold as a graph transformation: faces on [move_side] of the
+    TABLE-space [axis] (restricted to [moving_parents], default all faces)
+    are cut and hinged to their stationary counterpart with a new angle-1
+    hinge; any old hinge lying entirely on [axis] with exactly one moving
+    side toggles (a flat precrease upgrades to folded, keeping its
+    [crease_id]; a folded hinge with no cut counterpart on the axis
+    physically unfolds back to angle 0). The rank is rebuilt in two blocks —
+    stationary faces keep their relative order, movers reverse theirs — with
+    movers stacked above for a valley fold, below for a mountain fold. The
+    root and [base] are chosen from a stationary child where one exists (its
+    parent's placement is unchanged); only when every face moves is the base
+    itself reflected across [axis]. Raises {!Error.fail} at [prov]'s span on
+    a resulting invariant violation. *)
+
+val simple_fold : t -> axis:Geom.line -> move_side:int -> valley:bool -> t
+(** [fold] with no [crease_id]/[moving_parents] override and no provenance. *)

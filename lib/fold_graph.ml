@@ -92,21 +92,22 @@ let violation_to_string = function
         "layer ordering: creases of hinges %d and %d cross — taco-taco violation"
         i j
 
+(* 3D half-turn about a 2D line embedded in z = 0. *)
+let half_turn3_of_line (l : Geom.line) : I3.t =
+  let on =
+    if Num.sign l.Geom.a <> 0 then
+      { I3.x = Num.div l.Geom.c l.Geom.a; y = Num.zero; z = Num.zero }
+    else { I3.x = Num.zero; y = Num.div l.Geom.c l.Geom.b; z = Num.zero }
+  in
+  let dir = { I3.x = Num.neg l.Geom.b; y = l.Geom.a; z = Num.zero } in
+  I3.half_turn_about_line ~on ~dir
+
 (* 3D motion a folded hinge applies (in the sheet frame): a half-turn about the
    crease line embedded in the z=0 plane. Flat crease (angle=0) → identity.
    Flat-first: |angle|=1 → half-turn; the sign (M vs V) does NOT change the flat
    placement (±π about the same axis coincide) — M/V is the layer order. *)
 let hinge_motion (h : hinge) : I3.t =
-  if Num.sign h.angle = 0 then I3.identity
-  else
-    let l = h.line in
-    let on =
-      if Num.sign l.Geom.a <> 0 then
-        { I3.x = Num.div l.Geom.c l.Geom.a; y = Num.zero; z = Num.zero }
-      else { I3.x = Num.zero; y = Num.div l.Geom.c l.Geom.b; z = Num.zero }
-    in
-    let dir = { I3.x = Num.neg l.Geom.b; y = l.Geom.a; z = Num.zero } in
-    I3.half_turn_about_line ~on ~dir
+  if Num.sign h.angle = 0 then I3.identity else half_turn3_of_line h.line
 
 (* Derived placements: BFS from [root] over the hinge graph; crossing a hinge
    composes its motion onto the already-placed face's placement. [hinge_motion]
@@ -645,3 +646,166 @@ let subdivide_paper ?crease_id ?(intent : assign = V) (g : t) (paper_axis : Geom
     | _ -> None
   in
   split_with_flat_hinges g ~cid ~intent ~prov ~cut_of
+
+(* Simple flat fold as a graph transformation: cut the moving faces along
+   [axis], give the cut hinges angle 1, toggle existing on-axis hinges with
+   exactly one moving side (D8), restack via rank blocks. Placements are
+   derived; nothing composes isometries onto faces. Raises [Error.fail] when
+   the resulting state violates an invariant (old validity_error behaviour). *)
+let fold ?crease_id ?moving_parents (g : t) ~(axis : Geom.line)
+    ~(move_side : int) ~(valley : bool) ~(prov : State.provenance option) : t =
+  let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
+  let moves fi =
+    match moving_parents with None -> true | Some m -> m.(fi)
+  in
+  (* the crease-pattern letter of the fold on parent face fi: the user's
+     valley XOR the parent's orientation parity (old assign_of) *)
+  let letter_of fi : assign =
+    if valley <> (Isometry.det_sign (face_iso2 g fi) < 0) then V else M
+  in
+  (* 1. split: stationary children (stay side + all non-movers) and moved
+     children, in the OLD accumulation order (D9): stay list is reversed at
+     the end, mov list is not. *)
+  let stay = ref [] and mov = ref [] in (* (paper_poly, parent) *)
+  let chords = ref [] in (* (parent, a, b) for each face actually cut *)
+  Array.iteri
+    (fun fi f ->
+      if not (moves fi) then stay := (f, fi) :: !stay
+      else begin
+        let iso2 = face_iso2 g fi in
+        let table = Array.map (Isometry.apply_point iso2) f in
+        let inv = Isometry.inverse iso2 in
+        let part k =
+          let sub = Geom.clip_convex_halfplane axis k table in
+          if Array.length sub >= 3 then
+            Some (Array.map (Isometry.apply_point inv) sub)
+          else None
+        in
+        let s = part (-move_side) and m = part move_side in
+        (match (s, m) with
+        | Some _, Some _ -> (
+            match axis_chord_in_face g fi axis with
+            | Some (a, b) -> chords := (fi, a, b) :: !chords
+            | None -> ())
+        | _ -> ());
+        (match s with Some poly -> stay := (poly, fi) :: !stay | None -> ());
+        match m with Some poly -> mov := (poly, fi) :: !mov | None -> ()
+      end)
+    g.faces;
+  let stationary = List.rev !stay in
+  let moved = !mov in
+  let ordered = if valley then stationary @ moved else moved @ stationary in
+  let arr = Array.of_list ordered in
+  let faces' = Array.map fst arr in
+  let parent = Array.map snd arr in
+  let n_stay = List.length stationary in
+  let moved_flag =
+    if valley then Array.init (Array.length arr) (fun i -> i >= n_stay)
+    else Array.init (Array.length arr) (fun i -> i < List.length moved)
+  in
+  let children_of p =
+    let acc = ref [] in
+    Array.iteri (fun k pp -> if pp = p then acc := k :: !acc) parent;
+    List.rev !acc
+  in
+  (* 2. new folded hinges along the axis, one per cut parent *)
+  let new_hinges =
+    List.rev_map
+      (fun (fi, a, b) ->
+        let sc = ref (-1) and mc = ref (-1) in
+        Array.iteri
+          (fun k pp ->
+            if pp = fi then if moved_flag.(k) then mc := k else sc := k)
+          parent;
+        { fa = !sc; fb = !mc; line = Geom.line_through a b; angle = Num.one;
+          crease_id = cid; intent = letter_of fi; prov })
+      !chords
+  in
+  (* 3. carried hinges: re-attach (D7), then toggle on-axis hinges with
+     exactly one moving side (D8) *)
+  let moved_parent = Array.make (Array.length g.faces) false in
+  Array.iteri
+    (fun k pp -> if moved_flag.(k) then moved_parent.(pp) <- true)
+    parent;
+  let on_axis_of_old = Array.make (Array.length g.hinges) false in
+  Array.iteri
+    (fun hi (_ : hinge) ->
+      let ta, tb = hinge_table_segment g hi in
+      on_axis_of_old.(hi) <-
+        Geom.side_of_line axis ta = 0 && Geom.side_of_line axis tb = 0)
+    g.hinges;
+  let carried =
+    Array.to_list
+      (Array.mapi
+         (fun hi (h : hinge) ->
+           let toggled =
+             on_axis_of_old.(hi)
+             && moved_parent.(h.fa) <> moved_parent.(h.fb)
+           in
+           let h =
+             if not toggled then h
+             else if Num.sign h.angle = 0 then
+               (* precrease upgrade: F -> folded, intent gets the live letter
+                  of the MOVED parent (old assign_of_parent mf, #27) *)
+               let mf = if moved_parent.(h.fa) then h.fa else h.fb in
+               { h with angle = Num.one; intent = letter_of mf }
+             else { h with angle = Num.zero } (* physical unfold *)
+           in
+           List.concat_map
+             (fun cp ->
+               List.filter_map
+                 (fun cq ->
+                   let h' = { h with fa = cp; fb = cq } in
+                   match hinge_shared_segment faces' h' with
+                   | Some _ -> Some h'
+                   | None -> None)
+                 (children_of h.fb))
+             (children_of h.fa))
+         g.hinges)
+    |> List.concat
+  in
+  (* 4. rank blocks: stationaries keep their order; movers reversed; movers
+     on top for valley, below for mountain (old rel_of semantics) *)
+  let n' = Array.length faces' in
+  let idx = Array.init n' Fun.id in
+  let key i =
+    let r = g.rank.(parent.(i)) in
+    if moved_flag.(i) then (1, -r, i) else (0, r, i)
+  in
+  let block_first = if valley then 0 else 1 in
+  Array.sort
+    (fun i j ->
+      let (bi, ki, ti) = key i and (bj, kj, tj) = key j in
+      let bi = if bi = block_first then 0 else 1
+      and bj = if bj = block_first then 0 else 1 in
+      compare (bi, ki, ti) (bj, kj, tj))
+    idx;
+  let rank' = Array.make n' 0 in
+  Array.iteri (fun h i -> rank'.(i) <- h) idx;
+  (* 5. root + base: prefer a stationary child (its parent's placement is
+     unchanged); if everything moved, reflect the base across the axis *)
+  let root', base' =
+    let stat = ref (-1) in
+    (match children_of g.root with
+    | cs -> List.iter (fun c -> if (not (moved_flag.(c))) && !stat < 0 then stat := c) cs);
+    if !stat >= 0 then (!stat, g.isos.(g.root))
+    else begin
+      let first_stat = ref (-1) in
+      Array.iteri
+        (fun k m -> if (not m) && !first_stat < 0 then first_stat := k)
+        moved_flag;
+      if !first_stat >= 0 then (!first_stat, g.isos.(parent.(!first_stat)))
+      else (0, I3.compose (half_turn3_of_line axis) g.isos.(parent.(0)))
+    end
+  in
+  match
+    make ~base:base' ~marks:g.marks ~faces:faces'
+      ~hinges:(Array.of_list (List.rev_append (List.rev new_hinges) carried))
+      ~root:root' ~rank:rank' ()
+  with
+  | Ok g' -> g'
+  | Error v -> fail_of_violation prov v
+
+let simple_fold (g : t) ~(axis : Geom.line) ~(move_side : int)
+    ~(valley : bool) : t =
+  fold g ~axis ~move_side ~valley ~prov:None
