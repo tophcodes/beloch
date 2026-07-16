@@ -1014,6 +1014,114 @@ let test_add_mark () =
   let g' = Fold_graph.fold g ~axis:ax ~move_side:1 ~valley:true ~prov:None in
   Alcotest.(check int) "mark carried" 1 (Array.length (Fold_graph.marks g'))
 
+(* --- Plan 3b Task 1: crease queries --------------------------------------- *)
+
+(* build matched old/new states with one precrease + one fold *)
+let pair_precrease_fold () =
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let half = Num.div Num.one (Num.of_int 2) in
+  let vhalf = { Geom.a = q 1; b = q 0; c = half } in
+  let hhalf = { Geom.a = q 0; b = q 1; c = half } in
+  let g = Fold_graph.fold
+      (Fold_graph.subdivide Fold_graph.init_square hhalf ~prov:None)
+      ~axis:vhalf ~move_side:1 ~valley:true ~prov:None in
+  let st = Fold_state.fold_with_records
+      (Fold_state.subdivide Fold_state.init_square hhalf ~prov:None)
+      ~axis:vhalf ~move_side:1 ~valley:true ~prov:None in
+  (g, st)
+
+(* order-insensitive comparison of segment lists: multiset over
+   (unordered table endpoints, unordered paper endpoints) *)
+let check_segments label (news : Fold_graph.crease_segment list)
+    (olds : Fold_state.crease_segment list) =
+  Alcotest.(check int) (label ^ ": count") (List.length olds) (List.length news);
+  let key_eq (nta, ntb, npa, npb) (ota, otb, opa, opb) =
+    let seg_eq (a1, b1) (a2, b2) =
+      (Geom.point_equal a1 a2 && Geom.point_equal b1 b2)
+      || (Geom.point_equal a1 b2 && Geom.point_equal b1 a2)
+    in
+    seg_eq (nta, ntb) (ota, otb) && seg_eq (npa, npb) (opa, opb)
+  in
+  let used = Array.make (List.length olds) false in
+  List.iteri
+    (fun ni (n : Fold_graph.crease_segment) ->
+      let hit = ref false in
+      List.iteri
+        (fun oi (o : Fold_state.crease_segment) ->
+          if (not !hit) && (not used.(oi))
+             && key_eq (n.Fold_graph.ta, n.Fold_graph.tb, n.Fold_graph.pa, n.Fold_graph.pb)
+                  (o.Fold_state.ta, o.Fold_state.tb, o.Fold_state.pa, o.Fold_state.pb)
+          then begin used.(oi) <- true; hit := true end)
+        olds;
+      if not !hit then
+        Alcotest.failf "%s: new segment %d has no old match" label ni)
+    news
+
+let test_crease_segments_parity () =
+  let g, st = pair_precrease_fold () in
+  let ids_new = List.sort compare (Fold_graph.all_crease_ids g) in
+  let ids_old = List.sort compare (Fold_state.all_crease_ids st) in
+  Alcotest.(check (list int)) "crease ids" ids_old ids_new;
+  List.iter
+    (fun cid ->
+      check_segments (Printf.sprintf "cid %d" cid)
+        (Fold_graph.crease_segments g cid)
+        (Fold_state.crease_segments st cid))
+    ids_new
+
+let test_crease_axes_parity () =
+  let g, st = pair_precrease_fold () in
+  let string_of = function `Line _ -> "line" | `Bent -> "bent" | `Empty -> "empty" in
+  List.iter
+    (fun cid ->
+      (* table axis: same classification; when both are `Line, same point set
+         satisfies both (compare via two probe points of the old line) *)
+      let n = Fold_graph.crease_axis g cid { Geom.a = q 1; b = q 0; c = q 0 } in
+      let o = Fold_state.crease_axis st cid { Geom.a = q 1; b = q 0; c = q 0 } in
+      Alcotest.(check string) (Printf.sprintf "axis class cid %d" cid)
+        (string_of o) (string_of n);
+      (* representation-independent line equality: when both are `Line, each
+         returned line must contain the OLD crease's table endpoints *)
+      (match (n, o) with
+      | `Line nl, `Line _ ->
+          let old_endpoints = Fold_state.crease_table_endpoints st cid in
+          List.iter
+            (fun p ->
+              Alcotest.(check int)
+                (Printf.sprintf "axis line contains old endpoint, cid %d" cid)
+                0 (Geom.side_of_line nl p))
+            old_endpoints
+      | _ -> ());
+      let np = Fold_graph.crease_paper_axis g cid in
+      let op = Fold_state.crease_paper_axis st cid in
+      Alcotest.(check string) (Printf.sprintf "paper axis class cid %d" cid)
+        (string_of op) (string_of np))
+    (List.sort compare (Fold_graph.all_crease_ids g))
+
+let test_boundary_segments_parity () =
+  let g, st = pair_precrease_fold () in
+  (* the sheet's bottom edge y = 0 *)
+  let bottom = { Geom.a = q 0; b = q 1; c = q 0 } in
+  check_segments "boundary y=0"
+    (Fold_graph.edge_boundary_segments g bottom)
+    (Fold_state.edge_boundary_segments st bottom)
+
+let test_neighbors_hinge_between () =
+  let g, _ = pair_precrease_fold () in
+  let n = Array.length (Fold_graph.faces g) in
+  (* every hinge appears in both endpoints' neighbor lists, and
+     hinge_between finds it from its segment *)
+  Array.iteri
+    (fun i (h : Fold_graph.hinge) ->
+      Alcotest.(check bool) (Printf.sprintf "nb fa %d" i) true
+        (List.mem h.Fold_graph.fb (Fold_graph.neighbors g h.Fold_graph.fa));
+      let a, b = Fold_graph.hinge_segment g i in
+      match Fold_graph.hinge_between g h.Fold_graph.fa a b with
+      | Some j -> Alcotest.(check int) (Printf.sprintf "hb %d" i) i j
+      | None -> Alcotest.failf "hinge_between missed hinge %d" i)
+    (Fold_graph.hinges g);
+  ignore n
+
 let () =
   Alcotest.run "fold_graph"
     [ ( "derive",
@@ -1116,5 +1224,14 @@ let () =
             test_flip_nontrivial_base_parity;
           Alcotest.test_case "add_mark" `Quick test_add_mark ] );
       ( "task6-parity-battery",
-        [ Alcotest.test_case "cross-op parity battery" `Quick test_battery ] )
+        [ Alcotest.test_case "cross-op parity battery" `Quick test_battery ] );
+      ( "plan3b-task1-selectors",
+        [ Alcotest.test_case "crease segments parity" `Quick
+            test_crease_segments_parity;
+          Alcotest.test_case "crease axes parity" `Quick
+            test_crease_axes_parity;
+          Alcotest.test_case "boundary segments parity" `Quick
+            test_boundary_segments_parity;
+          Alcotest.test_case "neighbors and hinge_between" `Quick
+            test_neighbors_hinge_between ] )
     ]

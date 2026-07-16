@@ -849,3 +849,131 @@ let flip (g : t) : t =
 (* Marks carry no invariants; append without re-validation. *)
 let add_mark (g : t) (m : mark) : t =
   { g with marks = Array.append g.marks [| m |] }
+
+(* {1 Selectors} *)
+
+(* Face ids sharing a hinge with face [i]. *)
+let neighbors (g : t) (i : int) : int list =
+  Array.fold_left
+    (fun acc (h : hinge) ->
+      if h.fa = i then h.fb :: acc
+      else if h.fb = i then h.fa :: acc
+      else acc)
+    [] g.hinges
+
+(* The hinge incident to face [i] whose paper segment equals (pa,pb) in either
+   order (old [edge_between], as an index). *)
+let hinge_between (g : t) (i : int) (pa : Geom.point) (pb : Geom.point) :
+    int option =
+  let n = Array.length g.hinges in
+  let rec go k =
+    if k >= n then None
+    else
+      let h = g.hinges.(k) in
+      let a, b = g.segs.(k) in
+      if (h.fa = i || h.fb = i)
+         && ((Geom.point_equal a pa && Geom.point_equal b pb)
+            || (Geom.point_equal a pb && Geom.point_equal b pa))
+      then Some k
+      else go (k + 1)
+  in
+  go 0
+
+let all_crease_ids (g : t) : int list =
+  let seen = Hashtbl.create 16 in
+  Array.iter
+    (fun (h : hinge) ->
+      if h.crease_id >= 0 then Hashtbl.replace seen h.crease_id ())
+    g.hinges;
+  Hashtbl.fold (fun k () acc -> k :: acc) seen []
+
+type crease_segment = {
+  faces : int * int;
+  ta : Geom.point;
+  tb : Geom.point;
+  pa : Geom.point;
+  pb : Geom.point;
+}
+
+(* Every material segment of crease [cid]. Degenerate pieces cannot exist in
+   the new model ([make] rejects them), so no positive-length filter is
+   needed. List order is unspecified. *)
+let crease_segments (g : t) (cid : int) : crease_segment list =
+  let acc = ref [] in
+  Array.iteri
+    (fun i (h : hinge) ->
+      if h.crease_id = cid then begin
+        let pa, pb = g.segs.(i) in
+        let ta, tb = hinge_table_segment g i in
+        acc := { faces = (h.fa, h.fb); ta; tb; pa; pb } :: !acc
+      end)
+    g.hinges;
+  !acc
+
+(* table-space endpoints of every piece of crease [cid] *)
+let crease_table_endpoints (g : t) (cid : int) : Geom.point list =
+  List.concat_map (fun s -> [ s.ta; s.tb ]) (crease_segments g cid)
+
+(* Boundary pieces of a paper edge [line]: walk every face's polygon sides on
+   [line] not paired with a neighbor across a hinge (port of the old function;
+   see its doc comment in fold_state.ml). *)
+let edge_boundary_segments (g : t) (line : Geom.line) : crease_segment list =
+  let acc = ref [] in
+  Array.iteri
+    (fun fi f ->
+      let m = Array.length f in
+      let iso2 = face_iso2 g fi in
+      for k = 0 to m - 1 do
+        let pa = f.(k) and pb = f.((k + 1) mod m) in
+        if
+          Geom.side_of_line line pa = 0
+          && Geom.side_of_line line pb = 0
+          && hinge_between g fi pa pb = None
+        then
+          let ta = Isometry.apply_point iso2 pa
+          and tb = Isometry.apply_point iso2 pb in
+          if not (Geom.point_equal ta tb) then
+            acc := { faces = (fi, -1); ta; tb; pa; pb } :: !acc
+      done)
+    g.faces;
+  List.rev !acc
+
+let rec pick_two_distinct = function
+  | a :: rest -> (
+      match List.find_opt (fun b -> not (Geom.point_equal a b)) rest with
+      | Some b -> Some (a, b)
+      | None -> pick_two_distinct rest)
+  | [] -> None
+
+let crease_axis (g : t) (cid : int) (l_orig : Geom.line) :
+    [ `Line of Geom.line | `Bent | `Empty ] =
+  match crease_table_endpoints g cid with
+  | [] -> `Empty
+  | pts ->
+      if List.for_all (fun p -> Geom.side_of_line l_orig p = 0) pts then
+        `Line l_orig
+      else (
+        match pick_two_distinct pts with
+        | None -> `Empty
+        | Some (a, b) ->
+            let l = Geom.line_through a b in
+            if List.for_all (fun p -> Geom.side_of_line l p = 0) pts then
+              `Line l
+            else `Bent)
+
+let crease_paper_axis (g : t) (cid : int) :
+    [ `Line of Geom.line | `Bent | `Empty ] =
+  let pts = ref [] in
+  Array.iteri
+    (fun i (h : hinge) ->
+      if h.crease_id = cid then begin
+        let a, b = g.segs.(i) in
+        pts := a :: b :: !pts
+      end)
+    g.hinges;
+  match pick_two_distinct !pts with
+  | None -> `Empty
+  | Some (a, b) ->
+      let l = Geom.line_through a b in
+      if List.for_all (fun p -> Geom.side_of_line l p = 0) !pts then `Line l
+      else `Bent

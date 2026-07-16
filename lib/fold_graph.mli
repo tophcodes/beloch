@@ -250,3 +250,44 @@ val flip : t -> t
 val add_mark : t -> mark -> t
 (** Append a paper-space mark. Marks carry no invariants, so this is a plain
     record update — no re-validation through [make]. *)
+
+(** {1 Selectors} *)
+
+val neighbors : t -> int -> int list
+(** Face ids sharing a hinge with face [i]. *)
+
+val hinge_between : t -> int -> Geom.point -> Geom.point -> int option
+(** Index of the hinge incident to face [i] whose paper segment equals
+    (pa,pb) in either order (old [edge_between], returning an index so
+    callers can reach [mv]/[intent]/[prov]). *)
+
+val all_crease_ids : t -> int list
+(** The distinct crease ids present in the current state. *)
+
+type crease_segment = {
+  faces : int * int;
+  ta : Geom.point;  (** table space *)
+  tb : Geom.point;  (** table space *)
+  pa : Geom.point;  (** paper space *)
+  pb : Geom.point;  (** paper space *)
+}
+
+val crease_segments : t -> int -> crease_segment list
+(** Every material segment of crease [cid]. List order is unspecified. *)
+
+val edge_boundary_segments : t -> Geom.line -> crease_segment list
+(** Boundary pieces of a paper edge [line] (one of the sheet's sides): the
+    polygon sides of every face lying on [line] that are not paired with a
+    neighbor across a hinge. List order is unspecified. *)
+
+val crease_axis : t -> int -> Geom.line -> [ `Line of Geom.line | `Bent | `Empty ]
+(** Classification of crease [cid] against its ORIGINAL table-space line
+    [l_orig]: [`Line l_orig] if every piece still lies on it, else [`Line l]
+    for the single line carrying every piece if one exists (reconstructed
+    from two distinct table endpoints), [`Bent] if the pieces are not
+    collinear, [`Empty] if the crease has no pieces. *)
+
+val crease_paper_axis : t -> int -> [ `Line of Geom.line | `Bent | `Empty ]
+(** The single PAPER-space line carrying every material segment of [cid], if
+    one exists; [`Bent] if segments born on different layers are mirror-image
+    scars on different paper lines, [`Empty] if the crease has no pieces. *)
