@@ -56,6 +56,10 @@
  (libraries beloch alcotest zarith str))
 
 (test
+ (name test_collapse_graph)
+ (libraries beloch alcotest zarith))
+
+(test
  (name test_flatten)
  (libraries beloch alcotest zarith str))
 

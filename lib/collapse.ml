@@ -453,3 +453,270 @@ let collapse (st : Fold_state.t) (es : elem list) ~(over : (int * int) list) :
           end
         end
       end
+
+(* --- collapse_graph: single-vertex collapse on the hinge-graph core
+   (Plan 3b Task 5, issue #48). Same algorithm as [collapse] above — the pure
+   helpers ([common_vertex], [far_of], [sort_ccw], [has_duplicate_ray],
+   [closure_ok], [linear_extensions], [effective_valley],
+   [sector_isometries], error strings) are reused as-is. The new core sets
+   hinge angles and a total face rank; placements (and hence overlaps) are
+   DERIVED by [Fold_graph.make], not composed by hand, so there is no
+   [folded]/[faces_for_anchor] analogue — re-anchoring is just a different
+   (root, base) into the same [make]. ------------------------------------- *)
+
+(* [sector_of], reworked to read a placed polygon (table-space) instead of a
+   [Fold_state.face] record: body identical to [sector_of], just parameterized
+   over (poly, iso2) so it also works against [Fold_graph.t]'s bare polygons +
+   derived 2D placements. *)
+let sector_of_poly (o : Geom.point) (rays : (Geom.point * 'a) array)
+    ((poly, iso2) : Geom.point array * Isometry.t) : int =
+  let n = Array.length rays in
+  let sumx = ref Num.zero and sumy = ref Num.zero in
+  Array.iter
+    (fun (p : Geom.point) ->
+      let tp = Isometry.apply_point iso2 p in
+      sumx := Num.add !sumx tp.Geom.x;
+      sumy := Num.add !sumy tp.Geom.y)
+    poly;
+  let m = Num.of_int (Array.length poly) in
+  let rep = { Geom.x = Num.div !sumx m; y = Num.div !sumy m } in
+  let ocoord = (o.Geom.x, o.Geom.y) in
+  let repc = (rep.Geom.x, rep.Geom.y) in
+  let found = ref (-1) in
+  for k = 0 to n - 1 do
+    let rk, _ = rays.(k) and rk1, _ = rays.((k + 1) mod n) in
+    let c0 = cross ocoord (rk.Geom.x, rk.Geom.y) repc in
+    let c1 = cross ocoord (rk1.Geom.x, rk1.Geom.y) repc in
+    if Num.sign c0 > 0 && Num.sign c1 < 0 then found := k
+  done;
+  if !found < 0 then
+    invalid_arg
+      "Collapse.sector_of_poly: representative not strictly inside a sector";
+  !found
+
+let collapse_graph (g : Fold_graph.t) (es : elem list)
+    ~(over : (int * int) list) : (Fold_graph.t, string) result =
+  let n = List.length es in
+  match common_vertex es with
+  | None -> Error e_no_vertex
+  | Some o when not (strictly_interior o) -> Error e_no_vertex
+  | Some o ->
+      if n < 4 || n mod 2 = 1 then Error e_count
+      else if List.exists (fun e -> not (on_unit_boundary (far_of o e))) es then
+        Error e_midpaper
+      else begin
+        let rays = Array.of_list (sort_ccw o es) in
+        if has_duplicate_ray o rays then Error e_dup_ray
+        else if not (closure_ok o rays) then Error e_kawasaki
+        else begin
+          let nm = List.length (List.filter (fun e -> not e.valley) es) in
+          let nv = n - nm in
+          if abs (nm - nv) <> 2 then Error e_maekawa
+          else begin
+            let tsec = sector_isometries o rays in
+            let faces = Fold_graph.faces g in
+            let nf = Array.length faces in
+            (* sector of each face (fixed, independent of stacking) *)
+            let sec =
+              Array.init nf (fun i ->
+                  sector_of_poly o rays (faces.(i), Fold_graph.face_iso2 g i))
+            in
+            (* a representative pre-collapse 2D placement per sector, feeding
+               [effective_valley] exactly as in [collapse] *)
+            let sector_iso = Array.make n Isometry.identity in
+            let sector_seen = Array.make n false in
+            for i = 0 to nf - 1 do
+              let s = sec.(i) in
+              if not sector_seen.(s) then begin
+                sector_seen.(s) <- true;
+                sector_iso.(s) <- Fold_graph.face_iso2 g i
+              end
+            done;
+            (* hinge constraints, verbatim *)
+            let constraints =
+              List.init n (fun j ->
+                  let l = (j - 1 + n) mod n in
+                  let _, e = rays.(j) in
+                  let eff = effective_valley e.valley tsec.(l) sector_iso.(l) in
+                  if eff then (j, l) else (l, j))
+            in
+            let stackings = linear_extensions n constraints in
+            let eff_of_ray j =
+              let l = (j - 1 + n) mod n in
+              let _, e = rays.(j) in
+              effective_valley e.valley tsec.(l) sector_iso.(l)
+            in
+            let ray_assign =
+              Array.init n (fun j ->
+                  if eff_of_ray j then Fold_graph.V else Fold_graph.M)
+            in
+            (* new hinges: every hinge whose crease matches a ray gets angle 1
+               + the ray's derived letter; others are carried unchanged *)
+            let old_hinges = Fold_graph.hinges g in
+            let new_hinges =
+              Array.mapi
+                (fun i (h : Fold_graph.hinge) ->
+                  let ta, tb = Fold_graph.hinge_table_segment g i in
+                  let hit = ref None in
+                  for j = 0 to n - 1 do
+                    let far, elem = rays.(j) in
+                    if
+                      elem.cid = h.Fold_graph.crease_id
+                      && Geom.on_segment (o, far) ta
+                      && Geom.on_segment (o, far) tb
+                    then hit := Some j
+                  done;
+                  match !hit with
+                  | Some j ->
+                      { h with Fold_graph.angle = Num.one; intent = ray_assign.(j) }
+                  | None -> h)
+                old_hinges
+            in
+            let marks = Fold_graph.marks g in
+            (* total face rank from a sector stacking: sort by
+               (srank.(sector), intra-sector order), tiebreak by index (never
+               fires — g's rank is a permutation, so distinct within a sector,
+               and srank is a permutation over sectors). *)
+            let g_rank = Fold_graph.rank g in
+            let intra i =
+              if Isometry.det_sign tsec.(sec.(i)) > 0 then g_rank.(i)
+              else - g_rank.(i)
+            in
+            let build_face_rank (srank : int array) : int array =
+              let idx = Array.init nf Fun.id in
+              Array.sort
+                (fun i j ->
+                  compare
+                    (srank.(sec.(i)), intra i, i)
+                    (srank.(sec.(j)), intra j, j))
+                idx;
+              let rank = Array.make nf 0 in
+              Array.iteri (fun h i -> rank.(i) <- h) idx;
+              rank
+            in
+            let candidate_at ~root ~base rank =
+              Fold_graph.make ~base ~marks ~faces ~hinges:new_hinges ~root ~rank ()
+            in
+            (* Simplification (binding, per the task-5 brief): validity is
+               rigid-motion invariant, so filtering may anchor at ANY proper
+               (orientation-preserving) sector's representative face — the
+               Kawasaki closure already checked guarantees [make]'s cycle
+               closure holds regardless of which one. *)
+            let rep =
+              let found = ref (-1) in
+              for i = 0 to nf - 1 do
+                if !found < 0 && Isometry.det_sign tsec.(sec.(i)) > 0 then
+                  found := i
+              done;
+              !found
+            in
+            let valid_srank =
+              List.filter
+                (fun srank ->
+                  match
+                    candidate_at ~root:rep ~base:(Fold_graph.face_iso g rep)
+                      (build_face_rank srank)
+                  with
+                  | Ok _ -> true
+                  | Error _ -> false)
+                stackings
+            in
+            if valid_srank = [] then Error e_selfint
+            else begin
+              (* over filter at the sector level, BEFORE face-rank expansion
+                 (matches old order: valid -> over -> dedup) *)
+              let over_ok srank =
+                List.for_all
+                  (fun (up, lo) ->
+                    let su = sec.(up) and sl = sec.(lo) in
+                    su = sl || srank.(su) > srank.(sl))
+                  over
+              in
+              let filtered = List.filter over_ok valid_srank in
+              if filtered = [] then Error e_contra
+              else begin
+                (* placements do not depend on rank, so any surviving
+                   candidate's flat projections give the overlap set once *)
+                let sample =
+                  match
+                    candidate_at ~root:rep ~base:(Fold_graph.face_iso g rep)
+                      (build_face_rank (List.hd filtered))
+                  with
+                  | Ok c -> c
+                  | Error _ -> assert false
+                in
+                let overlaps =
+                  let acc = ref [] in
+                  for i = 0 to nf - 1 do
+                    for j = i + 1 to nf - 1 do
+                      if
+                        Geom.convex_overlap
+                          (Fold_graph.table_polygon sample i)
+                          (Fold_graph.table_polygon sample j)
+                      then acc := (i, j) :: !acc
+                    done
+                  done;
+                  List.rev !acc
+                in
+                let signature fr =
+                  List.map (fun (i, j) -> (i, j, fr.(i) > fr.(j))) overlaps
+                in
+                let distinct =
+                  List.fold_left
+                    (fun acc srank ->
+                      let fr = build_face_rank srank in
+                      let s = signature fr in
+                      if List.exists (fun (s', _, _) -> s' = s) acc then acc
+                      else (s, srank, fr) :: acc)
+                    [] filtered
+                in
+                match distinct with
+                | [] -> Error e_selfint (* unreachable: filtered <> [] *)
+                | _ :: _ :: _ -> Error (e_ambig (List.length distinct))
+                | [ (_, srank, fr) ] ->
+                    (* anchor: proper sectors ascending by srank; prefer the
+                       lowest, else the first in-bounds one (old preference
+                       order — see [collapse]'s doc comment for the rationale) *)
+                    let proper =
+                      List.filter
+                        (fun s -> Isometry.det_sign tsec.(s) > 0)
+                        (List.init n Fun.id)
+                      |> List.sort (fun a b -> compare srank.(a) srank.(b))
+                    in
+                    let first_face_in_sector bb =
+                      let found = ref (-1) in
+                      for i = 0 to nf - 1 do
+                        if !found < 0 && sec.(i) = bb then found := i
+                      done;
+                      !found
+                    in
+                    let candidate_for bb =
+                      let root_bb = first_face_in_sector bb in
+                      candidate_at ~root:root_bb
+                        ~base:(Fold_graph.face_iso g root_bb) fr
+                    in
+                    let in_bounds gg =
+                      let nfg = Array.length (Fold_graph.faces gg) in
+                      let ok = ref true in
+                      for i = 0 to nfg - 1 do
+                        if
+                          not
+                            (Array.for_all Geom.in_unit_square
+                               (Fold_graph.table_polygon gg i))
+                        then ok := false
+                      done;
+                      !ok
+                    in
+                    let rec pick = function
+                      | [] -> Error e_out_of_paper
+                      | bb :: rest -> (
+                          match candidate_for bb with
+                          | Ok gg when in_bounds gg -> Ok gg
+                          | _ -> pick rest)
+                    in
+                    pick proper
+              end
+            end
+          end
+        end
+      end
