@@ -647,7 +647,24 @@ underneath (mountain). The default scope is every layer on the anchor's side —
 `valley XOR (the cutting face is back-up)`, fixed when the fold runs. Because
 stacked layers alternate front/back, one fold through a stack yields the correct
 **alternating** M/V across layers (the accordion). Earlier creases keep their
-assignment (material facts).
+assignment (material facts). This XOR rule is exact for a **simple fold** — one
+crease, one pre-fold parity check — and is *equivalent to* the more general
+rule below in that case.
+
+For a **multi-crease move** (`flatten`, §4.9 — several creases folding
+together at one vertex), the folded-form letter of each resulting crease is
+the **derived global-frame M/V** of the finished folded state: the
+mountain/valley assignment determined by the isometric folding map and its
+layer ordering together [hullzakharevich2023, §2.1] — which face is
+orientation-preserved and whether the two faces across the crease are above
+or below each other — the same notion the single-crease XOR is checking, just
+read off the finished state instead of computed per-ray during the fold. (An
+earlier implementation instead adjusted the per-ray XOR by a fan-index parity
+term to approximate this; that adjustment was a bug, not a spec rule, and is
+not carried into the 3D rewrite.) The derived letter is anchored to the
+crease pattern, not to which side of the paper is facing up: `flip` (§4.7)
+negates orientation and layer order together, so the derived M/V is
+unchanged — mountain stays mountain when the model is turned over.
 
 **Folding along existing material** — `fold` with no motion *(since
 v0.18-dev)*:

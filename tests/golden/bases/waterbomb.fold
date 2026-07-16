@@ -49,7 +49,7 @@
     {
       "axiom": "mark",
       "sources": [ "--ac" ],
-      "span": "waterbomb.bel:20:10-14",
+      "span": "waterbomb.bel:22:10-14",
       "name": null,
       "step": null
     },
@@ -57,7 +57,7 @@
     {
       "axiom": "mark",
       "sources": [ "--v" ],
-      "span": "waterbomb.bel:23:4-7",
+      "span": "waterbomb.bel:25:4-7",
       "name": null,
       "step": null
     },
@@ -65,7 +65,7 @@
     {
       "axiom": "mark",
       "sources": [ "--bd" ],
-      "span": "waterbomb.bel:20:34-38",
+      "span": "waterbomb.bel:22:34-38",
       "name": null,
       "step": null
     },
@@ -73,14 +73,14 @@
     {
       "axiom": "mark",
       "sources": [ "--h" ],
-      "span": "waterbomb.bel:21:4-7",
+      "span": "waterbomb.bel:23:4-7",
       "name": null,
       "step": null
     },
     {
       "axiom": "mark",
       "sources": [ "--ac" ],
-      "span": "waterbomb.bel:20:10-14",
+      "span": "waterbomb.bel:22:10-14",
       "name": null,
       "step": null
     },
@@ -89,7 +89,7 @@
     {
       "axiom": "mark",
       "sources": [ "--h" ],
-      "span": "waterbomb.bel:21:4-7",
+      "span": "waterbomb.bel:23:4-7",
       "name": null,
       "step": null
     },
@@ -97,7 +97,7 @@
     {
       "axiom": "mark",
       "sources": [ "--bd" ],
-      "span": "waterbomb.bel:20:34-38",
+      "span": "waterbomb.bel:22:34-38",
       "name": null,
       "step": null
     },
@@ -105,7 +105,7 @@
     {
       "axiom": "mark",
       "sources": [ "--v" ],
-      "span": "waterbomb.bel:23:4-7",
+      "span": "waterbomb.bel:25:4-7",
       "name": null,
       "step": null
     },
@@ -239,12 +239,12 @@
         [ 6, 7, -1 ]
       ],
       "beloch:step": null,
-      "beloch:source_line": 20,
+      "beloch:source_line": 22,
       "beloch:edges": [
         {
           "axiom": "mark",
           "sources": [ "--ac" ],
-          "span": "waterbomb.bel:20:10-14",
+          "span": "waterbomb.bel:22:10-14",
           "name": null,
           "step": null
         },
@@ -252,7 +252,7 @@
         {
           "axiom": "mark",
           "sources": [ "--v" ],
-          "span": "waterbomb.bel:23:4-7",
+          "span": "waterbomb.bel:25:4-7",
           "name": null,
           "step": null
         },
@@ -260,7 +260,7 @@
         {
           "axiom": "mark",
           "sources": [ "--bd" ],
-          "span": "waterbomb.bel:20:34-38",
+          "span": "waterbomb.bel:22:34-38",
           "name": null,
           "step": null
         },
@@ -268,14 +268,14 @@
         {
           "axiom": "mark",
           "sources": [ "--h" ],
-          "span": "waterbomb.bel:21:4-7",
+          "span": "waterbomb.bel:23:4-7",
           "name": null,
           "step": null
         },
         {
           "axiom": "mark",
           "sources": [ "--ac" ],
-          "span": "waterbomb.bel:20:10-14",
+          "span": "waterbomb.bel:22:10-14",
           "name": null,
           "step": null
         },
@@ -284,7 +284,7 @@
         {
           "axiom": "mark",
           "sources": [ "--h" ],
-          "span": "waterbomb.bel:21:4-7",
+          "span": "waterbomb.bel:23:4-7",
           "name": null,
           "step": null
         },
@@ -292,7 +292,7 @@
         {
           "axiom": "mark",
           "sources": [ "--bd" ],
-          "span": "waterbomb.bel:20:34-38",
+          "span": "waterbomb.bel:22:34-38",
           "name": null,
           "step": null
         },
@@ -300,7 +300,7 @@
         {
           "axiom": "mark",
           "sources": [ "--v" ],
-          "span": "waterbomb.bel:23:4-7",
+          "span": "waterbomb.bel:25:4-7",
           "name": null,
           "step": null
         },
