@@ -8,10 +8,34 @@ type face = Geom.point array
 (** 2D paper polygon, sheet coordinates; convex, CCW (same contract as the
     construction kernel — not re-validated here). *)
 
-type hinge = { fa : int; fb : int; line : Geom.line; angle : Num.t }
+type assign = M | V | F
+(** Mountain / valley / flat. Used both as a hinge's stored [intent]
+    (crease-pattern colour, user intent) and as [mv]'s derived result. *)
+
+type hinge = {
+  fa : int;
+  fb : int;
+  line : Geom.line;
+  angle : Num.t;
+  crease_id : int;  (** internal identity; unique within a state, never serialized *)
+  intent : assign;  (** crease-pattern colour (old eintent) — user intent, stored *)
+  prov : State.provenance option;
+}
 (** Crease between adjacent faces [fa] and [fb]. [angle] = dihedral/π. The
     sign does not affect a flat placement (±π half-turns coincide); M/V is
     derived from the rank (Plan 2c), never stored. *)
+
+type mark_geom = MSeg of Geom.point * Geom.point | MPoint of Geom.point
+
+type mark = {
+  mgeom : mark_geom;
+  mline : Geom.line;
+  mintent : assign;
+  mcrease_id : int;
+  mprov : State.provenance option;
+}
+(** Paper-space, fold-invariant reference/pinch record (moved verbatim from
+    the old Fold_state). No invariants of its own. *)
 
 type t
 
@@ -38,17 +62,29 @@ type violation =
 val violation_to_string : violation -> string
 
 val make :
+  ?base:Isometry3.t ->
+  ?marks:mark array ->
   faces:face array ->
   hinges:hinge array ->
   root:int ->
   rank:int array ->
+  unit ->
   (t, violation) result
 (** The only constructor. [rank].(i) is face i's stacking height (higher =
-    above), a permutation of 0..n-1. Checks in order: structure (indices,
-    rank, angle domain, line non-degeneracy), connectivity, hinge adjacency
-    (half-plane + shared edge), cycle closure, then the non-crossing
-    conditions (taco-tortilla, taco-taco) over the flat projection. Input
-    arrays are copied. *)
+    above), a permutation of 0..n-1. [base] is the root face's placement —
+    ONE whole-sheet rigid motion (default identity); needed because after a
+    pleat (fold, then fold moving the previously-stationary side) no face
+    keeps an identity placement, and [flip] moves everything. No per-face
+    freedom, so tears stay unrepresentable, and the closure/non-crossing
+    checks are unaffected (a rigid motion of everything). [marks] is a
+    paper-space, fold-invariant array of reference/pinch records (default
+    empty). The trailing [unit] anchors the two leading optional arguments
+    — OCaml cannot erase omitted optionals followed only by labelled
+    arguments. Checks in order: structure (indices, rank, angle domain,
+    line non-degeneracy), connectivity, hinge adjacency (half-plane +
+    shared edge), cycle closure, then the non-crossing conditions
+    (taco-tortilla, taco-taco) over the flat projection. Input arrays are
+    copied. *)
 
 val faces : t -> face array
 val hinges : t -> hinge array
@@ -70,14 +106,25 @@ val face_isos : t -> Isometry3.t array
 
 val face_iso : t -> int -> Isometry3.t
 
-type mv = M | V
+val base : t -> Isometry3.t
+(** The stored root-face placement (see [make]'s [base] parameter). *)
+
+val marks : t -> mark array
+(** Copy of the paper-space marks carried on the state. *)
 
 val face_up : t -> int -> bool
 (** Face's derived placement preserves in-plane orientation (an even number
     of folds crossed from the root). *)
 
-val mv : t -> int -> mv option
-(** Derived mountain/valley of hinge [i], from placements + rank
+val mv : t -> int -> assign
+(** Derived mountain/valley/flat of hinge [i], from placements + rank
     [hullzakharevich2023, §2.1]: valley iff the orientation-preserved side
-    lies below its neighbour. [None] for a flat hinge. Derived, never
-    stored — it cannot contradict the geometry. *)
+    lies below its neighbour; [F] iff the hinge's angle is 0. Derived,
+    never stored — it cannot contradict the geometry. *)
+
+val fresh_crease_id : unit -> int
+(** Mints a fresh internal crease id, unique within a reset cycle. *)
+
+val reset_ids : unit -> unit
+(** Resets the crease-id counter to 0 (called once per eval, so ids are a
+    deterministic function of the program). *)

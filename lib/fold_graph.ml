@@ -11,15 +11,51 @@ module I3 = Isometry3
 
 type face = Geom.point array
 
-type hinge = { fa : int; fb : int; line : Geom.line; angle : Num.t }
+type assign = M | V | F
+
+type hinge = {
+  fa : int;
+  fb : int;
+  line : Geom.line;
+  angle : Num.t;
+  crease_id : int;  (* internal identity; unique within a state, never serialized *)
+  intent : assign;  (* crease-pattern colour (old eintent) — user intent, stored *)
+  prov : State.provenance option;
+}
+
+type mark_geom = MSeg of Geom.point * Geom.point | MPoint of Geom.point
+
+(* Paper-space, fold-invariant reference/pinch record (moved verbatim from the
+   old Fold_state; see that module's doc comment). No invariants of its own. *)
+type mark = {
+  mgeom : mark_geom;
+  mline : Geom.line;
+  mintent : assign;
+  mcrease_id : int;
+  mprov : State.provenance option;
+}
 
 type t = {
   faces : face array;
   hinges : hinge array;
   root : int;
   rank : int array;  (* stacking height per face, higher = above; permutation *)
+  base : Isometry3.t;  (* placement of the root face — ONE whole-sheet motion *)
+  marks : mark array;
   isos : Isometry3.t array;  (* derived in [make] (memoized BFS); [t] abstract ⇒ cannot desync *)
+  segs : (Geom.point * Geom.point) array [@warning "-69"];
+      (* per-hinge shared paper segment; unread until Task 2 exposes an accessor *)
 }
+
+(* Mints internal crease ids; reset per eval so ids are a deterministic
+   function of the program. Own counter — the old Fold_state keeps its own
+   until Plan 3c deletes it. *)
+let next_id = ref 0
+let reset_ids () = next_id := 0
+let fresh_crease_id () =
+  let id = !next_id in
+  incr next_id;
+  id
 
 type violation =
   | Bad_index of string
@@ -79,13 +115,14 @@ let hinge_motion (h : hinge) : I3.t =
    involutions), but the direction-awareness is what keeps this — and the
    uniform closure check in [make] — valid for Stage B's non-involutive rπ
    rotations. [seen] doubles as the connectivity witness. *)
-let derive_isos ~(faces : face array) ~(hinges : hinge array) ~(root : int) :
-    I3.t array * bool array =
+let derive_isos ~(faces : face array) ~(hinges : hinge array) ~(root : int)
+    ~(base : I3.t) : I3.t array * bool array =
   let n = Array.length faces in
   let iso = Array.make n I3.identity in
   let seen = Array.make n false in
   let queue = Queue.create () in
   seen.(root) <- true;
+  iso.(root) <- base;
   Queue.push root queue;
   while not (Queue.is_empty queue) do
     let fi = Queue.pop queue in
@@ -198,11 +235,16 @@ let check_structure ~(faces : face array) ~(hinges : hinge array) ~(root : int)
       if r < 0 || r >= n || hit.(r) then raise (V Bad_rank) else hit.(r) <- true)
     rank
 
-let make ~(faces : face array) ~(hinges : hinge array) ~(root : int)
-    ~(rank : int array) : (t, violation) result =
+(* [?base]/[?marks] are LEADING optional arguments with only labelled
+   required arguments after them; OCaml can only erase omitted optional
+   arguments when a positional argument follows, so [make] takes a trailing
+   [unit] to anchor that — existing call sites add a trailing [()]. *)
+let make ?(base = I3.identity) ?(marks = [||]) ~(faces : face array)
+    ~(hinges : hinge array) ~(root : int) ~(rank : int array) () :
+    (t, violation) result =
   try
     check_structure ~faces ~hinges ~root ~rank;
-    let isos, seen = derive_isos ~faces ~hinges ~root in
+    let isos, seen = derive_isos ~faces ~hinges ~root ~base in
     Array.iteri (fun i s -> if not s then raise (V (Disconnected i))) seen;
     (* hinge adjacency: each hinge's line must carry a positive-length shared
        boundary segment between its faces (paper space); the segments feed the
@@ -278,7 +320,10 @@ let make ~(faces : face array) ~(hinges : hinge array) ~(root : int)
         hinges = Array.copy hinges;
         root;
         rank = Array.copy rank;
+        base;
+        marks = Array.copy marks;
         isos;
+        segs;
       }
   with V v -> Error v
 
@@ -289,8 +334,8 @@ let rank (g : t) : int array = Array.copy g.rank
 let above (g : t) (i : int) (j : int) : bool = g.rank.(i) > g.rank.(j)
 let face_isos (g : t) : I3.t array = Array.copy g.isos
 let face_iso (g : t) (i : int) : I3.t = g.isos.(i)
-
-type mv = M | V
+let base (g : t) : I3.t = g.base
+let marks (g : t) : mark array = Array.copy g.marks
 
 (* Does face [i]'s derived placement preserve in-plane orientation? The
    motions here map the z=0 plane to itself with 3D determinant +1 (identity,
@@ -306,12 +351,12 @@ let face_up (g : t) (i : int) : bool = Num.sign g.isos.(i).I3.m22 > 0
    the equality negate (above by rank antisymmetry, face_up because a folded
    hinge separates one face-up from one face-down placement), so both
    readings give the same M/V. Flat hinges
-   (angle = 0) carry no M/V. Derived, never stored: rank and placements are
+   (angle = 0) derive F. Derived, never stored: rank and placements are
    the only inputs, so MV cannot contradict the geometry. Stage B: partial
    angles (rπ) make m22 = cos(rπ) ≠ ±1 and "folded" non-binary — both this
    and [face_up] need revisiting when the angle domain widens (until then
    [make]'s Bad_angle check keeps them unreachable). *)
-let mv (g : t) (i : int) : mv option =
+let mv (g : t) (i : int) : assign =
   let h = g.hinges.(i) in
-  if Num.sign h.angle = 0 then None
-  else Some (if above g h.fb h.fa = face_up g h.fa then V else M)
+  if Num.sign h.angle = 0 then F
+  else if above g h.fb h.fa = face_up g h.fa then V else M

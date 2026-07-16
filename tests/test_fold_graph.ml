@@ -16,13 +16,17 @@ let vline k : Geom.line = { Geom.a = q 1; b = q 0; c = q k }
 (* line y = k : a=0,b=1,c=k *)
 let hline k : Geom.line = { Geom.a = q 0; b = q 1; c = q k }
 
+(* Task 1 helper: metadata-carrying hinge literal with defaults *)
+let mkh ?(cid = -1) ?(intent = Fold_graph.F) ?(prov = None) fa fb line angle =
+  { Fold_graph.fa; fb; line; angle; crease_id = cid; intent; prov }
+
 let mk ?(root = 0) ~faces ~hinges ~rank () =
-  match Fold_graph.make ~faces ~hinges ~root ~rank with
+  match Fold_graph.make ~faces ~hinges ~root ~rank () with
   | Ok g -> g
   | Error v -> Alcotest.failf "expected Ok, got: %s" (Fold_graph.violation_to_string v)
 
 let expect_error label pred ~faces ~hinges ~root ~rank =
-  match Fold_graph.make ~faces ~hinges ~root ~rank with
+  match Fold_graph.make ~faces ~hinges ~root ~rank () with
   | Ok _ -> Alcotest.fail (label ^ ": expected a violation, got Ok")
   | Error v ->
       Alcotest.(check bool)
@@ -34,8 +38,7 @@ let strip_face k w = sq (gp k 0) (gp (k + w) 0) (gp (k + w) 1) (gp k 1)
 
 (* SINGLE FOLD: square split at x=1; face1 folded across x=1 onto face0. *)
 let single_fold_faces () = [| strip_face 0 1; strip_face 1 1 |]
-let single_fold_hinges () =
-  [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = q 1 } |]
+let single_fold_hinges () = [| mkh 0 1 (vline 1) (q 1) |]
 
 let test_single_fold () =
   let g =
@@ -53,10 +56,7 @@ let test_single_fold () =
 (* ACCORDION: strip [0,1],[1,2],[2,3]; hinges at x=1 and x=2, both folded. *)
 let test_accordion () =
   let faces = [| strip_face 0 1; strip_face 1 1; strip_face 2 1 |] in
-  let hinges =
-    [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = q 1 };
-       { Fold_graph.fa = 1; fb = 2; line = vline 2; angle = q 1 } |]
-  in
+  let hinges = [| mkh 0 1 (vline 1) (q 1); mkh 1 2 (vline 2) (q 1) |] in
   let g = mk ~faces ~hinges ~rank:[| 0; 1; 2 |] () in
   let isos = Fold_graph.face_isos g in
   let half = Num.of_q (Q.of_ints 1 2) in
@@ -67,9 +67,7 @@ let test_accordion () =
        { Isometry3.x = half; y = half; z = q 0 })
 
 let test_rejects_bad_angle () =
-  let hinges =
-    [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = Num.of_q (Q.of_ints 1 2) } |]
-  in
+  let hinges = [| mkh 0 1 (vline 1) (Num.of_q (Q.of_ints 1 2)) |] in
   expect_error "angle 1/2 outside flat-first domain"
     (function Fold_graph.Bad_angle 0 -> true | _ -> false)
     ~faces:(single_fold_faces ()) ~hinges ~root:0 ~rank:[| 0; 1 |]
@@ -88,7 +86,7 @@ let test_rejects_bad_index () =
   expect_error "hinge face out of range"
     (function Fold_graph.Bad_index _ -> true | _ -> false)
     ~faces:(single_fold_faces ())
-    ~hinges:[| { Fold_graph.fa = 0; fb = 5; line = vline 1; angle = q 1 } |]
+    ~hinges:[| mkh 0 5 (vline 1) (q 1) |]
     ~root:0 ~rank:[| 0; 1 |];
   expect_error "root out of range"
     (function Fold_graph.Bad_index _ -> true | _ -> false)
@@ -103,9 +101,9 @@ let test_rejects_disconnected () =
 let test_rejects_hinge_line_not_between () =
   (* line x=1/2 cuts face0 instead of separating the faces *)
   let hinges =
-    [| { Fold_graph.fa = 0; fb = 1;
-         line = { Geom.a = q 1; b = q 0; c = Num.of_q (Q.of_ints 1 2) };
-         angle = q 1 } |]
+    [| mkh 0 1
+         { Geom.a = q 1; b = q 0; c = Num.of_q (Q.of_ints 1 2) }
+         (q 1) |]
   in
   expect_error "line cuts a face"
     (function Fold_graph.Hinge_not_shared 0 -> true | _ -> false)
@@ -115,9 +113,9 @@ let test_rejects_hinge_gap () =
   (* faces [0,1]² and [2,3]²: opposite sides of x=3/2, but no shared edge *)
   let faces = [| strip_face 0 1; strip_face 2 1 |] in
   let hinges =
-    [| { Fold_graph.fa = 0; fb = 1;
-         line = { Geom.a = q 1; b = q 0; c = Num.of_q (Q.of_ints 3 2) };
-         angle = q 1 } |]
+    [| mkh 0 1
+         { Geom.a = q 1; b = q 0; c = Num.of_q (Q.of_ints 3 2) }
+         (q 1) |]
   in
   expect_error "faces do not touch the line"
     (function Fold_graph.Hinge_not_shared 0 -> true | _ -> false)
@@ -128,9 +126,7 @@ let test_rejects_hinge_vertex_touch () =
   let faces =
     [| strip_face 0 1; sq (gp 1 1) (gp 2 1) (gp 2 2) (gp 1 2) |]
   in
-  let hinges =
-    [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = q 1 } |]
-  in
+  let hinges = [| mkh 0 1 (vline 1) (q 1) |] in
   expect_error "zero-length shared boundary"
     (function Fold_graph.Hinge_not_shared 0 -> true | _ -> false)
     ~faces ~hinges ~root:0 ~rank:[| 0; 1 |]
@@ -144,10 +140,10 @@ let quadrant_faces () =
      sq (gp 0 1) (gp 1 1) (gp 1 2) (gp 0 2) |]
 
 let quadrant_hinges ~last_angle =
-  [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = q 1 };
-     { Fold_graph.fa = 1; fb = 2; line = hline 1; angle = q 1 };
-     { Fold_graph.fa = 2; fb = 3; line = vline 1; angle = q 1 };
-     { Fold_graph.fa = 3; fb = 0; line = hline 1; angle = last_angle } |]
+  [| mkh 0 1 (vline 1) (q 1);
+     mkh 1 2 (hline 1) (q 1);
+     mkh 2 3 (vline 1) (q 1);
+     mkh 3 0 (hline 1) last_angle |]
 
 let test_cycle_closes_fold_in_quarters () =
   (* all four creases folded: reflections compose to identity around the
@@ -175,8 +171,7 @@ let test_cycle_tear_rejected () =
 let tortilla_faces () = [| strip_face 0 2; strip_face 2 1; strip_face 3 1 |]
 
 let tortilla_hinges () =
-  [| { Fold_graph.fa = 0; fb = 1; line = vline 2; angle = q 1 };
-     { Fold_graph.fa = 1; fb = 2; line = vline 3; angle = q 1 } |]
+  [| mkh 0 1 (vline 2) (q 1); mkh 1 2 (vline 3) (q 1) |]
 
 let test_taco_tortilla_fires () =
   (* f0 stacked between the taco (f1|f2) whose crease it straddles *)
@@ -213,9 +208,9 @@ let quarters_faces () =
   [| strip_face 0 1; strip_face 1 1; strip_face 2 1; strip_face 3 1 |]
 
 let quarters_hinges () =
-  [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = q 1 };
-     { Fold_graph.fa = 1; fb = 2; line = vline 2; angle = q 1 };
-     { Fold_graph.fa = 2; fb = 3; line = vline 3; angle = q 1 } |]
+  [| mkh 0 1 (vline 1) (q 1);
+     mkh 1 2 (vline 2) (q 1);
+     mkh 2 3 (vline 3) (q 1) |]
 
 let test_taco_taco_fires () =
   (* f2 inside taco (f0|f1), f3 outside: the pairs interleave — the paper
@@ -268,8 +263,7 @@ let test_make_deep_copies_input_faces () =
 
 let test_rejects_degenerate_hinge_line () =
   let hinges =
-    [| { Fold_graph.fa = 0; fb = 1;
-         line = { Geom.a = q 0; b = q 0; c = q 1 }; angle = q 1 } |]
+    [| mkh 0 1 { Geom.a = q 0; b = q 0; c = q 1 } (q 1) |]
   in
   expect_error "degenerate hinge line a=b=0"
     (function Fold_graph.Bad_line 0 -> true | _ -> false)
@@ -285,7 +279,7 @@ let test_mv_single_fold_valley () =
   in
   Alcotest.(check bool) "f0 is face-up" true (Fold_graph.face_up g 0);
   Alcotest.(check bool) "f1 is face-down" false (Fold_graph.face_up g 1);
-  Alcotest.(check bool) "hinge 0 is V" true (Fold_graph.mv g 0 = Some Fold_graph.V)
+  Alcotest.(check bool) "hinge 0 is V" true (Fold_graph.mv g 0 = Fold_graph.V)
 
 let test_mv_single_fold_mountain () =
   (* same fold, f1 tucked UNDER f0: mountain *)
@@ -293,31 +287,28 @@ let test_mv_single_fold_mountain () =
     mk ~faces:(single_fold_faces ()) ~hinges:(single_fold_hinges ())
       ~rank:[| 1; 0 |] ()
   in
-  Alcotest.(check bool) "hinge 0 is M" true (Fold_graph.mv g 0 = Some Fold_graph.M)
+  Alcotest.(check bool) "hinge 0 is M" true (Fold_graph.mv g 0 = Fold_graph.M)
 
 let test_mv_side_symmetric () =
   (* swapping fa/fb in the hinge record must not change the derived MV *)
-  let hinges = [| { Fold_graph.fa = 1; fb = 0; line = vline 1; angle = q 1 } |] in
+  let hinges = [| mkh 1 0 (vline 1) (q 1) |] in
   let g = mk ~faces:(single_fold_faces ()) ~hinges ~rank:[| 0; 1 |] () in
   Alcotest.(check bool) "still V with fa/fb swapped" true
-    (Fold_graph.mv g 0 = Some Fold_graph.V)
+    (Fold_graph.mv g 0 = Fold_graph.V)
 
 let test_mv_flat_hinge_none () =
   (* two coplanar faces joined by an unfolded crease: no M/V *)
-  let hinges = [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = q 0 } |] in
+  let hinges = [| mkh 0 1 (vline 1) (q 0) |] in
   let g = mk ~faces:(single_fold_faces ()) ~hinges ~rank:[| 0; 1 |] () in
-  Alcotest.(check bool) "flat hinge has no MV" true (Fold_graph.mv g 0 = None)
+  Alcotest.(check bool) "flat hinge has no MV" true (Fold_graph.mv g 0 = Fold_graph.F)
 
 let test_mv_accordion_zigzag () =
   (* accordion bottom-to-top f0,f1,f2: the two creases alternate V then M *)
   let faces = [| strip_face 0 1; strip_face 1 1; strip_face 2 1 |] in
-  let hinges =
-    [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = q 1 };
-       { Fold_graph.fa = 1; fb = 2; line = vline 2; angle = q 1 } |]
-  in
+  let hinges = [| mkh 0 1 (vline 1) (q 1); mkh 1 2 (vline 2) (q 1) |] in
   let g = mk ~faces ~hinges ~rank:[| 0; 1; 2 |] () in
-  Alcotest.(check bool) "hinge 0 is V" true (Fold_graph.mv g 0 = Some Fold_graph.V);
-  Alcotest.(check bool) "hinge 1 is M" true (Fold_graph.mv g 1 = Some Fold_graph.M)
+  Alcotest.(check bool) "hinge 0 is V" true (Fold_graph.mv g 0 = Fold_graph.V);
+  Alcotest.(check bool) "hinge 1 is M" true (Fold_graph.mv g 1 = Fold_graph.M)
 
 (* Waterbomb-base 8-fan around the square's centre: sector faces
    (c, p_k, p_{k+1}), hinges through c, all folded; the classic
@@ -345,8 +336,7 @@ let wb_lines =
      { Geom.a = q 0; b = q 1; c = half } |]
 
 let wb_hinges () =
-  Array.init 8 (fun k ->
-      { Fold_graph.fa = k; fb = (k + 1) mod 8; line = wb_lines.(k); angle = q 1 })
+  Array.init 8 (fun k -> mkh k ((k + 1) mod 8) wb_lines.(k) (q 1))
 
 let test_waterbomb_constructs () =
   (* the full 8-cycle passes closure (Kawasaki) and non-crossing (spiral wrap) *)
@@ -382,15 +372,15 @@ let test_waterbomb_mv_maekawa () =
       Alcotest.(check bool)
         (Printf.sprintf "hinge %d assignment" i)
         true
-        (Fold_graph.mv g i = Some e))
+        (Fold_graph.mv g i = e))
     expected;
   let m, v =
     Array.fold_left
       (fun (m, v) i ->
         match Fold_graph.mv g i with
-        | Some Fold_graph.M -> (m + 1, v)
-        | Some Fold_graph.V -> (m, v + 1)
-        | None -> (m, v))
+        | Fold_graph.M -> (m + 1, v)
+        | Fold_graph.V -> (m, v + 1)
+        | Fold_graph.F -> (m, v))
       (0, 0)
       (Array.init 8 (fun i -> i))
   in
@@ -412,6 +402,63 @@ let test_waterbomb_tear_rejected () =
   expect_error "7-of-8 folded tears"
     (function Fold_graph.Hinge_not_closed _ -> true | _ -> false)
     ~faces:(wb_faces ()) ~hinges ~root:0 ~rank:[| 0; 1; 2; 3; 4; 5; 6; 7 |]
+
+(* --- Plan 3a Task 1: metadata, marks, base ------------------------------- *)
+
+let test_metadata_carried () =
+  let faces = single_fold_faces () in
+  let hinges = [| mkh ~cid:7 ~intent:Fold_graph.V 0 1 (vline 1) (q 1) |] in
+  let g = mk ~faces ~hinges ~rank:[| 0; 1 |] () in
+  let h = (Fold_graph.hinges g).(0) in
+  Alcotest.(check int) "crease_id" 7 h.Fold_graph.crease_id;
+  Alcotest.(check bool) "intent" true (h.Fold_graph.intent = Fold_graph.V)
+
+let test_mv_total () =
+  (* folded hinge derives M or V; flat hinge derives F *)
+  let faces = single_fold_faces () in
+  let folded = mk ~faces ~hinges:[| mkh 0 1 (vline 1) (q 1) |] ~rank:[| 0; 1 |] () in
+  Alcotest.(check bool) "folded = V" true (Fold_graph.mv folded 0 = Fold_graph.V);
+  let flat = mk ~faces ~hinges:[| mkh 0 1 (vline 1) (q 0) |] ~rank:[| 0; 1 |] () in
+  Alcotest.(check bool) "flat = F" true (Fold_graph.mv flat 0 = Fold_graph.F)
+
+let test_base_shifts_placements () =
+  (* base = translation by (3,0): derived table coords shift; invariants hold *)
+  let tr =
+    { Isometry3.identity with Isometry3.tx = q 3 }
+  in
+  let faces = single_fold_faces () in
+  let hinges = [| mkh 0 1 (vline 1) (q 1) |] in
+  match Fold_graph.make ~base:tr ~faces ~hinges ~root:0 ~rank:[| 0; 1 |] () with
+  | Error v -> Alcotest.failf "base: %s" (Fold_graph.violation_to_string v)
+  | Ok g ->
+      Alcotest.(check bool) "base stored" true
+        (Isometry3.equal (Fold_graph.base g) tr);
+      let p = Isometry3.apply_point (Fold_graph.face_iso g 0) (p3 0 0 0) in
+      Alcotest.(check bool) "root shifted" true (i3eq p (p3 3 0 0))
+
+let test_marks_carried () =
+  let m =
+    { Fold_graph.mgeom = Fold_graph.MPoint (gp 0 0);
+      mline = vline 0; mintent = Fold_graph.M; mcrease_id = 3; mprov = None }
+  in
+  let g =
+    match
+      Fold_graph.make ~marks:[| m |] ~faces:[| strip_face 0 2 |] ~hinges:[||]
+        ~root:0 ~rank:[| 0 |] ()
+    with
+    | Ok g -> g
+    | Error v -> Alcotest.failf "marks: %s" (Fold_graph.violation_to_string v)
+  in
+  Alcotest.(check int) "one mark" 1 (Array.length (Fold_graph.marks g))
+
+let test_fresh_ids () =
+  Fold_graph.reset_ids ();
+  let a = Fold_graph.fresh_crease_id () in
+  let b = Fold_graph.fresh_crease_id () in
+  Alcotest.(check int) "0" 0 a;
+  Alcotest.(check int) "1" 1 b;
+  Fold_graph.reset_ids ();
+  Alcotest.(check int) "reset" 0 (Fold_graph.fresh_crease_id ())
 
 let () =
   Alcotest.run "fold_graph"
@@ -469,4 +516,11 @@ let () =
           Alcotest.test_case "illegal wrap order rejected" `Quick
             test_waterbomb_bad_wrap_rejected;
           Alcotest.test_case "7-of-8 folded tears" `Quick
-            test_waterbomb_tear_rejected ] ) ]
+            test_waterbomb_tear_rejected ] );
+      ( "task1-metadata",
+        [ Alcotest.test_case "metadata carried" `Quick test_metadata_carried;
+          Alcotest.test_case "mv total" `Quick test_mv_total;
+          Alcotest.test_case "base shifts placements" `Quick
+            test_base_shifts_placements;
+          Alcotest.test_case "marks carried" `Quick test_marks_carried;
+          Alcotest.test_case "fresh ids" `Quick test_fresh_ids ] ) ]
