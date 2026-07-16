@@ -778,9 +778,10 @@ then reworked into **one solver pipeline** (v0.23-dev,
 ray given, the missing one solved for, a trailing `toward` mandatory to pick
 a side). That split is gone: every `flatten` statement now runs the same
 solve. `()` items state the topology — the rays sharing the vertex — and any
-material facts already known (`mountain`/`valley`, `over`, `standing`); these
-are **hard constraints** that *filter* the solution space, never pick a
-winner. The solver fills in the rest — the M/V of every unmarked ray, the one
+material facts already known (`mountain`/`valley`, `over`); these are **hard
+constraints** that *filter* the solution space, never pick a winner
+(`standing` shares the item form but is reserved — parsed, rejected at
+evaluation; see the check table). The solver fills in the rest — the M/V of every unmarked ray, the one
 emergent ray when the given count is odd (still not constructible by any
 Huzita axiom; it exists only because flat-foldability forces it), and the
 stacking — subject to Maekawa and Kawasaki, which act as the solve's oracle
@@ -810,9 +811,9 @@ over_flap     := point_operand | "#[" point_operand+ "]"
 ```
 
 `()` and `{}` are semantically distinct, not stylistic: a parenthesised item
-states a constraint on the vertex — a ray, an M/V pin, an `over` order, a
-`standing` flap — and *filters* the solution space; `{toward .p}` *selects*
-from whatever survives. `{toward .p}` is itself an item — it may appear in
+states a constraint on the vertex — a ray, an M/V pin, an `over` order — and
+*filters* the solution space; `{toward .p}` *selects* from whatever
+survives. `{toward .p}` is itself an item — it may appear in
 any position among the parenthesised ones — and at most once; a second
 occurrence is a parse error (`` only one {toward} per flatten ``).
 

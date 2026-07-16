@@ -126,15 +126,18 @@ type stmt =
   | StepMark of string * Error.span
   | Flatten of string option * collapse_elem list * (flap_arg * flap_arg) list
                 * flap_arg option * point_operand option * Error.span
-      (* [--r =] flatten <elements> [over-pairs] [standing] [toward .p]:
-         simultaneous multi-crease fold. elements = the creases folded, each
-         with its own direction; over-pairs = (upper flap, lower flap)
-         layer-order constraints; standing = the flap that stays upright
-         (unfolded). name_opt Some = `--r = flatten ...` binds --r to a
-         selectable bundle of the participating rays (validate mode: the
-         given rays). toward Some = DERIVE mode: elements are an odd set of
-         given rays sharing one vertex; the emergent crease completing them
-         to a flat-foldable vertex is solved (Flatten.derive) on the `toward`
-         side, then the completed set is folded via Collapse.collapse. *)
+      (* [--r =] flatten <items>: single-vertex multi-crease fold, ONE solver
+         pipeline (spec §4.9). elements = the given rays, each with an
+         mv_constraint (MvFree = solver-assigned; mountain/valley = hard
+         pin); over-pairs = (upper flap, lower flap) stacking constraints;
+         standing = reserved (parsed, rejected at eval). An odd ray count
+         makes the emergent completing ray part of the solution space
+         (Flatten.candidates). The realization space (candidate × Maekawa
+         M/V pattern × stacking, via Collapse.collapse_all) is filtered by
+         the hard constraints; the `{toward .p}` item (the point_operand
+         option) selects among survivors by the three-stage rule (position
+         class, min-mountain canon, centered-rank dipole). name_opt Some
+         binds --r to the emergent crease (when one was materialized) or the
+         given-ray bundle. *)
 
 type program = stmt list
