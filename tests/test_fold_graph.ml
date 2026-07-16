@@ -751,6 +751,110 @@ let test_fold_then_subdivide_parity () =
   let st = Fold_state.subdivide st1 diag ~prov:None in
   check_parity "fold then subdivide" g st
 
+(* --- Task 4 coverage: unfold toggle, intent letters, root/base branches --- *)
+
+let test_fold_unfold_toggle () =
+  (* book fold, then re-fold along the SAME axis moving only the top layer
+     back: the on-axis hinge toggles 1 -> 0 (physical unfold), intent kept *)
+  Fold_graph.reset_ids ();
+  let half = Num.div Num.one (Num.of_int 2) in
+  let ax = { Geom.a = q 1; b = q 0; c = half } in
+  let g1 = Fold_graph.fold Fold_graph.init_square ~axis:ax ~move_side:1
+      ~valley:true ~prov:None in
+  (* find the folded hinge and its moved-side face (the face that is Above) *)
+  let hs = Fold_graph.hinges g1 in
+  Alcotest.(check int) "one hinge" 1 (Array.length hs);
+  let h = hs.(0) in
+  Alcotest.(check bool) "folded" true (Num.sign h.Fold_graph.angle <> 0);
+  let intent_before = h.Fold_graph.intent in
+  let top = if Fold_graph.rel g1 h.Fold_graph.fa h.Fold_graph.fb = Fold_graph.Above
+            then h.Fold_graph.fa else h.Fold_graph.fb in
+  let moving = Array.make (Array.length (Fold_graph.faces g1)) false in
+  moving.(top) <- true;
+  (* the top layer's material lies on side -1 of the axis; folding it back *)
+  let g2 = Fold_graph.fold g1 ~axis:ax ~move_side:(-1) ~valley:false
+      ~moving_parents:moving ~prov:None in
+  let hs2 = Fold_graph.hinges g2 in
+  Alcotest.(check int) "still one hinge" 1 (Array.length hs2);
+  Alcotest.(check bool) "unfolded: angle 0" true
+    (Num.sign hs2.(0).Fold_graph.angle = 0);
+  Alcotest.(check bool) "intent kept" true
+    (hs2.(0).Fold_graph.intent = intent_before);
+  Alcotest.(check bool) "derived mv is F" true
+    (Fold_graph.mv g2 0 = Fold_graph.F);
+  Alcotest.(check bool) "faces apart again" true
+    (Fold_graph.rel g2 0 1 = Fold_graph.Apart);
+  (* the sheet is the open unit square again: every table vertex in [0,1]^2 *)
+  Array.iteri
+    (fun i _ ->
+      Alcotest.(check bool) (Printf.sprintf "face %d back on sheet" i) true
+        (Array.for_all Geom.in_unit_square (Fold_graph.table_polygon g2 i)))
+    (Fold_graph.faces g2)
+
+let test_fold_intent_letters () =
+  Fold_graph.reset_ids ();
+  let half = Num.div Num.one (Num.of_int 2) in
+  let ax = { Geom.a = q 1; b = q 0; c = half } in
+  (* valley fold on a face-up sheet mints intent V *)
+  let gv = Fold_graph.fold Fold_graph.init_square ~axis:ax ~move_side:1
+      ~valley:true ~prov:None in
+  Alcotest.(check bool) "valley mints V" true
+    ((Fold_graph.hinges gv).(0).Fold_graph.intent = Fold_graph.V);
+  (* mountain fold mints M *)
+  Fold_graph.reset_ids ();
+  let gm = Fold_graph.fold Fold_graph.init_square ~axis:ax ~move_side:1
+      ~valley:false ~prov:None in
+  Alcotest.(check bool) "mountain mints M" true
+    ((Fold_graph.hinges gm).(0).Fold_graph.intent = Fold_graph.M);
+  (* precrease scored with intent M, then VALLEY-folded on that axis:
+     upgrade overwrites intent with the live letter V (old #27 semantics) *)
+  Fold_graph.reset_ids ();
+  let g0 = Fold_graph.subdivide Fold_graph.init_square ax
+      ~intent:Fold_graph.M ~prov:None in
+  let g1 = Fold_graph.fold g0 ~axis:ax ~move_side:1 ~valley:true ~prov:None in
+  let folded =
+    Array.to_list (Fold_graph.hinges g1)
+    |> List.filter (fun h -> Num.sign h.Fold_graph.angle <> 0)
+  in
+  Alcotest.(check int) "one folded hinge" 1 (List.length folded);
+  Alcotest.(check bool) "upgraded intent = V" true
+    ((List.hd folded).Fold_graph.intent = Fold_graph.V)
+
+let test_fold_root_moves_parity () =
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let half = Num.div Num.one (Num.of_int 2) in
+  let ax = { Geom.a = q 1; b = q 0; c = half } in
+  let g0 = Fold_graph.subdivide Fold_graph.init_square ax ~prov:None in
+  let st0 = Fold_state.subdivide Fold_state.init_square ax ~prov:None in
+  (* the new root is a child of the old root; move whichever side the root
+     face lies on *)
+  let root = Fold_graph.root g0 in
+  let moving = Array.make (Array.length (Fold_graph.faces g0)) false in
+  moving.(root) <- true;
+  let mv_side =
+    let p = (Fold_graph.faces g0).(root).(0) in
+    let s = Geom.side_of_line ax p in
+    if s <> 0 then s
+    else Geom.side_of_line ax (Fold_graph.faces g0).(root).(2)
+  in
+  let g = Fold_graph.fold g0 ~axis:ax ~move_side:mv_side ~valley:true
+      ~moving_parents:moving ~prov:None in
+  let st = Fold_state.fold_with_records st0 ~axis:ax ~move_side:mv_side
+      ~valley:true ~moving_parents:moving ~prov:None in
+  check_parity "root moves" g st;
+  check_assign_parity "root moves" g st
+
+let test_fold_nothing_stationary_parity () =
+  (* whole-sheet fold across a boundary line: every face moves (branch 3) *)
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let ax = { Geom.a = q 1; b = q 0; c = q 1 } in  (* x = 1, right edge *)
+  let g = Fold_graph.fold Fold_graph.init_square ~axis:ax ~move_side:(-1)
+      ~valley:true ~prov:None in
+  let st = Fold_state.fold_with_records Fold_state.init_square ~axis:ax
+      ~move_side:(-1) ~valley:true ~prov:None in
+  check_parity "nothing stationary" g st;
+  check_assign_parity "nothing stationary" g st
+
 let () =
   Alcotest.run "fold_graph"
     [ ( "derive",
@@ -837,4 +941,11 @@ let () =
             test_fold_precrease_upgrade;
           Alcotest.test_case "scoped fold parity" `Quick test_fold_scoped_parity;
           Alcotest.test_case "fold then subdivide parity" `Quick
-            test_fold_then_subdivide_parity ] ) ]
+            test_fold_then_subdivide_parity ] );
+      ( "task4-coverage",
+        [ Alcotest.test_case "unfold toggle" `Quick test_fold_unfold_toggle;
+          Alcotest.test_case "intent letters" `Quick test_fold_intent_letters;
+          Alcotest.test_case "root moves parity" `Quick
+            test_fold_root_moves_parity;
+          Alcotest.test_case "nothing stationary parity" `Quick
+            test_fold_nothing_stationary_parity ] ) ]
