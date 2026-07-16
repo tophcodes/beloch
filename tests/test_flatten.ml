@@ -133,9 +133,12 @@ let test_flatten_derive_unit () =
     ]
   in
   let fixed = Collapse.sort_ccw v es in
-  match Flatten.derive v ~fixed ~toward:(mk Num.one Num.one) with
+  match
+    Flatten.derive v ~fixed ~feasible:(fun _ _ -> true)
+      ~toward:(mk Num.one Num.one)
+  with
   | Error msg -> Alcotest.failf "derive returned Error: %s" msg
-  | Ok l ->
+  | Ok (l, _) ->
       (* passes exactly through V *)
       Alcotest.(check int) "emergent line passes through V" 0
         (Geom.side_of_line l v);
@@ -263,25 +266,85 @@ let test_flatten_tip () =
       Alcotest.(check (float 0.001)) "tip lands near y=0.059" 0.0590169944
         (Num.to_float p.Geom.y)
 
-(* Anchor / fold-sense guard: a derive-mode vertex whose only flat realisation
-   folds a flap OFF the sheet must be REJECTED, not emitted with garbage
-   (negative) coordinates. fish-base's completed vertex is Kawasaki-valid but
-   its physically-staying background sector is orientation-reversing, so no
-   proper (front-up) anchor seats every layer inside the paper — collapse
-   returns [e_out_of_paper] and eval surfaces it (rather than the misleading
-   "does not close the vertex"). *)
-let fish_base_src =
-  "paper square\n\
-   mark --diag = map .a onto .c\n\
-   mark --ray = through .a .c\n\
-   step left\n\
-   mark --l1 = map --ab onto --diag\n\
-   mark --l2 = map --da onto --diag\n\
-   flatten (--l1 & .b) (--l2 & .d) (--ray & .a) toward .d\n"
+(* The fish-base vertex: O = incenter of triangle abd on the ac-diagonal; the
+   true 4th ray is the diagonal's CONTINUATION O→c — collinear with the given
+   a-ray, i.e. a tier-2 OPPOSITE-RAY completion under the two-tier rule. Both
+   tier-1 (line-new) candidates fold a flap off the paper, so after the
+   feasibility filter only O→c survives and ANY toward point picks it.
+   ADJUSTED EXPECTATION (two-tier design decision, 2026-07-16): this test
+   formerly asserted the [e_out_of_paper] rejection — before opposite rays
+   were candidates, the two unphysical tier-1 side candidates were all derive
+   offered, and both failed the anchor guard. With the two-tier rule the
+   vertex now folds cleanly; toward .b and toward .d (opposite sides of the
+   spine) must yield the SAME completion. *)
+let fish_base_src toward =
+  Printf.sprintf
+    "paper square\n\
+     mark --diag = map .a onto .c\n\
+     mark --ray = through .a .c\n\
+     step left\n\
+     mark --l1 = map --ab onto --diag\n\
+     mark --l2 = map --da onto --diag\n\
+     flatten (--l1 & .b) (--l2 & .d) (--ray & .a) toward %s\n" toward
 
-let test_flatten_derive_out_of_paper_rejected () =
-  expect_error Collapse.e_out_of_paper (fun () ->
-      Eval.eval_folded (Beloch.parse ~filename:"t.bel" fish_base_src))
+let test_flatten_derive_opposite_ray_fish_base () =
+  let faces toward =
+    let fd =
+      Eval.eval_folded (Beloch.parse ~filename:"t.bel" (fish_base_src toward))
+    in
+    Array.length (Fold_state.faces fd.Eval.state)
+  in
+  Alcotest.(check int) "fish-base toward .b folds (6 faces)" 6 (faces ".b");
+  Alcotest.(check int) "fish-base toward .d folds the same" 6 (faces ".d")
+
+(* Unit test of the same-DIRECTION genuine-filter: the PLUS vertex
+   O = (1/2,1/2) with given rays right (1,1/2), up (1/2,1), down (1/2,0).
+   The only completion is the LEFT ray (0,1/2) — the OPPOSITE ray of the
+   given right ray's own line (y = 1/2). The old same-LINE filter dropped it
+   ("extend a line already drawn"); the direction filter must keep it. No
+   line-new candidate exists at all here, so the tier-2 fallback applies. *)
+let plus_vertex_fixed () =
+  let mk x y = { Geom.x; y } in
+  let half = Num.of_q (Q.of_ints 1 2) in
+  let o = mk half half in
+  let es =
+    [
+      { Collapse.cid = 0; ea = o; eb = mk Num.one half; valley = true };
+      { Collapse.cid = 1; ea = o; eb = mk half Num.one; valley = true };
+      { Collapse.cid = 2; ea = o; eb = mk half Num.zero; valley = true };
+    ]
+  in
+  (o, Collapse.sort_ccw o es)
+
+let check_left_ray (o : Geom.point) = function
+  | Error msg -> Alcotest.failf "derive returned Error: %s" msg
+  | Ok (l, r) ->
+      (* the horizontal line y = 1/2 ... *)
+      Alcotest.(check bool) "emergent line is horizontal" true
+        (Num.sign l.Geom.a = 0);
+      Alcotest.(check int) "emergent line passes through O" 0
+        (Geom.side_of_line l o);
+      (* ... and the LEFT ray of it (x decreasing from O) *)
+      Alcotest.(check bool) "emergent ray points left" true
+        (Num.compare r.Geom.x o.Geom.x < 0)
+
+let test_flatten_derive_opposite_ray_unit () =
+  let o, fixed = plus_vertex_fixed () in
+  let mk x y = { Geom.x; y } in
+  check_left_ray o
+    (Flatten.derive o ~fixed ~feasible:(fun _ _ -> true)
+       ~toward:(mk (Num.of_q (Q.of_ints 1 4)) (Num.of_q (Q.of_ints 1 2))))
+
+(* feasibility filters BEFORE toward chooses: with a [feasible] accepting
+   only the horizontal (opposite-ray) line, a toward point aimed anywhere —
+   even away from the left ray, e.g. (1,1) — still yields it. *)
+let test_flatten_derive_feasible_before_toward () =
+  let o, fixed = plus_vertex_fixed () in
+  let mk x y = { Geom.x; y } in
+  check_left_ray o
+    (Flatten.derive o ~fixed
+       ~feasible:(fun l _ -> Num.sign l.Geom.a = 0)
+       ~toward:(mk Num.one Num.one))
 
 (* Conversely, a derive-mode vertex that DOES admit a proper in-bounds seating
    (the swivel rabbit ear) folds correctly: every folded face lands inside the
@@ -346,8 +409,12 @@ let () =
             test_flatten_derive_registers_name;
           Alcotest.test_case "--ear binds emergent crease; .tip meets base"
             `Quick test_flatten_tip;
-          Alcotest.test_case "derive off-paper fold is rejected (fish-base)"
-            `Quick test_flatten_derive_out_of_paper_rejected;
+          Alcotest.test_case "derive opposite-ray fallback folds fish-base"
+            `Quick test_flatten_derive_opposite_ray_fish_base;
+          Alcotest.test_case "derive unit: opposite ray is a candidate (plus)"
+            `Quick test_flatten_derive_opposite_ray_unit;
+          Alcotest.test_case "derive unit: feasibility filters before toward"
+            `Quick test_flatten_derive_feasible_before_toward;
           Alcotest.test_case "derive in-paper fold accepted (swivel-rabbit)"
             `Quick test_flatten_derive_in_bounds;
         ] );

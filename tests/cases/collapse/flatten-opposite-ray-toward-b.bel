@@ -1,0 +1,18 @@
+; fish-base vertex: O = incenter of triangle abd, sitting ON the ac-diagonal.
+; The emergent 4th ray is the diagonal's CONTINUATION O -> c — the OPPOSITE
+; ray of the given a-ray's own line (a tier-2 completion under derive's
+; two-tier rule). Both line-new candidates fold a flap off the paper, so
+; after the feasibility filter O -> c is the only completion left and any
+; toward point picks it (here .b, right of the spine).
+
+paper square
+
+mark --diag = map .a onto .c
+mark --ray = through .a .c
+
+step left
+mark --l1 = map --ab onto --diag
+mark --l2 = map --da onto --diag
+flatten (--l1 & .b) (--l2 & .d) (--ray & .a) toward .b
+
+; assert faces = 6

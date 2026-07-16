@@ -1,0 +1,17 @@
+; Same fish-base vertex as flatten-opposite-ray-toward-b.bel, but with the
+; toward point on the OTHER side of the spine (.d, left). Feasibility filters
+; BEFORE toward chooses: the 180-degree candidate this used to aim at is
+; infeasible (folds off the paper) and eliminated, so toward .d must yield
+; the SAME O -> c completion as toward .b — any off-spine point works.
+
+paper square
+
+mark --diag = map .a onto .c
+mark --ray = through .a .c
+
+step left
+mark --l1 = map --ab onto --diag
+mark --l2 = map --da onto --diag
+flatten (--l1 & .b) (--l2 & .d) (--ray & .a) toward .d
+
+; assert faces = 6

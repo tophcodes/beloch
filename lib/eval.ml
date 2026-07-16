@@ -1843,124 +1843,95 @@ let eval_folded (prog : Ast.program) : folded =
             in
             let toward_pt = resolve_point toward_po in
             let fixed = Collapse.sort_ccw o es in
-            (match Flatten.derive o ~fixed ~toward:toward_pt with
+            let given_fars =
+              List.map (fun (e : Collapse.elem) -> Collapse.far_of o e) es
+            in
+            (* Mint the emergent crease id ONCE, before derive runs: derive's
+               [feasible] oracle materializes every candidate as a probe (see
+               [try_ray] below), and the winning candidate is materialized
+               again afterwards — both must share one id, or the id counter
+               would drift between the probe and the real run. *)
+            let new_cid = Fold_state.fresh_crease_id () in
+            let prov : State.provenance option =
+              Some
+                { State.axiom = "flatten"; sources = []; span; name = None;
+                  step = ctx.panel }
+            in
+            (* Given a candidate emergent (line, ray point), materialize ONLY
+               that ray on a LOCAL copy of the pre-collapse state [st0]
+               (never touching [ctx.state] — this runs once per candidate as
+               a feasibility probe, and once more for the eventual winner),
+               then scan every crease ray now sitting at O on the kept side
+               and try each one (× valley) through [Collapse.collapse] as the
+               oracle. [keep_side] confines the cut to [ray_pt]'s side of the
+               perpendicular guard through O, so the opposite ray creases
+               nothing. When the ray runs collinear with an
+               already-materialized given crease (the classic rabbit-ear
+               up-spine), every face is already split along it and
+               [subdivide] is a no-op — the ray is then found below among the
+               EXISTING crease segments, so the scan spans all crease ids,
+               not just [new_cid]. Closure doesn't depend on valley, so a
+               wrong ray would fail both valleys identically; Maekawa admits
+               exactly one valley for the right one. *)
+            let try_ray (st0 : Fold_state.t) (line : Geom.line)
+                (ray_pt : Geom.point) :
+                Fold_state.t * ((Fold_state.t, string) result * int) list =
+              let guard = Geom.perpendicular_through line o in
+              let keep = Geom.side_of_line guard ray_pt in
+              let st' =
+                Fold_state.subdivide st0 line ~crease_id:new_cid
+                  ~keep_side:(guard, keep) ~prov
+              in
+              let far_of_seg (s : Fold_state.crease_segment) =
+                if Geom.point_equal s.Fold_state.ta o then s.Fold_state.tb
+                else s.Fold_state.ta
+              in
+              let candidates =
+                Fold_state.all_crease_ids st'
+                |> List.concat_map (fun cid ->
+                       Fold_state.crease_segments st' cid
+                       |> List.filter_map
+                            (fun (s : Fold_state.crease_segment) ->
+                              let far = far_of_seg s in
+                              if
+                                (Geom.point_equal s.Fold_state.ta o
+                                || Geom.point_equal s.Fold_state.tb o)
+                                && Geom.side_of_line line far = 0
+                                && Geom.side_of_line guard far = keep
+                                && not (List.exists (Geom.point_equal far) given_fars)
+                              then Some (cid, far)
+                              else None))
+              in
+              (* pair each attempt with the (cid, far) it was built from, so
+                 the winning attempt tells us which crease id is the
+                 emergent one — [new_cid] when the ray was freshly
+                 materialized, but a PRE-EXISTING cid when the ray is
+                 collinear with an already-materialized given crease (the
+                 rabbit-ear up-spine no-op case above). *)
+              let attempts =
+                List.concat_map
+                  (fun (cid, far) ->
+                    [ true; false ]
+                    |> List.map (fun valley ->
+                           (cid, { Collapse.cid; ea = o; eb = far; valley })))
+                  candidates
+              in
+              let outcomes =
+                List.map
+                  (fun (cid, (e : Collapse.elem)) ->
+                    (Collapse.collapse st' (e :: es) ~over, cid))
+                  attempts
+              in
+              (st', outcomes)
+            in
+            let feasible (l : Geom.line) (r : Geom.point) : bool =
+              let _, outcomes = try_ray !(ctx.state) l r in
+              List.exists (function Ok _, _ -> true | _ -> false) outcomes
+            in
+            (match Flatten.derive o ~fixed ~feasible ~toward:toward_pt with
             | Error msg -> Error.fail span msg
-            | Ok emergent_line ->
-                let given_fars =
-                  List.map (fun (e : Collapse.elem) -> Collapse.far_of o e) es
-                in
-                (* The emergent crease is ONE RAY of [emergent_line], not the
-                   whole line. Clip the line to the paper to get its two
-                   boundary tips (O lies between them); each is a candidate far.
-                   Drop a tip that merely re-names a given ray (the classic
-                   rabbit ear: the emergent up-spine tip is the opposite end of
-                   the given down-spine's own line). The genuine ray is the one
-                   whose four-ray vertex satisfies Kawasaki — [Collapse.closure_ok]
-                   settles it without needing the paper subdivided (closure is a
-                   function of the ray directions alone), so the wrong ray never
-                   gets materialized. *)
-                let candidate_fars =
-                  (match Geom.clip_to_unit_square emergent_line with
-                  | Some (p, q) -> [ p; q ]
-                  | None -> [])
-                  |> List.filter (fun f ->
-                         (not (Geom.point_equal f o))
-                         && not (List.exists (Geom.point_equal f) given_fars))
-                in
-                let closes far =
-                  (* closure_ok's reflection product is taken in CCW ray order
-                     (a cyclic rotation is conjugate, an arbitrary permutation
-                     is not), so sort the full four-ray set first. *)
-                  (far :: given_fars)
-                  |> List.map (fun f -> (f, ()))
-                  |> List.sort (fun (a, _) (b, _) -> Geom.ccw_compare ~center:o a b)
-                  |> Array.of_list
-                  |> Collapse.closure_ok o
-                in
-                let guard = Geom.perpendicular_through emergent_line o in
-                let ray_far =
-                  match List.filter closes candidate_fars with
-                  | [ f ] -> f
-                  | [] ->
-                      Error.fail span "the derived crease does not close the vertex"
-                  | fs -> (
-                      (* two rays of the line both close (a symmetric vertex):
-                         [toward] disambiguates — keep the ray pointing to
-                         [toward]'s side of the perpendicular through O. *)
-                      let ts = Geom.side_of_line guard toward_pt in
-                      match
-                        List.filter (fun f -> Geom.side_of_line guard f = ts) fs
-                      with
-                      | [ f ] -> f
-                      | _ ->
-                          Error.fail span
-                            "the derived crease is ambiguous; `toward` does not \
-                             pick one ray")
-                in
-                let keep = Geom.side_of_line guard ray_far in
-                let new_cid = Fold_state.fresh_crease_id () in
-                let prov : State.provenance option =
-                  Some
-                    { State.axiom = "flatten"; sources = []; span; name = None;
-                      step = ctx.panel }
-                in
-                (* Materialize ONLY the chosen ray: [keep_side] confines the cut
-                   to [ray_far]'s side of the guard, so the opposite ray creases
-                   nothing. When the ray runs collinear with an
-                   already-materialized given crease (the classic rabbit-ear
-                   up-spine), every face is already split along it and this is a
-                   no-op — the ray is then found below among the EXISTING crease
-                   segments, so the scan spans all crease ids, not just
-                   [new_cid]. *)
-                ctx.state :=
-                  Fold_state.subdivide !(ctx.state) emergent_line
-                    ~crease_id:new_cid ~keep_side:(guard, keep) ~prov;
-                let far_of_seg (s : Fold_state.crease_segment) =
-                  if Geom.point_equal s.Fold_state.ta o then s.Fold_state.tb
-                  else s.Fold_state.ta
-                in
-                (* the crease ray at O along [emergent_line] on the kept side —
-                   exactly one ray now exists there (new or pre-existing). *)
-                let candidates =
-                  Fold_state.all_crease_ids !(ctx.state)
-                  |> List.concat_map (fun cid ->
-                         Fold_state.crease_segments !(ctx.state) cid
-                         |> List.filter_map
-                              (fun (s : Fold_state.crease_segment) ->
-                                let far = far_of_seg s in
-                                if
-                                  (Geom.point_equal s.Fold_state.ta o
-                                  || Geom.point_equal s.Fold_state.tb o)
-                                  && Geom.side_of_line emergent_line far = 0
-                                  && Geom.side_of_line guard far = keep
-                                  && not (List.exists (Geom.point_equal far) given_fars)
-                                then Some (cid, far)
-                                else None))
-                in
-                (* closure doesn't depend on valley, so a wrong ray would fail
-                   both valleys identically; Maekawa admits exactly one valley
-                   for the right one. [Collapse.collapse] is the oracle. *)
-                (* pair each attempt with the (cid, far) it was built from, so
-                   the winning attempt tells us which crease id is the
-                   emergent one — [new_cid] when the ray was freshly
-                   materialized, but a PRE-EXISTING cid when the ray is
-                   collinear with an already-materialized given crease (the
-                   rabbit-ear up-spine no-op case; see the comment above
-                   [candidates]). *)
-                let attempts =
-                  List.concat_map
-                    (fun (cid, far) ->
-                      [ true; false ]
-                      |> List.map (fun valley ->
-                             (cid, { Collapse.cid; ea = o; eb = far; valley })))
-                    candidates
-                in
-                let outcomes =
-                  List.map
-                    (fun (cid, (e : Collapse.elem)) ->
-                      (Collapse.collapse !(ctx.state) (e :: es) ~over, cid))
-                    attempts
-                in
+            | Ok (emergent_line, ray_pt) ->
+                let _, outcomes = try_ray !(ctx.state) emergent_line ray_pt in
                 let results =
                   List.filter_map
                     (function (Ok st, cid) -> Some (st, cid) | _ -> None)
@@ -1975,7 +1946,10 @@ let eval_folded (prog : Ast.program) : folded =
                        every attempt) from a vertex that closes but whose only
                        flat realisation folds a flap off the sheet — the latter
                        carries Collapse.e_out_of_paper and deserves that clearer
-                       message rather than "does not close". *)
+                       message rather than "does not close". Unreachable in
+                       practice now that [feasible] already required at least
+                       one Ok outcome for this exact candidate — kept as a
+                       defensive match. *)
                     if
                       List.exists
                         (function

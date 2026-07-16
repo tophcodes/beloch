@@ -8,8 +8,12 @@
     one whose insertion at position j makes the full closure product the
     identity (Kawasaki). This module generalises that single insertion to
     every gap, keeping only the candidates whose axis genuinely falls in
-    their own gap, and disambiguates remaining candidates by which side of
-    the axis [toward] lands on. *)
+    their own gap, filters those down to the ones that are actually
+    collapse-feasible (a caller-supplied oracle — Kawasaki-closing isn't
+    enough; a candidate can still fold a flap off the paper), prefers
+    line-new completions over opposite-ray reuses of a given line (see the
+    two-tier comment in [derive]), and disambiguates the remaining
+    candidates by which one's emergent ray [toward] points closest to. *)
 
 let e_infeasible = "vertex not flat-foldable toward that side"
 
@@ -41,7 +45,8 @@ let in_gap (o : Geom.point) (lo : Geom.point) (hi : Geom.point) (q : Geom.point)
     Geom.ccw_compare ~center:o lo q < 0 || Geom.ccw_compare ~center:o q hi < 0
 
 let derive (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list)
-    ~(toward : Geom.point) : (Geom.line, string) result =
+    ~(feasible : Geom.line -> Geom.point -> bool) ~(toward : Geom.point) :
+    (Geom.line * Geom.point, string) result =
   let sorted = Array.of_list (Collapse.sort_ccw o (List.map snd fixed)) in
   let k = Array.length sorted in
   let refl i =
@@ -97,15 +102,17 @@ let derive (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list)
     && Num.sign
          (Num.sub (Num.mul l1.Geom.b l2.Geom.c) (Num.mul l2.Geom.b l1.Geom.c)) = 0
   in
-  (* Drop candidates collinear with a GIVEN ray: those are the degenerate
-     "extend a line already drawn" completions (e.g. the spine's own axis), not
-     the genuine emergent crease. All lines pass through O, so parallel ⟹
-     coincident. *)
-  let given_lines =
-    Array.to_list
-      (Array.map (fun (far, _) -> Geom.line_through o far) sorted)
+  (* Drop candidates whose emergent RAY points in the same direction as a
+     GIVEN ray: that is the degenerate "extend a line already drawn"
+     completion. The OPPOSITE ray of a given line is NOT degenerate — it is a
+     genuinely new crease (the fish-base vertex's emergent completion is
+     exactly the spine's far side) — so this filters by direction, not by
+     line: [Geom.ccw_compare] = 0 iff two points sit in the same half-plane
+     AND are collinear with O, i.e. same direction from O (the same test
+     [Collapse.has_duplicate_ray] uses). *)
+  let genuine (_, ray) =
+    not (Array.exists (fun (far, _) -> Geom.ccw_compare ~center:o far ray = 0) sorted)
   in
-  let genuine (l, _) = not (List.exists (fun g -> Geom.parallel l g) given_lines) in
   let uniq =
     List.fold_left
       (fun acc (l, r) ->
@@ -114,9 +121,37 @@ let derive (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list)
         else (l, r) :: acc)
       [] !candidates
   in
-  match uniq with
+  (* Kawasaki-closing is necessary but not sufficient: a candidate can still
+     be geometrically unrealisable (e.g. it forces a flap off the paper), so
+     the caller's [feasible] oracle filters further before [toward] picks
+     among what's actually left. *)
+  let viable = List.filter (fun (l, r) -> feasible l r) uniq in
+  (* Two-tier preference among the FEASIBLE candidates. §4.9 defines the
+     emergent crease as "not constructible by any Huzita axiom — it exists
+     only because flat-foldability forces it"; a completion that merely folds
+     the far side of an already-given line is constructible (the line exists)
+     and is therefore the DEGENERATE completion — admissible only when no
+     genuinely new crease closes the vertex. So: tier 1 = LINE-NEW (the
+     candidate's line is collinear with no given ray's line — all lines pass
+     through O, so parallel ⟹ coincident); tier 2 = OPPOSITE-RAY (collinear
+     with a given line; necessarily the opposite direction, since
+     same-direction candidates were already dropped above). [toward] chooses
+     among tier 1 whenever any tier-1 candidate survived feasibility; tier 2
+     is the fallback iff tier 1 is empty AFTER feasibility — the fish-base
+     vertex is exactly that case: both line-new candidates fold off the
+     paper, and the spine's far side (tier 2) is the only physical
+     completion, so any toward point picks it. *)
+  let given_lines =
+    Array.to_list (Array.map (fun (far, _) -> Geom.line_through o far) sorted)
+  in
+  let line_new (l, _) =
+    not (List.exists (fun g -> Geom.parallel l g) given_lines)
+  in
+  let tier1, tier2 = List.partition line_new viable in
+  let deciding = if tier1 <> [] then tier1 else tier2 in
+  match deciding with
   | [] -> Error e_infeasible
-  | [ (l, _) ] -> Ok l
+  | [ (l, r) ] -> Ok (l, r)
   | cands ->
       (* [toward] selects the completion whose emergent RAY points toward that
          point: maximise (ray − O)·(toward − O). Exact and orientation-free —
@@ -134,11 +169,11 @@ let derive (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list)
              (Num.sub toward.Geom.y o.Geom.y))
       in
       let scored =
-        List.map (fun c -> (dot c, fst c)) cands
+        List.map (fun c -> (dot c, c)) cands
         |> List.sort (fun (d1, _) (d2, _) -> Num.compare d2 d1)
       in
       match scored with
       | (d0, _) :: (d1, _) :: _ when Num.compare d0 d1 = 0 ->
           Error e_toward_ambiguous
-      | (_, l) :: _ -> Ok l
+      | (_, (l, r)) :: _ -> Ok (l, r)
       | [] -> Error e_infeasible
