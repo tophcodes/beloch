@@ -1355,10 +1355,13 @@ let test_select_scope_parity () =
    built independently from each model's own crease_segments. Anchor reuses
    the same top-face lookup as test_select_scope_parity (face indices align
    1:1 across models — established by check_parity above — so one lookup
-   serves both calls). Axis 3/8 (same as the TargetFace test) puts the
-   book-fold crease's OTHER hinged face outside the anchor's own frontier
-   step, forcing the BFS to walk at least one intermediate frontier before it
-   finds a face satisfying the predicate — an Ok case, as required. *)
+   serves both calls). Axis 3/8 (same as the TargetFace test): the anchor
+   (face 3) is not itself hinged on cid 0, so the `pred anchor` short-circuit
+   is skipped and the frontier loop runs; the hinged faces 0/1 are hits in
+   the FIRST frontier round (the visited-expansion multi-round branch remains
+   uncovered here; end-to-end up-to cases cover it in 3c Task 4). An Ok case,
+   as required. A second call with an unsatisfiable predicate then exercises
+   the frontier-exhausted error path in both models. *)
 let test_select_scope_target_hinged_parity () =
   Fold_graph.reset_ids (); Fold_state.reset_ids ();
   let frac a b = Num.div (Num.of_int a) (Num.of_int b) in
@@ -1403,11 +1406,30 @@ let test_select_scope_target_hinged_parity () =
       ~anchor:top ~target:(Fold_state.TargetHinged pred_old)
   and m = Fold_graph.select_scope g ~axis ~move_side:(-1) ~valley:true
       ~anchor:top ~target:(Fold_graph.TargetHinged pred_new) in
-  match (n, m) with
+  (match (n, m) with
   | Ok a, Ok b -> Alcotest.(check (array bool)) "moving sets equal" a b
   | Error e1, Error e2 -> Alcotest.(check string) "same error" e1 e2
   | Ok _, Error e -> Alcotest.failf "new errored: %s" e
-  | Error e, Ok _ -> Alcotest.failf "old errored: %s" e
+  | Error e, Ok _ -> Alcotest.failf "old errored: %s" e);
+  (* error path: a predicate no face satisfies must exhaust the frontier and
+     yield the same error string in both models *)
+  let never _ = false in
+  let n_err = Fold_state.select_scope st ~axis ~move_side:(-1) ~valley:true
+      ~anchor:top ~target:(Fold_state.TargetHinged never)
+  and m_err = Fold_graph.select_scope g ~axis ~move_side:(-1) ~valley:true
+      ~anchor:top ~target:(Fold_graph.TargetHinged never) in
+  match (n_err, m_err) with
+  | Error e1, Error e2 ->
+      Alcotest.(check string) "unsatisfiable pred: same error" e1 e2;
+      let contains hay needle =
+        let nh = String.length hay and nn = String.length needle in
+        let rec go i = i + nn <= nh && (String.sub hay i nn = needle || go (i + 1)) in
+        go 0
+      in
+      Alcotest.(check bool) "unsatisfiable pred: no-flap-hinged message" true
+        (contains e1 "no flap hinged")
+  | Ok _, _ -> Alcotest.fail "old: expected Error for unsatisfiable predicate"
+  | _, Ok _ -> Alcotest.fail "new: expected Error for unsatisfiable predicate"
 
 let test_scoped_hinge_closed_parity () =
   Fold_graph.reset_ids (); Fold_state.reset_ids ();
