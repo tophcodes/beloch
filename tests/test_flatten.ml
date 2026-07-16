@@ -190,7 +190,7 @@ let rabbit_ear_derive_src =
    mark --bm = through .b .m\n\
    mark --ba = map --ab onto --am\n\
    mark --bb = map --ab onto --bm\n\
-   --ear = flatten (--ba \\ .a) (--bb \\ .b) (--v \\ .m) toward .d\n"
+   --ear = flatten (--ba \\ .a) (--bb \\ .b) (--v \\ .m) {toward .d}\n"
 
 let test_flatten_derive_e2e () =
   let fd =
@@ -285,7 +285,7 @@ let fish_base_src toward =
      step left\n\
      mark --l1 = map --ab onto --diag\n\
      mark --l2 = map --da onto --diag\n\
-     flatten (--l1 & .b) (--l2 & .d) (--ray & .a) toward %s\n" toward
+     flatten (--l1 & .b) (--l2 & .d) (--ray & .a) {toward %s}\n" toward
 
 let test_flatten_derive_opposite_ray_fish_base () =
   let faces toward =
@@ -365,7 +365,7 @@ let swivel_rabbit_src =
    mark --ba = through .a .[--bc --lowerh]\n\
    mark --bb = through .b .[--da --lowerh]\n\
    step ear\n\
-   --ear = flatten (--ba \\ .a) (--bb \\ .b) (--v \\ .m) toward .c\n"
+   --ear = flatten (--ba \\ .a) (--bb \\ .b) (--v \\ .m) {toward .c}\n"
 
 let test_flatten_derive_in_bounds () =
   let fd =

@@ -83,9 +83,16 @@ type fold_spec = {
   direction : direction;
 }
 
-(* A single crease in a `collapse` statement, with its own fold direction
+(* A collapse element's M/V constraint (flatten V2 surface, spec
+   2026-07-16-flatten-derive-v2-design.md §Syntax): a bare element is
+   unconstrained — the solver assigns its M/V (Task 3). `mountain`/`valley`
+   pin it explicitly. Distinct from [direction] (Mark/Fold's own two-state
+   fold direction), which stays two-state. *)
+type mv_constraint = MvFree | MvMountain | MvValley
+
+(* A single crease in a `collapse` statement, with its own M/V constraint
    (ADR pending: collapse = simultaneous multi-crease fold). *)
-type collapse_elem = { cline : line_operand; cdir : direction }
+type collapse_elem = { cline : line_operand; cdir : mv_constraint }
 
 type point_expr =
   | PsExpr of point_operand (* the `.name = …` binding RHS: a meet/select/named point *)

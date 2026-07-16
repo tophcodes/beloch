@@ -146,7 +146,7 @@
     {
       "axiom": "flatten",
       "sources": [],
-      "span": "swivel-rabbit.bel:31:1-61",
+      "span": "swivel-rabbit.bel:31:1-63",
       "name": null,
       "step": "ear"
     },
@@ -1044,7 +1044,7 @@
         {
           "axiom": "flatten",
           "sources": [],
-          "span": "swivel-rabbit.bel:31:1-61",
+          "span": "swivel-rabbit.bel:31:1-63",
           "name": null,
           "step": "ear"
         },

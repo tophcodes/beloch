@@ -1729,6 +1729,14 @@ let eval_folded (prog : Ast.program) : folded =
           | Ast.LSelect _ -> ()
         in
         List.iter (fun (el : Ast.collapse_elem) -> force_material el.Ast.cline) elems;
+        (* TEMPORARY: V1 default-valley for MvFree; Task 3 replaces this with
+           solver enumeration over the unconstrained elements (spec
+           2026-07-16-flatten-derive-v2-design.md). *)
+        let mv_to_valley = function
+          | Ast.MvValley -> true
+          | Ast.MvMountain -> false
+          | Ast.MvFree -> true
+        in
         (* each element must resolve to exactly ONE material segment — same
            machinery as fold's material resolution *)
         let resolve_elem (el : Ast.collapse_elem) : Collapse.elem =
@@ -1747,7 +1755,7 @@ let eval_folded (prog : Ast.program) : folded =
                     Collapse.cid;
                     ea = s.Fold_state.ta;
                     eb = s.Fold_state.tb;
-                    valley = el.Ast.cdir = Ast.Valley;
+                    valley = mv_to_valley el.Ast.cdir;
                   }
               | [] ->
                   Error.fail span
@@ -1765,7 +1773,7 @@ let eval_folded (prog : Ast.program) : folded =
                     Collapse.cid;
                     ea = s.Fold_state.ta;
                     eb = s.Fold_state.tb;
-                    valley = el.Ast.cdir = Ast.Valley;
+                    valley = mv_to_valley el.Ast.cdir;
                   }
               | _, [] ->
                   Error.fail span
