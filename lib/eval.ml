@@ -11,12 +11,12 @@ let corners : (string * Geom.point) list =
   ]
 
 type folded = {
-  state : Fold_state.t;
+  state : Fold_graph.t;
   named_points : (string * Geom.point * int) list;
       (* [int] is the 0-based creation step (index into [frames] at bind
          time); see [scope.point_steps]/[scope.line_steps] *)
   named_lines : (string * Geom.line * int) list;
-  frames : (string option * Fold_state.t * Error.span option) list;
+  frames : (string option * Fold_graph.t * Error.span option) list;
 }
 
 (* ---- Scope-stack context ---- *)
@@ -25,7 +25,7 @@ type crease_val =
   | Material of int * Geom.line
   | Mark of int * Geom.line
       (* a materialized construction line backed by the mark layer: meetable
-         by `*` (its chords live in Fold_state.marks), never subdividing the
+         by `*` (its chords live in Fold_graph.marks), never subdividing the
          working arrangement. [int] is the mark's mcrease_id. *)
   | Frozen of Geom.line
   | Bundle of Ast.line_operand
@@ -101,10 +101,10 @@ type ctx = {
   mutable cur_def_idx : int option; (* Some k while running def k's body *)
   mutable next_def_idx : int;
   defs : (string, int * Ast.param list * Ast.stmt list) Hashtbl.t;
-  state : Fold_state.t ref;
+  state : Fold_graph.t ref;
   mutable panel : string option;
   panels : (string, unit) Hashtbl.t;
-  mutable frames_rev : (string option * Fold_state.t * Error.span option) list;
+  mutable frames_rev : (string option * Fold_graph.t * Error.span option) list;
   mutable pending : bool;
       (* true when the current state hasn't been captured in a frame yet;
          drives the conditional final push (see eval_folded) *)
@@ -129,8 +129,8 @@ let lookup_instance (ctx : ctx) (name : string) (span : Error.span) : instance =
 
 let is_temp (n : string) = String.length n > 0 && n.[0] = '_'
 
-let intent_of (dir : Ast.direction) : Fold_state.assign =
-  match dir with Ast.Valley -> Fold_state.V | Ast.Mountain -> Fold_state.M
+let intent_of (dir : Ast.direction) : Fold_graph.assign =
+  match dir with Ast.Valley -> Fold_graph.V | Ast.Mountain -> Fold_graph.M
 
 (* Shared failure text for every "points must land on exactly one flap/face"
    lookup (FByPoints resolution): callers narrow their own success variant
@@ -176,7 +176,7 @@ let promote_crease (ctx : ctx) (name : string) (cv : crease_val) =
 (* ---- Evaluator ---- *)
 
 let eval_folded (prog : Ast.program) : folded =
-  Fold_state.reset_ids ();
+  Fold_graph.reset_ids ();
   let root_scope = make_scope () in
   List.iter (fun (n, p) -> Hashtbl.replace root_scope.points n p) corners;
   List.iter
@@ -188,7 +188,7 @@ let eval_folded (prog : Ast.program) : folded =
     cur_def_idx = None;
     next_def_idx = 0;
     defs = Hashtbl.create 4;
-    state  = ref Fold_state.init_square;
+    state  = ref Fold_graph.init_square;
     panel = None;
     panels = Hashtbl.create 4;
     frames_rev = [];
@@ -243,12 +243,12 @@ let eval_folded (prog : Ast.program) : folded =
           (Printf.sprintf
              "--%s is a bundle; restrict it to one segment with & or \\" name)
     | Edge (a, b) ->
-        let pa = Fold_state.table_position !(ctx.state) (corner_point a)
-        and pb = Fold_state.table_position !(ctx.state) (corner_point b) in
+        let pa = Fold_graph.table_position !(ctx.state) (corner_point a)
+        and pb = Fold_graph.table_position !(ctx.state) (corner_point b) in
         Geom.line_through pa pb
     | Frozen l -> l
     | Mark (cid, line) -> (
-        match Fold_state.mark_axis_current !(ctx.state) cid with
+        match Fold_graph.mark_axis_current !(ctx.state) cid with
         | `Line l -> l
         | `Empty -> line
         | `Bent ->
@@ -257,7 +257,7 @@ let eval_folded (prog : Ast.program) : folded =
                  "--%s is bent by a fold; select a segment with `at`, e.g. \
                   --%s at #(.a .b .c)" name name))
     | Material (cid, l_orig) -> (
-        match Fold_state.crease_axis !(ctx.state) cid l_orig with
+        match Fold_graph.crease_axis !(ctx.state) cid l_orig with
         | `Line l -> l
         (* a crease that cut no face (e.g. lies on the paper boundary) has no
            material pieces but is still flat at its original line — byte-stable
@@ -289,7 +289,7 @@ let eval_folded (prog : Ast.program) : folded =
         (* meet is a paper-space construction; a mark is always straight in the
            material frame (folding only bends it in table space), so use its
            paper chord line + chords directly *)
-        let chords = Fold_state.mark_chords !(ctx.state) cid in
+        let chords = Fold_graph.mark_chords !(ctx.state) cid in
         let paper_line =
           match chords with (a, b) :: _ -> Geom.line_through a b | [] -> line
         in
@@ -297,13 +297,13 @@ let eval_folded (prog : Ast.program) : folded =
     | Edge (a, b) ->
         (Geom.line_through (corner_point a) (corner_point b), None)
     | Material (cid, l_orig) -> (
-        match Fold_state.crease_paper_axis !(ctx.state) cid with
+        match Fold_graph.crease_paper_axis !(ctx.state) cid with
         | `Line l ->
             let chords =
               List.map
-                (fun (s : Fold_state.crease_segment) ->
-                  (s.Fold_state.pa, s.Fold_state.pb))
-                (Fold_state.crease_segments !(ctx.state) cid)
+                (fun (s : Fold_graph.crease_segment) ->
+                  (s.Fold_graph.pa, s.Fold_graph.pb))
+                (Fold_graph.crease_segments !(ctx.state) cid)
             in
             (l, Some chords)
         (* a crease that cut no face (e.g. lies on the paper boundary) has no
@@ -330,13 +330,12 @@ let eval_folded (prog : Ast.program) : folded =
   let face_of_points (pts : Geom.point list) :
       [ `Face of int | `Zero | `Ambiguous ] =
     let st = !(ctx.state) in
+    let faces_arr = Fold_graph.faces st in
     let contains i =
-      List.for_all
-        (fun p -> Geom.in_convex_polygon st.Fold_state.faces.(i).Fold_state.paper p)
-        pts
+      List.for_all (fun p -> Geom.in_convex_polygon faces_arr.(i) p) pts
     in
     let hits = ref [] in
-    Array.iteri (fun i _ -> if contains i then hits := i :: !hits) st.Fold_state.faces;
+    Array.iteri (fun i _ -> if contains i then hits := i :: !hits) faces_arr;
     match !hits with [ i ] -> `Face i | [] -> `Zero | _ -> `Ambiguous
   in
   (* resolve a point operand to its material PAPER coordinate, a line operand to
@@ -356,7 +355,7 @@ let eval_folded (prog : Ast.program) : folded =
         | cv -> materialize_crease ~name:cr.Ast.cname cr.Ast.cspan cv)
     | (Ast.LFilter _ | Ast.LUnion _) as b ->
         let s = coerce_one_segment b in
-        Geom.line_through s.Fold_state.ta s.Fold_state.tb
+        Geom.line_through s.Fold_graph.ta s.Fold_graph.tb
     | Ast.LSelect (sels, span) -> select_line sels span
   and resolve_paper_line (lo : Ast.line_operand) :
       Geom.line * (Geom.point * Geom.point) list option =
@@ -367,8 +366,8 @@ let eval_folded (prog : Ast.program) : folded =
         | cv -> paper_line_of_crease ~name:cr.Ast.cname cr.Ast.cspan cv)
     | (Ast.LFilter _ | Ast.LUnion _) as b ->
         let s = coerce_one_segment b in
-        ( Geom.line_through s.Fold_state.pa s.Fold_state.pb,
-          Some [ (s.Fold_state.pa, s.Fold_state.pb) ] )
+        ( Geom.line_through s.Fold_graph.pa s.Fold_graph.pb,
+          Some [ (s.Fold_graph.pa, s.Fold_graph.pb) ] )
     | Ast.LSelect (sels, span) ->
         let _, _, pl, pm = select_cand sels span in
         (pl, pm)
@@ -381,13 +380,13 @@ let eval_folded (prog : Ast.program) : folded =
            real crease now (subdivide along its line), then treat it as
            Material. Pure-reference marks — never segment-selected — never
            reach here, so they stay non-subdividing records (#26). *)
-        let cid = Fold_state.fresh_crease_id () in
+        let cid = Fold_graph.fresh_crease_id () in
         let prov : State.provenance option =
           Some { State.axiom = "mark"; sources = [ "--" ^ cr.Ast.cname ];
                  span = cr.Ast.cspan; name = None; step = ctx.panel }
         in
         ctx.state :=
-          Fold_state.subdivide_paper !(ctx.state) line ~crease_id:cid ~prov;
+          Fold_graph.subdivide_paper !(ctx.state) line ~crease_id:cid ~prov;
         promote_crease ctx cr.Ast.cname (Material (cid, line));
         cid
     | Bundle _ ->
@@ -410,14 +409,14 @@ let eval_folded (prog : Ast.program) : folded =
      even when folding has stacked several segments onto the same table locus
      (notes/2026-07-03-crease-layer-selection.md; ADR 0014's "table-space
      selector can't disambiguate" is why table space is wrong here). *)
-  and seg_line (s : Fold_state.crease_segment) =
-    Geom.line_through s.Fold_state.pa s.Fold_state.pb
-  and point_on_seg (pp : Geom.point) (s : Fold_state.crease_segment) =
+  and seg_line (s : Fold_graph.crease_segment) =
+    Geom.line_through s.Fold_graph.pa s.Fold_graph.pb
+  and point_on_seg (pp : Geom.point) (s : Fold_graph.crease_segment) =
     Geom.side_of_line (seg_line s) pp = 0
     &&
-    let t = Geom.seg_param (s.Fold_state.pa, s.Fold_state.pb) pp in
+    let t = Geom.seg_param (s.Fold_graph.pa, s.Fold_graph.pb) pp in
     Num.compare t Num.zero >= 0 && Num.compare t Num.one <= 0
-  and seg_incident (sel : Ast.selector) (s : Fold_state.crease_segment) : bool =
+  and seg_incident (sel : Ast.selector) (s : Fold_graph.crease_segment) : bool =
     match sel with
     | Ast.SelPoint po -> point_on_seg (resolve_point po) s
     | Ast.SelLine lo -> (
@@ -428,7 +427,7 @@ let eval_folded (prog : Ast.program) : folded =
         flap_lookup_result fspan
           (match face_of_points (List.map resolve_point pts) with
           | `Face fi ->
-              let l, r = s.Fold_state.faces in
+              let l, r = s.Fold_graph.faces in
               `Found (l = fi || r = fi)
           | (`Zero | `Ambiguous) as bad -> bad)
   (* every existing straight line a --[…] selector may name: the four paper
@@ -444,8 +443,8 @@ let eval_folded (prog : Ast.program) : folded =
       List.map
         (fun (a, b) ->
           let ca = corner_point a and cb = corner_point b in
-          let ta = Fold_state.table_position !(ctx.state) ca
-          and tb = Fold_state.table_position !(ctx.state) cb in
+          let ta = Fold_graph.table_position !(ctx.state) ca
+          and tb = Fold_graph.table_position !(ctx.state) cb in
           (Geom.line_through ta tb, (ca, cb), Geom.line_through ca cb, None))
         [ ("a", "b"); ("b", "c"); ("c", "d"); ("d", "a") ]
     in
@@ -453,13 +452,13 @@ let eval_folded (prog : Ast.program) : folded =
       List.concat_map
         (fun cid ->
           List.map
-            (fun (s : Fold_state.crease_segment) ->
-              ( Geom.line_through s.Fold_state.ta s.Fold_state.tb,
-                (s.Fold_state.pa, s.Fold_state.pb),
-                Geom.line_through s.Fold_state.pa s.Fold_state.pb,
-                Some [ (s.Fold_state.pa, s.Fold_state.pb) ] ))
-            (Fold_state.crease_segments !(ctx.state) cid))
-        (Fold_state.all_crease_ids !(ctx.state))
+            (fun (s : Fold_graph.crease_segment) ->
+              ( Geom.line_through s.Fold_graph.ta s.Fold_graph.tb,
+                (s.Fold_graph.pa, s.Fold_graph.pb),
+                Geom.line_through s.Fold_graph.pa s.Fold_graph.pb,
+                Some [ (s.Fold_graph.pa, s.Fold_graph.pb) ] ))
+            (Fold_graph.crease_segments !(ctx.state) cid))
+        (Fold_graph.all_crease_ids !(ctx.state))
     in
     edges @ creases
   and cand_incident (sel : Ast.selector) (_l, (pa, pb), _pl, _pm) : bool =
@@ -531,7 +530,7 @@ let eval_folded (prog : Ast.program) : folded =
                     (Printf.sprintf "the mark of %s does not reach the crossing"
                        (lstr lo))
             | None ->
-                if not (Fold_state.on_paper !(ctx.state) pp) then
+                if not (Fold_graph.on_paper !(ctx.state) pp) then
                   Error.fail span
                     (Printf.sprintf "%s is off the paper" (lstr lo)))
           resolved;
@@ -541,18 +540,18 @@ let eval_folded (prog : Ast.program) : folded =
     | Ast.LNamed cr -> cr.Ast.cspan
     | Ast.LFilter (_, _, s) | Ast.LUnion (_, s) | Ast.LSelect (_, s) -> s
   and bundle_segments (lo : Ast.line_operand) :
-      int option * Fold_state.crease_segment list =
+      int option * Fold_graph.crease_segment list =
     match lo with
     | Ast.LNamed cr -> (
         match lookup_crease ctx cr with
         | Bundle expr -> bundle_segments expr
         | Edge (a, b) ->
             ( None,
-              Fold_state.edge_boundary_segments !(ctx.state)
+              Fold_graph.edge_boundary_segments !(ctx.state)
                 (Geom.line_through (corner_point a) (corner_point b)) )
         | _ ->
             let cid = material_cid cr in
-            (Some cid, Fold_state.crease_segments !(ctx.state) cid))
+            (Some cid, Fold_graph.crease_segments !(ctx.state) cid))
     | Ast.LFilter (b, elt, _) ->
         let cid, segs = bundle_segments b in
         let sel, keep =
@@ -565,7 +564,7 @@ let eval_folded (prog : Ast.program) : folded =
         Error.fail (span_of_line lo)
           "a --[…] result is a single line, not a segment bundle; filter a \
            named crease with & instead"
-  and coerce_one_segment (lo : Ast.line_operand) : Fold_state.crease_segment =
+  and coerce_one_segment (lo : Ast.line_operand) : Fold_graph.crease_segment =
     match snd (bundle_segments lo) with
     | [ s ] -> s
     | [] ->
@@ -577,16 +576,15 @@ let eval_folded (prog : Ast.program) : folded =
              (lstr lo) (List.length many))
   in
   let table_of (po : Ast.point_operand) : Geom.point =
-    Fold_state.table_position !(ctx.state) (resolve_point po)
+    Fold_graph.table_position !(ctx.state) (resolve_point po)
   in
   (* faces whose PAPER polygon contains material point [pp] *)
   let faces_containing (pp : Geom.point) : int list =
     let st = !(ctx.state) in
     let acc = ref [] in
     Array.iteri
-      (fun i (f : Fold_state.face) ->
-        if Geom.in_convex_polygon f.Fold_state.paper pp then acc := i :: !acc)
-      st.Fold_state.faces;
+      (fun i (f : Fold_graph.face) -> if Geom.in_convex_polygon f pp then acc := i :: !acc)
+      (Fold_graph.faces st);
     List.rev !acc
   in
   (* resolve a flap operand to its unique current flap — a coplanar cluster of
@@ -600,8 +598,8 @@ let eval_folded (prog : Ast.program) : folded =
         | [] ->
             Error.fail span (Printf.sprintf "%s is not on the paper" (fstr fa))
         | faces -> (
-            let cl = Fold_state.coplanar_clusters !(ctx.state) in
-            let n = Array.length !(ctx.state).Fold_state.faces in
+            let cl = Fold_graph.coplanar_clusters !(ctx.state) in
+            let n = Array.length (Fold_graph.faces !(ctx.state)) in
             match List.sort_uniq compare (List.map (fun f -> cl.(f)) faces) with
             | [ id ] -> List.filter (fun f -> cl.(f) = id) (List.init n Fun.id)
             | ids ->
@@ -613,7 +611,7 @@ let eval_folded (prog : Ast.program) : folded =
     | Ast.FlapSpec (Ast.FByPoints (pts, fspan)) ->
         flap_lookup_result fspan
           (match
-             Fold_state.flap_of_points !(ctx.state) (List.map resolve_point pts)
+             Fold_graph.flap_of_points !(ctx.state) (List.map resolve_point pts)
            with
           | `Cluster fs -> `Found fs
           | (`Zero | `Ambiguous) as bad -> bad)
@@ -622,15 +620,15 @@ let eval_folded (prog : Ast.program) : folded =
           match lo with
           | Ast.LNamed cr ->
               let cid = material_cid cr in
-              Fold_state.crease_segments !(ctx.state) cid
-              |> List.concat_map (fun (s : Fold_state.crease_segment) ->
-                     let l, r = s.Fold_state.faces in
+              Fold_graph.crease_segments !(ctx.state) cid
+              |> List.concat_map (fun (s : Fold_graph.crease_segment) ->
+                     let l, r = s.Fold_graph.faces in
                      l :: (if r >= 0 then [ r ] else []))
               |> List.sort_uniq compare
           | (Ast.LFilter _ | Ast.LUnion _) as b ->
               snd (bundle_segments b)
-              |> List.concat_map (fun (s : Fold_state.crease_segment) ->
-                     let l, r = s.Fold_state.faces in
+              |> List.concat_map (fun (s : Fold_graph.crease_segment) ->
+                     let l, r = s.Fold_graph.faces in
                      l :: (if r >= 0 then [ r ] else []))
               |> List.sort_uniq compare
           | _ ->
@@ -641,8 +639,8 @@ let eval_folded (prog : Ast.program) : folded =
         match candidates with
         | [] -> Error.fail span (Printf.sprintf "%s touches no flap" (fstr fa))
         | _ -> (
-            let cl = Fold_state.coplanar_clusters !(ctx.state) in
-            let n = Array.length !(ctx.state).Fold_state.faces in
+            let cl = Fold_graph.coplanar_clusters !(ctx.state) in
+            let n = Array.length (Fold_graph.faces !(ctx.state)) in
             let cluster_ids =
               List.sort_uniq compare (List.map (fun f -> cl.(f)) candidates)
             in
@@ -695,7 +693,7 @@ let eval_folded (prog : Ast.program) : folded =
         if s = 0 then Error `OnAxis else Ok s
     | _ -> (
         let cluster = resolve_flap_cluster fa span in
-        let polys = List.map (Fold_state.table_polygon !(ctx.state)) cluster in
+        let polys = List.map (Fold_graph.table_polygon !(ctx.state)) cluster in
         let pos = List.exists (Array.exists (fun p -> Geom.side_of_line axis p > 0)) polys in
         let neg = List.exists (Array.exists (fun p -> Geom.side_of_line axis p < 0)) polys in
         match (pos, neg) with
@@ -718,27 +716,27 @@ let eval_folded (prog : Ast.program) : folded =
         | _ -> Error.fail span (Printf.sprintf "%s lies on the fold axis" (fstr fa)))
   in
   let target_of (fa : Ast.flap_arg) (span : Error.span) :
-      Fold_state.scope_target =
+      Fold_graph.scope_target =
     match fa with
     | Ast.FlapPoint _ | Ast.FlapSpec _ ->
         let cluster = resolve_flap_cluster fa span in
-        Fold_state.TargetHinged (fun f -> List.mem f cluster)
+        Fold_graph.TargetHinged (fun f -> List.mem f cluster)
     | Ast.FlapLine lo -> (
         match lo with
         | Ast.LNamed cr ->
             let cid = material_cid cr in
             let st = !(ctx.state) in
-            Fold_state.TargetHinged
+            Fold_graph.TargetHinged
               (fun f ->
                 Array.exists
-                  (fun (e : Fold_state.edge) ->
-                    e.Fold_state.crease_id = cid
-                    && (e.Fold_state.left = f || e.Fold_state.right = f))
-                  st.Fold_state.edges)
+                  (fun (h : Fold_graph.hinge) ->
+                    h.Fold_graph.crease_id = cid
+                    && (h.Fold_graph.fa = f || h.Fold_graph.fb = f))
+                  (Fold_graph.hinges st))
         | (Ast.LFilter _ | Ast.LUnion _) as b ->
             let s = coerce_one_segment b in
-            let l, r = s.Fold_state.faces in
-            Fold_state.TargetHinged (fun f -> f = l || f = r)
+            let l, r = s.Fold_graph.faces in
+            Fold_graph.TargetHinged (fun f -> f = l || f = r)
         | _ ->
             Error.fail span
               (Printf.sprintf
@@ -956,11 +954,11 @@ let eval_folded (prog : Ast.program) : folded =
             k (fun fi ->
                 Array.length
                   (Geom.clip_convex_halfplane axis move_side
-                     (Fold_state.table_polygon st fi))
+                     (Fold_graph.table_polygon st fi))
                 >= 3)
         | None -> ());
         ctx.state :=
-          Fold_state.fold_with_records !(ctx.state) ~axis ~move_side ~valley
+          Fold_graph.fold !(ctx.state) ~axis ~move_side ~valley
             ~crease_id ~prov
     | Some tgt -> (
         let anchor =
@@ -973,7 +971,7 @@ let eval_folded (prog : Ast.program) : folded =
                    (fun f ->
                      Array.length
                        (Geom.clip_convex_halfplane axis move_side
-                          (Fold_state.table_polygon st f))
+                          (Fold_graph.table_polygon st f))
                      >= 3)
                    cluster
                with
@@ -984,13 +982,13 @@ let eval_folded (prog : Ast.program) : folded =
         in
         let target = target_of tgt span in
         match
-          Fold_state.select_scope !(ctx.state) ~axis ~move_side ~valley ~anchor
+          Fold_graph.select_scope !(ctx.state) ~axis ~move_side ~valley ~anchor
             ~target
         with
         | Error msg -> Error.fail span msg
         | Ok moving_parents ->
             (match
-               Fold_state.scoped_fold_hinge_closed !(ctx.state) ~axis
+               Fold_graph.scoped_fold_hinge_closed !(ctx.state) ~axis
                  ~move_side ~moving_parents
              with
             | Ok () -> ()
@@ -1008,7 +1006,7 @@ let eval_folded (prog : Ast.program) : folded =
             | Some k -> k (fun fi -> moving_parents.(fi))
             | None -> ());
             ctx.state :=
-              Fold_state.fold_with_records !(ctx.state) ~moving_parents ~axis
+              Fold_graph.fold !(ctx.state) ~moving_parents ~axis
                 ~move_side ~valley ~crease_id ~prov)
   in
   let run_fold ~(span : Error.span) ~(axis : Geom.line) ~(fs : Ast.fold_spec)
@@ -1022,8 +1020,8 @@ let eval_folded (prog : Ast.program) : folded =
   let ax5_material (p : ax5_pending) : (Geom.point * Geom.point) list =
     let of_material cid =
       List.map
-        (fun (s : Fold_state.crease_segment) -> (s.Fold_state.ta, s.Fold_state.tb))
-        (Fold_state.crease_segments !(ctx.state) cid)
+        (fun (s : Fold_graph.crease_segment) -> (s.Fold_graph.ta, s.Fold_graph.tb))
+        (Fold_graph.crease_segments !(ctx.state) cid)
     in
     match p.l1_op with
     | Ast.LNamed cr -> (
@@ -1031,16 +1029,16 @@ let eval_folded (prog : Ast.program) : folded =
         | Material (cid, _) -> of_material cid
         | Bundle _ ->
             List.map
-              (fun (s : Fold_state.crease_segment) ->
-                (s.Fold_state.ta, s.Fold_state.tb))
+              (fun (s : Fold_graph.crease_segment) ->
+                (s.Fold_graph.ta, s.Fold_graph.tb))
               (snd (bundle_segments (Ast.LNamed cr)))
-        | Edge _ -> Fold_state.line_material_segments !(ctx.state) p.la
-        | Mark _ | Frozen _ -> Fold_state.line_material_segments !(ctx.state) p.la)
-    | Ast.LSelect _ -> Fold_state.line_material_segments !(ctx.state) p.la
+        | Edge _ -> Fold_graph.line_material_segments !(ctx.state) p.la
+        | Mark _ | Frozen _ -> Fold_graph.line_material_segments !(ctx.state) p.la)
+    | Ast.LSelect _ -> Fold_graph.line_material_segments !(ctx.state) p.la
     | (Ast.LFilter _ | Ast.LUnion _) as b ->
         List.map
-          (fun (s : Fold_state.crease_segment) ->
-            (s.Fold_state.ta, s.Fold_state.tb))
+          (fun (s : Fold_graph.crease_segment) ->
+            (s.Fold_graph.ta, s.Fold_graph.tb))
           (snd (bundle_segments b))
   in
   (* viability core (shared by bind and fold): one material endpoint strictly on
@@ -1065,7 +1063,7 @@ let eval_folded (prog : Ast.program) : folded =
      the sheet *)
   let ax5_filter (p : ax5_pending) : Geom.line list =
     let b1, b2 = p.cands in
-    List.filter (Fold_state.line_cuts_paper !(ctx.state)) [ b1; b2 ]
+    List.filter (Fold_graph.line_cuts_paper !(ctx.state)) [ b1; b2 ]
   in
   let e2 (p : ax5_pending) =
     Printf.sprintf
@@ -1206,7 +1204,7 @@ let eval_folded (prog : Ast.program) : folded =
       (fold_opt : Ast.fold_spec option) (m : Ast.markable) =
     match m with
     | Ast.MMotion ax ->
-        let cid = Fold_state.fresh_crease_id () in
+        let cid = Fold_graph.fresh_crease_id () in
         let prov_name =
           match name_opt with
           | Some n when not (is_temp n) -> (
@@ -1252,17 +1250,17 @@ let eval_folded (prog : Ast.program) : folded =
      behaviour, unchanged). A partial extent also returns its PAPER-space
      representative point (mark_rep_point's convention: the first point of a
      segment, or the point itself) and the PAPER-space line it lies on:
-     Fold_state.classify_mark_extent and the resulting mark's [mline] both
+     Fold_graph.classify_mark_extent and the resulting mark's [mline] both
      need paper space, which need not equal [table_axis] once the carrying
-     flap has moved (see Fold_state.classify_mark_extent's doc). *)
+     flap has moved (see Fold_graph.classify_mark_extent's doc). *)
   let resolve_mark_extent (table_axis : Geom.line) (ext : Ast.extent)
       (span : Error.span) :
-      [ `Full | `Partial of Fold_state.mark_geom * Geom.point * Geom.line ] =
+      [ `Full | `Partial of Fold_graph.mark_geom * Geom.point * Geom.line ] =
     let on_axis (po : Ast.point_operand) : Geom.point =
       let p = resolve_point po in
       if
         Geom.side_of_line table_axis
-          (Fold_state.table_position !(ctx.state) p)
+          (Fold_graph.table_position !(ctx.state) p)
         <> 0
       then
         Error.fail span
@@ -1275,7 +1273,7 @@ let eval_folded (prog : Ast.program) : folded =
         let pa = on_axis a and pb = on_axis b in
         if Geom.point_equal pa pb then
           Error.fail span "the mark's extent needs two distinct points";
-        `Partial (Fold_state.MSeg (pa, pb), pa, Geom.line_through pa pb)
+        `Partial (Fold_graph.MSeg (pa, pb), pa, Geom.line_through pa pb)
     | Ast.At p ->
         let pp = on_axis p in
         (* a lone point gives no second point to build its own paper-space
@@ -1290,15 +1288,12 @@ let eval_folded (prog : Ast.program) : folded =
         let rec paper_axis_via = function
           | [] -> table_axis
           | fi :: rest -> (
-              match
-                Fold_state.axis_segment_in_face st.Fold_state.faces.(fi)
-                  table_axis
-              with
+              match Fold_graph.axis_chord_in_face st fi table_axis with
               | Some (p, q) when not (Geom.point_equal p q) ->
                   Geom.line_through p q
               | _ -> paper_axis_via rest)
         in
-        `Partial (Fold_state.MPoint pp, pp, paper_axis_via (faces_containing pp))
+        `Partial (Fold_graph.MPoint pp, pp, paper_axis_via (faces_containing pp))
   in
   (* Behaviour 3: the flap (coplanar cluster, as its face list) a partial
      mark's extent is written onto. An explicit #(...) layer wins (mirrors
@@ -1311,7 +1306,7 @@ let eval_folded (prog : Ast.program) : folded =
     match layer_opt with
     | Some (Ast.FByPoints (pts, fspan)) -> (
         match
-          Fold_state.flap_of_points !(ctx.state) (List.map resolve_point pts)
+          Fold_graph.flap_of_points !(ctx.state) (List.map resolve_point pts)
         with
         | `Cluster fs -> fs
         | `Zero -> Error.fail fspan "those points aren't all on one flap"
@@ -1321,8 +1316,8 @@ let eval_folded (prog : Ast.program) : folded =
         | [] -> Error.fail span "the mark's extent is not on the paper"
         | faces -> (
             let st = !(ctx.state) in
-            let cl = Fold_state.coplanar_clusters st in
-            let n = Array.length st.Fold_state.faces in
+            let cl = Fold_graph.coplanar_clusters st in
+            let n = Array.length (Fold_graph.faces st) in
             match List.sort_uniq compare (List.map (fun f -> cl.(f)) faces) with
             | [ id ] -> List.filter (fun f -> cl.(f) = id) (List.init n Fun.id)
             | ids ->
@@ -1353,8 +1348,8 @@ let eval_folded (prog : Ast.program) : folded =
         in
         let record ~prov cid mgeom paper_axis =
           ctx.state :=
-            Fold_state.add_mark !(ctx.state)
-              { Fold_state.mgeom; mline = paper_axis; mintent = intent;
+            Fold_graph.add_mark !(ctx.state)
+              { Fold_graph.mgeom; mline = paper_axis; mintent = intent;
                 mcrease_id = cid; mprov = prov };
           bind_mark cid paper_axis
         in
@@ -1365,9 +1360,8 @@ let eval_folded (prog : Ast.program) : folded =
         let record_full ~prov cid table_axis =
           let st = !(ctx.state) in
           let clips =
-            Array.to_list st.Fold_state.faces
-            |> List.filter_map (fun (f : Fold_state.face) ->
-                   Fold_state.axis_segment_in_face f table_axis)
+            List.init (Array.length (Fold_graph.faces st)) Fun.id
+            |> List.filter_map (fun fi -> Fold_graph.axis_chord_in_face st fi table_axis)
           in
           let rep =
             match clips with
@@ -1379,14 +1373,13 @@ let eval_folded (prog : Ast.program) : folded =
           let flap = resolve_mark_flap layer_opt rep span in
           let pts =
             List.filter_map
-              (fun fi ->
-                Fold_state.axis_segment_in_face st.Fold_state.faces.(fi) table_axis)
+              (fun fi -> Fold_graph.axis_chord_in_face st fi table_axis)
               flap
             |> List.concat_map (fun (p, q) -> [ p; q ])
           in
           match Geom.extreme_pair pts with
           | Some (a, b) ->
-              record ~prov cid (Fold_state.MSeg (a, b)) (Geom.line_through a b)
+              record ~prov cid (Fold_graph.MSeg (a, b)) (Geom.line_through a b)
           | None -> Error.fail span "the mark's line does not cross its flap"
         in
         (* Behaviour 4: dispatch a partial extent's classification. Under the
@@ -1395,12 +1388,12 @@ let eval_folded (prog : Ast.program) : folded =
            `Ast.Between` can ever yield [CCrossesFold]. *)
         let dispatch_partial ~prov ~cid ~flap ~extent_geom ~paper_axis () =
           match
-            Fold_state.classify_mark_extent !(ctx.state) ~flap ~axis:paper_axis
+            Fold_graph.classify_mark_extent !(ctx.state) ~flap ~axis:paper_axis
               ~extent_geom
           with
-          | Fold_state.CSubdivide (a, b) -> record ~prov cid (Fold_state.MSeg (a, b)) paper_axis
-          | Fold_state.CRecord g -> record ~prov cid g paper_axis
-          | Fold_state.CCrossesFold _ ->
+          | Fold_graph.CSubdivide (a, b) -> record ~prov cid (Fold_graph.MSeg (a, b)) paper_axis
+          | Fold_graph.CRecord g -> record ~prov cid g paper_axis
+          | Fold_graph.CCrossesFold _ ->
               let a, b =
                 match ext with Ast.Between (a, b) -> (a, b) | _ -> assert false
               in
@@ -1422,7 +1415,7 @@ let eval_folded (prog : Ast.program) : folded =
                names a pure value (Frozen), promote its binding to Mark so a
                later `fold --d` can materialize a real crease along it. *)
             let table_axis = resolve_line lo in
-            let cid = Fold_state.fresh_crease_id () in
+            let cid = Fold_graph.fresh_crease_id () in
             let promote () =
               match lo with
               | Ast.LNamed cr -> (
@@ -1461,7 +1454,7 @@ let eval_folded (prog : Ast.program) : folded =
               | _ -> assert false
             in
             let axis =
-              match Fold_state.mark_axis_current !(ctx.state) mark_cid with
+              match Fold_graph.mark_axis_current !(ctx.state) mark_cid with
               | `Line l -> l
               | `Empty -> mark_line
               | `Bent ->
@@ -1471,7 +1464,7 @@ let eval_folded (prog : Ast.program) : folded =
                         segment with `at`, e.g. --%s at #(.a .b .c)"
                        cr.Ast.cname cr.Ast.cname)
             in
-            let cid = Fold_state.fresh_crease_id () in
+            let cid = Fold_graph.fresh_crease_id () in
             let prov : State.provenance option =
               Some { State.axiom = "fold"; sources = [ "--" ^ cr.Ast.cname ];
                      span; name = None; step = ctx.panel }
@@ -1505,17 +1498,17 @@ let eval_folded (prog : Ast.program) : folded =
                moving set cannot fold (#28) *)
             let check_straight (moves : int -> bool) =
               List.iter
-                (fun (s : Fold_state.crease_segment) ->
-                  let l, r = s.Fold_state.faces in
+                (fun (s : Fold_graph.crease_segment) ->
+                  let l, r = s.Fold_graph.faces in
                   if
                     (moves l || (r >= 0 && moves r))
-                    && (Geom.side_of_line axis s.Fold_state.ta <> 0
-                       || Geom.side_of_line axis s.Fold_state.tb <> 0)
+                    && (Geom.side_of_line axis s.Fold_graph.ta <> 0
+                       || Geom.side_of_line axis s.Fold_graph.tb <> 0)
                   then
                     Error.fail span
                       "the crease is bent under the moving flaps; select a \
                        straight segment with `at` or move fewer flaps")
-                (Fold_state.crease_segments !(ctx.state) cid)
+                (Fold_graph.crease_segments !(ctx.state) cid)
             in
             let prov : State.provenance option =
               Some
@@ -1533,7 +1526,7 @@ let eval_folded (prog : Ast.program) : folded =
     | Ast.Point (n, Ast.PsExpr po, span) ->
         bind_point ctx n span (resolve_point po)
     | Ast.Flip _ ->
-        ctx.state := Fold_state.flip !(ctx.state);
+        ctx.state := Fold_graph.flip !(ctx.state);
         ctx.pending <- true
     | Ast.Def (name, params, body, span) ->
         if Hashtbl.mem ctx.defs name then
@@ -1748,12 +1741,12 @@ let eval_folded (prog : Ast.program) : folded =
           match el.Ast.cline with
           | Ast.LNamed cr -> (
               let cid = material_cid cr in
-              match Fold_state.crease_segments !(ctx.state) cid with
+              match Fold_graph.crease_segments !(ctx.state) cid with
               | [ s ] ->
                   {
                     Collapse.cid;
-                    ea = s.Fold_state.ta;
-                    eb = s.Fold_state.tb;
+                    ea = s.Fold_graph.ta;
+                    eb = s.Fold_graph.tb;
                     valley = el.Ast.cdir = Ast.Valley;
                   }
               | [] ->
@@ -1770,8 +1763,8 @@ let eval_folded (prog : Ast.program) : folded =
               | Some cid, [ s ] ->
                   {
                     Collapse.cid;
-                    ea = s.Fold_state.ta;
-                    eb = s.Fold_state.tb;
+                    ea = s.Fold_graph.ta;
+                    eb = s.Fold_graph.tb;
                     valley = el.Ast.cdir = Ast.Valley;
                   }
               | _, [] ->
@@ -1803,23 +1796,23 @@ let eval_folded (prog : Ast.program) : folded =
             let st = !(ctx.state) in
             let line = Geom.line_through el.Collapse.ea el.Collapse.eb in
             let aligned_faces =
-              Fold_state.crease_segments st el.Collapse.cid
-              |> List.concat_map (fun (s : Fold_state.crease_segment) ->
+              Fold_graph.crease_segments st el.Collapse.cid
+              |> List.concat_map (fun (s : Fold_graph.crease_segment) ->
                      if
-                       Geom.side_of_line line s.Fold_state.ta = 0
-                       && Geom.side_of_line line s.Fold_state.tb = 0
+                       Geom.side_of_line line s.Fold_graph.ta = 0
+                       && Geom.side_of_line line s.Fold_graph.tb = 0
                      then
-                       let l, r = s.Fold_state.faces in
+                       let l, r = s.Fold_graph.faces in
                        l :: (if r >= 0 then [ r ] else [])
                      else [])
             in
             Array.iteri
               (fun i _ ->
                 if
-                  Geom.line_cuts_polygon line (Fold_state.table_polygon_ccw st i)
+                  Geom.line_cuts_polygon line (Fold_graph.table_polygon_ccw st i)
                   && not (List.mem i aligned_faces)
                 then Error.fail span "collapse through unaligned layers")
-              st.Fold_state.faces)
+              (Fold_graph.faces st))
           es;
         let over =
           List.map
@@ -1832,14 +1825,14 @@ let eval_folded (prog : Ast.program) : folded =
         let emergent_bind = ref None in
         (match toward_opt with
         | None ->
-            (match Collapse.collapse !(ctx.state) es ~over with
+            (match Collapse.collapse_graph !(ctx.state) es ~over with
             | Ok st -> ctx.state := st
             | Error msg -> Error.fail span msg)
         | Some toward_po ->
             (* DERIVE mode: [elems] is an odd set of given rays sharing one
                vertex O; solve the emergent crease completing them to a flat
                vertex (Flatten.derive), materialize it as a real crease
-               (Fold_state.subdivide — the elems are already TABLE-space, so
+               (Fold_graph.subdivide — the elems are already TABLE-space, so
                the cutting axis is too, unlike a mark's paper-space line),
                then fold the completed (now even) set exactly like the
                validate path. *)
@@ -1905,7 +1898,7 @@ let eval_folded (prog : Ast.program) : folded =
                              pick one ray")
                 in
                 let keep = Geom.side_of_line guard ray_far in
-                let new_cid = Fold_state.fresh_crease_id () in
+                let new_cid = Fold_graph.fresh_crease_id () in
                 let prov : State.provenance option =
                   Some
                     { State.axiom = "flatten"; sources = []; span; name = None;
@@ -1920,24 +1913,24 @@ let eval_folded (prog : Ast.program) : folded =
                    segments, so the scan spans all crease ids, not just
                    [new_cid]. *)
                 ctx.state :=
-                  Fold_state.subdivide !(ctx.state) emergent_line
+                  Fold_graph.subdivide !(ctx.state) emergent_line
                     ~crease_id:new_cid ~keep_side:(guard, keep) ~prov;
-                let far_of_seg (s : Fold_state.crease_segment) =
-                  if Geom.point_equal s.Fold_state.ta o then s.Fold_state.tb
-                  else s.Fold_state.ta
+                let far_of_seg (s : Fold_graph.crease_segment) =
+                  if Geom.point_equal s.Fold_graph.ta o then s.Fold_graph.tb
+                  else s.Fold_graph.ta
                 in
                 (* the crease ray at O along [emergent_line] on the kept side —
                    exactly one ray now exists there (new or pre-existing). *)
                 let candidates =
-                  Fold_state.all_crease_ids !(ctx.state)
+                  Fold_graph.all_crease_ids !(ctx.state)
                   |> List.concat_map (fun cid ->
-                         Fold_state.crease_segments !(ctx.state) cid
+                         Fold_graph.crease_segments !(ctx.state) cid
                          |> List.filter_map
-                              (fun (s : Fold_state.crease_segment) ->
+                              (fun (s : Fold_graph.crease_segment) ->
                                 let far = far_of_seg s in
                                 if
-                                  (Geom.point_equal s.Fold_state.ta o
-                                  || Geom.point_equal s.Fold_state.tb o)
+                                  (Geom.point_equal s.Fold_graph.ta o
+                                  || Geom.point_equal s.Fold_graph.tb o)
                                   && Geom.side_of_line emergent_line far = 0
                                   && Geom.side_of_line guard far = keep
                                   && not (List.exists (Geom.point_equal far) given_fars)
@@ -1965,7 +1958,7 @@ let eval_folded (prog : Ast.program) : folded =
                 let outcomes =
                   List.map
                     (fun (cid, (e : Collapse.elem)) ->
-                      (Collapse.collapse !(ctx.state) (e :: es) ~over, cid))
+                      (Collapse.collapse_graph !(ctx.state) (e :: es) ~over, cid))
                     attempts
                 in
                 let results =
@@ -2045,7 +2038,7 @@ let eval_folded (prog : Ast.program) : folded =
           | Frozen l -> (k, l, step_of_line k) :: acc
           | Mark (_, l) -> (k, l, step_of_line k) :: acc
           | Material (cid, l_orig) -> (
-              match Fold_state.crease_axis !(ctx.state) cid l_orig with
+              match Fold_graph.crease_axis !(ctx.state) cid l_orig with
               | `Line l -> (k, l, step_of_line k) :: acc
               (* bent by a later fold, or no material endpoints left: no
                  single current line to emit, so omit from the map rather
