@@ -2,7 +2,8 @@
     rewrite). Faces = 2D paper polygons; hinges = the face-adjacency graph. A
     face's 3D placement is DERIVED as the product of hinge motions along a path
     from the root — so adjacent faces differ by exactly their hinge's motion and
-    a torn state cannot be written down. Flat-first: hinge angle (dihedral/π) ∈
+    a torn state cannot be written down. Layer order is a rank permutation and
+    M/V is derived from it (never stored). Flat-first: hinge angle (dihedral/π) ∈
     {0, ±1}; |angle|=1 folds via a half-turn about the crease line (= the 2D
     reflection on z=0), reproducing today's flat folds. General rπ is Stage B. *)
 
@@ -306,7 +307,10 @@ let face_up (g : t) (i : int) : bool = Num.sign g.isos.(i).I3.m22 > 0
    hinge separates one face-up from one face-down placement), so both
    readings give the same M/V. Flat hinges
    (angle = 0) carry no M/V. Derived, never stored: rank and placements are
-   the only inputs, so MV cannot contradict the geometry. *)
+   the only inputs, so MV cannot contradict the geometry. Stage B: partial
+   angles (rπ) make m22 = cos(rπ) ≠ ±1 and "folded" non-binary — both this
+   and [face_up] need revisiting when the angle domain widens (until then
+   [make]'s Bad_angle check keeps them unreachable). *)
 let mv (g : t) (i : int) : mv option =
   let h = g.hinges.(i) in
   if Num.sign h.angle = 0 then None
