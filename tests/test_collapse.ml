@@ -24,10 +24,10 @@ let line_specs =
 let precreased () =
   List.fold_left
     (fun (st, rays) (l, fars) ->
-      let cid = Fold_graph.fresh_crease_id () in
-      let st' = Fold_graph.subdivide ~crease_id:cid st l ~prov:None in
+      let cid = Fold_state.fresh_crease_id () in
+      let st' = Fold_state.subdivide ~crease_id:cid st l ~prov:None in
       (st', rays @ List.map (fun f -> (f, cid)) fars))
-    (Fold_graph.init_square, [])
+    (Fold_state.init_square, [])
     line_specs
 
 (* build elems for the 8 rays given a valley assignment (bool array length 8) *)
@@ -133,7 +133,7 @@ let test_waterbomb_assignment () =
   | Ok s ->
       (* the 8 sectors survive as 8 faces in the folded state *)
       Alcotest.(check int) "collapsed waterbomb has 8 faces" 8
-        (Array.length (Fold_graph.faces s))
+        (Array.length (Fold_state.faces s))
   | Error e ->
       (* an ambiguous-stacking error would still mean the assignment is
          flat-foldable (closure + Maekawa + a valid layer order all passed) *)
@@ -165,18 +165,18 @@ let test_over_resolves_ambiguity () =
   | Error e -> Alcotest.fail ("expected Ok with over, got: " ^ e)
   | Ok s ->
       Alcotest.(check int) "over-resolved collapse keeps 8 faces" 8
-        (Array.length (Fold_graph.faces s));
+        (Array.length (Fold_state.faces s));
       let m, v =
-        Array.to_list (Fold_graph.hinges s)
-        |> List.mapi (fun i (h : Fold_graph.hinge) -> (i, h))
-        |> List.filter (fun (_, (h : Fold_graph.hinge)) ->
-               Num.sign h.Fold_graph.angle <> 0)
+        Array.to_list (Fold_state.hinges s)
+        |> List.mapi (fun i (h : Fold_state.hinge) -> (i, h))
+        |> List.filter (fun (_, (h : Fold_state.hinge)) ->
+               Num.sign h.Fold_state.angle <> 0)
         |> List.fold_left
              (fun (m, v) (i, _) ->
-               match Fold_graph.mv s i with
-               | Fold_graph.M -> (m + 1, v)
-               | Fold_graph.V -> (m, v + 1)
-               | Fold_graph.F -> (m, v))
+               match Fold_state.mv s i with
+               | Fold_state.M -> (m + 1, v)
+               | Fold_state.V -> (m, v + 1)
+               | Fold_state.F -> (m, v))
              (0, 0)
       in
       Alcotest.(check int) "derived letters satisfy Maekawa (|M-V|=2)" 2
@@ -189,10 +189,10 @@ let test_over_resolves_ambiguity () =
 let precreased_plus () =
   let hline = Geom.line_through (pt (q 0) half) (pt (q 1) half) in
   let vline = Geom.line_through (pt half (q 0)) (pt half (q 1)) in
-  let cidh = Fold_graph.fresh_crease_id () in
-  let st = Fold_graph.subdivide ~crease_id:cidh Fold_graph.init_square hline ~prov:None in
-  let cidv = Fold_graph.fresh_crease_id () in
-  let st = Fold_graph.subdivide ~crease_id:cidv st vline ~prov:None in
+  let cidh = Fold_state.fresh_crease_id () in
+  let st = Fold_state.subdivide ~crease_id:cidh Fold_state.init_square hline ~prov:None in
+  let cidv = Fold_state.fresh_crease_id () in
+  let st = Fold_state.subdivide ~crease_id:cidv st vline ~prov:None in
   (* rays CCW-ish order: right(h), up(v), left(h), down(v) *)
   let rays =
     [ (pt (q 1) half, cidh); (pt half (q 1), cidv);
@@ -200,7 +200,7 @@ let precreased_plus () =
   in
   (st, cidh, cidv, rays)
 
-(* [Fold_graph.mv] is derived, never stored, so there is no separate
+(* [Fold_state.mv] is derived, never stored, so there is no separate
    "effective_valley" parity step to hand-verify against — on this fixture
    (no prior flip) the derived letter equals the raw declared valley/mountain
    for every ray. ADJUDICATED (Toph, 2026-07-16, Plan 3c Task 3b-5 / Task 4):
@@ -220,30 +220,30 @@ let test_eassign_parity () =
   match Collapse.collapse st es ~over:[] with
   | Error e -> Alcotest.fail ("expected Ok, got: " ^ e)
   | Ok s ->
-      let hs = Fold_graph.hinges s in
+      let hs = Fold_state.hinges s in
       let assigns cid =
         Array.to_list hs
-        |> List.mapi (fun i (h : Fold_graph.hinge) -> (i, h))
-        |> List.filter (fun (_, (h : Fold_graph.hinge)) -> h.Fold_graph.crease_id = cid)
-        |> List.map (fun (i, _) -> Fold_graph.mv s i)
+        |> List.mapi (fun i (h : Fold_state.hinge) -> (i, h))
+        |> List.filter (fun (_, (h : Fold_state.hinge)) -> h.Fold_state.crease_id = cid)
+        |> List.map (fun (i, _) -> Fold_state.mv s i)
         |> List.sort compare
       in
       Alcotest.(check bool)
         "horizontal crease: both rays derive M (raw declared, adjudicated 2026-07-16)"
-        true (assigns cidh = [ Fold_graph.M; Fold_graph.M ]);
+        true (assigns cidh = [ Fold_state.M; Fold_state.M ]);
       Alcotest.(check bool) "vertical crease: one V (up) + one M (down)" true
-        (assigns cidv = [ Fold_graph.M; Fold_graph.V ]);
+        (assigns cidv = [ Fold_state.M; Fold_state.V ]);
       let has_u =
         Array.to_list hs
         |> List.mapi (fun i _ -> i)
-        |> List.exists (fun i -> Fold_graph.mv s i = Fold_graph.F)
+        |> List.exists (fun i -> Fold_state.mv s i = Fold_state.F)
       in
       Alcotest.(check bool) "no folded crease left as F" false has_u
 
 (* Merged from test_collapse_graph.ml's `test_old_eassign_divergence` (Plan 3c
    Task 6 — that file's old-vs-new parity harness is gone). Pins the Task 5
    adjudication directly: on the "+" vertex with no prior flip, EVERY ray
-   hinge's derived [Fold_graph.mv] equals the raw user-declared letter — no
+   hinge's derived [Fold_state.mv] equals the raw user-declared letter — no
    effective_valley-style parity correction applies to the derived letter
    (the old kernel's stored `eassign` DID apply such a correction and, per
    the Task 5 finding, contradicted its own intrinsic_valley probe on this
@@ -258,14 +258,14 @@ let test_derived_mv_matches_declared () =
   match Collapse.collapse st es ~over:[] with
   | Error e -> Alcotest.fail ("expected Ok, got: " ^ e)
   | Ok s ->
-      let hs = Fold_graph.hinges s in
+      let hs = Fold_state.hinges s in
       let ray_of i =
-        let a, b = Fold_graph.hinge_segment s i in
+        let a, b = Fold_state.hinge_segment s i in
         let found = ref None in
         List.iteri
           (fun j (far, cid) ->
             if
-              hs.(i).Fold_graph.crease_id = cid
+              hs.(i).Fold_state.crease_id = cid
               && Geom.on_segment (o, far) a
               && Geom.on_segment (o, far) b
             then found := Some j)
@@ -274,16 +274,16 @@ let test_derived_mv_matches_declared () =
       in
       let checked = ref 0 in
       Array.iteri
-        (fun i (h : Fold_graph.hinge) ->
-          if Num.sign h.Fold_graph.angle <> 0 then
+        (fun i (h : Fold_state.hinge) ->
+          if Num.sign h.Fold_state.angle <> 0 then
             match ray_of i with
             | None -> Alcotest.failf "folded hinge %d matches no ray" i
             | Some j ->
                 incr checked;
-                let expect = if valleys.(j) then Fold_graph.V else Fold_graph.M in
+                let expect = if valleys.(j) then Fold_state.V else Fold_state.M in
                 Alcotest.(check bool)
                   (Printf.sprintf "derived mv equals raw declared letter (ray %d)" j)
-                  true (Fold_graph.mv s i = expect))
+                  true (Fold_state.mv s i = expect))
         hs;
       Alcotest.(check int) "all four ray hinges checked" 4 !checked
 
@@ -320,9 +320,9 @@ let test_duplicate_ray_rejected () =
    UPPER of its two incident faces is front-down (not [face_up]) — no
    reference to the derived [mv] on the crease itself. [test_intrinsic_convention_pin]
    below proves this is the emitter's convention on a trivial simple fold. *)
-let intrinsic_valley (s : Fold_graph.t) (fl : int) (fj : int) : bool =
-  let upper = if Fold_graph.rel s fj fl = Fold_graph.Above then fj else fl in
-  not (Fold_graph.face_up s upper)
+let intrinsic_valley (s : Fold_state.t) (fl : int) (fj : int) : bool =
+  let upper = if Fold_state.rel s fj fl = Fold_state.Above then fj else fl in
+  not (Fold_state.face_up s upper)
 
 (* Pin the convention on a trivial fold of the square along y = 1/2 (top half
    moves): valley lands the moved flap on TOP front-down (upper not face_up,
@@ -333,18 +333,18 @@ let test_intrinsic_convention_pin () =
   List.iter
     (fun valley ->
       let s =
-        Fold_graph.simple_fold Fold_graph.init_square ~axis ~move_side:1
+        Fold_state.simple_fold Fold_state.init_square ~axis ~move_side:1
           ~valley
       in
-      let hs = Fold_graph.hinges s in
+      let hs = Fold_state.hinges s in
       let letter =
         Array.to_list hs
         |> List.mapi (fun i _ -> i)
         |> List.filter_map (fun i ->
-               match Fold_graph.mv s i with
-               | Fold_graph.V -> Some true
-               | Fold_graph.M -> Some false
-               | Fold_graph.F -> None)
+               match Fold_state.mv s i with
+               | Fold_state.V -> Some true
+               | Fold_state.M -> Some false
+               | Fold_state.F -> None)
       in
       Alcotest.(check bool)
         (Printf.sprintf "trivial %s: derived letter matches"
@@ -379,10 +379,10 @@ let test_c2_declared_mountain_intrinsic () =
          face index order), then pair each ray's two bounding sectors. *)
       let sorted = Array.of_list (Collapse.sort_ccw o es) in
       let n = Array.length sorted in
-      let faces = Fold_graph.faces st in
+      let faces = Fold_state.faces st in
       let sec =
         Array.init (Array.length faces) (fun i ->
-            Collapse.sector_of_poly o sorted (faces.(i), Fold_graph.face_iso2 st i))
+            Collapse.sector_of_poly o sorted (faces.(i), Fold_state.face_iso2 st i))
       in
       let face_in sector =
         let r = ref (-1) in
@@ -403,19 +403,19 @@ let test_c2_declared_mountain_intrinsic () =
 
 let collapse_letters valleys ~flip =
   let st, _, _, rays = precreased_plus () in
-  let st = if flip then Fold_graph.flip st else st in
+  let st = if flip then Fold_state.flip st else st in
   let es = elems_of rays valleys in
   match Collapse.collapse st es ~over:[] with
   | Error e -> Alcotest.fail ("expected Ok, got: " ^ e)
   | Ok s ->
-      let hs = Fold_graph.hinges s in
+      let hs = Fold_state.hinges s in
       Array.to_list hs
       |> List.mapi (fun i _ -> i)
       |> List.filter_map (fun i ->
-             match Fold_graph.mv s i with
-             | Fold_graph.V -> Some true
-             | Fold_graph.M -> Some false
-             | Fold_graph.F -> None)
+             match Fold_state.mv s i with
+             | Fold_state.V -> Some true
+             | Fold_state.M -> Some false
+             | Fold_state.F -> None)
 
 (* OLD model (spec §4.7, "mountain = turn over, then valley"): a prior [flip]
    was believed to invert every collapse crease's letter, because the STORED
@@ -424,7 +424,7 @@ let collapse_letters valleys ~flip =
    every sector uniformly. ADJUDICATED (Toph, 2026-07-16, Plan 3c Task 4): the
    new kernel's [intent] (CP-frame, = old eintent/eassign — matches the old
    model bit-for-bit, see [test_eassign_parity] above) DOES still flip this
-   way, but the DERIVED [Fold_graph.mv] does not: [mv] reads only the
+   way, but the DERIVED [Fold_state.mv] does not: [mv] reads only the
    constructed hinge's rank + [face_up], an invariant of the realised
    physical fold — the same "old per-ray parity term belongs to [intent], not
    to the physically-derived letter" finding as [test_eassign_parity], just

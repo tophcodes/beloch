@@ -48,30 +48,30 @@ let beloch_edges_json edges : Yojson.Safe.t =
    Applied to BOTH the crease-pattern frame and each folded frame — fold-time
    algorithms never see it (emit-only). Partial (mid-segment) graduation is
    deferred: a whole mark graduates or it does not. *)
-let cp_display (st : Fold_graph.t) : Fold_graph.t * Fold_graph.mark list =
-  let faces = Fold_graph.faces st in
+let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
+  let faces = Fold_state.faces st in
   let material (p : Geom.point) =
     Array.exists
-      (fun (f : Fold_graph.face) -> Fold_graph.point_on_polygon_boundary f p)
+      (fun (f : Fold_state.face) -> Fold_state.point_on_polygon_boundary f p)
       faces
   in
-  let graduates (m : Fold_graph.mark) =
-    match m.Fold_graph.mgeom with
-    | Fold_graph.MSeg (a, b) -> material a && material b
-    | Fold_graph.MPoint _ -> false
+  let graduates (m : Fold_state.mark) =
+    match m.Fold_state.mgeom with
+    | Fold_state.MSeg (a, b) -> material a && material b
+    | Fold_state.MPoint _ -> false
   in
   let grad, kept =
-    List.partition graduates (Array.to_list (Fold_graph.marks st))
+    List.partition graduates (Array.to_list (Fold_state.marks st))
   in
   let disp =
     List.fold_left
-      (fun s (m : Fold_graph.mark) ->
-        match m.Fold_graph.mgeom with
-        | Fold_graph.MSeg (a, b) ->
-            Fold_graph.subdivide_paper s
+      (fun s (m : Fold_state.mark) ->
+        match m.Fold_state.mgeom with
+        | Fold_state.MSeg (a, b) ->
+            Fold_state.subdivide_paper s
               (Geom.line_through a b)
-              ~intent:m.Fold_graph.mintent ~prov:m.Fold_graph.mprov
-        | Fold_graph.MPoint _ -> s)
+              ~intent:m.Fold_state.mintent ~prov:m.Fold_state.mprov
+        | Fold_state.MPoint _ -> s)
       st grad
   in
   (disp, kept)
@@ -80,12 +80,12 @@ let cp_display (st : Fold_graph.t) : Fold_graph.t * Fold_graph.mark list =
    this state's faces (earlier steps have fewer faces than the final CP, so the
    frame cannot inherit the parent's vertex/face set — frame_inherit is false). *)
 let folded_frame_of_state (named_points : (string * Geom.point) list)
-    (state : Fold_graph.t) (step : string option)
+    (state : Fold_state.t) (step : string option)
     (span : Error.span option) : Yojson.Safe.t =
   (* graduate marks into flat (F) creases for the folded diagram too, so a
      scored precrease shows in the folded frame; emit-only, like the CP frame *)
   let state, _ = cp_display state in
-  let faces = Fold_graph.faces state in
+  let faces = Fold_state.faces state in
   (* dedup vertices by (paper coord, table coord) together, remembering both per
      vertex. Two faces sharing a paper corner merge only when their isometries
      agree there (same table position) — the case of a shared crease on a
@@ -97,7 +97,7 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
      — the "diagonal slash" render). *)
   let vpaper = Dynarray.create () and vtable = Dynarray.create () in
   let vindex (fi : int) (p : Geom.point) : int =
-    let t = Isometry.apply_point (Fold_graph.face_iso2 state fi) p in
+    let t = Isometry.apply_point (Fold_state.face_iso2 state fi) p in
     let n = Dynarray.length vpaper in
     let rec find i =
       if i >= n then -1
@@ -125,7 +125,7 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
     || (Num.equal a.Geom.y o && Num.equal b.Geom.y o)
   in
   (* collect unique edges with (assignment string, provenance) *)
-  let hs = Fold_graph.hinges state in
+  let hs = Fold_state.hinges state in
   let edge_tbl = Hashtbl.create 64 in
   let edges = ref [] in
   Array.iteri
@@ -141,15 +141,15 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
           let assign, prov =
             if on_unit_boundary pa pb then ("B", None)
             else
-              match Fold_graph.hinge_between state fi pa pb with
+              match Fold_state.hinge_between state fi pa pb with
               | Some hi ->
                   let a =
-                    match Fold_graph.mv state hi with
-                    | Fold_graph.M -> "M"
-                    | Fold_graph.V -> "V"
-                    | Fold_graph.F -> "F"
+                    match Fold_state.mv state hi with
+                    | Fold_state.M -> "M"
+                    | Fold_state.V -> "V"
+                    | Fold_state.F -> "F"
                   in
-                  (a, hs.(hi).Fold_graph.prov)
+                  (a, hs.(hi).Fold_state.prov)
               | None -> ("F", None)
           in
           edges := (ia, ib, assign, prov) :: !edges
@@ -189,11 +189,11 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
   let face_orders = ref [] in
   for fi = 0 to nf - 1 do
     for gi = fi + 1 to nf - 1 do
-      match Fold_graph.rel state fi gi with
-      | Fold_graph.Apart -> ()
+      match Fold_state.rel state fi gi with
+      | Fold_state.Apart -> ()
       | rel ->
-          let g_up = Fold_graph.face_up state gi in
-          let fi_below = rel = Fold_graph.Below in
+          let g_up = Fold_state.face_up state gi in
+          let fi_below = rel = Fold_state.Below in
           let s =
             if fi_below then if g_up then -1 else 1
             else if g_up then 1 else -1
@@ -205,7 +205,7 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
     Array.to_list
       (Array.mapi
          (fun fi _ ->
-           let i = Fold_graph.face_iso2 state fi in
+           let i = Fold_state.face_iso2 state fi in
            `List
              [ q_to_json i.Isometry.m00; q_to_json i.Isometry.m01;
                q_to_json i.Isometry.m10; q_to_json i.Isometry.m11;
@@ -235,7 +235,7 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
 
 let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
   let disp, kept_marks = cp_display fd.Eval.state in
-  let faces = Fold_graph.faces disp in
+  let faces = Fold_state.faces disp in
   (* dedup vertices by paper coord; remember paper coord per vertex, for the
      top-level crease-pattern frame (built from the final state). *)
   let vpaper = Dynarray.create () in
@@ -263,7 +263,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
     || (Num.equal a.Geom.y o && Num.equal b.Geom.y o)
   in
   (* collect unique edges with (assignment string, provenance) *)
-  let hs = Fold_graph.hinges disp in
+  let hs = Fold_state.hinges disp in
   let edge_tbl = Hashtbl.create 64 in
   let edges = ref [] in
   Array.iteri
@@ -279,16 +279,16 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
           let assign, prov =
             if on_unit_boundary pa pb then ("B", None)
             else
-              match Fold_graph.hinge_between disp fi pa pb with
+              match Fold_state.hinge_between disp fi pa pb with
               | Some hi ->
                   let h = hs.(hi) in
                   let a =
-                    match h.Fold_graph.intent with
-                    | Fold_graph.M -> "M"
-                    | Fold_graph.V -> "V"
-                    | Fold_graph.F -> "F"
+                    match h.Fold_state.intent with
+                    | Fold_state.M -> "M"
+                    | Fold_state.V -> "V"
+                    | Fold_state.F -> "F"
                   in
-                  (a, h.Fold_graph.prov)
+                  (a, h.Fold_state.prov)
               | None -> ("F", None)
           in
           edges := (ia, ib, assign, prov) :: !edges
@@ -319,7 +319,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
     `Assoc
       (List.map
          (fun (name, (p : Geom.point), step) ->
-           let t = Fold_graph.table_position fd.Eval.state p in
+           let t = Fold_state.table_position fd.Eval.state p in
            ( name,
              `Assoc
                [
@@ -341,36 +341,36 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
                ] ))
          fd.Eval.named_lines)
   in
-  (* record marks (non-subdividing; see Fold_graph.mark) — a mark's intent is
+  (* record marks (non-subdividing; see Fold_state.mark) — a mark's intent is
      only ever M or V (never F: F is a folded-form dihedral, not a
      crease-pattern colour), but match totally rather than special-casing. *)
   let mark_assign_str = function
-    | Fold_graph.M -> "M"
-    | Fold_graph.V -> "V"
-    | Fold_graph.F -> "F"
+    | Fold_state.M -> "M"
+    | Fold_state.V -> "V"
+    | Fold_state.F -> "F"
   in
   let beloch_marks =
     kept_marks
-    |> List.map (fun (m : Fold_graph.mark) ->
+    |> List.map (fun (m : Fold_state.mark) ->
         let line =
-          let l = m.Fold_graph.mline in
+          let l = m.Fold_state.mline in
           `List [ q_to_json l.Geom.a; q_to_json l.Geom.b; q_to_json l.Geom.c ]
         in
         let common =
           [
             ("line", line);
-            ("intent", `String (mark_assign_str m.Fold_graph.mintent));
-            ("crease_id", `Int m.Fold_graph.mcrease_id);
+            ("intent", `String (mark_assign_str m.Fold_state.mintent));
+            ("crease_id", `Int m.Fold_state.mcrease_id);
           ]
         in
-        match m.Fold_graph.mgeom with
-        | Fold_graph.MSeg (a, b) ->
+        match m.Fold_state.mgeom with
+        | Fold_state.MSeg (a, b) ->
             `Assoc
               (("kind", `String "seg")
               :: ("a", `List [ q_to_json a.Geom.x; q_to_json a.Geom.y ])
               :: ("b", `List [ q_to_json b.Geom.x; q_to_json b.Geom.y ])
               :: common)
-        | Fold_graph.MPoint p ->
+        | Fold_state.MPoint p ->
             `Assoc
               (("kind", `String "point")
               :: ("p", `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ])
@@ -397,7 +397,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
            frame only — not counted as a fold (the `steps` assertion reads
            Eval.frames, which excludes it). *)
         `List
-          (folded_frame_of_state named_points_2 Fold_graph.init_square
+          (folded_frame_of_state named_points_2 Fold_state.init_square
              None None
           :: List.map
                (fun (step, st, span) ->

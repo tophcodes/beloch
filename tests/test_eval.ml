@@ -23,10 +23,10 @@ let expect_error msg_substr thunk =
          true
        with Not_found -> false)
 
-let count_assign a (st : Fold_graph.t) =
-  let hs = Fold_graph.hinges st in
+let count_assign a (st : Fold_state.t) =
+  let hs = Fold_state.hinges st in
   List.filter
-    (fun i -> Fold_graph.mv st i = a)
+    (fun i -> Fold_state.mv st i = a)
     (List.init (Array.length hs) Fun.id)
   |> List.length
 
@@ -101,13 +101,13 @@ let test_eval_map_onto_line_ok () =
   in
   (* the axiom-4 crease is a full mark: it records as a chord (no fold-time
      edge), so read its line from the mark layer *)
-  match List.rev (Array.to_list (Fold_graph.marks fd.Eval.state)) with
+  match List.rev (Array.to_list (Fold_state.marks fd.Eval.state)) with
   | [] -> Alcotest.fail "expected at least one mark"
   | m :: _ ->
       let ca, cb =
-        match m.Fold_graph.mgeom with
-        | Fold_graph.MSeg (a, b) -> (a, b)
-        | Fold_graph.MPoint _ -> Alcotest.fail "expected a segment mark"
+        match m.Fold_state.mgeom with
+        | Fold_state.MSeg (a, b) -> (a, b)
+        | Fold_state.MPoint _ -> Alcotest.fail "expected a segment mark"
       in
       let c = Geom.line_through ca cb in
       let on (p : Geom.point) =
@@ -221,13 +221,13 @@ let test_fold_along_matches_restatement () =
          "paper square\nmark map .b onto .a\nfold map .b onto .a moving .b\n")
   in
   Alcotest.(check int) "same face count"
-    (Array.length (Fold_graph.faces via_axiom.Eval.state))
-    (Array.length (Fold_graph.faces via_fold.Eval.state));
+    (Array.length (Fold_state.faces via_axiom.Eval.state))
+    (Array.length (Fold_state.faces via_fold.Eval.state));
   Alcotest.(check int) "same V count"
-    (count_assign Fold_graph.V via_axiom.Eval.state)
-    (count_assign Fold_graph.V via_fold.Eval.state);
+    (count_assign Fold_state.V via_axiom.Eval.state)
+    (count_assign Fold_state.V via_fold.Eval.state);
   Alcotest.(check int) "no stale F" 0
-    (count_assign Fold_graph.F via_fold.Eval.state)
+    (count_assign Fold_state.F via_fold.Eval.state)
 
 (* crease all layers, @fold some: the unmoved layer keeps its flat F mark *)
 let[@warning "-32"] test_crease_all_fold_some () =
@@ -240,9 +240,9 @@ let[@warning "-32"] test_crease_all_fold_some () =
           fold --m moving .c up to .c\n")
   in
   Alcotest.(check int) "unmoved layer keeps F" 1
-    (count_assign Fold_graph.F scoped.Eval.state);
+    (count_assign Fold_state.F scoped.Eval.state);
   Alcotest.(check int) "4 faces" 4
-    (Array.length (Fold_graph.faces scoped.Eval.state));
+    (Array.length (Fold_state.faces scoped.Eval.state));
   let all_layers =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
@@ -252,7 +252,7 @@ let[@warning "-32"] test_crease_all_fold_some () =
           fold --m moving .c\n")
   in
   Alcotest.(check int) "all-layers upgrades every F" 0
-    (count_assign Fold_graph.F all_layers.Eval.state)
+    (count_assign Fold_state.F all_layers.Eval.state)
 
 let test_fold_along_needs_moving () =
   expect_error "needs `moving" (fun () ->
@@ -338,74 +338,74 @@ let test_flatten_all_layers_ok () =
           mountain) (--v & #[.a] mountain)\n")
   in
   Alcotest.(check int) "vertex flatten leaves 4 sector faces" 4
-    (Array.length (Fold_graph.faces fd.Eval.state))
+    (Array.length (Fold_state.faces fd.Eval.state))
 
 (* ---- Fold_state ---- *)
 
 let test_fold_state_init () =
-  let st = Fold_graph.init_square in
-  Alcotest.(check int) "one face" 1 (Array.length (Fold_graph.faces st));
+  let st = Fold_state.init_square in
+  Alcotest.(check int) "one face" 1 (Array.length (Fold_state.faces st));
   Alcotest.(check bool)
     "corner .a at (0,0) on the table" true
-    (Geom.point_equal (Fold_graph.table_position st (pt 0 0)) (pt 0 0))
+    (Geom.point_equal (Fold_state.table_position st (pt 0 0)) (pt 0 0))
 
 let test_fold_state_half () =
-  let st = Fold_graph.init_square in
+  let st = Fold_state.init_square in
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let st = Fold_graph.simple_fold st ~axis ~move_side:1 ~valley:true in
+  let st = Fold_state.simple_fold st ~axis ~move_side:1 ~valley:true in
   Alcotest.(check int) "two faces after one fold" 2
-    (Array.length (Fold_graph.faces st));
+    (Array.length (Fold_state.faces st));
   Alcotest.(check bool) ".b maps onto .a" true
-    (Geom.point_equal (Fold_graph.table_position st (pt 1 0)) (pt 0 0));
+    (Geom.point_equal (Fold_state.table_position st (pt 1 0)) (pt 0 0));
   let all_left =
     Array.for_all
       (fun i ->
         Array.for_all
           (fun p -> Num.compare p.Geom.x half <= 0)
-          (Fold_graph.table_polygon st i))
+          (Fold_state.table_polygon st i))
       [| 0; 1 |]
   in
   Alcotest.(check bool) "folded footprint is the left half" true all_left
 
 (* index of the single face with the given det_sign in a 2-face state *)
-let face_with_det (st : Fold_graph.t) (d : int) : int =
+let face_with_det (st : Fold_state.t) (d : int) : int =
   let idxs = List.filter
-    (fun i -> Isometry.det_sign (Fold_graph.face_iso2 st i) = d)
+    (fun i -> Isometry.det_sign (Fold_state.face_iso2 st i) = d)
     [ 0; 1 ] in
   match idxs with [ i ] -> i | _ -> Alcotest.fail "expected exactly one such face"
 
 let test_layer_valley_moved_above () =
-  let st = Fold_graph.init_square in
+  let st = Fold_state.init_square in
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let st = Fold_graph.simple_fold st ~axis ~move_side:1 ~valley:true in
+  let st = Fold_state.simple_fold st ~axis ~move_side:1 ~valley:true in
   let mv = face_with_det st (-1) and stt = face_with_det st 1 in
   Alcotest.(check bool) "moved face is Above stationary" true
-    (Fold_graph.rel st mv stt = Fold_graph.Above)
+    (Fold_state.rel st mv stt = Fold_state.Above)
 
 let test_layer_mountain_moved_below () =
-  let st = Fold_graph.init_square in
+  let st = Fold_state.init_square in
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let st = Fold_graph.simple_fold st ~axis ~move_side:1 ~valley:false in
+  let st = Fold_state.simple_fold st ~axis ~move_side:1 ~valley:false in
   let mv = face_with_det st (-1) and stt = face_with_det st 1 in
   Alcotest.(check bool) "moved face is Below stationary" true
-    (Fold_graph.rel st mv stt = Fold_graph.Below)
+    (Fold_state.rel st mv stt = Fold_state.Below)
 
-(* [Fold_graph.rel]'s own negation, ported locally — the core has no
+(* [Fold_state.rel]'s own negation, ported locally — the core has no
    standalone sparse-order module; [rel] is derived directly from rank. *)
 let negate_rel = function
-  | Fold_graph.Above -> Fold_graph.Below
-  | Fold_graph.Below -> Fold_graph.Above
-  | Fold_graph.Apart -> Fold_graph.Apart
+  | Fold_state.Above -> Fold_state.Below
+  | Fold_state.Below -> Fold_state.Above
+  | Fold_state.Apart -> Fold_state.Apart
 
 let test_layer_antisymmetry () =
-  let st = Fold_graph.init_square in
+  let st = Fold_state.init_square in
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let st = Fold_graph.simple_fold st ~axis ~move_side:1 ~valley:true in
-  let n = Array.length (Fold_graph.faces st) in
+  let st = Fold_state.simple_fold st ~axis ~move_side:1 ~valley:true in
+  let n = Array.length (Fold_state.faces st) in
   let ok = ref true in
   for i = 0 to n - 1 do
     for j = 0 to n - 1 do
-      if Fold_graph.rel st j i <> negate_rel (Fold_graph.rel st i j) then
+      if Fold_state.rel st j i <> negate_rel (Fold_state.rel st i j) then
         ok := false
     done
   done;
@@ -417,16 +417,16 @@ let test_layer_fold_quarter_reversal () =
        (Beloch.parse ~filename:"fq.bel"
           "paper square\nfold map .b onto .a moving .b\nfold map .d onto .a moving .d\n")).Eval.state
   in
-  Alcotest.(check int) "four faces" 4 (Array.length (Fold_graph.faces st));
-  let n = Array.length (Fold_graph.faces st) in
+  Alcotest.(check int) "four faces" 4 (Array.length (Fold_state.faces st));
+  let n = Array.length (Fold_state.faces st) in
   let bad = ref false in
   for i = 0 to n - 1 do
     for j = i + 1 to n - 1 do
       if
         Geom.convex_overlap
-          (Fold_graph.table_polygon st i)
-          (Fold_graph.table_polygon st j)
-        && Fold_graph.rel st i j = Fold_graph.Apart
+          (Fold_state.table_polygon st i)
+          (Fold_state.table_polygon st j)
+        && Fold_state.rel st i j = Fold_state.Apart
       then bad := true
     done
   done;
@@ -434,22 +434,22 @@ let test_layer_fold_quarter_reversal () =
 
 let test_fold_subdivide () =
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let st = Fold_graph.subdivide Fold_graph.init_square axis ~prov:None in
+  let st = Fold_state.subdivide Fold_state.init_square axis ~prov:None in
   Alcotest.(check int) "two faces after subdivide" 2
-    (Array.length (Fold_graph.faces st));
-  Alcotest.(check int) "one crease edge" 1 (Array.length (Fold_graph.hinges st));
-  Alcotest.(check int) "subdivide edges are F" 1 (count_assign Fold_graph.F st)
+    (Array.length (Fold_state.faces st));
+  Alcotest.(check int) "one crease edge" 1 (Array.length (Fold_state.hinges st));
+  Alcotest.(check int) "subdivide edges are F" 1 (count_assign Fold_state.F st)
 
 let test_fold_records_valley () =
   let axis = { Geom.a = q 1; b = q 0; c = half } in
   let st =
-    Fold_graph.fold Fold_graph.init_square ~axis ~move_side:1
+    Fold_state.fold Fold_state.init_square ~axis ~move_side:1
       ~valley:true ~prov:None
   in
-  Alcotest.(check int) "one edge" 1 (Array.length (Fold_graph.hinges st));
+  Alcotest.(check int) "one edge" 1 (Array.length (Fold_state.hinges st));
   Alcotest.(check int) "the half fold is a valley" 1
-    (count_assign Fold_graph.V st);
-  Alcotest.(check int) "no mountain" 0 (count_assign Fold_graph.M st)
+    (count_assign Fold_state.V st);
+  Alcotest.(check int) "no mountain" 0 (count_assign Fold_state.M st)
 
 (* Edges accumulate across folds (#26): to isolate the creases freshly cut by
    the second fold (as opposed to the first fold's crease carried/split
@@ -458,48 +458,48 @@ let test_fold_records_valley () =
    keep their parent's. *)
 (* returns hinge INDICES (into [after]'s hinge array), not values — [mv] needs
    the state + index pair, not a detached hinge record. *)
-let new_edges_since (before : Fold_graph.t) (after : Fold_graph.t) : int list =
+let new_edges_since (before : Fold_state.t) (after : Fold_state.t) : int list =
   let old_ids =
-    Array.to_list (Fold_graph.hinges before)
-    |> List.map (fun (h : Fold_graph.hinge) -> h.Fold_graph.crease_id)
+    Array.to_list (Fold_state.hinges before)
+    |> List.map (fun (h : Fold_state.hinge) -> h.Fold_state.crease_id)
   in
-  let hs = Fold_graph.hinges after in
+  let hs = Fold_state.hinges after in
   List.filter
-    (fun i -> not (List.mem hs.(i).Fold_graph.crease_id old_ids))
+    (fun i -> not (List.mem hs.(i).Fold_state.crease_id old_ids))
     (List.init (Array.length hs) Fun.id)
 
-let count_assign_in (st : Fold_graph.t) a (idxs : int list) =
-  List.length (List.filter (fun i -> Fold_graph.mv st i = a) idxs)
+let count_assign_in (st : Fold_state.t) a (idxs : int list) =
+  List.length (List.filter (fun i -> Fold_state.mv st i = a) idxs)
 
 let test_fold_records_accordion () =
   let axis1 = { Geom.a = q 1; b = q 0; c = half } in
   let st1 =
-    Fold_graph.simple_fold Fold_graph.init_square ~axis:axis1 ~move_side:1
+    Fold_state.simple_fold Fold_state.init_square ~axis:axis1 ~move_side:1
       ~valley:true
   in
   let axis2 = { Geom.a = q 0; b = q 1; c = half } in
   let st2 =
-    Fold_graph.fold st1 ~axis:axis2 ~move_side:1 ~valley:true
+    Fold_state.fold st1 ~axis:axis2 ~move_side:1 ~valley:true
       ~prov:None
   in
   let fresh = new_edges_since st1 st2 in
   Alcotest.(check int) "two crease edges from the second fold" 2
     (List.length fresh);
   Alcotest.(check int) "one valley (accordion)" 1
-    (count_assign_in st2 Fold_graph.V fresh);
+    (count_assign_in st2 Fold_state.V fresh);
   Alcotest.(check int) "one mountain (accordion)" 1
-    (count_assign_in st2 Fold_graph.M fresh)
+    (count_assign_in st2 Fold_state.M fresh)
 
 let test_fold_paper_preimages () =
-  let flat = Fold_graph.paper_preimages Fold_graph.init_square (pt 1 0) in
+  let flat = Fold_state.paper_preimages Fold_state.init_square (pt 1 0) in
   Alcotest.(check int) "one preimage when flat" 1 (List.length flat);
   let axis = { Geom.a = q 1; b = q 0; c = half } in
   let st =
-    Fold_graph.simple_fold Fold_graph.init_square ~axis ~move_side:1
+    Fold_state.simple_fold Fold_state.init_square ~axis ~move_side:1
       ~valley:true
   in
   let folded =
-    Fold_graph.paper_preimages st { Geom.x = Num.of_q (Q.of_ints 1 4); y = q 0 }
+    Fold_state.paper_preimages st { Geom.x = Num.of_q (Q.of_ints 1 4); y = q 0 }
   in
   Alcotest.(check int) "two preimages in the folded overlap" 2 (List.length folded)
 
@@ -508,57 +508,57 @@ let test_fold_paper_preimages () =
    upgrade comes from the carried on-axis edge, not from a new cut. *)
 let test_fold_precrease_upgrade () =
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let st1 = Fold_graph.subdivide Fold_graph.init_square axis ~prov:None in
+  let st1 = Fold_state.subdivide Fold_state.init_square axis ~prov:None in
   let st2 =
-    Fold_graph.fold st1 ~axis ~move_side:1 ~valley:true ~prov:None
+    Fold_state.fold st1 ~axis ~move_side:1 ~valley:true ~prov:None
   in
   Alcotest.(check int) "folding a precrease yields one valley edge" 1
-    (count_assign Fold_graph.V st2);
+    (count_assign Fold_state.V st2);
   Alcotest.(check int) "the fold emits no stale F" 0
-    (count_assign Fold_graph.F st2)
+    (count_assign Fold_state.F st2)
 
 let test_fold_state_flip () =
   let st =
-    Fold_graph.simple_fold Fold_graph.init_square
+    Fold_state.simple_fold Fold_state.init_square
       ~axis:{ Geom.a = q 1; b = q 0; c = half }
       ~move_side:1 ~valley:true
   in
-  let n = Array.length (Fold_graph.faces st) in
+  let n = Array.length (Fold_state.faces st) in
   let det_before =
-    Array.init n (fun i -> Isometry.det_sign (Fold_graph.face_iso2 st i))
+    Array.init n (fun i -> Isometry.det_sign (Fold_state.face_iso2 st i))
   in
-  let fl = Fold_graph.flip st in
+  let fl = Fold_state.flip st in
   Alcotest.(check int) "face count preserved" n
-    (Array.length (Fold_graph.faces fl));
+    (Array.length (Fold_state.faces fl));
   Array.iteri
-    (fun i (_ : Fold_graph.face) ->
+    (fun i (_ : Fold_state.face) ->
       Alcotest.(check int)
         "det flipped and order reversed"
         (-det_before.(n - 1 - i))
-        (Isometry.det_sign (Fold_graph.face_iso2 fl i)))
-    (Fold_graph.faces fl)
+        (Isometry.det_sign (Fold_state.face_iso2 fl i)))
+    (Fold_state.faces fl)
 
 let test_fold_state_flip_involution () =
   let st =
-    Fold_graph.simple_fold Fold_graph.init_square
+    Fold_state.simple_fold Fold_state.init_square
       ~axis:{ Geom.a = q 1; b = q 0; c = half }
       ~move_side:1 ~valley:true
   in
-  let twice = Fold_graph.flip (Fold_graph.flip st) in
+  let twice = Fold_state.flip (Fold_state.flip st) in
   Alcotest.(check bool)
     "flip twice restores .a's table position" true
     (Geom.point_equal
-       (Fold_graph.table_position st (pt 0 0))
-       (Fold_graph.table_position twice (pt 0 0)))
+       (Fold_state.table_position st (pt 0 0))
+       (Fold_state.table_position twice (pt 0 0)))
 
-(* [Fold_graph.t] is abstract and constructed only via [make], which enforces
+(* [Fold_state.t] is abstract and constructed only via [make], which enforces
    every state invariant — [simple_fold] succeeding at all already IS the
    validity proof; there is no separate [validity_error] probe on the new
    core (see the 3c port plan's dictionary). *)
 let test_layer_valid_examples_ok () =
-  let st = Fold_graph.init_square in
+  let st = Fold_state.init_square in
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let (_ : Fold_graph.t) = Fold_graph.simple_fold st ~axis ~move_side:1 ~valley:true in
+  let (_ : Fold_state.t) = Fold_state.simple_fold st ~axis ~move_side:1 ~valley:true in
   Alcotest.(check bool) "a simple valley fold is valid" true true
 
 let read_file path =
@@ -632,12 +632,12 @@ let test_eval_folded_half () =
          "paper square\nfold map .b onto .a moving .b\n")
   in
   Alcotest.(check int) "two faces" 2
-    (Array.length (Fold_graph.faces fd.Eval.state));
+    (Array.length (Fold_state.faces fd.Eval.state));
   Alcotest.(check int) "one valley edge" 1
-    (count_assign Fold_graph.V fd.Eval.state);
+    (count_assign Fold_state.V fd.Eval.state);
   Alcotest.(check bool) ".b maps onto .a" true
     (Geom.point_equal
-       (Fold_graph.table_position fd.Eval.state (pt 1 0))
+       (Fold_state.table_position fd.Eval.state (pt 1 0))
        (pt 0 0))
 
 let test_eval_folded_precrease () =
@@ -648,9 +648,9 @@ let test_eval_folded_precrease () =
   (* a full mark records (never subdivides at fold-time); it graduates to an
      F crease only at emit *)
   Alcotest.(check int) "one face" 1
-    (Array.length (Fold_graph.faces fd.Eval.state));
+    (Array.length (Fold_state.faces fd.Eval.state));
   Alcotest.(check int) "one mark" 1
-    (Array.length (Fold_graph.marks fd.Eval.state))
+    (Array.length (Fold_state.marks fd.Eval.state))
 
 let test_eval_folded_moving_required () =
   expect_error "moving" (fun () ->
@@ -665,9 +665,9 @@ let test_eval_folded_quarter_accordion () =
          "paper square\nfold map .b onto .a moving .b\nfold map .d onto .a moving .d\n")
   in
   Alcotest.(check int) "four faces after quarter fold" 4
-    (Array.length (Fold_graph.faces fd.Eval.state));
+    (Array.length (Fold_state.faces fd.Eval.state));
   Alcotest.(check int) "an accordion mountain appears" 1
-    (count_assign Fold_graph.M fd.Eval.state)
+    (count_assign Fold_state.M fd.Eval.state)
 
 (* a crease scored through two layers marks two DIFFERENT lines in the paper
    (mirror-image scars) — bare cross must refuse and point at `at` *)
@@ -754,15 +754,15 @@ let test_eval_temp_crease_unnamed () =
   Alcotest.(check bool)
     "temp crease provenance unnamed" true
     (Array.for_all
-       (fun (h : Fold_graph.hinge) ->
-         match h.Fold_graph.prov with
+       (fun (h : Fold_state.hinge) ->
+         match h.Fold_state.prov with
          | Some p -> p.State.name = None
          | None -> true)
-       (Fold_graph.hinges fd.Eval.state))
+       (Fold_state.hinges fd.Eval.state))
 
 let test_eval_def_never_runs () =
   let fd = eval_src "def bad() {\n  --x = through .a .a\n}\n" in
-  Alcotest.(check int) "no edges" 0 (Array.length (Fold_graph.hinges fd.Eval.state))
+  Alcotest.(check int) "no edges" 0 (Array.length (Fold_state.hinges fd.Eval.state))
 
 let test_eval_apply_closed_scope () =
   expect_error "undefined point .a" (fun () ->
@@ -774,7 +774,7 @@ let test_eval_apply_binds_params () =
       "def diag(.p .q) {\n  mark --d = through .p .q\n}\n$i = apply diag(.a .c)\n"
   in
   Alcotest.(check int) "one crease" 1
-    (Array.length (Fold_graph.marks fd.Eval.state))
+    (Array.length (Fold_state.marks fd.Eval.state))
 
 let test_eval_apply_arity_error () =
   expect_error "argument" (fun () ->
@@ -804,10 +804,10 @@ let test_eval_dup_instance_error () =
          $i = apply d(.a .c)\n$i = apply d(.b .d)\n")
 
 let prov_of (fd : Eval.folded) : State.provenance list =
-  (Array.to_list (Fold_graph.hinges fd.Eval.state)
-   |> List.filter_map (fun (h : Fold_graph.hinge) -> h.Fold_graph.prov))
-  @ (Array.to_list (Fold_graph.marks fd.Eval.state)
-     |> List.filter_map (fun (m : Fold_graph.mark) -> m.Fold_graph.mprov))
+  (Array.to_list (Fold_state.hinges fd.Eval.state)
+   |> List.filter_map (fun (h : Fold_state.hinge) -> h.Fold_state.prov))
+  @ (Array.to_list (Fold_state.marks fd.Eval.state)
+     |> List.filter_map (fun (m : Fold_state.mark) -> m.Fold_state.mprov))
 
 let prov_names (fd : Eval.folded) =
   prov_of fd |> List.filter_map (fun (p : State.provenance) -> p.State.name)
@@ -860,7 +860,7 @@ let test_eval_earlier_def_visible () =
        apply outer(.a .c)\n"
   in
   Alcotest.(check int) "one crease" 1
-    (Array.length (Fold_graph.marks fd.Eval.state))
+    (Array.length (Fold_state.marks fd.Eval.state))
 
 let test_eval_member_point_access () =
   let fd =
@@ -907,9 +907,9 @@ let test_eval_before_first_panel_untagged () =
   Alcotest.(check bool) "all tagged with p" true
     (tagged <> [] && List.for_all (fun s -> s = "p") tagged);
   let untagged =
-    Array.to_list (Fold_graph.marks fd.Eval.state)
-    |> List.filter (fun (m : Fold_graph.mark) ->
-           match m.Fold_graph.mprov with
+    Array.to_list (Fold_state.marks fd.Eval.state)
+    |> List.filter (fun (m : Fold_state.mark) ->
+           match m.Fold_state.mprov with
            | Some p -> p.State.step = None
            | None -> true)
   in
@@ -1037,7 +1037,7 @@ let test_eval_up_to_top_flap () =
           .h = --left * --hinge\n\
           fold map .d onto .h up to .d\n")
   in
-  Alcotest.(check int) "3 faces" 3 (Array.length (Fold_graph.faces fd.Eval.state))
+  Alcotest.(check int) "3 faces" 3 (Array.length (Fold_state.faces fd.Eval.state))
 
 (* the original 2-fold stack without up to: all-layers cuts both → 4 faces
    (contrast with test_eval_up_to_top_flap's scoped 3-face fold above) *)
@@ -1047,7 +1047,7 @@ let test_eval_all_layers_differs () =
       (Beloch.parse ~filename:"t.bel"
          "paper square\nfold map .d onto .a\nfold map .c onto .d\n")
   in
-  Alcotest.(check int) "4 faces" 4 (Array.length (Fold_graph.faces fd.Eval.state))
+  Alcotest.(check int) "4 faces" 4 (Array.length (Fold_state.faces fd.Eval.state))
 
 (* four-layer stack, fold the top two: 6 faces (all-layers would be 8).
    --l/--bot are boundary reference creases and MUST be bound before the folds
@@ -1067,7 +1067,7 @@ let test_eval_up_to_range () =
       (Beloch.parse ~filename:"t.bel"
          (quarter_stack_prefix ^ "fold through .p .q moving .d up to .c\n"))
   in
-  Alcotest.(check int) "6 faces" 6 (Array.length (Fold_graph.faces fd.Eval.state))
+  Alcotest.(check int) "6 faces" 6 (Array.length (Fold_state.faces fd.Eval.state))
 
 (* anchoring below a covering flap is a buried-anchor error *)
 let test_eval_buried_anchor () =
@@ -1114,7 +1114,7 @@ let test_eval_up_to_crease_target () =
          (quarter_stack_prefix ^ "fold through .p .q moving .d up to --h\n"))
   in
   Alcotest.(check int) "5 faces (top flap only)" 5
-    (Array.length (Fold_graph.faces fd.Eval.state))
+    (Array.length (Fold_state.faces fd.Eval.state))
 
 (* moving --d: a hinge has two sides → multi-match error. Under ADR 0017,
    --d's two faces must be GENUINELY different flaps (different coplanar
@@ -1150,7 +1150,7 @@ let test_eval_moving_flap_straddles () =
    (√2⁄2, √2⁄2) via the 67.5° crease *)
 let test_ax5_kite_filter () =
   let fd = eval_src "mark --ac = through .a .c\nfold map --da onto --ac\n" in
-  let p = Fold_graph.table_position fd.Eval.state (pt 0 1) in
+  let p = Fold_state.table_position fd.Eval.state (pt 0 1) in
   Alcotest.(check bool) ".d lands on the diagonal (x=y)" true
     (Num.equal p.Geom.x p.Geom.y);
   Alcotest.(check bool) ".d lands at x^2 = 1/2" true
@@ -1160,7 +1160,7 @@ let test_ax5_kite_filter () =
    land .d at the same place as the filtered fold above *)
 let test_ax5_kite_toward () =
   let landing src =
-    Fold_graph.table_position (eval_src src).Eval.state (pt 0 1)
+    Fold_state.table_position (eval_src src).Eval.state (pt 0 1)
   in
   let p1 = landing "mark --ac = through .a .c\nfold map --da onto --ac toward .b\n" in
   let p2 =
@@ -1181,7 +1181,7 @@ let test_ax5_straddle_moving_unique () =
        fold map --ac onto --bd toward .b moving .c\n"
   in
   Alcotest.(check bool) ".c lands on (1,0)" true
-    (Geom.point_equal (Fold_graph.table_position fd.Eval.state (pt 1 1)) (pt 1 0))
+    (Geom.point_equal (Fold_state.table_position fd.Eval.state (pt 1 1)) (pt 1 0))
 
 (* .d lies in both swinging flaps of the straddle → genuinely ambiguous *)
 let test_ax5_straddle_moving_both () =
@@ -1323,41 +1323,41 @@ let test_select_no_sightline () =
 let test_new_value_binding_no_material () =
   let fd = eval_src "--l = map .a onto .c\n" in
   Alcotest.(check int) "one face: no subdivide happened" 1
-    (Array.length (Fold_graph.faces fd.Eval.state));
+    (Array.length (Fold_state.faces fd.Eval.state));
   Alcotest.(check int) "no edges: no material crease" 0
-    (Array.length (Fold_graph.hinges fd.Eval.state))
+    (Array.length (Fold_state.hinges fd.Eval.state))
 
 let test_new_mark_precrease () =
   let fd = eval_src "mark map .a onto .c\n" in
   (* a full mark records at fold-time (never subdivides); it graduates to an F
      crease only at emit *)
   Alcotest.(check int) "one face" 1
-    (Array.length (Fold_graph.faces fd.Eval.state));
-  Alcotest.(check int) "one mark" 1 (Array.length (Fold_graph.marks fd.Eval.state))
+    (Array.length (Fold_state.faces fd.Eval.state));
+  Alcotest.(check int) "one mark" 1 (Array.length (Fold_state.marks fd.Eval.state))
 
 let test_new_mark_named () =
   let fd = eval_src "mark --d = map .a onto .c\n" in
   Alcotest.(check bool) "named crease bound" true
     (mem_assoc3 "d" fd.Eval.named_lines);
-  Alcotest.(check int) "one mark" 1 (Array.length (Fold_graph.marks fd.Eval.state))
+  Alcotest.(check int) "one mark" 1 (Array.length (Fold_state.marks fd.Eval.state))
 
 let test_new_fold_motion () =
   let fd = eval_src "fold map .b onto .a moving .b\n" in
   Alcotest.(check int) "two faces" 2
-    (Array.length (Fold_graph.faces fd.Eval.state));
-  Alcotest.(check int) "one valley edge" 1 (count_assign Fold_graph.V fd.Eval.state)
+    (Array.length (Fold_state.faces fd.Eval.state));
+  Alcotest.(check int) "one valley edge" 1 (count_assign Fold_state.V fd.Eval.state)
 
 let test_new_fold_named () =
   let fd = eval_src "fold --d = map .b onto .a moving .b\n" in
   Alcotest.(check bool) "named crease bound" true
     (mem_assoc3 "d" fd.Eval.named_lines);
-  Alcotest.(check int) "one valley edge" 1 (count_assign Fold_graph.V fd.Eval.state)
+  Alcotest.(check int) "one valley edge" 1 (count_assign Fold_state.V fd.Eval.state)
 
 (* fold along an existing material crease: --d = <motion> (value) then mark
    it (materialise), then fold along it (the old @fold path) *)
 let test_new_fold_along () =
   let fd = eval_src "--d = map .b onto .a\nmark --d\nfold --d moving .b\n" in
-  Alcotest.(check int) "one valley edge" 1 (count_assign Fold_graph.V fd.Eval.state)
+  Alcotest.(check int) "one valley edge" 1 (count_assign Fold_state.V fd.Eval.state)
 
 (* flatten without @, same "+" vertex fixture as test_flatten_all_layers_ok,
    with the two supporting creases materialised via `mark` instead of the
@@ -1371,7 +1371,7 @@ let test_new_flatten_no_at () =
        mountain) (--v & #[.a] mountain)\n"
   in
   Alcotest.(check int) "vertex flatten leaves 4 sector faces" 4
-    (Array.length (Fold_graph.faces fd.Eval.state))
+    (Array.length (Fold_state.faces fd.Eval.state))
 
 let test_new_at_is_gone () =
   (* `@` is no longer a token (AT retired): unrecognised character, rejected

@@ -7,7 +7,7 @@
  (libraries beloch alcotest zarith))
 
 (test
- (name test_fold_graph)
+ (name test_fold_state)
  (libraries beloch alcotest zarith))
 
 (test

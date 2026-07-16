@@ -407,7 +407,7 @@ let hinge_table_segment (g : t) (i : int) : Geom.point * Geom.point =
 let table_position (g : t) (paper : Geom.point) : Geom.point =
   let n = Array.length g.faces in
   let rec find i =
-    if i >= n then invalid_arg "Fold_graph.table_position: point in no face"
+    if i >= n then invalid_arg "Fold_state.table_position: point in no face"
     else if Geom.in_convex_polygon g.faces.(i) paper then
       Isometry.apply_point (face_iso2 g i) paper
     else find (i + 1)

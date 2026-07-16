@@ -85,7 +85,7 @@ let sector_isometries (o : Geom.point) (rays : (Geom.point * 'a) array) :
 
 (* Effective valley of a crease whose LEFT (stayer) sector is placed by
    [sec_transform] over a stayer face already carrying [face_iso]. Mirrors
-   [Fold_graph.fold]'s CP-frame intent convention: a stored/effective valley is
+   [Fold_state.fold]'s CP-frame intent convention: a stored/effective valley is
    the user's valley XORed with the parity of the stayer face's *final*
    orientation — [sec_transform ∘ face_iso]. Folding in [face_iso] (not just
    the sector transform) is what makes a prior `flip` invert M/V relative to
@@ -174,7 +174,7 @@ let linear_extensions (n : int) (constraints : (int * int) list) :
 (* --- the kernel: single-vertex collapse on the hinge-graph core (Plan 3b
    Task 5, issue #48; the old flat-record kernel this superseded was deleted
    in Plan 3c Task 6). Hinge angles and a total face rank are set directly;
-   placements (and hence overlaps) are DERIVED by [Fold_graph.make], not
+   placements (and hence overlaps) are DERIVED by [Fold_state.make], not
    composed by hand, so there is no [folded]/[faces_for_anchor] analogue —
    re-anchoring is just a different (root, base) into the same [make]. -- *)
 
@@ -209,8 +209,8 @@ let sector_of_poly (o : Geom.point) (rays : (Geom.point * 'a) array)
       "Collapse.sector_of_poly: representative not strictly inside a sector";
   !found
 
-let collapse (g : Fold_graph.t) (es : elem list)
-    ~(over : (int * int) list) : (Fold_graph.t, string) result =
+let collapse (g : Fold_state.t) (es : elem list)
+    ~(over : (int * int) list) : (Fold_state.t, string) result =
   let n = List.length es in
   match common_vertex es with
   | None -> Error e_no_vertex
@@ -229,12 +229,12 @@ let collapse (g : Fold_graph.t) (es : elem list)
           if abs (nm - nv) <> 2 then Error e_maekawa
           else begin
             let tsec = sector_isometries o rays in
-            let faces = Fold_graph.faces g in
+            let faces = Fold_state.faces g in
             let nf = Array.length faces in
             (* sector of each face (fixed, independent of stacking) *)
             let sec =
               Array.init nf (fun i ->
-                  sector_of_poly o rays (faces.(i), Fold_graph.face_iso2 g i))
+                  sector_of_poly o rays (faces.(i), Fold_state.face_iso2 g i))
             in
             (* a representative pre-collapse 2D placement per sector, feeding
                [effective_valley] exactly as in [collapse] *)
@@ -244,7 +244,7 @@ let collapse (g : Fold_graph.t) (es : elem list)
               let s = sec.(i) in
               if not sector_seen.(s) then begin
                 sector_seen.(s) <- true;
-                sector_iso.(s) <- Fold_graph.face_iso2 g i
+                sector_iso.(s) <- Fold_state.face_iso2 g i
               end
             done;
             (* hinge constraints, verbatim *)
@@ -263,36 +263,36 @@ let collapse (g : Fold_graph.t) (es : elem list)
             in
             let ray_assign =
               Array.init n (fun j ->
-                  if eff_of_ray j then Fold_graph.V else Fold_graph.M)
+                  if eff_of_ray j then Fold_state.V else Fold_state.M)
             in
             (* new hinges: every hinge whose crease matches a ray gets angle 1
                + the ray's derived letter; others are carried unchanged *)
-            let old_hinges = Fold_graph.hinges g in
+            let old_hinges = Fold_state.hinges g in
             let new_hinges =
               Array.mapi
-                (fun i (h : Fold_graph.hinge) ->
-                  let ta, tb = Fold_graph.hinge_table_segment g i in
+                (fun i (h : Fold_state.hinge) ->
+                  let ta, tb = Fold_state.hinge_table_segment g i in
                   let hit = ref None in
                   for j = 0 to n - 1 do
                     let far, elem = rays.(j) in
                     if
-                      elem.cid = h.Fold_graph.crease_id
+                      elem.cid = h.Fold_state.crease_id
                       && Geom.on_segment (o, far) ta
                       && Geom.on_segment (o, far) tb
                     then hit := Some j
                   done;
                   match !hit with
                   | Some j ->
-                      { h with Fold_graph.angle = Num.one; intent = ray_assign.(j) }
+                      { h with Fold_state.angle = Num.one; intent = ray_assign.(j) }
                   | None -> h)
                 old_hinges
             in
-            let marks = Fold_graph.marks g in
+            let marks = Fold_state.marks g in
             (* total face rank from a sector stacking: sort by
                (srank.(sector), intra-sector order), tiebreak by index (never
                fires — g's rank is a permutation, so distinct within a sector,
                and srank is a permutation over sectors). *)
-            let g_rank = Fold_graph.rank g in
+            let g_rank = Fold_state.rank g in
             let intra i =
               if Isometry.det_sign tsec.(sec.(i)) > 0 then g_rank.(i)
               else - g_rank.(i)
@@ -310,7 +310,7 @@ let collapse (g : Fold_graph.t) (es : elem list)
               rank
             in
             let candidate_at ~root ~base rank =
-              Fold_graph.make ~base ~marks ~faces ~hinges:new_hinges ~root ~rank ()
+              Fold_state.make ~base ~marks ~faces ~hinges:new_hinges ~root ~rank ()
             in
             (* Simplification (binding, per the task-5 brief): validity is
                rigid-motion invariant, so filtering may anchor at ANY proper
@@ -333,7 +333,7 @@ let collapse (g : Fold_graph.t) (es : elem list)
               List.filter
                 (fun srank ->
                   match
-                    candidate_at ~root:rep ~base:(Fold_graph.face_iso g rep)
+                    candidate_at ~root:rep ~base:(Fold_state.face_iso g rep)
                       (build_face_rank srank)
                   with
                   | Ok _ -> true
@@ -358,7 +358,7 @@ let collapse (g : Fold_graph.t) (es : elem list)
                    candidate's flat projections give the overlap set once *)
                 let sample =
                   match
-                    candidate_at ~root:rep ~base:(Fold_graph.face_iso g rep)
+                    candidate_at ~root:rep ~base:(Fold_state.face_iso g rep)
                       (build_face_rank (List.hd filtered))
                   with
                   | Ok c -> c
@@ -370,8 +370,8 @@ let collapse (g : Fold_graph.t) (es : elem list)
                     for j = i + 1 to nf - 1 do
                       if
                         Geom.convex_overlap
-                          (Fold_graph.table_polygon sample i)
-                          (Fold_graph.table_polygon sample j)
+                          (Fold_state.table_polygon sample i)
+                          (Fold_state.table_polygon sample j)
                       then acc := (i, j) :: !acc
                     done
                   done;
@@ -418,16 +418,16 @@ let collapse (g : Fold_graph.t) (es : elem list)
                     let candidate_for bb =
                       let root_bb = first_face_in_sector bb in
                       candidate_at ~root:root_bb
-                        ~base:(Fold_graph.face_iso g root_bb) fr
+                        ~base:(Fold_state.face_iso g root_bb) fr
                     in
                     let in_bounds gg =
-                      let nfg = Array.length (Fold_graph.faces gg) in
+                      let nfg = Array.length (Fold_state.faces gg) in
                       let ok = ref true in
                       for i = 0 to nfg - 1 do
                         if
                           not
                             (Array.for_all Geom.in_unit_square
-                               (Fold_graph.table_polygon gg i))
+                               (Fold_state.table_polygon gg i))
                         then ok := false
                       done;
                       !ok
