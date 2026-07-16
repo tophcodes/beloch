@@ -1345,6 +1345,70 @@ let test_select_scope_parity () =
   | Ok _, Error e -> Alcotest.failf "new errored: %s" e
   | Error e, Ok _ -> Alcotest.failf "old errored: %s" e
 
+(* Plan 3c Task 1: TargetHinged select_scope parity (frontier BFS + predicate
+   — the `up to <named crease>` machinery). Zero coverage in either model
+   before this test. Reuses test_select_scope_parity's 3-layer pleat
+   construction verbatim: book fold (axis 1/2, move_side 1) then a second fold
+   at axis 1/4, move_side -1, leaving 3 overlapping layers. After the
+   id-counter reset, cid 0 is the book fold's crease in both models, so the
+   predicate below asks "is this face hinged on the book-fold crease",
+   built independently from each model's own crease_segments. Anchor reuses
+   the same top-face lookup as test_select_scope_parity (face indices align
+   1:1 across models — established by check_parity above — so one lookup
+   serves both calls). Axis 3/8 (same as the TargetFace test) puts the
+   book-fold crease's OTHER hinged face outside the anchor's own frontier
+   step, forcing the BFS to walk at least one intermediate frontier before it
+   finds a face satisfying the predicate — an Ok case, as required. *)
+let test_select_scope_target_hinged_parity () =
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let frac a b = Num.div (Num.of_int a) (Num.of_int b) in
+  let vl c = { Geom.a = Num.one; b = Num.zero; c } in
+  let g = Fold_graph.fold
+      (vfold_new Fold_graph.init_square (vl (frac 1 2)))
+      ~axis:(vl (frac 1 4)) ~move_side:(-1) ~valley:true ~prov:None in
+  let st = Fold_state.fold_with_records
+      (vfold_old Fold_state.init_square (vl (frac 1 2)))
+      ~axis:(vl (frac 1 4)) ~move_side:(-1) ~valley:true ~prov:None in
+  check_parity "hinged scope pre" g st;
+  let top =
+    let n = Array.length (Fold_graph.faces g) in
+    let strip_lo = { Geom.a = q 1; b = q 0; c = frac 1 4 } in
+    let strip_hi = { Geom.a = q 1; b = q 0; c = frac 1 2 } in
+    let has_material i =
+      let tp = Fold_graph.table_polygon g i in
+      let c1 = Geom.clip_convex_halfplane strip_lo 1 tp in
+      Array.length c1 >= 3
+      && Array.length (Geom.clip_convex_halfplane strip_hi (-1) c1) >= 3
+    in
+    let best = ref (-1) in
+    for i = 0 to n - 1 do
+      if has_material i then
+        if !best < 0 || Fold_graph.rel g i !best = Fold_graph.Above then best := i
+    done;
+    !best
+  in
+  let cid = 0 in
+  let pred_new fi =
+    Fold_graph.crease_segments g cid
+    |> List.exists (fun (s : Fold_graph.crease_segment) ->
+        fst s.faces = fi || snd s.faces = fi)
+  in
+  let pred_old fi =
+    Fold_state.crease_segments st cid
+    |> List.exists (fun (s : Fold_state.crease_segment) ->
+        fst s.faces = fi || snd s.faces = fi)
+  in
+  let axis = vl (frac 3 8) in
+  let n = Fold_state.select_scope st ~axis ~move_side:(-1) ~valley:true
+      ~anchor:top ~target:(Fold_state.TargetHinged pred_old)
+  and m = Fold_graph.select_scope g ~axis ~move_side:(-1) ~valley:true
+      ~anchor:top ~target:(Fold_graph.TargetHinged pred_new) in
+  match (n, m) with
+  | Ok a, Ok b -> Alcotest.(check (array bool)) "moving sets equal" a b
+  | Error e1, Error e2 -> Alcotest.(check string) "same error" e1 e2
+  | Ok _, Error e -> Alcotest.failf "new errored: %s" e
+  | Error e, Ok _ -> Alcotest.failf "old errored: %s" e
+
 let test_scoped_hinge_closed_parity () =
   Fold_graph.reset_ids (); Fold_state.reset_ids ();
   let frac a b = Num.div (Num.of_int a) (Num.of_int b) in
@@ -1596,5 +1660,8 @@ let () =
         [ Alcotest.test_case "classify_mark_extent parity" `Quick
             test_classify_parity;
           Alcotest.test_case "mark_axis_current parity" `Quick
-            test_mark_axis_current_parity ] )
+            test_mark_axis_current_parity ] );
+      ( "plan3c-task1-target-hinged",
+        [ Alcotest.test_case "TargetHinged select_scope parity" `Quick
+            test_select_scope_target_hinged_parity ] )
     ]
