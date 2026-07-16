@@ -226,13 +226,13 @@ let line_equal (l1 : Geom.line) (l2 : Geom.line) : bool =
   && Num.equal (Num.mul l1.b l2.c) (Num.mul l2.b l1.c)
 
 (* v1 (non-goal note): boundary creases (the pristine paper edges) are never
-   recorded as Fold_state.edge — Fold_state.init_square starts with
-   `edges = [||]` and edges are only minted by fold/subdivide. fold_emit.ml's
+   recorded as a Fold_state.hinge — Fold_state.init_square starts with
+   `hinges = [||]` and hinges are only minted by fold/subdivide. fold_emit.ml's
    own FOLD serialization hits the same gap and works around it with a purely
-   geometric test (`on_unit_boundary`) rather than an edge lookup. We follow
+   geometric test (`on_unit_boundary`) rather than a hinge lookup. We follow
    that established idiom: a "boundary" line is one that coincides (up to
    scalar) with one of the four paper-frame edges x=0/x=1/y=0/y=1 in PAPER
-   space, checked directly against the resolved line — no edge array lookup,
+   space, checked directly against the resolved line — no hinge array lookup,
    since Fold_state.assign has no B constructor and never will (B is
    emit-time-only in fold_emit.ml). *)
 let unit_boundary_lines : Geom.line list =
@@ -292,23 +292,24 @@ let check_named_step (fd : Eval.folded) (v : value) (n : int) : unit =
    error per the design doc; v1 has no flap space to disambiguate it. *)
 let table_project (fd : Eval.folded) (p : Geom.point) : Geom.point =
   let st = fd.Eval.state in
+  let faces = Fold_state.faces st in
   let containing =
-    Array.to_list st.Fold_state.faces
-    |> List.filter (fun (f : Fold_state.face) ->
-           Geom.in_convex_polygon f.Fold_state.paper p)
+    List.filter
+      (fun i -> Geom.in_convex_polygon faces.(i) p)
+      (List.init (Array.length faces) Fun.id)
   in
   match containing with
   | [] -> harness_fail "point not in any face"
-  | fs -> (
+  | is -> (
       let images =
-        List.map (fun (f : Fold_state.face) -> Isometry.apply_point f.Fold_state.iso p) fs
+        List.map (fun i -> Isometry.apply_point (Fold_state.face_iso2 st i) p) is
       in
       match images with
       | img0 :: rest when List.for_all (Geom.point_equal img0) rest -> img0
       | _ ->
           harness_fail
             "ambiguous table position (point lies in %d layers); flap space is v2"
-            (List.length fs))
+            (List.length is))
 
 type resolved = RPoint of Geom.point | RLine of Geom.line
 
@@ -367,20 +368,23 @@ let check_is (fd : Eval.folded) (name : string) (kw : assign_kw) : unit =
       if not (is_unit_boundary_line l) then harness_fail "--%s is not the paper boundary" name
   | KMountain | KValley ->
       let want = if kw = KMountain then Fold_state.M else Fold_state.V in
-      let on_line (e : Fold_state.edge) =
-        Geom.side_of_line l e.Fold_state.ea = 0 && Geom.side_of_line l e.Fold_state.eb = 0
+      let st = fd.Eval.state in
+      let hs = Fold_state.hinges st in
+      let on_line i =
+        let a, b = Fold_state.hinge_segment st i in
+        Geom.side_of_line l a = 0 && Geom.side_of_line l b = 0
       in
-      let matching = Array.to_list fd.Eval.state.Fold_state.edges |> List.filter on_line in
+      let matching = List.filter on_line (List.init (Array.length hs) Fun.id) in
       (match matching with
        | [] -> harness_fail "--%s is not a material crease" name
-       | es ->
-           if not (List.for_all (fun (e : Fold_state.edge) -> e.Fold_state.eassign = want) es) then
+       | is ->
+           if not (List.for_all (fun i -> Fold_state.mv st i = want) is) then
              harness_fail "--%s is not %s" name (if kw = KMountain then "mountain" else "valley"))
 
 let check_count (fd : Eval.folded) (kind : string) (n : int) : unit =
   let got =
     match kind with
-    | "faces" -> Array.length fd.Eval.state.Fold_state.faces
+    | "faces" -> Array.length (Fold_state.faces fd.Eval.state)
     | "steps" -> List.length fd.Eval.frames
     | _ -> assert false
   in

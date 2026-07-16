@@ -49,11 +49,11 @@ let beloch_edges_json edges : Yojson.Safe.t =
    algorithms never see it (emit-only). Partial (mid-segment) graduation is
    deferred: a whole mark graduates or it does not. *)
 let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
+  let faces = Fold_state.faces st in
   let material (p : Geom.point) =
     Array.exists
-      (fun (f : Fold_state.face) ->
-        Fold_state.point_on_polygon_boundary f.Fold_state.paper p)
-      st.Fold_state.faces
+      (fun (f : Fold_state.face) -> Fold_state.point_on_polygon_boundary f p)
+      faces
   in
   let graduates (m : Fold_state.mark) =
     match m.Fold_state.mgeom with
@@ -61,7 +61,7 @@ let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
     | Fold_state.MPoint _ -> false
   in
   let grad, kept =
-    List.partition graduates (Array.to_list st.Fold_state.marks)
+    List.partition graduates (Array.to_list (Fold_state.marks st))
   in
   let disp =
     List.fold_left
@@ -85,7 +85,7 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
   (* graduate marks into flat (F) creases for the folded diagram too, so a
      scored precrease shows in the folded frame; emit-only, like the CP frame *)
   let state, _ = cp_display state in
-  let faces = state.Fold_state.faces in
+  let faces = Fold_state.faces state in
   (* dedup vertices by (paper coord, table coord) together, remembering both per
      vertex. Two faces sharing a paper corner merge only when their isometries
      agree there (same table position) — the case of a shared crease on a
@@ -96,8 +96,8 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
      stationary layer's position (which degenerated the moving face to zero area
      — the "diagonal slash" render). *)
   let vpaper = Dynarray.create () and vtable = Dynarray.create () in
-  let vindex (f : Fold_state.face) (p : Geom.point) : int =
-    let t = Isometry.apply_point f.Fold_state.iso p in
+  let vindex (fi : int) (p : Geom.point) : int =
+    let t = Isometry.apply_point (Fold_state.face_iso2 state fi) p in
     let n = Dynarray.length vpaper in
     let rec find i =
       if i >= n then -1
@@ -115,9 +115,7 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
       n
     end
   in
-  let face_idx =
-    Array.map (fun f -> Array.map (vindex f) f.Fold_state.paper) faces
-  in
+  let face_idx = Array.mapi (fun fi f -> Array.map (vindex fi) f) faces in
   (* edge classification *)
   let on_unit_boundary (a : Geom.point) (b : Geom.point) : bool =
     let z = Num.zero and o = Num.one in
@@ -127,6 +125,7 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
     || (Num.equal a.Geom.y o && Num.equal b.Geom.y o)
   in
   (* collect unique edges with (assignment string, provenance) *)
+  let hs = Fold_state.hinges state in
   let edge_tbl = Hashtbl.create 64 in
   let edges = ref [] in
   Array.iteri
@@ -138,20 +137,19 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
         let key = (min ia ib, max ia ib) in
         if not (Hashtbl.mem edge_tbl key) then begin
           Hashtbl.replace edge_tbl key ();
-          let pa = f.Fold_state.paper.(k)
-          and pb = f.Fold_state.paper.((k + 1) mod m) in
+          let pa = f.(k) and pb = f.((k + 1) mod m) in
           let assign, prov =
             if on_unit_boundary pa pb then ("B", None)
             else
-              match Fold_state.edge_between state fi pa pb with
-              | Some (e : Fold_state.edge) ->
+              match Fold_state.hinge_between state fi pa pb with
+              | Some hi ->
                   let a =
-                    match e.Fold_state.eassign with
+                    match Fold_state.mv state hi with
                     | Fold_state.M -> "M"
                     | Fold_state.V -> "V"
                     | Fold_state.F -> "F"
                   in
-                  (a, e.Fold_state.eprov)
+                  (a, hs.(hi).Fold_state.prov)
               | None -> ("F", None)
           in
           edges := (ia, ib, assign, prov) :: !edges
@@ -186,16 +184,15 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
   in
   (* faceOrders read directly from the folded state's partial order. For a pair
      (fi < gi) that overlaps, sign follows FOLD's convention keyed to gi's normal
-     (its det_sign): a "below" relation with gi facing up is -1, etc. *)
-  let order = state.Fold_state.order in
+     (its face_up-ness): a "below" relation with gi facing up is -1, etc. *)
   let nf = Array.length faces in
   let face_orders = ref [] in
   for fi = 0 to nf - 1 do
     for gi = fi + 1 to nf - 1 do
-      match Layer_order.get order fi gi with
+      match Fold_state.rel state fi gi with
       | Fold_state.Apart -> ()
       | rel ->
-          let g_up = Isometry.det_sign faces.(gi).Fold_state.iso > 0 in
+          let g_up = Fold_state.face_up state gi in
           let fi_below = rel = Fold_state.Below in
           let s =
             if fi_below then if g_up then -1 else 1
@@ -205,13 +202,15 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
     done
   done;
   let beloch_faces_matrix =
-    Array.to_list faces
-    |> List.map (fun (f : Fold_state.face) ->
-        let i = f.Fold_state.iso in
-        `List
-          [ q_to_json i.Isometry.m00; q_to_json i.Isometry.m01;
-            q_to_json i.Isometry.m10; q_to_json i.Isometry.m11;
-            q_to_json i.Isometry.tx;  q_to_json i.Isometry.ty ])
+    Array.to_list
+      (Array.mapi
+         (fun fi _ ->
+           let i = Fold_state.face_iso2 state fi in
+           `List
+             [ q_to_json i.Isometry.m00; q_to_json i.Isometry.m01;
+               q_to_json i.Isometry.m10; q_to_json i.Isometry.m11;
+               q_to_json i.Isometry.tx;  q_to_json i.Isometry.ty ])
+         faces)
   in
   `Assoc
     [
@@ -236,7 +235,7 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
 
 let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
   let disp, kept_marks = cp_display fd.Eval.state in
-  let faces = disp.Fold_state.faces in
+  let faces = Fold_state.faces disp in
   (* dedup vertices by paper coord; remember paper coord per vertex, for the
      top-level crease-pattern frame (built from the final state). *)
   let vpaper = Dynarray.create () in
@@ -254,7 +253,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
       n
     end
   in
-  let face_idx = Array.map (fun f -> Array.map vindex f.Fold_state.paper) faces in
+  let face_idx = Array.map (fun f -> Array.map vindex f) faces in
   (* edge classification *)
   let on_unit_boundary (a : Geom.point) (b : Geom.point) : bool =
     let z = Num.zero and o = Num.one in
@@ -264,6 +263,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
     || (Num.equal a.Geom.y o && Num.equal b.Geom.y o)
   in
   (* collect unique edges with (assignment string, provenance) *)
+  let hs = Fold_state.hinges disp in
   let edge_tbl = Hashtbl.create 64 in
   let edges = ref [] in
   Array.iteri
@@ -275,20 +275,20 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
         let key = (min ia ib, max ia ib) in
         if not (Hashtbl.mem edge_tbl key) then begin
           Hashtbl.replace edge_tbl key ();
-          let pa = f.Fold_state.paper.(k)
-          and pb = f.Fold_state.paper.((k + 1) mod m) in
+          let pa = f.(k) and pb = f.((k + 1) mod m) in
           let assign, prov =
             if on_unit_boundary pa pb then ("B", None)
             else
-              match Fold_state.edge_between disp fi pa pb with
-              | Some (e : Fold_state.edge) ->
+              match Fold_state.hinge_between disp fi pa pb with
+              | Some hi ->
+                  let h = hs.(hi) in
                   let a =
-                    match e.Fold_state.eintent with
+                    match h.Fold_state.intent with
                     | Fold_state.M -> "M"
                     | Fold_state.V -> "V"
                     | Fold_state.F -> "F"
                   in
-                  (a, e.Fold_state.eprov)
+                  (a, h.Fold_state.prov)
               | None -> ("F", None)
           in
           edges := (ia, ib, assign, prov) :: !edges
