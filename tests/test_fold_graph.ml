@@ -936,6 +936,7 @@ type battery_op =
   | OFoldV of Geom.line * int
   | OFoldM of Geom.line * int
   | OFlip
+  | OMark of Fold_graph.mark * Fold_state.mark
 
 let replay ops =
   Fold_graph.reset_ids ();
@@ -957,7 +958,9 @@ let replay ops =
           ( Fold_graph.fold g ~axis:l ~move_side:s ~valley:false ~prov:None,
             Fold_state.fold_with_records st ~axis:l ~move_side:s ~valley:false
               ~prov:None )
-      | OFlip -> (Fold_graph.flip g, Fold_state.flip st))
+      | OFlip -> (Fold_graph.flip g, Fold_state.flip st)
+      | OMark (m_new, m_old) ->
+          (Fold_graph.add_mark g m_new, Fold_state.add_mark st m_old))
     (Fold_graph.init_square, Fold_state.init_square)
     ops
 
@@ -1000,6 +1003,104 @@ let test_battery () =
       OFoldV
         ( { Geom.a = Num.one; b = Num.one; c = battery_frac 1 2 },
           1 ) ]
+
+(* mark-then-fold: book fold, mark a segment on the STATIONARY region, fold
+   again, then check the mark's current table axis survives via
+   mark_axis_current on both models. *)
+let test_battery_mark_then_fold () =
+  let half = battery_frac 1 2 in
+  let quarter = battery_frac 1 4 in
+  let seg_a = gph (q 0) quarter and seg_b = gph half quarter in
+  let mnew =
+    { Fold_graph.mgeom = Fold_graph.MSeg (seg_a, seg_b);
+      mline = battery_hl quarter; mintent = Fold_graph.V; mcrease_id = 99;
+      mprov = None }
+  in
+  let mold =
+    { Fold_state.mgeom = Fold_state.MSeg (seg_a, seg_b);
+      mline = battery_hl quarter; mintent = Fold_state.V; mcrease_id = 99;
+      mprov = None }
+  in
+  let ops =
+    [ OFoldV (battery_vl half, 1);
+      OMark (mnew, mold);
+      OFoldV (battery_hl half, 1) ]
+  in
+  let g, st = replay ops in
+  check_parity "mark then fold" g st;
+  check_assign_parity "mark then fold" g st;
+  let str = function `Line _ -> "line" | `Bent -> "bent" | `Empty -> "empty" in
+  let n = Fold_graph.mark_axis_current g 99 in
+  let o = Fold_state.mark_axis_current st 99 in
+  Alcotest.(check string) "mark axis class" (str o) (str n);
+  match (n, o) with
+  | `Line nl, `Line _ ->
+      (* representation-independent line equality: the new line must contain
+         the OLD model's two current table probe points *)
+      let old_chords = Fold_state.mark_chords st 99 in
+      List.iter
+        (fun (a, b) ->
+          let ta = Fold_state.table_position st a in
+          let tb = Fold_state.table_position st b in
+          Alcotest.(check int) "axis line contains old probe a" 0
+            (Geom.side_of_line nl ta);
+          Alcotest.(check int) "axis line contains old probe b" 0
+            (Geom.side_of_line nl tb))
+        old_chords
+  | _ -> ()
+
+(* select_scope-driven scoped fold: compute the moving set INDEPENDENTLY in
+   each model (own select_scope call, own top-face lookup), assert the two
+   bool arrays agree, then fold each model with ITS OWN moving set. Closes
+   the old-select->old-fold vs new-select->new-fold loop that
+   test_fold_scoped_parity (Task 4) and test_select_scope_parity (3b Task 3)
+   left open by sharing one model's selection with the other. *)
+let test_battery_scope_driven_fold () =
+  Fold_graph.reset_ids (); Fold_state.reset_ids ();
+  let half = battery_frac 1 2 in
+  let g1 = vfold_new Fold_graph.init_square (battery_vl half) in
+  let st1 = vfold_old Fold_state.init_square (battery_vl half) in
+  check_parity "scope-driven pre" g1 st1;
+  let quarter = battery_frac 1 4 in
+  let axis = battery_vl quarter in
+  let top_new =
+    let n = Array.length (Fold_graph.faces g1) in
+    let best = ref 0 in
+    for i = 1 to n - 1 do
+      if Fold_graph.rel g1 i !best = Fold_graph.Above then best := i
+    done;
+    !best
+  in
+  let top_old =
+    let n = Array.length st1.Fold_state.faces in
+    let best = ref 0 in
+    for i = 1 to n - 1 do
+      if Layer_order.get st1.Fold_state.order i !best = Fold_state.Above then
+        best := i
+    done;
+    !best
+  in
+  match
+    ( Fold_graph.select_scope g1 ~axis ~move_side:(-1) ~valley:true
+        ~anchor:top_new ~target:(Fold_graph.TargetFace top_new),
+      Fold_state.select_scope st1 ~axis ~move_side:(-1) ~valley:true
+        ~anchor:top_old ~target:(Fold_state.TargetFace top_old) )
+  with
+  | Ok mv_new, Ok mv_old ->
+      Alcotest.(check (array bool))
+        "independently-selected moving sets equal" mv_old mv_new;
+      let g =
+        Fold_graph.fold g1 ~axis ~move_side:(-1) ~valley:true
+          ~moving_parents:mv_new ~prov:None
+      in
+      let st =
+        Fold_state.fold_with_records st1 ~axis ~move_side:(-1) ~valley:true
+          ~moving_parents:mv_old ~prov:None
+      in
+      check_parity "scope-driven fold" g st;
+      check_assign_parity "scope-driven fold" g st
+  | Error e, _ -> Alcotest.failf "new select_scope errored: %s" e
+  | _, Error e -> Alcotest.failf "old select_scope errored: %s" e
 
 let test_add_mark () =
   let m =
@@ -1157,6 +1258,26 @@ let test_flap_of_points_parity () =
   probe [ { Geom.x = quarter; y = quarter }; { Geom.x = three_q; y = quarter } ]
     "spanning two flaps";
   probe [ { Geom.x = q 5; y = q 5 } ] "off paper"
+
+(* ambiguous-branch probe (carried minor from Task 2): a point exactly on the
+   shared paper-space boundary between the stationary and moved clusters of
+   pair_precrease_fold's BL/BR faces belongs to both -> Ambiguous. *)
+let test_flap_of_points_ambiguous () =
+  let g, st = pair_precrease_fold () in
+  let string_of = function
+    | `Cluster fs ->
+        "cluster:" ^ String.concat "," (List.map string_of_int (List.sort compare fs))
+    | `Zero -> "zero"
+    | `Ambiguous -> "ambiguous"
+  in
+  let half = Num.div Num.one (Num.of_int 2) in
+  let quarter = Num.div Num.one (Num.of_int 4) in
+  let p = { Geom.x = half; y = quarter } in
+  Alcotest.(check string) "boundary point ambiguous parity"
+    (string_of (Fold_state.flap_of_points st [ p ]))
+    (string_of (Fold_graph.flap_of_points g [ p ]));
+  Alcotest.(check string) "both actually Ambiguous" "ambiguous"
+    (string_of (Fold_graph.flap_of_points g [ p ]))
 
 (* --- Plan 3b Task 3: line material + scope ---------------------------------- *)
 
@@ -1441,7 +1562,11 @@ let () =
             test_flip_nontrivial_base_parity;
           Alcotest.test_case "add_mark" `Quick test_add_mark ] );
       ( "task6-parity-battery",
-        [ Alcotest.test_case "cross-op parity battery" `Quick test_battery ] );
+        [ Alcotest.test_case "cross-op parity battery" `Quick test_battery;
+          Alcotest.test_case "mark then fold then mark_axis_current" `Quick
+            test_battery_mark_then_fold;
+          Alcotest.test_case "select_scope-driven scoped fold" `Quick
+            test_battery_scope_driven_fold ] );
       ( "plan3b-task1-selectors",
         [ Alcotest.test_case "crease segments parity" `Quick
             test_crease_segments_parity;
@@ -1455,7 +1580,9 @@ let () =
         [ Alcotest.test_case "coplanar clusters parity" `Quick
             test_clusters_parity;
           Alcotest.test_case "flap_of_points parity" `Quick
-            test_flap_of_points_parity ] );
+            test_flap_of_points_parity;
+          Alcotest.test_case "flap_of_points ambiguous branch" `Quick
+            test_flap_of_points_ambiguous ] );
       ( "plan3b-task3-scope",
         [ Alcotest.test_case "line material parity" `Quick
             test_line_material_parity;
