@@ -619,32 +619,52 @@ let test_subdivide_keep_side () =
 
 (* --- Plan 3a Task 4: fold -------------------------------------------------- *)
 
-(* eassign parity: every folded hinge's derived mv must equal the old edge's
-   stored eassign for the edge with the same paper endpoints *)
+(* eassign/eintent parity: the new hinges and old edges must be in bijection
+   as a MULTISET of (paper segment, derived assign, intent). Hinge array
+   order is unspecified; FOLD emit derives edge order from face/vertex
+   iteration + endpoint lookup, so parity pins the multiset of (segment,
+   assign, intent), face order, and coordinates — not edge array order.
+   Intent (crease-pattern colour) matters separately from assign: old eintent
+   can be M/V while eassign is F (scored precrease). *)
 let check_assign_parity label (g : Fold_graph.t) (st : Fold_state.t) =
   let hs = Fold_graph.hinges g in
+  let es = st.Fold_state.edges in
+  Alcotest.(check int)
+    (Printf.sprintf "%s: hinge/edge count" label)
+    (Array.length es) (Array.length hs);
+  let of_old = function
+    | Fold_state.M -> Fold_graph.M
+    | Fold_state.V -> Fold_graph.V
+    | Fold_state.F -> Fold_graph.F
+  in
+  let used = Array.make (Array.length es) false in
   Array.iteri
     (fun i (h : Fold_graph.hinge) ->
       let a, b = Fold_graph.hinge_segment g i in
-      match
-        Array.to_list st.Fold_state.edges
-        |> List.find_opt (fun (e : Fold_state.edge) ->
-               (Geom.point_equal e.Fold_state.ea a && Geom.point_equal e.Fold_state.eb b)
-               || (Geom.point_equal e.Fold_state.ea b && Geom.point_equal e.Fold_state.eb a))
-      with
-      | None -> Alcotest.failf "%s: hinge %d has no old edge" label i
-      | Some e ->
-          let old_a =
-            match e.Fold_state.eassign with
-            | Fold_state.M -> Fold_graph.M
-            | Fold_state.V -> Fold_graph.V
-            | Fold_state.F -> Fold_graph.F
+      let matches j =
+        (not used.(j))
+        &&
+        let e = es.(j) in
+        ((Geom.point_equal e.Fold_state.ea a && Geom.point_equal e.Fold_state.eb b)
+        || (Geom.point_equal e.Fold_state.ea b && Geom.point_equal e.Fold_state.eb a))
+        && Fold_graph.mv g i = of_old e.Fold_state.eassign
+        && h.Fold_graph.intent = of_old e.Fold_state.eintent
+      in
+      let rec find j =
+        if j >= Array.length es then None
+        else if matches j then Some j
+        else find (j + 1)
+      in
+      match find 0 with
+      | Some j -> used.(j) <- true
+      | None ->
+          let pt p =
+            Printf.sprintf "(%g,%g)" (Num.to_float p.Geom.x) (Num.to_float p.Geom.y)
           in
-          Alcotest.(check bool)
-            (Printf.sprintf "%s: hinge %d assign (angle %s)" label i
-               (if Num.sign h.Fold_graph.angle = 0 then "0" else "1"))
-            true
-            (Fold_graph.mv g i = old_a))
+          Alcotest.failf
+            "%s: hinge %d %s--%s has no unused old edge with matching \
+             segment+assign+intent"
+            label i (pt a) (pt b))
     hs
 
 let vfold_new g ax = Fold_graph.fold g ~axis:ax ~move_side:1 ~valley:true ~prov:None
