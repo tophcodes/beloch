@@ -319,6 +319,100 @@ let test_mv_accordion_zigzag () =
   Alcotest.(check bool) "hinge 0 is V" true (Fold_graph.mv g 0 = Some Fold_graph.V);
   Alcotest.(check bool) "hinge 1 is M" true (Fold_graph.mv g 1 = Some Fold_graph.M)
 
+(* Waterbomb-base 8-fan around the square's centre: sector faces
+   (c, p_k, p_{k+1}), hinges through c, all folded; the classic
+   Kawasaki-satisfying single-vertex cycle. All coordinates rational. *)
+let half = Num.of_q (Q.of_ints 1 2)
+let gph x y : Geom.point = { Geom.x = x; y }
+let c2 = gph half half
+
+let wb_ring =
+  [| gph (q 1) half; gph (q 1) (q 1); gph half (q 1); gph (q 0) (q 1);
+     gph (q 0) half; gph (q 0) (q 0); gph half (q 0); gph (q 1) (q 0) |]
+
+let wb_faces () =
+  Array.init 8 (fun k -> [| c2; wb_ring.(k); wb_ring.((k + 1) mod 8) |])
+
+let wb_lines =
+  (* line through c and p_{k+1}, k = 0..7: y=x, x=½, x+y=1, y=½, repeating *)
+  [| { Geom.a = q 1; b = q (-1); c = q 0 };
+     { Geom.a = q 1; b = q 0; c = half };
+     { Geom.a = q 1; b = q 1; c = q 1 };
+     { Geom.a = q 0; b = q 1; c = half };
+     { Geom.a = q 1; b = q (-1); c = q 0 };
+     { Geom.a = q 1; b = q 0; c = half };
+     { Geom.a = q 1; b = q 1; c = q 1 };
+     { Geom.a = q 0; b = q 1; c = half } |]
+
+let wb_hinges () =
+  Array.init 8 (fun k ->
+      { Fold_graph.fa = k; fb = (k + 1) mod 8; line = wb_lines.(k); angle = q 1 })
+
+let test_waterbomb_constructs () =
+  (* the full 8-cycle passes closure (Kawasaki) and non-crossing (spiral wrap) *)
+  let g =
+    mk ~faces:(wb_faces ()) ~hinges:(wb_hinges ())
+      ~rank:[| 0; 1; 2; 3; 4; 5; 6; 7 |] ()
+  in
+  (* every face lands on sector 0: p3=(0,1), three hinges from the root,
+     must land on p1=(1,1) — trace: R(x+y=1)→(0,1); R(x=½)→(1,1); R(y=x)→(1,1) *)
+  let isos = Fold_graph.face_isos g in
+  Alcotest.(check bool) "p3 lands on (1,1)" true
+    (i3eq
+       (Isometry3.apply_point isos.(3)
+          { Isometry3.x = q 0; y = q 1; z = q 0 })
+       (p3 1 1 0));
+  (* centre is fixed by every placement *)
+  Alcotest.(check bool) "centre fixed under iso 5" true
+    (i3eq
+       (Isometry3.apply_point isos.(5)
+          { Isometry3.x = half; y = half; z = q 0 })
+       { Isometry3.x = half; y = half; z = q 0 })
+
+let test_waterbomb_mv_maekawa () =
+  let g =
+    mk ~faces:(wb_faces ()) ~hinges:(wb_hinges ())
+      ~rank:[| 0; 1; 2; 3; 4; 5; 6; 7 |] ()
+  in
+  let expected =
+    [| Fold_graph.V; M; V; M; V; M; V; V |]
+  in
+  Array.iteri
+    (fun i e ->
+      Alcotest.(check bool)
+        (Printf.sprintf "hinge %d assignment" i)
+        true
+        (Fold_graph.mv g i = Some e))
+    expected;
+  let m, v =
+    Array.fold_left
+      (fun (m, v) i ->
+        match Fold_graph.mv g i with
+        | Some Fold_graph.M -> (m + 1, v)
+        | Some Fold_graph.V -> (m, v + 1)
+        | None -> (m, v))
+      (0, 0)
+      (Array.init 8 (fun i -> i))
+  in
+  Alcotest.(check int) "Maekawa: |M - V| = 2" 2 (abs (m - v))
+
+let test_waterbomb_bad_wrap_rejected () =
+  (* swapping the heights of f1 and f2 interleaves tacos {0,1} and {2,3} on
+     the y=x ray: rank intervals [0,2] and [1,3] cross — taco-taco *)
+  expect_error "illegal wrap order"
+    (function Fold_graph.Taco_taco _ -> true | _ -> false)
+    ~faces:(wb_faces ()) ~hinges:(wb_hinges ())
+    ~root:0 ~rank:[| 0; 2; 1; 3; 4; 5; 6; 7 |]
+
+let test_waterbomb_tear_rejected () =
+  (* unfolding one crease of the 8-cycle (angle 0 on h4) breaks Kawasaki
+     closure: 7 folded creases at an interior vertex cannot close *)
+  let hinges = wb_hinges () in
+  hinges.(4) <- { (hinges.(4)) with Fold_graph.angle = q 0 };
+  expect_error "7-of-8 folded tears"
+    (function Fold_graph.Hinge_not_closed _ -> true | _ -> false)
+    ~faces:(wb_faces ()) ~hinges ~root:0 ~rank:[| 0; 1; 2; 3; 4; 5; 6; 7 |]
+
 let () =
   Alcotest.run "fold_graph"
     [ ( "derive",
@@ -366,4 +460,13 @@ let () =
             test_mv_single_fold_mountain;
           Alcotest.test_case "side-symmetric" `Quick test_mv_side_symmetric;
           Alcotest.test_case "flat hinge none" `Quick test_mv_flat_hinge_none;
-          Alcotest.test_case "accordion zigzag V,M" `Quick test_mv_accordion_zigzag ] ) ]
+          Alcotest.test_case "accordion zigzag V,M" `Quick test_mv_accordion_zigzag ] );
+      ( "waterbomb",
+        [ Alcotest.test_case "8-cycle constructs (closure + wrap)" `Quick
+            test_waterbomb_constructs;
+          Alcotest.test_case "derived MV satisfies Maekawa" `Quick
+            test_waterbomb_mv_maekawa;
+          Alcotest.test_case "illegal wrap order rejected" `Quick
+            test_waterbomb_bad_wrap_rejected;
+          Alcotest.test_case "7-of-8 folded tears" `Quick
+            test_waterbomb_tear_rejected ] ) ]
