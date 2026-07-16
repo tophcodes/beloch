@@ -47,9 +47,11 @@ let expect_error msg_substr thunk =
          true
        with Not_found -> false)
 
-let count_assign a (st : Fold_state.t) =
-  Array.to_list st.Fold_state.edges
-  |> List.filter (fun (e : Fold_state.edge) -> e.Fold_state.eassign = a)
+let count_assign a (st : Fold_graph.t) =
+  let hs = Fold_graph.hinges st in
+  List.filter
+    (fun i -> Fold_graph.mv st i = a)
+    (List.init (Array.length hs) Fun.id)
   |> List.length
 
 (* ---- E2e ---- *)
@@ -196,13 +198,13 @@ let test_eval_map_through_toward () =
   (* the axiom-6 crease is a full mark: it records as a chord (no fold-time
      edge), so read its line from the mark layer (the map crease is the last
      mark, after --bottom) *)
-  match List.rev (Array.to_list fd.Eval.state.Fold_state.marks) with
+  match List.rev (Array.to_list (Fold_graph.marks fd.Eval.state)) with
   | [] -> Alcotest.fail "expected at least one mark"
   | m :: _ ->
       let ca, cb =
-        match m.Fold_state.mgeom with
-        | Fold_state.MSeg (a, b) -> (a, b)
-        | Fold_state.MPoint _ -> Alcotest.fail "expected a segment mark"
+        match m.Fold_graph.mgeom with
+        | Fold_graph.MSeg (a, b) -> (a, b)
+        | Fold_graph.MPoint _ -> Alcotest.fail "expected a segment mark"
       in
       let c = Geom.line_through ca cb in
       let on (p : Geom.point) =
@@ -235,16 +237,16 @@ let test_e2e_flip_mountain () =
          "paper square\nflip\nfold map .a onto .b moving .a\n")
   in
   Alcotest.(check int) "fold after flip is a mountain" 1
-    (count_assign Fold_state.M fd.Eval.state);
+    (count_assign Fold_graph.M fd.Eval.state);
   Alcotest.(check int) "and not a valley" 0
-    (count_assign Fold_state.V fd.Eval.state);
+    (count_assign Fold_graph.V fd.Eval.state);
   let fd2 =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
          "paper square\nfold map .a onto .b moving .a\n")
   in
   Alcotest.(check int) "without flip it is a valley" 1
-    (count_assign Fold_state.V fd2.Eval.state)
+    (count_assign Fold_graph.V fd2.Eval.state)
 
 let test_e2e_flip_cp_counts () =
   let open Yojson.Safe.Util in
@@ -418,7 +420,7 @@ let test_emit_folded_crease_name () =
   Alcotest.(check bool) "crease carries name m" true
     (List.exists (fun n -> n = `String "m") names)
 
-(* Task 7: record marks (from Fold_state.marks) are serialized into a
+(* Task 7: record marks (from Fold_graph.marks) are serialized into a
    top-level "beloch:marks" custom field. Reuses the program from
    test_mark_point_records_no_edge, already proven to record exactly one
    interior POINT mark (the value-line --vm re-marked with a point extent at
@@ -441,7 +443,8 @@ let test_beloch_marks_emitted () =
 
 (* #36: mcrease_id for a non-graduating point mark must be deterministic per
    eval -- a function of the program alone, not of how many creases were
-   minted by earlier evals in the same process (Fold_state.next_id is a
+   minted by earlier evals in the same process (Fold_graph's internal
+   crease-id counter, reset per eval via [Fold_graph.reset_ids], is otherwise a
    process-lifetime global). Evaluate the point-mark program once for a
    baseline id, then again after deliberately polluting the global counter
    with unrelated real creases; the two ids must match. *)
@@ -690,7 +693,7 @@ let test_e2e_cohesion_moves_coplanar_sibling () =
           .m0 = --v * --ab\n\
           fold map .a onto .m0 moving .a up to .a\n")
   in
-  let d_pos = Fold_state.table_position fd.Eval.state (pt 0 1) in
+  let d_pos = Fold_graph.table_position fd.Eval.state (pt 0 1) in
   Alcotest.(check bool)
     "d's sibling flap (TL) moved with the anchor's flap (BL): (1/2,1), not \
      the stale (0,1)"
@@ -723,9 +726,9 @@ let test_e2e_bare_precrease_emits_f () =
 (* ---- Task 4: mark extent dispatch (partial marks / pinch, #50 slice 2) --- *)
 
 let eval_bel src = Eval.eval_folded (Beloch.parse ~filename:"t.bel" src)
-let edges_of src = Array.length (eval_bel src).Eval.state.Fold_state.edges
-let marks_of src = Array.length (eval_bel src).Eval.state.Fold_state.marks
-let faces_of src = Array.length (eval_bel src).Eval.state.Fold_state.faces
+let edges_of src = Array.length (Fold_graph.hinges (eval_bel src).Eval.state)
+let marks_of src = Array.length (Fold_graph.marks (eval_bel src).Eval.state)
+let faces_of src = Array.length (Fold_graph.faces (eval_bel src).Eval.state)
 
 (* an interior POINT mark records and adds no edge; comparing edges_of before
    and after isolates what the point mark itself contributes (the two named
@@ -871,13 +874,12 @@ let test_mark_endpoint_on_vertex_is_incident () =
      mark --ac at .ctr\n"
   in
   let st = (eval_bel src).Eval.state in
-  let m = st.Fold_state.marks.(0) in
-  let p = Fold_state.mark_rep_point m in
+  let m = (Fold_graph.marks st).(0) in
+  let p = Fold_graph.mark_rep_point m in
   let is_vertex =
     Array.exists
-      (fun (f : Fold_state.face) ->
-        Array.exists (Geom.point_equal p) f.Fold_state.paper)
-      st.Fold_state.faces
+      (fun (f : Fold_graph.face) -> Array.exists (Geom.point_equal p) f)
+      (Fold_graph.faces st)
   in
   Alcotest.(check bool) "point mark is incident to an existing vertex" true
     is_vertex

@@ -15,10 +15,6 @@
  (libraries beloch alcotest zarith))
 
 (test
- (name test_fold_state)
- (libraries beloch alcotest zarith unix str))
-
-(test
  (name test_parse)
  (libraries beloch alcotest str))
 

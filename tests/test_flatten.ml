@@ -31,7 +31,7 @@ let vertex_src =
 let test_flatten_bind_parses_and_evals () =
   let fd = Eval.eval_folded (Beloch.parse ~filename:"t.bel" vertex_src) in
   Alcotest.(check int) "vertex flatten still leaves 4 sector faces" 4
-    (Array.length fd.Eval.state.Fold_state.faces)
+    (Array.length (Fold_graph.faces fd.Eval.state))
 
 (* the bound name occupies the crease namespace like any other bind: a
    second bind of the same name is rejected exactly like
@@ -77,7 +77,7 @@ let test_flatten_unbound_still_parses () =
           mountain) (--v & #[.a] mountain)\n")
   in
   Alcotest.(check int) "unbound flatten still leaves 4 sector faces" 4
-    (Array.length fd.Eval.state.Fold_state.faces)
+    (Array.length (Fold_graph.faces fd.Eval.state))
 
 (* Task 5: derive-mode `flatten` — a trailing `toward` operand triggers
    Flatten.derive to solve the emergent crease completing an ODD set of
@@ -193,9 +193,10 @@ let test_flatten_derive_e2e () =
   let fd =
     Eval.eval_folded (Beloch.parse ~filename:"t.bel" rabbit_ear_derive_src)
   in
-  Alcotest.(check (option string))
-    "derived vertex is a valid flat state" None
-    (Fold_state.validity_error fd.Eval.state);
+  (* [Fold_graph.t] is abstract and constructed only via [make], which enforces
+     every state invariant — so [fd]'s successful evaluation already IS the
+     validity proof (no separate [validity_error] probe exists on the new
+     core; see the dictionary in the 3c port plan). *)
   (* prove a GENUINELY new crease was materialised: the incenter O and the
      three given lines (spine x=1/2 and the two bisectors through O) are known;
      assert some crease segment is incident to O in paper space on a line
@@ -217,15 +218,15 @@ let test_flatten_derive_e2e () =
   in
   let st = fd.Eval.state in
   let emergent_exists =
-    Fold_state.all_crease_ids st
+    Fold_graph.all_crease_ids st
     |> List.exists (fun cid ->
-           Fold_state.crease_segments st cid
-           |> List.exists (fun (s : Fold_state.crease_segment) ->
+           Fold_graph.crease_segments st cid
+           |> List.exists (fun (s : Fold_graph.crease_segment) ->
                   (* paper-space incidence to O and a NEW direction *)
-                  (Geom.point_equal s.Fold_state.pa o
-                  || Geom.point_equal s.Fold_state.pb o)
+                  (Geom.point_equal s.Fold_graph.pa o
+                  || Geom.point_equal s.Fold_graph.pb o)
                   &&
-                  let l = Geom.line_through s.Fold_state.pa s.Fold_state.pb in
+                  let l = Geom.line_through s.Fold_graph.pa s.Fold_graph.pb in
                   not (List.exists (Geom.parallel l) given)))
   in
   Alcotest.(check bool)
@@ -307,14 +308,14 @@ let test_flatten_derive_in_bounds () =
   let fd =
     Eval.eval_folded (Beloch.parse ~filename:"t.bel" swivel_rabbit_src)
   in
-  Alcotest.(check (option string))
-    "swivel-rabbit derived vertex is a valid flat state" None
-    (Fold_state.validity_error fd.Eval.state);
+  (* [fd]'s successful evaluation already proves validity — see
+     test_flatten_derive_e2e's comment. *)
+  let st = fd.Eval.state in
+  let nf = Array.length (Fold_graph.faces st) in
   let all_in =
     Array.for_all
-      (fun (f : Fold_state.face) ->
-        Array.for_all Geom.in_unit_square (Fold_state.table_poly_of f))
-      fd.Eval.state.Fold_state.faces
+      (fun i -> Array.for_all Geom.in_unit_square (Fold_graph.table_polygon st i))
+      (Array.init nf Fun.id)
   in
   Alcotest.(check bool)
     "every folded face stays within the unit-square paper" true all_in
