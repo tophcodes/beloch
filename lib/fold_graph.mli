@@ -128,3 +128,51 @@ val fresh_crease_id : unit -> int
 val reset_ids : unit -> unit
 (** Resets the crease-id counter to 0 (called once per eval, so ids are a
     deterministic function of the program). *)
+
+(** {1 2D access}
+
+    Flat-first (hinge angles in {0, ±1}) motions keep z = 0 invariant, so a
+    face's derived 3D placement restricted to the plane is exactly its table
+    placement as a 2D isometry — that is what this section exposes. Stage B
+    (partial angles) lifts faces off the plane; none of these must be used
+    once that lands. *)
+
+val face_iso2 : t -> int -> Isometry.t
+(** In-plane 2D restriction of face [i]'s derived placement (the upper-left
+    2×2 block + translation of [face_iso]). Flat-first only — see above. *)
+
+val table_polygon : t -> int -> Geom.point array
+(** Face [i]'s paper polygon placed on the table via [face_iso2]. Winding
+    follows the placement (a reflected face is CW); see [table_polygon_ccw]
+    for a normalized version. *)
+
+val table_polygon_ccw : t -> int -> Geom.point array
+(** [table_polygon], re-wound CCW if the placement reflects it. Use this for
+    the [Geom] clip/crossing helpers, which require CCW input. *)
+
+type rel = Above | Below | Apart
+(** Layer relation of two faces in the current table projection. *)
+
+val rel : t -> int -> int -> rel
+(** [rel g i j]: [Above]/[Below] by rank where [i] and [j]'s table polygons
+    strictly overlap ([Geom.convex_overlap] — touching is not overlap);
+    [Apart] otherwise (including [i = j]). *)
+
+val hinge_segment : t -> int -> Geom.point * Geom.point
+(** Hinge [i]'s shared boundary segment, in paper space. *)
+
+val hinge_table_segment : t -> int -> Geom.point * Geom.point
+(** Hinge [i]'s shared boundary segment, placed on the table via [fa]'s
+    [face_iso2]. *)
+
+val table_position : t -> Geom.point -> Geom.point
+(** The current table position of a paper-space point, found via whichever
+    face contains it (placements agree at shared hinges, so any works).
+    Raises [Invalid_argument] if the point lies in no face. *)
+
+val paper_preimages : t -> Geom.point -> Geom.point list
+(** Distinct paper-space points that currently map to table point [tp] — one
+    per overlapping layer covering it. *)
+
+val on_paper : t -> Geom.point -> bool
+(** Whether a paper-space point lies in some face. *)

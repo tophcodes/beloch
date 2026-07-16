@@ -460,6 +460,60 @@ let test_fresh_ids () =
   Fold_graph.reset_ids ();
   Alcotest.(check int) "reset" 0 (Fold_graph.fresh_crease_id ())
 
+(* --- Plan 3a Task 2: 2D access ------------------------------------------- *)
+
+(* single fold: face1 = [1,2]x[0,1] folded across x=1 onto face0 = [0,1]x[0,1] *)
+let folded_pair () =
+  mk ~faces:(single_fold_faces ())
+    ~hinges:[| mkh 0 1 (vline 1) (q 1) |] ~rank:[| 0; 1 |] ()
+
+let test_face_iso2 () =
+  let g = folded_pair () in
+  (* face1's in-plane placement is the reflection across x=1: (2,0) ↦ (0,0) *)
+  let p = Isometry.apply_point (Fold_graph.face_iso2 g 1) (gp 2 0) in
+  Alcotest.(check bool) "reflected" true (Geom.point_equal p (gp 0 0));
+  Alcotest.(check int) "det -1" (-1) (Isometry.det_sign (Fold_graph.face_iso2 g 1));
+  Alcotest.(check int) "det +1" 1 (Isometry.det_sign (Fold_graph.face_iso2 g 0))
+
+let test_table_polygon_and_rel () =
+  let g = folded_pair () in
+  let tp1 = Fold_graph.table_polygon g 1 in
+  Alcotest.(check bool) "folded onto [0,1]^2" true
+    (Array.for_all Geom.in_unit_square tp1);
+  Alcotest.(check bool) "1 above 0" true (Fold_graph.rel g 1 0 = Fold_graph.Above);
+  Alcotest.(check bool) "0 below 1" true (Fold_graph.rel g 0 1 = Fold_graph.Below);
+  (* flat (unfolded) neighbours do not overlap -> Apart *)
+  let flat =
+    mk ~faces:(single_fold_faces ())
+      ~hinges:[| mkh 0 1 (vline 1) (q 0) |] ~rank:[| 0; 1 |] ()
+  in
+  Alcotest.(check bool) "flat Apart" true (Fold_graph.rel flat 0 1 = Fold_graph.Apart)
+
+let test_hinge_segments () =
+  let g = folded_pair () in
+  let a, b = Fold_graph.hinge_segment g 0 in
+  Alcotest.(check bool) "paper seg on x=1" true
+    (Num.equal a.Geom.x (q 1) && Num.equal b.Geom.x (q 1));
+  let ta, tb = Fold_graph.hinge_table_segment g 0 in
+  Alcotest.(check bool) "table seg on x=1" true
+    (Num.equal ta.Geom.x (q 1) && Num.equal tb.Geom.x (q 1))
+
+let test_point_queries () =
+  let g = folded_pair () in
+  (* paper (3/2, 1/2) lives on face1 -> table (1/2, 1/2) *)
+  let half = Num.div Num.one (Num.of_int 2) in
+  let three_half = Num.div (Num.of_int 3) (Num.of_int 2) in
+  let tp = Fold_graph.table_position g { Geom.x = three_half; y = half } in
+  Alcotest.(check bool) "table pos" true
+    (Geom.point_equal tp { Geom.x = half; y = half });
+  (* table (1/2,1/2) is covered by both layers -> two paper preimages *)
+  let pre = Fold_graph.paper_preimages g { Geom.x = half; y = half } in
+  Alcotest.(check int) "two layers" 2 (List.length pre);
+  Alcotest.(check bool) "on paper" true
+    (Fold_graph.on_paper g { Geom.x = three_half; y = half });
+  Alcotest.(check bool) "off paper" false
+    (Fold_graph.on_paper g { Geom.x = q 5; y = q 5 })
+
 let () =
   Alcotest.run "fold_graph"
     [ ( "derive",
@@ -523,4 +577,10 @@ let () =
           Alcotest.test_case "base shifts placements" `Quick
             test_base_shifts_placements;
           Alcotest.test_case "marks carried" `Quick test_marks_carried;
-          Alcotest.test_case "fresh ids" `Quick test_fresh_ids ] ) ]
+          Alcotest.test_case "fresh ids" `Quick test_fresh_ids ] );
+      ( "task2-2d-access",
+        [ Alcotest.test_case "face_iso2" `Quick test_face_iso2;
+          Alcotest.test_case "table polygon and rel" `Quick
+            test_table_polygon_and_rel;
+          Alcotest.test_case "hinge segments" `Quick test_hinge_segments;
+          Alcotest.test_case "point queries" `Quick test_point_queries ] ) ]

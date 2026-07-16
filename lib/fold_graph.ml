@@ -43,8 +43,8 @@ type t = {
   base : Isometry3.t;  (* placement of the root face — ONE whole-sheet motion *)
   marks : mark array;
   isos : Isometry3.t array;  (* derived in [make] (memoized BFS); [t] abstract ⇒ cannot desync *)
-  segs : (Geom.point * Geom.point) array [@warning "-69"];
-      (* per-hinge shared paper segment; unread until Task 2 exposes an accessor *)
+  segs : (Geom.point * Geom.point) array;
+      (* per-hinge shared paper segment; exposed via [hinge_segment] *)
 }
 
 (* Mints internal crease ids; reset per eval so ids are a deterministic
@@ -195,7 +195,7 @@ let to2 (p : I3.point) : Geom.point = { Geom.x = p.I3.x; y = p.I3.y }
 (* Flat projection of face [i] under its derived placement, normalized to CCW:
    a reflected placement reverses the winding, and
    [Geom.segment_crosses_interior] requires CCW input. *)
-let table_polygon_ccw (faces : face array) (isos : I3.t array) (i : int) :
+let table_polygon_ccw_raw (faces : face array) (isos : I3.t array) (i : int) :
     Geom.point array =
   let tp = Array.map (fun p -> to2 (I3.apply_point isos.(i) (to3 p))) faces.(i) in
   if Num.sign (Geom.signed_area tp) < 0 then begin
@@ -294,7 +294,7 @@ let make ?(base = I3.identity) ?(marks = [||]) ~(faces : face array)
               c <> h.fa && c <> h.fb
               && rank_between rank h.fa c h.fb
               && Geom.segment_crosses_interior seg
-                   (table_polygon_ccw faces isos c)
+                   (table_polygon_ccw_raw faces isos c)
             then raise (V (Taco_tortilla { tortilla = c; hinge = i }))
           done
         end)
@@ -360,3 +360,72 @@ let mv (g : t) (i : int) : assign =
   let h = g.hinges.(i) in
   if Num.sign h.angle = 0 then F
   else if above g h.fb h.fa = face_up g h.fa then V else M
+
+(* In-plane 2D restriction of face [i]'s derived placement. Flat-first the
+   motions keep z = 0 invariant (angles ∈ {0, ±1}), so the upper-left block +
+   (tx, ty) IS the table placement as a 2D isometry. Stage B (partial angles)
+   lifts faces off the plane and must not use this. *)
+let face_iso2 (g : t) (i : int) : Isometry.t =
+  let m = g.isos.(i) in
+  { Isometry.m00 = m.I3.m00; m01 = m.I3.m01; m10 = m.I3.m10; m11 = m.I3.m11;
+    tx = m.I3.tx; ty = m.I3.ty }
+
+let table_polygon (g : t) (i : int) : Geom.point array =
+  Array.map (Isometry.apply_point (face_iso2 g i)) g.faces.(i)
+
+(* CCW-normalized (a reflected placement reverses winding); the clip/crossing
+   helpers in Geom require CCW input. *)
+let table_polygon_ccw (g : t) (i : int) : Geom.point array =
+  let tp = table_polygon g i in
+  if Num.sign (Geom.signed_area tp) < 0 then begin
+    let n = Array.length tp in
+    Array.init n (fun k -> tp.(n - 1 - k))
+  end
+  else tp
+
+type rel = Above | Below | Apart
+
+(* Layer relation of two faces: rank order where the flat projections overlap
+   (Geom.convex_overlap is SAT-based, winding-independent, strict — touching
+   is not overlap, same as the old Layer_order), Apart otherwise. *)
+let rel (g : t) (i : int) (j : int) : rel =
+  if i = j then Apart
+  else if Geom.convex_overlap (table_polygon g i) (table_polygon g j) then
+    if g.rank.(i) > g.rank.(j) then Above else Below
+  else Apart
+
+let hinge_segment (g : t) (i : int) : Geom.point * Geom.point = g.segs.(i)
+
+let hinge_table_segment (g : t) (i : int) : Geom.point * Geom.point =
+  let a, b = g.segs.(i) in
+  let iso = face_iso2 g g.hinges.(i).fa in
+  (Isometry.apply_point iso a, Isometry.apply_point iso b)
+
+(* Current table position of a material paper point: faces partition the paper
+   and placements agree on shared hinges, so any containing face works. *)
+let table_position (g : t) (paper : Geom.point) : Geom.point =
+  let n = Array.length g.faces in
+  let rec find i =
+    if i >= n then invalid_arg "Fold_graph.table_position: point in no face"
+    else if Geom.in_convex_polygon g.faces.(i) paper then
+      Isometry.apply_point (face_iso2 g i) paper
+    else find (i + 1)
+  in
+  find 0
+
+(* Distinct paper coordinates whose current table position is [tp] (one per
+   overlapping layer covering that table point). *)
+let paper_preimages (g : t) (tp : Geom.point) : Geom.point list =
+  let acc = ref [] in
+  Array.iteri
+    (fun i f ->
+      let pp = Isometry.apply_point (Isometry.inverse (face_iso2 g i)) tp in
+      if
+        Geom.in_convex_polygon f pp
+        && not (List.exists (Geom.point_equal pp) !acc)
+      then acc := pp :: !acc)
+    g.faces;
+  List.rev !acc
+
+let on_paper (g : t) (pp : Geom.point) : bool =
+  Array.exists (fun f -> Geom.in_convex_polygon f pp) g.faces
