@@ -3,6 +3,9 @@ paper square
 mark --ac = map .b onto .d     ; diagonal a–c (folds b onto d)
 mark --bd = map .a onto .c     ; diagonal b–d
 
-flatten (--ac & .a) (--ac & .c) (--bd & .b) (--bd & .d)
+; flatten V2 (spec 2026-07-16-flatten-derive-v2-design.md): a bare element is
+; UNCONSTRAINED — the solver assigns its M/V — so the all-valley assignment
+; this case pins must now be stated explicitly with `valley` markers.
+flatten (--ac & .a valley) (--ac & .c valley) (--bd & .b valley) (--bd & .d valley)
 
 ; expect error "Maekawa"

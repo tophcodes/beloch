@@ -1729,34 +1729,26 @@ let eval_folded (prog : Ast.program) : folded =
           | Ast.LSelect _ -> ()
         in
         List.iter (fun (el : Ast.collapse_elem) -> force_material el.Ast.cline) elems;
-        (* TEMPORARY: V1 default-valley for MvFree; Task 3 replaces this with
-           solver enumeration over the unconstrained elements (spec
-           2026-07-16-flatten-derive-v2-design.md). *)
-        let mv_to_valley = function
-          | Ast.MvValley -> true
-          | Ast.MvMountain -> false
-          | Ast.MvFree -> true
+        (* a resolved ray keeps its M/V CONSTRAINT (not yet a concrete valley
+           — that's the solver's job now, spec 2026-07-16-flatten-derive-v2-
+           design.md "the model"), as a 4-tuple rather than [Collapse.elem] so
+           its fields can't be confused with that type's same-named
+           cid/ea/eb once both are in scope below. *)
+        let fail_not_material (el : Ast.collapse_elem) () =
+          Error.fail span
+            (Printf.sprintf
+               "collapse folds along existing creases; %s is not a material \
+                crease" (lstr el.Ast.cline))
         in
         (* each element must resolve to exactly ONE material segment — same
            machinery as fold's material resolution *)
-        let resolve_elem (el : Ast.collapse_elem) : Collapse.elem =
-          let fail_not_material () =
-            Error.fail span
-              (Printf.sprintf
-                 "collapse folds along existing creases; %s is not a \
-                  material crease" (lstr el.Ast.cline))
-          in
+        let resolve_elem (el : Ast.collapse_elem) :
+            int * Geom.point * Geom.point * Ast.mv_constraint =
           match el.Ast.cline with
           | Ast.LNamed cr -> (
               let cid = material_cid cr in
               match Fold_state.crease_segments !(ctx.state) cid with
-              | [ s ] ->
-                  {
-                    Collapse.cid;
-                    ea = s.Fold_state.ta;
-                    eb = s.Fold_state.tb;
-                    valley = mv_to_valley el.Ast.cdir;
-                  }
+              | [ s ] -> (cid, s.Fold_state.ta, s.Fold_state.tb, el.Ast.cdir)
               | [] ->
                   Error.fail span
                     (Printf.sprintf "--%s has no material segment"
@@ -1768,13 +1760,7 @@ let eval_folded (prog : Ast.program) : folded =
                        cr.Ast.cname (List.length segs)))
           | (Ast.LFilter _ | Ast.LUnion _) as lo -> (
               match bundle_segments lo with
-              | Some cid, [ s ] ->
-                  {
-                    Collapse.cid;
-                    ea = s.Fold_state.ta;
-                    eb = s.Fold_state.tb;
-                    valley = mv_to_valley el.Ast.cdir;
-                  }
+              | Some cid, [ s ] -> (cid, s.Fold_state.ta, s.Fold_state.tb, el.Ast.cdir)
               | _, [] ->
                   Error.fail span
                     (Printf.sprintf "no segment of %s matches" (lstr lo))
@@ -1786,10 +1772,10 @@ let eval_folded (prog : Ast.program) : folded =
               | None, [ _ ] ->
                   (* a single segment but from a cross-crease union: no one cid
                      to fold along *)
-                  fail_not_material ())
-          | _ -> fail_not_material ()
+                  fail_not_material el ())
+          | _ -> fail_not_material el ()
         in
-        let es = List.map resolve_elem elems in
+        let rays = List.map resolve_elem elems in
         (* all-layers congruence guard: every layer under the collapse region
            folds as one unit (spec §Semantics: "Material / layers"). For each
            element's infinite table-space line, any face it actually cuts
@@ -1800,11 +1786,11 @@ let eval_folded (prog : Ast.program) : folded =
            (every face the line touches borders an edge of the same cid on
            that line); it guards future partial-crease states. *)
         List.iter
-          (fun (el : Collapse.elem) ->
+          (fun (fcid, fea, feb, _) ->
             let st = !(ctx.state) in
-            let line = Geom.line_through el.Collapse.ea el.Collapse.eb in
+            let line = Geom.line_through fea feb in
             let aligned_faces =
-              Fold_state.crease_segments st el.Collapse.cid
+              Fold_state.crease_segments st fcid
               |> List.concat_map (fun (s : Fold_state.crease_segment) ->
                      if
                        Geom.side_of_line line s.Fold_state.ta = 0
@@ -1821,161 +1807,364 @@ let eval_folded (prog : Ast.program) : folded =
                   && not (List.mem i aligned_faces)
                 then Error.fail span "collapse through unaligned layers")
               (Fold_state.faces st))
-          es;
+          rays;
         let over =
           List.map
             (fun (u, l) -> (resolve_sector_face u span, resolve_sector_face l span))
             overs
         in
-        (* DERIVE mode records the emergent crease's (id, line) here so the
-           name (if any) binds to it instead of the given rays; None in
-           validate mode and left None if unbound. *)
+        let elem_of (fcid, fea, feb, valley) =
+          { Collapse.cid = fcid; ea = fea; eb = feb; valley }
+        in
+        let elems_geom = List.map (fun r -> elem_of (let a, b, c, _ = r in (a, b, c, true))) rays in
+        let o =
+          match Collapse.common_vertex elems_geom with
+          | Some o -> o
+          | None -> Error.fail span Collapse.e_no_vertex
+        in
+        let n_given = List.length rays in
+        let odd = n_given mod 2 = 1 in
+        let prov : State.provenance option =
+          Some
+            { State.axiom = "flatten"; sources = []; span; name = None;
+              step = ctx.panel }
+        in
+        (* pre-mint the emergent crease id ONCE (odd case only — the even
+           case never materializes anything), so every candidate's probe
+           subdivision (below) and the eventual winner share one id instead
+           of drifting the global counter per candidate. *)
+        let new_cid = lazy (Fold_state.fresh_crease_id ()) in
+        let given_fars = List.map (fun e -> Collapse.far_of o e) elems_geom in
+        (* [realizations]: every (state, tier, emergent-binding) that a
+           candidate x M/V-pattern attempt actually closed (spec step 4-5).
+           [error_pool]: every failure message, for the |deciding|=0
+           differentiation (step 6). *)
+        let realizations :
+            (Fold_state.t * [ `Tier1 | `Tier2 ] * (int * Geom.line) option) list ref =
+          ref []
+        in
+        let error_pool = ref [] in
+        (* enumerate every Maekawa-consistent M/V pattern over [all_rays] and
+           try each through the collapse oracle, pooling Ok realizations and
+           Error messages. *)
+        let try_patterns (st' : Fold_state.t) (tier : [ `Tier1 | `Tier2 ])
+            (emergent : (int * Geom.line) option)
+            (all_rays : (int * Geom.point * Geom.point * Ast.mv_constraint) list) =
+          let constraints = List.map (fun (_, _, _, d) -> d) all_rays in
+          let patterns = Flatten.mv_patterns constraints in
+          List.iter
+            (fun pat ->
+              let elems' =
+                List.map2
+                  (fun (fcid, fea, feb, _) v -> elem_of (fcid, fea, feb, v))
+                  all_rays pat
+              in
+              match Collapse.collapse_all st' elems' ~over with
+              | Ok sts ->
+                  List.iter
+                    (fun s -> realizations := (s, tier, emergent) :: !realizations)
+                    sts
+              | Error msg -> error_pool := msg :: !error_pool)
+            patterns
+        in
+        (if odd then
+           let fixed = Collapse.sort_ccw o elems_geom in
+           match Flatten.candidates o ~fixed with
+           | [] -> Error.fail span Flatten.e_infeasible
+           | cands ->
+               List.iter
+                 (fun (line, ray_pt, tag) ->
+                   let tier : [ `Tier1 | `Tier2 ] =
+                     match tag with `LineNew -> `Tier1 | `OppositeRay -> `Tier2
+                   in
+                   (* materialize ONLY this candidate ray on a local copy of
+                      the pre-flatten state — never touching [ctx.state] —
+                      then scan every crease ray now sitting at O on the kept
+                      side. [keep_side] confines the cut to [ray_pt]'s side of
+                      the perpendicular guard through O, so the opposite ray
+                      creases nothing. When the ray runs collinear with an
+                      already-materialized given crease (the classic
+                      rabbit-ear up-spine), [subdivide] is a no-op and the ray
+                      is found below among the EXISTING segments (not
+                      [new_cid]) — the 364660f collinear-reuse case. *)
+                   let guard = Geom.perpendicular_through line o in
+                   let keep = Geom.side_of_line guard ray_pt in
+                   let st' =
+                     Fold_state.subdivide !(ctx.state) line
+                       ~crease_id:(Lazy.force new_cid) ~keep_side:(guard, keep)
+                       ~prov
+                   in
+                   let far_of_seg (s : Fold_state.crease_segment) =
+                     if Geom.point_equal s.Fold_state.ta o then s.Fold_state.tb
+                     else s.Fold_state.ta
+                   in
+                   let matches =
+                     Fold_state.all_crease_ids st'
+                     |> List.concat_map (fun cid ->
+                            Fold_state.crease_segments st' cid
+                            |> List.filter_map
+                                 (fun (s : Fold_state.crease_segment) ->
+                                   let far = far_of_seg s in
+                                   if
+                                     (Geom.point_equal s.Fold_state.ta o
+                                     || Geom.point_equal s.Fold_state.tb o)
+                                     && Geom.side_of_line line far = 0
+                                     && Geom.side_of_line guard far = keep
+                                     && not
+                                          (List.exists (Geom.point_equal far)
+                                             given_fars)
+                                   then Some (cid, far)
+                                   else None))
+                   in
+                   List.iter
+                     (fun (cid, far) ->
+                       let emergent_ray = (cid, o, far, Ast.MvFree) in
+                       try_patterns st' tier (Some (cid, line)) (emergent_ray :: rays))
+                     matches)
+                 cands
+         else try_patterns !(ctx.state) `Tier1 None rays);
+        let realizations = !realizations in
+        let tier1, tier2 = List.partition (fun (_, t, _) -> t = `Tier1) realizations in
+        let deciding = if tier1 <> [] then tier1 else tier2 in
+        (* records the emergent crease's (id, line) here so the name (if
+           any) binds to it instead of the given rays; None if no candidate
+           ray was materialized (even case) or left unbound. *)
         let emergent_bind = ref None in
-        (match toward_opt with
-        | None ->
-            (match Collapse.collapse !(ctx.state) es ~over with
-            | Ok st -> ctx.state := st
-            | Error msg -> Error.fail span msg)
-        | Some toward_po ->
-            (* DERIVE mode: [elems] is an odd set of given rays sharing one
-               vertex O; solve the emergent crease completing them to a flat
-               vertex (Flatten.derive), materialize it as a real crease
-               (Fold_state.subdivide — the elems are already TABLE-space, so
-               the cutting axis is too, unlike a mark's paper-space line),
-               then fold the completed (now even) set exactly like the
-               validate path. *)
-            let o =
-              match Collapse.common_vertex es with
-              | Some o -> o
-              | None -> Error.fail span Collapse.e_no_vertex
-            in
-            let toward_pt = resolve_point toward_po in
-            let fixed = Collapse.sort_ccw o es in
-            let given_fars =
-              List.map (fun (e : Collapse.elem) -> Collapse.far_of o e) es
-            in
-            (* Mint the emergent crease id ONCE, before derive runs: derive's
-               [feasible] oracle materializes every candidate as a probe (see
-               [try_ray] below), and the winning candidate is materialized
-               again afterwards — both must share one id, or the id counter
-               would drift between the probe and the real run. *)
-            let new_cid = Fold_state.fresh_crease_id () in
-            let prov : State.provenance option =
-              Some
-                { State.axiom = "flatten"; sources = []; span; name = None;
-                  step = ctx.panel }
-            in
-            (* Given a candidate emergent (line, ray point), materialize ONLY
-               that ray on a LOCAL copy of the pre-collapse state [st0]
-               (never touching [ctx.state] — this runs once per candidate as
-               a feasibility probe, and once more for the eventual winner),
-               then scan every crease ray now sitting at O on the kept side
-               and try each one (× valley) through [Collapse.collapse] as the
-               oracle. [keep_side] confines the cut to [ray_pt]'s side of the
-               perpendicular guard through O, so the opposite ray creases
-               nothing. When the ray runs collinear with an
-               already-materialized given crease (the classic rabbit-ear
-               up-spine), every face is already split along it and
-               [subdivide] is a no-op — the ray is then found below among the
-               EXISTING crease segments, so the scan spans all crease ids,
-               not just [new_cid]. Closure doesn't depend on valley, so a
-               wrong ray would fail both valleys identically; Maekawa admits
-               exactly one valley for the right one. *)
-            let try_ray (st0 : Fold_state.t) (line : Geom.line)
-                (ray_pt : Geom.point) :
-                Fold_state.t * ((Fold_state.t, string) result * int) list =
-              let guard = Geom.perpendicular_through line o in
-              let keep = Geom.side_of_line guard ray_pt in
-              let st' =
-                Fold_state.subdivide st0 line ~crease_id:new_cid
-                  ~keep_side:(guard, keep) ~prov
-              in
-              let far_of_seg (s : Fold_state.crease_segment) =
-                if Geom.point_equal s.Fold_state.ta o then s.Fold_state.tb
-                else s.Fold_state.ta
-              in
-              let candidates =
-                Fold_state.all_crease_ids st'
-                |> List.concat_map (fun cid ->
-                       Fold_state.crease_segments st' cid
-                       |> List.filter_map
-                            (fun (s : Fold_state.crease_segment) ->
-                              let far = far_of_seg s in
-                              if
-                                (Geom.point_equal s.Fold_state.ta o
-                                || Geom.point_equal s.Fold_state.tb o)
-                                && Geom.side_of_line line far = 0
-                                && Geom.side_of_line guard far = keep
-                                && not (List.exists (Geom.point_equal far) given_fars)
-                              then Some (cid, far)
-                              else None))
-              in
-              (* pair each attempt with the (cid, far) it was built from, so
-                 the winning attempt tells us which crease id is the
-                 emergent one — [new_cid] when the ray was freshly
-                 materialized, but a PRE-EXISTING cid when the ray is
-                 collinear with an already-materialized given crease (the
-                 rabbit-ear up-spine no-op case above). *)
-              let attempts =
-                List.concat_map
-                  (fun (cid, far) ->
-                    [ true; false ]
-                    |> List.map (fun valley ->
-                           (cid, { Collapse.cid; ea = o; eb = far; valley })))
-                  candidates
-              in
-              let outcomes =
-                List.map
-                  (fun (cid, (e : Collapse.elem)) ->
-                    (Collapse.collapse st' (e :: es) ~over, cid))
-                  attempts
-              in
-              (st', outcomes)
-            in
-            let feasible (l : Geom.line) (r : Geom.point) : bool =
-              let _, outcomes = try_ray !(ctx.state) l r in
-              List.exists (function Ok _, _ -> true | _ -> false) outcomes
-            in
-            (match Flatten.derive o ~fixed ~feasible ~toward:toward_pt with
-            | Error msg -> Error.fail span msg
-            | Ok (emergent_line, ray_pt) ->
-                let _, outcomes = try_ray !(ctx.state) emergent_line ray_pt in
-                let results =
-                  List.filter_map
-                    (function (Ok st, cid) -> Some (st, cid) | _ -> None)
-                    outcomes
+        (match deciding with
+        | [] ->
+            (* spec step 6: out-of-paper trumps everything; otherwise the
+               odd/even cases report differently — the odd case collapses
+               every closure failure into one message (364660f's original
+               differentiation, preserved verbatim); the even case surfaces
+               the pool's own dominant kernel error instead, since there is
+               no derived-crease framing to fall back on. *)
+            let pool = !error_pool in
+            if List.mem Collapse.e_out_of_paper pool then
+              Error.fail span Collapse.e_out_of_paper
+            else if odd then
+              Error.fail span "the derived crease does not close the vertex"
+            else begin
+              match List.find_opt (fun m -> m <> Collapse.e_selfint) pool with
+              | Some m -> Error.fail span m
+              | None ->
+                  (* pool = [] only when every candidate's pin set was itself
+                     Maekawa-unsatisfiable (no pattern to even try); a pool of
+                     all-e_selfint falls back to e_selfint itself. *)
+                  Error.fail span
+                    (if pool = [] then Collapse.e_maekawa else Collapse.e_selfint)
+            end
+        | [ (st, _, emergent) ] ->
+            ctx.state := st;
+            emergent_bind := emergent
+        | many ->
+            (* |deciding| > 1 — three-stage selection (amended spec 38bd69e +
+               .superpowers/sdd/toward-stacking-rule.md, 2026-07-16):
+               1. POSITION stage: placements depend only on ray LINES, so
+                  realizations group into position classes by moved-material
+                  centroid; {toward} picks the class by centroid dot.
+               2. MIN-MOUNTAIN CANON: within the class, keep only the
+                  realizations with the fewest derived mountains among the
+                  USER-GIVEN creases (a freshly-materialized emergent cid is
+                  not a given cid, so it is excluded automatically; a
+                  collinear-reuse emergent — the fish diagonal — IS a given
+                  cid and counts, per the rule doc's fish derivation).
+               3. RANK-DIPOLE stage: if several remain, maximize
+                  S(R) = Σ_faces area · (rank − (nf−1)/2) ·
+                  ((table_centroid − O)·(toward − O)) — "the material lying
+                  toward p ends up on top." Mirror realizations score ±equal,
+                  so any off-axis toward decides; toward ON a reflective
+                  symmetry axis of the given rays is guarded explicitly. *)
+            let paper_centroid_area (poly : Geom.point array) :
+                Geom.point * Num.t =
+              let n = Array.length poly in
+              let a2 = ref Num.zero and cx = ref Num.zero and cy = ref Num.zero in
+              for i = 0 to n - 1 do
+                let p = poly.(i) and q = poly.((i + 1) mod n) in
+                let cross =
+                  Num.sub (Num.mul p.Geom.x q.Geom.y) (Num.mul q.Geom.x p.Geom.y)
                 in
-                (match results with
-                | [ (st, cid) ] ->
-                    ctx.state := st;
-                    emergent_bind := Some (cid, emergent_line)
-                | [] ->
-                    (* Distinguish a genuine non-closure (Kawasaki fails for
-                       every attempt) from a vertex that closes but whose only
-                       flat realisation folds a flap off the sheet — the latter
-                       carries Collapse.e_out_of_paper and deserves that clearer
-                       message rather than "does not close". Unreachable in
-                       practice now that [feasible] already required at least
-                       one Ok outcome for this exact candidate — kept as a
-                       defensive match. *)
-                    if
-                      List.exists
-                        (function
-                          | (Error msg, _) -> msg = Collapse.e_out_of_paper
-                          | _ -> false)
-                        outcomes
-                    then Error.fail span Collapse.e_out_of_paper
-                    else
-                      Error.fail span
-                        "the derived crease does not close the vertex"
-                | _ :: _ :: _ ->
+                a2 := Num.add !a2 cross;
+                cx := Num.add !cx (Num.mul (Num.add p.Geom.x q.Geom.x) cross);
+                cy := Num.add !cy (Num.mul (Num.add p.Geom.y q.Geom.y) cross)
+              done;
+              let area = Num.div !a2 (Num.of_int 2) in
+              let denom = Num.mul (Num.of_int 3) !a2 in
+              ({ Geom.x = Num.div !cx denom; y = Num.div !cy denom }, area)
+            in
+            (* stage-2 canon: derived (never stored) M/V per hinge —
+               [Fold_state.mv] reads rank + orientation, so two stackings of
+               one pattern can differ. A given cid is a mountain iff some
+               FOLDED hinge of that cid derives M. *)
+            let given_cids =
+              List.sort_uniq compare (List.map (fun (c, _, _, _) -> c) rays)
+            in
+            let given_mountains (st, _, _) : int =
+              List.length
+                (List.filter
+                   (fun cid ->
+                     let hs = Fold_state.hinges st in
+                     let m = ref false in
+                     Array.iteri
+                       (fun i (h : Fold_state.hinge) ->
+                         if
+                           h.Fold_state.crease_id = cid
+                           && Num.sign h.Fold_state.angle <> 0
+                           && Fold_state.mv st i = Fold_state.M
+                         then m := true)
+                       hs;
+                     !m)
+                   given_cids)
+            in
+            let min_mountain_filter rs =
+              let counted = List.map (fun r -> (given_mountains r, r)) rs in
+              let m = List.fold_left (fun acc (c, _) -> min acc c) max_int counted in
+              List.filter_map (fun (c, r) -> if c = m then Some r else None) counted
+            in
+            let commit (st, _, emergent) =
+              ctx.state := st;
+              emergent_bind := emergent
+            in
+            (match toward_opt with
+            | None -> (
+                (* no class to pick without {toward}; the min-mountain canon
+                   is toward-independent, so it may still single out THE
+                   least-forced realization — only a post-canon surplus is a
+                   genuine ambiguity (spec: "no {toward} while |S| > 1 after
+                   stage 2"). *)
+                match min_mountain_filter many with
+                | [ r ] -> commit r
+                | kept ->
                     Error.fail span
-                      "the derived crease admits more than one closure")));
-        (* bind the name (if any): validate mode binds a selectable bundle of
-           the given rays; derive mode binds the EMERGENT crease instead (the
-           newly-completed vertex's own crease, not the rays that produced
-           it), so a meet-point selector against the name (e.g.
-           `.[--ear --ab]`) finds the emergent crease's tip. *)
+                      (Printf.sprintf
+                         "flatten is ambiguous: %d realizations; add {toward \
+                          .p} to pick the fold direction"
+                         (List.length kept)))
+            | Some toward_po ->
+                let toward_pt = resolve_point toward_po in
+                let st_pre = !(ctx.state) in
+                (* stage 1 — moved-material centroid per realization; a pure
+                   function of table placement, shared within a class. *)
+                let centroid_of (st_post, _, _) : Geom.point =
+                  let faces = Fold_state.faces st_post in
+                  let nf = Array.length faces in
+                  let sx = ref Num.zero and sy = ref Num.zero and sa = ref Num.zero in
+                  for f = 0 to nf - 1 do
+                    let c_f, a_f = paper_centroid_area faces.(f) in
+                    let pre_pos = Fold_state.table_position st_pre c_f in
+                    let post_pos =
+                      Isometry.apply_point (Fold_state.face_iso2 st_post f) c_f
+                    in
+                    if not (Geom.point_equal pre_pos post_pos) then begin
+                      sx := Num.add !sx (Num.mul a_f post_pos.Geom.x);
+                      sy := Num.add !sy (Num.mul a_f post_pos.Geom.y);
+                      sa := Num.add !sa a_f
+                    end
+                  done;
+                  if Num.sign !sa = 0 then
+                    invalid_arg
+                      "Flatten: a completed collapse moved no material \
+                       (unreachable)"
+                  else { Geom.x = Num.div !sx !sa; y = Num.div !sy !sa }
+                in
+                let dot_toward (p : Geom.point) : Num.t =
+                  Num.add
+                    (Num.mul (Num.sub p.Geom.x o.Geom.x)
+                       (Num.sub toward_pt.Geom.x o.Geom.x))
+                    (Num.mul (Num.sub p.Geom.y o.Geom.y)
+                       (Num.sub toward_pt.Geom.y o.Geom.y))
+                in
+                let by_centroid = List.map (fun r -> (centroid_of r, r)) many in
+                let distinct_centroids =
+                  List.fold_left
+                    (fun acc (c, _) ->
+                      if List.exists (Geom.point_equal c) acc then acc else c :: acc)
+                    [] by_centroid
+                in
+                let class_scored =
+                  List.map (fun c -> (dot_toward c, c)) distinct_centroids
+                  |> List.sort (fun (d1, _) (d2, _) -> Num.compare d2 d1)
+                in
+                let winning_centroid =
+                  match class_scored with
+                  | (d0, _) :: (d1, _) :: _ when Num.compare d0 d1 = 0 ->
+                      (* two DISTINCT position classes tie — toward is
+                         collinear with a crease through O (the classes are
+                         mirror-symmetric about it) *)
+                      Error.fail span Flatten.e_toward_ambiguous
+                  | (_, c) :: _ -> c
+                  | [] -> assert false (* [many] is non-empty here *)
+                in
+                let winners =
+                  List.filter_map
+                    (fun (c, r) ->
+                      if Geom.point_equal c winning_centroid then Some r else None)
+                    by_centroid
+                in
+                (* stage 2 *)
+                (match min_mountain_filter winners with
+                | [] -> assert false (* filter of a non-empty list *)
+                | [ r ] -> commit r
+                | kept ->
+                    (* stage 3 — but first the symmetry-axis guard (rule doc
+                       §Ties): the dipole's null direction is NOT the
+                       geometric mirror axis, so an on-axis toward would get
+                       a strict-but-arbitrary argmax; if the given-ray
+                       direction set is invariant under reflection across the
+                       O–toward line, the sides are genuinely
+                       indistinguishable. *)
+                    let on_symmetry_axis =
+                      Geom.point_equal toward_pt o
+                      ||
+                      let axis = Geom.line_through o toward_pt in
+                      let refl = Isometry.reflect_across_line axis in
+                      List.for_all
+                        (fun far ->
+                          let rf = Isometry.apply_point refl far in
+                          List.exists
+                            (fun g -> Geom.ccw_compare ~center:o rf g = 0)
+                            given_fars)
+                        given_fars
+                    in
+                    if on_symmetry_axis then
+                      Error.fail span Flatten.e_toward_ambiguous
+                    else
+                      let dipole (st, _, _) : Num.t =
+                        let faces = Fold_state.faces st in
+                        let rank = Fold_state.rank st in
+                        let nf = Array.length faces in
+                        let center =
+                          Num.div (Num.of_int (nf - 1)) (Num.of_int 2)
+                        in
+                        let acc = ref Num.zero in
+                        for f = 0 to nf - 1 do
+                          let pc, a_f = paper_centroid_area faces.(f) in
+                          let a_f = if Num.sign a_f < 0 then Num.neg a_f else a_f in
+                          let tc =
+                            Isometry.apply_point (Fold_state.face_iso2 st f) pc
+                          in
+                          acc :=
+                            Num.add !acc
+                              (Num.mul a_f
+                                 (Num.mul
+                                    (Num.sub (Num.of_int rank.(f)) center)
+                                    (dot_toward tc)))
+                        done;
+                        !acc
+                      in
+                      let scored =
+                        List.map (fun r -> (dipole r, r)) kept
+                        |> List.sort (fun (d1, _) (d2, _) -> Num.compare d2 d1)
+                      in
+                      (match scored with
+                      | (d0, _) :: (d1, _) :: _ when Num.compare d0 d1 = 0 ->
+                          Error.fail span Flatten.e_toward_ambiguous
+                      | (_, r) :: _ -> commit r
+                      | [] -> assert false (* [kept] has >= 2 elements *)))));
+        (* bind the name (if any): with no emergent ray materialized, bind a
+           selectable bundle of the given rays; with one, bind the EMERGENT
+           crease instead (the newly-completed vertex's own crease, not the
+           rays that produced it), so a meet-point selector against the name
+           (e.g. `.[--ear --ab]`) finds the emergent crease's tip. *)
         (match name_opt with
         | Some n ->
             let cv =
