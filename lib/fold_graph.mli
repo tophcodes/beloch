@@ -69,3 +69,15 @@ val face_isos : t -> Isometry3.t array
 (** Derived 3D placements (index = face), memoized at construction. *)
 
 val face_iso : t -> int -> Isometry3.t
+
+type mv = M | V
+
+val face_up : t -> int -> bool
+(** Face's derived placement preserves in-plane orientation (an even number
+    of folds crossed from the root). *)
+
+val mv : t -> int -> mv option
+(** Derived mountain/valley of hinge [i], from placements + rank
+    [hullzakharevich2023, §2.1]: valley iff the orientation-preserved side
+    lies below its neighbour. [None] for a flat hinge. Derived, never
+    stored — it cannot contradict the geometry. *)

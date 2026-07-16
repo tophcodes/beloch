@@ -275,6 +275,50 @@ let test_rejects_degenerate_hinge_line () =
     (function Fold_graph.Bad_line 0 -> true | _ -> false)
     ~faces:(single_fold_faces ()) ~hinges ~root:0 ~rank:[| 0; 1 |]
 
+let test_mv_single_fold_valley () =
+  (* f1 folded on TOP of face-up f0: the crease is a valley — the calibration
+     case (old evaluator: valley folds stack the mover above; fold_state.ml
+     assign rule V ⟺ valley XOR reflected). *)
+  let g =
+    mk ~faces:(single_fold_faces ()) ~hinges:(single_fold_hinges ())
+      ~rank:[| 0; 1 |] ()
+  in
+  Alcotest.(check bool) "f0 is face-up" true (Fold_graph.face_up g 0);
+  Alcotest.(check bool) "f1 is face-down" false (Fold_graph.face_up g 1);
+  Alcotest.(check bool) "hinge 0 is V" true (Fold_graph.mv g 0 = Some Fold_graph.V)
+
+let test_mv_single_fold_mountain () =
+  (* same fold, f1 tucked UNDER f0: mountain *)
+  let g =
+    mk ~faces:(single_fold_faces ()) ~hinges:(single_fold_hinges ())
+      ~rank:[| 1; 0 |] ()
+  in
+  Alcotest.(check bool) "hinge 0 is M" true (Fold_graph.mv g 0 = Some Fold_graph.M)
+
+let test_mv_side_symmetric () =
+  (* swapping fa/fb in the hinge record must not change the derived MV *)
+  let hinges = [| { Fold_graph.fa = 1; fb = 0; line = vline 1; angle = q 1 } |] in
+  let g = mk ~faces:(single_fold_faces ()) ~hinges ~rank:[| 0; 1 |] () in
+  Alcotest.(check bool) "still V with fa/fb swapped" true
+    (Fold_graph.mv g 0 = Some Fold_graph.V)
+
+let test_mv_flat_hinge_none () =
+  (* two coplanar faces joined by an unfolded crease: no M/V *)
+  let hinges = [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = q 0 } |] in
+  let g = mk ~faces:(single_fold_faces ()) ~hinges ~rank:[| 0; 1 |] () in
+  Alcotest.(check bool) "flat hinge has no MV" true (Fold_graph.mv g 0 = None)
+
+let test_mv_accordion_zigzag () =
+  (* accordion bottom-to-top f0,f1,f2: the two creases alternate V then M *)
+  let faces = [| strip_face 0 1; strip_face 1 1; strip_face 2 1 |] in
+  let hinges =
+    [| { Fold_graph.fa = 0; fb = 1; line = vline 1; angle = q 1 };
+       { Fold_graph.fa = 1; fb = 2; line = vline 2; angle = q 1 } |]
+  in
+  let g = mk ~faces ~hinges ~rank:[| 0; 1; 2 |] () in
+  Alcotest.(check bool) "hinge 0 is V" true (Fold_graph.mv g 0 = Some Fold_graph.V);
+  Alcotest.(check bool) "hinge 1 is M" true (Fold_graph.mv g 1 = Some Fold_graph.M)
+
 let () =
   Alcotest.run "fold_graph"
     [ ( "derive",
@@ -315,4 +359,11 @@ let () =
           Alcotest.test_case "taco-taco silent when nested" `Quick
             test_taco_taco_ok_nested;
           Alcotest.test_case "taco-taco silent when separated" `Quick
-            test_taco_taco_ok_separated ] ) ]
+            test_taco_taco_ok_separated ] );
+      ( "derived-mv",
+        [ Alcotest.test_case "single fold valley" `Quick test_mv_single_fold_valley;
+          Alcotest.test_case "single fold mountain" `Quick
+            test_mv_single_fold_mountain;
+          Alcotest.test_case "side-symmetric" `Quick test_mv_side_symmetric;
+          Alcotest.test_case "flat hinge none" `Quick test_mv_flat_hinge_none;
+          Alcotest.test_case "accordion zigzag V,M" `Quick test_mv_accordion_zigzag ] ) ]

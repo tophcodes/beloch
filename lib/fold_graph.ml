@@ -288,3 +288,24 @@ let rank (g : t) : int array = Array.copy g.rank
 let above (g : t) (i : int) (j : int) : bool = g.rank.(i) > g.rank.(j)
 let face_isos (g : t) : I3.t array = Array.copy g.isos
 let face_iso (g : t) (i : int) : I3.t = g.isos.(i)
+
+type mv = M | V
+
+(* Does face [i]'s derived placement preserve in-plane orientation? The
+   motions here map the z=0 plane to itself with 3D determinant +1 (identity,
+   half-turns about in-plane axes, and their products), so the in-plane
+   determinant equals the m22 entry: +1 for an even number of folds crossed,
+   -1 for odd (a reflected, face-down placement). *)
+let face_up (g : t) (i : int) : bool = Num.sign g.isos.(i).I3.m22 > 0
+
+(* Derived M/V of hinge [i] [hullzakharevich2023, §2.1]: for a crease between
+   U1 and U2 with U1's orientation preserved, the crease is a valley iff U1
+   lies below U2 (the paper's λ(p,q) = 1 reads "p below q"). Here: V ⟺
+   above(fb, fa) = face_up(fa). Side-symmetric — a folded hinge flips exactly
+   one of face_up/above when read from fb, so both sides agree. Flat hinges
+   (angle = 0) carry no M/V. Derived, never stored: rank and placements are
+   the only inputs, so MV cannot contradict the geometry. *)
+let mv (g : t) (i : int) : mv option =
+  let h = g.hinges.(i) in
+  if Num.sign h.angle = 0 then None
+  else Some (if above g h.fb h.fa = face_up g h.fa then V else M)
