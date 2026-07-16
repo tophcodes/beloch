@@ -254,15 +254,18 @@ val add_mark : t -> mark -> t
 (** {1 Selectors} *)
 
 val neighbors : t -> int -> int list
-(** Face ids sharing a hinge with face [i]. *)
+(** Face ids sharing a hinge with face [i]. List order is unspecified;
+    callers must not rely on it. *)
 
 val hinge_between : t -> int -> Geom.point -> Geom.point -> int option
 (** Index of the hinge incident to face [i] whose paper segment equals
     (pa,pb) in either order (old [edge_between], returning an index so
-    callers can reach [mv]/[intent]/[prov]). *)
+    callers can reach the hinge's metadata ([intent], [prov], [crease_id])
+    and the derived letter via [mv]). *)
 
 val all_crease_ids : t -> int list
-(** The distinct crease ids present in the current state. *)
+(** The distinct crease ids present in the current state. List order is
+    unspecified; callers must not rely on it. *)
 
 type crease_segment = {
   faces : int * int;
