@@ -955,6 +955,12 @@ let rec pick_two_distinct = function
       | None -> pick_two_distinct rest)
   | [] -> None
 
+(* CAVEAT (here and in [crease_paper_axis]): the reconstructed line's
+   coefficient SIGN is hinge-array-order dependent ([pick_two_distinct] over
+   endpoints collected in hinge order, which is unspecified). Same line,
+   possibly opposite normal — every consumer must be sign-insensitive
+   (side_of_line = 0 tests, drawing between clip points). A future consumer
+   needing an oriented normal must canonicalize first. *)
 let crease_axis (g : t) (cid : int) (l_orig : Geom.line) :
     [ `Line of Geom.line | `Bent | `Empty ] =
   match crease_table_endpoints g cid with
