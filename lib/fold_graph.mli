@@ -357,3 +357,58 @@ val scoped_fold_hinge_closed :
     called) for scoped `up to` folds; default folds partition by the axis
     halfplane, so their mover/stayer boundaries are on the axis by
     construction. *)
+
+(** {1 Marks} (port of the old Fold_state mark machinery, fold_state.ml:591-823) *)
+
+val mark_rep_point : mark -> Geom.point
+(** The mark's representative paper-space point: an [MSeg]'s first endpoint,
+    or an [MPoint]'s point. *)
+
+val mark_chords : t -> int -> (Geom.point * Geom.point) list
+(** Paper-space chords (segment endpoints) of every [MSeg] mark carrying
+    [cid]. [MPoint] marks contribute no chord. Used by the meet operator to
+    test that a marked line physically reaches a crossing. *)
+
+val mark_axis_current : t -> int -> [ `Line of Geom.line | `Bent | `Empty ]
+(** The mark [cid]'s current TABLE-space axis, tracking folds/flips (its
+    paper geometry is fold-invariant, so the current line is the paper chord
+    mapped to the table). [`Bent] if a fold has bent the chord (its paper
+    midpoint no longer maps onto the straight table chord) — the caller must
+    pick a flap. [`Empty] if [cid] has no [MSeg] mark, or its table
+    endpoints coincide. *)
+
+val mark_face : t -> mark -> int option
+(** The face whose PAPER polygon contains the mark's representative point;
+    paper coordinates partition the sheet, so this is unique in the interior
+    (a point on a shared boundary may match several — first match wins,
+    callers disambiguate). *)
+
+val point_on_polygon_boundary : Geom.point array -> Geom.point -> bool
+(** True iff point [p] lies on some edge (endpoints included) of convex CCW
+    [poly]. *)
+
+type mark_class =
+  | CSubdivide of Geom.point * Geom.point
+  | CRecord of mark_geom
+  | CCrossesFold of Geom.point * Geom.point
+(** A mark's paper-space extent, classified against the flap (coplanar
+    cluster) it lives on: does it subdivide the flap (a FULL CHORD — both
+    endpoints on the flap's outer boundary, crossing only flat hinges in
+    between), merely record (ANY endpoint strictly mid-face — the whole
+    contiguous extent becomes one non-subdividing record, splitting nothing,
+    even where it crosses face-to-face in the middle), or is it illegal
+    because it would leave the flap across a folded (M/V) hinge? *)
+
+val classify_mark_extent :
+  t -> flap:int list -> axis:Geom.line -> extent_geom:mark_geom -> mark_class
+(** Does a mark's paper-space [extent_geom] subdivide [flap], merely record
+    onto it, or illegally cross a folded (M/V) hinge? [axis] is the extent's
+    own paper-space motion line (the line the segment/point lies on — e.g.
+    the line a [between] extent was cut from). A full-extent mark never
+    reaches here (the caller handles that as a plain [subdivide]). [MPoint]
+    never subdivides and always records. *)
+
+val axis_chord_in_face : t -> int -> Geom.line -> (Geom.point * Geom.point) option
+(** The chord (in PAPER coordinates) where table-space [axis] crosses the
+    interior of face [i]; [None] if it misses (touches at most a point). Port
+    of the old [Fold_state.axis_segment_in_face]. *)

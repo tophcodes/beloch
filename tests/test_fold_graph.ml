@@ -1271,6 +1271,74 @@ let test_both_sides_moving_no_toggle () =
            (Fold_graph.table_polygon g i)))
     (Fold_graph.faces g)
 
+(* --- Plan 3b Task 4: marks -------------------------------------------------- *)
+
+let mclass_str = function
+  | `Sub -> "subdivide" | `Rec -> "record" | `Cross -> "crossesfold"
+
+let test_classify_parity () =
+  let g, st = pair_precrease_fold () in
+  (* flap = the moved packet cluster: probe from a point on it *)
+  let three_q = Num.div (Num.of_int 3) (Num.of_int 4) in
+  let quarter = Num.div Num.one (Num.of_int 4) in
+  let flap_new =
+    match Fold_graph.flap_of_points g [ { Geom.x = three_q; y = quarter } ] with
+    | `Cluster fs -> fs | _ -> Alcotest.fail "flap (new)"
+  in
+  let flap_old =
+    match Fold_state.flap_of_points st [ { Geom.x = three_q; y = quarter } ] with
+    | `Cluster fs -> fs | _ -> Alcotest.fail "flap (old)"
+  in
+  let case label axis geom_new geom_old =
+    let simplify_new = function
+      | Fold_graph.CSubdivide _ -> `Sub
+      | Fold_graph.CRecord _ -> `Rec
+      | Fold_graph.CCrossesFold _ -> `Cross
+    in
+    let simplify_old = function
+      | Fold_state.CSubdivide _ -> `Sub
+      | Fold_state.CRecord _ -> `Rec
+      | Fold_state.CCrossesFold _ -> `Cross
+    in
+    Alcotest.(check string) label
+      (mclass_str (simplify_old
+        (Fold_state.classify_mark_extent st ~flap:flap_old ~axis
+           ~extent_geom:geom_old)))
+      (mclass_str (simplify_new
+        (Fold_graph.classify_mark_extent g ~flap:flap_new ~axis
+           ~extent_geom:geom_new)))
+  in
+  (* full chord across the moved packet: subdivide *)
+  let a = { Geom.x = Num.div Num.one (Num.of_int 2); y = quarter }
+  and b = { Geom.x = Num.one; y = quarter } in
+  case "full chord" { Geom.a = q 0; b = q 1; c = quarter }
+    (Fold_graph.MSeg (a, b)) (Fold_state.MSeg (a, b));
+  (* stub ending mid-face: record *)
+  let mid = { Geom.x = three_q; y = quarter } in
+  case "stub" { Geom.a = q 0; b = q 1; c = quarter }
+    (Fold_graph.MSeg (a, mid)) (Fold_state.MSeg (a, mid));
+  (* point: record *)
+  case "point" { Geom.a = q 0; b = q 1; c = quarter }
+    (Fold_graph.MPoint mid) (Fold_state.MPoint mid)
+
+let test_mark_axis_current_parity () =
+  let g, st = pair_precrease_fold () in
+  let quarter = Num.div Num.one (Num.of_int 4) in
+  let mnew = { Fold_graph.mgeom = Fold_graph.MSeg
+                  ({ Geom.x = q 0; y = quarter }, { Geom.x = q 1; y = quarter });
+               mline = { Geom.a = q 0; b = q 1; c = quarter };
+               mintent = Fold_graph.V; mcrease_id = 77; mprov = None } in
+  let mold = { Fold_state.mgeom = Fold_state.MSeg
+                  ({ Geom.x = q 0; y = quarter }, { Geom.x = q 1; y = quarter });
+               mline = { Geom.a = q 0; b = q 1; c = quarter };
+               mintent = Fold_state.V; mcrease_id = 77; mprov = None } in
+  let g = Fold_graph.add_mark g mnew in
+  let st = Fold_state.add_mark st mold in
+  let str = function `Line _ -> "line" | `Bent -> "bent" | `Empty -> "empty" in
+  Alcotest.(check string) "mark axis class"
+    (str (Fold_state.mark_axis_current st 77))
+    (str (Fold_graph.mark_axis_current g 77))
+
 let () =
   Alcotest.run "fold_graph"
     [ ( "derive",
@@ -1396,5 +1464,10 @@ let () =
           Alcotest.test_case "scoped hinge closed parity" `Quick
             test_scoped_hinge_closed_parity;
           Alcotest.test_case "both sides moving no toggle" `Quick
-            test_both_sides_moving_no_toggle ] )
+            test_both_sides_moving_no_toggle ] );
+      ( "plan3b-task4-marks",
+        [ Alcotest.test_case "classify_mark_extent parity" `Quick
+            test_classify_parity;
+          Alcotest.test_case "mark_axis_current parity" `Quick
+            test_mark_axis_current_parity ] )
     ]
