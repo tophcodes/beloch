@@ -1807,7 +1807,16 @@ let eval_folded (prog : Ast.program) : folded =
             Array.iteri
               (fun i _ ->
                 if
-                  Geom.line_cuts_polygon line (Fold_state.table_polygon_ccw st i)
+                  (* judge the element's actual crease SEGMENT, not its
+                     infinite line: material a prior fold parked elsewhere on
+                     the sheet (e.g. the first ear of a two-ear fish base)
+                     lies on many rays' extended lines without being under
+                     this collapse at all. Exotic stacked states where a flap
+                     floats mid-sector beyond every crease span are not
+                     caught here — invariant hardening for those is #48
+                     territory. *)
+                  Geom.segment_cuts_polygon (fea, feb)
+                    (Fold_state.table_polygon_ccw st i)
                   && not (List.mem i aligned_faces)
                 then Error.fail span "collapse through unaligned layers")
               (Fold_state.faces st))
