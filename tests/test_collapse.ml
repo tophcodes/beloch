@@ -57,7 +57,7 @@ let test_odd_count_rejected () =
   let st, rays = precreased () in
   let es = elems_of rays (Array.make 8 true) in
   let seven = List.filteri (fun i _ -> i < 7) es in
-  match Collapse.collapse st seven ~over:[] with
+  match Collapse.collapse st seven ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
   | Ok _ -> Alcotest.fail "odd count must be rejected"
   | Error e -> Alcotest.(check bool) ("count error: " ^ e) true (prefix "count" e)
 
@@ -73,7 +73,7 @@ let test_no_common_vertex_rejected () =
       { Collapse.cid = 3; ea = pt (q 1) (q 0); eb = pt (q 0) (q 0); valley = false };
     ]
   in
-  match Collapse.collapse st es ~over:[] with
+  match Collapse.collapse st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
   | Ok _ -> Alcotest.fail "no common vertex must be rejected"
   | Error e ->
       Alcotest.(check bool) ("vertex error: " ^ e) true
@@ -101,7 +101,7 @@ let test_kawasaki_rejected () =
 let test_maekawa_rejected () =
   let st, rays = precreased () in
   let es = elems_of rays (Array.make 8 true) in
-  match Collapse.collapse st es ~over:[] with
+  match Collapse.collapse st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
   | Ok _ -> Alcotest.fail "all-valley must fail Maekawa"
   | Error e ->
       Alcotest.(check bool) ("Maekawa error: " ^ e) true (prefix "Maekawa" e)
@@ -129,7 +129,7 @@ let waterbomb_valleys = [| true; true; true; true; true; false; false; false |]
 let test_waterbomb_assignment () =
   let st, rays = precreased () in
   let es = elems_of rays waterbomb_valleys in
-  match Collapse.collapse st es ~over:[] with
+  match Collapse.collapse st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
   | Ok s ->
       (* the 8 sectors survive as 8 faces in the folded state *)
       Alcotest.(check int) "collapsed waterbomb has 8 faces" 8
@@ -153,15 +153,33 @@ let test_waterbomb_assignment () =
    as literals instead. *)
 let over_valleys = [| true; true; false; false; true; false; false; false |]
 
+(* The `over` pair (3,4) was pinned as face-index literals against the old
+   kernel's un-rotated [sort_ccw] labeling, where the anchor sat in fan sector
+   0. The stayer-anchored kernel rotates the labeling to the stayer sector, so
+   to keep this pin's intent we anchor on the material in sector 0 — the first
+   pre-collapse face there. [Collapse.Faces [f]] then rotates by 0 (a no-op),
+   reproducing the exact labeling the over-literals were calibrated for. *)
+let sector0_face st es =
+  let sorted = Array.of_list (Collapse.sort_ccw o es) in
+  let faces = Fold_state.faces st in
+  let sec =
+    Array.init (Array.length faces) (fun i ->
+        Collapse.sector_of_poly o sorted (faces.(i), Fold_state.face_iso2 st i))
+  in
+  let r = ref (-1) in
+  Array.iteri (fun i s -> if !r < 0 && s = 0 then r := i) sec;
+  !r
+
 let test_over_resolves_ambiguity () =
   let st, rays = precreased () in
   let es = elems_of rays over_valleys in
-  (match Collapse.collapse st es ~over:[] with
+  let stay = Collapse.Faces [ sector0_face st es ] in
+  (match Collapse.collapse st es ~over:[] ~stayer:stay with
   | Error e ->
       Alcotest.(check bool) ("ambiguous without over: " ^ e) true
         (prefix "ambiguous stacking" e)
   | Ok _ -> Alcotest.fail "expected ambiguous stacking without `over`");
-  match Collapse.collapse st es ~over:[ (3, 4) ] with
+  match Collapse.collapse st es ~over:[ (3, 4) ] ~stayer:stay with
   | Error e -> Alcotest.fail ("expected Ok with over, got: " ^ e)
   | Ok s ->
       Alcotest.(check int) "over-resolved collapse keeps 8 faces" 8
@@ -193,7 +211,7 @@ let test_over_resolves_ambiguity () =
 let test_collapse_all_ambiguous_returns_all () =
   let st, rays = precreased () in
   let es = elems_of rays over_valleys in
-  match Collapse.collapse_all st es ~over:[] with
+  match Collapse.collapse_all st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
   | Error e -> Alcotest.fail ("expected Ok list, got: " ^ e)
   | Ok sts ->
       Alcotest.(check int)
@@ -203,8 +221,10 @@ let test_collapse_all_ambiguous_returns_all () =
 let test_collapse_all_over_matches_collapse () =
   let st, rays = precreased () in
   let es = elems_of rays over_valleys in
+  let stay = Collapse.Faces [ sector0_face st es ] in
   match
-    (Collapse.collapse st es ~over:[ (3, 4) ], Collapse.collapse_all st es ~over:[ (3, 4) ])
+    ( Collapse.collapse st es ~over:[ (3, 4) ] ~stayer:stay,
+      Collapse.collapse_all st es ~over:[ (3, 4) ] ~stayer:stay )
   with
   | Error e, _ -> Alcotest.fail ("expected collapse Ok, got: " ^ e)
   | _, Error e -> Alcotest.fail ("expected collapse_all Ok, got: " ^ e)
@@ -231,7 +251,10 @@ let test_collapse_all_error_passthrough () =
   let st, rays = precreased () in
   let es = elems_of rays (Array.make 8 true) in
   let seven = List.filteri (fun i _ -> i < 7) es in
-  match (Collapse.collapse st seven ~over:[], Collapse.collapse_all st seven ~over:[]) with
+  match
+    ( Collapse.collapse st seven ~over:[] ~stayer:(Collapse.Faces [ 0 ]),
+      Collapse.collapse_all st seven ~over:[] ~stayer:(Collapse.Faces [ 0 ]) )
+  with
   | Error e1, Error e2 ->
       Alcotest.(check string) "collapse_all errors identically to collapse" e1 e2
   | _ -> Alcotest.fail "expected both collapse and collapse_all to error on odd count"
@@ -271,7 +294,7 @@ let precreased_plus () =
 let test_eassign_parity () =
   let st, cidh, cidv, rays = precreased_plus () in
   let es = elems_of rays [| false; true; false; false |] in
-  match Collapse.collapse st es ~over:[] with
+  match Collapse.collapse st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
   | Error e -> Alcotest.fail ("expected Ok, got: " ^ e)
   | Ok s ->
       let hs = Fold_state.hinges s in
@@ -309,7 +332,7 @@ let test_derived_mv_matches_declared () =
   let st, _, _, rays = precreased_plus () in
   let valleys = [| false; true; false; false |] in
   let es = elems_of rays valleys in
-  match Collapse.collapse st es ~over:[] with
+  match Collapse.collapse st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
   | Error e -> Alcotest.fail ("expected Ok, got: " ^ e)
   | Ok s ->
       let hs = Fold_state.hinges s in
@@ -341,6 +364,43 @@ let test_derived_mv_matches_declared () =
         hs;
       Alcotest.(check int) "all four ray hinges checked" 4 !checked
 
+(* -- Task 2 (flatten-staying): the stayer picks the physical world ----------
+   The stayer is the material that does NOT move — identity, front-up, where it
+   lay. Two Arc stayers on adjacent sectors of the same "+" vertex both solve;
+   their sectors have opposite fan parity, so anchoring the identity on each
+   yields through-plane mirror stacks — a shared overlapping face pair reverses
+   its layer relation. This is the load-bearing claim: both worlds are reachable
+   and differ (design 2026-07-17). *)
+let test_stayer_picks_world () =
+  let st, _, _, rays = precreased_plus () in
+  let es = elems_of rays [| false; true; false; false |] in
+  let right = pt (q 1) half and up = pt half (q 1) in
+  let left = pt (q 0) half in
+  let arc_a = Collapse.Arc (right, up) (* stayer region = the NE sector (even parity) *)
+  and arc_b = Collapse.Arc (up, left) (* stayer region = the NW sector (odd parity) *) in
+  match
+    ( Collapse.collapse_all st es ~over:[] ~stayer:arc_a,
+      Collapse.collapse_all st es ~over:[] ~stayer:arc_b )
+  with
+  | Ok (a :: _), Ok (b :: _) ->
+      let nf = Array.length (Fold_state.faces a) in
+      let flipped = ref false in
+      for i = 0 to nf - 1 do
+        for j = i + 1 to nf - 1 do
+          match (Fold_state.rel a i j, Fold_state.rel b i j) with
+          | Fold_state.Above, Fold_state.Below | Fold_state.Below, Fold_state.Above
+            ->
+              flipped := true
+          | _ -> ()
+        done
+      done;
+      Alcotest.(check bool)
+        "opposite-parity stayers give mirror stacks (a face pair flips)" true
+        !flipped
+  | Ok [], _ | _, Ok [] -> Alcotest.fail "a stayer world came out empty"
+  | Error e, _ -> Alcotest.fail ("arc_a stayer must solve: " ^ e)
+  | _, Error e -> Alcotest.fail ("arc_b stayer must solve: " ^ e)
+
 (* -- C1: duplicate ray (zero-width sector) ---------------------------------- *)
 
 (* Two elements pointing the SAME direction from O fold a zero-width sector; the
@@ -361,7 +421,7 @@ let test_duplicate_ray_rejected () =
       { Collapse.cid = 1; ea = o; eb = pt half (q 0); valley = false };
     ]
   in
-  match Collapse.collapse st es ~over:[] with
+  match Collapse.collapse st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
   | Ok _ -> Alcotest.fail "duplicate ray must be rejected"
   | Error e ->
       Alcotest.(check bool)
@@ -426,7 +486,7 @@ let c2_valleys = [| true; true; true; false; false; false; false; false |]
 let test_c2_declared_mountain_intrinsic () =
   let st, rays = precreased () in
   let es = elems_of rays c2_valleys in
-  match Collapse.collapse st es ~over:[] with
+  match Collapse.collapse st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
   | Error e -> Alcotest.fail ("expected Ok, got: " ^ e)
   | Ok s ->
       (* recover face→sector from the ORIGINAL flat faces (collapse preserves
@@ -459,7 +519,7 @@ let collapse_letters valleys ~flip =
   let st, _, _, rays = precreased_plus () in
   let st = if flip then Fold_state.flip st else st in
   let es = elems_of rays valleys in
-  match Collapse.collapse st es ~over:[] with
+  match Collapse.collapse st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with
   | Error e -> Alcotest.fail ("expected Ok, got: " ^ e)
   | Ok s ->
       let hs = Fold_state.hinges s in
@@ -541,6 +601,8 @@ let () =
             `Quick test_collapse_all_over_matches_collapse;
           Alcotest.test_case "error passthrough matches collapse" `Quick
             test_collapse_all_error_passthrough;
+          Alcotest.test_case "stayer picks the physical world (mirror stacks)"
+            `Quick test_stayer_picks_world;
         ] );
       ( "eassign",
         [

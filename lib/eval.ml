@@ -1847,6 +1847,16 @@ let eval_folded (prog : Ast.program) : folded =
            of drifting the global counter per candidate. *)
         let new_cid = lazy (Fold_state.fresh_crease_id ()) in
         let given_fars = List.map (fun e -> Collapse.far_of o e) elems_geom in
+        (* Task 3 wires staying + segment candidates. Interim stayer: the <π
+           arc between the first two GIVEN elements' resolved rays (the
+           leading-element convention). Each element resolves to exactly one
+           segment today, so [Arc (far elem1, far elem2)] is well-defined; a
+           flatten always has n >= 4 given rays, so the first two fars exist. *)
+        let interim_stayer =
+          match given_fars with
+          | f1 :: f2 :: _ -> Collapse.Arc (f1, f2)
+          | _ -> Collapse.Arc (o, o)
+        in
         (* [realizations]: every (state, tier, emergent-binding) that a
            candidate x M/V-pattern attempt actually closed (spec step 4-5).
            [error_pool]: every failure message, for the |deciding|=0
@@ -1871,7 +1881,7 @@ let eval_folded (prog : Ast.program) : folded =
                   (fun (fcid, fea, feb, _) v -> elem_of (fcid, fea, feb, v))
                   all_rays pat
               in
-              match Collapse.collapse_all st' elems' ~over with
+              match Collapse.collapse_all st' elems' ~over ~stayer:interim_stayer with
               | Ok sts ->
                   List.iter
                     (fun s -> realizations := (s, tier, emergent) :: !realizations)
