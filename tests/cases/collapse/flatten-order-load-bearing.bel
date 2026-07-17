@@ -13,6 +13,6 @@ mark --ea = map --ab onto --diag
 mark --eb = map --ab onto --bc
 mark --ec = map --bc onto --diag
 
-flatten (--eb & .b) (--ea & .a) (--ec & .c) {toward .a}
+flatten (--eb & .b) (--ea) (--ec) {toward .a}
 
 ; expect error "off the paper"

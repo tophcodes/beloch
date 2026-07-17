@@ -13,6 +13,6 @@ mark --ec = map --bc onto --diag
 ; Leading pair is (--ea .a)(--ec .c): their <180 arc is the big stayer
 ; sector the ear folds onto; the emergent splits it into the two mirror
 ; worlds {toward} then picks (design 2026-07-17 stayer convention).
-flatten (--ea & .a) (--ec & .c) (--eb & .b) {toward .b}
+flatten (--ea) (--ec) (--eb) {toward .b}
 
 ; expect error "does not pick a side"

@@ -612,13 +612,22 @@ let examples_dir () =
   | Some root -> Filename.concat root "examples"
   | None -> "../../../examples"
 
+(* every .bel under dir, recursively (examples/ nests into bases/, syntax/,
+   … — a flat readdir found none of them and starved this test; mirrors
+   test_golden.ml's example_names walker). *)
+let rec example_names dir prefix =
+  let d = Filename.concat dir prefix in
+  Sys.readdir d |> Array.to_list
+  |> List.concat_map (fun entry ->
+         let rel = if prefix = "" then entry else Filename.concat prefix entry in
+         if Sys.is_directory (Filename.concat d entry) then
+           example_names dir rel
+         else if Filename.check_suffix entry ".bel" then [ rel ]
+         else [])
+
 let test_layer_all_examples_valid () =
   let dir = examples_dir () in
-  let files =
-    Sys.readdir dir |> Array.to_list
-    |> List.filter (fun f -> Filename.check_suffix f ".bel")
-    |> List.sort compare
-  in
+  let files = example_names dir "" |> List.sort compare in
   Alcotest.(check bool) "found example files" true (List.length files > 0);
   List.iter
     (fun f ->
