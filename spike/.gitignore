@@ -2,3 +2,4 @@ src/
 prefix/
 build/
 *.o
+fish-base.png
