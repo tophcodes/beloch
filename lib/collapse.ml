@@ -327,30 +327,75 @@ let pipeline_at (g : Fold_state.t) ~(o : Geom.point)
     Array.init nf (fun i ->
         sector_of_poly o rays (faces.(i), Fold_state.face_iso2 g i))
   in
-  (* a representative pre-collapse 2D placement per sector, feeding
-     [effective_valley] *)
-  let sector_iso = Array.make n Isometry.identity in
-  let sector_seen = Array.make n false in
-  for i = 0 to nf - 1 do
-    let s = sec.(i) in
-    if not sector_seen.(s) then begin
-      sector_seen.(s) <- true;
-      sector_iso.(s) <- Fold_state.face_iso2 g i
-    end
-  done;
+  let g_rank = Fold_state.rank g in
+  (* Per-ray orientation representative feeding [effective_valley]. For ray [j]
+     the stayer-side sector is [l = (j-1+n) mod n] (the sector CCW-before the
+     ray). The M/V letter carried by ray [j] is about the *layer of stayer
+     material actually adjacent to that crease*, not an arbitrary face in a
+     possibly mixed-orientation sector: pick the face in sector [l] whose table
+     polygon has an edge running from O out along the ray segment (O -> far_j).
+     That edge is the crease itself, so its face is the layer the letter
+     describes. This is what lets a mixed sector — a stationary base strip
+     (det>0) with a folded stack (det<0) riding on it, e.g. the fish's
+     second-ear vertex — read parity from the crease-adjacent base layer rather
+     than from whatever face happens to be first by array index (the old
+     per-sector representative, which flipped one hinge constraint and starved
+     the true stacking chain). *)
+  let ray_rep =
+    Array.init n (fun j ->
+        let l = (j - 1 + n) mod n in
+        let far, _ = rays.(j) in
+        let adjacent i =
+          sec.(i) = l
+          &&
+          let poly =
+            Array.map (Isometry.apply_point (Fold_state.face_iso2 g i)) faces.(i)
+          in
+          let m = Array.length poly in
+          let hit = ref false in
+          for k = 0 to m - 1 do
+            let a = poly.(k) and b = poly.((k + 1) mod m) in
+            if
+              (Geom.point_equal a o
+              && (not (Geom.point_equal b o))
+              && Geom.on_segment (o, far) b)
+              || (Geom.point_equal b o
+                 && (not (Geom.point_equal a o))
+                 && Geom.on_segment (o, far) a)
+            then hit := true
+          done;
+          !hit
+        in
+        (* Among crease-adjacent faces take the lowest prior rank. Several
+           qualify only for a through-folded multi-layer crease (not in today's
+           corpus); which layer's letter wins is #48 territory. If none
+           qualifies (should not happen — the crease bounds the sector), fall
+           back to the old first-in-sector representative rather than raise. *)
+        let best = ref (-1) in
+        for i = 0 to nf - 1 do
+          if adjacent i && (!best < 0 || g_rank.(i) < g_rank.(!best)) then
+            best := i
+        done;
+        if !best < 0 then
+          for i = 0 to nf - 1 do
+            if !best < 0 && sec.(i) = l then best := i
+          done;
+        if !best < 0 then Isometry.identity
+        else Fold_state.face_iso2 g !best)
+  in
   (* hinge constraints *)
   let constraints =
     List.init n (fun j ->
         let l = (j - 1 + n) mod n in
         let _, e = rays.(j) in
-        let eff = effective_valley e.valley tsec.(l) sector_iso.(l) in
+        let eff = effective_valley e.valley tsec.(l) ray_rep.(j) in
         if eff then (j, l) else (l, j))
   in
   let stackings = linear_extensions n constraints in
   let eff_of_ray j =
-    let l = (j - 1 + n) mod n in
     let _, e = rays.(j) in
-    effective_valley e.valley tsec.(l) sector_iso.(l)
+    let l = (j - 1 + n) mod n in
+    effective_valley e.valley tsec.(l) ray_rep.(j)
   in
   let ray_assign =
     Array.init n (fun j -> if eff_of_ray j then Fold_state.V else Fold_state.M)
@@ -380,7 +425,6 @@ let pipeline_at (g : Fold_state.t) ~(o : Geom.point)
   let marks = Fold_state.marks g in
   (* total face rank from a sector stacking: sort by (srank.(sector),
      intra-sector order), tiebreak by index (never fires). *)
-  let g_rank = Fold_state.rank g in
   let intra i =
     if Isometry.det_sign tsec.(sec.(i)) > 0 then g_rank.(i) else -g_rank.(i)
   in

@@ -145,6 +145,21 @@ Per candidate and M/V pattern:
    three-stage selection. Signature dedup remains as hygiene against
    pattern-duplicates only.
 
+**Orientation representative — per ray, crease-adjacent.** `effective_valley`
+needs the parity of the stayer-side sector at each crease. A single
+representative *per sector* (the old first-face-by-index `sector_iso`) is wrong
+when a sector is **mixed-orientation**: at the fish's second-ear vertex the
+stayer sector holds both the stationary base strip (`det>0`) and the first
+ear's folded stack (`det<0`) riding on it, and first-by-index surfaced a folded
+`det<0` face, flipping one hinge constraint and starving the true stacking
+chain. Instead, for ray `j` the representative is the face in the stayer-side
+sector `l = (j-1+n) mod n` whose table polygon has an edge running from O out
+along the ray segment — the layer the crease's M/V letter is actually about.
+Ties (a through-folded multi-layer crease, not in today's corpus) take the
+lowest prior rank and are #48 territory; if none qualifies the code falls back
+to first-in-sector rather than raising. This reads parity from the
+crease-adjacent base layer, so the mixed sector no longer inverts the constraint.
+
 `valid_srank` is untouched — its checks read layer order through betweenness
 and were never parity-sensitive (variant experiment, see the parity note).
 

@@ -5,16 +5,24 @@
 ; stayer arc and the stayer filter picks --ray's surviving segment on its own,
 ; so the &-selectors drop.
 ;
-; STATUS (2026-07-18): the SECOND ear does not close with first ear {toward .d}
-; — every admissible stayer sector (and every emergent candidate and M/V
-; pattern) self-intersects at the 12-face state. This is the pre-existing
-; kernel block recorded in MEMORY ("Zwei-Ear-fish blockiert auf fehlender
-; wahrer Realisierung (self-int)"): the mirror seating that carries the true
-; chain is unreachable after the improper-anchor fallback was deleted
-; (design 2026-07-17 §Solver-design pt.3). First ear {toward .b} DOES let the
-; second ear close, but yields a different (14-face) state, not this intended
-; fold. Resolving it is kernel work (Task 2 / a mirror-seating pass), not the
-; eval wiring of this slice.
+; STATUS (2026-07-18): CLOSES. The per-ray crease-adjacent orientation
+; representative (lib/collapse.ml pipeline_at) lets the second ear read parity
+; from the stationary base strip riding in its mixed stayer sector, so the true
+; stacking chain (strip low, wings, ear on top) is enumerated and survives the
+; taco/self-int filters. Both ears {toward .d}. See diagnosis-vertex2.md.
+;
+; The emergent rabbit-ear crease is selected by the tier rule LineNew >
+; OppositeRay (spec §Solver; eval.ml deciding = tier1 else tier2). LineNew is
+; the only coherent realization here — forcing OppositeRay breaks the second
+; ear (--l4 loses its material segment). Verified physically: no paper through
+; the closed first-ear joint (derive-13 taco check green, Fold_state.make
+; succeeds), clean fish-base silhouette (.superpowers/sdd/two-ears-folded.png).
+;
+; faces = 12 counts the folded model's material faces (Fold_state.faces, what
+; `assert faces` reads). The `beloch fold` crease-pattern FOLD shows 14 regions
+; because it also draws the pure mark line --diag (never folded), which
+; subdivides the flat pattern further; the 14 in diagnosis-vertex2.md is that
+; emitted-CP count, a different metric from the folded material-face count.
 
 paper square
 
@@ -31,5 +39,4 @@ mark --l3 = map --cd onto --diag
 mark --l4 = map --bc onto --diag
 flatten (--l3) (--l4) (--ray) {toward .d}
 
-; assert steps = 4
 ; assert faces = 12
