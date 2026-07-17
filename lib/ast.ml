@@ -83,9 +83,16 @@ type fold_spec = {
   direction : direction;
 }
 
-(* A single crease in a `collapse` statement, with its own fold direction
+(* A collapse element's M/V constraint (flatten V2 surface, spec
+   2026-07-16-flatten-derive-v2-design.md §Syntax): a bare element is
+   unconstrained — the solver assigns its M/V (Task 3). `mountain`/`valley`
+   pin it explicitly. Distinct from [direction] (Mark/Fold's own two-state
+   fold direction), which stays two-state. *)
+type mv_constraint = MvFree | MvMountain | MvValley
+
+(* A single crease in a `collapse` statement, with its own M/V constraint
    (ADR pending: collapse = simultaneous multi-crease fold). *)
-type collapse_elem = { cline : line_operand; cdir : direction }
+type collapse_elem = { cline : line_operand; cdir : mv_constraint }
 
 type point_expr =
   | PsExpr of point_operand (* the `.name = …` binding RHS: a meet/select/named point *)
@@ -119,15 +126,18 @@ type stmt =
   | StepMark of string * Error.span
   | Flatten of string option * collapse_elem list * (flap_arg * flap_arg) list
                 * flap_arg option * point_operand option * Error.span
-      (* [--r =] flatten <elements> [over-pairs] [standing] [toward .p]:
-         simultaneous multi-crease fold. elements = the creases folded, each
-         with its own direction; over-pairs = (upper flap, lower flap)
-         layer-order constraints; standing = the flap that stays upright
-         (unfolded). name_opt Some = `--r = flatten ...` binds --r to a
-         selectable bundle of the participating rays (validate mode: the
-         given rays). toward Some = DERIVE mode: elements are an odd set of
-         given rays sharing one vertex; the emergent crease completing them
-         to a flat-foldable vertex is solved (Flatten.derive) on the `toward`
-         side, then the completed set is folded via Collapse.collapse. *)
+      (* [--r =] flatten <items>: single-vertex multi-crease fold, ONE solver
+         pipeline (spec §4.9). elements = the given rays, each with an
+         mv_constraint (MvFree = solver-assigned; mountain/valley = hard
+         pin); over-pairs = (upper flap, lower flap) stacking constraints;
+         standing = reserved (parsed, rejected at eval). An odd ray count
+         makes the emergent completing ray part of the solution space
+         (Flatten.candidates). The realization space (candidate × Maekawa
+         M/V pattern × stacking, via Collapse.collapse_all) is filtered by
+         the hard constraints; the `{toward .p}` item (the point_operand
+         option) selects among survivors by the three-stage rule (position
+         class, min-mountain canon, centered-rank dipole). name_opt Some
+         binds --r to the emergent crease (when one was materialized) or the
+         given-ray bundle. *)
 
 type program = stmt list

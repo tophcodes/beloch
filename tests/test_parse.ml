@@ -544,9 +544,9 @@ let test_parse_flatten_basic () =
   | [ Ast.Flatten (None, elems, [], None, None, _) ] ->
       Alcotest.(check int) "4 elements" 4 (List.length elems);
       let dirs = List.map (fun (e : Ast.collapse_elem) -> e.Ast.cdir) elems in
-      Alcotest.(check bool) "last is mountain, first is valley"
+      Alcotest.(check bool) "last is mountain, first is free (unconstrained)"
         true
-        (List.nth dirs 3 = Ast.Mountain && List.nth dirs 0 = Ast.Valley)
+        (List.nth dirs 3 = Ast.MvMountain && List.nth dirs 0 = Ast.MvFree)
   | _ -> Alcotest.fail "expected Flatten"
 
 let test_parse_flatten_parens_at_over_standing () =
@@ -559,7 +559,7 @@ let test_parse_flatten_parens_at_over_standing () =
   match prog with
   | [ Ast.Flatten (None, [ _; e2 ], [ (_, _) ], Some _, None, _) ] ->
       Alcotest.(check bool) "parenthesized elem is mountain"
-        true (e2.Ast.cdir = Ast.Mountain)
+        true (e2.Ast.cdir = Ast.MvMountain)
   | _ -> Alcotest.fail "expected Flatten with over + standing"
 
 let test_parse_flatten_followed_by_stmt () =
@@ -628,6 +628,55 @@ let test_parse_flatten_paren_items () =
   | [ Ast.Flatten (None, elems, [], None, None, _) ] ->
       Alcotest.(check int) "4 elements" 4 (List.length elems)
   | _ -> Alcotest.fail "expected Flatten with paren items"
+
+let test_parse_flatten_toward_item () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n\
+       flatten (--a & .p) (--b & .q valley) (--c & .r mountain) {toward .s}\n"
+  in
+  match prog with
+  | [
+   Ast.Flatten
+     (None, elems, [], None, Some (Ast.PNamed { name = "s"; _ }), _);
+  ] ->
+      let dirs = List.map (fun (e : Ast.collapse_elem) -> e.Ast.cdir) elems in
+      Alcotest.(check bool)
+        "cdirs = [free; valley; mountain]" true
+        (dirs = [ Ast.MvFree; Ast.MvValley; Ast.MvMountain ])
+  | _ ->
+      Alcotest.fail "expected Flatten with {toward} item and tri-state cdirs"
+
+let test_parse_flatten_toward_item_first_position () =
+  (* {toward .s} parses identically in any item position, here first. *)
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\n\
+       flatten {toward .s} (--a & .p) (--b & .q valley) (--c & .r mountain)\n"
+  in
+  match prog with
+  | [
+   Ast.Flatten
+     (None, elems, [], None, Some (Ast.PNamed { name = "s"; _ }), _);
+  ] ->
+      let dirs = List.map (fun (e : Ast.collapse_elem) -> e.Ast.cdir) elems in
+      Alcotest.(check bool)
+        "cdirs = [free; valley; mountain]" true
+        (dirs = [ Ast.MvFree; Ast.MvValley; Ast.MvMountain ])
+  | _ ->
+      Alcotest.fail "expected Flatten with {toward} in first item position"
+
+let test_parse_flatten_double_toward_rejected () =
+  let src = "paper square\nflatten (--a) {toward .p} {toward .q}\n" in
+  expect_error "only one {toward} per flatten" (fun () ->
+      Beloch.parse ~filename:"t.bel" src)
+
+let test_parse_flatten_old_trailing_toward_rejected () =
+  (* the old unparenthesised trailing `toward` is gone; only the `{toward}`
+     item survives (spec 2026-07-16-flatten-derive-v2-design.md). *)
+  expect_error "syntax error" (fun () ->
+      Beloch.parse ~filename:"t.bel"
+        "paper square\nflatten (--a) (--b) toward .c\n")
 
 let test_parse_spec_corpus () =
   List.iter
@@ -876,6 +925,14 @@ let () =
             test_parse_flatten_double_standing_rejected;
           Alcotest.test_case "flatten paren-juxtaposition items" `Quick
             test_parse_flatten_paren_items;
+          Alcotest.test_case "flatten {toward} item, tri-state cdirs" `Quick
+            test_parse_flatten_toward_item;
+          Alcotest.test_case "flatten {toward} item in first position" `Quick
+            test_parse_flatten_toward_item_first_position;
+          Alcotest.test_case "flatten double {toward} rejected" `Quick
+            test_parse_flatten_double_toward_rejected;
+          Alcotest.test_case "flatten old trailing toward rejected" `Quick
+            test_parse_flatten_old_trailing_toward_rejected;
         ] );
       ( "notation_cutover",
         [

@@ -209,8 +209,30 @@ let sector_of_poly (o : Geom.point) (rays : (Geom.point * 'a) array)
       "Collapse.sector_of_poly: representative not strictly inside a sector";
   !found
 
-let collapse (g : Fold_state.t) (es : elem list)
-    ~(over : (int * int) list) : (Fold_state.t, string) result =
+(* --- shared pipeline: every check and enumeration step common to [collapse]
+   and [collapse_all], up to signature dedup. Returns, per distinct-signature
+   realization, the (sector-rank, face-rank) pair anchoring needs — anchoring
+   itself is entry-point-specific ([collapse] takes the single rank or errors
+   [e_ambig]; [collapse_all] anchors every rank, dropping ones with no
+   in-bounds seating instead of erroring). Factored out so [collapse]'s
+   observable behavior stays byte-identical (same code path, just relocated)
+   while [collapse_all] is new territory built on the same guarantees. *)
+type pipeline = {
+  n : int;
+  nf : int;
+  tsec : Isometry.t array;
+  sec : int array;
+  candidate_at :
+    root:int ->
+    base:Isometry3.t ->
+    int array ->
+    (Fold_state.t, Fold_state.violation) result;
+  distinct : (int array * int array) list;
+      (* (sector rank, face rank) per distinct overlap signature *)
+}
+
+let collapse_pipeline (g : Fold_state.t) (es : elem list)
+    ~(over : (int * int) list) : (pipeline, string) result =
   let n = List.length es in
   match common_vertex es with
   | None -> Error e_no_vertex
@@ -325,8 +347,8 @@ let collapse (g : Fold_state.t) (es : elem list)
               done;
               if !found < 0 then
                 invalid_arg
-                  "Collapse.collapse: no orientation-preserving sector \
-                   (unreachable — sector parities alternate around O)";
+                  "Collapse.collapse_pipeline: no orientation-preserving \
+                   sector (unreachable — sector parities alternate around O)";
               !found
             in
             let valid_srank =
@@ -389,59 +411,106 @@ let collapse (g : Fold_state.t) (es : elem list)
                       else (s, srank, fr) :: acc)
                     [] filtered
                 in
-                match distinct with
-                | [] -> Error e_selfint (* unreachable: filtered <> [] *)
-                | _ :: _ :: _ -> Error (e_ambig (List.length distinct))
-                | [ (_, srank, fr) ] ->
-                    (* anchor: proper sectors ascending by srank; prefer the
-                       lowest, else the first in-bounds one (old preference
-                       order — see [collapse]'s doc comment for the rationale) *)
-                    let proper =
-                      List.filter
-                        (fun s -> Isometry.det_sign tsec.(s) > 0)
-                        (List.init n Fun.id)
-                      |> List.sort (fun a b -> compare srank.(a) srank.(b))
-                    in
-                    let first_face_in_sector bb =
-                      let found = ref (-1) in
-                      for i = 0 to nf - 1 do
-                        if !found < 0 && sec.(i) = bb then found := i
-                      done;
-                      if !found < 0 then
-                        invalid_arg
-                          (Printf.sprintf
-                             "Collapse.collapse: sector %d has no faces \
-                              (unreachable — every sector holds >= 1 face)"
-                             bb);
-                      !found
-                    in
-                    let candidate_for bb =
-                      let root_bb = first_face_in_sector bb in
-                      candidate_at ~root:root_bb
-                        ~base:(Fold_state.face_iso g root_bb) fr
-                    in
-                    let in_bounds gg =
-                      let nfg = Array.length (Fold_state.faces gg) in
-                      let ok = ref true in
-                      for i = 0 to nfg - 1 do
-                        if
-                          not
-                            (Array.for_all Geom.in_unit_square
-                               (Fold_state.table_polygon gg i))
-                        then ok := false
-                      done;
-                      !ok
-                    in
-                    let rec pick = function
-                      | [] -> Error e_out_of_paper
-                      | bb :: rest -> (
-                          match candidate_for bb with
-                          | Ok gg when in_bounds gg -> Ok gg
-                          | _ -> pick rest)
-                    in
-                    pick proper
+                Ok
+                  {
+                    n;
+                    nf;
+                    tsec;
+                    sec;
+                    candidate_at;
+                    distinct =
+                      List.map (fun (_, srank, fr) -> (srank, fr)) distinct;
+                  }
               end
             end
           end
         end
       end
+
+(* anchor one (sector-rank, face-rank) realization: proper sectors ascending
+   by srank, prefer the lowest, else the first in-bounds one (old preference
+   order — see [collapse_pipeline]'s validity comment for the rationale);
+   [e_out_of_paper] if none seats the flap inside the sheet. Shared by
+   [collapse] (applied to the single distinct rank) and [collapse_all]
+   (applied to every rank, dropping failures instead of erroring). *)
+let anchor_realization (g : Fold_state.t) ~(n : int) ~(nf : int)
+    ~(tsec : Isometry.t array) ~(sec : int array)
+    ~(candidate_at :
+       root:int ->
+       base:Isometry3.t ->
+       int array ->
+       (Fold_state.t, Fold_state.violation) result) ~(srank : int array)
+    (fr : int array) : (Fold_state.t, string) result =
+  let proper =
+    List.filter (fun s -> Isometry.det_sign tsec.(s) > 0) (List.init n Fun.id)
+    |> List.sort (fun a b -> compare srank.(a) srank.(b))
+  in
+  let first_face_in_sector bb =
+    let found = ref (-1) in
+    for i = 0 to nf - 1 do
+      if !found < 0 && sec.(i) = bb then found := i
+    done;
+    if !found < 0 then
+      invalid_arg
+        (Printf.sprintf
+           "Collapse.anchor_realization: sector %d has no faces (unreachable \
+            — every sector holds >= 1 face)"
+           bb);
+    !found
+  in
+  let candidate_for bb =
+    let root_bb = first_face_in_sector bb in
+    candidate_at ~root:root_bb ~base:(Fold_state.face_iso g root_bb) fr
+  in
+  let in_bounds gg =
+    let nfg = Array.length (Fold_state.faces gg) in
+    let ok = ref true in
+    for i = 0 to nfg - 1 do
+      if
+        not (Array.for_all Geom.in_unit_square (Fold_state.table_polygon gg i))
+      then ok := false
+    done;
+    !ok
+  in
+  let rec pick = function
+    | [] -> Error e_out_of_paper
+    | bb :: rest -> (
+        match candidate_for bb with
+        | Ok gg when in_bounds gg -> Ok gg
+        | _ -> pick rest)
+  in
+  pick proper
+
+let collapse (g : Fold_state.t) (es : elem list) ~(over : (int * int) list) :
+    (Fold_state.t, string) result =
+  match collapse_pipeline g es ~over with
+  | Error e -> Error e
+  | Ok { n; nf; tsec; sec; candidate_at; distinct } -> (
+      match distinct with
+      | [] -> Error e_selfint (* unreachable: pipeline never returns [] here *)
+      | _ :: _ :: _ -> Error (e_ambig (List.length distinct))
+      | [ (srank, fr) ] ->
+          anchor_realization g ~n ~nf ~tsec ~sec ~candidate_at ~srank fr)
+
+(* enumerating entry point (spec 2026-07-16 "flatten derive v2", Task 2):
+   every distinct-signature realization, anchored independently. A rank whose
+   proper sectors have no in-bounds seating is dropped rather than failing the
+   whole call; [collapse]'s single-or-e_ambig contract is exactly the k=1 case
+   of this pipeline (see [collapse] above) — this is genuinely new territory
+   only for k >= 2. *)
+let collapse_all (g : Fold_state.t) (es : elem list)
+    ~(over : (int * int) list) : (Fold_state.t list, string) result =
+  match collapse_pipeline g es ~over with
+  | Error e -> Error e
+  | Ok { n; nf; tsec; sec; candidate_at; distinct } -> (
+      let anchored =
+        List.filter_map
+          (fun (srank, fr) ->
+            match
+              anchor_realization g ~n ~nf ~tsec ~sec ~candidate_at ~srank fr
+            with
+            | Ok gg -> Some gg
+            | Error _ -> None)
+          distinct
+      in
+      match anchored with [] -> Error e_out_of_paper | sts -> Ok sts)
