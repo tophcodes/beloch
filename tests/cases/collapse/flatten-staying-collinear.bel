@@ -1,0 +1,16 @@
+; Collinear leading creases cannot pick a stayer side. A legal 4-ray vertex
+; (the two square diagonals crossing at the centre — a waterbomb-style vertex,
+; Maekawa 3V/1M) whose leading pair is the two OPPOSITE rays of a single
+; diagonal (--d1 toward .a and toward .c). Their folded rays are collinear, so
+; the <180 arc between them is undefined and the convention has no side to
+; anchor. Without (staying <flap>) this must error, pointing the user at the
+; clause that would resolve it.
+
+paper square
+
+mark --d1 = through .a .c
+mark --d2 = through .b .d
+
+flatten (--d1 & .a) (--d1 & .c) (--d2 & .b mountain) (--d2 & .d)
+
+; expect error "collinear leading creases"

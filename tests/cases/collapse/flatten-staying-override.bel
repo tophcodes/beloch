@@ -1,0 +1,21 @@
+; (staying <flap>) overrides the leading-element convention. Same incenter
+; rabbit ear as flatten-rabbit-ear-toward-a.bel, but the leading pair is
+; SWAPPED to (--eb .b)(--ea .a) — an order whose <180 arc is a small folding
+; sector, not the stayer, so the bare convention seats a flap off the paper
+; (see flatten-order-load-bearing.bel). Naming the stationary strip material
+; with (staying .d) restores the correct stayer regardless of element order;
+; {toward .a} then picks the a-side mirror, exactly as the convention-ordered
+; toward-a case does. `.t = --ear * --ab` errors unless the a-side ear was
+; picked (the c-side ear line is parallel to --ab).
+
+paper square
+
+mark --diag = through .a .c
+mark --ea = map --ab onto --diag
+mark --eb = map --ab onto --bc
+mark --ec = map --bc onto --diag
+
+--ear = flatten (--eb & .b) (--ea & .a) (--ec & .c) (staying .d) {toward .a}
+.t = --ear * --ab
+
+; assert --ear is mountain

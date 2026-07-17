@@ -294,10 +294,11 @@ let test_fold_along_bent_under_moving () =
 (* ---- @flatten ---- *)
 
 let test_flatten_staying_accepted () =
-  (* staying is now accepted at eval — inert until Task 3 wires it in. Same
-     valid "+" vertex flatten as test_flatten_all_layers_ok, plus a staying
-     clause: the fold must still evaluate to the same 4 sector faces, not
-     reject on the staying item. *)
+  (* staying is wired (Task 3). Same valid "+" vertex flatten as
+     test_flatten_all_layers_ok, plus a staying clause. On the still-flat
+     pre-collapse sheet every sector is one coplanar flap, so (staying .a)
+     names all four as stayer candidates — each a distinct fold — and {toward}
+     picks one; the fold must still evaluate to the same 4 sector faces. *)
   let fd =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
@@ -305,7 +306,7 @@ let test_flatten_staying_accepted () =
           mark --h = map .a onto .d\n\
           mark --v = map .a onto .b\n\
           flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
-          mountain) (--v & #[.a] mountain) (staying .a)\n")
+          mountain) (--v & #[.a] mountain) (staying .a) {toward .c}\n")
   in
   Alcotest.(check int) "vertex flatten with staying leaves 4 sector faces" 4
     (Array.length (Fold_state.faces fd.Eval.state))

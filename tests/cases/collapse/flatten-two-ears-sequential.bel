@@ -1,11 +1,20 @@
 ; Fish base as TWO sequential rabbit ears: triangle abd flattened at its
 ; incenter, then triangle cbd at its own — two independent single-vertex
-; statements on opposite sides of the b-d line. The second flatten's rays
-; never touch the first ear's folded material (it all lies strictly on the
-; other side, and both incenters' emergent rays stay on their own sides),
-; so the all-layers guard must judge the actual crease SEGMENTS — judging
-; each ray's infinite line instead hits the first ear's far-away flaps and
-; rejects a physically sound fold ("collapse through unaligned layers").
+; statements on opposite sides of the b-d line. Bare convention form (design
+; 2026-07-17 §Segment inference): the leading pair (--l1)(--l2) fixes the
+; stayer arc and the stayer filter picks --ray's surviving segment on its own,
+; so the &-selectors drop.
+;
+; STATUS (2026-07-18): the SECOND ear does not close with first ear {toward .d}
+; — every admissible stayer sector (and every emergent candidate and M/V
+; pattern) self-intersects at the 12-face state. This is the pre-existing
+; kernel block recorded in MEMORY ("Zwei-Ear-fish blockiert auf fehlender
+; wahrer Realisierung (self-int)"): the mirror seating that carries the true
+; chain is unreachable after the improper-anchor fallback was deleted
+; (design 2026-07-17 §Solver-design pt.3). First ear {toward .b} DOES let the
+; second ear close, but yields a different (14-face) state, not this intended
+; fold. Resolving it is kernel work (Task 2 / a mirror-seating pass), not the
+; eval wiring of this slice.
 
 paper square
 
@@ -15,12 +24,12 @@ mark --ray = through .a .c
 step left
 mark --l1 = map --ab onto --diag
 mark --l2 = map --da onto --diag
-flatten (--l1 & .b) (--l2 & .d) (--ray & .a) {toward .d}
+flatten (--l1) (--l2) (--ray) {toward .d}
 
 step right
 mark --l3 = map --cd onto --diag
 mark --l4 = map --bc onto --diag
-flatten (--l3 & .d) (--l4 & .b) (--ray & .c) {toward .d}
+flatten (--l3) (--l4) (--ray) {toward .d}
 
 ; assert steps = 4
 ; assert faces = 12
