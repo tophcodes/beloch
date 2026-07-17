@@ -35,8 +35,9 @@ js_of_ocaml.
 
 - **A — precompute fallback (display-only).** On `kind:"native"`, fetch a
   build-time FOLD JSON (the `<Beloch>` render-card pattern). fish base *appears*
-  folded but live edits to √2 code still fall back. Kept only as the Phase 0
-  fallback if the FLINT build fails.
+  folded but live edits to √2 code still fall back. Rejected: it doesn't meet
+  the live-recompute goal. Not an automatic fallback — if Phase 0 fails we stop
+  and rethink with the user rather than silently degrading to this.
 - **B — pure-OCaml ℚ(√·) fragment.** A second, JS-only algebraic-number kernel
   beside the FLINT one. Duplicates the number kernel, diverges on cube-roots /
   nested radicals, violates the project's single-exact-source principle.
@@ -63,8 +64,8 @@ to wasm. GMP+MPFR→wasm is well-trodden; FLINT 3.6 is the unknown.
 **Gate:**
 - ✅ compiles + numerically correct → C is proven, proceed to Phase 1.
 - ❌ FLINT won't emscripten (build error we can't resolve in the timebox) →
-  **stop, report, fall back to alternative A** (display-only precompute). Days
-  saved.
+  **stop and report. No automatic fallback** — reconsider the approach with the
+  user before writing any more code. Days saved either way.
 
 Deliverable: a `spike/` scratch dir with the build recipe (shell script or
 notes) and the passing node check. Not shipped as-is; informs Phase 1's real
