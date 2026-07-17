@@ -1,0 +1,15 @@
+; The incenter rabbit ear has TWO mirror realizations (see
+; flatten-rabbit-ear-toward-c.bel); with no {toward} and both at zero derived
+; given-mountains, the min-mountain canon cannot single one out — the
+; statement must report the ambiguity instead of silently picking a side.
+
+paper square
+
+mark --diag = through .a .c
+mark --ea = map --ab onto --diag
+mark --eb = map --ab onto --bc
+mark --ec = map --bc onto --diag
+
+flatten (--ea & .a) (--eb & .b) (--ec & .c)
+
+; expect error "ambiguous"

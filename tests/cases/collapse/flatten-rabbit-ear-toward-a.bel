@@ -1,0 +1,18 @@
+; Mirror file of flatten-rabbit-ear-toward-c.bel: same vertex, ear folded to
+; the a side (emergent hinge = perpendicular from the incenter to --ab). This
+; is the realization the pre-fix evaluator produced as its only one; it must
+; keep working — now selected explicitly, since with both sides real the
+; statement is ambiguous without {toward}. `.t = --ear * --ab` errors if the
+; c-side ear (parallel to --ab) were picked.
+
+paper square
+
+mark --diag = through .a .c
+mark --ea = map --ab onto --diag
+mark --eb = map --ab onto --bc
+mark --ec = map --bc onto --diag
+
+--ear = flatten (--ea & .a) (--eb & .b) (--ec & .c) {toward .a}
+.t = --ear * --ab
+
+; assert --ear is mountain

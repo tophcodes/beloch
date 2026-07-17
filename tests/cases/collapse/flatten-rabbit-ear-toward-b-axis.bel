@@ -1,0 +1,15 @@
+; {toward .b} cannot pick a rabbit-ear side: .b lies on the b–d line, the
+; reflective symmetry axis of the vertex's given rays — the two realizations'
+; position classes score an exact centroid-dot tie. Must error, not
+; arbitrarily pick.
+
+paper square
+
+mark --diag = through .a .c
+mark --ea = map --ab onto --diag
+mark --eb = map --ab onto --bc
+mark --ec = map --bc onto --diag
+
+flatten (--ea & .a) (--eb & .b) (--ec & .c) {toward .b}
+
+; expect error "does not pick a side"

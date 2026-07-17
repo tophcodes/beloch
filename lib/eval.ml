@@ -16,6 +16,10 @@ type folded = {
       (* [int] is the 0-based creation step (index into [frames] at bind
          time); see [scope.point_steps]/[scope.line_steps] *)
   named_lines : (string * Geom.line * int) list;
+  named_line_cids : (string * int) list;
+      (* crease id per name for [Material]/[Mark] creases — the identity the
+         line coefficients in [named_lines] lose (a folded crease's current
+         line can coincide with another crease's line) *)
   frames : (string option * Fold_state.t * Error.span option) list;
 }
 
@@ -2222,7 +2226,17 @@ let eval_folded (prog : Ast.program) : folded =
           | Bundle _ | Edge _ -> acc)
       root_scope.lines []
   in
+  let named_line_cids =
+    Hashtbl.fold
+      (fun k cv acc ->
+        if is_temp k then acc
+        else
+          match cv with
+          | Material (cid, _) | Mark (cid, _) -> (k, cid) :: acc
+          | Frozen _ | Bundle _ | Edge _ -> acc)
+      root_scope.lines []
+  in
   if ctx.pending then
     ctx.frames_rev <- (ctx.panel, !(ctx.state), None) :: ctx.frames_rev;
   let frames = List.rev ctx.frames_rev in
-  { state = !(ctx.state); named_points; named_lines; frames }
+  { state = !(ctx.state); named_points; named_lines; named_line_cids; frames }

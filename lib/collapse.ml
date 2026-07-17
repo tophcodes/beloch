@@ -445,6 +445,22 @@ let anchor_realization (g : Fold_state.t) ~(n : int) ~(nf : int)
     List.filter (fun s -> Isometry.det_sign tsec.(s) > 0) (List.init n Fun.id)
     |> List.sort (fun a b -> compare srank.(a) srank.(b))
   in
+  (* Improper-parity fallback seats. Sector parity (det of [tsec]) is keyed
+     to the CCW enumeration's arbitrary start ([sort_ccw]'s angular origin),
+     not to the geometry: the mirror image of a seatable configuration can
+     land its physically-stationary sector in the improper class (rabbit ear
+     with the emergent ray on the enumeration's other side of 0°), and
+     proper-only anchoring then rejects a fold whose mirror twin seats fine.
+     Seating on an improper sector realizes the through-plane mirror of what
+     the srank/letters were computed for, so the face rank is REVERSED to
+     compensate — mirrored placements x reversed rank = same derived M/V as
+     the proper-parity reading (both [above] and [face_up] flip in
+     [Fold_state.mv]). Preference order mirrors "lowest face-up first":
+     under the flipped reading the stack reverses, so descending srank. *)
+  let improper =
+    List.filter (fun s -> Isometry.det_sign tsec.(s) < 0) (List.init n Fun.id)
+    |> List.sort (fun a b -> compare srank.(b) srank.(a))
+  in
   let first_face_in_sector bb =
     let found = ref (-1) in
     for i = 0 to nf - 1 do
@@ -458,9 +474,9 @@ let anchor_realization (g : Fold_state.t) ~(n : int) ~(nf : int)
            bb);
     !found
   in
-  let candidate_for bb =
+  let candidate_for bb rank =
     let root_bb = first_face_in_sector bb in
-    candidate_at ~root:root_bb ~base:(Fold_state.face_iso g root_bb) fr
+    candidate_at ~root:root_bb ~base:(Fold_state.face_iso g root_bb) rank
   in
   let in_bounds gg =
     let nfg = Array.length (Fold_state.faces gg) in
@@ -472,14 +488,17 @@ let anchor_realization (g : Fold_state.t) ~(n : int) ~(nf : int)
     done;
     !ok
   in
+  let fr_rev = Array.map (fun r -> nf - 1 - r) fr in
   let rec pick = function
     | [] -> Error e_out_of_paper
-    | bb :: rest -> (
-        match candidate_for bb with
+    | (bb, rank) :: rest -> (
+        match candidate_for bb rank with
         | Ok gg when in_bounds gg -> Ok gg
         | _ -> pick rest)
   in
-  pick proper
+  pick
+    (List.map (fun bb -> (bb, fr)) proper
+    @ List.map (fun bb -> (bb, fr_rev)) improper)
 
 let collapse (g : Fold_state.t) (es : elem list) ~(over : (int * int) list) :
     (Fold_state.t, string) result =
