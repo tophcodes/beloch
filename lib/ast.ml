@@ -130,7 +130,7 @@ type stmt =
          pipeline (spec §4.9). elements = the given rays, each with an
          mv_constraint (MvFree = solver-assigned; mountain/valley = hard
          pin); over-pairs = (upper flap, lower flap) stacking constraints;
-         standing = reserved (parsed, rejected at eval). An odd ray count
+         staying = the staying flap (spec 2026-07-17). An odd ray count
          makes the emergent completing ray part of the solution space
          (Flatten.candidates). The realization space (candidate × Maekawa
          M/V pattern × stacking, via Collapse.collapse_all) is filtered by

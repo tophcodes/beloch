@@ -1716,10 +1716,9 @@ let eval_folded (prog : Ast.program) : folded =
            marker). A trailing fold/collapse clears pending again → no dup. *)
         ctx.pending <- true;
         ctx.panel <- Some id
-    | Ast.Flatten (name_opt, elems, overs, standing_opt, toward_opt, span) ->
-        (match standing_opt with
-        | Some _ -> Error.fail span "standing folds are not yet supported"
-        | None -> ());
+    | Ast.Flatten (name_opt, elems, overs, staying_opt, toward_opt, span) ->
+        ignore staying_opt;
+        (* wired in Task 3 *)
         (* materialize every collapse crease FIRST (a mark subdivides on
            segment-selection), so all of them cross and the shared collapse
            vertex is fully formed before any ray is selected. Selecting rays

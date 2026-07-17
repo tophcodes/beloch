@@ -293,14 +293,22 @@ let test_fold_along_bent_under_moving () =
 
 (* ---- @flatten ---- *)
 
-let test_flatten_standing_unsupported () =
-  expect_error "standing folds are not yet supported" (fun () ->
-      ignore
-        (Eval.eval_folded
-           (Beloch.parse ~filename:"t.bel"
-              "paper square\n\
-               mark --d = through .a .c\n\
-               flatten (--d) (standing .a)\n")))
+let test_flatten_staying_accepted () =
+  (* staying is now accepted at eval — inert until Task 3 wires it in. Same
+     valid "+" vertex flatten as test_flatten_all_layers_ok, plus a staying
+     clause: the fold must still evaluate to the same 4 sector faces, not
+     reject on the staying item. *)
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\n\
+          mark --h = map .a onto .d\n\
+          mark --v = map .a onto .b\n\
+          flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
+          mountain) (--v & #[.a] mountain) (staying .a)\n")
+  in
+  Alcotest.(check int) "vertex flatten with staying leaves 4 sector faces" 4
+    (Array.length (Fold_state.faces fd.Eval.state))
 
 (* n = 2: two diagonals through the same center point, each named as a single
    `at`-selected segment — a real fold, not a flatten; hint toward @fold *)
@@ -1434,8 +1442,8 @@ let () =
             test_fold_along_bent;
           Alcotest.test_case "@fold bent under the moving flaps" `Quick
             test_fold_along_bent_under_moving;
-          Alcotest.test_case "@flatten standing not yet supported" `Quick
-            test_flatten_standing_unsupported;
+          Alcotest.test_case "@flatten staying accepted" `Quick
+            test_flatten_staying_accepted;
           Alcotest.test_case "@flatten n=2 hints @fold" `Quick
             test_flatten_count_two;
           Alcotest.test_case "@flatten requires a material crease" `Quick

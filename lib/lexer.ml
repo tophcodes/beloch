@@ -31,7 +31,7 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "step" -> STEP
   | "flatten" -> FLATTEN
   | "over" -> OVER
-  | "standing" -> STANDING
+  | "staying" -> STAYING
   | "mark" -> MARK
   | "between" -> BETWEEN
   | "at" -> AT
