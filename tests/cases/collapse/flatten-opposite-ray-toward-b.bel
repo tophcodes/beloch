@@ -1,0 +1,31 @@
+; fish-base vertex: O = incenter of triangle abd, sitting ON the ac-diagonal.
+; All three given rays are bare (V2: unconstrained, spec 2026-07-16-flatten-
+; derive-v2-design.md), so the solution space isn't just the emergent ray's
+; position — the M/V pattern and stacking are free too. The POSITION is
+; forced regardless (the diagonal's OppositeRay continuation O -> c; both
+; line-new candidates fold a flap off the paper for every Maekawa pattern),
+; the min-mountain canon then narrows to 3 patterns, and `{toward}`'s
+; rank-dipole stage picks among THOSE by which side's material ends up on
+; top. `{toward .b}` (this file) and its sibling `{toward .d}` therefore
+; pick the two MIRROR realizations: same face count, same table positions,
+; opposite layer order — not the same fold twice, the whole point of this
+; slice.
+;
+; `.bel` assertions have no vocabulary for stacking/rank (see
+; tests/test_bel_assert.ml's `assertion` type), so `faces = 6` is all this
+; file can pin; the actual DIFFERENCE (this file's rank vs. -toward-d.bel's)
+; is pinned by tests/test_flatten.ml's
+; test_flatten_derive_opposite_ray_fish_base, which reads Fold_state.rank
+; directly and asserts the two runs disagree.
+
+paper square
+
+mark --diag = map .a onto .c
+mark --ray = through .a .c
+
+step left
+mark --l1 = map --ab onto --diag
+mark --l2 = map --da onto --diag
+flatten (--l1 & .b) (--l2 & .d) (--ray & .a) {toward .b}
+
+; assert faces = 6

@@ -1,15 +1,19 @@
-(** Derive-mode `flatten`: given an ODD set of material creases ("rays")
-    sharing one interior vertex O, solve for the missing ("emergent") crease
-    that completes the vertex to a flat-foldable arrangement — the rabbit-ear
-    move [hull2020, Thm 8.5]. Verified single-insertion case in
-    tests/spike_flatten.ml: for k given rays with reflections R_0..R_{k-1}
-    (CCW order), splitting at gap j into `before` = R_0∘…∘R_{j-1} and `after`
-    = R_j∘…∘R_{k-1}, the reflection R_ear = before^-1 ∘ after^-1 is exactly the
-    one whose insertion at position j makes the full closure product the
-    identity (Kawasaki). This module generalises that single insertion to
-    every gap, keeping only the candidates whose axis genuinely falls in
-    their own gap, and disambiguates remaining candidates by which side of
-    the axis [toward] lands on. *)
+(** flatten V2: one solver pipeline (spec 2026-07-16-flatten-derive-v2-design.md
+    "The model"). Given a set of material creases ("rays") sharing one interior
+    vertex O, an ODD ray count means one emergent ray is part of the solution
+    space; [candidates] is the pure GENERATOR of the geometric completions that
+    could close the vertex — same-direction filter, per-line dedup, two-tier
+    (`LineNew`/`OppositeRay`) preference tag [364660f]. It does NOT check
+    feasibility or M/V and does NOT pick a winner: the caller (lib/eval.ml)
+    enumerates every Maekawa-consistent M/V pattern ([mv_patterns], pure and
+    unit-testable) over each candidate's full ray set, tries each via
+    [Collapse.collapse_all], pools the results, and disambiguates by tier then
+    by `{toward}`'s moved-material-centroid score. This supersedes the old
+    [derive], which bundled feasibility-filtering and `toward`-selection into
+    this module; both now live in the caller because they need
+    [Collapse.collapse_all] (Task 2) and [Ast.mv_constraint] (Task 1), neither
+    of which this module should depend on beyond the generator's own
+    geometry. *)
 
 let e_infeasible = "vertex not flat-foldable toward that side"
 
@@ -40,8 +44,16 @@ let in_gap (o : Geom.point) (lo : Geom.point) (hi : Geom.point) (q : Geom.point)
   else
     Geom.ccw_compare ~center:o lo q < 0 || Geom.ccw_compare ~center:o q hi < 0
 
-let derive (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list)
-    ~(toward : Geom.point) : (Geom.line, string) result =
+(* The candidate GENERATOR (spec step 1's odd branch): every geometric
+   completion of the given rays that closes Kawasaki at [o], tagged by the
+   two-tier preference [364660f] (§4.9: the emergent crease is "not
+   constructible by any Huzita axiom" — a completion that only re-uses a
+   given line's far side is the degenerate, `OppositeRay` case; a completion
+   on a genuinely new line is `LineNew`). No feasibility check and no
+   [toward] selection — both are the caller's job now, over the pooled
+   realizations of every (candidate x M/V pattern). *)
+let candidates (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list) :
+    (Geom.line * Geom.point * [ `LineNew | `OppositeRay ]) list =
   let sorted = Array.of_list (Collapse.sort_ccw o (List.map snd fixed)) in
   let k = Array.length sorted in
   let refl i =
@@ -59,9 +71,8 @@ let derive (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list)
   (* Each candidate carries its emergent LINE *and* the actual emergent RAY
      endpoint (the axis end that lands in its own gap). The ray direction is
      geometrically fixed — chosen by [in_gap], a CCW test — unlike the
-     eigenvector's sign, which is arbitrary; so [toward] can select on the ray
-     rather than on the line's (arbitrarily-oriented) side. *)
-  let candidates = ref [] in
+     eigenvector's sign, which is arbitrary. *)
+  let raw = ref [] in
   for j = 0 to k - 1 do
     let before = compose_range 0 j in
     let after = compose_range j k in
@@ -83,7 +94,7 @@ let derive (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list)
         else None
       in
       match ray with
-      | Some r -> candidates := (Geom.line_through o r, r) :: !candidates
+      | Some r -> raw := (Geom.line_through o r, r) :: !raw
       | None -> ()
     end
   done;
@@ -97,48 +108,58 @@ let derive (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list)
     && Num.sign
          (Num.sub (Num.mul l1.Geom.b l2.Geom.c) (Num.mul l2.Geom.b l1.Geom.c)) = 0
   in
-  (* Drop candidates collinear with a GIVEN ray: those are the degenerate
-     "extend a line already drawn" completions (e.g. the spine's own axis), not
-     the genuine emergent crease. All lines pass through O, so parallel ⟹
-     coincident. *)
-  let given_lines =
-    Array.to_list
-      (Array.map (fun (far, _) -> Geom.line_through o far) sorted)
+  (* Drop candidates whose emergent RAY points in the same direction as a
+     GIVEN ray: that is the degenerate "extend a line already drawn"
+     completion. The OPPOSITE ray of a given line is NOT degenerate — it is a
+     genuinely new crease — so this filters by direction, not by line
+     ([Geom.ccw_compare] = 0 iff same direction from O). *)
+  let genuine (_, ray) =
+    not (Array.exists (fun (far, _) -> Geom.ccw_compare ~center:o far ray = 0) sorted)
   in
-  let genuine (l, _) = not (List.exists (fun g -> Geom.parallel l g) given_lines) in
   let uniq =
     List.fold_left
       (fun acc (l, r) ->
         if (not (genuine (l, r))) || List.exists (fun (l', _) -> same l l') acc
         then acc
         else (l, r) :: acc)
-      [] !candidates
+      [] !raw
   in
-  match uniq with
-  | [] -> Error e_infeasible
-  | [ (l, _) ] -> Ok l
-  | cands ->
-      (* [toward] selects the completion whose emergent RAY points toward that
-         point: maximise (ray − O)·(toward − O). Exact and orientation-free —
-         `toward .c` (right corner) yields the right-swinging crease. If the top
-         two candidates TIE (equal dot), [toward] fails to pick a side — it lies
-         along a crease through the vertex (the candidates are mirror-symmetric
-         about it), so reject rather than choose arbitrarily. *)
-      let dot (_, r) =
-        Num.add
-          (Num.mul
-             (Num.sub r.Geom.x o.Geom.x)
-             (Num.sub toward.Geom.x o.Geom.x))
-          (Num.mul
-             (Num.sub r.Geom.y o.Geom.y)
-             (Num.sub toward.Geom.y o.Geom.y))
-      in
-      let scored =
-        List.map (fun c -> (dot c, fst c)) cands
-        |> List.sort (fun (d1, _) (d2, _) -> Num.compare d2 d1)
-      in
-      match scored with
-      | (d0, _) :: (d1, _) :: _ when Num.compare d0 d1 = 0 ->
-          Error e_toward_ambiguous
-      | (_, l) :: _ -> Ok l
-      | [] -> Error e_infeasible
+  let given_lines =
+    Array.to_list (Array.map (fun (far, _) -> Geom.line_through o far) sorted)
+  in
+  let line_new (l, _) =
+    not (List.exists (fun g -> Geom.parallel l g) given_lines)
+  in
+  List.map
+    (fun (l, r) -> (l, r, if line_new (l, r) then `LineNew else `OppositeRay))
+    uniq
+
+(* Pure, unit-testable Maekawa-consistent M/V pattern enumerator (spec step
+   3): given a per-ray constraint list, every [bool list] (parallel to the
+   input, true = valley) honoring every pinned slot (`MvValley` -> true,
+   `MvMountain` -> false) and satisfying Maekawa (|#M - #V| = 2) over the
+   free slots. [] if no assignment satisfies both. *)
+let mv_patterns (constraints : Ast.mv_constraint list) : bool list list =
+  let n = List.length constraints in
+  let base = Array.make n false in
+  let free_idx = ref [] in
+  List.iteri
+    (fun i (c : Ast.mv_constraint) ->
+      match c with
+      | Ast.MvValley -> base.(i) <- true
+      | Ast.MvMountain -> base.(i) <- false
+      | Ast.MvFree -> free_idx := i :: !free_idx)
+    constraints;
+  let free_idx = List.rev !free_idx in
+  let rec free_combos = function
+    | [] -> [ [] ]
+    | _ :: rest -> List.concat_map (fun t -> [ true :: t; false :: t ]) (free_combos rest)
+  in
+  free_combos free_idx
+  |> List.filter_map (fun combo ->
+         let arr = Array.copy base in
+         List.iter2 (fun i v -> arr.(i) <- v) free_idx combo;
+         let lst = Array.to_list arr in
+         let nv = List.length (List.filter (fun v -> v) lst) in
+         let nm = n - nv in
+         if abs (nm - nv) = 2 then Some lst else None)

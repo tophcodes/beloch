@@ -20,6 +20,7 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "toward" -> TOWARD
   | "moving" -> MOVING
   | "mountain" -> MOUNTAIN
+  | "valley" -> VALLEY
   | "up" -> UP
   | "to" -> TO
   | "fold" -> FOLD_KW

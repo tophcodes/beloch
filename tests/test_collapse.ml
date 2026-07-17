@@ -182,6 +182,60 @@ let test_over_resolves_ambiguity () =
       Alcotest.(check int) "derived letters satisfy Maekawa (|M-V|=2)" 2
         (abs (m - v))
 
+(* -- collapse_all: enumerating entry point (Plan flatten-derive-v2 Task 2).
+   [collapse] becomes a wrapper over the same shared pipeline: single distinct
+   rank -> Ok, multiple -> e_ambig, error -> passthrough. [collapse_all]
+   instead anchors EVERY distinct rank independently and returns all that seat
+   in-bounds. Reuses the 8-ray cross + [over_valleys] fixture above, which
+   [test_over_resolves_ambiguity] already established is ambiguous (4 distinct
+   orders) without `over` and uniquely resolved by over=[(3,4)]. ------------ *)
+
+let test_collapse_all_ambiguous_returns_all () =
+  let st, rays = precreased () in
+  let es = elems_of rays over_valleys in
+  match Collapse.collapse_all st es ~over:[] with
+  | Error e -> Alcotest.fail ("expected Ok list, got: " ^ e)
+  | Ok sts ->
+      Alcotest.(check int)
+        "collapse_all returns the 4 distinct orders collapse's e_ambig names"
+        4 (List.length sts)
+
+let test_collapse_all_over_matches_collapse () =
+  let st, rays = precreased () in
+  let es = elems_of rays over_valleys in
+  match
+    (Collapse.collapse st es ~over:[ (3, 4) ], Collapse.collapse_all st es ~over:[ (3, 4) ])
+  with
+  | Error e, _ -> Alcotest.fail ("expected collapse Ok, got: " ^ e)
+  | _, Error e -> Alcotest.fail ("expected collapse_all Ok, got: " ^ e)
+  | Ok _, Ok ([] | _ :: _ :: _) ->
+      Alcotest.fail "expected collapse_all with over to narrow to exactly one state"
+  | Ok single, Ok [ many ] ->
+      let mv_list s =
+        Array.to_list (Fold_state.hinges s) |> List.mapi (fun i _ -> Fold_state.mv s i)
+      in
+      Alcotest.(check int) "collapse_all (over-narrowed) keeps 8 faces" 8
+        (Array.length (Fold_state.faces many));
+      Alcotest.(check bool) "collapse_all matches collapse (per-hinge mv)" true
+        (mv_list single = mv_list many);
+      let pts_equal a b =
+        Array.length a = Array.length b && Array.for_all2 Geom.point_equal a b
+      in
+      Alcotest.(check bool) "collapse_all matches collapse (face 0 table position)"
+        true
+        (pts_equal
+           (Fold_state.table_polygon single 0)
+           (Fold_state.table_polygon many 0))
+
+let test_collapse_all_error_passthrough () =
+  let st, rays = precreased () in
+  let es = elems_of rays (Array.make 8 true) in
+  let seven = List.filteri (fun i _ -> i < 7) es in
+  match (Collapse.collapse st seven ~over:[], Collapse.collapse_all st seven ~over:[]) with
+  | Error e1, Error e2 ->
+      Alcotest.(check string) "collapse_all errors identically to collapse" e1 e2
+  | _ -> Alcotest.fail "expected both collapse and collapse_all to error on odd count"
+
 (* -- eassign parity hand-verify (fold_with_records convention) ------------- *)
 
 (* A degree-4 "+" vertex at the centre: horizontal (y=1/2) and vertical (x=1/2)
@@ -478,6 +532,15 @@ let () =
             test_waterbomb_assignment;
           Alcotest.test_case "over resolves ambiguity" `Quick
             test_over_resolves_ambiguity;
+        ] );
+      ( "collapse_all",
+        [
+          Alcotest.test_case "ambiguous case returns all 4 distinct orders"
+            `Quick test_collapse_all_ambiguous_returns_all;
+          Alcotest.test_case "over-narrowed case matches collapse's state"
+            `Quick test_collapse_all_over_matches_collapse;
+          Alcotest.test_case "error passthrough matches collapse" `Quick
+            test_collapse_all_error_passthrough;
         ] );
       ( "eassign",
         [

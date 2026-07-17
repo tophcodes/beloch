@@ -7,7 +7,13 @@ mark --q = map --v onto --bc    ; vertical crease at x = 3/4
 .q  = --h * --q            ; interior crossing (3/4, 1/2)
 .tm = --v * --cd           ; top edge midpoint (1/2, 1)
 
-flatten (--h & #[.q .tm]) (--h & --da)
-  (--v & --cd) (--v & --ab)
+; flatten V2 (spec 2026-07-16-flatten-derive-v2-design.md): bare = solver-
+; assigned M/V, so the all-valley assignment this case's error depends on
+; must be stated with explicit `valley` markers (--q is a mark only, never
+; materialized, so #[.q .tm]'s face spans to the right edge and the selected
+; --h segment reaches the boundary — the flatten sees the full "+" vertex
+; and the stated all-valley assignment violates Maekawa, as before).
+flatten (--h & #[.q .tm] valley) (--h & --da valley)
+  (--v & --cd valley) (--v & --ab valley)
 
 ; expect error "Maekawa"
