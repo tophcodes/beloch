@@ -2189,31 +2189,81 @@ let eval_folded (prog : Ast.program) : folded =
             in
             (* stage-2 canon: derived (never stored) M/V per hinge —
                [Fold_state.mv] reads rank + orientation, so two stackings of
-               one pattern can differ. A given cid is a mountain iff some
-               FOLDED hinge of that cid derives M. *)
-            let given_cids =
-              List.sort_uniq compare (List.map (fun (c, _, _, _) -> c) rays)
+               one pattern can differ. A given ray is a mountain iff some
+               FOLDED hinge belonging to IT derives M. *)
+            (* derived M/V per USER-GIVEN RAY, not per crease id: the even
+               stated form can put two given rays on one crease (`--ray & .a`
+               and `--ray & .c` share one cid through the `&` filter, but are
+               two distinct physical segments that may fold with different
+               M/V). Keying on cid alone would OR the two half-rays into a
+               single boolean and let a pin-worthy ambiguity slip past the
+               gate.
+
+               Locating "the" hinge per ray can't use TABLE geometry post-fold:
+               a ray's own fold reflects OTHER, unrelated bundle pieces of the
+               same crease id along via the sector isometries (Collapse's
+               fan-out), so a folded piece can end up anywhere in table space,
+               and matching by post-fold table position both misses the ray's
+               real hinge and mismatches unrelated ones (confirmed by tracing
+               tests/cases/collapse/flatten-rabbit-ear-toward-a.bel — a given
+               ray's own hinge moved off its pre-fold table line entirely).
+               PAPER space is the intrinsic, fold-invariant coordinate system
+               (crease_segment carries both — [ta]/[tb] table, [pa]/[pb]
+               paper); a given ray's chosen pre-fold segment is looked up
+               once for its paper-space endpoints, then every realization's
+               folded segments of that cid are matched back by PAPER
+               collinearity/containment ([Geom.on_segment]), and the hinge for
+               the matched segment's face pair supplies the M/V. The boolean
+               vector over the given rays IS the realization's distinct M/V
+               pattern (the Maekawa letters on the given rays);
+               [given_mountains] counts its trues for the min-mountain canon. *)
+            let g = !(ctx.state) in
+            let ray_paper_segs =
+              List.map
+                (fun (cid, (ta : Geom.point), (tb : Geom.point), _) ->
+                  match
+                    List.find_opt
+                      (fun (s : Fold_state.crease_segment) ->
+                        (Geom.point_equal s.Fold_state.ta ta
+                        && Geom.point_equal s.Fold_state.tb tb)
+                        || (Geom.point_equal s.Fold_state.ta tb
+                           && Geom.point_equal s.Fold_state.tb ta))
+                      (Fold_state.crease_segments g cid)
+                  with
+                  | Some s -> (cid, s.Fold_state.pa, s.Fold_state.pb)
+                  | None ->
+                      (* unreachable: [ta]/[tb] came from this same cid's
+                         pre-fold segment list. Degrade to table coords rather
+                         than crash. *)
+                      (cid, ta, tb))
+                rays
             in
-            (* derived M/V per USER-GIVEN crease: cid is a mountain iff some
-               FOLDED hinge of that cid derives M. The boolean vector over
-               [given_cids] IS the realization's distinct M/V pattern (the
-               Maekawa letters on the given rays); [given_mountains] counts its
-               trues for the min-mountain canon. *)
             let given_mv_vector (st, _) : bool list =
               List.map
-                (fun cid ->
+                (fun (cid, (pa : Geom.point), (pb : Geom.point)) ->
                   let hs = Fold_state.hinges st in
                   let m = ref false in
-                  Array.iteri
-                    (fun i (h : Fold_state.hinge) ->
+                  List.iter
+                    (fun (s : Fold_state.crease_segment) ->
                       if
-                        h.Fold_state.crease_id = cid
-                        && Num.sign h.Fold_state.angle <> 0
-                        && Fold_state.mv st i = Fold_state.M
-                      then m := true)
-                    hs;
+                        Geom.on_segment (pa, pb) s.Fold_state.pa
+                        && Geom.on_segment (pa, pb) s.Fold_state.pb
+                      then
+                        let l, r = s.Fold_state.faces in
+                        Array.iteri
+                          (fun i (h : Fold_state.hinge) ->
+                            if
+                              h.Fold_state.crease_id = cid
+                              && ((h.Fold_state.fa = l && h.Fold_state.fb = r)
+                                 || (h.Fold_state.fa = r
+                                    && h.Fold_state.fb = l))
+                              && Num.sign h.Fold_state.angle <> 0
+                              && Fold_state.mv st i = Fold_state.M
+                            then m := true)
+                          hs)
+                    (Fold_state.crease_segments st cid);
                   !m)
-                given_cids
+                ray_paper_segs
             in
             let given_mountains r =
               List.length (List.filter Fun.id (given_mv_vector r))
