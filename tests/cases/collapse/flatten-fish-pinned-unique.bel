@@ -1,7 +1,7 @@
 ; Same fish-base vertex as flatten-opposite-ray-toward-{b,d}.bel, but two of
 ; the three given rays are PINNED (`.b valley`, `.a mountain`) instead of
 ; left bare. Pinning narrows the whole 4-ray Maekawa search from 8 patterns
-; to 2 (the two still-free rays — --l2 & .d and the emergent ray — must now
+; to 2 (the two still-free rays — --l2 and the emergent ray — must now
 ; share polarity to keep |M-V|=2). Kawasaki/candidate-geometry never depends
 ; on M/V, so the same two line-new candidates that fail for EVERY pattern in
 ; the bare case (see the sibling files) still fail for both of these; only
@@ -27,6 +27,6 @@ mark --ray = through .a .c
 step left
 mark --l1 = map --ab onto --diag
 mark --l2 = map --da onto --diag
-flatten (--l1 & .b valley) (--l2 & .d) (--ray & .a mountain)
+flatten (--l1 valley) (--l2) (--ray mountain)
 
 ; assert faces = 6

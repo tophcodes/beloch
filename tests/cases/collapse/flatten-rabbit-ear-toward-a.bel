@@ -1,0 +1,21 @@
+; Mirror file of flatten-rabbit-ear-toward-c.bel: same vertex, ear folded to
+; the a side (emergent hinge = perpendicular from the incenter to --ab). This
+; is the realization the pre-fix evaluator produced as its only one; it must
+; keep working — now selected explicitly, since with both sides real the
+; statement is ambiguous without {toward}. `.t = --ear * --ab` errors if the
+; c-side ear (parallel to --ab) were picked.
+
+paper square
+
+mark --diag = through .a .c
+mark --ea = map --ab onto --diag
+mark --eb = map --ab onto --bc
+mark --ec = map --bc onto --diag
+
+; Leading pair is (--ea .a)(--ec .c): their <180 arc is the big stayer
+; sector the ear folds onto; the emergent splits it into the two mirror
+; worlds {toward} then picks (design 2026-07-17 stayer convention).
+--ear = flatten (--ea) (--ec) (--eb) {toward .a}
+.t = --ear * --ab
+
+; assert --ear is mountain

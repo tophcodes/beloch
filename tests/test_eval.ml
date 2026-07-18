@@ -293,14 +293,23 @@ let test_fold_along_bent_under_moving () =
 
 (* ---- @flatten ---- *)
 
-let test_flatten_standing_unsupported () =
-  expect_error "standing folds are not yet supported" (fun () ->
-      ignore
-        (Eval.eval_folded
-           (Beloch.parse ~filename:"t.bel"
-              "paper square\n\
-               mark --d = through .a .c\n\
-               flatten (--d) (standing .a)\n")))
+let test_flatten_staying_accepted () =
+  (* staying is wired (Task 3). Same valid "+" vertex flatten as
+     test_flatten_all_layers_ok, plus a staying clause. On the still-flat
+     pre-collapse sheet every sector is one coplanar flap, so (staying .a)
+     names all four as stayer candidates — each a distinct fold — and {toward}
+     picks one; the fold must still evaluate to the same 4 sector faces. *)
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\n\
+          mark --h = map .a onto .d\n\
+          mark --v = map .a onto .b\n\
+          flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
+          mountain) (--v & #[.a] mountain) (staying .a) {toward .c}\n")
+  in
+  Alcotest.(check int) "vertex flatten with staying leaves 4 sector faces" 4
+    (Array.length (Fold_state.faces fd.Eval.state))
 
 (* n = 2: two diagonals through the same center point, each named as a single
    `at`-selected segment — a real fold, not a flatten; hint toward @fold *)
@@ -603,13 +612,22 @@ let examples_dir () =
   | Some root -> Filename.concat root "examples"
   | None -> "../../../examples"
 
+(* every .bel under dir, recursively (examples/ nests into bases/, syntax/,
+   … — a flat readdir found none of them and starved this test; mirrors
+   test_golden.ml's example_names walker). *)
+let rec example_names dir prefix =
+  let d = Filename.concat dir prefix in
+  Sys.readdir d |> Array.to_list
+  |> List.concat_map (fun entry ->
+         let rel = if prefix = "" then entry else Filename.concat prefix entry in
+         if Sys.is_directory (Filename.concat d entry) then
+           example_names dir rel
+         else if Filename.check_suffix entry ".bel" then [ rel ]
+         else [])
+
 let test_layer_all_examples_valid () =
   let dir = examples_dir () in
-  let files =
-    Sys.readdir dir |> Array.to_list
-    |> List.filter (fun f -> Filename.check_suffix f ".bel")
-    |> List.sort compare
-  in
+  let files = example_names dir "" |> List.sort compare in
   Alcotest.(check bool) "found example files" true (List.length files > 0);
   List.iter
     (fun f ->
@@ -1434,8 +1452,8 @@ let () =
             test_fold_along_bent;
           Alcotest.test_case "@fold bent under the moving flaps" `Quick
             test_fold_along_bent_under_moving;
-          Alcotest.test_case "@flatten standing not yet supported" `Quick
-            test_flatten_standing_unsupported;
+          Alcotest.test_case "@flatten staying accepted" `Quick
+            test_flatten_staying_accepted;
           Alcotest.test_case "@flatten n=2 hints @fold" `Quick
             test_flatten_count_two;
           Alcotest.test_case "@flatten requires a material crease" `Quick

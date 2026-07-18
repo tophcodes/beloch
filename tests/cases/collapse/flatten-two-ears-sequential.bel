@@ -1,0 +1,42 @@
+; Fish base as TWO sequential rabbit ears: triangle abd flattened at its
+; incenter, then triangle cbd at its own — two independent single-vertex
+; statements on opposite sides of the b-d line. Bare convention form (design
+; 2026-07-17 §Segment inference): the leading pair (--l1)(--l2) fixes the
+; stayer arc and the stayer filter picks --ray's surviving segment on its own,
+; so the &-selectors drop.
+;
+; STATUS (2026-07-18): CLOSES. The per-ray crease-adjacent orientation
+; representative (lib/collapse.ml pipeline_at) lets the second ear read parity
+; from the stationary base strip riding in its mixed stayer sector, so the true
+; stacking chain (strip low, wings, ear on top) is enumerated and survives the
+; taco/self-int filters. Both ears {toward .d}. See diagnosis-vertex2.md.
+;
+; The emergent rabbit-ear crease is selected by the tier rule LineNew >
+; OppositeRay (spec §Solver; eval.ml deciding = tier1 else tier2). LineNew is
+; the only coherent realization here — forcing OppositeRay breaks the second
+; ear (--l4 loses its material segment). Verified physically: no paper through
+; the closed first-ear joint (derive-13 taco check green, Fold_state.make
+; succeeds), clean fish-base silhouette (.superpowers/sdd/two-ears-folded.png).
+;
+; faces = 12 counts the folded model's material faces (Fold_state.faces, what
+; `assert faces` reads). The `beloch fold` crease-pattern FOLD shows 14 regions
+; because it also draws the pure mark line --diag (never folded), which
+; subdivides the flat pattern further; the 14 in diagnosis-vertex2.md is that
+; emitted-CP count, a different metric from the folded material-face count.
+
+paper square
+
+mark --diag = map .a onto .c
+mark --ray = through .a .c
+
+step left
+mark --l1 = map --ab onto --diag
+mark --l2 = map --da onto --diag
+flatten (--l1) (--l2) (--ray) {toward .d}
+
+step right
+mark --l3 = map --cd onto --diag
+mark --l4 = map --bc onto --diag
+flatten (--l3) (--l4) (--ray) {toward .d}
+
+; assert faces = 12

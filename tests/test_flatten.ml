@@ -444,6 +444,59 @@ let test_flatten_mv_patterns_beyond_maekawa () =
        (Flatten.mv_patterns
           [ Ast.MvMountain; Ast.MvMountain; Ast.MvMountain; Ast.MvMountain ]))
 
+(* A flat (angle 0) hinge is a tortilla: its two faces are one continuous
+   sheet across the hinge segment. Where that segment lies collinear on a
+   FOLDED hinge's crease (a taco), the sheet must stay on one side of the
+   taco's mouth — one face ranked inside [taco.fa, taco.fb] and the other
+   outside means paper passes through paper. Fixture: the two-ear fish base
+   with BOTH ears {toward .d}; before the flat-hinge taco-tortilla check this
+   emitted a ghost state (second wing seated under the stationary strip, its
+   ear above it — physically impossible, spotted on the render). *)
+let test_flatten_no_flat_hinge_splits_taco () =
+  let src =
+    "paper square\n\
+     mark --diag = map .a onto .c\n\
+     mark --ray = through .a .c\n\
+     mark --l1 = map --ab onto --diag\n\
+     mark --l2 = map --da onto --diag\n\
+     flatten (--l1 & .b) (--l2 & .d) (--ray & .a) {toward .d}\n\
+     mark --l3 = map --cd onto --diag\n\
+     mark --l4 = map --bc onto --diag\n\
+     flatten (--l3 & .d) (--l4 & .b) (--ray & .c) {toward .d}\n"
+  in
+  let fd = Eval.eval_folded (Beloch.parse ~filename:"t.bel" src) in
+  let st = fd.Eval.state in
+  let hs = Fold_state.hinges st in
+  let rank = Fold_state.rank st in
+  let between a c b =
+    (rank.(a) < rank.(c) && rank.(c) < rank.(b))
+    || (rank.(b) < rank.(c) && rank.(c) < rank.(a))
+  in
+  let m = Array.length hs in
+  for i = 0 to m - 1 do
+    for j = 0 to m - 1 do
+      let hi = hs.(i) and hj = hs.(j) in
+      if
+        Num.sign hi.Fold_state.angle <> 0
+        && Num.sign hj.Fold_state.angle = 0
+        && hj.Fold_state.fb >= 0
+        && hi.Fold_state.fa <> hj.Fold_state.fa
+        && hi.Fold_state.fa <> hj.Fold_state.fb
+        && hi.Fold_state.fb <> hj.Fold_state.fa
+        && hi.Fold_state.fb <> hj.Fold_state.fb
+        && Geom.segments_overlap_collinear
+             (Fold_state.hinge_table_segment st i)
+             (Fold_state.hinge_table_segment st j)
+        && (between hi.Fold_state.fa hj.Fold_state.fa hi.Fold_state.fb
+           || between hi.Fold_state.fa hj.Fold_state.fb hi.Fold_state.fb)
+      then
+        Alcotest.failf
+          "flat hinge %d (faces %d/%d) splits taco hinge %d (faces %d/%d)" j
+          hj.Fold_state.fa hj.Fold_state.fb i hi.Fold_state.fa
+          hi.Fold_state.fb
+    done
+  done
+
 let () =
   Alcotest.run "flatten bind"
     [
@@ -486,5 +539,7 @@ let () =
             test_flatten_mv_patterns_one_pinned;
           Alcotest.test_case "mv_patterns: beyond Maekawa -> 0" `Quick
             test_flatten_mv_patterns_beyond_maekawa;
+          Alcotest.test_case "no flat hinge splits a taco (two-ear fish)"
+            `Quick test_flatten_no_flat_hinge_splits_taco;
         ] );
     ]

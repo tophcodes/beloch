@@ -315,6 +315,29 @@ let make ?(base = I3.identity) ?(marks = [||]) ~(faces : face array)
         then raise (V (Taco_taco (i, j)))
       done
     done;
+    (* taco-tortilla, flat-hinge form: a FLAT hinge's two faces are one
+       continuous sheet crossing its own segment. Where that segment lies
+       collinear on a folded hinge's crease, the taco's leaves meet in a
+       closed joint spanning the mouth — a sheet crossing the axis there may
+       pass entirely OUTSIDE the mouth (wrapping the joint is fine), but any
+       crossing face ranked strictly inside the mouth goes through the joint.
+       The interior-crossing form above cannot see this: each sheet face only
+       ABUTS the crease segment (it lies on their shared edge), never crosses
+       it alone. Found via the two-ear fish base, both ears {toward .d}: a
+       ghost seated one wing under the stationary strip with its ear above —
+       front paper visibly sandwiched inside the ear's taco. *)
+    for i = 0 to m - 1 do
+      for j = 0 to m - 1 do
+        let h1 = hinges.(i) and h2 = hinges.(j) in
+        let a = h1.fa and b = h1.fb and c = h2.fa and d = h2.fb in
+        if
+          Num.sign h1.angle <> 0 && Num.sign h2.angle = 0 && d >= 0
+          && a <> c && a <> d && b <> c && b <> d
+          && Geom.segments_overlap_collinear (tseg i) (tseg j)
+          && (rank_between rank a c b || rank_between rank a d b)
+        then raise (V (Taco_tortilla { tortilla = c; hinge = i }))
+      done
+    done;
     Ok
       {
         faces = Array.map Array.copy faces;

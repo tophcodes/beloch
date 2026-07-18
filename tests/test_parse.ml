@@ -549,18 +549,18 @@ let test_parse_flatten_basic () =
         (List.nth dirs 3 = Ast.MvMountain && List.nth dirs 0 = Ast.MvFree)
   | _ -> Alcotest.fail "expected Flatten"
 
-let test_parse_flatten_parens_at_over_standing () =
+let test_parse_flatten_parens_at_over_staying () =
   let prog =
     Beloch.parse ~filename:"t.bel"
       "paper square\n\
        flatten (--a & .a) (--e & .o & --ab mountain) \
-       (.b over .d) (standing .m)\n"
+       (.b over .d) (staying .m)\n"
   in
   match prog with
   | [ Ast.Flatten (None, [ _; e2 ], [ (_, _) ], Some _, None, _) ] ->
       Alcotest.(check bool) "parenthesized elem is mountain"
         true (e2.Ast.cdir = Ast.MvMountain)
-  | _ -> Alcotest.fail "expected Flatten with over + standing"
+  | _ -> Alcotest.fail "expected Flatten with over + staying"
 
 let test_parse_flatten_followed_by_stmt () =
   (* regression: a bare @flatten must not swallow the next statement's
@@ -576,7 +576,7 @@ let test_parse_flatten_followed_by_stmt () =
 let test_parse_flatten_mixed_order () =
   let prog =
     Beloch.parse ~filename:"t.bel"
-      "paper square\nflatten (--a) (.p over .q) (--b) (standing .r)\n"
+      "paper square\nflatten (--a) (.p over .q) (--b) (staying .r)\n"
   in
   match prog with
   | [
@@ -598,25 +598,25 @@ let test_parse_flatten_mixed_order () =
   | _ ->
       Alcotest.fail
         "expected Flatten with elems [a;b] in source order, over (.p, .q) \
-         not swapped, standing .r"
+         not swapped, staying .r"
 
-let test_parse_flatten_double_standing_rejected () =
+let test_parse_flatten_double_staying_rejected () =
   let src =
-    "paper square\nflatten (--a) (standing .p) (standing .q)\n"
+    "paper square\nflatten (--a) (staying .p) (staying .q)\n"
   in
-  expect_error "only one standing" (fun () -> Beloch.parse ~filename:"t.bel" src);
-  (* the error must point at the duplicate (second, source-order) `standing`,
+  expect_error "only one staying" (fun () -> Beloch.parse ~filename:"t.bel" src);
+  (* the error must point at the duplicate (second, source-order) `staying`,
      not the first *)
-  let first_standing = Str.search_forward (Str.regexp_string "standing") src 0 in
-  let second_standing =
-    Str.search_forward (Str.regexp_string "standing") src (first_standing + 1)
+  let first_staying = Str.search_forward (Str.regexp_string "staying") src 0 in
+  let second_staying =
+    Str.search_forward (Str.regexp_string "staying") src (first_staying + 1)
   in
   match Beloch.parse ~filename:"t.bel" src with
-  | _ -> Alcotest.fail "expected duplicate-standing error"
+  | _ -> Alcotest.fail "expected duplicate-staying error"
   | exception Error.Beloch_error ((start, _), _) ->
       Alcotest.(check int)
-        "span points at the second `standing`, not the first"
-        second_standing start.Lexing.pos_cnum
+        "span points at the second `staying`, not the first"
+        second_staying start.Lexing.pos_cnum
 
 let test_parse_flatten_paren_items () =
   let prog =
@@ -915,14 +915,14 @@ let () =
           Alcotest.test_case "bind bundle" `Quick test_parse_bind_bundle;
           Alcotest.test_case "@fold statement" `Quick test_parse_fold_along;
           Alcotest.test_case "flatten basic" `Quick test_parse_flatten_basic;
-          Alcotest.test_case "flatten parens/at/over/standing" `Quick
-            test_parse_flatten_parens_at_over_standing;
+          Alcotest.test_case "flatten parens/at/over/staying" `Quick
+            test_parse_flatten_parens_at_over_staying;
           Alcotest.test_case "flatten followed by stmt" `Quick
             test_parse_flatten_followed_by_stmt;
           Alcotest.test_case "flatten mixed item order" `Quick
             test_parse_flatten_mixed_order;
-          Alcotest.test_case "flatten double standing rejected" `Quick
-            test_parse_flatten_double_standing_rejected;
+          Alcotest.test_case "flatten double staying rejected" `Quick
+            test_parse_flatten_double_staying_rejected;
           Alcotest.test_case "flatten paren-juxtaposition items" `Quick
             test_parse_flatten_paren_items;
           Alcotest.test_case "flatten {toward} item, tri-state cdirs" `Quick
