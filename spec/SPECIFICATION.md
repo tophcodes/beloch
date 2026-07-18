@@ -873,7 +873,7 @@ one segment when written, but writing them is no longer required to resolve
 a multi-segment crease: the **stayer filter** (State construction, below)
 prunes the combinations that contradict the stayer on its own. A
 combination survives resolution with zero matches only as an error: a bare
-crease name with no material segment at the vertex errors *"--<name> has no
+crease name with no material segment errors *"--<name> has no
 material segment"*; a filtered or unioned operand that matches nothing
 errors *"no segment of `<expr>` matches"*. An operand that does not resolve
 to an existing material crease at all (a joined selector like `.a * .b`, or a
