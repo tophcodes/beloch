@@ -144,6 +144,14 @@ _malloc,_free"
 # FLINT string result marshalled via UTF8ToString throws a TypeError in Firefox.
 # =0 keeps ALLOW_MEMORY_GROWTH (on-demand growth) but via classic copy-on-grow
 # into a fresh non-resizable buffer — no upfront reservation, cross-browser safe.
+#
+# EMULATE_FUNCTION_POINTER_CASTS=1 is also load-bearing: FLINT's
+# qqbar_express_in_field calls a function pointer whose C signature is cast (UB
+# that native ignores but wasm's typed call_indirect rejects), so the routing
+# added in #57 (compute in-field +/* over ℚ(α)) trapped with "indirect call
+# signature mismatch" / "null function" in ALL engines — every √2-class fold in
+# the playground died once #57 started calling it. =1 routes indirect calls
+# through signature-adapting thunks, restoring correct behaviour.
 echo "=== compiling web/qqbar_wasm.c to site/public/beloch/qqbar-wasm.js ==="
 nix shell nixpkgs#emscripten --command bash -c "
 emcc '$WEB_DIR/qqbar_wasm.c' -I'$PREFIX/include' -L'$PREFIX/lib' -lflint -lmpfr -lgmp \
@@ -151,6 +159,7 @@ emcc '$WEB_DIR/qqbar_wasm.c' -I'$PREFIX/include' -L'$PREFIX/lib' -lflint -lmpfr 
   -sEXPORTED_FUNCTIONS='$WASM_QQBAR_FUNCS' \
   -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString,stringToUTF8,lengthBytesUTF8 \
   -sALLOW_MEMORY_GROWTH=1 -sGROWABLE_ARRAYBUFFERS=0 \
+  -sEMULATE_FUNCTION_POINTER_CASTS=1 \
   -o '$OUT_DIR/qqbar-wasm.js'
 "
 ls -la "$OUT_DIR/qqbar-wasm.js"
