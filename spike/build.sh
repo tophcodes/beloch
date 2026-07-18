@@ -138,13 +138,19 @@ _wasm_qqbar_get_d,_wasm_qqbar_minpoly,_wasm_qqbar_express_in_field,\
 _wasm_qqbar_enclosure,_wasm_qqbar_real_roots,_wasm_qqbar_roots_qqbar_poly,\
 _malloc,_free"
 
+# GROWABLE_ARRAYBUFFERS=0 is load-bearing: emscripten 6's default (1) makes the
+# heap views sit on a *resizable* ArrayBuffer (wasmMemory.toResizableBuffer()).
+# Firefox's TextDecoder.decode rejects views backed by resizable buffers, so any
+# FLINT string result marshalled via UTF8ToString throws a TypeError in Firefox.
+# =0 keeps ALLOW_MEMORY_GROWTH (on-demand growth) but via classic copy-on-grow
+# into a fresh non-resizable buffer — no upfront reservation, cross-browser safe.
 echo "=== compiling web/qqbar_wasm.c to site/public/beloch/qqbar-wasm.js ==="
 nix shell nixpkgs#emscripten --command bash -c "
 emcc '$WEB_DIR/qqbar_wasm.c' -I'$PREFIX/include' -L'$PREFIX/lib' -lflint -lmpfr -lgmp \
   -O2 -sWASM_ASYNC_COMPILATION=0 -sMODULARIZE=1 -sEXPORT_NAME=QqbarWasm -sSINGLE_FILE=1 \
   -sEXPORTED_FUNCTIONS='$WASM_QQBAR_FUNCS' \
   -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString,stringToUTF8,lengthBytesUTF8 \
-  -sALLOW_MEMORY_GROWTH=1 \
+  -sALLOW_MEMORY_GROWTH=1 -sGROWABLE_ARRAYBUFFERS=0 \
   -o '$OUT_DIR/qqbar-wasm.js'
 "
 ls -la "$OUT_DIR/qqbar-wasm.js"
