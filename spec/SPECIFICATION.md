@@ -905,6 +905,7 @@ segment with `&` ``.
 | 12 | the leading two elements' folded rays are collinear and no `staying` is given — the convention has no side to anchor | `` collinear leading creases don't pick a stayer; add (staying <flap>) `` |
 | 13 | no realization keeps the stayer still — every candidate × Maekawa pattern died before a stacking closed | `no realization keeps the staying flap still` |
 | 14 | two different segment combinations (Resolution, above) both survive with valid realizations | `` <name> is ambiguous at the vertex; select a segment with `&` `` |
+| 15 | after the min-mountain canon the survivors carry more than one distinct M/V pattern — `{toward}` selects sides, never M/V letters (Selecting among survivors, below) | `` ambiguous mountain/valley assignment; pin one (e.g. `<crease> mountain`) `` |
 
 Checks 7–11 run against a **candidate ray set** — the given rays, plus one
 emergent candidate when the count is odd (The pipeline, below) — and never
@@ -1121,7 +1122,18 @@ stage first needs it, and is required once any stage does:
    `--ray & .c` spine — *is* a user-given crease and counts). This stage is
    `{toward}`-independent and, alone, is sometimes already unique — including
    with `{toward}` entirely absent (see step 3 below).
-3. **Rank dipole**: if several realizations still remain, maximize the exact
+3. **M/V-pattern gate, then rank dipole**: `{toward .p}` selects *sides and
+   mirrors*, never between distinct mountain/valley readings. If the
+   min-mountain survivors still carry **more than one distinct M/V pattern**
+   (the derived letters differ on the given rays — the even fish's three
+   equal-min-mountain readings put the single mountain on the spine, the
+   d-bisector, or the b-bisector), the fold is genuinely underdetermined: no
+   side/stacking heuristic — least of all the symmetry-breaking rank dipole,
+   which structurally cannot land on a symmetric ridge — may choose, so the
+   statement errors, and the user pins a crease's fold:
+   `` ambiguous mountain/valley assignment; pin one (e.g. `<crease> mountain`) ``
+   (check 15). Only when all survivors share **one** M/V pattern (mirror twins)
+   does the rank dipole run: maximize the exact
    `S(R) = Σ_faces area · (rank − (n_faces−1)/2) · ((table_centroid − O) · (p − O))` —
    "the material lying toward `p` ends up on top." Mirror realizations score
    ±equal, so any off-axis `p` decides. Guarded first by a symmetry check: if
@@ -1151,9 +1163,10 @@ needed for the odd case, only the requirement that the ray count be odd. See
 a full worked case where the emergent crease is genuinely non-constructible
 (the hinges sit at an arbitrary height, not a bisector angle), and
 [`tests/cases/collapse/flatten-opposite-ray-toward-b.bel`](../tests/cases/collapse/flatten-opposite-ray-toward-b.bel)
-(with its `-toward-d` sibling) for a vertex where `{toward}` genuinely picks
-between two *different* end states — same face count and table positions,
-mirrored stacking.
+(with its `-toward-d` sibling) for a vertex where — once the spine is pinned
+(`--ray & .c mountain`), since the bare vertex pools three distinct M/V
+patterns and errors per check 15 — `{toward}` genuinely picks between two
+*different* end states: same face count and table positions, mirrored stacking.
 
 The generative solution-space selector `#{…}` (and `.{…}`/`--{…}`) and the
 `stays <flap>` sugar that would desugar to it are **deferred** — their own

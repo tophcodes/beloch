@@ -66,3 +66,30 @@ Stayer-Seite. Die wahre Kette war nie ein Ghost: einmal enumeriert, besteht
 sie `make` + Taco-Checks. `flatten-two-ears-sequential` und derive-13 grün;
 Fallback aus 1a4f6d9 ersatzlos gestrichen. Nebenbefund e_midpaper: obsolet —
 LineNew-Emergent gewinnt regulär; #51-Trio bleibt als eigener Slice rot.
+
+## Amendment (2026-07-19, Pin-Regel — Spine-M ist kein Enumerations-Loch)
+
+Die Diagnose `.superpowers/sdd/diagnosis-spine-m.md` widerlegt die frühere
+„Spine-M wird ausgehungert"-These für das **einzelne** even-4-ray-fish (Ear 1):
+das Spine-M-Pattern (#5) IST enumeriert, besteht `valid_srank`/`over`/Taco/
+`in_bounds` und liegt als valide Realisierung im Pool. Es stirbt erst am
+**Stage-3-Rank-Dipol**: der symmetrische Grat scored exakt `S(R)=0` und
+verliert gegen den asymmetrischen Bisektor-M (`+0.369`) — ein
+symmetriebrechender Score kann den symmetrischen Grat nie wählen.
+
+**Owner-Regel (approved):** `{toward}` wählt *Seiten/Spiegel*, nie zwischen
+M/V-Patterns. Konkret in `lib/eval.ml`s Drei-Stufen-Wahl: nach dem
+Min-Mountain-Kanon vergleicht `given_mv_vector` die abgeleiteten Buchstaben pro
+gegebenem Ray; tragen die Überlebenden **mehr als ein** distinktes M/V-Pattern,
+fehlt jede legitime Entscheidung → Fehler `ambiguous mountain/valley
+assignment; pin one (e.g. `<crease> mountain`)` (Check 15). Der Rank-Dipol
+bleibt NUR für Spiegel-Zwillinge eines gemeinsamen Patterns. Der klassische
+fisch pinnt die Spine explizit: `flatten (--l1) (--l2) (--ray & .a) (--ray & .c
+mountain) {toward .d}` — M landet auf I1→c (Spine), Owner-Ground-Truth.
+
+Betroffen (Pin bekommen): `examples/bases/fish-base.bel` (Ear 1, Golden neu:
+M wandert vom d-Bisektor auf die Spine), `flatten-opposite-ray-toward-{b,d}.bel`
+(Spiegel bleiben, jetzt Spine-M), `flatten-two-ears-sequential.bel` (Ear 1;
+Ear 2 bleibt auf `--l4`-Fehler, #48). Rabbit-Ear-Familie unberührt: dort ist
+der Mountain der emergente LineNew (givenMtn=0), alle Überlebenden teilen das
+All-V-Pattern → Gate greift nicht, Dipol wählt wie bisher.

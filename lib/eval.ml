@@ -2194,27 +2194,52 @@ let eval_folded (prog : Ast.program) : folded =
             let given_cids =
               List.sort_uniq compare (List.map (fun (c, _, _, _) -> c) rays)
             in
-            let given_mountains (st, _) : int =
-              List.length
-                (List.filter
-                   (fun cid ->
-                     let hs = Fold_state.hinges st in
-                     let m = ref false in
-                     Array.iteri
-                       (fun i (h : Fold_state.hinge) ->
-                         if
-                           h.Fold_state.crease_id = cid
-                           && Num.sign h.Fold_state.angle <> 0
-                           && Fold_state.mv st i = Fold_state.M
-                         then m := true)
-                       hs;
-                     !m)
-                   given_cids)
+            (* derived M/V per USER-GIVEN crease: cid is a mountain iff some
+               FOLDED hinge of that cid derives M. The boolean vector over
+               [given_cids] IS the realization's distinct M/V pattern (the
+               Maekawa letters on the given rays); [given_mountains] counts its
+               trues for the min-mountain canon. *)
+            let given_mv_vector (st, _) : bool list =
+              List.map
+                (fun cid ->
+                  let hs = Fold_state.hinges st in
+                  let m = ref false in
+                  Array.iteri
+                    (fun i (h : Fold_state.hinge) ->
+                      if
+                        h.Fold_state.crease_id = cid
+                        && Num.sign h.Fold_state.angle <> 0
+                        && Fold_state.mv st i = Fold_state.M
+                      then m := true)
+                    hs;
+                  !m)
+                given_cids
+            in
+            let given_mountains r =
+              List.length (List.filter Fun.id (given_mv_vector r))
             in
             let min_mountain_filter rs =
               let counted = List.map (fun r -> (given_mountains r, r)) rs in
               let m = List.fold_left (fun acc (c, _) -> min acc c) max_int counted in
               List.filter_map (fun (c, r) -> if c = m then Some r else None) counted
+            in
+            (* APPROVED RULE (2026-07-19, .superpowers/sdd/diagnosis-spine-m.md):
+               {toward} selects sides/mirrors, NEVER between M/V patterns. If the
+               min-mountain survivors carry more than one distinct M/V pattern
+               (different given rays taking the mountain), no side/stacking
+               heuristic — least of all the symmetry-breaking rank-dipole — may
+               choose among them: the fold is genuinely underdetermined and the
+               user must pin a crease's M/V. The rank-dipole (stage 3) is left to
+               separate MIRROR TWINS of a single shared pattern only. *)
+            let require_single_mv_pattern kept =
+              match List.sort_uniq compare (List.map given_mv_vector kept) with
+              | _ :: _ :: _ ->
+                  Error.fail span
+                    (Printf.sprintf
+                       "ambiguous mountain/valley assignment; pin one (e.g. \
+                        `%s mountain`)"
+                       (lstr (List.hd elems).Ast.cline))
+              | _ -> ()
             in
             let commit (st, emergent) =
               ctx.state := st;
@@ -2230,6 +2255,7 @@ let eval_folded (prog : Ast.program) : folded =
                 match min_mountain_filter many with
                 | [ r ] -> commit r
                 | kept ->
+                    require_single_mv_pattern kept;
                     Error.fail span
                       (Printf.sprintf
                          "flatten is ambiguous: %d realizations; add {toward \
@@ -2301,6 +2327,7 @@ let eval_folded (prog : Ast.program) : folded =
                 | [] -> assert false (* filter of a non-empty list *)
                 | [ r ] -> commit r
                 | kept ->
+                    require_single_mv_pattern kept;
                     (* stage 3 — but first the symmetry-axis guard (rule doc
                        §Ties): the dipole's null direction is NOT the
                        geometric mirror axis, so an on-axis toward would get
