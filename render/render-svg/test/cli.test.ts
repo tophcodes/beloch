@@ -55,6 +55,31 @@ test("CLI: --legend adds the legend panel", async () => {
   expect(withLegend).toContain('class="legend-panel"');
 });
 
+test("CLI: --style yr|mono|cp all succeed and render distinct SVGs", async () => {
+  const outputs: string[] = [];
+  for (const style of ["yr", "mono", "cp"]) {
+    const p = Bun.spawn(["bun", CLI, FIX, "--style", style]);
+    const out = await new Response(p.stdout).text();
+    expect(await p.exited).toBe(0);
+    expect(out).toStartWith("<svg");
+    outputs.push(out);
+  }
+  expect(new Set(outputs).size).toBe(3);
+});
+
+test("CLI: --style defaults to yr", async () => {
+  const withDefault = await new Response(Bun.spawn(["bun", CLI, FIX]).stdout).text();
+  const withYr = await new Response(Bun.spawn(["bun", CLI, FIX, "--style", "yr"]).stdout).text();
+  expect(withDefault).toBe(withYr);
+});
+
+test("CLI: unknown --style value exits 1 with a plain error", async () => {
+  const p = Bun.spawn(["bun", CLI, FIX, "--style", "rainbow"], { stderr: "pipe" });
+  const err = await new Response(p.stderr).text();
+  expect(await p.exited).toBe(1);
+  expect(err).toContain("unknown --style value 'rainbow' — expected yr, mono, or cp");
+});
+
 test("CLI: unmatched --step exits 1 with the available named steps", async () => {
   const p = Bun.spawn(
     ["bun", CLI, CUBE_ROOT, "--view", "folded", "--step", "no-such-step"],
