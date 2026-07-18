@@ -876,7 +876,7 @@ combination survives resolution with zero matches only as an error: a bare
 crease name with no material segment at the vertex errors *"--<name> has no
 material segment"*; a filtered or unioned operand that matches nothing
 errors *"no segment of `<expr>` matches"*. An operand that does not resolve
-to an existing material crease at all (a paper edge like `--ab`, or a
+to an existing material crease at all (a joined selector like `.a * .b`, or a
 cross-crease union with no single crease to fold along) errors: *"collapse
 folds along existing creases; `<operand>` is not a material crease"* (the
 shipped message text predates the rename — an internal string, not a
@@ -887,12 +887,12 @@ still contradict each other after every filter — the error then names the
 element and suggests it: `` <name> is ambiguous at the vertex; select a
 segment with `&` ``.
 
-**Checks, in the order the evaluator runs them:**
+**Checks, roughly in evaluation order (see the note below on checks 12–14):**
 
 | # | check | shipped error text |
 |---|---|---|
 | 1 | element is not a material crease | `collapse folds along existing creases; <operand> is not a material crease` |
-| 2 | bare element resolves to zero material segments at O | `--<name> has no material segment` |
+| 2 | bare element resolves to zero material segments | `--<name> has no material segment` |
 | 3 | filtered/unioned element matches no segment | `` no segment of <expr> matches `` |
 | 4 | segments don't all share one strictly-interior common endpoint O | `no common interior vertex` |
 | 5 | (`staying` given) the flap's material doesn't touch the vertex fan | `the staying flap does not touch the vertex` |
