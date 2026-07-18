@@ -158,7 +158,7 @@ let test_flatten_derive_unit () =
   in
   match
     List.find_opt
-      (fun (l, r, _tag) ->
+      (fun (l, r) ->
         Geom.side_of_line l v = 0
         && (not (Geom.parallel l spine))
         && (not (Geom.parallel l bis_a))
@@ -169,7 +169,7 @@ let test_flatten_derive_unit () =
   | None ->
       Alcotest.failf "no genuine emergent candidate found among %d"
         (List.length cands)
-  | Some (l, _, _) ->
+  | Some (l, _) ->
       (* approximate coordinates matching the spike: meets base y=0 at
          x ≈ 0.787, i.e. the ≈320.55° crease *)
       let base_x = Num.to_float (Num.div l.Geom.c l.Geom.a) in
@@ -266,21 +266,17 @@ let test_flatten_tip () =
       Alcotest.(check (float 0.001)) "tip lands near y=0.059" 0.0590169944
         (Num.to_float p.Geom.y)
 
-(* The fish-base vertex: O = incenter of triangle abd on the ac-diagonal; the
-   true 4th ray is the diagonal's CONTINUATION O→c — collinear with the given
-   a-ray, i.e. a tier-2 OPPOSITE-RAY completion under the two-tier rule. Both
-   tier-1 (line-new) candidates fold a flap off the paper for EVERY Maekawa
-   pattern, so the deciding set is tier-2's pooled realizations — 6 of them,
-   all in ONE position class (placements depend only on ray LINES; verified
-   by instrumentation, see .superpowers/sdd/toward-stacking-rule.md). The
-   three-stage selection (amended spec 38bd69e) then works purely on
-   STACKING: the min-mountain canon keeps the three 1-given-mountain
-   realizations, and the rank-dipole stage picks the one laying the
-   toward-side material on top. `{toward .b}` and `{toward .d}` therefore
+(* The fish-base vertex: O = incenter of triangle abd on the ac-diagonal. A′
+   (2026-07-18): the diagonal's continuation O→c is collinear with the given
+   a-ray — a constructible completion, so it is STATED as a fourth element
+   (`--ray & .c`), not derived. The statement is therefore EVEN (four given
+   rays: the two bisectors + both halves of the diagonal) with no emergent at
+   all. The four rays place in ONE position class (placements depend only on
+   ray LINES); the min-mountain canon and the rank-dipole stage pick the one
+   laying the toward-side material on top, so `{toward .b}` and `{toward .d}`
    produce the two MIRROR realizations — same placements (every paper point
-   lands at the same table position!) but mirrored layer order — the spec's
-   whole point. The difference is observable in [Fold_state.rank], not in
-   table positions. *)
+   lands at the same table position!) but mirrored layer order. The difference
+   is observable in [Fold_state.rank], not in table positions. *)
 let fish_base_src toward =
   Printf.sprintf
     "paper square\n\
@@ -289,7 +285,8 @@ let fish_base_src toward =
      step left\n\
      mark --l1 = map --ab onto --diag\n\
      mark --l2 = map --da onto --diag\n\
-     flatten (--l1 & .b) (--l2 & .d) (--ray & .a) {toward %s}\n" toward
+     flatten (--l1 & .b) (--l2 & .d) (--ray & .a) (--ray & .c) {toward %s}\n"
+    toward
 
 let test_flatten_derive_opposite_ray_fish_base () =
   let result toward =
@@ -316,43 +313,14 @@ let test_flatten_fish_toward_on_axis_ambiguous () =
   expect_error "does not pick a side" (fun () ->
       Eval.eval_folded (Beloch.parse ~filename:"t.bel" (fish_base_src ".c")))
 
-(* Unit test of the same-DIRECTION genuine-filter: the PLUS vertex
-   O = (1/2,1/2) with given rays right (1,1/2), up (1/2,1), down (1/2,0).
-   The only completion is the LEFT ray (0,1/2) — the OPPOSITE ray of the
-   given right ray's own line (y = 1/2). The old same-LINE filter dropped it
-   ("extend a line already drawn"); the direction filter must keep it. No
-   line-new candidate exists at all here, so [candidates] returns exactly one
-   entry, tagged `OppositeRay`. (V2: feasibility is no longer [Flatten]'s job
-   — [candidates] is a pure generator now, spec 2026-07-16 — so the old
-   `feasible`-before-`toward` unit test has no Flatten-module-level
-   equivalent any more; its behavior is covered by the eval-level fish-base
-   test below, where the two LineNew candidates fail via
-   `Collapse.collapse_all` returning `Error` for every pattern.) *)
-let test_flatten_derive_opposite_ray_unit () =
-  let mk x y = { Geom.x; y } in
-  let half = Num.of_q (Q.of_ints 1 2) in
-  let o = mk half half in
-  let es =
-    [
-      { Collapse.cid = 0; ea = o; eb = mk Num.one half; valley = true };
-      { Collapse.cid = 1; ea = o; eb = mk half Num.one; valley = true };
-      { Collapse.cid = 2; ea = o; eb = mk half Num.zero; valley = true };
-    ]
-  in
-  let fixed = Collapse.sort_ccw o es in
-  match Flatten.candidates o ~fixed with
-  | [ (l, r, `OppositeRay) ] ->
-      (* the horizontal line y = 1/2 ... *)
-      Alcotest.(check bool) "emergent line is horizontal" true
-        (Num.sign l.Geom.a = 0);
-      Alcotest.(check int) "emergent line passes through O" 0
-        (Geom.side_of_line l o);
-      (* ... and the LEFT ray of it (x decreasing from O) *)
-      Alcotest.(check bool) "emergent ray points left" true
-        (Num.compare r.Geom.x o.Geom.x < 0)
-  | cands ->
-      Alcotest.failf "expected exactly one OppositeRay candidate, got %d"
-        (List.length cands)
+(* A′ (2026-07-18): the same-DIRECTION genuine-filter test is DELETED. Its
+   PLUS vertex — O = (1/2,1/2), rays right/up/down, whose only completion is
+   the LEFT ray (the OPPOSITE ray of the given right ray's own line y = 1/2) —
+   pinned a candidate class that no longer exists: derive yields LineNew ONLY,
+   and an opposite-ray completion is now stated as an element, never generated.
+   [Flatten.candidates] returns [] on this vertex. The behavior it once
+   guarded (the direction filter keeping the far side of a line) is subsumed by
+   the [line_new] filter's contract, exercised by the fish-base cases. *)
 
 (* Conversely, a derive-mode vertex that DOES admit a proper in-bounds seating
    (the swivel rabbit ear) folds correctly: every folded face lands inside the
@@ -391,14 +359,13 @@ let test_flatten_derive_in_bounds () =
   Alcotest.(check bool)
     "every folded face stays within the unit-square paper" true all_in
 
-(* Task 3 step 1: [Flatten.candidates] unit on the fish-base vertex itself —
-   O = incenter-on-diagonal (1 − √2/2, 1 − √2/2), given rays toward b, d, a
-   (the geometry [fish_base_src] actually resolves to; verified by evaluating
-   the marks up to just before the flatten and reading off named points).
-   Must contain the opposite-ray candidate (O→c, the diagonal's continuation,
-   tagged `OppositeRay`) and the two side candidates (tagged `LineNew`) —
-   exactly the shape the brief names, independent of feasibility (feasibility
-   is no longer this module's concern). *)
+(* A′ (2026-07-18): [Flatten.candidates] unit on the fish-base vertex —
+   O = incenter-on-diagonal (1 − √2/2, 1 − √2/2), given rays toward b, d, a.
+   Derive now yields LineNew ONLY: the two side candidates survive; the
+   opposite-ray continuation O→c (collinear with the given a-ray's line) is
+   dropped — it is stated as a fourth element in the even fish form, never
+   generated. Every returned candidate's line is parallel to NONE of the three
+   given lines. *)
 let test_flatten_candidates_fish_vertex () =
   let mk x y = { Geom.x; y } in
   let o_coord = Num.sub Num.one (Num.div (Num.sqrt (Num.of_int 2)) (Num.of_int 2)) in
@@ -415,10 +382,13 @@ let test_flatten_candidates_fish_vertex () =
   in
   let fixed = Collapse.sort_ccw o es in
   let cands = Flatten.candidates o ~fixed in
-  Alcotest.(check int) "3 candidates" 3 (List.length cands);
-  let count tag = List.length (List.filter (fun (_, _, t) -> t = tag) cands) in
-  Alcotest.(check int) "one OppositeRay (O→c)" 1 (count `OppositeRay);
-  Alcotest.(check int) "two LineNew (the side candidates)" 2 (count `LineNew)
+  Alcotest.(check int) "2 LineNew candidates (opposite-ray dropped)" 2
+    (List.length cands);
+  let given = [ Geom.line_through o a; Geom.line_through o b; Geom.line_through o d ] in
+  Alcotest.(check bool) "every candidate is a genuinely new line" true
+    (List.for_all
+       (fun (l, _) -> not (List.exists (Geom.parallel l) given))
+       cands)
 
 (* Task 3 step 1: the pure Maekawa-consistent M/V pattern enumerator
    ([Flatten.mv_patterns]). n=4: valid (M,V) splits are (3,1)/(1,3) —
@@ -523,15 +493,13 @@ let () =
             test_flatten_derive_registers_name;
           Alcotest.test_case "--ear binds emergent crease; .tip meets base"
             `Quick test_flatten_tip;
-          Alcotest.test_case "derive opposite-ray fallback folds fish-base"
+          Alcotest.test_case "fish base (even, stated spine): toward mirrors"
             `Quick test_flatten_derive_opposite_ray_fish_base;
           Alcotest.test_case "fish: toward on the symmetry axis is ambiguous"
             `Quick test_flatten_fish_toward_on_axis_ambiguous;
-          Alcotest.test_case "derive unit: opposite ray is a candidate (plus)"
-            `Quick test_flatten_derive_opposite_ray_unit;
           Alcotest.test_case "derive in-paper fold accepted (swivel-rabbit)"
             `Quick test_flatten_derive_in_bounds;
-          Alcotest.test_case "candidates: fish vertex (1 OppositeRay + 2 LineNew)"
+          Alcotest.test_case "candidates: fish vertex (2 LineNew, no OppositeRay)"
             `Quick test_flatten_candidates_fish_vertex;
           Alcotest.test_case "mv_patterns: 4 free -> 8" `Quick
             test_flatten_mv_patterns_all_free;

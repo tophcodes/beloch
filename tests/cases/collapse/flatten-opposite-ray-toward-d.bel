@@ -1,5 +1,6 @@
 ; Same fish-base vertex as flatten-opposite-ray-toward-b.bel (see its comment
-; for the full derivation) — `{toward .d}` picks the position class's other
+; for the full derivation) — A′ even 4-ray stated form (both halves of the
+; diagonal given, no derive). `{toward .d}` picks the position class's other
 ; side under the rank-dipole stage, giving the MIRROR realization of that
 ; file: same face count, same table positions, opposite layer order (pinned
 ; by tests/test_flatten.ml's test_flatten_derive_opposite_ray_fish_base,
@@ -14,6 +15,6 @@ mark --ray = through .a .c
 step left
 mark --l1 = map --ab onto --diag
 mark --l2 = map --da onto --diag
-flatten (--l1) (--l2) (--ray) {toward .d}
+flatten (--l1) (--l2) (--ray & .a) (--ray & .c) {toward .d}
 
 ; assert faces = 6
