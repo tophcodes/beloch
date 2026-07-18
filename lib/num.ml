@@ -309,10 +309,10 @@ let sub (x : t) (y : t) : t = add x (neg y)
 let mul (x : t) (y : t) : t =
   match (x, y) with
   | Rat a, Rat b -> Rat (Q.mul a b)
-  | _ when sign x = 0 || sign y = 0 -> zero
   | Field a, Field b when same_gen a.gen b.gen ->
       mk_field a.gen (Poly.rem (Poly.mul a.coords b.coords) a.gen.mu)
   | Field a, Rat q | Rat q, Field a -> mk_field a.gen (Poly.scale q a.coords)
+  | _ when sign x = 0 || sign y = 0 -> zero
   | _ -> (
       match via_field (fun g a b -> Poly.rem (Poly.mul a b) g.mu) x y with
       | Some r -> r
