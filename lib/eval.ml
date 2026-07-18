@@ -1955,20 +1955,23 @@ let eval_folded (prog : Ast.program) : folded =
                 (int * Geom.point * Geom.point * Ast.mv_constraint) list) =
             let constraints = List.map (fun (_, _, _, d) -> d) all_rays in
             let patterns = Flatten.mv_patterns constraints in
+            (* one call solves every Maekawa pattern over the fixed vertex
+               geometry, sharing placements/overlaps across patterns instead of
+               refolding per pattern; [es_geom]'s valley is a placeholder (the
+               real per-ray valley rides in [patterns]). *)
+            let es_geom =
+              List.map (fun (fcid, fea, feb, _) -> elem_of (fcid, fea, feb, true))
+                all_rays
+            in
             List.iter
-              (fun pat ->
-                let elems' =
-                  List.map2
-                    (fun (fcid, fea, feb, _) v -> elem_of (fcid, fea, feb, v))
-                    all_rays pat
-                in
-                match Collapse.collapse_all st' elems' ~over ~stayer with
+              (fun res ->
+                match res with
                 | Ok sts ->
                     List.iter
                       (fun s -> local_real := (s, tier, emergent) :: !local_real)
                       sts
                 | Error msg -> local_err := msg :: !local_err)
-              patterns
+              (Collapse.collapse_all_patterns st' es_geom ~over ~stayer ~patterns)
           in
           (if odd then
              let fixed = Collapse.sort_ccw o elems_geom in

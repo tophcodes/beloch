@@ -279,7 +279,10 @@ let admissible_sectors ~(stayer : stayer) (o : Geom.point)
 (* checks common to every stayer run — vertex, count, boundary, duplicate ray,
    Kawasaki closure, Maekawa. All rotation-invariant, so run once, before the
    admissible-sector fan-out. Returns the vertex O and the CCW-sorted rays. *)
-let prepipeline (es : elem list) :
+(* geometry-only prechecks: everything rotation- AND valley-invariant. The
+   Maekawa parity is the one per-pattern check, split into [maekawa_ok] so
+   [collapse_all_patterns] can share this over every M/V pattern. *)
+let prepipeline_geom (es : elem list) :
     (Geom.point * (Geom.point * elem) array, string) result =
   let n = List.length es in
   match common_vertex es with
@@ -293,11 +296,20 @@ let prepipeline (es : elem list) :
         let rays = Array.of_list (sort_ccw o es) in
         if has_duplicate_ray o rays then Error e_dup_ray
         else if not (closure_ok o rays) then Error e_kawasaki
-        else
-          let nm = List.length (List.filter (fun e -> not e.valley) es) in
-          let nv = n - nm in
-          if abs (nm - nv) <> 2 then Error e_maekawa
-          else Ok (o, rays)
+        else Ok (o, rays)
+
+let maekawa_ok (valley : bool list) : bool =
+  let n = List.length valley in
+  let nm = List.length (List.filter (fun v -> not v) valley) in
+  abs ((n - nm) - nm) = 2
+
+let prepipeline (es : elem list) :
+    (Geom.point * (Geom.point * elem) array, string) result =
+  match prepipeline_geom es with
+  | Error _ as e -> e
+  | Ok (o, rays) ->
+      if maekawa_ok (List.map (fun e -> e.valley) es) then Ok (o, rays)
+      else Error e_maekawa
 
 (* --- shared enumeration body: every check and enumeration step common to
    [collapse] and [collapse_all], run on a [rays] array ALREADY ROTATED so the
@@ -317,9 +329,36 @@ type pipeline = {
   distinct : int array list;  (* face rank per distinct overlap signature *)
 }
 
-let pipeline_at (g : Fold_state.t) ~(o : Geom.point)
+(* The valley-INDEPENDENT geometry of one (rotated) sector fan: sector
+   isometries, per-face sector, per-ray orientation representative, the anchor
+   root, and the ray<->hinge matching. A mountain and a valley half-turn land
+   every face in the SAME place (fold_state.ml: "the sign (M vs V) does NOT
+   change the flat placement"), and the layering-validity check reads only
+   angles + rank — so none of this depends on the M/V letters. [collapse_all_
+   patterns] builds it ONCE per vertex/sector and reuses it across every
+   Maekawa pattern; [overlaps] (also placement-derived, hence valley- and
+   rank-independent) is memoized lazily the first time a pattern needs it. *)
+type sector_geom = {
+  sg_g : Fold_state.t;
+  sg_o : Geom.point;
+  sg_rays : (Geom.point * elem) array;
+  sg_faces : Geom.point array array;
+  sg_nf : int;
+  sg_n : int;
+  sg_tsec : Isometry.t array;
+  sg_sec : int array;
+  sg_ray_rep : Isometry.t array;
+  sg_g_rank : int array;
+  sg_root : int;
+  sg_marks : Fold_state.mark array;
+  sg_old_hinges : Fold_state.hinge array;
+  sg_hinge_ray : int option array;  (* per hinge, the ray it carries, else None *)
+  mutable sg_overlaps : (int * int) list option;
+}
+
+let mk_sector_geom (g : Fold_state.t) ~(o : Geom.point)
     ~(rays : (Geom.point * elem) array) ~(faces : Geom.point array array)
-    ~(nf : int) ~(over : (int * int) list) : (pipeline, string) result =
+    ~(nf : int) : sector_geom =
   let n = Array.length rays in
   let tsec = sector_isometries o rays in
   (* sector of each face (fixed, independent of stacking) *)
@@ -383,27 +422,24 @@ let pipeline_at (g : Fold_state.t) ~(o : Geom.point)
         if !best < 0 then Isometry.identity
         else Fold_state.face_iso2 g !best)
   in
-  (* hinge constraints *)
-  let constraints =
-    List.init n (fun j ->
-        let l = (j - 1 + n) mod n in
-        let _, e = rays.(j) in
-        let eff = effective_valley e.valley tsec.(l) ray_rep.(j) in
-        if eff then (j, l) else (l, j))
+  (* anchor root = first face in the stayer sector (rotated sector 0). Its
+     [tsec.(0) = identity] is orientation-preserving, so validity filtering
+     (rigid-motion invariant) reads the same as at any proper sector. *)
+  let root =
+    let found = ref (-1) in
+    for i = 0 to nf - 1 do
+      if !found < 0 && sec.(i) = 0 then found := i
+    done;
+    if !found < 0 then
+      invalid_arg
+        "Collapse.pipeline_at: stayer sector 0 holds no face (unreachable — \
+         every sector holds >= 1 face)";
+    !found
   in
-  let stackings = linear_extensions n constraints in
-  let eff_of_ray j =
-    let _, e = rays.(j) in
-    let l = (j - 1 + n) mod n in
-    effective_valley e.valley tsec.(l) ray_rep.(j)
-  in
-  let ray_assign =
-    Array.init n (fun j -> if eff_of_ray j then Fold_state.V else Fold_state.M)
-  in
-  (* new hinges: every hinge whose crease matches a ray gets angle 1 + the
-     ray's derived letter; others are carried unchanged *)
+  (* which ray (if any) each hinge carries — pure geometry, so matched once and
+     reused: only the M/V *letter* stamped on it later varies by pattern. *)
   let old_hinges = Fold_state.hinges g in
-  let new_hinges =
+  let hinge_ray =
     Array.mapi
       (fun i (h : Fold_state.hinge) ->
         let ta, tb = Fold_state.hinge_table_segment g i in
@@ -416,13 +452,49 @@ let pipeline_at (g : Fold_state.t) ~(o : Geom.point)
             && Geom.on_segment (o, far) tb
           then hit := Some j
         done;
-        match !hit with
+        !hit)
+      old_hinges
+  in
+  {
+    sg_g = g; sg_o = o; sg_rays = rays; sg_faces = faces; sg_nf = nf; sg_n = n;
+    sg_tsec = tsec; sg_sec = sec; sg_ray_rep = ray_rep; sg_g_rank = g_rank;
+    sg_root = root; sg_marks = Fold_state.marks g; sg_old_hinges = old_hinges;
+    sg_hinge_ray = hinge_ray; sg_overlaps = None;
+  }
+
+(* The valley-DEPENDENT half of the old [pipeline_at]: given the shared
+   [sector_geom] and this pattern's per-ray valley, enumerate the layer
+   stackings and dedup by overlap signature. Byte-identical to the fused
+   version — the split only hoists the geometry out of the pattern loop. *)
+let pipeline_solve (sg : sector_geom) ~(valley : bool array)
+    ~(over : (int * int) list) : (pipeline, string) result =
+  let n = sg.sg_n and nf = sg.sg_nf in
+  let tsec = sg.sg_tsec and sec = sg.sg_sec and ray_rep = sg.sg_ray_rep in
+  let g_rank = sg.sg_g_rank and root = sg.sg_root in
+  (* hinge constraints *)
+  let eff_of_ray j =
+    let l = (j - 1 + n) mod n in
+    effective_valley valley.(j) tsec.(l) ray_rep.(j)
+  in
+  let constraints =
+    List.init n (fun j -> let l = (j - 1 + n) mod n in
+        if eff_of_ray j then (j, l) else (l, j))
+  in
+  let stackings = linear_extensions n constraints in
+  let ray_assign =
+    Array.init n (fun j -> if eff_of_ray j then Fold_state.V else Fold_state.M)
+  in
+  (* new hinges: every hinge whose crease matches a ray gets angle 1 + the
+     ray's derived letter; others are carried unchanged *)
+  let new_hinges =
+    Array.mapi
+      (fun i (h : Fold_state.hinge) ->
+        match sg.sg_hinge_ray.(i) with
         | Some j ->
             { h with Fold_state.angle = Num.one; intent = ray_assign.(j) }
         | None -> h)
-      old_hinges
+      sg.sg_old_hinges
   in
-  let marks = Fold_state.marks g in
   (* total face rank from a sector stacking: sort by (srank.(sector),
      intra-sector order), tiebreak by index (never fires). *)
   let intra i =
@@ -439,23 +511,10 @@ let pipeline_at (g : Fold_state.t) ~(o : Geom.point)
     rank
   in
   let candidate_at ~root ~base rank =
-    Fold_state.make ~base ~marks ~faces ~hinges:new_hinges ~root ~rank ()
+    Fold_state.make ~base ~marks:sg.sg_marks ~faces:sg.sg_faces
+      ~hinges:new_hinges ~root ~rank ()
   in
-  (* anchor root = first face in the stayer sector (rotated sector 0). Its
-     [tsec.(0) = identity] is orientation-preserving, so validity filtering
-     (rigid-motion invariant) reads the same as at any proper sector. *)
-  let root =
-    let found = ref (-1) in
-    for i = 0 to nf - 1 do
-      if !found < 0 && sec.(i) = 0 then found := i
-    done;
-    if !found < 0 then
-      invalid_arg
-        "Collapse.pipeline_at: stayer sector 0 holds no face (unreachable — \
-         every sector holds >= 1 face)";
-    !found
-  in
-  let anchor_base = Fold_state.face_iso g root in
+  let anchor_base = Fold_state.face_iso sg.sg_g root in
   let valid_srank =
     List.filter
       (fun srank ->
@@ -478,28 +537,36 @@ let pipeline_at (g : Fold_state.t) ~(o : Geom.point)
     let filtered = List.filter over_ok valid_srank in
     if filtered = [] then Error e_contra
     else begin
-      (* placements do not depend on rank, so any surviving candidate's flat
-         projections give the overlap set once *)
-      let sample =
-        match
-          candidate_at ~root ~base:anchor_base
-            (build_face_rank (List.hd filtered))
-        with
-        | Ok c -> c
-        | Error _ -> assert false
-      in
+      (* placements depend on neither rank nor the M/V letters, so the overlap
+         set is computed once per sector geometry and shared across every
+         pattern (any surviving candidate's flat projections give it). *)
       let overlaps =
-        let acc = ref [] in
-        for i = 0 to nf - 1 do
-          for j = i + 1 to nf - 1 do
-            if
-              Geom.convex_overlap
-                (Fold_state.table_polygon sample i)
-                (Fold_state.table_polygon sample j)
-            then acc := (i, j) :: !acc
-          done
-        done;
-        List.rev !acc
+        match sg.sg_overlaps with
+        | Some ov -> ov
+        | None ->
+            let sample =
+              match
+                candidate_at ~root ~base:anchor_base
+                  (build_face_rank (List.hd filtered))
+              with
+              | Ok c -> c
+              | Error _ -> assert false
+            in
+            let ov =
+              let acc = ref [] in
+              for i = 0 to nf - 1 do
+                for j = i + 1 to nf - 1 do
+                  if
+                    Geom.convex_overlap
+                      (Fold_state.table_polygon sample i)
+                      (Fold_state.table_polygon sample j)
+                  then acc := (i, j) :: !acc
+                done
+              done;
+              List.rev !acc
+            in
+            sg.sg_overlaps <- Some ov;
+            ov
       in
       let signature fr =
         List.map (fun (i, j) -> (i, j, fr.(i) > fr.(j))) overlaps
@@ -516,6 +583,17 @@ let pipeline_at (g : Fold_state.t) ~(o : Geom.point)
       Ok { root; candidate_at; distinct = List.map snd distinct }
     end
   end
+
+(* the original fused entry: build the sector geometry and solve for the one
+   valley vector carried by [rays]. Direct callers ([collapse]/[collapse_all]
+   via [collapse_runs]) keep byte-identical behavior; the pattern-sharing path
+   ([collapse_all_patterns]) reuses [mk_sector_geom] across many valleys. *)
+let pipeline_at (g : Fold_state.t) ~(o : Geom.point)
+    ~(rays : (Geom.point * elem) array) ~(faces : Geom.point array array)
+    ~(nf : int) ~(over : (int * int) list) : (pipeline, string) result =
+  let sg = mk_sector_geom g ~o ~rays ~faces ~nf in
+  let valley = Array.map (fun (_, e) -> e.valley) rays in
+  pipeline_solve sg ~valley ~over
 
 let in_bounds (gg : Fold_state.t) : bool =
   let nfg = Array.length (Fold_state.faces gg) in
@@ -542,13 +620,40 @@ let anchor_realization (g : Fold_state.t) ~(root : int)
   | Ok _ -> Error e_out_of_paper
   | Error _ -> Error e_out_of_paper
 
+(* pool the per-sector runs: any in-bounds realization wins (Ok pool); an empty
+   pool surfaces [e_contra] > [e_out_of_paper] > [e_stayer_dead]. Shared by the
+   single-valley [collapse_runs] and the pattern-sharing path. *)
+let pool_of_runs
+    (results :
+      [ `Err of string | `Run of (Fold_state.t, string) result list ] list) :
+    (Fold_state.t list, string) result =
+  let pool =
+    List.concat_map
+      (function
+        | `Run rs ->
+            List.filter_map (function Ok gg -> Some gg | Error _ -> None) rs
+        | `Err _ -> [])
+      results
+  in
+  match pool with
+  | _ :: _ -> Ok pool
+  | [] ->
+      let errs =
+        List.concat_map
+          (function
+            | `Err e -> [ e ]
+            | `Run rs ->
+                List.filter_map (function Error e -> Some e | Ok _ -> None) rs)
+          results
+      in
+      if List.mem e_contra errs then Error e_contra
+      else if List.mem e_out_of_paper errs then Error e_out_of_paper
+      else Error e_stayer_dead
+
 (* run the pipeline once per admissible stayer sector (rotating that sector to
    0), pooling every in-bounds anchored realization. No cross-run dedup — two
    admissible sectors are two different stayers, i.e. physically different
-   folds — while per-run signature dedup stays. Error priority preserves
-   today's behavior: a run reaching [e_contra] or [e_out_of_paper] surfaces it;
-   an otherwise dead pool (self-int everywhere, or no admissible sector) is
-   [e_stayer_dead]. *)
+   folds — while per-run signature dedup stays. *)
 let collapse_runs (g : Fold_state.t) (es : elem list)
     ~(over : (int * int) list) ~(stayer : stayer) :
     (Fold_state.t list, string) result =
@@ -579,33 +684,81 @@ let collapse_runs (g : Fold_state.t) (es : elem list)
                      (fun fr -> anchor_realization g ~root ~candidate_at fr)
                      distinct)
           in
-          let results = List.map run sectors in
-          let pool =
-            List.concat_map
-              (function
-                | `Run rs ->
-                    List.filter_map
-                      (function Ok gg -> Some gg | Error _ -> None)
-                      rs
-                | `Err _ -> [])
-              results
+          pool_of_runs (List.map run sectors))
+
+(* The many-pattern entry: solve a whole batch of Maekawa patterns over ONE
+   fixed vertex geometry, sharing the sector geometry (placements, overlap set,
+   ray reps) across every pattern instead of rebuilding it per pattern as a
+   [List.map (collapse_all g (es_with_valley p)) patterns] would. [es] carries
+   the geometry (its own valley is ignored); [patterns.(p)] is the per-ray
+   valley in [es] order. Returns one result per pattern, parallel to
+   [patterns]. Behaviorally identical to calling [collapse_all] once per
+   pattern. *)
+let collapse_all_patterns (g : Fold_state.t) (es : elem list)
+    ~(over : (int * int) list) ~(stayer : stayer)
+    ~(patterns : bool list list) : (Fold_state.t list, string) result list =
+  match prepipeline_geom es with
+  | Error e -> List.map (fun _ -> Error e) patterns
+  | Ok (o, rays) -> (
+      let faces = Fold_state.faces g in
+      let nf = Array.length faces in
+      let sec_orig =
+        Array.init nf (fun i ->
+            sector_of_poly o rays (faces.(i), Fold_state.face_iso2 g i))
+      in
+      match
+        try Ok (admissible_sectors ~stayer o rays sec_orig nf)
+        with Stayer_collinear -> Error e_stayer_collinear
+      with
+      | Error e -> List.map (fun _ -> Error e) patterns
+      | Ok [] -> List.map (fun _ -> Error e_stayer_dead) patterns
+      | Ok sectors ->
+          (* per-sector geometry, built ONCE and reused across all patterns *)
+          let sgs =
+            List.map
+              (fun s0 ->
+                let rays_r = rotate_rays rays s0 in
+                (s0, mk_sector_geom g ~o ~rays:rays_r ~faces ~nf))
+              sectors
           in
-          (match pool with
-          | _ :: _ -> Ok pool
-          | [] ->
-              let errs =
-                List.concat_map
-                  (function
-                    | `Err e -> [ e ]
-                    | `Run rs ->
-                        List.filter_map
-                          (function Error e -> Some e | Ok _ -> None)
-                          rs)
-                  results
-              in
-              if List.mem e_contra errs then Error e_contra
-              else if List.mem e_out_of_paper errs then Error e_out_of_paper
-              else Error e_stayer_dead))
+          (* map each pattern's valley (in [es] order) onto the sorted rays.
+             Match by far tip, NOT cid: a full crease through O subdivides into
+             two rays that share one crease id (the "+" vertex's --h/--v), so
+             cid is not unique per ray, but the far tip is (distinct ray
+             directions, boundary endpoints). *)
+          let es_arr = Array.of_list es in
+          let perm =
+            Array.map
+              (fun (far, _) ->
+                let idx = ref (-1) in
+                Array.iteri
+                  (fun i (e' : elem) ->
+                    if !idx < 0 && Geom.point_equal (far_of o e') far then idx := i)
+                  es_arr;
+                !idx)
+              rays
+          in
+          List.map
+            (fun pat ->
+              if not (maekawa_ok pat) then Error e_maekawa
+              else begin
+                let pat_arr = Array.of_list pat in
+                let valley_sorted =
+                  Array.map (fun oi -> pat_arr.(oi)) perm
+                in
+                let run (s0, sg) =
+                  let valley = rotate_rays valley_sorted s0 in
+                  match pipeline_solve sg ~valley ~over with
+                  | Error e -> `Err e
+                  | Ok { root; candidate_at; distinct } ->
+                      `Run
+                        (List.map
+                           (fun fr -> anchor_realization g ~root ~candidate_at fr)
+                           distinct)
+                in
+                pool_of_runs (List.map run sgs)
+              end)
+            patterns)
 
 let collapse (g : Fold_state.t) (es : elem list) ~(over : (int * int) list)
     ~(stayer : stayer) : (Fold_state.t, string) result =
