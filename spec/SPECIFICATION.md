@@ -1007,10 +1007,12 @@ composition close.
 
 **Admissible stayer sectors.** Every candidate ray set is tried against each
 fan sector that lies inside the stayer region (State construction, above):
-normally exactly one, unless the emergent ray itself falls inside the
-leading pair's arc and splits it in two — then both halves are admissible,
-and each is a genuinely different physical fold (a mirror world), not a
-duplicate to dedup away. A collinear leading pair (both candidate arcs
+normally exactly one, unless a single ray inside the leading pair's arc
+splits it in two — then both halves are admissible, and each is a genuinely
+different physical fold (a mirror world), not a duplicate to dedup away. That
+splitting ray is the emergent (odd count) or a stated fourth ray (the even
+fish form); at most one ray, given or emergent, may lie inside the arc (A′,
+Enumerate below). A collinear leading pair (both candidate arcs
 exactly 180°) admits no sector at all without `staying` — check 12. The
 evaluator rotates the ray labeling so the sector under test becomes sector 0
 before the fan construction runs, which is what anchors `T_0 = identity` on
@@ -1019,22 +1021,33 @@ the stayer (State construction, above).
 1. **Count rays.** Odd → `Flatten.candidates` generates every geometric
    completion that could close the vertex: it tries every angular gap
    between the sorted given rays as the insertion point, keeps the
-   candidates whose axis genuinely falls in its own gap, and tags each
-   `LineNew` (a genuinely new line) or `OppositeRay` (the far side of an
-   already-given line — degenerate in direction, not in position: it is
-   still a real, non-constructible crease). None found → check 8, above.
-   Even → no candidate; the given rays are the whole ray set.
+   candidates whose axis genuinely falls in its own gap, and — under A′
+   (2026-07-18) — keeps only the **`LineNew`** completions (a genuinely new
+   line, not constructible by any Huzita axiom). A completion collinear with
+   an already-given line — the degenerate `OppositeRay`, the far side of a
+   crease already drawn — is *not* derived: it is constructible/material and
+   is **stated as a further element** instead, which makes the ray count even
+   (the fish base is `flatten (--l1) (--l2) (--ray & .a) (--ray & .c)
+   {toward .d}` — both halves of the diagonal given, no derive at all). None
+   found → check 8, above. Even → no candidate; the given rays are the whole
+   ray set.
 2. **Enumerate.** Each **segment combination** (Resolution, above — one
    chosen segment per element, when a crease carries more than one at O) is
    tried independently. Two guards run before pattern search: check 6 drops
    a combination outright if flattening it would fold through an unaligned
-   layer; and, *only when the statement has more than one combination to
-   choose from*, another element's given ray landing strictly inside the
-   stayer arc kills that combination too — stayed material cannot carry a
-   folding crease. This gate is what makes bare through-crease operands
-   resolve without `&` (Resolution, above): at the fish vertex, the
-   combination that folds `--ray`'s far segment has that ray inside the
-   leading pair's arc and dies here, leaving only the near segment. A
+   layer; and the **≤1-arc-ray rule** (A′, 2026-07-18): **at most one ray —
+   given or emergent alike — may lie strictly inside the leading pair's stayer
+   arc.** That one ray is the splitter, dividing the stayer into the two
+   halves `{toward}` chooses between; two or more inside means stayed material
+   would carry two folding creases, and the combination dies. (The given-ray
+   count is checked here, before pattern search, *only when the statement has
+   more than one combination to choose from*; the emergent, odd case, is added
+   to the count per candidate.) In the even fish the stated spine `--ray & .c`
+   is the lone given splitter; a lone given ray inside the arc is therefore no
+   longer a kill on its own — so a bare through-crease `(--ray)` 3-ray
+   statement whose two segment combinations both close is genuinely
+   underdetermined and reports the segment-choice ambiguity (check 14),
+   inviting an explicit `&`. A
    single-combination statement has no alternative to fall back on, so a
    mis-ordered leading pair there is *not* caught this way — it runs the
    full pipeline and dies later as an ordinary `` collapse folds a flap off
@@ -1068,10 +1081,6 @@ the stayer (State construction, above).
    combination, pooled across candidates and, per candidate, across every
    admissible stayer sector):
 
-   - **Tier rule** (applied before counting): a `LineNew` realization always
-     outranks an `OppositeRay` one — S is the `LineNew` pool if it is
-     non-empty, the `OppositeRay` pool otherwise. A lone `LineNew` survivor
-     decides even if several `OppositeRay` realizations also close.
    - \|S\| = 0 → infeasible, checked in priority order:
      `` collapse folds a flap off the paper (no seating keeps it in the
      sheet) `` if any candidate failed that way; else whichever of
@@ -1101,10 +1110,10 @@ stage first needs it, and is required once any stage does:
 2. **Min-mountain canon** (within the winning class): keep only the
    realizations with the fewest derived mountains among the **user-given**
    creases (a freshly-materialized emergent crease is never a given crease,
-   so it never counts; a collinear-reuse `OppositeRay` emergent does, since
-   it *is* a given crease's own line). This stage is `{toward}`-independent
-   and, alone, is sometimes already unique — including with `{toward}`
-   entirely absent (see step 3 below).
+   so it never counts; a stated opposite-ray element — the even fish's
+   `--ray & .c` spine — *is* a user-given crease and counts). This stage is
+   `{toward}`-independent and, alone, is sometimes already unique — including
+   with `{toward}` entirely absent (see step 3 below).
 3. **Rank dipole**: if several realizations still remain, maximize the exact
    `S(R) = Σ_faces area · (rank − (n_faces−1)/2) · ((table_centroid − O) · (p − O))` —
    "the material lying toward `p` ends up on top." Mirror realizations score

@@ -14,6 +14,43 @@ parity keyed to `sort_ccw`'s absolute angular origin starves the stacking
 enumeration (16 of 24 sector chains at the fish's second ear, the missing 8
 reversal-closed and containing the physically true chain).
 
+## A′ amendment (2026-07-18, approved)
+
+The flatten **tier system is removed entirely**. Grounded in
+`.superpowers/sdd/task-51-report.md`: pooling the two tiers into one selection
+stage (issue #51's ask) makes the `OppositeRay` position class strictly
+dominate the `LineNew` class in the `{toward}` centroid-dot at every
+rabbit-ear/swivel-rabbit vertex, so the genuine ear becomes unselectable by any
+`{toward}` — the tier mask was load-bearing, and no in-scope rule reconciles
+"fish-wants-OppRay" with "rabbit-ear-wants-LineNew" while both are derived. A′
+resolves this by never deriving the OppositeRay at all:
+
+- **Derive produces `LineNew` candidates ONLY** (`Flatten.candidates`). An
+  OppositeRay completion lies on a given crease's own line — it is
+  constructible/material — so it is **stated as a further element**, not
+  derived. The fish base becomes an even-count statement with no derive:
+  `flatten (--l1) (--l2) (--ray & .a) (--ray & .c) {toward .d}`. (The two-ear
+  fish is two such ears; each ear's odd 3-ray form derives its genuine LineNew
+  rabbit-ear crease — unchanged by A′, still green.)
+- **Tier machinery removed**: the `` `Tier1``/`` `Tier2 `` tags, the
+  partition/mask (`deciding = if tier1 <> [] then tier1 else tier2`), and all
+  tier references in errors/spec prose. Selection is the existing three stages
+  over the now single-class pool.
+- **Stayer-region rule amended to ≤1**: at most one ray — given or emergent
+  alike — may lie strictly inside the leading pair's stayer arc; that ray is
+  the splitter `{toward}` picks a side of. Two or more inside → the combination
+  dies. This replaces the asymmetric "any given ray inside kills, emergent
+  allowed" rule. A consequence, correct under A′: a bare `(--ray)` 3-ray
+  statement whose lone given ray sits inside the arc is no longer killed for
+  that alone, so both segment combinations can close and the statement is
+  genuinely ambiguous — the existing `&`-suggestion error fires (the migration
+  is to give the spine an explicit `&`, i.e. the even fish form).
+
+Task-51 Blocker B (the `--l4 has no material segment` #48 kernel wall) was
+specific to the reverted *pooling* experiment; it does **not** manifest under
+A′ — the two-ear fish (`flatten-two-ears-sequential.bel`, derive-13) stays
+green with the classic `faces = 12` assertions.
+
 ## Motivation
 
 Determinism by convention, not solution-space guessing. Toph: `()` items
