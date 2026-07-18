@@ -12,7 +12,7 @@ export interface LineStyle {
 }
 
 // Pluggable per-assignment styling: callers can pass their own fn via
-// `theme.lineStyle`, or pick one of the two below.
+// `theme.lineStyle`, or pick one of the PRESETS below.
 export type LineStyleFn = (assignment: Assignment, theme: Theme) => LineStyle;
 
 export interface Theme {
@@ -29,30 +29,59 @@ export interface Theme {
   lineStyle: LineStyleFn;
 }
 
-// Colored: one solid color per assignment. Simple, no dash decoding required.
-export const colorLineStyle: LineStyleFn = (assignment, theme) => {
+// Yoshizawa–Randlett: solid = boundary/unfolded, dash-dot = mountain, dashed =
+// valley, dotted = hidden/flat, monochrome ink [demaine2007, p.168 —
+// Yoshizawa's notation of dotted lines + arrows]. Dash-pattern choice per
+// Lang's diagramming conventions (langorigami.com/article/origami-diagramming-conventions/):
+// valley = dashed ("no ifs, ands, or buts"), mountain = dot-dash (1 or 2 dots
+// both acceptable), hidden/x-ray = dotted, edges heavier than creases. This
+// replaces the old M dasharray `8 2 1 2`, whose 8px dash reads as visually
+// solid at typical PNG render scale — indistinguishable from the boundary.
+export const yrLineStyle: LineStyleFn = (assignment, theme) => {
+  switch (assignment) {
+    case "B": return { stroke: theme.boundary, strokeWidth: 3 };
+    case "M": return { stroke: theme.ink, strokeWidth: 1.75, dasharray: "10 3 1.5 3" };
+    case "V": return { stroke: theme.ink, strokeWidth: 1.75, dasharray: "6 4" };
+    case "F": return { stroke: theme.ink, strokeWidth: 1.25, dasharray: "1 3", opacity: 0.45 };
+    default: return { stroke: theme.unassigned, strokeWidth: 1.25, dasharray: "2 3", opacity: 0.55 };
+  }
+};
+
+// Print-friendly weight-coded CP [hull2020, §7.1]: "denote a mountain crease
+// with a bold line and a valley crease by a non-bold line ... using bold and
+// non-bold lines will look more clear" — Hull explicitly drops dash patterns
+// for dense crease patterns, coding M/V by stroke weight alone instead.
+// Monochrome ink, all solid.
+export const monoLineStyle: LineStyleFn = (assignment, theme) => {
+  switch (assignment) {
+    case "B": return { stroke: theme.ink, strokeWidth: 3 };
+    case "M": return { stroke: theme.ink, strokeWidth: 2.6 };
+    case "V": return { stroke: theme.ink, strokeWidth: 1.2 };
+    case "F": return { stroke: theme.ink, strokeWidth: 1, dasharray: "1 3", opacity: 0.4 };
+    default: return { stroke: theme.ink, strokeWidth: 1.2, dasharray: "2 3", opacity: 0.55 };
+  }
+};
+
+// Tool-color convention, one solid color per assignment — aligns with Origami
+// Simulator's undriven color (origamisimulator.org: M red, V blue, B black,
+// undriven magenta). Subsumes the old `colorLineStyle`. `unassigned` here is
+// hardcoded magenta rather than theme.unassigned (amber) specifically to match
+// that convention; other presets keep theme.unassigned.
+export const cpLineStyle: LineStyleFn = (assignment, theme) => {
   switch (assignment) {
     case "B": return { stroke: theme.boundary, strokeWidth: 3 };
     case "M": return { stroke: theme.mountain, strokeWidth: 2 };
     case "V": return { stroke: theme.valley, strokeWidth: 2 };
-    case "F": return { stroke: theme.flat, strokeWidth: 2, opacity: 0.45 };
-    default: return { stroke: theme.unassigned, strokeWidth: 2, opacity: 0.55 };
+    case "F": return { stroke: theme.flat, strokeWidth: 1.5, opacity: 0.5 };
+    default: return { stroke: "#d946ef", strokeWidth: 2, opacity: 0.8 };
   }
 };
 
-// Yoshizawa–Randlett: solid = boundary/unfolded, dashed = valley, dash-dot =
-// mountain, dotted = unassigned [demaine2007, p.6428 — Yoshizawa's notation
-// of dotted lines + arrows; exact dash/dash-dot split for M vs V is the
-// widely-used convention but not itself sourced in refs/]. Monochrome by
-// default (reads via `theme.ink`), default line style.
-export const yrLineStyle: LineStyleFn = (assignment, theme) => {
-  switch (assignment) {
-    case "B": return { stroke: theme.boundary, strokeWidth: 3 };
-    case "M": return { stroke: theme.ink, strokeWidth: 2, dasharray: "8 2 1 2" };
-    case "V": return { stroke: theme.ink, strokeWidth: 2, dasharray: "6 4" };
-    case "F": return { stroke: theme.ink, strokeWidth: 1.5, dasharray: "1 3", opacity: 0.45 };
-    default: return { stroke: theme.unassigned, strokeWidth: 1.5, dasharray: "2 3", opacity: 0.55 };
-  }
+// Selectable line-style presets, keyed by the CLI's `--style` value.
+export const PRESETS: Record<string, LineStyleFn> = {
+  yr: yrLineStyle,
+  mono: monoLineStyle,
+  cp: cpLineStyle,
 };
 
 export const DEFAULT_THEME: Theme = {

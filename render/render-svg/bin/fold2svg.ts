@@ -6,9 +6,10 @@
 // Usage:
 //   bun bin/fold2svg.ts input.fold [out.svg|out.png] [--title "..."]
 //   bun bin/fold2svg.ts f.fold --view folded [--flip] [--hidden dashed|hide]
+//   bun bin/fold2svg.ts f.fold --style mono|cp
 //   beloch fold f.bel | bun bin/fold2svg.ts - out.png --title f.bel
 import { parseFold, SceneError, StepNotFoundError } from "@beloch/scene";
-import { renderCP, renderFolded } from "@beloch/render-svg";
+import { PRESETS, renderCP, renderFolded } from "@beloch/render-svg";
 
 const args = process.argv.slice(2);
 const flagVal = (name: string): string | undefined => {
@@ -35,8 +36,16 @@ const legend = args.includes("--legend");
 const step = flagVal("--step");
 const formatFlag = flagVal("--format"); // "svg"|"png", overrides outPath extension
 const widthFlag = flagVal("--width"); // PNG output width in px; default = doc width
+const styleFlag = flagVal("--style") ?? "yr"; // "yr"|"mono"|"cp"
+if (!Object.hasOwn(PRESETS, styleFlag)) {
+  // process.stderr.write, not console.error — see the --view comment above.
+  process.stderr.write(
+    `beloch-render: unknown --style value '${styleFlag}' — expected yr, mono, or cp\n`,
+  );
+  process.exit(1);
+}
 const FLAGS = new Set([
-  "--title", "--view", "--hidden", "--labels", "--step", "--format", "--width",
+  "--title", "--view", "--hidden", "--labels", "--step", "--format", "--width", "--style",
 ]);
 const positional = args.filter((a, i) => !a.startsWith("--") && !FLAGS.has(args[i - 1]!));
 const [inPath, outPath] = positional;
@@ -51,7 +60,7 @@ const labels = labelsFlag !== undefined
 try {
   const raw = !inPath || inPath === "-" ? await Bun.stdin.text() : await Bun.file(inPath).text();
   const scene = parseFold(raw);
-  const opts = { title, labels, legend };
+  const opts = { title, labels, legend, theme: { lineStyle: PRESETS[styleFlag]! } };
   const doc = viewFlag === "folded"
     ? renderFolded(scene, { ...opts, view: flip ? "bottom" : "top", hidden, step })
     : renderCP(scene, opts);
