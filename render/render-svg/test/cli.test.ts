@@ -80,6 +80,17 @@ test("CLI: unknown --style value exits 1 with a plain error", async () => {
   expect(err).toContain("unknown --style value 'rainbow' — expected yr, mono, or cp");
 });
 
+test("CLI: --style constructor|__proto__ (prototype-chain lookups) are rejected like any unknown style", async () => {
+  for (const style of ["constructor", "__proto__"]) {
+    const p = Bun.spawn(["bun", CLI, FIX, "--style", style], { stderr: "pipe" });
+    const err = await new Response(p.stderr).text();
+    expect(await p.exited).toBe(1);
+    expect(err).toBe(
+      `beloch-render: unknown --style value '${style}' — expected yr, mono, or cp\n`,
+    );
+  }
+});
+
 test("CLI: unmatched --step exits 1 with the available named steps", async () => {
   const p = Bun.spawn(
     ["bun", CLI, CUBE_ROOT, "--view", "folded", "--step", "no-such-step"],

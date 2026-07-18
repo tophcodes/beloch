@@ -37,7 +37,7 @@ const step = flagVal("--step");
 const formatFlag = flagVal("--format"); // "svg"|"png", overrides outPath extension
 const widthFlag = flagVal("--width"); // PNG output width in px; default = doc width
 const styleFlag = flagVal("--style") ?? "yr"; // "yr"|"mono"|"cp"
-if (!(styleFlag in PRESETS)) {
+if (!Object.hasOwn(PRESETS, styleFlag)) {
   // process.stderr.write, not console.error — see the --view comment above.
   process.stderr.write(
     `beloch-render: unknown --style value '${styleFlag}' — expected yr, mono, or cp\n`,

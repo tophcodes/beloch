@@ -30,7 +30,7 @@ export interface Theme {
 }
 
 // Yoshizawa–Randlett: solid = boundary/unfolded, dash-dot = mountain, dashed =
-// valley, dotted = hidden/flat, monochrome ink [demaine2007, p.642 —
+// valley, dotted = hidden/flat, monochrome ink [demaine2007, p.168 —
 // Yoshizawa's notation of dotted lines + arrows]. Dash-pattern choice per
 // Lang's diagramming conventions (langorigami.com/article/origami-diagramming-conventions/):
 // valley = dashed ("no ifs, ands, or buts"), mountain = dot-dash (1 or 2 dots
