@@ -11,12 +11,15 @@
 ; stacking chain (strip low, wings, ear on top) is enumerated and survives the
 ; taco/self-int filters. Both ears {toward .d}. See diagnosis-vertex2.md.
 ;
-; The emergent rabbit-ear crease is selected by the tier rule LineNew >
-; OppositeRay (spec §Solver; eval.ml deciding = tier1 else tier2). LineNew is
-; the only coherent realization here — forcing OppositeRay breaks the second
-; ear (--l4 loses its material segment). Verified physically: no paper through
-; the closed first-ear joint (derive-13 taco check green, Fold_state.make
-; succeeds), clean fish-base silhouette (.superpowers/sdd/two-ears-folded.png).
+; The fish base is TWO rabbit ears: each ear's odd 3-ray statement derives a
+; genuinely-new (LineNew) emergent crease — under A′ (2026-07-18) that is the
+; ONLY class derive produces (the degenerate opposite-ray completion is stated
+; as an element, never derived; see flatten-opposite-ray-toward-{b,d}.bel).
+; No paper passes through the closed first-ear joint (derive-13 taco check
+; green, Fold_state.make succeeds); clean fish-base silhouette
+; (.superpowers/sdd/two-ears-folded.png). A′ leaves this path untouched, so
+; the two-ear fish still closes — the #48 kernel wall the pooling experiment
+; hit (task-51 Blocker B) was specific to that reverted approach, not A′.
 ;
 ; faces = 12 counts the folded model's material faces (Fold_state.faces, what
 ; `assert faces` reads). The `beloch fold` crease-pattern FOLD shows 14 regions

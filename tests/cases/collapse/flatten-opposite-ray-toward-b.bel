@@ -1,15 +1,15 @@
 ; fish-base vertex: O = incenter of triangle abd, sitting ON the ac-diagonal.
-; All three given rays are bare (V2: unconstrained, spec 2026-07-16-flatten-
-; derive-v2-design.md), so the solution space isn't just the emergent ray's
-; position — the M/V pattern and stacking are free too. The POSITION is
-; forced regardless (the diagonal's OppositeRay continuation O -> c; both
-; line-new candidates fold a flap off the paper for every Maekawa pattern),
-; the min-mountain canon then narrows to 3 patterns, and `{toward}`'s
-; rank-dipole stage picks among THOSE by which side's material ends up on
-; top. `{toward .b}` (this file) and its sibling `{toward .d}` therefore
-; pick the two MIRROR realizations: same face count, same table positions,
-; opposite layer order — not the same fold twice, the whole point of this
-; slice.
+; A′ (2026-07-18): the diagonal's continuation O→c is collinear with the given
+; a-ray — a constructible completion, so it is STATED as a fourth element
+; (`--ray & .c`) rather than derived. The statement is EVEN (the two bisectors
+; plus both halves of the diagonal) with no emergent at all; derive now yields
+; genuinely-new lines only, so the old odd 3-ray form no longer produces this
+; fold. The four rays place in ONE position class (placements depend only on
+; ray LINES); the min-mountain canon and the rank-dipole stage then pick by
+; which side's material ends up on top, so `{toward .b}` (this file) and its
+; sibling `{toward .d}` pick the two MIRROR realizations: same face count, same
+; table positions, opposite layer order — not the same fold twice, the whole
+; point of this slice.
 ;
 ; `.bel` assertions have no vocabulary for stacking/rank (see
 ; tests/test_bel_assert.ml's `assertion` type), so `faces = 6` is all this
@@ -26,6 +26,6 @@ mark --ray = through .a .c
 step left
 mark --l1 = map --ab onto --diag
 mark --l2 = map --da onto --diag
-flatten (--l1) (--l2) (--ray) {toward .b}
+flatten (--l1) (--l2) (--ray & .a) (--ray & .c) {toward .b}
 
 ; assert faces = 6

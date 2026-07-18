@@ -1871,33 +1871,44 @@ let eval_folded (prog : Ast.program) : folded =
               Collapse.Arc (far_of_combo_elem e1, far_of_combo_elem e2)
           | _ -> Collapse.Arc (o, o)
         in
-        (* KERNEL LIMITATION cover (Task-2 reviewer finding): the kernel's
-           [admissible_sectors] cannot tell "the emergent splits the leading
-           arc" (legitimate, 2 mirror worlds) from "another GIVEN element's ray
-           sits strictly inside the arc" (dead — stayed material cannot carry a
-           folding crease, spec §Semantics). The latter kill is ours, done here
-           over the GIVEN rays before the kernel runs. Gated on a genuine
-           segment choice (>1 combination): with a single combination the input
-           has no alternative and the pre-2026-07-17 convention behaviour stands.
-           Absent under [staying] — the convention carries no meaning then. *)
-        let leading_arc_ok combo =
+        (* The leading pair's stayer arc, CCW-ordered (a, b), or None when the
+           convention names no arc: under [staying] (convention carries no
+           meaning), collinear leading rays (no <π arc -> kernel:
+           e_stayer_collinear), or fewer than two elements. *)
+        let leading_arc combo =
           match (staying_opt, combo) with
-          | Some _, _ -> true
-          | None, e1 :: e2 :: rest ->
+          | Some _, _ -> None
+          | None, e1 :: e2 :: _ ->
               let f1 = far_of_combo_elem e1 and f2 = far_of_combo_elem e2 in
               let oc = (o.Geom.x, o.Geom.y) in
               let c =
                 Collapse.cross oc (f1.Geom.x, f1.Geom.y) (f2.Geom.x, f2.Geom.y)
               in
-              if Num.sign c = 0 then true (* collinear -> kernel: e_stayer_collinear *)
-              else
-                let a, b = if Num.sign c > 0 then (f1, f2) else (f2, f1) in
-                not
-                  (List.exists
-                     (fun e -> Collapse.in_ccw_arc o a b (far_of_combo_elem e))
-                     rest)
-          | None, _ -> true
+              if Num.sign c = 0 then None
+              else Some (if Num.sign c > 0 then (f1, f2) else (f2, f1))
+          | None, _ -> None
         in
+        let in_leading_arc combo (pt : Geom.point) =
+          match leading_arc combo with
+          | Some (a, b) -> Collapse.in_ccw_arc o a b pt
+          | None -> false
+        in
+        (* A′ ≤1-arc-ray rule (2026-07-18, spec §Semantics): AT MOST ONE ray —
+           given or emergent alike — may lie strictly inside the leading stayer
+           arc; it is the splitter [{toward}] then chooses a side of. This
+           counts the GIVEN rest rays inside (the emergent, odd case only, is
+           added per-candidate in [run_combo]). Two or more inside means stayed
+           material would carry two folding creases — the combination dies. *)
+        let given_in_arc combo =
+          match combo with
+          | _ :: _ :: rest ->
+              List.length
+                (List.filter
+                   (fun e -> in_leading_arc combo (far_of_combo_elem e))
+                   rest)
+          | _ -> 0
+        in
+        let leading_arc_ok combo = given_in_arc combo < 2 in
         (* the all-layers congruence guard (spec §Semantics: "Material /
            layers"), now judged per combination so a wrong-segment combination
            is dropped rather than aborting the whole statement. For each chosen
@@ -1940,8 +1951,7 @@ let eval_folded (prog : Ast.program) : folded =
            scan excludes them). *)
         let run_combo combo (stayer : Collapse.stayer) =
           let local_real :
-              (Fold_state.t * [ `Tier1 | `Tier2 ] * (int * Geom.line) option)
-              list ref =
+              (Fold_state.t * (int * Geom.line) option) list ref =
             ref []
           in
           let local_err = ref [] in
@@ -1949,7 +1959,13 @@ let eval_folded (prog : Ast.program) : folded =
             List.map (fun (a, b, c, _) -> elem_of (a, b, c, true)) combo
           in
           let given_fars = List.map (Collapse.far_of o) elems_geom in
-          let try_patterns (st' : Fold_state.t) (tier : [ `Tier1 | `Tier2 ])
+          (* A′ ≤1-arc-ray rule: the number of GIVEN rest rays already inside
+             the leading stayer arc (0 unless a lone given splitter is present,
+             e.g. the fish's stated spine). One emergent ray may join it; a
+             second ray inside makes two folding creases on stayed material, so
+             the candidate dies. See [given_in_arc]. *)
+          let given_in_arc = given_in_arc combo in
+          let try_patterns (st' : Fold_state.t)
               (emergent : (int * Geom.line) option)
               (all_rays :
                 (int * Geom.point * Geom.point * Ast.mv_constraint) list) =
@@ -1965,7 +1981,7 @@ let eval_folded (prog : Ast.program) : folded =
                 match Collapse.collapse_all st' elems' ~over ~stayer with
                 | Ok sts ->
                     List.iter
-                      (fun s -> local_real := (s, tier, emergent) :: !local_real)
+                      (fun s -> local_real := (s, emergent) :: !local_real)
                       sts
                 | Error msg -> local_err := msg :: !local_err)
               patterns
@@ -1976,12 +1992,16 @@ let eval_folded (prog : Ast.program) : folded =
              | [] -> local_err := Flatten.e_infeasible :: !local_err
              | cands ->
                  List.iter
-                   (fun (line, ray_pt, tag) ->
-                     let tier : [ `Tier1 | `Tier2 ] =
-                       match tag with
-                       | `LineNew -> `Tier1
-                       | `OppositeRay -> `Tier2
-                     in
+                   (fun (line, ray_pt) ->
+                     (* A′ ≤1-arc-ray rule: this emergent splits the leading
+                        arc iff its ray lands inside it; combined with any given
+                        ray already inside, two folding creases sit on stayed
+                        material — skip the candidate. *)
+                     if
+                       given_in_arc + (if in_leading_arc combo ray_pt then 1 else 0)
+                       >= 2
+                     then ()
+                     else
                      (* materialize ONLY this candidate ray on a local copy of
                         the pre-flatten state, then scan every crease ray now
                         sitting at O on the kept side (the perpendicular guard
@@ -2020,11 +2040,11 @@ let eval_folded (prog : Ast.program) : folded =
                      List.iter
                        (fun (cid, far) ->
                          let emergent_ray = (cid, o, far, Ast.MvFree) in
-                         try_patterns st' tier (Some (cid, line))
+                         try_patterns st' (Some (cid, line))
                            (emergent_ray :: combo))
                        matches)
                    cands
-           else try_patterns !(ctx.state) `Tier1 None combo);
+           else try_patterns !(ctx.state) None combo);
           (!local_real, !local_err, given_fars)
         in
         (* enumerate combinations; each yields realizations + errors. A
@@ -2083,8 +2103,10 @@ let eval_folded (prog : Ast.program) : folded =
           match surviving with (_, r, _) :: _ -> r | [] -> []
         in
         let error_pool = List.concat_map (fun (_, _, e) -> e) combo_runs in
-        let tier1, tier2 = List.partition (fun (_, t, _) -> t = `Tier1) realizations in
-        let deciding = if tier1 <> [] then tier1 else tier2 in
+        (* A′ (2026-07-18): the tier partition/mask is gone — [candidates]
+           yields a single class of emergent (LineNew), so the whole surviving
+           pool decides. *)
+        let deciding = realizations in
         (* records the emergent crease's (id, line) here so the name (if
            any) binds to it instead of the given rays; None if no candidate
            ray was materialized (even case) or left unbound. *)
@@ -2127,7 +2149,7 @@ let eval_folded (prog : Ast.program) : folded =
                   Error.fail span
                     (if pool = [] then Collapse.e_maekawa else Collapse.e_selfint)
             end)
-        | [ (st, _, emergent) ] ->
+        | [ (st, emergent) ] ->
             ctx.state := st;
             emergent_bind := emergent
         | many ->
@@ -2172,7 +2194,7 @@ let eval_folded (prog : Ast.program) : folded =
             let given_cids =
               List.sort_uniq compare (List.map (fun (c, _, _, _) -> c) rays)
             in
-            let given_mountains (st, _, _) : int =
+            let given_mountains (st, _) : int =
               List.length
                 (List.filter
                    (fun cid ->
@@ -2194,7 +2216,7 @@ let eval_folded (prog : Ast.program) : folded =
               let m = List.fold_left (fun acc (c, _) -> min acc c) max_int counted in
               List.filter_map (fun (c, r) -> if c = m then Some r else None) counted
             in
-            let commit (st, _, emergent) =
+            let commit (st, emergent) =
               ctx.state := st;
               emergent_bind := emergent
             in
@@ -2218,7 +2240,7 @@ let eval_folded (prog : Ast.program) : folded =
                 let st_pre = !(ctx.state) in
                 (* stage 1 — moved-material centroid per realization; a pure
                    function of table placement, shared within a class. *)
-                let centroid_of (st_post, _, _) : Geom.point =
+                let centroid_of (st_post, _) : Geom.point =
                   let faces = Fold_state.faces st_post in
                   let nf = Array.length faces in
                   let sx = ref Num.zero and sy = ref Num.zero and sa = ref Num.zero in
@@ -2302,7 +2324,7 @@ let eval_folded (prog : Ast.program) : folded =
                     if on_symmetry_axis then
                       Error.fail span Flatten.e_toward_ambiguous
                     else
-                      let dipole (st, _, _) : Num.t =
+                      let dipole (st, _) : Num.t =
                         let faces = Fold_state.faces st in
                         let rank = Fold_state.rank st in
                         let nf = Array.length faces in

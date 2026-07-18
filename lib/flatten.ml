@@ -2,13 +2,16 @@
     "The model"). Given a set of material creases ("rays") sharing one interior
     vertex O, an ODD ray count means one emergent ray is part of the solution
     space; [candidates] is the pure GENERATOR of the geometric completions that
-    could close the vertex — same-direction filter, per-line dedup, two-tier
-    (`LineNew`/`OppositeRay`) preference tag [364660f]. It does NOT check
+    could close the vertex — same-direction filter, per-line dedup. Under the
+    A′ redesign (2026-07-18) it yields genuinely-new (`LineNew`) completions
+    ONLY: a completion collinear with a given line (the degenerate OppositeRay,
+    the far side of a crease already drawn) is constructible/material and is
+    STATED as a further element, not derived. It does NOT check
     feasibility or M/V and does NOT pick a winner: the caller (lib/eval.ml)
     enumerates every Maekawa-consistent M/V pattern ([mv_patterns], pure and
     unit-testable) over each candidate's full ray set, tries each via
-    [Collapse.collapse_all], pools the results, and disambiguates by tier then
-    by `{toward}`'s moved-material-centroid score. This supersedes the old
+    [Collapse.collapse_all], pools the results, and disambiguates by
+    `{toward}`'s moved-material-centroid score. This supersedes the old
     [derive], which bundled feasibility-filtering and `toward`-selection into
     this module; both now live in the caller because they need
     [Collapse.collapse_all] (Task 2) and [Ast.mv_constraint] (Task 1), neither
@@ -45,15 +48,16 @@ let in_gap (o : Geom.point) (lo : Geom.point) (hi : Geom.point) (q : Geom.point)
     Geom.ccw_compare ~center:o lo q < 0 || Geom.ccw_compare ~center:o q hi < 0
 
 (* The candidate GENERATOR (spec step 1's odd branch): every geometric
-   completion of the given rays that closes Kawasaki at [o], tagged by the
-   two-tier preference [364660f] (§4.9: the emergent crease is "not
-   constructible by any Huzita axiom" — a completion that only re-uses a
-   given line's far side is the degenerate, `OppositeRay` case; a completion
-   on a genuinely new line is `LineNew`). No feasibility check and no
-   [toward] selection — both are the caller's job now, over the pooled
-   realizations of every (candidate x M/V pattern). *)
+   completion of the given rays that closes Kawasaki at [o]. A′ (2026-07-18):
+   keeps only genuinely-new (`LineNew`) completions — §4.9: the emergent crease
+   is "not constructible by any Huzita axiom". A completion collinear with a
+   given line (the degenerate OppositeRay, the far side of a crease already
+   drawn) is dropped: it is constructible/material and belongs in the statement
+   as a further element, not derived. No feasibility check and no [toward]
+   selection — both are the caller's job now, over the pooled realizations of
+   every (candidate x M/V pattern). *)
 let candidates (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list) :
-    (Geom.line * Geom.point * [ `LineNew | `OppositeRay ]) list =
+    (Geom.line * Geom.point) list =
   let sorted = Array.of_list (Collapse.sort_ccw o (List.map snd fixed)) in
   let k = Array.length sorted in
   let refl i =
@@ -127,12 +131,13 @@ let candidates (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list) :
   let given_lines =
     Array.to_list (Array.map (fun (far, _) -> Geom.line_through o far) sorted)
   in
+  (* A′ (2026-07-18): keep only completions on a genuinely NEW line. A line
+     parallel (hence, sharing O, collinear) with a given line is the degenerate
+     OppositeRay completion — stated as an element now, never derived. *)
   let line_new (l, _) =
     not (List.exists (fun g -> Geom.parallel l g) given_lines)
   in
-  List.map
-    (fun (l, r) -> (l, r, if line_new (l, r) then `LineNew else `OppositeRay))
-    uniq
+  List.filter line_new uniq
 
 (* Pure, unit-testable Maekawa-consistent M/V pattern enumerator (spec step
    3): given a per-ray constraint list, every [bool list] (parallel to the
