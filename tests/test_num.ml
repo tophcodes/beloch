@@ -346,6 +346,30 @@ let test_field_sign_and_inv () =
     (Num.equal (Num.mul alpha (Num.inv alpha)) Num.one);
   Alcotest.(check (float 1e-9)) "to_float α" 1.2599210498948732 (Num.to_float alpha)
 
+(* Arithmetic on same-field irrationals that ENTER as Qq (e.g. from Num.sqrt)
+   must route through the ℚ(α) fast path and yield Field, not fall back to
+   generic qqbar. Guards the #57 perf fix: the result representation proves the
+   factorization-free path engaged, and the value checks prove it stays exact. *)
+let test_field_routing_from_qq () =
+  let r2 = Num.sqrt (n 2) in
+  (* precondition: sqrt builds a generic Qq, not a Field *)
+  Alcotest.(check bool) "√2 enters as Qq" true
+    (match r2 with Num.Qq _ -> true | _ -> false);
+  let sum = Num.add r2 r2 in
+  let mixed = Num.mul r2 (Num.add r2 Num.one) in
+  Alcotest.(check bool) "2√2 is Field (fast path)" true
+    (match sum with Num.Field _ -> true | _ -> false);
+  Alcotest.(check bool) "√2·√2 = 2 (collapses to Rat)" true
+    (Num.equal (Num.mul r2 r2) (n 2));
+  Alcotest.(check bool) "√2·(√2+1) is Field" true
+    (match mixed with Num.Field _ -> true | _ -> false);
+  Alcotest.(check bool) "√2·(√2+1) = 2+√2" true
+    (Num.equal mixed (Num.add (n 2) r2));
+  (* independent fields do NOT force a bogus merge — √2·√3 stays exact *)
+  let r3 = Num.sqrt (n 3) in
+  Alcotest.(check bool) "√2·√3 squared = 6" true
+    (Num.equal (Num.mul (Num.mul r2 r3) (Num.mul r2 r3)) (n 6))
+
 let test_field_compare () =
   let mu = Poly.of_list [ Q.one; Q.of_int (-4); Q.one ] in
   let gen = { Num.mu; lo = Q.zero; hi = Q.one } in
@@ -702,6 +726,8 @@ let () =
           Alcotest.test_case "mul cube root" `Quick test_field_mul_cube;
           Alcotest.test_case "add canonicalizes" `Quick test_field_add_canonicalizes;
           Alcotest.test_case "sign and inv" `Quick test_field_sign_and_inv;
+          Alcotest.test_case "field routing from qq (#57)" `Quick
+            test_field_routing_from_qq;
           Alcotest.test_case "compare" `Quick test_field_compare;
         ] );
     ]
