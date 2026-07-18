@@ -5,9 +5,12 @@
 ; plus both halves of the diagonal) with no emergent at all; derive now yields
 ; genuinely-new lines only, so the old odd 3-ray form no longer produces this
 ; fold. The four rays place in ONE position class (placements depend only on
-; ray LINES); the min-mountain canon and the rank-dipole stage then pick by
-; which side's material ends up on top, so `{toward .b}` (this file) and its
-; sibling `{toward .d}` pick the two MIRROR realizations: same face count, same
+; ray LINES), but three distinct min-mountain M/V patterns survive there
+; (spine-M, d-bisector-M, b-bisector-M). Under the approved rule (2026-07-19,
+; .superpowers/sdd/diagnosis-spine-m.md) {toward} selects sides/mirrors, never
+; M/V — so the pattern is PINNED explicitly (`--ray & .c mountain`, the spine),
+; leaving only the two mirror sectors. `{toward .b}` (this file) and its sibling
+; `{toward .d}` then pick the two MIRROR realizations: same face count, same
 ; table positions, opposite layer order — not the same fold twice, the whole
 ; point of this slice.
 ;
@@ -26,6 +29,6 @@ mark --ray = through .a .c
 step left
 mark --l1 = map --ab onto --diag
 mark --l2 = map --da onto --diag
-flatten (--l1) (--l2) (--ray & .a) (--ray & .c) {toward .b}
+flatten (--l1) (--l2) (--ray & .a) (--ray & .c mountain) {toward .b}
 
 ; assert faces = 6

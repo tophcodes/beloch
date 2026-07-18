@@ -277,7 +277,28 @@ let test_flatten_tip () =
    produce the two MIRROR realizations — same placements (every paper point
    lands at the same table position!) but mirrored layer order. The difference
    is observable in [Fold_state.rank], not in table positions. *)
+(* Pin the spine to mountain (approved rule 2026-07-19,
+   .superpowers/sdd/diagnosis-spine-m.md): the even 4-ray fish vertex pools
+   three distinct min-mountain M/V patterns (spine-M, d-bisector-M,
+   b-bisector-M), so {toward} — which selects sides/mirrors, never M/V — is not
+   allowed to choose. The `mountain` pin on `--ray & .c` filters to spine-M; the
+   two admissible sectors then remain as the mirror twins {toward} does pick. *)
 let fish_base_src toward =
+  Printf.sprintf
+    "paper square\n\
+     mark --diag = map .a onto .c\n\
+     mark --ray = through .a .c\n\
+     step left\n\
+     mark --l1 = map --ab onto --diag\n\
+     mark --l2 = map --da onto --diag\n\
+     flatten (--l1 & .b) (--l2 & .d) (--ray & .a) (--ray & .c mountain) \
+     {toward %s}\n"
+    toward
+
+(* Same statement WITHOUT the pin: the three-stage selection reaches the
+   min-mountain canon with three distinct M/V patterns surviving and must
+   refuse to guess (approved rule). *)
+let fish_base_unpinned_src toward =
   Printf.sprintf
     "paper square\n\
      mark --diag = map .a onto .c\n\
@@ -287,6 +308,18 @@ let fish_base_src toward =
      mark --l2 = map --da onto --diag\n\
      flatten (--l1 & .b) (--l2 & .d) (--ray & .a) (--ray & .c) {toward %s}\n"
     toward
+
+(* the paper-space segments of the FOLDED hinges deriving M. *)
+let mountain_paper_segments (st : Fold_state.t) : (Geom.point * Geom.point) list =
+  let hs = Fold_state.hinges st in
+  List.filter_map
+    (fun i ->
+      if
+        Num.sign hs.(i).Fold_state.angle <> 0
+        && Fold_state.mv st i = Fold_state.M
+      then Some (Fold_state.hinge_segment st i)
+      else None)
+    (List.init (Array.length hs) Fun.id)
 
 let test_flatten_derive_opposite_ray_fish_base () =
   let result toward =
@@ -302,6 +335,33 @@ let test_flatten_derive_opposite_ray_fish_base () =
   Alcotest.(check bool)
     "toward .b and toward .d pick DIFFERENT realizations (mirror stackings)"
     false (rank_b = rank_d)
+
+(* The pin lands the single mountain on the SPINE — the incenter→c half of the
+   `--ray` diagonal (I1→corner c). Both toward mirrors share this ridge; check
+   .d. The spine is the reused diagonal (line y=x through a=(0,0) and c=(1,1)):
+   assert exactly one M hinge, its far tip = c, its near tip on that line. *)
+let test_flatten_fish_pin_mountain_on_spine () =
+  let fd =
+    Eval.eval_folded (Beloch.parse ~filename:"t.bel" (fish_base_src ".d"))
+  in
+  let ms = mountain_paper_segments fd.Eval.state in
+  Alcotest.(check int) "exactly one mountain hinge" 1 (List.length ms);
+  let a, b = List.hd ms in
+  let c = { Geom.x = Num.one; y = Num.one } in
+  let diag = Geom.line_through { Geom.x = Num.zero; y = Num.zero } c in
+  let far, near = if Geom.point_equal a c then (a, b) else (b, a) in
+  Alcotest.(check bool) "mountain far tip is corner c=(1,1)" true
+    (Geom.point_equal far c);
+  Alcotest.(check bool) "mountain near tip lies on the a-c diagonal" true
+    (Geom.side_of_line diag near = 0)
+
+(* Without the pin the same vertex is genuinely underdetermined between
+   distinct M/V patterns: the statement must error, not fall through to the
+   rank-dipole (approved rule 2026-07-19). *)
+let test_flatten_fish_unpinned_ambiguous_mv () =
+  expect_error "ambiguous mountain/valley assignment" (fun () ->
+      Eval.eval_folded
+        (Beloch.parse ~filename:"t.bel" (fish_base_unpinned_src ".d")))
 
 (* A′ (2026-07-18): the bare `(--ray)` 3-ray form does NOT error and is NOT
    "genuinely ambiguous" (spec/SPECIFICATION.md §4.9 / the design doc's A′
@@ -544,6 +604,10 @@ let () =
             `Quick test_flatten_tip;
           Alcotest.test_case "fish base (even, stated spine): toward mirrors"
             `Quick test_flatten_derive_opposite_ray_fish_base;
+          Alcotest.test_case "fish base: pin lands mountain on the spine" `Quick
+            test_flatten_fish_pin_mountain_on_spine;
+          Alcotest.test_case "fish base: unpinned M/V is ambiguous (approved rule)"
+            `Quick test_flatten_fish_unpinned_ambiguous_mv;
           Alcotest.test_case "bare (--ray) fish derives LineNew, not an error"
             `Quick test_flatten_bare_ray_fish_derives_line_new;
           Alcotest.test_case "fish: toward on the symmetry axis is ambiguous"

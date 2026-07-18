@@ -578,19 +578,31 @@ let test_emit_no_duplicate_coincident_edges () =
                 a')
           interior)
     interior;
-  (* the classic single-ear fish's spine: ear 1 (toward .d) folds the a-side
-     diagonal segment as the statement's ONE mountain; its table position is
-     the d–O segment ((0,1)–(1−√2/2, 1−√2/2), coinciding with --l2's valley
-     hinge in the layer below — a legitimate same-rank pair). Exactly one M
-     in the whole frame, and it is that segment. *)
+  (* the classic single-ear fish's spine (approved rule 2026-07-19,
+     .superpowers/sdd/diagnosis-spine-m.md): the `mountain` pin on `--ray & .c`
+     lands the statement's ONE mountain on the SPINE — the reused a–c diagonal
+     (line y = x) from the incenter O = (1−√2/2, 1−√2/2) up to corner c = (1,1).
+     The spine is the fold's mirror axis, so it stays put (table position = paper
+     position on y = x) while the ear folds over it; it is emitted as several
+     collinear M segments because the b–d diagonal and a bisector subdivide it at
+     (1/2, 1/2) and (√2/2, √2/2). Every mountain edge lies on that spine, and the
+     segments together run from O to c. (Pre-pin this was a single M on the d–O
+     segment — the d-bisector-M realization the rank-dipole wrongly preferred.) *)
   let approx a b = Float.abs (a -. b) < 1e-6 in
   let o_c = 1.0 -. (Float.sqrt 2.0 /. 2.0) in
+  let on_spine (x, y) = approx x y in
+  let pt_eq (x, y) (u, v) = approx x u && approx y v in
   let mountains = List.filter (fun (_, a) -> a = "M") segs in
-  (match mountains with
-  | [ (((p1x, p1y), (p2x, p2y)), _) ] ->
-      Alcotest.(check bool) "the M is the folded spine on the d–O segment" true
-        (approx p1x 0.0 && approx p1y 1.0 && approx p2x o_c && approx p2y o_c)
-  | ms -> Alcotest.failf "expected exactly one M edge, got %d" (List.length ms))
+  Alcotest.(check bool) "at least one mountain edge" true (mountains <> []);
+  Alcotest.(check bool) "every mountain edge lies on the a–c spine (y = x)" true
+    (List.for_all
+       (fun ((p1, p2), _) -> on_spine p1 && on_spine p2)
+       mountains);
+  let endpts = List.concat_map (fun ((p1, p2), _) -> [ p1; p2 ]) mountains in
+  Alcotest.(check bool) "the spine mountain runs from incenter O to corner c"
+    true
+    (List.exists (pt_eq (o_c, o_c)) endpts
+    && List.exists (pt_eq (1.0, 1.0)) endpts)
 
 (* cross is material: a crease scored through several layers marks different
    lines in the paper, so bare cross must error — with a hint toward the

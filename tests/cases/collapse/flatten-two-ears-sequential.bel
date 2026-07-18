@@ -2,10 +2,12 @@
 ; incenter, then triangle cbd at its own — two independent single-vertex
 ; statements on opposite sides of the b-d line. Ear 1 is the CLASSIC fold in
 ; A′ even stated form (2026-07-18, owner ground truth): both halves of the
-; diagonal given (`--ray & .a`/`--ray & .c`), no derive — the only mountain is
-; the spine (the diagonal's continuation through the incenter), verified M=1 in
-; the emitted assignments. The odd LineNew variant puts its mountain on a given
-; bisector and is NOT the fish.
+; diagonal given (`--ray & .a`/`--ray & .c`), no derive. The vertex pools three
+; distinct min-mountain M/V patterns, so under the approved rule (2026-07-19)
+; {toward} may not choose among them — the spine is PINNED (`--ray & .c
+; mountain`), landing the only mountain on the diagonal's continuation through
+; the incenter. The odd LineNew variant puts its mountain on a given bisector
+; and is NOT the fish.
 ;
 ; Ear 2 is BLOCKED ON #48: after ear 1 commits the classic spine, the mark
 ; --l4 (map --bc onto --diag) reflects across the folded ear-1 joint and the
@@ -24,7 +26,7 @@ mark --ray = through .a .c
 step left
 mark --l1 = map --ab onto --diag
 mark --l2 = map --da onto --diag
-flatten (--l1) (--l2) (--ray & .a) (--ray & .c) {toward .d}
+flatten (--l1) (--l2) (--ray & .a) (--ray & .c mountain) {toward .d}
 
 step right
 mark --l3 = map --cd onto --diag
