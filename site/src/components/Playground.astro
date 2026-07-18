@@ -14,11 +14,24 @@
 interface Props {
   code?: string;
   height?: number;
+  // Build-time-rendered SVG markup shown in `.pg-result` before any live
+  // evaluation has run (e.g. a static hero fold rendered via evalBelToFold,
+  // the same build-time path `<Beloch>` uses). Optional — default behavior
+  // (the "Run drücken" notice) is unchanged when absent.
+  seed?: string;
+  // When true, defer creating the eval Worker (and the 5.7 MB wasm module it
+  // pulls) until the first user gesture (textarea focus/input, or a Run
+  // click) instead of on mount. Optional — default is today's eager boot.
+  lazy?: boolean;
 }
-const { code = "", height = 320 } = Astro.props;
+const { code = "", height = 320, seed, lazy = false } = Astro.props;
 ---
 
-<div class="beloch-playground" style={`--pg-height:${height}px`}>
+<div
+  class="beloch-playground"
+  style={`--pg-height:${height}px`}
+  data-lazy={lazy ? "true" : "false"}
+>
   <div class="pg-pane pg-editor">
     <div class="pg-toolbar">
       <span class="pg-label">quelle</span>
@@ -32,7 +45,7 @@ const { code = "", height = 320 } = Astro.props;
       <div class="pg-swatches" role="group" aria-label="Paper"></div>
     </div>
     <div class="pg-result">
-      <p class="pg-notice pg-notice-info">„Run“ drücken, um auszuwerten.</p>
+      {seed ? <Fragment set:html={seed} /> : <p class="pg-notice pg-notice-info">„Run“ drücken, um auszuwerten.</p>}
     </div>
   </div>
 </div>
@@ -213,7 +226,8 @@ const { code = "", height = 320 } = Astro.props;
       swatchBar.append(...buttons);
     }
 
-    let worker = new Worker("/beloch/eval-worker.js");
+    const lazy = root.dataset.lazy === "true";
+    let worker: Worker | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
     const showInfo = (message: string) => {
@@ -262,36 +276,62 @@ const { code = "", height = 320 } = Astro.props;
       showError(parsed.message ?? "Unbekannter Fehler.");
     }
 
+    function wireWorker() {
+      worker!.onmessage = (e: MessageEvent<{ raw: string }>) => {
+        finish(() => renderResult(e.data.raw));
+      };
+      worker!.onerror = (e: ErrorEvent) => {
+        finish(() => showError(`Worker-Fehler: ${e.message}`));
+      };
+    }
+
+    // Creates the Worker (and triggers its wasm download) on first use. A
+    // no-op once `worker` exists, so both the eager path (called once on
+    // mount) and the lazy path (called from the first gesture listener,
+    // and again defensively from `run()`) are safe to call unconditionally.
+    function bootIfNeeded() {
+      if (worker) return;
+      worker = new Worker("/beloch/eval-worker.js");
+      wireWorker();
+    }
+
     function run() {
       if (timer !== null) return; // guard against overlapping runs
+      bootIfNeeded();
       runBtn!.disabled = true;
       showInfo("wertet aus …");
 
       timer = setTimeout(() => {
         timer = null;
-        worker.terminate();
+        worker!.terminate();
         worker = new Worker("/beloch/eval-worker.js");
         wireWorker();
         runBtn!.disabled = false;
         showError("Auswertung abgebrochen (Zeitüberschreitung).");
       }, TIMEOUT_MS);
 
-      worker.postMessage(textarea!.value);
+      worker!.postMessage(textarea!.value);
     }
-
-    function wireWorker() {
-      worker.onmessage = (e: MessageEvent<{ raw: string }>) => {
-        finish(() => renderResult(e.data.raw));
-      };
-      worker.onerror = (e: ErrorEvent) => {
-        finish(() => showError(`Worker-Fehler: ${e.message}`));
-      };
-    }
-    wireWorker();
 
     runBtn.addEventListener("click", run);
 
-    if (textarea.value.trim()) run();
+    if (lazy) {
+      // Defer worker creation + the first run to the user's first gesture
+      // with this instance, so the wasm module isn't pulled just because
+      // the page (e.g. the landing hero) rendered.
+      let started = false;
+      const start = () => {
+        if (started) return;
+        started = true;
+        run();
+      };
+      textarea.addEventListener("focus", start, { once: true });
+      textarea.addEventListener("input", start, { once: true });
+    } else {
+      worker = new Worker("/beloch/eval-worker.js");
+      wireWorker();
+      if (textarea.value.trim()) run();
+    }
   }
 
   document

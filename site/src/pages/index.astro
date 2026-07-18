@@ -1,0 +1,305 @@
+---
+// Standalone landing page at `/` — bypasses the Starlight shell entirely (no
+// sidebar), so it owns its own <html>/<head>: theme tokens, dark-default +
+// light override wired to Starlight's own `starlight-theme` localStorage key
+// (so the choice is shared with the docs), and the paper-scheme sync script.
+//
+// The hero is the live playground, seeded with a build-time-rendered static
+// SVG (same evalBelToFold -> parseFold -> render pipeline `<Beloch>` uses) so
+// visitors see a folded result instantly, before the ~5.7 MB wasm worker
+// boots lazily on first gesture.
+import Playground from "../components/Playground.astro";
+import { evalBelToFold } from "../lib/eval-bel";
+import { headSyncScript } from "../lib/paper-schemes";
+import { parseFold } from "@beloch/scene";
+import { renderFolded, WEB_THEME } from "@beloch/render-svg";
+import "../styles/theme.css";
+
+const HERO_SRC = `paper square
+
+mark --diag = through .a .c
+mark --ea = map --ab onto --diag
+mark --eb = map --ab onto --bc
+mark --ec = map --bc onto --diag
+
+flatten (--ea & .a) (--ec & .c) (--eb & .b) {toward .a}`;
+
+const fold = evalBelToFold(HERO_SRC);
+const scene = parseFold(fold as object);
+const heroSvg = renderFolded(scene, { theme: WEB_THEME }).toString();
+
+const FISH_BASE_SRC = `paper square
+
+mark --diag = map .a onto .c
+mark --ray = through .a .c
+
+step left
+mark --l1 = map --ab onto --diag
+mark --l2 = map --da onto --diag
+flatten (--l1 & .b) (--l2 & .d) (--ray & .a) {toward .d}
+
+step right
+mark --l3 = map --cd onto --diag
+mark --l4 = map --bc onto --diag
+; flatten (--l3 & .d) (--l4 & .b) (--ray & .c) {toward .d}`;
+
+const KITE_SRC = `paper square
+
+mark --ac = through .a .c
+fold map --da onto --ac
+fold map --ab onto --ac
+; status: works — incidence filter: only one candidate bisector per fold cuts the paper; moving is derived from l1's own material`;
+
+const EXAMPLES = [
+  { label: "Fish base", code: FISH_BASE_SRC },
+  { label: "Kite", code: KITE_SRC },
+  { label: "Rabbit ear", code: HERO_SRC },
+];
+
+const NAV_LINKS = [
+  { label: "Introduction", href: "/introduction/" },
+  { label: "Tutorials", href: "/tutorials/paper-and-values/" },
+  { label: "GitHub", href: "https://github.com/tophcodes/beloch" },
+];
+---
+
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Beloch</title>
+    <meta
+      name="description"
+      content="A declarative language for origami, built on the Huzita–Justin axioms."
+    />
+    <link rel="icon" href="/favicon.svg" />
+    {/* Inlined to avoid a flash of the wrong theme. Shares Starlight's
+        `starlight-theme` localStorage key so an explicit toggle choice carries
+        between this page and the docs — but the landing is hard dark-default:
+        with no stored choice it stays dark regardless of system preference
+        (the hero reads best dark), whereas the docs still follow the system. */}
+    <script is:inline>
+      (function () {
+        var stored = null;
+        try {
+          stored = localStorage.getItem("starlight-theme");
+        } catch (e) {}
+        var theme = stored || "dark";
+        document.documentElement.dataset.theme = theme === "light" ? "light" : "dark";
+      })();
+    </script>
+    <script set:html={headSyncScript()} />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="wordmark" href="/">Beloch</a>
+      <nav class="site-nav" aria-label="Primary">
+        {NAV_LINKS.map((l) => (
+          <a href={l.href}>{l.label}</a>
+        ))}
+        <button type="button" class="theme-toggle" aria-label="Toggle color theme">
+          <span class="theme-toggle-icon" aria-hidden="true"></span>
+        </button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <h1>Beloch</h1>
+        <p class="hero-sub">
+          A declarative language for origami, built on the Huzita–Justin axioms.
+        </p>
+        <p class="hero-body">
+          Describe a sheet and the creases you want; Beloch works out the exact
+          geometry — right here in your browser.
+        </p>
+        <Playground lazy seed={heroSvg} code={HERO_SRC} height={380} />
+      </section>
+
+      <section class="examples" aria-label="Examples">
+        <span class="examples-label">try one</span>
+        <div class="example-row">
+          {EXAMPLES.map((ex) => (
+            <button type="button" class="example-chip" data-code={ex.code}>
+              {ex.label}
+            </button>
+          ))}
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      {NAV_LINKS.map((l) => (
+        <a href={l.href}>{l.label}</a>
+      ))}
+    </footer>
+
+    <style>
+      /* Minimal reset — Starlight normally supplies this; this page bypasses
+         Starlight entirely, so it owns its own baseline. */
+      *, *::before, *::after { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        min-height: 100vh;
+        background: var(--beloch-panel);
+        color: var(--beloch-ink);
+        font-family: 'IBM Plex Sans', system-ui, sans-serif;
+        overflow-x: hidden;
+      }
+      a { color: var(--beloch-valley); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+
+      .site-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 20px clamp(20px, 5vw, 56px);
+        border-bottom: 1px solid var(--beloch-border);
+      }
+      .wordmark {
+        font-family: 'IBM Plex Mono', ui-monospace, monospace;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--beloch-ink);
+      }
+      .wordmark:hover { text-decoration: none; }
+      .site-nav {
+        display: flex;
+        align-items: center;
+        gap: clamp(12px, 3vw, 28px);
+        flex-wrap: wrap;
+        font-size: 14px;
+      }
+      .site-nav a { color: var(--beloch-muted); }
+      .site-nav a:hover { color: var(--beloch-ink); }
+
+      .theme-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        border-radius: 50%;
+        border: 1px solid var(--beloch-border);
+        background: transparent;
+        color: var(--beloch-muted);
+        cursor: pointer;
+      }
+      .theme-toggle:hover { color: var(--beloch-ink); border-color: var(--beloch-valley); }
+      .theme-toggle-icon { font-size: 14px; line-height: 1; }
+      .theme-toggle-icon::before { content: "\2600"; } /* sun, shown in dark mode (switch to light) */
+      :root[data-theme='light'] .theme-toggle-icon::before { content: "\263D"; } /* moon, shown in light mode */
+
+      main {
+        width: min(1120px, 94vw);
+        margin: 0 auto;
+        padding: clamp(32px, 6vw, 72px) 0 48px;
+      }
+
+      .hero { text-align: center; }
+      .hero h1 {
+        font-family: 'IBM Plex Mono', ui-monospace, monospace;
+        font-size: clamp(32px, 6vw, 48px);
+        margin: 0 0 12px;
+      }
+      .hero-sub {
+        margin: 0 auto 8px;
+        max-width: 46ch;
+        color: var(--beloch-ink);
+        font-size: 17px;
+      }
+      .hero-body {
+        margin: 0 auto 28px;
+        max-width: 52ch;
+        color: var(--beloch-muted);
+        font-size: 15px;
+        line-height: 1.55;
+      }
+      .hero :global(.beloch-playground) {
+        text-align: left;
+        margin: 0 auto;
+        max-width: 100%;
+      }
+
+      .examples {
+        margin-top: 28px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .examples-label {
+        font-family: 'IBM Plex Mono', ui-monospace, monospace;
+        font-size: 12px;
+        color: var(--beloch-faint);
+        letter-spacing: 0.02em;
+      }
+      .example-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .example-chip {
+        font-family: 'IBM Plex Mono', ui-monospace, monospace;
+        font-size: 13px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        border: 1px solid var(--beloch-border);
+        background: transparent;
+        color: var(--beloch-muted);
+        cursor: pointer;
+        transition: color 0.15s ease, border-color 0.15s ease;
+      }
+      .example-chip:hover {
+        color: var(--beloch-ink);
+        border-color: var(--beloch-valley);
+      }
+
+      .site-footer {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        padding: 24px clamp(20px, 5vw, 56px) 40px;
+        border-top: 1px solid var(--beloch-border);
+        font-size: 13px;
+      }
+      .site-footer a { color: var(--beloch-muted); }
+      .site-footer a:hover { color: var(--beloch-ink); }
+    </style>
+
+    <script>
+      const STARLIGHT_THEME_KEY = "starlight-theme";
+
+      const toggle = document.querySelector<HTMLButtonElement>(".theme-toggle");
+      toggle?.addEventListener("click", () => {
+        const current = document.documentElement.dataset.theme === "light" ? "light" : "dark";
+        const next = current === "light" ? "dark" : "light";
+        document.documentElement.dataset.theme = next;
+        try {
+          localStorage.setItem(STARLIGHT_THEME_KEY, next);
+        } catch {
+          /* private mode etc. — theme choice only applies to this session */
+        }
+      });
+
+      // Example chips load a sample into the hero playground and run it. The
+      // hero is the only Playground instance on this page, so this stays
+      // scoped to it rather than assuming a singleton globally.
+      const hero = document.querySelector<HTMLElement>(".beloch-playground");
+      const textarea = hero?.querySelector<HTMLTextAreaElement>(".pg-source");
+      const runBtn = hero?.querySelector<HTMLButtonElement>(".pg-run");
+
+      document.querySelectorAll<HTMLButtonElement>(".example-chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          if (!textarea || !runBtn) return;
+          const code = chip.dataset.code ?? "";
+          textarea.value = code;
+          textarea.dispatchEvent(new Event("input", { bubbles: true }));
+          runBtn.click();
+        });
+      });
+    </script>
+  </body>
+</html>
