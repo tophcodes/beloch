@@ -1044,10 +1044,17 @@ the stayer (State construction, above).
    more than one combination to choose from*; the emergent, odd case, is added
    to the count per candidate.) In the even fish the stated spine `--ray & .c`
    is the lone given splitter; a lone given ray inside the arc is therefore no
-   longer a kill on its own — so a bare through-crease `(--ray)` 3-ray
-   statement whose two segment combinations both close is genuinely
-   underdetermined and reports the segment-choice ambiguity (check 14),
-   inviting an explicit `&`. A
+   longer a kill on its own — but a bare through-crease `(--ray)` 3-ray
+   statement does not become ambiguous either: it folds cleanly with
+   `{toward}` (verified: M=1, V=3, 7 faces in `Fold_state`), landing on the odd-count
+   `LineNew` derive of check 1 above — a genuinely different, non-classic
+   shape whose mountain sits on the newly-derived crease itself, not on the
+   stated spine `--ray`.
+   Without `{toward}` it reports the ordinary fold-direction ambiguity, never
+   the segment-choice ambiguity (check 14) or an `&`-suggestion. Writing the
+   even stated form (`--ray & .a` / `--ray & .c`) is therefore not about
+   dodging an error — it is the only way to state the classic
+   spine-only-mountain fold at all. A
    single-combination statement has no alternative to fall back on, so a
    mis-ordered leading pair there is *not* caught this way — it runs the
    full pipeline and dies later as an ordinary `` collapse folds a flap off

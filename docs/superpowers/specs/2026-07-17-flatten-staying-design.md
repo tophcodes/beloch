@@ -42,14 +42,28 @@ resolves this by never deriving the OppositeRay at all:
   dies. This replaces the asymmetric "any given ray inside kills, emergent
   allowed" rule. A consequence, correct under A′: a bare `(--ray)` 3-ray
   statement whose lone given ray sits inside the arc is no longer killed for
-  that alone, so both segment combinations can close and the statement is
-  genuinely ambiguous — the existing `&`-suggestion error fires (the migration
-  is to give the spine an explicit `&`, i.e. the even fish form).
+  that alone — but it does not become ambiguous either. Empirically verified
+  (2026-07-18): `(--l1) (--l2) (--ray) {toward .d}` folds cleanly (M=1, V=3,
+  7 faces in `Fold_state`), landing on the odd-count `LineNew` derive — a
+  genuinely different shape whose mountain sits on the newly-derived crease
+  itself, not on the stated spine `--ray`. Without `{toward}` it reports the
+  ordinary fold-direction ambiguity ("add `{toward .p}`"), never the
+  `&`-suggestion error. The migration to the
+  even fish form (`(--ray & .a) (--ray & .c)`) is therefore not about
+  avoiding an error — the bare form folds fine, just into the wrong shape;
+  the even form is how the classic spine-only-mountain fold gets stated at
+  all.
 
-Task-51 Blocker B (the `--l4 has no material segment` #48 kernel wall) was
-specific to the reverted *pooling* experiment; it does **not** manifest under
-A′ — the two-ear fish (`flatten-two-ears-sequential.bel`, derive-13) stays
-green with the classic `faces = 12` assertions.
+Task-51 Blocker B (the `--l4 has no material segment` #48 kernel wall) does
+manifest under A′, but not for the pooling-experiment reason it was
+originally attributed to. Once ear 1 is written in the even classic form and
+folds the true spine, ear 2's `--l4` mark reflects across the closed ear-1
+joint and the current 2D fold-state cannot re-materialize it on the far flap
+(`Fold_state.crease_segments` returns `[]`). `flatten-two-ears-sequential.bel`
+(derive-13) is green, but ear 1 alone folds the classic spine and ear 2 is
+green via an expect-error contract (`--l4 has no material segment`), not the
+classic two-ear `faces = 12` assertions — flip ear 2 to those once the kernel
+rewrite (#48) lands.
 
 ## Motivation
 
@@ -240,7 +254,8 @@ the contract.
 
 - `flatten-two-ears-sequential.bel` green: the true chain (stationary strip,
   wings, ear) is enumerated and survives; ghosts stay dead (taco checks
-  unchanged).
+  unchanged). (A′ update: ear 1 folds the classic spine; ear 2 is green via
+  an expect-error contract on `--l4 has no material segment`, pending #48.)
 - `test_flatten` derive-13 green.
 - Single-ear flatten cases (`flatten-rabbit-ear-*`, `flatten-fish-*`) green
   after their statements are migrated to convention order; behavior changes
