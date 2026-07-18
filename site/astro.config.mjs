@@ -43,6 +43,11 @@ export default defineConfig({
 			fs: { allow: [repoRoot] },
 		},
 	},
+	redirects: {
+		// The docs playground page was replaced by the landing page at `/`
+		// (the live playground is the landing hero now).
+		'/playground/': '/',
+	},
 	markdown: {
 		// Highlight ```beloch fences with the tree-sitter highlighter before
 		// Expressive Code sees them.
@@ -64,8 +69,7 @@ export default defineConfig({
 				{
 					label: "Getting Started",
 					items: [
-						{ label: "Introduction", link: "/" },
-						{ label: "Playground", link: "/playground/" },
+						{ label: "Introduction", link: "/introduction/" },
 					],
 				},
 				{

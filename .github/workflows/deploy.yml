@@ -35,6 +35,15 @@ jobs:
         run: nix build .#beloch
       - name: Put beloch on PATH
         run: echo "$PWD/result/bin" >> "$GITHUB_PATH"
+      # Regenerate the js_of_ocaml playground bundle from the current lib/web on
+      # every deploy, so the committed artifact (site/public/beloch/beloch-eval.js)
+      # can never drift from the evaluator. The FLINT-wasm qqbar module
+      # (qqbar-wasm.js) stays a committed artifact — it's expensive to build and
+      # only changes when web/qqbar_wasm.c does.
+      - name: Regenerate js_of_ocaml eval bundle
+        run: |
+          nix develop --command dune build web/ --profile release
+          cp _build/default/web/beloch_web.bc.js site/public/beloch/beloch-eval.js
       - uses: oven-sh/setup-bun@v2
       - name: Build site
         working-directory: site
