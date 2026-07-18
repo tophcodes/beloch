@@ -518,6 +518,73 @@ let test_folded_provenance () =
     "at least one folded crease has non-null axiom/sources/span" true
     has_full_prov
 
+(* Emit-time dedup regression: fish-base.bel's --ray mark (`through .a .c`,
+   never itself folded) lies exactly along the diagonal that the flatten
+   steps also fold as the spine crease. cp_display graduates the mark on
+   whichever face it still straddles in paper space; when that face's fold
+   lands its table position exactly on top of the spine hinge's, the same
+   physical segment gets emitted twice — once "M" (the folded hinge) and
+   once "F" (the graduated, never-folded mark). A physical crease segment
+   must carry exactly one assignment.
+
+   Scoped to INTERIOR edges (M/V/F): paper-boundary (B) edges legitimately
+   duplicate across stacked layers in a flat-folded diagram (fish-base's own
+   final frame still has several B/B coincidences — different layers' outer
+   silhouettes landing on the same table segment) and are not part of this
+   bug; see dedup_coincident_edges's doc comment in fold_emit.ml. *)
+let test_emit_no_duplicate_coincident_edges () =
+  let open Yojson.Safe.Util in
+  let json =
+    Beloch.fold_string ~filename:"fish-base.bel"
+      (read_example "bases/fish-base.bel")
+  in
+  let folded = last_frame json in
+  let coords =
+    folded |> member "vertices_coords" |> to_list
+    |> List.map (fun p ->
+           match p |> to_list with
+           | [ x; y ] -> (to_number x, to_number y)
+           | _ -> Alcotest.fail "vertex is not a pair")
+    |> Array.of_list
+  in
+  let ev = folded |> member "edges_vertices" |> to_list in
+  let ea = folded |> member "edges_assignment" |> to_list |> List.map to_string in
+  let key_of ia ib =
+    let pa = coords.(ia) and pb = coords.(ib) in
+    if pa <= pb then (pa, pb) else (pb, pa)
+  in
+  let segs =
+    List.map2
+      (fun e a ->
+        match e |> to_list with
+        | [ ia; ib ] -> (key_of (to_int ia) (to_int ib), a)
+        | _ -> Alcotest.fail "edge is not a pair")
+      ev ea
+  in
+  let interior_keys =
+    segs |> List.filter (fun (_, a) -> a <> "B") |> List.map fst
+  in
+  Alcotest.(check int)
+    "no two interior (M/V/F) edges share an unordered endpoint pair"
+    (List.length interior_keys)
+    (List.length (List.sort_uniq compare interior_keys));
+  (* the two spine segments either side of the diagonal's midpoint — the
+     segments the --ray mark and the spine fold both cover — must each carry
+     exactly one assignment, M. *)
+  let approx a b = Float.abs (a -. b) < 1e-6 in
+  let on_diag (x, y) = approx x y in
+  let is_spine ((p1x, p1y), (p2x, p2y)) =
+    on_diag (p1x, p1y) && on_diag (p2x, p2y)
+    && ((approx p1x 0.5 && not (approx p2x 0.5))
+       || (approx p2x 0.5 && not (approx p1x 0.5)))
+  in
+  let spine_segs = List.filter (fun (k, _) -> is_spine k) segs in
+  Alcotest.(check int) "exactly two spine segments meet at the fold center" 2
+    (List.length spine_segs);
+  List.iter
+    (fun (_, a) -> Alcotest.(check string) "spine segment is M" "M" a)
+    spine_segs
+
 (* cross is material: a crease scored through several layers marks different
    lines in the paper, so bare cross must error — with a hint toward the
    #(...) flap escape hatch. (A merely table-bent scar crosses fine bare;
@@ -985,5 +1052,7 @@ let () =
             test_beloch_marks_crease_id_deterministic;
           Alcotest.test_case "folded provenance" `Quick
             test_folded_provenance;
+          Alcotest.test_case "no duplicate coincident edges (fish-base)"
+            `Quick test_emit_no_duplicate_coincident_edges;
         ] );
     ]
