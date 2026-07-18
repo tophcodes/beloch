@@ -37,7 +37,7 @@ let test_parse_named_and_anon () =
   match prog with
   | [
    Ast.BindLine ("d1", Ast.Through _, _);
-   Ast.Mark (None, Ast.MMotion (Ast.MapPoints _), Ast.Full, Ast.Valley, None, _);
+   Ast.Mark (None, Ast.MMotion (Ast.MapPoints _), Ast.Full, None, None, _);
    Ast.Point ("center", Ast.PsExpr (Ast.PSelect _), _);
   ] ->
       ()
@@ -60,7 +60,7 @@ let test_parse_perp () =
    Ast.Mark
      ( None,
        Ast.MMotion
-         (Ast.Perp (Ast.PNamed { name = "b"; _ }, Ast.LNamed { cname = "d"; _ })), Ast.Full, Ast.Valley, None,
+         (Ast.Perp (Ast.PNamed { name = "b"; _ }, Ast.LNamed { cname = "d"; _ })), Ast.Full, None, None,
        _ );
   ] ->
       ()
@@ -80,7 +80,7 @@ let test_parse_map_onto_line () =
        Ast.MMotion
          (Ast.MapOntoLine
             (Ast.PNamed { name = "c"; _ }, Ast.LNamed { cname = "l1"; _ },
-             Ast.LNamed { cname = "l2"; _ })), Ast.Full, Ast.Valley, None,
+             Ast.LNamed { cname = "l2"; _ })), Ast.Full, None, None,
        _ );
   ] ->
       ()
@@ -104,7 +104,7 @@ let test_parse_bisect () =
          (Ast.MapLines
             ( Ast.LNamed { cname = "v"; _ },
               Ast.LNamed { cname = "h"; _ },
-              Some (Ast.PNamed { name = "a"; _ }) )), Ast.Full, Ast.Valley, None,
+              Some (Ast.PNamed { name = "a"; _ }) )), Ast.Full, None, None,
        _ );
   ] ->
       ()
@@ -123,7 +123,7 @@ let test_parse_map_through () =
        Ast.MMotion
          (Ast.MapThrough
             (Ast.PNamed { name = "c"; _ }, Ast.LNamed { cname = "d"; _ },
-             Ast.PNamed { name = "a"; _ }, None)), Ast.Full, Ast.Valley, None,
+             Ast.PNamed { name = "a"; _ }, None)), Ast.Full, None, None,
        _ );
   ] ->
       ()
@@ -142,7 +142,7 @@ let test_parse_map_through_toward () =
        Ast.MMotion
          (Ast.MapThrough
             (Ast.PNamed { name = "c"; _ }, Ast.LNamed { cname = "d"; _ },
-             Ast.PNamed { name = "a"; _ }, Some (Ast.PNamed { name = "b"; _ }))), Ast.Full, Ast.Valley, None,
+             Ast.PNamed { name = "a"; _ }, Some (Ast.PNamed { name = "b"; _ }))), Ast.Full, None, None,
        _ );
   ] ->
       ()
@@ -158,7 +158,7 @@ let test_parse_map_both () =
                                       Ast.LNamed { cname = "d"; _ },
                                       Ast.PNamed { name = "c"; _ },
                                       Ast.LNamed { cname = "e"; _ },
-                                      None)), Ast.Full, Ast.Valley, None, _) ] -> ()
+                                      None)), Ast.Full, None, None, _) ] -> ()
   | _ -> Alcotest.fail "expected MapBoth without toward"
 
 let test_parse_map_both_toward () =
@@ -167,7 +167,7 @@ let test_parse_map_both_toward () =
       "paper square\nmark map .a onto --d and .c onto --e toward .b\n"
   in
   match prog with
-  | [ Ast.Mark (None, Ast.MMotion (Ast.MapBoth (_, _, _, _, Some _)), Ast.Full, Ast.Valley, None, _) ] -> ()
+  | [ Ast.Mark (None, Ast.MMotion (Ast.MapBoth (_, _, _, _, Some _)), Ast.Full, None, None, _) ] -> ()
   | _ -> Alcotest.fail "expected MapBoth with toward"
 
 let test_parse_fold_action () =
@@ -205,7 +205,7 @@ let test_parse_fold_valley_default () =
 let test_parse_precrease_no_foldspec () =
   let prog = Beloch.parse ~filename:"t.bel" "paper square\nmark map .a onto .c\n" in
   match prog with
-  | [ Ast.Mark (None, Ast.MMotion (Ast.MapPoints _), Ast.Full, Ast.Valley, None, _) ] -> ()
+  | [ Ast.Mark (None, Ast.MMotion (Ast.MapPoints _), Ast.Full, None, None, _) ] -> ()
   | _ -> Alcotest.fail "bare axiom must carry no fold_spec"
 
 let test_parse_flip () =
@@ -330,7 +330,7 @@ let test_parse_at_one_selector () =
   match prog with
   | [ Ast.BindLine ("b", _, _);
       Ast.Mark
-        (None, Ast.MMotion (Ast.Perp (_, Ast.LFilter (Ast.LNamed _, Ast.Keep (Ast.SelPoint _), _))), Ast.Full, Ast.Valley, None,
+        (None, Ast.MMotion (Ast.Perp (_, Ast.LFilter (Ast.LNamed _, Ast.Keep (Ast.SelPoint _), _))), Ast.Full, None, None,
          _) ] -> ()
   | _ -> Alcotest.fail "expected --b & .a (LFilter, one point selector)"
 
@@ -348,7 +348,7 @@ let test_parse_at_two_selectors () =
                (_,
                 Ast.LFilter
                   (Ast.LFilter (Ast.LNamed _, Ast.Keep (Ast.SelPoint _), _),
-                   Ast.Keep (Ast.SelLine _), _))), Ast.Full, Ast.Valley, None,
+                   Ast.Keep (Ast.SelLine _), _))), Ast.Full, None, None,
           _ ) ] -> ()
   | _ -> Alcotest.fail "expected --b & .a & --b (nested LFilter)"
 
@@ -370,7 +370,7 @@ let test_parse_meet_inline () =
        mark map (--d1 * --d2) onto .e\n"
   in
   match List.rev prog with
-  | Ast.Mark (None, Ast.MMotion (Ast.MapPoints (Ast.PSelect _, Ast.PNamed _)), Ast.Full, Ast.Valley, None, _) :: _ -> ()
+  | Ast.Mark (None, Ast.MMotion (Ast.MapPoints (Ast.PSelect _, Ast.PNamed _)), Ast.Full, None, None, _) :: _ -> ()
   | _ -> Alcotest.fail "expected map (PSelect) onto .e"
 
 (* ---- Spec corpus ---- *)
@@ -758,14 +758,14 @@ let test_parse_new_value_binding () =
 
 let test_parse_new_mark_bare () =
   match Beloch.parse ~filename:"t.bel" "paper square\nmark map .a onto .c\n" with
-  | [ Ast.Mark (None, Ast.MMotion (Ast.MapPoints _), Ast.Full, Ast.Valley, None, _) ] -> ()
+  | [ Ast.Mark (None, Ast.MMotion (Ast.MapPoints _), Ast.Full, None, None, _) ] -> ()
   | _ -> Alcotest.fail "expected mark map .a onto .c : Mark (None, MMotion)"
 
 let test_parse_new_mark_named () =
   match
     Beloch.parse ~filename:"t.bel" "paper square\nmark --d = map .a onto .c\n"
   with
-  | [ Ast.Mark (Some "d", Ast.MMotion (Ast.MapPoints _), Ast.Full, Ast.Valley, None, _) ] -> ()
+  | [ Ast.Mark (Some "d", Ast.MMotion (Ast.MapPoints _), Ast.Full, None, None, _) ] -> ()
   | _ -> Alcotest.fail "expected mark --d = map .a onto .c : Mark (Some \"d\", MMotion)"
 
 let test_parse_mark_extent_direction_layer () =
@@ -782,16 +782,16 @@ let test_parse_mark_extent_direction_layer () =
    Ast.Mark
      ( None, Ast.MLine (Ast.LNamed { cname = "l"; _ }),
        Ast.Between (Ast.PNamed { name = "a"; _ }, Ast.PNamed { name = "b"; _ }),
-       Ast.Valley, None, _ );
+       None, None, _ );
    Ast.Mark
      ( None, Ast.MLine (Ast.LNamed { cname = "l"; _ }),
-       Ast.At (Ast.PNamed { name = "m"; _ }), Ast.Mountain, None, _ );
+       Ast.At (Ast.PNamed { name = "m"; _ }), Some Ast.Mountain, None, _ );
    Ast.Mark
-     ( None, Ast.MLine (Ast.LNamed { cname = "l"; _ }), Ast.Full, Ast.Valley,
+     ( None, Ast.MLine (Ast.LNamed { cname = "l"; _ }), Ast.Full, None,
        Some (Ast.FByPoints ([ Ast.PNamed { name = "c"; _ } ], _)), _ );
    Ast.Mark
      ( Some "d", Ast.MMotion (Ast.MapPoints _),
-       Ast.At (Ast.PNamed { name = "m"; _ }), Ast.Valley, None, _ );
+       Ast.At (Ast.PNamed { name = "m"; _ }), None, None, _ );
   ] ->
       ()
   | _ -> Alcotest.fail "mark extent/direction/layer did not parse as expected"
@@ -835,7 +835,7 @@ let test_parse_new_fold_along () =
   with
   | [
    Ast.BindLine ("d", Ast.MapPoints _, _);
-   Ast.Mark (None, Ast.MLine (Ast.LNamed { cname = "d"; _ }), Ast.Full, Ast.Valley, None, _);
+   Ast.Mark (None, Ast.MLine (Ast.LNamed { cname = "d"; _ }), Ast.Full, None, None, _);
    Ast.Fold
      ( None,
        Ast.MLine (Ast.LNamed { cname = "d"; _ }),
