@@ -259,6 +259,39 @@ let to_float (x : t) : float =
       let lo, hi = enclosure_tight x w in
       Q.to_float (Q.div (Q.add lo hi) two_q)
 
+(* A single-generator field ℚ(α) that might contain x: reuse a Field's own
+   generator; upgrade an irrational Qq of degree ≤ 3 (field_upgrade); rationals
+   carry no generator. Used to route cross-representation +/* through the
+   factorization-free Field path instead of generic qqbar (#57). *)
+let field_gen (x : t) : gen option =
+  match x with
+  | Field { gen; _ } -> Some gen
+  | Qq q -> (match field_upgrade (Qq q) with Field { gen; _ } -> Some gen | _ -> None)
+  | Rat _ -> None
+
+(* x as a coordinate polynomial over α (the root of [g.mu] in [g.lo,g.hi]),
+   i.e. x ∈ ℚ(α), or None if x lies outside that field. express_over is exact
+   (FLINT re-verifies), so a Some result is always the true coordinates. *)
+let coords_over (g : gen) (alpha : Qqbar.t) (x : t) : Poly.t option =
+  match x with
+  | Rat q -> Some (Poly.const q)
+  | Field f when same_gen f.gen g -> Some f.coords
+  | Field _ | Qq _ -> Qqbar.express_over ~gen:alpha (to_qq x)
+
+(* Combine x and y inside a common single-generator field, or None if no such
+   field is found (independent irrationals / degree > 3): pick a candidate
+   generator from either operand, express both over it, and reduce with
+   [combine] (Poly.add for addition, rem∘mul for product). Never wrong — a None
+   simply defers to the qqbar fallback in the caller. *)
+let via_field (combine : gen -> Poly.t -> Poly.t -> Poly.t) (x : t) (y : t) : t option =
+  match (match field_gen x with Some _ as g -> g | None -> field_gen y) with
+  | None -> None
+  | Some g -> (
+      let alpha = qq_of_gen g in
+      match (coords_over g alpha x, coords_over g alpha y) with
+      | Some cx, Some cy -> Some (mk_field g (combine g cx cy))
+      | _ -> None)
+
 let add (x : t) (y : t) : t =
   match (x, y) with
   | Rat a, Rat b -> Rat (Q.add a b)
@@ -266,7 +299,10 @@ let add (x : t) (y : t) : t =
       mk_field a.gen (Poly.add a.coords b.coords)
   | Field a, Rat q | Rat q, Field a ->
       mk_field a.gen (Poly.add a.coords (Poly.const q))
-  | _ -> of_qq (Qqbar.add (to_qq x) (to_qq y))
+  | _ -> (
+      match via_field (fun _ a b -> Poly.add a b) x y with
+      | Some r -> r
+      | None -> of_qq (Qqbar.add (to_qq x) (to_qq y)))
 
 let sub (x : t) (y : t) : t = add x (neg y)
 
@@ -277,7 +313,10 @@ let mul (x : t) (y : t) : t =
   | Field a, Field b when same_gen a.gen b.gen ->
       mk_field a.gen (Poly.rem (Poly.mul a.coords b.coords) a.gen.mu)
   | Field a, Rat q | Rat q, Field a -> mk_field a.gen (Poly.scale q a.coords)
-  | _ -> of_qq (Qqbar.mul (to_qq x) (to_qq y))
+  | _ -> (
+      match via_field (fun g a b -> Poly.rem (Poly.mul a b) g.mu) x y with
+      | Some r -> r
+      | None -> of_qq (Qqbar.mul (to_qq x) (to_qq y)))
 
 let inv (x : t) : t =
   match x with

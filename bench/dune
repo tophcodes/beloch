@@ -6,3 +6,7 @@
  (name bench_generic)
  (modules bench_generic)
  (libraries beloch zarith unix))
+(executable
+ (name bench_fold)
+ (modules bench_fold)
+ (libraries beloch unix))
