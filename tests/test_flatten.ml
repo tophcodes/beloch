@@ -303,6 +303,41 @@ let test_flatten_derive_opposite_ray_fish_base () =
     "toward .b and toward .d pick DIFFERENT realizations (mirror stackings)"
     false (rank_b = rank_d)
 
+(* A′ (2026-07-18): the bare `(--ray)` 3-ray form does NOT error and is NOT
+   "genuinely ambiguous" (spec/SPECIFICATION.md §4.9 / the design doc's A′
+   amendment both used to claim it fires the `&`-suggestion error — verified
+   false). With `{toward}` it folds cleanly, but into the odd-count LineNew
+   derive: a different, non-classic shape from the even fish form (the
+   mountain lands on the newly-derived LineNew crease, not on the stated
+   spine `--ray`). Pins the face count and M/V split so a regression in
+   either direction is loud. *)
+let bare_ray_fish_src =
+  "paper square\n\
+   mark --diag = map .a onto .c\n\
+   mark --ray = through .a .c\n\
+   step left\n\
+   mark --l1 = map --ab onto --diag\n\
+   mark --l2 = map --da onto --diag\n\
+   flatten (--l1) (--l2) (--ray) {toward .d}\n"
+
+let test_flatten_bare_ray_fish_derives_line_new () =
+  let fd =
+    Eval.eval_folded (Beloch.parse ~filename:"t.bel" bare_ray_fish_src)
+  in
+  let st = fd.Eval.state in
+  Alcotest.(check int) "bare (--ray) fish: LineNew variant has 7 faces" 7
+    (Array.length (Fold_state.faces st));
+  let m = ref 0 and v = ref 0 in
+  Array.iteri
+    (fun i _ ->
+      match Fold_state.mv st i with
+      | Fold_state.M -> incr m
+      | Fold_state.V -> incr v
+      | Fold_state.F -> ())
+    (Fold_state.hinges st);
+  Alcotest.(check (pair int int)) "bare (--ray) fish: M=1, V=3" (1, 3)
+    (!m, !v)
+
 (* toward ON the vertex's reflective symmetry axis (fish: the ac-diagonal —
    the given-ray direction set is invariant under reflection across it, b↔d)
    cannot pick a side: the two flaps are genuinely indistinguishable there.
@@ -313,14 +348,28 @@ let test_flatten_fish_toward_on_axis_ambiguous () =
   expect_error "does not pick a side" (fun () ->
       Eval.eval_folded (Beloch.parse ~filename:"t.bel" (fish_base_src ".c")))
 
-(* A′ (2026-07-18): the same-DIRECTION genuine-filter test is DELETED. Its
-   PLUS vertex — O = (1/2,1/2), rays right/up/down, whose only completion is
-   the LEFT ray (the OPPOSITE ray of the given right ray's own line y = 1/2) —
-   pinned a candidate class that no longer exists: derive yields LineNew ONLY,
-   and an opposite-ray completion is now stated as an element, never generated.
-   [Flatten.candidates] returns [] on this vertex. The behavior it once
-   guarded (the direction filter keeping the far side of a line) is subsumed by
-   the [line_new] filter's contract, exercised by the fish-base cases. *)
+(* A′ (2026-07-18): the same-DIRECTION genuine-filter test's PLUS vertex is
+   recovered here, not to pin the old OppositeRay result but to pin its
+   opposite: O = (1/2,1/2), rays right/up/down. Before A′, the only
+   completion was the LEFT ray (the OPPOSITE ray of the given right ray's own
+   line y = 1/2), tagged `OppositeRay`. Under A′, derive yields LineNew ONLY
+   and an opposite-ray completion is stated as an element, never generated —
+   so this vertex, which has no LineNew completion at all, now derives
+   nothing. *)
+let test_flatten_candidates_plus_vertex_empty () =
+  let mk x y = { Geom.x; y } in
+  let half = Num.of_q (Q.of_ints 1 2) in
+  let o = mk half half in
+  let es =
+    [
+      { Collapse.cid = 0; ea = o; eb = mk Num.one half; valley = true };
+      { Collapse.cid = 1; ea = o; eb = mk half Num.one; valley = true };
+      { Collapse.cid = 2; ea = o; eb = mk half Num.zero; valley = true };
+    ]
+  in
+  let fixed = Collapse.sort_ccw o es in
+  Alcotest.(check int) "no LineNew completion at the plus vertex" 0
+    (List.length (Flatten.candidates o ~fixed))
 
 (* Conversely, a derive-mode vertex that DOES admit a proper in-bounds seating
    (the swivel rabbit ear) folds correctly: every folded face lands inside the
@@ -495,12 +544,16 @@ let () =
             `Quick test_flatten_tip;
           Alcotest.test_case "fish base (even, stated spine): toward mirrors"
             `Quick test_flatten_derive_opposite_ray_fish_base;
+          Alcotest.test_case "bare (--ray) fish derives LineNew, not an error"
+            `Quick test_flatten_bare_ray_fish_derives_line_new;
           Alcotest.test_case "fish: toward on the symmetry axis is ambiguous"
             `Quick test_flatten_fish_toward_on_axis_ambiguous;
           Alcotest.test_case "derive in-paper fold accepted (swivel-rabbit)"
             `Quick test_flatten_derive_in_bounds;
           Alcotest.test_case "candidates: fish vertex (2 LineNew, no OppositeRay)"
             `Quick test_flatten_candidates_fish_vertex;
+          Alcotest.test_case "candidates: plus vertex derives nothing (A′)"
+            `Quick test_flatten_candidates_plus_vertex_empty;
           Alcotest.test_case "mv_patterns: 4 free -> 8" `Quick
             test_flatten_mv_patterns_all_free;
           Alcotest.test_case "mv_patterns: one pinned Mountain -> 4" `Quick

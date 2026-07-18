@@ -1945,7 +1945,7 @@ let eval_folded (prog : Ast.program) : folded =
               if !bad then Some "collapse through unaligned layers" else None)
             combo
         in
-        (* run one combination: pool every (state, tier, emergent-binding) that
+        (* run one combination: pool every (state, emergent-binding) that
            a candidate x M/V-pattern attempt closed, and every failure message.
            [given_fars] is this combination's given rays' far tips (the emergent
            scan excludes them). *)
