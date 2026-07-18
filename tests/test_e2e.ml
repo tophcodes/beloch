@@ -520,18 +520,22 @@ let test_folded_provenance () =
 
 (* Emit-time dedup regression: fish-base.bel's --ray mark (`through .a .c`,
    never itself folded) lies exactly along the diagonal that the flatten
-   steps also fold as the spine crease. cp_display graduates the mark on
+   step also folds as the spine crease. cp_display graduates the mark on
    whichever face it still straddles in paper space; when that face's fold
-   lands its table position exactly on top of the spine hinge's, the same
-   physical segment gets emitted twice — once "M" (the folded hinge) and
-   once "F" (the graduated, never-folded mark). A physical crease segment
-   must carry exactly one assignment.
+   lands its table position exactly on top of a folded hinge's, the same
+   physical segment gets emitted twice — once "M"/"V" (the folded hinge)
+   and once "F" (the graduated, never-folded mark). The dedup contract
+   (dedup_coincident_edges, fold_emit.ml) is that a folded M/V supersedes a
+   coincident F — so no table segment may carry BOTH an F and an M/V.
 
-   Scoped to INTERIOR edges (M/V/F): paper-boundary (B) edges legitimately
-   duplicate across stacked layers in a flat-folded diagram (fish-base's own
-   final frame still has several B/B coincidences — different layers' outer
-   silhouettes landing on the same table segment) and are not part of this
-   bug; see dedup_coincident_edges's doc comment in fold_emit.ml. *)
+   Same-RANK coincidences are legitimate and kept: different stacked
+   layers' independently-folded hinges (M/V vs M/V — the fold-quarter
+   accordion precedent, and here ear 1's folded spine landing exactly on
+   the --l2 hinge) or different layers' graduated marks (F vs F), and all
+   paper-boundary (B) duplicates. Since the classic single-ear fish
+   (A′ even stated form, 2026-07-18) flat-folds several such pairs onto
+   shared table segments, the check is rank-mixing, not blanket
+   uniqueness. *)
 let test_emit_no_duplicate_coincident_edges () =
   let open Yojson.Safe.Util in
   let json =
@@ -561,29 +565,32 @@ let test_emit_no_duplicate_coincident_edges () =
         | _ -> Alcotest.fail "edge is not a pair")
       ev ea
   in
-  let interior_keys =
-    segs |> List.filter (fun (_, a) -> a <> "B") |> List.map fst
-  in
-  Alcotest.(check int)
-    "no two interior (M/V/F) edges share an unordered endpoint pair"
-    (List.length interior_keys)
-    (List.length (List.sort_uniq compare interior_keys));
-  (* the two spine segments either side of the diagonal's midpoint — the
-     segments the --ray mark and the spine fold both cover — must each carry
-     exactly one assignment, M. *)
-  let approx a b = Float.abs (a -. b) < 1e-6 in
-  let on_diag (x, y) = approx x y in
-  let is_spine ((p1x, p1y), (p2x, p2y)) =
-    on_diag (p1x, p1y) && on_diag (p2x, p2y)
-    && ((approx p1x 0.5 && not (approx p2x 0.5))
-       || (approx p2x 0.5 && not (approx p1x 0.5)))
-  in
-  let spine_segs = List.filter (fun (k, _) -> is_spine k) segs in
-  Alcotest.(check int) "exactly two spine segments meet at the fold center" 2
-    (List.length spine_segs);
+  let interior = List.filter (fun (_, a) -> a <> "B") segs in
   List.iter
-    (fun (_, a) -> Alcotest.(check string) "spine segment is M" "M" a)
-    spine_segs
+    (fun (k, a) ->
+      if a = "F" then
+        List.iter
+          (fun (k', a') ->
+            if k' = k && (a' = "M" || a' = "V") then
+              Alcotest.failf
+                "graduated F edge coincides with a folded %s hinge — dedup \
+                 must drop the F"
+                a')
+          interior)
+    interior;
+  (* the classic single-ear fish's spine: ear 1 (toward .d) folds the a-side
+     diagonal segment as the statement's ONE mountain; its table position is
+     the d–O segment ((0,1)–(1−√2/2, 1−√2/2), coinciding with --l2's valley
+     hinge in the layer below — a legitimate same-rank pair). Exactly one M
+     in the whole frame, and it is that segment. *)
+  let approx a b = Float.abs (a -. b) < 1e-6 in
+  let o_c = 1.0 -. (Float.sqrt 2.0 /. 2.0) in
+  let mountains = List.filter (fun (_, a) -> a = "M") segs in
+  (match mountains with
+  | [ (((p1x, p1y), (p2x, p2y)), _) ] ->
+      Alcotest.(check bool) "the M is the folded spine on the d–O segment" true
+        (approx p1x 0.0 && approx p1y 1.0 && approx p2x o_c && approx p2y o_c)
+  | ms -> Alcotest.failf "expected exactly one M edge, got %d" (List.length ms))
 
 (* cross is material: a crease scored through several layers marks different
    lines in the paper, so bare cross must error — with a hint toward the
