@@ -1,0 +1,36 @@
+{
+  "file_spec": 1.1,
+  "file_creator": "beloch render-svg test fixture",
+  "frame_classes": [ "creasePattern" ],
+  "vertices_coords": [
+    [ 0.0, 0.0 ],
+    [ 1.0, 0.0 ],
+    [ 1.0, 1.0 ],
+    [ 0.0, 1.0 ],
+    [ 0.5, 0.5 ],
+    [ 0.5, 0.0 ],
+    [ 1.0, 0.5 ],
+    [ 0.0, 0.5 ]
+  ],
+  "edges_vertices": [
+    [ 0, 1 ],
+    [ 1, 2 ],
+    [ 2, 3 ],
+    [ 3, 0 ],
+    [ 4, 5 ],
+    [ 4, 6 ],
+    [ 4, 7 ]
+  ],
+  "edges_assignment": [
+    "B", "B", "B", "B", "M", "V", "F"
+  ],
+  "faces_vertices": [
+    [ 0, 1, 2, 3 ]
+  ],
+  "beloch:edges": [ null, null, null, null, null, null, null ],
+  "beloch:vertices_names": [ "a", "b", "c", "d", null, null, null, null ],
+  "beloch:named_points": {},
+  "beloch:named_lines": {},
+  "beloch:named_lines_frame": "creasePattern",
+  "beloch:marks": []
+}

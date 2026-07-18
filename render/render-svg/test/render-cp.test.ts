@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
 import { parseFold } from "@beloch/scene";
-import { renderCP } from "@beloch/render-svg";
+import { PRESETS, renderCP } from "@beloch/render-svg";
 
 const golden = (p: string) =>
   Bun.file(new URL(`./fixtures/${p}`, import.meta.url)).text();
@@ -87,6 +87,32 @@ test("legend: true shows the legend panel", async () => {
   const scene = parseFold(await golden("bisect-a.fold"));
   const s = renderCP(scene, { legend: true }).toString();
   expect(s).toContain('class="legend-panel"');
+});
+
+test("legend lists exactly the assignment classes present, including F", async () => {
+  const scene = parseFold(await golden("legend-full.fold"));
+  const s = renderCP(scene, { legend: true }).toString();
+  expect(s).toContain(">boundary</text>");
+  expect(s).toContain(">mountain</text>");
+  expect(s).toContain(">valley</text>");
+  expect(s).toContain(">flat</text>");
+  expect(s).not.toContain(">unassigned</text>");
+});
+
+test("legend omits flat when the FOLD carries no F edges", async () => {
+  const scene = parseFold(await golden("fold-quarter.fold")); // B/M/V only
+  const s = renderCP(scene, { legend: true }).toString();
+  expect(s).toContain(">boundary</text>");
+  expect(s).toContain(">mountain</text>");
+  expect(s).toContain(">valley</text>");
+  expect(s).not.toContain(">flat</text>");
+});
+
+test("legend swatch styling follows the active theme.lineStyle preset", async () => {
+  const scene = parseFold(await golden("legend-full.fold"));
+  const s = renderCP(scene, { legend: true, theme: { lineStyle: PRESETS.mono! } }).toString();
+  // mono's F swatch: stroke=ink, dasharray "1 3", opacity 0.4
+  expect(s).toContain('stroke-dasharray="1 3"');
 });
 
 test("CP stamps data-bel-name on named creases and named vertex dots", async () => {
