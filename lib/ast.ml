@@ -85,7 +85,7 @@ type fold_spec = {
 
 (* A collapse element's M/V constraint (flatten V2 surface, spec
    2026-07-16-flatten-derive-v2-design.md §Syntax): a bare element is
-   unconstrained — the solver assigns its M/V (Task 3). `mountain`/`valley`
+   unconstrained — the solver assigns its M/V. `mountain`/`valley`
    pin it explicitly. Distinct from [direction] (Mark/Fold's own two-state
    fold direction), which stays two-state. *)
 type mv_constraint = MvFree | MvMountain | MvValley

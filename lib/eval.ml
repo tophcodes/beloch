@@ -1717,8 +1717,6 @@ let eval_folded (prog : Ast.program) : folded =
         ctx.pending <- true;
         ctx.panel <- Some id
     | Ast.Flatten (name_opt, elems, overs, staying_opt, toward_opt, span) ->
-        ignore staying_opt;
-        (* wired in Task 3 *)
         (* materialize every collapse crease FIRST (a mark subdivides on
            segment-selection), so all of them cross and the shared collapse
            vertex is fully formed before any ray is selected. Selecting rays
