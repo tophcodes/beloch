@@ -580,19 +580,31 @@ let test_emit_no_duplicate_coincident_edges () =
                 a')
           interior)
     interior;
-  (* the classic single-ear fish's spine: ear 1 (toward .d) folds the a-side
-     diagonal segment as the statement's ONE mountain; its table position is
-     the d–O segment ((0,1)–(1−√2/2, 1−√2/2), coinciding with --l2's valley
-     hinge in the layer below — a legitimate same-rank pair). Exactly one M
-     in the whole frame, and it is that segment. *)
+  (* the classic single-ear fish's spine (approved rule 2026-07-19,
+     .superpowers/sdd/diagnosis-spine-m.md): the `mountain` pin on `--ray & .c`
+     lands the statement's ONE mountain on the SPINE — the reused a–c diagonal
+     (line y = x) from the incenter O = (1−√2/2, 1−√2/2) up to corner c = (1,1).
+     The spine is the fold's mirror axis, so it stays put (table position = paper
+     position on y = x) while the ear folds over it; it is emitted as several
+     collinear M segments because the b–d diagonal and a bisector subdivide it at
+     (1/2, 1/2) and (√2/2, √2/2). Every mountain edge lies on that spine, and the
+     segments together run from O to c. (Pre-pin this was a single M on the d–O
+     segment — the d-bisector-M realization the rank-dipole wrongly preferred.) *)
   let approx a b = Float.abs (a -. b) < 1e-6 in
   let o_c = 1.0 -. (Float.sqrt 2.0 /. 2.0) in
+  let on_spine (x, y) = approx x y in
+  let pt_eq (x, y) (u, v) = approx x u && approx y v in
   let mountains = List.filter (fun (_, a) -> a = "M") segs in
-  (match mountains with
-  | [ (((p1x, p1y), (p2x, p2y)), _) ] ->
-      Alcotest.(check bool) "the M is the folded spine on the d–O segment" true
-        (approx p1x 0.0 && approx p1y 1.0 && approx p2x o_c && approx p2y o_c)
-  | ms -> Alcotest.failf "expected exactly one M edge, got %d" (List.length ms))
+  Alcotest.(check bool) "at least one mountain edge" true (mountains <> []);
+  Alcotest.(check bool) "every mountain edge lies on the a–c spine (y = x)" true
+    (List.for_all
+       (fun ((p1, p2), _) -> on_spine p1 && on_spine p2)
+       mountains);
+  let endpts = List.concat_map (fun ((p1, p2), _) -> [ p1; p2 ]) mountains in
+  Alcotest.(check bool) "the spine mountain runs from incenter O to corner c"
+    true
+    (List.exists (pt_eq (o_c, o_c)) endpts
+    && List.exists (pt_eq (1.0, 1.0)) endpts)
 
 (* cross is material: a crease scored through several layers marks different
    lines in the paper, so bare cross must error — with a hint toward the
@@ -821,9 +833,10 @@ let test_e2e_bare_precrease_emits_f () =
 (* FOLD-emit letters contract (owner-approved): the top-level crease-pattern
    frame shows what IS. A folded crease edge shows its DERIVED mv (the letter the
    folded frames already print); a never-folded reference mark shows F unless it
-   carries an explicit colour. On this branch the fish's single mountain is the
-   d-bisector (I1-d); the sibling pin-rule branch relocates it to the spine, so
-   assert the M *count* and the marks' F-ness, never the mountain's position. *)
+   carries an explicit colour. Merged with the pin rule, the fish's pinned spine
+   folds the sheet closed along the WHOLE a-c diagonal: one mountain LINE, three
+   collinear edges (I1-center, center-I2, I2-c) — so assert every M edge lies on
+   the y = x spine line rather than a brittle single-edge count. *)
 let test_fish_cp_letters_contract () =
   let open Yojson.Safe.Util in
   let json =
@@ -832,7 +845,35 @@ let test_fish_cp_letters_contract () =
   in
   let assigns = json_cp_assignments json in
   let count a = List.length (List.filter (( = ) a) assigns) in
-  Alcotest.(check int) "CP shows exactly one derived mountain" 1 (count "M");
+  Alcotest.(check int) "CP mountain edges = the spine ridge (3 collinear)" 3
+    (count "M");
+  (let coords =
+     json |> member "vertices_coords" |> to_list
+     |> List.map (fun p ->
+            match to_list p with
+            | [ x; y ] -> (to_number x, to_number y)
+            | _ -> Alcotest.fail "vertex arity")
+   in
+   let edges =
+     json |> member "edges_vertices" |> to_list
+     |> List.map (fun e ->
+            match to_list e with
+            | [ a; b ] -> (to_int a, to_int b)
+            | _ -> Alcotest.fail "edge arity")
+   in
+   let on_spine i =
+     let x, y = List.nth coords i in
+     Float.abs (x -. y) < 1e-9
+   in
+   List.iteri
+     (fun k a ->
+       if a = "M" then
+         let i, j = List.nth edges k in
+         Alcotest.(check bool)
+           (Printf.sprintf "M edge %d lies on the y = x spine" k)
+           true
+           (on_spine i && on_spine j))
+     assigns);
   Alcotest.(check bool) "CP shows flat (F) precreases" true (count "F" > 0);
   (* the never-folded reference marks (--diag / --l3 / --l4) must read F, not the
      old phantom default valley. beloch:edges is index-aligned with
