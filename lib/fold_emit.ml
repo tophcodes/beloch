@@ -39,6 +39,56 @@ let beloch_edges_json edges : Yojson.Safe.t =
                ])
        edges)
 
+let assign_rank = function "M" | "V" -> 2 | "F" -> 1 | _ (* "B" *) -> 0
+
+(* De-duplicate edges landing on the identical physical segment: two
+   different faces (stacked paper layers, or a mark graduating onto a
+   segment a fold hinge already covers) can share the same endpoint pair
+   once mapped through [coord_of]. Exact (Num) point comparison, never
+   float — coincidence here is a geometric fact, not a rendering
+   approximation.
+
+   Only a STRICT rank difference is resolved: a folded M/V (rank 2) always
+   supersedes a flat/graduated F (rank 1), which always supersedes a paper
+   boundary B (rank 0) — a scored-but-never-folded line lying exactly on a
+   hinge that DID fold ([mv] derives F from dihedral angle 0, so F can never
+   itself be a real fold) is provably the same crease, redundantly
+   registered by the marks/MATERIAL layer graduating onto ground a real fold
+   already covers — the fish-base bug this guards.
+
+   Edges that TIE for a segment's highest rank are left exactly as they are,
+   even when two rank-2 edges disagree on M vs V: verified against
+   tests/cases/fold/fold-quarter.bel, an accordion whose two perpendicular
+   folds legitimately stack an independently-folded M hinge and V hinge on
+   the same table segment once flattened — different layers, both truly
+   folded, neither redundant. Silently collapsing a same-rank tie (or
+   raising on it) would delete or reject a real crease. *)
+let dedup_coincident_edges (coord_of : int -> Geom.point)
+    (edges : (int * int * string * State.provenance option) list) :
+    (int * int * string * State.provenance option) list =
+  let matches (pa, pb) (qa, qb) =
+    (Geom.point_equal pa qa && Geom.point_equal pb qb)
+    || (Geom.point_equal pa qb && Geom.point_equal pb qa)
+  in
+  (* pass 1: find every segment's highest-ranked assignment present. *)
+  let groups = ref [] in (* (endpoint, endpoint) * rank ref, first-seen order *)
+  List.iter
+    (fun (ia, ib, a, _) ->
+      let key = (coord_of ia, coord_of ib) in
+      match List.find_opt (fun (k, _) -> matches key k) !groups with
+      | Some (_, r) -> r := max !r (assign_rank a)
+      | None -> groups := (key, ref (assign_rank a)) :: !groups)
+    edges;
+  (* pass 2: keep only edges at their segment's max rank, in original order —
+     a same-rank tie (e.g. M vs V) keeps every edge, each in its own slot. *)
+  List.filter
+    (fun (ia, ib, a, _) ->
+      let key = (coord_of ia, coord_of ib) in
+      match List.find_opt (fun (k, _) -> matches key k) !groups with
+      | Some (_, r) -> assign_rank a = !r
+      | None -> true)
+    edges
+
 (* Emit-time overlay (design §3.6). Graduates every mark whose MSeg endpoints
    both lie on a face boundary (corner / paper edge / real crease — the old
    CSubdivide test) into real creases by subdividing the state (in paper space,
@@ -156,7 +206,10 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
         end
       done)
     faces;
-  let edges = List.rev !edges in
+  let edges =
+    List.rev !edges
+    |> dedup_coincident_edges (fun i -> Dynarray.get vtable i)
+  in
   let beloch_edges = beloch_edges_json edges in
   let beloch_vertices_names = vertices_names_json vpaper named_points in
   let verts_table =
@@ -295,7 +348,10 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
         end
       done)
     faces;
-  let edges = List.rev !edges in
+  let edges =
+    List.rev !edges
+    |> dedup_coincident_edges (fun i -> Dynarray.get vpaper i)
+  in
   let verts_paper =
     Dynarray.to_list vpaper
     |> List.map (fun (p : Geom.point) ->
