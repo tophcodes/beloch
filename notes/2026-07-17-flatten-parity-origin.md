@@ -51,3 +51,18 @@ enumeriert, Ghosts bleiben tot), `test_flatten` derive-13 grün, keine
   (valid_srank), BELOCH_TT_DEBUG (Taco-Raise) waren als temporäre
   Instrumentierung nützlich; vor Commits entfernt. Bei Bedarf als dauerhafte
   env-gated Traces wiedereinführen.
+
+## Aufgelöst (2026-07-18, staying-Slice)
+
+Sprachlösung statt ~mirror-Union: `(staying <flap>)` + Leading-Pair-Konvention
+verankern die Paritätsklasse semantisch
+(`docs/superpowers/specs/2026-07-17-flatten-staying-design.md`, #52). Dabei
+dritte Repräsentanten-Arbitrarität gefunden und gefixt: `sector_iso` nahm das
+erste Face im Sektor als Orientierungs-Repräsentant — im gemischten
+Stayer-Sektor des zweiten Ears (Basis-Streifen det>0 + Ear-1-Stack det<0)
+las `effective_valley` dadurch die Spiegelwelt (Diagnose bestätigt: ein
+invertiertes Hinge-Constraint). Fix: pro Ray das crease-adjazente Face der
+Stayer-Seite. Die wahre Kette war nie ein Ghost: einmal enumeriert, besteht
+sie `make` + Taco-Checks. `flatten-two-ears-sequential` und derive-13 grün;
+Fallback aus 1a4f6d9 ersatzlos gestrichen. Nebenbefund e_midpaper: obsolet —
+LineNew-Emergent gewinnt regulär; #51-Trio bleibt als eigener Slice rot.
