@@ -335,8 +335,20 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
               match Fold_state.hinge_between disp fi pa pb with
               | Some hi ->
                   let h = hs.(hi) in
+                  (* FOLD-emit letters contract (2026-07-19): the crease pattern
+                     shows what IS. A FOLDED crease (angle <> 0) shows its
+                     DERIVED dihedral [mv] — the same letter the folded frames
+                     print — so a stale [intent] can never paint a phantom
+                     colour. A flat hinge (angle 0, a graduated mark) keeps its
+                     stored [intent]: F for a bare reference line, M/V for an
+                     explicitly-coloured precrease. *)
+                  let asg =
+                    if Num.sign h.Fold_state.angle <> 0 then
+                      Fold_state.mv disp hi
+                    else h.Fold_state.intent
+                  in
                   let a =
-                    match h.Fold_state.intent with
+                    match asg with
                     | Fold_state.M -> "M"
                     | Fold_state.V -> "V"
                     | Fold_state.F -> "F"
@@ -397,9 +409,9 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
                ] ))
          fd.Eval.named_lines)
   in
-  (* record marks (non-subdividing; see Fold_state.mark) — a mark's intent is
-     only ever M or V (never F: F is a folded-form dihedral, not a
-     crease-pattern colour), but match totally rather than special-casing. *)
+  (* record marks (non-subdividing; see Fold_state.mark) — a bare reference
+     mark stores intent F (no stated colour); an explicit mountain/valley mark
+     stores M/V (FOLD-emit letters contract, 2026-07-19). *)
   let mark_assign_str = function
     | Fold_state.M -> "M"
     | Fold_state.V -> "V"

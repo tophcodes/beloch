@@ -133,8 +133,14 @@ let lookup_instance (ctx : ctx) (name : string) (span : Error.span) : instance =
 
 let is_temp (n : string) = String.length n > 0 && n.[0] = '_'
 
-let intent_of (dir : Ast.direction) : Fold_state.assign =
-  match dir with Ast.Valley -> Fold_state.V | Ast.Mountain -> Fold_state.M
+(* A mark's stored crease-pattern colour. A bare reference mark states no
+   colour and stores F (a never-folded line reads flat in the CP); an explicit
+   `mountain`/`valley` pins M/V (FOLD-emit letters contract, 2026-07-19). *)
+let mark_intent_of (dir : Ast.direction option) : Fold_state.assign =
+  match dir with
+  | None -> Fold_state.F
+  | Some Ast.Valley -> Fold_state.V
+  | Some Ast.Mountain -> Fold_state.M
 
 (* Shared failure text for every "points must land on exactly one flap/face"
    lookup (FByPoints resolution): callers narrow their own success variant
@@ -1344,7 +1350,7 @@ let eval_folded (prog : Ast.program) : folded =
         in
         bind_crease ctx n span (Frozen axis)
     | Ast.Mark (name_opt, m, ext, dir, layer_opt, span) -> (
-        let intent = intent_of dir in
+        let intent = mark_intent_of dir in
         let bind_mark cid line =
           match name_opt with
           | Some n -> bind_crease ctx n span (Mark (cid, line))

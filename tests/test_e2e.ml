@@ -437,7 +437,9 @@ let test_beloch_marks_emitted () =
   | `List [ one ] ->
       Alcotest.(check string) "point kind" "point"
         (one |> member "kind" |> to_string);
-      Alcotest.(check string) "valley default" "V"
+      (* FOLD-emit letters contract: a bare reference mark states no colour and
+         emits F (was the old phantom valley default). *)
+      Alcotest.(check string) "bare mark defaults to F" "F"
         (one |> member "intent" |> to_string)
   | _ -> Alcotest.fail "expected exactly one point mark"
 
@@ -828,6 +830,68 @@ let test_e2e_bare_precrease_emits_f () =
   Alcotest.(check bool) "no U in output" false (List.mem "U" assigns);
   Alcotest.(check bool) "has an F crease" true (List.mem "F" assigns)
 
+(* FOLD-emit letters contract (owner-approved): the top-level crease-pattern
+   frame shows what IS. A folded crease edge shows its DERIVED mv (the letter the
+   folded frames already print); a never-folded reference mark shows F unless it
+   carries an explicit colour. Merged with the pin rule, the fish's pinned spine
+   folds the sheet closed along the WHOLE a-c diagonal: one mountain LINE, three
+   collinear edges (I1-center, center-I2, I2-c) — so assert every M edge lies on
+   the y = x spine line rather than a brittle single-edge count. *)
+let test_fish_cp_letters_contract () =
+  let open Yojson.Safe.Util in
+  let json =
+    Beloch.fold_string ~filename:"fish-base.bel"
+      (read_example "bases/fish-base.bel")
+  in
+  let assigns = json_cp_assignments json in
+  let count a = List.length (List.filter (( = ) a) assigns) in
+  Alcotest.(check int) "CP mountain edges = the spine ridge (3 collinear)" 3
+    (count "M");
+  (let coords =
+     json |> member "vertices_coords" |> to_list
+     |> List.map (fun p ->
+            match to_list p with
+            | [ x; y ] -> (to_number x, to_number y)
+            | _ -> Alcotest.fail "vertex arity")
+   in
+   let edges =
+     json |> member "edges_vertices" |> to_list
+     |> List.map (fun e ->
+            match to_list e with
+            | [ a; b ] -> (to_int a, to_int b)
+            | _ -> Alcotest.fail "edge arity")
+   in
+   let on_spine i =
+     let x, y = List.nth coords i in
+     Float.abs (x -. y) < 1e-9
+   in
+   List.iteri
+     (fun k a ->
+       if a = "M" then
+         let i, j = List.nth edges k in
+         Alcotest.(check bool)
+           (Printf.sprintf "M edge %d lies on the y = x spine" k)
+           true
+           (on_spine i && on_spine j))
+     assigns);
+  Alcotest.(check bool) "CP shows flat (F) precreases" true (count "F" > 0);
+  (* the never-folded reference marks (--diag / --l3 / --l4) must read F, not the
+     old phantom default valley. beloch:edges is index-aligned with
+     edges_assignment; its name drops the -- prefix. *)
+  let names =
+    json |> member "beloch:edges" |> to_list
+    |> List.map (fun e ->
+           if e = `Null then None else e |> member "name" |> to_string_option)
+  in
+  List.iter2
+    (fun a n ->
+      match n with
+      | Some (("diag" | "l3" | "l4") as nm) ->
+          Alcotest.(check string)
+            (Printf.sprintf "reference mark --%s reads F" nm) "F" a
+      | _ -> ())
+    assigns names
+
 (* ---- Task 4: mark extent dispatch (partial marks / pinch, #50 slice 2) --- *)
 
 let eval_bel src = Eval.eval_folded (Beloch.parse ~filename:"t.bel" src)
@@ -1040,6 +1104,9 @@ let () =
             test_e2e_cohesion_moves_coplanar_sibling;
           Alcotest.test_case "bare precrease emits F not U" `Quick
             test_e2e_bare_precrease_emits_f;
+          Alcotest.test_case
+            "fish CP: one derived M, reference marks read F" `Quick
+            test_fish_cp_letters_contract;
           Alcotest.test_case "interior point mark records, no edge" `Quick
             test_mark_point_records_no_edge;
           Alcotest.test_case "boundary->interior extent records, splits nothing"

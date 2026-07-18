@@ -132,8 +132,16 @@ mountain_opt:
   | MOUNTAIN { true }
 
 mark_clauses:
-  | extent_opt mountain_opt layer_opt
-      { ($1, (if $2 then Mountain else Valley), $3) }
+  | extent_opt mark_dir_opt layer_opt
+      { ($1, $2, $3) }
+
+(* a mark's crease-pattern colour is optional: bare = no colour (emits F);
+   mountain/valley pins M/V. Distinct from a fold, whose direction is a
+   mandatory two-state Valley default. *)
+mark_dir_opt:
+  |          { None }
+  | MOUNTAIN { Some Mountain }
+  | VALLEY   { Some Valley }
 
 extent_opt:
   |                                     { Full }

@@ -105,10 +105,13 @@ type markable =
 type stmt =
   | BindLine of string * axiom * Error.span
       (* --l = map .a onto .b : bind a pure line VALUE; no material effect *)
-  | Mark of string option * markable * extent * direction * flap_operand option * Error.span
-      (* mark <motion|--l> [between .a .b | at .p] [mountain] [#[..]] ;
+  | Mark of string option * markable * extent * direction option * flap_operand option * Error.span
+      (* mark <motion|--l> [between .a .b | at .p] [mountain|valley] [#[..]] ;
          flat crease. name_opt Some = `mark --l = <motion>` bind-and-materialise.
-         Full extent subdivides (emits F); a mid-face extent records (no subdivide). *)
+         Full extent subdivides (emits F); a mid-face extent records (no subdivide).
+         The direction is OPTIONAL: a bare reference mark states no colour and
+         emits F in the crease pattern; an explicit `mountain`/`valley` pins its
+         M/V colour (FOLD-emit letters contract, 2026-07-19). *)
   | Fold of string option * markable * fold_spec * Error.span
       (* fold <motion|--l> [moving][up to][mountain] : fold. On a motion,
          subdivide+fold; on an existing --l, fold along it. *)
