@@ -73,19 +73,18 @@ const NAV_LINKS = [
       content="A declarative language for origami, built on the Huzita–Justin axioms."
     />
     <link rel="icon" href="/favicon.svg" />
-    {/* Inlined to avoid a flash of the wrong theme, mirroring Starlight's own
-        ThemeProvider script — same `starlight-theme` key, same fallback rule
-        (stored value, else system preference), so the toggle state is shared
-        between this page and the docs. */}
+    {/* Inlined to avoid a flash of the wrong theme. Shares Starlight's
+        `starlight-theme` localStorage key so an explicit toggle choice carries
+        between this page and the docs — but the landing is hard dark-default:
+        with no stored choice it stays dark regardless of system preference
+        (the hero reads best dark), whereas the docs still follow the system. */}
     <script is:inline>
       (function () {
         var stored = null;
         try {
           stored = localStorage.getItem("starlight-theme");
         } catch (e) {}
-        var theme =
-          stored ||
-          (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+        var theme = stored || "dark";
         document.documentElement.dataset.theme = theme === "light" ? "light" : "dark";
       })();
     </script>
