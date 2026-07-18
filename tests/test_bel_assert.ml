@@ -370,16 +370,38 @@ let check_is (fd : Eval.folded) (name : string) (kw : assign_kw) : unit =
       let want = if kw = KMountain then Fold_state.M else Fold_state.V in
       let st = fd.Eval.state in
       let hs = Fold_state.hinges st in
+      (* Prefer the crease's IDENTITY: named_lines' coefficients are the
+         crease's CURRENT (table-space) line, which can coincide with another
+         crease's line once folds move material (e.g. a flatten's emergent
+         ray folded onto a mark's line) — a bare line filter then reads the
+         wrong hinges. Line filtering (paper space) remains the fallback for
+         [Frozen] names, which have no crease id. *)
       let on_line i =
         let a, b = Fold_state.hinge_segment st i in
         Geom.side_of_line l a = 0 && Geom.side_of_line l b = 0
       in
-      let matching = List.filter on_line (List.init (Array.length hs) Fun.id) in
+      let matching =
+        match List.assoc_opt name fd.Eval.named_line_cids with
+        | Some cid ->
+            let by_cid =
+              List.filter
+                (fun i -> hs.(i).Fold_state.crease_id = cid)
+                (List.init (Array.length hs) Fun.id)
+            in
+            (* a through-fold carries one cid across several layers whose
+               derived letters alternate; the crease's user-facing letter is
+               the REFERENCE layer's — the hinge still lying (paper-space) on
+               the named line. A crease whose hinge moved entirely (e.g. a
+               flatten's emergent ray) has no such hinge: judge all of them. *)
+            (match List.filter on_line by_cid with [] -> by_cid | ref -> ref)
+        | None -> List.filter on_line (List.init (Array.length hs) Fun.id)
+      in
       (match matching with
        | [] -> harness_fail "--%s is not a material crease" name
        | is ->
            if not (List.for_all (fun i -> Fold_state.mv st i = want) is) then
-             harness_fail "--%s is not %s" name (if kw = KMountain then "mountain" else "valley"))
+             harness_fail "--%s is not %s" name
+               (if kw = KMountain then "mountain" else "valley"))
 
 let check_count (fd : Eval.folded) (kind : string) (n : int) : unit =
   let got =

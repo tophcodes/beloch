@@ -1,0 +1,18 @@
+; {toward .b} cannot pick a rabbit-ear side: .b lies on the b–d line, the
+; reflective symmetry axis of the vertex's given rays — the two realizations'
+; position classes score an exact centroid-dot tie. Must error, not
+; arbitrarily pick.
+
+paper square
+
+mark --diag = through .a .c
+mark --ea = map --ab onto --diag
+mark --eb = map --ab onto --bc
+mark --ec = map --bc onto --diag
+
+; Leading pair is (--ea .a)(--ec .c): their <180 arc is the big stayer
+; sector the ear folds onto; the emergent splits it into the two mirror
+; worlds {toward} then picks (design 2026-07-17 stayer convention).
+flatten (--ea) (--ec) (--eb) {toward .b}
+
+; expect error "does not pick a side"

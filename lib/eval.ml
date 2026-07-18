@@ -16,6 +16,10 @@ type folded = {
       (* [int] is the 0-based creation step (index into [frames] at bind
          time); see [scope.point_steps]/[scope.line_steps] *)
   named_lines : (string * Geom.line * int) list;
+  named_line_cids : (string * int) list;
+      (* crease id per name for [Material]/[Mark] creases — the identity the
+         line coefficients in [named_lines] lose (a folded crease's current
+         line can coincide with another crease's line) *)
   frames : (string option * Fold_state.t * Error.span option) list;
 }
 
@@ -1712,10 +1716,7 @@ let eval_folded (prog : Ast.program) : folded =
            marker). A trailing fold/collapse clears pending again → no dup. *)
         ctx.pending <- true;
         ctx.panel <- Some id
-    | Ast.Flatten (name_opt, elems, overs, standing_opt, toward_opt, span) ->
-        (match standing_opt with
-        | Some _ -> Error.fail span "standing folds are not yet supported"
-        | None -> ());
+    | Ast.Flatten (name_opt, elems, overs, staying_opt, toward_opt, span) ->
         (* materialize every collapse crease FIRST (a mark subdivides on
            segment-selection), so all of them cross and the shared collapse
            vertex is fully formed before any ray is selected. Selecting rays
@@ -1740,89 +1741,117 @@ let eval_folded (prog : Ast.program) : folded =
                "collapse folds along existing creases; %s is not a material \
                 crease" (lstr el.Ast.cline))
         in
-        (* each element must resolve to exactly ONE material segment — same
-           machinery as fold's material resolution *)
-        let resolve_elem (el : Ast.collapse_elem) :
-            int * Geom.point * Geom.point * Ast.mv_constraint =
+        (* each element resolves to 1..k material SEGMENTS at the vertex — no
+           eager multi-segment error any more (spec 2026-07-17 §Segment
+           inference): the stayer filter and the vertex check prune the wrong
+           segment combinations. Only genuinely-non-material operands error,
+           with the old zero-segment texts verbatim. *)
+        let resolve_elem_candidates (el : Ast.collapse_elem) :
+            (int * Geom.point * Geom.point * Ast.mv_constraint) list =
+          let seg_tuple cid (s : Fold_state.crease_segment) =
+            (cid, s.Fold_state.ta, s.Fold_state.tb, el.Ast.cdir)
+          in
           match el.Ast.cline with
           | Ast.LNamed cr -> (
               let cid = material_cid cr in
               match Fold_state.crease_segments !(ctx.state) cid with
-              | [ s ] -> (cid, s.Fold_state.ta, s.Fold_state.tb, el.Ast.cdir)
               | [] ->
                   Error.fail span
-                    (Printf.sprintf "--%s has no material segment"
-                       cr.Ast.cname)
-              | segs ->
-                  Error.fail span
-                    (Printf.sprintf
-                       "--%s has %d segments; select one with & "
-                       cr.Ast.cname (List.length segs)))
+                    (Printf.sprintf "--%s has no material segment" cr.Ast.cname)
+              | segs -> List.map (seg_tuple cid) segs)
           | (Ast.LFilter _ | Ast.LUnion _) as lo -> (
               match bundle_segments lo with
-              | Some cid, [ s ] -> (cid, s.Fold_state.ta, s.Fold_state.tb, el.Ast.cdir)
               | _, [] ->
                   Error.fail span
                     (Printf.sprintf "no segment of %s matches" (lstr lo))
-              | _, (_ :: _ :: _ as many) ->
-                  Error.fail span
-                    (Printf.sprintf
-                       "%s is ambiguous: %d segments match; add a constraint"
-                       (lstr lo) (List.length many))
-              | None, [ _ ] ->
-                  (* a single segment but from a cross-crease union: no one cid
-                     to fold along *)
+              | Some cid, segs -> List.map (seg_tuple cid) segs
+              | None, _ ->
+                  (* segments from a cross-crease union: no single cid to fold
+                     along *)
                   fail_not_material el ())
           | _ -> fail_not_material el ()
         in
-        let rays = List.map resolve_elem elems in
-        (* all-layers congruence guard: every layer under the collapse region
-           folds as one unit (spec §Semantics: "Material / layers"). For each
-           element's infinite table-space line, any face it actually cuts
-           (not just grazes an edge of) must already carry THAT element's
-           crease lying on that same line — otherwise the bundle is bent or
-           missing on some layer under the vertex and collapsing it as one
-           unit is unsound. On today's all-layer precreases this never fires
-           (every face the line touches borders an edge of the same cid on
-           that line); it guards future partial-crease states. *)
-        List.iter
-          (fun (fcid, fea, feb, _) ->
-            let st = !(ctx.state) in
-            let line = Geom.line_through fea feb in
-            let aligned_faces =
-              Fold_state.crease_segments st fcid
-              |> List.concat_map (fun (s : Fold_state.crease_segment) ->
-                     if
-                       Geom.side_of_line line s.Fold_state.ta = 0
-                       && Geom.side_of_line line s.Fold_state.tb = 0
-                     then
-                       let l, r = s.Fold_state.faces in
-                       l :: (if r >= 0 then [ r ] else [])
-                     else [])
-            in
-            Array.iteri
-              (fun i _ ->
-                if
-                  Geom.line_cuts_polygon line (Fold_state.table_polygon_ccw st i)
-                  && not (List.mem i aligned_faces)
-                then Error.fail span "collapse through unaligned layers")
-              (Fold_state.faces st))
-          rays;
+        let elem_cands = List.map resolve_elem_candidates elems in
+        let elem_of (fcid, fea, feb, valley) =
+          { Collapse.cid = fcid; ea = fea; eb = feb; valley }
+        in
+        (* vertex O: the strictly-interior point shared by >= 1 candidate
+           segment of EVERY element (generalizes [Collapse.common_vertex] to the
+           per-element candidate lists). *)
+        let strictly_interior_pt (p : Geom.point) =
+          Num.sign p.Geom.x > 0
+          && Num.compare p.Geom.x Num.one < 0
+          && Num.sign p.Geom.y > 0
+          && Num.compare p.Geom.y Num.one < 0
+        in
+        let o =
+          let shared_by_all p =
+            List.for_all
+              (fun cands ->
+                List.exists
+                  (fun (_, a, b, _) ->
+                    Geom.point_equal a p || Geom.point_equal b p)
+                  cands)
+              elem_cands
+          in
+          let endpoints =
+            List.concat_map (fun (_, a, b, _) -> [ a; b ]) (List.hd elem_cands)
+          in
+          match
+            List.find_opt
+              (fun p -> strictly_interior_pt p && shared_by_all p)
+              endpoints
+          with
+          | Some o -> o
+          | None -> Error.fail span Collapse.e_no_vertex
+        in
+        (* keep only the candidate segments that actually end at O; every
+           element has >= 1 such by O's construction. *)
+        let elem_cands_at_o =
+          List.map
+            (List.filter (fun (_, a, b, _) ->
+                 Geom.point_equal a o || Geom.point_equal b o))
+            elem_cands
+        in
+        let far_at_o (a : Geom.point) (b : Geom.point) : Geom.point =
+          if Geom.point_equal a o then b else a
+        in
+        let far_of_combo_elem (_, a, b, _) = far_at_o a b in
+        (* combinations: one chosen segment per element (product; <= 2 per
+           element in practice, so the corpus tops out at 2 combinations). *)
+        let rec product = function
+          | [] -> [ [] ]
+          | xs :: rest ->
+              List.concat_map
+                (fun x -> List.map (fun r -> x :: r) (product rest))
+                xs
+        in
+        let combos = product elem_cands_at_o in
         let over =
           List.map
             (fun (u, l) -> (resolve_sector_face u span, resolve_sector_face l span))
             overs
         in
-        let elem_of (fcid, fea, feb, valley) =
-          { Collapse.cid = fcid; ea = fea; eb = feb; valley }
+        (* explicit staying: X's material is the stayer, order carries no
+           meaning. The flap must touch the vertex fan, else it names no stayer
+           sector at all (distinct from "no realization keeps it still"). *)
+        let staying_stayer =
+          match staying_opt with
+          | None -> None
+          | Some fa ->
+              let faces = resolve_flap_cluster fa span in
+              let touches =
+                List.exists
+                  (fun f ->
+                    Array.exists (Geom.point_equal o)
+                      (Fold_state.table_polygon_ccw !(ctx.state) f))
+                  faces
+              in
+              if not touches then
+                Error.fail span "the staying flap does not touch the vertex"
+              else Some (Collapse.Faces faces)
         in
-        let elems_geom = List.map (fun r -> elem_of (let a, b, c, _ = r in (a, b, c, true))) rays in
-        let o =
-          match Collapse.common_vertex elems_geom with
-          | Some o -> o
-          | None -> Error.fail span Collapse.e_no_vertex
-        in
-        let n_given = List.length rays in
+        let n_given = List.length elems in
         let odd = n_given mod 2 = 1 in
         let prov : State.provenance option =
           Some
@@ -1834,96 +1863,226 @@ let eval_folded (prog : Ast.program) : folded =
            subdivision (below) and the eventual winner share one id instead
            of drifting the global counter per candidate. *)
         let new_cid = lazy (Fold_state.fresh_crease_id ()) in
-        let given_fars = List.map (fun e -> Collapse.far_of o e) elems_geom in
-        (* [realizations]: every (state, tier, emergent-binding) that a
-           candidate x M/V-pattern attempt actually closed (spec step 4-5).
-           [error_pool]: every failure message, for the |deciding|=0
-           differentiation (step 6). *)
-        let realizations :
-            (Fold_state.t * [ `Tier1 | `Tier2 ] * (int * Geom.line) option) list ref =
-          ref []
+        (* the stayer for a bare combination: the <π arc between the first two
+           ELEMENTS' chosen folded rays (leading-element convention). *)
+        let arc_stayer combo =
+          match combo with
+          | e1 :: e2 :: _ ->
+              Collapse.Arc (far_of_combo_elem e1, far_of_combo_elem e2)
+          | _ -> Collapse.Arc (o, o)
         in
-        let error_pool = ref [] in
-        (* enumerate every Maekawa-consistent M/V pattern over [all_rays] and
-           try each through the collapse oracle, pooling Ok realizations and
-           Error messages. *)
-        let try_patterns (st' : Fold_state.t) (tier : [ `Tier1 | `Tier2 ])
-            (emergent : (int * Geom.line) option)
-            (all_rays : (int * Geom.point * Geom.point * Ast.mv_constraint) list) =
-          let constraints = List.map (fun (_, _, _, d) -> d) all_rays in
-          let patterns = Flatten.mv_patterns constraints in
-          List.iter
-            (fun pat ->
-              let elems' =
-                List.map2
-                  (fun (fcid, fea, feb, _) v -> elem_of (fcid, fea, feb, v))
-                  all_rays pat
+        (* KERNEL LIMITATION cover (Task-2 reviewer finding): the kernel's
+           [admissible_sectors] cannot tell "the emergent splits the leading
+           arc" (legitimate, 2 mirror worlds) from "another GIVEN element's ray
+           sits strictly inside the arc" (dead — stayed material cannot carry a
+           folding crease, spec §Semantics). The latter kill is ours, done here
+           over the GIVEN rays before the kernel runs. Gated on a genuine
+           segment choice (>1 combination): with a single combination the input
+           has no alternative and the pre-2026-07-17 convention behaviour stands.
+           Absent under [staying] — the convention carries no meaning then. *)
+        let leading_arc_ok combo =
+          match (staying_opt, combo) with
+          | Some _, _ -> true
+          | None, e1 :: e2 :: rest ->
+              let f1 = far_of_combo_elem e1 and f2 = far_of_combo_elem e2 in
+              let oc = (o.Geom.x, o.Geom.y) in
+              let c =
+                Collapse.cross oc (f1.Geom.x, f1.Geom.y) (f2.Geom.x, f2.Geom.y)
               in
-              match Collapse.collapse_all st' elems' ~over with
-              | Ok sts ->
-                  List.iter
-                    (fun s -> realizations := (s, tier, emergent) :: !realizations)
-                    sts
-              | Error msg -> error_pool := msg :: !error_pool)
-            patterns
+              if Num.sign c = 0 then true (* collinear -> kernel: e_stayer_collinear *)
+              else
+                let a, b = if Num.sign c > 0 then (f1, f2) else (f2, f1) in
+                not
+                  (List.exists
+                     (fun e -> Collapse.in_ccw_arc o a b (far_of_combo_elem e))
+                     rest)
+          | None, _ -> true
         in
-        (if odd then
-           let fixed = Collapse.sort_ccw o elems_geom in
-           match Flatten.candidates o ~fixed with
-           | [] -> Error.fail span Flatten.e_infeasible
-           | cands ->
-               List.iter
-                 (fun (line, ray_pt, tag) ->
-                   let tier : [ `Tier1 | `Tier2 ] =
-                     match tag with `LineNew -> `Tier1 | `OppositeRay -> `Tier2
-                   in
-                   (* materialize ONLY this candidate ray on a local copy of
-                      the pre-flatten state — never touching [ctx.state] —
-                      then scan every crease ray now sitting at O on the kept
-                      side. [keep_side] confines the cut to [ray_pt]'s side of
-                      the perpendicular guard through O, so the opposite ray
-                      creases nothing. When the ray runs collinear with an
-                      already-materialized given crease (the classic
-                      rabbit-ear up-spine), [subdivide] is a no-op and the ray
-                      is found below among the EXISTING segments (not
-                      [new_cid]) — the 364660f collinear-reuse case. *)
-                   let guard = Geom.perpendicular_through line o in
-                   let keep = Geom.side_of_line guard ray_pt in
-                   let st' =
-                     Fold_state.subdivide !(ctx.state) line
-                       ~crease_id:(Lazy.force new_cid) ~keep_side:(guard, keep)
-                       ~prov
-                   in
-                   let far_of_seg (s : Fold_state.crease_segment) =
-                     if Geom.point_equal s.Fold_state.ta o then s.Fold_state.tb
-                     else s.Fold_state.ta
-                   in
-                   let matches =
-                     Fold_state.all_crease_ids st'
-                     |> List.concat_map (fun cid ->
-                            Fold_state.crease_segments st' cid
-                            |> List.filter_map
-                                 (fun (s : Fold_state.crease_segment) ->
-                                   let far = far_of_seg s in
-                                   if
-                                     (Geom.point_equal s.Fold_state.ta o
-                                     || Geom.point_equal s.Fold_state.tb o)
-                                     && Geom.side_of_line line far = 0
-                                     && Geom.side_of_line guard far = keep
-                                     && not
-                                          (List.exists (Geom.point_equal far)
-                                             given_fars)
-                                   then Some (cid, far)
-                                   else None))
-                   in
-                   List.iter
-                     (fun (cid, far) ->
-                       let emergent_ray = (cid, o, far, Ast.MvFree) in
-                       try_patterns st' tier (Some (cid, line)) (emergent_ray :: rays))
-                     matches)
-                 cands
-         else try_patterns !(ctx.state) `Tier1 None rays);
-        let realizations = !realizations in
+        (* the all-layers congruence guard (spec §Semantics: "Material /
+           layers"), now judged per combination so a wrong-segment combination
+           is dropped rather than aborting the whole statement. For each chosen
+           element segment's table-space line, any face it actually cuts (not
+           just grazes) must already carry THAT element's crease on that line —
+           else the bundle is bent/missing on some layer and folding it as one
+           unit is unsound. Returns the guard error, or None if the combination
+           passes. *)
+        let all_layers_error combo =
+          let st = !(ctx.state) in
+          List.find_map
+            (fun (fcid, fea, feb, _) ->
+              let line = Geom.line_through fea feb in
+              let aligned_faces =
+                Fold_state.crease_segments st fcid
+                |> List.concat_map (fun (s : Fold_state.crease_segment) ->
+                       if
+                         Geom.side_of_line line s.Fold_state.ta = 0
+                         && Geom.side_of_line line s.Fold_state.tb = 0
+                       then
+                         let l, r = s.Fold_state.faces in
+                         l :: (if r >= 0 then [ r ] else [])
+                       else [])
+              in
+              let bad = ref false in
+              Array.iteri
+                (fun i _ ->
+                  if
+                    Geom.segment_cuts_polygon (fea, feb)
+                      (Fold_state.table_polygon_ccw st i)
+                    && not (List.mem i aligned_faces)
+                  then bad := true)
+                (Fold_state.faces st);
+              if !bad then Some "collapse through unaligned layers" else None)
+            combo
+        in
+        (* run one combination: pool every (state, tier, emergent-binding) that
+           a candidate x M/V-pattern attempt closed, and every failure message.
+           [given_fars] is this combination's given rays' far tips (the emergent
+           scan excludes them). *)
+        let run_combo combo (stayer : Collapse.stayer) =
+          let local_real :
+              (Fold_state.t * [ `Tier1 | `Tier2 ] * (int * Geom.line) option)
+              list ref =
+            ref []
+          in
+          let local_err = ref [] in
+          let elems_geom =
+            List.map (fun (a, b, c, _) -> elem_of (a, b, c, true)) combo
+          in
+          let given_fars = List.map (Collapse.far_of o) elems_geom in
+          let try_patterns (st' : Fold_state.t) (tier : [ `Tier1 | `Tier2 ])
+              (emergent : (int * Geom.line) option)
+              (all_rays :
+                (int * Geom.point * Geom.point * Ast.mv_constraint) list) =
+            let constraints = List.map (fun (_, _, _, d) -> d) all_rays in
+            let patterns = Flatten.mv_patterns constraints in
+            List.iter
+              (fun pat ->
+                let elems' =
+                  List.map2
+                    (fun (fcid, fea, feb, _) v -> elem_of (fcid, fea, feb, v))
+                    all_rays pat
+                in
+                match Collapse.collapse_all st' elems' ~over ~stayer with
+                | Ok sts ->
+                    List.iter
+                      (fun s -> local_real := (s, tier, emergent) :: !local_real)
+                      sts
+                | Error msg -> local_err := msg :: !local_err)
+              patterns
+          in
+          (if odd then
+             let fixed = Collapse.sort_ccw o elems_geom in
+             match Flatten.candidates o ~fixed with
+             | [] -> local_err := Flatten.e_infeasible :: !local_err
+             | cands ->
+                 List.iter
+                   (fun (line, ray_pt, tag) ->
+                     let tier : [ `Tier1 | `Tier2 ] =
+                       match tag with
+                       | `LineNew -> `Tier1
+                       | `OppositeRay -> `Tier2
+                     in
+                     (* materialize ONLY this candidate ray on a local copy of
+                        the pre-flatten state, then scan every crease ray now
+                        sitting at O on the kept side (the perpendicular guard
+                        confines the cut to [ray_pt]'s side). Collinear-reuse
+                        (the rabbit-ear up-spine) is found among EXISTING
+                        segments, not [new_cid]. *)
+                     let guard = Geom.perpendicular_through line o in
+                     let keep = Geom.side_of_line guard ray_pt in
+                     let st' =
+                       Fold_state.subdivide !(ctx.state) line
+                         ~crease_id:(Lazy.force new_cid)
+                         ~keep_side:(guard, keep) ~prov
+                     in
+                     let far_of_seg (s : Fold_state.crease_segment) =
+                       if Geom.point_equal s.Fold_state.ta o then s.Fold_state.tb
+                       else s.Fold_state.ta
+                     in
+                     let matches =
+                       Fold_state.all_crease_ids st'
+                       |> List.concat_map (fun cid ->
+                              Fold_state.crease_segments st' cid
+                              |> List.filter_map
+                                   (fun (s : Fold_state.crease_segment) ->
+                                     let far = far_of_seg s in
+                                     if
+                                       (Geom.point_equal s.Fold_state.ta o
+                                       || Geom.point_equal s.Fold_state.tb o)
+                                       && Geom.side_of_line line far = 0
+                                       && Geom.side_of_line guard far = keep
+                                       && not
+                                            (List.exists (Geom.point_equal far)
+                                               given_fars)
+                                     then Some (cid, far)
+                                     else None))
+                     in
+                     List.iter
+                       (fun (cid, far) ->
+                         let emergent_ray = (cid, o, far, Ast.MvFree) in
+                         try_patterns st' tier (Some (cid, line))
+                           (emergent_ray :: combo))
+                       matches)
+                   cands
+           else try_patterns !(ctx.state) `Tier1 None combo);
+          (!local_real, !local_err, given_fars)
+        in
+        (* enumerate combinations; each yields realizations + errors. A
+           combination is dropped (contributes only errors) when the leading-arc
+           filter or the all-layers guard rejects it. *)
+        let multiseg =
+          let rec find els cands =
+            match (els, cands) with
+            | el :: es, cs :: cr ->
+                if List.length cs > 1 then lstr el.Ast.cline else find es cr
+            | _ -> "--?"
+          in
+          find elems elem_cands_at_o
+        in
+        let combo_runs =
+          List.map
+            (fun combo ->
+              let stayer =
+                match staying_stayer with
+                | Some s -> s
+                | None -> arc_stayer combo
+              in
+              if List.length combos > 1 && not (leading_arc_ok combo) then
+                (combo, [], [])
+              else
+                match all_layers_error combo with
+                | Some e -> (combo, [], [ e ])
+                | None ->
+                    let r, e, _ = run_combo combo stayer in
+                    (combo, r, e))
+            combos
+        in
+        let surviving = List.filter (fun (_, r, _) -> r <> []) combo_runs in
+        (* a genuine segment contradiction: two combinations both close with
+           non-empty pools -> the user must disambiguate with `&`. *)
+        (match surviving with
+        | _ :: _ :: _ ->
+            Error.fail span
+              (Printf.sprintf
+                 "%s is ambiguous at the vertex; select a segment with `&`"
+                 multiseg)
+        | _ -> ());
+        (* the winning combination (or the leading one when none survive, so the
+           selection code's [rays]/[given_fars] are well-defined for the
+           error-reporting path). *)
+        let winner_combo =
+          match surviving with (c, _, _) :: _ -> c | [] -> List.hd combos
+        in
+        let rays = winner_combo in
+        let given_fars =
+          List.map
+            (fun (a, b, c, _) -> Collapse.far_of o (elem_of (a, b, c, true)))
+            winner_combo
+        in
+        let realizations =
+          match surviving with (_, r, _) :: _ -> r | [] -> []
+        in
+        let error_pool = List.concat_map (fun (_, _, e) -> e) combo_runs in
         let tier1, tier2 = List.partition (fun (_, t, _) -> t = `Tier1) realizations in
         let deciding = if tier1 <> [] then tier1 else tier2 in
         (* records the emergent crease's (id, line) here so the name (if
@@ -1938,10 +2097,25 @@ let eval_folded (prog : Ast.program) : folded =
                differentiation, preserved verbatim); the even case surfaces
                the pool's own dominant kernel error instead, since there is
                no derived-crease framing to fall back on. *)
-            let pool = !error_pool in
+            let pool = error_pool in
             if List.mem Collapse.e_out_of_paper pool then
               Error.fail span Collapse.e_out_of_paper
-            else if odd then
+            else (
+              match
+                (* eval-level and stayer diagnoses outrank the generic
+                   "derived crease does not close": the all-layers guard
+                   (a dropped combination), a collinear leading pair, and a
+                   dead [staying] flap each name a specific fixable cause. *)
+                List.find_opt
+                  (fun m ->
+                    m = "collapse through unaligned layers"
+                    || m = Collapse.e_stayer_collinear
+                    || m = Collapse.e_stayer_dead)
+                  pool
+              with
+            | Some m -> Error.fail span m
+            | None ->
+            if odd then
               Error.fail span "the derived crease does not close the vertex"
             else begin
               match List.find_opt (fun m -> m <> Collapse.e_selfint) pool with
@@ -1952,7 +2126,7 @@ let eval_folded (prog : Ast.program) : folded =
                      all-e_selfint falls back to e_selfint itself. *)
                   Error.fail span
                     (if pool = [] then Collapse.e_maekawa else Collapse.e_selfint)
-            end
+            end)
         | [ (st, _, emergent) ] ->
             ctx.state := st;
             emergent_bind := emergent
@@ -2222,7 +2396,17 @@ let eval_folded (prog : Ast.program) : folded =
           | Bundle _ | Edge _ -> acc)
       root_scope.lines []
   in
+  let named_line_cids =
+    Hashtbl.fold
+      (fun k cv acc ->
+        if is_temp k then acc
+        else
+          match cv with
+          | Material (cid, _) | Mark (cid, _) -> (k, cid) :: acc
+          | Frozen _ | Bundle _ | Edge _ -> acc)
+      root_scope.lines []
+  in
   if ctx.pending then
     ctx.frames_rev <- (ctx.panel, !(ctx.state), None) :: ctx.frames_rev;
   let frames = List.rev ctx.frames_rev in
-  { state = !(ctx.state); named_points; named_lines; frames }
+  { state = !(ctx.state); named_points; named_lines; named_line_cids; frames }

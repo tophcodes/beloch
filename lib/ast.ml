@@ -85,7 +85,7 @@ type fold_spec = {
 
 (* A collapse element's M/V constraint (flatten V2 surface, spec
    2026-07-16-flatten-derive-v2-design.md §Syntax): a bare element is
-   unconstrained — the solver assigns its M/V (Task 3). `mountain`/`valley`
+   unconstrained — the solver assigns its M/V. `mountain`/`valley`
    pin it explicitly. Distinct from [direction] (Mark/Fold's own two-state
    fold direction), which stays two-state. *)
 type mv_constraint = MvFree | MvMountain | MvValley
@@ -130,7 +130,7 @@ type stmt =
          pipeline (spec §4.9). elements = the given rays, each with an
          mv_constraint (MvFree = solver-assigned; mountain/valley = hard
          pin); over-pairs = (upper flap, lower flap) stacking constraints;
-         standing = reserved (parsed, rejected at eval). An odd ray count
+         staying = the staying flap (spec 2026-07-17). An odd ray count
          makes the emergent completing ray part of the solution space
          (Flatten.candidates). The realization space (candidate × Maekawa
          M/V pattern × stacking, via Collapse.collapse_all) is filtered by

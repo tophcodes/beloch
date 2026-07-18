@@ -10,11 +10,11 @@ open Ast
 type collapse_item =
   | CElem of collapse_elem
   | COver of flap_arg * flap_arg
-  | CStanding of flap_arg * Error.span
+  | CStaying of flap_arg * Error.span
   | CToward of point_operand * Error.span
 
 (* shared by the bound (`--r = flatten ...`) and unbound (`flatten ...`)
-   productions: partitions the item list and reports a duplicate `standing`
+   productions: partitions the item list and reports a duplicate `staying`
    (or duplicate `{toward}`) at its own (second-occurrence) span, not the
    first's. elems/overs are accumulated reversed and restored with List.rev
    to keep source order. [toward] now comes from the `{toward .p}` item
@@ -22,15 +22,15 @@ type collapse_item =
    position, at most one — the old trailing `toward` is gone. *)
 let mk_flatten (name : string option) (items : collapse_item list)
     (span : Error.span) : stmt =
-  let elems_rev, overs_rev, standing, toward =
+  let elems_rev, overs_rev, staying, toward =
     List.fold_left
       (fun (es, os, st, tw) item ->
         match item with
         | CElem e -> (e :: es, os, st, tw)
         | COver (u, l) -> (es, (u, l) :: os, st, tw)
-        | CStanding (f, sp) -> (
+        | CStaying (f, sp) -> (
             match st with
-            | Some _ -> Error.fail sp "only one standing clause per flatten"
+            | Some _ -> Error.fail sp "only one staying clause per flatten"
             | None -> (es, os, Some f, tw))
         | CToward (p, sp) -> (
             match tw with
@@ -38,12 +38,12 @@ let mk_flatten (name : string option) (items : collapse_item list)
             | None -> (es, os, st, Some p)))
       ([], [], None, None) items
   in
-  Flatten (name, List.rev elems_rev, List.rev overs_rev, standing, toward, span)
+  Flatten (name, List.rev elems_rev, List.rev overs_rev, staying, toward, span)
 %}
 
 %token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD MOVING MOUNTAIN VALLEY FLIP RPAREN AND UP TO FOLD_KW
 %token DEF APPLY EXPORT STEP AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
-%token FLATTEN OVER STANDING MARK BETWEEN AT
+%token FLATTEN OVER STAYING MARK BETWEEN AT
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN  (* --[ / .[ : the line/point select openers *)
 %token <string> POINT
 %token <string> CREASE
@@ -242,7 +242,7 @@ collapse_item_inner:
   | line_operand mv_opt
       { CElem { cline = $1; cdir = $2 } }
   | over_flap OVER over_flap { COver ($1, $3) }
-  | STANDING flap_arg        { CStanding ($2, $loc) }
+  | STAYING flap_arg         { CStaying ($2, $loc) }
 
 (* points and #(...) only — bare crease names would collide with elements *)
 over_flap:
