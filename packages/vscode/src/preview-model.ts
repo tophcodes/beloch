@@ -64,7 +64,7 @@ export function stepAtLine(edges: EdgeProv[], line: number): string | null {
 
 /**
  * Which `data-step` attribute values (as fold2svg emits them — the null
- * baseline serializes as `""`, see `render/render-svg/bin/fold2svg.ts`) should
+ * baseline serializes as `""`, see `packages/render-2d/render-svg/bin/fold2svg.ts`) should
  * be hidden in the crease-pattern view for the given `current` step.
  *
  * `data-step` is GLOBAL provenance: it names the step in which a crease is

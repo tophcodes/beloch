@@ -40,7 +40,7 @@ function run(argvTail: string[], input: string, cwd: string): string {
 }
 
 function runFold2svg(args: string[], input: string, cwd: string): string {
-  return execFileSync("bun", ["render/render-svg/bin/fold2svg.ts", ...args], {
+  return execFileSync("bun", ["packages/render-2d/render-svg/bin/fold2svg.ts", ...args], {
     input,
     cwd,
     encoding: "utf8",
