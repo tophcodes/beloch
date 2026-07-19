@@ -179,8 +179,98 @@ let promote_crease (ctx : ctx) (name : string) (cv : crease_val) =
 
 (* ---- Evaluator ---- *)
 
-let eval_folded (prog : Ast.program) : folded =
-  Fold_state.reset_ids ();
+(* ---- Incremental checkpoint: snapshot / restore of the whole ctx ---- *)
+
+type snapshot = {
+  s_points : (string, Geom.point) Hashtbl.t;
+  s_lines : (string, crease_val) Hashtbl.t;
+  s_instances : (string, instance) Hashtbl.t;
+  s_point_steps : (string, int) Hashtbl.t;
+  s_line_steps : (string, int) Hashtbl.t;
+  s_defs : (string, int * Ast.param list * Ast.stmt list) Hashtbl.t;
+  s_name_ctx : name_ctx;
+  s_cur_def_idx : int option;
+  s_next_def_idx : int;
+  s_panel : string option;
+  s_panels : (string, unit) Hashtbl.t;
+  s_frames_rev : (string option * Fold_state.t * Error.span option) list;
+  s_pending : bool;
+  s_state : Fold_state.t;
+  s_next_id : int;
+}
+
+let copy_instance (i : instance) : instance = {
+  ipoints = Hashtbl.copy i.ipoints;
+  ilines = Hashtbl.copy i.ilines;
+  ipoint_steps = Hashtbl.copy i.ipoint_steps;
+  iline_steps = Hashtbl.copy i.iline_steps;
+}
+
+let copy_instances (tbl : (string, instance) Hashtbl.t) =
+  let t = Hashtbl.create (Hashtbl.length tbl) in
+  Hashtbl.iter (fun k v -> Hashtbl.replace t k (copy_instance v)) tbl;
+  t
+
+(* Snapshots are taken between top-level statements, where [ctx.scopes] is a
+   single root scope. Hashtable values (points, crease_vals, AST fragments)
+   are immutable, so a shallow copy suffices — except [instance]s, whose inner
+   tables are mutable and must be deep-copied. *)
+let snapshot (ctx : ctx) : snapshot =
+  match ctx.scopes with
+  | [ root ] ->
+      {
+        s_points = Hashtbl.copy root.points;
+        s_lines = Hashtbl.copy root.lines;
+        s_instances = copy_instances root.instances;
+        s_point_steps = Hashtbl.copy root.point_steps;
+        s_line_steps = Hashtbl.copy root.line_steps;
+        s_defs = Hashtbl.copy ctx.defs;
+        s_name_ctx = ctx.name_ctx;
+        s_cur_def_idx = ctx.cur_def_idx;
+        s_next_def_idx = ctx.next_def_idx;
+        s_panel = ctx.panel;
+        s_panels = Hashtbl.copy ctx.panels;
+        s_frames_rev = ctx.frames_rev;
+        s_pending = ctx.pending;
+        s_state = !(ctx.state);
+        s_next_id = Fold_state.next_id_value ();
+      }
+  | _ -> failwith "Eval.snapshot: expected a single root scope at a statement boundary"
+
+let restore_tbl dst src =
+  Hashtbl.reset dst;
+  Hashtbl.iter (fun k v -> Hashtbl.replace dst k v) src
+
+(* Restore writes back INTO the existing root-scope tables (not fresh records),
+   so the [root_scope] binding [eval_folded]'s finalize reads stays valid.
+   Instances are deep-copied so re-using a snapshot across several edits can't
+   let a later [apply] mutate the stored one. *)
+let restore (ctx : ctx) (s : snapshot) : unit =
+  match ctx.scopes with
+  | [ root ] ->
+      restore_tbl root.points s.s_points;
+      restore_tbl root.lines s.s_lines;
+      Hashtbl.reset root.instances;
+      Hashtbl.iter
+        (fun k v -> Hashtbl.replace root.instances k (copy_instance v))
+        s.s_instances;
+      restore_tbl root.point_steps s.s_point_steps;
+      restore_tbl root.line_steps s.s_line_steps;
+      restore_tbl ctx.defs s.s_defs;
+      ctx.name_ctx <- s.s_name_ctx;
+      ctx.cur_def_idx <- s.s_cur_def_idx;
+      ctx.next_def_idx <- s.s_next_def_idx;
+      ctx.panel <- s.s_panel;
+      restore_tbl ctx.panels s.s_panels;
+      ctx.frames_rev <- s.s_frames_rev;
+      ctx.pending <- s.s_pending;
+      ctx.state := s.s_state;
+      Fold_state.set_next_id s.s_next_id
+  | _ -> failwith "Eval.restore: expected a single root scope at a statement boundary"
+
+let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> ())
+    (prog : Ast.program) : folded =
+  (match resume with None -> Fold_state.reset_ids () | Some _ -> ());
   let root_scope = make_scope () in
   List.iter (fun (n, p) -> Hashtbl.replace root_scope.points n p) corners;
   List.iter
@@ -2356,7 +2446,8 @@ let eval_folded (prog : Ast.program) : folded =
         | None -> ());
         push_frame (Some span)
   in
-  List.iter eval_stmt prog;
+  (match resume with Some s -> restore ctx s | None -> ());
+  List.iter (fun stmt -> eval_stmt stmt; on_step ctx) prog;
   (* corners and other names never routed through bind_point/bind_crease (the
      prelude corners/edges, set up directly via Hashtbl.replace above) have no
      entry in root_scope.point_steps/.line_steps; they default to step 0.
@@ -2413,3 +2504,5 @@ let eval_folded (prog : Ast.program) : folded =
     ctx.frames_rev <- (ctx.panel, !(ctx.state), None) :: ctx.frames_rev;
   let frames = List.rev ctx.frames_rev in
   { state = !(ctx.state); named_points; named_lines; named_line_cids; frames }
+
+let eval_folded (prog : Ast.program) : folded = eval_program prog

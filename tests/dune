@@ -20,7 +20,7 @@
 
 (test
  (name test_eval)
- (libraries beloch alcotest zarith str))
+ (libraries beloch alcotest yojson zarith str))
 
 (test
  (name test_e2e)
