@@ -60,6 +60,10 @@
  (libraries beloch alcotest zarith)
  (deps (source_tree cases)))
 
+(test
+ (name test_spine)
+ (libraries beloch alcotest str))
+
 (executable
  (name spike_flatten)
  (libraries beloch zarith))

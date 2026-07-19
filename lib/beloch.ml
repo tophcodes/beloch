@@ -42,3 +42,4 @@ module Mpoly = Mpoly
 module Qqbar = Qqbar
 module Diagnostic = Diagnostic
 module Field_merge = Field_merge
+module Spine = Spine
