@@ -445,6 +445,15 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
       }
     }
 
+    // Clears the scrubber + gutter marker so a stale scene from a previous
+    // multi-step run can't linger (and stay clickable) once a later run
+    // doesn't produce a fresh multi-step scene of its own.
+    function clearStepsUI() {
+      currentScene = null;
+      stepsBar!.hidden = true;
+      setStepLineOn(editor, null);
+    }
+
     // Cheap per-step-change update: toggles the active dot + label text,
     // without touching event listeners (buildStepsUI owns those).
     function updateStepsUI(i: number, scene: FoldScene) {
@@ -485,6 +494,7 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
     }
 
     function renderResult(raw: string) {
+      clearStepsUI();
       let parsed: { ok: boolean; fold?: unknown; kind?: string; message?: string };
       try {
         parsed = JSON.parse(raw);
@@ -500,9 +510,6 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
             buildStepsUI(scene);
             renderStep(scene.steps.length - 1);
           } else {
-            currentScene = null;
-            stepsBar!.hidden = true;
-            setStepLineOn(editor, null);
             showSvg(renderCP(scene, { theme: WEB_THEME }).toString());
           }
         } catch (err) {
