@@ -69,7 +69,7 @@
             ocamlPkgs.yojson
             ocamlPkgs.zarith
             ocamlPkgs.alcotest
-            # js_of_ocaml spike (web/) — browser eval bundle, rational fragment
+            # js_of_ocaml (packages/eval-web/) — browser eval bundle, rational fragment
             ocamlPkgs.js_of_ocaml
             ocamlPkgs.js_of_ocaml-compiler
             ocamlPkgs.zarith_stubs_js
@@ -78,18 +78,18 @@
             ocamlPkgs.ocamlformat
             ocamlPkgs.utop
             flint
-            # FOLD -> SVG/PNG rendering (render/render-svg)
+            # FOLD -> SVG/PNG rendering (packages/render-2d/render-svg)
             pkgs.bun
           ];
           # Link @beloch/render-svg's `beloch-render` bin globally so the
-          # OCaml `beloch render` subcommand (bin/main.ml) can execvp it, and
+          # OCaml `beloch render` subcommand (packages/core/bin/main.ml) can execvp it, and
           # shim a bare `beloch` onto PATH that always runs the freshly
           # built binary (not a stale Nix-store copy) via `dune exec`.
           shellHook = ''
             export PATH="$(bun pm bin -g 2>/dev/null):$PATH"
             root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-            ( cd "$root/render" && bun install --silent ) >/dev/null 2>&1
-            ( cd "$root/render/render-svg" && bun link --silent ) >/dev/null 2>&1
+            ( cd "$root/packages/render-2d" && bun install --silent ) >/dev/null 2>&1
+            ( cd "$root/packages/render-2d/render-svg" && bun link --silent ) >/dev/null 2>&1
             mkdir -p "$root/.direnv/bin"
             cat > "$root/.direnv/bin/beloch" <<EOF
 #!/usr/bin/env bash

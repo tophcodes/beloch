@@ -121,12 +121,12 @@ echo "=== running check.js under node (expect 1.41421356) ==="
 node check.js
 
 # ---------------------------------------------------------------------------
-# 6. Phase 1: link web/qqbar_wasm.c (the flat-ABI shim) into a MODULARIZE'd,
+# 6. Phase 1: link packages/eval-web/qqbar_wasm.c (the flat-ABI shim) into a MODULARIZE'd,
 #    SINGLE_FILE emscripten module — this is the real qqbar backend for the
 #    js_of_ocaml bundle, not a throwaway check.
 # ---------------------------------------------------------------------------
-WEB_DIR="$(cd "$SPIKE_DIR/../web" && pwd)"
-OUT_DIR="$(cd "$SPIKE_DIR/.." && pwd)/site/public/beloch"
+WEB_DIR="$(cd "$SPIKE_DIR/../packages/eval-web" && pwd)"
+OUT_DIR="$(cd "$SPIKE_DIR/.." && pwd)/packages/www/public/beloch"
 mkdir -p "$OUT_DIR"
 
 WASM_QQBAR_FUNCS="_wasm_qqbar_alloc,_wasm_qqbar_free,_wasm_free_str,\
@@ -152,7 +152,7 @@ _malloc,_free"
 # signature mismatch" / "null function" in ALL engines — every √2-class fold in
 # the playground died once #57 started calling it. =1 routes indirect calls
 # through signature-adapting thunks, restoring correct behaviour.
-echo "=== compiling web/qqbar_wasm.c to site/public/beloch/qqbar-wasm.js ==="
+echo "=== compiling packages/eval-web/qqbar_wasm.c to packages/www/public/beloch/qqbar-wasm.js ==="
 nix shell nixpkgs#emscripten --command bash -c "
 emcc '$WEB_DIR/qqbar_wasm.c' -I'$PREFIX/include' -L'$PREFIX/lib' -lflint -lmpfr -lgmp \
   -O2 -sWASM_ASYNC_COMPILATION=0 -sMODULARIZE=1 -sEXPORT_NAME=QqbarWasm -sSINGLE_FILE=1 \
