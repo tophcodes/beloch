@@ -7,25 +7,26 @@
    Prints a human line (stderr) and a machine-readable CSV line (stdout) so a
    run can be diffed across optimizations:
 
-     dune exec bench/bench_fold.exe > before.csv
+     dune exec packages/core/bench/bench_fold.exe > before.csv
      ...apply optimization, rebuild...
-     dune exec bench/bench_fold.exe > after.csv
+     dune exec packages/core/bench/bench_fold.exe > after.csv
      diff before.csv after.csv
 
-   Usage: dune exec bench/bench_fold.exe -- [case ...]   (default: all) *)
+   Usage: dune exec packages/core/bench/bench_fold.exe -- [case ...]   (default: all) *)
 
 let root =
   match Sys.getenv_opt "DUNE_SOURCEROOT" with
   | Some r -> r
-  | None -> Filename.concat (Filename.dirname Sys.executable_name) "../../.."
+  | None ->
+    Filename.concat (Filename.dirname Sys.executable_name) "../../../../.."
 
 (* (name, path relative to repo root) — representative folds, √2-heavy first *)
 let corpus =
   [ ("fish-base", "examples/bases/fish-base.bel");
     ("swivel-rabbit", "examples/bases/swivel-rabbit.bel");
-    ("rabbit-ear", "tests/cases/collapse/flatten-rabbit-ear-toward-a.bel");
-    ("two-ear-fish", "tests/cases/collapse/flatten-two-ears-sequential.bel");
-    ("cube-root", "tests/cases/fold/cube-root.bel") ]
+    ("rabbit-ear", "packages/core/tests/cases/collapse/flatten-rabbit-ear-toward-a.bel");
+    ("two-ear-fish", "packages/core/tests/cases/collapse/flatten-two-ears-sequential.bel");
+    ("cube-root", "packages/core/tests/cases/fold/cube-root.bel") ]
 
 let time f =
   let t0 = Unix.gettimeofday () in
