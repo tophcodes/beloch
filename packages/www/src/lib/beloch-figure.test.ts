@@ -1,7 +1,7 @@
 import { test, expect, beforeAll } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 
-beforeAll(() => { GlobalRegistrator.register(); });
+beforeAll(() => { if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register(); });
 
 // x-midpoint folds → has steps; inline its FOLD by evaluating at test time is
 // heavy, so load a golden the render tests also use.
