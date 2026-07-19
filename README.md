@@ -48,8 +48,12 @@ dune exec beloch -- --version
 ## Layout
 
 ```
-lib/          evaluator core (OCaml library)
-bin/          the `beloch` CLI
+packages/core/      evaluator core + `beloch` CLI (OCaml)
+packages/render-2d/ FOLD→SVG render engine (bun)
+packages/www/       landing + docs + Playground site
+packages/eval-web/  js_of_ocaml browser eval bundle
+packages/grammar/   tree-sitter grammar
+packages/vscode/    editor extension
 spec/         human-readable language specification (grows per increment)
 decisions/    architecture decision records (ADRs)
 notes/        dated design journal (+ antipatterns.md dead ends)
