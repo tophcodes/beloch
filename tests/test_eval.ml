@@ -1412,6 +1412,35 @@ let test_new_mark_edge_does_not_leak () =
   Alcotest.(check bool) "--ab is not promoted into named_lines" false
     (List.mem_assoc "ab" named_lines)
 
+let fold_str prog =
+  Yojson.Safe.to_string (Fold_emit.to_json_folded prog)
+
+(* grab the snapshot taken right after statement [n] (1-based) of [prog] *)
+let snap_after n prog =
+  let snap = ref None and i = ref 0 in
+  let on_step ctx =
+    incr i;
+    if !i = n then snap := Some (Eval.snapshot ctx)
+  in
+  ignore (Eval.eval_program ~on_step prog);
+  Option.get !snap
+
+(* Use `mark` statements: they subdivide the arrangement (a real per-step state
+   change → a snapshot per step) but never need `moving .p` and never throw, so
+   the program evaluates cleanly. `paper square` is the header, so this is a
+   3-statement program. *)
+let test_resume_equals_full () =
+  let src =
+    "paper square\nmark through .a .c\nmark through .b .d\nmark map .a onto .b\n"
+  in
+  let prog = Beloch.parse ~filename:"t.bel" src in
+  let full = fold_str (Eval.eval_folded prog) in
+  (* resume after statement 2 (index 1), replay statement 3 (index 2) *)
+  let resume = snap_after 2 prog in
+  let suffix = List.filteri (fun i _ -> i >= 2) prog in
+  let resumed = fold_str (Eval.eval_program ~resume suffix) in
+  Alcotest.(check string) "resumed FOLD == full FOLD" full resumed
+
 let () =
   Alcotest.run "beloch-eval"
     [
@@ -1632,5 +1661,7 @@ let () =
           Alcotest.test_case "@ is retired" `Quick test_new_at_is_gone;
           Alcotest.test_case "mark on prelude edge does not leak" `Quick
             test_new_mark_edge_does_not_leak;
+          Alcotest.test_case "resume == full eval" `Quick
+            test_resume_equals_full;
         ] );
     ]

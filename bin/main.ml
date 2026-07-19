@@ -127,9 +127,41 @@ let run_render args =
 let run_fold file =
   print_endline (Yojson.Safe.pretty_to_string (eval_bel_file file))
 
+(* `beloch fold --watch FILE`: keeps one incremental `Session.t` across
+   re-folds and recomputes only the suffix invalidated by the edit (see
+   lib/session.ml). Polls mtime rather than inotify — no new dependency
+   beyond `unix`, and .bel edits are human-paced so a 200ms poll is
+   imperceptible. *)
+let run_fold_watch file =
+  let session = Session.create () in
+  let last_mtime = ref 0.0 in
+  let fold_once () =
+    match In_channel.with_open_text file In_channel.input_all with
+    | exception Sys_error msg -> Printf.eprintf "%s\n%!" msg
+    | src -> (
+        try
+          let folded = Session.eval session ~filename:file src in
+          print_string (Yojson.Safe.pretty_to_string (Fold_emit.to_json_folded folded));
+          print_newline ();
+          let n = Session.last_ran session in
+          Printf.eprintf "[watch] refolded %s (%d statement%s recomputed)\n%!" file n
+            (if n = 1 then "" else "s")
+        with Error.Beloch_error (span, msg) ->
+          prerr_string (Diagnostic.render ~source:src ~span ~msg))
+  in
+  while true do
+    (match (Unix.stat file).Unix.st_mtime with
+    | m when m > !last_mtime ->
+        last_mtime := m;
+        fold_once ()
+    | _ -> ());
+    Unix.sleepf 0.2
+  done
+
 let () =
   match Array.to_list Sys.argv with
   | _ :: ("--version" | "-v") :: _ -> print_endline Beloch.version
+  | _ :: "fold" :: "--watch" :: file :: _ -> run_fold_watch file
   | _ :: "fold" :: file :: _ -> run_fold file
   | _ :: "check" :: _ -> todo "check"
   | _ :: "lsp" :: _ -> todo "lsp"

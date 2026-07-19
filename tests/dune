@@ -20,7 +20,7 @@
 
 (test
  (name test_eval)
- (libraries beloch alcotest zarith str))
+ (libraries beloch alcotest yojson zarith str))
 
 (test
  (name test_e2e)
@@ -59,6 +59,14 @@
  (name test_bel_assert)
  (libraries beloch alcotest zarith)
  (deps (source_tree cases)))
+
+(test
+ (name test_spine)
+ (libraries beloch alcotest str))
+
+(test
+ (name test_session)
+ (libraries beloch alcotest yojson zarith str))
 
 (executable
  (name spike_flatten)

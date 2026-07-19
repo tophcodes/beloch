@@ -20,12 +20,17 @@ let starts_with ~prefix s =
   let lp = String.length prefix in
   String.length s >= lp && String.sub s 0 lp = prefix
 
+(* One long-lived session per worker: successive edits reuse the unchanged
+   statement prefix and recompute only the divergent suffix. *)
+let session = Beloch.Session.create ()
+
 let fold_string_js (src : Js_of_ocaml.Js.js_string Js_of_ocaml.Js.t) :
     Js_of_ocaml.Js.js_string Js_of_ocaml.Js.t =
   let src = Js_of_ocaml.Js.to_string src in
   let result =
     try
-      let fold = Beloch.fold_string ~filename:"playground" src in
+      let folded = Beloch.Session.eval session ~filename:"playground" src in
+      let fold = Beloch.Fold_emit.to_json_folded folded in
       `Assoc [ ("ok", `Bool true); ("fold", fold) ]
     with
     | Failure m when starts_with ~prefix:irrational_prefix m ->
