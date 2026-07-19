@@ -42,8 +42,8 @@ jobs:
       # only changes when web/qqbar_wasm.c does.
       - name: Regenerate js_of_ocaml eval bundle
         run: |
-          nix develop --command dune build web/ --profile release
-          cp _build/default/web/beloch_web.bc.js site/public/beloch/beloch-eval.js
+          nix develop --command dune build packages/eval-web/ --profile release
+          cp _build/default/packages/eval-web/beloch_web.bc.js packages/www/public/beloch/beloch-eval.js
       - uses: oven-sh/setup-bun@v2
       - name: Build site
         working-directory: site

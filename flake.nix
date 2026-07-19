@@ -69,7 +69,7 @@
             ocamlPkgs.yojson
             ocamlPkgs.zarith
             ocamlPkgs.alcotest
-            # js_of_ocaml spike (web/) — browser eval bundle, rational fragment
+            # js_of_ocaml (packages/eval-web/) — browser eval bundle, rational fragment
             ocamlPkgs.js_of_ocaml
             ocamlPkgs.js_of_ocaml-compiler
             ocamlPkgs.zarith_stubs_js

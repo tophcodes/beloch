@@ -125,7 +125,7 @@ node check.js
 #    SINGLE_FILE emscripten module — this is the real qqbar backend for the
 #    js_of_ocaml bundle, not a throwaway check.
 # ---------------------------------------------------------------------------
-WEB_DIR="$(cd "$SPIKE_DIR/../web" && pwd)"
+WEB_DIR="$(cd "$SPIKE_DIR/../packages/eval-web" && pwd)"
 OUT_DIR="$(cd "$SPIKE_DIR/.." && pwd)/site/public/beloch"
 mkdir -p "$OUT_DIR"
 
