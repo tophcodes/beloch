@@ -64,6 +64,10 @@
  (name test_spine)
  (libraries beloch alcotest str))
 
+(test
+ (name test_session)
+ (libraries beloch alcotest yojson zarith str))
+
 (executable
  (name spike_flatten)
  (libraries beloch zarith))
