@@ -224,6 +224,7 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
   import { EditorView, basicSetup } from "codemirror";
   import { EditorState } from "@codemirror/state";
   import { keymap } from "@codemirror/view";
+  import { stepMarkerExtensions, setStepLineOn } from "../lib/cm-step-marker";
   import { parseFold } from "@beloch/scene";
   import { renderCP, renderFolded, WEB_THEME } from "@beloch/render-svg";
   import { SCHEMES, STORAGE_KEY, DEFAULT_ID, applyScheme, resolveScheme } from "../lib/paper-schemes";
@@ -302,6 +303,7 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
       state: EditorState.create({
         doc: initialCode,
         extensions: [
+          ...stepMarkerExtensions,
           basicSetup,
           keymap.of([
             {
