@@ -52,9 +52,7 @@ lib/          evaluator core (OCaml library)
 bin/          the `beloch` CLI
 spec/         human-readable language specification (grows per increment)
 decisions/    architecture decision records (ADRs)
-notes/        dated design journal
+notes/        dated design journal (+ antipatterns.md dead ends)
 examples/     .bel programs, tagged works / aspirational / anti
-paper/        the eventual write-up (arXiv / JOSS / OSME)
-antipatterns.md  dead ends and rejected approaches
-bibliography.md  annotated sources
+paper/        the eventual write-up (arXiv / JOSS / OSME) + bibliography.md
 ```
