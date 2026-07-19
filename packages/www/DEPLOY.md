@@ -1,15 +1,15 @@
 # Deploying the Beloch docs site
 
-The site is a static Astro/Starlight build in `site/dist`. Since the render-card
+The site is a static Astro/Starlight build in `packages/www/dist`. Since the render-card
 work, `<Beloch>` evaluates inline `.bel` at build time by shelling the native
 `beloch` binary — the build now requires `beloch` on `PATH`, not just bun.
-`site/public/beloch/beloch-eval.js` (the in-browser evaluator for the live
+`packages/www/public/beloch/beloch-eval.js` (the in-browser evaluator for the live
 playground) remains a **committed artifact**; regenerate it manually with
-`site/scripts/build-eval.sh` when the evaluator changes.
+`packages/www/scripts/build-eval.sh` when the evaluator changes.
 
 Build command (from repo root, **inside `nix develop`** — see below):
-`cd site && bun install && bun run build` → output `site/dist`.
-Cloudflare Pages project name: **`beloch-docs`** (see `site/wrangler.toml`).
+`cd packages/www && bun install && bun run build` → output `packages/www/dist`.
+Cloudflare Pages project name: **`beloch-docs`** (see `packages/www/wrangler.toml`).
 
 ## Status / prerequisites
 
@@ -30,10 +30,10 @@ CF Pages' Git-integration builder is **bun-only** and cannot shell out to a
 native `beloch` binary — since the build now depends on `beloch` being on
 `PATH`, Git-integration is **no longer a viable deploy path**. GitHub Actions
 is the only supported route: it builds `beloch` from the flake with Nix, puts
-it on `PATH`, then runs the bun build and uploads `site/dist` via Wrangler.
+it on `PATH`, then runs the bun build and uploads `packages/www/dist` via Wrangler.
 
 The workflow lives at `.github/workflows/deploy.yml` and runs on every push to
-`main` that touches `site/**`, `render/**`, `lib/**`, `bin/**`, `flake.nix`,
+`main` that touches `packages/www/**`, `packages/render-2d/**`, `packages/core/lib/**`, `packages/core/bin/**`, `flake.nix`,
 `flake.lock`, or the workflow file itself (also triggerable manually via
 `workflow_dispatch`). It uses the `CLOUDFLARE_API_TOKEN` /
 `CLOUDFLARE_ACCOUNT_ID` secrets from prerequisite 1.
@@ -56,8 +56,8 @@ token exported as `CLOUDFLARE_API_TOKEN` (and `CLOUDFLARE_ACCOUNT_ID`):
 
 ```sh
 nix develop
-cd site && bun run build
+cd packages/www && bun run build
 bunx wrangler pages deploy dist --project-name=beloch-docs --branch=main
 ```
 
-(`site/package.json` already has a `deploy` script for this.)
+(`packages/www/package.json` already has a `deploy` script for this.)

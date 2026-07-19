@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 // Phase 1 T5/T6 milestone harness: load the js_of_ocaml bundle
-// (site/public/beloch/beloch-eval.js) with the real FLINT-wasm qqbar module
-// (site/public/beloch/qqbar-wasm.js) wired in, fold examples/bases/fish-base.bel
+// (packages/www/public/beloch/beloch-eval.js) with the real FLINT-wasm qqbar module
+// (packages/www/public/beloch/qqbar-wasm.js) wired in, fold examples/bases/fish-base.bel
 // (which forces sqrt(2) through the rabbit-ear bisection) through it, and
 // render the result to spike/fish-base.svg. Also re-checks a pure-rational
 // program (examples/bases/kite.bel — a diagonal reflection, no qqbar) to
@@ -20,8 +20,8 @@ const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 
-// site/{package.json,public/beloch} inherit "type":"module" from
-// site/package.json, so `require`/`import` on the committed build artifacts
+// packages/www/{package.json,public/beloch} inherit "type":"module" from
+// packages/www/package.json, so `require`/`import` on the committed build artifacts
 // (qqbar-wasm.js, an emscripten MODULARIZE UMD bundle; beloch-eval.js, a
 // js_of_ocaml script bundle) resolve as ESM and silently drop their
 // CJS-style `module.exports`/global assignment. Neither file uses

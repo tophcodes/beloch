@@ -5,7 +5,7 @@
  * <Beloch> card and the markdown `bel` code-fence plugin. The same grammar wasm
  * also drives the live playground editor (see playground island).
  *
- * Captures (see tree-sitter-beloch/queries/highlights.scm) → CSS classes:
+ * Captures (see packages/grammar/queries/highlights.scm) → CSS classes:
  *   comment→bel-comment keyword→bel-keyword point→bel-point line→bel-line
  *   instance→bel-instance number→bel-number operator→bel-operator
  *   punct→bel-punct

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Regenerates site/public/beloch/beloch-eval.js, the js_of_ocaml browser
-# bundle for the evaluator (see web/beloch_web.ml), and (if the Phase 0/1
-# wasm prefix has been built — see spike/build.sh) site/public/beloch/
-# qqbar-wasm.js, the FLINT-wasm qqbar backend web/qqbar_shim.js calls into.
-# Run this MANUALLY after changing lib/ or web/ — the astro/bun site build
+# Regenerates packages/www/public/beloch/beloch-eval.js, the js_of_ocaml browser
+# bundle for the evaluator (see packages/eval-web/beloch_web.ml), and (if the
+# Phase 0/1 wasm prefix has been built — see spike/build.sh) packages/www/public/beloch/
+# qqbar-wasm.js, the FLINT-wasm qqbar backend packages/eval-web/qqbar_shim.js calls into.
+# Run this MANUALLY after changing lib/ or eval-web/ — the astro/bun site build
 # does NOT invoke the nix OCaml toolchain, so the bundle is a committed
-# build artifact (same pattern as site/public/grammar/tree-sitter-beloch.wasm).
+# build artifact (same pattern as packages/www/public/grammar/tree-sitter-beloch.wasm).
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"

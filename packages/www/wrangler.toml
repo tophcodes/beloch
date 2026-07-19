@@ -1,7 +1,7 @@
 # Cloudflare Pages project config for the Beloch docs site.
 # The project name must match the one created in Cloudflare
 # (`wrangler pages project create beloch-docs --production-branch=main`).
-# Output lives in site/dist; wrangler is run from the site/ directory.
+# Output lives in packages/www/dist; wrangler is run from the packages/www/ directory.
 name = "beloch-docs"
 compatibility_date = "2026-06-30"
 pages_build_output_dir = "dist"

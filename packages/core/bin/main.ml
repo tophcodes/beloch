@@ -31,7 +31,7 @@ let todo name =
 let render_unavailable_msg =
   Printf.sprintf
     "beloch render: `%s` not found on PATH — run `nix develop` (or `cd \
-     render/render-svg && bun link`)\n"
+     packages/render-2d/render-svg && bun link`)\n"
     render_bin
 
 (* Shared by `run_fold` and `.bel` render dispatch: read + evaluate a .bel
@@ -89,7 +89,7 @@ let xdg_open path =
   | Some xdg -> ignore (Unix.create_process xdg [| "xdg-open"; path |] Unix.stdin Unix.stdout Unix.stderr)
 
 (* `beloch render` hands off to `beloch-render`, the @beloch/render-svg CLI
-   (linked onto PATH by the Nix devShell) — see render/README.md. `.fold`
+   (linked onto PATH by the Nix devShell) — see packages/render-2d/README.md. `.fold`
    inputs pass straight through; `.bel` inputs are evaluated here first and
    the resulting FOLD JSON is piped into beloch-render's stdin. *)
 let run_render args =

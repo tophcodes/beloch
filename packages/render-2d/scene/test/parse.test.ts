@@ -116,7 +116,7 @@ test("malformed input throws SceneError naming the field", () => {
 // Fixture generated via `dune exec bin/main.exe -- fold` on a program that
 // records exactly one seg mark (a between-clip stub dangling mid-face) and
 // one point mark (an `at .p` reference on --vm); see
-// render/render-svg/test/marks.test.ts for the full .bel source.
+// render-svg/test/marks.test.ts for the full .bel source.
 const fixture = (p: string) =>
   Bun.file(new URL(`../../render-svg/test/fixtures/${p}`, import.meta.url)).text();
 

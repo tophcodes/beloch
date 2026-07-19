@@ -21,7 +21,7 @@ or folded-occlusion diagrams out. Spec:
 Rabbit Ear load-check — the OCaml emitter's own tests own FOLD validity):
 
 ```
-bun render/render-svg/bin/fold2svg.ts <in.fold|-> [out.svg|out.png]
+bun packages/render-2d/render-svg/bin/fold2svg.ts <in.fold|-> [out.svg|out.png]
   [--title "..."] [--view cp|folded] [--flip] [--hidden dashed|hide]
   [--labels "--v,.e"] [--step <label|N>] [--legend]
 ```

@@ -1,5 +1,5 @@
 // Playground eval worker. Loads the committed jsoo bundle (a plain top-level
-// script, not ESM/CJS — see site/scripts/build-eval.sh) plus the FLINT-wasm
+// script, not ESM/CJS — see packages/www/scripts/build-eval.sh) plus the FLINT-wasm
 // qqbar backend, and evaluates one Beloch source string per message, replying
 // with the raw JSON result string from belochFoldString. Caller
 // (Playground.astro) owns the timeout: if the evaluator hangs (e.g. a runaway
@@ -10,7 +10,7 @@
 // as a javascript_files input), so the shim's ml_qqbar_* primitives ship inside
 // the bundle. Those primitives never await — they require a ready emscripten
 // Module at globalThis.__beloch_qqbar_wasm *before the first call* (see the
-// loader contract in web/qqbar_shim.js). So we instantiate QqbarWasm once here
+// loader contract in packages/eval-web/qqbar_shim.js). So we instantiate QqbarWasm once here
 // and gate every eval on it. importScripts loads classic scripts, so the site's
 // package.json "type":"module" does not affect these two files in a Worker.
 importScripts('/beloch/qqbar-wasm.js');   // defines self.QqbarWasm (MODULARIZE factory, -sEXPORT_NAME)

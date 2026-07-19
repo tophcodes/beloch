@@ -1,8 +1,8 @@
 // js_of_ocaml runtime shim for lib/qqbar.ml's C stubs (lib/qqbar_stubs.c,
 // FLINT/Calcium — see decisions/0013-flint-qqbar-backend.md). jsoo cannot
 // compile C, so every `external ... = "ml_qqbar_*"` primitive is backed here
-// by calls into a real FLINT-wasm module (web/qqbar_wasm.c, built by
-// spike/build.sh into site/public/beloch/qqbar-wasm.js — see
+// by calls into a real FLINT-wasm module (packages/eval-web/qqbar_wasm.c, built by
+// spike/build.sh into packages/www/public/beloch/qqbar-wasm.js — see
 // docs/superpowers/plans/2026-07-18-flint-wasm-phase1.md for the ABI).
 //
 // Loader contract: the wasm module must already be ready (its emscripten

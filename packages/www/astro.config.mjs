@@ -6,9 +6,9 @@ import { fileURLToPath } from 'node:url';
 import remarkBel from './src/lib/remark-bel.ts';
 import { headSyncScript } from "./src/lib/paper-schemes.ts";
 
-// Anchor repo root to this file's location (site/astro.config.mjs → one level up).
+// Anchor repo root to this file's location (packages/www/astro.config.mjs → two levels up).
 // Used by highlight-bel.ts to resolve the grammar wasm + web-tree-sitter runtime
-// under site/. (The old BELOCH_BIN coupling — a native-binary path for build-time
+// under packages/www/. (The old BELOCH_BIN coupling — a native-binary path for build-time
 // .bel evaluation — is deliberately not carried forward: highlight-bel.ts and
 // remark-bel.ts only do tree-sitter syntax highlighting, no evaluation, so the
 // build has no dependency on a native binary. Real rendering happens client-side
@@ -16,7 +16,7 @@ import { headSyncScript } from "./src/lib/paper-schemes.ts";
 const repoRoot = join(fileURLToPath(import.meta.url), '..', '..', '..');
 process.env.BELOCH_REPO_ROOT = repoRoot;
 
-// The render pipeline (render/scene, render/render-svg) is browser-safe TS
+// The render pipeline (packages/render-2d/scene, packages/render-2d/render-svg) is browser-safe TS
 // with no build step of its own (main: src/index.ts, no dist/). It isn't a
 // published package, so instead of a `file:` dependency (raw TS sitting in
 // node_modules usually isn't transpiled by the consumer's bundler), we alias
@@ -37,7 +37,7 @@ export default defineConfig({
 				'@beloch/render-svg': renderSvgRoot,
 			},
 		},
-		// render/ lives outside site/ (Vite's default project root), so the dev
+		// packages/render-2d/ lives outside packages/www/ (Vite's default project root), so the dev
 		// server needs explicit permission to read source files from there.
 		server: {
 			fs: { allow: [repoRoot] },
