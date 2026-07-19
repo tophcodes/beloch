@@ -347,6 +347,11 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
         : dirty
           ? "Run"
           : "Code ändern, um erneut auszuführen";
+      // Line numbers from the last run no longer necessarily match the
+      // edited text — clear the gutter indicator, but leave the scrubber
+      // and the currently-shown SVG alone (same "stale result stays
+      // visible" philosophy as the Run button itself).
+      if (dirty) setStepLineOn(editor, null);
     }
 
     const editor = new EditorView({
