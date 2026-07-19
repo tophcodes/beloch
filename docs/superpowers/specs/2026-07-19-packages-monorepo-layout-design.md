@@ -31,7 +31,7 @@ beloch/
     core/       # was lib/ bin/ tests/ bench/ tools/  — opam package "beloch"
     eval-web/   # was web/   — js_of_ocaml browser eval bundle
     render-2d/  # was render/ — bun workspace (scene + render-svg)
-    docs-site/  # was site/   — Astro docs + Playground UI
+    www/        # was site/   — public web frontend (landing + docs + Playground UI)
     grammar/    # was tree-sitter-beloch/
     vscode/     # was editors/vscode/  (editors/ removed)
 ```
@@ -42,15 +42,18 @@ it now (YAGNI).
 ### Decisions taken
 
 - **`web/` → `packages/eval-web/`.** It is the OCaml→JS eval engine, not the
-  Playground UI (which lives in `docs-site`). Naming it `playground` would blur
-  that boundary.
+  Playground UI (which lives in `www`). Naming it `playground` would blur that
+  boundary.
+- **`site/` → `packages/www/`.** It is the public web frontend — landing page,
+  docs, and the Playground UI — not docs alone, so `docs-site`/`docs` undersells
+  it. `www` reads as "the website" and stays clear of `eval-web` (the engine).
 - **`examples/` stays at root.** It is a shared corpus consumed by the OCaml
-  tests, `docs-site`, and the CLI, and is featured in the README as a showcase.
-  It belongs to no single package, so it sits at root alongside `decisions/` and
+  tests, `www`, and the CLI, and is featured in the README as a showcase. It
+  belongs to no single package, so it sits at root alongside `decisions/` and
   `notes/`. Keeping it put also avoids re-plumbing the test fixture paths twice.
 - **Core stays one opam package.** `lib bin tests bench tools` all move under
-  `packages/core/` but remain the single `beloch` package declared in the
-  root `dune-project`. dune assigns sources to packages by declaration, not by
+  `packages/core/` but remain the single `beloch` package declared in the root
+  `dune-project`. dune assigns sources to packages by declaration, not by
   directory, so the split across `packages/core` and `packages/eval-web` is fine.
 
 ## Key insight: almost no code churn
@@ -62,9 +65,9 @@ build-orchestration files need path fixes:
 | File | Fix |
 |---|---|
 | `flake.nix` | `web/`→`packages/eval-web/`; `render/`→`packages/render-2d/`; `render/render-svg`→`packages/render-2d/render-svg` (both the build ref and the `bun install` / `bun link` shellHook paths) |
-| `.github/workflows/deploy.yml` | path filters `site/**`,`render/**`; `dune build web/`; `cp _build/default/web/beloch_web.bc.js …`; `working-directory: site` and wrangler `workingDirectory: site` (both → `packages/docs-site`) |
-| `packages/docs-site/scripts/build-eval.sh` | `dune build web/` → `dune build packages/eval-web/`; `_build/default/web/beloch_web.bc.js` → `_build/default/packages/eval-web/beloch_web.bc.js`; tree-sitter path |
-| `packages/docs-site/src/lib/highlight-bel.ts` | tree-sitter-beloch path → `packages/grammar` |
+| `.github/workflows/deploy.yml` | path filters `site/**`,`render/**`; `dune build web/`; `cp _build/default/web/beloch_web.bc.js …`; `working-directory: site` and wrangler `workingDirectory: site` (both → `packages/www`) |
+| `packages/www/scripts/build-eval.sh` | `dune build web/` → `dune build packages/eval-web/`; `_build/default/web/beloch_web.bc.js` → `_build/default/packages/eval-web/beloch_web.bc.js`; tree-sitter path |
+| `packages/www/src/lib/highlight-bel.ts` | tree-sitter-beloch path → `packages/grammar` |
 | `packages/core/tests/dune`, `test_eval.ml`, `test_e2e.ml` | fixture plumbing (see risk) |
 
 Unaffected:
@@ -107,9 +110,9 @@ preserved); the CI/flake path fix lands in the **same commit** as its move.
 
 1. **Peripheral packages** — `git mv` `tree-sitter-beloch → packages/grammar`,
    `render → packages/render-2d`, `web → packages/eval-web`, `site →
-   packages/docs-site`, `editors/vscode → packages/vscode` (drop empty
-   `editors/`). Fix `flake.nix`, `deploy.yml`, `build-eval.sh`, `highlight-bel.ts`.
-   Gate: `nix build` green + `docs-site` build + eval bundle regenerates.
+   packages/www`, `editors/vscode → packages/vscode` (drop empty `editors/`).
+   Fix `flake.nix`, `deploy.yml`, `build-eval.sh`, `highlight-bel.ts`.
+   Gate: `nix build` green + `www` build + eval bundle regenerates.
 2. **Core** — `git mv` `lib bin tests bench tools → packages/core/`. Re-point the
    fixture plumbing. Gate: full `dune build` + `dune test` green (all alcotest
    suites + TS suites that read their own fixtures).
@@ -124,3 +127,12 @@ preserved); the CI/flake path fix lands in the **same commit** as its move.
 - No renaming of internal package names (`beloch-render`, `@beloch/render-svg`,
   the `beloch` opam package) — directories move, names stay.
 - No touching `scratch/ learn/ refs/ spike/` (gitignored or one-off).
+
+## Integration note
+
+Branched from local `main` HEAD (`36f6ae7`, the root-tidy commit, which is not
+yet on `origin`). The main checkout also carries pre-existing uncommitted edits
+in `site/` (`package.json`, `package-lock.json`, `Playground.astro`,
+`index.astro`) that predate this work; because this migration renames `site/ →
+packages/www/`, those edits must be reconciled at integration time (commit or
+stash them on main first, then rebase/merge this branch).
