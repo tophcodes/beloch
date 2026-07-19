@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'site/**'
-      - 'render/**'
+      - 'packages/render-2d/**'
       - 'lib/**'
       - 'bin/**'
       - 'flake.nix'

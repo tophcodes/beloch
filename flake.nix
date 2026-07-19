@@ -78,7 +78,7 @@
             ocamlPkgs.ocamlformat
             ocamlPkgs.utop
             flint
-            # FOLD -> SVG/PNG rendering (render/render-svg)
+            # FOLD -> SVG/PNG rendering (packages/render-2d/render-svg)
             pkgs.bun
           ];
           # Link @beloch/render-svg's `beloch-render` bin globally so the
@@ -88,8 +88,8 @@
           shellHook = ''
             export PATH="$(bun pm bin -g 2>/dev/null):$PATH"
             root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-            ( cd "$root/render" && bun install --silent ) >/dev/null 2>&1
-            ( cd "$root/render/render-svg" && bun link --silent ) >/dev/null 2>&1
+            ( cd "$root/packages/render-2d" && bun install --silent ) >/dev/null 2>&1
+            ( cd "$root/packages/render-2d/render-svg" && bun link --silent ) >/dev/null 2>&1
             mkdir -p "$root/.direnv/bin"
             cat > "$root/.direnv/bin/beloch" <<EOF
 #!/usr/bin/env bash

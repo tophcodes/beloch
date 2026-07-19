@@ -13,8 +13,8 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
-import { parseFold } from "../render/scene/src/index";
-import { renderFolded, WEB_THEME } from "../render/render-svg/src/index";
+import { parseFold } from "../packages/render-2d/scene/src/index";
+import { renderFolded, WEB_THEME } from "../packages/render-2d/render-svg/src/index";
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
