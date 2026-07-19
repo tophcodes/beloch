@@ -2463,10 +2463,16 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
   let step_of_line n =
     match Hashtbl.find_opt root_scope.line_steps n with Some s -> s | None -> 0
   in
+  (* Sorted by name: Hashtbl.fold/iter order depends on internal bucket
+     layout, which differs between a fresh eval (insert in program order)
+     and a restored session (Hashtbl.reset + Hashtbl.iter replace). Sorting
+     here makes the emitted overlay arrays independent of that iteration
+     order, so fresh and resumed evals of the same program are byte-identical. *)
   let named_points =
     Hashtbl.fold
       (fun k v acc -> if is_temp k then acc else (k, v, step_of_point k) :: acc)
       root_scope.points []
+    |> List.sort (fun (a, _, _) (b, _, _) -> String.compare a b)
   in
   let named_lines =
     Hashtbl.fold
@@ -2489,6 +2495,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
              likewise not emitted. *)
           | Bundle _ | Edge _ -> acc)
       root_scope.lines []
+    |> List.sort (fun (a, _, _) (b, _, _) -> String.compare a b)
   in
   let named_line_cids =
     Hashtbl.fold
@@ -2499,6 +2506,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
           | Material (cid, _) | Mark (cid, _) -> (k, cid) :: acc
           | Frozen _ | Bundle _ | Edge _ -> acc)
       root_scope.lines []
+    |> List.sort (fun (a, _) (b, _) -> String.compare a b)
   in
   if ctx.pending then
     ctx.frames_rev <- (ctx.panel, !(ctx.state), None) :: ctx.frames_rev;
