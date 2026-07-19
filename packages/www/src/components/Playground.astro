@@ -248,7 +248,7 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
     color: var(--beloch-muted);
   }
   .pg-steps[hidden] { display: none; }
-  .pg-step-dots { display: inline-flex; gap: 6px; }
+  .pg-step-dots { display: inline-flex; flex-wrap: wrap; gap: 6px; }
   .pg-step-dot {
     width: 10px;
     height: 10px;
@@ -445,6 +445,7 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
         dot.type = "button";
         dot.className = "pg-step-dot";
         dot.setAttribute("aria-label", `Step ${i + 1} von ${n}`);
+        dot.setAttribute("aria-current", "false");
         dot.addEventListener("click", () => renderStep(i));
         stepDots!.appendChild(dot);
       }
@@ -464,6 +465,7 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
     function updateStepsUI(i: number, scene: FoldScene) {
       stepDots!.querySelectorAll<HTMLButtonElement>(".pg-step-dot").forEach((dot, idx) => {
         dot.classList.toggle("is-active", idx === i);
+        dot.setAttribute("aria-current", idx === i ? "true" : "false");
       });
       const step = scene.steps[i];
       stepLabel!.textContent = step?.label
