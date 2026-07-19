@@ -12,11 +12,11 @@
 #   diff before.csv after.csv
 set -u
 TIMEOUT="${1:-60}"
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$ROOT" || exit 1
 
-dune build bench/bench_real_roots.exe 2>&1 || { echo "build failed" >&2; exit 1; }
-EXE="$ROOT/_build/default/bench/bench_real_roots.exe"
+dune build packages/core/bench/bench_real_roots.exe 2>&1 || { echo "build failed" >&2; exit 1; }
+EXE="$ROOT/_build/default/packages/core/bench/bench_real_roots.exe"
 
 echo "# CSV,case,coeff_deg,total_s,merge_s,resultant_s,R_deg,roots_s,ncands,filter_s,nroots"
 for case in $("$EXE" list); do

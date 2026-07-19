@@ -6,8 +6,8 @@ on:
     paths:
       - 'packages/www/**'
       - 'packages/render-2d/**'
-      - 'lib/**'
-      - 'bin/**'
+      - 'packages/core/lib/**'
+      - 'packages/core/bin/**'
       - 'flake.nix'
       - 'flake.lock'
       - '.github/workflows/deploy.yml'

@@ -7,7 +7,7 @@ open Beloch
 let examples_dir =
   (match Sys.getenv_opt "DUNE_SOURCEROOT" with
    | Some root -> Filename.concat root "examples"
-   | None -> "../../../examples")
+   | None -> "../../../../../examples")
   ^ "/"
 
 let golden_dir = "golden/"

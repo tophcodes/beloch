@@ -10,7 +10,7 @@ let pt x y = { Geom.x = q x; y = q y }
 let examples_dir =
   match Sys.getenv_opt "DUNE_SOURCEROOT" with
   | Some root -> Filename.concat root "examples"
-  | None -> "../../../examples"
+  | None -> "../../../../../examples"
 
 let read_example name =
   In_channel.with_open_text (Filename.concat examples_dir name) In_channel.input_all
@@ -20,8 +20,8 @@ let read_example name =
    express (identity isometry, axiom5 tag). Read those from tests/cases. *)
 let cases_dir =
   match Sys.getenv_opt "DUNE_SOURCEROOT" with
-  | Some root -> Filename.concat root "tests/cases"
-  | None -> "../../../tests/cases"
+  | Some root -> Filename.concat root "packages/core/tests/cases"
+  | None -> "../../../../../packages/core/tests/cases"
 
 let read_case name =
   In_channel.with_open_text (Filename.concat cases_dir name) In_channel.input_all

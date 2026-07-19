@@ -610,7 +610,7 @@ let examples_dir () =
      reads its own examples/ rather than the main checkout's (#37). *)
   match Sys.getenv_opt "DUNE_SOURCEROOT" with
   | Some root -> Filename.concat root "examples"
-  | None -> "../../../examples"
+  | None -> "../../../../../examples"
 
 (* every .bel under dir, recursively (examples/ nests into bases/, syntax/,
    … — a flat readdir found none of them and starved this test; mirrors

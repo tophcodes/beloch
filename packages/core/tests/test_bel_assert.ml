@@ -14,8 +14,8 @@ open Beloch
    checkout's (#37). *)
 let cases_dir =
   (match Sys.getenv_opt "DUNE_SOURCEROOT" with
-   | Some root -> Filename.concat root "tests/cases"
-   | None -> "../../../tests/cases")
+   | Some root -> Filename.concat root "packages/core/tests/cases"
+   | None -> "../../../../../packages/core/tests/cases")
   ^ "/"
 
 (* every .bel under cases_dir (recursively); names are relative paths (e.g.

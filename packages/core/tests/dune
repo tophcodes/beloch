@@ -33,7 +33,7 @@
 (test
  (name test_golden)
  (libraries beloch alcotest yojson zarith str)
- (deps (source_tree ../examples) (source_tree golden)))
+ (deps (source_tree ../../../examples) (source_tree golden)))
 
 (test
  (name test_qqbar)
