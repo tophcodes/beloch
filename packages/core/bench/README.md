@@ -8,8 +8,8 @@ path. Re-run before and after any kernel optimization and diff the CSV.
 ```sh
 bench/run.sh [per-case-timeout-seconds]   # default 60; whole corpus
 # or a single case:
-dune exec bench/bench_real_roots.exe -- stacked:6
-dune exec bench/bench_real_roots.exe -- list
+dune exec packages/core/bench/bench_real_roots.exe -- stacked:6
+dune exec packages/core/bench/bench_real_roots.exe -- list
 ```
 
 `run.sh` writes a human table to stderr and a `CSV,...` block to stdout:

@@ -7,7 +7,7 @@
    Tier-3 stage breakdown (merge / resultant / roots / filter), mirroring
    bench_real_roots.
 
-   Usage: dune exec bench/bench_generic.exe -- [D1 D2 ...]   (default 3 9 27) *)
+   Usage: dune exec packages/core/bench/bench_generic.exe -- [D1 D2 ...]   (default 3 9 27) *)
 open Beloch
 
 let nq s = Num.of_q (Q.of_string s)

@@ -1,8 +1,8 @@
 (* Regenerate tests/golden/*.fold. Run from the repo root:
-   dune exec tools/regen.exe *)
+   dune exec packages/core/tools/regen.exe *)
 open Beloch
 
-let dir = "examples/" and out = "tests/golden/"
+let dir = "examples/" and out = "packages/core/tests/golden/"
 
 (* every .bel in examples/, recursively, as a path relative to `dir` (e.g.
    "syntax/bisect-a.bel") — mirrors tests/test_golden.ml's walk. *)

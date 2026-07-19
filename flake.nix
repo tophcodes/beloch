@@ -82,7 +82,7 @@
             pkgs.bun
           ];
           # Link @beloch/render-svg's `beloch-render` bin globally so the
-          # OCaml `beloch render` subcommand (bin/main.ml) can execvp it, and
+          # OCaml `beloch render` subcommand (packages/core/bin/main.ml) can execvp it, and
           # shim a bare `beloch` onto PATH that always runs the freshly
           # built binary (not a stale Nix-store copy) via `dune exec`.
           shellHook = ''

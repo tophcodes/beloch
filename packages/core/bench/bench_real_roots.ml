@@ -12,8 +12,8 @@
    check (it may drift if that check changes — trust `total` as the truth).
 
    Usage:
-     dune exec bench/bench_real_roots.exe -- <case>
-     dune exec bench/bench_real_roots.exe -- list      # names, one per line
+     dune exec packages/core/bench/bench_real_roots.exe -- <case>
+     dune exec packages/core/bench/bench_real_roots.exe -- list      # names, one per line
    Cases: rational | quad | independent | deepstack | stacked:<N>
    Or just run bench/run.sh for the whole corpus under per-case timeouts. *)
 open Beloch
