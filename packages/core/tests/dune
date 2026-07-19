@@ -1,0 +1,73 @@
+(test
+ (name test_num)
+ (libraries beloch alcotest zarith unix))
+
+(test
+ (name test_isometry3)
+ (libraries beloch alcotest zarith))
+
+(test
+ (name test_fold_state)
+ (libraries beloch alcotest zarith))
+
+(test
+ (name test_geom)
+ (libraries beloch alcotest zarith))
+
+(test
+ (name test_parse)
+ (libraries beloch alcotest str))
+
+(test
+ (name test_eval)
+ (libraries beloch alcotest yojson zarith str))
+
+(test
+ (name test_e2e)
+ (libraries beloch alcotest yojson zarith str))
+
+(test
+ (name test_diagnostic)
+ (libraries beloch alcotest str))
+
+(test
+ (name test_golden)
+ (libraries beloch alcotest yojson zarith str)
+ (deps (source_tree ../../../examples) (source_tree golden)))
+
+(test
+ (name test_qqbar)
+ (libraries beloch alcotest zarith))
+
+(test
+ (name test_field_merge)
+ (libraries beloch alcotest zarith))
+
+(test
+ (name test_collapse)
+ (libraries beloch alcotest zarith str))
+
+(test
+ (name test_flatten)
+ (libraries beloch alcotest zarith str))
+
+(test
+ (name test_render_cli)
+ (libraries render_cli alcotest unix))
+
+(test
+ (name test_bel_assert)
+ (libraries beloch alcotest zarith)
+ (deps (source_tree cases)))
+
+(test
+ (name test_spine)
+ (libraries beloch alcotest str))
+
+(test
+ (name test_session)
+ (libraries beloch alcotest yojson zarith str))
+
+(executable
+ (name spike_flatten)
+ (libraries beloch zarith))

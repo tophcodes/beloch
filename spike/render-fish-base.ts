@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 // Phase 1 T5/T6 milestone harness: load the js_of_ocaml bundle
-// (site/public/beloch/beloch-eval.js) with the real FLINT-wasm qqbar module
-// (site/public/beloch/qqbar-wasm.js) wired in, fold examples/bases/fish-base.bel
+// (packages/www/public/beloch/beloch-eval.js) with the real FLINT-wasm qqbar module
+// (packages/www/public/beloch/qqbar-wasm.js) wired in, fold examples/bases/fish-base.bel
 // (which forces sqrt(2) through the rabbit-ear bisection) through it, and
 // render the result to spike/fish-base.svg. Also re-checks a pure-rational
 // program (examples/bases/kite.bel — a diagonal reflection, no qqbar) to
@@ -13,15 +13,15 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
-import { parseFold } from "../render/scene/src/index";
-import { renderFolded, WEB_THEME } from "../render/render-svg/src/index";
+import { parseFold } from "../packages/render-2d/scene/src/index";
+import { renderFolded, WEB_THEME } from "../packages/render-2d/render-svg/src/index";
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 
-// site/{package.json,public/beloch} inherit "type":"module" from
-// site/package.json, so `require`/`import` on the committed build artifacts
+// packages/www/{package.json,public/beloch} inherit "type":"module" from
+// packages/www/package.json, so `require`/`import` on the committed build artifacts
 // (qqbar-wasm.js, an emscripten MODULARIZE UMD bundle; beloch-eval.js, a
 // js_of_ocaml script bundle) resolve as ESM and silently drop their
 // CJS-style `module.exports`/global assignment. Neither file uses
@@ -37,12 +37,12 @@ function loadAsScript(absPath: string): any {
 
 async function main() {
   // --- load the wasm qqbar module and install it where qqbar_shim.js looks ---
-  const QqbarWasmFactory = loadAsScript(path.join(repoRoot, "site/public/beloch/qqbar-wasm.js"));
+  const QqbarWasmFactory = loadAsScript(path.join(repoRoot, "packages/www/public/beloch/qqbar-wasm.js"));
   const qqbarModule = await QqbarWasmFactory();
   (globalThis as any).__beloch_qqbar_wasm = qqbarModule;
 
   // --- load the js_of_ocaml evaluator bundle (sets globalThis.belochFoldString) ---
-  loadAsScript(path.join(repoRoot, "site/public/beloch/beloch-eval.js"));
+  loadAsScript(path.join(repoRoot, "packages/www/public/beloch/beloch-eval.js"));
   const belochFoldString = (globalThis as any).belochFoldString;
   if (typeof belochFoldString !== "function") {
     throw new Error("belochFoldString was not installed by beloch-eval.js");
