@@ -136,10 +136,20 @@ let test_append_keeps_prefix () =
     a;
   Alcotest.(check int) "b has one more key" (List.length a + 1) (List.length b)
 
+(* NOTE: `paper square` is the mandatory program HEADER (parser rule
+   `program: PAPER SQUARE stmts EOF`), NOT an Ast.stmt — so `chain_keys`
+   returns exactly one key per statement (here: per `fold`), seeded by the
+   header. Editing the header changes the seed and busts every key. To show a
+   STABLE prefix we need ≥3 statements with a shared first one. *)
 let test_edit_invalidates_suffix () =
-  let a = keys "paper square\nfold through .a .c\nfold through .b .d\n" in
-  let b = keys "paper square\nfold through .a .b\nfold through .b .d\n" in
-  Alcotest.(check string) "key 0 stable" (List.nth a 0) (List.nth b 0);
+  let a =
+    keys "paper square\nfold through .a .c\nfold through .b .d\nfold through .a .b\n"
+  in
+  let b =
+    keys "paper square\nfold through .a .c\nfold through .b .c\nfold through .a .b\n"
+  in
+  Alcotest.(check int) "3 statements -> 3 keys" 3 (List.length a);
+  Alcotest.(check string) "key 0 stable (first stmt unchanged)" (List.nth a 0) (List.nth b 0);
   Alcotest.(check bool) "key 1 changed" true (List.nth a 1 <> List.nth b 1);
   Alcotest.(check bool) "key 2 changed (chained)" true (List.nth a 2 <> List.nth b 2)
 
@@ -216,7 +226,25 @@ let canon_stmt (src : string) (stmt : Ast.stmt) : string =
   let slice = if b > a then String.sub src a (b - a) else "" in
   normalize_ws slice
 
+(* `paper square` is the program header, not a statement, so it never appears
+   in [prog]. Seed the chain with the normalized source PREFIX before the first
+   statement (the header + any leading trivia): editing it changes the seed and
+   invalidates every key, while the returned list stays exactly one key per
+   Ast.stmt — so keys align 1:1 with statements (and with [Session]'s
+   per-statement snapshots). *)
 let chain_keys (src : string) (prog : Ast.program) : string list =
+  let first_start =
+    match prog with
+    | [] -> String.length src
+    | stmt :: _ -> (fst (span_of_stmt stmt)).Lexing.pos_cnum
+  in
+  let first_start =
+    if first_start < 0 then 0
+    else if first_start > String.length src then String.length src
+    else first_start
+  in
+  let prelude = normalize_ws (String.sub src 0 first_start) in
+  let seed = Digest.to_hex (Digest.string ("prelude\x00" ^ prelude)) in
   let rec go prev acc = function
     | [] -> List.rev acc
     | stmt :: rest ->
@@ -225,7 +253,7 @@ let chain_keys (src : string) (prog : Ast.program) : string list =
         in
         go key (key :: acc) rest
   in
-  go "" [] prog
+  go seed [] prog
 ```
 
 Add the re-export to `lib/beloch.ml` (after line 44 `module Field_merge = Field_merge`):
@@ -283,17 +311,19 @@ let snap_after n prog =
   ignore (Eval.eval_program ~on_step prog);
   Option.get !snap
 
+(* Use `mark` statements: they subdivide the arrangement (a real per-step state
+   change → a snapshot per step) but never need `moving .p` and never throw, so
+   the program evaluates cleanly. `paper square` is the header, so this is a
+   3-statement program. *)
 let test_resume_equals_full () =
   let src =
-    "paper square\nfold through .a .c\nfold through .b .d\nfold through .a .b\n"
+    "paper square\nmark through .a .c\nmark through .b .d\nmark map .a onto .b\n"
   in
   let prog = Beloch.parse ~filename:"t.bel" src in
   let full = fold_str (Eval.eval_folded prog) in
-  (* resume after statement 2, replay statements 3.. *)
+  (* resume after statement 2 (index 1), replay statement 3 (index 2) *)
   let resume = snap_after 2 prog in
-  let suffix =
-    List.filteri (fun i _ -> i >= 2) prog
-  in
+  let suffix = List.filteri (fun i _ -> i >= 2) prog in
   let resumed = fold_str (Eval.eval_program ~resume suffix) in
   Alcotest.(check string) "resumed FOLD == full FOLD" full resumed
 ```
@@ -484,27 +514,35 @@ let fold_str f = Yojson.Safe.to_string (Fold_emit.to_json_folded f)
 let full src =
   fold_str (Eval.eval_folded (Beloch.parse ~filename:"t.bel" src))
 
+(* `mark` statements evaluate cleanly (subdivide, no `moving .p`, never throw).
+   `paper square` is the header, not a statement, so an N-mark program has N
+   statements and N keys — the counts below reflect that. *)
+
 let test_equivalence () =
   let s = Session.create () in
-  let src = "paper square\nfold through .a .c\nfold through .b .d\n" in
+  let src = "paper square\nmark through .a .c\nmark through .b .d\n" in
   let got = fold_str (Session.eval s ~filename:"t.bel" src) in
   Alcotest.(check string) "session == eval_folded" (full src) got
 
 let test_append_recomputes_one () =
   let s = Session.create () in
-  let a = "paper square\nfold through .a .c\n" in
-  let b = "paper square\nfold through .a .c\nfold through .b .d\n" in
+  let a = "paper square\nmark through .a .c\n" in
+  let b = "paper square\nmark through .a .c\nmark through .b .d\n" in
   ignore (Session.eval s ~filename:"t.bel" a);
   ignore (Session.eval s ~filename:"t.bel" b);
   Alcotest.(check int) "only the appended statement ran" 1 (Session.last_ran s)
 
 let test_edit_invalidates_from_k () =
   let s = Session.create () in
-  let a = "paper square\nfold through .a .c\nfold through .b .d\n" in
-  let b = "paper square\nfold through .a .b\nfold through .b .d\n" in
+  (* 3 statements; edit the 2nd — statement 1 is reused, 2 and 3 recomputed *)
+  let a =
+    "paper square\nmark through .a .c\nmark through .b .d\nmark map .a onto .b\n"
+  in
+  let b =
+    "paper square\nmark through .a .c\nmark map .a onto .d\nmark map .a onto .b\n"
+  in
   ignore (Session.eval s ~filename:"t.bel" a);
   ignore (Session.eval s ~filename:"t.bel" b);
-  (* statement 0 (paper square) reused; statements 1 and 2 recomputed *)
   Alcotest.(check int) "recomputed 2 of 3" 2 (Session.last_ran s);
   (* and the result still equals a cold eval *)
   Alcotest.(check string) "edited result correct" (full b)
@@ -512,7 +550,7 @@ let test_edit_invalidates_from_k () =
 
 let test_unchanged_reuses_all () =
   let s = Session.create () in
-  let src = "paper square\nfold through .a .c\nfold through .b .d\n" in
+  let src = "paper square\nmark through .a .c\nmark through .b .d\n" in
   ignore (Session.eval s ~filename:"t.bel" src);
   ignore (Session.eval s ~filename:"t.bel" src);
   Alcotest.(check int) "nothing recomputed on identical re-eval" 0 (Session.last_ran s)
