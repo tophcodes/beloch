@@ -19,9 +19,14 @@ let test_append_keeps_prefix () =
   Alcotest.(check int) "b has one more key" (List.length a + 1) (List.length b)
 
 let test_edit_invalidates_suffix () =
-  let a = keys "paper square\nfold through .a .c\nfold through .b .d\n" in
-  let b = keys "paper square\nfold through .a .b\nfold through .b .d\n" in
-  Alcotest.(check string) "key 0 stable" (List.nth a 0) (List.nth b 0);
+  let a =
+    keys "paper square\nfold through .a .c\nfold through .b .d\nfold through .a .b\n"
+  in
+  let b =
+    keys "paper square\nfold through .a .c\nfold through .b .c\nfold through .a .b\n"
+  in
+  Alcotest.(check int) "3 statements -> 3 keys" 3 (List.length a);
+  Alcotest.(check string) "key 0 stable (first stmt unchanged)" (List.nth a 0) (List.nth b 0);
   Alcotest.(check bool) "key 1 changed" true (List.nth a 1 <> List.nth b 1);
   Alcotest.(check bool) "key 2 changed (chained)" true (List.nth a 2 <> List.nth b 2)
 

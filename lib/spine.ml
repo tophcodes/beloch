@@ -1,12 +1,12 @@
 (** Per-statement hash chain for the incremental evaluation cache.
 
-    The chain has one leading entry for the `paper square` header (source
-    text the parser consumes without producing an [Ast.stmt]), then one
-    entry per statement. Each entry folds in every entry before it, so the
-    key at index [i] is a hash of everything up to and including [i].
-    Appending a statement leaves all earlier keys unchanged (full prefix
-    reuse); editing statement [k] changes [k] and every key after it.
-    See [Session]. *)
+    The chain has exactly one entry per [Ast.stmt] (the `paper square`
+    header, which the parser consumes without producing a statement, is
+    folded into the chain seed instead of getting its own key). Each entry
+    folds in every entry before it, so the key at index [i] is a hash of
+    everything up to and including [i]. Appending a statement leaves all
+    earlier keys unchanged (full prefix reuse); editing statement [k]
+    changes [k] and every key after it. See [Session]. *)
 
 (* All [Ast.stmt] variants carry their [Error.span] as the last field. *)
 let span_of_stmt : Ast.stmt -> Error.span = function
@@ -48,11 +48,11 @@ let canon_stmt (src : string) (stmt : Ast.stmt) : string =
   let slice = if b > a then String.sub src a (b - a) else "" in
   normalize_ws slice
 
-(* The grammar's `PAPER SQUARE stmts EOF` header is consumed by the parser
-   and never becomes an [Ast.stmt] (verified: [List.length prog] excludes
-   it). It still occupies source text, so it gets its own leading chain
-   entry — normalized like any other slice, so cosmetic edits to the header
-   don't bust every key downstream. *)
+(* `paper square` is the program header, not a statement, so it never appears
+   in [prog]. Seed the chain with the normalized source PREFIX before the first
+   statement: editing it changes the seed and invalidates every key, while the
+   returned list stays exactly one key per Ast.stmt (keys align 1:1 with
+   statements and with Session's per-statement snapshots). *)
 let chain_keys (src : string) (prog : Ast.program) : string list =
   let first_start =
     match prog with
@@ -65,7 +65,7 @@ let chain_keys (src : string) (prog : Ast.program) : string list =
     else first_start
   in
   let prelude = normalize_ws (String.sub src 0 first_start) in
-  let prelude_key = Digest.to_hex (Digest.string ("\x00" ^ prelude)) in
+  let seed = Digest.to_hex (Digest.string ("prelude\x00" ^ prelude)) in
   let rec go prev acc = function
     | [] -> List.rev acc
     | stmt :: rest ->
@@ -74,4 +74,4 @@ let chain_keys (src : string) (prog : Ast.program) : string list =
         in
         go key (key :: acc) rest
   in
-  prelude_key :: go prelude_key [] prog
+  go seed [] prog
