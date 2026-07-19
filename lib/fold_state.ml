@@ -52,6 +52,8 @@ type t = {
    until Plan 3c deletes it. *)
 let next_id = ref 0
 let reset_ids () = next_id := 0
+let next_id_value () = !next_id
+let set_next_id n = next_id := n
 let fresh_crease_id () =
   let id = !next_id in
   incr next_id;

@@ -460,6 +460,16 @@ let test_fresh_ids () =
   Fold_state.reset_ids ();
   Alcotest.(check int) "reset" 0 (Fold_state.fresh_crease_id ())
 
+let test_next_id_roundtrip () =
+  Fold_state.reset_ids ();
+  Alcotest.(check int) "starts at 0" 0 (Fold_state.next_id_value ());
+  let _ = Fold_state.fresh_crease_id () in
+  let _ = Fold_state.fresh_crease_id () in
+  Alcotest.(check int) "advanced to 2" 2 (Fold_state.next_id_value ());
+  Fold_state.set_next_id 7;
+  Alcotest.(check int) "set to 7" 7 (Fold_state.next_id_value ());
+  Alcotest.(check int) "next alloc is 7" 7 (Fold_state.fresh_crease_id ())
+
 (* --- Plan 3a Task 2: 2D access ------------------------------------------- *)
 
 (* single fold: face1 = [1,2]x[0,1] folded across x=1 onto face0 = [0,1]x[0,1] *)
@@ -1404,7 +1414,9 @@ let () =
           Alcotest.test_case "base shifts placements" `Quick
             test_base_shifts_placements;
           Alcotest.test_case "marks carried" `Quick test_marks_carried;
-          Alcotest.test_case "fresh ids" `Quick test_fresh_ids ] );
+          Alcotest.test_case "fresh ids" `Quick test_fresh_ids;
+          Alcotest.test_case "next-id-roundtrip" `Quick
+            test_next_id_roundtrip ] );
       ( "task2-2d-access",
         [ Alcotest.test_case "face_iso2" `Quick test_face_iso2;
           Alcotest.test_case "table polygon and rel" `Quick

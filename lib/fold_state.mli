@@ -129,6 +129,13 @@ val reset_ids : unit -> unit
 (** Resets the crease-id counter to 0 (called once per eval, so ids are a
     deterministic function of the program). *)
 
+(** [next_id_value ()] / [set_next_id n] — snapshot and restore the global
+    crease-id counter, for the incremental evaluation cache (see
+    [Session]). Ids are a deterministic function of the program prefix, so
+    restoring the counter reproduces identical ids on resume. *)
+val next_id_value : unit -> int
+val set_next_id : int -> unit
+
 (** {1 2D access}
 
     Flat-first (hinge angles in {0, ±1}) motions keep z = 0 invariant, so a
