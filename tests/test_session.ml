@@ -20,8 +20,10 @@ let test_append_recomputes_one () =
   let a = "paper square\nmark through .a .c\n" in
   let b = "paper square\nmark through .a .c\nmark through .b .d\n" in
   ignore (Session.eval s ~filename:"t.bel" a);
-  ignore (Session.eval s ~filename:"t.bel" b);
-  Alcotest.(check int) "only the appended statement ran" 1 (Session.last_ran s)
+  let gotb = Session.eval s ~filename:"t.bel" b in
+  Alcotest.(check int) "only the appended statement ran" 1 (Session.last_ran s);
+  (* warmed (prefix=1) resume must byte-match a cold eval *)
+  Alcotest.(check string) "warmed append == cold eval" (full b) (fold_str gotb)
 
 let test_edit_invalidates_from_k () =
   let s = Session.create () in
@@ -33,11 +35,10 @@ let test_edit_invalidates_from_k () =
     "paper square\nmark through .a .c\nmark map .a onto .d\nmark map .a onto .b\n"
   in
   ignore (Session.eval s ~filename:"t.bel" a);
-  ignore (Session.eval s ~filename:"t.bel" b);
+  let gotb = Session.eval s ~filename:"t.bel" b in
   Alcotest.(check int) "recomputed 2 of 3" 2 (Session.last_ran s);
-  (* and the result still equals a cold eval *)
-  Alcotest.(check string) "edited result correct" (full b)
-    (fold_str (Session.eval (Session.create ()) ~filename:"t.bel" b))
+  (* the WARMED session resumed from snaps[0]; output must equal a cold eval *)
+  Alcotest.(check string) "warmed edit resume == cold eval" (full b) (fold_str gotb)
 
 let test_unchanged_reuses_all () =
   let s = Session.create () in
