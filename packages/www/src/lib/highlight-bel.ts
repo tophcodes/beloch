@@ -20,7 +20,7 @@ import { dirname, join } from "node:path";
 // module path for `bun test` / standalone use.
 const here = dirname(fileURLToPath(import.meta.url));
 const siteDir = process.env.BELOCH_REPO_ROOT
-  ? join(process.env.BELOCH_REPO_ROOT, "site")
+  ? join(process.env.BELOCH_REPO_ROOT, "packages", "www")
   : join(here, "..", "..");
 const grammarDir = join(siteDir, "src", "grammar");
 const wtsDir = join(siteDir, "node_modules", "web-tree-sitter");

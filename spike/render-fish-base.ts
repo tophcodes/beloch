@@ -37,12 +37,12 @@ function loadAsScript(absPath: string): any {
 
 async function main() {
   // --- load the wasm qqbar module and install it where qqbar_shim.js looks ---
-  const QqbarWasmFactory = loadAsScript(path.join(repoRoot, "site/public/beloch/qqbar-wasm.js"));
+  const QqbarWasmFactory = loadAsScript(path.join(repoRoot, "packages/www/public/beloch/qqbar-wasm.js"));
   const qqbarModule = await QqbarWasmFactory();
   (globalThis as any).__beloch_qqbar_wasm = qqbarModule;
 
   // --- load the js_of_ocaml evaluator bundle (sets globalThis.belochFoldString) ---
-  loadAsScript(path.join(repoRoot, "site/public/beloch/beloch-eval.js"));
+  loadAsScript(path.join(repoRoot, "packages/www/public/beloch/beloch-eval.js"));
   const belochFoldString = (globalThis as any).belochFoldString;
   if (typeof belochFoldString !== "function") {
     throw new Error("belochFoldString was not installed by beloch-eval.js");

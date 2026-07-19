@@ -8,23 +8,23 @@
 # build artifact (same pattern as site/public/grammar/tree-sitter-beloch.wasm).
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 
 cd "$repo_root"
 # --root: dune's workspace-root detection misresolves to a sibling git
 # worktree's checkout when run from inside an in-repo worktree (the .git
 # file here just points at .git/worktrees/<name>); pin it explicitly.
-nix develop --command dune build web/ --profile release --root "$repo_root"
+nix develop --command dune build packages/eval-web/ --profile release --root "$repo_root"
 
 cp \
-  "$repo_root/_build/default/web/beloch_web.bc.js" \
-  "$repo_root/site/public/beloch/beloch-eval.js"
+  "$repo_root/_build/default/packages/eval-web/beloch_web.bc.js" \
+  "$repo_root/packages/www/public/beloch/beloch-eval.js"
 
-echo "Wrote site/public/beloch/beloch-eval.js ($(du -h "$repo_root/site/public/beloch/beloch-eval.js" | cut -f1))"
+echo "Wrote packages/www/public/beloch/beloch-eval.js ($(du -h "$repo_root/packages/www/public/beloch/beloch-eval.js" | cut -f1))"
 
 if [ -f "$repo_root/spike/prefix/lib/libflint.a" ]; then
   "$repo_root/spike/build.sh"
-  echo "Wrote site/public/beloch/qqbar-wasm.js ($(du -h "$repo_root/site/public/beloch/qqbar-wasm.js" | cut -f1))"
+  echo "Wrote packages/www/public/beloch/qqbar-wasm.js ($(du -h "$repo_root/packages/www/public/beloch/qqbar-wasm.js" | cut -f1))"
 else
   echo "spike/prefix not built (run spike/build.sh) — skipping qqbar-wasm.js" >&2
 fi

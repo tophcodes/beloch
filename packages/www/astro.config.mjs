@@ -13,7 +13,7 @@ import { headSyncScript } from "./src/lib/paper-schemes.ts";
 // remark-bel.ts only do tree-sitter syntax highlighting, no evaluation, so the
 // build has no dependency on a native binary. Real rendering happens client-side
 // in a later step.)
-const repoRoot = join(fileURLToPath(import.meta.url), '..', '..');
+const repoRoot = join(fileURLToPath(import.meta.url), '..', '..', '..');
 process.env.BELOCH_REPO_ROOT = repoRoot;
 
 // The render pipeline (render/scene, render/render-svg) is browser-safe TS
@@ -25,8 +25,8 @@ process.env.BELOCH_REPO_ROOT = repoRoot;
 // dependency (@resvg/resvg-js, for PNG rasterization) is a dynamic `import()`
 // confined to bin/fold2svg.ts — not reachable from src/index.ts — so it never
 // enters the client bundle.
-const sceneRoot = join(repoRoot, 'render', 'scene', 'src', 'index.ts');
-const renderSvgRoot = join(repoRoot, 'render', 'render-svg', 'src', 'index.ts');
+const sceneRoot = join(repoRoot, 'packages', 'render-2d', 'scene', 'src', 'index.ts');
+const renderSvgRoot = join(repoRoot, 'packages', 'render-2d', 'render-svg', 'src', 'index.ts');
 
 // https://astro.build/config
 export default defineConfig({

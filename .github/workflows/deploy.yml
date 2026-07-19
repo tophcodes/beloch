@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'site/**'
+      - 'packages/www/**'
       - 'packages/render-2d/**'
       - 'lib/**'
       - 'bin/**'
@@ -46,12 +46,12 @@ jobs:
           cp _build/default/packages/eval-web/beloch_web.bc.js packages/www/public/beloch/beloch-eval.js
       - uses: oven-sh/setup-bun@v2
       - name: Build site
-        working-directory: site
+        working-directory: packages/www
         run: bun install && bun run build
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: site
+          workingDirectory: packages/www
           command: pages deploy dist --project-name=beloch-docs --branch=main

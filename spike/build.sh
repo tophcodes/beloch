@@ -126,7 +126,7 @@ node check.js
 #    js_of_ocaml bundle, not a throwaway check.
 # ---------------------------------------------------------------------------
 WEB_DIR="$(cd "$SPIKE_DIR/../packages/eval-web" && pwd)"
-OUT_DIR="$(cd "$SPIKE_DIR/.." && pwd)/site/public/beloch"
+OUT_DIR="$(cd "$SPIKE_DIR/.." && pwd)/packages/www/public/beloch"
 mkdir -p "$OUT_DIR"
 
 WASM_QQBAR_FUNCS="_wasm_qqbar_alloc,_wasm_qqbar_free,_wasm_free_str,\
