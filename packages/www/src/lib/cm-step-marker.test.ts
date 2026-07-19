@@ -4,7 +4,7 @@ import { EditorState } from "@codemirror/state";
 import { EditorView, basicSetup } from "codemirror";
 import { stepMarkerExtensions, setStepLineOn } from "./cm-step-marker";
 
-beforeAll(() => { GlobalRegistrator.register(); });
+beforeAll(() => { if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register(); });
 
 function mountEditor(doc: string): EditorView {
   const state = EditorState.create({ doc, extensions: stepMarkerExtensions });
