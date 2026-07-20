@@ -23,6 +23,11 @@ export interface TextureOptions {
   faces: "none" | "outline" | "filled";
 }
 
+export interface MarkOverlay {
+  marks: Mark[];
+  newestCreaseId?: number; // Mark.creaseId of the most recently added mark — drawn with an accent style
+}
+
 export interface SceneOptions {
   isometry: Isometry;
   texture: TextureOptions;
@@ -32,7 +37,7 @@ export interface SceneOptions {
   theme?: Partial<Theme>;
   view?: "top" | "bottom"; // folded only
   hidden?: "dashed" | "hide"; // folded only
-  markOverlay?: Mark; // folded only — project this one mark onto the step's faces
+  markOverlay?: MarkOverlay; // folded only — project these marks onto the step's faces
 }
 
 // fold2svg.mjs:217 — hardcoded unit-square corners, normalized paper space.
@@ -347,52 +352,54 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     // common case. A `point` mark has no span to clip, so it still just
     // picks the one face it lands in.
     if (opts.markOverlay) {
-      const m = opts.markOverlay;
       const FM = frame.facesMatrix ?? [];
       const applyIso = ([m00, m01, m10, m11, ox, oy]: FaceMatrix, p: Vec2): Vec2 =>
         [m00 * p[0] + m01 * p[1] + ox, m10 * p[0] + m11 * p[1] + oy];
-      const style = theme.lineStyle(m.intent, theme);
-      const markAttrs = {
-        stroke: style.stroke,
-        "stroke-width": Math.max(1, style.strokeWidth - 1),
-        "stroke-dasharray": "2 2",
-        "stroke-linecap": "round" as const,
-        opacity: 0.7,
-        "data-crease-id": m.creaseId,
-      };
-      if (m.kind === "seg") {
-        for (let fi = 0; fi < F.length; fi++) {
-          const M = FM[fi];
-          if (!M) continue;
-          const tabPoly = F[fi]!.map((idx) => V[idx]!);
-          const pa = applyIso(M, m.a), pb = applyIso(M, m.b);
-          for (const [t0, t1] of segInsideIntervals(pa, pb, tabPoly)) {
-            const p0: Vec2 = [pa[0] + (pb[0] - pa[0]) * t0, pa[1] + (pb[1] - pa[1]) * t0];
-            const p1: Vec2 = [pa[0] + (pb[0] - pa[0]) * t1, pa[1] + (pb[1] - pa[1]) * t1];
+      for (const m of opts.markOverlay.marks) {
+        const isNewest = m.creaseId === opts.markOverlay.newestCreaseId;
+        const style = theme.lineStyle(m.intent, theme);
+        const markAttrs = {
+          stroke: isNewest ? theme.construction : style.stroke,
+          "stroke-width": Math.max(1, style.strokeWidth - 1),
+          "stroke-dasharray": "2 2",
+          "stroke-linecap": "round" as const,
+          opacity: isNewest ? 1 : 0.7,
+          "data-crease-id": m.creaseId,
+        };
+        if (m.kind === "seg") {
+          for (let fi = 0; fi < F.length; fi++) {
+            const M = FM[fi];
+            if (!M) continue;
+            const tabPoly = F[fi]!.map((idx) => V[idx]!);
+            const pa = applyIso(M, m.a), pb = applyIso(M, m.b);
+            for (const [t0, t1] of segInsideIntervals(pa, pb, tabPoly)) {
+              const p0: Vec2 = [pa[0] + (pb[0] - pa[0]) * t0, pa[1] + (pb[1] - pa[1]) * t0];
+              const p1: Vec2 = [pa[0] + (pb[0] - pa[0]) * t1, pa[1] + (pb[1] - pa[1]) * t1];
+              creases.children.push(el("line", {
+                ...markAttrs, class: "mark", "data-kind": "mark",
+                x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
+              }));
+            }
+          }
+        } else {
+          for (let fi = 0; fi < F.length; fi++) {
+            const M = FM[fi];
+            if (!M) continue;
+            const tabPoly = F[fi]!.map((idx) => V[idx]!);
+            const pp = applyIso(M, m.p);
+            if (!pointInPolygonInclusive(pp, tabPoly)) continue;
+            const TICK = 0.03;
+            const [la, lb] = m.line;
+            const norm = Math.hypot(lb, -la) || 1;
+            const dx = lb / norm, dy = -la / norm;
+            const p0 = applyIso(M, [m.p[0] - dx * TICK, m.p[1] - dy * TICK]);
+            const p1 = applyIso(M, [m.p[0] + dx * TICK, m.p[1] + dy * TICK]);
             creases.children.push(el("line", {
-              ...markAttrs, class: "mark", "data-kind": "mark",
+              ...markAttrs, class: "mark", "data-kind": "mark-tick",
               x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
             }));
+            break; // a point belongs to exactly one face
           }
-        }
-      } else {
-        for (let fi = 0; fi < F.length; fi++) {
-          const M = FM[fi];
-          if (!M) continue;
-          const tabPoly = F[fi]!.map((idx) => V[idx]!);
-          const pp = applyIso(M, m.p);
-          if (!pointInPolygonInclusive(pp, tabPoly)) continue;
-          const TICK = 0.03;
-          const [la, lb] = m.line;
-          const norm = Math.hypot(lb, -la) || 1;
-          const dx = lb / norm, dy = -la / norm;
-          const p0 = applyIso(M, [m.p[0] - dx * TICK, m.p[1] - dy * TICK]);
-          const p1 = applyIso(M, [m.p[0] + dx * TICK, m.p[1] + dy * TICK]);
-          creases.children.push(el("line", {
-            ...markAttrs, class: "mark", "data-kind": "mark-tick",
-            x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
-          }));
-          break; // a point belongs to exactly one face
         }
       }
     }
