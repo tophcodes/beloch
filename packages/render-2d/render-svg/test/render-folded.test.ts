@@ -184,8 +184,40 @@ test("renderFolded: markOverlay draws exactly the given mark, omitting it change
   const seg: Mark = {
     kind: "seg", a: [0.1, 0.1], b: [0.3, 0.3], line: [1, -1, 0], intent: "V", creaseId: 999,
   };
-  const withOverlay = renderFolded(scene, { theme: WEB_THEME, markOverlay: seg }).toString();
+  const withOverlay = renderFolded(scene, { theme: WEB_THEME, markOverlay: { marks: [seg] } }).toString();
   expect(withOverlay).toContain('data-crease-id="999"');
+});
+
+test("renderFolded: markOverlay draws multiple marks, highlighting the newest", async () => {
+  const scene = parseFold(await golden("fold-quarter.fold"));
+
+  const older: Mark = {
+    kind: "seg", a: [0.1, 0.1], b: [0.2, 0.2], line: [1, -1, 0], intent: "V", creaseId: 111,
+  };
+  const newest: Mark = {
+    kind: "seg", a: [0.05, 0.15], b: [0.25, 0.35], line: [1, -1, 0.1], intent: "M", creaseId: 222,
+  };
+  const svg = renderFolded(scene, {
+    theme: WEB_THEME,
+    markOverlay: { marks: [older, newest], newestCreaseId: 222 },
+  }).toString();
+
+  const olderLine = svg.match(/<line[^>]*data-crease-id="111"[^>]*\/>/);
+  const newestLine = svg.match(/<line[^>]*data-crease-id="222"[^>]*\/>/);
+  expect(olderLine).not.toBeNull();
+  expect(newestLine).not.toBeNull();
+
+  expect(olderLine![0]).toContain('opacity="0.7"');
+  expect(newestLine![0]).toContain('opacity="1"');
+  expect(newestLine![0]).toContain(`stroke="${WEB_THEME.construction ?? "#6366f1"}"`);
+  expect(olderLine![0]).not.toContain(`stroke="${WEB_THEME.construction ?? "#6366f1"}"`);
+});
+
+test("renderFolded: markOverlay with an empty marks array draws nothing, same as omitting it", async () => {
+  const scene = parseFold(await golden("fold-quarter.fold"));
+  const withoutOverlay = renderFolded(scene, { theme: WEB_THEME }).toString();
+  const withEmptyOverlay = renderFolded(scene, { theme: WEB_THEME, markOverlay: { marks: [] } }).toString();
+  expect(withEmptyOverlay).toBe(withoutOverlay);
 });
 
 test("renderFolded: markOverlay draws real marks — boundary endpoints and multi-face spans", async () => {
@@ -208,7 +240,7 @@ test("renderFolded: markOverlay draws real marks — boundary endpoints and mult
 
   for (const stmt of scene.statements) {
     if (stmt.kind !== "mark" || !stmt.mark) continue;
-    const svg = renderFolded(scene, { theme: WEB_THEME, step: String(stmt.frameIndex), markOverlay: stmt.mark }).toString();
+    const svg = renderFolded(scene, { theme: WEB_THEME, step: String(stmt.frameIndex), markOverlay: { marks: [stmt.mark] } }).toString();
     expect(svg).toContain(`data-crease-id="${stmt.mark.creaseId}"`);
   }
 
@@ -217,7 +249,7 @@ test("renderFolded: markOverlay draws real marks — boundary endpoints and mult
   // silently pick one arbitrary face and drop the rest.
   const rayStmt = scene.statements[1]!;
   const raySvg = renderFolded(scene, {
-    theme: WEB_THEME, step: String(rayStmt.frameIndex), markOverlay: rayStmt.mark!,
+    theme: WEB_THEME, step: String(rayStmt.frameIndex), markOverlay: { marks: [rayStmt.mark!] },
   }).toString();
   const pieces = raySvg.match(new RegExp(`data-crease-id="${rayStmt.mark!.creaseId}"`, "g")) ?? [];
   expect(pieces.length).toBeGreaterThan(1);
