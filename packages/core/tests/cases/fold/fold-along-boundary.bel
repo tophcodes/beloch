@@ -1,0 +1,7 @@
+; A crease along a paper edge is a supporting line of the (convex) hull: all
+; material lies in one closed half-plane, so there is no second flap to reflect.
+; Such a fold is degenerate and must be a language error (issue #39), not a no-op.
+paper square
+fold through .a .b
+
+; expect error "does not separate"
