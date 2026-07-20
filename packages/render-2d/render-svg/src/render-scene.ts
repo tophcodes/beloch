@@ -10,7 +10,7 @@ import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
 import { DEFAULT_THEME, Theme, LineStyle } from "./theme";
 import { makeLayout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
-import { coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly, pointCovered, pointInPolygon } from "./geometry";
+import { coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly, pointCovered, pointInPolygonInclusive, segInsideIntervals } from "./geometry";
 import { resolveIsometry, type Isometry } from "./isometry";
 import { placeLabels, type LabelAnchor } from "./primitives/labels";
 
@@ -336,11 +336,16 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       annotations.children.push(el("text", attrs, [], lab.text));
     }
 
-    // Mark overlay: project one mark's paper-space geometry onto whichever
-    // face it lands on, via that face's own isometry — same paper->table
-    // technique as the ghost-overlay above, but for a bounded mark segment
-    // (known endpoints) rather than an infinite named line, so this tests
-    // point-in-polygon membership directly instead of clipping.
+    // Mark overlay: project one mark's paper-space geometry onto the folded
+    // faces via each face's own isometry — same paper->table technique as
+    // the ghost-overlay above. A `seg` mark is clipped per face (like the
+    // ghost overlay clips a named line) rather than required to fit
+    // entirely inside one face: a mark created before any actual fold
+    // routinely spans several still-flat, still-coplanar sub-faces (creases
+    // already subdivide the topology for rendering before anything has
+    // folded in 3D), so "whole segment in exactly one face" rejects the
+    // common case. A `point` mark has no span to clip, so it still just
+    // picks the one face it lands in.
     if (opts.markOverlay) {
       const m = opts.markOverlay;
       const FM = frame.facesMatrix ?? [];
@@ -355,20 +360,28 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
         opacity: 0.7,
         "data-crease-id": m.creaseId,
       };
-      for (let fi = 0; fi < F.length; fi++) {
-        const M = FM[fi];
-        if (!M) continue;
-        const tabPoly = F[fi]!.map((idx) => V[idx]!);
-        if (m.kind === "seg") {
+      if (m.kind === "seg") {
+        for (let fi = 0; fi < F.length; fi++) {
+          const M = FM[fi];
+          if (!M) continue;
+          const tabPoly = F[fi]!.map((idx) => V[idx]!);
           const pa = applyIso(M, m.a), pb = applyIso(M, m.b);
-          if (!pointInPolygon(pa, tabPoly) || !pointInPolygon(pb, tabPoly)) continue;
-          creases.children.push(el("line", {
-            ...markAttrs, class: "mark", "data-kind": "mark",
-            x1: mx(pa[0]), y1: ty(pa[1]), x2: mx(pb[0]), y2: ty(pb[1]),
-          }));
-        } else {
+          for (const [t0, t1] of segInsideIntervals(pa, pb, tabPoly)) {
+            const p0: Vec2 = [pa[0] + (pb[0] - pa[0]) * t0, pa[1] + (pb[1] - pa[1]) * t0];
+            const p1: Vec2 = [pa[0] + (pb[0] - pa[0]) * t1, pa[1] + (pb[1] - pa[1]) * t1];
+            creases.children.push(el("line", {
+              ...markAttrs, class: "mark", "data-kind": "mark",
+              x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
+            }));
+          }
+        }
+      } else {
+        for (let fi = 0; fi < F.length; fi++) {
+          const M = FM[fi];
+          if (!M) continue;
+          const tabPoly = F[fi]!.map((idx) => V[idx]!);
           const pp = applyIso(M, m.p);
-          if (!pointInPolygon(pp, tabPoly)) continue;
+          if (!pointInPolygonInclusive(pp, tabPoly)) continue;
           const TICK = 0.03;
           const [la, lb] = m.line;
           const norm = Math.hypot(lb, -la) || 1;
@@ -379,8 +392,8 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
             ...markAttrs, class: "mark", "data-kind": "mark-tick",
             x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
           }));
+          break; // a point belongs to exactly one face
         }
-        break; // a mark belongs to exactly one face
       }
     }
 
