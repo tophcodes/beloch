@@ -674,7 +674,11 @@ let test_beloch_statements () =
      unaffected, since it embeds geometry at record time, not by lookup. *)
   let global_marks = json |> member "beloch:marks" |> to_list in
   Alcotest.(check int) "both marks graduate — beloch:marks is empty" 0
-    (List.length global_marks)
+    (List.length global_marks);
+  let kept_count_of j = j |> member "kept_marks" |> to_list |> List.length in
+  Alcotest.(check (list int))
+    "kept_marks grows through the mark run, then both graduate at the fold"
+    [ 1; 2; 0 ] (List.map kept_count_of stmts)
 
 let test_e2e_faces_matrix_and_frame () =
   let json =
