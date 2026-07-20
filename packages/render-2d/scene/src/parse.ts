@@ -1,6 +1,6 @@
 import {
   Assignment, Crease, EdgeProvenance, FoldScene, Frame, LineCoeffs,
-  Mark, NamedLine, NamedPoint, SceneError, Step, StepNotFoundError, Vec2,
+  Mark, NamedLine, NamedPoint, SceneError, Statement, Step, StepNotFoundError, Vec2,
 } from "./types";
 
 function frameFrom(raw: Record<string, unknown>): Frame {
@@ -39,16 +39,29 @@ function groupCreases(cp: Frame): Crease[] {
   return [...byName.values()];
 }
 
+function markFrom(m: Record<string, unknown>): Mark {
+  const line = m["line"] as LineCoeffs;
+  const intent = m["intent"] as Assignment;
+  const creaseId = m["crease_id"] as number;
+  return m["kind"] === "seg"
+    ? { kind: "seg", a: m["a"] as Vec2, b: m["b"] as Vec2, line, intent, creaseId }
+    : { kind: "point", p: m["p"] as Vec2, line, intent, creaseId };
+}
+
 function marksFrom(fold: Record<string, unknown>): Mark[] {
   const raw = (fold["beloch:marks"] ?? []) as Record<string, unknown>[];
-  return raw.map((m): Mark => {
-    const line = m["line"] as LineCoeffs;
-    const intent = m["intent"] as Assignment;
-    const creaseId = m["crease_id"] as number;
-    return m["kind"] === "seg"
-      ? { kind: "seg", a: m["a"] as Vec2, b: m["b"] as Vec2, line, intent, creaseId }
-      : { kind: "point", p: m["p"] as Vec2, line, intent, creaseId };
-  });
+  return raw.map(markFrom);
+}
+
+function statementsFrom(fold: Record<string, unknown>): Statement[] {
+  const raw = (fold["beloch:statements"] ?? []) as Record<string, unknown>[];
+  return raw.map((s, index) => ({
+    index,
+    kind: s["kind"] as "fold" | "mark",
+    sourceLine: s["source_line"] as number,
+    frameIndex: s["frame_index"] as number,
+    mark: s["mark"] ? markFrom(s["mark"] as Record<string, unknown>) : null,
+  }));
 }
 
 export function parseFold(input: string | object): FoldScene {
@@ -76,7 +89,10 @@ export function parseFold(input: string | object): FoldScene {
     (fold["beloch:named_lines"] ?? {}) as
       Record<string, { coeffs: LineCoeffs; step?: number }>,
   ).map(([name, v]) => ({ name, coeffs: v.coeffs, step: v.step ?? 0 }));
-  return { cp, steps, namedPoints, namedLines, creases: groupCreases(cp), marks: marksFrom(fold) };
+  return {
+    cp, steps, statements: statementsFrom(fold), namedPoints, namedLines,
+    creases: groupCreases(cp), marks: marksFrom(fold),
+  };
 }
 
 export function pickStep(scene: FoldScene, label?: string): Step | undefined {
