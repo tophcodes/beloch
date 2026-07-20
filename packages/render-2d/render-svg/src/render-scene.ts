@@ -360,7 +360,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
         const style = theme.lineStyle(m.intent, theme);
         const markAttrs = {
           stroke: isNewest ? theme.construction : style.stroke,
-          "stroke-width": Math.max(1, style.strokeWidth - 1),
+          "stroke-width": isNewest ? style.strokeWidth + 1 : Math.max(1, style.strokeWidth - 1),
           "stroke-dasharray": "2 2",
           "stroke-linecap": "round" as const,
           opacity: isNewest ? 1 : 0.7,

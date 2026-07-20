@@ -211,6 +211,10 @@ test("renderFolded: markOverlay draws multiple marks, highlighting the newest", 
   expect(newestLine![0]).toContain('opacity="1"');
   expect(newestLine![0]).toContain(`stroke="${WEB_THEME.construction ?? "#6366f1"}"`);
   expect(olderLine![0]).not.toContain(`stroke="${WEB_THEME.construction ?? "#6366f1"}"`);
+
+  const olderWidth = Number(olderLine![0].match(/stroke-width="([\d.]+)"/)![1]);
+  const newestWidth = Number(newestLine![0].match(/stroke-width="([\d.]+)"/)![1]);
+  expect(newestWidth).toBeGreaterThan(olderWidth);
 });
 
 test("renderFolded: markOverlay with an empty marks array draws nothing, same as omitting it", async () => {
