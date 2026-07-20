@@ -1204,6 +1204,55 @@ let select_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
           | None -> Ok inm
         end
 
+(* Default (no `up to`) moving set: the outside-contiguous prefix of layers
+   down to and including the seed flap(s). "Outside" is top for valley, bottom
+   for mountain. Seed = the faces carrying the anchor operand (possibly several,
+   when the operand point lies on a shared crease — design option (a)). Unlike
+   [select_scope] there is no anchor-inclusion or buried check: the seed is the
+   *deepest* included layer and everything outside it moves with it. *)
+let default_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
+    ~(valley : bool) ~(seed : int list) : bool array =
+  let n = Array.length g.faces in
+  let tp = Array.init n (table_polygon g) in
+  let piece =
+    Array.init n (fun i ->
+        let sub = Geom.clip_convex_halfplane axis move_side tp.(i) in
+        if Array.length sub >= 3 then Some sub else None)
+  in
+  let cand i = piece.(i) <> None in
+  let overlap i j =
+    match (piece.(i), piece.(j)) with
+    | Some a, Some b -> Geom.convex_overlap a b
+    | _ -> false
+  in
+  let rel_m i j =
+    if i = j then Apart
+    else if Geom.convex_overlap tp.(i) tp.(j) then
+      if g.rank.(i) > g.rank.(j) then Above else Below
+    else Apart
+  in
+  (* gi is outside m: overlaps m and sits on the outer side (Above for valley) *)
+  let outer gi m =
+    overlap gi m && rel_m gi m = (if valley then Above else Below)
+  in
+  let cl = coplanar_clusters g in
+  let inm = Array.make n false in
+  List.iter (fun s -> if cand s then inm.(s) <- true) seed;
+  let changed = ref true in
+  while !changed do
+    changed := false;
+    for gi = 0 to n - 1 do
+      if (not inm.(gi)) && cand gi then
+        for m = 0 to n - 1 do
+          if inm.(m) && (not inm.(gi)) && (outer gi m || cl.(gi) = cl.(m)) then begin
+            inm.(gi) <- true;
+            changed := true
+          end
+        done
+    done
+  done;
+  inm
+
 (* A scoped moving set is hinge-closed iff every crease segment separating a
    moving face from a stationary face lies on the fold axis with no endpoint
    strictly on the move side (see the old module's doc comment). *)

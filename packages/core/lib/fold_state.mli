@@ -350,6 +350,22 @@ val select_scope :
     ADR 0017). Errors are user-facing messages; the caller attaches the
     span. *)
 
+val default_scope :
+  t ->
+  axis:Geom.line ->
+  move_side:int ->
+  valley:bool ->
+  seed:int list ->
+  bool array
+(** Default (no [up to]) moving set: the outside-contiguous prefix of layers
+    down to and including the [seed] flap(s). "Outside" is top for valley,
+    bottom for mountain. [seed] is the faces carrying the anchor operand — more
+    than one when the operand point lies on a crease shared by several flaps
+    (design option (a)). Unlike {!select_scope} there is no anchor-inclusion or
+    buried-anchor check: the seed is the deepest included layer, and every
+    candidate outside it (or coplanar with a mover) moves too. Non-seed folds
+    still need {!scoped_fold_hinge_closed} — a strict subset can tear. *)
+
 val scoped_fold_hinge_closed :
   t ->
   axis:Geom.line ->
