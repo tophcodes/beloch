@@ -790,8 +790,9 @@ same-typed bundles (`[--x --y] & .p`). At a singleton slot the result must be a
 than one is an error asking for a further constraint.
 
 `&` supersedes the earlier `--( --l #(…) )` restrict form (and the `at` operator
-it replaced). Creating a single segment (rather than selecting one) is `pinch`,
-still forthcoming (Appendix B).
+it replaced). `&` *selects* a segment from an existing bundle; *creating* a single
+reference segment is the partial mark `mark … at .p` (§4.6) — an extent ending
+mid-face lays a non-subdividing record, no separate primitive.
 
 ### 4.9 `flatten` — single-vertex flatten *(since v0.20-dev as `collapse`; renamed v0.23-dev; one-pipeline model v0.23-dev; stayer convention v0.23-dev)*
 
@@ -1276,8 +1277,9 @@ completing the design begun in
 
 Point-locating landmark constructions (a bisector foot, a reference apex) are
 currently scored as full `mark … = through …` creases — an interim that adds
-real geometry and moves the golden — pending the future `pinch` primitive
-that will mark a single segment without a full crease (Appendix B).
+real geometry and moves the golden. The short-reference alternative is the
+partial mark `mark … at .p` (§4.6), whose mid-face extent lays a non-subdividing
+record instead of a full crease.
 
 ---
 
@@ -1727,8 +1729,7 @@ the RHS note in §5.
 
 Deferred, in rough order of likely arrival: non-flat (constructible-angle) folds ·
 `rotate` · fold maneuvers (reverse/squash/sink/petal, via `unfold` + layer
-selection) · crease-segment *creation* (`pinch` — materialise one segment; the `&` selection
-filter landed in v0.17-dev, [ADR 0014](../decisions/0014-crease-is-a-bundle-of-segments.md)) ·
+selection) ·
 the 3D standing end state for `flatten` (the 3D isometry rework, ADR 0015 —
 retired `standing` keyword's successor form, unnamed until it lands) ·
 multi-vertex flatten (fish/bird base in one action) · boundary-vertex
