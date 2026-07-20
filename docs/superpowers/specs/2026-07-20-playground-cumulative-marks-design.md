@@ -29,12 +29,23 @@ fold-kind step rendering) are unchanged.
   is the mark **as recorded at that statement** — it stays populated even
   after the mark later graduates into a real crease (comment at
   `types.ts:33-38` confirms this explicitly).
-- `FoldScene.marks: Mark[]` (`types.ts:77`) is the final, file-wide list of
-  **still-active** (non-graduated) marks — a mark that graduated is absent
-  here. Graduation is one-directional (a graduated mark does not
-  un-graduate), so "is this statement's mark still active as of the final
-  scene" is a valid proxy for "was it still active at step `i`" for any
-  `i` ≤ the statement's own index.
+- Graduation (`packages/core/lib/fold_emit.ml`'s `cp_display`, `graduates`)
+  is a **per-frame, purely geometric** check — a mark graduates once both its
+  endpoints sit on a face boundary in *that frame's own topology*, regardless
+  of whether the mark was ever used by an explicit `fold` statement (e.g. a
+  mark between two paper corners graduates immediately, at frame 0). It is
+  NOT tracked per-statement or exposed per-frame in the FOLD JSON — only a
+  single final-state snapshot is exposed as `FoldScene.marks`. Checking a
+  statement's mark against this final snapshot is therefore not a safe
+  "still active at step `i`" proxy: a mark that's still legitimately dangling
+  at step `i` but graduates later (elsewhere in the file) would incorrectly
+  disappear from the overlay at every step, including step `i`. **Decision:
+  don't attempt this filter.** A graduated mark's line is already drawn by
+  the frame's own crease layer (graduation bakes it into that frame's real
+  edges, `fold_emit.ml:117-119`) — drawing the dangling-mark overlay on top
+  of it too is visually redundant (a dashed line retracing an existing solid
+  crease) but not a correctness bug, and far simpler than reconstructing
+  per-frame graduation state.
 - `Playground.astro`'s `renderStep(i)` (line 494-512) currently passes
   `markOverlay: stmt.mark ?? undefined` — exactly one statement's mark.
 - Theme has no dedicated "highlight" token; `theme.construction` (`#6366f1`,
@@ -91,8 +102,7 @@ function renderStep(i: number) {
   const activeMarks = currentStatements
     .slice(0, clamped + 1)
     .filter((s) => s.kind === "mark" && s.mark !== null)
-    .map((s) => s.mark!)
-    .filter((m) => currentScene!.marks.some((sm) => sm.creaseId === m.creaseId));
+    .map((s) => s.mark!);
   const newestCreaseId = activeMarks.at(-1)?.creaseId;
   const svg = renderFolded(currentScene, {
     theme: WEB_THEME,
@@ -106,21 +116,19 @@ function renderStep(i: number) {
 - `activeMarks` is recomputed per click — statement counts in this feature
   (Playground demo sources) are small (single digits to low tens), so no
   memoization needed.
-- Filter order matters: build from `Statement.mark` (survives graduation),
-  then drop graduated ones via the `scene.marks` membership check — matches
-  the "hide once graduated" decision.
-- `newestCreaseId` is the creaseId of the **last surviving entry** in
-  `activeMarks` (not necessarily `stmt`'s own mark — if `stmt` itself is a
-  `fold` statement, or its mark already graduated by step `i`, the newest
-  active mark is the last mark statement ≤ `i` that hasn't graduated).
+- No graduation filtering (see above) — every `mark`-kind statement's own
+  mark is included unconditionally, in statement order.
+- `newestCreaseId` is the creaseId of `activeMarks`' last entry — the most
+  recent `mark`-kind statement at or before `i` (not necessarily `stmt`
+  itself, if `stmt` is a `fold` statement).
 
 ## Edge cases
 
 - **Step `i` is a fold statement, no marks yet**: `activeMarks` is `[]`,
   `markOverlay` is `undefined` — identical to today's no-mark rendering.
-- **All marks so far have graduated**: `activeMarks` is `[]` even though
-  mark statements exist in `0..i` — no overlay drawn, consistent with "hide
-  once graduated."
+- **A mark has graduated by step `i`**: still included in `activeMarks` and
+  drawn — redundant with the frame's own crease line at that position, but
+  harmless (see graduation note above).
 - **Same `creaseId` reused** (shouldn't happen — creaseId is assigned once
   per mark by the evaluator) — not defended against; would only affect which
   duplicate is treated as "newest," a non-issue in practice.
@@ -146,6 +154,4 @@ function renderStep(i: number) {
   nothing (regression guard, mirrors the existing empty-marks case).
 - Playground: manual browser verification — source with 3+ marks before a
   fold, scrub forward and confirm marks accumulate with the latest
-  highlighted, scrub backward and confirm no stale marks linger, confirm a
-  mark disappears from the overlay once its statement's fold makes it
-  graduate.
+  highlighted, scrub backward and confirm no stale marks linger.
