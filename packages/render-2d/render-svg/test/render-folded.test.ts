@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
-import { parseFold, SceneError } from "@beloch/scene";
-import { renderFolded } from "@beloch/render-svg";
+import { parseFold, SceneError, type Mark } from "@beloch/scene";
+import { renderFolded, WEB_THEME } from "@beloch/render-svg";
 import { makeLayout, PAD, SZ } from "../src/layout";
 import { pointInPolygon } from "../src/geometry";
 
@@ -168,4 +168,22 @@ test("folded view stamps a text label (not just the dot) for a named vertex", as
   // 5 named vertices (d, center, c, b, a) but a≡center fold onto one point →
   // 4 labels, the overlap collapsed into a merged one.
   expect(labels.length).toBe(4);
+});
+
+test("renderFolded: markOverlay draws exactly the given mark, omitting it changes nothing", async () => {
+  const scene = parseFold(await golden("fold-quarter.fold"));
+
+  const withoutOverlay = renderFolded(scene, { theme: WEB_THEME }).toString();
+  const withOverlayButNoMark = renderFolded(scene, { theme: WEB_THEME, markOverlay: undefined }).toString();
+  expect(withOverlayButNoMark).toBe(withoutOverlay); // omitting is a true no-op
+
+  // fold-quarter's last frame stacks all 4 faces into table-space [0,0.5]x[0,0.5];
+  // face 0's facesMatrix is the identity, so this segment (inside face 0's
+  // (0,0)-(0.5,0)-(0.5,0.5)-(0,0.5) polygon under that identity transform)
+  // lands cleanly and the overlay actually draws.
+  const seg: Mark = {
+    kind: "seg", a: [0.1, 0.1], b: [0.3, 0.3], line: [1, -1, 0], intent: "V", creaseId: 999,
+  };
+  const withOverlay = renderFolded(scene, { theme: WEB_THEME, markOverlay: seg }).toString();
+  expect(withOverlay).toContain('data-crease-id="999"');
 });

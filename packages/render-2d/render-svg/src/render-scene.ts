@@ -5,12 +5,12 @@
 // knobs (texture.upToStep filtering, ghosted future creases) are strictly
 // additive and dormant for the presets.
 // Spec: docs/superpowers/specs/2026-07-14-render-scene-unified-design.md
-import type { FoldScene, Vec2 } from "@beloch/scene";
+import type { FoldScene, Mark, Vec2, Isometry as FaceMatrix } from "@beloch/scene";
 import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
 import { DEFAULT_THEME, Theme, LineStyle } from "./theme";
 import { makeLayout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
-import { coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly, pointCovered } from "./geometry";
+import { coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly, pointCovered, pointInPolygon } from "./geometry";
 import { resolveIsometry, type Isometry } from "./isometry";
 import { placeLabels, type LabelAnchor } from "./primitives/labels";
 
@@ -32,6 +32,7 @@ export interface SceneOptions {
   theme?: Partial<Theme>;
   view?: "top" | "bottom"; // folded only
   hidden?: "dashed" | "hide"; // folded only
+  markOverlay?: Mark; // folded only — project this one mark onto the step's faces
 }
 
 // fold2svg.mjs:217 — hardcoded unit-square corners, normalized paper space.
@@ -333,6 +334,54 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       if (buried) attrs["data-occluded"] = "true";
       if (lab.anchor !== "start") attrs["text-anchor"] = lab.anchor;
       annotations.children.push(el("text", attrs, [], lab.text));
+    }
+
+    // Mark overlay: project one mark's paper-space geometry onto whichever
+    // face it lands on, via that face's own isometry — same paper->table
+    // technique as the ghost-overlay above, but for a bounded mark segment
+    // (known endpoints) rather than an infinite named line, so this tests
+    // point-in-polygon membership directly instead of clipping.
+    if (opts.markOverlay) {
+      const m = opts.markOverlay;
+      const FM = frame.facesMatrix ?? [];
+      const applyIso = ([m00, m01, m10, m11, ox, oy]: FaceMatrix, p: Vec2): Vec2 =>
+        [m00 * p[0] + m01 * p[1] + ox, m10 * p[0] + m11 * p[1] + oy];
+      const style = theme.lineStyle(m.intent, theme);
+      const markAttrs = {
+        stroke: style.stroke,
+        "stroke-width": Math.max(1, style.strokeWidth - 1),
+        "stroke-dasharray": "2 2",
+        "stroke-linecap": "round" as const,
+        opacity: 0.7,
+        "data-crease-id": m.creaseId,
+      };
+      for (let fi = 0; fi < F.length; fi++) {
+        const M = FM[fi];
+        if (!M) continue;
+        const tabPoly = F[fi]!.map((idx) => V[idx]!);
+        if (m.kind === "seg") {
+          const pa = applyIso(M, m.a), pb = applyIso(M, m.b);
+          if (!pointInPolygon(pa, tabPoly) || !pointInPolygon(pb, tabPoly)) continue;
+          creases.children.push(el("line", {
+            ...markAttrs, class: "mark", "data-kind": "mark",
+            x1: mx(pa[0]), y1: ty(pa[1]), x2: mx(pb[0]), y2: ty(pb[1]),
+          }));
+        } else {
+          const pp = applyIso(M, m.p);
+          if (!pointInPolygon(pp, tabPoly)) continue;
+          const TICK = 0.03;
+          const [la, lb] = m.line;
+          const norm = Math.hypot(lb, -la) || 1;
+          const dx = lb / norm, dy = -la / norm;
+          const p0 = applyIso(M, [m.p[0] - dx * TICK, m.p[1] - dy * TICK]);
+          const p1 = applyIso(M, [m.p[0] + dx * TICK, m.p[1] + dy * TICK]);
+          creases.children.push(el("line", {
+            ...markAttrs, class: "mark", "data-kind": "mark-tick",
+            x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
+          }));
+        }
+        break; // a mark belongs to exactly one face
+      }
     }
 
     appendConstructions(doc, scene, layout, theme, opts.labels, { frame });
