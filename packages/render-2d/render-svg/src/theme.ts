@@ -26,6 +26,7 @@ export interface Theme {
   back: string;            // "#dbe4ee"  (folded: paper back)
   construction: string;    // "#6366f1"
   ink: string;             // "#0f172a"  (dots, labels, title)
+  background: string;      // "white"    (full-canvas backdrop rect fill)
   lineStyle: LineStyleFn;
 }
 
@@ -66,6 +67,7 @@ export const DEFAULT_THEME: Theme = {
   back: "#dbe4ee",
   construction: "#6366f1",
   ink: "#0f172a",
+  background: "white",
   lineStyle: yrLineStyle,
 };
 
@@ -81,4 +83,7 @@ export const WEB_THEME: Partial<Theme> = {
   back:      "var(--bel-paper-back, #dbe4ee)",
   ink:       "var(--bel-ink, #0f172a)",
   boundary:  "var(--bel-boundary, #1f2937)",
+  // Default fallback keeps the white backdrop everywhere (SSR cards, hero);
+  // only surfaces that opt in (the Playground) set --bel-bg: transparent.
+  background: "var(--bel-bg, white)",
 };
