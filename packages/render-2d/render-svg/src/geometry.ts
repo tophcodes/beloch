@@ -94,6 +94,28 @@ export function pointInPolygon(pt: Vec2, poly: Vec2[]): boolean {
   return inside;
 }
 
+// Same test, but a point ON an edge (within eps) also counts as inside.
+// pointInPolygon's ray-cast is undefined right on a boundary — fine for its
+// existing callers, but a Beloch mark's endpoints are usually constructed to
+// land exactly on a face's boundary (an existing crease or the paper edge),
+// so the strict test rejects the common case. Used only by the mark-overlay
+// projection (render-scene.ts) — pointInPolygon's other callers (occlusion
+// checks) keep the strict behavior their design comment calls out.
+export function pointInPolygonInclusive(pt: Vec2, poly: Vec2[], eps = 1e-9): boolean {
+  if (pointInPolygon(pt, poly)) return true;
+  const [x, y] = pt;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i]!, [xj, yj] = poly[j]!;
+    const dx = xj - xi, dy = yj - yi;
+    const len2 = dx * dx + dy * dy;
+    if (len2 < eps) continue;
+    const t = Math.max(0, Math.min(1, ((x - xi) * dx + (y - yi) * dy) / len2));
+    const px = xi + t * dx, py = yi + t * dy;
+    if ((px - x) * (px - x) + (py - y) * (py - y) < eps) return true;
+  }
+  return false;
+}
+
 // Parameter sub-intervals [t0,t1] of segment a→b that lie inside `poly`.
 // Breakpoints are the segment's crossings of the polygon's edges; each gap is
 // classified inside/outside by its midpoint. Works for convex or non-convex,
