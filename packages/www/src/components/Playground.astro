@@ -85,6 +85,9 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     border-radius: 14px;
     overflow: hidden;
     background: var(--beloch-panel);
+    /* Opt the rendered paper's SVG backdrop rect out of its white default
+       (WEB_THEME reads --bel-bg) so the paper lies on the transparent pane. */
+    --bel-bg: transparent;
   }
   @media (max-width: 720px) {
     .beloch-playground { grid-template-columns: 1fr; }

@@ -58,7 +58,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
   const doc = createDoc(layout.W, layout.H);
 
   // fold2svg.mjs:222-223 — background + shadow filter (shared by both views)
-  doc.root.children.push(el("rect", { width: layout.W, height: layout.H, fill: "white" }));
+  doc.root.children.push(el("rect", { width: layout.W, height: layout.H, fill: theme.background }));
   doc.root.children.push(el("defs", {}, [
     el("filter", { id: "layerShadow", x: "-20%", y: "-20%", width: "140%", height: "140%" }, [
       el("feDropShadow", {
