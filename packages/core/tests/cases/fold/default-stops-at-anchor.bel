@@ -1,0 +1,10 @@
+paper square
+fold --half = map .b onto .a moving .b   ; fold right half onto left: 2 layers over left half
+fold --q = map .a onto .d moving .a      ; fold only the top flap's a-corner region
+; Note: --half's two layers are fully congruent (mirror-image halves occupy the
+; identical table footprint), so .a's table position is a shared-vertex point of
+; BOTH layers; the shared-point union rule (design option (a)) seeds both, and
+; the result matches the pre-default_scope "all layers" count. This geometry
+; can't distinguish old vs new — see ear-default-scope.bel for the case that
+; does (13 -> 9 faces, a genuinely asymmetric anchor).
+; assert faces = 4

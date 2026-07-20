@@ -1,0 +1,14 @@
+paper square
+
+mark --diag = through .a .c
+mark --ea = map --ab onto --diag
+mark --eb = map --ab onto --bc
+mark --ec = map --bc onto --diag
+
+.o = --ea * --eb
+flatten (--ea & .a) (--ec & .c) (--eb & .b) {toward .a}
+mark --l = map .d onto .b
+
+fold map .b onto .o
+
+; assert faces = 9
