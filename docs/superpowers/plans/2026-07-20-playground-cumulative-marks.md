@@ -220,8 +220,16 @@ git commit -m "feat(render-svg): markOverlay accepts multiple marks, highlights 
 - Modify: `packages/www/src/components/Playground.astro:494-512` (`renderStep`)
 
 **Interfaces:**
-- Consumes: `MarkOverlay` shape from Task 1 (`{ marks: Mark[]; newestCreaseId?: number }`), `Statement` (`index`, `kind`, `mark`, `frameIndex`, `sourceLine` — unchanged, from `@beloch/scene`), `FoldScene.marks: Mark[]` (unchanged), `renderFolded(scene, opts)` (unchanged signature, `opts.markOverlay` now typed `MarkOverlay | undefined`).
+- Consumes: `MarkOverlay` shape from Task 1 (`{ marks: Mark[]; newestCreaseId?: number }`), `Statement` (`index`, `kind`, `mark`, `frameIndex`, `sourceLine` — unchanged, from `@beloch/scene`), `renderFolded(scene, opts)` (unchanged signature, `opts.markOverlay` now typed `MarkOverlay | undefined`).
 - Produces: nothing consumed by later tasks (this is the last task).
+
+Note: an earlier draft of this task also filtered `activeMarks` against
+`FoldScene.marks` to drop "graduated" marks. Dropped during implementation —
+graduation is a per-frame, purely geometric check (see spec doc's "Existing
+data" section, updated); the single final-state `FoldScene.marks` snapshot
+is not a valid per-step proxy for it, and a graduated mark's line is already
+drawn by the frame's own crease layer regardless, so showing the mark
+overlay too is redundant but harmless. No filtering needed.
 
 - [ ] **Step 1: Replace `renderStep`'s markOverlay construction**
 
@@ -241,8 +249,7 @@ with:
         const activeMarks = currentStatements
           .slice(0, clamped + 1)
           .filter((s) => s.kind === "mark" && s.mark !== null)
-          .map((s) => s.mark!)
-          .filter((m) => currentScene!.marks.some((sm) => sm.creaseId === m.creaseId));
+          .map((s) => s.mark!);
         const newestCreaseId = activeMarks.at(-1)?.creaseId;
         const svg = renderFolded(currentScene, {
           theme: WEB_THEME,
@@ -274,7 +281,6 @@ mark --v34 = map .b onto .vm
 Run it, then:
 1. Click through the scrubber dots left to right — confirm marks accumulate (step 2 shows marks 1+2, step 3 shows marks 1+2+3), and the most recently added mark is drawn in the indigo accent color at full opacity while earlier marks stay dashed/translucent.
 2. Click backward (e.g. from step 3 back to step 1) — confirm only that step's marks-so-far show, no stale marks from step 3 linger.
-3. Test a source where a mark later graduates into a real fold (e.g. `mark --hm = map .a onto .d` followed by `fold map .a onto .d`) — confirm the mark disappears from the overlay once its statement's fold makes it graduate, while the fold itself renders normally.
 
 - [ ] **Step 4: Commit**
 
@@ -287,6 +293,6 @@ git commit -m "feat(playground): scrubber shows cumulative marks, newest highlig
 
 ## Self-Review Notes
 
-- **Spec coverage:** `MarkOverlay` type change (Task 1, Steps 4/6), highlight styling (Task 1, Step 5), cumulative-list construction + graduation filter (Task 2, Step 1), out-of-scope flat CP view (untouched by both tasks) — all spec sections have a task.
+- **Spec coverage:** `MarkOverlay` type change (Task 1, Steps 4/6), highlight styling (Task 1, Step 5), cumulative-list construction (Task 2, Step 1), out-of-scope flat CP view (untouched by both tasks) — all spec sections have a task. Graduation filtering was dropped mid-implementation (see Task 2 note) — spec doc updated to match.
 - **Type consistency:** `MarkOverlay` declared once in `render-scene.ts` (Task 1, Step 4), imported into `render-folded.ts` (Task 1, Step 6) and used structurally in `Playground.astro` (Task 2, Step 1, via `renderFolded`'s exported option type) — no duplicate/divergent definitions.
 - **No placeholders:** every step has literal code; manual-verification step (Task 2, Step 3) is explicit because no automated harness exists for `.astro` files in this repo, matching the prior statement-sourcemap plan's precedent.
