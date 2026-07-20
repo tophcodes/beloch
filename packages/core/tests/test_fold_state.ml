@@ -15,6 +15,8 @@ let p3 x y z : Isometry3.point = { Isometry3.x = q x; y = q y; z = q z }
 let vline k : Geom.line = { Geom.a = q 1; b = q 0; c = q k }
 (* line y = k : a=0,b=1,c=k *)
 let hline k : Geom.line = { Geom.a = q 0; b = q 1; c = q k }
+(* line x = 1/2 *)
+let vline_half : Geom.line = { Geom.a = q 1; b = q 0; c = Num.of_q (Q.of_ints 1 2) }
 
 (* Task 1 helper: metadata-carrying hinge literal with defaults *)
 let mkh ?(cid = -1) ?(intent = Fold_state.F) ?(prov = None) fa fb line angle =
@@ -65,6 +67,25 @@ let test_accordion () =
        (Isometry3.apply_point isos.(2)
           { Isometry3.x = Num.of_q (Q.of_ints 5 2); y = half; z = q 0 })
        { Isometry3.x = half; y = half; z = q 0 })
+
+(* DEFAULT SCOPE: single fold gives face0 (rank 0) under face1 (rank 1), both
+   overlapping [0,1]x[0,1]. Axis x=1/2 cuts both; move_side = +1 (x>1/2 side).
+   Seed on the bottom flap grows to the whole stack; seed on the top flap stays
+   a singleton — the outside-prefix-down-to-anchor rule. *)
+let test_default_scope () =
+  let g =
+    mk ~faces:(single_fold_faces ()) ~hinges:(single_fold_hinges ())
+      ~rank:[| 0; 1 |] ()
+  in
+  let axis = vline_half in
+  let scope seed =
+    Fold_state.default_scope g ~axis ~move_side:1 ~valley:true ~seed
+    |> Array.to_list
+  in
+  Alcotest.(check (list bool)) "seed bottom flap -> whole stack moves"
+    [ true; true ] (scope [ 0 ]);
+  Alcotest.(check (list bool)) "seed top flap -> only it moves"
+    [ false; true ] (scope [ 1 ])
 
 let test_rejects_bad_angle () =
   let hinges = [| mkh 0 1 (vline 1) (Num.of_q (Q.of_ints 1 2)) |] in
@@ -1510,7 +1531,8 @@ let () =
           Alcotest.test_case "scoped hinge closed parity" `Quick
             test_scoped_hinge_closed_parity;
           Alcotest.test_case "both sides moving no toggle" `Quick
-            test_both_sides_moving_no_toggle ] );
+            test_both_sides_moving_no_toggle;
+          Alcotest.test_case "default_scope" `Quick test_default_scope ] );
       ( "plan3b-task4-marks",
         [ Alcotest.test_case "classify_mark_extent parity" `Quick
             test_classify_parity;
