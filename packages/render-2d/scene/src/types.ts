@@ -42,6 +42,7 @@ export interface Statement {
   sourceLine: number;                                        // beloch:statements[i].source_line — always present (every stmt has a span)
   frameIndex: number;                                        // beloch:statements[i].frame_index — index into scene.steps
   mark: Mark | null;                                          // present only for kind: "mark"
+  keptMarks: Mark[];                                          // beloch:statements[i].kept_marks — marks still dangling as of this statement (not yet graduated into a real crease)
 }
 
 export interface NamedPoint { name: string; paper: Vec2; table: Vec2; step: number; }

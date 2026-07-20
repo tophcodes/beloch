@@ -57,6 +57,23 @@ test("parseFold: statements carries one entry per fold statement, source order",
   expect(scene.statements.every((s) => s.mark === null)).toBe(true);
 });
 
+test("parseFold: statements carries kept_marks per statement", async () => {
+  const seg = (creaseId: number) => ({
+    kind: "seg", a: [0, 0], b: [1, 1], line: [1, -1, 0], intent: "V", crease_id: creaseId,
+  });
+  const fold = {
+    vertices_coords: [[0, 0], [1, 0], [1, 1], [0, 1]],
+    "beloch:statements": [
+      { kind: "mark", source_line: 2, frame_index: 0, mark: seg(0), kept_marks: [seg(0)] },
+      { kind: "mark", source_line: 3, frame_index: 0, mark: seg(1), kept_marks: [seg(0), seg(1)] },
+      { kind: "fold", source_line: 4, frame_index: 1, mark: null, kept_marks: [] },
+    ],
+  };
+  const scene = parseFold(fold);
+  expect(scene.statements.map((s) => s.keptMarks.length)).toEqual([1, 2, 0]);
+  expect(scene.statements[1]!.keptMarks.map((m) => m.creaseId)).toEqual([0, 1]);
+});
+
 test("pickStep: no label falls back to last step", async () => {
   const scene = parseFold(await golden("fold-quarter.fold"));
   expect(pickStep(scene)).toBe(scene.steps[scene.steps.length - 1]);
