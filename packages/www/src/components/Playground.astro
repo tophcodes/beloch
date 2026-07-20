@@ -45,7 +45,21 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       <div class="pg-swatches" role="group" aria-label="Paper"></div>
     </div>
     <div class="pg-result">
-      {seed ? <Fragment set:html={seed} /> : <p class="pg-notice pg-notice-info">„Run“ drücken, um auszuwerten.</p>}
+      <div class="pg-canvas">
+        {seed ? <Fragment set:html={seed} /> : <p class="pg-notice pg-notice-info">„Run“ drücken, um auszuwerten.</p>}
+      </div>
+      <button type="button" class="pg-reset" hidden aria-label="Ansicht zurücksetzen" title="Ansicht zurücksetzen">
+        <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+          <path
+            d="M8 3.5a4.5 4.5 0 1 0 4.24 3"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+          />
+          <path d="M12.5 1.5 L12.5 5 L9 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
     </div>
     <div class="pg-steps" hidden>
       <div class="pg-step-dots"></div>
@@ -203,20 +217,74 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   }
 
   .pg-output {
-    background: var(--beloch-panel);
+    background: transparent;
   }
   .pg-result {
+    position: relative;
     flex: 1;
     min-height: var(--pg-height, 320px);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 14px;
-    overflow: auto;
+    overflow: hidden;
+    background: transparent;
+    cursor: grab;
+    touch-action: none;
   }
-  .pg-result :global(svg) {
+  .pg-result.is-panning {
+    cursor: grabbing;
+  }
+  /* The paper itself: pan/zoom transform target. Origin 0 0 keeps the
+     zoom-toward-cursor math (in the client script) layout-agnostic. */
+  .pg-canvas {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     max-width: 100%;
+    max-height: 100%;
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+  .pg-canvas :global(svg) {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
     height: auto;
+  }
+  /* Notices (info/error) mustn't inherit the grab cursor — they're not
+     draggable paper. */
+  .pg-canvas:has(.pg-notice) {
+    cursor: default;
+  }
+
+  .pg-reset {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 8px;
+    border: 1px solid var(--beloch-border);
+    background: color-mix(in srgb, var(--beloch-panel) 78%, transparent);
+    color: var(--beloch-muted);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s ease, color 0.15s ease;
+  }
+  .pg-result:hover .pg-reset:not([hidden]) {
+    opacity: 1;
+  }
+  .pg-reset:hover {
+    color: var(--beloch-valley);
+  }
+  .pg-reset[hidden] {
+    display: none;
   }
 
   .pg-notice {
@@ -327,15 +395,114 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       .replace(/>/g, "&gt;");
   }
 
+  // Vanilla pan/zoom over a transform target (`.pg-canvas`) inside a viewport
+  // (`.pg-result`). No library — a translate()+scale() matrix driven by
+  // pointer-drag (pan) and wheel (zoom-toward-cursor). The zoom math is
+  // layout-agnostic: it reads the target's live client rect each wheel tick,
+  // so it works whether the canvas is flex-centered (identity) or panned.
+  function createPanZoom(
+    viewport: HTMLElement,
+    target: HTMLElement,
+    resetBtn: HTMLElement,
+  ) {
+    const MIN = 0.2;
+    const MAX = 8;
+    let scale = 1;
+    let tx = 0;
+    let ty = 0;
+    let enabled = true;
+    let dragging = false;
+    let pointerId = -1;
+    let lastX = 0;
+    let lastY = 0;
+
+    function apply() {
+      target.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    }
+    function reset() {
+      scale = 1;
+      tx = 0;
+      ty = 0;
+      apply();
+    }
+    function setEnabled(on: boolean) {
+      enabled = on;
+      if (!on) endDrag();
+    }
+
+    viewport.addEventListener(
+      "wheel",
+      (e: WheelEvent) => {
+        if (!enabled) return;
+        e.preventDefault();
+        const next = Math.min(MAX, Math.max(MIN, scale * Math.exp(-e.deltaY * 0.0015)));
+        if (next === scale) return;
+        const cr = target.getBoundingClientRect();
+        // Keep the paper point under the cursor fixed while scaling. With
+        // transform-origin 0 0, translate delta = (cursor − target-origin)·(1 − s'/s).
+        const ratio = next / scale;
+        tx += (e.clientX - cr.left) * (1 - ratio);
+        ty += (e.clientY - cr.top) * (1 - ratio);
+        scale = next;
+        apply();
+      },
+      { passive: false },
+    );
+
+    viewport.addEventListener("pointerdown", (e: PointerEvent) => {
+      if (!enabled || e.button !== 0) return;
+      if (resetBtn.contains(e.target as Node)) return;
+      dragging = true;
+      pointerId = e.pointerId;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      viewport.setPointerCapture(pointerId);
+      viewport.classList.add("is-panning");
+    });
+    viewport.addEventListener("pointermove", (e: PointerEvent) => {
+      if (!dragging) return;
+      tx += e.clientX - lastX;
+      ty += e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      apply();
+    });
+    function endDrag() {
+      if (!dragging) return;
+      dragging = false;
+      if (pointerId !== -1 && viewport.hasPointerCapture(pointerId)) {
+        viewport.releasePointerCapture(pointerId);
+      }
+      pointerId = -1;
+      viewport.classList.remove("is-panning");
+    }
+    viewport.addEventListener("pointerup", endDrag);
+    viewport.addEventListener("pointercancel", endDrag);
+    resetBtn.addEventListener("click", reset);
+
+    return { reset, setEnabled };
+  }
+
   function setup(root: HTMLElement) {
     const sourceMount = root.querySelector<HTMLDivElement>(".pg-source");
     const runBtn = root.querySelector<HTMLButtonElement>(".pg-run");
     const result = root.querySelector<HTMLDivElement>(".pg-result");
+    const canvas = result?.querySelector<HTMLDivElement>(".pg-canvas");
+    const resetBtn = root.querySelector<HTMLButtonElement>(".pg-reset");
     const runHint = root.querySelector<HTMLDivElement>(".pg-run-hint");
     const stepsBar = root.querySelector<HTMLDivElement>(".pg-steps");
     const stepDots = root.querySelector<HTMLDivElement>(".pg-step-dots");
     const stepLabel = root.querySelector<HTMLSpanElement>(".pg-step-label");
-    if (!sourceMount || !runBtn || !result || !runHint || !stepsBar || !stepDots || !stepLabel) return;
+    if (!sourceMount || !runBtn || !result || !canvas || !resetBtn || !runHint || !stepsBar || !stepDots || !stepLabel) return;
+
+    const panZoom = createPanZoom(result, canvas, resetBtn);
+    // A build-time `seed` SVG is already in the canvas; enable pan/zoom + the
+    // reset affordance for it. The "Run drücken" notice is not pannable.
+    {
+      const hasSeedSvg = !!canvas.querySelector("svg");
+      panZoom.setEnabled(hasSeedSvg);
+      resetBtn.hidden = !hasSeedSvg;
+    }
 
     function setRunHint(text: string) {
       runHint!.textContent = text;
@@ -436,14 +603,25 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     let currentScene: FoldScene | null = null;
     let currentStatements: Statement[] = [];
 
+    // Notices aren't pannable paper: reset the view, disable pan/zoom, and
+    // hide the reset affordance. A fresh SVG re-enables it and fits the paper.
+    const showNotice = (html: string) => {
+      canvas.innerHTML = html;
+      panZoom.reset();
+      panZoom.setEnabled(false);
+      resetBtn.hidden = true;
+    };
     const showInfo = (message: string) => {
-      result.innerHTML = `<p class="pg-notice pg-notice-info">${escapeHtml(message)}</p>`;
+      showNotice(`<p class="pg-notice pg-notice-info">${escapeHtml(message)}</p>`);
     };
     const showError = (message: string) => {
-      result.innerHTML = `<p class="pg-notice pg-notice-error">${escapeHtml(message)}</p>`;
+      showNotice(`<p class="pg-notice pg-notice-error">${escapeHtml(message)}</p>`);
     };
     const showSvg = (svg: string) => {
-      result.innerHTML = svg;
+      canvas.innerHTML = svg;
+      panZoom.reset();
+      panZoom.setEnabled(true);
+      resetBtn.hidden = false;
     };
 
     // Rebuilds the scrubber's dots for a freshly-parsed set of statements
