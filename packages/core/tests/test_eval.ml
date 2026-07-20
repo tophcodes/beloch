@@ -1057,15 +1057,18 @@ let test_eval_up_to_top_flap () =
   in
   Alcotest.(check int) "3 faces" 3 (Array.length (Fold_state.faces fd.Eval.state))
 
-(* the original 2-fold stack without up to: all-layers cuts both → 4 faces
-   (contrast with test_eval_up_to_top_flap's scoped 3-face fold above) *)
-let test_eval_all_layers_differs () =
-  let fd =
-    Eval.eval_folded
-      (Beloch.parse ~filename:"t.bel"
-         "paper square\nfold map .d onto .a\nfold map .c onto .d\n")
-  in
-  Alcotest.(check int) "4 faces" 4 (Array.length (Fold_state.faces fd.Eval.state))
+(* Since v0.24-dev the default (no `up to`) folds only the outside-contiguous
+   prefix down to the anchor flap, not all layers. After folding the square in
+   half, anchoring the second fold on corner .c (which belongs to the top paper
+   face only) seeds just the top layer; the bottom layer stays, so folding the
+   top alone tears along the y=1/2 spine. Folding both layers now needs an
+   explicit `up to` (contrast test_eval_up_to_top_flap's scoped fold above). *)
+let test_eval_default_corner_anchor_tears () =
+  expect_error "tearing the paper" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\nfold map .d onto .a\nfold map .c onto .d\n")))
 
 (* four-layer stack, fold the top two: 6 faces (all-layers would be 8).
    --l/--bot are boundary reference creases and MUST be bound before the folds
@@ -1152,13 +1155,17 @@ let test_eval_moving_line_multimatch () =
                fold map .b onto .a moving .b\n\
                fold through .a .c moving --d\n")))
 
-(* an explicit flap that straddles the axis cannot anchor *)
-let test_eval_moving_flap_straddles () =
-  expect_error "straddles" (fun () ->
-      ignore
-        (Eval.eval_folded
-           (Beloch.parse ~filename:"t.bel"
-              "paper square\nfold map .b onto .a moving #[.a .b]\n")))
+(* Since v0.24-dev an explicit flap selector whose faces straddle the axis no
+   longer errors on the default path: `default_move_side` reads the side from the
+   anchor's own point(s), so `#[.a .b]` folds — .a/.b both lie on the flat sheet,
+   the anchor point's side picks the mover, giving a clean 2-face fold. *)
+let test_eval_moving_flap_straddle_dissolves () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         "paper square\nfold map .b onto .a moving #[.a .b]\n")
+  in
+  Alcotest.(check int) "2 faces" 2 (Array.length (Fold_state.faces fd.Eval.state))
 
 (* ---- axiom 5: `toward` = direction semantics + paper-incidence filter ----
    Square corners a=(0,0), b=(1,0), c=(1,1), d=(0,1). *)
@@ -1626,8 +1633,8 @@ let () =
           Alcotest.test_case "step frames" `Quick test_step_frames;
           Alcotest.test_case "up to = anchor: top flap only" `Quick
             test_eval_up_to_top_flap;
-          Alcotest.test_case "all-layers differs from up-to" `Quick
-            test_eval_all_layers_differs;
+          Alcotest.test_case "default corner anchor tears (v0.24-dev)" `Quick
+            test_eval_default_corner_anchor_tears;
           Alcotest.test_case "up to range: fold top two of four" `Quick
             test_eval_up_to_range;
           Alcotest.test_case "buried anchor errors" `Quick
@@ -1640,8 +1647,8 @@ let () =
             test_eval_up_to_crease_target;
           Alcotest.test_case "moving line multimatch errors" `Quick
             test_eval_moving_line_multimatch;
-          Alcotest.test_case "moving flap straddles errors" `Quick
-            test_eval_moving_flap_straddles;
+          Alcotest.test_case "moving flap straddle dissolves (v0.24-dev)" `Quick
+            test_eval_moving_flap_straddle_dissolves;
           Alcotest.test_case "select --[.a .b] == --ab" `Quick test_select_edge;
           Alcotest.test_case "select diagonal errors (no sight-line)" `Quick
             test_select_no_sightline;
