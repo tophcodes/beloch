@@ -479,7 +479,10 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
         dot.classList.toggle("is-active", idx === i);
         dot.setAttribute("aria-current", idx === i ? "true" : "false");
       });
-      stepLabel!.textContent = `Step ${i + 1}/${statements.length}`;
+      const label = currentScene?.steps[statements[i]!.frameIndex]?.label;
+      stepLabel!.textContent = label
+        ? `Step ${i + 1}/${statements.length} · ${label}`
+        : `Step ${i + 1}/${statements.length}`;
     }
 
     // Client-side-only re-render of one statement of the already-parsed
