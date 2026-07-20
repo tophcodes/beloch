@@ -10,7 +10,7 @@ import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
 import { DEFAULT_THEME, Theme, LineStyle } from "./theme";
 import { makeLayout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
-import { coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly, pointCovered, pointInPolygonInclusive, segInsideIntervals } from "./geometry";
+import { coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly, pointCovered, pointInPolygonInclusive, segInsideIntervals, paperClippedIntervals } from "./geometry";
 import { resolveIsometry, type Isometry } from "./isometry";
 import { placeLabels, type LabelAnchor } from "./primitives/labels";
 
@@ -388,16 +388,20 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
             const tabPoly = F[fi]!.map((idx) => V[idx]!);
             const pp = applyIso(M, m.p);
             if (!pointInPolygonInclusive(pp, tabPoly)) continue;
-            const TICK = 0.03;
+            const TICK = 0.06;
             const [la, lb] = m.line;
             const norm = Math.hypot(lb, -la) || 1;
             const dx = lb / norm, dy = -la / norm;
             const p0 = applyIso(M, [m.p[0] - dx * TICK, m.p[1] - dy * TICK]);
             const p1 = applyIso(M, [m.p[0] + dx * TICK, m.p[1] + dy * TICK]);
-            creases.children.push(el("line", {
-              ...markAttrs, class: "mark", "data-kind": "mark-tick",
-              x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
-            }));
+            for (const [t0, t1] of segInsideIntervals(p0, p1, tabPoly)) {
+              const c0: Vec2 = [p0[0] + (p1[0] - p0[0]) * t0, p0[1] + (p1[1] - p0[1]) * t0];
+              const c1: Vec2 = [p0[0] + (p1[0] - p0[0]) * t1, p0[1] + (p1[1] - p0[1]) * t1];
+              creases.children.push(el("line", {
+                ...markAttrs, class: "mark", "data-kind": "mark-tick",
+                x1: mx(c0[0]), y1: ty(c0[1]), x2: mx(c1[0]), y2: ty(c1[1]),
+              }));
+            }
             break; // a point belongs to exactly one face
           }
         }
@@ -443,7 +447,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     }
 
     if (opts.texture.marks) {
-      const MARK_TICK_LEN = 0.03;
+      const MARK_TICK_LEN = 0.06;
       scene.marks.forEach((m) => {
         const lineStyle = theme.lineStyle(m.intent, theme);
         const attrs: Record<string, string | number> = {
@@ -466,10 +470,14 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
           const dx = lb / norm, dy = -la / norm;
           const p0: Vec2 = [m.p[0] - dx * MARK_TICK_LEN, m.p[1] - dy * MARK_TICK_LEN];
           const p1: Vec2 = [m.p[0] + dx * MARK_TICK_LEN, m.p[1] + dy * MARK_TICK_LEN];
-          creases.children.push(el("line", {
-            ...attrs, "data-kind": "mark-tick",
-            x1: tx(p0[0]), y1: ty(p0[1]), x2: tx(p1[0]), y2: ty(p1[1]),
-          }));
+          for (const [t0, t1] of paperClippedIntervals(p0, p1, F, V)) {
+            const c0: Vec2 = [p0[0] + (p1[0] - p0[0]) * t0, p0[1] + (p1[1] - p0[1]) * t0];
+            const c1: Vec2 = [p0[0] + (p1[0] - p0[0]) * t1, p0[1] + (p1[1] - p0[1]) * t1];
+            creases.children.push(el("line", {
+              ...attrs, "data-kind": "mark-tick",
+              x1: tx(c0[0]), y1: ty(c0[1]), x2: tx(c1[0]), y2: ty(c1[1]),
+            }));
+          }
         }
       });
     }

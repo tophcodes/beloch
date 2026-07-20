@@ -148,6 +148,23 @@ export function segInsideIntervals(a: Vec2, b: Vec2, poly: Vec2[]): [number, num
   return out;
 }
 
+// Sub-intervals of segment a→b covered by the union of all faces — clips a
+// flat (paper-space) segment to the physical paper boundary, ignoring
+// internal crease edges shared between adjacent faces.
+export function paperClippedIntervals(a: Vec2, b: Vec2, F: number[][], V: Vec2[]): [number, number][] {
+  const spans: [number, number][] = [];
+  for (const face of F) spans.push(...segInsideIntervals(a, b, face.map((i) => V[i]!)));
+  if (!spans.length) return spans;
+  spans.sort((p, q) => p[0] - q[0]);
+  const merged: [number, number][] = [spans[0]!.slice() as [number, number]];
+  for (let k = 1; k < spans.length; k++) {
+    const last = merged[merged.length - 1]!;
+    if (spans[k]![0] <= last[1] + 1e-9) last[1] = Math.max(last[1], spans[k]![1]);
+    else merged.push(spans[k]!.slice() as [number, number]);
+  }
+  return merged;
+}
+
 // Sub-intervals of segment a→b hidden by a face strictly above (or, for the
 // bottom view, below) `refPos` in the stack order — the union over all such
 // covering faces.
