@@ -2,6 +2,38 @@
 
 let q_to_json (x : Num.t) : Yojson.Safe.t = `Float (Num.to_float x)
 
+let mark_assign_str = function
+  | Fold_state.M -> "M"
+  | Fold_state.V -> "V"
+  | Fold_state.F -> "F"
+
+(* One `beloch:marks`-shaped entry — shared by the global (final-state) list
+   and each statement-log entry's embedded as-recorded mark. *)
+let mark_json (m : Fold_state.mark) : Yojson.Safe.t =
+  let line =
+    let l = m.Fold_state.mline in
+    `List [ q_to_json l.Geom.a; q_to_json l.Geom.b; q_to_json l.Geom.c ]
+  in
+  let common =
+    [
+      ("line", line);
+      ("intent", `String (mark_assign_str m.Fold_state.mintent));
+      ("crease_id", `Int m.Fold_state.mcrease_id);
+    ]
+  in
+  match m.Fold_state.mgeom with
+  | Fold_state.MSeg (a, b) ->
+      `Assoc
+        (("kind", `String "seg")
+        :: ("a", `List [ q_to_json a.Geom.x; q_to_json a.Geom.y ])
+        :: ("b", `List [ q_to_json b.Geom.x; q_to_json b.Geom.y ])
+        :: common)
+  | Fold_state.MPoint p ->
+      `Assoc
+        (("kind", `String "point")
+        :: ("p", `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ])
+        :: common)
+
 (* name for each vertex, by exact paper-coord match against named points *)
 let vertices_names_json (vpaper : Geom.point Dynarray.t)
     (named_points : (string * Geom.point) list) : Yojson.Safe.t =
@@ -233,6 +265,32 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
       ("beloch:vertices_names", beloch_vertices_names);
     ]
 
+(* One entry per fold- or mark-producing top-level statement, in source
+   order — a statement-level sourcemap for the Playground step player. A
+   mark statement embeds its OWN mark geometry as recorded at that point,
+   independent of whether it later graduates into a real crease (which only
+   ever happens at some LATER fold statement) — see
+   docs/superpowers/specs/2026-07-20-playground-statement-sourcemap-design.md. *)
+let beloch_statements_json (statements : Eval.stmt_log_entry list) : Yojson.Safe.t =
+  `List
+    (List.map
+       (fun (s : Eval.stmt_log_entry) ->
+         let common =
+           [
+             ( "kind",
+               `String
+                 (match s.Eval.sl_kind with
+                 | Eval.SFold -> "fold"
+                 | Eval.SMark -> "mark") );
+             ("source_line", `Int (fst s.Eval.sl_span).Lexing.pos_lnum);
+             ("frame_index", `Int s.Eval.sl_frame_index);
+           ]
+         in
+         match s.Eval.sl_mark with
+         | None -> `Assoc (("mark", `Null) :: common)
+         | Some m -> `Assoc (("mark", mark_json m) :: common))
+       statements)
+
 let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
   let disp, kept_marks = cp_display fd.Eval.state in
   let faces = Fold_state.faces disp in
@@ -341,41 +399,8 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
                ] ))
          fd.Eval.named_lines)
   in
-  (* record marks (non-subdividing; see Fold_state.mark) — a mark's intent is
-     only ever M or V (never F: F is a folded-form dihedral, not a
-     crease-pattern colour), but match totally rather than special-casing. *)
-  let mark_assign_str = function
-    | Fold_state.M -> "M"
-    | Fold_state.V -> "V"
-    | Fold_state.F -> "F"
-  in
-  let beloch_marks =
-    kept_marks
-    |> List.map (fun (m : Fold_state.mark) ->
-        let line =
-          let l = m.Fold_state.mline in
-          `List [ q_to_json l.Geom.a; q_to_json l.Geom.b; q_to_json l.Geom.c ]
-        in
-        let common =
-          [
-            ("line", line);
-            ("intent", `String (mark_assign_str m.Fold_state.mintent));
-            ("crease_id", `Int m.Fold_state.mcrease_id);
-          ]
-        in
-        match m.Fold_state.mgeom with
-        | Fold_state.MSeg (a, b) ->
-            `Assoc
-              (("kind", `String "seg")
-              :: ("a", `List [ q_to_json a.Geom.x; q_to_json a.Geom.y ])
-              :: ("b", `List [ q_to_json b.Geom.x; q_to_json b.Geom.y ])
-              :: common)
-        | Fold_state.MPoint p ->
-            `Assoc
-              (("kind", `String "point")
-              :: ("p", `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ])
-              :: common))
-  in
+  (* record marks (non-subdividing; see Fold_state.mark) *)
+  let beloch_marks = kept_marks |> List.map mark_json in
   `Assoc
     [
       ("file_spec", `Float 1.1);
@@ -391,6 +416,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
       ("beloch:named_lines", beloch_named_lines);
       ("beloch:named_lines_frame", `String "creasePattern");
       ("beloch:marks", `List beloch_marks);
+      ("beloch:statements", beloch_statements_json fd.Eval.statements);
       ( "file_frames",
         (* Step 0: the flat, unfolded sheet, so a folded-diagram stepper opens
            on the starting paper rather than on the first fold. It is a viewing

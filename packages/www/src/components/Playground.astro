@@ -282,7 +282,7 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
   import { EditorState } from "@codemirror/state";
   import { keymap } from "@codemirror/view";
   import { stepMarkerExtensions, setStepLineOn } from "../lib/cm-step-marker";
-  import { parseFold, type FoldScene } from "@beloch/scene";
+  import { parseFold, type FoldScene, type Statement } from "@beloch/scene";
   import { renderCP, renderFolded, WEB_THEME } from "@beloch/render-svg";
   import { SCHEMES, STORAGE_KEY, DEFAULT_ID, applyScheme, resolveScheme } from "../lib/paper-schemes";
 
@@ -428,6 +428,7 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
     let worker: Worker | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let currentScene: FoldScene | null = null;
+    let currentStatements: Statement[] = [];
 
     const showInfo = (message: string) => {
       result.innerHTML = `<p class="pg-notice pg-notice-info">${escapeHtml(message)}</p>`;
@@ -439,11 +440,11 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
       result.innerHTML = svg;
     };
 
-    // Rebuilds the scrubber's dots for a freshly-parsed scene (called once
-    // per successful run, not per step-click). Hides the bar entirely when
-    // there's nothing to navigate (0 or 1 steps).
-    function buildStepsUI(scene: FoldScene) {
-      const n = scene.steps.length;
+    // Rebuilds the scrubber's dots for a freshly-parsed set of statements
+    // (called once per successful run, not per statement-click). Hides the
+    // bar entirely when there's nothing to navigate (0 or 1 statements).
+    function buildStepsUI(statements: Statement[]) {
+      const n = statements.length;
       stepDots!.innerHTML = "";
       if (n <= 1) {
         stepsBar!.hidden = true;
@@ -466,38 +467,48 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
     // doesn't produce a fresh multi-step scene of its own.
     function clearStepsUI() {
       currentScene = null;
+      currentStatements = [];
       stepsBar!.hidden = true;
       setStepLineOn(editor, null);
     }
 
     // Cheap per-step-change update: toggles the active dot + label text,
     // without touching event listeners (buildStepsUI owns those).
-    function updateStepsUI(i: number, scene: FoldScene) {
+    function updateStepsUI(i: number, statements: Statement[]) {
       stepDots!.querySelectorAll<HTMLButtonElement>(".pg-step-dot").forEach((dot, idx) => {
         dot.classList.toggle("is-active", idx === i);
         dot.setAttribute("aria-current", idx === i ? "true" : "false");
       });
-      const step = scene.steps[i];
-      stepLabel!.textContent = step?.label
-        ? `Step ${i + 1}/${scene.steps.length} · ${step.label}`
-        : `Step ${i + 1}/${scene.steps.length}`;
+      const label = currentScene?.steps[statements[i]!.frameIndex]?.label;
+      stepLabel!.textContent = label
+        ? `Step ${i + 1}/${statements.length} · ${label}`
+        : `Step ${i + 1}/${statements.length}`;
     }
 
-    // Client-side-only re-render of one step of the already-parsed scene —
-    // no worker round-trip, since one eval already returned every frame.
+    // Client-side-only re-render of one statement of the already-parsed
+    // scene — no worker round-trip, since one eval already returned every
+    // frame and every statement's own mark geometry. A fold-kind statement
+    // just re-renders its backdrop frame; a mark-kind statement re-renders
+    // the SAME backdrop (marks don't fold anything) with its own mark
+    // overlaid.
     function renderStep(i: number) {
-      if (!currentScene) return;
-      const n = currentScene.steps.length;
+      if (!currentScene || currentStatements.length === 0) return;
+      const n = currentStatements.length;
       const clamped = Math.max(0, Math.min(i, n - 1));
-      const step = currentScene.steps[clamped]!;
+      const stmt = currentStatements[clamped]!;
       try {
-        showSvg(renderFolded(currentScene, { theme: WEB_THEME, step: String(clamped) }).toString());
+        const svg = renderFolded(currentScene, {
+          theme: WEB_THEME,
+          step: String(stmt.frameIndex),
+          markOverlay: stmt.mark ?? undefined,
+        }).toString();
+        showSvg(svg);
       } catch (err) {
         showError(`Render-Fehler: ${err instanceof Error ? err.message : String(err)}`);
         return;
       }
-      setStepLineOn(editor, step.sourceLine);
-      updateStepsUI(clamped, currentScene);
+      setStepLineOn(editor, stmt.sourceLine);
+      updateStepsUI(clamped, currentStatements);
     }
 
     function finish(handler: () => void) {
@@ -522,10 +533,11 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
       if (parsed.ok) {
         try {
           const scene = parseFold(parsed.fold as object);
-          if (scene.steps.length > 0) {
+          if (scene.statements.length > 0) {
             currentScene = scene;
-            buildStepsUI(scene);
-            renderStep(scene.steps.length - 1);
+            currentStatements = scene.statements;
+            buildStepsUI(scene.statements);
+            renderStep(scene.statements.length - 1);
           } else {
             showSvg(renderCP(scene, { theme: WEB_THEME }).toString());
           }

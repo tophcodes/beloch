@@ -1,6 +1,6 @@
 // Folded-occlusion preset: step-k geometry, creases up to k, layer occlusion.
 // A thin wrapper over renderScene — the drawing lives there.
-import type { FoldScene } from "@beloch/scene";
+import type { FoldScene, Mark } from "@beloch/scene";
 import { pickStep, SceneError } from "@beloch/scene";
 import { SvgDoc } from "./svgdoc";
 import { renderScene } from "./render-scene";
@@ -10,6 +10,7 @@ export interface FoldedOptions extends RenderOptions {
   view?: "top" | "bottom";     // default "top"
   hidden?: "dashed" | "hide";  // default "hide"
   step?: string;               // beloch:step label; undefined/unmatched → final state
+  markOverlay?: Mark;          // project this one mark onto the step's faces
 }
 
 export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc {
@@ -31,5 +32,6 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
     labels: opts.labels,
     legend: opts.legend,
     theme: opts.theme,
+    markOverlay: opts.markOverlay,
   });
 }

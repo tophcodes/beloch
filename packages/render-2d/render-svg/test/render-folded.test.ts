@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
-import { parseFold, SceneError } from "@beloch/scene";
-import { renderFolded } from "@beloch/render-svg";
+import { parseFold, SceneError, type Mark } from "@beloch/scene";
+import { renderFolded, WEB_THEME } from "@beloch/render-svg";
 import { makeLayout, PAD, SZ } from "../src/layout";
 import { pointInPolygon } from "../src/geometry";
 
@@ -168,4 +168,57 @@ test("folded view stamps a text label (not just the dot) for a named vertex", as
   // 5 named vertices (d, center, c, b, a) but a≡center fold onto one point →
   // 4 labels, the overlap collapsed into a merged one.
   expect(labels.length).toBe(4);
+});
+
+test("renderFolded: markOverlay draws exactly the given mark, omitting it changes nothing", async () => {
+  const scene = parseFold(await golden("fold-quarter.fold"));
+
+  const withoutOverlay = renderFolded(scene, { theme: WEB_THEME }).toString();
+  const withOverlayButNoMark = renderFolded(scene, { theme: WEB_THEME, markOverlay: undefined }).toString();
+  expect(withOverlayButNoMark).toBe(withoutOverlay); // omitting is a true no-op
+
+  // fold-quarter's last frame stacks all 4 faces into table-space [0,0.5]x[0,0.5];
+  // face 0's facesMatrix is the identity, so this segment (inside face 0's
+  // (0,0)-(0.5,0)-(0.5,0.5)-(0,0.5) polygon under that identity transform)
+  // lands cleanly and the overlay actually draws.
+  const seg: Mark = {
+    kind: "seg", a: [0.1, 0.1], b: [0.3, 0.3], line: [1, -1, 0], intent: "V", creaseId: 999,
+  };
+  const withOverlay = renderFolded(scene, { theme: WEB_THEME, markOverlay: seg }).toString();
+  expect(withOverlay).toContain('data-crease-id="999"');
+});
+
+test("renderFolded: markOverlay draws real marks — boundary endpoints and multi-face spans", async () => {
+  // mark-overlay-regression.fold is `paper square / mark --diag = map .a
+  // onto .c / step left / mark --ray = through .a .c / fold map --ab onto
+  // --diag` — both marks are real Beloch marks (not hand-picked
+  // safely-interior geometry): their endpoints are the paper's own
+  // corners, sitting exactly ON the boundary of whatever face they land
+  // in. --diag (frame 0, the synthetic flat sheet — always 1 face) exposed
+  // the pointInPolygon boundary-exclusion bug on its own. --ray is
+  // recorded at frame 1, captured AFTER `step left` against the live
+  // state (2 faces, since --diag already subdivides the render topology by
+  // then) — its segment crosses both of those still-flat, still-coplanar
+  // triangles before any real fold happens, exposing the "whole segment in
+  // one face" multi-face-span bug. See
+  // docs/superpowers/plans/2026-07-20-playground-statement-sourcemap.md's
+  // progress ledger — a regression here means either bug came back.
+  const scene = parseFold(await golden("mark-overlay-regression.fold"));
+  expect(scene.statements.length).toBe(3);
+
+  for (const stmt of scene.statements) {
+    if (stmt.kind !== "mark" || !stmt.mark) continue;
+    const svg = renderFolded(scene, { theme: WEB_THEME, step: String(stmt.frameIndex), markOverlay: stmt.mark }).toString();
+    expect(svg).toContain(`data-crease-id="${stmt.mark.creaseId}"`);
+  }
+
+  // --ray (the second mark) spans both of --diag's triangles — the
+  // multi-face fix must draw it as (at least) two separate pieces, not
+  // silently pick one arbitrary face and drop the rest.
+  const rayStmt = scene.statements[1]!;
+  const raySvg = renderFolded(scene, {
+    theme: WEB_THEME, step: String(rayStmt.frameIndex), markOverlay: rayStmt.mark!,
+  }).toString();
+  const pieces = raySvg.match(new RegExp(`data-crease-id="${rayStmt.mark!.creaseId}"`, "g")) ?? [];
+  expect(pieces.length).toBeGreaterThan(1);
 });

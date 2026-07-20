@@ -49,6 +49,14 @@ test("parses fold-quarter: foldedForm step inherits root fields", async () => {
   expect(step.frame.facesMatrix!.length).toBe(step.frame.facesVertices.length);
 });
 
+test("parseFold: statements carries one entry per fold statement, source order", async () => {
+  const scene = parseFold(await golden("fold-quarter.fold"));
+  expect(scene.statements.length).toBe(2);
+  expect(scene.statements.map((s) => s.kind)).toEqual(["fold", "fold"]);
+  expect(scene.statements.map((s) => s.sourceLine)).toEqual([3, 4]);
+  expect(scene.statements.every((s) => s.mark === null)).toBe(true);
+});
+
 test("pickStep: no label falls back to last step", async () => {
   const scene = parseFold(await golden("fold-quarter.fold"));
   expect(pickStep(scene)).toBe(scene.steps[scene.steps.length - 1]);
