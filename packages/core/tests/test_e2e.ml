@@ -639,6 +639,43 @@ let test_multiframe () =
   Alcotest.(check (list (option string))) "frame step tags"
     [ None; None; Some "a"; Some "b" ] (List.map step_of frames)
 
+(* Statement-level sourcemap for the Playground step player: one
+   beloch:statements entry per mark/fold statement, each mark embedding its
+   OWN geometry — even when both marks in this source graduate into real
+   creases by the end (their endpoints are paper corners), so beloch:marks
+   is empty while beloch:statements still carries their geometry. *)
+let test_beloch_statements () =
+  let src =
+    "paper square\n\
+     mark --diag = map .a onto .c\n\
+     mark --ray = through .a .c\n\
+     fold map .b onto .d\n"
+  in
+  let json = Beloch.fold_string ~filename:"t" src in
+  let open Yojson.Safe.Util in
+  let stmts = json |> member "beloch:statements" |> to_list in
+  Alcotest.(check int) "one entry per mark/fold statement" 3 (List.length stmts);
+  let kind_of j = j |> member "kind" |> to_string in
+  Alcotest.(check (list string)) "kinds in source order"
+    [ "mark"; "mark"; "fold" ] (List.map kind_of stmts);
+  let line_of j = j |> member "source_line" |> to_int in
+  Alcotest.(check (list int)) "source lines"
+    [ 2; 3; 4 ] (List.map line_of stmts);
+  let frame_of j = j |> member "frame_index" |> to_int in
+  Alcotest.(check (list int))
+    "marks before any fold read frame 0 (the flat sheet); the fold itself \
+     reads frame 1 (its own just-pushed frame)"
+    [ 0; 0; 1 ] (List.map frame_of stmts);
+  let mark_present j = j |> member "mark" <> `Null in
+  Alcotest.(check (list bool)) "both marks carry embedded geometry, the fold does not"
+    [ true; true; false ] (List.map mark_present stmts);
+  (* the bug this design avoids: both marks graduate (their endpoints are
+     corners), so the global list is empty — but the statement log is
+     unaffected, since it embeds geometry at record time, not by lookup. *)
+  let global_marks = json |> member "beloch:marks" |> to_list in
+  Alcotest.(check int) "both marks graduate — beloch:marks is empty" 0
+    (List.length global_marks)
+
 let test_e2e_faces_matrix_and_frame () =
   let json =
     Beloch.fold_string ~filename:"square.bel" (read_case "mark/square.bel")
@@ -944,6 +981,8 @@ let () =
             test_bind_bundle_roundtrip;
           Alcotest.test_case "one folded frame per step" `Quick
             test_multiframe;
+          Alcotest.test_case "beloch:statements sourcemap" `Quick
+            test_beloch_statements;
           Alcotest.test_case "e2e faces_matrix + frame" `Quick
             test_e2e_faces_matrix_and_frame;
           Alcotest.test_case

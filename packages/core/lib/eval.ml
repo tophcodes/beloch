@@ -10,6 +10,22 @@ let corners : (string * Geom.point) list =
     ("d", { Geom.x = q 0; y = q 1 });
   ]
 
+type stmt_kind = SFold | SMark
+
+type stmt_log_entry = {
+  sl_kind : stmt_kind;
+  sl_span : Error.span;
+  sl_frame_index : int;
+      (* file_frames index of the frame this statement's geometry reads
+         against — the just-pushed frame for [SFold], the most-recently
+         pushed frame for [SMark] (marks don't fold anything) *)
+  sl_mark : Fold_state.mark option;
+      (* the mark AS RECORDED by this statement, captured at record-time —
+         independent of whether it later graduates into a real crease (which
+         only happens at some LATER fold statement, or never). None for
+         [SFold]. *)
+}
+
 type folded = {
   state : Fold_state.t;
   named_points : (string * Geom.point * int) list;
@@ -21,6 +37,7 @@ type folded = {
          line coefficients in [named_lines] lose (a folded crease's current
          line can coincide with another crease's line) *)
   frames : (string option * Fold_state.t * Error.span option) list;
+  statements : stmt_log_entry list;
 }
 
 (* ---- Scope-stack context ---- *)
@@ -109,6 +126,7 @@ type ctx = {
   mutable panel : string option;
   panels : (string, unit) Hashtbl.t;
   mutable frames_rev : (string option * Fold_state.t * Error.span option) list;
+  mutable statements_rev : stmt_log_entry list;
   mutable pending : bool;
       (* true when the current state hasn't been captured in a frame yet;
          drives the conditional final push (see eval_folded) *)
@@ -194,6 +212,7 @@ type snapshot = {
   s_panel : string option;
   s_panels : (string, unit) Hashtbl.t;
   s_frames_rev : (string option * Fold_state.t * Error.span option) list;
+  s_statements_rev : stmt_log_entry list;
   s_pending : bool;
   s_state : Fold_state.t;
   s_next_id : int;
@@ -231,6 +250,7 @@ let snapshot (ctx : ctx) : snapshot =
         s_panel = ctx.panel;
         s_panels = Hashtbl.copy ctx.panels;
         s_frames_rev = ctx.frames_rev;
+        s_statements_rev = ctx.statements_rev;
         s_pending = ctx.pending;
         s_state = !(ctx.state);
         s_next_id = Fold_state.next_id_value ();
@@ -263,6 +283,7 @@ let restore (ctx : ctx) (s : snapshot) : unit =
       ctx.panel <- s.s_panel;
       restore_tbl ctx.panels s.s_panels;
       ctx.frames_rev <- s.s_frames_rev;
+      ctx.statements_rev <- s.s_statements_rev;
       ctx.pending <- s.s_pending;
       ctx.state := s.s_state;
       Fold_state.set_next_id s.s_next_id
@@ -286,11 +307,19 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
     panel = None;
     panels = Hashtbl.create 4;
     frames_rev = [];
+    statements_rev = [];
     pending = true;
   } in
   let push_frame (span : Error.span option) =
     ctx.frames_rev <- (ctx.panel, !(ctx.state), span) :: ctx.frames_rev;
-    ctx.pending <- false
+    ctx.pending <- false;
+    (match span with
+    | Some sp ->
+        ctx.statements_rev <-
+          { sl_kind = SFold; sl_span = sp;
+            sl_frame_index = List.length ctx.frames_rev; sl_mark = None }
+          :: ctx.statements_rev
+    | None -> ())
   in
   (* render an operand back to source text for provenance + error messages *)
   let rec pstr (po : Ast.point_operand) : string =
@@ -1441,10 +1470,15 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
           | None -> ()
         in
         let record ~prov cid mgeom paper_axis =
-          ctx.state :=
-            Fold_state.add_mark !(ctx.state)
-              { Fold_state.mgeom; mline = paper_axis; mintent = intent;
-                mcrease_id = cid; mprov = prov };
+          let m : Fold_state.mark =
+            { Fold_state.mgeom; mline = paper_axis; mintent = intent;
+              mcrease_id = cid; mprov = prov }
+          in
+          ctx.state := Fold_state.add_mark !(ctx.state) m;
+          ctx.statements_rev <-
+            { sl_kind = SMark; sl_span = span;
+              sl_frame_index = List.length ctx.frames_rev; sl_mark = Some m }
+            :: ctx.statements_rev;
           bind_mark cid paper_axis
         in
         (* A full mark is the whole line clipped to its flap; it records as a
@@ -2511,6 +2545,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
   if ctx.pending then
     ctx.frames_rev <- (ctx.panel, !(ctx.state), None) :: ctx.frames_rev;
   let frames = List.rev ctx.frames_rev in
-  { state = !(ctx.state); named_points; named_lines; named_line_cids; frames }
+  let statements = List.rev ctx.statements_rev in
+  { state = !(ctx.state); named_points; named_lines; named_line_cids; frames; statements }
 
 let eval_folded (prog : Ast.program) : folded = eval_program prog
