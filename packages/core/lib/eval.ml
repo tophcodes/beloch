@@ -852,6 +852,42 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
         | Ast.FlapPoint _ -> Error.fail span "the moving point lies on the fold axis"
         | _ -> Error.fail span (Printf.sprintf "%s lies on the fold axis" (fstr fa)))
   in
+  (* Default-scope anchor: the faces carrying the operand, as a UNION — a point on
+     a crease shared by several flaps seeds all of them (design option (a)), so no
+     ambiguity error here (unlike resolve_flap_cluster). *)
+  let anchor_faces (fa : Ast.flap_arg) (span : Error.span) : int list =
+    match fa with
+    | Ast.FlapPoint po -> (
+        match faces_containing (resolve_point po) with
+        | [] -> Error.fail span (Printf.sprintf "%s is not on the paper" (fstr fa))
+        | fs -> fs)
+    | Ast.FlapSpec (Ast.FByPoints (pts, _)) -> (
+        let per_pt = List.map (fun p -> faces_containing (resolve_point p)) pts in
+        match per_pt with
+        | [] -> Error.fail span "empty flap selector"
+        | first :: rest ->
+            (match List.fold_left (fun acc l -> List.filter (fun f -> List.mem f l) acc) first rest with
+             | [] -> Error.fail span (Printf.sprintf "%s is not on the paper" (fstr fa))
+             | fs -> fs))
+    | Ast.FlapLine _ -> resolve_flap_cluster fa span
+  in
+  (* Moving side for the default branch. Operands carrying explicit point(s) take
+     the point's side (a shared-crease flap straddles the axis, but the tip's side
+     is unambiguous — the point-anchor rule). A line operand falls back to the
+     cluster extent via side_of_flap_arg_res. *)
+  let default_move_side (axis : Geom.line) (fa : Ast.flap_arg) (span : Error.span) : int =
+    let side_of_point po =
+      let s = Geom.side_of_line axis (table_of po) in
+      if s = 0 then Error.fail span "the moving point lies on the fold axis" else s
+    in
+    match fa with
+    | Ast.FlapPoint po -> side_of_point po
+    | Ast.FlapSpec (Ast.FByPoints (pts, _)) -> (
+        match pts with
+        | po :: _ -> side_of_point po
+        | [] -> Error.fail span "empty flap selector")
+    | Ast.FlapLine _ -> side_of_flap_arg axis fa span
+  in
   let target_of (fa : Ast.flap_arg) (span : Error.span) :
       Fold_state.scope_target =
     match fa with
@@ -1072,32 +1108,73 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
       | None, Some p -> Some (Ast.FlapPoint p)
       | None, None -> None
     in
-    let move_side =
-      match side_override with
-      | Some s -> s
-      | None -> (
-          match anchor_arg with
-          | Some fa -> side_of_flap_arg axis fa span
-          | None ->
-              Error.fail span "this fold needs `moving .p` to choose the side")
-    in
     let valley = fs.Ast.direction = Ast.Valley in
     match fs.Ast.up_to with
     | None ->
+        (* Default scope: the outside-contiguous prefix down to the flap(s)
+           carrying the anchor operand — not every layer on the side. *)
+        let move_side =
+          match side_override with
+          | Some s -> s
+          | None -> (
+              match anchor_arg with
+              | Some fa -> default_move_side axis fa span
+              | None ->
+                  Error.fail span "this fold needs `moving .p` to choose the side")
+        in
+        let seed =
+          match anchor_arg with
+          | Some fa -> anchor_faces fa span
+          | None ->
+              (* No `moving` clause and no implied point (e.g. a bare axiom-5
+                 line-onto-line fold): move_side above only succeeded because
+                 side_override resolved the direction, so there is nothing to
+                 anchor a prefix to. Fall back to every face with a piece on
+                 move_side — default_scope's closure never removes an already-
+                 seeded candidate, so this reproduces the pre-default_scope
+                 "all layers on the side" behavior exactly. *)
+              let st = !(ctx.state) in
+              List.filter
+                (fun fi ->
+                  Array.length
+                    (Geom.clip_convex_halfplane axis move_side
+                       (Fold_state.table_polygon st fi))
+                  >= 3)
+                (List.init (Array.length (Fold_state.faces st)) Fun.id)
+        in
+        let moving_parents =
+          Fold_state.default_scope !(ctx.state) ~axis ~move_side ~valley ~seed
+        in
+        (match
+           Fold_state.scoped_fold_hinge_closed !(ctx.state) ~axis ~move_side
+             ~moving_parents
+         with
+        | Ok () -> ()
+        | Error (ta, tb) ->
+            Error.fail span
+              (Printf.sprintf
+                 "the moving flap is joined to a stationary layer along a \
+                  segment ((%g,%g)-(%g,%g)) that is not on the fold axis — it \
+                  cannot fold on its own without tearing the paper. Move those \
+                  layers too, or fold along a crease on the axis."
+                 (Num.to_float ta.Geom.x) (Num.to_float ta.Geom.y)
+                 (Num.to_float tb.Geom.x) (Num.to_float tb.Geom.y)));
         (match check with
-        | Some k ->
-            (* default scope: a face moves iff it has a piece on move_side *)
-            let st = !(ctx.state) in
-            k (fun fi ->
-                Array.length
-                  (Geom.clip_convex_halfplane axis move_side
-                     (Fold_state.table_polygon st fi))
-                >= 3)
+        | Some k -> k (fun fi -> moving_parents.(fi))
         | None -> ());
         ctx.state :=
-          Fold_state.fold !(ctx.state) ~axis ~move_side ~valley
+          Fold_state.fold !(ctx.state) ~moving_parents ~axis ~move_side ~valley
             ~crease_id ~prov
     | Some tgt -> (
+        let move_side =
+          match side_override with
+          | Some s -> s
+          | None -> (
+              match anchor_arg with
+              | Some fa -> side_of_flap_arg axis fa span
+              | None ->
+                  Error.fail span "this fold needs `moving .p` to choose the side")
+        in
         let anchor =
           match anchor_arg with
           | Some fa ->
