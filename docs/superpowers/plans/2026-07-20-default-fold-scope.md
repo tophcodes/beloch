@@ -506,49 +506,57 @@ git commit -m "docs(spec): default fold scope is prefix-to-anchor, not all layer
 
 ---
 
-### Task 5: Regenerate affected goldens
+### Task 5: Render-verify the base examples (do NOT touch goldens)
+
+**User decision (option a):** the golden suite is **already pre-existing-broken**
+on this branch (all 3 bases fail with large structural drift, 54–466 lines,
+unrelated to this feature — a prior session marked it "don't chase"). Do **not**
+regenerate or edit any golden `.fold` file in this task — that drift is a separate
+cleanup. This task only confirms the scope change didn't visually break the bases.
 
 **Files:**
-- Modify (regenerate): `packages/core/tests/golden/bases/kite.fold`, `fish-base.fold`, `swivel-rabbit.fold` (only those that actually change)
+- Possibly modify: `examples/bases/kite.bel` (and/or fish-base, swivel-rabbit)
+  ONLY if a base renders wrong and needs an explicit `up to <flap>` to restore it.
+- Do NOT touch `packages/core/tests/golden/**`.
 
 **Interfaces:** none.
 
-- [ ] **Step 1: See which goldens the change moved**
-
-Run: `dune runtest packages/core 2>&1 | grep -B1 -A6 'FOLD unchanged'`
-Expected: zero or more golden diffs. Any base whose second/later fold spanned multiple layers with the old all-layers default may now differ (kite.bel's `fold map --ab onto --ac` is the prime suspect). Record which files fail.
-
-- [ ] **Step 2: Inspect each changed base before promoting**
-
-For each failing base `X`, eyeball that the new fold is *correct*, not a regression:
+- [ ] **Step 1: Render each base's folded form after the scope change**
 
 ```bash
-dune exec beloch -- render examples/bases/X.bel /tmp/X.svg --view folded
+cd /home/toph/Projects/beloch
+for b in kite fish-base swivel-rabbit; do
+  direnv exec /home/toph/Projects/beloch dune exec beloch -- render examples/bases/$b.bel /tmp/$b.svg --view folded 2>&1 | tail -1
+done
 ```
 
-Open `/tmp/X.svg`. The base (kite, fish, swivel-rabbit) must still look like the finished model. If a base now folds too *little* (a layer that should have moved now stays), that base needs an explicit `up to <deeper-flap>` added to its later fold — fix the `.bel` in `examples/bases/` and re-render until correct. Prefer fixing the example over accepting a wrong golden.
+Expected: three SVGs written, no evaluation errors. If any base now raises a
+`fold` error (e.g. a later fold that used to catch all layers now can't reach a
+layer it needs), that base's later `fold` needs an explicit `up to <deeper-flap>`
+— add it to the `.bel` and re-render until clean.
 
-- [ ] **Step 3: Promote the verified goldens**
+- [ ] **Step 2: Eyeball each SVG against the finished model**
 
-For each base `X` confirmed correct:
+Open `/tmp/kite.svg`, `/tmp/fish-base.svg`, `/tmp/swivel-rabbit.svg`. Each must
+still look like its finished base (kite / fish base / swivel-rabbit rabbit-ear),
+NOT a half-flipped or under-folded sheet. Compare against the pre-change baseline
+folds saved at `$CLAUDE_JOB_DIR/tmp/golden-baseline/<base>.fold` if a structural
+question arises (those are the pre-change `beloch fold` outputs, basename spans).
+If a base folds too little (a layer that should move now stays), fix that base's
+later fold with an explicit `up to <flap>` and re-render.
+
+- [ ] **Step 3: Commit (only if a base .bel was edited)**
+
+If Step 1/2 required editing a base `.bel`, commit just that:
 
 ```bash
-dune exec beloch -- fold examples/bases/X.bel > packages/core/tests/golden/bases/X.fold
+git add examples/bases   # NOT tests/golden
+git commit -m "fix(examples): scope <base>'s fold with `up to` under prefix-default"
 ```
 
-(The golden runner reads with `~filename:(basename)`, and `beloch fold examples/bases/X.bel` reports spans basename-relative, so the bytes match — `test_golden.ml:45-50`.)
-
-- [ ] **Step 4: Run the full suite green**
-
-Run: `dune runtest packages/core 2>&1 | tail -20`
-Expected: all suites (`fold_state`, `bel_assert`, `golden`, and the rest) PASS.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add packages/core/tests/golden/bases examples/bases
-git commit -m "test(core): regenerate base goldens for prefix-to-anchor default scope"
-```
+If no base needed editing, this task produces no commit — record in the ledger
+that all three bases render correctly unchanged, and move on. Do not stage or
+commit any golden file.
 
 ---
 
