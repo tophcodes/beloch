@@ -626,14 +626,20 @@ when its flap straddles the axis.
   flap(s) carrying the anchor operand. The anchor operand is `moving` when
   present, or the implied source point on a map fold (`fold map .b onto .o`
   → `.b`). It is *not* every layer on the anchor's side: deeper layers below
-  the anchor flap stay. A point on a crease shared by several flaps seeds
-  **all** of them (the whole contiguous run), so the tip you would physically
-  grab is a valid anchor. On a single-layer region (e.g. a first fold on flat
-  paper) the prefix is that one flap — identical to the pre-v0.24-dev
-  behaviour. The one gap: a bare axiom-5 line-onto-line fold with no `moving`
-  and no implied point (the direction comes from `side_override` alone, so
-  there is nothing to anchor a prefix to) still falls back to every layer on
-  the side.
+  the anchor flap stay. The seed is resolved in **paper space**: the flap(s)
+  whose paper polygon contains the anchor point. A point on a shared paper
+  **edge** (as in the ear fold, where the tip sits on the crease between two
+  flaps) therefore seeds **all** those flaps — the whole contiguous run, so the
+  tip you would physically grab is a valid anchor. But a point interior to a
+  single paper face (a plain corner atop a folded stack) seeds only that one
+  flap; if the layers beneath it must move too, the fold tears (the
+  hinge-closure check below fires) and the fold needs an explicit `up to`. On a
+  single-layer region (e.g. a first fold on flat paper) the prefix is that one
+  flap — identical to the pre-v0.24-dev behaviour. The one gap: a bare axiom-5
+  line-onto-line fold with no `moving` and no implied point (the direction comes
+  from `side_override` alone, so there is nothing to anchor a prefix to) still
+  falls back to every layer on the side — and that fallback set is now gated by
+  the same hinge-closure tear check.
 - **`up to <flap>`**: the contiguous range of flaps from the anchor through the
   target flap, **inclusive**, walked in the stack order **over the crease
   region** (depth may vary along a crease, so the walk compares only the
