@@ -248,17 +248,27 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
     color: var(--beloch-muted);
   }
   .pg-steps[hidden] { display: none; }
-  .pg-step-dots { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+  .pg-step-dots { display: inline-flex; flex-wrap: wrap; gap: 2px; }
   .pg-step-dot {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pg-step-dot::before {
+    content: "";
     width: 10px;
     height: 10px;
-    padding: 0;
     border-radius: 50%;
     border: 1px solid var(--beloch-border);
     background: transparent;
-    cursor: pointer;
   }
-  .pg-step-dot.is-active {
+  .pg-step-dot.is-active::before {
     background: var(--beloch-valley);
     border-color: var(--beloch-valley);
   }
