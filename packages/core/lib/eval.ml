@@ -392,7 +392,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
             Error.fail span
               (Printf.sprintf
                  "--%s is bent by a fold; select a segment with `at`, e.g. \
-                  --%s at #(.a .b .c)" name name))
+                  --%s at #[.a .b .c]" name name))
     | Material (cid, l_orig) -> (
         match Fold_state.crease_axis !(ctx.state) cid l_orig with
         | `Line l -> l
@@ -404,7 +404,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
             Error.fail span
               (Printf.sprintf
                  "--%s is no longer straight after folding; select a segment \
-                  with `at`, e.g. --%s at #(.a .b .c) or --%s at .p"
+                  with `at`, e.g. --%s at #[.a .b .c] or --%s at .p"
                  name name name))
   in
   (* a cross operand resolved to PAPER space: the one material line carrying
@@ -451,13 +451,13 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
             Error.fail span
               (Printf.sprintf
                  "--%s marks different lines on different layers; select a \
-                  segment with `at`, e.g. --%s at #(.a .b .c)"
+                  segment with `at`, e.g. --%s at #[.a .b .c]"
                  name name))
   in
   (* the unique FACE (the fine ADR-0014 partition, not a flap/coplanar
      cluster) whose paper polygon contains every point in [pts]. Unlike
      `moving`/`up to`'s flap operand (ADR 0017: coarsened to a coplanar
-     cluster so a still-flat neighbourhood is one flap), `at`'s `#(...)`
+     cluster so a still-flat neighbourhood is one flap), `at`'s `#[...]`
      incidence check and `collapse`'s `over`/`under` sector clause both need
      FACE precision even on a still-flat, multiply-precreased sheet: they
      disambiguate BETWEEN a crease bundle's own segments / a vertex's own
@@ -743,7 +743,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
                 Error.fail span
                   (Printf.sprintf
                      "%s lies on a crease shared by %d flaps; name the flap \
-                      with #(...)"
+                      with #[...]"
                      (fstr fa) (List.length ids))))
     | Ast.FlapSpec (Ast.FByPoints (pts, fspan)) ->
         flap_lookup_result fspan
@@ -786,7 +786,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
             | many ->
                 Error.fail span
                   (Printf.sprintf
-                     "%s touches %d flaps; add a point, e.g. #(.p)" (fstr fa)
+                     "%s touches %d flaps; add a point, e.g. #[.p]" (fstr fa)
                      (List.length many))))
   in
   (* face-precise resolution for collapse's `over`/`under`: a sector around a
@@ -805,7 +805,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
             Error.fail span
               (Printf.sprintf
                  "%s lies on a crease shared by %d flaps; name the flap with \
-                  #(...)"
+                  #[...]"
                  (fstr fa) (List.length many)))
     | Ast.FlapSpec (Ast.FByPoints (pts, fspan)) ->
         flap_lookup_result fspan
@@ -1510,11 +1510,11 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
         `Partial (Fold_state.MPoint pp, pp, paper_axis_via (faces_containing pp))
   in
   (* Behaviour 3: the flap (coplanar cluster, as its face list) a partial
-     mark's extent is written onto. An explicit #(...) layer wins (mirrors
+     mark's extent is written onto. An explicit #[...] layer wins (mirrors
      resolve_flap_cluster's FlapSpec branch); otherwise default to the
      carrying flap — the cluster containing the extent's representative
      paper point, erroring if that point sits on a boundary shared by several
-     flaps (ambiguous without a #(...) to disambiguate). *)
+     flaps (ambiguous without a #[...] to disambiguate). *)
   let resolve_mark_flap (layer_opt : Ast.flap_operand option)
       (rep : Geom.point) (span : Error.span) : int list =
     match layer_opt with
@@ -1538,7 +1538,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
                 Error.fail span
                   (Printf.sprintf
                      "the mark's endpoint lies on a crease shared by %d \
-                      flaps; name the flap with #(...)"
+                      flaps; name the flap with #[...]"
                      (List.length ids))))
   in
   let rec eval_stmt (stmt : Ast.stmt) =
@@ -1579,7 +1579,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
           bind_mark cid paper_axis
         in
         (* A full mark is the whole line clipped to its flap; it records as a
-           material chord (never subdivides). Resolve the flap (explicit #(...)
+           material chord (never subdivides). Resolve the flap (explicit #[...]
            wins; else the carrying flap of a rep point on the axis), then take
            the extreme endpoints of the per-face paper clips. *)
         let record_full ~prov cid table_axis =
@@ -1686,7 +1686,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
                   Error.fail span
                     (Printf.sprintf
                        "--%s is no longer straight after folding; select a \
-                        segment with `at`, e.g. --%s at #(.a .b .c)"
+                        segment with `at`, e.g. --%s at #[.a .b .c]"
                        cr.Ast.cname cr.Ast.cname)
             in
             let cid = Fold_state.fresh_crease_id () in

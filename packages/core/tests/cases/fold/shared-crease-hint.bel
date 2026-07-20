@@ -1,0 +1,9 @@
+paper square
+fold --v = map .b onto .a moving .b
+.p = --v * --cd
+
+; .p sits on the v-crease, shared by the stationary and folded-over flaps;
+; naming it as the `up to` target must suggest the correct bracket token.
+fold map .c onto .a moving .c up to .p
+
+; expect error "#["
