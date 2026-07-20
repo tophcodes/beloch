@@ -83,6 +83,10 @@
   "beloch:named_lines": {},
   "beloch:named_lines_frame": "creasePattern",
   "beloch:marks": [],
+  "beloch:statements": [
+    { "kind": "fold", "source_line": 3, "frame_index": 1, "mark": null },
+    { "kind": "fold", "source_line": 4, "frame_index": 2, "mark": null }
+  ],
   "file_frames": [
     {
       "frame_classes": [ "foldedForm" ],
