@@ -61,6 +61,7 @@ function statementsFrom(fold: Record<string, unknown>): Statement[] {
     sourceLine: s["source_line"] as number,
     frameIndex: s["frame_index"] as number,
     mark: s["mark"] ? markFrom(s["mark"] as Record<string, unknown>) : null,
+    keptMarks: ((s["kept_marks"] ?? []) as Record<string, unknown>[]).map(markFrom),
   }));
 }
 
