@@ -15,7 +15,15 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.23-dev** (**`flatten` generalizes `collapse`, one
+Current version: **v0.24-dev** (default fold scope — no `moving`/`up to` folds
+the **outside-contiguous prefix** of the layer order down to and including the
+anchor flap, not every layer on the anchor's side; a point on a crease shared
+by several flaps seeds the whole contiguous run; `moving` now names the
+**deepest** flap of that prefix; a bare axiom-5 line-onto-line fold with no
+`moving` and no implied point still falls back to the all-layers set;
+`up to` is unchanged as the interim way to fold past the anchor flap; see
+[`notes/2026-07-20-default-fold-scope.md`](../notes/2026-07-20-default-fold-scope.md));
+**v0.23-dev** (**`flatten` generalizes `collapse`, one
 solver pipeline, stayer convention** — single-vertex flat-folding is renamed
 `flatten`. Every statement runs one pipeline, no modes: `()` items state the
 rays (the shipped `&`/`\` selectors narrow a multi-segment crease when
@@ -578,8 +586,8 @@ since folding a line onto another needs no material crossing.
 | Ingredient | What | Source |
 | --- | --- | --- |
 | axis | the fold line | a motion, or an existing material crease (`fold --d` with no motion, below) |
-| anchor | the flap that starts the moving set | implied on map folds, or `moving` |
-| scope | which flaps move | default: all layers on the anchor's side; or `up to` |
+| anchor | the deepest flap of the moving prefix | implied on map folds, or `moving` |
+| scope | which flaps move | default: outside-contiguous prefix down to the anchor; or `up to` |
 | direction | valley/mountain | `mountain` keyword; default valley |
 
 **Anchor.** `moving` takes a **flap operand** (ADR 0016) — a point, a line, or
@@ -612,9 +620,20 @@ when its flap straddles the axis.
 
 **Scope.**
 
-- **No `up to`** (default): every layer on the anchor's side moves — the
-  all-layers simple fold, unchanged from before `up to` existed. Existing
-  examples keep their meaning.
+- **No `up to`** (default): *(since v0.24-dev)* the moving set is the
+  **outside-contiguous prefix** of the layer order over the crease region —
+  top for valley, bottom for mountain — down to **and including** the
+  flap(s) carrying the anchor operand. The anchor operand is `moving` when
+  present, or the implied source point on a map fold (`fold map .b onto .o`
+  → `.b`). It is *not* every layer on the anchor's side: deeper layers below
+  the anchor flap stay. A point on a crease shared by several flaps seeds
+  **all** of them (the whole contiguous run), so the tip you would physically
+  grab is a valid anchor. On a single-layer region (e.g. a first fold on flat
+  paper) the prefix is that one flap — identical to the pre-v0.24-dev
+  behaviour. The one gap: a bare axiom-5 line-onto-line fold with no `moving`
+  and no implied point (the direction comes from `side_override` alone, so
+  there is nothing to anchor a prefix to) still falls back to every layer on
+  the side.
 - **`up to <flap>`**: the contiguous range of flaps from the anchor through the
   target flap, **inclusive**, walked in the stack order **over the crease
   region** (depth may vary along a crease, so the walk compares only the
@@ -638,10 +657,13 @@ bottom for mountain. A **buried anchor** — a stationary flap covering it in th
 crease region — is an error regardless of how the end state looks (its material
 would pierce the covering layer mid-rotation): "a simple fold cannot move a
 buried flap: face *N* covers the anchor in the crease region — include the
-covering flap (anchor the fold there) or fold less." The all-layers default
-satisfies the prefix trivially. Motion outside the crease region is not
-checked — full motion validation is out of scope until an animatable (3D)
-viewer needs it.
+covering flap (anchor the fold there) or fold less." The default scope is
+itself an outer-contiguous prefix by construction (it grows outward from the
+anchor flap), so it satisfies the prefix rule; a genuine tear (the anchor
+flap hinged to a stationary layer off the axis) is caught by the same
+hinge-closure check the `up to` path uses. Motion outside the crease region
+is not checked — full motion validation is out of scope until an animatable
+(3D) viewer needs it.
 
 **Folded state.** The paper is a set of flat **faces** — each a convex polygon
 in paper coordinates plus a rigid isometry placing it on the table — carrying a
@@ -651,8 +673,10 @@ not a single bottom→top stack). A flat fold (±180°) keeps everything in the 
 plane, so the only "depth" is this per-overlap order. A simple fold reflects every
 layer in the moving set across the crease line (an exact reflection — no
 `sqrt`) and restacks: the moved layers, reversed, go on top (valley) or
-underneath (mountain). The default scope is every layer on the anchor's side —
-"fold through all layers" — automatic unless narrowed by `up to`.
+underneath (mountain). The default scope is the outside-contiguous prefix
+down to the anchor flap (see **Scope** above), not every layer on the
+anchor's side; `up to` widens it explicitly when a fold needs to reach
+deeper.
 
 **Derived mountain/valley.** Each crease's assignment is
 `valley XOR (the cutting face is back-up)`, fixed when the fold runs. Because
