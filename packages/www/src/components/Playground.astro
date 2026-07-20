@@ -503,10 +503,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       const clamped = Math.max(0, Math.min(i, n - 1));
       const stmt = currentStatements[clamped]!;
       try {
-        const activeMarks = currentStatements
-          .slice(0, clamped + 1)
-          .filter((s) => s.kind === "mark" && s.mark !== null)
-          .map((s) => s.mark!);
+        const activeMarks = stmt.keptMarks;
         const newestCreaseId = activeMarks.at(-1)?.creaseId;
         const svg = renderFolded(currentScene, {
           theme: WEB_THEME,
