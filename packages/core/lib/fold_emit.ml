@@ -81,19 +81,9 @@ let beloch_edges_json edges : Yojson.Safe.t =
    algorithms never see it (emit-only). Partial (mid-segment) graduation is
    deferred: a whole mark graduates or it does not. *)
 let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
-  let faces = Fold_state.faces st in
-  let material (p : Geom.point) =
-    Array.exists
-      (fun (f : Fold_state.face) -> Fold_state.point_on_polygon_boundary f p)
-      faces
-  in
-  let graduates (m : Fold_state.mark) =
-    match m.Fold_state.mgeom with
-    | Fold_state.MSeg (a, b) -> material a && material b
-    | Fold_state.MPoint _ -> false
-  in
   let grad, kept =
-    List.partition graduates (Array.to_list (Fold_state.marks st))
+    List.partition (Fold_state.mark_graduates st)
+      (Array.to_list (Fold_state.marks st))
   in
   let disp =
     List.fold_left

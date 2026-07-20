@@ -1304,6 +1304,19 @@ let point_on_polygon_boundary (poly : Geom.point array) (p : Geom.point) : bool
   in
   go 0
 
+(* Emit-time graduation test (design §3.6, packages/core/lib/fold_emit.ml's
+   cp_display): true when a seg mark's endpoints already sit on a face
+   boundary in this state's current topology — i.e. it's indistinguishable
+   from a real crease and should stop being drawn as a dangling record.
+   Point marks never graduate. *)
+let mark_graduates (st : t) (m : mark) : bool =
+  let material (p : Geom.point) =
+    Array.exists (fun f -> point_on_polygon_boundary f p) (faces st)
+  in
+  match m.mgeom with
+  | MSeg (a, b) -> material a && material b
+  | MPoint _ -> false
+
 (* The polygon edge (as its two vertices) of convex CCW [poly] that contains
    point [p], assumed to lie on the boundary. First match wins — at a vertex
    this picks one of the two incident edges arbitrarily, which is fine here:

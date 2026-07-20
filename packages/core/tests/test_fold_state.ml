@@ -997,6 +997,33 @@ let test_add_mark () =
   let g' = Fold_state.fold g ~axis:ax ~move_side:1 ~valley:true ~prov:None in
   Alcotest.(check int) "mark carried" 1 (Array.length (Fold_state.marks g'))
 
+(* mark_graduates: a corner-to-corner seg mark graduates immediately (both
+   endpoints are already face-boundary vertices on the flat single-face
+   sheet); an interior point mark never graduates. *)
+let test_mark_graduates () =
+  let corner_seg =
+    { Fold_state.mgeom = Fold_state.MSeg (gp 0 0, gp 1 1);
+      mline = { Geom.a = q 1; b = q (-1); c = q 0 };
+      mintent = Fold_state.V; mcrease_id = 0; mprov = None }
+  in
+  Alcotest.(check bool) "corner-to-corner seg graduates immediately" true
+    (Fold_state.mark_graduates Fold_state.init_square corner_seg);
+  let half = Num.div (q 1) (q 2) in
+  let interior_seg =
+    { Fold_state.mgeom = Fold_state.MSeg (gp 0 0, gph half half);
+      mline = { Geom.a = q 1; b = q (-1); c = q 0 };
+      mintent = Fold_state.V; mcrease_id = 1; mprov = None }
+  in
+  Alcotest.(check bool) "seg ending mid-face does not graduate" false
+    (Fold_state.mark_graduates Fold_state.init_square interior_seg);
+  let point =
+    { Fold_state.mgeom = Fold_state.MPoint (gp 0 0);
+      mline = { Geom.a = q 1; b = q (-1); c = q 0 };
+      mintent = Fold_state.V; mcrease_id = 2; mprov = None }
+  in
+  Alcotest.(check bool) "point marks never graduate" false
+    (Fold_state.mark_graduates Fold_state.init_square point)
+
 (* --- Plan 3b Task 1: crease queries --------------------------------------- *)
 
 (* build a precrease + fold state (was matched old/new states) *)
@@ -1453,7 +1480,8 @@ let () =
             test_fold_after_flip_parity;
           Alcotest.test_case "flip nontrivial base parity" `Quick
             test_flip_nontrivial_base_parity;
-          Alcotest.test_case "add_mark" `Quick test_add_mark ] );
+          Alcotest.test_case "add_mark" `Quick test_add_mark;
+          Alcotest.test_case "mark_graduates" `Quick test_mark_graduates ] );
       ( "task6-parity-battery",
         [ Alcotest.test_case "cross-op battery" `Quick test_battery;
           Alcotest.test_case "mark then fold then mark_axis_current" `Quick

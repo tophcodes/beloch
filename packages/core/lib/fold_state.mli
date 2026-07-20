@@ -394,6 +394,11 @@ val point_on_polygon_boundary : Geom.point array -> Geom.point -> bool
 (** True iff point [p] lies on some edge (endpoints included) of convex CCW
     [poly]. *)
 
+val mark_graduates : t -> mark -> bool
+(** Emit-time graduation test: true when a seg mark's endpoints already sit
+    on a face boundary in this state's current topology. Point marks never
+    graduate. *)
+
 type mark_class =
   | CSubdivide of Geom.point * Geom.point
   | CRecord of mark_geom
