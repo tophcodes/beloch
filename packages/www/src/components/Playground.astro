@@ -18,12 +18,17 @@ interface Props {
   // the same build-time path `<Beloch>` uses). Optional — default behavior
   // (the "Run drücken" notice) is unchanged when absent.
   seed?: string;
+  // The FOLD JSON `seed` was rendered from (JSON.stringify'd). Optional — when
+  // present, the client parses it directly (parseFold + render-svg only, no
+  // wasm) on mount to populate the scrubber immediately, without waiting for
+  // a Run click or the eval Worker's wasm boot.
+  seedFold?: string;
   // When true, defer creating the eval Worker (and the 5.7 MB wasm module it
   // pulls) until the user actually clicks Run, instead of on mount. Optional
   // — default is today's eager boot.
   lazy?: boolean;
 }
-const { code = "", height = 320, seed, lazy = false } = Astro.props;
+const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
 ---
 
 <div
@@ -33,6 +38,7 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
 >
   <div class="pg-pane pg-editor">
     <div class="pg-source"><template class="pg-source-seed">{code}</template></div>
+    {seedFold ? <script type="application/json" class="pg-seed-fold" set:html={seedFold} /> : null}
   </div>
   <div class="pg-pane pg-output">
     <div class="pg-toolbar pg-toolbar-output">
@@ -526,6 +532,26 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
       handler();
     }
 
+    // Parses+renders an already-computed FOLD document (from the eval Worker,
+    // or a build-time seed) — pure @beloch/scene + @beloch/render-svg, no
+    // wasm involved. Shared by the worker-response path and the seed-fold
+    // bootstrap below, so both build the scrubber the same way.
+    function applyFold(fold: unknown) {
+      try {
+        const scene = parseFold(fold as object);
+        if (scene.statements.length > 0) {
+          currentScene = scene;
+          currentStatements = scene.statements;
+          buildStepsUI(scene.statements);
+          renderStep(scene.statements.length - 1);
+        } else {
+          showSvg(renderCP(scene, { theme: WEB_THEME }).toString());
+        }
+      } catch (err) {
+        showError(`Render-Fehler: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+
     function renderResult(raw: string) {
       clearStepsUI();
       let parsed: { ok: boolean; fold?: unknown; kind?: string; message?: string };
@@ -536,19 +562,7 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
         return;
       }
       if (parsed.ok) {
-        try {
-          const scene = parseFold(parsed.fold as object);
-          if (scene.statements.length > 0) {
-            currentScene = scene;
-            currentStatements = scene.statements;
-            buildStepsUI(scene.statements);
-            renderStep(scene.statements.length - 1);
-          } else {
-            showSvg(renderCP(scene, { theme: WEB_THEME }).toString());
-          }
-        } catch (err) {
-          showError(`Render-Fehler: ${err instanceof Error ? err.message : String(err)}`);
-        }
+        applyFold(parsed.fold);
         return;
       }
       if (parsed.kind === "native") {
@@ -602,6 +616,21 @@ const { code = "", height = 320, seed, lazy = false } = Astro.props;
       }, TIMEOUT_MS);
 
       worker!.postMessage(codeToRun);
+    }
+
+    // If a seed FOLD was embedded at build time, parse+render it right away
+    // — no wasm, no Run click, works even while the eval Worker hasn't
+    // (and for `lazy` instances, won't yet) booted. Wraps the pre-rendered
+    // SSR `seed` SVG with a live scene, so scrubbing works immediately.
+    const seedFoldTag = root.querySelector<HTMLScriptElement>("script.pg-seed-fold");
+    const seedFoldRaw = seedFoldTag?.textContent?.trim() ?? "";
+    if (seedFoldRaw) {
+      try {
+        applyFold(JSON.parse(seedFoldRaw));
+      } catch {
+        // Build-time-trusted JSON; a parse failure here is a build bug, not
+        // a user error — leave the SSR seed SVG showing rather than error.
+      }
     }
 
     runBtn.addEventListener("click", run);

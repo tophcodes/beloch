@@ -27,6 +27,7 @@ flatten (--ea & .a) (--ec & .c) (--eb & .b) {toward .a}`;
 const fold = evalBelToFold(HERO_SRC);
 const scene = parseFold(fold as object);
 const heroSvg = renderFolded(scene, { theme: WEB_THEME }).toString();
+const heroFoldJson = JSON.stringify(fold);
 
 const FISH_BASE_SRC = `paper square
 
@@ -113,7 +114,7 @@ const NAV_LINKS = [
           Describe a sheet and the creases you want; Beloch works out the exact
           geometry — right here in your browser.
         </p>
-        <Playground lazy seed={heroSvg} code={HERO_SRC} height={380} />
+        <Playground lazy seed={heroSvg} seedFold={heroFoldJson} code={HERO_SRC} height={380} />
       </section>
 
       <section class="examples" aria-label="Examples">
