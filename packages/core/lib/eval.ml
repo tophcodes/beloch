@@ -1100,6 +1100,15 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
       ~(side_override : int option) ~(crease_id : int)
       ~(prov : State.provenance option)
       ~(check : ((int -> bool) -> unit) option) : unit =
+    (* A degenerate fold: the crease is a supporting line of the convex paper —
+       collinear with a boundary edge, or tangent at a single corner (zero-length
+       crease). Either way one open half-plane holds no material, so there is no
+       second flap to reflect. Structurally impossible (issue #39), an error, not
+       a no-op. `line_cuts_paper` is false iff no face is strictly cut. *)
+    if not (Fold_state.line_cuts_paper !(ctx.state) axis) then
+      Error.fail span
+        "this fold is degenerate — the crease line lies along the edge of the \
+         paper and does not separate it into two flaps to reflect";
     (* [side_override] fixes the moving side (axiom-5 derived direction), so the
        anchor is only needed to scope an `up to` range *)
     let anchor_arg =
