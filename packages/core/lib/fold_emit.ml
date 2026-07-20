@@ -274,6 +274,7 @@ let beloch_statements_json (statements : Eval.stmt_log_entry list) : Yojson.Safe
                  | Eval.SMark -> "mark") );
              ("source_line", `Int (fst s.Eval.sl_span).Lexing.pos_lnum);
              ("frame_index", `Int s.Eval.sl_frame_index);
+             ("kept_marks", `List (List.map mark_json s.Eval.sl_kept));
            ]
          in
          match s.Eval.sl_mark with

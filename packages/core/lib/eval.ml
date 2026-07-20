@@ -24,6 +24,14 @@ type stmt_log_entry = {
          independent of whether it later graduates into a real crease (which
          only happens at some LATER fold statement, or never). None for
          [SFold]. *)
+  sl_kept : Fold_state.mark list;
+      (* marks still dangling (not yet graduated into a real crease) as of
+         immediately after this statement. [SMark] inherits the previous
+         statement's [sl_kept] and appends its own new mark, unchecked — the
+         backdrop frame is fixed and strictly predates this mark, so
+         graduation cannot apply yet. [SFold] recomputes fresh via
+         [Fold_state.mark_graduates] against the just-folded state. See
+         docs/superpowers/specs/2026-07-20-per-statement-mark-graduation-design.md. *)
 }
 
 type folded = {
@@ -315,9 +323,15 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
     ctx.pending <- false;
     (match span with
     | Some sp ->
+        let st = !(ctx.state) in
+        let kept =
+          Array.to_list (Fold_state.marks st)
+          |> List.filter (fun m -> not (Fold_state.mark_graduates st m))
+        in
         ctx.statements_rev <-
           { sl_kind = SFold; sl_span = sp;
-            sl_frame_index = List.length ctx.frames_rev; sl_mark = None }
+            sl_frame_index = List.length ctx.frames_rev; sl_mark = None;
+            sl_kept = kept }
           :: ctx.statements_rev
     | None -> ())
   in
@@ -1475,9 +1489,15 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
               mcrease_id = cid; mprov = prov }
           in
           ctx.state := Fold_state.add_mark !(ctx.state) m;
+          let prior_kept =
+            match ctx.statements_rev with
+            | prev :: _ -> prev.sl_kept
+            | [] -> []
+          in
           ctx.statements_rev <-
             { sl_kind = SMark; sl_span = span;
-              sl_frame_index = List.length ctx.frames_rev; sl_mark = Some m }
+              sl_frame_index = List.length ctx.frames_rev; sl_mark = Some m;
+              sl_kept = prior_kept @ [ m ] }
             :: ctx.statements_rev;
           bind_mark cid paper_axis
         in
