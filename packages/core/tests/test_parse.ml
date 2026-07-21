@@ -286,10 +286,6 @@ let test_parse_def_in_def_rejected () =
       Beloch.parse ~filename:"t.bel"
         "paper square\ndef a() {\n  def b() {\n  }\n}\n")
 
-let test_parse_step_in_body_rejected () =
-  expect_error "syntax error" (fun () ->
-      Beloch.parse ~filename:"t.bel" "paper square\ndef a() {\n  step x\n}\n")
-
 let test_parse_kebab_rejected () =
   expect_error "unexpected character" (fun () ->
       Beloch.parse ~filename:"t.bel"
@@ -333,13 +329,6 @@ let test_parse_export_kind_mismatch_rename () =
   expect_error "keep the kind" (fun () ->
       Beloch.parse ~filename:"t.bel"
         "paper square\nexport { .m as --m2 } $t\n")
-
-(* ---- Step ---- *)
-
-let test_parse_step_marker () =
-  match Beloch.parse ~filename:"t.bel" "paper square\nstep thirds\nflip\n" with
-  | [ Ast.StepMark ("thirds", _); Ast.Flip _ ] -> ()
-  | _ -> Alcotest.fail "expected StepMark then Flip"
 
 let test_parse_at_one_selector () =
   let prog =
@@ -419,12 +408,12 @@ let spec_corpus =
       "paper square\nexport { .tip --pq } $t\n\
        export { .tip as .left_tip } $t\nexport { .s! } $t\nexport $t\n" );
     ( "07_panels",
-      "paper square\nstep thirds\n._mb = --vm * --ab\n\
-       --pq = through ._pq1 ._pq2\n\nstep beloch_fold\n\
+      "paper square\n._mb = --vm * --ab\n\
+       --pq = through ._pq1 ._pq2\n\
        fold map .c onto --ab and .s onto --pq\n" );
     ( "08_cube_root",
-      "paper square\n\nstep vertical_middle\n--vm = map .a onto .b\n\n\
-       step thirds\n._mb  = --vm * --ab\n._mt  = --vm * --cd\n\
+      "paper square\n\n--vm = map .a onto .b\n\n\
+       ._mb  = --vm * --ab\n._mt  = --vm * --cd\n\
        --ac = through .a .c\n--db = through .d .b\n\
        --d_mb = through .d ._mb\n--a_mt = through .a ._mt\n\
        --c_mb = through .c ._mb\n--b_mt = through .b ._mt\n\
@@ -432,14 +421,14 @@ let spec_corpus =
        ._pq2 = --a_mt * --db\n--pq  = through ._pq1 ._pq2\n\
        ._rs1 = --c_mb * --db\n\
        ._rs2 = --b_mt * --ac\n--rs  = through ._rs1 ._rs2\n\
-       .s    = --rs * --cd\n\nstep beloch_fold\n\
+       .s    = --rs * --cd\n\n\
        fold map .c onto --ab and .s onto --pq\n" );
     ( "09_petal_full",
       "paper square\n\ndef petal(.p .q --base) {\n\
       \  fold map .p onto .q moving .p\n\
       \  .tip = .p * .q * --base\n\
-       }\n\nstep petal_folds\n$left  = apply petal(.a .c .b * .d)\n\
-       $right = apply petal(.b .d .a * .c)\n\nstep join\n\
+       }\n\n$left  = apply petal(.a .c .b * .d)\n\
+       $right = apply petal(.b .d .a * .c)\n\n\
        export { .tip as .lefttip } $left\n\
        export { .tip as .righttip } $right\n\
        fold map .lefttip onto .righttip\n" );
@@ -917,7 +906,6 @@ let () =
           Alcotest.test_case "parse def" `Quick test_parse_def;
           Alcotest.test_case "parse def zero params" `Quick test_parse_def_zero_params;
           Alcotest.test_case "parse def in def rejected" `Quick test_parse_def_in_def_rejected;
-          Alcotest.test_case "parse step in body rejected" `Quick test_parse_step_in_body_rejected;
           Alcotest.test_case "parse kebab rejected" `Quick test_parse_kebab_rejected;
           Alcotest.test_case "at operator, one selector" `Quick
             test_parse_at_one_selector;
@@ -989,10 +977,6 @@ let () =
           Alcotest.test_case "join .a * .b" `Quick test_parse_join_star;
           Alcotest.test_case "& binds tighter than *" `Quick
             test_parse_filter_binds_before_meet;
-        ] );
-      ( "step",
-        [
-          Alcotest.test_case "step marker" `Quick test_parse_step_marker;
         ] );
       ( "spec_corpus",
         [

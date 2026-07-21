@@ -9,7 +9,6 @@ paper square
 mark --v = map .a onto .b     ; x = 1/2: spine, also the fold's symmetry axis
 .m = --v * --cd               ; apex (1/2, 1)
 
-step precrease
 mark --_am = through .a .m    ; scaffolding — incenter only locates the hinge height
 mark --_bm = through .b .m
 mark --_ba = map --ab onto --_am
@@ -22,7 +21,6 @@ mark --lowerh = perp --bc through .lowerp   ; a height off the incenter, not a b
 mark --ba = through .a .[--bc --lowerh]     ; hinge from a, free height (not through .o)
 mark --bb = through .b .[--da --lowerh]     ; hinge from b, same free height
 
-step ear
 ; only THREE of the four rays at the hinge vertex are given (the away rays of
 ; --ba, --bb, and the downward ray of the spine --v); flat-foldability forces
 ; the fourth — the emergent "ear" crease, a mountain at ~320° from the vertex

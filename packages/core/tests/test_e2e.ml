@@ -614,15 +614,14 @@ let test_bind_bundle_roundtrip () =
   Alcotest.(check bool) "bound bundle == inline" true
     (q_axis inline = q_axis bound)
 
-(* #42: one self-contained foldedForm frame per step snapshot, baseline
-   included, each step-tagged. *)
+(* #42: one self-contained foldedForm frame per numeric frame, flat baseline
+   included. Frames are unlabelled — the retired `step` keyword no longer tags
+   them (beloch:step is gone). *)
 let test_multiframe () =
   let src =
     "paper square\n\
-     step a\n\
-     mark --v = map .a onto .b\n\
-     step b\n\
-     mark map .d onto .c\n"
+     fold map .c onto .a moving .c\n\
+     fold map .b onto .a moving .b\n"
   in
   let json = Beloch.fold_string ~filename:"t" src in
   let frames =
@@ -630,14 +629,14 @@ let test_multiframe () =
     | `Assoc kv -> (match List.assoc "file_frames" kv with `List l -> l | _ -> [])
     | _ -> []
   in
-  Alcotest.(check int) "flat step 0 + one folded frame per step (baseline+a+b)" 4
+  Alcotest.(check int) "flat baseline + one folded frame per fold" 3
     (List.length frames);
-  let step_of = function
-    | `Assoc kv -> (match List.assoc "beloch:step" kv with `String s -> Some s | _ -> None)
-    | _ -> None
+  let has_step_key = function
+    | `Assoc kv -> List.mem_assoc "beloch:step" kv
+    | _ -> false
   in
-  Alcotest.(check (list (option string))) "frame step tags"
-    [ None; None; Some "a"; Some "b" ] (List.map step_of frames)
+  Alcotest.(check bool) "no frame carries a beloch:step tag" false
+    (List.exists has_step_key frames)
 
 (* Statement-level sourcemap for the Playground step player: one
    beloch:statements entry per mark/fold statement, each mark embedding its

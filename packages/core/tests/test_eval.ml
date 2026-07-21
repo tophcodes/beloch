@@ -906,45 +906,6 @@ let test_eval_member_line_access () =
   Alcotest.(check bool) "point x exists" true
     (mem_assoc3 "x" fd.Eval.named_points)
 
-let prov_steps (fd : Eval.folded) =
-  prov_of fd |> List.filter_map (fun (p : State.provenance) -> p.State.step)
-
-let test_eval_panel_tags_creases () =
-  let fd =
-    eval_src
-      "step first\nmark --x = through .a .c\nstep second\nmark --y = through .b .d\n"
-  in
-  Alcotest.(check bool) "first tagged" true (List.mem "first" (prov_steps fd));
-  Alcotest.(check bool) "second tagged" true
-    (List.mem "second" (prov_steps fd))
-
-(* one crease stmt can yield several records (one per crossed face) — assert tag partition, not counts *)
-let test_eval_before_first_panel_untagged () =
-  let fd = eval_src "mark --x = through .a .c\nstep p\nmark --y = through .b .d\n" in
-  let tagged = prov_steps fd in
-  Alcotest.(check bool) "all tagged with p" true
-    (tagged <> [] && List.for_all (fun s -> s = "p") tagged);
-  let untagged =
-    Array.to_list (Fold_state.marks fd.Eval.state)
-    |> List.filter (fun (m : Fold_state.mark) ->
-           match m.Fold_state.mprov with
-           | Some p -> p.State.step = None
-           | None -> true)
-  in
-  Alcotest.(check bool) "some untagged (before first step)" true
-    (untagged <> [])
-
-let test_eval_dup_panel_error () =
-  expect_error "already used" (fun () -> eval_src "step a\nstep a\n")
-
-let test_eval_apply_folds_land_in_panel () =
-  let fd =
-    eval_src
-      "def d(.p .q) {\n  mark --l = through .p .q\n}\n\
-       step body\n$i = apply d(.a .c)\n"
-  in
-  Alcotest.(check bool) "tagged body" true (List.mem "body" (prov_steps fd))
-
 let test_eval_member_undefined_instance () =
   expect_error "undefined instance" (fun () -> eval_src "export $ghost\n")
 
@@ -978,33 +939,11 @@ let test_eval_export_rename () =
   Alcotest.(check bool) "m not landed" true
     (not (mem_assoc3 "m" fd.Eval.named_points))
 
-(* A renamed export is the SAME geometric object as its source member: it
-   must carry the source's own creation step, not default to 0. Prepend a
-   `step` marker (bumps frames_rev via push_frame without touching any
-   geometry, unlike a real fold — which would collapse two of def_d's three
-   corner arguments together in table-space) so def_d's internal `.m` binds
-   at a non-zero, distinguishable step, then check the exported-renamed
-   `.mid` reports that same step, not a fresh/defaulted one. *)
-let test_eval_export_rename_step () =
-  let fd = eval_src ("step s1\n" ^ def_d ^ "export { .m as .mid } $i\n") in
-  match List.find_opt (fun (k, _, _) -> k = "mid") fd.Eval.named_points with
-  | Some (_, _, step) ->
-      Alcotest.(check int) "mid carries source m's creation step" 1 step
-  | None -> Alcotest.fail "mid not found in named_points"
-
-(* A def body binding a name already used at top level (`.m`) must NOT
-   corrupt the outer/top-level binding's already-recorded step: the def
-   body's `.m` lives in its own (discarded, unexported) scope. `.m` is NOT
-   exported from `$i` here, so the top-level `.m` (bound at step 0, before
-   any step marker) must still read back as step 0 even though def_d's own
-   internal `.m` binds at step 1 inside its own, separate body scope. *)
-let test_eval_def_local_name_reuse_step () =
-  let fd = eval_src (".m = --ab * --bc\n" ^ "step s1\n" ^ def_d) in
-  match List.find_opt (fun (k, _, _) -> k = "m") fd.Eval.named_points with
-  | Some (_, _, step) ->
-      Alcotest.(check int)
-        "outer .m's step unaffected by def-local .m reuse" 0 step
-  | None -> Alcotest.fail "m not found in named_points"
+(* Creation-step provenance of exported/renamed names and def-local name reuse
+   is covered by the construct/*-step.bel cases (named-step, same-stem-point-
+   line-step, same-stem-export-step), which advance the creation step with a
+   real fold. The former OCaml tests here relied on the retired `step` keyword
+   as a geometry-free frame bump, which no longer exists. *)
 
 let test_eval_export_collision_needs_bang () =
   expect_error "use ! to shadow" (fun () ->
@@ -1299,25 +1238,6 @@ let test_ax5_up_to_needs_moving () =
    corner `toward` targets (including derived bisector lines as l1/l2): no
    combination reached this branch. *)
 
-let test_step_frames () =
-  let src =
-    "paper square\n\
-     step a\n\
-     mark --v = map .a onto .b\n\
-     step b\n\
-     mark map .d onto .c\n"
-  in
-  let prog = Beloch.parse ~filename:"t" src in
-  let fd = Beloch.Eval.eval_folded prog in
-  let tags = List.map (fun (s, _, _) -> s) fd.Beloch.Eval.frames in
-  (* baseline (None) + step a + step b — step markers push their own frames,
-     the trailing mark rides the conditional final push *)
-  Alcotest.(check (list (option string))) "step tags"
-    [ None; Some "a"; Some "b" ] tags;
-  (* last frame state is the final state *)
-  let _, last_state, _ = List.nth fd.frames (List.length fd.frames - 1) in
-  Alcotest.(check bool) "last frame is final" true (last_state == fd.state)
-
 (* the join selector --[.a .b] finds the same bottom edge as the prelude --ab *)
 let test_select_edge () =
   let base = "paper square\nmark --v = map .a onto .b\n" in
@@ -1606,10 +1526,6 @@ let () =
             test_eval_export_selective;
           Alcotest.test_case "export all" `Quick test_eval_export_all;
           Alcotest.test_case "export rename" `Quick test_eval_export_rename;
-          Alcotest.test_case "export rename carries source step" `Quick
-            test_eval_export_rename_step;
-          Alcotest.test_case "def-local name reuse doesn't corrupt outer step"
-            `Quick test_eval_def_local_name_reuse_step;
           Alcotest.test_case "export collision needs bang" `Quick
             test_eval_export_collision_needs_bang;
           Alcotest.test_case "export bang shadows" `Quick
@@ -1622,15 +1538,6 @@ let () =
             test_eval_export_all_collision;
           Alcotest.test_case "export temp target" `Quick
             test_eval_export_temp_target;
-          Alcotest.test_case "panel tags creases" `Quick
-            test_eval_panel_tags_creases;
-          Alcotest.test_case "before first panel untagged" `Quick
-            test_eval_before_first_panel_untagged;
-          Alcotest.test_case "dup panel error" `Quick
-            test_eval_dup_panel_error;
-          Alcotest.test_case "apply folds land in panel" `Quick
-            test_eval_apply_folds_land_in_panel;
-          Alcotest.test_case "step frames" `Quick test_step_frames;
           Alcotest.test_case "up to = anchor: top flap only" `Quick
             test_eval_up_to_top_flap;
           Alcotest.test_case "default corner anchor tears (v0.24-dev)" `Quick
