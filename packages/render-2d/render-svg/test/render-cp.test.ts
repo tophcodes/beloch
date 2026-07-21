@@ -21,8 +21,6 @@ test("bisect-a CP: faces, colored creases, named constructions, legend", async (
   // all since the notation-cutover rewrite to mark/fold, commit 818ed9e).
   expect(s).toContain('data-name="v"');
   expect(s).toContain('class="crease-V"');
-  // named crease "v" has no step provenance -> null step serializes as data-step=""
-  expect(s).toContain('data-step=""');
   // crease label text --v, corner labels .a
   expect(s).toContain(">--v</text>");
   expect(s).toContain(">.a</text>");

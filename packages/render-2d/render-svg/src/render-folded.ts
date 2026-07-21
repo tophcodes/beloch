@@ -10,7 +10,7 @@ import type { RenderOptions } from "./render-cp";
 export interface FoldedOptions extends RenderOptions {
   view?: "top" | "bottom";     // default "top"
   hidden?: "dashed" | "hide";  // default "hide"
-  step?: string;               // beloch:step label; undefined/unmatched → final state
+  step?: string;               // frame index (numeric string); undefined/out-of-range → final state
   markOverlay?: MarkOverlay;   // project these marks onto the step's faces (newest highlighted)
 }
 

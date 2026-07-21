@@ -161,7 +161,6 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
         if (!faces.length) return;
         const assignment = A[i]!;
         const name = prov[i]?.name;
-        const edgeStep = prov[i]?.step || "";
         const a0 = V[e[0]]!, b0 = V[e[1]]!;
         // Paper edges keep their bold solid style; other silhouette edges (folded
         // creases now on the outline) also go solid black, just a touch lighter;
@@ -192,7 +191,6 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
           const attrs: Record<string, string | number> = {
             class: `crease-${assignment}`,
             "data-kind": "crease",
-            "data-step": edgeStep,
             x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
             stroke: style.stroke, "stroke-width": style.strokeWidth, "stroke-linecap": "round",
           };
@@ -213,7 +211,6 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
             const attrs: Record<string, string | number> = {
               class: `crease-${assignment}`,
               "data-kind": "crease",
-              "data-step": edgeStep,
               "data-occluded": "true",
               x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
               stroke, "stroke-width": dashWgt, "stroke-dasharray": dash, "stroke-linecap": "round",
@@ -245,7 +242,6 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
           creases.children.push(el("line", {
             class: "crease-U",
             "data-kind": "crease",
-            "data-step": "",
             x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
             stroke: theme.unassigned, "stroke-width": 2, "stroke-linecap": "round",
           }));
@@ -257,7 +253,6 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
             dashedLines.push(el("line", {
               class: "crease-U",
               "data-kind": "crease",
-              "data-step": "",
               "data-occluded": "true",
               x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
               stroke: "#94a3b8", "stroke-width": 1.2, "stroke-dasharray": "4 3", "stroke-linecap": "round",
@@ -425,13 +420,11 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       E.forEach(([a, b], i) => {
         if (!showCrease(i)) return;
         const assignment = A[i]!;
-        const step = prov[i]?.step ?? "";
         const name = prov[i]?.name;
         const style = theme.lineStyle(assignment, theme);
         const attrs: Record<string, string | number> = {
           class: `crease-${assignment}`,
           "data-kind": "crease",
-          "data-step": step,
           x1: tx(V[a]![0]), y1: ty(V[a]![1]),
           x2: tx(V[b]![0]), y2: ty(V[b]![1]),
           stroke: style.stroke,
