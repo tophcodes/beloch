@@ -29,7 +29,7 @@
         { "match": "\\b(paper)\\b", "name": "keyword.control.paper.beloch" },
         { "match": "\\b(square)\\b", "name": "constant.language.shape.beloch" },
         { "match": "\\b(apply|export|as)\\b", "name": "keyword.control.import.beloch" },
-        { "match": "\\b(def|step)\\b", "name": "storage.type.beloch" }
+        { "match": "\\b(def)\\b", "name": "storage.type.beloch" }
       ]
     },
     "openers": {
@@ -55,13 +55,6 @@
           "captures": {
             "1": { "name": "storage.type.beloch" },
             "2": { "name": "entity.name.function.beloch" }
-          }
-        },
-        {
-          "match": "\\b(step)\\s+([A-Za-z0-9_]+)",
-          "captures": {
-            "1": { "name": "storage.type.beloch" },
-            "2": { "name": "entity.name.section.beloch" }
           }
         }
       ]
