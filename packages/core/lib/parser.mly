@@ -95,8 +95,9 @@ body_stmt:
       { mk_flatten (Some $1) $4 $loc }
 
 markable:
-  | axiom        { MMotion $1 }
-  | line_operand { MLine $1 }
+  | axiom               { MMotion $1 }
+  | LPAREN axiom RPAREN { MMotion $2 }  (* parens purely syntactic grouping *)
+  | line_operand        { MLine $1 }
 
 params:
   | { [] }

@@ -66,6 +66,25 @@ let test_parse_perp () =
       ()
   | _ -> Alcotest.fail "unexpected AST shape for perp"
 
+let test_parse_parenthesized_axiom () =
+  (* parenthesising an axiom is purely syntactic: same AST as the bare form *)
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\nmark (map .a onto .b) at .c\n"
+  in
+  match prog with
+  | [
+   Ast.Mark
+     ( None,
+       Ast.MMotion (Ast.MapPoints _),
+       Ast.At (Ast.PNamed { name = "c"; _ }),
+       Ast.Valley,
+       None,
+       _ );
+  ] ->
+      ()
+  | _ -> Alcotest.fail "unexpected AST shape for parenthesized axiom"
+
 let test_parse_map_onto_line () =
   let prog =
     Beloch.parse ~filename:"t.bel"
@@ -876,6 +895,8 @@ let () =
             test_parse_named_and_anon;
           Alcotest.test_case "syntax error" `Quick test_parse_syntax_error;
           Alcotest.test_case "perp parses" `Quick test_parse_perp;
+          Alcotest.test_case "parenthesized axiom parses" `Quick
+            test_parse_parenthesized_axiom;
           Alcotest.test_case "bisect parses" `Quick test_parse_bisect;
           Alcotest.test_case "fold action parses" `Quick test_parse_fold_action;
           Alcotest.test_case "fold valley default" `Quick
