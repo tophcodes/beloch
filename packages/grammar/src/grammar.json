@@ -119,10 +119,6 @@
         },
         {
           "type": "STRING",
-          "value": "step"
-        },
-        {
-          "type": "STRING",
           "value": "through"
         },
         {

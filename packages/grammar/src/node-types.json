@@ -227,10 +227,6 @@
     "named": false
   },
   {
-    "type": "step",
-    "named": false
-  },
-  {
     "type": "through",
     "named": false
   },
