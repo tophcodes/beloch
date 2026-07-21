@@ -1,0 +1,5 @@
+paper square
+--diag = through .a .c
+.m = free on --diag from .a
+; assert .m = (1/2, 1/2)
+; assert .m incident --diag

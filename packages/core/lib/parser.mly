@@ -44,11 +44,13 @@ let mk_flatten (name : string option) (items : collapse_item list)
 %token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD MOVING MOUNTAIN VALLEY FLIP RPAREN AND UP TO FOLD_KW
 %token DEF APPLY EXPORT AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
 %token FLATTEN OVER STAYING MARK BETWEEN AT
+%token FREE ON FROM
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN  (* --[ / .[ : the line/point select openers *)
 %token <string> POINT
 %token <string> CREASE
 %token <string> INSTANCE
 %token <string> IDENT
+%token <Q.t> NUMBER
 
 %start <Ast.program> program
 
@@ -171,6 +173,12 @@ point_ref:
 point_expr:
   | line_operand STAR line_operand                { PsExpr (PSelect ([ $1; $3 ], $loc)) }
   | POINT_MEMBER_OPEN line_operand_list RBRACKET  { PsExpr (PSelect ($2, $loc)) }
+  | FREE ON line_operand FROM point_operand at_frac_opt
+      { PsFree { line = $3; anchor = $5; t = $6; span = $loc } }
+
+at_frac_opt:
+  |           { None }
+  | AT NUMBER { Some (Num.of_q $2) }
 
 point_operand:
   | point_ref { PNamed $1 }

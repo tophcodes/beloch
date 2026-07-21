@@ -5,6 +5,7 @@ open Parser
 
 let id_char = [%sedlex.regexp? 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_']
 let id = [%sedlex.regexp? Plus id_char]
+let number = [%sedlex.regexp? Plus '0' .. '9', Opt ('/', Plus '0' .. '9')]
 
 let rec token (buf : Sedlexing.lexbuf) : token =
   match%sedlex buf with
@@ -35,6 +36,10 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "between" -> BETWEEN
   | "at" -> AT
   | "as" -> AS
+  | "free" -> FREE
+  | "on" -> ON
+  | "from" -> FROM
+  | number -> NUMBER (Q.of_string (Sedlexing.Utf8.lexeme buf))
   | '=' -> EQ
   | '!' -> BANG
   | '{' -> LBRACE

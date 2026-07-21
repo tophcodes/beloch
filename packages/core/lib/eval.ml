@@ -1748,6 +1748,42 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
             push_frame (Some span))
     | Ast.Point (n, Ast.PsExpr po, span) ->
         bind_point ctx n span (resolve_point po)
+    | Ast.Point (n, Ast.PsFree { line; anchor; t; span }, _) ->
+        (* a bare value-bound line (`--l = through .a .b`, unmarked) has no
+           material of its own; `free on` treats it as backed by the whole
+           paper square rather than raising paper_line_of_crease's Frozen
+           "no material mark to cross" error (that guard is for `*`/meet,
+           which does require a physical mark; a free point does not). *)
+        let l, chords_opt =
+          match line with
+          | Ast.LNamed cr -> (
+              match lookup_crease ctx cr with
+              | Frozen fl -> (fl, None)
+              | Bundle expr -> resolve_paper_line expr
+              | cv -> paper_line_of_crease ~name:cr.Ast.cname cr.Ast.cspan cv)
+          | _ -> resolve_paper_line line
+        in
+        let p0raw, p1raw =
+          match chords_opt with
+          | None -> (
+              match Geom.clip_to_unit_square l with
+              | Some (a, b) -> (a, b)
+              | None -> Error.fail span "the line does not cross the paper")
+          | Some _ ->
+              Error.fail span "free on a material line: not yet implemented"
+              (* Task 3 replaces this branch *)
+        in
+        let ax = resolve_point anchor in
+        (* orient: t=0 at the anchor endpoint *)
+        let e0, e1 =
+          if Geom.point_equal ax p0raw then (p0raw, p1raw)
+          else if Geom.point_equal ax p1raw then (p1raw, p0raw)
+          else Error.fail span "the anchor is not an endpoint of the line's material"
+        in
+        let tv = match t with Some v -> v | None -> Num.div Num.one (Num.of_int 2) in
+        let px = Num.add e0.Geom.x (Num.mul tv (Num.sub e1.Geom.x e0.Geom.x)) in
+        let py = Num.add e0.Geom.y (Num.mul tv (Num.sub e1.Geom.y e0.Geom.y)) in
+        bind_point ctx n span { Geom.x = px; y = py }
     | Ast.Flip _ ->
         ctx.state := Fold_state.flip !(ctx.state);
         ctx.pending <- true
