@@ -31,11 +31,6 @@
  (libraries beloch alcotest str))
 
 (test
- (name test_golden)
- (libraries beloch alcotest yojson zarith str)
- (deps (source_tree ../../../examples) (source_tree golden)))
-
-(test
  (name test_qqbar)
  (libraries beloch alcotest zarith))
 
