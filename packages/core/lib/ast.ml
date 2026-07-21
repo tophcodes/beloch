@@ -96,6 +96,15 @@ type collapse_elem = { cline : line_operand; cdir : mv_constraint }
 
 type point_expr =
   | PsExpr of point_operand (* the `.name = …` binding RHS: a meet/select/named point *)
+  | PsFree of {
+      line : line_operand;
+      anchor : point_operand;
+      t : Num.t option;
+      span : Error.span;
+    }
+    (* `free on --l from .x [at <frac>]`: a point at fractional distance t
+       (default 1/2) along the line's material chord, measured from the
+       anchor endpoint. *)
 
 (* a thing that can be creased/folded: a fresh motion, or an existing line *)
 type markable =
