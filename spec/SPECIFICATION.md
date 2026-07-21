@@ -73,7 +73,7 @@ syntax the evaluator does not yet implement; **notation cutover** — reads are
 operators (meet `*`, filter `&`, drop `\`, union `[]`, the incident-to-all
 selectors `.[] --[] #[]`), the one write was the keyword `through`; see
 [`docs/superpowers/specs/2026-07-08-notation-by-state-change-design.md`](../docs/superpowers/specs/2026-07-08-notation-by-state-change-design.md));
-**v0.19-dev** (material crossings live in paper space, on the marks; no table-space point values; axiom 5 `toward` is a fold direction, not a sector, with a paper-incidence filter for the omitted case and a derived `moving`); **v0.18-dev** (fold scope — flap-typed `moving`, `up to` for some-layers simple folds, `@fold` along material creases); **v0.17-dev** (crease-segment selection — the `&` filter: a crease name is a bundle, projected to one segment by incidence); **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`, `step` panels; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
+**v0.19-dev** (material crossings live in paper space, on the marks; no table-space point values; axiom 5 `toward` is a fold direction, not a sector, with a paper-incidence filter for the omitted case and a derived `moving`); **v0.18-dev** (fold scope — flap-typed `moving`, `up to` for some-layers simple folds, `@fold` along material creases); **v0.17-dev** (crease-segment selection — the `&` filter: a crease name is a bundle, projected to one segment by incidence); **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
 
 ---
 
@@ -1334,15 +1334,13 @@ sigil.
 
 ---
 
-## 5a. Defs, instances, steps *(since v0.16-dev)*
+## 5a. Defs, instances *(since v0.16-dev)*
 
-Four constructs extend program structure beyond flat top-to-bottom bindings.
+Three constructs extend program structure beyond flat top-to-bottom bindings.
 They share **one evaluation path**: `def` never runs (it only records a
 deferred body); `apply` is the *only* execution form — it folds immediately
 and yields a retained instance; `export` only reads from an instance, never
-re-runs anything; `step` is display metadata with no execution effect at all.
-Full design rationale is in
-[`docs/superpowers/specs/2026-07-02-step-macros-design.md`](../docs/superpowers/specs/2026-07-02-step-macros-design.md).
+re-runs anything.
 
 ### 5a.1 Temp names: `_`
 
@@ -1378,7 +1376,7 @@ def petal(.p .q --base) {
   a body that needs a corner takes it as a parameter. Because a body only
   sees earlier defs, recursion is structurally impossible.
 - Allowed body statements: bindings, fold/construction actions, `flip`,
-  `apply`, `export`. Not allowed inside a body: `def`, `step`.
+  `apply`, `export`. Not allowed inside a body: `def`.
 - The body never runs at `def` time — only `apply` runs it (§5a.3).
 
 ### 5a.3 `apply` and instances
@@ -1445,30 +1443,9 @@ export $t                            ; all non-temp members
   ("nothing to shadow, remove `!`"). Shadow validation applies only to
   non-temp landing names: exporting onto a temp target (`export { .m as ._t }
   $i`) rebinds it freely and needs no `!`, since temps are single-scope and
-  rebindable (§5a.1, §5a.7). Temps remain barred as export *sources*.
+  rebindable (§5a.1, §5a.6). Temps remain barred as export *sources*.
 
-### 5a.6 `step` — diagram panels
-
-```
-step thirds
-._mb = --vm * --ab
---pq = through ._pq1 ._pq2
-
-step beloch_fold
-fold map .c onto --ab and .s onto --pq
-```
-
-- `step ident` opens a display panel that runs until the next `step` or end
-  of file; actions before the first `step` are flat/ungrouped, as before
-  v0.16-dev.
-- The identifier binds nothing — zero namespace footprint. It is a stable
-  anchor for the FOLD `"step"` provenance field (§7) and for future
-  instruction-JSON / i18n label output; duplicate panel identifiers are an
-  error.
-- Top level only (not allowed inside a `def` body). Folds produced by an
-  `apply` land in whichever panel is open at the `apply` site.
-
-### 5a.7 Rebinding rules
+### 5a.6 Rebinding rules
 
 One invariant, uniform across root scope, `def` bodies, and `export`
 landings: **a name without a `_` prefix is bound at most once per scope.**
@@ -1478,7 +1455,6 @@ landings: **a name without a `_` prefix is bound at most once per scope.**
 | non-temp name bound twice in the same scope (root or `def` body) | error |
 | rebinding a corner `.a`–`.d` at root | error |
 | `def` name reused | error |
-| `step` panel id reused | error |
 | `export` lands an existing name without `!` | error |
 | `export` lands `!` onto a name that doesn't exist | error |
 | `._x = …` (temp) bound more than once | OK — temps are rebindable (§5a.1) |
@@ -1561,11 +1537,8 @@ internal edge is a crease.
   **qualified name** — `--pq` bound inside `$p1 = apply …` is named `"p1.pq"`,
   collision-free across repeated `apply`s of the same `def`. `"name"` is
   `null` for creases bound to a `_`-temp (§5a.1) and for creases produced by a
-  naked (unbound) `apply`. *(since v0.16-dev)* Each entry also carries
-  **`"step"`** — the identifier of the `step` panel (§5a.6) open when the
-  crease was produced, or `null` if it precedes the first `step` in the
-  program. Additive: stock FOLD consumers ignore both fields; `render/render-svg`
-  uses `"name"` to colour/label creases.
+  naked (unbound) `apply`. Additive: stock FOLD consumers ignore the field;
+  `render/render-svg` uses `"name"` to colour/label creases.
 - `beloch:marks` — custom property *(since v0.22-dev)* carrying the
   **non-subdividing record marks** (§4.6) that a `between`/`at` extent ending
   mid-face produces — reference/pinch creases that are not part of
@@ -1577,14 +1550,13 @@ internal edge is a crease.
   draws `seg` entries as a thin dashed reference line and `point` entries as a
   short tick along `"line"`, both visually distinct from live `F`/`M`/`V` edges.
 
-**`file_frames` — one `foldedForm` frame per `step` panel snapshot**
-*(since v0.16-dev)*: a baseline frame (`"beloch:step": null`) for the state
-before the first `step` (or the final state, for a program with no `step`
-panels at all), followed by one frame per `step` (§5a.6), in program order.
-Each frame is **self-contained** (`frame_parent: 0`, `frame_inherit: false`)
-rather than inheriting the parent's topology — an earlier step's state has
-fewer faces than the final crease pattern, so it cannot share the parent's
-vertex/face indexing. Each frame carries its own:
+**`file_frames` — one `foldedForm` frame per fold**: a flat baseline frame for
+the unfolded sheet, followed by one frame per fold/collapse action, in program
+order (the numeric folding sequence). Each frame is **self-contained**
+(`frame_parent: 0`, `frame_inherit: false`) rather than inheriting the parent's
+topology — an earlier frame's state has fewer faces than the final crease
+pattern, so it cannot share the parent's vertex/face indexing. Each frame
+carries its own:
 
 - `vertices_coords` — this state's vertices in **table** (folded) coordinates:
   each face's paper polygon through its isometry. Flat folds stay in the plane,
@@ -1598,15 +1570,14 @@ vertex/face indexing. Each frame carries its own:
   footprints **overlap**; `s = +1` if `f` is above `g` (toward `g`'s normal),
   `−1` below ([[foldformat]](#ref-foldformat) §"Layer information"). Emitted only
   for overlapping pairs (empty when nothing overlaps, e.g. a flat program).
-- `"beloch:step"` — the step identifier this frame snapshots, or `null` for the
-  baseline frame. A consumer can map a crease to the frame(s) it appears in via
-  `beloch:edges[].step` (§ above) against each frame's `"beloch:step"`.
+- `"beloch:source_line"` — the 1-based source line of the fold that produced
+  this frame, or `null` for the baseline frame; a statement-level source map
+  for a folding-diagram player.
 
 The top-level frame (frame 0) is always the final, cumulative crease pattern —
-it does not change with the number of `step` panels. A program with no `step`
-panels emits exactly one folded-form frame (`"beloch:step": null`), matching
-the pre-v0.16-dev dual-frame shape except that the frame is now self-contained
-rather than `frame_inherit: true`.
+it does not change with the number of frames. A program with no folds emits
+exactly one folded-form frame (the flat baseline), self-contained rather than
+`frame_inherit: true`.
 
 The renderer/animation client is a separate consumer; `render/render-svg` draws
 frame 0 by default and a folded form with `--folded`.
@@ -1649,7 +1620,7 @@ The Menhir grammar is authoritative once written; this sketch is a guide.
 ```
 program       := "paper" "square" stmt*
 stmt          := crease_stmt | point_stmt | flip_stmt | flatten_stmt
-              | def_stmt | instance_stmt | apply_stmt | export_stmt | step_stmt   ; since v0.16-dev
+              | def_stmt | instance_stmt | apply_stmt | export_stmt          ; since v0.16-dev
 crease_stmt   := CREASE_NAME "=" axiom                            ; a read — binds a line value, scores nothing
                | "mark" markable                                  ; crease flat (anonymous motion, or an existing line, since v0.21-dev)
                | "mark" CREASE_NAME "=" axiom                      ; crease flat, named (since v0.21-dev)
@@ -1699,12 +1670,11 @@ over_flap     := point_operand | "#[" point_operand+ "]"
 ; since v0.16-dev — §5a
 def_stmt      := "def" ident "(" param* ")" "{" body_stmt* "}"
 param         := POINT_NAME | CREASE_NAME
-body_stmt     := stmt minus ( def_stmt | step_stmt )
+body_stmt     := stmt minus ( def_stmt )
 instance_stmt := INSTANCE_NAME "=" "apply" ident "(" operand* ")"
 apply_stmt    := "apply" ident "(" operand* ")"
 export_stmt   := "export" ( "{" export_entry+ "}" )? INSTANCE_NAME
 export_entry  := ( POINT_NAME | CREASE_NAME ) "!"? ( "as" ( POINT_NAME | CREASE_NAME ) )?
-step_stmt     := "step" ident
 ```
 
 A motion (`through`/`map`/`perp`) is a pure read: it computes a line but
@@ -1768,7 +1738,7 @@ crease coordinates compared exactly (§6). *(v0.16-dev)*
 `def`/`apply`/instances with closed-scope bodies; `export` with shadow/rename
 validation (cross-instance access; the earlier bracket member access was
 removed in the v0.20-dev notation cutover, §5a.4);
-`step` diagram panels; the uniform rebinding rule (see §5, §5a). *(v0.17-dev)*
+the uniform rebinding rule (see §5, §5a). *(v0.17-dev)*
 crease-segment selection — the `&` filter, projecting a crease name (a
 bundle of segments) to one segment by incidence (ADR 0014). *(v0.18-dev)* fold
 scope — flap-typed `moving` (point/line/`#[...]` anchor operands, ADR 0016),
