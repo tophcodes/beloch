@@ -41,7 +41,6 @@ test("parses fold-quarter: foldedForm step inherits root fields", async () => {
   // the fully-folded state (both folds applied) is the LAST frame; its edge
   // list matches the root creasePattern
   const step = scene.steps[scene.steps.length - 1]!;
-  expect(step.label).toBeNull();
   // frame has own vertices + faceOrders; edges_assignment merged from root
   expect(step.frame.faceOrders.length).toBeGreaterThan(0);
   expect(step.frame.edgesAssignment).toEqual(scene.cp.edgesAssignment);
@@ -79,7 +78,7 @@ test("pickStep: no label falls back to last step", async () => {
   expect(pickStep(scene)).toBe(scene.steps[scene.steps.length - 1]);
 });
 
-test("pickStep: unmatched label throws StepNotFoundError listing named steps", async () => {
+test("pickStep: unmatched (non-numeric) label throws StepNotFoundError", async () => {
   const scene = parseFold(await golden("cube-root.fold"));
   expect(() => pickStep(scene, "no-such-step")).toThrow(StepNotFoundError);
   try {
@@ -88,8 +87,7 @@ test("pickStep: unmatched label throws StepNotFoundError listing named steps", a
   } catch (err) {
     expect(err).toBeInstanceOf(StepNotFoundError);
     expect((err as Error).message).toBe(
-      "step 'no-such-step' not found — 5 step(s) available. " +
-        "named steps are vertical_middle (2), thirds (3), beloch_fold (4)",
+      "step index 'no-such-step' not found — 5 frame(s) available",
     );
   }
 });
@@ -97,9 +95,9 @@ test("pickStep: unmatched label throws StepNotFoundError listing named steps", a
 test("pickStep: numeric label selects by 0-based ordinal", async () => {
   const scene = parseFold(await golden("cube-root.fold"));
   // step 0 is the flat sheet, step k the k-th fold
-  expect(pickStep(scene, "0")!.label).toBeNull();
-  expect(pickStep(scene, "1")!.label).toBeNull();
-  expect(pickStep(scene, "2")!.label).toBe("vertical_middle");
+  expect(pickStep(scene, "0")!.index).toBe(0);
+  expect(pickStep(scene, "1")!.index).toBe(1);
+  expect(pickStep(scene, "2")!.index).toBe(2);
 });
 
 test("pickStep: out-of-range ordinal throws StepNotFoundError", async () => {
@@ -107,26 +105,19 @@ test("pickStep: out-of-range ordinal throws StepNotFoundError", async () => {
   expect(() => pickStep(scene, "10")).toThrow(StepNotFoundError);
 });
 
-test("StepNotFoundError.render: no named steps omits the list", () => {
-  expect(StepNotFoundError.render("x", [{ index: 0, label: null }], (s) => s)).toBe(
-    "step 'x' not found — 1 step(s) available",
+test("StepNotFoundError.render: reports the requested label and available frame count", () => {
+  expect(StepNotFoundError.render("x", 1)).toBe(
+    "step index 'x' not found — 1 frame(s) available",
+  );
+  expect(StepNotFoundError.render("x", 5)).toBe(
+    "step index 'x' not found — 5 frame(s) available",
   );
 });
 
-test("StepNotFoundError.render: applies the given style to names only", () => {
-  const available = [{ index: 0, label: null }, { index: 1, label: "a" }];
-  const styled = StepNotFoundError.render("x", available, (s) => `[${s}]`);
-  expect(styled).toBe("step 'x' not found — 2 step(s) available. named steps are [a] (1)");
-});
-
-test("multi-step file keeps file order and labels", async () => {
+test("multi-step file keeps file order", async () => {
   const scene = parseFold(await golden("cube-root.fold"));
   expect(scene.steps.length).toBe(5);
-  expect(scene.steps.map((s) => s.label)).toEqual([
-    null, null, "vertical_middle", "thirds", "beloch_fold",
-  ]);
-  // flat step 0 + first fold are unlabelled; "thirds" is file_frames position 3
-  expect(pickStep(scene, "thirds")!.index).toBe(3);
+  expect(pickStep(scene, "3")!.index).toBe(3);
   // indices strictly increasing (file order preserved)
   const idx = scene.steps.map((s) => s.index);
   expect([...idx].sort((a, b) => a - b)).toEqual(idx);

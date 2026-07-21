@@ -67,7 +67,7 @@ test("fold-occlude dashed golden snapshot", async () => {
 
 test("step option selects an intermediate folded state", async () => {
   const scene = parseFold(await golden("cube-root.fold"));
-  const mid = renderFolded(scene, { step: "vertical_middle" }).toString();
+  const mid = renderFolded(scene, { step: "2" }).toString();
   const fin = renderFolded(scene).toString();
   expect(mid).not.toBe(fin);
 });
@@ -93,8 +93,10 @@ test("explicit --labels renders the named point in folded view", async () => {
 // the `lineToFace` unit.
 test("--pq (pure-value, non-crease named line) clips into folded faces across --step frames", async () => {
   const scene = parseFold(await golden("cube-root.fold"));
-  for (const step of ["vertical_middle", "thirds", "beloch_fold"]) {
-    const found = scene.steps.find((s) => s.label === step);
+  // 0-based frame indices for cube-root.fold's three named foldedForm steps
+  // (vertical_middle, thirds, beloch_fold), in file order.
+  for (const step of ["2", "3", "4"]) {
+    const found = scene.steps[Number(step)];
     expect(found).toBeDefined();
     const { frame } = found!;
 

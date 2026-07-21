@@ -55,7 +55,7 @@ test("CLI: --legend adds the legend panel", async () => {
   expect(withLegend).toContain('class="legend-panel"');
 });
 
-test("CLI: unmatched --step exits 1 with the available named steps", async () => {
+test("CLI: unmatched --step exits 1 with the available frame count", async () => {
   const p = Bun.spawn(
     ["bun", CLI, CUBE_ROOT, "--view", "folded", "--step", "no-such-step"],
     { stderr: "pipe" },
@@ -63,7 +63,6 @@ test("CLI: unmatched --step exits 1 with the available named steps", async () =>
   const err = await new Response(p.stderr).text();
   expect(await p.exited).toBe(1);
   expect(err).toBe(
-    "beloch-render: step 'no-such-step' not found — 5 step(s) available. " +
-      "named steps are vertical_middle (2), thirds (3), beloch_fold (4)\n",
+    "beloch-render: step index 'no-such-step' not found — 5 frame(s) available\n",
   );
 });

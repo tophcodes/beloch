@@ -77,7 +77,6 @@ export function parseFold(input: string | object): FoldScene {
       const merged = { ...fold, ...f }; // foldedForm overrides root (fold2svg semantics)
       return {
         index,
-        label: (f["beloch:step"] ?? null) as string | null,
         sourceLine: (f["beloch:source_line"] ?? null) as number | null,
         frame: frameFrom(merged),
       };
@@ -98,15 +97,10 @@ export function parseFold(input: string | object): FoldScene {
 
 export function pickStep(scene: FoldScene, label?: string): Step | undefined {
   if (label === undefined) return scene.steps[scene.steps.length - 1];
-  const byName = scene.steps.find((s) => s.label === label);
-  if (byName) return byName;
   if (/^\d+$/.test(label)) {
     // 0-based: step 0 is the flat starting sheet, step k the k-th fold.
     const idx = Number(label);
     if (idx >= 0 && idx < scene.steps.length) return scene.steps[idx];
   }
-  throw new StepNotFoundError(
-    label,
-    scene.steps.map((s, i) => ({ index: i, label: s.label })),
-  );
+  throw new StepNotFoundError(label, scene.steps.length);
 }

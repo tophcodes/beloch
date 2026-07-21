@@ -9,7 +9,6 @@ export interface EdgeProvenance {                            // one beloch:edges
   sources: string[];
   span: string | null;
   name: string | null;                                       // crease name (bundle) this edge belongs to
-  step: string | null;                                       // step-macro label
 }
 
 export interface Frame {
@@ -25,7 +24,6 @@ export interface Frame {
 
 export interface Step {
   index: number;                                             // position in file_frames
-  label: string | null;                                      // beloch:step
   sourceLine: number | null;                                 // beloch:source_line
   frame: Frame;                                              // self-contained (merged over root)
 }
@@ -83,23 +81,12 @@ export class SceneError extends Error {}
 export class StepNotFoundError extends SceneError {
   constructor(
     readonly label: string,
-    readonly available: { index: number; label: string | null }[],
+    readonly available: number,
   ) {
-    super(StepNotFoundError.render(label, available, (s) => s));
+    super(StepNotFoundError.render(label, available));
   }
 
-  static render(
-    label: string,
-    available: { index: number; label: string | null }[],
-    style: (s: string) => string,
-  ): string {
-    const named = available
-      .filter((s) => s.label !== null)
-      .map((s) => `${style(s.label!)} (${s.index})`)
-      .join(", ");
-    return (
-      `step '${label}' not found — ${available.length} step(s) available` +
-      (named ? `. named steps are ${named}` : "")
-    );
+  static render(label: string, available: number): string {
+    return `step index '${label}' not found — ${available} frame(s) available`;
   }
 }
