@@ -123,7 +123,6 @@ type stmt =
          Apply (None, ...) = naked apply *)
   | Export of export_entry list option * string * Error.span
       (* None = export-all; the string is the instance name *)
-  | StepMark of string * Error.span
   | Flatten of string option * collapse_elem list * (flap_arg * flap_arg) list
                 * flap_arg option * point_operand option * Error.span
       (* [--r =] flatten <items>: single-vertex multi-crease fold, ONE solver

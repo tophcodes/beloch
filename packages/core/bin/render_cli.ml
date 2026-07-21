@@ -34,13 +34,6 @@ what gets rendered:
   --flip                    view the folded state from the other side
                             (ignored/no-op with --view cp)
 
-step selection (--view folded only):
-  --step NAME|N             NAME = a declared `step <name>` label from the
-                            .bel source; N = 1-based ordinal position among
-                            declared steps. Default: last step (final
-                            folded state). Errors if NAME/N doesn't exist,
-                            listing the named steps that do.
-
 labels (named points/lines):
   --labels a,b,c            draw these named points/lines as labelled overlay
                             (comma-separated). Draws exactly what's named,
@@ -63,5 +56,5 @@ examples:
   beloch render kite.bel
   beloch render kite.bel --view folded out.png
   beloch render kite.bel --view folded --flip out.png
-  beloch render kite.bel --view folded --step precrease --open
+  beloch render kite.bel --view folded --open
 |}

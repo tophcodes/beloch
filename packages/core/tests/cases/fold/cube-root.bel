@@ -1,9 +1,7 @@
 paper square
 
-step vertical_middle
 mark --vm = map .a onto .b                ; vertical midline x=1/2 (axiom 2)
 
-step thirds
 ._mb = --vm * --ab                   ; (1/2, 0)
 ._mt = --vm * --cd                   ; (1/2, 1)
 mark --ac   = through .a .c               ; landmark diagonal
@@ -20,7 +18,6 @@ mark --b_mt = through .b ._mt             ; landmark
 mark --rs = through ._rs1 ._rs2           ; right third line RS : x = 2/3
 .s    = --rs * --cd                  ; S = (2/3, 1), top of RS
 
-step beloch_fold
 fold map .c onto --ab and .s onto --pq   ; fold C onto AB, S onto PQ → AC/CB = ∛2
 
 ; neither landing is assertable in v1: `incident` always resolves against
@@ -31,4 +28,4 @@ fold map .c onto --ab and .s onto --pq   ; fold C onto AB, S onto PQ → AC/CB =
 ; axiom7 tag and the no-temp-points invariant are covered externally by
 ; test_e2e_cube_root / test_e2e_cube_root_temps_hidden (kept, repointed here)
 ; assert faces = 2
-; assert steps = 4
+; assert steps = 1

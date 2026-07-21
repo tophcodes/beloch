@@ -28,7 +28,6 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "def" -> DEF
   | "apply" -> APPLY
   | "export" -> EXPORT
-  | "step" -> STEP
   | "flatten" -> FLATTEN
   | "over" -> OVER
   | "staying" -> STAYING

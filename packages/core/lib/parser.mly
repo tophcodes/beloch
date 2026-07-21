@@ -42,7 +42,7 @@ let mk_flatten (name : string option) (items : collapse_item list)
 %}
 
 %token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD MOVING MOUNTAIN VALLEY FLIP RPAREN AND UP TO FOLD_KW
-%token DEF APPLY EXPORT STEP AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
+%token DEF APPLY EXPORT AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
 %token FLATTEN OVER STAYING MARK BETWEEN AT
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN  (* --[ / .[ : the line/point select openers *)
 %token <string> POINT
@@ -65,7 +65,6 @@ stmt:
   | body_stmt  { $1 }
   | DEF IDENT LPAREN params RPAREN LBRACE body_stmts RBRACE
       { Def ($2, $4, $7, $loc) }
-  | STEP IDENT { StepMark ($2, $loc) }
 
 body_stmts:
   | { [] }

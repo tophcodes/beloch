@@ -44,7 +44,7 @@ type folded = {
       (* crease id per name for [Material]/[Mark] creases — the identity the
          line coefficients in [named_lines] lose (a folded crease's current
          line can coincide with another crease's line) *)
-  frames : (string option * Fold_state.t * Error.span option) list;
+  frames : (Fold_state.t * Error.span option) list;
   statements : stmt_log_entry list;
 }
 
@@ -131,9 +131,7 @@ type ctx = {
   mutable next_def_idx : int;
   defs : (string, int * Ast.param list * Ast.stmt list) Hashtbl.t;
   state : Fold_state.t ref;
-  mutable panel : string option;
-  panels : (string, unit) Hashtbl.t;
-  mutable frames_rev : (string option * Fold_state.t * Error.span option) list;
+  mutable frames_rev : (Fold_state.t * Error.span option) list;
   mutable statements_rev : stmt_log_entry list;
   mutable pending : bool;
       (* true when the current state hasn't been captured in a frame yet;
@@ -217,9 +215,7 @@ type snapshot = {
   s_name_ctx : name_ctx;
   s_cur_def_idx : int option;
   s_next_def_idx : int;
-  s_panel : string option;
-  s_panels : (string, unit) Hashtbl.t;
-  s_frames_rev : (string option * Fold_state.t * Error.span option) list;
+  s_frames_rev : (Fold_state.t * Error.span option) list;
   s_statements_rev : stmt_log_entry list;
   s_pending : bool;
   s_state : Fold_state.t;
@@ -255,8 +251,6 @@ let snapshot (ctx : ctx) : snapshot =
         s_name_ctx = ctx.name_ctx;
         s_cur_def_idx = ctx.cur_def_idx;
         s_next_def_idx = ctx.next_def_idx;
-        s_panel = ctx.panel;
-        s_panels = Hashtbl.copy ctx.panels;
         s_frames_rev = ctx.frames_rev;
         s_statements_rev = ctx.statements_rev;
         s_pending = ctx.pending;
@@ -288,8 +282,6 @@ let restore (ctx : ctx) (s : snapshot) : unit =
       ctx.name_ctx <- s.s_name_ctx;
       ctx.cur_def_idx <- s.s_cur_def_idx;
       ctx.next_def_idx <- s.s_next_def_idx;
-      ctx.panel <- s.s_panel;
-      restore_tbl ctx.panels s.s_panels;
       ctx.frames_rev <- s.s_frames_rev;
       ctx.statements_rev <- s.s_statements_rev;
       ctx.pending <- s.s_pending;
@@ -312,14 +304,12 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
     next_def_idx = 0;
     defs = Hashtbl.create 4;
     state  = ref Fold_state.init_square;
-    panel = None;
-    panels = Hashtbl.create 4;
     frames_rev = [];
     statements_rev = [];
     pending = true;
   } in
   let push_frame (span : Error.span option) =
-    ctx.frames_rev <- (ctx.panel, !(ctx.state), span) :: ctx.frames_rev;
+    ctx.frames_rev <- (!(ctx.state), span) :: ctx.frames_rev;
     ctx.pending <- false;
     (match span with
     | Some sp ->
@@ -520,7 +510,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
         let cid = Fold_state.fresh_crease_id () in
         let prov : State.provenance option =
           Some { State.axiom = "mark"; sources = [ "--" ^ cr.Ast.cname ];
-                 span = cr.Ast.cspan; name = None; step = ctx.panel }
+                 span = cr.Ast.cspan; name = None }
         in
         ctx.state :=
           Fold_state.subdivide_paper !(ctx.state) line ~crease_id:cid ~prov;
@@ -1451,7 +1441,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
               (axis, "axiom5", p.sources, so)
         in
         let prov : State.provenance option =
-          Some { State.axiom; sources; span; name = prov_name; step = ctx.panel }
+          Some { State.axiom; sources; span; name = prov_name }
         in
         let implied =
           match ax with
@@ -1701,7 +1691,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
             let cid = Fold_state.fresh_crease_id () in
             let prov : State.provenance option =
               Some { State.axiom = "fold"; sources = [ "--" ^ cr.Ast.cname ];
-                     span; name = None; step = ctx.panel }
+                     span; name = None }
             in
             run_fold ~span ~axis ~fs ~implied:None ~side_override:None
               ~crease_id:cid ~prov;
@@ -1751,7 +1741,6 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
                   sources = [ lstr lo ];
                   span;
                   name = None;
-                  step = ctx.panel;
                 }
             in
             run_fold_checked ~span ~axis ~fs ~implied:None ~side_override:None
@@ -1931,21 +1920,6 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
             Hashtbl.iter
               (fun k _ -> land_name ~kind:`Line ~shadow:false ~espan:span k k)
               inst.ilines)
-    | Ast.StepMark (id, span) ->
-        if Hashtbl.mem ctx.panels id then
-          Error.fail span (Printf.sprintf "step id %s is already used" id);
-        Hashtbl.replace ctx.panels id ();
-        (* a step marker snapshots the crease-pattern built up so far (precrease
-           stages between which nothing folds). Push with the CURRENT panel
-           FIRST so the snapshot carries the prior label, THEN switch the active
-           label. A step marker has no single fold line → source_line None. *)
-        push_frame None;
-        (* the marker OPENS a new labeled step whose own end-state isn't captured
-           yet; flag pending so the final push captures it (e.g. def-diagonals'
-           trailing `centre` step, which only binds points/exports after the
-           marker). A trailing fold/collapse clears pending again → no dup. *)
-        ctx.pending <- true;
-        ctx.panel <- Some id
     | Ast.Flatten (name_opt, elems, overs, staying_opt, toward_opt, span) ->
         (* materialize every collapse crease FIRST (a mark subdivides on
            segment-selection), so all of them cross and the shared collapse
@@ -2085,8 +2059,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
         let odd = n_given mod 2 = 1 in
         let prov : State.provenance option =
           Some
-            { State.axiom = "flatten"; sources = []; span; name = None;
-              step = ctx.panel }
+            { State.axiom = "flatten"; sources = []; span; name = None }
         in
         (* pre-mint the emergent crease id ONCE (odd case only — the even
            case never materializes anything), so every candidate's probe
@@ -2649,7 +2622,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
     |> List.sort (fun (a, _) (b, _) -> String.compare a b)
   in
   if ctx.pending then
-    ctx.frames_rev <- (ctx.panel, !(ctx.state), None) :: ctx.frames_rev;
+    ctx.frames_rev <- (!(ctx.state), None) :: ctx.frames_rev;
   let frames = List.rev ctx.frames_rev in
   let statements = List.rev ctx.statements_rev in
   { state = !(ctx.state); named_points; named_lines; named_line_cids; frames; statements }

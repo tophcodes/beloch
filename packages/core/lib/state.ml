@@ -6,5 +6,4 @@ type provenance = {
   sources : string list;
   span : Error.span;
   name : string option;
-  step : string option;
 }

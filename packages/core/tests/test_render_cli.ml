@@ -65,7 +65,6 @@ let test_render_help_mentions_flags () =
       "--view cp|folded";
       "--flip";
       "--legend";
-      "--step NAME|N";
       "--labels";
       "--format svg|png";
       "--width";

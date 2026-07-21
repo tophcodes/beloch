@@ -64,10 +64,6 @@ let beloch_edges_json edges : Yojson.Safe.t =
                    match pr.State.name with
                    | Some n -> `String n
                    | None -> `Null );
-                 ( "step",
-                   match pr.State.step with
-                   | Some s -> `String s
-                   | None -> `Null );
                ])
        edges)
 
@@ -102,7 +98,7 @@ let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
    this state's faces (earlier steps have fewer faces than the final CP, so the
    frame cannot inherit the parent's vertex/face set — frame_inherit is false). *)
 let folded_frame_of_state (named_points : (string * Geom.point) list)
-    (state : Fold_state.t) (step : string option)
+    (state : Fold_state.t)
     (span : Error.span option) : Yojson.Safe.t =
   (* graduate marks into flat (F) creases for the folded diagram too, so a
      scored precrease shows in the folded frame; emit-only, like the CP frame *)
@@ -246,7 +242,6 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
       ("faces_vertices", `List faces_vertices);
       ("beloch:faces_matrix", `List beloch_faces_matrix);
       ("faceOrders", `List (List.rev !face_orders));
-      ("beloch:step", (match step with Some s -> `String s | None -> `Null));
       ("beloch:source_line",
         (match span with
         | Some (start, _) -> `Int start.Lexing.pos_lnum
@@ -415,9 +410,9 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
            Eval.frames, which excludes it). *)
         `List
           (folded_frame_of_state named_points_2 Fold_state.init_square
-             None None
+             None
           :: List.map
-               (fun (step, st, span) ->
-                 folded_frame_of_state named_points_2 st step span)
+               (fun (st, span) ->
+                 folded_frame_of_state named_points_2 st span)
                fd.Eval.frames) );
     ]

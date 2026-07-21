@@ -23,7 +23,6 @@ paper square
 mark --diag = map .a onto .c
 mark --ray = through .a .c
 
-step left
 mark --l1 = map --ab onto --diag
 mark --l2 = map --da onto --diag
 flatten (--l1) (--l2) (--ray) {toward .b}

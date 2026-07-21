@@ -185,7 +185,6 @@ let rabbit_ear_derive_src =
   "paper square\n\
    mark --v = map .a onto .b\n\
    .m = --v * --cd\n\
-   step precrease\n\
    mark --am = through .a .m\n\
    mark --bm = through .b .m\n\
    mark --ba = map --ab onto --am\n\
@@ -286,7 +285,6 @@ let fish_base_src toward =
     "paper square\n\
      mark --diag = map .a onto .c\n\
      mark --ray = through .a .c\n\
-     step left\n\
      mark --l1 = map --ab onto --diag\n\
      mark --l2 = map --da onto --diag\n\
      flatten (--l1 & .b) (--l2 & .d) (--ray & .a) {toward %s}\n" toward
@@ -362,7 +360,6 @@ let swivel_rabbit_src =
   "paper square\n\
    mark --v = map .a onto .b\n\
    .m = --v * --cd\n\
-   step precrease\n\
    mark --_am = through .a .m\n\
    mark --_bm = through .b .m\n\
    mark --_ba = map --ab onto --_am\n\
@@ -372,7 +369,6 @@ let swivel_rabbit_src =
    mark --lowerh = perp --bc through .lowerp\n\
    mark --ba = through .a .[--bc --lowerh]\n\
    mark --bb = through .b .[--da --lowerh]\n\
-   step ear\n\
    --ear = flatten (--ba \\ .a) (--bb \\ .b) (--v \\ .m) {toward .c}\n"
 
 let test_flatten_derive_in_bounds () =
