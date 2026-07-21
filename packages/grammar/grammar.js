@@ -37,7 +37,7 @@ module.exports = grammar({
     // statement verbs, clause words, and axiom names — see lib/lexer.ml
     keyword: _ => choice(
       'paper', 'square',
-      'mark', 'fold', 'collapse', 'flip', 'def', 'apply', 'export', 'step',
+      'mark', 'fold', 'collapse', 'flip', 'def', 'apply', 'export',
       'through', 'map', 'onto', 'perp', 'toward',
       'and', 'moving', 'up', 'to', 'mountain', 'over', 'standing',
       'between', 'at', 'as',
@@ -63,7 +63,7 @@ module.exports = grammar({
     // plain grouping/structural punctuation
     punct: _ => choice('{', '}', '(', ')', '[', ']'),
 
-    // bare identifiers: def/apply/step names
+    // bare identifiers: def/apply names
     identifier: _ => /[A-Za-z0-9_]+/,
   },
 });
