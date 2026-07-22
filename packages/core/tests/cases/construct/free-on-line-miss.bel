@@ -1,0 +1,5 @@
+paper square
+--edge = through .a .b
+mark --m = through .c .d
+.p = free on --m from .a
+; expect error "not an endpoint"
