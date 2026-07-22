@@ -120,6 +120,24 @@ let test_e2e_perp () =
   in
   Alcotest.(check bool) "an axiom3 crease is present" true (List.mem "axiom3" axioms)
 
+let test_edges_carry_crease_id () =
+  (* a single fold produces one crease bundle; its non-boundary edges all
+     carry the same integer crease_id *)
+  let json =
+    Beloch.fold_string ~filename:"t.bel"
+      "paper square\nfold --h = map .a onto .d moving .a\n"
+  in
+  let open Yojson.Safe.Util in
+  let cids =
+    json |> member "beloch:edges" |> to_list
+    |> List.filter_map (function
+         | `Null -> None
+         | e -> ( match e |> member "crease_id" with `Int i -> Some i | _ -> None ))
+  in
+  Alcotest.(check bool) "at least one edge has a crease_id" true (cids <> []);
+  Alcotest.(check bool) "crease_ids are non-negative" true
+    (List.for_all (fun i -> i >= 0) cids)
+
 let test_e2e_cube_root () =
   let json =
     Beloch.fold_string ~filename:"cube-root.bel" (read_case "fold/cube-root.bel")
@@ -952,6 +970,8 @@ let () =
           Alcotest.test_case "diagonals four faces" `Quick
             test_e2e_diagonals_four_faces;
           Alcotest.test_case "perp end-to-end" `Quick test_e2e_perp;
+          Alcotest.test_case "beloch:edges carry crease_id" `Quick
+            test_edges_carry_crease_id;
           Alcotest.test_case "cube-root (Messer) axiom7 end-to-end" `Quick
             test_e2e_cube_root;
           Alcotest.test_case "cube-root restructured (panels + temps)" `Quick
