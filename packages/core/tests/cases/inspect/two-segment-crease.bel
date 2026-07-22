@@ -1,0 +1,4 @@
+paper square
+mark --h = map .a onto .d
+mark --v = map .a onto .b
+fold --h moving .a
