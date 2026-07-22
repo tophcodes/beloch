@@ -278,6 +278,101 @@ let beloch_statements_json (statements : Eval.stmt_log_entry list) : Yojson.Safe
          | Some m -> `Assoc (("mark", mark_json m) :: common))
        statements)
 
+(* beloch:inspect — crease_id-keyed inventory of the final display state:
+   each crease's segment bundle (with per-segment M/V/F), each face's flap
+   (coplanar cluster) + stacking rank, and each named point's carrying
+   face + flap. Entity Inspector slice B (playground). *)
+let beloch_inspect_json (state : Fold_state.t)
+    (named_points : (string * Geom.point * int) list) : Yojson.Safe.t =
+  let faces = Fold_state.faces state in
+  let rank = Fold_state.rank state in
+  let clusters = Fold_state.coplanar_clusters state in
+  let hinges = Fold_state.hinges state in
+  let pt_json (p : Geom.point) = `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ] in
+  (* one representative hinge per crease_id, for name/axiom/span/sources *)
+  let by_cid = Hashtbl.create 16 in
+  Array.iter
+    (fun (h : Fold_state.hinge) ->
+      if not (Hashtbl.mem by_cid h.Fold_state.crease_id) then
+        Hashtbl.replace by_cid h.Fold_state.crease_id h)
+    hinges;
+  (* per-crease derived M/V/F, precomputed once (mv wants a hinge index) *)
+  let assign_by_cid = Hashtbl.create 16 in
+  Array.iteri
+    (fun i (h : Fold_state.hinge) ->
+      if not (Hashtbl.mem assign_by_cid h.Fold_state.crease_id) then
+        Hashtbl.replace assign_by_cid h.Fold_state.crease_id
+          (mark_assign_str (Fold_state.mv state i)))
+    hinges;
+  let seg_json cid (s : Fold_state.crease_segment) =
+    let l, r = s.Fold_state.faces in
+    let a = Option.value (Hashtbl.find_opt assign_by_cid cid) ~default:"F" in
+    `Assoc
+      [
+        ("faces", `List [ `Int l; `Int r ]);
+        ("paper", `List [ pt_json s.Fold_state.pa; pt_json s.Fold_state.pb ]);
+        ("table", `List [ pt_json s.Fold_state.ta; pt_json s.Fold_state.tb ]);
+        ("assignment", `String a);
+      ]
+  in
+  let creases =
+    Hashtbl.fold
+      (fun cid (h : Fold_state.hinge) acc ->
+        let segs = Fold_state.crease_segments state cid in
+        let name, axiom, sources, span =
+          match h.Fold_state.prov with
+          | Some (p : State.provenance) ->
+              ( (match p.State.name with Some n -> `String n | None -> `Null),
+                `String p.State.axiom,
+                `List (List.map (fun s -> `String s) p.State.sources),
+                `String (Error.span_to_string p.State.span) )
+          | None -> (`Null, `Null, `List [], `Null)
+        in
+        ( string_of_int cid,
+          `Assoc
+            [
+              ("name", name);
+              ("axiom", axiom);
+              ("sources", sources);
+              ("span", span);
+              ("segments", `List (List.map (seg_json cid) segs));
+            ] )
+        :: acc)
+      by_cid []
+  in
+  let faces_json =
+    Array.to_list
+      (Array.mapi
+         (fun i poly ->
+           ( string_of_int i,
+             `Assoc
+               [
+                 ("vertices", `List (Array.to_list (Array.map pt_json poly)));
+                 ("flap", `Int clusters.(i));
+                 ("rank", `Int rank.(i));
+               ] ))
+         faces)
+  in
+  let face_of (p : Geom.point) =
+    let found = ref None in
+    Array.iteri (fun i poly -> if !found = None && Geom.in_convex_polygon poly p then found := Some i) faces;
+    !found
+  in
+  let points_json =
+    List.map
+      (fun (n, p, _step) ->
+        let f = face_of p in
+        ( n,
+          `Assoc
+            [
+              ("face", match f with Some i -> `Int i | None -> `Null);
+              ("flap", match f with Some i -> `Int clusters.(i) | None -> `Null);
+            ] ))
+      named_points
+  in
+  `Assoc
+    [ ("creases", `Assoc creases); ("faces", `Assoc faces_json); ("points", `Assoc points_json) ]
+
 let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
   let disp, kept_marks = cp_display fd.Eval.state in
   let faces = Fold_state.faces disp in
@@ -422,6 +517,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
       ("edges_assignment", `List edges_assignment);
       ("faces_vertices", `List faces_vertices);
       ("beloch:edges", beloch_edges);
+      ("beloch:inspect", beloch_inspect_json disp fd.Eval.named_points);
       ("beloch:vertices_names", beloch_vertices_names);
       ("beloch:named_points", beloch_named_points);
       ("beloch:named_lines", beloch_named_lines);
