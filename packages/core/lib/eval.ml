@@ -378,6 +378,11 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
         match Fold_state.mark_axis_current !(ctx.state) cid with
         | `Line l -> l
         | `Empty -> line
+        | `Collapsed ->
+            Error.fail span
+              (Printf.sprintf
+                 "--%s has collapsed to a point under folding, so it no longer \
+                  names a line" name)
         | `Bent ->
             Error.fail span
               (Printf.sprintf
@@ -390,6 +395,11 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
            material pieces but is still flat at its original line — byte-stable
            and lets reference-only boundary creases resolve *)
         | `Empty -> l_orig
+        | `Collapsed ->
+            Error.fail span
+              (Printf.sprintf
+                 "--%s has collapsed to a point under folding, so it no longer \
+                  names a line" name)
         | `Bent ->
             Error.fail span
               (Printf.sprintf
@@ -1681,6 +1691,11 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
               match Fold_state.mark_axis_current !(ctx.state) mark_cid with
               | `Line l -> l
               | `Empty -> mark_line
+              | `Collapsed ->
+                  Error.fail span
+                    (Printf.sprintf
+                       "--%s has collapsed to a point under folding, so there \
+                        is no line to fold along" cr.Ast.cname)
               | `Bent ->
                   Error.fail span
                     (Printf.sprintf
@@ -2598,10 +2613,10 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
           | Material (cid, l_orig) -> (
               match Fold_state.crease_axis !(ctx.state) cid l_orig with
               | `Line l -> (k, l, step_of_line k) :: acc
-              (* bent by a later fold, or no material endpoints left: no
-                 single current line to emit, so omit from the map rather
-                 than emit the stale frozen original *)
-              | `Bent | `Empty -> acc)
+              (* bent by a later fold, no material endpoints left, or folded
+                 onto a single point: no single current line to emit, so omit
+                 from the map rather than emit the stale frozen original *)
+              | `Bent | `Empty | `Collapsed -> acc)
           (* a bundle is not a single line; it is not emitted in the
              one-line-per-name overlay map. the prelude paper edges are
              implicit, not user-declared construction lines, so they are

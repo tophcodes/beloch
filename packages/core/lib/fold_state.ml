@@ -987,7 +987,7 @@ let rec pick_two_distinct = function
    (side_of_line = 0 tests, drawing between clip points). A future consumer
    needing an oriented normal must canonicalize first. *)
 let crease_axis (g : t) (cid : int) (l_orig : Geom.line) :
-    [ `Line of Geom.line | `Bent | `Empty ] =
+    [ `Line of Geom.line | `Bent | `Empty | `Collapsed ] =
   match crease_table_endpoints g cid with
   | [] -> `Empty
   | pts ->
@@ -995,7 +995,7 @@ let crease_axis (g : t) (cid : int) (l_orig : Geom.line) :
         `Line l_orig
       else (
         match pick_two_distinct pts with
-        | None -> `Empty
+        | None -> `Collapsed
         | Some (a, b) ->
             let l = Geom.line_through a b in
             if List.for_all (fun p -> Geom.side_of_line l p = 0) pts then
@@ -1300,12 +1300,12 @@ let mark_chords (g : t) (cid : int) : (Geom.point * Geom.point) list =
    the table). [`Bent] if a fold has bent the chord (its paper midpoint no
    longer maps onto the straight table chord) — the caller must pick a flap. *)
 let mark_axis_current (g : t) (cid : int) :
-    [ `Line of Geom.line | `Bent | `Empty ] =
+    [ `Line of Geom.line | `Bent | `Empty | `Collapsed ] =
   match mark_chords g cid with
   | [] -> `Empty
   | (a, b) :: _ ->
       let ta = table_position g a and tb = table_position g b in
-      if Geom.point_equal ta tb then `Empty
+      if Geom.point_equal ta tb then `Collapsed
       else
         let mid =
           { Geom.x = Num.div (Num.add a.Geom.x b.Geom.x) (Num.of_int 2);
