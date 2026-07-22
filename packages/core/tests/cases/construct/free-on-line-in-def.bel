@@ -1,0 +1,11 @@
+paper square
+def diagonal(.p .q) {
+  --d = through .p .q
+  .m = free on --d from .p
+}
+$d1 = apply diagonal(.a .c)
+$d2 = apply diagonal(.b .d)
+export { .m as .m1 } $d1
+export { .m as .m2 } $d2
+; assert .m1 = (1/2, 1/2)
+; assert .m2 = (1/2, 1/2)
