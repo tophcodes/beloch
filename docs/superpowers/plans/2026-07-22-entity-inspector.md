@@ -394,7 +394,7 @@ Give every inspectable element a stable attribute so pointer events map back to 
 
 **Interfaces:**
 - Consumes: `frame.edgesProvenance[i].creaseId` (Task 3).
-- Produces: crease lines carry `data-crease-id` and `data-seg`; point circles carry `data-vertex`. Face polygons keep `data-face-index`.
+- Produces: crease lines carry `data-crease-id`; point circles carry `data-vertex`. Face polygons keep `data-face-index`. (No `data-seg`: folded rendering can split one physical segment into several drawn arcs, so a per-line ordinal cannot equal the `beloch:inspect` segment index. Task 7 highlights a chosen segment by matching its table endpoints to drawn lines instead — geometry, not an index.)
 
 - [ ] **Step 1: Write the failing test**
 
@@ -492,13 +492,13 @@ In the module script, after `currentScene` is declared (~714), add:
 
 ```ts
 type EntityRef =
-  | { kind: "crease"; creaseId: string; seg: number | null }
+  | { kind: "crease"; creaseId: string }
   | { kind: "face"; index: string }
   | { kind: "vertex"; index: number };
 
 function lookupEntity(el: Element): EntityRef | null {
   const line = el.closest("[data-crease-id]");
-  if (line) return { kind: "crease", creaseId: line.getAttribute("data-crease-id")!, seg: Number(line.getAttribute("data-seg") ?? "0") };
+  if (line) return { kind: "crease", creaseId: line.getAttribute("data-crease-id")! };
   const face = el.closest("[data-face-index]");
   if (face) return { kind: "face", index: face.getAttribute("data-face-index")! };
   const vert = el.closest("[data-vertex]");
@@ -667,7 +667,7 @@ html += segs.map(({ s, i }) =>
   `<div class="seg" data-pick-seg="${i}">seg ${i} · rank ${segRank(insp, s)} · face ${s.faces[0]}|${s.faces[1]} · ${s.assignment}</div>`).join("");
 ```
 
-Add a delegated click on `.pg-inspect [data-pick-seg]` that sets `pinned = { kind: "crease", creaseId: ref.creaseId, seg: Number(...) }` and re-highlights just that segment's SVG element (`[data-crease-id="cid"][data-seg="i"]`) with `.pg-hl`.
+Add a delegated click on `.pg-inspect [data-pick-seg]` that reads the inspect segment `s = c.segments[Number(dataset.pickSeg)]` and highlights the drawn line(s) belonging to it by GEOMETRY, not a `data-seg` index: among `[data-crease-id="<creaseId>"]` lines, add `.pg-hl` to those whose endpoints match `s.table[0]`/`s.table[1]` within an epsilon (a segment split into several occluded arcs matches several lines — highlight all). Compare in the SVG's own coordinate space (the lines' `x1/y1/x2/y2` are in the rendered table→SVG frame; transform `s.table` through the same layout transform the renderer used, or compare against the untransformed table coords if the lines expose them — pick whichever the render actually emits and note it).
 
 - [ ] **Step 3: CP view unchanged**
 
