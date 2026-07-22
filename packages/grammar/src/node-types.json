@@ -167,6 +167,14 @@
     "named": false
   },
   {
+    "type": "free",
+    "named": false
+  },
+  {
+    "type": "from",
+    "named": false
+  },
+  {
     "type": "identifier",
     "named": true
   },
@@ -193,6 +201,10 @@
   {
     "type": "number",
     "named": true
+  },
+  {
+    "type": "on",
+    "named": false
   },
   {
     "type": "onto",
