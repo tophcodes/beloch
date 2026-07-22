@@ -176,6 +176,18 @@
         {
           "type": "STRING",
           "value": "as"
+        },
+        {
+          "type": "STRING",
+          "value": "free"
+        },
+        {
+          "type": "STRING",
+          "value": "on"
+        },
+        {
+          "type": "STRING",
+          "value": "from"
         }
       ]
     },

@@ -41,6 +41,7 @@ module.exports = grammar({
       'through', 'map', 'onto', 'perp', 'toward',
       'and', 'moving', 'up', 'to', 'mountain', 'over', 'standing',
       'between', 'at', 'as',
+      'free', 'on', 'from',
     ),
 
     // sigils: `--name` is a crease, `.name` is a point, `$name` an instance
