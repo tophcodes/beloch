@@ -50,8 +50,6 @@ it.
 - **No new views.** Works within the existing CP / folded views + stepper.
 - **No native server.** Runs on the existing js_of_ocaml worker bundle
   (slice A swaps the transport underneath later, without touching B).
-- **Layer identity per segment: deferred.** `Fold_state.crease_segment` carries
-  no layer field; exposing stacking order is a follow-up, not part of B.
 
 ## Architecture
 
@@ -81,7 +79,7 @@ geometry — pure serialization of data the evaluator already computes.
       ]
     }
   },
-  "faces":  { "<i>": { "vertices": [...], "flap": <cluster_id> } },
+  "faces":  { "<i>": { "vertices": [...], "flap": <cluster_id>, "rank": <int> } },
   "points": { "<name>": { "face": <i-or-null>, "flap": <cluster_id-or-null> } }
 }
 ```
@@ -90,6 +88,10 @@ Sources:
 - `Fold_state.crease_segments cid` → `faces`, `pa`/`pb`, `ta`/`tb` per segment.
 - `Fold_state.coplanar_clusters` → the `flap` (cluster) id for each face; a
   point's flap is the cluster of its owning face.
+- The fold-state `rank` array (stacking height per face, higher = above) → the
+  per-face `rank`. A segment's **layer identity** is the ranks of its two
+  bordering faces; the folded-view stack picker (§3) orders coincident segments
+  by it. Already computed by the layer-ordering solver — pure serialization.
 - `face_of_points [p]` → a point's owning face (may be `null` on a shared
   boundary → `Ambiguous`/`Zero`, surfaced honestly as null rather than a guess).
 - Per-segment `assignment`: matched from `edges_assignment` via the segment's
@@ -120,6 +122,13 @@ paper endpoints (`beloch:inspect`) match the edge by coordinate as a fallback.
 - **Click** → pin the entity's full detail into a **side panel**: segment list,
   paper + table coordinates, provenance, face/flap. The panel persists while the
   user reads or edits code (a segment list is too large for a tooltip).
+- **Stacked-group picker (folded view only).** When a click lands where multiple
+  drawn elements coincide on the table, the panel shows them as a stack ordered
+  top→bottom by face `rank`; the user picks which layer to focus. In the CP view
+  no picker is needed: a bundle's segments scatter to distinct paper preimages on
+  unfold (ADR-0014), so each is already individually clickable. This is the UI's
+  answer to ADR-0014's "a purely table-space selector cannot disambiguate stacked
+  copies" — an explicit layer chooser rather than reliance on click position.
 - **Code link (read-only, bidirectional):**
   - Clicking an entity scrolls/highlights its provenance span in the CodeMirror
     editor.
@@ -144,8 +153,8 @@ FOLD (+ beloch:inspect)
 - **Eval error:** B shows data for the last successful FOLD; the current error
   notice is unchanged. Partial-render-to-error is out of scope (separate slice).
 - **Stacked/occluded segments** (folded view): hover resolves to the topmost
-  drawn element; the pinned panel lists *all* segments of that bundle regardless
-  of occlusion.
+  drawn element; clicking opens the stack picker (§3), which lists every
+  coincident segment ordered by `rank`. The CP view separates them spatially.
 - **Anonymous crease:** panel titled `crease #<id> · axiom5 · from --h --l`.
 - **Point on a shared boundary** (`face`/`flap` = null): shown as
   "on a face boundary (ambiguous)" rather than an arbitrary pick.
@@ -154,8 +163,8 @@ FOLD (+ beloch:inspect)
 
 - **Core** (assertion test, `tests/cases/`): for a model with a folded,
   multi-segment crease (the peacock `--r`), assert `beloch:inspect.creases`
-  enumerates the expected segments with correct `faces` pairs and `flap` ids —
-  the exact fact that was invisible during the live session.
+  enumerates the expected segments with correct `faces` pairs, `flap` ids, and
+  per-face `rank` — the exact facts that were invisible during the live session.
 - **Render** (snapshot): assert `data-crease-id` / `data-seg` appear on crease
   lines in both CP and folded output.
 - **UI** (light DOM smoke): hovering a stamped element populates the panel.
@@ -165,8 +174,9 @@ FOLD (+ beloch:inspect)
 
 | In | Out |
 |----|-----|
-| `beloch:inspect` export (creases/faces/points) | Layer identity per segment |
-| `crease_id` on `beloch:edges` | Writing selectors to source (slice C) |
-| render-svg data-attr stamping | Partial-eval to error |
-| hover + click-pin side panel | Native `beloch playground` server (slice A) |
-| read-only bidirectional code↔SVG highlight | New views / action palette (slice D) |
+| `beloch:inspect` export (creases/faces/points) | Writing selectors to source (slice C) |
+| per-face `rank` → segment layer identity | Partial-eval to error |
+| `crease_id` on `beloch:edges` | Native `beloch playground` server (slice A) |
+| render-svg data-attr stamping | New views / action palette (slice D) |
+| hover + click-pin side panel + folded stack picker | |
+| read-only bidirectional code↔SVG highlight | |
