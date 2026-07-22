@@ -34,6 +34,13 @@ type stmt_log_entry = {
          docs/superpowers/specs/2026-07-20-per-statement-mark-graduation-design.md. *)
 }
 
+type free_info = {
+  fi_t : Num.t;
+  fi_p0 : Geom.point;  (* t = 0 endpoint (anchor) *)
+  fi_p1 : Geom.point;  (* t = 1 endpoint *)
+  fi_source_line : int;
+}
+
 type folded = {
   state : Fold_state.t;
   named_points : (string * Geom.point * int) list;
@@ -46,6 +53,12 @@ type folded = {
          line can coincide with another crease's line) *)
   frames : (Fold_state.t * Error.span option) list;
   statements : stmt_log_entry list;
+  free_points : (string * free_info) list;
+      (* one entry per `free on` point, recorded at bind time in the [PsFree]
+         arm — a running log (like [statements]), not reconstructed from
+         scope state at finalize (unlike [named_points]), since [free_info]
+         carries per-placement data the point's final bound value alone
+         doesn't retain. *)
 }
 
 (* ---- Scope-stack context ---- *)
@@ -133,6 +146,7 @@ type ctx = {
   state : Fold_state.t ref;
   mutable frames_rev : (Fold_state.t * Error.span option) list;
   mutable statements_rev : stmt_log_entry list;
+  mutable free_points_rev : (string * free_info) list;
   mutable pending : bool;
       (* true when the current state hasn't been captured in a frame yet;
          drives the conditional final push (see eval_folded) *)
@@ -217,6 +231,7 @@ type snapshot = {
   s_next_def_idx : int;
   s_frames_rev : (Fold_state.t * Error.span option) list;
   s_statements_rev : stmt_log_entry list;
+  s_free_points_rev : (string * free_info) list;
   s_pending : bool;
   s_state : Fold_state.t;
   s_next_id : int;
@@ -253,6 +268,7 @@ let snapshot (ctx : ctx) : snapshot =
         s_next_def_idx = ctx.next_def_idx;
         s_frames_rev = ctx.frames_rev;
         s_statements_rev = ctx.statements_rev;
+        s_free_points_rev = ctx.free_points_rev;
         s_pending = ctx.pending;
         s_state = !(ctx.state);
         s_next_id = Fold_state.next_id_value ();
@@ -284,6 +300,7 @@ let restore (ctx : ctx) (s : snapshot) : unit =
       ctx.next_def_idx <- s.s_next_def_idx;
       ctx.frames_rev <- s.s_frames_rev;
       ctx.statements_rev <- s.s_statements_rev;
+      ctx.free_points_rev <- s.s_free_points_rev;
       ctx.pending <- s.s_pending;
       ctx.state := s.s_state;
       Fold_state.set_next_id s.s_next_id
@@ -306,6 +323,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
     state  = ref Fold_state.init_square;
     frames_rev = [];
     statements_rev = [];
+    free_points_rev = [];
     pending = true;
   } in
   let push_frame (span : Error.span option) =
@@ -1786,7 +1804,12 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
           Error.fail span "t is out of range (must be between 0 and 1)";
         let px = Num.add e0.Geom.x (Num.mul tv (Num.sub e1.Geom.x e0.Geom.x)) in
         let py = Num.add e0.Geom.y (Num.mul tv (Num.sub e1.Geom.y e0.Geom.y)) in
-        bind_point ctx n span { Geom.x = px; y = py }
+        bind_point ctx n span { Geom.x = px; y = py };
+        ctx.free_points_rev <-
+          (n,
+           { fi_t = tv; fi_p0 = e0; fi_p1 = e1;
+             fi_source_line = (fst span).Lexing.pos_lnum })
+          :: ctx.free_points_rev
     | Ast.Flip _ ->
         ctx.state := Fold_state.flip !(ctx.state);
         ctx.pending <- true
@@ -2664,6 +2687,8 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
     ctx.frames_rev <- (!(ctx.state), None) :: ctx.frames_rev;
   let frames = List.rev ctx.frames_rev in
   let statements = List.rev ctx.statements_rev in
-  { state = !(ctx.state); named_points; named_lines; named_line_cids; frames; statements }
+  let free_points = List.rev ctx.free_points_rev in
+  { state = !(ctx.state); named_points; named_lines; named_line_cids; frames;
+    statements; free_points }
 
 let eval_folded (prog : Ast.program) : folded = eval_program prog

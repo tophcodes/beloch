@@ -387,6 +387,30 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
   in
   (* record marks (non-subdividing; see Fold_state.mark) *)
   let beloch_marks = kept_marks |> List.map mark_json in
+  (* forward-compat hook for a future renderer slider (issue #70); no
+     renderer consumes this yet — see [Eval.free_info]. *)
+  let beloch_free =
+    `Assoc
+      (List.map
+         (fun (name, (fi : Eval.free_info)) ->
+           ( name,
+             `Assoc
+               [
+                 ("t", q_to_json fi.Eval.fi_t);
+                 ( "endpoints",
+                   `List
+                     [
+                       `List
+                         [ q_to_json fi.Eval.fi_p0.Geom.x;
+                           q_to_json fi.Eval.fi_p0.Geom.y ];
+                       `List
+                         [ q_to_json fi.Eval.fi_p1.Geom.x;
+                           q_to_json fi.Eval.fi_p1.Geom.y ];
+                     ] );
+                 ("source_line", `Int fi.Eval.fi_source_line);
+               ] ))
+         fd.Eval.free_points)
+  in
   `Assoc
     [
       ("file_spec", `Float 1.1);
@@ -402,6 +426,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
       ("beloch:named_lines", beloch_named_lines);
       ("beloch:named_lines_frame", `String "creasePattern");
       ("beloch:marks", `List beloch_marks);
+      ("beloch:free", beloch_free);
       ("beloch:statements", beloch_statements_json fd.Eval.statements);
       ( "file_frames",
         (* Step 0: the flat, unfolded sheet, so a folded-diagram stepper opens
