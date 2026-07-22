@@ -62,7 +62,19 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       </button>
     </div>
     <div class="pg-steps" hidden>
-      <div class="pg-step-dots"></div>
+      <div class="pg-step-timeline">
+        <button type="button" class="pg-step-nav pg-step-prev" aria-label="Vorheriger Step" title="Vorheriger Step">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <path d="M10 3 L5 8 L10 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+        <div class="pg-step-track"></div>
+        <button type="button" class="pg-step-nav pg-step-next" aria-label="Nächster Step" title="Nächster Step">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <path d="M6 3 L11 8 L6 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+      </div>
       <span class="pg-step-label"></span>
     </div>
   </div>
@@ -316,8 +328,9 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
 
   .pg-steps {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
     padding: 8px 16px;
     border-top: 1px solid var(--beloch-border);
     font-family: 'IBM Plex Mono', ui-monospace, monospace;
@@ -325,10 +338,76 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     color: var(--beloch-muted);
   }
   .pg-steps[hidden] { display: none; }
-  .pg-step-dots { display: inline-flex; flex-wrap: wrap; gap: 2px; }
+
+  .pg-step-timeline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .pg-step-nav {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border-radius: 6px;
+    border: 1px solid var(--beloch-border);
+    background: transparent;
+    color: var(--beloch-muted);
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+  .pg-step-nav:hover:not(:disabled) {
+    color: var(--beloch-valley);
+    border-color: var(--beloch-valley);
+  }
+  .pg-step-nav:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  /* The track: dots spread edge-to-edge over a connecting rule, with a
+     valley-colored progress fill running left→current so the position is
+     legible in the bar itself (--pg-progress is set per step in JS). */
+  .pg-step-track {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .pg-step-track::before,
+  .pg-step-track::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    height: 3px;
+    border-radius: 3px;
+    transform: translateY(-50%);
+    /* Purely decorative rules — must never intercept the pointer, or the
+       dots underneath lose their pointer cursor / clickability. */
+    pointer-events: none;
+  }
+  .pg-step-track::before {
+    right: 0;
+    background: var(--beloch-border);
+  }
+  .pg-step-track::after {
+    width: var(--pg-progress, 0%);
+    background: var(--beloch-valley);
+    transition: width 0.15s ease;
+  }
   .pg-step-dot {
-    width: 26px;
-    height: 26px;
+    position: relative;
+    z-index: 1;
+    flex: none;
+    width: 34px;
+    height: 34px;
     padding: 0;
     border: none;
     background: transparent;
@@ -339,18 +418,45 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   }
   .pg-step-dot::before {
     content: "";
-    width: 10px;
-    height: 10px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    border: 1px solid var(--beloch-border);
-    background: transparent;
+    border: 2px solid var(--beloch-border);
+    background: var(--beloch-panel);
+    /* Panel-colored gap ring separates the dot from the track line so it
+       clearly reads as sitting *on top of* the line, not merged into it. */
+    box-shadow: 0 0 0 3px var(--beloch-panel);
+    transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
   }
-  .pg-step-dot.is-active::before {
+  .pg-step-dot:hover::before {
+    border-color: var(--beloch-valley);
+    transform: scale(1.15);
+  }
+  /* Steps at or before the current one read as "reached" (filled valley);
+     the current one is additionally enlarged with a halo ring. */
+  .pg-step-dot.is-past::before {
     background: var(--beloch-valley);
     border-color: var(--beloch-valley);
   }
+  .pg-step-dot.is-active {
+    z-index: 2;
+  }
+  .pg-step-dot.is-active::before {
+    width: 18px;
+    height: 18px;
+    background: var(--beloch-valley);
+    border-color: var(--beloch-valley);
+    /* Inner panel gap ring + outer valley glow — pops the current dot off
+       both the line and its neighbors. */
+    box-shadow:
+      0 0 0 3px var(--beloch-panel),
+      0 0 0 6px color-mix(in srgb, var(--beloch-valley) 30%, transparent);
+  }
   .pg-step-label {
+    text-align: center;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 </style>
 
@@ -494,9 +600,11 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     const resetBtn = root.querySelector<HTMLButtonElement>(".pg-reset");
     const runHint = root.querySelector<HTMLDivElement>(".pg-run-hint");
     const stepsBar = root.querySelector<HTMLDivElement>(".pg-steps");
-    const stepDots = root.querySelector<HTMLDivElement>(".pg-step-dots");
+    const stepDots = root.querySelector<HTMLDivElement>(".pg-step-track");
     const stepLabel = root.querySelector<HTMLSpanElement>(".pg-step-label");
-    if (!sourceMount || !runBtn || !result || !canvas || !resetBtn || !runHint || !stepsBar || !stepDots || !stepLabel) return;
+    const stepPrev = root.querySelector<HTMLButtonElement>(".pg-step-prev");
+    const stepNext = root.querySelector<HTMLButtonElement>(".pg-step-next");
+    if (!sourceMount || !runBtn || !result || !canvas || !resetBtn || !runHint || !stepsBar || !stepDots || !stepLabel || !stepPrev || !stepNext) return;
 
     const panZoom = createPanZoom(result, canvas, resetBtn);
     // A build-time `seed` SVG is already in the canvas; enable pan/zoom + the
@@ -605,6 +713,12 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let currentScene: FoldScene | null = null;
     let currentStatements: Statement[] = [];
+    let currentStep = 0;
+
+    // Prev/next just walk the clamped index; renderStep re-clamps and keeps
+    // the nav buttons' disabled state in sync (see updateStepsUI).
+    stepPrev.addEventListener("click", () => renderStep(currentStep - 1));
+    stepNext.addEventListener("click", () => renderStep(currentStep + 1));
 
     // Notices aren't pannable paper: reset the view, disable pan/zoom, and
     // hide the reset affordance. A fresh SVG re-enables it and fits the paper.
@@ -620,29 +734,34 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     const showError = (message: string) => {
       showNotice(`<p class="pg-notice pg-notice-error">${escapeHtml(message)}</p>`);
     };
-    const showSvg = (svg: string) => {
+    // keepView leaves the current pan/zoom transform in place — the canvas
+    // element (the transform target) survives innerHTML swaps, so stepping
+    // through the timeline keeps the user's framing. A fresh run passes
+    // keepView=false to re-fit the newly-parsed paper.
+    const showSvg = (svg: string, keepView = false) => {
       canvas.innerHTML = svg;
-      panZoom.reset();
+      if (!keepView) panZoom.reset();
       panZoom.setEnabled(true);
       resetBtn.hidden = false;
     };
 
     // Rebuilds the scrubber's dots for a freshly-parsed set of statements
-    // (called once per successful run, not per statement-click). Hides the
-    // bar entirely when there's nothing to navigate (0 or 1 statements).
+    // (called once per successful run, not per statement-click). The timeline
+    // has n+1 stops: index 0 is the flat starting sheet, 1..n each statement.
+    // Hidden when there's nothing to navigate (no statements at all).
     function buildStepsUI(statements: Statement[]) {
       const n = statements.length;
       stepDots!.innerHTML = "";
-      if (n <= 1) {
+      if (n < 1) {
         stepsBar!.hidden = true;
         return;
       }
       stepsBar!.hidden = false;
-      for (let i = 0; i < n; i++) {
+      for (let i = 0; i <= n; i++) {
         const dot = document.createElement("button");
         dot.type = "button";
         dot.className = "pg-step-dot";
-        dot.setAttribute("aria-label", `Step ${i + 1} von ${n}`);
+        dot.setAttribute("aria-label", i === 0 ? "Ausgangspapier" : `Step ${i} von ${n}`);
         dot.setAttribute("aria-current", "false");
         dot.addEventListener("click", () => renderStep(i));
         stepDots!.appendChild(dot);
@@ -662,14 +781,20 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // Cheap per-step-change update: toggles the active dot + label text,
     // without touching event listeners (buildStepsUI owns those).
     function updateStepsUI(i: number, statements: Statement[]) {
+      const n = statements.length;
       stepDots!.querySelectorAll<HTMLButtonElement>(".pg-step-dot").forEach((dot, idx) => {
         dot.classList.toggle("is-active", idx === i);
+        dot.classList.toggle("is-past", idx < i);
         dot.setAttribute("aria-current", idx === i ? "true" : "false");
       });
-      const label = currentScene?.steps[statements[i]!.frameIndex]?.label;
-      stepLabel!.textContent = label
-        ? `Step ${i + 1}/${statements.length} · ${label}`
-        : `Step ${i + 1}/${statements.length}`;
+      stepDots!.style.setProperty("--pg-progress", n > 0 ? `${(i / n) * 100}%` : "0%");
+      if (i === 0) {
+        stepLabel!.textContent = `Step 0/${n} · leeres Papier`;
+      } else {
+        stepLabel!.textContent = `Step ${i}/${n}`;
+      }
+      stepPrev!.disabled = i <= 0;
+      stepNext!.disabled = i >= n;
     }
 
     // Client-side-only re-render of one statement of the already-parsed
@@ -678,25 +803,33 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // just re-renders its backdrop frame; a mark-kind statement re-renders
     // the SAME backdrop (marks don't fold anything) with its own mark
     // overlaid.
-    function renderStep(i: number) {
+    function renderStep(i: number, keepView = true) {
       if (!currentScene || currentStatements.length === 0) return;
       const n = currentStatements.length;
-      const clamped = Math.max(0, Math.min(i, n - 1));
-      const stmt = currentStatements[clamped]!;
+      const clamped = Math.max(0, Math.min(i, n));
+      currentStep = clamped;
       try {
-        const activeMarks = stmt.keptMarks;
-        const newestCreaseId = activeMarks.at(-1)?.creaseId;
-        const svg = renderFolded(currentScene, {
-          theme: WEB_THEME,
-          step: String(stmt.frameIndex),
-          markOverlay: activeMarks.length > 0 ? { marks: activeMarks, newestCreaseId } : undefined,
-        }).toString();
-        showSvg(svg);
+        if (clamped === 0) {
+          // Step 0: the flat starting sheet, before any fold or mark.
+          const svg = renderFolded(currentScene, { theme: WEB_THEME, step: "0" }).toString();
+          showSvg(svg, keepView);
+          setStepLineOn(editor, null);
+        } else {
+          const stmt = currentStatements[clamped - 1]!;
+          const activeMarks = stmt.keptMarks;
+          const newestCreaseId = activeMarks.at(-1)?.creaseId;
+          const svg = renderFolded(currentScene, {
+            theme: WEB_THEME,
+            step: String(stmt.frameIndex),
+            markOverlay: activeMarks.length > 0 ? { marks: activeMarks, newestCreaseId } : undefined,
+          }).toString();
+          showSvg(svg, keepView);
+          setStepLineOn(editor, stmt.sourceLine);
+        }
       } catch (err) {
         showError(`Render-Fehler: ${err instanceof Error ? err.message : String(err)}`);
         return;
       }
-      setStepLineOn(editor, stmt.sourceLine);
       updateStepsUI(clamped, currentStatements);
     }
 
@@ -721,7 +854,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
           currentScene = scene;
           currentStatements = scene.statements;
           buildStepsUI(scene.statements);
-          renderStep(scene.statements.length - 1);
+          renderStep(scene.statements.length, false);
         } else {
           showSvg(renderCP(scene, { theme: WEB_THEME }).toString());
         }
