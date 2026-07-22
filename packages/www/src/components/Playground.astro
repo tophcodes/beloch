@@ -338,6 +338,10 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     border-top: 1px solid var(--beloch-border);
     padding-top: 4px;
     margin-top: 4px;
+    cursor: pointer;
+  }
+  .pg-inspect .seg:hover {
+    color: var(--beloch-ink);
   }
 
   .pg-notice {
@@ -503,10 +507,11 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   import { EditorState } from "@codemirror/state";
   import { keymap } from "@codemirror/view";
   import { stepMarkerExtensions, setStepLineOn } from "../lib/cm-step-marker";
-  import { parseFold, type FoldScene, type Statement } from "@beloch/scene";
-  import { renderCP, renderFolded, WEB_THEME } from "@beloch/render-svg";
+  import { parseFold, type FoldScene, type Statement, type Vec2 } from "@beloch/scene";
+  import { renderCP, renderFolded, makeLayout, WEB_THEME } from "@beloch/render-svg";
   import { SCHEMES, STORAGE_KEY, DEFAULT_ID, applyScheme, resolveScheme } from "../lib/paper-schemes";
   import { lineOfSpan, lookupEntity, type EntityRef } from "../lib/inspect-lookup";
+  import { segRank, segMatchesLine } from "../lib/stack-picker";
 
   const TIMEOUT_MS = 8000;
 
@@ -779,6 +784,15 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // the panel (see the mousemove handler below).
     let pinned: EntityRef | null = null;
 
+    // "Folded view" = geometry drawn via renderFolded's occlusion pipeline
+    // (any step, including step 0's flat sheet — it still goes through the
+    // same table-space/occlusion machinery); the only path that does NOT is
+    // renderCP, taken exactly once by applyFold below when a scene has no
+    // fold/mark statements at all. currentStatements is populated only on
+    // the renderFolded path, so its presence doubles as the view accessor —
+    // no separate mode flag needed.
+    const inFoldedView = () => currentStatements.length > 0;
+
     // Renders `ref` (a hover preview or the pinned click) into the inspect
     // panel, or hides it for null/an entity the current scene has no
     // `inspect` data for (e.g. a scene evaluated before beloch:inspect was
@@ -798,10 +812,18 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         }
         const title = c.name ? `--${c.name}` : `crease #${ref.creaseId}`;
         html = `<h4>${escapeHtml(title)}</h4><div>${escapeHtml(c.axiom ?? "")} · from ${c.sources.map(escapeHtml).join(" ")}</div>`;
-        html += c.segments
+        // Folded view stacks coincident segments (same bundle, different
+        // layer) at the same projected position — order top-of-stack first
+        // so the picker reads like the physical layer order. CP view has no
+        // stacking (segments are spatially separate there), so it stays in
+        // segment-array order (Task 5 behavior).
+        const rows = c.segments.map((s, i) => ({ s, i }));
+        if (inFoldedView()) rows.sort((a, b) => segRank(insp, b.s) - segRank(insp, a.s));
+        html += rows
           .map(
-            (s, i) =>
-              `<div class="seg">seg ${i} · face ${s.faces[0]}|${s.faces[1]} · ${escapeHtml(s.assignment)}<br>` +
+            ({ s, i }) =>
+              `<div class="seg" data-pick-seg="${i}" data-pick-crease="${escapeHtml(ref.creaseId)}">` +
+              `seg ${i} · rank ${segRank(insp, s)} · face ${s.faces[0]}|${s.faces[1]} · ${escapeHtml(s.assignment)}<br>` +
               `paper ${fmtPt(s.paper[0])}→${fmtPt(s.paper[1])}<br>table ${fmtPt(s.table[0])}→${fmtPt(s.table[1])}</div>`,
           )
           .join("");
@@ -854,6 +876,42 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         const ln = lineOfSpan(currentScene?.inspect?.creases[pinned.creaseId]?.span ?? null);
         if (ln) setStepLineOn(editor, ln);
       }
+    });
+
+    // Picking a stacked-segment row (see renderInspect above) highlights the
+    // SVG line(s) it corresponds to by GEOMETRY, not a data-seg index (there
+    // is none — dropped in Task 4). The segment's `table` endpoints are in
+    // the evaluator's table space; a rendered crease `<line>`'s x1/y1/x2/y2
+    // are in SVG pixel space, produced by render-scene.ts as
+    // `mx(tx(x)), ty(y)` off a layout built from `makeLayout(scene.cp.vertices)`
+    // (see layout.ts + render-scene.ts:56,102) — `mx` only differs from `tx`
+    // for `view: "bottom"`, which this Playground never passes (grepped: only
+    // `renderFolded(currentScene, { theme, step, markOverlay })` call sites
+    // above, no `view`), so plain `tx`/`ty` is the exact same transform.
+    // Running the segment's table endpoints through that SAME layout puts
+    // both sides of the comparison in the rendered pixel space. A segment
+    // fully occluded by a layer above it draws no line at all (render-scene
+    // drops fully-covered arcs unless `hidden: "dashed"`, which this
+    // Playground never sets) — zero matches then, and nothing highlights,
+    // the honest outcome for a layer this top-view projection can't show.
+    inspectPanel.addEventListener("click", (e: MouseEvent) => {
+      const row = (e.target as Element).closest<HTMLElement>("[data-pick-seg]");
+      if (!row) return;
+      e.stopPropagation(); // else this bubbles into result's click handler above and unpins
+      canvas.querySelectorAll(".pg-hl").forEach((el) => el.classList.remove("pg-hl"));
+      const cid = row.dataset.pickCrease;
+      const s = cid ? currentScene?.inspect?.creases[cid]?.segments[Number(row.dataset.pickSeg)] : undefined;
+      if (!currentScene || !cid || !s) return;
+      const layout = makeLayout(currentScene.cp.vertices);
+      const p0: Vec2 = [layout.tx(s.table[0][0]), layout.ty(s.table[0][1])];
+      const p1: Vec2 = [layout.tx(s.table[1][0]), layout.ty(s.table[1][1])];
+      canvas.querySelectorAll(`[data-crease-id="${cid}"]`).forEach((el) => {
+        const x1 = Number(el.getAttribute("x1"));
+        const y1 = Number(el.getAttribute("y1"));
+        const x2 = Number(el.getAttribute("x2"));
+        const y2 = Number(el.getAttribute("y2"));
+        if (segMatchesLine(p0, p1, x1, y1, x2, y2)) el.classList.add("pg-hl");
+      });
     });
 
     // Prev/next just walk the clamped index; renderStep re-clamps and keeps
