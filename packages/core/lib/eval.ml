@@ -1781,6 +1781,8 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
           else Error.fail span "the anchor is not an endpoint of the line's material"
         in
         let tv = match t with Some v -> v | None -> Num.div Num.one (Num.of_int 2) in
+        if Num.sign tv < 0 || Num.compare tv Num.one > 0 then
+          Error.fail span "t is out of range (must be between 0 and 1)";
         let px = Num.add e0.Geom.x (Num.mul tv (Num.sub e1.Geom.x e0.Geom.x)) in
         let py = Num.add e0.Geom.y (Num.mul tv (Num.sub e1.Geom.y e0.Geom.y)) in
         bind_point ctx n span { Geom.x = px; y = py }
