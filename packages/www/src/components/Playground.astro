@@ -60,6 +60,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
           <path d="M12.5 1.5 L12.5 5 L9 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
+      <aside class="pg-inspect" hidden></aside>
     </div>
     <div class="pg-steps" hidden>
       <div class="pg-step-timeline">
@@ -302,6 +303,35 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     display: none;
   }
 
+  .pg-inspect {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    max-width: 320px;
+    max-height: 70%;
+    overflow: auto;
+    background: var(--beloch-panel);
+    border: 1px solid var(--beloch-border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font: 12px/1.5 'IBM Plex Mono', ui-monospace, monospace;
+    color: var(--beloch-muted);
+  }
+  .pg-inspect[hidden] {
+    display: none;
+  }
+  .pg-inspect h4 {
+    margin: 0 0 6px;
+    font-size: 12px;
+    color: var(--beloch-ink);
+  }
+  .pg-inspect .seg {
+    border-top: 1px solid var(--beloch-border);
+    padding-top: 4px;
+    margin-top: 4px;
+  }
+
   .pg-notice {
     margin: 0;
     max-width: 32ch;
@@ -468,6 +498,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   import { parseFold, type FoldScene, type Statement } from "@beloch/scene";
   import { renderCP, renderFolded, WEB_THEME } from "@beloch/render-svg";
   import { SCHEMES, STORAGE_KEY, DEFAULT_ID, applyScheme, resolveScheme } from "../lib/paper-schemes";
+  import { lookupEntity, type EntityRef } from "../lib/inspect-lookup";
 
   const TIMEOUT_MS = 8000;
 
@@ -504,6 +535,8 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       .replace(/>/g, "&gt;");
   }
 
+  const fmtPt = (p: readonly [number, number]) => `(${p[0].toFixed(3)}, ${p[1].toFixed(3)})`;
+
   // Vanilla pan/zoom over a transform target (`.pg-canvas`) inside a viewport
   // (`.pg-result`). No library — a translate()+scale() matrix driven by
   // pointer-drag (pan) and wheel (zoom-toward-cursor). The zoom math is
@@ -524,6 +557,14 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     let pointerId = -1;
     let lastX = 0;
     let lastY = 0;
+    // Total displacement since pointerdown, past which a gesture counts as a
+    // pan rather than a click — read by the entity-inspector click handler
+    // (below) so a pan-and-release doesn't also pin whatever entity happens
+    // to sit under the cursor at drop.
+    const DRAG_THRESHOLD = 4;
+    let downX = 0;
+    let downY = 0;
+    let dragMoved = false;
 
     function apply() {
       target.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
@@ -565,6 +606,9 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       pointerId = e.pointerId;
       lastX = e.clientX;
       lastY = e.clientY;
+      downX = e.clientX;
+      downY = e.clientY;
+      dragMoved = false;
       viewport.setPointerCapture(pointerId);
       viewport.classList.add("is-panning");
     });
@@ -574,6 +618,9 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       ty += e.clientY - lastY;
       lastX = e.clientX;
       lastY = e.clientY;
+      if (!dragMoved && Math.hypot(e.clientX - downX, e.clientY - downY) > DRAG_THRESHOLD) {
+        dragMoved = true;
+      }
       apply();
     });
     function endDrag() {
@@ -589,7 +636,11 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     viewport.addEventListener("pointercancel", endDrag);
     resetBtn.addEventListener("click", reset);
 
-    return { reset, setEnabled };
+    // wasDrag() is read by the click handler, which fires AFTER pointerup
+    // (and thus after endDrag() has already reset `dragging`) — dragMoved
+    // survives that reset so the click handler can still tell a pan-release
+    // apart from a genuine click.
+    return { reset, setEnabled, wasDrag: () => dragMoved };
   }
 
   function setup(root: HTMLElement) {
@@ -604,7 +655,8 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     const stepLabel = root.querySelector<HTMLSpanElement>(".pg-step-label");
     const stepPrev = root.querySelector<HTMLButtonElement>(".pg-step-prev");
     const stepNext = root.querySelector<HTMLButtonElement>(".pg-step-next");
-    if (!sourceMount || !runBtn || !result || !canvas || !resetBtn || !runHint || !stepsBar || !stepDots || !stepLabel || !stepPrev || !stepNext) return;
+    const inspectPanel = root.querySelector<HTMLElement>(".pg-inspect");
+    if (!sourceMount || !runBtn || !result || !canvas || !resetBtn || !runHint || !stepsBar || !stepDots || !stepLabel || !stepPrev || !stepNext || !inspectPanel) return;
 
     const panZoom = createPanZoom(result, canvas, resetBtn);
     // A build-time `seed` SVG is already in the canvas; enable pan/zoom + the
@@ -714,6 +766,66 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     let currentScene: FoldScene | null = null;
     let currentStatements: Statement[] = [];
     let currentStep = 0;
+    // The click-pinned entity, if any — while set, hover no longer overrides
+    // the panel (see the mousemove handler below).
+    let pinned: EntityRef | null = null;
+
+    // Renders `ref` (a hover preview or the pinned click) into the inspect
+    // panel, or hides it for null/an entity the current scene has no
+    // `inspect` data for (e.g. a scene evaluated before beloch:inspect was
+    // emitted, or a mark tick whose crease has no inspect entry).
+    function renderInspect(ref: EntityRef | null) {
+      const insp = currentScene?.inspect;
+      if (!ref || !insp) {
+        inspectPanel!.hidden = true;
+        return;
+      }
+      let html = "";
+      if (ref.kind === "crease") {
+        const c = insp.creases[ref.creaseId];
+        if (!c) {
+          inspectPanel!.hidden = true;
+          return;
+        }
+        const title = c.name ? `--${c.name}` : `crease #${ref.creaseId}`;
+        html = `<h4>${escapeHtml(title)}</h4><div>${escapeHtml(c.axiom ?? "")} · from ${c.sources.map(escapeHtml).join(" ")}</div>`;
+        html += c.segments
+          .map(
+            (s, i) =>
+              `<div class="seg">seg ${i} · face ${s.faces[0]}|${s.faces[1]} · ${escapeHtml(s.assignment)}<br>` +
+              `paper ${fmtPt(s.paper[0])}→${fmtPt(s.paper[1])}<br>table ${fmtPt(s.table[0])}→${fmtPt(s.table[1])}</div>`,
+          )
+          .join("");
+      } else if (ref.kind === "face") {
+        const f = insp.faces[ref.index];
+        if (!f) {
+          inspectPanel!.hidden = true;
+          return;
+        }
+        html = `<h4>face ${ref.index}</h4><div>flap ${f.flap} · rank ${f.rank}</div>`;
+      } else {
+        const p = ref.name ? insp.points[ref.name] : null;
+        html =
+          `<h4>${ref.name ? "." + escapeHtml(ref.name) : "vertex " + ref.index}</h4>` +
+          (p ? `<div>face ${p.face ?? "—"} · flap ${p.flap ?? "—"}</div>` : "");
+      }
+      inspectPanel!.innerHTML = html;
+      inspectPanel!.hidden = false;
+    }
+
+    // Hover previews the entity under the cursor; a click pins it (and a
+    // second click, e.g. on empty paper, unpins). Pan gestures must not
+    // register as a click here — wasDrag() is only true after the pointer
+    // actually moved past the pan threshold during this press.
+    result.addEventListener("mousemove", (e: MouseEvent) => {
+      if (pinned) return;
+      renderInspect(lookupEntity(e.target as Element));
+    });
+    result.addEventListener("click", (e: MouseEvent) => {
+      if (panZoom.wasDrag()) return;
+      pinned = lookupEntity(e.target as Element);
+      renderInspect(pinned);
+    });
 
     // Prev/next just walk the clamped index; renderStep re-clamps and keeps
     // the nav buttons' disabled state in sync (see updateStepsUI).
@@ -774,6 +886,8 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     function clearStepsUI() {
       currentScene = null;
       currentStatements = [];
+      pinned = null;
+      inspectPanel!.hidden = true;
       stepsBar!.hidden = true;
       setStepLineOn(editor, null);
     }
