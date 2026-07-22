@@ -15,7 +15,13 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.24-dev** (default fold scope — no `moving`/`up to` folds
+Current version: **v0.25-dev** (free point on a line — 1-DOF reference point
+along a line's material bundle; `.p = free on --l from .x at <rational>`, `at`
+optional (default `t = 1/2`); `free` is provenance, not a kernel relaxation —
+the result is an ordinary exact point; `beloch:free` FOLD emission, a
+forward-compat hook for a future renderer slider; see
+[`docs/superpowers/specs/2026-07-22-free-point-on-line-design.md`](../docs/superpowers/specs/2026-07-22-free-point-on-line-design.md));
+**v0.24-dev** (default fold scope — no `moving`/`up to` folds
 the **outside-contiguous prefix** of the layer order down to and including the
 anchor flap, not every layer on the anchor's side; a point on a crease shared
 by several flaps seeds the whole contiguous run; `moving` now names the
@@ -159,7 +165,9 @@ v0.0 supports no other paper shape.
 Two kinds of value, distinguished by sigil:
 
 - **Point** — `.name`. The four corners, plus any point derived by a
-  construction (§4.3).
+  construction (§4.3), or *(since v0.25-dev)* a **free point on a line**
+  (§4.3a) — a 1-DOF reference point whose position is not load-bearing, but
+  whose value is an ordinary exact point like any other (§6).
 - **Crease / line** — `--name`. The geometric value of a fold: an (infinite)
   line. On output it appears as the edges of the folded state's faces (§7);
   `mark`/`fold` (§4.6) act on the paper with it.
@@ -242,6 +250,56 @@ covering layer, `Q2-B`.) Consequences:
   crease's segments);
 - the intersection is **off the paper** (paper-edge / boundary-reference
   operands; exact point-in-polygon test; the boundary counts as on the paper).
+
+### 4.3a Free point on a line — `free on … from … at …` *(since v0.25-dev)*
+
+```
+.p = free on --l from .x
+.p = free on --l from .x at 2/5
+```
+
+A **free point** is a reference point placed at a rational parameter `t` along
+`--l`'s material — "put a point roughly here on this line" without an explicit
+construction. `free` records *provenance* (how the point was placed, and that
+its exact position is not load-bearing), not a relaxation of the kernel: the
+result is an ordinary **exact** point, usable anywhere a point operand is
+accepted — `through .p`, `map … onto … at .p`, `mark … at .p`, perpendicular
+axioms, and so on (§6, all geometry is exact).
+
+**Domain.** The point lies on one contiguous bundle of `--l`'s material chords
+in the current paper (gaps between chords on the same run are bridged). That
+bundle's two **furthest-out points** are the parameter endpoints. For a plain
+constructed (unmarked) line, the bundle is simply where `--l` crosses the
+paper square. `t ∈ [0, 1]`; the seed point is `P0 + t·(P1 − P0)`, exact for
+rational `t`.
+
+**Orientation.** `from .x` is required and does two jobs at once: it selects
+*which* contiguous bundle (when `--l`'s material has more than one), and it
+fixes that end as `t = 0` — the opposite furthest-out point is `t = 1`. `.x`
+must be exactly one of the bundle's two endpoints; selection is by exact
+incidence, not nearest-point.
+
+**Seed value.** `at <rational>` is optional; the default is `t = 1/2`, the
+bundle's midpoint. `<rational>` is a rational literal (`2/5`, `3`, …).
+
+```
+paper square
+--diag = through .a .c
+.m = free on --diag from .a         ; midpoint, (1/2, 1/2)
+.q = free on --diag from .a at 1/4  ; (1/4, 1/4)
+```
+
+**Errors:**
+
+- `--l` has no material on the paper — "the line has no material on the
+  paper";
+- `.x` is not one of the bundle's furthest-out points — "the anchor is not an
+  endpoint of the line's material";
+- `t` outside `[0, 1]` — "t is out of range (must be between 0 and 1)".
+
+**Output.** Every free point emits a `beloch:free` custom property (§7) — a
+forward-compatibility hook for a future renderer slider over `[P0, P1]`; no
+renderer consumes it in this version.
 
 ### 4.4 Axiom 3 — perpendicular through a point *(since v0.2)*
 
@@ -1549,6 +1607,16 @@ internal edge is a crease.
   orientation only. Additive: stock FOLD consumers ignore it; `render/render-svg`
   draws `seg` entries as a thin dashed reference line and `point` entries as a
   short tick along `"line"`, both visually distinct from live `F`/`M`/`V` edges.
+- `beloch:free` — custom property *(since v0.25-dev)* carrying every **free
+  point** (§4.3a), keyed by point name (instance-qualified inside an applied
+  `def`, e.g. `"d1.m"`, matching `beloch:edges`' `"name"`). Each entry is
+  `{"t", "endpoints", "source_line"}`: `"t"` is the exact rational, emitted as
+  a **string** (e.g. `"1/2"`), not rounded to a JSON float, so a future
+  consumer can recover it exactly; `"endpoints"` is `[[x0, y0], [x1, y1]]`,
+  the bundle's two furthest-out points (`t=0`, `t=1`) in paper coordinates,
+  rendered to JSON decimal like `vertices_coords`. This is a
+  forward-compatibility hook for tooling — a future renderer MAY read it to
+  build a `t`-slider over the endpoints; no renderer consumes it yet.
 
 **`file_frames` — one `foldedForm` frame per fold**: a flat baseline frame for
 the unfolded sheet, followed by one frame per fold/collapse action, in program
