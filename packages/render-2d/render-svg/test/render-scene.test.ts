@@ -68,3 +68,21 @@ test("faces:none draws no face polygons", async () => {
   }).toString();
   expect(count(s, /data-kind="face"/g)).toBe(0);
 });
+
+test("crease lines carry data-crease-id and data-seg; points carry data-vertex", () => {
+  // None of the checked-in fixtures predate Task 3's `crease_id` emission, so
+  // none carry it — build a minimal scene (square + one named diagonal) with
+  // it set directly, same style as scene/test/parse.test.ts's Task 3 tests.
+  const scene = parseFold({
+    vertices_coords: [[0, 0], [1, 0], [1, 1], [0, 1]],
+    edges_vertices: [[0, 1], [1, 2], [2, 3], [3, 0], [0, 2]],
+    edges_assignment: ["B", "B", "B", "B", "V"],
+    faces_vertices: [[0, 1, 2], [0, 2, 3]],
+    "beloch:edges": [null, null, null, null, { name: "diag", crease_id: 7 }],
+    "beloch:vertices_names": ["a", "b", "c", "d"],
+  });
+  const svg = renderCP(scene).toString();
+  expect(svg).toContain('data-crease-id="7"');
+  expect(svg).toContain('data-seg="0"');
+  expect(svg).toContain("data-vertex=");
+});
