@@ -155,7 +155,6 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       return !(pos && neg); // faces all on one side → boundary of the silhouette
     };
 
-    const segCounter = new Map<number, number>();
     if (opts.texture.creases) {
       E.forEach((e, i) => {
         const faces = incident[i]!;
@@ -200,12 +199,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
           if (style.opacity !== undefined) attrs["opacity"] = style.opacity;
           if (name) attrs["data-name"] = name;
           if (name) attrs["data-bel-name"] = name;
-          if (cid !== null) {
-            const seg = segCounter.get(cid) ?? 0;
-            segCounter.set(cid, seg + 1);
-            attrs["data-crease-id"] = cid;
-            attrs["data-seg"] = seg;
-          }
+          if (cid !== null) attrs["data-crease-id"] = cid;
           creases.children.push(el("line", attrs));
         }
 
@@ -425,7 +419,6 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     }
 
     if (opts.texture.creases) {
-      const segCounter = new Map<number, number>();
       E.forEach(([a, b], i) => {
         if (!showCrease(i)) return;
         const assignment = A[i]!;
@@ -445,12 +438,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
         if (style.opacity !== undefined) attrs["opacity"] = style.opacity;
         if (name) attrs["data-name"] = name;
         if (name) attrs["data-bel-name"] = name;
-        if (cid !== null) {
-          const seg = segCounter.get(cid) ?? 0;
-          segCounter.set(cid, seg + 1);
-          attrs["data-crease-id"] = cid;
-          attrs["data-seg"] = seg;
-        }
+        if (cid !== null) attrs["data-crease-id"] = cid;
         creases.children.push(el("line", attrs));
       });
     }
