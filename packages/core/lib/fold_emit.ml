@@ -353,10 +353,20 @@ let beloch_inspect_json (state : Fold_state.t)
                ] ))
          faces)
   in
+  (* A point on a shared face boundary (crease crossing, corner) lies in
+     several polygons — in_convex_polygon is boundary-inclusive. Only resolve
+     to a face when EXACTLY one polygon contains it; otherwise `None` (the
+     point straddles a boundary and has no single carrying face/flap). *)
   let face_of (p : Geom.point) =
-    let found = ref None in
-    Array.iteri (fun i poly -> if !found = None && Geom.in_convex_polygon poly p then found := Some i) faces;
-    !found
+    let found = ref None and count = ref 0 in
+    Array.iteri
+      (fun i poly ->
+        if Geom.in_convex_polygon poly p then begin
+          incr count;
+          if !count = 1 then found := Some i
+        end)
+      faces;
+    if !count = 1 then !found else None
   in
   let points_json =
     List.map

@@ -569,7 +569,22 @@ let test_inspect_enumerates_crease_segments () =
     (fun (_i, f) ->
       Alcotest.(check bool) "face has rank" true (f |> member "rank" <> `Null);
       Alcotest.(check bool) "face has flap" true (f |> member "flap" <> `Null))
-    faces
+    faces;
+  (* points: a corner sits inside a single face → resolves to a unique
+     Some index; but .mid = --h * --v is the crossing point shared by all
+     four faces, so it lands on a shared boundary and MUST resolve to null
+     (face_of returns None unless exactly one polygon contains the point). *)
+  let points = inspect |> member "points" in
+  let corner = points |> member "a" in
+  Alcotest.(check bool) "corner .a has a face" true
+    (corner |> member "face" <> `Null);
+  Alcotest.(check bool) "corner .a has a flap" true
+    (corner |> member "flap" <> `Null);
+  let mid = points |> member "mid" in
+  Alcotest.(check bool) "boundary point .mid face is null" true
+    (mid |> member "face" = `Null);
+  Alcotest.(check bool) "boundary point .mid flap is null" true
+    (mid |> member "flap" = `Null)
 
 (* cross is material: a crease scored through several layers marks different
    lines in the paper, so bare cross must error — with a hint toward the
