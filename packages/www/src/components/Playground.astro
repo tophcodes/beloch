@@ -268,6 +268,14 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     width: auto;
     height: auto;
   }
+  /* Cursor→SVG side of the bidirectional entity highlight: outlines the
+     crease segment(s) whose provenance span covers the editor's cursor
+     line. Overrides the per-segment stroke/stroke-width attributes
+     render-scene.ts emits (CSS class beats presentation attributes). */
+  .pg-canvas :global(.pg-hl) {
+    stroke: var(--beloch-valley);
+    stroke-width: 4;
+  }
   /* Notices (info/error) mustn't inherit the grab cursor — they're not
      draggable paper. */
   .pg-canvas:has(.pg-notice) {
@@ -498,7 +506,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   import { parseFold, type FoldScene, type Statement } from "@beloch/scene";
   import { renderCP, renderFolded, WEB_THEME } from "@beloch/render-svg";
   import { SCHEMES, STORAGE_KEY, DEFAULT_ID, applyScheme, resolveScheme } from "../lib/paper-schemes";
-  import { lookupEntity, type EntityRef } from "../lib/inspect-lookup";
+  import { lineOfSpan, lookupEntity, type EntityRef } from "../lib/inspect-lookup";
 
   const TIMEOUT_MS = 8000;
 
@@ -718,6 +726,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
           editorTheme,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) updateRunButtonState();
+            if (update.selectionSet) highlightCreasesOnLine(update.state.doc.lineAt(update.state.selection.main.head).number);
           }),
         ],
       }),
@@ -813,6 +822,20 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       inspectPanel!.hidden = false;
     }
 
+    // The reverse direction of the click→line jump above: moving the
+    // editor cursor onto a source line outlines every SVG crease segment
+    // whose provenance span covers that line (read-only, no pinning).
+    const highlightCreasesOnLine = (line: number) => {
+      canvas.querySelectorAll(".pg-hl").forEach((el) => el.classList.remove("pg-hl"));
+      const insp = currentScene?.inspect;
+      if (!insp) return;
+      for (const [cid, c] of Object.entries(insp.creases)) {
+        if (lineOfSpan(c.span) === line) {
+          canvas.querySelectorAll(`[data-crease-id="${cid}"]`).forEach((el) => el.classList.add("pg-hl"));
+        }
+      }
+    };
+
     // Hover previews the entity under the cursor; a click pins it (and a
     // second click, e.g. on empty paper, unpins). Pan gestures must not
     // register as a click here — wasDrag() is only true after the pointer
@@ -825,6 +848,12 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       if (panZoom.wasDrag()) return;
       pinned = lookupEntity(e.target as Element);
       renderInspect(pinned);
+      // Jump the editor to the clicked entity's source line — creases carry
+      // a provenance span (faces/vertices don't have one yet).
+      if (pinned?.kind === "crease") {
+        const ln = lineOfSpan(currentScene?.inspect?.creases[pinned.creaseId]?.span ?? null);
+        if (ln) setStepLineOn(editor, ln);
+      }
     });
 
     // Prev/next just walk the clamped index; renderStep re-clamps and keeps

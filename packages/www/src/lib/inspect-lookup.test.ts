@@ -1,8 +1,24 @@
 import { test, expect, beforeAll } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
-import { lookupEntity } from "./inspect-lookup";
+import { lineOfSpan, lookupEntity } from "./inspect-lookup";
 
 beforeAll(() => { if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register(); });
+
+test("lineOfSpan reads the line out of a file:line:col-col span", () => {
+  expect(lineOfSpan("fish.bel:12:3-8")).toBe(12);
+});
+
+test("lineOfSpan handles a multi-digit line number", () => {
+  expect(lineOfSpan("fish.bel:123:0-4")).toBe(123);
+});
+
+test("lineOfSpan returns null for null input", () => {
+  expect(lineOfSpan(null)).toBeNull();
+});
+
+test("lineOfSpan returns null for a string with no line:col shape", () => {
+  expect(lineOfSpan("not a span")).toBeNull();
+});
 
 test("lookupEntity resolves a crease element", () => {
   const el = document.createElement("line");
