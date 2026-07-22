@@ -69,20 +69,29 @@ test("faces:none draws no face polygons", async () => {
   expect(count(s, /data-kind="face"/g)).toBe(0);
 });
 
-test("crease lines carry data-crease-id and data-seg; points carry data-vertex", () => {
+test("crease lines carry data-crease-id (bundle-grouped); boundary edges don't; points carry data-vertex", () => {
   // None of the checked-in fixtures predate Task 3's `crease_id` emission, so
-  // none carry it — build a minimal scene (square + one named diagonal) with
-  // it set directly, same style as scene/test/parse.test.ts's Task 3 tests.
+  // none carry it — build a minimal scene directly, same style as
+  // scene/test/parse.test.ts's Task 3 tests. A single crease bundle (id 4) is
+  // split across TWO collinear edges (0-4 and 4-2, the diagonal through the
+  // midpoint 4); the fourth edge is a null-provenance boundary.
   const scene = parseFold({
-    vertices_coords: [[0, 0], [1, 0], [1, 1], [0, 1]],
-    edges_vertices: [[0, 1], [1, 2], [2, 3], [3, 0], [0, 2]],
-    edges_assignment: ["B", "B", "B", "B", "V"],
+    vertices_coords: [[0, 0], [1, 0], [1, 1], [0, 1], [0.5, 0.5]],
+    edges_vertices: [[0, 4], [4, 2], [0, 1], [1, 2], [2, 3], [3, 0]],
+    edges_assignment: ["V", "V", "B", "B", "B", "B"],
     faces_vertices: [[0, 1, 2], [0, 2, 3]],
-    "beloch:edges": [null, null, null, null, { name: "diag", crease_id: 7 }],
+    "beloch:edges": [
+      { name: "diag", crease_id: 4 },
+      { name: "diag", crease_id: 4 },
+      null, null, null, null,
+    ],
     "beloch:vertices_names": ["a", "b", "c", "d"],
   });
   const svg = renderCP(scene).toString();
-  expect(svg).toContain('data-crease-id="7"');
-  expect(svg).toContain('data-seg="0"');
+  // Both edges of the bundle carry the same crease id (grouping).
+  expect(count(svg, /data-crease-id="4"/g)).toBe(2);
+  // The boundary edge (assignment B, on the outer square) carries no crease id;
+  // exactly the two bundle edges are stamped, no boundary line is.
+  expect(count(svg, /data-crease-id=/g)).toBe(2);
   expect(svg).toContain("data-vertex=");
 });
