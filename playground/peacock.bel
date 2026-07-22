@@ -1,0 +1,28 @@
+; author Jon Akashima
+; source https://jonakashima.com.br/2020/08/17/origami-peacock/
+paper square
+
+mark --v = map .b onto .d
+mark --h = map .a onto .c
+flip
+
+mark --_d1 = map .c onto (--h * --v)
+mark --_d2 = map .c onto (--_d1 * --v)
+
+; note:
+; --_d1 and --_d2 should be "at --v" but that doesn't exist yet.
+; the closest would be "at #? * --v" where "#?" is the emergent crease
+
+fold map .a onto (--_d2 * --v)
+flip
+
+fold --h moving .c
+mark --l = map .c onto .a #[.c]
+flip
+fold --l moving .a
+
+fold --r = map --h onto --l moving #[.b]
+.lb = --r & #[.a] * --ab
+
+.n = free on --h from .b at 1/4
+; fold --tailflap = through ; tailflap 
