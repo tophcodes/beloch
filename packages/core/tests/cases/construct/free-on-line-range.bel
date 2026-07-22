@@ -1,0 +1,4 @@
+paper square
+--diag = through .a .c
+.bad = free on --diag from .a at 2/1
+; expect error "out of range"

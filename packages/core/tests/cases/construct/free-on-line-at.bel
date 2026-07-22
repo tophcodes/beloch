@@ -1,0 +1,6 @@
+paper square
+--diag = through .a .c
+.q = free on --diag from .a at 1/4
+.r = free on --diag from .c at 1/4
+; assert .q = (1/4, 1/4)
+; assert .r = (3/4, 3/4)
