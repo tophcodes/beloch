@@ -1,5 +1,5 @@
 import {
-  Assignment, Crease, EdgeProvenance, FoldScene, Frame, LineCoeffs,
+  Assignment, Crease, EdgeProvenance, FoldScene, Frame, Inspect, LineCoeffs,
   Mark, NamedLine, NamedPoint, SceneError, Statement, Step, StepNotFoundError, Vec2,
 } from "./types";
 
@@ -10,13 +10,18 @@ function frameFrom(raw: Record<string, unknown>): Frame {
   const n = edgesVertices.length;
   const edgesAssignment = (raw["edges_assignment"] ??
     Array(n).fill("U")) as Assignment[];
-  const prov = (raw["beloch:edges"] ?? []) as (EdgeProvenance | null)[];
+  const prov = (raw["beloch:edges"] ?? []) as (Record<string, unknown> | null)[];
   const vnames = (raw["beloch:vertices_names"] ?? []) as (string | null)[];
   return {
     vertices,
     edgesVertices,
     edgesAssignment,
-    edgesProvenance: Array.from({ length: n }, (_, i) => prov[i] ?? null),
+    edgesProvenance: Array.from({ length: n }, (_, i) => {
+      const p = prov[i];
+      return p
+        ? ({ ...p, creaseId: (p["crease_id"] ?? null) as number | null } as EdgeProvenance)
+        : null;
+    }),
     verticesNames: Array.from(
       { length: vertices.length },
       (_, i) => vnames[i] ?? null,
@@ -89,9 +94,10 @@ export function parseFold(input: string | object): FoldScene {
     (fold["beloch:named_lines"] ?? {}) as
       Record<string, { coeffs: LineCoeffs; step?: number }>,
   ).map(([name, v]) => ({ name, coeffs: v.coeffs, step: v.step ?? 0 }));
+  const inspect = (fold["beloch:inspect"] ?? null) as Inspect | null;
   return {
     cp, steps, statements: statementsFrom(fold), namedPoints, namedLines,
-    creases: groupCreases(cp), marks: marksFrom(fold),
+    creases: groupCreases(cp), marks: marksFrom(fold), inspect,
   };
 }
 
