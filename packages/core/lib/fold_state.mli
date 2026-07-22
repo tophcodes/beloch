@@ -290,12 +290,15 @@ val edge_boundary_segments : t -> Geom.line -> crease_segment list
     polygon sides of every face lying on [line] that are not paired with a
     neighbor across a hinge. List order is unspecified. *)
 
-val crease_axis : t -> int -> Geom.line -> [ `Line of Geom.line | `Bent | `Empty ]
+val crease_axis :
+  t -> int -> Geom.line -> [ `Line of Geom.line | `Bent | `Empty | `Collapsed ]
 (** Classification of crease [cid] against its ORIGINAL table-space line
     [l_orig]: [`Line l_orig] if every piece still lies on it, else [`Line l]
     for the single line carrying every piece if one exists (reconstructed
     from two distinct table endpoints), [`Bent] if the pieces are not
-    collinear, [`Empty] if the crease has no pieces. *)
+    collinear, [`Empty] if the crease has no pieces, [`Collapsed] if it has
+    pieces but they have all folded onto a single table point (so it no longer
+    names a line — distinct from [`Empty], where there is nothing to name). *)
 
 val crease_paper_axis : t -> int -> [ `Line of Geom.line | `Bent | `Empty ]
 (** The single PAPER-space line carrying every material segment of [cid], if
@@ -392,13 +395,17 @@ val mark_chords : t -> int -> (Geom.point * Geom.point) list
     [cid]. [MPoint] marks contribute no chord. Used by the meet operator to
     test that a marked line physically reaches a crossing. *)
 
-val mark_axis_current : t -> int -> [ `Line of Geom.line | `Bent | `Empty ]
+val mark_axis_current :
+  t -> int -> [ `Line of Geom.line | `Bent | `Empty | `Collapsed ]
 (** The mark [cid]'s current TABLE-space axis, tracking folds/flips (its
     paper geometry is fold-invariant, so the current line is the paper chord
     mapped to the table). [`Bent] if a fold has bent the chord (its paper
     midpoint no longer maps onto the straight table chord) — the caller must
-    pick a flap. [`Empty] if [cid] has no [MSeg] mark, or its table
-    endpoints coincide. *)
+    pick a flap. [`Empty] if [cid] has no [MSeg] mark. [`Collapsed] if it has
+    a chord but a fold has folded its endpoints onto a single table point, so
+    it no longer names a line (distinct from [`Empty]: the mark exists, its
+    current geometry is a point — falling back to its flat-paper birth line
+    would be stale). *)
 
 val mark_face : t -> mark -> int option
 (** The face whose PAPER polygon contains the mark's representative point;

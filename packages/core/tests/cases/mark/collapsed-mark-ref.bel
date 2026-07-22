@@ -1,0 +1,12 @@
+paper square
+
+; --v is the a–c diagonal. --l is the perpendicular bisector of c and a, so
+; folding along it maps corner a onto c — which collapses the a–c diagonal to a
+; single table point. Referencing the collapsed --v as a line must fail honestly,
+; not silently fall back to its stale flat-paper birth line.
+mark --v = map .b onto .d
+mark --l = map .c onto .a
+fold --l moving .a
+mark --x = map .b onto --v perp --l
+
+; expect error "collapsed"
