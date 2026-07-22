@@ -109,19 +109,24 @@ single-`;` and are still discarded).
   affects folded-state geometry.
 - **`fold_emit.ml`**: read leading meta-keys into the FOLD metadata dict already
   being built next to `file_creator`.
+- **First-party renderers / playgrounds**: display declared attribution by
+  default — this is the "lead by example" lever from [ADR 0018] §3, and the only
+  enforcement Beloch has. Not a license duty on anyone; Beloch's own surfaces
+  simply show the credit.
 - **Instruction / step JSON + docs stepper**: attach notes to their positional
   step.
 
 ## Slice 1 scope
 
 **In:** `;;` lexer rule + `ANNOTATION` token; annotation AST node; Tier 1
-file-meta emitted to FOLD author/title/source/license; Tier 2 notes emitted to
-the instruction JSON. `playground/peacock.bel` becomes the first real user of
-`;; author` / `;; source`.
+file-meta emitted to FOLD author/title/source/license and displayed by the
+first-party playground/renderer; Tier 2 notes emitted to the instruction JSON.
+`playground/peacock.bel` becomes the first real user of `;; author` /
+`;; source`.
 
-**Out:** Tier 3 step grouping; the visualization license / retention clause
-(ADR 0018 §3 — a licensing action, not code); the `refs/`-grounded
-community-norm prose (ADR 0018 open item).
+**Out:** Tier 3 step grouping; the `refs/`-grounded community-norm prose
+(ADR 0018 open item). No license change of any kind — MIT stays intact
+([ADR 0006]); attribution is a capability, not an obligation.
 
 ## Open questions
 

@@ -2,15 +2,14 @@
 
 ## Status
 
-Accepted (2026-07-22) — the *stance* and the *license split* below are decided.
-The input mechanism that populates provenance (a source-level annotation) is
-designed separately in
+Accepted (2026-07-22) — the *stance* below is decided. The input mechanism that
+populates provenance (a source-level annotation) is designed separately in
 [docs/superpowers/specs/2026-07-22-annotation-layer-design.md] and is **not yet
-implemented**; until it ships, the emitter has nothing to propagate and the
-retention clause has nothing to protect.
+implemented**; until it ships, the emitter has nothing to propagate.
 
-Amends [0006 — Permissive license (MIT)], which now holds for the language core
-and the FOLD-emit runtime only. See *Decision* §3.
+Does **not** change [0006 — Permissive license (MIT)]. MIT stands everywhere,
+unchanged. Attribution here is a *capability*, never a license obligation — see
+*Decision* §3.
 
 ## Context
 
@@ -63,62 +62,65 @@ already exists, populated from a declaration that does not yet exist.
 Conflating the two is the usual mistake. MIT already makes you keep the code
 notice; it says nothing about the model whose crease pattern you transcribed.
 
-### 3. License shape — a split, not a field-of-use restriction
+### 3. Attribution is a capability, not a license obligation
 
-- The **language and the FOLD-emit runtime** stay **MIT** ([0006]). Use them for
-  anything.
-- The **visualization / rendering features** carry **MIT plus an
-  attribution-retention clause**: where a `.bel` declares model provenance, that
-  credit MUST survive in the rendered output; stripping it is a license
-  violation. There is OSI-compatible prior art for attribution-in-output
-  (badgeware / CPAL-style clauses). The exact SPDX identifier or license text is
-  **not decided here** — only the shape.
+The license stays **permissive MIT everywhere** ([0006]), unchanged. It grants
+no exception and imposes no attribution duty. Our license does not tell a user
+*"if you use this, you must handle attribution."* It tells them *"here is how you
+declare attribution"* — a way to say who designed a model — and then gets out of
+the way.
 
-This is deliberately *attribution-copyleft*, not *field-of-use*. It constrains
-whether declared credit may be **stripped**, never *what you are allowed to
-depict*.
+The norm is set by **example, not by force**: Beloch's **first-party tooling —
+the official playgrounds and renderers — displays declared attribution by
+default.** In the surfaces people actually look at, the credit is simply there.
+That makes the honest path the visible default without constraining, in any way,
+what anyone may do with the MIT-licensed code.
 
-### 4. Explicitly rejected: "visualization only for your own works"
+### 4. Explicitly rejected: license teeth of any kind
 
-An earlier framing split the runtime by *use*: the renderer usable only to
-depict your own models, or free-with-attribution otherwise. Rejected, for
-reasons worth recording so we do not relitigate:
+Two framings were considered and both rejected, recorded so we do not
+relitigate:
 
-- **It does not defend the goal.** If FOLD-emit is free-for-anything, the
-  `.fold` file is out, and *any* FOLD viewer (Rabbit Ear, Oripa, a three.js
-  snippet) renders it prettily. Restricting Beloch's *own* renderer only pushes
-  pretty replication to another viewer — it never stops it.
-- **It binds the wrong population.** A field-of-use clause taxes the honest user
-  who actually wanted Beloch's renderer, while the model thief ignores it as
-  readily as any attribution norm.
-- **It reverses openness for that weak gain.** A field-of-use restriction is not
-  open source (it fails freedom 0) and reverses [0006] wholesale, costing
-  adoption and contributors — for a protection §4's first bullet already shows is
-  illusory.
+- **Field-of-use ("visualization only for your own works").** Does not defend
+  the goal: if FOLD-emit is free-for-anything, the `.fold` file is out and *any*
+  FOLD viewer (Rabbit Ear, Oripa, a three.js snippet) renders it prettily —
+  restricting Beloch's *own* renderer only pushes pretty replication elsewhere,
+  never stops it. It also binds the wrong population (taxes the honest user, the
+  thief ignores it) and reverses [0006]'s adoption-first stance (a field-of-use
+  clause is not open source — fails freedom 0) for that illusory gain.
+- **Attribution-retention as a license obligation** ("declared credit must
+  survive in rendered output, or you are in violation"). Rejected too: it is
+  exactly the *"you must handle attribution"* framing we do not want. It taxes
+  honest users with a legal duty and contradicts the permissive stance, to
+  protect against stripping that, per the first bullet, any third-party FOLD
+  viewer sidesteps anyway.
+
+The lever is not law. It is making declaration easy and showing the result in
+our own tools.
 
 ### 5. Not frozen here
 
 - The exact `.bel` input syntax for the provenance declaration — designed in the
   annotation-layer spec, not this ADR.
-- The exact visualization license text / SPDX identifier.
 
 ## Consequences
 
-- **The monorepo becomes multi-licensed**: core + emit under MIT, visualization
-  under MIT-plus-attribution. This must be documented at the package level
-  (`packages/render-2d`, `packages/eval-web`, `LICENSE.md` pointers) when the
-  clause is chosen. [0006] is amended accordingly.
-- **Retention bites only where provenance is declared.** No declaration, nothing
-  to retain. The honest path becomes the default path, and deleting credit
-  becomes a deliberate act rather than the ambient outcome — but nothing is
-  forced on a plain scratch file.
-- **Honest limit — no overclaim.** The clause governs Beloch's *own* renderer's
-  output, not the universe. Someone who exports FOLD and renders elsewhere is
-  outside its reach, and this ADR says so plainly. It makes stripping credit from
-  Beloch's polished output a violation; it cannot and does not police re-rendering
-  by third-party tools.
-- **Roadmap.** The provenance feature — input syntax, emit propagation, and the
-  visualization license — is its own slice, tracked separately, with the
+- **MIT stays intact everywhere.** No license split, no multi-licensing, no new
+  clause. [0006] is unchanged.
+- **Attribution is opt-in.** Nothing is forced on a plain scratch file; a `.bel`
+  that declares no provenance carries none. Where it *is* declared, the honest
+  path becomes the visible default because our own tools show it — deleting
+  credit becomes a deliberate act rather than the ambient outcome.
+- **First-party tooling leads by example.** The official playgrounds and
+  renderers display declared attribution by default. This is the whole
+  enforcement mechanism: not a legal duty on anyone, but Beloch's own surfaces
+  modelling the norm.
+- **Honest limit — no overclaim.** Beloch cannot stop anyone from stripping
+  credit, and this ADR says so plainly. Its reach is exactly two things: make
+  declaring provenance easy, and show it by default in first-party surfaces.
+  Someone who exports FOLD and renders elsewhere is free to do as they like.
+- **Roadmap.** The provenance feature — input syntax, emit propagation, and
+  first-party display — is its own slice, tracked separately, with the
   annotation layer as the vehicle and attribution as its first client.
 - **Open — community-norm grounding.** The origami community's attribution norm
   (the folded-object-vs-diagram/CP distinction; Lang's writing on origami and
@@ -129,10 +131,9 @@ reasons worth recording so we do not relitigate:
 
 ## Alternatives considered
 
-- **Norm + mechanism, no license teeth** — carry attribution by construction
-  (populate `file_author`) but never mandate it; MIT stays intact everywhere.
-  The minimal, conflict-free path. Rejected in favour of the retention clause,
-  which gives the stated principle actual force in Beloch's own output without
-  fragmenting adoption. (The retention clause degrades gracefully to this if the
-  license work is ever dropped: the emit propagation stands on its own.)
-- **Field-of-use split** — see Decision §4.
+- **Attribution-retention as a license obligation** — MIT-plus-attribution on
+  the visualization features, credit required to survive in rendered output.
+  Rejected: it is the "you must handle attribution" framing we explicitly do not
+  want, and it fragments the license for protection any third-party viewer
+  sidesteps. See Decision §4.
+- **Field-of-use split** ("renderer only for your own works") — see Decision §4.
