@@ -13,6 +13,13 @@ control". The audience is academic-adjacent (origami math, PL, education).
 
 Ship under a **permissive license — MIT** (already in `LICENSE.md`).
 
+> **Superseded in part by [0018 — Attribution is carried by construction]
+> (2026-07-22).** MIT still holds for the language core and the FOLD-emit
+> runtime. The **visualization / rendering** features additionally carry an
+> attribution-retention clause (MIT-plus-attribution): where a `.bel` declares
+> model provenance, that credit must survive in the rendered output. This is
+> attribution-copyleft, *not* a field-of-use restriction — see ADR 0018 §3–§4.
+
 ## Alternatives considered
 
 - **AGPLv3 / GPLv2** (the author floated "AGPLv2", which doesn't exist —
