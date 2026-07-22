@@ -992,7 +992,7 @@ let test_battery_mark_then_fold () =
   let g = Fold_state.add_mark (replay ops) mnew in
   let g = Fold_state.fold g ~axis:(battery_hl half) ~move_side:1 ~valley:true ~prov:None in
   Alcotest.(check int) "4 faces" 4 (Array.length (Fold_state.faces g));
-  let str = function `Line _ -> "line" | `Bent -> "bent" | `Empty -> "empty" in
+  let str = function `Line _ -> "line" | `Bent -> "bent" | `Empty -> "empty" | `Collapsed -> "collapsed" in
   Alcotest.(check string) "mark axis class" "line" (str (Fold_state.mark_axis_current g 99));
   (match Fold_state.mark_axis_current g 99 with
   | `Line l ->
@@ -1073,7 +1073,7 @@ let test_crease_segments_parity () =
 
 let test_crease_axes_parity () =
   let g = pair_precrease_fold () in
-  let string_of = function `Line _ -> "line" | `Bent -> "bent" | `Empty -> "empty" in
+  let string_of = function `Line _ -> "line" | `Bent -> "bent" | `Empty -> "empty" | `Collapsed -> "collapsed" in
   List.iter
     (fun cid ->
       (* probe with a line unrelated to the crease, so a `Line result is
@@ -1385,9 +1385,9 @@ let test_classify_parity () =
 (* Was a parity test against the old model (Plan 3b Task 4); the old model is
    gone (Plan 3c Task 6). The mark's two paper endpoints happen to map to the
    SAME table point on this fixture (the book fold at x=1/2 reflects x=1 onto
-   x=0, and both endpoints sit at y=1/4), so [mark_axis_current] correctly
-   reports `Empty (no line through a single point) — pinned from a scratch
-   run (git history has the parity-checked provenance). *)
+   x=0, and both endpoints sit at y=1/4), so the mark has a chord but it has
+   folded onto a single point: [mark_axis_current] reports `Collapsed (a
+   present-but-degenerate mark, distinct from `Empty's nothing-to-name). *)
 let test_mark_axis_current_parity () =
   let g = pair_precrease_fold () in
   let quarter = Num.div Num.one (Num.of_int 4) in
@@ -1396,8 +1396,8 @@ let test_mark_axis_current_parity () =
                mline = { Geom.a = q 0; b = q 1; c = quarter };
                mintent = Fold_state.V; mcrease_id = 77; mprov = None } in
   let g = Fold_state.add_mark g mnew in
-  let str = function `Line _ -> "line" | `Bent -> "bent" | `Empty -> "empty" in
-  Alcotest.(check string) "mark axis class" "empty" (str (Fold_state.mark_axis_current g 77))
+  let str = function `Line _ -> "line" | `Bent -> "bent" | `Empty -> "empty" | `Collapsed -> "collapsed" in
+  Alcotest.(check string) "mark axis class" "collapsed" (str (Fold_state.mark_axis_current g 77))
 
 let () =
   Alcotest.run "fold_graph"
