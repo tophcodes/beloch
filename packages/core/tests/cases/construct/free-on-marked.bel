@@ -1,0 +1,5 @@
+paper square
+mark --m = through .a .c
+.mid = free on --m from .a
+; assert .mid = (1/2, 1/2)
+; assert .mid incident --m

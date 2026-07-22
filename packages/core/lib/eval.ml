@@ -1769,9 +1769,10 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
               match Geom.clip_to_unit_square l with
               | Some (a, b) -> (a, b)
               | None -> Error.fail span "the line does not cross the paper")
-          | Some _ ->
-              Error.fail span "free on a material line: not yet implemented"
-              (* Task 3 replaces this branch *)
+          | Some chords -> (
+              match Geom.material_bundle chords with
+              | Some (a, b) -> (a, b)
+              | None -> Error.fail span "the line has no material on the paper")
         in
         let ax = resolve_point anchor in
         (* orient: t=0 at the anchor endpoint *)

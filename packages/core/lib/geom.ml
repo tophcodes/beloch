@@ -177,6 +177,13 @@ let extreme_pair (pts : point list) : (point * point) option =
   | Some (a, b, d) when Num.sign d > 0 -> Some (a, b)
   | _ -> None
 
+(* The furthest-out endpoint pair over a set of (possibly disjoint, possibly
+   duplicated) collinear chords — the material "bundle" of a line. In-between
+   gaps are bridged; [None] iff there are no chords. *)
+let material_bundle (chords : (point * point) list) : (point * point) option =
+  let pts = List.concat_map (fun (a, b) -> [ a; b ]) chords in
+  extreme_pair pts
+
 let clip_to_unit_square (l : line) : segment option =
   let z = Num.zero and o = Num.one in
   let cands = ref [] in
