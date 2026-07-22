@@ -1805,11 +1805,27 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
         let px = Num.add e0.Geom.x (Num.mul tv (Num.sub e1.Geom.x e0.Geom.x)) in
         let py = Num.add e0.Geom.y (Num.mul tv (Num.sub e1.Geom.y e0.Geom.y)) in
         bind_point ctx n span { Geom.x = px; y = py };
-        ctx.free_points_rev <-
-          (n,
-           { fi_t = tv; fi_p0 = e0; fi_p1 = e1;
-             fi_source_line = (fst span).Lexing.pos_lnum })
-          :: ctx.free_points_rev
+        (* namespace the emitted name the same way prov_name qualifies crease
+           provenance (~1439-1445): a bare name collides across independent
+           `apply` instances of the same def, since [free_points_rev] is one
+           flat list across the whole eval, not scoped per instance. Temp
+           names are dropped, mirroring the is_temp filter that already keeps
+           `_`-prefixed names out of named_points/named_lines. *)
+        (match ctx.name_ctx with
+        | _ when is_temp n -> ()
+        | Root ->
+            ctx.free_points_rev <-
+              (n,
+               { fi_t = tv; fi_p0 = e0; fi_p1 = e1;
+                 fi_source_line = (fst span).Lexing.pos_lnum })
+              :: ctx.free_points_rev
+        | InInstance i ->
+            ctx.free_points_rev <-
+              (i ^ "." ^ n,
+               { fi_t = tv; fi_p0 = e0; fi_p1 = e1;
+                 fi_source_line = (fst span).Lexing.pos_lnum })
+              :: ctx.free_points_rev
+        | Anon -> ())
     | Ast.Flip _ ->
         ctx.state := Fold_state.flip !(ctx.state);
         ctx.pending <- true

@@ -396,7 +396,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
            ( name,
              `Assoc
                [
-                 ("t", q_to_json fi.Eval.fi_t);
+                 ("t", `String (Num.to_rational_string fi.Eval.fi_t));
                  ( "endpoints",
                    `List
                      [

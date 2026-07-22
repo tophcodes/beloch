@@ -259,6 +259,15 @@ let to_float (x : t) : float =
       let lo, hi = enclosure_tight x w in
       Q.to_float (Q.div (Q.add lo hi) two_q)
 
+(* exact rational rendering ("2/5", "1/2"), for callers that need the
+   authored fraction rather than a lossy float (e.g. beloch:free's [t]).
+   Only ever called on a value known to be rational; raises otherwise
+   rather than silently approximating. *)
+let to_rational_string (x : t) : string =
+  match x with
+  | Rat q -> Q.to_string q
+  | Qq _ | Field _ -> invalid_arg "Num.to_rational_string: not a rational value"
+
 (* A single-generator field ℚ(α) that might contain x: reuse a Field's own
    generator; upgrade an irrational Qq of degree ≤ 3 (field_upgrade); rationals
    carry no generator. Used to route cross-representation +/* through the
