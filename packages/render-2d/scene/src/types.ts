@@ -9,6 +9,7 @@ export interface EdgeProvenance {                            // one beloch:edges
   sources: string[];
   span: string | null;
   name: string | null;                                       // crease name (bundle) this edge belongs to
+  creaseId: number | null;                                   // beloch:edges[i].crease_id
 }
 
 export interface Frame {
@@ -66,6 +67,32 @@ export interface PointMark {
 }
 export type Mark = SegMark | PointMark;
 
+// beloch:inspect — entity inspector data (playground slice B); keyed by
+// crease_id / face index / point name as emitted by the core.
+export interface InspectSegment {
+  faces: [number, number];
+  paper: [Vec2, Vec2];
+  table: [Vec2, Vec2];
+  assignment: string;
+}
+export interface InspectCrease {
+  name: string | null;
+  axiom: string | null;
+  sources: string[];
+  span: string | null;
+  segments: InspectSegment[];
+}
+export interface InspectFace {
+  vertices: Vec2[];
+  flap: number;
+  rank: number;
+}
+export interface Inspect {
+  creases: Record<string, InspectCrease>;
+  faces: Record<string, InspectFace>;
+  points: Record<string, { face: number | null; flap: number | null }>;
+}
+
 export interface FoldScene {
   cp: Frame;
   steps: Step[];                                             // one per foldedForm frame, file order
@@ -74,6 +101,7 @@ export interface FoldScene {
   namedLines: NamedLine[];
   creases: Crease[];                                         // grouped by provenance name on the CP frame
   marks: Mark[];                                              // beloch:marks, paper-space, CP frame only
+  inspect: Inspect | null;                                   // beloch:inspect, entity inspector data
 }
 
 export class SceneError extends Error {}
