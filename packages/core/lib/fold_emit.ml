@@ -46,25 +46,26 @@ let vertices_names_json (vpaper : Geom.point Dynarray.t)
            | Some (name, _) -> `String name
            | None -> `Null))
 
-(* beloch:edges array from an (ia, ib, assign, prov) edge list *)
+(* beloch:edges array from an (ia, ib, assign, prov, cid) edge list *)
 let beloch_edges_json edges : Yojson.Safe.t =
   `List
     (List.map
-       (fun (_, _, _, prov) ->
+       (fun (_, _, _, prov, cid) ->
          match prov with
          | None -> `Null
          | Some (pr : State.provenance) ->
              `Assoc
-               [
-                 ("axiom", `String pr.State.axiom);
-                 ( "sources",
-                   `List (List.map (fun s -> `String s) pr.State.sources) );
-                 ("span", `String (Error.span_to_string pr.State.span));
-                 ( "name",
-                   match pr.State.name with
-                   | Some n -> `String n
-                   | None -> `Null );
-               ])
+               ([
+                  ("axiom", `String pr.State.axiom);
+                  ( "sources",
+                    `List (List.map (fun s -> `String s) pr.State.sources) );
+                  ("span", `String (Error.span_to_string pr.State.span));
+                  ( "name",
+                    match pr.State.name with
+                    | Some n -> `String n
+                    | None -> `Null );
+                ]
+               @ (match cid with Some c -> [ ("crease_id", `Int c) ] | None -> [])))
        edges)
 
 (* Emit-time overlay (design §3.6). Graduates every mark whose MSeg endpoints
@@ -156,8 +157,8 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
         if not (Hashtbl.mem edge_tbl key) then begin
           Hashtbl.replace edge_tbl key ();
           let pa = f.(k) and pb = f.((k + 1) mod m) in
-          let assign, prov =
-            if on_unit_boundary pa pb then ("B", None)
+          let assign, prov, cid =
+            if on_unit_boundary pa pb then ("B", None, None)
             else
               match Fold_state.hinge_between state fi pa pb with
               | Some hi ->
@@ -167,10 +168,10 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
                     | Fold_state.V -> "V"
                     | Fold_state.F -> "F"
                   in
-                  (a, hs.(hi).Fold_state.prov)
-              | None -> ("F", None)
+                  (a, hs.(hi).Fold_state.prov, Some hs.(hi).Fold_state.crease_id)
+              | None -> ("F", None, None)
           in
-          edges := (ia, ib, assign, prov) :: !edges
+          edges := (ia, ib, assign, prov, cid) :: !edges
         end
       done)
     faces;
@@ -183,12 +184,12 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
         `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ])
   in
   let edges_vertices =
-    List.map (fun (a, b, _, _) -> `List [ `Int a; `Int b ]) edges
+    List.map (fun (a, b, _, _, _) -> `List [ `Int a; `Int b ]) edges
   in
-  let edges_assignment = List.map (fun (_, _, a, _) -> `String a) edges in
+  let edges_assignment = List.map (fun (_, _, a, _, _) -> `String a) edges in
   let edges_fold_angle =
     List.map
-      (fun (_, _, a, _) ->
+      (fun (_, _, a, _, _) ->
         match a with
         | "V" -> `Float 180.0
         | "M" -> `Float (-180.0)
@@ -320,8 +321,8 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
         if not (Hashtbl.mem edge_tbl key) then begin
           Hashtbl.replace edge_tbl key ();
           let pa = f.(k) and pb = f.((k + 1) mod m) in
-          let assign, prov =
-            if on_unit_boundary pa pb then ("B", None)
+          let assign, prov, cid =
+            if on_unit_boundary pa pb then ("B", None, None)
             else
               match Fold_state.hinge_between disp fi pa pb with
               | Some hi ->
@@ -332,10 +333,10 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
                     | Fold_state.V -> "V"
                     | Fold_state.F -> "F"
                   in
-                  (a, h.Fold_state.prov)
-              | None -> ("F", None)
+                  (a, h.Fold_state.prov, Some h.Fold_state.crease_id)
+              | None -> ("F", None, None)
           in
-          edges := (ia, ib, assign, prov) :: !edges
+          edges := (ia, ib, assign, prov, cid) :: !edges
         end
       done)
     faces;
@@ -346,9 +347,9 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
         `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ])
   in
   let edges_vertices =
-    List.map (fun (a, b, _, _) -> `List [ `Int a; `Int b ]) edges
+    List.map (fun (a, b, _, _, _) -> `List [ `Int a; `Int b ]) edges
   in
-  let edges_assignment = List.map (fun (_, _, a, _) -> `String a) edges in
+  let edges_assignment = List.map (fun (_, _, a, _, _) -> `String a) edges in
   let faces_vertices =
     Array.to_list face_idx
     |> List.map (fun idxs ->
