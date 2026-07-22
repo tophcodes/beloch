@@ -266,18 +266,17 @@ result is an ordinary **exact** point, usable anywhere a point operand is
 accepted — `through .p`, `map … onto … at .p`, `mark … at .p`, perpendicular
 axioms, and so on (§6, all geometry is exact).
 
-**Domain.** The point lies on one contiguous bundle of `--l`'s material chords
-in the current paper (gaps between chords on the same run are bridged). That
-bundle's two **furthest-out points** are the parameter endpoints. For a plain
-constructed (unmarked) line, the bundle is simply where `--l` crosses the
-paper square. `t ∈ [0, 1]`; the seed point is `P0 + t·(P1 − P0)`, exact for
-rational `t`.
+**Domain.** The point lies on `--l`'s material in the current paper, taken as
+a single bundle: its two **furthest-out points** are the parameter endpoints,
+bridging any gaps between chords. For a plain constructed (unmarked) line, the
+bundle is simply where `--l` crosses the paper square. `t ∈ [0, 1]`; the seed
+point is `P0 + t·(P1 − P0)`, exact for rational `t`.
 
-**Orientation.** `from .x` is required and does two jobs at once: it selects
-*which* contiguous bundle (when `--l`'s material has more than one), and it
-fixes that end as `t = 0` — the opposite furthest-out point is `t = 1`. `.x`
-must be exactly one of the bundle's two endpoints; selection is by exact
-incidence, not nearest-point.
+**Orientation.** `from .x` is required: `.x` must be exactly one of the
+bundle's two furthest-out points, and fixes that end as `t = 0` — the opposite
+point is `t = 1`. The match is by exact incidence, not nearest-point. (In this
+version the bundle spans *all* of `--l`'s material as one furthest-out pair;
+genuinely disjoint re-entrant material is bridged, not separately selectable.)
 
 **Seed value.** `at <rational>` is optional; the default is `t = 1/2`, the
 bundle's midpoint. `<rational>` is a rational literal (`2/5`, `3`, …).
@@ -1696,6 +1695,7 @@ crease_stmt   := CREASE_NAME "=" axiom                            ; a read — b
                | "fold" CREASE_NAME "=" axiom fold_spec            ; crease and fold, named (since v0.21-dev)
 markable      := axiom | line_operand                             ; since v0.21-dev
 point_stmt    := POINT_NAME "=" point_operand
+               | POINT_NAME "=" "free" "on" line_operand "from" point_operand [ "at" RATIONAL ]  ; free point, since v0.25-dev
 flip_stmt     := "flip"
 axiom         := "through" point_operand point_operand          ; axiom 1 — a read (motion, since v0.21-dev)
                | "map" point_operand "onto" point_operand       ; axiom 2
