@@ -13,6 +13,16 @@ export type EntityRef =
   | { kind: "face"; index: string }
   | { kind: "vertex"; index: number; name: string | null };
 
+// Pulls the (1-based) line number out of a provenance span, e.g.
+// `foo.bel:12:3-8` (the `file:line:col-col` format `Error.span_to_string`
+// produces) → 12. Used to drive the editor↔SVG highlight in both
+// directions: click an entity → jump to its line; move the cursor → outline
+// the entities whose span covers that line.
+export function lineOfSpan(span: string | null): number | null {
+  const m = span?.match(/:(\d+):/);
+  return m ? Number(m[1]) : null;
+}
+
 export function lookupEntity(el: Element): EntityRef | null {
   const line = el.closest("[data-crease-id]");
   if (line) return { kind: "crease", creaseId: line.getAttribute("data-crease-id")! };
