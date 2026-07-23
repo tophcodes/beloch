@@ -400,8 +400,63 @@ let beloch_inspect_json (state : Fold_state.t)
             ] ))
       named_points
   in
+  (* paper-boundary edges as bundles too (the four paper edges --ab/--bc/--cd/
+     --da). A crossing crease splits an edge into pieces, so each is a bundle of
+     segments keyed by which paper edge it lies on; classified from the PAPER
+     coords (unfold-invariant), table coords via the owning face's isometry. *)
+  let z = Num.of_int 0 and o = Num.of_int 1 in
+  let paper_edge_name (a : Geom.point) (b : Geom.point) : string option =
+    if Num.equal a.Geom.y z && Num.equal b.Geom.y z then Some "ab"
+    else if Num.equal a.Geom.x o && Num.equal b.Geom.x o then Some "bc"
+    else if Num.equal a.Geom.y o && Num.equal b.Geom.y o then Some "cd"
+    else if Num.equal a.Geom.x z && Num.equal b.Geom.x z then Some "da"
+    else None
+  in
+  let edge_tbl = Hashtbl.create 4 in
+  Array.iteri
+    (fun fi poly ->
+      let m = Array.length poly in
+      let iso = Fold_state.face_iso2 state fi in
+      for k = 0 to m - 1 do
+        let pa = poly.(k) and pb = poly.((k + 1) mod m) in
+        match paper_edge_name pa pb with
+        | None -> ()
+        | Some nm ->
+            let ta = Isometry.apply_point iso pa
+            and tb = Isometry.apply_point iso pb in
+            let seg =
+              `Assoc
+                [
+                  ("faces", `List [ `Int fi ]);
+                  ("paper", `List [ pt_json pa; pt_json pb ]);
+                  ("table", `List [ pt_json ta; pt_json tb ]);
+                  ("assignment", `String "B");
+                ]
+            in
+            Hashtbl.replace edge_tbl nm
+              (seg :: (try Hashtbl.find edge_tbl nm with Not_found -> []))
+      done)
+    faces;
+  let edges_json =
+    Hashtbl.fold
+      (fun nm segs acc ->
+        ( nm,
+          `Assoc
+            [
+              ("name", `String nm);
+              ("assignment", `String "B");
+              ("segments", `List (List.rev segs));
+            ] )
+        :: acc)
+      edge_tbl []
+  in
   `Assoc
-    [ ("creases", `Assoc creases); ("faces", `Assoc faces_json); ("points", `Assoc points_json) ]
+    [
+      ("creases", `Assoc creases);
+      ("faces", `Assoc faces_json);
+      ("points", `Assoc points_json);
+      ("edges", `Assoc edges_json);
+    ]
 
 let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
   let disp, kept_marks = cp_display fd.Eval.state in
