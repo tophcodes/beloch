@@ -69,8 +69,13 @@ export type Mark = SegMark | PointMark;
 
 // beloch:inspect — entity inspector data (playground slice B); keyed by
 // crease_id / face index / point name as emitted by the core.
+//
+// `faces` is `number[]` rather than a strict 2-tuple: a crease segment
+// borders two faces, but a paper-boundary edge segment (see InspectEdge
+// below) borders only one (fold_emit.ml emits `"faces": [fi]` for those —
+// there's no far side, it's the sheet's edge).
 export interface InspectSegment {
-  faces: [number, number];
+  faces: number[];
   paper: [Vec2, Vec2];
   table: [Vec2, Vec2];
   assignment: string;
@@ -87,10 +92,19 @@ export interface InspectFace {
   flap: number;
   rank: number;
 }
+// beloch:inspect.edges — the four paper-boundary bundles (--ab/--bc/--cd/
+// --da), one entry per edge that exists; a crossing crease splits an edge
+// into several segments (task 9, playground slice B).
+export interface InspectEdge {
+  name: string;
+  assignment: string;
+  segments: InspectSegment[];
+}
 export interface Inspect {
   creases: Record<string, InspectCrease>;
   faces: Record<string, InspectFace>;
   points: Record<string, { face: number | null; flap: number | null }>;
+  edges: Record<string, InspectEdge>;
 }
 
 export interface FoldScene {

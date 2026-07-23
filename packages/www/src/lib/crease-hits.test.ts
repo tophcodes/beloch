@@ -56,3 +56,21 @@ test("enhanceCreaseHits is idempotent — a second call on the same markup adds 
   enhanceCreaseHits(container);
   expect(container.querySelectorAll(`.${HIT_CLASS}`)).toHaveLength(1);
 });
+
+// Task 9: paper boundary (type B) lines carry no data-crease-id at all (no
+// per-edge id exists) — they must still get a hit-area sibling.
+test("buildHitLine omits data-crease-id for a boundary line that has none", () => {
+  const container = mountSvg('<line data-kind="crease" x1="0" y1="0" x2="1" y2="0"></line>');
+  const line = container.querySelector("line")!;
+  const hit = buildHitLine(document, line);
+  expect(hit.hasAttribute("data-crease-id")).toBe(false);
+});
+
+test("enhanceCreaseHits enhances a boundary line with no data-crease-id too", () => {
+  const container = mountSvg('<line data-kind="crease" x1="0" y1="0" x2="1" y2="0"></line>');
+  enhanceCreaseHits(container);
+  const hits = container.querySelectorAll(`.${HIT_CLASS}`);
+  expect(hits).toHaveLength(1);
+  expect(hits[0]!.hasAttribute("data-crease-id")).toBe(false);
+  expect(hits[0]!.getAttribute("x2")).toBe("1");
+});
