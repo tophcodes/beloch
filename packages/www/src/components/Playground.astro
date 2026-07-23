@@ -46,9 +46,9 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     </div>
     <div class="pg-result">
       <div class="pg-canvas">
-        {seed ? <Fragment set:html={seed} /> : <p class="pg-notice pg-notice-info">„Run“ drücken, um auszuwerten.</p>}
+        {seed ? <Fragment set:html={seed} /> : <p class="pg-notice pg-notice-info">Press “Run” to evaluate.</p>}
       </div>
-      <button type="button" class="pg-reset" hidden aria-label="Ansicht zurücksetzen" title="Ansicht zurücksetzen">
+      <button type="button" class="pg-reset" hidden aria-label="Reset view" title="Reset view">
         <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
           <path
             d="M8 3.5a4.5 4.5 0 1 0 4.24 3"
@@ -64,13 +64,13 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     </div>
     <div class="pg-steps" hidden>
       <div class="pg-step-timeline">
-        <button type="button" class="pg-step-nav pg-step-prev" aria-label="Vorheriger Step" title="Vorheriger Step">
+        <button type="button" class="pg-step-nav pg-step-prev" aria-label="Previous step" title="Previous step">
           <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
             <path d="M10 3 L5 8 L10 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
         <div class="pg-step-track"></div>
-        <button type="button" class="pg-step-nav pg-step-next" aria-label="Nächster Step" title="Nächster Step">
+        <button type="button" class="pg-step-nav pg-step-next" aria-label="Next step" title="Next step">
           <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
             <path d="M6 3 L11 8 L6 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
@@ -788,10 +788,10 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       const dirty = editor.state.doc.toString() !== lastRunCode;
       runBtn.disabled = running || !dirty;
       runBtn.title = running
-        ? "wertet aus …"
+        ? "evaluating …"
         : dirty
           ? "Run"
-          : "Code ändern, um erneut auszuführen";
+          : "Change the code to run again";
       // Line numbers from the last run no longer necessarily match the
       // edited text — clear the gutter indicator, but leave the scrubber
       // and the currently-shown SVG alone (same "stale result stays
@@ -1028,7 +1028,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         inspectPanel!.classList.remove("is-anchored");
         return;
       }
-      const closeBtn = anchored ? `<button type="button" class="pg-inspect-close" aria-label="Schließen">×</button>` : "";
+      const closeBtn = anchored ? `<button type="button" class="pg-inspect-close" aria-label="Close">×</button>` : "";
       let html: string;
       if (ref.kind === "crease" && anchored) {
         const c = insp.creases[ref.creaseId];
@@ -1045,7 +1045,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         html =
           closeBtn +
           `<h4>${escapeHtml(title)}</h4>` +
-          `<div class="pg-inspect-sub">${srcLine ? `Zeile ${srcLine} · ` : ""}${rows.length} segment${rows.length === 1 ? "" : "s"}</div>` +
+          `<div class="pg-inspect-sub">${srcLine ? `at line ${srcLine} · ` : ""}${rows.length} segment${rows.length === 1 ? "" : "s"}</div>` +
           // One segment = the whole bundle; no per-segment picker needed.
           (rows.length > 1
             ? rows
@@ -1189,11 +1189,11 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       const insp = currentScene?.inspect;
       if (!insp) return;
       const closeBtn = anchored
-        ? `<button type="button" class="pg-inspect-close" aria-label="Schließen">×</button>`
+        ? `<button type="button" class="pg-inspect-close" aria-label="Close">×</button>`
         : "";
       inspectPanel!.innerHTML =
         closeBtn +
-        `<h4>${ents.length} Linien hier</h4>` +
+        `<h4>${ents.length} lines here</h4>` +
         ents
           .map((r, i) => {
             const t = hoverSummary(r, insp)?.title ?? entityKey(r);
@@ -1413,7 +1413,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         const dot = document.createElement("button");
         dot.type = "button";
         dot.className = "pg-step-dot";
-        dot.setAttribute("aria-label", i === 0 ? "Ausgangspapier" : `Step ${i} von ${n}`);
+        dot.setAttribute("aria-label", i === 0 ? "Starting paper" : `Step ${i} of ${n}`);
         dot.setAttribute("aria-current", "false");
         dot.addEventListener("click", () => renderStep(i));
         stepDots!.appendChild(dot);
@@ -1446,7 +1446,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       });
       stepDots!.style.setProperty("--pg-progress", n > 0 ? `${(i / n) * 100}%` : "0%");
       if (i === 0) {
-        stepLabel!.textContent = `Step 0/${n} · leeres Papier`;
+        stepLabel!.textContent = `Step 0/${n} · empty paper`;
       } else {
         stepLabel!.textContent = `Step ${i}/${n}`;
       }
@@ -1484,7 +1484,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
           setStepLineOn(editor, stmt.sourceLine);
         }
       } catch (err) {
-        showError(`Render-Fehler: ${err instanceof Error ? err.message : String(err)}`);
+        showError(`Render error: ${err instanceof Error ? err.message : String(err)}`);
         return;
       }
       updateStepsUI(clamped, currentStatements);
@@ -1516,7 +1516,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
           showSvg(renderCP(scene, { theme: WEB_THEME }).toString());
         }
       } catch (err) {
-        showError(`Render-Fehler: ${err instanceof Error ? err.message : String(err)}`);
+        showError(`Render error: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
 
@@ -1526,7 +1526,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       try {
         parsed = JSON.parse(raw);
       } catch (err) {
-        showError(`Ungültige Antwort vom Auswerter: ${String(err)}`);
+        showError(`Invalid response from the evaluator: ${String(err)}`);
         return;
       }
       if (parsed.ok) {
@@ -1535,11 +1535,11 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       }
       if (parsed.kind === "native") {
         showInfo(
-          "Dieser Ausdruck braucht die native Auswertung (irrationale Zahl über √/∛ jenseits des Browser-Fragments).",
+          "This expression needs native evaluation (an irrational number via √/∛ beyond the browser fragment).",
         );
         return;
       }
-      showError(parsed.message ?? "Unbekannter Fehler.");
+      showError(parsed.message ?? "Unknown error.");
     }
 
     function wireWorker() {
@@ -1547,7 +1547,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         finish(() => renderResult(e.data.raw));
       };
       worker!.onerror = (e: ErrorEvent) => {
-        finish(() => showError(`Worker-Fehler: ${e.message}`));
+        finish(() => showError(`Worker error: ${e.message}`));
       };
     }
 
@@ -1569,7 +1569,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       running = true;
       runBtn!.classList.add("is-loading");
       updateRunButtonState();
-      setRunHint(cold ? "lädt Playground-Runtime …" : "berechnet Geometrie …");
+      setRunHint(cold ? "loading playground runtime …" : "computing geometry …");
 
       timer = setTimeout(() => {
         timer = null;
@@ -1580,7 +1580,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         runBtn!.classList.remove("is-loading");
         updateRunButtonState();
         setRunHint("");
-        showError("Auswertung abgebrochen (Zeitüberschreitung).");
+        showError("Evaluation aborted (timeout).");
       }, TIMEOUT_MS);
 
       worker!.postMessage(codeToRun);

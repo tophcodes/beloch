@@ -29,7 +29,7 @@ export function hoverSummary(ref: EntityRef, insp: Inspect): HoverSummary | null
     // Unnamed crease (an unbound fold's result): show WHERE it was made so the
     // user can find the statement and bind/assign it.
     const ln = lineOfSpan(c.span);
-    return { title: "unnamed line", detail: `${ln ? `Zeile ${ln} · ` : ""}${segs}` };
+    return { title: "unnamed line", detail: `${ln ? `at line ${ln} · ` : ""}${segs}` };
   }
   if (ref.kind === "edge") {
     const e = insp.edges[ref.name];
