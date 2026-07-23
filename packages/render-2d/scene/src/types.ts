@@ -9,6 +9,7 @@ export interface EdgeProvenance {                            // one beloch:edges
   sources: string[];
   span: string | null;
   name: string | null;                                       // crease name (bundle) this edge belongs to
+  creaseId: number | null;                                   // beloch:edges[i].crease_id
 }
 
 export interface Frame {
@@ -66,6 +67,46 @@ export interface PointMark {
 }
 export type Mark = SegMark | PointMark;
 
+// beloch:inspect — entity inspector data (playground slice B); keyed by
+// crease_id / face index / point name as emitted by the core.
+//
+// `faces` is `number[]` rather than a strict 2-tuple: a crease segment
+// borders two faces, but a paper-boundary edge segment (see InspectEdge
+// below) borders only one (fold_emit.ml emits `"faces": [fi]` for those —
+// there's no far side, it's the sheet's edge).
+export interface InspectSegment {
+  faces: number[];
+  paper: [Vec2, Vec2];
+  table: [Vec2, Vec2];
+  assignment: string;
+}
+export interface InspectCrease {
+  name: string | null;
+  axiom: string | null;
+  sources: string[];
+  span: string | null;
+  segments: InspectSegment[];
+}
+export interface InspectFace {
+  vertices: Vec2[];
+  flap: number;
+  rank: number;
+}
+// beloch:inspect.edges — the four paper-boundary bundles (--ab/--bc/--cd/
+// --da), one entry per edge that exists; a crossing crease splits an edge
+// into several segments (task 9, playground slice B).
+export interface InspectEdge {
+  name: string;
+  assignment: string;
+  segments: InspectSegment[];
+}
+export interface Inspect {
+  creases: Record<string, InspectCrease>;
+  faces: Record<string, InspectFace>;
+  points: Record<string, { face: number | null; flap: number | null }>;
+  edges: Record<string, InspectEdge>;
+}
+
 export interface FoldScene {
   cp: Frame;
   steps: Step[];                                             // one per foldedForm frame, file order
@@ -74,6 +115,7 @@ export interface FoldScene {
   namedLines: NamedLine[];
   creases: Crease[];                                         // grouped by provenance name on the CP frame
   marks: Mark[];                                              // beloch:marks, paper-space, CP frame only
+  inspect: Inspect | null;                                   // beloch:inspect, entity inspector data
 }
 
 export class SceneError extends Error {}

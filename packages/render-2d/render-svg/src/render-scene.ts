@@ -161,6 +161,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
         if (!faces.length) return;
         const assignment = A[i]!;
         const name = prov[i]?.name;
+        const cid = prov[i]?.creaseId ?? null;
         const a0 = V[e[0]]!, b0 = V[e[1]]!;
         // Paper edges keep their bold solid style; other silhouette edges (folded
         // creases now on the outline) also go solid black, just a touch lighter;
@@ -198,6 +199,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
           if (style.opacity !== undefined) attrs["opacity"] = style.opacity;
           if (name) attrs["data-name"] = name;
           if (name) attrs["data-bel-name"] = name;
+          if (cid !== null) attrs["data-crease-id"] = cid;
           creases.children.push(el("line", attrs));
         }
 
@@ -315,7 +317,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       if (buried) occludedNames.add(nm);
       const circle: Record<string, string | number> = {
         cx: mx(p[0]), cy: ty(p[1]), r: 3, fill: buried ? MUTED : theme.ink,
-        "data-bel-name": nm, "data-kind": "point",
+        "data-bel-name": nm, "data-kind": "point", "data-vertex": i,
       };
       if (buried) circle["data-occluded"] = "true";
       annotations.children.push(el("circle", circle));
@@ -421,6 +423,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
         if (!showCrease(i)) return;
         const assignment = A[i]!;
         const name = prov[i]?.name;
+        const cid = prov[i]?.creaseId ?? null;
         const style = theme.lineStyle(assignment, theme);
         const attrs: Record<string, string | number> = {
           class: `crease-${assignment}`,
@@ -435,6 +438,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
         if (style.opacity !== undefined) attrs["opacity"] = style.opacity;
         if (name) attrs["data-name"] = name;
         if (name) attrs["data-bel-name"] = name;
+        if (cid !== null) attrs["data-crease-id"] = cid;
         creases.children.push(el("line", attrs));
       });
     }
@@ -479,7 +483,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     V.forEach((p, i) => {
       const nm = scene.cp.verticesNames[i];
       const circleAttrs: Record<string, string | number> = {
-        cx: tx(p[0]), cy: ty(p[1]), r: 3, fill: theme.ink,
+        cx: tx(p[0]), cy: ty(p[1]), r: 3, fill: theme.ink, "data-vertex": i,
       };
       if (nm) { circleAttrs["data-bel-name"] = nm; circleAttrs["data-kind"] = "point"; }
       annotations.children.push(el("circle", circleAttrs));
