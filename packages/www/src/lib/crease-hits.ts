@@ -19,6 +19,12 @@
 // opposed to its `.pg-hit` twins, which never carry `data-kind`) when
 // hunting for a boundary line's edge bundle by geometry.
 export const CREASE_SELECTOR = '[data-layer="creases"] line[data-kind="crease"]';
+// Lines that get a fat hit target: real creases PLUS the dashed mark overlay
+// (flat precreases) — those carry data-crease-id too and read to the user as
+// "flat creases", so they deserve the same forgiving hover as a fold crease.
+// (mark-tick — the tiny partial-mark ticks — stay untargeted.)
+export const HIT_SELECTOR =
+  '[data-layer="creases"] line[data-kind="crease"], [data-layer="creases"] line[data-kind="mark"]';
 export const HIT_CLASS = "pg-hit";
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -43,7 +49,7 @@ export function buildHitLine(doc: Document, line: Element): Element {
 // stack duplicates. Call this after every `showSvg` injection.
 export function enhanceCreaseHits(container: Element): void {
   const doc = container.ownerDocument;
-  container.querySelectorAll(CREASE_SELECTOR).forEach((line) => {
+  container.querySelectorAll(HIT_SELECTOR).forEach((line) => {
     const next = line.nextElementSibling;
     if (next?.classList.contains(HIT_CLASS)) return;
     line.after(buildHitLine(doc, line));
