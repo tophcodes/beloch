@@ -278,7 +278,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   }
   /* Notices (info/error) mustn't inherit the grab cursor — they're not
      draggable paper. */
-  .pg-canvas:has(.pg-notice) {
+  .pg-canvas:has(:global(.pg-notice)) {
     cursor: default;
   }
   /* Crease hit-area (task 8): enhanceCreaseHits inserts one of these,
@@ -403,7 +403,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     background: var(--beloch-code-bg);
   }
 
-  .pg-notice {
+  .pg-canvas :global(.pg-notice) {
     margin: 0;
     max-width: 32ch;
     text-align: center;
@@ -411,18 +411,18 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     font-size: 13.5px;
     line-height: 1.5;
   }
-  .pg-notice-info { color: var(--beloch-muted); }
-  .pg-notice-error { color: var(--beloch-mountain); }
+  .pg-canvas :global(.pg-notice-info) { color: var(--beloch-muted); }
+  .pg-canvas :global(.pg-notice-error) { color: var(--beloch-mountain); }
 
   .pg-swatches { display: inline-flex; gap: 8px; }
-  .pg-swatch {
+  .pg-swatches :global(.pg-swatch) {
     width: 22px; height: 22px; padding: 0;
     border-radius: 50%;
     border: 1px solid var(--beloch-border);
     cursor: pointer;
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
   }
-  .pg-swatch.is-active {
+  .pg-swatches :global(.pg-swatch.is-active) {
     outline: 2px solid var(--beloch-valley);
     outline-offset: 1px;
   }
@@ -503,7 +503,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     background: var(--beloch-valley);
     transition: width 0.15s ease;
   }
-  .pg-step-dot {
+  :global(.pg-step-dot) {
     position: relative;
     z-index: 1;
     flex: none;
@@ -517,7 +517,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     align-items: center;
     justify-content: center;
   }
-  .pg-step-dot::before {
+  :global(.pg-step-dot)::before {
     content: "";
     width: 14px;
     height: 14px;
@@ -529,20 +529,20 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     box-shadow: 0 0 0 3px var(--beloch-panel);
     transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
   }
-  .pg-step-dot:hover::before {
+  :global(.pg-step-dot:hover)::before {
     border-color: var(--beloch-valley);
     transform: scale(1.15);
   }
   /* Steps at or before the current one read as "reached" (filled valley);
      the current one is additionally enlarged with a halo ring. */
-  .pg-step-dot.is-past::before {
+  :global(.pg-step-dot.is-past)::before {
     background: var(--beloch-valley);
     border-color: var(--beloch-valley);
   }
-  .pg-step-dot.is-active {
+  :global(.pg-step-dot.is-active) {
     z-index: 2;
   }
-  .pg-step-dot.is-active::before {
+  :global(.pg-step-dot.is-active)::before {
     width: 18px;
     height: 18px;
     background: var(--beloch-valley);
