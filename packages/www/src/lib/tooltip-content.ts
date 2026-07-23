@@ -3,7 +3,7 @@
 // (which stays in Playground.astro so `escapeHtml` is applied at the one
 // place user-derived strings — names, sources — get written into innerHTML).
 import type { Inspect } from "@beloch/scene";
-import type { EntityRef } from "./inspect-lookup";
+import { type EntityRef, lineOfSpan } from "./inspect-lookup";
 import { segRank } from "./stack-picker";
 
 // The tooltip's un-anchored (hover) content: one title + one detail line,
@@ -24,14 +24,12 @@ export function hoverSummary(ref: EntityRef, insp: Inspect): HoverSummary | null
     const c = insp.creases[ref.creaseId];
     if (!c) return null;
     const n = c.segments.length;
-    // Generic label (task 9): a named crease shows its name; an anonymous
-    // one shows "line #<id>", not "crease #<id>" — this panel now also
-    // covers paper-boundary edges, so "crease" alone was no longer accurate
-    // for an unnamed entity here.
-    return {
-      title: c.name ? `--${c.name}` : `line #${ref.creaseId}`,
-      detail: `${n} segment${n === 1 ? "" : "s"}`,
-    };
+    const segs = `${n} segment${n === 1 ? "" : "s"}`;
+    if (c.name) return { title: `--${c.name}`, detail: segs };
+    // Unnamed crease (an unbound fold's result): show WHERE it was made so the
+    // user can find the statement and bind/assign it.
+    const ln = lineOfSpan(c.span);
+    return { title: "unnamed line", detail: `${ln ? `Zeile ${ln} · ` : ""}${segs}` };
   }
   if (ref.kind === "edge") {
     const e = insp.edges[ref.name];
