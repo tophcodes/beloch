@@ -120,6 +120,24 @@ let test_e2e_perp () =
   in
   Alcotest.(check bool) "an axiom3 crease is present" true (List.mem "axiom3" axioms)
 
+let test_edges_carry_crease_id () =
+  (* a single fold produces one crease bundle; its non-boundary edges all
+     carry the same integer crease_id *)
+  let json =
+    Beloch.fold_string ~filename:"t.bel"
+      "paper square\nfold --h = map .a onto .d moving .a\n"
+  in
+  let open Yojson.Safe.Util in
+  let cids =
+    json |> member "beloch:edges" |> to_list
+    |> List.filter_map (function
+         | `Null -> None
+         | e -> ( match e |> member "crease_id" with `Int i -> Some i | _ -> None ))
+  in
+  Alcotest.(check bool) "at least one edge has a crease_id" true (cids <> []);
+  Alcotest.(check bool) "crease_ids are non-negative" true
+    (List.for_all (fun i -> i >= 0) cids)
+
 let test_e2e_cube_root () =
   let json =
     Beloch.fold_string ~filename:"cube-root.bel" (read_case "fold/cube-root.bel")
@@ -517,6 +535,56 @@ let test_folded_provenance () =
   Alcotest.(check bool)
     "at least one folded crease has non-null axiom/sources/span" true
     has_full_prov
+
+let test_inspect_enumerates_crease_segments () =
+  let src = read_case "inspect/two-segment-crease.bel" in
+  let json = Beloch.fold_string ~filename:"t.bel" src in
+  let open Yojson.Safe.Util in
+  let inspect = json |> member "beloch:inspect" in
+  Alcotest.(check bool) "inspect present" true (inspect <> `Null);
+  let creases = inspect |> member "creases" |> to_assoc in
+  Alcotest.(check bool) "at least one crease" true (creases <> []);
+  (* --v crosses --h, so its bundle has 2 segments; every segment carries a
+     2-element faces pair *)
+  let v_segs =
+    creases
+    |> List.find (fun (_id, c) -> c |> member "name" = `String "v")
+    |> snd |> member "segments" |> to_list
+  in
+  Alcotest.(check int) "crease --v has 2 segments" 2 (List.length v_segs);
+  List.iter
+    (fun (_id, c) ->
+      let segs = c |> member "segments" |> to_list in
+      Alcotest.(check bool) "crease has segments" true (segs <> []);
+      List.iter
+        (fun s ->
+          Alcotest.(check int) "faces pair length" 2
+            (s |> member "faces" |> to_list |> List.length))
+        segs)
+    creases;
+  (* faces carry rank + flap *)
+  let faces = inspect |> member "faces" |> to_assoc in
+  Alcotest.(check bool) "at least one face" true (faces <> []);
+  List.iter
+    (fun (_i, f) ->
+      Alcotest.(check bool) "face has rank" true (f |> member "rank" <> `Null);
+      Alcotest.(check bool) "face has flap" true (f |> member "flap" <> `Null))
+    faces;
+  (* points: a corner sits inside a single face → resolves to a unique
+     Some index; but .mid = --h * --v is the crossing point shared by all
+     four faces, so it lands on a shared boundary and MUST resolve to null
+     (face_of returns None unless exactly one polygon contains the point). *)
+  let points = inspect |> member "points" in
+  let corner = points |> member "a" in
+  Alcotest.(check bool) "corner .a has a face" true
+    (corner |> member "face" <> `Null);
+  Alcotest.(check bool) "corner .a has a flap" true
+    (corner |> member "flap" <> `Null);
+  let mid = points |> member "mid" in
+  Alcotest.(check bool) "boundary point .mid face is null" true
+    (mid |> member "face" = `Null);
+  Alcotest.(check bool) "boundary point .mid flap is null" true
+    (mid |> member "flap" = `Null)
 
 (* cross is material: a crease scored through several layers marks different
    lines in the paper, so bare cross must error — with a hint toward the
@@ -952,6 +1020,8 @@ let () =
           Alcotest.test_case "diagonals four faces" `Quick
             test_e2e_diagonals_four_faces;
           Alcotest.test_case "perp end-to-end" `Quick test_e2e_perp;
+          Alcotest.test_case "beloch:edges carry crease_id" `Quick
+            test_edges_carry_crease_id;
           Alcotest.test_case "cube-root (Messer) axiom7 end-to-end" `Quick
             test_e2e_cube_root;
           Alcotest.test_case "cube-root restructured (panels + temps)" `Quick
@@ -1027,5 +1097,7 @@ let () =
             test_beloch_marks_crease_id_deterministic;
           Alcotest.test_case "folded provenance" `Quick
             test_folded_provenance;
+          Alcotest.test_case "beloch:inspect enumerates crease segments" `Quick
+            test_inspect_enumerates_crease_segments;
         ] );
     ]

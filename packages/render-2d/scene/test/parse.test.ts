@@ -168,3 +168,61 @@ test("folded step frames carry crease provenance names", async () => {
   const hasNamedCrease = step.frame.edgesProvenance.some((p) => p?.name);
   expect(hasNamedCrease).toBe(true);
 });
+
+// Task 3 (entity inspector, playground slice B): beloch:inspect + per-edge
+// crease_id.
+test("parse surfaces inspect and edge crease id", () => {
+  const fold = {
+    vertices_coords: [[0, 0], [1, 0]], edges_vertices: [[0, 1]],
+    edges_assignment: ["V"], faces_vertices: [],
+    "beloch:edges": [{ axiom: "axiom2", sources: [".a", ".d"], span: "x:2:1", name: "h", crease_id: 4 }],
+    "beloch:inspect": {
+      creases: { "4": { name: "h", axiom: "axiom2", sources: ["--h"], span: "x:2:1",
+        segments: [{ faces: [0, 1], paper: [[0, 0.5], [1, 0.5]], table: [[0, 0.5], [1, 0.5]], assignment: "V" }] } },
+      faces: { "0": { vertices: [[0, 0], [1, 0], [1, 1], [0, 1]], flap: 0, rank: 1 } },
+      points: { a: { face: 0, flap: 0 } },
+    },
+  };
+
+  const scene = parseFold(fold as any);
+  expect(scene.inspect?.creases["4"]!.segments[0]!.assignment).toBe("V");
+  expect(scene.inspect?.faces["0"]!.rank).toBe(1);
+  expect(scene.cp.edgesProvenance[0]?.creaseId).toBe(4);
+});
+
+test("no beloch:inspect field parses to a null inspect", async () => {
+  const scene = parseFold(await golden("bisect-a.fold"));
+  expect(scene.inspect).toBeNull();
+});
+
+// Task 9 (entity inspector, playground slice B): beloch:inspect.edges — the
+// paper-boundary bundles (--ab/--bc/--cd/--da).
+test("parse surfaces inspect.edges", () => {
+  const fold = {
+    vertices_coords: [[0, 0], [1, 0]], edges_vertices: [[0, 1]],
+    edges_assignment: ["B"], faces_vertices: [],
+    "beloch:inspect": {
+      creases: {}, faces: { "0": { vertices: [[0, 0], [1, 0], [1, 1], [0, 1]], flap: 0, rank: 0 } },
+      points: {},
+      edges: {
+        ab: { name: "ab", assignment: "B",
+          segments: [{ faces: [0], paper: [[0, 0], [1, 0]], table: [[0, 0], [1, 0]], assignment: "B" }] },
+      },
+    },
+  };
+
+  const scene = parseFold(fold as any);
+  expect(scene.inspect?.edges["ab"]!.name).toBe("ab");
+  expect(scene.inspect?.edges["ab"]!.segments[0]!.faces).toEqual([0]);
+});
+
+test("inspect.edges defaults to {} when the core build predates it", () => {
+  const fold = {
+    vertices_coords: [[0, 0], [1, 0]], edges_vertices: [[0, 1]],
+    edges_assignment: ["B"], faces_vertices: [],
+    "beloch:inspect": { creases: {}, faces: {}, points: {} },
+  };
+
+  const scene = parseFold(fold as any);
+  expect(scene.inspect?.edges).toEqual({});
+});

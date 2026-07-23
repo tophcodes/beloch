@@ -123,9 +123,9 @@ class BelochFigure extends HTMLElement {
       <button type="button" data-view="cp" class="beloch-tab is-active">Faltbild</button>
       <button type="button" data-view="folded" class="beloch-tab">Gefaltet</button>
       <span class="beloch-stepper" hidden>
-        <button type="button" class="beloch-step-prev" aria-label="Schritt zurück">◀</button>
+        <button type="button" class="beloch-step-prev" aria-label="Previous step">◀</button>
         <span class="beloch-step-label"></span>
-        <button type="button" class="beloch-step-next" aria-label="Schritt vor">▶</button>
+        <button type="button" class="beloch-step-next" aria-label="Next step">▶</button>
       </span>`;
     this.querySelector(".beloch-card")?.prepend(bar);
     bar.querySelector('[data-view="cp"]')!.addEventListener("click", () => this.setView("cp"));
@@ -159,7 +159,7 @@ class BelochFigure extends HTMLElement {
         }).toString();
         const lbl = this.querySelector(".beloch-step-label");
         // 0-based: step 0 is the flat starting sheet, step k the k-th fold.
-        if (lbl) lbl.textContent = `Schritt ${this.step} / ${this.scene.steps.length - 1}`;
+        if (lbl) lbl.textContent = `Step ${this.step} / ${this.scene.steps.length - 1}`;
       }
     } catch (err) {
       console.warn("beloch-figure: render failed", err);

@@ -46,25 +46,26 @@ let vertices_names_json (vpaper : Geom.point Dynarray.t)
            | Some (name, _) -> `String name
            | None -> `Null))
 
-(* beloch:edges array from an (ia, ib, assign, prov) edge list *)
+(* beloch:edges array from an (ia, ib, assign, prov, cid) edge list *)
 let beloch_edges_json edges : Yojson.Safe.t =
   `List
     (List.map
-       (fun (_, _, _, prov) ->
+       (fun (_, _, _, prov, cid) ->
          match prov with
          | None -> `Null
          | Some (pr : State.provenance) ->
              `Assoc
-               [
-                 ("axiom", `String pr.State.axiom);
-                 ( "sources",
-                   `List (List.map (fun s -> `String s) pr.State.sources) );
-                 ("span", `String (Error.span_to_string pr.State.span));
-                 ( "name",
-                   match pr.State.name with
-                   | Some n -> `String n
-                   | None -> `Null );
-               ])
+               ([
+                  ("axiom", `String pr.State.axiom);
+                  ( "sources",
+                    `List (List.map (fun s -> `String s) pr.State.sources) );
+                  ("span", `String (Error.span_to_string pr.State.span));
+                  ( "name",
+                    match pr.State.name with
+                    | Some n -> `String n
+                    | None -> `Null );
+                ]
+               @ (match cid with Some c -> [ ("crease_id", `Int c) ] | None -> [])))
        edges)
 
 (* Emit-time overlay (design §3.6). Graduates every mark whose MSeg endpoints
@@ -86,8 +87,14 @@ let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
       (fun s (m : Fold_state.mark) ->
         match m.Fold_state.mgeom with
         | Fold_state.MSeg (a, b) ->
+            (* reuse the mark's own crease_id so a graduated precrease keeps a
+               stable identity across every cp_display call — otherwise each
+               call (beloch:inspect vs each folded frame) allocates a fresh id,
+               and the inspector's data-crease-id on an F/U precrease no longer
+               matches its beloch:inspect key. *)
             Fold_state.subdivide_paper s
               (Geom.line_through a b)
+              ~crease_id:m.Fold_state.mcrease_id
               ~intent:m.Fold_state.mintent ~prov:m.Fold_state.mprov
         | Fold_state.MPoint _ -> s)
       st grad
@@ -156,8 +163,8 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
         if not (Hashtbl.mem edge_tbl key) then begin
           Hashtbl.replace edge_tbl key ();
           let pa = f.(k) and pb = f.((k + 1) mod m) in
-          let assign, prov =
-            if on_unit_boundary pa pb then ("B", None)
+          let assign, prov, cid =
+            if on_unit_boundary pa pb then ("B", None, None)
             else
               match Fold_state.hinge_between state fi pa pb with
               | Some hi ->
@@ -167,10 +174,10 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
                     | Fold_state.V -> "V"
                     | Fold_state.F -> "F"
                   in
-                  (a, hs.(hi).Fold_state.prov)
-              | None -> ("F", None)
+                  (a, hs.(hi).Fold_state.prov, Some hs.(hi).Fold_state.crease_id)
+              | None -> ("F", None, None)
           in
-          edges := (ia, ib, assign, prov) :: !edges
+          edges := (ia, ib, assign, prov, cid) :: !edges
         end
       done)
     faces;
@@ -183,12 +190,12 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
         `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ])
   in
   let edges_vertices =
-    List.map (fun (a, b, _, _) -> `List [ `Int a; `Int b ]) edges
+    List.map (fun (a, b, _, _, _) -> `List [ `Int a; `Int b ]) edges
   in
-  let edges_assignment = List.map (fun (_, _, a, _) -> `String a) edges in
+  let edges_assignment = List.map (fun (_, _, a, _, _) -> `String a) edges in
   let edges_fold_angle =
     List.map
-      (fun (_, _, a, _) ->
+      (fun (_, _, a, _, _) ->
         match a with
         | "V" -> `Float 180.0
         | "M" -> `Float (-180.0)
@@ -277,6 +284,189 @@ let beloch_statements_json (statements : Eval.stmt_log_entry list) : Yojson.Safe
          | Some m -> `Assoc (("mark", mark_json m) :: common))
        statements)
 
+(* beloch:inspect — crease_id-keyed inventory of the final display state:
+   each crease's segment bundle (with per-segment M/V/F), each face's flap
+   (coplanar cluster) + stacking rank, and each named point's carrying
+   face + flap. Entity Inspector slice B (playground). *)
+let beloch_inspect_json (state : Fold_state.t)
+    (named_points : (string * Geom.point * int) list)
+    (named_line_cids : (string * int) list) : Yojson.Safe.t =
+  let faces = Fold_state.faces state in
+  let rank = Fold_state.rank state in
+  let clusters = Fold_state.coplanar_clusters state in
+  let hinges = Fold_state.hinges state in
+  (* crease_id -> user's variable name. A FOLDED crease's hinge provenance
+     drops the name the `--h =` binding gave it (only marks keep it in prov),
+     so the name would show as null for every folded crease; recover it from
+     the eval's authoritative name<->cid table. *)
+  let name_by_cid = Hashtbl.create 16 in
+  List.iter (fun (n, cid) -> Hashtbl.replace name_by_cid cid n) named_line_cids;
+  let pt_json (p : Geom.point) = `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ] in
+  (* one representative hinge per crease_id, for name/axiom/span/sources *)
+  let by_cid = Hashtbl.create 16 in
+  Array.iter
+    (fun (h : Fold_state.hinge) ->
+      if not (Hashtbl.mem by_cid h.Fold_state.crease_id) then
+        Hashtbl.replace by_cid h.Fold_state.crease_id h)
+    hinges;
+  (* per-SEGMENT assignment, keyed by (crease_id, its two faces). A scoped fold
+     folds some layers and leaves others flat, so the fold state varies per
+     segment — a single per-crease representative (the old code) was wrong and
+     collapsed a mixed crease to one value. Use the segment's own hinge fold
+     state (`mv`): a folded layer reads V/M, a still-flat one reads F. NOT
+     `intent`, whose default is V, which would paint every reference/
+     construction line valley. *)
+  let seg_key cid a b = (cid, min a b, max a b) in
+  let mv_by_seg = Hashtbl.create 32 in
+  Array.iteri
+    (fun i (h : Fold_state.hinge) ->
+      Hashtbl.replace mv_by_seg
+        (seg_key h.Fold_state.crease_id h.Fold_state.fa h.Fold_state.fb)
+        (mark_assign_str (Fold_state.mv state i)))
+    hinges;
+  let seg_json cid (s : Fold_state.crease_segment) =
+    let l, r = s.Fold_state.faces in
+    let a =
+      Option.value (Hashtbl.find_opt mv_by_seg (seg_key cid l r)) ~default:"F"
+    in
+    `Assoc
+      [
+        ("faces", `List [ `Int l; `Int r ]);
+        ("paper", `List [ pt_json s.Fold_state.pa; pt_json s.Fold_state.pb ]);
+        ("table", `List [ pt_json s.Fold_state.ta; pt_json s.Fold_state.tb ]);
+        ("assignment", `String a);
+      ]
+  in
+  let creases =
+    Hashtbl.fold
+      (fun cid (h : Fold_state.hinge) acc ->
+        let segs = Fold_state.crease_segments state cid in
+        let name =
+          match Hashtbl.find_opt name_by_cid cid with
+          | Some n -> `String n
+          | None -> (
+              match h.Fold_state.prov with
+              | Some { State.name = Some n; _ } -> `String n
+              | _ -> `Null)
+        in
+        let axiom, sources, span =
+          match h.Fold_state.prov with
+          | Some (p : State.provenance) ->
+              ( `String p.State.axiom,
+                `List (List.map (fun s -> `String s) p.State.sources),
+                `String (Error.span_to_string p.State.span) )
+          | None -> (`Null, `List [], `Null)
+        in
+        ( string_of_int cid,
+          `Assoc
+            [
+              ("name", name);
+              ("axiom", axiom);
+              ("sources", sources);
+              ("span", span);
+              ("segments", `List (List.map (seg_json cid) segs));
+            ] )
+        :: acc)
+      by_cid []
+  in
+  let faces_json =
+    Array.to_list
+      (Array.mapi
+         (fun i poly ->
+           ( string_of_int i,
+             `Assoc
+               [
+                 ("vertices", `List (Array.to_list (Array.map pt_json poly)));
+                 ("flap", `Int clusters.(i));
+                 ("rank", `Int rank.(i));
+               ] ))
+         faces)
+  in
+  (* A point on a shared face boundary (crease crossing, corner) lies in
+     several polygons — in_convex_polygon is boundary-inclusive. Only resolve
+     to a face when EXACTLY one polygon contains it; otherwise `None` (the
+     point straddles a boundary and has no single carrying face/flap). *)
+  let face_of (p : Geom.point) =
+    let found = ref None and count = ref 0 in
+    Array.iteri
+      (fun i poly ->
+        if Geom.in_convex_polygon poly p then begin
+          incr count;
+          if !count = 1 then found := Some i
+        end)
+      faces;
+    if !count = 1 then !found else None
+  in
+  let points_json =
+    List.map
+      (fun (n, p, _step) ->
+        let f = face_of p in
+        ( n,
+          `Assoc
+            [
+              ("face", match f with Some i -> `Int i | None -> `Null);
+              ("flap", match f with Some i -> `Int clusters.(i) | None -> `Null);
+            ] ))
+      named_points
+  in
+  (* paper-boundary edges as bundles too (the four paper edges --ab/--bc/--cd/
+     --da). A crossing crease splits an edge into pieces, so each is a bundle of
+     segments keyed by which paper edge it lies on; classified from the PAPER
+     coords (unfold-invariant), table coords via the owning face's isometry. *)
+  let z = Num.of_int 0 and o = Num.of_int 1 in
+  let paper_edge_name (a : Geom.point) (b : Geom.point) : string option =
+    if Num.equal a.Geom.y z && Num.equal b.Geom.y z then Some "ab"
+    else if Num.equal a.Geom.x o && Num.equal b.Geom.x o then Some "bc"
+    else if Num.equal a.Geom.y o && Num.equal b.Geom.y o then Some "cd"
+    else if Num.equal a.Geom.x z && Num.equal b.Geom.x z then Some "da"
+    else None
+  in
+  let edge_tbl = Hashtbl.create 4 in
+  Array.iteri
+    (fun fi poly ->
+      let m = Array.length poly in
+      let iso = Fold_state.face_iso2 state fi in
+      for k = 0 to m - 1 do
+        let pa = poly.(k) and pb = poly.((k + 1) mod m) in
+        match paper_edge_name pa pb with
+        | None -> ()
+        | Some nm ->
+            let ta = Isometry.apply_point iso pa
+            and tb = Isometry.apply_point iso pb in
+            let seg =
+              `Assoc
+                [
+                  ("faces", `List [ `Int fi ]);
+                  ("paper", `List [ pt_json pa; pt_json pb ]);
+                  ("table", `List [ pt_json ta; pt_json tb ]);
+                  ("assignment", `String "B");
+                ]
+            in
+            Hashtbl.replace edge_tbl nm
+              (seg :: (try Hashtbl.find edge_tbl nm with Not_found -> []))
+      done)
+    faces;
+  let edges_json =
+    Hashtbl.fold
+      (fun nm segs acc ->
+        ( nm,
+          `Assoc
+            [
+              ("name", `String nm);
+              ("assignment", `String "B");
+              ("segments", `List (List.rev segs));
+            ] )
+        :: acc)
+      edge_tbl []
+  in
+  `Assoc
+    [
+      ("creases", `Assoc creases);
+      ("faces", `Assoc faces_json);
+      ("points", `Assoc points_json);
+      ("edges", `Assoc edges_json);
+    ]
+
 let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
   let disp, kept_marks = cp_display fd.Eval.state in
   let faces = Fold_state.faces disp in
@@ -320,8 +510,8 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
         if not (Hashtbl.mem edge_tbl key) then begin
           Hashtbl.replace edge_tbl key ();
           let pa = f.(k) and pb = f.((k + 1) mod m) in
-          let assign, prov =
-            if on_unit_boundary pa pb then ("B", None)
+          let assign, prov, cid =
+            if on_unit_boundary pa pb then ("B", None, None)
             else
               match Fold_state.hinge_between disp fi pa pb with
               | Some hi ->
@@ -332,10 +522,10 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
                     | Fold_state.V -> "V"
                     | Fold_state.F -> "F"
                   in
-                  (a, h.Fold_state.prov)
-              | None -> ("F", None)
+                  (a, h.Fold_state.prov, Some h.Fold_state.crease_id)
+              | None -> ("F", None, None)
           in
-          edges := (ia, ib, assign, prov) :: !edges
+          edges := (ia, ib, assign, prov, cid) :: !edges
         end
       done)
     faces;
@@ -346,9 +536,9 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
         `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ])
   in
   let edges_vertices =
-    List.map (fun (a, b, _, _) -> `List [ `Int a; `Int b ]) edges
+    List.map (fun (a, b, _, _, _) -> `List [ `Int a; `Int b ]) edges
   in
-  let edges_assignment = List.map (fun (_, _, a, _) -> `String a) edges in
+  let edges_assignment = List.map (fun (_, _, a, _, _) -> `String a) edges in
   let faces_vertices =
     Array.to_list face_idx
     |> List.map (fun idxs ->
@@ -421,6 +611,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
       ("edges_assignment", `List edges_assignment);
       ("faces_vertices", `List faces_vertices);
       ("beloch:edges", beloch_edges);
+      ("beloch:inspect", beloch_inspect_json disp fd.Eval.named_points fd.Eval.named_line_cids);
       ("beloch:vertices_names", beloch_vertices_names);
       ("beloch:named_points", beloch_named_points);
       ("beloch:named_lines", beloch_named_lines);
