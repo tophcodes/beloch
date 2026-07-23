@@ -663,7 +663,6 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       downX = e.clientX;
       downY = e.clientY;
       dragMoved = false;
-      viewport.setPointerCapture(pointerId);
       viewport.classList.add("is-panning");
     });
     viewport.addEventListener("pointermove", (e: PointerEvent) => {
@@ -674,6 +673,12 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       lastY = e.clientY;
       if (!dragMoved && Math.hypot(e.clientX - downX, e.clientY - downY) > DRAG_THRESHOLD) {
         dragMoved = true;
+        // Capture the pointer only once a genuine drag starts — NOT on
+        // pointerdown. Capturing on down retargets the synthesized `click` to
+        // the viewport, so a plain click's `e.target` is no longer the crease
+        // line and the inspector can't anchor. A pure click never crosses the
+        // threshold, so it never captures and keeps its real target.
+        viewport.setPointerCapture(pointerId);
       }
       apply();
     });
