@@ -849,6 +849,13 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // (X) button or a fresh run (clearStepsUI) — a background click no
     // longer clears it (task 8: explicit X-to-close replaces that).
     let pinned: EntityRef | null = null;
+    // Coincident-line chooser state (see renderChooser): open flag, the
+    // overlapping entities offered, and the raw click coords to anchor the
+    // picked one at the same spot.
+    let choiceOpen = false;
+    let choiceEnts: EntityRef[] = [];
+    let choiceX = 0;
+    let choiceY = 0;
 
     // "Folded view" = geometry drawn via renderFolded's occlusion pipeline
     // (any step, including step 0's flat sheet — it still goes through the
@@ -991,10 +998,78 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
 
     function closeAnchor() {
       pinned = null;
+      choiceOpen = false;
       inspectPanel!.hidden = true;
       inspectPanel!.classList.remove("is-anchored");
       clearHl();
     }
+
+    // Distinct crease/edge entities whose line lies under a screen point.
+    // Multiple lines (e.g. a construction crease and a paper edge) can project
+    // onto the SAME table coords in the folded view; elementsFromPoint returns
+    // every stacked element there (each crease line has a wide transparent
+    // .pg-hit twin, so the hit is forgiving), and we resolve + dedupe them.
+    // Faces/vertices are ignored — this is about overlapping LINES; a bare
+    // face click still goes through resolveRef in the click handler.
+    const entityKey = (r: EntityRef): string =>
+      r.kind === "crease" ? `c:${r.creaseId}`
+      : r.kind === "edge" ? `e:${r.name}`
+      : r.kind === "face" ? `f:${r.index}`
+      : `v:${r.index}`;
+    const lineEntitiesAtPoint = (x: number, y: number): EntityRef[] => {
+      const seen = new Set<string>();
+      const out: EntityRef[] = [];
+      for (const el of document.elementsFromPoint(x, y)) {
+        if (!canvas.contains(el)) continue;
+        const ref = resolveRef(el);
+        if (!ref || (ref.kind !== "crease" && ref.kind !== "edge")) continue;
+        const k = entityKey(ref);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        out.push(ref);
+      }
+      return out;
+    };
+
+    // Anchor one entity's tooltip at (x,y): shared tail of a direct single
+    // click and a chooser-row pick.
+    const anchorEntity = (ref: EntityRef, x: number, y: number) => {
+      pinned = ref;
+      choiceOpen = false;
+      if (ref.kind === "crease") highlightBundle(ref.creaseId);
+      else if (ref.kind === "edge") highlightEdgeBundle(ref.name);
+      positionTooltip(x, y);
+      renderInspect(ref, true);
+      if (ref.kind === "crease") {
+        const ln = lineOfSpan(currentScene?.inspect?.creases[ref.creaseId]?.span ?? null);
+        if (ln) setStepLineOn(editor, ln);
+      }
+    };
+
+    // The coincident-line chooser: a materialized list of the overlapping
+    // entities. Clicking a row (inspectPanel listener) drills into that one via
+    // anchorEntity; hovering a row previews its bundle highlight.
+    const renderChooser = (ents: EntityRef[], x: number, y: number) => {
+      const insp = currentScene?.inspect;
+      if (!insp) return;
+      choiceEnts = ents;
+      choiceOpen = true;
+      choiceX = x;
+      choiceY = y;
+      pinned = null;
+      positionTooltip(x, y);
+      inspectPanel!.innerHTML =
+        `<button type="button" class="pg-inspect-close" aria-label="Schließen">×</button>` +
+        `<h4>${ents.length} Linien hier</h4>` +
+        ents
+          .map((r, i) => {
+            const t = hoverSummary(r, insp)?.title ?? entityKey(r);
+            return `<div class="seg" data-choice-idx="${i}">${escapeHtml(t)}</div>`;
+          })
+          .join("");
+      inspectPanel!.hidden = false;
+      inspectPanel!.classList.add("is-anchored");
+    };
 
     // The reverse direction of the click→line jump above: moving the
     // editor cursor onto a source line outlines every SVG crease segment
@@ -1015,7 +1090,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // NOW, so hover resumes as soon as the drag actually ends rather than
     // staying suppressed until the next pointerdown (see createPanZoom).
     result.addEventListener("mousemove", (e: MouseEvent) => {
-      if (pinned || panZoom.isDragging()) return;
+      if (pinned || choiceOpen || panZoom.isDragging()) return;
       const ref = resolveRef(e.target as Element);
       if (ref?.kind === "crease") highlightBundle(ref.creaseId);
       else if (ref?.kind === "edge") highlightEdgeBundle(ref.name);
@@ -1033,19 +1108,16 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // this press.
     result.addEventListener("click", (e: MouseEvent) => {
       if (panZoom.wasDrag()) return;
-      const ref = resolveRef(e.target as Element);
-      if (!ref) return;
-      pinned = ref;
-      if (ref.kind === "crease") highlightBundle(ref.creaseId);
-      else if (ref.kind === "edge") highlightEdgeBundle(ref.name);
-      positionTooltip(e.clientX, e.clientY);
-      renderInspect(ref, true);
-      // Jump the editor to the clicked entity's source line — creases carry
-      // a provenance span (edges/faces/vertices don't have one yet).
-      if (ref.kind === "crease") {
-        const ln = lineOfSpan(currentScene?.inspect?.creases[ref.creaseId]?.span ?? null);
-        if (ln) setStepLineOn(editor, ln);
+      // Multiple distinct lines stacked at the click → offer a chooser rather
+      // than silently picking the topmost (e.g. --diag and --ab coincident).
+      const ents = lineEntitiesAtPoint(e.clientX, e.clientY);
+      if (ents.length >= 2) {
+        renderChooser(ents, e.clientX, e.clientY);
+        return;
       }
+      const ref = ents[0] ?? resolveRef(e.target as Element);
+      if (!ref) return;
+      anchorEntity(ref, e.clientX, e.clientY);
     });
 
     // Picking a segment row (anchored crease view only) highlights the SVG
@@ -1105,14 +1177,35 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         closeAnchor();
         return;
       }
+      // Chooser row → drill into that overlapping entity, at the chooser's spot.
+      const choice = target.closest<HTMLElement>("[data-choice-idx]");
+      if (choice) {
+        e.stopPropagation();
+        const ref = choiceEnts[Number(choice.dataset.choiceIdx)];
+        if (ref) anchorEntity(ref, choiceX, choiceY);
+        return;
+      }
       const row = target.closest<HTMLElement>("[data-pick-seg]");
       if (!row) return;
       e.stopPropagation();
       pickSegment(row);
     });
     inspectPanel.addEventListener("mouseover", (e: MouseEvent) => {
-      const row = (e.target as Element).closest<HTMLElement>("[data-pick-seg]");
-      if (row) pickSegment(row);
+      const target = e.target as Element;
+      const row = target.closest<HTMLElement>("[data-pick-seg]");
+      if (row) {
+        pickSegment(row);
+        return;
+      }
+      // Previewing a chooser row highlights that entity's whole bundle.
+      const choice = target.closest<HTMLElement>("[data-choice-idx]");
+      if (choice) {
+        const ref = choiceEnts[Number(choice.dataset.choiceIdx)];
+        if (!ref) return;
+        clearHl();
+        if (ref.kind === "crease") highlightBundle(ref.creaseId);
+        else if (ref.kind === "edge") highlightEdgeBundle(ref.name);
+      }
     });
 
     // Prev/next just walk the clamped index; renderStep re-clamps and keeps
@@ -1176,6 +1269,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       currentScene = null;
       currentStatements = [];
       pinned = null;
+      choiceOpen = false;
       inspectPanel!.hidden = true;
       inspectPanel!.classList.remove("is-anchored");
       clearHl();
