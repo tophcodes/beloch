@@ -309,24 +309,25 @@ let beloch_inspect_json (state : Fold_state.t)
       if not (Hashtbl.mem by_cid h.Fold_state.crease_id) then
         Hashtbl.replace by_cid h.Fold_state.crease_id h)
     hinges;
-  (* per-SEGMENT crease-pattern assignment, keyed by (crease_id, its two faces).
-     A scoped fold folds some layers and leaves others flat, so the assignment
-     varies per segment — a single per-crease representative is wrong. Use the
-     hinge's stored crease-pattern colour (`intent`), NOT its current fold state
-     (`mv`): a valley precrease scored V reads V even before it physically
-     folds, which is what the crease pattern means. *)
+  (* per-SEGMENT assignment, keyed by (crease_id, its two faces). A scoped fold
+     folds some layers and leaves others flat, so the fold state varies per
+     segment — a single per-crease representative (the old code) was wrong and
+     collapsed a mixed crease to one value. Use the segment's own hinge fold
+     state (`mv`): a folded layer reads V/M, a still-flat one reads F. NOT
+     `intent`, whose default is V, which would paint every reference/
+     construction line valley. *)
   let seg_key cid a b = (cid, min a b, max a b) in
-  let intent_by_seg = Hashtbl.create 32 in
-  Array.iter
-    (fun (h : Fold_state.hinge) ->
-      Hashtbl.replace intent_by_seg
+  let mv_by_seg = Hashtbl.create 32 in
+  Array.iteri
+    (fun i (h : Fold_state.hinge) ->
+      Hashtbl.replace mv_by_seg
         (seg_key h.Fold_state.crease_id h.Fold_state.fa h.Fold_state.fb)
-        (mark_assign_str h.Fold_state.intent))
+        (mark_assign_str (Fold_state.mv state i)))
     hinges;
   let seg_json cid (s : Fold_state.crease_segment) =
     let l, r = s.Fold_state.faces in
     let a =
-      Option.value (Hashtbl.find_opt intent_by_seg (seg_key cid l r)) ~default:"F"
+      Option.value (Hashtbl.find_opt mv_by_seg (seg_key cid l r)) ~default:"F"
     in
     `Assoc
       [
