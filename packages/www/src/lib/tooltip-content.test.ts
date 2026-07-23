@@ -36,7 +36,7 @@ test("hoverSummary for an unnamed crease with a span shows the constructing sour
   });
   expect(hoverSummary({ kind: "crease", creaseId: "3" }, insp)).toEqual({
     title: "unnamed line",
-    detail: "Zeile 7 · 2 segments",
+    detail: "at line 7 · 2 segments",
   });
 });
 
