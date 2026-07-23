@@ -293,8 +293,11 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   }
   /* Everything grabs the paper by default (see .pg-result above) — creases
      (and their hit-area twins) are the one thing you can click, so they get
-     their own cursor to signal that. */
-  .pg-canvas :global([data-crease-id]) {
+     their own cursor to signal that. Task 9: paper boundary lines are
+     selectable too but carry no data-crease-id, so this also matches on
+     data-kind="crease" directly (a superset of the data-crease-id case). */
+  .pg-canvas :global([data-crease-id]),
+  .pg-canvas :global(line[data-kind="crease"]) {
     cursor: pointer;
   }
 
@@ -552,9 +555,10 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   import { SCHEMES, STORAGE_KEY, DEFAULT_ID, applyScheme, resolveScheme } from "../lib/paper-schemes";
   import { lineOfSpan, lookupEntity, type EntityRef } from "../lib/inspect-lookup";
   import { segMatchesLine } from "../lib/stack-picker";
-  import { hoverSummary, segmentRows } from "../lib/tooltip-content";
+  import { hoverSummary, segmentRows, edgeSegmentRows } from "../lib/tooltip-content";
   import { bundleElements } from "../lib/bundle-highlight";
-  import { enhanceCreaseHits } from "../lib/crease-hits";
+  import { enhanceCreaseHits, CREASE_SELECTOR, HIT_CLASS } from "../lib/crease-hits";
+  import { edgeOfLine } from "../lib/edge-lookup";
 
   const TIMEOUT_MS = 8000;
 
@@ -858,6 +862,43 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       clearHl();
       bundleElements(canvas, creaseId).forEach((el) => el.classList.add("pg-hl"));
     };
+    // Whole-bundle highlight for a paper-boundary edge (task 9) — same idea
+    // as highlightBundle, but a boundary line carries no data-crease-id to
+    // select by, so every crease-layer line is re-checked by GEOMETRY
+    // (edgeOfLine, same helper the hover/click resolver below uses) instead
+    // of a `[data-crease-id="..."]` selector.
+    const highlightEdgeBundle = (name: string) => {
+      clearHl();
+      const insp = currentScene?.inspect;
+      if (!insp || !currentScene) return;
+      const layout = makeLayout(currentScene.cp.vertices);
+      canvas.querySelectorAll(CREASE_SELECTOR).forEach((el) => {
+        const x1 = Number(el.getAttribute("x1"));
+        const y1 = Number(el.getAttribute("y1"));
+        const x2 = Number(el.getAttribute("x2"));
+        const y2 = Number(el.getAttribute("y2"));
+        if (edgeOfLine(insp.edges, x1, y1, x2, y2, layout) === name) el.classList.add("pg-hl");
+      });
+    };
+    // Resolves the pointer target to an EntityRef: lookupEntity first
+    // (crease/face/vertex, attr-based); if that's null AND the target is a
+    // crease-layer line or its `.pg-hit` twin, fall back to geometry — this
+    // is the only way to identify a paper-boundary line, which carries no
+    // data-crease-id at all (task 9).
+    const resolveRef = (target: Element): EntityRef | null => {
+      const ref = lookupEntity(target);
+      if (ref) return ref;
+      if (!currentScene?.inspect) return null;
+      const line = target.closest(`line[data-kind="crease"], .${HIT_CLASS}`);
+      if (!line) return null;
+      const x1 = Number(line.getAttribute("x1"));
+      const y1 = Number(line.getAttribute("y1"));
+      const x2 = Number(line.getAttribute("x2"));
+      const y2 = Number(line.getAttribute("y2"));
+      const layout = makeLayout(currentScene.cp.vertices);
+      const name = edgeOfLine(currentScene.inspect.edges, x1, y1, x2, y2, layout);
+      return name ? { kind: "edge", name } : null;
+    };
 
     // Positions the tooltip at the pointer (task 8) — only meaningful while
     // NOT anchored; once anchored, nothing calls this again, so it freezes
@@ -889,7 +930,10 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
           inspectPanel!.hidden = true;
           return;
         }
-        const title = c.name ? `--${c.name}` : `crease #${ref.creaseId}`;
+        // Generic label (task 9): named -> its name; anonymous -> "line
+        // #<id>", not "crease #<id>" — this tooltip now also covers
+        // paper-boundary edges.
+        const title = c.name ? `--${c.name}` : `line #${ref.creaseId}`;
         const rows = segmentRows(insp, ref.creaseId, inFoldedView());
         html =
           closeBtn +
@@ -900,6 +944,27 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
               (r) =>
                 `<div class="seg" data-pick-seg="${r.index}" data-pick-crease="${escapeHtml(ref.creaseId)}">` +
                 `face ${r.faceL}|${r.faceR} · ${escapeHtml(r.assignment)} · rank ${r.rank}</div>`,
+            )
+            .join("");
+      } else if (ref.kind === "edge" && anchored) {
+        // Anchored view for a paper-boundary edge bundle (task 9) — same
+        // subsuming-the-stack-picker idea as the crease branch above, but
+        // simpler: a boundary segment has one face (no l|r, no provenance
+        // axiom/sources — it's the sheet's edge, not a fold).
+        const e = insp.edges[ref.name];
+        if (!e) {
+          inspectPanel!.hidden = true;
+          return;
+        }
+        const rows = edgeSegmentRows(insp, ref.name);
+        html =
+          closeBtn +
+          `<h4>${escapeHtml(`--${e.name}`)}</h4>` +
+          rows
+            .map(
+              (r) =>
+                `<div class="seg" data-pick-seg="${r.index}" data-pick-edge="${escapeHtml(ref.name)}">` +
+                `face ${r.face} · ${escapeHtml(r.assignment)}</div>`,
             )
             .join("");
       } else {
@@ -945,8 +1010,9 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // staying suppressed until the next pointerdown (see createPanZoom).
     result.addEventListener("mousemove", (e: MouseEvent) => {
       if (pinned || panZoom.isDragging()) return;
-      const ref = lookupEntity(e.target as Element);
+      const ref = resolveRef(e.target as Element);
       if (ref?.kind === "crease") highlightBundle(ref.creaseId);
+      else if (ref?.kind === "edge") highlightEdgeBundle(ref.name);
       else clearHl();
       renderInspect(ref, false);
       if (ref) positionTooltip(e.clientX, e.clientY);
@@ -961,14 +1027,15 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // this press.
     result.addEventListener("click", (e: MouseEvent) => {
       if (panZoom.wasDrag()) return;
-      const ref = lookupEntity(e.target as Element);
+      const ref = resolveRef(e.target as Element);
       if (!ref) return;
       pinned = ref;
       if (ref.kind === "crease") highlightBundle(ref.creaseId);
+      else if (ref.kind === "edge") highlightEdgeBundle(ref.name);
       positionTooltip(e.clientX, e.clientY);
       renderInspect(ref, true);
       // Jump the editor to the clicked entity's source line — creases carry
-      // a provenance span (faces/vertices don't have one yet).
+      // a provenance span (edges/faces/vertices don't have one yet).
       if (ref.kind === "crease") {
         const ln = lineOfSpan(currentScene?.inspect?.creases[ref.creaseId]?.span ?? null);
         if (ln) setStepLineOn(editor, ln);
@@ -996,15 +1063,28 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // stopPropagation()s so it doesn't bubble into result's click handler
     // above and re-anchor on whatever's under the tooltip (Task 7 already
     // learned this).
+    //
+    // Task 9: a row now comes from either a crease bundle (`data-pick-crease`
+    // — re-identify candidate lines by `[data-crease-id]`, via
+    // bundleElements) or a paper-boundary edge bundle (`data-pick-edge` — no
+    // id to select by, so every crease-layer line is a candidate, narrowed
+    // by geometry same as the single-segment match below).
     const pickSegment = (row: HTMLElement) => {
       const cid = row.dataset.pickCrease;
-      const s = cid ? currentScene?.inspect?.creases[cid]?.segments[Number(row.dataset.pickSeg)] : undefined;
-      if (!currentScene || !cid || !s) return;
+      const eid = row.dataset.pickEdge;
+      const segIndex = Number(row.dataset.pickSeg);
+      const s = cid
+        ? currentScene?.inspect?.creases[cid]?.segments[segIndex]
+        : eid
+          ? currentScene?.inspect?.edges[eid]?.segments[segIndex]
+          : undefined;
+      if (!currentScene || !s || (!cid && !eid)) return;
       const layout = makeLayout(currentScene.cp.vertices);
       const p0: Vec2 = [layout.tx(s.table[0][0]), layout.ty(s.table[0][1])];
       const p1: Vec2 = [layout.tx(s.table[1][0]), layout.ty(s.table[1][1])];
       clearHl();
-      bundleElements(canvas, cid).forEach((el) => {
+      const candidates = cid ? bundleElements(canvas, cid) : Array.from(canvas.querySelectorAll(CREASE_SELECTOR));
+      candidates.forEach((el) => {
         const x1 = Number(el.getAttribute("x1"));
         const y1 = Number(el.getAttribute("y1"));
         const x2 = Number(el.getAttribute("x2"));

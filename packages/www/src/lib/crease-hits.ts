@@ -10,19 +10,29 @@
 // live in the SAME `data-layer="creases"` group and also carry
 // `data-crease-id` (see render-scene.ts's `markAttrs`), but they aren't
 // part of the crease bundle and shouldn't gain a click target of their own.
-const CREASE_SELECTOR = '[data-layer="creases"] line[data-kind="crease"][data-crease-id]';
+//
+// Task 9: this now matches EVERY crease-layer line, not just ones with a
+// `data-crease-id` — paper boundary (B) lines carry no id at all (there is
+// no per-edge id to tag them with), so they need a hit target too; they're
+// re-identified by geometry instead (see edge-lookup.ts). Exported so
+// Playground.astro can also query "every real crease-layer line" (as
+// opposed to its `.pg-hit` twins, which never carry `data-kind`) when
+// hunting for a boundary line's edge bundle by geometry.
+export const CREASE_SELECTOR = '[data-layer="creases"] line[data-kind="crease"]';
 export const HIT_CLASS = "pg-hit";
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 // Pure factory: one transparent hit-line copying `line`'s endpoints + crease
-// id. Takes the owner Document explicitly (rather than reading a global) so
-// it behaves the same against a real document or a happy-dom one in tests.
+// id (if it has one — a boundary line doesn't). Takes the owner Document
+// explicitly (rather than reading a global) so it behaves the same against a
+// real document or a happy-dom one in tests.
 export function buildHitLine(doc: Document, line: Element): Element {
   const hit = doc.createElementNS(SVG_NS, "line");
   for (const attr of ["x1", "y1", "x2", "y2"]) {
     hit.setAttribute(attr, line.getAttribute(attr) ?? "0");
   }
-  hit.setAttribute("data-crease-id", line.getAttribute("data-crease-id") ?? "");
+  const creaseId = line.getAttribute("data-crease-id");
+  if (creaseId !== null) hit.setAttribute("data-crease-id", creaseId);
   hit.setAttribute("class", HIT_CLASS);
   return hit;
 }

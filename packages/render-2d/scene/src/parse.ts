@@ -94,7 +94,14 @@ export function parseFold(input: string | object): FoldScene {
     (fold["beloch:named_lines"] ?? {}) as
       Record<string, { coeffs: LineCoeffs; step?: number }>,
   ).map(([name, v]) => ({ name, coeffs: v.coeffs, step: v.step ?? 0 }));
-  const inspect = (fold["beloch:inspect"] ?? null) as Inspect | null;
+  // `edges` is a task-9 addition to beloch:inspect; default it to {} for a
+  // fold produced by a core build predating it, same treatment the rest of
+  // this parse gives every other optional beloch: field.
+  const rawInspect = (fold["beloch:inspect"] ?? null) as
+    (Omit<Inspect, "edges"> & { edges?: Inspect["edges"] }) | null;
+  const inspect: Inspect | null = rawInspect
+    ? { ...rawInspect, edges: rawInspect.edges ?? {} }
+    : null;
   return {
     cp, steps, statements: statementsFrom(fold), namedPoints, namedLines,
     creases: groupCreases(cp), marks: marksFrom(fold), inspect,

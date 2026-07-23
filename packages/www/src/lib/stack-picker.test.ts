@@ -7,7 +7,7 @@ function fakeInsp(ranks: Record<number, number>): Inspect {
   for (const [i, rank] of Object.entries(ranks)) {
     faces[i] = { vertices: [], flap: 0, rank };
   }
-  return { creases: {}, faces, points: {} };
+  return { creases: {}, faces, points: {}, edges: {} };
 }
 
 function seg(faces: [number, number]): InspectSegment {

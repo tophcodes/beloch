@@ -1,13 +1,13 @@
 import { test, expect } from "bun:test";
 import type { Inspect, InspectSegment } from "@beloch/scene";
-import { hoverSummary, segmentRows } from "./tooltip-content";
+import { hoverSummary, segmentRows, edgeSegmentRows } from "./tooltip-content";
 
-function seg(faces: [number, number], assignment = "M"): InspectSegment {
+function seg(faces: number[], assignment = "M"): InspectSegment {
   return { faces, paper: [[0, 0], [1, 1]], table: [[0, 0], [1, 1]], assignment };
 }
 
 function fakeInsp(overrides: Partial<Inspect> = {}): Inspect {
-  return { creases: {}, faces: {}, points: {}, ...overrides };
+  return { creases: {}, faces: {}, points: {}, edges: {}, ...overrides };
 }
 
 test("hoverSummary for a named crease shows --name and the true segment count", () => {
@@ -20,14 +20,28 @@ test("hoverSummary for a named crease shows --name and the true segment count", 
   });
 });
 
-test("hoverSummary for an unnamed crease falls back to crease #id", () => {
+test("hoverSummary for an unnamed crease falls back to line #id (generic label, task 9)", () => {
   const insp = fakeInsp({
     creases: { "3": { name: null, axiom: null, sources: [], span: null, segments: [seg([0, 1])] } },
   });
   expect(hoverSummary({ kind: "crease", creaseId: "3" }, insp)).toEqual({
-    title: "crease #3",
+    title: "line #3",
     detail: "1 segment",
   });
+});
+
+test("hoverSummary for a paper-boundary edge shows --name and its segment count", () => {
+  const insp = fakeInsp({
+    edges: { ab: { name: "ab", assignment: "B", segments: [seg([0], "B"), seg([1], "B")] } },
+  });
+  expect(hoverSummary({ kind: "edge", name: "ab" }, insp)).toEqual({
+    title: "--ab",
+    detail: "2 segments",
+  });
+});
+
+test("hoverSummary returns null for an edge name absent from insp.edges", () => {
+  expect(hoverSummary({ kind: "edge", name: "ab" }, fakeInsp())).toBeNull();
 });
 
 test("hoverSummary returns null for a crease id absent from insp.creases", () => {
@@ -94,4 +108,18 @@ test("segmentRows sorts by segRank descending when sortByRank is true", () => {
 
 test("segmentRows returns an empty array for a crease id absent from insp.creases", () => {
   expect(segmentRows(fakeInsp(), "9", true)).toEqual([]);
+});
+
+test("edgeSegmentRows lists every segment of the edge bundle, one face each", () => {
+  const insp = fakeInsp({
+    edges: { ab: { name: "ab", assignment: "B", segments: [seg([0], "B"), seg([1], "B")] } },
+  });
+  expect(edgeSegmentRows(insp, "ab")).toEqual([
+    { index: 0, face: 0, assignment: "B" },
+    { index: 1, face: 1, assignment: "B" },
+  ]);
+});
+
+test("edgeSegmentRows returns an empty array for an edge name absent from insp.edges", () => {
+  expect(edgeSegmentRows(fakeInsp(), "ab")).toEqual([]);
 });

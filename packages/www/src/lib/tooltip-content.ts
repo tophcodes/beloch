@@ -24,10 +24,20 @@ export function hoverSummary(ref: EntityRef, insp: Inspect): HoverSummary | null
     const c = insp.creases[ref.creaseId];
     if (!c) return null;
     const n = c.segments.length;
+    // Generic label (task 9): a named crease shows its name; an anonymous
+    // one shows "line #<id>", not "crease #<id>" — this panel now also
+    // covers paper-boundary edges, so "crease" alone was no longer accurate
+    // for an unnamed entity here.
     return {
-      title: c.name ? `--${c.name}` : `crease #${ref.creaseId}`,
+      title: c.name ? `--${c.name}` : `line #${ref.creaseId}`,
       detail: `${n} segment${n === 1 ? "" : "s"}`,
     };
+  }
+  if (ref.kind === "edge") {
+    const e = insp.edges[ref.name];
+    if (!e) return null;
+    const n = e.segments.length;
+    return { title: `--${e.name}`, detail: `${n} segment${n === 1 ? "" : "s"}` };
   }
   if (ref.kind === "face") {
     const f = insp.faces[ref.index];
@@ -62,11 +72,28 @@ export function segmentRows(insp: Inspect, creaseId: string, sortByRank: boolean
   if (!c) return [];
   const rows: SegmentRow[] = c.segments.map((s, i) => ({
     index: i,
-    faceL: s.faces[0],
-    faceR: s.faces[1],
+    faceL: s.faces[0]!,
+    faceR: s.faces[1]!,
     assignment: s.assignment,
     rank: segRank(insp, s),
   }));
   if (sortByRank) rows.sort((a, b) => b.rank - a.rank);
   return rows;
+}
+
+// The anchored tooltip's segment list for one paper-boundary edge bundle
+// (task 9) — same shape/purpose as segmentRows above, but a boundary
+// segment borders only ONE face (there's no far side, it's the sheet's
+// edge — see InspectSegment's comment in types.ts), so there's no l|r pair
+// and no stacking rank to speak of; the row is just `face <fi> · B`.
+export interface EdgeSegmentRow {
+  index: number;
+  face: number;
+  assignment: string;
+}
+
+export function edgeSegmentRows(insp: Inspect, name: string): EdgeSegmentRow[] {
+  const e = insp.edges[name];
+  if (!e) return [];
+  return e.segments.map((s, i) => ({ index: i, face: s.faces[0]!, assignment: s.assignment }));
 }

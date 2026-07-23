@@ -8,10 +8,19 @@
 // A named vertex also carries data-bel-name on the SAME circle element
 // (render-scene.ts:320,488), so the point name is read directly here
 // instead of reverse-mapping through `inspect.points` by index.
+//
+// The "edge" variant (task 9, paper boundary lines) is NEVER produced by
+// lookupEntity itself — a boundary line carries no distinguishing attribute
+// (no data-crease-id), so it can only be identified by geometry. It's
+// resolved by the caller (Playground.astro) via edge-lookup.ts's
+// `edgeOfLine`, after lookupEntity has already returned null. The variant
+// lives here anyway so every consumer (hoverSummary, segmentRows, the
+// Playground handlers) shares one EntityRef import.
 export type EntityRef =
   | { kind: "crease"; creaseId: string }
   | { kind: "face"; index: string }
-  | { kind: "vertex"; index: number; name: string | null };
+  | { kind: "vertex"; index: number; name: string | null }
+  | { kind: "edge"; name: string };
 
 // Pulls the (1-based) line number out of a provenance span, e.g.
 // `foo.bel:12:3-8` (the `file:line:col-col` format `Error.span_to_string`
