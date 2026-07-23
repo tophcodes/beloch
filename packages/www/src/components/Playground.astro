@@ -400,7 +400,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   }
   .pg-inspect :global(.seg:hover) {
     color: var(--beloch-ink);
-    background: var(--beloch-code-bg);
+    background: color-mix(in srgb, var(--beloch-ink) 10%, transparent);
   }
 
   .pg-canvas :global(.pg-notice) {
@@ -1027,19 +1027,49 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       : r.kind === "edge" ? `e:${r.name}`
       : r.kind === "face" ? `f:${r.index}`
       : `v:${r.index}`;
-    const lineEntitiesAtPoint = (x: number, y: number): EntityRef[] => {
+    // Every distinct inspect entity (crease OR edge) whose segment geometry
+    // lies along a given rendered line. Matching against the inspect DATA, not
+    // just the DOM, is what surfaces COINCIDENT entities: when a crease folds
+    // onto a paper edge they share the same table coords and the renderer
+    // dedupes them to ONE <line>, so elementsFromPoint alone would only ever
+    // see one — but both still have a segment on that geometry.
+    const entitiesOnLine = (x1: number, y1: number, x2: number, y2: number): EntityRef[] => {
+      const insp = currentScene?.inspect;
+      if (!insp || !currentScene) return [];
+      const layout = makeLayout(currentScene.cp.vertices);
       const seen = new Set<string>();
       const out: EntityRef[] = [];
+      const hit = (ref: EntityRef, segs: { table: [Vec2, Vec2] }[]) => {
+        for (const s of segs) {
+          const p0: Vec2 = [layout.tx(s.table[0][0]), layout.ty(s.table[0][1])];
+          const p1: Vec2 = [layout.tx(s.table[1][0]), layout.ty(s.table[1][1])];
+          if (segMatchesLine(p0, p1, x1, y1, x2, y2)) {
+            const k = entityKey(ref);
+            if (!seen.has(k)) { seen.add(k); out.push(ref); }
+            return;
+          }
+        }
+      };
+      for (const [cid, c] of Object.entries(insp.creases)) hit({ kind: "crease", creaseId: cid }, c.segments);
+      for (const [name, e] of Object.entries(insp.edges)) hit({ kind: "edge", name }, e.segments);
+      return out;
+    };
+    // The distinct line entities under a screen point: find the first
+    // crease-layer line (or its .pg-hit twin) there via elementsFromPoint
+    // (which handles the canvas pan/zoom transform), then return every inspect
+    // entity sharing that line's geometry (≥2 ⇒ the coincident-line chooser).
+    const lineEntitiesAtPoint = (x: number, y: number): EntityRef[] => {
       for (const el of document.elementsFromPoint(x, y)) {
         if (!canvas.contains(el)) continue;
-        const ref = resolveRef(el);
-        if (!ref || (ref.kind !== "crease" && ref.kind !== "edge")) continue;
-        const k = entityKey(ref);
-        if (seen.has(k)) continue;
-        seen.add(k);
-        out.push(ref);
+        const line = el.closest(`line[data-kind="crease"], .${HIT_CLASS}`);
+        if (!line) continue;
+        const ents = entitiesOnLine(
+          Number(line.getAttribute("x1")), Number(line.getAttribute("y1")),
+          Number(line.getAttribute("x2")), Number(line.getAttribute("y2")),
+        );
+        if (ents.length) return ents;
       }
-      return out;
+      return [];
     };
 
     // Anchor one entity's tooltip at (x,y): shared tail of a direct single
