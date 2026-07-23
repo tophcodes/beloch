@@ -368,28 +368,36 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   }
   .pg-inspect-close {
     position: absolute;
-    top: 4px;
-    right: 6px;
+    top: 2px;
+    right: 4px;
     z-index: 1;
-    border: none;
-    background: none;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
     color: var(--beloch-ink);
-    font-size: 16px;
-    line-height: 1;
+    font: 18px/1 ui-sans-serif, system-ui, sans-serif;
     cursor: pointer;
-    padding: 2px;
+    padding: 4px;
+    opacity: 0.5;
   }
   .pg-inspect-close:hover {
-    opacity: 0.6;
+    opacity: 1;
+  }
+  .pg-inspect-close:focus-visible {
+    outline: 1px solid var(--beloch-border);
+    border-radius: 3px;
   }
   .pg-inspect .seg {
     border-top: 1px solid var(--beloch-border);
-    padding-top: 4px;
-    margin-top: 4px;
+    margin: 4px -12px 0;
+    padding: 5px 12px 4px;
     cursor: pointer;
   }
   .pg-inspect .seg:hover {
     color: var(--beloch-ink);
+    background: var(--beloch-code-bg);
   }
 
   .pg-notice {
