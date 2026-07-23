@@ -289,11 +289,18 @@ let beloch_statements_json (statements : Eval.stmt_log_entry list) : Yojson.Safe
    (coplanar cluster) + stacking rank, and each named point's carrying
    face + flap. Entity Inspector slice B (playground). *)
 let beloch_inspect_json (state : Fold_state.t)
-    (named_points : (string * Geom.point * int) list) : Yojson.Safe.t =
+    (named_points : (string * Geom.point * int) list)
+    (named_line_cids : (string * int) list) : Yojson.Safe.t =
   let faces = Fold_state.faces state in
   let rank = Fold_state.rank state in
   let clusters = Fold_state.coplanar_clusters state in
   let hinges = Fold_state.hinges state in
+  (* crease_id -> user's variable name. A FOLDED crease's hinge provenance
+     drops the name the `--h =` binding gave it (only marks keep it in prov),
+     so the name would show as null for every folded crease; recover it from
+     the eval's authoritative name<->cid table. *)
+  let name_by_cid = Hashtbl.create 16 in
+  List.iter (fun (n, cid) -> Hashtbl.replace name_by_cid cid n) named_line_cids;
   let pt_json (p : Geom.point) = `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ] in
   (* one representative hinge per crease_id, for name/axiom/span/sources *)
   let by_cid = Hashtbl.create 16 in
@@ -325,14 +332,21 @@ let beloch_inspect_json (state : Fold_state.t)
     Hashtbl.fold
       (fun cid (h : Fold_state.hinge) acc ->
         let segs = Fold_state.crease_segments state cid in
-        let name, axiom, sources, span =
+        let name =
+          match Hashtbl.find_opt name_by_cid cid with
+          | Some n -> `String n
+          | None -> (
+              match h.Fold_state.prov with
+              | Some { State.name = Some n; _ } -> `String n
+              | _ -> `Null)
+        in
+        let axiom, sources, span =
           match h.Fold_state.prov with
           | Some (p : State.provenance) ->
-              ( (match p.State.name with Some n -> `String n | None -> `Null),
-                `String p.State.axiom,
+              ( `String p.State.axiom,
                 `List (List.map (fun s -> `String s) p.State.sources),
                 `String (Error.span_to_string p.State.span) )
-          | None -> (`Null, `Null, `List [], `Null)
+          | None -> (`Null, `List [], `Null)
         in
         ( string_of_int cid,
           `Assoc
@@ -533,7 +547,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
       ("edges_assignment", `List edges_assignment);
       ("faces_vertices", `List faces_vertices);
       ("beloch:edges", beloch_edges);
-      ("beloch:inspect", beloch_inspect_json disp fd.Eval.named_points);
+      ("beloch:inspect", beloch_inspect_json disp fd.Eval.named_points fd.Eval.named_line_cids);
       ("beloch:vertices_names", beloch_vertices_names);
       ("beloch:named_points", beloch_named_points);
       ("beloch:named_lines", beloch_named_lines);
