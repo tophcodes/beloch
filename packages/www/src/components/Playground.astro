@@ -1033,13 +1033,16 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
           closeBtn +
           `<h4>${escapeHtml(title)}</h4>` +
           `<div class="pg-inspect-sub">${rows.length} segment${rows.length === 1 ? "" : "s"}</div>` +
-          rows
-            .map(
-              (r, n) =>
-                `<div class="seg" data-pick-seg="${r.index}" data-pick-crease="${escapeHtml(ref.creaseId)}">` +
-                `Segment ${n + 1} · ${escapeHtml(r.assignment)}</div>`,
-            )
-            .join("");
+          // One segment = the whole bundle; no per-segment picker needed.
+          (rows.length > 1
+            ? rows
+                .map(
+                  (r, n) =>
+                    `<div class="seg" data-pick-seg="${r.index}" data-pick-crease="${escapeHtml(ref.creaseId)}">` +
+                    `Segment ${n + 1} · ${escapeHtml(r.assignment)}</div>`,
+                )
+                .join("")
+            : "");
       } else if (ref.kind === "edge" && anchored) {
         // Anchored view for a paper-boundary edge bundle (task 9) — same
         // subsuming-the-stack-picker idea as the crease branch above, but
@@ -1055,13 +1058,15 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
           closeBtn +
           `<h4>${escapeHtml(`--${e.name}`)}</h4>` +
           `<div class="pg-inspect-sub">${rows.length} segment${rows.length === 1 ? "" : "s"}</div>` +
-          rows
-            .map(
-              (r, n) =>
-                `<div class="seg" data-pick-seg="${r.index}" data-pick-edge="${escapeHtml(ref.name)}">` +
-                `Segment ${n + 1} · ${escapeHtml(r.assignment)}</div>`,
-            )
-            .join("");
+          (rows.length > 1
+            ? rows
+                .map(
+                  (r, n) =>
+                    `<div class="seg" data-pick-seg="${r.index}" data-pick-edge="${escapeHtml(ref.name)}">` +
+                    `Segment ${n + 1} · ${escapeHtml(r.assignment)}</div>`,
+                )
+                .join("")
+            : "");
       } else {
         const summary = hoverSummary(ref, insp);
         if (!summary) {
@@ -1294,13 +1299,19 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       const p1: Vec2 = [layout.tx(s.table[1][0]), layout.ty(s.table[1][1])];
       clearHl();
       const candidates = cid ? bundleElements(canvas, cid) : Array.from(canvas.querySelectorAll(CREASE_SELECTOR));
+      let matched = false;
       candidates.forEach((el) => {
         const x1 = Number(el.getAttribute("x1"));
         const y1 = Number(el.getAttribute("y1"));
         const x2 = Number(el.getAttribute("x2"));
         const y2 = Number(el.getAttribute("y2"));
-        if (segMatchesLine(p0, p1, x1, y1, x2, y2)) el.classList.add("pg-hl");
+        if (segMatchesLine(p0, p1, x1, y1, x2, y2)) {
+          el.classList.add("pg-hl");
+          matched = true;
+        }
       });
+      // Picked an occluded segment (no rendered line) → ghost it so it shows.
+      if (!matched) drawGhost(p0[0], p0[1], p1[0], p1[1]);
     };
     inspectPanel.addEventListener("click", (e: MouseEvent) => {
       const target = e.target as Element;
