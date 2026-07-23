@@ -281,6 +281,22 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   .pg-canvas:has(.pg-notice) {
     cursor: default;
   }
+  /* Crease hit-area (task 8): enhanceCreaseHits inserts one of these,
+     transparent and fat, right after every real crease line so there's a
+     forgiving click target — the visible line itself stays thin. */
+  .pg-canvas :global(.pg-hit) {
+    stroke: transparent;
+    stroke-width: 14;
+    fill: none;
+    pointer-events: stroke;
+    cursor: pointer;
+  }
+  /* Everything grabs the paper by default (see .pg-result above) — creases
+     (and their hit-area twins) are the one thing you can click, so they get
+     their own cursor to signal that. */
+  .pg-canvas :global([data-crease-id]) {
+    cursor: pointer;
+  }
 
   .pg-reset {
     position: absolute;
@@ -311,11 +327,15 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     display: none;
   }
 
+  /* Cursor-following tooltip (task 8): fixed positioning, left/top driven
+     from the pointer event each mousemove. `pointer-events: none` while
+     following — the tooltip sits right where the cursor is, so if it could
+     receive pointer events, hovering it would itself register as "leaving"
+     the crease underneath and flicker the tooltip shut. Anchoring re-enables
+     them (the close button + segment rows need clicks). */
   .pg-inspect {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: 2;
+    position: fixed;
+    z-index: 20;
     max-width: 320px;
     max-height: 70%;
     overflow: auto;
@@ -325,6 +345,10 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     padding: 10px 12px;
     font: 12px/1.5 'IBM Plex Mono', ui-monospace, monospace;
     color: var(--beloch-muted);
+    pointer-events: none;
+  }
+  .pg-inspect.is-anchored {
+    pointer-events: auto;
   }
   .pg-inspect[hidden] {
     display: none;
@@ -332,6 +356,22 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   .pg-inspect h4 {
     margin: 0 0 6px;
     font-size: 12px;
+    color: var(--beloch-ink);
+    padding-right: 18px; /* room for the close button */
+  }
+  .pg-inspect-close {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    border: none;
+    background: none;
+    color: var(--beloch-muted);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+  }
+  .pg-inspect-close:hover {
     color: var(--beloch-ink);
   }
   .pg-inspect .seg {
@@ -511,7 +551,10 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   import { renderCP, renderFolded, makeLayout, WEB_THEME } from "@beloch/render-svg";
   import { SCHEMES, STORAGE_KEY, DEFAULT_ID, applyScheme, resolveScheme } from "../lib/paper-schemes";
   import { lineOfSpan, lookupEntity, type EntityRef } from "../lib/inspect-lookup";
-  import { segRank, segMatchesLine } from "../lib/stack-picker";
+  import { segMatchesLine } from "../lib/stack-picker";
+  import { hoverSummary, segmentRows } from "../lib/tooltip-content";
+  import { bundleElements } from "../lib/bundle-highlight";
+  import { enhanceCreaseHits } from "../lib/crease-hits";
 
   const TIMEOUT_MS = 8000;
 
@@ -547,8 +590,6 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
   }
-
-  const fmtPt = (p: readonly [number, number]) => `(${p[0].toFixed(3)}, ${p[1].toFixed(3)})`;
 
   // Vanilla pan/zoom over a transform target (`.pg-canvas`) inside a viewport
   // (`.pg-result`). No library — a translate()+scale() matrix driven by
@@ -653,7 +694,15 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // (and thus after endDrag() has already reset `dragging`) — dragMoved
     // survives that reset so the click handler can still tell a pan-release
     // apart from a genuine click.
-    return { reset, setEnabled, wasDrag: () => dragMoved };
+    //
+    // isDragging() is different: it reflects the LIVE `dragging` flag, for
+    // the hover tooltip's mousemove handler (task 8) — that one needs to
+    // know whether a pan is happening RIGHT NOW (so it doesn't flicker the
+    // tooltip while the pointer crosses creases mid-drag), not whether the
+    // gesture that JUST ended was a pan (wasDrag() stays true until the
+    // NEXT pointerdown, which would wrongly suppress hover for a while
+    // after a finished pan).
+    return { reset, setEnabled, wasDrag: () => dragMoved, isDragging: () => dragging };
   }
 
   function setup(root: HTMLElement) {
@@ -780,8 +829,11 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     let currentScene: FoldScene | null = null;
     let currentStatements: Statement[] = [];
     let currentStep = 0;
-    // The click-pinned entity, if any — while set, hover no longer overrides
-    // the panel (see the mousemove handler below).
+    // The anchored (click-pinned) entity, if any — while set, hover no
+    // longer overrides the tooltip (see the mousemove handler below) and it
+    // stops following the cursor. Cleared only by the tooltip's own close
+    // (X) button or a fresh run (clearStepsUI) — a background click no
+    // longer clears it (task 8: explicit X-to-close replaces that).
     let pinned: EntityRef | null = null;
 
     // "Folded view" = geometry drawn via renderFolded's occlusion pipeline
@@ -793,96 +845,136 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // no separate mode flag needed.
     const inFoldedView = () => currentStatements.length > 0;
 
-    // Renders `ref` (a hover preview or the pinned click) into the inspect
-    // panel, or hides it for null/an entity the current scene has no
-    // `inspect` data for (e.g. a scene evaluated before beloch:inspect was
-    // emitted, or a mark tick whose crease has no inspect entry).
-    function renderInspect(ref: EntityRef | null) {
+    const clearHl = () => canvas.querySelectorAll(".pg-hl").forEach((el) => el.classList.remove("pg-hl"));
+    // Whole-bundle highlight (task 8): every segment sharing `creaseId`,
+    // across flaps/layers — not just the one under the cursor. `--var` names
+    // ONE crease_id whose segments are the bundle (ADR-0014).
+    const highlightBundle = (creaseId: string) => {
+      clearHl();
+      bundleElements(canvas, creaseId).forEach((el) => el.classList.add("pg-hl"));
+    };
+
+    // Positions the tooltip at the pointer (task 8) — only meaningful while
+    // NOT anchored; once anchored, nothing calls this again, so it freezes
+    // wherever the click left it.
+    const positionTooltip = (x: number, y: number) => {
+      inspectPanel!.style.left = `${x + 14}px`;
+      inspectPanel!.style.top = `${y + 14}px`;
+    };
+
+    // Renders `ref` into the tooltip, or hides it for null/an entity the
+    // current scene has no `inspect` data for (e.g. a scene evaluated
+    // before beloch:inspect was emitted, or a mark tick whose crease has no
+    // inspect entry). `anchored` selects the content: a crease's anchored
+    // view is the segment-row list (subsumes the Task 7 stack picker);
+    // everything else (hover preview, and face/vertex regardless of
+    // anchoring) is the lightweight one-line summary from hoverSummary.
+    function renderInspect(ref: EntityRef | null, anchored: boolean) {
       const insp = currentScene?.inspect;
       if (!ref || !insp) {
         inspectPanel!.hidden = true;
+        inspectPanel!.classList.remove("is-anchored");
         return;
       }
-      let html = "";
-      if (ref.kind === "crease") {
+      const closeBtn = anchored ? `<button type="button" class="pg-inspect-close" aria-label="Schließen">×</button>` : "";
+      let html: string;
+      if (ref.kind === "crease" && anchored) {
         const c = insp.creases[ref.creaseId];
         if (!c) {
           inspectPanel!.hidden = true;
           return;
         }
         const title = c.name ? `--${c.name}` : `crease #${ref.creaseId}`;
-        html = `<h4>${escapeHtml(title)}</h4><div>${escapeHtml(c.axiom ?? "")} · from ${c.sources.map(escapeHtml).join(" ")}</div>`;
-        // Folded view stacks coincident segments (same bundle, different
-        // layer) at the same projected position — order top-of-stack first
-        // so the picker reads like the physical layer order. CP view has no
-        // stacking (segments are spatially separate there), so it stays in
-        // segment-array order (Task 5 behavior).
-        const rows = c.segments.map((s, i) => ({ s, i }));
-        if (inFoldedView()) rows.sort((a, b) => segRank(insp, b.s) - segRank(insp, a.s));
-        html += rows
-          .map(
-            ({ s, i }) =>
-              `<div class="seg" data-pick-seg="${i}" data-pick-crease="${escapeHtml(ref.creaseId)}">` +
-              `seg ${i} · rank ${segRank(insp, s)} · face ${s.faces[0]}|${s.faces[1]} · ${escapeHtml(s.assignment)}<br>` +
-              `paper ${fmtPt(s.paper[0])}→${fmtPt(s.paper[1])}<br>table ${fmtPt(s.table[0])}→${fmtPt(s.table[1])}</div>`,
-          )
-          .join("");
-      } else if (ref.kind === "face") {
-        const f = insp.faces[ref.index];
-        if (!f) {
+        const rows = segmentRows(insp, ref.creaseId, inFoldedView());
+        html =
+          closeBtn +
+          `<h4>${escapeHtml(title)}</h4>` +
+          `<div>${escapeHtml(c.axiom ?? "")} · from ${c.sources.map(escapeHtml).join(" ")}</div>` +
+          rows
+            .map(
+              (r) =>
+                `<div class="seg" data-pick-seg="${r.index}" data-pick-crease="${escapeHtml(ref.creaseId)}">` +
+                `face ${r.faceL}|${r.faceR} · ${escapeHtml(r.assignment)} · rank ${r.rank}</div>`,
+            )
+            .join("");
+      } else {
+        const summary = hoverSummary(ref, insp);
+        if (!summary) {
           inspectPanel!.hidden = true;
           return;
         }
-        html = `<h4>face ${ref.index}</h4><div>flap ${f.flap} · rank ${f.rank}</div>`;
-      } else {
-        const p = ref.name ? insp.points[ref.name] : null;
         html =
-          `<h4>${ref.name ? "." + escapeHtml(ref.name) : "vertex " + ref.index}</h4>` +
-          (p ? `<div>face ${p.face ?? "—"} · flap ${p.flap ?? "—"}</div>` : "");
+          closeBtn +
+          `<h4>${escapeHtml(summary.title)}</h4>` +
+          (summary.detail ? `<div>${escapeHtml(summary.detail)}</div>` : "");
       }
       inspectPanel!.innerHTML = html;
       inspectPanel!.hidden = false;
+      inspectPanel!.classList.toggle("is-anchored", anchored);
+    }
+
+    function closeAnchor() {
+      pinned = null;
+      inspectPanel!.hidden = true;
+      inspectPanel!.classList.remove("is-anchored");
+      clearHl();
     }
 
     // The reverse direction of the click→line jump above: moving the
     // editor cursor onto a source line outlines every SVG crease segment
     // whose provenance span covers that line (read-only, no pinning).
     const highlightCreasesOnLine = (line: number) => {
-      canvas.querySelectorAll(".pg-hl").forEach((el) => el.classList.remove("pg-hl"));
+      clearHl();
       const insp = currentScene?.inspect;
       if (!insp) return;
       for (const [cid, c] of Object.entries(insp.creases)) {
-        if (lineOfSpan(c.span) === line) {
-          canvas.querySelectorAll(`[data-crease-id="${cid}"]`).forEach((el) => el.classList.add("pg-hl"));
-        }
+        if (lineOfSpan(c.span) === line) bundleElements(canvas, cid).forEach((el) => el.classList.add("pg-hl"));
       }
     };
 
-    // Hover previews the entity under the cursor; a click pins it (and a
-    // second click, e.g. on empty paper, unpins). Pan gestures must not
-    // register as a click here — wasDrag() is only true after the pointer
-    // actually moved past the pan threshold during this press.
+    // Hover previews the entity under the cursor, following it with the
+    // tooltip and (for a crease) the whole-bundle highlight; anchored
+    // (pinned) suppresses this entirely. isDragging() (not wasDrag()) is
+    // the right guard here — it reflects whether a pan is happening RIGHT
+    // NOW, so hover resumes as soon as the drag actually ends rather than
+    // staying suppressed until the next pointerdown (see createPanZoom).
     result.addEventListener("mousemove", (e: MouseEvent) => {
-      if (pinned) return;
-      renderInspect(lookupEntity(e.target as Element));
+      if (pinned || panZoom.isDragging()) return;
+      const ref = lookupEntity(e.target as Element);
+      if (ref?.kind === "crease") highlightBundle(ref.creaseId);
+      else clearHl();
+      renderInspect(ref, false);
+      if (ref) positionTooltip(e.clientX, e.clientY);
     });
+    // A click anchors (materializes) the tooltip at the click position — it
+    // stops following the cursor and gains a close (X) button; only that X
+    // clears it now (see closeAnchor). Clicking empty paper (no entity under
+    // the cursor) is a no-op rather than clearing an existing anchor — the
+    // old "background click unpins" behavior is replaced by X-to-close.
+    // Pan gestures must not register as a click here — wasDrag() is only
+    // true after the pointer actually moved past the pan threshold during
+    // this press.
     result.addEventListener("click", (e: MouseEvent) => {
       if (panZoom.wasDrag()) return;
-      pinned = lookupEntity(e.target as Element);
-      renderInspect(pinned);
+      const ref = lookupEntity(e.target as Element);
+      if (!ref) return;
+      pinned = ref;
+      if (ref.kind === "crease") highlightBundle(ref.creaseId);
+      positionTooltip(e.clientX, e.clientY);
+      renderInspect(ref, true);
       // Jump the editor to the clicked entity's source line — creases carry
       // a provenance span (faces/vertices don't have one yet).
-      if (pinned?.kind === "crease") {
-        const ln = lineOfSpan(currentScene?.inspect?.creases[pinned.creaseId]?.span ?? null);
+      if (ref.kind === "crease") {
+        const ln = lineOfSpan(currentScene?.inspect?.creases[ref.creaseId]?.span ?? null);
         if (ln) setStepLineOn(editor, ln);
       }
     });
 
-    // Picking a stacked-segment row (see renderInspect above) highlights the
-    // SVG line(s) it corresponds to by GEOMETRY, not a data-seg index (there
-    // is none — dropped in Task 4). The segment's `table` endpoints are in
-    // the evaluator's table space; a rendered crease `<line>`'s x1/y1/x2/y2
-    // are in SVG pixel space, produced by render-scene.ts as
+    // Picking a segment row (anchored crease view only) highlights the SVG
+    // line(s) it corresponds to by GEOMETRY, not a data-seg index (there is
+    // none — dropped in Task 4). The segment's `table` endpoints are in the
+    // evaluator's table space; a rendered crease `<line>`'s x1/y1/x2/y2 are
+    // in SVG pixel space, produced by render-scene.ts as
     // `mx(tx(x)), ty(y)` off a layout built from `makeLayout(scene.cp.vertices)`
     // (see layout.ts + render-scene.ts:56,102) — `mx` only differs from `tx`
     // for `view: "bottom"`, which this Playground never passes (grepped: only
@@ -894,24 +986,42 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // drops fully-covered arcs unless `hidden: "dashed"`, which this
     // Playground never sets) — zero matches then, and nothing highlights,
     // the honest outcome for a layer this top-view projection can't show.
-    inspectPanel.addEventListener("click", (e: MouseEvent) => {
-      const row = (e.target as Element).closest<HTMLElement>("[data-pick-seg]");
-      if (!row) return;
-      e.stopPropagation(); // else this bubbles into result's click handler above and unpins
-      canvas.querySelectorAll(".pg-hl").forEach((el) => el.classList.remove("pg-hl"));
+    // Hovering OR clicking a row narrows the highlight to just that segment
+    // (removing it from the rest of the bundle); a click additionally
+    // stopPropagation()s so it doesn't bubble into result's click handler
+    // above and re-anchor on whatever's under the tooltip (Task 7 already
+    // learned this).
+    const pickSegment = (row: HTMLElement) => {
       const cid = row.dataset.pickCrease;
       const s = cid ? currentScene?.inspect?.creases[cid]?.segments[Number(row.dataset.pickSeg)] : undefined;
       if (!currentScene || !cid || !s) return;
       const layout = makeLayout(currentScene.cp.vertices);
       const p0: Vec2 = [layout.tx(s.table[0][0]), layout.ty(s.table[0][1])];
       const p1: Vec2 = [layout.tx(s.table[1][0]), layout.ty(s.table[1][1])];
-      canvas.querySelectorAll(`[data-crease-id="${cid}"]`).forEach((el) => {
+      clearHl();
+      bundleElements(canvas, cid).forEach((el) => {
         const x1 = Number(el.getAttribute("x1"));
         const y1 = Number(el.getAttribute("y1"));
         const x2 = Number(el.getAttribute("x2"));
         const y2 = Number(el.getAttribute("y2"));
         if (segMatchesLine(p0, p1, x1, y1, x2, y2)) el.classList.add("pg-hl");
       });
+    };
+    inspectPanel.addEventListener("click", (e: MouseEvent) => {
+      const target = e.target as Element;
+      if (target.closest(".pg-inspect-close")) {
+        e.stopPropagation();
+        closeAnchor();
+        return;
+      }
+      const row = target.closest<HTMLElement>("[data-pick-seg]");
+      if (!row) return;
+      e.stopPropagation();
+      pickSegment(row);
+    });
+    inspectPanel.addEventListener("mouseover", (e: MouseEvent) => {
+      const row = (e.target as Element).closest<HTMLElement>("[data-pick-seg]");
+      if (row) pickSegment(row);
     });
 
     // Prev/next just walk the clamped index; renderStep re-clamps and keeps
@@ -939,6 +1049,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // keepView=false to re-fit the newly-parsed paper.
     const showSvg = (svg: string, keepView = false) => {
       canvas.innerHTML = svg;
+      enhanceCreaseHits(canvas); // bigger click/hover target per crease line (task 8)
       if (!keepView) panZoom.reset();
       panZoom.setEnabled(true);
       resetBtn.hidden = false;
@@ -975,6 +1086,8 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       currentStatements = [];
       pinned = null;
       inspectPanel!.hidden = true;
+      inspectPanel!.classList.remove("is-anchored");
+      clearHl();
       stepsBar!.hidden = true;
       setStepLineOn(editor, null);
     }
