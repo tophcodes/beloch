@@ -39,13 +39,16 @@ test("enhanceCreaseHits inserts one hit-line sibling per crease line", () => {
   expect(first!.nextElementSibling?.classList.contains(HIT_CLASS)).toBe(true);
 });
 
-test("enhanceCreaseHits does not enhance mark/mark-tick overlay lines", () => {
+test("enhanceCreaseHits enhances crease + mark overlay lines, but not mark-tick", () => {
   const container = mountSvg(
     '<line data-kind="crease" data-crease-id="3" x1="0" y1="0" x2="1" y2="1"></line>' +
-      '<line data-kind="mark" data-crease-id="3" x1="0" y1="0" x2="1" y2="1"></line>',
+      '<line data-kind="mark" data-crease-id="3" x1="0" y1="0" x2="1" y2="1"></line>' +
+      '<line data-kind="mark-tick" data-crease-id="3" x1="0" y1="0" x2="0.1" y2="0.1"></line>',
   );
   enhanceCreaseHits(container);
-  expect(container.querySelectorAll(`.${HIT_CLASS}`)).toHaveLength(1);
+  // A flat precrease ("mark") reads as a crease and gets the fat hover target;
+  // the tiny partial-mark tick does not.
+  expect(container.querySelectorAll(`.${HIT_CLASS}`)).toHaveLength(2);
 });
 
 test("enhanceCreaseHits is idempotent — a second call on the same markup adds nothing", () => {
