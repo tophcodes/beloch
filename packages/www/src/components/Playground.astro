@@ -618,7 +618,9 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     return s
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   // Vanilla pan/zoom over a transform target (`.pg-canvas`) inside a viewport
@@ -886,6 +888,11 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // the renderFolded path, so its presence doubles as the view accessor —
     // no separate mode flag needed.
     const inFoldedView = () => currentStatements.length > 0;
+    // beloch:inspect carries the FINAL fold's geometry only; the stepper renders
+    // a different (partial) placement per step, so any inspect-geometry path
+    // (proximity detection, ghosting hidden segments) is valid only on the last
+    // step. Off it, hover falls back to the per-step DOM data-crease-id.
+    const onFinalStep = () => currentStatements.length === 0 || currentStep === currentStatements.length;
 
     const clearHl = () => {
       canvas.querySelectorAll(".pg-hl").forEach((el) => el.classList.remove("pg-hl"));
@@ -907,6 +914,9 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // (makeLayout coords) so it pans/zooms with everything.
     const SVG_NS = "http://www.w3.org/2000/svg";
     const drawGhost = (ax: number, ay: number, bx: number, by: number) => {
+      // Guard every ghost path (bundle + picked-segment) at once: inspect
+      // geometry only lines up with the rendered final-fold placement.
+      if (!onFinalStep()) return;
       const svg = canvas.querySelector("svg");
       if (!svg) return;
       const l = document.createElementNS(SVG_NS, "line");
@@ -920,7 +930,9 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // Ghost every segment whose midpoint isn't near an already-drawn line
     // (i.e. it's occluded / not rendered at this step).
     const ghostHidden = (segments: { table: [Vec2, Vec2] }[], drawnLines: Element[]) => {
-      if (!currentScene) return;
+      // inspect geometry is final-fold only; drawing it over an earlier step's
+      // placement would put ghosts at the wrong positions.
+      if (!currentScene || !onFinalStep()) return;
       const layout = makeLayout(currentScene.cp.vertices);
       const drawn = drawnLines.map((el) => [
         Number(el.getAttribute("x1")), Number(el.getAttribute("y1")),
@@ -1127,7 +1139,9 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     const lineEntitiesAtPoint = (clientX: number, clientY: number): EntityRef[] => {
       const insp = currentScene?.inspect;
       const local = svgLocalPoint(clientX, clientY);
-      if (!insp || !currentScene || !local) return [];
+      // Final-fold geometry only; off the last step, hover/click fall back to
+      // the per-step DOM resolver (data-crease-id) — no proximity, no chooser.
+      if (!insp || !currentScene || !local || !onFinalStep()) return [];
       const [px, py] = local;
       const layout = makeLayout(currentScene.cp.vertices);
       const seen = new Set<string>();
