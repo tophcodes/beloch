@@ -881,17 +881,11 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // Whole-bundle highlight (task 8): every segment sharing `creaseId`,
     // across flaps/layers — not just the one under the cursor. `--var` names
     // ONE crease_id whose segments are the bundle (ADR-0014).
-    const highlightBundle = (creaseId: string) => {
-      clearHl();
+    // no-clear adders (so several bundles can be lit at once for the
+    // coincident-line case); the public highlight* wrap them with a clearHl.
+    const addBundleHl = (creaseId: string) =>
       bundleElements(canvas, creaseId).forEach((el) => el.classList.add("pg-hl"));
-    };
-    // Whole-bundle highlight for a paper-boundary edge (task 9) — same idea
-    // as highlightBundle, but a boundary line carries no data-crease-id to
-    // select by, so every crease-layer line is re-checked by GEOMETRY
-    // (edgeOfLine, same helper the hover/click resolver below uses) instead
-    // of a `[data-crease-id="..."]` selector.
-    const highlightEdgeBundle = (name: string) => {
-      clearHl();
+    const addEdgeHl = (name: string) => {
       const insp = currentScene?.inspect;
       if (!insp || !currentScene) return;
       const layout = makeLayout(currentScene.cp.vertices);
@@ -903,6 +897,18 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         if (edgeOfLine(insp.edges, x1, y1, x2, y2, layout) === name) el.classList.add("pg-hl");
       });
     };
+    const addEntityHl = (ref: EntityRef) => {
+      if (ref.kind === "crease") addBundleHl(ref.creaseId);
+      else if (ref.kind === "edge") addEdgeHl(ref.name);
+    };
+    // Whole-bundle highlight (task 8): every segment sharing `creaseId`, across
+    // flaps/layers. `--var` names ONE crease_id whose segments are the bundle.
+    const highlightBundle = (creaseId: string) => { clearHl(); addBundleHl(creaseId); };
+    // Same for a paper-boundary edge (task 9); boundary lines carry no
+    // data-crease-id, so they're matched by geometry (edgeOfLine).
+    const highlightEdgeBundle = (name: string) => { clearHl(); addEdgeHl(name); };
+    // All coincident entities at once (the chooser hover/anchor).
+    const highlightEntities = (ents: EntityRef[]) => { clearHl(); ents.forEach(addEntityHl); };
     // Resolves the pointer target to an EntityRef: lookupEntity first
     // (crease/face/vertex, attr-based); if that's null AND the target is a
     // crease-layer line or its `.pg-hit` twin, fall back to geometry — this
@@ -1097,17 +1103,18 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // The coincident-line chooser: a materialized list of the overlapping
     // entities. Clicking a row (inspectPanel listener) drills into that one via
     // anchorEntity; hovering a row previews its bundle highlight.
-    const renderChooser = (ents: EntityRef[], x: number, y: number) => {
+    // The coincident-line chooser content — shared by hover (anchored=false: a
+    // live preview that follows the cursor, so hover and click show the SAME
+    // "N Linien hier") and click (anchored=true: pinned, with an X and
+    // clickable rows to drill into one). Hovering a row previews its bundle.
+    const renderChoice = (ents: EntityRef[], anchored: boolean) => {
       const insp = currentScene?.inspect;
       if (!insp) return;
-      choiceEnts = ents;
-      choiceOpen = true;
-      choiceX = x;
-      choiceY = y;
-      pinned = null;
-      positionTooltip(x, y);
+      const closeBtn = anchored
+        ? `<button type="button" class="pg-inspect-close" aria-label="Schließen">×</button>`
+        : "";
       inspectPanel!.innerHTML =
-        `<button type="button" class="pg-inspect-close" aria-label="Schließen">×</button>` +
+        closeBtn +
         `<h4>${ents.length} Linien hier</h4>` +
         ents
           .map((r, i) => {
@@ -1116,7 +1123,11 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
           })
           .join("");
       inspectPanel!.hidden = false;
-      inspectPanel!.classList.add("is-anchored");
+      inspectPanel!.classList.toggle("is-anchored", anchored);
+      if (anchored) {
+        choiceEnts = ents;
+        choiceOpen = true;
+      }
     };
 
     // The reverse direction of the click→line jump above: moving the
@@ -1139,9 +1150,17 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // staying suppressed until the next pointerdown (see createPanZoom).
     result.addEventListener("mousemove", (e: MouseEvent) => {
       if (pinned || choiceOpen || panZoom.isDragging()) return;
-      // Same proximity detection as the click, so a line hovers exactly where
-      // it clicks; fall back to resolveRef for faces/vertices (not lines).
-      const ref = lineEntitiesAtPoint(e.clientX, e.clientY)[0] ?? resolveRef(e.target as Element);
+      // Same proximity detection as the click, so hover and click agree.
+      const ents = lineEntitiesAtPoint(e.clientX, e.clientY);
+      if (ents.length >= 2) {
+        // Preview the chooser so hover already shows "N Linien hier" — not one
+        // entity that then surprises with a chooser on click.
+        highlightEntities(ents);
+        renderChoice(ents, false);
+        positionTooltip(e.clientX, e.clientY);
+        return;
+      }
+      const ref = ents[0] ?? resolveRef(e.target as Element);
       if (ref?.kind === "crease") highlightBundle(ref.creaseId);
       else if (ref?.kind === "edge") highlightEdgeBundle(ref.name);
       else clearHl();
@@ -1158,11 +1177,16 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // this press.
     result.addEventListener("click", (e: MouseEvent) => {
       if (panZoom.wasDrag()) return;
-      // Multiple distinct lines stacked at the click → offer a chooser rather
-      // than silently picking the topmost (e.g. --diag and --ab coincident).
+      // Multiple distinct lines stacked at the click → anchor the chooser
+      // (same content the hover was already previewing).
       const ents = lineEntitiesAtPoint(e.clientX, e.clientY);
       if (ents.length >= 2) {
-        renderChooser(ents, e.clientX, e.clientY);
+        choiceX = e.clientX;
+        choiceY = e.clientY;
+        pinned = null;
+        highlightEntities(ents);
+        positionTooltip(e.clientX, e.clientY);
+        renderChoice(ents, true);
         return;
       }
       const ref = ents[0] ?? resolveRef(e.target as Element);
