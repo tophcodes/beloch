@@ -357,25 +357,30 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     display: none;
   }
   .pg-inspect h4 {
-    margin: 0 0 6px;
+    margin: 0 0 4px;
     font-size: 12px;
     color: var(--beloch-ink);
     padding-right: 18px; /* room for the close button */
   }
+  .pg-inspect-sub {
+    color: var(--beloch-muted);
+    margin-bottom: 4px;
+  }
   .pg-inspect-close {
     position: absolute;
-    top: 6px;
-    right: 8px;
+    top: 4px;
+    right: 6px;
+    z-index: 1;
     border: none;
     background: none;
-    color: var(--beloch-muted);
-    font-size: 15px;
+    color: var(--beloch-ink);
+    font-size: 16px;
     line-height: 1;
     cursor: pointer;
-    padding: 0;
+    padding: 2px;
   }
   .pg-inspect-close:hover {
-    color: var(--beloch-ink);
+    opacity: 0.6;
   }
   .pg-inspect .seg {
     border-top: 1px solid var(--beloch-border);
@@ -938,12 +943,12 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         html =
           closeBtn +
           `<h4>${escapeHtml(title)}</h4>` +
-          `<div>${escapeHtml(c.axiom ?? "")} · from ${c.sources.map(escapeHtml).join(" ")}</div>` +
+          `<div class="pg-inspect-sub">${rows.length} segment${rows.length === 1 ? "" : "s"}</div>` +
           rows
             .map(
-              (r) =>
+              (r, n) =>
                 `<div class="seg" data-pick-seg="${r.index}" data-pick-crease="${escapeHtml(ref.creaseId)}">` +
-                `face ${r.faceL}|${r.faceR} · ${escapeHtml(r.assignment)} · rank ${r.rank}</div>`,
+                `Segment ${n + 1} · ${escapeHtml(r.assignment)}</div>`,
             )
             .join("");
       } else if (ref.kind === "edge" && anchored) {
@@ -960,11 +965,12 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         html =
           closeBtn +
           `<h4>${escapeHtml(`--${e.name}`)}</h4>` +
+          `<div class="pg-inspect-sub">${rows.length} segment${rows.length === 1 ? "" : "s"}</div>` +
           rows
             .map(
-              (r) =>
+              (r, n) =>
                 `<div class="seg" data-pick-seg="${r.index}" data-pick-edge="${escapeHtml(ref.name)}">` +
-                `face ${r.face} · ${escapeHtml(r.assignment)}</div>`,
+                `Segment ${n + 1} · ${escapeHtml(r.assignment)}</div>`,
             )
             .join("");
       } else {
