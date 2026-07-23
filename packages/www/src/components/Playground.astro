@@ -276,6 +276,16 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     stroke: var(--beloch-valley);
     stroke-width: 4;
   }
+  /* Occluded segments of a highlighted bundle, drawn from inspect data since
+     they have no rendered line — dashed + semi-transparent to read as "behind". */
+  .pg-canvas :global(.pg-hl-ghost) {
+    stroke: var(--beloch-valley);
+    stroke-width: 2.5;
+    stroke-dasharray: 5 4;
+    opacity: 0.55;
+    fill: none;
+    pointer-events: none;
+  }
   /* Notices (info/error) mustn't inherit the grab cursor — they're not
      draggable paper. */
   .pg-canvas:has(:global(.pg-notice)) {
@@ -877,25 +887,80 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // no separate mode flag needed.
     const inFoldedView = () => currentStatements.length > 0;
 
-    const clearHl = () => canvas.querySelectorAll(".pg-hl").forEach((el) => el.classList.remove("pg-hl"));
-    // Whole-bundle highlight (task 8): every segment sharing `creaseId`,
-    // across flaps/layers — not just the one under the cursor. `--var` names
-    // ONE crease_id whose segments are the bundle (ADR-0014).
+    const clearHl = () => {
+      canvas.querySelectorAll(".pg-hl").forEach((el) => el.classList.remove("pg-hl"));
+      canvas.querySelectorAll(".pg-hl-ghost").forEach((el) => el.remove());
+    };
+    // Point→segment distance + tolerance, shared by proximity detection and
+    // the hidden-segment test. EPS is in SVG user units (~px at 1:1 zoom).
+    const EPS = 6;
+    const pointSegDist = (px: number, py: number, ax: number, ay: number, bx: number, by: number): number => {
+      const dx = bx - ax, dy = by - ay;
+      const len2 = dx * dx + dy * dy;
+      let t = len2 ? ((px - ax) * dx + (py - ay) * dy) / len2 : 0;
+      t = Math.max(0, Math.min(1, t));
+      return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+    };
+    // A highlighted bundle's OCCLUDED segments have no rendered <line> (a fold
+    // hides layers below), so they couldn't be shown. Draw each hidden segment
+    // as a dashed ghost from the inspect data, in the SVG's own user space
+    // (makeLayout coords) so it pans/zooms with everything.
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    const drawGhost = (ax: number, ay: number, bx: number, by: number) => {
+      const svg = canvas.querySelector("svg");
+      if (!svg) return;
+      const l = document.createElementNS(SVG_NS, "line");
+      l.setAttribute("x1", String(ax));
+      l.setAttribute("y1", String(ay));
+      l.setAttribute("x2", String(bx));
+      l.setAttribute("y2", String(by));
+      l.setAttribute("class", "pg-hl-ghost");
+      svg.appendChild(l);
+    };
+    // Ghost every segment whose midpoint isn't near an already-drawn line
+    // (i.e. it's occluded / not rendered at this step).
+    const ghostHidden = (segments: { table: [Vec2, Vec2] }[], drawnLines: Element[]) => {
+      if (!currentScene) return;
+      const layout = makeLayout(currentScene.cp.vertices);
+      const drawn = drawnLines.map((el) => [
+        Number(el.getAttribute("x1")), Number(el.getAttribute("y1")),
+        Number(el.getAttribute("x2")), Number(el.getAttribute("y2")),
+      ] as const);
+      for (const s of segments) {
+        const ax = layout.tx(s.table[0][0]), ay = layout.ty(s.table[0][1]);
+        const bx = layout.tx(s.table[1][0]), by = layout.ty(s.table[1][1]);
+        const mx = (ax + bx) / 2, my = (ay + by) / 2;
+        if (!drawn.some(([x1, y1, x2, y2]) => pointSegDist(mx, my, x1, y1, x2, y2) <= EPS)) {
+          drawGhost(ax, ay, bx, by);
+        }
+      }
+    };
     // no-clear adders (so several bundles can be lit at once for the
     // coincident-line case); the public highlight* wrap them with a clearHl.
-    const addBundleHl = (creaseId: string) =>
-      bundleElements(canvas, creaseId).forEach((el) => el.classList.add("pg-hl"));
+    // Each also ghosts the bundle's occluded segments.
+    const addBundleHl = (creaseId: string) => {
+      const drawn = Array.from(bundleElements(canvas, creaseId));
+      drawn.forEach((el) => el.classList.add("pg-hl"));
+      const c = currentScene?.inspect?.creases[creaseId];
+      if (c) ghostHidden(c.segments, drawn);
+    };
     const addEdgeHl = (name: string) => {
       const insp = currentScene?.inspect;
       if (!insp || !currentScene) return;
       const layout = makeLayout(currentScene.cp.vertices);
+      const drawn: Element[] = [];
       canvas.querySelectorAll(CREASE_SELECTOR).forEach((el) => {
         const x1 = Number(el.getAttribute("x1"));
         const y1 = Number(el.getAttribute("y1"));
         const x2 = Number(el.getAttribute("x2"));
         const y2 = Number(el.getAttribute("y2"));
-        if (edgeOfLine(insp.edges, x1, y1, x2, y2, layout) === name) el.classList.add("pg-hl");
+        if (edgeOfLine(insp.edges, x1, y1, x2, y2, layout) === name) {
+          el.classList.add("pg-hl");
+          drawn.push(el);
+        }
       });
+      const e = insp.edges[name];
+      if (e) ghostHidden(e.segments, drawn);
     };
     const addEntityHl = (ref: EntityRef) => {
       if (ref.kind === "crease") addBundleHl(ref.creaseId);
@@ -1046,13 +1111,6 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       const l = pt.matrixTransform(ctm.inverse());
       return [l.x, l.y];
     };
-    const pointSegDist = (px: number, py: number, ax: number, ay: number, bx: number, by: number): number => {
-      const dx = bx - ax, dy = by - ay;
-      const len2 = dx * dx + dy * dy;
-      let t = len2 ? ((px - ax) * dx + (py - ay) * dy) / len2 : 0;
-      t = Math.max(0, Math.min(1, t));
-      return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
-    };
     // Every distinct inspect entity (crease OR edge) whose segment passes
     // within EPS of the point — matched against the inspect DATA by proximity,
     // not against rendered <line>s. This surfaces COINCIDENT entities the
@@ -1060,7 +1118,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // they share table coords and dedupe to one <line>, and segments of
     // different lengths (a full diagonal vs. a short merged piece) still count
     // as long as the click sits on them. ≥2 ⇒ the coincident-line chooser.
-    const EPS = 6; // SVG user units (~px at 1:1); tolerance around the click
+    // (pointSegDist + EPS are defined with the highlight helpers above.)
     const lineEntitiesAtPoint = (clientX: number, clientY: number): EntityRef[] => {
       const insp = currentScene?.inspect;
       const local = svgLocalPoint(clientX, clientY);
