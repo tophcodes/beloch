@@ -7430,8 +7430,8 @@ lN(a){var
 c=aJ(hS(a)),i=0,h=0;for(;;){if(!c)break;var
 k=c[2],g=c[1];if(lo(a,g)){c=k;h=[0,g,h]}else{c=k;i=[0,g,i]}}var
 n=aq(i),b=aq(h),f=a;for(;;){if(!b)return[0,f,n];var
-j=b[2],e=b[1],d=e[1];if(0===d[0]){var
-l=e[5],m=Y(d[1],d[2]);b=j;f=le(0,[0,e[3]],f,m,l)}else
+j=b[2],d=b[1],e=d[1];if(0===e[0]){var
+l=d[5],m=Y(e[1],e[2]);b=j;f=le([0,d[4]],[0,d[3]],f,m,l)}else
 b=j}}var
 nm="frame_classes",mc="edges_assignment",nO="edges_vertices",m8="beloch:edges",mv="vertices_coords",ns="faces_vertices",no="beloch:vertices_names",tw=[0,d7,180.],tx=[0,d7,-180.],tv=[0,d7,0.],ty=[0,"frame_inherit",[0,d_,0]],tz=[0,"frame_parent",[0,at,0]],tA=[0,nm,[0,G,[0,[0,ag,"foldedForm"],0]]];function
 lO(a,b,c){var
