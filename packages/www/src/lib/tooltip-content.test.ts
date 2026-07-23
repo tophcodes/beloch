@@ -20,13 +20,23 @@ test("hoverSummary for a named crease shows --name and the true segment count", 
   });
 });
 
-test("hoverSummary for an unnamed crease falls back to line #id (generic label, task 9)", () => {
+test("hoverSummary for an unnamed crease reads 'unnamed line' (no span → just segments)", () => {
   const insp = fakeInsp({
     creases: { "3": { name: null, axiom: null, sources: [], span: null, segments: [seg([0, 1])] } },
   });
   expect(hoverSummary({ kind: "crease", creaseId: "3" }, insp)).toEqual({
-    title: "line #3",
+    title: "unnamed line",
     detail: "1 segment",
+  });
+});
+
+test("hoverSummary for an unnamed crease with a span shows the constructing source line", () => {
+  const insp = fakeInsp({
+    creases: { "3": { name: null, axiom: "axiom2", sources: [], span: "m.bel:7:1-9", segments: [seg([0, 1]), seg([1, 2])] } },
+  });
+  expect(hoverSummary({ kind: "crease", creaseId: "3" }, insp)).toEqual({
+    title: "unnamed line",
+    detail: "Zeile 7 · 2 segments",
   });
 });
 

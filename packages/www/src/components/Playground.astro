@@ -1036,15 +1036,16 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
           inspectPanel!.hidden = true;
           return;
         }
-        // Generic label (task 9): named -> its name; anonymous -> "line
-        // #<id>", not "crease #<id>" — this tooltip now also covers
-        // paper-boundary edges.
-        const title = c.name ? `--${c.name}` : `line #${ref.creaseId}`;
+        // Named -> its name; unnamed (an unbound fold's result) -> "unnamed
+        // line" plus the source line that constructed it, so the user can find
+        // and bind/assign it.
+        const title = c.name ? `--${c.name}` : "unnamed line";
+        const srcLine = c.name ? null : lineOfSpan(c.span);
         const rows = segmentRows(insp, ref.creaseId, inFoldedView());
         html =
           closeBtn +
           `<h4>${escapeHtml(title)}</h4>` +
-          `<div class="pg-inspect-sub">${rows.length} segment${rows.length === 1 ? "" : "s"}</div>` +
+          `<div class="pg-inspect-sub">${srcLine ? `Zeile ${srcLine} · ` : ""}${rows.length} segment${rows.length === 1 ? "" : "s"}</div>` +
           // One segment = the whole bundle; no per-segment picker needed.
           (rows.length > 1
             ? rows
