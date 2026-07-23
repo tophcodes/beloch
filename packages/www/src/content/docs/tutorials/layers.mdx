@@ -1,14 +1,14 @@
 ---
 title: Layers & Ordering
-description: Folding stacks the paper into layers, and up to <point> limits a fold to only the layers that reach a given anchor.
+description: Folding stacks the paper into layers, and by default a new fold takes only the outside flap down to its anchor — moving <flap> drives it through the whole stack.
 ---
 
 import Beloch from "../../../components/Beloch.astro";
 
 Every tutorial so far has folded at most once. This one folds twice, and shows
 what happens to the paper in between: it stacks. Once there is a stack, a new
-fold has to decide how far down it reaches — and `up to` is how you control
-that.
+fold has to decide *how far down* it reaches — and by default it reaches as
+little as it can.
 
 ## One fold, two layers
 
@@ -25,75 +25,89 @@ kind of reflection from earlier tutorials, but this time it's a `fold`, not a
 the sheet is now lying on top of the bottom half. The paper is no longer one
 flat face — it is two stacked layers.
 
-## A second fold goes through the whole stack
+## A second fold takes only the top flap
 
-Fold again, along a new crease.
+Now there is a stack, and a second fold has to choose which layers it lifts. By
+default it takes the smallest bite it can: the outside run of layers down to
+the fold's anchor — here, just the top flap. The layer underneath stays put.
 
-<Beloch filename="two-folds.bel">
-paper square
-fold map .d onto .a
-fold map .c onto .d
-</Beloch>
+Here's a second crease that folds cleanly by default. Fold the top down as
+before, find the point where that hinge meets the left edge, and fold `.d` back
+up onto it.
 
-`fold map .c onto .d` creases a new line and folds along it. By default, a
-fold goes through *every* layer beneath its crease — top and bottom alike. In
-the folded view you can see the result: 4 faces. Both layers from the first
-fold got creased by the second.
-
-It helps to see *where* that second crease falls before the paper moves. Here
-is the same second crease — named `--second` so we can point at it — ghosted
-onto the one-fold stack:
-
-<Beloch filename="two-folds.bel" isometry={1} textureUpTo={2}>
-paper square
-fold map .d onto .a
-fold --second = map .c onto .d
-</Beloch>
-
-The dotted line is `--second` projected onto the stack from the first fold. It
-runs straight down the middle, crossing *both* layers at once — which is why
-folding along it creases all of them into the 4 faces above. (This is a static
-"ghost" view: the geometry is the one-fold stack, the decoration is a crease
-from a later step.)
-
-## `up to` limits the fold to one flap
-
-That second fold cut straight across the whole stack, so it swept up both
-layers. To fold *just* the top layer, the new crease has to stay parallel to
-the one already separating the layers — otherwise lifting it would drag the
-bottom layer along too. Here's one that works: fold the top down as before,
-find the point where that hinge crosses the left edge, and fold `.d` back up
-onto it.
-
-<Beloch filename="up-to.bel">
+<Beloch filename="top-flap.bel">
 paper square
 mark --left = through .a .d
 fold --hinge = map .d onto .a
 .h = --left * --hinge
-fold map .d onto .h up to .d
+fold map .d onto .h
 </Beloch>
 
 `--left * --hinge` is a **meet**: the point where two lines cross. `.h` sits
-exactly on the first fold's crease, so folding `.d` onto it makes a new crease
-parallel to that hinge — one that only cuts through the top layer to begin
-with. `up to .d` then scopes the fold to the flap `.d` is on, leaving the rest
-of the top layer, and the whole bottom layer, alone. Toggle to the folded
-view and count faces: 3, not 4.
+exactly on the first fold's crease, so folding `.d` up onto it makes a new
+crease parallel to that hinge. Because it runs parallel, lifting the top flap
+doesn't drag the bottom layer along. Toggle to the folded view and count faces:
+3, not 4 — the bottom layer was left uncreased.
 
-`up to <point>` is how you fold "just this flap" instead of dragging the whole
-stack along with it — essential once a model has more than one or two layers.
-(Not every second fold can be scoped this way: the flap you're lifting has to
-be free to move on its own, without a hinge to the rest of the paper getting
-in the way.)
+That is the default now: a fold moves the outside flap(s) down to its anchor
+and nothing deeper. You don't have to ask for "just this flap" — you already
+have it.
+
+## Folding through the whole stack
+
+To crease *every* layer, you have to say so. Naming a point on the deepest flap
+you want to move — `moving .a` — extends the fold down through the stack.
+
+<Beloch filename="whole-stack.bel">
+paper square
+fold map .d onto .a
+fold map .c onto .d moving .a
+</Beloch>
+
+`fold map .c onto .d` creases a line straight down the middle, and `moving .a`
+tells it to carry the bottom flap (the one `.a` sits on) along with the top.
+Both layers fold → 4 faces.
+
+Leave off `moving .a` and this fold is an *error*, not a silent whole-stack
+fold: the crease down the middle crosses the hinge joining the two layers, so
+lifting only the top flap would tear the paper along that hinge. Beloch stops
+you and tells you to move the layers underneath too — which is exactly what
+`moving .a` does.
+
+It helps to see *where* that middle crease falls before the paper moves. Here
+is the same crease — named `--second` so we can point at it — ghosted onto the
+one-fold stack:
+
+<Beloch filename="whole-stack.bel" isometry={1} textureUpTo={2}>
+paper square
+fold map .d onto .a
+fold --second = map .c onto .d moving .a
+</Beloch>
+
+The dotted line is `--second` projected onto the stack from the first fold. It
+runs straight down the middle, crossing *both* layers at once — which is why
+folding along it (with `moving .a`) creases all of them into the 4 faces above.
+(This is a static "ghost" view: the geometry is the one-fold stack, the
+decoration is a crease from a later step.)
+
+## Reaching past the anchor with `up to`
+
+The default stops at the fold's anchor flap. `up to <point>` is the interim way
+to reach *past* it — to a flap deeper in the stack than the default would take,
+without moving the entire stack the way `moving` does. On the simple two-layer
+stacks here the default already lands where you want, so you rarely need it yet;
+it earns its keep once a model has several layers and you want to fold down to a
+specific one.
 
 ## What you learned
 
 - Folding stacks the paper: after one fold you have layers, not a single flat
   face.
-- By default, a fold passes through every layer under its crease — a second
-  fold on a two-layer stack creases both layers.
-- `up to <point>` restricts a fold to the flap(s) that reach that point,
-  leaving the other layers uncreased.
+- By default, a second fold takes only the outside flap(s) down to its anchor —
+  the layers underneath stay uncreased.
+- `moving <flap>` drives a fold through the whole stack; without it, a fold that
+  would tear the paper is rejected rather than forced.
+- `up to <point>` reaches past the default anchor to a deeper flap.
 
-Try adjusting the anchor in the [Playground](/playground/) to see which flap
-folds and which stays put.
+Try adjusting the anchor in the [Playground](/playground/) to see which flaps
+fold and which stay put.
