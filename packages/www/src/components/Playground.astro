@@ -356,17 +356,20 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   .pg-inspect[hidden] {
     display: none;
   }
-  .pg-inspect h4 {
+  /* These children are injected via innerHTML, so they never carry Astro's
+     scope attribute — the rules MUST be :global (like .pg-hl / .pg-hit above),
+     or they silently don't apply. */
+  .pg-inspect :global(h4) {
     margin: 0 0 4px;
     font-size: 12px;
     color: var(--beloch-ink);
     padding-right: 18px; /* room for the close button */
   }
-  .pg-inspect-sub {
+  .pg-inspect :global(.pg-inspect-sub) {
     color: var(--beloch-muted);
     margin-bottom: 4px;
   }
-  .pg-inspect-close {
+  .pg-inspect :global(.pg-inspect-close) {
     position: absolute;
     top: 2px;
     right: 4px;
@@ -382,20 +385,20 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     padding: 4px;
     opacity: 0.5;
   }
-  .pg-inspect-close:hover {
+  .pg-inspect :global(.pg-inspect-close:hover) {
     opacity: 1;
   }
-  .pg-inspect-close:focus-visible {
+  .pg-inspect :global(.pg-inspect-close:focus-visible) {
     outline: 1px solid var(--beloch-border);
     border-radius: 3px;
   }
-  .pg-inspect .seg {
+  .pg-inspect :global(.seg) {
     border-top: 1px solid var(--beloch-border);
     margin: 4px -12px 0;
     padding: 5px 12px 4px;
     cursor: pointer;
   }
-  .pg-inspect .seg:hover {
+  .pg-inspect :global(.seg:hover) {
     color: var(--beloch-ink);
     background: var(--beloch-code-bg);
   }
