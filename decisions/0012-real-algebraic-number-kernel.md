@@ -1,10 +1,10 @@
 # 0012 — Real-algebraic number kernel
 
-**Status:** Accepted (supersedes [0010](0010-constructible-real-numbers.md); `Alg` representation superseded by [0013](0013-flint-qqbar-backend.md))
+**Status:** Accepted (supersedes [0010](archive/0010-constructible-real-numbers.md); `Alg` representation superseded by [0013](0013-flint-qqbar-backend.md))
 
 ## Context
 
-[ADR 0010](0010-constructible-real-numbers.md) gave `Num` a quadratic-extension
+[ADR 0010](archive/0010-constructible-real-numbers.md) gave `Num` a quadratic-extension
 tower (`Rat | Ext(a,b,d)` = a+b√d) — the constructible reals, enough for axioms
 1–6 (square roots only) — and explicitly deferred the degree-3 kernel until
 axioms 6/7 forced it.

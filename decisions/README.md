@@ -2,14 +2,19 @@
 
 Architecture Decision Records (ADRs) for Beloch. One file per major decision,
 numbered, append-only. We don't delete ADRs — if a decision is reversed, a later
-ADR supersedes it and the old one is marked `Superseded by NNNN`.
+ADR supersedes it and the old one **moves to `archive/`**.
+
+The directory carries the status, not a banner inside the file: a `Superseded
+by` line sits far from any `rg` hit and gets skipped, by people and by agents
+alike. `decisions/*.md` is current truth; `decisions/archive/*.md` is not.
+The successor names its predecessor going forward.
 
 Scope: semantic and architectural choices (layer model, output format, language
 of implementation), **not** cosmetic ones (keyword spelling, file layout).
 
 Format per record:
 
-- **Status** — Accepted / Superseded by NNNN / Proposed
+- **Status** — Accepted / Proposed
 - **Context** — the forces in play, what made the decision necessary
 - **Decision** — what we chose
 - **Alternatives considered** — what we rejected and why
@@ -29,11 +34,11 @@ See also: `../notes/` (design journal), `../antipatterns.md` (dead ends),
 - [0007](0007-evaluator-not-compiler.md) — Evaluator, not compiler
 - [0008](0008-exact-rational-arithmetic.md) — Exact rational arithmetic
 - [0009](0009-relationship-to-rabbit-ear.md) — Relationship to Rabbit Ear
-- [0010](0010-constructible-real-numbers.md) — Constructible real numbers
+- [0010](archive/0010-constructible-real-numbers.md) — Constructible real numbers *(archived, replaced by 0012)*
 - [0011](0011-action-model.md) — Action model
 - [0012](0012-real-algebraic-number-kernel.md) — Real-algebraic number kernel
 - [0013](0013-flint-qqbar-backend.md) — FLINT qqbar backend for irrational values
 - [0014](0014-crease-is-a-bundle-of-segments.md) — A crease is a bundle of segments
 - [0015](0015-flat-folded-states-only.md) — Flat folded states only; 3D is a goal, not carried
 - [0016](0016-typed-operands-bundle-values-singleton-slots.md) — Typed operands: bundle values, singleton slots
-- [0017](0017-flap-is-coplanar-not-precrease-partition.md) — A flap is a coplanar cluster of faces, not a single precrease polygon *(Proposed)*
+- [0017](0017-flap-is-coplanar-not-precrease-partition.md) — A flap is a coplanar cluster of faces, not a single precrease polygon
