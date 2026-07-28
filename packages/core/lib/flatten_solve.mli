@@ -1,6 +1,5 @@
-(** The `flatten` solver orchestration, lifted out of [Eval.eval_program]'s
-    [Ast.Flatten] arm: single-vertex multi-crease fold, one solver pipeline
-    (spec §4.9). *)
+(** The `flatten` solver orchestration: single-vertex multi-crease fold, one
+    solver pipeline (spec §4.9). *)
 
 val run :
   Ctx.ctx ->

@@ -48,8 +48,7 @@ type t = {
 }
 
 (* Mints internal crease ids; reset per eval so ids are a deterministic
-   function of the program. Own counter — the old Fold_state keeps its own
-   until Plan 3c deletes it. *)
+   function of the program. *)
 let next_id = ref 0
 let reset_ids () = next_id := 0
 let next_id_value () = !next_id
@@ -251,7 +250,7 @@ let make ?(base = I3.identity) ?(marks = [||]) ~(faces : face array)
     Array.iteri (fun i s -> if not s then raise (V (Disconnected i))) seen;
     (* hinge adjacency: each hinge's line must carry a positive-length shared
        boundary segment between its faces (paper space); the segments feed the
-       non-crossing checks (Task 6) *)
+       non-crossing checks *)
     let segs =
       Array.mapi
         (fun i h ->
@@ -457,7 +456,7 @@ let on_paper (g : t) (pp : Geom.point) : bool =
   Array.exists (fun f -> Geom.in_convex_polygon f pp) g.faces
 
 (* ------------------------------------------------------------------ *)
-(* Construction operations (Plan 3a). Each op builds new arrays and    *)
+(* Construction operations. Each op builds new arrays and             *)
 (* re-validates through [make]; a violation raises [Error.fail] at the *)
 (* provenance span. Faces never carry isometries — a fold only sets    *)
 (* hinge angles and the rank.                                          *)
@@ -521,9 +520,7 @@ let chord_of_table (table : Geom.point array) (inv : Isometry.t)
   | _ -> None
 
 (* The chord (in PAPER coordinates) where table-space [axis] crosses the
-   interior of face [i]; None if it misses (touches at most a point).
-   Port of the old flat-record model's axis_segment_in_face (deleted, Plan 3c
-   Task 6). *)
+   interior of face [i]; None if it misses (touches at most a point). *)
 let axis_chord_in_face (g : t) (i : int) (axis : Geom.line) :
     (Geom.point * Geom.point) option =
   let iso2 = face_iso2 g i in
@@ -566,11 +563,11 @@ let densify_rank ~(old_rank : int array) ~(parent : int array) : int array =
    paper-space children plus the paper chord for face i, or None to keep it
    whole (the caller decides: not cut, guard-excluded, or a degenerate part
    with fewer than 3 vertices). Children order per parent: plus side first,
-   then minus (D9 — matches the old face order). Clipping the caller's
+   then minus. FOLD emit enumerates faces by array index, so this order is
+   observable output, not an implementation detail. Clipping the caller's
    canonical line/axis directly (rather than reconstructing a line from the
    chord via [Geom.line_through], whose sign depends on point order) is what
-   keeps child order in sync with the old model — see findings on commit
-   1f0436f. *)
+   keeps that order deterministic. *)
 let split_with_flat_hinges (g : t) ~(cid : int) ~(intent : assign)
     ~(prov : State.provenance option)
     ~(cut_of :
@@ -699,8 +696,9 @@ let fold ?crease_id ?moving_parents (g : t) ~(axis : Geom.line)
     if valley <> (Isometry.det_sign (face_iso2 g fi) < 0) then V else M
   in
   (* 1. split: stationary children (stay side + all non-movers) and moved
-     children, in the OLD accumulation order (D9): stay list is reversed at
-     the end, mov list is not. *)
+     children. The accumulation order is observable — FOLD emit enumerates
+     faces by array index — so: stay list is reversed at the end, mov list is
+     not. *)
   let stay = ref [] and mov = ref [] in (* (paper_poly, parent) *)
   let chords = ref [] in (* (parent, a, b) for each face actually cut *)
   Array.iteri
@@ -846,8 +844,9 @@ let simple_fold (g : t) ~(axis : Geom.line) ~(move_side : int)
   fold g ~axis ~move_side ~valley ~prov:None
 
 (* Turn the whole sheet over: reflect across the footprint's vertical
-   centerline (cosmetic internal axis, as in the old model), reverse the face
-   array (D9 — emit order), reverse the stack. base absorbs the reflection —
+   centerline (cosmetic internal axis), reverse the face
+   array (observable: FOLD emit enumerates faces by index), reverse the
+   stack. base absorbs the reflection —
    the ONE whole-sheet motion. *)
 let flip (g : t) : t =
   let n = Array.length g.faces in
@@ -1095,10 +1094,8 @@ let line_cuts_paper (g : t) (l : Geom.line) : bool =
 
 type scope_target = TargetFace of int | TargetHinged of (int -> bool)
 
-(* Port of the old flat-record model's select_scope (deleted, Plan 3c Task
-   6 — see git history for the algorithm commentary) with memoized table
-   polygons: [tp] is built once; [rel_m] queries [rel] directly. Error
-   strings verbatim from the old module. *)
+(* Memoized table polygons: [tp] is built once; [rel_m] queries [rel]
+   directly. *)
 let select_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
     ~(valley : bool) ~(anchor : int) ~(target : scope_target) :
     (bool array, string) result =
@@ -1255,7 +1252,7 @@ let default_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
 
 (* A scoped moving set is hinge-closed iff every crease segment separating a
    moving face from a stationary face lies on the fold axis with no endpoint
-   strictly on the move side (see the old module's doc comment). *)
+   strictly on the move side. *)
 let scoped_fold_hinge_closed (g : t) ~(axis : Geom.line) ~(move_side : int)
     ~(moving_parents : bool array) : (unit, Geom.point * Geom.point) result =
   let n = Array.length moving_parents in

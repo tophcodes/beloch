@@ -1,6 +1,5 @@
-(** Name resolution, the selector engine, flap resolution and mark resolution,
-    lifted out of [Eval.eval_program]. Every stateful function takes
-    [(ctx : Ctx.ctx)] as its first parameter. *)
+(** Name resolution, the selector engine, flap resolution and mark resolution.
+    Every stateful function takes [(ctx : Ctx.ctx)] as its first parameter. *)
 
 open Ctx
 
@@ -635,8 +634,8 @@ let resolve_mark_extent (ctx : Ctx.ctx) (table_axis : Geom.line) (ext : Ast.exte
          one flap every face shares one isometry, so any works). Falls back
          to the table-space axis itself if none do (an axis tangent to the
          paper only at [pp] — believed unreachable via the grammar); [mline]
-         is display-only this slice (Task 6 owns CP-frame emission), so an
-         imprecise fallback here is not load-bearing yet. *)
+         is display-only, so an imprecise fallback here is not
+         load-bearing. *)
       let st = !(ctx.state) in
       let rec paper_axis_via = function
         | [] -> table_axis

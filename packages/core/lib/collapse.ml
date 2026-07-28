@@ -183,9 +183,8 @@ let linear_extensions (n : int) (constraints : (int * int) list) :
   go 0;
   !results
 
-(* --- the kernel: single-vertex collapse on the hinge-graph core (Plan 3b
-   Task 5, issue #48; the old flat-record kernel this superseded was deleted
-   in Plan 3c Task 6). Hinge angles and a total face rank are set directly;
+(* --- the kernel: single-vertex collapse on the hinge-graph core (issue #48).
+   Hinge angles and a total face rank are set directly;
    placements (and hence overlaps) are DERIVED by [Fold_state.make], not
    composed by hand, so there is no [folded]/[faces_for_anchor] analogue —
    re-anchoring is just a different (root, base) into the same [make]. -- *)

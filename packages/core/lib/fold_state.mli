@@ -23,7 +23,7 @@ type hinge = {
 }
 (** Crease between adjacent faces [fa] and [fb]. [angle] = dihedral/π. The
     sign does not affect a flat placement (±π half-turns coincide); M/V is
-    derived from the rank (Plan 2c), never stored. *)
+    derived from the rank, never stored. *)
 
 type mark_geom = MSeg of Geom.point * Geom.point | MPoint of Geom.point
 
@@ -184,7 +184,7 @@ val paper_preimages : t -> Geom.point -> Geom.point list
 val on_paper : t -> Geom.point -> bool
 (** Whether a paper-space point lies in some face. *)
 
-(** {1 Construction operations (Plan 3a)}
+(** {1 Construction operations}
 
     Each operation builds new faces/hinges and re-validates through [make]; a
     violation raises {!Error.fail} at the given provenance span, since a
@@ -250,8 +250,9 @@ val simple_fold : t -> axis:Geom.line -> move_side:int -> valley:bool -> t
 val flip : t -> t
 (** Turn the whole sheet over: reflects across the footprint's vertical
     centerline (an internal, cosmetic axis — which line is irrelevant, only
-    the substantive effect matters), reverses the face array (D9 — emit
-    order) and the stack. The reflection is absorbed into [base] — the ONE
+    the substantive effect matters), reverses the face array (observable: FOLD
+    emit enumerates faces by index) and the stack. The reflection is absorbed
+    into [base] — the ONE
     whole-sheet motion; no per-face isometry is stored. *)
 
 val add_mark : t -> mark -> t
@@ -445,6 +446,4 @@ val classify_mark_extent :
 
 val axis_chord_in_face : t -> int -> Geom.line -> (Geom.point * Geom.point) option
 (** The chord (in PAPER coordinates) where table-space [axis] crosses the
-    interior of face [i]; [None] if it misses (touches at most a point). Port
-    of the old flat-record model's [axis_segment_in_face] (deleted, Plan 3c
-    Task 6). *)
+    interior of face [i]; [None] if it misses (touches at most a point). *)
