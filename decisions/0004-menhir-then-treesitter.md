@@ -1,6 +1,10 @@
-# 0004 — Menhir for the compiler parser, Tree-sitter later for editors
+---
+id: "0004"
+title: "Menhir for the compiler parser, Tree-sitter later for editors"
+status: accepted
+---
 
-**Status:** Accepted
+# 0004 — Menhir for the compiler parser, Tree-sitter later for editors
 
 ## Context
 

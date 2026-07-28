@@ -1,3 +1,9 @@
+---
+id: "0013"
+title: "FLINT qqbar backend for irrational values"
+status: accepted
+---
+
 # 0013 — FLINT qqbar backend for irrational values
 
 **Status:** Accepted (supersedes the `Alg` representation of

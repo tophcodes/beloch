@@ -1,3 +1,9 @@
+---
+id: "0010"
+title: "Constructible real numbers for the irrational axioms"
+status: superseded
+---
+
 # 0010 — Constructible real numbers for the irrational axioms
 
 **Status:** Superseded by [0012](0012-real-algebraic-number-kernel.md)

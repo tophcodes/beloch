@@ -1,6 +1,10 @@
-# 0008 — Exact rational arithmetic (zarith) for the geometry engine
+---
+id: "0008"
+title: "Exact rational arithmetic (zarith) for the geometry engine"
+status: accepted
+---
 
-**Status:** Accepted
+# 0008 — Exact rational arithmetic (zarith) for the geometry engine
 
 ## Context
 

@@ -1,7 +1,11 @@
-# 0011 — Beloch is an action model (folding), not only crease-pattern construction
+---
+id: "0011"
+title: "Beloch is an action model (folding), not only crease-pattern construction"
+date: 2026-06-29
+status: accepted
+---
 
-## Status
-Accepted (2026-06-29)
+# 0011 — Beloch is an action model (folding), not only crease-pattern construction
 
 ## Context
 Beloch v0.0–v0.4 was a crease-pattern *construction* language: Huzita-Justin axioms

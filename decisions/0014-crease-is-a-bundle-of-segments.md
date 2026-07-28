@@ -1,7 +1,11 @@
-# 0014 — A crease is a bundle of segments
+---
+id: "0014"
+title: "A crease is a bundle of segments"
+date: 2026-07-03
+status: accepted
+---
 
-## Status
-Accepted (2026-07-03)
+# 0014 — A crease is a bundle of segments
 
 ## Context
 After #28 a named crease was `Material(crease_id, line)` and was treated as a

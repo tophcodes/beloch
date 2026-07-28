@@ -1,6 +1,10 @@
-# 0007 — Beloch is an evaluator, not a compiler; CLI shape
+---
+id: "0007"
+title: "Beloch is an evaluator, not a compiler; CLI shape"
+status: accepted
+---
 
-**Status:** Accepted
+# 0007 — Beloch is an evaluator, not a compiler; CLI shape
 
 ## Context
 
