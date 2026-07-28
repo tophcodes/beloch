@@ -217,7 +217,7 @@ let resolve_markable (ctx : Ctx.ctx) (span : Error.span) (name_opt : string opti
               | None -> (Axiom.select_axiom5_bind ctx span p, None)
               | Some fs -> Axiom.select_axiom5_fold ctx span p ~fs
             in
-            (axis, "axiom5", p.sources, so)
+            (axis, "axiom5", Axiom.ax5_sources p, so)
       in
       let prov : State.provenance option =
         Some { State.axiom; sources; span; name = prov_name }
