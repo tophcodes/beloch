@@ -203,8 +203,23 @@ git commit -m "refactor(core): lift evaluator context out of eval.ml into Ctx"
   `select_point`, `span_of_line`, `bundle_segments`, `coerce_one_segment`,
   `table_of`, `faces_containing`, `resolve_flap_cluster`,
   `resolve_sector_face`, `side_of_flap_arg_res`, `side_of_flap_arg`,
-  `anchor_faces`, `default_move_side`, `target_of`, `resolve_markable`,
-  `resolve_mark_extent`, `resolve_mark_flap`.
+  `anchor_faces`, `default_move_side`, `target_of`, `resolve_mark_extent`,
+  `resolve_mark_flap`.
+
+**Correction, found during Task 2 (2026-07-28):** `resolve_markable`
+(pre-refactor 1444–1496) calls `axis_of`, `select_axiom5_bind` and
+`select_axiom5_fold`, all of which live in the `Axiom` layer *above*
+`Resolve`. Putting it in `Resolve` is a genuine dependency cycle, which the
+build catches as `Error: Unbound value axis_of`. The pre-plan call-graph check
+covered regions 501–937, 938–1115, 1116–1260, 1261–1443 and 2016–2653 but not
+1444–1570, which is how it slipped through. `resolve_markable` therefore
+**stays in `eval.ml`**, alongside `run_fold*`. `resolve_mark_extent` and
+`resolve_mark_flap` call nothing above themselves and do move into `Resolve`.
+The real layering is:
+
+```
+Ctx  ←  Resolve  ←  Axiom  ←  { resolve_markable, run_fold*, Flatten_solve }  ←  Eval
+```
 
 - [ ] **Step 1: Move the two regions into `resolve.ml`**
 
