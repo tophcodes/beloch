@@ -10,8 +10,7 @@ open Ctx
    fully-resolved [Axis]. *)
 type ax5_pending = {
   la : Geom.line;
-  lb : Geom.line;
-  cands : Geom.line * Geom.line;   (* angle bisectors of la, lb *)
+  cands : Geom.line * Geom.line;   (* angle bisectors of la and l2's line *)
   toward : Geom.point option;      (* table space, already checked off la *)
   l1_op : Ast.line_operand;        (* for the l1-material lookup *)
   l1_str : string;
@@ -23,6 +22,8 @@ type ax5_pending = {
 type axis_result =
   | Axis of Geom.line * string * string list
   | Ax5 of ax5_pending
+
+let ax5_sources (p : ax5_pending) : string list = p.sources
 
 (* axis line + provenance (axiom tag, source names), evaluated against the
    current table positions *)
@@ -91,7 +92,6 @@ let axis_of (ctx : Ctx.ctx) (span : Error.span) (ax : Ast.axiom) : axis_result =
           Ax5
             {
               la;
-              lb;
               cands;
               toward;
               l1_op = l1;

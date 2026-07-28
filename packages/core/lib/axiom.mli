@@ -2,21 +2,13 @@
     bisector-selection path. Every stateful function takes
     [(ctx : Ctx.ctx)] as its first parameter. *)
 
-type ax5_pending = {
-  la : Geom.line;
-  lb : Geom.line;
-  cands : Geom.line * Geom.line;  (** angle bisectors of [la], [lb] *)
-  toward : Geom.point option;  (** table space, already checked off [la] *)
-  l1_op : Ast.line_operand;  (** for the l1-material lookup *)
-  l1_str : string;
-  l2_str : string;
-  toward_str : string option;
-  sources : string list;  (** provenance, includes toward when present *)
-}
+type ax5_pending
 (** Axiom 5 (`map --l1 onto --l2`) needs its candidate bisectors selected
     against the current fold state (material of l1, paper incidence,
     `toward` direction), so {!axis_of} defers that choice: intersecting
-    lines yield [Ax5], everything else a fully-resolved [Axis]. *)
+    lines yield [Ax5], everything else a fully-resolved [Axis]. Opaque —
+    only {!select_axiom5_bind}, {!select_axiom5_fold} and {!ax5_sources}
+    read it. *)
 
 type axis_result =
   | Axis of Geom.line * string * string list
@@ -35,3 +27,6 @@ val select_axiom5_fold :
 (** Resolve a deferred axiom-5 axis for a `fold`. Returns the chosen axis
     plus an optional move-side override (`Some` when the direction is
     derived, not read off an explicit `moving` anchor). *)
+
+val ax5_sources : ax5_pending -> string list
+(** Provenance source names, including `toward` when present. *)
