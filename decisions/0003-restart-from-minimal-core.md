@@ -1,6 +1,10 @@
-# 0003 — Restart from a minimal formal core, don't patch the 2018 design
+---
+id: "0003"
+title: "Restart from a minimal formal core, don't patch the 2018 design"
+status: accepted
+---
 
-**Status:** Accepted
+# 0003 — Restart from a minimal formal core, don't patch the 2018 design
 
 ## Context
 

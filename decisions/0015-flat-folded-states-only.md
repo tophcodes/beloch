@@ -1,7 +1,11 @@
-# 0015 — Flat folded states only (2D isometries); 3D is a goal, not a carried feature
+---
+id: "0015"
+title: "Flat folded states only (2D isometries); 3D is a goal, not a carried feature"
+date: 2026-07-03
+status: accepted
+---
 
-## Status
-Accepted (2026-07-03)
+# 0015 — Flat folded states only (2D isometries); 3D is a goal, not a carried feature
 
 ## Context
 The action-model design doc

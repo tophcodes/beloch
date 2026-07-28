@@ -1,6 +1,10 @@
-# 0001 — OCaml for the evaluator core, TypeScript for the tooling edge
+---
+id: "0001"
+title: "OCaml for the evaluator core, TypeScript for the tooling edge"
+status: accepted
+---
 
-**Status:** Accepted
+# 0001 — OCaml for the evaluator core, TypeScript for the tooling edge
 
 ## Context
 

@@ -1,6 +1,10 @@
-# 0006 — Permissive license (MIT)
+---
+id: "0006"
+title: "Permissive license (MIT)"
+status: accepted
+---
 
-**Status:** Accepted
+# 0006 — Permissive license (MIT)
 
 ## Context
 

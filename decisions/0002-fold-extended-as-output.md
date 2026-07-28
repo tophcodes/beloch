@@ -1,6 +1,10 @@
-# 0002 — FOLD-extended as the geometric output, custom JSON for diagrams
+---
+id: "0002"
+title: "FOLD-extended as the geometric output, custom JSON for diagrams"
+status: accepted
+---
 
-**Status:** Accepted
+# 0002 — FOLD-extended as the geometric output, custom JSON for diagrams
 
 ## Context
 

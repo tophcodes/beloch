@@ -1,7 +1,11 @@
-# 0016 — Typed operands: bundle values, singleton slots
+---
+id: "0016"
+title: "Typed operands: bundle values, singleton slots"
+date: 2026-07-05
+status: accepted
+---
 
-## Status
-Accepted (2026-07-05)
+# 0016 — Typed operands: bundle values, singleton slots
 
 ## Context
 Designing the fold-scope refinement (`moving`, `up to`, `@fold` — see

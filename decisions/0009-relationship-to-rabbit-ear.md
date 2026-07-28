@@ -1,6 +1,10 @@
-# 0009 — Relationship to Rabbit Ear; a constrained declarative language, not a library or eDSL
+---
+id: "0009"
+title: "Relationship to Rabbit Ear; a constrained declarative language, not a library or eDSL"
+status: accepted
+---
 
-**Status:** Accepted
+# 0009 — Relationship to Rabbit Ear; a constrained declarative language, not a library or eDSL
 
 ## Context
 

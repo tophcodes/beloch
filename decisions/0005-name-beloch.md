@@ -1,6 +1,10 @@
-# 0005 — Name: Beloch
+---
+id: "0005"
+title: "Name: Beloch"
+status: accepted
+---
 
-**Status:** Accepted
+# 0005 — Name: Beloch
 
 ## Context
 

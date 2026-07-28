@@ -1,3 +1,9 @@
+---
+id: "0012"
+title: "Real-algebraic number kernel"
+status: accepted
+---
+
 # 0012 — Real-algebraic number kernel
 
 **Status:** Accepted (supersedes [0010](archive/0010-constructible-real-numbers.md); `Alg` representation superseded by [0013](0013-flint-qqbar-backend.md))

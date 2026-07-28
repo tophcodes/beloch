@@ -1,3 +1,10 @@
+---
+id: "0017"
+title: "A flap is a coplanar cluster of faces, not a single precrease polygon"
+date: 2026-07-06
+status: accepted
+---
+
 # 0017 — A flap is a coplanar cluster of faces, not a single precrease polygon
 
 ## Status
