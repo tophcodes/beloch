@@ -1,6 +1,5 @@
-(** Name resolution, the selector engine, flap resolution and mark resolution,
-    lifted out of [Eval.eval_program]. Every stateful function takes
-    [(ctx : Ctx.ctx)] as its first parameter. *)
+(** Name resolution, the selector engine, flap resolution and mark resolution.
+    Every stateful function takes [(ctx : Ctx.ctx)] as its first parameter. *)
 
 val pstr : Ast.point_operand -> string
 (** Render a point operand back to source text, for provenance and error

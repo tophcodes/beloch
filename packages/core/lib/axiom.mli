@@ -1,6 +1,6 @@
 (** Axiom construction: the seven Huzita-Justin axioms and the axiom-5
-    bisector-selection path, lifted out of [Eval.eval_program]. Every
-    stateful function takes [(ctx : Ctx.ctx)] as its first parameter. *)
+    bisector-selection path. Every stateful function takes
+    [(ctx : Ctx.ctx)] as its first parameter. *)
 
 type ax5_pending = {
   la : Geom.line;

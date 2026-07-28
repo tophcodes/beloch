@@ -69,8 +69,8 @@ let beloch_edges_json edges : Yojson.Safe.t =
        edges)
 
 (* Emit-time overlay (design §3.6). Graduates every mark whose MSeg endpoints
-   both lie on a face boundary (corner / paper edge / real crease — the old
-   CSubdivide test) into real creases by subdividing the state (in paper space,
+   both lie on a face boundary (corner / paper edge / real crease) into real
+   creases by subdividing the state (in paper space,
    fold-invariantly) along the mark's line. Returns the display state plus the
    marks that stay records for `beloch:marks`. A mark coincident with a real
    crease subdivides nothing, so it silently drops (the real crease supersedes).
