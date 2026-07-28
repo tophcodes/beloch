@@ -230,7 +230,7 @@ let snapshot (ctx : ctx) : snapshot =
         s_state = !(ctx.state);
         s_next_id = Fold_state.next_id_value ();
       }
-  | _ -> failwith "Eval.snapshot: expected a single root scope at a statement boundary"
+  | _ -> failwith "Ctx.snapshot: expected a single root scope at a statement boundary"
 
 let restore_tbl dst src =
   Hashtbl.reset dst;
@@ -261,7 +261,7 @@ let restore (ctx : ctx) (s : snapshot) : unit =
       ctx.pending <- s.s_pending;
       ctx.state := s.s_state;
       Fold_state.set_next_id s.s_next_id
-  | _ -> failwith "Eval.restore: expected a single root scope at a statement boundary"
+  | _ -> failwith "Ctx.restore: expected a single root scope at a statement boundary"
 
 let push_frame (ctx : ctx) (span : Error.span option) =
   ctx.frames_rev <- (!(ctx.state), span) :: ctx.frames_rev;
