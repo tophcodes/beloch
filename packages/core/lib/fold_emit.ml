@@ -94,8 +94,7 @@ let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
                matches its beloch:inspect key. *)
             Fold_state.subdivide_paper s
               (Geom.line_through a b)
-              ~crease_id:m.Fold_state.mcrease_id
-              ~intent:m.Fold_state.mintent ~prov:m.Fold_state.mprov
+              ~crease_id:m.Fold_state.mcrease_id ~prov:m.Fold_state.mprov
         | Fold_state.MPoint _ -> s)
       st grad
   in

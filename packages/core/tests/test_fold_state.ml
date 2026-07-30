@@ -19,8 +19,8 @@ let hline k : Geom.line = { Geom.a = q 0; b = q 1; c = q k }
 let vline_half : Geom.line = { Geom.a = q 1; b = q 0; c = Num.of_q (Q.of_ints 1 2) }
 
 (* Task 1 helper: metadata-carrying hinge literal with defaults *)
-let mkh ?(cid = -1) ?(intent = Fold_state.F) ?(prov = None) fa fb line angle =
-  { Fold_state.fa; fb; line; angle; crease_id = cid; intent; prov }
+let mkh ?(cid = -1) ?(prov = None) fa fb line angle =
+  { Fold_state.fa; fb; line; angle; crease_id = cid; prov }
 
 let mk ?(root = 0) ~faces ~hinges ~rank () =
   match Fold_state.make ~faces ~hinges ~root ~rank () with
@@ -428,11 +428,10 @@ let test_waterbomb_tear_rejected () =
 
 let test_metadata_carried () =
   let faces = single_fold_faces () in
-  let hinges = [| mkh ~cid:7 ~intent:Fold_state.V 0 1 (vline 1) (q 1) |] in
+  let hinges = [| mkh ~cid:7 0 1 (vline 1) (q 1) |] in
   let g = mk ~faces ~hinges ~rank:[| 0; 1 |] () in
   let h = (Fold_state.hinges g).(0) in
-  Alcotest.(check int) "crease_id" 7 h.Fold_state.crease_id;
-  Alcotest.(check bool) "intent" true (h.Fold_state.intent = Fold_state.V)
+  Alcotest.(check int) "crease_id" 7 h.Fold_state.crease_id
 
 let test_mv_total () =
   (* folded hinge derives M or V; flat hinge derives F *)
@@ -551,7 +550,7 @@ let test_subdivide_parity () =
   Fold_state.reset_ids ();
   let diag = { Geom.a = q 1; b = q 1; c = q 1 } in  (* diagonal x+y=1 *)
   let g = Fold_state.subdivide Fold_state.init_square diag ~prov:None in
-  (* the new F hinge exists and carries the id/intent *)
+  (* the new F hinge exists and carries the id *)
   let hs = Fold_state.hinges g in
   Alcotest.(check int) "one hinge" 1 (Array.length hs);
   Alcotest.(check bool) "flat" true (Num.sign hs.(0).Fold_state.angle = 0)
@@ -673,10 +672,10 @@ let test_fold_parity_pleat () =
 
 let test_fold_precrease_upgrade () =
   (* subdivide (F) then fold on the same axis: the F hinge toggles to angle 1
-     and the intent letter upgrades (old #27 upgrade path) *)
+     (old #27 upgrade path) *)
   Fold_state.reset_ids ();
   let ax = { Geom.a = q 1; b = q 0; c = Num.div Num.one (Num.of_int 2) } in
-  let g0 = Fold_state.subdivide Fold_state.init_square ax ~intent:Fold_state.M ~prov:None in
+  let g0 = Fold_state.subdivide Fold_state.init_square ax ~prov:None in
   let g = vfold_new g0 ax in
   (* the upgraded hinge is folded and keeps its crease id 0 *)
   let hs = Fold_state.hinges g in
@@ -731,11 +730,11 @@ let test_fold_then_subdivide_parity () =
   Alcotest.(check int) "4 faces (both layers cut)" 4
     (Array.length (Fold_state.faces g))
 
-(* --- Task 4 coverage: unfold toggle, intent letters, root/base branches --- *)
+(* --- Task 4 coverage: unfold toggle, root/base branches ------------------ *)
 
 let test_fold_unfold_toggle () =
   (* book fold, then re-fold along the SAME axis moving only the top layer
-     back: the on-axis hinge toggles 1 -> 0 (physical unfold), intent kept *)
+     back: the on-axis hinge toggles 1 -> 0 (physical unfold) *)
   Fold_state.reset_ids ();
   let half = Num.div Num.one (Num.of_int 2) in
   let ax = { Geom.a = q 1; b = q 0; c = half } in
@@ -746,7 +745,6 @@ let test_fold_unfold_toggle () =
   Alcotest.(check int) "one hinge" 1 (Array.length hs);
   let h = hs.(0) in
   Alcotest.(check bool) "folded" true (Num.sign h.Fold_state.angle <> 0);
-  let intent_before = h.Fold_state.intent in
   let top = if Fold_state.rel g1 h.Fold_state.fa h.Fold_state.fb = Fold_state.Above
             then h.Fold_state.fa else h.Fold_state.fb in
   let moving = Array.make (Array.length (Fold_state.faces g1)) false in
@@ -758,8 +756,6 @@ let test_fold_unfold_toggle () =
   Alcotest.(check int) "still one hinge" 1 (Array.length hs2);
   Alcotest.(check bool) "unfolded: angle 0" true
     (Num.sign hs2.(0).Fold_state.angle = 0);
-  Alcotest.(check bool) "intent kept" true
-    (hs2.(0).Fold_state.intent = intent_before);
   Alcotest.(check bool) "derived mv is F" true
     (Fold_state.mv g2 0 = Fold_state.F);
   Alcotest.(check bool) "faces apart again" true
@@ -771,34 +767,21 @@ let test_fold_unfold_toggle () =
         (Array.for_all Geom.in_unit_square (Fold_state.table_polygon g2 i)))
     (Fold_state.faces g2)
 
-let test_fold_intent_letters () =
+(* A valley fold on a face-up sheet derives V, a mountain fold M; the letter
+   is read from rank and orientation, never stored. *)
+let test_fold_derived_letters () =
   Fold_state.reset_ids ();
   let half = Num.div Num.one (Num.of_int 2) in
   let ax = { Geom.a = q 1; b = q 0; c = half } in
-  (* valley fold on a face-up sheet mints intent V *)
   let gv = Fold_state.fold Fold_state.init_square ~axis:ax ~move_side:1
       ~valley:true ~prov:None in
-  Alcotest.(check bool) "valley mints V" true
-    ((Fold_state.hinges gv).(0).Fold_state.intent = Fold_state.V);
-  (* mountain fold mints M *)
+  Alcotest.(check bool) "valley derives V" true
+    (Fold_state.mv gv 0 = Fold_state.V);
   Fold_state.reset_ids ();
   let gm = Fold_state.fold Fold_state.init_square ~axis:ax ~move_side:1
       ~valley:false ~prov:None in
-  Alcotest.(check bool) "mountain mints M" true
-    ((Fold_state.hinges gm).(0).Fold_state.intent = Fold_state.M);
-  (* precrease scored with intent M, then VALLEY-folded on that axis:
-     upgrade overwrites intent with the live letter V (old #27 semantics) *)
-  Fold_state.reset_ids ();
-  let g0 = Fold_state.subdivide Fold_state.init_square ax
-      ~intent:Fold_state.M ~prov:None in
-  let g1 = Fold_state.fold g0 ~axis:ax ~move_side:1 ~valley:true ~prov:None in
-  let folded =
-    Array.to_list (Fold_state.hinges g1)
-    |> List.filter (fun h -> Num.sign h.Fold_state.angle <> 0)
-  in
-  Alcotest.(check int) "one folded hinge" 1 (List.length folded);
-  Alcotest.(check bool) "upgraded intent = V" true
-    ((List.hd folded).Fold_state.intent = Fold_state.V)
+  Alcotest.(check bool) "mountain derives M" true
+    (Fold_state.mv gm 0 = Fold_state.M)
 
 let test_fold_root_moves_parity () =
   Fold_state.reset_ids ();
@@ -1490,7 +1473,7 @@ let () =
             test_fold_then_subdivide_parity ] );
       ( "task4-coverage",
         [ Alcotest.test_case "unfold toggle" `Quick test_fold_unfold_toggle;
-          Alcotest.test_case "intent letters" `Quick test_fold_intent_letters;
+          Alcotest.test_case "derived letters" `Quick test_fold_derived_letters;
           Alcotest.test_case "root moves parity" `Quick
             test_fold_root_moves_parity;
           Alcotest.test_case "nothing stationary parity" `Quick

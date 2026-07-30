@@ -19,7 +19,6 @@ type hinge = {
   line : Geom.line;
   angle : Num.t;
   crease_id : int;  (* internal identity; unique within a state, never serialized *)
-  intent : assign;  (* crease-pattern colour (old eintent) — user intent, stored *)
   prov : State.provenance option;
 }
 
@@ -568,7 +567,7 @@ let densify_rank ~(old_rank : int array) ~(parent : int array) : int array =
    canonical line/axis directly (rather than reconstructing a line from the
    chord via [Geom.line_through], whose sign depends on point order) is what
    keeps that order deterministic. *)
-let split_with_flat_hinges (g : t) ~(cid : int) ~(intent : assign)
+let split_with_flat_hinges (g : t) ~(cid : int)
     ~(prov : State.provenance option)
     ~(cut_of :
        int ->
@@ -598,7 +597,7 @@ let split_with_flat_hinges (g : t) ~(cid : int) ~(intent : assign)
         match children_of fi with
         | [ cp; cm ] ->
             { fa = cp; fb = cm; line = Geom.line_through a b; angle = Num.zero;
-              crease_id = cid; intent; prov }
+              crease_id = cid; prov }
         | _ -> assert false)
       !chords
   in
@@ -613,7 +612,7 @@ let split_with_flat_hinges (g : t) ~(cid : int) ~(intent : assign)
   | Ok g' -> g'
   | Error v -> fail_of_violation prov v
 
-let subdivide ?crease_id ?(intent : assign = V) ?keep_side (g : t) (axis : Geom.line)
+let subdivide ?crease_id ?keep_side (g : t) (axis : Geom.line)
     ~(prov : State.provenance option) : t =
   let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
   let on_keep_side fi =
@@ -657,9 +656,9 @@ let subdivide ?crease_id ?(intent : assign = V) ?keep_side (g : t) (axis : Geom.
           | None -> None)
       | _ -> None
   in
-  split_with_flat_hinges g ~cid ~intent ~prov ~cut_of
+  split_with_flat_hinges g ~cid ~prov ~cut_of
 
-let subdivide_paper ?crease_id ?(intent : assign = V) (g : t) (paper_axis : Geom.line)
+let subdivide_paper ?crease_id (g : t) (paper_axis : Geom.line)
     ~(prov : State.provenance option) : t =
   let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
   (* PLUS child = paper_axis side +1 (old-model convention): clip the paper
@@ -677,7 +676,7 @@ let subdivide_paper ?crease_id ?(intent : assign = V) (g : t) (paper_axis : Geom
         | None -> None)
     | _ -> None
   in
-  split_with_flat_hinges g ~cid ~intent ~prov ~cut_of
+  split_with_flat_hinges g ~cid ~prov ~cut_of
 
 (* Simple flat fold as a graph transformation: cut the moving faces along
    [axis], give the cut hinges angle 1, toggle existing on-axis hinges with
@@ -689,11 +688,6 @@ let fold ?crease_id ?moving_parents (g : t) ~(axis : Geom.line)
   let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
   let moves fi =
     match moving_parents with None -> true | Some m -> m.(fi)
-  in
-  (* the crease-pattern letter of the fold on parent face fi: the user's
-     valley XOR the parent's orientation parity (old assign_of) *)
-  let letter_of fi : assign =
-    if valley <> (Isometry.det_sign (face_iso2 g fi) < 0) then V else M
   in
   (* 1. split: stationary children (stay side + all non-movers) and moved
      children. The accumulation order is observable — FOLD emit enumerates
@@ -751,7 +745,7 @@ let fold ?crease_id ?moving_parents (g : t) ~(axis : Geom.line)
             if pp = fi then if moved_flag.(k) then mc := k else sc := k)
           parent;
         { fa = !sc; fb = !mc; line = Geom.line_through a b; angle = Num.one;
-          crease_id = cid; intent = letter_of fi; prov })
+          crease_id = cid; prov })
       !chords
   in
   (* 3. carried hinges: re-attach (D7), then toggle on-axis hinges with
@@ -778,10 +772,8 @@ let fold ?crease_id ?moving_parents (g : t) ~(axis : Geom.line)
            let h =
              if not toggled then h
              else if Num.sign h.angle = 0 then
-               (* precrease upgrade: F -> folded, intent gets the live letter
-                  of the MOVED parent (old assign_of_parent mf, #27) *)
-               let mf = if moved_parent.(h.fa) then h.fa else h.fb in
-               { h with angle = Num.one; intent = letter_of mf }
+               (* precrease upgrade: F -> folded *)
+               { h with angle = Num.one }
              else { h with angle = Num.zero } (* physical unfold *)
            in
            List.concat_map

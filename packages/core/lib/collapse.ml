@@ -480,17 +480,13 @@ let pipeline_solve (sg : sector_geom) ~(valley : bool array)
         if eff_of_ray j then (j, l) else (l, j))
   in
   let stackings = linear_extensions n constraints in
-  let ray_assign =
-    Array.init n (fun j -> if eff_of_ray j then Fold_state.V else Fold_state.M)
-  in
-  (* new hinges: every hinge whose crease matches a ray gets angle 1 + the
-     ray's derived letter; others are carried unchanged *)
+  (* new hinges: every hinge whose crease matches a ray gets angle 1; others
+     are carried unchanged *)
   let new_hinges =
     Array.mapi
       (fun i (h : Fold_state.hinge) ->
         match sg.sg_hinge_ray.(i) with
-        | Some j ->
-            { h with Fold_state.angle = Num.one; intent = ray_assign.(j) }
+        | Some _ -> { h with Fold_state.angle = Num.one }
         | None -> h)
       sg.sg_old_hinges
   in
