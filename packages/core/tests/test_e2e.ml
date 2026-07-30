@@ -920,6 +920,23 @@ let test_mark_mountain_cp_intent () =
   Alcotest.(check bool) "folded frame keeps the mark F" true
     (json_folded_assignments json |> List.mem "F")
 
+(* A FOLDED crease is coloured by the derived M/V, not by the letter frozen
+   into [intent] when the fold ran: later steps restack the sheet and the
+   stored letter does not follow. swivel-rabbit is symmetric about --v, so
+   its two hinges must agree, and only the emergent ear is a mountain. *)
+let test_cp_folded_crease_uses_derived_mv () =
+  let json =
+    Beloch.fold_string ~filename:"swivel-rabbit.bel"
+      (read_example "bases/swivel-rabbit.bel")
+  in
+  let count l a = List.length (List.filter (fun x -> x = a) l) in
+  let cp = json_cp_assignments json in
+  let folded = json_folded_assignments json in
+  Alcotest.(check int) "one mountain in the CP, the emergent ear" 1
+    (count cp "M");
+  Alcotest.(check int) "CP and folded frame agree on mountains"
+    (count folded "M") (count cp "M")
+
 (* full mark (no extent clause) keeps subdividing, unchanged from before this
    task; a full mark never records. *)
 let test_mark_full_still_subdivides () =
@@ -1072,6 +1089,8 @@ let () =
             `Quick test_mark_boundary_to_interior_records;
           Alcotest.test_case "mark mountain: CP frame M, folded frame F"
             `Quick test_mark_mountain_cp_intent;
+          Alcotest.test_case "CP colours folded creases by derived MV" `Quick
+            test_cp_folded_crease_uses_derived_mv;
           Alcotest.test_case "full mark still subdivides" `Quick
             test_mark_full_still_subdivides;
           (* PENDING #27: full multilayer mark materialization — the setup meet
