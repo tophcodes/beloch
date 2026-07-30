@@ -1,7 +1,7 @@
 {
   "name": "beloch",
   "displayName": "Beloch",
-  "description": "Language support and live preview for the Beloch origami language",
+  "description": "Language support for the Beloch origami language",
   "version": "0.0.1",
   "publisher": "toph",
   "private": true,
@@ -24,34 +24,18 @@
         "configuration": "./language-configuration.json"
       }
     ],
-    "configuration": {
-      "title": "Beloch",
-      "properties": {
-        "beloch.path": {
-          "type": "string",
-          "default": "",
-          "description": "Path to the beloch executable. Empty = look up `beloch` on PATH, then fall back to `dune exec beloch --`."
-        }
-      }
-    },
     "grammars": [
       {
         "language": "beloch",
         "scopeName": "source.beloch",
         "path": "./syntaxes/beloch.tmLanguage.json"
       }
-    ],
-    "commands": [
-      {
-        "command": "beloch.showPreview",
-        "title": "Beloch: Show Preview"
-      }
     ]
   },
   "scripts": {
     "compile": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
-    "test": "bun test",
+    "test": "bun run test:grammar",
     "test:grammar": "vscode-tmgrammar-test -g syntaxes/beloch.tmLanguage.json \"test/grammar/**/*.bel\"",
     "vscode:prepublish": "bun run compile",
     "package": "vsce package --no-dependencies -o beloch.vsix",
@@ -65,8 +49,5 @@
     "esbuild": "^0.24.0",
     "typescript": "^5.5.0",
     "vscode-tmgrammar-test": "^0.1.3"
-  },
-  "dependencies": {
-    "vscode-languageclient": "^9.0.1"
   }
 }
