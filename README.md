@@ -11,31 +11,16 @@ Beloch, named after [Margherita Piazzola Beloch][mpb], is a declarative language
 
 [fold-spec]: https://github.com/edemaine/fold
 
-## Quick example
-
-```
-paper square
-mark --d1 = through .a .c
-mark --d2 = through .b .d
-.center = --d1 * --d2
-fold map .a onto .center
-```
-
-Two diagonals, a named crossing, one fold — `mark` only scores a crease,
-`fold` actually moves paper, and `*` meets two marked lines at a point. The
-fold's axis is the crease axiom 2 derives. That program produces a
-[FOLD][fold-spec] file, which renders into this — crease pattern and folded
-state, named constructions overlaid:
-
-| crease pattern | folded |
-| --- | --- |
-| ![x-midpoint.bel rendered as a crease pattern: two diagonals --d1 and --d2, their crossing labelled .center, and the fold crease from .a to .center](examples/syntax/x-midpoint-cp.svg) | ![x-midpoint.bel folded: the corner .a flap reflected onto .center](examples/syntax/x-midpoint-folded.svg) |
-
 ## Bases
 
-Two traditional bases, each a handful of statements. The crease pattern shows
-the sheet as it is folded: mountains and valleys are derived from the layer
-order, and the construction lines that were only scored stay flat.
+Two traditional bases, each a handful of statements. `mark` only scores a
+crease, `fold` moves paper, and `flatten` collapses a vertex flat — deriving
+the crease that closes it when no axiom can construct one. Every program emits
+a [FOLD][fold-spec] file, which renders into the pairs below.
+
+The crease pattern shows the sheet as it is folded: mountains and valleys are
+derived from the layer order, and the construction lines that were only scored
+stay flat.
 
 ### Fish base
 
