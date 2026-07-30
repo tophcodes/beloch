@@ -1,4 +1,4 @@
-; status: legitimate error — .a is not incident to the top edge --cd, so
+; .a is not incident to the top edge --cd, so
 ; filtering the edge's segment bundle to it must select nothing (same
 ; "no segment ... matches" error a crease bundle would give).
 paper square

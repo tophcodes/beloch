@@ -3,4 +3,3 @@ paper square
 mark --ac = through .a .c
 fold map --da onto --ac
 fold map --ab onto --ac
-; status: works — incidence filter: only one candidate bisector per fold cuts the paper; moving is derived from l1's own material

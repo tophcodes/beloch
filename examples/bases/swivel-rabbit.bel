@@ -1,4 +1,4 @@
-; status: works — swivel rabbit ear, free hinges (not the incenter case,
+; Swivel rabbit ear, free hinges (not the incenter case,
 ; contrast examples/bases/rabbit-ear.bel). The two hinge creases land at an
 ; arbitrary height on the side edges rather than at the triangle's bisector
 ; angles, so the crease that flattens the vertex is not constructible by any
