@@ -516,17 +516,11 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
               match Fold_state.hinge_between disp fi pa pb with
               | Some hi ->
                   let h = hs.(hi) in
-                  (* A folded crease is coloured by the DERIVED M/V, which
-                     follows the current stacking; [intent] is the letter
-                     written when the fold ran and does not survive a later
-                     restack. It still decides flat precreases, where there is
-                     no stacking to derive from and the letter is the marked-in
-                     direction. *)
-                  let a =
-                    match Fold_state.mv disp hi with
-                    | Fold_state.F -> mark_assign_str h.Fold_state.intent
-                    | m -> mark_assign_str m
-                  in
+                  (* The crease pattern shows what the model looks like folded,
+                     so every edge is coloured by the DERIVED M/V. A precrease
+                     is flat and therefore F, whatever direction it was marked
+                     with. *)
+                  let a = mark_assign_str (Fold_state.mv disp hi) in
                   (a, h.Fold_state.prov, Some h.Fold_state.crease_id)
               | None -> ("F", None, None)
           in

@@ -912,11 +912,15 @@ let test_mark_boundary_to_interior_records () =
 
 let test_mark_mountain_cp_intent () =
   (* map .a onto .d = horizontal midline y=1/2, full chord (boundary-to-
-     boundary -> subdivides), marked mountain. *)
+     boundary -> subdivides), marked mountain. Both frames show the sheet as
+     it is folded, and a precrease is flat in both — the marked direction
+     never reaches edges_assignment. *)
   let src = "paper square\nmark map .a onto .d mountain\n" in
   let json = Beloch.fold_string ~filename:"t.bel" src in
-  Alcotest.(check bool) "CP frame colours the mark M" true
+  Alcotest.(check bool) "CP frame keeps the mark F" false
     (json_cp_assignments json |> List.mem "M");
+  Alcotest.(check bool) "CP frame has the flat crease" true
+    (json_cp_assignments json |> List.mem "F");
   Alcotest.(check bool) "folded frame keeps the mark F" true
     (json_folded_assignments json |> List.mem "F")
 
