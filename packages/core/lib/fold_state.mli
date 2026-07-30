@@ -9,8 +9,8 @@ type face = Geom.point array
     construction kernel — not re-validated here). *)
 
 type assign = M | V | F
-(** Mountain / valley / flat. Used both as a hinge's stored [intent]
-    (crease-pattern colour, user intent) and as [mv]'s derived result. *)
+(** Mountain / valley / flat. A hinge's assignment is always derived — see
+    {!mv}; this type is also a mark's stored [mintent]. *)
 
 type hinge = {
   fa : int;
@@ -18,7 +18,6 @@ type hinge = {
   line : Geom.line;
   angle : Num.t;
   crease_id : int;  (** internal identity; unique within a state, never serialized *)
-  intent : assign;  (** crease-pattern colour (old eintent) — user intent, stored *)
   prov : State.provenance option;
 }
 (** Crease between adjacent faces [fa] and [fb]. [angle] = dihedral/π. The
@@ -196,7 +195,6 @@ val init_square : t
 
 val subdivide :
   ?crease_id:int ->
-  ?intent:assign ->
   ?keep_side:Geom.line * int ->
   t ->
   Geom.line ->
@@ -208,12 +206,10 @@ val subdivide :
     shares a positive-length boundary segment. [keep_side:(guard, keep)]
     restricts the cut to the ray of [axis] on side [keep] of the
     perpendicular [guard] line through the ray's origin — faces on the other
-    side are left uncut. [crease_id] defaults to a fresh id; [intent]
-    defaults to [V]. *)
+    side are left uncut. [crease_id] defaults to a fresh id. *)
 
 val subdivide_paper :
   ?crease_id:int ->
-  ?intent:assign ->
   t ->
   Geom.line ->
   prov:State.provenance option ->
