@@ -63,3 +63,4 @@ See also: `../notes/` (design journal), `../antipatterns.md` (dead ends),
 - [0016](0016-typed-operands-bundle-values-singleton-slots.md) — Typed operands: bundle values, singleton slots
 - [0017](0017-flap-is-coplanar-not-precrease-partition.md) — A flap is a coplanar cluster of faces, not a single precrease polygon
 - [0018](0018-core-module-boundaries.md) — Core module boundaries: Ctx, Resolve, Axiom, Flatten_solve, Eval
+- [0019](0019-attribution-carried-by-construction.md) — Attribution is carried by construction
