@@ -1,4 +1,4 @@
-; status: works — companion to edge-bundle-select-c.bel: selecting the OTHER
+; Companion to edge-bundle-select-c.bel: selecting the OTHER
 ; boundary segment of --cd (`.d` instead of `.c`) folds the opposite half,
 ; proving `&` discriminates between the two segments a paper edge is split
 ; into rather than picking either/an arbitrary one. Here .d ends up on the

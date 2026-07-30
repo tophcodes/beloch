@@ -1,5 +1,5 @@
 ; SYNTAX TEST "source.beloch"
-; status: works — Peter Messer's cube-root-of-two construction [messer1986;
+; Peter Messer's cube-root-of-two construction [messer1986;
 ; <- comment.line.semicolon.beloch
 ; hull2020 §2.3], axiom 7 (the cubic Beloch fold) in its folded state.
 ;
