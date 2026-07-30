@@ -15,23 +15,72 @@ Beloch, named after [Margherita Piazzola Beloch][mpb], is a declarative language
 
 ```
 paper square
---d1 = through .a .c
---d2 = through .b .d
-.center = cross --d1 --d2
-@map .a onto .center
+mark --d1 = through .a .c
+mark --d2 = through .b .d
+.center = --d1 * --d2
+fold map .a onto .center
 ```
 
-Two diagonals, a named crossing, one fold — `@` actually folds `.a` onto
-`.center` (a bare `map` would just mark the crease) along the crease axiom 2
-derives. That program produces a [FOLD][fold-spec] file, which renders into
-this — crease pattern and folded state, named constructions overlaid:
+Two diagonals, a named crossing, one fold — `mark` only scores a crease,
+`fold` actually moves paper, and `*` meets two marked lines at a point. The
+fold's axis is the crease axiom 2 derives. That program produces a
+[FOLD][fold-spec] file, which renders into this — crease pattern and folded
+state, named constructions overlaid:
 
 | crease pattern | folded |
 | --- | --- |
 | ![x-midpoint.bel rendered as a crease pattern: two diagonals --d1 and --d2, their crossing labelled .center, and the fold crease from .a to .center](examples/syntax/x-midpoint-cp.svg) | ![x-midpoint.bel folded: the corner .a flap reflected onto .center](examples/syntax/x-midpoint-folded.svg) |
 
-More programs, from simple midline folds to Messer's cube-root-of-two
-construction (axiom 7), are in [`examples/`](examples/).
+## Bases
+
+Two traditional bases, each a handful of statements. The crease pattern shows
+the sheet as it is folded: mountains and valleys are derived from the layer
+order, and the construction lines that were only scored stay flat.
+
+### Fish base
+
+Two long flaps from opposite corners. Each half of the diagonal is collapsed
+with `flatten`, which derives the crease that closes the vertex — the one
+crease here that no axiom constructs from the named points.
+
+```
+paper square
+
+mark --diag = map .a onto .c
+mark --ray = through .a .c
+
+mark --l1 = map --ab onto --diag
+mark --l2 = map --da onto --diag
+flatten (--l1) (--l2) (--ray) {toward .d}
+
+mark --l3 = map --cd onto --diag
+mark --l4 = map --bc onto --diag
+flatten (--l3) (--l4) (--ray) {toward .d}
+```
+
+| crease pattern | folded |
+| --- | --- |
+| ![fish-base.bel as a crease pattern: the a-c diagonal, four kite creases folded onto it, and the two emergent creases that close the vertices](examples/bases/fish-base-cp.svg) | ![fish-base.bel folded: two narrow flaps from opposite corners](examples/bases/fish-base-folded.svg) |
+
+### Swivel rabbit ear
+
+A rabbit ear whose hinges sit at a free height on the side edges rather than
+at the triangle's angle bisectors, so the crease that flattens the vertex is
+not constructible by any Huzita axiom from the named points — `flatten`
+solves for it, and binds it to `--ear`:
+
+```
+--ear = flatten (--ba \ .a) (--bb \ .b) (--v \ .m) {toward .c}
+```
+
+| crease pattern | folded |
+| --- | --- |
+| ![swivel-rabbit.bel as a crease pattern: scaffolding lines flat, two hinge valleys, and the single emergent mountain](examples/bases/swivel-rabbit-cp.svg) | ![swivel-rabbit.bel folded: the ear swivelled to one side](examples/bases/swivel-rabbit-folded.svg) |
+
+The full program, with the scaffolding that locates the hinge height, is in
+[`examples/bases/swivel-rabbit.bel`](examples/bases/swivel-rabbit.bel). More
+programs, from simple midline folds to Messer's cube-root-of-two construction
+(axiom 7), are in [`examples/`](examples/).
 
 ## Development
 
