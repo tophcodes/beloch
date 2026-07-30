@@ -1,7 +1,7 @@
 # Annotation layer — `;;` doc-annotations for display-layer concerns
 
 **Status:** Proposed (2026-07-22). First client is the provenance stance in
-[decisions/0018-attribution-carried-by-construction.md]. Not yet implemented.
+[decisions/0019-attribution-carried-by-construction.md]. Not yet implemented.
 
 ## Context
 
@@ -9,7 +9,7 @@ Beloch statements describe *folding* — geometry the evaluator turns into a
 folded state. A second, separate class of information is about **presentation**,
 not geometry:
 
-- **who designed the model** (author, source, license) — see [ADR 0018];
+- **who designed the model** (author, source, license) — see [ADR 0019];
 - **prose between steps** — the caption text a diagram shows alongside a fold;
 - **step grouping** — which folds collapse into one displayed step.
 
@@ -17,7 +17,7 @@ None of these have a home today. A `.bel` file can only say them in a `;`
 comment, and the lexer discards `;`-to-EOL before the parser sees it
 (`packages/core/lib/lexer.ml`: `';', Star (Compl '\n') -> token buf` recurses
 without emitting a token). So a comment cannot carry anything that must reach
-emit or render — it is thrown away by construction. ADR 0018's "provenance is a
+emit or render — it is thrown away by construction. ADR 0019's "provenance is a
 first-class output concern" therefore needs a channel that **survives to the
 AST**. This spec designs that channel, and makes it general enough to serve all
 three concerns rather than bolting on a provenance-only hack.
@@ -62,7 +62,7 @@ paper square
 
 Consumed by emit: `author` → FOLD `file_author`, a `title` key → `file_title`,
 `source`/`license` → `beloch:source` / `beloch:license` extension fields (per
-[ADR 0002]). This is the propagation ADR 0018 §1 requires.
+[ADR 0002]). This is the propagation ADR 0019 §1 requires.
 
 ### Tier 2 — inline note (ships in slice 1)
 
@@ -110,7 +110,7 @@ single-`;` and are still discarded).
 - **`fold_emit.ml`**: read leading meta-keys into the FOLD metadata dict already
   being built next to `file_creator`.
 - **First-party renderers / playgrounds**: display declared attribution by
-  default — this is the "lead by example" lever from [ADR 0018] §3, and the only
+  default — this is the "lead by example" lever from [ADR 0019] §3, and the only
   enforcement Beloch has. Not a license duty on anyone; Beloch's own surfaces
   simply show the credit.
 - **Instruction / step JSON + docs stepper**: attach notes to their positional
@@ -125,7 +125,7 @@ first-party playground/renderer; Tier 2 notes emitted to the instruction JSON.
 `;; source`.
 
 **Out:** Tier 3 step grouping; the `refs/`-grounded community-norm prose
-(ADR 0018 open item). No license change of any kind — MIT stays intact
+(ADR 0019 open item). No license change of any kind — MIT stays intact
 ([ADR 0006]); attribution is a capability, not an obligation.
 
 ## Open questions
