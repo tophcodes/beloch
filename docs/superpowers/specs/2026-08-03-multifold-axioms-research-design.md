@@ -42,8 +42,10 @@ Secondary results, in descending priority:
 
 ## Non-goals
 
-- No proofs requiring theory beyond undergraduate algebra plus
-  Galois-group computations delegated to a CAS.
+- No proofs requiring graduate-level machinery. Bachelor-level Galois
+  theory (field extensions, degree towers, solvability) is in scope and
+  is learned demand-driven as the project needs it; Galois-group
+  *computations* are delegated to PARI.
 - No changes to Beloch's user-facing language semantics in this track
   until the mathematics is settled; multifold syntax is a later, separate
   design (own ADR/spec) informed by the classification.
