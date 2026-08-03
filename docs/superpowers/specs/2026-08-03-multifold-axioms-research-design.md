@@ -88,6 +88,12 @@ human-readable and human-checked — nothing rests on "the model said so".
    → verify: written novelty memo with sources.
 1. **Two-fold machinery.** Formalize alignments; enumerate; reproduce
    489. → verify: exact count match against Alperin & Lang.
+   Early milestone: a crude combinatorial **upper bound** on the number
+   of k-fold systems (count constraint multisets consuming 2k degrees of
+   freedom, before equivalence/degeneracy filtering). Cheap to compute
+   once the alignment alphabet is fixed; validated by evaluating it at
+   k=2 against 489; tells us early whether k=3 is ~10⁴ or ~10⁸ and thus
+   whether the Phase 2 fallback triggers.
 2. **Three-fold enumeration.** Run the machinery at k=3.
    → verify: classification with per-class non-degeneracy witnesses.
    Risk fallback: if the space explodes, restrict scope to a defensible
