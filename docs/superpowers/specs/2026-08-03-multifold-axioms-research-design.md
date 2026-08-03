@@ -80,6 +80,10 @@ AI division of labour: small models grind literature and cross-checks;
 the main model assists with formalization and proof sketches; the user
 owns architecture and decisions. Every proof appearing in the paper is
 human-readable and human-checked — nothing rests on "the model said so".
+"Checked" means the user understands the proof well enough to defend it
+independently; explaining the mathematics to that level is part of the
+deliverable, and the required theory is learned through the project's
+own proofs rather than a separate course track.
 
 ## Phases
 
