@@ -103,3 +103,33 @@ positioned against honestly in the paper.
   (survey of the field's tools: OrigamiDraw, Tessellatica, Grasshopper, TreeMaker,
   Origamizer, etc. — establishes that "axiomatic programming of origami as a
   standalone declarative language with its own file format" is the empty niche.)
+
+## Multifold research track (Phase 0)
+
+### Alperin & Lang — "One-, Two-, and Multi-Fold Origami Axioms" (Origami⁴, 2009)
+**The foundation of the multifold research track.** Defines alignments as the
+primitive (5 one-fold alignments A1–A5; 10 two-fold types AL1–AL10, a/b
+variants → 17 symbols), proves HJA completeness by hand table, then
+computer-enumerates non-separable two-fold axioms: 2–4 alignments summing to
+exactly 4 equations, deduped under permutation/folding equivalence, Jacobian
+non-degeneracy check in Mathematica. **489 with AL10, 203 without** — the
+numbers Phase 1 must reproduce, both. Section 8: N-fold axioms defined, one
+3-fold construction (general quintic via Lill), Theorem: degree n solvable
+with n−2 folds; minimality conjectured, **no enumeration for k≥3**. Caveat:
+our refs/ copy is a circulating draft with an unresolved editorial remark
+(§6.2.3, "– RJL"); verify counts against the published Origami⁴ version.
+Alignments use single reflections only (no nested F_a(F_b(P))) — a modeling
+choice our 3-fold alphabet must make explicitly and defend.
+
+### König & Nedrenco — "Septic equations are solvable by 2-fold origami" (arXiv:1504.07090, 2015)
+Two-fold origami reaches degree 7: explicit septics with Galois groups A₇ and
+PSL₃(F₂) solved via 2FAs. Upper end of what's known for k=2 — calibrates the
+"which degrees need how many folds" table.
+
+### Lucero — "Geometric solution of a quintic equation by two-fold origami" (arXiv:1801.07460, 2018)
+Explicit quintic solution using a single two-fold operation. NB: earlier scan
+misattributed this arXiv id to Nishimura — it is Lucero.
+
+### Lucero — "Construction of a regular hendecagon by two-fold origami" (arXiv:1807.09557, 2018)
+The 11-gon (smallest regular polygon beyond HJA reach) via 2-fold. Concrete
+minimal-fold-count data point for the Phase 3 table.
