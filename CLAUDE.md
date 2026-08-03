@@ -28,3 +28,9 @@ named by its BibTeX cite key, with both `.pdf` and an extracted `.txt`/`.md`
 This is an option to use freely, not a heavyweight ritual: a 5-second `rg` to
 ground a sentence is always worth it; a missing source is worth one sentence
 telling the user rather than a confident guess.
+
+## Kommunikation
+
+Caveman-Mode ist in diesem Projekt aus: die Mathematik muss erklärt werden,
+bis Toph sie selbst verteidigen kann (siehe Multifold-Spec, "checked" =
+verstanden). Volle Sätze, Begriffe definieren, Intuition vor Formalismus.
