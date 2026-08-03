@@ -43,10 +43,12 @@ Three independent checks (two web-research agents + a full read of
 
 ## Caveats / open items
 
-- Our `refs/alperin2006.pdf` is a circulating draft (unresolved "– RJL"
-  editorial remark in §6.2.3). The published Origami⁴ chapter (A K
-  Peters, 2009) must be obtained and the 489/203 counts verified against
-  it before Phase 1 treats them as the reproduction anchor.
+- ~~Our `refs/alperin2006.pdf` is a circulating draft (unresolved "– RJL"
+  editorial remark in §6.2.3).~~ Resolved: replaced with the December 6,
+  2006 preprint (Gatech mirror), which removes the editorial remark and
+  confirms 489/203. Residual check against the typeset Origami⁴ chapter
+  (A K Peters 2009, pp. 371–393) via interlibrary loan — nice-to-have,
+  no longer blocking.
 - ETH Zürich BSc thesis "Mathematics of Origami" (Kunz, 2024) could not
   be fully inspected (PDF not extractable); no indication of a 3-fold
   classification found in what was visible.
