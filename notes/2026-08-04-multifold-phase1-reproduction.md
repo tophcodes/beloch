@@ -21,8 +21,8 @@ Symbol-exact, at both of `Symeq`'s independent generic-parameter streams
 | k | filter | count | matches |
 |---|---|---|---|
 | 1 | strict algebraic (`count>=1`, multiplicity-free) | **7** | the 7 Huzita-Justin axioms [alperin2006, §2] |
-| 2, no AL10 | + R4 (published-list) | **203** | [alperin2006, l. 541-542]: "leaving it out gave 203 combinations" |
-| 2, with AL10 | + R4 (published-list) | **489** | [alperin2006, l. 541-542]: "Including AL10 gave 489 distinct combinations"; symbol-exact against the paper's full printed listing [alperin2006, §4, pp. 12-14 of the preprint] |
+| 2, no `AL10` | + R4 (published-list) | **203** | [alperin2006, l. 541-542]: "leaving it out gave 203 combinations" |
+| 2, with `AL10` | + R4 (published-list) | **489** | [alperin2006, l. 541-542]: "Including `AL10` gave 489 distinct combinations"; symbol-exact against the paper's full printed listing [alperin2006, §4, pp. 12-14 of the preprint] |
 
 "Symbol-exact" means the generated symbol *sets* are identical to the
 fixture extracted from the paper's own listing
@@ -54,10 +54,10 @@ as the fixture.
 ## How: the pipeline, stage by stage
 
 **Candidate generation** (`Combo.candidates`, `Alignment.all_twofold`).
-Alperin-Lang's two-fold alphabet is 17 symbols: AL1, AL8, AL9 are symmetric;
-AL2-AL7 and AL10 come in a/b variants [alperin2006, §4, Fig. 4]. A candidate
+Alperin-Lang's two-fold alphabet is 17 symbols: `AL1`, `AL8`, `AL9` are symmetric;
+`AL2`-`AL7` and `AL10` come in a/b variants [alperin2006, §4, Fig. 4]. A candidate
 2FA is a multiset of 2-4 of these symbols whose equation counts sum to
-exactly 4 (the four degrees of freedom of two fold lines) — AL4, AL8, AL9
+exactly 4 (the four degrees of freedom of two fold lines) — `AL4`, `AL8`, `AL9`
 contribute 2 equations each, every other kind contributes 1
 [alperin2006, l. 527-529, and its own step 4 of the enumeration procedure,
 l. 538]. The raw combinatorial count at this stage, before any
@@ -66,7 +66,7 @@ independently reproduced by `report.exe`'s `raw_twofold_count`) — the "crude
 upper bound... before equivalence/degeneracy filtering" the Phase-1 spec's
 early milestone asked for. `Combo.candidates` then applies canonicalization
 under global $a \leftrightarrow b$ swap and two structural rejection rules (R1, R2, below),
-landing at 566 (with AL10) / 264 (without).
+landing at 566 (with `AL10`) / 264 (without).
 
 **Symbolic equations** (`Symeq.equations_denoms_of`). Each alignment's
 incidence condition becomes one or two polynomial equations in 4 unknowns
@@ -102,7 +102,7 @@ against the extracted fixture.
 
 ### Equation-count table and the printed-list oracle
 
-`Alignment.equations` (AL4/AL8/AL9 → 2, everything else → 1) is read
+`Alignment.equations` (`AL4`/`AL8`/`AL9` → 2, everything else → 1) is read
 directly off Figure 4 [alperin2006, l. 521, "Figure 4: The 10 distinct
 two-fold alignments"] and the paragraph following it [l. 527-529]. It is not
 merely asserted: `test_fixture_all_sum_to_four`
@@ -128,27 +128,27 @@ under-rejects: the Abe-trisection worked example immediately following it
 then fold `b` using `a`'s line as an ordinary given line — the second set's
 one-fold axiom is allowed to reference the first fold), and the correct
 non-separability test is "does any proper subset of same-suffix single-fold
-alignments (AL2/AL3/AL6, ≥2 of them) already pin one fold independently,
+alignments (`AL2`/`AL3`/`AL6`, ≥2 of them) already pin one fold independently,
 with everything else acting as a one-fold axiom on the other?" —
 implemented as `Combo.separable`. This was the single largest source
 of the original 406-vs-203 discrepancy (160 of 205 extras), documented in
 full in `notes/2026-08-04-multifold-203-mismatch.md`, §R1.
 
-### AL1 degeneracies (R2)
+### `AL1` degeneracies (R2)
 
-AL1 ($F_a(L_b) \leftrightarrow L_b$) forces fold $a$ perpendicular to fold $b$ — the
+`AL1` ($F_a(L_b) \leftrightarrow L_b$) forces fold $a$ perpendicular to fold $b$ — the
 only line a reflection fixes besides the axis itself. Under $a \perp b$,
 Definition 12's fold-equivalence [alperin2006, l. 476-479] rewrites every
-combination of AL1 with AL4, AL5, AL8, or AL9 into something that is not a
-genuine independent 2FA: AL5a collapses to AL3b, AL8 to two AL3s on a
-derived midpoint, AL9 becomes generically inconsistent (needs two generic
-given lines parallel), and AL4 degenerates to fold `b` coinciding with an
+combination of `AL1` with `AL4`, `AL5`, `AL8`, or `AL9` into something that is not a
+genuine independent 2FA: `AL5a` collapses to `AL3b`, `AL8` to two `AL3`s on a
+derived midpoint, `AL9` becomes generically inconsistent (needs two generic
+given lines parallel), and `AL4` degenerates to fold `b` coinciding with an
 already-given line — not a new fold line, per the paper's own exclusion of
 a fold coinciding with an existing line [l. 285], stated there for the
 one-fold case but structurally the same failure. `Combo.al1_degenerate`
 encodes this; see the mismatch notes, §R2, for the full alignment-by-alignment
 derivation and the 40-extras accounting (24 reduce to R1, 10 are Def-12
-duplicates, 6 are the AL4 degeneracy).
+duplicates, 6 are the `AL4` degeneracy).
 
 ### The derived folded-line formula
 
@@ -185,12 +185,12 @@ but not real). The point-reflection formula [eq. (1)] already carries
 $x_f^2+y_f^2$ as its denominator, so point-folding alignments saturate it away
 automatically. But `reflect_line_raw`'s own chart denominator does **not**
 vanish on the isotropic locus — an isotropic mirror maps every line to the
-same image line, so for the two pure-line-reflection alignments (AL4, AL9)
+same image line, so for the two pure-line-reflection alignments (`AL4`, `AL9`)
 that degeneracy survives denominator-clearing as a spurious
 1-dimensional component. Adding both folds' isotropic factors
 ($x_0^2+y_0^2$, $x_1^2+y_1^2$) to the saturation product recovers the two
-symbols this was silently dropping: AL4ab (count 3, matching the paper's
-own trisection example, $c_x = 3$ [alperin2006, §6.1, l. 694]) and AL4a9
+symbols this was silently dropping: `AL4ab` (count 3, matching the paper's
+own trisection example, $c_x = 3$ [alperin2006, §6.1, l. 694]) and `AL4a9`
 (count 2). See the mismatch notes, §R3, for the full before/after table.
 
 ### Rabinowitsch denominator saturation
@@ -206,7 +206,7 @@ points are excluded before counting — not something the paper needs to
 state explicitly (its computer-assisted Mathematica enumeration presumably
 handled this internally, or avoided it structurally), but a necessary
 correctness step for this from-scratch reimplementation. Documented as a
-Task-7 requirement in the Phase-1 plan; without it, AL9's cleared
+Task-7 requirement in the Phase-1 plan; without it, `AL9`'s cleared
 equations retain a spurious 2-dimensional locus (Task 6's finding that
 motivated adding it).
 
@@ -232,9 +232,9 @@ Definition 9 requires a 2FA's fold lines to lie "on a finite region of the
 Euclidean plane" [alperin2006, l. 453-455] — real, not merely complex. An
 initial attempt added `real_count >= 1` (real solutions at the run's one
 generic parameter draw) as a fourth strict-filter conjunct. Its narrow,
-intended effect worked exactly as predicted (AL2a7a8/AL2a7b8 — see R4,
+intended effect worked exactly as predicted (`AL2a7a8`/`AL2a7b8` — see R4,
 below — die principledly, complex-conjugate-only at both `stream_a` and
-`stream_b`). But it had a much larger, unintended effect: the k=2/no-AL10
+`stream_b`). But it had a much larger, unintended effect: the k=2/no-`AL10`
 run stopped reproducing 203 (174 at `stream_a`, 180 at `stream_b`, with only
 12 of 29-vs-23 "missing" symbols in common between the streams) — because
 `real_count` is computed at exactly one generic parameter point, while
@@ -248,46 +248,46 @@ fact about the symbol. Decision: `Pipeline.strict_keep` does **not** filter
 on `real_count`; `Pipeline` instead logs every strict-surviving symbol whose
 solution is complex-only at the run's stream ("complex-only at this
 stream") so the information stays visible without silently dropping
-symbols. Live counts for this note: 1 (of 7) at k=1, 31 (of 208, no-AL10)
-and 38 (of 494, with-AL10) at k=2, all at `stream_a` — none of it affects
+symbols. Live counts for this note: 1 (of 7) at k=1, 31 (of 208, no-`AL10`)
+and 38 (of 494, with-`AL10`) at k=2, all at `stream_a` — none of it affects
 the 7/203/489 counts. Full argument, including what a *sound*
 existential-realness filter would require: `notes/2026-08-04-multifold-203-mismatch.md`,
 "Addendum (2026-08-04): realness is parameter-dependent".
 
 ### R4: the empirical published-list filter — and a potential novel finding
 
-After R1-R3, the no-AL10 slice still strict-survives at 208, not 203 — 5
-too many: AL2ab8, AL2a7a8, AL2a7b8, AL2a7a9, AL2a7b9 (and correspondingly
-494 vs. 489 with AL10, the same 5 symbols since none contain AL10).
+After R1-R3, the no-`AL10` slice still strict-survives at 208, not 203 — 5
+too many: `AL2ab8`, `AL2a7a8`, `AL2a7b8`, `AL2a7a9`, `AL2a7b9` (and correspondingly
+494 vs. 489 with `AL10`, the same 5 symbols since none contain `AL10`).
 `Combo.matches_published_list` (R4) is a purely syntactic, explicitly
-labeled **empirical** rule — "reject AL8/AL9-combos with no anchor
-alignment of kind AL3/AL4/AL5/AL6/AL10" — that reproduces the paper's exact
+labeled **empirical** rule — "reject `AL8`/`AL9`-combos with no anchor
+alignment of kind `AL3`/`AL4`/`AL5`/`AL6`/`AL10`" — that reproduces the paper's exact
 listing but is not derived from any rule the paper states. Of the 5:
 
-- **AL2a7a8, AL2a7b8** have a semi-principled explanation: both are
+- **`AL2a7a8`, `AL2a7b8`** have a semi-principled explanation: both are
   complex-conjugate-only at *both* independent parameter streams — unlike
   the stream-inconsistent realness artifact above, agreement across two
   independent streams is at least consistent with genuine structural
   non-realness, and Definition 9 does require real fold lines
   [alperin2006, l. 453-455]. Not a proof, but a real signal.
 
-- **AL2ab8, AL2a7a9, AL2a7b9 remain genuinely unexplained.** Each is real,
+- **`AL2ab8`, `AL2a7a9`, `AL2a7b9` remain genuinely unexplained.** Each is real,
   zero-dimensional, multiplicity-free, minimal, and non-separable under
   every reading of Definition 10 tried (R1's sequential test included).
   They pass every criterion the paper states for a valid 2FA and cannot be
   distinguished by any solution invariant from combos the paper *does* list
-  (e.g. AL2ab8 has the same block-triangular structure, count, and
-  rationality as the listed AL2ab7aa). The paper's own step-5 filter
+  (e.g. `AL2ab8` has the same block-triangular structure, count, and
+  rationality as the listed `AL2ab7aa`). The paper's own step-5 filter
   (Jacobian singularity at a solution [l. 539]) gives no reason to exclude
   them either, as far as this reimplementation can tell.
 
-**This is flagged prominently, on purpose: AL2ab8, AL2a7a9, and AL2a7b9
+**This is flagged prominently, on purpose: `AL2ab8`, `AL2a7a9`, and `AL2a7b9`
 look like valid, non-separable, real, zero-dimensional two-fold axioms that
 are simply missing from Alperin-Lang's printed list of 489** — either an
 omission in their Mathematica enumeration, or an unstated exclusion
 criterion this reimplementation hasn't identified. This is a **potential
 novel finding**, not a claim: it needs independent verification (by hand,
-geometrically, the way AL2ab8's rational solution was already spot-checked
+geometrically, the way `AL2ab8`'s rational solution was already spot-checked
 via Q-construction — see the mismatch notes) before it goes anywhere near a
 publication claim. The full accounting, including why the other two extras
 have a real (if unproven) story and these three don't, is in
@@ -311,7 +311,7 @@ have a real (if unproven) story and these three don't, is in
   composition space is larger, and one open design decision — **not yet
   answered** — is whether the alphabet must include alignments referencing a
   *nested* reflection (e.g. $F_a(F_b(P))$ as a single alignment target,
-  rather than only pairwise compositions like AL7's $\rho = F_a \circ F_b$) or whether
+  rather than only pairwise compositions like `AL7`'s $\rho = F_a \circ F_b$) or whether
   every 3-fold construction reduces to compositions the k=2 alphabet already
   has building blocks for. This is upstream of any 3-fold candidate
   generator.
@@ -328,7 +328,7 @@ have a real (if unproven) story and these three don't, is in
   streams and requiring agreement, or genuine semialgebraic/CAD-style
   reasoning about the real locus in parameter space) and explicitly does not
   implement it. Neither the 203/489 reproduction nor the R4 open questions
-  strictly require it, but it would firm up the AL2a7a8/AL2a7b8
+  strictly require it, but it would firm up the `AL2a7a8`/`AL2a7b8`
   semi-principled exclusion from "consistent with" to "proven," and any
   future construction-existence claim (Phase 3's Galois-bounds/fold-count
   work) will need real, not merely complex, solutions.
@@ -344,7 +344,7 @@ have a real (if unproven) story and these three don't, is in
   Obtaining the book version is still pending via Fernleihe (interlibrary
   loan); until it arrives, this reproduction is checked against the
   preprint only, and the R4 open questions above cannot rule out "the book's
-  listing already includes AL2ab8/AL2a7a9/AL2a7b9 and the preprint OCR just
+  listing already includes `AL2ab8`/`AL2a7a9`/`AL2a7b9` and the preprint OCR just
   dropped them" as a mundane alternative explanation.
 
 ## Reproducing this record
