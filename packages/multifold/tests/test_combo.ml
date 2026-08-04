@@ -79,6 +79,20 @@ let test_candidates_contain_fixture () =
   in
   Alcotest.(check (list string)) "no fixture symbol missing" [] missing
 
+let test_candidates_count () =
+  (* Pins the post-R1/R2 canonical non-separable counts quoted in
+     data/twofold-axioms.txt's header and both
+     notes/2026-08-04-multifold-{phase1-reproduction,203-mismatch}.md: 566
+     candidates total (with AL10), 264 of them without any AL10 alignment. *)
+  let cands = Combo.candidates () in
+  Alcotest.(check int) "566 candidates" 566 (List.length cands);
+  let no_al10 =
+    List.filter
+      (fun c -> not (List.exists (fun (a : Alignment.t) -> a.kind = AL10) c))
+      cands
+  in
+  Alcotest.(check int) "264 without AL10" 264 (List.length no_al10)
+
 let () =
   Alcotest.run "multifold-combo"
     [
@@ -93,5 +107,6 @@ let () =
         [
           Alcotest.test_case "contain fixture" `Quick
             test_candidates_contain_fixture;
+          Alcotest.test_case "566/264 count pins" `Quick test_candidates_count;
         ] );
     ]

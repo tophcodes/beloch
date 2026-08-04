@@ -386,7 +386,14 @@ let equations_denoms_of ~nvars ~(stream : param_stream) (combo : Combo.t) :
       (M.mul (xv nvars fold) (xv nvars fold))
       (M.mul (yv nvars fold) (yv nvars fold))
   in
-  (eqs, dedup_denoms (denoms @ [ isotropic 0; isotropic 1 ]))
+  (* Fold 1's isotropic factor references variables 2,3, which don't exist
+     below nvars=4 (the one-fold pipeline reuse uses nvars=2 -- see this
+     module's header); guarded rather than assumed, though no current
+     caller reaches this function below nvars=4. *)
+  let isotropic_denoms =
+    if nvars >= 4 then [ isotropic 0; isotropic 1 ] else [ isotropic 0 ]
+  in
+  (eqs, dedup_denoms (denoms @ isotropic_denoms))
 
 let equations_of ~nvars ~(stream : param_stream) (combo : Combo.t) : M.t list =
   fst (equations_denoms_of ~nvars ~stream combo)

@@ -39,6 +39,17 @@ let test_symbol_semantics () =
       Alcotest.(check bool) "AL8" true (z = al AL8 Sym)
   | _ -> Alcotest.fail "expected 3 alignments"
 
+let test_symbol_rejects_malformed () =
+  (* AL1 is symmetric (Alignment.symmetric): a trailing a/b letter is
+     malformed, not a suffix. *)
+  Alcotest.(check bool)
+    "AL1a rejected" true
+    (Alignment.combo_of_symbol "AL1a" = None);
+  (* Leading zero: "01" must not be read as kind number 1. *)
+  Alcotest.(check bool)
+    "AL01 rejected" true
+    (Alignment.combo_of_symbol "AL01" = None)
+
 let test_fixture_count () =
   Alcotest.(check int) "489 symbols" 489 (List.length (Test_fixture.fixture ()))
 
@@ -66,6 +77,8 @@ let () =
         [
           Alcotest.test_case "roundtrip" `Quick test_symbol_roundtrip;
           Alcotest.test_case "semantics" `Quick test_symbol_semantics;
+          Alcotest.test_case "rejects malformed" `Quick
+            test_symbol_rejects_malformed;
         ] );
       ( "fixture",
         [

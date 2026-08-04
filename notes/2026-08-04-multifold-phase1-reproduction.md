@@ -176,8 +176,7 @@ existing `Geom.reflect_point`/`Geom.line_through` at 3 fold lines × 2 lines
 (`test_reflect_line_involution`, `test_reflect_line_vs_geom`,
 `packages/multifold/tests/test_symeq.ml`). The derived `den` agrees exactly
 with the one part of the paper's eq. (2) that *is* legible:
-`X_F² − 2XX_F − 2YY_F + Y_F²`. Full derivation:
-`.superpowers/sdd/task-6-report.md`.
+`X_F² − 2XX_F − 2YY_F + Y_F²`.
 
 ### Isotropic saturation (R3)
 
@@ -225,8 +224,7 @@ multiplicity-*weighted* (Bézout) degree of the ideal's quotient ring —
 equal iff every point is simple. Verified directly: `(x−1)²` reports
 `count = 1` but `multiplicity_free = false`. This is Beloch's analogue of
 rejecting a Jacobian-singular candidate, arrived at independently because
-msolve doesn't expose Jacobian singular values directly. Full derivation:
-`.superpowers/sdd/task-7-report.md`.
+msolve doesn't expose Jacobian singular values directly.
 
 ### Realness: reported, not filtered
 
@@ -297,6 +295,16 @@ have a real (if unproven) story and these three don't, is in
 
 ## Open questions carried to Phase 2
 
+- **The spec's upper-bound milestone's k=3 arm is deferred.** The Phase-1
+  plan's early milestone asked for a crude combinatorial upper bound on
+  k-fold systems, "validated by evaluating it at k=2 against 489" and meant
+  to tell us early "whether k=3 is ~10⁴ or ~10⁸" [spec
+  `docs/superpowers/specs/2026-08-03-multifold-axioms-research-design.md`,
+  Phase 1]. The k=2 arm is delivered: raw candidates 2194, validated by
+  containing all 489 published symbols (`test_candidates_contain_fixture`,
+  `packages/multifold/tests/test_combo.ml`). The k=3 arm — evaluating the
+  same bound at k=3 to size the explosion risk — needs the k=3 alignment
+  alphabet first, and is deferred to Phase 2's alphabet derivation below.
 - **3-fold alphabet derivation.** The k=2 alphabet is 17 symbols derived from
   which pairs of (given/derived) objects an alignment can relate, restricted
   to what's expressible with two simultaneous folds. At k=3 the fold

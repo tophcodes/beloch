@@ -70,7 +70,8 @@ let test_twofold_full () =
     Pipeline.run_twofold_published ~with_al10:true ~stream:Symeq.stream_a
   in
   Alcotest.(check int) "489" 489 (List.length syms);
-  Alcotest.(check (list string)) "exact symbol set"
+  Alcotest.(check (list string))
+    "exact symbol set"
     (List.sort String.compare (Test_fixture.fixture ()))
     syms
 
@@ -83,7 +84,8 @@ let test_twofold_full_stream_b () =
     Pipeline.run_twofold_published ~with_al10:true ~stream:Symeq.stream_b
   in
   Alcotest.(check int) "489" 489 (List.length syms);
-  Alcotest.(check (list string)) "exact symbol set"
+  Alcotest.(check (list string))
+    "exact symbol set"
     (List.sort String.compare (Test_fixture.fixture ()))
     syms
 

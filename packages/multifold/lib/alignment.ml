@@ -89,22 +89,27 @@ let combo_of_symbol s =
   let is_digit c = c >= '0' && c <= '9' in
   let is_letter c = c = 'a' || c = 'b' in
   let digit_value c = Char.code c - Char.code '0' in
+  let is_symmetric_kind = function AL1 | AL8 | AL9 -> true | _ -> false in
   (* At position [i], try a two-digit kind number (only "10" is valid);
-     back off to a one-digit number (1-9) if that fails. *)
+     back off to a one-digit number (1-9) if that fails. A leading '0' is
+     rejected outright -- no valid kind number starts with it, and without
+     this check the two-digit path would silently read e.g. "01" as 1. *)
   let parse_number i =
-    let two =
-      if i + 1 < n && is_digit s.[i] && is_digit s.[i + 1] then
-        let v = (digit_value s.[i] * 10) + digit_value s.[i + 1] in
-        if v >= 1 && v <= 10 then Some (v, i + 2) else None
-      else None
-    in
-    match two with
-    | Some _ -> two
-    | None ->
-        if i < n && is_digit s.[i] then
-          let v = digit_value s.[i] in
-          if v >= 1 && v <= 9 then Some (v, i + 1) else None
+    if i < n && s.[i] = '0' then None
+    else
+      let two =
+        if i + 1 < n && is_digit s.[i] && is_digit s.[i + 1] then
+          let v = (digit_value s.[i] * 10) + digit_value s.[i + 1] in
+          if v >= 1 && v <= 10 then Some (v, i + 2) else None
         else None
+      in
+      match two with
+      | Some _ -> two
+      | None ->
+          if i < n && is_digit s.[i] then
+            let v = digit_value s.[i] in
+            if v >= 1 && v <= 9 then Some (v, i + 1) else None
+          else None
   in
   let rec parse_groups i acc =
     if i = n then Some (List.rev acc)
@@ -120,7 +125,14 @@ let combo_of_symbol s =
             else (k, acc)
           in
           let k', acc' = letters j acc in
-          let acc'' = if k' = j then { kind; suffix = Sym } :: acc else acc' in
-          parse_groups k' acc''
+          (* AL1/AL8/AL9 are symmetric and carry no a/b letters; a letter
+             immediately following their number (e.g. "AL1a") is malformed,
+             not a Sym occurrence. *)
+          if k' <> j && is_symmetric_kind kind then None
+          else
+            let acc'' =
+              if k' = j then { kind; suffix = Sym } :: acc else acc'
+            in
+            parse_groups k' acc''
   in
   if n >= 2 && String.sub s 0 2 = "AL" then parse_groups 2 [] else None

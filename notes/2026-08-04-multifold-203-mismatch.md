@@ -1,7 +1,7 @@
 # Multifold: the 406-vs-203 mismatch, resolved
 
-Investigation of the Task-8 finding (`.superpowers/sdd/task-8-report.md`):
-the k=2/no-AL10 pipeline produced 406 strict symbols against the paper's
+Investigation of a mismatch found during the initial pipeline pass: the
+k=2/no-AL10 pipeline produced 406 strict symbols against the paper's
 203 [alperin2006, l. 541–542], with 205 extras and 2 missing (AL4a9,
 AL4ab). Every discrepancy is now accounted for, and a corrected ruleset
 reproduces the fixture's no-AL10 slice **symbol-for-symbol: 203 = 203**
@@ -229,7 +229,11 @@ with R3 in place no candidate anywhere in the sweep fails
 - **`combo.ml`** (`candidates`) — add R2 (drop AL1 × {AL4, AL5, AL8, AL9})
   and R4 (drop AL8/AL9-combos with no alignment of kinds
   {AL3, AL4, AL5, AL6, AL10}), each with a comment citing this note; R4
-  explicitly marked empirical.
+  explicitly marked empirical. *Post-implementation amendment:* R4 was
+  deliberately NOT added to `candidates` -- it lives in
+  `Combo.matches_published_list`, applied explicitly by
+  `Pipeline.run_twofold_published`, so the empirical rule stays visible
+  rather than silently baked into the candidate pool.
 - **`symeq.ml`** — include the folding fold's isotropic factor
   x_f² + y_f² among the cleared denominators for AL4 and AL9 (the two
   pure line-reflection alignments; AL7 already carries it via its point
@@ -277,9 +281,8 @@ AL2a7b8 (§R4 above) turned out to be complex-conjugate-only at *both*
 {!Symeq.stream_a} and {!Symeq.stream_b}, and now die on the realness check
 rather than needing R4 at all.
 
-But the same change had a much larger, unintended consequence, reported in
-full in `.superpowers/sdd/task-8-report.md`'s "Fix round 2": the k=2/no-AL10
-slow run stopped reproducing 203 — **174** at `stream_a`, **180** at
+But the same change had a much larger, unintended consequence: the
+k=2/no-AL10 slow run stopped reproducing 203 — **174** at `stream_a`, **180** at
 `stream_b`. Diffing against the fixture: 0 extras, but **29** genuine
 paper-listed symbols missing at `stream_a` and **23** at `stream_b`, with
 only **12** symbols in common between the two missing sets. Every one of
