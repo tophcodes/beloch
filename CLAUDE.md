@@ -39,4 +39,4 @@ verstanden). Volle Sätze, Begriffe definieren, Intuition vor Formalismus.
 
 Formeln in notes/, docs/ und Memos als LaTeX-Math (`$...$` inline, `$$...$$`
 display) schreiben — GitHub, Forgejo und VS-Code-Preview rendern KaTeX.
-Symbol-Namen (AL2ab8), Code-Bezeichner und Pfade bleiben Backticks/plain.
+Symbol-Namen (`AL2ab8`), Code-Bezeichner und Pfade in Backticks, nie bare.
