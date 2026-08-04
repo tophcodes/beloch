@@ -316,16 +316,19 @@ let test_al8_semantic () =
     (some_nonzero eqs [| fx; fy; xb; Q.add yb Q.one |])
 
 (* AL9 [F_a(L1) <-> F_b(L2)]: unlike AL5a/AL8/AL10a, both given lines are
-   baked into the equations as constants pulled from the stream, so no choice
-   of fold pair generally satisfies the alignment for the stream's specific
-   L1 *and* L2 — the axis mapping one given line onto another is generically
-   an angle bisector, i.e. irrational (involves sqrt(a²+b²)), so it can't be
-   constructed as an exact rational fold line here. Instead: fix BOTH folds
-   concretely (rational, so every reflection below stays exact), take the
-   stream's L1, and use our own L2 := F_b(F_a(L1)) — built directly from
-   [Symeq.reflect_line_raw] and the same cross-multiplied equality
-   [Symeq.eq_pair] uses internally, rather than through [Symeq.equations_of]
-   (which would insist on the stream's L2, not this one). *)
+   drawn from the stream, so no choice of fold pair generally satisfies the
+   alignment for two independently-drawn stream lines — the axis mapping one
+   given line onto another is generically an angle bisector, i.e. irrational
+   (involves sqrt(a²+b²)), so it can't be constructed as an exact rational
+   fold line here. Instead: fix BOTH folds concretely (rational, so every
+   reflection below stays exact), take the stream's L1, and construct our own
+   L2 := F_b(F_a(L1)) via Geom (independent of Symeq) — but rather than
+   hand-duplicating [reflect_line_raw]/[eq_pair] to build the equations
+   ourselves, inject L1 and L2 into a custom stream ([Symeq.of_array]) at
+   AL9's own draw positions (0 points, 2 lines, so L1 at [0;1] and L2 at
+   [2;3] — [alignment_params] draws points before lines) and call the real
+   [Symeq.equations_of] on it, exercising the actual AL9 production branch of
+   [equations_of_alignment]. *)
 let test_al9_semantic () =
   let prm, _ =
     Symeq.alignment_params ~stream:Symeq.stream_a ~start:0 (al AL9 Sym)
@@ -336,11 +339,9 @@ let test_al9_semantic () =
   let f0x, f0y = (q "1/3", q "-7/5") and f1x, f1y = (q "-2", q "9/4") in
   let fa_l1 = geom_reflect_line (geom_line (f0x, f0y)) l1 in
   let l2 = geom_reflect_line (geom_line (f1x, f1y)) fa_l1 in
-  let n1X, n1Y, d1 = Symeq.reflect_line_raw ~nvars:4 ~fold:0 l1 in
-  let n2X, n2Y, d2 = Symeq.reflect_line_raw ~nvars:4 ~fold:1 l2 in
-  let eqs =
-    [ M.sub (M.mul n1X d2) (M.mul n2X d1); M.sub (M.mul n1Y d2) (M.mul n2Y d1) ]
-  in
+  let custom = Symeq.of_array [| fst l1; snd l1; fst l2; snd l2 |] in
+  let eqs = Symeq.equations_of ~nvars:4 ~stream:custom [ al AL9 Sym ] in
+  Alcotest.(check int) "2 equations" 2 (List.length eqs);
   let vals = [| f0x; f0y; f1x; f1y |] in
   List.iter
     (fun e ->
