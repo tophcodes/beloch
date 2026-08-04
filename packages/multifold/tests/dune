@@ -2,15 +2,22 @@
  (name test_alignment)
  (modules test_alignment test_fixture)
  (libraries multifold alcotest)
- (deps (glob_files fixtures/*.txt)))
+ (deps
+  (glob_files fixtures/*.txt)))
 
 (test
  (name test_combo)
  (modules test_combo test_fixture)
  (libraries multifold alcotest)
- (deps (glob_files fixtures/*.txt)))
+ (deps
+  (glob_files fixtures/*.txt)))
 
 (test
  (name test_symeq)
  (modules test_symeq)
  (libraries multifold beloch alcotest zarith))
+
+(test
+ (name test_msolve)
+ (modules test_msolve)
+ (libraries multifold beloch alcotest unix))
