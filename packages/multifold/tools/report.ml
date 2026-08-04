@@ -1,0 +1,247 @@
+(* Phase-1 pipeline report: prints the enumeration's stage counts at k=1 and
+   k=2, reusing {!Multifold.Pipeline}/{!Multifold.Combo} rather than
+   recomputing any classification logic. Two modes:
+
+   - `dune exec .../report.exe`            -- stage-count table to stdout.
+   - `dune exec .../report.exe -- --symbols` -- the 489-symbol published
+     listing (with_al10:true, R4-filtered), one symbol per line with a `#`
+     header, for redirecting into
+     packages/multifold/data/twofold-axioms.txt.
+
+   SCOPE: k=1 and k=2 only. A k=3 raw-candidate bound was floated in an
+   earlier draft of this task's plan but is Phase-2 work
+   (docs/superpowers/specs/2026-08-03-multifold-axioms-research-design.md,
+   Phase 2 -- three-fold enumeration is not yet formalized: no k=3 alignment
+   alphabet, no Combo/Symeq support). This tool deliberately prints only what
+   the current k<=2 generator can compute. *)
+
+open Multifold
+
+let msolve_version () =
+  try
+    let ic = Unix.open_process_in "msolve --version 2>&1" in
+    let line = try Some (input_line ic) with End_of_file -> None in
+    ignore (Unix.close_process_in ic);
+    match line with Some l -> String.trim l | None -> "unknown"
+  with Unix.Unix_error _ -> "unknown"
+
+(* Runs [f], with everything [f] (transitively) writes to stderr redirected
+   to a temp file instead of the terminal; returns [f]'s result together
+   with the captured text. Used to recover {!Pipeline}'s "complex-only at
+   this stream" log lines (real_count = 0, reported not filtered -- see
+   notes/2026-08-04-multifold-203-mismatch.md's addendum) as data, without
+   Pipeline needing to expose a new return value for it. *)
+let capture_stderr (f : unit -> 'a) : 'a * string =
+  flush stderr;
+  let tmp = Filename.temp_file "multifold_report_stderr" ".log" in
+  let tmp_fd = Unix.openfile tmp [ Unix.O_WRONLY; Unix.O_TRUNC ] 0o600 in
+  let saved_stderr = Unix.dup Unix.stderr in
+  Unix.dup2 tmp_fd Unix.stderr;
+  Unix.close tmp_fd;
+  let restore () =
+    flush stderr;
+    Unix.dup2 saved_stderr Unix.stderr;
+    Unix.close saved_stderr
+  in
+  let result =
+    match f () with
+    | r -> r
+    | exception e ->
+        restore ();
+        (try Sys.remove tmp with Sys_error _ -> ());
+        raise e
+  in
+  restore ();
+  let text = In_channel.with_open_text tmp In_channel.input_all in
+  (try Sys.remove tmp with Sys_error _ -> ());
+  (result, text)
+
+let count_substring ~sub s =
+  let n = String.length s and m = String.length sub in
+  let rec go i acc =
+    if i + m > n then acc
+    else if String.sub s i m = sub then go (i + 1) (acc + 1)
+    else go (i + 1) acc
+  in
+  go 0 0
+
+let complex_only_count log =
+  count_substring ~sub:"complex-only at this stream" log
+
+(* Raw one-fold candidate count: mirrors {!Combo.onefold_candidates}'s own
+   multiset generation (alphabet A1-A5 [alperin2006, §2, Fig. 2]; A1/A2
+   contribute 2 equations, A3/A4/A5 contribute 1), BEFORE excluding the
+   structurally invalid {A3,A3} pair (Table 1's "N/A" cell) -- the crude,
+   unfiltered combinatorial count. Not exposed by Combo.mli (onefold_candidates
+   already applies the exclusion), so reproduced here rather than modifying
+   library code for one report-only statistic. *)
+let raw_onefold_count () =
+  let eqs_of = [| 2; 2; 1; 1; 1 |] in
+  let n = Array.length eqs_of in
+  let count = ref 0 in
+  let rec go start eqs len =
+    if eqs = 2 && len >= 1 then incr count;
+    if eqs < 2 && len < 2 then
+      for i = start to n - 1 do
+        let e = eqs_of.(i) in
+        if eqs + e <= 2 then go i (eqs + e) (len + 1)
+      done
+  in
+  go 0 0 0;
+  !count
+
+(* Raw two-fold candidate count: mirrors {!Combo.candidates}'s own multiset
+   generation (17-symbol alphabet {!Alignment.all_twofold}, equations summing
+   to exactly 4), BEFORE separability/AL1-degeneracy filtering and BEFORE
+   canonical a<->b dedup -- the "crude combinatorial upper bound ... before
+   equivalence/degeneracy filtering" the Phase-1 spec's early milestone calls
+   for (docs/superpowers/specs/2026-08-03-multifold-axioms-research-design.md,
+   Phase 1). Matches the raw=2194 figure measured by a throwaway probe in
+   .superpowers/sdd/task-4-report.md; reproduced here (rather than exposing it
+   from Combo, which deliberately only returns the filtered/canonical result)
+   so this report is self-contained. *)
+let raw_twofold_count () =
+  let alphabet = Array.of_list Alignment.all_twofold in
+  let n = Array.length alphabet in
+  let count = ref 0 in
+  let rec go start eqs len =
+    if eqs = 4 && len >= 2 then incr count;
+    if eqs < 4 && len < 4 then
+      for i = start to n - 1 do
+        let e = Alignment.equations alphabet.(i) in
+        if eqs + e <= 4 then go i (eqs + e) (len + 1)
+      done
+  in
+  go 0 0 0;
+  !count
+
+let has_al10 (c : Combo.t) =
+  List.exists (fun (a : Alignment.t) -> a.kind = Alignment.AL10) c
+
+let header_lines () =
+  [
+    "# Multifold phase-1 pipeline report";
+    "# generated by packages/multifold/tools/report.ml";
+    "# date: 2026-08-04";
+    Printf.sprintf "# msolve: %s" (msolve_version ());
+    "# stream: Symeq.stream_a for every sweep below -- Symeq.stream_b is a \
+     second, disjoint";
+    "#   generic-parameter stream and reproduces the k=2 counts (566/494/489, \
+     264/208/203)";
+    "#   symbol-exact identically (see test_pipeline.ml's \
+     test_twofold_full_stream_b, Task 9);";
+    "#   not re-run here to keep this report to one sweep per column.";
+    "#";
+    "# SCOPE: k=1 and k=2 only. A k=3 alphabet/bound is Phase 2 -- not printed \
+     here (see the";
+    "#   module-header comment for why).";
+  ]
+
+let print_stats () =
+  List.iter print_endline (header_lines ());
+  print_newline ();
+
+  print_endline "## k=1 (one-fold alphabet A1-A5) [alperin2006, §2, Fig. 2]";
+  let raw1 = raw_onefold_count () in
+  let strict1, log1 = capture_stderr Pipeline.run_onefold in
+  Printf.printf "  raw candidates (pre-filter)              : %d\n" raw1;
+  Printf.printf "  strict survivors (= paper's 7 HJAs)      : %d\n"
+    (List.length strict1);
+  Printf.printf "  complex-only-at-stream survivors         : %d\n"
+    (complex_only_count log1);
+  print_newline ();
+
+  print_endline "## k=2 (two-fold alphabet AL1-AL10) [alperin2006, §4]";
+  let raw2 = raw_twofold_count () in
+  Printf.printf "  raw candidates (pre-filter, pre-dedup)   : %d\n" raw2;
+  print_newline ();
+
+  let no_al10 = List.filter (fun c -> not (has_al10 c)) (Combo.candidates ()) in
+  let with_al10 = Combo.candidates () in
+  Printf.printf "  %-42s %9s %9s\n" "stage" "no-AL10" "with-AL10";
+  Printf.printf "  %-42s %9d %9d\n" "post-R1/R2 canonical non-separable"
+    (List.length no_al10) (List.length with_al10);
+
+  (* run_twofold populates Pipeline's (with_al10, stream) cache; the later
+     run_twofold_published calls below reuse it, so each column is exactly
+     one msolve sweep (~264 / ~566 candidates), not two. *)
+  let strict_no, log_no =
+    capture_stderr (fun () ->
+        Pipeline.run_twofold ~with_al10:false ~stream:Symeq.stream_a)
+  in
+  let strict_with, log_with =
+    capture_stderr (fun () ->
+        Pipeline.run_twofold ~with_al10:true ~stream:Symeq.stream_a)
+  in
+  Printf.printf "  %-42s %9d %9d\n" "strict survivors (count>=1, mult-free)"
+    (List.length strict_no) (List.length strict_with);
+
+  let published_no =
+    Pipeline.run_twofold_published ~with_al10:false ~stream:Symeq.stream_a
+  in
+  let published_with =
+    Pipeline.run_twofold_published ~with_al10:true ~stream:Symeq.stream_a
+  in
+  Printf.printf "  %-42s %9d %9d\n" "post-R4 published-list filter"
+    (List.length published_no)
+    (List.length published_with);
+  print_newline ();
+
+  let r4_excluded =
+    List.filter (fun s -> not (List.mem s published_no)) strict_no
+    |> List.sort String.compare
+  in
+  Printf.printf "  R4-excluded, strict-valid symbols (%d): %s\n"
+    (List.length r4_excluded)
+    (String.concat ", " r4_excluded);
+  Printf.printf
+    "    (empirical exclusion -- notes/2026-08-04-multifold-203-mismatch.md, \
+     §R4;\n";
+  Printf.printf
+    "     2 semi-principled complex-only-at-both-streams, 3 genuinely open)\n";
+  Printf.printf "  complex-only-at-stream survivors, no-AL10 : %d\n"
+    (complex_only_count log_no);
+  Printf.printf "  complex-only-at-stream survivors, w/ AL10 : %d\n"
+    (complex_only_count log_with)
+
+let print_symbols () =
+  let post_r1_r2 = List.length (Combo.candidates ()) in
+  let strict, _log =
+    capture_stderr (fun () ->
+        Pipeline.run_twofold ~with_al10:true ~stream:Symeq.stream_a)
+  in
+  let published =
+    Pipeline.run_twofold_published ~with_al10:true ~stream:Symeq.stream_a
+  in
+  let n = List.length published in
+  Printf.printf "# packages/multifold/data/twofold-axioms.txt\n";
+  Printf.printf "# generated-by: packages/multifold/tools/report.ml --symbols\n";
+  Printf.printf "# date: 2026-08-04\n";
+  Printf.printf "# msolve: %s\n" (msolve_version ());
+  Printf.printf
+    "# stream: Symeq.stream_a (Symeq.stream_b reproduces the identical set,\n";
+  Printf.printf
+    "#   symbol-exact -- test_pipeline.ml's test_twofold_full_stream_b, Task 9)\n";
+  Printf.printf
+    "# counts: %d raw candidates -> %d post-R1/R2 canonical non-separable -> \
+     %d strict\n"
+    (raw_twofold_count ()) post_r1_r2 (List.length strict);
+  Printf.printf
+    "#   survivors -> %d published after R4 (empirical published-list filter,\n"
+    n;
+  Printf.printf
+    "#   notes/2026-08-04-multifold-203-mismatch.md); all with AL10 included\n";
+  Printf.printf
+    "# reproduces [alperin2006, §4]'s full 489-symbol listing, symbol-exact\n";
+  if n <> 489 then
+    Printf.eprintf
+      "report --symbols: WARNING, got %d symbols, expected 489 -- pipeline \
+       result changed since this header text was written\n\
+       %!"
+      n;
+  List.iter print_endline published
+
+let () =
+  match Array.to_list Sys.argv with
+  | _ :: "--symbols" :: _ -> print_symbols ()
+  | _ -> print_stats ()
