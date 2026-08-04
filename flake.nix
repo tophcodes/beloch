@@ -40,6 +40,9 @@
             flint
           ];
           checkInputs = [ocamlPkgs.alcotest];
+          # msolve is a subprocess dependency (packages/multifold/lib/msolve.ml) for
+          # tests only, so it belongs at test time (nativeCheckInputs), not linked in.
+          nativeCheckInputs = [pkgs.msolve];
           # Tests run in the `checks` output (nix flake check / CI), not on every
           # `nix build .#` — the number-kernel suite (Sturm/resultant/RUR) is slow.
           doCheck = false;
@@ -80,6 +83,8 @@
             flint
             # FOLD -> SVG/PNG rendering (packages/render-2d/render-svg)
             pkgs.bun
+            # msolve subprocess driver (packages/multifold/lib/msolve.ml)
+            pkgs.msolve
           ];
           # Link @beloch/render-svg's `beloch-render` bin globally so the
           # OCaml `beloch render` subcommand (packages/core/bin/main.ml) can execvp it, and
