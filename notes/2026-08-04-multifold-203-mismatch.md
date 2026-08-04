@@ -366,3 +366,98 @@ other rule here does; R4's total burden is back to the original 5 (AL2ab8,
 AL2a7a8, AL2a7b8, AL2a7a9, AL2a7b9), of which 2 (AL2a7a8/7b8) have this
 semi-principled non-realness story and 3 (AL2ab8, AL2a7a9, AL2a7b9) remain
 genuinely unexplained, exactly as in the original §R4 accounting above.
+
+## Follow-up: Def-12 duplicate check (2026-08-04)
+
+Question: are the three genuinely-unexplained R4 combos — AL2ab8, AL2a7a9,
+AL2a7b9 — fold-equivalence (Def. 12) duplicates of *listed* symbols? Our
+canonicalization quotients only the a↔b swap; Def. 12 ("application of
+F_LF1 or F_LF2 to both sides of one or more alignments", then equivalence
+under permutation [alperin2006, l. 476–479]) is coarser and is never
+checked at combo level by the pipeline. If any of the three were a Def-12
+duplicate, its absence from the printed 489 would be mundane; if all three
+are distinct, they contradict the paper's completeness claim ("exhaustive
+(computer-aided) enumeration … 489 distinct operations" [alperin2006,
+l. 154–157]; "a complete listing by symbol" [alperin2006, l. 564]).
+
+**Verdict: all three are DISTINCT.** No Def-12 rewrite reaches a listed
+symbol, and exhaustive shared-object variety comparison against every
+same-signature listed relative finds no coinciding — indeed no even
+partially overlapping — solution set.
+
+### 1. Symbolic closure (within-alphabet Def-12 rewrites)
+
+Applying F_a or F_b to both sides of each alignment and reducing by the
+involution F∘F = id [alperin2006, l. 208–212] and the symmetry of
+incidence/equality:
+
+- **AL2a** (F_a(L) ↔ L): F_a gives L ↔ F_a(L) — the same alignment.
+  F_b gives F_b(F_a(L)) ↔ F_b(L) — doubly-folded images, outside the
+  Fig. 4 alphabet (no alignment kind features a composition).
+- **AL7a** (F_a(P) ↔ F_b(L)): F_a gives P ↔ F_a(F_b(L)); F_b gives
+  F_b(F_a(P)) ↔ L — both outside (compositions).
+- **AL8** (F_a(P1) ↔ F_b(P2)): F_a gives P1 ↔ F_a(F_b(P2)); F_b gives
+  F_b(F_a(P1)) ↔ P2 — outside.
+- **AL9**: same shape as AL8 with lines — outside.
+
+So the within-alphabet Def-12 closure of each of the three combos is the
+singleton {itself} (plus its a↔b swap, already canonicalized). This mirrors
+the one-fold situation, where Def-12's only nontrivial content is
+F(P) ↔ L ≡ F(L) ↔ P [alperin2006, l. 279–281]; the incidence alignments of
+the two-fold alphabet are involution-invariant, and the equality alignments
+rewrite only into compositions.
+
+The *coarser* relation σ_a — renaming fold b as its own mirror image
+F_a(b), under which AL5a ↔ AL3b, AL7a ↔ AL7b, AL8/AL9 fixed — is provably
+NOT part of A-L's Def-12 as applied: σ_a maps the listed AL2a5a8 to the
+listed AL2a3b8 (same objects), so had they quotiented by σ these two would
+have been merged; both appear in the 489. Even under σ, the orbits of the
+three contain no listed symbol: σ_a{AL2a,AL7a,AL9} = {AL2a,AL7b,AL9} (both
+absent), and σ is undefined on AL2ab8 (the AL2b image leaves the alphabet).
+
+### 2. Semantic check (shared-object variety comparison)
+
+Criterion: two combos are the same 2FA iff, instantiated with the same
+given objects under some type-preserving bijection of points and lines
+(Def. 11 [alperin2006, l. 474–476]), possibly with fold roles swapped,
+their saturated solution varieties coincide. Both sides are
+zero-dimensional, so V1 = V2 ⟺ count(V1) = count(V2) = count(V1 ∩ V2),
+with counts from msolve on the Rabinowitsch-saturated systems (chart
+denominators + isotropic factors, as in R3).
+
+Candidate relatives: every listed no-AL10 symbol with the same given-object
+signature (a bijection of givens cannot exist otherwise — this excludes
+e.g. AL2ab7aa, whose signature (2 points, 4 lines) differs from AL2ab8's
+(2 points, 2 lines) a priori):
+
+- **AL2ab8** (2p, 2l): AL12a3b7a, AL12a3b7b, AL2ab5ab, AL3a4a6b, AL3a4a7a,
+  AL3a4a7b, AL3a4b6b, AL3a4b7a, AL3a4b7b, AL3a5a9, AL3a5b9, AL3ab9,
+  AL4a5b6a, AL4a5b6b, AL4a5b7a, AL4a5b7b, AL5aa9, AL5ab9 — 18 relatives ×
+  2!·2! object bijections × 2 fold orientations = 144 comparisons.
+- **AL2a7a9 / AL2a7b9** (1p, 4l): AL2a6b9 and each other — (2 relatives ×
+  4! line bijections × 2 orientations) = 96 comparisons each.
+
+Method: rebuild each candidate's equation system from
+`Symeq.reflect_point_raw`/`reflect_line_raw` with explicit object
+assignment (the stream type is abstract), validated by reproducing the
+pipeline's known counts for the targets (AL2ab8 → 1, AL2a7a9 → 2,
+AL2a7b9 → 2); then solve target-system ∪ candidate-system jointly.
+
+Result: in all 336 comparisons the joint system is **empty** — the
+varieties are pairwise disjoint, not merely unequal. In particular
+AL2a7a9 and AL2a7b9 are also distinct from *each other* (they are
+σ-related, and like the σ-related listed pair AL2a5a8/AL2a3b8, distinct
+axioms).
+
+### Consequence
+
+AL2ab8, AL2a7a9, AL2a7b9 are distinct, non-separable (Def. 10 in the
+sequential reading), minimal, zero-dimensional, multiplicity-free two-fold
+axioms with real solutions at both parameter streams, not equivalent under
+permutation or folding to any symbol in the printed 489. Unless Alperin-
+Lang applied a criterion not stated in the paper, the "exhaustive"
+enumeration [alperin2006, l. 154–157, 564] is missing these three (and,
+counting a/b forms as listed, the semi-principled non-real pair
+AL2a7a8/AL2a7b8 remains a separate question). R4 stays an explicitly
+empirical published-list filter; any claim built on the paper's
+completeness should carry this caveat.
