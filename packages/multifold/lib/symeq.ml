@@ -98,6 +98,8 @@ let stream_b =
       "-269/103";
     ]
 
+let of_array (a : Q.t array) : param_stream = a
+
 type params = { points : (Q.t * Q.t) list; lines : (Q.t * Q.t) list }
 
 (* How many (points, lines) each alignment kind consumes, per its notation in

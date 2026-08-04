@@ -31,6 +31,14 @@ val stream_a : param_stream
 val stream_b : param_stream
 (** A second such stream, disjoint from {!stream_a}. *)
 
+val of_array : Q.t array -> param_stream
+(** [of_array a] is a param_stream drawing positionally from [a], with no
+    genericity guarantee — unlike {!stream_a}/{!stream_b}, the caller chooses
+    every value. Exposed so tests can inject specific parameter values (e.g. a
+    given line computed from a constructed solution) at an alignment's own draw
+    positions and then exercise the real {!alignment_params} / {!equations_of}
+    on them, rather than hand-duplicating those functions' logic. *)
+
 type params = {
   points : (Q.t * Q.t) list;
       (** given points, in notation order (P, or P1 P2) *)
