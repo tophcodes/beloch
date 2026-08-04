@@ -59,6 +59,34 @@ let test_twofold_lax_diff () =
     (if diff = [] then "" else ": " ^ String.concat ", " diff);
   Alcotest.(check (list string)) "strict and lax coincide" [] diff
 
+(* Task 9: the full two-fold enumeration, AL10 candidates included
+   (566 total, vs. 264 without AL10). run_twofold_published applies R1-R3
+   (baked into Combo.candidates / Symeq.equations_denoms_of) plus R4 (the
+   empirical published-list filter); R4's anchor-kind list already includes
+   AL10 [combo.ml, published_list_anchor_kinds], so AL8/AL9 combos anchored
+   only by an AL10 alignment pass R4 without any change to that rule. *)
+let test_twofold_full () =
+  let syms =
+    Pipeline.run_twofold_published ~with_al10:true ~stream:Symeq.stream_a
+  in
+  Alcotest.(check int) "489" 489 (List.length syms);
+  Alcotest.(check (list string)) "exact symbol set"
+    (List.sort String.compare (Test_fixture.fixture ()))
+    syms
+
+(* Cross-validation (brief step 3): the second, disjoint generic-parameter
+   stream must give the identical symbol set -- a genericity guard against
+   any result being a stream-specific coincidence rather than a genuine
+   algebraic fact. *)
+let test_twofold_full_stream_b () =
+  let syms =
+    Pipeline.run_twofold_published ~with_al10:true ~stream:Symeq.stream_b
+  in
+  Alcotest.(check int) "489" 489 (List.length syms);
+  Alcotest.(check (list string)) "exact symbol set"
+    (List.sort String.compare (Test_fixture.fixture ()))
+    syms
+
 let () =
   Alcotest.run "multifold-pipeline"
     [
@@ -69,5 +97,8 @@ let () =
         [
           Alcotest.test_case "203, no AL10" `Slow test_twofold_no_al10;
           Alcotest.test_case "strict/lax difference" `Slow test_twofold_lax_diff;
+          Alcotest.test_case "489, with AL10" `Slow test_twofold_full;
+          Alcotest.test_case "489, with AL10, stream_b" `Slow
+            test_twofold_full_stream_b;
         ] );
     ]
