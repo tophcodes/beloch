@@ -3,8 +3,24 @@
    Line representation [alperin2006, Def. 2]: (X, Y) is the line
    Xx + Yy + 1 = 0. Lines through the origin are unrepresentable in this
    chart; the paper handles this by translating any concrete configuration
-   away from the origin, and here all given objects are generic rationals, so
-   no denominator below vanishes on generic data.
+   away from the origin.
+
+   Every reflection formula below (eq. (1), eq. (2)) divides by a
+   denominator, but that denominator is a polynomial in the UNKNOWN fold
+   coordinates (x_i, y_i), not in the given parameters — genericity of the
+   parameters does NOT make it nonzero. Assembling an alignment's equation
+   clears the denominator, which enlarges its zero set: any fold position
+   where the denominator vanishes now satisfies the cleared equation
+   vacuously, whether or not the original alignment held, because there the
+   reflected point/line has left the (X, Y) chart altogether. For example,
+   AL9 [F_a(L1) <-> F_b(L2)] clears both folded-line denominators; they can
+   vanish simultaneously on a 2-dimensional locus of fold pairs regardless of
+   whether the folded lines actually coincide, so the cleared system holds
+   vacuously there. Consumers solving these systems MUST exclude denominator
+   zeros, e.g. by Rabinowitsch saturation (auxiliary variable w, equation
+   w·∏den − 1 = 0) — see the Phase-1 plan, Task 7. {!equations_denoms_of}
+   exposes exactly the denominators that were cleared, for this purpose;
+   {!equations_of} is a convenience wrapper that drops them.
 
    Fold line i has coordinates x_i = var (2i), y_i = var (2i+1). *)
 
@@ -218,7 +234,10 @@ let fold_of_suffix : Alignment.suffix -> int = function
   | Alignment.B -> 1
   | Alignment.Sym -> invalid_arg "Symeq: symmetric alignment has no fold suffix"
 
-let equations_of_alignment ~nvars (a : Alignment.t) (prm : params) : M.t list =
+(* Builds one alignment's equations together with the denominators actually
+   cleared to produce them (see the header comment for why this matters). *)
+let equations_of_alignment ~nvars (a : Alignment.t) (prm : params) :
+    M.t list * M.t list =
   let xv = xv nvars and yv = yv nvars in
   let c q = M.const nvars q in
   let one = M.const nvars Q.one in
@@ -232,37 +251,45 @@ let equations_of_alignment ~nvars (a : Alignment.t) (prm : params) : M.t list =
          invariance <=> perpendicularity. The normal direction of line (X, Y)
          is the vector (X, Y) (from Xx + Yy + 1 = 0), and two lines are
          perpendicular iff their normals are:
-           x_a·x_b + y_a·y_b = 0   — 1 eq, symmetric in a, b. *)
-      [ M.add (M.mul (xv 0) (xv 1)) (M.mul (yv 0) (yv 1)) ]
+           x_a·x_b + y_a·y_b = 0   — 1 eq, symmetric in a, b. No reflection is
+         performed, so no denominator is cleared. *)
+      ([ M.add (M.mul (xv 0) (xv 1)) (M.mul (yv 0) (yv 1)) ], [])
   | AL2, { lines = [ (lX, lY) ]; _ } ->
       (* AL2 [F_a(L) <-> L]: the given line is invariant under fold a. Same
          lemma as AL1 (L is generic, hence not the fold line):
-           x_a·lX + y_a·lY = 0   — 1 eq. *)
+           x_a·lX + y_a·lY = 0   — 1 eq. No denominator cleared. *)
       let f = fold_of_suffix a.Alignment.suffix in
-      [ M.add (M.mul (xv f) (c lX)) (M.mul (yv f) (c lY)) ]
+      ([ M.add (M.mul (xv f) (c lX)) (M.mul (yv f) (c lY)) ], [])
   | AL3, { points = [ (px, py) ]; _ } ->
       (* AL3 [L_a <-> P]: the given point lies on fold line a
-         [alperin2006, Def. 7]: x_a·px + y_a·py + 1 = 0 — 1 eq. *)
+         [alperin2006, Def. 7]: x_a·px + y_a·py + 1 = 0 — 1 eq. No
+         denominator cleared (the given point is exact, not reflected). *)
       let f = fold_of_suffix a.Alignment.suffix in
-      [ incidence (xv f, yv f) (point_triple (px, py)) ]
+      ([ incidence (xv f, yv f) (point_triple (px, py)) ], [])
   | AL4, { lines = [ l ]; _ } ->
       (* AL4 [F_a(L) <-> L_b]: the folded given line coincides with fold
          line b, componentwise on the (X, Y) representation
-         [alperin2006, Def. 6], cross-multiplied — 2 eqs. *)
+         [alperin2006, Def. 6], cross-multiplied — 2 eqs. Clears the
+         reflected line's denominator. *)
       let f = fold_of_suffix a.Alignment.suffix in
       let g = 1 - f in
-      eq_pair (reflect_line_raw ~nvars ~fold:f l) (xv g, yv g, one)
+      let ((_, _, den) as img) = reflect_line_raw ~nvars ~fold:f l in
+      (eq_pair img (xv g, yv g, one), [ den ])
   | AL5, { points = [ p ]; _ } ->
       (* AL5 [F_a(P) <-> L_b]: the folded given point lies on fold line b:
-         x_b·num_x + y_b·num_y + den = 0 — 1 eq. *)
+         x_b·num_x + y_b·num_y + den = 0 — 1 eq. Clears the reflected
+         point's denominator. *)
       let f = fold_of_suffix a.Alignment.suffix in
       let g = 1 - f in
-      [ incidence (xv g, yv g) (reflect_point_raw ~nvars ~fold:f p) ]
+      let ((_, _, d) as img) = reflect_point_raw ~nvars ~fold:f p in
+      ([ incidence (xv g, yv g) img ], [ d ])
   | AL6, { points = [ p ]; lines = [ (lX, lY) ] } ->
       (* AL6 [F_a(P) <-> L]: the folded given point lies on the given line:
-         lX·num_x + lY·num_y + den = 0 — 1 eq. *)
+         lX·num_x + lY·num_y + den = 0 — 1 eq. Clears the reflected point's
+         denominator. *)
       let f = fold_of_suffix a.Alignment.suffix in
-      [ incidence (c lX, c lY) (reflect_point_raw ~nvars ~fold:f p) ]
+      let ((_, _, d) as img) = reflect_point_raw ~nvars ~fold:f p in
+      ([ incidence (c lX, c lY) img ], [ d ])
   | AL7, { points = [ p ]; lines = [ l ] } ->
       (* AL7 [F_a(P) <-> F_b(L)]: the point folded by a lies on the line
          folded by b. Incidence with both denominators cleared:
@@ -271,21 +298,24 @@ let equations_of_alignment ~nvars (a : Alignment.t) (prm : params) : M.t list =
       let g = 1 - f in
       let pnx, pny, pd = reflect_point_raw ~nvars ~fold:f p in
       let lnX, lnY, ld = reflect_line_raw ~nvars ~fold:g l in
-      [ incidence (lnX, lnY) (pnx, pny, M.mul pd ld) ]
+      ([ incidence (lnX, lnY) (pnx, pny, M.mul pd ld) ], [ pd; ld ])
   | AL8, { points = [ p1; p2 ]; _ } ->
       (* AL8 [F_a(P1) <-> F_b(P2)]: componentwise point equality
          [alperin2006, Def. 5], cross-multiplied — 2 eqs. Symmetric: the
-         roles are fixed as fold 0 folds P1, fold 1 folds P2. *)
-      eq_pair
-        (reflect_point_raw ~nvars ~fold:0 p1)
-        (reflect_point_raw ~nvars ~fold:1 p2)
+         roles are fixed as fold 0 folds P1, fold 1 folds P2. Clears both
+         reflected points' denominators. *)
+      let ((_, _, d1) as img1) = reflect_point_raw ~nvars ~fold:0 p1 in
+      let ((_, _, d2) as img2) = reflect_point_raw ~nvars ~fold:1 p2 in
+      (eq_pair img1 img2, [ d1; d2 ])
   | AL9, { lines = [ l1; l2 ]; _ } ->
       (* AL9 [F_a(L1) <-> F_b(L2)]: componentwise line equality
          [alperin2006, Def. 6], cross-multiplied — 2 eqs. Symmetric: fold 0
-         folds L1, fold 1 folds L2. *)
-      eq_pair
-        (reflect_line_raw ~nvars ~fold:0 l1)
-        (reflect_line_raw ~nvars ~fold:1 l2)
+         folds L1, fold 1 folds L2. Clears both reflected lines'
+         denominators (see header comment: this is the alignment whose
+         cleared system admits a 2-dimensional spurious locus). *)
+      let ((_, _, d1) as img1) = reflect_line_raw ~nvars ~fold:0 l1 in
+      let ((_, _, d2) as img2) = reflect_line_raw ~nvars ~fold:1 l2 in
+      (eq_pair img1 img2, [ d1; d2 ])
   | AL10, { lines = [ (x1, y1); l2 ]; _ } ->
       (* AL10 [F_b(P_{L_a,L1}) <-> L2] [alperin2006, §4, AL10 discussion]:
          the virtual point V is the intersection of fold line a with the
@@ -294,8 +324,9 @@ let equations_of_alignment ~nvars (a : Alignment.t) (prm : params) : M.t list =
          and reflects by fold 1.
 
          V by Cramer on  x_a·x + y_a·y = −1,  X1·x + Y1·y = −1:
-           det = x_a·Y1 − y_a·X1   (nonzero generically: zero iff fold line a
-                                    is parallel to L1)
+           det = x_a·Y1 − y_a·X1   (zero iff fold line a is parallel to L1 —
+                                    a denominator of the intersection, not of
+                                    a reflection)
            V = ((y_a − Y1)/det, (X1 − x_a)/det)
          — a homogeneous triple, degree 1 in fold-a variables. Reflect it by
          fold b with the triple formula and require incidence with L2, both
@@ -306,14 +337,35 @@ let equations_of_alignment ~nvars (a : Alignment.t) (prm : params) : M.t list =
       let vny = M.sub (c x1) (xv ia) in
       let vd = M.sub (M.mul (xv ia) (c y1)) (M.mul (yv ia) (c x1)) in
       let x2, y2 = l2 in
-      [ incidence (c x2, c y2) (reflect_triple ~nvars ~fold:rf (vnx, vny, vd)) ]
+      let fold_den = M.add (M.mul (xv rf) (xv rf)) (M.mul (yv rf) (yv rf)) in
+      ( [
+          incidence (c x2, c y2) (reflect_triple ~nvars ~fold:rf (vnx, vny, vd));
+        ],
+        [ vd; fold_den ] )
   | _ -> invalid_arg "Symeq.equations_of: malformed params"
 
-let equations_of ~nvars ~(stream : param_stream) (combo : Combo.t) : M.t list =
+(* Deduplicate denominators by structural equality of the (canonically
+   normalized) polynomial, not physical/syntactic equality. *)
+let dedup_denoms (denoms : M.t list) : M.t list =
+  List.fold_left
+    (fun acc d ->
+      if List.exists (fun d' -> M.is_zero (M.sub d d')) acc then acc
+      else d :: acc)
+    [] denoms
+  |> List.rev
+
+let equations_denoms_of ~nvars ~(stream : param_stream) (combo : Combo.t) :
+    M.t list * M.t list =
   let rec go pos = function
-    | [] -> []
+    | [] -> ([], [])
     | a :: rest ->
         let prm, pos = alignment_params ~stream ~start:pos a in
-        equations_of_alignment ~nvars a prm @ go pos rest
+        let eqs, denoms = equations_of_alignment ~nvars a prm in
+        let eqs', denoms' = go pos rest in
+        (eqs @ eqs', denoms @ denoms')
   in
-  go 0 combo
+  let eqs, denoms = go 0 combo in
+  (eqs, dedup_denoms denoms)
+
+let equations_of ~nvars ~(stream : param_stream) (combo : Combo.t) : M.t list =
+  fst (equations_denoms_of ~nvars ~stream combo)

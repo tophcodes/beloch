@@ -16,7 +16,12 @@ type param_stream
 (** A deterministic supply of generic rational parameters. Each alignment
     occurrence pulls fresh values, so no two alignments in a combination share a
     given object — matching the paper's "points and lines … are assumed to be
-    distinct" [alperin2006, §2, Table 1 caption]. *)
+    distinct" [alperin2006, §2, body text above Table 1]. Known limitation:
+    because every occurrence draws fresh values, a stream cannot express a
+    deliberately REPEATED given object across alignments (e.g. the paper's
+    quartic construction AL6ab9 with L1 = L2 [alperin2006, §6.2.3]) — fine for
+    generic enumeration, but relevant for future construction work that needs a
+    shared given object. *)
 
 val stream_a : param_stream
 (** A hardcoded stream of generic rationals (mixed large prime
@@ -61,9 +66,30 @@ val reflect_line_raw :
     the implementation (eq. (2) of the paper's OCR is garbled); validated by the
     involution and Geom cross-check tests. *)
 
+val equations_denoms_of :
+  nvars:int ->
+  stream:param_stream ->
+  Combo.t ->
+  Beloch.Mpoly.t list * Beloch.Mpoly.t list
+(** [equations_denoms_of ~nvars ~stream combo] is [(equations, denoms)]: the
+    same polynomial system as {!equations_of}, together with the denominators
+    that were actually cleared while building it (deduplicated across the whole
+    combination). Every equation is obtained from a reflection formula
+    ([reflect_point_raw] or [reflect_line_raw]) by clearing a denominator that
+    is a polynomial in the UNKNOWN fold coordinates, not in the given parameters
+    — clearing it enlarges the solution set to include fold positions where the
+    denominator vanishes (the reflected object has left the (X, Y) chart),
+    whether or not the alignment itself holds. Consumers solving these systems
+    MUST exclude denominator zeros, e.g. by Rabinowitsch saturation (auxiliary
+    variable [w], equation [w · (product of denoms) − 1 = 0]) — see the Phase-1
+    plan, Task 7. *)
+
 val equations_of :
   nvars:int -> stream:param_stream -> Combo.t -> Beloch.Mpoly.t list
-(** The polynomial system of a combination, denominators cleared: the
-    concatenation, in combo order, of each alignment's equations (1 or 2 per
-    alignment, per [Alignment.equations]). Given objects are drawn fresh from
-    [stream], threading positions left to right. *)
+(** The equations component of {!equations_denoms_of}, without the cleared
+    denominators: the concatenation, in combo order, of each alignment's
+    equations (1 or 2 per alignment, per [Alignment.equations]). Given objects
+    are drawn fresh from [stream], threading positions left to right. Callers
+    that will actually solve the system, rather than just build and inspect it,
+    should use {!equations_denoms_of} instead so the denominator-zero loci can
+    be excluded. *)
