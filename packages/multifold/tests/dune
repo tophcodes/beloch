@@ -27,7 +27,7 @@
  (modules test_pipeline test_fixture)
  (libraries multifold alcotest))
 
-;; The k=2 group shells out to msolve ~1099 times (minutes, not seconds), so
+;; The k=2 group shells out to msolve 264 times (~17s measured), so
 ;; `dune runtest`/`dune test` (the fast alias) forces Alcotest's Quick-only
 ;; mode via ALCOTEST_QUICK_TESTS (see alcotest's Cli.Quick_only, `-q`'s env
 ;; alias). Run the full suite (incl. Slow) with

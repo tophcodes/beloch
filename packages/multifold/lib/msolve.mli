@@ -16,7 +16,7 @@ val poly_to_string : names:(int -> string) -> Beloch.Mpoly.t -> string
     [names i] for the variable at index [i]. The zero polynomial renders as
     ["0"]. Exposed for the parser/printer unit tests. *)
 
-type zero_dim = { count : int; multiplicity_free : bool }
+type zero_dim = { count : int; multiplicity_free : bool; real_count : int }
 (** [count] is the degree of the eliminant f₀ in msolve's rational
     parametrization of the SATURATED system (see {!classify}) — the number of
     DISTINCT points of the variety over an algebraic closure of ℚ.
@@ -36,7 +36,19 @@ type zero_dim = { count : int; multiplicity_free : bool }
     Beloch analogue of rejecting a Jacobian-singular candidate point in the k=3
     (Alperin–Lang) fold construction [alperin2006, §4 step 5] — a spurious
     tangency the Rabinowitsch saturation didn't exclude shows up as a repeated
-    root here. *)
+    root here.
+
+    [real_count] is the number of [count] that are REAL (as opposed to strictly
+    complex), read from msolve's real-solutions isolating-box section: one box
+    per real point, regardless of [nvars]. This is not an optional refinement —
+    Definition 9 defines a two-fold axiom as a set of alignments that fixes fold
+    lines "on a finite region of the Euclidean plane" [alperin2006, l. 453-455],
+    and a complex (non-real) solution is not a point of that plane, so it cannot
+    ground a fold line no matter how algebraically clean the system otherwise
+    is. See the Task-8 review and notes/2026-08-04-multifold-203-mismatch.md
+    (§R4's AL2a7a8/AL2a7b8 case, resolved by this field: both are
+    complex-conjugate-only, i.e. [real_count = 0], at every parameter stream).
+*)
 
 val parse_output :
   string -> [ `Zero_dim of zero_dim | `Positive_dim | `No_solutions ]

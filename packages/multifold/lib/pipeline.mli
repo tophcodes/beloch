@@ -8,9 +8,11 @@ val run_onefold : unit -> string list
 (** Every one-fold generator combo ({!Combo.onefold_candidates}) whose equation
     system (alphabet A1-A5 [alperin2006, §2, Fig. 2], built on 2 variables — one
     fold) also survives the strict algebraic filter: zero dimensional, at least
-    one solution, no repeated root ({!Msolve.classify}'s
-    [count >= 1 && multiplicity_free]). Sorted. Validates the algebra and msolve
-    plumbing against ground truth: still exactly the 7 HJAs. *)
+    one solution, no repeated root, at least one REAL solution
+    ({!Msolve.classify}'s [count >= 1 && multiplicity_free && real_count >= 1] —
+    the last conjunct per Definition 9's "finite region of the Euclidean plane"
+    requirement [alperin2006, l. 453-455]). Sorted. Validates the algebra and
+    msolve plumbing against ground truth: still exactly the 7 HJAs. *)
 
 val run_twofold : with_al10:bool -> stream:Symeq.param_stream -> string list
 (** Every two-fold candidate combo ({!Combo.candidates}; combos containing an

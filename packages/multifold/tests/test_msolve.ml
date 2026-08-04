@@ -81,11 +81,31 @@ let out_saturated =
    [[[1, 1], [1, 1]]]\n\
    ]]:"
 
+(* x² + 1 = 0 (1 var): zero-dimensional, count 2 (i, -i), multiplicity-free,
+   but ZERO real solutions -- both roots are strictly complex. Captured fresh
+   by hand-running msolve 0.10.0 (same pinned nixpkgs rev as the other
+   fixtures) for the Task-8 realness-filter fix, since none of the pre-existing
+   fixtures exercise the 0-real-solutions section shape ([1, []]). *)
+let out_no_real =
+  "[0, [0, \n\
+   1, \n\
+   2, \n\
+   ['x'],\n\
+   [1],\n\
+   [1,\n\
+   [[2, [1, 0, 1]],\n\
+   [1, [0, 2]],\n\
+   [\n\
+   ]]]],[1,\n\
+   []\n\
+   ]]:"
+
 let test_parse_zero_dim () =
   match Msolve.parse_output out_zero_dim with
-  | `Zero_dim { count; multiplicity_free } ->
+  | `Zero_dim { count; multiplicity_free; real_count } ->
       Alcotest.(check int) "2 distinct solutions" 2 count;
-      Alcotest.(check bool) "multiplicity-free" true multiplicity_free
+      Alcotest.(check bool) "multiplicity-free" true multiplicity_free;
+      Alcotest.(check int) "2 real solutions" 2 real_count
   | _ -> Alcotest.fail "expected Zero_dim"
 
 let test_parse_positive_dim () =
@@ -100,18 +120,28 @@ let test_parse_no_solutions () =
 
 let test_parse_multiplicity_negative () =
   match Msolve.parse_output out_multiplicity with
-  | `Zero_dim { count; multiplicity_free } ->
+  | `Zero_dim { count; multiplicity_free; real_count } ->
       Alcotest.(check int) "1 distinct solution" 1 count;
       Alcotest.(check bool)
         "weighted degree 2 <> count 1 -> not multiplicity-free" false
-        multiplicity_free
+        multiplicity_free;
+      Alcotest.(check int) "1 real solution (x=1)" 1 real_count
   | _ -> Alcotest.fail "expected Zero_dim"
 
 let test_parse_saturated () =
   match Msolve.parse_output out_saturated with
-  | `Zero_dim { count; multiplicity_free } ->
+  | `Zero_dim { count; multiplicity_free; real_count } ->
       Alcotest.(check int) "1 solution after saturation" 1 count;
-      Alcotest.(check bool) "multiplicity-free" true multiplicity_free
+      Alcotest.(check bool) "multiplicity-free" true multiplicity_free;
+      Alcotest.(check int) "1 real solution" 1 real_count
+  | _ -> Alcotest.fail "expected Zero_dim"
+
+let test_parse_no_real () =
+  match Msolve.parse_output out_no_real with
+  | `Zero_dim { count; multiplicity_free; real_count } ->
+      Alcotest.(check int) "2 distinct (complex) solutions" 2 count;
+      Alcotest.(check bool) "multiplicity-free" true multiplicity_free;
+      Alcotest.(check int) "0 real solutions (i, -i)" 0 real_count
   | _ -> Alcotest.fail "expected Zero_dim"
 
 let test_parse_garbage () =
@@ -146,9 +176,10 @@ let test_classify_zero_dim () =
     [ M.sub (M.mul x x) (M.const 2 (q "2")); M.sub y (M.const 2 (q "1")) ]
   in
   match Msolve.classify ~nvars:2 ~denoms:[] sys with
-  | `Zero_dim { count; multiplicity_free } ->
+  | `Zero_dim { count; multiplicity_free; real_count } ->
       Alcotest.(check int) "2 sols" 2 count;
-      Alcotest.(check bool) "multiplicity-free" true multiplicity_free
+      Alcotest.(check bool) "multiplicity-free" true multiplicity_free;
+      Alcotest.(check int) "2 real sols" 2 real_count
   | _ -> Alcotest.fail "expected zero-dimensional"
 
 let test_classify_positive_dim () =
@@ -184,9 +215,22 @@ let test_classify_multiplicity_negative () =
   let x = M.var 1 0 in
   let d = M.sub x (M.const 1 (q "1")) in
   match Msolve.classify ~nvars:1 ~denoms:[] [ M.mul d d ] with
-  | `Zero_dim { count; multiplicity_free } ->
+  | `Zero_dim { count; multiplicity_free; real_count } ->
       Alcotest.(check int) "1 distinct solution" 1 count;
-      Alcotest.(check bool) "not multiplicity-free" false multiplicity_free
+      Alcotest.(check bool) "not multiplicity-free" false multiplicity_free;
+      Alcotest.(check int) "1 real solution (x=1)" 1 real_count
+  | _ -> Alcotest.fail "expected zero-dimensional"
+
+(* x² + 1 = 0: real analogue of test_parse_no_real, exercised through the real
+   msolve subprocess -- both roots (i, -i) are strictly complex. *)
+let test_classify_no_real () =
+  let x = M.var 1 0 in
+  let sys = [ M.add (M.mul x x) (M.const 1 (q "1")) ] in
+  match Msolve.classify ~nvars:1 ~denoms:[] sys with
+  | `Zero_dim { count; multiplicity_free; real_count } ->
+      Alcotest.(check int) "2 distinct (complex) solutions" 2 count;
+      Alcotest.(check bool) "multiplicity-free" true multiplicity_free;
+      Alcotest.(check int) "0 real solutions" 0 real_count
   | _ -> Alcotest.fail "expected zero-dimensional"
 
 let () =
@@ -200,6 +244,7 @@ let () =
           Alcotest.test_case "multiplicity-negative" `Quick
             test_parse_multiplicity_negative;
           Alcotest.test_case "saturated" `Quick test_parse_saturated;
+          Alcotest.test_case "no real solutions" `Quick test_parse_no_real;
           Alcotest.test_case "garbage" `Quick test_parse_garbage;
         ] );
       ( "printer",
@@ -213,5 +258,6 @@ let () =
             test_classify_saturation_effectiveness;
           Alcotest.test_case "multiplicity-negative" `Quick
             test_classify_multiplicity_negative;
+          Alcotest.test_case "no real solutions" `Quick test_classify_no_real;
         ] );
     ]

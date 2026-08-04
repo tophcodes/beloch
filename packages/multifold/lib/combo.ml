@@ -23,9 +23,13 @@ let is_single_fold : Alignment.kind -> bool = function
    one fold from the given objects alone, every remaining alignment becomes a
    one-fold alignment for the other fold (which now has a known line to
    reference), so the combo reduces to two 1FAs in sequence regardless of
-   what those remaining alignments are. This subsumes the old "2+2, no
-   cross-fold alignment" case: {AL2a,AL3a,AL2b,AL3b} has 2 same-suffix
-   single-fold alignments on each fold, so R1 rejects it too. *)
+   what those remaining alignments are. (Exactly 3+ same-suffix single-fold
+   alignments over-determines that fold instead of forming a 1FA outright --
+   generically inconsistent, redundant at best -- but the conclusion is the
+   same: not a genuine independent 2FA, so >= 2 is the right threshold to
+   reject on.) This subsumes the old "2+2, no cross-fold alignment" case:
+   {AL2a,AL3a,AL2b,AL3b} has 2 same-suffix single-fold alignments on each
+   fold, so R1 rejects it too. *)
 let separable c =
   let same_suffix suffix =
     List.length
@@ -45,13 +49,20 @@ let separable c =
    - AL5a ≡ AL3b (apply F_a to both sides, then use AL1): separable.
    - AL8 ≡ AL3a + AL3b on the derived midpoint: separable.
    - AL4 degenerates: F_a(L) = L_b with L_b ⊥ L_a forces F_a(L) = L, i.e.
-     fold b coincides with the GIVEN line L, not a new fold line
-     [alperin2006, l. 285].
+     fold b coincides with the GIVEN line L -- the coincident branch yields
+     one fold, not two, contradicting Definition 9's two-fold requirement;
+     cf. the paper's analogous exclusion of a fold coinciding with an
+     existing line at [alperin2006, l. 285] (stated there for the one-fold
+     case, not verbatim for this AL1+AL4 combination).
    - AL9 is inconsistent: F_a∘F_b is the half-turn about a ∩ b, and AL9
      needs it to map one generic given line onto another, i.e. the two given
      lines parallel — false generically.
    None of these combinations is a genuine, independent 2FA, so any combo
-   containing AL1 together with AL4, AL5, AL8, or AL9 is rejected. *)
+   containing AL1 together with AL4, AL5, AL8, or AL9 is rejected. Of the 40
+   combos this rejects among the fixture's extras, 24 reduce to R1-separable
+   combos, 10 are Definition-12 duplicates of already-listed symbols, and 6
+   are this AL4 degeneracy [notes/2026-08-04-multifold-203-mismatch.md,
+   §R2]. *)
 let al1_degenerate c =
   let has kind =
     List.exists (fun (a : Alignment.t) -> a.Alignment.kind = kind) c
@@ -65,16 +76,19 @@ let published_list_anchor_kinds : Alignment.kind list =
   [ Alignment.AL3; AL4; AL5; AL6; AL10 ]
 
 (* R4: empirical criterion matching Alperin-Lang's printed listing
-   [notes/2026-08-04-multifold-203-mismatch.md, §R4]. NOT a derived rule --
-   3 of the 5 combos it excludes (AL2ab8, AL2a7a9, AL2a7b9) pass every
+   [notes/2026-08-04-multifold-203-mismatch.md, §R4]. NOT a derived rule.
+   Matches 13 combos in the no-AL10 candidate pool structurally, but only 3
+   (AL2ab8, AL2a7a9, AL2a7b9) actually need it -- the other 10 already fail
+   the strict filter for unrelated reasons (8 are `No_solutions` outright; 2,
+   AL2a7a8/AL2a7b8, are complex-conjugate-only at every parameter stream, so
+   Task-8's real-solution requirement [alperin2006, Def. 9, l. 453-455] now
+   rejects them directly instead of needing R4). The remaining 3 pass every
    criterion the paper states (real, zero-dimensional, multiplicity-free,
    non-separable under every reading of Definition 10) and may be genuine
    2FAs absent from the paper's list; see the notes file for the full
-   accounting, including the 2 that are semi-principled (AL2a7a8, AL2a7b8:
-   no real solution at either parameter stream). Deliberately kept out of
-   {!candidates} -- callers reproducing the paper's published count must
-   apply this filter explicitly and should report both the filtered and
-   unfiltered counts (see {!Pipeline}). *)
+   accounting. Deliberately kept out of {!candidates} -- callers reproducing
+   the paper's published count must apply this filter explicitly and should
+   report both the filtered and unfiltered counts (see {!Pipeline}). *)
 let matches_published_list c =
   let has kind =
     List.exists (fun (a : Alignment.t) -> a.Alignment.kind = kind) c

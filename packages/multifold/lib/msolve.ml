@@ -93,11 +93,11 @@ let write_input (path : string) ~(names : int -> string) ~(nvars : int)
         polys)
 
 (* --- output parser: a tiny bracket/comma/atom S-expression reader -------
-   Only the dimension marker and (for zero-dim systems) the rational
-   parametrization's eliminant are interpreted; the trailing real-solution
-   isolating-box block is skipped structurally (parsed into atoms, never
-   inspected) — its entries include `/`- and `^`-separated big-integer
-   fractions we have no use for. *)
+   The dimension marker, the rational parametrization's eliminant, and (for
+   zero-dim systems) the real-solutions section's box COUNT are interpreted;
+   each box's interval bounds themselves are parsed into atoms but never
+   inspected — their entries include `/`- and `^`-separated big-integer
+   fractions we have no use for beyond knowing a box is present. *)
 
 type sexp = Atom of string | Node of sexp list
 
@@ -115,12 +115,12 @@ let tokenize (s : string) : [ `LB | `RB | `Comma | `Atom of string ] list =
       | ',' -> go (i + 1) (`Comma :: acc)
       | _ ->
           (* An "atom" runs up to the next bracket/comma, NOT the next
-             whitespace: the real-solution isolating-box section (which we
-             never interpret, only skip over structurally) prints rational
-             bounds as "num / den" with internal spaces and no comma between
-             the pieces, e.g. "[-123 / 2^64, 45 / 2^63]" is a 2-element list
-             whose elements are the space-separated blobs "-123 / 2^64" and
-             "45 / 2^63". *)
+             whitespace: the real-solution isolating-box section (whose
+             box COUNT we read, but whose interval contents we never
+             inspect) prints rational bounds as "num / den" with internal
+             spaces and no comma between the pieces, e.g.
+             "[-123 / 2^64, 45 / 2^63]" is a 2-element list whose elements
+             are the space-separated blobs "-123 / 2^64" and "45 / 2^63". *)
           let j = ref i in
           while !j < n && not (is_delim s.[!j]) do
             incr j
@@ -155,7 +155,7 @@ let as_int = function
   | Atom a -> int_of_string a
   | Node _ -> failwith "expected an int atom"
 
-type zero_dim = { count : int; multiplicity_free : bool }
+type zero_dim = { count : int; multiplicity_free : bool; real_count : int }
 
 (* dim-tuple layout, pinned against msolve 0.10.0 `-P 1` output (see
    test_msolve.ml for the literal captures):
@@ -166,21 +166,35 @@ type zero_dim = { count : int; multiplicity_free : bool }
    solutions only — RUR is computed on the ideal's radical, so f₀ is always
    squarefree regardless of the original multiplicities. Comparing the two
    degrees (not a gcd on f₀) is what detects multiplicity. *)
-let zero_dim_of_tuple (dim_tuple : sexp list) : zero_dim =
+let zero_dim_of_dim_tuple (dim_tuple : sexp list) : int * bool =
   let weighted_degree = as_int (List.nth dim_tuple 2) in
   let rur_wrapper = as_node (List.nth dim_tuple 5) in
   let rur_body = as_node (List.nth rur_wrapper 1) in
   let eliminant = as_node (List.nth rur_body 0) in
   let count = as_int (List.nth eliminant 0) in
-  { count; multiplicity_free = weighted_degree = count }
+  (count, weighted_degree = count)
+
+(* Real-solutions section layout, pinned against msolve 0.10.0 `-P 1` output
+   (test_msolve.ml has the literal captures, including the 0-real-solutions
+   case x²+1=0): `[flag, [box_1; ...; box_n]]`, one box per REAL solution —
+   `flag` is unexplained by the observed captures (always `1`) and ignored.
+   Each box is itself a per-variable list of rational isolating intervals
+   (`[lo, hi]`, collapsing to a point `[c, c]` for an exact rational
+   coordinate); their contents are never inspected, only counted. *)
+let real_count_of_real_solutions (real_solutions : sexp) : int =
+  match real_solutions with
+  | Node [ _flag; Node boxes ] -> List.length boxes
+  | _ -> failwith "unrecognized real-solutions section shape"
 
 let interpret (sx : sexp) :
     [ `Zero_dim of zero_dim | `Positive_dim | `No_solutions ] =
   match sx with
   | Node [ Atom "-1" ] -> `No_solutions
   | Node [ Atom "1"; _nvars; Atom "-1"; Node [] ] -> `Positive_dim
-  | Node [ Atom "0"; Node dim_tuple; _real_solutions ] ->
-      `Zero_dim (zero_dim_of_tuple dim_tuple)
+  | Node [ Atom "0"; Node dim_tuple; real_solutions ] ->
+      let count, multiplicity_free = zero_dim_of_dim_tuple dim_tuple in
+      let real_count = real_count_of_real_solutions real_solutions in
+      `Zero_dim { count; multiplicity_free; real_count }
   | _ -> failwith "unrecognized msolve output shape"
 
 let parse_output (raw : string) :
