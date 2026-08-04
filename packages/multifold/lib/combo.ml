@@ -25,6 +25,55 @@ let separable c =
   let sum l = List.fold_left (fun n a -> n + Alignment.equations a) 0 l in
   both = [] && sum one_a = 2 && sum one_b = 2
 
+(* The one-fold analogue of the alphabet above [alperin2006, §2, Fig. 2]:
+   A1 = FLF(P1)<->P2 (2 eq), A2 = FLF(L1)<->L2 (2 eq), A3 = FLF(L)<->L (1 eq),
+   A4 = FLF(P)<->L (1 eq), A5 = LF<->P (1 eq). *)
+type onefold = OA1 | OA2 | OA3 | OA4 | OA5
+
+let onefold_equations = function OA1 | OA2 -> 2 | OA3 | OA4 | OA5 -> 1
+
+let onefold_index = function
+  | OA1 -> 1
+  | OA2 -> 2
+  | OA3 -> 3
+  | OA4 -> 4
+  | OA5 -> 5
+
+let onefold_compare a b = Int.compare (onefold_index a) (onefold_index b)
+
+let onefold_name = function
+  | OA1 -> "A1"
+  | OA2 -> "A2"
+  | OA3 -> "A3"
+  | OA4 -> "A4"
+  | OA5 -> "A5"
+
+let onefold_combo_to_symbol combo =
+  combo |> List.map onefold_name |> String.concat "+"
+
+let onefold_candidates () =
+  let alphabet = [| OA1; OA2; OA3; OA4; OA5 |] in
+  let n = Array.length alphabet in
+  let out = ref [] in
+  (* Same multiset recursion as [candidates], length 1-2, pruned on eq sum. *)
+  let rec go start acc eqs len =
+    if eqs = 2 && len >= 1 then out := List.rev acc :: !out;
+    if eqs < 2 && len < 2 then
+      for i = start to n - 1 do
+        let a = alphabet.(i) in
+        let e = onefold_equations a in
+        if eqs + e <= 2 then go i (a :: acc) (eqs + e) (len + 1)
+      done
+  in
+  go 0 [] 0 0;
+  !out
+  (* {A3,A3}: two distinct lines each folded onto themselves — inconsistent
+     if nonparallel, redundant if parallel [alperin2006, Table 1, top-left
+     "N/A" cell]. *)
+  |> List.filter (fun c -> c <> [ OA3; OA3 ])
+  |> List.sort_uniq (List.compare onefold_compare)
+  |> List.map onefold_combo_to_symbol
+
 let candidates () =
   let alphabet = Array.of_list Alignment.all_twofold in
   let n = Array.length alphabet in
