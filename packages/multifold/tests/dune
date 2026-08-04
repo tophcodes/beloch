@@ -9,3 +9,8 @@
  (modules test_combo test_fixture)
  (libraries multifold alcotest)
  (deps (glob_files fixtures/*.txt)))
+
+(test
+ (name test_symeq)
+ (modules test_symeq)
+ (libraries multifold beloch alcotest zarith))
