@@ -34,3 +34,9 @@ telling the user rather than a confident guess.
 Caveman-Mode ist in diesem Projekt aus: die Mathematik muss erklärt werden,
 bis Toph sie selbst verteidigen kann (siehe Multifold-Spec, "checked" =
 verstanden). Volle Sätze, Begriffe definieren, Intuition vor Formalismus.
+
+## Mathe-Notation in Markdown
+
+Formeln in notes/, docs/ und Memos als LaTeX-Math (`$...$` inline, `$$...$$`
+display) schreiben — GitHub, Forgejo und VS-Code-Preview rendern KaTeX.
+Symbol-Namen (AL2ab8), Code-Bezeichner und Pfade bleiben Backticks/plain.
