@@ -31,3 +31,13 @@ val run_twofold_lax : with_al10:bool -> stream:Symeq.param_stream -> string list
 val lax_only : with_al10:bool -> stream:Symeq.param_stream -> string list
 (** {!run_twofold_lax}'s result minus {!run_twofold}'s: the combos accepted only
     because [multiplicity_free] was ignored. *)
+
+val run_twofold_published :
+  with_al10:bool -> stream:Symeq.param_stream -> string list
+(** {!run_twofold}'s result, additionally restricted by
+    {!Combo.matches_published_list} (R4) -- the EMPIRICAL filter that reproduces
+    Alperin-Lang's exact printed listing. This is the "reproduction run": at
+    [with_al10:false], its result is symbol-exact against the paper's 203
+    [alperin2006]. Logs both the unfiltered ({!run_twofold}) and R4-filtered
+    counts to stderr, since R4 is not a derived rule and its effect should stay
+    visible to callers rather than silently included. *)

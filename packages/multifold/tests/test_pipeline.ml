@@ -15,7 +15,13 @@ let test_onefold_pipeline () =
     (List.length (Pipeline.run_onefold ()))
 
 let test_twofold_no_al10 () =
-  let syms = Pipeline.run_twofold ~with_al10:false ~stream:Symeq.stream_a in
+  (* run_twofold_published applies R1-R3 (baked into Combo.candidates /
+     Symeq.equations_denoms_of) plus R4, the empirical published-list filter
+     [notes/2026-08-04-multifold-203-mismatch.md] -- this is what reproduces
+     the paper's printed count exactly. *)
+  let syms =
+    Pipeline.run_twofold_published ~with_al10:false ~stream:Symeq.stream_a
+  in
   Alcotest.(check int) "203" 203 (List.length syms);
   (* symbol-by-symbol against the 489-symbol fixture, restricted to symbols
      without AL10 *)
@@ -29,15 +35,21 @@ let test_twofold_no_al10 () =
   in
   Alcotest.(check (list string)) "exact symbol set" expected syms
 
-(* Prints, but asserts nothing about, the strict/lax difference at
-   k=2/no-AL10 — this measurement is what Task 10's report records; whether
-   it's empty is evidence, not yet a spec. Cheap: shares run_twofold's
-   cached msolve results (same with_al10/stream) rather than re-solving. *)
+(* Prints, and now asserts, the strict/lax difference at k=2/no-AL10. Before
+   R3, this was 1 symbol (AL13a9, a repeated-root artifact of the missing
+   isotropic saturation); the investigation found that with R3 in place no
+   surviving candidate fails multiplicity_free at all, so strict and lax
+   coincide -- a principled, verified claim (not an accident of this
+   particular stream), see
+   notes/2026-08-04-multifold-203-mismatch.md, §R3 and the AL13a9 section.
+   Cheap: shares run_twofold's cached msolve results (same with_al10/stream)
+   rather than re-solving. *)
 let test_twofold_lax_diff () =
   let diff = Pipeline.lax_only ~with_al10:false ~stream:Symeq.stream_a in
   Printf.printf "lax-only difference at k=2/no-AL10: %d symbol(s)%s\n%!"
     (List.length diff)
-    (if diff = [] then "" else ": " ^ String.concat ", " diff)
+    (if diff = [] then "" else ": " ^ String.concat ", " diff);
+  Alcotest.(check (list string)) "strict and lax coincide" [] diff
 
 let () =
   Alcotest.run "multifold-pipeline"

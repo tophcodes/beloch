@@ -141,19 +141,26 @@ let test_equation_counts_symbolic () =
 (* --- Group 2b: cleared denominators ------------------------------------ *)
 
 (* [equations_of] must be exactly the equations component of
-   [equations_denoms_of], and each alignment must clear exactly the
-   denominators its reflections produce: none for the incidence-only kinds
-   (AL1-AL3, which reflect nothing), one per single reflected object
-   (AL4-AL6), and two for the kinds that reflect two objects or an
-   intersection plus a reflection (AL7-AL10). *)
+   [equations_denoms_of]. Denominator counts here are each alignment's own
+   reflection denominators (none for the incidence-only kinds AL1-AL3, one
+   per single reflected object for AL4-AL6, two for the kinds that reflect
+   two objects or an intersection plus a reflection for AL7-AL10), PLUS R3's
+   unconditional isotropic factors x_0²+y_0², x_1²+y_1²
+   [notes/2026-08-04-multifold-203-mismatch.md, §R3] -- deduplicated against
+   any reflection denominator that already *is* one of those isotropic
+   factors exactly (true for every point reflection, whose denominator is
+   literally x_f²+y_f², and for AL10's fold_den; never true for a line
+   reflection's chart denominator, which also subtracts cross terms). *)
 let poly_list_equal (l1 : M.t list) (l2 : M.t list) : bool =
   List.length l1 = List.length l2
   && List.for_all2 (fun a b -> M.is_zero (M.sub a b)) l1 l2
 
 let expected_denom_count : Alignment.kind -> int = function
-  | AL1 | AL2 | AL3 -> 0
-  | AL4 | AL5 | AL6 -> 1
-  | AL7 | AL8 | AL9 | AL10 -> 2
+  | AL1 | AL2 | AL3 -> 2 (* 0 own + 2 new isotropic *)
+  | AL5 | AL6 | AL8 -> 2 (* all-point-reflection denoms already isotropic *)
+  | AL4 -> 3 (* 1 own (line chart denom, not isotropic) + 2 new *)
+  | AL7 | AL10 -> 3 (* 1 of 2 own already isotropic, other fold's is new *)
+  | AL9 -> 4 (* 2 own (both line chart denoms, neither isotropic) + 2 new *)
 
 let test_equations_denoms_of () =
   List.iter

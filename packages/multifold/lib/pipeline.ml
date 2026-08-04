@@ -181,3 +181,29 @@ let lax_only ~with_al10 ~stream : string list =
   let lax = symbols_where ~with_al10 ~stream ~keep:lax_keep in
   let strict = symbols_where ~with_al10 ~stream ~keep:strict_keep in
   List.filter (fun s -> not (List.mem s strict)) lax
+
+(* R4 [notes/2026-08-04-multifold-203-mismatch.md, §R4] is deliberately not
+   baked into {!Combo.candidates} -- it is an empirical criterion matching
+   Alperin-Lang's printed listing, not a derived rule (see
+   {!Combo.matches_published_list}'s doc comment). This is the "reproduction
+   run": {!run_twofold}'s result (every candidate surviving R1/R2/R3, i.e.
+   the strict algebraic filter over {!Combo.candidates}) additionally
+   restricted by R4. Logs both the unfiltered and R4-filtered counts to
+   stderr so the empirical filter's effect stays visible rather than
+   silently baked in. *)
+let run_twofold_published ~with_al10 ~stream : string list =
+  let unfiltered = run_twofold ~with_al10 ~stream in
+  let filtered =
+    List.filter
+      (fun symbol ->
+        match Alignment.combo_of_symbol symbol with
+        | Some c -> Combo.matches_published_list c
+        | None -> invalid_arg ("Pipeline: unparseable symbol " ^ symbol))
+      unfiltered
+  in
+  Printf.eprintf
+    "run_twofold_published: %d unfiltered (R1/R2/R3 only), %d after R4 \
+     (empirical published-list filter)\n\
+     %!"
+    (List.length unfiltered) (List.length filtered);
+  filtered

@@ -357,6 +357,19 @@ let dedup_denoms (denoms : M.t list) : M.t list =
     [] denoms
   |> List.rev
 
+(* R3 (isotropic saturation) [notes/2026-08-04-multifold-203-mismatch.md,
+   §R3]. reflect_line_raw's chart denominator
+   (x_f² + y_f² − 2·lX·x_f − 2·lY·y_f) does NOT vanish on the isotropic locus
+   x_f² + y_f² = 0, even though reflection across an isotropic "line" is
+   undefined there — an isotropic mirror sends every line to the same image,
+   so AL4/AL9's cross-multiplied line-equality equations vanish identically
+   on the curve {fold a = fold b, isotropic}, a spurious 1-dimensional
+   component that survives saturating only the chart denominators (missing
+   AL4ab and AL4a9, both genuine axioms). Saturating both folds' isotropic
+   factors closes the gap; doing so unconditionally for every two-fold combo
+   (rather than only when a line reflection occurs) is the simplest sound
+   choice, since x_f² + y_f² > 0 for any actual real fold line, so this never
+   excludes a genuine solution. *)
 let equations_denoms_of ~nvars ~(stream : param_stream) (combo : Combo.t) :
     M.t list * M.t list =
   let rec go pos = function
@@ -368,7 +381,12 @@ let equations_denoms_of ~nvars ~(stream : param_stream) (combo : Combo.t) :
         (eqs @ eqs', denoms @ denoms')
   in
   let eqs, denoms = go 0 combo in
-  (eqs, dedup_denoms denoms)
+  let isotropic fold =
+    M.add
+      (M.mul (xv nvars fold) (xv nvars fold))
+      (M.mul (yv nvars fold) (yv nvars fold))
+  in
+  (eqs, dedup_denoms (denoms @ [ isotropic 0; isotropic 1 ]))
 
 let equations_of ~nvars ~(stream : param_stream) (combo : Combo.t) : M.t list =
   fst (equations_denoms_of ~nvars ~stream combo)
