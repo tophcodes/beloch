@@ -65,12 +65,12 @@ equivalence/degeneracy filtering, is **2194** (Task 4's probe;
 independently reproduced by `report.exe`'s `raw_twofold_count`) — the "crude
 upper bound... before equivalence/degeneracy filtering" the Phase-1 spec's
 early milestone asked for. `Combo.candidates` then applies canonicalization
-under global a<->b swap and two structural rejection rules (R1, R2, below),
+under global $a \leftrightarrow b$ swap and two structural rejection rules (R1, R2, below),
 landing at 566 (with AL10) / 264 (without).
 
 **Symbolic equations** (`Symeq.equations_denoms_of`). Each alignment's
 incidence condition becomes one or two polynomial equations in 4 unknowns
-(`x_0,y_0,x_1,y_1`, the two fold lines' `(X,Y)` coordinates
+($x_0,y_0,x_1,y_1$, the two fold lines' $(X,Y)$ coordinates
 [alperin2006, Def. 2]) over `Beloch.Mpoly`, built from the folded-point
 formula [alperin2006, eq. (1)] and a from-scratch-derived folded-line
 formula (the paper's eq. (2) OCR is unusable — see below). Denominators
@@ -136,8 +136,8 @@ full in `notes/2026-08-04-multifold-203-mismatch.md`, §R1.
 
 ### AL1 degeneracies (R2)
 
-AL1 (`F_a(L_b) <-> L_b`) forces fold `a` perpendicular to fold `b` — the
-only line a reflection fixes besides the axis itself. Under `a ⊥ b`,
+AL1 ($F_a(L_b) \leftrightarrow L_b$) forces fold $a$ perpendicular to fold $b$ — the
+only line a reflection fixes besides the axis itself. Under $a \perp b$,
 Definition 12's fold-equivalence [alperin2006, l. 476-479] rewrites every
 combination of AL1 with AL4, AL5, AL8, or AL9 into something that is not a
 genuine independent 2FA: AL5a collapses to AL3b, AL8 to two AL3s on a
@@ -153,44 +153,44 @@ duplicates, 6 are the AL4 degeneracy).
 ### The derived folded-line formula
 
 The paper's eq. (2) [l. 205-212] is a folded-image-of-a-line formula whose
-OCR is internally inconsistent: its numerators mix lowercase `x,y` (point
-coordinates) into what should be a formula purely in the line's own `X,Y`
-and the fold's `X_F,Y_F` — reading the raw text, the X-numerator uses `y`
-where a derivation demands `X`, and vice versa for the Y-numerator (i.e.
+OCR is internally inconsistent: its numerators mix lowercase $x,y$ (point
+coordinates) into what should be a formula purely in the line's own $X,Y$
+and the fold's $X_F,Y_F$ — reading the raw text, the X-numerator uses $y$
+where a derivation demands $X$, and vice versa for the Y-numerator (i.e.
 the two numerator components are effectively swapped relative to what the
 derivation produces), with at least one sign also off. Rather than guess
 at the correction, Task 6 derived it from scratch: substitute the
 folded-point formula (eq. (1)) into the line's incidence equation, clear
 the (unknown-fold-line) denominator, collect coefficients, and reduce back
-to the `(X,Y)` chart —
+to the $(X,Y)$ chart —
 
-```
-num_X = X·(y_f² − x_f²) − 2·x_f·y_f·Y
-num_Y = Y·(x_f² − y_f²) − 2·x_f·y_f·X
-den   = x_f² + y_f² − 2·X·x_f − 2·Y·y_f
-```
+$$\text{num}_X = X(y_f^2 - x_f^2) - 2 x_f y_f Y$$
 
-— validated two ways: the involution property `F(F(L)) = L` at 3 distinct
+$$\text{num}_Y = Y(x_f^2 - y_f^2) - 2 x_f y_f X$$
+
+$$\text{den} = x_f^2 + y_f^2 - 2 X x_f - 2 Y y_f$$
+
+— validated two ways: the involution property $F(F(L)) = L$ at 3 distinct
 rational fold lines × 3 lines, and a numeric cross-check against Beloch's
 existing `Geom.reflect_point`/`Geom.line_through` at 3 fold lines × 2 lines
 (`test_reflect_line_involution`, `test_reflect_line_vs_geom`,
 `packages/multifold/tests/test_symeq.ml`). The derived `den` agrees exactly
 with the one part of the paper's eq. (2) that *is* legible:
-`X_F² − 2XX_F − 2YY_F + Y_F²`.
+$X_F^2 - 2X X_F - 2Y Y_F + Y_F^2$.
 
 ### Isotropic saturation (R3)
 
-Reflection is undefined across an isotropic line (`x_f² + y_f² = 0`, complex
+Reflection is undefined across an isotropic line ($x_f^2 + y_f^2 = 0$, complex
 but not real). The point-reflection formula [eq. (1)] already carries
-`x_f²+y_f²` as its denominator, so point-folding alignments saturate it away
+$x_f^2+y_f^2$ as its denominator, so point-folding alignments saturate it away
 automatically. But `reflect_line_raw`'s own chart denominator does **not**
 vanish on the isotropic locus — an isotropic mirror maps every line to the
 same image line, so for the two pure-line-reflection alignments (AL4, AL9)
 that degeneracy survives denominator-clearing as a spurious
 1-dimensional component. Adding both folds' isotropic factors
-(`x_0²+y_0²`, `x_1²+y_1²`) to the saturation product recovers the two
+($x_0^2+y_0^2$, $x_1^2+y_1^2$) to the saturation product recovers the two
 symbols this was silently dropping: AL4ab (count 3, matching the paper's
-own trisection example, `c_x = 3` [alperin2006, §6.1, l. 694]) and AL4a9
+own trisection example, $c_x = 3$ [alperin2006, §6.1, l. 694]) and AL4a9
 (count 2). See the mismatch notes, §R3, for the full before/after table.
 
 ### Rabinowitsch denominator saturation
@@ -201,7 +201,7 @@ equation — this necessarily enlarges the solution set to include points
 where that denominator vanishes (the reflected object has left the `(X,Y)`
 chart), regardless of whether the alignment geometrically holds there.
 `Msolve.classify`'s saturation step (Rabinowitsch trick: one auxiliary
-variable `w`, one equation `w·(∏ denoms) − 1 = 0`) is how those spurious
+variable $w$, one equation $w \cdot (\prod \text{denoms}) - 1 = 0$) is how those spurious
 points are excluded before counting — not something the paper needs to
 state explicitly (its computer-assisted Mathematica enumeration presumably
 handled this internally, or avoided it structurally), but a necessary
@@ -217,11 +217,11 @@ at a solution [alperin2006, l. 539] — a numeric, at-a-point test. This
 reimplementation's analogue is algebraic: msolve's RUR always represents
 the ideal's *radical* [rouillier1999], so its eliminant polynomial is
 squarefree by construction whether or not the underlying ideal has multiple
-points — `gcd(f₀, f₀′)` is therefore tautologically trivial and useless as
+points — $\gcd(f_0, f_0')$ is therefore tautologically trivial and useless as
 a multiplicity test. `Msolve.zero_dim.multiplicity_free` instead compares
 `count` (the radical's degree) against msolve's separately-reported
 multiplicity-*weighted* (Bézout) degree of the ideal's quotient ring —
-equal iff every point is simple. Verified directly: `(x−1)²` reports
+equal iff every point is simple. Verified directly: $(x-1)^2$ reports
 `count = 1` but `multiplicity_free = false`. This is Beloch's analogue of
 rejecting a Jacobian-singular candidate, arrived at independently because
 msolve doesn't expose Jacobian singular values directly.
@@ -310,8 +310,8 @@ have a real (if unproven) story and these three don't, is in
   to what's expressible with two simultaneous folds. At k=3 the fold
   composition space is larger, and one open design decision — **not yet
   answered** — is whether the alphabet must include alignments referencing a
-  *nested* reflection (e.g. `F_a(F_b(P))` as a single alignment target,
-  rather than only pairwise compositions like AL7's `ρ = F_a∘F_b`) or whether
+  *nested* reflection (e.g. $F_a(F_b(P))$ as a single alignment target,
+  rather than only pairwise compositions like AL7's $\rho = F_a \circ F_b$) or whether
   every 3-fold construction reduces to compositions the k=2 alphabet already
   has building blocks for. This is upstream of any 3-fold candidate
   generator.

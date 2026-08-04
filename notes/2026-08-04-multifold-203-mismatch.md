@@ -22,12 +22,12 @@ Three independent defects, one residual caveat:
    is equivalent to a separable, already-counted, or degenerate one. Kills
    **40** extras.
 3. **The line-reflection equations lose the isotropic denominator.**
-   Reflection across an isotropic line (x_f² + y_f² = 0) is undefined; for
+   Reflection across an isotropic line ($x_f^2 + y_f^2 = 0$) is undefined; for
    pure line-reflection alignments (AL4, AL9) that factor cancels out of
    the cleared chart denominators, leaving a spurious positive-dimensional
-   component that Rabinowitsch saturation misses. Saturating x_f² + y_f²
+   component that Rabinowitsch saturation misses. Saturating $x_f^2 + y_f^2$
    for both folds recovers the **2 missing** symbols (AL4ab with count 3 =
-   the paper's cx = 3 [alperin2006, l. 694], AL4a9 with count 2) and
+   the paper's $c_x = 3$ [alperin2006, l. 694], AL4a9 with count 2) and
    explains AL13a9's multiplicity artifact.
 4. **Five extras have no principled kill** (AL2ab8, AL2a7a8, AL2a7b8,
    AL2a7a9, AL2a7b9). Two of them (AL2a7a8/7b8) have no real solutions at
@@ -41,7 +41,7 @@ Three independent defects, one residual caveat:
 
 Let kinds {AL2, AL3, AL6} be the *single-fold* alignments (each mentions
 exactly one fold, via its suffix), and note that AL1, AL7, AL8, AL9
-constrain only the composition ρ = F_a ∘ F_b (see R4 below).
+constrain only the composition $\rho = F_a \circ F_b$ (see R4 below).
 
 - **R1 (separability, replaces `Combo.separable`).** A combo is separable
   iff it contains ≥ 2 single-fold alignments with the same suffix.
@@ -51,7 +51,7 @@ constrain only the composition ρ = F_a ∘ F_b (see R4 below).
   alignment becomes a one-fold alignment once one fold is a known line.)
 - **R2 (AL1 reduction, new).** Reject any combo containing AL1 together
   with any of AL4, AL5, AL8, AL9.
-- **R3 (algebra fix, `Symeq`/pipeline).** Add x_a² + y_a² and x_b² + y_b²
+- **R3 (algebra fix, `Symeq`/pipeline).** Add $x_a^2 + y_a^2$ and $x_b^2 + y_b^2$
   to the cleared denominators passed to `Msolve.classify` (equivalently:
   every alignment that reflects across fold f must list f's isotropic
   factor among its denominators; today only point reflections and AL10 do).
@@ -73,7 +73,7 @@ l. 470–473] fixes the intended reading: L1 folds P onto Q (O2 — a 1FA from
 given objects only), then L2 folds Q onto l *and P onto L1* (O6 — a 1FA
 that uses the *first fold line* as one of its given lines). The partition
 is ordered: S1 determines fold x from givens alone; S2 determines fold y
-with L_x available as an ordinary line. The current `Combo.separable`
+with $L_x$ available as an ordinary line. The current `Combo.separable`
 demands S2 mention only fold y, which the paper's own example violates —
 O6's second alignment references L1.
 
@@ -81,8 +81,8 @@ In the alphabet, only AL2/AL3/AL6 constrain one fold from givens alone, so
 S1 must be ≥ 2 same-suffix alignments from these kinds. No condition on S2
 is needed: once fold x is a known line, every remaining alignment is a
 one-fold alignment for fold y (AL4y ↦ A2, AL5y ↦ A4, AL8 ↦ A1 on the
-derived point F_x(P), AL9 ↦ A2 on the derived line, AL7 ↦ A4 via
-involution, AL1 ↦ A3 against L_x, AL10 ↦ A4/A5 on the derived objects),
+derived point $F_x(P)$, AL9 ↦ A2 on the derived line, AL7 ↦ A4 via
+involution, AL1 ↦ A3 against $L_x$, AL10 ↦ A4/A5 on the derived objects),
 and its 2 remaining equations make it a 1FA. The one exception, {AL2x,
 AL2x}, is not a valid 1FA (the paper's Table 1 "N/A" cell — inconsistent
 for nonparallel lines, redundant for parallel [alperin2006, l. 320–325])
@@ -93,43 +93,43 @@ exactly **160** of the 205 extras match it.
 
 ### R2: equivalence under folding, conditioned on AL1
 
-Definition 12 allows applying F_{F1} or F_{F2} to both sides of alignments
-[alperin2006, l. 476–479]. AL1 (F_a(L_b) ↔ L_b) forces a ⊥ b — its
-componentwise equations factor as (coincident fold) ∪ (perpendicular), and
+Definition 12 allows applying $F_{F1}$ or $F_{F2}$ to both sides of alignments
+[alperin2006, l. 476–479]. AL1 ($F_a(L_b) \leftrightarrow L_b$) forces $a \perp b$ — its
+componentwise equations factor as (coincident fold) $\cup$ (perpendicular), and
 the coincident branch is not a new fold line [alperin2006, l. 285]. With
-a ⊥ b: F_a(L_b) = L_b, F_b(L_a) = L_a, and ρ = F_a∘F_b is the half-turn
-about a ∩ b. Consequences, alignment by alignment:
+$a \perp b$: $F_a(L_b) = L_b$, $F_b(L_a) = L_a$, and $\rho = F_a \circ F_b$ is the half-turn
+about $a \cap b$. Consequences, alignment by alignment:
 
-- **AL5a ≡ AL3b**: F_a(P) ∈ L_b ⟺ P ∈ F_a(L_b) = L_b (apply F_a to both
+- **AL5a ≡ AL3b**: $F_a(P) \in L_b \iff P \in F_a(L_b) = L_b$ (apply F_a to both
   sides, then use AL1).
-- **AL8 ≡ AL3a + AL3b on the midpoint**: F_a(P1) = F_b(P2) ⟺ ρ(P1) = P2 ⟺
-  a ∩ b = midpoint(P1, P2), i.e. both folds pass through a derived point.
-- **AL4a degenerates**: L_b = F_a(L) with L_b ⊥ L_a forces L ⊥ L_a, hence
-  F_a(L) = L, i.e. **fold b coincides with the given line L** — not a new
+- **AL8 ≡ AL3a + AL3b on the midpoint**: $F_a(P_1) = F_b(P_2) \iff \rho(P_1) = P_2 \iff$
+  $a \cap b = \text{midpoint}(P_1, P_2)$, i.e. both folds pass through a derived point.
+- **AL4a degenerates**: $L_b = F_a(L)$ with $L_b \perp L_a$ forces $L \perp L_a$, hence
+  $F_a(L) = L$, i.e. **fold b coincides with the given line L** — not a new
   fold line [alperin2006, l. 285], and "any combination in which a single
   alignment fully specifies one of the fold lines will be separable"
   [alperin2006, l. 482–483]. Verified numerically: AL13a4a's unique
-  solution has fold b = (41/23, −53/31) = AL4a's given line, exactly.
-- **AL9 is inconsistent**: ρ(L1) = L2 needs L1 ∥ L2, generically false.
+  solution has fold b = $(41/23, -53/31)$ = AL4a's given line, exactly.
+- **AL9 is inconsistent**: $\rho(L_1) = L_2$ needs $L_1 \parallel L_2$, generically false.
   (Under R3 the AL1+AL9 systems indeed classify `No_solutions`.)
 
 So each of the 40 AL1-extras reduces, alignment-for-alignment, to either a
 R1-separable combo (24 of them, e.g. AL13ab5a ≡ AL1+3a+3b+3b), a combo
 already in the paper's list (10 of them, e.g. AL12a5a7a ≡ AL12a3b7a,
-AL15a7aa ≡ AL13a7bb after a↔b), or a degenerate one (the 6 containing AL4).
+AL15a7aa ≡ AL13a7bb after $a \leftrightarrow b$), or a degenerate one (the 6 containing AL4).
 Consistently, the paper's AL1-combos pair only with {AL2, AL3, AL6, AL7,
 AL10} — never AL4/5/8/9 [alperin2006, listing l. 545 ff.].
 
 ### R3: the isotropic component in pure line-reflection systems
 
-The paper's point-reflection formula divides by X_F² + Y_F² [alperin2006,
+The paper's point-reflection formula divides by $X_F^2 + Y_F^2$ [alperin2006,
 eq. (1), l. 198–201]; reflection is undefined on isotropic mirrors. Our
 `reflect_point_raw` keeps that factor in its denominator, so point-folding
 alignments already saturate it away. But in `reflect_line_raw` the factor
 cancels: the image line's homogeneous triple (num_X, num_Y, den) has chart
-denominator den = x_f² + y_f² − 2lX·x_f − 2lY·y_f, which does **not**
-vanish on the isotropic locus. On x_f² + y_f² = 0 the triple becomes
-proportional to (x_f, y_f, 1) — an isotropic mirror sends *every* line to
+denominator $\mathrm{den} = x_f^2 + y_f^2 - 2l_X \cdot x_f - 2l_Y \cdot y_f$, which does **not**
+vanish on the isotropic locus. On $x_f^2 + y_f^2 = 0$ the triple becomes
+proportional to $(x_f, y_f, 1)$ — an isotropic mirror sends *every* line to
 the same image — so the cross-multiplied line-equality equations of AL4
 and AL9 vanish identically on the curve {fold a = fold b, isotropic}.
 That component is 1-dimensional and survives Rabinowitsch saturation of
@@ -139,13 +139,13 @@ systems retain the component: msolve reports `Positive_dim` and the
 pipeline drops them, even though both are genuine axioms — AL4ab is the
 paper's own trisection example [alperin2006, §6.1, l. 694–698].
 
-With x_a² + y_a², x_b² + y_b² added to the saturation product:
+With $x_a^2 + y_a^2$, $x_b^2 + y_b^2$ added to the saturation product:
 
 | symbol | before | after |
 |---|---|---|
-| AL4ab | Positive_dim | Zero_dim, count 3, mult-free — matches cx = 3 [alperin2006, l. 694] |
+| AL4ab | Positive_dim | Zero_dim, count 3, mult-free — matches $c_x = 3$ [alperin2006, l. 694] |
 | AL4a9 | Positive_dim | Zero_dim, count 2, mult-free |
-| AL3ab9 (control) | count 4 | count 4 — matches cx = 4 [alperin2006, l. 709] |
+| AL3ab9 (control) | count 4 | count 4 — matches $c_x = 4$ [alperin2006, l. 709] |
 | AL13a9 | Zero_dim count 2, **not** mult-free | `No_solutions` |
 
 No other classification among the surviving candidates changes.
@@ -154,9 +154,9 @@ No other classification among the surviving candidates changes.
 
 AL2ab8, AL2a7a8, AL2a7b8, AL2a7a9, AL2a7b9. Shared structure: AL2 is a
 pure *direction* constraint, and each of AL1/AL7/AL8/AL9 constrains only
-the composition ρ = F_a∘F_b (AL7a ⟺ P ∈ ρ(L); AL8 ⟺ ρ(P2) = P1; AL9 ⟺
-ρ(L2) = L1). The five are precisely the strict-solvable combos built
-solely from {AL2} ∪ {AL7, AL8, AL9} containing a 2-equation ρ-alignment —
+the composition $\rho = F_a \circ F_b$ (AL7a $\iff P \in \rho(L)$; AL8 $\iff \rho(P_2) = P_1$; AL9 $\iff$
+$\rho(L_2) = L_1$). The five are precisely the strict-solvable combos built
+solely from {AL2} $\cup$ {AL7, AL8, AL9} containing a 2-equation $\rho$-alignment —
 no alignment ever ties a fold's *position* to a given point or line, which
 is what R4 encodes.
 
@@ -207,13 +207,13 @@ should revisit them.
   see above).
 - **2 missing** (AL4a9, AL4ab) — R3, spurious isotropic component.
 
-160 + 40 + 5 = 205 ✓; 406 − 205 + 2 = 203 ✓.
+$160 + 40 + 5 = 205$ ✓; $406 - 205 + 2 = 203$ ✓.
 
 ## AL13a9 (the strict-only rejection)
 
 Structural, not parameter-accidental — but not multiplicity either. AL1
-forces the folds perpendicular, making ρ a half-turn; AL9 then demands
-ρ(L1) = L2, impossible for generic (non-parallel) L1, L2. The genuine
+forces the folds perpendicular, making $\rho$ a half-turn; AL9 then demands
+$\rho(L_1) = L_2$, impossible for generic (non-parallel) $L_1, L_2$. The genuine
 solution set is empty; what msolve counted (count 2, with multiplicity)
 was entirely the spurious isotropic component of AL9's cleared equations.
 Under R3 the system classifies `No_solutions` at both streams. The
@@ -235,7 +235,7 @@ with R3 in place no candidate anywhere in the sweep fails
   `Pipeline.run_twofold_published`, so the empirical rule stays visible
   rather than silently baked into the candidate pool.
 - **`symeq.ml`** — include the folding fold's isotropic factor
-  x_f² + y_f² among the cleared denominators for AL4 and AL9 (the two
+  $x_f^2 + y_f^2$ among the cleared denominators for AL4 and AL9 (the two
   pure line-reflection alignments; AL7 already carries it via its point
   side, AL1/AL2 perform no reflection). Alternatively add both folds'
   isotropic factors unconditionally in `equations_denoms_of`; the sweep
