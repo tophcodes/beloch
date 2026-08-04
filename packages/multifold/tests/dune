@@ -3,3 +3,9 @@
  (modules test_alignment test_fixture)
  (libraries multifold alcotest)
  (deps (glob_files fixtures/*.txt)))
+
+(test
+ (name test_combo)
+ (modules test_combo test_fixture)
+ (libraries multifold alcotest)
+ (deps (glob_files fixtures/*.txt)))
