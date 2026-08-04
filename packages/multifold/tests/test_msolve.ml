@@ -44,12 +44,12 @@ let out_positive_dim = "[1, 2, -1, []]:"
 let out_no_solutions = "[-1]:"
 
 (* (x−1)² = 0 (1 var): msolve's rational parametrization always represents
-   the REDUCED variety [rouillier1999] — the eliminant reports the DISTINCT
-   root (degree 1, f₀ = x−1), not a degree-2 eliminant with a repeated root.
-   Captured as-is per the task instruction to assert what msolve actually
-   reports rather than the brief's a-priori guess (count=2, squarefree=false)
-   — see Msolve.zero_dim's doc comment for the consequence. *)
-let out_squarefree =
+   the REDUCED variety [rouillier1999] — the eliminant f₀ reports only the
+   DISTINCT root (degree 1, f₀ = x−1). The weighted degree at dim_tuple index
+   2 is 2 (the double root's Bézout multiplicity), so count=1 but
+   multiplicity_free=false — the mismatch is what flags the repeated root,
+   since f₀ alone (degree 1, trivially squarefree) can't. *)
+let out_multiplicity =
   "[0, [0, \n\
    1, \n\
    2, \n\
@@ -83,9 +83,9 @@ let out_saturated =
 
 let test_parse_zero_dim () =
   match Msolve.parse_output out_zero_dim with
-  | `Zero_dim { count; squarefree } ->
+  | `Zero_dim { count; multiplicity_free } ->
       Alcotest.(check int) "2 distinct solutions" 2 count;
-      Alcotest.(check bool) "squarefree" true squarefree
+      Alcotest.(check bool) "multiplicity-free" true multiplicity_free
   | _ -> Alcotest.fail "expected Zero_dim"
 
 let test_parse_positive_dim () =
@@ -98,19 +98,20 @@ let test_parse_no_solutions () =
   | `No_solutions -> ()
   | _ -> Alcotest.fail "expected No_solutions"
 
-let test_parse_squarefree_negative () =
-  match Msolve.parse_output out_squarefree with
-  | `Zero_dim { count; squarefree } ->
+let test_parse_multiplicity_negative () =
+  match Msolve.parse_output out_multiplicity with
+  | `Zero_dim { count; multiplicity_free } ->
       Alcotest.(check int) "1 distinct solution" 1 count;
       Alcotest.(check bool)
-        "reported squarefree (see doc comment)" true squarefree
+        "weighted degree 2 <> count 1 -> not multiplicity-free" false
+        multiplicity_free
   | _ -> Alcotest.fail "expected Zero_dim"
 
 let test_parse_saturated () =
   match Msolve.parse_output out_saturated with
-  | `Zero_dim { count; squarefree } ->
+  | `Zero_dim { count; multiplicity_free } ->
       Alcotest.(check int) "1 solution after saturation" 1 count;
-      Alcotest.(check bool) "squarefree" true squarefree
+      Alcotest.(check bool) "multiplicity-free" true multiplicity_free
   | _ -> Alcotest.fail "expected Zero_dim"
 
 let test_parse_garbage () =
@@ -145,9 +146,9 @@ let test_classify_zero_dim () =
     [ M.sub (M.mul x x) (M.const 2 (q "2")); M.sub y (M.const 2 (q "1")) ]
   in
   match Msolve.classify ~nvars:2 ~denoms:[] sys with
-  | `Zero_dim { count; squarefree } ->
+  | `Zero_dim { count; multiplicity_free } ->
       Alcotest.(check int) "2 sols" 2 count;
-      Alcotest.(check bool) "squarefree" true squarefree
+      Alcotest.(check bool) "multiplicity-free" true multiplicity_free
   | _ -> Alcotest.fail "expected zero-dimensional"
 
 let test_classify_positive_dim () =
@@ -176,16 +177,16 @@ let test_classify_saturation_effectiveness () =
   | `Zero_dim { count; _ } -> Alcotest.(check int) "saturated: only {1}" 1 count
   | _ -> Alcotest.fail "expected zero-dimensional"
 
-(* (x−1)² = 0: msolve's rational parametrization is always squarefree
-   (see Msolve.zero_dim's doc comment) — the observed result is count=1,
-   squarefree=true, not the naively-expected count=2/squarefree=false. *)
-let test_classify_squarefree_negative () =
+(* (x−1)² = 0: msolve's RUR eliminant f₀ = (x−1) reports only the distinct
+   root (count=1), but the weighted (Bézout) degree in the output tuple is 2
+   — the mismatch is what flags the double root: multiplicity_free=false. *)
+let test_classify_multiplicity_negative () =
   let x = M.var 1 0 in
   let d = M.sub x (M.const 1 (q "1")) in
   match Msolve.classify ~nvars:1 ~denoms:[] [ M.mul d d ] with
-  | `Zero_dim { count; squarefree } ->
+  | `Zero_dim { count; multiplicity_free } ->
       Alcotest.(check int) "1 distinct solution" 1 count;
-      Alcotest.(check bool) "reported squarefree" true squarefree
+      Alcotest.(check bool) "not multiplicity-free" false multiplicity_free
   | _ -> Alcotest.fail "expected zero-dimensional"
 
 let () =
@@ -196,8 +197,8 @@ let () =
           Alcotest.test_case "zero-dim" `Quick test_parse_zero_dim;
           Alcotest.test_case "positive-dim" `Quick test_parse_positive_dim;
           Alcotest.test_case "no solutions" `Quick test_parse_no_solutions;
-          Alcotest.test_case "squarefree-negative" `Quick
-            test_parse_squarefree_negative;
+          Alcotest.test_case "multiplicity-negative" `Quick
+            test_parse_multiplicity_negative;
           Alcotest.test_case "saturated" `Quick test_parse_saturated;
           Alcotest.test_case "garbage" `Quick test_parse_garbage;
         ] );
@@ -210,7 +211,7 @@ let () =
           Alcotest.test_case "empty" `Quick test_classify_empty;
           Alcotest.test_case "saturation effectiveness" `Quick
             test_classify_saturation_effectiveness;
-          Alcotest.test_case "squarefree-negative" `Quick
-            test_classify_squarefree_negative;
+          Alcotest.test_case "multiplicity-negative" `Quick
+            test_classify_multiplicity_negative;
         ] );
     ]

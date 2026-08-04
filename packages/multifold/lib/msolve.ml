@@ -155,25 +155,24 @@ let as_int = function
   | Atom a -> int_of_string a
   | Node _ -> failwith "expected an int atom"
 
-let as_q = function
-  | Atom a -> Q.of_string a
-  | Node _ -> failwith "expected a rational atom"
-
-type zero_dim = { count : int; squarefree : bool }
+type zero_dim = { count : int; multiplicity_free : bool }
 
 (* dim-tuple layout, pinned against msolve 0.10.0 `-P 1` output (see
    test_msolve.ml for the literal captures):
      [dim; nvars; degree; varnames; linear_form; [1, [eliminant; denom; params]]]
-   eliminant = [degree; coeffs] (low-to-high, matching Beloch.Poly.t). *)
+   `degree` (index 2) is the multiplicity-weighted (Bézout) degree of the
+   ideal's quotient ring; `eliminant = [degree; coeffs]` is msolve's RUR
+   eliminant f₀, whose own degree (`count`) is the number of DISTINCT
+   solutions only — RUR is computed on the ideal's radical, so f₀ is always
+   squarefree regardless of the original multiplicities. Comparing the two
+   degrees (not a gcd on f₀) is what detects multiplicity. *)
 let zero_dim_of_tuple (dim_tuple : sexp list) : zero_dim =
+  let weighted_degree = as_int (List.nth dim_tuple 2) in
   let rur_wrapper = as_node (List.nth dim_tuple 5) in
   let rur_body = as_node (List.nth rur_wrapper 1) in
   let eliminant = as_node (List.nth rur_body 0) in
   let count = as_int (List.nth eliminant 0) in
-  let coeffs = List.map as_q (as_node (List.nth eliminant 1)) in
-  let f0 = Beloch.Poly.of_list coeffs in
-  let g = Beloch.Poly.gcd f0 (Beloch.Poly.derivative f0) in
-  { count; squarefree = Beloch.Poly.degree g <= 0 }
+  { count; multiplicity_free = weighted_degree = count }
 
 let interpret (sx : sexp) :
     [ `Zero_dim of zero_dim | `Positive_dim | `No_solutions ] =
