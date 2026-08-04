@@ -514,7 +514,7 @@ Formulas, all with denominators cleared at the end (`equations_of` multiplies th
 
 **Interfaces:**
 - Consumes: `Mpoly.t` systems, variable count.
-- Produces: `Msolve.classify : nvars:int -> Mpoly.t list -> [ \`Zero_dim of int | \`Positive_dim | \`No_solutions ]` — dimension of the ideal's variety and, when 0-dimensional, the number of complex solutions counted via the degree of the eliminant (Bézout-refined count as msolve reports it).
+- Produces: `Msolve.classify : nvars:int -> Mpoly.t list -> [ \`Zero_dim of { count : int; squarefree : bool } | \`Positive_dim | \`No_solutions ]` — dimension of the ideal's variety; when 0-dimensional, `count` = degree of the eliminant f₀ from msolve's rational parametrization, and `squarefree` = whether gcd(f₀, f₀′) = 1 (exact Euclidean gcd over ℚ[x]; parse f₀ into `Beloch.Poly.t`, `derivative` exists in core, implement a small local `gcd` helper in `msolve.ml` — do not modify core). Rationale: a non-squarefree eliminant means multiple/degenerate solutions — the exact analogue of A-L's Jacobian-singularity rejection [alperin2006, §4 step 5], without numerics. This distinction is load-bearing for k=3, where no 489-style oracle exists to catch an over-accepting filter.
 
 - [ ] **Step 1: Add msolve to the flake**
 
@@ -562,7 +562,8 @@ line 1: comma-separated variable names (`x0,y0,x1,y1`), line 2: characteristic `
 **Interfaces:**
 - Consumes: everything above.
 - Produces:
-  - `Pipeline.run_twofold : with_al10:bool -> stream:Symeq.param_stream -> string list` — candidate combos → equations → msolve filter (keep `\`Zero_dim n` with `n ≥ 1`) → canonical symbols, sorted.
+  - `Pipeline.run_twofold : with_al10:bool -> stream:Symeq.param_stream -> string list` — candidate combos → equations → strict filter (keep `\`Zero_dim { count; squarefree }` with `count ≥ 1 && squarefree`) → canonical symbols, sorted.
+  - `Pipeline.run_twofold_lax : ...` — same but ignoring `squarefree`. The pipeline logs the set difference (combos accepted lax-only) to stderr and Task 10's report records it: at k=2 this measured difference is the evidence for which filter semantics A-L's 489 actually corresponds to, and it must be known before trusting any k=3 count.
   - `Pipeline.run_onefold : unit -> string list` — same filter over the one-fold generator on 2 variables (validates algebra + msolve on ground truth: still exactly 7).
 
 - [ ] **Step 1: Write the failing tests**
