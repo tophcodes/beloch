@@ -514,7 +514,8 @@ Formulas, all with denominators cleared at the end (`equations_of` multiplies th
 
 **Interfaces:**
 - Consumes: `Mpoly.t` systems, variable count.
-- Produces: `Msolve.classify : nvars:int -> Mpoly.t list -> [ \`Zero_dim of { count : int; squarefree : bool } | \`Positive_dim | \`No_solutions ]` — dimension of the ideal's variety; when 0-dimensional, `count` = degree of the eliminant f₀ from msolve's rational parametrization, and `squarefree` = whether gcd(f₀, f₀′) = 1 (exact Euclidean gcd over ℚ[x]; parse f₀ into `Beloch.Poly.t`, `derivative` exists in core, implement a small local `gcd` helper in `msolve.ml` — do not modify core). Rationale: a non-squarefree eliminant means multiple/degenerate solutions — the exact analogue of A-L's Jacobian-singularity rejection [alperin2006, §4 step 5], without numerics. This distinction is load-bearing for k=3, where no 489-style oracle exists to catch an over-accepting filter.
+- **Saturation obligation (from Task 6 review):** clearing denominators enlarges the zero set by spurious loci where an image leaves the Def. 2 chart (e.g. AL9's two folded-line denominators vanish on a 2-dimensional locus where both equations hold vacuously). The solver call must exclude these: `Symeq.equations_of` also returns the list of cleared denominator polynomials, and the msolve system is extended by one Rabinowitsch variable `w` with the extra equation `w · (∏ denominators) − 1 = 0` (nvars+1 variables). This removes every spurious solution exactly; classification then proceeds on the extended system.
+- Produces: `Msolve.classify : nvars:int -> denoms:Mpoly.t list -> Mpoly.t list -> [ \`Zero_dim of { count : int; multiplicity_free : bool } | \`Positive_dim | \`No_solutions ]` — dimension of the ideal's variety; when 0-dimensional, `count` = degree of the eliminant f₀ from msolve's rational parametrization (= number of DISTINCT complex solutions; msolve's RUR is computed on the radical, so f₀ is squarefree by construction — an earlier gcd(f₀,f₀′) design was a tautology, discovered empirically in Task 7), and `multiplicity_free` = (msolve's reported multiplicity-weighted ideal degree = deg f₀). Rationale: weighted degree > deg f₀ means some solution is degenerate/multiple — the exact analogue of A-L's Jacobian-singularity rejection [alperin2006, §4 step 5], without numerics. This distinction is load-bearing for k=3, where no 489-style oracle exists to catch an over-accepting filter.
 
 - [ ] **Step 1: Add msolve to the flake**
 
@@ -562,8 +563,8 @@ line 1: comma-separated variable names (`x0,y0,x1,y1`), line 2: characteristic `
 **Interfaces:**
 - Consumes: everything above.
 - Produces:
-  - `Pipeline.run_twofold : with_al10:bool -> stream:Symeq.param_stream -> string list` — candidate combos → equations → strict filter (keep `\`Zero_dim { count; squarefree }` with `count ≥ 1 && squarefree`) → canonical symbols, sorted.
-  - `Pipeline.run_twofold_lax : ...` — same but ignoring `squarefree`. The pipeline logs the set difference (combos accepted lax-only) to stderr and Task 10's report records it: at k=2 this measured difference is the evidence for which filter semantics A-L's 489 actually corresponds to, and it must be known before trusting any k=3 count.
+  - `Pipeline.run_twofold : with_al10:bool -> stream:Symeq.param_stream -> string list` — candidate combos → equations → strict filter (keep `\`Zero_dim { count; multiplicity_free }` with `count ≥ 1 && multiplicity_free`) → canonical symbols, sorted.
+  - `Pipeline.run_twofold_lax : ...` — same but ignoring `multiplicity_free`. The pipeline logs the set difference (combos accepted lax-only) to stderr and Task 10's report records it: at k=2 this measured difference is the evidence for which filter semantics A-L's 489 actually corresponds to, and it must be known before trusting any k=3 count.
   - `Pipeline.run_onefold : unit -> string list` — same filter over the one-fold generator on 2 variables (validates algebra + msolve on ground truth: still exactly 7).
 
 - [ ] **Step 1: Write the failing tests**

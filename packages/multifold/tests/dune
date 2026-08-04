@@ -1,0 +1,46 @@
+(test
+ (name test_alignment)
+ (modules test_alignment test_fixture)
+ (libraries multifold alcotest)
+ (deps
+  (glob_files fixtures/*.txt)))
+
+(test
+ (name test_combo)
+ (modules test_combo test_fixture)
+ (libraries multifold alcotest)
+ (deps
+  (glob_files fixtures/*.txt)))
+
+(test
+ (name test_symeq)
+ (modules test_symeq)
+ (libraries multifold beloch alcotest zarith))
+
+(test
+ (name test_msolve)
+ (modules test_msolve)
+ (libraries multifold beloch alcotest unix))
+
+(executable
+ (name test_pipeline)
+ (modules test_pipeline test_fixture)
+ (libraries multifold alcotest))
+
+;; The k=2 group shells out to msolve 264 times (~17s measured), so
+;; `dune runtest`/`dune test` (the fast alias) forces Alcotest's Quick-only
+;; mode via ALCOTEST_QUICK_TESTS (see alcotest's Cli.Quick_only, `-q`'s env
+;; alias). Run the full suite (incl. Slow) with
+;; `dune exec packages/multifold/tests/test_pipeline.exe` from this
+;; directory instead.
+
+(rule
+ (alias runtest)
+ (deps
+  test_pipeline.exe
+  (glob_files fixtures/*.txt))
+ (action
+  (setenv
+   ALCOTEST_QUICK_TESTS
+   true
+   (run %{exe:test_pipeline.exe}))))

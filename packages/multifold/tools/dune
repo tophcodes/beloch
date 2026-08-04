@@ -1,0 +1,9 @@
+(executable
+ (name extract_fixture)
+ (modules extract_fixture)
+ (libraries multifold))
+
+(executable
+ (name report)
+ (modules report)
+ (libraries multifold unix))
