@@ -40,15 +40,23 @@ type zero_dim = { count : int; multiplicity_free : bool; real_count : int }
 
     [real_count] is the number of [count] that are REAL (as opposed to strictly
     complex), read from msolve's real-solutions isolating-box section: one box
-    per real point, regardless of [nvars]. This is not an optional refinement —
-    Definition 9 defines a two-fold axiom as a set of alignments that fixes fold
-    lines "on a finite region of the Euclidean plane" [alperin2006, l. 453-455],
-    and a complex (non-real) solution is not a point of that plane, so it cannot
-    ground a fold line no matter how algebraically clean the system otherwise
-    is. See the Task-8 review and notes/2026-08-04-multifold-203-mismatch.md
-    (§R4's AL2a7a8/AL2a7b8 case, resolved by this field: both are
-    complex-conjugate-only, i.e. [real_count = 0], at every parameter stream).
-*)
+    per real point, regardless of [nvars]. Definition 9 defines a two-fold axiom
+    as a set of alignments that fixes fold lines "on a finite region of the
+    Euclidean plane" [alperin2006, l. 453-455], so realness is genuinely
+    informative — but [real_count] is computed at ONE generic parameter point
+    ({!Symeq.param_stream}), whereas Alperin-Lang's enumeration is a claim
+    generic over ℂ; a single point's realness does not soundly decide the
+    generic question (a construction can be real at some parameter choices and
+    complex at others — e.g. a tangent-line problem with 0 or 2 real solutions
+    depending on which side of a curve a point falls). Confirmed empirically: 29
+    (at {!Symeq.stream_a}) vs. 23 (at {!Symeq.stream_b}) genuine paper-listed
+    symbols show [real_count = 0], with only 12 in common between the two
+    streams. {!Pipeline} therefore REPORTS [real_count] (logs "complex-only at
+    this stream" for a kept symbol with [real_count = 0]) rather than filtering
+    on it. See notes/2026-08-04-multifold-203-mismatch.md's addendum for the
+    full argument, and its §R4 for the one case (AL2a7a8/AL2a7b8) where
+    [real_count = 0] at BOTH streams is at least a semi-principled — though
+    still not filtered — signal. *)
 
 val parse_output :
   string -> [ `Zero_dim of zero_dim | `Positive_dim | `No_solutions ]

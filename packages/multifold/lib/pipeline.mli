@@ -8,18 +8,25 @@ val run_onefold : unit -> string list
 (** Every one-fold generator combo ({!Combo.onefold_candidates}) whose equation
     system (alphabet A1-A5 [alperin2006, §2, Fig. 2], built on 2 variables — one
     fold) also survives the strict algebraic filter: zero dimensional, at least
-    one solution, no repeated root, at least one REAL solution
-    ({!Msolve.classify}'s [count >= 1 && multiplicity_free && real_count >= 1] —
-    the last conjunct per Definition 9's "finite region of the Euclidean plane"
-    requirement [alperin2006, l. 453-455]). Sorted. Validates the algebra and
-    msolve plumbing against ground truth: still exactly the 7 HJAs. *)
+    one solution, no repeated root ({!Msolve.classify}'s
+    [count >= 1 && multiplicity_free]). Sorted. Validates the algebra and msolve
+    plumbing against ground truth: still exactly the 7 HJAs.
+
+    Realness ({!Msolve.zero_dim.real_count}) is not part of this filter: it is
+    reported, not filtered (see notes/2026-08-04-multifold-203-mismatch.md's
+    addendum) — a symbol whose only strict-surviving solution at this function's
+    stream has [real_count = 0] is logged to stderr as "complex-only at this
+    stream" rather than dropped. *)
 
 val run_twofold : with_al10:bool -> stream:Symeq.param_stream -> string list
 (** Every two-fold candidate combo ({!Combo.candidates}; combos containing an
     AL10 alignment are dropped first when [with_al10] is [false]) whose equation
     system (4 variables — two folds) survives the same strict filter. Canonical
     symbols ({!Alignment.combo_to_symbol}), sorted. Logs progress to stderr
-    every 100 combos processed. *)
+    every 100 combos processed, and additionally logs any kept symbol whose
+    solution has [real_count = 0] at this [stream] as "complex-only at this
+    stream" — realness is reported, not filtered (see
+    notes/2026-08-04-multifold-203-mismatch.md's addendum). *)
 
 val run_twofold_lax : with_al10:bool -> stream:Symeq.param_stream -> string list
 (** Same sweep as {!run_twofold}, but keeping every [`Zero_dim { count; _ }]

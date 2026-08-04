@@ -263,3 +263,103 @@ SYMBOL-EXACT MATCH: 203 = 203
   AL3ab9 count 4 (= paper's cx), AL13a4a's fold b lands exactly on AL4a's
   given line, AL2a7a8/7b8 complex at both parameter streams, AL13a9
   `No_solutions` at both streams.
+
+## Addendum (2026-08-04): realness is parameter-dependent
+
+A later pass (Task-8 "Fix round 2") added a fourth strict-filter conjunct,
+`real_count >= 1`, on top of the R1-R3 rules above: Definition 9 defines a
+two-fold axiom as fixing fold lines "on a finite region of the Euclidean
+plane" [alperin2006, l. 453-455], and `Msolve.classify`'s new `real_count`
+field (parsed from msolve's real-solutions isolating-box section) made it
+possible to check that directly, per solution, per parameter stream. The
+narrow, intended consequence worked exactly as predicted: AL2a7a8 and
+AL2a7b8 (§R4 above) turned out to be complex-conjugate-only at *both*
+{!Symeq.stream_a} and {!Symeq.stream_b}, and now die on the realness check
+rather than needing R4 at all.
+
+But the same change had a much larger, unintended consequence, reported in
+full in `.superpowers/sdd/task-8-report.md`'s "Fix round 2": the k=2/no-AL10
+slow run stopped reproducing 203 — **174** at `stream_a`, **180** at
+`stream_b`. Diffing against the fixture: 0 extras, but **29** genuine
+paper-listed symbols missing at `stream_a` and **23** at `stream_b`, with
+only **12** symbols in common between the two missing sets. Every one of
+these has `count >= 1`, `multiplicity_free = true`, `real_count = 0` **at
+the failing stream only** — the same one-parameter-point sign-correlation
+artifact already documented for the one-fold pipeline's `A4+A5` (Huzita-
+Justin O5: a tangent-line-to-a-parabola problem with 0 or 2 real solutions
+depending on which side of the parabola the fixed point lands, and
+`stream_a`/`stream_b`'s strictly alternating signs happen to always land it
+on one particular side), now hitting AL5/AL8-family constructions (also
+degree ≥ 2, tangent/cubic-type) at k=2's larger scale.
+
+### Why single-parameter-point realness is unsound as a filter
+
+`real_count` is computed at exactly one generic parameter point — whichever
+one the caller's `Symeq.param_stream` happens to draw. But Alperin-Lang's
+enumeration is a claim generic **over ℂ**: whether a 2FA is realizable is a
+question about the construction's algebraic structure, not about whether one
+arbitrary numeric instantiation happens to land on the real side of a
+tangency. A construction whose real/complex split depends on the parameters
+(exactly the O5-type shape above) is real for *some* choices of given points
+and complex for *others*; sampling a single point and treating a `0` there
+as "this construction has no real form" conflates a parameter-dependent
+fact with a structural one. The 29-vs-23-vs-12 numbers make this concrete:
+if `real_count = 0` were tracking a genuine structural property of the
+symbol, both streams would agree on which symbols it hits (as AL2a7a8/7b8 do
+— see below). They don't: 17 of `stream_a`'s 29 and 11 of `stream_b`'s 23 are
+each other's exclusive property, which is the signature of a coordinate
+artifact, not a fact about the construction.
+
+### Decision: realness is REPORTED, not FILTERED
+
+`Pipeline.strict_keep` reverts to `count >= 1 && multiplicity_free` (no
+`real_count` conjunct) — the same filter as before Fix round 2. The
+`real_count` field itself stays on `Msolve.zero_dim` (parser, captures, and
+unit tests unchanged): it is genuine, informative data about one probed
+point, just not a sound admission criterion on its own. `Pipeline` now logs
+every strict-surviving symbol whose solution has `real_count = 0` at the
+run's stream to stderr, tagged "complex-only at this stream" — visible
+without being silently dropped. `Pipeline.onefold_stream` (the decorrelated
+stream introduced in Fix round 2 to route around O5's `stream_a`/`stream_b`
+artifact) is gone: with the realness conjunct removed, `run_onefold` on
+plain `Symeq.stream_a` again yields exactly the 7 HJAs (A4+A5 included,
+logged as complex-only at that stream rather than excluded), so the
+workaround has nothing left to work around.
+
+### What a sound existential-realness analysis would require
+
+Reducing this from "reported" to "filtered" correctly would need an
+argument that is generic over the parameter space, not evaluated at one
+point — e.g.:
+
+- **Multi-parameter probing**: evaluate `real_count` at many independent,
+  well-separated generic streams and only treat a symbol as structurally
+  non-real if it is complex-only at *all* of them (necessary but still not
+  sufficient — see below).
+- **Semialgebraic reasoning**: characterize, for each symbol's equation
+  system, the region of parameter space (a semialgebraic set, e.g. via
+  cylindrical algebraic decomposition or real quantifier elimination) on
+  which the solution is real, and ask whether that region is generic
+  (full-dimensional / dense) or a measure-zero exception — the actual
+  content of Alperin-Lang's "on a finite region of the Euclidean plane"
+  when read as a claim about the construction rather than about one
+  instance of it.
+
+Neither is implemented here; this addendum documents the gap rather than
+closing it.
+
+### AL2a7a8/AL2a7b8: semi-principled, not proven
+
+Multi-stream agreement is necessary evidence for structural non-realness,
+even if it falls short of the semialgebraic argument above. AL2a7a8 and
+AL2a7b8 are the one case in this sweep with that property: complex-conjugate
+solutions at *both* `stream_a` and `stream_b`, unlike the stream-inconsistent
+29/23 artifact set. That is why §R4 above still calls them a "semi-
+principled exclusion" rather than a proven one — two points of agreement is
+stronger than one, but is not a proof that no real-parameter instantiation
+of AL2a7a8/AL2a7b8 exists. `Combo.matches_published_list` (R4) still needs
+to exclude both explicitly, since neither the reverted strict filter nor any
+other rule here does; R4's total burden is back to the original 5 (AL2ab8,
+AL2a7a8, AL2a7b8, AL2a7a9, AL2a7b9), of which 2 (AL2a7a8/7b8) have this
+semi-principled non-realness story and 3 (AL2ab8, AL2a7a9, AL2a7b9) remain
+genuinely unexplained, exactly as in the original §R4 accounting above.

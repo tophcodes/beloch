@@ -36,17 +36,20 @@ val matches_published_list : t -> bool
 (** An EMPIRICAL criterion matching Alperin-Lang's printed listing, not a
     derived rule: false iff the combo contains AL8 or AL9 and no alignment of
     kinds AL3, AL4, AL5, AL6, AL10. Matches 13 combos in the no-AL10 candidate
-    pool structurally, but only 3 (AL2ab8, AL2a7a9, AL2a7b9) actually need it:
-    the other 10 fail the strict filter on their own regardless of R4 -- 8 are
-    {!Msolve.classify}'s [`No_solutions] outright, and since Task-8's
-    real-solution fix (Definition 9's "finite region of the Euclidean plane"
-    [alperin2006, l. 453-455]) 2 more (AL2a7a8, AL2a7b8: complex-conjugate
-    solutions at every parameter stream) also fail on [real_count >= 1]. The
-    remaining 3 pass every criterion the paper states and may be genuine 2FAs
-    missing from the paper's list. Not applied by {!candidates}; callers
-    reproducing the paper's count must apply it explicitly and should report
-    both filtered and unfiltered counts. See
-    notes/2026-08-04-multifold-203-mismatch.md, §R4. *)
+    pool structurally, of which 8 already fail the strict filter on their own
+    ({!Msolve.classify}'s [`No_solutions]) -- so R4's actual burden is the
+    remaining 5: AL2ab8, AL2a7a8, AL2a7b8, AL2a7a9, AL2a7b9.
+    [Msolve.zero_dim.real_count] is reported, not filtered (single-point
+    realness is stream-dependent, see the notes file's addendum), so it does not
+    shrink this burden. Two of the 5 (AL2a7a8, AL2a7b8) have a semi-principled
+    explanation -- complex-conjugate-only at BOTH {!Symeq.stream_a} and
+    {!Symeq.stream_b}, unlike the stream-inconsistent pattern behind the
+    addendum's 29/23 artifact symbols. The other 3 (AL2ab8, AL2a7a9, AL2a7b9)
+    have real solutions, pass every criterion the paper states, and remain
+    genuinely unexplained -- may be genuine 2FAs missing from the paper's list.
+    Not applied by {!candidates}; callers reproducing the paper's count must
+    apply it explicitly and should report both filtered and unfiltered counts.
+    See notes/2026-08-04-multifold-203-mismatch.md, §R4 and its addendum. *)
 
 val onefold_candidates : unit -> string list
 (** All multisets of 1-2 symbols from the one-fold alphabet A1-A5

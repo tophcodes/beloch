@@ -6,9 +6,25 @@ type classify_result =
   [ `Zero_dim of Msolve.zero_dim | `Positive_dim | `No_solutions ]
 
 let strict_keep : classify_result -> bool = function
-  | `Zero_dim { count; multiplicity_free; real_count } ->
-      count >= 1 && multiplicity_free && real_count >= 1
+  | `Zero_dim { count; multiplicity_free; real_count = _ } ->
+      count >= 1 && multiplicity_free
   | `Positive_dim | `No_solutions -> false
+
+(* [real_count] is not a filter criterion (see {!Msolve.zero_dim} and
+   notes/2026-08-04-multifold-203-mismatch.md's addendum): a single
+   parameter-point's realness is not the same question as Alperin-Lang's
+   generic-over-ℂ existence claim, and empirically it is stream-dependent
+   (29 vs. 23 genuine paper-listed symbols show real_count=0 at stream_a vs.
+   stream_b, only 12 in common). Reported, not filtered: a strict-surviving
+   combo with real_count=0 at the given stream is logged to stderr so the
+   information stays visible without silently dropping the symbol. *)
+let log_if_complex_only ~(where : string) ~(symbol : string)
+    (r : classify_result) : unit =
+  match r with
+  | `Zero_dim { real_count = 0; _ } ->
+      Printf.eprintf "%s: %s complex-only at this stream (real_count=0)\n%!"
+        where symbol
+  | _ -> ()
 
 let lax_keep : classify_result -> bool = function
   | `Zero_dim { count; _ } -> count >= 1
@@ -114,41 +130,14 @@ let onefold_equations_of ~(stream : Symeq.param_stream) (symbol : string) :
   in
   go 0 (String.split_on_char '+' symbol)
 
-(* {!Symeq.stream_a}/{!Symeq.stream_b} alternate sign by index parity
-   throughout, so ANY consecutive-pairs draw from them (as {!onefold_equations_of}
-   does) reproduces the same relative sign pattern across every alignment's
-   parameters, regardless of starting offset -- verified empirically: A4+A5
-   (Huzita-Justin O5, "fold P1 onto L1 through P2") has [real_count = 0] at
-   every one of 19 tested offsets in both streams. This isn't a defect of O5
-   (a tangent line from an external point to a parabola has 0 or 2 real
-   solutions depending on the point's side of the parabola, and both streams'
-   uniform sign correlation happens to always land the tangent point on the
-   complex side) but it does mean neither stream can witness a real one-fold
-   filter run. [onefold_stream] breaks that correlation with a hand-picked
-   sign pattern (still generic: distinct primes, no collinearities); every
-   one-fold generator combo was checked to have [real_count >= 1] with it. *)
-let onefold_stream : Symeq.param_stream =
-  Symeq.stream_of_strings
-    [
-      "7/3";
-      "-5/2";
-      "11/4";
-      "13/6";
-      "-17/5";
-      "19/8";
-      "23/9";
-      "-29/10";
-      "31/11";
-      "37/12";
-      "-41/13";
-      "43/14";
-    ]
-
 let run_onefold () : string list =
   Combo.onefold_candidates ()
   |> List.filter (fun symbol ->
-      let eqs, denoms = onefold_equations_of ~stream:onefold_stream symbol in
-      strict_keep (Msolve.classify ~nvars:onefold_nvars ~denoms eqs))
+      let eqs, denoms = onefold_equations_of ~stream:Symeq.stream_a symbol in
+      let r = Msolve.classify ~nvars:onefold_nvars ~denoms eqs in
+      let keep = strict_keep r in
+      if keep then log_if_complex_only ~where:"run_onefold" ~symbol r;
+      keep)
   |> List.sort String.compare
 
 (* ------------------------------------------------------------------ *)
@@ -188,7 +177,10 @@ let classify_raw ~(with_al10 : bool) ~(stream : Symeq.param_stream) :
               Symeq.equations_denoms_of ~nvars:twofold_nvars ~stream combo
             in
             let r = Msolve.classify ~nvars:twofold_nvars ~denoms eqs in
-            if strict_keep r then incr kept;
+            if strict_keep r then begin
+              incr kept;
+              log_if_complex_only ~where:"run_twofold" ~symbol r
+            end;
             if (i + 1) mod 100 = 0 then
               Printf.eprintf "run_twofold: %d/%d processed, %d kept so far\n%!"
                 (i + 1) total !kept;

@@ -23,16 +23,6 @@ type param_stream
     generic enumeration, but relevant for future construction work that needs a
     shared given object. *)
 
-val stream_of_strings : string list -> param_stream
-(** [stream_of_strings l] builds a {!param_stream} from decimal/rational
-    literals (e.g. ["17/13"; "-29/7"]), via {!Q.of_string} on each. Exposed so
-    callers needing a stream with different sign/magnitude structure than
-    {!stream_a}/{!stream_b} (e.g. {!Pipeline}'s one-fold construction, whose
-    A5-style tangent-line alignments are sensitive to realness in a way
-    {!stream_a}/{!stream_b}'s strictly-alternating signs happen to always land
-    on the complex side of) don't need to hand-roll
-    [Array.of_list (List.map Q.of_string ...)] themselves. *)
-
 val stream_a : param_stream
 (** A hardcoded stream of generic rationals (mixed large prime
     numerators/denominators, alternating signs — no collinearities or other

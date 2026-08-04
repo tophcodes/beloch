@@ -77,18 +77,28 @@ let published_list_anchor_kinds : Alignment.kind list =
 
 (* R4: empirical criterion matching Alperin-Lang's printed listing
    [notes/2026-08-04-multifold-203-mismatch.md, §R4]. NOT a derived rule.
-   Matches 13 combos in the no-AL10 candidate pool structurally, but only 3
-   (AL2ab8, AL2a7a9, AL2a7b9) actually need it -- the other 10 already fail
-   the strict filter for unrelated reasons (8 are `No_solutions` outright; 2,
-   AL2a7a8/AL2a7b8, are complex-conjugate-only at every parameter stream, so
-   Task-8's real-solution requirement [alperin2006, Def. 9, l. 453-455] now
-   rejects them directly instead of needing R4). The remaining 3 pass every
-   criterion the paper states (real, zero-dimensional, multiplicity-free,
-   non-separable under every reading of Definition 10) and may be genuine
-   2FAs absent from the paper's list; see the notes file for the full
-   accounting. Deliberately kept out of {!candidates} -- callers reproducing
-   the paper's published count must apply this filter explicitly and should
-   report both the filtered and unfiltered counts (see {!Pipeline}). *)
+   Matches 13 combos in the no-AL10 candidate pool structurally, of which 8
+   already fail the strict filter for unrelated reasons ({!Msolve.classify}'s
+   `No_solutions`) -- so R4's actual burden is the remaining 5: AL2ab8,
+   AL2a7a8, AL2a7b8, AL2a7a9, AL2a7b9. Realness ({!Msolve.zero_dim.real_count})
+   is reported, not filtered (see the notes file's addendum) -- it does not
+   shrink this burden, since a single parameter-point's realness is
+   stream-dependent and not a sound existence criterion on its own (Def. 9
+   asks whether Alperin-Lang's construction is realizable generically, over
+   ℂ, not whether one arbitrary probe point happens to be real). Two of the
+   5 (AL2a7a8, AL2a7b8) do have a semi-principled explanation: both are
+   complex-conjugate-only at BOTH {!Symeq.stream_a} and {!Symeq.stream_b},
+   which — unlike the single-stream, symbol-inconsistent pattern behind the
+   29/23 stream-artifact symbols documented in the notes addendum — is at
+   least consistent with genuine structural non-realness. The other 3
+   (AL2ab8, AL2a7a9, AL2a7b9) have real solutions at every stream tested and
+   pass every other criterion the paper states (zero-dimensional,
+   multiplicity-free, non-separable under every reading of Definition 10);
+   they remain genuinely unexplained and may be valid 2FAs missing from the
+   paper's list. See the notes file for the full accounting. Deliberately
+   kept out of {!candidates} -- callers reproducing the paper's published
+   count must apply this filter explicitly and should report both the
+   filtered and unfiltered counts (see {!Pipeline}). *)
 let matches_published_list c =
   let has kind =
     List.exists (fun (a : Alignment.t) -> a.Alignment.kind = kind) c
