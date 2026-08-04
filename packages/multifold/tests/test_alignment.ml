@@ -39,6 +39,24 @@ let test_symbol_semantics () =
       Alcotest.(check bool) "AL8" true (z = al AL8 Sym)
   | _ -> Alcotest.fail "expected 3 alignments"
 
+let test_fixture_count () =
+  Alcotest.(check int) "489 symbols" 489 (List.length (Test_fixture.fixture ()))
+
+let test_fixture_all_sum_to_four () =
+  List.iter
+    (fun s ->
+      match Alignment.combo_of_symbol s with
+      | None -> Alcotest.failf "unparseable %s" s
+      | Some c ->
+          let sum = List.fold_left (fun n a -> n + Alignment.equations a) 0 c in
+          Alcotest.(check int) ("eqs of " ^ s) 4 sum;
+          let n = List.length c in
+          Alcotest.(check bool)
+            ("2..4 alignments in " ^ s)
+            true
+            (n >= 2 && n <= 4))
+    (Test_fixture.fixture ())
+
 let () =
   Alcotest.run "multifold-alignment"
     [
@@ -48,5 +66,10 @@ let () =
         [
           Alcotest.test_case "roundtrip" `Quick test_symbol_roundtrip;
           Alcotest.test_case "semantics" `Quick test_symbol_semantics;
+        ] );
+      ( "fixture",
+        [
+          Alcotest.test_case "count" `Quick test_fixture_count;
+          Alcotest.test_case "sum to four" `Quick test_fixture_all_sum_to_four;
         ] );
     ]

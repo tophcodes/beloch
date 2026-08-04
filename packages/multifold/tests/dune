@@ -1,3 +1,5 @@
 (test
  (name test_alignment)
- (libraries multifold alcotest))
+ (modules test_alignment test_fixture)
+ (libraries multifold alcotest)
+ (deps (glob_files fixtures/*.txt)))
