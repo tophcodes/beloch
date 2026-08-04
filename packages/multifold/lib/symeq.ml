@@ -135,6 +135,9 @@ let alignment_params ~(stream : param_stream) ~(start : int) (a : Alignment.t) :
   let lines, pos = draw_pairs stream pos nl in
   ({ points; lines }, pos)
 
+let draw_pair ~(stream : param_stream) ~(start : int) : (Q.t * Q.t) * int =
+  draw_pair stream start
+
 (* ------------------------------------------------------------------ *)
 (* Reflection formulas                                                 *)
 (* ------------------------------------------------------------------ *)

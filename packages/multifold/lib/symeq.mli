@@ -46,6 +46,16 @@ val alignment_params :
     next unread position. Points are drawn before lines. Raises
     [Invalid_argument] if the stream is exhausted. *)
 
+val draw_pair : stream:param_stream -> start:int -> (Q.t * Q.t) * int
+(** [draw_pair ~stream ~start] draws one generic rational pair from [stream]
+    beginning at position [start], returning it together with the next unread
+    position — the same primitive {!alignment_params} uses internally for
+    two-fold alignments' points and lines. Exposed for {!Pipeline}'s one-fold
+    equation builder (alphabet A1-A5 [alperin2006, §2, Fig. 2], a different
+    alphabet from this module's two-fold AL* kinds) to draw generic parameters
+    from the same streams without duplicating [param_stream]'s representation.
+    Raises [Invalid_argument] if the stream is exhausted. *)
+
 val reflect_point_raw :
   nvars:int ->
   fold:int ->
