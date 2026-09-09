@@ -133,3 +133,14 @@ misattributed this arXiv id to Nishimura — it is Lucero.
 ### Lucero — "Construction of a regular hendecagon by two-fold origami" (arXiv:1807.09557, 2018)
 The 11-gon (smallest regular polygon beyond HJA reach) via 2-fold. Concrete
 minimal-fold-count data point for the Phase 3 table.
+
+### Chow & Fan, "The Power of Multifolds" (Origami⁴ 2009, arXiv:0808.1517)
+Sits directly after [alperin2006] in the same volume; our Phase-0 scan missed
+it. Defines the "$n$-parameter multifold" and shows one-parameter multifolds
+reach the full algebraic closure $\bar{\mathbb{Q}}$. This is a second
+multifold formalism beside Alperin-Lang's simultaneous-crease alignments, and
+the k=3 alphabet decision must engage with how the two relate. Their result
+settles reachability inside their framework and leaves the enumeration of
+axiom systems untouched, so the classification question stays open. The
+related-work section needs the comparison, and any "which degree needs how
+many folds" claim must name its formalism.
