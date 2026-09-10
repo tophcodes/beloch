@@ -48,7 +48,8 @@ identities (Messer's $(AC/CB)^3 = 2$) and nothing like a proof pipeline.
 State this plainly in the comparison.
 
 **Folded state and arithmetic** (from the Eos internals papers, obtained
-2026-09-10): Eos's folded state is the abstract origami 100 1 17 26 27 100 131 303 977 989 1000\Pi, \succ, A)
+2026-09-10): Eos's folded state is the abstract origami 100 1 17 26 27 100 131
+303 977 989 1000\Pi, \succ, A)
 [ida2007modeling]: convex faces, an overlay relation defined only on
 overlapping pairs and inherited per fold by the three-case rule of its Def. 7
 (both stayed, both moved with the order reversed, one of each ordered by
@@ -61,17 +62,24 @@ years before ADR 0011, and the paper must cite it as such. The difference is
 arithmetic: Eos interprets the axioms over algebraic numbers on paper
 [ida2008entcs, §3.2] but solves numerically for the simulation and keeps the
 constraints symbolically for the proof [ida2008entcs, §5, §7; ghourabi2007,
-§4]. Beloch's folded state is itself exact. Still missing: the AISC 2004
-paper (DOI 10.1007/978-3-540-30210-0_12) and Ida's 2020 book chapter
-"Abstract Origami" (DOI 10.1007/978-3-319-59189-6_7), the consolidated
-version.
+§4]. Beloch's folded state is itself exact. Ida's 2020 book [ida2020]
+consolidates this (Ch. 7) and adds two things: the abstract fold is the
+composition of a tentative crease and a
+flat fold (§7.2.2), which is the `mark`/`fold` split, and the command
+reference (App. B.2) has `InsertFace → f` for placing moved faces below a
+named face, the between-layers insertion Appendix B calls sector-block
+interleaving. Still missing: the AISC 2004 paper (DOI
+10.1007/978-3-540-30210-0_12).
 
 ### Origami-oriented languages before Beloch
 
 Lam's taxonomy [lam2009, §4.2, p. 241] has a category "origami-oriented
 languages": Oridraw (1999), Doodle (Gout 2001), and Fisher's 1994 system.
 All compile text to PostScript diagrams, and Lam's criticism is that the user
-still manages the positions of lines, vertices and polygons by hand.
+still manages the positions of lines, vertices and polygons by hand. Eos's
+language also has a name, Orikoto [ida2020, §3.8.1], a subset of Wolfram
+Language with one `HO` command and named arguments (`Handle`, `FoldLine`,
+`Direction`, `InsertFace`); it is embedded, like Caruana & Pace.
 
 Consequence for `bibliography.md`'s "empty niche" line: the niche is empty
 only with all three qualifiers. Beloch is a standalone language whose
@@ -157,9 +165,8 @@ identically. The discrepancy is ours to explain against the version of record.
 
 ## Follow-ups
 
-- Obtain for `refs/`: Justin 1991 and 1997; Ida et al. AISC 2004; Ida 2020
-  "Abstract Origami" (book chapter); Gout, Doodle (2001); Miyazaki et al.
-  1996 (the data structure everyone reuses).
+- Obtain for `refs/`: Justin 1991 and 1997; Ida et al. AISC 2004; Gout,
+  Doodle (2001); Miyazaki et al. 1996 (the data structure everyone reuses).
 - Cite [langdemaine2009facet] and [ida2007modeling] in ADR 0011 and phrase
   `flatten`'s layer validity check as the Justin conditions.
 - Examples backlog: heptagon, generalised fish base (needs `paper kite`),

@@ -345,3 +345,54 @@ axiom 6) and a constraint-specified alternative with two simultaneous axiom-3
 folds; the numeric solutions are printed as floats (`Line[0.9096, 1, -2]`).
 §5: correctness proofs by Gröbner basis (`1 − gξ` trick) via Theorema, CAD
 when inequalities appear. Confirms the numeric/symbolic split.
+
+### Ida, *An Introduction to Computational Origami* (Springer, 2020)
+The consolidated version of the Eos line, and the one to cite for the model.
+Three things it adds over the 2007–2008 papers.
+
+**The language has a name: Orikoto** ("a small programming language for
+origami", §3.8.1, p. 74; §2.2.1, p. 21), a subset of Wolfram Language. One
+command `HO` covers all seven rules by argument sorts (Table B.1, p. 208),
+with named arguments (App. B.2, pp. 209–210): `Handle → P` picks the moved
+face by a point on it and Eos infers the rest (Beloch's flap-typed `moving`),
+`FoldLine → k` selects the k-th solution by index (Beloch's `toward`),
+`Direction → Mountain`, `Mark`/`MarkAt` name intersection points, and
+**`InsertFace → f` places the moved faces below a named face**, a
+between-layers insertion that Beloch's Appendix B lists as sector-block
+interleaving. Orikoto joins Doodle and Oridraw in the "origami language"
+column of the related-work table, embedded like Caruana & Pace.
+
+**Fold = tentative crease ∘ flat fold** (§7.2.2, p. 173, Fig. 7.3): the
+abstract fold relation is the composition of a crease step and a
+mountain-or-valley flat-fold step, and unfold has the identity as its crease
+step. That is the `mark`/`fold` split of spec §4.6, published first here.
+
+**The folded-state model, final form** (§7.3, pp. 175–186): an abstract
+origami $(\Pi, \frown, \sqsupset)$ with faces as strictly convex $n$-gons
+with a side (up/down by vertex order), adjacency by shared edge (Def. 7.4,
+with the face-division axiom 7.1), *overlap* via a point of one face
+overlaying a point of the other (Def. 7.5), *over* defined inductively per
+fold with the moved set $\Pi_M$ computed by closure from the faces of concern
+(Eq. 7.1, Def. 7.6), *above* as its transitive closure (Def. 7.7), and
+*superposition* as immediate above (Def. 7.8); over is shown non-transitive
+(Example 7.10). §7.4.1 adds *face stratification*: Eos squeezes unrelated
+faces into as few levels as possible and notes this can fail when layers
+would become cyclic (Problem 7.11). §7.4.3 folds the crane in Orikoto
+(Fig. 7.19): inside-reverse folds are realised by splitting into
+sub-origamis, folding mountain and valley separately and merging, and the
+last two steps rotate by $\pi/2$ into 3D, for which "we need to extend the
+model of AO for 3D. We do not discuss this extension" (p. 192). Same
+boundary as ADR 0015.
+
+**Arithmetic, confirmed:** §7.1 (p. 169) separates "algebraic and numeric
+computation on geometric objects" from "symbolic and combinatorial
+computation on discrete objects"; §4.4.3 prints the three axiom-6 fold lines
+as decimals and says "the above values are approximations" (p. 107); a
+footnote in Ch. 6 switches to `Rationalize[...]` "to avoid numerical errors"
+(p. 151). Also useful: §3.7 (pp. 72–74) states the constructible-number
+results (Engeler, Martin, Alperin 2000, Cox 2004: 2-3 towers), §3.6 the
+general fold `Og` and Martin's finiteness condition, and §3.9 (p. 86) the
+Huzita/Justin history: both in the 1989 Padova proceedings, Justin's paper
+also in L'Ouvert 1986, Justin's set has O7. **Numbering trap:** Ida's O6 is
+the simultaneous two-point fold and his O7 is Hatori's, so his O4–O7 do not
+match Beloch's classic Justin order.

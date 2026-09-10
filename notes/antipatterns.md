@@ -35,6 +35,11 @@ work, including things inherited as warnings from the 2018 attempt.)
   line intersection, which Beloch exposes as the `cross` construction). Caught
   during the v0.0 spec write by checking `refs/hull2020.txt` instead of trusting
   memory.
+- **Ida's Eos/Orikoto numbering ≠ classic Huzita-Justin numbering either.**
+  Ida [ida2020, Table B.1] uses the Huzita-Hatori order: his O6 is the
+  simultaneous two-point fold (Beloch axiom 7) and his O7 is Hatori's fold
+  (Beloch axiom 4). Translate before comparing any Eos construction with a
+  `.bel` program.
 - **ℚ stops being closed at axioms 5/6.** Exact rational arithmetic
   ([ADR 0008](decisions/0008-exact-rational-arithmetic.md)) covers axioms 1–2
   and line intersection perfectly, but square roots (axiom 5) and cubic roots
