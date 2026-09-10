@@ -198,8 +198,16 @@ identically. The discrepancy is ours to explain against the version of record.
 
 ## Follow-ups
 
-- Obtain for `refs/`: Justin 1991 (Padova) and 1997 (Otsu); Gout, Doodle
-  (2001).
+- Obtain for `refs/`: Justin 1991 (in Huzita, ed., *Proceedings of the First
+  International Meeting of Origami Science and Technology*, Padova 1991,
+  pp. 263–277) and Justin 1997 ("Towards a mathematical theory of origami",
+  in Miura, ed., *Origami Science and Art*, Otsu 1997, pp. 15–30); Gout,
+  Doodle (2001); Beloch 1936 (*Periodico di Matematiche* IV.16, pp. 104–108),
+  the language's namesake, missing from `refs/`.
+- Fisher is untraceable online (common name, no contact in the thesis,
+  supervisor Bromley died 2002, absent from Hull's bibliographies). Routes:
+  Tung Ken Lam (the only citer), Tom Hull (likely the "Tom" in Fisher's
+  acknowledgements), the University of Sydney alumni office.
 - ADR 0011's context paragraph claims the landscape was unoccupied; a
   follow-up note there should point at [fisher1994].
 - Cite [langdemaine2009facet] and [ida2007modeling] in ADR 0011 and phrase
