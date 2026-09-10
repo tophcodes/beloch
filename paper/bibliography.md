@@ -104,8 +104,11 @@ positioned against honestly in the paper.
   Origamizer, etc. Together with [lam2009]'s taxonomy it fixes the niche Beloch
   claims: a standalone language whose primitives are the axioms, whose geometry
   is exact, and whose folded state and layer order are derived from the
-  actions. Each qualifier alone is taken: Doodle is a standalone language, Eos
-  and Caruana & Pace have axiom semantics, the simulators have a folded state.)
+  actions, with the folded state exact. Fisher 1994 already had the first three
+  in a single system; what he lacked was exact geometry, the emergent-crease
+  solve, and an interchange format. Eos and Caruana & Pace have axiom
+  semantics without a standalone language; the simulators have a folded
+  state without a language.)
 
 ## Multifold research track (Phase 0)
 
@@ -198,8 +201,10 @@ validity testing is factorial in practice.
 ### Lam, "Computer Origami Simulation and the Production of Origami Instructions" (pp. 237–249)
 Survey and usability study. §4.2 (p. 241) sorts origami software into design
 tools (Tess, ReferenceFinder, TreeMaker, ORIPA), **origami-oriented
-languages** (Oridraw, Doodle, Fisher 1994: text compiled to PostScript
-diagrams, with the user still placing lines and polygons by hand), and
+languages** (Oridraw and Doodle: text compiled to PostScript
+diagrams, with the user still placing lines and polygons by hand; and
+Fisher 1994, which Lam files here but is a folding-sequence interpreter,
+see [fisher1994] below), and
 direct-manipulation simulators (Miyazaki, eGami, Foldinator, Nimoy). This
 kills any "first origami language" claim; Beloch's claim is the combination
 of axiom semantics, exact arithmetic and a derived folded state in a
@@ -396,3 +401,98 @@ Huzita/Justin history: both in the 1989 Padova proceedings, Justin's paper
 also in L'Ouvert 1986, Justin's set has O7. **Numbering trap:** Ida's O6 is
 the simultaneous two-point fold and his O7 is Hatori's, so his O4–O7 do not
 match Beloch's classic Justin order.
+
+## Precedents before 2000
+
+### Fisher, *Origami On Computer* (Honours thesis, University of Sydney, 1994)
+**The closest precedent in shape to Beloch's action model, and the one ADR
+0011's landscape check missed.** A textual language for folding sequences
+of flat models plus a program that executes it (10 343 lines of C on
+SunOS/X11, §7.2). Design principles (§3.1): no coordinates, no absolute
+directions, everything named by vertices. Simple folds (§3.3.1) are `fold a
+to b`, `fold a-b to c-d`, `fold a to b-c through d`, `fold along line(a,b)
+moving c`, `fold at 45 degrees to ...`, with `and return` for a crease and
+`unfold e-f moving v`; Fisher lists eight fold types and notes "all except
+for the last one of these are the same as the ones arrived at by Huzita".
+The moving part is implicit in the syntax, and mountain/valley is relative
+to the viewpoint with `turn over` flipping it (§3.3.1, §3.5), which is
+Beloch's derived M/V plus `flip`. Designed but unimplemented (§3.3.2, §3.5,
+§3.8): `multifold e-f, g-h, mountain i-j, unfold k-l, reverse m-n holding
+face(...)` with `between e1 and e2` for the crease that "appears when the
+fold is done" (the rabbit-ear emergent crease `flatten` solves), `tucking A
+under B` to disambiguate layering (Beloch's `over`), `tuck`/`untuck`,
+`define name fold(...)` macros with `include`, `uses "preliminary-base"`.
+Data structures (§6.1): vertex, edge and face hash tables; layering as a
+full boolean above-matrix because "cyclic layering relationships can occur
+in origami ... so it would not be possible to simply give each face some
+kind of layer number" (the 2018 bookmark antipattern, refuted in 1994); a
+per-step difference list for replay (§6.2). Algorithms (§5.1): attached
+faces propagate through shared edges and through overlap-plus-above (valley)
+or overlap-plus-below (mountain), the same rule as Eos's affected set and
+Beloch's fold scope; crease-pattern folding by BFS two-colouring and
+reflection along the tree (§5.2); three layering inference rules with a
+contradiction check (§5.2). Limits he names: floats, with "infinite
+precision values" as future work (§7.1, §8); vertices must be named at
+creation via `creating e on a-b` because fold-created vertices have no
+other handle (§3.4); multifold and tuck algorithms "not discovered" (§5.3,
+§5.4). Beloch answers the first with the exact kernel, the second by naming
+points through constructions, the third with `flatten`. Cites Alice Gray's
+O.I.L. (1975) as an earlier written origami language (§2).
+
+### Miyazaki, Yasuda, Yokoi & Toriwaki, "An Origami Playing Simulator in the Virtual Space" (JVCA 7:1, 1996)
+The direct-manipulation simulator everyone after it builds on. Operations:
+bending, folding up (180°), tucking in (symmetric inside reverse), curving.
+Fold line = intersection of the face with the plane equidistant from the
+picked vertex's old and new positions. Data structure (§"Folding without
+curved faces"): a face-cell binary tree recording division history, a
+face-cell look-up table per *face group* (faces in one plane) holding the
+*face stack* order, edge-cell trees, vertex lists. Moved-face search (a)–(e):
+connectivity, overlap on the rotating side, and for tucks the faces between
+the two outside faces. Face-stack renewal: bending makes a new group,
+folding up reverses the moved group and piles it on, tucking interleaves.
+This is the ancestor of ADR 0017's coplanar clusters and of Eos's layers.
+
+### Justin, "Aspects mathématiques du pliage de papier" (L'Ouvert 47, 1987)
+The 1986 Strasbourg lecture, in French; the Padova 1991 proceedings carry
+the same title. §II.1 lists four folding operations a)–d) (line through two
+points, bisector of two lines, point onto line through a point, two points
+onto two lines) and says they solve the general cubic and quartic. §I.2 is
+the rabbit ear: fold a triangle along two bisectors and the segment to the
+incentre and "un quatrième pli se forme naturellement", the emergent crease.
+**§IV.2 is the origin of the layer conditions:** a *c-réseau* (crease
+network: domain, nodes, creases, every node of even degree), the folding
+map $\varphi$ as a composition of reflections along any path, the coherence
+condition $\prod \sigma_i = I$ around every circuit (reducing to
+Kawasaki's alternating angle sum when the sheet has no holes), the
+*f-réseau* (its image) and the *s-réseau* (superposition network, the
+preimage refinement), and then: the s-faces carry a partial order that must
+satisfy combinatorial non-crossing conditions, with the conjecture that for
+a sheet without holes these conditions suffice. §IV.3 gives the single-vertex
+M/V count by a parenthesisation of the creases (e.g.
+$(c_1(c_2c_3)c_4)c_5c_6$, 8 choices), §VI the stamp-folding counts and the
+dragon curve. Also §IV.1: the "perfect base" and the Loiseau point of a kite,
+Kawasaki's orizuru theory in embryo. Cite this for Justin's conditions
+alongside [langdemaine2009facet]; the 1991 and 1997 versions are still
+missing.
+
+## Eos internals, completed
+
+### Ida, Ţepeneu, Buchberger & Robu, "Proving and Constraint Solving in Computational Origami" (AISC 2004, LNCS 3249)
+The first Eos paper with proof. §2 defines an origami as $\langle\chi,
+R\rangle$, faces plus "the combination of overlay and neighborhood
+relations", and declines to elaborate. §3.1 gives Huzita's six axioms as
+existential formulas; "our computational origami system returns the
+solution both symbolically and numerically, depending on the input". §4
+trisects with `FoldBrBr[G, AE, A, IH]` and re-issues with `3` to pick the
+case; for O1–O4 the system "computes a solution using the well known
+mathematical formulas of elementary geometry rather than proving the
+existential formulas". §5 proves trisection by Gröbner bases in Theorema
+with the Rabinovich trick. The 2007–2020 papers supersede it on the model;
+cite it as the origin.
+
+### Ida & Takahashi, "Origami Fold as Algebraic Graph Rewriting" (J. Symbolic Computation 45:4, 2010)
+Journal version of the SAC 2009 paper and the source of [ida2020] Ch. 7.
+Same abstract origami $(\Pi, \frown, \sqsupset)$, fold as hypergraph
+rewriting; §1 states plainly that the Eos implementation "relies very much
+on algorithms which resort to mixtures of algebraic, numeric and symbolic
+computing". Nothing beyond [ida2008synasc] and [ida2020] for Beloch.

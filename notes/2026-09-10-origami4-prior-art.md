@@ -71,22 +71,43 @@ named face, the between-layers insertion Appendix B calls sector-block
 interleaving. Still missing: the AISC 2004 paper (DOI
 10.1007/978-3-540-30210-0_12).
 
+### Fisher 1994: the precedent ADR 0011 missed
+
+Fisher's honours thesis [fisher1994] is a standalone textual language for
+folding sequences of flat models with an interpreter that maintains a folded
+state: `fold a to b`, `fold a-b to c-d`, `fold a to b-c through d`, `fold
+along line(a,b) moving c`, `and return` for a crease, `unfold`, `turn over`.
+The moving part is implicit, mountain/valley is relative to the viewpoint,
+the layer order is a full above-matrix because layering can be cyclic, and
+the folding sequence is stored as a per-step difference list for replay. He
+maps his fold types to Huzita's operations himself. Designed on paper and
+left unimplemented: `multifold ... holding face(...)` with `between e1 and
+e2` for the crease that appears on its own, `tucking A under B` to fix an
+ambiguous layering, `define ... fold(...)` macros. What he did not have:
+exact arithmetic (floats, "infinite precision" named as future work), a
+solver for the emergent crease, an interchange format. ADR 0011's
+"landscape check found the combination unoccupied" (2026-06-29) is wrong
+for 1994; the paper must cite Fisher as the closest shape precedent and
+state Beloch's delta against him.
+
 ### Origami-oriented languages before Beloch
 
 Lam's taxonomy [lam2009, §4.2, p. 241] has a category "origami-oriented
 languages": Oridraw (1999), Doodle (Gout 2001), and Fisher's 1994 system.
-All compile text to PostScript diagrams, and Lam's criticism is that the user
+Oridraw and Doodle compile text to PostScript diagrams, and Lam's criticism is
+that the user
 still manages the positions of lines, vertices and polygons by hand. Eos's
 language also has a name, Orikoto [ida2020, §3.8.1], a subset of Wolfram
 Language with one `HO` command and named arguments (`Handle`, `FoldLine`,
 `Direction`, `InsertFace`); it is embedded, like Caruana & Pace.
 
-Consequence for `bibliography.md`'s "empty niche" line: the niche is empty
-only with all three qualifiers. Beloch is a standalone language whose
-primitives are the axioms, whose geometry is exact, and whose folded state
-and layer order are derived from the actions. Doodle has the first, Eos and
-Caruana & Pace have the second, the simulators have the last. Nobody has the
-combination, and the paper should say exactly that.
+Consequence for the "empty niche" line: Beloch is a standalone language
+whose primitives are the axioms, whose folded state and layer order are
+derived from the actions, and whose geometry is exact. Fisher had the first
+three qualities in 1994 as a prototype; Eos and Caruana & Pace have the
+axioms without a standalone language; the simulators have the folded state
+without a language. Beloch's delta is exact geometry, the emergent-crease
+solve, FOLD output, and a finished implementation of what Fisher designed.
 
 ### Two quotes that carry the thesis
 
@@ -111,13 +132,17 @@ as the fundamental mathematical description" [§4]. This is ADR 0011's
 "mountain/valley is derived" in print; cite it there.
 
 The four **Justin conditions** on overlapping facets [§3.1, Fig. 5] are the
-flat-foldability criterion beyond Kawasaki and Maekawa. Beloch's `flatten`
+flat-foldability criterion beyond Kawasaki and Maekawa. Their origin is
+[justin1987, §IV.2]: the s-faces of the superposition network carry a
+partial order subject to non-crossing conditions, conjectured sufficient for
+a sheet without holes. Beloch's `flatten`
 checks Kawasaki, Maekawa and "layer-order validity"; the follow-up is to
 state that validity check in terms of the Justin conditions (Konjevod's
 crossing types W, X, Y [konjevod2009ip, §2.4] are the same conditions in
-different clothing) and to test it against them. Justin's originals (1991
-Padova proceedings; 1997 "Towards a mathematical theory of origami") are not
-in `refs/`.
+different clothing) and to test it against them. The 1987 L'Ouvert version is
+in `refs/`; the 1991 Padova
+version Lang & Demaine cite and the 1997 "Towards a mathematical theory of
+origami" are not.
 
 Konjevod also calibrates the alternative: a 2×2 iso-area chessboard as an
 ILP takes hours [konjevod2009ip, §3]. Beloch's order comes from the action
@@ -165,8 +190,11 @@ identically. The discrepancy is ours to explain against the version of record.
 
 ## Follow-ups
 
-- Obtain for `refs/`: Justin 1991 and 1997; Ida et al. AISC 2004; Gout,
-  Doodle (2001); Miyazaki et al. 1996 (the data structure everyone reuses).
+- Obtain for `refs/`: Justin 1991 (Padova) and 1997 (Otsu); Gout, Doodle
+  (2001); Alice Gray, O.I.L. (The Origamian 13, 1975), the earliest written
+  origami language Fisher cites.
+- ADR 0011's context paragraph claims the landscape was unoccupied; a
+  follow-up note there should point at [fisher1994].
 - Cite [langdemaine2009facet] and [ida2007modeling] in ADR 0011 and phrase
   `flatten`'s layer validity check as the Justin conditions.
 - Examples backlog: heptagon, generalised fish base (needs `paper kite`),

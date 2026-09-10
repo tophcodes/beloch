@@ -15,7 +15,10 @@ work, including things inherited as warnings from the 2018 attempt.)
   state, not a tree. This is what FOLD's `faceOrders` uses and what the flat-
   foldability literature uses. Tagging vertices with a layer number also breaks
   for fold-line vertices that sit on neither layer. → A proper folded-state model
-  with face ordering is required; see the open layer problem.
+  with face ordering is required; see the open layer problem. Fisher reached the
+  same conclusion in 1994: "cyclic layering relationships can occur in
+  origami ... so it would not be possible to simply give each face some kind
+  of layer number" [fisher1994, §6.1].
 - **Region ≠ layer (conflation).** A *region* is an area of paper addressed by a
   predicate; a *layer* is a z-ordering of overlapping areas. The 2018 spec used
   `#region` to do both. We likely need both concepts, kept distinct.
