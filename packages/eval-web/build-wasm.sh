@@ -1,26 +1,29 @@
 #!/usr/bin/env bash
-# Phase 0 spike: build GMP -> MPFR -> FLINT 3.6.0 as static libs for
-# wasm32-emscripten, then compile+link check.c and run it under node.
-#
-# Proves: FLINT 3.6 (with Calcium/Arb/Antic/qqbar bundled in) compiles to
-# wasm via emscripten, and qqbar_sqrt computes a numerically-correct
-# algebraic sqrt(2) at runtime under node.
+# Builds packages/www/public/beloch/qqbar-wasm.js, the FLINT-wasm qqbar backend
+# the js_of_ocaml bundle reaches through qqbar_shim.js: GMP -> MPFR -> FLINT
+# 3.6.0 as static libs for wasm32-emscripten, a smoke check against them, then
+# qqbar_wasm.c linked into a MODULARIZE'd single-file emscripten module.
 #
 # Usage: run from anywhere; paths are relative to this script's directory.
-#   ./build.sh
+#   ./build-wasm.sh
+# packages/www/scripts/build-eval.sh calls it as its wasm half.
 #
 # Requires network access (downloads GMP/MPFR/FLINT release tarballs) and
-# nix (for `nix shell nixpkgs#emscripten ...`).
+# nix (for `nix shell nixpkgs#emscripten ...`). Tarballs and the static-lib
+# prefix are cached under .wasm-build/ and reused: a run that finds
+# .wasm-build/prefix/lib/libflint.a built rebuilds only the wasm module.
 set -euo pipefail
 
-SPIKE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SRC_DIR="$SPIKE_DIR/src"
-PREFIX="$SPIKE_DIR/prefix"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+BUILD_DIR="$SCRIPT_DIR/.wasm-build"
+SRC_DIR="$BUILD_DIR/src"
+PREFIX="$BUILD_DIR/prefix"
 
 GMP_VERSION=6.3.0
 MPFR_VERSION=4.2.1
 FLINT_VERSION=3.6.0
-# sha256 pinned in /home/toph/Projects/beloch/flake.nix for the flint override
+# same FLINT tarball the flint override in flake.nix pins
 FLINT_SHA256=b95e2c7792f5eea4a1c8d2d42c4098434756832e57a094b295eb5dfdc9b4c36b
 
 NIX_PKGS="nixpkgs#emscripten nixpkgs#m4 nixpkgs#gnumake nixpkgs#autoconf nixpkgs#automake nixpkgs#gcc"
@@ -111,22 +114,20 @@ fi
 # ---------------------------------------------------------------------------
 # 5. Compile + link the proof program, run it under node
 # ---------------------------------------------------------------------------
-echo "=== compiling check.c to wasm ==="
-cd "$SPIKE_DIR"
+echo "=== compiling qqbar_wasm_check.c to wasm ==="
+cd "$BUILD_DIR"
 nix shell nixpkgs#emscripten --command bash -c "
-emcc check.c -I'$PREFIX/include' -L'$PREFIX/lib' -lflint -lmpfr -lgmp -o check.js -sEXPORTED_RUNTIME_METHODS=ccall -sERROR_ON_UNDEFINED_SYMBOLS=0
+emcc '$SCRIPT_DIR/qqbar_wasm_check.c' -I'$PREFIX/include' -L'$PREFIX/lib' -lflint -lmpfr -lgmp -o check.js -sEXPORTED_RUNTIME_METHODS=ccall -sERROR_ON_UNDEFINED_SYMBOLS=0
 "
 
 echo "=== running check.js under node (expect 1.41421356) ==="
 node check.js
 
 # ---------------------------------------------------------------------------
-# 6. Phase 1: link packages/eval-web/qqbar_wasm.c (the flat-ABI shim) into a MODULARIZE'd,
-#    SINGLE_FILE emscripten module — this is the real qqbar backend for the
-#    js_of_ocaml bundle, not a throwaway check.
+# 6. Link qqbar_wasm.c (the flat-ABI shim) into a MODULARIZE'd, SINGLE_FILE
+#    emscripten module: the qqbar backend the js_of_ocaml bundle runs on.
 # ---------------------------------------------------------------------------
-WEB_DIR="$(cd "$SPIKE_DIR/../packages/eval-web" && pwd)"
-OUT_DIR="$(cd "$SPIKE_DIR/.." && pwd)/packages/www/public/beloch"
+OUT_DIR="$REPO_ROOT/packages/www/public/beloch"
 mkdir -p "$OUT_DIR"
 
 WASM_QQBAR_FUNCS="_wasm_qqbar_alloc,_wasm_qqbar_free,_wasm_free_str,\
@@ -154,7 +155,7 @@ _malloc,_free"
 # through signature-adapting thunks, restoring correct behaviour.
 echo "=== compiling packages/eval-web/qqbar_wasm.c to packages/www/public/beloch/qqbar-wasm.js ==="
 nix shell nixpkgs#emscripten --command bash -c "
-emcc '$WEB_DIR/qqbar_wasm.c' -I'$PREFIX/include' -L'$PREFIX/lib' -lflint -lmpfr -lgmp \
+emcc '$SCRIPT_DIR/qqbar_wasm.c' -I'$PREFIX/include' -L'$PREFIX/lib' -lflint -lmpfr -lgmp \
   -O2 -sWASM_ASYNC_COMPILATION=0 -sMODULARIZE=1 -sEXPORT_NAME=QqbarWasm -sSINGLE_FILE=1 \
   -sEXPORTED_FUNCTIONS='$WASM_QQBAR_FUNCS' \
   -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString,stringToUTF8,lengthBytesUTF8 \
