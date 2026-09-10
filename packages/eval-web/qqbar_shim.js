@@ -2,14 +2,13 @@
 // FLINT/Calcium — see decisions/0013-flint-qqbar-backend.md). jsoo cannot
 // compile C, so every `external ... = "ml_qqbar_*"` primitive is backed here
 // by calls into a real FLINT-wasm module (packages/eval-web/qqbar_wasm.c, built by
-// spike/build.sh into packages/www/public/beloch/qqbar-wasm.js — see
-// docs/superpowers/plans/2026-07-18-flint-wasm-phase1.md for the ABI).
+// spike/build.sh into packages/www/public/beloch/qqbar-wasm.js).
 //
 // Loader contract: the wasm module must already be ready (its emscripten
 // `Module` instance, post-`await`) and installed at
 // `globalThis.__beloch_qqbar_wasm` *before* any `ml_qqbar_*` primitive is
-// called — this file never awaits anything itself, matching the "module
-// ready synchronously" requirement from the plan. Wiring that load (worker
+// called — this file never awaits anything itself: the ABI requires the
+// module to be ready synchronously. Wiring that load (worker
 // or node harness) is the caller's job; see spike/ for the Phase 1 proof.
 //
 // Representation: `Qqbar.t` (opaque on the OCaml side) crosses to JS as a

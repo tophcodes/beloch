@@ -1,5 +1,5 @@
 /* Flat-ABI C shim for lib/qqbar.ml's FLINT/Calcium qqbar backend, compiled to
- * wasm via emscripten (see docs/superpowers/plans/2026-07-18-flint-wasm-phase1.md).
+ * wasm via emscripten.
  * Near-mechanical port of lib/qqbar_stubs.c: same FLINT 3.6 API sequences,
  * but `qqbar_t` crosses the boundary as a plain `int` handle (a heap pointer
  * cast to int) instead of an OCaml custom block, and every op is exposed as

@@ -238,9 +238,8 @@ test("renderFolded: markOverlay draws real marks — boundary endpoints and mult
   // state (2 faces, since --diag already subdivides the render topology by
   // then) — its segment crosses both of those still-flat, still-coplanar
   // triangles before any real fold happens, exposing the "whole segment in
-  // one face" multi-face-span bug. See
-  // docs/superpowers/plans/2026-07-20-playground-statement-sourcemap.md's
-  // progress ledger — a regression here means either bug came back.
+  // one face" multi-face-span bug. A regression here means either bug came
+  // back.
   const scene = parseFold(await golden("mark-overlay-regression.fold"));
   expect(scene.statements.length).toBe(3);
 
