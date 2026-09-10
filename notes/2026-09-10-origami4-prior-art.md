@@ -92,6 +92,14 @@ state Beloch's delta against him.
 
 ### Origami-oriented languages before Beloch
 
+The oldest is Smith's O.I.L. [smith1975oil], a written language for human
+folders: point coincidences with the layer count on the arrow, folds made
+between layers for reverses and sinks, points defined from the existing
+model by fractions, offsets, intersections and rotations, and "the smallest
+number of creases to flatten the model" assumed. Fisher's two objections,
+renumbering every step and opaque symbols, are what persistent point names
+answer.
+
 Lam's taxonomy [lam2009, §4.2, p. 241] has a category "origami-oriented
 languages": Oridraw (1999), Doodle (Gout 2001), and Fisher's 1994 system.
 Oridraw and Doodle compile text to PostScript diagrams, and Lam's criticism is
@@ -191,8 +199,7 @@ identically. The discrepancy is ours to explain against the version of record.
 ## Follow-ups
 
 - Obtain for `refs/`: Justin 1991 (Padova) and 1997 (Otsu); Gout, Doodle
-  (2001); Alice Gray, O.I.L. (The Origamian 13, 1975), the earliest written
-  origami language Fisher cites.
+  (2001).
 - ADR 0011's context paragraph claims the landscape was unoccupied; a
   follow-up note there should point at [fisher1994].
 - Cite [langdemaine2009facet] and [ida2007modeling] in ADR 0011 and phrase

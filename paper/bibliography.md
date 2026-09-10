@@ -436,8 +436,8 @@ precision values" as future work (§7.1, §8); vertices must be named at
 creation via `creating e on a-b` because fold-created vertices have no
 other handle (§3.4); multifold and tuck algorithms "not discovered" (§5.3,
 §5.4). Beloch answers the first with the exact kernel, the second by naming
-points through constructions, the third with `flatten`. Cites Alice Gray's
-O.I.L. (1975) as an earlier written origami language (§2).
+points through constructions, the third with `flatten`. Cites "Alice Gray's O.I.L." (1975) as an earlier written origami language
+(§2); the booklet is John Smith's, see [smith1975oil].
 
 ### Miyazaki, Yasuda, Yokoi & Toriwaki, "An Origami Playing Simulator in the Virtual Space" (JVCA 7:1, 1996)
 The direct-manipulation simulator everyone after it builds on. Operations:
@@ -496,3 +496,33 @@ Same abstract origami $(\Pi, \frown, \sqsupset)$, fold as hypergraph
 rewriting; §1 states plainly that the Eos implementation "relies very much
 on algorithms which resort to mixtures of algebraic, numeric and symbolic
 computing". Nothing beyond [ida2008synasc] and [ida2020] for Beloch.
+
+### Smith, *Origami Instruction Language* (BOS Booklet 4, 1975; rev. 2018)
+The earliest written origami language, for humans, drafted in Smith's 1971
+"The Nature of Paper Folding". Fisher's "Alice Gray, O.I.L." is a
+misattribution: Gray edited and introduced it in *The Origamian* 13(2)
+(p. 28). Each step has a *definition matrix* (boundary points numbered
+afresh per step, rows and columns meaning collinear horizontally or
+vertically, qualifiers for angles, `D(...)` for diagonals, optional layer
+counts per point, closed-boundary marks) and *fold instructions*
+`1 —n→ 4`: bring point 1 onto point 4, the number over or under the arrow
+giving the layers involved counted from the top, over for valley, under for
+mountain, and an arrow *between* two layer numbers for a fold made between
+layers, which turns a point coincidence into a reverse fold or sink (§0,
+pp. 4–6; Simon Williams's idea). "It is always assumed that the smallest
+number of creases will be made to flatten the model with the coincidence
+as specified" (p. 1): an implicit flatten. Points are defined
+hierarchically from existing points: fractions along a line `P = ½(1-2)`,
+offsets `P = 4+(4-3)`, intersections `K = (1-4)=(3-B)` (§1.1), rotations
+`Q = (1-P) -45° P` (§1.2), and the argument against coordinates is Beloch's
+(§1.0: "let the model be its own grid", "√2 dimensions which cannot be
+exactly specified"). Also: fold lines `(A-B) —1→` when needed, fold boxes for
+simultaneous folds, rotation folds, prefold `i ⇢ j`, soft and angled folds,
+turn over `=` and rotate `⟳90°` each forcing a new matrix (§2.4), and
+"Theorem 4.4": number of folds = separate M/V folds after cutting the
+closed boundaries + number of cut boundaries (a sink to the centre of a
+waterbomb base = 6 + 4 = 10, pp. 19–21). Bases in O.I.L. pp. 22–24 and
+31–35. What it shows for the paper: layer selection by count and folding
+between layers were language features in 1975; Fisher's 1994 critique
+(renumbering every step, opaque symbols) is what Beloch's persistent names
+answer.
