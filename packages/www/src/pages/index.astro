@@ -34,15 +34,13 @@ const FISH_BASE_SRC = `paper square
 mark --diag = map .a onto .c
 mark --ray = through .a .c
 
-step left
 mark --l1 = map --ab onto --diag
 mark --l2 = map --da onto --diag
 flatten (--l1 & .b) (--l2 & .d) (--ray & .a) {toward .d}
 
-step right
 mark --l3 = map --cd onto --diag
 mark --l4 = map --bc onto --diag
-; flatten (--l3 & .d) (--l4 & .b) (--ray & .c) {toward .d}`;
+flatten (--l3 & .d) (--l4 & .b) (--ray & .c) {toward .d}`;
 
 const KITE_SRC = `paper square
 
