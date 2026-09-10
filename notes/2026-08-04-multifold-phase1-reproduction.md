@@ -4,12 +4,12 @@ Phase 1 of the multifold research track (`multifold-phase1` branch, spec
 `docs/superpowers/specs/2026-08-03-multifold-axioms-research-design.md`)
 set one gate before any 3-fold claim is attempted: reproduce Alperin and
 Lang's two-fold classification exactly. This note is the record of that
-reproduction — what was reproduced, how the pipeline works, every judgment
+reproduction: what was reproduced, how the pipeline works, every judgment
 call made against the paper's (OCR'd, occasionally garbled) text, and what
 carries forward to Phase 2. The detailed mismatch investigation this rests on
 lives in `notes/2026-08-04-multifold-203-mismatch.md` (rules R1-R4 + the
 realness addendum); this note summarizes and supersedes it as the Phase-1
-record but does not repeat its full derivations — follow the citations back
+record but does not repeat its full derivations. Follow the citations back
 there for the algebra.
 
 ## What was reproduced
@@ -26,7 +26,7 @@ Symbol-exact, at both of `Symeq`'s independent generic-parameter streams
 "Symbol-exact" means the generated symbol *sets* are identical to the
 fixture extracted from the paper's own listing
 (`packages/multifold/tests/fixtures/al489.txt`,
-`packages/multifold/tools/extract_fixture.ml`) — not just matching counts.
+`packages/multifold/tools/extract_fixture.ml`), not just matching counts.
 Cross-validated at `stream_b` (a second, disjoint stream of generic
 rationals) specifically to rule out any result being a parameter-specific
 coincidence rather than a genuine algebraic fact
@@ -56,12 +56,12 @@ as the fixture.
 Alperin-Lang's two-fold alphabet is 17 symbols: `AL1`, `AL8`, `AL9` are symmetric;
 `AL2`-`AL7` and `AL10` come in a/b variants [alperin2006, §4, Fig. 4]. A candidate
 2FA is a multiset of 2-4 of these symbols whose equation counts sum to
-exactly 4 (the four degrees of freedom of two fold lines) — `AL4`, `AL8`, `AL9`
+exactly 4 (the four degrees of freedom of two fold lines). `AL4`, `AL8`, `AL9`
 contribute 2 equations each, every other kind contributes 1
 [alperin2006, l. 527-529, and its own step 4 of the enumeration procedure,
 l. 538]. The raw combinatorial count at this stage, before any
 equivalence/degeneracy filtering, is **2194** (Task 4's probe;
-independently reproduced by `report.exe`'s `raw_twofold_count`) — the "crude
+independently reproduced by `report.exe`'s `raw_twofold_count`): the "crude
 upper bound... before equivalence/degeneracy filtering" the Phase-1 spec's
 early milestone asked for. `Combo.candidates` then applies canonicalization
 under global $a \leftrightarrow b$ swap and two structural rejection rules (R1, R2, below),
@@ -72,7 +72,7 @@ incidence condition becomes one or two polynomial equations in 4 unknowns
 ($x_0,y_0,x_1,y_1$, the two fold lines' $(X,Y)$ coordinates
 [alperin2006, Def. 2]) over `Beloch.Mpoly`, built from the folded-point
 formula [alperin2006, eq. (1)] and a from-scratch-derived folded-line
-formula (the paper's eq. (2) OCR is unusable — see below). Denominators
+formula (the paper's eq. (2) OCR is unusable; see below). Denominators
 cleared while building each equation (chart denominators of the reflection
 formulas, plus both folds' isotropic factors) are tracked separately for
 saturation.
@@ -81,15 +81,15 @@ saturation.
 denominators Rabinowitsch-saturated (see below), are handed to msolve 0.10.0
 [rouillier1999] as a Gröbner-basis + rational univariate representation
 (RUR) computation. `classify` reports `Positive_dim`, `No_solutions`, or
-`Zero_dim {count; multiplicity_free; real_count}` — `count` is the number of
+`Zero_dim {count; multiplicity_free; real_count}`: `count` is the number of
 distinct points over an algebraic closure of ℚ, `multiplicity_free` says
 whether that count matches the ideal's multiplicity-weighted degree, and
 `real_count` is how many of those points are real at this one parameter
 draw.
 
 **Filtering** (`Pipeline.strict_keep`, `Combo.matches_published_list`). A
-candidate survives the strict filter iff `count >= 1 && multiplicity_free`
-— zero-dimensional, non-empty, no repeated root. Surviving candidates are
+candidate survives the strict filter iff `count >= 1 && multiplicity_free`:
+zero-dimensional, non-empty, no repeated root. Surviving candidates are
 then, optionally, further restricted by R4 (below), the empirical rule that
 reproduces the paper's exact printed listing rather than a superset of it.
 
@@ -106,13 +106,13 @@ directly off Figure 4 [alperin2006, l. 521, "Figure 4: The 10 distinct
 two-fold alignments"] and the paragraph following it [l. 527-529]. It is not
 merely asserted: `test_fixture_all_sum_to_four`
 (`packages/multifold/tests/test_alignment.ml`) independently confirms it
-against all 489 symbols extracted from the paper's own listing — every one
+against all 489 symbols extracted from the paper's own listing. Every one
 sums to exactly 4 equations and has 2-4 alignments, with zero mismatches.
 The printed listing itself
 (`packages/multifold/tools/extract_fixture.ml`, marker sentences "we can
 provide a complete listing by symbol" [l. 564] .. "This leads naturally to
 the question" [l. 633]) is the ground-truth oracle every pipeline stage is
-checked against — not a derived quantity, a transcription, validated by
+checked against: a transcription rather than a derived quantity, validated by
 `extract_fixture`'s own OCR-damage rejection (every token must both match
 `^AL[0-9ab]+$` and parse via `Alignment.combo_of_symbol`) and an independent
 shell/awk cross-extraction (Task 3).
@@ -124,25 +124,25 @@ its alignments can be partitioned into two sets, each of which is a
 one-fold axiom." Read literally as a single 2+2 bipartition, this
 under-rejects: the Abe-trisection worked example immediately following it
 [l. 470-473] shows a *sequential* decomposition (fold `a` from givens alone,
-then fold `b` using `a`'s line as an ordinary given line — the second set's
+then fold `b` using `a`'s line as an ordinary given line: the second set's
 one-fold axiom is allowed to reference the first fold), and the correct
 non-separability test is "does any proper subset of same-suffix single-fold
 alignments (`AL2`/`AL3`/`AL6`, ≥2 of them) already pin one fold independently,
-with everything else acting as a one-fold axiom on the other?" —
-implemented as `Combo.separable`. This was the single largest source
+with everything else acting as a one-fold axiom on the other?", implemented
+as `Combo.separable`. This was the single largest source
 of the original 406-vs-203 discrepancy (160 of 205 extras), documented in
 full in `notes/2026-08-04-multifold-203-mismatch.md`, §R1.
 
 ### `AL1` degeneracies (R2)
 
-`AL1` ($F_a(L_b) \leftrightarrow L_b$) forces fold $a$ perpendicular to fold $b$ — the
+`AL1` ($F_a(L_b) \leftrightarrow L_b$) forces fold $a$ perpendicular to fold $b$: the
 only line a reflection fixes besides the axis itself. Under $a \perp b$,
 Definition 12's fold-equivalence [alperin2006, l. 476-479] rewrites every
 combination of `AL1` with `AL4`, `AL5`, `AL8`, or `AL9` into something that is not a
 genuine independent 2FA: `AL5a` collapses to `AL3b`, `AL8` to two `AL3`s on a
 derived midpoint, `AL9` becomes generically inconsistent (needs two generic
 given lines parallel), and `AL4` degenerates to fold `b` coinciding with an
-already-given line — not a new fold line, per the paper's own exclusion of
+already-given line, not a new fold line, per the paper's own exclusion of
 a fold coinciding with an existing line [l. 285], stated there for the
 one-fold case but structurally the same failure. `Combo.al1_degenerate`
 encodes this; see the mismatch notes, §R2, for the full alignment-by-alignment
@@ -151,17 +151,21 @@ duplicates, 6 are the `AL4` degeneracy).
 
 ### The derived folded-line formula
 
-The paper's eq. (2) [l. 205-212] is a folded-image-of-a-line formula whose
-OCR is internally inconsistent: its numerators mix lowercase $x,y$ (point
-coordinates) into what should be a formula purely in the line's own $X,Y$
-and the fold's $X_F,Y_F$ — reading the raw text, the X-numerator uses $y$
-where a derivation demands $X$, and vice versa for the Y-numerator (i.e.
-the two numerator components are effectively swapped relative to what the
-derivation produces), with at least one sign also off. Rather than guess
+The paper's eq. (2) [l. 205-212] is a folded-image-of-a-line formula that
+is wrong as printed. The 2026-09-10 version-of-record check (see
+`notes/2026-09-10-origami4-version-of-record.md`) settled the exact form
+of the error against the typeset book page: the printed first component
+equals $-\text{num}_X$ and the printed second component equals
+$+\text{num}_Y$ over the correct denominator, a single sign flip in the
+first component. (An earlier revision of this note described the
+components as "effectively swapped"; that reading came from the preprint's
+garbled OCR and is superseded.) The printed numerators also mix lowercase
+$x,y$ into a formula that is purely in the line's own $X,Y$ and the fold's
+$X_F,Y_F$, a notational slip the book reproduces. Rather than guess
 at the correction, Task 6 derived it from scratch: substitute the
 folded-point formula (eq. (1)) into the line's incidence equation, clear
 the (unknown-fold-line) denominator, collect coefficients, and reduce back
-to the $(X,Y)$ chart —
+to the $(X,Y)$ chart:
 
 $$\text{num}_X = X(y_f^2 - x_f^2) - 2 x_f y_f Y$$
 
@@ -169,7 +173,7 @@ $$\text{num}_Y = Y(x_f^2 - y_f^2) - 2 x_f y_f X$$
 
 $$\text{den} = x_f^2 + y_f^2 - 2 X x_f - 2 Y y_f$$
 
-— validated two ways: the involution property $F(F(L)) = L$ at 3 distinct
+The result was validated two ways: the involution property $F(F(L)) = L$ at 3 distinct
 rational fold lines × 3 lines, and a numeric cross-check against Beloch's
 existing `Geom.reflect_point`/`Geom.line_through` at 3 fold lines × 2 lines
 (`test_reflect_line_involution`, `test_reflect_line_vs_geom`,
@@ -183,7 +187,7 @@ Reflection is undefined across an isotropic line ($x_f^2 + y_f^2 = 0$, complex
 but not real). The point-reflection formula [eq. (1)] already carries
 $x_f^2+y_f^2$ as its denominator, so point-folding alignments saturate it away
 automatically. But `reflect_line_raw`'s own chart denominator does **not**
-vanish on the isotropic locus — an isotropic mirror maps every line to the
+vanish on the isotropic locus: an isotropic mirror maps every line to the
 same image line, so for the two pure-line-reflection alignments (`AL4`, `AL9`)
 that degeneracy survives denominator-clearing as a spurious
 1-dimensional component. Adding both folds' isotropic factors
@@ -196,15 +200,15 @@ own trisection example, $c_x = 3$ [alperin2006, §6.1, l. 694]) and `AL4a9`
 
 `Symeq.equations_denoms_of` clears denominators that are polynomials in the
 *unknown* fold coordinates (not the given parameters) while building each
-equation — this necessarily enlarges the solution set to include points
+equation. This necessarily enlarges the solution set to include points
 where that denominator vanishes (the reflected object has left the `(X,Y)`
 chart), regardless of whether the alignment geometrically holds there.
 `Msolve.classify`'s saturation step (Rabinowitsch trick: one auxiliary
 variable $w$, one equation $w \cdot (\prod \text{denoms}) - 1 = 0$) is how those spurious
-points are excluded before counting — not something the paper needs to
-state explicitly (its computer-assisted Mathematica enumeration presumably
-handled this internally, or avoided it structurally), but a necessary
-correctness step for this from-scratch reimplementation. Documented as a
+points are excluded before counting. The paper itself has no need to state
+this explicitly: its computer-assisted Mathematica enumeration presumably
+handled it internally, or avoided it structurally. For this from-scratch
+reimplementation, it is a necessary correctness step. Documented as a
 Task-7 requirement in the Phase-1 plan; without it, `AL9`'s cleared
 equations retain a spurious 2-dimensional locus (Task 6's finding that
 motivated adding it).
@@ -212,14 +216,14 @@ motivated adding it).
 ### Multiplicity via weighted ideal degree
 
 The paper's own enumeration procedure's step 5 rejects singular Jacobians
-at a solution [alperin2006, l. 539] — a numeric, at-a-point test. This
+at a solution [alperin2006, l. 539]: a numeric, at-a-point test. This
 reimplementation's analogue is algebraic: msolve's RUR always represents
 the ideal's *radical* [rouillier1999], so its eliminant polynomial is
 squarefree by construction whether or not the underlying ideal has multiple
-points — $\gcd(f_0, f_0')$ is therefore tautologically trivial and useless as
+points. $\gcd(f_0, f_0')$ is therefore tautologically trivial and useless as
 a multiplicity test. `Msolve.zero_dim.multiplicity_free` instead compares
 `count` (the radical's degree) against msolve's separately-reported
-multiplicity-*weighted* (Bézout) degree of the ideal's quotient ring —
+multiplicity-*weighted* (Bézout) degree of the ideal's quotient ring:
 equal iff every point is simple. Verified directly: $(x-1)^2$ reports
 `count = 1` but `multiplicity_free = false`. This is Beloch's analogue of
 rejecting a Jacobian-singular candidate, arrived at independently because
@@ -228,14 +232,14 @@ msolve doesn't expose Jacobian singular values directly.
 ### Realness: reported, not filtered
 
 Definition 9 requires a 2FA's fold lines to lie "on a finite region of the
-Euclidean plane" [alperin2006, l. 453-455] — real, not merely complex. An
+Euclidean plane" [alperin2006, l. 453-455], meaning real fold lines rather than merely complex ones. An
 initial attempt added `real_count >= 1` (real solutions at the run's one
 generic parameter draw) as a fourth strict-filter conjunct. Its narrow,
-intended effect worked exactly as predicted (`AL2a7a8`/`AL2a7b8` — see R4,
-below — die principledly, complex-conjugate-only at both `stream_a` and
+intended effect worked exactly as predicted (`AL2a7a8`/`AL2a7b8`, see R4
+below, die principledly, complex-conjugate-only at both `stream_a` and
 `stream_b`). But it had a much larger, unintended effect: the k=2/no-`AL10`
 run stopped reproducing 203 (174 at `stream_a`, 180 at `stream_b`, with only
-12 of 29-vs-23 "missing" symbols in common between the streams) — because
+12 of 29-vs-23 "missing" symbols in common between the streams), because
 `real_count` is computed at exactly one generic parameter point, while
 Alperin-Lang's enumeration is a claim generic *over ℂ*: whether a
 construction is realizable can (and demonstrably does) depend on which
@@ -248,29 +252,29 @@ on `real_count`; `Pipeline` instead logs every strict-surviving symbol whose
 solution is complex-only at the run's stream ("complex-only at this
 stream") so the information stays visible without silently dropping
 symbols. Live counts for this note: 1 (of 7) at k=1, 31 (of 208, no-`AL10`)
-and 38 (of 494, with-`AL10`) at k=2, all at `stream_a` — none of it affects
+and 38 (of 494, with-`AL10`) at k=2, all at `stream_a`. None of it affects
 the 7/203/489 counts. Full argument, including what a *sound*
 existential-realness filter would require: `notes/2026-08-04-multifold-203-mismatch.md`,
 "Addendum (2026-08-04): realness is parameter-dependent".
 
-### R4: the empirical published-list filter — and a potential novel finding
+### R4: the empirical published-list filter and a potential novel finding
 
-After R1-R3, the no-`AL10` slice still strict-survives at 208, not 203 — 5
+After R1-R3, the no-`AL10` slice still strict-survives at 208, not 203; 5
 too many: `AL2ab8`, `AL2a7a8`, `AL2a7b8`, `AL2a7a9`, `AL2a7b9` (and correspondingly
 494 vs. 489 with `AL10`, the same 5 symbols since none contain `AL10`).
 `Combo.matches_published_list` (R4) is a purely syntactic, explicitly
-labeled **empirical** rule — "reject `AL8`/`AL9`-combos with no anchor
-alignment of kind `AL3`/`AL4`/`AL5`/`AL6`/`AL10`" — that reproduces the paper's exact
+labeled **empirical** rule ("reject `AL8`/`AL9`-combos with no anchor
+alignment of kind `AL3`/`AL4`/`AL5`/`AL6`/`AL10`") that reproduces the paper's exact
 listing but is not derived from any rule the paper states. Of the 5:
 
 - **`AL2a7a8`, `AL2a7b8`** have a semi-principled explanation: both are
-  complex-conjugate-only at *both* independent parameter streams — unlike
+  complex-conjugate-only at *both* independent parameter streams. Unlike
   the stream-inconsistent realness artifact above, agreement across two
   independent streams is at least consistent with genuine structural
   non-realness, and Definition 9 does require real fold lines
   [alperin2006, l. 453-455]. Not a proof, but a real signal.
 
-- **`AL2ab8`, `AL2a7a9`, `AL2a7b9` remain genuinely unexplained.** Each is real,
+- **`AL2ab8`, `AL2a7a9`, `AL2a7b9` remain unexplained.** Each is real,
   zero-dimensional, multiplicity-free, minimal, and non-separable under
   every reading of Definition 10 tried (R1's sequential test included).
   They pass every criterion the paper states for a valid 2FA and cannot be
@@ -282,12 +286,12 @@ listing but is not derived from any rule the paper states. Of the 5:
 
 **This is flagged prominently, on purpose: `AL2ab8`, `AL2a7a9`, and `AL2a7b9`
 look like valid, non-separable, real, zero-dimensional two-fold axioms that
-are simply missing from Alperin-Lang's printed list of 489** — either an
+are missing from Alperin-Lang's printed list of 489**: either an
 omission in their Mathematica enumeration, or an unstated exclusion
 criterion this reimplementation hasn't identified. This is a **potential
 novel finding**, not a claim: it needs independent verification (by hand,
 geometrically, the way `AL2ab8`'s rational solution was already spot-checked
-via Q-construction — see the mismatch notes) before it goes anywhere near a
+via Q-construction; see the mismatch notes) before it goes anywhere near a
 publication claim. The full accounting, including why the other two extras
 have a real (if unproven) story and these three don't, is in
 `notes/2026-08-04-multifold-203-mismatch.md`, §R4 and its addendum.
@@ -301,27 +305,27 @@ have a real (if unproven) story and these three don't, is in
   `docs/superpowers/specs/2026-08-03-multifold-axioms-research-design.md`,
   Phase 1]. The k=2 arm is delivered: raw candidates 2194, validated by
   containing all 489 published symbols (`test_candidates_contain_fixture`,
-  `packages/multifold/tests/test_combo.ml`). The k=3 arm — evaluating the
-  same bound at k=3 to size the explosion risk — needs the k=3 alignment
+  `packages/multifold/tests/test_combo.ml`). The k=3 arm (evaluating the
+  same bound at k=3 to size the explosion risk) needs the k=3 alignment
   alphabet first, and is deferred to Phase 2's alphabet derivation below.
 - **3-fold alphabet derivation.** The k=2 alphabet is 17 symbols derived from
   which pairs of (given/derived) objects an alignment can relate, restricted
   to what's expressible with two simultaneous folds. At k=3 the fold
-  composition space is larger, and one open design decision — **not yet
-  answered** — is whether the alphabet must include alignments referencing a
+  composition space is larger, and one open design decision, **not yet
+  answered**, is whether the alphabet must include alignments referencing a
   *nested* reflection (e.g. $F_a(F_b(P))$ as a single alignment target,
   rather than only pairwise compositions like `AL7`'s $\rho = F_a \circ F_b$) or whether
   every 3-fold construction reduces to compositions the k=2 alphabet already
   has building blocks for. This is upstream of any 3-fold candidate
   generator.
-- **R4's status at k=3.** R4 is admittedly not derived — it is a
+- **R4's status at k=3.** R4 has no derivation: it is a
   syntactic pattern that happens to match the paper's k=2 exclusions. There
   is no reason to expect the same pattern (or any simple syntactic pattern)
   to characterize whatever Alperin-Lang's Jacobian-at-a-solution step
   [l. 539] would exclude at k=3; a 3-fold reproduction (if attempted, given
-  no published k=3 classification exists to reproduce against — see the
+  no published k=3 classification exists to reproduce against; see the
   spec's Phase 0 novelty gate) would need its own principled non-degeneracy
-  argument, not a transplanted R4.
+  argument rather than a transplanted R4.
 - **Existential-realness analysis.** The realness addendum states what a
   *sound* filter would need (multi-parameter probing across many independent
   streams and requiring agreement, or genuine semialgebraic/CAD-style
@@ -331,20 +335,15 @@ have a real (if unproven) story and these three don't, is in
   semi-principled exclusion from "consistent with" to "proven," and any
   future construction-existence claim (Phase 3's Galois-bounds/fold-count
   work) will need real, not merely complex, solutions.
-- **Origami⁴ book-version check.** `refs/alperin2006.txt` is OCR'd from a
-  preprint/proceedings-draft PDF dated December 6, 2006 (visible at its own
-  header) — the version actually cited in `paper/references.bib`
-  (`alperin2006`, *Origami⁴: Fourth International Meeting of Origami
-  Science, Mathematics, and Education*, A K Peters) is the bound book
-  chapter, which may differ from the preprint in typesetting (the eq. (2)
-  garbling documented above is plausibly a preprint-specific OCR artifact,
-  or could be present in the book too) or, less likely but worth checking
-  given the R4 finding above, in the printed 489-symbol listing itself.
-  Obtaining the book version is still pending via Fernleihe (interlibrary
-  loan); until it arrives, this reproduction is checked against the
-  preprint only, and the R4 open questions above cannot rule out "the book's
-  listing already includes `AL2ab8`/`AL2a7a9`/`AL2a7b9` and the preprint OCR just
-  dropped them" as a mundane alternative explanation.
+- **Origami⁴ book-version check: done 2026-09-10, see
+  `notes/2026-09-10-origami4-version-of-record.md`.** The typeset book
+  chapter was photographed and diffed against the preprint. The printed
+  489-symbol listing is set-identical to our fixture, the five R4-excluded
+  symbols are absent from the book as well, the book adds no enumeration
+  criterion beyond the preprint, and the eq. (2) misprint appears in print
+  with the same text. The mundane explanation "the preprint OCR dropped
+  `AL2ab8`/`AL2a7a9`/`AL2a7b9` and the book has them" is ruled out; the
+  three-candidate finding stands against the version of record.
 
 ## Reproducing this record
 
@@ -353,7 +352,7 @@ direnv exec . dune exec packages/multifold/tools/report.exe            # stage-c
 direnv exec . dune exec packages/multifold/tools/report.exe -- --symbols # the 489-symbol artifact
 ```
 
-Both reuse `Pipeline`/`Combo`/`Msolve` directly — no logic duplicated for
+Both reuse `Pipeline`/`Combo`/`Msolve` directly: no logic duplicated for
 this report beyond two small, explicitly-commented raw-candidate counters
 (`raw_onefold_count`, `raw_twofold_count`) that mirror `Combo`'s own
 generation loops before its filters, since `Combo` deliberately only
