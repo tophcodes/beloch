@@ -28,6 +28,11 @@ FLINT_SHA256=b95e2c7792f5eea4a1c8d2d42c4098434756832e57a094b295eb5dfdc9b4c36b
 
 NIX_PKGS="nixpkgs#emscripten nixpkgs#m4 nixpkgs#gnumake nixpkgs#autoconf nixpkgs#automake nixpkgs#gcc"
 
+# Absolute source paths otherwise end up in the shipped module: FLINT bakes
+# __FILE__ into its assertion strings, so a plain build leaks the builder's
+# home directory into packages/www/public/beloch/qqbar-wasm.js.
+CFLAGS_COMMON="-O2 -ffile-prefix-map=$SRC_DIR=/build -ffile-prefix-map=$SCRIPT_DIR=/src"
+
 mkdir -p "$SRC_DIR" "$PREFIX"
 
 # ---------------------------------------------------------------------------
@@ -62,6 +67,7 @@ else
   nix shell $NIX_PKGS --command bash -c "
   set -e
   export CC_FOR_BUILD=gcc
+  export CFLAGS='$CFLAGS_COMMON'
   emconfigure ./configure --host=none --disable-assembly --enable-static --disable-shared --prefix='$PREFIX'
   emmake make -j\$(nproc)
   emmake make install
@@ -79,6 +85,7 @@ else
   nix shell $NIX_PKGS --command bash -c "
   set -e
   export CC_FOR_BUILD=gcc
+  export CFLAGS='$CFLAGS_COMMON'
   emconfigure ./configure --host=none --with-gmp='$PREFIX' --enable-static --disable-shared --prefix='$PREFIX'
   emmake make -j\$(nproc)
   emmake make install
@@ -105,6 +112,7 @@ else
   nix shell $NIX_PKGS --command bash -c "
   set -e
   export CC_FOR_BUILD=gcc
+  export CFLAGS='$CFLAGS_COMMON'
   emconfigure ./configure --host=none --disable-assembly --disable-pthread --without-blas --with-gmp='$PREFIX' --with-mpfr='$PREFIX' --enable-static --disable-shared --prefix='$PREFIX'
   emmake make -j\$(nproc)
   emmake make install
@@ -117,7 +125,7 @@ fi
 echo "=== compiling qqbar_wasm_check.c to wasm ==="
 cd "$BUILD_DIR"
 nix shell nixpkgs#emscripten --command bash -c "
-emcc '$SCRIPT_DIR/qqbar_wasm_check.c' -I'$PREFIX/include' -L'$PREFIX/lib' -lflint -lmpfr -lgmp -o check.js -sEXPORTED_RUNTIME_METHODS=ccall -sERROR_ON_UNDEFINED_SYMBOLS=0
+emcc '$SCRIPT_DIR/qqbar_wasm_check.c' $CFLAGS_COMMON -I'$PREFIX/include' -L'$PREFIX/lib' -lflint -lmpfr -lgmp -o check.js -sEXPORTED_RUNTIME_METHODS=ccall -sERROR_ON_UNDEFINED_SYMBOLS=0
 "
 
 echo "=== running check.js under node (expect 1.41421356) ==="
@@ -155,8 +163,8 @@ _malloc,_free"
 # through signature-adapting thunks, restoring correct behaviour.
 echo "=== compiling packages/eval-web/qqbar_wasm.c to packages/www/public/beloch/qqbar-wasm.js ==="
 nix shell nixpkgs#emscripten --command bash -c "
-emcc '$SCRIPT_DIR/qqbar_wasm.c' -I'$PREFIX/include' -L'$PREFIX/lib' -lflint -lmpfr -lgmp \
-  -O2 -sWASM_ASYNC_COMPILATION=0 -sMODULARIZE=1 -sEXPORT_NAME=QqbarWasm -sSINGLE_FILE=1 \
+emcc '$SCRIPT_DIR/qqbar_wasm.c' $CFLAGS_COMMON -I'$PREFIX/include' -L'$PREFIX/lib' -lflint -lmpfr -lgmp \
+  -sWASM_ASYNC_COMPILATION=0 -sMODULARIZE=1 -sEXPORT_NAME=QqbarWasm -sSINGLE_FILE=1 \
   -sEXPORTED_FUNCTIONS='$WASM_QQBAR_FUNCS' \
   -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString,stringToUTF8,lengthBytesUTF8 \
   -sALLOW_MEMORY_GROWTH=1 -sGROWABLE_ARRAYBUFFERS=0 \
