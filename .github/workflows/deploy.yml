@@ -46,9 +46,15 @@ jobs:
           nix develop --command dune build packages/eval-web/ --profile release
           cp _build/default/packages/eval-web/beloch_web.bc.js packages/www/public/beloch/beloch-eval.js
       - uses: oven-sh/setup-bun@v2
+      # The landing page's example programs are shipped as text and evaluated
+      # only when a visitor clicks one, so nothing else here would notice them
+      # going stale against the language.
+      - name: Run site tests
+        working-directory: packages/www
+        run: bun install && bun test
       - name: Build site
         working-directory: packages/www
-        run: bun install && bun run build
+        run: bun run build
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:

@@ -10,50 +10,16 @@
 // boots lazily on first gesture.
 import Playground from "../components/Playground.astro";
 import { evalBelToFold } from "../lib/eval-bel";
+import { HERO_SRC, EXAMPLES } from "../lib/landing-examples";
 import { headSyncScript } from "../lib/paper-schemes";
 import { parseFold } from "@beloch/scene";
 import { renderFolded, WEB_THEME } from "@beloch/render-svg";
 import "../styles/theme.css";
 
-const HERO_SRC = `paper square
-
-mark --diag = through .a .c
-mark --ea = map --ab onto --diag
-mark --eb = map --ab onto --bc
-mark --ec = map --bc onto --diag
-
-flatten (--ea & .a) (--ec & .c) (--eb & .b) {toward .a}`;
-
 const fold = evalBelToFold(HERO_SRC);
 const scene = parseFold(fold as object);
 const heroSvg = renderFolded(scene, { theme: WEB_THEME }).toString();
 const heroFoldJson = JSON.stringify(fold);
-
-const FISH_BASE_SRC = `paper square
-
-mark --diag = map .a onto .c
-mark --ray = through .a .c
-
-mark --l1 = map --ab onto --diag
-mark --l2 = map --da onto --diag
-flatten (--l1 & .b) (--l2 & .d) (--ray & .a) {toward .d}
-
-mark --l3 = map --cd onto --diag
-mark --l4 = map --bc onto --diag
-flatten (--l3 & .d) (--l4 & .b) (--ray & .c) {toward .d}`;
-
-const KITE_SRC = `paper square
-
-mark --ac = through .a .c
-fold map --da onto --ac
-fold map --ab onto --ac
-; status: works — incidence filter: only one candidate bisector per fold cuts the paper; moving is derived from l1's own material`;
-
-const EXAMPLES = [
-  { label: "Fish base", code: FISH_BASE_SRC },
-  { label: "Kite", code: KITE_SRC },
-  { label: "Rabbit ear", code: HERO_SRC },
-];
 
 const NAV_LINKS = [
   { label: "Introduction", href: "/introduction/" },
