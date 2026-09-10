@@ -1,8 +1,7 @@
 # Multifold Phase 1: reproduction record
 
-Phase 1 of the multifold research track (`multifold-phase1` branch, plan
-`docs/superpowers/plans/2026-08-03-multifold-phase1-twofold-enumeration.md`,
-spec `docs/superpowers/specs/2026-08-03-multifold-axioms-research-design.md`)
+Phase 1 of the multifold research track (`multifold-phase1` branch, spec
+`docs/superpowers/specs/2026-08-03-multifold-axioms-research-design.md`)
 set one gate before any 3-fold claim is attempted: reproduce Alperin and
 Lang's two-fold classification exactly. This note is the record of that
 reproduction — what was reproduced, how the pipeline works, every judgment

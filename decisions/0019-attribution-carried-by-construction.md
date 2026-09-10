@@ -31,7 +31,7 @@ polished rendering from its source. You can look at a model, transcribe it into
 because a fresh re-expression looks like original work.
 
 Today credit falls off completely, because it is first-class *nowhere*. The
-evidence is in the tree: `playground/peacock.bel` carried a hand-written
+evidence sits in the earliest programs: one carried a hand-written
 `# Copyright:` line pointing at the designer's page — dead text the lexer does
 not even tokenize (`#` is taken by `#[`/`#(`; only `;`-to-EOL is a comment). The
 one honest signal the author bothered to write had no place to live.

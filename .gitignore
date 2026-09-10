@@ -6,6 +6,13 @@ learn/
 # Full-text sources (copyrighted books/papers) — metadata lives in paper/references.bib
 refs/
 
+# Agent planning artefacts — local only; the design specs they belong to stay
+# tracked under docs/superpowers/specs/
+docs/superpowers/plans/
+
+# Scratch .bel programs, not part of the example set
+playground/
+
 # OCaml / dune
 _build/
 *.install
