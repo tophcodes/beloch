@@ -13,6 +13,13 @@ docs/superpowers/plans/
 # Scratch .bel programs, not part of the example set
 playground/
 
+# Phase 0/1 scratch around the FLINT-wasm bring-up; the build recipe itself
+# lives in packages/eval-web/build-wasm.sh
+spike/
+
+# Tarball + static-lib cache for the FLINT-wasm build (downloaded, reproducible)
+packages/eval-web/.wasm-build/
+
 # OCaml / dune
 _build/
 *.install

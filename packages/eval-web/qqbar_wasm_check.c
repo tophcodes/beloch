@@ -1,6 +1,6 @@
-/* Phase 0 spike: prove FLINT 3.6's qqbar (algebraic-number) backend runs
- * correctly under wasm/node. Computes sqrt(2) via qqbar and prints its
- * double approximation. Expected output: 1.41421356
+/* Smoke check for the FLINT-wasm prefix build-wasm.sh produces: computes
+ * sqrt(2) through FLINT 3.6's qqbar (algebraic-number) backend under
+ * wasm/node and prints its double approximation. Expected output: 1.41421356
  *
  * qqbar_get_d isn't a public qqbar.h entry point (it lives behind the `gr`
  * ring wrapper in src/gr/qqbar.c); the public path it uses internally is

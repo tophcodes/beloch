@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Regenerates packages/www/public/beloch/beloch-eval.js, the js_of_ocaml browser
 # bundle for the evaluator (see packages/eval-web/beloch_web.ml), and (if the
-# Phase 0/1 wasm prefix has been built — see spike/build.sh) packages/www/public/beloch/
-# qqbar-wasm.js, the FLINT-wasm qqbar backend packages/eval-web/qqbar_shim.js calls into.
+# FLINT-wasm prefix has been built) packages/www/public/beloch/qqbar-wasm.js,
+# the FLINT-wasm qqbar backend packages/eval-web/qqbar_shim.js calls into.
 # Run this MANUALLY after changing lib/ or eval-web/ — the astro/bun site build
 # does NOT invoke the nix OCaml toolchain, so the bundle is a committed
 # build artifact (same pattern as packages/www/public/grammar/tree-sitter-beloch.wasm).
@@ -22,9 +22,9 @@ cp \
 
 echo "Wrote packages/www/public/beloch/beloch-eval.js ($(du -h "$repo_root/packages/www/public/beloch/beloch-eval.js" | cut -f1))"
 
-if [ -f "$repo_root/spike/prefix/lib/libflint.a" ]; then
-  "$repo_root/spike/build.sh"
+if [ -f "$repo_root/packages/eval-web/.wasm-build/prefix/lib/libflint.a" ]; then
+  "$repo_root/packages/eval-web/build-wasm.sh"
   echo "Wrote packages/www/public/beloch/qqbar-wasm.js ($(du -h "$repo_root/packages/www/public/beloch/qqbar-wasm.js" | cut -f1))"
 else
-  echo "spike/prefix not built (run spike/build.sh) — skipping qqbar-wasm.js" >&2
+  echo "FLINT-wasm prefix not built (run packages/eval-web/build-wasm.sh) — skipping qqbar-wasm.js" >&2
 fi
