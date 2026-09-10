@@ -101,8 +101,11 @@ positioned against honestly in the paper.
   attribution; Hatori rediscovered #7 in 2002). Source for the axiom set.
 - Lang, *Computational Origami* overview — https://langorigami.com/article/computational-origami/
   (survey of the field's tools: OrigamiDraw, Tessellatica, Grasshopper, TreeMaker,
-  Origamizer, etc. — establishes that "axiomatic programming of origami as a
-  standalone declarative language with its own file format" is the empty niche.)
+  Origamizer, etc. Together with [lam2009]'s taxonomy it fixes the niche Beloch
+  claims: a standalone language whose primitives are the axioms, whose geometry
+  is exact, and whose folded state and layer order are derived from the
+  actions. Each qualifier alone is taken: Doodle is a standalone language, Eos
+  and Caruana & Pace have axiom semantics, the simulators have a folded state.)
 
 ## Multifold research track (Phase 0)
 
@@ -115,9 +118,15 @@ exactly 4 equations, deduped under permutation/folding equivalence, Jacobian
 non-degeneracy check in Mathematica. **489 with AL10, 203 without** — the
 numbers Phase 1 must reproduce, both. Section 8: N-fold axioms defined, one
 3-fold construction (general quintic via Lill), Theorem: degree n solvable
-with n−2 folds; minimality conjectured, **no enumeration for k≥3**. Caveat:
-our refs/ copy is a circulating draft with an unresolved editorial remark
-(§6.2.3, "– RJL"); verify counts against the published Origami⁴ version.
+with n−2 folds; minimality conjectured, **no enumeration for k≥3**.
+Version-of-record check done (see `notes/2026-09-10-origami4-version-of-record.md`):
+the typeset chapter is a copyedit of the Dec-2006 preprint. The 489-symbol
+listing matches our fixture symbol for symbol, the five symbols our pipeline
+produces that the listing lacks (`AL2ab8`, `AL2a7a8`, `AL2a7b8`, `AL2a7a9`,
+`AL2a7b9`) are absent in the book too, and the sign misprint in
+the folded-line formula, eq. (2), is printed identically in both. The
+discrepancy is therefore ours to explain against the version of record, and a
+candidate erratum for the paper.
 Alignments use single reflections only (no nested F_a(F_b(P))) — a modeling
 choice our 3-fold alphabet must make explicitly and defend.
 
@@ -144,3 +153,138 @@ settles reachability inside their framework and leaves the enumeration of
 axiom systems untouched, so the classification question stays open. The
 related-work section needs the comparison, and any "which degree needs how
 many folds" claim must name its formalism.
+
+## Origami⁴ (4OSME, 2009): computational origami and neighbours
+
+Photographed chapters from the Origami⁴ proceedings (A K Peters, 2009, ed.
+Robert J. Lang), OCR'd into `refs/<citekey>.txt`; the ingest is documented in
+`refs/origami4-scans/INGEST-REPORT.md`. Four further chapters are PDFs. The
+assessment of what they change for Beloch is
+[`notes/2026-09-10-origami4-prior-art.md`](../notes/2026-09-10-origami4-prior-art.md).
+
+### Ida, Takahashi, Marin, Kasem & Ghourabi, "Computational Origami System Eos" (pp. 285–293)
+**The closest system prior art beside Caruana & Pace.** Eos is a Mathematica
+package (`OrigamiBasics`) plus a web front end (`webOrigami`). Table 1 (p. 287)
+maps Huzita's axioms to function calls: `Fold[P,Q]` brings `P` onto `Q`,
+`Fold[PQ,EF]` superposes two lines, `Fold[P,EF,Through→Q]` is axiom 6 in
+Beloch's numbering, `Fold[P,EF,Q,GH]` the simultaneous two-point fold. When a
+fold has several solutions Eos shows the cases and the user re-issues the call
+with a case number (§3, heptagon construction, p. 288): the analogue of
+Beloch's `toward`. Five "artistic folds" (`MountainFold`, `ValleyFold`,
+`InsideReverseFold`, `OutsideReverseFold`, `SquashFold`) fold the crane (§4,
+p. 290–291). §5 proves construction correctness automatically: premises and
+conclusion become polynomial systems, decided by Gröbner bases or, with
+inequalities, cylindrical algebraic decomposition. What this chapter does not
+say: how Eos represents the folded state and layers, and what arithmetic it
+computes in. The 2004 AISC paper (Ida, Tepeneu, Buchberger, Robu) is the
+source for that and is not yet in `refs/`. Honest comparison for the paper:
+Eos has proof, Beloch has a standalone language, an exact folded-state
+kernel and a file format.
+
+### Fastag, "eGami: Virtual Paperfolding and Diagramming Software" (pp. 273–283)
+Direct-manipulation simulator for flat origami with automatic diagram
+generation. Two things matter for Beloch. Table 1 (p. 276) is a complete
+catalogue of folding maneuvers as diagrammers name them (fold: valley,
+mountain, valley-under, mountain-under, crease; reverse; squash; petal; rabbit
+ear; sink; pleat; fan fold; crimp; unfold), the checklist for the spec's
+Appendix B. §3.3 (p. 281) states that tools are operation-driven, and that one
+"could theoretically reproduce the entire folding sequence simply from the
+starting paper configuration and the history of operations, although this is
+not how it is implemented in practice". Beloch makes that operation history
+the source artefact. §3.2 (p. 280) lists the paper constraints (Maekawa,
+Kawasaki, no stretch, flat faces, no self-intersection) and §3.4 reports that
+validity testing is factorial in practice.
+
+### Lam, "Computer Origami Simulation and the Production of Origami Instructions" (pp. 237–249)
+Survey and usability study. §4.2 (p. 241) sorts origami software into design
+tools (Tess, ReferenceFinder, TreeMaker, ORIPA), **origami-oriented
+languages** (Oridraw, Doodle, Fisher 1994: text compiled to PostScript
+diagrams, with the user still placing lines and polygons by hand), and
+direct-manipulation simulators (Miyazaki, eGami, Foldinator, Nimoy). This
+kills any "first origami language" claim; Beloch's claim is the combination
+of axiom semantics, exact arithmetic and a derived folded state in a
+standalone language. §5.4 (p. 244) lists the disadvantages of direct
+manipulation: the user cannot manipulate what is hidden and cannot
+distinguish multiple layers. That is the usability argument for explicit
+layer selection (`up to`, `#[…]`) in a textual language. The bibliography
+(pp. 246–249) is the map of pre-2009 origami software.
+
+### Lang & Demaine, "Facet Ordering and Crease Assignment in Uniaxial Bases" (pp. 189–205)
+Completes TreeMaker's tree theory with an algorithm for stacking order and
+M/V assignment. §3.1 restates the four Justin layer-ordering conditions (Fig.
+5), §3.3 builds an ordering graph (OG) over facets and its reduced acyclic
+form (ROG), §3.4 derives mountain/valley from a two-colouring of facets plus
+the order: white-up above colour-up is a mountain. §4 names "the primacy of
+the ordering relationship, rather than the crease assignment, as the
+fundamental mathematical description". This is the published form of ADR
+0011's "M/V is derived from the layer order"; cite it there and in the paper.
+The Justin conditions are the correctness criterion Beloch's folded-state
+validity checks should be measured against. Justin's own 1991 and 1997 papers
+are not in `refs/`.
+
+### Konjevod, "Integer Programming Models for Flat Origami" (preprint of the Origami⁴ chapter)
+Flat foldability on a square-triangle grid as an integer linear program:
+crease variables, orientation and location constraints, layer variables
+$\lambda(v,w,k)$ and an above-relation $\alpha(u,v)$, with the three
+non-crossing types W, X, Y (§2.4). The 2×2 iso-area chessboard takes hours to
+solve (§3). Useful as the counterexample that motivates Beloch's
+constructive route: actions determine the order, so no global search over
+layer assignments is needed.
+
+### Shimanuki, Kato & Watanabe, "Construction of 3D Virtual Origami Models from Sketches" (pp. 217–228)
+Sketch to crease pattern to folded model. §2.3 uses Miyazaki's data
+structure: faces grouped by plane, each group holding an ordered face list.
+That is the coplanar-cluster view of ADR 0017. §4 orders faces by simulated
+annealing over cross sections because the global order is intractable; Beloch
+avoids the search by deriving order from actions.
+
+### Mitani, "Recognition, Modeling, and Rendering Method for Origami Using 2D Bar Codes" (pp. 251–258)
+Captures a physical folding sequence from photos of QR-coded paper (brute
+force over candidate folds per step, §2) and renders folded models with a
+per-face offset by stack position and slid vertices so layers read (§3). The
+rendering half is the reference for "thickness is a display-only offset"
+(ADR 0011 consequences). Miyazaki's structure again.
+
+### Hull, "Configuration Spaces for Flat Vertex Folds" (preprint of the Origami⁴ chapter)
+For a flat vertex of degree $2n$ the number $C(v)$ of valid M/V assignments
+is computable in linear time and bounded by $2^n \le C(v) \le 2\binom{2n}{n-1}$
+(§1); the chapter describes the configuration space of angle vectors and
+where $C(v)$ jumps. Test oracle for `flatten`'s solution-space enumeration
+at a single vertex.
+
+### Azuma, "On the Fish Base Crease Pattern and Its Flat Foldable Property" (pp. 417–426)
+Generalised fish base on a kite: the two vertices of the pattern are isogonal
+conjugates of the triangle, hence foci of an inellipse, and Apollonius'
+tangent-angle relation gives Kawasaki's condition at both (§2.3, Prop. 1–2).
+A parametric example family for Beloch once a kite paper shape exists:
+`flatten` at each vertex should verify flat foldability exactly.
+
+### Kawasaki & Kawasaki, "Orizuru Deformation Theory for Unbounded Quadrilaterals" (pp. 427–438)
+A bird base is foldable from a quadrilateral iff it has an inscribed circle
+(Justin), and the centre of the base can be any point on a conic fixed by the
+quadrilateral (Theorem 1, p. 436); the chapter extends this to unbounded
+quadrilaterals. The bird-base-from-a-quadrilateral construction is the
+target example for multi-vertex `flatten`.
+
+### Veenstra, "Fujimoto, Number Theory, and a New Folding Technique" (pp. 405–415)
+The Fujimoto approximation for folding $1/n$ as a recursion
+$l_{k+1} = \tfrac{1}{2}(l_k + c_k)$ with $c_k \in \{0,1\}$ from the parity of
+$n\,l_k$ (Eq. 1, p. 407); the number of distinct crease lines is the order of
+2 mod $n$ (Theorem 1). The concrete demand for a loop primitive; with exact
+rationals Beloch shows each pinch mark as an exact dyadic fraction.
+
+### Watanabe & Kawaguchi, "The Method for Judging Rigid Foldability" (pp. 165–174)
+Rigid foldability of a crease pattern via a vector diagram (closed loop, zero
+oriented area) and its matrix form $A\varepsilon = 0$,
+$\varepsilon^{T} C \varepsilon = 0$ solved with a generalised inverse.
+Relevant only once 3D folding motion is in scope (ADR 0015).
+
+### Tachi, "Simulation of Rigid Origami" (preprint of the Origami⁴ chapter)
+Rigid-origami simulation with crease angles as configuration and motion
+projected onto the constraint space given by the single-vertex closure
+$\chi_1 \cdots \chi_n = I$. The reference implementation to compare with when
+the 3D standing state lands (ADR 0015).
+
+### Halloran, "Concepts and Modeling of a Tessellated Molecule Surface" (pp. 305–314)
+Tessellated waterbomb surfaces and their rigid neighbourhoods. Photographed by
+mistake; out of scope for now.
