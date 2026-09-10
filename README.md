@@ -83,6 +83,7 @@ dune exec beloch -- --version
 
 ```
 packages/core/      evaluator core + `beloch` CLI (OCaml)
+packages/multifold/ multifold axiom enumeration (Alperin-Lang reproduction)
 packages/render-2d/ FOLD→SVG render engine (bun)
 packages/www/       landing + docs + Playground site
 packages/eval-web/  js_of_ocaml browser eval bundle
