@@ -48,8 +48,8 @@ identities (Messer's $(AC/CB)^3 = 2$) and nothing like a proof pipeline.
 State this plainly in the comparison.
 
 **Folded state and arithmetic** (from the Eos internals papers, obtained
-2026-09-10): Eos's folded state is the abstract origami 100 1 17 26 27 100 131
-303 977 989 1000\Pi, \succ, A)
+2026-09-10): Eos's folded state is the abstract origami
+$(\Pi, \succ, A)$
 [ida2007modeling]: convex faces, an overlay relation defined only on
 overlapping pairs and inherited per fold by the three-case rule of its Def. 7
 (both stayed, both moved with the order reversed, one of each ordered by
