@@ -288,3 +288,60 @@ the 3D standing state lands (ADR 0015).
 ### Halloran, "Concepts and Modeling of a Tessellated Molecule Surface" (pp. 305–314)
 Tessellated waterbomb surfaces and their rigid neighbourhoods. Photographed by
 mistake; out of scope for now.
+
+## Eos internals (Ida et al., Tsukuba, 2007–2008)
+
+The papers that answer what [ida2009eos] leaves open: how Eos represents the
+folded state and layers, and what arithmetic it runs on.
+
+### Ida, Takahashi, Marin & Ghourabi, "Modeling Origami for Computational Construction and Beyond" (ICCSA 2007, LNCS 4706)
+**Eos's folded-state model, and the closest published analogue of Beloch's
+`Fold_state`.** An abstract origami is $(\Pi, \succ, A)$: a set of convex
+faces with orientation (Def. 1–2), an overlay relation $\succ$ defined only
+between overlapping faces, and an adjacency mapping (Def. 4–5). A fold is the
+seven-step algorithm (F-1)–(F-7), p. 655–656: pick the fold method (a Huzita
+axiom), get the line, take the origamist's set $F$ of faces of concern,
+propagate to the affected set $G$ through adjacency and "overlapping and
+above" (Def. 6, (G-1)–(G-4)), divide faces by the line, rotate the moved
+half, recompute $\succ$ and $A$. Def. 7 defines $\succ$ inductively per fold
+in three cases (both stayed, both moved with the order reversed, one of
+each ordered by valley/mountain), which is exactly the parent-inheritance
+rule Beloch's layer order uses. §4.1 shows $\succ$ is neither total nor
+transitive and argues why a "touches if pressed" relation is too expensive to
+compute. §4.2 defines a *layer* as an equivalence class of adjacent
+same-orientation faces (coplanar clusters, cf. ADR 0017), the layer graph
+and its transitive reduction, and layer stacks for rendering; the crane has 8
+stacks of heights 31 and 23 (§6). §5: unfold is not undo, divided faces
+persist. §7 names relating the model to Alperin & Lang as open work.
+
+### Ida, "Graph Rewriting in Computational Origami" (SYNASC 2008)
+Refines the 2007 overlay into three relations (Def. 4.4–4.7): a transient
+*over* relation carried through face division, *above* as its transitive
+closure, and *superposes* as "above with nothing between". Fold becomes a
+hypergraph rewrite with labels `A` (adjacency), `S` (superposition), `L`/`R`
+(sides of the ray), and Algorithm Fold (§4.2) is the 2007 procedure made
+explicit. The paper states that rotation "will invoke numerical computation
+of the coordinates" (§7.4).
+
+### Ida, Marin, Takahashi & Ghourabi, "Computational Origami Construction as Constraint Solving and Rewriting" (ENTCS 216, 2008)
+Huzita's axioms as first-order formulas (A1)–(A6) and then as a 3-CTRS
+(`foldTh`, `foldBr`, `foldBrLine`, `foldPerTh`, `foldThBr`, `foldBrBr`,
+§3.3), with lines as `line(a,b,c)` under a coefficient normalisation. §3.2
+fixes "the domain of interpretation to be the domain of algebraic numbers",
+but the implementation splits: "the system solved the constraints
+numerically, and at the same time it saved the constraints in symbolic
+expression" (§5), and "the numerical solutions are used to simulate the
+construction" (§7). **So Eos's folded state is floating point; exactness
+lives only in the proof side.** That is the sharpest difference from
+Beloch's exact kernel, where the folded state itself is exact. §6 lists Eos's
+primitives (`HFold[A, Along→{P,Q}]`, `HFold[P,Q]`) and the wish list: typing
+of geometric objects that degenerate, a friendlier interface.
+
+### Ghourabi, Ida, Takahashi, Marin & Kasem, "Logical and Algebraic View of Huzita's Origami Axioms" (SAC 2007)
+The translation $\mathcal{A}[\![\cdot]\!]\rho$ from the logical axioms to
+polynomial systems (§3.2), with slack variables for disequalities. §4 shows
+Abe's trisection with `Fold[E, KJ, I, EG, Case → 3]` (explicit case index for
+axiom 6) and a constraint-specified alternative with two simultaneous axiom-3
+folds; the numeric solutions are printed as floats (`Line[0.9096, 1, -2]`).
+§5: correctness proofs by Gröbner basis (`1 − gξ` trick) via Theorema, CAD
+when inequalities appear. Confirms the numeric/symbolic split.

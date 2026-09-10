@@ -47,11 +47,24 @@ algebraic decomposition when inequalities appear. Beloch has kernel-verified
 identities (Messer's $(AC/CB)^3 = 2$) and nothing like a proof pipeline.
 State this plainly in the comparison.
 
-**Missing to complete the comparison:** how Eos represents folded state and
-layers, and its arithmetic model. Neither is in this chapter. Sources to
-obtain: Ida, Tepeneu, Buchberger, Robu, "Proving and Constraint Solving in
-Computational Origami", AISC 2004 (LNCS), and Ida & Buchberger 2004
-("Interaction of Solving, Proving and Computing"), both cited on p. 293.
+**Folded state and arithmetic** (from the Eos internals papers, obtained
+2026-09-10): Eos's folded state is the abstract origami 100 1 17 26 27 100 131 303 977 989 1000\Pi, \succ, A)
+[ida2007modeling]: convex faces, an overlay relation defined only on
+overlapping pairs and inherited per fold by the three-case rule of its Def. 7
+(both stayed, both moved with the order reversed, one of each ordered by
+valley or mountain), and adjacency. Layers are classes of adjacent
+same-orientation faces, the coplanar clusters of ADR 0017. The fold scope is
+a user-given set of faces of concern propagated through adjacency and
+"overlapping and above" (Def. 6), the counterpart of `moving` and `up to`.
+This is structurally the same model as Beloch's layer order, published two
+years before ADR 0011, and the paper must cite it as such. The difference is
+arithmetic: Eos interprets the axioms over algebraic numbers on paper
+[ida2008entcs, §3.2] but solves numerically for the simulation and keeps the
+constraints symbolically for the proof [ida2008entcs, §5, §7; ghourabi2007,
+§4]. Beloch's folded state is itself exact. Still missing: the AISC 2004
+paper (DOI 10.1007/978-3-540-30210-0_12) and Ida's 2020 book chapter
+"Abstract Origami" (DOI 10.1007/978-3-319-59189-6_7), the consolidated
+version.
 
 ### Origami-oriented languages before Beloch
 
@@ -144,10 +157,11 @@ identically. The discrepancy is ours to explain against the version of record.
 
 ## Follow-ups
 
-- Obtain for `refs/`: Justin 1991 and 1997; Ida et al. AISC 2004; Gout,
-  Doodle (2001); Miyazaki et al. 1996 (the data structure everyone reuses).
-- Cite [langdemaine2009facet] in ADR 0011 and phrase `flatten`'s layer
-  validity check as the Justin conditions.
+- Obtain for `refs/`: Justin 1991 and 1997; Ida et al. AISC 2004; Ida 2020
+  "Abstract Origami" (book chapter); Gout, Doodle (2001); Miyazaki et al.
+  1996 (the data structure everyone reuses).
+- Cite [langdemaine2009facet] and [ida2007modeling] in ADR 0011 and phrase
+  `flatten`'s layer validity check as the Justin conditions.
 - Examples backlog: heptagon, generalised fish base (needs `paper kite`),
   Fujimoto fifths (needs loops, or an unrolled n = 5).
 - 9OSME: the call for papers lives at 9osme.org, a client-rendered app; read
