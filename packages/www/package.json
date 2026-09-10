@@ -6,6 +6,7 @@
     "dev": "astro dev",
     "start": "astro dev",
     "build": "astro build",
+    "test": "bun test",
     "preview": "astro preview",
     "deploy": "wrangler pages deploy dist --project-name=beloch-docs --branch=main",
     "astro": "astro"
