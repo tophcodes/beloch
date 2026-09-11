@@ -1,0 +1,30 @@
+; Bird base by the Eos route [ida2020, Fig. 7.19]: the preliminary base, then
+; each of the four side corners inside-reversed along the kite crease through
+; .c, the open end where the raw edges meet. `map <corner> onto --mid through
+; .c` has two solutions (the circle around .c through the corner meets the
+; centre line twice); `toward .o` picks the inward one. The kite vertices carry
+; sqrt(2) coordinates, handled exactly. --ac is never creased on this route.
+
+paper square
+
+fold --bd = map .a onto .c              ; triangle
+reverse --h = map .b onto .c            ; preliminary base
+reverse --v = map .d onto .c
+
+.o = free on --bd from .b at 1/2        ; apex O, the paper centre
+--mid = through .c .o                   ; centre line of the base
+
+.sr = free on --ab from .a at 1/2       ; front-right side corner: paper (1/2, 0), table (1, 1/2)
+reverse map .sr onto --mid through .c toward .o
+
+.sl = free on --da from .a at 1/2       ; front-left side corner: paper (0, 1/2), table (1/2, 1)
+reverse map .sl onto --mid through .c toward .o
+
+.br = free on --bc from .b at 1/2       ; back-right side corner: paper (1, 1/2)
+reverse map .br onto --mid through .c toward .o
+
+.bl = free on --cd from .c at 1/2       ; back-left side corner: paper (1/2, 1)
+reverse map .bl onto --mid through .c toward .o
+
+; assert steps = 7
+; assert faces = 14
