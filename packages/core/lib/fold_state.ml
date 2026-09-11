@@ -895,6 +895,142 @@ let simple_fold (g : t) ~(axis : Geom.line) ~(move_side : int)
     ~(valley : bool) : t =
   fold g ~axis ~move_side ~valley ~prov:None
 
+type reverse_failure =
+  | No_spine
+  | Several_spines of int
+  | Bodies_interleaved
+  | Invalid of violation
+
+let reverse_failure_to_string = function
+  | No_spine ->
+      "reverse needs a tip folded along one spine; the moving material does \
+       not split into two halves"
+  | Several_spines n ->
+      Printf.sprintf
+        "the tip can be reversed at %d spines; fold less so that one remains" n
+  | Bodies_interleaved ->
+      "the two halves are hinged to interleaved layers; that is not a reverse \
+       fold"
+  | Invalid v -> violation_to_string v
+
+let reverse ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
+    ~(tip : bool array) ~(inside : bool) ~(prov : State.provenance option) :
+    (t, reverse_failure) result =
+  let n = Array.length g.faces in
+  let nh = Array.length g.hinges in
+  let internal =
+    List.filter
+      (fun hi ->
+        let h = g.hinges.(hi) in
+        tip.(h.fa) && tip.(h.fb))
+      (List.init nh Fun.id)
+  in
+  let folded_internal =
+    List.filter
+      (fun hi ->
+        Num.sign g.hinges.(hi).angle <> 0
+        &&
+        (* the spine must reach beyond the line: its far part is what reverses *)
+        let ta, tb = hinge_table_segment g hi in
+        Geom.side_of_line axis ta = move_side || Geom.side_of_line axis tb = move_side)
+      internal
+  in
+  (* connected components of the tip parents under [internal] minus [cut] *)
+  let components cut =
+    let comp = Array.make n (-1) in
+    let next = ref 0 in
+    for s = 0 to n - 1 do
+      if tip.(s) && comp.(s) < 0 then begin
+        let c = !next in
+        incr next;
+        comp.(s) <- c;
+        let stack = ref [ s ] in
+        while !stack <> [] do
+          let f = List.hd !stack in
+          stack := List.tl !stack;
+          List.iter
+            (fun hi ->
+              if hi <> cut then begin
+                let h = g.hinges.(hi) in
+                let other =
+                  if h.fa = f then h.fb else if h.fb = f then h.fa else -1
+                in
+                if other >= 0 && comp.(other) < 0 then begin
+                  comp.(other) <- c;
+                  stack := other :: !stack
+                end
+              end)
+            internal
+        done
+      end
+    done;
+    (comp, !next)
+  in
+  let has_stay_piece fi =
+    let table = table_polygon g fi in
+    Array.length (Geom.clip_convex_halfplane axis (-move_side) table) >= 3
+  in
+  let attempt cut =
+    let comp, k = components cut in
+    if k <> 2 then None
+    else begin
+      let half c = Array.init n (fun i -> tip.(i) && comp.(i) = c) in
+      let body c =
+        List.filter
+          (fun i -> tip.(i) && comp.(i) = c && has_stay_piece i)
+          (List.init n Fun.id)
+      in
+      let b0 = body 0 and b1 = body 1 in
+      if b0 = [] || b1 = [] then None
+      else
+        let lo l = List.fold_left (fun a i -> min a g.rank.(i)) max_int l in
+        let hi l = List.fold_left (fun a i -> max a g.rank.(i)) min_int l in
+        let arrangement =
+          if hi b0 < lo b1 then Some (0, 1, b0, b1)
+          else if hi b1 < lo b0 then Some (1, 0, b1, b0)
+          else None
+        in
+        match arrangement with
+        | None -> Some (Error Bodies_interleaved)
+        | Some (lower, upper, blo, bup) ->
+            let topmost l =
+              List.fold_left
+                (fun a i -> if g.rank.(i) > g.rank.(a) then i else a)
+                (List.hd l) l
+            in
+            let bottommost l =
+              List.fold_left
+                (fun a i -> if g.rank.(i) < g.rank.(a) then i else a)
+                (List.hd l) l
+            in
+            let blocks =
+              if inside then
+                [ (half lower, Over (topmost blo));
+                  (half upper, Under (bottommost bup)) ]
+              else [ (half lower, Bottom); (half upper, Top) ]
+            in
+            Some
+              (match
+                 fold_blocks ?crease_id ~blocks g ~axis ~move_side ~prov
+               with
+              | Ok g' -> Ok g'
+              | Error v -> Error (Invalid v))
+    end
+  in
+  let results = List.filter_map attempt folded_internal in
+  let oks =
+    List.filter_map (function Ok g' -> Some g' | Error _ -> None) results
+  in
+  match oks with
+  | [ g' ] -> Ok g'
+  | _ :: _ :: _ -> Error (Several_spines (List.length oks))
+  | [] -> (
+      match
+        List.filter_map (function Error e -> Some e | Ok _ -> None) results
+      with
+      | e :: _ -> Error e
+      | [] -> Error No_spine)
+
 (* Turn the whole sheet over: reflect across the footprint's vertical
    centerline (cosmetic internal axis), reverse the face
    array (observable: FOLD emit enumerates faces by index), reverse the

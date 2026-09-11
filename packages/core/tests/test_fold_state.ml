@@ -1410,6 +1410,28 @@ let find_by_range (g : Fold_state.t) lo hi : int =
   in
   go 0
 
+let paper_y_range (g : Fold_state.t) (i : int) : Num.t * Num.t =
+  let f = (Fold_state.faces g).(i) in
+  let ys = Array.to_list (Array.map (fun (p : Geom.point) -> p.Geom.y) f) in
+  ( List.fold_left (fun a b -> if Num.compare b a < 0 then b else a) (List.hd ys) ys,
+    List.fold_left (fun a b -> if Num.compare b a > 0 then b else a) (List.hd ys) ys )
+
+(* [find_by_range] alone cannot tell apart a horizontal cut's two children —
+   they share the same paper x-range — so this also matches the y-range. *)
+let find_by_box (g : Fold_state.t) xlo xhi ylo yhi : int =
+  let n = Array.length (Fold_state.faces g) in
+  let rec go i =
+    if i >= n then Alcotest.failf "no face with paper box [%s,%s]x[%s,%s]"
+        (Num.to_rational_string xlo) (Num.to_rational_string xhi)
+        (Num.to_rational_string ylo) (Num.to_rational_string yhi)
+    else
+      let xa, xb = paper_x_range g i in
+      let ya, yb = paper_y_range g i in
+      if Num.equal xa xlo && Num.equal xb xhi && Num.equal ya ylo && Num.equal yb yhi
+      then i else go (i + 1)
+  in
+  go 0
+
 let three_halves = Num.of_q (Q.of_ints 3 2)
 
 (* Literal regression contract: this is the face order and rank the old
@@ -1541,6 +1563,181 @@ let test_fold_blocks_bottom_pierces () =
   | Ok _ -> Alcotest.fail "Bottom: expected a violation"
   | Error (Fold_state.Taco_tortilla _) -> ()
   | Error v -> Alcotest.failf "Bottom: wrong violation %s" (Fold_state.violation_to_string v)
+
+
+(* ---- Task 2: reverse ---- *)
+
+let reverse_two_layer inside =
+  let g = two_layer () in
+  Fold_state.reverse g ~axis:vline_half ~move_side:(-1) ~tip:[| true; true |]
+    ~inside ~prov:None
+
+(* [vline_half] (table x=1/2) runs parallel to the spine (table x=1): no part
+   of the spine ever reaches beyond the line, so it is never a candidate and
+   every attempt on this fixture must fail with [No_spine], in either
+   direction. *)
+let check_no_spine label result =
+  match result with
+  | Error Fold_state.No_spine -> ()
+  | Error e -> Alcotest.failf "%s: wrong failure %s" label (Fold_state.reverse_failure_to_string e)
+  | Ok _ -> Alcotest.failf "%s: expected No_spine (axis parallel to the spine)" label
+
+let test_reverse_parallel_axis_no_spine () =
+  check_no_spine "inside" (reverse_two_layer true);
+  check_no_spine "outside" (reverse_two_layer false)
+
+let hinge_index_on (g : Fold_state.t) (line : Geom.line) (pred : int -> int -> bool) : int =
+  let hs = Fold_state.hinges g in
+  let rec go i =
+    if i >= Array.length hs then Alcotest.fail "no such hinge"
+    else
+      let h = hs.(i) in
+      let a, b = Fold_state.hinge_segment g i in
+      if Geom.side_of_line line a = 0 && Geom.side_of_line line b = 0
+         && pred h.Fold_state.fa h.Fold_state.fb
+      then i else go (i + 1)
+  in
+  go 0
+
+(* Crossing-axis fixture: axis x + y = 3/2 meets the spine (table x=1) at
+   O = (1, 1/2), so the corner beyond O is a tip that reaches beyond the
+   line and is a candidate spine. Covers the same ground as the
+   [vline_half] fixture above (order, new-crease letters) plus the spine's
+   own letter beyond O; only the inside fold is realizable here — wrapping
+   the corner around the outside of the whole flap tears it, which the
+   kernel rejects as taco-tortilla. *)
+let diag : Geom.line = { Geom.a = q 1; b = q 1; c = three_halves }
+
+let reverse_diag inside =
+  Fold_state.reverse (two_layer ()) ~axis:diag ~move_side:1 ~tip:[| true; true |]
+    ~inside ~prov:None
+
+(* children by paper x-range: body-L [0,1], tip-L [1/2,1], tip-R [1,3/2],
+   body-R [1,2] ([half] is defined above) *)
+
+let test_reverse_diag_inside_order () =
+  match reverse_diag true with
+  | Error e -> Alcotest.failf "inside: %s" (Fold_state.reverse_failure_to_string e)
+  | Ok g' ->
+      let body_l = find_by_range g' (q 0) (q 1) and tip_l = find_by_range g' half (q 1) in
+      let tip_r = find_by_range g' (q 1) three_halves
+      and body_r = find_by_range g' (q 1) (q 2) in
+      Alcotest.(check int) "four faces" 4 (Array.length (Fold_state.faces g'));
+      Alcotest.(check bool) "tip-L above body-L" true (Fold_state.above g' tip_l body_l);
+      Alcotest.(check bool) "tip-R above tip-L" true (Fold_state.above g' tip_r tip_l);
+      Alcotest.(check bool) "body-R above tip-R" true (Fold_state.above g' body_r tip_r)
+
+let test_reverse_diag_outside_rejected () =
+  match reverse_diag false with
+  | Ok _ -> Alcotest.fail "outside: expected a violation"
+  | Error (Fold_state.Invalid (Fold_state.Taco_tortilla _)) -> ()
+  | Error e -> Alcotest.failf "outside: wrong failure %s" (Fold_state.reverse_failure_to_string e)
+
+let test_reverse_diag_new_crease_letters () =
+  match reverse_diag true with
+  | Error e -> Alcotest.failf "%s" (Fold_state.reverse_failure_to_string e)
+  | Ok g' ->
+      let tip_l = find_by_range g' half (q 1)
+      and tip_r = find_by_range g' (q 1) three_halves in
+      (* f0's paper coords are identity, so its half of the cut line reads
+         literally as [diag]; f1's are mirrored across the original spine
+         (paper x = 2 - table x), so its half reads as x - y = 1/2 *)
+      let diag_mirrored : Geom.line = { Geom.a = q 1; b = Num.neg (q 1); c = half } in
+      let new_l = hinge_index_on g' diag (fun a b -> a = tip_l || b = tip_l)
+      and new_r = hinge_index_on g' diag_mirrored (fun a b -> a = tip_r || b = tip_r) in
+      Alcotest.(check bool) "new crease on L" true (Fold_state.mv g' new_l = Fold_state.V);
+      Alcotest.(check bool) "new crease on R" true (Fold_state.mv g' new_r = Fold_state.V)
+
+let joins x y a b = (a = x && b = y) || (a = y && b = x)
+
+let test_reverse_spine_beyond_o () =
+  match reverse_diag true with
+  | Error e -> Alcotest.failf "%s" (Fold_state.reverse_failure_to_string e)
+  | Ok g' ->
+      let tip_l = find_by_range g' half (q 1)
+      and tip_r = find_by_range g' (q 1) three_halves in
+      let spine_far = hinge_index_on g' (vline 1) (joins tip_l tip_r) in
+      let spine_near =
+        hinge_index_on g' (vline 1) (fun a b -> not (joins tip_l tip_r a b))
+      in
+      Alcotest.(check bool) "spine before O stays a valley" true
+        (Fold_state.mv g' spine_near = Fold_state.V);
+      Alcotest.(check bool) "spine beyond O reversed to mountain" true
+        (Fold_state.mv g' spine_far = Fold_state.M)
+
+(* Perpendicular-axis fixture: axis y=1/2 runs perpendicular to the spine
+   (table and paper x=1, from (1,0) to (1,1)) instead of parallel to it, so
+   the spine reaches beyond the axis and both layers are cut; the tip
+   (move_side:1) is the upper half of both layers. Children by paper box:
+   body-L = f0's stationary [0,1]x[0,1/2], tip-L = f0's moved [0,1]x[1/2,1],
+   body-R = f1's stationary [1,2]x[0,1/2], tip-R = f1's moved [1,2]x[1/2,1].
+   f1's fold across x=1 leaves y unchanged, so the axis and the cut line
+   coincide in both table and paper space for both parents. *)
+let perp_axis : Geom.line = { Geom.a = q 0; b = q 1; c = half }
+
+let reverse_perp inside =
+  Fold_state.reverse (two_layer ()) ~axis:perp_axis ~move_side:1
+    ~tip:[| true; true |] ~inside ~prov:None
+
+let perp_children g' =
+  let body_l = find_by_box g' (q 0) (q 1) (q 0) half in
+  let tip_l = find_by_box g' (q 0) (q 1) half (q 1) in
+  let body_r = find_by_box g' (q 1) (q 2) (q 0) half in
+  let tip_r = find_by_box g' (q 1) (q 2) half (q 1) in
+  (body_l, tip_l, body_r, tip_r)
+
+let test_reverse_perp_inside_order () =
+  match reverse_perp true with
+  | Error e -> Alcotest.failf "inside: %s" (Fold_state.reverse_failure_to_string e)
+  | Ok g' ->
+      let body_l, tip_l, body_r, tip_r = perp_children g' in
+      Alcotest.(check int) "four faces" 4 (Array.length (Fold_state.faces g'));
+      Alcotest.(check bool) "tip-L above body-L" true (Fold_state.above g' tip_l body_l);
+      Alcotest.(check bool) "tip-R above tip-L" true (Fold_state.above g' tip_r tip_l);
+      Alcotest.(check bool) "body-R above tip-R" true (Fold_state.above g' body_r tip_r)
+
+let test_reverse_perp_outside_order () =
+  match reverse_perp false with
+  | Error e -> Alcotest.failf "outside: %s" (Fold_state.reverse_failure_to_string e)
+  | Ok g' ->
+      let body_l, tip_l, body_r, tip_r = perp_children g' in
+      Alcotest.(check int) "four faces" 4 (Array.length (Fold_state.faces g'));
+      Alcotest.(check bool) "body-L above tip-L" true (Fold_state.above g' body_l tip_l);
+      Alcotest.(check bool) "body-R above body-L" true (Fold_state.above g' body_r body_l);
+      Alcotest.(check bool) "tip-R above body-R" true (Fold_state.above g' tip_r body_r)
+
+let test_reverse_perp_letters () =
+  let check_case label inside expected_new expected_far expected_near =
+    match reverse_perp inside with
+    | Error e -> Alcotest.failf "%s: %s" label (Fold_state.reverse_failure_to_string e)
+    | Ok g' ->
+        let body_l, tip_l, body_r, tip_r = perp_children g' in
+        let new_l = hinge_index_on g' perp_axis (joins body_l tip_l) in
+        let new_r = hinge_index_on g' perp_axis (joins body_r tip_r) in
+        let far = hinge_index_on g' (vline 1) (joins tip_l tip_r) in
+        let near = hinge_index_on g' (vline 1) (joins body_l body_r) in
+        Alcotest.(check bool) (label ^ ": new hinge L") true
+          (Fold_state.mv g' new_l = expected_new);
+        Alcotest.(check bool) (label ^ ": new hinge R") true
+          (Fold_state.mv g' new_r = expected_new);
+        Alcotest.(check bool) (label ^ ": far spine") true
+          (Fold_state.mv g' far = expected_far);
+        Alcotest.(check bool) (label ^ ": near spine") true
+          (Fold_state.mv g' near = expected_near)
+  in
+  check_case "inside" true Fold_state.V Fold_state.M Fold_state.V;
+  check_case "outside" false Fold_state.M Fold_state.M Fold_state.V
+
+let test_reverse_no_spine () =
+  (* a single flat sheet has no folded hinge to cut *)
+  let g = Fold_state.init_square in
+  match
+    Fold_state.reverse g ~axis:vline_half ~move_side:(-1) ~tip:[| true |]
+      ~inside:true ~prov:None
+  with
+  | Error Fold_state.No_spine -> ()
+  | Error e -> Alcotest.failf "wrong failure %s" (Fold_state.reverse_failure_to_string e)
+  | Ok _ -> Alcotest.fail "expected No_spine"
 
 let () =
   Alcotest.run "fold_graph"
@@ -1694,5 +1891,23 @@ let () =
           Alcotest.test_case "Two blocks same gap" `Quick
             test_fold_blocks_two_blocks_same_gap;
           Alcotest.test_case "Placement face without child" `Quick
-            test_fold_blocks_placement_face_without_child ] )
+            test_fold_blocks_placement_face_without_child ] );
+      ( "reverse",
+        [ Alcotest.test_case "parallel axis: no spine" `Quick
+            test_reverse_parallel_axis_no_spine;
+          Alcotest.test_case "diagonal fixture: inside order" `Quick
+            test_reverse_diag_inside_order;
+          Alcotest.test_case "diagonal fixture: outside rejected" `Quick
+            test_reverse_diag_outside_rejected;
+          Alcotest.test_case "diagonal fixture: new crease letters" `Quick
+            test_reverse_diag_new_crease_letters;
+          Alcotest.test_case "spine beyond O reverses" `Quick
+            test_reverse_spine_beyond_o;
+          Alcotest.test_case "perpendicular fixture: inside order" `Quick
+            test_reverse_perp_inside_order;
+          Alcotest.test_case "perpendicular fixture: outside order" `Quick
+            test_reverse_perp_outside_order;
+          Alcotest.test_case "perpendicular fixture: derived letters" `Quick
+            test_reverse_perp_letters;
+          Alcotest.test_case "no spine" `Quick test_reverse_no_spine ] )
     ]

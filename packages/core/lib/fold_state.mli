@@ -279,6 +279,37 @@ val fold :
 val simple_fold : t -> axis:Geom.line -> move_side:int -> valley:bool -> t
 (** [fold] with no [crease_id]/[moving_parents] override and no provenance. *)
 
+type reverse_failure =
+  | No_spine  (** no folded hinge of the tip splits it into two halves *)
+  | Several_spines of int  (** that many cuts give a valid fold *)
+  | Bodies_interleaved
+      (** the halves' hinge layers do not form two separate rank ranges *)
+  | Invalid of violation  (** the one candidate's state violated an invariant *)
+
+val reverse_failure_to_string : reverse_failure -> string
+
+val reverse :
+  ?crease_id:int ->
+  t ->
+  axis:Geom.line ->
+  move_side:int ->
+  tip:bool array ->
+  inside:bool ->
+  prov:State.provenance option ->
+  (t, reverse_failure) result
+(** Reverse fold of the material [tip] (a mask over PARENT faces) across the
+    TABLE-space [axis]: every folded hinge joining two tip faces and reaching
+    beyond the axis is tried as the spine; a cut that leaves exactly two
+    connected halves, each with at least one parent cut by the axis (its
+    hinge layers), whose hinge layers occupy two separate rank ranges, yields
+    a candidate {!fold_blocks} with
+    two blocks. Inside: the lower half [Over] the lower body's topmost
+    layer and the upper half [Under] the upper body's bottommost layer;
+    outside: [Bottom] and [Top]. Exactly one candidate state passing the
+    invariants is the result. [tip] must contain only parents with a piece on
+    the moving side (the caller builds it so); a tip parent lying entirely on
+    the stationary side is not checked. *)
+
 val flip : t -> t
 (** Turn the whole sheet over: reflects across the footprint's vertical
     centerline (an internal, cosmetic axis — which line is irrelevant, only
