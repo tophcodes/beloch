@@ -72,10 +72,12 @@ it scores, the material it subdivides, the derived letters.
   rotation argument that justifies the prefix rule [demaine2007, §14.1] does
   not apply. Whether the end state is a legal flat folded state is decided by
   the kernel's invariants, as for every other write.
-- **Direction.** Derived from where the target sits relative to the anchor
-  flap's own layer in the landing footprint: target above → valley, target
-  below → mountain. When the target *is* the anchor's hinge layer, `over`
-  means valley and `under` means mountain. A user never states it.
+- **Direction.** Never stated and never computed as an input. The placement
+  fixes the block's rank; the crease's letter is then the derived
+  mountain/valley of the finished state (rank and orientation, §4.6, ADR
+  0011). Tucking a corner under its own layer reads valley when that layer
+  lies face-down, mountain when it lies face-up: the same placement, two
+  letters, decided by the paper, not by the keyword.
 - **Target resolution.** `T` resolves by incidence to a coplanar cluster. It
   must be stationary, and it must overlap the footprint the moved block lands
   on; a target that covers none of the landing area cannot be inserted
@@ -127,10 +129,13 @@ half is placed relative to its own hinge layer.
 - **Letters.** Nothing is stated. Each half flips over and keeps its rank
   position relative to the other half, so at the spine beyond O the backs of
   the paper now face each other where the fronts did: the derived letter
-  reverses. The line's own crease reads valley on both halves for an inside
-  fold and mountain on both for an outside fold. This is the four-way table
-  from the brainstorm: the simple fold keeps the halves together and the
-  spine's letter, the reverse folds separate them and reverse it.
+  reverses. The line's own crease reads, on both halves, the letter the
+  spine had before the fold for an inside reverse and the opposite letter
+  for an outside reverse (Maekawa at O: three of one kind, one of the
+  other). For a valley spine that is V, V inside and M, M outside, which is
+  the four-way table from the brainstorm: the simple fold keeps the halves
+  together and the spine's letter, the reverse folds separate them and
+  reverse it.
 
 A reverse fold is not two placed folds in sequence. After one half has moved,
 the spine hinge joins a reflected face to an unreflected one along no common
