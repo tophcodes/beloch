@@ -171,8 +171,8 @@ diagonal `--ac` is never creased on this route.
 type placement =
   | Top                 (* outside, above everything in the footprint *)
   | Bottom              (* outside, below everything *)
-  | Above of int        (* immediately above this stationary face's child *)
-  | Below of int        (* immediately below it *)
+  | Over of int        (* immediately above this stationary face's child *)
+  | Under of int        (* immediately below it *)
 
 val fold :
   ?crease_id:int ->
@@ -189,10 +189,10 @@ generalizes step 4 of today's `fold`:
 1. Stationary faces keep their relative order.
 2. Each block's faces are ordered by reversed parent rank (a rigid half-turn
    reverses a stack), and the block is spliced in as one contiguous run.
-3. `Top` and `Bottom` splice at the ends; `Above f` splices immediately after
-   `f`'s stationary child, `Below f` immediately before it. Two blocks aimed
-   at the same gap from opposite sides keep their sides: the `Above` block
-   sits next to its face, the `Below` block next to its face.
+3. `Top` and `Bottom` splice at the ends; `Over f` splices immediately after
+   `f`'s stationary child, `Under f` immediately before it. Two blocks aimed
+   at the same gap from opposite sides keep their sides: the `Over` block
+   sits next to its face, the `Under` block next to its face.
 
 `simple_fold` keeps its signature and calls `fold` with one block placed
 `Top` for a valley fold and `Bottom` for a mountain fold. A single-block fold
@@ -255,7 +255,7 @@ reports.
 ## Acceptance
 
 1. **Kernel, placement.** `test_fold_state`: a three-layer strip; one block
-   placed `Above`/`Below` the middle layer lands in the middle with reversed
+   placed `Over`/`Under` the middle layer lands in the middle with reversed
    internal order; `Top`/`Bottom` reproduce `simple_fold` bit for bit on the
    existing fold goldens (no golden changes).
 2. **Kernel, reverse.** A square folded in half, `reverse` across a line
