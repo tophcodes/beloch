@@ -217,6 +217,41 @@ val subdivide_paper :
 (** Like [subdivide], but [paper_axis] is a PAPER-space line: every face it
     crosses is split, regardless of current table placement. *)
 
+type placement =
+  | Top  (** outside: above every stationary layer in the footprint *)
+  | Bottom  (** outside: below every stationary layer *)
+  | Over of int
+      (** immediately above the stationary child of this PARENT face *)
+  | Under of int  (** immediately below it *)
+(** Where a moved block lands in the rank after a fold. [Over]/[Under] name
+    a parent face of the state being folded; that face must keep a
+    stationary child to anchor on (any non-block parent, or a block parent
+    the axis cuts). *)
+
+val fold_blocks :
+  ?crease_id:int ->
+  blocks:(bool array * placement) list ->
+  t ->
+  axis:Geom.line ->
+  move_side:int ->
+  prov:State.provenance option ->
+  (t, violation) result
+(** The general simple fold: every block's parents are cut by the TABLE-space
+    [axis] and their [move_side] pieces reflected across it, in one graph
+    transformation (one new angle-1 hinge per cut parent, carried hinges
+    re-attached, on-axis hinges with exactly one moving side toggled). Rank:
+    stationary faces keep their relative order; each block's movers, in
+    reversed parent-rank order (a half-turn reverses a stack), are spliced in
+    as one contiguous run at the block's placement. Two blocks aimed at the
+    same gap from opposite sides each stay next to their own face. A block
+    mask marks PARENT faces; a parent in no block is stationary even where
+    it crosses the axis. [Error v] is the resulting state's invariant
+    violation ([Taco_taco]/[Taco_tortilla] reject an impossible insertion).
+    [Invalid_argument] if an [Over]/[Under] face has no stationary child
+    (a block parent lying entirely on the moving side). A block parent cut
+    by the axis keeps its stationary remainder as that child, so a flap can
+    be tucked under its own hinge layer. *)
+
 val fold :
   ?crease_id:int ->
   ?moving_parents:bool array ->
@@ -226,19 +261,20 @@ val fold :
   valley:bool ->
   prov:State.provenance option ->
   t
-(** Simple flat fold as a graph transformation: faces on [move_side] of the
-    TABLE-space [axis] (restricted to [moving_parents], default all faces)
-    are cut and hinged to their stationary counterpart with a new angle-1
-    hinge; any old hinge lying entirely on [axis] with exactly one moving
-    side toggles (a flat precrease upgrades to folded, keeping its
-    [crease_id]; a folded hinge with no cut counterpart on the axis
-    physically unfolds back to angle 0). The rank is rebuilt in two blocks —
+(** [fold_blocks] with one block: [moving_parents] (default every face)
+    placed [Top] for a valley fold, [Bottom] for a mountain fold; raises
+    {!Error.fail} at [prov]'s span on a violation. Faces on [move_side] of
+    the TABLE-space [axis] (restricted to [moving_parents]) are cut and
+    hinged to their stationary counterpart with a new angle-1 hinge; any
+    old hinge lying entirely on [axis] with exactly one moving side toggles
+    (a flat precrease upgrades to folded, keeping its [crease_id]; a folded
+    hinge with no cut counterpart on the axis physically unfolds back to
+    angle 0). The rank is rebuilt in two blocks —
     stationary faces keep their relative order, movers reverse theirs — with
     movers stacked above for a valley fold, below for a mountain fold. The
     root and [base] are chosen from a stationary child where one exists (its
     parent's placement is unchanged); only when every face moves is the base
-    itself reflected across [axis]. Raises {!Error.fail} at [prov]'s span on
-    a resulting invariant violation. *)
+    itself reflected across [axis]. *)
 
 val simple_fold : t -> axis:Geom.line -> move_side:int -> valley:bool -> t
 (** [fold] with no [crease_id]/[moving_parents] override and no provenance. *)

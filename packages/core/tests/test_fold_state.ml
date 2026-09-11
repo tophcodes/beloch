@@ -1382,6 +1382,166 @@ let test_mark_axis_current_parity () =
   let str = function `Line _ -> "line" | `Bent -> "bent" | `Empty -> "empty" | `Collapsed -> "collapsed" in
   Alcotest.(check string) "mark axis class" "collapsed" (str (Fold_state.mark_axis_current g 77))
 
+(* ---- Task 1: placement ---- *)
+
+(* Two layers: f0 = [0,1]x[0,1] flat on the table, f1 = [1,2]x[0,1] folded
+   across x=1 onto it (rank 1, face-down). Fold f1's table-left piece
+   (x < 1/2) across x=1/2: the moved piece lands on table [1/2,1]. *)
+let two_layer () =
+  mk ~faces:(single_fold_faces ()) ~hinges:(single_fold_hinges ())
+    ~rank:[| 0; 1 |] ()
+
+let paper_x_range (g : Fold_state.t) (i : int) : Num.t * Num.t =
+  let f = (Fold_state.faces g).(i) in
+  let xs = Array.to_list (Array.map (fun (p : Geom.point) -> p.Geom.x) f) in
+  ( List.fold_left (fun a b -> if Num.compare b a < 0 then b else a) (List.hd xs) xs,
+    List.fold_left (fun a b -> if Num.compare b a > 0 then b else a) (List.hd xs) xs )
+
+(* the child of parent f1 whose paper x-range is [3/2, 2] (the moved corner)
+   and the one whose range is [1, 3/2] (the stationary remainder) *)
+let find_by_range (g : Fold_state.t) lo hi : int =
+  let n = Array.length (Fold_state.faces g) in
+  let rec go i =
+    if i >= n then Alcotest.failf "no face with paper x-range [%s,%s]"
+        (Num.to_rational_string lo) (Num.to_rational_string hi)
+    else
+      let a, b = paper_x_range g i in
+      if Num.equal a lo && Num.equal b hi then i else go (i + 1)
+  in
+  go 0
+
+let three_halves = Num.of_q (Q.of_ints 3 2)
+
+(* Literal regression contract: this is the face order and rank the old
+   `fold` produced for a valley (Top) fold of the two-layer state, and the
+   face order is observable in FOLD output. Mountain (Bottom) on this exact
+   mask has no matching literal: it wraps the moved corner under the
+   full-width, uncut base, which the taco-tortilla check correctly rejects
+   ({!test_fold_blocks_bottom_pierces}) — so that direction is asserted as
+   the same rejection here, not as a second literal layout. *)
+let test_fold_blocks_top_bottom_match_old_fold () =
+  let g = two_layer () in
+  let mask = [| false; true |] in
+  let check_order label g' expected =
+    List.iteri
+      (fun i (lo, hi) ->
+        let a, b = paper_x_range g' i in
+        Alcotest.(check bool)
+          (Printf.sprintf "%s: face %d x-range" label i)
+          true (Num.equal a lo && Num.equal b hi))
+      expected
+  in
+  (match
+     Fold_state.fold_blocks ~blocks:[ (mask, Fold_state.Top) ] g
+       ~axis:vline_half ~move_side:(-1) ~prov:None
+   with
+  | Error v -> Alcotest.failf "Top: %s" (Fold_state.violation_to_string v)
+  | Ok g' ->
+      check_order "Top" g'
+        [ (q 0, q 1); (q 1, three_halves); (three_halves, q 2) ];
+      Alcotest.(check (array int)) "Top: rank" [| 0; 1; 2 |] (Fold_state.rank g'));
+  match
+    Fold_state.fold_blocks ~blocks:[ (mask, Fold_state.Bottom) ] g
+      ~axis:vline_half ~move_side:(-1) ~prov:None
+  with
+  | Ok _ -> Alcotest.fail "Bottom: expected a violation"
+  | Error (Fold_state.Taco_tortilla _) -> ()
+  | Error v -> Alcotest.failf "Bottom: wrong violation %s" (Fold_state.violation_to_string v)
+
+let test_fold_blocks_over_tucks () =
+  let g = two_layer () in
+  match
+    Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Over 0) ] g
+      ~axis:vline_half ~move_side:(-1) ~prov:None
+  with
+  | Error v -> Alcotest.failf "Over 0: %s" (Fold_state.violation_to_string v)
+  | Ok g' ->
+      let base = find_by_range g' (q 0) (q 1) in
+      let stay = find_by_range g' (q 1) three_halves in
+      let moved = find_by_range g' three_halves (q 2) in
+      Alcotest.(check bool) "moved above the base" true (Fold_state.above g' moved base);
+      Alcotest.(check bool) "moved below its own remainder" true
+        (Fold_state.above g' stay moved);
+      Alcotest.(check int) "three faces" 3 (Array.length (Fold_state.faces g'))
+
+let test_fold_blocks_under_own_hinge () =
+  let g = two_layer () in
+  match
+    Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Under 1) ] g
+      ~axis:vline_half ~move_side:(-1) ~prov:None
+  with
+  | Error v -> Alcotest.failf "Under 1: %s" (Fold_state.violation_to_string v)
+  | Ok g' ->
+      let base = find_by_range g' (q 0) (q 1) in
+      let stay = find_by_range g' (q 1) three_halves in
+      let moved = find_by_range g' three_halves (q 2) in
+      Alcotest.(check bool) "moved above the base" true (Fold_state.above g' moved base);
+      Alcotest.(check bool) "stay above moved" true (Fold_state.above g' stay moved)
+
+let test_fold_blocks_two_blocks_same_gap () =
+  let g = two_layer () in
+  let half = Num.of_q (Q.of_ints 1 2) in
+  match
+    Fold_state.fold_blocks
+      ~blocks:
+        [ ([| true; false |], Fold_state.Over 0);
+          ([| false; true |], Fold_state.Under 1) ]
+      g ~axis:vline_half ~move_side:(-1) ~prov:None
+  with
+  | Error v -> Alcotest.failf "two blocks: %s" (Fold_state.violation_to_string v)
+  | Ok g' ->
+      Alcotest.(check int) "four faces" 4 (Array.length (Fold_state.faces g'));
+      let f0s = find_by_range g' half (q 1) in
+      let f0m = find_by_range g' (q 0) half in
+      let f1s = find_by_range g' (q 1) three_halves in
+      let f1m = find_by_range g' three_halves (q 2) in
+      Alcotest.(check bool) "f0m above f0s" true (Fold_state.above g' f0m f0s);
+      Alcotest.(check bool) "f1m above f0m" true (Fold_state.above g' f1m f0m);
+      Alcotest.(check bool) "f1s above f1m" true (Fold_state.above g' f1s f1m)
+
+let test_fold_blocks_placement_face_without_child () =
+  let g = two_layer () in
+  (match
+     Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Over 1) ] g
+       ~axis:vline_half ~move_side:(-1) ~prov:None
+   with
+  | Ok _ -> ()
+  | Error v -> Alcotest.failf "Over 1 (self, cut): %s" (Fold_state.violation_to_string v));
+  match
+    Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Over 7) ] g
+      ~axis:vline_half ~move_side:(-1) ~prov:None
+  with
+  | exception Invalid_argument _ -> ()
+  | Ok _ -> Alcotest.fail "Over 7: expected Invalid_argument, got Ok"
+  | Error v ->
+      Alcotest.failf "Over 7: expected Invalid_argument, got Error %s"
+        (Fold_state.violation_to_string v)
+
+let test_fold_blocks_top_lands_outside () =
+  let g = two_layer () in
+  match
+    Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Top) ] g
+      ~axis:vline_half ~move_side:(-1) ~prov:None
+  with
+  | Error v -> Alcotest.failf "Top: %s" (Fold_state.violation_to_string v)
+  | Ok g' ->
+      let stay = find_by_range g' (q 1) three_halves in
+      let moved = find_by_range g' three_halves (q 2) in
+      Alcotest.(check bool) "moved on top of its remainder" true
+        (Fold_state.above g' moved stay)
+
+let test_fold_blocks_bottom_pierces () =
+  (* wrapping the top layer's corner under the full-width base would pass
+     through it: the base is a tortilla crossing the new taco's crease *)
+  let g = two_layer () in
+  match
+    Fold_state.fold_blocks ~blocks:[ ([| false; true |], Fold_state.Bottom) ] g
+      ~axis:vline_half ~move_side:(-1) ~prov:None
+  with
+  | Ok _ -> Alcotest.fail "Bottom: expected a violation"
+  | Error (Fold_state.Taco_tortilla _) -> ()
+  | Error v -> Alcotest.failf "Bottom: wrong violation %s" (Fold_state.violation_to_string v)
+
 let () =
   Alcotest.run "fold_graph"
     [ ( "derive",
@@ -1523,5 +1683,16 @@ let () =
             test_mark_axis_current_parity ] );
       ( "plan3c-task1-target-hinged",
         [ Alcotest.test_case "TargetHinged select_scope parity" `Quick
-            test_select_scope_target_hinged_parity ] )
+            test_select_scope_target_hinged_parity ] );
+      ( "placement",
+        [ Alcotest.test_case "Top/Bottom match old fold" `Quick
+            test_fold_blocks_top_bottom_match_old_fold;
+          Alcotest.test_case "Over tucks between" `Quick test_fold_blocks_over_tucks;
+          Alcotest.test_case "Top lands outside" `Quick test_fold_blocks_top_lands_outside;
+          Alcotest.test_case "Bottom pierces the base" `Quick test_fold_blocks_bottom_pierces;
+          Alcotest.test_case "Under own hinge" `Quick test_fold_blocks_under_own_hinge;
+          Alcotest.test_case "Two blocks same gap" `Quick
+            test_fold_blocks_two_blocks_same_gap;
+          Alcotest.test_case "Placement face without child" `Quick
+            test_fold_blocks_placement_face_without_child ] )
     ]
