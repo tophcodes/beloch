@@ -15,7 +15,13 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.25-dev** (free point on a line — 1-DOF reference point
+Current version: **v0.26-dev** (layer placement and the reverse fold:
+`fold … over/under <flap>` splices the moved block into the stack beside a
+named flap; `reverse` runs an inside or outside reverse fold as two placed
+half-folds over one line; both derive their crease letters from the finished
+stack; see
+[`docs/superpowers/specs/2026-09-10-reverse-fold-and-layer-placement-design.md`](../docs/superpowers/specs/2026-09-10-reverse-fold-and-layer-placement-design.md));
+**v0.25-dev** (free point on a line — 1-DOF reference point
 along a line's material bundle; `.p = free on --l from .x at <rational>`, `at`
 optional (default `t = 1/2`); `free` is provenance, not a kernel relaxation —
 the result is an ordinary exact point; `beloch:free` FOLD emission, a
@@ -800,7 +806,7 @@ crease and why `&` selection exists).
 **Placing the moved flap with `over` / `under`** *(since v0.26-dev)*.
 
 ```
-fold <motion|crease> moving <flap> ( over | under ) <flap>
+fold <motion|crease> [ moving <flap> ] ( over | under ) <flap>
 ```
 
 A placed fold reflects the anchor flap's material beyond the axis, as any
@@ -811,8 +817,10 @@ unchanged. The moving set is the anchor flap's faces on the moving side,
 closed under coplanar clusters, with no outer-prefix rule: a tuck passes
 through a pocket that opens for it, so the rigid-rotation argument behind
 the prefix rule does not apply; the layer invariants of the end state
-decide. The target resolves by incidence to a flap that must be stationary
-and must overlap the footprint the block lands on; of its overlapping faces
+decide. `moving` is optional here as in any fold: a map motion implies it
+from the moved point, and the fold errors when neither is available. The
+target resolves by incidence to a flap that must be stationary and must
+overlap the footprint the block lands on; of its overlapping faces
 the lowest-ranked anchors `under`, the highest-ranked `over`. The fold's
 direction is a consequence of the placement, never stated: `mountain` beside
 `over`/`under` is a parse error (`a placed fold derives its direction; drop
@@ -833,7 +841,8 @@ Design: [`docs/superpowers/specs/2026-09-10-reverse-fold-and-layer-placement-des
 ### 4.6a `reverse` — inside and outside reverse folds *(since v0.26-dev)*
 
 ```
-reverse [ CREASE_NAME "=" ] <motion|crease> [ moving <flap> ] [ outside ]
+reverse <motion|crease> [ moving <flap> ] [ outside ]
+reverse CREASE_NAME "=" <motion> [ moving <flap> ] [ outside ]
 ```
 
 Take a flap folded along a crease, the *spine*, and a line across it meeting
