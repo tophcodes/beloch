@@ -116,9 +116,11 @@ half is placed relative to its own hinge layer.
 - **Placement, outside.** The half hinged to the lower body goes under
   everything in the footprint; the half hinged to the upper body on top of
   everything.
-- **Which hinge is the spine.** Every folded hinge of the tip whose removal
-  leaves two components is tried; for each, the placement above is attempted
-  and the kernel's invariants decide. Exactly one survivor is the fold. None
+- **Which hinge is the spine.** Every folded hinge of the tip that reaches
+  beyond the line (its far part is what reverses; a hinge lying entirely on
+  the stationary side is no spine, so a line parallel to the crest finds
+  none) and whose removal leaves two components is tried; for each, the
+  placement above is attempted and the kernel's invariants decide. Exactly one survivor is the fold. None
   is an error, more than one is an error asking to fold less (a selector for
   the spine is deferred; the crane never needs one, since a tip with a single
   crest has a single cut).
@@ -213,8 +215,8 @@ val reverse :
   (t, reverse_failure) result
 ```
 
-Computes the tip's internal folded hinges, enumerates the single-hinge cuts
-with two components, derives each half's hinge layers and the two bodies,
+Computes the tip's internal folded hinges that reach beyond the axis,
+enumerates the single-hinge cuts with two components, derives each half's hinge layers and the two bodies,
 builds the two blocks with their placements, and calls `fold`. Failures:
 `No_spine`, `Several_spines of int`, `Bodies_interleaved`, and the `make`
 violation of the one candidate that had a placement. Lives in `Fold_state`
