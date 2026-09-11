@@ -203,6 +203,7 @@ let test_parse_fold_action () =
          moving = Some (Ast.FlapPoint (Ast.PNamed { name = "a"; _ }));
          up_to = None;
          direction = Ast.Mountain;
+         place = None;
        },
        _ );
   ] ->
@@ -215,7 +216,7 @@ let test_parse_fold_valley_default () =
   | [
    Ast.Fold
      ( None, Ast.MMotion (Ast.MapPoints _),
-       { moving = None; up_to = None; direction = Ast.Valley },
+       { moving = None; up_to = None; direction = Ast.Valley; place = None },
        _ );
   ] ->
       ()
@@ -453,6 +454,7 @@ let test_parse_up_to () =
          moving = None;
          up_to = Some (Ast.FlapPoint (Ast.PNamed { name = "c"; _ }));
          direction = Ast.Valley;
+         place = None;
        },
        _ );
   ] ->
@@ -472,6 +474,7 @@ let test_parse_flap_forms () =
          moving = Some (Ast.FlapSpec _);
          up_to = Some (Ast.FlapLine (Ast.LNamed { cname = "d"; _ }));
          direction = Ast.Mountain;
+         place = None;
        },
        _ );
   ] ->
@@ -535,7 +538,7 @@ let test_parse_fold_along () =
   | [
    Ast.Fold
      ( None, Ast.MLine (Ast.LNamed { cname = "m"; _ }),
-       { moving = Some (Ast.FlapPoint _); up_to = None; direction = Ast.Valley },
+       { moving = Some (Ast.FlapPoint _); up_to = None; direction = Ast.Valley; place = None },
        _ );
   ] ->
       ()
@@ -814,7 +817,7 @@ let test_parse_new_fold_motion () =
      ( None,
        Ast.MMotion (Ast.MapPoints _),
        { moving = Some (Ast.FlapPoint (Ast.PNamed { name = "a"; _ }));
-         up_to = None; direction = Ast.Valley },
+         up_to = None; direction = Ast.Valley; place = None },
        _ );
   ] ->
       ()
@@ -830,7 +833,7 @@ let test_parse_new_fold_named () =
      ( Some "d",
        Ast.MMotion (Ast.MapPoints _),
        { moving = Some (Ast.FlapPoint (Ast.PNamed { name = "a"; _ }));
-         up_to = None; direction = Ast.Valley },
+         up_to = None; direction = Ast.Valley; place = None },
        _ );
   ] ->
       ()
@@ -848,7 +851,7 @@ let test_parse_new_fold_along () =
      ( None,
        Ast.MLine (Ast.LNamed { cname = "d"; _ }),
        { moving = Some (Ast.FlapPoint (Ast.PNamed { name = "a"; _ }));
-         up_to = None; direction = Ast.Valley },
+         up_to = None; direction = Ast.Valley; place = None },
        _ );
   ] ->
       ()
@@ -874,6 +877,29 @@ let test_parse_at_retired () =
   expect_error "unexpected character" (fun () ->
       Beloch.parse ~filename:"t.bel" "paper square\n@flatten --a and --b\n")
 
+let test_parse_fold_under () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\nfold through .m .n moving .b under .p\n"
+  in
+  match prog with
+  | [ Ast.Fold (None, Ast.MMotion (Ast.Through _),
+        { moving = Some (Ast.FlapPoint (Ast.PNamed { name = "b"; _ }));
+          up_to = None; direction = Ast.Valley;
+          place = Some (Ast.PlaceUnder, Ast.FlapPoint (Ast.PNamed { name = "p"; _ })) }, _) ] -> ()
+  | _ -> Alcotest.fail "expected a placed fold"
+
+let test_parse_fold_over_rejects_mountain () =
+  expect_error "a placed fold derives its direction; drop mountain" (fun () ->
+      Beloch.parse ~filename:"t.bel"
+        "paper square\nfold through .m .n moving .b over .p mountain\n")
+
+let test_parse_fold_under_rejects_up_to () =
+  expect_error "a placed fold moves the anchor flap only; up to is not supported here"
+    (fun () ->
+      Beloch.parse ~filename:"t.bel"
+        "paper square\nfold through .m .n moving .b up to .c under .p\n")
+
 let () =
   Alcotest.run "beloch-parse"
     [
@@ -890,6 +916,11 @@ let () =
           Alcotest.test_case "fold action parses" `Quick test_parse_fold_action;
           Alcotest.test_case "fold valley default" `Quick
             test_parse_fold_valley_default;
+          Alcotest.test_case "fold under" `Quick test_parse_fold_under;
+          Alcotest.test_case "placed fold rejects mountain" `Quick
+            test_parse_fold_over_rejects_mountain;
+          Alcotest.test_case "placed fold rejects up to" `Quick
+            test_parse_fold_under_rejects_up_to;
           Alcotest.test_case "bare axiom has no fold_spec" `Quick
             test_parse_precrease_no_foldspec;
           Alcotest.test_case "flip parses" `Quick test_parse_flip;

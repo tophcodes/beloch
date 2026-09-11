@@ -43,7 +43,7 @@ let mk_flatten (name : string option) (items : collapse_item list)
 
 %token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD MOVING MOUNTAIN VALLEY FLIP RPAREN AND UP TO FOLD_KW
 %token DEF APPLY EXPORT AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
-%token FLATTEN OVER STAYING MARK BETWEEN AT
+%token FLATTEN OVER STAYING MARK BETWEEN AT UNDER REVERSE OUTSIDE
 %token FREE ON FROM
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN  (* --[ / .[ : the line/point select openers *)
 %token <string> POINT
@@ -117,9 +117,24 @@ arg:
   | line_operand  { ALine $1 }
 
 fold_clauses:
-  | moving_opt upto_opt mountain_opt
-      { { moving = $1; up_to = $2;
-          direction = (if $3 then Mountain else Valley) } }
+  (* `place_opt` precedes `mountain_opt` so that `over .p mountain` still
+     parses and reaches the "drop mountain" report below, rather than dying
+     as a bare syntax error. *)
+  | moving_opt upto_opt place_opt mountain_opt
+      { match $3, $4, $2 with
+        | Some _, true, _ ->
+            Error.fail $loc "a placed fold derives its direction; drop mountain"
+        | Some _, _, Some _ ->
+            Error.fail $loc
+              "a placed fold moves the anchor flap only; up to is not supported here"
+        | _ ->
+            { moving = $1; up_to = $2;
+              direction = (if $4 then Mountain else Valley); place = $3 } }
+
+place_opt:
+  |                { None }
+  | OVER flap_arg  { Some (PlaceOver, $2) }
+  | UNDER flap_arg { Some (PlaceUnder, $2) }
 
 moving_opt:
   |                 { None }

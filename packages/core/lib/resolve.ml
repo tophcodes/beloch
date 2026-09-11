@@ -678,3 +678,81 @@ let resolve_mark_flap (ctx : Ctx.ctx) (layer_opt : Ast.flap_operand option)
                    "the mark's endpoint lies on a crease shared by %d \
                     flaps; name the flap with #[...]"
                    (List.length ids))))
+
+(* ---- placed folds (spec 2026-09-10-reverse-fold-and-layer-placement) ---- *)
+
+let placed_fold_plan (ctx : Ctx.ctx) (axis : Geom.line) ~(anchor : Ast.flap_arg)
+    ~(place : Ast.place_dir * Ast.flap_arg) (span : Error.span) :
+    int * bool array * Fold_state.placement =
+  let st = !(ctx.state) in
+  let n = Array.length (Fold_state.faces st) in
+  let move_side = default_move_side ctx axis anchor span in
+  let piece side fi =
+    Geom.clip_convex_halfplane axis side (Fold_state.table_polygon_ccw st fi)
+  in
+  let cluster = resolve_flap_cluster ctx anchor span in
+  let block = Array.make n false in
+  List.iter
+    (fun fi -> if Array.length (piece move_side fi) >= 3 then block.(fi) <- true)
+    cluster;
+  if not (Array.exists Fun.id block) then
+    Error.fail span "the moving flap has no material on the moving side";
+  let dir, target = place in
+  let target_cluster = resolve_flap_cluster ctx target span in
+  (* a target face must keep a stationary piece: any non-block face, or a
+     block face the axis cuts (the anchor's own hinge layer, for a tuck) *)
+  let stay_piece fi =
+    if block.(fi) then piece (-move_side) fi else Fold_state.table_polygon_ccw st fi
+  in
+  if List.for_all (fun fi -> Array.length (stay_piece fi) < 3) target_cluster then
+    Error.fail span
+      "the placement target moves with the fold; name a stationary flap";
+  (* landing footprint: the block's move-side pieces reflected across the axis *)
+  let landing =
+    List.filter_map
+      (fun fi ->
+        if block.(fi) then
+          let p = piece move_side fi in
+          if Array.length p >= 3 then
+            Some
+              (Array.map (Geom.reflect_point axis) p |> fun a ->
+               if Num.sign (Geom.signed_area a) < 0 then
+                 Array.init (Array.length a) (fun k -> a.(Array.length a - 1 - k))
+               else a)
+          else None
+        else None)
+      (List.init n Fun.id)
+  in
+  let overlapping =
+    List.filter
+      (fun fi ->
+        let tp = stay_piece fi in
+        Array.length tp >= 3 && List.exists (fun l -> Geom.convex_overlap tp l) landing)
+      target_cluster
+  in
+  let rank = Fold_state.rank st in
+  match overlapping with
+  | [] ->
+      Error.fail span
+        (Printf.sprintf "%s's flap does not cover where the moved material lands"
+           (fstr target))
+  | f :: rest ->
+      let pick better = List.fold_left (fun a b -> if better b a then b else a) f rest in
+      let placement =
+        match dir with
+        | Ast.PlaceUnder -> Fold_state.Under (pick (fun b a -> rank.(b) < rank.(a)))
+        | Ast.PlaceOver -> Fold_state.Over (pick (fun b a -> rank.(b) > rank.(a)))
+      in
+      (move_side, block, placement)
+
+let placement_failure_message (dir : Ast.place_dir) (target : Ast.flap_arg)
+    (v : Fold_state.violation) : string =
+  let word = match dir with Ast.PlaceOver -> "over" | Ast.PlaceUnder -> "under" in
+  match v with
+  | Fold_state.Taco_tortilla { tortilla; _ } ->
+      Printf.sprintf "placing the moved material %s %s would pierce layer %d" word
+        (fstr target) tortilla
+  | Fold_state.Taco_taco (_, _) ->
+      Printf.sprintf "placing the moved material %s %s would pierce another layer"
+        word (fstr target)
+  | v -> Fold_state.violation_to_string v

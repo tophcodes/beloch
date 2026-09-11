@@ -67,8 +67,44 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
     | None, None -> None
   in
   let valley = fs.Ast.direction = Ast.Valley in
-  match fs.Ast.up_to with
-  | None ->
+  match (fs.Ast.place, fs.Ast.up_to) with
+  | Some place, _ ->
+      (* A placed fold: the anchor flap's material beyond the axis moves as one
+         block and is spliced next to the target flap instead of at the outside
+         of the stack. The direction follows from the placement, so [valley] is
+         unused here. *)
+      let anchor =
+        match anchor_arg with
+        | Some fa -> fa
+        | None -> Error.fail span "a placed fold needs `moving .p` to name the flap"
+      in
+      let move_side, block, placement =
+        Resolve.placed_fold_plan ctx axis ~anchor ~place span
+      in
+      (match
+         Fold_state.scoped_fold_hinge_closed !(ctx.state) ~axis ~move_side
+           ~moving_parents:block
+       with
+      | Ok () -> ()
+      | Error (ta, tb) ->
+          Error.fail span
+            (Printf.sprintf
+               "the moving flap is joined to a stationary layer along a \
+                segment ((%g,%g)-(%g,%g)) that is not on the fold axis — it \
+                cannot fold on its own without tearing the paper. Move those \
+                layers too, or fold along a crease on the axis."
+               (Num.to_float ta.Geom.x) (Num.to_float ta.Geom.y)
+               (Num.to_float tb.Geom.x) (Num.to_float tb.Geom.y)));
+      (match check with Some k -> k (fun fi -> block.(fi)) | None -> ());
+      (match
+         Fold_state.fold_blocks ~crease_id ~blocks:[ (block, placement) ]
+           !(ctx.state) ~axis ~move_side ~prov
+       with
+      | Ok st -> ctx.state := st
+      | Error v ->
+          Error.fail span
+            (Resolve.placement_failure_message (fst place) (snd place) v))
+  | None, None ->
       (* Default scope: the outside-contiguous prefix down to the flap(s)
          carrying the anchor operand — not every layer on the side. *)
       let move_side =
@@ -123,7 +159,7 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
       ctx.state :=
         Fold_state.fold !(ctx.state) ~moving_parents ~axis ~move_side ~valley
           ~crease_id ~prov
-  | Some tgt -> (
+  | None, Some tgt -> (
       let move_side =
         match side_override with
         | Some s -> s

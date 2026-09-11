@@ -77,10 +77,17 @@ type flap_arg =
   | FlapLine of line_operand
   | FlapSpec of flap_operand
 
+(* where a placed fold's moved block lands: immediately over or under the
+   target flap (spec 2026-09-10-reverse-fold-and-layer-placement-design.md) *)
+type place_dir = PlaceOver | PlaceUnder
+
 type fold_spec = {
   moving : flap_arg option;
   up_to : flap_arg option;
   direction : direction;
+  place : (place_dir * flap_arg) option;
+      (* Some: `over`/`under` given; direction is then derived and [direction]
+         is ignored; the parser rejects `mountain` and `up to` beside it *)
 }
 
 (* A collapse element's M/V constraint (flatten V2 surface, spec

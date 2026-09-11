@@ -99,3 +99,26 @@ val resolve_mark_flap :
 (** The flap (coplanar cluster) a partial mark's extent is written onto: an
     explicit `#[...]` wins; otherwise the carrying flap of the extent's
     representative paper point. *)
+
+val placed_fold_plan :
+  Ctx.ctx ->
+  Geom.line ->
+  anchor:Ast.flap_arg ->
+  place:Ast.place_dir * Ast.flap_arg ->
+  Error.span ->
+  int * bool array * Fold_state.placement
+(** A placed fold (`fold … over/under <flap>`, spec §4.6): the moving side
+    (from the anchor, as for a default fold), the block (the anchor flap's
+    faces with a piece on that side, as a mask over parent faces) and the
+    placement. The target flap must keep a stationary piece (a non-block
+    face, or a block face the axis cuts: the anchor's own hinge layer) that
+    overlaps the landing footprint (the block's move-side pieces reflected
+    across the axis); of its overlapping faces the lowest-ranked anchors
+    `under`, the highest-ranked `over`. Errors carry the spec's messages. *)
+
+val placement_failure_message :
+  Ast.place_dir -> Ast.flap_arg -> Fold_state.violation -> string
+(** The user-facing text for a placed fold the kernel rejected. Names the
+    pierced layer for [Fold_state.Taco_tortilla], whose [tortilla] is a face
+    index of the rejected state; a [Fold_state.Taco_taco] carries only hinge
+    indices, not a face, so its message names no layer. *)
