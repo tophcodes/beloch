@@ -1,0 +1,15 @@
+; reverse along a mark: the mark's name repoints at the material crease, so a
+; later fold along it does not mint a second coincident crease
+
+paper square
+
+fold --d = map .b onto .a                   ; right half onto the left; crest at table x = 1/2
+.m = free on --ab from .a at 3/8            ; (3/8, 0)
+.n = free on --cd from .d at 3/8            ; (3/8, 1)
+mark --m = through .m .n
+.t = free on --d from .[--d --ab] at 1/2    ; (1/2, 1/2): on the crest
+reverse --m moving .t
+
+; assert steps = 2
+; assert faces = 4
+; assert --m is valley

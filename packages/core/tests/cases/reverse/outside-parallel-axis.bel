@@ -1,0 +1,14 @@
+; The inside case's geometry with `outside`: the line x = 3/8 runs parallel
+; to the crest, so the whole spine lies beyond it and the two bodies are
+; joined only through the tip. Wrapping the halves around the outside would
+; run the reflected crest through both bodies, which the kernel rejects.
+
+paper square
+
+fold --d = map .b onto .a
+.m = free on --ab from .a at 3/8
+.n = free on --cd from .d at 3/8
+.t = free on --d from .[--d --ab] at 1/2
+reverse --r = through .m .n moving .t outside
+
+; expect error "reversing the tip would pierce layer"

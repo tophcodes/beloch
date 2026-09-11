@@ -473,6 +473,57 @@ let eval_fold (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
         ~crease_id:cid ~prov ~check:(Some check_straight);
       push_frame ctx (Some span)
 
+let eval_reverse (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
+    (rs : Ast.reverse_spec) (span : Error.span) : unit =
+  let fs_for_ax5 =
+    { Ast.moving = rs.Ast.rmoving; up_to = None; direction = Ast.Valley; place = None }
+  in
+  let cid, axis, prov, implied, mark_cr =
+    match resolve_markable ctx span name_opt (Some fs_for_ax5) m with
+    | `Fresh (cid, axis, prov, _, implied) -> (cid, axis, prov, implied, None)
+    | `Existing lo ->
+        let cid = Fold_state.fresh_crease_id () in
+        let prov : State.provenance option =
+          Some { State.axiom = "reverse"; sources = [ Resolve.lstr lo ]; span; name = None }
+        in
+        (* mirror eval_fold's `Existing (LNamed cr) when Mark` handling: if
+           the markable is a mark's name, its binding must repoint at this
+           fresh material crease when no new name is bound, or a later fold
+           along the mark mints a second, coincident crease. *)
+        let mark_cr =
+          match lo with
+          | Ast.LNamed cr
+            when (match lookup_crease ctx cr with Mark _ -> true | _ -> false) ->
+              Some cr
+          | _ -> None
+        in
+        (cid, Resolve.resolve_line ctx lo, prov, None, mark_cr)
+  in
+  let anchor =
+    match (rs.Ast.rmoving, implied) with
+    | Some fa, _ -> fa
+    | None, Some p -> Ast.FlapPoint p
+    | None, None -> Error.fail span "this reverse needs `moving .p` to name the tip"
+  in
+  let move_side, tip = Resolve.tip_faces ctx axis ~anchor span in
+  (match
+     Fold_state.reverse ~crease_id:cid !(ctx.state) ~axis ~move_side ~tip
+       ~inside:(not rs.Ast.outside) ~prov
+   with
+  | Ok st -> ctx.state := st
+  | Error (Fold_state.Invalid (Fold_state.Taco_tortilla { tortilla; _ })) ->
+      Error.fail span (Printf.sprintf "reversing the tip would pierce layer %d" tortilla)
+  | Error (Fold_state.Invalid (Fold_state.Taco_taco (_, _))) ->
+      Error.fail span "reversing the tip would pierce another layer"
+  | Error e -> Error.fail span (Fold_state.reverse_failure_to_string e));
+  push_frame ctx (Some span);
+  match name_opt with
+  | Some n -> bind_crease ctx n span (Material (cid, axis))
+  | None -> (
+      match mark_cr with
+      | Some cr -> promote_crease ctx cr.Ast.cname (Material (cid, axis))
+      | None -> ())
+
 let eval_free_point (ctx : Ctx.ctx) (n : string) (line : Ast.line_operand)
     (anchor : Ast.point_operand) (t : Num.t option) (span : Error.span) : unit =
   (* a bare value-bound line (`--l = through .a .b`, unmarked) has no
@@ -633,6 +684,7 @@ let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
   | Ast.Mark (name_opt, m, ext, dir, layer_opt, span) ->
       eval_mark ctx name_opt m ext dir layer_opt span
   | Ast.Fold (name_opt, m, fs, span) -> eval_fold ctx name_opt m fs span
+  | Ast.Reverse (name_opt, m, rs, span) -> eval_reverse ctx name_opt m rs span
   | Ast.Point (n, Ast.PsExpr po, span) ->
       bind_point ctx n span (Resolve.resolve_point ctx po)
   | Ast.Point (n, Ast.PsFree { line; anchor; t; span }, _) ->

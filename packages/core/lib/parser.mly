@@ -84,6 +84,8 @@ body_stmt:
   (* fold: motion-fold or fold-along an existing material crease *)
   | FOLD_KW markable fold_clauses        { Fold (None, $2, $3, $loc) }
   | FOLD_KW CREASE EQ axiom fold_clauses { Fold (Some $2, MMotion $4, $5, $loc) }
+  | REVERSE markable reverse_clauses        { Reverse (None, $2, $3, $loc) }
+  | REVERSE CREASE EQ axiom reverse_clauses { Reverse (Some $2, MMotion $4, $5, $loc) }
   | POINT EQ point_expr  { Point ($1, $3, $loc) }
   | FLIP                 { Flip $loc }
   | INSTANCE EQ APPLY IDENT LPAREN args RPAREN { Apply (Some $1, $4, $6, $loc) }
@@ -130,6 +132,13 @@ fold_clauses:
         | _ ->
             { moving = $1; up_to = $2;
               direction = (if $4 then Mountain else Valley); place = $3 } }
+
+reverse_clauses:
+  | moving_opt outside_opt { { rmoving = $1; outside = $2 } }
+
+outside_opt:
+  |         { false }
+  | OUTSIDE { true }
 
 place_opt:
   |                { None }

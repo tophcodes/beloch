@@ -756,3 +756,43 @@ let placement_failure_message (dir : Ast.place_dir) (target : Ast.flap_arg)
       Printf.sprintf "placing the moved material %s %s would pierce another layer"
         word (fstr target)
   | v -> Fold_state.violation_to_string v
+
+let tip_faces (ctx : Ctx.ctx) (axis : Geom.line) ~(anchor : Ast.flap_arg)
+    (span : Error.span) : int * bool array =
+  let st = !(ctx.state) in
+  let n = Array.length (Fold_state.faces st) in
+  let move_side = default_move_side ctx axis anchor span in
+  let beyond fi =
+    Array.length
+      (Geom.clip_convex_halfplane axis move_side (Fold_state.table_polygon_ccw st fi))
+    >= 3
+  in
+  let tip = Array.make n false in
+  let seeds = List.filter beyond (anchor_faces ctx anchor span) in
+  if seeds = [] then
+    Error.fail span "the moving flap has no material on the moving side";
+  let hinges = Fold_state.hinges st in
+  let reaches_beyond hi =
+    let ta, tb = Fold_state.hinge_table_segment st hi in
+    Geom.side_of_line axis ta = move_side || Geom.side_of_line axis tb = move_side
+  in
+  let stack = ref seeds in
+  List.iter (fun s -> tip.(s) <- true) seeds;
+  while !stack <> [] do
+    let f = List.hd !stack in
+    stack := List.tl !stack;
+    Array.iteri
+      (fun hi (h : Fold_state.hinge) ->
+        let other =
+          if h.Fold_state.fa = f then h.Fold_state.fb
+          else if h.Fold_state.fb = f then h.Fold_state.fa
+          else -1
+        in
+        if other >= 0 && (not tip.(other)) && beyond other && reaches_beyond hi
+        then begin
+          tip.(other) <- true;
+          stack := other :: !stack
+        end)
+      hinges
+  done;
+  (move_side, tip)

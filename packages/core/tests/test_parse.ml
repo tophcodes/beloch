@@ -857,6 +857,17 @@ let test_parse_new_fold_along () =
       ()
   | _ -> Alcotest.fail "expected --d = ...; mark --d; fold --d moving .a"
 
+let test_parse_reverse () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "paper square\nreverse map .c onto .b\nreverse --h = map .b onto .c moving .b outside\n"
+  in
+  match prog with
+  | [ Ast.Reverse (None, Ast.MMotion (Ast.MapPoints _), { rmoving = None; outside = false }, _);
+      Ast.Reverse (Some "h", Ast.MMotion (Ast.MapPoints _),
+        { rmoving = Some (Ast.FlapPoint (Ast.PNamed { name = "b"; _ })); outside = true }, _) ] -> ()
+  | _ -> Alcotest.fail "expected two reverse statements"
+
 let test_parse_new_flatten_no_at () =
   match
     Beloch.parse ~filename:"t.bel"
@@ -986,6 +997,7 @@ let () =
           Alcotest.test_case "fold named" `Quick test_parse_new_fold_named;
           Alcotest.test_case "fold along existing crease" `Quick
             test_parse_new_fold_along;
+          Alcotest.test_case "reverse" `Quick test_parse_reverse;
           Alcotest.test_case "flatten without @" `Quick
             test_parse_new_flatten_no_at;
           Alcotest.test_case "@ is retired" `Quick test_parse_at_retired;

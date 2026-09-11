@@ -122,3 +122,11 @@ val placement_failure_message :
     pierced layer for [Fold_state.Taco_tortilla], whose [tortilla] is a face
     index of the rejected state; a [Fold_state.Taco_taco] carries only hinge
     indices, not a face, so its message names no layer. *)
+
+val tip_faces :
+  Ctx.ctx -> Geom.line -> anchor:Ast.flap_arg -> Error.span -> int * bool array
+(** `reverse`'s tip (spec §4.6a): the moving side from the anchor, and the
+    mask of PARENT faces forming the connected material beyond the axis
+    that carries the anchor: the anchor's faces with a move-side piece,
+    closed under hinges whose table segment reaches strictly beyond the
+    axis. *)
