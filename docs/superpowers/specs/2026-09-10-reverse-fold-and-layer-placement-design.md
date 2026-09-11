@@ -270,19 +270,26 @@ reports.
    tip-R, body-R for inside and tip-L, body-L, body-R, tip-R for outside;
    `mv` on the spine's far hinge is the opposite of the near hinge; the new
    hinges read V, V (inside) and M, M (outside).
-3. **Language, pocket tuck.** The tuck example above as a golden; the same
-   fold with `mountain` instead of `under .p` wraps around the outside and
-   differs only in `faceOrders`.
+3. **Language, pocket tuck.** The tuck example above as a case, asserting
+   that the corner lands between the two layers and that its crease carries
+   the letter the finished stack derives. A comparison against the same fold
+   written `mountain` carries no information: the default scope of a plain
+   fold takes the outside-contiguous prefix from the bottom, which is both
+   layers, so the two programs describe different folds.
 4. **Language, Eos route.** The two-`reverse` preliminary base program as an
-   example with a golden, plus an e2e test that compares its folded frame
-   with `examples/bases/preliminary.bel`'s by *outline and per-side stacking*:
-   the set of table polygons agrees as sets, and for every table footprint
-   the order of the faces covering it agrees after matching faces by their
-   table polygon. Face and order counts are not the criterion (the
-   note records why).
-5. **Language, letters.** In the Eos-route golden, the diagonal's half-creases
-   beyond the two reverse vertices carry the opposite letter from the halves
-   near the first fold, with nothing in the source saying so.
+   example with a golden, plus an e2e test that compares its folded state
+   with `examples/bases/preliminary.bel`'s *pointwise*: over each probe point,
+   the bottom-to-top sequence of paper preimages and orientations must agree.
+   The comparison is pointwise because the two routes partition the paper
+   differently (the flatten route creases `--ac`, the Eos route never does),
+   so faces cannot be matched one to one. Outline agreement rides on the
+   face-count assertion in the case plus probes in both 45° wedges.
+5. **Language, letters.** Every `--bd` hinge in the finished base reads
+   mountain, which the case asserts, because each half of the diagonal lies
+   in one of the two tips and reverses with it. The intermediate state after
+   the first reverse is where the two halves disagree, one valley and one
+   mountain; the kernel test on the far part of the spine covers that
+   reversal directly.
 6. **Spec.** §4.6 gets the placement paragraph and grammar; a new §4.6a for
    `reverse`; Appendix A and B updated; the version note under the next
    `-dev`.
