@@ -44,6 +44,16 @@ type folded = {
 }
 
 
+let tear_error span (ta, tb) =
+  Error.fail span
+    (Printf.sprintf
+       "the moving flap is joined to a stationary layer along a segment \
+        ((%g,%g)-(%g,%g)) that is not on the fold axis — it cannot fold on \
+        its own without tearing the paper. Move those layers too, or fold \
+        along a crease on the axis."
+       (Num.to_float ta.Geom.x) (Num.to_float ta.Geom.y)
+       (Num.to_float tb.Geom.x) (Num.to_float tb.Geom.y))
+
 let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
     ~(fs : Ast.fold_spec) ~(implied : Ast.point_operand option)
     ~(side_override : int option) ~(crease_id : int)
@@ -72,7 +82,10 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
       (* A placed fold: the anchor flap's material beyond the axis moves as one
          block and is spliced next to the target flap instead of at the outside
          of the stack. The direction follows from the placement, so [valley] is
-         unused here. *)
+         unused here. [side_override] is discarded: axiom 5 is its only source
+         and it is [None] whenever [moving] is present; with [moving] absent
+         and nothing implied this branch errors, so the override is never
+         live here. *)
       let anchor =
         match anchor_arg with
         | Some fa -> fa
@@ -86,15 +99,7 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
            ~moving_parents:block
        with
       | Ok () -> ()
-      | Error (ta, tb) ->
-          Error.fail span
-            (Printf.sprintf
-               "the moving flap is joined to a stationary layer along a \
-                segment ((%g,%g)-(%g,%g)) that is not on the fold axis — it \
-                cannot fold on its own without tearing the paper. Move those \
-                layers too, or fold along a crease on the axis."
-               (Num.to_float ta.Geom.x) (Num.to_float ta.Geom.y)
-               (Num.to_float tb.Geom.x) (Num.to_float tb.Geom.y)));
+      | Error t -> tear_error span t);
       (match check with Some k -> k (fun fi -> block.(fi)) | None -> ());
       (match
          Fold_state.fold_blocks ~crease_id ~blocks:[ (block, placement) ]
@@ -144,15 +149,7 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
            ~moving_parents
        with
       | Ok () -> ()
-      | Error (ta, tb) ->
-          Error.fail span
-            (Printf.sprintf
-               "the moving flap is joined to a stationary layer along a \
-                segment ((%g,%g)-(%g,%g)) that is not on the fold axis — it \
-                cannot fold on its own without tearing the paper. Move those \
-                layers too, or fold along a crease on the axis."
-               (Num.to_float ta.Geom.x) (Num.to_float ta.Geom.y)
-               (Num.to_float tb.Geom.x) (Num.to_float tb.Geom.y)));
+      | Error t -> tear_error span t);
       (match check with
       | Some k -> k (fun fi -> moving_parents.(fi))
       | None -> ());
@@ -200,16 +197,7 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
                ~move_side ~moving_parents
            with
           | Ok () -> ()
-          | Error (ta, tb) ->
-              Error.fail span
-                (Printf.sprintf
-                   "the moving flap is joined to a stationary layer along a \
-                    segment ((%g,%g)-(%g,%g)) that is not on the fold axis \
-                    — it cannot fold on its own without tearing the paper. \
-                    Move those layers too, or fold along a crease on the \
-                    axis."
-                   (Num.to_float ta.Geom.x) (Num.to_float ta.Geom.y)
-                   (Num.to_float tb.Geom.x) (Num.to_float tb.Geom.y)));
+          | Error t -> tear_error span t);
           (match check with
           | Some k -> k (fun fi -> moving_parents.(fi))
           | None -> ());
@@ -475,11 +463,17 @@ let eval_fold (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
 
 let eval_reverse (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
     (rs : Ast.reverse_spec) (span : Error.span) : unit =
+  (* [fs_for_ax5] only carries what axiom-5 selection reads; its [direction] is
+     inert, since [Axiom] never reads it and a reverse fold's letters are
+     derived from the faces' orientation, never from the spec. *)
   let fs_for_ax5 =
     { Ast.moving = rs.Ast.rmoving; up_to = None; direction = Ast.Valley; place = None }
   in
   let cid, axis, prov, implied, mark_cr =
     match resolve_markable ctx span name_opt (Some fs_for_ax5) m with
+    (* the discarded field is the axiom-5 side override: it is [None] whenever
+       [moving] is present, and with [moving] absent and nothing implied the
+       anchor below errors, so it is never live here. *)
     | `Fresh (cid, axis, prov, _, implied) -> (cid, axis, prov, implied, None)
     | `Existing lo ->
         let cid = Fold_state.fresh_crease_id () in

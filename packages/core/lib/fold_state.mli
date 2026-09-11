@@ -245,7 +245,8 @@ val fold_blocks :
     as one contiguous run at the block's placement. Two blocks aimed at the
     same gap from opposite sides each stay next to their own face. A block
     mask marks PARENT faces; a parent in no block is stationary even where
-    it crosses the axis. [Error v] is the resulting state's invariant
+    it crosses the axis. Block masks must be disjoint: a parent claimed by
+    several blocks goes to the first. [Error v] is the resulting state's invariant
     violation ([Taco_taco]/[Taco_tortilla] reject an impossible insertion).
     [Invalid_argument] if an [Over]/[Under] face has no stationary child
     (a block parent lying entirely on the moving side). A block parent cut

@@ -1017,6 +1017,12 @@ let reverse ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
               | Error v -> Error (Invalid v))
     end
   in
+  (* Known ceiling: every candidate hinge pays a component walk plus a full
+     [fold_blocks] and [make], with the latter's quadratic layer checks. Tips
+     are a handful of faces on the crane path, so the cost stays small. To
+     reverse a tip with dozens of layers, filter the candidates by geometry
+     first — only hinges on the tip's outline can be spines — and attempt
+     placements for those. *)
   let results = List.filter_map attempt folded_internal in
   let oks =
     List.filter_map (function Ok g' -> Some g' | Error _ -> None) results
