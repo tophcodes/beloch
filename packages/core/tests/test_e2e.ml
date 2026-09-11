@@ -1059,6 +1059,24 @@ let test_e2e_tuck_under_between () =
 (* the coverage error: the .a corner is folded up over x + y = 1/2, so its
    flap covers a triangle in that corner only. .p names it; the far corner
    .c lands around (7/8, 7/8), which that flap does not reach. *)
+(* `over` the base flap: the same stack as tuck-under.bel reaches with `under`
+   the top layer's remainder. *)
+let test_e2e_tuck_over_between () =
+  let src = read_case "fold/tuck-over.bel" in
+  let fd = Eval.eval_folded (Beloch.parse ~filename:"tuck-over.bel" src) in
+  let st = fd.Eval.state in
+  let containing (x, y) =
+    let p = { Geom.x = Num.of_q (Q.of_ints x 8); y = Num.of_q (Q.of_ints y 8) } in
+    let fs = Fold_state.faces st in
+    let rec go i = if Geom.in_convex_polygon fs.(i) p then i else go (i + 1) in
+    go 0
+  in
+  let base = containing (4, 6) and remainder = containing (2, 2)
+  and corner = containing (7, 1) in
+  Alcotest.(check bool) "corner above the base" true (Fold_state.above st corner base);
+  Alcotest.(check bool) "remainder above the corner" true
+    (Fold_state.above st remainder corner)
+
 let test_e2e_tuck_target_off () =
   let src =
     "paper square\n\
@@ -1147,6 +1165,8 @@ let () =
           Alcotest.test_case "inline off-paper errors" `Quick test_e2e_inline_error;
           Alcotest.test_case "tuck under lands between" `Quick
             test_e2e_tuck_under_between;
+          Alcotest.test_case "tuck over the base lands between" `Quick
+            test_e2e_tuck_over_between;
           Alcotest.test_case "tuck target off the landing area" `Quick
             test_e2e_tuck_target_off;
           Alcotest.test_case "axiom7 rational crease fold emit" `Quick
