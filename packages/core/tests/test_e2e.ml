@@ -1073,6 +1073,48 @@ let test_e2e_tuck_target_off () =
   expect_error "does not cover where the moved material lands" (fun () ->
       Eval.eval_folded (Beloch.parse ~filename:"t.bel" src))
 
+(* Pointwise layer order [FOLD spec, faceOrders]: over a table point t, the
+   sequence bottom→top of (paper preimage, face-up) must agree between two
+   folded states. Partition-independent, so a base made of six faces can be
+   compared with one made of eight. *)
+let column (st : Fold_state.t) (t : Geom.point) : (Geom.point * bool) list =
+  let n = Array.length (Fold_state.faces st) in
+  let rank = Fold_state.rank st in
+  List.init n Fun.id
+  |> List.filter (fun i ->
+         Geom.in_convex_polygon (Fold_state.table_polygon_ccw st i) t)
+  |> List.sort (fun i j -> compare rank.(i) rank.(j))
+  |> List.map (fun i ->
+         let inv = Isometry.inverse (Fold_state.face_iso2 st i) in
+         (Isometry.apply_point inv t, Fold_state.face_up st i))
+
+let test_e2e_preliminary_routes_agree () =
+  let run name =
+    (Eval.eval_folded (Beloch.parse ~filename:name (read_example name)))
+      .Eval.state
+  in
+  let flat = run "bases/preliminary.bel"
+  and eos = run "bases/preliminary-reverse.bel" in
+  let probe x y =
+    { Geom.x = Num.of_q (Q.of_ints x 6); y = Num.of_q (Q.of_ints y 6) }
+  in
+  (* centroids of the two 45° wedges of the base square [1/2,1]x[1/2,1] *)
+  List.iter
+    (fun (t, label) ->
+      let a = column flat t and b = column eos t in
+      Alcotest.(check int)
+        (label ^ ": same layer count")
+        (List.length a) (List.length b);
+      List.iter2
+        (fun (pa, ua) (pb, ub) ->
+          Alcotest.(check bool)
+            (label ^ ": same paper point")
+            true
+            (Geom.point_equal pa pb);
+          Alcotest.(check bool) (label ^ ": same orientation") ua ub)
+        a b)
+    [ (probe 4 5, "upper-left wedge"); (probe 5 4, "lower-right wedge") ]
+
 let () =
   Alcotest.run "beloch-e2e"
     [
@@ -1150,6 +1192,9 @@ let () =
           Alcotest.test_case
             "point mark endpoint incident to existing vertex (exact snap)"
             `Quick test_mark_endpoint_on_vertex_is_incident;
+          Alcotest.test_case
+            "preliminary base: Eos route equals flatten route pointwise" `Quick
+            test_e2e_preliminary_routes_agree;
         ] );
       ( "emit_folded",
         [
