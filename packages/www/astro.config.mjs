@@ -113,6 +113,7 @@ export default defineConfig({
 					items: [
 						{ label: "The model", link: "/model/" },
 						{ label: "The kernel", link: "/kernel/" },
+						{ label: "The language", link: "/language/" },
 					],
 				},
 			],
