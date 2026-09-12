@@ -232,9 +232,18 @@ decomposition covers a single sheet.
 
 ::: {.definition #def-noncrossing name="non-crossing layer ordering" uses="def-flat-state cond-order cond-taco-tortilla cond-taco-taco cond-hinge-closure cond-connected" defines="term-noncrossing"}
 $\lambda$ is a non-crossing layer ordering for $f$ when it satisfies
-[#cond-order], [#cond-taco-tortilla] and [#cond-taco-taco]. A pair
-$(f, \lambda)$ with a non-crossing $\lambda$ is a flat folded state when in
-addition [#cond-hinge-closure] and [#cond-connected] hold.
+
+- the [order condition](#cond-order),
+- the [taco-tortilla condition](#cond-taco-tortilla), and
+- the [taco-taco condition](#cond-taco-taco).
+
+A pair $(f, \lambda)$ with a non-crossing $\lambda$ is a flat folded state when
+in addition
+
+- the [hinge closure condition](#cond-hinge-closure) and
+- the [connectivity condition](#cond-connected)
+
+hold.
 :::
 
 ::: {.term #term-noncrossing name="non-crossing"}
