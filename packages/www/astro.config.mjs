@@ -12,6 +12,7 @@ import rehypeKatex from 'rehype-katex';
 import rehypeCitation from 'rehype-citation/node/rehype-citation.mjs';
 import rehypeCitePost from './src/lib/rehype-cite-post.ts';
 import { headSyncScript } from "./src/lib/paper-schemes.ts";
+import { notePopupScript } from "./src/lib/note-popups.ts";
 
 // Anchor repo root to this file's location (packages/www/astro.config.mjs → two levels up).
 // Used by highlight-bel.ts to resolve the grammar wasm + web-tree-sitter runtime
@@ -119,6 +120,11 @@ export default defineConfig({
 				{
 					tag: "script",
 					content: headSyncScript(),
+				},
+				{
+					tag: "script",
+					attrs: { defer: true },
+					content: notePopupScript(),
 				},
 			],
 		}),
