@@ -1,0 +1,16 @@
+; Sheet folded in half, right half onto the left: the crest --d is the
+; stack's right edge at table x = 1/2. The line y = 1/2 runs across the
+; crest, so the spine reaches beyond it and the bodies stay joined below it;
+; the tip is the upper half of both layers, and it wraps around the outside.
+; .d is a corner of the upper half, so `moving .d` seeds the tip there.
+
+paper square
+
+fold --d = map .b onto .a                   ; crease x = 1/2; the right half lands on the left, face-down, on top
+.m = free on --da from .a at 1/2            ; (0, 1/2)
+.t = free on --d from .[--d --ab] at 1/2    ; (1/2, 1/2): the crest's midpoint, where the line meets the spine
+reverse --r = through .m .t moving .d outside
+
+; assert steps = 2
+; assert faces = 4
+; assert --r is mountain

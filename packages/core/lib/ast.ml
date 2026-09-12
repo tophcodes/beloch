@@ -77,11 +77,23 @@ type flap_arg =
   | FlapLine of line_operand
   | FlapSpec of flap_operand
 
+(* where a placed fold's moved block lands: immediately over or under the
+   target flap (spec 2026-09-10-reverse-fold-and-layer-placement-design.md) *)
+type place_dir = PlaceOver | PlaceUnder
+
 type fold_spec = {
   moving : flap_arg option;
   up_to : flap_arg option;
   direction : direction;
+  place : (place_dir * flap_arg) option;
+      (* Some: `over`/`under` given; direction is then derived and [direction]
+         is ignored; the parser rejects `mountain` and `up to` beside it *)
 }
+
+(* reverse <markable> [moving <flap>] [outside]: the tip beyond the line is
+   cut in two at its spine, both halves reflected, each placed next to its
+   own hinge layer (inside) or on the far outside (outside). *)
+type reverse_spec = { rmoving : flap_arg option; outside : bool }
 
 (* A collapse element's M/V constraint (flatten V2 surface, spec
    2026-07-16-flatten-derive-v2-design.md §Syntax): a bare element is
@@ -121,6 +133,9 @@ type stmt =
   | Fold of string option * markable * fold_spec * Error.span
       (* fold <motion|--l> [moving][up to][mountain] : fold. On a motion,
          subdivide+fold; on an existing --l, fold along it. *)
+  | Reverse of string option * markable * reverse_spec * Error.span
+      (* reverse <motion|--l> [moving][outside]: inside/outside reverse fold
+         of the tip beyond the line (spec 2026-09-10) *)
   | BindBundle of string * line_operand * Error.span
       (* --x = <bundle expr>: name a crease bundle (union/filter of existing
          creases). Resolves lazily as its expression; slots coerce to one. *)

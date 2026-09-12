@@ -15,7 +15,13 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.25-dev** (free point on a line — 1-DOF reference point
+Current version: **v0.26-dev** (layer placement and the reverse fold:
+`fold … over/under <flap>` splices the moved block into the stack beside a
+named flap; `reverse` runs an inside or outside reverse fold as two placed
+half-folds over one line; both derive their crease letters from the finished
+stack; see
+[`docs/superpowers/specs/2026-09-10-reverse-fold-and-layer-placement-design.md`](../docs/superpowers/specs/2026-09-10-reverse-fold-and-layer-placement-design.md));
+**v0.25-dev** (free point on a line — 1-DOF reference point
 along a line's material bundle; `.p = free on --l from .x at <rational>`, `at`
 optional (default `t = 1/2`); `free` is provenance, not a kernel relaxation —
 the result is an ordinary exact point; `beloch:free` FOLD emission, a
@@ -796,6 +802,92 @@ behind `moving`, `up to`, and `#[...]`) and
 [ADR 0014](../decisions/0014-crease-is-a-bundle-of-segments.md) (a crease is a
 bundle of segments — why folding along existing material checks for a bent
 crease and why `&` selection exists).
+
+**Placing the moved flap with `over` / `under`** *(since v0.26-dev)*.
+
+```
+fold <motion|crease> [ moving <flap> ] ( over | under ) <flap>
+```
+
+A placed fold reflects the anchor flap's material beyond the axis, as any
+fold does, and inserts the moved block into the stack immediately above
+(`over`) or below (`under`) the target flap instead of on the outside. The
+crease it scores, the material it subdivides and the derived letters are
+unchanged. The moving set is the anchor flap's faces on the moving side,
+closed under coplanar clusters, with no outer-prefix rule: a tuck passes
+through a pocket that opens for it, so the rigid-rotation argument behind
+the prefix rule does not apply; the layer invariants of the end state
+decide. `moving` is optional here as in any fold: a map motion implies it
+from the moved point, and the fold errors when neither is available. The
+target resolves by incidence to a flap that must be stationary and must
+overlap the footprint the block lands on; of its overlapping faces
+the lowest-ranked anchors `under`, the highest-ranked `over`. The fold's
+direction is a consequence of the placement, never stated: `mountain` beside
+`over`/`under` is a parse error (`a placed fold derives its direction; drop
+mountain`), and so is `up to` (`a placed fold moves the anchor flap only; up
+to is not supported here`).
+
+Errors: `the placement target moves with the fold; name a stationary flap`;
+`` <T>'s flap does not cover where the moved material lands ``; `` placing
+the moved material under <T> would pierce layer <n> `` (`over` likewise).
+
+```
+fold map .a onto .d                     ; two layers
+fold through .m .n moving .b under .p   ; the top layer's corner, tucked between
+```
+
+Design: [`docs/superpowers/specs/2026-09-10-reverse-fold-and-layer-placement-design.md`](../docs/superpowers/specs/2026-09-10-reverse-fold-and-layer-placement-design.md).
+
+### 4.6a `reverse` — inside and outside reverse folds *(since v0.26-dev)*
+
+```
+reverse <motion|crease> [ moving <flap> ] [ outside ]
+reverse CREASE_NAME "=" <motion> [ moving <flap> ] [ outside ]
+```
+
+Take a flap folded along a crease, the *spine*, and a line across it meeting
+the spine at O; the *tip* is the material beyond that line. An inside
+reverse fold pushes the tip in between the flap's layers, an outside reverse
+fold wraps it around them; in both the spine beyond O ends up folded the
+other way. `reverse` is a disposition verb like `fold`: it takes a motion
+(computed in the table frame) or an existing material crease, is bindable,
+and implies `moving` from a map motion's moved point.
+
+The end state is defined in the table frame: the tip is cut into two halves
+at the spine, both halves are reflected across the line in one operation,
+and each half is placed relative to its own hinge layer: inside, each half
+lands next to its own body in the gap between the two bodies; outside, the
+half hinged to the lower body goes under everything and the other on top.
+The tip is the connected material beyond the line that carries the anchor;
+the spine is whichever folded hinge of the tip splits it into two halves
+whose hinge layers occupy separate rank ranges and whose placement passes
+the layer invariants. Exactly one such hinge must exist.
+
+Nothing is stated about mountain and valley. Each half flips over and keeps
+its rank position relative to the other, so at the spine beyond O the backs
+of the paper face each other where the fronts did: the derived letter
+reverses. The new crease reads, on both halves, the letter the spine had
+before the fold for an inside reverse and the opposite letter for an outside
+reverse. A reverse fold is not two placed folds
+in sequence: after one half moves, the spine joins a reflected face to an
+unreflected one along no common segment, so the two halves move together.
+
+Errors: `reverse needs a tip folded along one spine; the moving material
+does not split into two halves`; `the tip can be reversed at <n> spines;
+fold less so that one remains`; `the two halves are hinged to interleaved
+layers; that is not a reverse fold`; `reversing the tip would pierce layer
+<n>`.
+
+```
+fold --bd = map .a onto .c              ; triangle
+reverse --h = map .b onto .c            ; tip b between the layers
+reverse --v = map .d onto .c            ; tip d likewise: the preliminary base
+```
+
+[`examples/bases/preliminary-reverse.bel`](../examples/bases/preliminary-reverse.bel)
+folds the preliminary base this way, the Eos route [ida2020, §7.4.3]; it
+agrees pointwise with the `flatten` construction in
+[`examples/bases/preliminary.bel`](../examples/bases/preliminary.bel).
 
 ### 4.7 `flip` — turn the sheet over *(since v0.7-dev)*
 
@@ -1693,6 +1785,9 @@ crease_stmt   := CREASE_NAME "=" axiom                            ; a read — b
                | "mark" CREASE_NAME "=" axiom                      ; crease flat, named (since v0.21-dev)
                | "fold" markable fold_spec                        ; crease and fold (a motion, or existing material — since v0.21-dev)
                | "fold" CREASE_NAME "=" axiom fold_spec            ; crease and fold, named (since v0.21-dev)
+               | "reverse" markable reverse_spec                  ; reverse fold (since v0.26-dev)
+               | "reverse" CREASE_NAME "=" axiom reverse_spec
+reverse_spec  := [ "moving" flap_operand ] [ "outside" ]
 markable      := axiom | line_operand                             ; since v0.21-dev
 point_stmt    := POINT_NAME "=" point_operand
                | POINT_NAME "=" "free" "on" line_operand "from" point_operand [ "at" RATIONAL ]  ; free point, since v0.25-dev
@@ -1708,6 +1803,7 @@ axiom         := "through" point_operand point_operand          ; axiom 1 — a 
                      "and" point_operand "onto" line_operand
                      [ "toward" point_operand ]                                  ; axiom 7
 fold_spec     := [ "moving" flap_operand ] [ "up" "to" flap_operand ] [ "mountain" ]  ; since v0.18-dev
+               | [ "moving" flap_operand ] ( "over" | "under" ) flap_operand         ; placed fold, since v0.26-dev
 flap_operand  := point_operand | line_operand | "#[" point_operand+ "]"              ; since v0.18-dev
 point_operand := POINT_NAME                                      ; named
                | line_operand "*" line_operand                   ; meet (binary): the point where two lines cross — a read
@@ -1766,8 +1862,7 @@ the RHS note in §5.
 ## Appendix B — not yet in the language
 
 Deferred, in rough order of likely arrival: non-flat (constructible-angle) folds ·
-`rotate` · fold maneuvers (reverse/squash/sink/petal, via `unfold` + layer
-selection) ·
+`rotate` · squash/sink/petal maneuvers · `unfold` ·
 the 3D standing end state for `flatten` (the 3D isometry rework, ADR 0015 —
 retired `standing` keyword's successor form, unnamed until it lands) ·
 multi-vertex flatten (fish/bird base in one action) · boundary-vertex
@@ -1848,6 +1943,10 @@ runs, rather than derived from the solved stack afterward. See
 [`docs/superpowers/specs/2026-07-16-flatten-derive-v2-design.md`](../docs/superpowers/specs/2026-07-16-flatten-derive-v2-design.md),
 and
 [`docs/superpowers/specs/2026-07-17-flatten-staying-design.md`](../docs/superpowers/specs/2026-07-17-flatten-staying-design.md).
+*(v0.26-dev)* **layer placement**: `fold … over/under <flap>` inserts the
+moved flap between layers, and the **`reverse`** verb folds inside and
+outside reverse folds as two placed half-folds with derived letters (§4.6,
+§4.6a).
 
 ---
 

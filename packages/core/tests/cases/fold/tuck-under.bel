@@ -1,0 +1,18 @@
+; A pocket tuck: fold the sheet in half, then tuck the top layer's corner
+; between the two layers. .p sits on the top layer's remaining part, so the
+; block goes immediately under that layer: the corner lands between the
+; layers, and its crease reads valley because the layer it tucks under lies
+; face-down (the letter is derived from the finished state, never from the
+; keyword).
+
+paper square
+
+fold map .a onto .d                     ; bottom half up onto the top half
+.m = free on --bc from .b at 1/2        ; (1, 1/2): on the crease, both layers
+.n = free on --ab from .b at 1/2        ; (1/2, 0) on the paper, table (1/2, 1)
+.p = free on --ab from .a at 1/4        ; (1/4, 0) on the paper, table (1/4, 1): the top layer's remainder
+fold --t = through .m .n moving .b under .p
+
+; assert steps = 2
+; assert faces = 3
+; assert --t is valley

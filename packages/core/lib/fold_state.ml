@@ -678,26 +678,44 @@ let subdivide_paper ?crease_id (g : t) (paper_axis : Geom.line)
   in
   split_with_flat_hinges g ~cid ~prov ~cut_of
 
-(* Simple flat fold as a graph transformation: cut the moving faces along
+(* Where a moved block lands in the rank after a fold. *)
+type placement = Top | Bottom | Over of int | Under of int
+
+(* splice [xs] into [lst] right after / right before the element [anchor] *)
+let insert_after anchor xs lst =
+  List.concat_map (fun e -> if e = anchor then e :: xs else [ e ]) lst
+
+let insert_before anchor xs lst =
+  List.concat_map (fun e -> if e = anchor then xs @ [ e ] else [ e ]) lst
+
+(* Simple flat fold as a graph transformation: cut each block's parents along
    [axis], give the cut hinges angle 1, toggle existing on-axis hinges with
-   exactly one moving side (D8), restack via rank blocks. Placements are
-   derived; nothing composes isometries onto faces. Raises [Error.fail] when
-   the resulting state violates an invariant (old validity_error behaviour). *)
-let fold ?crease_id ?moving_parents (g : t) ~(axis : Geom.line)
-    ~(move_side : int) ~(valley : bool) ~(prov : State.provenance option) : t =
+   exactly one moving side (D8), restack by splicing each block's movers in at
+   its placement. Placements are derived; nothing composes isometries onto
+   faces. *)
+let fold_blocks ?crease_id ~(blocks : (bool array * placement) list) (g : t)
+    ~(axis : Geom.line) ~(move_side : int) ~(prov : State.provenance option) :
+    (t, violation) result =
   let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
-  let moves fi =
-    match moving_parents with None -> true | Some m -> m.(fi)
+  let nb = List.length blocks in
+  let block_of_parent fi =
+    let rec go b = function
+      | [] -> -1
+      | (mask, _) :: rest -> if mask.(fi) then b else go (b + 1) rest
+    in
+    go 0 blocks
   in
-  (* 1. split: stationary children (stay side + all non-movers) and moved
-     children. The accumulation order is observable — FOLD emit enumerates
-     faces by array index — so: stay list is reversed at the end, mov list is
-     not. *)
-  let stay = ref [] and mov = ref [] in (* (paper_poly, parent) *)
+  (* 1. split: stationary children (stay side + every non-block parent) and,
+     per block, its moved children. Accumulation order is observable (FOLD
+     emit enumerates faces by array index) and must reproduce [fold]'s: the
+     stay list is reversed at the end, each block's mov list is not. *)
+  let stay = ref [] in (* (paper_poly, parent) *)
+  let movs = Array.make (max nb 1) [] in (* per block, (paper_poly, parent) *)
   let chords = ref [] in (* (parent, a, b) for each face actually cut *)
   Array.iteri
     (fun fi f ->
-      if not (moves fi) then stay := (f, fi) :: !stay
+      let b = block_of_parent fi in
+      if b < 0 then stay := (f, fi) :: !stay
       else begin
         let iso2 = face_iso2 g fi in
         let table = Array.map (Isometry.apply_point iso2) f in
@@ -716,20 +734,32 @@ let fold ?crease_id ?moving_parents (g : t) ~(axis : Geom.line)
             | None -> ())
         | _ -> ());
         (match s with Some poly -> stay := (poly, fi) :: !stay | None -> ());
-        match m with Some poly -> mov := (poly, fi) :: !mov | None -> ()
+        match m with
+        | Some poly -> movs.(b) <- (poly, fi) :: movs.(b)
+        | None -> ()
       end)
     g.faces;
   let stationary = List.rev !stay in
-  let moved = !mov in
-  let ordered = if valley then stationary @ moved else moved @ stationary in
+  let placed_bottom b = match List.nth blocks b with _, Bottom -> true | _ -> false in
+  let bottom_blocks =
+    List.concat (List.init nb (fun b -> if placed_bottom b then movs.(b) else []))
+  in
+  let other_blocks =
+    List.concat (List.init nb (fun b -> if placed_bottom b then [] else movs.(b)))
+  in
+  let ordered = bottom_blocks @ stationary @ other_blocks in
   let arr = Array.of_list ordered in
   let faces' = Array.map fst arr in
   let parent = Array.map snd arr in
-  let n_stay = List.length stationary in
-  let moved_flag =
-    if valley then Array.init (Array.length arr) (fun i -> i >= n_stay)
-    else Array.init (Array.length arr) (fun i -> i < List.length moved)
-  in
+  let n' = Array.length arr in
+  let block_of_child = Array.map (fun (_, p) -> block_of_parent p) arr in
+  (* a child is moved iff its parent is in a block AND it is that parent's
+     move-side piece; stationary pieces of block parents sit in [stationary] *)
+  let moved_flag = Array.make n' false in
+  let n_bottom = List.length bottom_blocks and n_stay = List.length stationary in
+  Array.iteri
+    (fun k _ -> moved_flag.(k) <- k < n_bottom || k >= n_bottom + n_stay)
+    arr;
   let children_of p =
     let acc = ref [] in
     Array.iteri (fun k pp -> if pp = p then acc := k :: !acc) parent;
@@ -772,8 +802,7 @@ let fold ?crease_id ?moving_parents (g : t) ~(axis : Geom.line)
            let h =
              if not toggled then h
              else if Num.sign h.angle = 0 then
-               (* precrease upgrade: F -> folded *)
-               { h with angle = Num.one }
+               { h with angle = Num.one } (* precrease upgrade: F -> folded *)
              else { h with angle = Num.zero } (* physical unfold *)
            in
            List.concat_map
@@ -789,30 +818,51 @@ let fold ?crease_id ?moving_parents (g : t) ~(axis : Geom.line)
          g.hinges)
     |> List.concat
   in
-  (* 4. rank blocks: stationaries keep their order; movers reversed; movers
-     on top for valley, below for mountain (old rel_of semantics) *)
-  let n' = Array.length faces' in
-  let idx = Array.init n' Fun.id in
-  let key i =
-    let r = g.rank.(parent.(i)) in
-    if moved_flag.(i) then (1, -r, i) else (0, r, i)
+  (* 4. rank: stationaries keep parent order; each block's movers, reversed,
+     spliced in at the block's placement *)
+  let by_parent_rank asc i j =
+    let ri = g.rank.(parent.(i)) and rj = g.rank.(parent.(j)) in
+    if asc then compare (ri, i) (rj, j) else compare (-ri, i) (-rj, j)
   in
-  let block_first = if valley then 0 else 1 in
-  Array.sort
-    (fun i j ->
-      let (bi, ki, ti) = key i and (bj, kj, tj) = key j in
-      let bi = if bi = block_first then 0 else 1
-      and bj = if bj = block_first then 0 else 1 in
-      compare (bi, ki, ti) (bj, kj, tj))
-    idx;
+  let stat_children =
+    List.init n' Fun.id
+    |> List.filter (fun i -> not moved_flag.(i))
+    |> List.sort (by_parent_rank true)
+  in
+  let block_children b =
+    List.init n' Fun.id
+    |> List.filter (fun i -> moved_flag.(i) && block_of_child.(i) = b)
+    |> List.sort (by_parent_rank false)
+  in
+  let stationary_child_of p =
+    match List.find_opt (fun i -> parent.(i) = p) stat_children with
+    | Some c -> c
+    | None ->
+        invalid_arg
+          (Printf.sprintf
+             "Fold_state.fold_blocks: placement face %d has no stationary child" p)
+  in
+  let order =
+    List.fold_left
+      (fun acc (b, (_, place)) ->
+        let xs = block_children b in
+        match place with
+        | Top -> acc @ xs
+        | Bottom -> xs @ acc
+        | Over p -> insert_after (stationary_child_of p) xs acc
+        | Under p -> insert_before (stationary_child_of p) xs acc)
+      stat_children
+      (List.mapi (fun b blk -> (b, blk)) blocks)
+  in
   let rank' = Array.make n' 0 in
-  Array.iteri (fun h i -> rank'.(i) <- h) idx;
+  List.iteri (fun h i -> rank'.(i) <- h) order;
   (* 5. root + base: prefer a stationary child (its parent's placement is
      unchanged); if everything moved, reflect the base across the axis *)
   let root', base' =
     let stat = ref (-1) in
-    (match children_of g.root with
-    | cs -> List.iter (fun c -> if (not (moved_flag.(c))) && !stat < 0 then stat := c) cs);
+    List.iter
+      (fun c -> if (not moved_flag.(c)) && !stat < 0 then stat := c)
+      (children_of g.root);
     if !stat >= 0 then (!stat, g.isos.(g.root))
     else begin
       let first_stat = ref (-1) in
@@ -823,10 +873,20 @@ let fold ?crease_id ?moving_parents (g : t) ~(axis : Geom.line)
       else (0, I3.compose (half_turn3_of_line axis) g.isos.(parent.(0)))
     end
   in
+  make ~base:base' ~marks:g.marks ~faces:faces'
+    ~hinges:(Array.of_list (new_hinges @ carried))
+    ~root:root' ~rank:rank' ()
+
+let fold ?crease_id ?moving_parents (g : t) ~(axis : Geom.line)
+    ~(move_side : int) ~(valley : bool) ~(prov : State.provenance option) : t =
+  let mask =
+    match moving_parents with
+    | Some m -> m
+    | None -> Array.make (Array.length g.faces) true
+  in
   match
-    make ~base:base' ~marks:g.marks ~faces:faces'
-      ~hinges:(Array.of_list (new_hinges @ carried))
-      ~root:root' ~rank:rank' ()
+    fold_blocks ?crease_id ~blocks:[ (mask, if valley then Top else Bottom) ] g
+      ~axis ~move_side ~prov
   with
   | Ok g' -> g'
   | Error v -> fail_of_violation prov v
@@ -834,6 +894,148 @@ let fold ?crease_id ?moving_parents (g : t) ~(axis : Geom.line)
 let simple_fold (g : t) ~(axis : Geom.line) ~(move_side : int)
     ~(valley : bool) : t =
   fold g ~axis ~move_side ~valley ~prov:None
+
+type reverse_failure =
+  | No_spine
+  | Several_spines of int
+  | Bodies_interleaved
+  | Invalid of violation
+
+let reverse_failure_to_string = function
+  | No_spine ->
+      "reverse needs a tip folded along one spine; the moving material does \
+       not split into two halves"
+  | Several_spines n ->
+      Printf.sprintf
+        "the tip can be reversed at %d spines; fold less so that one remains" n
+  | Bodies_interleaved ->
+      "the two halves are hinged to interleaved layers; that is not a reverse \
+       fold"
+  | Invalid v -> violation_to_string v
+
+let reverse ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
+    ~(tip : bool array) ~(inside : bool) ~(prov : State.provenance option) :
+    (t, reverse_failure) result =
+  let n = Array.length g.faces in
+  let nh = Array.length g.hinges in
+  let internal =
+    List.filter
+      (fun hi ->
+        let h = g.hinges.(hi) in
+        tip.(h.fa) && tip.(h.fb))
+      (List.init nh Fun.id)
+  in
+  let folded_internal =
+    List.filter
+      (fun hi ->
+        Num.sign g.hinges.(hi).angle <> 0
+        &&
+        (* the spine must reach beyond the line: its far part is what reverses *)
+        let ta, tb = hinge_table_segment g hi in
+        Geom.side_of_line axis ta = move_side || Geom.side_of_line axis tb = move_side)
+      internal
+  in
+  (* connected components of the tip parents under [internal] minus [cut] *)
+  let components cut =
+    let comp = Array.make n (-1) in
+    let next = ref 0 in
+    for s = 0 to n - 1 do
+      if tip.(s) && comp.(s) < 0 then begin
+        let c = !next in
+        incr next;
+        comp.(s) <- c;
+        let stack = ref [ s ] in
+        while !stack <> [] do
+          let f = List.hd !stack in
+          stack := List.tl !stack;
+          List.iter
+            (fun hi ->
+              if hi <> cut then begin
+                let h = g.hinges.(hi) in
+                let other =
+                  if h.fa = f then h.fb else if h.fb = f then h.fa else -1
+                in
+                if other >= 0 && comp.(other) < 0 then begin
+                  comp.(other) <- c;
+                  stack := other :: !stack
+                end
+              end)
+            internal
+        done
+      end
+    done;
+    (comp, !next)
+  in
+  let has_stay_piece fi =
+    let table = table_polygon g fi in
+    Array.length (Geom.clip_convex_halfplane axis (-move_side) table) >= 3
+  in
+  let attempt cut =
+    let comp, k = components cut in
+    if k <> 2 then None
+    else begin
+      let half c = Array.init n (fun i -> tip.(i) && comp.(i) = c) in
+      let body c =
+        List.filter
+          (fun i -> tip.(i) && comp.(i) = c && has_stay_piece i)
+          (List.init n Fun.id)
+      in
+      let b0 = body 0 and b1 = body 1 in
+      if b0 = [] || b1 = [] then None
+      else
+        let lo l = List.fold_left (fun a i -> min a g.rank.(i)) max_int l in
+        let hi l = List.fold_left (fun a i -> max a g.rank.(i)) min_int l in
+        let arrangement =
+          if hi b0 < lo b1 then Some (0, 1, b0, b1)
+          else if hi b1 < lo b0 then Some (1, 0, b1, b0)
+          else None
+        in
+        match arrangement with
+        | None -> Some (Error Bodies_interleaved)
+        | Some (lower, upper, blo, bup) ->
+            let topmost l =
+              List.fold_left
+                (fun a i -> if g.rank.(i) > g.rank.(a) then i else a)
+                (List.hd l) l
+            in
+            let bottommost l =
+              List.fold_left
+                (fun a i -> if g.rank.(i) < g.rank.(a) then i else a)
+                (List.hd l) l
+            in
+            let blocks =
+              if inside then
+                [ (half lower, Over (topmost blo));
+                  (half upper, Under (bottommost bup)) ]
+              else [ (half lower, Bottom); (half upper, Top) ]
+            in
+            Some
+              (match
+                 fold_blocks ?crease_id ~blocks g ~axis ~move_side ~prov
+               with
+              | Ok g' -> Ok g'
+              | Error v -> Error (Invalid v))
+    end
+  in
+  (* Known ceiling: every candidate hinge pays a component walk plus a full
+     [fold_blocks] and [make], with the latter's quadratic layer checks. Tips
+     are a handful of faces on the crane path, so the cost stays small. To
+     reverse a tip with dozens of layers, filter the candidates by geometry
+     first — only hinges on the tip's outline can be spines — and attempt
+     placements for those. *)
+  let results = List.filter_map attempt folded_internal in
+  let oks =
+    List.filter_map (function Ok g' -> Some g' | Error _ -> None) results
+  in
+  match oks with
+  | [ g' ] -> Ok g'
+  | _ :: _ :: _ -> Error (Several_spines (List.length oks))
+  | [] -> (
+      match
+        List.filter_map (function Error e -> Some e | Ok _ -> None) results
+      with
+      | e :: _ -> Error e
+      | [] -> Error No_spine)
 
 (* Turn the whole sheet over: reflect across the footprint's vertical
    centerline (cosmetic internal axis), reverse the face

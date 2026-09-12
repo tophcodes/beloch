@@ -1,0 +1,4 @@
+paper square
+reverse through .a .c moving .b
+
+; expect error "reverse needs a tip folded along one spine"

@@ -1,0 +1,8 @@
+paper square
+fold map .a onto .d
+.m = free on --bc from .b at 1/2
+.n = free on --ab from .b at 1/2
+.p = free on --ab from .a at 1/4
+fold through .m .n moving .b under .p mountain
+
+; expect error "a placed fold derives its direction; drop mountain"

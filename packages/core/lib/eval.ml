@@ -44,6 +44,16 @@ type folded = {
 }
 
 
+let tear_error span (ta, tb) =
+  Error.fail span
+    (Printf.sprintf
+       "the moving flap is joined to a stationary layer along a segment \
+        ((%g,%g)-(%g,%g)) that is not on the fold axis — it cannot fold on \
+        its own without tearing the paper. Move those layers too, or fold \
+        along a crease on the axis."
+       (Num.to_float ta.Geom.x) (Num.to_float ta.Geom.y)
+       (Num.to_float tb.Geom.x) (Num.to_float tb.Geom.y))
+
 let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
     ~(fs : Ast.fold_spec) ~(implied : Ast.point_operand option)
     ~(side_override : int option) ~(crease_id : int)
@@ -67,8 +77,39 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
     | None, None -> None
   in
   let valley = fs.Ast.direction = Ast.Valley in
-  match fs.Ast.up_to with
-  | None ->
+  match (fs.Ast.place, fs.Ast.up_to) with
+  | Some place, _ ->
+      (* A placed fold: the anchor flap's material beyond the axis moves as one
+         block and is spliced next to the target flap instead of at the outside
+         of the stack. The direction follows from the placement, so [valley] is
+         unused here. [side_override] is discarded: axiom 5 is its only source
+         and it is [None] whenever [moving] is present; with [moving] absent
+         and nothing implied this branch errors, so the override is never
+         live here. *)
+      let anchor =
+        match anchor_arg with
+        | Some fa -> fa
+        | None -> Error.fail span "a placed fold needs `moving .p` to name the flap"
+      in
+      let move_side, block, placement =
+        Resolve.placed_fold_plan ctx axis ~anchor ~place span
+      in
+      (match
+         Fold_state.scoped_fold_hinge_closed !(ctx.state) ~axis ~move_side
+           ~moving_parents:block
+       with
+      | Ok () -> ()
+      | Error t -> tear_error span t);
+      (match check with Some k -> k (fun fi -> block.(fi)) | None -> ());
+      (match
+         Fold_state.fold_blocks ~crease_id ~blocks:[ (block, placement) ]
+           !(ctx.state) ~axis ~move_side ~prov
+       with
+      | Ok st -> ctx.state := st
+      | Error v ->
+          Error.fail span
+            (Resolve.placement_failure_message (fst place) (snd place) v))
+  | None, None ->
       (* Default scope: the outside-contiguous prefix down to the flap(s)
          carrying the anchor operand — not every layer on the side. *)
       let move_side =
@@ -108,22 +149,14 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
            ~moving_parents
        with
       | Ok () -> ()
-      | Error (ta, tb) ->
-          Error.fail span
-            (Printf.sprintf
-               "the moving flap is joined to a stationary layer along a \
-                segment ((%g,%g)-(%g,%g)) that is not on the fold axis — it \
-                cannot fold on its own without tearing the paper. Move those \
-                layers too, or fold along a crease on the axis."
-               (Num.to_float ta.Geom.x) (Num.to_float ta.Geom.y)
-               (Num.to_float tb.Geom.x) (Num.to_float tb.Geom.y)));
+      | Error t -> tear_error span t);
       (match check with
       | Some k -> k (fun fi -> moving_parents.(fi))
       | None -> ());
       ctx.state :=
         Fold_state.fold !(ctx.state) ~moving_parents ~axis ~move_side ~valley
           ~crease_id ~prov
-  | Some tgt -> (
+  | None, Some tgt -> (
       let move_side =
         match side_override with
         | Some s -> s
@@ -164,16 +197,7 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
                ~move_side ~moving_parents
            with
           | Ok () -> ()
-          | Error (ta, tb) ->
-              Error.fail span
-                (Printf.sprintf
-                   "the moving flap is joined to a stationary layer along a \
-                    segment ((%g,%g)-(%g,%g)) that is not on the fold axis \
-                    — it cannot fold on its own without tearing the paper. \
-                    Move those layers too, or fold along a crease on the \
-                    axis."
-                   (Num.to_float ta.Geom.x) (Num.to_float ta.Geom.y)
-                   (Num.to_float tb.Geom.x) (Num.to_float tb.Geom.y)));
+          | Error t -> tear_error span t);
           (match check with
           | Some k -> k (fun fi -> moving_parents.(fi))
           | None -> ());
@@ -437,6 +461,63 @@ let eval_fold (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
         ~crease_id:cid ~prov ~check:(Some check_straight);
       push_frame ctx (Some span)
 
+let eval_reverse (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
+    (rs : Ast.reverse_spec) (span : Error.span) : unit =
+  (* [fs_for_ax5] only carries what axiom-5 selection reads; its [direction] is
+     inert, since [Axiom] never reads it and a reverse fold's letters are
+     derived from the faces' orientation, never from the spec. *)
+  let fs_for_ax5 =
+    { Ast.moving = rs.Ast.rmoving; up_to = None; direction = Ast.Valley; place = None }
+  in
+  let cid, axis, prov, implied, mark_cr =
+    match resolve_markable ctx span name_opt (Some fs_for_ax5) m with
+    (* the discarded field is the axiom-5 side override: it is [None] whenever
+       [moving] is present, and with [moving] absent and nothing implied the
+       anchor below errors, so it is never live here. *)
+    | `Fresh (cid, axis, prov, _, implied) -> (cid, axis, prov, implied, None)
+    | `Existing lo ->
+        let cid = Fold_state.fresh_crease_id () in
+        let prov : State.provenance option =
+          Some { State.axiom = "reverse"; sources = [ Resolve.lstr lo ]; span; name = None }
+        in
+        (* mirror eval_fold's `Existing (LNamed cr) when Mark` handling: if
+           the markable is a mark's name, its binding must repoint at this
+           fresh material crease when no new name is bound, or a later fold
+           along the mark mints a second, coincident crease. *)
+        let mark_cr =
+          match lo with
+          | Ast.LNamed cr
+            when (match lookup_crease ctx cr with Mark _ -> true | _ -> false) ->
+              Some cr
+          | _ -> None
+        in
+        (cid, Resolve.resolve_line ctx lo, prov, None, mark_cr)
+  in
+  let anchor =
+    match (rs.Ast.rmoving, implied) with
+    | Some fa, _ -> fa
+    | None, Some p -> Ast.FlapPoint p
+    | None, None -> Error.fail span "this reverse needs `moving .p` to name the tip"
+  in
+  let move_side, tip = Resolve.tip_faces ctx axis ~anchor span in
+  (match
+     Fold_state.reverse ~crease_id:cid !(ctx.state) ~axis ~move_side ~tip
+       ~inside:(not rs.Ast.outside) ~prov
+   with
+  | Ok st -> ctx.state := st
+  | Error (Fold_state.Invalid (Fold_state.Taco_tortilla { tortilla; _ })) ->
+      Error.fail span (Printf.sprintf "reversing the tip would pierce layer %d" tortilla)
+  | Error (Fold_state.Invalid (Fold_state.Taco_taco (_, _))) ->
+      Error.fail span "reversing the tip would pierce another layer"
+  | Error e -> Error.fail span (Fold_state.reverse_failure_to_string e));
+  push_frame ctx (Some span);
+  match name_opt with
+  | Some n -> bind_crease ctx n span (Material (cid, axis))
+  | None -> (
+      match mark_cr with
+      | Some cr -> promote_crease ctx cr.Ast.cname (Material (cid, axis))
+      | None -> ())
+
 let eval_free_point (ctx : Ctx.ctx) (n : string) (line : Ast.line_operand)
     (anchor : Ast.point_operand) (t : Num.t option) (span : Error.span) : unit =
   (* a bare value-bound line (`--l = through .a .b`, unmarked) has no
@@ -597,6 +678,7 @@ let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
   | Ast.Mark (name_opt, m, ext, dir, layer_opt, span) ->
       eval_mark ctx name_opt m ext dir layer_opt span
   | Ast.Fold (name_opt, m, fs, span) -> eval_fold ctx name_opt m fs span
+  | Ast.Reverse (name_opt, m, rs, span) -> eval_reverse ctx name_opt m rs span
   | Ast.Point (n, Ast.PsExpr po, span) ->
       bind_point ctx n span (Resolve.resolve_point ctx po)
   | Ast.Point (n, Ast.PsFree { line; anchor; t; span }, _) ->

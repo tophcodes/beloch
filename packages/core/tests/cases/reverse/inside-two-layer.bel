@@ -1,0 +1,17 @@
+; Sheet folded in half, right half onto the left: the crest --d is the
+; stack's right edge at table x = 1/2. The line x = 3/8 crosses both layers;
+; the tip is the material between it and the crest, hung from the crest.
+; .t sits on the crest, so `moving .t` names both layers of the tip.
+
+paper square
+
+fold --d = map .b onto .a                   ; crease x = 1/2; the right half lands on the left, face-down, on top
+.m = free on --ab from .a at 3/8            ; (3/8, 0)
+.n = free on --cd from .d at 3/8            ; (3/8, 1)
+.t = free on --d from .[--d --ab] at 1/2    ; (1/2, 1/2): on the crest
+reverse --r = through .m .n moving .t
+
+; assert steps = 2
+; assert faces = 4
+; assert --d is mountain
+; assert --r is valley

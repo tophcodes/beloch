@@ -43,7 +43,7 @@ let mk_flatten (name : string option) (items : collapse_item list)
 
 %token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD MOVING MOUNTAIN VALLEY FLIP RPAREN AND UP TO FOLD_KW
 %token DEF APPLY EXPORT AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
-%token FLATTEN OVER STAYING MARK BETWEEN AT
+%token FLATTEN OVER STAYING MARK BETWEEN AT UNDER REVERSE OUTSIDE
 %token FREE ON FROM
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN  (* --[ / .[ : the line/point select openers *)
 %token <string> POINT
@@ -84,6 +84,8 @@ body_stmt:
   (* fold: motion-fold or fold-along an existing material crease *)
   | FOLD_KW markable fold_clauses        { Fold (None, $2, $3, $loc) }
   | FOLD_KW CREASE EQ axiom fold_clauses { Fold (Some $2, MMotion $4, $5, $loc) }
+  | REVERSE markable reverse_clauses        { Reverse (None, $2, $3, $loc) }
+  | REVERSE CREASE EQ axiom reverse_clauses { Reverse (Some $2, MMotion $4, $5, $loc) }
   | POINT EQ point_expr  { Point ($1, $3, $loc) }
   | FLIP                 { Flip $loc }
   | INSTANCE EQ APPLY IDENT LPAREN args RPAREN { Apply (Some $1, $4, $6, $loc) }
@@ -117,9 +119,31 @@ arg:
   | line_operand  { ALine $1 }
 
 fold_clauses:
-  | moving_opt upto_opt mountain_opt
-      { { moving = $1; up_to = $2;
-          direction = (if $3 then Mountain else Valley) } }
+  (* `place_opt` precedes `mountain_opt` so that `over .p mountain` still
+     parses and reaches the "drop mountain" report below, rather than dying
+     as a bare syntax error. *)
+  | moving_opt upto_opt place_opt mountain_opt
+      { match $3, $4, $2 with
+        | Some _, true, _ ->
+            Error.fail $loc "a placed fold derives its direction; drop mountain"
+        | Some _, _, Some _ ->
+            Error.fail $loc
+              "a placed fold moves the anchor flap only; up to is not supported here"
+        | _ ->
+            { moving = $1; up_to = $2;
+              direction = (if $4 then Mountain else Valley); place = $3 } }
+
+reverse_clauses:
+  | moving_opt outside_opt { { rmoving = $1; outside = $2 } }
+
+outside_opt:
+  |         { false }
+  | OUTSIDE { true }
+
+place_opt:
+  |                { None }
+  | OVER flap_arg  { Some (PlaceOver, $2) }
+  | UNDER flap_arg { Some (PlaceUnder, $2) }
 
 moving_opt:
   |                 { None }
