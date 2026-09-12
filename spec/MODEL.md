@@ -14,11 +14,11 @@ what is written here.
 
 The document grows in steps. Each definition is stated with its intuition
 first, then its formal content, then the place in the kernel that realizes it.
-Open points are marked **Open** and are part of the contract until closed.
 Statements are numbered within their section: a *Definition* introduces a
 term, a *Lemma* is a consequence with a proof or a pointer to one, a
 *Corollary* follows from a lemma without further argument, a *Remark* is
-unproven commentary. Each statement carries the terms it defines, the
+unproven commentary, an *Open* point is a decision still to be made and is
+part of the contract until closed. Each statement carries the terms it defines, the
 statements it uses, the statements that use it, and the kernel function that
 realizes it. Every word used in a technical sense is listed under
 [Terms](#terms) with a link to where it is defined; the first use in the text
@@ -152,7 +152,8 @@ states with cyclic layering exist. In the square twist the four central faces
 lie over-under-over-under around the twist, so "no linear layer ordering will
 be able to avoid such obstructions", while the fold is flat-foldable
 [@hull2020, sec. 6.5, p. 119]. Such states are outside what the kernel can
-hold today. This is a known ceiling of the implementation, the model itself
+hold today. This is a known ceiling of the implementation, tracked as
+[issue #83](https://github.com/tophcodes/beloch/issues/83); the model itself
 is stated on $\lambda$.
 
 ::: {.lemma #lem-face-points name="face and point orderings agree" uses="def-flat-state def-noncrossing"}
