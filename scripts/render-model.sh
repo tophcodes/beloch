@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Render spec/MODEL.md and spec/KERNEL.md to PDFs with resolved citations.
+# Render spec/MODEL.md, spec/KERNEL.md and spec/BELOCH.md to PDFs with resolved citations.
 #
 # Statements and terms are pandoc fenced divs, `::: {.definition #id …}`;
 # scripts/model-blocks.lua numbers them and generates the cross-reference lines
@@ -19,7 +19,7 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 out="$root/_build/spec"
 mkdir -p "$out"
 
-for doc in MODEL KERNEL; do
+for doc in MODEL KERNEL BELOCH; do
   lower=$(echo "$doc" | tr "[:upper:]" "[:lower:]")
   pandoc "$root/spec/$doc.md" \
     --from markdown \
