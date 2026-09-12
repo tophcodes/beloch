@@ -55,8 +55,14 @@ algorithms need it [@ida2020, p. 176].
 ## 2. Flat folded state
 
 Intuition: a folded state records where every point of the sheet lies on the
-[table](#table) and, wherever paper lies on paper, which layer is on top. Nothing else.
-In particular a state does not remember how it was reached.
+[table](#table) and, wherever paper lies on paper, which layer is on top.
+In particular a state does not remember how it was reached.[^history]
+
+[^history]: This holds for the model. The implementation does keep the
+    history and exposes it: the FOLD output carries one frame per statement
+    and, per edge, the statement that scored it (`file_frames`,
+    `beloch:edges`, `beloch:source_line`; `SPECIFICATION.md` §7). Nothing in
+    this document depends on that record, and no operation may read it.
 
 > **Definition 2 (flat folded state).** A flat folded state of a sheet $P$ is a
 > pair $(f, \lambda)$ where
@@ -69,11 +75,12 @@ In particular a state does not remember how it was reached.
 > - $\lambda$ assigns to every pair of faces whose images overlap in a region of
 >   positive area one of *above* and *below*, subject to Definition 3.
 
-An edge shared by two faces is a [hinge](#hinge). Its angle is $0$ when $f$ agrees on
-both faces across it, and $\pm\pi$ when $f$ reflects one face onto the other
-across the edge's image. A hinge of angle $0$ is a flat crease; a hinge of
-angle $\pm\pi$ is a folded crease. Creases are not objects of their own; they
-are hinges (ADR 0014).
+An edge shared by two faces is a [hinge](#hinge). Its angle is $0$ when the
+two faces are placed by the same isometry, so that on the table they continue
+each other without a bend; it is $\pm\pi$ when one face's isometry is the
+other's composed with the reflection across the edge's image, so that on the
+table the two faces lie on top of each other, joined along the edge. A hinge
+of angle $0$ is a flat crease; a hinge of angle $\pm\pi$ is a folded crease.
 
 > **Definition 2a (refinement equivalence).** Splitting a face along a segment
 > into two faces joined by a hinge of angle $0$ does not change the state. Two
@@ -88,15 +95,34 @@ Kernel: `Fold_state.t` holds the face array in paper coordinates, one exact
 $\{0, \pm 1\}$ (units of $\pi$), and a rank. `Fold_state.make` is the only
 constructor and rejects anything outside Definitions 2 and 3.
 
-**Open.** The kernel stores $\lambda$ as a rank, a total order of all faces,
-and derives *above*/*below* for overlapping pairs from it. The model can treat
-the rank as a representation (the partial order plus one chosen linear
-extension) or as part of the state. Not yet decided.
+> **Remark 2b (rank).** The kernel does not store $\lambda$. It stores a rank,
+> a total order of all faces, and reads *above*/*below* for an overlapping
+> pair off the rank. A rank represents $\lambda$ exactly when it is a linear
+> extension of it: it agrees with $\lambda$ on every overlapping pair and is
+> free on the rest. Two ranks with the same restriction to overlapping pairs
+> represent the same state.
 
-**Open.** $\lambda$ is defined on faces here and on points in the literature
-[@demaine2007, §11.4; @hullzakharevich2023, §2.1]. The two agree when faces are
-uncreased regions, which Definition 2 guarantees. To be stated as a lemma once
-Definition 3 is written.
+The rank is a representation, and a strictly weaker one: a $\lambda$ has a
+linear extension only if it is acyclic across regions, and flat-foldable
+states with cyclic layering exist. In the square twist the four central faces
+lie over-under-over-under around the twist, so "no linear layer ordering will
+be able to avoid such obstructions", while the fold is flat-foldable
+[@hull2020, sec. 6.5, p. 119]. Such states are outside what the kernel can
+hold today. This is a known ceiling of the implementation, the model itself
+is stated on $\lambda$.
+
+> **Lemma 2c (face and point orderings agree).** Let $(f, \lambda)$ be a flat
+> folded state in the sense of Definition 2, and let $\lambda'$ be the layer
+> ordering on points that Demaine [@demaine2007, §11.4] and Hull and
+> Zakharevich [@hullzakharevich2023, §2.1] define. Setting $\lambda'(p, q) =
+> \lambda(F_p, F_q)$ for points $p, q$ interior to faces $F_p, F_q$ with
+> $f(p) = f(q)$ yields a global layer ordering in their sense, and every such
+> ordering arises this way from exactly one $\lambda$.
+>
+> *Proof.* Pending. The forward direction needs the non-crossing conditions of
+> Definition 3; the backward direction uses that faces are uncreased regions,
+> so $\lambda'$ is constant on pairs of faces by the tortilla-tortilla
+> property.
 
 ## 3. Non-crossing conditions
 
