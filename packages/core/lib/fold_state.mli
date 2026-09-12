@@ -37,26 +37,48 @@ type mark = {
     the old Fold_state). No invariants of its own. *)
 
 type t
+(** @see <https://beloch.toph.so/model/#def-flat-state>
+      realizes the flat folded state *)
 
 type violation =
   | Bad_index of string
-      (** root or a hinge's face index out of range, or fa = fb *)
-  | Bad_rank  (** rank is not a permutation of 0..n-1 *)
-  | Bad_angle of int  (** hinge i: angle outside {0, ±1} (flat-first) *)
-  | Bad_line of int  (** hinge i: line is degenerate (a = b = 0) *)
-  | Disconnected of int  (** face i unreachable from the root via hinges *)
+      (** root or a hinge's face index out of range, or fa = fb. A check on
+          the representation; the model has no statement behind it. *)
+  | Bad_rank
+      (** rank is not a permutation of 0..n-1
+          @see <https://beloch.toph.so/model/#rem-linear-extension>
+            realizes the linear-extension remark *)
+  | Bad_angle of int
+      (** hinge i: angle outside {0, ±1} (flat-first)
+          @see <https://beloch.toph.so/model/#def-flat-state>
+            realizes the hinge angles of the flat folded state *)
+  | Bad_line of int
+      (** hinge i: line is degenerate (a = b = 0). A check on the
+          representation; the model has no statement behind it. *)
+  | Disconnected of int
+      (** face i unreachable from the root via hinges
+          @see <https://beloch.toph.so/model/#cond-connected>
+            realizes the connectivity condition *)
   | Hinge_not_shared of int
       (** hinge i: its line is not a positive-length shared boundary edge
-          between faces lying in opposite half-planes *)
+          between faces lying in opposite half-planes
+          @see <https://beloch.toph.so/model/#cond-hinge-closure>
+            realizes the hinge-closure condition *)
   | Hinge_not_closed of int
       (** hinge i (a cycle edge): the derived placements contradict its
-          motion — folding would tear the sheet *)
+          motion — folding would tear the sheet
+          @see <https://beloch.toph.so/model/#cond-hinge-closure>
+            realizes the hinge-closure condition *)
   | Taco_tortilla of { tortilla : int; hinge : int }
       (** face [tortilla] is stacked inside folded hinge [hinge]'s taco but
-          crosses its crease [hullzakharevich2023 §2.1] *)
+          crosses its crease [hullzakharevich2023 §2.1]
+          @see <https://beloch.toph.so/model/#cond-taco-tortilla>
+            realizes the taco-tortilla condition *)
   | Taco_taco of int * int
       (** hinges i and j: creases coincide on the table and their face pairs
-          interleave in the stack [hullzakharevich2023 §2.1] *)
+          interleave in the stack [hullzakharevich2023 §2.1]
+          @see <https://beloch.toph.so/model/#cond-taco-taco>
+            realizes the taco-taco condition *)
 
 val violation_to_string : violation -> string
 
@@ -83,14 +105,18 @@ val make :
     line non-degeneracy), connectivity, hinge adjacency (half-plane +
     shared edge), cycle closure, then the non-crossing conditions
     (taco-tortilla, taco-taco) over the flat projection. Input arrays are
-    copied. *)
+    copied.
+    @see <https://beloch.toph.so/model/#def-flat-state> realizes the flat folded state
+    @see <https://beloch.toph.so/model/#def-noncrossing> realizes the non-crossing conditions *)
 
 val faces : t -> face array
 val hinges : t -> hinge array
 val root : t -> int
 
 val rank : t -> int array
-(** Accessors return copies; [t] cannot be mutated from outside. *)
+(** Accessors return copies; [t] cannot be mutated from outside.
+    @see <https://beloch.toph.so/model/#rem-linear-extension>
+      realizes the linear extension of the layer relation *)
 
 val above : t -> int -> int -> bool
 (** [above g i j]: face i stacked strictly above face j (rank comparison —
@@ -162,7 +188,9 @@ type rel = Above | Below | Apart
 val rel : t -> int -> int -> rel
 (** [rel g i j]: [Above]/[Below] by rank where [i] and [j]'s table polygons
     strictly overlap ([Geom.convex_overlap] — touching is not overlap);
-    [Apart] otherwise (including [i = j]). *)
+    [Apart] otherwise (including [i = j]).
+    @see <https://beloch.toph.so/model/#def-flat-state>
+      realizes the layer relation of the flat folded state *)
 
 val hinge_segment : t -> int -> Geom.point * Geom.point
 (** Hinge [i]'s shared boundary segment, in paper space. *)

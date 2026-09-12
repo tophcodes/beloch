@@ -79,6 +79,7 @@
             # tooling
             ocamlPkgs.ocaml-lsp
             ocamlPkgs.ocamlformat
+            ocamlPkgs.odoc
             ocamlPkgs.utop
             flint
             # FOLD -> SVG/PNG rendering (packages/render-2d/render-svg)

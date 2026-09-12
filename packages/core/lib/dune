@@ -1,5 +1,6 @@
 (library
  (name beloch)
+ (public_name beloch)
  (libraries zarith yojson sedlex menhirLib)
  (foreign_stubs (language c) (names qqbar_stubs))
  (c_library_flags (-lflint -lgmp -lmpfr))
