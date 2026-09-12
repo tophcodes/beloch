@@ -25,4 +25,4 @@ flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab)
   (--bd & .b) (--bd & .d) (.q over .r) {toward .q}
 
 ; assert steps = 1
-; assert faces = 8
+; assert faces = 6
