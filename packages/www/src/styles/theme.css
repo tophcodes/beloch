@@ -140,3 +140,29 @@ h3:target + p,
   border-radius: 0.15rem;
 }
 h3:target + p { box-shadow: none; }
+
+/* Model statements and terms (remark-model-blocks). The left rule shows how far
+   a statement reaches, the label reads as small caps, and the generated
+   cross-reference line stays quiet enough to skip while reading. */
+.sl-markdown-content .stmt,
+.sl-markdown-content .term {
+  border-inline-start: 3px solid var(--sl-color-accent);
+  padding-inline-start: 1rem;
+  margin-block: 1.5rem;
+}
+.sl-markdown-content .term {
+  border-inline-start-color: var(--sl-color-gray-4);
+  margin-block: 1rem;
+}
+.stmt-head, .term-head { margin-block-end: 0.5rem; }
+.stmt-label, .term-name {
+  font-variant-caps: small-caps;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+}
+.stmt-name { font-style: italic; color: var(--sl-color-gray-2); }
+.stmt-links, .term-links {
+  font-size: 0.85em;
+  color: var(--sl-color-gray-3);
+}
+.stmt-links a, .term-links a { color: inherit; }
