@@ -1,6 +1,6 @@
 ---
 title: The model
-description: What a Beloch program talks about. States, values, and the operations on both, with the kernel as one model of it.
+description: What a Beloch program talks about. States, values, and the operations on both.
 tableOfContents:
   minHeadingLevel: 2
   maxHeadingLevel: 2
@@ -8,19 +8,18 @@ tableOfContents:
 
 This document defines what a Beloch program talks about: the set of states,
 the values a program can name, and the operations on both. `SPECIFICATION.md`
-says how the language is written; this document says what it means. The two
-are kept consistent by hand, and the kernel (`packages/core`) is one model of
-what is written here.
+says how the language is written; this document says what it means. How the
+kernel realizes it is the subject of `KERNEL.md`, which refers to the
+statements here by their ids; this document does not refer back.
 
 The document grows in steps. Each definition is stated with its intuition
-first, then its formal content, then the place in the kernel that realizes it.
+first, then its formal content.
 Statements are numbered within their section: a *Definition* introduces a
 term, a *Lemma* is a consequence with a proof or a pointer to one, a
 *Corollary* follows from a lemma without further argument, a *Remark* is
 unproven commentary, an *Open* point is a decision still to be made and is
-part of the contract until closed. Each statement carries the terms it defines, the
-statements it uses, the statements that use it, and the kernel function that
-realizes it. Every word used in a technical sense is listed under
+part of the contract until closed. Each statement carries the terms it
+defines, the statements it uses and the statements that use it. Every word used in a technical sense is listed under
 [Terms](#terms) with a link to where it is defined; the first use in the text
 links there too.
 
@@ -47,10 +46,8 @@ change.
 :::
 
 The sheet may be non-convex. Convexity belongs to the faces of a state
-([#def-flat-state]), because the kernel's clipping and overlap tests work on
-convex polygons; a non-convex sheet is decomposed into convex faces joined by
-flat hinges (angle $0$). A convex sheet is a single face. `paper square` is
-the only sheet the language offers today; the model does not depend on that.
+([#def-flat-state]): a non-convex sheet is decomposed into convex faces joined
+by flat hinges (angle $0$), and a convex sheet is a single face.
 
 Holes are excluded because the tortilla conditions of [#def-noncrossing] are
 stated for regions without holes [@hullzakharevich2023, §2.1] and because the
@@ -67,13 +64,11 @@ Intuition: a folded state records where every point of the sheet lies on the
 [table](#term-table) and, wherever paper lies on paper, which layer is on top.
 In particular a state does not remember how it was reached.[^history]
 
-[^history]: This holds for the model. The implementation does keep the
-    history and exposes it: the FOLD output carries one frame per statement
-    and, per edge, the statement that scored it (`file_frames`,
-    `beloch:edges`, `beloch:source_line`; `SPECIFICATION.md` §7). Nothing in
-    this document depends on that record, and no operation may read it.
+[^history]: An implementation may record the history for its own purposes.
+    Nothing in this document depends on such a record, and no operation may
+    read it.
 
-::: {.definition #def-flat-state name="flat folded state" uses="def-sheet def-noncrossing" defines="term-table term-face term-hinge term-layer" realized-by="Fold_state.make"}
+::: {.definition #def-flat-state name="flat folded state" uses="def-sheet def-noncrossing" defines="term-table term-face term-hinge term-layer"}
 A flat folded state of a sheet $P$ is a pair $(f, \lambda)$ where
 
 - $F$ is a finite decomposition of $P$ into convex polygons, the faces, such
@@ -132,29 +127,18 @@ This makes the convex decomposition of [#def-sheet] immaterial, makes `mark`
 a no-op on the state modulo refinement, and is what "the two routes reach the
 same folded state" means when comparing programs.
 
-Kernel: `Fold_state.t` holds the face array in paper coordinates, one exact
-2D isometry per face (`Isometry.t`), the hinge array with angles in
-$\{0, \pm 1\}$ (units of $\pi$), and a rank. `Fold_state.make` is the only
-constructor and rejects anything outside [#def-flat-state] and
-[#def-noncrossing].
-
-::: {.remark #rem-rank name="rank" uses="def-flat-state" realized-by="Fold_state.rank"}
-The kernel does not store $\lambda$. It stores a rank, a total order of all
-faces, and reads *above*/*below* for an overlapping pair off the rank. A rank
-represents $\lambda$ exactly when it is a linear extension of it: it agrees
-with $\lambda$ on every overlapping pair and is free on the rest. Two ranks
-with the same restriction to overlapping pairs represent the same state.
+::: {.remark #rem-linear-extension name="linear extensions" uses="def-flat-state"}
+$\lambda$ is a partial order: it relates overlapping faces only. A total order
+of all faces that agrees with $\lambda$ on every overlapping pair is a linear
+extension of $\lambda$, and two linear extensions with the same restriction to
+overlapping pairs describe the same state. A linear extension exists only
+when the *above* relation is acyclic across regions, and flat-foldable states
+violate this: in the square twist the four central faces lie
+over-under-over-under around the twist, so "no linear layer ordering will be
+able to avoid such obstructions", while the fold is flat-foldable
+[@hull2020, sec. 6.5, p. 119]. A representation that stores one linear
+extension therefore cannot hold every state of [#def-flat-state].
 :::
-
-The rank is a representation, and a strictly weaker one: a $\lambda$ has a
-linear extension only if it is acyclic across regions, and flat-foldable
-states with cyclic layering exist. In the square twist the four central faces
-lie over-under-over-under around the twist, so "no linear layer ordering will
-be able to avoid such obstructions", while the fold is flat-foldable
-[@hull2020, sec. 6.5, p. 119]. Such states are outside what the kernel can
-hold today. This is a known ceiling of the implementation, tracked as
-[issue #83](https://github.com/tophcodes/beloch/issues/83); the model itself
-is stated on $\lambda$.
 
 ::: {.lemma #lem-face-points name="face and point orderings agree" uses="def-flat-state def-noncrossing"}
 Let $(f, \lambda)$ be a flat folded state in the sense of [#def-flat-state],
@@ -173,11 +157,10 @@ tortilla-tortilla property.
 
 ## 3. Non-crossing conditions
 
-::: {.definition #def-noncrossing name="non-crossing conditions" realized-by="Fold_state.violation"}
+::: {.definition #def-noncrossing name="non-crossing conditions"}
 To be written: the conditions on $\lambda$ that make $(f, \lambda)$ a physical
 state (antisymmetry, transitivity, tortilla-tortilla, taco-tortilla,
-taco-taco) and Beloch's structural conditions (hinge closure, connectivity),
-each mapped to a constructor of `Fold_state.violation`.
+taco-taco) and the structural conditions (hinge closure, connectivity).
 :::
 
 ## Terms
