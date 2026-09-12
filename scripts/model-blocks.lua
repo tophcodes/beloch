@@ -23,6 +23,7 @@
 
 local LABELS = {
   definition = "Definition",
+  condition = "Condition",
   lemma = "Lemma",
   corollary = "Corollary",
   remark = "Remark",
