@@ -112,6 +112,7 @@ export default defineConfig({
 					label: "Reference",
 					items: [
 						{ label: "The model", link: "/model/" },
+						{ label: "The kernel", link: "/kernel/" },
 					],
 				},
 			],

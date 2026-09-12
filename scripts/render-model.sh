@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Render spec/MODEL.md to a PDF with resolved citations.
+# Render spec/MODEL.md and spec/KERNEL.md to PDFs with resolved citations.
 #
 # Statements and terms are pandoc fenced divs, `::: {.definition #id …}`;
 # scripts/model-blocks.lua numbers them and generates the cross-reference lines
@@ -19,15 +19,17 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 out="$root/_build/spec"
 mkdir -p "$out"
 
-pandoc "$root/spec/MODEL.md" \
-  --from markdown \
-  --lua-filter "$root/scripts/model-blocks.lua" \
-  --citeproc \
-  --bibliography "$root/paper/references.bib" \
-  --csl "$root/paper/chicago-notes-bibliography.csl" \
-  --pdf-engine typst \
-  --variable mainfont="Libertinus Serif" \
-  --metadata link-citations=true \
-  --output "$out/model.pdf"
-
-echo "$out/model.pdf"
+for doc in MODEL KERNEL; do
+  lower=$(echo "$doc" | tr "[:upper:]" "[:lower:]")
+  pandoc "$root/spec/$doc.md" \
+    --from markdown \
+    --lua-filter "$root/scripts/model-blocks.lua" \
+    --citeproc \
+    --bibliography "$root/paper/references.bib" \
+    --csl "$root/paper/chicago-notes-bibliography.csl" \
+    --pdf-engine typst \
+    --variable mainfont="Libertinus Serif" \
+    --metadata link-citations=true \
+    --output "$out/$lower.pdf"
+  echo "$out/$lower.pdf"
+done
