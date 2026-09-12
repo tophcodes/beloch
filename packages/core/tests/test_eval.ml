@@ -122,14 +122,29 @@ let test_eval_map_onto_line_ok () =
         "axiom-4 crease passes through (1,1/2)" true
         (on { Geom.x = q 1; y = half })
 
+(* both creases through the sheet centre — the vertical midline and the
+   anti-diagonal — cut the paper, so the paper-incidence filter leaves the
+   ambiguity standing. *)
 let test_eval_map_through_ambiguous () =
-  expect_error "toward" (fun () ->
+  expect_error "both landing on the paper" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               mark --bottom = through .a .b\n\
-               mark map .d onto --bottom through .a\n")))
+               mark --ac = through .a .c\n\
+               .o = free on --ac from .a at 1/2\n\
+               mark map .a onto --bc through .o\n")))
+
+(* the mirror landing's crease meets the sheet at the corner .a alone, so the
+   filter empties the candidate list. *)
+let test_eval_map_through_none_on_paper () =
+  expect_error "no crease lands on the paper" (fun () ->
+      ignore
+        (Eval.eval_folded
+           (Beloch.parse ~filename:"t.bel"
+              "paper square\n\
+               --ac = through .a .c\n\
+               --x = map .c onto --ac through .a\n")))
 
 let test_eval_map_through_same_point () =
   expect_error "same point" (fun () ->
@@ -1379,6 +1394,8 @@ let () =
           Alcotest.test_case "bisect errors" `Quick test_eval_bisect_errors;
           Alcotest.test_case "map through ambiguous" `Quick
             test_eval_map_through_ambiguous;
+          Alcotest.test_case "map through none on paper" `Quick
+            test_eval_map_through_none_on_paper;
           Alcotest.test_case "map through same point" `Quick
             test_eval_map_through_same_point;
           Alcotest.test_case "axiom7 q already on e" `Quick
