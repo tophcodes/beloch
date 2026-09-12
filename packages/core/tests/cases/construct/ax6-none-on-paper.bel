@@ -1,0 +1,10 @@
+; .c already lies on --ac, so the identity landing is dropped and the mirror
+; landing (-1, -1) leaves one crease: the anti-diagonal direction through .a.
+; It touches the sheet at the corner .a alone and creases nothing, so the
+; paper-incidence filter leaves no survivor and there is no fold to make.
+
+paper square
+--ac = through .a .c
+--x = map .c onto --ac through .a
+
+; expect error "map .c onto --ac through .a: no crease lands on the paper — no fold to make"

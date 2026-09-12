@@ -429,9 +429,11 @@ let segments_overlap_collinear ((p1, q1) : point * point)
    stricter "does this actually fold the face" test. *)
 let clip_line_to_convex (l : line) (poly : point array) : (point * point) option =
   let n = Array.length poly in
-  if n < 3 then None
+  let n2 = Num.add (Num.mul l.a l.a) (Num.mul l.b l.b) in
+  (* a = b = 0 is no line at all (the degenerate output of a degenerate
+     construction), so it clips to nothing rather than dividing by a²+b² *)
+  if n < 3 || Num.sign n2 = 0 then None
   else
-    let n2 = Num.add (Num.mul l.a l.a) (Num.mul l.b l.b) in
     let dirx = l.b and diry = Num.neg l.a in
     let p0 =
       { x = Num.div (Num.mul l.a l.c) n2; y = Num.div (Num.mul l.b l.c) n2 }

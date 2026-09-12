@@ -114,39 +114,50 @@ let axis_of (ctx : Ctx.ctx) (span : Error.span) (ax : Ast.axiom) : axis_result =
           Error.fail span
             (Printf.sprintf "cannot fold %s onto %s through %s: out of reach"
                (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr p'))
-      | [ c ] -> Axis (c, "axiom6", base)
-      | creases -> (
-          match x_opt with
-          | None ->
+      | candidates -> (
+          (* a candidate that creases no face is a line on the abstract plane
+             with nothing to fold; same paper-incidence filter as axiom 5 *)
+          match List.filter (Fold_state.line_cuts_paper !(ctx.state)) candidates with
+          | [] ->
               Error.fail span
                 (Printf.sprintf
-                   "two folds place %s onto %s through %s; add 'toward .x'"
+                   "map %s onto %s through %s: no crease lands on the paper — \
+                    no fold to make"
                    (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr p'))
-          | Some xo ->
-              let xt = Resolve.table_of ctx xo in
-              (* pick the crease whose landing (the reflection of p across it)
-                 is nearest x; exact squared-distance comparison *)
-              let dist2 (c : Geom.line) =
-                let im = Geom.reflect_point c pp in
-                let ex = Num.sub im.Geom.x xt.Geom.x
-                and ey = Num.sub im.Geom.y xt.Geom.y in
-                Num.add (Num.mul ex ex) (Num.mul ey ey)
-              in
-              let best =
-                List.fold_left
-                  (fun acc c ->
-                    match acc with
-                    | None -> Some c
-                    | Some b ->
-                        if Num.compare (dist2 c) (dist2 b) < 0 then Some c
-                        else acc)
-                  None creases
-              in
-              match best with
-              | Some c -> Axis (c, "axiom6", base @ [ Resolve.pstr xo ])
-              (* unreachable: this arm only runs with ≥2 creases, so the
-                 fold over a non-empty list always yields [Some]. *)
-              | None -> assert false))
+          | [ c ] -> Axis (c, "axiom6", base)
+          | creases -> (
+              match x_opt with
+              | None ->
+                  Error.fail span
+                    (Printf.sprintf
+                       "two folds place %s onto %s through %s, both landing on \
+                        the paper; add 'toward .x'"
+                       (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr p'))
+              | Some xo ->
+                  let xt = Resolve.table_of ctx xo in
+                  (* pick the crease whose landing (the reflection of p across
+                     it) is nearest x; exact squared-distance comparison *)
+                  let dist2 (c : Geom.line) =
+                    let im = Geom.reflect_point c pp in
+                    let ex = Num.sub im.Geom.x xt.Geom.x
+                    and ey = Num.sub im.Geom.y xt.Geom.y in
+                    Num.add (Num.mul ex ex) (Num.mul ey ey)
+                  in
+                  let best =
+                    List.fold_left
+                      (fun acc c ->
+                        match acc with
+                        | None -> Some c
+                        | Some b ->
+                            if Num.compare (dist2 c) (dist2 b) < 0 then Some c
+                            else acc)
+                      None creases
+                  in
+                  match best with
+                  | Some c -> Axis (c, "axiom6", base @ [ Resolve.pstr xo ])
+                  (* unreachable: this arm only runs with ≥2 creases, so the
+                     fold over a non-empty list always yields [Some]. *)
+                  | None -> assert false)))
   | Ast.MapBoth (p, d, q, e, x_opt) -> (
       let pp = Resolve.table_of ctx p and dd = Resolve.resolve_line ctx d in
       let qq = Resolve.table_of ctx q and ee = Resolve.resolve_line ctx e in
@@ -172,37 +183,49 @@ let axis_of (ctx : Ctx.ctx) (span : Error.span) (ax : Ast.axiom) : axis_result =
                "cannot fold %s onto %s and %s onto %s: out of reach (no \
                 common tangent)"
                (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr q) (Resolve.lstr e))
-      | [ c ] -> Axis (c, "axiom7", base)
-      | creases -> (
-          match x_opt with
-          | None ->
+      | candidates -> (
+          (* a common tangent that creases no face is a line on the abstract
+             plane with nothing to fold; same paper-incidence filter as axiom 5 *)
+          match List.filter (Fold_state.line_cuts_paper !(ctx.state)) candidates with
+          | [] ->
               Error.fail span
                 (Printf.sprintf
-                   "%d folds place %s onto %s and %s onto %s; add 'toward \
-                    .x'"
-                   (List.length creases) (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr q) (Resolve.lstr e))
-          | Some xo ->
-              let xt = Resolve.table_of ctx xo in
-              (* nearest landing of the first point p, exact squared distance *)
-              let dist2 (c : Geom.line) =
-                let im = Geom.reflect_point c pp in
-                let ex = Num.sub im.Geom.x xt.Geom.x
-                and ey = Num.sub im.Geom.y xt.Geom.y in
-                Num.add (Num.mul ex ex) (Num.mul ey ey)
-              in
-              let best =
-                List.fold_left
-                  (fun acc c ->
-                    match acc with
-                    | None -> Some c
-                    | Some b ->
-                        if Num.compare (dist2 c) (dist2 b) < 0 then Some c
-                        else acc)
-                  None creases
-              in
-              match best with
-              | Some c -> Axis (c, "axiom7", base @ [ Resolve.pstr xo ])
-              | None -> assert false))
+                   "map %s onto %s and %s onto %s: no crease lands on the \
+                    paper — no fold to make"
+                   (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr q) (Resolve.lstr e))
+          | [ c ] -> Axis (c, "axiom7", base)
+          | creases -> (
+              match x_opt with
+              | None ->
+                  Error.fail span
+                    (Printf.sprintf
+                       "%d folds place %s onto %s and %s onto %s, all landing \
+                        on the paper; add 'toward .x'"
+                       (List.length creases) (Resolve.pstr p) (Resolve.lstr d)
+                       (Resolve.pstr q) (Resolve.lstr e))
+              | Some xo ->
+                  let xt = Resolve.table_of ctx xo in
+                  (* nearest landing of the first point p, exact squared
+                     distance *)
+                  let dist2 (c : Geom.line) =
+                    let im = Geom.reflect_point c pp in
+                    let ex = Num.sub im.Geom.x xt.Geom.x
+                    and ey = Num.sub im.Geom.y xt.Geom.y in
+                    Num.add (Num.mul ex ex) (Num.mul ey ey)
+                  in
+                  let best =
+                    List.fold_left
+                      (fun acc c ->
+                        match acc with
+                        | None -> Some c
+                        | Some b ->
+                            if Num.compare (dist2 c) (dist2 b) < 0 then Some c
+                            else acc)
+                      None creases
+                  in
+                  match best with
+                  | Some c -> Axis (c, "axiom7", base @ [ Resolve.pstr xo ])
+                  | None -> assert false)))
 
 (* ---- axiom-5 bisector selection (direction + paper incidence) ---- *)
 (* l1's swinging material as table-space segments *)

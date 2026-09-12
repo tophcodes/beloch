@@ -1,0 +1,19 @@
+; The bird base's kite crease on the preliminary base: axiom 6 has two
+; solutions through .c, but the outward one is a line meeting the base only at
+; .c itself, cutting no face. The paper-incidence filter drops it and leaves a
+; single survivor, so no `toward` is needed to reach the inward crease.
+
+paper square
+
+fold --bd = map .a onto .c
+reverse --h = map .b onto .c
+reverse --v = map .d onto .c
+
+.o = free on --bd from .b at 1/2
+--mid = through .c .o
+
+.sr = free on --ab from .a at 1/2
+reverse map .sr onto --mid through .c
+
+; assert steps = 4
+; assert faces = 8
