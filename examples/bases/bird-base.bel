@@ -6,6 +6,10 @@
 ; nothing, so the paper-incidence filter leaves the inward one as the single
 ; survivor and no `toward` is needed. The kite vertices carry sqrt(2)
 ; coordinates, handled exactly. --ac is never creased on this route.
+;
+; The seven statements are Ida's steps 2-8; the finished state is her O_8
+; [ida2020, Fig. 7.20(h), p. 194]. Checked against her figures in
+; notes/2026-09-12-bird-base-oracle.md.
 
 paper square
 
@@ -30,3 +34,20 @@ reverse map .bl onto --mid through .c
 
 ; assert steps = 7
 ; assert faces = 14
+
+; the kite: apex .c, far vertex the paper centre, all four paper corners at
+; the apex. The two side vertices carry sqrt(2) coordinates and have no
+; rational literal to compare against.
+; assert .c = (1, 1)
+; assert .a = .c
+; assert .b = .c
+; assert .d = .c
+; assert .o = (1/2, 1/2)
+
+; the four reversed side corners land on one point of the centre line
+; assert .sr = .sl
+; assert .sr = .br
+; assert .sr = .bl
+
+; the spine reverses beyond O on both halves
+; assert --bd is mountain
