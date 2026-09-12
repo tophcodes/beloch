@@ -18,6 +18,7 @@ pandoc "$root/spec/MODEL.md" \
   --from markdown \
   --citeproc \
   --bibliography "$root/paper/references.bib" \
+  --csl "$root/paper/chicago-notes-bibliography.csl" \
   --pdf-engine typst \
   --variable mainfont="Libertinus Serif" \
   --metadata link-citations=true \
