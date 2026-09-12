@@ -37,12 +37,12 @@ test("statements are numbered per section, shared across classes", () => {
 test("statement sections carry RDFa and keep their id", () => {
   expect(html).toContain(
     '<section class="stmt stmt-definition" id="def-flat-state" typeof="bm:Definition"' +
-      ' resource="#def-flat-state" prefix="bm: https://beloch.dev/model#">',
+      ' resource="#def-flat-state" prefix="bm: https://beloch.toph.so/ns/model#">',
   );
   expect(html).toContain('<span class="stmt-name" property="bm:name">flat folded state</span>');
   expect(html).toContain(
     '<section class="term" id="term-table" typeof="bm:Term" resource="#term-table"' +
-      ' prefix="bm: https://beloch.dev/model#">',
+      ' prefix="bm: https://beloch.toph.so/ns/model#">',
   );
 });
 

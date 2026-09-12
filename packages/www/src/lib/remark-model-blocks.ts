@@ -37,7 +37,9 @@ const LABELS: Record<string, string> = {
 // page-level wrapper: a remark plugin cannot reach the element Starlight wraps
 // the content in, and every CURIE this plugin emits is inside a section it
 // generates, so the bindings cover them all.
-const PREFIX = "bm: https://beloch.dev/model#";
+// The vocabulary lives under the docs site; the statements themselves are
+// resources on the page (`/model/#def-…`), so the two fragment spaces stay apart.
+const PREFIX = "bm: https://beloch.toph.so/ns/model#";
 
 const OPEN_FENCE = /^:{3,}\s*\{(.*)\}\s*$/;
 const CLOSE_FENCE = /^:{3,}\s*$/;
