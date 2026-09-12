@@ -160,22 +160,12 @@ tortilla-tortilla property.
 Intuition: $\lambda$ says which of two overlapping faces is on top. Not every
 such assignment describes a sheet of paper. A face cannot pass through
 another face, it cannot pass through a fold, and two folds cannot thread
-through each other. The conditions below rule those out, and nothing else:
-they are the non-crossing conditions of Hull and Zakharevich
-[@hullzakharevich2023, §2.1], restated for faces instead of points, plus two
-conditions that a decomposition into faces has to satisfy to be one sheet.
-
-::: {.definition #def-noncrossing name="non-crossing conditions" uses="def-flat-state" defines="term-noncrossing"}
-$\lambda$ is a non-crossing layer ordering for $f$ when it satisfies
-[#cond-order], [#cond-taco-tortilla] and [#cond-taco-taco], and $(f, \lambda)$
-is a flat folded state only if in addition [#cond-hinge-closure] and
-[#cond-connected] hold.
-:::
-
-::: {.term #term-noncrossing name="non-crossing"}
-The conditions on a layer ordering that keep the paper from passing through
-itself.
-:::
+through each other. This section states the conditions that rule those out,
+one at a time, and then defines a non-crossing layer ordering as one that
+satisfies them all. They are the non-crossing conditions of Hull and
+Zakharevich [@hullzakharevich2023, §2.1], restated for faces instead of
+points, plus two conditions that a decomposition into faces has to satisfy to
+be one sheet.
 
 Two of the six properties in the literature need no condition here. Existence
 says that $\lambda$ is defined exactly on overlapping pairs, and
@@ -183,17 +173,17 @@ tortilla-tortilla says that two uncreased regions which fully overlap are
 ordered as wholes. Both hold by construction, because [#def-flat-state]
 defines $\lambda$ on pairs of faces and a face is an uncreased region.
 
-::: {.definition #cond-order name="order" uses="def-flat-state"}
+::: {.definition #cond-order name="order condition" uses="def-flat-state"}
 For faces $A$, $B$, $C$ whose images share a region of positive area: if $A$
 is above $B$ and $B$ is above $C$, then $A$ is above $C$. Antisymmetry needs
 no separate statement, since $\lambda$ assigns one of *above* and *below* to
 each unordered pair.
 :::
 
-The remaining two conditions speak about folded hinges. A folded hinge $h$
-between faces $A$ and $B$ folds the two onto each other, so that near $f(h)$
-the images of $A$ and $B$ coincide; the pair is a [taco](#term-taco), closed
-along $f(h)$ and open on the other side.
+The next two conditions speak about folded hinges. A folded hinge $h$ between
+faces $A$ and $B$ folds the two onto each other, so that near $f(h)$ the
+images of $A$ and $B$ coincide; the pair is a [taco](#term-taco), closed along
+$f(h)$ and open on the other side.
 
 ::: {.term #term-taco name="taco"}
 Two faces joined by a folded hinge, seen near the hinge: closed along the
@@ -205,7 +195,7 @@ A face whose image covers a neighbourhood of a point of a folded hinge's
 image without that hinge being its own edge.
 :::
 
-::: {.definition #cond-taco-tortilla name="taco-tortilla" uses="def-flat-state cond-order"}
+::: {.definition #cond-taco-tortilla name="taco-tortilla condition" uses="def-flat-state cond-order" defines="term-taco term-tortilla"}
 Let $A$ and $B$ be joined by a folded hinge $h$, and let $C$ be a face whose
 image contains a neighbourhood of an interior point of $f(h)$, so that $C$
 overlaps both $A$ and $B$ there. Then $C$ lies on the same side of both:
@@ -213,7 +203,7 @@ $\lambda(A, C) = \lambda(B, C)$. A face cannot lie between the two sides of a
 fold.
 :::
 
-::: {.definition #cond-taco-taco name="taco-taco" uses="def-flat-state cond-order"}
+::: {.definition #cond-taco-taco name="taco-taco condition" uses="def-flat-state cond-order"}
 Let $A$ and $B$ be joined by a folded hinge $h$, and $C$ and $D$ by a folded
 hinge $k$, such that $f(h)$ and $f(k)$ overlap in a segment of positive length
 and all four faces overlap near it. Then the two pairs do not interleave: in
@@ -224,25 +214,37 @@ the pairs exchanged. Two folds along the same line are nested or separate.
 
 The last two conditions concern $f$ and the decomposition rather than
 $\lambda$. They are consequences of [#def-flat-state] for a sheet that is one
-piece, and they are stated here because a representation has to check them.
+piece, and they are stated on their own because a representation has to
+check them.
 
-::: {.definition #cond-hinge-closure name="hinge closure" uses="def-flat-state"}
+::: {.definition #cond-hinge-closure name="hinge closure condition" uses="def-flat-state"}
 For every hinge between faces $A$ and $B$, the isometries of $A$ and $B$ agree
 on the shared edge, and the isometry of $B$ is the isometry of $A$ either
 unchanged or composed with the reflection across the edge. Equivalently every
 hinge has angle $0$ or $\pm\pi$, and $f$ is continuous.
 :::
 
-::: {.definition #cond-connected name="connectivity" uses="def-sheet def-flat-state"}
+::: {.definition #cond-connected name="connectivity condition" uses="def-sheet def-flat-state"}
 The faces, joined along their hinges, form one connected piece: every face is
 reachable from every other through shared edges. This restates that the
 decomposition covers a single sheet.
 :::
 
+::: {.definition #def-noncrossing name="non-crossing layer ordering" uses="def-flat-state cond-order cond-taco-tortilla cond-taco-taco cond-hinge-closure cond-connected" defines="term-noncrossing"}
+$\lambda$ is a non-crossing layer ordering for $f$ when it satisfies
+[#cond-order], [#cond-taco-tortilla] and [#cond-taco-taco]. A pair
+$(f, \lambda)$ with a non-crossing $\lambda$ is a flat folded state when in
+addition [#cond-hinge-closure] and [#cond-connected] hold.
+:::
+
+::: {.term #term-noncrossing name="non-crossing"}
+The conditions on a layer ordering that keep the paper from passing through
+itself.
+:::
+
 Sources: the six properties on points, with Figure 1 showing the two crossing
-patterns [@hullzakharevich2023, §2.1]; the same conditions as the definition
-of a valid layer ordering, and Justin's original statement of them
-[@hull2020, sec. 6.5, p. 123].
+patterns [@hullzakharevich2023, §2.1]; Justin's three conditions in Hull's
+statement [@hull2020, sec. 6.5, p. 123].
 
 ## Terms
 
