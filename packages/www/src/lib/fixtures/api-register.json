@@ -1,0 +1,56 @@
+{
+  "items": [
+    {
+      "path": "Sample.t",
+      "kind": "type",
+      "name": "t",
+      "parent": null,
+      "signature": "type t",
+      "doc": "",
+      "realizes": [
+        {
+          "url": "https://beloch.toph.so/model/#def-flat-state",
+          "id": "def-flat-state",
+          "text": "realizes the flat folded state"
+        }
+      ],
+      "html": "/api/beloch/Beloch/Sample/index.html#type-t"
+    },
+    {
+      "path": "Sample.violation",
+      "kind": "type",
+      "name": "violation",
+      "parent": null,
+      "signature": "type violation =\n  | Bad_index of string\n  | Taco_taco of int * int",
+      "doc": "Why a candidate is not a state.",
+      "realizes": [],
+      "html": "/api/beloch/Beloch/Sample/index.html#type-violation"
+    },
+    {
+      "path": "Sample.violation.Bad_index",
+      "kind": "constructor",
+      "name": "Bad_index",
+      "parent": "Sample.violation",
+      "signature": "| Bad_index of string",
+      "doc": "an index out of range",
+      "realizes": [],
+      "html": "/api/beloch/Beloch/Sample/index.html#type-violation.Bad_index"
+    },
+    {
+      "path": "Sample.violation.Taco_taco",
+      "kind": "constructor",
+      "name": "Taco_taco",
+      "parent": "Sample.violation",
+      "signature": "| Taco_taco of int * int",
+      "doc": "hinges i and j interleave",
+      "realizes": [
+        {
+          "url": "https://beloch.toph.so/model/#def-sheet",
+          "id": "def-sheet",
+          "text": "realizes the sheet"
+        }
+      ],
+      "html": "/api/beloch/Beloch/Sample/index.html#type-violation.Taco_taco"
+    }
+  ]
+}

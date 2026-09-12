@@ -2,7 +2,7 @@ Prose before the first section.
 
 ## 1. Paper
 
-::: {.definition #def-sheet name="sheet" defines="term-face" realized-by="Paper.make"}
+::: {.definition #def-sheet name="sheet" defines="term-face"}
 A sheet is a simple polygon $P \subset \mathbb{R}^2$.
 :::
 

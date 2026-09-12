@@ -8,17 +8,25 @@ import remarkRehype from "remark-rehype";
 import rehypeStringify from "rehype-stringify";
 import remarkModelBlocks from "./remark-model-blocks.ts";
 
-const fixture = readFileSync(join(import.meta.dir, "fixtures", "model-blocks.md"), "utf8");
+const fixtures = join(import.meta.dir, "fixtures");
+const model = join(fixtures, "model-blocks.md");
+const register = join(fixtures, "api-register.json");
 
-const html = String(
-  await unified()
-    .use(remarkParse)
-    .use(remarkModelBlocks)
-    .use(remarkMath)
-    .use(remarkRehype, { allowDangerousHtml: true })
-    .use(rehypeStringify, { allowDangerousHtml: true })
-    .process(fixture),
-);
+async function render(path: string, options: Record<string, string> = {}) {
+  return String(
+    await unified()
+      .use(remarkParse)
+      .use(remarkModelBlocks, options)
+      .use(remarkMath)
+      .use(remarkRehype, { allowDangerousHtml: true })
+      .use(rehypeStringify, { allowDangerousHtml: true })
+      .process(readFileSync(path, "utf8")),
+  );
+}
+
+// The model document, rendered against the register: its statements carry the
+// realizations the kernel's `@see` tags declare.
+const html = await render(model, { register, model });
 
 // the links line of one statement section, by id
 function links(id: string): string {
@@ -64,7 +72,10 @@ test("back references are derived from the forward ones", () => {
 
 test("defines and realized-by render on the links line", () => {
   expect(links("def-sheet")).toContain('Defines: <a rel="bm:defines" href="#term-face">face</a>');
-  expect(links("def-sheet")).toContain('Realized by: <code property="bm:realizedBy">Paper.make</code>');
+  expect(links("def-sheet")).toContain(
+    'Realized by: <a rel="bm:realizedBy" href="/api/beloch/Beloch/Sample/index.html' +
+      '#type-violation.Taco_taco"><code>Sample.violation.Taco_taco</code></a>',
+  );
   // a term's own defined-by is the same relation written from the other end
   expect(links("def-flat-state")).toContain(
     'Defines: <a rel="bm:defines" href="#term-table">table</a>, ' +
@@ -103,4 +114,47 @@ test("math and citations inside a block body survive", () => {
   const section = html.slice(html.indexOf('id="def-flat-state"'));
   expect(section).toContain('class="language-math math-inline"');
   expect(html).toContain("[@hull2020, chapter 6]");
+});
+
+test("a statement no kernel item points at has no Realized by line", () => {
+  expect(links("lem-face-points")).not.toContain("Realized by");
+});
+
+test("without a register there are no Realized by lines", async () => {
+  const bare = await render(model, { register: join(fixtures, "no-such-register.json"), model });
+  expect(bare).not.toContain("Realized by");
+});
+
+test(".include renders the register entry with RDFa and a Realizes line", async () => {
+  const included = await render(join(fixtures, "model-include.md"), { register, model });
+  expect(included).toContain(
+    '<div class="api-item" about="/api/beloch/Beloch/Sample/index.html#type-t"' +
+      ' typeof="bm:CodeItem" prefix="bm: https://beloch.toph.so/ns/model#">',
+  );
+  expect(included).toContain("<code class=\"language-ocaml\">type t\n</code>");
+  // the label comes from the model document's numbering, not from the register
+  expect(included).toContain(
+    '<p class="api-realizes">Realizes: <a rel="bm:realizes" href="/model/#def-flat-state">' +
+      "Definition 1.2</a></p>",
+  );
+});
+
+test(".include on a variant type lists its constructors", async () => {
+  const included = await render(join(fixtures, "model-include.md"), { register, model });
+  expect(included).toContain("Why a candidate is not a state.");
+  expect(included).toContain(
+    '<div class="api-member" about="/api/beloch/Beloch/Sample/index.html' +
+      '#type-violation.Taco_taco" typeof="bm:CodeItem">',
+  );
+  expect(included).toContain('<code>| Taco_taco of int * int</code>');
+  expect(included).toContain("hinges i and j interleave");
+  expect(included).toContain('href="/model/#def-sheet">Definition 1.1</a>');
+});
+
+test("an item the register does not have renders a visible placeholder", async () => {
+  const included = await render(join(fixtures, "model-include.md"), { register, model });
+  expect(included).toContain(
+    '<p class="api-missing">No API register entry for <code>Sample.missing</code>;' +
+      " run scripts/api-register.ts.</p>",
+  );
 });

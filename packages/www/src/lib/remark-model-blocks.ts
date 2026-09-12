@@ -5,9 +5,17 @@
 //   :::
 //
 // become numbered statement sections with RDFa, a generated links line that
-// carries both the written relations (`defines`, `uses`, `realized-by`) and the
-// derived ones (`used-by`, `defined-by`), and a generated Terms glossary.
+// carries both the written relations (`defines`, `uses`) and the derived ones
+// (`used-by`, `defined-by`, `realized-by`), and a generated Terms glossary.
 // `.term` blocks are moved out of the text into that glossary.
+//
+// `::: {.include api="Fold_state.violation"}` is replaced by what
+// packages/core's interface says about that item: its signature, its doc
+// comment, and one entry per constructor. Both directions of the realization
+// relation come from the API register that scripts/api-register.ts writes; a
+// statement's "Realized by" line names the kernel items whose `@see` tags point
+// at it. Without the register, an `.include` block renders a placeholder and no
+// statement gets a "Realized by" line.
 //
 // Statement classes: definition, lemma, corollary, remark, open. Numbers are
 // `<section>.<n>`, counted per `##` heading and shared by all statement
@@ -23,6 +31,8 @@
 //
 // Astro caches rendered content entries in node_modules/.astro; after changing
 // this file, delete that directory (and .astro/) or the old output is served.
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { visit } from "unist-util-visit";
 
 const LABELS: Record<string, string> = {
@@ -46,7 +56,101 @@ const CLOSE_FENCE = /^:{3,}\s*$/;
 const ATTR = /([.#])([^\s"'{}]+)|([A-Za-z_][\w-]*)="([^"]*)"/g;
 const SUGAR = /\[#([A-Za-z0-9_-]+)\]/g;
 
+// astro.config.mjs sets BELOCH_REPO_ROOT in its module body, which runs after
+// this module is imported, so the variable is read per document rather than
+// once. A bare `bun test` runs from the package directory and passes both paths
+// as options instead.
+function repoRoot(): string {
+	return process.env.BELOCH_REPO_ROOT ?? process.cwd();
+}
+
 type Attrs = Record<string, string>;
+
+interface Realization {
+	id: string;
+}
+
+interface ApiItem {
+	path: string;
+	kind: string;
+	parent: string | null;
+	signature: string;
+	doc: string;
+	realizes: Realization[];
+	html: string;
+}
+
+interface Register {
+	byPath: Map<string, ApiItem>;
+	children: Map<string, ApiItem[]>;
+	realizedBy: Map<string, ApiItem[]>;
+}
+
+// One read per path per process: the plugin runs once per file, and every file
+// of a build asks the same two questions.
+const registers = new Map<string, Register | null>();
+const labelMaps = new Map<string, Map<string, string>>();
+
+function register(path: string): Register | null {
+	if (registers.has(path)) return registers.get(path) as Register | null;
+	let index: Register | null = null;
+	try {
+		const items: ApiItem[] = JSON.parse(readFileSync(path, "utf8")).items;
+		index = { byPath: new Map(), children: new Map(), realizedBy: new Map() };
+		for (const item of items) {
+			if (!index.byPath.has(item.path)) index.byPath.set(item.path, item);
+			if (item.parent) push(index.children, item.parent, item);
+			for (const realization of item.realizes) push(index.realizedBy, realization.id, item);
+		}
+	} catch {
+		index = null;
+	}
+	registers.set(path, index);
+	return index;
+}
+
+function push(map: Map<string, ApiItem[]>, key: string, item: ApiItem) {
+	const list = map.get(key);
+	if (list) list.push(item);
+	else map.set(key, [item]);
+}
+
+// The labels a link to a model statement carries. The plugin runs per file, so
+// a document that is not the model has to number the model's statements itself,
+// with the same counting rule.
+function labelMap(path: string): Map<string, string> {
+	const cached = labelMaps.get(path);
+	if (cached) return cached;
+	let labels = new Map<string, string>();
+	try {
+		const source = readFileSync(path, "utf8");
+		const lines = source.split("\n");
+		const sectionStarts: number[] = [];
+		lines.forEach((line, i) => {
+			if (/^## /.test(line)) sectionStarts.push(i + 1);
+		});
+		labels = number(scanBlocks(source), sectionStarts);
+	} catch {
+		labels = new Map();
+	}
+	labelMaps.set(path, labels);
+	return labels;
+}
+
+// `<section>.<n>`, counted per `##` heading and shared by all statement classes.
+function number(blocks: RawBlock[], sectionStarts: number[]): Map<string, string> {
+	const labels = new Map<string, string>();
+	const counters: number[] = [];
+	for (const block of blocks) {
+		const kind = block.classes.find((c) => c in LABELS);
+		if (!kind) continue;
+		const section = sectionStarts.filter((line) => line < block.openLine).length;
+		counters[section] = (counters[section] ?? 0) + 1;
+		const n = section > 0 ? `${section}.${counters[section]}` : `${counters[section]}`;
+		labels.set(block.id, `${LABELS[kind]} ${n}`);
+	}
+	return labels;
+}
 
 interface RawBlock {
 	classes: string[];
@@ -65,7 +169,6 @@ interface Statement {
 	defines: string[];
 	uses: string[];
 	usedBy: string[];
-	realizedBy: string;
 	body: any[];
 }
 
@@ -76,13 +179,21 @@ interface Term {
 	body: any[];
 }
 
-export default function remarkModelBlocks(this: any) {
+export default function remarkModelBlocks(
+	this: any,
+	options: { register?: string; model?: string } = {},
+) {
 	const processor = this;
 	return (tree: any, file: any) => {
+		const registerPath = options.register ?? join(repoRoot(), "_build", "api-register.json");
+		const modelPath = options.model ?? join(repoRoot(), "spec", "MODEL.md");
 		const source = String(file.value ?? "");
 		if (!source.includes(":::")) return;
 		const raw = scanBlocks(source).filter(
-			(b) => b.classes.includes("term") || b.classes.some((c) => c in LABELS),
+			(b) =>
+				b.classes.includes("term") ||
+				b.classes.includes("include") ||
+				b.classes.some((c) => c in LABELS),
 		);
 		if (raw.length === 0) return;
 
@@ -92,12 +203,21 @@ export default function remarkModelBlocks(this: any) {
 		});
 		sectionStarts.sort((a, b) => a - b);
 
+		const api = register(registerPath);
+		const labels = number(raw, sectionStarts);
+		// A link to a model statement is labelled from this document when this is
+		// the model, and from the model document otherwise.
+		const labelOf = (id: string) => labels.get(id) ?? labelMap(modelPath).get(id) ?? id;
+
 		const statements = new Map<string, Statement>();
 		const terms = new Map<string, Term>();
-		const order: { block: RawBlock; id: string; isTerm: boolean }[] = [];
-		const counters: number[] = [];
+		const order: { block: RawBlock; id: string; kind: "statement" | "term" | "include" }[] = [];
 
 		for (const block of raw) {
+			if (block.classes.includes("include")) {
+				order.push({ block, id: "", kind: "include" });
+				continue;
+			}
 			const body = processor.parse(block.body).children;
 			if (block.classes.includes("term")) {
 				terms.set(block.id, {
@@ -106,37 +226,40 @@ export default function remarkModelBlocks(this: any) {
 					definedBy: block.attrs["defined-by"] ?? "",
 					body,
 				});
-				order.push({ block, id: block.id, isTerm: true });
+				order.push({ block, id: block.id, kind: "term" });
 				continue;
 			}
-			const kind = block.classes.find((c) => c in LABELS) as string;
-			const section = sectionStarts.filter((line) => line < block.openLine).length;
-			counters[section] = (counters[section] ?? 0) + 1;
-			const number = section > 0 ? `${section}.${counters[section]}` : `${counters[section]}`;
 			statements.set(block.id, {
 				id: block.id,
-				kind,
-				label: `${LABELS[kind]} ${number}`,
+				kind: block.classes.find((c) => c in LABELS) as string,
+				label: labels.get(block.id) as string,
 				name: block.attrs.name ?? "",
 				defines: ids(block.attrs.defines),
 				uses: ids(block.attrs.uses),
 				usedBy: [],
-				realizedBy: block.attrs["realized-by"] ?? "",
 				body,
 			});
-			order.push({ block, id: block.id, isTerm: false });
+			order.push({ block, id: block.id, kind: "statement" });
 		}
 
 		link(statements, terms);
 
 		const nodes = new Map<string, any>();
-		for (const s of statements.values()) nodes.set(s.id, statementNode(s, terms, statements));
+		for (const s of statements.values()) {
+			nodes.set(s.id, statementNode(s, terms, statements, api?.realizedBy.get(s.id) ?? []));
+		}
 		for (const t of terms.values()) nodes.set(t.id, termNode(t, statements));
 
 		// Splice back to front so earlier indices stay valid. Terms leave nothing
 		// behind; they are re-emitted in the glossary.
 		for (const entry of [...order].reverse()) {
-			replaceRange(tree, entry.block, entry.isTerm ? [] : [nodes.get(entry.id)]);
+			const replacement =
+				entry.kind === "term"
+					? []
+					: entry.kind === "include"
+						? [includeNode(processor, api, entry.block.attrs.api ?? "", labelOf)]
+						: [nodes.get(entry.id)];
+			replaceRange(tree, entry.block, replacement);
 		}
 
 		placeGlossary(
@@ -211,6 +334,7 @@ function statementNode(
 	s: Statement,
 	terms: Map<string, Term>,
 	statements: Map<string, Statement>,
+	realizedBy: ApiItem[],
 ): any {
 	const head: any[] = [el("span", { className: ["stmt-label"], property: "bm:label" }, [text(s.label)])];
 	if (s.name) {
@@ -237,10 +361,16 @@ function statementNode(
 			...series(s.usedBy.map((id) => anchor("bm:usedBy", id, statements.get(id)?.label ?? id))),
 		]);
 	}
-	if (s.realizedBy) {
+	if (realizedBy.length) {
 		groups.push([
 			text("Realized by: "),
-			el("code", { property: "bm:realizedBy" }, [text(s.realizedBy)]),
+			...series(
+				realizedBy.map((item) =>
+					el("a", { rel: "bm:realizedBy", href: item.html }, [
+						el("code", {}, [text(item.path)]),
+					]),
+				),
+			),
 		]);
 	}
 
@@ -352,6 +482,64 @@ function expandSugar(tree: any, statements: Map<string, Statement>, terms: Map<s
 		parent.children.splice(index, 1, ...parts);
 		return index + parts.length;
 	});
+}
+
+// An `.include` block: the register's entry for the item, with the signature in
+// a code block, the doc comment, and one entry per constructor or field.
+function includeNode(
+	processor: any,
+	api: Register | null,
+	path: string,
+	labelOf: (id: string) => string,
+): any {
+	const item = api?.byPath.get(path);
+	if (!item) {
+		return para("api-missing", [
+			text("No API register entry for "),
+			el("code", {}, [text(path)]),
+			text("; run scripts/api-register.ts."),
+		]);
+	}
+	const children = [
+		{ type: "code", lang: "ocaml", value: item.signature },
+		...processor.parse(item.doc).children,
+	];
+	const realizes = realizesLine(item, labelOf);
+	if (realizes) children.push(realizes);
+	for (const member of api?.children.get(path) ?? []) {
+		children.push(memberNode(processor, member, labelOf));
+	}
+	return el(
+		"div",
+		{ className: ["api-item"], about: item.html, typeof: "bm:CodeItem", prefix: PREFIX },
+		children,
+	);
+}
+
+function memberNode(processor: any, item: ApiItem, labelOf: (id: string) => string): any {
+	const children = [
+		para("api-member-head", [el("code", {}, [text(item.signature)])]),
+		...processor.parse(item.doc).children,
+	];
+	const realizes = realizesLine(item, labelOf);
+	if (realizes) children.push(realizes);
+	return el(
+		"div",
+		{ className: ["api-member"], about: item.html, typeof: "bm:CodeItem" },
+		children,
+	);
+}
+
+function realizesLine(item: ApiItem, labelOf: (id: string) => string): any | null {
+	if (item.realizes.length === 0) return null;
+	return para("api-realizes", [
+		text("Realizes: "),
+		...series(
+			item.realizes.map((r) =>
+				el("a", { rel: "bm:realizes", href: `/model/#${r.id}` }, [text(labelOf(r.id))]),
+			),
+		),
+	]);
 }
 
 function el(tagName: string, properties: Record<string, unknown>, children: any[]) {

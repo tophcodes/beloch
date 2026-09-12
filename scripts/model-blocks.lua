@@ -9,6 +9,17 @@
 -- Numbers are `<section>.<n>`, counted per level-2 header and shared by all
 -- statement classes. `[#some-id]` in prose becomes a link whose text is the
 -- computed label.
+--
+-- `::: {.include api="Fold_state.violation"}` is replaced by the API register's
+-- entry for that item (scripts/api-register.ts writes it; BELOCH_API_REGISTER
+-- overrides the default path `_build/api-register.json`), and the register's
+-- `@see` targets give each model statement its "Realized by" line. Without the
+-- register an `.include` block renders a placeholder and no statement gets that
+-- line.
+--
+-- Labels for links into the model come from spec/MODEL.md, which this filter
+-- scans line by line when the document it is rendering is not the model itself;
+-- an id it cannot number is written as the id.
 
 local LABELS = {
   definition = "Definition",
@@ -18,9 +29,77 @@ local LABELS = {
   open = "Open",
 }
 
-local statements = {}  -- id -> {kind, label, name, order, defines, uses, usedBy, realizedBy}
+local statements = {}  -- id -> {kind, label, name, order, defines, uses, usedBy}
 local terms = {}       -- id -> {name, definedBy, content}
 local termOrder = {}
+
+local root = (PANDOC_SCRIPT_FILE or ""):match("^(.*)/scripts/[^/]+$") or "."
+
+-- The API register, indexed the three ways this filter asks about it.
+local api = nil
+local function register()
+  if api ~= nil then return api end
+  api = { byPath = {}, children = {}, realizedBy = {} }
+  local path = os.getenv("BELOCH_API_REGISTER") or (root .. "/_build/api-register.json")
+  local file = io.open(path, "r")
+  if not file then return api end
+  local ok, decoded = pcall(pandoc.json.decode, file:read("a"), false)
+  file:close()
+  if not ok or type(decoded) ~= "table" or type(decoded.items) ~= "table" then return api end
+  for _, item in ipairs(decoded.items) do
+    api.byPath[item.path] = item
+    if type(item.parent) == "string" then
+      local list = api.children[item.parent] or {}
+      list[#list + 1] = item
+      api.children[item.parent] = list
+    end
+    for _, realization in ipairs(item.realizes or {}) do
+      local list = api.realizedBy[realization.id] or {}
+      list[#list + 1] = item
+      api.realizedBy[realization.id] = list
+    end
+  end
+  return api
+end
+
+-- spec/MODEL.md's numbering, read from the source. The same counting rule as
+-- `collect` below, over the fenced divs as they are written.
+local modelLabels = nil
+local function model_labels()
+  if modelLabels then return modelLabels end
+  modelLabels = {}
+  local file = io.open(root .. "/spec/MODEL.md", "r")
+  if not file then return modelLabels end
+  local section, counters = 0, {}
+  for line in file:lines() do
+    if line:match("^## ") then
+      section = section + 1
+    else
+      local attrs = line:match("^:::+%s*{(.-)}%s*$")
+      if attrs then
+        local kind
+        for class in attrs:gmatch("%.([%w%-_]+)") do
+          if LABELS[class] then kind = class end
+        end
+        local id = attrs:match("#([%w%-_]+)")
+        if kind and id then
+          counters[section] = (counters[section] or 0) + 1
+          modelLabels[id] = LABELS[kind] .. " " ..
+            (section > 0 and (section .. "." .. counters[section]) or tostring(counters[section]))
+        end
+      end
+    end
+  end
+  file:close()
+  return modelLabels
+end
+
+-- A link to a model statement is labelled from this document when this is the
+-- model, and from the model document otherwise.
+local function label_of(id)
+  if statements[id] then return statements[id].label end
+  return model_labels()[id] or id
+end
 
 local function class_of(div)
   if div.classes:includes("term") then return "term" end
@@ -74,7 +153,6 @@ local function collect(blocks)
           defines = ids(block.attributes.defines),
           uses = ids(block.attributes.uses),
           usedBy = {},
-          realizedBy = block.attributes["realized-by"] or "",
         }
       end
     end
@@ -143,7 +221,7 @@ local function group(title, items)
   return out
 end
 
-local function links_line(s)
+local function links_line(id, s)
   local groups = {}
   if #s.defines > 0 then
     local items = {}
@@ -162,10 +240,13 @@ local function links_line(s)
     for _, id in ipairs(s.usedBy) do items[#items + 1] = ref(id, statements[id].label) end
     groups[#groups + 1] = group("Used by", items)
   end
-  if s.realizedBy ~= "" then
-    groups[#groups + 1] = {
-      pandoc.Str("Realized by:"), pandoc.Space(), pandoc.Code(s.realizedBy),
-    }
+  local realizedBy = register().realizedBy[id]
+  if realizedBy then
+    local items = {}
+    for _, item in ipairs(realizedBy) do
+      items[#items + 1] = pandoc.Link(pandoc.Code(item.path), item.html)
+    end
+    groups[#groups + 1] = group("Realized by", items)
   end
   if #groups == 0 then return nil end
   return pandoc.Para(pandoc.Emph(join(groups)))
@@ -183,7 +264,7 @@ end
 local function statement_div(id, s, content)
   local blocks = { head_line(s.label, s.name) }
   for _, b in ipairs(content) do blocks[#blocks + 1] = b end
-  local links = links_line(s)
+  local links = links_line(id, s)
   if links then blocks[#blocks + 1] = links end
   return pandoc.Div(blocks, pandoc.Attr(id, { "stmt", "stmt-" .. s.kind }))
 end
@@ -199,6 +280,48 @@ local function term_div(id, t)
     }))
   end
   return pandoc.Div(blocks, pandoc.Attr(id, { "term" }))
+end
+
+-- An `.include` block: the register's entry for the item, with the signature in
+-- a code block, the doc comment, and one entry per constructor or field.
+local function realizes_line(item)
+  if not item.realizes or #item.realizes == 0 then return nil end
+  local items = {}
+  for _, realization in ipairs(item.realizes) do
+    items[#items + 1] = pandoc.Link(
+      pandoc.Str(label_of(realization.id)), "/model/#" .. realization.id)
+  end
+  return pandoc.Para(pandoc.Emph(group("Realizes", items)))
+end
+
+local function markdown(text)
+  if not text or text == "" then return {} end
+  return pandoc.read(text, "markdown").blocks
+end
+
+local function api_div(item, class)
+  local blocks = { pandoc.CodeBlock(item.signature, pandoc.Attr("", { "ocaml" })) }
+  for _, b in ipairs(markdown(item.doc)) do blocks[#blocks + 1] = b end
+  local realizes = realizes_line(item)
+  if realizes then blocks[#blocks + 1] = realizes end
+  return pandoc.Div(blocks, pandoc.Attr("", { class }))
+end
+
+local function include_div(path)
+  local item = register().byPath[path]
+  if not item then
+    return pandoc.Div({ pandoc.Para(pandoc.Emph({
+      pandoc.Str("No"), pandoc.Space(), pandoc.Str("API"), pandoc.Space(),
+      pandoc.Str("register"), pandoc.Space(), pandoc.Str("entry"), pandoc.Space(),
+      pandoc.Str("for"), pandoc.Space(), pandoc.Code(path), pandoc.Str(";"), pandoc.Space(),
+      pandoc.Str("run"), pandoc.Space(), pandoc.Code("scripts/api-register.ts"), pandoc.Str("."),
+    })) }, pandoc.Attr("", { "api-missing" }))
+  end
+  local outer = api_div(item, "api-item")
+  for _, child in ipairs(register().children[path] or {}) do
+    outer.content:insert(api_div(child, "api-member"))
+  end
+  return outer
 end
 
 local function glossary()
@@ -218,7 +341,9 @@ end
 local function rewrite(blocks)
   local out = {}
   for _, block in ipairs(blocks) do
-    if block.t == "Div" and class_of(block) then
+    if block.t == "Div" and block.classes:includes("include") then
+      out[#out + 1] = include_div(block.attributes.api or "")
+    elseif block.t == "Div" and class_of(block) then
       local kind = class_of(block)
       if kind ~= "term" then
         out[#out + 1] = statement_div(block.identifier, statements[block.identifier], block.content)
