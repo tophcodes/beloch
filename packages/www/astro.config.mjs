@@ -9,6 +9,7 @@ import rehypeKatex from 'rehype-katex';
 // The package's default export condition is the browser build, which cannot
 // read a local .bib; the node entry is what a static build needs.
 import rehypeCitation from 'rehype-citation/node/rehype-citation.mjs';
+import rehypeCitePost from './src/lib/rehype-cite-post.ts';
 import { headSyncScript } from "./src/lib/paper-schemes.ts";
 
 // Anchor repo root to this file's location (packages/www/astro.config.mjs → two levels up).
@@ -66,8 +67,11 @@ export default defineConfig({
 				// would be appended to the cwd and fail to resolve.
 				path: repoRoot,
 				bibliography: join('paper', 'references.bib'),
+				// note style: a footnote marker in the text, the locator in the note
+				csl: join('paper', 'chicago-notes-bibliography.csl'),
 				linkCitations: true,
 			}],
+			rehypeCitePost,
 		],
 		// SmartyPants (on by default) rewrites "--" to an en/em dash in prose.
 		// Beloch source uses "--" as the crease-name sigil (e.g. `--d1`), and

@@ -119,3 +119,24 @@ svg circle.bel-hover, svg circle.bel-selected { r: 5; }
 svg text.bel-selected { fill: var(--bel-sel) !important; }
 /* selected but occluded → ghosted, still dashed */
 svg [data-bel-name].bel-selected[data-occluded] { stroke: var(--bel-sel) !important; opacity: 0.25; }
+
+/* Bibliography backlinks (rehype-cite-backlinks): "↑ a b c" after each entry. */
+.cite-backlinks { margin-inline-start: 0.5em; font-size: 0.85em; color: var(--sl-color-gray-3); }
+.cite-backlinks .cite-backlink { text-decoration: none; margin-inline-end: 0.15em; }
+
+/* Anchor targets: whatever a link just jumped to (a Terms heading, a
+   bibliography entry, a citation in the text) is highlighted, and fades out
+   so the eye lands on it without it staying lit. */
+@keyframes target-flash {
+  from { background-color: var(--sl-color-accent-low); }
+  to   { background-color: transparent; }
+}
+:target,
+h3:target + p,
+.sl-markdown-content :target {
+  scroll-margin-top: calc(var(--sl-nav-height, 4rem) + 1rem);
+  animation: target-flash 3s ease-out both;
+  box-shadow: -0.5rem 0 0 var(--sl-color-accent-low);
+  border-radius: 0.15rem;
+}
+h3:target + p { box-shadow: none; }
