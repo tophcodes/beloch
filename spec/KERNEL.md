@@ -28,25 +28,26 @@ several convex faces joined by hinges of angle $0$.
 
 ## State
 
-`Fold_state.t` realizes the flat folded state
-([def-flat-state](/model/#def-flat-state)):
+`Fold_state.t` is abstract and `Fold_state.make` is its only constructor, so
+every operation builds a candidate and passes it through `make`: no value of
+type `Fold_state.t` exists that is not a legal state. `make` returns
+`Error violation` for anything outside the definition of the state and its
+non-crossing conditions ([def-noncrossing](/model/#def-noncrossing)); the
+`violation` constructors and the conditions they check are listed under
+Violations.
 
-- the face array, each face a convex polygon in paper coordinates;
-- one exact 2D isometry per face (`Isometry.t`), the restriction of $f$ to
-  that face;
-- the hinge array: each hinge names its two faces, its line, and an angle in
-  $\{0, \pm 1\}$ in units of $\pi$;
-- a rank, a permutation of the faces, from which the layer relation is read
-  (see Rank);
-- optionally marks (reference creases that do not subdivide) and a whole-sheet
-  base placement.
+::: {.include api="Fold_state.t"}
+:::
 
-`Fold_state.t` is abstract. `Fold_state.make` is its only constructor; it
-returns `Error violation` for anything outside the definition of the state and
-its non-crossing conditions ([def-noncrossing](/model/#def-noncrossing)).
-Every operation builds a candidate and passes it through `make`, so no value
-of type `Fold_state.t` exists that is not a legal state. The `violation`
-constructors and the conditions they check are listed under Violations.
+::: {.include api="Fold_state.make"}
+:::
+
+Faces are convex polygons in paper coordinates, one exact 2D isometry each
+(`Isometry.t`), the restriction of $f$ to that face. A hinge names the two
+faces it joins, its line and its angle in $\{0, \pm 1\}$ units of $\pi$:
+
+::: {.include api="Fold_state.hinge"}
+:::
 
 Refinement equivalence ([def-refinement](/model/#def-refinement)) is not
 quotiented in the representation: `mark` adds faces and hinges of angle $0$,
@@ -78,8 +79,9 @@ history for output: the FOLD file carries one frame per statement in
 
 ## Violations
 
-To be filled with the model's non-crossing conditions: one row per
-`Fold_state.violation` constructor, naming the condition it checks. Today the
-constructors are `Bad_index`, `Bad_rank`, `Bad_angle`, `Bad_line`,
-`Disconnected`, `Hinge_not_shared`, `Hinge_not_closed`, `Taco_tortilla`,
-`Taco_taco`.
+One constructor per check `Fold_state.make` runs, each carrying the model
+statement it enforces. `Bad_index` and `Bad_line` reject a malformed
+representation and answer to no statement of the model.
+
+::: {.include api="Fold_state.violation"}
+:::
