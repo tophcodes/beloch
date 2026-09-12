@@ -37,6 +37,7 @@ import { visit } from "unist-util-visit";
 
 const LABELS: Record<string, string> = {
 	definition: "Definition",
+	condition: "Condition",
 	lemma: "Lemma",
 	corollary: "Corollary",
 	remark: "Remark",

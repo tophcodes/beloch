@@ -17,7 +17,8 @@ first, then its formal content.
 Statements are numbered within their section: a *Definition* introduces a
 term, a *Lemma* is a consequence with a proof or a pointer to one, a
 *Corollary* follows from a lemma without further argument, a *Remark* is
-unproven commentary, an *Open* point is a decision still to be made and is
+unproven commentary, a *Condition* is a named requirement that a later
+definition collects, an *Open* point is a decision still to be made and is
 part of the contract until closed. Each statement carries the terms it
 defines, the statements it uses and the statements that use it. Every word used in a technical sense is listed under
 [Terms](#terms) with a link to where it is defined; the first use in the text
@@ -173,7 +174,7 @@ tortilla-tortilla says that two uncreased regions which fully overlap are
 ordered as wholes. Both hold by construction, because [#def-flat-state]
 defines $\lambda$ on pairs of faces and a face is an uncreased region.
 
-::: {.definition #cond-order name="order condition" uses="def-flat-state"}
+::: {.condition #cond-order name="order condition" uses="def-flat-state"}
 For faces $A$, $B$, $C$ whose images share a region of positive area: if $A$
 is above $B$ and $B$ is above $C$, then $A$ is above $C$. Antisymmetry needs
 no separate statement, since $\lambda$ assigns one of *above* and *below* to
@@ -195,7 +196,7 @@ A face whose image covers a neighbourhood of a point of a folded hinge's
 image without that hinge being its own edge.
 :::
 
-::: {.definition #cond-taco-tortilla name="taco-tortilla condition" uses="def-flat-state cond-order" defines="term-taco term-tortilla"}
+::: {.condition #cond-taco-tortilla name="taco-tortilla condition" uses="def-flat-state cond-order" defines="term-taco term-tortilla"}
 Let $A$ and $B$ be joined by a folded hinge $h$, and let $C$ be a face whose
 image contains a neighbourhood of an interior point of $f(h)$, so that $C$
 overlaps both $A$ and $B$ there. Then $C$ lies on the same side of both:
@@ -203,7 +204,7 @@ $\lambda(A, C) = \lambda(B, C)$. A face cannot lie between the two sides of a
 fold.
 :::
 
-::: {.definition #cond-taco-taco name="taco-taco condition" uses="def-flat-state cond-order"}
+::: {.condition #cond-taco-taco name="taco-taco condition" uses="def-flat-state cond-order"}
 Let $A$ and $B$ be joined by a folded hinge $h$, and $C$ and $D$ by a folded
 hinge $k$, such that $f(h)$ and $f(k)$ overlap in a segment of positive length
 and all four faces overlap near it. Then the two pairs do not interleave: in
@@ -217,14 +218,14 @@ $\lambda$. They are consequences of [#def-flat-state] for a sheet that is one
 piece, and they are stated on their own because a representation has to
 check them.
 
-::: {.definition #cond-hinge-closure name="hinge closure condition" uses="def-flat-state"}
+::: {.condition #cond-hinge-closure name="hinge closure condition" uses="def-flat-state"}
 For every hinge between faces $A$ and $B$, the isometries of $A$ and $B$ agree
 on the shared edge, and the isometry of $B$ is the isometry of $A$ either
 unchanged or composed with the reflection across the edge. Equivalently every
 hinge has angle $0$ or $\pm\pi$, and $f$ is continuous.
 :::
 
-::: {.definition #cond-connected name="connectivity condition" uses="def-sheet def-flat-state"}
+::: {.condition #cond-connected name="connectivity condition" uses="def-sheet def-flat-state"}
 The faces, joined along their hinges, form one connected piece: every face is
 reachable from every other through shared edges. This restates that the
 decomposition covers a single sheet.
