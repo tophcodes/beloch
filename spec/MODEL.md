@@ -230,6 +230,13 @@ reachable from every other through shared edges. This restates that the
 decomposition covers a single sheet.
 :::
 
+These five conditions are what a layer ordering needs to describe paper. Each
+of the first three names one way in which paper would pass through itself; the
+last two say that $f$ folds one sheet. That they are also enough, so that
+every ordering which satisfies them describes a sheet that can be folded, is
+a theorem rather than a definition, stated as [#lem-noncrossing-adequate]
+after the definition that collects them.
+
 ::: {.definition #def-noncrossing name="non-crossing layer ordering" uses="def-flat-state cond-order cond-taco-tortilla cond-taco-taco cond-hinge-closure cond-connected" defines="term-noncrossing"}
 $\lambda$ is a non-crossing layer ordering for $f$ when it satisfies
 
@@ -250,6 +257,30 @@ hold.
 The conditions on a layer ordering that keep the paper from passing through
 itself.
 :::
+
+::: {.lemma #lem-noncrossing-adequate name="the conditions are necessary and sufficient" uses="def-noncrossing def-flat-state"}
+Let $f$ be an isometric folding map of a sheet $P$ into the plane, with faces
+as in [#def-flat-state]. A layer ordering $\lambda$ on the faces describes a
+placement of $P$ in space that does not pass through itself if and only if
+$\lambda$ is non-crossing in the sense of [#def-noncrossing].
+
+*Proof.* Cited. Necessity: whenever two crease images coincide, the faces on
+either side are two tacos, a taco and a tortilla, or two tortillas, and any
+self-intersection caused by the ordering falls into one of these three cases
+[@hull2020, sec. 6.5, p. 123]. Sufficiency: lift each face along the third
+axis by its position in the ordering and join the faces along their hinges by
+half-cylinders; the conditions are exactly what makes this map one-to-one
+[@hull2020, sec. 6.5, Proposition 6.13, p. 124]. That such a placement is
+reached by a continuous folding motion of unstretched paper is Demaine's
+theorem [@demaine2007, sec. 11.6, Theorem 11.6.2], which Hull's argument
+leaves open, since it deforms the paper elastically [@hull2020, p. 125]. The
+sheet without holes is what both results assume; with holes an additional
+condition on the boundary curves is needed [@hull2020, Proposition 6.14].
+:::
+
+Sufficiency is what allows the model to define a flat folded state through
+$f$ and $\lambda$ alone: nothing about a state's physical realisability is
+left outside the definition.
 
 Sources: the six properties on points, with Figure 1 showing the two crossing
 patterns [@hullzakharevich2023, §2.1]; Justin's three conditions in Hull's
