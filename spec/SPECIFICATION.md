@@ -15,7 +15,12 @@ and not a design doc.
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
-Current version: **v0.26-dev** (layer placement and the reverse fold:
+Current version: **v0.27-dev** (paper-incidence filter for axioms 6 and 7:
+a candidate crease that cuts no face is dropped before the ambiguity check,
+the way axiom 5 already does it (§4.5); a single survivor is taken silently
+even when `toward` is written, `toward` selects among the survivors only, and
+an empty survivor list is its own error, distinct from *out of reach*);
+**v0.26-dev** (layer placement and the reverse fold:
 `fold … over/under <flap>` splices the moved block into the stack beside a
 named flap; `reverse` runs an inside or outside reverse fold as two placed
 half-folds over one line; both derive their crease letters from the finished
@@ -491,11 +496,31 @@ landing nearest `.x` — and *(since v0.19-dev)* that is unaffected by axiom 5's
 whether axioms 6/7 get the same direction reading is a separate, unstarted
 pass.
 
+**Paper-incidence filter.** *(since v0.27-dev)* A candidate crease that never
+touches the sheet, or touches it at a single point, creases nothing and is no
+fold. Beloch clips each candidate to the paper and keeps only the candidates
+that cut through some face's interior, the filter axiom 5 applies to its
+bisectors (§4.5). The filter runs **before** the ambiguity check:
+
+- **one candidate survives**: taken silently. A `toward` written anyway is
+  redundant and is ignored, never an error;
+- **two survive**: genuinely ambiguous, and `toward` is required. It picks the
+  landing nearest `.x` among the survivors;
+- **none survive**: no fold exists. This is distinct from *out of reach*, where
+  the circle misses `--d` and there is no candidate to begin with.
+
+The bird base's kite crease is the motivating case: `map .sr onto --mid through
+.c` on the preliminary base has two solutions, and the outward one is a line
+meeting the folded base only at `.c`, so the filter takes the inward one on its
+own (`examples/bases/bird-base.bel`).
+
 Errors: the lines/points being out of reach (`dist(p',D) > |p'p|`) raises *out of
-reach*; two solutions without `toward` raises an ambiguity error naming the
-selector; `.p` and `.p'` being the same point raises *no fold exists*. When `.p`
-already lies on `--d`, the identity landing is dropped and the mirror landing
-gives the crease.
+reach*; two surviving solutions without `toward` raises an ambiguity error
+naming the selector ("two folds place .p onto --d through .p', both landing on
+the paper; add 'toward .x'"); no surviving solution raises "map .p onto --d
+through .p': no crease lands on the paper — no fold to make"; `.p` and `.p'`
+being the same point raises *no fold exists*. When `.p` already lies on `--d`,
+the identity landing is dropped and the mirror landing gives the crease.
 
 ### 4.5c Axiom 7 — cubic Beloch fold (two points, two lines) *(since v0.9-dev)*
 
@@ -518,13 +543,20 @@ This is the operation that **doubles the cube and trisects angles**
 ruler-and-compass. The crease is in general irrational (a real cube root); its
 coordinates must still be compared exactly (§6).
 
-**Solutions and `toward`.** When the cubic has three real solutions (`toward` is
-required); when it has one real solution, `toward` is ignored. `toward .x` picks
-the solution whose first folded point (the image of `.p` on `--d`) lands nearest
-`.x`, measured by exact squared distance. This is the same metric proximity
-selector as axiom 6, and *(since v0.19-dev)* it is unaffected by axiom 5's
-`toward`, which now names a direction rather than a proximity (§4.5); a
-direction reading for axioms 6/7 remains a separate, unstarted pass.
+**Paper-incidence filter.** *(since v0.27-dev)* A common tangent that cuts no
+face of the sheet creases nothing and is no fold, so Beloch drops it before
+counting solutions, exactly as it does for the bisectors of axiom 5 (§4.5) and
+the two creases of axiom 6 (§4.5b). Everything below counts **survivors** of
+that filter rather than raw roots of the cubic.
+
+**Solutions and `toward`.** When more than one solution survives the filter,
+`toward` is required; with a single survivor it is ignored, and writing it
+anyway is allowed. `toward .x` picks the surviving solution whose first folded
+point (the image of `.p` on `--d`) lands nearest `.x`, measured by exact
+squared distance. This is the same metric proximity selector as axiom 6, and
+*(since v0.19-dev)* it is unaffected by axiom 5's `toward`, which now names a
+direction rather than a proximity (§4.5); a direction reading for axioms 6/7
+remains a separate, unstarted pass.
 
 **Errors:**
 
@@ -533,8 +565,13 @@ direction reading for axioms 6/7 remains a separate, unstarted pass.
   raises an error naming the appropriate axiom.
 - `--d` and `--e` are **parallel** — the cubic degenerates and the system is
   ill-defined; Beloch raises an error.
-- Three solutions and **`toward` omitted** — ambiguous; Beloch raises an
-  ambiguity error naming the selector.
+- Two or more **surviving** solutions and **`toward` omitted** — ambiguous;
+  Beloch raises an ambiguity error naming the selector ("N folds place .p onto
+  --d and .q onto --e, all landing on the paper; add 'toward .x'").
+- **No surviving solution**: the cubic has real roots, and every one of them
+  misses the paper ("map .p onto --d and .q onto --e: no crease lands on the
+  paper — no fold to make"). Distinct from *out of reach*, where there is no
+  common tangent at all.
 
 **Provenance.** Each crease edge carries `"axiom": "axiom7"` in `beloch:edges`.
 

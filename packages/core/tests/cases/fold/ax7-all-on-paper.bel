@@ -1,0 +1,9 @@
+; Axiom 7 folding .a onto --cd and .c onto --vm: the cubic has three real
+; common tangents and every one of them cuts the sheet, so the
+; paper-incidence filter settles nothing and the ambiguity stands.
+
+paper square
+mark --vm = map .a onto .b                ; vertical midline x = 1/2
+--x = map .a onto --cd and .c onto --vm
+
+; expect error "3 folds place .a onto --cd and .c onto --vm, all landing on the paper; add 'toward .x'"

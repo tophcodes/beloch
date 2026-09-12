@@ -1,0 +1,11 @@
+; Axiom 6 from the sheet centre: the circle around .o through .a meets --bc at
+; both .b and .c, so the two creases are the vertical midline and the
+; anti-diagonal. Both cut the paper's interior, so the paper-incidence filter
+; settles nothing and the ambiguity stands.
+
+paper square
+mark --ac = through .a .c
+.o = free on --ac from .a at 1/2        ; the sheet centre, (1/2, 1/2)
+--x = map .a onto --bc through .o
+
+; expect error "two folds place .a onto --bc through .o, both landing on the paper; add 'toward .x'"
