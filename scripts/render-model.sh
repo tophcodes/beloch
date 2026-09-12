@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Render spec/MODEL.md to a PDF with resolved citations.
 #
+# Statements and terms are pandoc fenced divs, `::: {.definition #id …}`;
+# scripts/model-blocks.lua numbers them and generates the cross-reference lines
+# and the Terms glossary. packages/www/src/lib/remark-model-blocks.ts is the
+# docs-site counterpart.
+#
 # Citations use pandoc's syntax, `[@key, §3, p. 176]`, resolved against
 # paper/references.bib. Math is `$...$` / `$$...$$`. The same source renders on
 # the docs site (packages/www) through remark-math, rehype-katex and
@@ -16,6 +21,7 @@ mkdir -p "$out"
 
 pandoc "$root/spec/MODEL.md" \
   --from markdown \
+  --lua-filter "$root/scripts/model-blocks.lua" \
   --citeproc \
   --bibliography "$root/paper/references.bib" \
   --csl "$root/paper/chicago-notes-bibliography.csl" \
