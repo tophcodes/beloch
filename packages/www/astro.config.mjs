@@ -4,6 +4,11 @@ import starlight from '@astrojs/starlight';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import remarkBel from './src/lib/remark-bel.ts';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+// The package's default export condition is the browser build, which cannot
+// read a local .bib; the node entry is what a static build needs.
+import rehypeCitation from 'rehype-citation/node/rehype-citation.mjs';
 import { headSyncScript } from "./src/lib/paper-schemes.ts";
 
 // Anchor repo root to this file's location (packages/www/astro.config.mjs → two levels up).
@@ -51,7 +56,19 @@ export default defineConfig({
 	markdown: {
 		// Highlight ```beloch fences with the tree-sitter highlighter before
 		// Expressive Code sees them.
-		remarkPlugins: [remarkBel],
+		remarkPlugins: [remarkBel, remarkMath],
+		// `$...$` math and `[@key, §3]` citations, the same syntax pandoc reads
+		// for scripts/render-model.sh; the bibliography is the paper's.
+		rehypePlugins: [
+			rehypeKatex,
+			[rehypeCitation, {
+				// `bibliography` is joined onto `path`; an absolute path here
+				// would be appended to the cwd and fail to resolve.
+				path: repoRoot,
+				bibliography: join('paper', 'references.bib'),
+				linkCitations: true,
+			}],
+		],
 		// SmartyPants (on by default) rewrites "--" to an en/em dash in prose.
 		// Beloch source uses "--" as the crease-name sigil (e.g. `--d1`), and
 		// <Beloch> slot children are markdown body text, not raw JS/JSX text —
@@ -82,8 +99,14 @@ export default defineConfig({
 						{ label: "Layers & Ordering", link: "/tutorials/layers/" },
 					],
 				},
+				{
+					label: "Reference",
+					items: [
+						{ label: "The model", link: "/model/" },
+					],
+				},
 			],
-			customCss: ['./src/styles/theme.css'],
+			customCss: ['./src/styles/theme.css', 'katex/dist/katex.min.css'],
 			head: [
 				{
 					tag: "script",

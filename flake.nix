@@ -85,6 +85,10 @@
             pkgs.bun
             # msolve subprocess driver (packages/multifold/lib/msolve.ml)
             pkgs.msolve
+            # spec/MODEL.md -> PDF with citations from paper/references.bib
+            # (scripts/render-model.sh); typst is pandoc's PDF engine here
+            pkgs.pandoc
+            pkgs.typst
           ];
           # Link @beloch/render-svg's `beloch-render` bin globally so the
           # OCaml `beloch render` subcommand (packages/core/bin/main.ml) can execvp it, and
