@@ -53,7 +53,7 @@
 (test
  (name test_bel_assert)
  (libraries beloch alcotest zarith)
- (deps (source_tree cases)))
+ (deps (source_tree cases) (source_tree ../../../examples)))
 
 (test
  (name test_spine)

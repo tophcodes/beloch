@@ -9,20 +9,27 @@
 open Beloch
 
 (* Anchor to the source root of *this* build context, exactly like
-   test_golden.ml — dune sets DUNE_SOURCEROOT to the absolute workspace root,
-   so an in-repo worktree reads its own tests/cases/ rather than the main
-   checkout's (#37). *)
-let cases_dir =
-  (match Sys.getenv_opt "DUNE_SOURCEROOT" with
-   | Some root -> Filename.concat root "packages/core/tests/cases"
-   | None -> "../../../../../packages/core/tests/cases")
-  ^ "/"
+   test_eval.ml's example walk — dune sets DUNE_SOURCEROOT to the absolute
+   workspace root, so an in-repo worktree reads its own corpora rather than
+   the main checkout's (#37). *)
+let source_root =
+  match Sys.getenv_opt "DUNE_SOURCEROOT" with
+  | Some root -> root
+  | None -> "../../../../.."
 
-(* every .bel under cases_dir (recursively); names are relative paths (e.g.
-   "fold/basic-fold.bel") mirroring test_golden.ml's example_names walker. *)
-let case_names () =
+(* The `.bel` corpora this runner covers: the dedicated case files and the
+   docs examples. Both carry inline assertions and are checked identically, so
+   a behaviour test that is also a showcase lives in examples/ alone. A file
+   with no assertion line is still evaluated (it must not error). *)
+let corpora = [ ("cases", "packages/core/tests/cases"); ("examples", "examples") ]
+
+let corpus_dir (rel : string) = Filename.concat source_root rel ^ "/"
+
+(* every .bel under [dir] (recursively); names are relative paths (e.g.
+   "fold/basic-fold.bel") mirroring test_eval.ml's example_names walker. *)
+let bel_names (dir : string) =
   let rec walk prefix =
-    let dir = cases_dir ^ prefix in
+    let dir = dir ^ prefix in
     Sys.readdir dir |> Array.to_list
     |> List.concat_map (fun entry ->
            let rel = prefix ^ entry in
@@ -431,8 +438,8 @@ let contains_substring (haystack : string) (needle : string) : bool =
 
 (* ---- Per-file test ---- *)
 
-let test_one (name : string) () =
-  let path = cases_dir ^ name in
+let test_one (dir : string) (name : string) () =
+  let path = dir ^ name in
   let src = read path in
   let lines = extract_assertions src in
   let parsed =
@@ -473,4 +480,11 @@ let test_one (name : string) () =
 
 let () =
   Alcotest.run "bel_assert"
-    [ ("cases", List.map (fun n -> Alcotest.test_case n `Quick (test_one n)) (case_names ())) ]
+    (List.map
+       (fun (group, rel) ->
+         let dir = corpus_dir rel in
+         ( group,
+           List.map
+             (fun n -> Alcotest.test_case n `Quick (test_one dir n))
+             (bel_names dir) ))
+       corpora)
