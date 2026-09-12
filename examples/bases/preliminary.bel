@@ -1,0 +1,28 @@
+; Preliminary (square) base: one flatten at the centre vertex.
+;
+; Six rays fold, not eight. The half-diagonals toward .b and .d fold 180
+; degrees: each becomes a two-layer taco, one per side of the base. The
+; diagonal through .a and .c stays flat (marked, so it subdivides) and spans
+; both sides: the a-quarter is the front face, the c-quarter the back, the
+; two tacos sit between them. All eight rays folded gives the base folded in
+; half again (every face in one 45-degree wedge); the four medians alone give
+; the quarter fold, which becomes this base only after a squash.
+;
+; Every named point lies on a crease through the centre, so the stacking
+; needs points inside sectors: .q in the a-quarter, .r in the b-quarter.
+; (.q over .r) puts the a-quarter on top of the b-taco, i.e. in front.
+
+paper square
+
+mark --ac = through .a .c
+mark --bd = through .b .d
+mark --h = map --ab onto --cd
+mark --v = map --da onto --bc
+.q = free on --ab from .a at 1/4
+.r = free on --ab from .b at 1/4
+
+flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab)
+  (--bd & .b) (--bd & .d) (.q over .r) {toward .q}
+
+; assert steps = 1
+; assert faces = 8

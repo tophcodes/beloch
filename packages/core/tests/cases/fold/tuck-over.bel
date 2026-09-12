@@ -1,0 +1,18 @@
+; The mirror of tuck-under.bel: the same pocket tuck, named from below. .q sits
+; on the base layer, so `over .q` lands the block immediately above the base —
+; between the two layers, the same stack `under` the top layer's remainder
+; produces. A plain fold of the same corner would put it on top of everything
+; and its crease would read mountain; here the corner ends up under the layer
+; it hinges to, and the crease reads valley.
+
+paper square
+
+fold map .a onto .d                     ; bottom half up onto the top half
+.m = free on --bc from .b at 1/2        ; (1, 1/2): on the crease, both layers
+.n = free on --ab from .b at 1/2        ; (1/2, 0) on the paper, table (1/2, 1)
+.q = free on --cd from .d at 1/4        ; (1/4, 1) on the paper: the base layer
+fold --t = through .m .n moving .b over .q
+
+; assert steps = 2
+; assert faces = 3
+; assert --t is valley

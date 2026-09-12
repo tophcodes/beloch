@@ -1032,6 +1032,107 @@ let test_mark_endpoint_on_vertex_is_incident () =
   Alcotest.(check bool) "point mark is incident to an existing vertex" true
     is_vertex
 
+(* the tuck: the moved corner sits between the two layers, which is what
+   `under .p` buys over a plain mountain fold: the same fold with `mountain`
+   and no placement moves both layers (the mountain default scope takes the
+   outside prefix from the bottom of the stack), so the placement is what
+   makes this a tuck *)
+let test_e2e_tuck_under_between () =
+  let src = read_case "fold/tuck-under.bel" in
+  let fd = Eval.eval_folded (Beloch.parse ~filename:"tuck-under.bel" src) in
+  let st = fd.Eval.state in
+  (* faces: 0 = the bottom layer (top half of the paper), the top layer's
+     remainder, and the moved corner (paper x >= 1/2, y <= 1/2 region of the
+     folded-up bottom half). Identify by paper polygon containment. *)
+  let containing (x, y) =
+    let p = { Geom.x = Num.of_q (Q.of_ints x 8); y = Num.of_q (Q.of_ints y 8) } in
+    let fs = Fold_state.faces st in
+    let rec go i = if Geom.in_convex_polygon fs.(i) p then i else go (i + 1) in
+    go 0
+  in
+  let base = containing (4, 6) and remainder = containing (2, 2)
+  and corner = containing (7, 1) in
+  Alcotest.(check bool) "corner above the base" true (Fold_state.above st corner base);
+  Alcotest.(check bool) "remainder above the corner" true
+    (Fold_state.above st remainder corner)
+
+(* the coverage error: the .a corner is folded up over x + y = 1/2, so its
+   flap covers a triangle in that corner only. .p names it; the far corner
+   .c lands around (7/8, 7/8), which that flap does not reach. *)
+(* `over` the base flap: the same stack as tuck-under.bel reaches with `under`
+   the top layer's remainder. *)
+let test_e2e_tuck_over_between () =
+  let src = read_case "fold/tuck-over.bel" in
+  let fd = Eval.eval_folded (Beloch.parse ~filename:"tuck-over.bel" src) in
+  let st = fd.Eval.state in
+  let containing (x, y) =
+    let p = { Geom.x = Num.of_q (Q.of_ints x 8); y = Num.of_q (Q.of_ints y 8) } in
+    let fs = Fold_state.faces st in
+    let rec go i = if Geom.in_convex_polygon fs.(i) p then i else go (i + 1) in
+    go 0
+  in
+  let base = containing (4, 6) and remainder = containing (2, 2)
+  and corner = containing (7, 1) in
+  Alcotest.(check bool) "corner above the base" true (Fold_state.above st corner base);
+  Alcotest.(check bool) "remainder above the corner" true
+    (Fold_state.above st remainder corner)
+
+let test_e2e_tuck_target_off () =
+  let src =
+    "paper square\n\
+     .m = free on --ab from .a at 1/2\n\
+     .n = free on --da from .a at 1/2\n\
+     fold through .m .n moving .a\n\
+     .q = free on --bc from .c at 1/4\n\
+     .r = free on --cd from .c at 1/4\n\
+     .p = free on --ab from .a at 1/4\n\
+     fold through .q .r moving .c under .p\n"
+  in
+  expect_error "does not cover where the moved material lands" (fun () ->
+      Eval.eval_folded (Beloch.parse ~filename:"t.bel" src))
+
+(* Pointwise layer order [FOLD spec, faceOrders]: over a table point t, the
+   sequence bottom→top of (paper preimage, face-up) must agree between two
+   folded states. Partition-independent, so a base made of six faces can be
+   compared with one made of eight. *)
+let column (st : Fold_state.t) (t : Geom.point) : (Geom.point * bool) list =
+  let n = Array.length (Fold_state.faces st) in
+  let rank = Fold_state.rank st in
+  List.init n Fun.id
+  |> List.filter (fun i ->
+         Geom.in_convex_polygon (Fold_state.table_polygon_ccw st i) t)
+  |> List.sort (fun i j -> compare rank.(i) rank.(j))
+  |> List.map (fun i ->
+         let inv = Isometry.inverse (Fold_state.face_iso2 st i) in
+         (Isometry.apply_point inv t, Fold_state.face_up st i))
+
+let test_e2e_preliminary_routes_agree () =
+  let run name =
+    (Eval.eval_folded (Beloch.parse ~filename:name (read_example name)))
+      .Eval.state
+  in
+  let flat = run "bases/preliminary.bel"
+  and eos = run "bases/preliminary-reverse.bel" in
+  let probe x y =
+    { Geom.x = Num.of_q (Q.of_ints x 6); y = Num.of_q (Q.of_ints y 6) }
+  in
+  (* centroids of the two 45° wedges of the base square [1/2,1]x[1/2,1] *)
+  List.iter
+    (fun (t, label) ->
+      let a = column flat t and b = column eos t in
+      Alcotest.(check int)
+        (label ^ ": same layer count")
+        (List.length a) (List.length b);
+      List.iter2
+        (fun (pa, ua) (pb, ub) ->
+          Alcotest.(check bool)
+            (label ^ ": same paper point")
+            true
+            (Geom.point_equal pa pb);
+          Alcotest.(check bool) (label ^ ": same orientation") ua ub)
+        a b)
+    [ (probe 4 5, "upper-left wedge"); (probe 5 4, "lower-right wedge") ]
+
 let () =
   Alcotest.run "beloch-e2e"
     [
@@ -1062,6 +1163,12 @@ let () =
             test_e2e_flip_cp_counts;
           Alcotest.test_case "inline equals named" `Quick test_e2e_inline_equiv;
           Alcotest.test_case "inline off-paper errors" `Quick test_e2e_inline_error;
+          Alcotest.test_case "tuck under lands between" `Quick
+            test_e2e_tuck_under_between;
+          Alcotest.test_case "tuck over the base lands between" `Quick
+            test_e2e_tuck_over_between;
+          Alcotest.test_case "tuck target off the landing area" `Quick
+            test_e2e_tuck_target_off;
           Alcotest.test_case "axiom7 rational crease fold emit" `Quick
             test_e2e_axiom7_rational_crease;
           Alcotest.test_case "precrease then fold emits V not U" `Quick
@@ -1105,6 +1212,9 @@ let () =
           Alcotest.test_case
             "point mark endpoint incident to existing vertex (exact snap)"
             `Quick test_mark_endpoint_on_vertex_is_incident;
+          Alcotest.test_case
+            "preliminary base: Eos route equals flatten route pointwise" `Quick
+            test_e2e_preliminary_routes_agree;
         ] );
       ( "emit_folded",
         [

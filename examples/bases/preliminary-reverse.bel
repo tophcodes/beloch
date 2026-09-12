@@ -1,0 +1,16 @@
+; Preliminary base by the Eos route [ida2020, Fig. 7.19, steps 1-3]: one
+; diagonal fold, then each acute corner of the triangle inside-reversed to
+; the right-angle corner. The first fold runs along --bd so that the b- and
+; d-quarters become the tacos, as in preliminary.bel; --ac is never creased.
+
+paper square
+
+fold --bd = map .a onto .c              ; triangle; a lands on c
+reverse --h = map .b onto .c            ; tip b between the layers; crease y = 1/2 through O
+reverse --v = map .d onto .c            ; tip d likewise; crease x = 1/2
+
+; assert steps = 3
+; assert faces = 6
+; assert --bd is mountain
+; assert --h is valley
+; assert --v is valley

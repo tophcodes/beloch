@@ -26,11 +26,14 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "to" -> TO
   | "fold" -> FOLD_KW
   | "flip" -> FLIP
+  | "reverse" -> REVERSE
+  | "outside" -> OUTSIDE
   | "def" -> DEF
   | "apply" -> APPLY
   | "export" -> EXPORT
   | "flatten" -> FLATTEN
   | "over" -> OVER
+  | "under" -> UNDER
   | "staying" -> STAYING
   | "mark" -> MARK
   | "between" -> BETWEEN

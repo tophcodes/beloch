@@ -21,6 +21,19 @@ ordering + dual FOLD (`creasePattern` + `foldedForm`) output. The nearest "compe
 (Kleinlaut) is fabricated AI content; the Haskell axiom eDSL overlaps only the axiom
 layer.
 
+**Correction (2026-09-10).** The landscape check missed two precedents, found
+with the Origami⁴ proceedings (`notes/2026-09-10-origami4-prior-art.md`).
+Fisher's 1994 thesis [fisher1994] is a standalone textual language over a
+folded state with an implicit moving part, an above-relation between faces, and
+a per-step difference list; `multifold … holding face(…)`, `tucking A under B`
+and macros are designed there and left unimplemented. The folded state chosen
+below is structurally the abstract origami $(\Pi, \succ, A)$ of Eos
+[ida2007modeling]: faces, an overlay relation on overlapping pairs inherited per
+fold, adjacency. "Mountain/valley is derived" is Lang and Demaine's ordering
+graph in print [langdemaine2009facet, §3.3–3.4, §4]. What remains unoccupied is
+the combination with exact arithmetic through the fold, the emergent-crease
+solve, and FOLD output.
+
 ## Decision
 Beloch is an **action model**: a `.bel` program is an imperative sequence of folding
 actions on a stateful sheet. The flat crease pattern and mountain/valley become *derived*

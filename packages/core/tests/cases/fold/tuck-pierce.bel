@@ -1,0 +1,11 @@
+; A placement the stack cannot hold: fold the sheet in half, then try to slide
+; the quarter-fold's block over .b. The target flap runs uncut across the fold
+; axis, so the block would have to enclose it — the layer-order invariant
+; rejects it rather than emitting an impossible state.
+
+paper square
+fold map .b onto .a moving .b
+.p = free on --ab from .a at 1/4
+fold map .a onto .p moving .a over .b
+
+; expect error "would pierce layer"

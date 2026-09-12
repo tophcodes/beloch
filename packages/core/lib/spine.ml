@@ -13,6 +13,7 @@ let span_of_stmt : Ast.stmt -> Error.span = function
   | Ast.BindLine (_, _, sp)
   | Ast.Mark (_, _, _, _, _, sp)
   | Ast.Fold (_, _, _, sp)
+  | Ast.Reverse (_, _, _, sp)
   | Ast.BindBundle (_, _, sp)
   | Ast.Point (_, _, sp)
   | Ast.Flip sp
