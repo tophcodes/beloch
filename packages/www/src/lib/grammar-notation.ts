@@ -320,3 +320,98 @@ export function parseDocument(
 	check(doc, options.references ?? "check");
 	return doc;
 }
+
+// ── Rendering ──────────────────────────────────────────────────────────────
+// One <pre class="grammar-block"> per rule, so that a rule other rules refer to
+// can carry its own links line under it; the rules of a fragment sit in a
+// .grammar-fragment wrapper that closes the gap between them.
+
+function escape(text: string): string {
+	return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function spanHtml(span: Span, doc: GrammarDocument): string {
+	if (span.class === "gr-plain") return escape(span.text);
+	if (span.class === "gr-nonterminal") {
+		const external = doc.external.some((e) => e.name === span.text);
+		const cls = external ? "gr-nonterminal gr-external" : "gr-nonterminal";
+		return `<a class="${cls}" href="#${span.ref}">${escape(span.text)}</a>`;
+	}
+	return `<span class="${span.class}">${escape(span.text)}</span>`;
+}
+
+export function renderRule(
+	rule: Rule,
+	doc: GrammarDocument,
+	options: { collected?: boolean } = {},
+): string {
+	const collected = options.collected === true;
+	const body = rule.lines
+		.map((spans, i) =>
+			spans
+				.map((span, j) => {
+					if (i === 0 && j === 0 && span.class === "gr-rule") {
+						return collected
+							? `<a class="gr-rule" href="#${rule.id}">${escape(rule.name)}</a>`
+							: `<span class="gr-rule" id="${rule.id}">${escape(rule.name)}</span>`;
+					}
+					return spanHtml(span, doc);
+				})
+				.join(""),
+		)
+		.join("\n");
+	let html = `<pre class="grammar-block"><code>${body}</code></pre>`;
+	if (!collected && rule.usedBy.length > 0) {
+		const links = rule.usedBy
+			.map((name) => `<a href="#rule-${name}">${escape(name)}</a>`)
+			.join(", ");
+		html += `\n<p class="gr-links">Used by: ${links}</p>`;
+	}
+	return html;
+}
+
+export function renderFragment(fragment: Fragment, doc: GrammarDocument): string {
+	const rules = fragment.rules.map((rule) => renderRule(rule, doc)).join("\n");
+	return `<div class="grammar-fragment">\n${rules}\n</div>`;
+}
+
+export function renderCollected(doc: GrammarDocument): string {
+	const rules = doc.fragments
+		.flatMap((fragment) => fragment.rules)
+		.map((rule) => renderRule(rule, doc, { collected: true }))
+		.join("\n");
+	return `<div class="grammar-fragment">\n${rules}\n</div>`;
+}
+
+function entryBlock(head: string, rows: { name: string; id?: string; note: string }[]): string {
+	if (rows.length === 0) return "";
+	const width = Math.max(...rows.map((row) => row.name.length));
+	const body = rows
+		.map((row) => {
+			const name = row.id
+				? `<span class="gr-rule" id="${row.id}">${escape(row.name)}</span>`
+				: `<span class="gr-keyword">${escape(row.name)}</span>`;
+			if (!row.note) return name;
+			const pad = " ".repeat(width - row.name.length + 3);
+			return `${name}${pad}<span class="gr-comment">; ${escape(row.note)}</span>`;
+		})
+		.join("\n");
+	return (
+		`<p class="gr-block-head">${head}</p>\n` +
+		`<pre class="grammar-block"><code>${body}</code></pre>`
+	);
+}
+
+export function renderExternal(doc: GrammarDocument): string {
+	return entryBlock(
+		"Defined elsewhere",
+		doc.external.map((e) => ({ name: e.name, id: e.id, note: e.note })),
+	);
+}
+
+export function renderPlanned(doc: GrammarDocument): string {
+	return entryBlock(
+		"Not lexed yet",
+		doc.planned.map((p) => ({ name: p.keyword, note: p.note })),
+	);
+}
