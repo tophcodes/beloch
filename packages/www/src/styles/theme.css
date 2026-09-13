@@ -167,6 +167,44 @@ h3:target + p { box-shadow: none; }
 }
 .stmt-links a, .term-links a { color: inherit; }
 
+/* Model figures (remark-model-blocks). The views sit side by side and wrap on a
+   narrow screen; the program stays collapsed so the drawing leads. */
+.sl-markdown-content .figure {
+  margin-block: 1.5rem;
+}
+.figure-views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+.figure-view {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+.figure-view svg {
+  width: 100%;
+  height: auto;
+}
+.sl-markdown-content .figure-source {
+  margin-block-start: 0.5rem;
+  font-size: 0.85em;
+}
+.figure-program summary {
+  cursor: pointer;
+  font-size: 0.85em;
+  color: var(--sl-color-gray-3);
+}
+.sl-markdown-content .figure figcaption {
+  font-size: 0.9em;
+  color: var(--sl-color-gray-2);
+}
+.figure-label {
+  font-variant-caps: small-caps;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+}
+
 /* Footnote hover popups (note-popups.ts): a note's text shown beside its marker. */
 .note-popup {
   position: absolute;

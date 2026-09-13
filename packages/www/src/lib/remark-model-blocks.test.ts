@@ -11,6 +11,7 @@ import remarkModelBlocks from "./remark-model-blocks.ts";
 const fixtures = join(import.meta.dir, "fixtures");
 const model = join(fixtures, "model-blocks.md");
 const register = join(fixtures, "api-register.json");
+const figures = join(fixtures, "figures");
 
 async function render(path: string, options: Record<string, string> = {}) {
   return String(
@@ -26,7 +27,7 @@ async function render(path: string, options: Record<string, string> = {}) {
 
 // The model document, rendered against the register: its statements carry the
 // realizations the kernel's `@see` tags declare.
-const html = await render(model, { register, model });
+const html = await render(model, { register, model, figures });
 
 // the links line of one statement section, by id
 function links(id: string): string {
@@ -111,9 +112,40 @@ test("terms are moved out of the running text", () => {
   expect(html.split('id="term-table"').length - 1).toBe(1);
 });
 
+test("figures are numbered on a counter of their own", () => {
+  // Figure 1.1 sits between Definition 1.1 and Definition 1.2, and numbers
+  // neither of them differently.
+  expect(html).toContain('<span class="figure-label" property="bm:label">Figure 1.1</span>');
+  expect(html).toContain('<span class="stmt-label" property="bm:label">Definition 1.2</span>');
+});
+
+test("a figure inlines the rendered view, the program and the caption", () => {
+  const figure = html.slice(html.indexOf('id="fig-sheet"'), html.indexOf("Prose between"));
+  expect(html).toContain(
+    '<figure class="figure" id="fig-sheet" typeof="bm:Figure" resource="#fig-sheet"' +
+      ' prefix="bm: https://beloch.toph.so/ns/model#">',
+  );
+  expect(figure).toContain('<div class="figure-view" data-view="cp">');
+  expect(figure).toContain('<rect class="dummy-cp"');
+  expect(figure).toContain(
+    '<pre class="figure-source" property="bm:program">paper square\nmark --ac = through .a .c',
+  );
+  expect(figure).toContain("<figcaption>");
+  expect(figure).toContain("A sheet, with the corner <em>.a</em> at the origin.");
+});
+
+test("a view with no rendered file becomes a placeholder, not a build failure", () => {
+  const figure = html.slice(html.indexOf('id="fig-sheet"'), html.indexOf("Prose between"));
+  expect(figure).toContain(
+    '<p class="figure-missing">No rendered <code>folded</code> view for <code>fig-sheet</code>;' +
+      " run scripts/render-figures.ts.</p>",
+  );
+});
+
 test("[#id] in prose becomes a link carrying the computed label", () => {
   expect(html).toContain('<a href="#def-flat-state">Definition 1.2</a>');
   expect(html).toContain('<a href="#term-table">table</a>');
+  expect(html).toContain('<a href="#fig-sheet">Figure 1.1</a>');
 });
 
 test("math and citations inside a block body survive", () => {

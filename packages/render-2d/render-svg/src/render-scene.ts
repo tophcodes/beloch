@@ -33,6 +33,9 @@ export interface SceneOptions {
   texture: TextureOptions;
   title?: string;
   labels?: string[]; // construction overlay selection: ["--v", ".p"]
+  // Entities to emphasise: ".p" / "--l" join the construction overlay, "#[.p]"
+  // fills the faces of the flap carrying every listed point.
+  highlight?: string[];
   legend?: boolean;
   theme?: Partial<Theme>;
   view?: "top" | "bottom"; // folded only
@@ -49,8 +52,36 @@ const near = (p: Vec2, x: number, y: number) =>
 const cornerLabel = (p: Vec2): string | undefined =>
   CORNER.find(([x, y]) => near(p, x, y))?.[2];
 
+// `#[.p .q]` names the flap carrying every listed point, the same incidence
+// rule the language's flap selector uses. The flap numbering comes from
+// `beloch:inspect`, which describes the final state, so it addresses the faces
+// of the crease pattern and of the last folded step; an earlier step has its
+// own face decomposition and is left unhighlighted.
+function flapFaces(scene: FoldScene, selectors: string[]): Set<number> {
+  const faces = new Set<number>();
+  const inspect = scene.inspect;
+  if (!inspect) return faces;
+  for (const selector of selectors) {
+    const names = selector.slice(2, -1).trim().split(/\s+/).filter(Boolean);
+    const flaps = names.map((n) => inspect.points[n.replace(/^\./, "")]?.flap ?? null);
+    const flap = flaps[0];
+    if (flap === null || flap === undefined) continue;
+    if (!flaps.every((f) => f === flap)) continue;
+    for (const [index, face] of Object.entries(inspect.faces)) {
+      if (face.flap === flap) faces.add(Number(index));
+    }
+  }
+  return faces;
+}
+
 export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
   const theme: Theme = { ...DEFAULT_THEME, ...opts.theme };
+  // A `.p` / `--l` highlight is the construction overlay the `labels` option
+  // already draws: a dot with its name, or the line bolder and dashed on top,
+  // clipped per face in a folded frame so what shows is the line's material.
+  const highlight = opts.highlight ?? [];
+  const selection = [...(opts.labels ?? []), ...highlight.filter((h) => !h.startsWith("#["))];
+  const highlightFaces = flapFaces(scene, highlight.filter((h) => h.startsWith("#[")));
   // Always scale to the paper (cp) footprint so folded subsets render in place
   // at true relative size, sharing the flat sheet's coordinate origin.
   const layout = makeLayout(scene.cp.vertices);
@@ -108,11 +139,13 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
         const face = F[fi]!;
         const poly = face.map((idx) => V[idx]!);
         const showFront = (sideUp(poly) === "front") !== bottom;
-        const fill = showFront ? theme.front : theme.back;
+        const lit = highlightFaces.has(fi);
+        const fill = lit ? theme.highlight : showFront ? theme.front : theme.back;
         const pts = face.map((idx) => `${mx(V[idx]![0])},${ty(V[idx]![1])}`).join(" ");
         paper.children.push(el("polygon", {
           points: pts, fill, stroke: "none", filter: "url(#layerShadow)",
           "data-kind": "face", "data-face-index": fi,
+          ...(lit ? { "data-highlight": "true" } : {}),
         }));
       }
     }
@@ -405,15 +438,17 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       }
     }
 
-    appendConstructions(doc, scene, layout, theme, opts.labels, { frame });
+    appendConstructions(doc, scene, layout, theme, selection, { frame });
   } else {
     // ===== flat crease-pattern geometry (ported from renderCP) =====
     if (opts.texture.faces !== "none") {
       F.forEach((f, i) => {
+        const lit = highlightFaces.has(i);
         const pts = f.map((vi) => `${tx(V[vi]![0])},${ty(V[vi]![1])}`).join(" ");
         paper.children.push(el("polygon", {
-          points: pts, fill: theme.paperFill, stroke: "none",
+          points: pts, fill: lit ? theme.highlight : theme.paperFill, stroke: "none",
           "data-kind": "face", "data-face-index": i,
+          ...(lit ? { "data-highlight": "true" } : {}),
         }));
       });
     }
@@ -536,7 +571,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       }, [], `--${nm}`));
     }
 
-    appendConstructions(doc, scene, layout, theme, opts.labels, null);
+    appendConstructions(doc, scene, layout, theme, selection, null);
   }
 
   if (opts.title) appendTitle(doc, theme, opts.title);

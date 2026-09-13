@@ -10,6 +10,15 @@
 -- statement classes. `[#some-id]` in prose becomes a link whose text is the
 -- computed label.
 --
+-- `::: {.figure #fig-point caption="…" views="cp folded"}` becomes the figure's
+-- pre-rendered views side by side, the caption, and the program as a code
+-- block. The SVGs come from _build/spec/figures (scripts/render-figures.ts
+-- writes them; BELOCH_FIGURES overrides the directory); a view with no file
+-- renders a placeholder. The program text is read from the source file rather
+-- than from the Div's content, because the markdown reader has already turned
+-- `--l` into an en dash and the line breaks into soft breaks by the time this
+-- filter sees it. Figures are numbered per section on a counter of their own.
+--
 -- `::: {.include api="Fold_state.violation"}` is replaced by the API register's
 -- entry for that item (scripts/api-register.ts writes it; BELOCH_API_REGISTER
 -- overrides the default path `_build/api-register.json`), and the register's
@@ -33,6 +42,7 @@ local LABELS = {
 local statements = {}  -- id -> {kind, label, name, order, defines, uses, usedBy}
 local terms = {}       -- id -> {name, definedBy, content}
 local termOrder = {}
+local figures = {}     -- id -> {label, views}
 
 local root = (PANDOC_SCRIPT_FILE or ""):match("^(.*)/scripts/[^/]+$") or "."
 
@@ -71,22 +81,24 @@ local function model_labels()
   modelLabels = {}
   local file = io.open(root .. "/spec/MODEL.md", "r")
   if not file then return modelLabels end
-  local section, counters = 0, {}
+  local section, counters, figureCounters = 0, {}, {}
   for line in file:lines() do
     if line:match("^## ") then
       section = section + 1
     else
       local attrs = line:match("^:::+%s*{(.-)}%s*$")
       if attrs then
-        local kind
+        local kind, isFigure
         for class in attrs:gmatch("%.([%w%-_]+)") do
           if LABELS[class] then kind = class end
+          if class == "figure" then isFigure = true end
         end
         local id = attrs:match("#([%w%-_]+)")
-        if kind and id then
-          counters[section] = (counters[section] or 0) + 1
-          modelLabels[id] = LABELS[kind] .. " " ..
-            (section > 0 and (section .. "." .. counters[section]) or tostring(counters[section]))
+        if id and (kind or isFigure) then
+          local counter = kind and counters or figureCounters
+          counter[section] = (counter[section] or 0) + 1
+          modelLabels[id] = (kind and LABELS[kind] or "Figure") .. " " ..
+            (section > 0 and (section .. "." .. counter[section]) or tostring(counter[section]))
         end
       end
     end
@@ -95,15 +107,46 @@ local function model_labels()
   return modelLabels
 end
 
+-- The body of each `.figure` block of the document being rendered, verbatim.
+local figurePrograms = nil
+local function figure_programs()
+  if figurePrograms then return figurePrograms end
+  figurePrograms = {}
+  local path = (PANDOC_STATE.input_files or {})[1]
+  local file = path and io.open(path, "r")
+  if not file then return figurePrograms end
+  local id, lines = nil, nil
+  for line in file:lines() do
+    if id then
+      if line:match("^:::+%s*$") then
+        figurePrograms[id] = table.concat(lines, "\n")
+        id, lines = nil, nil
+      else
+        lines[#lines + 1] = line
+      end
+    else
+      local attrs = line:match("^:::+%s*{(.-)}%s*$")
+      if attrs and attrs:match("%.figure") then
+        id = attrs:match("#([%w%-_]+)")
+        lines = {}
+      end
+    end
+  end
+  file:close()
+  return figurePrograms
+end
+
 -- A link to a model statement is labelled from this document when this is the
 -- model, and from the model document otherwise.
 local function label_of(id)
   if statements[id] then return statements[id].label end
+  if figures[id] then return figures[id].label end
   return model_labels()[id] or id
 end
 
 local function class_of(div)
   if div.classes:includes("term") then return "term" end
+  if div.classes:includes("figure") then return "figure" end
   for _, c in ipairs(div.classes) do
     if LABELS[c] then return c end
   end
@@ -128,12 +171,26 @@ local function collect(blocks)
   local section = 0
   local seen = 0
   local counters = {}
+  local figureCounters = {}
   for _, block in ipairs(blocks) do
     if block.t == "Header" and block.level == 2 then
       section = section + 1
     elseif block.t == "Div" then
       local kind = class_of(block)
-      if kind == "term" then
+      if kind == "figure" then
+        figureCounters[section] = (figureCounters[section] or 0) + 1
+        local n = figureCounters[section]
+        local views = {}
+        for word in string.gmatch(block.attributes.views or "", "%S+") do
+          views[#views + 1] = word
+        end
+        if #views == 0 then views = { "cp", "folded" } end
+        figures[block.identifier] = {
+          label = "Figure " .. (section > 0 and (section .. "." .. n) or tostring(n)),
+          views = views,
+          caption = block.attributes.caption or "",
+        }
+      elseif kind == "term" then
         local name = block.attributes.name or block.identifier
         terms[block.identifier] = {
           name = name,
@@ -298,6 +355,52 @@ local function api_div(item, class)
   return pandoc.Div(blocks, pandoc.Attr("", { class }))
 end
 
+-- A `.figure` block: the rendered views side by side, the caption, then the
+-- program.
+local function figure_div(id, f)
+  -- typst resolves a leading slash against its project root, which is the
+  -- directory pandoc runs in; scripts/render-model.sh makes that the repo root,
+  -- so the directory is named relative to it.
+  local dir = os.getenv("BELOCH_FIGURES") or "_build/spec/figures"
+  local width = #f.views > 1 and "48%" or "70%"
+  local views, missing = {}, {}
+  for _, view in ipairs(f.views) do
+    local file = dir .. "/" .. id .. "-" .. view .. ".svg"
+    local probe = io.open(root .. "/" .. file, "r")
+    if probe then
+      probe:close()
+      if #views > 0 then views[#views + 1] = pandoc.Space() end
+      views[#views + 1] = pandoc.Image({}, "/" .. file, "",
+        pandoc.Attr("", {}, { { "width", width } }))
+    else
+      missing[#missing + 1] = pandoc.Para(pandoc.Emph({
+        pandoc.Str("No"), pandoc.Space(), pandoc.Str("rendered"), pandoc.Space(),
+        pandoc.Code(view), pandoc.Space(), pandoc.Str("view"), pandoc.Space(),
+        pandoc.Str("for"), pandoc.Space(), pandoc.Code(id), pandoc.Str(";"), pandoc.Space(),
+        pandoc.Str("run"), pandoc.Space(), pandoc.Code("scripts/render-figures.ts"),
+        pandoc.Str("."),
+      }))
+    end
+  end
+
+  local blocks = {}
+  if #views > 0 then blocks[#blocks + 1] = pandoc.Para(views) end
+  for _, block in ipairs(missing) do blocks[#blocks + 1] = block end
+
+  local caption = { pandoc.Strong(pandoc.Str(f.label)), pandoc.Space() }
+  local read = pandoc.read(f.caption, "markdown").blocks[1]
+  for _, inline in ipairs(read and read.content or {}) do
+    caption[#caption + 1] = inline
+  end
+  blocks[#blocks + 1] = pandoc.Para(caption)
+
+  local program = figure_programs()[id]
+  if program then
+    blocks[#blocks + 1] = pandoc.CodeBlock(program, pandoc.Attr("", { "beloch" }))
+  end
+  return pandoc.Div(blocks, pandoc.Attr(id, { "figure" }))
+end
+
 local function include_div(path)
   local item = register().byPath[path]
   if not item then
@@ -336,7 +439,9 @@ local function rewrite(blocks)
       out[#out + 1] = include_div(block.attributes.api or "")
     elseif block.t == "Div" and class_of(block) then
       local kind = class_of(block)
-      if kind ~= "term" then
+      if kind == "figure" then
+        out[#out + 1] = figure_div(block.identifier, figures[block.identifier])
+      elseif kind ~= "term" then
         out[#out + 1] = statement_div(block.identifier, statements[block.identifier], block.content)
       end
     else
@@ -389,6 +494,7 @@ local function expand_sugar(elem)
     if not first then break end
     local label = statements[id] and statements[id].label
       or (terms[id] and terms[id].name)
+      or (figures[id] and figures[id].label)
     if first > pos then out[#out + 1] = pandoc.Str(text:sub(pos, first - 1)) end
     if label then
       out[#out + 1] = ref(id, label)

@@ -8,6 +8,7 @@ import { renderScene } from "./render-scene";
 export interface RenderOptions {
   title?: string;
   labels?: string[]; // ["--v", ".e"]; undefined = none
+  highlight?: string[]; // entities to emphasise: ["--v", ".e", "#[.p]"]
   theme?: Partial<Theme>;
   legend?: boolean; // default false
 }
@@ -25,6 +26,7 @@ export function renderCP(scene: FoldScene, opts: RenderOptions = {}): SvgDoc {
     },
     title: opts.title,
     labels: opts.labels,
+    highlight: opts.highlight,
     legend: opts.legend,
     theme: opts.theme,
   });
