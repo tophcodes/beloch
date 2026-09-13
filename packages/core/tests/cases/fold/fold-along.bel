@@ -1,6 +1,6 @@
 paper square
-mark --d = map .b onto .a
-fold --d moving .b
+mark (map .b onto .a) as --d
+fold (--d) (moving .b) into --d
 
 ; assert faces = 2
 ; assert --d is valley

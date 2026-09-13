@@ -21,11 +21,11 @@
 
 paper square
 
-mark --diag = map .a onto .c
-mark --ray = through .a .c
+mark (map .a onto .c) as --diag
+mark (through .a .c) as --ray
 
-mark --l1 = map --ab onto --diag
-mark --l2 = map --da onto --diag
+mark (map --ab onto --diag) as --l1
+mark (map --da onto --diag) as --l2
 flatten (--l1 valley) (--l2) (--ray mountain)
 
 ; assert faces = 6

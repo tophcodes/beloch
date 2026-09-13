@@ -1,8 +1,8 @@
 paper square
-mark --d1 = through .a .c
-mark --d2 = through .b .d
+mark (through .a .c) as --d1
+mark (through .b .d) as --d2
 .center = --d1 * --d2
-fold map .a onto .center
+fold (map .a onto .center)
 
 ; `faces` is the evaluator's crease-pattern state: the one fold subdivides
 ; to 2; --d1/--d2 stay unfolded marks there (they graduate to F creases,

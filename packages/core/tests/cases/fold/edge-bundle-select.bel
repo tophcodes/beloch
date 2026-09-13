@@ -6,8 +6,8 @@
 ; wrongly reported "ambiguous: 2 segments match", checking table space where
 ; the folded halves coincide.)
 paper square
-fold --v = map .a onto .b
-fold map --cd & .c onto --v
+fold (map .a onto .b) as --v
+fold (map --cd & .c onto --v)
 
 ; assert steps = 2
 ; assert faces = 4

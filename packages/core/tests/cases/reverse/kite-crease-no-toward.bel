@@ -5,15 +5,15 @@
 
 paper square
 
-fold --bd = map .a onto .c
-reverse --h = map .b onto .c
-reverse --v = map .d onto .c
+fold (map .a onto .c) as --bd
+reverse (map .b onto .c) as --h
+reverse (map .d onto .c) as --v
 
 .o = free on --bd from .b at 1/2
---mid = through .c .o
+--mid = (through .c .o)
 
 .sr = free on --ab from .a at 1/2
-reverse map .sr onto --mid through .c
+reverse (map .sr onto --mid through .c)
 
 ; assert steps = 4
 ; assert faces = 8

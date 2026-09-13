@@ -5,10 +5,10 @@
 
 paper square
 
-mark --diag = through .a .c
-mark --ea = map --ab onto --diag
-mark --eb = map --ab onto --bc
-mark --ec = map --bc onto --diag
+mark (through .a .c) as --diag
+mark (map --ab onto --diag) as --ea
+mark (map --ab onto --bc) as --eb
+mark (map --bc onto --diag) as --ec
 
 ; Leading pair is (--ea .a)(--ec .c): their <180 arc is the big stayer
 ; sector the ear folds onto; the emergent splits it into the two mirror

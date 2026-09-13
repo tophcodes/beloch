@@ -1,7 +1,7 @@
 paper square
-mark --b = through .a .c
-fold --v = map .c onto .b
-mark --q = perp --b & #[.c .d] through .a
+mark (through .a .c) as --b
+fold (map .c onto .b) as --v
+mark (perp --b & #[.c .d] through .a) as --q
 
 ; assert faces = 4
 ; assert steps = 1

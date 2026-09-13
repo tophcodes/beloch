@@ -4,8 +4,8 @@
 ; rejects it rather than emitting an impossible state.
 
 paper square
-fold map .b onto .a moving .b
+fold (map .b onto .a) (moving .b)
 .p = free on --ab from .a at 1/4
-fold map .a onto .p moving .a over .b
+fold (map .a onto .p) (moving .a) (over .b)
 
 ; expect error "would pierce layer"

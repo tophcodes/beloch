@@ -1,11 +1,11 @@
 paper square
-mark --l = through .a .d
-mark --bot = through .a .b
-fold --v = map .b onto .a
-fold --h = map .d onto .a
+mark (through .a .d) as --l
+mark (through .a .b) as --bot
+fold (map .b onto .a) as --v
+fold (map .d onto .a) as --h
 .p = --l * --h
 .q = --v * --bot
-fold through .p .q moving .d up to .c
+fold (through .p .q) (moving .d) (up to .c)
 
 ; assert faces = 6
 ; assert steps = 3

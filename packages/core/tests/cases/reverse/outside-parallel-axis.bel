@@ -5,10 +5,10 @@
 
 paper square
 
-fold --d = map .b onto .a
+fold (map .b onto .a) as --d
 .m = free on --ab from .a at 3/8
 .n = free on --cd from .d at 3/8
 .t = free on --d from .[--d --ab] at 1/2
-reverse --r = through .m .n moving .t outside
+reverse (through .m .n) (moving .t) (outside) as --r
 
 ; expect error "reversing the tip would pierce layer"

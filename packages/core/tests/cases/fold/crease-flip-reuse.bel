@@ -1,6 +1,6 @@
 paper square
-mark --q = through .a .c
+mark (through .a .c) as --q
 flip
-mark perp --q through .b
+mark (perp --q through .b)
 
 ; assert faces = 1

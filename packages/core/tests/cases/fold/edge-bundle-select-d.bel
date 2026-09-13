@@ -4,8 +4,8 @@
 ; into rather than picking either/an arbitrary one. Here .d ends up on the
 ; fold's mirror point instead, while .c (on the untouched half) stays put.
 paper square
-mark --v = map .a onto .b
-fold map --cd & .d onto --v toward .a moving .d
+mark (map .a onto .b) as --v
+fold (map --cd & .d onto --v toward .a) (moving .d)
 
 ; assert .d = (1/2, 1/2)
 ; assert .c = (1, 1)

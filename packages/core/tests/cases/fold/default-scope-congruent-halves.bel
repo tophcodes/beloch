@@ -2,8 +2,8 @@
 ; This guards the option-(a) union path on fully-congruent layers; the actual
 ; scope-narrowing proof is ear-default-scope.bel (13 -> 9 faces).
 paper square
-fold --half = map .b onto .a moving .b   ; fold right half onto left: 2 layers over left half
-fold --q = map .a onto .d moving .a      ; fold only the top flap's a-corner region
+fold (map .b onto .a) (moving .b) as --half ; fold right half onto left: 2 layers over left half
+fold (map .a onto .d) (moving .a) as --q ; fold only the top flap's a-corner region
 ; Note: --half's two layers are fully congruent (mirror-image halves occupy the
 ; identical table footprint), so .a's table position is a shared-vertex point of
 ; BOTH layers; the shared-point union rule (design option (a)) seeds both, and

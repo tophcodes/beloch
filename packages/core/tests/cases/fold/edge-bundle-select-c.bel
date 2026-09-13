@@ -4,7 +4,7 @@
 ; halves of --cd stay at their own distinct table positions — folding the
 ; .c-side segment onto --v moves .c to the fold's mirror point.
 paper square
-mark --v = map .a onto .b
-fold map --cd & .c onto --v toward .a moving .c
+mark (map .a onto .b) as --v
+fold (map --cd & .c onto --v toward .a) (moving .c)
 
 ; assert .c = (1/2, 1/2)

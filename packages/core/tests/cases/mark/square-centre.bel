@@ -3,8 +3,8 @@
 ; working sheet (it stays one face while .ctr is located); they graduate to
 ; F creases only at emit, so the crease pattern still shows the construction.
 paper square
-mark --ac = through .a .c
-mark --bd = through .b .d
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
 .ctr = --ac * --bd
 
 ; assert faces = 1
