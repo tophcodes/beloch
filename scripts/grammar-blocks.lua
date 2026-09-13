@@ -100,18 +100,9 @@ local function rule_blocks(rule, collected)
       end
     end
   end
-  local blocks = {
+  return {
     pandoc.Div({ pandoc.Para(inlines) }, pandoc.Attr("", { "grammar-block" })),
   }
-  if not collected and rule.usedBy and #rule.usedBy > 0 then
-    local items = { pandoc.Str("Used by: ") }
-    for k, name in ipairs(rule.usedBy) do
-      if k > 1 then items[#items + 1] = pandoc.Str(", ") end
-      items[#items + 1] = pandoc.Link({ pandoc.Str(name) }, "#rule-" .. name)
-    end
-    blocks[#blocks + 1] = pandoc.Div({ pandoc.Para(items) }, pandoc.Attr("", { "gr-links" }))
-  end
-  return blocks
 end
 
 local function all_rules()
