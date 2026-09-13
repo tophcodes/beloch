@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import remarkBel from './src/lib/remark-bel.ts';
 import remarkModelBlocks from './src/lib/remark-model-blocks.ts';
+import remarkGrammar from './src/lib/remark-grammar.ts';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 // The package's default export condition is the browser build, which cannot
@@ -62,7 +63,9 @@ export default defineConfig({
 		// remark-model-blocks turns the `::: {.definition #id …}` fenced divs of
 		// spec/MODEL.md into numbered, cross-referenced sections; it runs before
 		// remarkMath so the math inside a block body is still tokenized.
-		remarkPlugins: [remarkBel, remarkModelBlocks, remarkMath],
+		// remark-grammar turns the ```grammar fragments of spec/BELOCH.md into
+		// linked rules and generates the collected grammar under `## Grammar`.
+		remarkPlugins: [remarkBel, remarkGrammar, remarkModelBlocks, remarkMath],
 		// `$...$` math and `[@key, §3]` citations, the same syntax pandoc reads
 		// for scripts/render-model.sh; the bibliography is the paper's.
 		rehypePlugins: [
