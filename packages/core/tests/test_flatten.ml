@@ -23,10 +23,10 @@ let expect_error msg_substr thunk =
    one vertex. Here the flatten is bound to --r. *)
 let vertex_src =
   "paper square\n\
-   mark --h = map .a onto .d\n\
-   mark --v = map .a onto .b\n\
-   --r = flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
-   mountain) (--v & #[.a] mountain)\n"
+   mark (map .a onto .d) as --h\n\
+   mark (map .a onto .b) as --v\n\
+   flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
+   mountain) (--v & #[.a] mountain) as --r\n"
 
 let test_flatten_bind_parses_and_evals () =
   let fd = Eval.eval_folded (Beloch.parse ~filename:"t.bel" vertex_src) in
@@ -71,8 +71,8 @@ let test_flatten_unbound_still_parses () =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
          "paper square\n\
-          mark --h = map .a onto .d\n\
-          mark --v = map .a onto .b\n\
+          mark (map .a onto .d) as --h\n\
+          mark (map .a onto .b) as --v\n\
           flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
           mountain) (--v & #[.a] mountain)\n")
   in
@@ -93,8 +93,8 @@ let test_flatten_item_accepts_backslash_filter () =
   let prog =
     Beloch.parse ~filename:"t.bel"
       "paper square\n\
-       mark --h = map .a onto .d\n\
-       mark --v = map .a onto .b\n\
+       mark (map .a onto .d) as --h\n\
+       mark (map .a onto .b) as --v\n\
        flatten (--h \\ #[.b]) (--v & #[.c]) (--h & #[.d] mountain) (--v & \
        #[.a] mountain)\n"
   in
@@ -183,13 +183,13 @@ let test_flatten_derive_unit () =
    crease distinct from every given ray. *)
 let rabbit_ear_derive_src =
   "paper square\n\
-   mark --v = map .a onto .b\n\
+   mark (map .a onto .b) as --v\n\
    .m = --v * --cd\n\
-   mark --am = through .a .m\n\
-   mark --bm = through .b .m\n\
-   mark --ba = map --ab onto --am\n\
-   mark --bb = map --ab onto --bm\n\
-   --ear = flatten (--ba \\ .a) (--bb \\ .b) (--v \\ .m) {toward .d}\n"
+   mark (through .a .m) as --am\n\
+   mark (through .b .m) as --bm\n\
+   mark (map --ab onto --am) as --ba\n\
+   mark (map --ab onto --bm) as --bb\n\
+   flatten (--ba \\ .a) (--bb \\ .b) (--v \\ .m) (toward .d) as --ear\n"
 
 let test_flatten_derive_e2e () =
   let fd =
@@ -283,11 +283,11 @@ let test_flatten_tip () =
 let fish_base_src toward =
   Printf.sprintf
     "paper square\n\
-     mark --diag = map .a onto .c\n\
-     mark --ray = through .a .c\n\
-     mark --l1 = map --ab onto --diag\n\
-     mark --l2 = map --da onto --diag\n\
-     flatten (--l1 & .b) (--l2 & .d) (--ray & .a) {toward %s}\n" toward
+     mark (map .a onto .c) as --diag\n\
+     mark (through .a .c) as --ray\n\
+     mark (map --ab onto --diag) as --l1\n\
+     mark (map --da onto --diag) as --l2\n\
+     flatten (--l1 & .b) (--l2 & .d) (--ray & .a) (toward %s)\n" toward
 
 let test_flatten_derive_opposite_ray_fish_base () =
   let result toward =
@@ -358,18 +358,18 @@ let test_flatten_derive_opposite_ray_unit () =
    the natural (on-paper) fold sense. *)
 let swivel_rabbit_src =
   "paper square\n\
-   mark --v = map .a onto .b\n\
+   mark (map .a onto .b) as --v\n\
    .m = --v * --cd\n\
-   mark --_am = through .a .m\n\
-   mark --_bm = through .b .m\n\
-   mark --_ba = map --ab onto --_am\n\
-   mark --_bb = map --ab onto --_bm\n\
+   mark (through .a .m) as --_am\n\
+   mark (through .b .m) as --_bm\n\
+   mark (map --ab onto --_am) as --_ba\n\
+   mark (map --ab onto --_bm) as --_bb\n\
    .o = --_ba * --_bb\n\
    .lowerp = --_ba * --_bm\n\
-   mark --lowerh = perp --bc through .lowerp\n\
-   mark --ba = through .a .[--bc --lowerh]\n\
-   mark --bb = through .b .[--da --lowerh]\n\
-   --ear = flatten (--ba \\ .a) (--bb \\ .b) (--v \\ .m) {toward .c}\n"
+   mark (perp --bc through .lowerp) as --lowerh\n\
+   mark (through .a .[--bc --lowerh]) as --ba\n\
+   mark (through .b .[--da --lowerh]) as --bb\n\
+   flatten (--ba \\ .a) (--bb \\ .b) (--v \\ .m) (toward .c) as --ear\n"
 
 let test_flatten_derive_in_bounds () =
   let fd =
@@ -451,14 +451,14 @@ let test_flatten_mv_patterns_beyond_maekawa () =
 let test_flatten_no_flat_hinge_splits_taco () =
   let src =
     "paper square\n\
-     mark --diag = map .a onto .c\n\
-     mark --ray = through .a .c\n\
-     mark --l1 = map --ab onto --diag\n\
-     mark --l2 = map --da onto --diag\n\
-     flatten (--l1 & .b) (--l2 & .d) (--ray & .a) {toward .d}\n\
-     mark --l3 = map --cd onto --diag\n\
-     mark --l4 = map --bc onto --diag\n\
-     flatten (--l3 & .d) (--l4 & .b) (--ray & .c) {toward .d}\n"
+     mark (map .a onto .c) as --diag\n\
+     mark (through .a .c) as --ray\n\
+     mark (map --ab onto --diag) as --l1\n\
+     mark (map --da onto --diag) as --l2\n\
+     flatten (--l1 & .b) (--l2 & .d) (--ray & .a) (toward .d)\n\
+     mark (map --cd onto --diag) as --l3\n\
+     mark (map --bc onto --diag) as --l4\n\
+     flatten (--l3 & .d) (--l4 & .b) (--ray & .c) (toward .d)\n"
   in
   let fd = Eval.eval_folded (Beloch.parse ~filename:"t.bel" src) in
   let st = fd.Eval.state in
