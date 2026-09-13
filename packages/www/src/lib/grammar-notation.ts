@@ -70,7 +70,12 @@ export interface ParseOptions {
 
 export class GrammarError extends Error {}
 
-const OPEN = /^```([A-Za-z-]*)\s*$/;
+// The info string's language is its first word; anything after is a meta
+// part (a title, flags for a highlighter) and is not part of the language.
+// CommonMark forbids a backtick in the info string, which is also how a
+// fence of four or more backticks is told apart from a three-backtick fence
+// whose meta part happens to start right after the language.
+const OPEN = /^```([A-Za-z-]*)[^`]*$/;
 const CLOSE = /^```\s*$/;
 const HEAD = /^([A-Za-z_][A-Za-z0-9_]*)\s*:=/;
 const ENTRY = /^\s*([A-Za-z_][A-Za-z0-9_]*)[ \t]*(?:;[ \t]*(.*?))?[ \t]*$/;
@@ -90,7 +95,7 @@ function fail(path: string, line: number, message: string): never {
 	throw new GrammarError(`${path}:${line}: ${message}`);
 }
 
-function blocks(source: string): Block[] {
+function blocks(source: string, path: string): Block[] {
 	const all = source.split("\n");
 	const out: Block[] = [];
 	for (let i = 0; i < all.length; i++) {
@@ -98,6 +103,7 @@ function blocks(source: string): Block[] {
 		if (!open) continue;
 		let j = i + 1;
 		while (j < all.length && !CLOSE.test(all[j])) j++;
+		if (j >= all.length) fail(path, i + 1, "unclosed fence; add a closing line of three backticks");
 		out.push({ lang: open[1], line: i + 2, lines: all.slice(i + 1, j) });
 		i = j;
 	}
@@ -283,7 +289,7 @@ export function parseDocument(
 	options: ParseOptions = {},
 ): GrammarDocument {
 	const doc: GrammarDocument = { path, fragments: [], external: [], planned: [] };
-	for (const block of blocks(source)) {
+	for (const block of blocks(source, path)) {
 		if (block.lang === "grammar") {
 			doc.fragments.push(parseFragment(block, path));
 		} else if (block.lang === "grammar-external") {

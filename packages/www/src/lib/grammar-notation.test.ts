@@ -185,6 +185,12 @@ test("an external name nothing refers to is an error at its entry", () => {
 	);
 });
 
+test("an unclosed fence ends in a named error, not a swallowed remainder", () => {
+	expect(() => parseDocument("```grammar\na := CREASE_NAME\n", "fixture.md")).toThrow(
+		"fixture.md:1: unclosed fence; add a closing line of three backticks",
+	);
+});
+
 test("content in the collected marker is an error", () => {
 	expect(parseFixture("grammar-error-collected.md")).toThrow(
 		`${at("grammar-error-collected.md", 8)}the grammar-collected block is generated; leave it empty`,

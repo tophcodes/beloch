@@ -19,6 +19,7 @@
 // this file, delete that directory (and .astro/) or the old output is served.
 import { visit } from "unist-util-visit";
 import {
+	GrammarError,
 	parseDocument,
 	renderCollected,
 	renderExternal,
@@ -32,16 +33,28 @@ export default function remarkGrammar() {
 	return (tree: any, file: any) => {
 		const source = String(file.value ?? "");
 		if (!source.includes("```grammar")) return;
-		const doc = parseDocument(source, file.path ?? file.basename ?? "<document>");
+		const path = file.path ?? file.basename ?? "<document>";
+		const doc = parseDocument(source, path);
 		const targets: any[] = [];
 		visit(tree, "code", (node: any) => {
 			if (node.lang && LANGS.has(node.lang)) targets.push(node);
 		});
-		let fragment = 0;
 		for (const node of targets) {
 			let html: string;
-			if (node.lang === "grammar") html = renderFragment(doc.fragments[fragment++], doc);
-			else if (node.lang === "grammar-external") html = renderExternal(doc);
+			if (node.lang === "grammar") {
+				// Paired by line rather than by ordinal position: a fence remark
+				// sees but the raw scan of grammar-notation.ts does not (or the
+				// reverse, a sample fence nested inside a wider one) would
+				// otherwise shift every later block's pairing.
+				const line = node.position.start.line + 1;
+				const fragment = doc.fragments.find((f) => f.line === line);
+				if (!fragment) {
+					throw new GrammarError(
+						`${path}:${line}: no grammar fragment parses at this \`grammar\` fence`,
+					);
+				}
+				html = renderFragment(fragment, doc);
+			} else if (node.lang === "grammar-external") html = renderExternal(doc);
 			else if (node.lang === "grammar-planned") html = renderPlanned(doc);
 			else html = renderCollected(doc);
 			node.type = "html";
