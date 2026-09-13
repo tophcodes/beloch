@@ -281,8 +281,8 @@ export_stmt     ; SPECIFICATION.md Appendix A
 ```
 
 ```grammar-planned
-align   ; two-fold constructions are not evaluated yet
-into    ; the output clause of a write is not parsed yet
+align   ; constructions written as alignments are not lexed yet
+into    ; the into branch of a write's output clause is not lexed yet
 ```
 
 ## References
