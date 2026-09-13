@@ -26,6 +26,11 @@ statement, each a flat folded state ([def-flat-state](/model/#def-flat-state))
 in table coordinates. A reader that wants only the result takes the last
 frame; a reader that wants the diagram sequence takes them all.
 
+A program with several sheets (the sheet-as-value design) keeps this shape: a
+frame holds every sheet as its own connected component of the planar graph,
+and a field `beloch:sheets` maps faces to sheet names. An assembled body is
+one frame like any other, since the model treats it as one folded state.
+
 This is where the history lives that the model's state does not carry. The
 file is a record of the run, and no operation of the language reads it.
 
