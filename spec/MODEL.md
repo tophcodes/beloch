@@ -30,7 +30,7 @@ the way folders use them. Everything it needs from flat-folding theory is
 restated where it is used; the full account is Hull [@hull2020, chapter 6].
 
 **Review status.** Sections 1 and 2 read and accepted. Section 3 read up to
-the taco-taco condition. Section 4 is a draft.
+the taco-taco condition. Sections 4 and 5 are drafts.
 
 ## 1. Paper
 
@@ -464,8 +464,492 @@ followed by a fold and then `mark --l` means.
 
 ## 5. Operations
 
-To be written: the writes as partial functions on states, each with its
-domain.
+Intuition: a write takes the current state and a few values and yields the
+next state, or fails. Every write of the language is built from one
+construction: some faces are reflected across a table line, and the layer
+ordering is rebuilt around them. Which faces move, the moving set, is what
+separates folding one flap from folding through the stack; where the moved
+faces come to lie, the placement, is what separates a valley fold from a
+mountain fold from a tuck. `mark` reflects nothing, `flip` reflects
+everything, `fold` reflects one block, `reverse` reflects two blocks in one
+move, and `flatten` moves the sectors of a fan by different motions. This
+section defines the construction once and then each write as an instance of
+it, with its parameters and its domain.
+
+::: {.definition #def-write name="write" uses="def-flat-state def-noncrossing def-read" defines="term-write"}
+A write with parameter sorts $A$ is a partial function
+$w : S \times A \rightharpoonup S$ from states and values to states. Where it
+is undefined the program fails with a reason. Every value of a write is a
+flat folded state with a non-crossing ordering ([#def-noncrossing]); a write
+has no other effect. The domain of a write has two parts: conditions on its
+arguments, stated with each write below, and the condition that the pair
+$(f', \lambda')$ it constructs satisfies [#def-noncrossing]. The second part
+is the same for every write and is not repeated.
+:::
+
+::: {.term #term-write name="write"}
+A partial function from the current state and some values to the next state;
+where it is undefined the program fails.
+:::
+
+::: {.definition #def-score name="scoring" uses="def-flat-state def-refinement def-bundle" defines="term-score"}
+For a state $s$ and a bundle $b$, *scoring* $b$ in $s$ is the refinement
+([#def-refinement]) that splits every face along each segment of $b$ it
+contains, joining the parts by hinges of angle $0$. By [#def-refinement] the
+result is $s$; the hinges it introduces are the crease of $b$
+([#def-bundle]). Scoring a line $\ell$ means scoring its material
+([#def-line]).
+:::
+
+::: {.term #term-score name="score"}
+Split faces along a bundle without moving anything; the state is unchanged
+up to refinement.
+:::
+
+Every write below scores its axis first, so that each face lies on one side
+of the axis before any face moves. Because scoring changes nothing, a write
+may score every face the axis crosses, moving or not; the hinges that end up
+between two stationary faces stay flat and vanish again under refinement.
+
+::: {.definition #def-mark name="mark" uses="def-write def-score def-line def-flap def-bundle"}
+The write `mark` takes a line $\ell$, a flap $\phi$ and an extent: the whole
+of $\ell$, a segment of $\ell$ between two points, or a point of $\ell$. Its
+value is the state itself, up to refinement. Its effect is a crease value:
+the bundle of the material of $\ell$ in the faces of $\phi$, clipped to the
+extent. It is defined when that bundle is non-empty and the extent lies in
+the image of $\phi$; an extent that crosses a folded hinge of $\phi$ leaves
+the flap and is outside the domain.
+:::
+
+`mark` is the identity on states. The read/write law of the language
+sequences it as a write because it introduces a piece of material that
+later reads select and later folds fold along; the model records that
+material as a value in paper coordinates, and the state itself has no
+memory of it. The mountain or valley intent a program may write beside a
+mark is an annotation for the crease pattern output and no part of the
+state or the value.
+
+::: {.open #open-point-mark name="a mark at a point" uses="def-mark def-segment def-bundle"}
+A mark whose extent is a single point yields a segment of length zero, which
+[#def-segment] excludes from bundles. The language admits such a mark as a
+crease whose material is one point on $\ell$ and whose line is $\ell$, and a
+meet against it uses the line. Whether a bundle may hold a point together
+with the line it was marked on, or a point mark is a value of its own sort,
+is not decided.
+:::
+
+::: {.definition #def-letter name="letter of a folded hinge" uses="def-flat-state" defines="term-letter term-face-up"}
+Let $h$ be a folded hinge between faces $A$ and $B$. Exactly one of the two
+isometries $f|_A$ and $f|_B$ preserves orientation, because they differ by a
+reflection; the face whose isometry preserves orientation is *face up*, the
+other *face down*. The *letter* of $h$ is *valley* when the face-up face is
+below the other, *mountain* when it is above [@hullzakharevich2023, §2.1].
+:::
+
+::: {.term #term-letter name="letter, mountain, valley"}
+Mountain or valley, derived for every folded hinge from which of its two
+faces is face up and which is above.
+:::
+
+::: {.term #term-face-up name="face up, face down"}
+A face is face up in a state when its isometry preserves orientation; the
+front of the paper shows.
+:::
+
+The letter is the folder's mountain and valley seen from the front of the
+paper, and it is a property of the state: no write takes a letter as an
+instruction, and every letter in an output is read off the state.
+
+::: {.definition #def-reflection name="reflection of blocks" uses="def-flat-state def-score def-line cond-hinge-closure def-noncrossing" defines="term-block term-placement term-moving-set"}
+Let $s = (f, \lambda)$ be a state, $\ell$ a table line, $H$ one of the two
+closed half-planes bounded by $\ell$, and $\rho$ the reflection of the table
+across $\ell$. Score $\ell$, so that every face lies in $H$ or in the other
+half-plane. A *block* is a pair $(M, \pi)$ of a set $M$ of faces lying in
+$H$ and a *placement* $\pi$, which is one of *top*, *bottom*, *over $T$* and
+*under $T$* for a set $T$ of faces belonging to no block. The *reflection*
+of a family of blocks with pairwise disjoint face sets is the pair
+$(f', \lambda')$ given as follows, where $\mathcal M$, the *moving set*, is
+the union of the blocks' face sets and every other face is *stationary*:
+
+- $f'|_F = \rho \circ f|_F$ for $F \in \mathcal M$, and $f'|_F = f|_F$ for
+  stationary $F$;
+- two faces of one block that overlap under $f'$ overlapped under $f$ and
+  reverse their relation: $\lambda'(A, B) = \lambda(B, A)$. A rigid half
+  turn reverses a stack;
+- two stationary faces keep their relation;
+- a face $F$ of a block $(M, \pi)$ and a stationary face $G$ that overlap
+  under $f'$ are ordered by $\pi$: $F$ is above $G$ for *top* and below $G$
+  for *bottom*. For *over $T$*, $F$ is above $G$ unless $G$ lies above every
+  face of $T$ it overlaps, in which case $F$ is below $G$; for *under $T$*,
+  $F$ is below $G$ unless $G$ lies below every face of $T$ it overlaps. Both
+  placements require $T$ to cover the landing footprint: every point of
+  $f'(F)$ lies in the image of some face of $T$;
+- faces of two different blocks are ordered as their placements are ordered
+  in the stack: a block placed *bottom* below every other block, a block
+  placed *top* above every other, a block placed at $T$ below a block placed
+  at $T'$ when every face of $T$ lies below every face of $T'$ it overlaps,
+  and a block placed *under $T$* below a block placed *over $T$*. Two blocks
+  whose placements are not so ordered are outside the domain.
+
+The reflection is the candidate a write returns: it is the next state when
+it satisfies [#def-noncrossing] and undefined otherwise.
+:::
+
+::: {.term #term-block name="block"}
+A set of faces on one side of the axis together with the placement they
+receive after reflection.
+:::
+
+::: {.term #term-placement name="placement"}
+Where a reflected block comes to lie among the stationary faces: outside
+above, outside below, or immediately above or below a set of stationary
+faces.
+:::
+
+::: {.term #term-moving-set name="moving set, stationary"}
+The faces a write reflects; every other face is stationary.
+:::
+
+Hinge closure ([#cond-hinge-closure]) is where the reflection fails when the
+paper would tear: a hinge that joins a moving face to a stationary face off
+the axis leaves $f'$ discontinuous there. On the axis the picture is exact:
+
+::: {.lemma #lem-toggle name="hinges toggle on the axis" uses="def-reflection cond-hinge-closure"}
+Let $(f', \lambda')$ be the reflection of blocks across $\ell$, and let $h$ be
+a hinge between faces $A$ and $B$. If both faces move or both are
+stationary, the angle of $h$ is unchanged. If $A$ moves, $B$ is stationary
+and $f(h)$ lies on $\ell$, the angle of $h$ changes from $0$ to $\pm\pi$ or
+from $\pm\pi$ to $0$.
+
+*Proof.* Write $r$ for the reflection of the paper across the line of $h$.
+If both move, $f'|_B = \rho \circ f|_B$ and $f'|_A = \rho \circ f|_A$, so
+$f'|_B = f'|_A \circ r$ exactly when $f|_B = f|_A \circ r$; likewise when
+both are stationary. If $A$ moves and $f(h) \subset \ell$, then $f|_A$
+carries the line of $h$ onto $\ell$, so $\rho \circ f|_A = f|_A \circ r$.
+For a flat hinge, $f|_B = f|_A$ and $f'|_A = f|_A \circ r = f|_B \circ r$:
+angle $\pm\pi$. For a folded hinge, $f|_B = f|_A \circ r$ and
+$f'|_A = f|_A \circ r = f|_B$: angle $0$. $\square$
+:::
+
+The lemma is why the model needs no unfold: reflecting a block back across
+a folded hinge returns that hinge to angle $0$, and the crease is then a flat
+hinge that refinement forgets. What survives is the crease value, which a
+later write can fold along again. Whether the language offers such a write
+is its decision.
+
+::: {.definition #def-fold name="fold" uses="def-write def-reflection def-flap def-score def-line" defines="term-anchor term-depth"}
+The write `fold` takes a table line $\ell$, a side $H$ of it, an *anchor*
+flap $\alpha$ with material in $H$, a *depth* flap $\delta$ with material in
+$H$, which is $\alpha$ when the program names none, and a placement $\pi$.
+Score $\ell$ and call the faces lying in $H$ the candidates. The moving set
+$M$ is the least set of candidates that contains the faces of $\delta$ in
+$H$ and is closed under
+
+- cohesion: a candidate joined to a face of $M$ by a hinge of angle $0$ is
+  in $M$, so that a flap moves as a whole ([#def-flap]); and,
+- when $\pi$ is *top* or *bottom*, outward closure: a candidate that lies
+  above a face of $M$ is in $M$ for *top*, and one that lies below a face of
+  $M$ is in $M$ for *bottom*.
+
+The value of the write is the reflection of the single block $(M, \pi)$. It
+is defined when the faces of $\alpha$ in $H$ belong to $M$, when for *over
+$T$* and *under $T$* the set $T$ is the faces of a stationary flap, and when
+the reflection is a state. The crease the write scores is the bundle of the
+hinges of the result that lie on $\ell$ between a face of $M$ and a
+stationary face.
+:::
+
+::: {.term #term-anchor name="anchor"}
+The flap a fold is told to move; it fixes the side of the axis and must end
+up in the moving set.
+:::
+
+::: {.term #term-depth name="depth"}
+The deepest flap a fold reaches; the moving set grows outward from it.
+:::
+
+The language derives $H$ and $\alpha$ from a point: the flap carrying it and
+the side its image lies on. A point on the axis names no side, and a flap
+that straddles the axis without a point names none either; both are outside
+the domain. `mountain` is the placement *bottom* and the default is *top*;
+`up to` names $\delta$; `over` and `under` name $T$. When $\delta$ is
+$\alpha$, the anchor condition holds by construction and the moving set is
+the outward closure of one flap: the layers above it move with it, the
+layers beneath it stay. When $\delta$ lies deeper, the moving set grows from
+$\delta$ outward and the anchor condition fails exactly when a stationary
+flap covers the anchor in the crease region; the fold would have to move
+paper it was not told to move.
+
+::: {.figure #fig-fold-default caption="`--f` folds the corner of the top layer only: the moving set is the outward closure of the flap carrying `.b`, and the layer beneath it stays. The crease reads mountain because that layer lies face down." views="cp folded" highlight="--f"}
+paper square
+fold map .b onto .a
+.p = free on --bc from .b at 1/4
+.q = free on --ab from .b at 1/4
+fold --f = through .p .q moving .b
+:::
+
+::: {.figure #fig-fold-depth caption="The same fold with `up to .a` names the bottom layer as its depth; the moving set grows outward from there and both corners fold, valley on the face-up layer and mountain on the face-down one." views="cp folded" highlight="--f"}
+paper square
+fold map .b onto .a
+.p = free on --bc from .b at 1/4
+.q = free on --ab from .b at 1/4
+fold --f = through .p .q moving .b up to .a
+:::
+
+::: {.corollary #cor-fold-letters name="letters of an outside fold" uses="def-fold def-letter def-reflection"}
+For a fold placed *top*, every hinge it scores reads valley where the face
+was face up before the fold and mountain where it was face down; for a fold
+placed *bottom* the other way round.
+
+*Proof.* Let $F \in M$ and let $G$ be the stationary face across the new
+hinge; before the fold both had the same isometry. After it, $F$ is
+reflected and $G$ is not, so exactly one is face up. For *top*, $F$ lies
+above $G$. If $G$ is face up, the face-up face is below: valley. If $G$ is
+face down, $F$ is face up and above: mountain. For *bottom*, exchange above
+and below. $\square$
+:::
+
+A placed fold has no such rule. Its letter is read off the finished state
+and depends on the layer the block is inserted against: tucking a corner
+under a face-down layer reads valley, under a face-up layer mountain.
+
+::: {.figure #fig-fold-tuck caption="A pocket tuck: after the sheet is folded in half, the corner `.b` of the top layer is folded `under .p`, into the gap between the two layers. The crease `--t` reads valley because the layer it tucks under lies face down." views="cp folded" highlight="--t"}
+paper square
+fold map .a onto .d
+.m = free on --bc from .b at 1/2
+.n = free on --ab from .b at 1/2
+.p = free on --ab from .a at 1/4
+fold --t = through .m .n moving .b under .p
+:::
+
+::: {.remark #rem-simple-fold name="simple folds" uses="def-fold lem-noncrossing-adequate"}
+A fold placed *top* or *bottom* is a some-layers simple fold in Demaine's
+sense: a rigid rotation of some layers under the crease segment through
+$\pi$, avoiding self-intersection throughout [@demaine2007, §14.1]. Outward
+closure is the condition that rotation imposes at the crease: a stationary
+layer outside a moving one would be swept through. The model checks the end
+state and never the motion; that a non-crossing end state of an
+outward-closed block is reached by a rigid rotation is not claimed here. A
+fold placed *over* or *under* is no simple fold, since the block passes
+between layers that open for it. The model accepts it whenever the end state
+is a state, which by [#lem-noncrossing-adequate] means whenever the end
+state can be reached by some folding motion.
+:::
+
+::: {.lemma #lem-fold-closed name="an outward-closed fold crosses nothing" uses="def-fold def-reflection def-noncrossing cond-hinge-closure"}
+Let $M$ be the moving set of a fold placed *top* or *bottom*. If the
+reflection of $(M, \pi)$ satisfies the hinge closure condition, it satisfies
+the order, taco-tortilla and taco-taco conditions as well.
+
+*Proof.* Pending. The order condition holds because the relation on
+stationary pairs is unchanged, the relation on moving pairs is reversed, and
+every moving face lies outside every stationary face it overlaps. The two
+taco conditions need the case analysis at a crease image: a new taco on
+$\ell$ has its moving side outside its stationary side, and an old taco or
+tortilla lies wholly in $M$ or wholly outside it by outward closure and
+cohesion.
+:::
+
+::: {.definition #def-flip name="flip" uses="def-write def-flat-state def-noncrossing"}
+The write `flip` takes no argument. For a state $(f, \lambda)$ and a fixed
+reflection $\rho$ of the table its value is $(\rho \circ f, \lambda^{op})$,
+where $\lambda^{op}$ exchanges above and below on every overlapping pair. It
+is defined on every state.
+:::
+
+::: {.lemma #lem-flip name="flip preserves everything but the side" uses="def-flip def-letter def-noncrossing"}
+The value of `flip` is a state. Every hinge keeps its angle and every folded
+hinge keeps its letter; every face changes between face up and face down.
+
+*Proof.* The order, taco-tortilla and taco-taco conditions are stated
+symmetrically in above and below, so $\lambda^{op}$ satisfies them when
+$\lambda$ does. For a hinge between $A$ and $B$ with $f|_B = f|_A \circ r$,
+also $\rho \circ f|_B = \rho \circ f|_A \circ r$, so hinge closure and the
+angles are unchanged; connectivity does not involve $f$. Composing with
+$\rho$ reverses the orientation of every face, so the face-up face of a
+folded hinge becomes the face-down one, and $\lambda^{op}$ puts it on the
+other side: the letter is unchanged. $\square$
+:::
+
+Which reflection $\rho$ is used is immaterial for the state up to a motion of
+the table, and it is visible to line values, which are table lines
+([#open-line-after-fold]).
+
+::: {.figure #fig-flip caption="After `flip` the sheet lies face down, so the crease `--g` scored by a fold placed on top reads mountain: the folder turned the paper over and made a valley on its back." views="cp folded" highlight="--g"}
+paper square
+flip
+fold --g = map .a onto .c
+:::
+
+::: {.definition #def-reverse name="reverse fold" uses="def-write def-reflection def-fold def-flap def-letter" defines="term-tip term-spine term-body"}
+The write `reverse` takes a table line $\ell$, a side $H$, an anchor flap
+$\alpha$ with material in $H$, and a kind, *inside* or *outside*. Score
+$\ell$ and call the faces in $H$ the candidates. The *tip* $T$ is the least
+set of candidates that contains the faces of $\alpha$ in $H$ and is closed
+under hinges of any angle between candidates. A *spine* is a folded hinge
+between two faces of $T$ whose removal from the hinge graph of $T$ leaves
+exactly two connected components, the *halves* $T_1$ and $T_2$. The *body*
+$B_i$ of a half is the set of stationary faces joined to a face of $T_i$ by
+a hinge on $\ell$. The spine is admissible when both bodies are non-empty
+and separated: every face of $B_1$ lies below every face of $B_2$ it
+overlaps, after renaming so that $B_1$ is the lower body. The value of the
+write is the reflection of the two blocks
+$(T_1, \text{over } B_1)$ and $(T_2, \text{under } B_2)$ for *inside*, and
+$(T_1, \text{bottom})$ and $(T_2, \text{top})$ for *outside*. It is defined
+when exactly one admissible spine yields a state.
+:::
+
+::: {.term #term-tip name="tip, half"}
+The material beyond the axis of a reverse fold that is joined to the anchor;
+the spine cuts it into two halves.
+:::
+
+::: {.term #term-spine name="spine"}
+The folded hinge of the tip along which the two halves lie on each other and
+which the reverse fold turns the other way.
+:::
+
+::: {.term #term-body name="body"}
+The stationary faces a half of the tip is hinged to along the axis.
+:::
+
+The two halves move in one reflection and never one after the other: once
+one half has moved, the spine joins a reflected face to an unreflected one
+along no common segment, and hinge closure fails. Inside, each half lands
+next to its own body in the gap between the two bodies; outside, the lower
+half goes under everything and the upper half on top.
+
+::: {.figure #fig-reverse caption="The preliminary base by two inside reverse folds [@ida2020, §7.4.3]: the diagonal fold makes a triangle whose spine is `--bd`, and each acute corner is reversed to the right-angle corner in turn." views="cp folded" highlight="--h --v"}
+paper square
+fold --bd = map .a onto .c
+reverse --h = map .b onto .c
+reverse --v = map .d onto .c
+:::
+
+::: {.corollary #cor-reverse-letters name="letters of a reverse fold" uses="def-reverse def-letter cor-fold-letters def-reflection"}
+The spine beyond the axis reverses its letter. The hinges the write scores
+on $\ell$ read, on both halves, the letter the spine had before for an
+*inside* reverse and the opposite letter for an *outside* reverse.
+
+*Proof.* The spine joins a face $A$ of $T_1$ to a face $B$ of $T_2$. Both
+are reflected, so the face-up one becomes face down and the other face up;
+the two blocks keep their relative order, since $B_1$ lies below $B_2$ and
+each half is placed at its own body. The face-up face of the spine has
+therefore changed and its side has not: the letter reverses. A face of
+$T_i$ is face up exactly when its body is, because they are joined by a
+flat hinge before the fold, and the bodies have opposite orientations
+because the spine continues between them as a folded hinge. Let the lower
+body be face up; the spine is then a valley. Inside, $T_1$ lands above the
+face-up $B_1$ and $T_2$ below the face-down $B_2$: by [#cor-fold-letters]
+both new hinges are valleys. Outside, $T_1$ lands below the face-up $B_1$
+and $T_2$ above the face-down $B_2$: both mountains. For a face-down lower
+body exchange the letters. $\square$
+:::
+
+::: {.definition #def-flatten name="flatten" uses="def-write def-flap def-score def-reflection def-letter def-noncrossing def-motion" defines="term-fan term-sector term-stayer term-emergent"}
+The write `flatten` takes a paper point $O$ interior to a flap $\Phi$, a
+finite set of *rays*: segments from $O$ to the boundary of $\Phi$ in
+pairwise distinct directions, a set of constraints, and a selection
+$\sigma$. Let $\rho_1, \ldots, \rho_k$ be the reflections of the table
+across the lines of the rays' images, in counter-clockwise order around
+$f(O)$.
+
+- If $k$ is even, the composition $\rho_1 \circ \cdots \circ \rho_k$ must be
+  the identity; this is Kawasaki's condition that the alternating sum of the
+  angles between consecutive rays vanishes [@hull2020, §5.3].
+- If $k$ is odd, the composition is a reflection across a line through
+  $f(O)$, since an odd number of reflections through a point reverses
+  orientation and fixes the point. Each of the two rays of that line that
+  lies strictly inside a gap between consecutive given rays is an *emergent*
+  ray; adding it makes the composition close. Each choice is a candidate
+  fan.
+
+Call the $n$ rays of a candidate fan $r_1, \ldots, r_n$ and the parts of
+$\Phi$ between consecutive rays the *sectors* $S_0, \ldots, S_{n-1}$, with
+$S_i$ between $r_i$ and $r_{i+1}$. The *stayer* is one sector $S_0$, named
+by the program or by its convention. Set $m_0 = \mathrm{id}$ and
+$m_i = m_{i-1} \circ \rho_i$; Kawasaki's condition is $m_n = m_0$, so the
+motions close around $O$. Let $R$ be the image of $\Phi$ and let $C$ be the
+faces whose image meets $R$ in positive area, the layers under the fan.
+Score every face of $C$ along the rays' half-lines from $f(O)$, so that each
+piece lies in one wedge between consecutive rays. The map $f'$ is $m_i \circ
+f$ on every piece in the wedge of $S_i$ and $f$ elsewhere. A *candidate
+state* is a pair $(f', \lambda')$ with $\lambda'$ such that it satisfies
+[#def-noncrossing] and the constraints:
+
+- a letter for a ray: the hinge between the two sectors of $\Phi$ on that ray
+  has that letter;
+- one sector over another: the two sectors of $\Phi$ are so ordered;
+- the stayer, which only fixes $m_0$ and so the table position.
+
+The value of the write is the one candidate state $\sigma$ selects from the
+set of all candidate states of all candidate fans; it is undefined when
+that set is empty or $\sigma$ leaves more than one. The crease the write
+scores is the bundle of the hinges on the given rays when $k$ is even and
+the bundle of the hinges on the emergent ray when $k$ is odd.
+:::
+
+::: {.term #term-fan name="fan, ray"}
+The segments from one vertex along which a flatten folds at once.
+:::
+
+::: {.term #term-sector name="sector"}
+The part of the flap between two consecutive rays of a fan.
+:::
+
+::: {.term #term-stayer name="stayer"}
+The sector of a flatten that keeps its isometry; it fixes where the result
+lies on the table.
+:::
+
+::: {.term #term-emergent name="emergent ray"}
+The ray a flatten with an odd number of given rays has to add for the vertex
+to fold flat.
+:::
+
+The construction is the single-vertex fan of flat-folding theory: the
+isometry of each sector is the composition of the reflections across the
+rays between it and the stayer [@hull2020, chapter 5]. Kawasaki's theorem
+says that the closure condition is exactly flat-foldability of the vertex,
+and Maekawa's theorem, that the letters around $O$ differ in number by two,
+holds in every candidate state because a candidate state is a flat folded
+state [@hull2020, §5.2, §5.3]. Everything stacked over the fan moves with
+its sector; where a layer under the fan is hinged to stationary paper off
+the rays, hinge closure fails and the write is undefined, as for every
+reflection.
+
+::: {.figure #fig-flatten caption="The preliminary base by one flatten at the centre: six rays fold, the diagonal through `.a` and `.c` stays flat, and `(.q over .r)` puts the a-quarter in front of the b-taco." views="cp folded" highlight="--h --v"}
+paper square
+mark --ac = through .a .c
+mark --bd = through .b .d
+mark --h = map --ab onto --cd
+mark --v = map --da onto --bc
+.q = free on --ab from .a at 1/4
+.r = free on --ab from .b at 1/4
+flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) {toward .q}
+:::
+
+::: {.open #open-flatten-selection name="what selects among the candidates of a flatten" uses="def-flatten def-motion"}
+[#def-flatten] leaves $\sigma$ to the program, as [#def-motion] does for the
+candidates of a construction. The language's `toward` is three rules in
+sequence: the candidate whose moved material lies toward the named point,
+among those the ones with the fewest mountains on the given rays, among
+those the one whose material toward the point lies on top. The first is a
+selection in the sense of [#def-motion]; the other two are conventions that
+pick a folder's habit out of several states that are all flat folded. Whether
+they belong in the model as named selections, or the language should ask for
+a constraint instead when several states remain, is not decided.
+:::
+
+::: {.remark #rem-all-layers name="the two rules for the layers under a crease" uses="def-fold def-flatten"}
+`fold` moves the outward closure of one flap and leaves the layers beneath
+it; `flatten` moves every layer under its fan. The two rules answer the same
+question, which layers under a crease move with it, and they answer it
+differently. A flatten that moves only the layers outward of a stayer, or a
+fold through every layer, are both expressible with the constructions above
+and neither is a write of the language; the model has no reason to prefer
+one rule, and the difference is a language decision.
+:::
 
 ## 6. Programs
 
