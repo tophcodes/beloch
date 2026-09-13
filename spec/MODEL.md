@@ -123,8 +123,8 @@ state.
 :::
 
 ::: {.term #term-flap name="flap"}
-A maximal set of faces joined by flat hinges; the unit that moves as one in a
-fold. ADR 0017, to be defined in the section on operations.
+A maximal set of faces joined by hinges of angle $0$; a piece of paper that
+lies flat as one, and the unit a program addresses.
 :::
 
 This makes the convex decomposition of [#def-sheet] immaterial, makes `mark`
