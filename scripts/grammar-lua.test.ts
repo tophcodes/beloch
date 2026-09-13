@@ -20,6 +20,7 @@ function typst(): string {
 		{ cwd: root, env: { ...process.env, BELOCH_GRAMMAR_REGISTER: registerPath } },
 	);
 	if (run.exitCode !== 0) throw new Error(run.stderr.toString());
+	expect(run.stderr.toString()).toBe("");
 	return run.stdout.toString();
 }
 
@@ -43,6 +44,17 @@ test.skipIf(!pandoc)("every label occurs once, so typst can resolve every link",
 	expect(new Set(labels).size).toBe(labels.length);
 	const linked = new Set([...out.matchAll(/#link\(<(rule-[a-z_]+)>\)/g)].map((m) => m[1]));
 	for (const target of linked) expect(labels).toContain(target);
+});
+
+test.skipIf(!pandoc)("a missing register warns instead of rendering silently", () => {
+	const dir = mkdtempSync(join(tmpdir(), "grammar-lua-"));
+	const registerPath = join(dir, "does-not-exist.json");
+	const run = Bun.spawnSync(
+		[pandoc as string, join(root, fixture), "--from", "markdown", "--to", "typst",
+		 "--lua-filter", filter],
+		{ cwd: root, env: { ...process.env, BELOCH_GRAMMAR_REGISTER: registerPath } },
+	);
+	expect(run.stderr.toString()).toContain("run scripts/grammar-register.ts");
 });
 
 test.skipIf(!pandoc)("the collected copy carries the rules and no second label", () => {
