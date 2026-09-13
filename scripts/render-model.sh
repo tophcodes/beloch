@@ -6,6 +6,10 @@
 # and the Terms glossary. packages/www/src/lib/remark-model-blocks.ts is the
 # docs-site counterpart.
 #
+# The ```grammar fragments of BELOCH.md are rendered by
+# scripts/grammar-blocks.lua from _build/grammar.json, which the line above the
+# loop regenerates; packages/www/src/lib/remark-grammar.ts is its counterpart.
+#
 # Citations use pandoc's syntax, `[@key, §3, p. 176]`, resolved against
 # paper/references.bib. Math is `$...$` / `$$...$$`. The same source renders on
 # the docs site (packages/www) through remark-math, rehype-katex and
@@ -23,11 +27,16 @@ mkdir -p "$out"
 # in, so run from the repo root.
 cd "$root"
 
+# The PDF renders the grammar fragments from _build/grammar.json, so the parse
+# can never be stale against the documents this loop reads.
+bun "$root/scripts/grammar-register.ts"
+
 for doc in MODEL KERNEL BELOCH FOLD; do
   lower=$(echo "$doc" | tr "[:upper:]" "[:lower:]")
   pandoc "$root/spec/$doc.md" \
     --from markdown \
     --lua-filter "$root/scripts/model-blocks.lua" \
+    --lua-filter "$root/scripts/grammar-blocks.lua" \
     --citeproc \
     --bibliography "$root/paper/references.bib" \
     --csl "$root/paper/chicago-notes-bibliography.csl" \
