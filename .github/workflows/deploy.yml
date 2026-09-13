@@ -44,6 +44,10 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - name: Build API docs and register
         run: nix develop --command scripts/build-api-docs.sh
+      # The register's parse of the spec documents and its keyword comparison
+      # against packages/core/lib/lexer.ml, plus scripts/api-register.test.ts.
+      - name: Run script tests
+        run: nix develop --command bun test scripts
       # Regenerate the js_of_ocaml playground bundle from the current
       # packages/core/lib/+packages/eval-web/ on every deploy, so the committed
       # artifact (packages/www/public/beloch/beloch-eval.js)
