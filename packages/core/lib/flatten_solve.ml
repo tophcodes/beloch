@@ -450,7 +450,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
          .superpowers/sdd/toward-stacking-rule.md, 2026-07-16):
          1. POSITION stage: placements depend only on ray LINES, so
             realizations group into position classes by moved-material
-            centroid; {toward} picks the class by centroid dot.
+            centroid; (toward) picks the class by centroid dot.
          2. MIN-MOUNTAIN CANON: within the class, keep only the
             realizations with the fewest derived mountains among the
             USER-GIVEN creases (a freshly-materialized emergent cid is
@@ -512,18 +512,18 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       let commit = land_realization in
       (match toward_opt with
       | None -> (
-          (* no class to pick without {toward}; the min-mountain canon
+          (* no class to pick without (toward); the min-mountain canon
              is toward-independent, so it may still single out THE
              least-forced realization — only a post-canon surplus is a
-             genuine ambiguity (spec: "no {toward} while |S| > 1 after
+             genuine ambiguity (spec: "no (toward) while |S| > 1 after
              stage 2"). *)
           match min_mountain_filter many with
           | [ r ] -> commit r
           | kept ->
               Error.fail span
                 (Printf.sprintf
-                   "flatten is ambiguous: %d realizations; add {toward \
-                    .p} to pick the fold direction"
+                   "flatten is ambiguous: %d realizations; add (toward \
+                    .p) to pick the fold direction"
                    (List.length kept)))
       | Some toward_po ->
           let toward_pt = Resolve.resolve_point ctx toward_po in

@@ -1046,6 +1046,9 @@ prose syntax back at the reader (`map .c onto --ac through .a: no crease lands o
 `align` construction that fails at resolution therefore reports its prose
 equivalent. Rewriting those messages around item syntax is a separate pass.
 
+One exception: the flatten ambiguity message from `Flatten_solve` advises
+`(toward .p)`.
+
 ## Acceptance
 
 1. **Parser, one grammar.** `dune build` produces no `parser.conflicts`, so

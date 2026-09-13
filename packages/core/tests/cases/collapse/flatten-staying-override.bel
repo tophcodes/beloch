@@ -4,7 +4,7 @@
 ; sector, not the stayer, so the bare convention seats a flap off the paper
 ; (see flatten-order-load-bearing.bel). Naming the stationary strip material
 ; with (staying .d) restores the correct stayer regardless of element order;
-; {toward .a} then picks the a-side mirror, exactly as the convention-ordered
+; (toward .a) then picks the a-side mirror, exactly as the convention-ordered
 ; toward-a case does. `.t = --ear * --ab` errors unless the a-side ear was
 ; picked (the c-side ear line is parallel to --ab).
 

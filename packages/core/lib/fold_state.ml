@@ -323,7 +323,7 @@ let make ?(base = I3.identity) ?(marks = [||]) ~(faces : face array)
        crossing face ranked strictly inside the mouth goes through the joint.
        The interior-crossing form above cannot see this: each sheet face only
        ABUTS the crease segment (it lies on their shared edge), never crosses
-       it alone. Found via the two-ear fish base, both ears {toward .d}: a
+       it alone. Found via the two-ear fish base, both ears (toward .d): a
        ghost seated one wing under the stationary strip with its ear above —
        front paper visibly sandwiched inside the ear's taco. *)
     for i = 0 to m - 1 do

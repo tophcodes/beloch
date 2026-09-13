@@ -10,7 +10,7 @@
     Choosing among them is [Flatten_solve]'s job: it enumerates every
     Maekawa-consistent M/V pattern ([mv_patterns], pure and unit-testable) over
     each candidate's full ray set, tries each via [Collapse.collapse_all], pools
-    the results, and disambiguates by tier then by `{toward}`'s
+    the results, and disambiguates by tier then by `(toward)`'s
     moved-material-centroid score. Feasibility-filtering and `toward`-selection
     belong there rather than here because they need [Collapse.collapse_all] and
     [Ast.mv_constraint], neither of which this module should depend on beyond

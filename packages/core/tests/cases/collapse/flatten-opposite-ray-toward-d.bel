@@ -1,5 +1,5 @@
 ; Same fish-base vertex as flatten-opposite-ray-toward-b.bel (see its comment
-; for the full derivation) — `{toward .d}` picks the position class's other
+; for the full derivation) — `(toward .d)` picks the position class's other
 ; side under the rank-dipole stage, giving the MIRROR realization of that
 ; file: same face count, same table positions, opposite layer order (pinned
 ; by tests/test_flatten.ml's test_flatten_derive_opposite_ray_fish_base,
