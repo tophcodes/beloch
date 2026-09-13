@@ -15,6 +15,13 @@ What is fixed:
   forms are sugar for it.
 - Round parentheses are items and braces are blocks. `flatten`'s selection is
   `(toward .q)`; no brace item remains in the language.
+- A write's output is named by a clause after the items: `as --f` binds the
+  scored crease to a new name, `as --f!` rebinds, `into --l` adds the scored
+  material to an existing crease, no clause leaves it anonymous. `=` binds the
+  value of a read and nothing else.
+- One sigil, two sorts. `--l = …` is a line, `… as --l` is a crease. Slots
+  demand one or the other, and the check reads the binding form with no
+  geometry.
 - Hard cut. The bare-keyword argument forms are removed with no compatibility
   period, every `.bel` file in the repository is rewritten, and the folded
   geometry of every example and case is unchanged.
@@ -22,14 +29,11 @@ What is fixed:
 Two places where the fixed documents disagree with each other or with the
 code, resolved here and listed again under Migration:
 
-1. `spec/BELOCH.md` states `write_stmt := [ CREASE_NAME "=" ] verb item*`
-   (name before the verb) and one paragraph later gives the binding form as
-   `fold --f = (map .a onto .c) (moving .a)` (name after the verb). The code
-   has both: `mark`/`fold`/`reverse` bind after the verb, `flatten` binds
-   before it (`--r = flatten …`). This design takes the explicit binding form,
-   `verb [ CREASE_NAME "=" ] item*`, for all five verbs. `flatten`'s binding
-   moves to `flatten --r = …` and the grammar line in `BELOCH.md` is
-   corrected.
+1. The `=` binding of a write is gone from every verb. `mark --l = …`,
+   `fold --f = …`, `reverse --h = …` and `--r = flatten …` all become the
+   output clause: `mark … as --l`, `fold … as --f`, `reverse … as --h`,
+   `flatten … as --r`. One form for five verbs, and `=` is left to reads, so
+   a name's sort is visible at its binding.
 2. `spec/BELOCH.md` gives `align`'s multi-line head as `"align" CREASE_NAME*`
    and the brief calls a construction "over two or more fold lines" the
    unevaluated case. A construction with exactly one named line denotes the
@@ -101,7 +105,8 @@ The collected grammar is in `spec/BELOCH.md`. Restated in the shape the
 Menhir file takes:
 
 ```
-write_stmt   := verb [ CREASE_NAME "=" ] item*
+write_stmt   := verb item* [ output ]
+output       := "as" CREASE_NAME [ "!" ] | "into" CREASE_NAME
 verb         := "mark" | "fold" | "reverse" | "flatten" | "flip"
 item         := "(" item_body ")"
 
@@ -119,8 +124,8 @@ item_body    := construction_body                        ; the axis, as a constr
               | over_flap "over" over_flap
               | "toward" point_operand
 
-bind_stmt    := CREASE_NAME "=" "(" construction_body ")"
-              | CREASE_NAME "=" bundle_expr
+bind_stmt    := CREASE_NAME "=" "(" construction_body ")"   ; binds a line
+              | CREASE_NAME "=" bundle_expr                  ; binds a crease
 ```
 
 Round parentheses are items and braces are blocks. `{ … }` occurs in `def`
@@ -146,6 +151,76 @@ per-verb item set:
   corpus test (below) holds them together.
 - The per-verb table then exists in exactly one place, `Items`, and a new verb
   or a new slot is an entry in it.
+
+### The output clause
+
+A write scores one crease and the clause after the items says what becomes of
+it. The clause is the same for all five verbs and there is at most one.
+
+- **`as --f`** binds the scored crease to a new name. A name already bound is
+  an error; `as --f!` rebinds, with the `!` of `SPECIFICATION.md` §5a.6.
+- **`into --l`** adds the scored material to the crease `--l`, which keeps its
+  name and its crease id. The new material must lie on the table line of a
+  segment of `--l`.
+- **No clause** leaves the crease anonymous, reachable by incidence only.
+
+The clause sits after the items rather than before them because the items are
+the arguments and the clause is the result, and because a verb followed
+straight by `(` is the shape every write now has. `flip` scores nothing, so a
+clause on `flip` is an error.
+
+`=` keeps its one job, binding the value of a read, so the sort of a name is
+visible where the name is introduced.
+
+### Sorts of a name
+
+One sigil, two sorts. `--l = (map .a onto .c)` binds a line, a value with no
+material. `mark (map .a onto .c) as --l` binds a crease, the material scored
+under that name. `--x = --l & .p` binds a crease too, because a filter is a
+read of sort bundle over creases.
+
+The kernel already separates them and has since the value bindings landed:
+`Ctx.crease_val` is `Frozen` for a line, `Material` and `Mark` and `Edge` for
+a crease with material, and `Bundle` for a crease-valued expression. The sort
+of a name is its constructor, and no geometry is read to tell them apart.
+
+Which sort each slot demands:
+
+| slot | sort |
+|---|---|
+| the operands of a construction | line or crease |
+| the axis item of `mark` | line or crease |
+| the axis item `(--d)` of `fold` and `reverse` | crease |
+| a `flatten` ray | crease |
+| the meet `*` and `.[…]` | crease |
+| the filters `&`, `\`, `[…]` | crease |
+| `free on` | crease |
+| the flap operand's line form (`moving --d`, `up to --d`, `on --d`) | crease |
+| `into` | crease, and one with material of its own |
+
+A crease stands where a line is wanted by projecting to its table line, which
+exists while its segments are collinear (ADR 0014) and is the existing
+`is bent` error once a fold has bent it. A line stands nowhere a crease is
+wanted, because it has no material until a `mark` scores it.
+
+**Where the check lives.** In `Resolve`, at the slot, reading the binding's
+constructor and nothing else. One function carries it:
+
+```ocaml
+val crease_of : Ctx.ctx -> Ast.crease_ref -> slot:string -> Error.span -> Ctx.crease_val
+(** The binding of [cr], when it is a crease. Fails with
+    "--l is a line; <slot> needs a crease" when the binding is [Frozen]. *)
+```
+
+and the four sites in `Resolve` that today report a `Frozen` binding with a
+geometry-flavoured message call it instead. The alternative, a pre-pass over
+the AST that builds a name-to-sort table before evaluation, is what `beloch
+check` will be. It is not this slice: the scope machinery it would need
+(`def` bodies, instances, `export` landings, temp names) exists once in `Ctx`,
+and a second copy of it is where the two would drift. What the pre-pass adds
+over the `Resolve` placement is narrow and worth stating so the follow-up is
+contained: it reports a sort error inside a `def` body that no `apply` ever
+reaches, and it reports without running the kernel.
 
 ### Which items each verb takes
 
@@ -316,16 +391,18 @@ the one growth direction `BELOCH.md` has already fixed the syntax for.
 fold    (map .a onto .c) (moving .a)
 fold    (map .a onto .c) (moving .a) (mountain)
 fold    (through .m .n) (moving .b) (under .p)
-fold    (--d) (moving .b) (up to .c)
-fold    --f = (map .a onto .c) (moving .a)
+fold    (--d) (moving .b) (up to .c) into --d
+fold    (map .a onto .c) (moving .a) as --f
 reverse (map .b onto .c) (outside)
 mark    (through .a .c)
 mark    (map --ab onto --cd) (on #[.c]) (between .a .m) (mountain)
-mark    --p = (map .a onto .c) (between .a .m)
+mark    (map .a onto .c) (between .a .m) as --p
+mark    (--p) into --p                             ; the same crease, full chord
 flatten (--h & --bc) (--v & --cd) (.q over .r) (staying .a) (toward .q)
-flatten --ear = (--ea) (--ec) (--eb) (toward .a)
+flatten (--ea) (--ec) (--eb) (toward .a) as --ear
 flip
---l = (map --a onto --b toward .p)
+--l = (map --a onto --b toward .p)                 ; a line, no material
+--x = [--ea --eb] & .a                             ; a crease, a selection
 ```
 
 and the same constructions written canonically:
@@ -356,9 +433,11 @@ module, and the recognition front of `Axiom` that ADR 0022 moves there.
 
 ### `lexer.ml`
 
-One token: `"align" -> ALIGN`. No identifier in the repository is `align`, and
-no `def` is named `align`, so promoting it to a keyword breaks nothing. Every
-other head word is already a token: `MOVING`, `UP`, `TO`, `MOUNTAIN`,
+Two tokens: `"align" -> ALIGN` and `"into" -> INTO`. No identifier in the
+repository is `align` or `into`, and no `def` carries either name, so
+promoting them to keywords breaks nothing. `AS` and `BANG` already exist, from
+`export … as … !`. Every other head word is already a token: `MOVING`, `UP`,
+`TO`, `MOUNTAIN`,
 `VALLEY`, `OVER`, `UNDER`, `OUTSIDE`, `ON`, `BETWEEN`, `AT`, `STAYING`,
 `TOWARD`, `ONTO`, `PERP`, `THROUGH`, `MAP`.
 
@@ -405,7 +484,19 @@ and `Ast.stmt` retains them: `BindLine` and `MMotion` both carry a
 `construction` where they carried an `axiom`, which is the whole of the
 `ast.ml` change beyond the surface types.
 
-Changed, two lines: `Mark`'s layer slot becomes `flap_arg option`, was
+The output clause is one type, carried by every write constructor in place of
+the `string option` name they hold today:
+
+```ocaml
+type output =
+  | Anonymous
+  | Named of string * bool * Error.span   (* as --f, `true` for the ! rebind *)
+  | Into of string * Error.span           (* into --l *)
+```
+
+`Mark`, `Fold`, `Reverse` and `Flatten` take an `output` where they took a
+`string option`; `Flip` takes one so that a clause on `flip` reports rather
+than failing to parse. `Mark`'s layer slot becomes `flap_arg option`, was
 `flap_operand option`.
 
 ### `items.ml` / `items.mli` (new)
@@ -416,11 +507,11 @@ A leaf module over `Ast` and `Error`, called from the semantic actions of
 the `Ctx → Resolve → { Axiom, Flatten_solve } → Eval` chain of ADR 0018.
 
 ```ocaml
-val mark    : string option -> Ast.raw_item list -> Error.span -> Ast.stmt
-val fold    : string option -> Ast.raw_item list -> Error.span -> Ast.stmt
-val reverse : string option -> Ast.raw_item list -> Error.span -> Ast.stmt
-val flatten : string option -> Ast.raw_item list -> Error.span -> Ast.stmt
-val flip    : Ast.raw_item list -> Error.span -> Ast.stmt
+val mark    : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
+val fold    : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
+val reverse : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
+val flatten : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
+val flip    : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
 ```
 
 Each of the five walks the item list once, left to right, into the slots of
@@ -453,17 +544,18 @@ Added:
 
 ```
 body_stmt:
-  | MARK    bind_opt items { Items.mark    $2 $3 $loc }
-  | FOLD_KW bind_opt items { Items.fold    $2 $3 $loc }
-  | REVERSE bind_opt items { Items.reverse $2 $3 $loc }
-  | FLATTEN bind_opt items { Items.flatten $2 $3 $loc }
-  | FLIP    items          { Items.flip    $2 $loc }
+  | MARK    items output { Items.mark    $2 $3 $loc }
+  | FOLD_KW items output { Items.fold    $2 $3 $loc }
+  | REVERSE items output { Items.reverse $2 $3 $loc }
+  | FLATTEN items output { Items.flatten $2 $3 $loc }
+  | FLIP    items output { Items.flip    $2 $3 $loc }
   | CREASE EQ LPAREN construction_body RPAREN { BindLine ($1, $4, $loc) }
   | CREASE EQ bundle_expr                     { BindBundle ($1, $3, $loc) }
 
-bind_opt:
-  |            { None }
-  | CREASE EQ  { Some $1 }
+output:
+  |                   { Ast.Anonymous }
+  | AS CREASE bang_opt { Ast.Named ($2, $3, $loc) }
+  | INTO CREASE        { Ast.Into ($2, $loc) }
 
 items:
   |            { [] }
@@ -504,9 +596,13 @@ plus `alignment`, `alignments`, `fold_line_names`, `align_object` and
 **Conflicts.** Menhir already runs with `--explain`. The decisions the
 automaton has to make at one token of lookahead:
 
-- After a verb, `CREASE` means a binding and `LPAREN` an item. No item body
-  starts with `CREASE`, so there is no choice to make. `LBRACE` reaches the
-  parser only in `def` and `export`, which no item can follow.
+- After a verb, `LPAREN` opens an item and `AS`/`INTO` open the output clause,
+  so the empty `items` reduction and the empty `output` reduction are decided
+  by one token. `LBRACE` reaches the parser only in `def` and `export`, which
+  no item can follow.
+- `AS` heads the output clause of a write and the rename of an `export_entry`.
+  The two contexts are disjoint: an export entry lives inside `export { … }`,
+  which contains no write.
 - Inside an item, after a `point_operand`, `STAR` continues a join into a
   `line_operand` and `OVER` reduces to `over_flap`. Distinct lookaheads.
 - Inside an item, after a `line_operand`, `MOUNTAIN`/`VALLEY` shift into
@@ -532,17 +628,59 @@ about 90 lines, and its seven solver bodies are moved onto `classified`
 without other change. It goes from 408 lines to about 500, which ADR 0018
 places no ceiling on.
 
-`eval.ml` loses the three-arm implied-anchor match to
-`Axiom.implied_point` and gains nothing, so it stays under its current 881
-lines and under the 900-line check of ADR 0018. The other two changes there
-are pattern types: `BindLine`'s `axiom` becomes a `construction`, and the
-`Mark` layer slot's type is a pattern variable.
+`eval.ml` loses the three-arm implied-anchor match to `Axiom.implied_point`
+and gains the output clause, one function shared by the four scoring verbs:
 
-`Resolve.resolve_mark_flap` takes `Ast.flap_arg option`. `Some (FlapSpec f)`
-keeps today's path and its two messages; `Some (FlapPoint _ | FlapLine _)`
-delegates to `Resolve.resolve_flap_cluster`, which already resolves all three
-forms to a coplanar cluster. About five lines, plus the signature in
-`resolve.mli`.
+```ocaml
+val crease_id_for : Ctx.ctx -> Ast.output -> Error.span -> int * (int -> unit)
+(** The crease id a write scores under, and the binding step to run once the
+    write has succeeded. [Anonymous] and [Named _] give a fresh id;
+    [Into name] gives the id already bound to [name]. *)
+```
+
+- `Anonymous`: `Fold_state.fresh_crease_id ()`, no binding.
+- `Named (n, rebind, _)`: a fresh id, then `Ctx.bind_crease` with the rebind
+  flag, which is today's binding path with `!` threaded through.
+- `Into (n, _)`: the id of `n`'s existing binding. `Material (cid, _)` and
+  `Mark (cid, _)` give `cid`; `Frozen`, `Bundle` and `Edge` are sort errors
+  (below). Before the write runs, the axis is checked against the crease: it
+  must coincide with the table line of some segment of `cid`. Afterwards the
+  binding is promoted in place, `Mark (cid, l)` to `Material (cid, l)` when
+  the write folded.
+
+**`into` replaces the mark-superseding path.** `fold` along a name bound to a
+`Mark` today materialises a fresh crease on the mark's line and relies on the
+emitter to drop the coincident mark. With `into --d` the fold scores under the
+mark's own id, so there is one crease in the state, one id in the output, and
+nothing to supersede. The emitter's superseding rule stays for the anonymous
+case, where a fold along a mark still scores a crease of its own.
+
+The promotion `fold (--d)` performs today, repointing `--d` at the fresh
+crease without being asked, goes: a write with no output clause binds nothing.
+Programs that relied on it say `into --d`, which is the corpus rewrite rule
+under Migration.
+
+`eval.ml` nets out at about its current 881 lines and under the 900-line check
+of ADR 0018: the implied-anchor match leaves, `crease_id_for` arrives, and the
+per-verb name handling those four statement arms carry today collapses into
+it. `BindLine`'s `axiom` becomes a `construction`, and the `Mark` layer slot's
+type is a pattern variable.
+
+`resolve.ml` takes two changes. `resolve_mark_flap` takes `Ast.flap_arg
+option`: `Some (FlapSpec f)` keeps today's path and its two messages,
+`Some (FlapPoint _ | FlapLine _)` delegates to `Resolve.resolve_flap_cluster`,
+which already resolves all three forms to a coplanar cluster. And the sort
+check arrives as `Resolve.crease_of`, which the four sites that report a
+`Frozen` binding today call instead of raising their own message:
+
+| site | message today | message after |
+|---|---|---|
+| `meet_source` (the meet `*` / `.[…]`) | `--l is not a physical crease, so it has no material mark to cross` | `--l is a line; the meet needs a crease` |
+| `bundle_segments` (the filters) | `--l is not a physical crease, so it has no segments to select` | `--l is a line; the filter needs a crease` |
+| the two flap-operand sites | `--l is not a physical crease, so it names no flap` | `--l is a line; a flap operand needs a crease` |
+
+The `Bundle` messages at those sites stay as they are: a bundle is
+crease-sorted and the complaint is about cardinality.
 
 ## Tooling
 
@@ -560,13 +698,15 @@ everything else:
 source_file: $ => repeat(choice($.write_statement, $.construction, $._token)),
 
 write_statement: $ => choice(
-  seq('mark',    optional($._bind), repeat($._axis_item)),
-  seq('fold',    optional($._bind), repeat($._axis_item)),
-  seq('reverse', optional($._bind), repeat($._axis_item)),
-  seq('flatten', optional($._bind), repeat($._ray_item)),
-  seq('flip',                       repeat($._axis_item))),
+  seq('mark',    repeat($._axis_item), optional($.output_clause)),
+  seq('fold',    repeat($._axis_item), optional($.output_clause)),
+  seq('reverse', repeat($._axis_item), optional($.output_clause)),
+  seq('flatten', repeat($._ray_item),  optional($.output_clause)),
+  seq('flip',    repeat($._axis_item), optional($.output_clause))),
 
-_bind: $ => seq($.crease, '='),
+output_clause: $ => choice(
+  seq('as', $.crease, optional('!')),
+  seq('into', $.crease)),
 ```
 
 `_axis_item` and `_ray_item` are the same union of heads and differ in one
@@ -595,6 +735,7 @@ Named nodes, one per item type:
 | `order_item` | `(.q over .r)` |
 | `stayer_item` | `(staying …)` |
 | `selection_item` | `(toward …)` |
+| `output_clause` | `as --f`, `as --f!`, `into --l` |
 
 Operands inside an item stay unstructured: a `_operand` is a run of the
 existing token classes plus a parenthesised group, excluding the head keywords
@@ -636,12 +777,14 @@ keyword rather than the whole node, leaving operands on their existing
 (order_item      "over" @order)
 (stayer_item     "staying" @stayer)
 (selection_item  "toward" @selection)
+(output_clause   ["as" "into" "!"] @output)
 ```
 
 `packages/www/src/styles/theme.css` gains the matching `.bel-anchor`,
 `.bel-depth`, `.bel-placement`, `.bel-kind`, `.bel-intent`, `.bel-extent`,
 `.bel-layer`, `.bel-ray`, `.bel-order`, `.bel-stayer`, `.bel-selection`,
-`.bel-construction`, `.bel-alignment` classes, each in both themes. The same
+`.bel-construction`, `.bel-alignment`, `.bel-output` classes, each in both
+themes. The same
 query file is copied to `packages/grammar/queries/highlights.scm`.
 
 ### Markdown rendering (`packages/www/src/lib/remark-bel.ts`)
@@ -678,7 +821,23 @@ and are skipped by the corpus test and by the site.
 | ```` ```bel prelude name=<id> ```` | a program fragment that sets up names for other blocks | parses and evaluates under its own prelude; never rendered |
 | ```` ```bel frag [prelude=<id>] ```` | statements with no `paper square` of their own | the named prelude (default: `paper square`) is prepended, then parses and evaluates |
 | ```` ```bel construction [prelude=<id>] ```` | one construction item per line, with a trailing comment | each line is wrapped as `mark <line>`, appended to the prelude, then parses and evaluates |
-| ```` ```bel reject [prelude=<id>] ```` | one statement per line, each with a trailing `; error: <text>` | each line, under the prelude, fails with a message containing `<text>`, at parse or at evaluation |
+
+Any block of the three non-prelude kinds may carry the inline assertion lines
+of the `.bel` corpus, unchanged in grammar and in meaning
+(`docs/superpowers/specs/2026-07-14-beloch-inline-assertions-design.md`):
+
+```
+; assert faces = 3
+; assert .ctr = (1/2, 1/2)
+; assert --t is valley
+; expect error "fold takes no (outside) item"
+```
+
+`; expect error` keeps its rule from the `.bel` corpus: at most one per block
+and the only assertion in it, matched as a substring. That is how a negative
+example is written now, and it is the same sentence a reader of
+`packages/core/tests/cases/` already knows. A block with no assertion line
+still has to evaluate.
 
 ### Hidden preludes
 
@@ -687,12 +846,12 @@ alone. A `bel prelude` block carries that program: it stands in the document
 where the fragments that use it begin, names itself with `name=<id>`, and is
 removed before rendering, so it appears on the site and in the PDF nowhere.
 
-- **Default.** A `frag`, `construction` or `reject` block with no `prelude=`
-  uses the implicit prelude `paper square`, which covers every block whose
-  operands are the four corners `.a` to `.d` and the four edges.
+- **Default.** A `frag` or `construction` block with no `prelude=` uses the
+  implicit prelude `paper square`, which covers every block whose operands are
+  the four corners `.a` to `.d` and the four edges.
 - **Named.** `prelude=triangle` prepends the text of the block tagged
   `prelude name=triangle`. A prelude is defined before its first use in
-  document order, so both runners resolve it in one pass over the file.
+  document order, so every runner resolves it in one pass over the file.
 - **Composition.** A prelude is one block and does not itself carry a
   `prelude=`. Nesting would buy a shorter document and cost a resolution
   order that a reader of the raw markdown cannot follow.
@@ -704,37 +863,114 @@ construction has more than one such fold its example carries the `toward` that
 picks one. `spec/BELOCH.md` supplies those preludes; this design supplies the
 mechanism.
 
-### The two runners
+A block's assertions belong to the block, and its prelude is invisible. The
+runner evaluates prelude and body together, so a diagnostic can point into the
+prelude; what is recorded for the reader is the message and, when the span
+falls inside the block body, its line and column relative to that body. A span
+inside the prelude is recorded as a message with no excerpt.
+
+### The shared assertion module
+
+`test_bel_assert.ml` holds the assertion grammar, its tokenizer and its
+checker in 480 lines of test executable. The corpus runner and the build-side
+capture both need them, so they move to `packages/core/tests/bel_assert.ml`
+with an `.mli` exposing
+
+```ocaml
+type assertion
+val extract : string -> (string * assertion) list   (* line text, parsed *)
+val check : Eval.folded -> assertion -> unit        (* raises on failure *)
+val expected_error : assertion list -> string option
+```
+
+`test_bel_assert.ml` keeps the corpus walk and calls into it, so the `.bel`
+cases and the document blocks are checked by one implementation. The dune file
+gains an explicit `(modules …)` field on every stanza in that directory, since
+the shared module has to be claimed by the stanzas that use it rather than
+by one of them.
+
+### The three runners
 
 **Kernel side.** `packages/core/tests/test_reference_corpus.ml`, an alcotest
 suite declared in `packages/core/tests/dune` with
 `(deps (source_tree ../../../spec))`, reading `$DUNE_SOURCEROOT/spec/BELOCH.md`
 the way `test_bel_assert.ml` reads its corpora. It extracts the tagged blocks,
-resolves preludes, and runs
+resolves preludes, runs
 `Eval.eval_folded (Parse.parse ~filename:"BELOCH.md" src)` on each assembled
-program, which is the entry point `test_bel_assert.ml` uses. A `bel reject`
-line must raise `Error.Beloch_error` with the named substring, from the parse
-or from the evaluation; the runner does not care which, because the reader
-does not. Calling the evaluator in process rather than shelling out to
+program, and applies `Bel_assert` to the result exactly as the `.bel` corpus
+runner does. Calling the evaluator in process rather than shelling out to
 `beloch fold` keeps the suite inside `dune runtest` and gives it the exception
-rather than an exit code. About 160 lines, half of it the block extractor.
+rather than an exit code. About 140 lines, most of it the block extractor.
+
+**Build side.** `packages/core/tools/blocks.ml`, a dune executable run from
+`scripts/build-api-docs.sh` beside `scripts/render-figures.ts`. It evaluates
+the same blocks by the same rule and writes `_build/spec/blocks.json`, one
+entry per tagged block, keyed by document path and block index in document
+order:
+
+```json
+{
+  "spec/BELOCH.md": [
+    { "index": 3, "status": "ok",
+      "asserts": [{ "text": "assert faces = 3", "verified": true }] },
+    { "index": 7, "status": "error",
+      "message": "fold takes no (outside) item",
+      "line": 2, "col": 22, "end_col": 31,
+      "expected": true,
+      "asserts": [] }
+  ]
+}
+```
+
+It is OCaml rather than an extension of `render-figures.ts` because both
+things it has to produce live in OCaml: the assertion checker, now
+`Bel_assert`, and the diagnostic the CLI prints, `Diagnostic.render`.
+A TypeScript reimplementation of either is where the rendered hint would start
+lying about what the kernel does. `_build/spec/blocks.json` sits beside
+`_build/spec/figures/index.json` and has the same lifecycle: written by the
+build, read by the site, absent until the build has run.
 
 **tree-sitter side.** `packages/www/src/lib/reference-corpus.test.ts`, a
 `bun test` file beside `highlight-bel.test.ts`, using the same
 `web-tree-sitter` load path `highlight-bel.ts` uses. It stays parse-only: it
 extracts the same blocks by the same rule, parses each block body on its own
-without its prelude, and asserts `tree.rootNode.hasError === false`, for
-`bel reject` blocks as well. A rejected program is well-formed item syntax
-that the wrong verb takes, so tree-sitter must produce a clean tree for it.
-That is the property that forces the union-of-heads shape into both grammars.
-Prelude blocks are parsed too; they are Beloch like everything else.
+without its prelude, and asserts `tree.rootNode.hasError === false`, for a
+block carrying `; expect error` as well. A block whose program the wrong verb
+rejects is well-formed item syntax, so tree-sitter must produce a clean tree
+for it. That is the property that forces the union-of-heads shape into both
+grammars. Prelude blocks are parsed too; they are Beloch like everything else.
 
-The two extractors are about 30 lines each in two languages. To catch one
-drifting from the other, each asserts the block inventory it found (a count
-per tag) against a constant at the top of the file, and the two constants are
-updated together when a block is added to `BELOCH.md`. A shared manifest would
-remove the duplication and is not worth a generated file at this size; the
-ceiling is noted at both constants.
+The extractors are about 30 lines each in two languages, three copies in all.
+To catch one drifting from the others, each asserts the block inventory it
+found (a count per tag) against a constant at the top of the file, and the
+constants are updated together when a block is added to `BELOCH.md`. A shared
+manifest would remove the duplication and is not worth a generated file at
+this size; the ceiling is noted at each constant.
+
+### Rendering the outcome
+
+`remark-bel.ts` reads `_build/spec/blocks.json`, with a path option beside the
+one `remark-model-blocks.ts` takes for figures, and counts tagged blocks in
+document order so its index matches the one the capture tool wrote. Under the
+highlighted program it renders:
+
+- for a block whose entry is `status: "error"` and `expected: true`, the
+  diagnostic in the shape `Diagnostic.render` prints: an `error:` line, the
+  arrow with line and column, the offending line and a caret. The renderer
+  draws it from the recorded message and position against the block's own
+  text, so the prelude stays out of sight.
+- for each `; assert` line, the line itself marked as verified.
+
+Three states the renderer has to handle, and all three are visible to a reader
+of the site:
+
+- no entry for the block, because `astro dev` is running ahead of the build
+  script: the program alone, no hint. The site still builds.
+- `status: "error"` with `expected: false`: the diagnostic, marked as a
+  failure. The corpus test is what fails the build over it; the site shows
+  what went wrong rather than hiding it.
+- `status: "ok"` with an `expect error` assertion: the same, inverted, and the
+  same division of labour.
 
 `bun test` in `packages/www` runs in CI today. `dune runtest` does not: the
 workflow builds `nix build .#beloch` and the OCaml tests run only under
@@ -759,6 +995,25 @@ Item classification, from `Items`, at parse time:
 | `mountain`/`valley` on an axis item | `` an axis item takes no mountain or valley; write (mountain) as its own item `` |
 | `(mountain)` with `(over …)`/`(under …)` | `` a placed fold derives its direction; drop mountain `` (unchanged) |
 | `(up to …)` with `(over …)`/`(under …)` | `` a placed fold moves the anchor flap only; up to is not supported here `` (unchanged) |
+| a clause on `flip` | `` flip scores no crease, so it takes no as or into `` |
+
+The output clause, from `Eval`:
+
+| situation | message |
+|---|---|
+| `as --f` on a bound name | `` --f is bound; write as --f! to rebind `` |
+| `as --f!` on a free name | `` nothing to rebind with --f!; drop the ! `` |
+| `into --l` on a line | `` into needs a crease; --l is a line `` |
+| `into --l` on a selection | `` into needs a crease of its own; --l is a selection from others `` |
+| `into --ab` on a paper edge | `` into needs a scored crease; --ab is a paper edge `` |
+| `into --l` on an unbound name | `` --l is not bound; write as --l to name a new crease `` |
+| the scored material lies off `--l` | `` the material this scores lies on no segment of --l; name it with as instead `` |
+
+Sorts, from `Resolve.crease_of`, at the slot:
+
+| situation | message |
+|---|---|
+| a line where a crease is wanted | `` --l is a line; the meet needs a crease `` (slot substituted: `the meet`, `the filter`, `the axis of fold`, `a flatten ray`, `free on`, `a flap operand`) |
 
 Construction recognition, from `Axiom.classify`, at evaluation:
 
@@ -778,9 +1033,11 @@ the same way: `only one staying clause per flatten` becomes
 becomes `only one toward item per flatten`. No `.bel` case asserts either
 string; both appear in `SPECIFICATION.md` §4.9 and are updated there.
 
-Every semantic message from `Eval`, `Resolve`, `Axiom`, `Flatten_solve` and
-`Fold_state` is unchanged, including the ones that quote prose syntax back at
-the reader (`map .c onto --ac through .a: no crease lands on the paper`,
+The four `is not a physical crease` messages are replaced by the sort error
+above, which says the same thing in the language's own terms and says it at
+the slot. Every other semantic message from `Eval`, `Resolve`, `Axiom`,
+`Flatten_solve` and `Fold_state` is unchanged, including the ones that quote
+prose syntax back at the reader (`map .c onto --ac through .a: no crease lands on the paper`,
 `.p lies on a crease shared by 2 flaps; name the flap with #[...]`). An
 `align` construction that fails at resolution therefore reports its prose
 equivalent. Rewriting those messages around item syntax is a separate pass.
@@ -802,36 +1059,52 @@ equivalent. Rewriting those messages around item syntax is a separate pass.
 4. **The align table is total.** Every alignment multiset of size one or two
    over the five kinds is either in the table or produces the "not one of the
    seven" message; the test enumerates them.
-5. **Item errors.** One `.bel` case per row of the item-classification errors
-   table under `packages/core/tests/cases/items/`, each with an
-   `; expect error "…"` line, plus the same rows as a `bel reject` block in
-   `BELOCH.md`.
-6. **Reference corpus, kernel.** `test_reference_corpus` evaluates every
-   tagged block in `BELOCH.md` under its prelude and fails when a block does
-   not fold, when a `bel reject` line succeeds or fails with the wrong
-   message, when a `prelude=` names no block, or when the block inventory does
-   not match the constant.
-7. **Reference corpus, tree-sitter.** `reference-corpus.test.ts` parses the
+5. **Item errors.** One `.bel` case per row of the item-classification, output
+   and sort error tables, under `packages/core/tests/cases/items/`, each with
+   an `; expect error "…"` line.
+6. **Output clause.** Cases for `as` on a free and on a bound name, `as --f!`
+   on both, `into` on a `Mark`, on a `Material`, on a line, on a selection and
+   on a paper edge, and `into` with an axis off every segment. The `into` case
+   on a `Mark` asserts that the folded crease and the mark carry one id: the
+   FOLD output holds one crease under that name and the emitter supersedes
+   nothing.
+7. **Sorts.** A case per slot row: a line in the meet, in a filter, in a
+   `flatten` ray, as `fold`'s axis, in `free on`, in a flap operand, and in
+   `into`, each asserting the sort message. And the mirror: a crease as a
+   construction operand and as `mark`'s axis evaluates, since a crease
+   projects to its table line.
+8. **Reference corpus, kernel.** `test_reference_corpus` evaluates every
+   tagged block in `BELOCH.md` under its prelude, applies `Bel_assert` to the
+   result, and fails when a block does not fold, when an `; expect error`
+   block succeeds or fails with the wrong message, when an `; assert` line
+   does not hold, when a `prelude=` names no block, or when the block
+   inventory does not match the constant.
+9. **Reference corpus, tree-sitter.** `reference-corpus.test.ts` parses the
    same blocks with the shipped wasm and finds no `ERROR` node in any of them,
-   `bel reject` and `prelude` blocks included.
-8. **Preludes are invisible.** A `bel prelude` block appears in neither the
-   rendered site HTML nor the pandoc PDF. `remark-bel`'s test asserts the
-   first; the second is checked by reading the built PDF once during the
-   slice.
-9. **Highlighting.** `highlight-bel.test.ts` gains a case asserting that
-   `fold (map .a onto .c) (moving .a) (mountain)` yields a `bel-construction`
-   span on `map`, a `bel-anchor` span on `moving` and a `bel-intent` span on
-   `mountain`, and that `.a` still carries `data-bel-name="a"`.
-10. **Geometry unchanged.** The normalised FOLD output of every `.bel` file
+   `prelude` blocks and blocks carrying `; expect error` included.
+10. **Blocks are captured and rendered.** `packages/core/tools/blocks.exe`
+    writes an entry per tagged block into `_build/spec/blocks.json`, and
+    `remark-bel`'s test asserts three renderings against a fixture: a block
+    with a verified assert, a block with an expected error and its diagnostic,
+    and a block with no entry, which renders as the program alone.
+11. **Preludes are invisible.** A `bel prelude` block appears in neither the
+    rendered site HTML nor the pandoc PDF, and no diagnostic rendered under a
+    block quotes a prelude line. `remark-bel`'s test asserts the first; the
+    second is checked by reading the built PDF once during the slice.
+12. **Highlighting.** `highlight-bel.test.ts` gains a case asserting that
+    `fold (map .a onto .c) (moving .a) (mountain)` yields a `bel-construction`
+    span on `map`, a `bel-anchor` span on `moving` and a `bel-intent` span on
+    `mountain`, and that `.a` still carries `data-bel-name="a"`.
+13. **Geometry unchanged.** The normalised FOLD output of every `.bel` file
     under `examples/` and `packages/core/tests/cases/` is byte-identical
     before and after the rewrite (procedure under Migration), and every inline
     `; assert` and `; expect error` in those files passes unchanged except for
     the two flatten duplicate messages.
-11. **Site.** `bun run build` in `packages/www` succeeds with the reduced
+14. **Site.** `bun run build` in `packages/www` succeeds with the reduced
     content set: the four reference documents, the API docs and the landing
     page. `bun test` passes, including the landing test, which evaluates the
     bird base.
-12. **Figures.** `scripts/render-figures.ts` renders all eleven `MODEL.md`
+15. **Figures.** `scripts/render-figures.ts` renders all eleven `MODEL.md`
     figures with no `error` entry in `_build/spec/figures/index.json`.
 
 ## Non-goals
@@ -855,6 +1128,10 @@ equivalent. Rewriting those messages around item syntax is a separate pass.
   slice and stays red after it. The extension is not in CI and the site does
   not use it. Bringing it to the item syntax is its own slice, with the item
   scopes and the five fixtures in one change.
+- `beloch check`, the pre-pass that would report sort and binding errors
+  without running the kernel. The checks land in `Resolve` in this slice and
+  the pre-pass is where they move when the scope machinery is worth lifting
+  out of `Ctx`.
 - Rewriting the tutorials. The five tutorial pages and the introduction are
   removed rather than carried forward (see Migration); a tutorial set written
   against the item syntax is a separate piece of work.
@@ -897,35 +1174,64 @@ depend on the surface syntax of the programs that once produced them.
 
 94 `.bel` files hold 231 write statements and 16 bare construction binds.
 A hand rewrite of that many statements is where a geometry change would enter
-unnoticed, so the rewrite is machine-made:
+unnoticed, so the rewrite is machine-made by `packages/core/tools/to_items.ml`,
+which parses a file with the pre-change grammar and prints it back in the new
+syntax, rewriting only the statement lines it recognises and leaving comments
+where they are.
 
-1. Add a printer, `packages/core/tools/to_items.ml`, that parses a file with
-   the pre-change grammar and prints the program back in item syntax,
-   preserving comments by rewriting only the statement lines it recognises.
-2. Run it over all 94 files and over the Beloch embedded in markdown
-   (`MODEL.md`'s figure bodies, `README.md`), and read the diff.
-3. Swap the grammar.
-4. Re-run the snapshot comparison above.
-5. Delete `to_items.ml` in the same change; it has no second use.
+Four rewrite rules, three of them mechanical and one that needs the file's
+bindings:
+
+1. **Items.** `fold --d moving .b up to .c` becomes
+   `fold (--d) (moving .b) (up to .c)`. One item per clause, the axis first,
+   the order of the source preserved.
+2. **The output clause.** `fold --f = <motion> <clauses>` becomes
+   `fold <items> as --f`, and `--r = flatten <items>` becomes
+   `flatten <items> as --r`. The name moves from in front of the items to
+   behind them.
+3. **`into` for a fold along a name.** A `fold` or `reverse` whose axis is a
+   bare crease name gets `into --name`. Today such a statement repoints the
+   name at the crease it scores, through `promote_crease`; an anonymous write
+   binds nothing, so the clause is what preserves the meaning. Where the name
+   is already `Material`, `into` names the id the fold would have used anyway
+   and the collinearity check it adds is the check the bent-crease rule
+   already makes, so the clause is inert there and can be dropped by hand
+   afterwards.
+4. **Line binds that are marked.** `--d = <construction>` followed by
+   `mark --d …` collapses into one statement, `mark (<construction>) … as
+   --d`. Under the two sorts a name bound by `=` stays a line and never gains
+   material, so the two-statement form has no meaning left; today's
+   `promote_crease` on `mark --d` is what it relied on. The tool tracks
+   `=` binds per file and collapses the pair when the name is marked exactly
+   once; a name marked twice keeps the first `as` and the later marks say
+   `into --d`; a name never marked stays a line bind and is left alone. This
+   is the one rule that reads more than one statement, and it is the one to
+   read the diff for.
+
+Then: swap the grammar, re-run the snapshot comparison above, and delete
+`to_items.ml` in the same change, since it has no second use.
 
 ### Order of work
 
 1. `lexer.ml`, `ast.ml`, `items.ml`/`items.mli`, `parser.mly`, `axiom.ml`
    and `axiom.mli` (`classify`, `tag`, `implied_point`),
-   `resolve.ml`/`resolve.mli`, `eval.ml`. `dune build` green, `test_parse`
-   rewritten onto alignment lists.
+   `resolve.ml`/`resolve.mli` (`crease_of`, the flap widening), `eval.ml`
+   (`crease_id_for`, `into`). `dune build` green, `test_parse` rewritten onto
+   alignment lists.
 2. `to_items.ml`, corpus rewrite, snapshot comparison, `dune runtest` green.
-3. `spec/BELOCH.md` (owner): the `write_stmt` production, the `flatten`
-   binding example, `(toward …)` in place of `{toward …}`, the fence info
-   strings, the hidden preludes and the `bel reject` block.
-4. `test_reference_corpus.ml` and the item-error cases under
+3. `spec/BELOCH.md` (owner): the fence info strings, the hidden preludes and
+   the inline assertions on the example blocks.
+4. `bel_assert.ml`/`.mli` extracted from `test_bel_assert.ml` with the dune
+   `(modules …)` fields, `test_reference_corpus.ml`, `tools/blocks.ml` and its
+   step in `scripts/build-api-docs.sh`, and the error cases under
    `packages/core/tests/cases/items/`.
 5. `packages/grammar`: `grammar.js`, regenerate `parser.c` and the wasm, copy
    into `packages/www/src/grammar/`, `tree-sitter` into the `flake.nix`
    devshell, the `generate` script in `package.json`.
-6. `highlights.scm` in both copies, `theme.css`, `remark-bel.ts` and its
-   prelude rule, `scripts/model-blocks.lua`'s matching clause,
-   `reference-corpus.test.ts`, `highlight-bel.test.ts`.
+6. `highlights.scm` in both copies, `theme.css`, `remark-bel.ts` with its
+   prelude rule and its outcome rendering, `scripts/model-blocks.lua`'s
+   matching prelude clause, `reference-corpus.test.ts`,
+   `highlight-bel.test.ts`, `remark-bel`'s own test and its fixture.
 7. Site content cut (below).
 8. Documentation: `SPECIFICATION.md` Appendix A and the examples in §4.1 to
    §4.10, `MODEL.md`'s eleven figure programs, and the two snippets in
@@ -964,9 +1270,9 @@ landing page renders the same figure it renders today.
 
 | package | files | of which mechanical rewrites |
 |---|---|---|
-| `packages/core` | 10 source, 3 test, 82 `.bel`, 1 tool (added and deleted) | 82 |
+| `packages/core` | 10 source, 5 test, 82 `.bel`, 2 tools (one deleted again) | 82 |
 | `packages/grammar` | 3 source, 4 generated | 0 |
-| `packages/www` | 5 source, 1 test added, 1 test shrunk, 1 wasm, 6 deleted pages | 0 |
+| `packages/www` | 5 source, 2 tests added, 1 test shrunk, 1 fixture, 1 wasm, 6 deleted pages | 0 |
 | `spec` | 3 | 0 |
 | `examples` | 6 | 6 |
 | `scripts`, root | 5 | 0 |
