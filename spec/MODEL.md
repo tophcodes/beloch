@@ -317,6 +317,12 @@ its position on the table is $f(p)$. A point keeps its paper coordinate
 through every later state; only $f(p)$ changes.
 :::
 
+::: {.figure #fig-point caption="`.p` keeps the paper coordinate it was named with, and the fold moves only where it sits on the table." views="cp folded" highlight=".p"}
+paper square
+.p = free on --ab from .a at 1/4
+fold map .a onto .c
+:::
+
 ::: {.term #term-point name="point"}
 A paper point, named once and carried in paper coordinates; its table
 position depends on the state.
@@ -331,6 +337,12 @@ $f(\text{segment})$, a straight segment of the same length, because $f$ is an
 isometry on a face that contains it.
 :::
 
+::: {.figure #fig-segment caption="`--s` meets each of the two faces in a segment that lies within it, and the crease of `--h` is a segment along the hinge where those faces join." views="cp folded" highlight="--s --h"}
+paper square
+--s = map .a onto .b
+fold --h = map .a onto .d
+:::
+
 ::: {.term #term-segment name="segment"}
 A straight piece of the sheet inside one face, carried in paper coordinates.
 :::
@@ -341,6 +353,12 @@ a state is the set of segments in which $\ell$ meets the images of the faces:
 for every face $F$ with $f(F) \cap \ell$ of positive length, the paper segment
 $f|_F^{-1}(f(F) \cap \ell) \subseteq F$. A line is a description of where a
 crease would go; it has no material of its own until a write creases it.
+:::
+
+::: {.figure #fig-line caption="The material of the table line `--l` is one segment per face it crosses: on the paper the two lie on either side of the crease, on the table they land on the same stretch of `--l`." views="cp folded" highlight="--l"}
+paper square
+--l = through .a .c
+fold map .a onto .c
 :::
 
 ::: {.term #term-line name="line"}
@@ -360,6 +378,12 @@ states, and once later folds have bent it its hinges no longer lie on one
 table line.
 :::
 
+::: {.figure #fig-bundle caption="The crease `--m` is one straight line on the paper; the fold that follows bends it, and on the table its two hinges meet at a right angle." views="cp folded" highlight="--m"}
+paper square
+mark --m = map --ab onto --cd
+fold map .a onto .c
+:::
+
 ::: {.term #term-bundle name="bundle"}
 A finite set of segments; the material of a line, or a crease.
 :::
@@ -374,6 +398,13 @@ a chain of hinges of angle $0$. Flaps partition the faces; they are the
 pieces of paper that lie flat as one, and they are invariant under refinement
 ([#def-refinement]), which is why the language addresses flaps and never
 faces.
+:::
+
+::: {.figure #fig-flap caption="The fold leaves two flaps; the marked crease `--s` runs through the highlighted one and splits it into two faces, which stay one flap because the hinge between them has angle $0$." views="cp" highlight="#[.c]"}
+paper square
+.m = free on --cd from .c at 1/4
+fold map .a onto .b
+mark --s = through .b .m
 :::
 
 ::: {.definition #def-read name="read" uses="def-flat-state def-point def-line def-bundle def-flap" defines="term-read"}
