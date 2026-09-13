@@ -296,10 +296,8 @@ test("a reference to an external name carries gr-external", () => {
 	expect(html).toContain('<span class="gr-token">CREASE_NAME</span>');
 });
 
-test("a rule other rules refer to carries a Used by line; one nothing refers to does not", () => {
-	expect(renderRule(byName.get("axis") as never, doc)).toContain(
-		'<p class="gr-links">Used by: <a href="#rule-write_stmt">write_stmt</a></p>',
-	);
+test("no rule carries a Used by line, whether or not other rules refer to it", () => {
+	expect(renderRule(byName.get("axis") as never, doc)).not.toContain("gr-links");
 	expect(renderRule(byName.get("program") as never, doc)).not.toContain("gr-links");
 });
 

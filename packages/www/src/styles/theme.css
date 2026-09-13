@@ -180,11 +180,11 @@ h3:target + p { box-shadow: none; }
   font-weight: 600;
 }
 .stmt-name { font-style: italic; color: var(--sl-color-gray-2); }
-.stmt-links, .term-links, .gr-links {
+.stmt-links, .term-links {
   font-size: 0.85em;
   color: var(--sl-color-gray-3);
 }
-.stmt-links a, .term-links a, .gr-links a { color: inherit; }
+.stmt-links a, .term-links a { color: inherit; }
 
 /* Model figures (remark-model-blocks). The views sit side by side and wrap on a
    narrow screen; the program stays collapsed so the drawing leads. */

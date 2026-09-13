@@ -1,9 +1,8 @@
 // Grammar fragments of spec/BELOCH.md. `grammar`, `grammar-external`,
 // `grammar-planned` and `grammar-collected` fenced blocks become raw HTML:
 // every rule gets an id, every nonterminal on a right-hand side gets a link to
-// its rule, every rule other rules refer to gets a "Used by" line, and the
-// empty `grammar-collected` marker expands to every rule of the page in order
-// of definition.
+// its rule, and the empty `grammar-collected` marker expands to every rule of
+// the page in order of definition.
 //
 // The parse comes from ./grammar-notation.ts rather than from
 // _build/grammar.json: `astro dev` has to work before any script has run, and a

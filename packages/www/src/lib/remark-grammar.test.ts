@@ -53,13 +53,8 @@ test("a nonterminal is a link; an external name points at its entry", () => {
 	expect(html).toContain('<span class="gr-rule" id="rule-flap_operand">flap_operand</span>');
 });
 
-test("backlinks are in document order; a rule nothing refers to has none", () => {
-	expect(html).toContain(
-		'<p class="gr-links">Used by: <a href="#rule-fold_item">fold_item</a>, ' +
-			'<a href="#rule-reverse_item">reverse_item</a></p>',
-	);
-	const program = html.slice(html.indexOf('id="rule-program"'));
-	expect(program.slice(0, program.indexOf("</pre>"))).not.toContain("gr-links");
+test("no rule carries a gr-links element", () => {
+	expect(html).not.toContain("gr-links");
 });
 
 test("the collected marker expands to every rule in order of definition", () => {

@@ -337,8 +337,7 @@ export function parseDocument(
 }
 
 // ── Rendering ──────────────────────────────────────────────────────────────
-// One <pre class="grammar-block"> per rule, so that a rule other rules refer to
-// can carry its own links line under it; the rules of a fragment sit in a
+// One <pre class="grammar-block"> per rule; the rules of a fragment sit in a
 // .grammar-fragment wrapper that closes the gap between them.
 
 function escape(text: string): string {
@@ -375,14 +374,7 @@ export function renderRule(
 				.join(""),
 		)
 		.join("\n");
-	let html = `<pre class="grammar-block"><code>${body}</code></pre>`;
-	if (!collected && rule.usedBy.length > 0) {
-		const links = rule.usedBy
-			.map((name) => `<a href="#rule-${name}">${escape(name)}</a>`)
-			.join(", ");
-		html += `\n<p class="gr-links">Used by: ${links}</p>`;
-	}
-	return html;
+	return `<pre class="grammar-block"><code>${body}</code></pre>`;
 }
 
 export function renderFragment(fragment: Fragment, doc: GrammarDocument): string {

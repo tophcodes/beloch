@@ -63,5 +63,5 @@ test.skipIf(!pandoc)("the collected copy carries the rules and no second label",
 	// definition rather than attaching a second label there.
 	const defs = [...out.matchAll(/(?<!#link\()<rule-fold_item>/g)];
 	expect(defs.length).toBe(1);
-	expect(out).toContain("Used by:");
+	expect(out).not.toContain("Used by:");
 });

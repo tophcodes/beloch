@@ -119,7 +119,7 @@ The marker under `## Grammar`, written empty. The plugin replaces it with
 every rule of the page in order of definition. Content inside it is an error:
 the hand-written copy cannot survive by accident.
 
-## Ids, links and backlinks
+## Ids and links
 
 - The defining occurrence of `fold_item` carries `id="rule-fold_item"`. The id
   is the rule name verbatim, underscores included, so a reader can guess an
@@ -128,16 +128,12 @@ the hand-written copy cannot survive by accident.
   `<a class="gr-nonterminal" href="#rule-axis">axis</a>`. A reference to an
   external name gets `class="gr-nonterminal gr-external"` and points at the
   entry in the *Defined elsewhere* block.
-- Under each rule that other rules refer to, a generated line
-  `<p class="gr-links">Used by: <a …>item</a>, <a …>write_stmt</a></p>`, in
-  the wording and the styling of the model blocks' links line. A rule nothing
-  refers to gets no line.
-- The forward direction gets no line. The uses are already links in the rule
-  text, which is the reasoning `remark-model-blocks.ts` gives for hiding
-  `uses` on a statement.
-- Ids and backlink lines live at the definition site. The collected grammar
-  renders the same rules with the rule name as a link back to its fragment,
-  no ids and no backlink lines, so the page has one anchor per rule.
+- The register still records `usedBy` for each rule, for tooling that walks
+  the grammar; rendering carries forward links only, so a rule's page carries
+  no line naming what refers to it.
+- Ids live at the definition site. The collected grammar renders the same
+  rules with the rule name as a link back to its fragment and no id, so the
+  page has one anchor per rule.
 
 Keywords do not link to a section yet. The sections that would introduce them
 arrive with the per-write sections ADR 0021 plans, and a keyword-to-section
