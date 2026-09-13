@@ -29,6 +29,9 @@ first-course level, and folding words (crease, flap, layer, mountain, valley)
 the way folders use them. Everything it needs from flat-folding theory is
 restated where it is used; the full account is Hull [@hull2020, chapter 6].
 
+**Review status.** Sections 1 and 2 read and accepted. Section 3 read up to
+the taco-taco condition. Section 4 is a draft.
+
 ## 1. Paper
 
 Intuition: a sheet of paper is a flat shape whose points keep their identity
@@ -286,6 +289,123 @@ left outside the definition.
 Sources: the six properties on points, with Figure 1 showing the two crossing
 patterns [@hullzakharevich2023, §2.1]; Justin's three conditions in Hull's
 statement [@hull2020, sec. 6.5, p. 123].
+
+## 4. Values and reads
+
+Intuition: a program names things on the paper, points, lines, and pieces of
+paper, and asks questions about them: where is this point now, which line
+folds this onto that, which piece of paper carries this point. Values are the
+answers, and a read is the act of asking. A read looks at the current state
+and computes a value; it changes nothing. If the state has no answer, the
+read fails, and the program stops there.
+
+::: {.definition #def-point name="point value" uses="def-sheet def-flat-state" defines="term-point"}
+A value of sort *point* is a paper point $p \in P$. In a state $(f, \lambda)$
+its position on the table is $f(p)$. A point keeps its paper coordinate
+through every later state; only $f(p)$ changes.
+:::
+
+::: {.term #term-point name="point"}
+A paper point, named once and carried in paper coordinates; its table
+position depends on the state.
+:::
+
+::: {.definition #def-line name="line value" uses="def-flat-state" defines="term-line term-material"}
+A value of sort *line* is a line $\ell$ in the table frame. Its *material* in
+a state is the set of segments in which $\ell$ meets the images of the faces:
+for every face $F$ with $f(F) \cap \ell$ of positive length, the paper segment
+$f|_F^{-1}(f(F) \cap \ell) \subseteq F$. A line is a description of where a
+crease would go; it has no material of its own until a write creases it.
+:::
+
+::: {.term #term-line name="line"}
+A line in the table frame, computed by a read in some state; its material in
+a state is where it crosses the paper.
+:::
+
+::: {.term #term-material name="material"}
+The paper segments a line crosses in a state, one per face.
+:::
+
+::: {.definition #def-bundle name="bundle" uses="def-flat-state def-line" defines="term-bundle term-crease"}
+A value of sort *bundle* is a finite set of paper segments, each lying in one
+face or on one hinge. The material of a line is a bundle. A *crease* is the
+bundle of hinges that one write scored; it keeps its identity through later
+states, and once later folds have bent it its hinges no longer lie on one
+table line.
+:::
+
+::: {.term #term-bundle name="bundle"}
+A finite set of paper segments in faces or on hinges; the material of a line,
+or a crease.
+:::
+
+::: {.term #term-crease name="crease"}
+The bundle of hinges that one write scored, named or unnamed.
+:::
+
+::: {.definition #def-flap name="flap" uses="def-flat-state def-refinement" defines="term-flap"}
+A *flap* of a state is a maximal set of faces in which any two are joined by
+a chain of hinges of angle $0$. Flaps partition the faces; they are the
+pieces of paper that lie flat as one, and they are invariant under refinement
+([#def-refinement]), which is why the language addresses flaps and never
+faces.
+:::
+
+::: {.definition #def-read name="read" uses="def-flat-state def-point def-line def-bundle def-flap" defines="term-read"}
+A read of sort $V$ is a partial function $r : S \times A \rightharpoonup V$
+from states and arguments (values of the sorts above) to values of sort $V$.
+A read has no effect on the state. Where it is undefined the program fails
+with a reason.
+:::
+
+::: {.term #term-read name="read"}
+A partial function from the current state and some values to a value; it
+never changes the state.
+:::
+
+The reads of the language fall into three families.
+
+::: {.definition #def-motion name="motion" uses="def-read def-line" defines="term-motion"}
+A *motion* is a read of sort line built from a Huzita-Justin construction: a
+construction $c$ takes points and lines and yields a finite set $c(s, a)$ of
+candidate lines, between zero and three of them. The motion is the read
+$$ r(s, a) = \ell \quad \text{when } \sigma(s, a, c(s, a)) = \{\ell\}, $$
+undefined otherwise, where $\sigma$ is the selection the program stated, the
+identity when it stated none. Selections are: discard candidates whose
+material in $s$ is empty; keep the candidate nearest a named point; keep the
+candidate whose fold moves a named point to a named side.
+:::
+
+::: {.term #term-motion name="motion"}
+A read that computes a line from a Huzita-Justin construction and a
+selection among its candidates.
+:::
+
+::: {.definition #def-selector name="selector" uses="def-read def-flap def-point"}
+A *selector* is a read of sort flap or point that resolves a description by
+incidence: the flap whose faces contain every listed point; the point where
+the materials of two bundles cross; the point on a bundle's material at a
+given fraction of its length from a named end. Each is defined exactly when
+the description picks out one thing.
+:::
+
+::: {.definition #def-filter name="filter" uses="def-read def-bundle"}
+The *filters* are the reads of sort bundle that form the Boolean algebra of
+subsets of a bundle $b$ generated by incidence predicates: for a point $p$, a
+line $m$ or a flap $\phi$, the predicate "the segment contains $p$", "the
+segment's table image meets $m$", "the segment lies in a face of $\phi$".
+A filter keeps the segments satisfying a predicate, its complement drops
+them, and the union joins two bundles. Chaining filters is intersection.
+:::
+
+::: {.open #open-line-after-fold name="a line value across later states"}
+A line value is a table line. When a later write moves the paper, the value
+stays where it is on the table while its material changes. Whether this is
+the intended meaning, or a line should be re-anchored to the material it was
+computed from, is not decided; it decides what `--l = map .a onto .b`
+followed by a fold and then `mark --l` means.
+:::
 
 ## Terms
 
