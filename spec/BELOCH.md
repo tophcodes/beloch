@@ -105,7 +105,7 @@ others, so every slot of a write's signature is one block in the source,
 delimited on both sides and classified by its head.
 
 ```
-write_stmt := verb [ CREASE_NAME "=" ] item*
+write_stmt := verb item* [ "as" CREASE_NAME ]
 verb       := "mark" | "fold" | "reverse" | "flatten" | "flip"
 item       := "(" item_body ")"
 item_body  := fold_item | reverse_item | mark_item | flatten_item
@@ -155,8 +155,11 @@ flatten (--h & --bc) (--v & --cd) (.q over .r) (staying .a) (toward .q)
 flip
 ```
 
-The binding form puts the name after the verb, for every verb: `fold --f =
-(map .a onto .c) (moving .a)`, `flatten --r = (--ba \ .a) …`.
+The name of the crease a write scores is its one output and stands after
+the items, for every verb: `fold (map .a onto .c) (moving .a) as --f`,
+`flatten (--ba \ .a) … as --r`. `=` binds the value of a read and nothing
+else: `--l = (map .a onto .c)` is a line with no material, `fold (map .a
+onto .c) as --l` is a crease with a name.
 
 A head that does not belong to the verb is an error naming the verb and
 the item; an item type given twice is an error at the second occurrence.
@@ -245,7 +248,7 @@ section of this document are in `SPECIFICATION.md`, Appendix A.
 program           := "paper" "square" stmt*
 stmt              := write_stmt | bind_stmt | def_stmt | apply_stmt | export_stmt
 
-write_stmt        := verb [ CREASE_NAME "=" ] item*
+write_stmt        := verb item* [ "as" CREASE_NAME ]
 verb              := "mark" | "fold" | "reverse" | "flatten" | "flip"
 item              := "(" item_body ")"
 item_body         := fold_item | reverse_item | mark_item | flatten_item
