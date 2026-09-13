@@ -392,8 +392,10 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
      ray was materialized (even case) or left unbound. *)
   let emergent_bind = ref None in
   (* `into`'s axis check runs on the emergent line before the winning state
-     lands, so a crease on another line leaves the state as it was. With no
-     emergent ray there is nothing for `into` to add. *)
+     lands: the emergent line comes from the pre-flatten table geometry, and
+     the check must compare it against material in the same frame, so it
+     runs before the collapsed state replaces it. With no emergent ray there
+     is nothing for `into` to add. *)
   let land_realization (st, _, emergent) =
     (match (into, emergent) with
     | Some (_, check_axis), Some (_, line) -> check_axis line

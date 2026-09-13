@@ -1659,6 +1659,8 @@ let ear_prelude =
    mark (perp --ab through .o) as --spine\n"
 
 let test_output_into_flatten_emergent () =
+  let before = folded ear_prelude in
+  let cid_before = List.assoc "spine" before.Eval.named_line_cids in
   let fd =
     folded
       (ear_prelude
@@ -1667,6 +1669,7 @@ let test_output_into_flatten_emergent () =
   let cid = List.assoc "spine" fd.Eval.named_line_cids in
   Alcotest.(check bool) "the emergent crease is --spine's own" true
     (Fold_state.crease_segments fd.Eval.state cid <> []);
+  Alcotest.(check int) "--spine keeps its id across the flatten" cid_before cid;
   let named_spine =
     Yojson.Safe.Util.(
       Fold_emit.to_json_folded fd

@@ -1010,9 +1010,8 @@ The output clause, from `Eval`:
 | the scored material lies off `--l` | `` the material this scores lies on no segment of --l; name it with as instead `` |
 | `into` on a `flatten` with an even ray count | `` flatten with an even ray count scores no new crease; drop into `` |
 
-The last row is a deviation recorded during implementation: an even ray count
-closes the vertex with the given rays alone, so the write scores no crease for
-`into` to add.
+An even ray count closes the vertex with the given rays alone, so the write
+scores no crease for `into` to add.
 
 Sorts, from `Resolve.crease_of`, at the slot:
 
