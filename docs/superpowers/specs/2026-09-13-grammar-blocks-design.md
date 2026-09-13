@@ -371,7 +371,7 @@ script exits non-zero with the same text.
    of the fixture in order of definition, and the rule names of the collected
    copy link back to the fragments.
 7. **Register.** `scripts/grammar-register.test.ts`: `spec/BELOCH.md` yields
-   14 rules and 8 external names; the shape of one rule's `lines` matches the
+   15 rules and 7 external names; the shape of one rule's `lines` matches the
    JSON above.
 8. **Cross-check.** The same test compares the documented word keywords
    against `packages/core/lib/lexer.ml` and passes with `align` declared
@@ -415,11 +415,13 @@ places, so the document changes in the same slice:
    `grammar-collected` marker. The prose under `## Grammar` stays; the
    sentence that names `SPECIFICATION.md` Appendix A is replaced by the
    `grammar-external` block, which says the same per name.
-3. Declare the eight external names: `point_operand`, `line_operand`,
-   `prose_axiom`, `bind_stmt`, `def_stmt`, `apply_stmt`, `export_stmt`,
-   `item_body`. `item_body` has no rule anywhere; it is the placeholder the
-   per-verb `*_item` rules stand under, and it gets either a rule of its own
-   (`item_body := fold_item | reverse_item | mark_item | flatten_item`) or an
+3. Declare the seven external names: `point_operand`, `line_operand`,
+   `prose_axiom`, `bind_stmt`, `def_stmt`, `apply_stmt`, `export_stmt`; each
+   names its home in `SPECIFICATION.md`. `item_body` is a rule of the Write
+   statements fragment (`item_body := fold_item | reverse_item | mark_item |
+   flatten_item`).
+4. Declare `align` and `into` planned: both are keywords the documented
+   grammar states and the lexer does not have.| reverse_item | mark_item | flatten_item`) or an
    external entry saying where it is going. The other seven name their home in
    `SPECIFICATION.md`.
 4. Declare `align` planned.

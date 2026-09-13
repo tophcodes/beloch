@@ -76,7 +76,8 @@ export class GrammarError extends Error {}
 // highlighter), set off from the language by a space or tab, and not part of
 // the language. A fence ends at the first later line that is a run of
 // backticks at least as wide as the opener and nothing else, so a narrower
-// fence quoted inside it is content, not a nested block.
+// fence quoted inside it is content, not a nested block. Backtick fences
+// only; a tilde fence is not recognised.
 const OPEN = /^(`{3,})([^`]*)$/;
 const CLOSE = /^(`+)\s*$/;
 const HEAD = /^([A-Za-z_][A-Za-z0-9_]*)\s*:=/;
