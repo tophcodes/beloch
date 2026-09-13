@@ -129,7 +129,7 @@ a line, the fold line through a point, the fold line perpendicular to a
 line. Alperin and Lang show that the seven Huzita-Justin axioms are exactly
 the minimal sets of such alignments that determine one fold line with
 finitely many solutions [@alperin2006, §3], and that the same alignments,
-distributed over two fold lines, give the 489 two-fold axioms [alperin2006,
+distributed over two fold lines, give the 489 two-fold axioms [@alperin2006,
 §4]. The construction with its alignments is the canonical form; an axiom
 number is the name of one such set.
 
