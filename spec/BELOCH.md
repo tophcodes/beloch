@@ -105,10 +105,11 @@ others, so every slot of a write's signature is one block in the source,
 delimited on both sides and classified by its head.
 
 ```
-write_stmt := [ CREASE_NAME "=" ] verb item*
+write_stmt := verb [ CREASE_NAME "=" ] item*
 verb       := "mark" | "fold" | "reverse" | "flatten" | "flip"
 item       := "(" item_body ")"
             | "{" "toward" point_operand "}"
+item_body  := fold_item | reverse_item | mark_item | flatten_item
 ```
 
 Which item bodies a verb accepts is stated with the verb; the bodies of the
@@ -153,7 +154,8 @@ flatten (--h & --bc) (--v & --cd) (.q over .r) (staying .a) {toward .q}
 flip
 ```
 
-The binding form is unchanged: `fold --f = (map .a onto .c) (moving .a)`.
+The binding form puts the name after the verb, for every verb: `fold --f =
+(map .a onto .c) (moving .a)`, `flatten --r = (--ba \ .a) …`.
 
 A head that does not belong to the verb is an error naming the verb and
 the item; an item type given twice is an error at the second occurrence.
@@ -242,10 +244,11 @@ section of this document are in `SPECIFICATION.md`, Appendix A.
 program           := "paper" "square" stmt*
 stmt              := write_stmt | bind_stmt | def_stmt | apply_stmt | export_stmt
 
-write_stmt        := [ CREASE_NAME "=" ] verb item*
+write_stmt        := verb [ CREASE_NAME "=" ] item*
 verb              := "mark" | "fold" | "reverse" | "flatten" | "flip"
 item              := "(" item_body ")"
                    | "{" "toward" point_operand "}"
+item_body         := fold_item | reverse_item | mark_item | flatten_item
 
 fold_item         := axis
                    | "moving" flap_operand
