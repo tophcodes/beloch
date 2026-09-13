@@ -150,7 +150,12 @@ axis         := construction_body | line_operand
 ([open-flatten-selection](/model/#open-flatten-selection)); a construction
 carries its own selection inside its item.
 
-```bel prelude name=sheet
+Six blocks follow, one group per verb, each a complete program that this page
+evaluates. `fold` and `reverse` take two blocks each, because the second form
+of either needs a sheet of its own, and the last block carries `flatten` with
+`flip`.
+
+```{.bel .prelude name=sheet}
 paper square
 mark (map --da onto --bc) as --d
 .m = free on --bc from .b at 1/2
@@ -158,7 +163,7 @@ mark (map --da onto --bc) as --d
 .p = free on --ab from .a at 1/4
 ```
 
-```bel frag prelude=sheet
+```{.bel .frag prelude=sheet}
 fold    (--d) (moving .b) (up to .c)               ; along an existing crease
 fold    (map .a onto .d) (moving .a)
 fold    (through .m .n) (moving .b) (under .p)
@@ -168,52 +173,54 @@ fold    (map .a onto .b) (moving .a) (mountain)
 ; assert faces = 8
 ```
 
-```bel frag
+```{.bel .frag}
 fold    (map .c onto .b) (up to .d)                ; the depth names the anchor
 
 ; assert steps = 1
 ; assert faces = 2
 ```
 
-```bel prelude name=triangle
+```{.bel .prelude name=triangle}
 paper square
 fold (map .a onto .c) as --bd
 ```
 
-```bel frag prelude=triangle
+```{.bel .frag prelude=triangle}
 reverse (map .b onto .c)
 reverse (map .d onto .c)
 
-; assert steps = 3
+; assert .b = .c
+; assert .d = .c
 ; assert faces = 6
 ```
 
-```bel prelude name=half
+```{.bel .prelude name=half}
 paper square
 fold (map .b onto .a) as --d
 ```
 
-```bel frag prelude=half
+```{.bel .frag prelude=half}
 reverse (map .a onto .d) (outside)
 
-; assert steps = 2
+; assert .a = .d
 ; assert faces = 4
 ```
 
-```bel prelude name=midline
+```{.bel .prelude name=midline}
 paper square
+mark (through .a .c) as --ac
 .m = free on --da from .a at 1/2
-.n = free on --bc from .b at 1/2
+.o = free on --ac from .a at 1/2
 ```
 
-```bel frag prelude=midline
-mark    (through .a .c)
-mark    (map --ab onto --cd) (on #[.c]) (between .m .n) (mountain)
+```{.bel .frag prelude=midline}
+mark    (through .b .d)
+mark    (map --ab onto --cd) (between .m .o) (mountain)
 
 ; assert faces = 1
 ```
 
-```bel prelude name=prelim
+```{.bel .prelude name=prelim}
 paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd
@@ -223,7 +230,7 @@ mark (map --da onto --bc) as --v
 .r = free on --ab from .b at 1/4
 ```
 
-```bel frag prelude=prelim
+```{.bel .frag prelude=prelim}
 flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d)
         (.q over .r) (staying .a) (toward .q)
 flip
@@ -258,7 +265,7 @@ the item; an item type given twice is an error at the second occurrence.
 direction, and the error says so: `a placed fold derives its direction;
 drop mountain`.
 
-```bel frag
+```{.bel .frag}
 fold (map .a onto .c) (moving .a) (over .b) (mountain)
 
 ; expect error "a placed fold derives its direction; drop mountain"
@@ -271,7 +278,7 @@ its own, so that highlighting colours an anchor, a placement and a
 construction differently, and a malformed item is contained by its
 parentheses instead of swallowing the rest of the statement.
 
-::: {.figure #fig-lang-fold caption="One item carries the axis and one the anchor: `(through .p .q)` is the line the paper turns about, `(moving .b)` the corner that travels. With no placement item the block lands on top of the paper it was folded from, and `as --f` gives the crease a name later statements can select." views="cp folded" highlight="--f"}
+::: {.figure #fig-lang-fold caption="The first `fold` carries a single item, the construction `(map .b onto .a)`, and reads its anchor from the corner that alignment moves. The second carries two: `(through .p .q)` is the line the paper turns about, `(moving .b)` the corner that travels. With no placement item the block lands on top of the paper it was folded from, and `as --f` gives the crease a name later statements can select." views="cp folded" highlight="--f"}
 paper square
 fold (map .b onto .a)
 .p = free on --bc from .b at 1/4
@@ -294,7 +301,7 @@ mark (through .a .c) as --ac
 mark (map --ab onto --cd) (on #[.c]) (between .m .o) (mountain) as --h
 :::
 
-::: {.figure #fig-lang-flatten caption="One `flatten` collapses six rays at the paper centre into the preliminary base. Each ray item picks a piece of a marked crease with `&`, `(.q over .r)` fixes which quarter comes to the front, and `(toward .q)` chooses one of the flat states the rays allow." views="cp folded" highlight="--h --v"}
+::: {.figure #fig-lang-flatten caption="One `flatten` collapses six of the eight rays at the paper centre into the preliminary base, and the diagonal through `.a` and `.c` stays flat. Each ray item picks a piece of a marked crease with `&`, `(.q over .r)` fixes which quarter comes to the front, and `(toward .q)` chooses one of the flat states the rays allow." views="cp folded" highlight="--h --v"}
 paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd
@@ -334,7 +341,7 @@ alignment         := "(" [ CREASE_NAME ] object "onto" [ CREASE_NAME ] object ")
 object            := point_operand | line_operand
 ```
 
-```bel prelude name=axioms
+```{.bel .prelude name=axioms}
 paper square
 mark (through .a .b) as --l
 mark (through .b .c) as --m
@@ -343,7 +350,7 @@ mark (through .a .c) as --ac
 .q = free on --ab from .a at 1/2
 ```
 
-```bel construction prelude=axioms
+```{.bel .construction prelude=axioms}
 (align (.a onto .c))                            ; axiom 2
 (align (through .a) (through .b))               ; axiom 1
 (align (perp --l) (through .p))                 ; axiom 3

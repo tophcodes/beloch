@@ -789,11 +789,12 @@ query file is copied to `packages/grammar/queries/highlights.scm`.
 
 ### Markdown rendering (`packages/www/src/lib/remark-bel.ts`)
 
-`remarkBel` rewrites every fenced block whose language is `bel` or `beloch`
-into highlighted HTML. It gains one rule: a block tagged `prelude` is removed
-from the tree instead of rendered. `visit` already hands it the parent and the
-index, so the prelude nodes are collected during the walk and spliced out
-after it.
+`remarkBel` rewrites every fenced block whose info string carries the class
+`bel` or `beloch` into highlighted HTML, reading that class list by the rule
+under [Marking the blocks](#marking-the-blocks). It gains one rule: a block
+carrying the `prelude` class is removed from the tree instead of rendered.
+`visit` already hands it the parent and the index, so the prelude nodes are
+collected during the walk and spliced out after it.
 
 The pandoc path needs the same rule. `scripts/render-model.sh` renders
 `spec/{MODEL,KERNEL,BELOCH,FOLD}.md` to PDF through
@@ -812,15 +813,29 @@ does not fold is a block the document should not be showing.
 
 Fenced blocks in `spec/*.md` carry no info string today, and `remark-bel.ts`
 highlights a block only when its language is `bel` or `beloch`. The example
-blocks in `BELOCH.md` gain an info string; the grammar blocks stay unlabelled
-and are skipped by the corpus test and by the site.
+blocks in `BELOCH.md` gain an info string in pandoc's attribute form,
+`{.bel .frag prelude=triangle}`, because pandoc's markdown reader accepts a
+single bare word or an attribute list and reads a two-word string such as
+`bel frag` as the start of an untagged block that swallows the prose after it.
+The grammar blocks stay unlabelled and are skipped by the corpus test and by
+the site.
 
 | info string | content | how it is checked |
 |---|---|---|
-| ```` ```bel ```` | a whole program, starting `paper square` | parses and evaluates |
-| ```` ```bel prelude name=<id> ```` | a program fragment that sets up names for other blocks | parses and evaluates under its own prelude; never rendered |
-| ```` ```bel frag [prelude=<id>] ```` | statements with no `paper square` of their own | the named prelude (default: `paper square`) is prepended, then parses and evaluates |
-| ```` ```bel construction [prelude=<id>] ```` | one construction item per line, with a trailing comment | each line is wrapped as `mark <line>`, appended to the prelude, then parses and evaluates |
+| ```` ```{.bel} ```` | a whole program, starting `paper square` | parses and evaluates |
+| ```` ```{.bel .prelude name=<id>} ```` | a program fragment that sets up names for other blocks | parses and evaluates under its own prelude; never rendered |
+| ```` ```{.bel .frag [prelude=<id>]} ```` | statements with no `paper square` of their own | the named prelude (default: `paper square`) is prepended, then parses and evaluates |
+| ```` ```{.bel .construction [prelude=<id>]} ```` | one construction item per line, with a trailing comment | each line is wrapped as `mark <line>`, appended to the prelude, then parses and evaluates |
+
+A bare ```` ```bel ```` is a single word and stays valid for a whole program.
+Every reader in the repository takes the attribute form, and each of the three
+runners below reads the same three fields out of it: the first class is `bel`,
+a second class names the kind, and `name=` and `prelude=` are attributes.
+Pandoc yields the attribute triple directly, `CodeBlock ("", ["bel","frag"],
+[("prelude","triangle")])`, which its Lua filters already know how to read.
+`remark-parse` splits the info string at the first space, so `lang` holds
+`{.bel` and `meta` holds `.frag prelude=triangle}`; a remark consumer joins
+the two with a space and parses the attribute list out of the result.
 
 Any block of the three non-prelude kinds may carry the inline assertion lines
 of the `.bel` corpus, unchanged in grammar and in meaning
@@ -842,7 +857,7 @@ still has to evaluate.
 ### Hidden preludes
 
 A fragment needs a program around it and a reader needs to see the fragment
-alone. A `bel prelude` block carries that program: it stands in the document
+alone. A `.prelude` block carries that program: it stands in the document
 where the fragments that use it begin, names itself with `name=<id>`, and is
 removed before rendering, so it appears on the site and in the PDF nowhere.
 
@@ -1094,7 +1109,7 @@ One exception: the flatten ambiguity message from `Flatten_solve` advises
     `remark-bel`'s test asserts three renderings against a fixture: a block
     with a verified assert, a block with an expected error and its diagnostic,
     and a block with no entry, which renders as the program alone.
-11. **Preludes are invisible.** A `bel prelude` block appears in neither the
+11. **Preludes are invisible.** A `.prelude` block appears in neither the
     rendered site HTML nor the pandoc PDF, and no diagnostic rendered under a
     block quotes a prelude line. `remark-bel`'s test asserts the first; the
     second is checked by reading the built PDF once during the slice.
