@@ -42,10 +42,12 @@ export default function remarkGrammar() {
 		for (const node of targets) {
 			let html: string;
 			if (node.lang === "grammar") {
-				// Paired by line rather than by ordinal position: a fence remark
-				// sees but the raw scan of grammar-notation.ts does not (or the
-				// reverse, a sample fence nested inside a wider one) would
-				// otherwise shift every later block's pairing.
+				// A fragment is paired to its fence's code node by the line on
+				// which the fence opens. An indented fence, or one quoted as a
+				// sample inside a wider fence, is invisible to the raw scan in
+				// grammar-notation.ts even though remark still parses it as a
+				// code node; that mismatch fails with the error below instead
+				// of shifting every later block's pairing.
 				const line = node.position.start.line + 1;
 				const fragment = doc.fragments.find((f) => f.line === line);
 				if (!fragment) {

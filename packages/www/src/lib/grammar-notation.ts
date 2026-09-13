@@ -71,12 +71,14 @@ export interface ParseOptions {
 export class GrammarError extends Error {}
 
 // The info string's language is its first word; anything after is a meta
-// part (a title, flags for a highlighter) and is not part of the language.
-// CommonMark forbids a backtick in the info string, which is also how a
-// fence of four or more backticks is told apart from a three-backtick fence
-// whose meta part happens to start right after the language.
-const OPEN = /^```([A-Za-z-]*)[^`]*$/;
-const CLOSE = /^```\s*$/;
+// part (a title, flags for a highlighter) and is not part of the language,
+// so a meta part must be set off from the language by a space or tab. An
+// opener is a run of three or more backticks; a fence ends at the first
+// later line that is a run of backticks at least as wide as the opener and
+// nothing else, so a narrower fence quoted inside it is content, not a
+// nested block.
+const OPEN = /^(`{3,})([A-Za-z-]*)(?:[ \t][^`]*)?$/;
+const CLOSE = /^(`+)\s*$/;
 const HEAD = /^([A-Za-z_][A-Za-z0-9_]*)\s*:=/;
 const ENTRY = /^\s*([A-Za-z_][A-Za-z0-9_]*)[ \t]*(?:;[ \t]*(.*?))?[ \t]*$/;
 const IDENT = /^[A-Za-z_][A-Za-z0-9_]*/;
@@ -101,10 +103,15 @@ function blocks(source: string, path: string): Block[] {
 	for (let i = 0; i < all.length; i++) {
 		const open = OPEN.exec(all[i]);
 		if (!open) continue;
+		const width = open[1].length;
 		let j = i + 1;
-		while (j < all.length && !CLOSE.test(all[j])) j++;
+		while (j < all.length) {
+			const close = CLOSE.exec(all[j]);
+			if (close && close[1].length >= width) break;
+			j++;
+		}
 		if (j >= all.length) fail(path, i + 1, "unclosed fence; add a closing line of three backticks");
-		out.push({ lang: open[1], line: i + 2, lines: all.slice(i + 1, j) });
+		out.push({ lang: open[2], line: i + 2, lines: all.slice(i + 1, j) });
 		i = j;
 	}
 	return out;

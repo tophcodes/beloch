@@ -191,6 +191,41 @@ test("an unclosed fence ends in a named error, not a swallowed remainder", () =>
 	);
 });
 
+test("a `grammar` sample quoted inside a wider fence is not a fragment of its own", () => {
+	const nested = parseFixture("grammar-nested-fence.md")();
+	expect(nested.fragments.map((f) => ({ line: f.line, rules: f.rules.map((r) => r.name) }))).toEqual(
+		[{ line: 13, rules: ["real"] }],
+	);
+	expect(renderCollected(nested)).not.toContain("rule-fake");
+});
+
+test("a `grammar2` info string is not a grammar block", () => {
+	const doc = parseDocument(
+		["```grammar", "real := CREASE_NAME", "```", "", "```grammar2", "fake := CREASE_NAME"].join(
+			"\n",
+		),
+		"fixture.md",
+	);
+	expect(doc.fragments.map((f) => f.rules.map((r) => r.name))).toEqual([["real"]]);
+});
+
+test("a four-backtick block quoting an unclosed three-backtick fence parses without error", () => {
+	const doc = parseDocument(
+		[
+			"````",
+			"```grammar",
+			"fake := CREASE_NAME",
+			"````",
+			"",
+			"```grammar",
+			"real := CREASE_NAME",
+			"```",
+		].join("\n"),
+		"fixture.md",
+	);
+	expect(doc.fragments.map((f) => f.rules.map((r) => r.name))).toEqual([["real"]]);
+});
+
 test("content in the collected marker is an error", () => {
 	expect(parseFixture("grammar-error-collected.md")).toThrow(
 		`${at("grammar-error-collected.md", 8)}the grammar-collected block is generated; leave it empty`,
