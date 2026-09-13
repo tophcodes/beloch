@@ -3,7 +3,7 @@
 
 val run :
   Ctx.ctx ->
-  name_opt:string option ->
+  bind_out:(Ctx.crease_val -> unit) ->
   elems:Ast.collapse_elem list ->
   overs:(Ast.flap_arg * Ast.flap_arg) list ->
   staying_opt:Ast.flap_arg option ->

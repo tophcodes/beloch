@@ -24,18 +24,3 @@ val slot : string -> string -> 'a option ref -> Error.span -> 'a -> unit
 
 val reject : string -> string -> Error.span -> 'a
 (** [reject verb head span] fails with ["<verb> takes no (<head>) item"]. *)
-
-val axiom_of_construction : Ast.construction -> Ast.axiom
-(** The construction's alignment set recognised as one of the seven axioms,
-    by the multiset of its alignment kinds, with source order fixing the
-    operand roles where a kind repeats (ADR 0022). Fails naming the
-    alignments when the set is none of the seven, when the construction names
-    fold lines, and when [toward] rides on a construction that determines one
-    line.
-
-    The evaluator reads a construction through this function, since
-    [Axiom.axis_of] dispatches on the seven-constructor [Ast.axiom]. *)
-
-val bound_name : Ast.output -> string option
-(** The name the output clause binds, for the evaluator's binding step, which
-    takes the name alone. *)

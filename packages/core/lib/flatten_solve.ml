@@ -3,7 +3,7 @@
 
 open Ctx
 
-let run (ctx : Ctx.ctx) ~(name_opt : string option)
+let run (ctx : Ctx.ctx) ~(bind_out : Ctx.crease_val -> unit)
     ~(elems : Ast.collapse_elem list)
     ~(overs : (Ast.flap_arg * Ast.flap_arg) list)
     ~(staying_opt : Ast.flap_arg option)
@@ -15,7 +15,9 @@ let run (ctx : Ctx.ctx) ~(name_opt : string option)
      leaving it unsplit at the vertex (`no common interior vertex`). *)
   let rec force_material (lo : Ast.line_operand) =
     match lo with
-    | Ast.LNamed cr -> ignore (Resolve.material_cid ctx cr)
+    | Ast.LNamed cr ->
+        ignore (Resolve.crease_of ctx cr ~slot:"a flatten ray" cr.Ast.cspan);
+        ignore (Resolve.material_cid ctx cr)
     | Ast.LFilter (b, _, _) -> force_material b
     | Ast.LUnion (los, _) -> List.iter force_material los
     | Ast.LSelect _ -> ()
@@ -627,21 +629,16 @@ let run (ctx : Ctx.ctx) ~(name_opt : string option)
                     Error.fail span Flatten.e_toward_ambiguous
                 | (_, r) :: _ -> commit r
                 | [] -> assert false (* [kept] has >= 2 elements *)))));
-  (* bind the name (if any): with no emergent ray materialized, bind a
-     selectable bundle of the given rays; with one, bind the EMERGENT
-     crease instead (the newly-completed vertex's own crease, not the
-     rays that produced it), so a meet-point selector against the name
+  (* run the output clause's binding step: with no emergent ray materialized
+     it takes a selectable bundle of the given rays; with one it takes the
+     EMERGENT crease (the newly-completed vertex's own crease, not the rays
+     that produced it), so a meet-point selector against the name
      (e.g. `.[--ear --ab]`) finds the emergent crease's tip. *)
-  (match name_opt with
-  | Some n ->
-      let cv =
-        match !emergent_bind with
-        | Some (cid, line) -> Material (cid, line)
-        | None ->
-            Bundle
-              (Ast.LUnion
-                 (List.map (fun (el : Ast.collapse_elem) -> el.Ast.cline) elems, span))
-      in
-      bind_crease ctx n span cv
-  | None -> ());
+  bind_out
+    (match !emergent_bind with
+    | Some (cid, line) -> Material (cid, line)
+    | None ->
+        Bundle
+          (Ast.LUnion
+             (List.map (fun (el : Ast.collapse_elem) -> el.Ast.cline) elems, span)));
   push_frame ctx (Some span)

@@ -40,6 +40,17 @@ let corner_point (n : string) : Geom.point =
   | Some p -> p
   | None -> assert false (* Edge is only ever built from a,b,c,d *)
 
+(* The sort check (spec/BELOCH.md, Parameter types): a slot that wants a
+   crease reads the binding's constructor and nothing else. A [Frozen] name
+   is a line, and a line has no material until a `mark` scores it. *)
+let crease_of (ctx : Ctx.ctx) (cr : Ast.crease_ref) ~(slot : string)
+    (span : Error.span) : crease_val =
+  match lookup_crease ctx cr with
+  | Frozen _ ->
+      Error.fail span
+        (Printf.sprintf "--%s is a line; %s needs a crease" cr.Ast.cname slot)
+  | cv -> cv
+
 let materialize_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (cv : crease_val) :
     Geom.line =
   match cv with
@@ -97,9 +108,7 @@ let paper_line_of_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (c
            "--%s is a bundle; restrict it to one segment with & or \\" name)
   | Frozen _ ->
       Error.fail span
-        (Printf.sprintf
-           "--%s is not a physical crease, so it has no material mark to \
-            cross" name)
+        (Printf.sprintf "--%s is a line; the meet needs a crease" name)
   | Mark (cid, line) ->
       (* meet is a paper-space construction; a mark is always straight in the
          material frame (folding only bends it in table space), so use its
@@ -211,8 +220,7 @@ and material_cid (ctx : Ctx.ctx) (cr : Ast.crease_ref) : int =
            cr.Ast.cname)
   | Frozen _ ->
       Error.fail cr.Ast.cspan
-        (Printf.sprintf
-           "--%s is not a physical crease, so it has no segments to select"
+        (Printf.sprintf "--%s is a line; the filter needs a crease"
            cr.Ast.cname)
   | Edge _ ->
       Error.fail cr.Ast.cspan
@@ -434,6 +442,7 @@ let resolve_flap_cluster (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span)
       let candidates =
         match lo with
         | Ast.LNamed cr ->
+            ignore (crease_of ctx cr ~slot:"a flap operand" span);
             let cid = material_cid ctx cr in
             Fold_state.crease_segments !(ctx.state) cid
             |> List.concat_map (fun (s : Fold_state.crease_segment) ->
@@ -448,8 +457,8 @@ let resolve_flap_cluster (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span)
             |> List.sort_uniq compare
         | _ ->
             Error.fail span
-              (Printf.sprintf
-                 "%s is not a physical crease, so it names no flap" (lstr lo))
+              (Printf.sprintf "%s is a line; a flap operand needs a crease"
+                 (lstr lo))
       in
       match candidates with
       | [] -> Error.fail span (Printf.sprintf "%s touches no flap" (fstr fa))
@@ -575,6 +584,7 @@ let target_of (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span) :
   | Ast.FlapLine lo -> (
       match lo with
       | Ast.LNamed cr ->
+          ignore (crease_of ctx cr ~slot:"a flap operand" span);
           let cid = material_cid ctx cr in
           let st = !(ctx.state) in
           Fold_state.TargetHinged
@@ -590,8 +600,8 @@ let target_of (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span) :
           Fold_state.TargetHinged (fun f -> f = l || f = r)
       | _ ->
           Error.fail span
-            (Printf.sprintf
-               "%s is not a physical crease, so it names no flap" (lstr lo)))
+            (Printf.sprintf "%s is a line; a flap operand needs a crease"
+               (lstr lo)))
 
 (* A mark's extent (spec §4), resolved to PAPER-space geometry and checked
    against the motion's axis. [table_axis] is TABLE-space (as `resolve_line`
@@ -647,16 +657,69 @@ let resolve_mark_extent (ctx : Ctx.ctx) (table_axis : Geom.line) (ext : Ast.exte
       in
       `Partial (Fold_state.MPoint pp, pp, paper_axis_via (faces_containing ctx pp))
 
+(* ---- `into`: the crease a write scores onto ---- *)
+
+(* whether the write's table-space axis lies on the crease's own material:
+   a segment of a Material, the current chord of a Mark *)
+let crease_carries (ctx : Ctx.ctx) (cv : crease_val) (axis : Geom.line) : bool =
+  match cv with
+  | Material (cid, l_orig) -> (
+      match Fold_state.crease_segments !(ctx.state) cid with
+      | [] -> Geom.same_line axis l_orig
+      | segs ->
+          List.exists
+            (fun (sg : Fold_state.crease_segment) ->
+              Geom.side_of_line axis sg.Fold_state.ta = 0
+              && Geom.side_of_line axis sg.Fold_state.tb = 0)
+            segs)
+  | Mark (cid, line) -> (
+      match Fold_state.mark_axis_current !(ctx.state) cid with
+      | `Line l -> Geom.same_line axis l
+      | `Empty -> Geom.same_line axis line
+      | `Bent | `Collapsed -> false)
+  | Frozen _ | Bundle _ | Edge _ -> false
+
+let into_crease (ctx : Ctx.ctx) (n : string) (sp : Error.span) :
+    int * (Geom.line -> unit) =
+  let cv =
+    match List.find_map (fun s -> Hashtbl.find_opt s.lines n) ctx.scopes with
+    | Some ((Material _ | Mark _) as cv) -> cv
+    | Some (Frozen _) ->
+        Error.fail sp (Printf.sprintf "into needs a crease; --%s is a line" n)
+    | Some (Bundle _) ->
+        Error.fail sp
+          (Printf.sprintf
+             "into needs a crease of its own; --%s is a selection from others" n)
+    | Some (Edge _) ->
+        Error.fail sp
+          (Printf.sprintf "into needs a scored crease; --%s is a paper edge" n)
+    | None ->
+        Error.fail sp
+          (Printf.sprintf
+             "--%s is not bound; write as --%s to name a new crease" n n)
+  in
+  let cid = match cv with Material (c, _) | Mark (c, _) -> c | _ -> assert false in
+  ( cid,
+    fun axis ->
+      if not (crease_carries ctx cv axis) then
+        Error.fail sp
+          (Printf.sprintf
+             "the material this scores lies on no segment of --%s; name it \
+              with as instead" n) )
+
 (* Behaviour 3: the flap (coplanar cluster, as its face list) a partial
-   mark's extent is written onto. An explicit #[...] layer wins (mirrors
-   resolve_flap_cluster's FlapSpec branch); otherwise default to the
-   carrying flap — the cluster containing the extent's representative
-   paper point, erroring if that point sits on a boundary shared by several
-   flaps (ambiguous without a #[...] to disambiguate). *)
-let resolve_mark_flap (ctx : Ctx.ctx) (layer_opt : Ast.flap_operand option)
+   mark's extent is written onto. An explicit layer wins; a point or a line
+   there resolves through the flap resolver every other flap slot uses (ADR
+   0016 §5). Without one, default to the carrying flap: the cluster
+   containing the extent's representative paper point, erroring if that
+   point sits on a boundary shared by several flaps (ambiguous without a
+   #[...] to disambiguate). *)
+let resolve_mark_flap (ctx : Ctx.ctx) (layer_opt : Ast.flap_arg option)
     (rep : Geom.point) (span : Error.span) : int list =
   match layer_opt with
-  | Some (Ast.FByPoints (pts, fspan)) -> (
+  | Some ((Ast.FlapPoint _ | Ast.FlapLine _) as fa) ->
+      resolve_flap_cluster ctx fa span
+  | Some (Ast.FlapSpec (Ast.FByPoints (pts, fspan))) -> (
       match
         Fold_state.flap_of_points !(ctx.state) (List.map (resolve_point ctx) pts)
       with

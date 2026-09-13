@@ -162,6 +162,25 @@ let bind_crease (ctx : ctx) (name : string) (span : Error.span) (cv : crease_val
   Hashtbl.replace s.lines name cv;
   Hashtbl.replace s.line_steps name (List.length ctx.frames_rev)
 
+(* The binding step of an `as NAME` / `as NAME!` output clause (BELOCH.md,
+   Write statements). The name is checked when the clause is read, ahead of
+   the write, and bound when the returned step runs, after it. *)
+let bind_output (ctx : ctx) (name : string) ~(rebind : bool)
+    (span : Error.span) : crease_val -> unit =
+  let cur = List.hd ctx.scopes in
+  if not (is_temp name) then begin
+    let bound = Hashtbl.mem cur.lines name in
+    if bound && not rebind then
+      Error.fail span
+        (Printf.sprintf "--%s is bound; write as --%s! to rebind" name name);
+    if rebind && not bound then
+      Error.fail span
+        (Printf.sprintf "nothing to rebind with --%s!; drop the !" name)
+  end;
+  fun cv ->
+    if rebind then Hashtbl.remove cur.lines name;
+    bind_crease ctx name span cv
+
 (* `mark --d` on an already-bound name (e.g. a pure `--d = <motion>` value)
    promotes its binding in place to the freshly materialised crease, so a
    later `fold --d` can find it. Not a user-facing rebind (no dup check): the

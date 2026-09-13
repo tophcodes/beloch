@@ -4,6 +4,112 @@
 
 open Ctx
 
+(* ---- recognition: an alignment set as one of the seven axioms ---- *)
+
+type classified =
+  | Ax1 of Ast.point_operand * Ast.point_operand
+  | Ax2 of Ast.point_operand * Ast.point_operand
+  | Ax3 of Ast.point_operand * Ast.line_operand
+  | Ax4 of Ast.point_operand * Ast.line_operand * Ast.line_operand
+  | Ax5 of Ast.line_operand * Ast.line_operand * Ast.point_operand option
+  | Ax6 of
+      Ast.point_operand * Ast.line_operand * Ast.point_operand
+      * Ast.point_operand option
+  | Ax7 of
+      Ast.point_operand * Ast.line_operand * Ast.point_operand
+      * Ast.line_operand * Ast.point_operand option
+
+let kind_name (k : Ast.alignment_kind) : string =
+  match k with
+  | Ast.AlOnto (Ast.AoPoint _, Ast.AoPoint _) -> "point onto point"
+  | Ast.AlOnto (Ast.AoPoint _, Ast.AoLine _) -> "point onto line"
+  | Ast.AlOnto (Ast.AoLine _, Ast.AoPoint _) -> "line onto point"
+  | Ast.AlOnto (Ast.AoLine _, Ast.AoLine _) -> "line onto line"
+  | Ast.AlThrough _ -> "through a point"
+  | Ast.AlPerp _ -> "perp to a line"
+
+let unrecognised (c : Ast.construction) : 'a =
+  Error.fail c.Ast.c_span
+    ("these alignments are not one of the seven axioms: "
+    ^ String.concat ", "
+        (List.map (fun (a : Ast.alignment) -> kind_name a.Ast.al_kind)
+           c.Ast.c_alignments))
+
+(* A construction that names fold lines, in its head or on an alignment, is
+   the two-fold form: representable, and outside what the kernel solves. *)
+let names_fold_lines (c : Ast.construction) : bool =
+  c.Ast.c_fold_lines <> []
+  || List.exists
+       (fun (a : Ast.alignment) ->
+         a.Ast.al_fold_line <> None || a.Ast.al_fold_line2 <> None)
+       c.Ast.c_alignments
+
+let classify (c : Ast.construction) : classified =
+  if names_fold_lines c then
+    Error.fail c.Ast.c_span
+      "a construction over named fold lines is not evaluated yet";
+  (* the multiset of kinds, each bucket in source order: where a kind occurs
+     twice (axioms 1 and 7), source order fixes the operand roles *)
+  let onto_pp = ref [] and onto_pl = ref [] and onto_ll = ref [] in
+  let through = ref [] and perp = ref [] and other = ref false in
+  List.iter
+    (fun (a : Ast.alignment) ->
+      match a.Ast.al_kind with
+      | Ast.AlOnto (Ast.AoPoint p, Ast.AoPoint q) -> onto_pp := (p, q) :: !onto_pp
+      | Ast.AlOnto (Ast.AoPoint p, Ast.AoLine l) -> onto_pl := (p, l) :: !onto_pl
+      | Ast.AlOnto (Ast.AoLine l, Ast.AoLine m) -> onto_ll := (l, m) :: !onto_ll
+      | Ast.AlOnto (Ast.AoLine _, Ast.AoPoint _) -> other := true
+      | Ast.AlThrough p -> through := p :: !through
+      | Ast.AlPerp l -> perp := l :: !perp)
+    c.Ast.c_alignments;
+  let onto_pp = List.rev !onto_pp
+  and onto_pl = List.rev !onto_pl
+  and onto_ll = List.rev !onto_ll
+  and through = List.rev !through
+  and perp = List.rev !perp in
+  let one_line () =
+    (* toward selects among the candidates of axioms 5, 6 and 7; the other
+       four determine one line *)
+    if c.Ast.c_toward <> None then
+      Error.fail c.Ast.c_span "this construction determines one line; drop toward"
+  in
+  if !other then unrecognised c
+  else
+    match (onto_pp, onto_pl, onto_ll, through, perp) with
+    | [], [], [], [ p; q ], [] ->
+        one_line ();
+        Ax1 (p, q)
+    | [ (p, q) ], [], [], [], [] ->
+        one_line ();
+        Ax2 (p, q)
+    | [], [], [], [ p ], [ l ] ->
+        one_line ();
+        Ax3 (p, l)
+    | [], [ (p, d) ], [], [], [ m ] ->
+        one_line ();
+        Ax4 (p, d, m)
+    | [], [], [ (l, m) ], [], [] -> Ax5 (l, m, c.Ast.c_toward)
+    | [], [ (p, d) ], [], [ q ], [] -> Ax6 (p, d, q, c.Ast.c_toward)
+    | [], [ (p, d); (q, e) ], [], [], [] -> Ax7 (p, d, q, e, c.Ast.c_toward)
+    | _ -> unrecognised c
+
+let tag (cl : classified) : string =
+  match cl with
+  | Ax1 _ -> "axiom1"
+  | Ax2 _ -> "axiom2"
+  | Ax3 _ -> "axiom3"
+  | Ax4 _ -> "axiom4"
+  | Ax5 _ -> "axiom5"
+  | Ax6 _ -> "axiom6"
+  | Ax7 _ -> "axiom7"
+
+(* the point a map construction moves: a `fold` with no `moving` anchors on
+   it, and `reverse` reads it as the tip *)
+let implied_point (c : Ast.construction) : Ast.point_operand option =
+  match classify c with
+  | Ax2 (p, _) | Ax6 (p, _, _, _) | Ax7 (p, _, _, _, _) -> Some p
+  | Ax1 _ | Ax3 _ | Ax4 _ | Ax5 _ -> None
+
 (* axiom-5 (`map --l1 onto --l2`) needs its candidate bisectors selected against
    the current fold state (material of l1, paper incidence, `toward` direction),
    so [axis_of] defers that: intersecting lines yield [Ax5], everything else a
@@ -27,9 +133,12 @@ let ax5_sources (p : ax5_pending) : string list = p.sources
 
 (* axis line + provenance (axiom tag, source names), evaluated against the
    current table positions *)
-let axis_of (ctx : Ctx.ctx) (span : Error.span) (ax : Ast.axiom) : axis_result =
-  match ax with
-  | Ast.Through (p, q) ->
+let axis_of (ctx : Ctx.ctx) (span : Error.span) (c : Ast.construction) :
+    axis_result =
+  let cl = classify c in
+  let t = tag cl in
+  match cl with
+  | Ax1 (p, q) ->
       let pp = Resolve.table_of ctx p and qq = Resolve.table_of ctx q in
       if Geom.point_equal pp qq then
         Error.fail span
@@ -37,28 +146,28 @@ let axis_of (ctx : Ctx.ctx) (span : Error.span) (ax : Ast.axiom) : axis_result =
              "%s and %s are at the same place, so there is no line through \
               them"
              (Resolve.pstr p) (Resolve.pstr q));
-      Axis (Geom.line_through pp qq, "axiom1", [ Resolve.pstr p; Resolve.pstr q ])
-  | Ast.MapPoints (p, q) ->
+      Axis (Geom.line_through pp qq, t, [ Resolve.pstr p; Resolve.pstr q ])
+  | Ax2 (p, q) ->
       let pp = Resolve.table_of ctx p and qq = Resolve.table_of ctx q in
       if Geom.point_equal pp qq then
         Error.fail span
           (Printf.sprintf "%s and %s are already at the same place" (Resolve.pstr p)
              (Resolve.pstr q));
-      Axis (Geom.perpendicular_bisector pp qq, "axiom2", [ Resolve.pstr p; Resolve.pstr q ])
-  | Ast.Perp (p, l) ->
+      Axis (Geom.perpendicular_bisector pp qq, t, [ Resolve.pstr p; Resolve.pstr q ])
+  | Ax3 (p, l) ->
       Axis
         ( Geom.perpendicular_through (Resolve.resolve_line ctx l) (Resolve.table_of ctx p),
-          "axiom3",
+          t,
           [ Resolve.pstr p; Resolve.lstr l ] )
-  | Ast.MapOntoLine (p, l1, l2) -> (
+  | Ax4 (p, l1, l2) -> (
       let pp = Resolve.table_of ctx p and ll1 = Resolve.resolve_line ctx l1 and ll2 = Resolve.resolve_line ctx l2 in
       match Geom.project_crease pp ll1 ll2 with
       | None ->
           Error.fail span
             (Printf.sprintf "map %s onto %s perp %s: lines are parallel, no fold exists"
                (Resolve.pstr p) (Resolve.lstr l1) (Resolve.lstr l2))
-      | Some crease -> Axis (crease, "axiom4", [ Resolve.pstr p; Resolve.lstr l1; Resolve.lstr l2 ]))
-  | Ast.MapLines (l1, l2, p_opt) -> (
+      | Some crease -> Axis (crease, t, [ Resolve.pstr p; Resolve.lstr l1; Resolve.lstr l2 ]))
+  | Ax5 (l1, l2, p_opt) -> (
       let la = Resolve.resolve_line ctx l1 and lb = Resolve.resolve_line ctx l2 in
       let l1_str = Resolve.lstr l1 and l2_str = Resolve.lstr l2 in
       match Geom.angle_bisectors la lb with
@@ -70,7 +179,7 @@ let axis_of (ctx : Ctx.ctx) (span : Error.span) (ax : Ast.axiom) : axis_result =
           in
           if Num.equal lb.Geom.c (Num.mul k la.Geom.c) then
             Error.fail span "lines are identical";
-          Axis (Geom.parallel_midline la lb, "axiom5", [ l1_str; l2_str ])
+          Axis (Geom.parallel_midline la lb, t, [ l1_str; l2_str ])
       | Some cands ->
           (* intersecting: defer bisector choice to the fold state. `toward`
              names where the fold goes, so a point on l1 is meaningless (E1);
@@ -100,7 +209,7 @@ let axis_of (ctx : Ctx.ctx) (span : Error.span) (ax : Ast.axiom) : axis_result =
               toward_str;
               sources;
             })
-  | Ast.MapThrough (p, d, p', x_opt) -> (
+  | Ax6 (p, d, p', x_opt) -> (
       let pp = Resolve.table_of ctx p and dd = Resolve.resolve_line ctx d and pp' = Resolve.table_of ctx p' in
       if Geom.point_equal pp pp' then
         Error.fail span
@@ -124,7 +233,7 @@ let axis_of (ctx : Ctx.ctx) (span : Error.span) (ax : Ast.axiom) : axis_result =
                    "map %s onto %s through %s: no crease lands on the paper — \
                     no fold to make"
                    (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr p'))
-          | [ c ] -> Axis (c, "axiom6", base)
+          | [ c ] -> Axis (c, t, base)
           | creases -> (
               match x_opt with
               | None ->
@@ -154,11 +263,11 @@ let axis_of (ctx : Ctx.ctx) (span : Error.span) (ax : Ast.axiom) : axis_result =
                       None creases
                   in
                   match best with
-                  | Some c -> Axis (c, "axiom6", base @ [ Resolve.pstr xo ])
+                  | Some c -> Axis (c, t, base @ [ Resolve.pstr xo ])
                   (* unreachable: this arm only runs with ≥2 creases, so the
                      fold over a non-empty list always yields [Some]. *)
                   | None -> assert false)))
-  | Ast.MapBoth (p, d, q, e, x_opt) -> (
+  | Ax7 (p, d, q, e, x_opt) -> (
       let pp = Resolve.table_of ctx p and dd = Resolve.resolve_line ctx d in
       let qq = Resolve.table_of ctx q and ee = Resolve.resolve_line ctx e in
       let base = [ Resolve.pstr p; Resolve.lstr d; Resolve.pstr q; Resolve.lstr e ] in
@@ -193,7 +302,7 @@ let axis_of (ctx : Ctx.ctx) (span : Error.span) (ax : Ast.axiom) : axis_result =
                    "map %s onto %s and %s onto %s: no crease lands on the \
                     paper — no fold to make"
                    (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr q) (Resolve.lstr e))
-          | [ c ] -> Axis (c, "axiom7", base)
+          | [ c ] -> Axis (c, t, base)
           | creases -> (
               match x_opt with
               | None ->
@@ -224,7 +333,7 @@ let axis_of (ctx : Ctx.ctx) (span : Error.span) (ax : Ast.axiom) : axis_result =
                       None creases
                   in
                   match best with
-                  | Some c -> Axis (c, "axiom7", base @ [ Resolve.pstr xo ])
+                  | Some c -> Axis (c, t, base @ [ Resolve.pstr xo ])
                   | None -> assert false)))
 
 (* ---- axiom-5 bisector selection (direction + paper incidence) ---- *)

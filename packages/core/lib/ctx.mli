@@ -117,6 +117,13 @@ val flap_lookup_result :
 val bind_point : ctx -> string -> Error.span -> Geom.point -> unit
 val bind_crease : ctx -> string -> Error.span -> crease_val -> unit
 
+val bind_output :
+  ctx -> string -> rebind:bool -> Error.span -> (crease_val -> unit)
+(** The binding step of a write's `as NAME` / `as NAME!` output clause: the
+    name is checked now, ahead of the write, and bound when the returned
+    step runs. A bound name needs the `!`, a free one refuses it, and a
+    `_`-prefixed temp rebinds either way. *)
+
 val promote_crease : ctx -> string -> crease_val -> unit
 (** Promotes an already-bound name's binding in place to a freshly
     materialised crease (e.g. `mark --d` on a pure value-bound line), so a

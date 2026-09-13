@@ -48,8 +48,9 @@ type arg = APoint of point_operand | ALine of line_operand
 
 (* A construction, the read of sort line a write's axis comes from: the set
    of alignments that together determine the fold line (ADR 0022). The seven
-   prose spellings desugar to this record at parse time; the alignment set is
-   recognised as one of the seven axioms where a solver is needed. *)
+   prose spellings desugar to this record at parse time; [Axiom.classify]
+   recognises the alignment set as one of the seven axioms where a solver is
+   needed. *)
 type align_object = AoPoint of point_operand | AoLine of line_operand
 
 and alignment_kind =
@@ -70,22 +71,6 @@ and construction = {
   c_toward : point_operand option;
   c_span : Error.span;
 }
-
-(* The seven Huzita-Justin axioms as constructors, the form [Axiom.axis_of]
-   dispatches on. [Items.axiom_of_construction] recognises an alignment set
-   as one of them. *)
-type axiom =
-  | Through of point_operand * point_operand (* axiom 1 *)
-  | MapPoints of point_operand * point_operand (* axiom 2 *)
-  | Perp of point_operand * line_operand (* axiom 3: through .p, perp to --l *)
-  | MapOntoLine of point_operand * line_operand * line_operand (* axiom 4 *)
-  | MapLines of line_operand * line_operand * point_operand option (* axiom 5 *)
-  | MapThrough of
-      point_operand * line_operand * point_operand * point_operand option
-    (* axiom 6: fold .p onto --d, crease through .p', optional `toward` selector *)
-  | MapBoth of
-      point_operand * line_operand * point_operand * line_operand * point_operand option
-    (* axiom 7: fold .p onto --d AND .q onto --e simultaneously, optional toward *)
 
 type direction = Valley | Mountain
 
