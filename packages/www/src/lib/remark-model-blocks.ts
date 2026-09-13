@@ -350,18 +350,13 @@ function statementNode(
 			...series(s.defines.map((id) => anchor("bm:defines", id, (terms.get(id) as Term).name))),
 		]);
 	}
-	if (s.uses.length) {
-		groups.push([
-			text("Uses: "),
-			...series(s.uses.map((id) => anchor("bm:uses", id, statements.get(id)?.label ?? id))),
-		]);
-	}
-	if (s.usedBy.length) {
-		groups.push([
-			text("Used by: "),
-			...series(s.usedBy.map((id) => anchor("bm:usedBy", id, statements.get(id)?.label ?? id))),
-		]);
-	}
+	// `uses` and `usedBy` stay in the RDFa graph but are not shown: the uses are
+	// already links in the statement text, and the reverse direction is noise
+	// to a reader.
+	const hiddenRels: any[] = [
+		...s.uses.map((id) => anchor("bm:uses", id, statements.get(id)?.label ?? id)),
+		...s.usedBy.map((id) => anchor("bm:usedBy", id, statements.get(id)?.label ?? id)),
+	];
 	if (realizedBy.length) {
 		groups.push([
 			text("Realized by: "),
@@ -377,6 +372,7 @@ function statementNode(
 
 	const children = [para("stmt-head", head), ...s.body];
 	if (groups.length) children.push(para("stmt-links", separated(groups)));
+	if (hiddenRels.length) children.push(el("span", { className: ["stmt-rels"], hidden: true }, hiddenRels));
 
 	return el(
 		"section",

@@ -229,18 +229,8 @@ local function links_line(id, s)
     for _, id in ipairs(s.defines) do items[#items + 1] = ref(id, terms[id].name) end
     groups[#groups + 1] = group("Defines", items)
   end
-  if #s.uses > 0 then
-    local items = {}
-    for _, id in ipairs(s.uses) do
-      if statements[id] then items[#items + 1] = ref(id, statements[id].label) end
-    end
-    if #items > 0 then groups[#groups + 1] = group("Uses", items) end
-  end
-  if #s.usedBy > 0 then
-    local items = {}
-    for _, id in ipairs(s.usedBy) do items[#items + 1] = ref(id, statements[id].label) end
-    groups[#groups + 1] = group("Used by", items)
-  end
+  -- `uses` and `usedBy` are not printed: the uses are links in the statement
+  -- text already, and the reverse direction is noise to a reader.
   local realizedBy = register().realizedBy[id]
   if realizedBy then
     local items = {}

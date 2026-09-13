@@ -35,6 +35,12 @@ function links(id: string): string {
   return line ? line[1] : "";
 }
 
+function rels(id: string): string {
+  const section = html.slice(html.indexOf(`id="${id}"`));
+  const span = /<span class="stmt-rels" hidden(?:="")?>(.*?)<\/span>/s.exec(section);
+  return span ? span[1] : "";
+}
+
 test("statements are numbered per section, shared across classes", () => {
   expect(html).toContain('<span class="stmt-label" property="bm:label">Definition 1.1</span>');
   expect(html).toContain('<span class="stmt-label" property="bm:label">Definition 1.2</span>');
@@ -54,20 +60,20 @@ test("statement sections carry RDFa and keep their id", () => {
   );
 });
 
-test("back references are derived from the forward ones", () => {
+test("back references are derived from the forward ones, kept out of sight", () => {
   // Definition 1.1 is used by the lemma only; Definition 1.2 by the lemma and
-  // the open point.
-  expect(links("def-sheet")).toContain(
-    'Used by: <a rel="bm:usedBy" href="#lem-face-points">Lemma 2.1</a>',
+  // the open point. Both directions live in a hidden span so that the RDFa
+  // graph has them while the reader sees only the links in the text.
+  expect(links("def-sheet")).not.toContain("Used by");
+  expect(rels("def-sheet")).toContain(
+    '<a rel="bm:usedBy" href="#lem-face-points">Lemma 2.1</a>',
   );
-  expect(links("def-flat-state")).toContain(
-    'Used by: <a rel="bm:usedBy" href="#lem-face-points">Lemma 2.1</a>, ' +
-      '<a rel="bm:usedBy" href="#open-rank">Open 2.2</a>',
+  expect(rels("def-flat-state")).toContain(
+    '<a rel="bm:usedBy" href="#lem-face-points">Lemma 2.1</a>',
   );
-  expect(links("lem-face-points")).toContain(
-    'Uses: <a rel="bm:uses" href="#def-sheet">Definition 1.1</a>, ' +
-      '<a rel="bm:uses" href="#def-flat-state">Definition 1.2</a>',
-  );
+  expect(rels("def-flat-state")).toContain('<a rel="bm:usedBy" href="#open-rank">Open 2.2</a>');
+  expect(rels("lem-face-points")).toContain('<a rel="bm:uses" href="#def-sheet">Definition 1.1</a>');
+  expect(links("lem-face-points")).not.toContain("Uses:");
 });
 
 test("defines and realized-by render on the links line", () => {
