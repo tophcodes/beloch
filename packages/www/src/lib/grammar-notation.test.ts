@@ -201,12 +201,46 @@ test("a `grammar` sample quoted inside a wider fence is not a fragment of its ow
 
 test("a `grammar2` info string is not a grammar block", () => {
 	const doc = parseDocument(
-		["```grammar", "real := CREASE_NAME", "```", "", "```grammar2", "fake := CREASE_NAME"].join(
-			"\n",
-		),
+		[
+			"```grammar",
+			"real := CREASE_NAME",
+			"```",
+			"",
+			"```grammar2",
+			"fake := CREASE_NAME",
+			"```",
+		].join("\n"),
 		"fixture.md",
 	);
 	expect(doc.fragments.map((f) => f.rules.map((r) => r.name))).toEqual([["real"]]);
+});
+
+test("an info string glued to the language, like `c99` or `json5`, still opens and closes a fence, and a closed `grammar2` block does not swallow a later `grammar` block", () => {
+	const doc = parseDocument(
+		[
+			"```grammar",
+			"real := CREASE_NAME",
+			"```",
+			"",
+			"```grammar2",
+			"fake := CREASE_NAME",
+			"```",
+			"",
+			"```c99",
+			"int main() {}",
+			"```",
+			"",
+			"```json5",
+			"{ x: 1 }",
+			"```",
+			"",
+			"```grammar",
+			"real2 := CREASE_NAME",
+			"```",
+		].join("\n"),
+		"fixture.md",
+	);
+	expect(doc.fragments.map((f) => f.rules.map((r) => r.name))).toEqual([["real"], ["real2"]]);
 });
 
 test("a four-backtick block quoting an unclosed three-backtick fence parses without error", () => {
