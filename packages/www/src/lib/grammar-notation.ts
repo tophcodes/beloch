@@ -70,14 +70,14 @@ export interface ParseOptions {
 
 export class GrammarError extends Error {}
 
-// The info string's language is its first word; anything after is a meta
-// part (a title, flags for a highlighter) and is not part of the language,
-// so a meta part must be set off from the language by a space or tab. An
-// opener is a run of three or more backticks; a fence ends at the first
-// later line that is a run of backticks at least as wide as the opener and
-// nothing else, so a narrower fence quoted inside it is content, not a
-// nested block.
-const OPEN = /^(`{3,})([A-Za-z-]*)(?:[ \t][^`]*)?$/;
+// An opener is a run of three or more backticks followed by an info string:
+// anything with no backtick in it, possibly empty. The language is the info
+// string's first word; anything after is a meta part (a title, flags for a
+// highlighter), set off from the language by a space or tab, and not part of
+// the language. A fence ends at the first later line that is a run of
+// backticks at least as wide as the opener and nothing else, so a narrower
+// fence quoted inside it is content, not a nested block.
+const OPEN = /^(`{3,})([^`]*)$/;
 const CLOSE = /^(`+)\s*$/;
 const HEAD = /^([A-Za-z_][A-Za-z0-9_]*)\s*:=/;
 const ENTRY = /^\s*([A-Za-z_][A-Za-z0-9_]*)[ \t]*(?:;[ \t]*(.*?))?[ \t]*$/;
@@ -104,6 +104,7 @@ function blocks(source: string, path: string): Block[] {
 		const open = OPEN.exec(all[i]);
 		if (!open) continue;
 		const width = open[1].length;
+		const lang = open[2].trim().split(/[ \t]+/, 1)[0] ?? "";
 		let j = i + 1;
 		while (j < all.length) {
 			const close = CLOSE.exec(all[j]);
@@ -111,7 +112,7 @@ function blocks(source: string, path: string): Block[] {
 			j++;
 		}
 		if (j >= all.length) fail(path, i + 1, "unclosed fence; add a closing line of three backticks");
-		out.push({ lang: open[2], line: i + 2, lines: all.slice(i + 1, j) });
+		out.push({ lang, line: i + 2, lines: all.slice(i + 1, j) });
 		i = j;
 	}
 	return out;
