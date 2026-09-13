@@ -62,6 +62,18 @@ Sources: paper as an orientable 2-manifold with boundary [@demaine2007,
 §11.4.1]; faces as strictly convex polygons because face division and overlap
 algorithms need it [@ida2020, p. 176].
 
+::: {.open #open-sheet-shapes name="sheet shapes beyond polygons" uses="def-sheet def-flat-state"}
+The language design for sheets as values
+(`docs/superpowers/specs/2026-09-13-paper-as-value-design.md`) names the
+circle as a shape. A disc is no polygon and has no decomposition into finitely
+many convex polygons, so [#def-sheet] and [#def-flat-state] exclude it as
+written. The generalisation is a sheet bounded by finitely many algebraic
+arcs and faces that are convex regions bounded by segments and arcs of the
+sheet boundary; convexity survives cuts by lines, so the rest of the model
+stands. Whether to widen the definitions now or when a circular sheet is
+built is open; the kernel's polygon geometry is the cost either way.
+:::
+
 ## 2. Flat folded state
 
 Intuition: a folded state records where every point of the sheet lies on the
@@ -418,6 +430,30 @@ stays where it is on the table while its material changes. Whether this is
 the intended meaning, or a line should be re-anchored to the material it was
 computed from, is not decided; it decides what `--l = map .a onto .b`
 followed by a fold and then `mark --l` means.
+:::
+
+## 5. Operations
+
+To be written: the writes as partial functions on states, each with its
+domain.
+
+## 6. Programs
+
+To be written: a program as a finite sequence of states.
+
+::: {.open #open-several-sheets name="several sheets and bodies" uses="def-sheet def-flat-state def-noncrossing cond-connected"}
+The language design for sheets as values
+(`docs/superpowers/specs/2026-09-13-paper-as-value-design.md`) lets a program
+hold several sheets and assemble them into a body. In the model a multi-sheet
+program state is a family of flat folded states, one per sheet, and an
+assembled body is a flat folded state of the disjoint union of its sheets: one
+$f$ into one table, one $\lambda$ over the faces of all members, the
+non-crossing conditions unchanged, and [#cond-connected] required per member
+instead of overall. A tab inside a pocket is then $\lambda$ placing the tab's
+faces between the pocket's, with the taco-tortilla condition keeping it out of
+the pocket's fold. This covers flat assembly; a body that is not flat waits
+for the non-flat state. Taking a body apart again is trivial in the model and
+absent from the language, which should be stated as a choice.
 :::
 
 ## Terms
