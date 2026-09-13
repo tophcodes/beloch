@@ -108,7 +108,6 @@ delimited on both sides and classified by its head.
 write_stmt := verb [ CREASE_NAME "=" ] item*
 verb       := "mark" | "fold" | "reverse" | "flatten" | "flip"
 item       := "(" item_body ")"
-            | "{" "toward" point_operand "}"
 item_body  := fold_item | reverse_item | mark_item | flatten_item
 ```
 
@@ -132,13 +131,15 @@ mark_item    := axis
 flatten_item := line_operand [ "mountain" | "valley" ]
               | flap_operand "over" flap_operand
               | "staying" flap_operand
+              | "toward" point_operand
 axis         := construction_body | line_operand
 ```
 
-`flip` takes no item. `{toward …}` is the one item with braces; it belongs
-to `flatten`, where it selects among states rather than among lines
-([open-flatten-selection](/model/#open-flatten-selection)), and a
-construction carries its own selection inside its item.
+`flip` takes no item. Round parentheses are items and braces are blocks
+(`def`, `on`, `export`); no item uses braces. The `toward` item of
+`flatten` selects among states rather than among lines
+([open-flatten-selection](/model/#open-flatten-selection)); a construction
+carries its own selection inside its item.
 
 ```
 fold    (map .a onto .c) (moving .a)
@@ -150,7 +151,7 @@ reverse (map .b onto .c)
 reverse (map .b onto .c) (outside)
 mark    (through .a .c)
 mark    (map --ab onto --cd) (on #[.c]) (between .a .m) (mountain)
-flatten (--h & --bc) (--v & --cd) (.q over .r) (staying .a) {toward .q}
+flatten (--h & --bc) (--v & --cd) (.q over .r) (staying .a) (toward .q)
 flip
 ```
 
@@ -247,7 +248,6 @@ stmt              := write_stmt | bind_stmt | def_stmt | apply_stmt | export_stm
 write_stmt        := verb [ CREASE_NAME "=" ] item*
 verb              := "mark" | "fold" | "reverse" | "flatten" | "flip"
 item              := "(" item_body ")"
-                   | "{" "toward" point_operand "}"
 item_body         := fold_item | reverse_item | mark_item | flatten_item
 
 fold_item         := axis
@@ -266,6 +266,7 @@ mark_item         := axis
 flatten_item      := line_operand [ "mountain" | "valley" ]
                    | flap_operand "over" flap_operand
                    | "staying" flap_operand
+                   | "toward" point_operand
 axis              := construction_body | line_operand
 
 construction_body := "align" CREASE_NAME* alignment+ [ "toward" point_operand ]
