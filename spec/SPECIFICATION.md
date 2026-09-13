@@ -1813,7 +1813,7 @@ and the process exits non-zero:
 
 The Menhir grammar is authoritative once written; this sketch is a guide.
 
-```
+```grammar
 program       := "paper" "square" stmt*
 stmt          := crease_stmt | point_stmt | flip_stmt | flatten_stmt
               | def_stmt | instance_stmt | apply_stmt | export_stmt          ; since v0.16-dev

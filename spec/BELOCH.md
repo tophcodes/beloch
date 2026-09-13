@@ -21,10 +21,11 @@ by section. The model does not refer to the language.
 
 Each section states its part of the grammar in the notation of the
 collected [grammar](#grammar) at the end: `:=` defines, `|` separates
-alternatives, `[ … ]` is optional, `*` and `+` repeat, quoted strings are
-keywords, upper-case names are tokens. The collected grammar is assembled
-from the fragments; the parsers in `packages/core` and `packages/grammar`
-are held to it.
+alternatives, `[ … ]` is optional, `( … )` groups, `*` and `+` repeat,
+quoted strings are keywords, upper-case names are tokens, and `;` starts a
+comment that runs to the end of the line. The collected grammar is
+assembled from the fragments; the parsers in `packages/core` and
+`packages/grammar` are held to it.
 
 ## A program is a path
 
@@ -34,7 +35,7 @@ state ([def-flat-state](/model/#def-flat-state)) and either produces the next
 one or fails with a reason. The program's meaning is the finite sequence of
 states it passes through; its result is the last state.
 
-```
+```grammar
 program := "paper" "square" stmt*
 stmt    := write_stmt | bind_stmt | def_stmt | apply_stmt | export_stmt
 ```
@@ -100,7 +101,7 @@ A line stands nowhere a crease is wanted: it has no material until a
 `mark` scores it. The check needs no geometry, so a program's sorts can be
 verified before it is evaluated.
 
-```
+```grammar
 flap_operand  := point_operand | line_operand | "#[" point_operand+ "]"
 ```
 
@@ -112,7 +113,7 @@ any order. The construction that supplies the axis is an item like the
 others, so every slot of a write's signature is one block in the source,
 delimited on both sides and classified by its head.
 
-```
+```grammar
 write_stmt := verb item* [ "as" CREASE_NAME [ "!" ] | "into" CREASE_NAME ]
 verb       := "mark" | "fold" | "reverse" | "flatten" | "flip"
 item       := "(" item_body ")"
@@ -122,7 +123,7 @@ item_body  := fold_item | reverse_item | mark_item | flatten_item
 Which item bodies a verb accepts is stated with the verb; the bodies of the
 current writes, ahead of their own sections:
 
-```
+```grammar
 fold_item    := axis
               | "moving" flap_operand
               | "up" "to" flap_operand
@@ -208,7 +209,7 @@ distributed over two fold lines, give the 489 two-fold axioms [@alperin2006,
 §4]. The construction with its alignments is the canonical form; an axiom
 number is the name of one such set.
 
-```
+```grammar
 construction_body := "align" CREASE_NAME* alignment+ [ "toward" point_operand ]
                    | prose_axiom
 alignment         := "(" [ CREASE_NAME ] object "onto" [ CREASE_NAME ] object ")"
@@ -262,45 +263,25 @@ is the material a graphical editor binds its actions to.
 
 ## Grammar
 
-The fragments of the sections above, collected. Rules not yet stated in a
-section of this document are in `SPECIFICATION.md`, Appendix A.
+The fragments of the sections above, collected. A rule a fragment refers to
+and no section of this document states is listed under *Defined elsewhere*,
+with its home.
 
+```grammar-collected
 ```
-program           := "paper" "square" stmt*
-stmt              := write_stmt | bind_stmt | def_stmt | apply_stmt | export_stmt
 
-write_stmt        := verb item* [ "as" CREASE_NAME [ "!" ] | "into" CREASE_NAME ]
-verb              := "mark" | "fold" | "reverse" | "flatten" | "flip"
-item              := "(" item_body ")"
-item_body         := fold_item | reverse_item | mark_item | flatten_item
+```grammar-external
+point_operand   ; SPECIFICATION.md Appendix A
+line_operand    ; SPECIFICATION.md Appendix A
+prose_axiom     ; SPECIFICATION.md §4.1 to §4.5c
+bind_stmt       ; SPECIFICATION.md Appendix A
+def_stmt        ; SPECIFICATION.md Appendix A
+apply_stmt      ; SPECIFICATION.md Appendix A
+export_stmt     ; SPECIFICATION.md Appendix A
+```
 
-fold_item         := axis
-                   | "moving" flap_operand
-                   | "up" "to" flap_operand
-                   | "mountain"
-                   | ( "over" | "under" ) flap_operand
-reverse_item      := axis
-                   | "moving" flap_operand
-                   | "outside"
-mark_item         := axis
-                   | "on" flap_operand
-                   | "between" point_operand point_operand
-                   | "at" point_operand
-                   | "mountain" | "valley"
-flatten_item      := line_operand [ "mountain" | "valley" ]
-                   | flap_operand "over" flap_operand
-                   | "staying" flap_operand
-                   | "toward" point_operand
-axis              := construction_body | line_operand
-
-construction_body := "align" CREASE_NAME* alignment+ [ "toward" point_operand ]
-                   | prose_axiom
-alignment         := "(" [ CREASE_NAME ] object "onto" [ CREASE_NAME ] object ")"
-                   | "(" [ CREASE_NAME ] "through" point_operand ")"
-                   | "(" [ CREASE_NAME ] "perp" line_operand ")"
-object            := point_operand | line_operand
-
-flap_operand      := point_operand | line_operand | "#[" point_operand+ "]"
+```grammar-planned
+align   ; two-fold constructions are not evaluated yet
 ```
 
 ## References
