@@ -422,9 +422,16 @@ never changes the state.
 The reads of the language fall into three families.
 
 ::: {.definition #def-motion name="motion" uses="def-read def-line" defines="term-motion"}
-A *motion* is a read of sort line built from a Huzita-Justin construction: a
-construction $c$ takes points and lines and yields a finite set $c(s, a)$ of
-candidate lines, between zero and three of them. The motion is the read
+A *motion* is a read of sort line built from a construction. An *alignment*
+is an incidence between two objects, each a point, a line, or the image of
+one under the fold across the line sought: a point onto a point, a point
+onto a line, a line onto a line, the line through a point, the line
+perpendicular to a line. A *construction* $c$ is a finite set of alignments
+that determines the line: finitely many solutions, and no alignment
+redundant [@alperin2006, Definition 8]. Its value $c(s, a)$ is the finite
+set of candidate lines that satisfy every alignment; the seven Huzita-Justin
+axioms are the seven such sets, with between zero and three candidates each
+[@alperin2006, §3]. The motion is the read
 $$ r(s, a) = \ell \quad \text{when } \sigma(s, a, c(s, a)) = \{\ell\}, $$
 undefined otherwise, where $\sigma$ is the selection the program stated, the
 identity when it stated none. Selections are: discard candidates whose
