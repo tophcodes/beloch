@@ -180,7 +180,6 @@ program sample read as one system:
 .gr-comment     { color: #7E8C73; font-style: italic; }
 ```
 
-`.gr-links` joins the existing `.stmt-links, .term-links` selector group.
 
 ## The register
 
@@ -322,8 +321,8 @@ The colour table is written twice, once in CSS and once in typst. The class
 names are the same on both sides, so the two tables are checkable against each
 other by eye.
 
-The collected grammar, the *Defined elsewhere* block and the backlink lines
-are built from the same register entry, so the PDF and the page carry the same
+The collected grammar and the *Defined elsewhere* block are built from the
+same register entry, so the PDF and the page carry the same
 rules in the same order.
 
 ## Errors
@@ -358,9 +357,8 @@ script exits non-zero with the same text.
    `<a class="gr-nonterminal" href="#rule-axis">axis</a>`; an external name
    renders with `gr-external` and points at its entry in the *Defined
    elsewhere* block.
-4. **Backlinks.** `axis` carries
-   `Used by: <a href="#rule-fold_item">fold_item</a>, …` in document order;
-   `program`, which nothing refers to, carries no links line.
+4. **Forward links only.** No rule renders a `gr-links` line; the register
+   still records `usedBy` per rule.
 5. **Errors.** Six fixtures, one per build error above, each asserted by its
    full message.
 6. **Collected grammar.** The `grammar-collected` block expands to every rule
