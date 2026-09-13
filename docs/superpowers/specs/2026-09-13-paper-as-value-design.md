@@ -297,6 +297,80 @@ Lighter than a full composite, and incomplete in a way that cannot be fixed
 incrementally: a fold that sweeps through B without disturbing a recorded
 constraint passes.
 
+### D8: A folded model, trimmed to one flap, is a shape
+
+Folders make shapes by folding: corners folded under give an octagon, the
+diagonal gives a triangle, and the excess is cut away. `trim` is that cut.
+It takes a folded sheet and one of its flaps and yields a fresh, unfolded
+sheet whose outline is the flap's outline; every other flap is discarded.
+
+```
+$$m = square
+on $$m { fold (map .a onto .c) }          ; the a-flap lies on the c-flap
+$$t = trim $$m to .a                      ; the triangle, with .a .b .d
+```
+
+**Why the flap and not the silhouette.** The silhouette of a folded state is
+the union of all face images; a flap is one connected piece of paper that
+lies flat as one (`MODEL.md`, `#def-flap`). Cutting a real model down to one
+layer yields the flap. The silhouette would need a cut through every layer
+along the outer boundary and leaves a stack, and a silhouette point
+corresponds to several paper points, so no name survives it. In the cases
+this is for, the two coincide: the bottom flap of an octagon or a triangle
+covers the whole silhouette. Where they differ, a strip folded around so
+that no layer spans the outline, the flap is the honest answer.
+
+**Names carry over.** A flap is a subset $P' \subseteq P$ of the sheet, and
+the model carries every point in paper coordinates. The trimmed sheet is
+that subset: every name whose point lies in $P'$ keeps its meaning and its
+coordinate, every name outside it is gone. The triangle above has `.a`,
+`.b`, `.d` and every point placed on the a-flap; `.c` lay on the discarded
+flap. The flap's faces are convex polygons joined by flat hinges, which is
+already the decomposition `#def-flat-state` asks for, and the flat creases
+marked on the flap remain material.
+
+**Which flap.** The model has no bottom: the layer ordering is partial
+(`MODEL.md`, `#rem-linear-extension`), and a lowest flap exists only when
+one flap covers every other. The flap is therefore named, with the operand
+`moving` and `on` take: a point, a line, or `#[…]`. A default for the case
+of exactly one covering flap can be added later without changing the form.
+
+**The hole condition.** A flap can have a hole: the frame around a centre
+folded inward is one flap with a hole. `#def-sheet` excludes holes, because
+the tortilla conditions and the folding-motion theorem are proven for
+polygons without them. `trim` is partial on the same ground: a flap whose
+outline has a hole is an error naming the flap.
+
+**Vertices and ordinals.** The outline's vertices are the boundary points
+where it turns: inherited corners, endpoints of folded creases on the old
+boundary, and crossings of folded creases; a flat crease meeting the
+boundary makes no vertex. All of them are crease-and-edge intersections
+and reachable through the meet selector when the creases have names. For
+the rest, D5 applies with the trivial symmetry group: ordinals exist only
+from an anchor. `vertex n` and `edge n` take `from .p`, counting
+counter-clockwise from a named point, `.p` itself not counted:
+
+```
+$$t = trim $$m to .a with { .p = vertex 1 from .a }
+```
+
+On a shape with a non-trivial group `from` is allowed and moves the origin;
+on a trimmed shape it is required, and its absence is an error: `the shape
+has no symmetry to count from; name an anchor with from`.
+
+**Reach.** A trimmed shape's vertices are origami-constructible, so any
+polygon with such vertices is a shape: every rational triangle through
+`free on … at t`, the cubic ones through axioms 6 and 7, and the regular
+$n$-gons of D5's reach discussion through their folding constructions. The
+regular polygon is a folding recipe on top of `trim`, and the shape table
+of D5 grows by construction instead of by entry.
+
+**Rejected: `cut` as an operation.** A cut from boundary to boundary makes
+two sheets out of one, which is D6's multi-sheet layer, and a cut that ends
+inside the sheet is a slit, a degenerate hole against `#def-sheet`.
+Kirigami with layers kept is a different undertaking; `trim` covers making
+a shape by folding without layers, holes or a second sheet.
+
 ## Surface syntax
 
 Grammar delta against Appendix A:
@@ -311,9 +385,10 @@ on_stmt        := "on" SHEET_NAME "{" on_body* "}"
 on_body        := stmt minus ( def_stmt | on_stmt )      ; §5a.2 keeps def top-level
 shape_expr     := shape [ "with" "{" prelude_entry+ "}" ]
 shape          := "square"                                ; the shape table grows
+                | "trim" SHEET_NAME "to" flap_operand       ; D8
 prelude_entry  := ( POINT_NAME | CREASE_NAME ) "!"? "=" selector
-selector       := "vertex" NAT
-                | "edge" NAT
+selector       := "vertex" NAT [ "from" POINT_NAME ]       ; from: required on a trimmed shape (D8)
+                | "edge" NAT [ "from" POINT_NAME ]
                 | "center"
                 | "free" "on" "boundary" [ "from" POINT_NAME ] [ "at" RATIONAL ]
 
