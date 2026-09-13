@@ -53,12 +53,11 @@ code, resolved here and listed again under Migration:
   `Ctx → Resolve → { Axiom, Flatten_solve } → Eval`. `Items` sits on the parse
   side, before that chain, and its `.mli` follows the same convention. The
   `eval.ml` line budget stays green.
-- **Open, and the one decision here worth a record of its own:** which form
-  the AST keeps for a construction. Option A recognises an `align` into
-  `Ast.axiom` at parse time and keeps the seven-constructor AST; option B
-  makes the alignment set the AST's only representation and recognises it in
-  `Axiom`. Both are laid out under Constructions below. The decision is
-  pending with the owner and the rest of this design holds either way.
+- **ADR 0022** (`decisions/0022-constructions-are-alignment-sets.md`) fixes
+  the form a construction takes in the tree: the alignment set, with the prose
+  spellings desugared to it at parse time and the seven sets recognised in
+  `Axiom`. The Constructions section below designs that and records the
+  alternative it replaces.
 
 ## Motivation
 
@@ -200,8 +199,7 @@ alignment is recognised by the multiset of its alignment kinds:
 Numbering is the classic Huzita-Justin numbering of `SPECIFICATION.md` §1, the
 one the solvers in `Axiom` already carry as their provenance tags
 (`"axiom1"` … `"axiom7"`). The operand-role column names the `Ast.axiom`
-constructors under option A and the roles of `Axiom.classify`'s result under
-option B; the roles are the same either way.
+roles of `Axiom.classify`'s result.
 
 The kinds are a multiset, so alignment order is free. Where one kind occurs
 twice, axioms 1 and 7, source order fixes the operand order: the first
@@ -214,109 +212,103 @@ An alignment whose two objects have kinds outside the table, `(--l onto .p)`
 for instance, produces no match and reaches the same "not one of the seven"
 message as any other unrecognised set.
 
-#### Where the recognition runs: decision pending
+#### The alignment set is the AST (ADR 0022)
 
-The table above is the same under both options. What differs is which form the
-AST holds and where the table is applied. The owner decides; everything else in
-this design holds either way, and the two options touch the same files.
-
-**Option A: recognise at parse time, keep `Ast.axiom`.**
-
-The alignment production hands its list to `Items.construction`, which applies
-the table and returns one of the seven `Ast.axiom` constructors. Prose forms
-build the same constructors directly, as they do today. `Ast.axiom` keeps its
-shape, `Axiom.axis_of` keeps its seven-arm dispatch, `Eval`'s implied-anchor
-derivation keeps its three-arm match, and the surface gains a spelling.
-
-- Both spellings produce the identical AST node, so the sugar claim is checked
-  by parsing the two spellings of each of the seven and comparing the trees.
-- The "not one of the seven" error carries the item's span and fires before
-  any paper exists, so a construction written in a binding that no write ever
-  uses still reports.
-- The alignment set is not retained. A multifold construction has no AST node
-  to live in, so it raises at parse time and `packages/multifold` has no
-  input from source. A formatter could not print `align` back from a tree
-  parsed from prose.
-- Two representations of one object exist in the pipeline: the alignment set
-  in the parser, the seven constructors in the AST, with a one-way map between
-  them. [#def-motion] makes the alignment set the definition and the axiom
-  number the name of one such set, so the AST holds the name and drops the
-  thing named.
-
-**Option B: the alignment set is the AST, recognise in `Axiom`.**
+`decisions/0022-constructions-are-alignment-sets.md` fixes the form: a
+construction is its alignment set in the tree, the prose forms desugar to it
+at parse time, and the recognition table above is applied in `Axiom`.
 
 `Ast.axiom` is replaced by
 
 ```ocaml
 type construction = {
-  c_fold_lines : string list;
-  c_alignments : alignment list;
+  c_fold_lines : string list;        (* CREASE_NAME* in the align head *)
+  c_alignments : alignment list;     (* source order, one entry per alignment *)
   c_toward : point_operand option;
   c_span : Error.span;
 }
 ```
 
-Prose forms desugar at parse time into alignment lists, so the two spellings
-agree up to the order of the list. `Axiom` gains
+Prose forms build the same record, with the alignment list in the order the
+spelling fixes: `map .p onto --l through .q` gives
+`[point onto line; through a point]`. An `align` gives whatever order the
+author wrote. The two agree as sets, which is what recognition reads.
+
+`Axiom` gains two functions and keeps `axis_of` as its entry point:
 
 ```ocaml
+type classified =
+  | Ax1 of point_operand * point_operand
+  | Ax2 of point_operand * point_operand
+  | Ax3 of point_operand * line_operand
+  | Ax4 of point_operand * line_operand * line_operand
+  | Ax5 of line_operand * line_operand * point_operand option
+  | Ax6 of point_operand * line_operand * point_operand * point_operand option
+  | Ax7 of point_operand * line_operand * point_operand * line_operand
+           * point_operand option
+
 val classify : Ast.construction -> classified
-(** Recognise the alignment set as one of the seven, or fail naming the
-    alignments. [classified] carries the resolved operand roles: the two
-    points of axiom 1, the point and the two lines of axiom 4, and so on. *)
+(** Recognise the alignment set as one of the seven, by the table above.
+    Fails naming the alignments when the set matches none of them, and when
+    the head names fold lines. Order-insensitive across kinds; where a kind
+    repeats, source order fixes the operand roles. *)
+
+val tag : classified -> string
+(** The provenance tag, ["axiom1"] … ["axiom7"]. *)
+
+val implied_point : Ast.construction -> Ast.point_operand option
+(** The point a map construction moves, which a `fold` takes as its anchor
+    when the program names no `moving`: the first operand of axioms 2, 6 and
+    7, and [None] for the rest. *)
 ```
 
-and `axis_of` calls it first, then runs today's seven-arm dispatch over
-`classified`.
+`axis_of` calls `classify` first and then runs today's seven-arm dispatch over
+`classified`, so every solver body, the axiom-5 deferral and the error texts
+inside them are unchanged. `State.provenance.axiom` comes from `Axiom.tag`,
+and `sources` is built from the operands `classified` hands back, so the
+provenance strings stay what they are today.
 
-- **Consumers that match on the seven constructors: two sites in library code,
-  ten constructor arms in total.** `Axiom.axis_of` (seven arms) and
-  `Eval.resolve_markable`'s implied-anchor derivation (three arms:
-  `MapPoints`, `MapThrough`, `MapBoth`). `Resolve`, `Fold_emit`,
-  `Flatten_solve`, `Spine`, `packages/multifold` and `packages/eval-web` match
-  on none of them. Outside library code, `packages/core/tests/test_parse.ml`
-  carries 36 lines with such a pattern, all in that one file; they become
-  assertions over alignment lists.
-- The `Eval` site is better served either way: it becomes
-  `Axiom.implied_point : Ast.construction -> Ast.point_operand option`, which
-  moves the knowledge of which axioms carry a moved point out of `Eval` and
-  into the module that owns the axioms.
-- **The sugar test becomes axis equality after evaluation.** The two spellings
-  no longer produce equal ASTs, because a prose form fixes its alignment order
-  and an `align` does not. The test evaluates both spellings in the same
-  program and compares the resulting `Geom.line` and the provenance tag. A
-  cheaper variant compares ASTs after sorting the alignment list by kind, and
-  is weaker: it checks the parser rather than the pipeline.
-- **Provenance** keeps working unchanged. `State.provenance.axiom` is the tag
-  string `"axiom1"` … `"axiom7"` and `axis_of` already returns it alongside
-  the line; under B it comes from `classify`'s result rather than from the
-  constructor it matched. `sources` is built from the operands `classified`
-  hands back, so the strings stay what they are today.
-- **Multifold gains its input.** A construction over named fold lines keeps
-  its alignments in the AST, so it is representable, the kernel refuses it
-  with a message from the evaluator rather than the parser, and
-  `packages/multifold`'s naming of two-fold axioms (`AL6ab8` and its family)
-  has a source-level object to name. Under A that object exists nowhere.
-- The "not one of the seven" error moves behind evaluation. The reference
-  corpus test evaluates every block (below), so the `align` table stays under
-  that test either way. What A catches and B does not: a bad construction in a
-  binding that no write ever reaches, since an unevaluated statement still
-  parses.
-- `BindLine` carries a `construction` instead of an `axiom`, one constructor
-  argument in `ast.ml` and one pattern in `Eval`.
+What this costs, counted: two sites in library code match on the seven
+constructors, ten constructor arms in total. `Axiom.axis_of` (seven arms) and
+`Eval.resolve_markable`'s implied-anchor derivation (three arms: `MapPoints`,
+`MapThrough`, `MapBoth`, now one call to `Axiom.implied_point`). `Resolve`,
+`Fold_emit`, `Flatten_solve`, `Spine`, `packages/multifold` and
+`packages/eval-web` match on none of them. Outside library code,
+`packages/core/tests/test_parse.ml` carries 36 lines with such a pattern, all
+in that one file; they become assertions over alignment lists. `BindLine`
+carries a `construction` instead of an `axiom`, one constructor argument in
+`ast.ml` and one pattern in `Eval`.
 
-**Recommendation.** Option B. The argument that carried A was that a
-parse-only corpus test would see the recognition errors before any evaluation;
-the corpus test now evaluates, so that argument is gone. What remains is a
-small and countable migration, two library sites and ten constructor arms plus
-one test file, against two durable properties: the AST holds the object
-[#def-motion] defines instead of the name of the set, and the two-fold
-constructions whose syntax `BELOCH.md` already fixes have somewhere to land
-when the kernel can solve them. The cost of B is that a construction in a
-binding no write ever reaches goes unchecked. That case is narrow, and the
-corpus test covers the document, which is what this slice protects.
+Two consequences to plan around:
 
-**Decision pending.**
+- **The sugar test is axis equality after evaluation.** The two spellings no
+  longer produce equal ASTs, since a prose form fixes its alignment order and
+  an `align` does not. The test evaluates both spellings in the same program
+  and compares the resulting `Geom.line` and the provenance tag. Comparing
+  ASTs after sorting the alignment list by kind is the cheaper variant and the
+  weaker one: it checks the parser where the other checks the pipeline.
+- **Recognition errors fire at evaluation.** A construction in a binding that
+  no write ever reaches goes unchecked, since an unevaluated statement still
+  parses. The case is narrow, and the reference corpus test evaluates every
+  block of `BELOCH.md`, so the recognition table stays under test.
+
+What multifold gains: a construction over named fold lines keeps its
+alignments in the tree, so it is representable, the kernel refuses it with a
+message from the evaluator, and `packages/multifold`'s naming of two-fold
+axioms (`AL6ab8` and its family) has a source-level object to name.
+
+**Rejected: recognise at parse time and keep `Ast.axiom`.** The alignment
+production would hand its list to a recogniser in `Items`, which applies the
+table and returns one of the seven existing constructors; prose forms would
+build those constructors directly, as they do today, and `Axiom`, `Eval` and
+`test_parse` would need no change at all. Rejected on two grounds. The
+canonical form would exist only in the document: [#def-motion] makes the
+alignment set the definition and the axiom number the name of one such set,
+and an AST that keeps the name and drops the thing named leaves two
+representations in the pipeline with a one-way map between them. And a
+multifold construction would have no node to live in, so it would raise inside
+the parser and `packages/multifold` would have no input from source, which is
+the one growth direction `BELOCH.md` has already fixed the syntax for.
 
 ### Examples
 
@@ -356,10 +348,11 @@ record. This is the only semantic change in the slice.
 
 ## Kernel design
 
-The statement constructors of `Ast.stmt` keep their shape. `Eval`, `Resolve`
-(apart from the `on` widening), `Axiom`, `Flatten_solve`, `Spine` and
-`Fold_emit` are untouched. The change is contained in the lexer, the parser,
-the AST's surface types and one new module.
+The statement constructors of `Ast.stmt` keep their shape; two of them carry a
+`construction` where they carried an `axiom`. `Flatten_solve`, `Spine`,
+`Fold_emit` and `Ctx` are untouched, and `Resolve` changes only for the `on`
+widening. The change is contained in the lexer, the parser, the AST, one new
+module, and the recognition front of `Axiom` that ADR 0022 moves there.
 
 ### `lexer.ml`
 
@@ -405,11 +398,12 @@ type raw_item =
   | RiSelection of point_operand * Error.span
 ```
 
-`RiConstruction` carries whichever form the pending construction decision
-fixes: `axiom` under option A, where recognition has already run in the
-alignment production, and `construction` under option B, where it carries the
-alignment list itself. Every other `raw_item` constructor and the whole of
-`Items`' per-verb classification are the same under both.
+`RiConstruction of construction * Error.span` carries the record the
+alignment production builds (ADR 0022); recognition runs later, in `Axiom`.
+`alignment` and `construction` are in the AST because the parser builds them
+and `Ast.stmt` retains them: `BindLine` and `MMotion` both carry a
+`construction` where they carried an `axiom`, which is the whole of the
+`ast.ml` change beyond the surface types.
 
 Changed, two lines: `Mark`'s layer slot becomes `flap_arg option`, was
 `flap_operand option`.
@@ -422,13 +416,6 @@ A leaf module over `Ast` and `Error`, called from the semantic actions of
 the `Ctx → Resolve → { Axiom, Flatten_solve } → Eval` chain of ADR 0018.
 
 ```ocaml
-val construction :
-  string list -> Ast.alignment list -> Ast.point_operand option ->
-  Error.span -> Ast.axiom
-(** Recognise an `align` head as one of the seven axioms. Option A only;
-    under option B the parser builds an [Ast.construction] record directly
-    and [Axiom.classify] carries the table. *)
-
 val mark    : string option -> Ast.raw_item list -> Error.span -> Ast.stmt
 val fold    : string option -> Ast.raw_item list -> Error.span -> Ast.stmt
 val reverse : string option -> Ast.raw_item list -> Error.span -> Ast.stmt
@@ -503,8 +490,9 @@ item_body:
   | TOWARD point_operand                { Ast.RiSelection ($2, $loc) }
 
 construction_body:
-  | ALIGN fold_line_names alignments toward_opt { Items.construction $2 $3 $4 $loc }
-  | prose_axiom                                 { $1 }
+  | ALIGN fold_line_names alignments toward_opt
+      { { c_fold_lines = $2; c_alignments = $3; c_toward = $4; c_span = $loc } }
+  | prose_axiom  { $1 }
 ```
 
 plus `alignment`, `alignments`, `fold_line_names`, `align_object` and
@@ -537,11 +525,18 @@ Zero conflicts is an acceptance criterion, checked by the absence of
 Size: `parser.mly` stays near 300 lines; the clause chains removed are close
 in size to the item rules added.
 
-### `eval.ml`, `resolve.ml`
+### `axiom.ml`, `eval.ml`, `resolve.ml`
 
-`eval.ml` is unchanged except for the `Mark` layer slot's type, which is a
-pattern variable. It stays at its current 881 lines, under the 900-line check
-of ADR 0018.
+`axiom.ml` gains `classify`, `tag` and `implied_point` in front of `axis_of`,
+about 90 lines, and its seven solver bodies are moved onto `classified`
+without other change. It goes from 408 lines to about 500, which ADR 0018
+places no ceiling on.
+
+`eval.ml` loses the three-arm implied-anchor match to
+`Axiom.implied_point` and gains nothing, so it stays under its current 881
+lines and under the 900-line check of ADR 0018. The other two changes there
+are pattern types: `BindLine`'s `axiom` becomes a `construction`, and the
+`Mark` layer slot's type is a pattern variable.
 
 `Resolve.resolve_mark_flap` takes `Ast.flap_arg option`. `Some (FlapSpec f)`
 keeps today's path and its two messages; `Some (FlapPoint _ | FlapLine _)`
@@ -765,8 +760,7 @@ Item classification, from `Items`, at parse time:
 | `(mountain)` with `(over …)`/`(under …)` | `` a placed fold derives its direction; drop mountain `` (unchanged) |
 | `(up to …)` with `(over …)`/`(under …)` | `` a placed fold moves the anchor flap only; up to is not supported here `` (unchanged) |
 
-Construction recognition. These fire at parse time under option A and at
-evaluation under option B; the texts are the same either way:
+Construction recognition, from `Axiom.classify`, at evaluation:
 
 | situation | message |
 |---|---|
@@ -800,12 +794,11 @@ equivalent. Rewriting those messages around item syntax is a separate pass.
    that `mark`, `reverse` and `flatten` accept their items in any order with
    `flatten`'s ray order preserved.
 3. **Sugar is sugar.** Each of the seven axioms is written in both spellings,
-   prose and `align`, with the alignments in every order, and the two agree.
-   Under option A that is AST equality in `test_parse`. Under option B it is
+   prose and `align`, with the alignments in every order, and the two agree by
    axis equality after evaluation: the same program folded through each
    spelling yields the same `Geom.line` and the same provenance tag. Axiom 7's
-   two `point onto line` alignments keep source order under both, which is
-   what fixes the implied anchor.
+   two `point onto line` alignments keep source order, which is what fixes the
+   implied anchor `Axiom.implied_point` returns.
 4. **The align table is total.** Every alignment multiset of size one or two
    over the five kinds is either in the table or produces the "not one of the
    seven" message; the test enumerates them.
@@ -917,10 +910,10 @@ unnoticed, so the rewrite is machine-made:
 
 ### Order of work
 
-1. `lexer.ml`, `ast.ml`, `items.ml`/`items.mli`, `parser.mly`,
-   `resolve.ml`/`resolve.mli`, `eval.ml`. `dune build` green, parser tests
-   updated. The construction decision (A or B) is settled before this step,
-   since it fixes `ast.ml` and the `Axiom` interface.
+1. `lexer.ml`, `ast.ml`, `items.ml`/`items.mli`, `parser.mly`, `axiom.ml`
+   and `axiom.mli` (`classify`, `tag`, `implied_point`),
+   `resolve.ml`/`resolve.mli`, `eval.ml`. `dune build` green, `test_parse`
+   rewritten onto alignment lists.
 2. `to_items.ml`, corpus rewrite, snapshot comparison, `dune runtest` green.
 3. `spec/BELOCH.md` (owner): the `write_stmt` production, the `flatten`
    binding example, `(toward …)` in place of `{toward …}`, the fence info
@@ -971,7 +964,7 @@ landing page renders the same figure it renders today.
 
 | package | files | of which mechanical rewrites |
 |---|---|---|
-| `packages/core` | 8 source, 3 test, 82 `.bel`, 1 tool (added and deleted) | 82 |
+| `packages/core` | 10 source, 3 test, 82 `.bel`, 1 tool (added and deleted) | 82 |
 | `packages/grammar` | 3 source, 4 generated | 0 |
 | `packages/www` | 5 source, 1 test added, 1 test shrunk, 1 wasm, 6 deleted pages | 0 |
 | `spec` | 3 | 0 |
