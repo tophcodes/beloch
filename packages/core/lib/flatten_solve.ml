@@ -3,7 +3,8 @@
 
 open Ctx
 
-let run (ctx : Ctx.ctx) ~(bind_out : Ctx.crease_val -> unit)
+let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
+    ~(bind_out : Ctx.crease_val -> unit)
     ~(elems : Ast.collapse_elem list)
     ~(overs : (Ast.flap_arg * Ast.flap_arg) list)
     ~(staying_opt : Ast.flap_arg option)
@@ -150,11 +151,17 @@ let run (ctx : Ctx.ctx) ~(bind_out : Ctx.crease_val -> unit)
     Some
       { State.axiom = "flatten"; sources = []; span; name = None }
   in
-  (* pre-mint the emergent crease id ONCE (odd case only — the even
-     case never materializes anything), so every candidate's probe
-     subdivision (below) and the eventual winner share one id instead
-     of drifting the global counter per candidate. *)
-  let new_cid = lazy (Fold_state.fresh_crease_id ()) in
+  (* the emergent crease id, fixed ONCE (odd case only; the even case
+     never materializes anything), so every candidate's probe subdivision
+     (below) and the eventual winner share one id instead of drifting the
+     global counter per candidate. Under `into` it is the named crease's
+     own id, so the emergent material lands on that crease. *)
+  let new_cid =
+    lazy
+      (match into with
+      | Some (cid, _) -> cid
+      | None -> Fold_state.fresh_crease_id ())
+  in
   (* the stayer for a bare combination: the <π arc between the first two
      ELEMENTS' chosen folded rays (leading-element convention). *)
   let arc_stayer combo =
@@ -384,6 +391,19 @@ let run (ctx : Ctx.ctx) ~(bind_out : Ctx.crease_val -> unit)
      any) binds to it instead of the given rays; None if no candidate
      ray was materialized (even case) or left unbound. *)
   let emergent_bind = ref None in
+  (* `into`'s axis check runs on the emergent line before the winning state
+     lands, so a crease on another line leaves the state as it was. With no
+     emergent ray there is nothing for `into` to add. *)
+  let land_realization (st, _, emergent) =
+    (match (into, emergent) with
+    | Some (_, check_axis), Some (_, line) -> check_axis line
+    | Some _, None ->
+        Error.fail span
+          "flatten with an even ray count scores no new crease; drop into"
+    | None, _ -> ());
+    ctx.state := st;
+    emergent_bind := emergent
+  in
   (match deciding with
   | [] ->
       (* spec step 6: out-of-paper trumps everything; otherwise the
@@ -422,9 +442,7 @@ let run (ctx : Ctx.ctx) ~(bind_out : Ctx.crease_val -> unit)
             Error.fail span
               (if pool = [] then Collapse.e_maekawa else Collapse.e_selfint)
       end)
-  | [ (st, _, emergent) ] ->
-      ctx.state := st;
-      emergent_bind := emergent
+  | [ r ] -> land_realization r
   | many ->
       (* |deciding| > 1 — three-stage selection (amended spec 38bd69e +
          .superpowers/sdd/toward-stacking-rule.md, 2026-07-16):
@@ -489,10 +507,7 @@ let run (ctx : Ctx.ctx) ~(bind_out : Ctx.crease_val -> unit)
         let m = List.fold_left (fun acc (c, _) -> min acc c) max_int counted in
         List.filter_map (fun (c, r) -> if c = m then Some r else None) counted
       in
-      let commit (st, _, emergent) =
-        ctx.state := st;
-        emergent_bind := emergent
-      in
+      let commit = land_realization in
       (match toward_opt with
       | None -> (
           (* no class to pick without {toward}; the min-mountain canon
@@ -636,7 +651,13 @@ let run (ctx : Ctx.ctx) ~(bind_out : Ctx.crease_val -> unit)
      (e.g. `.[--ear --ab]`) finds the emergent crease's tip. *)
   bind_out
     (match !emergent_bind with
-    | Some (cid, line) -> Material (cid, line)
+    | Some (ecid, line) ->
+        (* `into` keeps the named crease's id: a freshly materialized
+           emergent already carries it, and an emergent that reuses an
+           existing collinear crease scores no material to move the name
+           to. *)
+        let cid = match into with Some (cid, _) -> cid | None -> ecid in
+        Material (cid, line)
     | None ->
         Bundle
           (Ast.LUnion

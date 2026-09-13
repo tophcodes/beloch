@@ -114,8 +114,11 @@ let lookup_point (ctx : ctx) (pr : Ast.point_ref) : Geom.point =
   | Some p -> p
   | None   -> Error.fail pr.Ast.span (Printf.sprintf "undefined point .%s" pr.Ast.name)
 
+let find_crease_by_name (ctx : ctx) (name : string) : crease_val option =
+  List.find_map (fun s -> Hashtbl.find_opt s.lines name) ctx.scopes
+
 let lookup_crease (ctx : ctx) (cr : Ast.crease_ref) : crease_val =
-  match List.find_map (fun s -> Hashtbl.find_opt s.lines cr.Ast.cname) ctx.scopes with
+  match find_crease_by_name ctx cr.Ast.cname with
   | Some cv -> cv
   | None -> Error.fail cr.Ast.cspan (Printf.sprintf "undefined crease --%s" cr.Ast.cname)
 

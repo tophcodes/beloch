@@ -105,8 +105,8 @@ let tag (cl : classified) : string =
 
 (* the point a map construction moves: a `fold` with no `moving` anchors on
    it, and `reverse` reads it as the tip *)
-let implied_point (c : Ast.construction) : Ast.point_operand option =
-  match classify c with
+let implied_point (cl : classified) : Ast.point_operand option =
+  match cl with
   | Ax2 (p, _) | Ax6 (p, _, _, _) | Ax7 (p, _, _, _, _) -> Some p
   | Ax1 _ | Ax3 _ | Ax4 _ | Ax5 _ -> None
 
@@ -134,9 +134,10 @@ let ax5_sources (p : ax5_pending) : string list = p.sources
 (* axis line + provenance (axiom tag, source names), evaluated against the
    current table positions *)
 let axis_of (ctx : Ctx.ctx) (span : Error.span) (c : Ast.construction) :
-    axis_result =
+    classified * axis_result =
   let cl = classify c in
   let t = tag cl in
+  ( cl,
   match cl with
   | Ax1 (p, q) ->
       let pp = Resolve.table_of ctx p and qq = Resolve.table_of ctx q in
@@ -334,7 +335,7 @@ let axis_of (ctx : Ctx.ctx) (span : Error.span) (c : Ast.construction) :
                   in
                   match best with
                   | Some c -> Axis (c, t, base @ [ Resolve.pstr xo ])
-                  | None -> assert false)))
+                  | None -> assert false))) )
 
 (* ---- axiom-5 bisector selection (direction + paper incidence) ---- *)
 (* l1's swinging material as table-space segments *)

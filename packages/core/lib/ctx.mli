@@ -99,6 +99,11 @@ type ctx = {
 }
 
 val lookup_point : ctx -> Ast.point_ref -> Geom.point
+
+val find_crease_by_name : ctx -> string -> crease_val option
+(** The innermost binding of a crease name, or [None] when the name is free.
+    The scope walk {!lookup_crease} and the output clause's `into` share. *)
+
 val lookup_crease : ctx -> Ast.crease_ref -> crease_val
 val lookup_instance : ctx -> string -> Error.span -> instance
 

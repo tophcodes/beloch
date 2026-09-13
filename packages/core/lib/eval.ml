@@ -257,8 +257,9 @@ let resolve_markable (ctx : Ctx.ctx) (span : Error.span) (out : Ast.output)
       in
       (* axiom 5 defers bisector choice to the fold state (direction / paper
          incidence); every other axiom resolves its axis up front *)
+      let cl, axis_res = Axiom.axis_of ctx span c in
       let axis, axiom, sources, side_override =
-        match Axiom.axis_of ctx span c with
+        match axis_res with
         | Axiom.Axis (axis, axiom, sources) -> (axis, axiom, sources, None)
         | Axiom.Ax5 p ->
             let axis, so =
@@ -272,7 +273,7 @@ let resolve_markable (ctx : Ctx.ctx) (span : Error.span) (out : Ast.output)
         Some { State.axiom; sources; span; name = prov_name }
       in
       check_axis axis;
-      `Fresh (cid, bind_out, axis, prov, side_override, Axiom.implied_point c)
+      `Fresh (cid, bind_out, axis, prov, side_override, Axiom.implied_point cl)
   | Ast.MLine lo -> `Existing lo
 
 let eval_mark (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
@@ -378,7 +379,7 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
       push_frame ctx (Some span);
       bind_out (Material (cid, axis))
   | `Existing (Ast.LNamed cr)
-    when (match Resolve.crease_of ctx cr ~slot:"the axis of fold" span with
+    when (match Resolve.crease_of ctx cr ~slot:"the axis of fold" cr.Ast.cspan with
           | Mark _ -> true
           | _ -> false) ->
       (* fold along a MARK: marks never subdivide, so there is no existing
@@ -425,7 +426,7 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
       let along =
         match lo with
         | Ast.LNamed cr ->
-            ignore (Resolve.crease_of ctx cr ~slot:"the axis of fold" span);
+            ignore (Resolve.crease_of ctx cr ~slot:"the axis of fold" cr.Ast.cspan);
             Resolve.material_cid ctx cr
         | Ast.LFilter _ | Ast.LUnion _ -> (
             match fst (Resolve.bundle_segments ctx lo) with
@@ -493,7 +494,9 @@ let eval_reverse (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
     | `Existing lo ->
         (match lo with
         | Ast.LNamed cr ->
-            ignore (Resolve.crease_of ctx cr ~slot:"the axis of reverse" span)
+            ignore
+              (Resolve.crease_of ctx cr ~slot:"the axis of reverse"
+                 cr.Ast.cspan)
         | _ -> ());
         let axis = Resolve.resolve_line ctx lo in
         let cid, check_axis, bind_out =
@@ -674,7 +677,7 @@ let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
       (* pure value: resolve the construction to a line, bind Frozen, no
          subdivide *)
       let axis =
-        match Axiom.axis_of ctx span c with
+        match snd (Axiom.axis_of ctx span c) with
         | Axiom.Axis (axis, _, _) -> axis
         | Axiom.Ax5 p -> Axiom.select_axiom5_bind ctx span p
       in
@@ -695,11 +698,18 @@ let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
       eval_apply ctx bind_opt defname args span
   | Ast.Export (entries_opt, iname, span) -> eval_export ctx entries_opt iname span
   | Ast.Flatten (out, elems, overs, staying_opt, toward_opt, span) ->
-      (* flatten mints the emergent crease's id inside the solver, so the
-         output clause hands it the binding step alone and the id this call
-         returns (-1) has no reader *)
-      let _, _, bind_out = crease_id_for ctx out ~fresh:(fun () -> -1) in
-      Flatten_solve.run ctx ~bind_out ~elems ~overs ~staying_opt ~toward_opt span
+      (* the emergent crease is minted inside the solver, where the even case
+         mints nothing, so the id this call returns (-1) has no reader.
+         `into` hands the solver its own id and axis check: the emergent
+         crease is scored under the named crease's id, on its line. *)
+      let cid, check_axis, bind_out = crease_id_for ctx out ~fresh:(fun () -> -1) in
+      let into =
+        match out with
+        | Ast.Into _ -> Some (cid, check_axis)
+        | Ast.Anonymous | Ast.Named _ -> None
+      in
+      Flatten_solve.run ctx ~into ~bind_out ~elems ~overs ~staying_opt
+        ~toward_opt span
 
 and eval_apply (ctx : Ctx.ctx) (bind_opt : string option) (defname : string)
     (args : Ast.arg list) (span : Error.span) : unit =

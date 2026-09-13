@@ -1645,6 +1645,59 @@ let test_output_into_a_material_crease () =
   Alcotest.(check int) "one crease in the state" 1
     (List.length (Fold_state.all_crease_ids fd.Eval.state))
 
+(* A `flatten` with an odd ray count scores one emergent crease. `into`
+   scores it under the named crease's id: the rabbit ear's emergent hinge is
+   the perpendicular from the incenter to --ab, and --spine is a mark on
+   exactly that line. *)
+let ear_prelude =
+  "paper square\n\
+   mark (through .a .c) as --diag\n\
+   mark (map --ab onto --diag) as --ea\n\
+   mark (map --ab onto --bc) as --eb\n\
+   mark (map --bc onto --diag) as --ec\n\
+   .o = --ea * --ec\n\
+   mark (perp --ab through .o) as --spine\n"
+
+let test_output_into_flatten_emergent () =
+  let fd =
+    folded
+      (ear_prelude
+     ^ "flatten (--ea) (--ec) (--eb) (toward .a) into --spine\n")
+  in
+  let cid = List.assoc "spine" fd.Eval.named_line_cids in
+  Alcotest.(check bool) "the emergent crease is --spine's own" true
+    (Fold_state.crease_segments fd.Eval.state cid <> []);
+  let named_spine =
+    Yojson.Safe.Util.(
+      Fold_emit.to_json_folded fd
+      |> member "beloch:inspect" |> member "creases" |> to_assoc
+      |> List.filter (fun (_, c) -> member "name" c = `String "spine"))
+  in
+  Alcotest.(check int) "FOLD shows one crease named --spine" 1
+    (List.length named_spine)
+
+let test_output_into_flatten_off_the_line () =
+  expect_error
+    "the material this scores lies on no segment of --diag; name it with as \
+     instead" (fun () ->
+      ignore
+        (folded
+           (ear_prelude
+          ^ "flatten (--ea) (--ec) (--eb) (toward .a) into --diag\n")))
+
+(* An even ray count closes the vertex on its own, so the flatten scores no
+   new crease and `into` has nothing to add. *)
+let test_output_into_flatten_even () =
+  expect_error "flatten with an even ray count scores no new crease; drop into"
+    (fun () ->
+      ignore
+        (folded
+           "paper square\n\
+            mark (map .a onto .d) as --h\n\
+            mark (map .a onto .b) as --v\n\
+            flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
+            mountain) (--v & #[.a] mountain) into --h\n"))
+
 (* ---- sorts: a line stands nowhere a crease is wanted ---- *)
 
 let line_prelude = "paper square\n--l = (through .a .c)\n"
@@ -1671,6 +1724,22 @@ let test_sort_free_on () = sort_case "free on" ".p = free on --l from .a\n"
 
 let test_sort_flap_operand () =
   sort_case "a flap operand" "fold (map .b onto .a) (moving --l)\n"
+
+(* A sort error is raised at the name, so an editor underlines the operand
+   rather than the whole statement. *)
+let test_sort_error_at_the_name () =
+  let src = line_prelude ^ "fold (--l) (moving .a)\n" in
+  match
+    (try
+       ignore (folded src);
+       None
+     with Error.Beloch_error ((st, _), _) -> Some st)
+  with
+  | None -> Alcotest.fail "expected a sort error"
+  | Some st ->
+      Alcotest.(check (pair int int))
+        "the span starts at --l" (3, 7)
+        (st.Lexing.pos_lnum, st.Lexing.pos_cnum - st.Lexing.pos_bol + 1)
 
 (* the mirror: a crease projects to its table line, so it stands where a
    line is wanted *)
@@ -1932,6 +2001,14 @@ let () =
           Alcotest.test_case "sort: the axis of reverse" `Quick
             test_sort_reverse_axis;
           Alcotest.test_case "sort: a flatten ray" `Quick test_sort_flatten_ray;
+          Alcotest.test_case "into: flatten scores under the name" `Quick
+            test_output_into_flatten_emergent;
+          Alcotest.test_case "into: a flatten emergent off the line" `Quick
+            test_output_into_flatten_off_the_line;
+          Alcotest.test_case "into: an even flatten scores nothing" `Quick
+            test_output_into_flatten_even;
+          Alcotest.test_case "sort errors land on the name" `Quick
+            test_sort_error_at_the_name;
           Alcotest.test_case "sort: free on" `Quick test_sort_free_on;
           Alcotest.test_case "sort: a flap operand" `Quick
             test_sort_flap_operand;

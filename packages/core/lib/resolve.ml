@@ -442,7 +442,7 @@ let resolve_flap_cluster (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span)
       let candidates =
         match lo with
         | Ast.LNamed cr ->
-            ignore (crease_of ctx cr ~slot:"a flap operand" span);
+            ignore (crease_of ctx cr ~slot:"a flap operand" cr.Ast.cspan);
             let cid = material_cid ctx cr in
             Fold_state.crease_segments !(ctx.state) cid
             |> List.concat_map (fun (s : Fold_state.crease_segment) ->
@@ -584,7 +584,7 @@ let target_of (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span) :
   | Ast.FlapLine lo -> (
       match lo with
       | Ast.LNamed cr ->
-          ignore (crease_of ctx cr ~slot:"a flap operand" span);
+          ignore (crease_of ctx cr ~slot:"a flap operand" cr.Ast.cspan);
           let cid = material_cid ctx cr in
           let st = !(ctx.state) in
           Fold_state.TargetHinged
@@ -682,7 +682,7 @@ let crease_carries (ctx : Ctx.ctx) (cv : crease_val) (axis : Geom.line) : bool =
 let into_crease (ctx : Ctx.ctx) (n : string) (sp : Error.span) :
     int * (Geom.line -> unit) =
   let cv =
-    match List.find_map (fun s -> Hashtbl.find_opt s.lines n) ctx.scopes with
+    match Ctx.find_crease_by_name ctx n with
     | Some ((Material _ | Mark _) as cv) -> cv
     | Some (Frozen _) ->
         Error.fail sp (Printf.sprintf "into needs a crease; --%s is a line" n)
