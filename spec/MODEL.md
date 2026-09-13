@@ -325,14 +325,14 @@ position depends on the state.
 ::: {.definition #def-segment name="segment" uses="def-sheet def-flat-state" defines="term-segment"}
 A *segment* is a closed straight piece of the sheet of positive length,
 $\{p + t(q - p) : 0 \le t \le 1\}$ for paper points $p \neq q$, that lies
-within one face or along one hinge. In a state its table image is
+within one face. Faces are closed, so a segment along a hinge lies in both
+faces the hinge joins. In a state the table image of a segment is
 $f(\text{segment})$, a straight segment of the same length, because $f$ is an
-isometry on the face that contains it.
+isometry on a face that contains it.
 :::
 
 ::: {.term #term-segment name="segment"}
-A straight piece of the sheet, in one face or on one hinge, carried in paper
-coordinates.
+A straight piece of the sheet inside one face, carried in paper coordinates.
 :::
 
 ::: {.definition #def-line name="line value" uses="def-flat-state def-segment" defines="term-line term-material"}
@@ -353,16 +353,15 @@ The paper segments a line crosses in a state, one per face.
 :::
 
 ::: {.definition #def-bundle name="bundle" uses="def-flat-state def-segment def-line" defines="term-bundle term-crease"}
-A value of sort *bundle* is a finite set of paper segments, each lying in one
-face or on one hinge. The material of a line is a bundle. A *crease* is the
+A value of sort *bundle* is a finite set of segments. The material of a line
+is a bundle. A *crease* is the
 bundle of hinges that one write scored; it keeps its identity through later
 states, and once later folds have bent it its hinges no longer lie on one
 table line.
 :::
 
 ::: {.term #term-bundle name="bundle"}
-A finite set of paper segments in faces or on hinges; the material of a line,
-or a crease.
+A finite set of segments; the material of a line, or a crease.
 :::
 
 ::: {.term #term-crease name="crease"}
