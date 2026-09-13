@@ -6,8 +6,9 @@
 # /api/beloch/Beloch/Fold_state/index.html#type-t. The directory is generated
 # and gitignored.
 #
-# scripts/api-register.ts reads the same .mli sources and records these paths,
-# so `.include` blocks in spec/ link into the pages this script publishes.
+# scripts/api-register.ts reads the same .mli sources and records these paths
+# in _build/api-register.json, which the `.include` blocks in spec/ read; it
+# runs here as well so one command produces both.
 #
 # Runs inside the flake devshell (odoc comes from there):
 #   nix develop -c scripts/build-api-docs.sh
@@ -17,6 +18,7 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 dest="$root/packages/www/public/api"
 
 dune build --root "$root" @doc
+bun "$root/scripts/api-register.ts"
 
 rm -rf "$dest"
 mkdir -p "$dest"

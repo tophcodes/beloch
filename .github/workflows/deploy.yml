@@ -35,6 +35,11 @@ jobs:
         run: nix build .#beloch
       - name: Put beloch on PATH
         run: echo "$PWD/result/bin" >> "$GITHUB_PATH"
+      # odoc pages under packages/www/public/api and the register that the
+      # spec pages read for their `.include` blocks and "Realized by" lines.
+      - uses: oven-sh/setup-bun@v2
+      - name: Build API docs and register
+        run: nix develop --command scripts/build-api-docs.sh
       # Regenerate the js_of_ocaml playground bundle from the current
       # packages/core/lib/+packages/eval-web/ on every deploy, so the committed
       # artifact (packages/www/public/beloch/beloch-eval.js)
@@ -45,7 +50,6 @@ jobs:
         run: |
           nix develop --command dune build packages/eval-web/ --profile release
           cp _build/default/packages/eval-web/beloch_web.bc.js packages/www/public/beloch/beloch-eval.js
-      - uses: oven-sh/setup-bun@v2
       # The landing page's example programs are shipped as text and evaluated
       # only when a visitor clicks one, so nothing else here would notice them
       # going stale against the language.
