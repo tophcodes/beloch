@@ -310,7 +310,20 @@ A paper point, named once and carried in paper coordinates; its table
 position depends on the state.
 :::
 
-::: {.definition #def-line name="line value" uses="def-flat-state" defines="term-line term-material"}
+::: {.definition #def-segment name="segment" uses="def-sheet def-flat-state" defines="term-segment"}
+A *segment* is a closed straight piece of the sheet of positive length,
+$\{p + t(q - p) : 0 \le t \le 1\}$ for paper points $p \neq q$, that lies
+within one face or along one hinge. In a state its table image is
+$f(\text{segment})$, a straight segment of the same length, because $f$ is an
+isometry on the face that contains it.
+:::
+
+::: {.term #term-segment name="segment"}
+A straight piece of the sheet, in one face or on one hinge, carried in paper
+coordinates.
+:::
+
+::: {.definition #def-line name="line value" uses="def-flat-state def-segment" defines="term-line term-material"}
 A value of sort *line* is a line $\ell$ in the table frame. Its *material* in
 a state is the set of segments in which $\ell$ meets the images of the faces:
 for every face $F$ with $f(F) \cap \ell$ of positive length, the paper segment
@@ -327,7 +340,7 @@ a state is where it crosses the paper.
 The paper segments a line crosses in a state, one per face.
 :::
 
-::: {.definition #def-bundle name="bundle" uses="def-flat-state def-line" defines="term-bundle term-crease"}
+::: {.definition #def-bundle name="bundle" uses="def-flat-state def-segment def-line" defines="term-bundle term-crease"}
 A value of sort *bundle* is a finite set of paper segments, each lying in one
 face or on one hinge. The material of a line is a bundle. A *crease* is the
 bundle of hinges that one write scored; it keeps its identity through later
