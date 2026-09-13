@@ -10,6 +10,11 @@
 # in _build/api-register.json, which the `.include` blocks in spec/ read; it
 # runs here as well so one command produces both.
 #
+# scripts/grammar-register.ts parses the grammar fragments of spec/ into
+# _build/grammar.json, which the pandoc filter renders the PDF's grammar pages
+# from and which the keyword cross-check reads; it runs here so one command
+# still produces every generated input the spec documents read.
+#
 # scripts/render-figures.ts draws the `.figure` blocks of spec/ into
 # _build/spec/figures, the other generated input both renderers of those
 # documents read. It needs the `beloch` binary on PATH.
@@ -23,6 +28,7 @@ dest="$root/packages/www/public/api"
 
 dune build --root "$root" @doc
 bun "$root/scripts/api-register.ts"
+bun "$root/scripts/grammar-register.ts"
 bun "$root/scripts/render-figures.ts"
 
 rm -rf "$dest"
