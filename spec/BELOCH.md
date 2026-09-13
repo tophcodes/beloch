@@ -19,6 +19,13 @@ moved here yet.
 The language refers to the model by statement ids and to the specification
 by section. The model does not refer to the language.
 
+Each section states its part of the grammar in the notation of the
+collected [grammar](#grammar) at the end: `:=` defines, `|` separates
+alternatives, `[ … ]` is optional, `*` and `+` repeat, quoted strings are
+keywords, upper-case names are tokens. The collected grammar is assembled
+from the fragments; the parsers in `packages/core` and `packages/grammar`
+are held to it.
+
 ## A program is a path
 
 A program starts from a sheet ([def-sheet](/model/#def-sheet)) and applies
@@ -26,6 +33,11 @@ operations one after another. Each operation takes the current flat folded
 state ([def-flat-state](/model/#def-flat-state)) and either produces the next
 one or fails with a reason. The program's meaning is the finite sequence of
 states it passes through; its result is the last state.
+
+```
+program := "paper" "square" stmt*
+stmt    := write_stmt | bind_stmt | def_stmt | apply_stmt | export_stmt
+```
 
 ## Reads and writes
 
@@ -46,10 +58,12 @@ read is an error.
 value sorts of the model's section on values; each a value computed in the
 current state and carried in paper coordinates, so it survives later folds.
 
-**Writes.** `mark`, `fold`, `reverse`, `flatten`, `flip`, the operations of
-the model's section on operations. Each is a partial function on states
-with its own domain; the domain is the language's notion of a safe
-operation, and the model states it.
+**Writes.** The operations of the model's section on operations, named by
+the verbs `mark`, `fold`, `reverse`, `flatten` and `flip`. Each is a
+partial function on states with its own domain; the domain is the
+language's notion of a safe operation, and the model states it. A *write
+statement* is a verb followed by its arguments; its shape is given under
+[Write statements](#write-statements).
 
 **Reads.** Constructions (below), selectors (`#[…]`, `*`, `--[…]`, `free
 on`), and the filter operators (`&`, `\`, `[…]`), which form a Boolean
@@ -58,11 +72,11 @@ predicate, difference, union.
 
 ## Parameter types
 
-A write is a verb followed by its arguments, and every argument has a type.
-Four of the types are value sorts of the model and are supplied by a read;
-the others are enumerations that occur only as an argument of a write. The
-type of a slot is what a graphical editor binds to: a slot of type flap gets
-a flap picker, a slot of type placement a menu of four entries.
+A write takes typed arguments. Four of the types are value sorts of the
+model and are supplied by a read; the others are enumerations that occur
+only as an argument of a write. The type of a slot is what a graphical
+editor binds to: a slot of type flap gets a flap picker, a slot of type
+placement a menu of four entries.
 
 | type | values | slots |
 |---|---|---|
@@ -78,20 +92,59 @@ a flap picker, a slot of type placement a menu of four entries.
 | order | one sector over another | `flatten` |
 | selection | toward a point ([def-motion](/model/#def-motion)) | constructions, `flatten` |
 
-## Arguments of writes
+```
+flap_operand  := point_operand | line_operand | "#[" point_operand+ "]"
+```
 
-Every argument of a write is an *item*: a parenthesised block after the
-verb whose first token names its type. Items may stand in any order. The
-construction that supplies the axis is an item like the others, so every
-slot of a write's signature is one block in the source, delimited on both
-sides and classified by its head.
+## Write statements
+
+A write statement is a verb followed by its *items*. An item is a
+parenthesised block whose first token names its type; items may stand in
+any order. The construction that supplies the axis is an item like the
+others, so every slot of a write's signature is one block in the source,
+delimited on both sides and classified by its head.
+
+```
+write_stmt := [ CREASE_NAME "=" ] verb item*
+verb       := "mark" | "fold" | "reverse" | "flatten" | "flip"
+item       := "(" item_body ")"
+            | "{" "toward" point_operand "}"
+```
+
+Which item bodies a verb accepts is stated with the verb; the bodies of the
+current writes, ahead of their own sections:
+
+```
+fold_item    := axis
+              | "moving" flap_operand
+              | "up" "to" flap_operand
+              | "mountain"
+              | ( "over" | "under" ) flap_operand
+reverse_item := axis
+              | "moving" flap_operand
+              | "outside"
+mark_item    := axis
+              | "on" flap_operand
+              | "between" point_operand point_operand
+              | "at" point_operand
+              | "mountain" | "valley"
+flatten_item := line_operand [ "mountain" | "valley" ]
+              | flap_operand "over" flap_operand
+              | "staying" flap_operand
+axis         := construction_body | line_operand
+```
+
+`flip` takes no item. `{toward …}` is the one item with braces; it belongs
+to `flatten`, where it selects among states rather than among lines
+([open-flatten-selection](/model/#open-flatten-selection)), and a
+construction carries its own selection inside its item.
 
 ```
 fold    (map .a onto .c) (moving .a)
 fold    (map .a onto .c) (moving .a) (mountain)
 fold    (through .m .n) (moving .b) (under .p)
 fold    (map .c onto .b) (up to .d)
-fold    --d (moving .b) (up to .c)                 ; along an existing crease
+fold    (--d) (moving .b) (up to .c)               ; along an existing crease
 reverse (map .b onto .c)
 reverse (map .b onto .c) (outside)
 mark    (through .a .c)
@@ -102,15 +155,10 @@ flip
 
 The binding form is unchanged: `fold --f = (map .a onto .c) (moving .a)`.
 
-The head of an item is a keyword of the language, except for the
-construction, whose head is one of `map`, `through`, `perp`, `align`, and
-for the rays of a `flatten`, whose head is a crease. A keyword that does not
-belong to the verb is an error naming the verb and the item; an item type
-given twice is an error at the second occurrence. `mountain` is a value of
-the placement type, so `(mountain)` beside `(over …)` is two values in one
-slot and rejected on that ground alone. `{toward …}` keeps its braces on
-`flatten`, where it selects among states rather than among lines
-([open-flatten-selection](/model/#open-flatten-selection)).
+A head that does not belong to the verb is an error naming the verb and
+the item; an item type given twice is an error at the second occurrence.
+`mountain` is a value of the placement type, so `(mountain)` beside `(over
+…)` is two values in one slot and rejected on that ground alone.
 
 Marking every argument as a block is what the model's operation signatures
 ask for: one item per parameter, the same shape for every write. For the
@@ -134,6 +182,15 @@ distributed over two fold lines, give the 489 two-fold axioms [@alperin2006,
 number is the name of one such set.
 
 ```
+construction_body := "align" CREASE_NAME* alignment+ [ "toward" point_operand ]
+                   | prose_axiom
+alignment         := "(" [ CREASE_NAME ] object "onto" [ CREASE_NAME ] object ")"
+                   | "(" [ CREASE_NAME ] "through" point_operand ")"
+                   | "(" [ CREASE_NAME ] "perp" line_operand ")"
+object            := point_operand | line_operand
+```
+
+```
 (align (.a onto .c))                       ; axiom 2
 (align (through .a) (through .b))          ; axiom 1
 (align (perp --l) (through .p))            ; axiom 3
@@ -144,11 +201,13 @@ number is the name of one such set.
 ```
 
 The prose forms of the seven axioms are sugar for these and stay as they
-are: `(map .a onto .c)`, `(through .a .b)`, `(perp --l through .p)`, `(map
-.p onto --l through .q)`, `(map .p onto --l perp --m)`, `(map --l onto --m
-toward .p)`, `(map .p onto --l and .q onto --m)`. A selection belongs to the
-construction and is written inside its item, because a bound line (`--l =
-(map --a onto --b toward .p)`) needs it without any write.
+are; they are the `prose_axiom` alternatives, spelled in `SPECIFICATION.md`
+§4.1 to §4.5c until their sections move here: `(map .a onto .c)`,
+`(through .a .b)`, `(perp --l through .p)`, `(map .p onto --l through
+.q)`, `(map .p onto --l perp --m)`, `(map --l onto --m toward .p)`, `(map
+.p onto --l and .q onto --m)`. A selection belongs to the construction and
+is written inside its item, because a bound line (`--l = (map --a onto --b
+toward .p)`) needs it without any write.
 
 A construction over several fold lines names them and lets each alignment
 say which line folds: `(align --a --b (--a .p onto --l) (--b .q onto --m)
@@ -170,8 +229,50 @@ decided and waits for the first two-fold construction the kernel can solve.
 ## What this document will grow into
 
 One section per sort and one per write, each pointing at the model
-statement that defines it and at the specification section that spells its
-syntax, with a worked example rendered live on this page. That is the
-material a graphical editor binds its actions to.
+statement that defines it, with its grammar fragment, the resolution of its
+operands, its errors, and a worked example rendered live on this page. That
+is the material a graphical editor binds its actions to.
+
+## Grammar
+
+The fragments of the sections above, collected. Rules not yet stated in a
+section of this document are in `SPECIFICATION.md`, Appendix A.
+
+```
+program           := "paper" "square" stmt*
+stmt              := write_stmt | bind_stmt | def_stmt | apply_stmt | export_stmt
+
+write_stmt        := [ CREASE_NAME "=" ] verb item*
+verb              := "mark" | "fold" | "reverse" | "flatten" | "flip"
+item              := "(" item_body ")"
+                   | "{" "toward" point_operand "}"
+
+fold_item         := axis
+                   | "moving" flap_operand
+                   | "up" "to" flap_operand
+                   | "mountain"
+                   | ( "over" | "under" ) flap_operand
+reverse_item      := axis
+                   | "moving" flap_operand
+                   | "outside"
+mark_item         := axis
+                   | "on" flap_operand
+                   | "between" point_operand point_operand
+                   | "at" point_operand
+                   | "mountain" | "valley"
+flatten_item      := line_operand [ "mountain" | "valley" ]
+                   | flap_operand "over" flap_operand
+                   | "staying" flap_operand
+axis              := construction_body | line_operand
+
+construction_body := "align" CREASE_NAME* alignment+ [ "toward" point_operand ]
+                   | prose_axiom
+alignment         := "(" [ CREASE_NAME ] object "onto" [ CREASE_NAME ] object ")"
+                   | "(" [ CREASE_NAME ] "through" point_operand ")"
+                   | "(" [ CREASE_NAME ] "perp" line_operand ")"
+object            := point_operand | line_operand
+
+flap_operand      := point_operand | line_operand | "#[" point_operand+ "]"
+```
 
 ## References
