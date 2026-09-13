@@ -21,7 +21,9 @@
 --
 -- A count mismatch between the document's grammar blocks and the register's
 -- fragments means the register is stale: the block is left verbatim and the
--- filter warns.
+-- filter warns. A missing or unreadable register warns the same way, rather
+-- than leaving the blocks verbatim in silence, whenever the document has a
+-- grammar block to render.
 --
 -- packages/www/src/lib/remark-grammar.ts is the docs-site counterpart.
 
@@ -52,6 +54,21 @@ end
 
 local function stale()
   io.stderr:write("_build/grammar.json is stale; run scripts/grammar-register.ts\n")
+end
+
+local GRAMMAR_CLASSES = {
+  grammar = true,
+  ["grammar-external"] = true,
+  ["grammar-planned"] = true,
+  ["grammar-collected"] = true,
+}
+
+local function has_grammar_block(doc)
+  local found = false
+  doc:walk({ CodeBlock = function(block)
+    if GRAMMAR_CLASSES[block.classes[1]] then found = true end
+  end })
+  return found
 end
 
 local function code(text, class)
@@ -159,7 +176,10 @@ end
 function Pandoc(doc)
   local files = PANDOC_STATE and PANDOC_STATE.input_files or {}
   entry = entry_for(load_register(), files[1] or "")
-  if not entry then return nil end
+  if not entry then
+    if has_grammar_block(doc) then stale() end
+    return nil
+  end
   local walked = doc:walk({ CodeBlock = code_block })
   if fragment_index ~= #entry.fragments then stale() end
   return walked
