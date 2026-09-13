@@ -19,6 +19,10 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 out="$root/_build/spec"
 mkdir -p "$out"
 
+# typst reads a figure's SVG through a path rooted at the directory pandoc runs
+# in, so run from the repo root.
+cd "$root"
+
 for doc in MODEL KERNEL BELOCH FOLD; do
   lower=$(echo "$doc" | tr "[:upper:]" "[:lower:]")
   pandoc "$root/spec/$doc.md" \

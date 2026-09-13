@@ -31,6 +31,7 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
     hidden: opts.hidden,
     title: opts.title,
     labels: opts.labels,
+    highlight: opts.highlight,
     legend: opts.legend,
     theme: opts.theme,
     markOverlay: opts.markOverlay,

@@ -8,6 +8,10 @@ on:
       - 'packages/render-2d/**'
       - 'packages/core/lib/**'
       - 'packages/core/bin/**'
+      # The reference documents are symlinked into the site, and their figures
+      # are generated from them by scripts/build-api-docs.sh.
+      - 'spec/**'
+      - 'scripts/**'
       - 'flake.nix'
       - 'flake.lock'
       - '.github/workflows/deploy.yml'

@@ -10,6 +10,10 @@
 # in _build/api-register.json, which the `.include` blocks in spec/ read; it
 # runs here as well so one command produces both.
 #
+# scripts/render-figures.ts draws the `.figure` blocks of spec/ into
+# _build/spec/figures, the other generated input both renderers of those
+# documents read. It needs the `beloch` binary on PATH.
+#
 # Runs inside the flake devshell (odoc comes from there):
 #   nix develop -c scripts/build-api-docs.sh
 set -euo pipefail
@@ -19,6 +23,7 @@ dest="$root/packages/www/public/api"
 
 dune build --root "$root" @doc
 bun "$root/scripts/api-register.ts"
+bun "$root/scripts/render-figures.ts"
 
 rm -rf "$dest"
 mkdir -p "$dest"

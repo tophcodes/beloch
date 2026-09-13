@@ -10,6 +10,11 @@ A sheet is a simple polygon $P \subset \mathbb{R}^2$.
 A convex polygon of the decomposition on which $f$ is a single isometry.
 :::
 
+::: {.figure #fig-sheet caption="A sheet, with the corner *.a* at the origin." views="cp folded" highlight=".a"}
+paper square
+mark --ac = through .a .c
+:::
+
 Prose between the two definitions, citing Hull [@hull2020, chapter 6].
 
 ::: {.definition #def-flat-state name="flat folded state" defines="term-table"}
@@ -34,7 +39,7 @@ The two orderings agree whenever the faces are uncreased regions.
 Whether the rank is part of the state or a representation of it.
 :::
 
-A sugared reference to [#def-flat-state] and to [#term-table].
+A sugared reference to [#def-flat-state], to [#term-table] and to [#fig-sheet].
 
 ## Terms
 

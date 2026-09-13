@@ -25,6 +25,7 @@ export interface Theme {
   front: string;           // "#fafaf7"  (folded: paper front)
   back: string;            // "#dbe4ee"  (folded: paper back)
   construction: string;    // "#6366f1"
+  highlight: string;       // "#e0e7ff"  (face fill of a flap the caller emphasises)
   ink: string;             // "#0f172a"  (dots, labels, title)
   background: string;      // "white"    (full-canvas backdrop rect fill)
   lineStyle: LineStyleFn;
@@ -66,6 +67,7 @@ export const DEFAULT_THEME: Theme = {
   front: "#fafaf7",
   back: "#dbe4ee",
   construction: "#6366f1",
+  highlight: "#e0e7ff",
   ink: "#0f172a",
   background: "white",
   lineStyle: yrLineStyle,

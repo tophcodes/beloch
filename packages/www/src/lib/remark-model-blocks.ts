@@ -9,6 +9,13 @@
 // (`used-by`, `defined-by`, `realized-by`), and a generated Terms glossary.
 // `.term` blocks are moved out of the text into that glossary.
 //
+// `::: {.figure #fig-point caption="…" views="cp folded" highlight=".p"}` is a
+// Beloch program with its crease pattern and its folded form beside it. The
+// SVGs come pre-rendered from _build/spec/figures (scripts/render-figures.ts);
+// a figure with no files there renders a placeholder and the build carries on.
+// Figures are numbered per section on a counter of their own, so adding one
+// renumbers no statement.
+//
 // `::: {.include api="Fold_state.violation"}` is replaced by what
 // packages/core's interface says about that item: its signature, its doc
 // comment, and one entry per constructor. Both directions of the realization
@@ -51,6 +58,8 @@ const LABELS: Record<string, string> = {
 // The vocabulary lives under the docs site; the statements themselves are
 // resources on the page (`/model/#def-…`), so the two fragment spaces stay apart.
 const PREFIX = "bm: https://beloch.toph.so/ns/model#";
+
+const FIGURE_VIEWS = ["cp", "folded"];
 
 const OPEN_FENCE = /^:{3,}\s*\{(.*)\}\s*$/;
 const CLOSE_FENCE = /^:{3,}\s*$/;
@@ -139,16 +148,20 @@ function labelMap(path: string): Map<string, string> {
 }
 
 // `<section>.<n>`, counted per `##` heading and shared by all statement classes.
+// Figures run on a counter of their own, so Figure 4.1 can sit under
+// Definition 4.1.
 function number(blocks: RawBlock[], sectionStarts: number[]): Map<string, string> {
 	const labels = new Map<string, string>();
 	const counters: number[] = [];
+	const figures: number[] = [];
 	for (const block of blocks) {
 		const kind = block.classes.find((c) => c in LABELS);
-		if (!kind) continue;
+		if (!kind && !block.classes.includes("figure")) continue;
 		const section = sectionStarts.filter((line) => line < block.openLine).length;
-		counters[section] = (counters[section] ?? 0) + 1;
-		const n = section > 0 ? `${section}.${counters[section]}` : `${counters[section]}`;
-		labels.set(block.id, `${LABELS[kind]} ${n}`);
+		const counter = kind ? counters : figures;
+		counter[section] = (counter[section] ?? 0) + 1;
+		const n = section > 0 ? `${section}.${counter[section]}` : `${counter[section]}`;
+		labels.set(block.id, `${kind ? LABELS[kind] : "Figure"} ${n}`);
 	}
 	return labels;
 }
@@ -180,20 +193,30 @@ interface Term {
 	body: any[];
 }
 
+interface Figure {
+	id: string;
+	label: string;
+	views: string[];
+	program: string;
+	caption: any[];
+}
+
 export default function remarkModelBlocks(
 	this: any,
-	options: { register?: string; model?: string } = {},
+	options: { register?: string; model?: string; figures?: string } = {},
 ) {
 	const processor = this;
 	return (tree: any, file: any) => {
 		const registerPath = options.register ?? join(repoRoot(), "_build", "api-register.json");
 		const modelPath = options.model ?? join(repoRoot(), "spec", "MODEL.md");
+		const figuresPath = options.figures ?? join(repoRoot(), "_build", "spec", "figures");
 		const source = String(file.value ?? "");
 		if (!source.includes(":::")) return;
 		const raw = scanBlocks(source).filter(
 			(b) =>
 				b.classes.includes("term") ||
 				b.classes.includes("include") ||
+				b.classes.includes("figure") ||
 				b.classes.some((c) => c in LABELS),
 		);
 		if (raw.length === 0) return;
@@ -212,11 +235,28 @@ export default function remarkModelBlocks(
 
 		const statements = new Map<string, Statement>();
 		const terms = new Map<string, Term>();
-		const order: { block: RawBlock; id: string; kind: "statement" | "term" | "include" }[] = [];
+		const figures = new Map<string, Figure>();
+		const order: {
+			block: RawBlock;
+			id: string;
+			kind: "statement" | "term" | "include" | "figure";
+		}[] = [];
 
 		for (const block of raw) {
 			if (block.classes.includes("include")) {
 				order.push({ block, id: "", kind: "include" });
+				continue;
+			}
+			if (block.classes.includes("figure")) {
+				const views = ids(block.attrs.views).filter((v) => FIGURE_VIEWS.includes(v));
+				figures.set(block.id, {
+					id: block.id,
+					label: labels.get(block.id) as string,
+					views: views.length ? views : FIGURE_VIEWS,
+					program: block.body.trim(),
+					caption: processor.parse(block.attrs.caption ?? "").children,
+				});
+				order.push({ block, id: block.id, kind: "figure" });
 				continue;
 			}
 			const body = processor.parse(block.body).children;
@@ -250,6 +290,7 @@ export default function remarkModelBlocks(
 			nodes.set(s.id, statementNode(s, terms, statements, api?.realizedBy.get(s.id) ?? []));
 		}
 		for (const t of terms.values()) nodes.set(t.id, termNode(t, statements));
+		for (const f of figures.values()) nodes.set(f.id, figureNode(f, figuresPath));
 
 		// Splice back to front so earlier indices stay valid. Terms leave nothing
 		// behind; they are re-emitted in the glossary.
@@ -270,7 +311,7 @@ export default function remarkModelBlocks(
 				.map((t) => nodes.get(t.id)),
 		);
 
-		expandSugar(tree, statements, terms);
+		expandSugar(tree, statements, terms, figures);
 	};
 }
 
@@ -460,7 +501,12 @@ function sectionEnd(children: any[], start: number): number {
 }
 
 // `[#def-flat-state]` in prose renders as a link carrying the computed label.
-function expandSugar(tree: any, statements: Map<string, Statement>, terms: Map<string, Term>) {
+function expandSugar(
+	tree: any,
+	statements: Map<string, Statement>,
+	terms: Map<string, Term>,
+	figures: Map<string, Figure>,
+) {
 	visit(tree, "text", (node: any, index: number | undefined, parent: any) => {
 		if (!parent || index === undefined || !node.value.includes("[#")) return;
 		const parts: any[] = [];
@@ -468,7 +514,8 @@ function expandSugar(tree: any, statements: Map<string, Statement>, terms: Map<s
 		let m: RegExpExecArray | null;
 		SUGAR.lastIndex = 0;
 		while ((m = SUGAR.exec(node.value))) {
-			const label = statements.get(m[1])?.label ?? terms.get(m[1])?.name;
+			const label =
+				statements.get(m[1])?.label ?? terms.get(m[1])?.name ?? figures.get(m[1])?.label;
 			if (!label) continue;
 			if (m.index > last) parts.push(text(node.value.slice(last, m.index)));
 			parts.push(el("a", { href: `#${m[1]}` }, [text(label)]));
@@ -479,6 +526,58 @@ function expandSugar(tree: any, statements: Map<string, Statement>, terms: Map<s
 		parent.children.splice(index, 1, ...parts);
 		return index + parts.length;
 	});
+}
+
+// A `.figure` block: the pre-rendered views side by side, the program in a
+// collapsed <details> so a reader can copy it, and the caption last. The
+// program is a bare <pre>, with no <code> inside: Expressive Code claims every
+// `pre > code` it finds and rewrites it, which would drop the RDFa.
+function figureNode(f: Figure, figuresPath: string): any {
+	const views = f.views.map((view) => {
+		let svg: string;
+		try {
+			svg = readFileSync(join(figuresPath, `${f.id}-${view}.svg`), "utf8");
+		} catch {
+			return para("figure-missing", [
+				text("No rendered "),
+				el("code", {}, [text(view)]),
+				text(" view for "),
+				el("code", {}, [text(f.id)]),
+				text("; run scripts/render-figures.ts."),
+			]);
+		}
+		return el("div", { className: ["figure-view"], "data-view": view }, [
+			{ type: "html", value: svg },
+		]);
+	});
+
+	const caption = f.caption;
+	const label = el("span", { className: ["figure-label"], property: "bm:label" }, [
+		text(f.label),
+	]);
+	if (caption[0]?.type === "paragraph") caption[0].children.unshift(label, text(" "));
+	else caption.unshift(para("figure-caption-head", [label]));
+
+	return el(
+		"figure",
+		{
+			className: ["figure"],
+			id: f.id,
+			typeof: "bm:Figure",
+			resource: `#${f.id}`,
+			prefix: PREFIX,
+		},
+		[
+			el("div", { className: ["figure-views"] }, views),
+			el("details", { className: ["figure-program"] }, [
+				el("summary", {}, [text("Program")]),
+				el("pre", { className: ["figure-source"], property: "bm:program" }, [
+					text(f.program),
+				]),
+			]),
+			el("figcaption", {}, caption),
+		],
+	);
 }
 
 // An `.include` block: the register's entry for the item, with the signature in
