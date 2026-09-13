@@ -219,7 +219,8 @@ let run_fold (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line) ~(fs : Ast
 let resolve_markable (ctx : Ctx.ctx) (span : Error.span) (name_opt : string option)
     (fold_opt : Ast.fold_spec option) (m : Ast.markable) =
   match m with
-  | Ast.MMotion ax ->
+  | Ast.MMotion c ->
+      let ax = Items.axiom_of_construction c in
       let cid = Fold_state.fresh_crease_id () in
       let prov_name =
         match name_opt with
@@ -257,8 +258,18 @@ let resolve_markable (ctx : Ctx.ctx) (span : Error.span) (name_opt : string opti
       `Fresh (cid, axis, prov, side_override, implied)
   | Ast.MLine lo -> `Existing lo
 
+(* `mark`'s layer slot holds a flap operand of any of the three forms (ADR
+   0016 §5), so an explicit layer resolves through the flap resolver every
+   other flap slot uses; without one the extent's carrying flap is the
+   default Resolve.resolve_mark_flap derives. *)
+let mark_flap (ctx : Ctx.ctx) (layer_opt : Ast.flap_arg option)
+    (rep : Geom.point) (span : Error.span) : int list =
+  match layer_opt with
+  | Some fa -> Resolve.resolve_flap_cluster ctx fa span
+  | None -> Resolve.resolve_mark_flap ctx None rep span
+
 let eval_mark (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
-    (ext : Ast.extent) (dir : Ast.direction) (layer_opt : Ast.flap_operand option)
+    (ext : Ast.extent) (dir : Ast.direction) (layer_opt : Ast.flap_arg option)
     (span : Error.span) : unit =
   let intent = intent_of dir in
   let bind_mark cid line =
@@ -301,7 +312,7 @@ let eval_mark (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
             y = Num.div (Num.add p.Geom.y q.Geom.y) (Num.of_int 2) }
       | [] -> Error.fail span "the mark's line does not cross the paper"
     in
-    let flap = Resolve.resolve_mark_flap ctx layer_opt rep span in
+    let flap = mark_flap ctx layer_opt rep span in
     let pts =
       List.filter_map
         (fun fi -> Fold_state.axis_chord_in_face st fi table_axis)
@@ -339,7 +350,7 @@ let eval_mark (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
       match Resolve.resolve_mark_extent ctx table_axis ext span with
       | `Full -> record_full ~prov cid table_axis
       | `Partial (extent_geom, rep, paper_axis) ->
-          let flap = Resolve.resolve_mark_flap ctx layer_opt rep span in
+          let flap = mark_flap ctx layer_opt rep span in
           dispatch_partial ~prov ~cid ~flap ~extent_geom ~paper_axis ())
   | `Existing lo ->
       (* mark an already-bound value line: record a material chord. If it
@@ -359,7 +370,7 @@ let eval_mark (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
       (match Resolve.resolve_mark_extent ctx table_axis ext span with
       | `Full -> record_full ~prov:None cid table_axis
       | `Partial (extent_geom, rep, paper_axis) ->
-          let flap = Resolve.resolve_mark_flap ctx layer_opt rep span in
+          let flap = mark_flap ctx layer_opt rep span in
           dispatch_partial ~prov:None ~cid ~flap ~extent_geom ~paper_axis ());
       promote ()
 
@@ -667,18 +678,22 @@ let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
   match stmt with
   | Ast.BindBundle (name, expr, span) ->
       bind_crease ctx name span (Bundle expr)
-  | Ast.BindLine (n, ax, span) ->
-      (* pure value: resolve the axiom to a line, bind Frozen, no subdivide *)
+  | Ast.BindLine (n, c, span) ->
+      (* pure value: resolve the construction to a line, bind Frozen, no
+         subdivide *)
       let axis =
-        match Axiom.axis_of ctx span ax with
+        match Axiom.axis_of ctx span (Items.axiom_of_construction c) with
         | Axiom.Axis (axis, _, _) -> axis
         | Axiom.Ax5 p -> Axiom.select_axiom5_bind ctx span p
       in
       bind_crease ctx n span (Frozen axis)
-  | Ast.Mark (name_opt, m, ext, dir, layer_opt, span) ->
-      eval_mark ctx name_opt m ext dir layer_opt span
-  | Ast.Fold (name_opt, m, fs, span) -> eval_fold ctx name_opt m fs span
-  | Ast.Reverse (name_opt, m, rs, span) -> eval_reverse ctx name_opt m rs span
+  (* the evaluator binds the crease under the name of the output clause;
+     `into` and the `!` rebind reach it through Items.bound_name *)
+  | Ast.Mark (out, m, ext, dir, layer_opt, span) ->
+      eval_mark ctx (Items.bound_name out) m ext dir layer_opt span
+  | Ast.Fold (out, m, fs, span) -> eval_fold ctx (Items.bound_name out) m fs span
+  | Ast.Reverse (out, m, rs, span) ->
+      eval_reverse ctx (Items.bound_name out) m rs span
   | Ast.Point (n, Ast.PsExpr po, span) ->
       bind_point ctx n span (Resolve.resolve_point ctx po)
   | Ast.Point (n, Ast.PsFree { line; anchor; t; span }, _) ->
@@ -690,8 +705,9 @@ let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
   | Ast.Apply (bind_opt, defname, args, span) ->
       eval_apply ctx bind_opt defname args span
   | Ast.Export (entries_opt, iname, span) -> eval_export ctx entries_opt iname span
-  | Ast.Flatten (name_opt, elems, overs, staying_opt, toward_opt, span) ->
-      Flatten_solve.run ctx ~name_opt ~elems ~overs ~staying_opt ~toward_opt span
+  | Ast.Flatten (out, elems, overs, staying_opt, toward_opt, span) ->
+      Flatten_solve.run ctx ~name_opt:(Items.bound_name out) ~elems ~overs
+        ~staying_opt ~toward_opt span
 
 and eval_apply (ctx : Ctx.ctx) (bind_opt : string option) (defname : string)
     (args : Ast.arg list) (span : Error.span) : unit =
