@@ -28,6 +28,7 @@ for doc in MODEL KERNEL BELOCH FOLD; do
     --bibliography "$root/paper/references.bib" \
     --csl "$root/paper/chicago-notes-bibliography.csl" \
     --pdf-engine typst \
+    --include-in-header "$root/scripts/typst-compat.typ" \
     --variable mainfont="Libertinus Serif" \
     --metadata link-citations=true \
     --output "$out/$lower.pdf"
