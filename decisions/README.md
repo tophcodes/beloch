@@ -64,3 +64,5 @@ See also: `../notes/` (design journal), `../antipatterns.md` (dead ends),
 - [0017](0017-flap-is-coplanar-not-precrease-partition.md) — A flap is a coplanar cluster of faces, not a single precrease polygon
 - [0018](0018-core-module-boundaries.md) — Core module boundaries: Ctx, Resolve, Axiom, Flatten_solve, Eval
 - [0019](0019-attribution-carried-by-construction.md) — Attribution is carried by construction
+- [0020](0020-multifold-research-package.md) — Multifold research package: a separate library, one-way dependency on core
+- [0021](0021-reference-documents-replace-specification.md) — The reference documents replace SPECIFICATION.md
