@@ -282,6 +282,7 @@ export_stmt     ; SPECIFICATION.md Appendix A
 
 ```grammar-planned
 align   ; two-fold constructions are not evaluated yet
+into    ; the output clause of a write is not parsed yet
 ```
 
 ## References
