@@ -9,15 +9,19 @@ import remarkGrammar from "./remark-grammar.ts";
 
 const fixtures = join(import.meta.dir, "fixtures");
 
-async function render(path: string) {
+async function renderSource(path: string, source: string) {
 	return String(
 		await unified()
 			.use(remarkParse)
 			.use(remarkGrammar)
 			.use(remarkRehype, { allowDangerousHtml: true })
 			.use(rehypeStringify, { allowDangerousHtml: true })
-			.process({ path, value: readFileSync(path, "utf8") }),
+			.process({ path, value: source }),
 	);
+}
+
+async function render(path: string) {
+	return renderSource(path, readFileSync(path, "utf8"));
 }
 
 const html = await render(join(fixtures, "grammar-blocks.md"));
@@ -83,4 +87,29 @@ test("the declaration blocks render with their heads", () => {
 test("a build error names the document", async () => {
 	const path = join(fixtures, "grammar-error-unknown.md");
 	expect(render(path)).rejects.toThrow(`${path}:4: rule fold_item refers to point_operand`);
+});
+
+test("a fence tagged grammar with a meta string still renders, meta ignored", async () => {
+	const out = await render(join(fixtures, "grammar-meta-fence.md"));
+	expect(out).toContain('<span class="gr-rule" id="rule-a">a</span>');
+	expect(out).toContain('<span class="gr-rule" id="rule-b">b</span>');
+	expect(out.indexOf('id="rule-a"')).toBeLessThan(out.indexOf('id="rule-b"'));
+	expect(out).not.toContain("title=");
+	expect(out).not.toContain("demo");
+});
+
+test("a grammar sample nested in a four-backtick block is not paired as a fence", async () => {
+	const out = await render(join(fixtures, "grammar-nested-fence.md"));
+	// The real fence renders its own rule, matched by line rather than by an
+	// ordinal count the nested sample would otherwise have shifted.
+	expect(out).toContain('<span class="gr-rule" id="rule-real">real</span>');
+	expect(out).not.toContain('id="rule-fake"');
+	expect(out).toContain("```grammar\nfake := CREASE_NAME\n```");
+});
+
+test("an unclosed fence ends in a named error, not a swallowed remainder", async () => {
+	const path = join(fixtures, "grammar-unclosed.md");
+	await expect(renderSource(path, "```grammar\na := CREASE_NAME\n")).rejects.toThrow(
+		`${path}:1: unclosed fence`,
+	);
 });
