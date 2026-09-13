@@ -13,6 +13,8 @@ What is fixed:
   supplies the axis is an item like the others. Items stand in any order.
 - The canonical construction is `(align …)` over alignments. The seven prose
   forms are sugar for it.
+- Round parentheses are items and braces are blocks. `flatten`'s selection is
+  `(toward .q)`; no brace item remains in the language.
 - Hard cut. The bare-keyword argument forms are removed with no compatibility
   period, every `.bel` file in the repository is rewritten, and the folded
   geometry of every example and case is unchanged.
@@ -51,13 +53,12 @@ code, resolved here and listed again under Migration:
   `Ctx → Resolve → { Axiom, Flatten_solve } → Eval`. `Items` sits on the parse
   side, before that chain, and its `.mli` follows the same convention. The
   `eval.ml` line budget stays green.
-- **Open, and the one decision here worth a record of its own:** an `align`
-  construction is recognised into `Ast.axiom` at parse time, so the AST keeps
-  the seven-constructor form and the alignment set is a surface object. The
-  alternative, carrying the alignment set into the AST and recognising it in
-  `Axiom`, is weighed under Constructions below. Whichever way it goes, the
-  reasoning is worth writing down before the two-fold constructions arrive and
-  find the answer already made.
+- **Open, and the one decision here worth a record of its own:** which form
+  the AST keeps for a construction. Option A recognises an `align` into
+  `Ast.axiom` at parse time and keeps the seven-constructor AST; option B
+  makes the alignment set the AST's only representation and recognises it in
+  `Axiom`. Both are laid out under Constructions below. The decision is
+  pending with the owner and the rest of this design holds either way.
 
 ## Motivation
 
@@ -104,7 +105,6 @@ Menhir file takes:
 write_stmt   := verb [ CREASE_NAME "=" ] item*
 verb         := "mark" | "fold" | "reverse" | "flatten" | "flip"
 item         := "(" item_body ")"
-              | "{" "toward" point_operand "}"
 
 item_body    := construction_body                        ; the axis, as a construction
               | line_operand [ "mountain" | "valley" ]   ; the axis, or a flatten ray
@@ -118,10 +118,21 @@ item_body    := construction_body                        ; the axis, as a constr
               | "at" point_operand
               | "staying" flap_operand
               | over_flap "over" over_flap
+              | "toward" point_operand
 
 bind_stmt    := CREASE_NAME "=" "(" construction_body ")"
               | CREASE_NAME "=" bundle_expr
 ```
+
+Round parentheses are items and braces are blocks. `{ … }` occurs in `def`
+and `export` and nowhere else, so `flatten`'s selection is `(toward .q)` like
+every other argument and the language has one bracket per job. The `toward`
+that belongs to a construction stays inside the construction's item, where it
+selects among that construction's candidate lines; `(toward .q)` as an item of
+its own is `flatten`'s selection among candidate states
+([open-flatten-selection](/model/#open-flatten-selection)). The two never
+collide, because a construction item's body starts with `align`, `map`,
+`through` or `perp`.
 
 `item_body` is one nonterminal, the union of every verb's item bodies. The
 parser accepts any head after any verb and a second pass classifies the list
@@ -131,9 +142,9 @@ per-verb item set:
 - A head that does not belong to the verb gets a message naming the verb and
   the head, at the item's span, instead of `syntax error` at whatever token
   the LR automaton died on.
-- The same shape can be implemented in tree-sitter and in TextMate, neither of
-  which should carry the per-verb signature. One grammar, three
-  implementations, and the reference corpus test (below) holds them together.
+- The same shape can be implemented in tree-sitter, which should not carry the
+  per-verb signature. One grammar, two implementations, and the reference
+  corpus test (below) holds them together.
 - The per-verb table then exists in exactly one place, `Items`, and a new verb
   or a new slot is an entry in it.
 
@@ -144,7 +155,7 @@ per-verb item set:
 | `mark` | one axis item | one layer item (`on`), one extent item (`between` or `at`), one intent item (`mountain`/`valley`) |
 | `fold` | one axis item | one anchor item (`moving`), one depth item (`up to`), one placement item (`mountain`, `over`, `under`) |
 | `reverse` | one axis item | one anchor item (`moving`), one kind item (`outside`) |
-| `flatten` | one or more ray items | order items (`over`, any number), one stayer item (`staying`), one selection item (`{toward}`) |
+| `flatten` | one or more ray items | order items (`over`, any number), one stayer item (`staying`), one selection item (`toward`) |
 | `flip` | none | none |
 
 An axis item is `(<construction>)` or `(<line>)`. A ray item is `(<line>)` or
@@ -176,7 +187,7 @@ through … [toward …]`, `map … onto … and … onto … [toward …]`, `ma
 **Recognition.** An `align` with no named fold lines and no line prefix on any
 alignment is recognised by the multiset of its alignment kinds:
 
-| alignment kinds | axiom | operands |
+| alignment kinds | axiom | operand roles |
 |---|---|---|
 | through a point, through a point | 1 | `Through (p1, p2)` |
 | point onto point | 2 | `MapPoints (p, q)` |
@@ -188,7 +199,9 @@ alignment is recognised by the multiset of its alignment kinds:
 
 Numbering is the classic Huzita-Justin numbering of `SPECIFICATION.md` §1, the
 one the solvers in `Axiom` already carry as their provenance tags
-(`"axiom1"` … `"axiom7"`).
+(`"axiom1"` … `"axiom7"`). The operand-role column names the `Ast.axiom`
+constructors under option A and the roles of `Axiom.classify`'s result under
+option B; the roles are the same either way.
 
 The kinds are a multiset, so alignment order is free. Where one kind occurs
 twice, axioms 1 and 7, source order fixes the operand order: the first
@@ -201,25 +214,109 @@ An alignment whose two objects have kinds outside the table, `(--l onto .p)`
 for instance, produces no match and reaches the same "not one of the seven"
 message as any other unrecognised set.
 
-**Where recognition runs: at parse time, into `Ast.axiom`.** Both surfaces
-produce the identical AST node, so a test can parse the two spellings of each
-of the seven and compare the trees; the sugar claim is checked rather than
-asserted.
-`Axiom.axis_of`, the provenance record, the implied-anchor derivation and the
-axiom-5 deferral are untouched. The reference corpus test (below) parses every
-example in `BELOCH.md` without evaluating it, so parse-time recognition puts
-the whole `align` table under that test.
+#### Where the recognition runs: decision pending
 
-The alternative, carrying the alignment set into the AST and recognising it in
-`Axiom`, was rejected: it widens `Ast.axiom` to a second representation of the
-same seven facts, every consumer of `Ast.axiom` has to handle both, and the
-recognition error moves behind evaluation where a parse-only corpus test
-cannot see it.
+The table above is the same under both options. What differs is which form the
+AST holds and where the table is applied. The owner decides; everything else in
+this design holds either way, and the two options touch the same files.
 
-The cost of recognising at parse time: the alignment set is not retained, so a
-formatter could not print `align` back from a tree parsed from prose. No
-formatter exists and `BELOCH.md` fixes the canonical form for readers rather
-than for a printer.
+**Option A: recognise at parse time, keep `Ast.axiom`.**
+
+The alignment production hands its list to `Items.construction`, which applies
+the table and returns one of the seven `Ast.axiom` constructors. Prose forms
+build the same constructors directly, as they do today. `Ast.axiom` keeps its
+shape, `Axiom.axis_of` keeps its seven-arm dispatch, `Eval`'s implied-anchor
+derivation keeps its three-arm match, and the surface gains a spelling.
+
+- Both spellings produce the identical AST node, so the sugar claim is checked
+  by parsing the two spellings of each of the seven and comparing the trees.
+- The "not one of the seven" error carries the item's span and fires before
+  any paper exists, so a construction written in a binding that no write ever
+  uses still reports.
+- The alignment set is not retained. A multifold construction has no AST node
+  to live in, so it raises at parse time and `packages/multifold` has no
+  input from source. A formatter could not print `align` back from a tree
+  parsed from prose.
+- Two representations of one object exist in the pipeline: the alignment set
+  in the parser, the seven constructors in the AST, with a one-way map between
+  them. [#def-motion] makes the alignment set the definition and the axiom
+  number the name of one such set, so the AST holds the name and drops the
+  thing named.
+
+**Option B: the alignment set is the AST, recognise in `Axiom`.**
+
+`Ast.axiom` is replaced by
+
+```ocaml
+type construction = {
+  c_fold_lines : string list;
+  c_alignments : alignment list;
+  c_toward : point_operand option;
+  c_span : Error.span;
+}
+```
+
+Prose forms desugar at parse time into alignment lists, so the two spellings
+agree up to the order of the list. `Axiom` gains
+
+```ocaml
+val classify : Ast.construction -> classified
+(** Recognise the alignment set as one of the seven, or fail naming the
+    alignments. [classified] carries the resolved operand roles: the two
+    points of axiom 1, the point and the two lines of axiom 4, and so on. *)
+```
+
+and `axis_of` calls it first, then runs today's seven-arm dispatch over
+`classified`.
+
+- **Consumers that match on the seven constructors: two sites in library code,
+  ten constructor arms in total.** `Axiom.axis_of` (seven arms) and
+  `Eval.resolve_markable`'s implied-anchor derivation (three arms:
+  `MapPoints`, `MapThrough`, `MapBoth`). `Resolve`, `Fold_emit`,
+  `Flatten_solve`, `Spine`, `packages/multifold` and `packages/eval-web` match
+  on none of them. Outside library code, `packages/core/tests/test_parse.ml`
+  carries 36 lines with such a pattern, all in that one file; they become
+  assertions over alignment lists.
+- The `Eval` site is better served either way: it becomes
+  `Axiom.implied_point : Ast.construction -> Ast.point_operand option`, which
+  moves the knowledge of which axioms carry a moved point out of `Eval` and
+  into the module that owns the axioms.
+- **The sugar test becomes axis equality after evaluation.** The two spellings
+  no longer produce equal ASTs, because a prose form fixes its alignment order
+  and an `align` does not. The test evaluates both spellings in the same
+  program and compares the resulting `Geom.line` and the provenance tag. A
+  cheaper variant compares ASTs after sorting the alignment list by kind, and
+  is weaker: it checks the parser rather than the pipeline.
+- **Provenance** keeps working unchanged. `State.provenance.axiom` is the tag
+  string `"axiom1"` … `"axiom7"` and `axis_of` already returns it alongside
+  the line; under B it comes from `classify`'s result rather than from the
+  constructor it matched. `sources` is built from the operands `classified`
+  hands back, so the strings stay what they are today.
+- **Multifold gains its input.** A construction over named fold lines keeps
+  its alignments in the AST, so it is representable, the kernel refuses it
+  with a message from the evaluator rather than the parser, and
+  `packages/multifold`'s naming of two-fold axioms (`AL6ab8` and its family)
+  has a source-level object to name. Under A that object exists nowhere.
+- The "not one of the seven" error moves behind evaluation. The reference
+  corpus test evaluates every block (below), so the `align` table stays under
+  that test either way. What A catches and B does not: a bad construction in a
+  binding that no write ever reaches, since an unevaluated statement still
+  parses.
+- `BindLine` carries a `construction` instead of an `axiom`, one constructor
+  argument in `ast.ml` and one pattern in `Eval`.
+
+**Recommendation.** Option B. The argument that carried A was that a
+parse-only corpus test would see the recognition errors before any evaluation;
+the corpus test now evaluates, so that argument is gone. What remains is a
+small and countable migration, two library sites and ten constructor arms plus
+one test file, against two durable properties: the AST holds the object
+[#def-motion] defines instead of the name of the set, and the two-fold
+constructions whose syntax `BELOCH.md` already fixes have somewhere to land
+when the kernel can solve them. The cost of B is that a construction in a
+binding no write ever reaches goes unchecked. That case is narrow, and the
+corpus test covers the document, which is what this slice protects.
+
+**Decision pending.**
 
 ### Examples
 
@@ -233,8 +330,8 @@ reverse (map .b onto .c) (outside)
 mark    (through .a .c)
 mark    (map --ab onto --cd) (on #[.c]) (between .a .m) (mountain)
 mark    --p = (map .a onto .c) (between .a .m)
-flatten (--h & --bc) (--v & --cd) (.q over .r) (staying .a) {toward .q}
-flatten --ear = (--ea) (--ec) (--eb) {toward .a}
+flatten (--h & --bc) (--v & --cd) (.q over .r) (staying .a) (toward .q)
+flatten --ear = (--ea) (--ec) (--eb) (toward .a)
 flip
 --l = (map --a onto --b toward .p)
 ```
@@ -308,9 +405,11 @@ type raw_item =
   | RiSelection of point_operand * Error.span
 ```
 
-`RiConstruction` carries `axiom` because recognition has already run in the
-alignment production. `alignment` is in the AST because the parser builds it,
-even though no `stmt` retains one.
+`RiConstruction` carries whichever form the pending construction decision
+fixes: `axiom` under option A, where recognition has already run in the
+alignment production, and `construction` under option B, where it carries the
+alignment list itself. Every other `raw_item` constructor and the whole of
+`Items`' per-verb classification are the same under both.
 
 Changed, two lines: `Mark`'s layer slot becomes `flap_arg option`, was
 `flap_operand option`.
@@ -326,7 +425,9 @@ the `Ctx → Resolve → { Axiom, Flatten_solve } → Eval` chain of ADR 0018.
 val construction :
   string list -> Ast.alignment list -> Ast.point_operand option ->
   Error.span -> Ast.axiom
-(** Recognise an `align` head as one of the seven axioms. *)
+(** Recognise an `align` head as one of the seven axioms. Option A only;
+    under option B the parser builds an [Ast.construction] record directly
+    and [Axiom.classify] carries the table. *)
 
 val mark    : string option -> Ast.raw_item list -> Error.span -> Ast.stmt
 val fold    : string option -> Ast.raw_item list -> Error.span -> Ast.stmt
@@ -382,8 +483,7 @@ items:
   | item items { $1 :: $2 }
 
 item:
-  | LPAREN item_body RPAREN            { $2 }
-  | LBRACE TOWARD point_operand RBRACE { Ast.RiSelection ($3, $loc) }
+  | LPAREN item_body RPAREN { $2 }
 
 item_body:
   | construction_body                   { Ast.RiConstruction ($1, $loc) }
@@ -400,6 +500,7 @@ item_body:
   | AT point_operand                    { Ast.RiExtent (At $2, $loc) }
   | STAYING flap_arg                    { Ast.RiStaying ($2, $loc) }
   | over_flap OVER over_flap            { Ast.RiOrder ($1, $3, $loc) }
+  | TOWARD point_operand                { Ast.RiSelection ($2, $loc) }
 
 construction_body:
   | ALIGN fold_line_names alignments toward_opt { Items.construction $2 $3 $4 $loc }
@@ -415,8 +516,9 @@ plus `alignment`, `alignments`, `fold_line_names`, `align_object` and
 **Conflicts.** Menhir already runs with `--explain`. The decisions the
 automaton has to make at one token of lookahead:
 
-- After a verb, `CREASE` means a binding and `LPAREN`/`LBRACE` an item. No
-  item body starts with `CREASE`, so there is no choice to make.
+- After a verb, `CREASE` means a binding and `LPAREN` an item. No item body
+  starts with `CREASE`, so there is no choice to make. `LBRACE` reaches the
+  parser only in `def` and `export`, which no item can follow.
 - Inside an item, after a `point_operand`, `STAR` continues a join into a
   `line_operand` and `OVER` reduces to `over_flap`. Distinct lookaheads.
 - Inside an item, after a `line_operand`, `MOUNTAIN`/`VALLEY` shift into
@@ -497,7 +599,7 @@ Named nodes, one per item type:
 | `layer_item` | `(on …)` |
 | `order_item` | `(.q over .r)` |
 | `stayer_item` | `(staying …)` |
-| `selection_item` | `{toward …}` |
+| `selection_item` | `(toward …)` |
 
 Operands inside an item stay unstructured: a `_operand` is a run of the
 existing token classes plus a parenthesised group, excluding the head keywords
@@ -547,112 +649,107 @@ keyword rather than the whole node, leaving operands on their existing
 `.bel-construction`, `.bel-alignment` classes, each in both themes. The same
 query file is copied to `packages/grammar/queries/highlights.scm`.
 
-### TextMate (`packages/vscode/syntaxes/beloch.tmLanguage.json`)
+### Markdown rendering (`packages/www/src/lib/remark-bel.ts`)
 
-The grammar targets a retired syntax generation (`step`, `cross`, `@`, `--(`,
-`.(`, `._temp` points) and covers none of the current verbs. It is rewritten
-around begin/end patterns on `(` plus a lookahead for the head keyword, each
-including `$self` so operands keep their own scopes:
+`remarkBel` rewrites every fenced block whose language is `bel` or `beloch`
+into highlighted HTML. It gains one rule: a block tagged `prelude` is removed
+from the tree instead of rendered. `visit` already hands it the parent and the
+index, so the prelude nodes are collected during the walk and spliced out
+after it.
 
-| pattern begins | scope |
-|---|---|
-| `\((?=\s*align\b)` and `\((?=\s*(map\|through\|perp)\b)` | `meta.item.construction.beloch` |
-| `\((?=\s*moving\b)` | `meta.item.anchor.beloch` |
-| `\((?=\s*up\s+to\b)` | `meta.item.depth.beloch` |
-| `\((?=\s*(over\|under)\b)` | `meta.item.placement.beloch` |
-| `\((?=\s*outside\s*\))` | `meta.item.kind.beloch` |
-| `\((?=\s*(mountain\|valley)\s*\))` | `meta.item.intent.beloch` |
-| `\((?=\s*(between\|at)\b)` | `meta.item.extent.beloch` |
-| `\((?=\s*on\b)` | `meta.item.layer.beloch` |
-| `\((?=\s*staying\b)` | `meta.item.stayer.beloch` |
-| `\((?=[^)]*\bover\b)` | `meta.item.order.beloch` |
-| `\{(?=\s*toward\b)` | `meta.item.selection.beloch` |
-| `\(` (last, the catch-all) | `meta.item.axis.beloch` |
-
-Order is load-bearing: the order-item lookahead must come after the
-placement lookahead (which starts with `over`) and before the catch-all. Each
-pattern's `beginCaptures`/`endCaptures` carry
-`punctuation.section.item.begin.beloch` / `.end.beloch`.
-
-The keyword patterns gain `mark|fold|flatten|reverse|flip` as
-`keyword.control.verb.beloch` and `align|onto|toward|moving|up|to|over|under|
-outside|on|between|at|staying|valley|mountain|perp|through|map` in their
-existing role scopes, and lose `cross`, `@`, `--(`, `.(`.
-`language-configuration.json` gains `{}` to its bracket pairs, since
-`{toward .p}` is live syntax.
-
-**Tests.** `packages/vscode` runs `vscode-tmgrammar-test` over five fixtures
-under `test/grammar/`, which assert scopes the current grammar cannot emit
-(`entity.name.section.beloch`, `storage.type.beloch` for `step`), so the suite
-is red before this slice touches it. All five fixtures are rewritten to the
-item syntax with assertions for the new `meta.item.*` scopes, `keywords.bel`
-gains the verb and head words, and `contextual.bel` loses the `step` and `@`
-assertions. `packages/vscode` is not in CI; adding `bun run test:grammar` to
-the workflow is one line and is listed under Acceptance.
+The pandoc path needs the same rule. `scripts/render-model.sh` renders
+`spec/{MODEL,KERNEL,BELOCH,FOLD}.md` to PDF through
+`scripts/model-blocks.lua`, so that filter drops a `CodeBlock` carrying the
+`prelude` class as well. One clause, beside the clauses it already has for
+fenced divs.
 
 ## The reference corpus test
 
-The guard that holds both parsers to `BELOCH.md`.
+The guard that holds the kernel and the tree-sitter grammar to `BELOCH.md`.
+Every tagged block in the document is evaluated, the way
+`scripts/render-figures.ts` evaluates every `::: {.figure}` body: a block that
+does not fold is a block the document should not be showing.
 
 ### Marking the blocks
 
 Fenced blocks in `spec/*.md` carry no info string today, and `remark-bel.ts`
 highlights a block only when its language is `bel` or `beloch`. The example
 blocks in `BELOCH.md` gain an info string; the grammar blocks stay unlabelled
-and are skipped by both the corpus test and the site.
+and are skipped by the corpus test and by the site.
 
 | info string | content | how it is checked |
 |---|---|---|
-| ```` ```bel ```` | a whole program, starting `paper square` | must parse |
-| ```` ```bel frag ```` | statements with no prelude | `paper square\n` is prepended, then must parse |
-| ```` ```bel construction ```` | one construction item per line, with a trailing comment | each line is wrapped as `mark <line>` under the prelude, then must parse |
-| ```` ```bel reject ```` | one statement per line, each with a trailing `; error: <text>` | each line must fail with a message containing `<text>` |
+| ```` ```bel ```` | a whole program, starting `paper square` | parses and evaluates |
+| ```` ```bel prelude name=<id> ```` | a program fragment that sets up names for other blocks | parses and evaluates under its own prelude; never rendered |
+| ```` ```bel frag [prelude=<id>] ```` | statements with no `paper square` of their own | the named prelude (default: `paper square`) is prepended, then parses and evaluates |
+| ```` ```bel construction [prelude=<id>] ```` | one construction item per line, with a trailing comment | each line is wrapped as `mark <line>`, appended to the prelude, then parses and evaluates |
+| ```` ```bel reject [prelude=<id>] ```` | one statement per line, each with a trailing `; error: <text>` | each line, under the prelude, fails with a message containing `<text>`, at parse or at evaluation |
 
-`bel reject` reuses the comment-assertion idea of the `.bel` corpus, where
-`; expect error "<substring>"` matches by substring. It is per line because a
-negative example is one statement long and a block-level tag would need one
-block per message.
+### Hidden preludes
 
-Parsing rather than evaluating is enough for every item error and for the
-whole `align` table, because head classification, duplicate detection, slot
-conflicts and axiom recognition all run inside the parse. A `bel reject` block
-therefore needs no paper, no names and no geometry.
+A fragment needs a program around it and a reader needs to see the fragment
+alone. A `bel prelude` block carries that program: it stands in the document
+where the fragments that use it begin, names itself with `name=<id>`, and is
+removed before rendering, so it appears on the site and in the PDF nowhere.
+
+- **Default.** A `frag`, `construction` or `reject` block with no `prelude=`
+  uses the implicit prelude `paper square`, which covers every block whose
+  operands are the four corners `.a` to `.d` and the four edges.
+- **Named.** `prelude=triangle` prepends the text of the block tagged
+  `prelude name=triangle`. A prelude is defined before its first use in
+  document order, so both runners resolve it in one pass over the file.
+- **Composition.** A prelude is one block and does not itself carry a
+  `prelude=`. Nesting would buy a shorter document and cost a resolution
+  order that a reader of the raw markdown cannot follow.
+
+Evaluation puts a real constraint on the author of a prelude, which is the
+point of evaluating: the Constructions block needs a prelude that gives every
+one of the seven examples a fold that lands on the paper, and where a
+construction has more than one such fold its example carries the `toward` that
+picks one. `spec/BELOCH.md` supplies those preludes; this design supplies the
+mechanism.
 
 ### The two runners
 
-**Menhir side.** `packages/core/tests/test_reference_corpus.ml`, an alcotest
+**Kernel side.** `packages/core/tests/test_reference_corpus.ml`, an alcotest
 suite declared in `packages/core/tests/dune` with
 `(deps (source_tree ../../../spec))`, reading `$DUNE_SOURCEROOT/spec/BELOCH.md`
 the way `test_bel_assert.ml` reads its corpora. It extracts the tagged blocks,
-calls `Parse.parse ~filename:"BELOCH.md"` on each, and for a `bel reject` line
-asserts `Error.Beloch_error` with the named substring. About 120 lines,
-half of it the block extractor.
+resolves preludes, and runs
+`Eval.eval_folded (Parse.parse ~filename:"BELOCH.md" src)` on each assembled
+program, which is the entry point `test_bel_assert.ml` uses. A `bel reject`
+line must raise `Error.Beloch_error` with the named substring, from the parse
+or from the evaluation; the runner does not care which, because the reader
+does not. Calling the evaluator in process rather than shelling out to
+`beloch fold` keeps the suite inside `dune runtest` and gives it the exception
+rather than an exit code. About 160 lines, half of it the block extractor.
 
 **tree-sitter side.** `packages/www/src/lib/reference-corpus.test.ts`, a
 `bun test` file beside `highlight-bel.test.ts`, using the same
-`web-tree-sitter` load path `highlight-bel.ts` uses. It extracts the same
-blocks by the same rule, parses each with the shipped wasm, and asserts
-`tree.rootNode.hasError === false`, for the `bel reject` blocks as well:
-a rejected program is well-formed item syntax that the wrong verb takes, so
-tree-sitter must produce a clean tree for it. This is the property that forces
-the union-of-heads shape in both grammars.
+`web-tree-sitter` load path `highlight-bel.ts` uses. It stays parse-only: it
+extracts the same blocks by the same rule, parses each block body on its own
+without its prelude, and asserts `tree.rootNode.hasError === false`, for
+`bel reject` blocks as well. A rejected program is well-formed item syntax
+that the wrong verb takes, so tree-sitter must produce a clean tree for it.
+That is the property that forces the union-of-heads shape into both grammars.
+Prelude blocks are parsed too; they are Beloch like everything else.
 
-The two extractors are 20 lines each in two languages. To catch one drifting
-from the other, each asserts the block inventory it found (a count per tag)
-against a constant at the top of the file, and the two constants are updated
-together when a block is added to `BELOCH.md`. A shared manifest would remove
-the duplication and is not worth a generated file at this size; the ceiling is
-noted at both constants.
+The two extractors are about 30 lines each in two languages. To catch one
+drifting from the other, each asserts the block inventory it found (a count
+per tag) against a constant at the top of the file, and the two constants are
+updated together when a block is added to `BELOCH.md`. A shared manifest would
+remove the duplication and is not worth a generated file at this size; the
+ceiling is noted at both constants.
 
 `bun test` in `packages/www` runs in CI today. `dune runtest` does not: the
 workflow builds `nix build .#beloch` and the OCaml tests run only under
 `nix flake check`. The slice adds a `nix flake check` step to
-`.github/workflows/deploy.yml`, so the Menhir half of the corpus test runs on
+`.github/workflows/deploy.yml`, so the kernel half of the corpus test runs on
 every push alongside the tree-sitter half.
 
 ## Errors
 
-Parse-time, from `Items`:
+Item classification, from `Items`, at parse time:
 
 | situation | message |
 |---|---|
@@ -660,13 +757,19 @@ Parse-time, from `Items`:
 | any item on `flip` | `` flip takes no items `` |
 | a second item of one type | `` only one moving item per fold `` (head and verb substituted) |
 | a second extent on `mark` | `` only one extent item per mark `` |
-| a second `{toward}` | `` only one {toward} item per flatten `` |
+| a second selection item | `` only one toward item per flatten `` |
 | a second `staying` | `` only one staying item per flatten `` |
 | no axis item | `` fold needs an axis item: a construction or a crease `` (verb substituted) |
 | no ray item on `flatten` | `` flatten needs at least one ray item `` |
 | `mountain`/`valley` on an axis item | `` an axis item takes no mountain or valley; write (mountain) as its own item `` |
 | `(mountain)` with `(over …)`/`(under …)` | `` a placed fold derives its direction; drop mountain `` (unchanged) |
 | `(up to …)` with `(over …)`/`(under …)` | `` a placed fold moves the anchor flap only; up to is not supported here `` (unchanged) |
+
+Construction recognition. These fire at parse time under option A and at
+evaluation under option B; the texts are the same either way:
+
+| situation | message |
+|---|---|
 | `align` alignments match no axiom | `` these alignments are not one of the seven axioms: point onto line, point onto line, through a point `` |
 | `align` names fold lines | `` a construction over named fold lines is not evaluated yet `` |
 | `toward` on a one-solution construction | `` this construction determines one line; drop toward `` |
@@ -678,7 +781,7 @@ source order.
 Two existing parse-time messages change wording so that every duplicate reads
 the same way: `only one staying clause per flatten` becomes
 `only one staying item per flatten`, and `only one {toward} per flatten`
-becomes `only one {toward} item per flatten`. No `.bel` case asserts either
+becomes `only one toward item per flatten`. No `.bel` case asserts either
 string; both appear in `SPECIFICATION.md` §4.9 and are updated there.
 
 Every semantic message from `Eval`, `Resolve`, `Axiom`, `Flatten_solve` and
@@ -696,39 +799,45 @@ equivalent. Rewriting those messages around item syntax is a separate pass.
    `fold (map .a onto .c) (moving .a) (mountain)` produce the same AST, and
    that `mark`, `reverse` and `flatten` accept their items in any order with
    `flatten`'s ray order preserved.
-3. **Sugar is sugar.** `test_parse` parses each of the seven axioms in both
-   spellings, prose and `align`, with the alignments in every order, and
-   asserts the resulting `Ast.axiom` values are equal. Axiom 7's two
-   `point onto line` alignments are asserted to keep source order, which is
+3. **Sugar is sugar.** Each of the seven axioms is written in both spellings,
+   prose and `align`, with the alignments in every order, and the two agree.
+   Under option A that is AST equality in `test_parse`. Under option B it is
+   axis equality after evaluation: the same program folded through each
+   spelling yields the same `Geom.line` and the same provenance tag. Axiom 7's
+   two `point onto line` alignments keep source order under both, which is
    what fixes the implied anchor.
 4. **The align table is total.** Every alignment multiset of size one or two
    over the five kinds is either in the table or produces the "not one of the
    seven" message; the test enumerates them.
-5. **Item errors.** One `.bel` case per row of the parse-time errors table
-   under `packages/core/tests/cases/items/`, each with an
+5. **Item errors.** One `.bel` case per row of the item-classification errors
+   table under `packages/core/tests/cases/items/`, each with an
    `; expect error "…"` line, plus the same rows as a `bel reject` block in
    `BELOCH.md`.
-6. **Reference corpus, Menhir.** `test_reference_corpus` parses every tagged
-   block in `BELOCH.md` and fails when a block is malformed, when a `bel
-   reject` line parses, or when the block inventory does not match the
-   constant.
+6. **Reference corpus, kernel.** `test_reference_corpus` evaluates every
+   tagged block in `BELOCH.md` under its prelude and fails when a block does
+   not fold, when a `bel reject` line succeeds or fails with the wrong
+   message, when a `prelude=` names no block, or when the block inventory does
+   not match the constant.
 7. **Reference corpus, tree-sitter.** `reference-corpus.test.ts` parses the
    same blocks with the shipped wasm and finds no `ERROR` node in any of them,
-   `bel reject` blocks included.
-8. **Highlighting.** `highlight-bel.test.ts` gains a case asserting that
+   `bel reject` and `prelude` blocks included.
+8. **Preludes are invisible.** A `bel prelude` block appears in neither the
+   rendered site HTML nor the pandoc PDF. `remark-bel`'s test asserts the
+   first; the second is checked by reading the built PDF once during the
+   slice.
+9. **Highlighting.** `highlight-bel.test.ts` gains a case asserting that
    `fold (map .a onto .c) (moving .a) (mountain)` yields a `bel-construction`
    span on `map`, a `bel-anchor` span on `moving` and a `bel-intent` span on
    `mountain`, and that `.a` still carries `data-bel-name="a"`.
-9. **TextMate.** `bun run test:grammar` in `packages/vscode` is green on the
-   five rewritten fixtures, and the workflow runs it.
 10. **Geometry unchanged.** The normalised FOLD output of every `.bel` file
     under `examples/` and `packages/core/tests/cases/` is byte-identical
     before and after the rewrite (procedure under Migration), and every inline
     `; assert` and `; expect error` in those files passes unchanged except for
     the two flatten duplicate messages.
-11. **Site.** `bun run build` in `packages/www` succeeds, which evaluates the
-    ten `<Beloch>` bodies in the tutorials, and `bun test` passes, which
-    evaluates the three landing examples.
+11. **Site.** `bun run build` in `packages/www` succeeds with the reduced
+    content set: the four reference documents, the API docs and the landing
+    page. `bun test` passes, including the landing test, which evaluates the
+    bird base.
 12. **Figures.** `scripts/render-figures.ts` renders all eleven `MODEL.md`
     figures with no `error` entry in `_build/spec/figures/index.json`.
 
@@ -747,6 +856,15 @@ equivalent. Rewriting those messages around item syntax is a separate pass.
   affected sections in place.
 - Rewriting semantic error messages that quote prose construction syntax.
 - The grammar-blocks documentation plugin and `remark-model-blocks.ts`.
+- `packages/vscode`. The TextMate grammar targets a syntax generation that is
+  already retired (`step`, `cross`, `@`, `--(`, `.(`) and its own fixtures
+  assert scopes it cannot emit, so `bun run test:grammar` is red before this
+  slice and stays red after it. The extension is not in CI and the site does
+  not use it. Bringing it to the item syntax is its own slice, with the item
+  scopes and the five fixtures in one change.
+- Rewriting the tutorials. The five tutorial pages and the introduction are
+  removed rather than carried forward (see Migration); a tutorial set written
+  against the item syntax is a separate piece of work.
 - Reviving `packages/core/tools/regen.ml`, which points at a deleted
   `tests/golden/` directory and a deleted `test_golden.ml`. It is dead code
   that predates the inline-assertion corpus; this slice leaves it alone.
@@ -791,8 +909,8 @@ unnoticed, so the rewrite is machine-made:
 1. Add a printer, `packages/core/tools/to_items.ml`, that parses a file with
    the pre-change grammar and prints the program back in item syntax,
    preserving comments by rewriting only the statement lines it recognises.
-2. Run it over all 94 files and over the snippets embedded in markdown and
-   TypeScript, and read the diff.
+2. Run it over all 94 files and over the Beloch embedded in markdown
+   (`MODEL.md`'s figure bodies, `README.md`), and read the diff.
 3. Swap the grammar.
 4. Re-run the snapshot comparison above.
 5. Delete `to_items.ml` in the same change; it has no second use.
@@ -801,31 +919,53 @@ unnoticed, so the rewrite is machine-made:
 
 1. `lexer.ml`, `ast.ml`, `items.ml`/`items.mli`, `parser.mly`,
    `resolve.ml`/`resolve.mli`, `eval.ml`. `dune build` green, parser tests
-   updated.
+   updated. The construction decision (A or B) is settled before this step,
+   since it fixes `ast.ml` and the `Axiom` interface.
 2. `to_items.ml`, corpus rewrite, snapshot comparison, `dune runtest` green.
-3. `spec/BELOCH.md`: the `write_stmt` production corrected to
-   `verb [ CREASE_NAME "=" ] item*`, the `flatten` binding example, the fence
-   info strings, and the `bel reject` block.
-4. `test_reference_corpus.ml` and the `bel reject` cases under
+3. `spec/BELOCH.md` (owner): the `write_stmt` production, the `flatten`
+   binding example, `(toward …)` in place of `{toward …}`, the fence info
+   strings, the hidden preludes and the `bel reject` block.
+4. `test_reference_corpus.ml` and the item-error cases under
    `packages/core/tests/cases/items/`.
 5. `packages/grammar`: `grammar.js`, regenerate `parser.c` and the wasm, copy
-   into `packages/www/src/grammar/`, `flake.nix` devshell, the `generate`
-   script.
-6. `highlights.scm` in both copies, `theme.css`,
+   into `packages/www/src/grammar/`, `tree-sitter` into the `flake.nix`
+   devshell, the `generate` script in `package.json`.
+6. `highlights.scm` in both copies, `theme.css`, `remark-bel.ts` and its
+   prelude rule, `scripts/model-blocks.lua`'s matching clause,
    `reference-corpus.test.ts`, `highlight-bel.test.ts`.
-7. `packages/vscode`: the TextMate grammar, `language-configuration.json`,
-   the five fixtures.
+7. Site content cut (below).
 8. Documentation: `SPECIFICATION.md` Appendix A and the examples in §4.1 to
-   §4.10, `MODEL.md`'s eleven figure programs,
-   `packages/www/src/lib/landing-examples.ts`, the ten `<Beloch>` bodies in
-   `packages/www/src/content/docs/**/*.mdx`, and the two snippets in
+   §4.10, `MODEL.md`'s eleven figure programs, and the two snippets in
    `README.md`.
-9. CI: `nix flake check` and `bun run test:grammar` in
-   `.github/workflows/deploy.yml`.
+9. CI: `nix flake check` in `.github/workflows/deploy.yml`.
 
-The `.mdx` tutorial bodies and `README.md` are in the rewrite because the
-Astro build evaluates the former and fails on a parse error, and because
-`README.md` is the first Beloch a reader sees.
+### Cutting the site down to the reference documents
+
+The docs site keeps the four reference documents rendered from `spec/`
+(`/model/`, `/kernel/`, `/language/`, `/output/`), the API docs under
+`/api/`, and the landing page. Everything else under
+`packages/www/src/content/docs` goes in this slice rather than being rewritten
+into the item syntax:
+
+- Delete `introduction.mdx` and the five files under `tutorials/`. Their ten
+  `<Beloch>` bodies are evaluated by the Astro build, so leaving them in the
+  old syntax would fail the build and rewriting them would be work on pages
+  whose text is written against the old surface throughout.
+- `astro.config.mjs`: the "Getting Started" and "Tutorials" sidebar groups go;
+  "Reference" stays.
+- The landing page shows the bird base and nothing else.
+  `packages/www/src/lib/landing-examples.ts` keeps `HERO_SRC` and loses
+  `FISH_BASE_SRC`, `KITE_SRC` and the `EXAMPLES` array; `index.astro` loses
+  the example-button row. `HERO_SRC` reads
+  `examples/bases/bird-base.bel` at build time through the existing
+  `BELOCH_REPO_ROOT` anchor, so the landing program and the example file
+  cannot drift and the `.bel` corpus already asserts on it.
+- `landing-examples.test.ts` shrinks to one test: the hero evaluates and
+  yields a non-empty `vertices_coords`.
+
+`examples/bases/bird-base.bel` is rewritten to the item syntax with the rest
+of the corpus, and its normalised FOLD output must match byte for byte, so the
+landing page renders the same figure it renders today.
 
 ### Size of the change, in files
 
@@ -833,11 +973,10 @@ Astro build evaluates the former and fails on a parse error, and because
 |---|---|---|
 | `packages/core` | 8 source, 3 test, 82 `.bel`, 1 tool (added and deleted) | 82 |
 | `packages/grammar` | 3 source, 4 generated | 0 |
-| `packages/www` | 3 source, 1 test added, 1 wasm, 5 `.mdx` | 5 |
-| `packages/vscode` | 2 source, 5 fixtures | 5 |
+| `packages/www` | 5 source, 1 test added, 1 test shrunk, 1 wasm, 6 deleted pages | 0 |
 | `spec` | 3 | 0 |
 | `examples` | 6 | 6 |
-| `scripts`, root | 4 | 0 |
+| `scripts`, root | 5 | 0 |
 
-About 130 files, of which about 100 are mechanical corpus rewrites produced by
-`to_items.ml` and read as a diff.
+About 125 files, of which about 90 are mechanical corpus rewrites produced by
+`to_items.ml` and read as a diff, and six are page deletions.
