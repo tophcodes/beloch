@@ -63,3 +63,15 @@ float-fast for generic sign queries, exact only when the interval straddles —
 no guarantee sacrificed; (2) honest degree budget with a clear error naming the
 offending fold, rather than a silent-wrong mode; (3) rendering stays float via
 to_float as today. Revisit only with #33 benchmark data.
+
+## Named reusable preludes
+
+`paper square with { … }` (design: `docs/superpowers/specs/2026-09-13-paper-as-value-design.md`)
+lets a program bind its own names to the parts of a sheet. A named, reusable
+prelude (`prelude corners { .a = vertex 1 … }`, applied as `square with corners`)
+would let several sheets share one spelling.
+
+Left out because no program has yet written the same non-default prelude twice,
+and a second declaration construct costs grammar, a namespace of its own and
+its own error messages. Revisit when two sheets in one program spell out the
+same non-default prelude.
