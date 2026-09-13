@@ -1,5 +1,12 @@
 import { test, expect } from "bun:test";
 import { parseDocument } from "./grammar-notation.ts";
+import {
+	renderCollected,
+	renderExternal,
+	renderFragment,
+	renderPlanned,
+	renderRule,
+} from "./grammar-notation.ts";
 
 const source = [
 	"# Fixture",
@@ -194,5 +201,58 @@ test("a line that is neither a rule head nor a continuation quotes the line", ()
 test("a character with no class names the character and the rule", () => {
 	expect(parseFixture("grammar-error-char.md")).toThrow(
 		`${at("grammar-error-char.md", 4)}unexpected character "%" in rule fold_item`,
+	);
+});
+
+test("a defining name carries its id; a nonterminal is a link", () => {
+	const html = renderRule(byName.get("program") as never, doc);
+	expect(html).toContain('<pre class="grammar-block"><code>');
+	expect(html).toContain('<span class="gr-rule" id="rule-program">program</span>');
+	expect(html).toContain('<span class="gr-keyword">"paper"</span>');
+	expect(html).toContain('<a class="gr-nonterminal" href="#rule-stmt">stmt</a>');
+	expect(html).toContain('<span class="gr-operator">*</span>');
+});
+
+test("a reference to an external name carries gr-external", () => {
+	const html = renderRule(byName.get("axis") as never, doc);
+	expect(html).toContain(
+		'<a class="gr-nonterminal gr-external" href="#rule-flap_operand">flap_operand</a>',
+	);
+	expect(html).toContain('<span class="gr-token">CREASE_NAME</span>');
+});
+
+test("a rule other rules refer to carries a Used by line; one nothing refers to does not", () => {
+	expect(renderRule(byName.get("axis") as never, doc)).toContain(
+		'<p class="gr-links">Used by: <a href="#rule-write_stmt">write_stmt</a></p>',
+	);
+	expect(renderRule(byName.get("program") as never, doc)).not.toContain("gr-links");
+});
+
+test("the collected copy links the name back and carries no id and no links line", () => {
+	const html = renderCollected(doc);
+	expect(html).toContain('<a class="gr-rule" href="#rule-program">program</a>');
+	expect(html).not.toContain('id="rule-program"');
+	expect(html).not.toContain("gr-links");
+	const order = [...html.matchAll(/<a class="gr-rule" href="#rule-([a-z_]+)">/g)].map((m) => m[1]);
+	expect(order).toEqual(["program", "stmt", "write_stmt", "axis"]);
+});
+
+test("a fragment wraps its rules and keeps its line breaks", () => {
+	const html = renderFragment(doc.fragments[1], doc);
+	expect(html.startsWith('<div class="grammar-fragment">')).toBe(true);
+	expect(html).toContain("\n            <span");
+	expect(html).toContain('<span class="gr-comment">; a placed fold</span>');
+});
+
+test("the external and planned blocks carry their heads, ids and notes", () => {
+	const html = renderExternal(doc);
+	expect(html).toContain('<p class="gr-block-head">Defined elsewhere</p>');
+	expect(html).toContain('<span class="gr-rule" id="rule-flap_operand">flap_operand</span>');
+	expect(html).toContain('<span class="gr-comment">; SPECIFICATION.md Appendix A</span>');
+	const planned = renderPlanned(doc);
+	expect(planned).toContain('<p class="gr-block-head">Not lexed yet</p>');
+	expect(planned).toContain('<span class="gr-keyword">align</span>');
+	expect(planned).toContain(
+		'<span class="gr-comment">; two-fold constructions are not evaluated yet</span>',
 	);
 });
