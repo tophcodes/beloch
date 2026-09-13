@@ -80,10 +80,10 @@ placement a menu of four entries.
 
 | type | values | slots |
 |---|---|---|
-| line | a construction, or a crease selection that yields one segment | the axis of `mark`, `fold`, `reverse` |
+| line | a construction, a name bound by `=`, or a crease whose segments lie on one table line ([def-line](/model/#def-line)) | the operands of a construction, the axis of `mark` |
+| crease | a name bound by `as`: the material scored under that name ([def-bundle](/model/#def-bundle)), or a selection from one | the axis `(--d)` of `fold` and `reverse`, the rays of `flatten`, the meet `*`, the filters `&` `\` `[…]`, `free on` |
 | flap | a point, a line, or `#[…]`, resolved by incidence ([def-selector](/model/#def-selector)) | `moving`, `up to`, `on`, `staying`, the target of `over` and `under` |
 | point | a named or selected point | `at`, `between`, `toward` |
-| bundle | the segments of a crease ([def-bundle](/model/#def-bundle)) | the rays of `flatten` |
 | placement | top, bottom, over a flap, under a flap ([def-reflection](/model/#def-reflection)) | `fold` |
 | kind | inside, outside ([def-reverse](/model/#def-reverse)) | `reverse` |
 | extent | the whole line, between two points, at a point ([def-mark](/model/#def-mark)) | `mark` |
@@ -91,6 +91,14 @@ placement a menu of four entries.
 | letter | mountain, valley as a constraint on a ray ([def-letter](/model/#def-letter)) | `flatten` |
 | order | one sector over another | `flatten` |
 | selection | toward a point ([def-motion](/model/#def-motion)) | constructions, `flatten` |
+
+Line and crease are two sorts under one sigil, and the binding tells them
+apart: `--l = …` is a line, `… as --l` is a crease. A crease stands where a
+line is wanted by projection to its table line, which exists while its
+segments are collinear (ADR 0014) and is an error once a fold has bent it.
+A line stands nowhere a crease is wanted: it has no material until a
+`mark` scores it. The check needs no geometry, so a program's sorts can be
+verified before it is evaluated.
 
 ```
 flap_operand  := point_operand | line_operand | "#[" point_operand+ "]"
@@ -105,7 +113,7 @@ others, so every slot of a write's signature is one block in the source,
 delimited on both sides and classified by its head.
 
 ```
-write_stmt := verb item* [ "as" CREASE_NAME ]
+write_stmt := verb item* [ "as" CREASE_NAME [ "!" ] | "into" CREASE_NAME ]
 verb       := "mark" | "fold" | "reverse" | "flatten" | "flip"
 item       := "(" item_body ")"
 item_body  := fold_item | reverse_item | mark_item | flatten_item
@@ -155,11 +163,24 @@ flatten (--h & --bc) (--v & --cd) (.q over .r) (staying .a) (toward .q)
 flip
 ```
 
-The name of the crease a write scores is its one output and stands after
-the items, for every verb: `fold (map .a onto .c) (moving .a) as --f`,
-`flatten (--ba \ .a) … as --r`. `=` binds the value of a read and nothing
-else: `--l = (map .a onto .c)` is a line with no material, `fold (map .a
-onto .c) as --l` is a crease with a name.
+The crease a write scores is its one output, and the clause after the
+items says what becomes of it, for every verb:
+
+- `as --f` binds it to a new name: `fold (map .a onto .c) (moving .a) as
+  --f`, `flatten (--ba \ .a) … as --r`. A name already bound is an error;
+  `as --f!` rebinds it, with the `!` of `SPECIFICATION.md` §5a.6.
+- `into --l` adds it to the crease `--l`: `mark (--l) into --l` draws the
+  full line through a reference mark, `fold (--d) (moving .b) (up to .c)
+  into --d` folds some layers of a crease marked through all of them and
+  keeps one name for the material. The new material must lie on the table
+  line of a segment of `--l`; material on another line is a crease of its
+  own, and `[--l --m]` is the read that unites two.
+- no clause: an anonymous crease, addressable by incidence only.
+
+`=` binds the value of a read and nothing else, so the sort of a name is
+visible at its binding: `--l = (map .a onto .c)` is a line with no
+material, `fold (map .a onto .c) as --l` is a crease. A value bound by `=`
+is a snapshot and takes no `into`; a new value is a new binding.
 
 A head that does not belong to the verb is an error naming the verb and
 the item; an item type given twice is an error at the second occurrence.
@@ -248,7 +269,7 @@ section of this document are in `SPECIFICATION.md`, Appendix A.
 program           := "paper" "square" stmt*
 stmt              := write_stmt | bind_stmt | def_stmt | apply_stmt | export_stmt
 
-write_stmt        := verb item* [ "as" CREASE_NAME ]
+write_stmt        := verb item* [ "as" CREASE_NAME [ "!" ] | "into" CREASE_NAME ]
 verb              := "mark" | "fold" | "reverse" | "flatten" | "flip"
 item              := "(" item_body ")"
 item_body         := fold_item | reverse_item | mark_item | flatten_item

@@ -372,10 +372,10 @@ The paper segments a line crosses in a state, one per face.
 
 ::: {.definition #def-bundle name="bundle" uses="def-flat-state def-segment def-line" defines="term-bundle term-crease"}
 A value of sort *bundle* is a finite set of segments. The material of a line
-is a bundle. A *crease* is the
-bundle of hinges that one write scored; it keeps its identity through later
-states, and once later folds have bent it its hinges no longer lie on one
-table line.
+is a bundle. A *crease* is the bundle of hinges that writes scored under one
+name; each write adds hinges that lie on one table line with a hinge already
+there. A crease keeps its identity through later states, and once later
+folds have bent it its hinges no longer lie on one table line.
 :::
 
 ::: {.figure #fig-bundle caption="The crease `--m` is one straight line on the paper; the fold that follows bends it, and on the table its two hinges meet at a right angle." views="cp folded" highlight="--m"}
@@ -389,7 +389,8 @@ A finite set of segments; the material of a line, or a crease.
 :::
 
 ::: {.term #term-crease name="crease"}
-The bundle of hinges that one write scored, named or unnamed.
+The bundle of hinges that writes scored under one name, or that one unnamed
+write scored.
 :::
 
 ::: {.definition #def-flap name="flap" uses="def-flat-state def-refinement" defines="term-flap"}
