@@ -778,13 +778,15 @@ stays with `@output`.
 ```scheme
 (write_statement ["mark" "fold" "reverse" "flatten" "flip"] @keyword)
 ["(" ")" "[" "]"] @punct
-(construction    ["align" "map" "through" "perp" "onto"] @construction)
+(construction    ["align" "map" "through" "perp" "onto" "and"] @construction)
+(construction    "toward" @selection)
 (alignment       ["onto" "through" "perp"] @alignment)
 (anchor_item     "moving" @anchor)
 (depth_item      ["up" "to"] @depth)
 (placement_item  ["over" "under"] @placement)
 (kind_item       "outside" @kind)
 (intent_item     ["mountain" "valley"] @intent)
+(axis_item       ["mountain" "valley"] @intent)
 (extent_item     ["between" "at"] @extent)
 (layer_item      "on" @layer)
 (flatten_element ["mountain" "valley"] @ray)
@@ -798,8 +800,9 @@ stays with `@output`.
 `packages/www/src/styles/theme.css` gains the matching `.bel-anchor`,
 `.bel-depth`, `.bel-placement`, `.bel-kind`, `.bel-intent`, `.bel-extent`,
 `.bel-layer`, `.bel-ray`, `.bel-order`, `.bel-stayer`, `.bel-selection`,
-`.bel-construction`, `.bel-alignment`, `.bel-output` classes, each in both
-themes. The same
+`.bel-construction`, `.bel-alignment`, `.bel-output` classes. One unscoped
+definition each: the syntax palette is defined only in the dark `:root`
+block, so the code panel is dark under either site theme. The same
 query file is copied to `packages/grammar/queries/highlights.scm`.
 
 ### Markdown rendering (`packages/www/src/lib/remark-bel.ts`)
