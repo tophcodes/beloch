@@ -320,7 +320,7 @@ through every later state; only $f(p)$ changes.
 ::: {.figure #fig-point caption="`.p` keeps the paper coordinate it was named with, and the fold moves only where it sits on the table." views="cp folded" highlight=".p"}
 paper square
 .p = free on --ab from .a at 1/4
-fold map .a onto .c
+fold (map .a onto .c)
 :::
 
 ::: {.term #term-point name="point"}
@@ -339,8 +339,8 @@ isometry on a face that contains it.
 
 ::: {.figure #fig-segment caption="`--s` meets each of the two faces in a segment that lies within it, and the crease of `--h` is a segment along the hinge where those faces join." views="cp folded" highlight="--s --h"}
 paper square
---s = map .a onto .b
-fold --h = map .a onto .d
+--s = (map .a onto .b)
+fold (map .a onto .d) as --h
 :::
 
 ::: {.term #term-segment name="segment"}
@@ -357,8 +357,8 @@ crease would go; it has no material of its own until a write creases it.
 
 ::: {.figure #fig-line caption="The material of the table line `--l` is one segment per face it crosses: on the paper the two lie on either side of the crease, on the table they land on the same stretch of `--l`." views="cp folded" highlight="--l"}
 paper square
---l = through .a .c
-fold map .a onto .c
+--l = (through .a .c)
+fold (map .a onto .c)
 :::
 
 ::: {.term #term-line name="line"}
@@ -380,8 +380,8 @@ folds have bent it its hinges no longer lie on one table line.
 
 ::: {.figure #fig-bundle caption="The crease `--m` is one straight line on the paper; the fold that follows bends it, and on the table its two hinges meet at a right angle." views="cp folded" highlight="--m"}
 paper square
-mark --m = map --ab onto --cd
-fold map .a onto .c
+mark (map --ab onto --cd) as --m
+fold (map .a onto .c)
 :::
 
 ::: {.term #term-bundle name="bundle"}
@@ -404,8 +404,8 @@ faces.
 ::: {.figure #fig-flap caption="The fold leaves two flaps; the marked crease `--s` runs through the highlighted one and splits it into two faces, which stay one flap because the hinge between them has angle $0$." views="cp" highlight="#[.c]"}
 paper square
 .m = free on --cd from .c at 1/4
-fold map .a onto .b
-mark --s = through .b .m
+fold (map .a onto .b)
+mark (through .b .m) as --s
 :::
 
 ::: {.definition #def-read name="read" uses="def-flat-state def-point def-line def-bundle def-flap" defines="term-read"}
@@ -466,8 +466,8 @@ them, and the union joins two bundles. Chaining filters is intersection.
 A line value is a table line. When a later write moves the paper, the value
 stays where it is on the table while its material changes. Whether this is
 the intended meaning, or a line should be re-anchored to the material it was
-computed from, is not decided; it decides what `--l = map .a onto .b`
-followed by a fold and then `mark --l` means.
+computed from, is not decided; it decides what `--l = (map .a onto .b)`
+followed by a fold and then `mark (--l)` means.
 :::
 
 ## 5. Operations
@@ -690,18 +690,18 @@ paper it was not told to move.
 
 ::: {.figure #fig-fold-default caption="`--f` folds the corner of the top layer only: the moving set is the outward closure of the flap carrying `.b`, and the layer beneath it stays. The crease reads mountain because that layer lies face down." views="cp folded" highlight="--f"}
 paper square
-fold map .b onto .a
+fold (map .b onto .a)
 .p = free on --bc from .b at 1/4
 .q = free on --ab from .b at 1/4
-fold --f = through .p .q moving .b
+fold (through .p .q) (moving .b) as --f
 :::
 
 ::: {.figure #fig-fold-depth caption="The same fold with `up to .a` names the bottom layer as its depth; the moving set grows outward from there and both corners fold, valley on the face-up layer and mountain on the face-down one." views="cp folded" highlight="--f"}
 paper square
-fold map .b onto .a
+fold (map .b onto .a)
 .p = free on --bc from .b at 1/4
 .q = free on --ab from .b at 1/4
-fold --f = through .p .q moving .b up to .a
+fold (through .p .q) (moving .b) (up to .a) as --f
 :::
 
 ::: {.corollary #cor-fold-letters name="letters of an outside fold" uses="def-fold def-letter def-reflection"}
@@ -723,11 +723,11 @@ under a face-down layer reads valley, under a face-up layer mountain.
 
 ::: {.figure #fig-fold-tuck caption="A pocket tuck: after the sheet is folded in half, the corner `.b` of the top layer is folded `under .p`, into the gap between the two layers. The crease `--t` reads valley because the layer it tucks under lies face down." views="cp folded" highlight="--t"}
 paper square
-fold map .a onto .d
+fold (map .a onto .d)
 .m = free on --bc from .b at 1/2
 .n = free on --ab from .b at 1/2
 .p = free on --ab from .a at 1/4
-fold --t = through .m .n moving .b under .p
+fold (through .m .n) (moving .b) (under .p) as --t
 :::
 
 ::: {.remark #rem-simple-fold name="simple folds" uses="def-fold lem-noncrossing-adequate"}
@@ -786,7 +786,7 @@ the table, and it is visible to line values, which are table lines
 ::: {.figure #fig-flip caption="After `flip` the sheet lies face down, so the crease `--g` scored by a fold placed on top reads mountain: the folder turned the paper over and made a valley on its back." views="cp folded" highlight="--g"}
 paper square
 flip
-fold --g = map .a onto .c
+fold (map .a onto .c) as --g
 :::
 
 ::: {.definition #def-reverse name="reverse fold" uses="def-write def-reflection def-fold def-flap def-letter" defines="term-tip term-spine term-body"}
@@ -829,9 +829,9 @@ half goes under everything and the upper half on top.
 
 ::: {.figure #fig-reverse caption="The preliminary base by two inside reverse folds [@ida2020, §7.4.3]: the diagonal fold makes a triangle whose spine is `--bd`, and each acute corner is reversed to the right-angle corner in turn." views="cp folded" highlight="--h --v"}
 paper square
-fold --bd = map .a onto .c
-reverse --h = map .b onto .c
-reverse --v = map .d onto .c
+fold (map .a onto .c) as --bd
+reverse (map .b onto .c) as --h
+reverse (map .d onto .c) as --v
 :::
 
 ::: {.corollary #cor-reverse-letters name="letters of a reverse fold" uses="def-reverse def-letter cor-fold-letters def-reflection"}
@@ -928,13 +928,13 @@ reflection.
 
 ::: {.figure #fig-flatten caption="The preliminary base by one flatten at the centre: six rays fold, the diagonal through `.a` and `.c` stays flat, and `(.q over .r)` puts the a-quarter in front of the b-taco." views="cp folded" highlight="--h --v"}
 paper square
-mark --ac = through .a .c
-mark --bd = through .b .d
-mark --h = map --ab onto --cd
-mark --v = map --da onto --bc
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+mark (map --ab onto --cd) as --h
+mark (map --da onto --bc) as --v
 .q = free on --ab from .a at 1/4
 .r = free on --ab from .b at 1/4
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) {toward .q}
+flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
 :::
 
 ::: {.open #open-flatten-selection name="what selects among the candidates of a flatten" uses="def-flatten def-motion"}
