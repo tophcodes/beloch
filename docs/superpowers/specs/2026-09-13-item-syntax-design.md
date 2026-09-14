@@ -761,9 +761,23 @@ corpus test below runs against the artifact the site ships.
 `highlight-bel.ts` maps a capture name to the CSS class `bel-<name>` and has
 no rule for overlapping captures, so the queries capture each item's head
 keyword rather than the whole node, leaving operands on their existing
-`@point` / `@line` captures:
+`@point` / `@line` captures.
+
+The first two queries hold classes that the `keyword` and `punct` rules
+supplied on their own while the grammar was flat. A token under a named node
+is anonymous, so `(keyword)` and `(punct)` no longer reach it: that is the
+five verbs, and every parenthesis and bracket inside an item, an operand or a
+construction. Without these two the structured grammar colours less than the
+token soup it replaced.
+
+`highlight-bel.ts` sorts captures by start offset and drops any that overlap
+one already emitted, so for a token matched by two patterns the one written
+first in this file wins. `!` is therefore left out of the bracket query and
+stays with `@output`.
 
 ```scheme
+(write_statement ["mark" "fold" "reverse" "flatten" "flip"] @keyword)
+["(" ")" "[" "]"] @punct
 (construction    ["align" "map" "through" "perp" "onto"] @construction)
 (alignment       ["onto" "through" "perp"] @alignment)
 (anchor_item     "moving" @anchor)
@@ -780,6 +794,7 @@ keyword rather than the whole node, leaving operands on their existing
 (output_clause   ["as" "into" "!"] @output)
 ```
 
+`.bel-keyword` and `.bel-punct` are already in the stylesheet.
 `packages/www/src/styles/theme.css` gains the matching `.bel-anchor`,
 `.bel-depth`, `.bel-placement`, `.bel-kind`, `.bel-intent`, `.bel-extent`,
 `.bel-layer`, `.bel-ray`, `.bel-order`, `.bel-stayer`, `.bel-selection`,
