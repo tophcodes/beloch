@@ -19,6 +19,11 @@
 # _build/spec/figures, the other generated input both renderers of those
 # documents read. It needs the `beloch` binary on PATH.
 #
+# packages/core/tools/blocks.exe evaluates the tagged `.bel` blocks of
+# spec/BELOCH.md and writes _build/spec/blocks.json, which
+# packages/www/src/lib/remark-bel.ts reads to render each block's outcome. It
+# reads and writes paths relative to the repo root, hence the `cd`.
+#
 # Runs inside the flake devshell (odoc comes from there):
 #   nix develop -c scripts/build-api-docs.sh
 set -euo pipefail
@@ -30,6 +35,7 @@ dune build --root "$root" @doc
 bun "$root/scripts/api-register.ts"
 bun "$root/scripts/grammar-register.ts"
 bun "$root/scripts/render-figures.ts"
+(cd "$root" && dune exec packages/core/tools/blocks.exe)
 
 rm -rf "$dest"
 mkdir -p "$dest"

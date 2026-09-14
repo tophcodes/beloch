@@ -444,6 +444,9 @@ local function rewrite(blocks)
       elseif kind ~= "term" then
         out[#out + 1] = statement_div(block.identifier, statements[block.identifier], block.content)
       end
+    elseif block.t == "CodeBlock" and block.classes:includes("bel") and block.classes:includes("prelude") then
+      -- a hidden prelude (design doc "Hidden preludes"): sets up names for
+      -- other `.bel` blocks and is never rendered, in the PDF or on the site.
     else
       out[#out + 1] = block
     end

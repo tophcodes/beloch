@@ -106,6 +106,53 @@
 	white-space: pre;
 }
 
+/* Block-outcome markers (remark-bel): what compute_outcome in blocks.ml
+   decided about a tagged block, rendered directly under its highlighted
+   program on the same always-dark code panel as .bel-block. One unscoped
+   definition each, not re-scoped per site theme, same as the token classes
+   above. Verified/failed lean on --beloch-valley / --beloch-mountain, the
+   crease colours a reader already reads as good/bad fold direction, plus a
+   glyph and a left border so the distinction does not rest on hue alone. */
+.bel-outcome {
+	margin: 0 0 1.25rem;
+	font-family: 'IBM Plex Mono', ui-monospace, monospace;
+	font-size: 13px;
+	border-radius: 0 0 12px 12px;
+}
+.bel-outcome-error {
+	background: var(--beloch-code-bg);
+	padding: 10px 20px 14px;
+	overflow-x: auto;
+	white-space: pre;
+	border-top: 1px solid var(--beloch-border);
+	border-left: 3px solid transparent;
+}
+.bel-outcome-expected {
+	color: var(--beloch-muted);
+	border-left-color: var(--beloch-valley);
+}
+.bel-outcome-expected::before { content: "expected \2014  "; color: var(--beloch-valley); }
+.bel-outcome-unexpected {
+	color: var(--beloch-mountain);
+	border-left-color: var(--beloch-mountain);
+	font-weight: 600;
+}
+.bel-outcome-unexpected::before { content: "\2717 "; }
+.bel-outcome-ok {
+	background: var(--beloch-code-bg);
+	padding: 8px 20px 12px;
+	border-top: 1px solid var(--beloch-border);
+}
+.bel-assert {
+	padding-left: 1.4em;
+	text-indent: -1.4em;
+}
+.bel-assert-verified { color: var(--beloch-valley); }
+.bel-assert-verified::before { content: "\2713 "; }
+.bel-assert-failed { color: var(--beloch-mountain); font-weight: 600; }
+.bel-assert-failed::before { content: "\2717 "; }
+.bel-assert-message { font-weight: 400; font-style: italic; opacity: 0.85; }
+
 /* Grammar notation (remark-grammar). The token classes take the variables the
    .bel-* classes take; the print values live in scripts/typst-compat.typ. */
 .gr-rule        { color: var(--beloch-keyword); font-weight: 600; }

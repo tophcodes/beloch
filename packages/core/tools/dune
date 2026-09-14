@@ -2,3 +2,26 @@
  (name regen)
  (modules regen)
  (libraries beloch))
+
+; Bel_assert lives in ../tests/ (packages/core/tests/bel_assert.ml{,i}), the
+; shared assertion module test_bel_assert.ml and test_reference_corpus.ml
+; both use. A dune module belongs to the directory it is compiled in, so
+; blocks.exe gets its own compiled copy via these rules rather than reaching
+; across directories; ../tests/bel_assert.ml{,i} stay the one place the
+; source is written.
+(rule
+ (target bel_assert.ml)
+ (deps ../tests/bel_assert.ml)
+ (action
+  (copy %{deps} %{target})))
+
+(rule
+ (target bel_assert.mli)
+ (deps ../tests/bel_assert.mli)
+ (action
+  (copy %{deps} %{target})))
+
+(executable
+ (name blocks)
+ (modules blocks bel_assert)
+ (libraries beloch yojson))
