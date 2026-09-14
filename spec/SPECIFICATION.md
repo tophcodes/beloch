@@ -963,7 +963,8 @@ distinct from `toward` (§4), whose meaning now varies by axiom: axioms 6/7
 still use it for **proximity** (the construction landing nearest a point,
 §4.5b, §4.5c); axiom 5 uses it for **direction** (§4.5) — the target side of a
 fold, not a nearness measure. `&` binds tighter than the axiom keywords: `perp --l & --a through .b`
-reads as `perp (--l & --a) through .b`.
+reads as `perp (--l & --a) through .b`, and that grouping may be written out,
+since a parenthesised operand is that operand *(since v0.28-dev)*.
 
 Chaining conjoins: when one point sits on a crease crossing (two adjacent
 segments share it), pin the unique segment incident to *both* constraints by
@@ -1815,7 +1816,7 @@ program       := "paper" "square" stmt*
 stmt          := crease_stmt | point_stmt | flip_stmt | flatten_stmt
               | def_stmt | instance_stmt | apply_stmt | export_stmt          ; since v0.16-dev
 crease_stmt   := CREASE_NAME "=" "(" axiom ")"                    ; a read — binds a line value, scores nothing
-               | CREASE_NAME "=" bundle_expr                      ; a read — binds an existing bundle by name, filter, or union, unparenthesised
+               | CREASE_NAME "=" line_operand                     ; a read — binds an existing line: name, join, selector, filter or union
                | "mark" item* output                              ; crease flat, an anonymous motion or an existing line as one of the items (item syntax, since v0.27-dev)
                | "fold" item* output                               ; crease and fold
                | "reverse" item* output                            ; reverse fold (since v0.26-dev)
@@ -1851,16 +1852,15 @@ flap_operand  := point_operand | line_operand | "#[" point_operand+ "]"         
 point_operand := POINT_NAME                                      ; named
                | "(" line_operand "*" line_operand ")"           ; meet (binary), as an operand: parenthesised — bare only at a binding's RHS (point_stmt, above)
                | ".[" line_operand+ "]"                          ; meet (n-ary): the point on all listed lines
+               | "(" point_operand ")"                           ; grouping (since v0.28-dev)
 line_operand  := CREASE_NAME                                     ; named crease, or a prelude edge (--ab --bc --cd --da)
                | point_operand "*" point_operand                 ; join (binary), as an operand: bare, unlike the meet direction above — the existing crease/edge through two points, a read
+               | "(" line_operand ")"                            ; grouping (since v0.28-dev)
                | "--[" constraint+ "]"                           ; join / line selector: crease/edge segments incident to all constraints
                | line_operand "&" constraint                     ; filter to incident segments (since v0.17-dev)
                | line_operand "\" constraint                     ; drop incident segments
                | "[" line_operand+ "]"                           ; union of same-typed bundles
-bundle_expr   := CREASE_NAME                                     ; an existing bundle by name
-               | "[" line_operand+ "]"                           ; union of same-typed bundles
-               | bundle_expr "&" constraint                      ; filter to incident segments
-               | bundle_expr "\" constraint                      ; drop incident segments
+
 constraint    := point_operand | CREASE_NAME | "#[" point_operand+ "]"  ; a bare crease name, not a general line_operand
 POINT_NAME    := "." ident
 CREASE_NAME   := "--" ident

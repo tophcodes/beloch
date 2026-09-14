@@ -203,6 +203,18 @@ let test_parse_perp () =
     "perp alignments" [ "perp --d"; "through .b" ]
     (alignments (construction1 "mark (perp --d through .b)"))
 
+(* A parenthesised operand is that operand, so a grouping the reader adds
+   for clarity parses as the ungrouped form does. The meet already required
+   the parentheses in operand position; these give the other operands the
+   same freedom. *)
+let test_parse_grouped_operand () =
+  Alcotest.(check (list string))
+    "grouping a filtered line leaves the alignments alone" [ "perp --d & .a"; "through .b" ]
+    (alignments (construction1 "mark (perp (--d & .a) through .b)"));
+  Alcotest.(check (list string))
+    "a doubly grouped crease is that crease" [ "through .a"; "through .b" ]
+    (alignments (construction1 "mark (align (through ((.a))) (through .b))"))
+
 let test_parse_map_onto_line () =
   Alcotest.(check (list string))
     "map onto line, perp" [ ".c onto --l1"; "perp --l2" ]
@@ -995,6 +1007,7 @@ let () =
             test_parse_named_and_anon;
           Alcotest.test_case "syntax error" `Quick test_parse_syntax_error;
           Alcotest.test_case "perp parses" `Quick test_parse_perp;
+          Alcotest.test_case "grouped operand" `Quick test_parse_grouped_operand;
           Alcotest.test_case "bisect parses" `Quick test_parse_bisect;
           Alcotest.test_case "fold action parses" `Quick test_parse_fold_action;
           Alcotest.test_case "fold valley default" `Quick

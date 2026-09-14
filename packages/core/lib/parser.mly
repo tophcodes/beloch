@@ -52,7 +52,10 @@ body_stmts:
 body_stmt:
   (* value binding: pure geometry, no material *)
   | CREASE EQ LPAREN construction_body RPAREN { BindLine ($1, $4, $loc) }
-  | CREASE EQ bundle_expr                     { BindBundle ($1, $3, $loc) }
+  (* a bind takes the line operands an item takes, parenthesised or not; the
+     parentheses of the construction form are the construction's, not the
+     binding's. *)
+  | CREASE EQ line_operand                    { BindBundle ($1, $3, $loc) }
   (* the five writes: a verb, its items in any order, its output clause.
      Every verb takes the union of item bodies and Items classifies the list
      against the verb, so a head the verb does not take is reported by name
@@ -239,12 +242,14 @@ point_operand:
   | point_ref { PNamed $1 }
   | LPAREN line_operand STAR line_operand RPAREN { PSelect ([ $2; $4 ], $loc) }
   | POINT_MEMBER_OPEN line_operand_list RBRACKET { PSelect ($2, $loc) }
+  | LPAREN point_operand RPAREN { $2 }
 
 crease_ref:
   | CREASE { { cname = $1; cspan = $loc } }
 
 line_operand:
   | crease_ref { LNamed $1 }
+  | LPAREN line_operand RPAREN { $2 }
   | LINE_MEMBER_OPEN select_constraints RBRACKET { LSelect ($2, $loc) }
   | point_operand STAR point_operand { LSelect ([ SelPoint $1; SelPoint $3 ], $loc) }
   | line_operand AMP selector       { LFilter ($1, Keep $3, $loc) }
@@ -262,14 +267,6 @@ select_constraints:
 line_operand_list:
   | line_operand                   { [ $1 ] }
   | line_operand line_operand_list { $1 :: $2 }
-
-(* the RHS of a bundle binding: a named crease, a union, or either filtered.
-   Excludes bare axioms (those are Crease binds) so `--x = …` stays unambiguous. *)
-bundle_expr:
-  | crease_ref { LNamed $1 }
-  | LBRACKET line_list RBRACKET     { LUnion ($2, $loc) }
-  | bundle_expr AMP selector        { LFilter ($1, Keep $3, $loc) }
-  | bundle_expr BACKSLASH selector  { LFilter ($1, Drop $3, $loc) }
 
 selector:
   | point_operand { SelPoint $1 }
