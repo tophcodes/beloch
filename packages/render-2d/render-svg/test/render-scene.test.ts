@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
 import { parseFold } from "@beloch/scene";
-import { renderScene, renderCP, renderFolded } from "@beloch/render-svg";
+import { renderScene, renderCP, renderFolded, PAD } from "@beloch/render-svg";
 
 const golden = (p: string) =>
   Bun.file(new URL(`./fixtures/${p}`, import.meta.url)).text();
@@ -94,4 +94,35 @@ test("crease lines carry data-crease-id (bundle-grouped); boundary edges don't; 
   // exactly the two bundle edges are stamped, no boundary line is.
   expect(count(svg, /data-crease-id=/g)).toBe(2);
   expect(svg).toContain("data-vertex=");
+});
+
+// One frame for both views of one program: the union of the paper's bounds and
+// every folded frame's bounds, so the crease pattern and the folded form sit at
+// one scale on one baseline. cube-root's last step reaches to x = -0.115, past
+// the sheet, which is what makes the union differ from the paper alone.
+test("cp and folded share one frame: one viewBox, one scale, one baseline", async () => {
+  const scene = parseFold(await golden("cube-root.fold"));
+  const cp = renderCP(scene, { labels: [".a", ".b"] }).toString();
+  const folded = renderFolded(scene, { labels: [".a", ".b"] }).toString();
+
+  const attr = (s: string, name: string) =>
+    new RegExp(`\\b${name}="([^"]*)"`).exec(s)?.[1];
+  expect(attr(folded, "viewBox")).toBe(attr(cp, "viewBox") as string);
+  expect(attr(folded, "height")).toBe(attr(cp, "height") as string);
+
+  // `.a` and `.b` do not move in cube-root: paper and table coordinates agree.
+  // Same pixels in both drawings means one scale and one baseline.
+  const dot = (s: string, name: string) => {
+    const g = s.slice(s.indexOf(`data-construction="${name}"`));
+    const m = /<circle cx="([^"]*)" cy="([^"]*)"/.exec(g);
+    return `${m?.[1]},${m?.[2]}`;
+  };
+  expect(dot(folded, "a")).toBe(dot(cp, "a"));
+  expect(dot(folded, "b")).toBe(dot(cp, "b"));
+  // The folded form reaching past the sheet is inside the frame, not in the
+  // padding: every drawn x is at least the left pad.
+  const xs = [...folded.matchAll(/points="([^"]*)"/g)].flatMap((m) =>
+    m[1]!.split(" ").map((p) => Number(p.split(",")[0])),
+  );
+  expect(Math.min(...xs)).toBeGreaterThanOrEqual(PAD - 1e-6);
 });

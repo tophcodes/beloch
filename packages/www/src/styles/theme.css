@@ -66,6 +66,40 @@
 .bel-operator { color: var(--beloch-at); }
 .bel-punct    { color: #7E889A; }
 
+/* Item heads: one colour per item type, so an item's kind reads at a glance
+   without following its parentheses. */
+.bel-construction { color: #8FA6D9; }
+.bel-alignment    { color: #7C93C4; }
+.bel-anchor       { color: #E0A458; }
+.bel-depth        { color: #C77FE0; }
+.bel-placement    { color: #C98BA0; }
+.bel-kind         { color: #8FBF8F; }
+.bel-intent       { color: #E0896F; }
+.bel-extent       { color: #7FB3B3; }
+.bel-layer        { color: #A3A0D9; }
+.bel-ray          { color: #D97D7D; }
+.bel-order        { color: #C2A66B; }
+.bel-stayer       { color: #8AA6A6; }
+.bel-selection    { color: #B08CC9; }
+.bel-output       { color: #9FB88F; }
+
+/* Figure highlights (remark-model-blocks). A figure's `highlight` attribute
+   lists the entities its caption refers to; each takes the colour at its
+   position in this palette, in the crease pattern, in the folded form and in
+   the caption's inline code, so a name and the thing drawn read as one. The
+   values are the strokes of HIGHLIGHT_PALETTE in @beloch/render-svg's theme.ts,
+   which the SVGs carry as literals for the PDF, and scripts/typst-compat.typ
+   repeats them for the caption in print. One unscoped definition each, like the
+   token classes above: the caption sits on the page rather than on the code
+   panel, so every colour is held at L* 49 to 56, legible on either site theme,
+   and at least ΔE76 19 from every colour already in this file. */
+.figure-hl-0 { color: #0d9488; }
+.figure-hl-1 { color: #c2620a; }
+.figure-hl-2 { color: #9a52d8; }
+.figure-hl-3 { color: #db2777; }
+.figure-hl-4 { color: #5f9412; }
+.figure-hl-5 { color: #0284c7; }
+
 /* Beloch fenced code blocks (```beloch) highlighted by the remark plugin, and
    the grammar fragments of spec/BELOCH.md (```grammar), so a rule and a program
    read as one system. */
@@ -88,6 +122,53 @@
 	padding: 0;
 	white-space: pre;
 }
+
+/* Block-outcome markers (remark-bel): what compute_outcome in blocks.ml
+   decided about a tagged block, rendered directly under its highlighted
+   program on the same always-dark code panel as .bel-block. One unscoped
+   definition each, not re-scoped per site theme, same as the token classes
+   above. Verified/failed lean on --beloch-valley / --beloch-mountain, the
+   crease colours a reader already reads as good/bad fold direction, plus a
+   glyph and a left border so the distinction does not rest on hue alone. */
+.bel-outcome {
+	margin: 0 0 1.25rem;
+	font-family: 'IBM Plex Mono', ui-monospace, monospace;
+	font-size: 13px;
+	border-radius: 0 0 12px 12px;
+}
+.bel-outcome-error {
+	background: var(--beloch-code-bg);
+	padding: 10px 20px 14px;
+	overflow-x: auto;
+	white-space: pre;
+	border-top: 1px solid var(--beloch-border);
+	border-left: 3px solid transparent;
+}
+.bel-outcome-expected {
+	color: var(--beloch-muted);
+	border-left-color: var(--beloch-valley);
+}
+.bel-outcome-expected::before { content: "expected \2014  "; color: var(--beloch-valley); }
+.bel-outcome-unexpected {
+	color: var(--beloch-mountain);
+	border-left-color: var(--beloch-mountain);
+	font-weight: 600;
+}
+.bel-outcome-unexpected::before { content: "\2717 "; }
+.bel-outcome-ok {
+	background: var(--beloch-code-bg);
+	padding: 8px 20px 12px;
+	border-top: 1px solid var(--beloch-border);
+}
+.bel-assert {
+	padding-left: 1.4em;
+	text-indent: -1.4em;
+}
+.bel-assert-verified { color: var(--beloch-valley); }
+.bel-assert-verified::before { content: "\2713 "; }
+.bel-assert-failed { color: var(--beloch-mountain); font-weight: 600; }
+.bel-assert-failed::before { content: "\2717 "; }
+.bel-assert-message { font-weight: 400; font-style: italic; opacity: 0.85; }
 
 /* Grammar notation (remark-grammar). The token classes take the variables the
    .bel-* classes take; the print values live in scripts/typst-compat.typ. */

@@ -8,11 +8,11 @@
 
 paper square
 
-mark --diag = through .a .c
-mark --ea = map --ab onto --diag
-mark --eb = map --ab onto --bc
-mark --ec = map --bc onto --diag
+mark (through .a .c) as --diag
+mark (map --ab onto --diag) as --ea
+mark (map --ab onto --bc) as --eb
+mark (map --bc onto --diag) as --ec
 
-flatten (--eb & .b) (--ea) (--ec) {toward .a}
+flatten (--eb & .b) (--ea) (--ec) (toward .a)
 
 ; expect error "off the paper"

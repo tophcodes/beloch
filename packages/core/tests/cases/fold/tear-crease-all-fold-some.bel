@@ -1,6 +1,6 @@
 paper square
-fold map .d onto .a
-mark --m = map .c onto .d
-fold --m moving .c up to .c
+fold (map .d onto .a)
+mark (map .c onto .d) as --m
+fold (--m) (moving .c) (up to .c) into --m
 
 ; expect error "tear"

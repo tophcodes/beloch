@@ -7,8 +7,8 @@
 // Spec: docs/superpowers/specs/2026-07-14-render-scene-unified-design.md
 import type { FoldScene, Mark, Vec2, Isometry as FaceMatrix } from "@beloch/scene";
 import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
-import { DEFAULT_THEME, Theme, LineStyle } from "./theme";
-import { makeLayout } from "./layout";
+import { DEFAULT_THEME, Theme, LineStyle, HighlightColor } from "./theme";
+import { sceneLayout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
 import { coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly, pointCovered, pointInPolygonInclusive, segInsideIntervals, paperClippedIntervals } from "./geometry";
 import { resolveIsometry, type Isometry } from "./isometry";
@@ -56,19 +56,24 @@ const cornerLabel = (p: Vec2): string | undefined =>
 // rule the language's flap selector uses. The flap numbering comes from
 // `beloch:inspect`, which describes the final state, so it addresses the faces
 // of the crease pattern and of the last folded step; an earlier step has its
-// own face decomposition and is left unhighlighted.
-function flapFaces(scene: FoldScene, selectors: string[]): Set<number> {
-  const faces = new Set<number>();
+// own face decomposition and is left unhighlighted. Each face is mapped to the
+// colour of the selector that claimed it, so two highlighted flaps stay apart.
+function flapFaces(
+  scene: FoldScene,
+  colorOf: Map<string, HighlightColor>,
+): Map<number, HighlightColor> {
+  const faces = new Map<number, HighlightColor>();
   const inspect = scene.inspect;
   if (!inspect) return faces;
-  for (const selector of selectors) {
+  for (const [selector, color] of colorOf) {
+    if (!selector.startsWith("#[")) continue;
     const names = selector.slice(2, -1).trim().split(/\s+/).filter(Boolean);
     const flaps = names.map((n) => inspect.points[n.replace(/^\./, "")]?.flap ?? null);
     const flap = flaps[0];
     if (flap === null || flap === undefined) continue;
     if (!flaps.every((f) => f === flap)) continue;
     for (const [index, face] of Object.entries(inspect.faces)) {
-      if (face.flap === flap) faces.add(Number(index));
+      if (face.flap === flap) faces.set(Number(index), color);
     }
   }
   return faces;
@@ -81,10 +86,17 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
   // clipped per face in a folded frame so what shows is the line's material.
   const highlight = opts.highlight ?? [];
   const selection = [...(opts.labels ?? []), ...highlight.filter((h) => !h.startsWith("#["))];
-  const highlightFaces = flapFaces(scene, highlight.filter((h) => h.startsWith("#[")));
-  // Always scale to the paper (cp) footprint so folded subsets render in place
-  // at true relative size, sharing the flat sheet's coordinate origin.
-  const layout = makeLayout(scene.cp.vertices);
+  // One palette colour per highlighted entity, by its position in the list, in
+  // this view and in the other view of the same scene.
+  const palette = theme.highlightPalette;
+  const colorOf = new Map<string, HighlightColor>(
+    highlight.map((h, i) => [h, palette[i % palette.length]!]),
+  );
+  const highlightFaces = flapFaces(scene, colorOf);
+  // The frame both views of this scene share: the paper's footprint together
+  // with every folded frame's, so a folded subset renders in place at true
+  // relative size on the flat sheet's baseline.
+  const layout = sceneLayout(scene);
   const { tx, ty, minX, maxX, minY, maxY } = layout;
   const doc = createDoc(layout.W, layout.H);
 
@@ -139,8 +151,8 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
         const face = F[fi]!;
         const poly = face.map((idx) => V[idx]!);
         const showFront = (sideUp(poly) === "front") !== bottom;
-        const lit = highlightFaces.has(fi);
-        const fill = lit ? theme.highlight : showFront ? theme.front : theme.back;
+        const lit = highlightFaces.get(fi);
+        const fill = lit ? lit.wash : showFront ? theme.front : theme.back;
         const pts = face.map((idx) => `${mx(V[idx]![0])},${ty(V[idx]![1])}`).join(" ");
         paper.children.push(el("polygon", {
           points: pts, fill, stroke: "none", filter: "url(#layerShadow)",
@@ -438,15 +450,15 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       }
     }
 
-    appendConstructions(doc, scene, layout, theme, selection, { frame });
+    appendConstructions(doc, scene, layout, theme, selection, { frame }, colorOf);
   } else {
     // ===== flat crease-pattern geometry (ported from renderCP) =====
     if (opts.texture.faces !== "none") {
       F.forEach((f, i) => {
-        const lit = highlightFaces.has(i);
+        const lit = highlightFaces.get(i);
         const pts = f.map((vi) => `${tx(V[vi]![0])},${ty(V[vi]![1])}`).join(" ");
         paper.children.push(el("polygon", {
-          points: pts, fill: lit ? theme.highlight : theme.paperFill, stroke: "none",
+          points: pts, fill: lit ? lit.wash : theme.paperFill, stroke: "none",
           "data-kind": "face", "data-face-index": i,
           ...(lit ? { "data-highlight": "true" } : {}),
         }));
@@ -523,7 +535,10 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       if (nm) { circleAttrs["data-bel-name"] = nm; circleAttrs["data-kind"] = "point"; }
       annotations.children.push(el("circle", circleAttrs));
       const lab = cornerLabel(p);
-      if (lab) {
+      // A highlighted corner is already labelled by the construction overlay,
+      // in its palette colour and at nearly this offset; drawing the plain
+      // label too would set one name on top of the other.
+      if (lab && !colorOf.has(`.${nm}`)) {
         const ox = p[0] < 0.5 ? -16 : 10, oy = p[1] < 0.5 ? 18 : -8;
         const labelAttrs: Record<string, string | number> = {
           x: tx(p[0]) + ox, y: ty(p[1]) + oy,
@@ -571,7 +586,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       }, [], `--${nm}`));
     }
 
-    appendConstructions(doc, scene, layout, theme, selection, null);
+    appendConstructions(doc, scene, layout, theme, selection, null, colorOf);
   }
 
   if (opts.title) appendTitle(doc, theme, opts.title);

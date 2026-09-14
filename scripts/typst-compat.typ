@@ -14,3 +14,15 @@
 #show raw.where(lang: "gr-token"): it => text(fill: rgb("#6B6B4A"))[#it]
 #show raw.where(lang: "gr-operator"): it => text(fill: rgb("#5A6472"))[#it]
 #show raw.where(lang: "gr-comment"): it => text(fill: rgb("#4F6B45"), style: "italic")[#it]
+
+// Figure highlights (scripts/model-blocks.lua). A caption's inline code for a
+// highlighted entity is emitted as raw with its palette class as the language,
+// so it prints in the colour the figure draws that entity in. Same values as
+// HIGHLIGHT_PALETTE in @beloch/render-svg's theme.ts and .figure-hl-<n> in
+// packages/www/src/styles/theme.css.
+#show raw.where(lang: "figure-hl-0"): it => text(fill: rgb("#0d9488"))[#it]
+#show raw.where(lang: "figure-hl-1"): it => text(fill: rgb("#c2620a"))[#it]
+#show raw.where(lang: "figure-hl-2"): it => text(fill: rgb("#9a52d8"))[#it]
+#show raw.where(lang: "figure-hl-3"): it => text(fill: rgb("#db2777"))[#it]
+#show raw.where(lang: "figure-hl-4"): it => text(fill: rgb("#5f9412"))[#it]
+#show raw.where(lang: "figure-hl-5"): it => text(fill: rgb("#0284c7"))[#it]

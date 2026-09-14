@@ -1,50 +1,27 @@
 %{
 open Ast
 
-(* collapse: one flat parenthesised-juxtaposition chain; the statement action
-   partitions it. Every item is `( ... )`-wrapped — required, not stylistic:
-   a bare (unparenthesised) item would make the item-list's CREASE/POINT
-   first-tokens collide with the first-tokens of the *next* statement (a
-   bind `--l = ...` or point binding `.p = ...`), which is a genuine
-   shift/reduce conflict at 1 token of lookahead, not just a style choice. *)
-type collapse_item =
-  | CElem of collapse_elem
-  | COver of flap_arg * flap_arg
-  | CStaying of flap_arg * Error.span
-  | CToward of point_operand * Error.span
-
-(* shared by the bound (`--r = flatten ...`) and unbound (`flatten ...`)
-   productions: partitions the item list and reports a duplicate `staying`
-   (or duplicate `{toward}`) at its own (second-occurrence) span, not the
-   first's. elems/overs are accumulated reversed and restored with List.rev
-   to keep source order. [toward] now comes from the `{toward .p}` item
-   (flatten V2 surface, spec 2026-07-16-flatten-derive-v2-design.md): any
-   position, at most one — the old trailing `toward` is gone. *)
-let mk_flatten (name : string option) (items : collapse_item list)
-    (span : Error.span) : stmt =
-  let elems_rev, overs_rev, staying, toward =
-    List.fold_left
-      (fun (es, os, st, tw) item ->
-        match item with
-        | CElem e -> (e :: es, os, st, tw)
-        | COver (u, l) -> (es, (u, l) :: os, st, tw)
-        | CStaying (f, sp) -> (
-            match st with
-            | Some _ -> Error.fail sp "only one staying clause per flatten"
-            | None -> (es, os, Some f, tw))
-        | CToward (p, sp) -> (
-            match tw with
-            | Some _ -> Error.fail sp "only one {toward} per flatten"
-            | None -> (es, os, st, Some p)))
-      ([], [], None, None) items
-  in
-  Flatten (name, List.rev elems_rev, List.rev overs_rev, staying, toward, span)
+(* A prose construction: the alignments its spelling fixes, in the order the
+   spelling fixes them, over no named fold line (ADR 0022). An `align` writes
+   its own order; the two agree as sets, which is what recognition reads. *)
+let prose (span : Error.span) (kinds : (alignment_kind * Error.span) list)
+    (toward : point_operand option) : construction =
+  {
+    c_fold_lines = [];
+    c_alignments =
+      List.map
+        (fun (k, sp) ->
+          { al_fold_line = None; al_fold_line2 = None; al_kind = k; al_span = sp })
+        kinds;
+    c_toward = toward;
+    c_span = span;
+  }
 %}
 
 %token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD MOVING MOUNTAIN VALLEY FLIP RPAREN AND UP TO FOLD_KW
 %token DEF APPLY EXPORT AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
 %token FLATTEN OVER STAYING MARK BETWEEN AT UNDER REVERSE OUTSIDE
-%token FREE ON FROM
+%token FREE ON FROM ALIGN INTO
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN  (* --[ / .[ : the line/point select openers *)
 %token <string> POINT
 %token <string> CREASE
@@ -74,33 +51,62 @@ body_stmts:
 
 body_stmt:
   (* value binding: pure geometry, no material *)
-  | CREASE EQ axiom      { BindLine ($1, $3, $loc) }
-  | CREASE EQ bundle_expr { BindBundle ($1, $3, $loc) }
-  (* mark: flat crease; Full subdivides, partial extent may record *)
-  | MARK markable mark_clauses
-      { let (ext, dir, lay) = $3 in Mark (None, $2, ext, dir, lay, $loc) }
-  | MARK CREASE EQ axiom mark_clauses
-      { let (ext, dir, lay) = $5 in Mark (Some $2, MMotion $4, ext, dir, lay, $loc) }
-  (* fold: motion-fold or fold-along an existing material crease *)
-  | FOLD_KW markable fold_clauses        { Fold (None, $2, $3, $loc) }
-  | FOLD_KW CREASE EQ axiom fold_clauses { Fold (Some $2, MMotion $4, $5, $loc) }
-  | REVERSE markable reverse_clauses        { Reverse (None, $2, $3, $loc) }
-  | REVERSE CREASE EQ axiom reverse_clauses { Reverse (Some $2, MMotion $4, $5, $loc) }
+  | CREASE EQ LPAREN construction_body RPAREN { BindLine ($1, $4, $loc) }
+  (* a bind takes the line operands an item takes, parenthesised or not; the
+     parentheses of the construction form are the construction's, not the
+     binding's. *)
+  | CREASE EQ line_operand                    { BindBundle ($1, $3, $loc) }
+  (* the five writes: a verb, its items in any order, its output clause.
+     Every verb takes the union of item bodies and Items classifies the list
+     against the verb, so a head the verb does not take is reported by name
+     at its own span. `flip items` for the same reason: `flip (moving .a)`
+     reaches Items.flip's message instead of a syntax error at `(`. *)
+  | MARK    items output { Items.mark    $2 $3 $loc }
+  | FOLD_KW items output { Items.fold    $2 $3 $loc }
+  | REVERSE items output { Items.reverse $2 $3 $loc }
+  | FLATTEN items output { Items.flatten $2 $3 $loc }
+  | FLIP    items output { Items.flip    $2 $3 $loc }
   | POINT EQ point_expr  { Point ($1, $3, $loc) }
-  | FLIP                 { Flip $loc }
   | INSTANCE EQ APPLY IDENT LPAREN args RPAREN { Apply (Some $1, $4, $6, $loc) }
   | APPLY IDENT LPAREN args RPAREN             { Apply (None, $2, $4, $loc) }
   | EXPORT LBRACE export_entries RBRACE INSTANCE { Export (Some $3, $5, $loc) }
   | EXPORT INSTANCE                              { Export (None, $2, $loc) }
-  | FLATTEN collapse_items
-      { mk_flatten None $2 $loc }
-  | CREASE EQ FLATTEN collapse_items
-      { mk_flatten (Some $1) $4 $loc }
 
-markable:
-  | axiom               { MMotion $1 }
-  | LPAREN axiom RPAREN { MMotion $2 }  (* parens purely syntactic grouping *)
-  | line_operand        { MLine $1 }
+(* the crease a write scores: bound to a new name, added to an existing
+   crease, or left anonymous (BELOCH.md, Write statements) *)
+output:
+  |                    { Ast.Anonymous }
+  | AS CREASE bang_opt { Ast.Named ($2, $3, $loc) }
+  | INTO CREASE        { Ast.Into ($2, $loc) }
+
+items:
+  |            { [] }
+  | item items { $1 :: $2 }
+
+(* The parentheses around an item carry the grammar. Without them the item
+   list's CREASE/POINT first-tokens collide with the first-tokens of the
+   *next* statement (a bind `--l = ...` or a point binding `.p = ...`),
+   which is a shift/reduce conflict at 1 token of lookahead. *)
+item:
+  | LPAREN item_body RPAREN { $2 }
+
+(* the union of every verb's item bodies; Items holds the per-verb table *)
+item_body:
+  | construction_body                   { Ast.RiConstruction ($1, $loc) }
+  | line_operand mv_opt                 { Ast.RiLine ($1, $2, $loc) }
+  | MOVING flap_arg                     { Ast.RiMoving ($2, $loc) }
+  | UP TO flap_arg                      { Ast.RiUpTo ($3, $loc) }
+  | MOUNTAIN                            { Ast.RiLetter (MvMountain, $loc) }
+  | VALLEY                              { Ast.RiLetter (MvValley, $loc) }
+  | OVER flap_arg                       { Ast.RiPlace (PlaceOver, $2, $loc) }
+  | UNDER flap_arg                      { Ast.RiPlace (PlaceUnder, $2, $loc) }
+  | OUTSIDE                             { Ast.RiOutside $loc }
+  | ON flap_arg                         { Ast.RiOn ($2, $loc) }
+  | BETWEEN point_operand point_operand { Ast.RiExtent (Between ($2, $3), $loc) }
+  | AT point_operand                    { Ast.RiExtent (At $2, $loc) }
+  | STAYING flap_arg                    { Ast.RiStaying ($2, $loc) }
+  | over_flap OVER over_flap            { Ast.RiOrder ($1, $3, $loc) }
+  | TOWARD point_operand                { Ast.RiSelection ($2, $loc) }
 
 params:
   | { [] }
@@ -118,78 +124,106 @@ arg:
   | point_operand { APoint $1 }
   | line_operand  { ALine $1 }
 
-fold_clauses:
-  (* `place_opt` precedes `mountain_opt` so that `over .p mountain` still
-     parses and reaches the "drop mountain" report below, rather than dying
-     as a bare syntax error. *)
-  | moving_opt upto_opt place_opt mountain_opt
-      { match $3, $4, $2 with
-        | Some _, true, _ ->
-            Error.fail $loc "a placed fold derives its direction; drop mountain"
-        | Some _, _, Some _ ->
-            Error.fail $loc
-              "a placed fold moves the anchor flap only; up to is not supported here"
-        | _ ->
-            { moving = $1; up_to = $2;
-              direction = (if $4 then Mountain else Valley); place = $3 } }
-
-reverse_clauses:
-  | moving_opt outside_opt { { rmoving = $1; outside = $2 } }
-
-outside_opt:
-  |         { false }
-  | OUTSIDE { true }
-
-place_opt:
-  |                { None }
-  | OVER flap_arg  { Some (PlaceOver, $2) }
-  | UNDER flap_arg { Some (PlaceUnder, $2) }
-
-moving_opt:
-  |                 { None }
-  | MOVING flap_arg { Some $2 }
-
-upto_opt:
-  |                { None }
-  | UP TO flap_arg { Some $3 }
-
-mountain_opt:
-  |          { false }
-  | MOUNTAIN { true }
-
-mark_clauses:
-  | extent_opt mountain_opt layer_opt
-      { ($1, (if $2 then Mountain else Valley), $3) }
-
-extent_opt:
-  |                                     { Full }
-  | BETWEEN point_operand point_operand { Between ($2, $3) }
-  | AT point_operand                    { At $2 }
-
-layer_opt:
-  |              { None }
-  | flap_operand { Some $1 }
-
 flap_arg:
   | point_operand { FlapPoint $1 }
   | line_operand  { FlapLine $1 }
   | flap_operand  { FlapSpec $1 }
 
-axiom:
-  | THROUGH point_operand point_operand       { Through ($2, $3) }
-  | MAP point_operand ONTO point_operand      { MapPoints ($2, $4) }
-  | MAP point_operand ONTO line_operand PERP line_operand   { MapOntoLine ($2, $4, $6) }
+(* A construction: the canonical `align` over its alignments, or one of the
+   seven prose spellings, which desugar to the same record (ADR 0022). *)
+construction_body:
+  | ALIGN fold_line_names alignments toward_opt
+      { { c_fold_lines = $2; c_alignments = $3; c_toward = $4; c_span = $loc } }
+  | prose_axiom { $1 }
+
+fold_line_names:
+  |                        { [] }
+  | CREASE fold_line_names { $1 :: $2 }
+
+alignments:
+  | alignment            { [ $1 ] }
+  | alignment alignments { $1 :: $2 }
+
+alignment:
+  | LPAREN alignment_body RPAREN
+      { let (f1, f2, k) = $2 in
+        { al_fold_line = f1; al_fold_line2 = f2; al_kind = k; al_span = $loc } }
+
+(* The fold-line prefix is left-factored into every alternative: an object
+   can itself begin with a crease name, so an optional leading CREASE would
+   need two tokens of lookahead and is a shift/reduce conflict. `align_side`
+   splits the objects into those that cannot begin with a crease name and
+   those that do, and the decision falls to one token. *)
+alignment_body:
+  | THROUGH point_operand        { (None, None, AlThrough $2) }
+  | PERP line_operand            { (None, None, AlPerp $2) }
+  | CREASE THROUGH point_operand { (Some $1, None, AlThrough $3) }
+  | CREASE PERP line_operand     { (Some $1, None, AlPerp $3) }
+  | align_side ONTO align_side
+      { let (f1, o1) = $1 and (f2, o2) = $3 in (f1, f2, AlOnto (o1, o2)) }
+
+align_side:
+  | align_object           { (None, $1) }
+  | crease_object          { (None, AoLine $1) }
+  | CREASE align_object    { (Some $1, $2) }
+  | CREASE crease_object   { (Some $1, AoLine $2) }
+
+(* an object whose first token is not a crease name *)
+align_object:
+  | point_operand { AoPoint $1 }
+  | line_object   { AoLine $1 }
+
+line_object:
+  | LINE_MEMBER_OPEN select_constraints RBRACKET { LSelect ($2, $loc) }
+  | point_operand STAR point_operand { LSelect ([ SelPoint $1; SelPoint $3 ], $loc) }
+  | LBRACKET line_list RBRACKET      { LUnion ($2, $loc) }
+  | line_object AMP selector         { LFilter ($1, Keep $3, $loc) }
+  | line_object BACKSLASH selector   { LFilter ($1, Drop $3, $loc) }
+
+(* a crease name, filtered or not *)
+crease_object:
+  | crease_ref                        { LNamed $1 }
+  | crease_object AMP selector        { LFilter ($1, Keep $3, $loc) }
+  | crease_object BACKSLASH selector  { LFilter ($1, Drop $3, $loc) }
+
+toward_opt:
+  |                      { None }
+  | TOWARD point_operand { Some $2 }
+
+(* the seven prose spellings, each fixing its own alignment order *)
+prose_axiom:
+  | THROUGH point_operand point_operand
+      { prose $loc [ (AlThrough $2, $loc($2)); (AlThrough $3, $loc($3)) ] None }
+  | MAP point_operand ONTO point_operand
+      { prose $loc [ (AlOnto (AoPoint $2, AoPoint $4), $loc) ] None }
+  | MAP point_operand ONTO line_operand PERP line_operand
+      { prose $loc
+          [ (AlOnto (AoPoint $2, AoLine $4), $loc($2)); (AlPerp $6, $loc($6)) ]
+          None }
   | MAP point_operand ONTO line_operand THROUGH point_operand
-      { MapThrough ($2, $4, $6, None) }
+      { prose $loc
+          [ (AlOnto (AoPoint $2, AoLine $4), $loc($2)); (AlThrough $6, $loc($6)) ]
+          None }
   | MAP point_operand ONTO line_operand THROUGH point_operand TOWARD point_operand
-      { MapThrough ($2, $4, $6, Some $8) }
+      { prose $loc
+          [ (AlOnto (AoPoint $2, AoLine $4), $loc($2)); (AlThrough $6, $loc($6)) ]
+          (Some $8) }
   | MAP point_operand ONTO line_operand AND point_operand ONTO line_operand
-      { MapBoth ($2, $4, $6, $8, None) }
+      { prose $loc
+          [ (AlOnto (AoPoint $2, AoLine $4), $loc($2));
+            (AlOnto (AoPoint $6, AoLine $8), $loc($6)) ]
+          None }
   | MAP point_operand ONTO line_operand AND point_operand ONTO line_operand TOWARD point_operand
-      { MapBoth ($2, $4, $6, $8, Some $10) }
-  | PERP line_operand THROUGH point_operand   { Perp ($4, $2) }
-  | MAP line_operand ONTO line_operand                  { MapLines ($2, $4, None) }
-  | MAP line_operand ONTO line_operand TOWARD point_operand { MapLines ($2, $4, Some $6) }
+      { prose $loc
+          [ (AlOnto (AoPoint $2, AoLine $4), $loc($2));
+            (AlOnto (AoPoint $6, AoLine $8), $loc($6)) ]
+          (Some $10) }
+  | PERP line_operand THROUGH point_operand
+      { prose $loc [ (AlPerp $2, $loc($2)); (AlThrough $4, $loc($4)) ] None }
+  | MAP line_operand ONTO line_operand
+      { prose $loc [ (AlOnto (AoLine $2, AoLine $4), $loc) ] None }
+  | MAP line_operand ONTO line_operand TOWARD point_operand
+      { prose $loc [ (AlOnto (AoLine $2, AoLine $4), $loc) ] (Some $6) }
 
 point_ref:
   | POINT { { name = $1; span = $loc } }
@@ -208,12 +242,14 @@ point_operand:
   | point_ref { PNamed $1 }
   | LPAREN line_operand STAR line_operand RPAREN { PSelect ([ $2; $4 ], $loc) }
   | POINT_MEMBER_OPEN line_operand_list RBRACKET { PSelect ($2, $loc) }
+  | LPAREN point_operand RPAREN { $2 }
 
 crease_ref:
   | CREASE { { cname = $1; cspan = $loc } }
 
 line_operand:
   | crease_ref { LNamed $1 }
+  | LPAREN line_operand RPAREN { $2 }
   | LINE_MEMBER_OPEN select_constraints RBRACKET { LSelect ($2, $loc) }
   | point_operand STAR point_operand { LSelect ([ SelPoint $1; SelPoint $3 ], $loc) }
   | line_operand AMP selector       { LFilter ($1, Keep $3, $loc) }
@@ -232,14 +268,6 @@ line_operand_list:
   | line_operand                   { [ $1 ] }
   | line_operand line_operand_list { $1 :: $2 }
 
-(* the RHS of a bundle binding: a named crease, a union, or either filtered.
-   Excludes bare axioms (those are Crease binds) so `--x = …` stays unambiguous. *)
-bundle_expr:
-  | crease_ref { LNamed $1 }
-  | LBRACKET line_list RBRACKET     { LUnion ($2, $loc) }
-  | bundle_expr AMP selector        { LFilter ($1, Keep $3, $loc) }
-  | bundle_expr BACKSLASH selector  { LFilter ($1, Drop $3, $loc) }
-
 selector:
   | point_operand { SelPoint $1 }
   | crease_ref    { SelLine (LNamed $1) }
@@ -252,29 +280,11 @@ point_operand_list:
   | point_operand                    { [ $1 ] }
   | point_operand point_operand_list { $1 :: $2 }
 
-collapse_items:
-  | collapse_item                { [ $1 ] }
-  | collapse_item collapse_items { $1 :: $2 }
-
 (* mv constraint marker: bare = solver-assigned (V2); mountain/valley pin it. *)
 mv_opt:
   |          { MvFree }
   | MOUNTAIN { MvMountain }
   | VALLEY   { MvValley }
-
-collapse_item:
-  | LPAREN collapse_item_inner RPAREN  { $2 }
-  | LBRACE TOWARD point_operand RBRACE { CToward ($3, $loc) }
-      (* `{toward .p}`: any item position, at most one (mk_flatten rejects a
-         second occurrence). Present = derive mode: the items are an odd set
-         of given rays and this names which side of the emergent crease to
-         keep. *)
-
-collapse_item_inner:
-  | line_operand mv_opt
-      { CElem { cline = $1; cdir = $2 } }
-  | over_flap OVER over_flap { COver ($1, $3) }
-  | STAYING flap_arg         { CStaying ($2, $loc) }
 
 (* points and #(...) only — bare crease names would collide with elements *)
 over_flap:

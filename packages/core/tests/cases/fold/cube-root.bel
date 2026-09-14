@@ -1,24 +1,24 @@
 paper square
 
-mark --vm = map .a onto .b                ; vertical midline x=1/2 (axiom 2)
+mark (map .a onto .b) as --vm             ; vertical midline x=1/2 (axiom 2)
 
 ._mb = --vm * --ab                   ; (1/2, 0)
 ._mt = --vm * --cd                   ; (1/2, 1)
-mark --ac   = through .a .c               ; landmark diagonal
-mark --db   = through .d .b               ; landmark diagonal
-mark --d_mb = through .d ._mb             ; landmark
-mark --a_mt = through .a ._mt             ; landmark
-mark --c_mb = through .c ._mb             ; landmark
-mark --b_mt = through .b ._mt             ; landmark
+mark (through .a .c) as --ac              ; landmark diagonal
+mark (through .d .b) as --db              ; landmark diagonal
+mark (through .d ._mb) as --d_mb          ; landmark
+mark (through .a ._mt) as --a_mt          ; landmark
+mark (through .c ._mb) as --c_mb          ; landmark
+mark (through .b ._mt) as --b_mt          ; landmark
 ._pq1 = --d_mb * --ac                ; (1/3, 1/3)
 ._pq2 = --a_mt * --db                ; (1/3, 2/3)
---pq  = through ._pq1 ._pq2           ; left third line PQ : x = 1/3
+--pq = (through ._pq1 ._pq2)          ; left third line PQ : x = 1/3
 ._rs1 = --c_mb * --db                ; (2/3, 1/3)
 ._rs2 = --b_mt * --ac                ; (2/3, 2/3)
-mark --rs = through ._rs1 ._rs2           ; right third line RS : x = 2/3
+mark (through ._rs1 ._rs2) as --rs        ; right third line RS : x = 2/3
 .s    = --rs * --cd                  ; S = (2/3, 1), top of RS
 
-fold map .c onto --ab and .s onto --pq   ; fold C onto AB, S onto PQ → AC/CB = ∛2
+fold (map .c onto --ab and .s onto --pq) ; fold C onto AB, S onto PQ → AC/CB = ∛2
 
 ; neither landing is assertable in v1: `incident` always resolves against
 ; PAPER space (fixed, pre-fold — see test_bel_assert.ml's check_incident),

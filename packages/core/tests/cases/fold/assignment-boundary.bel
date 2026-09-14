@@ -1,4 +1,4 @@
 paper square
-mark --bot = through .a .b
+mark (through .a .b) as --bot
 
 ; assert --bot is boundary

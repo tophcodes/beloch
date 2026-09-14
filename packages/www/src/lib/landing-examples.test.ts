@@ -1,13 +1,11 @@
 import { test, expect } from "bun:test";
 import { evalBelToFold } from "./eval-bel";
-import { EXAMPLES } from "./landing-examples";
+import { HERO_SRC } from "./landing-examples";
 
-// The playground loads these into its editor on click, so a program that stops
-// parsing fails in front of a visitor and nowhere else.
-for (const { label, code } of EXAMPLES) {
-  test(`landing example "${label}" evaluates`, () => {
-    const fold = evalBelToFold(code) as { vertices_coords?: unknown[] };
-    expect(Array.isArray(fold.vertices_coords)).toBe(true);
-    expect(fold.vertices_coords!.length).toBeGreaterThan(0);
-  });
-}
+// The landing page's hero is the only Beloch program this page ships, so a
+// program that stops parsing fails in front of every visitor.
+test("landing hero evaluates", () => {
+  const fold = evalBelToFold(HERO_SRC) as { vertices_coords?: unknown[] };
+  expect(Array.isArray(fold.vertices_coords)).toBe(true);
+  expect(fold.vertices_coords!.length).toBeGreaterThan(0);
+});

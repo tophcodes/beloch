@@ -16,6 +16,17 @@
 // Figures are numbered per section on a counter of their own, so adding one
 // renumbers no statement.
 //
+// Whether a figure shows its program is decided per document: the model shows
+// drawings and no program text, every other document shows the program. A block
+// writes `program="shown"` or `program="hidden"` to escape its document's
+// default. The body stays a Beloch program in the markdown either way, and
+// scripts/render-figures.ts keeps evaluating it.
+//
+// `highlight` lists the entities the caption refers to. Each takes its own
+// colour from the palette in @beloch/render-svg's DEFAULT_THEME, by its
+// position in the list, and the caption's inline code for that entity carries
+// the matching `.figure-hl-<n>` class from styles/theme.css.
+//
 // `::: {.include api="Fold_state.violation"}` is replaced by what
 // packages/core's interface says about that item: its signature, its doc
 // comment, and one entry per constructor. Both directions of the realization
@@ -38,7 +49,7 @@
 //
 // Astro caches rendered content entries in node_modules/.astro; after changing
 // this file, delete that directory (and .astro/) or the old output is served.
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { visit } from "unist-util-visit";
 
@@ -61,6 +72,10 @@ const PREFIX = "bm: https://beloch.toph.so/ns/model#";
 
 const FIGURE_VIEWS = ["cp", "folded"];
 
+// `.p --l #[.p .q]`, the same reading scripts/render-figures.ts does: a flap
+// selector stays one entry although it has a space inside its brackets.
+const HIGHLIGHT_NAME = /#\[[^\]]*\]|\S+/g;
+
 const OPEN_FENCE = /^:{3,}\s*\{(.*)\}\s*$/;
 const CLOSE_FENCE = /^:{3,}\s*$/;
 const ATTR = /([.#])([^\s"'{}]+)|([A-Za-z_][\w-]*)="([^"]*)"/g;
@@ -72,6 +87,21 @@ const SUGAR = /\[#([A-Za-z0-9_-]+)\]/g;
 // as options instead.
 function repoRoot(): string {
 	return process.env.BELOCH_REPO_ROOT ?? process.cwd();
+}
+
+// Whether the file being processed is the model document. The reference
+// documents are reached through symlinks under src/content/docs/ (model.md ->
+// ../../../../../spec/MODEL.md), so both sides are resolved before comparing.
+function samePath(a: string | undefined, b: string): boolean {
+	if (!a) return false;
+	const real = (path: string) => {
+		try {
+			return realpathSync(path);
+		} catch {
+			return path;
+		}
+	};
+	return real(a) === real(b);
 }
 
 type Attrs = Record<string, string>;
@@ -198,6 +228,7 @@ interface Figure {
 	label: string;
 	views: string[];
 	program: string;
+	showProgram: boolean;
 	caption: any[];
 }
 
@@ -232,6 +263,9 @@ export default function remarkModelBlocks(
 		// A link to a model statement is labelled from this document when this is
 		// the model, and from the model document otherwise.
 		const labelOf = (id: string) => labels.get(id) ?? labelMap(modelPath).get(id) ?? id;
+		// The per-document default for a figure's program text: hidden in the
+		// model, shown everywhere else.
+		const isModel = samePath(file?.path ?? file?.history?.[0], modelPath);
 
 		const statements = new Map<string, Statement>();
 		const terms = new Map<string, Term>();
@@ -249,12 +283,15 @@ export default function remarkModelBlocks(
 			}
 			if (block.classes.includes("figure")) {
 				const views = ids(block.attrs.views).filter((v) => FIGURE_VIEWS.includes(v));
+				const caption = processor.parse(block.attrs.caption ?? "").children;
+				colorCaption(caption, highlightNames(block.attrs.highlight));
 				figures.set(block.id, {
 					id: block.id,
 					label: labels.get(block.id) as string,
 					views: views.length ? views : FIGURE_VIEWS,
 					program: block.body.trim(),
-					caption: processor.parse(block.attrs.caption ?? "").children,
+					showProgram: (block.attrs.program ?? (isModel ? "hidden" : "shown")) !== "hidden",
+					caption,
 				});
 				order.push({ block, id: block.id, kind: "figure" });
 				continue;
@@ -354,6 +391,25 @@ function parseAttrs(text: string): { classes: string[]; id: string; attrs: Attrs
 
 function ids(value: string | undefined): string[] {
 	return value ? value.trim().split(/\s+/).filter(Boolean) : [];
+}
+
+function highlightNames(value: string | undefined): string[] {
+	HIGHLIGHT_NAME.lastIndex = 0;
+	return [...(value ?? "").matchAll(HIGHLIGHT_NAME)].map((m) => m[0]);
+}
+
+// The caption's inline code for a highlighted entity takes that entity's
+// palette colour, so the name a reader finds in the caption and the thing drawn
+// in the two views carry one colour. The class index is the entity's position
+// in the `highlight` list, the same index the renderer assigns.
+function colorCaption(caption: any[], highlight: string[]) {
+	if (highlight.length === 0) return;
+	const index = new Map(highlight.map((name, i) => [name, i]));
+	visit({ type: "root", children: caption } as any, "inlineCode", (node: any) => {
+		const i = index.get(node.value);
+		if (i === undefined) return;
+		node.data = { ...node.data, hProperties: { className: [`figure-hl-${i}`] } };
+	});
 }
 
 // Resolve the written relations and derive their reverses.
@@ -529,9 +585,10 @@ function expandSugar(
 }
 
 // A `.figure` block: the pre-rendered views side by side, the program in a
-// collapsed <details> so a reader can copy it, and the caption last. The
-// program is a bare <pre>, with no <code> inside: Expressive Code claims every
-// `pre > code` it finds and rewrites it, which would drop the RDFa.
+// collapsed <details> so a reader can copy it where the document shows it, and
+// the caption last. The program is a bare <pre>, with no <code> inside:
+// Expressive Code claims every `pre > code` it finds and rewrites it, which
+// would drop the RDFa.
 function figureNode(f: Figure, figuresPath: string): any {
 	const views = f.views.map((view) => {
 		let svg: string;
@@ -569,12 +626,16 @@ function figureNode(f: Figure, figuresPath: string): any {
 		},
 		[
 			el("div", { className: ["figure-views"] }, views),
-			el("details", { className: ["figure-program"] }, [
-				el("summary", {}, [text("Program")]),
-				el("pre", { className: ["figure-source"], property: "bm:program" }, [
-					text(f.program),
-				]),
-			]),
+			...(f.showProgram
+				? [
+						el("details", { className: ["figure-program"] }, [
+							el("summary", {}, [text("Program")]),
+							el("pre", { className: ["figure-source"], property: "bm:program" }, [
+								text(f.program),
+							]),
+						]),
+					]
+				: []),
 			el("figcaption", {}, caption),
 		],
 	);

@@ -8,8 +8,8 @@
 
 paper square
 
-mark --d1 = through .a .c
-mark --d2 = through .b .d
+mark (through .a .c) as --d1
+mark (through .b .d) as --d2
 
 flatten (--d1 & .a) (--d1 & .c) (--d2 & .b mountain) (--d2 & .d)
 

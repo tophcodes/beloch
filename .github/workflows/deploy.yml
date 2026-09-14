@@ -39,6 +39,13 @@ jobs:
         run: nix build .#beloch
       - name: Put beloch on PATH
         run: echo "$PWD/result/bin" >> "$GITHUB_PATH"
+      # The kernel suites, including the BELOCH.md reference corpus. Not a
+      # plain `nix flake check`: four cases are red on issue #51 and would
+      # fail every push, so the failures are held against the baseline in
+      # scripts/known-failures.txt and anything else fails the build. This
+      # step becomes `nix flake check` once #51 has landed.
+      - name: Run kernel tests
+        run: nix develop --command bash scripts/run-ocaml-tests.sh
       # odoc pages under packages/www/public/api and the register that the
       # spec pages read for their `.include` blocks and "Realized by" lines.
       - uses: oven-sh/setup-bun@v2

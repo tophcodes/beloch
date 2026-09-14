@@ -36,13 +36,13 @@ let test_eval_identical_points () =
   expect_error "same place" (fun () ->
       ignore
         (Eval.eval_folded
-           (Beloch.parse ~filename:"t.bel" "paper square\nmark through .a .a\n")))
+           (Beloch.parse ~filename:"t.bel" "paper square\nmark (through .a .a)\n")))
 
 let test_eval_undefined_point () =
   expect_error "undefined" (fun () ->
       ignore
         (Eval.eval_folded
-           (Beloch.parse ~filename:"t.bel" "paper square\nmark map .a onto .z\n")))
+           (Beloch.parse ~filename:"t.bel" "paper square\nmark (map .a onto .z)\n")))
 
 let test_eval_parallel_cross () =
   expect_error "parallel" (fun () ->
@@ -50,8 +50,8 @@ let test_eval_parallel_cross () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               mark --h1 = through .a .b\n\
-               mark --h2 = through .d .c\n\
+               mark (through .a .b) as --h1\n\
+               mark (through .d .c) as --h2\n\
                .x = --h1 * --h2\n")))
 
 let test_eval_bisect_errors () =
@@ -60,25 +60,25 @@ let test_eval_bisect_errors () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               mark --x = through .a .c\n\
-               mark --y = through .a .c\n\
-               mark map --x onto --y toward .b\n")));
+               mark (through .a .c) as --x\n\
+               mark (through .a .c) as --y\n\
+               mark (map --x onto --y toward .b)\n")));
   expect_error "ambiguous" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               mark --v = map .a onto .b\n\
-               mark --h = map .b onto .c\n\
-               mark map --v onto --h\n")));
+               mark (map .a onto .b) as --v\n\
+               mark (map .b onto .c) as --h\n\
+               mark (map --v onto --h)\n")));
   expect_error "names where the fold goes" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               mark --d = through .a .c\n\
-               mark --h = map .b onto .c\n\
-               mark map --d onto --h toward .a\n")))
+               mark (through .a .c) as --d\n\
+               mark (map .b onto .c) as --h\n\
+               mark (map --d onto --h toward .a)\n")))
 
 let test_eval_map_onto_line_parallel () =
   expect_error "parallel" (fun () ->
@@ -86,18 +86,18 @@ let test_eval_map_onto_line_parallel () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               mark --l1 = through .a .b\n\
-               mark --l2 = through .d .c\n\
-               mark map .c onto --l1 perp --l2\n")))
+               mark (through .a .b) as --l1\n\
+               mark (through .d .c) as --l2\n\
+               mark (map .c onto --l1 perp --l2)\n")))
 
 let test_eval_map_onto_line_ok () =
   let fd =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
          "paper square\n\
-          mark --l1 = through .a .b\n\
-          mark --l2 = through .a .d\n\
-          mark map .c onto --l1 perp --l2\n")
+          mark (through .a .b) as --l1\n\
+          mark (through .a .d) as --l2\n\
+          mark (map .c onto --l1 perp --l2)\n")
   in
   (* the axiom-4 crease is a full mark: it records as a chord (no fold-time
      edge), so read its line from the mark layer *)
@@ -131,9 +131,9 @@ let test_eval_map_through_ambiguous () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               mark --ac = through .a .c\n\
+               mark (through .a .c) as --ac\n\
                .o = free on --ac from .a at 1/2\n\
-               mark map .a onto --bc through .o\n")))
+               mark (map .a onto --bc through .o)\n")))
 
 (* the mirror landing's crease meets the sheet at the corner .a alone, so the
    filter empties the candidate list. *)
@@ -143,8 +143,8 @@ let test_eval_map_through_none_on_paper () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               --ac = through .a .c\n\
-               --x = map .c onto --ac through .a\n")))
+               --ac = (through .a .c)\n\
+               --x = (map .c onto --ac through .a)\n")))
 
 let test_eval_map_through_same_point () =
   expect_error "same point" (fun () ->
@@ -152,8 +152,8 @@ let test_eval_map_through_same_point () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               mark --bottom = through .a .b\n\
-               mark map .a onto --bottom through .a\n")))
+               mark (through .a .b) as --bottom\n\
+               mark (map .a onto --bottom through .a)\n")))
 
 let test_axiom7_error_q_on_e () =
   expect_error "already lies on" (fun () ->
@@ -161,9 +161,9 @@ let test_axiom7_error_q_on_e () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               mark --top = through .d .c\n\
-               mark --bot = through .a .b\n\
-               mark map .a onto --bot and .d onto --top\n")))
+               mark (through .d .c) as --top\n\
+               mark (through .a .b) as --bot\n\
+               mark (map .a onto --bot and .d onto --top)\n")))
 
 let test_axiom7_error_parallel_directrices () =
   expect_error "parallel" (fun () ->
@@ -171,9 +171,9 @@ let test_axiom7_error_parallel_directrices () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               mark --bot = through .a .b\n\
-               mark --top = through .d .c\n\
-               mark map .a onto --bot and .b onto --top\n")))
+               mark (through .a .b) as --bot\n\
+               mark (through .d .c) as --top\n\
+               mark (map .a onto --bot and .b onto --top)\n")))
 
 (* the migrated crease-flap-restrict scenario: select --b's piece on the upper
    flap with `at #(.c .d)` and cross it with --v — must evaluate cleanly. *)
@@ -182,10 +182,10 @@ let test_eval_at_flap () =
     (Eval.eval_folded
        (Beloch.parse ~filename:"t.bel"
           "paper square\n\
-           mark --b = through .a .c\n\
-           fold --v = map .c onto .b moving .c\n\
+           mark (through .a .c) as --b\n\
+           fold (map .c onto .b) (moving .c) as --v\n\
            .mid = --b & #[.c .d] * --v\n\
-           mark map .d onto .mid\n"))
+           mark (map .d onto .mid)\n"))
 
 (* cross is material: a crease bent on the TABLE by a later fold is still one
    straight scar in the paper, so the bare bundle crosses fine — no `at` *)
@@ -194,10 +194,10 @@ let test_eval_cross_table_bent_scar_ok () =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
          "paper square\n\
-          mark --b = through .a .c\n\
-          fold --v = map .c onto .b moving .c\n\
+          mark (through .a .c) as --b\n\
+          fold (map .c onto .b) (moving .c) as --v\n\
           .mid = --b * --v\n\
-          mark map .d onto .mid\n")
+          mark (map .d onto .mid)\n")
   in
   match assoc3 "mid" fd.Eval.named_points with
   | Some p ->
@@ -219,8 +219,8 @@ let test_eval_at_no_match () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               mark --b = through .a .c\n\
-               mark --w = through .b .d\n\
+               mark (through .a .c) as --b\n\
+               mark (through .b .d) as --w\n\
                .mid = --b & .b * --w\n")))
 
 (* @fold --d ≡ re-stating the axiom: same faces, same M/V, no stale F (#27) *)
@@ -228,12 +228,12 @@ let test_fold_along_matches_restatement () =
   let via_fold =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
-         "paper square\nmark --d = map .b onto .a\nfold --d moving .b\n")
+         "paper square\nmark (map .b onto .a) as --d\nfold (--d) (moving .b) into --d\n")
   in
   let via_axiom =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
-         "paper square\nmark map .b onto .a\nfold map .b onto .a moving .b\n")
+         "paper square\nmark (map .b onto .a)\nfold (map .b onto .a) (moving .b)\n")
   in
   Alcotest.(check int) "same face count"
     (Array.length (Fold_state.faces via_axiom.Eval.state))
@@ -250,9 +250,9 @@ let[@warning "-32"] test_crease_all_fold_some () =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
          "paper square\n\
-          fold map .d onto .a\n\
-          mark --m = map .c onto .d\n\
-          fold --m moving .c up to .c\n")
+          fold (map .d onto .a)\n\
+          mark (map .c onto .d) as --m\n\
+          fold (--m) (moving .c) (up to .c) into --m\n")
   in
   Alcotest.(check int) "unmoved layer keeps F" 1
     (count_assign Fold_state.F scoped.Eval.state);
@@ -262,9 +262,9 @@ let[@warning "-32"] test_crease_all_fold_some () =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
          "paper square\n\
-          fold map .d onto .a\n\
-          mark --m = map .c onto .d\n\
-          fold --m moving .c\n")
+          fold (map .d onto .a)\n\
+          mark (map .c onto .d) as --m\n\
+          fold (--m) (moving .c) into --m\n")
   in
   Alcotest.(check int) "all-layers upgrades every F" 0
     (count_assign Fold_state.F all_layers.Eval.state)
@@ -274,14 +274,14 @@ let test_fold_along_needs_moving () =
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
-              "paper square\nmark --d = map .b onto .a\nfold --d\n")))
+              "paper square\nmark (map .b onto .a) as --d\nfold (--d) into --d\n")))
 
 let test_fold_along_not_material () =
   expect_error "existing crease" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
-              "paper square\nfold .a * .c moving .b\n")))
+              "paper square\nfold (.a * .c) (moving .b)\n")))
 
 (* globally bent bundle without `at` → the existing PR2/at error *)
 let test_fold_along_bent () =
@@ -290,9 +290,9 @@ let test_fold_along_bent () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               mark --b = through .a .c\n\
-               fold --v = map .c onto .b\n\
-               fold --b moving .a\n")))
+               mark (through .a .c) as --b\n\
+               fold (map .c onto .b) as --v\n\
+               fold (--b) (moving .a) into --b\n")))
 
 (* bent under the moving set: axis picked via `at`, but a moving flap carries
    an off-axis segment of the same bundle *)
@@ -302,9 +302,9 @@ let test_fold_along_bent_under_moving () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               mark --b = through .a .c\n\
-               fold --v = map .c onto .b\n\
-               fold --b & #[.c .d] moving .a\n")))
+               mark (through .a .c) as --b\n\
+               fold (map .c onto .b) as --v\n\
+               fold (--b & #[.c .d]) (moving .a)\n")))
 
 (* ---- @flatten ---- *)
 
@@ -318,10 +318,10 @@ let test_flatten_staying_accepted () =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
          "paper square\n\
-          mark --h = map .a onto .d\n\
-          mark --v = map .a onto .b\n\
+          mark (map .a onto .d) as --h\n\
+          mark (map .a onto .b) as --v\n\
           flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
-          mountain) (--v & #[.a] mountain) (staying .a) {toward .c}\n")
+          mountain) (--v & #[.a] mountain) (staying .a) (toward .c)\n")
   in
   Alcotest.(check int) "vertex flatten with staying leaves 4 sector faces" 4
     (Array.length (Fold_state.faces fd.Eval.state))
@@ -334,8 +334,8 @@ let test_flatten_count_two () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               mark --d1 = through .a .c\n\
-               mark --d2 = through .b .d\n\
+               mark (through .a .c) as --d1\n\
+               mark (through .b .d) as --d2\n\
                flatten (--d1 & .a) (--d2 & .b)\n")))
 
 let test_flatten_not_material () =
@@ -356,8 +356,8 @@ let test_flatten_all_layers_ok () =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
          "paper square\n\
-          mark --h = map .a onto .d\n\
-          mark --v = map .a onto .b\n\
+          mark (map .a onto .d) as --h\n\
+          mark (map .a onto .b) as --v\n\
           flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
           mountain) (--v & #[.a] mountain)\n")
   in
@@ -439,7 +439,7 @@ let test_layer_fold_quarter_reversal () =
   let st =
     (Eval.eval_folded
        (Beloch.parse ~filename:"fq.bel"
-          "paper square\nfold map .b onto .a moving .b\nfold map .d onto .a moving .d\n")).Eval.state
+          "paper square\nfold (map .b onto .a) (moving .b)\nfold (map .d onto .a) (moving .d)\n")).Eval.state
   in
   Alcotest.(check int) "four faces" 4 (Array.length (Fold_state.faces st));
   let n = Array.length (Fold_state.faces st) in
@@ -662,7 +662,7 @@ let test_eval_folded_half () =
   let fd =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
-         "paper square\nfold map .b onto .a moving .b\n")
+         "paper square\nfold (map .b onto .a) (moving .b)\n")
   in
   Alcotest.(check int) "two faces" 2
     (Array.length (Fold_state.faces fd.Eval.state));
@@ -676,7 +676,7 @@ let test_eval_folded_half () =
 let test_eval_folded_precrease () =
   let fd =
     Eval.eval_folded
-      (Beloch.parse ~filename:"t.bel" "paper square\nmark map .a onto .c\n")
+      (Beloch.parse ~filename:"t.bel" "paper square\nmark (map .a onto .c)\n")
   in
   (* a full mark records (never subdivides at fold-time); it graduates to an
      F crease only at emit *)
@@ -689,13 +689,13 @@ let test_eval_folded_moving_required () =
   expect_error "moving" (fun () ->
       Eval.eval_folded
         (Beloch.parse ~filename:"t.bel"
-           "paper square\nmark --d = through .a .c\nfold perp --d through .b\n"))
+           "paper square\nmark (through .a .c) as --d\nfold (perp --d through .b)\n"))
 
 let test_eval_folded_quarter_accordion () =
   let fd =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
-         "paper square\nfold map .b onto .a moving .b\nfold map .d onto .a moving .d\n")
+         "paper square\nfold (map .b onto .a) (moving .b)\nfold (map .d onto .a) (moving .d)\n")
   in
   Alcotest.(check int) "four faces after quarter fold" 4
     (Array.length (Fold_state.faces fd.Eval.state));
@@ -710,8 +710,8 @@ let[@warning "-32"] test_eval_cross_multilayer_needs_at () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               fold map .c onto .a moving .c\n\
-               mark --v = map .b onto .a\n\
+               fold (map .c onto .a) (moving .c)\n\
+               mark (map .b onto .a) as --v\n\
                .mid = --v * --ab\n")))
 
 (* same setup, `at #(.a)` picks the bottom layer's scar: the crossing is the
@@ -721,8 +721,8 @@ let test_eval_cross_multilayer_with_at () =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
          "paper square\n\
-          fold map .c onto .a moving .c\n\
-          mark --v = map .b onto .a\n\
+          fold (map .c onto .a) (moving .c)\n\
+          mark (map .b onto .a) as --v\n\
           .mid = --v & #[.a] * --ab\n")
   in
   match assoc3 "mid" fd.Eval.named_points with
@@ -738,14 +738,14 @@ let test_eval_cross_mark_does_not_reach () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               fold map .c onto .a moving .c\n\
-               mark --v = map .b onto .a\n\
+               fold (map .c onto .a) (moving .c)\n\
+               mark (map .b onto .a) as --v\n\
                .x = --v & #[.a] * --cd\n")))
 
 let test_scope_basic_lookup () =
   let r = Eval.eval_folded (Beloch.parse ~filename:"t.bel"
     "paper square\n\
-     mark --d = through .a .c\n\
+     mark (through .a .c) as --d\n\
      .m = --d * --ab\n") in
   let has_d = assoc3 "d" r.Eval.named_lines <> None in
   let has_m = assoc3 "m" r.Eval.named_points <> None in
@@ -756,23 +756,23 @@ let eval_src src =
   Eval.eval_folded (Beloch.parse ~filename:"t.bel" ("paper square\n" ^ src))
 
 let test_eval_dup_crease_error () =
-  expect_error "already bound" (fun () ->
-      eval_src "mark --x = through .a .b\nmark --x = through .a .c\n")
+  expect_error "--x is bound; write as --x! to rebind" (fun () ->
+      eval_src "mark (through .a .b) as --x\nmark (through .a .c) as --x\n")
 
 let test_eval_dup_point_error () =
   expect_error "already bound" (fun () ->
       eval_src
-        "mark --h = through .a .b\nmark --v = through .a .d\n.x = --h * --v\n\
+        "mark (through .a .b) as --h\nmark (through .a .d) as --v\n.x = --h * --v\n\
          .x = --h * --v\n")
 
 let test_eval_corner_rebind_error () =
   expect_error "already bound" (fun () ->
-      eval_src "mark --h = through .a .b\nmark --v = through .a .d\n.a = --h * --v\n")
+      eval_src "mark (through .a .b) as --h\nmark (through .a .d) as --v\n.a = --h * --v\n")
 
 let test_eval_temp_rebind_ok () =
   let fd =
     eval_src
-      "mark --h = through .a .b\nmark --v = through .a .d\n._x = --h * --v\n\
+      "mark (through .a .b) as --h\nmark (through .a .d) as --v\n._x = --h * --v\n\
        ._x = --v * --h\n"
   in
   Alcotest.(check bool)
@@ -780,7 +780,7 @@ let test_eval_temp_rebind_ok () =
     (not (mem_assoc3 "_x" fd.Eval.named_points))
 
 let test_eval_temp_crease_unnamed () =
-  let fd = eval_src "mark --_t = through .a .c\n" in
+  let fd = eval_src "mark (through .a .c) as --_t\n" in
   Alcotest.(check bool)
     "temp line not in named_lines" true
     (not (mem_assoc3 "_t" fd.Eval.named_lines));
@@ -794,29 +794,29 @@ let test_eval_temp_crease_unnamed () =
        (Fold_state.hinges fd.Eval.state))
 
 let test_eval_def_never_runs () =
-  let fd = eval_src "def bad() {\n  --x = through .a .a\n}\n" in
+  let fd = eval_src "def bad() {\n  --x = (through .a .a)\n}\n" in
   Alcotest.(check int) "no edges" 0 (Array.length (Fold_state.hinges fd.Eval.state))
 
 let test_eval_apply_closed_scope () =
   expect_error "undefined point .a" (fun () ->
-      eval_src "def d() {\n  --x = through .a .b\n}\napply d()\n")
+      eval_src "def d() {\n  --x = (through .a .b)\n}\napply d()\n")
 
 let test_eval_apply_binds_params () =
   let fd =
     eval_src
-      "def diag(.p .q) {\n  mark --d = through .p .q\n}\n$i = apply diag(.a .c)\n"
+      "def diag(.p .q) {\n  mark (through .p .q) as --d\n}\n$i = apply diag(.a .c)\n"
   in
   Alcotest.(check int) "one crease" 1
     (Array.length (Fold_state.marks fd.Eval.state))
 
 let test_eval_apply_arity_error () =
   expect_error "argument" (fun () ->
-      eval_src "def diag(.p .q) {\n  --d = through .p .q\n}\napply diag(.a)\n")
+      eval_src "def diag(.p .q) {\n  --d = (through .p .q)\n}\napply diag(.a)\n")
 
 let test_eval_apply_kind_error () =
   expect_error "point argument" (fun () ->
       eval_src
-        "def d(.p) {\n  --x = perp --ab through .p\n}\n\
+        "def d(.p) {\n  --x = (perp --ab through .p)\n}\n\
          apply d(--ab)\n")
 
 let test_eval_apply_undefined_def () =
@@ -833,7 +833,7 @@ let test_eval_dup_param_error () =
 let test_eval_dup_instance_error () =
   expect_error "already bound" (fun () ->
       eval_src
-        "def d(.p .q) {\n  --x = through .p .q\n}\n\
+        "def d(.p .q) {\n  --x = (through .p .q)\n}\n\
          $i = apply d(.a .c)\n$i = apply d(.b .d)\n")
 
 let prov_of (fd : Eval.folded) : State.provenance list =
@@ -847,27 +847,27 @@ let prov_names (fd : Eval.folded) =
 
 let test_eval_instance_fold_names () =
   let fd =
-    eval_src "def d(.p .q) {\n  mark --x = through .p .q\n}\n$i = apply d(.a .c)\n"
+    eval_src "def d(.p .q) {\n  mark (through .p .q) as --x\n}\n$i = apply d(.a .c)\n"
   in
   Alcotest.(check bool) "crease named i.x" true
     (List.mem "i.x" (prov_names fd))
 
 let test_eval_naked_apply_unnamed () =
   let fd =
-    eval_src "def d(.p .q) {\n  mark --x = through .p .q\n}\napply d(.a .c)\n"
+    eval_src "def d(.p .q) {\n  mark (through .p .q) as --x\n}\napply d(.a .c)\n"
   in
   Alcotest.(check int) "no named provenance" 0 (List.length (prov_names fd))
 
 let test_eval_temp_instance_unnamed () =
   let fd =
-    eval_src "def d(.p .q) {\n  mark --x = through .p .q\n}\n$_i = apply d(.a .c)\n"
+    eval_src "def d(.p .q) {\n  mark (through .p .q) as --x\n}\n$_i = apply d(.a .c)\n"
   in
   Alcotest.(check int) "no named provenance" 0 (List.length (prov_names fd))
 
 let test_eval_nested_instance_names () =
   let fd =
     eval_src
-      "def inner(.p .q) {\n  mark --pq = through .p .q\n}\n\
+      "def inner(.p .q) {\n  mark (through .p .q) as --pq\n}\n\
        def outer(.p .q) {\n  $in = apply inner(.p .q)\n}\n\
        $o = apply outer(.a .c)\n"
   in
@@ -888,7 +888,7 @@ let test_eval_later_def_invisible () =
 let test_eval_earlier_def_visible () =
   let fd =
     eval_src
-      "def inner(.p .q) {\n  mark --l = through .p .q\n}\n\
+      "def inner(.p .q) {\n  mark (through .p .q) as --l\n}\n\
        def outer(.p .q) {\n  apply inner(.p .q)\n}\n\
        apply outer(.a .c)\n"
   in
@@ -898,14 +898,14 @@ let test_eval_earlier_def_visible () =
 let test_eval_member_point_access () =
   let fd =
     eval_src
-      "mark --h = through .a .b\n\
+      "mark (through .a .b) as --h\n\
        def d(.p .q --base) {\n\
-      \  mark --l = through .p .q\n\
+      \  mark (through .p .q) as --l\n\
       \  .m = --l * --base\n\
        }\n\
        $i = apply d(.d .b --h)\n\
        export { .m as .im } $i\n\
-       mark --thru = through .im .c\n"
+       mark (through .im .c) as --thru\n"
   in
   Alcotest.(check bool) "crease thru exists" true
     (mem_assoc3 "thru" fd.Eval.named_lines)
@@ -913,7 +913,7 @@ let test_eval_member_point_access () =
 let test_eval_member_line_access () =
   let fd =
     eval_src
-      "def d(.p .q) {\n  mark --l = through .p .q\n}\n\
+      "def d(.p .q) {\n  mark (through .p .q) as --l\n}\n\
        $i = apply d(.a .c)\n\
        export { --l as --il } $i\n\
        .x = --il * --ab\n"
@@ -926,9 +926,9 @@ let test_eval_member_undefined_instance () =
 
 let def_d =
   "def d(.p .q .r) {\n\
-  \  mark --l1 = through .p .q\n\
-  \  --l2 = through .p .r\n\
-  \  mark --qr = through .q .r\n\
+  \  mark (through .p .q) as --l1\n\
+  \  --l2 = (through .p .r)\n\
+  \  mark (through .q .r) as --qr\n\
   \  .m = --l1 * --qr\n\
    }\n\
    $i = apply d(.a .c .b)\n"
@@ -962,11 +962,11 @@ let test_eval_export_rename () =
 
 let test_eval_export_collision_needs_bang () =
   expect_error "use ! to shadow" (fun () ->
-      eval_src ("mark --l1 = through .a .b\n" ^ def_d ^ "export { --l1 } $i\n"))
+      eval_src ("mark (through .a .b) as --l1\n" ^ def_d ^ "export { --l1 } $i\n"))
 
 let test_eval_export_bang_shadows () =
   let fd =
-    eval_src ("mark --l1 = through .a .b\n" ^ def_d ^ "export { --l1! } $i\n")
+    eval_src ("mark (through .a .b) as --l1\n" ^ def_d ^ "export { --l1! } $i\n")
   in
   Alcotest.(check bool) "l1 present" true
     (mem_assoc3 "l1" fd.Eval.named_lines)
@@ -1004,10 +1004,10 @@ let test_eval_up_to_top_flap () =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
          "paper square\n\
-          mark --left = through .a .d\n\
-          fold --hinge = map .d onto .a\n\
+          mark (through .a .d) as --left\n\
+          fold (map .d onto .a) as --hinge\n\
           .h = --left * --hinge\n\
-          fold map .d onto .h up to .d\n")
+          fold (map .d onto .h) (up to .d)\n")
   in
   Alcotest.(check int) "3 faces" 3 (Array.length (Fold_state.faces fd.Eval.state))
 
@@ -1022,17 +1022,17 @@ let test_eval_default_corner_anchor_tears () =
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
-              "paper square\nfold map .d onto .a\nfold map .c onto .d\n")))
+              "paper square\nfold (map .d onto .a)\nfold (map .c onto .d)\n")))
 
 (* four-layer stack, fold the top two: 6 faces (all-layers would be 8).
    --l/--bot are boundary reference creases and MUST be bound before the folds
    (afterwards .a/.b and .a/.d coincide on the table → "same place" error) *)
 let quarter_stack_prefix =
   "paper square\n\
-   mark --l = through .a .d\n\
-   mark --bot = through .a .b\n\
-   fold --v = map .b onto .a\n\
-   fold --h = map .d onto .a\n\
+   mark (through .a .d) as --l\n\
+   mark (through .a .b) as --bot\n\
+   fold (map .b onto .a) as --v\n\
+   fold (map .d onto .a) as --h\n\
    .p = --l * --h\n\
    .q = --v * --bot\n"
 
@@ -1040,7 +1040,7 @@ let test_eval_up_to_range () =
   let fd =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
-         (quarter_stack_prefix ^ "fold through .p .q moving .d up to .c\n"))
+         (quarter_stack_prefix ^ "fold (through .p .q) (moving .d) (up to .c)\n"))
   in
   Alcotest.(check int) "6 faces" 6 (Array.length (Fold_state.faces fd.Eval.state))
 
@@ -1050,7 +1050,7 @@ let test_eval_buried_anchor () =
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
-              (quarter_stack_prefix ^ "fold through .p .q moving .c up to .b\n"))))
+              (quarter_stack_prefix ^ "fold (through .p .q) (moving .c) (up to .b)\n"))))
 
 (* target flap entirely off the moving side, on the quarter-stack (4-layer,
    all-full-fold) scaffold: `moving .a up to .c` walks inward from .a's flap
@@ -1071,7 +1071,7 @@ let test_eval_up_to_wrong_side () =
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
-              (quarter_stack_prefix ^ "fold through .p .q moving .a up to .c\n"))))
+              (quarter_stack_prefix ^ "fold (through .p .q) (moving .a) (up to .c)\n"))))
 
 (* up to --crease with no reachable hinged flap *)
 let test_eval_up_to_crease_unreachable () =
@@ -1079,14 +1079,14 @@ let test_eval_up_to_crease_unreachable () =
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
-              "paper square\nmark --l = through .a .d\nfold map .d onto .a up to --l\n")))
+              "paper square\nmark (through .a .d) as --l\nfold (map .d onto .a) (up to --l)\n")))
 
 (* up to --crease: the anchor itself is hinged on it → range = anchor alone *)
 let test_eval_up_to_crease_target () =
   let fd =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
-         (quarter_stack_prefix ^ "fold through .p .q moving .d up to --h\n"))
+         (quarter_stack_prefix ^ "fold (through .p .q) (moving .d) (up to --h)\n"))
   in
   Alcotest.(check int) "5 faces (top flap only)" 5
     (Array.length (Fold_state.faces fd.Eval.state))
@@ -1105,9 +1105,9 @@ let test_eval_moving_line_multimatch () =
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
               "paper square\n\
-               mark --d = map .b onto .a\n\
-               fold map .b onto .a moving .b\n\
-               fold through .a .c moving --d\n")))
+               mark (map .b onto .a) as --d\n\
+               fold (map .b onto .a) (moving .b)\n\
+               fold (through .a .c) (moving --d)\n")))
 
 (* Since v0.24-dev an explicit flap selector whose faces straddle the axis no
    longer errors on the default path: `default_move_side` reads the side from the
@@ -1117,7 +1117,7 @@ let test_eval_moving_flap_straddle_dissolves () =
   let fd =
     Eval.eval_folded
       (Beloch.parse ~filename:"t.bel"
-         "paper square\nfold map .b onto .a moving #[.a .b]\n")
+         "paper square\nfold (map .b onto .a) (moving #[.a .b])\n")
   in
   Alcotest.(check int) "2 faces" 2 (Array.length (Fold_state.faces fd.Eval.state))
 
@@ -1128,7 +1128,7 @@ let test_eval_moving_flap_straddle_dissolves () =
    filter drops the −22.5° candidate (it only touches corner .a); .d lands at
    (√2⁄2, √2⁄2) via the 67.5° crease *)
 let test_ax5_kite_filter () =
-  let fd = eval_src "mark --ac = through .a .c\nfold map --da onto --ac\n" in
+  let fd = eval_src "mark (through .a .c) as --ac\nfold (map --da onto --ac)\n" in
   let p = Fold_state.table_position fd.Eval.state (pt 0 1) in
   Alcotest.(check bool) ".d lands on the diagonal (x=y)" true
     (Num.equal p.Geom.x p.Geom.y);
@@ -1141,9 +1141,9 @@ let test_ax5_kite_toward () =
   let landing src =
     Fold_state.table_position (eval_src src).Eval.state (pt 0 1)
   in
-  let p1 = landing "mark --ac = through .a .c\nfold map --da onto --ac toward .b\n" in
+  let p1 = landing "mark (through .a .c) as --ac\nfold (map --da onto --ac toward .b)\n" in
   let p2 =
-    landing "mark --ac = through .a .c\nfold map --da onto --ac toward .b moving .d\n"
+    landing "mark (through .a .c) as --ac\nfold (map --da onto --ac toward .b) (moving .d)\n"
   in
   Alcotest.(check bool) "toward and toward+moving agree" true
     (Geom.point_equal p1 p2);
@@ -1156,8 +1156,8 @@ let test_ax5_kite_toward () =
 let test_ax5_straddle_moving_unique () =
   let fd =
     eval_src
-      "mark --ac = through .a .c\nmark --bd = through .b .d\n\
-       fold map --ac onto --bd toward .b moving .c\n"
+      "mark (through .a .c) as --ac\nmark (through .b .d) as --bd\n\
+       fold (map --ac onto --bd toward .b) (moving .c)\n"
   in
   Alcotest.(check bool) ".c lands on (1,0)" true
     (Geom.point_equal (Fold_state.table_position fd.Eval.state (pt 1 1)) (pt 1 0))
@@ -1166,27 +1166,27 @@ let test_ax5_straddle_moving_unique () =
 let test_ax5_straddle_moving_both () =
   expect_error "both swinging flaps" (fun () ->
       eval_src
-        "mark --ac = through .a .c\nmark --bd = through .b .d\n\
-         fold map --ac onto --bd toward .b moving .d\n")
+        "mark (through .a .c) as --ac\nmark (through .b .d) as --bd\n\
+         fold (map --ac onto --bd toward .b) (moving .d)\n")
 
 (* straddle without `moving`: both bisectors move material toward .b *)
 let test_ax5_straddle_no_moving () =
   expect_error "straddles the crossing" (fun () ->
       eval_src
-        "mark --ac = through .a .c\nmark --bd = through .b .d\n\
-         fold map --ac onto --bd toward .b\n")
+        "mark (through .a .c) as --ac\nmark (through .b .d) as --bd\n\
+         fold (map --ac onto --bd toward .b)\n")
 
 (* moving .b: neither candidate swings .b's flap toward .b *)
 let test_ax5_no_viable () =
   expect_error "no fold of" (fun () ->
       eval_src
-        "mark --ac = through .a .c\nmark --bd = through .b .d\n\
-         fold map --ac onto --bd toward .b moving .b\n")
+        "mark (through .a .c) as --ac\nmark (through .b .d) as --bd\n\
+         fold (map --ac onto --bd toward .b) (moving .b)\n")
 
 (* `toward .b` names a point ON l2 (bottom edge) — legal now; --k binds the
    y=x diagonal (through a and c, off the (1,0) corner) *)
 let test_ax5_bind_x_on_l2 () =
-  let fd = eval_src "mark --k = map --da onto --ab toward .b\n" in
+  let fd = eval_src "mark (map --da onto --ab toward .b) as --k\n" in
   match assoc3 "k" fd.Eval.named_lines with
   | Some k ->
       Alcotest.(check bool) "--k passes through (0,0)" true
@@ -1205,8 +1205,8 @@ let test_ax5_bind_endpoint_directions () =
     | Some k -> k
     | None -> Alcotest.fail "expected --k"
   in
-  let ka = k "mark --v = map .a onto .b\nmark --k = map --v onto --ab toward .a\n" in
-  let kb = k "mark --v = map .a onto .b\nmark --k = map --v onto --ab toward .b\n" in
+  let ka = k "mark (map .a onto .b) as --v\nmark (map --v onto --ab toward .a) as --k\n" in
+  let kb = k "mark (map .a onto .b) as --v\nmark (map --v onto --ab toward .b) as --k\n" in
   Alcotest.(check bool) "toward .a and toward .b differ" true
     (Geom.side_of_line ka (pt 1 1) <> Geom.side_of_line kb (pt 1 1))
 
@@ -1215,16 +1215,16 @@ let test_ax5_bind_endpoint_directions () =
 let test_ax5_bind_center_ambiguous () =
   expect_error "with `at`" (fun () ->
       eval_src
-        "mark --v = map .a onto .b\n\
-         mark --h = map .b onto .c\n\
-         mark --k = map --v onto --h toward .b\n")
+        "mark (map .a onto .b) as --v\n\
+         mark (map .b onto .c) as --h\n\
+         mark (map --v onto --h toward .b) as --k\n")
 
 (* `toward .c` names a point ON l1 (the a–c diagonal) → E1 *)
 let test_ax5_toward_on_l1 () =
   expect_error "names where the fold goes" (fun () ->
       eval_src
-        "mark --ac = through .a .c\nmark --bd = through .b .d\n\
-         fold map --ac onto --bd toward .c\n")
+        "mark (through .a .c) as --ac\nmark (through .b .d) as --bd\n\
+         fold (map --ac onto --bd toward .c)\n")
 
 (* kite, `up to` with no `moving` and no implied anchor (axiom-5 folds have no
    implied anchor point — only line operands): the paper-incidence filter
@@ -1233,7 +1233,7 @@ let test_ax5_toward_on_l1 () =
 let test_ax5_up_to_needs_moving () =
   expect_error "needs `moving" (fun () ->
       eval_src
-        "mark --ac = through .a .c\nfold map --da onto --ac up to .c\n")
+        "mark (through .a .c) as --ac\nfold (map --da onto --ac) (up to .c)\n")
 
 (* NOTE: E3 (no bisector lands on the paper) and E7 (implied-moving material
    straddles the crease) are geometrically unreachable on the flat square —
@@ -1255,7 +1255,7 @@ let test_ax5_up_to_needs_moving () =
 
 (* the join selector --[.a .b] finds the same bottom edge as the prelude --ab *)
 let test_select_edge () =
-  let base = "paper square\nmark --v = map .a onto .b\n" in
+  let base = "paper square\nmark (map .a onto .b) as --v\n" in
   let fold body =
     let j = Yojson.Safe.to_string (Beloch.fold_string ~filename:"t.bel" body) in
     (* the two spellings differ in source length, so their provenance spans end
@@ -1266,8 +1266,8 @@ let test_select_edge () =
          (Str.global_replace (Str.regexp_string "--ab") "EDGE" j))
   in
   Alcotest.(check string) "--[.a .b] == --ab"
-    (fold (base ^ "mark map --v onto --ab toward .a\n"))
-    (fold (base ^ "mark map --v onto --[.a .b] toward .a\n"))
+    (fold (base ^ "mark (map --v onto --ab toward .a)\n"))
+    (fold (base ^ "mark (map --v onto --[.a .b] toward .a)\n"))
 
 (* --[.a .c] names the diagonal, on which no crease or edge exists → error
    (no sight-lines) *)
@@ -1275,20 +1275,20 @@ let test_select_no_sightline () =
   expect_error "incident" (fun () ->
       ignore
         (Beloch.fold_string ~filename:"t.bel"
-           "paper square\nmark --v = map .a onto .b\nmark map --v onto --[.a .c] toward .a\n"))
+           "paper square\nmark (map .a onto .b) as --v\nmark (map --v onto --[.a .c] toward .a)\n"))
 
 (* ---- Notation cutover: mark/fold/flatten verbs replace @/bare-axiom (#24) ---- *)
 
 (* --l = <motion> is a pure value binding: no subdivide, no material *)
 let test_new_value_binding_no_material () =
-  let fd = eval_src "--l = map .a onto .c\n" in
+  let fd = eval_src "--l = (map .a onto .c)\n" in
   Alcotest.(check int) "one face: no subdivide happened" 1
     (Array.length (Fold_state.faces fd.Eval.state));
   Alcotest.(check int) "no edges: no material crease" 0
     (Array.length (Fold_state.hinges fd.Eval.state))
 
 let test_new_mark_precrease () =
-  let fd = eval_src "mark map .a onto .c\n" in
+  let fd = eval_src "mark (map .a onto .c)\n" in
   (* a full mark records at fold-time (never subdivides); it graduates to an F
      crease only at emit *)
   Alcotest.(check int) "one face" 1
@@ -1296,27 +1296,29 @@ let test_new_mark_precrease () =
   Alcotest.(check int) "one mark" 1 (Array.length (Fold_state.marks fd.Eval.state))
 
 let test_new_mark_named () =
-  let fd = eval_src "mark --d = map .a onto .c\n" in
+  let fd = eval_src "mark (map .a onto .c) as --d\n" in
   Alcotest.(check bool) "named crease bound" true
     (mem_assoc3 "d" fd.Eval.named_lines);
   Alcotest.(check int) "one mark" 1 (Array.length (Fold_state.marks fd.Eval.state))
 
 let test_new_fold_motion () =
-  let fd = eval_src "fold map .b onto .a moving .b\n" in
+  let fd = eval_src "fold (map .b onto .a) (moving .b)\n" in
   Alcotest.(check int) "two faces" 2
     (Array.length (Fold_state.faces fd.Eval.state));
   Alcotest.(check int) "one valley edge" 1 (count_assign Fold_state.V fd.Eval.state)
 
 let test_new_fold_named () =
-  let fd = eval_src "fold --d = map .b onto .a moving .b\n" in
+  let fd = eval_src "fold (map .b onto .a) (moving .b) as --d\n" in
   Alcotest.(check bool) "named crease bound" true
     (mem_assoc3 "d" fd.Eval.named_lines);
   Alcotest.(check int) "one valley edge" 1 (count_assign Fold_state.V fd.Eval.state)
 
-(* fold along an existing material crease: --d = <motion> (value) then mark
-   it (materialise), then fold along it (the old @fold path) *)
+(* fold along an existing crease: mark it under a name, then fold along the
+   name and score into it *)
 let test_new_fold_along () =
-  let fd = eval_src "--d = map .b onto .a\nmark --d\nfold --d moving .b\n" in
+  let fd =
+    eval_src "mark (map .b onto .a) as --d\nfold (--d) (moving .b) into --d\n"
+  in
   Alcotest.(check int) "one valley edge" 1 (count_assign Fold_state.V fd.Eval.state)
 
 (* flatten without @, same "+" vertex fixture as test_flatten_all_layers_ok,
@@ -1325,8 +1327,8 @@ let test_new_fold_along () =
 let test_new_flatten_no_at () =
   let fd =
     eval_src
-      "mark --h = map .a onto .d\n\
-       mark --v = map .a onto .b\n\
+      "mark (map .a onto .d) as --h\n\
+       mark (map .a onto .b) as --v\n\
        flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
        mountain) (--v & #[.a] mountain)\n"
   in
@@ -1347,7 +1349,7 @@ let test_new_at_is_gone () =
 let test_new_mark_edge_does_not_leak () =
   let j =
     Beloch.fold_string ~filename:"t.bel"
-      "paper square\nmark --ab\nmark map .a onto .b\n"
+      "paper square\nmark (--ab)\nmark (map .a onto .b)\n"
   in
   let open Yojson.Safe.Util in
   let named_lines = j |> member "beloch:named_lines" |> to_assoc in
@@ -1373,7 +1375,7 @@ let snap_after n prog =
    3-statement program. *)
 let test_resume_equals_full () =
   let src =
-    "paper square\nmark through .a .c\nmark through .b .d\nmark map .a onto .b\n"
+    "paper square\nmark (through .a .c)\nmark (through .b .d)\nmark (map .a onto .b)\n"
   in
   let prog = Beloch.parse ~filename:"t.bel" src in
   let full = fold_str (Eval.eval_folded prog) in
@@ -1382,6 +1384,378 @@ let test_resume_equals_full () =
   let suffix = List.filteri (fun i _ -> i >= 2) prog in
   let resumed = fold_str (Eval.eval_program ~resume suffix) in
   Alcotest.(check string) "resumed FOLD == full FOLD" full resumed
+
+(* ---- Recognition, sorts and the output clause (ADR 0022) ---- *)
+
+let folded src = Eval.eval_folded (Beloch.parse ~filename:"t.bel" src)
+
+let line_of (fd : Eval.folded) (n : string) : Geom.line =
+  match assoc3 n fd.Eval.named_lines with
+  | Some l -> l
+  | None -> Alcotest.fail ("no line bound to --" ^ n)
+
+(* the axiom tag the mark scored under this name carries *)
+let tag_of (fd : Eval.folded) (n : string) : string =
+  let cid = List.assoc n fd.Eval.named_line_cids in
+  match
+    Array.to_list (Fold_state.marks fd.Eval.state)
+    |> List.find_opt (fun (m : Fold_state.mark) ->
+           m.Fold_state.mcrease_id = cid)
+  with
+  | Some { Fold_state.mprov = Some p; _ } -> p.State.axiom
+  | _ -> Alcotest.fail ("no provenance for --" ^ n)
+
+(* Acceptance 3. Each axiom in both spellings, the `align` alignments in
+   every order, folded in the one program: the spellings agree by axis and
+   by provenance tag. The trees differ, since a prose form fixes its
+   alignment order and an `align` does not, so the claim is checked here
+   and not on the AST. *)
+let sugar_cases =
+  [
+    ( "axiom1",
+      [ "(through .a .c)"; "(align (through .a) (through .c))";
+        "(align (through .c) (through .a))" ] );
+    ("axiom2", [ "(map .a onto .c)"; "(align (.a onto .c))" ]);
+    ( "axiom3",
+      [ "(perp --ab through .c)"; "(align (perp --ab) (through .c))";
+        "(align (through .c) (perp --ab))" ] );
+    ( "axiom4",
+      [ "(map .a onto --bc perp --ab)"; "(align (.a onto --bc) (perp --ab))";
+        "(align (perp --ab) (.a onto --bc))" ] );
+    ("axiom5", [ "(map --ab onto --bc)"; "(align (--ab onto --bc))" ]);
+    ( "axiom6",
+      [ "(map .a onto --bc through .d)";
+        "(align (.a onto --bc) (through .d))";
+        "(align (through .d) (.a onto --bc))" ] );
+    ( "axiom7",
+      [ "(map .a onto --bc and .d onto --ab)";
+        "(align (.a onto --bc) (.d onto --ab))" ] );
+  ]
+
+let test_sugar_is_sugar () =
+  List.iter
+    (fun (tag, spellings) ->
+      let names = List.mapi (fun i _ -> Printf.sprintf "s%d" i) spellings in
+      let src =
+        "paper square\n"
+        ^ String.concat ""
+            (List.map2
+               (fun sp n -> Printf.sprintf "mark %s as --%s\n" sp n)
+               spellings names)
+      in
+      let fd = folded src in
+      let first = List.hd names in
+      List.iter
+        (fun n ->
+          Alcotest.(check bool)
+            (tag ^ ": " ^ n ^ " is the same axis")
+            true
+            (Geom.same_line (line_of fd first) (line_of fd n));
+          Alcotest.(check string) (tag ^ ": " ^ n ^ " provenance") tag
+            (tag_of fd n))
+        names)
+    sugar_cases
+
+(* the provenance sources of the mark scored under this name, in the operand
+   roles recognition handed back *)
+let sources_of (fd : Eval.folded) (n : string) : string list =
+  let cid = List.assoc n fd.Eval.named_line_cids in
+  match
+    Array.to_list (Fold_state.marks fd.Eval.state)
+    |> List.find_opt (fun (m : Fold_state.mark) ->
+           m.Fold_state.mcrease_id = cid)
+  with
+  | Some { Fold_state.mprov = Some p; _ } -> p.State.sources
+  | _ -> Alcotest.fail ("no provenance for --" ^ n)
+
+(* Axiom 7's two `point onto line` alignments are one kind twice, so source
+   order fixes the operand roles, and the first of them is the point a
+   `fold` without `moving` takes as its anchor. *)
+let test_axiom7_source_order () =
+  let sources body =
+    sources_of
+      (folded
+         (Printf.sprintf "paper square\nmark (align %s) as --z\n" body))
+      "z"
+  in
+  Alcotest.(check (list string)) "the roles follow the alignments"
+    [ ".a"; "--bc"; ".d"; "--ab" ]
+    (sources "(.a onto --bc) (.d onto --ab)");
+  Alcotest.(check (list string)) "and swap with them"
+    [ ".d"; "--ab"; ".a"; "--bc" ]
+    (sources "(.d onto --ab) (.a onto --bc)")
+
+(* The implied anchor: axioms 2, 6 and 7 move a point, so a `reverse` over
+   one needs no `moving` to name its tip; the other four have none. *)
+let test_implied_point () =
+  expect_error "this reverse needs `moving .p` to name the tip" (fun () ->
+      ignore (folded "paper square\nreverse (align (through .a) (through .c))\n"));
+  expect_error "does not split into two halves" (fun () ->
+      ignore
+        (folded
+           "paper square\nreverse (align (.a onto --bc) (.d onto --ab))\n"))
+
+(* Acceptance 4. The recognition table is total over the alignment multisets
+   of size one and two: each is one of the seven or reaches the unrecognised
+   message. *)
+(* two spellings per kind, so a set that repeats a kind stays non-degenerate *)
+let align_kinds =
+  [ ("pp", [| "(.a onto .c)"; "(.b onto .d)" |]);
+    ("pl", [| "(.a onto --bc)"; "(.d onto --ab)" |]);
+    ("ll", [| "(--ab onto --bc)"; "(--cd onto --da)" |]);
+    ("th", [| "(through .c)"; "(through .a)" |]);
+    ("pe", [| "(perp --ab)"; "(perp --bc)" |]) ]
+
+let align_table =
+  [ ([ "pp" ], "axiom2"); ([ "ll" ], "axiom5"); ([ "th"; "th" ], "axiom1");
+    ([ "pe"; "th" ], "axiom3"); ([ "pl"; "pe" ], "axiom4");
+    ([ "pl"; "th" ], "axiom6"); ([ "pl"; "pl" ], "axiom7") ]
+
+let test_align_table_total () =
+  let keys = List.map fst align_kinds in
+  let sets =
+    List.map (fun k -> [ k ]) keys
+    @ List.concat_map
+        (fun k1 -> List.map (fun k2 -> [ k1; k2 ]) keys)
+        keys
+  in
+  List.iter
+    (fun set ->
+      let seen = Hashtbl.create 2 in
+      let body =
+        String.concat " "
+          (List.map
+             (fun k ->
+               let i = Option.value (Hashtbl.find_opt seen k) ~default:0 in
+               Hashtbl.replace seen k (i + 1);
+               (List.assoc k align_kinds).(i))
+             set)
+      in
+      let src =
+        Printf.sprintf "paper square\nmark (align %s) as --z\n" body
+      in
+      let key = List.sort compare set in
+      match
+        List.find_opt (fun (k, _) -> List.sort compare k = key) align_table
+      with
+      | Some (_, tag) ->
+          let fd = folded src in
+          Alcotest.(check string)
+            (String.concat "+" set ^ " is " ^ tag)
+            tag (tag_of fd "z")
+      | None ->
+          expect_error "these alignments are not one of the seven axioms"
+            (fun () -> ignore (folded src)))
+    sets
+
+(* `align` over named fold lines, and `toward` on a construction that
+   determines one line. *)
+let test_recognition_refusals () =
+  expect_error "a construction over named fold lines is not evaluated yet"
+    (fun () ->
+      ignore (folded "paper square\nmark (align --f (.a onto .c)) as --z\n"));
+  expect_error "this construction determines one line; drop toward" (fun () ->
+      ignore
+        (folded
+           "paper square\nmark (align (through .a) (through .c) toward .b)\n"))
+
+(* ---- the output clause ---- *)
+
+let test_output_as_on_bound_name () =
+  expect_error "--f is bound; write as --f! to rebind" (fun () ->
+      ignore
+        (folded
+           "paper square\n\
+            mark (through .a .c) as --f\n\
+            mark (through .b .d) as --f\n"))
+
+let test_output_bang_on_free_name () =
+  expect_error "nothing to rebind with --f!; drop the !" (fun () ->
+      ignore (folded "paper square\nmark (through .a .c) as --f!\n"))
+
+let test_output_bang_rebinds () =
+  let fd =
+    folded
+      "paper square\n\
+       mark (through .a .c) as --f\n\
+       mark (through .b .d) as --f!\n"
+  in
+  Alcotest.(check bool) "--f is the second line" true
+    (Geom.same_line (line_of fd "f")
+       (line_of (folded "paper square\nmark (through .b .d) as --g\n") "g"))
+
+let test_output_into_a_line () =
+  expect_error "into needs a crease; --l is a line" (fun () ->
+      ignore
+        (folded
+           "paper square\n\
+            --l = (through .a .c)\n\
+            mark (through .a .c) into --l\n"))
+
+let test_output_into_a_selection () =
+  expect_error "into needs a crease of its own; --x is a selection from others"
+    (fun () ->
+      ignore
+        (folded
+           "paper square\n\
+            mark (through .a .c) as --d\n\
+            --x = --d & .a\n\
+            mark (through .a .c) into --x\n"))
+
+let test_output_into_a_paper_edge () =
+  expect_error "into needs a scored crease; --ab is a paper edge" (fun () ->
+      ignore (folded "paper square\nmark (through .a .b) into --ab\n"))
+
+let test_output_into_unbound () =
+  expect_error "--l is not bound; write as --l to name a new crease" (fun () ->
+      ignore (folded "paper square\nmark (through .a .c) into --l\n"))
+
+let test_output_into_off_the_crease () =
+  expect_error
+    "the material this scores lies on no segment of --d; name it with as \
+     instead" (fun () ->
+      ignore
+        (folded
+           "paper square\n\
+            mark (through .a .c) as --d\n\
+            mark (through .b .d) into --d\n"))
+
+(* `into` on a mark scores under the mark's own id, so the fold and the mark
+   are one crease and the emitter has nothing to supersede. *)
+let test_output_into_a_mark_keeps_one_id () =
+  let fd =
+    folded
+      "paper square\n\
+       mark (map .b onto .a) as --d\n\
+       fold (--d) (moving .b) into --d\n"
+  in
+  Alcotest.(check int) "one crease in the state" 1
+    (List.length (Fold_state.all_crease_ids fd.Eval.state));
+  Alcotest.(check int) "--d names it" (List.hd (Fold_state.all_crease_ids fd.Eval.state))
+    (List.assoc "d" fd.Eval.named_line_cids)
+
+let test_output_into_a_material_crease () =
+  let fd =
+    folded
+      "paper square\n\
+       mark (map .b onto .a) as --d\n\
+       fold (--d) (moving .b) into --d\n\
+       mark (--d) (on #[.a]) into --d\n"
+  in
+  Alcotest.(check int) "one crease in the state" 1
+    (List.length (Fold_state.all_crease_ids fd.Eval.state))
+
+(* A `flatten` with an odd ray count scores one emergent crease. `into`
+   scores it under the named crease's id: the rabbit ear's emergent hinge is
+   the perpendicular from the incenter to --ab, and --spine is a mark on
+   exactly that line. *)
+let ear_prelude =
+  "paper square\n\
+   mark (through .a .c) as --diag\n\
+   mark (map --ab onto --diag) as --ea\n\
+   mark (map --ab onto --bc) as --eb\n\
+   mark (map --bc onto --diag) as --ec\n\
+   .o = --ea * --ec\n\
+   mark (perp --ab through .o) as --spine\n"
+
+let test_output_into_flatten_emergent () =
+  let before = folded ear_prelude in
+  let cid_before = List.assoc "spine" before.Eval.named_line_cids in
+  let fd =
+    folded
+      (ear_prelude
+     ^ "flatten (--ea) (--ec) (--eb) (toward .a) into --spine\n")
+  in
+  let cid = List.assoc "spine" fd.Eval.named_line_cids in
+  Alcotest.(check bool) "the emergent crease is --spine's own" true
+    (Fold_state.crease_segments fd.Eval.state cid <> []);
+  Alcotest.(check int) "--spine keeps its id across the flatten" cid_before cid;
+  let named_spine =
+    Yojson.Safe.Util.(
+      Fold_emit.to_json_folded fd
+      |> member "beloch:inspect" |> member "creases" |> to_assoc
+      |> List.filter (fun (_, c) -> member "name" c = `String "spine"))
+  in
+  Alcotest.(check int) "FOLD shows one crease named --spine" 1
+    (List.length named_spine)
+
+let test_output_into_flatten_off_the_line () =
+  expect_error
+    "the material this scores lies on no segment of --diag; name it with as \
+     instead" (fun () ->
+      ignore
+        (folded
+           (ear_prelude
+          ^ "flatten (--ea) (--ec) (--eb) (toward .a) into --diag\n")))
+
+(* An even ray count closes the vertex on its own, so the flatten scores no
+   new crease and `into` has nothing to add. *)
+let test_output_into_flatten_even () =
+  expect_error "flatten with an even ray count scores no new crease; drop into"
+    (fun () ->
+      ignore
+        (folded
+           "paper square\n\
+            mark (map .a onto .d) as --h\n\
+            mark (map .a onto .b) as --v\n\
+            flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
+            mountain) (--v & #[.a] mountain) into --h\n"))
+
+(* ---- sorts: a line stands nowhere a crease is wanted ---- *)
+
+let line_prelude = "paper square\n--l = (through .a .c)\n"
+
+let sort_case slot src =
+  expect_error (Printf.sprintf "--l is a line; %s needs a crease" slot)
+    (fun () -> ignore (folded (line_prelude ^ src)))
+
+let test_sort_meet () =
+  sort_case "the meet"
+    "mark (through .b .d) as --m\n.x = --l * --m\n"
+
+let test_sort_filter () = sort_case "the filter" "mark (--l & .a)\n"
+let test_sort_fold_axis () = sort_case "the axis of fold" "fold (--l) (moving .a)\n"
+
+let test_sort_reverse_axis () =
+  sort_case "the axis of reverse" "reverse (--l) (moving .a)\n"
+
+let test_sort_flatten_ray () =
+  sort_case "a flatten ray"
+    "mark (through .b .d) as --m\nflatten (--l) (--m)\n"
+
+let test_sort_free_on () = sort_case "free on" ".p = free on --l from .a\n"
+
+let test_sort_flap_operand () =
+  sort_case "a flap operand" "fold (map .b onto .a) (moving --l)\n"
+
+(* A sort error is raised at the name, so an editor underlines the operand
+   rather than the whole statement. *)
+let test_sort_error_at_the_name () =
+  let src = line_prelude ^ "fold (--l) (moving .a)\n" in
+  match
+    (try
+       ignore (folded src);
+       None
+     with Error.Beloch_error ((st, _), _) -> Some st)
+  with
+  | None -> Alcotest.fail "expected a sort error"
+  | Some st ->
+      Alcotest.(check (pair int int))
+        "the span starts at --l" (3, 7)
+        (st.Lexing.pos_lnum, st.Lexing.pos_cnum - st.Lexing.pos_bol + 1)
+
+(* the mirror: a crease projects to its table line, so it stands where a
+   line is wanted *)
+let test_sort_crease_where_a_line_is_wanted () =
+  let fd =
+    folded
+      "paper square\n\
+       mark (through .a .c) as --d\n\
+       mark (--d) as --e\n\
+       mark (perp --d through .b) as --f\n"
+  in
+  Alcotest.(check bool) "--e was scored" true (mem_assoc3 "e" fd.Eval.named_lines);
+  Alcotest.(check bool) "--f was scored" true (mem_assoc3 "f" fd.Eval.named_lines)
 
 let () =
   Alcotest.run "beloch-eval"
@@ -1594,5 +1968,54 @@ let () =
             test_new_mark_edge_does_not_leak;
           Alcotest.test_case "resume == full eval" `Quick
             test_resume_equals_full;
+        ] );
+      ( "items",
+        [
+          Alcotest.test_case "sugar is sugar" `Quick test_sugar_is_sugar;
+          Alcotest.test_case "axiom 7 keeps source order" `Quick
+            test_axiom7_source_order;
+          Alcotest.test_case "the implied anchor" `Quick test_implied_point;
+          Alcotest.test_case "the align table is total" `Quick
+            test_align_table_total;
+          Alcotest.test_case "recognition refusals" `Quick
+            test_recognition_refusals;
+          Alcotest.test_case "as on a bound name" `Quick
+            test_output_as_on_bound_name;
+          Alcotest.test_case "as! on a free name" `Quick
+            test_output_bang_on_free_name;
+          Alcotest.test_case "as! rebinds" `Quick test_output_bang_rebinds;
+          Alcotest.test_case "into a line" `Quick test_output_into_a_line;
+          Alcotest.test_case "into a selection" `Quick
+            test_output_into_a_selection;
+          Alcotest.test_case "into a paper edge" `Quick
+            test_output_into_a_paper_edge;
+          Alcotest.test_case "into an unbound name" `Quick
+            test_output_into_unbound;
+          Alcotest.test_case "into with the axis off the crease" `Quick
+            test_output_into_off_the_crease;
+          Alcotest.test_case "into a mark keeps one id" `Quick
+            test_output_into_a_mark_keeps_one_id;
+          Alcotest.test_case "into a material crease" `Quick
+            test_output_into_a_material_crease;
+          Alcotest.test_case "sort: the meet" `Quick test_sort_meet;
+          Alcotest.test_case "sort: the filter" `Quick test_sort_filter;
+          Alcotest.test_case "sort: the axis of fold" `Quick
+            test_sort_fold_axis;
+          Alcotest.test_case "sort: the axis of reverse" `Quick
+            test_sort_reverse_axis;
+          Alcotest.test_case "sort: a flatten ray" `Quick test_sort_flatten_ray;
+          Alcotest.test_case "into: flatten scores under the name" `Quick
+            test_output_into_flatten_emergent;
+          Alcotest.test_case "into: a flatten emergent off the line" `Quick
+            test_output_into_flatten_off_the_line;
+          Alcotest.test_case "into: an even flatten scores nothing" `Quick
+            test_output_into_flatten_even;
+          Alcotest.test_case "sort errors land on the name" `Quick
+            test_sort_error_at_the_name;
+          Alcotest.test_case "sort: free on" `Quick test_sort_free_on;
+          Alcotest.test_case "sort: a flap operand" `Quick
+            test_sort_flap_operand;
+          Alcotest.test_case "a crease stands where a line is wanted" `Quick
+            test_sort_crease_where_a_line_is_wanted;
         ] );
     ]

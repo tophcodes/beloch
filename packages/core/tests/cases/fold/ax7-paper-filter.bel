@@ -3,7 +3,7 @@
 ; drops the other, so the fold resolves without `toward`.
 
 paper square
-fold map .a onto --cd and .c onto --da
+fold (map .a onto --cd and .c onto --da)
 
 ; assert steps = 1
 ; assert faces = 2

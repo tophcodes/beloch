@@ -30,6 +30,12 @@ let perpendicular_through (l : line) (p : point) : line =
 let parallel (l1 : line) (l2 : line) : bool =
   Num.equal (Num.sub (Num.mul l1.a l2.b) (Num.mul l2.a l1.b)) Num.zero
 
+(* two lines coincide when every 2x2 minor of their coefficients vanishes *)
+let same_line (l1 : line) (l2 : line) : bool =
+  let minor a b c d = Num.equal (Num.sub (Num.mul a d) (Num.mul c b)) Num.zero in
+  minor l1.a l1.b l2.a l2.b && minor l1.a l1.c l2.a l2.c
+  && minor l1.b l1.c l2.b l2.c
+
 let intersection (l1 : line) (l2 : line) : point option =
   let det = Num.sub (Num.mul l1.a l2.b) (Num.mul l2.a l1.b) in
   if Num.sign det = 0 then None

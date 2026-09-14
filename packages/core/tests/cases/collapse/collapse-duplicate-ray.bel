@@ -1,7 +1,7 @@
 paper square
 
-mark --h = map .a onto .d      ; horizontal midline, y = 1/2
-mark --v = map .a onto .b      ; vertical midline, x = 1/2
+mark (map .a onto .d) as --h   ; horizontal midline, y = 1/2
+mark (map .a onto .b) as --v   ; vertical midline, x = 1/2
 
 flatten (--h & --bc) (--h & --bc mountain)
   (--v & --cd) (--v & --ab mountain)

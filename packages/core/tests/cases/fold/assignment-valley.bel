@@ -1,4 +1,4 @@
 paper square
-fold --f = map .b onto .a
+fold (map .b onto .a) as --f
 
 ; assert --f is valley

@@ -1,0 +1,14 @@
+# Alcotest suites expected to fail, as "<suite> <number of failing cases>",
+# where <suite> is the name alcotest reports in its "Full test results in
+# …/_tests/<suite>" line. Read by scripts/run-ocaml-tests.sh.
+#
+# All four cases below are one defect: the tier pre-mask in flatten_solve.ml
+# discards the opposite-ray completion whenever a line-new one seats, so the
+# fold the fish-base cases mean is unreachable even with a `toward` that names
+# it. Issue #51. They passed until the stayer-anchoring change of 2026-07-18,
+# which removed the seating artifact that had been hiding the line-new
+# candidates.
+#
+# Empty this file, and delete it along with the check, once #51 has landed.
+bel_assert 3
+flatten 1

@@ -5,13 +5,13 @@ let parse src = Beloch.parse ~filename:"t.bel" src
 let keys src = Spine.chain_keys src (parse src)
 
 let test_whitespace_insensitive () =
-  let a = keys "paper square\nmark through .a .c\n" in
-  let b = keys "paper square\n\n  mark   through .a .c\n" in
+  let a = keys "paper square\nmark (through .a .c)\n" in
+  let b = keys "paper square\n\n  mark   (through .a .c)\n" in
   Alcotest.(check (list string)) "cosmetic edits do not bust" a b
 
 let test_append_keeps_prefix () =
-  let a = keys "paper square\nfold through .a .c\n" in
-  let b = keys "paper square\nfold through .a .c\nfold through .b .d\n" in
+  let a = keys "paper square\nfold (through .a .c)\n" in
+  let b = keys "paper square\nfold (through .a .c)\nfold (through .b .d)\n" in
   (* every key of [a] is a prefix of [b] *)
   List.iteri
     (fun i k -> Alcotest.(check string) (Printf.sprintf "key %d stable" i) k (List.nth b i))
@@ -20,10 +20,10 @@ let test_append_keeps_prefix () =
 
 let test_edit_invalidates_suffix () =
   let a =
-    keys "paper square\nfold through .a .c\nfold through .b .d\nfold through .a .b\n"
+    keys "paper square\nfold (through .a .c)\nfold (through .b .d)\nfold (through .a .b)\n"
   in
   let b =
-    keys "paper square\nfold through .a .c\nfold through .b .c\nfold through .a .b\n"
+    keys "paper square\nfold (through .a .c)\nfold (through .b .c)\nfold (through .a .b)\n"
   in
   Alcotest.(check int) "3 statements -> 3 keys" 3 (List.length a);
   Alcotest.(check string) "key 0 stable (first stmt unchanged)" (List.nth a 0) (List.nth b 0);

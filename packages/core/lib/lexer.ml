@@ -39,6 +39,8 @@ let rec token (buf : Sedlexing.lexbuf) : token =
   | "between" -> BETWEEN
   | "at" -> AT
   | "as" -> AS
+  | "align" -> ALIGN
+  | "into" -> INTO
   | "free" -> FREE
   | "on" -> ON
   | "from" -> FROM

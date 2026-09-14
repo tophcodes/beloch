@@ -1,6 +1,6 @@
 paper square
-mark map .b onto .a
-fold map .b onto .a moving .b
+mark (map .b onto .a)
+fold (map .b onto .a) (moving .b)
 
 ; assert faces = 2
 ; assert steps = 1

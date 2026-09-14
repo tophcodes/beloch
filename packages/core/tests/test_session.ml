@@ -11,14 +11,14 @@ let full src =
 
 let test_equivalence () =
   let s = Session.create () in
-  let src = "paper square\nmark through .a .c\nmark through .b .d\n" in
+  let src = "paper square\nmark (through .a .c)\nmark (through .b .d)\n" in
   let got = fold_str (Session.eval s ~filename:"t.bel" src) in
   Alcotest.(check string) "session == eval_folded" (full src) got
 
 let test_append_recomputes_one () =
   let s = Session.create () in
-  let a = "paper square\nmark through .a .c\n" in
-  let b = "paper square\nmark through .a .c\nmark through .b .d\n" in
+  let a = "paper square\nmark (through .a .c)\n" in
+  let b = "paper square\nmark (through .a .c)\nmark (through .b .d)\n" in
   ignore (Session.eval s ~filename:"t.bel" a);
   let gotb = Session.eval s ~filename:"t.bel" b in
   Alcotest.(check int) "only the appended statement ran" 1 (Session.last_ran s);
@@ -29,10 +29,10 @@ let test_edit_invalidates_from_k () =
   let s = Session.create () in
   (* 3 statements; edit the 2nd — statement 1 is reused, 2 and 3 recomputed *)
   let a =
-    "paper square\nmark through .a .c\nmark through .b .d\nmark map .a onto .b\n"
+    "paper square\nmark (through .a .c)\nmark (through .b .d)\nmark (map .a onto .b)\n"
   in
   let b =
-    "paper square\nmark through .a .c\nmark map .a onto .d\nmark map .a onto .b\n"
+    "paper square\nmark (through .a .c)\nmark (map .a onto .d)\nmark (map .a onto .b)\n"
   in
   ignore (Session.eval s ~filename:"t.bel" a);
   let gotb = Session.eval s ~filename:"t.bel" b in
@@ -42,7 +42,7 @@ let test_edit_invalidates_from_k () =
 
 let test_unchanged_reuses_all () =
   let s = Session.create () in
-  let src = "paper square\nmark through .a .c\nmark through .b .d\n" in
+  let src = "paper square\nmark (through .a .c)\nmark (through .b .d)\n" in
   ignore (Session.eval s ~filename:"t.bel" src);
   ignore (Session.eval s ~filename:"t.bel" src);
   Alcotest.(check int) "nothing recomputed on identical re-eval" 0 (Session.last_ran s)
@@ -53,19 +53,19 @@ let test_resume_byte_identical_many_named () =
      output is canonicalized. Marks eval cleanly (no `moving .p`). *)
   let src =
     "paper square\n\
-     mark --l1 = through .a .c\n\
-     mark --l2 = through .b .d\n\
-     mark --l3 = map .a onto .b\n\
-     mark --l4 = map .a onto .d\n\
-     mark --l5 = map .b onto .c\n\
-     mark --l6 = map .c onto .d\n\
-     mark --l7 = map .a onto .c\n"
+     mark (through .a .c) as --l1\n\
+     mark (through .b .d) as --l2\n\
+     mark (map .a onto .b) as --l3\n\
+     mark (map .a onto .d) as --l4\n\
+     mark (map .b onto .c) as --l5\n\
+     mark (map .c onto .d) as --l6\n\
+     mark (map .a onto .c) as --l7\n"
   in
   let s = Session.create () in
   (* warm the session, then edit the LAST statement so resume replays from a
      deep prefix (>6) — the regime where bucket order diverges *)
   ignore (Session.eval s ~filename:"t.bel" src);
-  let src2 = src ^ "mark --l8 = map .b onto .d\n" in
+  let src2 = src ^ "mark (map .b onto .d) as --l8\n" in
   let warmed = fold_str (Session.eval s ~filename:"t.bel" src2) in
   Alcotest.(check string) "warmed deep-resume == cold eval" (full src2) warmed;
   (* idempotency: same session, same source, twice → identical bytes *)

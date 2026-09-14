@@ -1,6 +1,6 @@
 paper square
 flip
-fold --m = map .a onto .b moving .a
+fold (map .a onto .b) (moving .a) as --m
 
 ; assert faces = 2
 ; assert --m is mountain

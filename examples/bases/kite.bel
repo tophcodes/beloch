@@ -1,5 +1,5 @@
 paper square
 
-mark --ac = through .a .c
-fold map --da onto --ac
-fold map --ab onto --ac
+mark (through .a .c) as --ac
+fold (map --da onto --ac)
+fold (map --ab onto --ac)

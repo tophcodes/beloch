@@ -10,7 +10,7 @@
 // boots lazily on first gesture.
 import Playground from "../components/Playground.astro";
 import { evalBelToFold } from "../lib/eval-bel";
-import { HERO_SRC, EXAMPLES } from "../lib/landing-examples";
+import { HERO_SRC } from "../lib/landing-examples";
 import { headSyncScript } from "../lib/paper-schemes";
 import { parseFold } from "@beloch/scene";
 import { renderFolded, WEB_THEME } from "@beloch/render-svg";
@@ -22,8 +22,7 @@ const heroSvg = renderFolded(scene, { theme: WEB_THEME }).toString();
 const heroFoldJson = JSON.stringify(fold);
 
 const NAV_LINKS = [
-  { label: "Introduction", href: "/introduction/" },
-  { label: "Tutorials", href: "/tutorials/paper-and-values/" },
+  { label: "Docs", href: "/language/" },
   { label: "GitHub", href: "https://github.com/tophcodes/beloch" },
 ];
 ---
@@ -79,17 +78,6 @@ const NAV_LINKS = [
           geometry — right here in your browser.
         </p>
         <Playground lazy seed={heroSvg} seedFold={heroFoldJson} code={HERO_SRC} height={380} />
-      </section>
-
-      <section class="examples" aria-label="Examples">
-        <span class="examples-label">try one</span>
-        <div class="example-row">
-          {EXAMPLES.map((ex) => (
-            <button type="button" class="example-chip" data-code={ex.code}>
-              {ex.label}
-            </button>
-          ))}
-        </div>
       </section>
     </main>
 
@@ -193,40 +181,6 @@ const NAV_LINKS = [
         border-right: none;
       }
 
-      .examples {
-        margin-top: 28px;
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        flex-wrap: wrap;
-      }
-      .examples-label {
-        font-family: 'IBM Plex Mono', ui-monospace, monospace;
-        font-size: 12px;
-        color: var(--beloch-faint);
-        letter-spacing: 0.02em;
-      }
-      .example-row {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-      .example-chip {
-        font-family: 'IBM Plex Mono', ui-monospace, monospace;
-        font-size: 13px;
-        padding: 6px 14px;
-        border-radius: 20px;
-        border: 1px solid var(--beloch-border);
-        background: transparent;
-        color: var(--beloch-muted);
-        cursor: pointer;
-        transition: color 0.15s ease, border-color 0.15s ease;
-      }
-      .example-chip:hover {
-        color: var(--beloch-ink);
-        border-color: var(--beloch-valley);
-      }
-
       .site-footer {
         display: flex;
         gap: 20px;
@@ -252,23 +206,6 @@ const NAV_LINKS = [
         } catch {
           /* private mode etc. — theme choice only applies to this session */
         }
-      });
-
-      // Example chips load a sample into the hero playground and run it. The
-      // hero is the only Playground instance on this page, so this stays
-      // scoped to it rather than assuming a singleton globally.
-      const hero = document.querySelector<HTMLElement>(".beloch-playground");
-      const runBtn = hero?.querySelector<HTMLButtonElement>(".pg-run");
-
-      document.querySelectorAll<HTMLButtonElement>(".example-chip").forEach((chip) => {
-        chip.addEventListener("click", () => {
-          const setCode = (hero as unknown as { belochSetCode?: (code: string) => void } | null)
-            ?.belochSetCode;
-          if (!setCode || !runBtn) return;
-          const code = chip.dataset.code ?? "";
-          setCode(code);
-          runBtn.click();
-        });
       });
     </script>
   </body>

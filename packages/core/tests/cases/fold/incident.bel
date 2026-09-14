@@ -1,7 +1,7 @@
 paper square
-mark --v = map .b onto .a
-mark --l = through .a .b
-mark --r = through .b .c
+mark (map .b onto .a) as --v
+mark (through .a .b) as --l
+mark (through .b .c) as --r
 .p = --v * --l
 
 ; assert .p incident --v

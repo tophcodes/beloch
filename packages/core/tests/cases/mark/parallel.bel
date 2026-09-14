@@ -1,6 +1,6 @@
 paper square
-mark --h1 = through .a .b
-mark --h2 = through .d .c
+mark (through .a .b) as --h1
+mark (through .d .c) as --h2
 .x = --h1 * --h2
 
 ; expect error "parallel"

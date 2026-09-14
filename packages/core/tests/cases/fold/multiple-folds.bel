@@ -1,10 +1,10 @@
 paper square
 
-fold map .c onto .a moving .c
-mark --b = through .a .b
-fold --v = map .b onto .a
+fold (map .c onto .a) (moving .c)
+mark (through .a .b) as --b
+fold (map .b onto .a) as --v
 .mid = --b * --v & #[.a]
-mark map .d onto .mid
+mark (map .d onto .mid)
 
 ; assert faces = 4
 ; assert steps = 2

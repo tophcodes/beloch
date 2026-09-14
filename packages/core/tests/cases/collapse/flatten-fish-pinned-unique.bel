@@ -10,22 +10,22 @@
 ; patterns, only ONE seats in-bounds (the other self-intersects/folds off
 ; the paper — an M/V-dependent property, unlike Kawasaki). So the pool this
 ; statement pools from already has exactly one member — |S| = 1 before the
-; three-stage selection is even reached, and `{toward}` is redundant.
+; three-stage selection is even reached, and `(toward)` is redundant.
 ;
 ; Verified by hand (not asserted here — `.bel` has no rank/stacking
 ; vocabulary, and `faces` alone can't distinguish "no ambiguity" from
-; "toward broke a tie"): adding `{toward .b}`, `{toward .d}`, or even
-; `{toward .c}` (the ac-diagonal symmetry axis, which errors with "does not
+; "toward broke a tie"): adding `(toward .b)`, `(toward .d)`, or even
+; `(toward .c)` (the ac-diagonal symmetry axis, which errors with "does not
 ; pick a side" whenever |S| > 1) all commit to the byte-identical fold as
 ; this toward-less statement.
 
 paper square
 
-mark --diag = map .a onto .c
-mark --ray = through .a .c
+mark (map .a onto .c) as --diag
+mark (through .a .c) as --ray
 
-mark --l1 = map --ab onto --diag
-mark --l2 = map --da onto --diag
+mark (map --ab onto --diag) as --l1
+mark (map --da onto --diag) as --l2
 flatten (--l1 valley) (--l2) (--ray mountain)
 
 ; assert faces = 6

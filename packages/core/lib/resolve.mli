@@ -11,6 +11,21 @@ val lstr : Ast.line_operand -> string
 val fstr : Ast.flap_arg -> string
 (** Render a flap argument back to source text. *)
 
+val crease_of :
+  Ctx.ctx -> Ast.crease_ref -> slot:string -> Error.span -> Ctx.crease_val
+(** The binding of [cr], when it is a crease. Fails with
+    ["--l is a line; <slot> needs a crease"] when the binding is
+    [Ctx.Frozen]. One sigil carries two sorts and the binding tells them
+    apart (spec/BELOCH.md, Parameter types); the check reads the
+    constructor and no geometry, and sits at the slot that wants a crease. *)
+
+val into_crease : Ctx.ctx -> string -> Error.span -> int * (Geom.line -> unit)
+(** The crease `into NAME` scores onto: the id already bound to [NAME], plus
+    the check that the write's axis lies on that crease's own material,
+    which the caller runs before the write. Fails when the name is bound to
+    a line, to a selection, to a paper edge, or is not bound at all
+    (spec/BELOCH.md, Write statements). *)
+
 val resolve_point : Ctx.ctx -> Ast.point_operand -> Geom.point
 (** Resolve a point operand to its material PAPER coordinate. *)
 
@@ -95,10 +110,11 @@ val resolve_mark_extent :
     against the motion's TABLE-space [axis]. *)
 
 val resolve_mark_flap :
-  Ctx.ctx -> Ast.flap_operand option -> Geom.point -> Error.span -> int list
+  Ctx.ctx -> Ast.flap_arg option -> Geom.point -> Error.span -> int list
 (** The flap (coplanar cluster) a partial mark's extent is written onto: an
-    explicit `#[...]` wins; otherwise the carrying flap of the extent's
-    representative paper point. *)
+    explicit `on` layer wins, in any of the three flap forms (ADR 0016 §5);
+    otherwise the carrying flap of the extent's representative paper
+    point. *)
 
 val placed_fold_plan :
   Ctx.ctx ->

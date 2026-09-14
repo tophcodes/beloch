@@ -211,19 +211,44 @@ let run_fold (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line) ~(fs : Ast
   run_fold_checked ctx ~span ~axis ~fs ~implied ~side_override ~crease_id ~prov
     ~check:None
 
+(* ---- the output clause (BELOCH.md, Write statements) ---- *)
+
+(* The crease id a write scores under, the check its axis has to pass before
+   the write runs, and the binding step to run once the write has succeeded.
+   [Anonymous] and [Named _] score a crease of their own, so they take
+   [fresh ()]; `into` scores onto the crease its name is already bound to, so
+   a fold along a mark keeps one id instead of minting a second, coincident
+   crease for the emitter to supersede. *)
+let crease_id_for (ctx : Ctx.ctx) (out : Ast.output) ~(fresh : unit -> int) :
+    int * (Geom.line -> unit) * (crease_val -> unit) =
+  match out with
+  | Ast.Anonymous -> (fresh (), ignore, fun _ -> ())
+  | Ast.Named (n, rebind, sp) -> (fresh (), ignore, bind_output ctx n ~rebind sp)
+  | Ast.Into (n, sp) ->
+      let cid, check_axis = Resolve.into_crease ctx n sp in
+      (* a fold promotes the mark it scored into to material; a mark adds a
+         record under the id already bound and changes nothing *)
+      ( cid, check_axis,
+        fun cv ->
+          match cv with
+          | Material _ -> promote_crease ctx n cv
+          | Frozen _ | Mark _ | Bundle _ | Edge _ -> () )
+
 (* Resolve a markable to either a fresh motion (axis + provenance + the
    axiom-5 side override / implied-anchor, mirroring the old Crease arm) or
    an existing line to fold/mark along. [fold_opt] is [Some fs] only when
    called from a `fold` statement (axiom-5 direction resolution differs
    between bind/mark and fold). *)
-let resolve_markable (ctx : Ctx.ctx) (span : Error.span) (name_opt : string option)
+let resolve_markable (ctx : Ctx.ctx) (span : Error.span) (out : Ast.output)
     (fold_opt : Ast.fold_spec option) (m : Ast.markable) =
   match m with
-  | Ast.MMotion ax ->
-      let cid = Fold_state.fresh_crease_id () in
+  | Ast.MMotion c ->
+      let cid, check_axis, bind_out =
+        crease_id_for ctx out ~fresh:Fold_state.fresh_crease_id
+      in
       let prov_name =
-        match name_opt with
-        | Some n when not (is_temp n) -> (
+        match out with
+        | (Ast.Named (n, _, _) | Ast.Into (n, _)) when not (is_temp n) -> (
             match ctx.name_ctx with
             | Root -> Some n
             | InInstance i -> Some (i ^ "." ^ n)
@@ -232,8 +257,9 @@ let resolve_markable (ctx : Ctx.ctx) (span : Error.span) (name_opt : string opti
       in
       (* axiom 5 defers bisector choice to the fold state (direction / paper
          incidence); every other axiom resolves its axis up front *)
+      let cl, axis_res = Axiom.axis_of ctx span c in
       let axis, axiom, sources, side_override =
-        match Axiom.axis_of ctx span ax with
+        match axis_res with
         | Axiom.Axis (axis, axiom, sources) -> (axis, axiom, sources, None)
         | Axiom.Ax5 p ->
             let axis, so =
@@ -246,27 +272,30 @@ let resolve_markable (ctx : Ctx.ctx) (span : Error.span) (name_opt : string opti
       let prov : State.provenance option =
         Some { State.axiom; sources; span; name = prov_name }
       in
-      let implied =
-        match ax with
-        | Ast.MapPoints (p, _)
-        | Ast.MapThrough (p, _, _, _)
-        | Ast.MapBoth (p, _, _, _, _) ->
-            Some p
-        | _ -> None
-      in
-      `Fresh (cid, axis, prov, side_override, implied)
+      check_axis axis;
+      `Fresh (cid, bind_out, axis, prov, side_override, Axiom.implied_point cl)
   | Ast.MLine lo -> `Existing lo
 
-let eval_mark (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
-    (ext : Ast.extent) (dir : Ast.direction) (layer_opt : Ast.flap_operand option)
+let eval_mark (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
+    (ext : Ast.extent) (dir : Ast.direction) (layer_opt : Ast.flap_arg option)
     (span : Error.span) : unit =
   let intent = intent_of dir in
-  let bind_mark cid line =
-    match name_opt with
-    | Some n -> bind_crease ctx n span (Mark (cid, line))
-    | None -> ()
+  (* a `mark` along an already-bound line records a material chord of its
+     own: the axis slot of `mark` is line-sorted, so a Frozen name stands
+     here where `fold`'s axis would refuse it. *)
+  let cid, bind_out, table_axis, prov =
+    match resolve_markable ctx span out None m with
+    | `Fresh (cid, bind_out, axis, prov, _side_override, _implied) ->
+        (cid, bind_out, axis, prov)
+    | `Existing lo ->
+        let axis = Resolve.resolve_line ctx lo in
+        let cid, check_axis, bind_out =
+          crease_id_for ctx out ~fresh:Fold_state.fresh_crease_id
+        in
+        check_axis axis;
+        (cid, bind_out, axis, None)
   in
-  let record ~prov cid mgeom paper_axis =
+  let record mgeom paper_axis =
     let m : Fold_state.mark =
       { Fold_state.mgeom; mline = paper_axis; mintent = intent;
         mcrease_id = cid; mprov = prov }
@@ -282,13 +311,13 @@ let eval_mark (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
         sl_frame_index = List.length ctx.frames_rev; sl_mark = Some m;
         sl_kept = prior_kept @ [ m ] }
       :: ctx.statements_rev;
-    bind_mark cid paper_axis
+    bind_out (Mark (cid, paper_axis))
   in
   (* A full mark is the whole line clipped to its flap; it records as a
-     material chord (never subdivides). Resolve the flap (explicit #[...]
+     material chord (never subdivides). Resolve the flap (explicit layer
      wins; else the carrying flap of a rep point on the axis), then take
      the extreme endpoints of the per-face paper clips. *)
-  let record_full ~prov cid table_axis =
+  let record_full () =
     let st = !(ctx.state) in
     let clips =
       List.init (Array.length (Fold_state.faces st)) Fun.id
@@ -309,21 +338,20 @@ let eval_mark (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
       |> List.concat_map (fun (p, q) -> [ p; q ])
     in
     match Geom.extreme_pair pts with
-    | Some (a, b) ->
-        record ~prov cid (Fold_state.MSeg (a, b)) (Geom.line_through a b)
+    | Some (a, b) -> record (Fold_state.MSeg (a, b)) (Geom.line_through a b)
     | None -> Error.fail span "the mark's line does not cross its flap"
   in
   (* Behaviour 4: dispatch a partial extent's classification. Under the
      material-layer model NO mark subdivides — CSubdivide (a full chord
      between two boundary points) records exactly like CRecord. Only
      `Ast.Between` can ever yield [CCrossesFold]. *)
-  let dispatch_partial ~prov ~cid ~flap ~extent_geom ~paper_axis () =
+  let dispatch_partial ~flap ~extent_geom ~paper_axis =
     match
       Fold_state.classify_mark_extent !(ctx.state) ~flap ~axis:paper_axis
         ~extent_geom
     with
-    | Fold_state.CSubdivide (a, b) -> record ~prov cid (Fold_state.MSeg (a, b)) paper_axis
-    | Fold_state.CRecord g -> record ~prov cid g paper_axis
+    | Fold_state.CSubdivide (a, b) -> record (Fold_state.MSeg (a, b)) paper_axis
+    | Fold_state.CRecord g -> record g paper_axis
     | Fold_state.CCrossesFold _ ->
         let a, b =
           match ext with Ast.Between (a, b) -> (a, b) | _ -> assert false
@@ -334,49 +362,26 @@ let eval_mark (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
               (it leaves its flap)"
              (Resolve.pstr a) (Resolve.pstr b))
   in
-  match resolve_markable ctx span name_opt None m with
-  | `Fresh (cid, table_axis, prov, _side_override, _implied) -> (
-      match Resolve.resolve_mark_extent ctx table_axis ext span with
-      | `Full -> record_full ~prov cid table_axis
-      | `Partial (extent_geom, rep, paper_axis) ->
-          let flap = Resolve.resolve_mark_flap ctx layer_opt rep span in
-          dispatch_partial ~prov ~cid ~flap ~extent_geom ~paper_axis ())
-  | `Existing lo ->
-      (* mark an already-bound value line: record a material chord. If it
-         names a pure value (Frozen), promote its binding to Mark so a
-         later `fold --d` can materialize a real crease along it. *)
-      let table_axis = Resolve.resolve_line ctx lo in
-      let cid = Fold_state.fresh_crease_id () in
-      let promote () =
-        match lo with
-        | Ast.LNamed cr -> (
-            match lookup_crease ctx cr with
-            | Frozen _ ->
-                promote_crease ctx cr.Ast.cname (Mark (cid, table_axis))
-            | Mark _ | Material _ | Bundle _ | Edge _ -> ())
-        | _ -> ()
-      in
-      (match Resolve.resolve_mark_extent ctx table_axis ext span with
-      | `Full -> record_full ~prov:None cid table_axis
-      | `Partial (extent_geom, rep, paper_axis) ->
-          let flap = Resolve.resolve_mark_flap ctx layer_opt rep span in
-          dispatch_partial ~prov:None ~cid ~flap ~extent_geom ~paper_axis ());
-      promote ()
+  match Resolve.resolve_mark_extent ctx table_axis ext span with
+  | `Full -> record_full ()
+  | `Partial (extent_geom, rep, paper_axis) ->
+      let flap = Resolve.resolve_mark_flap ctx layer_opt rep span in
+      dispatch_partial ~flap ~extent_geom ~paper_axis
 
-let eval_fold (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
+let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
     (fs : Ast.fold_spec) (span : Error.span) : unit =
-  match resolve_markable ctx span name_opt (Some fs) m with
-  | `Fresh (cid, axis, prov, side_override, implied) ->
+  match resolve_markable ctx span out (Some fs) m with
+  | `Fresh (cid, bind_out, axis, prov, side_override, implied) ->
       run_fold ctx ~span ~axis ~fs ~implied ~side_override ~crease_id:cid ~prov;
       (* push the frame BEFORE binding the name: a first-fold crease's
          creation step must count that fold (step 1), not the
          pre-fold count (step 0) — see scope.line_steps. *)
       push_frame ctx (Some span);
-      (match name_opt with
-      | Some n -> bind_crease ctx n span (Material (cid, axis))
-      | None -> ())
+      bind_out (Material (cid, axis))
   | `Existing (Ast.LNamed cr)
-    when (match lookup_crease ctx cr with Mark _ -> true | _ -> false) ->
+    when (match Resolve.crease_of ctx cr ~slot:"the axis of fold" cr.Ast.cspan with
+          | Mark _ -> true
+          | _ -> false) ->
       (* fold along a MARK: marks never subdivide, so there is no existing
          crease to fold along — materialize a fresh real crease on the
          mark's line. At emit the coincident mark is superseded by this
@@ -402,7 +407,10 @@ let eval_fold (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
                   segment with `at`, e.g. --%s at #[.a .b .c]"
                  cr.Ast.cname cr.Ast.cname)
       in
-      let cid = Fold_state.fresh_crease_id () in
+      let cid, check_axis, bind_out =
+        crease_id_for ctx out ~fresh:Fold_state.fresh_crease_id
+      in
+      check_axis axis;
       let prov : State.provenance option =
         Some { State.axiom = "fold"; sources = [ "--" ^ cr.Ast.cname ];
                span; name = None }
@@ -410,14 +418,16 @@ let eval_fold (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
       run_fold ctx ~span ~axis ~fs ~implied:None ~side_override:None
         ~crease_id:cid ~prov;
       push_frame ctx (Some span);
-      (match name_opt with
-      | Some n -> bind_crease ctx n span (Material (cid, axis))
-      | None -> promote_crease ctx cr.Ast.cname (Material (cid, axis)))
+      bind_out (Material (cid, axis))
   | `Existing lo ->
-      (* fold along an existing material crease (the old FoldAlong path) *)
-      let cid =
+      (* fold along an existing material crease (the old FoldAlong path).
+         The write scores no crease of its own, so the output clause names
+         the crease that is already there rather than a fresh id. *)
+      let along =
         match lo with
-        | Ast.LNamed cr -> Resolve.material_cid ctx cr
+        | Ast.LNamed cr ->
+            ignore (Resolve.crease_of ctx cr ~slot:"the axis of fold" cr.Ast.cspan);
+            Resolve.material_cid ctx cr
         | Ast.LFilter _ | Ast.LUnion _ -> (
             match fst (Resolve.bundle_segments ctx lo) with
             | Some c -> c
@@ -431,6 +441,10 @@ let eval_fold (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
                name, e.g. fold --d or fold --d & .p"
       in
       let axis = Resolve.resolve_line ctx lo in
+      let cid, check_axis, bind_out =
+        crease_id_for ctx out ~fresh:(fun () -> along)
+      in
+      check_axis axis;
       (* per-flap material check: every segment of the bundle carried by
          a moving flap must lie on the axis — a crease bent under the
          moving set cannot fold (#28) *)
@@ -446,7 +460,7 @@ let eval_fold (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
               Error.fail span
                 "the crease is bent under the moving flaps; select a \
                  straight segment with `at` or move fewer flaps")
-          (Fold_state.crease_segments !(ctx.state) cid)
+          (Fold_state.crease_segments !(ctx.state) along)
       in
       let prov : State.provenance option =
         Some
@@ -459,9 +473,10 @@ let eval_fold (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
       in
       run_fold_checked ctx ~span ~axis ~fs ~implied:None ~side_override:None
         ~crease_id:cid ~prov ~check:(Some check_straight);
-      push_frame ctx (Some span)
+      push_frame ctx (Some span);
+      bind_out (Material (cid, axis))
 
-let eval_reverse (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
+let eval_reverse (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
     (rs : Ast.reverse_spec) (span : Error.span) : unit =
   (* [fs_for_ax5] only carries what axiom-5 selection reads; its [direction] is
      inert, since [Axiom] never reads it and a reverse fold's letters are
@@ -469,29 +484,29 @@ let eval_reverse (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
   let fs_for_ax5 =
     { Ast.moving = rs.Ast.rmoving; up_to = None; direction = Ast.Valley; place = None }
   in
-  let cid, axis, prov, implied, mark_cr =
-    match resolve_markable ctx span name_opt (Some fs_for_ax5) m with
+  let cid, bind_out, axis, prov, implied =
+    match resolve_markable ctx span out (Some fs_for_ax5) m with
     (* the discarded field is the axiom-5 side override: it is [None] whenever
        [moving] is present, and with [moving] absent and nothing implied the
        anchor below errors, so it is never live here. *)
-    | `Fresh (cid, axis, prov, _, implied) -> (cid, axis, prov, implied, None)
+    | `Fresh (cid, bind_out, axis, prov, _, implied) ->
+        (cid, bind_out, axis, prov, implied)
     | `Existing lo ->
-        let cid = Fold_state.fresh_crease_id () in
+        (match lo with
+        | Ast.LNamed cr ->
+            ignore
+              (Resolve.crease_of ctx cr ~slot:"the axis of reverse"
+                 cr.Ast.cspan)
+        | _ -> ());
+        let axis = Resolve.resolve_line ctx lo in
+        let cid, check_axis, bind_out =
+          crease_id_for ctx out ~fresh:Fold_state.fresh_crease_id
+        in
+        check_axis axis;
         let prov : State.provenance option =
           Some { State.axiom = "reverse"; sources = [ Resolve.lstr lo ]; span; name = None }
         in
-        (* mirror eval_fold's `Existing (LNamed cr) when Mark` handling: if
-           the markable is a mark's name, its binding must repoint at this
-           fresh material crease when no new name is bound, or a later fold
-           along the mark mints a second, coincident crease. *)
-        let mark_cr =
-          match lo with
-          | Ast.LNamed cr
-            when (match lookup_crease ctx cr with Mark _ -> true | _ -> false) ->
-              Some cr
-          | _ -> None
-        in
-        (cid, Resolve.resolve_line ctx lo, prov, None, mark_cr)
+        (cid, bind_out, axis, prov, None)
   in
   let anchor =
     match (rs.Ast.rmoving, implied) with
@@ -511,25 +526,16 @@ let eval_reverse (ctx : Ctx.ctx) (name_opt : string option) (m : Ast.markable)
       Error.fail span "reversing the tip would pierce another layer"
   | Error e -> Error.fail span (Fold_state.reverse_failure_to_string e));
   push_frame ctx (Some span);
-  match name_opt with
-  | Some n -> bind_crease ctx n span (Material (cid, axis))
-  | None -> (
-      match mark_cr with
-      | Some cr -> promote_crease ctx cr.Ast.cname (Material (cid, axis))
-      | None -> ())
+  bind_out (Material (cid, axis))
 
 let eval_free_point (ctx : Ctx.ctx) (n : string) (line : Ast.line_operand)
     (anchor : Ast.point_operand) (t : Num.t option) (span : Error.span) : unit =
-  (* a bare value-bound line (`--l = through .a .b`, unmarked) has no
-     material of its own; `free on` treats it as backed by the whole
-     paper square rather than raising paper_line_of_crease's Frozen
-     "no material mark to cross" error (that guard is for `*`/meet,
-     which does require a physical mark; a free point does not). *)
+  (* `free on` measures along material, so its line slot is crease-sorted
+     (spec/BELOCH.md, Parameter types). *)
   let l, chords_opt =
     match line with
     | Ast.LNamed cr -> (
-        match lookup_crease ctx cr with
-        | Frozen fl -> (fl, None)
+        match Resolve.crease_of ctx cr ~slot:"free on" cr.Ast.cspan with
         | Bundle expr -> Resolve.resolve_paper_line ctx expr
         | cv -> Resolve.paper_line_of_crease ctx ~name:cr.Ast.cname cr.Ast.cspan cv)
     | _ -> Resolve.resolve_paper_line ctx line
@@ -667,18 +673,19 @@ let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
   match stmt with
   | Ast.BindBundle (name, expr, span) ->
       bind_crease ctx name span (Bundle expr)
-  | Ast.BindLine (n, ax, span) ->
-      (* pure value: resolve the axiom to a line, bind Frozen, no subdivide *)
+  | Ast.BindLine (n, c, span) ->
+      (* pure value: resolve the construction to a line, bind Frozen, no
+         subdivide *)
       let axis =
-        match Axiom.axis_of ctx span ax with
+        match snd (Axiom.axis_of ctx span c) with
         | Axiom.Axis (axis, _, _) -> axis
         | Axiom.Ax5 p -> Axiom.select_axiom5_bind ctx span p
       in
       bind_crease ctx n span (Frozen axis)
-  | Ast.Mark (name_opt, m, ext, dir, layer_opt, span) ->
-      eval_mark ctx name_opt m ext dir layer_opt span
-  | Ast.Fold (name_opt, m, fs, span) -> eval_fold ctx name_opt m fs span
-  | Ast.Reverse (name_opt, m, rs, span) -> eval_reverse ctx name_opt m rs span
+  | Ast.Mark (out, m, ext, dir, layer_opt, span) ->
+      eval_mark ctx out m ext dir layer_opt span
+  | Ast.Fold (out, m, fs, span) -> eval_fold ctx out m fs span
+  | Ast.Reverse (out, m, rs, span) -> eval_reverse ctx out m rs span
   | Ast.Point (n, Ast.PsExpr po, span) ->
       bind_point ctx n span (Resolve.resolve_point ctx po)
   | Ast.Point (n, Ast.PsFree { line; anchor; t; span }, _) ->
@@ -690,8 +697,19 @@ let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
   | Ast.Apply (bind_opt, defname, args, span) ->
       eval_apply ctx bind_opt defname args span
   | Ast.Export (entries_opt, iname, span) -> eval_export ctx entries_opt iname span
-  | Ast.Flatten (name_opt, elems, overs, staying_opt, toward_opt, span) ->
-      Flatten_solve.run ctx ~name_opt ~elems ~overs ~staying_opt ~toward_opt span
+  | Ast.Flatten (out, elems, overs, staying_opt, toward_opt, span) ->
+      (* the emergent crease is minted inside the solver, where the even case
+         mints nothing, so the id this call returns (-1) has no reader.
+         `into` hands the solver its own id and axis check: the emergent
+         crease is scored under the named crease's id, on its line. *)
+      let cid, check_axis, bind_out = crease_id_for ctx out ~fresh:(fun () -> -1) in
+      let into =
+        match out with
+        | Ast.Into _ -> Some (cid, check_axis)
+        | Ast.Anonymous | Ast.Named _ -> None
+      in
+      Flatten_solve.run ctx ~into ~bind_out ~elems ~overs ~staying_opt
+        ~toward_opt span
 
 and eval_apply (ctx : Ctx.ctx) (bind_opt : string option) (defname : string)
     (args : Ast.arg list) (span : Error.span) : unit =

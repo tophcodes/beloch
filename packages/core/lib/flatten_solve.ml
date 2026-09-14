@@ -3,7 +3,8 @@
 
 open Ctx
 
-let run (ctx : Ctx.ctx) ~(name_opt : string option)
+let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
+    ~(bind_out : Ctx.crease_val -> unit)
     ~(elems : Ast.collapse_elem list)
     ~(overs : (Ast.flap_arg * Ast.flap_arg) list)
     ~(staying_opt : Ast.flap_arg option)
@@ -15,7 +16,9 @@ let run (ctx : Ctx.ctx) ~(name_opt : string option)
      leaving it unsplit at the vertex (`no common interior vertex`). *)
   let rec force_material (lo : Ast.line_operand) =
     match lo with
-    | Ast.LNamed cr -> ignore (Resolve.material_cid ctx cr)
+    | Ast.LNamed cr ->
+        ignore (Resolve.crease_of ctx cr ~slot:"a flatten ray" cr.Ast.cspan);
+        ignore (Resolve.material_cid ctx cr)
     | Ast.LFilter (b, _, _) -> force_material b
     | Ast.LUnion (los, _) -> List.iter force_material los
     | Ast.LSelect _ -> ()
@@ -148,11 +151,17 @@ let run (ctx : Ctx.ctx) ~(name_opt : string option)
     Some
       { State.axiom = "flatten"; sources = []; span; name = None }
   in
-  (* pre-mint the emergent crease id ONCE (odd case only — the even
-     case never materializes anything), so every candidate's probe
-     subdivision (below) and the eventual winner share one id instead
-     of drifting the global counter per candidate. *)
-  let new_cid = lazy (Fold_state.fresh_crease_id ()) in
+  (* the emergent crease id, fixed ONCE (odd case only; the even case
+     never materializes anything), so every candidate's probe subdivision
+     (below) and the eventual winner share one id instead of drifting the
+     global counter per candidate. Under `into` it is the named crease's
+     own id, so the emergent material lands on that crease. *)
+  let new_cid =
+    lazy
+      (match into with
+      | Some (cid, _) -> cid
+      | None -> Fold_state.fresh_crease_id ())
+  in
   (* the stayer for a bare combination: the <π arc between the first two
      ELEMENTS' chosen folded rays (leading-element convention). *)
   let arc_stayer combo =
@@ -382,6 +391,21 @@ let run (ctx : Ctx.ctx) ~(name_opt : string option)
      any) binds to it instead of the given rays; None if no candidate
      ray was materialized (even case) or left unbound. *)
   let emergent_bind = ref None in
+  (* `into`'s axis check runs on the emergent line before the winning state
+     lands: the emergent line comes from the pre-flatten table geometry, and
+     the check must compare it against material in the same frame, so it
+     runs before the collapsed state replaces it. With no emergent ray there
+     is nothing for `into` to add. *)
+  let land_realization (st, _, emergent) =
+    (match (into, emergent) with
+    | Some (_, check_axis), Some (_, line) -> check_axis line
+    | Some _, None ->
+        Error.fail span
+          "flatten with an even ray count scores no new crease; drop into"
+    | None, _ -> ());
+    ctx.state := st;
+    emergent_bind := emergent
+  in
   (match deciding with
   | [] ->
       (* spec step 6: out-of-paper trumps everything; otherwise the
@@ -420,15 +444,13 @@ let run (ctx : Ctx.ctx) ~(name_opt : string option)
             Error.fail span
               (if pool = [] then Collapse.e_maekawa else Collapse.e_selfint)
       end)
-  | [ (st, _, emergent) ] ->
-      ctx.state := st;
-      emergent_bind := emergent
+  | [ r ] -> land_realization r
   | many ->
       (* |deciding| > 1 — three-stage selection (amended spec 38bd69e +
          .superpowers/sdd/toward-stacking-rule.md, 2026-07-16):
          1. POSITION stage: placements depend only on ray LINES, so
             realizations group into position classes by moved-material
-            centroid; {toward} picks the class by centroid dot.
+            centroid; (toward) picks the class by centroid dot.
          2. MIN-MOUNTAIN CANON: within the class, keep only the
             realizations with the fewest derived mountains among the
             USER-GIVEN creases (a freshly-materialized emergent cid is
@@ -487,24 +509,21 @@ let run (ctx : Ctx.ctx) ~(name_opt : string option)
         let m = List.fold_left (fun acc (c, _) -> min acc c) max_int counted in
         List.filter_map (fun (c, r) -> if c = m then Some r else None) counted
       in
-      let commit (st, _, emergent) =
-        ctx.state := st;
-        emergent_bind := emergent
-      in
+      let commit = land_realization in
       (match toward_opt with
       | None -> (
-          (* no class to pick without {toward}; the min-mountain canon
+          (* no class to pick without (toward); the min-mountain canon
              is toward-independent, so it may still single out THE
              least-forced realization — only a post-canon surplus is a
-             genuine ambiguity (spec: "no {toward} while |S| > 1 after
+             genuine ambiguity (spec: "no (toward) while |S| > 1 after
              stage 2"). *)
           match min_mountain_filter many with
           | [ r ] -> commit r
           | kept ->
               Error.fail span
                 (Printf.sprintf
-                   "flatten is ambiguous: %d realizations; add {toward \
-                    .p} to pick the fold direction"
+                   "flatten is ambiguous: %d realizations; add (toward \
+                    .p) to pick the fold direction"
                    (List.length kept)))
       | Some toward_po ->
           let toward_pt = Resolve.resolve_point ctx toward_po in
@@ -627,21 +646,22 @@ let run (ctx : Ctx.ctx) ~(name_opt : string option)
                     Error.fail span Flatten.e_toward_ambiguous
                 | (_, r) :: _ -> commit r
                 | [] -> assert false (* [kept] has >= 2 elements *)))));
-  (* bind the name (if any): with no emergent ray materialized, bind a
-     selectable bundle of the given rays; with one, bind the EMERGENT
-     crease instead (the newly-completed vertex's own crease, not the
-     rays that produced it), so a meet-point selector against the name
+  (* run the output clause's binding step: with no emergent ray materialized
+     it takes a selectable bundle of the given rays; with one it takes the
+     EMERGENT crease (the newly-completed vertex's own crease, not the rays
+     that produced it), so a meet-point selector against the name
      (e.g. `.[--ear --ab]`) finds the emergent crease's tip. *)
-  (match name_opt with
-  | Some n ->
-      let cv =
-        match !emergent_bind with
-        | Some (cid, line) -> Material (cid, line)
-        | None ->
-            Bundle
-              (Ast.LUnion
-                 (List.map (fun (el : Ast.collapse_elem) -> el.Ast.cline) elems, span))
-      in
-      bind_crease ctx n span cv
-  | None -> ());
+  bind_out
+    (match !emergent_bind with
+    | Some (ecid, line) ->
+        (* `into` keeps the named crease's id: a freshly materialized
+           emergent already carries it, and an emergent that reuses an
+           existing collinear crease scores no material to move the name
+           to. *)
+        let cid = match into with Some (cid, _) -> cid | None -> ecid in
+        Material (cid, line)
+    | None ->
+        Bundle
+          (Ast.LUnion
+             (List.map (fun (el : Ast.collapse_elem) -> el.Ast.cline) elems, span)));
   push_frame ctx (Some span)

@@ -1,5 +1,5 @@
 paper square
-fold --half = map .b onto .a moving .b
+fold (map .b onto .a) (moving .b) as --half
 
 ; assert faces = 2
 ; assert --half is valley

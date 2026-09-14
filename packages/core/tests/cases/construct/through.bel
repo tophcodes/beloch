@@ -1,9 +1,9 @@
 paper square
-mark --vmid = map .a onto .b              ; x = 1/2
-mark --hmid = map .a onto .d              ; y = 1/2
+mark (map .a onto .b) as --vmid           ; x = 1/2
+mark (map .a onto .d) as --hmid           ; y = 1/2
 .ctr = --vmid * --hmid               ; sheet centre, (1/2, 1/2)
 ; fold the centre onto the bottom edge, crease through corner .b
-fold map .ctr onto --ab through .b toward .a
+fold (map .ctr onto --ab through .b toward .a)
 
 ; the landing point (1 − 1/√2, 0) is irrational, and bare --ab (the builtin
 ; edge) has no material mark so it can't be resolved by this v1 grammar
