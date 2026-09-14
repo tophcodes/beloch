@@ -948,6 +948,7 @@ order:
       "asserts": [{ "text": "assert faces = 3", "verified": true }] },
     { "index": 7, "status": "error",
       "message": "fold takes no (outside) item",
+      "diagnostic": "error: fold takes no (outside) item\n --> BELOCH.md:2:22\n…",
       "line": 2, "col": 22, "end_col": 31,
       "expected": true,
       "asserts": [] }
@@ -989,9 +990,17 @@ highlighted program it renders:
 
 - for a block whose entry is `status: "error"` and `expected: true`, the
   diagnostic in the shape `Diagnostic.render` prints: an `error:` line, the
-  arrow with line and column, the offending line and a caret. The renderer
-  draws it from the recorded message and position against the block's own
-  text, so the prelude stays out of sight.
+  arrow with line and column, the offending line and a caret. The capture tool
+  renders it, against the block's own text and a span remapped onto that text,
+  so the prelude stays out of sight and the hint on the page is the one the
+  CLI would print. A span that falls inside the prelude is recorded as a
+  message with no diagnostic. The positions travel alongside for a renderer
+  that wants to anchor to them.
+
+  `expected` records whether the raised message matches the block's
+  `expect error` substring, the same judgment `test_reference_corpus` makes.
+  A field that merely noted the presence of an `expect error` would let the
+  page call a block healthy while the kernel test fails it.
 - for each `; assert` line, the line itself marked as verified.
 
 Three states the renderer has to handle, and all three are visible to a reader
