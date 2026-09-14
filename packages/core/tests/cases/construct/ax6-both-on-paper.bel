@@ -4,8 +4,8 @@
 ; settles nothing and the ambiguity stands.
 
 paper square
-mark --ac = through .a .c
+mark (through .a .c) as --ac
 .o = free on --ac from .a at 1/2        ; the sheet centre, (1/2, 1/2)
---x = map .a onto --bc through .o
+--x = (map .a onto --bc through .o)
 
 ; expect error "two folds place .a onto --bc through .o, both landing on the paper; add 'toward .x'"

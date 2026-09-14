@@ -1,7 +1,7 @@
 paper square
 
-mark --ac = map .b onto .d     ; diagonal a–c
-mark --v  = map .a onto .b     ; vertical midline x = 1/2
+mark (map .b onto .d) as --ac  ; diagonal a–c
+mark (map .a onto .b) as --v   ; vertical midline x = 1/2
 
 flatten (--ac & .a) (--ac & .c)
   (--v & --cd) (--v & --ab)

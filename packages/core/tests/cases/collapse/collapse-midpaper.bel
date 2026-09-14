@@ -1,8 +1,8 @@
 paper square
 
-mark --h = map .a onto .d       ; horizontal midline, y = 1/2
-mark --v = map .a onto .b       ; vertical midline, x = 1/2
-mark --q = map --v onto --bc    ; vertical crease at x = 3/4
+mark (map .a onto .d) as --h    ; horizontal midline, y = 1/2
+mark (map .a onto .b) as --v    ; vertical midline, x = 1/2
+mark (map --v onto --bc) as --q ; vertical crease at x = 3/4
 
 .q  = --h * --q            ; interior crossing (3/4, 1/2)
 .tm = --v * --cd           ; top edge midpoint (1/2, 1)

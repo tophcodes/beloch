@@ -1,6 +1,6 @@
 paper square
-mark --diag = through .a .c
-mark perp --diag through .b
+mark (through .a .c) as --diag
+mark (perp --diag through .b)
 
 ; `faces` is the evaluator's crease-pattern state, where unfolded marks
 ; don't subdivide (1 face); the emitted FOLD's 4-face crease pattern (marks

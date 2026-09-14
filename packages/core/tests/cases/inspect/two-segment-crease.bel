@@ -1,5 +1,5 @@
 paper square
-mark --h = map .a onto .d
-mark --v = map .a onto .b
+mark (map .a onto .d) as --h
+mark (map .a onto .b) as --v
 .mid = --h * --v
-fold --h moving .a
+fold (--h) (moving .a) into --h

@@ -3,7 +3,7 @@
 ; paper-incidence filter settles nothing and the ambiguity stands.
 
 paper square
-mark --vm = map .a onto .b                ; vertical midline x = 1/2
---x = map .a onto --cd and .c onto --vm
+mark (map .a onto .b) as --vm             ; vertical midline x = 1/2
+--x = (map .a onto --cd and .c onto --vm)
 
 ; expect error "3 folds place .a onto --cd and .c onto --vm, all landing on the paper; add 'toward .x'"

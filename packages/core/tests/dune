@@ -1,68 +1,91 @@
 (test
  (name test_num)
+ (modules test_num)
  (libraries beloch alcotest zarith unix))
 
 (test
  (name test_isometry3)
+ (modules test_isometry3)
  (libraries beloch alcotest zarith))
 
 (test
  (name test_fold_state)
+ (modules test_fold_state)
  (libraries beloch alcotest zarith))
 
 (test
  (name test_geom)
+ (modules test_geom)
  (libraries beloch alcotest zarith))
 
 (test
  (name test_parse)
+ (modules test_parse)
  (libraries beloch alcotest str))
 
 (test
  (name test_eval)
+ (modules test_eval)
  (libraries beloch alcotest yojson zarith str))
 
 (test
  (name test_e2e)
+ (modules test_e2e)
  (libraries beloch alcotest yojson zarith str))
 
 (test
  (name test_diagnostic)
+ (modules test_diagnostic)
  (libraries beloch alcotest str))
 
 (test
  (name test_qqbar)
+ (modules test_qqbar)
  (libraries beloch alcotest zarith))
 
 (test
  (name test_field_merge)
+ (modules test_field_merge)
  (libraries beloch alcotest zarith))
 
 (test
  (name test_collapse)
+ (modules test_collapse)
  (libraries beloch alcotest zarith str))
 
 (test
  (name test_flatten)
+ (modules test_flatten)
  (libraries beloch alcotest zarith str))
 
 (test
  (name test_render_cli)
+ (modules test_render_cli)
  (libraries render_cli alcotest unix))
 
 (test
  (name test_bel_assert)
+ (modules test_bel_assert bel_assert)
  (libraries beloch alcotest zarith)
  (deps (source_tree cases) (source_tree ../../../examples)))
 
 (test
+ (name test_reference_corpus)
+ (modules test_reference_corpus bel_assert)
+ (libraries beloch alcotest zarith)
+ (deps (source_tree ../../../spec)))
+
+(test
  (name test_spine)
+ (modules test_spine)
  (libraries beloch alcotest str))
 
 (test
  (name test_session)
+ (modules test_session)
  (libraries beloch alcotest yojson zarith str))
 
 (executable
  (name spike_flatten)
+ (modules spike_flatten)
  (libraries beloch zarith))

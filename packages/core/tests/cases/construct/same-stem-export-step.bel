@@ -4,10 +4,10 @@
 ; SAME bare stem in the outer scope (`.m` at step 1, after the fold).
 paper square
 def diagonal(.p .q) {
-  mark --d = through .p .q
+  mark (through .p .q) as --d
 }
 $d1 = apply diagonal(.a .c)
-fold --v = map .a onto .b
+fold (map .a onto .b) as --v
 export { --d as --m } $d1
 .m = --v * --m
 

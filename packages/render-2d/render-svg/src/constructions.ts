@@ -7,7 +7,7 @@ import { el, SvgDoc, SvgNode } from "./svgdoc";
 import { clipLineBox, clipLineToPoly, lineToFace } from "./geometry";
 import { PAD } from "./layout";
 import type { Layout } from "./layout";
-import type { Theme } from "./theme";
+import type { HighlightColor, Theme } from "./theme";
 
 // A named line that's also a real crease highlights in that crease's own
 // assignment color (bolder, dashed on top) rather than a separate hue — the
@@ -25,6 +25,10 @@ export function appendConstructions(
   theme: Theme,
   selection: string[] | undefined,
   folded: null | { frame: Frame },
+  // The palette colour of each entity the caller highlights, keyed by the
+  // selection entry (".p", "--l"). An entry outside it keeps the crease or
+  // construction colour it had.
+  highlightOf: Map<string, HighlightColor> = new Map(),
 ): void {
   const annotations = doc.layer("annotations");
   const { tx, ty, minX, maxX, minY, maxY } = layout;
@@ -42,6 +46,9 @@ export function appendConstructions(
   const pMinY = Math.min(...pys), pMaxY = Math.max(...pys);
 
   for (const s of sel) {
+    // A highlighted entity is drawn in its own palette colour, in this view and
+    // in the other view of the same scene, matching the caption's inline code.
+    const hl = highlightOf.get(s);
     if (s.startsWith("--")) {
       const name = s.slice(2);
       const line = scene.namedLines.find((l) => l.name === name);
@@ -49,7 +56,7 @@ export function appendConstructions(
       const [la, lb, lc] = line.coeffs;
       const g: SvgNode[] = [];
       if (folded) {
-        const color = creaseColor(folded.frame, name, theme) ?? theme.construction;
+        const color = hl?.stroke ?? creaseColor(folded.frame, name, theme) ?? theme.construction;
         const F = folded.frame.facesVertices;
         const V = folded.frame.vertices;
         const FM = folded.frame.facesMatrix ?? [];
@@ -79,7 +86,7 @@ export function appendConstructions(
           }, [], `--${name}`));
         }
       } else {
-        const color = creaseColor(scene.cp, name, theme) ?? theme.construction;
+        const color = hl?.stroke ?? creaseColor(scene.cp, name, theme) ?? theme.construction;
         const seg = clipLineBox(la, lb, lc, pMinX, pMaxX, pMinY, pMaxY);
         if (!seg) continue;
         const [[x1, y1], [x2, y2]] = seg;
@@ -106,16 +113,17 @@ export function appendConstructions(
       const pt = scene.namedPoints.find((p) => p.name === name);
       if (!pt) continue;
       const [px, py] = folded ? pt.table : pt.paper;
+      const color = hl?.stroke ?? theme.ink;
       const ox = px < (minX + maxX) / 2 ? -14 : 10;
       const oy = py < (minY + maxY) / 2 ? 16 : -7;
       annotations.children.push(el("g", {
         class: "construction", "data-construction": name,
         "data-kind": "point", "data-name": name,
       }, [
-        el("circle", { cx: tx(px), cy: ty(py), r: 4.5, fill: theme.ink, opacity: 0.85 }),
+        el("circle", { cx: tx(px), cy: ty(py), r: 4.5, fill: color, opacity: 0.85 }),
         el("text", {
           x: tx(px) + ox, y: ty(py) + oy,
-          "font-size": 13, "font-weight": 600, fill: theme.ink,
+          "font-size": 13, "font-weight": 600, fill: color,
           stroke: "white", "stroke-width": 2.5, "paint-order": "stroke",
         }, [], `.${name}`),
       ]));

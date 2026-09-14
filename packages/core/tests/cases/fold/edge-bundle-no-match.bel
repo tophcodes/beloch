@@ -2,6 +2,6 @@
 ; filtering the edge's segment bundle to it must select nothing (same
 ; "no segment ... matches" error a crease bundle would give).
 paper square
-fold perp --cd & .a through .b
+fold (perp --cd & .a through .b)
 
 ; expect error "no segment of --cd & .a matches"

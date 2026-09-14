@@ -14,7 +14,7 @@ Beloch, named after [Margherita Piazzola Beloch][mpb], is a declarative language
 ## Bases
 
 Two traditional bases, each a handful of statements. `mark` only scores a
-crease, `fold` moves paper, and `flatten` collapses a vertex flat — deriving
+crease, `fold` moves paper, and `flatten` collapses a vertex flat, deriving
 the crease that closes it when no axiom can construct one. Every program emits
 a [FOLD][fold-spec] file, which renders into the pairs below.
 
@@ -25,22 +25,22 @@ stay flat.
 ### Fish base
 
 Two long flaps from opposite corners. Each half of the diagonal is collapsed
-with `flatten`, which derives the crease that closes the vertex — the one
+with `flatten`, which derives the crease that closes the vertex: the one
 crease here that no axiom constructs from the named points.
 
 ```
 paper square
 
-mark --diag = map .a onto .c
-mark --ray = through .a .c
+mark (map .a onto .c) as --diag
+mark (through .a .c) as --ray
 
-mark --l1 = map --ab onto --diag
-mark --l2 = map --da onto --diag
-flatten (--l1) (--l2) (--ray) {toward .d}
+mark (map --ab onto --diag) as --l1
+mark (map --da onto --diag) as --l2
+flatten (--l1) (--l2) (--ray) (toward .d)
 
-mark --l3 = map --cd onto --diag
-mark --l4 = map --bc onto --diag
-flatten (--l3) (--l4) (--ray) {toward .d}
+mark (map --cd onto --diag) as --l3
+mark (map --bc onto --diag) as --l4
+flatten (--l3) (--l4) (--ray) (toward .d)
 ```
 
 | crease pattern | folded |
@@ -51,11 +51,11 @@ flatten (--l3) (--l4) (--ray) {toward .d}
 
 A rabbit ear whose hinges sit at a free height on the side edges rather than
 at the triangle's angle bisectors, so the crease that flattens the vertex is
-not constructible by any Huzita axiom from the named points — `flatten`
+not constructible by any Huzita axiom from the named points: `flatten`
 solves for it, and binds it to `--ear`:
 
 ```
---ear = flatten (--ba \ .a) (--bb \ .b) (--v \ .m) {toward .c}
+flatten (--ba \ .a) (--bb \ .b) (--v \ .m) (toward .c) as --ear
 ```
 
 | crease pattern | folded |

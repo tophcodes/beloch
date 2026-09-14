@@ -28,7 +28,7 @@ test("spec/BELOCH.md yields 15 rules and 7 external names", () => {
 		"apply_stmt",
 		"export_stmt",
 	]);
-	expect(beloch.planned.map((p) => p.keyword)).toEqual(["align", "into"]);
+	expect(beloch.planned).toEqual([]);
 });
 
 test("a rule's lines are the rendering contract both renderers consume", () => {
@@ -68,28 +68,19 @@ test("the lexer's keyword table is read from its sedlex branches", () => {
 	expect(lexed.has("--[")).toBe(false);
 });
 
-test("the documented keywords and the lexer agree, with align and into declared planned", () => {
+test("the documented keywords and the lexer agree, with no keyword declared planned", () => {
+	expect(register.documents.every((d) => d.planned.length === 0)).toBe(true);
 	expect(crossCheck(register, lexerSource, LEXER)).toEqual([]);
 });
 
 test("a documented keyword the lexer lacks fails, naming where it is stated", () => {
-	const without = {
-		documents: register.documents.map((d) =>
-			d.path === "spec/BELOCH.md" ? { ...d, planned: [] } : d,
-		),
-	};
-	const failures = crossCheck(without, lexerSource, LEXER);
-	expect(failures.length).toBe(2);
-	expect(failures).toContainEqual(
+	const unlexed = lexerSource.replace(/^[ \t]*\|[ \t]*"align"[ \t]*->.*$/m, "");
+	const failures = crossCheck(register, unlexed, LEXER);
+	expect(failures).toEqual([
 		expect.stringMatching(
 			/^keyword "align" is stated in spec\/BELOCH\.md:\d+ and packages\/core\/lib\/lexer\.ml does not lex it$/,
 		),
-	);
-	expect(failures).toContainEqual(
-		expect.stringMatching(
-			/^keyword "into" is stated in spec\/BELOCH\.md:\d+ and packages\/core\/lib\/lexer\.ml does not lex it$/,
-		),
-	);
+	]);
 });
 
 test("a lexed keyword no documented rule states fails, naming the keyword", () => {

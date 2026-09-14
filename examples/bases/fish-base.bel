@@ -1,15 +1,15 @@
 paper square
 
-mark --diag = map .a onto .c
-mark --ray = through .a .c
+mark (map .a onto .c) as --diag
+mark (through .a .c) as --ray
 
-mark --l1 = map --ab onto --diag
-mark --l2 = map --da onto --diag
-flatten (--l1) (--l2) (--ray) {toward .d}
+mark (map --ab onto --diag) as --l1
+mark (map --da onto --diag) as --l2
+flatten (--l1) (--l2) (--ray) (toward .d)
 
-mark --l3 = map --cd onto --diag
-mark --l4 = map --bc onto --diag
-flatten (--l3) (--l4) (--ray) {toward .d}
+mark (map --cd onto --diag) as --l3
+mark (map --bc onto --diag) as --l4
+flatten (--l3) (--l4) (--ray) (toward .d)
 
 ; assert steps = 2
 ; assert faces = 12

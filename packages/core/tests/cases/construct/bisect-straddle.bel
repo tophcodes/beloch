@@ -1,7 +1,7 @@
 paper square
-mark --ac = through .a .c          ; TODO(pinch): landmark — replace with pinch when shipped
-mark --bd = through .b .d          ; TODO(pinch): landmark — replace with pinch when shipped
-fold map --ac onto --bd toward .b moving .c
+mark (through .a .c) as --ac       ; TODO(pinch): landmark — replace with pinch when shipped
+mark (through .b .d) as --bd       ; TODO(pinch): landmark — replace with pinch when shipped
+fold (map --ac onto --bd toward .b) (moving .c)
 
 ; assert faces = 2
 ; assert steps = 1

@@ -1,9 +1,9 @@
 paper square
-mark --bd = through .b .d
-mark --v = map .a onto .b
+mark (through .b .d) as --bd
+mark (map .a onto .b) as --v
 .ctr = --bd * --v
-mark --ac = through .a .c between .a .ctr
-fold --ac moving .b
+mark (through .a .c) (between .a .ctr) as --ac
+fold (--ac) (moving .b) into --ac
 
 ; assert faces = 2
 ; assert .ctr paper = (1/2, 1/2)

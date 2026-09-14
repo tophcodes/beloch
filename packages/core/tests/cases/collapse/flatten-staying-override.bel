@@ -4,18 +4,18 @@
 ; sector, not the stayer, so the bare convention seats a flap off the paper
 ; (see flatten-order-load-bearing.bel). Naming the stationary strip material
 ; with (staying .d) restores the correct stayer regardless of element order;
-; {toward .a} then picks the a-side mirror, exactly as the convention-ordered
+; (toward .a) then picks the a-side mirror, exactly as the convention-ordered
 ; toward-a case does. `.t = --ear * --ab` errors unless the a-side ear was
 ; picked (the c-side ear line is parallel to --ab).
 
 paper square
 
-mark --diag = through .a .c
-mark --ea = map --ab onto --diag
-mark --eb = map --ab onto --bc
-mark --ec = map --bc onto --diag
+mark (through .a .c) as --diag
+mark (map --ab onto --diag) as --ea
+mark (map --ab onto --bc) as --eb
+mark (map --bc onto --diag) as --ec
 
---ear = flatten (--eb & .b) (--ea & .a) (--ec & .c) (staying .d) {toward .a}
+flatten (--eb & .b) (--ea & .a) (--ec & .c) (staying .d) (toward .a) as --ear
 .t = --ear * --ab
 
 ; assert --ear is mountain

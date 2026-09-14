@@ -150,18 +150,93 @@ axis         := construction_body | line_operand
 ([open-flatten-selection](/model/#open-flatten-selection)); a construction
 carries its own selection inside its item.
 
+Six blocks follow, one group per verb, each a complete program that this page
+evaluates. `fold` and `reverse` take two blocks each, because the second form
+of either needs a sheet of its own, and the last block carries `flatten` with
+`flip`.
+
+```{.bel .prelude name=sheet}
+paper square
+mark (map --da onto --bc) as --d
+.m = free on --bc from .b at 1/2
+.n = free on --ab from .b at 1/2
+.p = free on --ab from .a at 1/4
 ```
-fold    (map .a onto .c) (moving .a)
-fold    (map .a onto .c) (moving .a) (mountain)
-fold    (through .m .n) (moving .b) (under .p)
-fold    (map .c onto .b) (up to .d)
+
+```{.bel .frag prelude=sheet}
 fold    (--d) (moving .b) (up to .c)               ; along an existing crease
+fold    (map .a onto .d) (moving .a)
+fold    (through .m .n) (moving .b) (under .p)
+fold    (map .a onto .b) (moving .a) (mountain)
+
+; assert steps = 4
+; assert faces = 8
+```
+
+```{.bel .frag}
+fold    (map .c onto .b) (up to .d)                ; the depth names the anchor
+
+; assert steps = 1
+; assert faces = 2
+```
+
+```{.bel .prelude name=triangle}
+paper square
+fold (map .a onto .c) as --bd
+```
+
+```{.bel .frag prelude=triangle}
 reverse (map .b onto .c)
-reverse (map .b onto .c) (outside)
-mark    (through .a .c)
-mark    (map --ab onto --cd) (on #[.c]) (between .a .m) (mountain)
-flatten (--h & --bc) (--v & --cd) (.q over .r) (staying .a) (toward .q)
+reverse (map .d onto .c)
+
+; assert .b = .c
+; assert .d = .c
+; assert faces = 6
+```
+
+```{.bel .prelude name=half}
+paper square
+fold (map .b onto .a) as --d
+```
+
+```{.bel .frag prelude=half}
+reverse (map .a onto .d) (outside)
+
+; assert .a = .d
+; assert faces = 4
+```
+
+```{.bel .prelude name=midline}
+paper square
+mark (through .a .c) as --ac
+.m = free on --da from .a at 1/2
+.o = free on --ac from .a at 1/2
+```
+
+```{.bel .frag prelude=midline}
+mark    (through .b .d)
+mark    (map --ab onto --cd) (between .m .o) (mountain)
+
+; assert faces = 1
+```
+
+```{.bel .prelude name=prelim}
+paper square
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+mark (map --ab onto --cd) as --h
+mark (map --da onto --bc) as --v
+.q = free on --ab from .a at 1/4
+.r = free on --ab from .b at 1/4
+```
+
+```{.bel .frag prelude=prelim}
+flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d)
+        (.q over .r) (staying .a) (toward .q)
 flip
+
+; assert steps = 2
+; assert faces = 6
 ```
 
 The crease a write scores is its one output, and the clause after the
@@ -186,7 +261,15 @@ is a snapshot and takes no `into`; a new value is a new binding.
 A head that does not belong to the verb is an error naming the verb and
 the item; an item type given twice is an error at the second occurrence.
 `mountain` is a value of the placement type, so `(mountain)` beside `(over
-…)` is two values in one slot and rejected on that ground alone.
+…)` puts two values in one slot; the placement item has already fixed the
+direction, and the error says so: `a placed fold derives its direction;
+drop mountain`.
+
+```{.bel .frag}
+fold (map .a onto .c) (moving .a) (over .b) (mountain)
+
+; expect error "a placed fold derives its direction; drop mountain"
+```
 
 Marking every argument as a block is what the model's operation signatures
 ask for: one item per parameter, the same shape for every write. For the
@@ -194,6 +277,46 @@ tools it means that an item is one node of the syntax tree with a type of
 its own, so that highlighting colours an anchor, a placement and a
 construction differently, and a malformed item is contained by its
 parentheses instead of swallowing the rest of the statement.
+
+::: {.figure #fig-lang-fold caption="The first `fold` carries a single item, the construction `(map .b onto .a)`, and reads its anchor from the corner that alignment moves. The second carries two: `(through .p .q)` is the line the paper turns about, `(moving .b)` the corner that travels. With no placement item the block lands on top of the paper it was folded from, and `as --f` gives the crease a name later statements can select." views="cp folded" highlight="--f"}
+paper square
+fold (map .b onto .a)
+.p = free on --bc from .b at 1/4
+.q = free on --ab from .b at 1/4
+fold (through .p .q) (moving .b) as --f
+:::
+
+::: {.figure #fig-lang-reverse caption="Two reverse folds turn the triangle into the preliminary base. `reverse` reads its axis from a construction the way `fold` does, and the anchor is implied by the tip the axis cuts off, so neither write needs a `(moving …)` item." views="cp folded" highlight="--h --v"}
+paper square
+fold (map .a onto .c) as --bd
+reverse (map .b onto .c) as --h
+reverse (map .d onto .c) as --v
+:::
+
+::: {.figure #fig-lang-mark caption="`mark` scores paper without moving it. `(between .m .o)` cuts the score back to the stretch between two points, `(on #[.c])` names the flap it runs on, and `(mountain)` records the intent the crease pattern draws." views="cp" highlight="--h --ac"}
+paper square
+mark (through .a .c) as --ac
+.m = free on --da from .a at 1/2
+.o = free on --ac from .a at 1/2
+mark (map --ab onto --cd) (on #[.c]) (between .m .o) (mountain) as --h
+:::
+
+::: {.figure #fig-lang-flatten caption="One `flatten` collapses six of the eight rays at the paper centre into the preliminary base, and the diagonal through `.a` and `.c` stays flat. Each ray item picks a piece of a marked crease with `&`, `(.q over .r)` fixes which quarter comes to the front, and `(toward .q)` chooses one of the flat states the rays allow." views="cp folded" highlight=".a .c"}
+paper square
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+mark (map --ab onto --cd) as --h
+mark (map --da onto --bc) as --v
+.q = free on --ab from .a at 1/4
+.r = free on --ab from .b at 1/4
+flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+:::
+
+::: {.figure #fig-lang-flip caption="`flip` takes no item at all. It turns the sheet over, so the fold that follows is placed on what was the back, and `--g` comes out mountain where the same fold on an unflipped sheet would read valley." views="cp folded" highlight="--g"}
+paper square
+flip
+fold (map .a onto .c) as --g
+:::
 
 ## Constructions
 
@@ -218,14 +341,26 @@ alignment         := "(" [ CREASE_NAME ] object "onto" [ CREASE_NAME ] object ")
 object            := point_operand | line_operand
 ```
 
+```{.bel .prelude name=axioms}
+paper square
+mark (through .a .b) as --l
+mark (through .b .c) as --m
+mark (through .a .c) as --ac
+.p = free on --ac from .a at 1/2
+.q = free on --ab from .a at 1/2
 ```
-(align (.a onto .c))                       ; axiom 2
-(align (through .a) (through .b))          ; axiom 1
-(align (perp --l) (through .p))            ; axiom 3
-(align (.p onto --l) (through .q))         ; axiom 6
-(align (.p onto --l) (perp --m))           ; axiom 4
-(align (--l onto --m) toward .p)           ; axiom 5, with its selection
-(align (.p onto --l) (.q onto --m))        ; axiom 7
+
+```{.bel .construction prelude=axioms}
+(align (.a onto .c))                            ; axiom 2
+(align (through .a) (through .b))               ; axiom 1
+(align (perp --l) (through .p))                 ; axiom 3
+(align (.p onto --l) (through .q) toward .a)    ; axiom 6, with its selection
+(align (.p onto --l) (perp --m))                ; axiom 4
+(align (--l onto --m) toward .p)                ; axiom 5, with its selection
+(align (.p onto --l) (.q onto --m))             ; axiom 7
+
+; assert .p = (1/2, 1/2)
+; assert .q = (1/2, 0)
 ```
 
 The prose forms of the seven axioms are sugar for these and stay as they
@@ -278,11 +413,6 @@ bind_stmt       ; SPECIFICATION.md Appendix A
 def_stmt        ; SPECIFICATION.md Appendix A
 apply_stmt      ; SPECIFICATION.md Appendix A
 export_stmt     ; SPECIFICATION.md Appendix A
-```
-
-```grammar-planned
-align   ; constructions written as alignments are not lexed yet
-into    ; the into branch of a write's output clause is not lexed yet
 ```
 
 ## References

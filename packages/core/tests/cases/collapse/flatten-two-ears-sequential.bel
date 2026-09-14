@@ -9,7 +9,7 @@
 ; representative (lib/collapse.ml pipeline_at) lets the second ear read parity
 ; from the stationary base strip riding in its mixed stayer sector, so the true
 ; stacking chain (strip low, wings, ear on top) is enumerated and survives the
-; taco/self-int filters. Both ears {toward .d}. See diagnosis-vertex2.md.
+; taco/self-int filters. Both ears (toward .d). See diagnosis-vertex2.md.
 ;
 ; The emergent rabbit-ear crease is selected by the tier rule LineNew >
 ; OppositeRay (spec §Solver; eval.ml deciding = tier1 else tier2). LineNew is
@@ -26,15 +26,15 @@
 
 paper square
 
-mark --diag = map .a onto .c
-mark --ray = through .a .c
+mark (map .a onto .c) as --diag
+mark (through .a .c) as --ray
 
-mark --l1 = map --ab onto --diag
-mark --l2 = map --da onto --diag
-flatten (--l1) (--l2) (--ray) {toward .d}
+mark (map --ab onto --diag) as --l1
+mark (map --da onto --diag) as --l2
+flatten (--l1) (--l2) (--ray) (toward .d)
 
-mark --l3 = map --cd onto --diag
-mark --l4 = map --bc onto --diag
-flatten (--l3) (--l4) (--ray) {toward .d}
+mark (map --cd onto --diag) as --l3
+mark (map --bc onto --diag) as --l4
+flatten (--l3) (--l4) (--ray) (toward .d)
 
 ; assert faces = 12

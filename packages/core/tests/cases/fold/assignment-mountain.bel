@@ -1,4 +1,4 @@
 paper square
-fold --f = map .b onto .a mountain
+fold (map .b onto .a) (mountain) as --f
 
 ; assert --f is mountain

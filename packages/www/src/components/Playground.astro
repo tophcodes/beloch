@@ -577,7 +577,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   import { keymap } from "@codemirror/view";
   import { stepMarkerExtensions, setStepLineOn } from "../lib/cm-step-marker";
   import { parseFold, type FoldScene, type Statement, type Vec2 } from "@beloch/scene";
-  import { renderCP, renderFolded, makeLayout, WEB_THEME } from "@beloch/render-svg";
+  import { renderCP, renderFolded, sceneLayout, WEB_THEME } from "@beloch/render-svg";
   import { SCHEMES, STORAGE_KEY, DEFAULT_ID, applyScheme, resolveScheme } from "../lib/paper-schemes";
   import { lineOfSpan, lookupEntity, type EntityRef } from "../lib/inspect-lookup";
   import { segMatchesLine } from "../lib/stack-picker";
@@ -911,7 +911,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // A highlighted bundle's OCCLUDED segments have no rendered <line> (a fold
     // hides layers below), so they couldn't be shown. Draw each hidden segment
     // as a dashed ghost from the inspect data, in the SVG's own user space
-    // (makeLayout coords) so it pans/zooms with everything.
+    // (sceneLayout coords) so it pans/zooms with everything.
     const SVG_NS = "http://www.w3.org/2000/svg";
     const drawGhost = (ax: number, ay: number, bx: number, by: number) => {
       // Guard every ghost path (bundle + picked-segment) at once: inspect
@@ -933,7 +933,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       // inspect geometry is final-fold only; drawing it over an earlier step's
       // placement would put ghosts at the wrong positions.
       if (!currentScene || !onFinalStep()) return;
-      const layout = makeLayout(currentScene.cp.vertices);
+      const layout = sceneLayout(currentScene);
       const drawn = drawnLines.map((el) => [
         Number(el.getAttribute("x1")), Number(el.getAttribute("y1")),
         Number(el.getAttribute("x2")), Number(el.getAttribute("y2")),
@@ -959,7 +959,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     const addEdgeHl = (name: string) => {
       const insp = currentScene?.inspect;
       if (!insp || !currentScene) return;
-      const layout = makeLayout(currentScene.cp.vertices);
+      const layout = sceneLayout(currentScene);
       const drawn: Element[] = [];
       canvas.querySelectorAll(CREASE_SELECTOR).forEach((el) => {
         const x1 = Number(el.getAttribute("x1"));
@@ -1001,7 +1001,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       const y1 = Number(line.getAttribute("y1"));
       const x2 = Number(line.getAttribute("x2"));
       const y2 = Number(line.getAttribute("y2"));
-      const layout = makeLayout(currentScene.cp.vertices);
+      const layout = sceneLayout(currentScene);
       const name = edgeOfLine(currentScene.inspect.edges, x1, y1, x2, y2, layout);
       return name ? { kind: "edge", name } : null;
     };
@@ -1144,7 +1144,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       // the per-step DOM resolver (data-crease-id) — no proximity, no chooser.
       if (!insp || !currentScene || !local || !onFinalStep()) return [];
       const [px, py] = local;
-      const layout = makeLayout(currentScene.cp.vertices);
+      const layout = sceneLayout(currentScene);
       const seen = new Set<string>();
       const out: EntityRef[] = [];
       const check = (ref: EntityRef, segs: { table: [Vec2, Vec2] }[]) => {
@@ -1277,7 +1277,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // none — dropped in Task 4). The segment's `table` endpoints are in the
     // evaluator's table space; a rendered crease `<line>`'s x1/y1/x2/y2 are
     // in SVG pixel space, produced by render-scene.ts as
-    // `mx(tx(x)), ty(y)` off a layout built from `makeLayout(scene.cp.vertices)`
+    // `mx(tx(x)), ty(y)` off the layout `sceneLayout(scene)` builds
     // (see layout.ts + render-scene.ts:56,102) — `mx` only differs from `tx`
     // for `view: "bottom"`, which this Playground never passes (grepped: only
     // `renderFolded(currentScene, { theme, step, markOverlay })` call sites
@@ -1309,7 +1309,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
           ? currentScene?.inspect?.edges[eid]?.segments[segIndex]
           : undefined;
       if (!currentScene || !s || (!cid && !eid)) return;
-      const layout = makeLayout(currentScene.cp.vertices);
+      const layout = sceneLayout(currentScene);
       const p0: Vec2 = [layout.tx(s.table[0][0]), layout.ty(s.table[0][1])];
       const p1: Vec2 = [layout.tx(s.table[1][0]), layout.ty(s.table[1][1])];
       clearHl();

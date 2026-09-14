@@ -5,9 +5,9 @@
 
 paper square
 
-fold --bd = map .a onto .c              ; triangle; a lands on c
-reverse --h = map .b onto .c            ; tip b between the layers; crease y = 1/2 through O
-reverse --v = map .d onto .c            ; tip d likewise; crease x = 1/2
+fold (map .a onto .c) as --bd           ; triangle; a lands on c
+reverse (map .b onto .c) as --h         ; tip b between the layers; crease y = 1/2 through O
+reverse (map .d onto .c) as --v         ; tip d likewise; crease x = 1/2
 
 ; assert steps = 3
 ; assert faces = 6

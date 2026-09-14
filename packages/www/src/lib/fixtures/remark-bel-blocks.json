@@ -1,0 +1,37 @@
+{
+  "spec/BELOCH.md": [
+    { "index": 0, "status": "ok", "expected": false, "asserts": [] },
+    {
+      "index": 1,
+      "status": "ok",
+      "expected": false,
+      "asserts": [
+        { "text": "assert faces = 1", "verified": true },
+        { "text": "assert faces = 2", "verified": false, "message": "faces was 1, not 2" }
+      ]
+    },
+    {
+      "index": 2,
+      "status": "error",
+      "expected": true,
+      "message": "a placed fold derives its direction; drop mountain",
+      "asserts": [],
+      "diagnostic": "error: a placed fold derives its direction; drop mountain\n --> BELOCH.md:2:46\n |\n1 | paper square\n2 | fold (map .a onto .c) (moving .a) (over .b) (mountain)\n |                                              ^^^^^^^^ a placed fold derives its direction; drop mountain\n"
+    },
+    {
+      "index": 4,
+      "status": "error",
+      "expected": false,
+      "message": "something genuinely broke",
+      "asserts": [],
+      "diagnostic": "error: something genuinely broke\n --> BELOCH.md:2:37\n |\n1 | paper square\n2 | fold (map .a onto .c) (moving .a) (bogus)\n |                                     ^^^^^ something genuinely broke\n"
+    },
+    {
+      "index": 5,
+      "status": "ok",
+      "expected": true,
+      "message": "expected an error containing \"something that never happens\", but eval succeeded",
+      "asserts": []
+    }
+  ]
+}

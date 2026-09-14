@@ -5,10 +5,10 @@
  * <Beloch> card and the markdown `bel` code-fence plugin. The same grammar wasm
  * also drives the live playground editor (see playground island).
  *
- * Captures (see packages/grammar/queries/highlights.scm) → CSS classes:
- *   comment→bel-comment keyword→bel-keyword point→bel-point line→bel-line
- *   instance→bel-instance number→bel-number operator→bel-operator
- *   punct→bel-punct
+ * A capture named `x` becomes the CSS class `bel-x`, so the class list is
+ * whatever packages/grammar/queries/highlights.scm captures: the token classes
+ * of the flat grammar (comment, keyword, point, line, instance, number,
+ * operator, punct) and one per item type under a write statement.
  */
 import { Parser, Language, Query } from "web-tree-sitter";
 import { readFileSync } from "node:fs";

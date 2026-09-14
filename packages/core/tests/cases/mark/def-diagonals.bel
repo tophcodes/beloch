@@ -1,7 +1,7 @@
 paper square
 
 def diagonal(.p .q) {
-  mark --d = through .p .q
+  mark (through .p .q) as --d
 }
 
 $d1 = apply diagonal(.a .c)

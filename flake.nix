@@ -90,6 +90,9 @@
             # (scripts/render-model.sh); typst is pandoc's PDF engine here
             pkgs.pandoc
             pkgs.typst
+            # the `generate` script of packages/grammar, which rebuilds the
+            # committed parser and wasm
+            pkgs.tree-sitter
           ];
           # Link @beloch/render-svg's `beloch-render` bin globally so the
           # OCaml `beloch render` subcommand (packages/core/bin/main.ml) can execvp it, and

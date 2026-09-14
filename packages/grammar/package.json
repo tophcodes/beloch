@@ -3,5 +3,8 @@
   "version": "0.0.1",
   "description": "Ad-hoc tree-sitter grammar for the Beloch origami language (syntax highlighting)",
   "type": "commonjs",
-  "private": true
+  "private": true,
+  "scripts": {
+    "generate": "tree-sitter generate && tree-sitter build --wasm && cp tree-sitter-beloch.wasm ../www/src/grammar/tree-sitter-beloch.wasm"
+  }
 }

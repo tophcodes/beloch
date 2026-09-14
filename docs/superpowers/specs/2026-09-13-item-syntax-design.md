@@ -761,16 +761,32 @@ corpus test below runs against the artifact the site ships.
 `highlight-bel.ts` maps a capture name to the CSS class `bel-<name>` and has
 no rule for overlapping captures, so the queries capture each item's head
 keyword rather than the whole node, leaving operands on their existing
-`@point` / `@line` captures:
+`@point` / `@line` captures.
+
+The first two queries hold classes that the `keyword` and `punct` rules
+supplied on their own while the grammar was flat. A token under a named node
+is anonymous, so `(keyword)` and `(punct)` no longer reach it: that is the
+five verbs, and every parenthesis and bracket inside an item, an operand or a
+construction. Without these two the structured grammar colours less than the
+token soup it replaced.
+
+`highlight-bel.ts` sorts captures by start offset and drops any that overlap
+one already emitted, so for a token matched by two patterns the one written
+first in this file wins. `!` is therefore left out of the bracket query and
+stays with `@output`.
 
 ```scheme
-(construction    ["align" "map" "through" "perp" "onto"] @construction)
+(write_statement ["mark" "fold" "reverse" "flatten" "flip"] @keyword)
+["(" ")" "[" "]"] @punct
+(construction    ["align" "map" "through" "perp" "onto" "and"] @construction)
+(construction    "toward" @selection)
 (alignment       ["onto" "through" "perp"] @alignment)
 (anchor_item     "moving" @anchor)
 (depth_item      ["up" "to"] @depth)
 (placement_item  ["over" "under"] @placement)
 (kind_item       "outside" @kind)
 (intent_item     ["mountain" "valley"] @intent)
+(axis_item       ["mountain" "valley"] @intent)
 (extent_item     ["between" "at"] @extent)
 (layer_item      "on" @layer)
 (flatten_element ["mountain" "valley"] @ray)
@@ -780,20 +796,23 @@ keyword rather than the whole node, leaving operands on their existing
 (output_clause   ["as" "into" "!"] @output)
 ```
 
+`.bel-keyword` and `.bel-punct` are already in the stylesheet.
 `packages/www/src/styles/theme.css` gains the matching `.bel-anchor`,
 `.bel-depth`, `.bel-placement`, `.bel-kind`, `.bel-intent`, `.bel-extent`,
 `.bel-layer`, `.bel-ray`, `.bel-order`, `.bel-stayer`, `.bel-selection`,
-`.bel-construction`, `.bel-alignment`, `.bel-output` classes, each in both
-themes. The same
+`.bel-construction`, `.bel-alignment`, `.bel-output` classes. One unscoped
+definition each: the syntax palette is defined only in the dark `:root`
+block, so the code panel is dark under either site theme. The same
 query file is copied to `packages/grammar/queries/highlights.scm`.
 
 ### Markdown rendering (`packages/www/src/lib/remark-bel.ts`)
 
-`remarkBel` rewrites every fenced block whose language is `bel` or `beloch`
-into highlighted HTML. It gains one rule: a block tagged `prelude` is removed
-from the tree instead of rendered. `visit` already hands it the parent and the
-index, so the prelude nodes are collected during the walk and spliced out
-after it.
+`remarkBel` rewrites every fenced block whose info string carries the class
+`bel` or `beloch` into highlighted HTML, reading that class list by the rule
+under [Marking the blocks](#marking-the-blocks). It gains one rule: a block
+carrying the `prelude` class is removed from the tree instead of rendered.
+`visit` already hands it the parent and the index, so the prelude nodes are
+collected during the walk and spliced out after it.
 
 The pandoc path needs the same rule. `scripts/render-model.sh` renders
 `spec/{MODEL,KERNEL,BELOCH,FOLD}.md` to PDF through
@@ -812,15 +831,29 @@ does not fold is a block the document should not be showing.
 
 Fenced blocks in `spec/*.md` carry no info string today, and `remark-bel.ts`
 highlights a block only when its language is `bel` or `beloch`. The example
-blocks in `BELOCH.md` gain an info string; the grammar blocks stay unlabelled
-and are skipped by the corpus test and by the site.
+blocks in `BELOCH.md` gain an info string in pandoc's attribute form,
+`{.bel .frag prelude=triangle}`, because pandoc's markdown reader accepts a
+single bare word or an attribute list and reads a two-word string such as
+`bel frag` as the start of an untagged block that swallows the prose after it.
+The grammar blocks stay unlabelled and are skipped by the corpus test and by
+the site.
 
 | info string | content | how it is checked |
 |---|---|---|
-| ```` ```bel ```` | a whole program, starting `paper square` | parses and evaluates |
-| ```` ```bel prelude name=<id> ```` | a program fragment that sets up names for other blocks | parses and evaluates under its own prelude; never rendered |
-| ```` ```bel frag [prelude=<id>] ```` | statements with no `paper square` of their own | the named prelude (default: `paper square`) is prepended, then parses and evaluates |
-| ```` ```bel construction [prelude=<id>] ```` | one construction item per line, with a trailing comment | each line is wrapped as `mark <line>`, appended to the prelude, then parses and evaluates |
+| ```` ```{.bel} ```` | a whole program, starting `paper square` | parses and evaluates |
+| ```` ```{.bel .prelude name=<id>} ```` | a program fragment that sets up names for other blocks | parses and evaluates under its own prelude; never rendered |
+| ```` ```{.bel .frag [prelude=<id>]} ```` | statements with no `paper square` of their own | the named prelude (default: `paper square`) is prepended, then parses and evaluates |
+| ```` ```{.bel .construction [prelude=<id>]} ```` | one construction item per line, with a trailing comment | each line is wrapped as `mark <line>`, appended to the prelude, then parses and evaluates |
+
+A bare ```` ```bel ```` is a single word and stays valid for a whole program.
+Every reader in the repository takes the attribute form, and each of the three
+runners below reads the same three fields out of it: the first class is `bel`,
+a second class names the kind, and `name=` and `prelude=` are attributes.
+Pandoc yields the attribute triple directly, `CodeBlock ("", ["bel","frag"],
+[("prelude","triangle")])`, which its Lua filters already know how to read.
+`remark-parse` splits the info string at the first space, so `lang` holds
+`{.bel` and `meta` holds `.frag prelude=triangle}`; a remark consumer joins
+the two with a space and parses the attribute list out of the result.
 
 Any block of the three non-prelude kinds may carry the inline assertion lines
 of the `.bel` corpus, unchanged in grammar and in meaning
@@ -842,7 +875,7 @@ still has to evaluate.
 ### Hidden preludes
 
 A fragment needs a program around it and a reader needs to see the fragment
-alone. A `bel prelude` block carries that program: it stands in the document
+alone. A `.prelude` block carries that program: it stands in the document
 where the fragments that use it begin, names itself with `name=<id>`, and is
 removed before rendering, so it appears on the site and in the PDF nowhere.
 
@@ -915,6 +948,7 @@ order:
       "asserts": [{ "text": "assert faces = 3", "verified": true }] },
     { "index": 7, "status": "error",
       "message": "fold takes no (outside) item",
+      "diagnostic": "error: fold takes no (outside) item\n --> BELOCH.md:2:22\n…",
       "line": 2, "col": 22, "end_col": 31,
       "expected": true,
       "asserts": [] }
@@ -956,9 +990,17 @@ highlighted program it renders:
 
 - for a block whose entry is `status: "error"` and `expected: true`, the
   diagnostic in the shape `Diagnostic.render` prints: an `error:` line, the
-  arrow with line and column, the offending line and a caret. The renderer
-  draws it from the recorded message and position against the block's own
-  text, so the prelude stays out of sight.
+  arrow with line and column, the offending line and a caret. The capture tool
+  renders it, against the block's own text and a span remapped onto that text,
+  so the prelude stays out of sight and the hint on the page is the one the
+  CLI would print. A span that falls inside the prelude is recorded as a
+  message with no diagnostic. The positions travel alongside for a renderer
+  that wants to anchor to them.
+
+  `expected` records whether the raised message matches the block's
+  `expect error` substring, the same judgment `test_reference_corpus` makes.
+  A field that merely noted the presence of an `expect error` would let the
+  page call a block healthy while the kernel test fails it.
 - for each `; assert` line, the line itself marked as verified.
 
 Three states the renderer has to handle, and all three are visible to a reader
@@ -1008,6 +1050,10 @@ The output clause, from `Eval`:
 | `into --ab` on a paper edge | `` into needs a scored crease; --ab is a paper edge `` |
 | `into --l` on an unbound name | `` --l is not bound; write as --l to name a new crease `` |
 | the scored material lies off `--l` | `` the material this scores lies on no segment of --l; name it with as instead `` |
+| `into` on a `flatten` with an even ray count | `` flatten with an even ray count scores no new crease; drop into `` |
+
+An even ray count closes the vertex with the given rays alone, so the write
+scores no crease for `into` to add.
 
 Sorts, from `Resolve.crease_of`, at the slot:
 
@@ -1041,6 +1087,9 @@ prose syntax back at the reader (`map .c onto --ac through .a: no crease lands o
 `.p lies on a crease shared by 2 flaps; name the flap with #[...]`). An
 `align` construction that fails at resolution therefore reports its prose
 equivalent. Rewriting those messages around item syntax is a separate pass.
+
+One exception: the flatten ambiguity message from `Flatten_solve` advises
+`(toward .p)`.
 
 ## Acceptance
 
@@ -1087,7 +1136,7 @@ equivalent. Rewriting those messages around item syntax is a separate pass.
     `remark-bel`'s test asserts three renderings against a fixture: a block
     with a verified assert, a block with an expected error and its diagnostic,
     and a block with no entry, which renders as the program alone.
-11. **Preludes are invisible.** A `bel prelude` block appears in neither the
+11. **Preludes are invisible.** A `.prelude` block appears in neither the
     rendered site HTML nor the pandoc PDF, and no diagnostic rendered under a
     block quotes a prelude line. `remark-bel`'s test asserts the first; the
     second is checked by reading the built PDF once during the slice.
