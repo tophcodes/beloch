@@ -96,22 +96,6 @@ export default defineConfig({
 			social: [{ icon: "github", label: "GitHub", href: "https://github.com/tophcodes/beloch" }],
 			sidebar: [
 				{
-					label: "Getting Started",
-					items: [
-						{ label: "Introduction", link: "/introduction/" },
-					],
-				},
-				{
-					label: "Tutorials",
-					items: [
-						{ label: "Paper & Values", link: "/tutorials/paper-and-values/" },
-						{ label: "Naming Points & Lines", link: "/tutorials/naming/" },
-						{ label: "Reflecting: map onto", link: "/tutorials/reflecting/" },
-						{ label: "mark vs. fold", link: "/tutorials/mark-vs-fold/" },
-						{ label: "Layers & Ordering", link: "/tutorials/layers/" },
-					],
-				},
-				{
 					label: "Reference",
 					items: [
 						{ label: "The model", link: "/model/" },
