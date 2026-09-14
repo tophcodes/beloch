@@ -66,6 +66,23 @@
 .bel-operator { color: var(--beloch-at); }
 .bel-punct    { color: #7E889A; }
 
+/* Item heads: one colour per item type, so an item's kind reads at a glance
+   without following its parentheses. */
+.bel-construction { color: #8FA6D9; }
+.bel-alignment    { color: #7C93C4; }
+.bel-anchor       { color: #E0A458; }
+.bel-depth        { color: #C77FE0; }
+.bel-placement    { color: #C98BA0; }
+.bel-kind         { color: #8FBF8F; }
+.bel-intent       { color: #E0896F; }
+.bel-extent       { color: #7FB3B3; }
+.bel-layer        { color: #A3A0D9; }
+.bel-ray          { color: #D97D7D; }
+.bel-order        { color: #C2A66B; }
+.bel-stayer       { color: #8AA6A6; }
+.bel-selection    { color: #B08CC9; }
+.bel-output       { color: #9FB88F; }
+
 /* Beloch fenced code blocks (```beloch) highlighted by the remark plugin, and
    the grammar fragments of spec/BELOCH.md (```grammar), so a rule and a program
    read as one system. */
