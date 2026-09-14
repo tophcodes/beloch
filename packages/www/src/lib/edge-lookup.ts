@@ -7,11 +7,11 @@
 // picker re-identifies a crease segment without a data-seg attribute: match
 // its rendered endpoints (SVG pixel space) against an `InspectEdge`'s
 // `table` coordinates, run through the SAME layout the renderer used
-// (`makeLayout(scene.cp.vertices)` from @beloch/render-svg).
+// (`sceneLayout(scene)` from @beloch/render-svg).
 import type { Inspect } from "@beloch/scene";
 import { segMatchesLine } from "./stack-picker";
 
-// The subset of makeLayout's return value this needs — kept minimal so unit
+// The subset of the layout's return value this needs — kept minimal so unit
 // tests can pass a fake transform instead of pulling in @beloch/render-svg.
 export interface EdgeLayout {
   tx: (x: number) => number;

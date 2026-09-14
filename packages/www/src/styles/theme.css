@@ -83,6 +83,23 @@
 .bel-selection    { color: #B08CC9; }
 .bel-output       { color: #9FB88F; }
 
+/* Figure highlights (remark-model-blocks). A figure's `highlight` attribute
+   lists the entities its caption refers to; each takes the colour at its
+   position in this palette, in the crease pattern, in the folded form and in
+   the caption's inline code, so a name and the thing drawn read as one. The
+   values are the strokes of HIGHLIGHT_PALETTE in @beloch/render-svg's theme.ts,
+   which the SVGs carry as literals for the PDF, and scripts/typst-compat.typ
+   repeats them for the caption in print. One unscoped definition each, like the
+   token classes above: the caption sits on the page rather than on the code
+   panel, so every colour is held at L* 49 to 56, legible on either site theme,
+   and at least ΔE76 19 from every colour already in this file. */
+.figure-hl-0 { color: #0d9488; }
+.figure-hl-1 { color: #c2620a; }
+.figure-hl-2 { color: #9a52d8; }
+.figure-hl-3 { color: #db2777; }
+.figure-hl-4 { color: #5f9412; }
+.figure-hl-5 { color: #0284c7; }
+
 /* Beloch fenced code blocks (```beloch) highlighted by the remark plugin, and
    the grammar fragments of spec/BELOCH.md (```grammar), so a rule and a program
    read as one system. */

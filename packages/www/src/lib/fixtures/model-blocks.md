@@ -15,6 +15,11 @@ paper square
 mark --ac = through .a .c
 :::
 
+::: {.figure #fig-crease caption="The crease `--ac` runs to the corner `.a`." views="cp" highlight="--ac .a" program="shown"}
+paper square
+mark --ac = through .a .c
+:::
+
 Prose between the two definitions, citing Hull [@hull2020, chapter 6].
 
 ::: {.definition #def-flat-state name="flat folded state" defines="term-table"}

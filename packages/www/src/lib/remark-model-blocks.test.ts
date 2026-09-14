@@ -13,6 +13,8 @@ const model = join(fixtures, "model-blocks.md");
 const register = join(fixtures, "api-register.json");
 const figures = join(fixtures, "figures");
 
+// The file carries its path, as it does in the Astro build: the plugin reads it
+// to tell the model document from every other one.
 async function render(path: string, options: Record<string, string> = {}) {
   return String(
     await unified()
@@ -21,7 +23,7 @@ async function render(path: string, options: Record<string, string> = {}) {
       .use(remarkMath)
       .use(remarkRehype, { allowDangerousHtml: true })
       .use(rehypeStringify, { allowDangerousHtml: true })
-      .process(readFileSync(path, "utf8")),
+      .process({ path, value: readFileSync(path, "utf8") }),
   );
 }
 
@@ -119,19 +121,49 @@ test("figures are numbered on a counter of their own", () => {
   expect(html).toContain('<span class="stmt-label" property="bm:label">Definition 1.2</span>');
 });
 
-test("a figure inlines the rendered view, the program and the caption", () => {
-  const figure = html.slice(html.indexOf('id="fig-sheet"'), html.indexOf("Prose between"));
+test("a figure inlines the rendered view and the caption", () => {
+  const figure = html.slice(html.indexOf('id="fig-sheet"'), html.indexOf('id="fig-crease"'));
   expect(html).toContain(
     '<figure class="figure" id="fig-sheet" typeof="bm:Figure" resource="#fig-sheet"' +
       ' prefix="bm: https://beloch.toph.so/ns/model#">',
   );
   expect(figure).toContain('<div class="figure-view" data-view="cp">');
   expect(figure).toContain('<rect class="dummy-cp"');
-  expect(figure).toContain(
-    '<pre class="figure-source" property="bm:program">paper square\nmark --ac = through .a .c',
-  );
   expect(figure).toContain("<figcaption>");
   expect(figure).toContain("A sheet, with the corner <em>.a</em> at the origin.");
+});
+
+// Requirement A: the default is per document. The model carries drawings and no
+// program text; every other document carries the program. A block writes
+// `program=` to escape its document's default.
+test("in the model a figure's program is hidden, and program=shown brings it back", () => {
+  const sheet = html.slice(html.indexOf('id="fig-sheet"'), html.indexOf('id="fig-crease"'));
+  expect(sheet).not.toContain("figure-program");
+  expect(sheet).not.toContain("figure-source");
+  const crease = html.slice(html.indexOf('id="fig-crease"'), html.indexOf("Prose between"));
+  expect(crease).toContain('<details class="figure-program">');
+  expect(crease).toContain(
+    '<pre class="figure-source" property="bm:program">paper square\nmark --ac = through .a .c',
+  );
+});
+
+test("outside the model a figure's program is shown without asking", async () => {
+  const outside = await render(join(fixtures, "model-include.md"), { register, model });
+  expect(outside).toContain('<details class="figure-program">');
+  expect(outside).toContain('<pre class="figure-source" property="bm:program">paper square');
+});
+
+// Requirement D: the caption's inline code for a highlighted entity carries the
+// palette colour that entity is drawn in, by its position in the list.
+test("caption code for a highlighted entity carries its palette class", () => {
+  const crease = html.slice(html.indexOf('id="fig-crease"'), html.indexOf("Prose between"));
+  expect(crease).toContain('<code class="figure-hl-0">--ac</code>');
+  expect(crease).toContain('<code class="figure-hl-1">.a</code>');
+});
+
+test("caption code that names no highlighted entity stays uncoloured", () => {
+  const sheet = html.slice(html.indexOf('id="fig-sheet"'), html.indexOf('id="fig-crease"'));
+  expect(sheet).not.toContain("figure-hl-");
 });
 
 test("a view with no rendered file becomes a placeholder, not a build failure", () => {

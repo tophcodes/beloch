@@ -401,7 +401,7 @@ pieces of paper that lie flat as one, and they are invariant under refinement
 faces.
 :::
 
-::: {.figure #fig-flap caption="The fold leaves two flaps; the marked crease `--s` runs through the highlighted one and splits it into two faces, which stay one flap because the hinge between them has angle $0$." views="cp" highlight="#[.c]"}
+::: {.figure #fig-flap caption="The fold leaves two flaps; the marked crease `--s` runs through the highlighted one and splits it into two faces, which stay one flap because the hinge between them has angle $0$." views="cp" highlight="#[.c] --s"}
 paper square
 .m = free on --cd from .c at 1/4
 fold (map .a onto .b)
@@ -688,7 +688,7 @@ $\delta$ outward and the anchor condition fails exactly when a stationary
 flap covers the anchor in the crease region; the fold would have to move
 paper it was not told to move.
 
-::: {.figure #fig-fold-default caption="`--f` folds the corner of the top layer only: the moving set is the outward closure of the flap carrying `.b`, and the layer beneath it stays. The crease reads mountain because that layer lies face down." views="cp folded" highlight="--f"}
+::: {.figure #fig-fold-default caption="`--f` folds the corner of the top layer only: the moving set is the outward closure of the flap carrying `.b`, and the layer beneath it stays. The crease reads mountain because that layer lies face down." views="cp folded" highlight="--f .b"}
 paper square
 fold (map .b onto .a)
 .p = free on --bc from .b at 1/4
@@ -696,7 +696,7 @@ fold (map .b onto .a)
 fold (through .p .q) (moving .b) as --f
 :::
 
-::: {.figure #fig-fold-depth caption="The same fold with `up to .a` names the bottom layer as its depth; the moving set grows outward from there and both corners fold, valley on the face-up layer and mountain on the face-down one." views="cp folded" highlight="--f"}
+::: {.figure #fig-fold-depth caption="The same fold given the bottom layer as its depth: the moving set grows outward from there and both corners fold, valley on the face-up layer and mountain on the face-down one." views="cp folded" highlight="--f"}
 paper square
 fold (map .b onto .a)
 .p = free on --bc from .b at 1/4
@@ -721,7 +721,7 @@ A placed fold has no such rule. Its letter is read off the finished state
 and depends on the layer the block is inserted against: tucking a corner
 under a face-down layer reads valley, under a face-up layer mountain.
 
-::: {.figure #fig-fold-tuck caption="A pocket tuck: after the sheet is folded in half, the corner `.b` of the top layer is folded `under .p`, into the gap between the two layers. The crease `--t` reads valley because the layer it tucks under lies face down." views="cp folded" highlight="--t"}
+::: {.figure #fig-fold-tuck caption="A pocket tuck: after the sheet is folded in half, the corner `.b` of the top layer is placed beneath `.p`, into the gap between the two layers. The crease `--t` reads valley because the layer it goes beneath lies face down." views="cp folded" highlight="--t .b"}
 paper square
 fold (map .a onto .d)
 .m = free on --bc from .b at 1/2
@@ -783,7 +783,7 @@ Which reflection $\rho$ is used is immaterial for the state up to a motion of
 the table, and it is visible to line values, which are table lines
 ([#open-line-after-fold]).
 
-::: {.figure #fig-flip caption="After `flip` the sheet lies face down, so the crease `--g` scored by a fold placed on top reads mountain: the folder turned the paper over and made a valley on its back." views="cp folded" highlight="--g"}
+::: {.figure #fig-flip caption="With the sheet turned face down, the crease `--g` scored by a fold placed on top reads mountain: the folder turned the paper over and made a valley on its back." views="cp folded" highlight="--g"}
 paper square
 flip
 fold (map .a onto .c) as --g
@@ -827,7 +827,7 @@ along no common segment, and hinge closure fails. Inside, each half lands
 next to its own body in the gap between the two bodies; outside, the lower
 half goes under everything and the upper half on top.
 
-::: {.figure #fig-reverse caption="The preliminary base by two inside reverse folds [@ida2020, §7.4.3]: the diagonal fold makes a triangle whose spine is `--bd`, and each acute corner is reversed to the right-angle corner in turn." views="cp folded" highlight="--h --v"}
+::: {.figure #fig-reverse caption="The preliminary base by two inside reverse folds [@ida2020, §7.4.3]: the diagonal fold makes a triangle whose spine is `--bd`, and each acute corner is reversed to the right-angle corner in turn." views="cp folded" highlight="--h --v --bd"}
 paper square
 fold (map .a onto .c) as --bd
 reverse (map .b onto .c) as --h
@@ -926,7 +926,7 @@ its sector; where a layer under the fan is hinged to stationary paper off
 the rays, hinge closure fails and the write is undefined, as for every
 reflection.
 
-::: {.figure #fig-flatten caption="The preliminary base by one flatten at the centre: six rays fold, the diagonal through `.a` and `.c` stays flat, and `(.q over .r)` puts the a-quarter in front of the b-taco." views="cp folded" highlight="--h --v"}
+::: {.figure #fig-flatten caption="The preliminary base by one collapse at the centre: six rays fold, the diagonal through `.a` and `.c` stays flat, and the ordering constraint puts the a-quarter in front of the b-taco." views="cp folded" highlight=".a .c"}
 paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd

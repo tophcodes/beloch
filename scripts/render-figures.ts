@@ -97,7 +97,36 @@ export function highlightNames(value: string | undefined): string[] {
 	return [...(value ?? "").matchAll(/#\[[^\]]*\]|\S+/g)].map((m) => m[0]);
 }
 
-function render(block: FigureBlock, outDir: string, source: string): FigureEntry {
+// The entities of `highlight` the program never names. A crease resolves
+// against the named lines, a point against the named points, and a flap
+// selector against the points it lists. A paper edge such as `--ab` is no named
+// line and counts as unknown, which is what the drawing does with it too: the
+// construction overlay has no line to draw for it.
+export function unknownHighlights(
+	scene: ReturnType<typeof parseFold>,
+	highlight: string[],
+): string[] {
+	const points = new Set(scene.namedPoints.map((p) => p.name));
+	const lines = new Set(scene.namedLines.map((l) => l.name));
+	const unknown: string[] = [];
+	for (const entry of highlight) {
+		if (entry.startsWith("#[")) {
+			const names = entry.slice(2, -1).trim().split(/\s+/).filter(Boolean);
+			for (const name of names) {
+				if (!points.has(name.replace(/^\./, ""))) unknown.push(name);
+			}
+		} else if (entry.startsWith("--")) {
+			if (!lines.has(entry.slice(2))) unknown.push(entry);
+		} else if (entry.startsWith(".")) {
+			if (!points.has(entry.slice(1))) unknown.push(entry);
+		} else {
+			unknown.push(entry);
+		}
+	}
+	return unknown;
+}
+
+export function renderFigure(block: FigureBlock, outDir: string, source: string): FigureEntry {
 	const views = block.views.length ? block.views : [...VIEWS];
 	const entry: FigureEntry = {
 		source,
@@ -111,6 +140,13 @@ function render(block: FigureBlock, outDir: string, source: string): FigureEntry
 		scene = parseFold(evalBelToFold(block.program) as object);
 	} catch (err) {
 		entry.error = (err as Error).message;
+		return entry;
+	}
+	const unknown = unknownHighlights(scene, block.highlight);
+	if (unknown.length) {
+		entry.error =
+			`highlight names ${unknown.join(", ")}, which the program of ` +
+			`figure ${block.id} does not define`;
 		return entry;
 	}
 	for (const view of views) {
@@ -142,7 +178,7 @@ function main() {
 		if (!name.endsWith(".md")) continue;
 		const source = `spec/${name}`;
 		for (const block of scanFigures(readFileSync(join(specDir, name), "utf8"))) {
-			const entry = render(block, outDir, source);
+			const entry = renderFigure(block, outDir, source);
 			if (entry.error) failed++;
 			figures[block.id] = entry;
 		}

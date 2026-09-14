@@ -19,6 +19,17 @@
 -- `--l` into an en dash and the line breaks into soft breaks by the time this
 -- filter sees it. Figures are numbered per section on a counter of their own.
 --
+-- Whether a figure shows its program is decided per document: the model shows
+-- drawings and no program text, every other document shows the program. A block
+-- writes `program="shown"` or `program="hidden"` to escape its document's
+-- default.
+--
+-- `highlight` lists the entities the caption refers to. Each takes its own
+-- colour from the palette in @beloch/render-svg's DEFAULT_THEME, by its
+-- position in the list; the SVG carries that colour and the caption's inline
+-- code for the entity carries the matching `figure-hl-<n>` class, which
+-- scripts/typst-compat.typ colours the same way.
+--
 -- `::: {.include api="Fold_state.violation"}` is replaced by the API register's
 -- entry for that item (scripts/api-register.ts writes it; BELOCH_API_REGISTER
 -- overrides the default path `_build/api-register.json`), and the register's
@@ -42,9 +53,15 @@ local LABELS = {
 local statements = {}  -- id -> {kind, label, name, order, defines, uses, usedBy}
 local terms = {}       -- id -> {name, definedBy, content}
 local termOrder = {}
-local figures = {}     -- id -> {label, views}
+local figures = {}     -- id -> {label, views, caption, highlight, showProgram}
 
 local root = (PANDOC_SCRIPT_FILE or ""):match("^(.*)/scripts/[^/]+$") or "."
+
+-- The per-document default for a figure's program text: hidden in the model,
+-- shown everywhere else.
+local function is_model()
+  return ((PANDOC_STATE.input_files or {})[1] or ""):match("MODEL%.md$") ~= nil
+end
 
 -- The API register, indexed the three ways this filter asks about it.
 local api = nil
@@ -159,6 +176,28 @@ local function ids(value)
   return out
 end
 
+-- `.p --l #[.p .q]`, the same reading scripts/render-figures.ts does: a flap
+-- selector stays one entry although it has a space inside its brackets.
+local function highlight_names(value)
+  value = value or ""
+  local out, pos = {}, 1
+  while pos <= #value do
+    local _, blank = value:find("^%s+", pos)
+    if blank then pos = blank + 1 end
+    if pos > #value then break end
+    if value:sub(pos, pos + 1) == "#[" then
+      local close = value:find("]", pos, true) or #value
+      out[#out + 1] = value:sub(pos, close)
+      pos = close + 1
+    else
+      local _, stop = value:find("^%S+", pos)
+      out[#out + 1] = value:sub(pos, stop)
+      pos = stop + 1
+    end
+  end
+  return out
+end
+
 local function contains(list, value)
   for _, v in ipairs(list) do
     if v == value then return true end
@@ -185,10 +224,13 @@ local function collect(blocks)
           views[#views + 1] = word
         end
         if #views == 0 then views = { "cp", "folded" } end
+        local program = block.attributes.program or (is_model() and "hidden" or "shown")
         figures[block.identifier] = {
           label = "Figure " .. (section > 0 and (section .. "." .. n) or tostring(n)),
           views = views,
           caption = block.attributes.caption or "",
+          highlight = highlight_names(block.attributes.highlight),
+          showProgram = program ~= "hidden",
         }
       elseif kind == "term" then
         local name = block.attributes.name or block.identifier
@@ -387,14 +429,23 @@ local function figure_div(id, f)
   if #views > 0 then blocks[#blocks + 1] = pandoc.Para(views) end
   for _, block in ipairs(missing) do blocks[#blocks + 1] = block end
 
+  -- The caption's inline code for a highlighted entity carries that entity's
+  -- palette class, so the name in the caption and the thing drawn share a
+  -- colour. The index is the entity's position in the `highlight` list, the
+  -- same index the renderer assigns.
+  local hl = {}
+  for i, name in ipairs(f.highlight or {}) do hl[name] = i - 1 end
   local caption = { pandoc.Strong(pandoc.Str(f.label)), pandoc.Space() }
   local read = pandoc.read(f.caption, "markdown").blocks[1]
   for _, inline in ipairs(read and read.content or {}) do
+    if inline.t == "Code" and hl[inline.text] then
+      inline = pandoc.Code(inline.text, pandoc.Attr("", { "figure-hl-" .. hl[inline.text] }))
+    end
     caption[#caption + 1] = inline
   end
   blocks[#blocks + 1] = pandoc.Para(caption)
 
-  local program = figure_programs()[id]
+  local program = f.showProgram and figure_programs()[id] or nil
   if program then
     blocks[#blocks + 1] = pandoc.CodeBlock(program, pandoc.Attr("", { "beloch" }))
   end

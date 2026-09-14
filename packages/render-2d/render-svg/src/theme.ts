@@ -15,6 +15,16 @@ export interface LineStyle {
 // `theme.lineStyle`, or pick one of the two below.
 export type LineStyleFn = (assignment: Assignment, theme: Theme) => LineStyle;
 
+// One entry of the highlight palette: `stroke` draws the entity (a line, a
+// point dot, its label), `wash` fills the faces of a highlighted flap. The wash
+// is a literal rather than a blend of `stroke` with the paper, because the web
+// theme supplies its paper fills as CSS variables that no blend can read, and
+// because a translucent face would break the folded view's layer occlusion.
+export interface HighlightColor {
+  stroke: string;
+  wash: string;
+}
+
 export interface Theme {
   boundary: string;        // "#1f2937" — B
   mountain: string;        // "#dc2626" — M
@@ -25,7 +35,7 @@ export interface Theme {
   front: string;           // "#fafaf7"  (folded: paper front)
   back: string;            // "#dbe4ee"  (folded: paper back)
   construction: string;    // "#6366f1"
-  highlight: string;       // "#e0e7ff"  (face fill of a flap the caller emphasises)
+  highlightPalette: HighlightColor[]; // one colour per entity the caller emphasises
   ink: string;             // "#0f172a"  (dots, labels, title)
   background: string;      // "white"    (full-canvas backdrop rect fill)
   lineStyle: LineStyleFn;
@@ -57,6 +67,26 @@ export const yrLineStyle: LineStyleFn = (assignment, theme) => {
   }
 };
 
+// The entities a figure's caption refers to, one colour each, taken in the
+// order the `highlight` attribute lists them. The same six colours carry the
+// caption's inline code on the docs site (`.figure-hl-<n>` in
+// packages/www/src/styles/theme.css) and in the PDF (scripts/typst-compat.typ),
+// so a name in the caption and the thing drawn read as one. They are literals
+// here because typst places the SVG into the PDF and resolves no var().
+// Each stroke sits at L* 49 to 56, which keeps it legible on the paper of a
+// drawing and on a page of either site theme, at least ΔE76 19 from every
+// Beloch token colour and ΔE76 50 from the others here. A `highlight` longer
+// than the palette wraps round to the first colour and two entities then share
+// one; six is well past the two the documents use today.
+export const HIGHLIGHT_PALETTE: HighlightColor[] = [
+  { stroke: "#0d9488", wash: "#c2e4e1" },
+  { stroke: "#c2620a", wash: "#f0d8c2" },
+  { stroke: "#9a52d8", wash: "#e6d4f5" },
+  { stroke: "#db2777", wash: "#f6c9dd" },
+  { stroke: "#5f9412", wash: "#d7e4c4" },
+  { stroke: "#0284c7", wash: "#c0e0f1" },
+];
+
 export const DEFAULT_THEME: Theme = {
   boundary: "#1f2937",
   mountain: "#dc2626",
@@ -67,7 +97,7 @@ export const DEFAULT_THEME: Theme = {
   front: "#fafaf7",
   back: "#dbe4ee",
   construction: "#6366f1",
-  highlight: "#e0e7ff",
+  highlightPalette: HIGHLIGHT_PALETTE,
   ink: "#0f172a",
   background: "white",
   lineStyle: yrLineStyle,
