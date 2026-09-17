@@ -26,6 +26,13 @@ below, one or two lines of explanation under it.
   face.
 - Advance with the scroll position: the definition in view decides the
   program, the step, the view and the highlight.
+- Dark mode: follow the site theme toggle. The web theme already carries
+  dark tokens for the code panel and the paper schemes, so the rendering
+  needs a dark variant of its palette, not a second renderer.
+- Transparent background: the SVG currently paints a full-canvas backdrop
+  rect filled from a CSS variable. The tour pane has to sit on whatever the
+  page ground is, so that rect goes (or becomes an option that defaults to
+  none) and the faces carry the only fills.
 
 ## What already exists
 
