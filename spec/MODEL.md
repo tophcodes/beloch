@@ -29,8 +29,11 @@ first-course level, and folding words (crease, flap, layer, mountain, valley)
 the way folders use them. Everything it needs from flat-folding theory is
 restated where it is used; the full account is Hull [@hull2020, chapter 6].
 
-**Review status.** Sections 1 and 2 read and accepted. Section 3 read up to
-the taco-taco condition. Sections 4 and 5 are drafts.
+**Review status.** Section 1 read and accepted. Section 2 rewritten on
+review (2026-09-17): the state is a triple, $\lambda$ is a signed function
+on ordered pairs, refinement has its lemma. Section 3 read up to the
+taco-taco condition. Sections 4 and 5 are drafts and still write states as
+pairs $(f, \lambda)$.
 
 ## 1. Paper
 
@@ -84,54 +87,124 @@ In particular a state does not remember how it was reached.[^history]
     Nothing in this document depends on such a record, and no operation may
     read it.
 
-::: {.definition #def-flat-state name="flat folded state" uses="def-sheet def-noncrossing" defines="term-table term-face term-hinge term-layer"}
-A flat folded state of a sheet $P$ is a pair $(f, \lambda)$ where
+::: {.definition #def-flat-state name="flat folded state" uses="def-sheet def-refinement def-noncrossing" defines="term-table term-face term-layer"}
+Let $P$ be a sheet and let $T = \mathbb{R}^2$ be the [table](#term-table), a
+plane with a chosen side called *up*. A flat folded state of $P$ is a triple
+$(\mathcal{F}, f, \lambda)$, read up to the refinement equivalence of
+[#def-refinement], where
 
-- $F$ is a finite decomposition of $P$ into convex polygons, the faces, such
-  that any two faces meet in a common edge, a common vertex, or not at all;
-- $f : P \to \mathbb{R}^2$ is a map that is an isometry (a rotation,
-  reflection, or translation, composed) on each face and continuous across
-  face edges; the plane of the image is the [table frame](#term-table);
-- $\lambda$ assigns to every pair of faces whose images overlap in a region of
-  positive area one of *above* and *below*, subject to [#def-noncrossing].
+1. $\mathcal{F}$ is a finite set of convex polygons, the faces, with pairwise
+   disjoint interiors and $\bigcup \mathcal{F} = P$: the faces cover the sheet
+   and overlap at most along their boundaries;
+2. for every face $A$ there is a plane isometry $\phi_A$, a map
+   $\mathbb{R}^2 \to \mathbb{R}^2$ that preserves distances (every such map is
+   a composition of translations, rotations and reflections), such that
+   $\phi_A(p) = \phi_B(p)$ for all $p \in A \cap B$, and $f : P \to T$ is the
+   map with $f(p) = \phi_A(p)$ for $p \in A$. The agreement on shared
+   boundaries makes $f$ well defined, and since the faces are finitely many
+   closed sets, $f$ is continuous;
+3. with $\Omega = \{(A, B) \in \mathcal{F} \times \mathcal{F} : A \neq B,\
+   \operatorname{int} f(A) \cap \operatorname{int} f(B) \neq \emptyset\}$
+   the set of ordered pairs of overlapping faces, $\lambda : \Omega \to
+   \{+1, -1\}$ is a function with $\lambda(B, A) = -\lambda(A, B)$, and
+   $\lambda(A, B) = +1$ reads as "$A$ lies above $B$": throughout their
+   overlap, $A$ is on the up side of $B$;
+
+and $\lambda$ satisfies the non-crossing conditions of [#def-noncrossing].
 :::
 
+Reading the notation: $\bigcup \mathcal{F}$ is the union of all faces;
+$\operatorname{int} X$ is the interior of $X$, the set without its boundary,
+and for convex polygons "the interiors meet" is the same as "the intersection
+has positive area"; $\lambda : \Omega \to \{+1, -1\}$ names the function, its
+domain and its set of values, in that order.
+
+One value per pair of faces is enough because the overlap of two convex faces
+is a single convex region that contains no crease of either face, and the
+order of two uncreased regions is constant on their overlap [@demaine2007,
+§11.4.4.3; @hullzakharevich2023, §2.1, tortilla-tortilla]. The sign is
+Demaine's: $+1$ means above [@demaine2007, §11.4.4]; Hull and Zakharevich use
+the opposite sign [@hullzakharevich2023, §2.1].
+
 ::: {.term #term-table name="table"}
-The plane a state is folded onto, the image of $f$. "Table frame" names its
-coordinate system; a point of the sheet has one paper coordinate and, per
-state, one table coordinate.
+The plane $T = \mathbb{R}^2$ a state is folded onto, the image of $f$, with a
+chosen side called *up*. "Table frame" names its coordinate system; a point
+of the sheet has one paper coordinate and, per state, one table coordinate.
 :::
 
 ::: {.term #term-face name="face"}
-A convex polygon of the decomposition $F$ on which $f$ is a single isometry.
-:::
-
-An edge shared by two faces is a [hinge](#term-hinge). Its angle is $0$ when the
-two faces are placed by the same isometry, so that on the table they continue
-each other without a bend; it is $\pm\pi$ when one face's isometry is the
-other's composed with the reflection across the edge's image, so that on the
-table the two faces lie on top of each other, joined along the edge. A hinge
-of angle $0$ is a flat crease; a hinge of angle $\pm\pi$ is a folded crease.
-
-::: {.term #term-hinge name="hinge"}
-An edge shared by two faces, with an angle of $0$ (flat crease) or $\pm\pi$
-(folded crease).
+A convex polygon $A$ of the decomposition $\mathcal{F}$, on which $f$ is the
+single isometry $\phi_A$.
 :::
 
 ::: {.term #term-layer name="layer, above, below"}
 In a region of the table where several faces overlap, the faces are the
-layers, and $\lambda$ says for each pair which is above.
+layers, and $\lambda$ says for each pair which is above: $\lambda(A, B) = +1$
+puts $A$ above $B$.
+:::
+
+A segment of positive length shared by the boundaries of two faces $A$ and
+$B$ is a [hinge](#term-hinge). Its angle is $0$ when $\phi_A = \phi_B$, so that
+on the table the two faces continue each other without a bend; it is
+$\pm\pi$ when $\phi_B = \phi_A \circ \rho_e$, where $\rho_e$ is the
+reflection of the paper across the line through the segment $e$, so that on
+the table the two faces lie on top of each other, joined along the edge. A
+hinge of angle $0$ is a flat crease; a hinge of angle $\pm\pi$ is a folded
+crease. That these are the only two cases is [#lem-hinge-cases].
+
+::: {.lemma #lem-hinge-cases name="a hinge is flat or folded" uses="def-flat-state" defines="term-hinge"}
+Let $A$ and $B$ be faces sharing a boundary segment $e$ of positive length.
+Then either $\phi_A = \phi_B$, or $\phi_B = \phi_A \circ \rho_e$ with $\rho_e$
+the reflection across the line through $e$.
+
+*Proof.* The isometry $\psi = \phi_A^{-1} \circ \phi_B$ fixes every point of
+$e$, since $\phi_A$ and $\phi_B$ agree there. An isometry that fixes two
+distinct points $u$, $v$ fixes every point of the line through them, because
+a point of that line is determined by its distances to $u$ and $v$. A point
+$q$ off the line is sent to a point with the same distances to $u$ and $v$ as
+$q$, and there are exactly two such points, $q$ and its mirror image across
+the line. So $\psi$ is the identity or $\rho_e$, which is the claim.
+:::
+
+::: {.term #term-hinge name="hinge"}
+A boundary segment of positive length shared by two faces, with an angle of
+$0$ (flat crease) or $\pm\pi$ (folded crease).
 :::
 
 ::: {.definition #def-refinement name="refinement equivalence" uses="def-flat-state" defines="term-refinement"}
-Splitting a face along a segment into two faces joined by a hinge of angle $0$
-does not change the state. Two states that differ only by such splits are the
-same state.
+A split of a state $(\mathcal{F}, f, \lambda)$ replaces one face $A$ by two
+convex faces $A_1$, $A_2$ with $A_1 \cup A_2 = A$ and disjoint interiors, sets
+$\phi_{A_1} = \phi_{A_2} = \phi_A$, and sets $\lambda(A_i, B) = \lambda(A, B)$
+for every face $B$ with $(A_i, B) \in \Omega$; $f$ is unchanged. A refinement
+of a state is the result of finitely many splits. Two states are the same
+state when they have a common refinement.
+:::
+
+::: {.lemma #lem-refinement-overlay name="refinements have a common refinement" uses="def-refinement"}
+Two refinements of one state have a common refinement. Consequently "having a
+common refinement" is an equivalence relation on states, and "the same
+state" in [#def-refinement] is well defined.
+
+*Proof.* Let $\mathcal{F}_1$ and $\mathcal{F}_2$ be the face sets of two
+refinements of $(\mathcal{F}, f, \lambda)$. The overlay
+$\{A_1 \cap A_2 : A_1 \in \mathcal{F}_1, A_2 \in \mathcal{F}_2\}$, with the
+pieces of empty interior dropped, consists of convex polygons with disjoint
+interiors covering $P$, since the intersection of two convex polygons is a
+convex polygon. Each piece $A_1 \cap A_2$ arises from $A_1$ by cutting along
+the lines through the edges of $A_2$, one at a time, and each cut is a split;
+so the overlay refines $\mathcal{F}_1$, and by the same argument
+$\mathcal{F}_2$. The isometries and the values of $\lambda$ on the overlay
+are inherited from $\mathcal{F}$ through either side and agree, because both
+sides copied them from the same faces of $\mathcal{F}$. Reflexivity and
+symmetry of the relation are immediate; for transitivity, if $S_1$, $S_2$
+share a refinement $R_{12}$ and $S_2$, $S_3$ share $R_{23}$, then $R_{12}$ and
+$R_{23}$ are refinements of $S_2$, their common refinement refines $S_1$ and
+$S_3$, and splits compose.
 :::
 
 ::: {.term #term-refinement name="refinement"}
-Splitting faces along flat hinges; states equal up to refinement are the same
-state.
+Splitting faces along flat hinges, finitely often; states with a common
+refinement are the same state.
 :::
 
 ::: {.term #term-flap name="flap"}
@@ -144,7 +217,8 @@ a no-op on the state modulo refinement, and is what "the two routes reach the
 same folded state" means when comparing programs.
 
 ::: {.remark #rem-linear-extension name="linear extensions" uses="def-flat-state"}
-$\lambda$ is a partial order: it relates overlapping faces only. A total order
+The relation "$A$ above $B$", that is $\lambda(A, B) = +1$, is a partial
+order: it relates overlapping faces only. A total order
 of all faces that agrees with $\lambda$ on every overlapping pair is a linear
 extension of $\lambda$, and two linear extensions with the same restriction to
 overlapping pairs describe the same state. A linear extension exists only
@@ -157,13 +231,14 @@ extension therefore cannot hold every state of [#def-flat-state].
 :::
 
 ::: {.lemma #lem-face-points name="face and point orderings agree" uses="def-flat-state def-noncrossing"}
-Let $(f, \lambda)$ be a flat folded state in the sense of [#def-flat-state],
-and let $\lambda'$ be the layer ordering on points that Demaine
-[@demaine2007, §11.4] and Hull and Zakharevich [@hullzakharevich2023, §2.1]
-define. Setting $\lambda'(p, q) = \lambda(F_p, F_q)$ for points $p, q$
-interior to faces $F_p, F_q$ with $f(p) = f(q)$ yields a global layer ordering
-in their sense, and every such ordering arises this way from exactly one
-$\lambda$.
+Let $(\mathcal{F}, f, \lambda)$ be a flat folded state in the sense of
+[#def-flat-state], and let $\lambda'$ be the layer ordering on points that
+Demaine [@demaine2007, §11.4] and Hull and Zakharevich
+[@hullzakharevich2023, §2.1] define. Setting $\lambda'(p, q) = \lambda(A_p,
+A_q)$ for points $p, q$ interior to faces $A_p, A_q$ with $f(p) = f(q)$ yields
+a global layer ordering in Demaine's sense, and $-\lambda(A_p, A_q)$ one in
+Hull and Zakharevich's, whose sign is opposite; every such ordering arises
+this way from exactly one $\lambda$.
 
 *Proof.* Pending. The forward direction needs the non-crossing conditions of
 [#def-noncrossing]; the backward direction uses that faces are uncreased
@@ -183,17 +258,16 @@ Zakharevich [@hullzakharevich2023, §2.1], restated for faces instead of
 points, plus two conditions that a decomposition into faces has to satisfy to
 be one sheet.
 
-Two of the six properties in the literature need no condition here. Existence
-says that $\lambda$ is defined exactly on overlapping pairs, and
-tortilla-tortilla says that two uncreased regions which fully overlap are
-ordered as wholes. Both hold by construction, because [#def-flat-state]
-defines $\lambda$ on pairs of faces and a face is an uncreased region.
+Three of the six properties in the literature need no condition here.
+Existence says that $\lambda$ is defined exactly on overlapping pairs, and
+antisymmetry says that reversing a pair reverses the value; both are part of
+[#def-flat-state]. Tortilla-tortilla says that two uncreased regions which
+fully overlap are ordered as wholes; [#def-flat-state] takes one value per
+pair of faces, and the paragraph after it says why that is legitimate.
 
 ::: {.condition #cond-order name="order condition" uses="def-flat-state"}
 For faces $A$, $B$, $C$ whose images share a region of positive area: if $A$
-is above $B$ and $B$ is above $C$, then $A$ is above $C$. Antisymmetry needs
-no separate statement, since $\lambda$ assigns one of *above* and *below* to
-each unordered pair.
+is above $B$ and $B$ is above $C$, then $A$ is above $C$.
 :::
 
 The next two conditions speak about folded hinges. A folded hinge $h$ between
@@ -234,9 +308,10 @@ piece, and they are stated on their own because a representation has to
 check them.
 
 ::: {.condition #cond-hinge-closure name="hinge closure condition" uses="def-flat-state"}
-For every hinge between faces $A$ and $B$, the isometries of $A$ and $B$ agree
-on the shared edge, and the isometry of $B$ is the isometry of $A$ either
-unchanged or composed with the reflection across the edge. Equivalently every
+For every hinge between faces $A$ and $B$, the isometries $\phi_A$ and
+$\phi_B$ agree on the shared segment, and by [#lem-hinge-cases] $\phi_B$ is
+then $\phi_A$ either unchanged or composed with the reflection across the
+segment's line. Equivalently every
 hinge has angle $0$ or $\pm\pi$, and $f$ is continuous.
 :::
 
