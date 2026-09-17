@@ -212,9 +212,13 @@ A maximal set of faces joined by hinges of angle $0$; a piece of paper that
 lies flat as one, and the unit a program addresses.
 :::
 
-This makes the convex decomposition of [#def-sheet] immaterial, makes `mark`
-a no-op on the state modulo refinement, and is what "the two routes reach the
-same folded state" means when comparing programs.
+Three things follow from [#def-refinement]. Which convex decomposition a
+state carries does not matter: two decompositions of the same folding have a
+common refinement, so they are the same state. A `mark` (§5) splits a face
+along a flat hinge and nothing else, so it leaves the state unchanged. And
+when two programs are said to reach the same folded state, this is the
+equality meant: the two routes cut the sheet differently, and they agree up
+to refinement.
 
 ::: {.remark #rem-linear-extension name="linear extensions" uses="def-flat-state"}
 The relation "$A$ above $B$", that is $\lambda(A, B) = +1$, is a partial
