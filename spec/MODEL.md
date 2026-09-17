@@ -258,10 +258,12 @@ For faces $A$, $B$, $C$ whose images share a region of positive area: if $A$
 is above $B$ and $B$ is above $C$, then $A$ is above $C$.
 :::
 
-The next two conditions speak about folded hinges. A folded hinge $h$ between
-faces $A$ and $B$ folds the two onto each other, so that near $f(h)$ the
-images of $A$ and $B$ coincide; the pair is a [taco](#term-taco), closed along
-$f(h)$ and open on the other side.
+The next two conditions speak about folded hinges. Let $h$ be a folded hinge
+between faces $A$ and $B$. Since $\phi_B = \phi_A \circ \rho_h$, the fold lays
+$B$ onto $A$: near $f(h)$ the images $f(A)$ and $f(B)$ cover the same region
+of the table, one on the other, joined along $f(h)$ and separate everywhere
+else. The pair is a [taco](#term-taco): closed along the fold, open away from
+it.
 
 ::: {.term #term-taco name="taco"}
 Two faces joined by a folded hinge, seen near the hinge: closed along the
