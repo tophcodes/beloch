@@ -31,9 +31,13 @@ restated where it is used; the full account is Hull [@hull2020, chapter 6].
 
 **Review status.** Section 1 read and accepted. Section 2 rewritten on
 review (2026-09-17): the state is a triple, $\lambda$ is a signed function
-on ordered pairs, refinement has its lemma. Section 3 read up to the
-taco-taco condition. Sections 4 and 5 are drafts and still write states as
-pairs $(f, \lambda)$.
+on ordered pairs, refinement has its lemma. Section 3 read and accepted for
+now (2026-09-18); the primary source Justin 1997 is still missing. Section 4
+rewritten on review (2026-09-18): every value is a set of paper points, the
+line sort is gone in favour of the material of a table line and the line of
+a straight bundle, and the former open point on a line value across states
+is closed by that. Section 5 is a draft; it still writes states as pairs
+$(f, \lambda)$ and takes lines rather than bundles as arguments.
 
 ## 1. Paper
 
@@ -243,6 +247,23 @@ Splitting faces along flat hinges, finitely often; states with a common
 refinement are the same state.
 :::
 
+::: {.definition #def-flap name="flap" uses="def-flat-state def-refinement" defines="term-flap"}
+A *flap* of a state is a maximal set of faces in which any two are joined by
+a chain of hinges of angle $0$. Flaps partition the faces, and they are the
+pieces of paper that lie flat as one: neighbouring faces of angle $0$ share
+their isometry, so on the union of a flap's faces $f$ is one isometry. A
+split of [#def-refinement] adds a hinge of angle $0$ inside a face, so flaps
+are invariant under refinement, which is why the language addresses flaps
+and never faces.
+:::
+
+::: {.figure #fig-flap caption="The fold leaves two flaps; the marked crease `--s` runs through the highlighted one and splits it into two faces, which stay one flap because the hinge between them has angle $0$." views="cp" highlight="#[.c] --s"}
+paper square
+.m = free on --cd from .c at 1/4
+fold (map .a onto .b)
+mark (through .b .m) as --s
+:::
+
 ::: {.term #term-flap name="flap"}
 A maximal set of faces joined by hinges of angle $0$; a piece of paper that
 lies flat as one, and the unit a program addresses.
@@ -427,17 +448,21 @@ statement [@hull2020, sec. 6.5, p. 123].
 
 ## 4. Values and reads
 
-Intuition: a program names things on the paper, points, lines, and pieces of
-paper, and asks questions about them: where is this point now, which line
-folds this onto that, which piece of paper carries this point. Values are the
-answers, and a read is the act of asking. A read looks at the current state
-and computes a value; it changes nothing. If the state has no answer, the
-read fails, and the program stops there.
+Intuition: a program names things on the paper, points, straight pieces of
+paper, and pieces that lie flat as one, and asks questions about them: where
+is this point now, which fold carries this onto that, which piece of paper
+holds this point. Values are the answers, and a read is the act of asking. A
+read looks at the current state and computes a value; it changes nothing. If
+the state has no answer, the read fails, and the program stops there.
+
+Every value is a set of paper points, and a state says where those points
+lie on the table. So a fold moves every value with the paper, and no value
+has to be told about it. There are three sorts: point, bundle and flap.
 
 ::: {.definition #def-point name="point value" uses="def-sheet def-flat-state" defines="term-point"}
-A value of sort *point* is a paper point $p \in P$. In a state $(f, \lambda)$
-its position on the table is $f(p)$. A point keeps its paper coordinate
-through every later state; only $f(p)$ changes.
+A value of sort *point* is a paper point $p \in P$. In a state
+$(\mathcal{F}, f, \lambda)$ its position on the table is $f(p)$. A point
+keeps its paper coordinate through every later state; only $f(p)$ changes.
 :::
 
 ::: {.figure #fig-point caption="`.p` keeps the paper coordinate it was named with, and the fold moves only where it sits on the table." views="cp folded" highlight=".p"}
@@ -451,91 +476,117 @@ A paper point, named once and carried in paper coordinates; its table
 position depends on the state.
 :::
 
-::: {.definition #def-segment name="segment" uses="def-sheet def-flat-state" defines="term-segment"}
-A *segment* is a closed straight piece of the sheet of positive length,
-$\{p + t(q - p) : 0 \le t \le 1\}$ for paper points $p \neq q$, that lies
-within one face. Faces are closed, so a segment along a hinge lies in both
-faces the hinge joins. In a state the table image of a segment is
-$f(\text{segment})$, a straight segment of the same length, because $f$ is an
-isometry on a face that contains it.
+::: {.definition #def-segment name="segment" uses="def-sheet def-flat-state def-flap" defines="term-segment"}
+A *segment* of a state is a closed straight piece of the sheet of positive
+length, $\{p + t(q - p) : 0 \le t \le 1\}$ for paper points $p \neq q$, on
+which $f$ is an isometry, so that its table image is a straight segment of
+the same length. Equivalently the piece lies within one flap ([#def-flap]):
+faces are closed, so a piece along a hinge lies in the faces on both sides,
+and $f$ is an isometry on it either way. A straight piece that crosses a
+folded hinge is not a segment, since its image is bent. Segments are not
+values; they are what bundles are made of.
 :::
 
-::: {.figure #fig-segment caption="`--s` meets each of the two faces in a segment that lies within it, and the crease of `--h` is a segment along the hinge where those faces join." views="cp folded" highlight="--s --h"}
+::: {.figure #fig-segment caption="`--s` meets each of the two flaps in a segment, and the crease `--h` is a segment along the hinge where the flaps join." views="cp folded" highlight="--s --h"}
 paper square
 --s = (map .a onto .b)
 fold (map .a onto .d) as --h
 :::
 
 ::: {.term #term-segment name="segment"}
-A straight piece of the sheet inside one face, carried in paper coordinates.
+A straight piece of the sheet on which $f$ is an isometry, so within one
+flap; carried in paper coordinates.
 :::
 
-::: {.definition #def-line name="line value" uses="def-flat-state def-segment" defines="term-line term-material"}
-A value of sort *line* is a line $\ell$ in the table frame. Its *material* in
-a state is the set of segments in which $\ell$ meets the images of the faces:
-for every face $F$ with $f(F) \cap \ell$ of positive length, the paper segment
-$f|_F^{-1}(f(F) \cap \ell) \subseteq F$. A line is a description of where a
-crease would go; it has no material of its own until a write creases it.
+::: {.definition #def-bundle name="bundle" uses="def-flat-state def-segment def-flap" defines="term-bundle term-piece"}
+A value of sort *bundle* is a finite union of segments, a subset
+$b \subseteq P$. Two bundles are equal when they are equal as sets: a bundle
+does not remember the segments it was assembled from, so a refinement, which
+splits segments along flat hinges, leaves every bundle as it is. The
+*pieces* of a bundle in a state are its maximal segments, the connected
+straight stretches within one flap each. Its table image is $f(b)$, one
+straight segment per piece.
 :::
 
-::: {.figure #fig-line caption="The material of the table line `--l` is one segment per face it crosses: on the paper the two lie on either side of the crease, on the table they land on the same stretch of `--l`." views="cp folded" highlight="--l"}
+::: {.term #term-bundle name="bundle"}
+A finite union of segments, a set of paper points; the material of a line,
+or a crease.
+:::
+
+::: {.term #term-piece name="piece"}
+A maximal segment of a bundle in a state; one straight stretch within one
+flap.
+:::
+
+::: {.definition #def-material name="material of a table line" uses="def-flat-state def-bundle def-flap" defines="term-material"}
+Let $\ell$ be a line in the table frame. The *material* of $\ell$ in a state
+is the union of all segments whose table image lies on $\ell$: the paper
+that $f$ sends onto $\ell$, isolated points aside. It is a bundle with one
+piece per flap that $\ell$ crosses, because $f$ is an isometry on each flap
+and the flaps are finitely many. A table line is what a construction
+computes; the value a program holds is its material.
+:::
+
+::: {.figure #fig-line caption="The material of the table line `--l` is one piece per flap it crosses: on the paper the two lie on either side of the crease, on the table they land on the same stretch of `--l`." views="cp folded" highlight="--l"}
 paper square
 --l = (through .a .c)
 fold (map .a onto .c)
 :::
 
-::: {.term #term-line name="line"}
-A line in the table frame, computed by a read in some state; its material in
-a state is where it crosses the paper.
-:::
-
 ::: {.term #term-material name="material"}
-The paper segments a line crosses in a state, one per face.
+The paper a table line crosses in a state: a bundle with one piece per flap.
 :::
 
-::: {.definition #def-bundle name="bundle" uses="def-flat-state def-segment def-line" defines="term-bundle term-crease"}
-A value of sort *bundle* is a finite set of segments. The material of a line
-is a bundle. A *crease* is the bundle of hinges that writes scored under one
-name; each write adds hinges that lie on one table line with a hinge already
-there. A crease keeps its identity through later states, and once later
-folds have bent it its hinges no longer lie on one table line.
+::: {.definition #def-line name="line of a bundle" uses="def-flat-state def-bundle def-material" defines="term-line term-straight"}
+A bundle $b$ is *straight* in a state when it is non-empty and its table
+image $f(b)$ lies on one table line. The *line of* $b$ is that line, a read
+of the state defined exactly when $b$ is straight. Straightness belongs to
+the state, not to the bundle: a bundle straight in one state is bent by a
+fold across it and straight again when that fold is undone. The material of
+the line of a straight bundle contains $b$ and may be larger, where other
+flaps cross the same line.
+
+A line is needed at two places only: as the axis of a write (§5), and as an
+argument of an alignment ([#def-motion]). Both take a bundle and use its
+line, so a line off the paper never arises, and a bundle that is not
+straight cannot serve. Nothing in the language holds a table line across
+states: `--l = (map .a onto .b)`, then a fold, then `mark (--l)` scores the
+pieces of `--l` where they lie after the fold, bent or not.
 :::
 
-::: {.figure #fig-bundle caption="The crease `--m` is one straight line on the paper; the fold that follows bends it, and on the table its two hinges meet at a right angle." views="cp folded" highlight="--m"}
+::: {.term #term-line name="line"}
+The table line a straight bundle lies on; a read defined exactly when the
+bundle is straight.
+:::
+
+::: {.term #term-straight name="straight"}
+A bundle whose table image lies on one table line in the current state.
+:::
+
+::: {.definition #def-crease name="crease" uses="def-bundle def-line def-material" defines="term-crease"}
+A *crease* is a bundle that a write of §5 scored, under a name or not. Its
+hinges in a state are the hinges of the state that lie in it. A write scores
+the material of a line, so a crease is straight when scored; a later fold
+across it bends it, and it stays the same bundle.
+:::
+
+::: {.figure #fig-bundle caption="The crease `--m` is straight when marked; the fold that follows bends it: on the table its two pieces meet at a right angle, and `--m` is the same bundle of paper." views="cp folded" highlight="--m"}
 paper square
 mark (map --ab onto --cd) as --m
 fold (map .a onto .c)
 :::
 
-::: {.term #term-bundle name="bundle"}
-A finite set of segments; the material of a line, or a crease.
-:::
-
 ::: {.term #term-crease name="crease"}
-The bundle of hinges that writes scored under one name, or that one unnamed
-write scored.
+A bundle that a write scored; its hinges in a state are those of the state
+that lie in it.
 :::
 
-::: {.definition #def-flap name="flap" uses="def-flat-state def-refinement" defines="term-flap"}
-A *flap* of a state is a maximal set of faces in which any two are joined by
-a chain of hinges of angle $0$. Flaps partition the faces; they are the
-pieces of paper that lie flat as one, and they are invariant under refinement
-([#def-refinement]), which is why the language addresses flaps and never
-faces.
-:::
-
-::: {.figure #fig-flap caption="The fold leaves two flaps; the marked crease `--s` runs through the highlighted one and splits it into two faces, which stay one flap because the hinge between them has angle $0$." views="cp" highlight="#[.c] --s"}
-paper square
-.m = free on --cd from .c at 1/4
-fold (map .a onto .b)
-mark (through .b .m) as --s
-:::
-
-::: {.definition #def-read name="read" uses="def-flat-state def-point def-line def-bundle def-flap" defines="term-read"}
-A read of sort $V$ is a partial function $r : S \times A \rightharpoonup V$
-from states and arguments (values of the sorts above) to values of sort $V$.
-A read has no effect on the state. Where it is undefined the program fails
-with a reason.
+::: {.definition #def-read name="read" uses="def-flat-state def-point def-bundle def-flap" defines="term-read"}
+Write $S$ for the set of flat folded states of the sheet. A read of sort $V$,
+with $V$ one of point, bundle and flap, is a partial function
+$r : S \times A \rightharpoonup V$, where $A$ is a tuple of values of these
+sorts, the arguments. A read has no effect on the state. Where it is
+undefined the program fails with a reason.
 :::
 
 ::: {.term #term-read name="read"}
@@ -543,54 +594,51 @@ A partial function from the current state and some values to a value; it
 never changes the state.
 :::
 
-The reads of the language fall into three families.
+The reads of the language fall into three families; the line of a bundle
+([#def-line]) is a fourth read that the others use.
 
-::: {.definition #def-motion name="motion" uses="def-read def-line" defines="term-motion"}
-A *motion* is a read of sort line built from a construction. An *alignment*
-is an incidence between two objects, each a point, a line, or the image of
-one under the fold across the line sought: a point onto a point, a point
-onto a line, a line onto a line, the line through a point, the line
+::: {.definition #def-motion name="motion" uses="def-read def-line def-material" defines="term-motion"}
+A *motion* is a read of sort bundle built from a construction. An
+*alignment* is an incidence on the table between two objects, each the
+table position of a point, the line of a bundle, or the image of one of
+these under the reflection across the line sought: a point onto a point, a
+point onto a line, a line onto a line, the line through a point, the line
 perpendicular to a line. A *construction* $c$ is a finite set of alignments
 that determines the line: finitely many solutions, and no alignment
-redundant [@alperin2006, Definition 8]. Its value $c(s, a)$ is the finite
-set of candidate lines that satisfy every alignment; the seven Huzita-Justin
-axioms are the seven such sets, with between zero and three candidates each
-[@alperin2006, §3]. The motion is the read
-$$ r(s, a) = \ell \quad \text{when } \sigma(s, a, c(s, a)) = \{\ell\}, $$
-undefined otherwise, where $\sigma$ is the selection the program stated, the
-identity when it stated none. Selections are: discard candidates whose
-material in $s$ is empty; keep the candidate nearest a named point; keep the
+redundant [@alperin2006, §2, Definition 8]. Its value $c(s, a)$ is the
+finite set of candidate table lines that satisfy every alignment; the seven
+Huzita-Justin axioms are all the constructions there are [@alperin2006,
+§2]. The motion is the read
+$$ r(s, a) = \text{the material of } \ell \quad \text{when } \sigma(s, a, c'(s, a)) = \{\ell\}, $$
+undefined otherwise, where $c'(s, a)$ is $c(s, a)$ without the candidates
+whose material in $s$ is empty, since a line off the paper is no fold, and
+$\sigma$ is the selection the program stated, the identity when it stated
+none. Selections are: keep the candidate nearest a named point; keep the
 candidate whose fold moves a named point to a named side.
 :::
 
 ::: {.term #term-motion name="motion"}
-A read that computes a line from a Huzita-Justin construction and a
-selection among its candidates.
+A read that computes a bundle, the material of the line a Huzita-Justin
+construction and a selection among its candidates determine.
 :::
 
-::: {.definition #def-selector name="selector" uses="def-read def-flap def-point"}
+::: {.definition #def-selector name="selector" uses="def-read def-flap def-point def-bundle"}
 A *selector* is a read of sort flap or point that resolves a description by
-incidence: the flap whose faces contain every listed point; the point where
-the materials of two bundles cross; the point on a bundle's material at a
-given fraction of its length from a named end. Each is defined exactly when
-the description picks out one thing.
+incidence in paper coordinates: the flap whose faces contain every listed
+point; the point where two bundles meet, their intersection when it is a
+single point; the point on a bundle of a single piece at a given fraction of
+that piece's length from a named endpoint. Each is defined exactly when the
+description picks out one thing.
 :::
 
-::: {.definition #def-filter name="filter" uses="def-read def-bundle"}
+::: {.definition #def-filter name="filter" uses="def-read def-bundle def-line def-flap"}
 The *filters* are the reads of sort bundle that form the Boolean algebra of
-subsets of a bundle $b$ generated by incidence predicates: for a point $p$, a
-line $m$ or a flap $\phi$, the predicate "the segment contains $p$", "the
-segment's table image meets $m$", "the segment lies in a face of $\phi$".
-A filter keeps the segments satisfying a predicate, its complement drops
-them, and the union joins two bundles. Chaining filters is intersection.
-:::
-
-::: {.open #open-line-after-fold name="a line value across later states"}
-A line value is a table line. When a later write moves the paper, the value
-stays where it is on the table while its material changes. Whether this is
-the intended meaning, or a line should be re-anchored to the material it was
-computed from, is not decided; it decides what `--l = (map .a onto .b)`
-followed by a fold and then `mark (--l)` means.
+subsets of the pieces of a bundle $b$ generated by incidence predicates: for
+a point $p$, a straight bundle $m$ or a flap $\phi$, the predicate "the
+piece contains $p$", "the piece's table image meets the line of $m$", "the
+piece lies in $\phi$". A filter keeps the pieces satisfying a predicate, its
+complement drops them, and the union joins two bundles. Chaining filters is
+intersection.
 :::
 
 ## 5. Operations
