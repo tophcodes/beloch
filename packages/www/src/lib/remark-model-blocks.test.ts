@@ -49,6 +49,7 @@ test("statements are numbered per section, shared across classes", () => {
   expect(html).toContain('<span class="stmt-label" property="bm:label">Definition 1.2</span>');
   expect(html).toContain('<span class="stmt-label" property="bm:label">Lemma 2.1</span>');
   expect(html).toContain('<span class="stmt-label" property="bm:label">Open 2.2</span>');
+  expect(html).toContain('<span class="stmt-label" property="bm:label">Example 2.3</span>');
 });
 
 test("statement sections carry RDFa and keep their id", () => {

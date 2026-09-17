@@ -35,7 +35,8 @@
 // at it. Without the register, an `.include` block renders a placeholder and no
 // statement gets a "Realized by" line.
 //
-// Statement classes: definition, lemma, corollary, remark, open. Numbers are
+// Statement classes: definition, condition, lemma, corollary, remark,
+// example, open. Numbers are
 // `<section>.<n>`, counted per `##` heading and shared by all statement
 // classes, so ids are what the source refers to and numbers only ever appear
 // in the output. `[#some-id]` in prose becomes a link whose text is the
@@ -59,6 +60,7 @@ const LABELS: Record<string, string> = {
 	lemma: "Lemma",
 	corollary: "Corollary",
 	remark: "Remark",
+	example: "Example",
 	open: "Open",
 };
 
