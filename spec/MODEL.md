@@ -234,22 +234,6 @@ able to avoid such obstructions", while the fold is flat-foldable
 extension therefore cannot hold every state of [#def-flat-state].
 :::
 
-::: {.lemma #lem-face-points name="face and point orderings agree" uses="def-flat-state def-noncrossing"}
-Let $(\mathcal{F}, f, \lambda)$ be a flat folded state in the sense of
-[#def-flat-state], and let $\lambda'$ be the layer ordering on points that
-Demaine [@demaine2007, §11.4] and Hull and Zakharevich
-[@hullzakharevich2023, §2.1] define. Setting $\lambda'(p, q) = \lambda(A_p,
-A_q)$ for points $p, q$ interior to faces $A_p, A_q$ with $f(p) = f(q)$ yields
-a global layer ordering in Demaine's sense, and $-\lambda(A_p, A_q)$ one in
-Hull and Zakharevich's, whose sign is opposite; every such ordering arises
-this way from exactly one $\lambda$.
-
-*Proof.* Pending. The forward direction needs the non-crossing conditions of
-[#def-noncrossing]; the backward direction uses that faces are uncreased
-regions, so $\lambda'$ is constant on pairs of faces by the
-tortilla-tortilla property.
-:::
-
 ## 3. Non-crossing conditions
 
 Intuition: $\lambda$ says which of two overlapping faces is on top. Not every
@@ -376,6 +360,27 @@ condition on the boundary curves is needed [@hull2020, Proposition 6.14].
 Sufficiency is what allows the model to define a flat folded state through
 $f$ and $\lambda$ alone: nothing about a state's physical realisability is
 left outside the definition.
+
+The last statement of this section connects the ordering on faces to the
+ordering on points that the literature defines. It stands here rather than
+in §2 because its proof needs the conditions above.
+
+::: {.lemma #lem-face-points name="face and point orderings agree" uses="def-flat-state def-noncrossing"}
+Let $(\mathcal{F}, f, \lambda)$ be a flat folded state in the sense of
+[#def-flat-state], and let $\lambda'$ be the layer ordering on points that
+Demaine [@demaine2007, §11.4] and Akitaya et al. [@akitaya2016, §2] define.
+Setting $\lambda'(p, q) = \lambda(A_p, A_q)$ for points $p, q$ interior to
+faces $A_p, A_q$ with $f(p) = f(q)$ yields a global layer ordering in
+Demaine's sense, and $-\lambda(A_p, A_q)$ one in Akitaya's, whose sign is
+opposite; every such ordering arises this way from exactly one $\lambda$ up
+to refinement.
+
+*Proof.* Pending. The forward direction needs the non-crossing conditions of
+[#def-noncrossing]; the backward direction uses that the crease pattern of a
+flat folding is a straight-line graph, so its regions refine to convex faces,
+and that faces are uncreased regions, so $\lambda'$ is constant on pairs of
+faces by the consistency property.
+:::
 
 Sources: the six properties on points and their names [@akitaya2016, §2],
 with Figure 1 of Hull and Zakharevich showing the two crossing patterns
