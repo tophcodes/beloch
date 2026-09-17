@@ -278,9 +278,12 @@ h3:target + p { box-shadow: none; }
   gap: 1rem;
   justify-content: center;
 }
-.figure-view {
+/* Starlight gives every sibling in markdown content a top margin; the second
+   view would sit lower than the first. */
+.sl-markdown-content .figure-view {
   flex: 1 1 14rem;
   min-width: 0;
+  margin-top: 0;
 }
 .figure-view svg {
   width: 100%;
