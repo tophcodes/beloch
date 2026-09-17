@@ -47,6 +47,7 @@ local LABELS = {
   lemma = "Lemma",
   corollary = "Corollary",
   remark = "Remark",
+  example = "Example",
   open = "Open",
 }
 

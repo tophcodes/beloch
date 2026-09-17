@@ -44,6 +44,10 @@ The two orderings agree whenever the faces are uncreased regions.
 Whether the rank is part of the state or a representation of it.
 :::
 
+::: {.example #ex-half-square name="a square folded in half" uses="def-flat-state"}
+Fold the right half onto the left; the corner at $(1, 0)$ lands on $(0, 0)$.
+:::
+
 A sugared reference to [#def-flat-state], to [#term-table] and to [#fig-sheet].
 
 ## Terms

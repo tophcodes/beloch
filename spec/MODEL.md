@@ -171,19 +171,25 @@ A boundary segment of positive length shared by two faces, with an angle of
 $0$ (flat crease) or $\pm\pi$ (folded crease).
 :::
 
-::: {.remark #rem-half-square name="a square folded in half" uses="def-flat-state lem-hinge-cases"}
-Let $P$ be the unit square with corners $(0, 0)$ to $(1, 1)$, $A$ its left
-half, $B$ its right half, and $h$ the segment they share on the line
-$x = \tfrac12$. Unfolded, $\phi_A = \phi_B = \mathrm{id}$ and the hinge is
-flat. Fold the right half onto the left: $A$ stays, so $\phi_A = \mathrm{id}$,
-and $B$ is mirrored across the hinge, so $\phi_B(x, y) = (1 - x, y)$, which
-is $\rho_h$; the corner $(1, 0)$ lands on $(0, 0)$. Now turn the folded
-square on the table by a rotation $R$: $\phi_A = R$ and $\phi_B = R \circ
-\rho_h$. The relation $\phi_B = \phi_A \circ \rho_h$ says nothing about where
-$A$ lies. It says how $B$ lies relative to $A$: displaced by the flip across
-the hinge, wherever $A$ went. Read $\circ$ from the right: mirror $B$ across
-$h$ in the paper, which puts it on $A$'s paper position, then move it the way
-$A$ is moved.
+::: {.example #ex-half-square name="a square folded in half" uses="def-flat-state lem-hinge-cases"}
+Let $P$ be the unit square with corners `.a` $= (0, 0)$, `.b` $= (1, 0)$,
+`.c` $= (1, 1)$, `.d` $= (0, 1)$; let $A$ be its left half, $B$ its right
+half, and $h$ the segment they share on the line $x = \tfrac12$. Unfolded,
+$\phi_A = \phi_B = \mathrm{id}$ and the hinge is flat. Fold the right half
+onto the left, in Beloch `fold (map .b onto .a)`: $A$ stays, so
+$\phi_A = \mathrm{id}$, and $B$ is mirrored across the hinge, so
+$\phi_B(x, y) = (1 - x, y)$, which is $\rho_h$; the corner `.b` lands on
+`.a`. Now turn the folded square on the table by a rotation $R$: $\phi_A = R$
+and $\phi_B = R \circ \rho_h$. The relation $\phi_B = \phi_A \circ \rho_h$
+says nothing about where $A$ lies. It says how $B$ lies relative to $A$:
+displaced by the flip across the hinge, wherever $A$ went. Read $\circ$ from
+the right: mirror $B$ across $h$ in the paper, which puts it on $A$'s paper
+position, then move it the way $A$ is moved.
+:::
+
+::: {.figure #fig-half-square caption="The square of [#ex-half-square]: on the paper `.b` is the right corner, on the table it lies on `.a`, and the crease `--h` is the hinge between the two faces." views="cp folded" highlight=".b --h" program="shown"}
+paper square
+fold (map .b onto .a) as --h
 :::
 
 ::: {.remark #rem-fold-and-hinge name="folds and hinges are one reflection seen twice" uses="def-flat-state lem-hinge-cases"}
