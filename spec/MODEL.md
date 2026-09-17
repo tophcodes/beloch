@@ -171,6 +171,36 @@ A boundary segment of positive length shared by two faces, with an angle of
 $0$ (flat crease) or $\pm\pi$ (folded crease).
 :::
 
+::: {.remark #rem-half-square name="a square folded in half" uses="def-flat-state lem-hinge-cases"}
+Let $P$ be the unit square with corners $(0, 0)$ to $(1, 1)$, $A$ its left
+half, $B$ its right half, and $h$ the segment they share on the line
+$x = \tfrac12$. Unfolded, $\phi_A = \phi_B = \mathrm{id}$ and the hinge is
+flat. Fold the right half onto the left: $A$ stays, so $\phi_A = \mathrm{id}$,
+and $B$ is mirrored across the hinge, so $\phi_B(x, y) = (1 - x, y)$, which
+is $\rho_h$; the corner $(1, 0)$ lands on $(0, 0)$. Now turn the folded
+square on the table by a rotation $R$: $\phi_A = R$ and $\phi_B = R \circ
+\rho_h$. The relation $\phi_B = \phi_A \circ \rho_h$ says nothing about where
+$A$ lies. It says how $B$ lies relative to $A$: displaced by the flip across
+the hinge, wherever $A$ went. Read $\circ$ from the right: mirror $B$ across
+$h$ in the paper, which puts it on $A$'s paper position, then move it the way
+$A$ is moved.
+:::
+
+::: {.remark #rem-fold-and-hinge name="folds and hinges are one reflection seen twice" uses="def-flat-state lem-hinge-cases"}
+The hinge relation composes the reflection on the paper side of $\phi_A$.
+The fold operation of §5 composes on the table side: a fold along a table
+line $\ell$ replaces $\phi_F$ by $\rho_\ell \circ \phi_F$ on every moving face
+$F$, so a state reached by folding has $\phi_F = \rho_n \circ \dots \circ
+\rho_1$, the reflections that moved $F$, in order. The two views agree
+because reflecting across the table image of $h$ is the paper reflection
+carried over by $\phi_A$: $\rho_{f(h)} = \phi_A \circ \rho_h \circ
+\phi_A^{-1}$, hence $\rho_{f(h)} \circ \phi_A = \phi_A \circ \rho_h$. A
+folded hinge between $A$ and $B$ is therefore the same as "$B$ is $A$
+reflected across the table line $f(h)$". A state still records no history:
+$\phi_F$ is the net motion, and the relation holds for every hinge whether or
+not the state was reached by folding.
+:::
+
 ::: {.definition #def-refinement name="refinement equivalence" uses="def-flat-state" defines="term-refinement"}
 A split of a state $(\mathcal{F}, f, \lambda)$ replaces one face $A$ by two
 convex faces $A_1$, $A_2$ with $A_1 \cup A_2 = A$ and disjoint interiors, sets
