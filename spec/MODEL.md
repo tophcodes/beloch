@@ -122,9 +122,9 @@ domain and its set of values, in that order.
 One value per pair of faces is enough because the overlap of two convex faces
 is a single convex region that contains no crease of either face, and the
 order of two uncreased regions is constant on their overlap [@demaine2007,
-§11.4.4.3; @hullzakharevich2023, §2.1, tortilla-tortilla]. The sign is
-Demaine's: $+1$ means above [@demaine2007, §11.4.4]; Hull and Zakharevich use
-the opposite sign [@hullzakharevich2023, §2.1].
+§11.4.4.3; @akitaya2016, §2, consistency]. The sign is Demaine's: $+1$
+means above [@demaine2007, §11.4.4]; Akitaya et al. and Hull and Zakharevich
+use the opposite sign [@akitaya2016, §2; @hullzakharevich2023, §2.1].
 
 ::: {.term #term-table name="table"}
 The plane $T = \mathbb{R}^2$ a state is folded onto, the image of $f$, with a
@@ -257,9 +257,9 @@ such assignment describes a sheet of paper. A face cannot pass through
 another face, it cannot pass through a fold, and two folds cannot thread
 through each other. This section states the conditions that rule those out,
 one at a time, and then defines a non-crossing layer ordering as one that
-satisfies them all. They are the non-crossing conditions of Hull and
-Zakharevich [@hullzakharevich2023, §2.1], restated for faces instead of
-points, plus two conditions that a decomposition into faces has to satisfy to
+satisfies them all. They are the non-crossing conditions of Akitaya et al. [@akitaya2016, §2],
+as Hull and Zakharevich restate them [@hullzakharevich2023, §2.1], stated
+here for faces instead of points, plus two conditions that a decomposition into faces has to satisfy to
 be one sheet.
 
 Three of the six properties in the literature need no condition here.
@@ -377,8 +377,9 @@ Sufficiency is what allows the model to define a flat folded state through
 $f$ and $\lambda$ alone: nothing about a state's physical realisability is
 left outside the definition.
 
-Sources: the six properties on points, with Figure 1 showing the two crossing
-patterns [@hullzakharevich2023, §2.1]; Justin's three conditions in Hull's
+Sources: the six properties on points and their names [@akitaya2016, §2],
+with Figure 1 of Hull and Zakharevich showing the two crossing patterns
+[@hullzakharevich2023, §2.1]; Justin's three conditions in Hull's
 statement [@hull2020, sec. 6.5, p. 123].
 
 ## 4. Values and reads

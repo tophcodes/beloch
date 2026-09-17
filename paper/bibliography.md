@@ -42,6 +42,17 @@ resist in the core). Relevant for: related-work framing; the "compile-to-
 computational-origami" spin-off idea; Figure 18 (Rule 110 cell) as a potential
 reproducibility/parametricity example in a future paper.
 
+### Akitaya, Cheung, Demaine, Horiyama, Hull, Ku, Tachi & Uehara — "Box Pleating is Hard" (JCDCGG 2015, LNCS 9943, 2016)
+Proves that flat-foldability stays NP-hard for box pleating. For Beloch the
+reference is §2 (pp. 168–170): the six properties of a global layer ordering
+on points (existence, antisymmetry, transitivity, and the three non-crossing
+properties named there as consistency = tortilla-tortilla, face-crease =
+taco-tortilla, crease-crease = taco-taco), which Hull and Zakharevich adopt
+verbatim. Sign convention: λ(p, q) = −1 means p above q, the opposite of
+Demaine. Also defines faces as the open regions of the crease pattern and the
+orientation u_f of a face. Justin 1997 (2OSME) is the primary source of the
+conditions and is still missing from refs/.
+
 ### Basu, Pollack & Roy — *Algorithms in Real Algebraic Geometry* (Springer, 2006)
 The canonical reference for real-algebraic computation: resultants and
 subresultants (Ch. 4, 8), Sturm sequences and real-root counting (Ch. 2, 9),
