@@ -29,7 +29,18 @@
         beloch = ocamlPkgs.buildDunePackage {
           pname = "beloch";
           version = "0.0.0-dev";
-          src = ./.;
+          # Only the OCaml tree. A change to the docs, the site or the notes then
+          # leaves the derivation untouched, and CI serves it from its cache.
+          src = pkgs.lib.fileset.toSource {
+            root = ./.;
+            fileset = pkgs.lib.fileset.unions [
+              ./dune
+              ./dune-project
+              ./packages/core
+              ./packages/multifold
+              ./packages/eval-web
+            ];
+          };
           duneVersion = "3";
           nativeBuildInputs = [ocamlPkgs.menhir];
           buildInputs = [
