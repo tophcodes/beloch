@@ -42,8 +42,8 @@ jobs:
           # The key follows the OCaml sources as well as the flake, so a run that
           # builds a new beloch saves it, and a docs-only push restores that
           # exact store and finds the derivation already built.
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock', 'dune', 'dune-project', 'packages/core/**', 'packages/multifold/**', 'packages/eval-web/**') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
+          primary-key: nix-store-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock', 'dune', 'dune-project', 'packages/core/**', 'packages/multifold/**', 'packages/eval-web/**') }}
+          restore-prefixes-first-match: nix-store-${{ runner.os }}-
           # The store after a build is about 3.5G; a lower bound collected the
           # devshell and part of the build closure before every save.
           gc-max-store-size-linux: 4G
