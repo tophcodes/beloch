@@ -505,7 +505,10 @@ does not remember the segments it was assembled from, so a refinement, which
 splits segments along flat hinges, leaves every bundle as it is. The
 *pieces* of a bundle in a state are its maximal segments, the connected
 straight stretches within one flap each. Its table image is $f(b)$, one
-straight segment per piece.
+straight segment per piece. A fold across a bundle leaves the bundle as it
+is and splits a piece in two: the stretch across the new folded hinge is no
+longer a segment, so each side is a piece of its own. Pieces are read off
+the state; nothing subdivides a value.
 :::
 
 ::: {.term #term-bundle name="bundle"}
