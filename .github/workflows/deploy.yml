@@ -25,19 +25,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@v16
+      # Single-user Nix, as cache-nix-action documents: with a daemon store the
+      # restore fails on extraction (tar cannot write into root-owned /nix), so
+      # every run rebuilt FLINT and beloch even on a cache hit.
+      - uses: nixbuild/nix-quick-install-action@v35
+        with:
+          nix_conf: |
+            keep-env-derivations = true
+            keep-outputs = true
       - name: Cache /nix/store
         # The FLINT-3.6.0 override isn't on cache.nixos.org, so it recompiles from
         # source on a cold store — this caches the built closure across runs.
         # (Self-hosted attic on the fleet is the longer-term substituter.)
-        uses: nix-community/cache-nix-action@v6
+        uses: nix-community/cache-nix-action@v7
         with:
           # The key follows the OCaml sources as well as the flake, so a run that
           # builds a new beloch saves it, and a docs-only push restores that
           # exact store and finds the derivation already built.
           primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock', 'dune', 'dune-project', 'packages/core/**', 'packages/multifold/**', 'packages/eval-web/**') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
-          gc-max-store-size-linux: 2G
+          # The store after a build is about 3.5G; a lower bound collected the
+          # devshell and part of the build closure before every save.
+          gc-max-store-size-linux: 4G
       - name: Build beloch (native)
         run: nix build .#beloch
       - name: Put beloch on PATH
