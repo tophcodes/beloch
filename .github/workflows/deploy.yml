@@ -32,7 +32,10 @@ jobs:
         # (Self-hosted attic on the fleet is the longer-term substituter.)
         uses: nix-community/cache-nix-action@v6
         with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          # The key follows the OCaml sources as well as the flake, so a run that
+          # builds a new beloch saves it, and a docs-only push restores that
+          # exact store and finds the derivation already built.
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock', 'dune', 'dune-project', 'packages/core/**', 'packages/multifold/**', 'packages/eval-web/**') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
           gc-max-store-size-linux: 2G
       - name: Build beloch (native)
