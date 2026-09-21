@@ -32,11 +32,11 @@ telling the user rather than a confident guess.
 ## Kommunikation
 
 Caveman-Mode ist in diesem Projekt aus: die Mathematik muss erklärt werden,
-bis Toph sie selbst verteidigen kann (siehe Multifold-Spec, "checked" =
+bis Toph sie selbst verteidigen kann ("checked" =
 verstanden). Volle Sätze, Begriffe definieren, Intuition vor Formalismus.
 
 ## Mathe-Notation in Markdown
 
 Formeln in notes/, docs/ und Memos als LaTeX-Math (`$...$` inline, `$$...$$`
 display) schreiben — GitHub, Forgejo und VS-Code-Preview rendern KaTeX.
-Symbol-Namen (`ALxxxx`), Code-Bezeichner und Pfade in Backticks, nie bare.
+Symbol-Namen (`AL8`), Code-Bezeichner und Pfade in Backticks, nie bare.
