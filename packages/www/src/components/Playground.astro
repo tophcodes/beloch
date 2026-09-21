@@ -585,8 +585,15 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   import { bundleElements } from "../lib/bundle-highlight";
   import { enhanceCreaseHits, CREASE_SELECTOR, HIT_CLASS } from "../lib/crease-hits";
   import { edgeOfLine } from "../lib/edge-lookup";
+  import { runUi, type RuntimePhase } from "../lib/playground-run-state";
 
-  const TIMEOUT_MS = 8000;
+  // Two separate limits. Booting the Worker pulls the wasm runtime over the
+  // network (megabytes, once per visitor); the evaluation itself then runs
+  // locally. The eval limit starts only once the Worker reports its runtime
+  // ready (see public/beloch/eval-worker.js), so a slow line stays
+  // distinguishable from a hung evaluator.
+  const LOAD_TIMEOUT_MS = 60000;
+  const EVAL_TIMEOUT_MS = 8000;
 
   const editorTheme = EditorView.theme(
     {
@@ -780,23 +787,29 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // its own, kick off a run or pull in the wasm module.
     const lazy = root.dataset.lazy === "true";
 
-    // Run is only meaningful once the doc differs from whatever was last
-    // sent to the worker (or the initial/seeded code, before any run).
+    // Run is available whenever no run is in flight, including on first
+    // contact with the seeded code. A re-run of unchanged source reports
+    // itself in the status line. The states and their wording live in
+    // ../lib/playground-run-state.
     let running = false;
-    let lastRunCode = initialCode;
+    let phase: RuntimePhase = "cold";
+    // The run that just finished re-ran source identical to the previous
+    // completed run's.
+    let repeat = false;
+    // A run was dropped because the runtime took longer than LOAD_TIMEOUT_MS.
+    let loadStalled = false;
+    // Source of the last run the worker actually answered; null until then.
+    let lastRunCode: string | null = null;
     function updateRunButtonState() {
-      const dirty = editor.state.doc.toString() !== lastRunCode;
-      runBtn.disabled = running || !dirty;
-      runBtn.title = running
-        ? "evaluating …"
-        : dirty
-          ? "Run"
-          : "Change the code to run again";
+      const ui = runUi({ phase, running, repeat, loadStalled });
+      runBtn.disabled = ui.disabled;
+      runBtn.title = ui.title;
+      setRunHint(ui.status);
       // Line numbers from the last run no longer necessarily match the
       // edited text — clear the gutter indicator, but leave the scrubber
       // and the currently-shown SVG alone (same "stale result stays
       // visible" philosophy as the Run button itself).
-      if (dirty) setStepLineOn(editor, null);
+      if (editor.state.doc.toString() !== lastRunCode) setStepLineOn(editor, null);
     }
 
     const editor = new EditorView({
@@ -816,7 +829,10 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
           ]),
           editorTheme,
           EditorView.updateListener.of((update) => {
-            if (update.docChanged) updateRunButtonState();
+            if (update.docChanged) {
+              repeat = false;
+              updateRunButtonState();
+            }
             if (update.selectionSet) highlightCreasesOnLine(update.state.doc.lineAt(update.state.selection.main.head).number);
           }),
         ],
@@ -862,7 +878,14 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     }
 
     let worker: Worker | null = null;
-    let timer: ReturnType<typeof setTimeout> | null = null;
+    // Load limit (runtime boot) and eval limit (one postMessage round trip);
+    // at most one of them runs at a time.
+    let loadTimer: ReturnType<typeof setTimeout> | null = null;
+    let evalTimer: ReturnType<typeof setTimeout> | null = null;
+    // Source waiting for the runtime to report ready, and the source of the
+    // request currently with the worker.
+    let pendingCode: string | null = null;
+    let dispatchedCode: string | null = null;
     let currentScene: FoldScene | null = null;
     let currentStatements: Statement[] = [];
     let currentStep = 0;
@@ -1490,13 +1513,20 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       updateStepsUI(clamped, currentStatements);
     }
 
+    function clearTimers() {
+      if (loadTimer !== null) clearTimeout(loadTimer);
+      if (evalTimer !== null) clearTimeout(evalTimer);
+      loadTimer = null;
+      evalTimer = null;
+    }
+
     function finish(handler: () => void) {
-      if (timer !== null) clearTimeout(timer);
-      timer = null;
+      clearTimers();
+      pendingCode = null;
+      dispatchedCode = null;
       running = false;
       runBtn!.classList.remove("is-loading");
       updateRunButtonState();
-      setRunHint("");
       handler();
     }
 
@@ -1543,12 +1573,36 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     }
 
     function wireWorker() {
-      worker!.onmessage = (e: MessageEvent<{ raw: string }>) => {
-        finish(() => renderResult(e.data.raw));
+      worker!.onmessage = (e: MessageEvent<{ raw?: string; ready?: boolean }>) => {
+        // The worker announces its instantiated wasm runtime (eval-worker.js).
+        // Until that arrives, a pending run is waiting on the network, so the
+        // short evaluation limit must not be running yet.
+        if (e.data.ready) {
+          phase = "ready";
+          loadStalled = false;
+          clearTimers();
+          const queued = pendingCode;
+          pendingCode = null;
+          if (queued !== null) startEval(queued);
+          else updateRunButtonState();
+          return;
+        }
+        // Only an answered request updates the baseline for "same code as
+        // the last run". A timeout or worker error leaves it where it was,
+        // so a retry is not announced as a repeat.
+        lastRunCode = dispatchedCode;
+        const raw = e.data.raw ?? "";
+        finish(() => renderResult(raw));
       };
       worker!.onerror = (e: ErrorEvent) => {
         finish(() => showError(`Worker error: ${e.message}`));
       };
+    }
+
+    function spawnWorker() {
+      worker = new Worker("/beloch/eval-worker.js");
+      phase = "loading";
+      wireWorker();
     }
 
     // Creates the Worker (and triggers its wasm download) on first use. A
@@ -1556,34 +1610,57 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // the lazy path only once the user actually clicks Run.
     function bootIfNeeded() {
       if (worker) return;
-      worker = new Worker("/beloch/eval-worker.js");
-      wireWorker();
+      spawnWorker();
+    }
+
+    // Hands one source string to a ready worker, under the evaluation limit.
+    function startEval(code: string) {
+      dispatchedCode = code;
+      evalTimer = setTimeout(() => {
+        evalTimer = null;
+        // A hung evaluation needs a fresh worker; it re-reads the runtime
+        // from the HTTP cache. A slow *load* never reaches this path.
+        worker!.terminate();
+        spawnWorker();
+        dispatchedCode = null;
+        running = false;
+        repeat = false;
+        runBtn!.classList.remove("is-loading");
+        updateRunButtonState();
+        showError("Evaluation aborted (timeout).");
+      }, EVAL_TIMEOUT_MS);
+      updateRunButtonState();
+      worker!.postMessage(code);
     }
 
     function run() {
-      if (timer !== null) return; // guard against overlapping runs
-      const cold = !worker; // no Worker yet -> this run also pays for the wasm boot
-      bootIfNeeded();
+      if (running) return; // guard against overlapping runs
       const codeToRun = editor.state.doc.toString();
-      lastRunCode = codeToRun;
+      repeat = lastRunCode !== null && codeToRun === lastRunCode;
+      loadStalled = false;
       running = true;
       runBtn!.classList.add("is-loading");
-      updateRunButtonState();
-      setRunHint(cold ? "loading playground runtime …" : "computing geometry …");
+      bootIfNeeded();
+      if (phase === "ready") {
+        startEval(codeToRun);
+        return;
+      }
 
-      timer = setTimeout(() => {
-        timer = null;
-        worker!.terminate();
-        worker = new Worker("/beloch/eval-worker.js");
-        wireWorker();
+      // Still booting: the run waits for the ready signal under the generous
+      // load limit. On expiry the worker keeps its download running (it is
+      // never terminated here), so pressing Run again picks the transfer up
+      // where it stands; the status line says as much.
+      pendingCode = codeToRun;
+      loadTimer = setTimeout(() => {
+        loadTimer = null;
+        pendingCode = null;
         running = false;
+        repeat = false;
+        loadStalled = true;
         runBtn!.classList.remove("is-loading");
         updateRunButtonState();
-        setRunHint("");
-        showError("Evaluation aborted (timeout).");
-      }, TIMEOUT_MS);
-
-      worker!.postMessage(codeToRun);
+      }, LOAD_TIMEOUT_MS);
+      updateRunButtonState();
     }
 
     // If a seed FOLD was embedded at build time, parse+render it right away
@@ -1604,8 +1681,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     runBtn.addEventListener("click", run);
 
     if (!lazy) {
-      worker = new Worker("/beloch/eval-worker.js");
-      wireWorker();
+      bootIfNeeded();
       if (initialCode.trim()) run();
     }
   }
