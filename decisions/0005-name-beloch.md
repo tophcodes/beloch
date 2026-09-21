@@ -21,11 +21,15 @@ Name the language **Beloch**, after **Margherita Piazzolla Beloch**.
 
 - Her 1936 work showed origami constructions solve general cubic equations,
   making paper-folding more powerful than straightedge-and-compass.
-- The **Beloch fold is axiom 6** — the single hardest thing in the language to
-  handle (up to three solutions, no closed form, the cubic-solving one, the
-  disambiguation problem the design keeps circling). Naming the language after
-  the person whose axiom defines its central design problem reads as intentional
-  in hindsight.
+- The **Beloch fold is axiom 7** in the Huzita-Justin numbering this project
+  uses (see "Numbering" in `spec/SPECIFICATION.md`). Justin ordered the seven
+  axioms by algebraic power, so the Beloch fold is the last and strongest one:
+  the single hardest thing in the language to handle, with up to three
+  solutions, no closed form, and the disambiguation problem the design keeps
+  circling. Naming the language after the person whose axiom defines its
+  central design problem reads as intentional in hindsight. (The
+  Huzita-Hatori numbering used by Wikipedia calls the same fold axiom 6; the
+  mapping table in the specification carries both.)
 - She is notably under-credited; the name is a small corrective at zero cost.
 - "beloch" has essentially no tech collision — the project will dominate search
   for its own name within a year.
@@ -48,7 +52,7 @@ Practical notes:
   story.
 - **Kami / Ori** — Japanese roots; some overload.
 
-Beloch won on: a story worth telling on stage, the axiom-6 symmetry, the
+Beloch won on: a story worth telling on stage, the axiom-7 symmetry, the
 historical corrective, and near-zero search collision.
 
 ## Consequences

@@ -26,7 +26,7 @@ work, including things inherited as warnings from the 2018 attempt.)
   design hit mutual inconsistency at the layer problem and stalled. Replaced by
   the minimal-formal-core approach — see decisions/0003-restart-from-minimal-core.md.
 - **"There is a unique fold" (from the axiom phrasing).** False in general:
-  axiom 5 has up to 2 solutions, axiom 6 up to 3. Disambiguation must be
+  axioms 5 and 6 have up to 2 solutions, axiom 7 up to 3. Disambiguation must be
   first-class and ergonomic, not an afterthought.
 
 ## Watch-points & traps
@@ -43,10 +43,10 @@ work, including things inherited as warnings from the 2018 attempt.)
   simultaneous two-point fold (Beloch axiom 7) and his O7 is Hatori's fold
   (Beloch axiom 4). Translate before comparing any Eos construction with a
   `.bel` program.
-- **ℚ stops being closed at axioms 5/6.** Exact rational arithmetic
+- **ℚ stops being closed at axioms 5, 6 and 7.** Exact rational arithmetic
   ([ADR 0008](decisions/0008-exact-rational-arithmetic.md)) covers axioms 1–2
-  and line intersection perfectly, but square roots (axiom 5) and cubic roots
-  (axiom 6) leave ℚ. Don't assume the rational engine extends to the full axiom
+  and line intersection perfectly, but square roots (axioms 5 and 6) and cubic roots
+  (axiom 7) leave ℚ. Don't assume the rational engine extends to the full axiom
   set — that boundary needs a constructible/algebraic number representation,
   decided when those axioms land.
 
