@@ -1,4 +1,4 @@
-Beloch, named after [Margherita Piazzola Beloch][mpb], is a declarative language for origami, built on the [Huzita-Justin axioms][huzita-justin], that compiles source models into folded states, crease patterns, and step-by-step folding diagrams.
+Beloch, named after [Margherita Piazzola Beloch][mpb], is a declarative language for origami, built on the [Huzita-Justin axioms][huzita-justin], that evaluates source models into folded states and crease patterns.
 
 [mpb]: https://en.wikipedia.org/wiki/Margherita_Piazzola_Beloch
 [huzita-justin]: https://langorigami.com/article/huzita-justin-axioms/
@@ -10,6 +10,8 @@ Beloch, named after [Margherita Piazzola Beloch][mpb], is a declarative language
 > **[beloch.toph.so](https://beloch.toph.so)**.
 
 [fold-spec]: https://github.com/edemaine/fold
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22884252.svg)](https://doi.org/10.5281/zenodo.22884252)
 
 ## Bases
 
@@ -63,9 +65,7 @@ flatten (--ba \ .a) (--bb \ .b) (--v \ .m) (toward .c) as --ear
 | ![swivel-rabbit.bel as a crease pattern: scaffolding lines flat, two hinge valleys, and the single emergent mountain](examples/bases/swivel-rabbit-cp.svg) | ![swivel-rabbit.bel folded: the ear swivelled to one side](examples/bases/swivel-rabbit-folded.svg) |
 
 The full program, with the scaffolding that locates the hinge height, is in
-[`examples/bases/swivel-rabbit.bel`](examples/bases/swivel-rabbit.bel). More
-programs, from simple midline folds to Messer's cube-root-of-two construction
-(axiom 7), are in [`examples/`](examples/).
+[`examples/bases/swivel-rabbit.bel`](examples/bases/swivel-rabbit.bel). More programs, from a kite to the bird base, are in [`examples/`](examples/).
 
 ## Development
 
