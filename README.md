@@ -83,7 +83,6 @@ dune exec beloch -- --version
 
 ```
 packages/core/      evaluator core + `beloch` CLI (OCaml)
-packages/multifold/ multifold axiom enumeration (Alperin-Lang reproduction)
 packages/render-2d/ FOLD→SVG render engine (bun)
 packages/www/       landing + docs + Playground site
 packages/eval-web/  js_of_ocaml browser eval bundle
@@ -93,5 +92,5 @@ spec/         human-readable language specification (grows per increment)
 decisions/    architecture decision records (ADRs)
 notes/        dated design journal (+ antipatterns.md dead ends)
 examples/     .bel programs, tagged works / aspirational / anti
-paper/        the eventual write-up (arXiv / JOSS / OSME) + bibliography.md
+paper/        the eventual write-up (arXiv / JOSS / OSME) + references.bib
 ```

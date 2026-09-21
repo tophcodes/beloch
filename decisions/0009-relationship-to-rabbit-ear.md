@@ -50,7 +50,7 @@ problem.
 - Step-by-step YR folding-instruction generation (the program *is* a linear,
   analyzable op sequence).
 - Static / precondition analysis — cf. Caruana & Pace 2007
-  ([caruana2007](../bibliography.md)), who did exactly this for their embedded
+  ([caruana2007](../paper/references.bib)), who did exactly this for their embedded
   origami DSL.
 - A clean LLM generation target (small grammar, every token meaningful).
 - Formal operational semantics → the paper.

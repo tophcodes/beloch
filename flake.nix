@@ -37,7 +37,6 @@
               ./dune
               ./dune-project
               ./packages/core
-              ./packages/multifold
               ./packages/eval-web
             ];
           };
@@ -51,7 +50,7 @@
             flint
           ];
           checkInputs = [ocamlPkgs.alcotest];
-          # msolve is a subprocess dependency (packages/multifold/lib/msolve.ml) for
+          # msolve is a subprocess dependency of the separate research package, for
           # tests only, so it belongs at test time (nativeCheckInputs), not linked in.
           nativeCheckInputs = [pkgs.msolve];
           # Tests run in the `checks` output (nix flake check / CI), not on every
@@ -95,7 +94,7 @@
             flint
             # FOLD -> SVG/PNG rendering (packages/render-2d/render-svg)
             pkgs.bun
-            # msolve subprocess driver (packages/multifold/lib/msolve.ml)
+            # msolve subprocess driver (separate research package)
             pkgs.msolve
             # spec/MODEL.md -> PDF with citations from paper/references.bib
             # (scripts/render-model.sh); typst is pandoc's PDF engine here

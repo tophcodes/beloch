@@ -22,7 +22,7 @@ ordering + dual FOLD (`creasePattern` + `foldedForm`) output. The nearest "compe
 layer.
 
 **Correction (2026-09-10).** The landscape check missed two precedents, found
-with the Origami⁴ proceedings (`notes/2026-09-10-origami4-prior-art.md`).
+with the Origami⁴ proceedings.
 Fisher's 1994 thesis [fisher1994] is a standalone textual language over a
 folded state with an implicit moving part, an above-relation between faces, and
 a per-step difference list; `multifold … holding face(…)`, `tucking A under B`

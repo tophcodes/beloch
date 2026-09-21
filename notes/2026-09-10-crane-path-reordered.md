@@ -9,7 +9,7 @@ path entirely. Issues #29–#35 and milestones 1–7 carry the new positions.
 
 The ladder in the issues (Even Bases → Squash → Petal → Bird Base → Inside
 Reverse → Outside Reverse → Crane) follows the diagrams every folder knows.
-The Origami⁴ prior-art pass (`2026-09-10-origami4-prior-art.md`) turned up a
+The Origami⁴ prior-art pass turned up a
 shorter route in print.
 
 Eos folds the crane with three commands: `ValleyFold`, `MountainFold`,

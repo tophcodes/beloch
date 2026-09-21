@@ -51,4 +51,4 @@ the formalism with each.
   a foundation that won't need replacing again.
 - Every feature must arrive with its semantics written down first.
 - Reading the literature happens interleaved with design, not as a phase before
-  it (see `../notes/` journal and `../bibliography.md`).
+  it (see the `../notes/` journal).
