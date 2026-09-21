@@ -1,0 +1,29 @@
+; Beloch logo mark, direction B ("one knot") — the geometry of
+; knot-01-emergent.svg, evaluated rather than drawn.
+;
+;   nix develop --command dune exec beloch -- fold \
+;     docs/brand/logo-explorations/knot/logo.bel > /tmp/logo.fold
+;   cd packages/render-2d/render-svg && bun bin/fold2svg.ts /tmp/logo.fold /tmp/logo-cp.svg
+;
+; Three marked lines meet at .o = (1/3, 2/3). Three of the six rays there are
+; given; `flatten` solves for the fourth, which no Huzita axiom constructs from
+; the named points — it exists only because the vertex has to fold flat. That
+; derived crease is the mark's single mountain.
+;
+; Vertex: (1/3, 2/3). Sectors 139.3987 / 71.5651 / 40.6013 / 108.4349 degrees.
+; Kawasaki: 139.3987 - 71.5651 + 40.6013 - 108.4349 = 0.
+; Maekawa:  M - V = 1 - 3 = -2.
+
+paper square
+
+mark (map .c onto .d) as --w   ; perpendicular bisector of --cd: x = 1/2
+.mcd = --w * --cd              ; (1/2, 1)
+.mab = --w * --ab              ; (1/2, 0)
+
+mark (through .a .mcd) as --l1
+mark (through .d .b) as --l2
+.o = --l1 * --l2               ; (1/3, 2/3) — the knot
+
+mark (through .o .mab) as --l3
+
+flatten (--l1 & .a) (--l2 & .b) (--l3 \ .mab) (toward .c) as --ear
