@@ -37,6 +37,21 @@ const NAV_LINKS = [
       content="A declarative language for origami, built on the Huzita–Justin axioms."
     />
     <link rel="icon" href="/favicon.svg" />
+    {/* No Open Graph tags existed before this: a shared link rendered as a
+        bare URL. The image is scripts/generate-og-image.ts's output, the
+        project's own bird-base fold on the dark theme panel. */}
+    <meta property="og:title" content="Beloch" />
+    <meta
+      property="og:description"
+      content="A declarative language for origami, built on the Huzita–Justin axioms."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://beloch.toph.so/" />
+    <meta property="og:image" content="https://beloch.toph.so/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://beloch.toph.so/og-image.png" />
     {/* Inlined to avoid a flash of the wrong theme. Shares Starlight's
         `starlight-theme` localStorage key so an explicit toggle choice carries
         between this page and the docs — but the landing is hard dark-default:

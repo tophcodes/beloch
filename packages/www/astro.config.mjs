@@ -40,6 +40,10 @@ const renderSvgRoot = join(repoRoot, 'packages', 'render-2d', 'render-svg', 'src
 
 // https://astro.build/config
 export default defineConfig({
+	// The canonical domain (DEPLOY.md). Starlight only emits `og:url` and the
+	// per-page canonical link when `site` is set, and an absolute `og:image`
+	// needs a known origin to resolve against.
+	site: 'https://beloch.toph.so',
 	vite: {
 		resolve: {
 			alias: {
@@ -57,6 +61,23 @@ export default defineConfig({
 		// The docs playground page was replaced by the landing page at `/`
 		// (the live playground is the landing hero now).
 		'/playground/': '/',
+		// `introduction.mdx` and `tutorials/` were removed in favor of the four
+		// reference documents under `/model/`, `/kernel/`, `/language/`,
+		// `/output/`; both were still targets of the main navigation and are
+		// indexed, so they 404 without a redirect. Each old path goes to the
+		// reference doc covering the same ground: `paper-and-values`, `naming`
+		// and `mark-vs-fold` are language syntax (paper declaration, bindings,
+		// the `mark`/`fold` verbs), all in the language spec's "Write
+		// statements" section; `reflecting` covers `map onto`, which the model
+		// spec defines as an operation; `layers` covers fold-stack ordering,
+		// which the kernel spec documents as rank. `/introduction/` followed
+		// the same path as the first tutorial, so it goes there too.
+		'/introduction/': '/language/',
+		'/tutorials/paper-and-values/': '/language/',
+		'/tutorials/naming/': '/language/',
+		'/tutorials/mark-vs-fold/': '/language/',
+		'/tutorials/reflecting/': '/model/',
+		'/tutorials/layers/': '/kernel/',
 	},
 	markdown: {
 		// Highlight ```beloch fences with the tree-sitter highlighter before
@@ -109,6 +130,29 @@ export default defineConfig({
 			components: { Sidebar: './src/components/Sidebar.astro' },
 			customCss: ['./src/styles/theme.css', 'katex/dist/katex.min.css'],
 			head: [
+				// Starlight sets og:title, og:description, og:type and
+				// twitter:card itself (utils/head.ts); it never sets an image, so
+				// the docs pages announce `summary_large_image` and deliver no
+				// image, same gap as the landing page. Reuses the same
+				// build-generated card (scripts/generate-og-image.ts) rather than
+				// a second image, since these are reference documents of the same
+				// project, not individually illustrated pages.
+				{
+					tag: "meta",
+					attrs: { property: "og:image", content: "https://beloch.toph.so/og-image.png" },
+				},
+				{
+					tag: "meta",
+					attrs: { property: "og:image:width", content: "1200" },
+				},
+				{
+					tag: "meta",
+					attrs: { property: "og:image:height", content: "630" },
+				},
+				{
+					tag: "meta",
+					attrs: { name: "twitter:image", content: "https://beloch.toph.so/og-image.png" },
+				},
 				{
 					tag: "script",
 					content: headSyncScript(),
