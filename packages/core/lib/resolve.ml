@@ -198,16 +198,33 @@ and resolve_paper_line (ctx : Ctx.ctx) (lo : Ast.line_operand) :
 and material_cid (ctx : Ctx.ctx) (cr : Ast.crease_ref) : int =
   match lookup_crease ctx cr with
   | Material (cid, _) -> cid
-  | Mark (_, line) ->
+  | Mark (mid, line) ->
       (* selecting a segment/ray of a mark is a folding-side operation
          (collapse `& .x`, fold-along, `at`): materialize the mark into a
          real crease now (subdivide along its line), then treat it as
          Material. Pure-reference marks — never segment-selected — never
          reach here, so they stay non-subdividing records (#26). *)
       let cid = Fold_state.fresh_crease_id () in
+      (* Two different questions, two different answers. WHAT DEFINED this
+         line is the `mark` statement, so the crease inherits that mark's
+         own provenance — its construction, its inputs, its name and the
+         span a reader should be sent to. WHEN the crease exists is this
+         statement, the one selecting a segment, so the statement index is
+         taken here. Minting provenance from the reference instead would
+         report the use site as the definition and name the axiom "mark",
+         which says nothing about how the line was built. *)
+      let mark_prov =
+        Array.find_opt
+          (fun (m : Fold_state.mark) -> m.Fold_state.mcrease_id = mid)
+          (Fold_state.marks !(ctx.state))
+        |> Fun.flip Option.bind (fun (m : Fold_state.mark) -> m.Fold_state.mprov)
+      in
       let prov : State.provenance option =
-        Some { State.axiom = "mark"; sources = [ "--" ^ cr.Ast.cname ];
-               span = cr.Ast.cspan; name = None; stmt = Ctx.stmt_index ctx }
+        match mark_prov with
+        | Some pr -> Some { pr with State.stmt = Ctx.stmt_index ctx }
+        | None ->
+            Some { State.axiom = "mark"; sources = [ "--" ^ cr.Ast.cname ];
+                   span = cr.Ast.cspan; name = None; stmt = Ctx.stmt_index ctx }
       in
       ctx.state :=
         Fold_state.subdivide_paper !(ctx.state) line ~crease_id:cid ~prov;
