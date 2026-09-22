@@ -67,15 +67,6 @@ const codeLines = code ? code.split("\n").length : 0;
         <button type="button" role="tab" class="pg-view is-active" data-view="folded" aria-selected="true">folded</button>
       </div>
       <div class="pg-toolbar-tools">
-        <div class="pg-linestyle" role="group" aria-label="Line style">
-          <button type="button" class="pg-style is-active" data-style="mono" aria-pressed="true">mono</button>
-          <button type="button" class="pg-style" data-style="colour" aria-pressed="false">colour</button>
-        </div>
-        <div class="pg-linestyle" role="group" aria-label="Hidden edges">
-          <button type="button" class="pg-occl is-active" data-hidden="hide" aria-pressed="true">off</button>
-          <button type="button" class="pg-occl" data-hidden="dashed" aria-pressed="false">dashed</button>
-          <button type="button" class="pg-occl" data-hidden="depth" aria-pressed="false">depth</button>
-        </div>
         <div class="pg-swatches" role="group" aria-label="Paper"></div>
         <button type="button" class="pg-export-toggle" aria-expanded="false">export</button>
       </div>
@@ -85,6 +76,10 @@ const codeLines = code ? code.split("\n").length : 0;
       role="group"
       aria-label="Drawing. Arrow keys step, plus and minus zoom, 0 resets the view."
     >
+      <div class="pg-viewer-controls">
+        <button type="button" class="pg-cycle pg-cycle-style">mono</button>
+        <button type="button" class="pg-cycle pg-cycle-occl">hidden: off</button>
+      </div>
       <div class="pg-canvas">
         {seed ? <Fragment set:html={seed} /> : <p class="pg-notice pg-notice-info">Press “Run” to evaluate.</p>}
       </div>
@@ -208,6 +203,7 @@ const codeLines = code ? code.split("\n").length : 0;
   .is-hero .pg-inspect,
   .is-hero .pg-error,
   .is-hero .pg-reset,
+  .is-hero .pg-viewer-controls,
   .is-hero .pg-export {
     display: none;
   }
@@ -279,13 +275,24 @@ const codeLines = code ? code.split("\n").length : 0;
      is drawn on. A paper whose contrast the coloured style cannot hold
      switches that button off (see colorOk in lib/paper-schemes) and says why
      in its title, rather than dropping it and leaving a gap. */
-  .pg-linestyle {
-    display: inline-flex;
-    gap: 4px;
+  /* The two drawing switches sit over the paper rather than in the header
+     row: they change what the reader is looking at, so they belong where
+     the looking happens. Each is one button carrying its own state, cycled
+     by clicking — see updateCycleButtons. Top left, opposite the reset
+     button at top right. */
+  .pg-viewer-controls {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 2;
+    display: flex;
+    gap: 6px;
+  }
+  .pg-cycle {
+    background: color-mix(in srgb, var(--bel-ui-surface) 78%, transparent);
   }
   .pg-view,
-  .pg-style,
-  .pg-occl,
+  .pg-cycle,
   .pg-export-toggle {
     font: inherit;
     font-size: 12px;
@@ -299,27 +306,22 @@ const codeLines = code ? code.split("\n").length : 0;
     transition: color var(--bel-duration-state) var(--bel-ease), border-color var(--bel-duration-state) var(--bel-ease);
   }
   .pg-view:hover,
-  .pg-style:hover:not(:disabled),
-  .pg-occl:hover:not(:disabled),
+  .pg-cycle:hover:not(:disabled),
   .pg-export-toggle:hover {
     color: var(--bel-ui-accent);
   }
   .pg-view.is-active,
-  .pg-style.is-active,
-  .pg-occl.is-active,
   .pg-export-toggle[aria-expanded="true"] {
     border-color: var(--bel-ui-accent);
     color: var(--bel-ui-text);
   }
-  .pg-style:disabled,
-  .pg-occl:disabled {
+  .pg-cycle:disabled {
     cursor: default;
     border-color: var(--bel-ui-divider);
     color: var(--bel-ui-text-faint);
   }
   .pg-view:focus-visible,
-  .pg-style:focus-visible,
-  .pg-occl:focus-visible,
+  .pg-cycle:focus-visible,
   .pg-export-toggle:focus-visible {
     outline: 2px solid var(--bel-ui-accent);
     outline-offset: 2px;
@@ -1174,14 +1176,13 @@ const codeLines = code ? code.split("\n").length : 0;
     const stepNext = root.querySelector<HTMLButtonElement>(".pg-step-next");
     const inspectPanel = root.querySelector<HTMLElement>(".pg-inspect");
     const errorBox = root.querySelector<HTMLDivElement>(".pg-error");
-    const styleBar = root.querySelector<HTMLDivElement>(".pg-linestyle");
     const exportToggle = root.querySelector<HTMLButtonElement>(".pg-export-toggle");
     const exportPanel = root.querySelector<HTMLDivElement>(".pg-export");
     // Queried here rather than beside the export wiring below, because
     // renderStep reaches for them through updateExportPanel and runs first.
     const exportSaid = exportPanel?.querySelector<HTMLParagraphElement>(".pg-export-said") ?? null;
     const exportStepLine = exportPanel?.querySelector<HTMLParagraphElement>(".pg-export-step") ?? null;
-    if (!sourceMount || !runBtn || !result || !canvas || !resetBtn || !runHint || !stepsBar || !stepDots || !stepLabel || !stepPrev || !stepNext || !inspectPanel || !errorBox || !styleBar || !exportToggle || !exportPanel) return;
+    if (!sourceMount || !runBtn || !result || !canvas || !resetBtn || !runHint || !stepsBar || !stepDots || !stepLabel || !stepPrev || !stepNext || !inspectPanel || !errorBox || !exportToggle || !exportPanel) return;
 
     const panZoom = createPanZoom(result, canvas, resetBtn);
     // A build-time `seed` SVG is already in the canvas; enable pan/zoom + the
@@ -1347,22 +1348,42 @@ const codeLines = code ? code.split("\n").length : 0;
       else showSvg(svgForStep(0, renderTheme()), true, fade);
     }
 
-    // A style the paper cannot hold is switched off rather than hidden, and
-    // its title says which paper and why (B1.4).
-    function updateStyleButtons() {
+    // The two drawing switches over the paper. Each button carries its own
+    // state as its label and steps to the next on click, so the pair takes
+    // the width of two words instead of five. A state the current paper or
+    // view cannot hold disables the button rather than hiding it, and the
+    // title says why.
+    const styleBtn = root.querySelector<HTMLButtonElement>(".pg-cycle-style");
+    const occlBtn = root.querySelector<HTMLButtonElement>(".pg-cycle-occl");
+    const OCCL_LABEL: Record<typeof hiddenMode, string> = {
+      hide: "hidden: off",
+      dashed: "hidden: dashed",
+      depth: "hidden: depth",
+    };
+    const OCCL_TITLE: Record<typeof hiddenMode, string> = {
+      hide: "Buried crease segments are not drawn. Click for dashed.",
+      dashed: "Buried crease segments drawn alike. Click to fade them by depth.",
+      depth: "Buried crease segments fade with the layers over them. Click to stop drawing them.",
+    };
+    function updateCycleButtons() {
       const scheme = resolveScheme(currentSchemeId);
-      styleBar!.querySelectorAll<HTMLButtonElement>(".pg-style").forEach((b) => {
-        const id = b.dataset.style as "mono" | "colour";
-        const off = id === "colour" && !scheme.colorOk;
-        b.disabled = off;
-        b.title = off
-          ? `Not offered on ${scheme.label}: every crease colour falls below 2:1 on this paper`
-          : id === "mono"
-            ? "Yoshizawa-Randlett notation, monochrome"
-            : "One colour per fold direction";
-        b.classList.toggle("is-active", id === lineStyleId);
-        b.setAttribute("aria-pressed", String(id === lineStyleId));
-      });
+      if (styleBtn) {
+        styleBtn.textContent = lineStyleId;
+        styleBtn.disabled = !scheme.colorOk;
+        styleBtn.title = !scheme.colorOk
+          ? `Only monochrome on ${scheme.label}: every crease colour falls below 2:1 on this paper`
+          : lineStyleId === "mono"
+            ? "Yoshizawa-Randlett notation, monochrome. Click for one colour per fold direction."
+            : "One colour per fold direction. Click for monochrome.";
+      }
+      if (occlBtn) {
+        const flat = currentView === "cp";
+        occlBtn.textContent = OCCL_LABEL[hiddenMode];
+        occlBtn.disabled = flat;
+        occlBtn.title = flat
+          ? "The crease pattern is one flat sheet: nothing is buried"
+          : OCCL_TITLE[hiddenMode];
+      }
     }
     const viewsBar = root.querySelector<HTMLDivElement>(".pg-toolbar-views");
     function updateViewTabs() {
@@ -1379,49 +1400,26 @@ const codeLines = code ? code.split("\n").length : 0;
       if (v === currentView) return;
       currentView = v;
       updateViewTabs();
-      updateOcclButtons();
+      updateCycleButtons();
       // Two views of one state, so the shorter of the two lengths.
       rerenderCurrent("view");
     });
     updateViewTabs();
 
-    styleBar.addEventListener("click", (e: MouseEvent) => {
-      const b = (e.target as Element).closest<HTMLButtonElement>(".pg-style");
-      if (!b || b.disabled) return;
-      const id = b.dataset.style as "mono" | "colour";
-      if (id === lineStyleId) return;
-      lineStyleId = id;
-      updateStyleButtons();
+    styleBtn?.addEventListener("click", () => {
+      if (styleBtn.disabled) return;
+      lineStyleId = lineStyleId === "mono" ? "colour" : "mono";
+      updateCycleButtons();
       rerenderCurrent();
     });
-    updateStyleButtons();
-
-    const occlBar = root.querySelector<HTMLDivElement>('[aria-label="Hidden edges"]');
-    const OCCL_TITLE: Record<string, string> = {
-      hide: "Draw only what the reader can see",
-      dashed: "Draw buried crease segments too, all alike",
-      depth: "Draw buried crease segments, fainter the more layers cover them",
-    };
-    function updateOcclButtons() {
-      const flat = currentView === "cp";
-      occlBar?.querySelectorAll<HTMLButtonElement>(".pg-occl").forEach((b) => {
-        const id = b.dataset.hidden!;
-        b.disabled = flat;
-        b.title = flat ? "The crease pattern is one flat sheet: nothing is buried" : OCCL_TITLE[id]!;
-        b.classList.toggle("is-active", id === hiddenMode);
-        b.setAttribute("aria-pressed", String(id === hiddenMode));
-      });
-    }
-    occlBar?.addEventListener("click", (e: MouseEvent) => {
-      const b = (e.target as Element).closest<HTMLButtonElement>(".pg-occl");
-      if (!b || b.disabled) return;
-      const id = b.dataset.hidden as typeof hiddenMode;
-      if (id === hiddenMode) return;
-      hiddenMode = id;
-      updateOcclButtons();
+    const OCCL_CYCLE = ["hide", "dashed", "depth"] as const;
+    occlBtn?.addEventListener("click", () => {
+      if (occlBtn.disabled) return;
+      hiddenMode = OCCL_CYCLE[(OCCL_CYCLE.indexOf(hiddenMode) + 1) % OCCL_CYCLE.length]!;
+      updateCycleButtons();
       rerenderCurrent();
     });
-    updateOcclButtons();
+    updateCycleButtons();
 
     const swatchBar = root.querySelector<HTMLDivElement>(".pg-swatches");
     if (swatchBar) {
@@ -1443,7 +1441,7 @@ const codeLines = code ? code.split("\n").length : 0;
           // to one of those papers takes the drawing back to monochrome
           // instead of leaving an unreadable one on screen.
           if (!s.colorOk && lineStyleId === "colour") lineStyleId = "mono";
-          updateStyleButtons();
+          updateCycleButtons();
           rerenderCurrent();
           swatchBar.querySelectorAll(".pg-swatch").forEach((el) => {
             el.classList.toggle("is-active", el === b);
@@ -1587,6 +1585,16 @@ const codeLines = code ? code.split("\n").length : 0;
     const highlightEdgeBundle = (name: string) => { clearHl(); addEdgeHl(name); };
     // All coincident entities at once (the chooser hover/anchor).
     const highlightEntities = (ents: EntityRef[]) => { clearHl(); ents.forEach(addEntityHl); };
+    // The drawing is rebuilt on every step and the highlight lives on its
+    // elements, so an anchored bundle loses its classes together with the
+    // old SVG. Putting them back after each swap is what keeps a clicked
+    // bundle lit while the reader steps through the program. A bundle with
+    // no segment at the step on screen lights nothing, which is the honest
+    // answer rather than an empty promise.
+    const reapplyAnchorHl = () => {
+      if (choiceOpen && choiceEnts.length) highlightEntities(choiceEnts);
+      else if (pinned) highlightEntities([pinned]);
+    };
     // Resolves the pointer target to an EntityRef: lookupEntity first
     // (crease/face/vertex, attr-based); if that's null AND the target is a
     // crease-layer line or its `.pg-hit` twin, fall back to geometry — this
@@ -1998,6 +2006,7 @@ const codeLines = code ? code.split("\n").length : 0;
       enhanceCreaseHits(live);
       enhancePointHits(live);
       makeCreasesReachable();
+      reapplyAnchorHl();
       // A drawing on the stage means the rail has something to stand for. A
       // pinned answer survives a step change, which is what the rail is for.
       if (!hero && !pinned && !choiceOpen) restInspect();
