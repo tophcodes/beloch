@@ -8,7 +8,10 @@ import type { EntityRef } from "./state";
 // arguments to renderCommand, because they change no shared state and two
 // drawings of one document may differ in both.
 export type Event =
-  | { type: "document/set"; scene: FoldScene }
+  // Null empties the slot: a consumer whose source changed has no document
+  // until the next run answers, and what was said about the old one no longer
+  // holds.
+  | { type: "document/set"; scene: FoldScene | null }
   // Statement index. Out-of-range values are clamped rather than rejected, so
   // a caller may hand over a remembered step from a shorter program.
   | { type: "step/to"; index: number }

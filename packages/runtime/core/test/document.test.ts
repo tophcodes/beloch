@@ -27,3 +27,21 @@ test("a step arriving without a document is ignored", () => {
   rt.dispatch({ type: "step/to", index: 4 });
   expect(rt.state.step).toBe(0);
 });
+
+test("emptying the slot takes the step and the selection with it", () => {
+  const rt = createRuntime();
+  rt.dispatch({ type: "document/set", scene: sceneOf([statement(0), statement(1)]) });
+  rt.dispatch({ type: "selection/set", entities: [{ kind: "crease", creaseId: "3" }] });
+  rt.dispatch({ type: "document/set", scene: null });
+  expect(rt.state.scene).toBeNull();
+  expect(rt.state.step).toBe(0);
+  expect(rt.state.selection).toEqual([]);
+});
+
+test("emptying an already empty slot is no news", () => {
+  const rt = createRuntime();
+  let told = 0;
+  rt.subscribe(() => told++);
+  rt.dispatch({ type: "document/set", scene: null });
+  expect(told).toBe(0);
+});

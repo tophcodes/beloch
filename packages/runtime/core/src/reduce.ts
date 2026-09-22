@@ -37,7 +37,7 @@ export function reduce(state: State, event: Event): State {
       return {
         ...state,
         scene: event.scene,
-        step: event.scene.statements.length,
+        step: event.scene === null ? 0 : event.scene.statements.length,
         selection: [],
         hover: null,
       };
