@@ -6,11 +6,11 @@ import { Theme } from "./theme";
 import { renderScene } from "./render-scene";
 
 export interface RenderOptions {
-  title?: string;
-  labels?: string[]; // ["--v", ".e"]; undefined = none
-  highlight?: string[]; // entities to emphasise: ["--v", ".e", "#[.p]"]
-  theme?: Partial<Theme>;
-  legend?: boolean; // default false
+  title?: string | undefined;
+  labels?: string[] | undefined; // ["--v", ".e"]; undefined = none
+  highlight?: string[] | undefined; // entities to emphasise: ["--v", ".e", "#[.p]"]
+  theme?: Partial<Theme> | undefined;
+  legend?: boolean | undefined; // default false
 }
 
 export function renderCP(scene: FoldScene, opts: RenderOptions = {}): SvgDoc {

@@ -8,10 +8,10 @@ import type { MarkOverlay } from "./render-scene";
 import type { RenderOptions } from "./render-cp";
 
 export interface FoldedOptions extends RenderOptions {
-  view?: "top" | "bottom";     // default "top"
-  hidden?: "dashed" | "hide";  // default "hide"
-  step?: string;               // frame index (numeric string); undefined/out-of-range → final state
-  markOverlay?: MarkOverlay;   // project these marks onto the step's faces (newest highlighted)
+  view?: "top" | "bottom" | undefined; // default "top"
+  hidden?: "dashed" | "hide" | "depth" | undefined; // default "hide"
+  step?: string | undefined;   // frame index (numeric string); undefined/out-of-range → final state
+  markOverlay?: MarkOverlay | undefined; // project these marks onto the step's faces (newest highlighted)
 }
 
 export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc {

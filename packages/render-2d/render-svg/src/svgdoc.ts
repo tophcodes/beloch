@@ -11,7 +11,9 @@ export function el(
   children: SvgNode[] = [],
   text?: string,
 ): SvgNode {
-  return { tag, attrs, children, text };
+  // `text` is left out rather than set to undefined, so the node keeps the
+  // shape its type describes under exactOptionalPropertyTypes.
+  return text === undefined ? { tag, attrs, children } : { tag, attrs, children, text };
 }
 
 export type LayerName = "paper" | "creases" | "annotations" | "hud";
