@@ -1,7 +1,7 @@
 # Design language: what is built, what is not
 
 The draft that this implements is `design-language.md` (the conditions) plus
-the Claude Design answers to it, which fixed twenty-two decisions across four
+the Claude Design answers to it, which fixed twenty-three decisions across four
 passes. This file says how far the code follows, so the next piece of work does
 not have to re-derive it.
 
@@ -31,6 +31,7 @@ not have to re-derive it.
 | 20 | A figure's program is shown, highlighted, on the code surface | `remark-model-blocks.ts` |
 | 21 | The seven statement kinds read as three groups | the bridge |
 | 22 | There is a named type scale | `--bel-text-*` |
+| 23 | The site states the archived record it belongs to | `CiteLine.astro`, `/cite/` |
 
 ## Built
 
@@ -129,6 +130,15 @@ not have to re-derive it.
   icon, the two page links are words. Below 50rem the words step aside for the
   search and the drawer button and reappear inside the drawer; the icon and
   the toggle stay reachable without opening anything.
+- **The release is on the page.** Every footer carries the version, the
+  concept DOI, the author with their ORCID and a link to `/cite/`, and the
+  landing carries `citation_*` metadata and a `SoftwareSourceCode` record in
+  JSON-LD for the indexers that read them. The citation tags describe one work,
+  so they sit on the one page that stands for the software rather than on every
+  page. Every value is read from `CITATION.cff` at build time, so a release
+  moves one file and the site follows. The DOI is the concept DOI, which
+  resolves to the newest version, so a reference made today survives the next
+  release.
 - **A figure's program is code.** It was plain text in a collapsed
   `<details>`, on the page ground, so the syntax roles a real program uses
   (points, axiom operators, sigils, numbers) appeared nowhere in the
