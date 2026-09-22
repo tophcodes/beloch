@@ -12,6 +12,8 @@ adds the modules it needs, and plugs in its own renderer.
 - **`core/`** (`@beloch/runtime`): the state, the events that change it, and
   `renderCommand`, which says what to draw. Imports types from `@beloch/scene`
   and nothing at runtime.
+- **`editor/`** (`@beloch/runtime-editor`): source and entities, both
+  directions. It carries no DOM and no editor library.
 - **`render-dom/`** (`@beloch/runtime-render-dom`): the renderer plug for a
   DOM host. It executes a render command with `@beloch/render-svg` and puts the
   result in an element.
@@ -103,6 +105,11 @@ drawing in `host`. It owns four pieces of DOM work:
   the picture does not already carry as a crease. A folded frame answers that
   from its own edges; a flat sheet holds every crease of the final state, so
   there the statement each crease was scored at decides.
+- The emphasis a piece of source puts on the drawing: one palette colour per
+  entity the source named, over creases, construction lines and named points
+  alike. The palette is the one whose statement is that a word and a thing are
+  the same thing, so a pick keeps the interface accent and the host's
+  stylesheet settles which wins where both land.
 - A dashed ghost per segment of a settled entity that the folded drawing has
   no line for. Those coordinates come from `beloch:inspect`, which describes
   the final fold, so they are drawn at that frame and nowhere else.
@@ -119,6 +126,23 @@ transform are untouched by a swap, and the host decides whether a swap fades.
 The markup it writes carries `bel-hit`, `bel-hl`, `bel-hl-ghost` and
 `bel-fade-host` / `bel-fade-ghost`; what those look like is the host's
 stylesheet, including whether the fade is a fade at all.
+
+## Source blocks
+
+Only a fold or a mark makes a step, so a program reads as a sequence of
+blocks: a statement's own line, and everything under it until the next
+statement. A point or a named line declared in between belongs to the step it
+follows, and the drawing at that step carries what it built. `blockOfStep`
+answers what a step stands for, `blockAtLine` what a line belongs to, and
+`entitiesIn` what a block named.
+
+Each kind is placed by what the document records about it. A crease carries
+the span of the statement that scored it. A named point carries the number of
+statements that ran before it was declared. A named line carries the frame it
+was bound against and nothing else, which places it only where every statement
+is a fold; a program with a mark leaves its lines out of every block rather
+than putting them in the wrong one. Settling that needs a `statement` on a
+named line in the FOLD, which a named point already has.
 
 ## Tests
 

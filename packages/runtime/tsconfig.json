@@ -15,5 +15,5 @@
       "@beloch/render-svg": ["../render-2d/render-svg/src/index.ts"]
     }
   },
-  "include": ["core/src", "core/test", "render-dom/src", "render-dom/test"]
+  "include": ["core/src", "core/test", "editor/src", "editor/test", "render-dom/src", "render-dom/test"]
 }
