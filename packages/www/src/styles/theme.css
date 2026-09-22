@@ -356,20 +356,20 @@
 .gr-block-head { font-size: 0.85em; color: var(--sl-color-gray-3); margin-bottom: 0.35rem; }
 
 /* ──────────────────────────────────────────────────────────────────────────
- * <beloch-figure> interaction — controls bar, hover, per-name selection.
- * `.beloch-controls` is injected as a 3rd child into the 2-column
- * `.beloch-card` grid (scoped in Beloch.astro); span both columns so it
- * doesn't push the diagram panel into its own row.
+ * <beloch-figure> interaction — stepper, hover, per-name selection.
+ * `.beloch-controls` is injected as a child of the 2-column `.beloch-card`
+ * grid (scoped in Beloch.astro); span both columns so it doesn't push the
+ * diagram panel into its own row.
  * ────────────────────────────────────────────────────────────────────────── */
-.beloch-controls { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
-.beloch-tab { font: inherit; padding: 3px 10px; border-radius: var(--bel-radius-control); border: 1px solid var(--bel-ui-control-border); background: transparent; color: var(--bel-ui-text-muted); cursor: pointer; }
-.beloch-tab.is-active { color: var(--bel-ui-text); border-color: var(--bel-ui-accent); }
+.beloch-controls { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-family: var(--bel-font-mono); font-size: 12px; }
 .beloch-stepper { display: inline-flex; align-items: center; gap: 6px; color: var(--bel-ui-text-muted); }
 .beloch-stepper button { background: none; border: none; color: inherit; cursor: pointer; font-size: 13px; }
+.beloch-stepper button:hover { color: var(--bel-ui-accent); }
+.beloch-stepper button:focus-visible { outline: 2px solid var(--bel-ui-accent); outline-offset: 2px; border-radius: var(--bel-radius-control); }
 
-/* active step line — same accent already used for "active" state (see
- * .beloch-tab.is-active above) rather than inventing a new colour, in the
- * code surface's fixed column because the gutter sits on that panel. */
+/* active step line — the accent that carries "active" everywhere else rather
+ * than a colour of its own, in the code surface's fixed column because the
+ * gutter sits on that panel. */
 .beloch-gutter [data-line].bel-step-line {
 	color: var(--bel-ui-code-accent);
 	font-weight: 700;

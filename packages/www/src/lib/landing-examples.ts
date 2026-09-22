@@ -1,11 +1,18 @@
-/** The landing page's hero program: rendered to a static SVG at build time
- *  and loaded into the live playground. Kept as its own display file
- *  (`landing-hero.bel`) rather than the raw `examples/bases/bird-base.bel`,
- *  because that corpus file opens with a source-attribution comment block
- *  and ends with `; assert` lines that are test fixture, not something a
- *  first-time visitor should have to scroll past. `landing-examples.test.ts`
- *  checks the two evaluate to the same FOLD, so this display copy cannot
- *  drift from the corpus in anything but comments. */
+/** The two programs the standalone pages ship, each rendered to a static SVG
+ *  at build time and handed to the card as its starting source.
+ *
+ *  Each is a display copy of a corpus file rather than the corpus file itself,
+ *  because those open with a source-attribution comment block and end with
+ *  `; assert` lines that are test fixture, not something a first-time visitor
+ *  should have to scroll past. `landing-examples.test.ts` checks each copy
+ *  evaluates to the same FOLD as its corpus file, so a display copy cannot
+ *  drift from the corpus in anything but comments.
+ *
+ *  The two differ in length on purpose. The hero has to show its program and
+ *  its drawing complete at 1280 by 800 with the drawing still holding half the
+ *  width, which a program with ninety-character lines cannot do; the fish base
+ *  is twelve short lines. The playground has an editor, the height for it and
+ *  a reader who came to read, so it starts on the bird base. */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -18,7 +25,10 @@ const siteDir = process.env.BELOCH_REPO_ROOT
   ? join(process.env.BELOCH_REPO_ROOT, "packages", "www")
   : join(here, "..", "..");
 
-export const HERO_SRC = readFileSync(
-  join(siteDir, "src", "lib", "landing-hero.bel"),
-  "utf-8",
-);
+const read = (name: string) => readFileSync(join(siteDir, "src", "lib", name), "utf-8");
+
+/** The landing hero's program: a display copy of examples/bases/fish-base.bel. */
+export const HERO_SRC = read("landing-hero.bel");
+
+/** The playground's starting program: a display copy of examples/bases/bird-base.bel. */
+export const PLAYGROUND_SRC = read("playground-start.bel");

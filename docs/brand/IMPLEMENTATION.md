@@ -69,19 +69,43 @@ far the code follows, so the next piece of work does not have to re-derive it.
   landing as well as in the docs. The landing no longer pins dark before the
   first paint.
 
+## The viewer pass
+
+`viewer-brief.md` put seven decisions to the design. The answer came back as
+two versions of one surface, differing in how the crease pattern and the folded
+state stand next to each other, where the inspector goes and how the columns
+split. Both are built, on the surface each suits: the playground takes the tab
+pair, because an editor needs the width and a reader has to be able to hit a
+crease in the folded state; the docs card takes the pair side by side, because
+it has no editor and checking flat-foldability is a comparison.
+
+| # | Question | Answer |
+|---|---|---|
+| 1 | Crease pattern and folded state | Tab pair in the playground, side by side in the docs card |
+| 2 | A line-style switch | Yes, beside the paper choice; a paper that cannot hold the coloured style switches that button off and says why in its title |
+| 3 | Export and sharing | The drawing as SVG to a file or the clipboard, and a link carrying the program and the step |
+| 4 | The inspector | A rail under the drawing, holding its place across a step change |
+| 5 | The landing hero | Its own job: a program and its drawing, and nothing to operate; the playground moved back to `/playground/` |
+| 6 | `--bel-ui-border` as two roles | `--bel-ui-divider` and `--bel-ui-control-border` |
+| 7 | Whether `--bel-ui-text-faint` stays | It stays, as the text of a switched-off control |
+
+Also built with it, from the findings in section 5 of the brief: a diagnostic
+stands beside the drawing instead of replacing it and marks the line the
+evaluator named, the drawing takes focus and answers the arrow keys, page
+scrolling over the drawing stays the page's, the runtime transfer reports how
+far it has got, and the control transitions take the duration tokens.
+
 ## Not built, and why
 
-- **A colour/monochrome style switch.** `colorOk` says which papers may offer
-  the coloured style, but nothing offers it yet: the renderer draws the
-  monochrome Yoshizawa-Randlett style throughout.
+- **A view of the crease pattern in the docs card independent of its folded
+  twin.** The card's stepper moves both drawings together, because they are two
+  drawings of one state.
 
 ## Measured, and left for a decision
 
 Making light the reference put its values under the same measurement the dark
-ones already had. Three things came out of it that a value change alone does
-not settle. The last two belong to the design pass over the viewer, the editor
-and the renderer, because what they need is a decision about the controls
-there.
+ones already had. One thing came out of it that a value change alone does not
+settle.
 
 - **The light accent and the first highlight colour are both teal.** ΔE76 11.0
   against `HIGHLIGHT_TEXT[0]`, where B1.7 asks for 25. Dark mode reaches 30.1
@@ -91,19 +115,8 @@ there.
   leaves teal-green, which changes every figure and the PDF, or the accent
   leaves teal, which was decision 1.
 
-- **`--bel-ui-border` carries two roles.** It draws the dividers between panes
-  and the outlines of tabs, the theme toggle, the step buttons and the paper
-  swatches. At 1.28:1 light and 1.31:1 dark that is fine for a divider and
-  below the 3:1 B6.5 asks of a control outline. The fix is two roles.
-
-- **`--bel-ui-text-faint` is declared and used nowhere.**
-
 ## Next
 
-The accent against the first highlight colour, which is the one measurement
-above that reaches the docs and the printed paper. The other two ride with the
-design pass over the viewer, the editor and the renderer, whose brief is
-`viewer-brief.md`; it also carries the hardcoded 0.15s transitions in the
-playground and the loading indicator, which names the runtime and its size but
-shows no progress (B2.12). After that, the colour style switch `colorOk`
-describes.
+The accent against the first highlight colour, which reaches the docs and the
+printed paper: either the first highlight leaves teal-green, which changes
+every figure and the PDF, or the accent leaves teal, which was decision 1.

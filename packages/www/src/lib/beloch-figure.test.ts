@@ -29,7 +29,10 @@ function mountCard(fold: string): HTMLElement {
     <beloch-figure>
       <figure class="beloch-card">
         <div class="beloch-code-panel"></div>
-        <div class="beloch-diagram"><svg></svg></div>
+        <div class="beloch-views is-pair">
+          <div class="beloch-diagram" data-view="cp"><svg></svg></div>
+          <div class="beloch-diagram" data-view="folded"><svg></svg></div>
+        </div>
         <script type="application/json" class="beloch-fold">${fold}</script>
       </figure>
     </beloch-figure>`;
@@ -49,30 +52,39 @@ function mountCardWithGutter(fold: string, lineCount: number, offset = 0): HTMLE
         <div class="beloch-code-panel">
           <pre class="beloch-pre has-lines"><span class="beloch-gutter" aria-hidden="true">${gutter}</span><code></code></pre>
         </div>
-        <div class="beloch-diagram"><svg></svg></div>
+        <div class="beloch-views is-pair">
+          <div class="beloch-diagram" data-view="cp"><svg></svg></div>
+          <div class="beloch-diagram" data-view="folded"><svg></svg></div>
+        </div>
         <script type="application/json" class="beloch-fold">${fold}</script>
       </figure>
     </beloch-figure>`;
   return document.querySelector("beloch-figure") as HTMLElement;
 }
 
-test("hydration adds a view toggle when the fold has steps", async () => {
+test("hydration adds a stepper when the fold has steps, and keeps both drawings", async () => {
   await import("./beloch-figure");            // registers the element
   const el = mountCard(foldJson);
   (el as any).hydrate();                       // force hydration (bypass IntersectionObserver in test)
-  expect(el.querySelector('[data-view="cp"]')).not.toBeNull();
-  expect(el.querySelector('[data-view="folded"]')).not.toBeNull();
+  expect(el.querySelector(".beloch-stepper")).not.toBeNull();
+  expect(el.querySelector('.beloch-diagram[data-view="cp"]')).not.toBeNull();
+  expect(el.querySelector('.beloch-diagram[data-view="folded"]')).not.toBeNull();
 });
 
-test("switching to folded renders a folded svg; stepper advances", async () => {
+test("stepping moves both drawings of the state at once", async () => {
   await import("./beloch-figure");
   const el = mountCard(foldJson);
   (el as any).hydrate();
-  (el.querySelector('[data-view="folded"]') as HTMLElement).click();
-  const diagram = el.querySelector(".beloch-diagram")!;
-  expect(diagram.querySelector("svg")).not.toBeNull();       // re-rendered
-  const stepper = el.querySelector(".beloch-stepper");
-  expect(stepper).not.toBeNull();
+  const cp = el.querySelector('.beloch-diagram[data-view="cp"]') as HTMLElement;
+  const folded = el.querySelector('.beloch-diagram[data-view="folded"]') as HTMLElement;
+
+  (el as any).setStep((el as any).scene.steps.length - 1);
+  const lastCp = cp.innerHTML;
+  const lastFolded = folded.innerHTML;
+
+  (el as any).setStep(0);
+  expect(cp.innerHTML).not.toBe(lastCp);
+  expect(folded.innerHTML).not.toBe(lastFolded);
 });
 
 test("stepper selects by index, not by (possibly null) step label", async () => {
@@ -84,8 +96,7 @@ test("stepper selects by index, not by (possibly null) step label", async () => 
   await import("./beloch-figure");
   const el = mountCard(diagonalsFoldJson);
   (el as any).hydrate();
-  (el.querySelector('[data-view="folded"]') as HTMLElement).click();
-  const diagram = el.querySelector(".beloch-diagram") as HTMLElement;
+  const diagram = el.querySelector('.beloch-diagram[data-view="folded"]') as HTMLElement;
 
   (el as any).setStep(0);
   const firstStepHTML = diagram.innerHTML;
@@ -128,10 +139,10 @@ test("hover adds and removes .bel-hover", async () => {
   expect(el.querySelectorAll(".bel-hover").length).toBe(0);
 });
 
-test("selection survives a re-render (view switch)", async () => {
+test("selection survives a re-render (a step change)", async () => {
   // x-midpoint's folded SVG emits data-bel-name for its named creases/points
   // (confirmed: "d2", "d1", "d", "center", "c", "b", "a"). Select one via the
-  // code panel, switch to the folded view — this replaces .beloch-diagram's
+  // code panel, step the figure — this replaces the folded panel's
   // innerHTML wholesale with a brand-new SVG — then assert the *freshly
   // rendered* element (not the code-panel token, which render() never
   // touches) regained .bel-selected + a live --bel-sel style. That only
@@ -147,9 +158,9 @@ test("selection survives a re-render (view switch)", async () => {
   token.click();
   expect((el as any).selected.has("d1")).toBe(true);
 
-  (el.querySelector('[data-view="folded"]') as HTMLElement).click();   // triggers render() → new SVG
+  (el as any).setStep((el as any).scene.steps.length - 1);   // triggers render() → new SVG
 
-  const diagram = el.querySelector(".beloch-diagram")!;
+  const diagram = el.querySelector('.beloch-diagram[data-view="folded"]')!;
   const svgEl = diagram.querySelector('[data-bel-name="d1"]') as HTMLElement;
   expect(svgEl).not.toBeNull();
   expect(svgEl.classList.contains("bel-selected")).toBe(true);
@@ -191,7 +202,7 @@ test("deselecting a non-last name frees its colour slot instead of shifting into
   expect(colorA).not.toBe(colorD);
 });
 
-test("folded view highlights the active step's gutter line, tracks stepping, and clears in CP view", async () => {
+test("the active step's gutter line is highlighted and tracks stepping", async () => {
   await import("./beloch-figure");
   const el = mountCardWithGutter(foldQuarterJson, 4, 0);
   (el as any).hydrate();                        // hydrate() selects the last step by default
@@ -203,18 +214,18 @@ test("folded view highlights the active step's gutter line, tracks stepping, and
       (e) => (e as HTMLElement).dataset.line,
     );
 
-  // switch to folded view: last step (index 2, the 2nd fold) has sourceLine 4
-  (el.querySelector('[data-view="folded"]') as HTMLElement).click();
+  // last step (index 2, the 2nd fold) has sourceLine 4
+  (el as any).setStep(2);
   expect(highlighted()).toEqual(["4"]);
   expect(lineEl(4).classList.contains("bel-step-line")).toBe(true);
 
-  // step back to the 1st fold (index 1) has sourceLine 3 — highlight moves,
-  // doesn't accumulate. (Index 0 is the flat sheet, no source line.)
+  // the 1st fold (index 1) has sourceLine 3 — the highlight moves, it doesn't
+  // accumulate.
   (el as any).setStep(1);
   expect(highlighted()).toEqual(["3"]);
   expect(lineEl(4).classList.contains("bel-step-line")).toBe(false);
 
-  // back to CP view: highlight clears entirely
-  (el.querySelector('[data-view="cp"]') as HTMLElement).click();
+  // index 0 is the flat sheet and has no source line, so nothing is marked.
+  (el as any).setStep(0);
   expect(highlighted()).toEqual([]);
 });

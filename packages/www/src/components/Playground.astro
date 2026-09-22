@@ -27,14 +27,20 @@ interface Props {
   // pulls) until the user actually clicks Run, instead of on mount. Optional
   // — default is today's eager boot.
   lazy?: boolean;
+  // "hero" is the landing's card: the program and the drawing, and nothing to
+  // operate. No run button, no step rail, no paper choice, no export, and the
+  // source is read-only. A visitor who wants to change something goes to the
+  // playground, which is the one surface with an editor.
+  variant?: "full" | "hero";
 }
-const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
+const { code = "", height = 320, seed, seedFold, lazy = false, variant = "full" } = Astro.props;
 ---
 
 <div
-  class="beloch-playground"
+  class={`beloch-playground${variant === "hero" ? " is-hero" : ""}`}
   style={`--pg-height:${height}px`}
   data-lazy={lazy ? "true" : "false"}
+  data-variant={variant}
 >
   <div class="pg-pane pg-editor">
     <div class="pg-source"><template class="pg-source-seed">{code}</template></div>
@@ -42,7 +48,10 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   </div>
   <div class="pg-pane pg-output">
     <div class="pg-toolbar pg-toolbar-output">
-      <div class="pg-toolbar-views"></div>
+      <div class="pg-toolbar-views" role="tablist" aria-label="View">
+        <button type="button" role="tab" class="pg-view" data-view="cp" aria-selected="false">crease pattern</button>
+        <button type="button" role="tab" class="pg-view is-active" data-view="folded" aria-selected="true">folded</button>
+      </div>
       <div class="pg-toolbar-tools">
         <div class="pg-linestyle" role="group" aria-label="Line style">
           <button type="button" class="pg-style is-active" data-style="mono" aria-pressed="true">mono</button>
@@ -72,7 +81,6 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
           <path d="M12.5 1.5 L12.5 5 L9 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
-      <aside class="pg-inspect" hidden></aside>
       <div class="pg-export" hidden>
         <p class="pg-export-step"></p>
         <button type="button" data-export="download">Download SVG</button>
@@ -81,6 +89,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         <p class="pg-export-said" role="status"></p>
       </div>
     </div>
+    <aside class="pg-inspect" hidden></aside>
     <div class="pg-error" role="alert" hidden></div>
     <div class="pg-steps" hidden>
       <div class="pg-step-timeline">
@@ -109,9 +118,12 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
 </div>
 
 <style>
+  /* 44 / 56. The drawing takes more than half the card, so its shorter edge
+     clears 320 px at every width the two columns are used at (B3.2), and the
+     editor still holds a forty-character line without wrapping. */
   .beloch-playground {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 44% 1fr;
     position: relative;
     margin: 1.5rem 0;
     border: 1px solid var(--bel-ui-divider);
@@ -122,8 +134,78 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
        (WEB_THEME reads --bel-paper-background) so the paper lies on the transparent pane. */
     --bel-paper-background: transparent;
   }
+  /* Under the break the drawing goes above the code (B3.7), and the editor
+     keeps a height that reaches past the fold, so the cut-off line at the
+     bottom of the screen says there is more (B3.9). */
   @media (max-width: 720px) {
     .beloch-playground { grid-template-columns: 1fr; }
+    .pg-output { order: 1; }
+    .pg-editor { order: 2; }
+    /* With the panes stacked there is no seam to sit on, so the run button
+       goes into the corner of the pane it acts on. */
+    .pg-run {
+      left: auto;
+      right: 14px;
+      top: auto;
+      bottom: 14px;
+      transform: none;
+    }
+    .pg-run-hint {
+      left: auto;
+      right: 14px;
+      top: auto;
+      bottom: 66px;
+      transform: none;
+    }
+  }
+
+  /* The hero: program and drawing, and nothing to operate. It carries no card
+     edge, because on the landing the page is its frame. Every token it uses
+     the docs already have (8.1 of the conditions). */
+  .beloch-playground.is-hero {
+    /* Wide enough that the hero's program needs no horizontal scrollbar, and
+       still the smaller of the two columns, so the drawing leads. */
+    grid-template-columns: minmax(0, 460px) minmax(0, 1fr);
+    gap: 40px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
+  }
+  .is-hero .pg-editor {
+    border-right: none;
+    border-radius: var(--bel-radius-card);
+    overflow: hidden;
+    align-self: center;
+  }
+  .is-hero .pg-toolbar,
+  .is-hero .pg-run,
+  .is-hero .pg-run-hint,
+  .is-hero .pg-steps,
+  .is-hero .pg-inspect,
+  .is-hero .pg-error,
+  .is-hero .pg-reset,
+  .is-hero .pg-export {
+    display: none;
+  }
+  /* The hero's row is sized by its two panes, so the drawing needs a height to
+     fit into rather than a floor to grow from. The SVG's own `max-height:100%`
+     resolves to nothing against a parent whose height is its content, so
+     without a definite height up the chain the drawing draws at natural size
+     and runs off the page. */
+  .is-hero .pg-output {
+    height: var(--pg-height, 320px);
+  }
+  .is-hero .pg-result {
+    min-height: 0;
+    cursor: default;
+  }
+  @media (max-width: 720px) {
+    .beloch-playground.is-hero {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 24px;
+    }
+    .is-hero .pg-editor { border-top: none; }
   }
 
   .pg-pane {
@@ -145,6 +227,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     align-items: center;
     justify-content: space-between;
     padding: 9px 16px;
+    gap: 8px 16px;
     font-family: var(--bel-font-mono);
     font-size: 12px;
   }
@@ -158,12 +241,14 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   .pg-toolbar-tools {
     display: flex;
     align-items: center;
-    gap: 16px;
+    flex-wrap: wrap;
+    gap: 8px 16px;
     margin-left: auto;
   }
   .pg-toolbar-views {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 4px;
   }
 
@@ -175,6 +260,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     display: inline-flex;
     gap: 4px;
   }
+  .pg-view,
   .pg-style,
   .pg-export-toggle {
     font: inherit;
@@ -188,10 +274,12 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     white-space: nowrap;
     transition: color var(--bel-duration-state) var(--bel-ease), border-color var(--bel-duration-state) var(--bel-ease);
   }
+  .pg-view:hover,
   .pg-style:hover:not(:disabled),
   .pg-export-toggle:hover {
     color: var(--bel-ui-accent);
   }
+  .pg-view.is-active,
   .pg-style.is-active,
   .pg-export-toggle[aria-expanded="true"] {
     border-color: var(--bel-ui-accent);
@@ -202,6 +290,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     border-color: var(--bel-ui-divider);
     color: var(--bel-ui-text-faint);
   }
+  .pg-view:focus-visible,
   .pg-style:focus-visible,
   .pg-export-toggle:focus-visible {
     outline: 2px solid var(--bel-ui-accent);
@@ -210,7 +299,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
 
   .pg-run {
     position: absolute;
-    left: 50%;
+    left: 44%;
     top: 50%;
     transform: translate(-50%, -50%);
     z-index: 2;
@@ -261,7 +350,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
 
   .pg-run-hint {
     position: absolute;
-    left: 50%;
+    left: 44%;
     top: calc(50% + 36px);
     transform: translateX(-50%);
     z-index: 2;
@@ -284,7 +373,13 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     opacity: 1;
   }
 
+  /* The editor fills its pane through the flex chain rather than a percentage
+     height: this box takes its size from `min-height` and from growing, so its
+     computed height stays `auto` and a child's `height: 100%` would resolve to
+     its own content, leaving a strip of pane below the editor. */
   .pg-source {
+    display: flex;
+    flex-direction: column;
     flex: 1;
     min-height: var(--pg-height, 320px);
     resize: vertical;
@@ -292,7 +387,8 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     background: transparent;
   }
   .pg-source :global(.cm-editor) {
-    height: 100%;
+    flex: 1;
+    min-height: 0;
   }
   .pg-source :global(.cm-scroller) {
     overflow: auto;
@@ -341,12 +437,21 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   }
   /* The paper itself: pan/zoom transform target. Origin 0 0 keeps the
      zoom-toward-cursor math (in the client script) layout-agnostic. */
+  /* The canvas fills the pane rather than shrinking to the drawing, so its
+     height is definite and the SVG's own `max-height: 100%` has something to
+     resolve against. Against a parent whose height is its content that
+     percentage resolves to nothing and a large drawing renders at natural size
+     and gets clipped. The drawing stays centred because this is itself a
+     centring flex container, and the pan/zoom maths reads this element's live
+     rect, so a bigger box changes nothing there. */
   .pg-canvas {
     display: flex;
     align-items: center;
     justify-content: center;
-    max-width: 100%;
-    max-height: 100%;
+    align-self: stretch;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
     transform-origin: 0 0;
     will-change: transform;
   }
@@ -440,25 +545,30 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
      receive pointer events, hovering it would itself register as "leaving"
      the crease underneath and flicker the tooltip shut. Anchoring re-enables
      them (the close button + segment rows need clicks). */
+  /* The inspector is a rail under the drawing. It keeps one place, so it does
+     not move under the pointer as the answer changes, it covers no paper
+     (B3.11), and it stays where it is across a step change. Below the break
+     it is the same rail in the same place. */
   .pg-inspect {
-    position: fixed;
-    z-index: 20;
-    max-width: 320px;
-    max-height: 70%;
+    position: relative;
+    max-height: 40vh;
     overflow: auto;
     background: var(--bel-ui-surface);
-    border: 1px solid var(--bel-ui-divider);
-    border-radius: var(--bel-radius-card);
-    padding: 10px 12px;
+    border-top: 1px solid var(--bel-ui-divider);
+    padding: 10px 16px;
     font: 12px/1.5 var(--bel-font-mono);
     color: var(--bel-ui-text-muted);
-    pointer-events: none;
-  }
-  .pg-inspect.is-anchored {
-    pointer-events: auto;
   }
   .pg-inspect[hidden] {
     display: none;
+  }
+  /* The rail holds the height of an answer while it has none, so pointing at a
+     crease fills it instead of pushing the step bar down the card. */
+  .pg-inspect {
+    min-height: 62px;
+  }
+  .pg-inspect :global(.pg-inspect-rest) {
+    color: var(--bel-ui-text-faint);
   }
   /* These children are injected via innerHTML, so they never carry Astro's
      scope attribute — the rules MUST be :global (like .pg-hl / .pg-hit above),
@@ -763,11 +873,12 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   import { keymap } from "@codemirror/view";
   import { stepMarkerExtensions, setStepLineOn, setErrorLineOn } from "../lib/cm-step-marker";
   import { swapDrawing, type FadeLength } from "../lib/crossfade";
-  import { parseFold, type FoldScene, type Statement, type Vec2 } from "@beloch/scene";
+  import { parseFold, pickStep, type FoldScene, type Statement, type Vec2 } from "@beloch/scene";
   import {
     colorLineStyle,
     renderCP,
     renderFolded,
+    renderScene,
     sceneLayout,
     DEFAULT_THEME,
     WEB_THEME,
@@ -787,6 +898,9 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   // locally. The eval limit starts only once the Worker reports its runtime
   // ready (see public/beloch/eval-worker.js), so a slow line stays
   // distinguishable from a hung evaluator.
+  // Which drawing of a state the stage shows. Both come off one step index.
+  type View = "cp" | "folded";
+
   const LOAD_TIMEOUT_MS = 60000;
   const EVAL_TIMEOUT_MS = 8000;
 
@@ -1006,6 +1120,10 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // user actually clicks Run — focusing or editing the code must not, on
     // its own, kick off a run or pull in the wasm module.
     const lazy = root.dataset.lazy === "true";
+    // The hero shows a program and its drawing and offers nothing to operate:
+    // the controls are hidden, so the behaviour behind them is not wired up
+    // either, and the source is read-only.
+    const hero = root.dataset.variant === "hero";
 
     // Run is available whenever no run is in flight, including on first
     // contact with the seeded code. A re-run of unchanged source reports
@@ -1047,6 +1165,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         extensions: [
           ...stepMarkerExtensions,
           basicSetup,
+          EditorView.editable.of(!hero),
           keymap.of([
             {
               key: "Mod-Enter",
@@ -1087,6 +1206,15 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       currentSchemeId = DEFAULT_ID;
     }
     let lineStyleId: "mono" | "colour" = "mono";
+    // Which drawing of the current state is on the stage. Both are the same
+    // state: the crease pattern is the flat sheet with the creases that exist
+    // by this step, the folded view is that state seen from above with the
+    // layers resolved. Switching the tab never moves the step.
+    //
+    // The folded state leads, because that is what the server already put in
+    // the card (index.astro seeds renderFolded) and what the reader pressed
+    // Run to see.
+    let currentView: View = "folded";
 
     // The theme the stage draws with: the engine's own colours, resolved by
     // the page through CSS variables, under the chosen line style. Monochrome
@@ -1115,10 +1243,10 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
 
     // Re-draws what is on the stage after a choice that changes how it looks
     // rather than which state it shows, so the view and the step stay put.
-    function rerenderCurrent() {
+    function rerenderCurrent(fade: FadeLength | null = null) {
       if (!currentScene) return;
-      if (currentStatements.length > 0) renderStep(currentStep, true, false);
-      else showSvg(renderCP(currentScene, { theme: renderTheme() }).toString(), true);
+      if (currentStatements.length > 0) renderStep(currentStep, true, fade !== null, fade);
+      else showSvg(svgForStep(0, renderTheme()), true, fade);
     }
 
     // A style the paper cannot hold is switched off rather than hidden, and
@@ -1138,6 +1266,26 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         b.setAttribute("aria-pressed", String(id === lineStyleId));
       });
     }
+    const viewsBar = root.querySelector<HTMLDivElement>(".pg-toolbar-views");
+    function updateViewTabs() {
+      viewsBar?.querySelectorAll<HTMLButtonElement>(".pg-view").forEach((b) => {
+        const on = b.dataset.view === currentView;
+        b.classList.toggle("is-active", on);
+        b.setAttribute("aria-selected", String(on));
+      });
+    }
+    viewsBar?.addEventListener("click", (e: MouseEvent) => {
+      const b = (e.target as Element).closest<HTMLButtonElement>(".pg-view");
+      if (!b) return;
+      const v = b.dataset.view as View;
+      if (v === currentView) return;
+      currentView = v;
+      updateViewTabs();
+      // Two views of one state, so the shorter of the two lengths.
+      rerenderCurrent("view");
+    });
+    updateViewTabs();
+
     styleBar.addEventListener("click", (e: MouseEvent) => {
       const b = (e.target as Element).closest<HTMLButtonElement>(".pg-style");
       if (!b || b.disabled) return;
@@ -1202,13 +1350,10 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // (X) button or a fresh run (clearStepsUI) — a background click no
     // longer clears it (task 8: explicit X-to-close replaces that).
     let pinned: EntityRef | null = null;
-    // Coincident-line chooser state (see renderChooser): open flag, the
-    // overlapping entities offered, and the raw click coords to anchor the
-    // picked one at the same spot.
+    // Coincident-line chooser state (see renderChoice): open flag and the
+    // overlapping entities offered.
     let choiceOpen = false;
     let choiceEnts: EntityRef[] = [];
-    let choiceX = 0;
-    let choiceY = 0;
 
     // "Folded view" = geometry drawn via renderFolded's occlusion pipeline
     // (any step, including step 0's flat sheet — it still goes through the
@@ -1336,14 +1481,6 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       return name ? { kind: "edge", name } : null;
     };
 
-    // Positions the tooltip at the pointer (task 8) — only meaningful while
-    // NOT anchored; once anchored, nothing calls this again, so it freezes
-    // wherever the click left it.
-    const positionTooltip = (x: number, y: number) => {
-      inspectPanel!.style.left = `${x + 14}px`;
-      inspectPanel!.style.top = `${y + 14}px`;
-    };
-
     // Renders `ref` into the tooltip, or hides it for null/an entity the
     // current scene has no `inspect` data for (e.g. a scene evaluated
     // before beloch:inspect was emitted, or a mark tick whose crease has no
@@ -1351,11 +1488,19 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // view is the segment-row list (subsumes the Task 7 stack picker);
     // everything else (hover preview, and face/vertex regardless of
     // anchoring) is the lightweight one-line summary from hoverSummary.
+    // With nothing to answer, the rail says what it is for. It keeps its place
+    // either way: a rail that appeared and vanished under the pointer would
+    // move the step bar every time the reader crossed a crease.
+    function restInspect() {
+      inspectPanel!.innerHTML =
+        '<div class="pg-inspect-rest">Point at a crease, or press Enter on one, to see the statement that made it.</div>';
+      inspectPanel!.hidden = !currentScene;
+    }
+
     function renderInspect(ref: EntityRef | null, anchored: boolean) {
       const insp = currentScene?.inspect;
       if (!ref || !insp) {
-        inspectPanel!.hidden = true;
-        inspectPanel!.classList.remove("is-anchored");
+        restInspect();
         return;
       }
       const closeBtn = anchored ? `<button type="button" class="pg-inspect-close" aria-label="Close">×</button>` : "";
@@ -1363,7 +1508,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       if (ref.kind === "crease" && anchored) {
         const c = insp.creases[ref.creaseId];
         if (!c) {
-          inspectPanel!.hidden = true;
+          restInspect();
           return;
         }
         // Named -> its name; unnamed (an unbound fold's result) -> "unnamed
@@ -1393,7 +1538,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         // axiom/sources — it's the sheet's edge, not a fold).
         const e = insp.edges[ref.name];
         if (!e) {
-          inspectPanel!.hidden = true;
+          restInspect();
           return;
         }
         const rows = edgeSegmentRows(insp, ref.name);
@@ -1413,7 +1558,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       } else {
         const summary = hoverSummary(ref, insp);
         if (!summary) {
-          inspectPanel!.hidden = true;
+          restInspect();
           return;
         }
         html =
@@ -1423,14 +1568,12 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       }
       inspectPanel!.innerHTML = html;
       inspectPanel!.hidden = false;
-      inspectPanel!.classList.toggle("is-anchored", anchored);
     }
 
     function closeAnchor() {
       pinned = null;
       choiceOpen = false;
-      inspectPanel!.hidden = true;
-      inspectPanel!.classList.remove("is-anchored");
+      restInspect();
       clearHl();
     }
 
@@ -1495,12 +1638,11 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
 
     // Anchor one entity's tooltip at (x,y): shared tail of a direct single
     // click and a chooser-row pick.
-    const anchorEntity = (ref: EntityRef, x: number, y: number) => {
+    const anchorEntity = (ref: EntityRef) => {
       pinned = ref;
       choiceOpen = false;
       if (ref.kind === "crease") highlightBundle(ref.creaseId);
       else if (ref.kind === "edge") highlightEdgeBundle(ref.name);
-      positionTooltip(x, y);
       renderInspect(ref, true);
       if (ref.kind === "crease") {
         const ln = lineOfSpan(currentScene?.inspect?.creases[ref.creaseId]?.span ?? null);
@@ -1531,7 +1673,6 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
           })
           .join("");
       inspectPanel!.hidden = false;
-      inspectPanel!.classList.toggle("is-anchored", anchored);
       if (anchored) {
         choiceEnts = ents;
         choiceOpen = true;
@@ -1556,7 +1697,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // the right guard here — it reflects whether a pan is happening RIGHT
     // NOW, so hover resumes as soon as the drag actually ends rather than
     // staying suppressed until the next pointerdown (see createPanZoom).
-    result.addEventListener("mousemove", (e: MouseEvent) => {
+    if (!hero) result.addEventListener("mousemove", (e: MouseEvent) => {
       if (pinned || choiceOpen || panZoom.isDragging()) return;
       // Same proximity detection as the click, so hover and click agree.
       const ents = lineEntitiesAtPoint(e.clientX, e.clientY);
@@ -1565,7 +1706,6 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         // entity that then surprises with a chooser on click.
         highlightEntities(ents);
         renderChoice(ents, false);
-        positionTooltip(e.clientX, e.clientY);
         return;
       }
       const ref = ents[0] ?? resolveRef(e.target as Element);
@@ -1573,7 +1713,6 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       else if (ref?.kind === "edge") highlightEdgeBundle(ref.name);
       else clearHl();
       renderInspect(ref, false);
-      if (ref) positionTooltip(e.clientX, e.clientY);
     });
     // A click anchors (materializes) the tooltip at the click position — it
     // stops following the cursor and gains a close (X) button; only that X
@@ -1583,23 +1722,20 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // Pan gestures must not register as a click here — wasDrag() is only
     // true after the pointer actually moved past the pan threshold during
     // this press.
-    result.addEventListener("click", (e: MouseEvent) => {
+    if (!hero) result.addEventListener("click", (e: MouseEvent) => {
       if (panZoom.wasDrag()) return;
       // Multiple distinct lines stacked at the click → anchor the chooser
       // (same content the hover was already previewing).
       const ents = lineEntitiesAtPoint(e.clientX, e.clientY);
       if (ents.length >= 2) {
-        choiceX = e.clientX;
-        choiceY = e.clientY;
         pinned = null;
         highlightEntities(ents);
-        positionTooltip(e.clientX, e.clientY);
         renderChoice(ents, true);
         return;
       }
       const ref = ents[0] ?? resolveRef(e.target as Element);
       if (!ref) return;
-      anchorEntity(ref, e.clientX, e.clientY);
+      anchorEntity(ref);
     });
 
     // Picking a segment row (anchored crease view only) highlights the SVG
@@ -1670,7 +1806,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       if (choice) {
         e.stopPropagation();
         const ref = choiceEnts[Number(choice.dataset.choiceIdx)];
-        if (ref) anchorEntity(ref, choiceX, choiceY);
+        if (ref) anchorEntity(ref);
         return;
       }
       const row = target.closest<HTMLElement>("[data-pick-seg]");
@@ -1732,6 +1868,9 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       // areas; `querySelector` finds it because the fading layer sits after it.
       enhanceCreaseHits(canvas.querySelector("svg") ?? canvas); // bigger click/hover target per crease line (task 8)
       makeCreasesReachable();
+      // A drawing on the stage means the rail has something to stand for. A
+      // pinned answer survives a step change, which is what the rail is for.
+      if (!hero && !pinned && !choiceOpen) restInspect();
       if (!keepView) panZoom.reset();
       panZoom.setEnabled(true);
       resetBtn.hidden = false;
@@ -1769,7 +1908,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       pinned = null;
       choiceOpen = false;
       inspectPanel!.hidden = true;
-      inspectPanel!.classList.remove("is-anchored");
+      inspectPanel!.textContent = "";
       clearHl();
       stepsBar!.hidden = true;
       setStepLineOn(editor, null);
@@ -1806,22 +1945,45 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // One step of the current scene as SVG, under whichever theme is asked
     // for. The stage asks with the web theme, whose colours are variables the
     // page resolves; the export asks with literals (see literalTheme).
-    function svgForStep(i: number, theme: Partial<Theme>): string {
+    function svgForStep(i: number, theme: Partial<Theme>, view: View = currentView): string {
       if (!currentScene) return "";
+      // A scene with no statements has no timeline: its one drawing is the
+      // crease pattern, whichever tab is up.
       if (currentStatements.length === 0) return renderCP(currentScene, { theme }).toString();
-      // Step 0: the flat starting sheet, before any fold or mark.
+      // Step 0 is the flat starting sheet, before any fold or mark.
+      const frame = i === 0 ? "0" : String(currentStatements[i - 1]!.frameIndex);
+      if (view === "cp") {
+        // The flat sheet carrying the creases that exist by this step. The
+        // step index is the one renderFolded resolves for the same step, so
+        // the two tabs never disagree about which state is on screen.
+        const step = pickStep(currentScene, frame);
+        return renderScene(currentScene, {
+          theme,
+          isometry: { kind: "flat" },
+          texture: {
+            upToStep: step ? step.index : "all",
+            creases: true,
+            marks: true,
+            points: true,
+            lines: true,
+            faces: "outline",
+          },
+        }).toString();
+      }
       if (i === 0) return renderFolded(currentScene, { theme, step: "0" }).toString();
       const stmt = currentStatements[i - 1]!;
       const activeMarks = stmt.keptMarks;
       const newestCreaseId = activeMarks.at(-1)?.creaseId;
       return renderFolded(currentScene, {
         theme,
-        step: String(stmt.frameIndex),
+        step: frame,
         markOverlay: activeMarks.length > 0 ? { marks: activeMarks, newestCreaseId } : undefined,
       }).toString();
     }
 
-    function renderStep(i: number, keepView = true, animate = false) {
+    // `fadeOverride` is for a swap that is not a step change at all: switching
+    // the tab, or the line style, shows the same state drawn differently.
+    function renderStep(i: number, keepView = true, animate = false, fadeOverride: FadeLength | null = null) {
       if (!currentScene || currentStatements.length === 0) return;
       const n = currentStatements.length;
       const clamped = Math.max(0, Math.min(i, n));
@@ -1829,12 +1991,16 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       try {
         const svg = svgForStep(clamped, renderTheme());
         if (clamped === 0) {
-          showSvg(svg, keepView, animate ? "view" : null);
+          showSvg(svg, keepView, fadeOverride ?? (animate ? "view" : null));
           setStepLineOn(editor, null);
         } else {
           const stmt = currentStatements[clamped - 1]!;
           // A mark folds nothing, so it changes the view rather than the paper.
-          showSvg(svg, keepView, animate ? (stmt.kind === "fold" ? "fold" : "view") : null);
+          // A crease pattern never folds either: the sheet stays flat and gains
+          // a line.
+          const stepFade: FadeLength =
+            currentView === "cp" || stmt.kind !== "fold" ? "view" : "fold";
+          showSvg(svg, keepView, fadeOverride ?? (animate ? stepFade : null));
           setStepLineOn(editor, stmt.sourceLine);
         }
       } catch (err) {
@@ -2140,7 +2306,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // and the vertical arrows move from one crease to the next, so a drawing
     // with twenty creases does not put twenty tab stops between this card and
     // the rest of the page.
-    result.tabIndex = 0;
+    if (!hero) result.tabIndex = 0;
     result.addEventListener("keydown", (e: KeyboardEvent) => {
       // A control inside the stage keeps its own keys.
       if (e.target !== result) return;
@@ -2174,6 +2340,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // Called after every drawing swap, because the hit lines are rebuilt with
     // the SVG. One of them holds the tab stop; the rest are reachable from it.
     function makeCreasesReachable() {
+      if (hero) return;
       const insp = currentScene?.inspect;
       hitLines().forEach((el, i) => {
         el.setAttribute("tabindex", i === 0 ? "0" : "-1");
@@ -2189,7 +2356,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
 
     canvas.addEventListener("keydown", (e: KeyboardEvent) => {
       const el = e.target as Element;
-      if (!el.classList?.contains(HIT_CLASS)) return;
+      if (hero || !el.classList?.contains(HIT_CLASS)) return;
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         const lines = hitLines();
         const i = lines.indexOf(el as SVGLineElement);
@@ -2203,12 +2370,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       }
       if (e.key === "Enter" || e.key === " ") {
         const ref = resolveRef(el);
-        if (ref) {
-          // The inspector anchors at the middle of the crease, which is where
-          // the reader is looking when they asked about it.
-          const r = el.getBoundingClientRect();
-          anchorEntity(ref, r.left + r.width / 2, r.top + r.height / 2);
-        }
+        if (ref) anchorEntity(ref);
         e.preventDefault();
         return;
       }

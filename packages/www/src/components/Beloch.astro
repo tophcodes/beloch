@@ -11,7 +11,7 @@ import { highlightBel } from "../lib/highlight-bel";
 import { evalBelToFold } from "../lib/eval-bel";
 import { stripHtml } from "../lib/strip-html";
 import { parseFold } from "@beloch/scene";
-import { renderCP, renderScene, WEB_THEME } from "@beloch/render-svg";
+import { renderCP, renderFolded, renderScene, WEB_THEME } from "@beloch/render-svg";
 
 interface Props {
   filename?: string;
@@ -84,9 +84,20 @@ if (composed) {
   svg = renderCP(scene, { theme: WEB_THEME }).toString();
 }
 // A composed figure is a static illustration: skip the FOLD embed so the
-// hydration island stays dormant (its CP tab would otherwise show the
-// crease-subset as if it were the full pattern).
+// hydration island stays dormant (it would otherwise show the crease-subset
+// as if it were the full pattern).
 const foldJson = composed ? "" : JSON.stringify(fold);
+
+// The card has no editor, so it has the width to put both drawings of a state
+// next to each other: the crease pattern and the folded form, rather than one
+// behind a switch. Checking whether a flat-foldable construction works is a
+// comparison, and a reader who has to remember one image while looking at the
+// other is doing that comparison from memory. A scene the evaluator produced
+// no folded frames for keeps the single panel.
+const showsPair = !composed && scene.steps.length > 0;
+const foldedSvg = showsPair
+  ? renderFolded(scene, { theme: WEB_THEME, hidden: "dashed" }).toString()
+  : "";
 ---
 
 <beloch-figure data-line-offset={filename ? 1 : 0}>
@@ -94,7 +105,10 @@ const foldJson = composed ? "" : JSON.stringify(fold);
     <div class="beloch-code-panel">
       <pre class={`beloch-pre${showLines ? " has-lines" : ""}`}>{showLines && <span class="beloch-gutter" aria-hidden="true">{gutterLines.map((n, i) => <>{i > 0 ? "\n" : ""}<span data-line={n}>{n}</span></>)}</span>}<code set:html={highlightedSource} /></pre>
     </div>
-    <div class="beloch-diagram" set:html={svg}></div>
+    <div class={`beloch-views${showsPair ? " is-pair" : ""}`}>
+      <div class="beloch-diagram" data-view="cp" set:html={svg}></div>
+      {showsPair ? <div class="beloch-diagram" data-view="folded" set:html={foldedSvg}></div> : null}
+    </div>
     <script type="application/json" class="beloch-fold" set:html={foldJson}></script>
   </figure>
 </beloch-figure>
@@ -104,17 +118,23 @@ const foldJson = composed ? "" : JSON.stringify(fold);
 
 <style>
   /* ── Card shell ─────────────────────────────────────────────────────────── */
+  /* 34 / 66: the source is fixed here and fits its column, and the two
+     drawings need the rest. */
   .beloch-card {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: 34% minmax(0, 1fr);
     margin: 1.5rem 0;
     border: 1px solid var(--bel-ui-divider);
     border-radius: var(--bel-radius-card);
     overflow: hidden;
     background: var(--bel-ui-surface);
   }
+  /* Under the break the drawings go above the source (B3.7), and the two of
+     them stack. */
   @media (max-width: 720px) {
     .beloch-card { grid-template-columns: 1fr; }
+    .beloch-views { order: 1; }
+    .beloch-code-panel { order: 2; }
   }
 
   /* ── Code panel ─────────────────────────────────────────────────────────── */
@@ -161,6 +181,28 @@ const foldJson = composed ? "" : JSON.stringify(fold);
   }
 
   /* ── Diagram panel ──────────────────────────────────────────────────────── */
+  .beloch-views {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+  }
+  .beloch-views.is-pair {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  /* Two drawings of one state read as one figure, so the line between them is
+     a divider and there is no second card edge. */
+  .beloch-views.is-pair .beloch-diagram + .beloch-diagram {
+    border-left: 1px solid var(--bel-ui-divider);
+  }
+  @media (max-width: 720px) {
+    .beloch-views.is-pair {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .beloch-views.is-pair .beloch-diagram + .beloch-diagram {
+      border-left: none;
+      border-top: 1px solid var(--bel-ui-divider);
+    }
+  }
   .beloch-diagram {
     display: flex;
     align-items: center;
@@ -168,6 +210,7 @@ const foldJson = composed ? "" : JSON.stringify(fold);
     padding: 18px 22px;
     background: var(--bel-ui-surface);
     overflow: auto;
+    min-width: 0;
   }
   .beloch-diagram :global(svg) {
     max-width: 100%;

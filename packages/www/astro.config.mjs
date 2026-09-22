@@ -58,9 +58,6 @@ export default defineConfig({
 		},
 	},
 	redirects: {
-		// The docs playground page was replaced by the landing page at `/`
-		// (the live playground is the landing hero now).
-		'/playground/': '/',
 		// `introduction.mdx` and `tutorials/` were removed in favor of the four
 		// reference documents under `/model/`, `/kernel/`, `/language/`,
 		// `/output/`; both were still targets of the main navigation and are

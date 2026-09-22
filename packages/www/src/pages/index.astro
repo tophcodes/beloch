@@ -1,242 +1,103 @@
 ---
-// Standalone landing page at `/` — bypasses the Starlight shell entirely (no
-// sidebar), so it owns its own <html>/<head>: theme tokens, the mode read from
-// Starlight's own `starlight-theme` localStorage key (so the choice is shared
-// with the docs), and the paper-scheme sync script.
+// The landing at `/`. The hero shows a program and the drawing it produces,
+// and offers nothing to operate: what it has to say is that a line of this
+// language is a fold and that the geometry comes out exact. A visitor who
+// wants to change something goes to `/playground/`, which is the surface with
+// an editor. Both are drawn by the same component and speak the same
+// vocabulary, and the hero defines no token the docs do not have.
 //
-// The hero is the live playground, seeded with a build-time-rendered static
-// SVG (same evalBelToFold -> parseFold -> render pipeline `<Beloch>` uses) so
-// visitors see a folded result instantly, before the ~5.7 MB wasm worker
-// boots lazily on first gesture.
+// The drawing is rendered at build time (the same evalBelToFold -> parseFold
+// -> render pipeline the docs cards use), so it is on the page at first paint
+// with no worker and no wasm.
+import Shell from "../layouts/Shell.astro";
 import Playground from "../components/Playground.astro";
 import { evalBelToFold } from "../lib/eval-bel";
 import { HERO_SRC } from "../lib/landing-examples";
-import { headSyncScript } from "../lib/paper-schemes";
 import { parseFold } from "@beloch/scene";
 import { renderFolded, WEB_THEME } from "@beloch/render-svg";
-import "../styles/theme.css";
 
 const fold = evalBelToFold(HERO_SRC);
 const scene = parseFold(fold as object);
 const heroSvg = renderFolded(scene, { theme: WEB_THEME }).toString();
 const heroFoldJson = JSON.stringify(fold);
 
-const NAV_LINKS = [
-  { label: "Docs", href: "/language/" },
-  { label: "GitHub", href: "https://github.com/tophcodes/beloch" },
-];
+const DESCRIPTION = "A declarative language for origami, built on the Huzita–Justin axioms.";
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Beloch</title>
-    <meta
-      name="description"
-      content="A declarative language for origami, built on the Huzita–Justin axioms."
+<Shell title="Beloch" description={DESCRIPTION} url="https://beloch.toph.so/">
+  <section class="hero">
+    <h1>beloch</h1>
+    <p class="pronunciation">beh-LOK · /be&#712;l&#596;k/</p>
+    <p class="hero-body">
+      A programming language in which every line is a fold. Beloch works out the
+      geometry exactly and gives you the crease pattern and the folded state.
+    </p>
+    <div class="hero-actions">
+      <a class="action action-primary" href="/playground/">Playground</a>
+      <a class="action" href="/language/">Docs</a>
+    </div>
+    <Playground
+      variant="hero"
+      lazy
+      seed={heroSvg}
+      seedFold={heroFoldJson}
+      code={HERO_SRC}
+      height={340}
     />
-    <link rel="icon" href="/favicon.svg" />
-    {/* No Open Graph tags existed before this: a shared link rendered as a
-        bare URL. The image is scripts/generate-og-image.ts's output, the
-        project's own bird-base fold on the dark theme panel. */}
-    <meta property="og:title" content="Beloch" />
-    <meta
-      property="og:description"
-      content="A declarative language for origami, built on the Huzita–Justin axioms."
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://beloch.toph.so/" />
-    <meta property="og:image" content="https://beloch.toph.so/og-image.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://beloch.toph.so/og-image.png" />
-    {/* Inlined to avoid a flash of the wrong theme. Shares Starlight's
-        `starlight-theme` localStorage key so an explicit toggle choice carries
-        between this page and the docs. Nothing is set without a stored choice:
-        the attribute is what pins `color-scheme`, and leaving it off is what
-        lets the visitor's system decide. */}
-    <script is:inline>
-      (function () {
-        var stored = null;
-        try {
-          stored = localStorage.getItem("starlight-theme");
-        } catch (e) {}
-        if (stored === "light" || stored === "dark") {
-          document.documentElement.dataset.theme = stored;
-        }
-      })();
-    </script>
-    <script set:html={headSyncScript()} />
-  </head>
-  <body>
-    <header class="site-header">
-      <a class="wordmark" href="/">Beloch</a>
-      <nav class="site-nav" aria-label="Primary">
-        {NAV_LINKS.map((l) => (
-          <a href={l.href}>{l.label}</a>
-        ))}
-        <button type="button" class="theme-toggle" aria-label="Toggle color theme">
-          <span class="theme-toggle-icon" aria-hidden="true"></span>
-        </button>
-      </nav>
-    </header>
+  </section>
+</Shell>
 
-    <main>
-      <section class="hero">
-        <h1>Beloch</h1>
-        <p class="hero-sub">
-          A declarative language for origami, built on the Huzita–Justin axioms.
-        </p>
-        <p class="hero-body">
-          Describe a sheet and the creases you want; Beloch works out the exact
-          geometry — right here in your browser.
-        </p>
-        <Playground lazy seed={heroSvg} seedFold={heroFoldJson} code={HERO_SRC} height={380} />
-      </section>
-    </main>
+<style>
+  .hero h1 {
+    font-family: var(--bel-font-mono);
+    font-size: clamp(32px, 6vw, 48px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .pronunciation {
+    margin: 6px 0 0;
+    font-family: var(--bel-font-mono);
+    font-size: 13px;
+    color: var(--bel-ui-text-muted);
+  }
+  .hero-body {
+    margin: 18px 0 0;
+    max-width: 52ch;
+    font-size: 17px;
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
 
-    <footer class="site-footer">
-      {NAV_LINKS.map((l) => (
-        <a href={l.href}>{l.label}</a>
-      ))}
-    </footer>
+  .hero-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 22px;
+    font-family: var(--bel-font-mono);
+    font-size: 13px;
+  }
+  .action {
+    padding: 7px 16px;
+    border-radius: var(--bel-radius-control);
+    border: 1px solid var(--bel-ui-control-border);
+    color: var(--bel-ui-text);
+  }
+  .action:hover {
+    text-decoration: none;
+    border-color: var(--bel-ui-accent);
+  }
+  .action-primary {
+    background: var(--bel-ui-accent);
+    border-color: var(--bel-ui-accent);
+    color: var(--bel-ui-accent-text);
+  }
+  .action:focus-visible {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: 2px;
+  }
 
-    <style>
-      /* Minimal reset — Starlight normally supplies this; this page bypasses
-         Starlight entirely, so it owns its own baseline. */
-      *, *::before, *::after { box-sizing: border-box; }
-      html, body { margin: 0; padding: 0; }
-      body {
-        min-height: 100vh;
-        background: var(--bel-ui-surface);
-        color: var(--bel-ui-text);
-        font-family: var(--bel-font-prose);
-        overflow-x: hidden;
-      }
-      a { color: var(--bel-ui-accent); text-decoration: none; }
-      a:hover { text-decoration: underline; }
-
-      .site-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 20px clamp(20px, 5vw, 56px);
-        border-bottom: 1px solid var(--bel-ui-divider);
-      }
-      .wordmark {
-        font-family: var(--bel-font-mono);
-        font-size: 18px;
-        font-weight: 600;
-        color: var(--bel-ui-text);
-      }
-      .wordmark:hover { text-decoration: none; }
-      .site-nav {
-        display: flex;
-        align-items: center;
-        gap: clamp(12px, 3vw, 28px);
-        flex-wrap: wrap;
-        font-size: 14px;
-      }
-      .site-nav a { color: var(--bel-ui-text-muted); }
-      .site-nav a:hover { color: var(--bel-ui-text); }
-
-      .theme-toggle {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 30px;
-        height: 30px;
-        padding: 0;
-        border-radius: 50%;
-        border: 1px solid var(--bel-ui-control-border);
-        background: transparent;
-        color: var(--bel-ui-text-muted);
-        cursor: pointer;
-      }
-      .theme-toggle:hover { color: var(--bel-ui-text); border-color: var(--bel-ui-accent); }
-      /* The icon names the mode the button switches TO: a moon while the page
-         is light, a sun while it is dark. With no stored choice there is no
-         attribute to key off, so the system preference carries it. */
-      .theme-toggle-icon { font-size: 14px; line-height: 1; }
-      .theme-toggle-icon::before { content: "\263D"; }
-      @media (prefers-color-scheme: dark) {
-        :root:not([data-theme='light']) .theme-toggle-icon::before { content: "\2600"; }
-      }
-      :root[data-theme='dark'] .theme-toggle-icon::before { content: "\2600"; }
-
-      main {
-        width: min(1120px, 94vw);
-        margin: 0 auto;
-        padding: clamp(32px, 6vw, 72px) 0 48px;
-      }
-
-      .hero { text-align: center; }
-      .hero h1 {
-        font-family: var(--bel-font-mono);
-        font-size: clamp(32px, 6vw, 48px);
-        margin: 0 0 12px;
-      }
-      .hero-sub {
-        margin: 0 auto 8px;
-        max-width: 46ch;
-        color: var(--bel-ui-text);
-        font-size: 17px;
-      }
-      .hero-body {
-        margin: 0 auto 28px;
-        max-width: 52ch;
-        color: var(--bel-ui-text-muted);
-        font-size: 15px;
-        line-height: 1.55;
-      }
-      .hero :global(.beloch-playground) {
-        text-align: left;
-        width: 100vw;
-        max-width: 100vw;
-        margin-left: calc(50% - 50vw);
-        margin-right: calc(50% - 50vw);
-        border-radius: 0;
-        border-left: none;
-        border-right: none;
-      }
-
-      .site-footer {
-        display: flex;
-        gap: 20px;
-        justify-content: center;
-        padding: 24px clamp(20px, 5vw, 56px) 40px;
-        border-top: 1px solid var(--bel-ui-divider);
-        font-size: 13px;
-      }
-      .site-footer a { color: var(--bel-ui-text-muted); }
-      .site-footer a:hover { color: var(--bel-ui-text); }
-    </style>
-
-    <script>
-      const STARLIGHT_THEME_KEY = "starlight-theme";
-
-      // Without a stored choice the page has no data-theme and the system
-      // carries the mode, so the first click has to read the system to know
-      // what it is switching away from.
-      const currentTheme = () => {
-        const pinned = document.documentElement.dataset.theme;
-        if (pinned === "light" || pinned === "dark") return pinned;
-        return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-      };
-
-      const toggle = document.querySelector<HTMLButtonElement>(".theme-toggle");
-      toggle?.addEventListener("click", () => {
-        const next = currentTheme() === "light" ? "dark" : "light";
-        document.documentElement.dataset.theme = next;
-        try {
-          localStorage.setItem(STARLIGHT_THEME_KEY, next);
-        } catch {
-          /* private mode etc. — theme choice only applies to this session */
-        }
-      });
-    </script>
-  </body>
-</html>
+  .hero :global(.beloch-playground) {
+    margin-top: 36px;
+  }
+</style>

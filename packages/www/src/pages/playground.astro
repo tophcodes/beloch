@@ -1,0 +1,55 @@
+---
+// The playground at `/playground/`: the one surface with an editor. The
+// landing shows a program and its drawing without controls and points here,
+// so this page carries the whole card, with the run button, the step rail,
+// the paper and line-style choices, the inspector and export.
+//
+// It is seeded with the same build-time drawing the landing uses, so the card
+// is not empty while the runtime is still on its way; the worker boots on the
+// first Run.
+import Shell from "../layouts/Shell.astro";
+import Playground from "../components/Playground.astro";
+import { evalBelToFold } from "../lib/eval-bel";
+import { PLAYGROUND_SRC } from "../lib/landing-examples";
+import { parseFold } from "@beloch/scene";
+import { renderFolded, WEB_THEME } from "@beloch/render-svg";
+
+const fold = evalBelToFold(PLAYGROUND_SRC);
+const scene = parseFold(fold as object);
+const seedSvg = renderFolded(scene, { theme: WEB_THEME }).toString();
+const seedFoldJson = JSON.stringify(fold);
+
+const DESCRIPTION = "Write a fold and watch the geometry come out, in the browser.";
+---
+
+<Shell title="Playground · Beloch" description={DESCRIPTION} url="https://beloch.toph.so/playground/">
+  <section class="playground-page">
+    <h1>Playground</h1>
+    <p class="lede">
+      Every line is a fold. Press Run to evaluate, step through the result, and
+      click a crease to see the statement that made it.
+    </p>
+    <Playground lazy seed={seedSvg} seedFold={seedFoldJson} code={PLAYGROUND_SRC} height={440} />
+  </section>
+</Shell>
+
+<style>
+  .playground-page h1 {
+    font-family: var(--bel-font-mono);
+    font-size: clamp(24px, 4vw, 32px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .lede {
+    margin: 10px 0 0;
+    max-width: 62ch;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--bel-ui-text-muted);
+    text-wrap: pretty;
+  }
+  .playground-page :global(.beloch-playground) {
+    margin-top: 28px;
+  }
+</style>

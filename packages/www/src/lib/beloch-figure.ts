@@ -1,9 +1,11 @@
 // <beloch-figure> hydration island: wraps a statically-rendered
-// <figure class="beloch-card"> (see Beloch.astro), adds a CP↔folded view
-// toggle and, when the fold has foldedForm steps, a per-step stepper —
-// re-rendering via the same pure-TS render pipeline used at build time.
+// <figure class="beloch-card"> (see Beloch.astro) and, when the fold has
+// foldedForm steps, adds a per-step stepper that moves both drawings of the
+// state at once — re-rendering via the same pure-TS render pipeline used at
+// build time. The card shows the crease pattern and the folded form side by
+// side, so there is no view to switch.
 import { parseFold, type FoldScene } from "@beloch/scene";
-import { renderCP, renderFolded, WEB_THEME } from "@beloch/render-svg";
+import { renderCP, renderFolded, renderScene, WEB_THEME } from "@beloch/render-svg";
 import { swapDrawing, type FadeLength } from "./crossfade";
 
 export function clampStep(i: number, n: number): number {
@@ -14,13 +16,10 @@ export function viewHasSteps(scene: FoldScene): boolean {
   return scene.steps.length > 0;
 }
 
-type View = "cp" | "folded";
-
 class BelochFigure extends HTMLElement {
   private static PALETTE = ["#e8a33d", "#3db0a8", "#a878e0", "#5fa85f", "#e06e9e", "#4aa8d8"];
 
   private scene: FoldScene | null = null;
-  private view: View = "cp";
   private step = 0;
   private cpHTML = "";                 // cached SSR CP svg
   private hydrated = false;
@@ -40,7 +39,7 @@ class BelochFigure extends HTMLElement {
     if (this.hydrated) return;
     this.hydrated = true;
     const raw = this.querySelector("script.beloch-fold")?.textContent ?? "";
-    const diagram = this.querySelector(".beloch-diagram") as HTMLElement | null;
+    const diagram = this.querySelector('.beloch-diagram[data-view="cp"]') as HTMLElement | null;
     if (!raw || !diagram) return;
     try {
       this.scene = parseFold(JSON.parse(raw));
@@ -48,7 +47,7 @@ class BelochFigure extends HTMLElement {
       console.warn("beloch-figure: parse failed, keeping static SVG", err);
       return;                            // graceful degradation
     }
-    this.cpHTML = diagram.innerHTML;      // keep the SSR CP as the CP view + fallback
+    this.cpHTML = diagram.innerHTML;      // the SSR crease pattern, and the fallback
     if (viewHasSteps(this.scene)) {
       this.step = this.scene.steps.length - 1;
       this.buildControls();
@@ -121,50 +120,64 @@ class BelochFigure extends HTMLElement {
     const bar = document.createElement("div");
     bar.className = "beloch-controls";
     bar.innerHTML = `
-      <button type="button" data-view="cp" class="beloch-tab is-active">Faltbild</button>
-      <button type="button" data-view="folded" class="beloch-tab">Gefaltet</button>
-      <span class="beloch-stepper" hidden>
+      <span class="beloch-stepper">
         <button type="button" class="beloch-step-prev" aria-label="Previous step">◀</button>
         <span class="beloch-step-label"></span>
         <button type="button" class="beloch-step-next" aria-label="Next step">▶</button>
       </span>`;
     this.querySelector(".beloch-card")?.prepend(bar);
-    bar.querySelector('[data-view="cp"]')!.addEventListener("click", () => this.setView("cp"));
-    bar.querySelector('[data-view="folded"]')!.addEventListener("click", () => this.setView("folded"));
     bar.querySelector(".beloch-step-prev")!.addEventListener("click", () => this.setStep(this.step - 1));
     bar.querySelector(".beloch-step-next")!.addEventListener("click", () => this.setStep(this.step + 1));
+    this.updateStepLabel();
   }
 
-  private setView(v: View) {
-    this.view = v;
-    this.querySelectorAll(".beloch-tab").forEach((b) =>
-      b.classList.toggle("is-active", (b as HTMLElement).dataset.view === v));
-    (this.querySelector(".beloch-stepper") as HTMLElement).hidden = v !== "folded";
-    // Two views of one state, so the shorter length.
-    this.render("view");
-  }
   private setStep(i: number) {
     if (!this.scene) return;
     this.step = clampStep(i, this.scene.steps.length);
     this.render("fold");
   }
 
-  // Both callers are a click, so the drawing always crossfades; the card's
-  // first drawing comes from the server and is never rendered here.
+  private updateStepLabel() {
+    const lbl = this.querySelector(".beloch-step-label");
+    // 0-based: step 0 is the flat starting sheet, step k the k-th fold.
+    if (lbl && this.scene) lbl.textContent = `Step ${this.step} / ${this.scene.steps.length - 1}`;
+  }
+
+  // The only caller is a click, so the drawings always crossfade; the card's
+  // first pair comes from the server and is never rendered here. Both panels
+  // move together, because they are two drawings of one state: the crease
+  // pattern carries the creases that exist by this step, the folded form is
+  // that state with its layers resolved.
   private render(fade: FadeLength) {
-    const diagram = this.querySelector(".beloch-diagram") as HTMLElement;
     if (!this.scene) return;
+    const cp = this.querySelector('.beloch-diagram[data-view="cp"]') as HTMLElement | null;
+    const folded = this.querySelector('.beloch-diagram[data-view="folded"]') as HTMLElement | null;
     try {
-      if (this.view === "cp") {
-        swapDrawing(diagram, this.cpHTML || renderCP(this.scene, { theme: WEB_THEME }).toString(), fade);
-      } else {
-        swapDrawing(diagram, renderFolded(this.scene, {
+      const index = this.scene.steps[this.step]?.index;
+      if (cp) {
+        const cpSvg =
+          index === undefined
+            ? this.cpHTML || renderCP(this.scene, { theme: WEB_THEME }).toString()
+            : renderScene(this.scene, {
+                theme: WEB_THEME,
+                isometry: { kind: "flat" },
+                texture: {
+                  upToStep: index,
+                  creases: true,
+                  marks: true,
+                  points: true,
+                  lines: true,
+                  faces: "outline",
+                },
+              }).toString();
+        swapDrawing(cp, cpSvg, fade);
+      }
+      if (folded) {
+        swapDrawing(folded, renderFolded(this.scene, {
           step: String(this.step), hidden: "dashed", theme: WEB_THEME,
         }).toString(), fade);
-        const lbl = this.querySelector(".beloch-step-label");
-        // 0-based: step 0 is the flat starting sheet, step k the k-th fold.
-        if (lbl) lbl.textContent = `Step ${this.step} / ${this.scene.steps.length - 1}`;
       }
+      this.updateStepLabel();
     } catch (err) {
       console.warn("beloch-figure: render failed", err);
       return;                              // graceful degradation: keep prior diagram
@@ -176,12 +189,10 @@ class BelochFigure extends HTMLElement {
   }
 
   // Marks the gutter line number of the fold that produced the currently
-  // shown step (folded view only) so the reader can see which source line
-  // is "active". No-op (after clearing) in the CP view and for step-marker
-  // frames, which have no sourceLine.
+  // shown step, so the reader can see which source line is "active". No-op
+  // (after clearing) for step-marker frames, which have no sourceLine.
   private highlightStepLine() {
     this.querySelectorAll(".bel-step-line").forEach((el) => el.classList.remove("bel-step-line"));
-    if (this.view !== "folded") return;
     const sl = this.scene?.steps[this.step]?.sourceLine;
     if (sl == null) return;
     const offset = Number(this.dataset.lineOffset ?? 0);
