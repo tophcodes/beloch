@@ -22,6 +22,39 @@ test("fold-quarter top view paints all faces bottom→top", async () => {
   expect(s).toContain("#dbe4ee");
 });
 
+// hidden="depth" answers how deeply a segment is buried, not only that it is.
+// fold-quarter stacks four layers, so its buried runs span three depths.
+test("hidden=depth fades a buried segment by the layers over it", async () => {
+  const scene = parseFold(await golden("fold-quarter.fold"));
+  const depth = renderFolded(scene, { hidden: "depth" }).toString();
+  const dashed = renderFolded(scene, { hidden: "dashed" }).toString();
+  const hide = renderFolded(scene, { hidden: "hide" }).toString();
+
+  const occluded = (svg: string) => (svg.match(/data-occluded="true"/g) ?? []).length;
+  expect(occluded(hide)).toBe(0);
+  expect(occluded(dashed)).toBeGreaterThan(0);
+  expect(occluded(depth)).toBeGreaterThan(0);
+
+  const depths = [...new Set([...depth.matchAll(/data-depth="(\d+)"/g)].map((m) => Number(m[1])))];
+  expect(depths.length).toBeGreaterThanOrEqual(2);
+  expect(Math.min(...depths)).toBe(1);
+
+  // The uniform mode stamps no depth at all, so the two modes stay apart.
+  expect(dashed).not.toContain("data-depth");
+
+  // Deeper is fainter, strictly, over the whole range this scene produces.
+  const opacityAt = (n: number) => {
+    const m = new RegExp(`data-depth="${n}" opacity="([0-9.]+)"`).exec(depth);
+    return m ? Number(m[1]) : null;
+  };
+  const sorted = [...depths].sort((a, b) => a - b);
+  const first = opacityAt(sorted[0]!);
+  const last = opacityAt(sorted[sorted.length - 1]!);
+  expect(first).not.toBeNull();
+  expect(last).not.toBeNull();
+  expect(last!).toBeLessThan(first!);
+});
+
 test("hidden=dashed draws occluded sub-segments, hide does not", async () => {
   const scene = parseFold(await occlude());
   const dashed = renderFolded(scene, { hidden: "dashed" }).toString();

@@ -165,6 +165,28 @@ export function paperClippedIntervals(a: Vec2, b: Vec2, F: number[][], V: Vec2[]
   return merged;
 }
 
+// One span per covering face: the sub-intervals of a→b that lie inside a face
+// strictly above (or, for the bottom view, below) `refPos` in the stack order.
+// Overlapping spans are kept apart, so a caller can either merge them
+// (coveredIntervals) or count them (coverageDepth).
+function coveringSpans(
+  a: Vec2,
+  b: Vec2,
+  order: number[],
+  refPos: number,
+  F: number[][],
+  V: Vec2[],
+  below: boolean,
+): [number, number][] {
+  const spans: [number, number][] = [];
+  const from = below ? refPos - 1 : refPos + 1;
+  const step = below ? -1 : 1;
+  for (let pos = from; pos >= 0 && pos < order.length; pos += step) {
+    for (const iv of segInsideIntervals(a, b, F[order[pos]!]!.map((i) => V[i]!))) spans.push(iv);
+  }
+  return spans;
+}
+
 // Sub-intervals of segment a→b hidden by a face strictly above (or, for the
 // bottom view, below) `refPos` in the stack order — the union over all such
 // covering faces.
@@ -177,12 +199,7 @@ export function coveredIntervals(
   V: Vec2[],
   below = false,
 ): [number, number][] {
-  const spans: [number, number][] = [];
-  const from = below ? refPos - 1 : refPos + 1;
-  const step = below ? -1 : 1;
-  for (let pos = from; pos >= 0 && pos < order.length; pos += step) {
-    for (const iv of segInsideIntervals(a, b, F[order[pos]!]!.map((i) => V[i]!))) spans.push(iv);
-  }
+  const spans = coveringSpans(a, b, order, refPos, F, V, below);
   if (!spans.length) return spans;
   spans.sort((p, q) => p[0] - q[0]);
   const merged: [number, number][] = [spans[0]!.slice() as [number, number]];
@@ -192,6 +209,44 @@ export function coveredIntervals(
     else merged.push(spans[k]!.slice() as [number, number]);
   }
   return merged;
+}
+
+export interface DepthSpan {
+  t0: number;
+  t1: number;
+  depth: number; // how many faces cover this sub-interval; always >= 1
+}
+
+// The same covered set as coveredIntervals, cut at every point where the
+// number of covering faces changes and labelled with that number. A renderer
+// uses it to say how deeply an edge is buried rather than only that it is.
+// Cost is O(cuts x spans); both are the count of faces above the edge, which
+// is small enough that a sweep structure would only add code.
+export function coverageDepth(
+  a: Vec2,
+  b: Vec2,
+  order: number[],
+  refPos: number,
+  F: number[][],
+  V: Vec2[],
+  below = false,
+): DepthSpan[] {
+  const spans = coveringSpans(a, b, order, refPos, F, V, below);
+  if (!spans.length) return [];
+  const cuts = [...new Set(spans.flat())].sort((p, q) => p - q);
+  const out: DepthSpan[] = [];
+  for (let k = 0; k < cuts.length - 1; k++) {
+    const t0 = cuts[k]!, t1 = cuts[k + 1]!;
+    if (t1 - t0 < 1e-9) continue;
+    const tm = (t0 + t1) / 2;
+    let depth = 0;
+    for (const [s, e] of spans) if (s <= tm && tm <= e) depth++;
+    if (depth === 0) continue; // a gap between two disjoint covering faces
+    const last = out[out.length - 1];
+    if (last && last.depth === depth && t0 - last.t1 < 1e-9) last.t1 = t1;
+    else out.push({ t0, t1, depth });
+  }
+  return out;
 }
 
 // True if point `p` is hidden by a face strictly above (or, for the bottom

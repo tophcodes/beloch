@@ -9,7 +9,7 @@ import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
 import { DEFAULT_THEME, Theme, LineStyle, HighlightColor } from "./theme";
 import { sceneLayout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
-import { coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly, pointCovered, pointInPolygonInclusive, segInsideIntervals, paperClippedIntervals } from "./geometry";
+import { coverageDepth, coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly, pointCovered, pointInPolygonInclusive, segInsideIntervals, paperClippedIntervals } from "./geometry";
 import { resolveIsometry, type Isometry } from "./isometry";
 import { placeLabels, type LabelAnchor } from "./primitives/labels";
 
@@ -38,7 +38,8 @@ export interface SceneOptions {
   legend?: boolean;
   theme?: Partial<Theme>;
   view?: "top" | "bottom"; // folded only
-  hidden?: "dashed" | "hide"; // folded only
+  hidden?: "dashed" | "hide" | "depth"; // folded only: drop buried segments,
+  // draw them uniformly, or fade each by how many layers cover it
   markOverlay?: MarkOverlay; // draw these marks instead of the scene's final ones — projected onto the step's faces when folded, in paper space when flat
 }
 
@@ -167,6 +168,23 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     });
     const pos = new Map(order.map((f, i) => [f, i]));
     const dashedLines: SvgNode[] = [];
+    const showHidden = opts.hidden === "dashed" || opts.hidden === "depth";
+
+    // hidden="depth": how faint a buried segment is, by how many layers lie
+    // over it. Known ceiling: the floor is reached at four layers, so a
+    // deeper stack reads as "deep" without separating further. Finer steps
+    // are not distinguishable at the sizes these diagrams are drawn at; if
+    // that changes, raise the floor's reach rather than the base opacity,
+    // which one layer already spends.
+    const HIDDEN_BASE = 0.55, HIDDEN_FALLOFF = 0.6, HIDDEN_FLOOR = 0.12;
+    const depthOpacity = (n: number) =>
+      Number(Math.max(HIDDEN_FLOOR, HIDDEN_BASE * HIDDEN_FALLOFF ** (n - 1)).toFixed(3));
+    // The buried runs of one edge, as {t0,t1,depth}. depth is 0 for the
+    // uniform mode, which is the signal not to stamp a fade at all.
+    const buriedRuns = (a0: Vec2, b0: Vec2, refPos: number, cov: [number, number][]) =>
+      opts.hidden === "depth"
+        ? coverageDepth(a0, b0, order, refPos, F, V, bottom)
+        : cov.map(([t0, t1]) => ({ t0, t1, depth: 0 }));
 
     // A crease that has been folded stacks its two faces onto the SAME side of
     // the crease line, so in projection the crease sits on the silhouette of the
@@ -241,12 +259,12 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
           creases.children.push(el("line", attrs));
         }
 
-        if (opts.hidden === "dashed") {
+        if (showHidden) {
           const isB = assignment === "B";
           const stroke = isB ? "#475569" : "#94a3b8";
           const dashWgt = isB ? 2 : 1.2;
           const dash = isB ? "6 3" : "4 3";
-          for (const [t0, t1] of covered) {
+          for (const { t0, t1, depth } of buriedRuns(a0, b0, refPos, covered)) {
             const p0 = lerp(t0), p1 = lerp(t1);
             const attrs: Record<string, string | number> = {
               class: `crease-${assignment}`,
@@ -255,6 +273,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
               x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
               stroke, "stroke-width": dashWgt, "stroke-dasharray": dash, "stroke-linecap": "round",
             };
+            if (depth) { attrs["data-depth"] = depth; attrs["opacity"] = depthOpacity(depth); }
             if (name) attrs["data-name"] = name;
             if (name) attrs["data-bel-name"] = name;
             dashedLines.push(el("line", attrs));
@@ -287,8 +306,8 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
           }));
         }
 
-        if (opts.hidden === "dashed") {
-          for (const [t0, t1] of covered) {
+        if (showHidden) {
+          for (const { t0, t1, depth } of buriedRuns(a0, b0, refPos, covered)) {
             const p0 = lerp(t0), p1 = lerp(t1);
             dashedLines.push(el("line", {
               class: "crease-U",
@@ -296,6 +315,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
               "data-occluded": "true",
               x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
               stroke: "#94a3b8", "stroke-width": 1.2, "stroke-dasharray": "4 3", "stroke-linecap": "round",
+              ...(depth ? { "data-depth": depth, opacity: depthOpacity(depth) } : {}),
             }));
           }
         }
@@ -356,7 +376,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       if (!nm) return;
       const p = fverts[i]!;
       const buried = occludedPt(i);
-      if (buried && opts.hidden !== "dashed") return; // "hide": drop dot + label
+      if (buried && !showHidden) return; // "hide": drop dot + label
       if (buried) occludedNames.add(nm);
       const circle: Record<string, string | number> = {
         cx: mx(p[0]), cy: ty(p[1]), r: 3, fill: buried ? MUTED : theme.ink,

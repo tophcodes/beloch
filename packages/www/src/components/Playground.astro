@@ -71,6 +71,11 @@ const codeLines = code ? code.split("\n").length : 0;
           <button type="button" class="pg-style is-active" data-style="mono" aria-pressed="true">mono</button>
           <button type="button" class="pg-style" data-style="colour" aria-pressed="false">colour</button>
         </div>
+        <div class="pg-linestyle" role="group" aria-label="Hidden edges">
+          <button type="button" class="pg-occl is-active" data-hidden="hide" aria-pressed="true">off</button>
+          <button type="button" class="pg-occl" data-hidden="dashed" aria-pressed="false">dashed</button>
+          <button type="button" class="pg-occl" data-hidden="depth" aria-pressed="false">depth</button>
+        </div>
         <div class="pg-swatches" role="group" aria-label="Paper"></div>
         <button type="button" class="pg-export-toggle" aria-expanded="false">export</button>
       </div>
@@ -280,6 +285,7 @@ const codeLines = code ? code.split("\n").length : 0;
   }
   .pg-view,
   .pg-style,
+  .pg-occl,
   .pg-export-toggle {
     font: inherit;
     font-size: 12px;
@@ -294,22 +300,26 @@ const codeLines = code ? code.split("\n").length : 0;
   }
   .pg-view:hover,
   .pg-style:hover:not(:disabled),
+  .pg-occl:hover:not(:disabled),
   .pg-export-toggle:hover {
     color: var(--bel-ui-accent);
   }
   .pg-view.is-active,
   .pg-style.is-active,
+  .pg-occl.is-active,
   .pg-export-toggle[aria-expanded="true"] {
     border-color: var(--bel-ui-accent);
     color: var(--bel-ui-text);
   }
-  .pg-style:disabled {
+  .pg-style:disabled,
+  .pg-occl:disabled {
     cursor: default;
     border-color: var(--bel-ui-divider);
     color: var(--bel-ui-text-faint);
   }
   .pg-view:focus-visible,
   .pg-style:focus-visible,
+  .pg-occl:focus-visible,
   .pg-export-toggle:focus-visible {
     outline: 2px solid var(--bel-ui-accent);
     outline-offset: 2px;
@@ -1283,6 +1293,9 @@ const codeLines = code ? code.split("\n").length : 0;
       currentSchemeId = DEFAULT_ID;
     }
     let lineStyleId: "mono" | "colour" = "mono";
+    // What the folded view does with the crease segments that lie under other
+    // layers. The flat sheet occludes nothing, so this only bites in "folded".
+    let hiddenMode: "hide" | "dashed" | "depth" = "hide";
     // Which drawing of the current state is on the stage. Both are the same
     // state: the crease pattern is the flat sheet with the creases that exist
     // by this step, the folded view is that state seen from above with the
@@ -1358,6 +1371,7 @@ const codeLines = code ? code.split("\n").length : 0;
       if (v === currentView) return;
       currentView = v;
       updateViewTabs();
+      updateOcclButtons();
       // Two views of one state, so the shorter of the two lengths.
       rerenderCurrent("view");
     });
@@ -1373,6 +1387,33 @@ const codeLines = code ? code.split("\n").length : 0;
       rerenderCurrent();
     });
     updateStyleButtons();
+
+    const occlBar = root.querySelector<HTMLDivElement>('[aria-label="Hidden edges"]');
+    const OCCL_TITLE: Record<string, string> = {
+      hide: "Draw only what the reader can see",
+      dashed: "Draw buried crease segments too, all alike",
+      depth: "Draw buried crease segments, fainter the more layers cover them",
+    };
+    function updateOcclButtons() {
+      const flat = currentView === "cp";
+      occlBar?.querySelectorAll<HTMLButtonElement>(".pg-occl").forEach((b) => {
+        const id = b.dataset.hidden!;
+        b.disabled = flat;
+        b.title = flat ? "The crease pattern is one flat sheet: nothing is buried" : OCCL_TITLE[id]!;
+        b.classList.toggle("is-active", id === hiddenMode);
+        b.setAttribute("aria-pressed", String(id === hiddenMode));
+      });
+    }
+    occlBar?.addEventListener("click", (e: MouseEvent) => {
+      const b = (e.target as Element).closest<HTMLButtonElement>(".pg-occl");
+      if (!b || b.disabled) return;
+      const id = b.dataset.hidden as typeof hiddenMode;
+      if (id === hiddenMode) return;
+      hiddenMode = id;
+      updateOcclButtons();
+      rerenderCurrent();
+    });
+    updateOcclButtons();
 
     const swatchBar = root.querySelector<HTMLDivElement>(".pg-swatches");
     if (swatchBar) {
@@ -1821,16 +1862,16 @@ const codeLines = code ? code.split("\n").length : 0;
     // evaluator's table space; a rendered crease `<line>`'s x1/y1/x2/y2 are
     // in SVG pixel space, produced by render-scene.ts as
     // `mx(tx(x)), ty(y)` off the layout `sceneLayout(scene)` builds
-    // (see layout.ts + render-scene.ts:56,102) — `mx` only differs from `tx`
-    // for `view: "bottom"`, which this Playground never passes (grepped: only
-    // `renderFolded(currentScene, { theme, step, markOverlay })` call sites
-    // above, no `view`), so plain `tx`/`ty` is the exact same transform.
+    // (see layout.ts + render-scene.ts) — `mx` only differs from `tx` for
+    // `view: "bottom"`, which this Playground never passes, so plain
+    // `tx`/`ty` is the exact same transform.
     // Running the segment's table endpoints through that SAME layout puts
     // both sides of the comparison in the rendered pixel space. A segment
-    // fully occluded by a layer above it draws no line at all (render-scene
-    // drops fully-covered arcs unless `hidden: "dashed"`, which this
-    // Playground never sets) — zero matches then, and nothing highlights,
-    // the honest outcome for a layer this top-view projection can't show.
+    // fully occluded by a layer above it draws no line at all while the
+    // hidden-edge control is off — zero matches then, and nothing
+    // highlights, the honest outcome for a layer this top-view projection
+    // can't show. With the control on, the buried run is drawn and carries
+    // `data-occluded`, so it matches like any other segment.
     // Hovering OR clicking a row narrows the highlight to just that segment
     // (removing it from the rest of the bundle); a click additionally
     // stopPropagation()s so it doesn't bubble into result's click handler
@@ -2050,10 +2091,13 @@ const codeLines = code ? code.split("\n").length : 0;
           markOverlay: { marks: activeMarks, newestCreaseId },
         }).toString();
       }
-      if (!stmt) return renderFolded(currentScene, { theme, step: "0" }).toString();
+      if (!stmt) {
+        return renderFolded(currentScene, { theme, step: "0", hidden: hiddenMode }).toString();
+      }
       return renderFolded(currentScene, {
         theme,
         step: String(stmt.frameIndex),
+        hidden: hiddenMode,
         markOverlay: activeMarks.length > 0 ? { marks: activeMarks, newestCreaseId } : undefined,
       }).toString();
     }
