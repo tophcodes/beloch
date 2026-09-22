@@ -1,9 +1,12 @@
 /**
  * Beloch syntax highlighting via the ad-hoc tree-sitter grammar.
  *
- * Single source of truth for highlighting .bel source: used at build time by the
- * <Beloch> card and the markdown `bel` code-fence plugin. The same grammar wasm
- * also drives the live playground editor (see playground island).
+ * The build-time half: used by the <Beloch> card and the markdown `bel`
+ * code-fence plugin to emit HTML. This module reads the grammar off disk and
+ * cannot run in a browser; the playground editor highlights through
+ * cm-bel-highlight.ts, which loads the same grammar and the same query over
+ * the network. Both take their token ranges from bel-tokens.ts, so the editor
+ * and the card beside it cannot colour one token differently.
  *
  * A capture named `x` becomes the CSS class `bel-x`, so the class list is
  * whatever packages/grammar/queries/highlights.scm captures: the token classes
@@ -11,6 +14,7 @@
  * operator, punct) and one per item type under a write statement.
  */
 import { Parser, Language, Query } from "web-tree-sitter";
+import { belTokens, belEntityName } from "./bel-tokens";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -57,27 +61,15 @@ export async function highlightBel(source: string): Promise<string> {
   const { parser, query } = await ensure();
   const tree = parser.parse(source);
   if (!tree) return esc(source);
-  const caps = query.captures(tree.rootNode);
-  // Flat grammar → non-overlapping tokens; sort by start just in case.
-  caps.sort((a, b) => a.node.startIndex - b.node.startIndex);
   let out = "";
   let pos = 0;
-  for (const c of caps) {
-    const { startIndex: s, endIndex: e } = c.node;
-    if (s < pos) continue; // skip any overlap
-    if (s > pos) out += esc(source.slice(pos, s));
-    const tokenText = source.slice(s, e);
-    let belName = "";
-    if (c.name === "point") {
-      const m = /^\.([A-Za-z_]\w*)$/.exec(tokenText); // .center — not .[
-      if (m) belName = m[1]!;
-    } else if (c.name === "line") {
-      const m = /^--([A-Za-z_]\w*)$/.exec(tokenText); // --d1 — not --[
-      if (m) belName = m[1]!;
-    }
+  for (const t of belTokens(query.captures(tree.rootNode))) {
+    if (t.from > pos) out += esc(source.slice(pos, t.from));
+    const tokenText = source.slice(t.from, t.to);
+    const belName = belEntityName(t.name, tokenText);
     const dataAttr = belName ? ` data-bel-name="${belName}"` : "";
-    out += `<span class="bel-${c.name}"${dataAttr}>${esc(tokenText)}</span>`;
-    pos = e;
+    out += `<span class="bel-${t.name}"${dataAttr}>${esc(tokenText)}</span>`;
+    pos = t.to;
   }
   if (pos < source.length) out += esc(source.slice(pos));
   tree.delete();

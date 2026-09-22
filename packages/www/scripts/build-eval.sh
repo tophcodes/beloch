@@ -5,7 +5,7 @@
 # the FLINT-wasm qqbar backend packages/eval-web/qqbar_shim.js calls into.
 # Run this MANUALLY after changing lib/ or eval-web/ — the astro/bun site build
 # does NOT invoke the nix OCaml toolchain, so the bundle is a committed
-# build artifact (same pattern as packages/www/public/grammar/tree-sitter-beloch.wasm).
+# build artifact (same pattern as packages/www/src/grammar/tree-sitter-beloch.wasm).
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"

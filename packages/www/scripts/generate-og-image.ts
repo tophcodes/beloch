@@ -2,7 +2,7 @@
 // Regenerates packages/www/public/og-image.png, the social-preview image for
 // the landing page and the Starlight docs (og:image / twitter:card). It is a
 // committed build artifact, same pattern as public/beloch/beloch-eval.js and
-// public/grammar/tree-sitter-beloch.wasm: the site build does not run this
+// src/grammar/tree-sitter-beloch.wasm: the site build does not run this
 // script, so run it manually after the source program or the wordmark
 // changes.
 //

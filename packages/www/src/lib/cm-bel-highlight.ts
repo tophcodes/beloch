@@ -1,0 +1,114 @@
+/**
+ * Beloch syntax colouring for the playground editor.
+ *
+ * The browser half of the pair described in highlight-bel.ts: the same grammar
+ * wasm and the same highlights.scm, parsed with web-tree-sitter and handed to
+ * CodeMirror as line decorations rather than as HTML. Token ranges come from
+ * bel-tokens.ts, so a token here carries the class it carries in a <Beloch>
+ * card, and theme.css colours both from the same --bel-syntax-* role.
+ *
+ * This is decorations, not a CodeMirror `Language`. A Language would need a
+ * Lezer parser, and the grammar this project maintains is a tree-sitter one;
+ * nothing else in CodeMirror (folding, indentation, completion) reads the tree
+ * here, so the tree's only job is to say which range gets which class.
+ *
+ * The three files the parser needs are imported through the bundler, so the
+ * build emits them with the rest of the site and there is no hand-kept copy to
+ * drift: packages/grammar's `generate` writes src/grammar, and src/grammar is
+ * what both halves read.
+ */
+import { Parser, Language, Query, type Tree } from "web-tree-sitter";
+import { Decoration, EditorView, ViewPlugin } from "@codemirror/view";
+import type { DecorationSet, ViewUpdate } from "@codemirror/view";
+import { RangeSetBuilder } from "@codemirror/state";
+import type { Extension } from "@codemirror/state";
+import { belTokens } from "./bel-tokens";
+
+import wtsWasmUrl from "web-tree-sitter/web-tree-sitter.wasm?url";
+import grammarWasmUrl from "../grammar/tree-sitter-beloch.wasm?url";
+import highlightsQuery from "../grammar/highlights.scm?raw";
+
+let ready: Promise<{ parser: Parser; query: Query }> | null = null;
+
+/**
+ * Loads the parser, once per page. The playground awaits this before it mounts
+ * the editor: the server already rendered the program with its colours, and
+ * mounting an uncoloured editor over that would take them away and give them
+ * back a moment later, on the one element the reader is looking at.
+ */
+export function initBelHighlight(): Promise<{ parser: Parser; query: Query }> {
+  if (!ready) {
+    ready = (async () => {
+      await Parser.init({ locateFile: () => wtsWasmUrl });
+      const lang = await Language.load(grammarWasmUrl);
+      const parser = new Parser();
+      parser.setLanguage(lang);
+      return { parser, query: new Query(lang, highlightsQuery) };
+    })();
+  }
+  return ready;
+}
+
+const marks = new Map<string, Decoration>();
+function markFor(name: string): Decoration {
+  let d = marks.get(name);
+  if (!d) {
+    d = Decoration.mark({ class: `bel-${name}` });
+    marks.set(name, d);
+  }
+  return d;
+}
+
+/**
+ * The extension. Pass the value `initBelHighlight()` resolved to, so the
+ * editor is built with colouring already in place rather than gaining it on a
+ * later transaction.
+ *
+ * Re-parsing hands tree-sitter the previous tree, so an edit re-walks the part
+ * of the document it touched instead of the whole program.
+ */
+export function belHighlighting({ parser, query }: { parser: Parser; query: Query }): Extension {
+  return ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
+      private tree: Tree | null = null;
+
+      constructor(view: EditorView) {
+        this.decorations = this.build(view);
+      }
+
+      update(update: ViewUpdate) {
+        if (update.docChanged || update.viewportChanged) {
+          this.decorations = this.build(update.view);
+        }
+      }
+
+      destroy() {
+        this.tree?.delete();
+        this.tree = null;
+      }
+
+      private build(view: EditorView): DecorationSet {
+        const text = view.state.doc.toString();
+        let next: Tree | null;
+        try {
+          next = parser.parse(text, this.tree ?? undefined);
+        } catch {
+          // A parse that throws leaves the previous colouring standing rather
+          // than stripping the editor back to plain text mid-edit.
+          return this.decorations ?? Decoration.none;
+        }
+        if (!next) return this.decorations ?? Decoration.none;
+        this.tree?.delete();
+        this.tree = next;
+
+        const builder = new RangeSetBuilder<Decoration>();
+        for (const t of belTokens(query.captures(next.rootNode))) {
+          builder.add(t.from, t.to, markFor(t.name));
+        }
+        return builder.finish();
+      }
+    },
+    { decorations: (v) => v.decorations },
+  );
+}

@@ -10,6 +10,8 @@
 // is a build-time-only pipeline today (see Beloch.astro) — a live CM6
 // language/highlight extension for .bel is not wired up yet, so the editor
 // runs with CM6's basicSetup only (no Beloch token coloring).
+import { highlightBel } from "../lib/highlight-bel";
+
 interface Props {
   code?: string;
   height?: number;
@@ -34,6 +36,13 @@ interface Props {
   variant?: "full" | "hero";
 }
 const { code = "", height = 320, seed, seedFold, lazy = false, variant = "full" } = Astro.props;
+
+// The program, coloured at build time by the same grammar the editor will use
+// (lib/highlight-bel.ts). It stands in the pane until the editor's parser has
+// loaded, so the first paint already carries the syntax colours and mounting
+// the editor never takes them away again. Line numbers are known here too.
+const highlightedCode = code ? await highlightBel(code) : "";
+const codeLines = code ? code.split("\n").length : 0;
 ---
 
 <div
@@ -43,7 +52,12 @@ const { code = "", height = 320, seed, seedFold, lazy = false, variant = "full" 
   data-variant={variant}
 >
   <div class="pg-pane pg-editor">
-    <div class="pg-source"><template class="pg-source-seed">{code}</template></div>
+    <div class="pg-source">
+      <template class="pg-source-seed">{code}</template>
+      {code ? (
+        <pre class="pg-source-static"><span class="pg-static-gutter">{Array.from({ length: codeLines }, (_, i) => i + 1).join("\n")}</span><code set:html={highlightedCode} /></pre>
+      ) : null}
+    </div>
     {seedFold ? <script type="application/json" class="pg-seed-fold" set:html={seedFold} /> : null}
   </div>
   <div class="pg-pane pg-output">
@@ -133,6 +147,10 @@ const { code = "", height = 320, seed, seedFold, lazy = false, variant = "full" 
     /* Opt the rendered paper's SVG backdrop rect out of its white default
        (WEB_THEME reads --bel-paper-background) so the paper lies on the transparent pane. */
     --bel-paper-background: transparent;
+    /* The editor's step-marker gutter, in one place: the CodeMirror gutter
+       reads it, and so does the static copy that stands in before the editor
+       mounts, so the two cannot drift apart horizontally. */
+    --pg-step-gutter: 14px;
   }
   /* Under the break the drawing goes above the code (B3.7), and the editor
      keeps a height that reaches past the fold, so the cut-off line at the
@@ -390,11 +408,59 @@ const { code = "", height = 320, seed, seedFold, lazy = false, variant = "full" 
     flex: 1;
     min-height: 0;
   }
+
+  /* The build-time copy of the program, holding the pane until the editor's
+     parser has loaded. Its type grid is the editor's: the same font, the same
+     --bel-code-* scale, the same content padding and the same gutter width, so
+     the swap moves no glyph. cm-mount.test.ts pins the four values that have
+     to agree. */
+  .pg-source-static {
+    display: grid;
+    grid-template-columns: var(--pg-step-gutter) auto minmax(0, 1fr);
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    padding: 14px 18px 14px 0;
+    overflow: hidden;
+    font-family: var(--bel-font-mono);
+    font-size: var(--bel-code-size);
+    line-height: var(--bel-code-line);
+    color: var(--bel-ui-code-text);
+    white-space: pre;
+  }
+  .pg-static-gutter {
+    grid-column: 2;
+    padding-right: 3px;
+    padding-left: 5px;
+    margin-right: 18px;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    min-width: 20px;
+    text-align: right;
+    color: var(--bel-ui-code-gutter);
+    user-select: none;
+  }
+  .pg-source-static code {
+    font: inherit;
+    background: none;
+    padding: 0;
+    white-space: pre;
+  }
   .pg-source :global(.cm-scroller) {
     overflow: auto;
   }
   .pg-source :global(.cm-step-gutter) {
-    width: 14px;
+    width: var(--pg-step-gutter);
+  }
+  /* basicSetup brings a fold gutter. Folding needs a language to supply the
+     ranges, and this editor colours through decorations rather than through a
+     CodeMirror language, so that gutter can never show a marker. Hidden, it
+     stops taking ten pixels that the static copy would otherwise have to
+     reproduce to keep the swap from moving the text.
+     `!important` because CodeMirror's base theme marks every gutter's display
+     `flex !important` to stop margin collapsing, and nothing weaker reaches
+     past that. */
+  .pg-source :global(.cm-foldGutter) {
+    display: none !important;
   }
   /* The editor sits on the code surface, so the step marker takes that
      surface's fixed accent rather than the one that follows the mode. */
@@ -872,6 +938,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false, variant = "full" 
   import { EditorState } from "@codemirror/state";
   import { keymap } from "@codemirror/view";
   import { stepMarkerExtensions, setStepLineOn, setErrorLineOn } from "../lib/cm-step-marker";
+  import { initBelHighlight, belHighlighting } from "../lib/cm-bel-highlight";
   import { swapDrawing, type FadeLength } from "../lib/crossfade";
   import { parseFold, pickStep, type FoldScene, type Statement, type Vec2 } from "@beloch/scene";
   import {
@@ -1075,7 +1142,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false, variant = "full" 
     return { reset, setEnabled, zoomBy, wasDrag: () => dragMoved, isDragging: () => dragging };
   }
 
-  function setup(root: HTMLElement) {
+  async function setup(root: HTMLElement) {
     const sourceMount = root.querySelector<HTMLDivElement>(".pg-source");
     const runBtn = root.querySelector<HTMLButtonElement>(".pg-run");
     const result = root.querySelector<HTMLDivElement>(".pg-result");
@@ -1114,7 +1181,15 @@ const { code = "", height = 320, seed, seedFold, lazy = false, variant = "full" 
 
     const seed = sourceMount.querySelector<HTMLTemplateElement>(".pg-source-seed");
     const initialCode = seed?.content.textContent ?? "";
-    sourceMount.textContent = "";
+    // The server's coloured copy stays in the pane until the editor is built,
+    // and goes in the same frame the editor goes in, so the reader sees the
+    // program in its colours from the first paint through to typing in it.
+    const staticSource = sourceMount.querySelector<HTMLElement>(".pg-source-static");
+    const highlighter = await initBelHighlight().catch((err) => {
+      // A grammar that fails to load costs the colours, not the editor.
+      console.warn("playground: syntax highlighting unavailable", err);
+      return null;
+    });
 
     // Lazy instances defer the eval Worker (see bootIfNeeded below) until the
     // user actually clicks Run — focusing or editing the code must not, on
@@ -1165,6 +1240,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false, variant = "full" 
         extensions: [
           ...stepMarkerExtensions,
           basicSetup,
+          ...(highlighter ? [belHighlighting(highlighter)] : []),
           EditorView.editable.of(!hero),
           keymap.of([
             {
@@ -1187,6 +1263,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false, variant = "full" 
       }),
       parent: sourceMount,
     });
+    staticSource?.remove();
     updateRunButtonState();
 
     // Exposed so pages embedding this playground (e.g. the landing page's
@@ -2407,5 +2484,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false, variant = "full" 
 
   document
     .querySelectorAll<HTMLElement>(".beloch-playground")
-    .forEach(setup);
+    .forEach((root) => {
+      void setup(root).catch((err) => console.error("playground: setup failed", err));
+    });
 </script>
