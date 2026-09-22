@@ -43,9 +43,12 @@ Settled in conversation on 2026-09-22:
    evaluate nothing; they are handed a finished FOLD document. Only the
    playground and a VS Code preview evaluate, and they do it by different
    means.
-4. The editor owns the source text and reports changes. Everything derived
+4. **Picking among coincident lines is a module too.** The core knows one
+   selection; resolving several entities that share a pixel into a choice is
+   the playground's affordance, and the card and the tour never open it.
+5. The editor owns the source text and reports changes. Everything derived
    from the text belongs to the runtime.
-5. First slice: the core, the two modules the playground needs, the DOM
+6. First slice: the core, the three modules the playground needs, the DOM
    renderer, and the playground migrated onto them.
 
 ## The core and its document slot
@@ -62,9 +65,10 @@ have to pretend to evaluate what was already evaluated at build time.
 
 Beside the slot the core holds:
 
-**Interaction state.** Current step, the pinned entity, the coincidence
-chooser's open flag and its candidates, the hovered entity. This is the group
-all three consumers share and the reason the package exists.
+**Interaction state.** Current step, the pinned entity, the hovered entity,
+and the selection. This is the group all three consumers share and the reason
+the package exists. What the core carries is one settled selection; how a
+reader arrived at it belongs to whoever offered the choice.
 
 **Presentation options.** View (`cp` / `folded`), hidden mode
 (`hide` / `dashed` / `depth`), paper scheme, line style. They are inputs to
@@ -92,7 +96,7 @@ the worker, both timers and the DOM writes. That file becomes the run-UI
 decision inside the evaluation module and keeps its tests. The scheduler is
 injected, so a headless test drives debounce and timeouts without waiting.
 
-Three modules in this slice, each its own package under `packages/runtime/`:
+Four modules in this slice, each its own package under `packages/runtime/`:
 
 **`@beloch/runtime` (core).** State, events, reducers, render-command
 derivation. No DOM, no effects, no evaluation.
@@ -104,6 +108,14 @@ web consumers pass the wasm worker under `public/beloch/`, a VS Code preview
 passes a subprocess running the native `beloch fold`. One interface, two
 backends. This is the concrete payoff of making evaluation a module rather
 than a core concern.
+
+**`@beloch/runtime-pick`.** Coincident lines. It holds the candidate list and
+the open flag, decides from a hit report whether a pick settles directly or
+opens a choice, and dispatches the settled selection into the core. The hit
+test itself stays with the view, which is the only side that knows what was
+drawn where (see `pick-visibility.ts` and `lineEntitiesAtPoint`); the module
+receives its verdict as data. A consumer that never has two entities on one
+pixel omits this and picks by dispatching a selection.
 
 **`@beloch/runtime-editor`.** Selection and spans, both directions: it turns
 the runtime's selection into the spans an editor should mark (step line,
@@ -119,12 +131,12 @@ a host with a different surface writes its own plug instead.
 
 ## What each consumer composes
 
-| Consumer | Core | eval | editor | renderer |
-|---|---|---|---|---|
-| Playground | yes | wasm worker | CodeMirror | render-dom |
-| `<Beloch>` card | yes | no | no | render-dom |
-| Model tour | yes | no | no | render-dom |
-| VS Code preview | yes | subprocess | `TextDocument` | its own |
+| Consumer | Core | eval | pick | editor | renderer |
+|---|---|---|---|---|---|
+| Playground | yes | wasm worker | yes | CodeMirror | render-dom |
+| `<Beloch>` card | yes | no | no | no | render-dom |
+| Model tour | yes | no | no | no | render-dom |
+| VS Code preview | yes | subprocess | yes | `TextDocument` | its own |
 
 The card and the tour need the core and a renderer. They set the document
 once and dispatch step, view and highlight. That is the shape the composition
@@ -143,7 +155,9 @@ ADR-0014 settles the identity question: a crease is a bundle of segments, and
 the bundle is what a selection names. So the core carries
 `selection: EntityRef[]` with `pinned: EntityRef | null` beside it, and each
 consumer constrains what it dispatches. The card's multi-selection and the
-playground's single pin are two policies over one state shape. Names stay what
+playground's single pin are two policies over one state shape. The candidate
+list leaves the core with the chooser, into `@beloch/runtime-pick`, because it
+is a step on the way to a selection rather than a selection. Names stay what
 the program calls an entity, resolved through the inspect data, never used as
 the identity.
 
@@ -162,11 +176,15 @@ invariants the playground maintains by hand today:
 - hover, then pin, then hover elsewhere: the pin survives, hover is suppressed
 - pin, then step forward: the pin survives the redraw and lights whatever the
   new step draws, or nothing, without clearing
-- pick on coincident lines: the chooser opens with every candidate, and a
-  candidate pick closes it and pins that one
 - toggle hidden mode: the render command changes, the selection does not
 - a source change invalidates the document, the step and the pin together
 - a failed run keeps the last good document and adds the diagnostic
+
+**The pick module against hit reports.** One entity settles directly. Two or
+more open the choice with every candidate, and choosing one closes it and
+settles that selection. A hit report with nothing in it leaves the selection
+alone, which is the drawing's honest answer where a buried segment is not
+drawn.
 
 **The eval module against a fake backend.** Phase transitions, debounce
 collapsing two keystrokes into one run, a stalled load, and a run whose source
@@ -184,8 +202,8 @@ property under test is the state logic.
 
 In scope:
 
-- `@beloch/runtime`, `@beloch/runtime-eval`, `@beloch/runtime-editor`,
-  `@beloch/runtime-render-dom`.
+- `@beloch/runtime`, `@beloch/runtime-eval`, `@beloch/runtime-pick`,
+  `@beloch/runtime-editor`, `@beloch/runtime-render-dom`.
 - `playground-run-state.ts` moved into the eval module with its tests.
 - `Playground.astro` migrated onto the composition, its inline script reduced
   to wiring and viewport handling.
@@ -215,9 +233,9 @@ One ADR, on the decision and not on the mechanics: the web client holds its
 state in a composable runtime, the core carries a document slot rather than an
 evaluator, views are renderers plugged in by the consumer, and the editor owns
 the text. It records what was rejected (state in each component, a framework
-store, evaluation in the core, the card's name-based selection as the
-identity) and the constraint that a non-DOM consumer with a different
-evaluation backend is planned. Numbered 0024 unless something lands first.
+store, evaluation in the core, the coincidence chooser in the core, the
+card's name-based selection as the identity) and the constraint that a non-DOM
+consumer with a different evaluation backend is planned. Numbered 0024 unless something lands first.
 
 The interfaces themselves stay in the packages' own types and doc comments,
 where they cannot drift from the code.
