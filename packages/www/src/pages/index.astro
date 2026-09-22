@@ -10,6 +10,7 @@
 // -> render pipeline the docs cards use), so it is on the page at first paint
 // with no worker and no wasm.
 import Shell from "../layouts/Shell.astro";
+import CitationMeta from "../components/CitationMeta.astro";
 import Playground from "../components/Playground.astro";
 import { evalBelToFold } from "../lib/eval-bel";
 import { HERO_SRC } from "../lib/landing-examples";
@@ -25,6 +26,7 @@ const DESCRIPTION = "A declarative language for origami, built on the Huzita–J
 ---
 
 <Shell title="Beloch" description={DESCRIPTION} url="https://beloch.toph.so/">
+  <CitationMeta slot="head" />
   <section class="hero">
     <h1>beloch</h1>
     <p class="pronunciation">beh-LOK · /be&#712;l&#596;k/</p>

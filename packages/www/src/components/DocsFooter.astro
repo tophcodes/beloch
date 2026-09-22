@@ -1,0 +1,35 @@
+---
+// Starlight's Footer, with the release line under it, so the docs carry the
+// same record as the landing and the playground.
+import EditLink from "virtual:starlight/components/EditLink";
+import LastUpdated from "virtual:starlight/components/LastUpdated";
+import Pagination from "virtual:starlight/components/Pagination";
+import CiteLine from "./CiteLine.astro";
+---
+
+<footer class="sl-flex">
+  <div class="meta sl-flex">
+    <EditLink />
+    <LastUpdated />
+  </div>
+  <Pagination />
+  <CiteLine />
+</footer>
+
+<style>
+  footer {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .meta {
+    gap: 0.75rem 3rem;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-top: 3rem;
+    font-size: var(--bel-text-sm);
+    color: var(--bel-ui-text-muted);
+  }
+  .meta > :global(p:only-child) {
+    margin-inline-start: auto;
+  }
+</style>

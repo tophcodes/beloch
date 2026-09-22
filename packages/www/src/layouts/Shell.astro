@@ -7,6 +7,7 @@
 import { headSyncScript } from "../lib/paper-schemes";
 import { NAV_LINKS } from "../lib/nav-links";
 import SiteHeader from "../components/SiteHeader.astro";
+import CiteLine from "../components/CiteLine.astro";
 import "../styles/theme.css";
 
 interface Props {
@@ -53,6 +54,7 @@ const { title, description, url } = Astro.props;
       })();
     </script>
     <script set:html={headSyncScript()} />
+    <slot name="head" />
   </head>
   <body>
     <header class="site-header">
@@ -64,9 +66,12 @@ const { title, description, url } = Astro.props;
     </main>
 
     <footer class="site-footer">
-      {NAV_LINKS.map((l) => (
-        <a href={l.href}>{l.label}</a>
-      ))}
+      <nav class="site-footer-nav" aria-label="Secondary">
+        {NAV_LINKS.map((l) => (
+          <a href={l.href}>{l.label}</a>
+        ))}
+      </nav>
+      <CiteLine />
     </footer>
 
     <style is:global>
@@ -101,14 +106,16 @@ const { title, description, url } = Astro.props;
 
       .site-footer {
         display: flex;
-        gap: 20px;
-        justify-content: center;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
         padding: 24px var(--bel-shell-pad-x) 40px;
         border-top: 1px solid var(--bel-ui-divider);
         font-size: var(--bel-text-sm);
       }
-      .site-footer a { color: var(--bel-ui-text-muted); }
-      .site-footer a:hover { color: var(--bel-ui-text); }
+      .site-footer-nav { display: flex; gap: 20px; justify-content: center; }
+      .site-footer-nav a { color: var(--bel-ui-text-muted); }
+      .site-footer-nav a:hover { color: var(--bel-ui-text); }
     </style>
 
   </body>

@@ -1,0 +1,40 @@
+---
+// The citation metadata a scholarly indexer reads. These tags describe one
+// work, so they belong on the one page that stands for the software rather
+// than on every page of the site: the landing is the `url` CITATION.cff names.
+// The JSON-LD says the same thing to a general crawler.
+import { readCitation, citedName, doiUrl } from "../lib/citation";
+
+const c = readCitation();
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  name: c.title,
+  version: c.version,
+  datePublished: c.dateReleased,
+  license: `https://spdx.org/licenses/${c.license}`,
+  codeRepository: c.repository,
+  url: c.url,
+  identifier: doiUrl(c),
+  sameAs: doiUrl(c),
+  programmingLanguage: "OCaml",
+  author: {
+    "@type": "Person",
+    familyName: c.familyNames,
+    givenName: c.givenNames,
+    name: `${c.givenNames} ${c.familyNames}`,
+    identifier: c.orcid,
+    sameAs: c.orcid,
+  },
+};
+---
+
+<meta name="citation_title" content={c.title} />
+<meta name="citation_author" content={citedName(c)} />
+<meta name="citation_author_orcid" content={c.orcid} />
+<meta name="citation_publication_date" content={c.dateReleased.replace(/-/g, "/")} />
+<meta name="citation_doi" content={c.doi} />
+<meta name="citation_technical_report_institution" content="Zenodo" />
+<meta name="citation_public_url" content={c.url} />
+<link rel="license" href={`https://spdx.org/licenses/${c.license}`} />
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />

@@ -1,0 +1,32 @@
+---
+// The release this page belongs to, and the record that dates it. Both come
+// out of CITATION.cff, so a release moves one file and every footer follows.
+import { readCitation, doiUrl } from "../lib/citation";
+
+const c = readCitation();
+---
+
+<p class="cite-line">
+  <span>{c.title.split(":")[0]} {c.version}</span>
+  <span aria-hidden="true">·</span>
+  <a href={doiUrl(c)}>doi:{c.doi}</a>
+  <span aria-hidden="true">·</span>
+  <a href={c.orcid} rel="author">{c.givenNames} {c.familyNames}</a>
+  <span aria-hidden="true">·</span>
+  <a href="/cite/">How to cite</a>
+</p>
+
+<style>
+  .cite-line {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--bel-space-1);
+    margin: 0;
+    font-family: var(--bel-font-mono);
+    font-size: var(--bel-text-2xs);
+    color: var(--bel-ui-text-faint);
+  }
+  .cite-line a { color: var(--bel-ui-text-muted); }
+  .cite-line a:hover { color: var(--bel-ui-text); }
+</style>

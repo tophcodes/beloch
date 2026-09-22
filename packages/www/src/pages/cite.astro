@@ -1,0 +1,110 @@
+---
+// How to cite Beloch. Every value on this page comes out of CITATION.cff, so
+// the page cannot disagree with the file a release updates, and the DOI is the
+// concept DOI: it resolves to the newest version rather than to the one that
+// happened to be current when a reader copied it.
+import Shell from "../layouts/Shell.astro";
+import { readCitation, apa, bibtex, citedName, doiUrl } from "../lib/citation";
+
+const c = readCitation();
+const DESCRIPTION = `How to cite ${c.title.split(":")[0]}, with its DOI, a BibTeX entry and an APA reference.`;
+---
+
+<Shell title="Cite Beloch" description={DESCRIPTION} url="https://beloch.toph.so/cite/">
+  <section class="cite-page">
+    <h1>Cite</h1>
+    <p class="lede">
+      Every release is archived with a DOI. The one below is the concept DOI: it
+      resolves to the most recent version, so a reference made today keeps
+      working after the next release.
+    </p>
+
+    <dl class="cite-facts">
+      <dt>Author</dt>
+      <dd><a href={c.orcid} rel="author">{c.givenNames} {c.familyNames}</a> ({c.orcid.replace("https://orcid.org/", "ORCID ")})</dd>
+      <dt>Version</dt>
+      <dd>{c.version}, released {c.dateReleased}</dd>
+      <dt>DOI</dt>
+      <dd><a href={doiUrl(c)}>{c.doi}</a></dd>
+      <dt>Licence</dt>
+      <dd>{c.license}</dd>
+      <dt>Source</dt>
+      <dd><a href={c.repository}>{c.repository.replace("https://", "")}</a></dd>
+    </dl>
+
+    <h2>APA</h2>
+    <p class="cite-plain">{apa(c)}</p>
+
+    <h2>BibTeX</h2>
+    <pre class="bel-block"><code>{bibtex(c)}</code></pre>
+
+    <p class="cite-foot">
+      The repository carries the same metadata as <code>CITATION.cff</code>, which
+      GitHub and Zenodo both read. <a href={doiUrl(c)}>The archived record</a>
+      offers the other styles.
+    </p>
+  </section>
+</Shell>
+
+<style>
+  .cite-page {
+    max-width: 62ch;
+    margin-inline: auto;
+    padding-inline: var(--bel-shell-pad-x);
+  }
+  h1 {
+    margin: 0;
+    font-family: var(--bel-font-mono);
+    font-size: var(--bel-text-h1);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  h2 {
+    margin: var(--bel-space-5) 0 var(--bel-space-1);
+    font-family: var(--bel-font-mono);
+    font-size: var(--bel-text-h4);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .lede {
+    margin: var(--bel-space-1) 0 0;
+    font-size: var(--bel-text-md);
+    line-height: var(--bel-line-height);
+    color: var(--bel-ui-text-muted);
+    text-wrap: pretty;
+  }
+
+  .cite-facts {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--bel-space-1) var(--bel-space-3);
+    margin: var(--bel-space-4) 0 0;
+    font-size: var(--bel-text-sm);
+  }
+  .cite-facts dt {
+    font-family: var(--bel-font-mono);
+    color: var(--bel-ui-text-muted);
+  }
+  .cite-facts dd { margin: 0; }
+
+  .cite-plain {
+    margin: 0;
+    padding: var(--bel-space-2);
+    background: var(--bel-ui-accent-low);
+    border-radius: var(--bel-radius-control);
+    font-size: var(--bel-text-sm);
+    line-height: var(--bel-line-height);
+  }
+  .cite-foot {
+    margin-top: var(--bel-space-5);
+    font-size: var(--bel-text-sm);
+    line-height: var(--bel-line-height);
+    color: var(--bel-ui-text-muted);
+  }
+  .cite-foot code {
+    font-family: var(--bel-font-mono);
+    background: var(--bel-ui-code-inline);
+    border-radius: var(--bel-radius-control);
+    padding: 0 4px;
+  }
+</style>
