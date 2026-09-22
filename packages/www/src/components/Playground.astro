@@ -1039,6 +1039,7 @@ const codeLines = code ? code.split("\n").length : 0;
   import { hoverSummary, segmentRows, edgeSegmentRows } from "../lib/tooltip-content";
   import { bundleElements } from "../lib/bundle-highlight";
   import { blockOfStep, entitiesIn } from "@beloch/runtime-editor";
+  import { createPick } from "@beloch/runtime-pick";
   import {
     applyEmphasis,
     clearHighlight,
@@ -1569,10 +1570,11 @@ const codeLines = code ? code.split("\n").length : 0;
       runtime.dispatch({ type: "hover/set", entity: ref });
       relight();
     };
-    // Coincident-line chooser state (see renderChoice): open flag and the
-    // overlapping entities offered.
-    let choiceOpen = false;
-    let choiceEnts: EntityRef[] = [];
+    // Coincident lines: which entities a pixel offers, and whether the reader
+    // has been asked. The list and the decision are the module's; the panel
+    // that shows them and the highlight over them are this view's
+    // (see renderChoice).
+    const pick = createPick(runtime);
 
     // A scene with statements has a timeline, and every step of it goes
     // through the occlusion pipeline, step 0's flat sheet included. A scene
@@ -1647,12 +1649,13 @@ const codeLines = code ? code.split("\n").length : 0;
       );
     };
     // The runtime's own highlight comes back with every drawing the renderer
-    // makes. The chooser's preview does not, because the candidate list is
-    // this view's and not the runtime's yet.
+    // makes. The candidates of an open choice do not: they are what the reader
+    // is being asked about rather than an answer, so the core holds no
+    // selection for them and this view lights them itself.
     const reapplyChoiceHl = () => {
       const scene = currentScene();
-      if (!scene || !choiceOpen || choiceEnts.length === 0) return;
-      lightEntities(canvas, scene, choiceEnts);
+      if (!scene || !pick.state.open || pick.state.candidates.length === 0) return;
+      lightEntities(canvas, scene, pick.state.candidates);
     };
     // Resolves the pointer target to an EntityRef: lookupEntity first
     // (crease/face/vertex, attr-based); if that's null AND the target is a
@@ -1765,7 +1768,7 @@ const codeLines = code ? code.split("\n").length : 0;
     }
 
     function closeAnchor() {
-      choiceOpen = false;
+      pick.close();
       pin(null);
       restInspect();
       setRefSpansOn(editor, []);
@@ -1842,7 +1845,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // Anchor one entity's tooltip at (x,y): shared tail of a direct single
     // click and a chooser-row pick.
     const anchorEntity = (ref: EntityRef) => {
-      choiceOpen = false;
+      pick.close();
       pin(ref);
       markRefsFor([ref]);
       renderInspect(ref, true);
@@ -1877,10 +1880,6 @@ const codeLines = code ? code.split("\n").length : 0;
           })
           .join("");
       inspectPanel!.hidden = false;
-      if (anchored) {
-        choiceEnts = ents;
-        choiceOpen = true;
-      }
     };
 
     // The reverse direction of the click→line jump above: moving the
@@ -1907,21 +1906,20 @@ const codeLines = code ? code.split("\n").length : 0;
     // NOW, so hover resumes as soon as the drag actually ends rather than
     // staying suppressed until the next pointerdown (see createPanZoom).
     if (!hero) result.addEventListener("mousemove", (e: MouseEvent) => {
-      if (pinned() || choiceOpen || panZoom.isDragging()) return;
+      if (pinned() || pick.state.open || panZoom.isDragging()) return;
       // Same proximity detection as the click, so hover and click agree.
-      const ents = lineEntitiesAtPoint(e.clientX, e.clientY);
-      if (ents.length >= 2) {
-        // Preview the chooser so hover already shows "N Linien hier" rather
-        // than one entity that then surprises with a chooser on click. The
-        // candidate list is this view's until the chooser moves into its own
-        // module, so its preview is lit here.
+      const outcome = pick.report(lineEntitiesAtPoint(e.clientX, e.clientY), "hover");
+      if (outcome.kind === "several") {
+        // Preview the choice so hover already shows "N lines here" rather than
+        // one entity that then surprises with a chooser on click. The
+        // candidates are not a selection, so the drawing is lit from here.
         hover(null);
         const scene = currentScene();
-        if (scene) lightEntities(canvas, scene, ents);
-        renderChoice(ents, false);
+        if (scene) lightEntities(canvas, scene, outcome.candidates);
+        renderChoice(outcome.candidates, false);
         return;
       }
-      hover(ents[0] ?? resolveRef(e.target as Element));
+      hover(outcome.kind === "one" ? outcome.entity : resolveRef(e.target as Element));
       renderInspect(runtime.state.hover, false);
     });
     // A click anchors (materializes) the tooltip at the click position — it
@@ -1935,17 +1933,18 @@ const codeLines = code ? code.split("\n").length : 0;
     if (!hero) result.addEventListener("click", (e: MouseEvent) => {
       if (panZoom.wasDrag()) return;
       // Multiple distinct lines stacked at the click → anchor the chooser
-      // (same content the hover was already previewing).
-      const ents = lineEntitiesAtPoint(e.clientX, e.clientY);
-      if (ents.length >= 2) {
-        pin(null);
+      // (same content the hover was already previewing). The module clears the
+      // selection for it: the reader has been asked and has not answered.
+      const outcome = pick.report(lineEntitiesAtPoint(e.clientX, e.clientY), "settle");
+      if (outcome.kind === "several") {
+        relight();
         const scene = currentScene();
-        if (scene) lightEntities(canvas, scene, ents);
-        markRefsFor(ents);
-        renderChoice(ents, true);
+        if (scene) lightEntities(canvas, scene, outcome.candidates);
+        markRefsFor(outcome.candidates);
+        renderChoice(outcome.candidates, true);
         return;
       }
-      const ref = ents[0] ?? resolveRef(e.target as Element);
+      const ref = outcome.kind === "one" ? outcome.entity : resolveRef(e.target as Element);
       if (!ref) return;
       anchorEntity(ref);
     });
@@ -2018,7 +2017,7 @@ const codeLines = code ? code.split("\n").length : 0;
       const choice = target.closest<HTMLElement>("[data-choice-idx]");
       if (choice) {
         e.stopPropagation();
-        const ref = choiceEnts[Number(choice.dataset.choiceIdx)];
+        const ref = pick.choose(Number(choice.dataset.choiceIdx));
         if (ref) anchorEntity(ref);
         return;
       }
@@ -2037,7 +2036,7 @@ const codeLines = code ? code.split("\n").length : 0;
       // Previewing a chooser row highlights that entity's whole bundle.
       const choice = target.closest<HTMLElement>("[data-choice-idx]");
       if (choice) {
-        const ref = choiceEnts[Number(choice.dataset.choiceIdx)];
+        const ref = pick.state.candidates[Number(choice.dataset.choiceIdx)];
         const scene = currentScene();
         if (!ref || !scene) return;
         clearHighlight(canvas);
@@ -2118,7 +2117,7 @@ const codeLines = code ? code.split("\n").length : 0;
       reapplyChoiceHl();
       // A drawing on the stage means the rail has something to stand for. A
       // pinned answer survives a step change, so the rail keeps it.
-      if (!hero && !pinned() && !choiceOpen) restInspect();
+      if (!hero && !pinned() && !pick.state.open) restInspect();
       if (!keepView) panZoom.reset();
       panZoom.setEnabled(true);
       resetBtn.hidden = false;
@@ -2167,8 +2166,8 @@ const codeLines = code ? code.split("\n").length : 0;
     function clearStepsUI() {
       runtime.dispatch({ type: "document/set", scene: null });
       setStepSlotsOn(editor, []);
-      // Emptying the document takes the selection and the hover with it.
-      choiceOpen = false;
+      // Emptying the document takes the selection, the hover and any open
+      // choice with it; the modules watch the slot themselves.
       inspectPanel!.hidden = true;
       inspectPanel!.textContent = "";
       clearHighlight(canvas!);
