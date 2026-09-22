@@ -8,7 +8,7 @@
 (number) @number
 (operator) @operator
 (punct) @punct
-(flap_bracket) @punct
+(flap_bracket) @selector
 
 (write_statement ["mark" "fold" "reverse" "flatten" "flip"] @keyword)
 ["(" ")" "[" "]"] @punct

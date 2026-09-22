@@ -36,12 +36,6 @@
 	/* Code panel (always dark, in both themes) */
 	--beloch-code-bg: #101C2E;
 
-	/* Sigil / fold tokens (tree-sitter highlight classes, on the dark panel) */
-	--beloch-point:     #D69A6B;
-	--beloch-line:      #6E9AAE;
-	--beloch-at:        #C9A24B;
-	--beloch-keyword:   #AFC07A;
-	--beloch-reference: #A9A993;
 }
 
 /* ── Functional tokens — light ───────────────────────────────────────────── */
@@ -71,33 +65,56 @@
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
- * Beloch syntax highlighting (tree-sitter) — token classes on the navy panel.
+ * Beloch syntax highlighting (tree-sitter) — ten roles on the navy panel.
+ *
+ * There were 22 colours here, of which 18 pairs sat below dE76 15: the eye
+ * could not use distinctions the stylesheet was making. The item heads are
+ * grouped by what they do instead of by which rule produced them, which is
+ * also what a reader needs: an axiom operator reads as an axiom operator,
+ * whichever item it heads. Every pair holds dE76 22.3 or better.
  * ────────────────────────────────────────────────────────────────────────── */
-.bel-comment  { color: #7E8C73; font-style: italic; }
-.bel-keyword  { color: var(--beloch-keyword); }
-.bel-point    { color: var(--beloch-point); }
-.bel-line     { color: var(--beloch-line); }
-.bel-instance { color: var(--beloch-reference); }
-.bel-number   { color: #D08C70; }
-.bel-operator { color: var(--beloch-at); }
-.bel-punct    { color: #7E889A; }
+:root {
+	--bel-syntax-keyword:  #E8EDF5;  /* paper mark flatten assert */
+	--bel-syntax-axiom:    #7FD1C1;  /* map onto through as toward */
+	--bel-syntax-point:    #F2B45C;  /* .a .c */
+	--bel-syntax-line:     #8FB8F5;  /* --diag --l1 */
+	--bel-syntax-selector: #D89CF0;  /* #[ ] */
+	--bel-syntax-sigil:    #F08E7A;  /* ! * & \ = */
+	--bel-syntax-punct:    #9AA9BF;  /* ( ) , */
+	--bel-syntax-number:   #B9D97A;  /* 0.5 12 */
+	--bel-syntax-label:    #E3CFA0;  /* square hex, mountain valley */
+	--bel-syntax-comment:  #79937F;  /* ; to end of line */
+}
 
-/* Item heads: one colour per item type, so an item's kind reads at a glance
-   without following its parentheses. */
-.bel-construction { color: #8FA6D9; }
-.bel-alignment    { color: #7C93C4; }
-.bel-anchor       { color: #E0A458; }
-.bel-depth        { color: #C77FE0; }
-.bel-placement    { color: #C98BA0; }
-.bel-kind         { color: #8FBF8F; }
-.bel-intent       { color: #E0896F; }
-.bel-extent       { color: #7FB3B3; }
-.bel-layer        { color: #A3A0D9; }
-.bel-ray          { color: #D97D7D; }
-.bel-order        { color: #C2A66B; }
-.bel-stayer       { color: #8AA6A6; }
-.bel-selection    { color: #B08CC9; }
-.bel-output       { color: #9FB88F; }
+.bel-comment { color: var(--bel-syntax-comment); font-style: italic; }
+.bel-point   { color: var(--bel-syntax-point); }
+.bel-line    { color: var(--bel-syntax-line); }
+.bel-number  { color: var(--bel-syntax-number); }
+.bel-operator { color: var(--bel-syntax-sigil); }
+.bel-punct   { color: var(--bel-syntax-punct); }
+.bel-selector { color: var(--bel-syntax-selector); }
+
+/* Statement verbs and the modifier heads that introduce a clause. */
+.bel-keyword,
+.bel-anchor,
+.bel-depth,
+.bel-placement,
+.bel-kind,
+.bel-extent,
+.bel-layer,
+.bel-order,
+.bel-stayer   { color: var(--bel-syntax-keyword); }
+
+/* Axiom operators and the clause that names the result, wherever they sit. */
+.bel-construction,
+.bel-alignment,
+.bel-selection,
+.bel-output   { color: var(--bel-syntax-axiom); }
+
+/* Named values: instances, and the fold kinds spelled as words. */
+.bel-instance,
+.bel-intent,
+.bel-ray      { color: var(--bel-syntax-label); }
 
 /* Figure highlights (remark-model-blocks). A figure's `highlight` attribute
    lists the entities its caption refers to; each takes the colour at its
@@ -188,10 +205,10 @@
 
 /* Grammar notation (remark-grammar). The token classes take the variables the
    .bel-* classes take; the print values live in scripts/typst-compat.typ. */
-.gr-rule        { color: var(--beloch-keyword); font-weight: 600; }
-.gr-nonterminal { color: var(--beloch-line); }
-.gr-keyword     { color: var(--beloch-keyword); }
-.gr-token       { color: var(--beloch-reference); }
+.gr-rule        { color: var(--bel-syntax-keyword); font-weight: 600; }
+.gr-nonterminal { color: var(--bel-syntax-line); }
+.gr-keyword     { color: var(--bel-syntax-keyword); }
+.gr-token       { color: var(--bel-syntax-label); }
 .gr-operator    { color: #7E889A; }
 .gr-comment     { color: #7E8C73; font-style: italic; }
 
