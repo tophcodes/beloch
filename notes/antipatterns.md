@@ -171,3 +171,30 @@ state, and the repository has no property-based tests at all. Tracked as
 Rule of thumb: a runtime-assertion tool pays where the checker is independent
 of the implementation. Where the function *is* the checker, it can only restate
 the code.
+
+## Reconstructed identity: the consumer guessing what the emitter knew (2026-09-22)
+
+The Playground has to know which creases exist at statement k. The kernel
+never wrote that down, so two consumers set out to reconstruct it.
+
+Instance 1, shipped and broken: `creaseStepOf` in the renderer matched a
+crease edge to the same-named entry in `beloch:named_lines` and read its
+`step`. That field is a frame counter. In `cube-root.bel` all nine named
+lines bind before the single fold, so all nine report step 0; the filter
+could not separate them and drew the same crease set at every stop. The
+defect survived until someone counted crease lines across the nine stops of
+the fish base.
+
+Instance 2, designed and rejected before implementation: join on the source
+line, `beloch:edges[i].span` against `beloch:statements[j].source_line`. It
+would have worked on every program in this repository. Two statements on one
+line is a legal program that evaluates, and then both report the same line,
+so the key identifies nothing.
+
+Fix: the emitter names the statement itself, as an index into
+`beloch:statements` (`beloch:edges[i].statement`; see `spec/FOLD.md`). The
+name lookup was deleted rather than repaired.
+
+Rules of thumb since: a join key has to be unique under the grammar, and the
+corpus failing to violate it proves nothing. And when a consumer recomputes
+an identity the emitter already holds, the repair belongs in the emitter.
