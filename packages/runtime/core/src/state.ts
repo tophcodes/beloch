@@ -7,7 +7,12 @@ export type EntityRef =
   | { kind: "crease"; creaseId: string }
   | { kind: "edge"; name: string };
 
+// Which of the two pictures of a state to draw: the flat sheet with its
+// creases, or the folded result.
 export type View = "cp" | "folded";
+
+// What becomes of a segment lying under a higher layer: dropped, drawn
+// dashed, or drawn with an opacity that falls off by how deep it is buried.
 export type HiddenMode = "hide" | "dashed" | "depth";
 
 // How a caller wants the current state drawn. These are arguments to a
@@ -36,6 +41,8 @@ export interface State {
   hover: EntityRef | null;
 }
 
+// Before any document arrives. A consumer may render this: renderCommand
+// answers null, which is the honest drawing of nothing.
 export const initialState: State = {
   scene: null,
   step: 0,

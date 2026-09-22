@@ -19,6 +19,8 @@ export interface Runtime {
   subscribe(listener: Listener): () => void;
 }
 
+// A runtime with no document and no modules. Modules compose onto it by
+// dispatching and subscribing; the core imports none of them.
 export function createRuntime(): Runtime {
   let state = initialState;
   let listeners: Listener[] = [];

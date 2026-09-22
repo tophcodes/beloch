@@ -5,6 +5,8 @@ import type { EntityRef, HiddenMode, RenderOptions, State } from "./state";
 // a renderer executes it, and a headless test reads it without a view
 // existing. It names no colours and no geometry: a theme is the renderer's,
 // and the frames are in the scene the state already holds.
+// Carried by every shape of command: the entities the drawing should light,
+// already resolved from the selection and the hover.
 export interface RenderCommon {
   highlight: EntityRef[];
 }
@@ -30,6 +32,9 @@ export type RenderCommand =
       newestCreaseId: number | null;
     });
 
+// What to draw of `state`, as `options` asks for it. Null when there is no
+// document yet. Pure and cheap, so a consumer showing two views of one
+// document calls it twice rather than holding two runtimes.
 export function renderCommand(state: State, options: RenderOptions): RenderCommand | null {
   const { scene, step } = state;
   if (!scene) return null;
