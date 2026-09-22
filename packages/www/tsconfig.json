@@ -6,7 +6,8 @@
       "@beloch/scene": ["../render-2d/scene/src/index.ts"],
       "@beloch/render-svg": ["../render-2d/render-svg/src/index.ts"],
       "@beloch/runtime": ["../runtime/core/src/index.ts"],
-      "@beloch/runtime-render-dom": ["../runtime/render-dom/src/index.ts"]
+      "@beloch/runtime-render-dom": ["../runtime/render-dom/src/index.ts"],
+      "@beloch/runtime-editor": ["../runtime/editor/src/index.ts"]
     }
   },
   "include": [".astro/types.d.ts", "**/*"],

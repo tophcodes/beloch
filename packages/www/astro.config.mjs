@@ -41,6 +41,7 @@ const renderSvgRoot = join(repoRoot, 'packages', 'render-2d', 'render-svg', 'src
 // with no build step, aliased to its entrypoints.
 const runtimeRoot = join(repoRoot, 'packages', 'runtime', 'core', 'src', 'index.ts');
 const runtimeRenderDomRoot = join(repoRoot, 'packages', 'runtime', 'render-dom', 'src', 'index.ts');
+const runtimeEditorRoot = join(repoRoot, 'packages', 'runtime', 'editor', 'src', 'index.ts');
 
 // https://astro.build/config
 export default defineConfig({
@@ -55,6 +56,7 @@ export default defineConfig({
 				'@beloch/render-svg': renderSvgRoot,
 				'@beloch/runtime': runtimeRoot,
 				'@beloch/runtime-render-dom': runtimeRenderDomRoot,
+				'@beloch/runtime-editor': runtimeEditorRoot,
 			},
 		},
 		// packages/render-2d/ lives outside packages/www/ (Vite's default project root), so the dev

@@ -547,6 +547,20 @@ const codeLines = code ? code.split("\n").length : 0;
     width: auto;
     height: auto;
   }
+  /* What a piece of source built, lit in the highlight palette: one colour per
+     entity, the same six that carry a caption's inline code (B1.10 in
+     docs/brand/design-language.md). Declared before .pg-hl so a hovered or
+     pinned entity keeps the interface accent where both land on it. */
+  .pg-canvas :global(line.bel-em),
+  .pg-canvas :global(.bel-em line) {
+    stroke: var(--bel-em);
+    stroke-width: 3.5;
+  }
+  .pg-canvas :global(circle.bel-em),
+  .pg-canvas :global(text.bel-em),
+  .pg-canvas :global(.bel-em text) {
+    fill: var(--bel-em);
+  }
   /* Cursor→SVG side of the bidirectional entity highlight: outlines the
      crease segment(s) whose provenance span covers the editor's cursor
      line. Overrides the per-segment stroke/stroke-width attributes
@@ -982,7 +996,9 @@ const codeLines = code ? code.split("\n").length : 0;
   import { segMatchesLine } from "../lib/stack-picker";
   import { hoverSummary, segmentRows, edgeSegmentRows } from "../lib/tooltip-content";
   import { bundleElements } from "../lib/bundle-highlight";
+  import { blockAtLine, blockOfStep, entitiesIn } from "@beloch/runtime-editor";
   import {
+    applyEmphasis,
     commandToSvg,
     createDomRenderer,
     CREASE_SELECTOR,
@@ -2073,6 +2089,31 @@ const codeLines = code ? code.split("\n").length : 0;
     // element (the transform target) survives innerHTML swaps, so stepping
     // through the timeline keeps the user's framing. A fresh run passes
     // keepView=false to re-fit the newly-parsed paper.
+    // Pointing at a piece of source lights what that source built, in the
+    // palette whose statement is that a word and a thing in the drawing are
+    // the same thing. The step's own block is marked in the editor at the same
+    // time, so the two read together.
+    //
+    // This is the reader asking about the text, so it yields to what they
+    // picked in the drawing: the accent of a hover or a pin wins on its own
+    // entity, which the stylesheet settles.
+    let emphasisLine: number | null = null;
+    const emphasisFor = (line: number | null) => {
+      const scene = currentScene();
+      if (!scene || line === null) return null;
+      return entitiesIn(scene, blockAtLine(scene, line));
+    };
+    const emphasiseLine = (line: number | null) => {
+      if (line === emphasisLine) return;
+      emphasisLine = line;
+      applyEmphasis(canvas, emphasisFor(line));
+    };
+    editor.dom.addEventListener("mousemove", (e: MouseEvent) => {
+      const pos = editor.posAtCoords({ x: e.clientX, y: e.clientY });
+      emphasiseLine(pos === null ? null : editor.state.doc.lineAt(pos).number);
+    });
+    editor.dom.addEventListener("mouseleave", () => emphasiseLine(null));
+
     const drawCurrent = (keepView = false, fade: FadeLength | null = null) => {
       const scene = currentScene();
       if (!scene) return;
@@ -2081,6 +2122,9 @@ const codeLines = code ? code.split("\n").length : 0;
       // The renderer owns the markup and the hit targets over it. What stays
       // here is the stage around the drawing.
       renderer.draw(scene, command, { theme: renderTheme(), fade });
+      // The drawing is new, so what the reader was pointing at in the source
+      // has to be lit again on it.
+      applyEmphasis(canvas, emphasisFor(emphasisLine));
       makeCreasesReachable();
       reapplyAnchorHl();
       // A drawing on the stage means the rail has something to stand for. A
@@ -2160,33 +2204,25 @@ const codeLines = code ? code.split("\n").length : 0;
     // `fadeOverride` is for a swap that is not a step change at all: switching
     // the tab, or the line style, shows the same state drawn differently.
     function renderStep(i: number, keepView = true, animate = false, fadeOverride: FadeLength | null = null) {
+      const scene = currentScene();
       const statements = currentStatements();
-      if (!currentScene() || statements.length === 0) return;
+      if (!scene || statements.length === 0) return;
       // Out-of-range steps are the runtime's to clamp, so a shared link with a
       // step from a longer program lands on the last one.
       runtime.dispatch({ type: "step/to", index: i });
       const clamped = currentStep();
-      // Everything from a statement's own line down to the line before the
-      // next one is in force at this step: only a fold or a mark makes a step,
-      // so a point or a named line declared in between belongs to the step it
-      // follows, and the drawing carries what it built. Step 0 owns the source
-      // above the first statement, which is where the paper is declared.
-      const blockEnd = (i: number): number =>
-        (statements[i]?.sourceLine ?? editor.state.doc.lines + 1) - 1;
+      const stmt = clamped === 0 ? null : statements[clamped - 1]!;
+      // The source this step stands for, which is its own line and everything
+      // under it until the next statement (see @beloch/runtime-editor).
+      const block = blockOfStep(scene, clamped);
+      // A mark folds nothing, so it changes the view rather than the paper. A
+      // crease pattern never folds either: the sheet stays flat and gains a
+      // line. Step 0 arrives at the sheet, which is no fold either.
+      const stepFade: FadeLength =
+        currentView === "cp" || stmt === null || stmt.kind !== "fold" ? "view" : "fold";
       try {
-        if (clamped === 0) {
-          drawCurrent(keepView, fadeOverride ?? (animate ? "view" : null));
-          setStepLineOn(editor, 1, { through: blockEnd(0) });
-        } else {
-          const stmt = statements[clamped - 1]!;
-          // A mark folds nothing, so it changes the view rather than the paper.
-          // A crease pattern never folds either: the sheet stays flat and gains
-          // a line.
-          const stepFade: FadeLength =
-            currentView === "cp" || stmt.kind !== "fold" ? "view" : "fold";
-          drawCurrent(keepView, fadeOverride ?? (animate ? stepFade : null));
-          setStepLineOn(editor, stmt.sourceLine, { through: blockEnd(clamped) });
-        }
+        drawCurrent(keepView, fadeOverride ?? (animate ? stepFade : null));
+        setStepLineOn(editor, block.fromLine, { through: block.toLine ?? editor.state.doc.lines });
       } catch (err) {
         showError(`Render error: ${err instanceof Error ? err.message : String(err)}`);
         return;
