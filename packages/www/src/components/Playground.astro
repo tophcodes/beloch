@@ -570,10 +570,10 @@ const codeLines = code ? code.split("\n").length : 0;
   .pg-canvas:has(:global(.pg-notice)) {
     cursor: default;
   }
-  /* Crease hit-area (task 8): enhanceCreaseHits inserts one of these,
-     transparent and fat, right after every real crease line so there's a
-     forgiving click target — the visible line itself stays thin. */
-  .pg-canvas :global(line.pg-hit) {
+  /* Crease hit-area: the renderer inserts one of these, transparent and fat,
+     right after every real crease line so there's a forgiving click target;
+     the visible line itself stays thin. */
+  .pg-canvas :global(line.bel-hit) {
     stroke: transparent;
     stroke-width: 14;
     fill: none;
@@ -582,7 +582,7 @@ const codeLines = code ? code.split("\n").length : 0;
   }
   /* The point twin is a disc rather than a fat stroke, so it takes the
      pointer over its whole area. */
-  .pg-canvas :global(circle.pg-hit) {
+  .pg-canvas :global(circle.bel-hit) {
     fill: transparent;
     stroke: none;
     pointer-events: fill;
@@ -665,7 +665,7 @@ const codeLines = code ? code.split("\n").length : 0;
     color: var(--bel-ui-text-faint);
   }
   /* These children are injected via innerHTML, so they never carry Astro's
-     scope attribute — the rules MUST be :global (like .pg-hl / .pg-hit above),
+     scope attribute — the rules MUST be :global (like .pg-hl / .bel-hit above),
      or they silently don't apply. */
   .pg-inspect :global(h4) {
     margin: 0 0 4px;
@@ -755,7 +755,7 @@ const codeLines = code ? code.split("\n").length : 0;
   /* A crease is reached with the keyboard through its hit line, which is
      transparent until it carries focus. An `outline` on an SVG line is drawn
      around its bounding box, so the hit stroke itself is what shows. */
-  .pg-canvas :global(.pg-hit:focus-visible) {
+  .pg-canvas :global(.bel-hit:focus-visible) {
     outline: none;
     stroke: var(--bel-ui-accent);
     stroke-opacity: 0.4;
@@ -968,30 +968,28 @@ const codeLines = code ? code.split("\n").length : 0;
   import { stepMarkerExtensions, setStepLineOn, setErrorLineOn } from "../lib/cm-step-marker";
   import { refMarkExtensions, setRefSpansOn } from "../lib/cm-ref-marks";
   import { initBelHighlight, belHighlighting } from "../lib/cm-bel-highlight";
-  import { swapDrawing, type FadeLength } from "../lib/crossfade";
   import { parseFold, type FoldScene, type Statement, type Vec2 } from "@beloch/scene";
   import {
     colorLineStyle,
-    renderCP,
-    renderFolded,
-    renderScene,
     sceneLayout,
     DEFAULT_THEME,
     WEB_THEME,
     type Theme,
   } from "@beloch/render-svg";
+  import { createRuntime, renderCommand, type View } from "@beloch/runtime";
   import { SCHEMES, STORAGE_KEY, DEFAULT_ID, applyScheme, resolveScheme } from "../lib/paper-schemes";
   import { lineOfSpan, lookupEntity, type EntityRef } from "../lib/inspect-lookup";
   import { segMatchesLine } from "../lib/stack-picker";
   import { hoverSummary, segmentRows, edgeSegmentRows } from "../lib/tooltip-content";
   import { bundleElements } from "../lib/bundle-highlight";
   import {
-    enhanceCreaseHits,
-    enhancePointHits,
+    commandToSvg,
+    createDomRenderer,
     CREASE_SELECTOR,
     HIT_SELECTOR,
     HIT_CLASS,
-  } from "../lib/crease-hits";
+    type FadeLength,
+  } from "@beloch/runtime-render-dom";
   import { edgeOfLine } from "../lib/edge-lookup";
   import { pointSegDist, segmentDrawnAt, type DrawnLine } from "../lib/pick-visibility";
   import { runUi, type RuntimePhase } from "../lib/playground-run-state";
@@ -1001,9 +999,6 @@ const codeLines = code ? code.split("\n").length : 0;
   // locally. The eval limit starts only once the Worker reports its runtime
   // ready (see public/beloch/eval-worker.js), so a slow line stays
   // distinguishable from a hung evaluator.
-  // Which drawing of a state the stage shows. Both come off one step index.
-  type View = "cp" | "folded";
-
   const LOAD_TIMEOUT_MS = 60000;
   const EVAL_TIMEOUT_MS = 8000;
 
@@ -1337,8 +1332,11 @@ const codeLines = code ? code.split("\n").length : 0;
     // is the Yoshizawa-Randlett notation a printed diagram uses and carries
     // mountain against valley in the dash pattern; coloured carries it in the
     // hue and reads faster where the paper allows it.
+    // One object per style rather than a fresh one per call: the renderer
+    // compares the theme by identity to tell a redraw from a re-light.
+    const COLOUR_THEME: Partial<Theme> = { ...WEB_THEME, lineStyle: colorLineStyle };
     const renderTheme = (): Partial<Theme> =>
-      lineStyleId === "colour" ? { ...WEB_THEME, lineStyle: colorLineStyle } : WEB_THEME;
+      lineStyleId === "colour" ? COLOUR_THEME : WEB_THEME;
 
     // The same drawing with every colour spelled out, for a file that leaves
     // the page. `background: transparent` emits no backdrop behind the paper,
@@ -1360,9 +1358,9 @@ const codeLines = code ? code.split("\n").length : 0;
     // Re-draws what is on the stage after a choice that changes how it looks
     // rather than which state it shows, so the view and the step stay put.
     function rerenderCurrent(fade: FadeLength | null = null) {
-      if (!currentScene) return;
-      if (currentStatements.length > 0) renderStep(currentStep, true, fade !== null, fade);
-      else showSvg(svgForStep(0, renderTheme()), true, fade);
+      if (!currentScene()) return;
+      if (currentStatements().length > 0) renderStep(currentStep(), true, fade !== null, fade);
+      else drawCurrent(true, fade);
     }
 
     // The two drawing switches over the paper. Each button carries its own
@@ -1479,9 +1477,14 @@ const codeLines = code ? code.split("\n").length : 0;
     // request currently with the worker.
     let pendingCode: string | null = null;
     let dispatchedCode: string | null = null;
-    let currentScene: FoldScene | null = null;
-    let currentStatements: Statement[] = [];
-    let currentStep = 0;
+    // The document and the step live in the runtime; the stage reads them back
+    // through these. Everything derived from them (which frame to draw, which
+    // marks still dangle) is the runtime's answer rather than this file's.
+    const runtime = createRuntime();
+    const renderer = createDomRenderer(canvas);
+    const currentScene = (): FoldScene | null => runtime.state.scene;
+    const currentStatements = (): Statement[] => runtime.state.scene?.statements ?? [];
+    const currentStep = (): number => runtime.state.step;
     // The step a shared `?s=` names, held until the run behind it produces one
     // (see the bottom of setup).
     let pendingSharedStep: number | null = null;
@@ -1496,19 +1499,16 @@ const codeLines = code ? code.split("\n").length : 0;
     let choiceOpen = false;
     let choiceEnts: EntityRef[] = [];
 
-    // "Folded view" = geometry drawn via renderFolded's occlusion pipeline
-    // (any step, including step 0's flat sheet — it still goes through the
-    // same table-space/occlusion machinery); the only path that does NOT is
-    // renderCP, taken exactly once by applyFold below when a scene has no
-    // fold/mark statements at all. currentStatements is populated only on
-    // the renderFolded path, so its presence doubles as the view accessor —
-    // no separate mode flag needed.
-    const inFoldedView = () => currentStatements.length > 0;
+    // A scene with statements has a timeline, and every step of it goes
+    // through the occlusion pipeline, step 0's flat sheet included. A scene
+    // without them has one drawing, the crease pattern. So the statement list
+    // doubles as the view accessor, with no separate mode flag.
+    const inFoldedView = () => currentStatements().length > 0;
     // beloch:inspect carries the FINAL fold's geometry only; the stepper renders
     // a different (partial) placement per step, so any inspect-geometry path
     // (proximity detection, ghosting hidden segments) is valid only on the last
     // step. Off it, hover falls back to the per-step DOM data-crease-id.
-    const onFinalStep = () => currentStatements.length === 0 || currentStep === currentStatements.length;
+    const onFinalStep = () => currentStatements().length === 0 || currentStep() === currentStatements().length;
 
     const clearHl = () => {
       canvas.querySelectorAll(".pg-hl").forEach((el) => el.classList.remove("pg-hl"));
@@ -1521,7 +1521,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // Every line the renderer drew, as [x1,y1,x2,y2] in SVG user space.
     // Marks sit in it beside creases (HIT_SELECTOR's set): they carry a
     // crease id and read to the user as flat creases, so they are pickable
-    // the same way. The `.pg-hit` twins stay out, they only duplicate
+    // the same way. The `.bel-hit` twins stay out, they only duplicate
     // endpoints that are already here.
     const drawnCoords = (): DrawnLine[] =>
       Array.from(canvas.querySelectorAll(HIT_SELECTOR)).map(
@@ -1557,8 +1557,9 @@ const codeLines = code ? code.split("\n").length : 0;
     const ghostHidden = (segments: { table: [Vec2, Vec2] }[], drawnLines: Element[]) => {
       // inspect geometry is final-fold only; drawing it over an earlier step's
       // placement would put ghosts at the wrong positions.
-      if (!currentScene || !onFinalStep()) return;
-      const layout = sceneLayout(currentScene);
+      const scene = currentScene();
+      if (!scene || !onFinalStep()) return;
+      const layout = sceneLayout(scene);
       const drawn = drawnLines.map((el) => [
         Number(el.getAttribute("x1")), Number(el.getAttribute("y1")),
         Number(el.getAttribute("x2")), Number(el.getAttribute("y2")),
@@ -1582,9 +1583,10 @@ const codeLines = code ? code.split("\n").length : 0;
       return drawn;
     };
     const addEdgeHl = (name: string): Element[] => {
-      const insp = currentScene?.inspect;
-      if (!insp || !currentScene) return [];
-      const layout = sceneLayout(currentScene);
+      const scene = currentScene();
+      const insp = scene?.inspect;
+      if (!insp || !scene) return [];
+      const layout = sceneLayout(scene);
       const drawn: Element[] = [];
       canvas.querySelectorAll(CREASE_SELECTOR).forEach((el) => {
         const x1 = Number(el.getAttribute("x1"));
@@ -1622,7 +1624,7 @@ const codeLines = code ? code.split("\n").length : 0;
     const highlightSelected = (ref: EntityRef) => {
       clearHl();
       const drawn = addEntityHl(ref);
-      const insp = currentScene?.inspect;
+      const insp = currentScene()?.inspect;
       const segments =
         ref.kind === "crease"
           ? insp?.creases[ref.creaseId]?.segments
@@ -1642,7 +1644,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // flatten, a filter over the bundle. The emitter resolved each of those
     // mentions, so this needs no guessing at the text.
     const markRefsFor = (ents: EntityRef[]) => {
-      const refs = currentScene?.references ?? [];
+      const refs = currentScene()?.references ?? [];
       setRefSpansOn(
         editor,
         refs
@@ -1664,21 +1666,22 @@ const codeLines = code ? code.split("\n").length : 0;
     };
     // Resolves the pointer target to an EntityRef: lookupEntity first
     // (crease/face/vertex, attr-based); if that's null AND the target is a
-    // crease-layer line or its `.pg-hit` twin, fall back to geometry — this
+    // crease-layer line or its `.bel-hit` twin, fall back to geometry — this
     // is the only way to identify a paper-boundary line, which carries no
     // data-crease-id at all (task 9).
     const resolveRef = (target: Element): EntityRef | null => {
       const ref = lookupEntity(target);
       if (ref) return ref;
-      if (!currentScene?.inspect) return null;
+      const scene = currentScene();
+      if (!scene?.inspect) return null;
       const line = target.closest(`line[data-kind="crease"], .${HIT_CLASS}`);
       if (!line) return null;
       const x1 = Number(line.getAttribute("x1"));
       const y1 = Number(line.getAttribute("y1"));
       const x2 = Number(line.getAttribute("x2"));
       const y2 = Number(line.getAttribute("y2"));
-      const layout = sceneLayout(currentScene);
-      const name = edgeOfLine(currentScene.inspect.edges, x1, y1, x2, y2, layout);
+      const layout = sceneLayout(scene);
+      const name = edgeOfLine(scene.inspect.edges, x1, y1, x2, y2, layout);
       return name ? { kind: "edge", name } : null;
     };
 
@@ -1695,11 +1698,11 @@ const codeLines = code ? code.split("\n").length : 0;
     function restInspect() {
       inspectPanel!.innerHTML =
         '<div class="pg-inspect-rest">Point at a crease, or press Enter on one, to see the statement that made it.</div>';
-      inspectPanel!.hidden = !currentScene;
+      inspectPanel!.hidden = !currentScene();
     }
 
     function renderInspect(ref: EntityRef | null, anchored: boolean) {
-      const insp = currentScene?.inspect;
+      const insp = currentScene()?.inspect;
       if (!ref || !insp) {
         restInspect();
         return;
@@ -1783,7 +1786,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // Multiple lines (e.g. a construction crease and a paper edge) can project
     // onto the SAME table coords in the folded view; elementsFromPoint returns
     // every stacked element there (each crease line has a wide transparent
-    // .pg-hit twin, so the hit is forgiving), and we resolve + dedupe them.
+    // .bel-hit twin, so the hit is forgiving), and we resolve + dedupe them.
     // Faces/vertices are ignored — this is about overlapping LINES; a bare
     // face click still goes through resolveRef in the click handler.
     const entityKey = (r: EntityRef): string =>
@@ -1816,13 +1819,14 @@ const codeLines = code ? code.split("\n").length : 0;
     // pickable exactly when the hidden-edge control draws it.
     // (pointSegDist + EPS are defined with the highlight helpers above.)
     const lineEntitiesAtPoint = (clientX: number, clientY: number): EntityRef[] => {
-      const insp = currentScene?.inspect;
+      const insp = currentScene()?.inspect;
       const local = svgLocalPoint(clientX, clientY);
       // Final-fold geometry only; off the last step, hover/click fall back to
       // the per-step DOM resolver (data-crease-id) — no proximity, no chooser.
-      if (!insp || !currentScene || !local || !onFinalStep()) return [];
+      const scene = currentScene();
+      if (!insp || !scene || !local || !onFinalStep()) return [];
       const [px, py] = local;
-      const layout = sceneLayout(currentScene);
+      const layout = sceneLayout(scene);
       const drawn = drawnCoords();
       const seen = new Set<string>();
       const out: EntityRef[] = [];
@@ -1855,7 +1859,7 @@ const codeLines = code ? code.split("\n").length : 0;
       highlightSelected(ref);
       renderInspect(ref, true);
       if (ref.kind === "crease") {
-        const ln = lineOfSpan(currentScene?.inspect?.creases[ref.creaseId]?.span ?? null);
+        const ln = lineOfSpan(currentScene()?.inspect?.creases[ref.creaseId]?.span ?? null);
         // Mark the statement that built this crease, but leave the editor
         // where the reader left it: they clicked the drawing, not the code.
         if (ln) setStepLineOn(editor, ln, { reveal: false });
@@ -1870,7 +1874,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // "N Linien hier") and click (anchored=true: pinned, with an X and
     // clickable rows to drill into one). Hovering a row previews its bundle.
     const renderChoice = (ents: EntityRef[], anchored: boolean) => {
-      const insp = currentScene?.inspect;
+      const insp = currentScene()?.inspect;
       if (!insp) return;
       const closeBtn = anchored
         ? `<button type="button" class="pg-inspect-close" aria-label="Close">×</button>`
@@ -1896,7 +1900,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // whose provenance span covers that line (read-only, no pinning).
     const highlightCreasesOnLine = (line: number) => {
       clearHl();
-      const insp = currentScene?.inspect;
+      const insp = currentScene()?.inspect;
       if (!insp) return;
       for (const [cid, c] of Object.entries(insp.creases)) {
         if (lineOfSpan(c.span) === line) bundleElements(canvas, cid).forEach((el) => el.classList.add("pg-hl"));
@@ -1983,12 +1987,13 @@ const codeLines = code ? code.split("\n").length : 0;
       const eid = row.dataset.pickEdge;
       const segIndex = Number(row.dataset.pickSeg);
       const s = cid
-        ? currentScene?.inspect?.creases[cid]?.segments[segIndex]
+        ? currentScene()?.inspect?.creases[cid]?.segments[segIndex]
         : eid
-          ? currentScene?.inspect?.edges[eid]?.segments[segIndex]
+          ? currentScene()?.inspect?.edges[eid]?.segments[segIndex]
           : undefined;
-      if (!currentScene || !s || (!cid && !eid)) return;
-      const layout = sceneLayout(currentScene);
+      const scene = currentScene();
+      if (!scene || !s || (!cid && !eid)) return;
+      const layout = sceneLayout(scene);
       const p0: Vec2 = [layout.tx(s.table[0][0]), layout.ty(s.table[0][1])];
       const p1: Vec2 = [layout.tx(s.table[1][0]), layout.ty(s.table[1][1])];
       clearHl();
@@ -2047,8 +2052,8 @@ const codeLines = code ? code.split("\n").length : 0;
 
     // Prev/next just walk the clamped index; renderStep re-clamps and keeps
     // the nav buttons' disabled state in sync (see updateStepsUI).
-    stepPrev.addEventListener("click", () => renderStep(currentStep - 1, true, true));
-    stepNext.addEventListener("click", () => renderStep(currentStep + 1, true, true));
+    stepPrev.addEventListener("click", () => renderStep(currentStep() - 1, true, true));
+    stepNext.addEventListener("click", () => renderStep(currentStep() + 1, true, true));
 
     // A diagnostic goes beside the drawing, never in its place: the last valid
     // drawing is what the reader is holding the message against, and wiping it
@@ -2075,15 +2080,14 @@ const codeLines = code ? code.split("\n").length : 0;
     // element (the transform target) survives innerHTML swaps, so stepping
     // through the timeline keeps the user's framing. A fresh run passes
     // keepView=false to re-fit the newly-parsed paper.
-    const showSvg = (svg: string, keepView = false, fade: FadeLength | null = null) => {
-      swapDrawing(canvas, svg, fade);
-      // The outgoing state is inert, so only the step that is current gets hit
-      // areas; `querySelector` finds it because the fading layer sits after it.
-      // Bigger click/hover target per crease line and per point dot; the
-      // drawn line and dot stay as thin as the notation wants them.
-      const live = canvas.querySelector("svg") ?? canvas;
-      enhanceCreaseHits(live);
-      enhancePointHits(live);
+    const drawCurrent = (keepView = false, fade: FadeLength | null = null) => {
+      const scene = currentScene();
+      if (!scene) return;
+      const command = renderCommand(runtime.state, { view: currentView, hidden: hiddenMode });
+      if (!command) return;
+      // The renderer owns the markup and the hit targets over it. What stays
+      // here is the stage around the drawing.
+      renderer.draw(scene, command, { theme: renderTheme(), fade });
       makeCreasesReachable();
       reapplyAnchorHl();
       // A drawing on the stage means the rail has something to stand for. A
@@ -2121,8 +2125,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // multi-step run can't linger (and stay clickable) once a later run
     // doesn't produce a fresh multi-step scene of its own.
     function clearStepsUI() {
-      currentScene = null;
-      currentStatements = [];
+      runtime.dispatch({ type: "document/set", scene: null });
       pinned = null;
       choiceOpen = false;
       inspectPanel!.hidden = true;
@@ -2161,75 +2164,34 @@ const codeLines = code ? code.split("\n").length : 0;
     // `animate` is what the reader's click carries in: a step reached by
     // clicking crossfades from the step it left, a step rendered because a run
     // just finished appears outright.
-    // One step of the current scene as SVG, under whichever theme is asked
-    // for. The stage asks with the web theme, whose colours are variables the
-    // page resolves; the export asks with literals (see literalTheme).
-    function svgForStep(i: number, theme: Partial<Theme>, view: View = currentView): string {
-      if (!currentScene) return "";
-      // A scene with no statements has no timeline: its one drawing is the
-      // crease pattern, whichever tab is up.
-      if (currentStatements.length === 0) return renderCP(currentScene, { theme }).toString();
-      // Step 0 is the flat starting sheet, before any fold or mark — so it
-      // shows no statement's creases (index -1) and no marks.
-      const stmt = i === 0 ? null : currentStatements[i - 1]!;
-      const activeMarks = stmt ? stmt.keptMarks : [];
-      const newestCreaseId = activeMarks.at(-1)?.creaseId;
-      if (view === "cp") {
-        // The flat sheet carrying the creases scored up to this statement,
-        // plus the marks still dangling at it — so a scored line first shows
-        // as a mark and turns into a crease at the statement that folds it.
-        return renderScene(currentScene, {
-          theme,
-          isometry: { kind: "flat" },
-          texture: {
-            upToStatement: i - 1,
-            creases: true,
-            marks: true,
-            points: true,
-            lines: true,
-            faces: "outline",
-          },
-          markOverlay: { marks: activeMarks, newestCreaseId },
-        }).toString();
-      }
-      if (!stmt) {
-        return renderFolded(currentScene, { theme, step: "0", hidden: hiddenMode }).toString();
-      }
-      return renderFolded(currentScene, {
-        theme,
-        step: String(stmt.frameIndex),
-        hidden: hiddenMode,
-        markOverlay: activeMarks.length > 0 ? { marks: activeMarks, newestCreaseId } : undefined,
-      }).toString();
-    }
-
     // `fadeOverride` is for a swap that is not a step change at all: switching
     // the tab, or the line style, shows the same state drawn differently.
     function renderStep(i: number, keepView = true, animate = false, fadeOverride: FadeLength | null = null) {
-      if (!currentScene || currentStatements.length === 0) return;
-      const n = currentStatements.length;
-      const clamped = Math.max(0, Math.min(i, n));
-      currentStep = clamped;
+      const statements = currentStatements();
+      if (!currentScene() || statements.length === 0) return;
+      // Out-of-range steps are the runtime's to clamp, so a shared link with a
+      // step from a longer program lands on the last one.
+      runtime.dispatch({ type: "step/to", index: i });
+      const clamped = currentStep();
       try {
-        const svg = svgForStep(clamped, renderTheme());
         if (clamped === 0) {
-          showSvg(svg, keepView, fadeOverride ?? (animate ? "view" : null));
+          drawCurrent(keepView, fadeOverride ?? (animate ? "view" : null));
           setStepLineOn(editor, null);
         } else {
-          const stmt = currentStatements[clamped - 1]!;
+          const stmt = statements[clamped - 1]!;
           // A mark folds nothing, so it changes the view rather than the paper.
           // A crease pattern never folds either: the sheet stays flat and gains
           // a line.
           const stepFade: FadeLength =
             currentView === "cp" || stmt.kind !== "fold" ? "view" : "fold";
-          showSvg(svg, keepView, fadeOverride ?? (animate ? stepFade : null));
+          drawCurrent(keepView, fadeOverride ?? (animate ? stepFade : null));
           setStepLineOn(editor, stmt.sourceLine);
         }
       } catch (err) {
         showError(`Render error: ${err instanceof Error ? err.message : String(err)}`);
         return;
       }
-      updateStepsUI(clamped, currentStatements);
+      updateStepsUI(clamped, statements);
       updateExportPanel();
     }
 
@@ -2257,15 +2219,15 @@ const codeLines = code ? code.split("\n").length : 0;
     function applyFold(fold: unknown) {
       try {
         const scene = parseFold(fold as object);
+        runtime.dispatch({ type: "document/set", scene });
         if (scene.statements.length > 0) {
-          currentScene = scene;
-          currentStatements = scene.statements;
           buildStepsUI(scene.statements);
           const target = pendingSharedStep;
           pendingSharedStep = null;
           renderStep(target ?? scene.statements.length, false);
         } else {
-          showSvg(renderCP(scene, { theme: renderTheme() }).toString());
+          // No fold and no mark statement: one drawing, no timeline.
+          drawCurrent();
         }
       } catch (err) {
         showError(`Render error: ${err instanceof Error ? err.message : String(err)}`);
@@ -2419,8 +2381,8 @@ const codeLines = code ? code.split("\n").length : 0;
     // the panel is shut (B3.11).
     function updateExportPanel() {
       if (!exportStepLine) return;
-      const n = currentStatements.length;
-      exportStepLine.textContent = n > 0 ? `step ${currentStep} of ${n}` : "crease pattern";
+      const n = currentStatements().length;
+      exportStepLine.textContent = n > 0 ? `step ${currentStep()} of ${n}` : "crease pattern";
     }
 
     const say = (text: string) => {
@@ -2476,7 +2438,7 @@ const codeLines = code ? code.split("\n").length : 0;
     const shareLink = () => {
       const url = new URL(window.location.href);
       url.searchParams.set("p", encodeProgram(editor.state.doc.toString()));
-      url.searchParams.set("s", String(currentStep));
+      url.searchParams.set("s", String(currentStep()));
       return url.toString();
     };
 
@@ -2497,13 +2459,15 @@ const codeLines = code ? code.split("\n").length : 0;
         void copyText(shareLink(), "link copied");
         return;
       }
-      if (!currentScene) {
+      const scene = currentScene();
+      if (!scene) {
         say("nothing drawn yet");
         return;
       }
       let svg: string;
       try {
-        svg = svgForStep(currentStep, literalTheme());
+        const command = renderCommand(runtime.state, { view: currentView, hidden: hiddenMode });
+        svg = command ? commandToSvg(scene, command, literalTheme()) : "";
       } catch (err) {
         say(`render failed: ${err instanceof Error ? err.message : String(err)}`);
         return;
@@ -2515,7 +2479,7 @@ const codeLines = code ? code.split("\n").length : 0;
       const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
       const a = document.createElement("a");
       a.href = url;
-      a.download = currentStatements.length > 0 ? `beloch-step-${currentStep}.svg` : "beloch.svg";
+      a.download = currentStatements().length > 0 ? `beloch-step-${currentStep()}.svg` : "beloch.svg";
       a.click();
       URL.revokeObjectURL(url);
       say("SVG downloaded");
@@ -2534,10 +2498,10 @@ const codeLines = code ? code.split("\n").length : 0;
       if (e.target !== result) return;
       switch (e.key) {
         case "ArrowRight":
-          renderStep(currentStep + 1, true, true);
+          renderStep(currentStep() + 1, true, true);
           break;
         case "ArrowLeft":
-          renderStep(currentStep - 1, true, true);
+          renderStep(currentStep() - 1, true, true);
           break;
         case "+":
         case "=":
@@ -2566,7 +2530,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // from it.
     function makeCreasesReachable() {
       if (hero) return;
-      const insp = currentScene?.inspect;
+      const insp = currentScene()?.inspect;
       hitLines().forEach((el, i) => {
         el.setAttribute("tabindex", i === 0 ? "0" : "-1");
         el.setAttribute("role", "button");

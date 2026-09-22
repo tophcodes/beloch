@@ -19,14 +19,14 @@ test("bundleElements finds every element carrying the given crease id", () => {
   expect(bundleElements(g, "3")).toHaveLength(2);
 });
 
-test("bundleElements excludes synthetic .pg-hit twins", () => {
+test("bundleElements excludes synthetic .bel-hit twins", () => {
   const g = mount(
     '<line data-crease-id="3" data-kind="crease"></line>' +
-      '<line data-crease-id="3" class="pg-hit"></line>',
+      '<line data-crease-id="3" class="bel-hit"></line>',
   );
   const found = bundleElements(g, "3");
   expect(found).toHaveLength(1);
-  expect(found[0]!.classList.contains("pg-hit")).toBe(false);
+  expect(found[0]!.classList.contains("bel-hit")).toBe(false);
 });
 
 test("bundleElements returns an empty array when no element carries the id", () => {
