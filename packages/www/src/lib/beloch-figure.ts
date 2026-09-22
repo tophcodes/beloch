@@ -4,6 +4,7 @@
 // re-rendering via the same pure-TS render pipeline used at build time.
 import { parseFold, type FoldScene } from "@beloch/scene";
 import { renderCP, renderFolded, WEB_THEME } from "@beloch/render-svg";
+import { swapDrawing, type FadeLength } from "./crossfade";
 
 export function clampStep(i: number, n: number): number {
   if (n <= 0) return 0;
@@ -139,24 +140,27 @@ class BelochFigure extends HTMLElement {
     this.querySelectorAll(".beloch-tab").forEach((b) =>
       b.classList.toggle("is-active", (b as HTMLElement).dataset.view === v));
     (this.querySelector(".beloch-stepper") as HTMLElement).hidden = v !== "folded";
-    this.render();
+    // Two views of one state, so the shorter length.
+    this.render("view");
   }
   private setStep(i: number) {
     if (!this.scene) return;
     this.step = clampStep(i, this.scene.steps.length);
-    this.render();
+    this.render("fold");
   }
 
-  private render() {
+  // Both callers are a click, so the drawing always crossfades; the card's
+  // first drawing comes from the server and is never rendered here.
+  private render(fade: FadeLength) {
     const diagram = this.querySelector(".beloch-diagram") as HTMLElement;
     if (!this.scene) return;
     try {
       if (this.view === "cp") {
-        diagram.innerHTML = this.cpHTML || renderCP(this.scene, { theme: WEB_THEME }).toString();
+        swapDrawing(diagram, this.cpHTML || renderCP(this.scene, { theme: WEB_THEME }).toString(), fade);
       } else {
-        diagram.innerHTML = renderFolded(this.scene, {
+        swapDrawing(diagram, renderFolded(this.scene, {
           step: String(this.step), hidden: "dashed", theme: WEB_THEME,
-        }).toString();
+        }).toString(), fade);
         const lbl = this.querySelector(".beloch-step-label");
         // 0-based: step 0 is the flat starting sheet, step k the k-th fold.
         if (lbl) lbl.textContent = `Step ${this.step} / ${this.scene.steps.length - 1}`;

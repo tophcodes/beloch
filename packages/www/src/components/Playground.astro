@@ -576,6 +576,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   import { EditorState } from "@codemirror/state";
   import { keymap } from "@codemirror/view";
   import { stepMarkerExtensions, setStepLineOn } from "../lib/cm-step-marker";
+  import { swapDrawing, type FadeLength } from "../lib/crossfade";
   import { parseFold, type FoldScene, type Statement, type Vec2 } from "@beloch/scene";
   import { renderCP, renderFolded, sceneLayout, WEB_THEME } from "@beloch/render-svg";
   import { SCHEMES, STORAGE_KEY, DEFAULT_ID, applyScheme, resolveScheme } from "../lib/paper-schemes";
@@ -1391,8 +1392,8 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
 
     // Prev/next just walk the clamped index; renderStep re-clamps and keeps
     // the nav buttons' disabled state in sync (see updateStepsUI).
-    stepPrev.addEventListener("click", () => renderStep(currentStep - 1));
-    stepNext.addEventListener("click", () => renderStep(currentStep + 1));
+    stepPrev.addEventListener("click", () => renderStep(currentStep - 1, true, true));
+    stepNext.addEventListener("click", () => renderStep(currentStep + 1, true, true));
 
     // Notices aren't pannable paper: reset the view, disable pan/zoom, and
     // hide the reset affordance. A fresh SVG re-enables it and fits the paper.
@@ -1412,9 +1413,11 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // element (the transform target) survives innerHTML swaps, so stepping
     // through the timeline keeps the user's framing. A fresh run passes
     // keepView=false to re-fit the newly-parsed paper.
-    const showSvg = (svg: string, keepView = false) => {
-      canvas.innerHTML = svg;
-      enhanceCreaseHits(canvas); // bigger click/hover target per crease line (task 8)
+    const showSvg = (svg: string, keepView = false, fade: FadeLength | null = null) => {
+      swapDrawing(canvas, svg, fade);
+      // The outgoing state is inert, so only the step that is current gets hit
+      // areas; `querySelector` finds it because the fading layer sits after it.
+      enhanceCreaseHits(canvas.querySelector("svg") ?? canvas); // bigger click/hover target per crease line (task 8)
       if (!keepView) panZoom.reset();
       panZoom.setEnabled(true);
       resetBtn.hidden = false;
@@ -1438,7 +1441,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         dot.className = "pg-step-dot";
         dot.setAttribute("aria-label", i === 0 ? "Starting paper" : `Step ${i} of ${n}`);
         dot.setAttribute("aria-current", "false");
-        dot.addEventListener("click", () => renderStep(i));
+        dot.addEventListener("click", () => renderStep(i, true, true));
         stepDots!.appendChild(dot);
       }
     }
@@ -1483,7 +1486,10 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // just re-renders its backdrop frame; a mark-kind statement re-renders
     // the SAME backdrop (marks don't fold anything) with its own mark
     // overlaid.
-    function renderStep(i: number, keepView = true) {
+    // `animate` is what the reader's click carries in: a step reached by
+    // clicking crossfades from the step it left, a step rendered because a run
+    // just finished appears outright.
+    function renderStep(i: number, keepView = true, animate = false) {
       if (!currentScene || currentStatements.length === 0) return;
       const n = currentStatements.length;
       const clamped = Math.max(0, Math.min(i, n));
@@ -1492,7 +1498,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         if (clamped === 0) {
           // Step 0: the flat starting sheet, before any fold or mark.
           const svg = renderFolded(currentScene, { theme: WEB_THEME, step: "0" }).toString();
-          showSvg(svg, keepView);
+          showSvg(svg, keepView, animate ? "view" : null);
           setStepLineOn(editor, null);
         } else {
           const stmt = currentStatements[clamped - 1]!;
@@ -1503,7 +1509,8 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
             step: String(stmt.frameIndex),
             markOverlay: activeMarks.length > 0 ? { marks: activeMarks, newestCreaseId } : undefined,
           }).toString();
-          showSvg(svg, keepView);
+          // A mark folds nothing, so it changes the view rather than the paper.
+          showSvg(svg, keepView, animate ? (stmt.kind === "fold" ? "fold" : "view") : null);
           setStepLineOn(editor, stmt.sourceLine);
         }
       } catch (err) {

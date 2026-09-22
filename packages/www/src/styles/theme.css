@@ -86,6 +86,24 @@
 	}
 }
 
+/* A fold is shown as a crossfade of two flat states: the state the reader left
+   lies over the state they arrived at and fades off it. Beloch computes flat
+   states only, so there is nothing to draw in between, and only the outgoing
+   layer moves, so no half-transparent drawing appears. The rule above turns
+   this into a jump when the visitor asks for reduced motion. See
+   lib/crossfade.ts, which owns the two layers. */
+.bel-fade-host { position: relative; }
+.bel-fade-ghost {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: none;
+	transition: opacity var(--bel-fade-length, var(--bel-duration-view)) var(--bel-ease);
+}
+.bel-fade-ghost[data-fading] { opacity: 0; }
+
 /* ──────────────────────────────────────────────────────────────────────────
  * Paper layer: everything that lies in the artefact — the sheet, the ink on
  * it, the creases. One value per role in both modes, because a crease is
@@ -363,7 +381,8 @@ svg [data-bel-name].bel-selected[data-occluded] { stroke: var(--bel-sel) !import
 
 /* Anchor targets: whatever a link just jumped to (a Terms heading, a
    bibliography entry, a citation in the text) is highlighted, and fades out
-   so the eye lands on it without it staying lit. */
+   so the eye lands on it without it staying lit. The left rule stays after
+   the fill has gone, so the mark survives the animation being switched off. */
 @keyframes target-flash {
   from { background-color: var(--sl-color-accent-low); }
   to   { background-color: transparent; }
@@ -372,7 +391,7 @@ svg [data-bel-name].bel-selected[data-occluded] { stroke: var(--bel-sel) !import
 h3:target + p,
 .sl-markdown-content :target {
   scroll-margin-top: calc(var(--sl-nav-height, 4rem) + 1rem);
-  animation: target-flash 3s ease-out both;
+  animation: target-flash var(--bel-duration-view) var(--bel-ease) both;
   box-shadow: -0.5rem 0 0 var(--sl-color-accent-low);
   border-radius: 0.15rem;
 }

@@ -15,7 +15,7 @@ far the code follows, so the next piece of work does not have to re-derive it.
 | 5 | Kraft and indigo get the monochrome style only | `colorOk` in `paper-schemes.ts` |
 | 6 | Monospace shipped, prose on a system stack | `public/fonts/`, `--bel-font-*` |
 | 7 | Wordmark stays monospace | unchanged, already true |
-| 8 | A fold animates as a crossfade of two flat states | **not implemented** |
+| 8 | A fold animates as a crossfade of two flat states | `lib/crossfade.ts` |
 | 9 | Ten syntax roles | `--bel-syntax-*` in `theme.css` |
 
 ## Built
@@ -47,6 +47,15 @@ far the code follows, so the next piece of work does not have to re-derive it.
   and the typst show rules to the same values.
 - **Scale and duration tokens**, and a `prefers-reduced-motion` rule, which the
   site did not have anywhere.
+- **The fold crossfade.** One helper serves both surfaces that swap a drawing,
+  the playground's stepper and the `<Beloch>` card. The state the reader left
+  lies over the state they arrived at and fades off it, so no in-between
+  geometry is drawn and no half-transparent paper appears. A step reached by
+  clicking fades; a drawing that appears because a run finished does not, and a
+  step clicked during a fade drops it. The transition is CSS, so the site's one
+  `prefers-reduced-motion` rule turns it into a jump. A step that folds takes
+  `--bel-duration-fold`, a step that only marks and a switch between two views
+  of one state take `--bel-duration-view`.
 - **Light as the reference mode.** Every interface role is one `light-dark()`
   declaration with the light value first, and `color-scheme` decides which half
   is handed out: with no stored choice the visitor's system decides, on the
@@ -55,8 +64,6 @@ far the code follows, so the next piece of work does not have to re-derive it.
 
 ## Not built, and why
 
-- **The fold crossfade.** There is no motion on the drawing at all today, so
-  this is new behaviour rather than a change to existing behaviour.
 - **A colour/monochrome style switch.** `colorOk` says which papers may offer
   the coloured style, but nothing offers it yet: the renderer draws the
   monochrome Yoshizawa-Randlett style throughout.
@@ -90,4 +97,5 @@ settle.
 
 ## Next
 
-The landing, which carries decision 2 with it, and the token rename.
+The four measurements above, each of which wants a decision before a value
+changes. After those, the colour style switch `colorOk` already describes.
