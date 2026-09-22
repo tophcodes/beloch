@@ -27,8 +27,7 @@ type stmt_log_entry = {
          statement's [sl_kept] and appends its own new mark, unchecked — the
          backdrop frame is fixed and strictly predates this mark, so
          graduation cannot apply yet. [SFold] recomputes fresh via
-         [Fold_state.mark_graduates] against the just-folded state. See
-         docs/superpowers/specs/2026-07-20-per-statement-mark-graduation-design.md. *)
+         [Fold_state.mark_graduates] against the just-folded state. *)
 }
 
 type free_info = {

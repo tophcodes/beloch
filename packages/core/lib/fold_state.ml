@@ -1,5 +1,4 @@
-(** The 3D-native folded-state core (issue #48, spec 2026-07-15-fold-state-3d-
-    rewrite). Faces = 2D paper polygons; hinges = the face-adjacency graph. A
+(** The 3D-native folded-state core (issue #48). Faces = 2D paper polygons; hinges = the face-adjacency graph. A
     face's 3D placement is DERIVED as the product of hinge motions along a path
     from the root — so adjacent faces differ by exactly their hinge's motion and
     a torn state cannot be written down. Layer order is a rank permutation and

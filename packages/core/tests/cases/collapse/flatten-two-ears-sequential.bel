@@ -16,7 +16,7 @@
 ; the only coherent realization here — forcing OppositeRay breaks the second
 ; ear (--l4 loses its material segment). Verified physically: no paper through
 ; the closed first-ear joint (derive-13 taco check green, Fold_state.make
-; succeeds), clean fish-base silhouette (.superpowers/sdd/two-ears-folded.png).
+; succeeds), clean fish-base silhouette.
 ;
 ; faces = 12 counts the folded model's material faces (Fold_state.faces, what
 ; `assert faces` reads). The `beloch fold` crease-pattern FOLD shows 14 regions

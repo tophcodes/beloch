@@ -70,9 +70,7 @@ Sources: paper as an orientable 2-manifold with boundary [@demaine2007,
 algorithms need it [@ida2020, p. 176].
 
 ::: {.open #open-sheet-shapes name="sheet shapes beyond polygons" uses="def-sheet def-flat-state"}
-The language design for sheets as values
-(`docs/superpowers/specs/2026-09-13-paper-as-value-design.md`) names the
-circle as a shape. A disc is no polygon and has no decomposition into finitely
+The language design for sheets as values names the circle as a shape. A disc is no polygon and has no decomposition into finitely
 many convex polygons, so [#def-sheet] and [#def-flat-state] exclude it as
 written. The generalisation is a sheet bounded by finitely many algebraic
 arcs and faces that are convex regions bounded by segments and arcs of the
@@ -1138,8 +1136,7 @@ one rule, and the difference is a language decision.
 To be written: a program as a finite sequence of states.
 
 ::: {.open #open-several-sheets name="several sheets and bodies" uses="def-sheet def-flat-state def-noncrossing cond-connected"}
-The language design for sheets as values
-(`docs/superpowers/specs/2026-09-13-paper-as-value-design.md`) lets a program
+The language design for sheets as values lets a program
 hold several sheets and assemble them into a body. In the model a multi-sheet
 program state is a family of flat folded states, one per sheet, and an
 assembled body is a flat folded state of the disjoint union of its sheets: one

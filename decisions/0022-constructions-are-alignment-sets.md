@@ -29,8 +29,7 @@ it. `packages/multifold` (ADR 0020) enumerates the two-fold sets under
 Alperin and Lang's names.
 
 The question this record settles is what the syntax tree keeps. Two options
-were designed side by side in
-`docs/superpowers/specs/2026-09-13-item-syntax-design.md`:
+were designed side by side:
 
 - A: recognise an `align` form in the parser and map it onto the existing
   seven constructors; the alignment set is a surface object and is gone after

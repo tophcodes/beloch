@@ -15,7 +15,7 @@ import { renderCP, renderFolded, renderScene, WEB_THEME } from "@beloch/render-s
 
 interface Props {
   filename?: string;
-  // Opt-in composition (spec 2026-07-14 §Presets). Default (both unset) stays
+  // Opt-in composition. Default (both unset) stays
   // the interactive CP↔folded card. When either is set the card renders a
   // STATIC composed illustration — `isometry` picks the geometry (flat sheet,
   // or a folded step index), `upToStatement` filters creases by the statement

@@ -1,5 +1,4 @@
-(** The generator half of the flatten solver (model:
-    docs/superpowers/specs/2026-07-16-flatten-derive-v2-design.md, "The model").
+(** The generator half of the flatten solver.
     Given a set of material creases ("rays") sharing one interior vertex O, an
     ODD ray count means one emergent ray is part of the solution space;
     [candidates] generates the geometric completions that could close the vertex

@@ -1,7 +1,7 @@
 ; fish-base vertex: O = incenter of triangle abd, sitting ON the ac-diagonal.
-; All three given rays are bare (V2: unconstrained, spec 2026-07-16-flatten-
-; derive-v2-design.md), so the solution space isn't just the emergent ray's
-; position — the M/V pattern and stacking are free too. The POSITION is
+; All three given rays are bare, hence unconstrained, so the solution space
+; covers the M/V pattern and the stacking as well as the emergent ray's
+; position. The POSITION is
 ; forced regardless (the diagonal's OppositeRay continuation O -> c; both
 ; line-new candidates fold a flap off the paper for every Maekawa pattern),
 ; the min-mountain canon then narrows to 3 patterns, and `(toward)`'s

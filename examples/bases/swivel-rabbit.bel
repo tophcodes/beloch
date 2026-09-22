@@ -24,6 +24,6 @@ mark (through .b .[--da --lowerh]) as --bb  ; hinge from b, same free height
 ; only THREE of the four rays at the hinge vertex are given (the away rays of
 ; --ba, --bb, and the downward ray of the spine --v); flat-foldability forces
 ; the fourth — the emergent "ear" crease, a mountain at ~320° from the vertex
-; (meeting the base right of center), not parallel to any given line (verified:
-; docs/superpowers/specs/2026-07-15-flatten-generalizes-collapse-design.md).
+; (meeting the base right of center), on a line no Huzita axiom constructs
+; from the given points and lines.
 flatten (--ba \ .a) (--bb \ .b) (--v \ .m) (toward .c) as --ear

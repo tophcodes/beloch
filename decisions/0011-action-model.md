@@ -50,12 +50,9 @@ is a pure read that produces a line value, and a *disposition* verb (`mark`,
 `fold`, `collapse`, `flip`) is the write that touches the paper. Fold direction is
 `toward` / implied `moving`; the segment filter is `&` and region sets are `#[…]`.
 
-Full design and the staged "ladder" (simple fold → layer selection → unfold/maneuvers):
-`docs/superpowers/specs/2026-06-29-action-model-folding-design.md`. The surface-syntax
-revision that retired `@` is
-`docs/superpowers/specs/2026-07-09-mark-fold-crease-notation-design.md` (and the
-bundle-algebra selection design for `&` / `#[…]`); the deeper action-model questions
-it raised were tracked and resolved in #23.
+The staged "ladder" runs simple fold → layer selection → unfold/maneuvers. The
+surface-syntax revision that retired `@` is the mark/fold notation cutover; the
+deeper action-model questions it raised were tracked and resolved in #23.
 
 ## Consequences
 - Breaking syntax change (`fold`/`bisect` → `map … onto …`); acceptable pre-1.0.

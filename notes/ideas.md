@@ -66,8 +66,8 @@ to_float as today. Revisit only with #33 benchmark data.
 
 ## Named reusable preludes
 
-`paper square with { … }` (design: `docs/superpowers/specs/2026-09-13-paper-as-value-design.md`)
-lets a program bind its own names to the parts of a sheet. A named, reusable
+`paper square with { … }` lets a program bind its own names to the parts of a
+sheet. A named, reusable
 prelude (`prelude corners { .a = vertex 1 … }`, applied as `square with corners`)
 would let several sheets share one spelling.
 

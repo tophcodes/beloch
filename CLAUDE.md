@@ -4,7 +4,17 @@ Beloch is a declarative language for origami, built on the Huzita-Justin axioms,
 that evaluates `.bel` source into folded states, crease patterns, and YR-style
 folding diagrams. Architecture decisions live in `decisions/` (ADRs); read those
 before proposing anything structural. Design journal in `notes/`, dead ends in
-`notes/antipatterns.md`.
+`notes/antipatterns.md`. The contracts live in `spec/`: `MODEL.md` what a
+program means, `KERNEL.md` what `packages/core` realizes, `BELOCH.md` the
+language, `FOLD.md` the output.
+
+Per-slice design documents are not kept in the working tree. They were
+point-in-time records of how one slice was built, they went stale as the code
+moved on, and code comments pointing into them taught readers things that had
+stopped being true. What a slice decided belongs in an ADR, what it contracts
+in `spec/`, and what it is worth remembering about a dead end in
+`notes/antipatterns.md`. The documents themselves stay in the Git history;
+`git log --diff-filter=D --stat -- docs/superpowers/specs` finds them.
 
 ## Sources & citations
 

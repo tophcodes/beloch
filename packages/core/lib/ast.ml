@@ -91,7 +91,7 @@ type flap_arg =
   | FlapSpec of flap_operand
 
 (* where a placed fold's moved block lands: immediately over or under the
-   target flap (spec 2026-09-10-reverse-fold-and-layer-placement-design.md) *)
+   target flap *)
 type place_dir = PlaceOver | PlaceUnder
 
 type fold_spec = {
@@ -108,8 +108,7 @@ type fold_spec = {
    own hinge layer (inside) or on the far outside (outside). *)
 type reverse_spec = { rmoving : flap_arg option; outside : bool }
 
-(* A collapse element's M/V constraint (flatten V2 surface, spec
-   2026-07-16-flatten-derive-v2-design.md §Syntax): a bare element is
+(* A collapse element's M/V constraint: a bare element is
    unconstrained — the solver assigns its M/V. `mountain`/`valley`
    pin it explicitly. Distinct from [direction] (Mark/Fold's own two-state
    fold direction), which stays two-state. *)
@@ -171,7 +170,7 @@ type stmt =
          a construction, subdivide+fold; on an existing --l, fold along it. *)
   | Reverse of output * markable * reverse_spec * Error.span
       (* reverse (<construction>|(--l)) [(moving …)][(outside)]: inside/outside
-         reverse fold of the tip beyond the line (spec 2026-09-10) *)
+         reverse fold of the tip beyond the line *)
   | BindBundle of string * line_operand * Error.span
       (* --x = <bundle expr>: name a crease bundle (union/filter of existing
          creases). Resolves lazily as its expression; slots coerce to one. *)
@@ -189,7 +188,7 @@ type stmt =
          pipeline (spec §4.9). elements = the given rays, each with an
          mv_constraint (MvFree = solver-assigned; mountain/valley = hard
          pin); over-pairs = (upper flap, lower flap) stacking constraints;
-         staying = the staying flap (spec 2026-07-17). An odd ray count
+         staying = the staying flap. An odd ray count
          makes the emergent completing ray part of the solution space
          (Flatten.candidates). The realization space (candidate × Maekawa
          M/V pattern × stacking, via Collapse.collapse_all) is filtered by

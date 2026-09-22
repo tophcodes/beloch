@@ -8,9 +8,7 @@ status: accepted
 # 0015 — Flat folded states only (2D isometries); 3D is a goal, not a carried feature
 
 ## Context
-The action-model design doc
-(`docs/superpowers/specs/2026-06-29-action-model-folding-design.md`) described the
-runtime state as carrying a "per-face exact isometry into 3D" and asserted that
+The action-model design doc described the runtime state as carrying a "per-face exact isometry into 3D" and asserted that
 non-flat fold angles were "already carried" by that state. Neither is true of the
 evaluator:
 

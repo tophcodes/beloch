@@ -108,8 +108,8 @@ shrinks, so that at no point the grammar is nowhere.
 - Until step 3 completes, `SPECIFICATION.md` is in transit: a section that
   has moved is gone from it, a section that has not is still authoritative
   for the surface, never for the meaning.
-- Links from 25 files have to be redirected at deletion. Design documents
-  under `docs/superpowers/specs/` are point-in-time and may keep dead
-  section numbers; ADRs, notes and `spec/` itself are updated.
+- Links from 25 files have to be redirected at deletion. Design documents are
+  point-in-time and may keep dead section numbers; ADRs, notes and `spec/`
+  itself are updated.
 - The number 0021 was informally reserved for the diagram annotation schema;
   that decision takes the next number when it is written.

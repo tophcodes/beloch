@@ -261,8 +261,8 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
    order — a statement-level sourcemap for the Playground step player. A
    mark statement embeds its OWN mark geometry as recorded at that point,
    independent of whether it later graduates into a real crease (which only
-   ever happens at some LATER fold statement) — see
-   docs/superpowers/specs/2026-07-20-playground-statement-sourcemap-design.md. *)
+   ever happens at some LATER fold statement). The field is contracted in
+   spec/FOLD.md. *)
 let beloch_statements_json (statements : Eval.stmt_log_entry list) : Yojson.Safe.t =
   `List
     (List.map

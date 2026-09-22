@@ -742,7 +742,7 @@ let resolve_mark_flap (ctx : Ctx.ctx) (layer_opt : Ast.flap_arg option)
                     flaps; name the flap with #[...]"
                    (List.length ids))))
 
-(* ---- placed folds (spec 2026-09-10-reverse-fold-and-layer-placement) ---- *)
+(* ---- placed folds ---- *)
 
 let placed_fold_plan (ctx : Ctx.ctx) (axis : Geom.line) ~(anchor : Ast.flap_arg)
     ~(place : Ast.place_dir * Ast.flap_arg) (span : Error.span) :

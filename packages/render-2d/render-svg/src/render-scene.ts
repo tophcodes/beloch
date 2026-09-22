@@ -4,7 +4,6 @@
 // sheet vs folded step), so the presets stay byte-identical — the composition
 // knobs (texture.upToStatement filtering, ghosted future creases) are strictly
 // additive and dormant for the presets.
-// Spec: docs/superpowers/specs/2026-07-14-render-scene-unified-design.md
 import type { FoldScene, Mark, Vec2, Isometry as FaceMatrix } from "@beloch/scene";
 import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
 import { DEFAULT_THEME, Theme, LineStyle, HighlightColor } from "./theme";

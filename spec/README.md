@@ -24,8 +24,8 @@ Division of artifacts:
 - **`spec/`**: *what* the language is. Durable source of truth.
 - **`../decisions/`** (ADRs): *why* a choice was made. Point-in-time.
 - **Design documents** (per slice, disposable): *how* a slice is built. They
-  live under `../docs/superpowers/specs/` and are obsolete once the slice has
-  landed and the documents here reflect it.
+  are obsolete once the slice has landed and the documents here reflect it,
+  and they are not kept in the working tree; the Git history holds them.
 
 A slice that changes the language edits the document whose role it touches
 and adds no file here.

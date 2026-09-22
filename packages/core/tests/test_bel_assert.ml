@@ -1,5 +1,5 @@
 (* tests/test_bel_assert.ml — runner for the `.bel` inline-assertion test
-   format (docs/superpowers/specs/2026-07-14-beloch-inline-assertions-design.md).
+   format.
 
    The assertion grammar, tokenizer and checker live in bel_assert.ml, shared
    with test_reference_corpus.ml; this file keeps the corpus walk and calls

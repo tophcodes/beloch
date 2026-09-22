@@ -2,8 +2,7 @@
     along [Spine]'s prefix-stable hash chain: on re-eval, the longest matching
     key prefix is reused and only the divergent suffix is recomputed.
 
-    In-memory only (Phase 1). See
-    docs/superpowers/specs/2026-07-19-incremental-eval-cache-design.md. *)
+    In-memory only (Phase 1). *)
 
 type t = {
   mutable keys : string array;        (* one hash-chain key per statement *)

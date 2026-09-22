@@ -1,8 +1,7 @@
 # 2026-07-08 — two deferred primitives: partial creases & rational landmarks
 
-Captured out of the notation-by-state-change brainstorm
-(`docs/superpowers/specs/2026-07-08-notation-by-state-change-design.md`). Neither
-is in that slice; both want their own design. Noting here before they evaporate,
+Captured out of the notation-by-state-change brainstorm. Neither is in that
+slice; both want their own design. Noting here before they evaporate,
 because each one validates the state-change law by landing cleanly on one side of
 it.
 

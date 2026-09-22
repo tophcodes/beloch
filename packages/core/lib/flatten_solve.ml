@@ -24,9 +24,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     | Ast.LSelect _ -> ()
   in
   List.iter (fun (el : Ast.collapse_elem) -> force_material el.Ast.cline) elems;
-  (* a resolved ray keeps its M/V CONSTRAINT (not yet a concrete valley
-     — that's the solver's job now, spec 2026-07-16-flatten-derive-v2-
-     design.md "the model"), as a 4-tuple rather than [Collapse.elem] so
+  (* a resolved ray keeps its M/V CONSTRAINT, which the solver below turns
+     into a concrete valley, as a 4-tuple rather than [Collapse.elem] so
      its fields can't be confused with that type's same-named
      cid/ea/eb once both are in scope below. *)
   let fail_not_material (el : Ast.collapse_elem) () =
@@ -36,9 +35,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
           crease" (Resolve.lstr el.Ast.cline))
   in
   (* each element resolves to 1..k material SEGMENTS at the vertex — no
-     eager multi-segment error any more (spec 2026-07-17 §Segment
-     inference): the stayer filter and the vertex check prune the wrong
-     segment combinations. Only genuinely-non-material operands error,
+     eager multi-segment error any more: the stayer filter and the vertex
+     check prune the wrong segment combinations. Only genuinely-non-material operands error,
      with the old zero-segment texts verbatim. *)
   let resolve_elem_candidates (el : Ast.collapse_elem) :
       (int * Geom.point * Geom.point * Ast.mv_constraint) list =
@@ -447,8 +445,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       end)
   | [ r ] -> land_realization r
   | many ->
-      (* |deciding| > 1 — three-stage selection (amended spec 38bd69e +
-         .superpowers/sdd/toward-stacking-rule.md, 2026-07-16):
+      (* |deciding| > 1 — three-stage selection, derived empirically against
+         the fish mirror pair and the swivel golden:
          1. POSITION stage: placements depend only on ray LINES, so
             realizations group into position classes by moved-material
             centroid; (toward) picks the class by centroid dot.

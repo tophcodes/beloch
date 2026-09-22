@@ -172,8 +172,8 @@ the sequence it derives has the same shape as that description:
 
 The intermediate state after the first reverse fold is where the spine's two
 halves disagree, one valley and one mountain, which is acceptance criterion 5
-of `docs/superpowers/specs/2026-09-10-reverse-fold-and-layer-placement-design.md`
-holding on a longer program than the one it was written for. Each corner
+of the layer-placement slice holding on a longer program than the one it was
+written for. Each corner
 reverse fold flips exactly one segment of the preliminary base's own crease to
 mountain, which is what leaves `--h` and `--v` reading M, V, M, V at the end.
 
@@ -194,9 +194,8 @@ Every one of these was read out of the evaluator's output first:
 - `--bd is mountain`: the spine reverses on both halves.
 
 The two side vertices carry $\sqrt2$ coordinates and v1 of the assertion
-format has no irrational literal
-(`docs/superpowers/specs/2026-07-14-beloch-inline-assertions-design.md`,
-non-goals), so the kite's width is pinned only through the point coincidences
+format has no irrational literal (a stated non-goal), so the kite's width is
+pinned only through the point coincidences
 above. Every named point in this program projects to one table position from
 every face that contains it, so the harness's ambiguity error cannot fire on
 them.

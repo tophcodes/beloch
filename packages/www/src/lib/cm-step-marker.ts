@@ -1,9 +1,8 @@
 // CM6 line markers for the Playground: a small gutter dot (breakpoint-style)
 // plus a line-background highlight on whichever source line produced the
 // currently-shown fold step, and a second highlight on the line a failed run
-// reported. Read-only/display-only by
-// design — it never moves the text cursor/selection, so it can't interfere
-// with editing (see docs/superpowers/specs/2026-07-19-playground-step-navigation-design.md).
+// reported. Read-only/display-only by design: it never moves the text
+// cursor/selection, so it can't interfere with editing.
 //
 // The two markers are independent: a diagnostic leaves the last valid drawing
 // and its step marker standing (B3.5), so both lines can be lit at once.

@@ -8,9 +8,8 @@ status: accepted
 # 0016 — Typed operands: bundle values, singleton slots
 
 ## Context
-Designing the fold-scope refinement (`moving`, `up to`, `@fold` — see
-`docs/superpowers/specs/2026-07-05-fold-scope-design.md`) surfaced a question the
-language had been answering ad hoc: what does an operand *denote*, and who
+Designing the fold-scope refinement (`moving`, `up to`, `@fold`) surfaced a
+question the language had been answering ad hoc: what does an operand *denote*, and who
 resolves ambiguity?
 
 The evidence was scattered but consistent:

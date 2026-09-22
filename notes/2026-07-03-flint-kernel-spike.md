@@ -41,8 +41,7 @@ close roots separated correctly.
 Slice 2 pivots: instead of building D5 joins + subresultant PRS ourselves,
 `Num` gets a qqbar backend for the irrational cases. The practical stacked-
 cubic ceiling moves from "~4–5 stacked cubics after heavy own work" to
-"not the bottleneck". Spec updated in
-`docs/superpowers/specs/2026-07-02-exact-kernel-design.md`; the D5 material
+"not the bottleneck". The D5 material
 (ddd1985/duval1994 refs, fieldbench numbers) stays in the spec history and
 `refs/` — it explains *what qqbar does for us* and remains the fallback plan
 if the FLINT dependency ever becomes untenable.

@@ -1,7 +1,7 @@
 (** Primitive-element merge for real_roots: express algebraic coefficients over
     one generator γ of the field they span (compositum of independent folds),
-    and form the ℚ[t] superset polynomial via a single resultant. See
-    docs/superpowers/specs/2026-07-03-pe-merge-real-roots-design.md. *)
+    and form the ℚ[t] superset polynomial via a single resultant. The tier
+    this sits in, and the gate that reaches it, are in [Num.real_roots]. *)
 
 let k_limit = 64 (* defensive cap on the primitive-element multiplier search *)
 

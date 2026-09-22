@@ -24,14 +24,12 @@ an empty survivor list is its own error, distinct from *out of reach*);
 `fold … over/under <flap>` splices the moved block into the stack beside a
 named flap; `reverse` runs an inside or outside reverse fold as two placed
 half-folds over one line; both derive their crease letters from the finished
-stack; see
-[`docs/superpowers/specs/2026-09-10-reverse-fold-and-layer-placement-design.md`](../docs/superpowers/specs/2026-09-10-reverse-fold-and-layer-placement-design.md));
+stack);
 **v0.25-dev** (free point on a line — 1-DOF reference point
 along a line's material bundle; `.p = free on --l from .x at <rational>`, `at`
 optional (default `t = 1/2`); `free` is provenance, not a kernel relaxation —
 the result is an ordinary exact point; `beloch:free` FOLD emission, a
-forward-compat hook for a future renderer slider; see
-[`docs/superpowers/specs/2026-07-22-free-point-on-line-design.md`](../docs/superpowers/specs/2026-07-22-free-point-on-line-design.md));
+forward-compat hook for a future renderer slider);
 **v0.24-dev** (default fold scope — no `moving`/`up to` folds
 the **outside-contiguous prefix** of the layer order down to and including the
 anchor flap, not every layer on the anchor's side; a point on a crease shared
@@ -58,11 +56,7 @@ selects among survivors by a three-stage rule (position class, min-mountain
 canon, rank dipole) only when more than one remains — never mandatory. The
 item list drops `and` for parenthesised juxtaposition (`flatten (--a & .p)
 (--b & .q) …`); `flatten` is bindable, so an emergent crease — otherwise
-unconstructible — gets a name, and its tip point becomes selectable. See
-[`docs/superpowers/specs/2026-07-15-flatten-generalizes-collapse-design.md`](../docs/superpowers/specs/2026-07-15-flatten-generalizes-collapse-design.md),
-[`docs/superpowers/specs/2026-07-16-flatten-derive-v2-design.md`](../docs/superpowers/specs/2026-07-16-flatten-derive-v2-design.md),
-and
-[`docs/superpowers/specs/2026-07-17-flatten-staying-design.md`](../docs/superpowers/specs/2026-07-17-flatten-staying-design.md));
+unconstructible — gets a name, and its tip point becomes selectable);
 **v0.22-dev** (**partial marks — the pinch** — `mark
 <motion> between .a .b` / `at .p` clip a mark's extent; an extent that ends
 mid-face is a non-subdividing *record* — splits no rays, can dangle mid-face —
@@ -72,24 +66,20 @@ sets a crease-pattern-frame M/V *intent* on records the same way it does on
 subdividing marks; `#[...]` picks the flap a record lands on; `mark --l =
 <motion> [extent] [dir] [#[...]]` combines bind-and-write; records emit into a
 `beloch:marks` FOLD custom field and `render-svg` draws them as a dashed
-reference line or short tick, distinct from live `F`/`M`/`V` edges; see
-[`docs/superpowers/specs/2026-07-10-mark-fold-slice2-design.md`](../docs/superpowers/specs/2026-07-10-mark-fold-slice2-design.md));
+reference line or short tick, distinct from live `F`/`M`/`V` edges);
 **v0.21-dev** (**mark/fold notation** — `map`/`through`/`perp`
 motions are pure reads: bindable line values, touching nothing; the writes are
 the keyword verbs **`mark`** (crease and leave flat, FOLD `F`) and **`fold`**
 (crease and fold, FOLD `M`/`V`), alongside `collapse` and `flip`; `@` is
 retired entirely from the grammar — this completes the read/write law begun
-in the v0.20-dev cutover (through was its one write; now it too is a read);
-see
-[`docs/superpowers/specs/2026-07-09-mark-fold-crease-notation-design.md`](../docs/superpowers/specs/2026-07-09-mark-fold-crease-notation-design.md));
+in the v0.20-dev cutover (through was its one write; now it too is a read));
 **v0.20-dev** (`@collapse` — single-vertex collapse: n ≥ 4
 material creases sharing one interior vertex fold straight to the flat end
 state in one step — rabbit ear, waterbomb — checked by Kawasaki/Maekawa/local
 validity, `over` disambiguates the layer order, `standing` is reserved
 syntax the evaluator does not yet implement; **notation cutover** — reads are
 operators (meet `*`, filter `&`, drop `\`, union `[]`, the incident-to-all
-selectors `.[] --[] #[]`), the one write was the keyword `through`; see
-[`docs/superpowers/specs/2026-07-08-notation-by-state-change-design.md`](../docs/superpowers/specs/2026-07-08-notation-by-state-change-design.md));
+selectors `.[] --[] #[]`), the one write was the keyword `through`);
 **v0.19-dev** (material crossings live in paper space, on the marks; no table-space point values; axiom 5 `toward` is a fold direction, not a sector, with a paper-incidence filter for the omitted case and a derived `moving`); **v0.18-dev** (fold scope — flap-typed `moving`, `up to` for some-layers simple folds, `@fold` along material creases); **v0.17-dev** (crease-segment selection — the `&` filter: a crease name is a bundle, projected to one segment by incidence); **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
 
 ---
@@ -873,7 +863,6 @@ fold (map .a onto .d)                         ; two layers
 fold (through .m .n) (moving .b) (under .p)   ; the top layer's corner, tucked between
 ```
 
-Design: [`docs/superpowers/specs/2026-09-10-reverse-fold-and-layer-placement-design.md`](../docs/superpowers/specs/2026-09-10-reverse-fold-and-layer-placement-design.md).
 
 ### 4.6a `reverse` — inside and outside reverse folds *(since v0.26-dev)*
 
@@ -990,10 +979,8 @@ but no *sequence* of single simple folds reaches that end state; flat-foldable
 and simple-foldable are different classes [demaine2007, §14.1.1]. `flatten`
 jumps straight from the precreased flat sheet to the flat end state of several
 creases folded at once, all meeting at one point — shipped as `collapse`
-(v0.20-dev), renamed `flatten` and generalized (v0.23-dev,
-[design](../docs/superpowers/specs/2026-07-15-flatten-generalizes-collapse-design.md)),
-then reworked into **one solver pipeline** (v0.23-dev,
-[design](../docs/superpowers/specs/2026-07-16-flatten-derive-v2-design.md)).
+(v0.20-dev), renamed `flatten` and generalized (v0.23-dev), then reworked
+into **one solver pipeline** (v0.23-dev).
 
 **One pipeline, no modes.** An earlier revision split `flatten` into a
 *validate* mode (every ray given, only checked) and a *derive* mode (an odd
@@ -1454,10 +1441,8 @@ The **writes** are the disposition keyword verbs (§4.6, §4.9):
   flat-foldability forces when the given ray set is odd (§4.9).
 
 `@` is retired entirely: it is no longer a marker anywhere in the grammar —
-the verb itself (`mark`/`fold`/`flatten`) carries the write. Full derivation:
-[`docs/superpowers/specs/2026-07-09-mark-fold-crease-notation-design.md`](../docs/superpowers/specs/2026-07-09-mark-fold-crease-notation-design.md),
-completing the design begun in
-[`docs/superpowers/specs/2026-07-08-notation-by-state-change-design.md`](../docs/superpowers/specs/2026-07-08-notation-by-state-change-design.md).
+the verb itself (`mark`/`fold`/`flatten`) carries the write, completing the
+notation cutover begun in v0.20-dev.
 
 Point-locating landmark constructions (a bisector foot, a reference apex) are
 currently scored as full `mark (through …) as …` creases, an interim that adds
@@ -1969,8 +1954,7 @@ retires in favour of `export` (§4.10, design doc). *(v0.21-dev)* the
 reads (joining the v0.20-dev operators); the writes are the keyword verbs
 `mark` (crease flat, FOLD `F`) and `fold` (crease and fold, FOLD `M`/`V`);
 `@collapse` is renamed `collapse`; `@` is retired entirely from the grammar;
-`U` is no longer emitted (§7). See
-[`docs/superpowers/specs/2026-07-09-mark-fold-crease-notation-design.md`](../docs/superpowers/specs/2026-07-09-mark-fold-crease-notation-design.md).
+`U` is no longer emitted (§7).
 *(v0.23-dev)* **`flatten` generalizes `collapse`, one solver pipeline** —
 `collapse` is renamed `flatten`; the item list drops `and` for parenthesised
 juxtaposition (`flatten (--a & .p) (--b & .q) …`); `flatten` is bindable
@@ -1990,11 +1974,7 @@ material that does not move, geometric-anchored instead of guessed: fixed
 by convention (the leading two elements' <180° arc) or named explicitly
 with `(staying <flap>)`, which retires the reserved `standing` slot
 entirely — and the fan labeling is anchored on it before layer solving
-runs, rather than derived from the solved stack afterward. See
-[`docs/superpowers/specs/2026-07-15-flatten-generalizes-collapse-design.md`](../docs/superpowers/specs/2026-07-15-flatten-generalizes-collapse-design.md),
-[`docs/superpowers/specs/2026-07-16-flatten-derive-v2-design.md`](../docs/superpowers/specs/2026-07-16-flatten-derive-v2-design.md),
-and
-[`docs/superpowers/specs/2026-07-17-flatten-staying-design.md`](../docs/superpowers/specs/2026-07-17-flatten-staying-design.md).
+runs, rather than derived from the solved stack afterward.
 *(v0.26-dev)* **layer placement**: `fold … over/under <flap>` inserts the
 moved flap between layers, and the **`reverse`** verb folds inside and
 outside reverse folds as two placed half-folds with derived letters (§4.6,

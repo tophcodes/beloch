@@ -28,8 +28,7 @@ type stmt_log_entry = {
           immediately after this statement. [SMark] inherits the previous
           statement's [sl_kept] and appends its own new mark, unchecked;
           [SFold] recomputes fresh via [Fold_state.mark_graduates] against
-          the just-folded state. See
-          docs/superpowers/specs/2026-07-20-per-statement-mark-graduation-design.md. *)
+          the just-folded state. *)
 }
 
 type free_info = {

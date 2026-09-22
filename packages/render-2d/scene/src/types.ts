@@ -34,8 +34,7 @@ export interface Step {
 // statement, source order. A mark entry embeds its OWN mark geometry as
 // recorded at that statement (not a beloch:marks lookup — a mark that
 // later graduates into a real crease is dropped from beloch:marks, but its
-// Statement.mark here is unaffected). See
-// docs/superpowers/specs/2026-07-20-playground-statement-sourcemap-design.md.
+// Statement.mark here is unaffected). Contract: spec/FOLD.md.
 export interface Statement {
   index: number;
   kind: "fold" | "mark";
@@ -51,7 +50,7 @@ export interface CreaseSegment { edgeIndex: number; a: Vec2; b: Vec2; }
 export interface Crease { name: string; segments: CreaseSegment[]; }
 
 // beloch:marks — non-subdividing record marks (dangling segments + points);
-// see docs/superpowers/specs/2026-07-10-mark-fold-slice2-design.md §5.
+// see spec/FOLD.md.
 export interface SegMark {
   kind: "seg";
   a: Vec2; b: Vec2;

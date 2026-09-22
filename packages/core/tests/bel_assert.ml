@@ -1,5 +1,4 @@
-(* tests/bel_assert.ml — the `.bel` inline-assertion format
-   (docs/superpowers/specs/2026-07-14-beloch-inline-assertions-design.md):
+(* tests/bel_assert.ml — the `.bel` inline-assertion format:
    grammar, tokenizer and checker, shared by test_bel_assert.ml and
    test_reference_corpus.ml. See bel_assert.mli for the module's contract.
 

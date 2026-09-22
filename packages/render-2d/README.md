@@ -1,8 +1,7 @@
 # render
 
 Bun workspace for Beloch's SVG rendering: FOLD JSON in, labelled crease-pattern
-or folded-occlusion diagrams out. Spec:
-`docs/superpowers/specs/2026-07-06-render-scene-svg-design.md`.
+or folded-occlusion diagrams out. The input contract is `spec/FOLD.md`.
 
 ## Packages
 

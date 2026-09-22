@@ -7,8 +7,8 @@ mark (map --v onto --bc) as --q ; vertical crease at x = 3/4
 .q  = --h * --q            ; interior crossing (3/4, 1/2)
 .tm = --v * --cd           ; top edge midpoint (1/2, 1)
 
-; flatten V2 (spec 2026-07-16-flatten-derive-v2-design.md): bare = solver-
-; assigned M/V, so the all-valley assignment this case's error depends on
+; a bare element is solver-assigned M/V, so the all-valley assignment this
+; case's error depends on
 ; must be stated with explicit `valley` markers (--q is a mark only, never
 ; materialized, so #[.q .tm]'s face spans to the right edge and the selected
 ; --h segment reaches the boundary — the flatten sees the full "+" vertex

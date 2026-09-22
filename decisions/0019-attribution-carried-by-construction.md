@@ -3,9 +3,8 @@
 ## Status
 
 Accepted (2026-07-22) — the *stance* below is decided. The input mechanism that
-populates provenance (a source-level annotation) is designed separately in
-[docs/superpowers/specs/2026-07-22-annotation-layer-design.md] and is **not yet
-implemented**; until it ships, the emitter has nothing to propagate.
+populates provenance (a source-level annotation) is designed separately and is
+**not yet implemented**; until it ships, the emitter has nothing to propagate.
 
 Does **not** change [0006 — Permissive license (MIT)]. MIT stands everywhere,
 unchanged. Attribution here is a *capability*, never a license obligation — see

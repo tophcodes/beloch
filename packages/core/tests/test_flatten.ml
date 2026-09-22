@@ -79,7 +79,7 @@ let test_flatten_unbound_still_parses () =
   Alcotest.(check int) "unbound flatten still leaves 4 sector faces" 4
     (Array.length (Fold_state.faces fd.Eval.state))
 
-(* flatten V2 (spec 2026-07-16): ONE pipeline for both parities — an ODD ray
+(* ONE pipeline for both parities — an ODD ray
    count adds an emergent-ray candidate ([Flatten.candidates]); the solver
    enumerates Maekawa-consistent M/V patterns ([Flatten.mv_patterns]) through
    [Collapse.collapse_all] and `{toward}` selects among the pooled
@@ -103,8 +103,8 @@ let test_flatten_item_accepts_backslash_filter () =
       Alcotest.(check int) "4 elements" 4 (List.length elems)
   | _ -> Alcotest.fail "expected --h \\ #[.b] to parse as a flatten item"
 
-(* Direct unit test of the candidate GENERATOR (V2: Flatten.candidates no
-   longer picks a winner — that's the caller's job now, spec 2026-07-16) on
+(* Direct unit test of the candidate GENERATOR ([Flatten.candidates] no
+   longer picks a winner; that is the caller's job) on
    the exact spike vertex V = (1/2, √5−2) with the ALL-`\` surface (rays
    pointing AWAY from the two base corners + the down-spine, fars ≈25.3°,
    ≈154.7°, 270°). This is the proven configuration of
@@ -270,9 +270,8 @@ let test_flatten_tip () =
    a-ray, i.e. a tier-2 OPPOSITE-RAY completion under the two-tier rule. Both
    tier-1 (line-new) candidates fold a flap off the paper for EVERY Maekawa
    pattern, so the deciding set is tier-2's pooled realizations — 6 of them,
-   all in ONE position class (placements depend only on ray LINES; verified
-   by instrumentation, see .superpowers/sdd/toward-stacking-rule.md). The
-   three-stage selection (amended spec 38bd69e) then works purely on
+   all in ONE position class (placements depend only on ray LINES, verified
+   by instrumentation). The three-stage selection then works purely on
    STACKING: the min-mountain canon keeps the three 1-given-mountain
    realizations, and the rank-dipole stage picks the one laying the
    toward-side material on top. `{toward .b}` and `{toward .d}` therefore
@@ -321,7 +320,7 @@ let test_flatten_fish_toward_on_axis_ambiguous () =
    ("extend a line already drawn"); the direction filter must keep it. No
    line-new candidate exists at all here, so [candidates] returns exactly one
    entry, tagged `OppositeRay`. (V2: feasibility is no longer [Flatten]'s job
-   — [candidates] is a pure generator now, spec 2026-07-16 — so the old
+   — [candidates] is a pure generator now — so the old
    `feasible`-before-`toward` unit test has no Flatten-module-level
    equivalent any more; its behavior is covered by the eval-level fish-base
    test below, where the two LineNew candidates fail via

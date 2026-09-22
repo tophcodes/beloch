@@ -1,6 +1,5 @@
-(** The `.bel` inline-assertion format
-    (docs/superpowers/specs/2026-07-14-beloch-inline-assertions-design.md):
-    its grammar, tokenizer and checker, shared by the `.bel` corpus runner
+(** The `.bel` inline-assertion format: its grammar, tokenizer and checker,
+    shared by the `.bel` corpus runner
     (test_bel_assert.ml) and the BELOCH.md reference-corpus runner
     (test_reference_corpus.ml), so both check assertions through one
     implementation. *)

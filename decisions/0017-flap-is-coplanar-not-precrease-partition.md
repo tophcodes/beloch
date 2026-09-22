@@ -8,8 +8,7 @@ status: accepted
 # 0017 — A flap is a coplanar cluster of faces, not a single precrease polygon
 
 ## Status
-Accepted (2026-07-06) — implemented in
-[docs/superpowers/specs/2026-07-06-flap-coplanar-cluster-design.md]. Acceptance
+Accepted (2026-07-06) — implemented. Acceptance
 clarified what `#(...)` *is*: a **region-disambiguation operator** ("pick out
 the region here"), not a value of fixed granularity. The region it denotes is
 the finest unit the **enclosing** operator addresses — a **flap** (coplanar
@@ -26,8 +25,7 @@ precedent for using it.
 ## Context
 
 ADR 0016 fixed the *operand type* consumed by `moving`, `up to`, and the
-`#(...)` incidence selector: a **flap**. The fold-scope design
-(`docs/superpowers/specs/2026-07-05-fold-scope-design.md`) and the current
+`#(...)` incidence selector: a **flap**. The fold-scope design and the current
 evaluator resolve that flap type to a single **face** — one convex polygon in
 the fixed partition `subdivide` carves. A face boundary is created the moment
 **any** crease crosses a polygon (ADR 0014: creasing runs `subdivide`, which
@@ -257,8 +255,6 @@ already face-granular and unchanged.
 
 - ADR 0014 (a crease is a bundle of segments — why faces stay fine-grained)
 - ADR 0016 (typed operands: the flap operand type this ADR redefines)
-- `docs/superpowers/specs/2026-07-05-fold-scope-design.md` (the per-face
-  granularity choice this revisits; § *Validity* on depth-varying-along-crease)
 - `spec/SPECIFICATION.md` §4.6 (`@` / `@fold` / `moving` / `up to`), §4.8 (`at`)
 - `examples/bases/rabbit-ear.bel` (the repro for both findings)
 - `lib/fold_state.ml` (`flap_of_points` :352, `select_scope` :385,

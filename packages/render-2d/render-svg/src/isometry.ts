@@ -1,7 +1,6 @@
 // Geometry axis of renderScene: pick which Frame supplies the folded (or flat)
 // face polygons, and compute the stack order + per-face orientation used for
-// occlusion. Orthogonal to `texture` (which decorations get drawn) — see
-// docs/superpowers/specs/2026-07-14-render-scene-unified-design.md.
+// occlusion. Orthogonal to `texture` (which decorations get drawn).
 import type { FoldScene, Frame } from "@beloch/scene";
 import { SceneError } from "@beloch/scene";
 import { linearExtension, sideUp } from "./geometry";

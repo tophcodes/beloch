@@ -55,8 +55,7 @@ enumeriert, Ghosts bleiben tot), `test_flatten` derive-13 grün, keine
 ## Aufgelöst (2026-07-18, staying-Slice)
 
 Sprachlösung statt ~mirror-Union: `(staying <flap>)` + Leading-Pair-Konvention
-verankern die Paritätsklasse semantisch
-(`docs/superpowers/specs/2026-07-17-flatten-staying-design.md`, #52). Dabei
+verankern die Paritätsklasse semantisch (#52). Dabei
 dritte Repräsentanten-Arbitrarität gefunden und gefixt: `sector_iso` nahm das
 erste Face im Sektor als Orientierungs-Repräsentant — im gemischten
 Stayer-Sektor des zweiten Ears (Basis-Streifen det>0 + Ear-1-Stack det<0)
