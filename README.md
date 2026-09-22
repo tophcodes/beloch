@@ -3,12 +3,11 @@ Beloch, named after [Margherita Piazzola Beloch][mpb], is a declarative language
 [mpb]: https://en.wikipedia.org/wiki/Margherita_Piazzola_Beloch
 [huzita-justin]: https://langorigami.com/article/huzita-justin-axioms/
 
-It is written for two kinds of reader. If you do origami mathematics, a
-program here is a construction you can run, and the evaluator answers "does
-this point lie on this line" with yes or no rather than with a tolerance. If
-you build languages, this is a small one with a real evaluator: seven
-construction operations, three writes, exact arithmetic underneath, and a
-semantics that is written down before it is implemented.
+A program is a sequence of folds. Each line applies one of the seven axioms to
+the points and creases the sheet already carries, or collapses a vertex flat,
+and the evaluator works out where the paper ends up. Coordinates stay exact,
+so "does this point lie on this line" has an answer rather than a tolerance.
+Those seven constructions and three writing verbs are the whole language.
 
 > **Status:** the evaluator implements all seven Huzita-Justin axioms over an
 > exact real-algebraic number kernel and emits [FOLD][fold-spec]. The language
