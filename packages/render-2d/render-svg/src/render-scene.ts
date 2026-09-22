@@ -2,7 +2,7 @@
 // independently; renderCP and renderFolded are thin presets over this. The two
 // legacy draw paths are merged here verbatim under an `occlude` branch (flat CP
 // sheet vs folded step), so the presets stay byte-identical — the composition
-// knobs (texture.upToStep filtering, ghosted future creases) are strictly
+// knobs (texture.upToStatement filtering, ghosted future creases) are strictly
 // additive and dormant for the presets.
 // Spec: docs/superpowers/specs/2026-07-14-render-scene-unified-design.md
 import type { FoldScene, Mark, Vec2, Isometry as FaceMatrix } from "@beloch/scene";
@@ -15,7 +15,7 @@ import { resolveIsometry, type Isometry } from "./isometry";
 import { placeLabels, type LabelAnchor } from "./primitives/labels";
 
 export interface TextureOptions {
-  upToStep: number | "all"; // filter features by creation step ≤ this (flat/ghost)
+  upToStatement: number | "all"; // filter creases by scoring statement ≤ this (flat/ghost)
   creases: boolean;
   marks: boolean; // paper-space record marks (CP frame only)
   points: boolean; // named-point construction dots (overlay, via `labels`)
@@ -40,7 +40,7 @@ export interface SceneOptions {
   theme?: Partial<Theme>;
   view?: "top" | "bottom"; // folded only
   hidden?: "dashed" | "hide"; // folded only
-  markOverlay?: MarkOverlay; // folded only — project these marks onto the step's faces
+  markOverlay?: MarkOverlay; // draw these marks instead of the scene's final ones — projected onto the step's faces when folded, in paper space when flat
 }
 
 // fold2svg.mjs:217 — hardcoded unit-square corners, normalized paper space.
@@ -111,7 +111,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
   ]));
 
   const { frame, order, occlude } = resolveIsometry(scene, opts.isometry);
-  const upTo = opts.texture.upToStep;
+  const upTo = opts.texture.upToStatement;
 
   const V = frame.vertices;
   const F = frame.facesVertices;
@@ -119,21 +119,15 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
   const A = frame.edgesAssignment;
   const prov = frame.edgesProvenance;
 
-  // Numeric creation step of a crease edge, for texture.upToStep filtering on
-  // the flat sheet (progressive CP). Boundary edges are the sheet itself → step
-  // 0 (always shown). A named crease inherits its named-line's numeric step
-  // (Slice A); anything unnamed defaults to 0 (present from the start).
-  const creaseStepOf = (i: number): number => {
-    if (A[i] === "B") return 0;
-    const nm = prov[i]?.name;
-    if (nm) {
-      const nl = scene.namedLines.find((l) => l.name === nm);
-      if (nl) return nl.step;
-    }
-    return 0;
+  // Progressive CP: an edge shows once the statement that scored it has run.
+  // The scoring statement is named by the edge itself (beloch:edges[i].
+  // statement); a FOLD written before that field existed reports null, and
+  // such a scene shows every crease at every step rather than guessing.
+  const showCrease = (i: number): boolean => {
+    if (typeof upTo !== "number") return true;
+    const stmt = prov[i]?.statement;
+    return stmt == null || stmt <= upTo;
   };
-  const showCrease = (i: number): boolean =>
-    typeof upTo !== "number" || creaseStepOf(i) <= upTo;
 
   const paper = doc.layer("paper");
   const creases = doc.layer("creases");
@@ -311,12 +305,17 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       creases.children.push(...dashedLines);
     }
 
-    // Ghost overlay: future creases (named lines with step in (isometry, upTo])
-    // projected onto the current folded faces as translucent dashed hints.
-    if (opts.isometry.kind === "step" && typeof upTo === "number" && upTo > opts.isometry.index) {
+    // Ghost overlay: future creases projected onto the current folded faces as
+    // translucent dashed hints. Named lines are dated by FRAME (their binding
+    // step), so the statement bound is read as the frame that statement folds
+    // against. "all", or a statement index the scene has no entry for, ghosts
+    // nothing, as before.
+    const ghostTo =
+      typeof upTo === "number" ? scene.statements[upTo]?.frameIndex ?? -1 : -1;
+    if (opts.isometry.kind === "step" && ghostTo > opts.isometry.index) {
       const FM = frame.facesMatrix ?? [];
       for (const nl of scene.namedLines) {
-        if (nl.step <= opts.isometry.index || nl.step > upTo) continue;
+        if (nl.step <= opts.isometry.index || nl.step > ghostTo) continue;
         const [la, lb, lc] = nl.coeffs;
         for (let fi = 0; fi < F.length; fi++) {
           const M = FM[fi];
@@ -492,16 +491,23 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
 
     if (opts.texture.marks) {
       const MARK_TICK_LEN = 0.06;
-      scene.marks.forEach((m) => {
+      // The flat sheet draws marks in paper space, so it needs no face
+      // matrices and takes the overlay list directly. Without an overlay it
+      // falls back to the scene's own marks, i.e. the final state's.
+      const flatMarks = opts.markOverlay?.marks ?? scene.marks;
+      flatMarks.forEach((m) => {
         const lineStyle = theme.lineStyle(m.intent, theme);
+        const isNewest = m.creaseId === opts.markOverlay?.newestCreaseId;
         const attrs: Record<string, string | number> = {
           class: "mark",
           "data-crease-id": m.creaseId,
-          stroke: lineStyle.stroke,
-          "stroke-width": Math.max(1, lineStyle.strokeWidth - 1),
+          stroke: isNewest ? theme.construction : lineStyle.stroke,
+          "stroke-width": isNewest
+            ? lineStyle.strokeWidth + 1
+            : Math.max(1, lineStyle.strokeWidth - 1),
           "stroke-dasharray": "2 2",
           "stroke-linecap": "round",
-          opacity: 0.7,
+          opacity: isNewest ? 1 : 0.7,
         };
         if (m.kind === "seg") {
           creases.children.push(el("line", {

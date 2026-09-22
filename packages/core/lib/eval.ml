@@ -270,7 +270,7 @@ let resolve_markable (ctx : Ctx.ctx) (span : Error.span) (out : Ast.output)
             (axis, "axiom5", Axiom.ax5_sources p, so)
       in
       let prov : State.provenance option =
-        Some { State.axiom; sources; span; name = prov_name }
+        Some { State.axiom; sources; span; name = prov_name; stmt = Ctx.stmt_index ctx }
       in
       check_axis axis;
       `Fresh (cid, bind_out, axis, prov, side_override, Axiom.implied_point cl)
@@ -413,7 +413,7 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
       check_axis axis;
       let prov : State.provenance option =
         Some { State.axiom = "fold"; sources = [ "--" ^ cr.Ast.cname ];
-               span; name = None }
+               span; name = None; stmt = Ctx.stmt_index ctx }
       in
       run_fold ctx ~span ~axis ~fs ~implied:None ~side_override:None
         ~crease_id:cid ~prov;
@@ -469,6 +469,7 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
             sources = [ Resolve.lstr lo ];
             span;
             name = None;
+            stmt = Ctx.stmt_index ctx;
           }
       in
       run_fold_checked ctx ~span ~axis ~fs ~implied:None ~side_override:None
@@ -504,7 +505,8 @@ let eval_reverse (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
         in
         check_axis axis;
         let prov : State.provenance option =
-          Some { State.axiom = "reverse"; sources = [ Resolve.lstr lo ]; span; name = None }
+          Some { State.axiom = "reverse"; sources = [ Resolve.lstr lo ]; span;
+                 name = None; stmt = Ctx.stmt_index ctx }
         in
         (cid, bind_out, axis, prov, None)
   in

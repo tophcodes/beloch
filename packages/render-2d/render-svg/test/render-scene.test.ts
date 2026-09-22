@@ -7,64 +7,96 @@ const golden = (p: string) =>
 
 const count = (s: string, re: RegExp) => (s.match(re) ?? []).length;
 
-// The four compositions from the spec: isometry × texture.upToStep are
+// The four compositions from the spec: isometry × texture.upToStatement are
 // independently controllable.
 
 test("CP composition == renderCP preset (byte-identical wrapper)", async () => {
   const scene = parseFold(await golden("cube-root.fold"));
   const viaScene = renderScene(scene, {
     isometry: { kind: "flat" },
-    texture: { upToStep: "all", creases: true, marks: true, points: true, lines: true, faces: "outline" },
+    texture: { upToStatement: "all", creases: true, marks: true, points: true, lines: true, faces: "outline" },
   }).toString();
   expect(viaScene).toBe(renderCP(scene).toString());
 });
 
 test("folded composition == renderFolded preset (byte-identical wrapper)", async () => {
   const scene = parseFold(await golden("fold-quarter.fold"));
-  const last = scene.steps.length - 1;
   const viaScene = renderScene(scene, {
-    isometry: { kind: "step", index: last },
-    texture: { upToStep: last, creases: true, marks: false, points: true, lines: true, faces: "filled" },
+    isometry: { kind: "step", index: scene.steps.length - 1 },
+    texture: { upToStatement: "all", creases: true, marks: false, points: true, lines: true, faces: "filled" },
   }).toString();
   expect(viaScene).toBe(renderFolded(scene).toString());
 });
 
-test("progressive-flat shows fewer creases at an earlier step", async () => {
-  const scene = parseFold(await golden("cube-root.fold"));
-  const all = renderScene(scene, {
+// Two creases on ONE source line, scored by two different statements: the
+// case a line-number join cannot tell apart, and the reason beloch:edges
+// carries a statement index of its own.
+const twoOnOneLine = () =>
+  parseFold({
+    vertices_coords: [[0, 0], [1, 0], [1, 1], [0, 1], [0.5, 0], [0.5, 1], [0, 0.5], [1, 0.5]],
+    edges_vertices: [
+      [4, 5], [6, 7],
+      [0, 4], [4, 1], [1, 7], [7, 2], [2, 5], [5, 3], [3, 6], [6, 0],
+    ],
+    edges_assignment: ["V", "V", "B", "B", "B", "B", "B", "B", "B", "B"],
+    faces_vertices: [[0, 4, 5, 3], [4, 1, 2, 5]],
+    "beloch:edges": [
+      { name: "v", span: "2:1-2:20", statement: 0 },
+      { name: "h", span: "2:1-2:20", statement: 1 },
+      null, null, null, null, null, null, null, null,
+    ],
+    "beloch:statements": [
+      { kind: "mark", source_line: 2, frame_index: 0, mark: null, kept_marks: [] },
+      { kind: "mark", source_line: 2, frame_index: 0, mark: null, kept_marks: [] },
+    ],
+  });
+
+test("progressive-flat shows a crease from the statement that scored it", () => {
+  const scene = twoOnOneLine();
+  const draw = (upToStatement: number | "all") =>
+    renderScene(scene, {
+      isometry: { kind: "flat" },
+      texture: { upToStatement, creases: true, marks: false, points: false, lines: false, faces: "outline" },
+    }).toString();
+  const creases = (s: string) => count(s, /data-kind="crease"/g);
+  // Ten edges, eight of them the sheet's boundary: the two statements add one
+  // crease each, and both report source line 2.
+  expect(creases(draw(-1))).toBe(8);
+  expect(creases(draw(0))).toBe(9);
+  expect(creases(draw(1))).toBe(10);
+  expect(creases(draw("all"))).toBe(10);
+});
+
+test("a FOLD without the statement field shows every crease at every step", () => {
+  const scene = twoOnOneLine();
+  for (const p of scene.cp.edgesProvenance) if (p) p.statement = null;
+  const svg = renderScene(scene, {
     isometry: { kind: "flat" },
-    texture: { upToStep: "all", creases: true, marks: false, points: false, lines: false, faces: "outline" },
+    texture: { upToStatement: -1, creases: true, marks: false, points: false, lines: false, faces: "outline" },
   }).toString();
-  const upTo1 = renderScene(scene, {
-    isometry: { kind: "flat" },
-    texture: { upToStep: 1, creases: true, marks: false, points: false, lines: false, faces: "outline" },
-  }).toString();
-  // cube-root: named creases live at steps 1 (vm) and 2 (the rest); upToStep 1
-  // drops the step-2 creases, so fewer crease lines are drawn.
-  expect(count(upTo1, /data-kind="crease"/g)).toBeLessThan(count(all, /data-kind="crease"/g));
-  expect(count(upTo1, /data-kind="crease"/g)).toBeGreaterThan(0);
+  expect(count(svg, /data-kind="crease"/g)).toBe(10);
 });
 
 test("ghost projects future creases onto the current folded step", async () => {
-  const scene = parseFold(await golden("cube-root.fold"));
-  // stand on step 1, ghost everything up to the last step
-  const ghosted = renderScene(scene, {
-    isometry: { kind: "step", index: 1 },
-    texture: { upToStep: scene.steps.length - 1, creases: true, marks: false, points: true, lines: true, faces: "filled" },
-  }).toString();
-  const plain = renderScene(scene, {
-    isometry: { kind: "step", index: 1 },
-    texture: { upToStep: 1, creases: true, marks: false, points: true, lines: true, faces: "filled" },
-  }).toString();
-  expect(count(ghosted, /data-kind="ghost"/g)).toBeGreaterThan(0);
-  expect(count(plain, /data-kind="ghost"/g)).toBe(0);
+  // mark-overlay-regression binds --diag at frame 0 and --ray at frame 1, so a
+  // reader standing on frame 0 has exactly one line still ahead of them.
+  const scene = parseFold(await golden("mark-overlay-regression.fold"));
+  const draw = (upToStatement: number) =>
+    renderScene(scene, {
+      isometry: { kind: "step", index: 0 },
+      texture: { upToStatement, creases: true, marks: false, points: true, lines: true, faces: "filled" },
+    }).toString();
+  // Statement 1 reads against frame 1, which is where --ray arrives.
+  expect(count(draw(1), /data-kind="ghost"/g)).toBeGreaterThan(0);
+  // Statement 0 reads against frame 0: nothing is ahead yet.
+  expect(count(draw(0), /data-kind="ghost"/g)).toBe(0);
 });
 
 test("faces:none draws no face polygons", async () => {
   const scene = parseFold(await golden("bisect-a.fold"));
   const s = renderScene(scene, {
     isometry: { kind: "flat" },
-    texture: { upToStep: "all", creases: true, marks: false, points: false, lines: false, faces: "none" },
+    texture: { upToStatement: "all", creases: true, marks: false, points: false, lines: false, faces: "none" },
   }).toString();
   expect(count(s, /data-kind="face"/g)).toBe(0);
 });

@@ -59,10 +59,13 @@ kernel computes stay exact (ADR 0008, 0012).
 
 What the language knows about a state and FOLD cannot say:
 
-- `beloch:edges`: per crease edge, the statement that scored it, its
+- `beloch:edges`: per crease edge, the statement that scored it as an index
+  into `beloch:statements` (`statement`) together with its source span, its
   construction (which axiom or verb), the names of the points and lines it
-  was built from, and the crease's name if it has one. This is the
-  attribution the model calls provenance (ADR 0019).
+  was built from, and the crease's name if it has one. Consumers join on the
+  index; two statements may share a source line, so the span alone leaves
+  the join ambiguous. This is the attribution the model calls provenance
+  (ADR 0019).
 - `beloch:source_line`, on each folded frame: the source line of the
   statement that produced the frame.
 - `beloch:statements`: one entry per state-changing statement in source order,

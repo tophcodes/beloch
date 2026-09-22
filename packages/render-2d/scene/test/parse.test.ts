@@ -190,6 +190,30 @@ test("parse surfaces inspect and edge crease id", () => {
   expect(scene.cp.edgesProvenance[0]?.creaseId).toBe(4);
 });
 
+// beloch:edges[i].statement — the index of the statement that scored the edge.
+// A source span cannot stand in for it: two statements may share a line.
+test("parse surfaces the edge's statement index, null when absent", () => {
+  const base = {
+    vertices_coords: [[0, 0], [1, 0]], edges_vertices: [[0, 1], [0, 1]],
+    edges_assignment: ["V", "V"], faces_vertices: [],
+  };
+  const withIndex = parseFold({
+    ...base,
+    "beloch:edges": [
+      { span: "x:2:1", name: "v", statement: 0 },
+      { span: "x:2:1", name: "h", statement: 1 },
+    ],
+  } as any);
+  expect(withIndex.cp.edgesProvenance.map((p) => p?.statement)).toEqual([0, 1]);
+
+  // A FOLD written before the field existed reports null rather than 0.
+  const without = parseFold({
+    ...base,
+    "beloch:edges": [{ span: "x:2:1", name: "v" }, null],
+  } as any);
+  expect(without.cp.edgesProvenance.map((p) => p?.statement ?? null)).toEqual([null, null]);
+});
+
 test("no beloch:inspect field parses to a null inspect", async () => {
   const scene = parseFold(await golden("bisect-a.fold"));
   expect(scene.inspect).toBeNull();

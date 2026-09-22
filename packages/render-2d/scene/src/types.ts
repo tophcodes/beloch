@@ -10,6 +10,7 @@ export interface EdgeProvenance {                            // one beloch:edges
   span: string | null;
   name: string | null;                                       // crease name (bundle) this edge belongs to
   creaseId: number | null;                                   // beloch:edges[i].crease_id
+  statement: number | null;                                  // beloch:edges[i].statement — index into scene.statements; null on a FOLD written before the field existed
 }
 
 export interface Frame {

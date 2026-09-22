@@ -285,6 +285,12 @@ let restore (ctx : ctx) (s : snapshot) : unit =
       Fold_state.set_next_id s.s_next_id
   | _ -> failwith "Ctx.restore: expected a single root scope at a statement boundary"
 
+(* Index the statement currently being evaluated will occupy in
+   [statements_rev] once it is logged. Every provenance record is built while
+   its statement runs, i.e. strictly before that statement's log entry is
+   pushed, so the length of the log is that statement's own index. *)
+let stmt_index (ctx : ctx) : int = List.length ctx.statements_rev
+
 let push_frame (ctx : ctx) (span : Error.span option) =
   ctx.frames_rev <- (!(ctx.state), span) :: ctx.frames_rev;
   ctx.pending <- false;

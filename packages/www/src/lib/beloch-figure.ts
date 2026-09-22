@@ -154,6 +154,16 @@ class BelochFigure extends HTMLElement {
     const folded = this.querySelector('.beloch-diagram[data-view="folded"]') as HTMLElement | null;
     try {
       const index = this.scene.steps[this.step]?.index;
+      // The card steps through FRAMES; the crease filter counts STATEMENTS.
+      // The last statement that reads against this frame is the one whose
+      // creases the flat sheet should already carry.
+      const upTo =
+        index === undefined
+          ? "all"
+          : this.scene.statements.reduce(
+              (last, st, i) => (st.frameIndex <= index ? i : last),
+              -1,
+            );
       if (cp) {
         const cpSvg =
           index === undefined
@@ -162,7 +172,7 @@ class BelochFigure extends HTMLElement {
                 theme: WEB_THEME,
                 isometry: { kind: "flat" },
                 texture: {
-                  upToStep: index,
+                  upToStatement: upTo,
                   creases: true,
                   marks: true,
                   points: true,

@@ -19,7 +19,11 @@ function frameFrom(raw: Record<string, unknown>): Frame {
     edgesProvenance: Array.from({ length: n }, (_, i) => {
       const p = prov[i];
       return p
-        ? ({ ...p, creaseId: (p["crease_id"] ?? null) as number | null } as EdgeProvenance)
+        ? ({
+            ...p,
+            creaseId: (p["crease_id"] ?? null) as number | null,
+            statement: (p["statement"] ?? null) as number | null,
+          } as EdgeProvenance)
         : null;
     }),
     verticesNames: Array.from(

@@ -17,7 +17,7 @@ export function renderCP(scene: FoldScene, opts: RenderOptions = {}): SvgDoc {
   return renderScene(scene, {
     isometry: { kind: "flat" },
     texture: {
-      upToStep: "all",
+      upToStatement: "all",
       creases: true,
       marks: true,
       points: true,

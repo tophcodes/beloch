@@ -60,6 +60,7 @@ let beloch_edges_json edges : Yojson.Safe.t =
                   ( "sources",
                     `List (List.map (fun s -> `String s) pr.State.sources) );
                   ("span", `String (Error.span_to_string pr.State.span));
+                  ("statement", `Int pr.State.stmt);
                   ( "name",
                     match pr.State.name with
                     | Some n -> `String n

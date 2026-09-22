@@ -940,7 +940,7 @@ const codeLines = code ? code.split("\n").length : 0;
   import { stepMarkerExtensions, setStepLineOn, setErrorLineOn } from "../lib/cm-step-marker";
   import { initBelHighlight, belHighlighting } from "../lib/cm-bel-highlight";
   import { swapDrawing, type FadeLength } from "../lib/crossfade";
-  import { parseFold, pickStep, type FoldScene, type Statement, type Vec2 } from "@beloch/scene";
+  import { parseFold, type FoldScene, type Statement, type Vec2 } from "@beloch/scene";
   import {
     colorLineStyle,
     renderCP,
@@ -2027,33 +2027,33 @@ const codeLines = code ? code.split("\n").length : 0;
       // A scene with no statements has no timeline: its one drawing is the
       // crease pattern, whichever tab is up.
       if (currentStatements.length === 0) return renderCP(currentScene, { theme }).toString();
-      // Step 0 is the flat starting sheet, before any fold or mark.
-      const frame = i === 0 ? "0" : String(currentStatements[i - 1]!.frameIndex);
+      // Step 0 is the flat starting sheet, before any fold or mark — so it
+      // shows no statement's creases (index -1) and no marks.
+      const stmt = i === 0 ? null : currentStatements[i - 1]!;
+      const activeMarks = stmt ? stmt.keptMarks : [];
+      const newestCreaseId = activeMarks.at(-1)?.creaseId;
       if (view === "cp") {
-        // The flat sheet carrying the creases that exist by this step. The
-        // step index is the one renderFolded resolves for the same step, so
-        // the two tabs never disagree about which state is on screen.
-        const step = pickStep(currentScene, frame);
+        // The flat sheet carrying the creases scored up to this statement,
+        // plus the marks still dangling at it — so a scored line first shows
+        // as a mark and turns into a crease at the statement that folds it.
         return renderScene(currentScene, {
           theme,
           isometry: { kind: "flat" },
           texture: {
-            upToStep: step ? step.index : "all",
+            upToStatement: i - 1,
             creases: true,
             marks: true,
             points: true,
             lines: true,
             faces: "outline",
           },
+          markOverlay: { marks: activeMarks, newestCreaseId },
         }).toString();
       }
-      if (i === 0) return renderFolded(currentScene, { theme, step: "0" }).toString();
-      const stmt = currentStatements[i - 1]!;
-      const activeMarks = stmt.keptMarks;
-      const newestCreaseId = activeMarks.at(-1)?.creaseId;
+      if (!stmt) return renderFolded(currentScene, { theme, step: "0" }).toString();
       return renderFolded(currentScene, {
         theme,
-        step: frame,
+        step: String(stmt.frameIndex),
         markOverlay: activeMarks.length > 0 ? { marks: activeMarks, newestCreaseId } : undefined,
       }).toString();
     }

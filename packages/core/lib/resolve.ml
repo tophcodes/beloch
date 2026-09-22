@@ -207,7 +207,7 @@ and material_cid (ctx : Ctx.ctx) (cr : Ast.crease_ref) : int =
       let cid = Fold_state.fresh_crease_id () in
       let prov : State.provenance option =
         Some { State.axiom = "mark"; sources = [ "--" ^ cr.Ast.cname ];
-               span = cr.Ast.cspan; name = None }
+               span = cr.Ast.cspan; name = None; stmt = Ctx.stmt_index ctx }
       in
       ctx.state :=
         Fold_state.subdivide_paper !(ctx.state) line ~crease_id:cid ~prov;

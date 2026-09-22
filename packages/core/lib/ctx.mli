@@ -149,4 +149,10 @@ val restore : ctx -> snapshot -> unit
     records), so a [root_scope] binding taken before the restore stays
     valid. *)
 
+val stmt_index : ctx -> int
+(** Index the statement currently being evaluated will occupy in the
+    `beloch:statements` log. Provenance records are built while their
+    statement runs, strictly before its log entry is pushed, so the current
+    log length is that statement's own index. *)
+
 val push_frame : ctx -> Error.span option -> unit

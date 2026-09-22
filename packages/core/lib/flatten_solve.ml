@@ -149,7 +149,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   let odd = n_given mod 2 = 1 in
   let prov : State.provenance option =
     Some
-      { State.axiom = "flatten"; sources = []; span; name = None }
+      { State.axiom = "flatten"; sources = []; span; name = None;
+        stmt = Ctx.stmt_index ctx }
   in
   (* the emergent crease id, fixed ONCE (odd case only; the even case
      never materializes anything), so every candidate's probe subdivision
