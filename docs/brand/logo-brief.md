@@ -171,8 +171,9 @@ Jede Vorgabe mit dem Grund. Wer eine davon verletzt, liefert kein Ergebnis.
    Seiten gesetzt, vom Build-Werkzeug rasterisiert und von Hand gepflegt.
    Jeder Pfad, den ein Mensch nicht lesen kann, ist ein Wartungsproblem.
 4. **Lebt auf dunklem Navy und auf Papierweiß, ohne Umgestaltung.**
-   Dunkel: `#101C2E` und `#171B24`. Hell: `#F7F9FB` und Weiß. Die Landing ist
-   standardmäßig dunkel, die Docs folgen dem System, das Paper ist weiß. Das
+   Dunkel: `#101C2E` und `#171B24`. Hell: `#F7F9FB` und Weiß. Hell ist der
+   Bezugsmodus; ohne gespeicherte Wahl folgt jede Fläche dem System des
+   Besuchers, und das Paper ist weiß. Das
    Zeichen wechselt zwischen den beiden Welten durch eine Farbe (Tinte hell
    `#E7EAF2` auf dunkel, Tinte dunkel `#0f172a` auf hell). Technisch: eine
    Datei mit `fill="currentColor"` oder dem heutigen

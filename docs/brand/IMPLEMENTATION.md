@@ -102,7 +102,8 @@ there.
 
 The accent against the first highlight colour, which is the one measurement
 above that reaches the docs and the printed paper. The other two ride with the
-design pass over the viewer, the editor and the renderer, which also owns the
-loading indicator (B2.12 asks it to name what it waits for, and it spins
-without one while a 2.27 MB runtime loads) and the hardcoded 0.15s transitions
-in the playground. After that, the colour style switch `colorOk` describes.
+design pass over the viewer, the editor and the renderer, whose brief is
+`viewer-brief.md`; it also carries the hardcoded 0.15s transitions in the
+playground and the loading indicator, which names the runtime and its size but
+shows no progress (B2.12). After that, the colour style switch `colorOk`
+describes.
