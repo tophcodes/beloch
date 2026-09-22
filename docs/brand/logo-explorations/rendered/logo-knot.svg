@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M6 6L32 6M32 6L58 6M58 6L58 38M58 38L58 58M58 58L32 58M6 58L6 6M19 58L6 58M32 58L19 58" stroke-width="4"/>
+  <path d="M32 6L23.33 40.67M32 6L32 32M32 32L32 40M32 58L23.33 40.67M32 40L32 58M23.33 40.67L6 58" stroke-width="2"/>
+  <path d="M23.33 40.67L6 6M32 32L23.33 40.67M58 6L32 32M23.33 40.67L19 58" stroke-width="3" stroke-dasharray="4.5 3" stroke-linecap="butt"/>
+  <path d="M32 40L23.33 40.67M58 38L32 40" stroke-width="3" stroke-dasharray="6 2.5 1 2.5" stroke-linecap="butt"/>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="miter">
+  <!-- sheet edge 10,10-54,10 and the crease from the corner to 21,54: dx:dy = 33:44 = 3:4 -->
+  <path d="M10 10H54L21 54" stroke-width="6"/>
+  <!-- the half-fold: top edge onto bottom edge, so the crease is the midline y=32,
+       which meets the stem at 37.5,32 and is drawn 12 either side -->
+  <path d="M25.5 32H49.5" stroke-width="5"/>
+</svg>

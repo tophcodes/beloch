@@ -57,6 +57,9 @@ historical corrective, and near-zero search collision.
 
 ## Consequences
 
-- Domain/TLD still open (leaning `beloch.it` for the nationality + "Beloch [solves]
-  it" read, `beloch.dev` as fallback); optional while self-hosted.
+- Domain/TLD still open. `beloch.it` was the preferred read (nationality plus
+  "Beloch [solves] it") and is taken; `beloch.co.it` is free and reads badly.
+  `beloch.dev` remains the fallback. `beloch.toph.so` serves the site today.
+  The choice has to close before the first citable publication, because a paper
+  fixes the URL.
 - README one-liner and license already updated to the new name.

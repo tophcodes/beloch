@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="miter">
+  <path d="M10 10H54L21 54" stroke-width="6"/>
+  <!-- a point and its mirror image across the crease: the segment is perpendicular
+       to it and bisected by it at the crease midpoint 37.5,32 -->
+  <path d="M29.5 26L45.5 38" stroke-width="3.5"/>
+  <circle cx="29.5" cy="26" r="3.5" fill="currentColor" stroke="none"/>
+  <circle cx="45.5" cy="38" r="3.5" fill="currentColor" stroke="none"/>
+</svg>

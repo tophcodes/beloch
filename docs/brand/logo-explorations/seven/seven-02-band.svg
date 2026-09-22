@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="currentColor">
+  <!-- a paper strip of width 11 folded once. The two arms run along 1,0 and
+       -0.6,0.8; the crease bisects them, from the outer corner 54,10 to the
+       inner corner 32,21. Both raw ends are cut square to the sheet. The gap
+       is the crease, 1.6 wide. -->
+  <path d="M11 10H52.21L30.21 21H11Z"/>
+  <path d="M52.93 11.43L21.75 53H8L30.93 22.43Z"/>
+</svg>
