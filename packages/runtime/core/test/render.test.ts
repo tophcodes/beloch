@@ -16,6 +16,7 @@ test("the folded view draws the frame the current statement folds against", () =
     hidden: "hide",
     marks: [],
     newestCreaseId: null,
+    constructions: [],
     highlight: [],
     settled: false,
   });
@@ -31,6 +32,7 @@ test("the flat sheet is frame zero, before any statement", () => {
     hidden: "hide",
     marks: [],
     newestCreaseId: null,
+    constructions: [],
     highlight: [],
     settled: false,
   });
@@ -39,7 +41,7 @@ test("the flat sheet is frame zero, before any statement", () => {
 test("a scene with no statements has one drawing, the crease pattern", () => {
   const rt = createRuntime();
   rt.dispatch({ type: "document/set", scene: sceneOf([]) });
-  expect(renderCommand(rt.state, folded)).toEqual({ kind: "cp-only", highlight: [], settled: false });
+  expect(renderCommand(rt.state, folded)).toEqual({ kind: "cp-only", constructions: [], highlight: [], settled: false });
 });
 
 test("without a document there is nothing to draw", () => {

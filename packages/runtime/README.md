@@ -56,6 +56,12 @@ from one step and one selection.
 A command also says whether its highlight is settled or under the pointer,
 because a renderer may show a settled entity more than the drawing holds.
 
+Beside that it names the **construction lines** the program has bound by this
+step. A line that never becomes a crease is geometry the program built and the
+paper does not carry, so a drawing that leaves it out loses it. The core dates
+the list by the step and stops there: whether a name is already in the picture
+as a crease is something only the drawing knows.
+
 A command carries no scene, no theme and no geometry. The scene is in the
 state the renderer already reads, colours are the renderer's, and the motion
 of a flap between two frames comes from the scene's `facesMatrix`. So a
@@ -93,6 +99,10 @@ drawing in `host`. It owns four pieces of DOM work:
 - The highlight: every segment of a bundle at once, a paper boundary matched
   by its geometry, and the classes cleared again when the next command names
   something else.
+- The construction overlay, for the lines the command dates to this step that
+  the picture does not already carry as a crease. A folded frame answers that
+  from its own edges; a flat sheet holds every crease of the final state, so
+  there the statement each crease was scored at decides.
 - A dashed ghost per segment of a settled entity that the folded drawing has
   no line for. Those coordinates come from `beloch:inspect`, which describes
   the final fold, so they are drawn at that frame and nowhere else.

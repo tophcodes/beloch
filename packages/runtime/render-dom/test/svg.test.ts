@@ -1,7 +1,11 @@
-// The drawing the playground makes today, made from a render command instead.
-// Each case writes out the call the playground's own `svgForStep` makes and
-// asserts the command produces the same markup, so the migration can be read
-// as a rewiring rather than a redrawing.
+// The drawing the playground made before the runtime drew it, made from a
+// render command instead. Each case writes out the call the playground's own
+// step-to-SVG made and asserts the command produces the same markup, so the
+// migration can be read as a rewiring rather than a redrawing.
+//
+// The fixture names no construction lines, so the overlay the command adds is
+// empty here and the two sides stay comparable. What the overlay draws lives
+// in constructions.test.ts.
 import { test, expect } from "bun:test";
 import { parseFold, type FoldScene, type Mark } from "@beloch/scene";
 import { DEFAULT_THEME, renderCP, renderFolded, renderScene, WEB_THEME } from "@beloch/render-svg";

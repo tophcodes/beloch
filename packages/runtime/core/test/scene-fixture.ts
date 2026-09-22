@@ -1,7 +1,7 @@
 // A FoldScene carrying only what the core reads: the statement list. The core
 // never looks inside a frame, so the frames stay empty and a test that starts
 // caring about geometry is a test that belongs to the renderer.
-import type { FoldScene, Frame, Mark, Statement } from "@beloch/scene";
+import type { FoldScene, Frame, Mark, NamedLine, Statement } from "@beloch/scene";
 
 const emptyFrame = (): Frame => ({
   vertices: [],
@@ -32,14 +32,22 @@ export function statement(index: number, spec: StatementSpec = {}): Statement {
   };
 }
 
-export function sceneOf(statements: Statement[]): FoldScene {
+// A named line bound against `step`, which counts frames rather than
+// statements.
+export const namedLine = (name: string, step: number): NamedLine => ({
+  name,
+  coeffs: [1, 0, 0],
+  step,
+});
+
+export function sceneOf(statements: Statement[], namedLines: NamedLine[] = []): FoldScene {
   return {
     cp: emptyFrame(),
     steps: statements.map((s) => ({ index: s.frameIndex, sourceLine: s.sourceLine, frame: emptyFrame() })),
     statements,
     references: [],
     namedPoints: [],
-    namedLines: [],
+    namedLines,
     creases: [],
     marks: [],
     inspect: null,

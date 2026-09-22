@@ -40,6 +40,7 @@ const command = (highlight: EntityRef[], settled: boolean, frame = 1): RenderCom
   hidden: "hide",
   marks: [],
   newestCreaseId: null,
+  constructions: [],
   highlight,
   settled,
 });
@@ -89,6 +90,7 @@ test("a flat drawing ghosts nothing, since it buries nothing", () => {
     upToStatement: 0,
     marks: [],
     newestCreaseId: null,
+    constructions: [],
     highlight: [crease],
     settled: true,
   });

@@ -8,6 +8,12 @@ import type { EntityRef, HiddenMode, RenderOptions, State } from "./state";
 // Carried by every shape of command: the entities the drawing should light,
 // already resolved from the selection and the hover.
 export interface RenderCommon {
+  // The construction lines the program has named by this step, by name. A
+  // line the drawing has no other way of showing: one that never becomes a
+  // crease is geometry the program built and the paper does not carry.
+  // Whether a name is already drawn as a crease is the renderer's to see, so
+  // this list is dated by the step and nothing more.
+  constructions: string[];
   highlight: EntityRef[];
   // Whether the highlight is the reader's settled answer rather than the
   // pointer passing over a line. A renderer may show a settled entity more
@@ -48,21 +54,37 @@ export function renderCommand(state: State, options: RenderOptions): RenderComma
   // line, moving the cursor away must not take the answer with it.
   const settled = state.selection.length > 0;
   const highlight: EntityRef[] = settled ? state.selection : state.hover ? [state.hover] : [];
-  if (scene.statements.length === 0) return { kind: "cp-only", highlight, settled };
+  if (scene.statements.length === 0) {
+    // No timeline, so every construction the program named is in the drawing.
+    return { kind: "cp-only", constructions: scene.namedLines.map((l) => l.name), highlight, settled };
+  }
   // Step 0 is the sheet before any statement ran, so it carries no
   // statement's creases and no marks.
   const stmt = step === 0 ? null : scene.statements[step - 1] ?? null;
   const marks = stmt ? stmt.keptMarks : [];
   const newestCreaseId = marks.at(-1)?.creaseId ?? null;
+  // A named line is dated by the frame it was bound against, which is the
+  // frame the statement in view folds against.
+  const frame = stmt ? stmt.frameIndex : 0;
+  const constructions = scene.namedLines.filter((l) => l.step <= frame).map((l) => l.name);
   if (options.view === "cp") {
-    return { kind: "flat", upToStatement: step - 1, marks, newestCreaseId, highlight, settled };
+    return {
+      kind: "flat",
+      upToStatement: step - 1,
+      marks,
+      newestCreaseId,
+      constructions,
+      highlight,
+      settled,
+    };
   }
   return {
     kind: "folded",
-    frame: stmt ? stmt.frameIndex : 0,
+    frame,
     hidden: options.hidden,
     marks,
     newestCreaseId,
+    constructions,
     highlight,
     settled,
   };
