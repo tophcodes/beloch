@@ -59,25 +59,36 @@ event is the composition's business. The evaluation module raises it after a
 run; the card raises it once from the FOLD JSON embedded in its markup; the
 tour raises it per section from a build-time evaluated program.
 
-That single decision is what makes the core small enough to compose. Without
-it the tour would have to carry a worker it never uses, and the card would
-have to pretend to evaluate what was already evaluated at build time.
+That single decision keeps the core small enough to compose. Without it the
+tour would have to carry a worker it never uses, and the card would have to
+pretend to evaluate what was already evaluated at build time.
 
 Beside the slot the core holds:
 
-**Interaction state.** Current step, the pinned entity, the hovered entity,
-and the selection. This is the group all three consumers share and the reason
-the package exists. What the core carries is one settled selection; how a
-reader arrived at it belongs to whoever offered the choice.
+**Interaction state.** Current step, the settled selection, the hovered
+entity. This is the group all three consumers share and the reason the package
+exists. What the core carries is one settled selection; how a reader arrived
+at it belongs to whoever offered the choice.
+
+The playground's "pinned" does not appear here. It means the tooltip has
+stopped following the cursor and gained a close button, which is the view's
+business. What the core needs from it is whether a selection is settled, and
+a settled selection outranks the pointer: once the reader has picked a line,
+moving the cursor away does not take the answer with it.
 
 **Presentation options.** View (`cp` / `folded`), hidden mode
 (`hide` / `dashed` / `depth`), paper scheme, line style. They are inputs to
 the render command, so they belong with it.
 
-**The render command.** The core derives it on demand from the state above:
-scene, step, view, options and the highlight set, as plain data. A renderer consumes it. Keeping the
-derivation in the core is what lets a headless test assert what a view would
-draw without a view existing.
+**The render command.** The core derives it on demand from the state above,
+as plain data: which of three drawings to make (the crease pattern of a
+document with no timeline, the flat sheet scored up to a statement, or one
+folded frame), the hidden mode, the marks still dangling, and the highlight
+set. It carries no scene and no theme: the document is in the state the
+renderer already reads, and colours belong to the renderer. Deriving it in the
+core lets a headless test assert what a view would draw without a view
+existing. `svgForStep` in `Playground.astro` is this function today, buried in
+the component.
 
 The core does **not** hold the viewport. Pan offset, zoom scale, drag tracking
 and pointer capture stay with the view, because two consumers showing the same
@@ -153,7 +164,7 @@ a crease by `creaseId` rather than by name.
 
 ADR-0014 settles the identity question: a crease is a bundle of segments, and
 the bundle is what a selection names. So the core carries
-`selection: EntityRef[]` with `pinned: EntityRef | null` beside it, and each
+`selection: EntityRef[]` with `hover: EntityRef | null` beside it, and each
 consumer constrains what it dispatches. The card's multi-selection and the
 playground's single pin are two policies over one state shape. The candidate
 list leaves the core with the chooser, into `@beloch/runtime-pick`, because it

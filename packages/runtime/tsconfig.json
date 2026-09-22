@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["bun"],
+    "paths": {
+      "@beloch/scene": ["../render-2d/scene/src/index.ts"]
+    }
+  },
+  "include": ["core/src", "core/test"]
+}

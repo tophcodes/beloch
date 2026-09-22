@@ -1,0 +1,47 @@
+// A FoldScene carrying only what the core reads: the statement list. The core
+// never looks inside a frame, so the frames stay empty and a test that starts
+// caring about geometry is a test that belongs to the renderer.
+import type { FoldScene, Frame, Mark, Statement } from "@beloch/scene";
+
+const emptyFrame = (): Frame => ({
+  vertices: [],
+  edgesVertices: [],
+  edgesAssignment: [],
+  edgesProvenance: [],
+  verticesNames: [],
+  facesVertices: [],
+  faceOrders: [],
+  facesMatrix: null,
+});
+
+export interface StatementSpec {
+  kind?: Statement["kind"];
+  sourceLine?: number;
+  frameIndex?: number;
+  keptMarks?: Mark[];
+}
+
+export function statement(index: number, spec: StatementSpec = {}): Statement {
+  return {
+    index,
+    kind: spec.kind ?? "fold",
+    sourceLine: spec.sourceLine ?? index + 1,
+    frameIndex: spec.frameIndex ?? index + 1,
+    mark: null,
+    keptMarks: spec.keptMarks ?? [],
+  };
+}
+
+export function sceneOf(statements: Statement[]): FoldScene {
+  return {
+    cp: emptyFrame(),
+    steps: statements.map((s) => ({ index: s.frameIndex, sourceLine: s.sourceLine, frame: emptyFrame() })),
+    statements,
+    references: [],
+    namedPoints: [],
+    namedLines: [],
+    creases: [],
+    marks: [],
+    inspect: null,
+  };
+}
