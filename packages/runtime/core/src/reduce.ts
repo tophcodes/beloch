@@ -9,11 +9,13 @@ const clampStep = (index: number, statements: number): number =>
 const sameEntity = (a: EntityRef | null, b: EntityRef | null): boolean => {
   if (a === null || b === null) return a === b;
   if (a.kind !== b.kind) return false;
-  return a.kind === "crease" && b.kind === "crease"
-    ? a.creaseId === b.creaseId
-    : a.kind === "edge" && b.kind === "edge"
-      ? a.name === b.name
-      : false;
+  if (a.kind === "crease" && b.kind === "crease") return a.creaseId === b.creaseId;
+  if (a.kind === "edge" && b.kind === "edge") return a.name === b.name;
+  if (a.kind === "face" && b.kind === "face") return a.index === b.index;
+  // A vertex is the same vertex at the same index; the name rides along for a
+  // reader and adds nothing to the identity.
+  if (a.kind === "vertex" && b.kind === "vertex") return a.index === b.index;
+  return false;
 };
 
 // Order carries meaning here: a consumer that lights several entities decides

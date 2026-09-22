@@ -70,3 +70,20 @@ test("the command says whether the highlight is settled or under the pointer", (
   rt.dispatch({ type: "selection/set", entities: [crease("3")] });
   expect(renderCommand(rt.state, folded)?.settled).toBe(true);
 });
+
+test("a face and a vertex are entities a reader can settle on", () => {
+  const rt = withDocument();
+  rt.dispatch({ type: "selection/set", entities: [{ kind: "face", index: "2" }] });
+  expect(rt.state.selection).toEqual([{ kind: "face", index: "2" }]);
+  rt.dispatch({ type: "hover/set", entity: { kind: "vertex", index: 7, name: "m" } });
+  expect(rt.state.hover).toEqual({ kind: "vertex", index: 7, name: "m" });
+});
+
+test("the same vertex under another name is the same vertex", () => {
+  const rt = withDocument();
+  let told = 0;
+  rt.dispatch({ type: "hover/set", entity: { kind: "vertex", index: 7, name: null } });
+  rt.subscribe(() => told++);
+  rt.dispatch({ type: "hover/set", entity: { kind: "vertex", index: 7, name: "m" } });
+  expect(told).toBe(0);
+});

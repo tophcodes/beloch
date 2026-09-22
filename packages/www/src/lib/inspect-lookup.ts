@@ -16,11 +16,10 @@
 // `edgeOfLine`, after lookupEntity has already returned null. The variant
 // lives here anyway so every consumer (hoverSummary, segmentRows, the
 // Playground handlers) shares one EntityRef import.
-export type EntityRef =
-  | { kind: "crease"; creaseId: string }
-  | { kind: "face"; index: string }
-  | { kind: "vertex"; index: number; name: string | null }
-  | { kind: "edge"; name: string };
+// One model for what a reader can point at, held by @beloch/runtime: the
+// playground, the drawing and the editor all name the same things.
+export type { EntityRef } from "@beloch/runtime";
+import type { EntityRef } from "@beloch/runtime";
 
 // Pulls the (1-based) line number out of a provenance span, e.g.
 // `foo.bel:12:3-8` (the `file:line:col-col` format `Error.span_to_string`

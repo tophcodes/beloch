@@ -48,15 +48,37 @@ function edgeElements(root: ParentNode, scene: FoldScene, name: string): Element
   );
 }
 
+// A face and a vertex are entities a reader can settle on, and the drawing
+// already marks them where the selection came from. Lighting them is left
+// alone here: the lines are what a reader follows through a fold, and a filled
+// face under a lit crease would compete with the paper it stands on.
 const elementsFor = (root: ParentNode, scene: FoldScene, ref: EntityRef): Element[] =>
-  ref.kind === "crease" ? bundleElements(root, ref.creaseId) : edgeElements(root, scene, ref.name);
+  ref.kind === "crease"
+    ? bundleElements(root, ref.creaseId)
+    : ref.kind === "edge"
+      ? edgeElements(root, scene, ref.name)
+      : [];
+
+// Lights what `refs` names, without clearing first and without ghosts. A
+// caller offering several entities at once uses this: a chooser previewing the
+// lines that share a pixel, or an editor showing what one source line built.
+export function lightEntities(root: Element, scene: FoldScene, refs: EntityRef[]): Element[] {
+  const lit: Element[] = [];
+  for (const ref of refs) {
+    for (const el of elementsFor(root, scene, ref)) {
+      el.classList.add(HL_CLASS);
+      lit.push(el);
+    }
+  }
+  return lit;
+}
 
 const segmentsFor = (scene: FoldScene, ref: EntityRef): InspectSegment[] => {
   const inspect = scene.inspect;
   if (!inspect) return [];
-  return (
-    (ref.kind === "crease" ? inspect.creases[ref.creaseId] : inspect.edges[ref.name])?.segments ?? []
-  );
+  if (ref.kind === "crease") return inspect.creases[ref.creaseId]?.segments ?? [];
+  if (ref.kind === "edge") return inspect.edges[ref.name]?.segments ?? [];
+  return [];
 };
 
 // `beloch:inspect` describes the final fold, so its coordinates line up with
@@ -114,8 +136,7 @@ export function applyHighlight(root: Element, scene: FoldScene, command: RenderC
   const svg = root.tagName.toLowerCase() === "svg" ? root : root.querySelector("svg");
   const ghosts = command.settled && svg !== null && drawsFinalFold(scene, command);
   for (const ref of command.highlight) {
-    const drawn = elementsFor(root, scene, ref);
-    drawn.forEach((el) => el.classList.add(HL_CLASS));
+    const drawn = lightEntities(root, scene, [ref]);
     if (ghosts && svg) ghostBuried(svg, scene, ref, drawn);
   }
 }

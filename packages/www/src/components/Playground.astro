@@ -585,7 +585,7 @@ const codeLines = code ? code.split("\n").length : 0;
   }
   /* What a piece of source built, lit in the highlight palette: one colour per
      entity, the same six that carry a caption's inline code (B1.10 in
-     docs/brand/design-language.md). Declared before .pg-hl so a hovered or
+     docs/brand/design-language.md). Declared before .bel-hl so a hovered or
      pinned entity keeps the interface accent where both land on it. */
   .pg-canvas :global(line.bel-em),
   .pg-canvas :global(.bel-em line) {
@@ -601,13 +601,13 @@ const codeLines = code ? code.split("\n").length : 0;
      crease segment(s) whose provenance span covers the editor's cursor
      line. Overrides the per-segment stroke/stroke-width attributes
      render-scene.ts emits (CSS class beats presentation attributes). */
-  .pg-canvas :global(.pg-hl) {
+  .pg-canvas :global(.bel-hl) {
     stroke: var(--bel-ui-accent);
     stroke-width: 4;
   }
   /* Occluded segments of a highlighted bundle, drawn from inspect data since
      they have no rendered line — dashed + semi-transparent to read as "behind". */
-  .pg-canvas :global(.pg-hl-ghost) {
+  .pg-canvas :global(.bel-hl-ghost) {
     stroke: var(--bel-ui-accent);
     stroke-width: 2.5;
     stroke-dasharray: 5 4;
@@ -715,7 +715,7 @@ const codeLines = code ? code.split("\n").length : 0;
     color: var(--bel-ui-text-faint);
   }
   /* These children are injected via innerHTML, so they never carry Astro's
-     scope attribute — the rules MUST be :global (like .pg-hl / .bel-hit above),
+     scope attribute — the rules MUST be :global (like .bel-hl / .bel-hit above),
      or they silently don't apply. */
   .pg-inspect :global(h4) {
     margin: 0 0 4px;
@@ -1041,11 +1041,15 @@ const codeLines = code ? code.split("\n").length : 0;
   import { blockOfStep, entitiesIn } from "@beloch/runtime-editor";
   import {
     applyEmphasis,
+    clearHighlight,
     commandToSvg,
     createDomRenderer,
+    lightEntities,
     CREASE_SELECTOR,
+    GHOST_CLASS,
     HIT_SELECTOR,
     HIT_CLASS,
+    HL_CLASS,
     type FadeLength,
   } from "@beloch/runtime-render-dom";
   import { edgeOfLine } from "../lib/edge-lookup";
@@ -1547,12 +1551,24 @@ const codeLines = code ? code.split("\n").length : 0;
     // The step a shared `?s=` names, held until the run behind it produces one
     // (see the bottom of setup).
     let pendingSharedStep: number | null = null;
-    // The anchored (click-pinned) entity, if any — while set, hover no
-    // longer overrides the tooltip (see the mousemove handler below) and it
-    // stops following the cursor. Cleared only by the tooltip's own close
-    // (X) button or a fresh run (clearStepsUI) — a background click no
-    // longer clears it (task 8: explicit X-to-close replaces that).
-    let pinned: EntityRef | null = null;
+    // The anchored entity is the runtime's settled selection. While one is
+    // set, hover no longer overrides the tooltip (see the mousemove handler
+    // below) and the tooltip stops following the cursor. It is cleared by the
+    // tooltip's own close (X) button or by a fresh run; a background click
+    // leaves it alone.
+    //
+    // "Pinned" is this view's word for it: what the runtime holds is that the
+    // reader settled on this entity, and the tooltip's close button is how
+    // this view lets them take it back.
+    const pinned = (): EntityRef | null => runtime.state.selection[0] ?? null;
+    const pin = (ref: EntityRef | null) => {
+      runtime.dispatch({ type: "selection/set", entities: ref ? [ref] : [] });
+      relight();
+    };
+    const hover = (ref: EntityRef | null) => {
+      runtime.dispatch({ type: "hover/set", entity: ref });
+      relight();
+    };
     // Coincident-line chooser state (see renderChoice): open flag and the
     // overlapping entities offered.
     let choiceOpen = false;
@@ -1569,10 +1585,6 @@ const codeLines = code ? code.split("\n").length : 0;
     // step. Off it, hover falls back to the per-step DOM data-crease-id.
     const onFinalStep = () => currentStatements().length === 0 || currentStep() === currentStatements().length;
 
-    const clearHl = () => {
-      canvas.querySelectorAll(".pg-hl").forEach((el) => el.classList.remove("pg-hl"));
-      canvas.querySelectorAll(".pg-hl-ghost").forEach((el) => el.remove());
-    };
     // Tolerance shared by proximity detection and the hidden-segment test,
     // in SVG user units (~px at 1:1 zoom). pointSegDist comes from
     // pick-visibility.ts, which measures against it too.
@@ -1592,112 +1604,27 @@ const codeLines = code ? code.split("\n").length : 0;
             Number(el.getAttribute("y2")),
           ] as const,
       );
-    // A SELECTED bundle's OCCLUDED segments have no rendered <line> (a fold
-    // hides layers below), so they couldn't be shown. Draw each hidden segment
-    // as a dashed ghost from the inspect data, in the SVG's own user space
-    // (sceneLayout coords) so it pans/zooms with everything.
+    // The stack picker points at one segment of a bundle rather than at the
+    // bundle, so it lights by geometry and draws its own dashed ghost where
+    // the drawing has no line for that segment. Everything a reader points at
+    // or settles on goes through the runtime instead (see `pin` and `hover`).
+    //
+    // inspect geometry describes the final fold, so a ghost is placed only on
+    // the drawing of that step; anywhere else it would sit over a different
+    // placement of the paper.
     const SVG_NS = "http://www.w3.org/2000/svg";
-    const drawGhost = (ax: number, ay: number, bx: number, by: number) => {
-      // Guard every ghost path (bundle + picked-segment) at once: inspect
-      // geometry only lines up with the rendered final-fold placement.
-      if (!onFinalStep()) return;
+    const ghostSegment = (ax: number, ay: number, bx: number, by: number) => {
       const svg = canvas.querySelector("svg");
-      if (!svg) return;
+      if (!svg || !onFinalStep()) return;
       const l = document.createElementNS(SVG_NS, "line");
       l.setAttribute("x1", String(ax));
       l.setAttribute("y1", String(ay));
       l.setAttribute("x2", String(bx));
       l.setAttribute("y2", String(by));
-      l.setAttribute("class", "pg-hl-ghost");
+      l.setAttribute("class", GHOST_CLASS);
       svg.appendChild(l);
     };
-    // Ghost every segment whose midpoint isn't near an already-drawn line
-    // (i.e. it's occluded / not rendered at this step).
-    const ghostHidden = (segments: { table: [Vec2, Vec2] }[], drawnLines: Element[]) => {
-      // inspect geometry is final-fold only; drawing it over an earlier step's
-      // placement would put ghosts at the wrong positions.
-      const scene = currentScene();
-      if (!scene || !onFinalStep()) return;
-      const layout = sceneLayout(scene);
-      const drawn = drawnLines.map((el) => [
-        Number(el.getAttribute("x1")), Number(el.getAttribute("y1")),
-        Number(el.getAttribute("x2")), Number(el.getAttribute("y2")),
-      ] as const);
-      for (const s of segments) {
-        const ax = layout.tx(s.table[0][0]), ay = layout.ty(s.table[0][1]);
-        const bx = layout.tx(s.table[1][0]), by = layout.ty(s.table[1][1]);
-        const mx = (ax + bx) / 2, my = (ay + by) / 2;
-        if (!drawn.some(([x1, y1, x2, y2]) => pointSegDist(mx, my, x1, y1, x2, y2) <= EPS)) {
-          drawGhost(ax, ay, bx, by);
-        }
-      }
-    };
-    // no-clear adders (so several bundles can be lit at once for the
-    // coincident-line case); the public highlight* wrap them with a clearHl.
-    // Each returns the lines it lit, which is what the ghosting of a
-    // SELECTED bundle needs to tell drawn segments from buried ones.
-    const addBundleHl = (creaseId: string): Element[] => {
-      const drawn = Array.from(bundleElements(canvas, creaseId));
-      drawn.forEach((el) => el.classList.add("pg-hl"));
-      return drawn;
-    };
-    const addEdgeHl = (name: string): Element[] => {
-      const scene = currentScene();
-      const insp = scene?.inspect;
-      if (!insp || !scene) return [];
-      const layout = sceneLayout(scene);
-      const drawn: Element[] = [];
-      canvas.querySelectorAll(CREASE_SELECTOR).forEach((el) => {
-        const x1 = Number(el.getAttribute("x1"));
-        const y1 = Number(el.getAttribute("y1"));
-        const x2 = Number(el.getAttribute("x2"));
-        const y2 = Number(el.getAttribute("y2"));
-        if (edgeOfLine(insp.edges, x1, y1, x2, y2, layout) === name) {
-          el.classList.add("pg-hl");
-          drawn.push(el);
-        }
-      });
-      return drawn;
-    };
-    const addEntityHl = (ref: EntityRef): Element[] =>
-      ref.kind === "crease"
-        ? addBundleHl(ref.creaseId)
-        : ref.kind === "edge"
-          ? addEdgeHl(ref.name)
-          : [];
-    // Whole-bundle highlight (task 8): every segment sharing `creaseId`, across
-    // flaps/layers. `--var` names ONE crease_id whose segments are the bundle.
-    const highlightBundle = (creaseId: string) => { clearHl(); addBundleHl(creaseId); };
-    // Same for a paper-boundary edge (task 9); boundary lines carry no
-    // data-crease-id, so they're matched by geometry (edgeOfLine).
-    const highlightEdgeBundle = (name: string) => { clearHl(); addEdgeHl(name); };
-    // All coincident entities at once (the chooser hover/anchor).
-    const highlightEntities = (ents: EntityRef[]) => { clearHl(); ents.forEach(addEntityHl); };
-    // One SELECTED entity: lit like a hover, plus a dashed ghost for every
-    // segment of it the drawing has no line for. Ghosting belongs to
-    // selection alone. A hover that drew segments the picture does not have
-    // would put dashes under the cursor on the way past every crease, and
-    // this view's whole claim is that the drawing shows what the program
-    // built. Once the reader has picked one line, the buried rest of it is
-    // the answer to a question they asked.
-    const highlightSelected = (ref: EntityRef) => {
-      clearHl();
-      const drawn = addEntityHl(ref);
-      const insp = currentScene()?.inspect;
-      const segments =
-        ref.kind === "crease"
-          ? insp?.creases[ref.creaseId]?.segments
-          : ref.kind === "edge"
-            ? insp?.edges[ref.name]?.segments
-            : undefined;
-      if (segments) ghostHidden(segments, drawn);
-    };
-    // The drawing is rebuilt on every step and the highlight lives on its
-    // elements, so an anchored bundle loses its classes together with the
-    // old SVG. Putting them back after each swap is what keeps a clicked
-    // bundle lit while the reader steps through the program. A bundle with
-    // no segment at the step on screen lights nothing, which is the honest
-    // answer rather than an empty promise.
+
     // Every place the program NAMES the anchored entities, out of
     // beloch:references: the operands of a construction, the arguments of a
     // flatten, a filter over the bundle. The emitter resolved each of those
@@ -1719,9 +1646,13 @@ const codeLines = code ? code.split("\n").length : 0;
           .map((r) => r.span),
       );
     };
-    const reapplyAnchorHl = () => {
-      if (choiceOpen && choiceEnts.length) highlightEntities(choiceEnts);
-      else if (pinned) highlightSelected(pinned);
+    // The runtime's own highlight comes back with every drawing the renderer
+    // makes. The chooser's preview does not, because the candidate list is
+    // this view's and not the runtime's yet.
+    const reapplyChoiceHl = () => {
+      const scene = currentScene();
+      if (!scene || !choiceOpen || choiceEnts.length === 0) return;
+      lightEntities(canvas, scene, choiceEnts);
     };
     // Resolves the pointer target to an EntityRef: lookupEntity first
     // (crease/face/vertex, attr-based); if that's null AND the target is a
@@ -1834,10 +1765,9 @@ const codeLines = code ? code.split("\n").length : 0;
     }
 
     function closeAnchor() {
-      pinned = null;
       choiceOpen = false;
+      pin(null);
       restInspect();
-      clearHl();
       setRefSpansOn(editor, []);
     }
 
@@ -1912,10 +1842,9 @@ const codeLines = code ? code.split("\n").length : 0;
     // Anchor one entity's tooltip at (x,y): shared tail of a direct single
     // click and a chooser-row pick.
     const anchorEntity = (ref: EntityRef) => {
-      pinned = ref;
       choiceOpen = false;
+      pin(ref);
       markRefsFor([ref]);
-      highlightSelected(ref);
       renderInspect(ref, true);
       if (ref.kind === "crease") {
         const ln = lineOfSpan(currentScene()?.inspect?.creases[ref.creaseId]?.span ?? null);
@@ -1958,12 +1887,17 @@ const codeLines = code ? code.split("\n").length : 0;
     // editor cursor onto a source line outlines every SVG crease segment
     // whose provenance span covers that line (read-only, no pinning).
     const highlightCreasesOnLine = (line: number) => {
-      clearHl();
-      const insp = currentScene()?.inspect;
-      if (!insp) return;
-      for (const [cid, c] of Object.entries(insp.creases)) {
-        if (lineOfSpan(c.span) === line) bundleElements(canvas, cid).forEach((el) => el.classList.add("pg-hl"));
-      }
+      const scene = currentScene();
+      clearHighlight(canvas);
+      const insp = scene?.inspect;
+      if (!scene || !insp) return;
+      lightEntities(
+        canvas,
+        scene,
+        Object.entries(insp.creases)
+          .filter(([, c]) => lineOfSpan(c.span) === line)
+          .map(([cid]) => ({ kind: "crease", creaseId: cid })),
+      );
     };
 
     // Hover previews the entity under the cursor, following it with the
@@ -1973,21 +1907,22 @@ const codeLines = code ? code.split("\n").length : 0;
     // NOW, so hover resumes as soon as the drag actually ends rather than
     // staying suppressed until the next pointerdown (see createPanZoom).
     if (!hero) result.addEventListener("mousemove", (e: MouseEvent) => {
-      if (pinned || choiceOpen || panZoom.isDragging()) return;
+      if (pinned() || choiceOpen || panZoom.isDragging()) return;
       // Same proximity detection as the click, so hover and click agree.
       const ents = lineEntitiesAtPoint(e.clientX, e.clientY);
       if (ents.length >= 2) {
-        // Preview the chooser so hover already shows "N Linien hier" — not one
-        // entity that then surprises with a chooser on click.
-        highlightEntities(ents);
+        // Preview the chooser so hover already shows "N Linien hier" rather
+        // than one entity that then surprises with a chooser on click. The
+        // candidate list is this view's until the chooser moves into its own
+        // module, so its preview is lit here.
+        hover(null);
+        const scene = currentScene();
+        if (scene) lightEntities(canvas, scene, ents);
         renderChoice(ents, false);
         return;
       }
-      const ref = ents[0] ?? resolveRef(e.target as Element);
-      if (ref?.kind === "crease") highlightBundle(ref.creaseId);
-      else if (ref?.kind === "edge") highlightEdgeBundle(ref.name);
-      else clearHl();
-      renderInspect(ref, false);
+      hover(ents[0] ?? resolveRef(e.target as Element));
+      renderInspect(runtime.state.hover, false);
     });
     // A click anchors (materializes) the tooltip at the click position — it
     // stops following the cursor and gains a close (X) button; only that X
@@ -2003,8 +1938,9 @@ const codeLines = code ? code.split("\n").length : 0;
       // (same content the hover was already previewing).
       const ents = lineEntitiesAtPoint(e.clientX, e.clientY);
       if (ents.length >= 2) {
-        pinned = null;
-        highlightEntities(ents);
+        pin(null);
+        const scene = currentScene();
+        if (scene) lightEntities(canvas, scene, ents);
         markRefsFor(ents);
         renderChoice(ents, true);
         return;
@@ -2055,7 +1991,7 @@ const codeLines = code ? code.split("\n").length : 0;
       const layout = sceneLayout(scene);
       const p0: Vec2 = [layout.tx(s.table[0][0]), layout.ty(s.table[0][1])];
       const p1: Vec2 = [layout.tx(s.table[1][0]), layout.ty(s.table[1][1])];
-      clearHl();
+      clearHighlight(canvas);
       const candidates = cid ? bundleElements(canvas, cid) : Array.from(canvas.querySelectorAll(CREASE_SELECTOR));
       let matched = false;
       candidates.forEach((el) => {
@@ -2064,12 +2000,12 @@ const codeLines = code ? code.split("\n").length : 0;
         const x2 = Number(el.getAttribute("x2"));
         const y2 = Number(el.getAttribute("y2"));
         if (segMatchesLine(p0, p1, x1, y1, x2, y2)) {
-          el.classList.add("pg-hl");
+          el.classList.add(HL_CLASS);
           matched = true;
         }
       });
       // Picked an occluded segment (no rendered line) → ghost it so it shows.
-      if (!matched) drawGhost(p0[0], p0[1], p1[0], p1[1]);
+      if (!matched) ghostSegment(p0[0], p0[1], p1[0], p1[1]);
     };
     inspectPanel.addEventListener("click", (e: MouseEvent) => {
       const target = e.target as Element;
@@ -2102,10 +2038,10 @@ const codeLines = code ? code.split("\n").length : 0;
       const choice = target.closest<HTMLElement>("[data-choice-idx]");
       if (choice) {
         const ref = choiceEnts[Number(choice.dataset.choiceIdx)];
-        if (!ref) return;
-        clearHl();
-        if (ref.kind === "crease") highlightBundle(ref.creaseId);
-        else if (ref.kind === "edge") highlightEdgeBundle(ref.name);
+        const scene = currentScene();
+        if (!ref || !scene) return;
+        clearHighlight(canvas);
+        lightEntities(canvas, scene, [ref]);
       }
     });
 
@@ -2158,22 +2094,31 @@ const codeLines = code ? code.split("\n").length : 0;
       applyEmphasis(canvas, emphasisFor(step));
     };
 
-    const drawCurrent = (keepView = false, fade: FadeLength | null = null) => {
+    // What the runtime says to draw, drawn, and nothing else. The renderer
+    // compares this against what it last drew, so an event that only moves the
+    // highlight re-lights the drawing on screen rather than rebuilding it.
+    // That is what makes this cheap enough for every mouse move.
+    function relight(fade: FadeLength | null = null) {
       const scene = currentScene();
       if (!scene) return;
       const command = renderCommand(runtime.state, { view: currentView, hidden: hiddenMode });
       if (!command) return;
+      renderer.draw(scene, command, { theme: renderTheme(), fade });
+    }
+
+    const drawCurrent = (keepView = false, fade: FadeLength | null = null) => {
+      if (!currentScene()) return;
       // The renderer owns the markup and the hit targets over it. What stays
       // here is the stage around the drawing.
-      renderer.draw(scene, command, { theme: renderTheme(), fade });
+      relight(fade);
       // The drawing is new, so what the reader was pointing at in the source
       // has to be lit again on it.
       applyEmphasis(canvas, emphasisFor(emphasisStep));
       makeCreasesReachable();
-      reapplyAnchorHl();
+      reapplyChoiceHl();
       // A drawing on the stage means the rail has something to stand for. A
-      // pinned answer survives a step change, which is what the rail is for.
-      if (!hero && !pinned && !choiceOpen) restInspect();
+      // pinned answer survives a step change, so the rail keeps it.
+      if (!hero && !pinned() && !choiceOpen) restInspect();
       if (!keepView) panZoom.reset();
       panZoom.setEnabled(true);
       resetBtn.hidden = false;
@@ -2222,11 +2167,11 @@ const codeLines = code ? code.split("\n").length : 0;
     function clearStepsUI() {
       runtime.dispatch({ type: "document/set", scene: null });
       setStepSlotsOn(editor, []);
-      pinned = null;
+      // Emptying the document takes the selection and the hover with it.
       choiceOpen = false;
       inspectPanel!.hidden = true;
       inspectPanel!.textContent = "";
-      clearHl();
+      clearHighlight(canvas!);
       setRefSpansOn(editor, []);
       stepsBar!.hidden = true;
       setStepLineOn(editor, null);

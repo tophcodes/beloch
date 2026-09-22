@@ -2,10 +2,14 @@ import type { FoldScene } from "@beloch/scene";
 
 // What a selection names. A crease is its bundle (ADR-0014), so the identity
 // is the crease id and never one of its segments; a paper boundary has no id
-// to carry and is named by its edge ("ab").
+// to carry and is named by its edge ("ab"). A face and a vertex are the two
+// other things a reader can point at, carried by the index the document gives
+// them, with a vertex's name beside it where the program gave it one.
 export type EntityRef =
   | { kind: "crease"; creaseId: string }
-  | { kind: "edge"; name: string };
+  | { kind: "edge"; name: string }
+  | { kind: "face"; index: string }
+  | { kind: "vertex"; index: number; name: string | null };
 
 // Which of the two pictures of a state to draw: the flat sheet with its
 // creases, or the folded result.
