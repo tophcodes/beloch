@@ -549,18 +549,49 @@ button[data-open-modal] svg { width: 16px; height: 16px; }
 	font-family: var(--bel-font-mono);
 	font-size: 12px;
 }
+/* The disclosure names the section the reader is in and opens the table of
+ * contents under it. Its own label leaves the bar and stays for a screen
+ * reader, which is also what names the navigation landmark. The caret is drawn
+ * from borders rather than set as a character, so no font decides its shape. */
 #starlight__mobile-toc .toggle {
-	gap: var(--bel-space-1);
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	border: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+#starlight__mobile-toc .display-current {
+	position: relative;
+	display: block;
+	max-width: 60%;
 	height: 30px;
-	padding-block: 0;
-	padding-inline: 10px;
+	line-height: 28px;
+	padding-inline: 10px 26px;
 	border: 1px solid var(--bel-ui-control-border);
 	border-radius: var(--bel-radius-control);
-	background: transparent;
 	color: var(--bel-ui-text-muted);
+	cursor: pointer;
 }
-#starlight__mobile-toc[open] .toggle,
-#starlight__mobile-toc .toggle:hover {
+#starlight__mobile-toc .display-current:empty::before { content: "On this page"; }
+#starlight__mobile-toc .display-current::after {
+	content: "";
+	position: absolute;
+	inset-inline-end: 10px;
+	top: 50%;
+	margin-top: -2px;
+	width: 0;
+	height: 0;
+	border-inline: 4px solid transparent;
+	border-block-start: 5px solid currentColor;
+	transition: transform var(--bel-duration-state) var(--bel-ease);
+}
+#starlight__mobile-toc[open] .display-current::after { transform: rotate(180deg); }
+#starlight__mobile-toc[open] .display-current,
+#starlight__mobile-toc > summary:hover .display-current {
 	color: var(--bel-ui-text);
 	border-color: var(--bel-ui-accent);
 }
@@ -575,4 +606,16 @@ button[data-open-modal] svg { width: 16px; height: 16px; }
  * both sides as everywhere else. */
 [data-has-sidebar] .header {
 	padding-inline-end: var(--bel-shell-pad-x);
+}
+
+/* The drawer opens under the bar that carries its button, so its list never
+ * runs beneath it while scrolling. The disclosure beside the button steps out
+ * for as long as the drawer is open: it sits inside .main-frame, which the
+ * drawer marks inert, and a control that is visible and cannot be used is
+ * worse than one that is gone. */
+@media (max-width: 49.99rem) {
+	.sidebar-pane {
+		inset-block-start: calc(var(--bel-shell-nav-height) + var(--sl-mobile-toc-height));
+	}
+	body[data-mobile-menu-expanded] #starlight__mobile-toc { visibility: hidden; }
 }
