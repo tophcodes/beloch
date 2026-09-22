@@ -1038,7 +1038,13 @@ const codeLines = code ? code.split("\n").length : 0;
   import { segMatchesLine } from "../lib/stack-picker";
   import { hoverSummary, segmentRows, edgeSegmentRows } from "../lib/tooltip-content";
   import { bundleElements } from "../lib/bundle-highlight";
-  import { blockOfStep, entitiesIn } from "@beloch/runtime-editor";
+  import {
+    blockOfStep,
+    entitiesAtLine,
+    entitiesIn,
+    refSpansFor,
+    sourceLineOf,
+  } from "@beloch/runtime-editor";
   import { createPick } from "@beloch/runtime-pick";
   import {
     applyEmphasis,
@@ -1632,21 +1638,8 @@ const codeLines = code ? code.split("\n").length : 0;
     // flatten, a filter over the bundle. The emitter resolved each of those
     // mentions, so this needs no guessing at the text.
     const markRefsFor = (ents: EntityRef[]) => {
-      const refs = currentScene()?.references ?? [];
-      setRefSpansOn(
-        editor,
-        refs
-          .filter((r) =>
-            ents.some((e) =>
-              e.kind === "crease"
-                ? r.creaseId !== null && String(r.creaseId) === e.creaseId
-                : e.kind === "edge"
-                  ? r.edge === e.name
-                  : false,
-            ),
-          )
-          .map((r) => r.span),
-      );
+      const scene = currentScene();
+      setRefSpansOn(editor, scene ? refSpansFor(scene, ents) : []);
     };
     // The runtime's own highlight comes back with every drawing the renderer
     // makes. The candidates of an open choice do not: they are what the reader
@@ -1849,12 +1842,11 @@ const codeLines = code ? code.split("\n").length : 0;
       pin(ref);
       markRefsFor([ref]);
       renderInspect(ref, true);
-      if (ref.kind === "crease") {
-        const ln = lineOfSpan(currentScene()?.inspect?.creases[ref.creaseId]?.span ?? null);
-        // Mark the statement that built this crease, but leave the editor
-        // where the reader left it: they clicked the drawing, not the code.
-        if (ln) setStepLineOn(editor, ln, { reveal: false });
-      }
+      const scene = currentScene();
+      const ln = scene ? sourceLineOf(scene, ref) : null;
+      // Mark the statement that built this entity, but leave the editor where
+      // the reader left it: they clicked the drawing, not the code.
+      if (ln) setStepLineOn(editor, ln, { reveal: false });
     };
 
     // The coincident-line chooser: a materialized list of the overlapping
@@ -1888,15 +1880,8 @@ const codeLines = code ? code.split("\n").length : 0;
     const highlightCreasesOnLine = (line: number) => {
       const scene = currentScene();
       clearHighlight(canvas);
-      const insp = scene?.inspect;
-      if (!scene || !insp) return;
-      lightEntities(
-        canvas,
-        scene,
-        Object.entries(insp.creases)
-          .filter(([, c]) => lineOfSpan(c.span) === line)
-          .map(([cid]) => ({ kind: "crease", creaseId: cid })),
-      );
+      if (!scene) return;
+      lightEntities(canvas, scene, entitiesAtLine(scene, line));
     };
 
     // Hover previews the entity under the cursor, following it with the

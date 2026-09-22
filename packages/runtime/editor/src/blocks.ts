@@ -5,6 +5,7 @@
 // statement. A point, a named line or a comment in between belongs to the
 // step it follows, and the drawing at that step carries what it built.
 import type { FoldScene } from "@beloch/scene";
+import { lineOfSpan } from "./spans";
 
 export interface SourceBlock {
   // Index into the statement list. -1 is the source above the first
@@ -57,11 +58,6 @@ export interface BlockEntities {
 }
 
 export const NOTHING: BlockEntities = { creases: [], points: [], lines: [] };
-
-const lineOfSpan = (span: string | null): number | null => {
-  const m = span?.match(/:(\d+):/);
-  return m ? Number(m[1]) : null;
-};
 
 const within = (block: SourceBlock, line: number | null): boolean =>
   line !== null && line >= block.fromLine && (block.toLine === null || line <= block.toLine);
