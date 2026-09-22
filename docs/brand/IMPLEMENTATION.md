@@ -1,7 +1,7 @@
 # Design language: what is built, what is not
 
 The draft that this implements is `design-language.md` (the conditions) plus
-the Claude Design answers to it, which fixed fourteen decisions across two
+the Claude Design answers to it, which fixed sixteen decisions across two
 passes. This file says how far the code follows, so the next piece of work does
 not have to re-derive it.
 
@@ -23,6 +23,8 @@ not have to re-derive it.
 | 12 | Callouts and badges run on accent and error, never on a fold colour | the hue rows in the bridge |
 | 13 | One line height for prose, 1.55 | `--bel-line-height` |
 | 14 | The light caption of highlight 0 turns towards green | `HIGHLIGHT_TEXT[0]`, `.figure-hl-0`, `typst-compat.typ` |
+| 15 | One header component draws every page | `SiteHeader.astro`, the `Header` override |
+| 16 | The lockup is the mark beside the wordmark | `Wordmark.astro` |
 
 ## Built
 
@@ -74,7 +76,6 @@ not have to re-derive it.
   is handed out: with no stored choice the visitor's system decides, on the
   landing as well as in the docs. The landing no longer pins dark before the
   first paint.
-
 - **The token layer is one file.** `tokens.css` carries every `--bel-*`
   declaration and nothing else; `theme.css` imports it and holds the font
   faces, the rendering surface and the Starlight bridge. A reader asking what
@@ -114,6 +115,21 @@ not have to re-derive it.
   because the bridge overrides the values Starlight forces for print. One
   `@media print` rule pins `color-scheme` instead, which is what `light-dark()`
   reads.
+- **One header.** `SiteHeader.astro` draws the header for the landing, the
+  playground and the docs; Starlight's own `Header` and `MobileMenuFooter` are
+  overrides that hand it the search and the drawer links. The docs lose
+  Starlight's site title and its select-shaped mode switch, and gain the
+  wordmark, the three navigation links and the round toggle the landing has.
+  Below 50rem the text links step aside for the search and the drawer button
+  and reappear inside the drawer; the toggle stays reachable without opening
+  anything.
+- **The lockup.** `Wordmark.astro` sets the mark beside the wordmark at
+  `--bel-space-2`, both inline so the mark draws in `currentColor` and follows
+  the mode. The mark is a crease pattern, and the three stroke styles that say
+  which line is which stop reading at header size: the scored lines dash at
+  4.5/3 in a 64 unit grid, under 1.6px once the drawing is 22px wide. Below
+  50rem the header therefore takes `mark-small` at 22px, where every line is
+  4px, and above it `mark` at 28px.
 - **The light caption of highlight 0.** `HIGHLIGHT_TEXT[0]` moves from
   `#07715a` to `#1C6B33`: ΔE76 27.5 to the light accent where it was 11.0, and
   6.22:1 on the surface where it was 5.65:1. The stroke in `HIGHLIGHT_PALETTE`
