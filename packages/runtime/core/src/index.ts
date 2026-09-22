@@ -27,7 +27,11 @@ export function createRuntime(): Runtime {
       return state;
     },
     dispatch(event: Event) {
-      state = reduce(state, event);
+      const next = reduce(state, event);
+      // An event that changed nothing is not news. Telling listeners anyway
+      // would redraw on every mouse event a resting pointer sends.
+      if (next === state) return;
+      state = next;
       // Notify over a copy: a listener may subscribe or unsubscribe while it
       // runs, and the round it was told about is the one that already
       // happened.
