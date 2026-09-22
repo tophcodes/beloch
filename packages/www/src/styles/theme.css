@@ -34,6 +34,50 @@
 	--bel-font-prose: Palatino, 'Palatino Linotype', 'URW Palladio L', Georgia, serif;
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+ * Spacing, radii and duration. One scale, so a drawing keeps the same quiet
+ * zone whether it sits on the landing, in the docs or in a figure.
+ * ────────────────────────────────────────────────────────────────────────── */
+:root {
+	--bel-space-half: 4px;
+	--bel-space-1:    8px;
+	--bel-space-2:   16px;
+	--bel-space-3:   24px;
+	--bel-space-4:   32px;
+	--bel-space-5:   40px;
+	--bel-space-6:   56px;
+
+	--bel-radius-card:    6px;
+	--bel-radius-control: 3px;
+	--bel-radius-paper:   0;      /* paper has square corners; it is paper */
+
+	--bel-paper-quiet: 16px;      /* clear on every side of a drawing */
+
+	--bel-code-size: 13.5px;      /* the code grid is the same everywhere */
+	--bel-code-line: 22px;
+
+	/* Motion starts on an action, never on its own. A state change is the
+	   shortest, a view change gives the eye time to follow, and a fold is the
+	   only place where the duration is the subject rather than the transport. */
+	--bel-duration-state: 160ms;
+	--bel-duration-view:  280ms;
+	--bel-duration-fold:  520ms;
+	--bel-ease: cubic-bezier(0.4, 0, 0.2, 1);   /* no overshoot: paper does not bounce */
+}
+
+/* One query turns motion off everywhere. The loading indicator then has to say
+   in words what it is waiting for, because a still spinner says nothing. */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
+
 /* ── Functional tokens — dark ────────────────────────────────────────────── */
 :root,
 :root[data-theme='dark'] {

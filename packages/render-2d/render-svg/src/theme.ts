@@ -78,13 +78,24 @@ export const yrLineStyle: LineStyleFn = (assignment, theme) => {
 // Beloch token colour and ΔE76 50 from the others here. A `highlight` longer
 // than the palette wraps round to the first colour and two entities then share
 // one; six is well past the two the documents use today.
+// Six colours a caption can point with. Measured: L* 50.1 to 55.9, at least
+// dE76 55.3 from each other, 34.9 from mountain and valley, 27.2 from the
+// interface accent, so a highlight is never mistaken for a fold or a control.
+// Each wash is its stroke lightened towards white by 0.25, the ratio the
+// previous palette already used throughout.
 export const HIGHLIGHT_PALETTE: HighlightColor[] = [
-  { stroke: "#0d9488", wash: "#c2e4e1" },
-  { stroke: "#c2620a", wash: "#f0d8c2" },
-  { stroke: "#9a52d8", wash: "#e6d4f5" },
-  { stroke: "#db2777", wash: "#f6c9dd" },
-  { stroke: "#5f9412", wash: "#d7e4c4" },
-  { stroke: "#0284c7", wash: "#c0e0f1" },
+  { stroke: "#079876", wash: "#c1e5dd" },
+  { stroke: "#fb0069", wash: "#febfd9" },
+  { stroke: "#a945ff", wash: "#e9d0ff" },
+  { stroke: "#ce6400", wash: "#f3d8bf" },
+  { stroke: "#0880d4", wash: "#c1dff4" },
+  { stroke: "#7d8700", wash: "#dee1bf" },
+];
+
+// A highlight used as caption text needs 4.5:1, which the stroke values do not
+// hold on white. These are the same hues, darkened, for text only.
+export const HIGHLIGHT_TEXT: string[] = [
+  "#07715a", "#c2004f", "#8a2fd6", "#b25600", "#0b6fb0", "#5f6600",
 ];
 
 // flat, unassigned and construction were re-measured against the paper
