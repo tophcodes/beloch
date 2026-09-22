@@ -28,3 +28,14 @@ if [ -f "$repo_root/packages/eval-web/.wasm-build/prefix/lib/libflint.a" ]; then
 else
   echo "FLINT-wasm prefix not built (run packages/eval-web/build-wasm.sh) — skipping qqbar-wasm.js" >&2
 fi
+
+# Byte counts of the two files the worker pulls, so its progress reporting has a
+# denominator that cannot drift from what is actually served (eval-worker.js
+# reads this manifest before it starts fetching). Written on every rebuild, so
+# a new bundle updates it in the same change that produced it.
+manifest="$repo_root/packages/www/public/beloch/runtime-manifest.json"
+printf '{"parts":[{"url":"/beloch/qqbar-wasm.js","bytes":%s},{"url":"/beloch/beloch-eval.js","bytes":%s}]}\n' \
+  "$(stat -c %s "$repo_root/packages/www/public/beloch/qqbar-wasm.js")" \
+  "$(stat -c %s "$repo_root/packages/www/public/beloch/beloch-eval.js")" \
+  > "$manifest"
+echo "Wrote $manifest"

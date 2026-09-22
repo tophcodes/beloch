@@ -146,8 +146,18 @@
 	--bel-ui-surface:       light-dark(#F7F9FB, #171B24);
 	--bel-ui-text:          light-dark(#171A21, #E7EAF2);
 	--bel-ui-text-muted:    light-dark(#5B6478, #8D93A6);
+	/* The text of a switched-off control, carried together with the divider
+	   outline: the pair reads as "not available here" without the control
+	   disappearing, and the reason is in its title. */
 	--bel-ui-text-faint:    light-dark(#8891A3, #656B7E);
-	--bel-ui-border:        light-dark(#D8DEE7, #2A3040);
+
+	/* Two border roles, because they answer to different thresholds. A line
+	   between two areas only has to be found, so it stays quiet at 1.28:1
+	   light and 1.31:1 dark. The outline of a control is what says where the
+	   control is and needs 3:1, which these hold at 3.75:1 and 4.57:1 against
+	   surface. */
+	--bel-ui-divider:        light-dark(#D8DEE7, #2A3040);
+	--bel-ui-control-border: light-dark(#767F8E, #79839A);
 
 	/* Accent and error. Kept clear of the crease colours so a focus ring next
 	   to a drawing cannot read as a valley fold: in the dark column the accent
@@ -301,7 +311,7 @@
 	padding: 10px 20px 14px;
 	overflow-x: auto;
 	white-space: pre;
-	border-top: 1px solid var(--bel-ui-border);
+	border-top: 1px solid var(--bel-ui-divider);
 	border-left: 3px solid transparent;
 }
 .bel-outcome-expected {
@@ -318,7 +328,7 @@
 .bel-outcome-ok {
 	background: var(--bel-ui-code-surface);
 	padding: 8px 20px 12px;
-	border-top: 1px solid var(--bel-ui-border);
+	border-top: 1px solid var(--bel-ui-divider);
 }
 .bel-assert {
 	padding-left: 1.4em;
@@ -352,7 +362,7 @@
  * doesn't push the diagram panel into its own row.
  * ────────────────────────────────────────────────────────────────────────── */
 .beloch-controls { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
-.beloch-tab { font: inherit; padding: 3px 10px; border-radius: 7px; border: 1px solid var(--bel-ui-border); background: transparent; color: var(--bel-ui-text-muted); cursor: pointer; }
+.beloch-tab { font: inherit; padding: 3px 10px; border-radius: var(--bel-radius-control); border: 1px solid var(--bel-ui-control-border); background: transparent; color: var(--bel-ui-text-muted); cursor: pointer; }
 .beloch-tab.is-active { color: var(--bel-ui-text); border-color: var(--bel-ui-accent); }
 .beloch-stepper { display: inline-flex; align-items: center; gap: 6px; color: var(--bel-ui-text-muted); }
 .beloch-stepper button { background: none; border: none; color: inherit; cursor: pointer; font-size: 13px; }

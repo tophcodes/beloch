@@ -22,6 +22,10 @@ export interface RunState {
   // The runtime's load limit elapsed while a run was waiting for it. The
   // Worker keeps loading; the run was dropped.
   loadStalled: boolean;
+  // How much of the runtime has arrived, 0 to 1, or null while that is
+  // unknown (the worker reports it from runtime-manifest.json; without the
+  // manifest it loads the runtime without measuring it).
+  progress?: number | null;
 }
 
 export interface RunUi {
@@ -40,13 +44,25 @@ export const RUNTIME_SIZE = "2.3 MB";
 
 export function runUi(s: RunState): RunUi {
   if (s.running) {
-    return s.phase === "ready"
-      ? { disabled: true, title: "evaluating …", status: "computing geometry …" }
-      : {
-          disabled: true,
-          title: "loading runtime …",
-          status: `loading runtime (${RUNTIME_SIZE}) …`,
-        };
+    if (s.phase === "ready") {
+      return { disabled: true, title: "evaluating …", status: "computing geometry …" };
+    }
+    // A share of the runtime, against the size of the transfer it costs. The
+    // share is measured on the decoded bytes and the size is what goes over
+    // the wire, so the percentage moves with the download without claiming a
+    // byte count the reader could hold against the network panel.
+    const share =
+      s.progress === null || s.progress === undefined
+        ? null
+        : Math.round(Math.max(0, Math.min(1, s.progress)) * 100);
+    return {
+      disabled: true,
+      title: "loading runtime …",
+      status:
+        share === null
+          ? `loading runtime (${RUNTIME_SIZE}) …`
+          : `loading runtime · ${share} % of ${RUNTIME_SIZE}`,
+    };
   }
   if (s.loadStalled) {
     return {

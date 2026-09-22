@@ -1,8 +1,12 @@
-// CM6 extension pair for the Playground's step player: a small gutter dot
-// (breakpoint-style) plus a line-background highlight on whichever source
-// line produced the currently-shown fold step. Read-only/display-only by
+// CM6 line markers for the Playground: a small gutter dot (breakpoint-style)
+// plus a line-background highlight on whichever source line produced the
+// currently-shown fold step, and a second highlight on the line a failed run
+// reported. Read-only/display-only by
 // design — it never moves the text cursor/selection, so it can't interfere
 // with editing (see docs/superpowers/specs/2026-07-19-playground-step-navigation-design.md).
+//
+// The two markers are independent: a diagnostic leaves the last valid drawing
+// and its step marker standing (B3.5), so both lines can be lit at once.
 import {
   Decoration, EditorView, gutter, GutterMarker,
 } from "@codemirror/view";
@@ -53,12 +57,45 @@ const stepGutterExtension = gutter({
     update.startState.field(stepLineField).line !== update.state.field(stepLineField).line,
 });
 
-export const stepMarkerExtensions = [stepLineField, stepGutterExtension];
+// The line a failed run named. Same mechanism as the step line, its own
+// effect and field so neither clears the other.
+export const setErrorLine = StateEffect.define<number | null>();
+
+const errorLineField = StateField.define<StepLineValue>({
+  create: () => ({ line: null, deco: Decoration.none }),
+  update(value, tr) {
+    let line = value.line;
+    for (const e of tr.effects) if (e.is(setErrorLine)) line = e.value;
+    if (line === value.line && !tr.docChanged) return value;
+    return { line, deco: errorDecorationsFor(tr.state, line) };
+  },
+  provide: (f) => EditorView.decorations.from(f, (v) => v.deco),
+});
+
+function errorDecorationsFor(state: EditorState, line: number | null): DecorationSet {
+  if (line == null || line < 1 || line > state.doc.lines) return Decoration.none;
+  const { from } = state.doc.line(line);
+  return Decoration.set([
+    Decoration.line({ attributes: { class: "cm-error-line" } }).range(from),
+  ]);
+}
+
+export const stepMarkerExtensions = [stepLineField, errorLineField, stepGutterExtension];
 
 /** Show (or, with `line: null`, clear) the step-line gutter dot + highlight,
  * and scroll it into view. Never touches the selection/cursor. */
 export function setStepLineOn(view: EditorView, line: number | null) {
   view.dispatch({ effects: setStepLine.of(line) });
+  if (line != null && line >= 1 && line <= view.state.doc.lines) {
+    const pos = view.state.doc.line(line).from;
+    view.dispatch({ effects: EditorView.scrollIntoView(pos, { y: "center" }) });
+  }
+}
+
+/** Show (or, with `line: null`, clear) the highlight on the line a failed run
+ * named, and scroll it into view. Never touches the selection/cursor. */
+export function setErrorLineOn(view: EditorView, line: number | null) {
+  view.dispatch({ effects: setErrorLine.of(line) });
   if (line != null && line >= 1 && line <= view.state.doc.lines) {
     const pos = view.state.doc.line(line).from;
     view.dispatch({ effects: EditorView.scrollIntoView(pos, { y: "center" }) });

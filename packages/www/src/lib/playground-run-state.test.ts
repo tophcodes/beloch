@@ -65,3 +65,19 @@ test("Run is disabled only while a run is in flight", () => {
     expect(runUi(state({ phase, running: true })).disabled).toBe(true);
   }
 });
+
+test("a measured load reports the share of the runtime that has arrived", () => {
+  const ui = runUi(state({ phase: "loading", running: true, progress: 0.42 }));
+  expect(ui.status).toBe(`loading runtime · 42 % of ${RUNTIME_SIZE}`);
+});
+
+test("an unmeasured load falls back to naming the size alone", () => {
+  expect(runUi(state({ phase: "loading", running: true, progress: null })).status).toBe(
+    `loading runtime (${RUNTIME_SIZE}) …`,
+  );
+});
+
+test("a share outside 0 to 1 is clamped rather than printed", () => {
+  expect(runUi(state({ phase: "loading", running: true, progress: 1.4 })).status).toContain("100 %");
+  expect(runUi(state({ phase: "loading", running: true, progress: -0.2 })).status).toContain("0 %");
+});

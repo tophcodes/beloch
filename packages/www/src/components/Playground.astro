@@ -42,9 +42,21 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   </div>
   <div class="pg-pane pg-output">
     <div class="pg-toolbar pg-toolbar-output">
-      <div class="pg-swatches" role="group" aria-label="Paper"></div>
+      <div class="pg-toolbar-views"></div>
+      <div class="pg-toolbar-tools">
+        <div class="pg-linestyle" role="group" aria-label="Line style">
+          <button type="button" class="pg-style is-active" data-style="mono" aria-pressed="true">mono</button>
+          <button type="button" class="pg-style" data-style="colour" aria-pressed="false">colour</button>
+        </div>
+        <div class="pg-swatches" role="group" aria-label="Paper"></div>
+        <button type="button" class="pg-export-toggle" aria-expanded="false">export</button>
+      </div>
     </div>
-    <div class="pg-result">
+    <div
+      class="pg-result"
+      role="group"
+      aria-label="Drawing. Arrow keys step, plus and minus zoom, 0 resets the view."
+    >
       <div class="pg-canvas">
         {seed ? <Fragment set:html={seed} /> : <p class="pg-notice pg-notice-info">Press “Run” to evaluate.</p>}
       </div>
@@ -61,7 +73,15 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         </svg>
       </button>
       <aside class="pg-inspect" hidden></aside>
+      <div class="pg-export" hidden>
+        <p class="pg-export-step"></p>
+        <button type="button" data-export="download">Download SVG</button>
+        <button type="button" data-export="copy">Copy SVG</button>
+        <button type="button" data-export="link">Copy link to program + step</button>
+        <p class="pg-export-said" role="status"></p>
+      </div>
     </div>
+    <div class="pg-error" role="alert" hidden></div>
     <div class="pg-steps" hidden>
       <div class="pg-step-timeline">
         <button type="button" class="pg-step-nav pg-step-prev" aria-label="Previous step" title="Previous step">
@@ -94,8 +114,8 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     grid-template-columns: 1fr 1fr;
     position: relative;
     margin: 1.5rem 0;
-    border: 1px solid var(--bel-ui-border);
-    border-radius: 14px;
+    border: 1px solid var(--bel-ui-divider);
+    border-radius: var(--bel-radius-card);
     overflow: hidden;
     background: var(--bel-ui-surface);
     /* Opt the rendered paper's SVG backdrop rect out of its white default
@@ -114,10 +134,10 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
 
   .pg-editor {
     background: var(--bel-ui-code-surface);
-    border-right: 1px solid var(--bel-ui-border);
+    border-right: 1px solid var(--bel-ui-divider);
   }
   @media (max-width: 720px) {
-    .pg-editor { border-right: none; border-bottom: 1px solid var(--bel-ui-border); }
+    .pg-editor { border-right: none; border-bottom: 1px solid var(--bel-ui-divider); }
   }
 
   .pg-toolbar {
@@ -130,10 +150,62 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   }
   .pg-output .pg-toolbar {
     color: var(--bel-ui-text-muted);
-    border-bottom: 1px solid var(--bel-ui-border);
+    border-bottom: 1px solid var(--bel-ui-divider);
   }
   .pg-toolbar-output {
-    justify-content: flex-end;
+    gap: 16px;
+  }
+  .pg-toolbar-tools {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-left: auto;
+  }
+  .pg-toolbar-views {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Line style and paper are siblings: which ink the diagram uses, and what it
+     is drawn on. A paper whose contrast the coloured style cannot hold
+     switches that button off (see colorOk in lib/paper-schemes) and says why
+     in its title, rather than dropping it and leaving a gap. */
+  .pg-linestyle {
+    display: inline-flex;
+    gap: 4px;
+  }
+  .pg-style,
+  .pg-export-toggle {
+    font: inherit;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: var(--bel-radius-control);
+    border: 1px solid var(--bel-ui-control-border);
+    background: transparent;
+    color: var(--bel-ui-text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color var(--bel-duration-state) var(--bel-ease), border-color var(--bel-duration-state) var(--bel-ease);
+  }
+  .pg-style:hover:not(:disabled),
+  .pg-export-toggle:hover {
+    color: var(--bel-ui-accent);
+  }
+  .pg-style.is-active,
+  .pg-export-toggle[aria-expanded="true"] {
+    border-color: var(--bel-ui-accent);
+    color: var(--bel-ui-text);
+  }
+  .pg-style:disabled {
+    cursor: default;
+    border-color: var(--bel-ui-divider);
+    color: var(--bel-ui-text-faint);
+  }
+  .pg-style:focus-visible,
+  .pg-export-toggle:focus-visible {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: 2px;
   }
 
   .pg-run {
@@ -153,7 +225,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     background: var(--bel-ui-surface);
     color: var(--bel-ui-accent);
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition: background var(--bel-duration-state) var(--bel-ease), color var(--bel-duration-state) var(--bel-ease);
   }
   .pg-run:hover:not(:disabled) {
     background: var(--bel-ui-accent);
@@ -161,8 +233,8 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   }
   .pg-run:disabled {
     cursor: default;
-    border-color: var(--bel-ui-border);
-    color: var(--bel-ui-text-muted);
+    border-color: var(--bel-ui-divider);
+    color: var(--bel-ui-text-faint);
   }
   .pg-run-spinner {
     display: none;
@@ -175,6 +247,14 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   }
   .pg-run.is-loading .pg-run-play { display: none; }
   .pg-run.is-loading .pg-run-spinner { display: block; }
+  /* Once the transfer reports itself, the ring turns by how much of the
+     runtime has arrived instead of looping: the movement carries the progress
+     the status line spells out (B2.12). */
+  .pg-run.has-progress .pg-run-spinner {
+    animation: none;
+    transform: rotate(var(--pg-load-turn, 0deg));
+    transition: transform var(--bel-duration-state) var(--bel-ease);
+  }
   @keyframes pg-spin {
     to { transform: rotate(360deg); }
   }
@@ -193,12 +273,12 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     font-size: 11px;
     color: var(--bel-ui-text-muted);
     background: var(--bel-ui-surface);
-    border: 1px solid var(--bel-ui-border);
+    border: 1px solid var(--bel-ui-divider);
     border-radius: 999px;
     padding: 3px 10px;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--bel-duration-state) var(--bel-ease);
   }
   .pg-run-hint.is-visible {
     opacity: 1;
@@ -233,6 +313,13 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   .pg-source :global(.cm-step-line) {
     background: color-mix(in srgb, var(--bel-ui-code-accent) 15%, transparent);
   }
+  /* The line a failed run named, on the same always-dark surface and in that
+     surface's own error colour. It stands next to the step line rather than
+     replacing it: the drawing the step marks is still on screen. */
+  .pg-source :global(.cm-error-line) {
+    background: color-mix(in srgb, var(--bel-ui-code-error) 12%, transparent);
+    box-shadow: inset 3px 0 0 var(--bel-ui-code-error);
+  }
 
   .pg-output {
     background: transparent;
@@ -248,7 +335,6 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     overflow: hidden;
     background: transparent;
     cursor: grab;
-    touch-action: none;
   }
   .pg-result.is-panning {
     cursor: grabbing;
@@ -324,19 +410,25 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     width: 30px;
     height: 30px;
     padding: 0;
-    border-radius: 8px;
-    border: 1px solid var(--bel-ui-border);
+    border-radius: var(--bel-radius-control);
+    border: 1px solid var(--bel-ui-control-border);
     background: color-mix(in srgb, var(--bel-ui-surface) 78%, transparent);
     color: var(--bel-ui-text-muted);
     cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.15s ease, color 0.15s ease;
+    opacity: 0.45;
+    transition: opacity var(--bel-duration-state) var(--bel-ease), color var(--bel-duration-state) var(--bel-ease);
   }
-  .pg-result:hover .pg-reset:not([hidden]) {
+  .pg-result:hover .pg-reset:not([hidden]),
+  .pg-reset:hover,
+  .pg-reset:focus-visible {
     opacity: 1;
   }
   .pg-reset:hover {
     color: var(--bel-ui-accent);
+  }
+  .pg-reset:focus-visible {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: 2px;
   }
   .pg-reset[hidden] {
     display: none;
@@ -355,8 +447,8 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     max-height: 70%;
     overflow: auto;
     background: var(--bel-ui-surface);
-    border: 1px solid var(--bel-ui-border);
-    border-radius: 6px;
+    border: 1px solid var(--bel-ui-divider);
+    border-radius: var(--bel-radius-card);
     padding: 10px 12px;
     font: 12px/1.5 var(--bel-font-mono);
     color: var(--bel-ui-text-muted);
@@ -401,11 +493,11 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     opacity: 1;
   }
   .pg-inspect :global(.pg-inspect-close:focus-visible) {
-    outline: 1px solid var(--bel-ui-border);
-    border-radius: 3px;
+    outline: 2px solid var(--bel-ui-accent);
+    border-radius: var(--bel-radius-control);
   }
   .pg-inspect :global(.seg) {
-    border-top: 1px solid var(--bel-ui-border);
+    border-top: 1px solid var(--bel-ui-divider);
     margin: 4px -12px 0;
     padding: 5px 12px 4px;
     cursor: pointer;
@@ -424,19 +516,111 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     line-height: 1.5;
   }
   .pg-canvas :global(.pg-notice-info) { color: var(--bel-ui-text-muted); }
-  .pg-canvas :global(.pg-notice-error) { color: var(--bel-ui-error); }
 
   .pg-swatches { display: inline-flex; gap: 8px; }
   .pg-swatches :global(.pg-swatch) {
     width: 22px; height: 22px; padding: 0;
     border-radius: 50%;
-    border: 1px solid var(--bel-ui-border);
+    border: 1px solid var(--bel-ui-control-border);
     cursor: pointer;
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
   }
+  .pg-swatches :global(.pg-swatch:hover) {
+    border-color: var(--bel-ui-accent);
+  }
+  .pg-swatches :global(.pg-swatch:focus-visible) {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: 2px;
+  }
+  /* The chosen paper carries a ring in the panel colour and then the accent,
+     so the mark reads against a swatch of any lightness. */
   .pg-swatches :global(.pg-swatch.is-active) {
+    box-shadow:
+      inset 0 0 0 1px rgba(0, 0, 0, 0.08),
+      0 0 0 2px var(--bel-ui-surface),
+      0 0 0 4px var(--bel-ui-accent);
+  }
+
+  /* The drawing takes focus as one target: arrow keys walk the steps, plus and
+     minus zoom, 0 resets. The ring is offset inwards because this pane runs to
+     the card's own edge, and a ring outside it would sit on that edge. */
+  .pg-result:focus-visible {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: -4px;
+  }
+  /* A crease is reached with the keyboard through its hit line, which is
+     transparent until it carries focus. An `outline` on an SVG line is drawn
+     around its bounding box, so the hit stroke itself is what shows. */
+  .pg-canvas :global(.pg-hit:focus-visible) {
+    outline: none;
+    stroke: var(--bel-ui-accent);
+    stroke-opacity: 0.4;
+  }
+
+  /* Export sits in the quiet zone beside the reset button: it is reachable
+     without the drawing moving, and it covers paper only while it is open. */
+  .pg-export {
+    position: absolute;
+    top: 10px;
+    right: 48px;
+    z-index: 5;
+    width: 240px;
+    padding: 8px 12px 10px;
+    background: var(--bel-ui-surface);
+    border: 1px solid var(--bel-ui-divider);
+    border-radius: var(--bel-radius-card);
+    font-family: var(--bel-font-mono);
+  }
+  .pg-export[hidden] { display: none; }
+  .pg-export-step {
+    margin: 0 0 2px;
+    font-size: 11px;
+    color: var(--bel-ui-text-faint);
+  }
+  .pg-export button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    font: inherit;
+    font-size: 12px;
+    color: var(--bel-ui-text);
+    background: transparent;
+    border: 0;
+    padding: 5px 0;
+    cursor: pointer;
+  }
+  .pg-export button:hover { color: var(--bel-ui-accent); }
+  .pg-export button:focus-visible {
     outline: 2px solid var(--bel-ui-accent);
     outline-offset: 1px;
+  }
+  .pg-export button[data-export="link"] {
+    border-top: 1px solid var(--bel-ui-divider);
+    margin-top: 4px;
+  }
+  .pg-export-said {
+    margin: 2px 0 0;
+    min-height: 1em;
+    font-size: 11px;
+    color: var(--bel-ui-text-muted);
+  }
+
+  /* A diagnostic stands beside the drawing it belongs to and never in place of
+     it: the last valid drawing is what the reader is comparing the message
+     against (B3.5). */
+  .pg-error {
+    padding: 9px 16px;
+    border-top: 1px solid var(--bel-ui-divider);
+    font-family: var(--bel-font-mono);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--bel-ui-text);
+  }
+  .pg-error[hidden] { display: none; }
+  .pg-error :global(.pg-error-where) {
+    color: var(--bel-ui-error);
+    font-weight: 600;
+    margin-right: 8px;
   }
 
   .pg-steps {
@@ -445,7 +629,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     align-items: stretch;
     gap: 6px;
     padding: 8px 16px;
-    border-top: 1px solid var(--bel-ui-border);
+    border-top: 1px solid var(--bel-ui-divider);
     font-family: var(--bel-font-mono);
     font-size: 11px;
     color: var(--bel-ui-text-muted);
@@ -465,12 +649,12 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     width: 24px;
     height: 24px;
     padding: 0;
-    border-radius: 6px;
-    border: 1px solid var(--bel-ui-border);
+    border-radius: var(--bel-radius-control);
+    border: 1px solid var(--bel-ui-control-border);
     background: transparent;
     color: var(--bel-ui-text-muted);
     cursor: pointer;
-    transition: color 0.15s ease, border-color 0.15s ease;
+    transition: color var(--bel-duration-state) var(--bel-ease), border-color var(--bel-duration-state) var(--bel-ease);
   }
   .pg-step-nav:hover:not(:disabled) {
     color: var(--bel-ui-accent);
@@ -508,12 +692,12 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   }
   .pg-step-track::before {
     right: 0;
-    background: var(--bel-ui-border);
+    background: var(--bel-ui-divider);
   }
   .pg-step-track::after {
     width: var(--pg-progress, 0%);
     background: var(--bel-ui-accent);
-    transition: width 0.15s ease;
+    transition: width var(--bel-duration-state) var(--bel-ease);
   }
   :global(.pg-step-dot) {
     position: relative;
@@ -534,12 +718,12 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    border: 2px solid var(--bel-ui-border);
+    border: 2px solid var(--bel-ui-control-border);
     background: var(--bel-ui-surface);
     /* Panel-colored gap ring separates the dot from the track line so it
        clearly reads as sitting *on top of* the line, not merged into it. */
     box-shadow: 0 0 0 3px var(--bel-ui-surface);
-    transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+    transition: transform var(--bel-duration-state) var(--bel-ease), background var(--bel-duration-state) var(--bel-ease), border-color var(--bel-duration-state) var(--bel-ease);
   }
   :global(.pg-step-dot:hover)::before {
     border-color: var(--bel-ui-accent);
@@ -577,10 +761,18 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   import { EditorView, basicSetup } from "codemirror";
   import { EditorState } from "@codemirror/state";
   import { keymap } from "@codemirror/view";
-  import { stepMarkerExtensions, setStepLineOn } from "../lib/cm-step-marker";
+  import { stepMarkerExtensions, setStepLineOn, setErrorLineOn } from "../lib/cm-step-marker";
   import { swapDrawing, type FadeLength } from "../lib/crossfade";
   import { parseFold, type FoldScene, type Statement, type Vec2 } from "@beloch/scene";
-  import { renderCP, renderFolded, sceneLayout, WEB_THEME } from "@beloch/render-svg";
+  import {
+    colorLineStyle,
+    renderCP,
+    renderFolded,
+    sceneLayout,
+    DEFAULT_THEME,
+    WEB_THEME,
+    type Theme,
+  } from "@beloch/render-svg";
   import { SCHEMES, STORAGE_KEY, DEFAULT_ID, applyScheme, resolveScheme } from "../lib/paper-schemes";
   import { lineOfSpan, lookupEntity, type EntityRef } from "../lib/inspect-lookup";
   import { segMatchesLine } from "../lib/stack-picker";
@@ -676,21 +868,38 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       if (!on) endDrag();
     }
 
+    // Scaling about a point: with transform-origin 0 0, keeping that point
+    // fixed means translate delta = (point − target-origin)·(1 − s'/s).
+    function zoomAbout(clientX: number, clientY: number, next: number) {
+      const clamped = Math.min(MAX, Math.max(MIN, next));
+      if (clamped === scale) return;
+      const cr = target.getBoundingClientRect();
+      const ratio = clamped / scale;
+      tx += (clientX - cr.left) * (1 - ratio);
+      ty += (clientY - cr.top) * (1 - ratio);
+      scale = clamped;
+      apply();
+    }
+
+    // Zoom from the keyboard has no cursor to hold still, so it holds the
+    // middle of the viewport.
+    function zoomBy(factor: number) {
+      const r = viewport.getBoundingClientRect();
+      zoomAbout(r.left + r.width / 2, r.top + r.height / 2, scale * factor);
+    }
+
+    // A wheel or a swipe over the drawing scrolls the page, like everywhere
+    // else on it (B3.8). Zoom asks for itself: the modifier a trackpad pinch
+    // already sends, or the drawing holding focus, which is also the state in
+    // which + and − zoom.
     viewport.addEventListener(
       "wheel",
       (e: WheelEvent) => {
         if (!enabled) return;
+        const asked = e.ctrlKey || e.metaKey || viewport.contains(document.activeElement);
+        if (!asked) return;
         e.preventDefault();
-        const next = Math.min(MAX, Math.max(MIN, scale * Math.exp(-e.deltaY * 0.0015)));
-        if (next === scale) return;
-        const cr = target.getBoundingClientRect();
-        // Keep the paper point under the cursor fixed while scaling. With
-        // transform-origin 0 0, translate delta = (cursor − target-origin)·(1 − s'/s).
-        const ratio = next / scale;
-        tx += (e.clientX - cr.left) * (1 - ratio);
-        ty += (e.clientY - cr.top) * (1 - ratio);
-        scale = next;
-        apply();
+        zoomAbout(e.clientX, e.clientY, scale * Math.exp(-e.deltaY * 0.0015));
       },
       { passive: false },
     );
@@ -749,7 +958,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // gesture that JUST ended was a pan (wasDrag() stays true until the
     // NEXT pointerdown, which would wrongly suppress hover for a while
     // after a finished pan).
-    return { reset, setEnabled, wasDrag: () => dragMoved, isDragging: () => dragging };
+    return { reset, setEnabled, zoomBy, wasDrag: () => dragMoved, isDragging: () => dragging };
   }
 
   function setup(root: HTMLElement) {
@@ -765,7 +974,15 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     const stepPrev = root.querySelector<HTMLButtonElement>(".pg-step-prev");
     const stepNext = root.querySelector<HTMLButtonElement>(".pg-step-next");
     const inspectPanel = root.querySelector<HTMLElement>(".pg-inspect");
-    if (!sourceMount || !runBtn || !result || !canvas || !resetBtn || !runHint || !stepsBar || !stepDots || !stepLabel || !stepPrev || !stepNext || !inspectPanel) return;
+    const errorBox = root.querySelector<HTMLDivElement>(".pg-error");
+    const styleBar = root.querySelector<HTMLDivElement>(".pg-linestyle");
+    const exportToggle = root.querySelector<HTMLButtonElement>(".pg-export-toggle");
+    const exportPanel = root.querySelector<HTMLDivElement>(".pg-export");
+    // Queried here rather than beside the export wiring below, because
+    // renderStep reaches for them through updateExportPanel and runs first.
+    const exportSaid = exportPanel?.querySelector<HTMLParagraphElement>(".pg-export-said") ?? null;
+    const exportStepLine = exportPanel?.querySelector<HTMLParagraphElement>(".pg-export-step") ?? null;
+    if (!sourceMount || !runBtn || !result || !canvas || !resetBtn || !runHint || !stepsBar || !stepDots || !stepLabel || !stepPrev || !stepNext || !inspectPanel || !errorBox || !styleBar || !exportToggle || !exportPanel) return;
 
     const panZoom = createPanZoom(result, canvas, resetBtn);
     // A build-time `seed` SVG is already in the canvas; enable pan/zoom + the
@@ -803,8 +1020,17 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     let loadStalled = false;
     // Source of the last run the worker actually answered; null until then.
     let lastRunCode: string | null = null;
+    // Share of the runtime that has arrived, as the worker reports it, or null
+    // while it reports nothing (see public/beloch/eval-worker.js).
+    let loadProgress: number | null = null;
     function updateRunButtonState() {
-      const ui = runUi({ phase, running, repeat, loadStalled });
+      const ui = runUi({ phase, running, repeat, loadStalled, progress: loadProgress });
+      runBtn!.classList.toggle("has-progress", loadProgress !== null);
+      // Two and a half turns over the whole transfer, so the ring keeps moving
+      // visibly between one reported percent and the next.
+      if (loadProgress !== null) {
+        runBtn!.style.setProperty("--pg-load-turn", `${Math.round(loadProgress * 900)}deg`);
+      }
       runBtn.disabled = ui.disabled;
       runBtn.title = ui.title;
       setRunHint(ui.status);
@@ -850,14 +1076,82 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       editor.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: code } });
     };
 
+    // Which paper the drawing is on, and which of the two line styles draws on
+    // it. They belong together: the coloured style is only offered where the
+    // paper holds the crease colours (colorOk in lib/paper-schemes), so
+    // picking a paper can decide the style.
+    let currentSchemeId: string;
+    try {
+      currentSchemeId = resolveScheme(localStorage.getItem(STORAGE_KEY)).id;
+    } catch {
+      currentSchemeId = DEFAULT_ID;
+    }
+    let lineStyleId: "mono" | "colour" = "mono";
+
+    // The theme the stage draws with: the engine's own colours, resolved by
+    // the page through CSS variables, under the chosen line style. Monochrome
+    // is the Yoshizawa-Randlett notation a printed diagram uses and carries
+    // mountain against valley in the dash pattern; coloured carries it in the
+    // hue and reads faster where the paper allows it.
+    const renderTheme = (): Partial<Theme> =>
+      lineStyleId === "colour" ? { ...WEB_THEME, lineStyle: colorLineStyle } : WEB_THEME;
+
+    // The same drawing with every colour spelled out, for a file that leaves
+    // the page. `background: transparent` emits no backdrop behind the paper,
+    // so the sheet is what lands in a slide or an issue (B3.10, B3.11).
+    const literalTheme = (): Partial<Theme> => {
+      const scheme = resolveScheme(currentSchemeId);
+      return {
+        ...DEFAULT_THEME,
+        fill: scheme.fill,
+        front: scheme.front,
+        back: scheme.back,
+        ink: scheme.ink ?? DEFAULT_THEME.ink,
+        boundary: scheme.ink ?? DEFAULT_THEME.boundary,
+        background: "transparent",
+        lineStyle: lineStyleId === "colour" ? colorLineStyle : DEFAULT_THEME.lineStyle,
+      };
+    };
+
+    // Re-draws what is on the stage after a choice that changes how it looks
+    // rather than which state it shows, so the view and the step stay put.
+    function rerenderCurrent() {
+      if (!currentScene) return;
+      if (currentStatements.length > 0) renderStep(currentStep, true, false);
+      else showSvg(renderCP(currentScene, { theme: renderTheme() }).toString(), true);
+    }
+
+    // A style the paper cannot hold is switched off rather than hidden, and
+    // its title says which paper and why (B1.4).
+    function updateStyleButtons() {
+      const scheme = resolveScheme(currentSchemeId);
+      styleBar!.querySelectorAll<HTMLButtonElement>(".pg-style").forEach((b) => {
+        const id = b.dataset.style as "mono" | "colour";
+        const off = id === "colour" && !scheme.colorOk;
+        b.disabled = off;
+        b.title = off
+          ? `Not offered on ${scheme.label}: every crease colour falls below 2:1 on this paper`
+          : id === "mono"
+            ? "Yoshizawa-Randlett notation, monochrome"
+            : "One colour per fold direction";
+        b.classList.toggle("is-active", id === lineStyleId);
+        b.setAttribute("aria-pressed", String(id === lineStyleId));
+      });
+    }
+    styleBar.addEventListener("click", (e: MouseEvent) => {
+      const b = (e.target as Element).closest<HTMLButtonElement>(".pg-style");
+      if (!b || b.disabled) return;
+      const id = b.dataset.style as "mono" | "colour";
+      if (id === lineStyleId) return;
+      lineStyleId = id;
+      updateStyleButtons();
+      rerenderCurrent();
+    });
+    updateStyleButtons();
+
     const swatchBar = root.querySelector<HTMLDivElement>(".pg-swatches");
     if (swatchBar) {
-      let activeId: string;
-      try {
-        activeId = resolveScheme(localStorage.getItem(STORAGE_KEY)).id;
-      } catch {
-        activeId = DEFAULT_ID;
-      }
+      const activeId = currentSchemeId;
       const buttons = SCHEMES.map((s) => {
         const b = document.createElement("button");
         b.type = "button";
@@ -870,6 +1164,13 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         if (s.id === activeId) b.classList.add("is-active");
         b.addEventListener("click", () => {
           applyScheme(s.id);
+          currentSchemeId = s.id;
+          // The coloured style falls below 2:1 on kraft and indigo, so a move
+          // to one of those papers takes the drawing back to monochrome
+          // instead of leaving an unreadable one on screen.
+          if (!s.colorOk && lineStyleId === "colour") lineStyleId = "mono";
+          updateStyleButtons();
+          rerenderCurrent();
           swatchBar.querySelectorAll(".pg-swatch").forEach((el) => {
             el.classList.toggle("is-active", el === b);
             el.setAttribute("aria-pressed", String(el === b));
@@ -892,6 +1193,9 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     let currentScene: FoldScene | null = null;
     let currentStatements: Statement[] = [];
     let currentStep = 0;
+    // The step a shared `?s=` names, held until the run behind it produces one
+    // (see the bottom of setup).
+    let pendingSharedStep: number | null = null;
     // The anchored (click-pinned) entity, if any — while set, hover no
     // longer overrides the tooltip (see the mousemove handler below) and it
     // stops following the cursor. Cleared only by the tooltip's own close
@@ -1397,20 +1701,27 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     stepPrev.addEventListener("click", () => renderStep(currentStep - 1, true, true));
     stepNext.addEventListener("click", () => renderStep(currentStep + 1, true, true));
 
-    // Notices aren't pannable paper: reset the view, disable pan/zoom, and
-    // hide the reset affordance. A fresh SVG re-enables it and fits the paper.
-    const showNotice = (html: string) => {
-      canvas.innerHTML = html;
-      panZoom.reset();
-      panZoom.setEnabled(false);
-      resetBtn.hidden = true;
+    // A diagnostic goes beside the drawing, never in its place: the last valid
+    // drawing is what the reader is holding the message against, and wiping it
+    // takes that away at the moment it is needed (B3.5). The line the
+    // evaluator named is marked in the editor at the same time.
+    //
+    // The alert region is written before it is shown, and hidden before it is
+    // emptied. A screen reader announces whatever lands in a live region, so
+    // emptying a visible one reads the clearing out as a message of its own.
+    const showDiagnostic = (message: string, where: string, line: number | null) => {
+      errorBox!.innerHTML = `<span class="pg-error-where">${escapeHtml(where)}</span>${escapeHtml(message)}`;
+      errorBox!.hidden = false;
+      setErrorLineOn(editor, line);
     };
-    const showInfo = (message: string) => {
-      showNotice(`<p class="pg-notice pg-notice-info">${escapeHtml(message)}</p>`);
+    const clearDiagnostic = () => {
+      errorBox!.hidden = true;
+      errorBox!.textContent = "";
+      setErrorLineOn(editor, null);
     };
-    const showError = (message: string) => {
-      showNotice(`<p class="pg-notice pg-notice-error">${escapeHtml(message)}</p>`);
-    };
+    const showInfo = (message: string) => showDiagnostic(message, "note", null);
+    const showError = (message: string, line: number | null = null) =>
+      showDiagnostic(message, line === null ? "error" : `line ${line}`, line);
     // keepView leaves the current pan/zoom transform in place — the canvas
     // element (the transform target) survives innerHTML swaps, so stepping
     // through the timeline keeps the user's framing. A fresh run passes
@@ -1420,6 +1731,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       // The outgoing state is inert, so only the step that is current gets hit
       // areas; `querySelector` finds it because the fading layer sits after it.
       enhanceCreaseHits(canvas.querySelector("svg") ?? canvas); // bigger click/hover target per crease line (task 8)
+      makeCreasesReachable();
       if (!keepView) panZoom.reset();
       panZoom.setEnabled(true);
       resetBtn.hidden = false;
@@ -1491,26 +1803,36 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     // `animate` is what the reader's click carries in: a step reached by
     // clicking crossfades from the step it left, a step rendered because a run
     // just finished appears outright.
+    // One step of the current scene as SVG, under whichever theme is asked
+    // for. The stage asks with the web theme, whose colours are variables the
+    // page resolves; the export asks with literals (see literalTheme).
+    function svgForStep(i: number, theme: Partial<Theme>): string {
+      if (!currentScene) return "";
+      if (currentStatements.length === 0) return renderCP(currentScene, { theme }).toString();
+      // Step 0: the flat starting sheet, before any fold or mark.
+      if (i === 0) return renderFolded(currentScene, { theme, step: "0" }).toString();
+      const stmt = currentStatements[i - 1]!;
+      const activeMarks = stmt.keptMarks;
+      const newestCreaseId = activeMarks.at(-1)?.creaseId;
+      return renderFolded(currentScene, {
+        theme,
+        step: String(stmt.frameIndex),
+        markOverlay: activeMarks.length > 0 ? { marks: activeMarks, newestCreaseId } : undefined,
+      }).toString();
+    }
+
     function renderStep(i: number, keepView = true, animate = false) {
       if (!currentScene || currentStatements.length === 0) return;
       const n = currentStatements.length;
       const clamped = Math.max(0, Math.min(i, n));
       currentStep = clamped;
       try {
+        const svg = svgForStep(clamped, renderTheme());
         if (clamped === 0) {
-          // Step 0: the flat starting sheet, before any fold or mark.
-          const svg = renderFolded(currentScene, { theme: WEB_THEME, step: "0" }).toString();
           showSvg(svg, keepView, animate ? "view" : null);
           setStepLineOn(editor, null);
         } else {
           const stmt = currentStatements[clamped - 1]!;
-          const activeMarks = stmt.keptMarks;
-          const newestCreaseId = activeMarks.at(-1)?.creaseId;
-          const svg = renderFolded(currentScene, {
-            theme: WEB_THEME,
-            step: String(stmt.frameIndex),
-            markOverlay: activeMarks.length > 0 ? { marks: activeMarks, newestCreaseId } : undefined,
-          }).toString();
           // A mark folds nothing, so it changes the view rather than the paper.
           showSvg(svg, keepView, animate ? (stmt.kind === "fold" ? "fold" : "view") : null);
           setStepLineOn(editor, stmt.sourceLine);
@@ -1520,6 +1842,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         return;
       }
       updateStepsUI(clamped, currentStatements);
+      updateExportPanel();
     }
 
     function clearTimers() {
@@ -1550,9 +1873,11 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
           currentScene = scene;
           currentStatements = scene.statements;
           buildStepsUI(scene.statements);
-          renderStep(scene.statements.length, false);
+          const target = pendingSharedStep;
+          pendingSharedStep = null;
+          renderStep(target ?? scene.statements.length, false);
         } else {
-          showSvg(renderCP(scene, { theme: WEB_THEME }).toString());
+          showSvg(renderCP(scene, { theme: renderTheme() }).toString());
         }
       } catch (err) {
         showError(`Render error: ${err instanceof Error ? err.message : String(err)}`);
@@ -1561,7 +1886,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
 
     function renderResult(raw: string) {
       clearStepsUI();
-      let parsed: { ok: boolean; fold?: unknown; kind?: string; message?: string };
+      let parsed: { ok: boolean; fold?: unknown; kind?: string; message?: string; line?: number };
       try {
         parsed = JSON.parse(raw);
       } catch (err) {
@@ -1578,17 +1903,24 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         );
         return;
       }
-      showError(parsed.message ?? "Unknown error.");
+      showError(parsed.message ?? "Unknown error.", parsed.line ?? null);
     }
 
     function wireWorker() {
-      worker!.onmessage = (e: MessageEvent<{ raw?: string; ready?: boolean }>) => {
+      worker!.onmessage = (e: MessageEvent<{ raw?: string; ready?: boolean; loaded?: number; total?: number }>) => {
+        // Transfer progress, while the runtime is still on its way.
+        if (e.data.total !== undefined && e.data.loaded !== undefined) {
+          loadProgress = e.data.total > 0 ? e.data.loaded / e.data.total : null;
+          updateRunButtonState();
+          return;
+        }
         // The worker announces its instantiated wasm runtime (eval-worker.js).
         // Until that arrives, a pending run is waiting on the network, so the
         // short evaluation limit must not be running yet.
         if (e.data.ready) {
           phase = "ready";
           loadStalled = false;
+          loadProgress = null;
           clearTimers();
           const queued = pendingCode;
           pendingCode = null;
@@ -1644,6 +1976,9 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
 
     function run() {
       if (running) return; // guard against overlapping runs
+      // The standing diagnostic describes the previous run; this one answers
+      // for itself. The drawing stays either way.
+      clearDiagnostic();
       const codeToRun = editor.state.doc.toString();
       repeat = lastRunCode !== null && codeToRun === lastRunCode;
       loadStalled = false;
@@ -1687,7 +2022,220 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
       }
     }
 
+    // ── Export ───────────────────────────────────────────────────────────
+    // What leaves the page is what the render path produces, re-rendered from
+    // the scene rather than lifted out of the DOM: the stage's copy carries
+    // hit lines, highlight classes and colours that are CSS variables, none of
+    // which mean anything in a file (B3.10). The trigger sits in the quiet
+    // zone beside the reset button, so nothing is laid over the drawing while
+    // the panel is shut (B3.11).
+    function updateExportPanel() {
+      if (!exportStepLine) return;
+      const n = currentStatements.length;
+      exportStepLine.textContent = n > 0 ? `step ${currentStep} of ${n}` : "crease pattern";
+    }
+
+    const say = (text: string) => {
+      if (exportSaid) exportSaid.textContent = text;
+    };
+
+    const setExportOpen = (open: boolean) => {
+      exportPanel!.hidden = !open;
+      exportToggle!.setAttribute("aria-expanded", String(open));
+      if (open) {
+        updateExportPanel();
+        say("");
+      }
+    };
+
+    exportToggle.addEventListener("click", () => setExportOpen(exportPanel!.hidden));
+    // Clicking away shuts the panel; it covers paper only while it is in use.
+    document.addEventListener("click", (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (exportPanel!.hidden) return;
+      if (exportPanel!.contains(t) || exportToggle!.contains(t)) return;
+      setExportOpen(false);
+    });
+    exportPanel.addEventListener("keydown", (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setExportOpen(false);
+      exportToggle!.focus();
+    });
+
+    // base64url of the UTF-8 bytes, so a program with umlauts or a long line
+    // survives the trip through a URL. Built a chunk at a time because
+    // String.fromCharCode(...bytes) overflows the argument list on a long one.
+    function encodeProgram(src: string): string {
+      const bytes = new TextEncoder().encode(src);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i += 0x8000) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      }
+      return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+    function decodeProgram(param: string): string | null {
+      try {
+        const b64 = param.replace(/-/g, "+").replace(/_/g, "/");
+        const binary = atob(b64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return new TextDecoder().decode(bytes);
+      } catch {
+        return null;
+      }
+    }
+
+    const shareLink = () => {
+      const url = new URL(window.location.href);
+      url.searchParams.set("p", encodeProgram(editor.state.doc.toString()));
+      url.searchParams.set("s", String(currentStep));
+      return url.toString();
+    };
+
+    const copyText = async (text: string, said: string) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        say(said);
+      } catch {
+        say("the browser refused the clipboard");
+      }
+    };
+
+    exportPanel.addEventListener("click", (e: MouseEvent) => {
+      const b = (e.target as Element).closest<HTMLButtonElement>("[data-export]");
+      if (!b) return;
+      const what = b.dataset.export;
+      if (what === "link") {
+        void copyText(shareLink(), "link copied");
+        return;
+      }
+      if (!currentScene) {
+        say("nothing drawn yet");
+        return;
+      }
+      let svg: string;
+      try {
+        svg = svgForStep(currentStep, literalTheme());
+      } catch (err) {
+        say(`render failed: ${err instanceof Error ? err.message : String(err)}`);
+        return;
+      }
+      if (what === "copy") {
+        void copyText(svg, "SVG copied");
+        return;
+      }
+      const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = currentStatements.length > 0 ? `beloch-step-${currentStep}.svg` : "beloch.svg";
+      a.click();
+      URL.revokeObjectURL(url);
+      say("SVG downloaded");
+    });
+
+    // ── Keyboard ─────────────────────────────────────────────────────────
+    // Everything the drawing can do is reachable without a pointer (B7). The
+    // stage is one tab stop: the horizontal arrows walk the steps, + and −
+    // zoom, 0 puts the view back. A crease is reached through its hit line,
+    // and the vertical arrows move from one crease to the next, so a drawing
+    // with twenty creases does not put twenty tab stops between this card and
+    // the rest of the page.
+    result.tabIndex = 0;
+    result.addEventListener("keydown", (e: KeyboardEvent) => {
+      // A control inside the stage keeps its own keys.
+      if (e.target !== result) return;
+      switch (e.key) {
+        case "ArrowRight":
+          renderStep(currentStep + 1, true, true);
+          break;
+        case "ArrowLeft":
+          renderStep(currentStep - 1, true, true);
+          break;
+        case "+":
+        case "=":
+          panZoom.zoomBy(1.15);
+          break;
+        case "-":
+          panZoom.zoomBy(1 / 1.15);
+          break;
+        case "0":
+          panZoom.reset();
+          break;
+        default:
+          return;
+      }
+      e.preventDefault();
+    });
+
+    function hitLines(): SVGLineElement[] {
+      return Array.from(canvas!.querySelectorAll<SVGLineElement>(`.${HIT_CLASS}`));
+    }
+
+    // Called after every drawing swap, because the hit lines are rebuilt with
+    // the SVG. One of them holds the tab stop; the rest are reachable from it.
+    function makeCreasesReachable() {
+      const insp = currentScene?.inspect;
+      hitLines().forEach((el, i) => {
+        el.setAttribute("tabindex", i === 0 ? "0" : "-1");
+        el.setAttribute("role", "button");
+        const ref = resolveRef(el);
+        const title = ref && insp ? hoverSummary(ref, insp)?.title : null;
+        // A paper edge carries no inspect entry to take a name from, so it is
+        // named for what it is rather than as a crease.
+        const fallback = ref?.kind === "edge" ? "Paper edge" : "Crease line";
+        el.setAttribute("aria-label", title ?? fallback);
+      });
+    }
+
+    canvas.addEventListener("keydown", (e: KeyboardEvent) => {
+      const el = e.target as Element;
+      if (!el.classList?.contains(HIT_CLASS)) return;
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        const lines = hitLines();
+        const i = lines.indexOf(el as SVGLineElement);
+        const next = lines[(i + (e.key === "ArrowDown" ? 1 : lines.length - 1)) % lines.length];
+        if (!next) return;
+        lines.forEach((l) => l.setAttribute("tabindex", "-1"));
+        next.setAttribute("tabindex", "0");
+        next.focus();
+        e.preventDefault();
+        return;
+      }
+      if (e.key === "Enter" || e.key === " ") {
+        const ref = resolveRef(el);
+        if (ref) {
+          // The inspector anchors at the middle of the crease, which is where
+          // the reader is looking when they asked about it.
+          const r = el.getBoundingClientRect();
+          anchorEntity(ref, r.left + r.width / 2, r.top + r.height / 2);
+        }
+        e.preventDefault();
+        return;
+      }
+      if (e.key === "Escape") {
+        closeAnchor();
+        result!.focus();
+        e.preventDefault();
+      }
+    });
+
     runBtn.addEventListener("click", run);
+
+    // A shared link carries the program in `?p=` and the step it was shared at
+    // in `?s=`. That link is the reason the visitor opened the page, so it
+    // loads and runs on arrival even on an instance that otherwise waits for a
+    // click, and the step is taken once the run has produced one.
+    const sharedParams = new URLSearchParams(window.location.search);
+    const sharedRaw = sharedParams.get("p");
+    const sharedProgram = sharedRaw === null ? null : decodeProgram(sharedRaw);
+    if (sharedProgram !== null) {
+      const step = Number(sharedParams.get("s"));
+      pendingSharedStep = Number.isInteger(step) && step >= 0 ? step : null;
+      editor.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: sharedProgram } });
+      bootIfNeeded();
+      run();
+      return;
+    }
 
     if (!lazy) {
       bootIfNeeded();

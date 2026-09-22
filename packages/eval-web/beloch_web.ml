@@ -7,8 +7,10 @@
       irrational (qqbar) value, which the js_of_ocaml build can't compute
       (see [qqbar_shim.js] and decisions/0013-flint-qqbar-backend.md) — the
       caller should fall back to the native evaluator.
-    - [{"ok":false,"kind":"error","message":...}] for a Beloch_error
-      (language/program error) or any other exception.
+    - [{"ok":false,"kind":"error","message":...,"line":...,"column":...}] for a
+      Beloch_error (language/program error); [line] and [column] are the 1-based
+      start of the span the error carries, so the caller can mark the offending
+      line in its editor. An exception with no span omits both fields.
 
     Pure-rational programs (incl. the axiom-7 cube-root fragment) round-trip
     fully in-browser; only ops that force a [Qqbar.t] canonical form hit the
@@ -36,9 +38,15 @@ let fold_string_js (src : Js_of_ocaml.Js.js_string Js_of_ocaml.Js.t) :
     | Failure m when starts_with ~prefix:irrational_prefix m ->
         `Assoc
           [ ("ok", `Bool false); ("kind", `String "native"); ("message", `String m) ]
-    | Beloch.Error.Beloch_error (_, m) ->
+    | Beloch.Error.Beloch_error ((start, _), m) ->
         `Assoc
-          [ ("ok", `Bool false); ("kind", `String "error"); ("message", `String m) ]
+          [
+            ("ok", `Bool false);
+            ("kind", `String "error");
+            ("message", `String m);
+            ("line", `Int start.Lexing.pos_lnum);
+            ("column", `Int (start.Lexing.pos_cnum - start.Lexing.pos_bol + 1));
+          ]
     | e ->
         `Assoc
           [
