@@ -985,8 +985,15 @@ const codeLines = code ? code.split("\n").length : 0;
   import { segMatchesLine } from "../lib/stack-picker";
   import { hoverSummary, segmentRows, edgeSegmentRows } from "../lib/tooltip-content";
   import { bundleElements } from "../lib/bundle-highlight";
-  import { enhanceCreaseHits, enhancePointHits, CREASE_SELECTOR, HIT_CLASS } from "../lib/crease-hits";
+  import {
+    enhanceCreaseHits,
+    enhancePointHits,
+    CREASE_SELECTOR,
+    HIT_SELECTOR,
+    HIT_CLASS,
+  } from "../lib/crease-hits";
   import { edgeOfLine } from "../lib/edge-lookup";
+  import { pointSegDist, segmentDrawnAt, type DrawnLine } from "../lib/pick-visibility";
   import { runUi, type RuntimePhase } from "../lib/playground-run-state";
 
   // Two separate limits. Booting the Worker pulls the wasm runtime over the
@@ -1507,17 +1514,26 @@ const codeLines = code ? code.split("\n").length : 0;
       canvas.querySelectorAll(".pg-hl").forEach((el) => el.classList.remove("pg-hl"));
       canvas.querySelectorAll(".pg-hl-ghost").forEach((el) => el.remove());
     };
-    // Point→segment distance + tolerance, shared by proximity detection and
-    // the hidden-segment test. EPS is in SVG user units (~px at 1:1 zoom).
+    // Tolerance shared by proximity detection and the hidden-segment test,
+    // in SVG user units (~px at 1:1 zoom). pointSegDist comes from
+    // pick-visibility.ts, which measures against it too.
     const EPS = 6;
-    const pointSegDist = (px: number, py: number, ax: number, ay: number, bx: number, by: number): number => {
-      const dx = bx - ax, dy = by - ay;
-      const len2 = dx * dx + dy * dy;
-      let t = len2 ? ((px - ax) * dx + (py - ay) * dy) / len2 : 0;
-      t = Math.max(0, Math.min(1, t));
-      return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
-    };
-    // A highlighted bundle's OCCLUDED segments have no rendered <line> (a fold
+    // Every line the renderer drew, as [x1,y1,x2,y2] in SVG user space.
+    // Marks sit in it beside creases (HIT_SELECTOR's set): they carry a
+    // crease id and read to the user as flat creases, so they are pickable
+    // the same way. The `.pg-hit` twins stay out, they only duplicate
+    // endpoints that are already here.
+    const drawnCoords = (): DrawnLine[] =>
+      Array.from(canvas.querySelectorAll(HIT_SELECTOR)).map(
+        (el) =>
+          [
+            Number(el.getAttribute("x1")),
+            Number(el.getAttribute("y1")),
+            Number(el.getAttribute("x2")),
+            Number(el.getAttribute("y2")),
+          ] as const,
+      );
+    // A SELECTED bundle's OCCLUDED segments have no rendered <line> (a fold
     // hides layers below), so they couldn't be shown. Draw each hidden segment
     // as a dashed ghost from the inspect data, in the SVG's own user space
     // (sceneLayout coords) so it pans/zooms with everything.
@@ -1558,16 +1574,16 @@ const codeLines = code ? code.split("\n").length : 0;
     };
     // no-clear adders (so several bundles can be lit at once for the
     // coincident-line case); the public highlight* wrap them with a clearHl.
-    // Each also ghosts the bundle's occluded segments.
-    const addBundleHl = (creaseId: string) => {
+    // Each returns the lines it lit, which is what the ghosting of a
+    // SELECTED bundle needs to tell drawn segments from buried ones.
+    const addBundleHl = (creaseId: string): Element[] => {
       const drawn = Array.from(bundleElements(canvas, creaseId));
       drawn.forEach((el) => el.classList.add("pg-hl"));
-      const c = currentScene?.inspect?.creases[creaseId];
-      if (c) ghostHidden(c.segments, drawn);
+      return drawn;
     };
-    const addEdgeHl = (name: string) => {
+    const addEdgeHl = (name: string): Element[] => {
       const insp = currentScene?.inspect;
-      if (!insp || !currentScene) return;
+      if (!insp || !currentScene) return [];
       const layout = sceneLayout(currentScene);
       const drawn: Element[] = [];
       canvas.querySelectorAll(CREASE_SELECTOR).forEach((el) => {
@@ -1580,13 +1596,14 @@ const codeLines = code ? code.split("\n").length : 0;
           drawn.push(el);
         }
       });
-      const e = insp.edges[name];
-      if (e) ghostHidden(e.segments, drawn);
+      return drawn;
     };
-    const addEntityHl = (ref: EntityRef) => {
-      if (ref.kind === "crease") addBundleHl(ref.creaseId);
-      else if (ref.kind === "edge") addEdgeHl(ref.name);
-    };
+    const addEntityHl = (ref: EntityRef): Element[] =>
+      ref.kind === "crease"
+        ? addBundleHl(ref.creaseId)
+        : ref.kind === "edge"
+          ? addEdgeHl(ref.name)
+          : [];
     // Whole-bundle highlight (task 8): every segment sharing `creaseId`, across
     // flaps/layers. `--var` names ONE crease_id whose segments are the bundle.
     const highlightBundle = (creaseId: string) => { clearHl(); addBundleHl(creaseId); };
@@ -1595,6 +1612,25 @@ const codeLines = code ? code.split("\n").length : 0;
     const highlightEdgeBundle = (name: string) => { clearHl(); addEdgeHl(name); };
     // All coincident entities at once (the chooser hover/anchor).
     const highlightEntities = (ents: EntityRef[]) => { clearHl(); ents.forEach(addEntityHl); };
+    // One SELECTED entity: lit like a hover, plus a dashed ghost for every
+    // segment of it the drawing has no line for. Ghosting belongs to
+    // selection alone. A hover that drew segments the picture does not have
+    // would put dashes under the cursor on the way past every crease, and
+    // this view's whole claim is that the drawing shows what the program
+    // built. Once the reader has picked one line, the buried rest of it is
+    // the answer to a question they asked.
+    const highlightSelected = (ref: EntityRef) => {
+      clearHl();
+      const drawn = addEntityHl(ref);
+      const insp = currentScene?.inspect;
+      const segments =
+        ref.kind === "crease"
+          ? insp?.creases[ref.creaseId]?.segments
+          : ref.kind === "edge"
+            ? insp?.edges[ref.name]?.segments
+            : undefined;
+      if (segments) ghostHidden(segments, drawn);
+    };
     // The drawing is rebuilt on every step and the highlight lives on its
     // elements, so an anchored bundle loses its classes together with the
     // old SVG. Putting them back after each swap is what keeps a clicked
@@ -1624,7 +1660,7 @@ const codeLines = code ? code.split("\n").length : 0;
     };
     const reapplyAnchorHl = () => {
       if (choiceOpen && choiceEnts.length) highlightEntities(choiceEnts);
-      else if (pinned) highlightEntities([pinned]);
+      else if (pinned) highlightSelected(pinned);
     };
     // Resolves the pointer target to an EntityRef: lookupEntity first
     // (crease/face/vertex, attr-based); if that's null AND the target is a
@@ -1769,12 +1805,15 @@ const codeLines = code ? code.split("\n").length : 0;
       return [l.x, l.y];
     };
     // Every distinct inspect entity (crease OR edge) whose segment passes
-    // within EPS of the point — matched against the inspect DATA by proximity,
-    // not against rendered <line>s. This surfaces COINCIDENT entities the
+    // within EPS of the point AND is drawn there. Identity comes from the
+    // inspect DATA by proximity, which surfaces COINCIDENT entities the
     // renderer collapses: when creases fold onto each other / onto a paper edge
     // they share table coords and dedupe to one <line>, and segments of
     // different lengths (a full diagonal vs. a short merged piece) still count
     // as long as the click sits on them. ≥2 ⇒ the coincident-line chooser.
+    // Visibility then comes from the drawing, via segmentDrawnAt
+    // (pick-visibility.ts), so a segment buried under a higher layer is
+    // pickable exactly when the hidden-edge control draws it.
     // (pointSegDist + EPS are defined with the highlight helpers above.)
     const lineEntitiesAtPoint = (clientX: number, clientY: number): EntityRef[] => {
       const insp = currentScene?.inspect;
@@ -1784,17 +1823,22 @@ const codeLines = code ? code.split("\n").length : 0;
       if (!insp || !currentScene || !local || !onFinalStep()) return [];
       const [px, py] = local;
       const layout = sceneLayout(currentScene);
+      const drawn = drawnCoords();
       const seen = new Set<string>();
       const out: EntityRef[] = [];
       const check = (ref: EntityRef, segs: { table: [Vec2, Vec2] }[]) => {
         for (const s of segs) {
           const ax = layout.tx(s.table[0][0]), ay = layout.ty(s.table[0][1]);
           const bx = layout.tx(s.table[1][0]), by = layout.ty(s.table[1][1]);
-          if (pointSegDist(px, py, ax, ay, bx, by) <= EPS) {
-            const k = entityKey(ref);
-            if (!seen.has(k)) { seen.add(k); out.push(ref); }
-            return;
-          }
+          if (pointSegDist(px, py, ax, ay, bx, by) > EPS) continue;
+          // The inspect data has no occlusion, so it offers segments buried
+          // under a higher layer, which `hidden: "hide"` draws nothing for.
+          // A pick has to land on a line the drawing shows; the bundle's
+          // other segments keep their chance, hence `continue`.
+          if (!segmentDrawnAt([ax, ay], [bx, by], px, py, drawn, EPS)) continue;
+          const k = entityKey(ref);
+          if (!seen.has(k)) { seen.add(k); out.push(ref); }
+          return;
         }
       };
       for (const [cid, c] of Object.entries(insp.creases)) check({ kind: "crease", creaseId: cid }, c.segments);
@@ -1808,8 +1852,7 @@ const codeLines = code ? code.split("\n").length : 0;
       pinned = ref;
       choiceOpen = false;
       markRefsFor([ref]);
-      if (ref.kind === "crease") highlightBundle(ref.creaseId);
-      else if (ref.kind === "edge") highlightEdgeBundle(ref.name);
+      highlightSelected(ref);
       renderInspect(ref, true);
       if (ref.kind === "crease") {
         const ln = lineOfSpan(currentScene?.inspect?.creases[ref.creaseId]?.span ?? null);
