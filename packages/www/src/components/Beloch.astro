@@ -108,10 +108,10 @@ const foldJson = composed ? "" : JSON.stringify(fold);
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     margin: 1.5rem 0;
-    border: 1px solid var(--beloch-border);
+    border: 1px solid var(--bel-ui-border);
     border-radius: 14px;
     overflow: hidden;
-    background: var(--beloch-panel);
+    background: var(--bel-ui-surface);
   }
   @media (max-width: 720px) {
     .beloch-card { grid-template-columns: 1fr; }
@@ -119,7 +119,7 @@ const foldJson = composed ? "" : JSON.stringify(fold);
 
   /* ── Code panel ─────────────────────────────────────────────────────────── */
   .beloch-code-panel {
-    background: var(--beloch-code-bg);
+    background: var(--bel-ui-code-surface);
     padding: 18px 22px;
     font-family: var(--bel-font-mono);
     font-size: 13.5px;
@@ -135,7 +135,7 @@ const foldJson = composed ? "" : JSON.stringify(fold);
     font-family: inherit;
     font-size: inherit;
     line-height: inherit;
-    color: #C9D2DE;
+    color: var(--bel-ui-code-text);
     white-space: pre;
   }
 
@@ -155,7 +155,7 @@ const foldJson = composed ? "" : JSON.stringify(fold);
 
   .beloch-gutter {
     text-align: right;
-    color: #4A5A70;
+    color: var(--bel-ui-code-gutter);
     user-select: none;
     white-space: pre;
   }
@@ -166,7 +166,7 @@ const foldJson = composed ? "" : JSON.stringify(fold);
     align-items: center;
     justify-content: center;
     padding: 18px 22px;
-    background: var(--beloch-panel);
+    background: var(--bel-ui-surface);
     overflow: auto;
   }
   .beloch-diagram :global(svg) {

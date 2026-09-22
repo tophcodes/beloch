@@ -8,10 +8,10 @@
 export interface PaperScheme {
   id: string;
   label: string;
-  cp: string;     // --bel-paper-cp (CP face fill)
+  fill: string;   // --bel-paper-fill (face fill of the flat sheet in the crease pattern)
   front: string;  // --bel-paper-front (folded: front side)
   back: string;   // --bel-paper-back (folded: back side)
-  ink?: string;   // --bel-ink + --bel-boundary; only dark papers set it
+  ink?: string;   // --bel-paper-ink + --bel-paper-boundary; only dark papers set it
   swatch: string; // display color of the toolbar swatch
   // Whether the coloured line style may be offered on this paper. On kraft and
   // indigo every crease colour falls below 2:1 against the sheet (max 1.86), so
@@ -25,11 +25,11 @@ export const STORAGE_KEY = "beloch-paper";
 export const DEFAULT_ID = "white";
 
 export const SCHEMES: PaperScheme[] = [
-  { id: "white",  label: "White",  cp: "#f8fafc", front: "#fafaf7", back: "#dbe4ee", swatch: "#fafaf7", colorOk: true },
-  { id: "kraft",  label: "Kraft",  cp: "#c9a87d", front: "#b8926a", back: "#8f6f4e", swatch: "#b8926a", colorOk: false },
-  { id: "washi",  label: "Washi",  cp: "#f2ead6", front: "#f2ead6", back: "#d8cbaa", swatch: "#f2ead6", colorOk: true },
+  { id: "white",  label: "White",  fill: "#f8fafc", front: "#fafaf7", back: "#dbe4ee", swatch: "#fafaf7", colorOk: true },
+  { id: "kraft",  label: "Kraft",  fill: "#c9a87d", front: "#b8926a", back: "#8f6f4e", swatch: "#b8926a", colorOk: false },
+  { id: "washi",  label: "Washi",  fill: "#f2ead6", front: "#f2ead6", back: "#d8cbaa", swatch: "#f2ead6", colorOk: true },
   // Ink and boundary together at 8.05 against the sheet.
-  { id: "indigo", label: "Indigo", cp: "#3b4a6b", front: "#3b4a6b", back: "#26314a", ink: "#f2f5f9", swatch: "#3b4a6b", colorOk: false },
+  { id: "indigo", label: "Indigo", fill: "#3b4a6b", front: "#3b4a6b", back: "#26314a", ink: "#f2f5f9", swatch: "#3b4a6b", colorOk: false },
 ];
 
 export function resolveScheme(id: string | null | undefined): PaperScheme {
@@ -40,11 +40,11 @@ export function resolveScheme(id: string | null | undefined): PaperScheme {
 // (null => remove the variable, so the WEB_THEME fallback takes over).
 export function schemeVars(s: PaperScheme): Record<string, string | null> {
   return {
-    "--bel-paper-cp": s.cp,
+    "--bel-paper-fill": s.fill,
     "--bel-paper-front": s.front,
     "--bel-paper-back": s.back,
-    "--bel-ink": s.ink ?? null,
-    "--bel-boundary": s.ink ?? null,
+    "--bel-paper-ink": s.ink ?? null,
+    "--bel-paper-boundary": s.ink ?? null,
   };
 }
 

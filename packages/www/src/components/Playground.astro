@@ -94,13 +94,13 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     grid-template-columns: 1fr 1fr;
     position: relative;
     margin: 1.5rem 0;
-    border: 1px solid var(--beloch-border);
+    border: 1px solid var(--bel-ui-border);
     border-radius: 14px;
     overflow: hidden;
-    background: var(--beloch-panel);
+    background: var(--bel-ui-surface);
     /* Opt the rendered paper's SVG backdrop rect out of its white default
-       (WEB_THEME reads --bel-bg) so the paper lies on the transparent pane. */
-    --bel-bg: transparent;
+       (WEB_THEME reads --bel-paper-background) so the paper lies on the transparent pane. */
+    --bel-paper-background: transparent;
   }
   @media (max-width: 720px) {
     .beloch-playground { grid-template-columns: 1fr; }
@@ -113,11 +113,11 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   }
 
   .pg-editor {
-    background: var(--beloch-code-bg);
-    border-right: 1px solid var(--beloch-border);
+    background: var(--bel-ui-code-surface);
+    border-right: 1px solid var(--bel-ui-border);
   }
   @media (max-width: 720px) {
-    .pg-editor { border-right: none; border-bottom: 1px solid var(--beloch-border); }
+    .pg-editor { border-right: none; border-bottom: 1px solid var(--bel-ui-border); }
   }
 
   .pg-toolbar {
@@ -129,8 +129,8 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     font-size: 12px;
   }
   .pg-output .pg-toolbar {
-    color: var(--beloch-muted);
-    border-bottom: 1px solid var(--beloch-border);
+    color: var(--bel-ui-text-muted);
+    border-bottom: 1px solid var(--bel-ui-border);
   }
   .pg-toolbar-output {
     justify-content: flex-end;
@@ -149,20 +149,20 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     height: 44px;
     padding: 0;
     border-radius: 50%;
-    border: 1px solid var(--beloch-accent);
-    background: var(--beloch-panel);
-    color: var(--beloch-accent);
+    border: 1px solid var(--bel-ui-accent);
+    background: var(--bel-ui-surface);
+    color: var(--bel-ui-accent);
     cursor: pointer;
     transition: background 0.15s ease, color 0.15s ease;
   }
   .pg-run:hover:not(:disabled) {
-    background: var(--beloch-accent);
-    color: var(--beloch-accent-ink);
+    background: var(--bel-ui-accent);
+    color: var(--bel-ui-accent-text);
   }
   .pg-run:disabled {
     cursor: default;
-    border-color: var(--beloch-border);
-    color: var(--beloch-muted);
+    border-color: var(--bel-ui-border);
+    color: var(--bel-ui-text-muted);
   }
   .pg-run-spinner {
     display: none;
@@ -191,9 +191,9 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     text-overflow: ellipsis;
     font-family: var(--bel-font-mono);
     font-size: 11px;
-    color: var(--beloch-muted);
-    background: var(--beloch-panel);
-    border: 1px solid var(--beloch-border);
+    color: var(--bel-ui-text-muted);
+    background: var(--bel-ui-surface);
+    border: 1px solid var(--bel-ui-border);
     border-radius: 999px;
     padding: 3px 10px;
     opacity: 0;
@@ -226,10 +226,10 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     height: 8px;
     margin: 6px auto 0;
     border-radius: 50%;
-    background: var(--beloch-accent);
+    background: var(--bel-ui-accent);
   }
   .pg-source :global(.cm-step-line) {
-    background: color-mix(in srgb, var(--beloch-accent) 15%, transparent);
+    background: color-mix(in srgb, var(--bel-ui-accent) 15%, transparent);
   }
 
   .pg-output {
@@ -273,13 +273,13 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
      line. Overrides the per-segment stroke/stroke-width attributes
      render-scene.ts emits (CSS class beats presentation attributes). */
   .pg-canvas :global(.pg-hl) {
-    stroke: var(--beloch-accent);
+    stroke: var(--bel-ui-accent);
     stroke-width: 4;
   }
   /* Occluded segments of a highlighted bundle, drawn from inspect data since
      they have no rendered line — dashed + semi-transparent to read as "behind". */
   .pg-canvas :global(.pg-hl-ghost) {
-    stroke: var(--beloch-accent);
+    stroke: var(--bel-ui-accent);
     stroke-width: 2.5;
     stroke-dasharray: 5 4;
     opacity: 0.55;
@@ -323,9 +323,9 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     height: 30px;
     padding: 0;
     border-radius: 8px;
-    border: 1px solid var(--beloch-border);
-    background: color-mix(in srgb, var(--beloch-panel) 78%, transparent);
-    color: var(--beloch-muted);
+    border: 1px solid var(--bel-ui-border);
+    background: color-mix(in srgb, var(--bel-ui-surface) 78%, transparent);
+    color: var(--bel-ui-text-muted);
     cursor: pointer;
     opacity: 0;
     transition: opacity 0.15s ease, color 0.15s ease;
@@ -334,7 +334,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     opacity: 1;
   }
   .pg-reset:hover {
-    color: var(--beloch-accent);
+    color: var(--bel-ui-accent);
   }
   .pg-reset[hidden] {
     display: none;
@@ -352,12 +352,12 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     max-width: 320px;
     max-height: 70%;
     overflow: auto;
-    background: var(--beloch-panel);
-    border: 1px solid var(--beloch-border);
+    background: var(--bel-ui-surface);
+    border: 1px solid var(--bel-ui-border);
     border-radius: 6px;
     padding: 10px 12px;
     font: 12px/1.5 var(--bel-font-mono);
-    color: var(--beloch-muted);
+    color: var(--bel-ui-text-muted);
     pointer-events: none;
   }
   .pg-inspect.is-anchored {
@@ -372,11 +372,11 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   .pg-inspect :global(h4) {
     margin: 0 0 4px;
     font-size: 12px;
-    color: var(--beloch-ink);
+    color: var(--bel-ui-text);
     padding-right: 18px; /* room for the close button */
   }
   .pg-inspect :global(.pg-inspect-sub) {
-    color: var(--beloch-muted);
+    color: var(--bel-ui-text-muted);
     margin-bottom: 4px;
   }
   .pg-inspect :global(.pg-inspect-close) {
@@ -389,7 +389,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     border: 0;
     background: transparent;
     box-shadow: none;
-    color: var(--beloch-ink);
+    color: var(--bel-ui-text);
     font: 18px/1 ui-sans-serif, system-ui, sans-serif;
     cursor: pointer;
     padding: 4px;
@@ -399,18 +399,18 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     opacity: 1;
   }
   .pg-inspect :global(.pg-inspect-close:focus-visible) {
-    outline: 1px solid var(--beloch-border);
+    outline: 1px solid var(--bel-ui-border);
     border-radius: 3px;
   }
   .pg-inspect :global(.seg) {
-    border-top: 1px solid var(--beloch-border);
+    border-top: 1px solid var(--bel-ui-border);
     margin: 4px -12px 0;
     padding: 5px 12px 4px;
     cursor: pointer;
   }
   .pg-inspect :global(.seg:hover) {
-    color: var(--beloch-ink);
-    background: color-mix(in srgb, var(--beloch-ink) 10%, transparent);
+    color: var(--bel-ui-text);
+    background: color-mix(in srgb, var(--bel-ui-text) 10%, transparent);
   }
 
   .pg-canvas :global(.pg-notice) {
@@ -421,19 +421,19 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     font-size: 13.5px;
     line-height: 1.5;
   }
-  .pg-canvas :global(.pg-notice-info) { color: var(--beloch-muted); }
-  .pg-canvas :global(.pg-notice-error) { color: var(--beloch-error); }
+  .pg-canvas :global(.pg-notice-info) { color: var(--bel-ui-text-muted); }
+  .pg-canvas :global(.pg-notice-error) { color: var(--bel-ui-error); }
 
   .pg-swatches { display: inline-flex; gap: 8px; }
   .pg-swatches :global(.pg-swatch) {
     width: 22px; height: 22px; padding: 0;
     border-radius: 50%;
-    border: 1px solid var(--beloch-border);
+    border: 1px solid var(--bel-ui-border);
     cursor: pointer;
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
   }
   .pg-swatches :global(.pg-swatch.is-active) {
-    outline: 2px solid var(--beloch-accent);
+    outline: 2px solid var(--bel-ui-accent);
     outline-offset: 1px;
   }
 
@@ -443,10 +443,10 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     align-items: stretch;
     gap: 6px;
     padding: 8px 16px;
-    border-top: 1px solid var(--beloch-border);
+    border-top: 1px solid var(--bel-ui-border);
     font-family: var(--bel-font-mono);
     font-size: 11px;
-    color: var(--beloch-muted);
+    color: var(--bel-ui-text-muted);
   }
   .pg-steps[hidden] { display: none; }
 
@@ -464,15 +464,15 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     height: 24px;
     padding: 0;
     border-radius: 6px;
-    border: 1px solid var(--beloch-border);
+    border: 1px solid var(--bel-ui-border);
     background: transparent;
-    color: var(--beloch-muted);
+    color: var(--bel-ui-text-muted);
     cursor: pointer;
     transition: color 0.15s ease, border-color 0.15s ease;
   }
   .pg-step-nav:hover:not(:disabled) {
-    color: var(--beloch-accent);
-    border-color: var(--beloch-accent);
+    color: var(--bel-ui-accent);
+    border-color: var(--bel-ui-accent);
   }
   .pg-step-nav:disabled {
     opacity: 0.4;
@@ -506,11 +506,11 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   }
   .pg-step-track::before {
     right: 0;
-    background: var(--beloch-border);
+    background: var(--bel-ui-border);
   }
   .pg-step-track::after {
     width: var(--pg-progress, 0%);
-    background: var(--beloch-accent);
+    background: var(--bel-ui-accent);
     transition: width 0.15s ease;
   }
   :global(.pg-step-dot) {
@@ -532,22 +532,22 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    border: 2px solid var(--beloch-border);
-    background: var(--beloch-panel);
+    border: 2px solid var(--bel-ui-border);
+    background: var(--bel-ui-surface);
     /* Panel-colored gap ring separates the dot from the track line so it
        clearly reads as sitting *on top of* the line, not merged into it. */
-    box-shadow: 0 0 0 3px var(--beloch-panel);
+    box-shadow: 0 0 0 3px var(--bel-ui-surface);
     transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
   }
   :global(.pg-step-dot:hover)::before {
-    border-color: var(--beloch-accent);
+    border-color: var(--bel-ui-accent);
     transform: scale(1.15);
   }
   /* Steps at or before the current one read as "reached" (filled valley);
      the current one is additionally enlarged with a halo ring. */
   :global(.pg-step-dot.is-past)::before {
-    background: var(--beloch-accent);
-    border-color: var(--beloch-accent);
+    background: var(--bel-ui-accent);
+    border-color: var(--bel-ui-accent);
   }
   :global(.pg-step-dot.is-active) {
     z-index: 2;
@@ -555,13 +555,13 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   :global(.pg-step-dot.is-active)::before {
     width: 18px;
     height: 18px;
-    background: var(--beloch-accent);
-    border-color: var(--beloch-accent);
+    background: var(--bel-ui-accent);
+    border-color: var(--bel-ui-accent);
     /* Inner panel gap ring + outer valley glow — pops the current dot off
        both the line and its neighbors. */
     box-shadow:
-      0 0 0 3px var(--beloch-panel),
-      0 0 0 6px color-mix(in srgb, var(--beloch-accent) 30%, transparent);
+      0 0 0 3px var(--bel-ui-surface),
+      0 0 0 6px color-mix(in srgb, var(--bel-ui-accent) 30%, transparent);
   }
   .pg-step-label {
     text-align: center;
@@ -598,19 +598,19 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   const editorTheme = EditorView.theme(
     {
       "&": {
-        color: "#C9D2DE",
+        color: "var(--bel-ui-code-text)",
         backgroundColor: "transparent",
         height: "100%",
       },
       ".cm-scroller": {
-        fontFamily: "JetBrains Mono, ui-monospace, monospace",
-        fontSize: "13.5px",
-        lineHeight: "22px",
+        fontFamily: "var(--bel-font-mono)",
+        fontSize: "var(--bel-code-size)",
+        lineHeight: "var(--bel-code-line)",
       },
-      ".cm-content": { padding: "14px 18px", caretColor: "#C9D2DE" },
+      ".cm-content": { padding: "14px 18px", caretColor: "var(--bel-ui-code-text)" },
       ".cm-gutters": {
         backgroundColor: "transparent",
-        color: "#55627A",
+        color: "var(--bel-ui-code-gutter)",
         border: "none",
         borderRight: "1px solid rgba(255, 255, 255, 0.08)",
       },

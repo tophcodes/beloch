@@ -8,9 +8,9 @@ const golden = (p: string) =>
 test("renderCP with WEB_THEME emits CSS-var paper + ink fills", async () => {
   const scene = parseFold(await golden("bisect-a.fold"));
   const svg = renderCP(scene, { theme: WEB_THEME }).toString();
-  expect(svg).toContain('fill="var(--bel-paper-cp, #f8fafc)"');
-  expect(svg).toContain('fill="var(--bel-ink, #0f172a)"');
-  expect(svg).toContain('stroke="var(--bel-boundary, #1f2937)"');
+  expect(svg).toContain('fill="var(--bel-paper-fill, #f8fafc)"');
+  expect(svg).toContain('fill="var(--bel-paper-ink, #0f172a)"');
+  expect(svg).toContain('stroke="var(--bel-paper-boundary, #1f2937)"');
 });
 
 test("renderFolded with WEB_THEME emits CSS-var front/back paper fills", async () => {

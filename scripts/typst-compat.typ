@@ -17,12 +17,14 @@
 
 // Figure highlights (scripts/model-blocks.lua). A caption's inline code for a
 // highlighted entity is emitted as raw with its palette class as the language,
-// so it prints in the colour the figure draws that entity in. Same values as
-// HIGHLIGHT_PALETTE in @beloch/render-svg's theme.ts and .figure-hl-<n> in
-// packages/www/src/styles/theme.css.
-#show raw.where(lang: "figure-hl-0"): it => text(fill: rgb("#0d9488"))[#it]
-#show raw.where(lang: "figure-hl-1"): it => text(fill: rgb("#c2620a"))[#it]
-#show raw.where(lang: "figure-hl-2"): it => text(fill: rgb("#9a52d8"))[#it]
-#show raw.where(lang: "figure-hl-3"): it => text(fill: rgb("#db2777"))[#it]
-#show raw.where(lang: "figure-hl-4"): it => text(fill: rgb("#5f9412"))[#it]
-#show raw.where(lang: "figure-hl-5"): it => text(fill: rgb("#0284c7"))[#it]
+// so it prints in the colour the figure draws that entity in. A caption is
+// text and needs 4.5:1, which the strokes the drawing uses do not hold on
+// white: these are HIGHLIGHT_TEXT in @beloch/render-svg's theme.ts, the same
+// values .figure-hl-<n> carries in packages/www/src/styles/theme.css.
+// theme-tokens.test.ts holds the three lists together.
+#show raw.where(lang: "figure-hl-0"): it => text(fill: rgb("#07715a"))[#it]
+#show raw.where(lang: "figure-hl-1"): it => text(fill: rgb("#c2004f"))[#it]
+#show raw.where(lang: "figure-hl-2"): it => text(fill: rgb("#8a2fd6"))[#it]
+#show raw.where(lang: "figure-hl-3"): it => text(fill: rgb("#b25600"))[#it]
+#show raw.where(lang: "figure-hl-4"): it => text(fill: rgb("#0b6fb0"))[#it]
+#show raw.where(lang: "figure-hl-5"): it => text(fill: rgb("#5f6600"))[#it]

@@ -458,7 +458,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
         const lit = highlightFaces.get(i);
         const pts = f.map((vi) => `${tx(V[vi]![0])},${ty(V[vi]![1])}`).join(" ");
         paper.children.push(el("polygon", {
-          points: pts, fill: lit ? lit.wash : theme.paperFill, stroke: "none",
+          points: pts, fill: lit ? lit.wash : theme.fill, stroke: "none",
           "data-kind": "face", "data-face-index": i,
           ...(lit ? { "data-highlight": "true" } : {}),
         }));

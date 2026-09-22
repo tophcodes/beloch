@@ -35,7 +35,7 @@ const sourceBel = join(repoRoot, "examples", "bases", "bird-base.bel");
 const fold2svgBin = join(repoRoot, "packages", "render-2d", "render-svg", "bin", "fold2svg.ts");
 const outPath = join(repoRoot, "packages", "www", "public", "og-image.png");
 
-// theme.css dark theme: --beloch-panel and --beloch-ink.
+// theme.css dark theme: --bel-ui-surface and --bel-ui-text.
 const PANEL_BG = "#171B24";
 const INK = "#E7EAF2";
 

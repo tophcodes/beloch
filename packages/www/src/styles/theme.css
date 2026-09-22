@@ -1,10 +1,18 @@
 /* Beloch — functional design tokens only.
  *
- * The site rides on vanilla Starlight for all chrome (fonts, palette, layout).
- * This file keeps ONLY what the rendering surface needs: the crease-semantic
- * colours (valley/mountain) used by the Playground + <Beloch> render cards, the
- * few neutral tokens those components reference, and the tree-sitter syntax
- * highlighting for ```beloch code fences. Everything cosmetic lives in Starlight.
+ * The site rides on vanilla Starlight for all chrome (fonts, palette, layout);
+ * everything cosmetic lives there. This file holds what the rendering surface
+ * needs, in three layers that never borrow from each other:
+ *
+ *   --bel-paper-*   what lies in the artefact: the sheet, the ink, the creases
+ *   --bel-ui-*      the interface around it: surfaces, borders, text, state
+ *   --bel-syntax-*  the token colours of Beloch code
+ *
+ * A role that would fit two layers is two roles: the text of a paragraph is
+ * --bel-ui-text, the ink of a drawing is --bel-paper-ink, and a crease colour
+ * never carries a control. The scales without a colour (--bel-space-*,
+ * --bel-radius-*, --bel-duration-*, --bel-font-*, --bel-code-*) sit in none of
+ * the three and keep the bare prefix.
  */
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -51,7 +59,7 @@
 	--bel-radius-control: 3px;
 	--bel-radius-paper:   0;      /* paper has square corners; it is paper */
 
-	--bel-paper-quiet: 16px;      /* clear on every side of a drawing */
+	--bel-space-quiet: 16px;      /* clear on every side of a drawing */
 
 	--bel-code-size: 13.5px;      /* the code grid is the same everywhere */
 	--bel-code-line: 22px;
@@ -78,50 +86,70 @@
 	}
 }
 
-/* ── Functional tokens — dark ────────────────────────────────────────────── */
-:root,
-:root[data-theme='dark'] {
-	--beloch-panel:    #171B24;
-	--beloch-ink:      #E7EAF2;
-	--beloch-muted:    #8D93A6;
-	--beloch-faint:    #656B7E;
-	--beloch-border:   #2A3040;
-
-	/* Crease semantics — valley (blue) / mountain (red). Load-bearing content,
-	   and the same values the render engine uses (render-svg/src/theme.ts's
-	   DEFAULT_THEME), because a crease is always drawn on paper: the paper
-	   schemes set the ground under it, never this panel. One value per role,
-	   in both themes. These are reserved for creases; interface state takes
-	   --beloch-accent and --beloch-error below. */
-	--beloch-valley:   #2563eb;
-	--beloch-mountain: #dc2626;
-
-	/* Interface accent and error. Kept clear of the crease colours so a focus
-	   ring next to a drawing cannot read as a valley fold: the accent sits at
-	   dE76 30.1 from the nearest semantic colour here, and at L* 35.8 against
-	   mountain 47.9 and valley 46.1, so it stays separate desaturated too. */
-	--beloch-accent:     #7ED4CB;
-	--beloch-accent-ink: #08221E;
-	--beloch-error:      #ff7d5e;
-
-	/* Code panel (always dark, in both themes) */
-	--beloch-code-bg: #101C2E;
-
+/* ──────────────────────────────────────────────────────────────────────────
+ * Paper layer: everything that lies in the artefact — the sheet, the ink on
+ * it, the creases. One value per role in both modes, because a crease is
+ * always drawn on paper and the paper scheme sets the ground under it, never
+ * the panel behind the drawing. paper-schemes.ts writes fill, front, back,
+ * ink and boundary onto documentElement at runtime, which beats this block.
+ *
+ * Every role here carries the name and the literal of the same role in
+ * @beloch/render-svg's Theme, and theme-tokens.test.ts holds the two lists
+ * together: resvg resolves no var(), so the TypeScript side has to carry the
+ * value as well, and a value that drifts here stops matching the PDF.
+ * ────────────────────────────────────────────────────────────────────────── */
+:root {
+	--bel-paper-fill:         #f8fafc;
+	--bel-paper-front:        #fafaf7;
+	--bel-paper-back:         #dbe4ee;
+	--bel-paper-background:   white;
+	--bel-paper-ink:          #0f172a;
+	--bel-paper-boundary:     #1f2937;
+	--bel-paper-mountain:     #dc2626;
+	--bel-paper-valley:       #2563eb;
+	--bel-paper-flat:         #64748b;
+	--bel-paper-unassigned:   #a16207;
+	--bel-paper-construction: #4f46e5;
 }
 
-/* ── Functional tokens — light ───────────────────────────────────────────── */
-:root[data-theme='light'] {
-	--beloch-panel:    #F7F9FB;
-	--beloch-ink:      #171A21;
-	--beloch-muted:    #5B6478;
-	--beloch-faint:    #8891A3;
-	--beloch-border:   #D8DEE7;
+/* ── Interface layer — dark ──────────────────────────────────────────────── */
+:root,
+:root[data-theme='dark'] {
+	--bel-ui-surface:       #171B24;
+	--bel-ui-text:          #E7EAF2;
+	--bel-ui-text-muted:    #8D93A6;
+	--bel-ui-text-faint:    #656B7E;
+	--bel-ui-border:        #2A3040;
 
-	/* Crease colours are not redefined here: they belong to the paper, which
-	   keeps its own ground in both themes. */
-	--beloch-accent:     #0D5F54;
-	--beloch-accent-ink: #FFFFFF;
-	--beloch-error:      #cf4327;
+	/* Accent and error. Kept clear of the crease colours so a focus ring next
+	   to a drawing cannot read as a valley fold: the accent sits at dE76 30.1
+	   from the nearest paper colour here, and at L* 35.8 against mountain 47.9
+	   and valley 46.1, so it stays separate desaturated too. */
+	--bel-ui-accent:        #7ED4CB;
+	--bel-ui-accent-text:   #08221E;
+	--bel-ui-error:         #ff7d5e;
+}
+
+/* The code surface is the one dark area that survives into the light mode, so
+   it holds one value in both and the ten syntax roles are measured against
+   this ground alone. Line numbers are text and hold 4.5:1 like any other. */
+:root {
+	--bel-ui-code-surface: #101C2E;
+	--bel-ui-code-text:    #C9D2DE;   /* 11.2:1 */
+	--bel-ui-code-gutter:  #7E889A;   /*  4.8:1 */
+}
+
+/* ── Interface layer — light ─────────────────────────────────────────────── */
+:root[data-theme='light'] {
+	--bel-ui-surface:       #F7F9FB;
+	--bel-ui-text:          #171A21;
+	--bel-ui-text-muted:    #5B6478;
+	--bel-ui-text-faint:    #8891A3;
+	--bel-ui-border:        #D8DEE7;
+
+	--bel-ui-accent:        #0D5F54;
+	--bel-ui-accent-text:   #FFFFFF;
+	--bel-ui-error:         #cf4327;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -190,27 +218,38 @@
 /* Figure highlights (remark-model-blocks). A figure's `highlight` attribute
    lists the entities its caption refers to; each takes the colour at its
    position in this palette, in the crease pattern, in the folded form and in
-   the caption's inline code, so a name and the thing drawn read as one. The
-   values are the strokes of HIGHLIGHT_PALETTE in @beloch/render-svg's theme.ts,
-   which the SVGs carry as literals for the PDF, and scripts/typst-compat.typ
-   repeats them for the caption in print. One unscoped definition each, like the
-   token classes above: the caption sits on the page rather than on the code
-   panel, so every colour is held at L* 49 to 56, legible on either site theme,
-   and at least ΔE76 19 from every colour already in this file. */
-.figure-hl-0 { color: #0d9488; }
-.figure-hl-1 { color: #c2620a; }
-.figure-hl-2 { color: #9a52d8; }
-.figure-hl-3 { color: #db2777; }
-.figure-hl-4 { color: #5f9412; }
-.figure-hl-5 { color: #0284c7; }
+   the caption's inline code, so a name and the thing drawn read as one.
+
+   The drawing uses HIGHLIGHT_PALETTE's strokes, which the SVG carries as
+   literals because typst resolves no var(). A caption is text and needs 4.5:1,
+   which those strokes hold on neither surface, so the caption takes a variant
+   per mode: HIGHLIGHT_TEXT from the same file for the light page and for print
+   (scripts/typst-compat.typ repeats it), and the stroke lightened towards white
+   until it holds 4.5:1 for the dark page. theme-tokens.test.ts keeps the three
+   lists of light values equal. Measured on the dark set: 4.51 to 4.73 against
+   the panel, L* 54.5 to 55.9, ΔE76 54.4 between any two and 20.4 to every other
+   colour in the project. */
+.figure-hl-0 { color: #07715a; }
+.figure-hl-1 { color: #c2004f; }
+.figure-hl-2 { color: #8a2fd6; }
+.figure-hl-3 { color: #b25600; }
+.figure-hl-4 { color: #0b6fb0; }
+.figure-hl-5 { color: #5f6600; }
+
+:root[data-theme='dark'] .figure-hl-0 { color: #079876; }
+:root[data-theme='dark'] .figure-hl-1 { color: #fb1777; }
+:root[data-theme='dark'] .figure-hl-2 { color: #b054ff; }
+:root[data-theme='dark'] .figure-hl-3 { color: #ce6603; }
+:root[data-theme='dark'] .figure-hl-4 { color: #1788d7; }
+:root[data-theme='dark'] .figure-hl-5 { color: #808905; }
 
 /* Beloch fenced code blocks (```beloch) highlighted by the remark plugin, and
    the grammar fragments of spec/BELOCH.md (```grammar), so a rule and a program
    read as one system. */
 .bel-block,
 .grammar-block {
-	background: var(--beloch-code-bg);
-	color: #C9D2DE;
+	background: var(--bel-ui-code-surface);
+	color: var(--bel-ui-code-text);
 	padding: 16px 20px;
 	border-radius: 12px;
 	overflow-x: auto;
@@ -231,7 +270,7 @@
    decided about a tagged block, rendered directly under its highlighted
    program on the same always-dark code panel as .bel-block. One unscoped
    definition each, not re-scoped per site theme, same as the token classes
-   above. Verified/failed lean on --beloch-accent / --beloch-error, the
+   above. Verified/failed lean on --bel-ui-accent / --bel-ui-error, the
    crease colours a reader already reads as good/bad fold direction, plus a
    glyph and a left border so the distinction does not rest on hue alone. */
 .bel-outcome {
@@ -241,36 +280,36 @@
 	border-radius: 0 0 12px 12px;
 }
 .bel-outcome-error {
-	background: var(--beloch-code-bg);
+	background: var(--bel-ui-code-surface);
 	padding: 10px 20px 14px;
 	overflow-x: auto;
 	white-space: pre;
-	border-top: 1px solid var(--beloch-border);
+	border-top: 1px solid var(--bel-ui-border);
 	border-left: 3px solid transparent;
 }
 .bel-outcome-expected {
-	color: var(--beloch-muted);
-	border-left-color: var(--beloch-accent);
+	color: var(--bel-ui-text-muted);
+	border-left-color: var(--bel-ui-accent);
 }
-.bel-outcome-expected::before { content: "expected \2014  "; color: var(--beloch-accent); }
+.bel-outcome-expected::before { content: "expected \2014  "; color: var(--bel-ui-accent); }
 .bel-outcome-unexpected {
-	color: var(--beloch-error);
-	border-left-color: var(--beloch-error);
+	color: var(--bel-ui-error);
+	border-left-color: var(--bel-ui-error);
 	font-weight: 600;
 }
 .bel-outcome-unexpected::before { content: "\2717 "; }
 .bel-outcome-ok {
-	background: var(--beloch-code-bg);
+	background: var(--bel-ui-code-surface);
 	padding: 8px 20px 12px;
-	border-top: 1px solid var(--beloch-border);
+	border-top: 1px solid var(--bel-ui-border);
 }
 .bel-assert {
 	padding-left: 1.4em;
 	text-indent: -1.4em;
 }
-.bel-assert-verified { color: var(--beloch-accent); }
+.bel-assert-verified { color: var(--bel-ui-accent); }
 .bel-assert-verified::before { content: "\2713 "; }
-.bel-assert-failed { color: var(--beloch-error); font-weight: 600; }
+.bel-assert-failed { color: var(--bel-ui-error); font-weight: 600; }
 .bel-assert-failed::before { content: "\2717 "; }
 .bel-assert-message { font-weight: 400; font-style: italic; opacity: 0.85; }
 
@@ -280,8 +319,8 @@
 .gr-nonterminal { color: var(--bel-syntax-line); }
 .gr-keyword     { color: var(--bel-syntax-keyword); }
 .gr-token       { color: var(--bel-syntax-label); }
-.gr-operator    { color: #7E889A; }
-.gr-comment     { color: #7E8C73; font-style: italic; }
+.gr-operator    { color: var(--bel-syntax-punct); }
+.gr-comment     { color: var(--bel-syntax-comment); font-style: italic; }
 
 /* The rules of one fragment sit together; each is its own <pre> so a rule can
    carry its links line. */
@@ -296,21 +335,21 @@
  * doesn't push the diagram panel into its own row.
  * ────────────────────────────────────────────────────────────────────────── */
 .beloch-controls { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
-.beloch-tab { font: inherit; padding: 3px 10px; border-radius: 7px; border: 1px solid var(--beloch-border); background: transparent; color: var(--beloch-muted); cursor: pointer; }
-.beloch-tab.is-active { color: var(--beloch-ink); border-color: var(--beloch-accent); }
-.beloch-stepper { display: inline-flex; align-items: center; gap: 6px; color: var(--beloch-muted); }
+.beloch-tab { font: inherit; padding: 3px 10px; border-radius: 7px; border: 1px solid var(--bel-ui-border); background: transparent; color: var(--bel-ui-text-muted); cursor: pointer; }
+.beloch-tab.is-active { color: var(--bel-ui-text); border-color: var(--bel-ui-accent); }
+.beloch-stepper { display: inline-flex; align-items: center; gap: 6px; color: var(--bel-ui-text-muted); }
 .beloch-stepper button { background: none; border: none; color: inherit; cursor: pointer; font-size: 13px; }
 
 /* active step line — same accent already used for "active" state (see
  * .beloch-tab.is-active above) rather than inventing a new colour. */
 .beloch-gutter [data-line].bel-step-line {
-	color: var(--beloch-accent);
+	color: var(--bel-ui-accent);
 	font-weight: 700;
 }
 
 /* hover — neutral, transient */
-[data-bel-name].bel-hover { outline: 2px solid var(--beloch-muted); outline-offset: 1px; }
-svg [data-bel-name].bel-hover { outline: none; filter: drop-shadow(0 0 3px var(--beloch-muted)); }
+[data-bel-name].bel-hover { outline: 2px solid var(--bel-ui-text-muted); outline-offset: 1px; }
+svg [data-bel-name].bel-hover { outline: none; filter: drop-shadow(0 0 3px var(--bel-ui-text-muted)); }
 
 /* selection — per-name colour via --bel-sel */
 .beloch-code-panel [data-bel-name].bel-selected {

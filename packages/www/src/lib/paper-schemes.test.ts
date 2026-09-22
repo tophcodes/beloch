@@ -17,13 +17,13 @@ test("schemeVars sets ink vars for dark paper, clears them for light", () => {
   expect(indigo["--bel-paper-front"]).toBe("#3b4a6b");
   // Ink and boundary move together and take the scheme's own value, so a
   // contrast correction there does not have to be restated here.
-  expect(indigo["--bel-ink"]).toBe(indigoScheme.ink);
-  expect(indigo["--bel-boundary"]).toBe(indigoScheme.ink);
+  expect(indigo["--bel-paper-ink"]).toBe(indigoScheme.ink);
+  expect(indigo["--bel-paper-boundary"]).toBe(indigoScheme.ink);
 
   const white = schemeVars(resolveScheme("white"));
   expect(white["--bel-paper-front"]).toBe("#fafaf7");
-  expect(white["--bel-ink"]).toBeNull();
-  expect(white["--bel-boundary"]).toBeNull();
+  expect(white["--bel-paper-ink"]).toBeNull();
+  expect(white["--bel-paper-boundary"]).toBeNull();
 });
 
 test("headSyncScript embeds the catalog and reads the storage key", () => {

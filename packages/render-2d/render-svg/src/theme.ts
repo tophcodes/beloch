@@ -31,7 +31,7 @@ export interface Theme {
   valley: string;          // "#2563eb" — V
   flat: string;            // "#64748b" — F (flat-foldable/unfolded crease)
   unassigned: string;      // "#a16207" — U
-  paperFill: string;       // "#f8fafc"  (CP face fill)
+  fill: string;           // "#f8fafc"  (face fill of the flat sheet in the crease pattern)
   front: string;           // "#fafaf7"  (folded: paper front)
   back: string;            // "#dbe4ee"  (folded: paper back)
   construction: string;    // "#4f46e5"
@@ -107,7 +107,7 @@ export const DEFAULT_THEME: Theme = {
   valley: "#2563eb",
   flat: "#64748b",
   unassigned: "#a16207",
-  paperFill: "#f8fafc",
+  fill: "#f8fafc",
   front: "#fafaf7",
   back: "#dbe4ee",
   construction: "#4f46e5",
@@ -124,12 +124,12 @@ export const DEFAULT_THEME: Theme = {
 // DEFAULT_THEME value, so the headless resvg path (which does NOT resolve
 // var()) stays unchanged — it keeps using DEFAULT_THEME.
 export const WEB_THEME: Partial<Theme> = {
-  paperFill: "var(--bel-paper-cp, #f8fafc)",
+  fill: "var(--bel-paper-fill, #f8fafc)",
   front:     "var(--bel-paper-front, #fafaf7)",
   back:      "var(--bel-paper-back, #dbe4ee)",
-  ink:       "var(--bel-ink, #0f172a)",
-  boundary:  "var(--bel-boundary, #1f2937)",
+  ink:       "var(--bel-paper-ink, #0f172a)",
+  boundary:  "var(--bel-paper-boundary, #1f2937)",
   // Default fallback keeps the white backdrop everywhere (SSR cards, hero);
-  // only surfaces that opt in (the Playground) set --bel-bg: transparent.
-  background: "var(--bel-bg, white)",
+  // only surfaces that opt in (the Playground) set --bel-paper-background: transparent.
+  background: "var(--bel-paper-background, white)",
 };

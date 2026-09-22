@@ -109,12 +109,12 @@ const NAV_LINKS = [
       html, body { margin: 0; padding: 0; }
       body {
         min-height: 100vh;
-        background: var(--beloch-panel);
-        color: var(--beloch-ink);
+        background: var(--bel-ui-surface);
+        color: var(--bel-ui-text);
         font-family: var(--bel-font-prose);
         overflow-x: hidden;
       }
-      a { color: var(--beloch-accent); text-decoration: none; }
+      a { color: var(--bel-ui-accent); text-decoration: none; }
       a:hover { text-decoration: underline; }
 
       .site-header {
@@ -123,13 +123,13 @@ const NAV_LINKS = [
         justify-content: space-between;
         gap: 16px;
         padding: 20px clamp(20px, 5vw, 56px);
-        border-bottom: 1px solid var(--beloch-border);
+        border-bottom: 1px solid var(--bel-ui-border);
       }
       .wordmark {
         font-family: var(--bel-font-mono);
         font-size: 18px;
         font-weight: 600;
-        color: var(--beloch-ink);
+        color: var(--bel-ui-text);
       }
       .wordmark:hover { text-decoration: none; }
       .site-nav {
@@ -139,8 +139,8 @@ const NAV_LINKS = [
         flex-wrap: wrap;
         font-size: 14px;
       }
-      .site-nav a { color: var(--beloch-muted); }
-      .site-nav a:hover { color: var(--beloch-ink); }
+      .site-nav a { color: var(--bel-ui-text-muted); }
+      .site-nav a:hover { color: var(--bel-ui-text); }
 
       .theme-toggle {
         display: inline-flex;
@@ -150,12 +150,12 @@ const NAV_LINKS = [
         height: 30px;
         padding: 0;
         border-radius: 50%;
-        border: 1px solid var(--beloch-border);
+        border: 1px solid var(--bel-ui-border);
         background: transparent;
-        color: var(--beloch-muted);
+        color: var(--bel-ui-text-muted);
         cursor: pointer;
       }
-      .theme-toggle:hover { color: var(--beloch-ink); border-color: var(--beloch-accent); }
+      .theme-toggle:hover { color: var(--bel-ui-text); border-color: var(--bel-ui-accent); }
       .theme-toggle-icon { font-size: 14px; line-height: 1; }
       .theme-toggle-icon::before { content: "\2600"; } /* sun, shown in dark mode (switch to light) */
       :root[data-theme='light'] .theme-toggle-icon::before { content: "\263D"; } /* moon, shown in light mode */
@@ -175,13 +175,13 @@ const NAV_LINKS = [
       .hero-sub {
         margin: 0 auto 8px;
         max-width: 46ch;
-        color: var(--beloch-ink);
+        color: var(--bel-ui-text);
         font-size: 17px;
       }
       .hero-body {
         margin: 0 auto 28px;
         max-width: 52ch;
-        color: var(--beloch-muted);
+        color: var(--bel-ui-text-muted);
         font-size: 15px;
         line-height: 1.55;
       }
@@ -201,11 +201,11 @@ const NAV_LINKS = [
         gap: 20px;
         justify-content: center;
         padding: 24px clamp(20px, 5vw, 56px) 40px;
-        border-top: 1px solid var(--beloch-border);
+        border-top: 1px solid var(--bel-ui-border);
         font-size: 13px;
       }
-      .site-footer a { color: var(--beloch-muted); }
-      .site-footer a:hover { color: var(--beloch-ink); }
+      .site-footer a { color: var(--bel-ui-text-muted); }
+      .site-footer a:hover { color: var(--bel-ui-text); }
     </style>
 
     <script>
