@@ -1,8 +1,14 @@
 // CM6 line markers for the Playground: a small gutter dot (breakpoint-style)
-// plus a line-background highlight on whichever source line produced the
-// currently-shown fold step, and a second highlight on the line a failed run
-// reported. Read-only/display-only by design: it never moves the text
-// cursor/selection, so it can't interfere with editing.
+// plus a line-background highlight over the source the currently-shown step
+// stands for, and a second highlight on the line a failed run reported.
+// Read-only/display-only by design: it never moves the text cursor/selection,
+// so it can't interfere with editing.
+//
+// A step stands for more than its own line. Only a fold or a mark makes a
+// step, so everything between one of them and the next (a point, a named
+// line, a comment) is in force at the step that precedes it, and the drawing
+// shows what it built. Marking the block rather than the line is what keeps
+// the editor and the drawing saying the same thing.
 //
 // The two markers are independent: a diagnostic leaves the last valid drawing
 // and its step marker standing (B3.5), so both lines can be lit at once.
@@ -13,25 +19,33 @@ import type { DecorationSet } from "@codemirror/view";
 import { StateEffect, StateField } from "@codemirror/state";
 import type { EditorState } from "@codemirror/state";
 
-export const setStepLine = StateEffect.define<number | null>();
+// The source a step stands for: its first line carries the gutter dot, and
+// every line through `to` carries the background.
+export interface StepBlock { line: number; to: number }
 
-interface StepLineValue { line: number | null; deco: DecorationSet }
+export const setStepLine = StateEffect.define<StepBlock | null>();
 
-function decorationsFor(state: EditorState, line: number | null): DecorationSet {
-  if (line == null || line < 1 || line > state.doc.lines) return Decoration.none;
-  const { from } = state.doc.line(line);
-  return Decoration.set([
-    Decoration.line({ attributes: { class: "cm-step-line" } }).range(from),
-  ]);
+interface StepLineValue { block: StepBlock | null; deco: DecorationSet }
+
+function decorationsFor(state: EditorState, block: StepBlock | null): DecorationSet {
+  if (block == null || block.line < 1 || block.line > state.doc.lines) return Decoration.none;
+  const last = Math.min(Math.max(block.to, block.line), state.doc.lines);
+  const deco = Decoration.line({ attributes: { class: "cm-step-line" } });
+  const ranges = [];
+  for (let n = block.line; n <= last; n++) ranges.push(deco.range(state.doc.line(n).from));
+  return Decoration.set(ranges);
 }
 
+const sameBlock = (a: StepBlock | null, b: StepBlock | null): boolean =>
+  a === b || (a !== null && b !== null && a.line === b.line && a.to === b.to);
+
 const stepLineField = StateField.define<StepLineValue>({
-  create: () => ({ line: null, deco: Decoration.none }),
+  create: () => ({ block: null, deco: Decoration.none }),
   update(value, tr) {
-    let line = value.line;
-    for (const e of tr.effects) if (e.is(setStepLine)) line = e.value;
-    if (line === value.line && !tr.docChanged) return value;
-    return { line, deco: decorationsFor(tr.state, line) };
+    let block = value.block;
+    for (const e of tr.effects) if (e.is(setStepLine)) block = e.value;
+    if (sameBlock(block, value.block) && !tr.docChanged) return value;
+    return { block, deco: decorationsFor(tr.state, block) };
   },
   provide: (f) => EditorView.decorations.from(f, (v) => v.deco),
 });
@@ -48,19 +62,24 @@ const stepDotMarker = new StepDotMarker();
 const stepGutterExtension = gutter({
   class: "cm-step-gutter",
   lineMarker(view, line) {
-    const { line: current } = view.state.field(stepLineField);
-    if (current == null) return null;
-    return view.state.doc.lineAt(line.from).number === current ? stepDotMarker : null;
+    const { block } = view.state.field(stepLineField);
+    if (block == null) return null;
+    return view.state.doc.lineAt(line.from).number === block.line ? stepDotMarker : null;
   },
   lineMarkerChange: (update) =>
-    update.startState.field(stepLineField).line !== update.state.field(stepLineField).line,
+    !sameBlock(
+      update.startState.field(stepLineField).block,
+      update.state.field(stepLineField).block,
+    ),
 });
 
 // The line a failed run named. Same mechanism as the step line, its own
 // effect and field so neither clears the other.
 export const setErrorLine = StateEffect.define<number | null>();
 
-const errorLineField = StateField.define<StepLineValue>({
+interface ErrorLineValue { line: number | null; deco: DecorationSet }
+
+const errorLineField = StateField.define<ErrorLineValue>({
   create: () => ({ line: null, deco: Decoration.none }),
   update(value, tr) {
     let line = value.line;
@@ -81,8 +100,14 @@ function errorDecorationsFor(state: EditorState, line: number | null): Decoratio
 
 export const stepMarkerExtensions = [stepLineField, errorLineField, stepGutterExtension];
 
-/** Show (or, with `line: null`, clear) the step-line gutter dot + highlight,
- * and scroll it into view. Never touches the selection/cursor. */
+/** Show (or, with `line: null`, clear) the step marker: the gutter dot on
+ * `line`, the background over `line` through `opts.through`, and the first
+ * line scrolled into view. Never touches the selection/cursor. */
+// `through` (default `line`) is the last line the step stands for. A block
+// that ends above where it starts stands for nothing and clears the marker,
+// which is what a program whose first statement is also its first line asks
+// for.
+//
 // `reveal` (default true) also brings the line into view. Stepping through a
 // program wants that; marking the line a clicked crease was built on does
 // not, because the reader is looking at the drawing and did not ask the
@@ -90,11 +115,13 @@ export const stepMarkerExtensions = [stepLineField, errorLineField, stepGutterEx
 export function setStepLineOn(
   view: EditorView,
   line: number | null,
-  opts: { reveal?: boolean } = {},
+  opts: { through?: number; reveal?: boolean } = {},
 ) {
-  view.dispatch({ effects: setStepLine.of(line) });
-  if (opts.reveal !== false && line != null && line >= 1 && line <= view.state.doc.lines) {
-    const pos = view.state.doc.line(line).from;
+  const to = opts.through ?? line;
+  const block = line == null || to == null || to < line ? null : { line, to };
+  view.dispatch({ effects: setStepLine.of(block) });
+  if (opts.reveal !== false && block !== null && block.line >= 1 && block.line <= view.state.doc.lines) {
+    const pos = view.state.doc.line(block.line).from;
     view.dispatch({ effects: EditorView.scrollIntoView(pos, { y: "center" }) });
   }
 }

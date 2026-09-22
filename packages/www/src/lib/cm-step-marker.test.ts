@@ -33,6 +33,36 @@ test("setStepLineOn adds a line-background decoration on the target line", () =>
   expect(view.dom.querySelector(".cm-step-line")).not.toBeNull();
 });
 
+test("a step marks every line it stands for, with one dot on its first", () => {
+  const view = mountEditor("paper square\nfold X\n.m = free\n--mid = (through .a .c)\nfold Y\n");
+  // The first fold stands for its own line and the two declarations under it.
+  setStepLineOn(view, 2, { through: 4 });
+  expect(view.dom.querySelectorAll(".cm-step-line").length).toBe(3);
+  expect(view.dom.querySelectorAll(".cm-step-gutter .cm-step-dot").length).toBe(1);
+});
+
+test("the source above the first statement is a block of its own", () => {
+  const view = mountEditor("paper square\n--diag = (through .a .c)\nfold X\n");
+  setStepLineOn(view, 1, { through: 2 });
+  expect(view.dom.querySelectorAll(".cm-step-line").length).toBe(2);
+});
+
+test("a block that ends above where it starts stands for nothing", () => {
+  // A program whose first statement is also its first line: step 0 owns no
+  // source at all.
+  const view = mountEditor("fold X\nfold Y\n");
+  setStepLineOn(view, 1, { through: 0 });
+  expect(view.dom.querySelector(".cm-step-line")).toBeNull();
+  expect(view.dom.querySelector(".cm-step-gutter .cm-step-dot")).toBeNull();
+});
+
+test("a block reaching past the end of the document stops at the last line", () => {
+  // No trailing newline, so the document is exactly three lines.
+  const view = mountEditor("paper square\nfold X\n.m = free");
+  setStepLineOn(view, 2, { through: 99 });
+  expect(view.dom.querySelectorAll(".cm-step-line").length).toBe(2);
+});
+
 test("moving to a different line clears the previous marker", () => {
   const view = mountEditor("paper square\nfold X\nfold Y\n");
   setStepLineOn(view, 2);

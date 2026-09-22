@@ -2166,10 +2166,17 @@ const codeLines = code ? code.split("\n").length : 0;
       // step from a longer program lands on the last one.
       runtime.dispatch({ type: "step/to", index: i });
       const clamped = currentStep();
+      // Everything from a statement's own line down to the line before the
+      // next one is in force at this step: only a fold or a mark makes a step,
+      // so a point or a named line declared in between belongs to the step it
+      // follows, and the drawing carries what it built. Step 0 owns the source
+      // above the first statement, which is where the paper is declared.
+      const blockEnd = (i: number): number =>
+        (statements[i]?.sourceLine ?? editor.state.doc.lines + 1) - 1;
       try {
         if (clamped === 0) {
           drawCurrent(keepView, fadeOverride ?? (animate ? "view" : null));
-          setStepLineOn(editor, null);
+          setStepLineOn(editor, 1, { through: blockEnd(0) });
         } else {
           const stmt = statements[clamped - 1]!;
           // A mark folds nothing, so it changes the view rather than the paper.
@@ -2178,7 +2185,7 @@ const codeLines = code ? code.split("\n").length : 0;
           const stepFade: FadeLength =
             currentView === "cp" || stmt.kind !== "fold" ? "view" : "fold";
           drawCurrent(keepView, fadeOverride ?? (animate ? stepFade : null));
-          setStepLineOn(editor, stmt.sourceLine);
+          setStepLineOn(editor, stmt.sourceLine, { through: blockEnd(clamped) });
         }
       } catch (err) {
         showError(`Render error: ${err instanceof Error ? err.message : String(err)}`);
