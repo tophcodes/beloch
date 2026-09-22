@@ -119,10 +119,16 @@ not have to re-derive it.
   playground and the docs; Starlight's own `Header` and `MobileMenuFooter` are
   overrides that hand it the search and the drawer links. The docs lose
   Starlight's site title and its select-shaped mode switch, and gain the
-  wordmark, the three navigation links and the round toggle the landing has.
-  Below 50rem the text links step aside for the search and the drawer button
-  and reappear inside the drawer; the toggle stays reachable without opening
-  anything.
+  wordmark, the navigation and the round toggle the landing has. GitHub is an
+  icon, the two page links are words. Below 50rem the words step aside for the
+  search and the drawer button and reappear inside the drawer; the icon and
+  the toggle stay reachable without opening anything.
+- **The mode toggle is drawn, not typed.** Its moon and sun were the `☽` and
+  `☀` characters set through CSS `content`, so their shape came from whichever
+  installed font the page's fallback chain reached first. The landing and the
+  docs bring different chains, which put two different moons on one site. Both
+  icons are now SVG from Starlight's set, drawn in `currentColor`, and only
+  one is shown.
 - **The lockup.** `Wordmark.astro` sets the mark beside the wordmark at
   `--bel-space-2`, both inline so the mark draws in `currentColor` and follows
   the mode. The mark is a crease pattern, and the three stroke styles that say
