@@ -218,6 +218,35 @@ Out of scope, deliberately:
 - Behaviour changes. The migration is observable only as the same playground.
   Anything the reader could notice belongs in a separate change.
 
+## Migration order
+
+The playground works at the end of every step below, and each step is its own
+commit. The order exists to keep that true: nothing here is a rewrite with a
+broken interval in the middle.
+
+1. **`@beloch/runtime` core.** State, events, reducers, render-command
+   derivation. Gate: the core-alone test.
+2. **`@beloch/runtime-render-dom`.** Render command to SVG in an element.
+   Gate: a drawing the playground produces today, reproduced from a render
+   command under happy-dom.
+3. **The playground adopts core and renderer** for the document, the
+   presentation options and the drawing. Its interaction state stays where it
+   is for now. Gate: the 201 existing tests, plus the click list by hand.
+4. **Interaction state moves in**: step, hover, pin, selection. Gate: the six
+   sequences. This is the step that carries the invariants, so it moves alone.
+5. **`@beloch/runtime-pick`** takes the chooser and the candidate list.
+   Gate: the pick suite.
+6. **`@beloch/runtime-editor`** takes the spans in both directions.
+   Gate: the editor suite.
+7. **`@beloch/runtime-eval`** takes the worker, the phases and the debounce;
+   `playground-run-state.ts` moves in with its tests. Gate: the fake-backend
+   suite. It goes last because it owns the only behaviour the reader watches
+   while it happens, the runtime download and the run button.
+
+Where the risk sits: step 4 holds the invariants that are currently kept by
+hand at each call site, and step 7 holds everything the reader sees. Steps 1,
+2, 5 and 6 are additive and reversible on their own.
+
 ## The name collision, resolved
 
 "Runtime" named two things: this core, and the wasm evaluation runtime the
