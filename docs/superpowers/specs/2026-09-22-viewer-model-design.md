@@ -1,4 +1,4 @@
-# The viewer model: one owner for document and interaction state
+# The runtime: a composable owner for document and interaction state
 
 Point-in-time design document. It is written to be executed from and then
 deleted; the durable part becomes an ADR (see "What outlives this document").
@@ -33,65 +33,102 @@ agree and have no mechanism forcing them to.
 
 Settled in conversation on 2026-09-22:
 
-1. The model is a separate package with a DOM-free core.
-2. It owns the document state, the interaction state, and the render command.
-   Views become renderers without decisions of their own.
-3. A future VS Code preview counts as a consumer, so the core may not reach
-   for the DOM, CodeMirror or SVG. Renderer and editor attach as adapters.
+1. A small core, the **runtime**, holds the state and derives the render
+   command. Optional modules compose onto it. A consumer loads the runtime,
+   the modules it needs, and plugs in its own renderer.
+2. The runtime core is free of the DOM and free of side effects. A planned VS
+   Code preview is a consumer, so nothing in the core may reach for the DOM,
+   CodeMirror or SVG.
+3. **Evaluation is a module beside the core.** The tour and the card
+   evaluate nothing; they are handed a finished FOLD document. Only the
+   playground and a VS Code preview evaluate, and they do it by different
+   means.
 4. The editor owns the source text and reports changes. Everything derived
-   from the text belongs to the model.
-5. First slice: the core plus the playground migration. The playground is the
-   only consumer that exercises the whole state, so it is what proves the
-   interface.
+   from the text belongs to the runtime.
+5. First slice: the core, the two modules the playground needs, the DOM
+   renderer, and the playground migrated onto them.
 
-## What the model owns
+## The core and its document slot
 
-The playground's 27 variables sort into five groups, and the sort is the
-design.
+The runtime holds a **document slot**: a `FoldScene`, its statement list, its
+inspect data, or nothing. The slot is set by an event, and who raises that
+event is the composition's business. The evaluation module raises it after a
+run; the card raises it once from the FOLD JSON embedded in its markup; the
+tour raises it per section from a build-time evaluated program.
 
-**Document state, owned by the model.** The last evaluated source, the
-`FoldScene` it produced, the statement list, the inspect data, the diagnostic
-of a failed run. Derived from text the model does not own.
+That single decision is what makes the core small enough to compose. Without
+it the tour would have to carry a worker it never uses, and the card would
+have to pretend to evaluate what was already evaluated at build time.
 
-**Evaluation lifecycle, owned by the model.** Worker handle, phase
-(`cold` / `loading` / `ready`), in-flight run, load progress, the debounce
-timers, the dispatched-versus-pending source. `playground-run-state.ts`
-already decides the run button and status line from this as a pure function;
-it moves into the core unchanged and keeps its tests.
+Beside the slot the core holds:
 
-**Interaction state, owned by the model.** Current step, the pinned entity,
-the coincidence chooser's open flag and its candidates, the hovered entity.
-This is the group the three consumers share and the reason the package exists.
+**Interaction state.** Current step, the pinned entity, the coincidence
+chooser's open flag and its candidates, the hovered entity. This is the group
+all three consumers share and the reason the package exists.
 
-**Presentation options, owned by the model.** View (`cp` / `folded`), hidden
-mode (`hide` / `dashed` / `depth`), paper scheme, line style. They are inputs
-to the render command, so they belong with it.
+**Presentation options.** View (`cp` / `folded`), hidden mode
+(`hide` / `dashed` / `depth`), paper scheme, line style. They are inputs to
+the render command, so they belong with it.
 
-**Viewport, owned by the view.** Pan offset, zoom scale, drag tracking,
-pointer capture. A second consumer showing the same document at a different
-zoom is correct behaviour, so this state stays local and the core never sees
-it.
+**The render command.** The core derives it on demand from the state above:
+scene, step, view, options and the highlight set, as plain data. A renderer consumes it. Keeping the
+derivation in the core is what lets a headless test assert what a view would
+draw without a view existing.
 
-## The seams
+The core does **not** hold the viewport. Pan offset, zoom scale, drag tracking
+and pointer capture stay with the view, because two consumers showing the same
+document at different zoom is correct behaviour.
 
-Three interfaces, and the core depends on none of them concretely.
+## Modules
 
-**The store.** `subscribe(listener)` plus one `dispatch(event)`. Events are
-the reader's intentions (`hover`, `pick`, `pin`, `unpin`, `step`,
-`setHidden`, `sourceChanged`, `runRequested`), never state assignments. A
-listener receives the new state and the render command derived from it. The
-model is the only writer, so "both views render the same state" is a property
-of the code rather than a habit of the call sites.
+A module contributes a state slice, a pure reducer over its own events, and a
+declaration of the effects it needs. The core imports no module. A module
+reads core state and never another module's slice.
 
-**The renderer adapter.** Takes a render command (scene, step, view, options,
-highlight set) and puts a drawing somewhere. The SVG adapter in
-`packages/www` wraps `@beloch/render-svg` and keeps the DOM work that lives in
-the playground today: hit-line enhancement, ghosting, the crossfade.
+Effects stay out of the reducer, which is the pattern
+`src/lib/playground-run-state.ts` already follows: it decides the run button
+and the status line as a pure function of a state record, and the caller owns
+the worker, both timers and the DOM writes. That file becomes the run-UI
+decision inside the evaluation module and keeps its tests. The scheduler is
+injected, so a headless test drives debounce and timeouts without waiting.
 
-**The editor adapter.** Reports text changes and cursor position to the model,
-receives the spans to mark (step line, reference marks, selection). CodeMirror
-here, `TextDocument` in VS Code. Text flows one way into the model and marks
-flow one way out, which is why no version reconciliation is needed.
+Three modules in this slice, each its own package under `packages/runtime/`:
+
+**`@beloch/runtime` (core).** State, events, reducers, render-command
+derivation. No DOM, no effects, no evaluation.
+
+**`@beloch/runtime-eval`.** Source to document. Owns the phase machine
+(`cold` / `loading` / `ready`), the in-flight run, load progress, the debounce,
+and the dispatched-versus-pending source. Its **backend is swappable**: the
+web consumers pass the wasm worker under `public/beloch/`, a VS Code preview
+passes a subprocess running the native `beloch fold`. One interface, two
+backends. This is the concrete payoff of making evaluation a module rather
+than a core concern.
+
+**`@beloch/runtime-editor`.** Selection and spans, both directions: it turns
+the runtime's selection into the spans an editor should mark (step line,
+reference marks) and turns a cursor position into a selection. It reads
+`document.inspect` and stays free of the DOM; the host passes a small adapter,
+CodeMirror here, `TextDocument` in VS Code.
+
+**`@beloch/runtime-render-dom`** is the renderer plug rather than a module: it
+takes a render command and puts SVG in an element, wrapping
+`@beloch/render-svg` and keeping the DOM work the playground carries today
+(hit-line enhancement, ghosting, the crossfade). Any DOM host can use it, and
+a host with a different surface writes its own plug instead.
+
+## What each consumer composes
+
+| Consumer | Core | eval | editor | renderer |
+|---|---|---|---|---|
+| Playground | yes | wasm worker | CodeMirror | render-dom |
+| `<Beloch>` card | yes | no | no | render-dom |
+| Model tour | yes | no | no | render-dom |
+| VS Code preview | yes | subprocess | `TextDocument` | its own |
+
+The card and the tour need the core and a renderer. They set the document
+once and dispatch step, view and highlight. That is the shape the composition
+has to make possible, and it is how the core's size gets judged.
 
 ## Selection has to be reconciled first
 
@@ -103,7 +140,7 @@ entities lit at once, no notion of a pinned one. The playground keeps one
 a crease by `creaseId` rather than by name.
 
 ADR-0014 settles the identity question: a crease is a bundle of segments, and
-the bundle is what a selection names. So the model carries
+the bundle is what a selection names. So the core carries
 `selection: EntityRef[]` with `pinned: EntityRef | null` beside it, and each
 consumer constrains what it dispatches. The card's multi-selection and the
 playground's single pin are two policies over one state shape. Names stay what
@@ -112,11 +149,15 @@ the identity.
 
 ## Acceptance test
 
-Headless tests on the core, in `bun test`, no browser.
+Headless tests in `bun test`, no browser.
 
-A test drives the model with an interaction sequence and asserts the render
-command and the editor marks it emits. The sequences that matter are the ones
-whose invariants the playground currently maintains by hand:
+**The core alone, no modules.** Given a FOLD document and nothing else, it
+produces a render command, accepts step and selection events, and clamps the
+step to the document. This is the card-and-tour path, and it is the test that
+proves the core composes rather than merely exists.
+
+**The core with the two modules**, driven through the sequences whose
+invariants the playground maintains by hand today:
 
 - hover, then pin, then hover elsewhere: the pin survives, hover is suppressed
 - pin, then step forward: the pin survives the redraw and lights whatever the
@@ -124,8 +165,12 @@ whose invariants the playground currently maintains by hand:
 - pick on coincident lines: the chooser opens with every candidate, and a
   candidate pick closes it and pins that one
 - toggle hidden mode: the render command changes, the selection does not
-- a source change invalidates the scene, the step and the pin together
-- a failed run keeps the last good drawing and adds the diagnostic
+- a source change invalidates the document, the step and the pin together
+- a failed run keeps the last good document and adds the diagnostic
+
+**The eval module against a fake backend.** Phase transitions, debounce
+collapsing two keystrokes into one run, a stalled load, and a run whose source
+matches the previous one. The injected scheduler makes this instant.
 
 Two guards beside them: the existing 201 tests in `packages/www` keep passing,
 and `astro check` gains no errors.
@@ -139,42 +184,40 @@ property under test is the state logic.
 
 In scope:
 
-- The package, core only, with the store, the state shape, the render command
-  and the two adapter interfaces.
-- `playground-run-state.ts` moved into it with its tests.
-- The SVG renderer adapter and the CodeMirror editor adapter in
-  `packages/www`.
-- `Playground.astro` migrated onto it, its inline script reduced to wiring.
-- The headless test suite above.
+- `@beloch/runtime`, `@beloch/runtime-eval`, `@beloch/runtime-editor`,
+  `@beloch/runtime-render-dom`.
+- `playground-run-state.ts` moved into the eval module with its tests.
+- `Playground.astro` migrated onto the composition, its inline script reduced
+  to wiring and viewport handling.
+- The headless suites above.
 
 Out of scope, deliberately:
 
-- The `<Beloch>` card and the model tour. They migrate once the interface has
-  carried the playground.
-- Any VS Code adapter. The constraint shapes the core now; the adapter waits
-  for a preview panel to exist.
+- Migrating the `<Beloch>` card and building the model tour. The core is
+  tested for their path, and they move on their own schedule.
+- The VS Code subprocess backend. The interface admits it; nothing is written
+  until a preview panel exists.
 - Behaviour changes. The migration is observable only as the same playground.
   Anything the reader could notice belongs in a separate change.
 
-## Naming hazard
+## The name collision, resolved
 
-"Runtime" is taken. `playground-run-state.ts` uses it for the wasm evaluation
-runtime (`RuntimePhase`, `RUNTIME_SIZE`, "loading runtime"), and that
-vocabulary reaches the user in the status line. A second meaning would make
-every sentence about either one ambiguous.
-
-Proposal: the package is `@beloch/viewer` at `packages/viewer/`, and the thing
-it holds is the **viewer model**. It sits above `@beloch/scene` and
-`@beloch/render-svg` and depends on the first only.
+"Runtime" named two things: this core, and the wasm evaluation runtime the
+first run downloads. The second one gives up the word. In code it becomes the
+**evaluator**: `EvaluatorPhase`, `EVALUATOR_SIZE`, and the eval module's
+backend interface. The reader-facing status line keeps saying "loading runtime
+(2.3 MB)", because the reader never meets a module name and changing that
+string would be a visible change this slice does not make.
 
 ## What outlives this document
 
 One ADR, on the decision and not on the mechanics: the web client holds its
-state in one model package with a DOM-free core, views are renderers, the
-editor owns the text. It records what was rejected (state in each component,
-a framework store, the card's name-based selection as the identity) and the
-constraint that a non-DOM consumer is planned. Numbered 0024 unless something
-lands first.
+state in a composable runtime, the core carries a document slot rather than an
+evaluator, views are renderers plugged in by the consumer, and the editor owns
+the text. It records what was rejected (state in each component, a framework
+store, evaluation in the core, the card's name-based selection as the
+identity) and the constraint that a non-DOM consumer with a different
+evaluation backend is planned. Numbered 0024 unless something lands first.
 
-The interface itself stays in the package's own types and doc comments, where
-it cannot drift from the code.
+The interfaces themselves stay in the packages' own types and doc comments,
+where they cannot drift from the code.
