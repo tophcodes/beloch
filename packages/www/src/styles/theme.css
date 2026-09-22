@@ -7,6 +7,33 @@
  * highlighting for ```beloch code fences. Everything cosmetic lives in Starlight.
  */
 
+/* ──────────────────────────────────────────────────────────────────────────
+ * Type. The monospace is shipped rather than asked for: it is load-bearing
+ * here, because a reader has to tell `.a` from `.o`, `--` from `-`, `1` from
+ * `l` and `!` from `|` in a language where each of those means something
+ * different. Prose takes a system stack; a paragraph does not carry that
+ * weight. Mathematics stays on KaTeX's own fonts.
+ * ────────────────────────────────────────────────────────────────────────── */
+@font-face {
+	font-family: 'JetBrains Mono';
+	src: url('/fonts/jetbrains-mono-400.woff2') format('woff2');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'JetBrains Mono';
+	src: url('/fonts/jetbrains-mono-600.woff2') format('woff2');
+	font-weight: 600;
+	font-style: normal;
+	font-display: swap;
+}
+
+:root {
+	--bel-font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+	--bel-font-prose: Palatino, 'Palatino Linotype', 'URW Palladio L', Georgia, serif;
+}
+
 /* ── Functional tokens — dark ────────────────────────────────────────────── */
 :root,
 :root[data-theme='dark'] {
@@ -144,7 +171,7 @@
 	border-radius: 12px;
 	overflow-x: auto;
 	margin: 1.25rem 0;
-	font-family: 'IBM Plex Mono', ui-monospace, monospace;
+	font-family: var(--bel-font-mono);
 	font-size: 13.5px;
 	line-height: 22px;
 }
@@ -165,7 +192,7 @@
    glyph and a left border so the distinction does not rest on hue alone. */
 .bel-outcome {
 	margin: 0 0 1.25rem;
-	font-family: 'IBM Plex Mono', ui-monospace, monospace;
+	font-family: var(--bel-font-mono);
 	font-size: 13px;
 	border-radius: 0 0 12px 12px;
 }

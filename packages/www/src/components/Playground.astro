@@ -125,7 +125,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     align-items: center;
     justify-content: space-between;
     padding: 9px 16px;
-    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-family: var(--bel-font-mono);
     font-size: 12px;
   }
   .pg-output .pg-toolbar {
@@ -189,7 +189,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-family: var(--bel-font-mono);
     font-size: 11px;
     color: var(--beloch-muted);
     background: var(--beloch-panel);
@@ -356,7 +356,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     border: 1px solid var(--beloch-border);
     border-radius: 6px;
     padding: 10px 12px;
-    font: 12px/1.5 'IBM Plex Mono', ui-monospace, monospace;
+    font: 12px/1.5 var(--bel-font-mono);
     color: var(--beloch-muted);
     pointer-events: none;
   }
@@ -417,7 +417,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     margin: 0;
     max-width: 32ch;
     text-align: center;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-family: var(--bel-font-prose);
     font-size: 13.5px;
     line-height: 1.5;
   }
@@ -444,7 +444,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     gap: 6px;
     padding: 8px 16px;
     border-top: 1px solid var(--beloch-border);
-    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-family: var(--bel-font-mono);
     font-size: 11px;
     color: var(--beloch-muted);
   }
@@ -603,7 +603,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
         height: "100%",
       },
       ".cm-scroller": {
-        fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+        fontFamily: "JetBrains Mono, ui-monospace, monospace",
         fontSize: "13.5px",
         lineHeight: "22px",
       },

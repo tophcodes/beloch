@@ -12,10 +12,13 @@ test("resolveScheme falls back to default for unknown/empty id", () => {
 });
 
 test("schemeVars sets ink vars for dark paper, clears them for light", () => {
-  const indigo = schemeVars(resolveScheme("indigo"));
+  const indigoScheme = resolveScheme("indigo");
+  const indigo = schemeVars(indigoScheme);
   expect(indigo["--bel-paper-front"]).toBe("#3b4a6b");
-  expect(indigo["--bel-ink"]).toBe("#e7eaf2");
-  expect(indigo["--bel-boundary"]).toBe("#e7eaf2");
+  // Ink and boundary move together and take the scheme's own value, so a
+  // contrast correction there does not have to be restated here.
+  expect(indigo["--bel-ink"]).toBe(indigoScheme.ink);
+  expect(indigo["--bel-boundary"]).toBe(indigoScheme.ink);
 
   const white = schemeVars(resolveScheme("white"));
   expect(white["--bel-paper-front"]).toBe("#fafaf7");

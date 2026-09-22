@@ -111,7 +111,7 @@ const NAV_LINKS = [
         min-height: 100vh;
         background: var(--beloch-panel);
         color: var(--beloch-ink);
-        font-family: 'IBM Plex Sans', system-ui, sans-serif;
+        font-family: var(--bel-font-prose);
         overflow-x: hidden;
       }
       a { color: var(--beloch-accent); text-decoration: none; }
@@ -126,7 +126,7 @@ const NAV_LINKS = [
         border-bottom: 1px solid var(--beloch-border);
       }
       .wordmark {
-        font-family: 'IBM Plex Mono', ui-monospace, monospace;
+        font-family: var(--bel-font-mono);
         font-size: 18px;
         font-weight: 600;
         color: var(--beloch-ink);
@@ -168,7 +168,7 @@ const NAV_LINKS = [
 
       .hero { text-align: center; }
       .hero h1 {
-        font-family: 'IBM Plex Mono', ui-monospace, monospace;
+        font-family: var(--bel-font-mono);
         font-size: clamp(32px, 6vw, 48px);
         margin: 0 0 12px;
       }

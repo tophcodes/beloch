@@ -13,16 +13,23 @@ export interface PaperScheme {
   back: string;   // --bel-paper-back (folded: back side)
   ink?: string;   // --bel-ink + --bel-boundary; only dark papers set it
   swatch: string; // display color of the toolbar swatch
+  // Whether the coloured line style may be offered on this paper. On kraft and
+  // indigo every crease colour falls below 2:1 against the sheet (max 1.86), so
+  // those papers get the monochrome Yoshizawa-Randlett style only, where the
+  // dash pattern carries mountain against valley. The renderer draws monochrome
+  // throughout today; this flag is what a style switch has to honour.
+  colorOk: boolean;
 }
 
 export const STORAGE_KEY = "beloch-paper";
 export const DEFAULT_ID = "white";
 
 export const SCHEMES: PaperScheme[] = [
-  { id: "white",  label: "White",  cp: "#f8fafc", front: "#fafaf7", back: "#dbe4ee", swatch: "#fafaf7" },
-  { id: "kraft",  label: "Kraft",  cp: "#c9a87d", front: "#b8926a", back: "#8f6f4e", swatch: "#b8926a" },
-  { id: "washi",  label: "Washi",  cp: "#f2ead6", front: "#f2ead6", back: "#d8cbaa", swatch: "#f2ead6" },
-  { id: "indigo", label: "Indigo", cp: "#3b4a6b", front: "#3b4a6b", back: "#26314a", ink: "#e7eaf2", swatch: "#3b4a6b" },
+  { id: "white",  label: "White",  cp: "#f8fafc", front: "#fafaf7", back: "#dbe4ee", swatch: "#fafaf7", colorOk: true },
+  { id: "kraft",  label: "Kraft",  cp: "#c9a87d", front: "#b8926a", back: "#8f6f4e", swatch: "#b8926a", colorOk: false },
+  { id: "washi",  label: "Washi",  cp: "#f2ead6", front: "#f2ead6", back: "#d8cbaa", swatch: "#f2ead6", colorOk: true },
+  // Ink and boundary together at 8.05 against the sheet.
+  { id: "indigo", label: "Indigo", cp: "#3b4a6b", front: "#3b4a6b", back: "#26314a", ink: "#f2f5f9", swatch: "#3b4a6b", colorOk: false },
 ];
 
 export function resolveScheme(id: string | null | undefined): PaperScheme {
