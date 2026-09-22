@@ -57,3 +57,36 @@ test("gutter is registered before (left of) the default line-number gutter", () 
   expect(stepIdx).toBeGreaterThanOrEqual(0);
   expect(lineNumIdx).toBeGreaterThan(stepIdx);
 });
+
+// Marking a line and revealing it are different jobs: stepping through a
+// program wants the line brought into view, clicking a crease in the
+// drawing wants the editor left where the reader put it. Asserted on the
+// dispatches rather than on scrollTop, because CodeMirror only renders the
+// visible viewport and a headless editor has no layout to scroll.
+function countDispatches(view: EditorView, run: () => void): number {
+  const real = view.dispatch.bind(view);
+  let n = 0;
+  (view as unknown as { dispatch: typeof real }).dispatch = (...args: Parameters<typeof real>) => {
+    n++;
+    return real(...args);
+  };
+  run();
+  (view as unknown as { dispatch: typeof real }).dispatch = real;
+  return n;
+}
+
+test("reveal:false marks the line and dispatches no scroll", () => {
+  const view = mountEditor("paper square\nfold X\nfold Y\n");
+  expect(countDispatches(view, () => setStepLineOn(view, 3, { reveal: false }))).toBe(1);
+  expect(view.dom.querySelector(".cm-step-line")).not.toBeNull();
+});
+
+test("the default still reveals the line, as stepping needs", () => {
+  const view = mountEditor("paper square\nfold X\nfold Y\n");
+  expect(countDispatches(view, () => setStepLineOn(view, 3))).toBe(2);
+});
+
+test("clearing dispatches once either way", () => {
+  const view = mountEditor("paper square\nfold X\n");
+  expect(countDispatches(view, () => setStepLineOn(view, null))).toBe(1);
+});

@@ -1780,7 +1780,9 @@ const codeLines = code ? code.split("\n").length : 0;
       renderInspect(ref, true);
       if (ref.kind === "crease") {
         const ln = lineOfSpan(currentScene?.inspect?.creases[ref.creaseId]?.span ?? null);
-        if (ln) setStepLineOn(editor, ln);
+        // Mark the statement that built this crease, but leave the editor
+        // where the reader left it: they clicked the drawing, not the code.
+        if (ln) setStepLineOn(editor, ln, { reveal: false });
       }
     };
 

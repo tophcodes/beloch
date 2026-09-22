@@ -83,9 +83,17 @@ export const stepMarkerExtensions = [stepLineField, errorLineField, stepGutterEx
 
 /** Show (or, with `line: null`, clear) the step-line gutter dot + highlight,
  * and scroll it into view. Never touches the selection/cursor. */
-export function setStepLineOn(view: EditorView, line: number | null) {
+// `reveal` (default true) also brings the line into view. Stepping through a
+// program wants that; marking the line a clicked crease was built on does
+// not, because the reader is looking at the drawing and did not ask the
+// editor to move.
+export function setStepLineOn(
+  view: EditorView,
+  line: number | null,
+  opts: { reveal?: boolean } = {},
+) {
   view.dispatch({ effects: setStepLine.of(line) });
-  if (line != null && line >= 1 && line <= view.state.doc.lines) {
+  if (opts.reveal !== false && line != null && line >= 1 && line <= view.state.doc.lines) {
     const pos = view.state.doc.line(line).from;
     view.dispatch({ effects: EditorView.scrollIntoView(pos, { y: "center" }) });
   }
