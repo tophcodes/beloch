@@ -1,7 +1,7 @@
 # Design language: what is built, what is not
 
 The draft that this implements is `design-language.md` (the conditions) plus
-the Claude Design answers to it, which fixed eighteen decisions across three
+the Claude Design answers to it, which fixed nineteen decisions across three
 passes. This file says how far the code follows, so the next piece of work does
 not have to re-derive it.
 
@@ -27,6 +27,7 @@ not have to re-derive it.
 | 16 | The lockup is the mark beside the wordmark | `Wordmark.astro` |
 | 17 | A control that is a mark alone is a circle, one that carries a word is a rectangle | `SiteHeader.astro`, `MenuButton.astro`, the bridge |
 | 18 | On a narrow screen the drawer button sits in the bar below the header | `MenuButton.astro` |
+| 19 | The table of contents is named by the section the reader is in | the bridge, `.display-current` |
 
 ## Built
 
@@ -138,6 +139,19 @@ not have to re-derive it.
   it keeps `--bel-menu-button-width` clear. The search stays in the top bar:
   Starlight renders one search per page with fixed ids, and the desktop header
   is where that one belongs.
+- **The bar below the header names the section.** Starlight's disclosure read
+  "On this page" beside the heading the reader is in, which spends the width of
+  a control on a label nobody needs twice. The heading is the control now, with
+  a caret behind it; the label stays for a screen reader, where it also names
+  the navigation landmark. The caret is drawn from borders rather than set as a
+  character, so no font decides its shape. Before the first heading is
+  observed the control falls back to the label.
+- **The drawer opens below that bar.** Its button is fixed into the bar, so a
+  drawer starting under the header would scroll its own list beneath the
+  button. The drawer now starts below the bar instead. The disclosure steps out
+  while the drawer is open: it sits inside `.main-frame`, which the drawer
+  marks `inert`, so leaving it on screen would show a control that cannot be
+  used.
 - **Two components that flip themselves.** Starlight writes its base values
   dark first and flips them on `:root[data-theme='light']`. `MobileMenuToggle`
   and `Badge` do that flip in their own rules rather than through the
