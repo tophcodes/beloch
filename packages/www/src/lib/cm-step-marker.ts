@@ -17,7 +17,7 @@ import {
 } from "@codemirror/view";
 import type { DecorationSet } from "@codemirror/view";
 import { StateEffect, StateField } from "@codemirror/state";
-import type { EditorState } from "@codemirror/state";
+import type { EditorState, Extension } from "@codemirror/state";
 
 // The source a step stands for: its first line carries the gutter dot, and
 // every line through `to` carries the background.
@@ -50,28 +50,77 @@ const stepLineField = StateField.define<StepLineValue>({
   provide: (f) => EditorView.decorations.from(f, (v) => v.deco),
 });
 
+// Where a step can be reached from the source: the first line of each step's
+// block, and the step it stands for. A program with nothing above its first
+// statement has no slot for step 0, which is the honest answer rather than a
+// second slot on a line that already carries one.
+export interface StepSlot { line: number; step: number }
+
+export const setStepSlots = StateEffect.define<StepSlot[]>();
+
+const stepSlotsField = StateField.define<StepSlot[]>({
+  create: () => [],
+  update(value, tr) {
+    let slots = value;
+    for (const e of tr.effects) if (e.is(setStepSlots)) slots = e.value;
+    return slots;
+  },
+});
+
 class StepDotMarker extends GutterMarker {
+  constructor(
+    private readonly step: number,
+    private readonly current: boolean,
+  ) {
+    super();
+  }
+  override eq(other: StepDotMarker) {
+    return other.step === this.step && other.current === this.current;
+  }
   toDOM() {
     const dot = document.createElement("span");
-    dot.className = "cm-step-dot";
+    // The current step is filled, every other slot is an outline: the reader
+    // sees where they are and where else they could go, in one column.
+    dot.className = this.current ? "cm-step-dot" : "cm-step-dot cm-step-slot";
+    dot.title = this.step === 0 ? "Starting paper" : `Step ${this.step}`;
     return dot;
   }
 }
-const stepDotMarker = new StepDotMarker();
 
-const stepGutterExtension = gutter({
-  class: "cm-step-gutter",
-  lineMarker(view, line) {
-    const { block } = view.state.field(stepLineField);
-    if (block == null) return null;
-    return view.state.doc.lineAt(line.from).number === block.line ? stepDotMarker : null;
-  },
-  lineMarkerChange: (update) =>
-    !sameBlock(
-      update.startState.field(stepLineField).block,
-      update.state.field(stepLineField).block,
-    ),
-});
+/** The step a line's gutter slot stands for, if it carries one. */
+export const slotAtLine = (state: EditorState, line: number): StepSlot | undefined =>
+  state.field(stepSlotsField).find((s) => s.line === line);
+
+const markerFor = (state: EditorState, lineNumber: number): GutterMarker | null => {
+  const { block } = state.field(stepLineField);
+  const slot = slotAtLine(state, lineNumber);
+  const current = block != null && block.line === lineNumber;
+  if (slot) return new StepDotMarker(slot.step, current);
+  // A marked block whose line carries no slot still shows where the reader is,
+  // which is what a clicked crease's line asks for.
+  return current ? new StepDotMarker(-1, true) : null;
+};
+
+const stepGutterExtension = (onPick: ((step: number) => void) | null) =>
+  gutter({
+    class: "cm-step-gutter",
+    lineMarker: (view, line) => markerFor(view.state, view.state.doc.lineAt(line.from).number),
+    lineMarkerChange: (update) =>
+      !sameBlock(
+        update.startState.field(stepLineField).block,
+        update.state.field(stepLineField).block,
+      ) || update.startState.field(stepSlotsField) !== update.state.field(stepSlotsField),
+    domEventHandlers: {
+      mousedown(view, line) {
+        if (onPick === null) return false;
+        const number = view.state.doc.lineAt(line.from).number;
+        const slot = slotAtLine(view.state, number);
+        if (!slot) return false;
+        onPick(slot.step);
+        return true;
+      },
+    },
+  });
 
 // The line a failed run named. Same mechanism as the step line, its own
 // effect and field so neither clears the other.
@@ -98,7 +147,23 @@ function errorDecorationsFor(state: EditorState, line: number | null): Decoratio
   ]);
 }
 
-export const stepMarkerExtensions = [stepLineField, errorLineField, stepGutterExtension];
+/** The marker extensions. `onPickStep` is called when the reader clicks a
+ * step's slot in the gutter; without it the slots are shown and inert. */
+export function stepMarkerExtensions(
+  opts: { onPickStep?: (step: number) => void } = {},
+): Extension[] {
+  return [
+    stepLineField,
+    stepSlotsField,
+    errorLineField,
+    stepGutterExtension(opts.onPickStep ?? null),
+  ];
+}
+
+/** Show the slots a reader can jump to, or clear them with an empty list. */
+export function setStepSlotsOn(view: EditorView, slots: StepSlot[]) {
+  view.dispatch({ effects: setStepSlots.of(slots) });
+}
 
 /** Show (or, with `line: null`, clear) the step marker: the gutter dot on
  * `line`, the background over `line` through `opts.through`, and the first

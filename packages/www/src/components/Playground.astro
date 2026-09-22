@@ -484,6 +484,20 @@ const codeLines = code ? code.split("\n").length : 0;
     border-radius: 50%;
     background: var(--bel-ui-code-accent);
   }
+  /* Every step the program has, in the column the reader already reads it in:
+     an outline for a step that can be reached, the filled dot above for the
+     one on screen. Clicking one is the same move as clicking its dot on the
+     scrubber. */
+  .pg-source :global(.cm-step-slot) {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--bel-ui-code-accent) 55%, transparent);
+  }
+  .pg-source :global(.cm-step-slot:hover) {
+    background: color-mix(in srgb, var(--bel-ui-code-accent) 35%, transparent);
+  }
+  .pg-source :global(.cm-step-gutter) {
+    cursor: pointer;
+  }
   .pg-source :global(.cm-step-line) {
     background: color-mix(in srgb, var(--bel-ui-code-accent) 15%, transparent);
   }
@@ -979,7 +993,13 @@ const codeLines = code ? code.split("\n").length : 0;
   import { EditorView, basicSetup } from "codemirror";
   import { EditorState } from "@codemirror/state";
   import { keymap } from "@codemirror/view";
-  import { stepMarkerExtensions, setStepLineOn, setErrorLineOn } from "../lib/cm-step-marker";
+  import {
+    stepMarkerExtensions,
+    setStepLineOn,
+    setStepSlotsOn,
+    setErrorLineOn,
+    type StepSlot,
+  } from "../lib/cm-step-marker";
   import { refMarkExtensions, setRefSpansOn } from "../lib/cm-ref-marks";
   import { initBelHighlight, belHighlighting } from "../lib/cm-bel-highlight";
   import { parseFold, type FoldScene, type Statement, type Vec2 } from "@beloch/scene";
@@ -1273,14 +1293,19 @@ const codeLines = code ? code.split("\n").length : 0;
       // edited text — clear the gutter indicator, but leave the scrubber
       // and the currently-shown SVG alone (same "stale result stays
       // visible" philosophy as the Run button itself).
-      if (editor.state.doc.toString() !== lastRunCode) setStepLineOn(editor, null);
+      if (editor.state.doc.toString() !== lastRunCode) {
+        setStepLineOn(editor, null);
+        setStepSlotsOn(editor, []);
+      }
     }
 
     const editor = new EditorView({
       state: EditorState.create({
         doc: initialCode,
         extensions: [
-          ...stepMarkerExtensions,
+          // Clicking a slot in the gutter is the same move as clicking its dot
+          // on the scrubber.
+          ...stepMarkerExtensions({ onPickStep: (step) => renderStep(step, true, true) }),
           ...refMarkExtensions,
           basicSetup,
           ...(highlighter ? [belHighlighting(highlighter)] : []),
@@ -2139,6 +2164,19 @@ const codeLines = code ? code.split("\n").length : 0;
     // (called once per successful run, not per statement-click). The timeline
     // has n+1 stops: index 0 is the flat starting sheet, 1..n each statement.
     // Hidden when there's nothing to navigate (no statements at all).
+    // The same stops in the editor's gutter: one slot per step, on the first
+    // line of the source that step stands for. A program with nothing above
+    // its first statement gets no slot for step 0, whose block is empty.
+    function buildStepSlots(scene: FoldScene) {
+      const slots: StepSlot[] = [];
+      for (let step = 0; step <= scene.statements.length; step++) {
+        const block = blockOfStep(scene, step);
+        if (block.toLine !== null && block.toLine < block.fromLine) continue;
+        slots.push({ line: block.fromLine, step });
+      }
+      setStepSlotsOn(editor, slots);
+    }
+
     function buildStepsUI(statements: Statement[]) {
       const n = statements.length;
       stepDots!.innerHTML = "";
@@ -2163,6 +2201,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // doesn't produce a fresh multi-step scene of its own.
     function clearStepsUI() {
       runtime.dispatch({ type: "document/set", scene: null });
+      setStepSlotsOn(editor, []);
       pinned = null;
       choiceOpen = false;
       inspectPanel!.hidden = true;
@@ -2258,6 +2297,7 @@ const codeLines = code ? code.split("\n").length : 0;
         runtime.dispatch({ type: "document/set", scene });
         if (scene.statements.length > 0) {
           buildStepsUI(scene.statements);
+          buildStepSlots(scene);
           const target = pendingSharedStep;
           pendingSharedStep = null;
           renderStep(target ?? scene.statements.length, false);

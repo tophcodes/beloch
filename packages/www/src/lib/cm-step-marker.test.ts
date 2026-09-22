@@ -2,12 +2,15 @@ import { test, expect, beforeAll } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { EditorState } from "@codemirror/state";
 import { EditorView, basicSetup } from "codemirror";
-import { stepMarkerExtensions, setStepLineOn } from "./cm-step-marker";
+import { stepMarkerExtensions, setStepLineOn, setStepSlotsOn, slotAtLine } from "./cm-step-marker";
 
 beforeAll(() => { if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register(); });
 
-function mountEditor(doc: string): EditorView {
-  const state = EditorState.create({ doc, extensions: stepMarkerExtensions });
+function mountEditor(doc: string, onPickStep?: (step: number) => void): EditorView {
+  const state = EditorState.create({
+    doc,
+    extensions: onPickStep ? stepMarkerExtensions({ onPickStep }) : stepMarkerExtensions(),
+  });
   const parent = document.createElement("div");
   document.body.appendChild(parent);
   return new EditorView({ state, parent });
@@ -76,7 +79,7 @@ test("moving to a different line clears the previous marker", () => {
 test("gutter is registered before (left of) the default line-number gutter", () => {
   const state = EditorState.create({
     doc: "a\nb\nc\n",
-    extensions: [...stepMarkerExtensions, basicSetup],
+    extensions: [...stepMarkerExtensions(), basicSetup],
   });
   const parent = document.createElement("div");
   document.body.appendChild(parent);
@@ -119,4 +122,45 @@ test("the default still reveals the line, as stepping needs", () => {
 test("clearing dispatches once either way", () => {
   const view = mountEditor("paper square\nfold X\n");
   expect(countDispatches(view, () => setStepLineOn(view, null))).toBe(1);
+});
+
+// The gutter carries a slot per step, so the column the reader reads the
+// program in also says where else they could stand.
+test("every step gets a slot, and only the current one is filled", () => {
+  const view = mountEditor("paper square\nfold X\nfold Y\n");
+  setStepSlotsOn(view, [
+    { line: 1, step: 0 },
+    { line: 2, step: 1 },
+    { line: 3, step: 2 },
+  ]);
+  setStepLineOn(view, 2, { through: 2 });
+  expect(view.dom.querySelectorAll(".cm-step-gutter .cm-step-dot").length).toBe(3);
+  // The outline class is what an unvisited slot carries; the current step has
+  // the filled dot alone.
+  expect(view.dom.querySelectorAll(".cm-step-gutter .cm-step-slot").length).toBe(2);
+});
+
+test("a slot names the step it stands for", () => {
+  const view = mountEditor("paper square\nfold X\n");
+  setStepSlotsOn(view, [{ line: 2, step: 1 }]);
+  expect(slotAtLine(view.state, 2)).toEqual({ line: 2, step: 1 });
+  expect(slotAtLine(view.state, 1)).toBeUndefined();
+});
+
+test("clearing the slots leaves only the marked step", () => {
+  const view = mountEditor("paper square\nfold X\n");
+  setStepSlotsOn(view, [{ line: 1, step: 0 }, { line: 2, step: 1 }]);
+  setStepLineOn(view, 2, { through: 2 });
+  setStepSlotsOn(view, []);
+  expect(view.dom.querySelectorAll(".cm-step-gutter .cm-step-dot").length).toBe(1);
+  expect(view.dom.querySelector(".cm-step-gutter .cm-step-slot")).toBeNull();
+});
+
+test("a mousedown in the gutter jumps to the slot's step", () => {
+  const picked: number[] = [];
+  const view = mountEditor("paper square\nfold X\n", (step) => picked.push(step));
+  setStepSlotsOn(view, [{ line: 1, step: 0 }]);
+  const cell = view.dom.querySelector(".cm-step-gutter .cm-gutterElement");
+  cell?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+  expect(picked).toEqual([0]);
 });
