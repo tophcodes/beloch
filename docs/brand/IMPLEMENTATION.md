@@ -1,7 +1,7 @@
 # Design language: what is built, what is not
 
 The draft that this implements is `design-language.md` (the conditions) plus
-the Claude Design answers to it, which fixed nineteen decisions across three
+the Claude Design answers to it, which fixed twenty-two decisions across four
 passes. This file says how far the code follows, so the next piece of work does
 not have to re-derive it.
 
@@ -28,6 +28,9 @@ not have to re-derive it.
 | 17 | A control that is a mark alone is a circle, one that carries a word is a rectangle | `SiteHeader.astro`, `MenuButton.astro`, the bridge |
 | 18 | On a narrow screen the drawer button sits in the bar below the header | `MenuButton.astro` |
 | 19 | The table of contents is named by the section the reader is in | the bridge, `.display-current` |
+| 20 | A figure's program is shown, highlighted, on the code surface | `remark-model-blocks.ts` |
+| 21 | The seven statement kinds read as three groups | the bridge |
+| 22 | There is a named type scale | `--bel-text-*` |
 
 ## Built
 
@@ -126,6 +129,23 @@ not have to re-derive it.
   icon, the two page links are words. Below 50rem the words step aside for the
   search and the drawer button and reappear inside the drawer; the icon and
   the toggle stay reachable without opening anything.
+- **A figure's program is code.** It was plain text in a collapsed
+  `<details>`, on the page ground, so the syntax roles a real program uses
+  (points, axiom operators, sigils, numbers) appeared nowhere in the
+  documents. It runs through the same highlighter as a fenced block now, lands
+  on `--bel-ui-code-surface`, and the disclosure starts open. The model
+  document keeps its programs hidden unless a block asks for them: there the
+  mathematics leads and the program is an illustration.
+- **Three groups of statement.** The markup separates seven kinds and the
+  stylesheet drew them alike. B1.7 leaves no room for seven hues, so they fall
+  into what a reader does with them: the kinds that assert keep the accent
+  spine, `remark` and `example` step back onto a divider with a muted label,
+  and `open` sits on `--bel-ui-accent-low` so an unsettled question is findable
+  while scrolling. The label still names which of the seven it is.
+- **A type scale.** `--bel-text-2xs` to `--bel-text-xl` are the sizes the
+  surfaces already used, named, plus a heading ramp and the hero. The docs
+  headings take that ramp rather than Starlight's: Starlight's is built for a
+  sans, and these are set in the monospace, which runs wider at the same size.
 - **One control language in the header.** The bar carried four: Starlight's
   frameless search button, a frameless icon link, a 30px circle with a 1px
   outline, and Starlight's filled drawer chip with a shadow. All four now take
@@ -225,9 +245,6 @@ far it has got, and the control transitions take the duration tokens.
 The gaps the design system records. The list is the brief, and nothing on it
 is filled.
 
-- **No type scale.** Sizes and line heights of the interface stand as literals
-  in the components. Tokenised are the code grid (`--bel-code-size`,
-  `--bel-code-line`) and prose line height (`--bel-line-height`).
 - **No z-index scale.** The export panel sits at 5, controls at 2, tooltips at
   50, each set where it is used.
 - **The focus ring is a pattern.** 2px accent at offset 2px stands at every
