@@ -26,7 +26,11 @@ Auftrittssprache des Projekts ist Englisch. Dieses Dokument ist deutsch, weil es
 Arbeitsmaterial ist. Alle Bezeichner, Tokennamen und Beispielformulierungen
 stehen im Original.
 
-Stand der Quellen: `origin/main` bei `f69217fe`, geprüft am 21.09.2026.
+Stand der Quellen: `origin/main` bei `f69217fe`, geprüft am 21.09.2026. Was von
+diesem Zustand seither geändert wurde, steht in `docs/brand/IMPLEMENTATION.md`;
+wer die Bedingungen gegen den heutigen Code liest, fängt dort an. Die aktuellen
+Werte der Tokens stehen in `packages/www/src/styles/theme.css` und in
+`packages/render-2d/render-svg/src/theme.ts`.
 
 ## Was Beloch ist
 

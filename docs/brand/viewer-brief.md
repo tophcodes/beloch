@@ -13,6 +13,14 @@ wiederholt, nennt er ihre Nummer (B3.1, B2.7 …), damit der Entwurf auf sie
 antworten kann. Was im Brief steht und in keiner Bedingung, ist neu und in
 Abschnitt 3 und 8 gesammelt.
 
+Zwei Dinge bringt der Brief nicht mit und sie werden gebraucht: die
+Kontrastmatrix aus Abschnitt 1.1 der Bedingungen, ohne die sich Abnahmekriterium
+9 und die acht Zellen aus Constraint 13 nicht prüfen lassen, und die aktuellen
+Tokenwerte, die in `packages/www/src/styles/theme.css` und
+`packages/render-2d/render-svg/src/theme.ts` stehen. Der gemessene Zustand in
+den Bedingungen ist an mehreren Stellen überholt;
+`docs/brand/IMPLEMENTATION.md` sagt, was davon gebaut ist.
+
 Auftrittssprache des Projekts ist Englisch. Dieser Brief ist deutsch, weil er
 Arbeitsmaterial ist. Alle Bezeichner, Tokennamen und Pfade stehen im Original.
 
