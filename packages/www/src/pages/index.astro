@@ -1,8 +1,8 @@
 ---
 // Standalone landing page at `/` — bypasses the Starlight shell entirely (no
-// sidebar), so it owns its own <html>/<head>: theme tokens, dark-default +
-// light override wired to Starlight's own `starlight-theme` localStorage key
-// (so the choice is shared with the docs), and the paper-scheme sync script.
+// sidebar), so it owns its own <html>/<head>: theme tokens, the mode read from
+// Starlight's own `starlight-theme` localStorage key (so the choice is shared
+// with the docs), and the paper-scheme sync script.
 //
 // The hero is the live playground, seeded with a build-time-rendered static
 // SVG (same evalBelToFold -> parseFold -> render pipeline `<Beloch>` uses) so
@@ -27,7 +27,7 @@ const NAV_LINKS = [
 ];
 ---
 
-<html lang="en" data-theme="dark">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -54,17 +54,18 @@ const NAV_LINKS = [
     <meta name="twitter:image" content="https://beloch.toph.so/og-image.png" />
     {/* Inlined to avoid a flash of the wrong theme. Shares Starlight's
         `starlight-theme` localStorage key so an explicit toggle choice carries
-        between this page and the docs — but the landing is hard dark-default:
-        with no stored choice it stays dark regardless of system preference
-        (the hero reads best dark), whereas the docs still follow the system. */}
+        between this page and the docs. Nothing is set without a stored choice:
+        the attribute is what pins `color-scheme`, and leaving it off is what
+        lets the visitor's system decide. */}
     <script is:inline>
       (function () {
         var stored = null;
         try {
           stored = localStorage.getItem("starlight-theme");
         } catch (e) {}
-        var theme = stored || "dark";
-        document.documentElement.dataset.theme = theme === "light" ? "light" : "dark";
+        if (stored === "light" || stored === "dark") {
+          document.documentElement.dataset.theme = stored;
+        }
       })();
     </script>
     <script set:html={headSyncScript()} />
@@ -156,9 +157,15 @@ const NAV_LINKS = [
         cursor: pointer;
       }
       .theme-toggle:hover { color: var(--bel-ui-text); border-color: var(--bel-ui-accent); }
+      /* The icon names the mode the button switches TO: a moon while the page
+         is light, a sun while it is dark. With no stored choice there is no
+         attribute to key off, so the system preference carries it. */
       .theme-toggle-icon { font-size: 14px; line-height: 1; }
-      .theme-toggle-icon::before { content: "\2600"; } /* sun, shown in dark mode (switch to light) */
-      :root[data-theme='light'] .theme-toggle-icon::before { content: "\263D"; } /* moon, shown in light mode */
+      .theme-toggle-icon::before { content: "\263D"; }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) .theme-toggle-icon::before { content: "\2600"; }
+      }
+      :root[data-theme='dark'] .theme-toggle-icon::before { content: "\2600"; }
 
       main {
         width: min(1120px, 94vw);
@@ -211,10 +218,18 @@ const NAV_LINKS = [
     <script>
       const STARLIGHT_THEME_KEY = "starlight-theme";
 
+      // Without a stored choice the page has no data-theme and the system
+      // carries the mode, so the first click has to read the system to know
+      // what it is switching away from.
+      const currentTheme = () => {
+        const pinned = document.documentElement.dataset.theme;
+        if (pinned === "light" || pinned === "dark") return pinned;
+        return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      };
+
       const toggle = document.querySelector<HTMLButtonElement>(".theme-toggle");
       toggle?.addEventListener("click", () => {
-        const current = document.documentElement.dataset.theme === "light" ? "light" : "dark";
-        const next = current === "light" ? "dark" : "light";
+        const next = currentTheme() === "light" ? "dark" : "light";
         document.documentElement.dataset.theme = next;
         try {
           localStorage.setItem(STARLIGHT_THEME_KEY, next);

@@ -112,45 +112,46 @@
 	--bel-paper-construction: #4f46e5;
 }
 
-/* ── Interface layer — dark ──────────────────────────────────────────────── */
-:root,
-:root[data-theme='dark'] {
-	--bel-ui-surface:       #171B24;
-	--bel-ui-text:          #E7EAF2;
-	--bel-ui-text-muted:    #8D93A6;
-	--bel-ui-text-faint:    #656B7E;
-	--bel-ui-border:        #2A3040;
+/* ──────────────────────────────────────────────────────────────────────────
+ * Interface layer. Light is the reference: the artefact is ink on paper, the
+ * renderer's own default is dark ink on a near-white sheet, three of the four
+ * paper schemes are light, and the paper is printed on paper. Take the dark
+ * column away and a complete site remains.
+ *
+ * Both values of a role stand next to each other, and `color-scheme` below
+ * decides which one light-dark() hands out: with no stored choice the visitor's
+ * system decides, and an explicit choice pins it.
+ * ────────────────────────────────────────────────────────────────────────── */
+:root {
+	color-scheme: light dark;
+
+	--bel-ui-surface:       light-dark(#F7F9FB, #171B24);
+	--bel-ui-text:          light-dark(#171A21, #E7EAF2);
+	--bel-ui-text-muted:    light-dark(#5B6478, #8D93A6);
+	--bel-ui-text-faint:    light-dark(#8891A3, #656B7E);
+	--bel-ui-border:        light-dark(#D8DEE7, #2A3040);
 
 	/* Accent and error. Kept clear of the crease colours so a focus ring next
-	   to a drawing cannot read as a valley fold: the accent sits at dE76 30.1
-	   from the nearest paper colour here, and at L* 35.8 against mountain 47.9
-	   and valley 46.1, so it stays separate desaturated too. */
-	--bel-ui-accent:        #7ED4CB;
-	--bel-ui-accent-text:   #08221E;
-	--bel-ui-error:         #ff7d5e;
-}
+	   to a drawing cannot read as a valley fold: in the dark column the accent
+	   sits at dE76 30.1 from the nearest paper colour, and at L* 35.8 against
+	   mountain 47.9 and valley 46.1, so it stays separate desaturated too. */
+	--bel-ui-accent:        light-dark(#0D5F54, #7ED4CB);
+	--bel-ui-accent-text:   light-dark(#FFFFFF, #08221E);
+	--bel-ui-error:         light-dark(#cf4327, #ff7d5e);
 
-/* The code surface is the one dark area that survives into the light mode, so
-   it holds one value in both and the ten syntax roles are measured against
-   this ground alone. Line numbers are text and hold 4.5:1 like any other. */
-:root {
+	/* The code surface is the one dark area the light mode keeps, so it holds
+	   one value in both and the ten syntax roles are measured against this
+	   ground alone. Line numbers are text and hold 4.5:1 like any other. */
 	--bel-ui-code-surface: #101C2E;
 	--bel-ui-code-text:    #C9D2DE;   /* 11.2:1 */
 	--bel-ui-code-gutter:  #7E889A;   /*  4.8:1 */
 }
 
-/* ── Interface layer — light ─────────────────────────────────────────────── */
-:root[data-theme='light'] {
-	--bel-ui-surface:       #F7F9FB;
-	--bel-ui-text:          #171A21;
-	--bel-ui-text-muted:    #5B6478;
-	--bel-ui-text-faint:    #8891A3;
-	--bel-ui-border:        #D8DEE7;
-
-	--bel-ui-accent:        #0D5F54;
-	--bel-ui-accent-text:   #FFFFFF;
-	--bel-ui-error:         #cf4327;
-}
+/* A stored choice pins the scheme; without one `light dark` above leaves it to
+   the visitor's system. The storage key is Starlight's, so the choice carries
+   between the docs and the landing, which brings its own shell. */
+:root[data-theme='light'] { color-scheme: light; }
+:root[data-theme='dark']  { color-scheme: dark; }
 
 /* ──────────────────────────────────────────────────────────────────────────
  * <Beloch> render cards break out of the prose column, centered, running wider.
@@ -229,19 +230,12 @@
    lists of light values equal. Measured on the dark set: 4.51 to 4.73 against
    the panel, L* 54.5 to 55.9, ΔE76 54.4 between any two and 20.4 to every other
    colour in the project. */
-.figure-hl-0 { color: #07715a; }
-.figure-hl-1 { color: #c2004f; }
-.figure-hl-2 { color: #8a2fd6; }
-.figure-hl-3 { color: #b25600; }
-.figure-hl-4 { color: #0b6fb0; }
-.figure-hl-5 { color: #5f6600; }
-
-:root[data-theme='dark'] .figure-hl-0 { color: #079876; }
-:root[data-theme='dark'] .figure-hl-1 { color: #fb1777; }
-:root[data-theme='dark'] .figure-hl-2 { color: #b054ff; }
-:root[data-theme='dark'] .figure-hl-3 { color: #ce6603; }
-:root[data-theme='dark'] .figure-hl-4 { color: #1788d7; }
-:root[data-theme='dark'] .figure-hl-5 { color: #808905; }
+.figure-hl-0 { color: light-dark(#07715a, #079876); }
+.figure-hl-1 { color: light-dark(#c2004f, #fb1777); }
+.figure-hl-2 { color: light-dark(#8a2fd6, #b054ff); }
+.figure-hl-3 { color: light-dark(#b25600, #ce6603); }
+.figure-hl-4 { color: light-dark(#0b6fb0, #1788d7); }
+.figure-hl-5 { color: light-dark(#5f6600, #808905); }
 
 /* Beloch fenced code blocks (```beloch) highlighted by the remark plugin, and
    the grammar fragments of spec/BELOCH.md (```grammar), so a rule and a program

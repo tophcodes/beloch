@@ -9,7 +9,7 @@ far the code follows, so the next piece of work does not have to re-derive it.
 | # | Decision | Where it lives |
 |---|---|---|
 | 1 | Interface accent is a teal outside the fold semantics | `--bel-ui-accent` in `theme.css` |
-| 2 | Reference mode is light | **not implemented**, see below |
+| 2 | Reference mode is light | `light-dark()` in `theme.css`, `index.astro` |
 | 3 | Code surface stays dark in both modes | already true |
 | 4 | Engine values win over web tokens | `render-svg/src/theme.ts` |
 | 5 | Kraft and indigo get the monochrome style only | `colorOk` in `paper-schemes.ts` |
@@ -47,18 +47,46 @@ far the code follows, so the next piece of work does not have to re-derive it.
   and the typst show rules to the same values.
 - **Scale and duration tokens**, and a `prefers-reduced-motion` rule, which the
   site did not have anywhere.
+- **Light as the reference mode.** Every interface role is one `light-dark()`
+  declaration with the light value first, and `color-scheme` decides which half
+  is handed out: with no stored choice the visitor's system decides, on the
+  landing as well as in the docs. The landing no longer pins dark before the
+  first paint.
 
 ## Not built, and why
 
-- **Light as the reference mode.** The landing is still hard-defaulted to dark
-  and the token blocks are still written dark-first, with light as the override.
-  Turning that around touches every surface at once, so it belongs with the
-  landing pass rather than ahead of it.
 - **The fold crossfade.** There is no motion on the drawing at all today, so
   this is new behaviour rather than a change to existing behaviour.
 - **A colour/monochrome style switch.** `colorOk` says which papers may offer
   the coloured style, but nothing offers it yet: the renderer draws the
   monochrome Yoshizawa-Randlett style throughout.
+
+## Measured, and left for a decision
+
+Making light the reference put its values under the same measurement the dark
+ones already had. Four things came out of it that a value change alone does not
+settle.
+
+- **The light error colour is the old light mountain colour.** `#cf4327` holds
+  4.44:1 on the light surface, just under the 4.5 a text colour needs, and sits
+  at ΔE76 13.2 from `mountain`, so an error message beside a drawing reads as a
+  fold direction (B1.6, B6.5). Darkening the dark-mode error to 4.5:1 gives
+  `#b05641`, which holds 4.68 and ΔE76 36.6 from `mountain`.
+
+- **The light accent and the first highlight colour are both teal.** ΔE76 11.0
+  against `HIGHLIGHT_TEXT[0]`, where B1.7 asks for 25. Dark mode reaches 30.1
+  because the accent is light and the highlight is dark; on a light ground both
+  have to be dark for 4.5:1, so the separation has to come from hue, and the
+  best teal that still holds contrast reaches 24.3. Either the first highlight
+  leaves teal-green, which changes every figure and the PDF, or the accent
+  leaves teal, which was decision 1.
+
+- **`--bel-ui-border` carries two roles.** It draws the dividers between panes
+  and the outlines of tabs, the theme toggle, the step buttons and the paper
+  swatches. At 1.28:1 light and 1.31:1 dark that is fine for a divider and
+  below the 3:1 B6.5 asks of a control outline. The fix is two roles.
+
+- **`--bel-ui-text-faint` is declared and used nowhere.**
 
 ## Next
 

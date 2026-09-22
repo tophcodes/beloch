@@ -63,7 +63,7 @@ test("figure highlight captions carry HIGHLIGHT_TEXT on the web and in print", a
   const typ = await read("../../../../scripts/typst-compat.typ");
 
   HIGHLIGHT_TEXT.forEach((colour, i) => {
-    expect(css).toContain(`.figure-hl-${i} { color: ${colour}; }`);
+    expect(css).toContain(`.figure-hl-${i} { color: light-dark(${colour},`);
     expect(typ).toContain(`#show raw.where(lang: "figure-hl-${i}"): it => text(fill: rgb("${colour}"))`);
   });
 
