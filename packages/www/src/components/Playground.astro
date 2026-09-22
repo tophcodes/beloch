@@ -563,11 +563,19 @@ const codeLines = code ? code.split("\n").length : 0;
   /* Crease hit-area (task 8): enhanceCreaseHits inserts one of these,
      transparent and fat, right after every real crease line so there's a
      forgiving click target — the visible line itself stays thin. */
-  .pg-canvas :global(.pg-hit) {
+  .pg-canvas :global(line.pg-hit) {
     stroke: transparent;
     stroke-width: 14;
     fill: none;
     pointer-events: stroke;
+    cursor: pointer;
+  }
+  /* The point twin is a disc rather than a fat stroke, so it takes the
+     pointer over its whole area. */
+  .pg-canvas :global(circle.pg-hit) {
+    fill: transparent;
+    stroke: none;
+    pointer-events: fill;
     cursor: pointer;
   }
   /* Everything grabs the paper by default (see .pg-result above) — creases
@@ -966,7 +974,7 @@ const codeLines = code ? code.split("\n").length : 0;
   import { segMatchesLine } from "../lib/stack-picker";
   import { hoverSummary, segmentRows, edgeSegmentRows } from "../lib/tooltip-content";
   import { bundleElements } from "../lib/bundle-highlight";
-  import { enhanceCreaseHits, CREASE_SELECTOR, HIT_CLASS } from "../lib/crease-hits";
+  import { enhanceCreaseHits, enhancePointHits, CREASE_SELECTOR, HIT_CLASS } from "../lib/crease-hits";
   import { edgeOfLine } from "../lib/edge-lookup";
   import { runUi, type RuntimePhase } from "../lib/playground-run-state";
 
@@ -1984,7 +1992,11 @@ const codeLines = code ? code.split("\n").length : 0;
       swapDrawing(canvas, svg, fade);
       // The outgoing state is inert, so only the step that is current gets hit
       // areas; `querySelector` finds it because the fading layer sits after it.
-      enhanceCreaseHits(canvas.querySelector("svg") ?? canvas); // bigger click/hover target per crease line (task 8)
+      // Bigger click/hover target per crease line and per point dot; the
+      // drawn line and dot stay as thin as the notation wants them.
+      const live = canvas.querySelector("svg") ?? canvas;
+      enhanceCreaseHits(live);
+      enhancePointHits(live);
       makeCreasesReachable();
       // A drawing on the stage means the rail has something to stand for. A
       // pinned answer survives a step change, which is what the rail is for.
@@ -2454,12 +2466,15 @@ const codeLines = code ? code.split("\n").length : 0;
       e.preventDefault();
     });
 
-    function hitLines(): SVGLineElement[] {
-      return Array.from(canvas!.querySelectorAll<SVGLineElement>(`.${HIT_CLASS}`));
+    // Every hit target on the stage: the fat twins over crease lines and the
+    // discs over point dots, in document order.
+    function hitLines(): SVGElement[] {
+      return Array.from(canvas!.querySelectorAll<SVGElement>(`.${HIT_CLASS}`));
     }
 
-    // Called after every drawing swap, because the hit lines are rebuilt with
-    // the SVG. One of them holds the tab stop; the rest are reachable from it.
+    // Called after every drawing swap, because the hit targets are rebuilt
+    // with the SVG. One of them holds the tab stop; the rest are reachable
+    // from it.
     function makeCreasesReachable() {
       if (hero) return;
       const insp = currentScene?.inspect;
@@ -2469,8 +2484,12 @@ const codeLines = code ? code.split("\n").length : 0;
         const ref = resolveRef(el);
         const title = ref && insp ? hoverSummary(ref, insp)?.title : null;
         // A paper edge carries no inspect entry to take a name from, so it is
-        // named for what it is rather than as a crease.
-        const fallback = ref?.kind === "edge" ? "Paper edge" : "Crease line";
+        // named for what it is rather than as a crease. Same for a point dot,
+        // whose twin is reachable too.
+        const fallback =
+          ref?.kind === "edge" ? "Paper edge"
+            : ref?.kind === "vertex" ? "Point"
+              : "Crease line";
         el.setAttribute("aria-label", title ?? fallback);
       });
     }
@@ -2480,7 +2499,7 @@ const codeLines = code ? code.split("\n").length : 0;
       if (hero || !el.classList?.contains(HIT_CLASS)) return;
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         const lines = hitLines();
-        const i = lines.indexOf(el as SVGLineElement);
+        const i = lines.indexOf(el as SVGElement);
         const next = lines[(i + (e.key === "ArrowDown" ? 1 : lines.length - 1)) % lines.length];
         if (!next) return;
         lines.forEach((l) => l.setAttribute("tabindex", "-1"));

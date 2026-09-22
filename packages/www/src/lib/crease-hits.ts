@@ -1,6 +1,6 @@
-// Crease hit-area (playground slice B, task 8): rendered crease `<line>`s
-// are thin (stroke-width ~1-2, see render-scene.ts's `theme.lineStyle`) —
-// too fine a target to reliably hover/click. This inserts a transparent,
+// Hit areas for the thin marks the renderer draws: crease `<line>`s
+// (stroke-width ~1-2, see render-scene.ts's `theme.lineStyle`) and point
+// dots (r = 3) are too fine a target to reliably hover/click. This inserts a transparent,
 // fatter sibling line with the SAME endpoints + `data-crease-id` right
 // after each real crease line, so `lookupEntity` resolves the hit line
 // exactly like the visible one, while CSS (`.pg-hit` in Playground.astro)
@@ -53,5 +53,36 @@ export function enhanceCreaseHits(container: Element): void {
     const next = line.nextElementSibling;
     if (next?.classList.contains(HIT_CLASS)) return;
     line.after(buildHitLine(doc, line));
+  });
+}
+
+// Point dots are drawn at r = 3 in the annotations layer, which is a 6px
+// target. Same treatment as a crease line: a transparent, fatter twin right
+// after the dot, carrying the identity `lookupEntity` resolves by
+// (`closest("[data-vertex]")`, plus the name when the dot has one).
+export const POINT_SELECTOR = '[data-layer="annotations"] circle[data-vertex]';
+const HIT_DOT_R = 10;
+
+export function buildHitDot(doc: Document, dot: Element): Element {
+  const hit = doc.createElementNS(SVG_NS, "circle");
+  for (const attr of ["cx", "cy"]) hit.setAttribute(attr, dot.getAttribute(attr) ?? "0");
+  hit.setAttribute("r", String(HIT_DOT_R));
+  for (const attr of ["data-vertex", "data-bel-name", "data-kind"]) {
+    const v = dot.getAttribute(attr);
+    if (v !== null) hit.setAttribute(attr, v);
+  }
+  hit.setAttribute("class", HIT_CLASS);
+  return hit;
+}
+
+// Idempotent, like enhanceCreaseHits: a dot already followed by its twin is
+// skipped, so re-running against unchanged markup stacks nothing.
+export function enhancePointHits(container: Element): void {
+  const doc = container.ownerDocument;
+  container.querySelectorAll(POINT_SELECTOR).forEach((dot) => {
+    if (dot.classList.contains(HIT_CLASS)) return; // a twin from an earlier run
+    const next = dot.nextElementSibling;
+    if (next?.classList.contains(HIT_CLASS)) return;
+    dot.after(buildHitDot(doc, dot));
   });
 }

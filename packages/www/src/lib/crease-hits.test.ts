@@ -1,6 +1,6 @@
 import { test, expect, beforeAll } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
-import { buildHitLine, enhanceCreaseHits, HIT_CLASS } from "./crease-hits";
+import { buildHitLine, enhanceCreaseHits, enhancePointHits, HIT_CLASS } from "./crease-hits";
 
 beforeAll(() => { if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register(); });
 
@@ -76,4 +76,45 @@ test("enhanceCreaseHits enhances a boundary line with no data-crease-id too", ()
   expect(hits).toHaveLength(1);
   expect(hits[0]!.hasAttribute("data-crease-id")).toBe(false);
   expect(hits[0]!.getAttribute("x2")).toBe("1");
+});
+
+function mountDots(inner: string): Element {
+  const container = document.createElement("div");
+  container.innerHTML = `<svg><g data-layer="annotations">${inner}</g></svg>`;
+  return container;
+}
+
+test("enhancePointHits gives each point dot a fatter transparent twin", () => {
+  const container = mountDots(
+    '<circle data-kind="point" data-vertex="7" data-bel-name="m" cx="5" cy="6" r="3"></circle>' +
+      '<circle data-vertex="8" cx="9" cy="9" r="3"></circle>',
+  );
+  enhancePointHits(container);
+  const hits = container.querySelectorAll(`.${HIT_CLASS}`);
+  // Both dots are hoverable: a crossing carries no name but is still an
+  // entity the inspector resolves by data-vertex.
+  expect(hits.length).toBe(2);
+  const first = hits[0]!;
+  expect(first.getAttribute("cx")).toBe("5");
+  expect(first.getAttribute("cy")).toBe("6");
+  expect(Number(first.getAttribute("r"))).toBeGreaterThan(3);
+  // lookupEntity resolves via closest("[data-vertex]"), so the twin has to
+  // carry the same identity as the dot it covers.
+  expect(first.getAttribute("data-vertex")).toBe("7");
+  expect(first.getAttribute("data-bel-name")).toBe("m");
+});
+
+test("enhancePointHits is idempotent", () => {
+  const container = mountDots('<circle data-vertex="1" cx="1" cy="1" r="3"></circle>');
+  enhancePointHits(container);
+  enhancePointHits(container);
+  expect(container.querySelectorAll(`.${HIT_CLASS}`).length).toBe(1);
+});
+
+test("enhancePointHits leaves labels and creases alone", () => {
+  const container = mountDots(
+    '<text data-bel-name="a">.a</text><line data-kind="crease" x1="0" y1="0" x2="1" y2="1"></line>',
+  );
+  enhancePointHits(container);
+  expect(container.querySelectorAll(`.${HIT_CLASS}`).length).toBe(0);
 });
