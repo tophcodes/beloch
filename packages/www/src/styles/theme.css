@@ -143,21 +143,29 @@
 :root {
 	color-scheme: light dark;
 
-	--bel-ui-surface:       light-dark(#F7F9FB, #171B24);
-	--bel-ui-text:          light-dark(#171A21, #E7EAF2);
-	--bel-ui-text-muted:    light-dark(#5B6478, #8D93A6);
+	/* The light column's neutrals are warm: the artefact is paper, and a card
+	   of paper on a cool grey page reads as a screenshot of paper. Surface is
+	   what a card is made of, ground is the page it lies on, and quiet is the
+	   fill of a control that is on. The dark column keeps the cool neutrals it
+	   had; warming it is its own pass with its own four checks. */
+	--bel-ui-surface:       light-dark(#FFFFFF, #171B24);
+	--bel-ui-ground:        light-dark(#FBFAF7, #12151C);
+	--bel-ui-quiet:         light-dark(#F1EFEA, #1F2533);
+	--bel-ui-text:          light-dark(#1A1D22, #E7EAF2);   /* 16.9:1 on surface */
+	--bel-ui-text-muted:    light-dark(#5C6068, #8D93A6);   /*  6.3:1 on surface */
 	/* The text of a switched-off control, carried together with the divider
 	   outline: the pair reads as "not available here" without the control
-	   disappearing, and the reason is in its title. */
-	--bel-ui-text-faint:    light-dark(#8891A3, #656B7E);
+	   disappearing, and the reason is in its title. At 2.2:1 it is the weakest
+	   role in the file, which is what a control nobody can use should be. */
+	--bel-ui-text-faint:    light-dark(#B5B0A6, #656B7E);
 
 	/* Two border roles, because they answer to different thresholds. A line
-	   between two areas only has to be found, so it stays quiet at 1.28:1
+	   between two areas only has to be found, so it stays quiet at 1.38:1
 	   light and 1.31:1 dark. The outline of a control is what says where the
-	   control is and needs 3:1, which these hold at 3.75:1 and 4.57:1 against
+	   control is and needs 3:1, which these hold at 3.56:1 and 4.57:1 against
 	   surface. */
-	--bel-ui-divider:        light-dark(#D8DEE7, #2A3040);
-	--bel-ui-control-border: light-dark(#767F8E, #79839A);
+	--bel-ui-divider:        light-dark(#DFDBD2, #2A3040);
+	--bel-ui-control-border: light-dark(#8E877A, #79839A);
 
 	/* Accent and error. Kept clear of the crease colours so a focus ring next
 	   to a drawing cannot read as a valley fold: in the dark column the accent
