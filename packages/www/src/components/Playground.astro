@@ -149,15 +149,15 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     height: 44px;
     padding: 0;
     border-radius: 50%;
-    border: 1px solid var(--beloch-valley);
+    border: 1px solid var(--beloch-accent);
     background: var(--beloch-panel);
-    color: var(--beloch-valley);
+    color: var(--beloch-accent);
     cursor: pointer;
     transition: background 0.15s ease, color 0.15s ease;
   }
   .pg-run:hover:not(:disabled) {
-    background: var(--beloch-valley);
-    color: #fff;
+    background: var(--beloch-accent);
+    color: var(--beloch-accent-ink);
   }
   .pg-run:disabled {
     cursor: default;
@@ -226,10 +226,10 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     height: 8px;
     margin: 6px auto 0;
     border-radius: 50%;
-    background: var(--beloch-valley);
+    background: var(--beloch-accent);
   }
   .pg-source :global(.cm-step-line) {
-    background: color-mix(in srgb, var(--beloch-valley) 15%, transparent);
+    background: color-mix(in srgb, var(--beloch-accent) 15%, transparent);
   }
 
   .pg-output {
@@ -273,13 +273,13 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
      line. Overrides the per-segment stroke/stroke-width attributes
      render-scene.ts emits (CSS class beats presentation attributes). */
   .pg-canvas :global(.pg-hl) {
-    stroke: var(--beloch-valley);
+    stroke: var(--beloch-accent);
     stroke-width: 4;
   }
   /* Occluded segments of a highlighted bundle, drawn from inspect data since
      they have no rendered line — dashed + semi-transparent to read as "behind". */
   .pg-canvas :global(.pg-hl-ghost) {
-    stroke: var(--beloch-valley);
+    stroke: var(--beloch-accent);
     stroke-width: 2.5;
     stroke-dasharray: 5 4;
     opacity: 0.55;
@@ -334,7 +334,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     opacity: 1;
   }
   .pg-reset:hover {
-    color: var(--beloch-valley);
+    color: var(--beloch-accent);
   }
   .pg-reset[hidden] {
     display: none;
@@ -422,7 +422,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     line-height: 1.5;
   }
   .pg-canvas :global(.pg-notice-info) { color: var(--beloch-muted); }
-  .pg-canvas :global(.pg-notice-error) { color: var(--beloch-mountain); }
+  .pg-canvas :global(.pg-notice-error) { color: var(--beloch-error); }
 
   .pg-swatches { display: inline-flex; gap: 8px; }
   .pg-swatches :global(.pg-swatch) {
@@ -433,7 +433,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
   }
   .pg-swatches :global(.pg-swatch.is-active) {
-    outline: 2px solid var(--beloch-valley);
+    outline: 2px solid var(--beloch-accent);
     outline-offset: 1px;
   }
 
@@ -471,8 +471,8 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     transition: color 0.15s ease, border-color 0.15s ease;
   }
   .pg-step-nav:hover:not(:disabled) {
-    color: var(--beloch-valley);
-    border-color: var(--beloch-valley);
+    color: var(--beloch-accent);
+    border-color: var(--beloch-accent);
   }
   .pg-step-nav:disabled {
     opacity: 0.4;
@@ -510,7 +510,7 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   }
   .pg-step-track::after {
     width: var(--pg-progress, 0%);
-    background: var(--beloch-valley);
+    background: var(--beloch-accent);
     transition: width 0.15s ease;
   }
   :global(.pg-step-dot) {
@@ -540,14 +540,14 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
     transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
   }
   :global(.pg-step-dot:hover)::before {
-    border-color: var(--beloch-valley);
+    border-color: var(--beloch-accent);
     transform: scale(1.15);
   }
   /* Steps at or before the current one read as "reached" (filled valley);
      the current one is additionally enlarged with a halo ring. */
   :global(.pg-step-dot.is-past)::before {
-    background: var(--beloch-valley);
-    border-color: var(--beloch-valley);
+    background: var(--beloch-accent);
+    border-color: var(--beloch-accent);
   }
   :global(.pg-step-dot.is-active) {
     z-index: 2;
@@ -555,13 +555,13 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   :global(.pg-step-dot.is-active)::before {
     width: 18px;
     height: 18px;
-    background: var(--beloch-valley);
-    border-color: var(--beloch-valley);
+    background: var(--beloch-accent);
+    border-color: var(--beloch-accent);
     /* Inner panel gap ring + outer valley glow — pops the current dot off
        both the line and its neighbors. */
     box-shadow:
       0 0 0 3px var(--beloch-panel),
-      0 0 0 6px color-mix(in srgb, var(--beloch-valley) 30%, transparent);
+      0 0 0 6px color-mix(in srgb, var(--beloch-accent) 30%, transparent);
   }
   .pg-step-label {
     text-align: center;

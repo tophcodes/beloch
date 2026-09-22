@@ -16,9 +16,22 @@
 	--beloch-faint:    #656B7E;
 	--beloch-border:   #2A3040;
 
-	/* Crease semantics — valley (blue) / mountain (red). Load-bearing content. */
-	--beloch-valley:   #6f9bff;
-	--beloch-mountain: #ff7d5e;
+	/* Crease semantics — valley (blue) / mountain (red). Load-bearing content,
+	   and the same values the render engine uses (render-svg/src/theme.ts's
+	   DEFAULT_THEME), because a crease is always drawn on paper: the paper
+	   schemes set the ground under it, never this panel. One value per role,
+	   in both themes. These are reserved for creases; interface state takes
+	   --beloch-accent and --beloch-error below. */
+	--beloch-valley:   #2563eb;
+	--beloch-mountain: #dc2626;
+
+	/* Interface accent and error. Kept clear of the crease colours so a focus
+	   ring next to a drawing cannot read as a valley fold: the accent sits at
+	   dE76 30.1 from the nearest semantic colour here, and at L* 35.8 against
+	   mountain 47.9 and valley 46.1, so it stays separate desaturated too. */
+	--beloch-accent:     #7ED4CB;
+	--beloch-accent-ink: #08221E;
+	--beloch-error:      #ff7d5e;
 
 	/* Code panel (always dark, in both themes) */
 	--beloch-code-bg: #101C2E;
@@ -39,8 +52,11 @@
 	--beloch-faint:    #8891A3;
 	--beloch-border:   #D8DEE7;
 
-	--beloch-valley:   #2f5fd0;
-	--beloch-mountain: #cf4327;
+	/* Crease colours are not redefined here: they belong to the paper, which
+	   keeps its own ground in both themes. */
+	--beloch-accent:     #0D5F54;
+	--beloch-accent-ink: #FFFFFF;
+	--beloch-error:      #cf4327;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -127,7 +143,7 @@
    decided about a tagged block, rendered directly under its highlighted
    program on the same always-dark code panel as .bel-block. One unscoped
    definition each, not re-scoped per site theme, same as the token classes
-   above. Verified/failed lean on --beloch-valley / --beloch-mountain, the
+   above. Verified/failed lean on --beloch-accent / --beloch-error, the
    crease colours a reader already reads as good/bad fold direction, plus a
    glyph and a left border so the distinction does not rest on hue alone. */
 .bel-outcome {
@@ -146,12 +162,12 @@
 }
 .bel-outcome-expected {
 	color: var(--beloch-muted);
-	border-left-color: var(--beloch-valley);
+	border-left-color: var(--beloch-accent);
 }
-.bel-outcome-expected::before { content: "expected \2014  "; color: var(--beloch-valley); }
+.bel-outcome-expected::before { content: "expected \2014  "; color: var(--beloch-accent); }
 .bel-outcome-unexpected {
-	color: var(--beloch-mountain);
-	border-left-color: var(--beloch-mountain);
+	color: var(--beloch-error);
+	border-left-color: var(--beloch-error);
 	font-weight: 600;
 }
 .bel-outcome-unexpected::before { content: "\2717 "; }
@@ -164,9 +180,9 @@
 	padding-left: 1.4em;
 	text-indent: -1.4em;
 }
-.bel-assert-verified { color: var(--beloch-valley); }
+.bel-assert-verified { color: var(--beloch-accent); }
 .bel-assert-verified::before { content: "\2713 "; }
-.bel-assert-failed { color: var(--beloch-mountain); font-weight: 600; }
+.bel-assert-failed { color: var(--beloch-error); font-weight: 600; }
 .bel-assert-failed::before { content: "\2717 "; }
 .bel-assert-message { font-weight: 400; font-style: italic; opacity: 0.85; }
 
@@ -193,14 +209,14 @@
  * ────────────────────────────────────────────────────────────────────────── */
 .beloch-controls { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
 .beloch-tab { font: inherit; padding: 3px 10px; border-radius: 7px; border: 1px solid var(--beloch-border); background: transparent; color: var(--beloch-muted); cursor: pointer; }
-.beloch-tab.is-active { color: var(--beloch-ink); border-color: var(--beloch-valley); }
+.beloch-tab.is-active { color: var(--beloch-ink); border-color: var(--beloch-accent); }
 .beloch-stepper { display: inline-flex; align-items: center; gap: 6px; color: var(--beloch-muted); }
 .beloch-stepper button { background: none; border: none; color: inherit; cursor: pointer; font-size: 13px; }
 
 /* active step line — same accent already used for "active" state (see
  * .beloch-tab.is-active above) rather than inventing a new colour. */
 .beloch-gutter [data-line].bel-step-line {
-	color: var(--beloch-valley, #e8a33d);
+	color: var(--beloch-accent);
 	font-weight: 700;
 }
 

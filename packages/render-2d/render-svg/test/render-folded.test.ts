@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
 import { parseFold, SceneError, type Mark } from "@beloch/scene";
-import { renderFolded, WEB_THEME } from "@beloch/render-svg";
+import { renderFolded, WEB_THEME, DEFAULT_THEME } from "@beloch/render-svg";
 import { makeLayout, PAD, SZ } from "../src/layout";
 import { pointInPolygon } from "../src/geometry";
 
@@ -211,8 +211,8 @@ test("renderFolded: markOverlay draws multiple marks, highlighting the newest", 
 
   expect(olderLine![0]).toContain('opacity="0.7"');
   expect(newestLine![0]).toContain('opacity="1"');
-  expect(newestLine![0]).toContain(`stroke="${WEB_THEME.construction ?? "#6366f1"}"`);
-  expect(olderLine![0]).not.toContain(`stroke="${WEB_THEME.construction ?? "#6366f1"}"`);
+  expect(newestLine![0]).toContain(`stroke="${WEB_THEME.construction ?? DEFAULT_THEME.construction}"`);
+  expect(olderLine![0]).not.toContain(`stroke="${WEB_THEME.construction ?? DEFAULT_THEME.construction}"`);
 
   const olderWidth = Number(olderLine![0].match(/stroke-width="([\d.]+)"/)![1]);
   const newestWidth = Number(newestLine![0].match(/stroke-width="([\d.]+)"/)![1]);

@@ -29,12 +29,12 @@ export interface Theme {
   boundary: string;        // "#1f2937" — B
   mountain: string;        // "#dc2626" — M
   valley: string;          // "#2563eb" — V
-  flat: string;            // "#94a3b8" — F (flat-foldable/unfolded crease)
-  unassigned: string;      // "#f59e0b" — U
+  flat: string;            // "#64748b" — F (flat-foldable/unfolded crease)
+  unassigned: string;      // "#a16207" — U
   paperFill: string;       // "#f8fafc"  (CP face fill)
   front: string;           // "#fafaf7"  (folded: paper front)
   back: string;            // "#dbe4ee"  (folded: paper back)
-  construction: string;    // "#6366f1"
+  construction: string;    // "#4f46e5"
   highlightPalette: HighlightColor[]; // one colour per entity the caller emphasises
   ink: string;             // "#0f172a"  (dots, labels, title)
   background: string;      // "white"    (full-canvas backdrop rect fill)
@@ -87,16 +87,19 @@ export const HIGHLIGHT_PALETTE: HighlightColor[] = [
   { stroke: "#0284c7", wash: "#c0e0f1" },
 ];
 
+// flat, unassigned and construction were re-measured against the paper
+// schemes and darkened: the old values sat at 2.45, 2.05 and below 3:1 on
+// white, so a crease could not be told from the sheet it was drawn on.
 export const DEFAULT_THEME: Theme = {
   boundary: "#1f2937",
   mountain: "#dc2626",
   valley: "#2563eb",
-  flat: "#94a3b8",
-  unassigned: "#f59e0b",
+  flat: "#64748b",
+  unassigned: "#a16207",
   paperFill: "#f8fafc",
   front: "#fafaf7",
   back: "#dbe4ee",
-  construction: "#6366f1",
+  construction: "#4f46e5",
   highlightPalette: HIGHLIGHT_PALETTE,
   ink: "#0f172a",
   background: "white",
