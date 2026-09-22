@@ -25,11 +25,12 @@
 // resolve "IBM Plex Mono, monospace" against, the same font stack the
 // site's CSS already asks browsers for.
 import { execFileSync } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 
 const repoRoot = join(fileURLToPath(import.meta.url), "..", "..", "..", "..");
+const markPath = join(repoRoot, "packages", "www", "public", "brand", "mark.svg");
 const sourceBel = join(repoRoot, "examples", "bases", "bird-base.bel");
 const fold2svgBin = join(repoRoot, "packages", "render-2d", "render-svg", "bin", "fold2svg.ts");
 const outPath = join(repoRoot, "packages", "www", "public", "og-image.png");
@@ -54,60 +55,45 @@ function run(cmd: string, args: string[], input?: string): string {
 }
 
 const fold = run("beloch", ["fold", sourceBel]);
-const foldedSvg = run("bun", [fold2svgBin, "-", "--view", "folded"], fold);
+// The crease pattern, not the folded state: flat-folded from above, the bird
+// base is a quadrilateral and shows nothing. Labels are stripped from the
+// markup rather than asked off, because --labels "" leaves the corner names in.
+const cpSvg = run("bun", [fold2svgBin, "-", "--view", "cp", "--labels", ""], fold)
+  .replace(/<text\b[^>]*>[\s\S]*?<\/text>/g, "");
 
-// Crop to the fold's own geometry rather than the full render canvas (which
-// is mostly blank paper around a folded base far smaller than the sheet) by
-// reading every coordinate resvg would draw and padding around their bounds.
-const coords: [number, number][] = [];
-for (const m of foldedSvg.matchAll(/points="([^"]+)"/g)) {
-  for (const pair of m[1]!.trim().split(/\s+/)) {
-    const [x, y] = pair.split(",").map(Number);
-    coords.push([x!, y!]);
-  }
-}
-for (const m of foldedSvg.matchAll(/<(?:line|circle)\b[^>]*>/g)) {
-  const tag = m[0];
-  const attr = (name: string) => Number(tag.match(new RegExp(`${name}="([-\\d.]+)"`))?.[1]);
-  if (tag.startsWith("<line")) {
-    coords.push([attr("x1"), attr("y1")], [attr("x2"), attr("y2")]);
-  } else {
-    coords.push([attr("cx"), attr("cy")]);
-  }
-}
-const xs = coords.map(([x]) => x);
-const ys = coords.map(([, y]) => y);
-// Padding accounts for corner/crease-name labels, which sit just outside the
-// shape's own coordinates.
-const PAD = 100;
-const cropX0 = Math.min(...xs) - PAD;
-const cropY0 = Math.min(...ys) - PAD;
-const cropWidth = Math.max(...xs) - cropX0 + PAD;
-const cropHeight = Math.max(...ys) - cropY0 + PAD;
-
-// Drop the fold's own full-canvas background rect (it covers the whole
-// 572x572 render, not just the cropped region) and draw a card-sized one in
-// its place, in the same pre-transform coordinate space as the crop.
-const innerMarkup = foldedSvg
+// The CP render is a square canvas the pattern already fills, so it needs no
+// cropping: drop its white backdrop and place the whole square as the card.
+const CANVAS = 572;
+const innerMarkup = cpSvg
   .replace(/^<svg[^>]*>/, "")
   .replace(/<\/svg>\s*$/, "")
   .replace(/<rect width="\d+(?:\.\d+)?" height="\d+(?:\.\d+)?" fill="white"\/>/, "");
-const cardBg =
-  `<rect x="${cropX0}" y="${cropY0}" width="${cropWidth}" height="${cropHeight}" fill="white"/>`;
 
-// Fit the cropped fold into a card on the right, vertically centered,
-// leaving the left side for the wordmark.
 const cardHeight = HEIGHT - 150;
-const cardWidth = cardHeight * (cropWidth / cropHeight);
-const scale = cardHeight / cropHeight;
-const cardX = WIDTH - cardWidth - 96;
+const scale = cardHeight / CANVAS;
+const cardX = WIDTH - cardHeight - 96;
 const cardY = (HEIGHT - cardHeight) / 2;
+const cardBg = `<rect width="${CANVAS}" height="${CANVAS}" fill="white"/>`;
+
+// The mark, from brand/mark.svg, which fold2logo.ts renders out of
+// brand/mark.bel. currentColor has no meaning inside a standalone SVG, so the
+// ink value is substituted in.
+const MARK_SIZE = 128;
+const MARK_Y = 168;
+const markInner = readFileSync(markPath, "utf8")
+  .replace(/^<svg[^>]*>/, "")
+  .replace(/<\/svg>\s*$/, "")
+  .replaceAll("currentColor", INK)
+  .trim();
 
 const composed = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <rect width="${WIDTH}" height="${HEIGHT}" fill="${PANEL_BG}"/>
-  <text x="96" y="${HEIGHT / 2 - 10}" font-family="IBM Plex Mono, monospace" font-size="72" font-weight="600" fill="${INK}">Beloch</text>
-  <text x="96" y="${HEIGHT / 2 + 34}" font-family="IBM Plex Sans, sans-serif" font-size="22" fill="${INK}" opacity="0.7">A declarative language for origami</text>
-  <g transform="translate(${cardX - cropX0 * scale}, ${cardY - cropY0 * scale}) scale(${scale})">
+  <g transform="translate(96, ${MARK_Y}) scale(${MARK_SIZE / 64})" fill="none" stroke="${INK}" stroke-linecap="round">
+    ${markInner}
+  </g>
+  <text x="96" y="${MARK_Y + MARK_SIZE + 84}" font-family="IBM Plex Mono, monospace" font-size="72" font-weight="600" fill="${INK}">Beloch</text>
+  <text x="96" y="${MARK_Y + MARK_SIZE + 128}" font-family="IBM Plex Sans, sans-serif" font-size="22" fill="${INK}" opacity="0.7">A declarative language for origami</text>
+  <g transform="translate(${cardX}, ${cardY}) scale(${scale})">
     ${cardBg}
     ${innerMarkup}
   </g>
