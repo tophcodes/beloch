@@ -124,43 +124,70 @@ test("clearing dispatches once either way", () => {
   expect(countDispatches(view, () => setStepLineOn(view, null))).toBe(1);
 });
 
-// The gutter carries a slot per step, so the column the reader reads the
-// program in also says where else they could stand.
-test("every step gets a slot, and only the current one is filled", () => {
-  const view = mountEditor("paper square\nfold X\nfold Y\n");
-  setStepSlotsOn(view, [
-    { line: 1, step: 0 },
-    { line: 2, step: 1 },
-    { line: 3, step: 2 },
-  ]);
-  setStepLineOn(view, 2, { through: 2 });
-  expect(view.dom.querySelectorAll(".cm-step-gutter .cm-step-dot").length).toBe(3);
-  // The outline class is what an unvisited slot carries; the current step has
-  // the filled dot alone.
-  expect(view.dom.querySelectorAll(".cm-step-gutter .cm-step-slot").length).toBe(2);
+// The gutter carries one bar per step, over the source that step stands for,
+// so the column says how the program divides into steps.
+const threeSteps = [
+  { step: 0, fromLine: 1, toLine: 1 },
+  { step: 1, fromLine: 2, toLine: 3 },
+  { step: 2, fromLine: 4, toLine: 4 },
+];
+
+test("a step's bar covers every line of its block", () => {
+  const view = mountEditor("paper square\nfold X\n.m = free\nfold Y\n");
+  setStepSlotsOn(view, threeSteps);
+  expect(view.dom.querySelectorAll(".cm-step-gutter .cm-step-bar").length).toBe(4);
+  // One head and one tail per block, so three blocks end up with three of each.
+  expect(view.dom.querySelectorAll(".cm-step-bar.is-head").length).toBe(3);
+  expect(view.dom.querySelectorAll(".cm-step-bar.is-tail").length).toBe(3);
 });
 
-test("a slot names the step it stands for", () => {
-  const view = mountEditor("paper square\nfold X\n");
-  setStepSlotsOn(view, [{ line: 2, step: 1 }]);
-  expect(slotAtLine(view.state, 2)).toEqual({ line: 2, step: 1 });
-  expect(slotAtLine(view.state, 1)).toBeUndefined();
+test("the step on screen is the one drawn solid", () => {
+  const view = mountEditor("paper square\nfold X\n.m = free\nfold Y\n");
+  setStepSlotsOn(view, threeSteps);
+  setStepLineOn(view, 2, { through: 3 });
+  // Both lines of the marked block, and nothing from the others.
+  expect(view.dom.querySelectorAll(".cm-step-bar.is-current").length).toBe(2);
 });
 
-test("clearing the slots leaves only the marked step", () => {
+test("a bar answers for every line its block covers", () => {
+  const view = mountEditor("paper square\nfold X\n.m = free\nfold Y\n");
+  setStepSlotsOn(view, threeSteps);
+  expect(slotAtLine(view.state, 3)?.step).toBe(1);
+  expect(slotAtLine(view.state, 4)?.step).toBe(2);
+  expect(slotAtLine(view.state, 9)).toBeUndefined();
+});
+
+test("clearing the bars leaves only the marked line's dot", () => {
   const view = mountEditor("paper square\nfold X\n");
-  setStepSlotsOn(view, [{ line: 1, step: 0 }, { line: 2, step: 1 }]);
+  setStepSlotsOn(view, [{ step: 0, fromLine: 1, toLine: 1 }]);
   setStepLineOn(view, 2, { through: 2 });
   setStepSlotsOn(view, []);
+  expect(view.dom.querySelector(".cm-step-gutter .cm-step-bar")).toBeNull();
   expect(view.dom.querySelectorAll(".cm-step-gutter .cm-step-dot").length).toBe(1);
-  expect(view.dom.querySelector(".cm-step-gutter .cm-step-slot")).toBeNull();
 });
 
-test("a mousedown in the gutter jumps to the slot's step", () => {
+test("a mousedown on a bar jumps to its step", () => {
   const picked: number[] = [];
   const view = mountEditor("paper square\nfold X\n", (step) => picked.push(step));
-  setStepSlotsOn(view, [{ line: 1, step: 0 }]);
+  setStepSlotsOn(view, [{ step: 0, fromLine: 1, toLine: 1 }]);
   const cell = view.dom.querySelector(".cm-step-gutter .cm-gutterElement");
   cell?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
   expect(picked).toEqual([0]);
+});
+
+test("pointing at a bar reports its step, and leaving reports none", () => {
+  const hovered: (number | null)[] = [];
+  const state = EditorState.create({
+    doc: "paper square\nfold X\n",
+    extensions: stepMarkerExtensions({ onHoverStep: (step) => hovered.push(step) }),
+  });
+  const parent = document.createElement("div");
+  document.body.appendChild(parent);
+  const view = new EditorView({ state, parent });
+  setStepSlotsOn(view, [{ step: 0, fromLine: 1, toLine: 1 }]);
+  const gutterDom = view.dom.querySelector(".cm-step-gutter")!;
+  gutterDom.querySelector(".cm-gutterElement")
+    ?.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
+  gutterDom.dispatchEvent(new MouseEvent("mouseleave", { bubbles: false }));
+  expect(hovered).toEqual([0, null]);
 });

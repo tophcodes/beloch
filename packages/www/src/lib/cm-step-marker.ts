@@ -50,11 +50,11 @@ const stepLineField = StateField.define<StepLineValue>({
   provide: (f) => EditorView.decorations.from(f, (v) => v.deco),
 });
 
-// Where a step can be reached from the source: the first line of each step's
-// block, and the step it stands for. A program with nothing above its first
-// statement has no slot for step 0, which is the honest answer rather than a
-// second slot on a line that already carries one.
-export interface StepSlot { line: number; step: number }
+// Where a step can be reached from the source: the block it stands for, and
+// the step it is. The gutter draws one bar per block, so the column says how
+// the program divides into steps and which of them is on screen, rather than
+// pointing at one line of each.
+export interface StepSlot { step: number; fromLine: number; toLine: number }
 
 export const setStepSlots = StateEffect.define<StepSlot[]>();
 
@@ -67,41 +67,88 @@ const stepSlotsField = StateField.define<StepSlot[]>({
   },
 });
 
-class StepDotMarker extends GutterMarker {
+// The block the pointer is over, which lights its bar and is what a host
+// answers by lighting what that block built.
+const setHoveredStep = StateEffect.define<number | null>();
+
+const hoveredStepField = StateField.define<number | null>({
+  create: () => null,
+  update(value, tr) {
+    let step = value;
+    for (const e of tr.effects) if (e.is(setHoveredStep)) step = e.value;
+    return step;
+  },
+});
+
+// One line's piece of a block's bar. The ends are marked so the bar reads as
+// one shape over its lines rather than a column of segments.
+class StepBarMarker extends GutterMarker {
   constructor(
     private readonly step: number,
-    private readonly current: boolean,
+    private readonly state: "current" | "hover" | "rest",
+    private readonly head: boolean,
+    private readonly tail: boolean,
   ) {
     super();
   }
-  override eq(other: StepDotMarker) {
-    return other.step === this.step && other.current === this.current;
+  override eq(other: StepBarMarker) {
+    return (
+      other.step === this.step &&
+      other.state === this.state &&
+      other.head === this.head &&
+      other.tail === this.tail
+    );
   }
   toDOM() {
-    const dot = document.createElement("span");
-    // The current step is filled, every other slot is an outline: the reader
-    // sees where they are and where else they could go, in one column.
-    dot.className = this.current ? "cm-step-dot" : "cm-step-dot cm-step-slot";
-    dot.title = this.step === 0 ? "Starting paper" : `Step ${this.step}`;
-    return dot;
+    const bar = document.createElement("span");
+    bar.className =
+      `cm-step-bar${this.state === "rest" ? "" : ` is-${this.state}`}` +
+      `${this.head ? " is-head" : ""}${this.tail ? " is-tail" : ""}`;
+    bar.title = this.step === 0 ? "Starting paper" : `Step ${this.step}`;
+    return bar;
   }
 }
 
-/** The step a line's gutter slot stands for, if it carries one. */
+// A line a marked block covers that no step owns: the line a clicked crease
+// was built on. It keeps the dot, which points rather than spans.
+class StepDotMarker extends GutterMarker {
+  override eq() {
+    return true;
+  }
+  toDOM() {
+    const dot = document.createElement("span");
+    dot.className = "cm-step-dot";
+    return dot;
+  }
+}
+const stepDotMarker = new StepDotMarker();
+
+/** The step whose block covers this line, if one does. */
 export const slotAtLine = (state: EditorState, line: number): StepSlot | undefined =>
-  state.field(stepSlotsField).find((s) => s.line === line);
+  state.field(stepSlotsField).find((s) => line >= s.fromLine && line <= s.toLine);
 
 const markerFor = (state: EditorState, lineNumber: number): GutterMarker | null => {
   const { block } = state.field(stepLineField);
   const slot = slotAtLine(state, lineNumber);
-  const current = block != null && block.line === lineNumber;
-  if (slot) return new StepDotMarker(slot.step, current);
-  // A marked block whose line carries no slot still shows where the reader is,
-  // which is what a clicked crease's line asks for.
-  return current ? new StepDotMarker(-1, true) : null;
+  if (slot) {
+    const current = block != null && block.line === slot.fromLine;
+    const hovered = state.field(hoveredStepField) === slot.step;
+    return new StepBarMarker(
+      slot.step,
+      current ? "current" : hovered ? "hover" : "rest",
+      lineNumber === slot.fromLine,
+      lineNumber === slot.toLine,
+    );
+  }
+  return block != null && block.line === lineNumber ? stepDotMarker : null;
 };
 
-const stepGutterExtension = (onPick: ((step: number) => void) | null) =>
+interface GutterHooks {
+  onPick: ((step: number) => void) | null;
+  onHover: ((step: number | null) => void) | null;
+}
+
+const stepGutterExtension = ({ onPick, onHover }: GutterHooks) =>
   gutter({
     class: "cm-step-gutter",
     lineMarker: (view, line) => markerFor(view.state, view.state.doc.lineAt(line.from).number),
@@ -109,15 +156,32 @@ const stepGutterExtension = (onPick: ((step: number) => void) | null) =>
       !sameBlock(
         update.startState.field(stepLineField).block,
         update.state.field(stepLineField).block,
-      ) || update.startState.field(stepSlotsField) !== update.state.field(stepSlotsField),
+      ) ||
+      update.startState.field(stepSlotsField) !== update.state.field(stepSlotsField) ||
+      update.startState.field(hoveredStepField) !== update.state.field(hoveredStepField),
     domEventHandlers: {
       mousedown(view, line) {
         if (onPick === null) return false;
-        const number = view.state.doc.lineAt(line.from).number;
-        const slot = slotAtLine(view.state, number);
+        const slot = slotAtLine(view.state, view.state.doc.lineAt(line.from).number);
         if (!slot) return false;
         onPick(slot.step);
         return true;
+      },
+      mousemove(view, line) {
+        const slot = slotAtLine(view.state, view.state.doc.lineAt(line.from).number);
+        const step = slot?.step ?? null;
+        if (view.state.field(hoveredStepField) !== step) {
+          view.dispatch({ effects: setHoveredStep.of(step) });
+          onHover?.(step);
+        }
+        return false;
+      },
+      mouseleave(view) {
+        if (view.state.field(hoveredStepField) !== null) {
+          view.dispatch({ effects: setHoveredStep.of(null) });
+          onHover?.(null);
+        }
+        return false;
       },
     },
   });
@@ -148,15 +212,23 @@ function errorDecorationsFor(state: EditorState, line: number | null): Decoratio
 }
 
 /** The marker extensions. `onPickStep` is called when the reader clicks a
- * step's slot in the gutter; without it the slots are shown and inert. */
+ * step's bar in the gutter, `onHoverStep` when the pointer enters or leaves
+ * one. Without them the bars are shown and inert. */
 export function stepMarkerExtensions(
-  opts: { onPickStep?: (step: number) => void } = {},
+  opts: {
+    onPickStep?: (step: number) => void;
+    onHoverStep?: (step: number | null) => void;
+  } = {},
 ): Extension[] {
   return [
     stepLineField,
     stepSlotsField,
+    hoveredStepField,
     errorLineField,
-    stepGutterExtension(opts.onPickStep ?? null),
+    stepGutterExtension({
+      onPick: opts.onPickStep ?? null,
+      onHover: opts.onHoverStep ?? null,
+    }),
   ];
 }
 

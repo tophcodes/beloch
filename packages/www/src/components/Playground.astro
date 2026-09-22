@@ -485,18 +485,40 @@ const codeLines = code ? code.split("\n").length : 0;
     background: var(--bel-ui-code-accent);
   }
   /* Every step the program has, in the column the reader already reads it in:
-     an outline for a step that can be reached, the filled dot above for the
-     one on screen. Clicking one is the same move as clicking its dot on the
-     scrubber. */
-  .pg-source :global(.cm-step-slot) {
-    background: transparent;
-    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--bel-ui-code-accent) 55%, transparent);
-  }
-  .pg-source :global(.cm-step-slot:hover) {
-    background: color-mix(in srgb, var(--bel-ui-code-accent) 35%, transparent);
-  }
+     one bar over the source each step stands for, the one on screen drawn
+     solid. Clicking a bar is the same move as clicking its dot on the
+     scrubber, and pointing at one lights what that step built. */
   .pg-source :global(.cm-step-gutter) {
+    width: 14px;
     cursor: pointer;
+  }
+  .pg-source :global(.cm-step-gutter .cm-gutterElement) {
+    position: relative;
+  }
+  .pg-source :global(.cm-step-bar) {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 5px;
+    width: 2px;
+    background: color-mix(in srgb, var(--bel-ui-code-accent) 30%, transparent);
+  }
+  /* The ends of a block pull in, so two steps that meet read as two bars. */
+  .pg-source :global(.cm-step-bar.is-head) {
+    top: 3px;
+    border-radius: 1px 1px 0 0;
+  }
+  .pg-source :global(.cm-step-bar.is-tail) {
+    bottom: 3px;
+    border-radius: 0 0 1px 1px;
+  }
+  .pg-source :global(.cm-step-bar.is-hover) {
+    background: color-mix(in srgb, var(--bel-ui-code-accent) 60%, transparent);
+  }
+  .pg-source :global(.cm-step-bar.is-current) {
+    left: 4px;
+    width: 4px;
+    background: var(--bel-ui-code-accent);
   }
   .pg-source :global(.cm-step-line) {
     background: color-mix(in srgb, var(--bel-ui-code-accent) 15%, transparent);
@@ -1016,7 +1038,7 @@ const codeLines = code ? code.split("\n").length : 0;
   import { segMatchesLine } from "../lib/stack-picker";
   import { hoverSummary, segmentRows, edgeSegmentRows } from "../lib/tooltip-content";
   import { bundleElements } from "../lib/bundle-highlight";
-  import { blockAtLine, blockOfStep, entitiesIn } from "@beloch/runtime-editor";
+  import { blockOfStep, entitiesIn } from "@beloch/runtime-editor";
   import {
     applyEmphasis,
     commandToSvg,
@@ -1305,7 +1327,10 @@ const codeLines = code ? code.split("\n").length : 0;
         extensions: [
           // Clicking a slot in the gutter is the same move as clicking its dot
           // on the scrubber.
-          ...stepMarkerExtensions({ onPickStep: (step) => renderStep(step, true, true) }),
+          ...stepMarkerExtensions({
+            onPickStep: (step) => renderStep(step, true, true),
+            onHoverStep: (step) => emphasiseStep(step),
+          }),
           ...refMarkExtensions,
           basicSetup,
           ...(highlighter ? [belHighlighting(highlighter)] : []),
@@ -2114,30 +2139,24 @@ const codeLines = code ? code.split("\n").length : 0;
     // element (the transform target) survives innerHTML swaps, so stepping
     // through the timeline keeps the user's framing. A fresh run passes
     // keepView=false to re-fit the newly-parsed paper.
-    // Pointing at a piece of source lights what that source built, in the
-    // palette whose statement is that a word and a thing in the drawing are
-    // the same thing. The step's own block is marked in the editor at the same
-    // time, so the two read together.
+    // Pointing at a step's bar in the gutter lights what that step built, in
+    // the palette whose statement is that a word and a thing in the drawing
+    // are the same thing. The bar is a target the reader aims at, so reading
+    // the program recolours nothing.
     //
     // This is the reader asking about the text, so it yields to what they
     // picked in the drawing: the accent of a hover or a pin wins on its own
     // entity, which the stylesheet settles.
-    let emphasisLine: number | null = null;
-    const emphasisFor = (line: number | null) => {
+    let emphasisStep: number | null = null;
+    const emphasisFor = (step: number | null) => {
       const scene = currentScene();
-      if (!scene || line === null) return null;
-      return entitiesIn(scene, blockAtLine(scene, line));
+      if (!scene || step === null) return null;
+      return entitiesIn(scene, blockOfStep(scene, step));
     };
-    const emphasiseLine = (line: number | null) => {
-      if (line === emphasisLine) return;
-      emphasisLine = line;
-      applyEmphasis(canvas, emphasisFor(line));
+    const emphasiseStep = (step: number | null) => {
+      emphasisStep = step;
+      applyEmphasis(canvas, emphasisFor(step));
     };
-    editor.dom.addEventListener("mousemove", (e: MouseEvent) => {
-      const pos = editor.posAtCoords({ x: e.clientX, y: e.clientY });
-      emphasiseLine(pos === null ? null : editor.state.doc.lineAt(pos).number);
-    });
-    editor.dom.addEventListener("mouseleave", () => emphasiseLine(null));
 
     const drawCurrent = (keepView = false, fade: FadeLength | null = null) => {
       const scene = currentScene();
@@ -2149,7 +2168,7 @@ const codeLines = code ? code.split("\n").length : 0;
       renderer.draw(scene, command, { theme: renderTheme(), fade });
       // The drawing is new, so what the reader was pointing at in the source
       // has to be lit again on it.
-      applyEmphasis(canvas, emphasisFor(emphasisLine));
+      applyEmphasis(canvas, emphasisFor(emphasisStep));
       makeCreasesReachable();
       reapplyAnchorHl();
       // A drawing on the stage means the rail has something to stand for. A
@@ -2164,15 +2183,16 @@ const codeLines = code ? code.split("\n").length : 0;
     // (called once per successful run, not per statement-click). The timeline
     // has n+1 stops: index 0 is the flat starting sheet, 1..n each statement.
     // Hidden when there's nothing to navigate (no statements at all).
-    // The same stops in the editor's gutter: one slot per step, on the first
-    // line of the source that step stands for. A program with nothing above
-    // its first statement gets no slot for step 0, whose block is empty.
+    // The same stops in the editor's gutter: one bar per step, over the source
+    // that step stands for. A program with nothing above its first statement
+    // gets no bar for step 0, whose block is empty.
     function buildStepSlots(scene: FoldScene) {
       const slots: StepSlot[] = [];
       for (let step = 0; step <= scene.statements.length; step++) {
         const block = blockOfStep(scene, step);
-        if (block.toLine !== null && block.toLine < block.fromLine) continue;
-        slots.push({ line: block.fromLine, step });
+        const toLine = block.toLine ?? editor.state.doc.lines;
+        if (toLine < block.fromLine) continue;
+        slots.push({ step, fromLine: block.fromLine, toLine });
       }
       setStepSlotsOn(editor, slots);
     }
