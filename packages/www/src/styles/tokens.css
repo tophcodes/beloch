@@ -31,6 +31,30 @@
 	--bel-font-prose: Palatino, 'Palatino Linotype', 'URW Palladio L', Georgia, serif;
 
 	--bel-line-height: 1.55;
+
+	/* The type scale. The interface sizes are the ones the surfaces already
+	   used, named: a status line and a step label at 2xs, toolbar controls and
+	   the inspector at xs, an action and the footer at sm, navigation at base,
+	   a lede and docs prose at md, the hero paragraph at lg, the wordmark at
+	   xl. The code grid keeps its own pair below, because a program is set on
+	   a grid rather than at a size. */
+	--bel-text-2xs:  11px;
+	--bel-text-xs:   12px;
+	--bel-text-sm:   13px;
+	--bel-text-base: 14px;
+	--bel-text-md:   16px;
+	--bel-text-lg:   17px;
+	--bel-text-xl:   18px;
+
+	/* Headings are monospace, which runs wider than a sans at the same size,
+	   so the ramp is shorter than a prose scale would be and the top of it
+	   only grows once there is width for it. */
+	--bel-text-h1: clamp(26px, 4vw, 32px);
+	--bel-text-h2: 24px;
+	--bel-text-h3: 20px;
+	--bel-text-h4: 17px;
+	--bel-text-h5: 15px;
+	--bel-text-hero: clamp(32px, 6vw, 48px);
 }
 
 /* ──────────────────────────────────────────────────────────────────────────

@@ -142,16 +142,19 @@ test("in the model a figure's program is hidden, and program=shown brings it bac
   expect(sheet).not.toContain("figure-program");
   expect(sheet).not.toContain("figure-source");
   const crease = html.slice(html.indexOf('id="fig-crease"'), html.indexOf("Prose between"));
-  expect(crease).toContain('<details class="figure-program">');
-  expect(crease).toContain(
-    '<pre class="figure-source" property="bm:program">paper square\nmark --ac = through .a .c',
-  );
+  expect(crease).toContain('<details class="figure-program" open>');
+  // The program lands on the code surface, highlighted by the same pass a
+  // ```beloch fence takes.
+  expect(crease).toContain('<pre class="bel-block figure-source" property="bm:program"><code>');
+  expect(crease).toContain('<span class="bel-keyword">paper</span>');
+  expect(crease).toContain('<span class="bel-line" data-bel-name="ac">--ac</span>');
 });
 
 test("outside the model a figure's program is shown without asking", async () => {
   const outside = await render(join(fixtures, "model-include.md"), { register, model });
-  expect(outside).toContain('<details class="figure-program">');
-  expect(outside).toContain('<pre class="figure-source" property="bm:program">paper square');
+  expect(outside).toContain('<details class="figure-program" open>');
+  expect(outside).toContain('<pre class="bel-block figure-source" property="bm:program"><code>');
+  expect(outside).toContain('<span class="bel-keyword">paper</span>');
 });
 
 // Requirement D: the caption's inline code for a highlighted entity carries the

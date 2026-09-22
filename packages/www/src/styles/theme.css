@@ -218,7 +218,7 @@
  * grid (scoped in Beloch.astro); span both columns so it doesn't push the
  * diagram panel into its own row.
  * ────────────────────────────────────────────────────────────────────────── */
-.beloch-controls { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-family: var(--bel-font-mono); font-size: 12px; }
+.beloch-controls { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-family: var(--bel-font-mono); font-size: var(--bel-text-xs); }
 .beloch-stepper { display: inline-flex; align-items: center; gap: 6px; color: var(--bel-ui-text-muted); }
 .beloch-stepper button { background: none; border: none; color: inherit; cursor: pointer; font-size: 13px; }
 .beloch-stepper button:hover { color: var(--bel-ui-accent); }
@@ -319,8 +319,7 @@ h3:target + p { box-shadow: none; }
   height: auto;
 }
 .sl-markdown-content .figure-source {
-  margin-block-start: 0.5rem;
-  font-size: 0.85em;
+  margin-block: 0.5rem 0;
 }
 .figure-program summary {
   cursor: pointer;
@@ -429,6 +428,18 @@ h3:target + p { box-shadow: none; }
 	/* One line height for a paragraph, whichever surface it sits on. */
 	--sl-line-height: var(--bel-line-height);
 
+	/* Starlight's sizes are a ramp for a sans; the headings here are set in
+	   the monospace, which runs wider, so they take the project's own ramp. */
+	--sl-text-h1: var(--bel-text-h1);
+	--sl-text-h2: var(--bel-text-h2);
+	--sl-text-h3: var(--bel-text-h3);
+	--sl-text-h4: var(--bel-text-h4);
+	--sl-text-h5: var(--bel-text-h5);
+	--sl-text-body:    var(--bel-text-md);
+	--sl-text-body-sm: var(--bel-text-sm);
+	--sl-text-code:    var(--bel-code-size);
+	--sl-text-code-sm: var(--bel-text-xs);
+
 	--sl-nav-height:     var(--bel-shell-nav-height);
 	--sl-nav-pad-x:      var(--bel-shell-pad-x);
 	--sl-content-pad-x:  var(--bel-shell-pad-x);
@@ -516,7 +527,7 @@ button[data-open-modal] {
 	background: transparent;
 	color: var(--bel-ui-text-muted);
 	font-family: var(--bel-font-mono);
-	font-size: 12px;
+	font-size: var(--bel-text-xs);
 }
 button[data-open-modal]:hover {
 	color: var(--bel-ui-text);
@@ -547,7 +558,7 @@ button[data-open-modal] svg { width: 16px; height: 16px; }
 	);
 	padding-inline-end: var(--bel-shell-pad-x);
 	font-family: var(--bel-font-mono);
-	font-size: 12px;
+	font-size: var(--bel-text-xs);
 }
 /* The disclosure names the section the reader is in and opens the table of
  * contents under it. Its own label leaves the bar and stays for a screen
@@ -618,4 +629,27 @@ button[data-open-modal] svg { width: 16px; height: 16px; }
 		inset-block-start: calc(var(--bel-shell-nav-height) + var(--sl-mobile-toc-height));
 	}
 	body[data-mobile-menu-expanded] #starlight__mobile-toc { visibility: hidden; }
+}
+
+/* The seven kinds of model statement, which the markup already separates and
+ * the stylesheet drew alike. B1.7 leaves no room for seven hues, so they fall
+ * into what a reader does with them: the ones that assert keep the accent
+ * spine of the document, the ones that comment step back onto a divider, and
+ * an open question sits on a field so it is findable while scrolling. The
+ * label says which of the seven it is, as it did before.
+ */
+.sl-markdown-content :is(.stmt-remark, .stmt-example) {
+  border-inline-start-color: var(--bel-ui-divider);
+}
+.sl-markdown-content :is(.stmt-remark, .stmt-example) .stmt-label,
+.sl-markdown-content :is(.stmt-remark, .stmt-example) .stmt-name {
+  color: var(--bel-ui-text-muted);
+}
+.sl-markdown-content .stmt-open {
+  background: var(--bel-ui-accent-low);
+  padding: var(--bel-space-2);
+  border-radius: 0 var(--bel-radius-card) var(--bel-radius-card) 0;
+}
+.sl-markdown-content :is(.stmt-definition, .stmt-condition) .stmt-label {
+  color: var(--bel-ui-accent);
 }

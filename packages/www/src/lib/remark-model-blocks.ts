@@ -51,6 +51,7 @@
 // Astro caches rendered content entries in node_modules/.astro; after changing
 // this file, delete that directory (and .astro/) or the old output is served.
 import { readFileSync, realpathSync } from "node:fs";
+import { highlightBel } from "./highlight-bel.ts";
 import { join } from "node:path";
 import { visit } from "unist-util-visit";
 
@@ -239,7 +240,7 @@ export default function remarkModelBlocks(
 	options: { register?: string; model?: string; figures?: string } = {},
 ) {
 	const processor = this;
-	return (tree: any, file: any) => {
+	return async (tree: any, file: any) => {
 		const registerPath = options.register ?? join(repoRoot(), "_build", "api-register.json");
 		const modelPath = options.model ?? join(repoRoot(), "spec", "MODEL.md");
 		const figuresPath = options.figures ?? join(repoRoot(), "_build", "spec", "figures");
@@ -329,7 +330,7 @@ export default function remarkModelBlocks(
 			nodes.set(s.id, statementNode(s, terms, statements, api?.realizedBy.get(s.id) ?? []));
 		}
 		for (const t of terms.values()) nodes.set(t.id, termNode(t, statements));
-		for (const f of figures.values()) nodes.set(f.id, figureNode(f, figuresPath));
+		for (const f of figures.values()) nodes.set(f.id, await figureNode(f, figuresPath));
 
 		// Splice back to front so earlier indices stay valid. Terms leave nothing
 		// behind; they are re-emitted in the glossary.
@@ -591,7 +592,7 @@ function expandSugar(
 // the caption last. The program is a bare <pre>, with no <code> inside:
 // Expressive Code claims every `pre > code` it finds and rewrites it, which
 // would drop the RDFa.
-function figureNode(f: Figure, figuresPath: string): any {
+async function figureNode(f: Figure, figuresPath: string): Promise<any> {
 	const views = f.views.map((view) => {
 		let svg: string;
 		try {
@@ -609,6 +610,13 @@ function figureNode(f: Figure, figuresPath: string): any {
 			{ type: "html", value: svg },
 		]);
 	});
+
+	// The program is the figure. It runs through the same highlighter as a
+	// ```beloch fence and lands on the same code surface, so the names a
+	// caption points at are the colours the drawing above it uses.
+	const program = f.showProgram
+		? `<pre class="bel-block figure-source" property="bm:program"><code>${await highlightBel(f.program)}</code></pre>`
+		: "";
 
 	const caption = f.caption;
 	const label = el("span", { className: ["figure-label"], property: "bm:label" }, [
@@ -630,11 +638,9 @@ function figureNode(f: Figure, figuresPath: string): any {
 			el("div", { className: ["figure-views"] }, views),
 			...(f.showProgram
 				? [
-						el("details", { className: ["figure-program"] }, [
+						el("details", { className: ["figure-program"], open: true }, [
 							el("summary", {}, [text("Program")]),
-							el("pre", { className: ["figure-source"], property: "bm:program" }, [
-								text(f.program),
-							]),
+							{ type: "html", value: program },
 						]),
 					]
 				: []),
