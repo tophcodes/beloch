@@ -284,6 +284,34 @@ let beloch_statements_json (statements : Eval.stmt_log_entry list) : Yojson.Safe
          | Some m -> `Assoc (("mark", mark_json m) :: common))
        statements)
 
+(* beloch:references — one entry per resolved mention of a crease name in the
+   source: the span it occupies and the crease (or paper edge) it names. A
+   reader asking "where is this bundle referenced" gets the answer from the
+   emitter instead of re-lexing the program, which cannot tell two scopes
+   apart. Deduplicated: one syntactic mention can pass through the lookup
+   more than once on its way to an id. *)
+let beloch_references_json (refs : Ctx.reference list) : Yojson.Safe.t =
+  let seen = Hashtbl.create 64 in
+  let out =
+    List.filter_map
+      (fun r ->
+        let key, fields =
+          match r with
+          | Ctx.RCrease (cid, span) ->
+              ( (string_of_int cid, Error.span_to_string span),
+                [ ("crease_id", `Int cid) ] )
+          | Ctx.REdge (name, span) ->
+              ((name, Error.span_to_string span), [ ("edge", `String name) ])
+        in
+        if Hashtbl.mem seen key then None
+        else begin
+          Hashtbl.replace seen key ();
+          Some (`Assoc (("span", `String (snd key)) :: fields))
+        end)
+      refs
+  in
+  `List out
+
 (* beloch:inspect — crease_id-keyed inventory of the final display state:
    each crease's segment bundle (with per-segment M/V/F), each face's flap
    (coplanar cluster) + stacking rank, and each named point's carrying
@@ -619,6 +647,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
       ("beloch:marks", `List beloch_marks);
       ("beloch:free", beloch_free);
       ("beloch:statements", beloch_statements_json fd.Eval.statements);
+      ("beloch:references", beloch_references_json fd.Eval.references);
       ( "file_frames",
         (* Step 0: the flat, unfolded sheet, so a folded-diagram stepper opens
            on the starting paper rather than on the first fold. It is a viewing

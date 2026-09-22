@@ -204,7 +204,12 @@ and material_cid (ctx : Ctx.ctx) (cr : Ast.crease_ref) : int =
          real crease now (subdivide along its line), then treat it as
          Material. Pure-reference marks — never segment-selected — never
          reach here, so they stay non-subdividing records (#26). *)
-      let cid = Fold_state.fresh_crease_id () in
+      (* The mark's own id carries over, the way [cp_display] carries it
+         over when a mark graduates: one line keeps one identity whether it
+         reaches the arrangement by graduation or by segment selection. A
+         fresh id here would split a name's references into a before and an
+         after around the statement that materialises it. *)
+      let cid = mid in
       (* Two different questions, two different answers. WHAT DEFINED this
          line is the `mark` statement, so the crease inherits that mark's
          own provenance — its construction, its inputs, its name and the

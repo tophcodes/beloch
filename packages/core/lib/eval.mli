@@ -52,6 +52,9 @@ type folded = {
           line can coincide with another crease's line). *)
   frames : (Fold_state.t * Error.span option) list;
   statements : stmt_log_entry list;
+  references : Ctx.reference list;
+      (** Every resolved mention of a crease name, in source order — the
+          sourcemap from a bundle back to the places the program names it. *)
   free_points : (string * free_info) list;
       (** One entry per `free on` point, recorded at bind time — a running
           log (like [statements]), not reconstructed from scope state at

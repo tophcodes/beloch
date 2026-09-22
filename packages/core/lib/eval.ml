@@ -35,6 +35,7 @@ type folded = {
          line can coincide with another crease's line) *)
   frames : (Fold_state.t * Error.span option) list;
   statements : stmt_log_entry list;
+  references : Ctx.reference list;
   free_points : (string * free_info) list;
       (* one entry per `free on` point, recorded at bind time in the [PsFree]
          arm — a running log (like [statements]), not reconstructed from
@@ -878,7 +879,8 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
   let statements = List.rev ctx.statements_rev in
   let free_points = List.rev ctx.free_points_rev in
   { state = !(ctx.state); named_points; named_lines; named_line_cids; frames;
-    statements; free_points }
+    statements; free_points;
+    references = List.rev ctx.references_rev }
 
 let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> ())
     (prog : Ast.program) : folded =
@@ -898,6 +900,7 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
     frames_rev = [];
     statements_rev = [];
     free_points_rev = [];
+    references_rev = [];
     pending = true;
   } in
   (match resume with Some s -> restore ctx s | None -> ());

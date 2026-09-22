@@ -44,6 +44,15 @@ export interface Statement {
   keptMarks: Mark[];                                          // beloch:statements[i].kept_marks — marks still dangling as of this statement (not yet graduated into a real crease)
 }
 
+// beloch:references — where the program names a crease. `span` is the
+// emitter's "file:line:startCol-endCol" (1-based columns, end exclusive);
+// a span crossing lines reads "file:line:col-line:col".
+export interface SourceRef {
+  span: string;
+  creaseId: number | null;
+  edge: string | null;                                       // paper boundary edge ("ab"), when it is one
+}
+
 export interface NamedPoint {
   name: string; paper: Vec2; table: Vec2;
   step: number;                                              // frame counter
@@ -115,6 +124,7 @@ export interface FoldScene {
   cp: Frame;
   steps: Step[];                                             // one per foldedForm frame, file order
   statements: Statement[];                                   // one per fold/mark statement, source order
+  references: SourceRef[];                                   // every mention of a crease name in the source
   namedPoints: NamedPoint[];
   namedLines: NamedLine[];
   creases: Crease[];                                         // grouped by provenance name on the CP frame

@@ -487,6 +487,14 @@ const codeLines = code ? code.split("\n").length : 0;
   .pg-source :global(.cm-step-line) {
     background: color-mix(in srgb, var(--bel-ui-code-accent) 15%, transparent);
   }
+  /* Every place the clicked bundle is named: the operands of a construction,
+     the arguments of a flatten, a filter. Marked on the characters rather
+     than the line, because a line can name several creases. */
+  .pg-source :global(.cm-bel-ref) {
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--bel-ui-code-accent) 28%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--bel-ui-code-accent) 45%, transparent);
+  }
   /* The line a failed run named, on the same always-dark surface and in that
      surface's own error colour. It stands next to the step line rather than
      replacing it: the drawing the step marks is still on screen. */
@@ -958,6 +966,7 @@ const codeLines = code ? code.split("\n").length : 0;
   import { EditorState } from "@codemirror/state";
   import { keymap } from "@codemirror/view";
   import { stepMarkerExtensions, setStepLineOn, setErrorLineOn } from "../lib/cm-step-marker";
+  import { refMarkExtensions, setRefSpansOn } from "../lib/cm-ref-marks";
   import { initBelHighlight, belHighlighting } from "../lib/cm-bel-highlight";
   import { swapDrawing, type FadeLength } from "../lib/crossfade";
   import { parseFold, type FoldScene, type Statement, type Vec2 } from "@beloch/scene";
@@ -1258,6 +1267,7 @@ const codeLines = code ? code.split("\n").length : 0;
         doc: initialCode,
         extensions: [
           ...stepMarkerExtensions,
+          ...refMarkExtensions,
           basicSetup,
           ...(highlighter ? [belHighlighting(highlighter)] : []),
           EditorView.editable.of(!hero),
@@ -1591,6 +1601,27 @@ const codeLines = code ? code.split("\n").length : 0;
     // bundle lit while the reader steps through the program. A bundle with
     // no segment at the step on screen lights nothing, which is the honest
     // answer rather than an empty promise.
+    // Every place the program NAMES the anchored entities, out of
+    // beloch:references: the operands of a construction, the arguments of a
+    // flatten, a filter over the bundle. The emitter resolved each of those
+    // mentions, so this needs no guessing at the text.
+    const markRefsFor = (ents: EntityRef[]) => {
+      const refs = currentScene?.references ?? [];
+      setRefSpansOn(
+        editor,
+        refs
+          .filter((r) =>
+            ents.some((e) =>
+              e.kind === "crease"
+                ? r.creaseId !== null && String(r.creaseId) === e.creaseId
+                : e.kind === "edge"
+                  ? r.edge === e.name
+                  : false,
+            ),
+          )
+          .map((r) => r.span),
+      );
+    };
     const reapplyAnchorHl = () => {
       if (choiceOpen && choiceEnts.length) highlightEntities(choiceEnts);
       else if (pinned) highlightEntities([pinned]);
@@ -1709,6 +1740,7 @@ const codeLines = code ? code.split("\n").length : 0;
       choiceOpen = false;
       restInspect();
       clearHl();
+      setRefSpansOn(editor, []);
     }
 
     // Distinct crease/edge entities whose line lies under a screen point.
@@ -1775,6 +1807,7 @@ const codeLines = code ? code.split("\n").length : 0;
     const anchorEntity = (ref: EntityRef) => {
       pinned = ref;
       choiceOpen = false;
+      markRefsFor([ref]);
       if (ref.kind === "crease") highlightBundle(ref.creaseId);
       else if (ref.kind === "edge") highlightEdgeBundle(ref.name);
       renderInspect(ref, true);
@@ -1866,6 +1899,7 @@ const codeLines = code ? code.split("\n").length : 0;
       if (ents.length >= 2) {
         pinned = null;
         highlightEntities(ents);
+        markRefsFor(ents);
         renderChoice(ents, true);
         return;
       }
@@ -2051,6 +2085,7 @@ const codeLines = code ? code.split("\n").length : 0;
       inspectPanel!.hidden = true;
       inspectPanel!.textContent = "";
       clearHl();
+      setRefSpansOn(editor, []);
       stepsBar!.hidden = true;
       setStepLineOn(editor, null);
     }

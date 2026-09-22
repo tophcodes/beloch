@@ -70,6 +70,14 @@ What the language knows about a state and FOLD cannot say:
   statement that produced the frame.
 - `beloch:statements`: one entry per state-changing statement in source order,
   a sourcemap from the program to the frames.
+- `beloch:references`: one entry per resolved mention of a crease name in the
+  source, each with the `span` it occupies and what it names: a `crease_id`,
+  or `edge` for a paper boundary. The arguments of a `flatten`, the operands
+  of a `map`, a filter: every place the program names a crease. The spans a
+  crease's own entry in `beloch:edges` carries say where it was *defined*;
+  these say where it is *used*, which no consumer can recover by re-reading
+  the text, since one spelling names different creases inside a `def` body
+  and after a `--x!` rebinding. Deduplicated by (target, span).
 - `beloch:named_points[].statement`: the statement a point belongs to, as an
   index into `beloch:statements`. A construction statement (`.m = --v * --ab`)
   changes no state and is not logged, so the index is the one the next

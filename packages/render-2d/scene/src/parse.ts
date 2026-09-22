@@ -1,6 +1,6 @@
 import {
   Assignment, Crease, EdgeProvenance, FoldScene, Frame, Inspect, LineCoeffs,
-  Mark, NamedLine, NamedPoint, SceneError, Statement, Step, StepNotFoundError, Vec2,
+  Mark, NamedLine, NamedPoint, SceneError, SourceRef, Statement, Step, StepNotFoundError, Vec2,
 } from "./types";
 
 function frameFrom(raw: Record<string, unknown>): Frame {
@@ -98,6 +98,13 @@ export function parseFold(input: string | object): FoldScene {
     step: v.step ?? 0,
     statement: v.statement ?? null,
   }));
+  const references: SourceRef[] = (
+    (fold["beloch:references"] ?? []) as Record<string, unknown>[]
+  ).map((r) => ({
+    span: String(r["span"] ?? ""),
+    creaseId: (r["crease_id"] ?? null) as number | null,
+    edge: (r["edge"] ?? null) as string | null,
+  }));
   const namedLines: NamedLine[] = Object.entries(
     (fold["beloch:named_lines"] ?? {}) as
       Record<string, { coeffs: LineCoeffs; step?: number }>,
@@ -111,7 +118,7 @@ export function parseFold(input: string | object): FoldScene {
     ? { ...rawInspect, edges: rawInspect.edges ?? {} }
     : null;
   return {
-    cp, steps, statements: statementsFrom(fold), namedPoints, namedLines,
+    cp, steps, statements: statementsFrom(fold), references, namedPoints, namedLines,
     creases: groupCreases(cp), marks: marksFrom(fold), inspect,
   };
 }

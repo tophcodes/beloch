@@ -80,6 +80,14 @@ type scope = {
 
 val make_scope : unit -> scope
 
+type reference =
+  | RCrease of int * Error.span
+  | REdge of string * Error.span
+(** One resolved mention of a crease name in the source: where it stands and
+    what it names. The sourcemap behind "show me every reference to this
+    bundle" — not recoverable from the text, since one spelling means
+    different creases inside a [def] body and after a [--x!] rebinding. *)
+
 type name_ctx = Root | InInstance of string | Anon
 
 type ctx = {
@@ -92,6 +100,7 @@ type ctx = {
   mutable frames_rev : (Fold_state.t * Error.span option) list;
   mutable statements_rev : stmt_log_entry list;
   mutable free_points_rev : (string * free_info) list;
+  mutable references_rev : reference list;
   mutable pending : bool;
       (** True when the current state hasn't been captured in a frame yet;
           drives the conditional final push (see [Eval.eval_program]). *)

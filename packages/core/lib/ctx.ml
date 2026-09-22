@@ -96,6 +96,16 @@ let make_scope () = {
   line_steps  = Hashtbl.create 8;
 }
 
+(* One resolved mention of a crease name in the source: where it stands, and
+   what it turned out to name. This is the sourcemap a reader needs to see
+   every place a bundle is referenced — the arguments of a `flatten`, the
+   operands of a `map`, a filter — which no consumer can recover from the
+   text, because the same spelling means different creases inside a `def`
+   body and after a `--x!` rebinding. *)
+type reference =
+  | RCrease of int * Error.span  (* crease id *)
+  | REdge of string * Error.span  (* paper edge, by its two corners: "ab" *)
+
 type name_ctx = Root | InInstance of string | Anon
 
 type ctx = {
@@ -108,6 +118,7 @@ type ctx = {
   mutable frames_rev : (Fold_state.t * Error.span option) list;
   mutable statements_rev : stmt_log_entry list;
   mutable free_points_rev : (string * free_info) list;
+  mutable references_rev : reference list;
   mutable pending : bool;
       (* true when the current state hasn't been captured in a frame yet;
          drives the conditional final push (see eval_folded) *)
@@ -127,9 +138,21 @@ let lookup_point (ctx : ctx) (pr : Ast.point_ref) : Geom.point =
 let find_crease_by_name (ctx : ctx) (name : string) : crease_val option =
   List.find_map (fun s -> Hashtbl.find_opt s.lines name) ctx.scopes
 
+(* Every lookup of a crease name is a reference the sourcemap records. A
+   name standing for a bundle expression or a bare line has no single
+   identity to point at, so only the two that do are kept. *)
+let record_reference (ctx : ctx) (span : Error.span) (cv : crease_val) : unit =
+  match cv with
+  | Material (cid, _) | Mark (cid, _) ->
+      ctx.references_rev <- RCrease (cid, span) :: ctx.references_rev
+  | Edge (a, b) -> ctx.references_rev <- REdge (a ^ b, span) :: ctx.references_rev
+  | Frozen _ | Bundle _ -> ()
+
 let lookup_crease (ctx : ctx) (cr : Ast.crease_ref) : crease_val =
   match find_crease_by_name ctx cr.Ast.cname with
-  | Some cv -> cv
+  | Some cv ->
+      record_reference ctx cr.Ast.cspan cv;
+      cv
   | None -> Error.fail cr.Ast.cspan (Printf.sprintf "undefined crease --%s" cr.Ast.cname)
 
 let lookup_instance (ctx : ctx) (name : string) (span : Error.span) : instance =
@@ -222,6 +245,7 @@ type snapshot = {
   s_frames_rev : (Fold_state.t * Error.span option) list;
   s_statements_rev : stmt_log_entry list;
   s_free_points_rev : (string * free_info) list;
+  s_references_rev : reference list;
   s_pending : bool;
   s_state : Fold_state.t;
   s_next_id : int;
@@ -259,6 +283,7 @@ let snapshot (ctx : ctx) : snapshot =
         s_frames_rev = ctx.frames_rev;
         s_statements_rev = ctx.statements_rev;
         s_free_points_rev = ctx.free_points_rev;
+        s_references_rev = ctx.references_rev;
         s_pending = ctx.pending;
         s_state = !(ctx.state);
         s_next_id = Fold_state.next_id_value ();
@@ -291,6 +316,7 @@ let restore (ctx : ctx) (s : snapshot) : unit =
       ctx.frames_rev <- s.s_frames_rev;
       ctx.statements_rev <- s.s_statements_rev;
       ctx.free_points_rev <- s.s_free_points_rev;
+      ctx.references_rev <- s.s_references_rev;
       ctx.pending <- s.s_pending;
       ctx.state := s.s_state;
       Fold_state.set_next_id s.s_next_id
