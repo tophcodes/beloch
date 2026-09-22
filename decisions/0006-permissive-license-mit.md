@@ -8,10 +8,11 @@ status: accepted
 
 ## Context
 
-The project will not be monetized — in the LLM era, funding niche OSS via
-licensing isn't viable, and closed source defeats the purpose. So the license
-choice is not "income vs. none" but "optimize for adoption" vs. "optimize for
-control". The audience is academic-adjacent (origami math, PL, education).
+The project will not be commercialized (voluntary sponsorship is welcome) — in
+the LLM era, funding niche OSS via licensing isn't viable, and closed source
+defeats the purpose. So the license choice is not "income vs. none" but
+"optimize for adoption" vs. "optimize for control". The audience is
+academic-adjacent (origami math, PL, education).
 
 ## Decision
 
