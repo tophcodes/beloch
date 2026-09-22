@@ -3,6 +3,7 @@
 // <header>; in the docs it is Starlight's Header override and PageFrame
 // supplies the element around it. Both grounds resolve to the same height,
 // side margin and divider through the bridge in theme.css.
+import { Icon } from "@astrojs/starlight/components";
 import Wordmark from "./Wordmark.astro";
 import { NAV_LINKS } from "../lib/nav-links";
 
@@ -24,9 +25,18 @@ const hasSearch = Astro.slots.has("search");
     </div>
   )}
   <nav class:list={["site-nav", { "site-nav-compact": compact }]} aria-label="Primary">
-    {NAV_LINKS.map((l) => <a href={l.href}>{l.label}</a>)}
+    {NAV_LINKS.map((l) =>
+      "icon" in l ? (
+        <a class="nav-icon" href={l.href} aria-label={l.label}>
+          <Icon name={l.icon} />
+        </a>
+      ) : (
+        <a href={l.href}>{l.label}</a>
+      )
+    )}
     <button type="button" class="theme-toggle" aria-label="Toggle color theme">
-      <span class="theme-toggle-icon" aria-hidden="true"></span>
+      <Icon name="moon" class="toggle-moon" />
+      <Icon name="sun" class="toggle-sun" />
     </button>
   </nav>
 </div>
@@ -56,9 +66,25 @@ const hasSearch = Astro.slots.has("search");
   .site-nav a { color: var(--bel-ui-text-muted); }
   .site-nav a:hover { color: var(--bel-ui-text); }
 
-  .site-nav-compact a { display: none; }
+  /* An icon link carries no text, so it needs a hit area of its own rather
+     than the line box a word brings. */
+  .nav-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+  }
+  .nav-icon :global(svg) { width: 18px; height: 18px; }
+  .nav-icon:focus-visible {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: 2px;
+    border-radius: var(--bel-radius-control);
+  }
+
+  .site-nav-compact a:not(.nav-icon) { display: none; }
   @media (min-width: 50rem) {
-    .site-nav-compact a { display: inline; }
+    .site-nav-compact a:not(.nav-icon) { display: inline; }
   }
 
   .theme-toggle {
@@ -80,15 +106,21 @@ const hasSearch = Astro.slots.has("search");
     outline-offset: 2px;
   }
 
-  /* The icon names the mode the button switches TO: a moon while the page
-     is light, a sun while it is dark. With no stored choice there is no
-     attribute to key off, so the system preference carries it. */
-  .theme-toggle-icon { font-size: 14px; line-height: 1; }
-  .theme-toggle-icon::before { content: "\263D"; }
+  /* Both icons are drawn and one is shown, because the icon names the mode
+     the button switches TO: a moon while the page is light, a sun while it is
+     dark. With no stored choice there is no attribute to key off, so the
+     system preference carries it. These are SVG rather than the ☽ and ☀
+     characters, whose shape would otherwise come from whichever installed
+     font the page's fallback chain reaches first, and the two surfaces bring
+     different chains. */
+  .theme-toggle :global(svg) { width: 15px; height: 15px; }
+  .theme-toggle :global(.toggle-sun) { display: none; }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme='light']) .theme-toggle-icon::before { content: "\2600"; }
+    :root:not([data-theme='light']) .theme-toggle :global(.toggle-moon) { display: none; }
+    :root:not([data-theme='light']) .theme-toggle :global(.toggle-sun) { display: block; }
   }
-  :root[data-theme='dark'] .theme-toggle-icon::before { content: "\2600"; }
+  :root[data-theme='dark'] .theme-toggle :global(.toggle-moon) { display: none; }
+  :root[data-theme='dark'] .theme-toggle :global(.toggle-sun) { display: block; }
 </style>
 
 <script>

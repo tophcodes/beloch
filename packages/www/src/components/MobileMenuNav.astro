@@ -1,12 +1,14 @@
 ---
-// Starlight's MobileMenuFooter. The header drops its text links below 50rem,
-// so the drawer is where they land. The mode toggle stays in the header,
-// where it is reachable without opening the drawer.
+// Starlight's MobileMenuFooter. Below 50rem the header keeps the wordmark,
+// the search, the GitHub icon and the mode toggle, and drops the text links
+// for want of room. The drawer is where those land.
 import { NAV_LINKS } from "../lib/nav-links";
+
+const textLinks = NAV_LINKS.filter((l) => !("icon" in l));
 ---
 
 <nav class="mobile-nav" aria-label="Primary">
-  {NAV_LINKS.map((l) => <a href={l.href}>{l.label}</a>)}
+  {textLinks.map((l) => <a href={l.href}>{l.label}</a>)}
 </nav>
 
 <style>
