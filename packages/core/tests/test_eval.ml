@@ -1264,10 +1264,16 @@ let test_select_edge () =
     let j = Yojson.Safe.to_string (Beloch.fold_string ~filename:"t.bel" body) in
     (* the two spellings differ in source length, so their provenance spans end
        at different columns — neutralize the span; this test is about which edge
-       gets selected, not source geometry *)
+       gets selected, not source geometry. beloch:references goes for the same
+       reason and more strongly: it maps the NAMES the source uses, and only
+       one of these two programs names an edge at all. *)
+    let drop_refs =
+      Str.global_replace
+        (Str.regexp "\"beloch:references\":[[][^]]*[]],") "" j
+    in
     Str.global_replace (Str.regexp "\"span\":\"[^\"]*\"") "\"span\":\"S\""
       (Str.global_replace (Str.regexp_string "--[.a .b]") "EDGE"
-         (Str.global_replace (Str.regexp_string "--ab") "EDGE" j))
+         (Str.global_replace (Str.regexp_string "--ab") "EDGE" drop_refs))
   in
   Alcotest.(check string) "--[.a .b] == --ab"
     (fold (base ^ "mark (map --v onto --ab toward .a)\n"))
