@@ -124,7 +124,13 @@ export default defineConfig({
 					],
 				},
 			],
-			components: { Sidebar: './src/components/Sidebar.astro' },
+			components: {
+				Sidebar: './src/components/Sidebar.astro',
+				// One header on every page. The mobile drawer picks up the text
+				// links the compact header drops.
+				Header: './src/components/DocsHeader.astro',
+				MobileMenuFooter: './src/components/MobileMenuNav.astro',
+			},
 			customCss: ['./src/styles/theme.css', 'katex/dist/katex.min.css'],
 			head: [
 				// Starlight sets og:title, og:description, og:type and

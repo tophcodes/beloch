@@ -1,0 +1,23 @@
+---
+// Starlight's MobileMenuFooter. The header drops its text links below 50rem,
+// so the drawer is where they land. The mode toggle stays in the header,
+// where it is reachable without opening the drawer.
+import { NAV_LINKS } from "../lib/nav-links";
+---
+
+<nav class="mobile-nav" aria-label="Primary">
+  {NAV_LINKS.map((l) => <a href={l.href}>{l.label}</a>)}
+</nav>
+
+<style>
+  .mobile-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bel-space-3);
+    border-top: 1px solid var(--bel-ui-divider);
+    padding: var(--bel-space-2) 0;
+    font-size: 14px;
+  }
+  .mobile-nav a { color: var(--bel-ui-text-muted); }
+  .mobile-nav a:hover { color: var(--bel-ui-text); }
+</style>

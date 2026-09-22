@@ -1,0 +1,15 @@
+---
+// Starlight's Header, replaced by the one the landing draws. Search stays
+// Starlight's own component: it is the Pagefind index, which only the docs
+// pages carry.
+import config from "virtual:starlight/user-config";
+import Search from "virtual:starlight/components/Search";
+import SiteHeader from "./SiteHeader.astro";
+
+const shouldRenderSearch =
+  config.pagefind || config.components.Search !== "@astrojs/starlight/components/Search.astro";
+---
+
+<SiteHeader compact>
+  {shouldRenderSearch && <Search slot="search" />}
+</SiteHeader>

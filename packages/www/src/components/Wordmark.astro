@@ -1,0 +1,72 @@
+---
+// The lockup: the mark beside the wordmark. Both are inline rather than an
+// <img>, because the mark draws in currentColor and an embedded image would
+// not follow the mode.
+//
+// The mark is a crease pattern. At the size the header gives it, the three
+// stroke styles that say which line is which stop reading: the dashes of the
+// scored lines sit at 4.5/3 in a 64 unit grid, under 1.6px once the drawing is
+// 22px wide. Below the breakpoint the header therefore takes the small cut,
+// where every line is 4px and the shape alone carries the mark.
+interface Props {
+  href?: string;
+}
+const { href = "/" } = Astro.props;
+---
+
+<a class="wordmark" href={href}>
+  <svg
+    class="mark mark-small"
+    viewBox="0 0 64 64"
+    fill="none"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M6 58L32 58M32 58L58 58M58 58L58 26M58 26L58 6M58 6L32 6M6 6L6 58M19 6L6 6M32 6L19 6" stroke-width="4"/>
+    <path d="M23.33 23.33L6 58M32 32L23.33 23.33M58 58L32 32M32 24L23.33 23.33M58 26L32 24M23.33 23.33L19 6" stroke-width="4"/>
+  </svg>
+  <svg
+    class="mark mark-full"
+    viewBox="0 0 64 64"
+    fill="none"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M6 58L32 58M32 58L58 58M58 58L58 26M58 26L58 6M58 6L32 6M6 6L6 58M19 6L6 6M32 6L19 6" stroke-width="4"/>
+    <path d="M23.33 23.33L6 58M32 32L23.33 23.33M58 58L32 32M23.33 23.33L19 6" stroke-width="3" stroke-dasharray="4.5 3" stroke-linecap="butt"/>
+    <path d="M32 24L23.33 23.33M58 26L32 24" stroke-width="3" stroke-dasharray="6 2.5 1 2.5" stroke-linecap="butt"/>
+  </svg>
+  <span>beloch</span>
+</a>
+
+<style>
+  .wordmark {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--bel-space-2);
+    font-family: var(--bel-font-mono);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--bel-ui-text);
+    text-decoration: none;
+  }
+  .wordmark:hover { text-decoration: none; }
+  .wordmark:focus-visible {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: 2px;
+    border-radius: var(--bel-radius-control);
+  }
+
+  .mark { flex: none; }
+  .mark-small { width: 22px; height: 22px; }
+  .mark-full { display: none; width: 28px; height: 28px; }
+
+  @media (min-width: 50rem) {
+    .mark-small { display: none; }
+    .mark-full { display: block; }
+  }
+</style>

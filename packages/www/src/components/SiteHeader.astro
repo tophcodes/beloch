@@ -1,0 +1,116 @@
+---
+// The one header. The landing and the playground wrap it in their own
+// <header>; in the docs it is Starlight's Header override and PageFrame
+// supplies the element around it. Both grounds resolve to the same height,
+// side margin and divider through the bridge in theme.css.
+import Wordmark from "./Wordmark.astro";
+import { NAV_LINKS } from "../lib/nav-links";
+
+interface Props {
+  // Below 50rem the docs need the room for the search button and the drawer
+  // toggle, so the text links step aside there and the mobile drawer carries
+  // them instead. The standalone pages have no drawer and keep them.
+  compact?: boolean;
+}
+const { compact = false } = Astro.props;
+const hasSearch = Astro.slots.has("search");
+---
+
+<div class="site-header-inner">
+  <Wordmark />
+  {hasSearch && (
+    <div class="header-search">
+      <slot name="search" />
+    </div>
+  )}
+  <nav class:list={["site-nav", { "site-nav-compact": compact }]} aria-label="Primary">
+    {NAV_LINKS.map((l) => <a href={l.href}>{l.label}</a>)}
+    <button type="button" class="theme-toggle" aria-label="Toggle color theme">
+      <span class="theme-toggle-icon" aria-hidden="true"></span>
+    </button>
+  </nav>
+</div>
+
+<style>
+  .site-header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    height: 100%;
+  }
+
+  .header-search {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .site-nav {
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 3vw, 28px);
+    flex-wrap: wrap;
+    font-size: 14px;
+  }
+  .site-nav a { color: var(--bel-ui-text-muted); }
+  .site-nav a:hover { color: var(--bel-ui-text); }
+
+  .site-nav-compact a { display: none; }
+  @media (min-width: 50rem) {
+    .site-nav-compact a { display: inline; }
+  }
+
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--bel-ui-control-border);
+    background: transparent;
+    color: var(--bel-ui-text-muted);
+    cursor: pointer;
+  }
+  .theme-toggle:hover { color: var(--bel-ui-text); border-color: var(--bel-ui-accent); }
+  .theme-toggle:focus-visible {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: 2px;
+  }
+
+  /* The icon names the mode the button switches TO: a moon while the page
+     is light, a sun while it is dark. With no stored choice there is no
+     attribute to key off, so the system preference carries it. */
+  .theme-toggle-icon { font-size: 14px; line-height: 1; }
+  .theme-toggle-icon::before { content: "\263D"; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) .theme-toggle-icon::before { content: "\2600"; }
+  }
+  :root[data-theme='dark'] .theme-toggle-icon::before { content: "\2600"; }
+</style>
+
+<script>
+  const STARLIGHT_THEME_KEY = "starlight-theme";
+
+  // Without a stored choice the page has no data-theme and the system
+  // carries the mode, so the first click has to read the system to know
+  // what it is switching away from.
+  const currentTheme = () => {
+    const pinned = document.documentElement.dataset.theme;
+    if (pinned === "light" || pinned === "dark") return pinned;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  };
+
+  const toggle = document.querySelector<HTMLButtonElement>(".theme-toggle");
+  toggle?.addEventListener("click", () => {
+    const next = currentTheme() === "light" ? "dark" : "light";
+    document.documentElement.dataset.theme = next;
+    try {
+      localStorage.setItem(STARLIGHT_THEME_KEY, next);
+    } catch {
+      /* private mode etc. — theme choice only applies to this session */
+    }
+  });
+</script>
