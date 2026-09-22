@@ -272,6 +272,95 @@ Where the risk sits: step 4 holds the invariants that are currently kept by
 hand at each call site, and step 7 holds everything the reader sees. Steps 1,
 2, 5 and 6 are additive and reversible on their own.
 
+## Where the work stands (2026-09-22, end of session)
+
+Steps 1 to 4 are done and committed on `runtime-model`, and step 6 is half
+done because a feature needed it early. What each step actually produced:
+
+1. **Core.** State, events, reducers, `renderCommand`. Two fields joined the
+   command since this document was written: `settled`, because a renderer has
+   to tell a reader's settled answer from the pointer passing over a line
+   before it may draw the buried rest of a crease, and `constructions`, the
+   named lines a step has bound. `document/set` also accepts null, which is how
+   a consumer empties the slot when its source changes.
+2. **`@beloch/runtime-render-dom`.** Markup through `@beloch/render-svg`, hit
+   twins, the crossfade, the highlight with its ghosts, the construction
+   overlay, and a palette emphasis a caller can put on the drawing. It holds
+   what it last drew, so a command asking for the same picture re-lights rather
+   than rebuilds; the theme counts as part of the picture and is compared by
+   identity, so a host keeps one theme object per style.
+3. **The playground draws from the runtime.** The step moved in with the
+   document rather than waiting for step 4: `renderCommand` reads it, and a
+   shadow copy in the view would have been two truths for one commit.
+4. **The pin and the hover moved in.** `EntityRef` now covers face and vertex
+   as well, so the playground, the drawing and the editor name the same things;
+   `packages/www/src/lib/inspect-lookup.ts` re-exports the core's type. Three
+   highlight paths stayed in the view because they belong to steps 5 and 6: the
+   chooser's candidate preview, the stack picker's single segment, and the
+   creases on the cursor's line.
+6. **`@beloch/runtime-editor`** exists with source blocks (`blockOfStep`,
+   `blockAtLine`, `entitiesIn`). The spans in both directions, which is what
+   this step is really for, are not written.
+
+Still open: **step 5** (the chooser and the candidate list), **the rest of step
+6**, and **step 7** (the evaluator, the phases, the debounce).
+
+What is known about placing a block's entities, since it cost an afternoon to
+find out: a crease is placed by the span in `beloch:inspect`, a named point by
+the `statement` it records, and a named line by nothing at all. A line carries
+only the frame it was bound against, and a program with a `mark` in it leaves
+two blocks reading against one frame. Those lines stay out of every block
+rather than lighting up in the wrong one. Settling it needs a `statement` field
+on a named line in the FOLD, beside the one a named point already has, which is
+an emitter change, a `spec/FOLD.md` change, a parser change and a core change.
+
+The click list was walked by hand on the dev server after step 3 and everything
+held. Steps 4's six sequences have not been walked.
+
+## The design brief
+
+A second document arrived the same day: a Claude Design project, "Oberflächen
+und Bezugsmodus", whose `Playground v2.dc.html` redesigns this view. The design
+was built from `packages/www/src/styles/theme.css`, so the accent, the code
+surface and all ten syntax colours in it are already the tokens this site uses.
+
+Phase 1 is done: the interface neutrals are warm in the token layer, with the
+contrast of each role recorded beside it. Two roles were added that the design
+needs, `--bel-ui-ground` and `--bel-ui-quiet`.
+
+What the brief still asks for, in the order to build it:
+
+2. The card and its bars. A toolbar with two menus (view: paper, colour
+   against mono, hidden lines; export: SVG), a segmented control for crease
+   pattern against folded, the stepper moved under the stage with the current
+   statement's text beside it, and the step's block marked inside the code with
+   an inset bar.
+3. The selection card at the crease's midpoint, carrying the stack picker's
+   segment rows, in place of the inspector rail.
+4. The failed run shown in the code: a wavy underline under the word, a caret
+   row with the message, a hint row, and the rest of the program dimmed.
+
+Decided with Christopher, and not to be re-litigated:
+
+- Hidden lines is a checkbox between `hide` and `depth`. `dashed` goes.
+- Export offers SVG. No reset, no PNG, no PDF for now.
+- The stack picker moves into the selection card.
+- The gutter's step bars are given up; the stepper under the stage replaces
+  them.
+- `theme.css` is the source of truth for every colour.
+- Nothing the playground can do today is dropped. The brief is about how it
+  looks, and pan, zoom, the keyboard path to a crease and the share link stay.
+
+Two loose ends from phase 1. The dark column of the token layer is still cool
+against a warm light column, and the design covers only light. And
+`--bel-ui-ground` is defined and connected to nothing: the page itself is
+Starlight's `--sl-color-bg`, so warming the ground touches every document page
+and wants Christopher's eyes before it lands.
+
+One flake, unrelated and older than this work: `remark-bel.test.ts` fails with
+`Incompatible language version 0` in perhaps half of the runs, when several
+test files load the grammar wasm at once.
+
 ## The name collision, resolved
 
 "Runtime" named two things: this core, and the wasm evaluation runtime the
