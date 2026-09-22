@@ -467,6 +467,26 @@ h3:target + p { box-shadow: none; }
 	--sl-color-red-low:  var(--bel-ui-error-low);
 	--sl-color-red:      var(--bel-ui-error);
 	--sl-color-red-high: var(--bel-ui-text);
+
+	/* The badge sets its own fills from those rows, and flips them a second
+	   time on :root[data-theme='light'] — Starlight writes its base values
+	   dark first, where this file has light-dark() choose the column before
+	   any of that runs. Left alone, a badge came out white on near-black with
+	   a pinned light mode and white on a pale tint with a light mode that came
+	   from the system. Both halves are named here instead, so neither flip
+	   reaches them. */
+	--sl-badge-default-bg: var(--bel-ui-accent-low);
+	--sl-badge-note-bg:    var(--bel-ui-accent-low);
+	--sl-badge-tip-bg:     var(--bel-ui-accent-low);
+	--sl-badge-success-bg: var(--bel-ui-accent-low);
+	--sl-badge-danger-bg:  var(--bel-ui-error-low);
+	--sl-badge-caution-bg: var(--bel-ui-error-low);
+	--sl-badge-default-text: var(--bel-ui-text);
+	--sl-badge-note-text:    var(--bel-ui-text);
+	--sl-badge-tip-text:     var(--bel-ui-text);
+	--sl-badge-success-text: var(--bel-ui-text);
+	--sl-badge-danger-text:  var(--bel-ui-text);
+	--sl-badge-caution-text: var(--bel-ui-text);
 }
 
 /* Headings take the monospace, as they do on the landing. This is the one
@@ -477,4 +497,82 @@ h3:target + p { box-shadow: none; }
 h1#_top {
 	font-family: var(--bel-font-mono);
 	letter-spacing: -0.02em;
+}
+
+/* Starlight's two remaining controls, brought into the same set as the ones
+ * SiteHeader draws: transparent ground, a 1px --bel-ui-control-border, hover
+ * on the accent. A control that is a mark alone is a circle, a control that
+ * carries a word is a rectangle.
+ */
+button[data-open-modal] {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	border: 1px solid var(--bel-ui-control-border);
+	border-radius: 50%;
+	background: transparent;
+	color: var(--bel-ui-text-muted);
+	font-family: var(--bel-font-mono);
+	font-size: 12px;
+}
+button[data-open-modal]:hover {
+	color: var(--bel-ui-text);
+	border-color: var(--bel-ui-accent);
+}
+button[data-open-modal] svg { width: 16px; height: 16px; }
+
+@media (min-width: 50rem) {
+	/* The word and the shortcut appear at this width, so the control becomes
+	   a rectangle around them. */
+	button[data-open-modal] {
+		justify-content: flex-start;
+		gap: var(--bel-space-1);
+		width: 100%;
+		max-width: 18rem;
+		padding-inline: 10px;
+		border-radius: var(--bel-radius-control);
+	}
+	button[data-open-modal] > :last-child { margin-inline-start: auto; }
+}
+
+/* The bar under the header on a narrow screen. Starlight fills it with the
+ * table of contents; the drawer button is fixed into its left end, so the
+ * disclosure keeps that width clear. */
+#starlight__mobile-toc > summary {
+	padding-inline-start: calc(
+		var(--bel-shell-pad-x) + var(--bel-menu-button-width) + var(--bel-space-2)
+	);
+	padding-inline-end: var(--bel-shell-pad-x);
+	font-family: var(--bel-font-mono);
+	font-size: 12px;
+}
+#starlight__mobile-toc .toggle {
+	gap: var(--bel-space-1);
+	height: 30px;
+	padding-block: 0;
+	padding-inline: 10px;
+	border: 1px solid var(--bel-ui-control-border);
+	border-radius: var(--bel-radius-control);
+	background: transparent;
+	color: var(--bel-ui-text-muted);
+}
+#starlight__mobile-toc[open] .toggle,
+#starlight__mobile-toc .toggle:hover {
+	color: var(--bel-ui-text);
+	border-color: var(--bel-ui-accent);
+}
+#starlight__mobile-toc .dropdown {
+	background: var(--bel-ui-surface);
+	border-color: var(--bel-ui-divider);
+	box-shadow: var(--bel-shadow-overlay);
+}
+
+/* Starlight keeps the end of the top bar clear for the drawer button. That
+ * button now sits in the bar below, so the header takes the same margin on
+ * both sides as everywhere else. */
+[data-has-sidebar] .header {
+	padding-inline-end: var(--bel-shell-pad-x);
 }

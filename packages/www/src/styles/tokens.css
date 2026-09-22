@@ -76,6 +76,7 @@
 :root {
 	--bel-shell-nav-height: 70px;                    /* 20px padding twice around a 30px control */
 	--bel-shell-pad-x: clamp(20px, 5vw, 56px);
+	--bel-menu-button-width: 84px;                   /* the drawer button, and what the bar beside it keeps clear */
 
 	--bel-shadow-overlay: 0 4px 12px light-dark(rgba(23, 26, 33, 0.14), rgba(0, 0, 0, 0.5));
 }

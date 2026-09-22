@@ -1,0 +1,113 @@
+---
+// Starlight's MobileMenuToggle. The drawer button leaves the top bar, which
+// then carries what the landing carries, and sits at the left end of the bar
+// below it, the one the table of contents already occupies. That bar is fixed
+// and belongs to Starlight, so this button is fixed into the same row rather
+// than laid out inside it; its width is a token because the table of contents
+// keeps clear of it by that same number.
+//
+// The element keeps the tag name `starlight-menu-button`: PageFrame opens the
+// drawer through `[aria-expanded='true'] ~ .sidebar-pane`, so the state has to
+// sit on a sibling of the drawer with that attribute. The behaviour below is
+// Starlight's own, carried here because replacing a component replaces it
+// whole.
+import { Icon } from "@astrojs/starlight/components";
+---
+
+<starlight-menu-button class="print:hidden">
+  <button
+    aria-expanded="false"
+    aria-label="Menu"
+    aria-controls="starlight__sidebar"
+    class="menu-button"
+  >
+    <Icon name="bars" class="open-menu" />
+    <Icon name="close" class="close-menu" />
+    <span>Menu</span>
+  </button>
+</starlight-menu-button>
+
+<style>
+  .menu-button {
+    position: fixed;
+    z-index: calc(var(--sl-z-index-navbar) + 1);
+    top: calc(var(--bel-shell-nav-height) + (var(--sl-mobile-toc-height) - 30px) / 2);
+    inset-inline-start: var(--bel-shell-pad-x);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--bel-space-1);
+    width: var(--bel-menu-button-width);
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--bel-ui-control-border);
+    border-radius: var(--bel-radius-control);
+    background: transparent;
+    color: var(--bel-ui-text-muted);
+    font-family: var(--bel-font-mono);
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .menu-button:hover { color: var(--bel-ui-text); border-color: var(--bel-ui-accent); }
+  .menu-button:focus-visible {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: 2px;
+  }
+  .menu-button :global(svg) { width: 14px; height: 14px; }
+
+  :global([aria-expanded='true']) .menu-button {
+    color: var(--bel-ui-text);
+    border-color: var(--bel-ui-accent);
+  }
+  :global([aria-expanded='true']) .menu-button .open-menu { display: none; }
+  :global(:not([aria-expanded='true'])) .menu-button .close-menu { display: none; }
+
+  /* The drawer is the mobile arrangement; above the breakpoint the sidebar
+     stands open and there is nothing to toggle. */
+  @media (min-width: 50rem) {
+    .menu-button { display: none; }
+  }
+</style>
+
+<script>
+  class StarlightMenuButton extends HTMLElement {
+    btn = this.querySelector("button")!;
+
+    constructor() {
+      super();
+      this.btn.addEventListener("click", () => this.toggleExpanded());
+
+      const parentNav = this.closest("nav");
+      if (parentNav) {
+        parentNav.addEventListener("keyup", (e) => this.closeOnEscape(e));
+      }
+
+      matchMedia("(min-width: 50em)").addEventListener("change", () => this.setExpanded(false));
+    }
+
+    setExpanded(expanded: boolean) {
+      this.setAttribute("aria-expanded", String(expanded));
+      this.btn.setAttribute("aria-expanded", String(expanded));
+      document.body.toggleAttribute("data-mobile-menu-expanded", expanded);
+      // Keyboard focus stays inside the header and the drawer while it is open.
+      document.querySelectorAll<HTMLElement>(".main-frame, .sl-skip-link").forEach((el) => {
+        el.toggleAttribute("inert", expanded);
+      });
+    }
+
+    toggleExpanded() {
+      this.setExpanded(this.getAttribute("aria-expanded") !== "true");
+    }
+
+    closeOnEscape(e: KeyboardEvent) {
+      if (e.code === "Escape") {
+        this.setExpanded(false);
+        this.btn.focus();
+      }
+    }
+  }
+
+  customElements.define("starlight-menu-button", StarlightMenuButton);
+</script>

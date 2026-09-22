@@ -130,6 +130,7 @@ export default defineConfig({
 				// links the compact header drops.
 				Header: './src/components/DocsHeader.astro',
 				MobileMenuFooter: './src/components/MobileMenuNav.astro',
+				MobileMenuToggle: './src/components/MenuButton.astro',
 			},
 			customCss: ['./src/styles/theme.css', 'katex/dist/katex.min.css'],
 			head: [
