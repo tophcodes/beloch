@@ -93,9 +93,14 @@ export const HIGHLIGHT_PALETTE: HighlightColor[] = [
 ];
 
 // A highlight used as caption text needs 4.5:1, which the stroke values do not
-// hold on white. These are the same hues, darkened, for text only.
+// hold on white. These are the same hues, darkened, for text only — with one
+// exception: highlight 0 turns towards green, because its stroke is the same
+// teal-green as the interface accent and the two darkened values sat at dE76
+// 11.0 where B1.7 asks for 25. At #1C6B33 the caption holds dE76 27.5 to the
+// accent and 6.22:1 on the light surface. The stroke does not move, so the
+// drawings and the PDF are unchanged.
 export const HIGHLIGHT_TEXT: string[] = [
-  "#07715a", "#c2004f", "#8a2fd6", "#b25600", "#0b6fb0", "#5f6600",
+  "#1C6B33", "#c2004f", "#8a2fd6", "#b25600", "#0b6fb0", "#5f6600",
 ];
 
 // flat, unassigned and construction were re-measured against the paper

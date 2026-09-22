@@ -1,0 +1,208 @@
+/* Beloch — the token layer. One list of values, in one place (B1.1).
+ *
+ * Three colour layers that never borrow from each other:
+ *
+ *   --bel-paper-*   what lies in the artefact: the sheet, the ink, the creases
+ *   --bel-ui-*      the interface around it: surfaces, borders, text, state
+ *   --bel-syntax-*  the token colours of Beloch code
+ *
+ * A role that would fit two layers is two roles: the text of a paragraph is
+ * --bel-ui-text, the ink of a drawing is --bel-paper-ink, and a crease colour
+ * never carries a control. The scales without a colour sit in none of the
+ * three and keep the bare prefix.
+ *
+ * This file holds declarations only. Component rules, @font-face and the
+ * Starlight bridge live in theme.css, which imports this file first.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Type. The monospace is shipped rather than asked for: it is load-bearing
+ * here, because a reader has to tell `.a` from `.o`, `--` from `-`, `1` from
+ * `l` and `!` from `|` in a language where each of those means something
+ * different. Prose takes a system stack; a paragraph does not carry that
+ * weight. Mathematics stays on KaTeX's own fonts.
+ *
+ * One line height for prose on every surface, landing and docs alike.
+ * Palatino runs narrower than a system sans, so 1.55 holds a paragraph
+ * together where Starlight's own 1.75 opens it up.
+ * ────────────────────────────────────────────────────────────────────────── */
+:root {
+	--bel-font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+	--bel-font-prose: Palatino, 'Palatino Linotype', 'URW Palladio L', Georgia, serif;
+
+	--bel-line-height: 1.55;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Spacing, radii and duration. One scale, so a drawing keeps the same quiet
+ * zone whether it sits on the landing, in the docs or in a figure.
+ * ────────────────────────────────────────────────────────────────────────── */
+:root {
+	--bel-space-half: 4px;
+	--bel-space-1:    8px;
+	--bel-space-2:   16px;
+	--bel-space-3:   24px;
+	--bel-space-4:   32px;
+	--bel-space-5:   40px;
+	--bel-space-6:   56px;
+
+	--bel-radius-card:    6px;
+	--bel-radius-control: 3px;
+	--bel-radius-paper:   0;      /* paper has square corners; it is paper */
+
+	--bel-space-quiet: 16px;      /* clear on every side of a drawing */
+
+	--bel-code-size: 13.5px;      /* the code grid is the same everywhere */
+	--bel-code-line: 22px;
+
+	/* Motion starts on an action, never on its own. A state change is the
+	   shortest, a view change gives the eye time to follow, and a fold is the
+	   only place where the duration is the subject rather than the transport. */
+	--bel-duration-state: 160ms;
+	--bel-duration-view:  280ms;
+	--bel-duration-fold:  520ms;
+	--bel-ease: cubic-bezier(0.4, 0, 0.2, 1);   /* no overshoot: paper does not bounce */
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Shell geometry. The header is the one piece of layout both the landing and
+ * the docs draw, so its height and its side margin are values rather than two
+ * copies of the same number: the wordmark must not move when a visitor
+ * crosses from one to the other.
+ *
+ * There is no elevation ramp. The system separates with 1px lines, and the
+ * one case a line cannot carry is a panel lying over the text it covers.
+ * ────────────────────────────────────────────────────────────────────────── */
+:root {
+	--bel-shell-nav-height: 70px;                    /* 20px padding twice around a 30px control */
+	--bel-shell-pad-x: clamp(20px, 5vw, 56px);
+
+	--bel-shadow-overlay: 0 4px 12px light-dark(rgba(23, 26, 33, 0.14), rgba(0, 0, 0, 0.5));
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Paper layer: everything that lies in the artefact — the sheet, the ink on
+ * it, the creases. One value per role in both modes, because a crease is
+ * always drawn on paper and the paper scheme sets the ground under it, never
+ * the panel behind the drawing. paper-schemes.ts writes fill, front, back,
+ * ink and boundary onto documentElement at runtime, which beats this block.
+ *
+ * Every role here carries the name and the literal of the same role in
+ * @beloch/render-svg's Theme, and theme-tokens.test.ts holds the two lists
+ * together: resvg resolves no var(), so the TypeScript side has to carry the
+ * value as well, and a value that drifts here stops matching the PDF.
+ * ────────────────────────────────────────────────────────────────────────── */
+:root {
+	--bel-paper-fill:         #f8fafc;
+	--bel-paper-front:        #fafaf7;
+	--bel-paper-back:         #dbe4ee;
+	--bel-paper-background:   white;
+	--bel-paper-ink:          #0f172a;
+	--bel-paper-boundary:     #1f2937;
+	--bel-paper-mountain:     #dc2626;
+	--bel-paper-valley:       #2563eb;
+	--bel-paper-flat:         #64748b;
+	--bel-paper-unassigned:   #a16207;
+	--bel-paper-construction: #4f46e5;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Interface layer. Light is the reference: the artefact is ink on paper, the
+ * renderer's own default is dark ink on a near-white sheet, three of the four
+ * paper schemes are light, and the paper is printed on paper. Take the dark
+ * column away and a complete site remains.
+ *
+ * Both values of a role stand next to each other, and `color-scheme` below
+ * decides which one light-dark() hands out: with no stored choice the visitor's
+ * system decides, and an explicit choice pins it.
+ * ────────────────────────────────────────────────────────────────────────── */
+:root {
+	color-scheme: light dark;
+
+	--bel-ui-surface:       light-dark(#F7F9FB, #171B24);
+	--bel-ui-text:          light-dark(#171A21, #E7EAF2);
+	--bel-ui-text-muted:    light-dark(#5B6478, #8D93A6);
+	/* The text of a switched-off control, carried together with the divider
+	   outline: the pair reads as "not available here" without the control
+	   disappearing, and the reason is in its title. */
+	--bel-ui-text-faint:    light-dark(#8891A3, #656B7E);
+
+	/* Two border roles, because they answer to different thresholds. A line
+	   between two areas only has to be found, so it stays quiet at 1.28:1
+	   light and 1.31:1 dark. The outline of a control is what says where the
+	   control is and needs 3:1, which these hold at 3.75:1 and 4.57:1 against
+	   surface. */
+	--bel-ui-divider:        light-dark(#D8DEE7, #2A3040);
+	--bel-ui-control-border: light-dark(#767F8E, #79839A);
+
+	/* Accent and error. Kept clear of the crease colours so a focus ring next
+	   to a drawing cannot read as a valley fold: in the dark column the accent
+	   sits at dE76 30.1 from the nearest paper colour, and at L* 35.8 against
+	   mountain 47.9 and valley 46.1, so it stays separate desaturated too. */
+	--bel-ui-accent:        light-dark(#0D5F54, #7ED4CB);
+	--bel-ui-accent-text:   light-dark(#FFFFFF, #08221E);
+	--bel-ui-error:         light-dark(#b05641, #ff7d5e);
+
+	/* Two tinted grounds, one per meaning, for text that sits on a field
+	   rather than on the page: the anchor a link just jumped to, a callout,
+	   a badge. Measured against --bel-ui-text, --bel-ui-text-muted and the
+	   colour that carries the tint.
+	     accent-low  text 14.54:1 · 11.69:1   muted 4.96:1 · 4.59:1   accent rule 6.30:1 · 8.15:1
+	     error-low   text 14.62:1 · 13.05:1   muted 4.98:1 · 5.13:1   error  rule 4.15:1 · 6.25:1
+	   Against --bel-ui-surface they hold dE76 6.5 / 15.8 and 7.3 / 15.5, far
+	   enough to be seen as a field and near enough not to read as a second
+	   page colour. */
+	--bel-ui-accent-low:    light-dark(#E2EDEA, #16302C);
+	--bel-ui-error-low:     light-dark(#F4E9E5, #301F1A);
+
+	/* Inline code stands inside a paragraph, not on the code panel: the dark
+	   surface would be a hole in the line. Text holds 14.81:1 and 12.25:1. */
+	--bel-ui-code-inline:   light-dark(#E9EDF2, #222836);
+
+	/* The code surface is the one dark area the light mode keeps, so every role
+	   that lands on it holds one value in both modes and is measured against
+	   this ground alone. That includes accent and error: a verified assertion
+	   and a failed one are printed on the panel, where the light column's
+	   values reach 2.3:1 and 3.5:1. Line numbers are text and hold 4.5:1 like
+	   any other. */
+	--bel-ui-code-surface: #101C2E;
+	--bel-ui-code-text:    #C9D2DE;   /* 11.2:1 */
+	--bel-ui-code-gutter:  #7E889A;   /*  4.8:1 */
+	--bel-ui-code-accent:  #7ED4CB;   /*  9.9:1 */
+	--bel-ui-code-error:   #ff7d5e;   /*  6.8:1 */
+}
+
+/* A stored choice pins the scheme; without one `light dark` above leaves it to
+   the visitor's system. The storage key is Starlight's, so the choice carries
+   between the docs and the landing, which brings its own shell. */
+:root[data-theme='light'] { color-scheme: light; }
+:root[data-theme='dark']  { color-scheme: dark; }
+
+/* Print is light, whatever the visitor chose on screen: the ink on the page
+   comes out of a printer, and the drawings are ink on paper either way. */
+@media print {
+	:root,
+	:root[data-theme='dark'] { color-scheme: light; }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Syntax layer — ten roles on the navy panel, so they carry one value each.
+ *
+ * There were 22 colours here, of which 18 pairs sat below dE76 15: the eye
+ * could not use distinctions the stylesheet was making. The roles are grouped
+ * by what a token does instead of by which grammar rule produced it, which is
+ * also what a reader needs: an axiom operator reads as an axiom operator,
+ * whichever item it heads. Every pair holds dE76 22.3 or better.
+ * ────────────────────────────────────────────────────────────────────────── */
+:root {
+	--bel-syntax-keyword:  #E8EDF5;  /* paper mark flatten assert */
+	--bel-syntax-axiom:    #7FD1C1;  /* map onto through as toward */
+	--bel-syntax-point:    #F2B45C;  /* .a .c */
+	--bel-syntax-line:     #8FB8F5;  /* --diag --l1 */
+	--bel-syntax-selector: #D89CF0;  /* #[ ] */
+	--bel-syntax-sigil:    #F08E7A;  /* ! * & \ = */
+	--bel-syntax-punct:    #9AA9BF;  /* ( ) , */
+	--bel-syntax-number:   #B9D97A;  /* 0.5 12 */
+	--bel-syntax-label:    #E3CFA0;  /* square hex, mountain valley */
+	--bel-syntax-comment:  #79937F;  /* ; to end of line */
+}

@@ -32,7 +32,7 @@ const declarations = (css: string): Map<string, string> => {
 };
 
 test("the paper layer and the renderer's Theme carry the same roles", async () => {
-  const vars = declarations(await read("../styles/theme.css"));
+  const vars = declarations(await read("../styles/tokens.css"));
   const inCss = [...vars.keys()]
     .filter((n) => n.startsWith("--bel-paper-"))
     .map((n) => n.slice("--bel-paper-".length))
@@ -46,7 +46,7 @@ test("the paper layer and the renderer's Theme carry the same roles", async () =
 });
 
 test("the paper layer and the renderer's Theme carry the same values", async () => {
-  const vars = declarations(await read("../styles/theme.css"));
+  const vars = declarations(await read("../styles/tokens.css"));
   for (const role of PAPER_ROLES) {
     expect(vars.get(`--bel-paper-${role}`)).toBe(
       DEFAULT_THEME[role as keyof typeof DEFAULT_THEME] as string,

@@ -101,7 +101,8 @@ const NAV_LINKS = [
         align-items: center;
         justify-content: space-between;
         gap: 16px;
-        padding: 20px clamp(20px, 5vw, 56px);
+        padding: 20px var(--bel-shell-pad-x);
+        min-height: var(--bel-shell-nav-height);
         border-bottom: 1px solid var(--bel-ui-divider);
       }
       .wordmark {
@@ -159,7 +160,7 @@ const NAV_LINKS = [
         display: flex;
         gap: 20px;
         justify-content: center;
-        padding: 24px clamp(20px, 5vw, 56px) 40px;
+        padding: 24px var(--bel-shell-pad-x) 40px;
         border-top: 1px solid var(--bel-ui-divider);
         font-size: 13px;
       }
