@@ -220,16 +220,18 @@ const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
   .pg-source :global(.cm-step-gutter) {
     width: 14px;
   }
+  /* The editor sits on the code surface, so the step marker takes that
+     surface's fixed accent rather than the one that follows the mode. */
   .pg-source :global(.cm-step-dot) {
     display: block;
     width: 8px;
     height: 8px;
     margin: 6px auto 0;
     border-radius: 50%;
-    background: var(--bel-ui-accent);
+    background: var(--bel-ui-code-accent);
   }
   .pg-source :global(.cm-step-line) {
-    background: color-mix(in srgb, var(--bel-ui-accent) 15%, transparent);
+    background: color-mix(in srgb, var(--bel-ui-code-accent) 15%, transparent);
   }
 
   .pg-output {

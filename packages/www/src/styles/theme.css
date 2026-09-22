@@ -155,14 +155,19 @@
 	   mountain 47.9 and valley 46.1, so it stays separate desaturated too. */
 	--bel-ui-accent:        light-dark(#0D5F54, #7ED4CB);
 	--bel-ui-accent-text:   light-dark(#FFFFFF, #08221E);
-	--bel-ui-error:         light-dark(#cf4327, #ff7d5e);
+	--bel-ui-error:         light-dark(#b05641, #ff7d5e);
 
-	/* The code surface is the one dark area the light mode keeps, so it holds
-	   one value in both and the ten syntax roles are measured against this
-	   ground alone. Line numbers are text and hold 4.5:1 like any other. */
+	/* The code surface is the one dark area the light mode keeps, so every role
+	   that lands on it holds one value in both modes and is measured against
+	   this ground alone. That includes accent and error: a verified assertion
+	   and a failed one are printed on the panel, where the light column's
+	   values reach 2.3:1 and 3.5:1. Line numbers are text and hold 4.5:1 like
+	   any other. */
 	--bel-ui-code-surface: #101C2E;
 	--bel-ui-code-text:    #C9D2DE;   /* 11.2:1 */
 	--bel-ui-code-gutter:  #7E889A;   /*  4.8:1 */
+	--bel-ui-code-accent:  #7ED4CB;   /*  9.9:1 */
+	--bel-ui-code-error:   #ff7d5e;   /*  6.8:1 */
 }
 
 /* A stored choice pins the scheme; without one `light dark` above leaves it to
@@ -282,7 +287,7 @@
    decided about a tagged block, rendered directly under its highlighted
    program on the same always-dark code panel as .bel-block. One unscoped
    definition each, not re-scoped per site theme, same as the token classes
-   above. Verified/failed lean on --bel-ui-accent / --bel-ui-error, the
+   above. Verified/failed lean on the code surface's own accent and error, the
    crease colours a reader already reads as good/bad fold direction, plus a
    glyph and a left border so the distinction does not rest on hue alone. */
 .bel-outcome {
@@ -301,12 +306,12 @@
 }
 .bel-outcome-expected {
 	color: var(--bel-ui-text-muted);
-	border-left-color: var(--bel-ui-accent);
+	border-left-color: var(--bel-ui-code-accent);
 }
-.bel-outcome-expected::before { content: "expected \2014  "; color: var(--bel-ui-accent); }
+.bel-outcome-expected::before { content: "expected \2014  "; color: var(--bel-ui-code-accent); }
 .bel-outcome-unexpected {
-	color: var(--bel-ui-error);
-	border-left-color: var(--bel-ui-error);
+	color: var(--bel-ui-code-error);
+	border-left-color: var(--bel-ui-code-error);
 	font-weight: 600;
 }
 .bel-outcome-unexpected::before { content: "\2717 "; }
@@ -319,9 +324,9 @@
 	padding-left: 1.4em;
 	text-indent: -1.4em;
 }
-.bel-assert-verified { color: var(--bel-ui-accent); }
+.bel-assert-verified { color: var(--bel-ui-code-accent); }
 .bel-assert-verified::before { content: "\2713 "; }
-.bel-assert-failed { color: var(--bel-ui-error); font-weight: 600; }
+.bel-assert-failed { color: var(--bel-ui-code-error); font-weight: 600; }
 .bel-assert-failed::before { content: "\2717 "; }
 .bel-assert-message { font-weight: 400; font-style: italic; opacity: 0.85; }
 
@@ -353,9 +358,10 @@
 .beloch-stepper button { background: none; border: none; color: inherit; cursor: pointer; font-size: 13px; }
 
 /* active step line — same accent already used for "active" state (see
- * .beloch-tab.is-active above) rather than inventing a new colour. */
+ * .beloch-tab.is-active above) rather than inventing a new colour, in the
+ * code surface's fixed column because the gutter sits on that panel. */
 .beloch-gutter [data-line].bel-step-line {
-	color: var(--bel-ui-accent);
+	color: var(--bel-ui-code-accent);
 	font-weight: 700;
 }
 

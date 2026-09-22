@@ -56,6 +56,13 @@ far the code follows, so the next piece of work does not have to re-derive it.
   `prefers-reduced-motion` rule turns it into a jump. A step that folds takes
   `--bel-duration-fold`, a step that only marks and a switch between two views
   of one state take `--bel-duration-view`.
+- **An error colour that is not a crease colour.** The light error was the old
+  light mountain colour, at 4.44:1 and ΔE76 13.2 from `mountain`, so an error
+  message beside a drawing read as a fold direction. It is now `#b05641`, at
+  4.68:1 and ΔE76 36.6, with 27.2 to the nearest other colour in the project.
+  Accent and error also land on the always-dark code surface, where the light
+  column reached 2.3:1 and 3.5:1, so that surface has its own pair alongside
+  its text and gutter roles.
 - **Light as the reference mode.** Every interface role is one `light-dark()`
   declaration with the light value first, and `color-scheme` decides which half
   is handed out: with no stored choice the visitor's system decides, on the
@@ -71,14 +78,10 @@ far the code follows, so the next piece of work does not have to re-derive it.
 ## Measured, and left for a decision
 
 Making light the reference put its values under the same measurement the dark
-ones already had. Four things came out of it that a value change alone does not
-settle.
-
-- **The light error colour is the old light mountain colour.** `#cf4327` holds
-  4.44:1 on the light surface, just under the 4.5 a text colour needs, and sits
-  at ΔE76 13.2 from `mountain`, so an error message beside a drawing reads as a
-  fold direction (B1.6, B6.5). Darkening the dark-mode error to 4.5:1 gives
-  `#b05641`, which holds 4.68 and ΔE76 36.6 from `mountain`.
+ones already had. Three things came out of it that a value change alone does
+not settle. The last two belong to the design pass over the viewer, the editor
+and the renderer, because what they need is a decision about the controls
+there.
 
 - **The light accent and the first highlight colour are both teal.** ΔE76 11.0
   against `HIGHLIGHT_TEXT[0]`, where B1.7 asks for 25. Dark mode reaches 30.1
@@ -97,5 +100,9 @@ settle.
 
 ## Next
 
-The four measurements above, each of which wants a decision before a value
-changes. After those, the colour style switch `colorOk` already describes.
+The accent against the first highlight colour, which is the one measurement
+above that reaches the docs and the printed paper. The other two ride with the
+design pass over the viewer, the editor and the renderer, which also owns the
+loading indicator (B2.12 asks it to name what it waits for, and it spins
+without one while a 2.27 MB runtime loads) and the hardcoded 0.15s transitions
+in the playground. After that, the colour style switch `colorOk` describes.
