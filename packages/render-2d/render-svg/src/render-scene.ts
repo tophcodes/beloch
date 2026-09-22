@@ -551,9 +551,35 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       });
     }
 
+    // Which vertices exist by this statement. A paper corner is there from
+    // the start; a crossing exists once a crease that carves it is drawn; a
+    // named point once the statement that bound it has run. Boundary edges
+    // are drawn at every step (they are the sheet itself), so they cannot
+    // date a vertex — the foot of a crease sits on one, and it arrives with
+    // the crease, not with the paper.
+    const madeByCrease = new Set<number>();
+    if (typeof upTo === "number") {
+      E.forEach(([a, b], i) => {
+        if (A[i] === "B" || !showCrease(i)) return;
+        madeByCrease.add(a);
+        madeByCrease.add(b);
+      });
+    }
+    const showVertex = (i: number, nm: string | null): boolean => {
+      if (typeof upTo !== "number") return true;
+      if (cornerLabel(V[i]!)) return true;
+      if (madeByCrease.has(i)) return true;
+      if (!nm) return false;
+      const np = scene.namedPoints.find((q) => q.name === nm);
+      // No point statement to read (a FOLD from before the field): show it,
+      // the same promise the crease filter makes.
+      return np ? np.statement == null || np.statement <= upTo : false;
+    };
+
     // vertex dots + corner labels
     V.forEach((p, i) => {
       const nm = scene.cp.verticesNames[i];
+      if (!showVertex(i, nm)) return;
       const circleAttrs: Record<string, string | number> = {
         cx: tx(p[0]), cy: ty(p[1]), r: 3, fill: theme.ink, "data-vertex": i,
       };

@@ -62,7 +62,7 @@ let test_flatten_bind_selects_ray () =
          (vertex_src ^ ".z = --r & --h & #[.b] * --r & --v & #[.a]\n"))
   in
   Alcotest.(check bool) "z bound via bound-bundle selection" true
-    (List.exists (fun (n, _, _) -> n = "z") fd.Eval.named_points)
+    (List.exists (fun (n, _, _, _) -> n = "z") fd.Eval.named_points)
 
 (* unbound `flatten ...` (no name) must keep parsing — the name is optional,
    not required. *)
@@ -257,9 +257,9 @@ let test_flatten_tip () =
       (Beloch.parse ~filename:"t.bel"
          (rabbit_ear_derive_src ^ ".tip = .[--ear --da]\n"))
   in
-  match List.find_opt (fun (n, _, _) -> n = "tip") fd.Eval.named_points with
+  match List.find_opt (fun (n, _, _, _) -> n = "tip") fd.Eval.named_points with
   | None -> Alcotest.fail ".tip was not bound"
-  | Some (_, p, _) ->
+  | Some (_, p, _, _) ->
       Alcotest.(check (float 0.001)) "tip lies on the left edge (x=0)" 0.0
         (Num.to_float p.Geom.x);
       Alcotest.(check (float 0.001)) "tip lands near y=0.059" 0.0590169944

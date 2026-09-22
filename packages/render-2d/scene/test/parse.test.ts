@@ -22,8 +22,10 @@ test("parses bisect-a: CP frame, provenance, named points/lines, creases", async
   // flipped) — deterministic, matches the golden.
   expect(scene.namedLines).toEqual([{ name: "v", coeffs: [-1, 0, -0.5], step: 0 }]);
   expect(scene.namedPoints.map((p) => p.name).sort()).toEqual(["a", "b", "c", "d"]);
+  // bisect-a.fold predates beloch:named_points[].statement, so the point
+  // reports null there and the renderer falls back to showing it.
   expect(scene.namedPoints.find((p) => p.name === "a")).toEqual({
-    name: "a", paper: [0, 0], table: [0, 0], step: 0,
+    name: "a", paper: [0, 0], table: [0, 0], step: 0, statement: null,
   });
   // crease bundle: edge 3 = [1,3] = (0.5,0)→(0.5,1), named "v"
   expect(scene.creases).toEqual([

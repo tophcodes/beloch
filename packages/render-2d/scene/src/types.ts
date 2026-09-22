@@ -44,7 +44,11 @@ export interface Statement {
   keptMarks: Mark[];                                          // beloch:statements[i].kept_marks — marks still dangling as of this statement (not yet graduated into a real crease)
 }
 
-export interface NamedPoint { name: string; paper: Vec2; table: Vec2; step: number; }
+export interface NamedPoint {
+  name: string; paper: Vec2; table: Vec2;
+  step: number;                                              // frame counter
+  statement: number | null;                                  // index into scene.statements; null on a FOLD written before the field existed
+}
 export interface NamedLine  { name: string; coeffs: LineCoeffs; step: number; }
 export interface CreaseSegment { edgeIndex: number; a: Vec2; b: Vec2; }
 export interface Crease { name: string; segments: CreaseSegment[]; }

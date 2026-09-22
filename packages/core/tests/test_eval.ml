@@ -9,6 +9,10 @@ let pt x y = { Geom.x = q x; y = q y }
    look up by name like the old 2-tuple assoc list did. *)
 let assoc3 k l = List.find_map (fun (k', v, _) -> if k' = k then Some v else None) l
 let mem_assoc3 k l = List.exists (fun (k', _, _) -> k' = k) l
+(* named_points carries a frame step AND a statement index, so it needs its
+   own arity; named_lines still uses the three-wide pair above. *)
+let assoc4 k l = List.find_map (fun (k', v, _, _) -> if k' = k then Some v else None) l
+let mem_assoc4 k l = List.exists (fun (k', _, _, _) -> k' = k) l
 
 let expect_error msg_substr thunk =
   try
@@ -199,7 +203,7 @@ let test_eval_cross_table_bent_scar_ok () =
           .mid = --b * --v\n\
           mark (map .d onto .mid)\n")
   in
-  match assoc3 "mid" fd.Eval.named_points with
+  match assoc4 "mid" fd.Eval.named_points with
   | Some p ->
       Alcotest.(check bool) "mid is the material centre" true
         (Geom.point_equal p { Geom.x = half; y = half })
@@ -725,7 +729,7 @@ let test_eval_cross_multilayer_with_at () =
           mark (map .b onto .a) as --v\n\
           .mid = --v & #[.a] * --ab\n")
   in
-  match assoc3 "mid" fd.Eval.named_points with
+  match assoc4 "mid" fd.Eval.named_points with
   | Some p ->
       Alcotest.(check bool) "mid is the bottom scar's foot" true
         (Geom.point_equal p { Geom.x = half; y = q 0 })
@@ -748,7 +752,7 @@ let test_scope_basic_lookup () =
      mark (through .a .c) as --d\n\
      .m = --d * --ab\n") in
   let has_d = assoc3 "d" r.Eval.named_lines <> None in
-  let has_m = assoc3 "m" r.Eval.named_points <> None in
+  let has_m = assoc4 "m" r.Eval.named_points <> None in
   Alcotest.(check bool) "d defined" true has_d;
   Alcotest.(check bool) "m defined" true has_m
 
@@ -777,7 +781,7 @@ let test_eval_temp_rebind_ok () =
   in
   Alcotest.(check bool)
     "temp not in named_points" true
-    (not (mem_assoc3 "_x" fd.Eval.named_points))
+    (not (mem_assoc4 "_x" fd.Eval.named_points))
 
 let test_eval_temp_crease_unnamed () =
   let fd = eval_src "mark (through .a .c) as --_t\n" in
@@ -919,7 +923,7 @@ let test_eval_member_line_access () =
        .x = --il * --ab\n"
   in
   Alcotest.(check bool) "point x exists" true
-    (mem_assoc3 "x" fd.Eval.named_points)
+    (mem_assoc4 "x" fd.Eval.named_points)
 
 let test_eval_member_undefined_instance () =
   expect_error "undefined instance" (fun () -> eval_src "export $ghost\n")
@@ -936,7 +940,7 @@ let def_d =
 let test_eval_export_selective () =
   let fd = eval_src (def_d ^ "export { .m --l1 } $i\n") in
   Alcotest.(check bool) "m landed" true
-    (mem_assoc3 "m" fd.Eval.named_points);
+    (mem_assoc4 "m" fd.Eval.named_points);
   Alcotest.(check bool) "l1 landed" true
     (mem_assoc3 "l1" fd.Eval.named_lines);
   Alcotest.(check bool) "l2 not landed" true
@@ -950,9 +954,9 @@ let test_eval_export_all () =
 let test_eval_export_rename () =
   let fd = eval_src (def_d ^ "export { .m as .mid } $i\n") in
   Alcotest.(check bool) "mid landed" true
-    (mem_assoc3 "mid" fd.Eval.named_points);
+    (mem_assoc4 "mid" fd.Eval.named_points);
   Alcotest.(check bool) "m not landed" true
-    (not (mem_assoc3 "m" fd.Eval.named_points))
+    (not (mem_assoc4 "m" fd.Eval.named_points))
 
 (* Creation-step provenance of exported/renamed names and def-local name reuse
    is covered by the construct/*-step.bel cases (named-step, same-stem-point-
@@ -990,7 +994,7 @@ let test_eval_export_temp_target () =
     eval_src (def_d ^ "export { .m as ._t } $i\nexport { .m as ._t } $i\n")
   in
   Alcotest.(check bool) "temp target not named" true
-    (not (mem_assoc3 "_t" fd.Eval.named_points))
+    (not (mem_assoc4 "_t" fd.Eval.named_points))
 
 (* up to = anchor: only the top flap of a 2-layer stack folds → 3 faces.
    The fold's own hinge (--hinge) is parallel to the fold axis, so folding

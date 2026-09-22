@@ -92,8 +92,12 @@ export function parseFold(input: string | object): FoldScene {
     });
   const namedPoints: NamedPoint[] = Object.entries(
     (fold["beloch:named_points"] ?? {}) as
-      Record<string, { paper: Vec2; table: Vec2; step?: number }>,
-  ).map(([name, v]) => ({ name, paper: v.paper, table: v.table, step: v.step ?? 0 }));
+      Record<string, { paper: Vec2; table: Vec2; step?: number; statement?: number }>,
+  ).map(([name, v]) => ({
+    name, paper: v.paper, table: v.table,
+    step: v.step ?? 0,
+    statement: v.statement ?? null,
+  }));
   const namedLines: NamedLine[] = Object.entries(
     (fold["beloch:named_lines"] ?? {}) as
       Record<string, { coeffs: LineCoeffs; step?: number }>,

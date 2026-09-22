@@ -56,7 +56,7 @@ type crease_val =
 type instance = {
   ipoints : (string, Geom.point) Hashtbl.t;
   ilines : (string, crease_val) Hashtbl.t;
-  ipoint_steps : (string, int) Hashtbl.t;
+  ipoint_steps : (string, int * int) Hashtbl.t;
   iline_steps : (string, int) Hashtbl.t;
       (* creation step of each member, copied from the def body's own
          [scope.point_steps]/[scope.line_steps] at apply-time; see those.
@@ -70,11 +70,16 @@ type scope = {
   points    : (string, Geom.point) Hashtbl.t;
   lines     : (string, crease_val) Hashtbl.t;
   instances : (string, instance) Hashtbl.t;
-  point_steps : (string, int) Hashtbl.t;
+  point_steps : (string, int * int) Hashtbl.t;
   line_steps  : (string, int) Hashtbl.t;
       (* creation step of each name bound in points/lines (respectively)
          within THIS scope, recorded at bind time by [bind_point]/
-         [bind_crease] as [List.length ctx.frames_rev]. Scoped per-entry so
+         [bind_crease] as [List.length ctx.frames_rev]. A point carries the
+         statement index beside it, because a frame count cannot separate
+         two names bound between the same pair of folds, which is what a
+         progressive drawing has to do. A pure construction statement is
+         never logged, so its index is the one the NEXT state-changing
+         statement takes: the first stop at which the point can matter. Scoped per-entry so
          it saves/restores across `apply` exactly like points/lines do — a
          def body's own bindings never clobber an outer scope's already-
          recorded step for the same name. Kept as two tables (not one keyed
@@ -107,6 +112,12 @@ type ctx = {
       (* true when the current state hasn't been captured in a frame yet;
          drives the conditional final push (see eval_folded) *)
 }
+
+(* Index the statement currently being evaluated will occupy in
+   [statements_rev] once it is logged. Every provenance record is built while
+   its statement runs, i.e. strictly before that statement's log entry is
+   pushed, so the length of the log is that statement's own index. *)
+let stmt_index (ctx : ctx) : int = List.length ctx.statements_rev
 
 let lookup_point (ctx : ctx) (pr : Ast.point_ref) : Geom.point =
   match List.find_map (fun s -> Hashtbl.find_opt s.points pr.Ast.name) ctx.scopes with
@@ -153,7 +164,8 @@ let bind_point (ctx : ctx) (name : string) (span : Error.span) (p : Geom.point)
       (Printf.sprintf "point .%s is already bound; only _-prefixed temps rebind"
          name);
   Hashtbl.replace s.points name p;
-  Hashtbl.replace s.point_steps name (List.length ctx.frames_rev)
+  Hashtbl.replace s.point_steps name
+    (List.length ctx.frames_rev, stmt_index ctx)
 
 let bind_crease (ctx : ctx) (name : string) (span : Error.span) (cv : crease_val) =
   let s = List.hd ctx.scopes in
@@ -201,7 +213,7 @@ type snapshot = {
   s_points : (string, Geom.point) Hashtbl.t;
   s_lines : (string, crease_val) Hashtbl.t;
   s_instances : (string, instance) Hashtbl.t;
-  s_point_steps : (string, int) Hashtbl.t;
+  s_point_steps : (string, int * int) Hashtbl.t;
   s_line_steps : (string, int) Hashtbl.t;
   s_defs : (string, int * Ast.param list * Ast.stmt list) Hashtbl.t;
   s_name_ctx : name_ctx;
@@ -283,12 +295,6 @@ let restore (ctx : ctx) (s : snapshot) : unit =
       ctx.state := s.s_state;
       Fold_state.set_next_id s.s_next_id
   | _ -> failwith "Ctx.restore: expected a single root scope at a statement boundary"
-
-(* Index the statement currently being evaluated will occupy in
-   [statements_rev] once it is logged. Every provenance record is built while
-   its statement runs, i.e. strictly before that statement's log entry is
-   pushed, so the length of the log is that statement's own index. *)
-let stmt_index (ctx : ctx) : int = List.length ctx.statements_rev
 
 let push_frame (ctx : ctx) (span : Error.span option) =
   ctx.frames_rev <- (!(ctx.state), span) :: ctx.frames_rev;

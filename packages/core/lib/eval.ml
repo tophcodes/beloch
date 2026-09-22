@@ -25,7 +25,7 @@ let restore = Ctx.restore
 
 type folded = {
   state : Fold_state.t;
-  named_points : (string * Geom.point * int) list;
+  named_points : (string * Geom.point * int * int) list;
       (* [int] is the 0-based creation step (index into [frames] at bind
          time); see [scope.point_steps]/[scope.line_steps] *)
   named_lines : (string * Geom.line * int) list;
@@ -634,7 +634,7 @@ let eval_export (ctx : Ctx.ctx) (entries_opt : Ast.export_entry list option)
     match kind with
     | `Point -> (
         let step =
-          Option.value (Hashtbl.find_opt inst.ipoint_steps src) ~default:0
+          Option.value (Hashtbl.find_opt inst.ipoint_steps src) ~default:(0, 0)
         in
         match Hashtbl.find_opt inst.ipoints src with
         | Some v ->
@@ -816,7 +816,9 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
      point and a line may share a stem (`.m` / `--m`) without clobbering each
      other's step. *)
   let step_of_point n =
-    match Hashtbl.find_opt root_scope.point_steps n with Some s -> s | None -> 0
+    match Hashtbl.find_opt root_scope.point_steps n with
+    | Some s -> s
+    | None -> (0, 0)
   in
   let step_of_line n =
     match Hashtbl.find_opt root_scope.line_steps n with Some s -> s | None -> 0
@@ -828,9 +830,13 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
      order, so fresh and resumed evals of the same program are byte-identical. *)
   let named_points =
     Hashtbl.fold
-      (fun k v acc -> if is_temp k then acc else (k, v, step_of_point k) :: acc)
+      (fun k v acc ->
+        if is_temp k then acc
+        else
+          let frame, stmt = step_of_point k in
+          (k, v, frame, stmt) :: acc)
       root_scope.points []
-    |> List.sort (fun (a, _, _) (b, _, _) -> String.compare a b)
+    |> List.sort (fun (a, _, _, _) (b, _, _, _) -> String.compare a b)
   in
   let named_lines =
     Hashtbl.fold

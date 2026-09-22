@@ -70,6 +70,12 @@ What the language knows about a state and FOLD cannot say:
   statement that produced the frame.
 - `beloch:statements`: one entry per state-changing statement in source order,
   a sourcemap from the program to the frames.
+- `beloch:named_points[].statement`: the statement a point belongs to, as an
+  index into `beloch:statements`. A construction statement (`.m = --v * --ab`)
+  changes no state and is not logged, so the index is the one the next
+  state-changing statement takes: the first stop at which the point can
+  matter. The `step` beside it counts frames and cannot separate two points
+  bound between the same pair of folds.
 - `beloch:vertices_names`, `beloch:named_points`, `beloch:named_lines` with
   `beloch:named_lines_frame`: the names a program gave to points and lines,
   mapped to vertices and to lines. See

@@ -39,9 +39,12 @@ val restore : Ctx.ctx -> snapshot -> unit
 
 type folded = {
   state : Fold_state.t;
-  named_points : (string * Geom.point * int) list;
-      (** [int] is the 0-based creation step (index into [frames] at bind
-          time). *)
+  named_points : (string * Geom.point * int * int) list;
+      (** The two ints are the 0-based creation step (index into [frames] at
+          bind time) and the index of the statement the point belongs to in
+          the `beloch:statements` log. A construction statement is not
+          logged, so the second is the index the next state-changing
+          statement takes — the first stop at which the point can matter. *)
   named_lines : (string * Geom.line * int) list;
   named_line_cids : (string * int) list;
       (** Crease id per name for [Material]/[Mark] creases — the identity the

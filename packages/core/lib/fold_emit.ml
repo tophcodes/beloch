@@ -289,7 +289,7 @@ let beloch_statements_json (statements : Eval.stmt_log_entry list) : Yojson.Safe
    (coplanar cluster) + stacking rank, and each named point's carrying
    face + flap. Entity Inspector slice B (playground). *)
 let beloch_inspect_json (state : Fold_state.t)
-    (named_points : (string * Geom.point * int) list)
+    (named_points : (string * Geom.point * int * int) list)
     (named_line_cids : (string * int) list) : Yojson.Safe.t =
   let faces = Fold_state.faces state in
   let rank = Fold_state.rank state in
@@ -399,7 +399,7 @@ let beloch_inspect_json (state : Fold_state.t)
   in
   let points_json =
     List.map
-      (fun (n, p, _step) ->
+      (fun (n, p, _, _) ->
         let f = face_of p in
         ( n,
           `Assoc
@@ -546,12 +546,12 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
   let beloch_edges = beloch_edges_json edges in
   (* the step-annotated 3-tuple is only needed for beloch_named_points below;
      everywhere else strips it to keep the 2-tuple helper signature. *)
-  let named_points_2 = List.map (fun (n, p, _step) -> (n, p)) fd.Eval.named_points in
+  let named_points_2 = List.map (fun (n, p, _, _) -> (n, p)) fd.Eval.named_points in
   let beloch_vertices_names = vertices_names_json vpaper named_points_2 in
   let beloch_named_points =
     `Assoc
       (List.map
-         (fun (name, (p : Geom.point), step) ->
+         (fun (name, (p : Geom.point), step, stmt) ->
            let t = Fold_state.table_position fd.Eval.state p in
            ( name,
              `Assoc
@@ -559,6 +559,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
                  ("paper", `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ]);
                  ("table", `List [ q_to_json t.Geom.x; q_to_json t.Geom.y ]);
                  ("step", `Int step);
+                 ("statement", `Int stmt);
                ] ))
          fd.Eval.named_points)
   in

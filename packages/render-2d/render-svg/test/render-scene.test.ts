@@ -77,6 +77,56 @@ test("a FOLD without the statement field shows every crease at every step", () =
   expect(count(svg, /data-kind="crease"/g)).toBe(10);
 });
 
+// The flat sheet draws a dot per vertex of the FINAL topology, so without a
+// filter every state shows every point that will ever exist. A vertex is
+// dated by the creases that make it; a named point by its own statement.
+test("progressive-flat shows a vertex once something makes it", () => {
+  const scene = parseFold({
+    // unit square, split by a vertical crease (statement 0) and a horizontal
+    // one (statement 1). Vertex 8 is their crossing; 4..7 are the four points
+    // where a crease meets the paper edge; 9 is a named point on the top edge
+    // bound by a construction that lands on statement 1.
+    vertices_coords: [
+      [0, 0], [1, 0], [1, 1], [0, 1],
+      [0.5, 0], [0.5, 1], [0, 0.5], [1, 0.5],
+      [0.5, 0.5], [0.75, 1],
+    ],
+    edges_vertices: [
+      [4, 8], [8, 5], [6, 8], [8, 7],
+      [0, 4], [4, 1], [1, 7], [7, 2], [2, 9], [9, 5], [5, 3], [3, 6], [6, 0],
+    ],
+    edges_assignment: ["V", "V", "V", "V", "B", "B", "B", "B", "B", "B", "B", "B", "B"],
+    faces_vertices: [[0, 4, 8, 6], [4, 1, 7, 8], [8, 7, 2, 9], [6, 8, 9, 3]],
+    "beloch:edges": [
+      { name: "v", statement: 0 }, { name: "v", statement: 0 },
+      { name: "h", statement: 1 }, { name: "h", statement: 1 },
+      null, null, null, null, null, null, null, null, null,
+    ],
+    "beloch:vertices_names": ["a", "b", "c", "d", null, null, null, null, null, "s"],
+    "beloch:named_points": {
+      a: { paper: [0, 0], table: [0, 0], step: 0, statement: 0 },
+      b: { paper: [1, 0], table: [1, 0], step: 0, statement: 0 },
+      c: { paper: [1, 1], table: [1, 1], step: 0, statement: 0 },
+      d: { paper: [0, 1], table: [0, 1], step: 0, statement: 0 },
+      s: { paper: [0.75, 1], table: [0.75, 1], step: 0, statement: 1 },
+    },
+    "beloch:statements": [
+      { kind: "mark", source_line: 2, frame_index: 0, mark: null, kept_marks: [] },
+      { kind: "mark", source_line: 3, frame_index: 0, mark: null, kept_marks: [] },
+    ],
+  });
+  const dots = (upToStatement: number | "all") =>
+    (renderScene(scene, {
+      isometry: { kind: "flat" },
+      texture: { upToStatement, creases: true, marks: false, points: false, lines: false, faces: "outline" },
+    }).toString().match(/data-vertex=/g) ?? []).length;
+
+  expect(dots(-1)).toBe(4); // empty paper: its four corners and nothing else
+  expect(dots(0)).toBe(7); // the vertical crease brings its two feet and the centre
+  expect(dots(1)).toBe(10); // the horizontal crease and the named point .s
+  expect(dots("all")).toBe(10);
+});
+
 test("ghost projects future creases onto the current folded step", async () => {
   // mark-overlay-regression binds --diag at frame 0 and --ray at frame 1, so a
   // reader standing on frame 0 has exactly one line still ahead of them.

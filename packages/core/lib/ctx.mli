@@ -59,7 +59,7 @@ type crease_val =
 type instance = {
   ipoints : (string, Geom.point) Hashtbl.t;
   ilines : (string, crease_val) Hashtbl.t;
-  ipoint_steps : (string, int) Hashtbl.t;
+  ipoint_steps : (string, int * int) Hashtbl.t;
   iline_steps : (string, int) Hashtbl.t;
 }
 (** A landed [apply] instance's member tables, copied from the def body's own
@@ -69,7 +69,7 @@ type scope = {
   points : (string, Geom.point) Hashtbl.t;
   lines : (string, crease_val) Hashtbl.t;
   instances : (string, instance) Hashtbl.t;
-  point_steps : (string, int) Hashtbl.t;
+  point_steps : (string, int * int) Hashtbl.t;
   line_steps : (string, int) Hashtbl.t;
       (** Creation step of each name bound in [points]/[lines] (respectively)
           within this scope, recorded at bind time by [bind_point]/

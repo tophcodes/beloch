@@ -250,8 +250,13 @@ let is_unit_boundary_line (l : Geom.line) : bool =
 let assoc3 (name : string) (l : (string * 'a * int) list) : 'a option =
   List.find_map (fun (n, v, _) -> if n = name then Some v else None) l
 
+(* named_points carries a frame step AND a statement index; named_lines still
+   carries the step alone. *)
+let assoc4 (name : string) (l : (string * 'a * int * int) list) : 'a option =
+  List.find_map (fun (n, v, _, _) -> if n = name then Some v else None) l
+
 let lookup_point (fd : Eval.folded) (name : string) : Geom.point =
-  match assoc3 name fd.Eval.named_points with
+  match assoc4 name fd.Eval.named_points with
   | Some p -> p
   | None -> harness_fail "unknown point .%s" name
 
@@ -264,7 +269,7 @@ let lookup_named_step (fd : Eval.folded) (v : value) : string * int option =
   match v with
   | VPoint (name, _) ->
       ( Printf.sprintf ".%s" name,
-        List.find_map (fun (n, _, s) -> if n = name then Some s else None)
+        List.find_map (fun (n, _, s, _) -> if n = name then Some s else None)
           fd.Eval.named_points )
   | VLine name ->
       ( Printf.sprintf "--%s" name,
