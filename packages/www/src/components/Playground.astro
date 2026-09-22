@@ -1231,14 +1231,10 @@ const codeLines = code ? code.split("\n").length : 0;
     const hero = root.dataset.variant === "hero";
 
     // Run is available whenever no run is in flight, including on first
-    // contact with the seeded code. A re-run of unchanged source reports
-    // itself in the status line. The states and their wording live in
+    // contact with the seeded code. The states and their wording live in
     // ../lib/playground-run-state.
     let running = false;
     let phase: RuntimePhase = "cold";
-    // The run that just finished re-ran source identical to the previous
-    // completed run's.
-    let repeat = false;
     // A run was dropped because the runtime took longer than LOAD_TIMEOUT_MS.
     let loadStalled = false;
     // Source of the last run the worker actually answered; null until then.
@@ -1247,7 +1243,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // while it reports nothing (see public/beloch/eval-worker.js).
     let loadProgress: number | null = null;
     function updateRunButtonState() {
-      const ui = runUi({ phase, running, repeat, loadStalled, progress: loadProgress });
+      const ui = runUi({ phase, running, loadStalled, progress: loadProgress });
       runBtn!.classList.toggle("has-progress", loadProgress !== null);
       // Two and a half turns over the whole transfer, so the ring keeps moving
       // visibly between one reported percent and the next.
@@ -1284,10 +1280,7 @@ const codeLines = code ? code.split("\n").length : 0;
           ]),
           editorTheme,
           EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
-              repeat = false;
-              updateRunButtonState();
-            }
+            if (update.docChanged) updateRunButtonState();
             if (update.selectionSet) highlightCreasesOnLine(update.state.doc.lineAt(update.state.selection.main.head).number);
           }),
         ],
@@ -2278,9 +2271,9 @@ const codeLines = code ? code.split("\n").length : 0;
           else updateRunButtonState();
           return;
         }
-        // Only an answered request updates the baseline for "same code as
-        // the last run". A timeout or worker error leaves it where it was,
-        // so a retry is not announced as a repeat.
+        // Only an answered request updates the source the gutter marker is
+        // held against. A timeout or worker error leaves it where it was, so
+        // the marker stays with the last run that produced one.
         lastRunCode = dispatchedCode;
         const raw = e.data.raw ?? "";
         finish(() => renderResult(raw));
@@ -2315,7 +2308,6 @@ const codeLines = code ? code.split("\n").length : 0;
         spawnWorker();
         dispatchedCode = null;
         running = false;
-        repeat = false;
         runBtn!.classList.remove("is-loading");
         updateRunButtonState();
         showError("Evaluation aborted (timeout).");
@@ -2330,7 +2322,6 @@ const codeLines = code ? code.split("\n").length : 0;
       // for itself. The drawing stays either way.
       clearDiagnostic();
       const codeToRun = editor.state.doc.toString();
-      repeat = lastRunCode !== null && codeToRun === lastRunCode;
       loadStalled = false;
       running = true;
       runBtn!.classList.add("is-loading");
@@ -2349,7 +2340,6 @@ const codeLines = code ? code.split("\n").length : 0;
         loadTimer = null;
         pendingCode = null;
         running = false;
-        repeat = false;
         loadStalled = true;
         runBtn!.classList.remove("is-loading");
         updateRunButtonState();

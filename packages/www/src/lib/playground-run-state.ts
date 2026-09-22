@@ -16,9 +16,6 @@ export interface RunState {
   phase: RuntimePhase;
   // A run is in flight: either waiting for the runtime, or evaluating.
   running: boolean;
-  // The run that just finished re-evaluated source identical to the previous
-  // completed run's, so it reproduced that run's result.
-  repeat: boolean;
   // The runtime's load limit elapsed while a run was waiting for it. The
   // Worker keeps loading; the run was dropped.
   loadStalled: boolean;
@@ -71,9 +68,5 @@ export function runUi(s: RunState): RunUi {
       status: "runtime still loading; press Run to retry",
     };
   }
-  return {
-    disabled: false,
-    title: "Run",
-    status: s.repeat ? "same code as the last run, result unchanged" : "",
-  };
+  return { disabled: false, title: "Run", status: "" };
 }
