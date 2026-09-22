@@ -1,22 +1,28 @@
 # Design language: what is built, what is not
 
 The draft that this implements is `design-language.md` (the conditions) plus
-the Claude Design answer to it, which fixed nine decisions. This file says how
-far the code follows, so the next piece of work does not have to re-derive it.
+the Claude Design answers to it, which fixed fourteen decisions across two
+passes. This file says how far the code follows, so the next piece of work does
+not have to re-derive it.
 
 ## Decided
 
 | # | Decision | Where it lives |
 |---|---|---|
-| 1 | Interface accent is a teal outside the fold semantics | `--bel-ui-accent` in `theme.css` |
-| 2 | Reference mode is light | `light-dark()` in `theme.css`, `index.astro` |
+| 1 | Interface accent is a teal outside the fold semantics | `--bel-ui-accent` in `tokens.css` |
+| 2 | Reference mode is light | `light-dark()` in `tokens.css`, `index.astro` |
 | 3 | Code surface stays dark in both modes | already true |
 | 4 | Engine values win over web tokens | `render-svg/src/theme.ts` |
 | 5 | Kraft and indigo get the monochrome style only | `colorOk` in `paper-schemes.ts` |
 | 6 | Monospace shipped, prose on a system stack | `public/fonts/`, `--bel-font-*` |
 | 7 | Wordmark stays monospace | unchanged, already true |
 | 8 | A fold animates as a crossfade of two flat states | `lib/crossfade.ts` |
-| 9 | Ten syntax roles | `--bel-syntax-*` in `theme.css` |
+| 9 | Ten syntax roles | `--bel-syntax-*` in `tokens.css` |
+| 10 | The token layer is a file of its own | `src/styles/tokens.css`, imported by `theme.css` |
+| 11 | Starlight's custom properties are supplied from `--bel-*` | the bridge block in `theme.css` |
+| 12 | Callouts and badges run on accent and error, never on a fold colour | the hue rows in the bridge |
+| 13 | One line height for prose, 1.55 | `--bel-line-height` |
+| 14 | The light caption of highlight 0 turns towards green | `HIGHLIGHT_TEXT[0]`, `.figure-hl-0`, `typst-compat.typ` |
 
 ## Built
 
@@ -69,6 +75,53 @@ far the code follows, so the next piece of work does not have to re-derive it.
   landing as well as in the docs. The landing no longer pins dark before the
   first paint.
 
+- **The token layer is one file.** `tokens.css` carries every `--bel-*`
+  declaration and nothing else; `theme.css` imports it and holds the font
+  faces, the rendering surface and the Starlight bridge. A reader asking what
+  a value is opens one file, and `theme-tokens.test.ts` reads that file for
+  the paper roles.
+- **Three tinted grounds.** `--bel-ui-accent-low` and `--bel-ui-error-low`
+  carry text on a field: the anchor a link jumped to, a callout, a badge.
+  `--bel-ui-code-inline` carries inline code inside a paragraph, where the
+  dark code surface would be a hole in the line. Body text holds 14.5:1 and
+  above on all three, muted text 4.6:1 and above, and each sits 4.6 to 15.8
+  ΔE76 off the page surface.
+- **The Starlight bridge.** `--sl-*` is supplied from `--bel-*` in one block,
+  so the docs take the landing's surface without a component being overridden
+  for a colour. The bridge is one-way, which keeps one list of values. The
+  header height and the side margin became `--bel-shell-nav-height` and
+  `--bel-shell-pad-x` so the wordmark holds its place when a visitor crosses
+  from the landing into the docs. `theme.css` no longer reads `--sl-color-*`
+  in its own rules.
+- **A callout row clear of the folds.** Starlight's five hue rows name four
+  fold colours: blue is the valley, red the mountain, purple the construction
+  line, orange the unassigned crease. They collapse onto accent for note, tip
+  and a positive badge, and onto error for caution and danger. Two kinds of
+  callout then read alike in colour and are told apart by their icon and their
+  title word, which B1.2 asks for regardless.
+- **Headings in the monospace.** `--sl-text-h1…h5` are a size scale and carry
+  no typeface, so the choice is a rule on `.sl-markdown-content` and on the
+  page title. This is the one place the integration goes past supplying a
+  value.
+- **One line height for prose.** Starlight sets 1.75 and the landing set 1.5.
+  Palatino runs narrow, and `--bel-line-height` is 1.55 on both surfaces.
+- **One elevation value.** The system separates with 1px lines. The case a
+  line cannot carry is a panel lying over the text it covers, so
+  `--bel-shadow-overlay` exists for the mobile menu, the mobile table of
+  contents, the search dialog and the two overlays this site brings of its
+  own. Starlight's `--sl-shadow-sm` goes to `none`.
+- **Print is light.** A stored dark choice used to survive into the printer,
+  because the bridge overrides the values Starlight forces for print. One
+  `@media print` rule pins `color-scheme` instead, which is what `light-dark()`
+  reads.
+- **The light caption of highlight 0.** `HIGHLIGHT_TEXT[0]` moves from
+  `#07715a` to `#1C6B33`: ΔE76 27.5 to the light accent where it was 11.0, and
+  6.22:1 on the surface where it was 5.65:1. The stroke in `HIGHLIGHT_PALETTE`
+  does not move, so no drawing and no PDF changes. The price is that the
+  caption of the first highlight stands in a green whose stroke is teal-green,
+  which weakens the tie between the word and the drawn thing for that one
+  colour.
+
 ## The viewer pass
 
 `viewer-brief.md` put seven decisions to the design. The answer came back as
@@ -100,23 +153,38 @@ far it has got, and the control transitions take the duration tokens.
 - **A view of the crease pattern in the docs card independent of its folded
   twin.** The card's stepper moves both drawings together, because they are two
   drawings of one state.
+- **One code surface in the docs.** A ```` ```beloch ```` fence is `.bel-block`
+  from `theme.css`, on `--bel-ui-code-surface` with a 12px radius. Every other
+  fence runs through Starlight's code rendering with its own frame and its own
+  theme, so two kinds of code block can stand under each other. That is a
+  Shiki configuration question, and the bridge does not reach it.
+- **A flat pagination link.** Starlight's pagination takes `--sl-shadow-md`,
+  which the bridge points at the overlay shadow for the panels that need it.
+  The link keeps a shadow it does not need until it gets a rule of its own.
 
-## Measured, and left for a decision
+## What the system does not name yet
 
-Making light the reference put its values under the same measurement the dark
-ones already had. One thing came out of it that a value change alone does not
-settle.
+The gaps the design system records. The list is the brief, and nothing on it
+is filled.
 
-- **The light accent and the first highlight colour are both teal.** ΔE76 11.0
-  against `HIGHLIGHT_TEXT[0]`, where B1.7 asks for 25. Dark mode reaches 30.1
-  because the accent is light and the highlight is dark; on a light ground both
-  have to be dark for 4.5:1, so the separation has to come from hue, and the
-  best teal that still holds contrast reaches 24.3. Either the first highlight
-  leaves teal-green, which changes every figure and the PDF, or the accent
-  leaves teal, which was decision 1.
+- **No type scale.** Sizes and line heights of the interface stand as literals
+  in the components. Tokenised are the code grid (`--bel-code-size`,
+  `--bel-code-line`) and prose line height (`--bel-line-height`).
+- **No z-index scale.** The export panel sits at 5, controls at 2, tooltips at
+  50, each set where it is used.
+- **The focus ring is a pattern.** 2px accent at offset 2px stands at every
+  control separately. There is no `--bel-focus-*`.
+- **Breakpoints are unnamed.** 720px splits the card and the playground, 50rem
+  and 72rem the docs sidebar.
+- **Opacity literals are unnamed.** The editor gutter takes
+  `rgba(255,255,255,.08)`, the active line `.04`, occluded segments `0.55`,
+  the reset button `0.45`.
+- **No form vocabulary.** The site knows buttons, tabs, swatches and an editor.
+  Input fields, selects, switches and tables have no pattern yet.
 
 ## Next
 
-The accent against the first highlight colour, which reaches the docs and the
-printed paper: either the first highlight leaves teal-green, which changes
-every figure and the PDF, or the accent leaves teal, which was decision 1.
+The bridge changes every docs page at once, so the first thing it needs is a
+reading pass over `/model/`, `/kernel/`, `/language/` and `/output/` in both
+modes: the headings at their new typeface, the code blocks against each other,
+the sidebar and the search dialog on the one page ground.
