@@ -171,7 +171,10 @@ not have to re-derive it.
   button. The drawer now starts below the bar instead. The disclosure steps out
   while the drawer is open: it sits inside `.main-frame`, which the drawer
   marks `inert`, so leaving it on screen would show a control that cannot be
-  used.
+  used. The room the button needs in that bar is the disclosure's margin, not
+  its padding: `<summary>` is the click target, and as padding the gap belonged
+  to it, so half the bar opened the table of contents and the button sat inside
+  that half.
 - **Two components that flip themselves.** Starlight writes its base values
   dark first and flips them on `:root[data-theme='light']`. `MobileMenuToggle`
   and `Badge` do that flip in their own rules rather than through the

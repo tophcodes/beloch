@@ -553,12 +553,23 @@ button[data-open-modal] svg { width: 16px; height: 16px; }
  * table of contents; the drawer button is fixed into its left end, so the
  * disclosure keeps that width clear. */
 #starlight__mobile-toc > summary {
-	padding-inline-start: calc(
-		var(--bel-shell-pad-x) + var(--bel-menu-button-width) + var(--bel-space-2)
-	);
-	padding-inline-end: var(--bel-shell-pad-x);
+	/* The summary is the click target, so it ends where the control ends. The
+	   room the drawer button needs is margin rather than padding: as padding
+	   it belonged to the target, and half the bar opened the table of contents,
+	   the button included. */
+	width: fit-content;
+	margin-inline: calc(
+			var(--bel-shell-pad-x) + var(--bel-menu-button-width) + var(--bel-space-2)
+		)
+		var(--bel-shell-pad-x);
+	padding-inline: 0;
+	border-bottom: 0;
 	font-family: var(--bel-font-mono);
 	font-size: var(--bel-text-xs);
+}
+/* The bar keeps both its edges; the summary no longer spans it. */
+mobile-starlight-toc > nav {
+	border-bottom: 1px solid var(--bel-ui-divider);
 }
 /* The disclosure names the section the reader is in and opens the table of
  * contents under it. Its own label leaves the bar and stays for a screen
@@ -578,7 +589,7 @@ button[data-open-modal] svg { width: 16px; height: 16px; }
 #starlight__mobile-toc .display-current {
 	position: relative;
 	display: block;
-	max-width: 60%;
+	max-width: 100%;
 	height: 30px;
 	line-height: 28px;
 	padding-inline: 10px 26px;
