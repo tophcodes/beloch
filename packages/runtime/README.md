@@ -12,6 +12,9 @@ adds the modules it needs, and plugs in its own renderer.
 - **`core/`** (`@beloch/runtime`): the state, the events that change it, and
   `renderCommand`, which says what to draw. Imports types from `@beloch/scene`
   and nothing at runtime.
+- **`render-dom/`** (`@beloch/runtime-render-dom`): the renderer plug for a
+  DOM host. It executes a render command with `@beloch/render-svg` and puts the
+  result in an element.
 
 ## What the core holds
 
@@ -50,6 +53,9 @@ reader of either is a renderer and one document may be drawn twice at once:
 the `<Beloch>` card shows the crease pattern and the folded form side by side,
 from one step and one selection.
 
+A command also says whether its highlight is settled or under the pointer,
+because a renderer may show a settled entity more than the drawing holds.
+
 A command carries no scene, no theme and no geometry. The scene is in the
 state the renderer already reads, colours are the renderer's, and the motion
 of a flap between two frames comes from the scene's `facesMatrix`. So a
@@ -74,3 +80,38 @@ String-literal unions, no `enum`. These values cross into FOLD JSON, into DOM
 attributes and into `@beloch/render-svg` as the strings they are, and TypeScript
 erases a union entirely where an enum would leave an object in the bundle.
 Exhaustiveness is checked the same way, by a `switch` the compiler completes.
+
+## The renderer plug
+
+`createDomRenderer(host).draw(scene, command, { theme, fade })` puts the
+drawing in `host`. It owns four pieces of DOM work:
+
+- The markup, through `@beloch/render-svg`. `commandToSvg` alone is the pure
+  half, for a caller that wants the string without an element to put it in.
+- A fat transparent twin after every crease line and point dot, since a
+  two-pixel line is too fine a target to hover or click.
+- The highlight: every segment of a bundle at once, a paper boundary matched
+  by its geometry, and the classes cleared again when the next command names
+  something else.
+- A dashed ghost per segment of a settled entity that the folded drawing has
+  no line for. Those coordinates come from `beloch:inspect`, which describes
+  the final fold, so they are drawn at that frame and nowhere else.
+
+It holds what it last drew. A command asking for the same picture re-lights
+rather than rebuilds, so a pointer resting on a crease leaves a running fade
+alone. The theme counts as part of the picture and is compared by
+identity, so a host that builds a fresh theme object per call redraws on every
+event: keep one object per style.
+
+The viewport stays with the host. Pan, zoom and the element carrying the
+transform are untouched by a swap, and the host decides whether a swap fades.
+
+The markup it writes carries `bel-hit`, `bel-hl`, `bel-hl-ghost` and
+`bel-fade-host` / `bel-fade-ghost`; what those look like is the host's
+stylesheet, including whether the fade is a fade at all.
+
+## Tests
+
+`bun test` in this directory. The render-dom suite draws through
+`@beloch/render-svg`, whose own workspace has to be installed for that import
+to resolve: `bun install` in `packages/render-2d`.

@@ -62,3 +62,11 @@ test("a new document clears selection and hover", () => {
   expect(rt.state.hover).toBeNull();
   expect(renderCommand(rt.state, folded)?.highlight).toEqual([]);
 });
+
+test("the command says whether the highlight is settled or under the pointer", () => {
+  const rt = withDocument();
+  rt.dispatch({ type: "hover/set", entity: crease("7") });
+  expect(renderCommand(rt.state, folded)?.settled).toBe(false);
+  rt.dispatch({ type: "selection/set", entities: [crease("3")] });
+  expect(renderCommand(rt.state, folded)?.settled).toBe(true);
+});

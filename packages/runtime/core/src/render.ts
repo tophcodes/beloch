@@ -9,6 +9,12 @@ import type { EntityRef, HiddenMode, RenderOptions, State } from "./state";
 // already resolved from the selection and the hover.
 export interface RenderCommon {
   highlight: EntityRef[];
+  // Whether the highlight is the reader's settled answer rather than the
+  // pointer passing over a line. A renderer may show a settled entity more
+  // than the drawing holds, the buried rest of a crease for one; under the
+  // pointer that would put marks under the cursor on the way past every
+  // crease.
+  settled: boolean;
 }
 
 export type RenderCommand =
@@ -40,16 +46,16 @@ export function renderCommand(state: State, options: RenderOptions): RenderComma
   if (!scene) return null;
   // A settled selection outranks the pointer: once the reader has picked a
   // line, moving the cursor away must not take the answer with it.
-  const highlight: EntityRef[] =
-    state.selection.length > 0 ? state.selection : state.hover ? [state.hover] : [];
-  if (scene.statements.length === 0) return { kind: "cp-only", highlight };
+  const settled = state.selection.length > 0;
+  const highlight: EntityRef[] = settled ? state.selection : state.hover ? [state.hover] : [];
+  if (scene.statements.length === 0) return { kind: "cp-only", highlight, settled };
   // Step 0 is the sheet before any statement ran, so it carries no
   // statement's creases and no marks.
   const stmt = step === 0 ? null : scene.statements[step - 1] ?? null;
   const marks = stmt ? stmt.keptMarks : [];
   const newestCreaseId = marks.at(-1)?.creaseId ?? null;
   if (options.view === "cp") {
-    return { kind: "flat", upToStatement: step - 1, marks, newestCreaseId, highlight };
+    return { kind: "flat", upToStatement: step - 1, marks, newestCreaseId, highlight, settled };
   }
   return {
     kind: "folded",
@@ -58,5 +64,6 @@ export function renderCommand(state: State, options: RenderOptions): RenderComma
     marks,
     newestCreaseId,
     highlight,
+    settled,
   };
 }
