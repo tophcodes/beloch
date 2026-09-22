@@ -1,7 +1,7 @@
 # Design language: what is built, what is not
 
 The draft that this implements is `design-language.md` (the conditions) plus
-the Claude Design answers to it, which fixed sixteen decisions across two
+the Claude Design answers to it, which fixed eighteen decisions across three
 passes. This file says how far the code follows, so the next piece of work does
 not have to re-derive it.
 
@@ -25,6 +25,8 @@ not have to re-derive it.
 | 14 | The light caption of highlight 0 turns towards green | `HIGHLIGHT_TEXT[0]`, `.figure-hl-0`, `typst-compat.typ` |
 | 15 | One header component draws every page | `SiteHeader.astro`, the `Header` override |
 | 16 | The lockup is the mark beside the wordmark | `Wordmark.astro` |
+| 17 | A control that is a mark alone is a circle, one that carries a word is a rectangle | `SiteHeader.astro`, `MenuButton.astro`, the bridge |
+| 18 | On a narrow screen the drawer button sits in the bar below the header | `MenuButton.astro` |
 
 ## Built
 
@@ -123,6 +125,26 @@ not have to re-derive it.
   icon, the two page links are words. Below 50rem the words step aside for the
   search and the drawer button and reappear inside the drawer; the icon and
   the toggle stay reachable without opening anything.
+- **One control language in the header.** The bar carried four: Starlight's
+  frameless search button, a frameless icon link, a 30px circle with a 1px
+  outline, and Starlight's filled drawer chip with a shadow. All four now take
+  a transparent ground, a 1px `--bel-ui-control-border` and the accent on
+  hover, and the shape follows what the control carries: a mark alone is a
+  circle, a word is a rectangle.
+- **The drawer button leaves the top bar.** On a narrow screen it is fixed into
+  the left end of the bar Starlight already draws under the header for the
+  table of contents, as a labelled `Menu` button in the control language. The
+  top bar is then the landing's bar, and no row is added: the disclosure beside
+  it keeps `--bel-menu-button-width` clear. The search stays in the top bar:
+  Starlight renders one search per page with fixed ids, and the desktop header
+  is where that one belongs.
+- **Two components that flip themselves.** Starlight writes its base values
+  dark first and flips them on `:root[data-theme='light']`. `MobileMenuToggle`
+  and `Badge` do that flip in their own rules rather than through the
+  variables, and `light-dark()` has already chosen the column by then, so both
+  came out inverted when a visitor pinned the light mode and correct when the
+  mode came from the system. The drawer button is replaced outright; the badge
+  names both its ground and its text in the bridge.
 - **The mode toggle is drawn, not typed.** Its moon and sun were the `☽` and
   `☀` characters set through CSS `content`, so their shape came from whichever
   installed font the page's fallback chain reached first. The landing and the
