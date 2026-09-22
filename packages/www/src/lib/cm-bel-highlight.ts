@@ -64,14 +64,18 @@ function markFor(name: string): Decoration {
  * editor is built with colouring already in place rather than gaining it on a
  * later transaction.
  *
- * Re-parsing hands tree-sitter the previous tree, so an edit re-walks the part
- * of the document it touched instead of the whole program.
+ * Every build parses the whole document. Reusing the previous tree would mean
+ * applying each change to it with `tree.edit()` first; handing over an
+ * unedited tree makes tree-sitter keep the old ranges, and the colouring then
+ * describes the text as it was before the keystroke. At the size a program in
+ * this editor reaches, a full parse with its captures takes about 0.15 ms, so
+ * the ceiling is a document long enough for that to show between two
+ * keystrokes, and that is where keeping an edited tree would start to pay.
  */
 export function belHighlighting({ parser, query }: { parser: Parser; query: Query }): Extension {
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
-      private tree: Tree | null = null;
 
       constructor(view: EditorView) {
         this.decorations = this.build(view);
@@ -83,30 +87,28 @@ export function belHighlighting({ parser, query }: { parser: Parser; query: Quer
         }
       }
 
-      destroy() {
-        this.tree?.delete();
-        this.tree = null;
-      }
-
       private build(view: EditorView): DecorationSet {
         const text = view.state.doc.toString();
-        let next: Tree | null;
+        let tree: Tree | null;
         try {
-          next = parser.parse(text, this.tree ?? undefined);
+          tree = parser.parse(text);
         } catch {
           // A parse that throws leaves the previous colouring standing rather
           // than stripping the editor back to plain text mid-edit.
           return this.decorations ?? Decoration.none;
         }
-        if (!next) return this.decorations ?? Decoration.none;
-        this.tree?.delete();
-        this.tree = next;
-
-        const builder = new RangeSetBuilder<Decoration>();
-        for (const t of belTokens(query.captures(next.rootNode))) {
-          builder.add(t.from, t.to, markFor(t.name));
+        if (!tree) return this.decorations ?? Decoration.none;
+        try {
+          const builder = new RangeSetBuilder<Decoration>();
+          for (const t of belTokens(query.captures(tree.rootNode))) {
+            builder.add(t.from, t.to, markFor(t.name));
+          }
+          return builder.finish();
+        } finally {
+          // The tree lives in wasm memory, which the garbage collector does
+          // not reach.
+          tree.delete();
         }
-        return builder.finish();
       }
     },
     { decorations: (v) => v.decorations },
