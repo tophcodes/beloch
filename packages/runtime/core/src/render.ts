@@ -1,5 +1,5 @@
 import type { Mark } from "@beloch/scene";
-import type { EntityRef, HiddenMode, State } from "./state";
+import type { EntityRef, HiddenMode, RenderOptions, State } from "./state";
 
 // What to draw of the current document, as plain data. The core decides it,
 // a renderer executes it, and a headless test reads it without a view
@@ -30,8 +30,8 @@ export type RenderCommand =
       newestCreaseId: number | null;
     });
 
-export function renderCommand(state: State): RenderCommand | null {
-  const { scene, step, options } = state;
+export function renderCommand(state: State, options: RenderOptions): RenderCommand | null {
+  const { scene, step } = state;
   if (!scene) return null;
   // A settled selection outranks the pointer: once the reader has picked a
   // line, moving the cursor away must not take the answer with it.

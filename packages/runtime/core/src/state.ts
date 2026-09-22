@@ -10,12 +10,14 @@ export type EntityRef =
 export type View = "cp" | "folded";
 export type HiddenMode = "hide" | "dashed" | "depth";
 
-export interface PresentationOptions {
+// How a caller wants the current state drawn. These are arguments to a
+// drawing request rather than state: the only reader of either is a renderer,
+// and the <Beloch> card draws both views of one document side by side, so a
+// single state has to answer two requests that differ here.
+export interface RenderOptions {
   view: View;
   hidden: HiddenMode;
 }
-
-export const DEFAULT_OPTIONS: PresentationOptions = { view: "folded", hidden: "hide" };
 
 export interface State {
   // The document slot. Who fills it is the composition's business: the eval
@@ -25,20 +27,18 @@ export interface State {
   // Statement index, 0 to statements.length. 0 is the sheet before any
   // statement ran; n means every statement has been applied.
   step: number;
-  options: PresentationOptions;
   // The settled selection. A card lights several named entities at once and
   // the playground lights one; both are policies over this one list, and the
   // core imposes neither.
   selection: EntityRef[];
-  // The entity under the pointer. Transient: it survives no step change and
-  // it yields to a settled selection.
+  // The entity under the pointer. Transient: it yields to a settled
+  // selection.
   hover: EntityRef | null;
 }
 
 export const initialState: State = {
   scene: null,
   step: 0,
-  options: DEFAULT_OPTIONS,
   selection: [],
   hover: null,
 };

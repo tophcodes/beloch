@@ -76,12 +76,17 @@ business. What the core needs from it is whether a selection is settled, and
 a settled selection outranks the pointer: once the reader has picked a line,
 moving the cursor away does not take the answer with it.
 
-**Presentation options.** View (`cp` / `folded`), hidden mode
-(`hide` / `dashed` / `depth`), paper scheme, line style. They are inputs to
-the render command, so they belong with it.
+**Presentation options are arguments, not state.** View (`cp` / `folded`),
+hidden mode, paper scheme and line style go to `renderCommand` as parameters.
+The only reader of any of them is a renderer, and the `<Beloch>` card draws
+the crease pattern and the folded form of one document side by side, so a
+single state has to answer two drawing requests that differ here. Holding the
+view in the core would leave the card unable to express itself with one
+runtime. Step, selection and hover are the same in both drawings, which is
+where the line falls.
 
-**The render command.** The core derives it on demand from the state above,
-as plain data: which of three drawings to make (the crease pattern of a
+**The render command.** The core derives it from the state above and the
+caller's options, as plain data: which of three drawings to make (the crease pattern of a
 document with no timeline, the flat sheet scored up to a statement, or one
 folded frame), the hidden mode, the marks still dangling, and the highlight
 set. It carries no scene and no theme: the document is in the state the
@@ -187,7 +192,8 @@ invariants the playground maintains by hand today:
 - hover, then pin, then hover elsewhere: the pin survives, hover is suppressed
 - pin, then step forward: the pin survives the redraw and lights whatever the
   new step draws, or nothing, without clearing
-- toggle hidden mode: the render command changes, the selection does not
+- one state answers a crease-pattern and a folded request at once, with the
+  same step and the same highlight in both (the card's side-by-side)
 - a source change invalidates the document, the step and the pin together
 - a failed run keeps the last good document and adds the diagnostic
 

@@ -30,10 +30,6 @@ export function reduce(state: State, event: Event): State {
       return { ...state, selection: event.entities };
     case "hover/set":
       return { ...state, hover: event.entity };
-    case "options/view":
-      return { ...state, options: { ...state.options, view: event.view } };
-    case "options/hidden":
-      return { ...state, options: { ...state.options, hidden: event.mode } };
     default:
       // An event this version does not know leaves the state as it was. The
       // union makes that unreachable in typed code; a composition loading a

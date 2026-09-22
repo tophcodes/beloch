@@ -1,12 +1,14 @@
 import { test, expect } from "bun:test";
-import { createRuntime, type RenderCommand, type State } from "../src/index";
+import { createRuntime, renderCommand, type State } from "../src/index";
+
+const folded = { view: "folded", hidden: "hide" } as const;
 import { sceneOf, statement } from "./scene-fixture";
 
-test("a listener hears the state and the render command after a dispatch", () => {
+test("a listener hears the state after a dispatch", () => {
   const rt = createRuntime();
   const heard: { step: number; kind: string | null }[] = [];
-  rt.subscribe((state: State, render: RenderCommand | null) =>
-    heard.push({ step: state.step, kind: render?.kind ?? null }),
+  rt.subscribe((state: State) =>
+    heard.push({ step: state.step, kind: renderCommand(state, folded)?.kind ?? null }),
   );
   rt.dispatch({ type: "document/set", scene: sceneOf([statement(0), statement(1)]) });
   rt.dispatch({ type: "step/to", index: 0 });

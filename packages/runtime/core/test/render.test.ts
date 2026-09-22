@@ -1,5 +1,7 @@
 import { test, expect } from "bun:test";
 import { createRuntime, renderCommand, initialState } from "../src/index";
+
+const folded = { view: "folded", hidden: "hide" } as const;
 import { sceneOf, statement } from "./scene-fixture";
 
 test("the folded view draws the frame the current statement folds against", () => {
@@ -8,7 +10,7 @@ test("the folded view draws the frame the current statement folds against", () =
     type: "document/set",
     scene: sceneOf([statement(0, { frameIndex: 1 }), statement(1, { frameIndex: 4 })]),
   });
-  expect(rt.render).toEqual({
+  expect(renderCommand(rt.state, folded)).toEqual({
     kind: "folded",
     frame: 4,
     hidden: "hide",
@@ -22,7 +24,7 @@ test("the flat sheet is frame zero, before any statement", () => {
   const rt = createRuntime();
   rt.dispatch({ type: "document/set", scene: sceneOf([statement(0, { frameIndex: 1 })]) });
   rt.dispatch({ type: "step/to", index: 0 });
-  expect(rt.render).toEqual({
+  expect(renderCommand(rt.state, folded)).toEqual({
     kind: "folded",
     frame: 0,
     hidden: "hide",
@@ -35,9 +37,9 @@ test("the flat sheet is frame zero, before any statement", () => {
 test("a scene with no statements has one drawing, the crease pattern", () => {
   const rt = createRuntime();
   rt.dispatch({ type: "document/set", scene: sceneOf([]) });
-  expect(rt.render).toEqual({ kind: "cp-only", highlight: [] });
+  expect(renderCommand(rt.state, folded)).toEqual({ kind: "cp-only", highlight: [] });
 });
 
 test("without a document there is nothing to draw", () => {
-  expect(renderCommand(initialState)).toBeNull();
+  expect(renderCommand(initialState, folded)).toBeNull();
 });
