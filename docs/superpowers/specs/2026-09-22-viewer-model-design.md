@@ -86,18 +86,26 @@ runtime. Step, selection and hover are the same in both drawings, which is
 where the line falls.
 
 **The render command.** The core derives it from the state above and the
-caller's options, as plain data: which of three drawings to make (the crease pattern of a
-document with no timeline, the flat sheet scored up to a statement, or one
-folded frame), the hidden mode, the marks still dangling, and the highlight
-set. It carries no scene and no theme: the document is in the state the
+caller's options, as plain data: which of three drawings to make (the crease
+pattern of a document with no timeline, the flat sheet scored up to a
+statement, or one folded frame), the hidden mode, the marks still dangling,
+and the highlight set. It carries no scene and no theme: the document is in the state the
 renderer already reads, and colours belong to the renderer. Deriving it in the
 core lets a headless test assert what a view would draw without a view
 existing. `svgForStep` in `Playground.astro` is this function today, buried in
 the component.
 
+**Nothing is news twice.** An event that changes nothing returns the state
+object it was given, and a dispatch that changed nothing notifies no one. That
+lets a renderer answer "did anything move" with `===`. A pointer resting on
+one crease sends a hover per mouse event, and redrawing on each of them would
+restart a running animation.
+
 The core does **not** hold the viewport. Pan offset, zoom scale, drag tracking
 and pointer capture stay with the view, because two consumers showing the same
-document at different zoom is correct behaviour.
+document at different zoom is correct behaviour. Animation progress belongs
+there too: the core says be at frame 2, and the renderer takes as long as it
+takes to get there.
 
 ## Modules
 
