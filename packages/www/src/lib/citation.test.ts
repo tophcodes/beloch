@@ -8,6 +8,8 @@ test("the citation comes out of CITATION.cff", () => {
   expect(c.version).toMatch(/^\d+\.\d+\.\d+$/);
   expect(c.dateReleased).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   expect(c.orcid).toStartWith("https://orcid.org/");
+  // A WebID is a URI with a fragment: the document is not the person.
+  expect(c.webid).toMatch(/^https:\/\/[^\s#]+#[^\s#]+$/);
   expect(c.familyNames.length).toBeGreaterThan(0);
   expect(c.givenNames.length).toBeGreaterThan(0);
 });

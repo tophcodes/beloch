@@ -12,6 +12,15 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+/**
+ * The author's WebID. It is not read from CITATION.cff because the format has
+ * no field for one: `website` means a homepage, and a WebID is the URI that
+ * denotes the person and dereferences to a document describing them. Keeping
+ * it here rather than bending `website` leaves the CFF file saying what other
+ * tools think it says.
+ */
+export const WEBID = "https://toph.so/profile#me";
+
 export interface Citation {
 	title: string;
 	version: string;
@@ -23,6 +32,7 @@ export interface Citation {
 	familyNames: string;
 	givenNames: string;
 	orcid: string;
+	webid: string;
 }
 
 /** `key: "value"` or `key: value`, at the given indent, first match wins. */
@@ -51,6 +61,7 @@ export function readCitation(path = join(repoRoot(), "CITATION.cff")): Citation 
 		familyNames: scalar(cff, "family-names", "\\s*"),
 		givenNames: scalar(cff, "given-names", "\\s*"),
 		orcid: scalar(cff, "orcid", "\\s*"),
+		webid: WEBID,
 	};
 }
 

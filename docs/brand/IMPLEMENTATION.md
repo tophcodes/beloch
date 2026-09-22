@@ -133,7 +133,10 @@ not have to re-derive it.
 - **The release is on the page.** Every footer carries the version, the
   concept DOI, the author with their ORCID and a link to `/cite/`, and the
   landing carries `citation_*` metadata and a `SoftwareSourceCode` record in
-  JSON-LD for the indexers that read them. The citation tags describe one work,
+  JSON-LD for the indexers that read them. The author node in that record is
+  identified by its WebID, so the record and the profile document at that URI
+  are statements about one subject; the ORCID stays beside it as the identifier
+  a bibliographic consumer looks for. The citation tags describe one work,
   so they sit on the one page that stands for the software rather than on every
   page. Every value is read from `CITATION.cff` at build time, so a release
   moves one file and the site follows. The DOI is the concept DOI, which

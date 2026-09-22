@@ -18,13 +18,18 @@ const jsonLd = {
   identifier: doiUrl(c),
   sameAs: doiUrl(c),
   programmingLanguage: "OCaml",
+  // The author node is identified by the WebID, so this record and the
+  // profile document at that URI are statements about one subject rather than
+  // two people who happen to share a name. The ORCID stays alongside it, which
+  // is the identifier a bibliographic consumer looks for.
   author: {
     "@type": "Person",
+    "@id": c.webid,
     familyName: c.familyNames,
     givenName: c.givenNames,
     name: `${c.givenNames} ${c.familyNames}`,
     identifier: c.orcid,
-    sameAs: c.orcid,
+    sameAs: [c.orcid, c.repository.replace(/\/[^/]+$/, "")],
   },
 };
 ---
