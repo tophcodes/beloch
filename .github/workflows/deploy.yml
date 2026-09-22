@@ -8,6 +8,11 @@ on:
       - 'packages/render-2d/**'
       - 'packages/core/lib/**'
       - 'packages/core/bin/**'
+      # The job runs the kernel suites, so the corpus they read has to be
+      # able to trigger it: a new or edited .bel case, or a change to a
+      # harness under tests/, is otherwise never checked until some other
+      # path happens to carry it in.
+      - 'packages/core/tests/**'
       # The reference documents are symlinked into the site, and their figures
       # are generated from them by scripts/build-api-docs.sh.
       - 'spec/**'
