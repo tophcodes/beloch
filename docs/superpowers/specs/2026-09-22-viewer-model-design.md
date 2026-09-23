@@ -272,10 +272,10 @@ Where the risk sits: step 4 holds the invariants that are currently kept by
 hand at each call site, and step 7 holds everything the reader sees. Steps 1,
 2, 5 and 6 are additive and reversible on their own.
 
-## Where the work stands (2026-09-22, end of session)
+## Where the work stands (2026-09-23)
 
-Steps 1 to 4 are done and committed on `runtime-model`, and step 6 is half
-done because a feature needed it early. What each step actually produced:
+Steps 1 to 6 are done and committed on `runtime-model`, which is open as draft
+PR #29. What each step actually produced:
 
 1. **Core.** State, events, reducers, `renderCommand`. Two fields joined the
    command since this document was written: `settled`, because a renderer has
@@ -295,15 +295,25 @@ done because a feature needed it early. What each step actually produced:
 4. **The pin and the hover moved in.** `EntityRef` now covers face and vertex
    as well, so the playground, the drawing and the editor name the same things;
    `packages/www/src/lib/inspect-lookup.ts` re-exports the core's type. Three
-   highlight paths stayed in the view because they belong to steps 5 and 6: the
-   chooser's candidate preview, the stack picker's single segment, and the
-   creases on the cursor's line.
-6. **`@beloch/runtime-editor`** exists with source blocks (`blockOfStep`,
-   `blockAtLine`, `entitiesIn`). The spans in both directions, which is what
-   this step is really for, are not written.
+   highlight paths stayed in the view at the time: the chooser's candidate
+   preview and the creases on the cursor's line came back with steps 5 and 6,
+   and the stack picker's single segment is still drawn by geometry in the
+   view, because it points at one segment of a bundle rather than at the
+   bundle a selection names (ADR-0014).
+5. **`@beloch/runtime-pick`.** `decide` answers a hit report with none, one or
+   several, and the store holds the candidates and whether the reader has been
+   asked. A report with nothing in it changes nothing at all: a click on empty
+   paper is no statement about the answer that stands. The panel, the rows and
+   the preview highlight stay in the view, because the module never touches the
+   DOM.
+6. **`@beloch/runtime-editor`.** Source blocks (`blockOfStep`, `blockAtLine`,
+   `entitiesIn`) and the spans in both directions: `refSpansFor` for every
+   place the program names a selection, `sourceLineOf` for the line that built
+   it, `entitiesAtLine` for what the cursor's line made. The span parser lives
+   here now, so the CodeMirror marks, the tooltip and the lookups read a span
+   the same way.
 
-Still open: **step 5** (the chooser and the candidate list), **the rest of step
-6**, and **step 7** (the evaluator, the phases, the debounce).
+Still open: **step 7** (the evaluator, the phases, the debounce).
 
 What is known about placing a block's entities, since it cost an afternoon to
 find out: a crease is placed by the span in `beloch:inspect`, a named point by
@@ -315,7 +325,10 @@ on a named line in the FOLD, beside the one a named point already has, which is
 an emitter change, a `spec/FOLD.md` change, a parser change and a core change.
 
 The click list was walked by hand on the dev server after step 3 and everything
-held. Steps 4's six sequences have not been walked.
+held. Step 4's sequences run headless in `core/test/sequences.test.ts`, and
+each one was checked against a broken reducer to see it fail. Nothing since
+step 3 has been walked in a browser, so the chooser and the editor marks are
+proved by their suites and not by a pointer.
 
 ## The design brief
 
