@@ -7,36 +7,13 @@
 //
 // Display-only, like the step marker beside it: it never moves the cursor or
 // the selection, and it never scrolls.
+import { parseSpan } from "@beloch/runtime-editor";
 import { Decoration, EditorView } from "@codemirror/view";
 import type { DecorationSet } from "@codemirror/view";
 import { RangeSetBuilder, StateEffect, StateField } from "@codemirror/state";
 import type { EditorState } from "@codemirror/state";
 
 export const setRefSpans = StateEffect.define<string[]>();
-
-export interface SpanPos {
-  fromLine: number; // 1-based
-  fromCol: number; // 1-based
-  toLine: number;
-  toCol: number; // exclusive
-}
-
-// The emitter writes "file:line:col-col" on one line and
-// "file:line:col-line:col" across two (Error.span_to_string). A path may
-// itself contain colons, so both shapes are matched from the end.
-export function parseSpan(span: string): SpanPos | null {
-  const multi = /:(\d+):(\d+)-(\d+):(\d+)$/.exec(span);
-  if (multi) {
-    return {
-      fromLine: Number(multi[1]), fromCol: Number(multi[2]),
-      toLine: Number(multi[3]), toCol: Number(multi[4]),
-    };
-  }
-  const one = /:(\d+):(\d+)-(\d+)$/.exec(span);
-  if (!one) return null;
-  const line = Number(one[1]);
-  return { fromLine: line, fromCol: Number(one[2]), toLine: line, toCol: Number(one[3]) };
-}
 
 // Document offsets for a span, or null when it falls outside the text the
 // editor currently holds. That happens whenever the program has been edited

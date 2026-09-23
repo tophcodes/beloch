@@ -2,7 +2,7 @@ import { test, expect, beforeAll } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "codemirror";
-import { parseSpan, spanToRange, refMarkExtensions, setRefSpansOn } from "./cm-ref-marks";
+import { spanToRange, refMarkExtensions, setRefSpansOn } from "./cm-ref-marks";
 
 beforeAll(() => { if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register(); });
 
@@ -14,27 +14,6 @@ function mountEditor(doc: string): EditorView {
   document.body.appendChild(parent);
   return new EditorView({ state, parent });
 }
-
-test("parseSpan reads the one-line form the emitter writes", () => {
-  expect(parseSpan("examples/bases/fish-base.bel:6:11-15")).toEqual({
-    fromLine: 6, fromCol: 11, toLine: 6, toCol: 15,
-  });
-});
-
-test("parseSpan reads a span that crosses lines", () => {
-  expect(parseSpan("a.bel:6:11-8:4")).toEqual({
-    fromLine: 6, fromCol: 11, toLine: 8, toCol: 4,
-  });
-});
-
-// A Windows-style path, or any path with a colon in it, must not confuse the
-// parse. It reads the numeric tail and ignores the prefix.
-test("parseSpan ignores colons in the path", () => {
-  expect(parseSpan("C:/tmp/a.bel:2:1-5")).toEqual({
-    fromLine: 2, fromCol: 1, toLine: 2, toCol: 5,
-  });
-  expect(parseSpan("nonsense")).toBeNull();
-});
 
 test("spanToRange lands on the text the span names", () => {
   const state = EditorState.create({ doc: DOC });

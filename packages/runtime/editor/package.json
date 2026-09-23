@@ -1,0 +1,6 @@
+{
+  "name": "@beloch/runtime-editor",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts"
+}

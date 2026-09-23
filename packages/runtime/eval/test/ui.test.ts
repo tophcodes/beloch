@@ -1,10 +1,9 @@
 import { test, expect } from "bun:test";
-import { runUi, RUNTIME_SIZE, type RunState } from "./playground-run-state";
+import { runUi, EVALUATOR_SIZE, type RunState } from "../src/index";
 
 const state = (over: Partial<RunState> = {}): RunState => ({
   phase: "cold",
   running: false,
-  repeat: false,
   loadStalled: false,
   ...over,
 });
@@ -22,21 +21,21 @@ test("Run stays available at rest with the runtime ready and the code unchanged"
   expect(ui.title).toBe("Run");
 });
 
-test("a repeated run reports the unchanged result in the status line", () => {
-  const ui = runUi(state({ phase: "ready", repeat: true }));
+test("a run that changed nothing says nothing", () => {
+  const ui = runUi(state({ phase: "ready" }));
   expect(ui.disabled).toBe(false);
-  expect(ui.status).toBe("same code as the last run, result unchanged");
+  expect(ui.status).toBe("");
 });
 
 test("waiting for the runtime names the download size", () => {
   const ui = runUi(state({ phase: "cold", running: true }));
   expect(ui.disabled).toBe(true);
-  expect(ui.status).toContain(RUNTIME_SIZE);
+  expect(ui.status).toContain(EVALUATOR_SIZE);
 });
 
 test("a booting runtime reports loading, not computing", () => {
   expect(runUi(state({ phase: "loading", running: true })).status).toBe(
-    `loading runtime (${RUNTIME_SIZE}) …`,
+    `loading runtime (${EVALUATOR_SIZE}) …`,
   );
 });
 
@@ -53,11 +52,6 @@ test("a stalled load re-enables Run and says the runtime is still loading", () =
   expect(ui.status).toBe("runtime still loading; press Run to retry");
 });
 
-test("the stalled-load message outranks a pending repeat message", () => {
-  const ui = runUi(state({ phase: "loading", loadStalled: true, repeat: true }));
-  expect(ui.status).toBe("runtime still loading; press Run to retry");
-});
-
 test("Run is disabled only while a run is in flight", () => {
   const phases = ["cold", "loading", "ready"] as const;
   for (const phase of phases) {
@@ -68,12 +62,12 @@ test("Run is disabled only while a run is in flight", () => {
 
 test("a measured load reports the share of the runtime that has arrived", () => {
   const ui = runUi(state({ phase: "loading", running: true, progress: 0.42 }));
-  expect(ui.status).toBe(`loading runtime · 42 % of ${RUNTIME_SIZE}`);
+  expect(ui.status).toBe(`loading runtime · 42 % of ${EVALUATOR_SIZE}`);
 });
 
 test("an unmeasured load falls back to naming the size alone", () => {
   expect(runUi(state({ phase: "loading", running: true, progress: null })).status).toBe(
-    `loading runtime (${RUNTIME_SIZE}) …`,
+    `loading runtime (${EVALUATOR_SIZE}) …`,
   );
 });
 

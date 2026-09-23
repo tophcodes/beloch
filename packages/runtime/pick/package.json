@@ -1,0 +1,6 @@
+{
+  "name": "@beloch/runtime-pick",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts"
+}

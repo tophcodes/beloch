@@ -24,23 +24,23 @@ export interface TextureOptions {
 
 export interface MarkOverlay {
   marks: Mark[];
-  newestCreaseId?: number; // Mark.creaseId of the most recently added mark — drawn with an accent style
+  newestCreaseId?: number | undefined; // Mark.creaseId of the most recently added mark — drawn with an accent style
 }
 
 export interface SceneOptions {
   isometry: Isometry;
   texture: TextureOptions;
-  title?: string;
-  labels?: string[]; // construction overlay selection: ["--v", ".p"]
+  title?: string | undefined;
+  labels?: string[] | undefined; // construction overlay selection: ["--v", ".p"]
   // Entities to emphasise: ".p" / "--l" join the construction overlay, "#[.p]"
   // fills the faces of the flap carrying every listed point.
-  highlight?: string[];
-  legend?: boolean;
-  theme?: Partial<Theme>;
-  view?: "top" | "bottom"; // folded only
-  hidden?: "dashed" | "hide" | "depth"; // folded only: drop buried segments,
+  highlight?: string[] | undefined;
+  legend?: boolean | undefined;
+  theme?: Partial<Theme> | undefined;
+  view?: "top" | "bottom" | undefined; // folded only
+  hidden?: "dashed" | "hide" | "depth" | undefined; // folded only: drop buried segments,
   // draw them uniformly, or fade each by how many layers cover it
-  markOverlay?: MarkOverlay; // draw these marks instead of the scene's final ones — projected onto the step's faces when folded, in paper space when flat
+  markOverlay?: MarkOverlay | undefined; // draw these marks instead of the scene's final ones — projected onto the step's faces when folded, in paper space when flat
 }
 
 // fold2svg.mjs:217 — hardcoded unit-square corners, normalized paper space.
@@ -198,9 +198,9 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       for (const vi of vs) { sx += V[vi]![0]; sy += V[vi]![1]; }
       return [sx / vs.length, sy / vs.length];
     };
-    const sideOf = (a0: number[], b0: number[], p: number[]): number =>
+    const sideOf = (a0: Vec2, b0: Vec2, p: Vec2): number =>
       (b0[0] - a0[0]) * (p[1] - a0[1]) - (b0[1] - a0[1]) * (p[0] - a0[0]);
-    const onSilhouette = (a0: number[], b0: number[], faces: number[]): boolean => {
+    const onSilhouette = (a0: Vec2, b0: Vec2, faces: number[]): boolean => {
       if (faces.length < 2) return true;
       let pos = false, neg = false;
       for (const fi of faces) {
@@ -578,7 +578,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
 
     // vertex dots + corner labels
     V.forEach((p, i) => {
-      const nm = scene.cp.verticesNames[i];
+      const nm = scene.cp.verticesNames[i] ?? null;
       if (!showVertex(i, nm)) return;
       const circleAttrs: Record<string, string | number> = {
         cx: tx(p[0]), cy: ty(p[1]), r: 3, fill: theme.ink, "data-vertex": i,

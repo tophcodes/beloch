@@ -37,6 +37,13 @@ process.env.BELOCH_REPO_ROOT = repoRoot;
 // enters the client bundle.
 const sceneRoot = join(repoRoot, 'packages', 'render-2d', 'scene', 'src', 'index.ts');
 const renderSvgRoot = join(repoRoot, 'packages', 'render-2d', 'render-svg', 'src', 'index.ts');
+// The runtime (packages/runtime) is the same kind of package: browser-safe TS
+// with no build step, aliased to its entrypoints.
+const runtimeRoot = join(repoRoot, 'packages', 'runtime', 'core', 'src', 'index.ts');
+const runtimeRenderDomRoot = join(repoRoot, 'packages', 'runtime', 'render-dom', 'src', 'index.ts');
+const runtimeEditorRoot = join(repoRoot, 'packages', 'runtime', 'editor', 'src', 'index.ts');
+const runtimePickRoot = join(repoRoot, 'packages', 'runtime', 'pick', 'src', 'index.ts');
+const runtimeEvalRoot = join(repoRoot, 'packages', 'runtime', 'eval', 'src', 'index.ts');
 
 // https://astro.build/config
 export default defineConfig({
@@ -49,6 +56,11 @@ export default defineConfig({
 			alias: {
 				'@beloch/scene': sceneRoot,
 				'@beloch/render-svg': renderSvgRoot,
+				'@beloch/runtime': runtimeRoot,
+				'@beloch/runtime-render-dom': runtimeRenderDomRoot,
+				'@beloch/runtime-editor': runtimeEditorRoot,
+				'@beloch/runtime-pick': runtimePickRoot,
+				'@beloch/runtime-eval': runtimeEvalRoot,
 			},
 		},
 		// packages/render-2d/ lives outside packages/www/ (Vite's default project root), so the dev
