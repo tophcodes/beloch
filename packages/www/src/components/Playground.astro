@@ -266,12 +266,7 @@ const codeLines = code ? code.split("\n").length : 0;
     gap: 8px 16px;
     margin-left: auto;
   }
-  .pg-toolbar-views {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
+
 
   /* A set of states one control chooses between is drawn as one control: the
      segments carry the border between them, and the chosen one is filled
@@ -298,6 +293,9 @@ const codeLines = code ? code.split("\n").length : 0;
   .pg-segmented > button + button {
     border-left: 1px solid var(--bel-ui-divider);
   }
+  /* In a menu the control runs the width of the panel, so its segments split
+     that width rather than sitting in the corner of it. */
+  .pg-view-panel .pg-segmented > button { flex: 1; }
   .pg-segmented > button:hover:not(:disabled) { color: var(--bel-ui-accent); }
   .pg-segmented > button.is-active {
     background: var(--bel-ui-quiet);
@@ -460,6 +458,11 @@ const codeLines = code ? code.split("\n").length : 0;
     border: 2px solid currentColor;
     border-top-color: transparent;
     animation: pg-spin 0.7s linear infinite;
+  }
+  .pg-run-play {
+    /* A triangle carries its mass to the left of its box, so the optical
+       centre of the circle is two pixels right of the geometric one. */
+    margin-left: 2px;
   }
   .pg-run.is-loading .pg-run-play { display: none; }
   .pg-run.is-loading .pg-run-spinner { display: block; }
@@ -2247,7 +2250,20 @@ const codeLines = code ? code.split("\n").length : 0;
         currentView === "cp" || stmt === null || stmt.kind !== "fold" ? "view" : "fold";
       try {
         drawCurrent(keepView, fadeOverride ?? (animate ? stepFade : null));
-        setStepLineOn(editor, block.fromLine, { through: block.toLine ?? editor.state.doc.lines });
+        // The hero offers nothing to operate, so it marks nothing: a block lit
+        // in a program the visitor cannot step through is a control that is
+        // not there.
+        //
+        // Scrolling the source to the block is for a reader who asked to step.
+        // A run landing on its last step, a paper changed, a style switched:
+        // in all of those the reader is looking at the drawing, and moving the
+        // program under them takes the page with it.
+        if (!hero) {
+          setStepLineOn(editor, block.fromLine, {
+            through: block.toLine ?? editor.state.doc.lines,
+            reveal: animate,
+          });
+        }
       } catch (err) {
         showError(`Render error: ${err instanceof Error ? err.message : String(err)}`);
         return;
