@@ -2,7 +2,12 @@ import { test, expect, beforeAll } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "codemirror";
-import { stepMarkerExtensions, setStepLineOn, setStepBlocksOn } from "./cm-step-marker";
+import {
+  stepMarkerExtensions,
+  setStepLineOn,
+  setStepBlocksOn,
+  setHoveredStepOn,
+} from "./cm-step-marker";
 
 beforeAll(() => { if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register(); });
 
@@ -136,4 +141,23 @@ test("clearing the blocks takes the bars with it", () => {
   setStepBlocksOn(view, threeBlocks);
   setStepBlocksOn(view, []);
   expect(view.dom.querySelector(".cm-step-bar")).toBeNull();
+});
+
+test("the ends of a block are marked, so two blocks read as two", () => {
+  const view = mountEditor("paper square\nfold X\n.m = free\nfold Y\n");
+  setStepBlocksOn(view, threeBlocks);
+  const bars = Array.from(view.dom.querySelectorAll(".cm-step-bar"));
+  // A block of one line is both its own head and its own tail.
+  expect(bars.map((b) => b.classList.contains("is-head"))).toEqual([true, true, false, true]);
+  expect(bars.map((b) => b.classList.contains("is-tail"))).toEqual([true, false, true, true]);
+});
+
+test("pointing at a block lights the whole block's bar", () => {
+  const view = mountEditor("paper square\nfold X\n.m = free\nfold Y\n");
+  setStepBlocksOn(view, threeBlocks);
+  setHoveredStepOn(view, 1);
+  const hovered = Array.from(view.dom.querySelectorAll(".cm-step-bar.is-hover"));
+  expect(hovered.map((b) => b.getAttribute("data-step"))).toEqual(["1", "1"]);
+  setHoveredStepOn(view, null);
+  expect(view.dom.querySelector(".cm-step-bar.is-hover")).toBeNull();
 });

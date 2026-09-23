@@ -588,7 +588,11 @@ const codeLines = code ? code.split("\n").length : 0;
     cursor: pointer;
     transition: border-color var(--bel-duration-state) var(--bel-ease);
   }
-  .pg-source :global(.cm-step-bar:hover) {
+  /* The ends of a block pull in, so the column shows at a glance how the
+     program divides into steps. */
+  .pg-source :global(.cm-step-bar.is-head) { top: 3px; }
+  .pg-source :global(.cm-step-bar.is-tail) { bottom: 3px; }
+  .pg-source :global(.cm-step-bar.is-hover) {
     border-left-color: color-mix(in srgb, var(--bel-ui-code-accent) 60%, transparent);
   }
   .pg-source :global(.cm-step-bar.is-current) {
@@ -1082,6 +1086,7 @@ const codeLines = code ? code.split("\n").length : 0;
   import { keymap } from "@codemirror/view";
   import {
     stepMarkerExtensions,
+    setHoveredStepOn,
     setStepBlocksOn,
     setStepLineOn,
     setErrorLineOn,
@@ -2143,6 +2148,9 @@ const codeLines = code ? code.split("\n").length : 0;
       if (step === emphasisStep) return;
       emphasisStep = step;
       applyEmphasis(canvas, emphasisFor(step));
+      // The block is one target: its whole bar lights, and the drawing lights
+      // what that block built.
+      setHoveredStepOn(editor, step);
     };
     // Pointing at a line of the program lights what the block it belongs to
     // built. The bars in the gutter offered this before; the source itself is

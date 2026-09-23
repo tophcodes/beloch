@@ -61,21 +61,40 @@ export const setStepBlocks = StateEffect.define<StepBlockSpan[]>();
 
 // One block's bar on one line. Absolutely positioned inside the line, so it
 // sits in the padding lane and takes no room in the text.
+//
+// The ends of a block are marked: the bar pulls in at the first and the last
+// line of its block, so two blocks that meet read as two bars rather than as
+// one unbroken column.
+interface BarState {
+  step: number;
+  current: boolean;
+  hovered: boolean;
+  head: boolean;
+  tail: boolean;
+}
+
 class StepBarWidget extends WidgetType {
-  constructor(
-    private readonly step: number,
-    private readonly current: boolean,
-  ) {
+  constructor(private readonly state: BarState) {
     super();
   }
   override eq(other: StepBarWidget) {
-    return other.step === this.step && other.current === this.current;
+    const a = this.state, b = other.state;
+    return (
+      a.step === b.step && a.current === b.current &&
+      a.hovered === b.hovered && a.head === b.head && a.tail === b.tail
+    );
   }
   override toDOM() {
+    const { step, current, hovered, head, tail } = this.state;
     const bar = document.createElement("span");
-    bar.className = `cm-step-bar${this.current ? " is-current" : ""}`;
-    bar.dataset.step = String(this.step);
-    bar.title = this.step === 0 ? "Starting paper" : `Step ${this.step}`;
+    bar.className =
+      "cm-step-bar" +
+      (current ? " is-current" : "") +
+      (hovered ? " is-hover" : "") +
+      (head ? " is-head" : "") +
+      (tail ? " is-tail" : "");
+    bar.dataset.step = String(step);
+    bar.title = step === 0 ? "Starting paper" : `Step ${step}`;
     return bar;
   }
   override ignoreEvent() {
@@ -85,21 +104,43 @@ class StepBarWidget extends WidgetType {
   }
 }
 
+// The block the pointer is over. A block is one target, so pointing anywhere
+// in it lights its whole bar rather than the one line under the cursor.
+export const setHoveredStep = StateEffect.define<number | null>();
+
+const hoveredStepField = StateField.define<number | null>({
+  create: () => null,
+  update(value, tr) {
+    let step = value;
+    for (const e of tr.effects) if (e.is(setHoveredStep)) step = e.value;
+    return step;
+  },
+});
+
 function barsFor(
   state: EditorState,
   blocks: StepBlockSpan[],
   current: StepBlock | null,
+  hovered: number | null,
 ): DecorationSet {
   const ranges = [];
   for (const b of blocks) {
+    const first = Math.max(1, b.fromLine);
     const last = Math.min(b.toLine, state.doc.lines);
-    for (let n = Math.max(1, b.fromLine); n <= last; n++) {
+    for (let n = first; n <= last; n++) {
       const inCurrent =
         current !== null && n >= current.line && n <= Math.max(current.to, current.line);
       ranges.push(
-        Decoration.widget({ widget: new StepBarWidget(b.step, inCurrent), side: -1 }).range(
-          state.doc.line(n).from,
-        ),
+        Decoration.widget({
+          widget: new StepBarWidget({
+            step: b.step,
+            current: inCurrent,
+            hovered: hovered === b.step,
+            head: n === first,
+            tail: n === last,
+          }),
+          side: -1,
+        }).range(state.doc.line(n).from),
       );
     }
   }
@@ -113,11 +154,19 @@ const stepBlocksField = StateField.define<StepBlocksValue>({
   update(value, tr) {
     let blocks = value.blocks;
     for (const e of tr.effects) if (e.is(setStepBlocks)) blocks = e.value;
-    // Which block is on screen is the step line's answer, so the bars are
-    // rebuilt when either moves.
-    const movedLine = tr.effects.some((e) => e.is(setStepLine));
-    if (blocks === value.blocks && !tr.docChanged && !movedLine) return value;
-    return { blocks, deco: barsFor(tr.state, blocks, tr.state.field(stepLineField).block) };
+    // Which block is on screen and which one the pointer is over are answered
+    // elsewhere, so the bars are rebuilt when either moves.
+    const moved = tr.effects.some((e) => e.is(setStepLine) || e.is(setHoveredStep));
+    if (blocks === value.blocks && !tr.docChanged && !moved) return value;
+    return {
+      blocks,
+      deco: barsFor(
+        tr.state,
+        blocks,
+        tr.state.field(stepLineField).block,
+        tr.state.field(hoveredStepField),
+      ),
+    };
   },
   provide: (f) => EditorView.decorations.from(f, (v) => v.deco),
 });
@@ -162,6 +211,7 @@ export function stepMarkerExtensions(
   const onPick = opts.onPickStep;
   return [
     stepLineField,
+    hoveredStepField,
     stepBlocksField,
     errorLineField,
     EditorView.domEventHandlers({
@@ -180,6 +230,12 @@ export function stepMarkerExtensions(
  * list. */
 export function setStepBlocksOn(view: EditorView, blocks: StepBlockSpan[]) {
   view.dispatch({ effects: setStepBlocks.of(blocks) });
+}
+
+/** Light the bar of the block the pointer is over, or none with `null`. */
+export function setHoveredStepOn(view: EditorView, step: number | null) {
+  if (view.state.field(hoveredStepField) === step) return;
+  view.dispatch({ effects: setHoveredStep.of(step) });
 }
 
 /** Show (or, with `line: null`, clear) the step marker: the bar and the
