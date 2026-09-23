@@ -91,7 +91,7 @@ placement a menu of four entries.
 | intent | mountain, valley; an annotation for the crease pattern, no part of the state | `mark` |
 | letter | mountain, valley as a constraint on a ray ([def-letter](/model/#def-letter)) | `flatten` |
 | order | one sector over another | `flatten` |
-| selection | toward a point ([def-motion](/model/#def-motion)) | constructions, `flatten` |
+| selection | toward a point ([def-selection](/model/#def-selection)) | constructions, `flatten` |
 
 Line and crease are two sorts under one sigil, and the binding tells them
 apart: `--l = …` is a line, `… as --l` is a crease. A crease stands where a

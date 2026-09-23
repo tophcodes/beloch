@@ -548,7 +548,7 @@ the line of a straight bundle contains $b$ and may be larger, where other
 flaps cross the same line.
 
 A line is needed at two places only: as the axis of a write (§5), and as an
-argument of an alignment ([#def-motion]). Both take a bundle and use its
+argument of an alignment ([#def-alignment]). Both take a bundle and use its
 line, so a line off the paper never arises, and a bundle that is not
 straight cannot serve. Nothing in the language holds a table line across
 states: `--l = (map .a onto .b)`, then a fold, then `mark (--l)` scores the
@@ -598,29 +598,66 @@ never changes the state.
 The reads of the language fall into three families; the line of a bundle
 ([#def-line]) is a fourth read that the others use.
 
-::: {.definition #def-motion name="motion" uses="def-read def-line def-material" defines="term-motion"}
-A *motion* is a read of sort bundle built from a construction. An
-*alignment* is an incidence on the table between two objects, each the
+::: {.definition #def-alignment name="alignment" uses="def-flat-state def-point def-line" defines="term-alignment"}
+An *alignment* is an incidence on the table between two objects, each the
 table position of a point, the line of a bundle, or the image of one of
 these under the reflection across the line sought: a point onto a point, a
 point onto a line, a line onto a line, the line through a point, the line
-perpendicular to a line. A *construction* $c$ is a finite set of alignments
-that determines the line: finitely many solutions, and no alignment
-redundant [@alperin2006, §2, Definition 8]. Its value $c(s, a)$ is the
-finite set of candidate table lines that satisfy every alignment; the seven
-Huzita-Justin axioms are all the constructions there are [@alperin2006,
-§2]. The motion is the read
-$$ r(s, a) = \text{the material of } \ell \quad \text{when } \sigma(s, a, c'(s, a)) = \{\ell\}, $$
-undefined otherwise, where $c'(s, a)$ is $c(s, a)$ without the candidates
-whose material in $s$ is empty, since a line off the paper is no fold, and
-$\sigma$ is the selection the program stated, the identity when it stated
-none. Selections are: keep the candidate nearest a named point; keep the
-candidate whose fold moves a named point to a named side.
+perpendicular to a line.
 :::
 
-::: {.term #term-motion name="motion"}
-A read that computes a bundle, the material of the line a Huzita-Justin
-construction and a selection among its candidates determine.
+::: {.term #term-alignment name="alignment"}
+An incidence on the table that the line sought has to satisfy, with one side
+of it reflected across that line.
+:::
+
+::: {.definition #def-selection name="selection" uses="def-read" defines="term-selection"}
+A *selection* $\sigma$ is a read that keeps one table line out of a finite
+set of them: the line nearest a named point; the line whose fold moves a
+named point to a named side. A program that states none selects by the
+identity. Like every read, a selection is defined exactly where it answers,
+here when one line remains.
+:::
+
+::: {.term #term-selection name="selection"}
+The read that keeps one table line out of the finitely many a construction
+offers.
+:::
+
+::: {.definition #def-construction name="construction" uses="def-read def-alignment def-selection def-line def-material" defines="term-construction term-candidate"}
+A *construction* is a read of sort bundle, written as a finite set of
+alignments on one sought line: finitely many solutions, and no alignment
+redundant [@alperin2006, §2, Definition 8]. A construction determines no
+line on its own. Its *candidates* $c(s, a)$ in a state $s$ with arguments
+$a$ are the table lines satisfying every alignment, less those whose
+material in $s$ is empty, since a line off the paper is no fold; there are
+finitely many and there is usually more than one. A line is reached only
+through a selection, and the value of the construction is
+$$ r(s, a) = \text{the material of } \ell \quad \text{when } \sigma(s, a, c(s, a)) = \{\ell\}, $$
+undefined otherwise, where $\sigma$ is the selection ([#def-selection]) the
+program stated. The seven Huzita-Justin axioms are all the constructions on
+one sought line [@alperin2006, §2].
+:::
+
+::: {.term #term-construction name="construction"}
+A read of sort bundle: a finite set of alignments on one sought line, whose
+candidates a selection narrows to the one whose material is the value.
+:::
+
+::: {.term #term-candidate name="candidate"}
+A table line that satisfies every alignment of a construction in a state and
+crosses paper; a line off the paper is none.
+:::
+
+::: {.open #open-several-sought-lines name="constructions that seek more than one line" uses="def-construction def-alignment"}
+[#def-construction] puts its alignments on one sought line, which is where
+the seven Huzita-Justin axioms live. The same alignments distributed over two
+lines sought at once give the 489 two-fold axioms [@alperin2006, §3, §4],
+which `packages/multifold` (ADR 0020) enumerates. A candidate is then a pair
+of lines, a selection keeps one pair, and a write takes two axes and moves
+them together, so the definitions of candidate, selection and write all widen
+by the same step. Which of them the language will carry, and whether a
+two-fold write is one write or a pair, is not decided.
 :::
 
 ::: {.definition #def-selector name="selector" uses="def-read def-flap def-point def-bundle"}
@@ -684,6 +721,30 @@ result is $s$; the hinges it introduces are the crease of $b$
 ::: {.term #term-score name="score"}
 Split faces along a bundle without moving anything; the state is unchanged
 up to refinement.
+:::
+
+::: {.definition #def-effective name="effective write" uses="def-write def-score def-refinement" defines="term-effective"}
+A write is *effective* in a state when its value is a different state in the
+sense of [#def-refinement]. A score is exactly a write that is not effective:
+by [#def-score] its value is the state it was given. A read is effective
+nowhere, since it yields no state at all.
+:::
+
+::: {.term #term-effective name="effective"}
+A write whose value is a different state; a score is not one, and a read is
+no write.
+:::
+
+::: {.open #open-writes-on-the-quotient name="whether a write acts on the states read up to refinement" uses="def-effective def-refinement def-write"}
+A write is stated here on a state, so *effective* is a property of a write at
+a state. The stronger reading is that every write descends to the states read
+up to refinement ([#def-refinement]): applied to two refinements of one
+state, a write yields two states with a common refinement, so it induces a
+map there, and a score induces the identity while an effective write does
+not. The text argues the intuition for scoring below, that a write may score
+every face its axis crosses because scoring changes nothing, and
+`spec/KERNEL.md` records that the representation does not quotient. The
+statement is not proved here, and nothing in the model rests on it.
 :::
 
 Every write below scores its axis first, so that each face lies on one side
@@ -1026,7 +1087,7 @@ and $T_2$ above the face-down $B_2$: both mountains. For a face-down lower
 body exchange the letters. $\square$
 :::
 
-::: {.definition #def-flatten name="flatten" uses="def-write def-flap def-score def-reflection def-letter def-noncrossing def-motion" defines="term-fan term-sector term-stayer term-emergent"}
+::: {.definition #def-flatten name="flatten" uses="def-write def-flap def-score def-reflection def-letter def-noncrossing def-selection" defines="term-fan term-sector term-stayer term-emergent"}
 The write `flatten` takes a paper point $O$ interior to a flap $\Phi$, a
 finite set of *rays*: segments from $O$ to the boundary of $\Phi$ in
 pairwise distinct directions, a set of constraints, and a selection
@@ -1109,13 +1170,13 @@ mark (map --da onto --bc) as --v
 flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
 :::
 
-::: {.open #open-flatten-selection name="what selects among the candidates of a flatten" uses="def-flatten def-motion"}
-[#def-flatten] leaves $\sigma$ to the program, as [#def-motion] does for the
-candidates of a construction. The language's `toward` is three rules in
+::: {.open #open-flatten-selection name="what selects among the candidates of a flatten" uses="def-flatten def-selection"}
+[#def-flatten] leaves $\sigma$ to the program, as [#def-construction] does
+for the candidates of a construction. The language's `toward` is three rules in
 sequence: the candidate whose moved material lies toward the named point,
 among those the ones with the fewest mountains on the given rays, among
 those the one whose material toward the point lies on top. The first is a
-selection in the sense of [#def-motion]; the other two are conventions that
+selection in the sense of [#def-selection]; the other two are conventions that
 pick a folder's habit out of several states that are all flat folded. Whether
 they belong in the model as named selections, or the language should ask for
 a constraint instead when several states remain, is not decided.
