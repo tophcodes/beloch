@@ -276,6 +276,10 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
             if (depth) { attrs["data-depth"] = depth; attrs["opacity"] = depthOpacity(depth); }
             if (name) attrs["data-name"] = name;
             if (name) attrs["data-bel-name"] = name;
+            // The same crease as the visible run it continues. A host resolves
+            // what the reader pointed at from the line's own attributes, and a
+            // drawn segment that answers nothing is a target that lies.
+            if (cid !== null) attrs["data-crease-id"] = cid;
             dashedLines.push(el("line", attrs));
           }
         }
