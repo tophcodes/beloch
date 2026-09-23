@@ -52,6 +52,13 @@ const codeLines = code ? code.split("\n").length : 0;
   data-variant={variant}
 >
   <div class="pg-pane pg-editor">
+    <button type="button" class="pg-run" aria-label="Run" title="Run">
+      <svg class="pg-run-play" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
+        <path d="M3 2 L13 8 L3 14 Z" fill="currentColor" />
+      </svg>
+      <span class="pg-run-spinner" aria-hidden="true"></span>
+    </button>
+    <div class="pg-run-hint" role="status" aria-live="polite"></div>
     <div class="pg-source">
       <template class="pg-source-seed">{code}</template>
       {code ? (
@@ -144,13 +151,6 @@ const codeLines = code ? code.split("\n").length : 0;
       <span class="pg-step-label"></span>
     </div>
   </div>
-  <button type="button" class="pg-run" aria-label="Run" title="Run">
-    <svg class="pg-run-play" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
-      <path d="M3 2 L13 8 L3 14 Z" fill="currentColor" />
-    </svg>
-    <span class="pg-run-spinner" aria-hidden="true"></span>
-  </button>
-  <div class="pg-run-hint" role="status" aria-live="polite"></div>
 </div>
 
 <style>
@@ -177,22 +177,6 @@ const codeLines = code ? code.split("\n").length : 0;
     .beloch-playground { grid-template-columns: 1fr; }
     .pg-output { order: 1; }
     .pg-editor { order: 2; }
-    /* With the panes stacked there is no seam to sit on, so the run button
-       goes into the corner of the pane it acts on. */
-    .pg-run {
-      left: auto;
-      right: 14px;
-      top: auto;
-      bottom: 14px;
-      transform: none;
-    }
-    .pg-run-hint {
-      left: auto;
-      right: 14px;
-      top: auto;
-      bottom: 66px;
-      transform: none;
-    }
   }
 
   /* The hero: program and drawing, and nothing to operate. It carries no card
@@ -251,6 +235,7 @@ const codeLines = code ? code.split("\n").length : 0;
   }
 
   .pg-editor {
+    position: relative;
     background: var(--bel-ui-code-surface);
     border-right: 1px solid var(--bel-ui-divider);
   }
@@ -435,33 +420,37 @@ const codeLines = code ? code.split("\n").length : 0;
     outline-offset: 2px;
   }
 
+  /* The button sits in the top right of the program it runs. On the seam
+     between the panes it stood over the drawing's left edge, which is where
+     the paper is widest; a program's first lines are short, so the corner over
+     the code is the quietest place on the card. It takes the code surface's
+     own palette, because that is the surface it lies on. */
   .pg-run {
     position: absolute;
-    left: 44%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+    top: 10px;
+    right: 10px;
     z-index: 2;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     padding: 0;
     border-radius: 50%;
-    border: 1px solid var(--bel-ui-accent);
-    background: var(--bel-ui-surface);
-    color: var(--bel-ui-accent);
+    border: 1px solid var(--bel-ui-code-accent);
+    background: color-mix(in srgb, var(--bel-ui-code-surface) 82%, transparent);
+    color: var(--bel-ui-code-accent);
     cursor: pointer;
     transition: background var(--bel-duration-state) var(--bel-ease), color var(--bel-duration-state) var(--bel-ease);
   }
   .pg-run:hover:not(:disabled) {
-    background: var(--bel-ui-accent);
-    color: var(--bel-ui-accent-text);
+    background: var(--bel-ui-code-accent);
+    color: var(--bel-ui-code-surface);
   }
   .pg-run:disabled {
     cursor: default;
-    border-color: var(--bel-ui-divider);
-    color: var(--bel-ui-text-faint);
+    border-color: var(--bel-ui-code-gutter);
+    color: var(--bel-ui-code-gutter);
   }
   .pg-run-spinner {
     display: none;
@@ -488,19 +477,19 @@ const codeLines = code ? code.split("\n").length : 0;
 
   .pg-run-hint {
     position: absolute;
-    left: 44%;
-    top: calc(50% + 36px);
-    transform: translateX(-50%);
+    top: 56px;
+    right: 10px;
     z-index: 2;
-    max-width: calc(100% - 24px);
+    max-width: calc(100% - 20px);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     font-family: var(--bel-font-mono);
     font-size: var(--bel-text-2xs);
-    color: var(--bel-ui-text-muted);
-    background: var(--bel-ui-surface);
-    border: 1px solid var(--bel-ui-divider);
+    /* Beside the button, so both read as one control on the code surface. */
+    color: var(--bel-ui-code-text);
+    background: color-mix(in srgb, var(--bel-ui-code-surface) 92%, transparent);
+    border: 1px solid color-mix(in srgb, var(--bel-ui-code-gutter) 45%, transparent);
     border-radius: 999px;
     padding: 3px 10px;
     opacity: 0;
