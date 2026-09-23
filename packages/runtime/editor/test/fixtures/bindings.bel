@@ -1,0 +1,7 @@
+paper square
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+--vert = (map .a onto .b)
+.mid = --ac * --bd
+fold (map --da onto --ac)
+fold (map --ab onto --ac)
