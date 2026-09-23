@@ -13,6 +13,7 @@ const sameEntity = (a: EntityRef | null, b: EntityRef | null): boolean => {
   if (a.kind === "crease" && b.kind === "crease") return a.creaseId === b.creaseId;
   if (a.kind === "edge" && b.kind === "edge") return a.name === b.name;
   if (a.kind === "face" && b.kind === "face") return a.index === b.index;
+  if (a.kind === "construction" && b.kind === "construction") return a.name === b.name;
   // A vertex is the same vertex at the same index; the name rides along for a
   // reader and adds nothing to the identity.
   if (a.kind === "vertex" && b.kind === "vertex") return a.index === b.index;

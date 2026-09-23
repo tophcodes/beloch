@@ -39,6 +39,15 @@ function bundleElements(root: ParentNode, creaseId: string): Element[] {
   );
 }
 
+// Everything the drawing marks with `attribute="value"`, minus the hit twins.
+// A construction line and a named point are drawn under the name the program
+// gave them rather than under a crease id.
+function namedElements(root: ParentNode, attribute: string, value: string): Element[] {
+  return Array.from(
+    root.querySelectorAll(`[${attribute}="${escapeAttr(value)}"]`),
+  ).filter((el) => !el.classList.contains(HIT_CLASS));
+}
+
 function edgeElements(root: ParentNode, scene: FoldScene, name: string): Element[] {
   const inspect = scene.inspect;
   if (!inspect) return [];
@@ -48,16 +57,23 @@ function edgeElements(root: ParentNode, scene: FoldScene, name: string): Element
   );
 }
 
-// A face and a vertex are entities a reader can settle on, and the drawing
-// already marks them where the selection came from. Lighting them is left
-// alone here: the lines are what a reader follows through a fold, and a filled
-// face under a lit crease would compete with the paper it stands on.
-const elementsFor = (root: ParentNode, scene: FoldScene, ref: EntityRef): Element[] =>
-  ref.kind === "crease"
-    ? bundleElements(root, ref.creaseId)
-    : ref.kind === "edge"
-      ? edgeElements(root, scene, ref.name)
-      : [];
+// A face is left dark: a filled face under a lit crease would compete with the
+// paper it stands on. A vertex the program never named is left dark too, since
+// the drawing has no mark to light for it.
+const elementsFor = (root: ParentNode, scene: FoldScene, ref: EntityRef): Element[] => {
+  switch (ref.kind) {
+    case "crease":
+      return bundleElements(root, ref.creaseId);
+    case "edge":
+      return edgeElements(root, scene, ref.name);
+    case "construction":
+      return namedElements(root, "data-construction", ref.name);
+    case "vertex":
+      return ref.name === null ? [] : namedElements(root, "data-bel-name", ref.name);
+    default:
+      return [];
+  }
+};
 
 // Lights what `refs` names, without clearing first and without ghosts. A
 // caller offering several entities at once uses this: a chooser previewing the

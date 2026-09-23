@@ -6,7 +6,6 @@ import { enhanceHits } from "./hits";
 import { commandToSvg } from "./svg";
 import { swapDrawing, type FadeLength } from "./swap";
 
-export * from "./emphasis";
 export * from "./highlight";
 export * from "./hits";
 export * from "./match";

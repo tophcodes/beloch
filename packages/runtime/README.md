@@ -107,11 +107,6 @@ drawing in `host`. It owns four pieces of DOM work:
   the picture does not already carry as a crease. A folded frame answers that
   from its own edges; a flat sheet holds every crease of the final state, so
   there the statement each crease was scored at decides.
-- The emphasis a piece of source puts on the drawing: one palette colour per
-  entity the source named, over creases, construction lines and named points
-  alike. The palette is the one whose statement is that a word and a thing are
-  the same thing, so a pick keeps the interface accent and the host's
-  stylesheet settles which wins where both land.
 - A dashed ghost per segment of a settled entity that the folded drawing has
   no line for. Those coordinates come from `beloch:inspect`, which describes
   the final fold, so they are drawn at that frame and nowhere else.

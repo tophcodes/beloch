@@ -638,20 +638,6 @@ const codeLines = code ? code.split("\n").length : 0;
     width: auto;
     height: auto;
   }
-  /* What a piece of source built, lit in the highlight palette: one colour per
-     entity, the same six that carry a caption's inline code (B1.10 in
-     docs/brand/design-language.md). Declared before .bel-hl so a hovered or
-     pinned entity keeps the interface accent where both land on it. */
-  .pg-canvas :global(line.bel-em),
-  .pg-canvas :global(.bel-em line) {
-    stroke: var(--bel-em);
-    stroke-width: 3.5;
-  }
-  .pg-canvas :global(circle.bel-em),
-  .pg-canvas :global(text.bel-em),
-  .pg-canvas :global(.bel-em text) {
-    fill: var(--bel-em);
-  }
   /* Cursor→SVG side of the bidirectional entity highlight: outlines the
      crease segment(s) whose provenance span covers the editor's cursor
      line. Overrides the per-segment stroke/stroke-width attributes
