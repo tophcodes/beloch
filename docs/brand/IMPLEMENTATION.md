@@ -238,11 +238,35 @@ card it draws is what the toolbar, the stepper and the code column now follow.
   said how the program divides into steps a second time, next to a stepper
   under the drawing that says it already, and it cost fourteen pixels of the
   width the program is read in. What the bars offered survives elsewhere: the
-  scrubber's dots jump to a step, and pointing anywhere in a block lights what
-  it built.
+  scrubber's dots jump to a step, and the debug mode below answers what a
+  statement built.
 - **The stepper names the statement.** Beside `3/7` stands the line of the
   program that step folded, taken from the source the evaluator answered rather
   than from the editor, because the two part company on the next keystroke.
+
+## What the editor says about the program
+
+The stepper is a display of the fold sequence, and what it can say about the
+program is which line folded. It marks that line and nothing under it. Marking
+the whole block a step stood over answered a different question, so a reader
+always saw several statements at once and never one on its own.
+
+Which value a statement binds is a separate job with a separate audience: a
+reader points at the line that binds a name and wants that value in the
+drawing. It is a mode of the editor. While it is on the editor is read-only, so
+a click is a choice and never a caret; every span that binds a value carries a
+box; clicking a box takes that value into the selection or out of it, and
+several stand at once. The drawing lights them the way it lights any settled
+selection, which is why a construction line the paper never carries is a
+selection of its own kind.
+
+Two questions the mode raised, and their answers:
+
+- **A box surrounds the span that binds.** A statement that binds twice would
+  otherwise offer one box for two values, and a box around a whole statement is
+  forty characters of target for a name of six.
+- **The mode is reached from the toolbar and from a key**, so it is findable by
+  a reader who has never seen it and cheap for one who uses it all day.
 
 ## The viewer pass
 

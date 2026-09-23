@@ -92,9 +92,9 @@ gives the runtime core a document slot rather than an evaluator.
   reading it: a statement without a kind is a state-changing one, which is what
   the old list held.
 - The stepper keeps walking the writes, which is where it stops today. What
-  the second axis buys is the editor, which can say what each statement binds
-  and offer it; `docs/superpowers/specs/2026-09-23-editor-debug-selection-design.md`
-  builds that.
+  the second axis buys is the editor's debug mode: it can say what each
+  statement binds and offer it as a target, which needs the map from
+  statements to values that this record puts in the document.
 - `beloch:named_points[].statement` changes meaning: it becomes the statement
   that binds the point rather than the next state-changing one. The old reading
   was a workaround for the missing entries.
