@@ -16,7 +16,7 @@
 //
 // The two markers are independent: a diagnostic leaves the last valid drawing
 // and its step marker standing (B3.5), so both lines can be lit at once.
-import { Decoration, EditorView, WidgetType } from "@codemirror/view";
+import { Decoration, EditorView, WidgetType, lineNumbers } from "@codemirror/view";
 import type { DecorationSet } from "@codemirror/view";
 import { StateEffect, StateField } from "@codemirror/state";
 import type { EditorState, Extension } from "@codemirror/state";
@@ -183,16 +183,6 @@ const barStep = (target: EventTarget | null): number | null => {
   return step === undefined ? null : Number(step);
 };
 
-// A click on a line number belongs to the block that line is in. The number
-// column carries no marker of its own; what it offers is the line, and a line
-// is in one block.
-const numberStep = (view: EditorView, event: MouseEvent): number | null => {
-  const target = event.target;
-  if (!(target instanceof Element) || !target.closest(".cm-lineNumbers")) return null;
-  const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
-  return pos === null ? null : stepOfLine(view.state, view.state.doc.lineAt(pos).number);
-};
-
 // The line a failed run named. Same mechanism as the step line, its own
 // effect and field so neither clears the other.
 export const setErrorLine = StateEffect.define<number | null>();
@@ -230,14 +220,28 @@ export function stepMarkerExtensions(
     stepBlocksField,
     errorLineField,
     EditorView.domEventHandlers({
-      mousedown(event, view) {
+      mousedown(event) {
         if (onPick === undefined) return false;
-        // The bar, or the line number beside it: pointing at either already
-        // lights the block, so both answer the click.
-        const step = barStep(event.target) ?? numberStep(view, event);
+        const step = barStep(event.target);
         if (step === null) return false;
         onPick(step);
         return true;
+      },
+    }),
+    // A click on a line number belongs to the block that line is in: pointing
+    // at the number already lights that bar, so it answers the click too. The
+    // handlers above are registered on the content element and never see the
+    // gutters, which is what this configuration is for; it merges into the
+    // line-number gutter the editor already has rather than adding a second.
+    lineNumbers({
+      domEventHandlers: {
+        mousedown(view, line) {
+          if (onPick === undefined) return false;
+          const step = stepOfLine(view.state, view.state.doc.lineAt(line.from).number);
+          if (step === null) return false;
+          onPick(step);
+          return true;
+        },
       },
     }),
   ];

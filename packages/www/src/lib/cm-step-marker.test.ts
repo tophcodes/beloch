@@ -166,3 +166,18 @@ test("clicking a line number jumps to the step its block stands for", () => {
   expect(stepOfLine(view.state, 4)).toBe(2);
   expect(stepOfLine(view.state, 99)).toBeNull();
 });
+
+test("a mousedown on a line number is answered", () => {
+  const picked: number[] = [];
+  const view = mountEditor("paper square\nfold X\n.m = free\nfold Y\n", (step) => picked.push(step));
+  setStepBlocksOn(view, threeBlocks);
+  const numbers = view.dom.querySelectorAll(".cm-lineNumbers .cm-gutterElement");
+  expect(numbers.length).toBeGreaterThan(0);
+  numbers[numbers.length - 1]!.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+  // Which line was clicked comes from the pointer's height against the line
+  // boxes, and a headless editor has no layout, so the step it lands on is not
+  // the assertion here; `stepOfLine` above is. What this holds is that the
+  // number column reaches the handler at all, which the content element's own
+  // handlers never do.
+  expect(picked).toHaveLength(1);
+});
