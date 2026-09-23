@@ -107,7 +107,7 @@ val resolve_mark_extent :
   Error.span ->
   [ `Full | `Partial of Fold_state.mark_geom * Geom.point * Geom.line ]
 (** A mark's extent (spec §4), resolved to PAPER-space geometry and checked
-    against the motion's TABLE-space [axis]. *)
+    against the construction's TABLE-space [axis]. *)
 
 val resolve_mark_flap :
   Ctx.ctx -> Ast.flap_arg option -> Geom.point -> Error.span -> int list

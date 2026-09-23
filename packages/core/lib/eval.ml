@@ -235,7 +235,7 @@ let crease_id_for (ctx : Ctx.ctx) (out : Ast.output) ~(fresh : unit -> int) :
           | Material _ -> promote_crease ctx n cv
           | Frozen _ | Mark _ | Bundle _ | Edge _ -> () )
 
-(* Resolve a markable to either a fresh motion (axis + provenance + the
+(* Resolve a markable to either a fresh construction (axis + provenance + the
    axiom-5 side override / implied-anchor, mirroring the old Crease arm) or
    an existing line to fold/mark along. [fold_opt] is [Some fs] only when
    called from a `fold` statement (axiom-5 direction resolution differs
@@ -243,7 +243,7 @@ let crease_id_for (ctx : Ctx.ctx) (out : Ast.output) ~(fresh : unit -> int) :
 let resolve_markable (ctx : Ctx.ctx) (span : Error.span) (out : Ast.output)
     (fold_opt : Ast.fold_spec option) (m : Ast.markable) =
   match m with
-  | Ast.MMotion c ->
+  | Ast.MConstruction c ->
       let cid, check_axis, bind_out =
         crease_id_for ctx out ~fresh:Fold_state.fresh_crease_id
       in

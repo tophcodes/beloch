@@ -79,7 +79,7 @@ let cstr (c : Ast.construction) : string =
 
 let mstr (m : Ast.markable) : string =
   match m with
-  | Ast.MMotion c -> "motion{" ^ cstr c ^ "}"
+  | Ast.MConstruction c -> "construction{" ^ cstr c ^ "}"
   | Ast.MLine l -> "line{" ^ lstr l ^ "}"
 
 let outstr (o : Ast.output) : string =
@@ -155,9 +155,9 @@ let shape1 (src : string) : string = stmt_shape (parse1 src)
 (* the construction of a one-statement program whose verb carries a motion *)
 let construction1 (src : string) : Ast.construction =
   match parse1 src with
-  | Ast.Mark (_, Ast.MMotion c, _, _, _, _)
-  | Ast.Fold (_, Ast.MMotion c, _, _)
-  | Ast.Reverse (_, Ast.MMotion c, _, _)
+  | Ast.Mark (_, Ast.MConstruction c, _, _, _, _)
+  | Ast.Fold (_, Ast.MConstruction c, _, _)
+  | Ast.Reverse (_, Ast.MConstruction c, _, _)
   | Ast.BindLine (_, c, _) ->
       c
   | _ -> Alcotest.fail ("expected a construction in: " ^ src)
@@ -186,7 +186,7 @@ let test_parse_named_and_anon () =
   match prog with
   | [
    Ast.BindLine ("d1", _, _);
-   Ast.Mark (Ast.Anonymous, Ast.MMotion _, Ast.Full, Ast.Valley, None, _);
+   Ast.Mark (Ast.Anonymous, Ast.MConstruction _, Ast.Full, Ast.Valley, None, _);
    Ast.Point ("center", Ast.PsExpr (Ast.PSelect _), _);
   ] ->
       ()
@@ -248,19 +248,19 @@ let test_parse_map_both_toward () =
 let test_parse_fold_action () =
   Alcotest.(check string)
     "fold with anchor and mountain"
-    "fold anon motion{.a onto .c} moving=.a upto=- dir=mountain place=-"
+    "fold anon construction{.a onto .c} moving=.a upto=- dir=mountain place=-"
     (shape1 "fold (map .a onto .c) (moving .a) (mountain)")
 
 let test_parse_fold_valley_default () =
   Alcotest.(check string)
     "no items beyond the axis"
-    "fold anon motion{.a onto .c} moving=- upto=- dir=valley place=-"
+    "fold anon construction{.a onto .c} moving=- upto=- dir=valley place=-"
     (shape1 "fold (map .a onto .c)")
 
 let test_parse_precrease_no_foldspec () =
   Alcotest.(check string)
     "a mark carries no fold spec"
-    "mark anon motion{.a onto .c} extent=full intent=valley on=-"
+    "mark anon construction{.a onto .c} extent=full intent=valley on=-"
     (shape1 "mark (map .a onto .c)")
 
 let test_parse_flip () =
@@ -514,13 +514,13 @@ let test_parse_spec_corpus () =
 let test_parse_up_to () =
   Alcotest.(check string)
     "up to as its own item"
-    "fold anon motion{.c onto .d} moving=- upto=.c dir=valley place=-"
+    "fold anon construction{.c onto .d} moving=- upto=.c dir=valley place=-"
     (shape1 "fold (map .c onto .d) (up to .c)")
 
 let test_parse_flap_forms () =
   Alcotest.(check string)
     "flap spec, crease and mountain"
-    "fold anon motion{perp --d; through .p} moving=#[.a .b] upto=--d \
+    "fold anon construction{perp --d; through .p} moving=#[.a .b] upto=--d \
      dir=mountain place=-"
     (shape1 "fold (perp --d through .p) (moving #[.a .b]) (up to --d) (mountain)")
 
@@ -865,11 +865,11 @@ let test_bind_line_align () =
 let test_output_clause_forms () =
   Alcotest.(check string)
     "as a new name"
-    "fold as --f motion{.a onto .c} moving=.a upto=- dir=valley place=-"
+    "fold as --f construction{.a onto .c} moving=.a upto=- dir=valley place=-"
     (shape1 "fold (map .a onto .c) (moving .a) as --f");
   Alcotest.(check string)
     "as with the rebind bang"
-    "fold as --f! motion{.a onto .c} moving=.a upto=- dir=valley place=-"
+    "fold as --f! construction{.a onto .c} moving=.a upto=- dir=valley place=-"
     (shape1 "fold (map .a onto .c) (moving .a) as --f!");
   Alcotest.(check string)
     "into an existing crease"
@@ -877,7 +877,7 @@ let test_output_clause_forms () =
     (shape1 "mark (--p) into --p");
   Alcotest.(check string)
     "no clause leaves the crease anonymous"
-    "reverse anon motion{.b onto .c} moving=- outside=true"
+    "reverse anon construction{.b onto .c} moving=- outside=true"
     (shape1 "reverse (map .b onto .c) (outside)");
   Alcotest.(check string)
     "flatten scores under a name"
@@ -888,7 +888,7 @@ let test_output_clause_forms () =
 let test_mark_items () =
   Alcotest.(check string)
     "every mark item at once"
-    "mark as --p motion{--ab onto --cd} extent=between .a .m intent=mountain \
+    "mark as --p construction{--ab onto --cd} extent=between .a .m intent=mountain \
      on=#[.c]"
     (shape1 "mark (map --ab onto --cd) (on #[.c]) (between .a .m) (mountain) as --p");
   Alcotest.(check string)
@@ -899,7 +899,7 @@ let test_mark_items () =
 let test_fold_placed () =
   Alcotest.(check string)
     "a placed fold"
-    "fold anon motion{through .m; through .n} moving=.b upto=- dir=valley \
+    "fold anon construction{through .m; through .n} moving=.b upto=- dir=valley \
      place=under .p"
     (shape1 "fold (through .m .n) (moving .b) (under .p)")
 

@@ -218,7 +218,7 @@ let bind_output (ctx : ctx) (name : string) ~(rebind : bool)
     if rebind then Hashtbl.remove cur.lines name;
     bind_crease ctx name span cv
 
-(* `mark --d` on an already-bound name (e.g. a pure `--d = <motion>` value)
+(* `mark --d` on an already-bound name (e.g. a pure `--d = <construction>` value)
    promotes its binding in place to the freshly materialised crease, so a
    later `fold --d` can find it. Not a user-facing rebind (no dup check): the
    name already resolved to [lo], we're just upgrading what it points to. *)

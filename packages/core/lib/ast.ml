@@ -74,7 +74,7 @@ and construction = {
 
 type direction = Valley | Mountain
 
-(* mark extent (spec §4). Full = the motion's whole chord (subdivides as before);
+(* mark extent (spec §4). Full = the construction's whole chord (subdivides as before);
    Between/At are partial — record iff they end mid-face. *)
 type extent =
   | Full
@@ -130,9 +130,9 @@ type point_expr =
        (default 1/2) along the line's material chord, measured from the
        anchor endpoint. *)
 
-(* a thing that can be creased/folded: a fresh motion, or an existing line *)
+(* a thing that can be creased/folded: a fresh construction, or an existing line *)
 type markable =
-  | MMotion of construction   (* a construction: a fresh crease line *)
+  | MConstruction of construction   (* a fresh crease line *)
   | MLine of line_operand     (* an existing material crease or bound value *)
 
 (* The clause after a write's items, naming what becomes of the one crease

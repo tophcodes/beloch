@@ -626,7 +626,7 @@ let target_of (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span) :
                (lstr lo)))
 
 (* A mark's extent (spec §4), resolved to PAPER-space geometry and checked
-   against the motion's axis. [table_axis] is TABLE-space (as `resolve_line`
+   against the construction's axis. [table_axis] is TABLE-space (as `resolve_line`
    / `resolve_markable` produce — the current physical layout the fold acts
    on), but `resolve_point` always yields the fold-invariant PAPER
    coordinate, so the on-axis check goes through `table_of` to compare like
