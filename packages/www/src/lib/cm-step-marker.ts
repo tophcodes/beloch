@@ -4,10 +4,9 @@
 // Read-only/display-only by design: it never moves the text cursor/selection,
 // so it can't interfere with editing.
 //
-// There is no gutter column of its own. One bar per step beside the source
-// said how the program divides into steps a second time, next to a stepper
-// under the drawing that says it already, and it cost a column of the width
-// the program is read in.
+// The bars stand in the lane the line padding keeps free at the left edge of
+// every line, rather than in a gutter column of their own: the column cost
+// width the program is read in, and the lane is already there.
 //
 // A step stands for more than its own line. Only a fold or a mark makes a
 // step, so everything between one of them and the next (a point, a named
@@ -17,7 +16,7 @@
 //
 // The two markers are independent: a diagnostic leaves the last valid drawing
 // and its step marker standing (B3.5), so both lines can be lit at once.
-import { Decoration, EditorView } from "@codemirror/view";
+import { Decoration, EditorView, WidgetType } from "@codemirror/view";
 import type { DecorationSet } from "@codemirror/view";
 import { StateEffect, StateField } from "@codemirror/state";
 import type { EditorState, Extension } from "@codemirror/state";
@@ -53,6 +52,83 @@ const stepLineField = StateField.define<StepLineValue>({
   provide: (f) => EditorView.decorations.from(f, (v) => v.deco),
 });
 
+// Every block the program divides into, so the source says how many steps
+// there are and which one is on screen. The current block's own mark is the
+// step line above; a bar stands on every block, the current one solid.
+export interface StepBlockSpan { step: number; fromLine: number; toLine: number }
+
+export const setStepBlocks = StateEffect.define<StepBlockSpan[]>();
+
+// One block's bar on one line. Absolutely positioned inside the line, so it
+// sits in the padding lane and takes no room in the text.
+class StepBarWidget extends WidgetType {
+  constructor(
+    private readonly step: number,
+    private readonly current: boolean,
+  ) {
+    super();
+  }
+  override eq(other: StepBarWidget) {
+    return other.step === this.step && other.current === this.current;
+  }
+  override toDOM() {
+    const bar = document.createElement("span");
+    bar.className = `cm-step-bar${this.current ? " is-current" : ""}`;
+    bar.dataset.step = String(this.step);
+    bar.title = this.step === 0 ? "Starting paper" : `Step ${this.step}`;
+    return bar;
+  }
+  override ignoreEvent() {
+    // The bar answers the pointer itself: a click on it is a jump, never a
+    // place for the cursor.
+    return false;
+  }
+}
+
+function barsFor(
+  state: EditorState,
+  blocks: StepBlockSpan[],
+  current: StepBlock | null,
+): DecorationSet {
+  const ranges = [];
+  for (const b of blocks) {
+    const last = Math.min(b.toLine, state.doc.lines);
+    for (let n = Math.max(1, b.fromLine); n <= last; n++) {
+      const inCurrent =
+        current !== null && n >= current.line && n <= Math.max(current.to, current.line);
+      ranges.push(
+        Decoration.widget({ widget: new StepBarWidget(b.step, inCurrent), side: -1 }).range(
+          state.doc.line(n).from,
+        ),
+      );
+    }
+  }
+  return Decoration.set(ranges, true);
+}
+
+interface StepBlocksValue { blocks: StepBlockSpan[]; deco: DecorationSet }
+
+const stepBlocksField = StateField.define<StepBlocksValue>({
+  create: () => ({ blocks: [], deco: Decoration.none }),
+  update(value, tr) {
+    let blocks = value.blocks;
+    for (const e of tr.effects) if (e.is(setStepBlocks)) blocks = e.value;
+    // Which block is on screen is the step line's answer, so the bars are
+    // rebuilt when either moves.
+    const movedLine = tr.effects.some((e) => e.is(setStepLine));
+    if (blocks === value.blocks && !tr.docChanged && !movedLine) return value;
+    return { blocks, deco: barsFor(tr.state, blocks, tr.state.field(stepLineField).block) };
+  },
+  provide: (f) => EditorView.decorations.from(f, (v) => v.deco),
+});
+
+/** The block whose bar was clicked, or nothing. */
+const barStep = (target: EventTarget | null): number | null => {
+  const bar = target instanceof Element ? target.closest<HTMLElement>(".cm-step-bar") : null;
+  const step = bar?.dataset.step;
+  return step === undefined ? null : Number(step);
+};
+
 // The line a failed run named. Same mechanism as the step line, its own
 // effect and field so neither clears the other.
 export const setErrorLine = StateEffect.define<number | null>();
@@ -78,9 +154,32 @@ function errorDecorationsFor(state: EditorState, line: number | null): Decoratio
   ]);
 }
 
-/** The marker extensions. */
-export function stepMarkerExtensions(): Extension[] {
-  return [stepLineField, errorLineField];
+/** The marker extensions. `onPickStep` is called when the reader clicks a
+ * block's bar; without it the bars are shown and inert. */
+export function stepMarkerExtensions(
+  opts: { onPickStep?: (step: number) => void } = {},
+): Extension[] {
+  const onPick = opts.onPickStep;
+  return [
+    stepLineField,
+    stepBlocksField,
+    errorLineField,
+    EditorView.domEventHandlers({
+      mousedown(event) {
+        if (onPick === undefined) return false;
+        const step = barStep(event.target);
+        if (step === null) return false;
+        onPick(step);
+        return true;
+      },
+    }),
+  ];
+}
+
+/** Show the blocks the program divides into, or clear them with an empty
+ * list. */
+export function setStepBlocksOn(view: EditorView, blocks: StepBlockSpan[]) {
+  view.dispatch({ effects: setStepBlocks.of(blocks) });
 }
 
 /** Show (or, with `line: null`, clear) the step marker: the bar and the

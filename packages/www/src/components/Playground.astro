@@ -571,13 +571,31 @@ const codeLines = code ? code.split("\n").length : 0;
   .pg-source :global(.cm-foldGutter) {
     display: none !important;
   }
-  /* The block the drawing stands for, marked in the column the reader already
-     reads: a bar down its left edge and a wash over its lines. The editor sits
-     on the code surface, so both take that surface's fixed accent rather than
-     the one that follows the mode. */
+  /* Every step the program has, in the column the reader already reads it in:
+     one bar per block, in the lane the line padding keeps free, the block on
+     screen drawn solid. Clicking a bar is the same move as clicking its dot on
+     the scrubber. The editor sits on the code surface, so the bars take that
+     surface's fixed accent rather than the one that follows the mode. */
+  .pg-source :global(.cm-step-bar) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    /* Three pixels of paint in an eleven-pixel target: the lane is the thing
+       the pointer has to hit, the bar is what says where it is. */
+    width: 11px;
+    border-left: 3px solid color-mix(in srgb, var(--bel-ui-code-accent) 26%, transparent);
+    cursor: pointer;
+    transition: border-color var(--bel-duration-state) var(--bel-ease);
+  }
+  .pg-source :global(.cm-step-bar:hover) {
+    border-left-color: color-mix(in srgb, var(--bel-ui-code-accent) 60%, transparent);
+  }
+  .pg-source :global(.cm-step-bar.is-current) {
+    border-left-color: var(--bel-ui-code-accent);
+  }
   .pg-source :global(.cm-step-line) {
     background: color-mix(in srgb, var(--bel-ui-code-accent) 15%, transparent);
-    box-shadow: inset 3px 0 0 var(--bel-ui-code-accent);
   }
   /* Every place the clicked bundle is named: the operands of a construction,
      the arguments of a flatten, a filter. Marked on the characters rather
@@ -1064,8 +1082,10 @@ const codeLines = code ? code.split("\n").length : 0;
   import { keymap } from "@codemirror/view";
   import {
     stepMarkerExtensions,
+    setStepBlocksOn,
     setStepLineOn,
     setErrorLineOn,
+    type StepBlockSpan,
   } from "../lib/cm-step-marker";
   import { refMarkExtensions, setRefSpansOn } from "../lib/cm-ref-marks";
   import { initBelHighlight, belHighlighting } from "../lib/cm-bel-highlight";
@@ -1132,7 +1152,7 @@ const codeLines = code ? code.split("\n").length : 0;
       // edge, which gives it a lane of its own instead of a place against the
       // first character.
       ".cm-content": { padding: "14px 0", caretColor: "var(--bel-ui-code-text)" },
-      ".cm-line": { padding: "0 18px" },
+      ".cm-line": { padding: "0 18px", position: "relative" },
       ".cm-gutters": {
         backgroundColor: "transparent",
         color: "var(--bel-ui-code-gutter)",
@@ -1380,7 +1400,9 @@ const codeLines = code ? code.split("\n").length : 0;
       state: EditorState.create({
         doc: initialCode,
         extensions: [
-          ...stepMarkerExtensions(),
+          // Clicking a block's bar is the same move as clicking its dot on
+          // the scrubber.
+          ...stepMarkerExtensions({ onPickStep: (step) => renderStep(step, true, true) }),
           ...refMarkExtensions,
           basicSetup,
           ...(highlighter ? [belHighlighting(highlighter)] : []),
@@ -2166,6 +2188,20 @@ const codeLines = code ? code.split("\n").length : 0;
       resetBtn.hidden = false;
     };
 
+    // The blocks the program divides into, one per step, for the bars in the
+    // editor's left lane. A program with nothing above its first statement
+    // gets no bar for step 0, whose block is empty.
+    function buildStepBlocks(scene: FoldScene) {
+      const blocks: StepBlockSpan[] = [];
+      for (let step = 0; step <= scene.statements.length; step++) {
+        const block = blockOfStep(scene, step);
+        const toLine = block.toLine ?? editor.state.doc.lines;
+        if (toLine < block.fromLine) continue;
+        blocks.push({ step, fromLine: block.fromLine, toLine });
+      }
+      setStepBlocksOn(editor, blocks);
+    }
+
     // Rebuilds the scrubber's dots for a freshly-parsed set of statements
     // (called once per successful run, not per statement-click). The timeline
     // has n+1 stops: index 0 is the flat starting sheet, 1..n each statement.
@@ -2196,6 +2232,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // hover and any open choice with it, and the modules watch the slot
     // themselves.
     function clearStepsUI() {
+      setStepBlocksOn(editor, []);
       inspectPanel!.hidden = true;
       inspectPanel!.textContent = "";
       clearHighlight(canvas!);
@@ -2285,6 +2322,7 @@ const codeLines = code ? code.split("\n").length : 0;
       clearStepsUI();
       if (scene.statements.length > 0) {
         buildStepsUI(scene.statements);
+        if (!hero) buildStepBlocks(scene);
         const target = pendingSharedStep;
         pendingSharedStep = null;
         renderStep(target ?? scene.statements.length, false);

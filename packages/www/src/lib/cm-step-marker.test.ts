@@ -2,12 +2,15 @@ import { test, expect, beforeAll } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "codemirror";
-import { stepMarkerExtensions, setStepLineOn } from "./cm-step-marker";
+import { stepMarkerExtensions, setStepLineOn, setStepBlocksOn } from "./cm-step-marker";
 
 beforeAll(() => { if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register(); });
 
-function mountEditor(doc: string): EditorView {
-  const state = EditorState.create({ doc, extensions: stepMarkerExtensions() });
+function mountEditor(doc: string, onPickStep?: (step: number) => void): EditorView {
+  const state = EditorState.create({
+    doc,
+    extensions: onPickStep ? stepMarkerExtensions({ onPickStep }) : stepMarkerExtensions(),
+  });
   const parent = document.createElement("div");
   document.body.appendChild(parent);
   return new EditorView({ state, parent });
@@ -85,4 +88,52 @@ test("the default still reveals the line, as stepping needs", () => {
 test("clearing dispatches once either way", () => {
   const view = mountEditor("paper square\nfold X\n");
   expect(countDispatches(view, () => setStepLineOn(view, null))).toBe(1);
+});
+
+// Every step the program has, marked in the lane the line padding keeps free
+// at its left edge: the column says how the program divides into steps, and a
+// bar is the target that jumps to one.
+const threeBlocks = [
+  { step: 0, fromLine: 1, toLine: 1 },
+  { step: 1, fromLine: 2, toLine: 3 },
+  { step: 2, fromLine: 4, toLine: 4 },
+];
+
+test("every block a program has carries a bar", () => {
+  const view = mountEditor("paper square\nfold X\n.m = free\nfold Y\n");
+  setStepBlocksOn(view, threeBlocks);
+  expect(view.dom.querySelectorAll(".cm-step-bar").length).toBe(4);
+});
+
+test("the block on screen is the one drawn solid", () => {
+  const view = mountEditor("paper square\nfold X\n.m = free\nfold Y\n");
+  setStepBlocksOn(view, threeBlocks);
+  setStepLineOn(view, 2, { through: 3, reveal: false });
+  const current = view.dom.querySelectorAll(".cm-step-bar.is-current");
+  expect(current.length).toBe(2);
+});
+
+test("a bar says which step it stands for", () => {
+  const view = mountEditor("paper square\nfold X\n.m = free\nfold Y\n");
+  setStepBlocksOn(view, threeBlocks);
+  const steps = Array.from(view.dom.querySelectorAll(".cm-step-bar")).map((b) =>
+    b.getAttribute("data-step"),
+  );
+  expect(steps).toEqual(["0", "1", "1", "2"]);
+});
+
+test("clicking a bar jumps to its step", () => {
+  const picked: number[] = [];
+  const view = mountEditor("paper square\nfold X\n.m = free\nfold Y\n", (step) => picked.push(step));
+  setStepBlocksOn(view, threeBlocks);
+  const bar = view.dom.querySelectorAll(".cm-step-bar")[2]!;
+  bar.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+  expect(picked).toEqual([1]);
+});
+
+test("clearing the blocks takes the bars with it", () => {
+  const view = mountEditor("paper square\nfold X\n.m = free\nfold Y\n");
+  setStepBlocksOn(view, threeBlocks);
+  setStepBlocksOn(view, []);
+  expect(view.dom.querySelector(".cm-step-bar")).toBeNull();
 });
