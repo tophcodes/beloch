@@ -571,38 +571,10 @@ const codeLines = code ? code.split("\n").length : 0;
   .pg-source :global(.cm-foldGutter) {
     display: none !important;
   }
-  /* Every step the program has, in the column the reader already reads it in:
-     one bar per block, in the lane the line padding keeps free, the block on
-     screen drawn solid. Clicking a bar is the same move as clicking its dot on
-     the scrubber. The editor sits on the code surface, so the bars take that
-     surface's fixed accent rather than the one that follows the mode. */
-  /* The number beside a block answers for it too: pointing at it already
-     lights the bar, so it takes the click as well. */
-  .pg-source :global(.cm-lineNumbers .cm-gutterElement) {
-    cursor: pointer;
-  }
-  .pg-source :global(.cm-step-bar) {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    /* Three pixels of paint in an eleven-pixel target: the lane is the thing
-       the pointer has to hit, the bar is what says where it is. */
-    width: 11px;
-    border-left: 3px solid color-mix(in srgb, var(--bel-ui-code-accent) 26%, transparent);
-    cursor: pointer;
-    transition: border-color var(--bel-duration-state) var(--bel-ease);
-  }
-  /* The ends of a block pull in, so the column shows at a glance how the
-     program divides into steps. */
-  .pg-source :global(.cm-step-bar.is-head) { top: 3px; }
-  .pg-source :global(.cm-step-bar.is-tail) { bottom: 3px; }
-  .pg-source :global(.cm-step-bar.is-hover) {
-    border-left-color: color-mix(in srgb, var(--bel-ui-code-accent) 60%, transparent);
-  }
-  .pg-source :global(.cm-step-bar.is-current) {
-    border-left-color: var(--bel-ui-code-accent);
-  }
+  /* The line the drawing stands at, marked in the column the reader already
+     reads the program in. The editor sits on the code surface, so the mark
+     takes that surface's fixed accent rather than the one that follows the
+     mode. */
   .pg-source :global(.cm-step-line) {
     background: color-mix(in srgb, var(--bel-ui-code-accent) 15%, transparent);
   }
@@ -1091,11 +1063,8 @@ const codeLines = code ? code.split("\n").length : 0;
   import { keymap } from "@codemirror/view";
   import {
     stepMarkerExtensions,
-    setHoveredStepOn,
-    setStepBlocksOn,
     setStepLineOn,
     setErrorLineOn,
-    type StepBlockSpan,
   } from "../lib/cm-step-marker";
   import { refMarkExtensions, setRefSpansOn } from "../lib/cm-ref-marks";
   import { initBelHighlight, belHighlighting } from "../lib/cm-bel-highlight";
@@ -1114,16 +1083,12 @@ const codeLines = code ? code.split("\n").length : 0;
   import { hoverSummary, segmentRows, edgeSegmentRows } from "../lib/tooltip-content";
   import { bundleElements } from "../lib/bundle-highlight";
   import {
-    blockAtLine,
-    blockOfStep,
     entitiesAtLine,
-    entitiesIn,
     refSpansFor,
     sourceLineOf,
   } from "@beloch/runtime-editor";
   import { createPick } from "@beloch/runtime-pick";
   import {
-    applyEmphasis,
     clearHighlight,
     commandToSvg,
     createDomRenderer,
@@ -1410,9 +1375,7 @@ const codeLines = code ? code.split("\n").length : 0;
       state: EditorState.create({
         doc: initialCode,
         extensions: [
-          // Clicking a block's bar is the same move as clicking its dot on
-          // the scrubber.
-          ...stepMarkerExtensions({ onPickStep: (step) => renderStep(step, true, true) }),
+          ...stepMarkerExtensions(),
           ...refMarkExtensions,
           basicSetup,
           ...(highlighter ? [belHighlighting(highlighter)] : []),
@@ -2134,42 +2097,6 @@ const codeLines = code ? code.split("\n").length : 0;
     // element (the transform target) survives innerHTML swaps, so stepping
     // through the timeline keeps the user's framing. A fresh run passes
     // keepView=false to re-fit the newly-parsed paper.
-    // Pointing at a step's bar in the gutter lights what that step built, in
-    // the palette whose statement is that a word and a thing in the drawing
-    // are the same thing. The bar is a target the reader aims at, so reading
-    // the program recolours nothing.
-    //
-    // This is the reader asking about the text, so it yields to what they
-    // picked in the drawing: the accent of a hover or a pin wins on its own
-    // entity, which the stylesheet settles.
-    let emphasisStep: number | null = null;
-    const emphasisFor = (step: number | null) => {
-      const scene = currentScene();
-      if (!scene || step === null) return null;
-      return entitiesIn(scene, blockOfStep(scene, step));
-    };
-    const emphasiseStep = (step: number | null) => {
-      if (step === emphasisStep) return;
-      emphasisStep = step;
-      applyEmphasis(canvas, emphasisFor(step));
-      // The block is one target: its whole bar lights, and the drawing lights
-      // what that block built.
-      setHoveredStepOn(editor, step);
-    };
-    // Pointing at a line of the program lights what the block it belongs to
-    // built. The bars in the gutter offered this before; the source itself is
-    // the larger target and costs no column.
-    if (!hero) {
-      editor.dom.addEventListener("mousemove", (e: MouseEvent) => {
-        const scene = currentScene();
-        if (!scene) return;
-        const pos = editor.posAtCoords({ x: e.clientX, y: e.clientY });
-        if (pos === null) return;
-        emphasiseStep(blockAtLine(scene, editor.state.doc.lineAt(pos).number).statement + 1);
-      });
-      editor.dom.addEventListener("mouseleave", () => emphasiseStep(null));
-    }
-
     // What the runtime says to draw, drawn, and nothing else. The renderer
     // compares this against what it last drew, so an event that only moves the
     // highlight re-lights the drawing on screen rather than rebuilding it.
@@ -2187,9 +2114,6 @@ const codeLines = code ? code.split("\n").length : 0;
       // The renderer owns the markup and the hit targets over it. What stays
       // here is the stage around the drawing.
       relight(fade);
-      // The drawing is new, so what the reader was pointing at in the source
-      // has to be lit again on it.
-      applyEmphasis(canvas, emphasisFor(emphasisStep));
       makeCreasesReachable();
       reapplyChoiceHl();
       // A drawing on the stage means the rail has something to stand for. A
@@ -2199,20 +2123,6 @@ const codeLines = code ? code.split("\n").length : 0;
       panZoom.setEnabled(true);
       resetBtn.hidden = false;
     };
-
-    // The blocks the program divides into, one per step, for the bars in the
-    // editor's left lane. A program with nothing above its first statement
-    // gets no bar for step 0, whose block is empty.
-    function buildStepBlocks(scene: FoldScene) {
-      const blocks: StepBlockSpan[] = [];
-      for (let step = 0; step <= scene.statements.length; step++) {
-        const block = blockOfStep(scene, step);
-        const toLine = block.toLine ?? editor.state.doc.lines;
-        if (toLine < block.fromLine) continue;
-        blocks.push({ step, fromLine: block.fromLine, toLine });
-      }
-      setStepBlocksOn(editor, blocks);
-    }
 
     // Rebuilds the scrubber's dots for a freshly-parsed set of statements
     // (called once per successful run, not per statement-click). The timeline
@@ -2244,7 +2154,6 @@ const codeLines = code ? code.split("\n").length : 0;
     // hover and any open choice with it, and the modules watch the slot
     // themselves.
     function clearStepsUI() {
-      setStepBlocksOn(editor, []);
       inspectPanel!.hidden = true;
       inspectPanel!.textContent = "";
       clearHighlight(canvas!);
@@ -2295,9 +2204,6 @@ const codeLines = code ? code.split("\n").length : 0;
       runtime.dispatch({ type: "step/to", index: i });
       const clamped = currentStep();
       const stmt = clamped === 0 ? null : statements[clamped - 1]!;
-      // The source this step stands for, which is its own line and everything
-      // under it until the next statement (see @beloch/runtime-editor).
-      const block = blockOfStep(scene, clamped);
       // A mark folds nothing, so it changes the view rather than the paper. A
       // crease pattern never folds either: the sheet stays flat and gains a
       // line. Step 0 arrives at the sheet, which is no fold either.
@@ -2305,15 +2211,10 @@ const codeLines = code ? code.split("\n").length : 0;
         currentView === "cp" || stmt === null || stmt.kind !== "fold" ? "view" : "fold";
       try {
         drawCurrent(keepView, fadeOverride ?? (animate ? stepFade : null));
-        // The hero offers nothing to operate, so it marks nothing: a block lit
+        // The hero offers nothing to operate, so it marks nothing: a line lit
         // in a program the visitor cannot step through is a control that is
         // not there.
-        //
-        if (!hero) {
-          setStepLineOn(editor, block.fromLine, {
-            through: block.toLine ?? editor.state.doc.lines,
-          });
-        }
+        if (!hero) setStepLineOn(editor, stmt === null ? null : stmt.sourceLine);
       } catch (err) {
         showError(`Render error: ${err instanceof Error ? err.message : String(err)}`);
         return;
@@ -2329,7 +2230,6 @@ const codeLines = code ? code.split("\n").length : 0;
       clearStepsUI();
       if (scene.statements.length > 0) {
         buildStepsUI(scene.statements);
-        if (!hero) buildStepBlocks(scene);
         const target = pendingSharedStep;
         pendingSharedStep = null;
         renderStep(target ?? scene.statements.length, false);

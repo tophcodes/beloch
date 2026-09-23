@@ -127,23 +127,6 @@ The markup it writes carries `bel-hit`, `bel-hl`, `bel-hl-ghost` and
 `bel-fade-host` / `bel-fade-ghost`; what those look like is the host's
 stylesheet, including whether the fade is a fade at all.
 
-## Source blocks
-
-Only a fold or a mark makes a step, so a program reads as a sequence of
-blocks: a statement's own line, and everything under it until the next
-statement. A point or a named line declared in between belongs to the step it
-follows, and the drawing at that step carries what it built. `blockOfStep`
-answers what a step stands for, `blockAtLine` what a line belongs to, and
-`entitiesIn` what a block named.
-
-Each kind is placed by what the document records about it. A crease carries
-the span of the statement that scored it. A named point carries the number of
-statements that ran before it was declared. A named line carries the frame it
-was bound against and nothing else, which places it only where every statement
-is a fold; a program with a mark leaves its lines out of every block rather
-than putting them in the wrong one. Settling that needs a `statement` on a
-named line in the FOLD, which a named point already has.
-
 ## Tests
 
 `bun test` in this directory. The render-dom suite draws through
