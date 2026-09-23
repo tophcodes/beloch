@@ -111,3 +111,15 @@ test("the entities a report offers are the candidates, in the order it gave them
   pick.report([edge("ab"), crease("3")], "settle");
   expect(pick.state.candidates).toEqual([edge("ab"), crease("3")]);
 });
+
+// The sequence the chooser exists for, end to end: two creases share a pixel,
+// the reader is asked, answers, and the answer behaves like any other pin.
+test("a chosen candidate is a settled selection like any other", () => {
+  const { runtime, pick } = withDocument();
+  pick.report([crease("3"), edge("ab")], "hover");
+  pick.report([crease("3"), edge("ab")], "settle");
+  pick.choose(0);
+  runtime.dispatch({ type: "hover/set", entity: edge("ab") });
+  expect(runtime.state.selection).toEqual([crease("3")]);
+  expect(pick.state.open).toBe(false);
+});
