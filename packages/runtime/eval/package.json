@@ -1,0 +1,6 @@
+{
+  "name": "@beloch/runtime-eval",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts"
+}

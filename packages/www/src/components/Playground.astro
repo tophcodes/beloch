@@ -484,6 +484,42 @@ const codeLines = code ? code.split("\n").length : 0;
     border-radius: 50%;
     background: var(--bel-ui-code-accent);
   }
+  /* Every step the program has, in the column the reader already reads it in:
+     one bar over the source each step stands for, the one on screen drawn
+     solid. Clicking a bar is the same move as clicking its dot on the
+     scrubber, and pointing at one lights what that step built. */
+  .pg-source :global(.cm-step-gutter) {
+    width: 14px;
+    cursor: pointer;
+  }
+  .pg-source :global(.cm-step-gutter .cm-gutterElement) {
+    position: relative;
+  }
+  .pg-source :global(.cm-step-bar) {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 5px;
+    width: 2px;
+    background: color-mix(in srgb, var(--bel-ui-code-accent) 30%, transparent);
+  }
+  /* The ends of a block pull in, so two steps that meet read as two bars. */
+  .pg-source :global(.cm-step-bar.is-head) {
+    top: 3px;
+    border-radius: 1px 1px 0 0;
+  }
+  .pg-source :global(.cm-step-bar.is-tail) {
+    bottom: 3px;
+    border-radius: 0 0 1px 1px;
+  }
+  .pg-source :global(.cm-step-bar.is-hover) {
+    background: color-mix(in srgb, var(--bel-ui-code-accent) 60%, transparent);
+  }
+  .pg-source :global(.cm-step-bar.is-current) {
+    left: 4px;
+    width: 4px;
+    background: var(--bel-ui-code-accent);
+  }
   .pg-source :global(.cm-step-line) {
     background: color-mix(in srgb, var(--bel-ui-code-accent) 15%, transparent);
   }
@@ -547,17 +583,31 @@ const codeLines = code ? code.split("\n").length : 0;
     width: auto;
     height: auto;
   }
+  /* What a piece of source built, lit in the highlight palette: one colour per
+     entity, the same six that carry a caption's inline code (B1.10 in
+     docs/brand/design-language.md). Declared before .bel-hl so a hovered or
+     pinned entity keeps the interface accent where both land on it. */
+  .pg-canvas :global(line.bel-em),
+  .pg-canvas :global(.bel-em line) {
+    stroke: var(--bel-em);
+    stroke-width: 3.5;
+  }
+  .pg-canvas :global(circle.bel-em),
+  .pg-canvas :global(text.bel-em),
+  .pg-canvas :global(.bel-em text) {
+    fill: var(--bel-em);
+  }
   /* Cursor→SVG side of the bidirectional entity highlight: outlines the
      crease segment(s) whose provenance span covers the editor's cursor
      line. Overrides the per-segment stroke/stroke-width attributes
      render-scene.ts emits (CSS class beats presentation attributes). */
-  .pg-canvas :global(.pg-hl) {
+  .pg-canvas :global(.bel-hl) {
     stroke: var(--bel-ui-accent);
     stroke-width: 4;
   }
   /* Occluded segments of a highlighted bundle, drawn from inspect data since
      they have no rendered line — dashed + semi-transparent to read as "behind". */
-  .pg-canvas :global(.pg-hl-ghost) {
+  .pg-canvas :global(.bel-hl-ghost) {
     stroke: var(--bel-ui-accent);
     stroke-width: 2.5;
     stroke-dasharray: 5 4;
@@ -570,10 +620,10 @@ const codeLines = code ? code.split("\n").length : 0;
   .pg-canvas:has(:global(.pg-notice)) {
     cursor: default;
   }
-  /* Crease hit-area (task 8): enhanceCreaseHits inserts one of these,
-     transparent and fat, right after every real crease line so there's a
-     forgiving click target — the visible line itself stays thin. */
-  .pg-canvas :global(line.pg-hit) {
+  /* Crease hit-area: the renderer inserts one of these, transparent and fat,
+     right after every real crease line so there's a forgiving click target;
+     the visible line itself stays thin. */
+  .pg-canvas :global(line.bel-hit) {
     stroke: transparent;
     stroke-width: 14;
     fill: none;
@@ -582,7 +632,7 @@ const codeLines = code ? code.split("\n").length : 0;
   }
   /* The point twin is a disc rather than a fat stroke, so it takes the
      pointer over its whole area. */
-  .pg-canvas :global(circle.pg-hit) {
+  .pg-canvas :global(circle.bel-hit) {
     fill: transparent;
     stroke: none;
     pointer-events: fill;
@@ -665,7 +715,7 @@ const codeLines = code ? code.split("\n").length : 0;
     color: var(--bel-ui-text-faint);
   }
   /* These children are injected via innerHTML, so they never carry Astro's
-     scope attribute — the rules MUST be :global (like .pg-hl / .pg-hit above),
+     scope attribute — the rules MUST be :global (like .bel-hl / .bel-hit above),
      or they silently don't apply. */
   .pg-inspect :global(h4) {
     margin: 0 0 4px;
@@ -755,7 +805,7 @@ const codeLines = code ? code.split("\n").length : 0;
   /* A crease is reached with the keyboard through its hit line, which is
      transparent until it carries focus. An `outline` on an SVG line is drawn
      around its bounding box, so the hit stroke itself is what shows. */
-  .pg-canvas :global(.pg-hit:focus-visible) {
+  .pg-canvas :global(.bel-hit:focus-visible) {
     outline: none;
     stroke: var(--bel-ui-accent);
     stroke-opacity: 0.4;
@@ -963,49 +1013,61 @@ const codeLines = code ? code.split("\n").length : 0;
 
 <script>
   import { EditorView, basicSetup } from "codemirror";
-  import { EditorState } from "@codemirror/state";
+  import { EditorState, Prec } from "@codemirror/state";
   import { keymap } from "@codemirror/view";
-  import { stepMarkerExtensions, setStepLineOn, setErrorLineOn } from "../lib/cm-step-marker";
+  import {
+    stepMarkerExtensions,
+    setStepLineOn,
+    setStepSlotsOn,
+    setErrorLineOn,
+    type StepSlot,
+  } from "../lib/cm-step-marker";
   import { refMarkExtensions, setRefSpansOn } from "../lib/cm-ref-marks";
   import { initBelHighlight, belHighlighting } from "../lib/cm-bel-highlight";
-  import { swapDrawing, type FadeLength } from "../lib/crossfade";
   import { parseFold, type FoldScene, type Statement, type Vec2 } from "@beloch/scene";
   import {
     colorLineStyle,
-    renderCP,
-    renderFolded,
-    renderScene,
     sceneLayout,
     DEFAULT_THEME,
     WEB_THEME,
     type Theme,
   } from "@beloch/render-svg";
+  import { createRuntime, renderCommand, type View } from "@beloch/runtime";
   import { SCHEMES, STORAGE_KEY, DEFAULT_ID, applyScheme, resolveScheme } from "../lib/paper-schemes";
   import { lineOfSpan, lookupEntity, type EntityRef } from "../lib/inspect-lookup";
   import { segMatchesLine } from "../lib/stack-picker";
   import { hoverSummary, segmentRows, edgeSegmentRows } from "../lib/tooltip-content";
   import { bundleElements } from "../lib/bundle-highlight";
   import {
-    enhanceCreaseHits,
-    enhancePointHits,
+    blockOfStep,
+    entitiesAtLine,
+    entitiesIn,
+    refSpansFor,
+    sourceLineOf,
+  } from "@beloch/runtime-editor";
+  import { createPick } from "@beloch/runtime-pick";
+  import {
+    applyEmphasis,
+    clearHighlight,
+    commandToSvg,
+    createDomRenderer,
+    lightEntities,
     CREASE_SELECTOR,
+    GHOST_CLASS,
     HIT_SELECTOR,
     HIT_CLASS,
-  } from "../lib/crease-hits";
+    HL_CLASS,
+    type FadeLength,
+  } from "@beloch/runtime-render-dom";
   import { edgeOfLine } from "../lib/edge-lookup";
   import { pointSegDist, segmentDrawnAt, type DrawnLine } from "../lib/pick-visibility";
-  import { runUi, type RuntimePhase } from "../lib/playground-run-state";
-
-  // Two separate limits. Booting the Worker pulls the wasm runtime over the
-  // network (megabytes, once per visitor); the evaluation itself then runs
-  // locally. The eval limit starts only once the Worker reports its runtime
-  // ready (see public/beloch/eval-worker.js), so a slow line stays
-  // distinguishable from a hung evaluator.
-  // Which drawing of a state the stage shows. Both come off one step index.
-  type View = "cp" | "folded";
-
-  const LOAD_TIMEOUT_MS = 60000;
-  const EVAL_TIMEOUT_MS = 8000;
+  import {
+    createEvaluator,
+    initialEvaluatorState,
+    runUi,
+    type Diagnostic,
+    type EvaluatorState,
+  } from "@beloch/runtime-eval";
 
   const editorTheme = EditorView.theme(
     {
@@ -1226,38 +1288,29 @@ const codeLines = code ? code.split("\n").length : 0;
       return null;
     });
 
-    // Lazy instances defer the eval Worker (see bootIfNeeded below) until the
-    // user actually clicks Run — focusing or editing the code must not, on
-    // its own, kick off a run or pull in the wasm module.
+    // Lazy instances defer the eval Worker until the user actually clicks
+    // Run — focusing or editing the code must not, on its own, kick off a run
+    // or pull in the wasm module.
     const lazy = root.dataset.lazy === "true";
     // The hero shows a program and its drawing and offers nothing to operate:
     // the controls are hidden, so the behaviour behind them is not wired up
     // either, and the source is read-only.
     const hero = root.dataset.variant === "hero";
 
-    // Run is available whenever no run is in flight, including on first
-    // contact with the seeded code. A re-run of unchanged source reports
-    // itself in the status line. The states and their wording live in
-    // ../lib/playground-run-state.
-    let running = false;
-    let phase: RuntimePhase = "cold";
-    // The run that just finished re-ran source identical to the previous
-    // completed run's.
-    let repeat = false;
-    // A run was dropped because the runtime took longer than LOAD_TIMEOUT_MS.
-    let loadStalled = false;
-    // Source of the last run the worker actually answered; null until then.
-    let lastRunCode: string | null = null;
-    // Share of the runtime that has arrived, as the worker reports it, or null
-    // while it reports nothing (see public/beloch/eval-worker.js).
-    let loadProgress: number | null = null;
+    // The phases, both limits and the in-flight run belong to
+    // @beloch/runtime-eval. What is held here is the last state it reported,
+    // because the button is drawn from a snapshot rather than from a module
+    // that may not exist yet when the editor first asks.
+    let runState: EvaluatorState = initialEvaluatorState;
     function updateRunButtonState() {
-      const ui = runUi({ phase, running, repeat, loadStalled, progress: loadProgress });
-      runBtn!.classList.toggle("has-progress", loadProgress !== null);
+      const ui = runUi(runState);
+      const progress = runState.progress;
+      runBtn!.classList.toggle("is-loading", runState.running);
+      runBtn!.classList.toggle("has-progress", progress !== null);
       // Two and a half turns over the whole transfer, so the ring keeps moving
       // visibly between one reported percent and the next.
-      if (loadProgress !== null) {
-        runBtn!.style.setProperty("--pg-load-turn", `${Math.round(loadProgress * 900)}deg`);
+      if (progress !== null) {
+        runBtn!.style.setProperty("--pg-load-turn", `${Math.round(progress * 900)}deg`);
       }
       runBtn.disabled = ui.disabled;
       runBtn.title = ui.title;
@@ -1266,33 +1319,43 @@ const codeLines = code ? code.split("\n").length : 0;
       // edited text — clear the gutter indicator, but leave the scrubber
       // and the currently-shown SVG alone (same "stale result stays
       // visible" philosophy as the Run button itself).
-      if (editor.state.doc.toString() !== lastRunCode) setStepLineOn(editor, null);
+      if (editor.state.doc.toString() !== runState.answered) {
+        setStepLineOn(editor, null);
+        setStepSlotsOn(editor, []);
+      }
     }
 
     const editor = new EditorView({
       state: EditorState.create({
         doc: initialCode,
         extensions: [
-          ...stepMarkerExtensions,
+          // Clicking a slot in the gutter is the same move as clicking its dot
+          // on the scrubber.
+          ...stepMarkerExtensions({
+            onPickStep: (step) => renderStep(step, true, true),
+            onHoverStep: (step) => emphasiseStep(step),
+          }),
           ...refMarkExtensions,
           basicSetup,
           ...(highlighter ? [belHighlighting(highlighter)] : []),
           EditorView.editable.of(!hero),
-          keymap.of([
-            {
-              key: "Mod-Enter",
-              run: () => {
-                runBtn.click();
-                return true;
+          // Above basicSetup, which binds Mod-Enter to insertBlankLine in
+          // CodeMirror's default keymap. Precedence goes by position in this
+          // list, so a binding added after it never fires.
+          Prec.highest(
+            keymap.of([
+              {
+                key: "Mod-Enter",
+                run: () => {
+                  runBtn.click();
+                  return true;
+                },
               },
-            },
-          ]),
+            ]),
+          ),
           editorTheme,
           EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
-              repeat = false;
-              updateRunButtonState();
-            }
+            if (update.docChanged) updateRunButtonState();
             if (update.selectionSet) highlightCreasesOnLine(update.state.doc.lineAt(update.state.selection.main.head).number);
           }),
         ],
@@ -1337,8 +1400,11 @@ const codeLines = code ? code.split("\n").length : 0;
     // is the Yoshizawa-Randlett notation a printed diagram uses and carries
     // mountain against valley in the dash pattern; coloured carries it in the
     // hue and reads faster where the paper allows it.
+    // One object per style rather than a fresh one per call: the renderer
+    // compares the theme by identity to tell a redraw from a re-light.
+    const COLOUR_THEME: Partial<Theme> = { ...WEB_THEME, lineStyle: colorLineStyle };
     const renderTheme = (): Partial<Theme> =>
-      lineStyleId === "colour" ? { ...WEB_THEME, lineStyle: colorLineStyle } : WEB_THEME;
+      lineStyleId === "colour" ? COLOUR_THEME : WEB_THEME;
 
     // The same drawing with every colour spelled out, for a file that leaves
     // the page. `background: transparent` emits no backdrop behind the paper,
@@ -1360,9 +1426,9 @@ const codeLines = code ? code.split("\n").length : 0;
     // Re-draws what is on the stage after a choice that changes how it looks
     // rather than which state it shows, so the view and the step stay put.
     function rerenderCurrent(fade: FadeLength | null = null) {
-      if (!currentScene) return;
-      if (currentStatements.length > 0) renderStep(currentStep, true, fade !== null, fade);
-      else showSvg(svgForStep(0, renderTheme()), true, fade);
+      if (!currentScene()) return;
+      if (currentStatements().length > 0) renderStep(currentStep(), true, fade !== null, fade);
+      else drawCurrent(true, fade);
     }
 
     // The two drawing switches over the paper. Each button carries its own
@@ -1470,50 +1536,52 @@ const codeLines = code ? code.split("\n").length : 0;
       swatchBar.append(...buttons);
     }
 
-    let worker: Worker | null = null;
-    // Load limit (runtime boot) and eval limit (one postMessage round trip);
-    // at most one of them runs at a time.
-    let loadTimer: ReturnType<typeof setTimeout> | null = null;
-    let evalTimer: ReturnType<typeof setTimeout> | null = null;
-    // Source waiting for the runtime to report ready, and the source of the
-    // request currently with the worker.
-    let pendingCode: string | null = null;
-    let dispatchedCode: string | null = null;
-    let currentScene: FoldScene | null = null;
-    let currentStatements: Statement[] = [];
-    let currentStep = 0;
+    // The document and the step live in the runtime; the stage reads them back
+    // through these. Everything derived from them (which frame to draw, which
+    // marks still dangle) is the runtime's answer rather than this file's.
+    const runtime = createRuntime();
+    const renderer = createDomRenderer(canvas);
+    const currentScene = (): FoldScene | null => runtime.state.scene;
+    const currentStatements = (): Statement[] => runtime.state.scene?.statements ?? [];
+    const currentStep = (): number => runtime.state.step;
     // The step a shared `?s=` names, held until the run behind it produces one
     // (see the bottom of setup).
     let pendingSharedStep: number | null = null;
-    // The anchored (click-pinned) entity, if any — while set, hover no
-    // longer overrides the tooltip (see the mousemove handler below) and it
-    // stops following the cursor. Cleared only by the tooltip's own close
-    // (X) button or a fresh run (clearStepsUI) — a background click no
-    // longer clears it (task 8: explicit X-to-close replaces that).
-    let pinned: EntityRef | null = null;
-    // Coincident-line chooser state (see renderChoice): open flag and the
-    // overlapping entities offered.
-    let choiceOpen = false;
-    let choiceEnts: EntityRef[] = [];
+    // The anchored entity is the runtime's settled selection. While one is
+    // set, hover no longer overrides the tooltip (see the mousemove handler
+    // below) and the tooltip stops following the cursor. It is cleared by the
+    // tooltip's own close (X) button or by a fresh run; a background click
+    // leaves it alone.
+    //
+    // "Pinned" is this view's word for it: what the runtime holds is that the
+    // reader settled on this entity, and the tooltip's close button is how
+    // this view lets them take it back.
+    const pinned = (): EntityRef | null => runtime.state.selection[0] ?? null;
+    const pin = (ref: EntityRef | null) => {
+      runtime.dispatch({ type: "selection/set", entities: ref ? [ref] : [] });
+      relight();
+    };
+    const hover = (ref: EntityRef | null) => {
+      runtime.dispatch({ type: "hover/set", entity: ref });
+      relight();
+    };
+    // Coincident lines: which entities a pixel offers, and whether the reader
+    // has been asked. The list and the decision are the module's; the panel
+    // that shows them and the highlight over them are this view's
+    // (see renderChoice).
+    const pick = createPick(runtime);
 
-    // "Folded view" = geometry drawn via renderFolded's occlusion pipeline
-    // (any step, including step 0's flat sheet — it still goes through the
-    // same table-space/occlusion machinery); the only path that does NOT is
-    // renderCP, taken exactly once by applyFold below when a scene has no
-    // fold/mark statements at all. currentStatements is populated only on
-    // the renderFolded path, so its presence doubles as the view accessor —
-    // no separate mode flag needed.
-    const inFoldedView = () => currentStatements.length > 0;
+    // A scene with statements has a timeline, and every step of it goes
+    // through the occlusion pipeline, step 0's flat sheet included. A scene
+    // without them has one drawing, the crease pattern. So the statement list
+    // doubles as the view accessor, with no separate mode flag.
+    const inFoldedView = () => currentStatements().length > 0;
     // beloch:inspect carries the FINAL fold's geometry only; the stepper renders
     // a different (partial) placement per step, so any inspect-geometry path
     // (proximity detection, ghosting hidden segments) is valid only on the last
     // step. Off it, hover falls back to the per-step DOM data-crease-id.
-    const onFinalStep = () => currentStatements.length === 0 || currentStep === currentStatements.length;
+    const onFinalStep = () => currentStatements().length === 0 || currentStep() === currentStatements().length;
 
-    const clearHl = () => {
-      canvas.querySelectorAll(".pg-hl").forEach((el) => el.classList.remove("pg-hl"));
-      canvas.querySelectorAll(".pg-hl-ghost").forEach((el) => el.remove());
-    };
     // Tolerance shared by proximity detection and the hidden-segment test,
     // in SVG user units (~px at 1:1 zoom). pointSegDist comes from
     // pick-visibility.ts, which measures against it too.
@@ -1521,7 +1589,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // Every line the renderer drew, as [x1,y1,x2,y2] in SVG user space.
     // Marks sit in it beside creases (HIT_SELECTOR's set): they carry a
     // crease id and read to the user as flat creases, so they are pickable
-    // the same way. The `.pg-hit` twins stay out, they only duplicate
+    // the same way. The `.bel-hit` twins stay out, they only duplicate
     // endpoints that are already here.
     const drawnCoords = (): DrawnLine[] =>
       Array.from(canvas.querySelectorAll(HIT_SELECTOR)).map(
@@ -1533,152 +1601,62 @@ const codeLines = code ? code.split("\n").length : 0;
             Number(el.getAttribute("y2")),
           ] as const,
       );
-    // A SELECTED bundle's OCCLUDED segments have no rendered <line> (a fold
-    // hides layers below), so they couldn't be shown. Draw each hidden segment
-    // as a dashed ghost from the inspect data, in the SVG's own user space
-    // (sceneLayout coords) so it pans/zooms with everything.
+    // The stack picker points at one segment of a bundle rather than at the
+    // bundle, so it lights by geometry and draws its own dashed ghost where
+    // the drawing has no line for that segment. Everything a reader points at
+    // or settles on goes through the runtime instead (see `pin` and `hover`).
+    //
+    // inspect geometry describes the final fold, so a ghost is placed only on
+    // the drawing of that step; anywhere else it would sit over a different
+    // placement of the paper.
     const SVG_NS = "http://www.w3.org/2000/svg";
-    const drawGhost = (ax: number, ay: number, bx: number, by: number) => {
-      // Guard every ghost path (bundle + picked-segment) at once: inspect
-      // geometry only lines up with the rendered final-fold placement.
-      if (!onFinalStep()) return;
+    const ghostSegment = (ax: number, ay: number, bx: number, by: number) => {
       const svg = canvas.querySelector("svg");
-      if (!svg) return;
+      if (!svg || !onFinalStep()) return;
       const l = document.createElementNS(SVG_NS, "line");
       l.setAttribute("x1", String(ax));
       l.setAttribute("y1", String(ay));
       l.setAttribute("x2", String(bx));
       l.setAttribute("y2", String(by));
-      l.setAttribute("class", "pg-hl-ghost");
+      l.setAttribute("class", GHOST_CLASS);
       svg.appendChild(l);
     };
-    // Ghost every segment whose midpoint isn't near an already-drawn line
-    // (i.e. it's occluded / not rendered at this step).
-    const ghostHidden = (segments: { table: [Vec2, Vec2] }[], drawnLines: Element[]) => {
-      // inspect geometry is final-fold only; drawing it over an earlier step's
-      // placement would put ghosts at the wrong positions.
-      if (!currentScene || !onFinalStep()) return;
-      const layout = sceneLayout(currentScene);
-      const drawn = drawnLines.map((el) => [
-        Number(el.getAttribute("x1")), Number(el.getAttribute("y1")),
-        Number(el.getAttribute("x2")), Number(el.getAttribute("y2")),
-      ] as const);
-      for (const s of segments) {
-        const ax = layout.tx(s.table[0][0]), ay = layout.ty(s.table[0][1]);
-        const bx = layout.tx(s.table[1][0]), by = layout.ty(s.table[1][1]);
-        const mx = (ax + bx) / 2, my = (ay + by) / 2;
-        if (!drawn.some(([x1, y1, x2, y2]) => pointSegDist(mx, my, x1, y1, x2, y2) <= EPS)) {
-          drawGhost(ax, ay, bx, by);
-        }
-      }
-    };
-    // no-clear adders (so several bundles can be lit at once for the
-    // coincident-line case); the public highlight* wrap them with a clearHl.
-    // Each returns the lines it lit, which is what the ghosting of a
-    // SELECTED bundle needs to tell drawn segments from buried ones.
-    const addBundleHl = (creaseId: string): Element[] => {
-      const drawn = Array.from(bundleElements(canvas, creaseId));
-      drawn.forEach((el) => el.classList.add("pg-hl"));
-      return drawn;
-    };
-    const addEdgeHl = (name: string): Element[] => {
-      const insp = currentScene?.inspect;
-      if (!insp || !currentScene) return [];
-      const layout = sceneLayout(currentScene);
-      const drawn: Element[] = [];
-      canvas.querySelectorAll(CREASE_SELECTOR).forEach((el) => {
-        const x1 = Number(el.getAttribute("x1"));
-        const y1 = Number(el.getAttribute("y1"));
-        const x2 = Number(el.getAttribute("x2"));
-        const y2 = Number(el.getAttribute("y2"));
-        if (edgeOfLine(insp.edges, x1, y1, x2, y2, layout) === name) {
-          el.classList.add("pg-hl");
-          drawn.push(el);
-        }
-      });
-      return drawn;
-    };
-    const addEntityHl = (ref: EntityRef): Element[] =>
-      ref.kind === "crease"
-        ? addBundleHl(ref.creaseId)
-        : ref.kind === "edge"
-          ? addEdgeHl(ref.name)
-          : [];
-    // Whole-bundle highlight (task 8): every segment sharing `creaseId`, across
-    // flaps/layers. `--var` names ONE crease_id whose segments are the bundle.
-    const highlightBundle = (creaseId: string) => { clearHl(); addBundleHl(creaseId); };
-    // Same for a paper-boundary edge (task 9); boundary lines carry no
-    // data-crease-id, so they're matched by geometry (edgeOfLine).
-    const highlightEdgeBundle = (name: string) => { clearHl(); addEdgeHl(name); };
-    // All coincident entities at once (the chooser hover/anchor).
-    const highlightEntities = (ents: EntityRef[]) => { clearHl(); ents.forEach(addEntityHl); };
-    // One SELECTED entity: lit like a hover, plus a dashed ghost for every
-    // segment of it the drawing has no line for. Ghosting belongs to
-    // selection alone. A hover that drew segments the picture does not have
-    // would put dashes under the cursor on the way past every crease, and
-    // this view's whole claim is that the drawing shows what the program
-    // built. Once the reader has picked one line, the buried rest of it is
-    // the answer to a question they asked.
-    const highlightSelected = (ref: EntityRef) => {
-      clearHl();
-      const drawn = addEntityHl(ref);
-      const insp = currentScene?.inspect;
-      const segments =
-        ref.kind === "crease"
-          ? insp?.creases[ref.creaseId]?.segments
-          : ref.kind === "edge"
-            ? insp?.edges[ref.name]?.segments
-            : undefined;
-      if (segments) ghostHidden(segments, drawn);
-    };
-    // The drawing is rebuilt on every step and the highlight lives on its
-    // elements, so an anchored bundle loses its classes together with the
-    // old SVG. Putting them back after each swap is what keeps a clicked
-    // bundle lit while the reader steps through the program. A bundle with
-    // no segment at the step on screen lights nothing, which is the honest
-    // answer rather than an empty promise.
+
     // Every place the program NAMES the anchored entities, out of
     // beloch:references: the operands of a construction, the arguments of a
     // flatten, a filter over the bundle. The emitter resolved each of those
     // mentions, so this needs no guessing at the text.
     const markRefsFor = (ents: EntityRef[]) => {
-      const refs = currentScene?.references ?? [];
-      setRefSpansOn(
-        editor,
-        refs
-          .filter((r) =>
-            ents.some((e) =>
-              e.kind === "crease"
-                ? r.creaseId !== null && String(r.creaseId) === e.creaseId
-                : e.kind === "edge"
-                  ? r.edge === e.name
-                  : false,
-            ),
-          )
-          .map((r) => r.span),
-      );
+      const scene = currentScene();
+      setRefSpansOn(editor, scene ? refSpansFor(scene, ents) : []);
     };
-    const reapplyAnchorHl = () => {
-      if (choiceOpen && choiceEnts.length) highlightEntities(choiceEnts);
-      else if (pinned) highlightSelected(pinned);
+    // The runtime's own highlight comes back with every drawing the renderer
+    // makes. The candidates of an open choice do not: they are what the reader
+    // is being asked about rather than an answer, so the core holds no
+    // selection for them and this view lights them itself.
+    const reapplyChoiceHl = () => {
+      const scene = currentScene();
+      if (!scene || !pick.state.open || pick.state.candidates.length === 0) return;
+      lightEntities(canvas, scene, pick.state.candidates);
     };
     // Resolves the pointer target to an EntityRef: lookupEntity first
     // (crease/face/vertex, attr-based); if that's null AND the target is a
-    // crease-layer line or its `.pg-hit` twin, fall back to geometry — this
+    // crease-layer line or its `.bel-hit` twin, fall back to geometry — this
     // is the only way to identify a paper-boundary line, which carries no
     // data-crease-id at all (task 9).
     const resolveRef = (target: Element): EntityRef | null => {
       const ref = lookupEntity(target);
       if (ref) return ref;
-      if (!currentScene?.inspect) return null;
+      const scene = currentScene();
+      if (!scene?.inspect) return null;
       const line = target.closest(`line[data-kind="crease"], .${HIT_CLASS}`);
       if (!line) return null;
       const x1 = Number(line.getAttribute("x1"));
       const y1 = Number(line.getAttribute("y1"));
       const x2 = Number(line.getAttribute("x2"));
       const y2 = Number(line.getAttribute("y2"));
-      const layout = sceneLayout(currentScene);
-      const name = edgeOfLine(currentScene.inspect.edges, x1, y1, x2, y2, layout);
+      const layout = sceneLayout(scene);
+      const name = edgeOfLine(scene.inspect.edges, x1, y1, x2, y2, layout);
       return name ? { kind: "edge", name } : null;
     };
 
@@ -1695,11 +1673,11 @@ const codeLines = code ? code.split("\n").length : 0;
     function restInspect() {
       inspectPanel!.innerHTML =
         '<div class="pg-inspect-rest">Point at a crease, or press Enter on one, to see the statement that made it.</div>';
-      inspectPanel!.hidden = !currentScene;
+      inspectPanel!.hidden = !currentScene();
     }
 
     function renderInspect(ref: EntityRef | null, anchored: boolean) {
-      const insp = currentScene?.inspect;
+      const insp = currentScene()?.inspect;
       if (!ref || !insp) {
         restInspect();
         return;
@@ -1772,10 +1750,9 @@ const codeLines = code ? code.split("\n").length : 0;
     }
 
     function closeAnchor() {
-      pinned = null;
-      choiceOpen = false;
+      pick.close();
+      pin(null);
       restInspect();
-      clearHl();
       setRefSpansOn(editor, []);
     }
 
@@ -1783,7 +1760,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // Multiple lines (e.g. a construction crease and a paper edge) can project
     // onto the SAME table coords in the folded view; elementsFromPoint returns
     // every stacked element there (each crease line has a wide transparent
-    // .pg-hit twin, so the hit is forgiving), and we resolve + dedupe them.
+    // .bel-hit twin, so the hit is forgiving), and we resolve + dedupe them.
     // Faces/vertices are ignored — this is about overlapping LINES; a bare
     // face click still goes through resolveRef in the click handler.
     const entityKey = (r: EntityRef): string =>
@@ -1816,13 +1793,14 @@ const codeLines = code ? code.split("\n").length : 0;
     // pickable exactly when the hidden-edge control draws it.
     // (pointSegDist + EPS are defined with the highlight helpers above.)
     const lineEntitiesAtPoint = (clientX: number, clientY: number): EntityRef[] => {
-      const insp = currentScene?.inspect;
+      const insp = currentScene()?.inspect;
       const local = svgLocalPoint(clientX, clientY);
       // Final-fold geometry only; off the last step, hover/click fall back to
       // the per-step DOM resolver (data-crease-id) — no proximity, no chooser.
-      if (!insp || !currentScene || !local || !onFinalStep()) return [];
+      const scene = currentScene();
+      if (!insp || !scene || !local || !onFinalStep()) return [];
       const [px, py] = local;
-      const layout = sceneLayout(currentScene);
+      const layout = sceneLayout(scene);
       const drawn = drawnCoords();
       const seen = new Set<string>();
       const out: EntityRef[] = [];
@@ -1849,17 +1827,15 @@ const codeLines = code ? code.split("\n").length : 0;
     // Anchor one entity's tooltip at (x,y): shared tail of a direct single
     // click and a chooser-row pick.
     const anchorEntity = (ref: EntityRef) => {
-      pinned = ref;
-      choiceOpen = false;
+      pick.close();
+      pin(ref);
       markRefsFor([ref]);
-      highlightSelected(ref);
       renderInspect(ref, true);
-      if (ref.kind === "crease") {
-        const ln = lineOfSpan(currentScene?.inspect?.creases[ref.creaseId]?.span ?? null);
-        // Mark the statement that built this crease, but leave the editor
-        // where the reader left it: they clicked the drawing, not the code.
-        if (ln) setStepLineOn(editor, ln, { reveal: false });
-      }
+      const scene = currentScene();
+      const ln = scene ? sourceLineOf(scene, ref) : null;
+      // Mark the statement that built this entity, but leave the editor where
+      // the reader left it: they clicked the drawing, not the code.
+      if (ln) setStepLineOn(editor, ln, { reveal: false });
     };
 
     // The coincident-line chooser: a materialized list of the overlapping
@@ -1870,7 +1846,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // "N Linien hier") and click (anchored=true: pinned, with an X and
     // clickable rows to drill into one). Hovering a row previews its bundle.
     const renderChoice = (ents: EntityRef[], anchored: boolean) => {
-      const insp = currentScene?.inspect;
+      const insp = currentScene()?.inspect;
       if (!insp) return;
       const closeBtn = anchored
         ? `<button type="button" class="pg-inspect-close" aria-label="Close">×</button>`
@@ -1885,22 +1861,16 @@ const codeLines = code ? code.split("\n").length : 0;
           })
           .join("");
       inspectPanel!.hidden = false;
-      if (anchored) {
-        choiceEnts = ents;
-        choiceOpen = true;
-      }
     };
 
     // The reverse direction of the click→line jump above: moving the
     // editor cursor onto a source line outlines every SVG crease segment
     // whose provenance span covers that line (read-only, no pinning).
     const highlightCreasesOnLine = (line: number) => {
-      clearHl();
-      const insp = currentScene?.inspect;
-      if (!insp) return;
-      for (const [cid, c] of Object.entries(insp.creases)) {
-        if (lineOfSpan(c.span) === line) bundleElements(canvas, cid).forEach((el) => el.classList.add("pg-hl"));
-      }
+      const scene = currentScene();
+      clearHighlight(canvas);
+      if (!scene) return;
+      lightEntities(canvas, scene, entitiesAtLine(scene, line));
     };
 
     // Hover previews the entity under the cursor, following it with the
@@ -1910,21 +1880,21 @@ const codeLines = code ? code.split("\n").length : 0;
     // NOW, so hover resumes as soon as the drag actually ends rather than
     // staying suppressed until the next pointerdown (see createPanZoom).
     if (!hero) result.addEventListener("mousemove", (e: MouseEvent) => {
-      if (pinned || choiceOpen || panZoom.isDragging()) return;
+      if (pinned() || pick.state.open || panZoom.isDragging()) return;
       // Same proximity detection as the click, so hover and click agree.
-      const ents = lineEntitiesAtPoint(e.clientX, e.clientY);
-      if (ents.length >= 2) {
-        // Preview the chooser so hover already shows "N Linien hier" — not one
-        // entity that then surprises with a chooser on click.
-        highlightEntities(ents);
-        renderChoice(ents, false);
+      const outcome = pick.report(lineEntitiesAtPoint(e.clientX, e.clientY), "hover");
+      if (outcome.kind === "several") {
+        // Preview the choice so hover already shows "N lines here" rather than
+        // one entity that then surprises with a chooser on click. The
+        // candidates are not a selection, so the drawing is lit from here.
+        hover(null);
+        const scene = currentScene();
+        if (scene) lightEntities(canvas, scene, outcome.candidates);
+        renderChoice(outcome.candidates, false);
         return;
       }
-      const ref = ents[0] ?? resolveRef(e.target as Element);
-      if (ref?.kind === "crease") highlightBundle(ref.creaseId);
-      else if (ref?.kind === "edge") highlightEdgeBundle(ref.name);
-      else clearHl();
-      renderInspect(ref, false);
+      hover(outcome.kind === "one" ? outcome.entity : resolveRef(e.target as Element));
+      renderInspect(runtime.state.hover, false);
     });
     // A click anchors (materializes) the tooltip at the click position — it
     // stops following the cursor and gains a close (X) button; only that X
@@ -1937,16 +1907,18 @@ const codeLines = code ? code.split("\n").length : 0;
     if (!hero) result.addEventListener("click", (e: MouseEvent) => {
       if (panZoom.wasDrag()) return;
       // Multiple distinct lines stacked at the click → anchor the chooser
-      // (same content the hover was already previewing).
-      const ents = lineEntitiesAtPoint(e.clientX, e.clientY);
-      if (ents.length >= 2) {
-        pinned = null;
-        highlightEntities(ents);
-        markRefsFor(ents);
-        renderChoice(ents, true);
+      // (same content the hover was already previewing). The module clears the
+      // selection for it: the reader has been asked and has not answered.
+      const outcome = pick.report(lineEntitiesAtPoint(e.clientX, e.clientY), "settle");
+      if (outcome.kind === "several") {
+        relight();
+        const scene = currentScene();
+        if (scene) lightEntities(canvas, scene, outcome.candidates);
+        markRefsFor(outcome.candidates);
+        renderChoice(outcome.candidates, true);
         return;
       }
-      const ref = ents[0] ?? resolveRef(e.target as Element);
+      const ref = outcome.kind === "one" ? outcome.entity : resolveRef(e.target as Element);
       if (!ref) return;
       anchorEntity(ref);
     });
@@ -1983,15 +1955,16 @@ const codeLines = code ? code.split("\n").length : 0;
       const eid = row.dataset.pickEdge;
       const segIndex = Number(row.dataset.pickSeg);
       const s = cid
-        ? currentScene?.inspect?.creases[cid]?.segments[segIndex]
+        ? currentScene()?.inspect?.creases[cid]?.segments[segIndex]
         : eid
-          ? currentScene?.inspect?.edges[eid]?.segments[segIndex]
+          ? currentScene()?.inspect?.edges[eid]?.segments[segIndex]
           : undefined;
-      if (!currentScene || !s || (!cid && !eid)) return;
-      const layout = sceneLayout(currentScene);
+      const scene = currentScene();
+      if (!scene || !s || (!cid && !eid)) return;
+      const layout = sceneLayout(scene);
       const p0: Vec2 = [layout.tx(s.table[0][0]), layout.ty(s.table[0][1])];
       const p1: Vec2 = [layout.tx(s.table[1][0]), layout.ty(s.table[1][1])];
-      clearHl();
+      clearHighlight(canvas);
       const candidates = cid ? bundleElements(canvas, cid) : Array.from(canvas.querySelectorAll(CREASE_SELECTOR));
       let matched = false;
       candidates.forEach((el) => {
@@ -2000,12 +1973,12 @@ const codeLines = code ? code.split("\n").length : 0;
         const x2 = Number(el.getAttribute("x2"));
         const y2 = Number(el.getAttribute("y2"));
         if (segMatchesLine(p0, p1, x1, y1, x2, y2)) {
-          el.classList.add("pg-hl");
+          el.classList.add(HL_CLASS);
           matched = true;
         }
       });
       // Picked an occluded segment (no rendered line) → ghost it so it shows.
-      if (!matched) drawGhost(p0[0], p0[1], p1[0], p1[1]);
+      if (!matched) ghostSegment(p0[0], p0[1], p1[0], p1[1]);
     };
     inspectPanel.addEventListener("click", (e: MouseEvent) => {
       const target = e.target as Element;
@@ -2018,7 +1991,7 @@ const codeLines = code ? code.split("\n").length : 0;
       const choice = target.closest<HTMLElement>("[data-choice-idx]");
       if (choice) {
         e.stopPropagation();
-        const ref = choiceEnts[Number(choice.dataset.choiceIdx)];
+        const ref = pick.choose(Number(choice.dataset.choiceIdx));
         if (ref) anchorEntity(ref);
         return;
       }
@@ -2037,18 +2010,18 @@ const codeLines = code ? code.split("\n").length : 0;
       // Previewing a chooser row highlights that entity's whole bundle.
       const choice = target.closest<HTMLElement>("[data-choice-idx]");
       if (choice) {
-        const ref = choiceEnts[Number(choice.dataset.choiceIdx)];
-        if (!ref) return;
-        clearHl();
-        if (ref.kind === "crease") highlightBundle(ref.creaseId);
-        else if (ref.kind === "edge") highlightEdgeBundle(ref.name);
+        const ref = pick.state.candidates[Number(choice.dataset.choiceIdx)];
+        const scene = currentScene();
+        if (!ref || !scene) return;
+        clearHighlight(canvas);
+        lightEntities(canvas, scene, [ref]);
       }
     });
 
     // Prev/next just walk the clamped index; renderStep re-clamps and keeps
     // the nav buttons' disabled state in sync (see updateStepsUI).
-    stepPrev.addEventListener("click", () => renderStep(currentStep - 1, true, true));
-    stepNext.addEventListener("click", () => renderStep(currentStep + 1, true, true));
+    stepPrev.addEventListener("click", () => renderStep(currentStep() - 1, true, true));
+    stepNext.addEventListener("click", () => renderStep(currentStep() + 1, true, true));
 
     // A diagnostic goes beside the drawing, never in its place: the last valid
     // drawing is what the reader is holding the message against, and wiping it
@@ -2075,20 +2048,50 @@ const codeLines = code ? code.split("\n").length : 0;
     // element (the transform target) survives innerHTML swaps, so stepping
     // through the timeline keeps the user's framing. A fresh run passes
     // keepView=false to re-fit the newly-parsed paper.
-    const showSvg = (svg: string, keepView = false, fade: FadeLength | null = null) => {
-      swapDrawing(canvas, svg, fade);
-      // The outgoing state is inert, so only the step that is current gets hit
-      // areas; `querySelector` finds it because the fading layer sits after it.
-      // Bigger click/hover target per crease line and per point dot; the
-      // drawn line and dot stay as thin as the notation wants them.
-      const live = canvas.querySelector("svg") ?? canvas;
-      enhanceCreaseHits(live);
-      enhancePointHits(live);
+    // Pointing at a step's bar in the gutter lights what that step built, in
+    // the palette whose statement is that a word and a thing in the drawing
+    // are the same thing. The bar is a target the reader aims at, so reading
+    // the program recolours nothing.
+    //
+    // This is the reader asking about the text, so it yields to what they
+    // picked in the drawing: the accent of a hover or a pin wins on its own
+    // entity, which the stylesheet settles.
+    let emphasisStep: number | null = null;
+    const emphasisFor = (step: number | null) => {
+      const scene = currentScene();
+      if (!scene || step === null) return null;
+      return entitiesIn(scene, blockOfStep(scene, step));
+    };
+    const emphasiseStep = (step: number | null) => {
+      emphasisStep = step;
+      applyEmphasis(canvas, emphasisFor(step));
+    };
+
+    // What the runtime says to draw, drawn, and nothing else. The renderer
+    // compares this against what it last drew, so an event that only moves the
+    // highlight re-lights the drawing on screen rather than rebuilding it.
+    // That is what makes this cheap enough for every mouse move.
+    function relight(fade: FadeLength | null = null) {
+      const scene = currentScene();
+      if (!scene) return;
+      const command = renderCommand(runtime.state, { view: currentView, hidden: hiddenMode });
+      if (!command) return;
+      renderer.draw(scene, command, { theme: renderTheme(), fade });
+    }
+
+    const drawCurrent = (keepView = false, fade: FadeLength | null = null) => {
+      if (!currentScene()) return;
+      // The renderer owns the markup and the hit targets over it. What stays
+      // here is the stage around the drawing.
+      relight(fade);
+      // The drawing is new, so what the reader was pointing at in the source
+      // has to be lit again on it.
+      applyEmphasis(canvas, emphasisFor(emphasisStep));
       makeCreasesReachable();
-      reapplyAnchorHl();
+      reapplyChoiceHl();
       // A drawing on the stage means the rail has something to stand for. A
-      // pinned answer survives a step change, which is what the rail is for.
-      if (!hero && !pinned && !choiceOpen) restInspect();
+      // pinned answer survives a step change, so the rail keeps it.
+      if (!hero && !pinned() && !pick.state.open) restInspect();
       if (!keepView) panZoom.reset();
       panZoom.setEnabled(true);
       resetBtn.hidden = false;
@@ -2098,6 +2101,20 @@ const codeLines = code ? code.split("\n").length : 0;
     // (called once per successful run, not per statement-click). The timeline
     // has n+1 stops: index 0 is the flat starting sheet, 1..n each statement.
     // Hidden when there's nothing to navigate (no statements at all).
+    // The same stops in the editor's gutter: one bar per step, over the source
+    // that step stands for. A program with nothing above its first statement
+    // gets no bar for step 0, whose block is empty.
+    function buildStepSlots(scene: FoldScene) {
+      const slots: StepSlot[] = [];
+      for (let step = 0; step <= scene.statements.length; step++) {
+        const block = blockOfStep(scene, step);
+        const toLine = block.toLine ?? editor.state.doc.lines;
+        if (toLine < block.fromLine) continue;
+        slots.push({ step, fromLine: block.fromLine, toLine });
+      }
+      setStepSlotsOn(editor, slots);
+    }
+
     function buildStepsUI(statements: Statement[]) {
       const n = statements.length;
       stepDots!.innerHTML = "";
@@ -2119,15 +2136,15 @@ const codeLines = code ? code.split("\n").length : 0;
 
     // Clears the scrubber + gutter marker so a stale scene from a previous
     // multi-step run can't linger (and stay clickable) once a later run
-    // doesn't produce a fresh multi-step scene of its own.
+    // doesn't produce a fresh multi-step scene of its own. The document
+    // itself is already the new one: filling the slot took the selection, the
+    // hover and any open choice with it, and the modules watch the slot
+    // themselves.
     function clearStepsUI() {
-      currentScene = null;
-      currentStatements = [];
-      pinned = null;
-      choiceOpen = false;
+      setStepSlotsOn(editor, []);
       inspectPanel!.hidden = true;
       inspectPanel!.textContent = "";
-      clearHl();
+      clearHighlight(canvas!);
       setRefSpansOn(editor, []);
       stepsBar!.hidden = true;
       setStepLineOn(editor, null);
@@ -2161,238 +2178,140 @@ const codeLines = code ? code.split("\n").length : 0;
     // `animate` is what the reader's click carries in: a step reached by
     // clicking crossfades from the step it left, a step rendered because a run
     // just finished appears outright.
-    // One step of the current scene as SVG, under whichever theme is asked
-    // for. The stage asks with the web theme, whose colours are variables the
-    // page resolves; the export asks with literals (see literalTheme).
-    function svgForStep(i: number, theme: Partial<Theme>, view: View = currentView): string {
-      if (!currentScene) return "";
-      // A scene with no statements has no timeline: its one drawing is the
-      // crease pattern, whichever tab is up.
-      if (currentStatements.length === 0) return renderCP(currentScene, { theme }).toString();
-      // Step 0 is the flat starting sheet, before any fold or mark — so it
-      // shows no statement's creases (index -1) and no marks.
-      const stmt = i === 0 ? null : currentStatements[i - 1]!;
-      const activeMarks = stmt ? stmt.keptMarks : [];
-      const newestCreaseId = activeMarks.at(-1)?.creaseId;
-      if (view === "cp") {
-        // The flat sheet carrying the creases scored up to this statement,
-        // plus the marks still dangling at it — so a scored line first shows
-        // as a mark and turns into a crease at the statement that folds it.
-        return renderScene(currentScene, {
-          theme,
-          isometry: { kind: "flat" },
-          texture: {
-            upToStatement: i - 1,
-            creases: true,
-            marks: true,
-            points: true,
-            lines: true,
-            faces: "outline",
-          },
-          markOverlay: { marks: activeMarks, newestCreaseId },
-        }).toString();
-      }
-      if (!stmt) {
-        return renderFolded(currentScene, { theme, step: "0", hidden: hiddenMode }).toString();
-      }
-      return renderFolded(currentScene, {
-        theme,
-        step: String(stmt.frameIndex),
-        hidden: hiddenMode,
-        markOverlay: activeMarks.length > 0 ? { marks: activeMarks, newestCreaseId } : undefined,
-      }).toString();
-    }
-
     // `fadeOverride` is for a swap that is not a step change at all: switching
     // the tab, or the line style, shows the same state drawn differently.
     function renderStep(i: number, keepView = true, animate = false, fadeOverride: FadeLength | null = null) {
-      if (!currentScene || currentStatements.length === 0) return;
-      const n = currentStatements.length;
-      const clamped = Math.max(0, Math.min(i, n));
-      currentStep = clamped;
+      const scene = currentScene();
+      const statements = currentStatements();
+      if (!scene || statements.length === 0) return;
+      // Out-of-range steps are the runtime's to clamp, so a shared link with a
+      // step from a longer program lands on the last one.
+      runtime.dispatch({ type: "step/to", index: i });
+      const clamped = currentStep();
+      const stmt = clamped === 0 ? null : statements[clamped - 1]!;
+      // The source this step stands for, which is its own line and everything
+      // under it until the next statement (see @beloch/runtime-editor).
+      const block = blockOfStep(scene, clamped);
+      // A mark folds nothing, so it changes the view rather than the paper. A
+      // crease pattern never folds either: the sheet stays flat and gains a
+      // line. Step 0 arrives at the sheet, which is no fold either.
+      const stepFade: FadeLength =
+        currentView === "cp" || stmt === null || stmt.kind !== "fold" ? "view" : "fold";
       try {
-        const svg = svgForStep(clamped, renderTheme());
-        if (clamped === 0) {
-          showSvg(svg, keepView, fadeOverride ?? (animate ? "view" : null));
-          setStepLineOn(editor, null);
-        } else {
-          const stmt = currentStatements[clamped - 1]!;
-          // A mark folds nothing, so it changes the view rather than the paper.
-          // A crease pattern never folds either: the sheet stays flat and gains
-          // a line.
-          const stepFade: FadeLength =
-            currentView === "cp" || stmt.kind !== "fold" ? "view" : "fold";
-          showSvg(svg, keepView, fadeOverride ?? (animate ? stepFade : null));
-          setStepLineOn(editor, stmt.sourceLine);
-        }
+        drawCurrent(keepView, fadeOverride ?? (animate ? stepFade : null));
+        setStepLineOn(editor, block.fromLine, { through: block.toLine ?? editor.state.doc.lines });
       } catch (err) {
         showError(`Render error: ${err instanceof Error ? err.message : String(err)}`);
         return;
       }
-      updateStepsUI(clamped, currentStatements);
+      updateStepsUI(clamped, statements);
       updateExportPanel();
     }
 
-    function clearTimers() {
-      if (loadTimer !== null) clearTimeout(loadTimer);
-      if (evalTimer !== null) clearTimeout(evalTimer);
-      loadTimer = null;
-      evalTimer = null;
+    // A document is in the slot: build the stage around it. The evaluator
+    // calls this after a run, and the seed path below after parsing the FOLD
+    // the build embedded, so both build the scrubber the same way.
+    function showDocument(scene: FoldScene) {
+      clearStepsUI();
+      if (scene.statements.length > 0) {
+        buildStepsUI(scene.statements);
+        buildStepSlots(scene);
+        const target = pendingSharedStep;
+        pendingSharedStep = null;
+        renderStep(target ?? scene.statements.length, false);
+      } else {
+        // No fold and no mark statement: one drawing, no timeline.
+        drawCurrent();
+      }
     }
 
-    function finish(handler: () => void) {
-      clearTimers();
-      pendingCode = null;
-      dispatchedCode = null;
-      running = false;
-      runBtn!.classList.remove("is-loading");
-      updateRunButtonState();
-      handler();
-    }
-
-    // Parses+renders an already-computed FOLD document (from the eval Worker,
-    // or a build-time seed) — pure @beloch/scene + @beloch/render-svg, no
-    // wasm involved. Shared by the worker-response path and the seed-fold
-    // bootstrap below, so both build the scrubber the same way.
+    // A FOLD document computed at build time — pure @beloch/scene +
+    // @beloch/render-svg, no wasm involved.
     function applyFold(fold: unknown) {
       try {
         const scene = parseFold(fold as object);
-        if (scene.statements.length > 0) {
-          currentScene = scene;
-          currentStatements = scene.statements;
-          buildStepsUI(scene.statements);
-          const target = pendingSharedStep;
-          pendingSharedStep = null;
-          renderStep(target ?? scene.statements.length, false);
-        } else {
-          showSvg(renderCP(scene, { theme: renderTheme() }).toString());
-        }
+        runtime.dispatch({ type: "document/set", scene });
+        showDocument(scene);
       } catch (err) {
         showError(`Render error: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
 
-    function renderResult(raw: string) {
-      clearStepsUI();
-      let parsed: { ok: boolean; fold?: unknown; kind?: string; message?: string; line?: number };
-      try {
-        parsed = JSON.parse(raw);
-      } catch (err) {
-        showError(`Invalid response from the evaluator: ${String(err)}`);
-        return;
+    // The words for what the evaluator reports. It says what happened in
+    // kinds, because a package has no reader; the sentences are this view's.
+    function sayDiagnostic(diagnostic: Diagnostic) {
+      switch (diagnostic.kind) {
+        case "program":
+          showError(diagnostic.message, diagnostic.line);
+          return;
+        case "native":
+          showInfo(
+            "This expression needs native evaluation (an irrational number via √/∛ beyond the browser fragment).",
+          );
+          return;
+        case "timeout":
+          showError("Evaluation aborted (timeout).");
+          return;
+        case "backend":
+          showError(`Worker error: ${diagnostic.message}`);
+          return;
+        case "protocol":
+          showError(`Invalid response from the evaluator: ${diagnostic.message}`);
+          return;
+        case "document":
+          showError(`Render error: ${diagnostic.message}`);
       }
-      if (parsed.ok) {
-        applyFold(parsed.fold);
-        return;
-      }
-      if (parsed.kind === "native") {
-        showInfo(
-          "This expression needs native evaluation (an irrational number via √/∛ beyond the browser fragment).",
-        );
-        return;
-      }
-      showError(parsed.message ?? "Unknown error.", parsed.line ?? null);
     }
 
-    function wireWorker() {
-      worker!.onmessage = (e: MessageEvent<{ raw?: string; ready?: boolean; loaded?: number; total?: number }>) => {
-        // Transfer progress, while the runtime is still on its way.
-        if (e.data.total !== undefined && e.data.loaded !== undefined) {
-          loadProgress = e.data.total > 0 ? e.data.loaded / e.data.total : null;
+    // Source to document. The phases, the queue behind a runtime that has not
+    // arrived, both limits and the evaluator's envelope are the module's; the
+    // Worker it drives is this page's, and a VS Code preview would hand it a
+    // subprocess instead.
+    const evaluator = createEvaluator({
+      runtime,
+      spawn: (events) => {
+        const worker = new Worker("/beloch/eval-worker.js");
+        worker.onmessage = (
+          e: MessageEvent<{ raw?: string; ready?: boolean; loaded?: number; total?: number }>,
+        ) => {
+          // Transfer progress, while the runtime is still on its way.
+          if (e.data.total !== undefined && e.data.loaded !== undefined) {
+            events.progress(e.data.total > 0 ? e.data.loaded / e.data.total : null);
+            return;
+          }
+          // The worker announces its instantiated wasm runtime
+          // (public/beloch/eval-worker.js).
+          if (e.data.ready) {
+            events.ready();
+            return;
+          }
+          events.answer(e.data.raw ?? "");
+        };
+        worker.onerror = (e: ErrorEvent) => events.failed(e.message);
+        return {
+          evaluate: (source: string) => worker.postMessage(source),
+          terminate: () => worker.terminate(),
+        };
+      },
+      host: {
+        document: showDocument,
+        diagnostic: sayDiagnostic,
+        changed: (state) => {
+          runState = state;
           updateRunButtonState();
-          return;
-        }
-        // The worker announces its instantiated wasm runtime (eval-worker.js).
-        // Until that arrives, a pending run is waiting on the network, so the
-        // short evaluation limit must not be running yet.
-        if (e.data.ready) {
-          phase = "ready";
-          loadStalled = false;
-          loadProgress = null;
-          clearTimers();
-          const queued = pendingCode;
-          pendingCode = null;
-          if (queued !== null) startEval(queued);
-          else updateRunButtonState();
-          return;
-        }
-        // Only an answered request updates the baseline for "same code as
-        // the last run". A timeout or worker error leaves it where it was,
-        // so a retry is not announced as a repeat.
-        lastRunCode = dispatchedCode;
-        const raw = e.data.raw ?? "";
-        finish(() => renderResult(raw));
-      };
-      worker!.onerror = (e: ErrorEvent) => {
-        finish(() => showError(`Worker error: ${e.message}`));
-      };
-    }
-
-    function spawnWorker() {
-      worker = new Worker("/beloch/eval-worker.js");
-      phase = "loading";
-      wireWorker();
-    }
-
-    // Creates the Worker (and triggers its wasm download) on first use. A
-    // no-op once `worker` exists — the eager path creates it once on mount,
-    // the lazy path only once the user actually clicks Run.
-    function bootIfNeeded() {
-      if (worker) return;
-      spawnWorker();
-    }
-
-    // Hands one source string to a ready worker, under the evaluation limit.
-    function startEval(code: string) {
-      dispatchedCode = code;
-      evalTimer = setTimeout(() => {
-        evalTimer = null;
-        // A hung evaluation needs a fresh worker; it re-reads the runtime
-        // from the HTTP cache. A slow *load* never reaches this path.
-        worker!.terminate();
-        spawnWorker();
-        dispatchedCode = null;
-        running = false;
-        repeat = false;
-        runBtn!.classList.remove("is-loading");
-        updateRunButtonState();
-        showError("Evaluation aborted (timeout).");
-      }, EVAL_TIMEOUT_MS);
-      updateRunButtonState();
-      worker!.postMessage(code);
-    }
+        },
+      },
+    });
 
     function run() {
-      if (running) return; // guard against overlapping runs
+      // A run in flight keeps its diagnostic: the reader is still holding it
+      // against the drawing, and this click adds nothing (the evaluator drops
+      // it too).
+      if (runState.running) return;
       // The standing diagnostic describes the previous run; this one answers
       // for itself. The drawing stays either way.
       clearDiagnostic();
-      const codeToRun = editor.state.doc.toString();
-      repeat = lastRunCode !== null && codeToRun === lastRunCode;
-      loadStalled = false;
-      running = true;
-      runBtn!.classList.add("is-loading");
-      bootIfNeeded();
-      if (phase === "ready") {
-        startEval(codeToRun);
-        return;
-      }
-
-      // Still booting: the run waits for the ready signal under the generous
-      // load limit. On expiry the worker keeps its download running (it is
-      // never terminated here), so pressing Run again picks the transfer up
-      // where it stands; the status line says as much.
-      pendingCode = codeToRun;
-      loadTimer = setTimeout(() => {
-        loadTimer = null;
-        pendingCode = null;
-        running = false;
-        repeat = false;
-        loadStalled = true;
-        runBtn!.classList.remove("is-loading");
-        updateRunButtonState();
-      }, LOAD_TIMEOUT_MS);
-      updateRunButtonState();
+      evaluator.run(editor.state.doc.toString());
     }
 
     // If a seed FOLD was embedded at build time, parse+render it right away
@@ -2419,8 +2338,8 @@ const codeLines = code ? code.split("\n").length : 0;
     // the panel is shut (B3.11).
     function updateExportPanel() {
       if (!exportStepLine) return;
-      const n = currentStatements.length;
-      exportStepLine.textContent = n > 0 ? `step ${currentStep} of ${n}` : "crease pattern";
+      const n = currentStatements().length;
+      exportStepLine.textContent = n > 0 ? `step ${currentStep()} of ${n}` : "crease pattern";
     }
 
     const say = (text: string) => {
@@ -2476,7 +2395,7 @@ const codeLines = code ? code.split("\n").length : 0;
     const shareLink = () => {
       const url = new URL(window.location.href);
       url.searchParams.set("p", encodeProgram(editor.state.doc.toString()));
-      url.searchParams.set("s", String(currentStep));
+      url.searchParams.set("s", String(currentStep()));
       return url.toString();
     };
 
@@ -2497,13 +2416,15 @@ const codeLines = code ? code.split("\n").length : 0;
         void copyText(shareLink(), "link copied");
         return;
       }
-      if (!currentScene) {
+      const scene = currentScene();
+      if (!scene) {
         say("nothing drawn yet");
         return;
       }
       let svg: string;
       try {
-        svg = svgForStep(currentStep, literalTheme());
+        const command = renderCommand(runtime.state, { view: currentView, hidden: hiddenMode });
+        svg = command ? commandToSvg(scene, command, literalTheme()) : "";
       } catch (err) {
         say(`render failed: ${err instanceof Error ? err.message : String(err)}`);
         return;
@@ -2515,7 +2436,7 @@ const codeLines = code ? code.split("\n").length : 0;
       const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
       const a = document.createElement("a");
       a.href = url;
-      a.download = currentStatements.length > 0 ? `beloch-step-${currentStep}.svg` : "beloch.svg";
+      a.download = currentStatements().length > 0 ? `beloch-step-${currentStep()}.svg` : "beloch.svg";
       a.click();
       URL.revokeObjectURL(url);
       say("SVG downloaded");
@@ -2534,10 +2455,10 @@ const codeLines = code ? code.split("\n").length : 0;
       if (e.target !== result) return;
       switch (e.key) {
         case "ArrowRight":
-          renderStep(currentStep + 1, true, true);
+          renderStep(currentStep() + 1, true, true);
           break;
         case "ArrowLeft":
-          renderStep(currentStep - 1, true, true);
+          renderStep(currentStep() - 1, true, true);
           break;
         case "+":
         case "=":
@@ -2566,7 +2487,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // from it.
     function makeCreasesReachable() {
       if (hero) return;
-      const insp = currentScene?.inspect;
+      const insp = currentScene()?.inspect;
       hitLines().forEach((el, i) => {
         el.setAttribute("tabindex", i === 0 ? "0" : "-1");
         el.setAttribute("role", "button");
@@ -2623,13 +2544,13 @@ const codeLines = code ? code.split("\n").length : 0;
       const step = Number(sharedParams.get("s"));
       pendingSharedStep = Number.isInteger(step) && step >= 0 ? step : null;
       editor.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: sharedProgram } });
-      bootIfNeeded();
+      evaluator.boot();
       run();
       return;
     }
 
     if (!lazy) {
-      bootIfNeeded();
+      evaluator.boot();
       if (initialCode.trim()) run();
     }
   }

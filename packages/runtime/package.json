@@ -1,0 +1,13 @@
+{
+  "name": "beloch-runtime",
+  "private": true,
+  "type": "module",
+  "workspaces": ["core", "editor", "eval", "pick", "render-dom"],
+  "scripts": { "test": "bun test", "typecheck": "bun x tsc --noEmit" },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/bun": "^1.1.0",
+    "happy-dom": "^20.10.6",
+    "@happy-dom/global-registrator": "^20.10.6"
+  }
+}

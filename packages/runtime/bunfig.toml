@@ -1,0 +1,4 @@
+[install]
+# Same reason as packages/render-2d: bun's "isolated" linker leaves
+# workspace-internal packages unresolvable from their own test dirs.
+linker = "hoisted"

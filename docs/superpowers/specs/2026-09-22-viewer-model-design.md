@@ -59,29 +59,53 @@ event is the composition's business. The evaluation module raises it after a
 run; the card raises it once from the FOLD JSON embedded in its markup; the
 tour raises it per section from a build-time evaluated program.
 
-That single decision is what makes the core small enough to compose. Without
-it the tour would have to carry a worker it never uses, and the card would
-have to pretend to evaluate what was already evaluated at build time.
+That single decision keeps the core small enough to compose. Without it the
+tour would have to carry a worker it never uses, and the card would have to
+pretend to evaluate what was already evaluated at build time.
 
 Beside the slot the core holds:
 
-**Interaction state.** Current step, the pinned entity, the hovered entity,
-and the selection. This is the group all three consumers share and the reason
-the package exists. What the core carries is one settled selection; how a
-reader arrived at it belongs to whoever offered the choice.
+**Interaction state.** Current step, the settled selection, the hovered
+entity. This is the group all three consumers share and the reason the package
+exists. What the core carries is one settled selection; how a reader arrived
+at it belongs to whoever offered the choice.
 
-**Presentation options.** View (`cp` / `folded`), hidden mode
-(`hide` / `dashed` / `depth`), paper scheme, line style. They are inputs to
-the render command, so they belong with it.
+The playground's "pinned" does not appear here. It means the tooltip has
+stopped following the cursor and gained a close button, which is the view's
+business. What the core needs from it is whether a selection is settled, and
+a settled selection outranks the pointer: once the reader has picked a line,
+moving the cursor away does not take the answer with it.
 
-**The render command.** The core derives it on demand from the state above:
-scene, step, view, options and the highlight set, as plain data. A renderer consumes it. Keeping the
-derivation in the core is what lets a headless test assert what a view would
-draw without a view existing.
+**Presentation options are arguments, not state.** View (`cp` / `folded`),
+hidden mode, paper scheme and line style go to `renderCommand` as parameters.
+The only reader of any of them is a renderer, and the `<Beloch>` card draws
+the crease pattern and the folded form of one document side by side, so a
+single state has to answer two drawing requests that differ here. Holding the
+view in the core would leave the card unable to express itself with one
+runtime. Step, selection and hover are the same in both drawings, which is
+where the line falls.
+
+**The render command.** The core derives it from the state above and the
+caller's options, as plain data: which of three drawings to make (the crease
+pattern of a document with no timeline, the flat sheet scored up to a
+statement, or one folded frame), the hidden mode, the marks still dangling,
+and the highlight set. It carries no scene and no theme: the document is in the state the
+renderer already reads, and colours belong to the renderer. Deriving it in the
+core lets a headless test assert what a view would draw without a view
+existing. `svgForStep` in `Playground.astro` is this function today, buried in
+the component.
+
+**Nothing is news twice.** An event that changes nothing returns the state
+object it was given, and a dispatch that changed nothing notifies no one. That
+lets a renderer answer "did anything move" with `===`. A pointer resting on
+one crease sends a hover per mouse event, and redrawing on each of them would
+restart a running animation.
 
 The core does **not** hold the viewport. Pan offset, zoom scale, drag tracking
 and pointer capture stay with the view, because two consumers showing the same
-document at different zoom is correct behaviour.
+document at different zoom is correct behaviour. Animation progress belongs
+there too: the core says be at frame 2, and the renderer takes as long as it
+takes to get there.
 
 ## Modules
 
@@ -153,7 +177,7 @@ a crease by `creaseId` rather than by name.
 
 ADR-0014 settles the identity question: a crease is a bundle of segments, and
 the bundle is what a selection names. So the core carries
-`selection: EntityRef[]` with `pinned: EntityRef | null` beside it, and each
+`selection: EntityRef[]` with `hover: EntityRef | null` beside it, and each
 consumer constrains what it dispatches. The card's multi-selection and the
 playground's single pin are two policies over one state shape. The candidate
 list leaves the core with the chooser, into `@beloch/runtime-pick`, because it
@@ -176,7 +200,8 @@ invariants the playground maintains by hand today:
 - hover, then pin, then hover elsewhere: the pin survives, hover is suppressed
 - pin, then step forward: the pin survives the redraw and lights whatever the
   new step draws, or nothing, without clearing
-- toggle hidden mode: the render command changes, the selection does not
+- one state answers a crease-pattern and a folded request at once, with the
+  same step and the same highlight in both (the card's side-by-side)
 - a source change invalidates the document, the step and the pin together
 - a failed run keeps the last good document and adds the diagnostic
 
@@ -246,6 +271,122 @@ broken interval in the middle.
 Where the risk sits: step 4 holds the invariants that are currently kept by
 hand at each call site, and step 7 holds everything the reader sees. Steps 1,
 2, 5 and 6 are additive and reversible on their own.
+
+## Where the work stands (2026-09-23)
+
+The migration is done: steps 1 to 7 are committed on `runtime-model`, which is
+open as draft PR #29. What each step actually produced:
+
+1. **Core.** State, events, reducers, `renderCommand`. Two fields joined the
+   command since this document was written: `settled`, because a renderer has
+   to tell a reader's settled answer from the pointer passing over a line
+   before it may draw the buried rest of a crease, and `constructions`, the
+   named lines a step has bound. `document/set` also accepts null, which is how
+   a consumer empties the slot when its source changes.
+2. **`@beloch/runtime-render-dom`.** Markup through `@beloch/render-svg`, hit
+   twins, the crossfade, the highlight with its ghosts, the construction
+   overlay, and a palette emphasis a caller can put on the drawing. It holds
+   what it last drew, so a command asking for the same picture re-lights rather
+   than rebuilds; the theme counts as part of the picture and is compared by
+   identity, so a host keeps one theme object per style.
+3. **The playground draws from the runtime.** The step moved in with the
+   document rather than waiting for step 4: `renderCommand` reads it, and a
+   shadow copy in the view would have been two truths for one commit.
+4. **The pin and the hover moved in.** `EntityRef` now covers face and vertex
+   as well, so the playground, the drawing and the editor name the same things;
+   `packages/www/src/lib/inspect-lookup.ts` re-exports the core's type. Three
+   highlight paths stayed in the view at the time: the chooser's candidate
+   preview and the creases on the cursor's line came back with steps 5 and 6,
+   and the stack picker's single segment is still drawn by geometry in the
+   view, because it points at one segment of a bundle rather than at the
+   bundle a selection names (ADR-0014).
+5. **`@beloch/runtime-pick`.** `decide` answers a hit report with none, one or
+   several, and the store holds the candidates and whether the reader has been
+   asked. A report with nothing in it changes nothing at all: a click on empty
+   paper is no statement about the answer that stands. The panel, the rows and
+   the preview highlight stay in the view, because the module never touches the
+   DOM.
+6. **`@beloch/runtime-editor`.** Source blocks (`blockOfStep`, `blockAtLine`,
+   `entitiesIn`) and the spans in both directions: `refSpansFor` for every
+   place the program names a selection, `sourceLineOf` for the line that built
+   it, `entitiesAtLine` for what the cursor's line made. The span parser lives
+   here now, so the CodeMirror marks, the tooltip and the lookups read a span
+   the same way.
+
+7. **`@beloch/runtime-eval`.** The phases, the run waiting behind an
+   evaluator that has not arrived, both limits, and the evaluator's envelope
+   turned into a document or a diagnostic. The backend is an interface the
+   playground fills with its worker. `playground-run-state.ts` moved in as
+   `ui.ts` with its tests, renamed for the collision. Two departures from
+   this document, both deliberate. The debounce is not written: nothing
+   re-evaluates on typing today, and a limit nobody reaches is a limit nobody
+   tests. And a failed run now keeps the document rather than emptying the
+   slot, which is the invariant listed under the acceptance test and what the
+   reader already saw, since the drawing stayed on screen either way.
+
+The migration is over, so this document's remaining job is the design brief
+below.
+
+What is known about placing a block's entities, since it cost an afternoon to
+find out: a crease is placed by the span in `beloch:inspect`, a named point by
+the `statement` it records, and a named line by nothing at all. A line carries
+only the frame it was bound against, and a program with a `mark` in it leaves
+two blocks reading against one frame. Those lines stay out of every block
+rather than lighting up in the wrong one. Settling it needs a `statement` field
+on a named line in the FOLD, beside the one a named point already has, which is
+an emitter change, a `spec/FOLD.md` change, a parser change and a core change.
+
+The click list was walked by hand on the dev server after step 3 and everything
+held. Step 4's sequences run headless in `core/test/sequences.test.ts`, and
+each one was checked against a broken reducer to see it fail. Nothing since
+step 3 has been walked in a browser, so the chooser, the editor marks and
+everything the reader watches while a run happens are proved by their suites
+and not by a pointer. Step 7 is where that gap matters most: the suites drive
+a fake backend, and no test downloads 2.3 MB of wasm.
+
+## The design brief
+
+A second document arrived the same day: a Claude Design project, "Oberflächen
+und Bezugsmodus", whose `Playground v2.dc.html` redesigns this view. The design
+was built from `packages/www/src/styles/theme.css`, so the accent, the code
+surface and all ten syntax colours in it are already the tokens this site uses.
+
+Phase 1 is done: the interface neutrals are warm in the token layer, with the
+contrast of each role recorded beside it. Two roles were added that the design
+needs, `--bel-ui-ground` and `--bel-ui-quiet`.
+
+What the brief still asks for, in the order to build it:
+
+2. The card and its bars. A toolbar with two menus (view: paper, colour
+   against mono, hidden lines; export: SVG), a segmented control for crease
+   pattern against folded, the stepper moved under the stage with the current
+   statement's text beside it, and the step's block marked inside the code with
+   an inset bar.
+3. The selection card at the crease's midpoint, carrying the stack picker's
+   segment rows, in place of the inspector rail.
+4. The failed run shown in the code: a wavy underline under the word, a caret
+   row with the message, a hint row, and the rest of the program dimmed.
+
+Decided with Christopher, and not to be re-litigated:
+
+- Hidden lines is a checkbox between `hide` and `depth`. `dashed` goes.
+- Export offers SVG. No reset, no PNG, no PDF for now.
+- The stack picker moves into the selection card.
+- The gutter's step bars are given up; the stepper under the stage replaces
+  them.
+- `theme.css` is the source of truth for every colour.
+- Nothing the playground can do today is dropped. The brief is about how it
+  looks, and pan, zoom, the keyboard path to a crease and the share link stay.
+
+Two loose ends from phase 1. The dark column of the token layer is still cool
+against a warm light column, and the design covers only light. And
+`--bel-ui-ground` is defined and connected to nothing: the page itself is
+Starlight's `--sl-color-bg`, so warming the ground touches every document page
+and wants Christopher's eyes before it lands.
+
+One flake, unrelated and older than this work: `remark-bel.test.ts` fails with
+`Incompatible language version 0` in perhaps half of the runs, when several
+test files load the grammar wasm at once.
 
 ## The name collision, resolved
 
