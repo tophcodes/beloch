@@ -7,7 +7,10 @@ import type { EntityRef, State } from "./state";
 const clampStep = (index: number, writes: number): number =>
   Math.max(0, Math.min(index, writes));
 
-const sameEntity = (a: EntityRef | null, b: EntityRef | null): boolean => {
+// Whether two references name the same thing. A consumer holding a list of
+// them needs this to answer "is it already in", which is what a reader toggling
+// one value at a time asks on every click.
+export const sameEntity = (a: EntityRef | null, b: EntityRef | null): boolean => {
   if (a === null || b === null) return a === b;
   if (a.kind !== b.kind) return false;
   if (a.kind === "crease" && b.kind === "crease") return a.creaseId === b.creaseId;

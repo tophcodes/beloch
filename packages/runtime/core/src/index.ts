@@ -5,7 +5,7 @@ import { reduce } from "./reduce";
 export * from "./state";
 export * from "./events";
 export * from "./render";
-export { reduce } from "./reduce";
+export { reduce, sameEntity } from "./reduce";
 
 // Called after every dispatch. What the new state says to draw is a separate
 // question, asked with renderCommand and the caller's own view and hidden

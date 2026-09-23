@@ -59,6 +59,13 @@ const codeLines = code ? code.split("\n").length : 0;
       <span class="pg-run-spinner" aria-hidden="true"></span>
     </button>
     <div class="pg-run-hint" role="status" aria-live="polite"></div>
+    <button
+      type="button"
+      class="pg-debug"
+      aria-pressed="false"
+      disabled
+      title="Show the values the program binds (Ctrl/Cmd+Shift+D)"
+    >values</button>
     <div class="pg-source">
       <template class="pg-source-seed">{code}</template>
       {code ? (
@@ -200,6 +207,7 @@ const codeLines = code ? code.split("\n").length : 0;
   }
   .is-hero .pg-toolbar,
   .is-hero .pg-run,
+  .is-hero .pg-debug,
   .is-hero .pg-run-hint,
   .is-hero .pg-steps,
   .is-hero .pg-inspect,
@@ -423,6 +431,36 @@ const codeLines = code ? code.split("\n").length : 0;
      the paper is widest; a program's first lines are short, so the corner over
      the code is the quietest place on the card. It takes the code surface's
      own palette, because that is the surface it lies on. */
+  /* The debug toggle, under the Run button on the code surface: the mode is
+     the editor's, so the control stands with the editor rather than in the
+     toolbar over the drawing. */
+  .pg-debug {
+    position: absolute;
+    top: 10px;
+    right: 58px;
+    z-index: 2;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--bel-ui-code-gutter) 45%, transparent);
+    background: color-mix(in srgb, var(--bel-ui-code-surface) 92%, transparent);
+    color: var(--bel-ui-code-text);
+    font-family: var(--bel-font-mono);
+    font-size: var(--bel-text-2xs);
+    cursor: pointer;
+    transition:
+      color var(--bel-duration-state) var(--bel-ease),
+      border-color var(--bel-duration-state) var(--bel-ease);
+  }
+  .pg-debug:hover:not(:disabled) { color: var(--bel-ui-code-accent); }
+  .pg-debug.is-active {
+    color: var(--bel-ui-code-accent);
+    border-color: var(--bel-ui-code-accent);
+  }
+  .pg-debug:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
   .pg-run {
     position: absolute;
     top: 10px;
@@ -577,6 +615,18 @@ const codeLines = code ? code.split("\n").length : 0;
      mode. */
   .pg-source :global(.cm-step-line) {
     background: color-mix(in srgb, var(--bel-ui-code-accent) 15%, transparent);
+  }
+  /* A span that binds a value, while debug mode is on: a box the reader aims
+     at, drawn on the characters rather than the line, since a statement binds
+     where it spells the name. The selected ones are filled. */
+  .pg-source :global(.cm-debug-box) {
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--bel-ui-code-accent) 50%, transparent);
+    cursor: pointer;
+  }
+  .pg-source :global(.cm-debug-box.is-on) {
+    background: color-mix(in srgb, var(--bel-ui-code-accent) 30%, transparent);
+    box-shadow: 0 0 0 1px var(--bel-ui-code-accent);
   }
   /* Every place the clicked bundle is named: the operands of a construction,
      the arguments of a flatten, a filter. Marked on the characters rather
@@ -1052,6 +1102,13 @@ const codeLines = code ? code.split("\n").length : 0;
     setStepLineOn,
     setErrorLineOn,
   } from "../lib/cm-step-marker";
+  import {
+    debugExtensions,
+    debugIsOn,
+    setDebugBoxesOn,
+    setDebugModeOn,
+    type DebugBox,
+  } from "../lib/cm-debug-boxes";
   import { refMarkExtensions, setRefSpansOn } from "../lib/cm-ref-marks";
   import { initBelHighlight, belHighlighting } from "../lib/cm-bel-highlight";
   import { parseFold, type FoldScene, type Statement, type Vec2 } from "@beloch/scene";
@@ -1062,16 +1119,19 @@ const codeLines = code ? code.split("\n").length : 0;
     WEB_THEME,
     type Theme,
   } from "@beloch/render-svg";
-  import { createRuntime, renderCommand, type View } from "@beloch/runtime";
+  import { createRuntime, renderCommand, sameEntity, type View } from "@beloch/runtime";
   import { SCHEMES, STORAGE_KEY, DEFAULT_ID, applyScheme, resolveScheme } from "../lib/paper-schemes";
   import { lineOfSpan, lookupEntity, type EntityRef } from "../lib/inspect-lookup";
   import { segMatchesLine } from "../lib/stack-picker";
   import { hoverSummary, segmentRows, edgeSegmentRows } from "../lib/tooltip-content";
   import { bundleElements } from "../lib/bundle-highlight";
   import {
+    debugTargets,
     entitiesAtLine,
     refSpansFor,
     sourceLineOf,
+    type DebugTarget,
+    type SpanPos,
   } from "@beloch/runtime-editor";
   import { createPick } from "@beloch/runtime-pick";
   import {
@@ -1287,13 +1347,14 @@ const codeLines = code ? code.split("\n").length : 0;
     const stepNext = root.querySelector<HTMLButtonElement>(".pg-step-next");
     const inspectPanel = root.querySelector<HTMLElement>(".pg-inspect");
     const errorBox = root.querySelector<HTMLDivElement>(".pg-error");
+    const debugBtn = root.querySelector<HTMLButtonElement>(".pg-debug");
     const exportToggle = root.querySelector<HTMLButtonElement>(".pg-export-toggle");
     const exportPanel = root.querySelector<HTMLDivElement>(".pg-export");
     // Queried here rather than beside the export wiring below, because
     // renderStep reaches for them through updateExportPanel and runs first.
     const exportSaid = exportPanel?.querySelector<HTMLParagraphElement>(".pg-export-said") ?? null;
     const exportStepLine = exportPanel?.querySelector<HTMLParagraphElement>(".pg-export-step") ?? null;
-    if (!sourceMount || !runBtn || !result || !canvas || !resetBtn || !runHint || !stepsBar || !stepDots || !stepLabel || !stepPrev || !stepNext || !inspectPanel || !errorBox || !exportToggle || !exportPanel) return;
+    if (!sourceMount || !runBtn || !result || !canvas || !resetBtn || !runHint || !stepsBar || !stepDots || !stepLabel || !stepPrev || !stepNext || !inspectPanel || !errorBox || !exportToggle || !exportPanel || !debugBtn) return;
 
     const panZoom = createPanZoom(result, canvas, resetBtn);
     // A build-time `seed` SVG is already in the canvas; enable pan/zoom + the
@@ -1355,6 +1416,7 @@ const codeLines = code ? code.split("\n").length : 0;
       if (editor.state.doc.toString() !== runState.answered) {
         setStepLineOn(editor, null);
       }
+      updateDebugButton();
     }
 
     const editor = new EditorView({
@@ -1362,6 +1424,7 @@ const codeLines = code ? code.split("\n").length : 0;
         doc: initialCode,
         extensions: [
           ...stepMarkerExtensions(),
+          ...debugExtensions({ onPick: (id) => pickDebugTarget(id) }),
           ...refMarkExtensions,
           basicSetup,
           ...(highlighter ? [belHighlighting(highlighter)] : []),
@@ -1375,6 +1438,13 @@ const codeLines = code ? code.split("\n").length : 0;
                 key: "Mod-Enter",
                 run: () => {
                   runBtn.click();
+                  return true;
+                },
+              },
+              {
+                key: "Mod-Shift-d",
+                run: () => {
+                  debugBtn.click();
                   return true;
                 },
               },
@@ -1608,6 +1678,105 @@ const codeLines = code ? code.split("\n").length : 0;
     // (see renderChoice).
     const pick = createPick(runtime);
 
+    // Debug mode: what the program binds, boxed in the source, with a click
+    // adding that value to the selection. The spans come out of the document
+    // the run answered, so the mode is only offered while the text in the
+    // editor is the text that was run; entering it turns the editor read-only,
+    // which keeps the two from parting company while it is on.
+    //
+    // The selection it fills is the core's, the same list a pick in the drawing
+    // settles. Neither side knows about the other: both dispatch the same
+    // event.
+    let documentSource: string | null = null;
+    let debugList: DebugTarget[] = [];
+
+    const textAt = (span: SpanPos): string | null => {
+      const doc = editor.state.doc;
+      if (span.fromLine < 1 || span.fromLine > doc.lines) return null;
+      if (span.toLine !== span.fromLine) return null;
+      const line = doc.line(span.fromLine);
+      if (span.toCol - 1 > line.length) return null;
+      return line.text.slice(span.fromCol - 1, span.toCol - 1);
+    };
+
+    const offsetsOf = (span: SpanPos): { from: number; to: number } | null => {
+      const doc = editor.state.doc;
+      if (span.fromLine < 1 || span.fromLine > doc.lines) return null;
+      if (span.toLine < span.fromLine || span.toLine > doc.lines) return null;
+      const from = doc.line(span.fromLine).from + span.fromCol - 1;
+      const to = doc.line(span.toLine).from + span.toCol - 1;
+      return to > from && to <= doc.length ? { from, to } : null;
+    };
+
+    // A target whose span was derived from the head of a statement claims what
+    // it should spell; a statement that does not spell it there binds the name
+    // somewhere else, and the write's own box covers the value instead.
+    const spellsItself = (target: DebugTarget): boolean =>
+      target.spelling === null || textAt(target.span) === target.spelling;
+
+    const debugAvailable = (): boolean =>
+      currentScene() !== null && documentSource === editor.state.doc.toString();
+
+    function buildDebugTargets() {
+      const scene = currentScene();
+      debugList = scene === null ? [] : debugTargets(scene).filter(spellsItself);
+    }
+
+    function refreshDebugBoxes() {
+      const selection = runtime.state.selection;
+      const boxes: DebugBox[] = [];
+      debugList.forEach((target, id) => {
+        const at = offsetsOf(target.span);
+        if (at === null) return;
+        boxes.push({
+          ...at,
+          id,
+          on: selection.some((e) => sameEntity(e, target.entity)),
+        });
+      });
+      setDebugBoxesOn(editor, boxes);
+    }
+
+    // A click takes a value in or out, and several stand at once. The order of
+    // the list follows the order of the clicks, which is the order the drawing
+    // lights them in.
+    function pickDebugTarget(id: number) {
+      const target = debugList[id];
+      if (target === undefined) return;
+      const selection = runtime.state.selection;
+      const entities = selection.some((e) => sameEntity(e, target.entity))
+        ? selection.filter((e) => !sameEntity(e, target.entity))
+        : [...selection, target.entity];
+      runtime.dispatch({ type: "selection/set", entities });
+      relight();
+      refreshDebugBoxes();
+    }
+
+    function updateDebugButton() {
+      const on = debugIsOn(editor.state);
+      debugBtn!.disabled = !on && !debugAvailable();
+      debugBtn!.classList.toggle("is-active", on);
+      debugBtn!.setAttribute("aria-pressed", on ? "true" : "false");
+    }
+
+    // Leaving the mode leaves the selection standing and takes the boxes away.
+    function setDebugOn(on: boolean) {
+      if (on && !debugAvailable()) return;
+      if (on) buildDebugTargets();
+      setDebugModeOn(editor, on);
+      if (on) refreshDebugBoxes();
+      updateDebugButton();
+    }
+
+    if (!hero) {
+      debugBtn.addEventListener("click", () => setDebugOn(!debugIsOn(editor.state)));
+      // A selection settled in the drawing lights its box too, so the two
+      // sides show one answer.
+      runtime.subscribe(() => {
+        if (debugIsOn(editor.state)) refreshDebugBoxes();
+      });
+    }
+
     // A scene with statements has a timeline, and every step of it goes
     // through the occlusion pipeline, step 0's flat sheet included. A scene
     // without them has one drawing, the crease pattern. So the statement list
@@ -1804,6 +1973,7 @@ const codeLines = code ? code.split("\n").length : 0;
       r.kind === "crease" ? `c:${r.creaseId}`
       : r.kind === "edge" ? `e:${r.name}`
       : r.kind === "face" ? `f:${r.index}`
+      : r.kind === "construction" ? `l:${r.name}`
       : `v:${r.index}`;
     // Map a screen (client) point into the SVG's own user space, where the
     // rendered line coords and makeLayout output live. getScreenCTM folds in
@@ -2215,6 +2385,16 @@ const codeLines = code ? code.split("\n").length : 0;
     // the build embedded, so both build the scrubber the same way.
     function showDocument(scene: FoldScene) {
       clearStepsUI();
+      // The spans in the document point into the source it was evaluated from,
+      // which is the editor's text at this moment: a run answers the text that
+      // was sent, and the seed path parses the FOLD the build made of the text
+      // the pane opened with.
+      documentSource = runState.answered ?? editor.state.doc.toString();
+      if (debugIsOn(editor.state)) {
+        buildDebugTargets();
+        refreshDebugBoxes();
+      }
+      updateDebugButton();
       if (scene.writes.length > 0) {
         buildStepsUI(scene.writes);
         const target = pendingSharedStep;
