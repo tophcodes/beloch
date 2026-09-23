@@ -24,6 +24,10 @@ business happening while the reader is typing.
 
 ## What gets built
 
+**The stepper stops at every write.** A fold, a reverse, a flip, a flatten and
+a mark: wherever the paper changed, whether it moved or was only scored. This
+is where it stops today, and ADR 0026 states the axis that way.
+
 **The step marker marks one line.** The line of the statement the drawing
 stands at, as it did before the block. The block wash, the bar over every line
 of a block and the per-block bars in the left lane all go.
@@ -84,12 +88,6 @@ is the design brief's business.
 
 ## Open
 
-- **Does the stepper stop at a mark?** A mark is a write that scores and moves
-  nothing, so it is not a motion in the sense of ADR 0025, and the first axis
-  as that record states it would skip it. The playground stops there today, and
-  a mark does change the drawing. Either the stepper stops wherever the picture
-  changes, and ADR 0026's first axis is writes rather than effective writes, or
-  it walks the states and a mark is reached by clicking its line. Undecided.
 - **What a box surrounds.** The whole line, or the span that binds. Spans are
   more precise and need the span data above; lines are cheaper and wrong for a
   statement that binds twice.

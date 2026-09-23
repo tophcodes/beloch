@@ -42,14 +42,19 @@ interface invented.
 program has moved since that state began. Written `2.3`: the third statement
 standing on the second folded state.
 
-**The first axis counts motions** in the sense of ADR 0025: writes that leave
-the refinement class.
+**The first axis counts writes.** Every `fold`, `reverse`, `flip`, `flatten`
+and `mark`. The axis asks whether the paper changed, and a score changes it:
+the sheet carries a scar it did not carry before, which the drawing shows and
+a reader steps to. That an effective write moves the state and a score leaves
+it standing up to refinement (ADR 0025) still separates the two inside the
+axis, and a renderer needs that separation: a fold crossfades between two
+placements, a mark draws on the placement that is already there.
 
-**The second axis counts statements**, and it treats a score and a bound read
-alike. Both add to a state that does not move: a mark scars the paper, a
-binding names a read of it. The language knows both as statements, the model
-knows neither as an event, and an interface showing what the program gained has
-no reason to separate them.
+**The second axis counts statements**, all of them, including the writes the
+first axis already counted. It answers where in the program a position stands,
+which the first axis cannot: a binding moves it and moves no paper. The model
+knows a bound read as no event at all, so this axis belongs to the language
+alone.
 
 **The FOLD carries both.** `beloch:statements` logs every top-level statement
 in source order, each carrying the kind that says which axis it moves, its
@@ -86,8 +91,10 @@ gives the runtime core a document slot rather than an evaluator.
 - A FOLD written before this change carries fewer entries. The parser keeps
   reading it: a statement without a kind is a state-changing one, which is what
   the old list held.
-- The stepper keeps walking the states. The source column shows every
-  statement, so a declaration is visible on its own without gaining a stop.
+- The stepper keeps walking the writes, which is where it stops today. What
+  the second axis buys is the editor, which can say what each statement binds
+  and offer it; `docs/superpowers/specs/2026-09-23-editor-debug-selection-design.md`
+  builds that.
 - `beloch:named_points[].statement` changes meaning: it becomes the statement
   that binds the point rather than the next state-changing one. The old reading
   was a workaround for the missing entries.
