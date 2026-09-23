@@ -54,13 +54,15 @@ export function renderCommand(state: State, options: RenderOptions): RenderComma
   // line, moving the cursor away must not take the answer with it.
   const settled = state.selection.length > 0;
   const highlight: EntityRef[] = settled ? state.selection : state.hover ? [state.hover] : [];
-  if (scene.statements.length === 0) {
+  if (scene.writes.length === 0) {
     // No timeline, so every construction the program named is in the drawing.
     return { kind: "cp-only", constructions: scene.namedLines.map((l) => l.name), highlight, settled };
   }
   // Step 0 is the sheet before any statement ran, so it carries no
-  // statement's creases and no marks.
-  const stmt = step === 0 ? null : scene.statements[step - 1] ?? null;
+  // statement's creases and no marks. The step counts writes; what a crease is
+  // dated by is the index of its statement in the program (ADR 0026), which is
+  // the index the write carries.
+  const stmt = step === 0 ? null : scene.writes[step - 1] ?? null;
   const marks = stmt ? stmt.keptMarks : [];
   const newestCreaseId = marks.at(-1)?.creaseId ?? null;
   // A named line is dated by the frame it was bound against, which is the
@@ -70,7 +72,7 @@ export function renderCommand(state: State, options: RenderOptions): RenderComma
   if (options.view === "cp") {
     return {
       kind: "flat",
-      upToStatement: step - 1,
+      upToStatement: stmt ? stmt.index : -1,
       marks,
       newestCreaseId,
       constructions,

@@ -1472,7 +1472,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // rather than which state it shows, so the view and the step stay put.
     function rerenderCurrent(fade: FadeLength | null = null) {
       if (!currentScene()) return;
-      if (currentStatements().length > 0) renderStep(currentStep(), true, fade !== null, fade);
+      if (currentWrites().length > 0) renderStep(currentStep(), true, fade !== null, fade);
       else drawCurrent(true, fade);
     }
 
@@ -1592,7 +1592,8 @@ const codeLines = code ? code.split("\n").length : 0;
     const runtime = createRuntime();
     const renderer = createDomRenderer(canvas);
     const currentScene = (): FoldScene | null => runtime.state.scene;
-    const currentStatements = (): Statement[] => runtime.state.scene?.statements ?? [];
+    // What the stepper walks: the statements that changed the paper (ADR 0026).
+    const currentWrites = (): Statement[] => runtime.state.scene?.writes ?? [];
     const currentStep = (): number => runtime.state.step;
     // The step a shared `?s=` names, held until the run behind it produces one
     // (see the bottom of setup).
@@ -1625,12 +1626,12 @@ const codeLines = code ? code.split("\n").length : 0;
     // through the occlusion pipeline, step 0's flat sheet included. A scene
     // without them has one drawing, the crease pattern. So the statement list
     // doubles as the view accessor, with no separate mode flag.
-    const inFoldedView = () => currentStatements().length > 0;
+    const inFoldedView = () => currentWrites().length > 0;
     // beloch:inspect carries the FINAL fold's geometry only; the stepper renders
     // a different (partial) placement per step, so any inspect-geometry path
     // (proximity detection, ghosting hidden segments) is valid only on the last
     // step. Off it, hover falls back to the per-step DOM data-crease-id.
-    const onFinalStep = () => currentStatements().length === 0 || currentStep() === currentStatements().length;
+    const onFinalStep = () => currentWrites().length === 0 || currentStep() === currentWrites().length;
 
     // Tolerance shared by proximity detection and the hidden-segment test,
     // in SVG user units (~px at 1:1 zoom). pointSegDist comes from
@@ -2124,12 +2125,12 @@ const codeLines = code ? code.split("\n").length : 0;
       resetBtn.hidden = false;
     };
 
-    // Rebuilds the scrubber's dots for a freshly-parsed set of statements
-    // (called once per successful run, not per statement-click). The timeline
-    // has n+1 stops: index 0 is the flat starting sheet, 1..n each statement.
-    // Hidden when there's nothing to navigate (no statements at all).
-    function buildStepsUI(statements: Statement[]) {
-      const n = statements.length;
+    // Rebuilds the scrubber's dots for a freshly-parsed set of writes (called
+    // once per successful run, not per step-click). The timeline has n+1 stops:
+    // index 0 is the flat starting sheet, 1..n each write. Hidden when there is
+    // nothing to navigate, which a program that folds nothing asks for.
+    function buildStepsUI(writes: Statement[]) {
+      const n = writes.length;
       stepDots!.innerHTML = "";
       if (n < 1) {
         stepsBar!.hidden = true;
@@ -2164,8 +2165,8 @@ const codeLines = code ? code.split("\n").length : 0;
 
     // Cheap per-step-change update: toggles the active dot + label text,
     // without touching event listeners (buildStepsUI owns those).
-    function updateStepsUI(i: number, statements: Statement[]) {
-      const n = statements.length;
+    function updateStepsUI(i: number, writes: Statement[]) {
+      const n = writes.length;
       stepDots!.querySelectorAll<HTMLButtonElement>(".pg-step-dot").forEach((dot, idx) => {
         dot.classList.toggle("is-active", idx === i);
         dot.classList.toggle("is-past", idx < i);
@@ -2176,7 +2177,7 @@ const codeLines = code ? code.split("\n").length : 0;
       // for it. It comes out of the source the evaluator answered rather than
       // the text in the editor, because the two part company on the next
       // keystroke and the drawing belongs to the run.
-      const line = i === 0 ? null : statements[i - 1]?.sourceLine ?? null;
+      const line = i === 0 ? null : writes[i - 1]?.sourceLine ?? null;
       const said = line === null ? null : (runState.answered?.split("\n")[line - 1] ?? null);
       stepLabel!.textContent =
         i === 0 ? `0/${n} · empty paper` : `${i}/${n} · ${said?.trim() || `step ${i}`}`;
@@ -2197,13 +2198,13 @@ const codeLines = code ? code.split("\n").length : 0;
     // the tab, or the line style, shows the same state drawn differently.
     function renderStep(i: number, keepView = true, animate = false, fadeOverride: FadeLength | null = null) {
       const scene = currentScene();
-      const statements = currentStatements();
-      if (!scene || statements.length === 0) return;
+      const writes = currentWrites();
+      if (!scene || writes.length === 0) return;
       // Out-of-range steps are the runtime's to clamp, so a shared link with a
       // step from a longer program lands on the last one.
       runtime.dispatch({ type: "step/to", index: i });
       const clamped = currentStep();
-      const stmt = clamped === 0 ? null : statements[clamped - 1]!;
+      const stmt = clamped === 0 ? null : writes[clamped - 1]!;
       // A mark folds nothing, so it changes the view rather than the paper. A
       // crease pattern never folds either: the sheet stays flat and gains a
       // line. Step 0 arrives at the sheet, which is no fold either.
@@ -2219,7 +2220,7 @@ const codeLines = code ? code.split("\n").length : 0;
         showError(`Render error: ${err instanceof Error ? err.message : String(err)}`);
         return;
       }
-      updateStepsUI(clamped, statements);
+      updateStepsUI(clamped, writes);
       updateExportPanel();
     }
 
@@ -2228,11 +2229,11 @@ const codeLines = code ? code.split("\n").length : 0;
     // the build embedded, so both build the scrubber the same way.
     function showDocument(scene: FoldScene) {
       clearStepsUI();
-      if (scene.statements.length > 0) {
-        buildStepsUI(scene.statements);
+      if (scene.writes.length > 0) {
+        buildStepsUI(scene.writes);
         const target = pendingSharedStep;
         pendingSharedStep = null;
-        renderStep(target ?? scene.statements.length, false);
+        renderStep(target ?? scene.writes.length, false);
       } else {
         // No fold and no mark statement: one drawing, no timeline.
         drawCurrent();
@@ -2352,7 +2353,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // the panel is shut (B3.11).
     function updateExportPanel() {
       if (!exportStepLine) return;
-      const n = currentStatements().length;
+      const n = currentWrites().length;
       exportStepLine.textContent = n > 0 ? `step ${currentStep()} of ${n}` : "crease pattern";
     }
 
@@ -2471,7 +2472,7 @@ const codeLines = code ? code.split("\n").length : 0;
       const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
       const a = document.createElement("a");
       a.href = url;
-      a.download = currentStatements().length > 0 ? `beloch-step-${currentStep()}.svg` : "beloch.svg";
+      a.download = currentWrites().length > 0 ? `beloch-step-${currentStep()}.svg` : "beloch.svg";
       a.click();
       URL.revokeObjectURL(url);
       say("SVG downloaded");

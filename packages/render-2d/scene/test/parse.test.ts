@@ -20,7 +20,11 @@ test("parses bisect-a: CP frame, provenance, named points/lines, creases", async
   // extreme_pair(a,b) over the face clip endpoints, which orders b=(0.5,1)
   // before a=(0.5,0) here, giving [-1,0,-0.5] (same line as [1,0,0.5], sign
   // flipped) — deterministic, matches the golden.
-  expect(scene.namedLines).toEqual([{ name: "v", coeffs: [-1, 0, -0.5], step: 0 }]);
+  // bisect-a.fold predates beloch:named_lines[].statement too, so the line
+  // reports null there, as the point below does.
+  expect(scene.namedLines).toEqual([
+    { name: "v", coeffs: [-1, 0, -0.5], step: 0, statement: null },
+  ]);
   expect(scene.namedPoints.map((p) => p.name).sort()).toEqual(["a", "b", "c", "d"]);
   // bisect-a.fold predates beloch:named_points[].statement, so the point
   // reports null there and the renderer falls back to showing it.

@@ -86,7 +86,7 @@ const segmentsFor = (scene: FoldScene, ref: EntityRef): InspectSegment[] => {
 // they would place geometry over a different placement of the paper.
 function drawsFinalFold(scene: FoldScene, command: RenderCommand): boolean {
   if (command.kind !== "folded") return false;
-  const last = scene.statements.at(-1);
+  const last = scene.writes.at(-1);
   return last !== undefined && command.frame === last.frameIndex;
 }
 

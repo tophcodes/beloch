@@ -30,15 +30,22 @@ export interface Step {
   frame: Frame;                                              // self-contained (merged over root)
 }
 
-// beloch:statements — one entry per fold- or mark-producing top-level
-// statement, source order. A mark entry embeds its OWN mark geometry as
-// recorded at that statement (not a beloch:marks lookup — a mark that
-// later graduates into a real crease is dropped from beloch:marks, but its
-// Statement.mark here is unaffected). Contract: spec/FOLD.md.
+// Which axis a statement moves (ADR 0026). "fold" and "mark" are the writes:
+// the paper moved, or it was scored and stands where it was. "bind" moves the
+// program alone — a point, a construction line, a bundle, a definition, an
+// export.
+export type StatementKind = "fold" | "mark" | "bind";
+
+// beloch:statements — one entry per top-level statement, source order. A mark
+// entry embeds its OWN mark geometry as recorded at that statement (not a
+// beloch:marks lookup — a mark that later graduates into a real crease is
+// dropped from beloch:marks, but its Statement.mark here is unaffected).
+// Contract: spec/FOLD.md.
 export interface Statement {
   index: number;
-  kind: "fold" | "mark";
+  kind: StatementKind;
   sourceLine: number;                                        // beloch:statements[i].source_line — always present (every stmt has a span)
+  span: string | null;                                       // beloch:statements[i].span; null on a FOLD written before the field existed
   frameIndex: number;                                        // beloch:statements[i].frame_index — index into scene.steps
   mark: Mark | null;                                          // present only for kind: "mark"
   keptMarks: Mark[];                                          // beloch:statements[i].kept_marks — marks still dangling as of this statement (not yet graduated into a real crease)
@@ -58,7 +65,11 @@ export interface NamedPoint {
   step: number;                                              // frame counter
   statement: number | null;                                  // index into scene.statements; null on a FOLD written before the field existed
 }
-export interface NamedLine  { name: string; coeffs: LineCoeffs; step: number; }
+export interface NamedLine {
+  name: string; coeffs: LineCoeffs;
+  step: number;                                              // frame counter
+  statement: number | null;                                  // index into scene.statements; null on a FOLD written before the field existed
+}
 export interface CreaseSegment { edgeIndex: number; a: Vec2; b: Vec2; }
 export interface Crease { name: string; segments: CreaseSegment[]; }
 
@@ -123,7 +134,8 @@ export interface Inspect {
 export interface FoldScene {
   cp: Frame;
   steps: Step[];                                             // one per foldedForm frame, file order
-  statements: Statement[];                                   // one per fold/mark statement, source order
+  statements: Statement[];                                   // every statement, source order — the axis a reader of the program walks
+  writes: Statement[];                                       // the statements that changed the paper, source order — the axis the stepper walks
   references: SourceRef[];                                   // every mention of a crease name in the source
   namedPoints: NamedPoint[];
   namedLines: NamedLine[];

@@ -1,10 +1,11 @@
 import type { Event } from "./events";
 import type { EntityRef, State } from "./state";
 
-// Statement index range: 0 is the sheet before any statement ran, n means
-// every statement has been applied.
-const clampStep = (index: number, statements: number): number =>
-  Math.max(0, Math.min(index, statements));
+// Step range: 0 is the sheet before any statement ran, n means every write has
+// been applied. The stepper walks the writes (ADR 0026), so a binding statement
+// is no stop of its own.
+const clampStep = (index: number, writes: number): number =>
+  Math.max(0, Math.min(index, writes));
 
 const sameEntity = (a: EntityRef | null, b: EntityRef | null): boolean => {
   if (a === null || b === null) return a === b;
@@ -39,7 +40,7 @@ export function reduce(state: State, event: Event): State {
       return {
         ...state,
         scene: event.scene,
-        step: event.scene === null ? 0 : event.scene.statements.length,
+        step: event.scene === null ? 0 : event.scene.writes.length,
         selection: [],
         hover: null,
       };
@@ -48,7 +49,7 @@ export function reduce(state: State, event: Event): State {
       // Without a document there is no range to clamp against, so the step
       // has nothing to mean yet.
       if (!state.scene) return state;
-      const step = clampStep(event.index, state.scene.statements.length);
+      const step = clampStep(event.index, state.scene.writes.length);
       if (step === state.step) return state;
       return { ...state, step };
     }
