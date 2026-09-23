@@ -22,9 +22,10 @@ The model's meaning of a program is the sequence of states it passes through
 (`BELOCH.md`, "A program is a path"). The file records that sequence: the
 top-level dictionary is frame 0, the flat sheet with every crease drawn on it
 in paper coordinates, and `file_frames` holds one `foldedForm` frame per
-statement, each a flat folded state ([def-flat-state](/model/#def-flat-state))
-in table coordinates. A reader that wants only the result takes the last
-frame; a reader that wants the diagram sequence takes them all.
+statement that moved the paper, each a flat folded state
+([def-flat-state](/model/#def-flat-state)) in table coordinates. A reader that
+wants only the result takes the last frame; a reader that wants the diagram
+sequence takes them all.
 
 A program with several sheets (the sheet-as-value design) keeps this shape: a
 frame holds every sheet as its own connected component of the planar graph,
@@ -68,8 +69,14 @@ What the language knows about a state and FOLD cannot say:
   (ADR 0019).
 - `beloch:source_line`, on each folded frame: the source line of the
   statement that produced the frame.
-- `beloch:statements`: one entry per state-changing statement in source order,
-  a sourcemap from the program to the frames.
+- `beloch:statements`: one entry per top-level statement in source order, a
+  sourcemap from the program to the frames. Each entry carries the `kind` that
+  says which axis it moves (ADR 0026), its `source_line` and its `span`, and
+  the `frame_index` of the frame it reads against. `fold` and `mark` are the
+  writes: the paper moved, or it was scored and stands where it was. `bind`
+  moves the program alone, which a point, a construction line, a bundle, a
+  definition and an export all do. A reader stepping through the fold sequence
+  walks the writes; a reader of the program walks every entry.
 - `beloch:references`: one entry per resolved mention of a crease name in the
   source, each with the `span` it occupies and what it names: a `crease_id`,
   or `edge` for a paper boundary. The arguments of a `flatten`, the operands
@@ -78,12 +85,12 @@ What the language knows about a state and FOLD cannot say:
   these say where it is *used*, which no consumer can recover by re-reading
   the text, since one spelling names different creases inside a `def` body
   and after a `--x!` rebinding. Deduplicated by (target, span).
-- `beloch:named_points[].statement`: the statement a point belongs to, as an
-  index into `beloch:statements`. A construction statement (`.m = --v * --ab`)
-  changes no state and is not logged, so the index is the one the next
-  state-changing statement takes: the first stop at which the point can
-  matter. The `step` beside it counts frames and cannot separate two points
-  bound between the same pair of folds.
+- `beloch:named_points[].statement` and `beloch:named_lines[].statement`: the
+  statement that binds the name, as an index into `beloch:statements`. The
+  `step` beside it counts frames and cannot separate two names bound between
+  the same pair of folds. A FOLD written before every statement was logged
+  reports the next state-changing statement instead, which is what the field
+  meant then.
 - `beloch:vertices_names`, `beloch:named_points`, `beloch:named_lines` with
   `beloch:named_lines_frame`: the names a program gave to points and lines,
   mapped to vertices and to lines. See

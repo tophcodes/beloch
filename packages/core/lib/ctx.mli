@@ -8,7 +8,11 @@
 val corners : (string * Geom.point) list
 (** The four paper corners, keyed "a" "b" "c" "d". *)
 
-type stmt_kind = SFold | SMark
+type stmt_kind = SFold | SMark | SBind
+(** Which axis a statement moves (ADR 0026). [SFold] and [SMark] are writes:
+    the paper moved, or it was scored and stands where it was. [SBind] moves
+    the program alone — a point, a construction line, a bundle, a definition,
+    an apply that folds nothing, an export. *)
 
 type stmt_log_entry = {
   sl_kind : stmt_kind;
@@ -16,19 +20,20 @@ type stmt_log_entry = {
   sl_frame_index : int;
       (** Index into [ctx.frames_rev] (reversed) of the frame this
           statement's geometry reads against — the just-pushed frame for
-          [SFold], the most-recently pushed frame for [SMark] (marks don't
-          fold anything). *)
+          [SFold], the most-recently pushed frame for [SMark] and [SBind]
+          (neither folds anything). *)
   sl_mark : Fold_state.mark option;
       (** The mark AS RECORDED by this statement, captured at record-time —
           independent of whether it later graduates into a real crease
           (which only happens at some LATER fold statement, or never). [None]
-          for [SFold]. *)
+          for [SFold] and [SBind]. *)
   sl_kept : Fold_state.mark list;
       (** Marks still dangling (not yet graduated into a real crease) as of
           immediately after this statement. [SMark] inherits the previous
           statement's [sl_kept] and appends its own new mark, unchecked;
           [SFold] recomputes fresh via [Fold_state.mark_graduates] against
-          the just-folded state. *)
+          the just-folded state; [SBind] inherits it unchanged, since a
+          binding leaves every mark where it was. *)
 }
 
 type free_info = {
@@ -60,7 +65,7 @@ type instance = {
   ipoints : (string, Geom.point) Hashtbl.t;
   ilines : (string, crease_val) Hashtbl.t;
   ipoint_steps : (string, int * int) Hashtbl.t;
-  iline_steps : (string, int) Hashtbl.t;
+  iline_steps : (string, int * int) Hashtbl.t;
 }
 (** A landed [apply] instance's member tables, copied from the def body's own
     scope at apply-time. *)
@@ -70,10 +75,11 @@ type scope = {
   lines : (string, crease_val) Hashtbl.t;
   instances : (string, instance) Hashtbl.t;
   point_steps : (string, int * int) Hashtbl.t;
-  line_steps : (string, int) Hashtbl.t;
+  line_steps : (string, int * int) Hashtbl.t;
       (** Creation step of each name bound in [points]/[lines] (respectively)
           within this scope, recorded at bind time by [bind_point]/
-          [bind_crease] as [List.length ctx.frames_rev]. Kept as two tables
+          [bind_crease] as [List.length ctx.frames_rev] and the index of the
+          statement that binds the name ([stmt_index]). Kept as two tables
           (not one keyed by bare name) because points and lines are separate
           namespaces: a point and a line may share a stem (`.m` / `--m`). *)
 }
@@ -162,5 +168,10 @@ val stmt_index : ctx -> int
     `beloch:statements` log. Provenance records are built while their
     statement runs, strictly before its log entry is pushed, so the current
     log length is that statement's own index. *)
+
+val push_bind : ctx -> Error.span -> unit
+(** Log a statement that bound a name and moved no paper, at its own span.
+    Called once per top-level statement that logged nothing of its own, so
+    every statement appears on the second axis. *)
 
 val push_frame : ctx -> Error.span option -> unit

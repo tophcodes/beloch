@@ -6,7 +6,7 @@ open Ctx
 (* Re-exported so the public [Eval] surface is unchanged for fold_emit,
    session, the test suites and packages/www/public/beloch/beloch-eval.js. *)
 type snapshot = Ctx.snapshot
-type stmt_kind = Ctx.stmt_kind = SFold | SMark
+type stmt_kind = Ctx.stmt_kind = SFold | SMark | SBind
 type stmt_log_entry = Ctx.stmt_log_entry = {
   sl_kind : stmt_kind;
   sl_span : Error.span;
@@ -28,7 +28,7 @@ type folded = {
   named_points : (string * Geom.point * int * int) list;
       (* [int] is the 0-based creation step (index into [frames] at bind
          time); see [scope.point_steps]/[scope.line_steps] *)
-  named_lines : (string * Geom.line * int) list;
+  named_lines : (string * Geom.line * int * int) list;
   named_line_cids : (string * int) list;
       (* crease id per name for [Material]/[Mark] creases — the identity the
          line coefficients in [named_lines] lose (a folded crease's current
@@ -646,7 +646,7 @@ let eval_export (ctx : Ctx.ctx) (entries_opt : Ast.export_entry list option)
               (Printf.sprintf "instance $%s has no point member %s" iname src))
     | `Line -> (
         let step =
-          Option.value (Hashtbl.find_opt inst.iline_steps src) ~default:0
+          Option.value (Hashtbl.find_opt inst.iline_steps src) ~default:(0, 0)
         in
         match Hashtbl.find_opt inst.ilines src with
         | Some v ->
@@ -822,7 +822,9 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
     | None -> (0, 0)
   in
   let step_of_line n =
-    match Hashtbl.find_opt root_scope.line_steps n with Some s -> s | None -> 0
+    match Hashtbl.find_opt root_scope.line_steps n with
+    | Some s -> s
+    | None -> (0, 0)
   in
   (* Sorted by name: Hashtbl.fold/iter order depends on internal bucket
      layout, which differs between a fresh eval (insert in program order)
@@ -844,12 +846,13 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
       (fun k cv acc ->
         if is_temp k then acc
         else
+          let frame, stmt = step_of_line k in
           match cv with
-          | Frozen l -> (k, l, step_of_line k) :: acc
-          | Mark (_, l) -> (k, l, step_of_line k) :: acc
+          | Frozen l -> (k, l, frame, stmt) :: acc
+          | Mark (_, l) -> (k, l, frame, stmt) :: acc
           | Material (cid, l_orig) -> (
               match Fold_state.crease_axis !(ctx.state) cid l_orig with
-              | `Line l -> (k, l, step_of_line k) :: acc
+              | `Line l -> (k, l, frame, stmt) :: acc
               (* bent by a later fold, no material endpoints left, or folded
                  onto a single point: no single current line to emit, so omit
                  from the map rather than emit the stale frozen original *)
@@ -860,7 +863,7 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
              likewise not emitted. *)
           | Bundle _ | Edge _ -> acc)
       root_scope.lines []
-    |> List.sort (fun (a, _, _) (b, _, _) -> String.compare a b)
+    |> List.sort (fun (a, _, _, _) (b, _, _, _) -> String.compare a b)
   in
   let named_line_cids =
     Hashtbl.fold
@@ -904,7 +907,19 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
     pending = true;
   } in
   (match resume with Some s -> restore ctx s | None -> ());
-  List.iter (fun stmt -> eval_stmt ctx stmt; on_step ctx) prog;
+  (* A statement that logged nothing of its own bound a name and moved no
+     paper, so it gets its entry here: the second axis counts every statement
+     (ADR 0026). A write logs itself as it pushes its frame or records its
+     mark, and an `apply` whose body folds logs those inner writes instead of
+     itself. *)
+  List.iter
+    (fun stmt ->
+      let logged = List.length ctx.statements_rev in
+      eval_stmt ctx stmt;
+      if List.length ctx.statements_rev = logged then
+        Ctx.push_bind ctx (Spine.span_of_stmt stmt);
+      on_step ctx)
+    prog;
   build_output ctx root_scope
 
 let eval_folded (prog : Ast.program) : folded = eval_program prog

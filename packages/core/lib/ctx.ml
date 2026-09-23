@@ -7,7 +7,7 @@ let corners : (string * Geom.point) list =
     ("d", { Geom.x = q 0; y = q 1 });
   ]
 
-type stmt_kind = SFold | SMark
+type stmt_kind = SFold | SMark | SBind
 
 type stmt_log_entry = {
   sl_kind : stmt_kind;
@@ -57,7 +57,7 @@ type instance = {
   ipoints : (string, Geom.point) Hashtbl.t;
   ilines : (string, crease_val) Hashtbl.t;
   ipoint_steps : (string, int * int) Hashtbl.t;
-  iline_steps : (string, int) Hashtbl.t;
+  iline_steps : (string, int * int) Hashtbl.t;
       (* creation step of each member, copied from the def body's own
          [scope.point_steps]/[scope.line_steps] at apply-time; see those.
          Points and lines are separate namespaces (distinct sigils `.`/`--`),
@@ -71,7 +71,7 @@ type scope = {
   lines     : (string, crease_val) Hashtbl.t;
   instances : (string, instance) Hashtbl.t;
   point_steps : (string, int * int) Hashtbl.t;
-  line_steps  : (string, int) Hashtbl.t;
+  line_steps  : (string, int * int) Hashtbl.t;
       (* creation step of each name bound in points/lines (respectively)
          within THIS scope, recorded at bind time by [bind_point]/
          [bind_crease] as [List.length ctx.frames_rev]. A point carries the
@@ -197,7 +197,8 @@ let bind_crease (ctx : ctx) (name : string) (span : Error.span) (cv : crease_val
       (Printf.sprintf "crease --%s is already bound; only _-prefixed temps rebind"
          name);
   Hashtbl.replace s.lines name cv;
-  Hashtbl.replace s.line_steps name (List.length ctx.frames_rev)
+  Hashtbl.replace s.line_steps name
+    (List.length ctx.frames_rev, stmt_index ctx)
 
 (* The binding step of an `as NAME` / `as NAME!` output clause (BELOCH.md,
    Write statements). The name is checked when the clause is read, ahead of
@@ -237,7 +238,7 @@ type snapshot = {
   s_lines : (string, crease_val) Hashtbl.t;
   s_instances : (string, instance) Hashtbl.t;
   s_point_steps : (string, int * int) Hashtbl.t;
-  s_line_steps : (string, int) Hashtbl.t;
+  s_line_steps : (string, int * int) Hashtbl.t;
   s_defs : (string, int * Ast.param list * Ast.stmt list) Hashtbl.t;
   s_name_ctx : name_ctx;
   s_cur_def_idx : int option;
@@ -321,6 +322,22 @@ let restore (ctx : ctx) (s : snapshot) : unit =
       ctx.state := s.s_state;
       Fold_state.set_next_id s.s_next_id
   | _ -> failwith "Ctx.restore: expected a single root scope at a statement boundary"
+
+(* A statement that moved the program and left the paper where it was: a
+   point, a construction line, a bundle, a definition, an export, an apply
+   whose body folds nothing. The second axis counts these as well (ADR 0026),
+   which is what lets a reader of the program be told what each statement
+   binds. It reads against the frame already on screen and carries the marks
+   the statement before it left dangling. *)
+let push_bind (ctx : ctx) (sp : Error.span) =
+  let kept =
+    match ctx.statements_rev with prev :: _ -> prev.sl_kept | [] -> []
+  in
+  ctx.statements_rev <-
+    { sl_kind = SBind; sl_span = sp;
+      sl_frame_index = List.length ctx.frames_rev; sl_mark = None;
+      sl_kept = kept }
+    :: ctx.statements_rev
 
 let push_frame (ctx : ctx) (span : Error.span option) =
   ctx.frames_rev <- (!(ctx.state), span) :: ctx.frames_rev;

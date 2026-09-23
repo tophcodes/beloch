@@ -8,7 +8,7 @@ type snapshot = Ctx.snapshot
 (** Opaque incremental-eval checkpoint; see {!snapshot} / {!restore} and
     [Session]. *)
 
-type stmt_kind = Ctx.stmt_kind = SFold | SMark
+type stmt_kind = Ctx.stmt_kind = SFold | SMark | SBind
 
 type stmt_log_entry = Ctx.stmt_log_entry = {
   sl_kind : stmt_kind;
@@ -41,11 +41,12 @@ type folded = {
   state : Fold_state.t;
   named_points : (string * Geom.point * int * int) list;
       (** The two ints are the 0-based creation step (index into [frames] at
-          bind time) and the index of the statement the point belongs to in
-          the `beloch:statements` log. A construction statement is not
-          logged, so the second is the index the next state-changing
-          statement takes — the first stop at which the point can matter. *)
-  named_lines : (string * Geom.line * int) list;
+          bind time) and the index of the statement that binds the point in
+          the `beloch:statements` log. Every statement is logged (ADR 0026),
+          so the second is the binding statement's own index. *)
+  named_lines : (string * Geom.line * int * int) list;
+      (** Name, current line, and the same two counters a named point
+          carries: the creation frame and the statement that binds it. *)
   named_line_cids : (string * int) list;
       (** Crease id per name for [Material]/[Mark] creases — the identity the
           line coefficients in [named_lines] lose (a folded crease's current

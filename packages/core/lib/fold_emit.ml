@@ -273,8 +273,10 @@ let beloch_statements_json (statements : Eval.stmt_log_entry list) : Yojson.Safe
                `String
                  (match s.Eval.sl_kind with
                  | Eval.SFold -> "fold"
-                 | Eval.SMark -> "mark") );
+                 | Eval.SMark -> "mark"
+                 | Eval.SBind -> "bind") );
              ("source_line", `Int (fst s.Eval.sl_span).Lexing.pos_lnum);
+             ("span", `String (Error.span_to_string s.Eval.sl_span));
              ("frame_index", `Int s.Eval.sl_frame_index);
              ("kept_marks", `List (List.map mark_json s.Eval.sl_kept));
            ]
@@ -594,12 +596,13 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
   let beloch_named_lines =
     `Assoc
       (List.map
-         (fun (name, (l : Geom.line), step) ->
+         (fun (name, (l : Geom.line), step, stmt) ->
            ( name,
              `Assoc
                [
                  ("coeffs", `List [ q_to_json l.Geom.a; q_to_json l.Geom.b; q_to_json l.Geom.c ]);
                  ("step", `Int step);
+                 ("statement", `Int stmt);
                ] ))
          fd.Eval.named_lines)
   in
