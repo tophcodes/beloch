@@ -1119,7 +1119,13 @@ const codeLines = code ? code.split("\n").length : 0;
     WEB_THEME,
     type Theme,
   } from "@beloch/render-svg";
-  import { createRuntime, renderCommand, sameEntity, type View } from "@beloch/runtime";
+  import {
+    createRuntime,
+    renderCommand,
+    sameEntity,
+    toggleEntity,
+    type View,
+  } from "@beloch/runtime";
   import { SCHEMES, STORAGE_KEY, DEFAULT_ID, applyScheme, resolveScheme } from "../lib/paper-schemes";
   import { lineOfSpan, lookupEntity, type EntityRef } from "../lib/inspect-lookup";
   import { segMatchesLine } from "../lib/stack-picker";
@@ -1743,10 +1749,7 @@ const codeLines = code ? code.split("\n").length : 0;
     function pickDebugTarget(id: number) {
       const target = debugList[id];
       if (target === undefined) return;
-      const selection = runtime.state.selection;
-      const entities = selection.some((e) => sameEntity(e, target.entity))
-        ? selection.filter((e) => !sameEntity(e, target.entity))
-        : [...selection, target.entity];
+      const entities = toggleEntity(runtime.state.selection, target.entity);
       runtime.dispatch({ type: "selection/set", entities });
       relight();
       refreshDebugBoxes();

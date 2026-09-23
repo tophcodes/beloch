@@ -70,3 +70,10 @@ test("a span that binds nothing is offered to nobody", () => {
   // `paper square` on line 1 binds no name and scores nothing.
   expect(targets.some((t) => t.span.fromLine === 1)).toBe(false);
 });
+
+// What the stepper marks in the editor: the line of the statement the drawing
+// stands at, which is the write's own line at every step, the mark included.
+test("a step stands for the line of its own statement", () => {
+  expect(scene.writes.map((w) => w.sourceLine)).toEqual([2, 3, 6, 7]);
+  expect(scene.writes.map((w) => w.kind)).toEqual(["mark", "mark", "fold", "fold"]);
+});

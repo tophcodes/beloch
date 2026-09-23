@@ -23,6 +23,18 @@ export const sameEntity = (a: EntityRef | null, b: EntityRef | null): boolean =>
   return false;
 };
 
+// A selection with `entity` taken out where it was in, and appended where it
+// was not: one click of a reader picking values one at a time. The order of the
+// list follows the order of the clicks, which is the order a consumer lighting
+// several entities shows them in.
+export const toggleEntity = (
+  selection: readonly EntityRef[],
+  entity: EntityRef,
+): EntityRef[] =>
+  selection.some((e) => sameEntity(e, entity))
+    ? selection.filter((e) => !sameEntity(e, entity))
+    : [...selection, entity];
+
 // Order carries meaning here: a consumer that lights several entities decides
 // what the list means, and two orders are two answers.
 const sameEntities = (a: EntityRef[], b: EntityRef[]): boolean =>
