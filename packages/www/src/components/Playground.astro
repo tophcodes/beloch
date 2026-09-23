@@ -1013,7 +1013,7 @@ const codeLines = code ? code.split("\n").length : 0;
 
 <script>
   import { EditorView, basicSetup } from "codemirror";
-  import { EditorState } from "@codemirror/state";
+  import { EditorState, Prec } from "@codemirror/state";
   import { keymap } from "@codemirror/view";
   import {
     stepMarkerExtensions,
@@ -1339,15 +1339,20 @@ const codeLines = code ? code.split("\n").length : 0;
           basicSetup,
           ...(highlighter ? [belHighlighting(highlighter)] : []),
           EditorView.editable.of(!hero),
-          keymap.of([
-            {
-              key: "Mod-Enter",
-              run: () => {
-                runBtn.click();
-                return true;
+          // Above basicSetup, which binds Mod-Enter to insertBlankLine in
+          // CodeMirror's default keymap. Precedence goes by position in this
+          // list, so a binding added after it never fires.
+          Prec.highest(
+            keymap.of([
+              {
+                key: "Mod-Enter",
+                run: () => {
+                  runBtn.click();
+                  return true;
+                },
               },
-            },
-          ]),
+            ]),
+          ),
           editorTheme,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) updateRunButtonState();
