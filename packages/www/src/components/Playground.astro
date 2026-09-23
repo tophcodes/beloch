@@ -62,13 +62,46 @@ const codeLines = code ? code.split("\n").length : 0;
   </div>
   <div class="pg-pane pg-output">
     <div class="pg-toolbar pg-toolbar-output">
-      <div class="pg-toolbar-views" role="tablist" aria-label="View">
+      <div class="pg-toolbar-views pg-segmented" role="tablist" aria-label="View">
         <button type="button" role="tab" class="pg-view" data-view="cp" aria-selected="false">crease pattern</button>
         <button type="button" role="tab" class="pg-view is-active" data-view="folded" aria-selected="true">folded</button>
       </div>
       <div class="pg-toolbar-tools">
-        <div class="pg-swatches" role="group" aria-label="Paper"></div>
-        <button type="button" class="pg-export-toggle" aria-expanded="false">export</button>
+        <div class="pg-menu">
+          <button type="button" class="pg-menu-toggle pg-view-toggle" aria-expanded="false" aria-haspopup="true">
+            <span class="pg-menu-swatch" aria-hidden="true"></span>view<span class="pg-menu-caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="pg-menu-panel pg-view-panel" hidden>
+            <div class="pg-menu-group">
+              <p class="pg-menu-head" aria-hidden="true">Paper</p>
+              <div class="pg-swatches" role="group" aria-label="Paper"></div>
+              <p class="pg-menu-note"></p>
+            </div>
+            <div class="pg-menu-group">
+              <p class="pg-menu-head" aria-hidden="true">Lines</p>
+              <div class="pg-segmented pg-styles" role="group" aria-label="Line style">
+                <button type="button" class="pg-style" data-style="colour" aria-pressed="false">color</button>
+                <button type="button" class="pg-style is-active" data-style="mono" aria-pressed="true">mono</button>
+              </div>
+            </div>
+            <label class="pg-menu-check">
+              <span>hidden lines</span>
+              <input type="checkbox" class="pg-hidden-lines" />
+            </label>
+          </div>
+        </div>
+        <div class="pg-menu">
+          <button type="button" class="pg-menu-toggle pg-export-toggle" aria-expanded="false" aria-haspopup="true">
+            export<span class="pg-menu-caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="pg-menu-panel pg-export" hidden>
+            <p class="pg-export-step"></p>
+            <button type="button" data-export="download">Download SVG</button>
+            <button type="button" data-export="copy">Copy SVG</button>
+            <button type="button" data-export="link">Copy link to program + step</button>
+            <p class="pg-export-said" role="status"></p>
+          </div>
+        </div>
       </div>
     </div>
     <div
@@ -76,10 +109,6 @@ const codeLines = code ? code.split("\n").length : 0;
       role="group"
       aria-label="Drawing. Arrow keys step, plus and minus zoom, 0 resets the view."
     >
-      <div class="pg-viewer-controls">
-        <button type="button" class="pg-cycle pg-cycle-style">mono</button>
-        <button type="button" class="pg-cycle pg-cycle-occl">hidden: off</button>
-      </div>
       <div class="pg-canvas">
         {seed ? <Fragment set:html={seed} /> : <p class="pg-notice pg-notice-info">Press “Run” to evaluate.</p>}
       </div>
@@ -95,13 +124,6 @@ const codeLines = code ? code.split("\n").length : 0;
           <path d="M12.5 1.5 L12.5 5 L9 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
-      <div class="pg-export" hidden>
-        <p class="pg-export-step"></p>
-        <button type="button" data-export="download">Download SVG</button>
-        <button type="button" data-export="copy">Copy SVG</button>
-        <button type="button" data-export="link">Copy link to program + step</button>
-        <p class="pg-export-said" role="status"></p>
-      </div>
     </div>
     <aside class="pg-inspect" hidden></aside>
     <div class="pg-error" role="alert" hidden></div>
@@ -203,8 +225,7 @@ const codeLines = code ? code.split("\n").length : 0;
   .is-hero .pg-inspect,
   .is-hero .pg-error,
   .is-hero .pg-reset,
-  .is-hero .pg-viewer-controls,
-  .is-hero .pg-export {
+  .is-hero .pg-menu-panel {
     display: none;
   }
   /* The hero's row is sized by its two panes, so the drawing needs a height to
@@ -271,31 +292,62 @@ const codeLines = code ? code.split("\n").length : 0;
     gap: 4px;
   }
 
-  /* Line style and paper are siblings: which ink the diagram uses, and what it
-     is drawn on. A paper whose contrast the coloured style cannot hold
-     switches that button off (see colorOk in lib/paper-schemes) and says why
-     in its title, rather than dropping it and leaving a gap. */
-  /* The two drawing switches sit over the paper rather than in the header
-     row: they change what the reader is looking at, so they belong where
-     the looking happens. Each is one button carrying its own state, cycled
-     by clicking — see updateCycleButtons. Top left, opposite the reset
-     button at top right. */
-  .pg-viewer-controls {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    z-index: 2;
+  /* A set of states one control chooses between is drawn as one control: the
+     segments carry the border between them, and the chosen one is filled
+     rather than outlined, so the pair reads as a switch and not as two
+     buttons that happen to touch. */
+  .pg-segmented {
     display: flex;
-    gap: 6px;
+    align-items: center;
+    border: 1px solid var(--bel-ui-divider);
+    border-radius: var(--bel-radius-control);
+    overflow: hidden;
   }
-  .pg-cycle {
-    background: color-mix(in srgb, var(--bel-ui-surface) 78%, transparent);
-  }
-  .pg-view,
-  .pg-cycle,
-  .pg-export-toggle {
+  .pg-segmented > button {
     font: inherit;
     font-size: var(--bel-text-xs);
+    padding: 4px 10px;
+    border: 0;
+    background: var(--bel-ui-surface);
+    color: var(--bel-ui-text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color var(--bel-duration-state) var(--bel-ease), background var(--bel-duration-state) var(--bel-ease);
+  }
+  .pg-segmented > button + button {
+    border-left: 1px solid var(--bel-ui-divider);
+  }
+  .pg-segmented > button:hover:not(:disabled) { color: var(--bel-ui-accent); }
+  .pg-segmented > button.is-active {
+    background: var(--bel-ui-quiet);
+    color: var(--bel-ui-text);
+  }
+  /* A paper the coloured style cannot hold switches that segment off (see
+     colorOk in lib/paper-schemes) and the note under the swatches says why,
+     rather than dropping it and leaving a gap. */
+  .pg-segmented > button:disabled {
+    cursor: default;
+    color: var(--bel-ui-text-faint);
+  }
+  .pg-segmented > button:focus-visible {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: -2px;
+  }
+
+  /* A menu is a word in the bar and a panel under it. Two of them: what the
+     drawing looks like, and what leaves the page. Both hold choices a reader
+     makes rarely, which is why they are folded away and the bar stays short
+     enough to read in one pass. */
+  .pg-menu {
+    position: relative;
+    display: flex;
+  }
+  .pg-menu-toggle {
+    font: inherit;
+    font-size: var(--bel-text-xs);
+    display: flex;
+    align-items: center;
+    gap: var(--bel-space-1);
     padding: 3px 10px;
     border-radius: var(--bel-radius-control);
     border: 1px solid var(--bel-ui-control-border);
@@ -305,24 +357,84 @@ const codeLines = code ? code.split("\n").length : 0;
     white-space: nowrap;
     transition: color var(--bel-duration-state) var(--bel-ease), border-color var(--bel-duration-state) var(--bel-ease);
   }
-  .pg-view:hover,
-  .pg-cycle:hover:not(:disabled),
-  .pg-export-toggle:hover {
-    color: var(--bel-ui-accent);
-  }
-  .pg-view.is-active,
-  .pg-export-toggle[aria-expanded="true"] {
+  .pg-menu-toggle:hover { color: var(--bel-ui-accent); }
+  .pg-menu-toggle[aria-expanded="true"] {
     border-color: var(--bel-ui-accent);
     color: var(--bel-ui-text);
   }
-  .pg-cycle:disabled {
-    cursor: default;
-    border-color: var(--bel-ui-divider);
-    color: var(--bel-ui-text-faint);
+  .pg-menu-toggle:focus-visible {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: 2px;
   }
-  .pg-view:focus-visible,
-  .pg-cycle:focus-visible,
-  .pg-export-toggle:focus-visible {
+  .pg-menu-caret { font-size: var(--bel-text-2xs); }
+  /* The paper the drawing is on, shown in the closed menu: the choice is
+     visible without opening what made it. */
+  .pg-menu-swatch {
+    width: 11px;
+    height: 11px;
+    border-radius: 2px;
+    border: 1px solid var(--bel-ui-control-border);
+  }
+  .pg-menu-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 5;
+    background: var(--bel-ui-surface);
+    border: 1px solid var(--bel-ui-divider);
+    border-radius: var(--bel-radius-card);
+    box-shadow: var(--bel-shadow-overlay);
+    font-family: var(--bel-font-mono);
+  }
+  .pg-menu-panel[hidden] { display: none; }
+  .pg-view-panel {
+    width: 232px;
+    padding: var(--bel-space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--bel-space-2);
+  }
+  .pg-menu-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--bel-space-1);
+  }
+  .pg-menu-head {
+    margin: 0;
+    font-size: var(--bel-text-2xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--bel-ui-text-muted);
+  }
+  .pg-menu-note {
+    margin: 0;
+    font-size: var(--bel-text-2xs);
+    color: var(--bel-ui-text-muted);
+    min-height: 1em;
+  }
+  .pg-menu-check {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--bel-space-1);
+    font-size: var(--bel-text-xs);
+    color: var(--bel-ui-text);
+    cursor: pointer;
+  }
+  /* A switch nothing can be said about is still shown, with the reason in its
+     title: hidden lines mean nothing on a flat sheet. */
+  .pg-menu-check:has(input:disabled) {
+    color: var(--bel-ui-text-faint);
+    cursor: default;
+  }
+  .pg-menu-check input {
+    accent-color: var(--bel-ui-accent);
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    cursor: inherit;
+  }
+  .pg-menu-check input:focus-visible {
     outline: 2px solid var(--bel-ui-accent);
     outline-offset: 2px;
   }
@@ -811,21 +923,12 @@ const codeLines = code ? code.split("\n").length : 0;
     stroke-opacity: 0.4;
   }
 
-  /* Export sits in the quiet zone beside the reset button: it is reachable
-     without the drawing moving, and it covers paper only while it is open. */
+  /* What leaves the page hangs under the word that offers it, so nothing is
+     laid over the drawing while the reader is choosing. */
   .pg-export {
-    position: absolute;
-    top: 10px;
-    right: 48px;
-    z-index: 5;
     width: 240px;
     padding: 8px 12px 10px;
-    background: var(--bel-ui-surface);
-    border: 1px solid var(--bel-ui-divider);
-    border-radius: var(--bel-radius-card);
-    font-family: var(--bel-font-mono);
   }
-  .pg-export[hidden] { display: none; }
   .pg-export-step {
     margin: 0 0 2px;
     font-size: var(--bel-text-2xs);
@@ -1384,7 +1487,11 @@ const codeLines = code ? code.split("\n").length : 0;
     let lineStyleId: "mono" | "colour" = "mono";
     // What the folded view does with the crease segments that lie under other
     // layers. The flat sheet occludes nothing, so this only bites in "folded".
-    let hiddenMode: "hide" | "dashed" | "depth" = "hide";
+    // Two states, so a checkbox: a buried segment is either drawn or it is
+    // not. Drawn means `depth`, which fades a segment by how deep it lies;
+    // `dashed` drew every buried run alike and is given up with the switch
+    // that cycled through the three.
+    let hiddenMode: "hide" | "depth" = "hide";
     // Which drawing of the current state is on the stage. Both are the same
     // state: the crease pattern is the flat sheet with the creases that exist
     // by this step, the folded view is that state seen from above with the
@@ -1431,41 +1538,45 @@ const codeLines = code ? code.split("\n").length : 0;
       else drawCurrent(true, fade);
     }
 
-    // The two drawing switches over the paper. Each button carries its own
-    // state as its label and steps to the next on click, so the pair takes
-    // the width of two words instead of five. A state the current paper or
-    // view cannot hold disables the button rather than hiding it, and the
-    // title says why.
-    const styleBtn = root.querySelector<HTMLButtonElement>(".pg-cycle-style");
-    const occlBtn = root.querySelector<HTMLButtonElement>(".pg-cycle-occl");
-    const OCCL_LABEL: Record<typeof hiddenMode, string> = {
-      hide: "hidden: off",
-      dashed: "hidden: dashed",
-      depth: "hidden: depth",
-    };
-    const OCCL_TITLE: Record<typeof hiddenMode, string> = {
-      hide: "Buried crease segments are not drawn. Click for dashed.",
-      dashed: "Buried crease segments drawn alike. Click to fade them by depth.",
-      depth: "Buried crease segments fade with the layers over them. Click to stop drawing them.",
-    };
-    function updateCycleButtons() {
+    // What the drawing looks like, folded into one menu: the paper it is on,
+    // the ink it is drawn with, and whether a buried segment is drawn at all.
+    // Each is a choice a reader makes rarely, so the bar carries one word for
+    // all three and the panel holds them.
+    const viewToggle = root.querySelector<HTMLButtonElement>(".pg-view-toggle");
+    const menuSwatch = root.querySelector<HTMLSpanElement>(".pg-menu-swatch");
+    const stylesBar = root.querySelector<HTMLDivElement>(".pg-styles");
+    const paperNote = root.querySelector<HTMLParagraphElement>(".pg-menu-note");
+    const hiddenBox = root.querySelector<HTMLInputElement>(".pg-hidden-lines");
+    function updateViewMenu() {
       const scheme = resolveScheme(currentSchemeId);
-      if (styleBtn) {
-        styleBtn.textContent = lineStyleId;
-        styleBtn.disabled = !scheme.colorOk;
-        styleBtn.title = !scheme.colorOk
-          ? `Only monochrome on ${scheme.label}: every crease colour falls below 2:1 on this paper`
-          : lineStyleId === "mono"
-            ? "Yoshizawa-Randlett notation, monochrome. Click for one colour per fold direction."
-            : "One colour per fold direction. Click for monochrome.";
+      // The closed menu carries the paper it chose, so the choice is visible
+      // without opening what made it.
+      if (menuSwatch) menuSwatch.style.background = scheme.swatch;
+      if (viewToggle) viewToggle.title = `Drawn on ${scheme.label}, ${lineStyleId}`;
+      if (paperNote) {
+        paperNote.textContent = scheme.colorOk
+          ? scheme.label
+          : `${scheme.label} · monochrome only, every crease colour falls below 2:1 on it`;
       }
-      if (occlBtn) {
+      stylesBar?.querySelectorAll<HTMLButtonElement>(".pg-style").forEach((b) => {
+        const on = b.dataset.style === lineStyleId;
+        b.classList.toggle("is-active", on);
+        b.setAttribute("aria-pressed", String(on));
+        b.disabled = b.dataset.style === "colour" && !scheme.colorOk;
+        b.title =
+          b.dataset.style === "mono"
+            ? "Yoshizawa-Randlett notation, monochrome"
+            : scheme.colorOk
+              ? "One colour per fold direction"
+              : `Not on ${scheme.label}: every crease colour falls below 2:1 on this paper`;
+      });
+      if (hiddenBox) {
         const flat = currentView === "cp";
-        occlBtn.textContent = OCCL_LABEL[hiddenMode];
-        occlBtn.disabled = flat;
-        occlBtn.title = flat
+        hiddenBox.checked = hiddenMode === "depth";
+        hiddenBox.disabled = flat;
+        hiddenBox.title = flat
           ? "The crease pattern is one flat sheet: nothing is buried"
-          : OCCL_TITLE[hiddenMode];
+          : "Buried crease segments fade with the layers over them";
       }
     }
     const viewsBar = root.querySelector<HTMLDivElement>(".pg-toolbar-views");
@@ -1483,26 +1594,27 @@ const codeLines = code ? code.split("\n").length : 0;
       if (v === currentView) return;
       currentView = v;
       updateViewTabs();
-      updateCycleButtons();
+      updateViewMenu();
       // Two views of one state, so the shorter of the two lengths.
       rerenderCurrent("view");
     });
     updateViewTabs();
 
-    styleBtn?.addEventListener("click", () => {
-      if (styleBtn.disabled) return;
-      lineStyleId = lineStyleId === "mono" ? "colour" : "mono";
-      updateCycleButtons();
+    stylesBar?.addEventListener("click", (e: MouseEvent) => {
+      const b = (e.target as Element).closest<HTMLButtonElement>(".pg-style");
+      if (!b || b.disabled) return;
+      const style = b.dataset.style === "colour" ? "colour" : "mono";
+      if (style === lineStyleId) return;
+      lineStyleId = style;
+      updateViewMenu();
       rerenderCurrent();
     });
-    const OCCL_CYCLE = ["hide", "dashed", "depth"] as const;
-    occlBtn?.addEventListener("click", () => {
-      if (occlBtn.disabled) return;
-      hiddenMode = OCCL_CYCLE[(OCCL_CYCLE.indexOf(hiddenMode) + 1) % OCCL_CYCLE.length]!;
-      updateCycleButtons();
+    hiddenBox?.addEventListener("change", () => {
+      hiddenMode = hiddenBox.checked ? "depth" : "hide";
+      updateViewMenu();
       rerenderCurrent();
     });
-    updateCycleButtons();
+    updateViewMenu();
 
     const swatchBar = root.querySelector<HTMLDivElement>(".pg-swatches");
     if (swatchBar) {
@@ -1524,7 +1636,7 @@ const codeLines = code ? code.split("\n").length : 0;
           // to one of those papers takes the drawing back to monochrome
           // instead of leaving an unreadable one on screen.
           if (!s.colorOk && lineStyleId === "colour") lineStyleId = "mono";
-          updateCycleButtons();
+          updateViewMenu();
           rerenderCurrent();
           swatchBar.querySelectorAll(".pg-swatch").forEach((el) => {
             el.classList.toggle("is-active", el === b);
@@ -2346,27 +2458,48 @@ const codeLines = code ? code.split("\n").length : 0;
       if (exportSaid) exportSaid.textContent = text;
     };
 
-    const setExportOpen = (open: boolean) => {
-      exportPanel!.hidden = !open;
-      exportToggle!.setAttribute("aria-expanded", String(open));
-      if (open) {
-        updateExportPanel();
-        say("");
+    // One menu open at a time. A panel is a choice in progress, and two of
+    // them standing open would be two.
+    const menus: { toggle: HTMLButtonElement; panel: HTMLElement }[] = [];
+    const closeMenus = () => {
+      for (const m of menus) {
+        m.panel.hidden = true;
+        m.toggle.setAttribute("aria-expanded", "false");
       }
     };
-
-    exportToggle.addEventListener("click", () => setExportOpen(exportPanel!.hidden));
-    // Clicking away shuts the panel; it covers paper only while it is in use.
-    document.addEventListener("click", (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (exportPanel!.hidden) return;
-      if (exportPanel!.contains(t) || exportToggle!.contains(t)) return;
-      setExportOpen(false);
+    const wireMenu = (toggle: HTMLButtonElement, panel: HTMLElement, opened?: () => void) => {
+      menus.push({ toggle, panel });
+      toggle.addEventListener("click", () => {
+        const opening = panel.hidden;
+        closeMenus();
+        if (!opening) return;
+        panel.hidden = false;
+        toggle.setAttribute("aria-expanded", "true");
+        opened?.();
+      });
+      // Escape takes the question back and leaves the reader on the word that
+      // asked it.
+      const onEscape = (e: KeyboardEvent) => {
+        if (e.key !== "Escape" || panel.hidden) return;
+        closeMenus();
+        toggle.focus();
+      };
+      toggle.addEventListener("keydown", onEscape);
+      panel.addEventListener("keydown", onEscape);
+    };
+    wireMenu(exportToggle, exportPanel, () => {
+      updateExportPanel();
+      say("");
     });
-    exportPanel.addEventListener("keydown", (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      setExportOpen(false);
-      exportToggle!.focus();
+    const viewPanel = root.querySelector<HTMLElement>(".pg-view-panel");
+    if (viewToggle && viewPanel) wireMenu(viewToggle, viewPanel);
+    // Clicking anywhere else shuts what is open: a menu covers the card only
+    // while it is in use. Another card's menu on the same page is somewhere
+    // else, which is why this asks about this card first.
+    document.addEventListener("click", (e: MouseEvent) => {
+      const t = e.target as Element;
+      if (root.contains(t) && t.closest(".pg-menu")) return;
+      closeMenus();
     });
 
     // base64url of the UTF-8 bytes, so a program with umlauts or a long line
