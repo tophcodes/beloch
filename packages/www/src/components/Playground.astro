@@ -543,7 +543,7 @@ const codeLines = code ? code.split("\n").length : 0;
   .pg-static-gutter {
     grid-column: 1;
     padding-right: 3px;
-    padding-left: 5px;
+    padding-left: 12px;
     margin-right: 18px;
     border-right: 1px solid rgba(255, 255, 255, 0.08);
     min-width: 20px;
@@ -1127,13 +1127,19 @@ const codeLines = code ? code.split("\n").length : 0;
         fontSize: "var(--bel-code-size)",
         lineHeight: "var(--bel-code-line)",
       },
-      ".cm-content": { padding: "14px 18px", caretColor: "var(--bel-ui-code-text)" },
+      // The padding is on the line rather than on the content, so a line's box
+      // starts where the gutter ends. The step block's bar is drawn at that
+      // edge, which gives it a lane of its own instead of a place against the
+      // first character.
+      ".cm-content": { padding: "14px 0", caretColor: "var(--bel-ui-code-text)" },
+      ".cm-line": { padding: "0 18px" },
       ".cm-gutters": {
         backgroundColor: "transparent",
         color: "var(--bel-ui-code-gutter)",
         border: "none",
         borderRight: "1px solid rgba(255, 255, 255, 0.08)",
       },
+      ".cm-lineNumbers .cm-gutterElement": { padding: "0 3px 0 12px" },
       ".cm-activeLine": { backgroundColor: "rgba(255, 255, 255, 0.04)" },
       ".cm-activeLineGutter": { backgroundColor: "rgba(255, 255, 255, 0.04)" },
       "&.cm-focused": { outline: "none" },
