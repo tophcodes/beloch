@@ -1061,15 +1061,13 @@ const codeLines = code ? code.split("\n").length : 0;
   } from "@beloch/runtime-render-dom";
   import { edgeOfLine } from "../lib/edge-lookup";
   import { pointSegDist, segmentDrawnAt, type DrawnLine } from "../lib/pick-visibility";
-  import { runUi, type RuntimePhase } from "../lib/playground-run-state";
-
-  // Two separate limits. Booting the Worker pulls the wasm runtime over the
-  // network (megabytes, once per visitor); the evaluation itself then runs
-  // locally. The eval limit starts only once the Worker reports its runtime
-  // ready (see public/beloch/eval-worker.js), so a slow line stays
-  // distinguishable from a hung evaluator.
-  const LOAD_TIMEOUT_MS = 60000;
-  const EVAL_TIMEOUT_MS = 8000;
+  import {
+    createEvaluator,
+    initialEvaluatorState,
+    runUi,
+    type Diagnostic,
+    type EvaluatorState,
+  } from "@beloch/runtime-eval";
 
   const editorTheme = EditorView.theme(
     {
@@ -1290,34 +1288,29 @@ const codeLines = code ? code.split("\n").length : 0;
       return null;
     });
 
-    // Lazy instances defer the eval Worker (see bootIfNeeded below) until the
-    // user actually clicks Run — focusing or editing the code must not, on
-    // its own, kick off a run or pull in the wasm module.
+    // Lazy instances defer the eval Worker until the user actually clicks
+    // Run — focusing or editing the code must not, on its own, kick off a run
+    // or pull in the wasm module.
     const lazy = root.dataset.lazy === "true";
     // The hero shows a program and its drawing and offers nothing to operate:
     // the controls are hidden, so the behaviour behind them is not wired up
     // either, and the source is read-only.
     const hero = root.dataset.variant === "hero";
 
-    // Run is available whenever no run is in flight, including on first
-    // contact with the seeded code. The states and their wording live in
-    // ../lib/playground-run-state.
-    let running = false;
-    let phase: RuntimePhase = "cold";
-    // A run was dropped because the runtime took longer than LOAD_TIMEOUT_MS.
-    let loadStalled = false;
-    // Source of the last run the worker actually answered; null until then.
-    let lastRunCode: string | null = null;
-    // Share of the runtime that has arrived, as the worker reports it, or null
-    // while it reports nothing (see public/beloch/eval-worker.js).
-    let loadProgress: number | null = null;
+    // The phases, both limits and the in-flight run belong to
+    // @beloch/runtime-eval. What is held here is the last state it reported,
+    // because the button is drawn from a snapshot rather than from a module
+    // that may not exist yet when the editor first asks.
+    let runState: EvaluatorState = initialEvaluatorState;
     function updateRunButtonState() {
-      const ui = runUi({ phase, running, loadStalled, progress: loadProgress });
-      runBtn!.classList.toggle("has-progress", loadProgress !== null);
+      const ui = runUi(runState);
+      const progress = runState.progress;
+      runBtn!.classList.toggle("is-loading", runState.running);
+      runBtn!.classList.toggle("has-progress", progress !== null);
       // Two and a half turns over the whole transfer, so the ring keeps moving
       // visibly between one reported percent and the next.
-      if (loadProgress !== null) {
-        runBtn!.style.setProperty("--pg-load-turn", `${Math.round(loadProgress * 900)}deg`);
+      if (progress !== null) {
+        runBtn!.style.setProperty("--pg-load-turn", `${Math.round(progress * 900)}deg`);
       }
       runBtn.disabled = ui.disabled;
       runBtn.title = ui.title;
@@ -1326,7 +1319,7 @@ const codeLines = code ? code.split("\n").length : 0;
       // edited text — clear the gutter indicator, but leave the scrubber
       // and the currently-shown SVG alone (same "stale result stays
       // visible" philosophy as the Run button itself).
-      if (editor.state.doc.toString() !== lastRunCode) {
+      if (editor.state.doc.toString() !== runState.answered) {
         setStepLineOn(editor, null);
         setStepSlotsOn(editor, []);
       }
@@ -1538,15 +1531,6 @@ const codeLines = code ? code.split("\n").length : 0;
       swatchBar.append(...buttons);
     }
 
-    let worker: Worker | null = null;
-    // Load limit (runtime boot) and eval limit (one postMessage round trip);
-    // at most one of them runs at a time.
-    let loadTimer: ReturnType<typeof setTimeout> | null = null;
-    let evalTimer: ReturnType<typeof setTimeout> | null = null;
-    // Source waiting for the runtime to report ready, and the source of the
-    // request currently with the worker.
-    let pendingCode: string | null = null;
-    let dispatchedCode: string | null = null;
     // The document and the step live in the runtime; the stage reads them back
     // through these. Everything derived from them (which frame to draw, which
     // marks still dangle) is the runtime's answer rather than this file's.
@@ -2147,12 +2131,12 @@ const codeLines = code ? code.split("\n").length : 0;
 
     // Clears the scrubber + gutter marker so a stale scene from a previous
     // multi-step run can't linger (and stay clickable) once a later run
-    // doesn't produce a fresh multi-step scene of its own.
+    // doesn't produce a fresh multi-step scene of its own. The document
+    // itself is already the new one: filling the slot took the selection, the
+    // hover and any open choice with it, and the modules watch the slot
+    // themselves.
     function clearStepsUI() {
-      runtime.dispatch({ type: "document/set", scene: null });
       setStepSlotsOn(editor, []);
-      // Emptying the document takes the selection, the hover and any open
-      // choice with it; the modules watch the slot themselves.
       inspectPanel!.hidden = true;
       inspectPanel!.textContent = "";
       clearHighlight(canvas!);
@@ -2219,164 +2203,110 @@ const codeLines = code ? code.split("\n").length : 0;
       updateExportPanel();
     }
 
-    function clearTimers() {
-      if (loadTimer !== null) clearTimeout(loadTimer);
-      if (evalTimer !== null) clearTimeout(evalTimer);
-      loadTimer = null;
-      evalTimer = null;
+    // A document is in the slot: build the stage around it. The evaluator
+    // calls this after a run, and the seed path below after parsing the FOLD
+    // the build embedded, so both build the scrubber the same way.
+    function showDocument(scene: FoldScene) {
+      clearStepsUI();
+      if (scene.statements.length > 0) {
+        buildStepsUI(scene.statements);
+        buildStepSlots(scene);
+        const target = pendingSharedStep;
+        pendingSharedStep = null;
+        renderStep(target ?? scene.statements.length, false);
+      } else {
+        // No fold and no mark statement: one drawing, no timeline.
+        drawCurrent();
+      }
     }
 
-    function finish(handler: () => void) {
-      clearTimers();
-      pendingCode = null;
-      dispatchedCode = null;
-      running = false;
-      runBtn!.classList.remove("is-loading");
-      updateRunButtonState();
-      handler();
-    }
-
-    // Parses+renders an already-computed FOLD document (from the eval Worker,
-    // or a build-time seed) — pure @beloch/scene + @beloch/render-svg, no
-    // wasm involved. Shared by the worker-response path and the seed-fold
-    // bootstrap below, so both build the scrubber the same way.
+    // A FOLD document computed at build time — pure @beloch/scene +
+    // @beloch/render-svg, no wasm involved.
     function applyFold(fold: unknown) {
       try {
         const scene = parseFold(fold as object);
         runtime.dispatch({ type: "document/set", scene });
-        if (scene.statements.length > 0) {
-          buildStepsUI(scene.statements);
-          buildStepSlots(scene);
-          const target = pendingSharedStep;
-          pendingSharedStep = null;
-          renderStep(target ?? scene.statements.length, false);
-        } else {
-          // No fold and no mark statement: one drawing, no timeline.
-          drawCurrent();
-        }
+        showDocument(scene);
       } catch (err) {
         showError(`Render error: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
 
-    function renderResult(raw: string) {
-      clearStepsUI();
-      let parsed: { ok: boolean; fold?: unknown; kind?: string; message?: string; line?: number };
-      try {
-        parsed = JSON.parse(raw);
-      } catch (err) {
-        showError(`Invalid response from the evaluator: ${String(err)}`);
-        return;
+    // The words for what the evaluator reports. It says what happened in
+    // kinds, because a package has no reader; the sentences are this view's.
+    function sayDiagnostic(diagnostic: Diagnostic) {
+      switch (diagnostic.kind) {
+        case "program":
+          showError(diagnostic.message, diagnostic.line);
+          return;
+        case "native":
+          showInfo(
+            "This expression needs native evaluation (an irrational number via √/∛ beyond the browser fragment).",
+          );
+          return;
+        case "timeout":
+          showError("Evaluation aborted (timeout).");
+          return;
+        case "backend":
+          showError(`Worker error: ${diagnostic.message}`);
+          return;
+        case "protocol":
+          showError(`Invalid response from the evaluator: ${diagnostic.message}`);
+          return;
+        case "document":
+          showError(`Render error: ${diagnostic.message}`);
       }
-      if (parsed.ok) {
-        applyFold(parsed.fold);
-        return;
-      }
-      if (parsed.kind === "native") {
-        showInfo(
-          "This expression needs native evaluation (an irrational number via √/∛ beyond the browser fragment).",
-        );
-        return;
-      }
-      showError(parsed.message ?? "Unknown error.", parsed.line ?? null);
     }
 
-    function wireWorker() {
-      worker!.onmessage = (e: MessageEvent<{ raw?: string; ready?: boolean; loaded?: number; total?: number }>) => {
-        // Transfer progress, while the runtime is still on its way.
-        if (e.data.total !== undefined && e.data.loaded !== undefined) {
-          loadProgress = e.data.total > 0 ? e.data.loaded / e.data.total : null;
+    // Source to document. The phases, the queue behind a runtime that has not
+    // arrived, both limits and the evaluator's envelope are the module's; the
+    // Worker it drives is this page's, and a VS Code preview would hand it a
+    // subprocess instead.
+    const evaluator = createEvaluator({
+      runtime,
+      spawn: (events) => {
+        const worker = new Worker("/beloch/eval-worker.js");
+        worker.onmessage = (
+          e: MessageEvent<{ raw?: string; ready?: boolean; loaded?: number; total?: number }>,
+        ) => {
+          // Transfer progress, while the runtime is still on its way.
+          if (e.data.total !== undefined && e.data.loaded !== undefined) {
+            events.progress(e.data.total > 0 ? e.data.loaded / e.data.total : null);
+            return;
+          }
+          // The worker announces its instantiated wasm runtime
+          // (public/beloch/eval-worker.js).
+          if (e.data.ready) {
+            events.ready();
+            return;
+          }
+          events.answer(e.data.raw ?? "");
+        };
+        worker.onerror = (e: ErrorEvent) => events.failed(e.message);
+        return {
+          evaluate: (source: string) => worker.postMessage(source),
+          terminate: () => worker.terminate(),
+        };
+      },
+      host: {
+        document: showDocument,
+        diagnostic: sayDiagnostic,
+        changed: (state) => {
+          runState = state;
           updateRunButtonState();
-          return;
-        }
-        // The worker announces its instantiated wasm runtime (eval-worker.js).
-        // Until that arrives, a pending run is waiting on the network, so the
-        // short evaluation limit must not be running yet.
-        if (e.data.ready) {
-          phase = "ready";
-          loadStalled = false;
-          loadProgress = null;
-          clearTimers();
-          const queued = pendingCode;
-          pendingCode = null;
-          if (queued !== null) startEval(queued);
-          else updateRunButtonState();
-          return;
-        }
-        // Only an answered request updates the source the gutter marker is
-        // held against. A timeout or worker error leaves it where it was, so
-        // the marker stays with the last run that produced one.
-        lastRunCode = dispatchedCode;
-        const raw = e.data.raw ?? "";
-        finish(() => renderResult(raw));
-      };
-      worker!.onerror = (e: ErrorEvent) => {
-        finish(() => showError(`Worker error: ${e.message}`));
-      };
-    }
-
-    function spawnWorker() {
-      worker = new Worker("/beloch/eval-worker.js");
-      phase = "loading";
-      wireWorker();
-    }
-
-    // Creates the Worker (and triggers its wasm download) on first use. A
-    // no-op once `worker` exists — the eager path creates it once on mount,
-    // the lazy path only once the user actually clicks Run.
-    function bootIfNeeded() {
-      if (worker) return;
-      spawnWorker();
-    }
-
-    // Hands one source string to a ready worker, under the evaluation limit.
-    function startEval(code: string) {
-      dispatchedCode = code;
-      evalTimer = setTimeout(() => {
-        evalTimer = null;
-        // A hung evaluation needs a fresh worker; it re-reads the runtime
-        // from the HTTP cache. A slow *load* never reaches this path.
-        worker!.terminate();
-        spawnWorker();
-        dispatchedCode = null;
-        running = false;
-        runBtn!.classList.remove("is-loading");
-        updateRunButtonState();
-        showError("Evaluation aborted (timeout).");
-      }, EVAL_TIMEOUT_MS);
-      updateRunButtonState();
-      worker!.postMessage(code);
-    }
+        },
+      },
+    });
 
     function run() {
-      if (running) return; // guard against overlapping runs
+      // A run in flight keeps its diagnostic: the reader is still holding it
+      // against the drawing, and this click adds nothing (the evaluator drops
+      // it too).
+      if (runState.running) return;
       // The standing diagnostic describes the previous run; this one answers
       // for itself. The drawing stays either way.
       clearDiagnostic();
-      const codeToRun = editor.state.doc.toString();
-      loadStalled = false;
-      running = true;
-      runBtn!.classList.add("is-loading");
-      bootIfNeeded();
-      if (phase === "ready") {
-        startEval(codeToRun);
-        return;
-      }
-
-      // Still booting: the run waits for the ready signal under the generous
-      // load limit. On expiry the worker keeps its download running (it is
-      // never terminated here), so pressing Run again picks the transfer up
-      // where it stands; the status line says as much.
-      pendingCode = codeToRun;
-      loadTimer = setTimeout(() => {
-        loadTimer = null;
-        pendingCode = null;
-        running = false;
-        loadStalled = true;
-        runBtn!.classList.remove("is-loading");
-        updateRunButtonState();
-      }, LOAD_TIMEOUT_MS);
-      updateRunButtonState();
+      evaluator.run(editor.state.doc.toString());
     }
 
     // If a seed FOLD was embedded at build time, parse+render it right away
@@ -2609,13 +2539,13 @@ const codeLines = code ? code.split("\n").length : 0;
       const step = Number(sharedParams.get("s"));
       pendingSharedStep = Number.isInteger(step) && step >= 0 ? step : null;
       editor.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: sharedProgram } });
-      bootIfNeeded();
+      evaluator.boot();
       run();
       return;
     }
 
     if (!lazy) {
-      bootIfNeeded();
+      evaluator.boot();
       if (initialCode.trim()) run();
     }
   }

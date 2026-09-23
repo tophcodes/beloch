@@ -43,6 +43,7 @@ const runtimeRoot = join(repoRoot, 'packages', 'runtime', 'core', 'src', 'index.
 const runtimeRenderDomRoot = join(repoRoot, 'packages', 'runtime', 'render-dom', 'src', 'index.ts');
 const runtimeEditorRoot = join(repoRoot, 'packages', 'runtime', 'editor', 'src', 'index.ts');
 const runtimePickRoot = join(repoRoot, 'packages', 'runtime', 'pick', 'src', 'index.ts');
+const runtimeEvalRoot = join(repoRoot, 'packages', 'runtime', 'eval', 'src', 'index.ts');
 
 // https://astro.build/config
 export default defineConfig({
@@ -59,6 +60,7 @@ export default defineConfig({
 				'@beloch/runtime-render-dom': runtimeRenderDomRoot,
 				'@beloch/runtime-editor': runtimeEditorRoot,
 				'@beloch/runtime-pick': runtimePickRoot,
+				'@beloch/runtime-eval': runtimeEvalRoot,
 			},
 		},
 		// packages/render-2d/ lives outside packages/www/ (Vite's default project root), so the dev

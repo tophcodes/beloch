@@ -18,6 +18,7 @@
   "include": [
     "core/src", "core/test",
     "editor/src", "editor/test",
+    "eval/src", "eval/test",
     "pick/src", "pick/test",
     "render-dom/src", "render-dom/test"
   ]

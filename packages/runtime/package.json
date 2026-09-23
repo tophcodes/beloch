@@ -2,7 +2,7 @@
   "name": "beloch-runtime",
   "private": true,
   "type": "module",
-  "workspaces": ["core", "editor", "pick", "render-dom"],
+  "workspaces": ["core", "editor", "eval", "pick", "render-dom"],
   "scripts": { "test": "bun test", "typecheck": "bun x tsc --noEmit" },
   "devDependencies": {
     "typescript": "^5.5.0",
