@@ -39,12 +39,13 @@ val restore : Ctx.ctx -> snapshot -> unit
 
 type folded = {
   state : Fold_state.t;
-  named_points : (string * Geom.point * int * int) list;
-      (** The two ints are the 0-based creation step (index into [frames] at
-          bind time) and the index of the statement that binds the point in
-          the `beloch:statements` log. Every statement is logged (ADR 0026),
-          so the second is the binding statement's own index. *)
-  named_lines : (string * Geom.line * int * int) list;
+  named_points : (string * Geom.point * int * int option) list;
+      (** The 0-based creation step (index into [frames] at bind time) and
+          the index of the statement that binds the point in the
+          `beloch:statements` log. Every statement is logged (ADR 0026), so
+          the index is the binding statement's own. [None] for a name no
+          statement bound, which the four paper corners are. *)
+  named_lines : (string * Geom.line * int * int option) list;
       (** Name, current line, and the same two counters a named point
           carries: the creation frame and the statement that binds it. *)
   named_line_cids : (string * int) list;

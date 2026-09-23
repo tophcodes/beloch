@@ -64,8 +64,8 @@ type crease_val =
 type instance = {
   ipoints : (string, Geom.point) Hashtbl.t;
   ilines : (string, crease_val) Hashtbl.t;
-  ipoint_steps : (string, int * int) Hashtbl.t;
-  iline_steps : (string, int * int) Hashtbl.t;
+  ipoint_steps : (string, int * int option) Hashtbl.t;
+  iline_steps : (string, int * int option) Hashtbl.t;
 }
 (** A landed [apply] instance's member tables, copied from the def body's own
     scope at apply-time. *)
@@ -74,8 +74,8 @@ type scope = {
   points : (string, Geom.point) Hashtbl.t;
   lines : (string, crease_val) Hashtbl.t;
   instances : (string, instance) Hashtbl.t;
-  point_steps : (string, int * int) Hashtbl.t;
-  line_steps : (string, int * int) Hashtbl.t;
+  point_steps : (string, int * int option) Hashtbl.t;
+  line_steps : (string, int * int option) Hashtbl.t;
       (** Creation step of each name bound in [points]/[lines] (respectively)
           within this scope, recorded at bind time by [bind_point]/
           [bind_crease] as [List.length ctx.frames_rev] and the index of the
@@ -134,7 +134,13 @@ val flap_lookup_result :
     as-is. *)
 
 val bind_point : ctx -> string -> Error.span -> Geom.point -> unit
-val bind_crease : ctx -> string -> Error.span -> crease_val -> unit
+
+val bind_crease :
+  ?stmt:int -> ctx -> string -> Error.span -> crease_val -> unit
+(** Bind a crease name. [stmt] is the index of the statement that binds it,
+    for a caller that binds after that statement has logged its own entry;
+    it defaults to [stmt_index], which is that index while the statement is
+    still running. *)
 
 val bind_output :
   ctx -> string -> rebind:bool -> Error.span -> (crease_val -> unit)

@@ -25,10 +25,10 @@ let restore = Ctx.restore
 
 type folded = {
   state : Fold_state.t;
-  named_points : (string * Geom.point * int * int) list;
+  named_points : (string * Geom.point * int * int option) list;
       (* [int] is the 0-based creation step (index into [frames] at bind
          time); see [scope.point_steps]/[scope.line_steps] *)
-  named_lines : (string * Geom.line * int * int) list;
+  named_lines : (string * Geom.line * int * int option) list;
   named_line_cids : (string * int) list;
       (* crease id per name for [Material]/[Mark] creases — the identity the
          line coefficients in [named_lines] lose (a folded crease's current
@@ -635,7 +635,7 @@ let eval_export (ctx : Ctx.ctx) (entries_opt : Ast.export_entry list option)
     match kind with
     | `Point -> (
         let step =
-          Option.value (Hashtbl.find_opt inst.ipoint_steps src) ~default:(0, 0)
+          Option.value (Hashtbl.find_opt inst.ipoint_steps src) ~default:(0, None)
         in
         match Hashtbl.find_opt inst.ipoints src with
         | Some v ->
@@ -646,7 +646,7 @@ let eval_export (ctx : Ctx.ctx) (entries_opt : Ast.export_entry list option)
               (Printf.sprintf "instance $%s has no point member %s" iname src))
     | `Line -> (
         let step =
-          Option.value (Hashtbl.find_opt inst.iline_steps src) ~default:(0, 0)
+          Option.value (Hashtbl.find_opt inst.iline_steps src) ~default:(0, None)
         in
         match Hashtbl.find_opt inst.ilines src with
         | Some v ->
@@ -819,12 +819,12 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
   let step_of_point n =
     match Hashtbl.find_opt root_scope.point_steps n with
     | Some s -> s
-    | None -> (0, 0)
+    | None -> (0, None)
   in
   let step_of_line n =
     match Hashtbl.find_opt root_scope.line_steps n with
     | Some s -> s
-    | None -> (0, 0)
+    | None -> (0, None)
   in
   (* Sorted by name: Hashtbl.fold/iter order depends on internal bucket
      layout, which differs between a fresh eval (insert in program order)

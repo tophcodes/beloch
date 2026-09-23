@@ -263,6 +263,11 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
    independent of whether it later graduates into a real crease (which only
    ever happens at some LATER fold statement). The field is contracted in
    spec/FOLD.md. *)
+(* The statement that bound a name, or null where none did: the four paper
+   corners come with the sheet rather than from a statement. *)
+let stmt_json (stmt : int option) : Yojson.Safe.t =
+  match stmt with Some i -> `Int i | None -> `Null
+
 let beloch_statements_json (statements : Eval.stmt_log_entry list) : Yojson.Safe.t =
   `List
     (List.map
@@ -319,7 +324,7 @@ let beloch_references_json (refs : Ctx.reference list) : Yojson.Safe.t =
    (coplanar cluster) + stacking rank, and each named point's carrying
    face + flap. Entity Inspector slice B (playground). *)
 let beloch_inspect_json (state : Fold_state.t)
-    (named_points : (string * Geom.point * int * int) list)
+    (named_points : (string * Geom.point * int * int option) list)
     (named_line_cids : (string * int) list) : Yojson.Safe.t =
   let faces = Fold_state.faces state in
   let rank = Fold_state.rank state in
@@ -589,7 +594,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
                  ("paper", `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ]);
                  ("table", `List [ q_to_json t.Geom.x; q_to_json t.Geom.y ]);
                  ("step", `Int step);
-                 ("statement", `Int stmt);
+                 ("statement", stmt_json stmt);
                ] ))
          fd.Eval.named_points)
   in
@@ -602,7 +607,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
                [
                  ("coeffs", `List [ q_to_json l.Geom.a; q_to_json l.Geom.b; q_to_json l.Geom.c ]);
                  ("step", `Int step);
-                 ("statement", `Int stmt);
+                 ("statement", stmt_json stmt);
                ] ))
          fd.Eval.named_lines)
   in

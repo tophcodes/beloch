@@ -88,7 +88,8 @@ What the language knows about a state and FOLD cannot say:
 - `beloch:named_points[].statement` and `beloch:named_lines[].statement`: the
   statement that binds the name, as an index into `beloch:statements`. The
   `step` beside it counts frames and cannot separate two names bound between
-  the same pair of folds. A FOLD written before every statement was logged
+  the same pair of folds. It is null for a name no statement bound, which the
+  four paper corners are. A FOLD written before every statement was logged
   reports the next state-changing statement instead, which is what the field
   meant then.
 - `beloch:vertices_names`, `beloch:named_points`, `beloch:named_lines` with

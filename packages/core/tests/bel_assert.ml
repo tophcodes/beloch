@@ -247,7 +247,7 @@ let is_unit_boundary_line (l : Geom.line) : bool =
 
 (* Eval.named_points and named_lines both carry a frame step and the index of
    the statement that binds the name; look up by name, ignoring both. *)
-let assoc4 (name : string) (l : (string * 'a * int * int) list) : 'a option =
+let assoc4 (name : string) (l : (string * 'a * int * 'b) list) : 'a option =
   List.find_map (fun (n, v, _, _) -> if n = name then Some v else None) l
 
 let lookup_point (fd : Eval.folded) (name : string) : Geom.point =
