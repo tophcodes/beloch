@@ -274,8 +274,8 @@ hand at each call site, and step 7 holds everything the reader sees. Steps 1,
 
 ## Where the work stands (2026-09-23)
 
-Steps 1 to 6 are done and committed on `runtime-model`, which is open as draft
-PR #29. What each step actually produced:
+The migration is done: steps 1 to 7 are committed on `runtime-model`, which is
+open as draft PR #29. What each step actually produced:
 
 1. **Core.** State, events, reducers, `renderCommand`. Two fields joined the
    command since this document was written: `settled`, because a renderer has
@@ -313,7 +313,19 @@ PR #29. What each step actually produced:
    here now, so the CodeMirror marks, the tooltip and the lookups read a span
    the same way.
 
-Still open: **step 7** (the evaluator, the phases, the debounce).
+7. **`@beloch/runtime-eval`.** The phases, the run waiting behind an
+   evaluator that has not arrived, both limits, and the evaluator's envelope
+   turned into a document or a diagnostic. The backend is an interface the
+   playground fills with its worker. `playground-run-state.ts` moved in as
+   `ui.ts` with its tests, renamed for the collision. Two departures from
+   this document, both deliberate. The debounce is not written: nothing
+   re-evaluates on typing today, and a limit nobody reaches is a limit nobody
+   tests. And a failed run now keeps the document rather than emptying the
+   slot, which is the invariant listed under the acceptance test and what the
+   reader already saw, since the drawing stayed on screen either way.
+
+The migration is over, so this document's remaining job is the design brief
+below.
 
 What is known about placing a block's entities, since it cost an afternoon to
 find out: a crease is placed by the span in `beloch:inspect`, a named point by
@@ -327,8 +339,10 @@ an emitter change, a `spec/FOLD.md` change, a parser change and a core change.
 The click list was walked by hand on the dev server after step 3 and everything
 held. Step 4's sequences run headless in `core/test/sequences.test.ts`, and
 each one was checked against a broken reducer to see it fail. Nothing since
-step 3 has been walked in a browser, so the chooser and the editor marks are
-proved by their suites and not by a pointer.
+step 3 has been walked in a browser, so the chooser, the editor marks and
+everything the reader watches while a run happens are proved by their suites
+and not by a pointer. Step 7 is where that gap matters most: the suites drive
+a fake backend, and no test downloads 2.3 MB of wasm.
 
 ## The design brief
 
