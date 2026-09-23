@@ -7,6 +7,7 @@ import {
   setStepLineOn,
   setStepBlocksOn,
   setHoveredStepOn,
+  stepOfLine,
 } from "./cm-step-marker";
 
 beforeAll(() => { if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register(); });
@@ -62,11 +63,9 @@ test("moving to a different line clears the previous marker", () => {
   expect(view.dom.querySelectorAll(".cm-step-line").length).toBe(1);
 });
 
-// Marking a line and revealing it are different jobs: stepping through a
-// program wants the line brought into view, clicking a crease in the
-// drawing wants the editor left where the reader put it. Asserted on the
-// dispatches rather than on scrollTop, because CodeMirror only renders the
-// visible viewport and a headless editor has no layout to scroll.
+// Marking a block never moves the program: where the reader put it is theirs.
+// Asserted on the dispatches rather than on scrollTop, because CodeMirror only
+// renders the visible viewport and a headless editor has no layout to scroll.
 function countDispatches(view: EditorView, run: () => void): number {
   const real = view.dispatch.bind(view);
   let n = 0;
@@ -79,15 +78,10 @@ function countDispatches(view: EditorView, run: () => void): number {
   return n;
 }
 
-test("reveal:false marks the line and dispatches no scroll", () => {
+test("marking a block dispatches once and scrolls nothing", () => {
   const view = mountEditor("paper square\nfold X\nfold Y\n");
-  expect(countDispatches(view, () => setStepLineOn(view, 3, { reveal: false }))).toBe(1);
+  expect(countDispatches(view, () => setStepLineOn(view, 3))).toBe(1);
   expect(view.dom.querySelector(".cm-step-line")).not.toBeNull();
-});
-
-test("the default still reveals the line, as stepping needs", () => {
-  const view = mountEditor("paper square\nfold X\nfold Y\n");
-  expect(countDispatches(view, () => setStepLineOn(view, 3))).toBe(2);
 });
 
 test("clearing dispatches once either way", () => {
@@ -113,7 +107,7 @@ test("every block a program has carries a bar", () => {
 test("the block on screen is the one drawn solid", () => {
   const view = mountEditor("paper square\nfold X\n.m = free\nfold Y\n");
   setStepBlocksOn(view, threeBlocks);
-  setStepLineOn(view, 2, { through: 3, reveal: false });
+  setStepLineOn(view, 2, { through: 3 });
   const current = view.dom.querySelectorAll(".cm-step-bar.is-current");
   expect(current.length).toBe(2);
 });
@@ -160,4 +154,15 @@ test("pointing at a block lights the whole block's bar", () => {
   expect(hovered.map((b) => b.getAttribute("data-step"))).toEqual(["1", "1"]);
   setHoveredStepOn(view, null);
   expect(view.dom.querySelector(".cm-step-bar.is-hover")).toBeNull();
+});
+
+test("clicking a line number jumps to the step its block stands for", () => {
+  const picked: number[] = [];
+  const view = mountEditor("paper square\nfold X\n.m = free\nfold Y\n", (step) => picked.push(step));
+  setStepBlocksOn(view, threeBlocks);
+  // The third line belongs to the block of step 1, which is what its number
+  // answers for: pointing there already lights that bar.
+  expect(stepOfLine(view.state, 3)).toBe(1);
+  expect(stepOfLine(view.state, 4)).toBe(2);
+  expect(stepOfLine(view.state, 99)).toBeNull();
 });

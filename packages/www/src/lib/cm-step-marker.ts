@@ -171,11 +171,26 @@ const stepBlocksField = StateField.define<StepBlocksValue>({
   provide: (f) => EditorView.decorations.from(f, (v) => v.deco),
 });
 
+/** The step whose block covers `line`, or nothing where no block does. */
+export const stepOfLine = (state: EditorState, line: number): number | null =>
+  state.field(stepBlocksField).blocks.find((b) => line >= b.fromLine && line <= b.toLine)?.step ??
+  null;
+
 /** The block whose bar was clicked, or nothing. */
 const barStep = (target: EventTarget | null): number | null => {
   const bar = target instanceof Element ? target.closest<HTMLElement>(".cm-step-bar") : null;
   const step = bar?.dataset.step;
   return step === undefined ? null : Number(step);
+};
+
+// A click on a line number belongs to the block that line is in. The number
+// column carries no marker of its own; what it offers is the line, and a line
+// is in one block.
+const numberStep = (view: EditorView, event: MouseEvent): number | null => {
+  const target = event.target;
+  if (!(target instanceof Element) || !target.closest(".cm-lineNumbers")) return null;
+  const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+  return pos === null ? null : stepOfLine(view.state, view.state.doc.lineAt(pos).number);
 };
 
 // The line a failed run named. Same mechanism as the step line, its own
@@ -215,9 +230,11 @@ export function stepMarkerExtensions(
     stepBlocksField,
     errorLineField,
     EditorView.domEventHandlers({
-      mousedown(event) {
+      mousedown(event, view) {
         if (onPick === undefined) return false;
-        const step = barStep(event.target);
+        // The bar, or the line number beside it: pointing at either already
+        // lights the block, so both answer the click.
+        const step = barStep(event.target) ?? numberStep(view, event);
         if (step === null) return false;
         onPick(step);
         return true;
@@ -239,29 +256,25 @@ export function setHoveredStepOn(view: EditorView, step: number | null) {
 }
 
 /** Show (or, with `line: null`, clear) the step marker: the bar and the
- * background over `line` through `opts.through`, with the first line scrolled
- * into view. Never touches the selection/cursor. */
+ * background over `line` through `opts.through`. Never touches the
+ * selection/cursor, and never scrolls. */
 // `through` (default `line`) is the last line the step stands for. A block
 // that ends above where it starts stands for nothing and clears the marker,
 // which is what a program whose first statement is also its first line asks
 // for.
 //
-// `reveal` (default true) also brings the line into view. Stepping through a
-// program wants that; marking the line a clicked crease was built on does
-// not, because the reader is looking at the drawing and did not ask the
-// editor to move.
+// Marking a block does not bring it into view. Where the reader put the
+// program is theirs: a step taken while reading line 40 of a long program has
+// no business pulling the text back to line 3, and the drawing they are
+// watching would go with it.
 export function setStepLineOn(
   view: EditorView,
   line: number | null,
-  opts: { through?: number; reveal?: boolean } = {},
+  opts: { through?: number } = {},
 ) {
   const to = opts.through ?? line;
   const block = line == null || to == null || to < line ? null : { line, to };
   view.dispatch({ effects: setStepLine.of(block) });
-  if (opts.reveal !== false && block !== null && block.line >= 1 && block.line <= view.state.doc.lines) {
-    const pos = view.state.doc.line(block.line).from;
-    view.dispatch({ effects: EditorView.scrollIntoView(pos, { y: "center" }) });
-  }
 }
 
 /** Show (or, with `line: null`, clear) the highlight on the line a failed run

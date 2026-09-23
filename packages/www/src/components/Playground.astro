@@ -576,6 +576,11 @@ const codeLines = code ? code.split("\n").length : 0;
      screen drawn solid. Clicking a bar is the same move as clicking its dot on
      the scrubber. The editor sits on the code surface, so the bars take that
      surface's fixed accent rather than the one that follows the mode. */
+  /* The number beside a block answers for it too: pointing at it already
+     lights the bar, so it takes the click as well. */
+  .pg-source :global(.cm-lineNumbers .cm-gutterElement) {
+    cursor: pointer;
+  }
   .pg-source :global(.cm-step-bar) {
     position: absolute;
     left: 0;
@@ -1915,9 +1920,8 @@ const codeLines = code ? code.split("\n").length : 0;
       renderInspect(ref, true);
       const scene = currentScene();
       const ln = scene ? sourceLineOf(scene, ref) : null;
-      // Mark the statement that built this entity, but leave the editor where
-      // the reader left it: they clicked the drawing, not the code.
-      if (ln) setStepLineOn(editor, ln, { reveal: false });
+      // Mark the statement that built this entity.
+      if (ln) setStepLineOn(editor, ln);
     };
 
     // The coincident-line chooser: a materialized list of the overlapping
@@ -2305,14 +2309,9 @@ const codeLines = code ? code.split("\n").length : 0;
         // in a program the visitor cannot step through is a control that is
         // not there.
         //
-        // Scrolling the source to the block is for a reader who asked to step.
-        // A run landing on its last step, a paper changed, a style switched:
-        // in all of those the reader is looking at the drawing, and moving the
-        // program under them takes the page with it.
         if (!hero) {
           setStepLineOn(editor, block.fromLine, {
             through: block.toLine ?? editor.state.doc.lines,
-            reveal: animate,
           });
         }
       } catch (err) {
