@@ -32,6 +32,10 @@ not have to re-derive it.
 | 21 | The seven statement kinds read as three groups | the bridge |
 | 22 | There is a named type scale | `--bel-text-*` |
 | 23 | The site states the archived record it belongs to | `CiteLine.astro`, `/cite/` |
+| 24 | A set of states one control chooses between is one control, the chosen state filled rather than outlined | `.pg-segmented` |
+| 25 | Choices a reader makes rarely fold into a menu: a word in the bar, a panel under it, one open at a time | `.pg-menu` in `Playground.astro` |
+| 26 | A two-state choice is a checkbox, which is the first form control the system names | `.pg-menu-check` |
+| 27 | The step a drawing stands for is marked in the code by a bar down the block's left edge | `.cm-step-line` |
 
 ## Built
 
@@ -216,6 +220,30 @@ not have to re-derive it.
   which weakens the tie between the word and the drawn thing for that one
   colour.
 
+## The playground's bars
+
+The design put a second version of the playground beside the first, and the
+card it draws is what the toolbar, the stepper and the code column now follow.
+
+- **Two menus instead of five controls in a row.** The paper, the line style
+  and the hidden lines stood as a swatch row, two cycling buttons over the
+  drawing and a word in the bar. They are one `view` menu now, and what leaves
+  the page is the `export` menu beside it. The closed `view` button carries a
+  swatch of the paper it chose, so the choice is legible without opening it.
+- **Hidden lines is a checkbox.** A buried segment is either drawn or it is
+  not, which is two states and reads as one switch. `dashed`, the third state
+  of the button that cycled, is given up: it drew every buried run alike where
+  `depth` says how deep each one lies.
+- **The gutter's step bars are given up.** A column of bars beside the source
+  said how the program divides into steps a second time, next to a stepper
+  under the drawing that says it already, and it cost fourteen pixels of the
+  width the program is read in. What the bars offered survives elsewhere: the
+  scrubber's dots jump to a step, and pointing anywhere in a block lights what
+  it built.
+- **The stepper names the statement.** Beside `3/7` stands the line of the
+  program that step folded, taken from the source the evaluator answered rather
+  than from the editor, because the two part company on the next keystroke.
+
 ## The viewer pass
 
 `viewer-brief.md` put seven decisions to the design. The answer came back as
@@ -270,8 +298,9 @@ is filled.
 - **Opacity literals are unnamed.** The editor gutter takes
   `rgba(255,255,255,.08)`, the active line `.04`, occluded segments `0.55`,
   the reset button `0.45`.
-- **No form vocabulary.** The site knows buttons, tabs, swatches and an editor.
-  Input fields, selects, switches and tables have no pattern yet.
+- **No form vocabulary beyond the checkbox.** The site knows buttons, tabs,
+  swatches, a segmented control, a menu and one checkbox. Input fields,
+  selects, radio groups and tables have no pattern yet.
 
 ## Next
 
