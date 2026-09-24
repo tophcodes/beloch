@@ -25,15 +25,7 @@ const hasSearch = Astro.slots.has("search");
     </div>
   )}
   <nav class:list={["site-nav", { "site-nav-compact": compact }]} aria-label="Primary">
-    {NAV_LINKS.map((l) =>
-      "icon" in l ? (
-        <a class="nav-icon" href={l.href} aria-label={l.label}>
-          <Icon name={l.icon} />
-        </a>
-      ) : (
-        <a href={l.href}>{l.label}</a>
-      )
-    )}
+    {NAV_LINKS.map((l) => <a href={l.href}>{l.label}</a>)}
     <button type="button" class="theme-toggle" aria-label="Toggle color theme">
       <Icon name="moon" class="toggle-moon" />
       <Icon name="sun" class="toggle-sun" />
@@ -66,30 +58,14 @@ const hasSearch = Astro.slots.has("search");
   .site-nav a { color: var(--bel-ui-text-muted); }
   .site-nav a:hover { color: var(--bel-ui-text); }
 
+  .site-nav-compact a { display: none; }
+  @media (min-width: 50rem) {
+    .site-nav-compact a { display: inline; }
+  }
+
   /* A control that is a mark alone is a circle, a control that carries a word
      is a rectangle. The mode toggle, the search and the drawer button follow
      the same rule, so the bar reads as one set. */
-  .nav-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border: 1px solid var(--bel-ui-control-border);
-    border-radius: 50%;
-  }
-  .nav-icon:hover { color: var(--bel-ui-text); border-color: var(--bel-ui-accent); }
-  .nav-icon :global(svg) { width: 18px; height: 18px; }
-  .nav-icon:focus-visible {
-    outline: 2px solid var(--bel-ui-accent);
-    outline-offset: 2px;
-  }
-
-  .site-nav-compact a:not(.nav-icon) { display: none; }
-  @media (min-width: 50rem) {
-    .site-nav-compact a:not(.nav-icon) { display: inline; }
-  }
-
   .theme-toggle {
     display: inline-flex;
     align-items: center;

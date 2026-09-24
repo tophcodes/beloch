@@ -5,7 +5,7 @@
 // `starlight-theme` localStorage key (so the choice carries into the docs),
 // and the paper-scheme sync script.
 import { headSyncScript } from "../lib/paper-schemes";
-import { NAV_LINKS } from "../lib/nav-links";
+import { NAV_LINKS, REPO_LINK } from "../lib/nav-links";
 import SiteHeader from "../components/SiteHeader.astro";
 import CiteLine from "../components/CiteLine.astro";
 import "../styles/theme.css";
@@ -67,7 +67,7 @@ const { title, description, url } = Astro.props;
 
     <footer class="site-footer">
       <nav class="site-footer-nav" aria-label="Secondary">
-        {NAV_LINKS.map((l) => (
+        {[...NAV_LINKS, REPO_LINK].map((l) => (
           <a href={l.href}>{l.label}</a>
         ))}
       </nav>
