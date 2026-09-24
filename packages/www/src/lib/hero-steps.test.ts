@@ -5,7 +5,7 @@ const SRC = `paper square
 
 ; a comment stands on no step
 fold (map .a onto .c) as --bd
-.o = free on --bd from .b at 1/2
+--m = (through .b .d)
 reverse (map .b onto .c)
   as --h
 `;
@@ -14,7 +14,7 @@ test("one step per write, a read on the step of the write after it", () => {
   const { steps } = heroSequence(SRC);
   expect(steps.map((s) => s.lines)).toEqual([
     ["fold (map .a onto .c) as --bd"],
-    [".o = free on --bd from .b at 1/2", "reverse (map .b onto .c) as --h"],
+    ["--m = (through .b .d)", "reverse (map .b onto .c) as --h"],
   ]);
 });
 
