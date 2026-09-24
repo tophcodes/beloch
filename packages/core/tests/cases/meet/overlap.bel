@@ -1,0 +1,6 @@
+; A bundle meets itself along its whole length: no single point.
+paper square
+mark (map .a onto .b) as --m
+.p = --m * --m
+
+; expect error "overlap"

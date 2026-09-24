@@ -245,14 +245,9 @@ let unit_boundary_lines : Geom.line list =
 let is_unit_boundary_line (l : Geom.line) : bool =
   List.exists (line_equal l) unit_boundary_lines
 
-(* Eval.named_points/named_lines are (name, value, step) triples (step = the
-   0-based creation step, task A1); look up by name, ignoring the step. *)
-let assoc3 (name : string) (l : (string * 'a * int) list) : 'a option =
-  List.find_map (fun (n, v, _) -> if n = name then Some v else None) l
-
-(* named_points carries a frame step AND a statement index; named_lines still
-   carries the step alone. *)
-let assoc4 (name : string) (l : (string * 'a * int * int) list) : 'a option =
+(* Eval.named_points and named_lines both carry a frame step and the index of
+   the statement that binds the name; look up by name, ignoring both. *)
+let assoc4 (name : string) (l : (string * 'a * int * 'b) list) : 'a option =
   List.find_map (fun (n, v, _, _) -> if n = name then Some v else None) l
 
 let lookup_point (fd : Eval.folded) (name : string) : Geom.point =
@@ -261,7 +256,7 @@ let lookup_point (fd : Eval.folded) (name : string) : Geom.point =
   | None -> harness_fail "unknown point .%s" name
 
 let lookup_line (fd : Eval.folded) (name : string) : Geom.line =
-  match assoc3 name fd.Eval.named_lines with
+  match assoc4 name fd.Eval.named_lines with
   | Some l -> l
   | None -> harness_fail "unknown line --%s" name
 
@@ -273,7 +268,7 @@ let lookup_named_step (fd : Eval.folded) (v : value) : string * int option =
           fd.Eval.named_points )
   | VLine name ->
       ( Printf.sprintf "--%s" name,
-        List.find_map (fun (n, _, s) -> if n = name then Some s else None)
+        List.find_map (fun (n, _, s, _) -> if n = name then Some s else None)
           fd.Eval.named_lines )
   | VLit _ -> harness_fail "'named-step' requires a point or line operand"
 

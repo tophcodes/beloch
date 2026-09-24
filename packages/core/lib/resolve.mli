@@ -36,8 +36,8 @@ val resolve_line : Ctx.ctx -> Ast.line_operand -> Geom.line
 val resolve_paper_line :
   Ctx.ctx -> Ast.line_operand -> Geom.line * (Geom.point * Geom.point) list option
 (** Resolve a line operand to a PAPER-space line, plus the marks (chords) it
-    carries if any. Used by `cross`: folding never moves a mark within the
-    sheet, so the crossing is fold-state-independent. *)
+    carries if any. Used by `free on` and by line selectors: folding never
+    moves a mark within the sheet, so the result is fold-state-independent. *)
 
 val material_cid : Ctx.ctx -> Ast.crease_ref -> int
 (** The crease id of a MATERIAL crease reference. A [Ctx.Mark] is
@@ -107,7 +107,7 @@ val resolve_mark_extent :
   Error.span ->
   [ `Full | `Partial of Fold_state.mark_geom * Geom.point * Geom.line ]
 (** A mark's extent (spec §4), resolved to PAPER-space geometry and checked
-    against the motion's TABLE-space [axis]. *)
+    against the construction's TABLE-space [axis]. *)
 
 val resolve_mark_flap :
   Ctx.ctx -> Ast.flap_arg option -> Geom.point -> Error.span -> int list

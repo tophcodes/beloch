@@ -32,6 +32,10 @@ not have to re-derive it.
 | 21 | The seven statement kinds read as three groups | the bridge |
 | 22 | There is a named type scale | `--bel-text-*` |
 | 23 | The site states the archived record it belongs to | `CiteLine.astro`, `/cite/` |
+| 24 | A set of states one control chooses between is one control, the chosen state filled rather than outlined | `.pg-segmented` |
+| 25 | Choices a reader makes rarely fold into a menu: a word in the bar, a panel under it, one open at a time | `.pg-menu` in `Playground.astro` |
+| 26 | A two-state choice is a checkbox, which is the first form control the system names | `.pg-menu-check` |
+| 27 | The step a drawing stands for is marked in the code by a bar down the block's left edge | `.cm-step-line` |
 
 ## Built
 
@@ -216,6 +220,77 @@ not have to re-derive it.
   which weakens the tie between the word and the drawn thing for that one
   colour.
 
+## The playground's bars
+
+The design put a second version of the playground beside the first, and the
+card it draws is what the toolbar, the stepper and the code column now follow.
+
+- **Two menus instead of five controls in a row.** The paper, the line style
+  and the hidden lines stood as a swatch row, two cycling buttons over the
+  drawing and a word in the bar. They are one `view` menu now, and what leaves
+  the page is the `export` menu beside it. The closed `view` button carries a
+  swatch of the paper it chose, so the choice is legible without opening it.
+- **Hidden lines is a checkbox.** A buried segment is either drawn or it is
+  not, which is two states and reads as one switch. `dashed`, the third state
+  of the button that cycled, is given up: it drew every buried run alike where
+  `depth` says how deep each one lies.
+- **The gutter's step bars are given up.** A column of bars beside the source
+  said how the program divides into steps a second time, next to a stepper
+  under the drawing that says it already, and it cost fourteen pixels of the
+  width the program is read in. What the bars offered survives elsewhere: the
+  scrubber's dots jump to a step, and the debug mode below answers what a
+  statement built.
+- **The stepper names the statement.** Beside `3/7` stands the line of the
+  program that step folded, taken from the source the evaluator answered rather
+  than from the editor, because the two part company on the next keystroke.
+
+## What the editor says about the program
+
+The stepper is a display of the fold sequence, and what it can say about the
+program is which line folded. It marks that line and nothing under it. Marking
+the whole block a step stood over answered a different question, so a reader
+always saw several statements at once and never one on its own.
+
+Which value a statement binds is a separate job with a separate audience: a
+reader points at the line that binds a name and wants that value in the
+drawing. It is a mode of the editor. While it is on the editor is read-only, so
+a click is a choice and never a caret; every span that binds a value carries a
+box; clicking a box takes that value into the selection or out of it, and
+several stand at once. The drawing lights them the way it lights any settled
+selection, which is why a construction line the paper never carries is a
+selection of its own kind.
+
+Two questions the mode raised, and their answers:
+
+- **A box surrounds the span that binds.** A statement that binds twice would
+  otherwise offer one box for two values, and a box around a whole statement is
+  forty characters of target for a name of six.
+- **The mode is reached from the toolbar and from a key**, so it is findable by
+  a reader who has never seen it and cheap for one who uses it all day.
+
+## The selection card
+
+A click in the drawing answers on the drawing. A card stands at the place the
+reader clicked and names what was settled, the line of the program that made
+it, and that line as the run answered it. The rail under the drawing it
+replaces sat a hand's width away from the line it was about and cost the stage
+its height whether or not anything was selected.
+
+- **The stack picker lives in the card.** A bundle of several segments lists
+  them as rows under the answer, and so do the lines a pixel holds when the
+  click could mean more than one of them.
+- **The card stands where the click landed.** A bundle has several segments
+  and a pixel can hold several lines, so the click is the only point that is
+  unambiguous. A key press on a crease has no click to go by and takes the
+  middle of the line. The card holds its place on the paper through a pan and
+  a zoom, and follows its entity to the nearest drawn point of it when a step
+  moves the paper.
+- **Hovering lights the drawing and nothing else.** A card that appeared and
+  vanished under the pointer would cover the lines the reader is moving
+  across.
+- **A selection of several takes no card.** The debug mode makes one, and the
+  boxes in the editor already say what it holds.
+
 ## The viewer pass
 
 `viewer-brief.md` put seven decisions to the design. The answer came back as
@@ -231,7 +306,7 @@ it has no editor and checking flat-foldability is a comparison.
 | 1 | Crease pattern and folded state | Tab pair in the playground, side by side in the docs card |
 | 2 | A line-style switch | Yes, beside the paper choice; a paper that cannot hold the coloured style switches that button off and says why in its title |
 | 3 | Export and sharing | The drawing as SVG to a file or the clipboard, and a link carrying the program and the step |
-| 4 | The inspector | A rail under the drawing, holding its place across a step change |
+| 4 | The inspector | A rail under the drawing, holding its place across a step change; since replaced by the selection card |
 | 5 | The landing hero | Its own job: a program and its drawing, and nothing to operate; the playground moved back to `/playground/` |
 | 6 | `--bel-ui-border` as two roles | `--bel-ui-divider` and `--bel-ui-control-border` |
 | 7 | Whether `--bel-ui-text-faint` stays | It stays, as the text of a switched-off control |
@@ -270,8 +345,9 @@ is filled.
 - **Opacity literals are unnamed.** The editor gutter takes
   `rgba(255,255,255,.08)`, the active line `.04`, occluded segments `0.55`,
   the reset button `0.45`.
-- **No form vocabulary.** The site knows buttons, tabs, swatches and an editor.
-  Input fields, selects, switches and tables have no pattern yet.
+- **No form vocabulary beyond the checkbox.** The site knows buttons, tabs,
+  swatches, a segmented control, a menu and one checkbox. Input fields,
+  selects, radio groups and tables have no pattern yet.
 
 ## Next
 

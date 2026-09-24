@@ -55,20 +55,38 @@ export function segMatchesLine(
   );
 }
 
+// Which space a drawing places its geometry in: the flat sheet carries the
+// paper's own coordinates, a folded frame the table's. `beloch:inspect` records
+// both per segment, so the match has to be told which one it is looking at.
+export type PaperSpace = "paper" | "table";
+
 // Which paper-edge bundle (by name, "ab") the drawn line belongs to, or null
 // for none. Every segment of every edge is checked, since a crossing crease
 // splits an edge into several.
+//
+// A drawn line is matched by lying ALONG a segment rather than by having its
+// ends: occlusion clips a boundary run into pieces and a crossing crease cuts
+// it again, so the piece on screen is usually part of the segment the document
+// records. Both ends within the tolerance of the segment is what "along" means.
 export function edgeOfLine(
   edges: Inspect["edges"],
   line: DrawnLine,
   layout: PixelTransform,
+  space: PaperSpace = "table",
+  eps = 1.5,
 ): string | null {
   const [x1, y1, x2, y2] = line;
   for (const [name, edge] of Object.entries(edges)) {
     for (const seg of edge.segments) {
-      const p0: Vec2 = [layout.tx(seg.table[0][0]), layout.ty(seg.table[0][1])];
-      const p1: Vec2 = [layout.tx(seg.table[1][0]), layout.ty(seg.table[1][1])];
-      if (segMatchesLine(p0, p1, x1, y1, x2, y2)) return name;
+      const ends = space === "paper" ? seg.paper : seg.table;
+      const ax = layout.tx(ends[0][0]), ay = layout.ty(ends[0][1]);
+      const bx = layout.tx(ends[1][0]), by = layout.ty(ends[1][1]);
+      if (
+        pointSegDist(x1, y1, ax, ay, bx, by) <= eps &&
+        pointSegDist(x2, y2, ax, ay, bx, by) <= eps
+      ) {
+        return name;
+      }
     }
   }
   return null;

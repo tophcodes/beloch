@@ -292,3 +292,21 @@ test("renderFolded: markOverlay draws real marks — boundary endpoints and mult
   const pieces = raySvg.match(new RegExp(`data-crease-id="${rayStmt.mark!.creaseId}"`, "g")) ?? [];
   expect(pieces.length).toBeGreaterThan(1);
 });
+
+// A buried run is the same crease as the visible run it continues, and a host
+// resolves what the reader pointed at from the line's own attributes. Without
+// the id a drawn hidden line answers nothing when it is clicked.
+test("a buried run carries the crease it belongs to", async () => {
+  const scene = parseFold(await occlude());
+  // The fixture is a bare FOLD, so every edge is given a provenance here: the
+  // id is what the drawing is asked to carry through to the buried runs.
+  for (const step of scene.steps) {
+    step.frame.edgesProvenance = step.frame.edgesVertices.map((_, i) => ({
+      axiom: null, sources: [], span: null, name: null, creaseId: i, statement: null,
+    }));
+  }
+  const svg = renderFolded(scene, { hidden: "depth" }).toString();
+  const buried = svg.match(/<line[^>]*data-occluded="true"[^>]*>/g) ?? [];
+  expect(buried.length).toBeGreaterThan(0);
+  expect(buried.filter((l) => /data-crease-id="\d+"/.test(l)).length).toBe(buried.length);
+});

@@ -9,7 +9,11 @@ export type EntityRef =
   | { kind: "crease"; creaseId: string }
   | { kind: "edge"; name: string }
   | { kind: "face"; index: string }
-  | { kind: "vertex"; index: number; name: string | null };
+  | { kind: "vertex"; index: number; name: string | null }
+  // A construction line the program bound. One that never becomes a crease has
+  // no crease id to take, and the drawing carries it under the name the program
+  // gave it, so the name is the identity.
+  | { kind: "construction"; name: string };
 
 // Which of the two pictures of a state to draw: the flat sheet with its
 // creases, or the folded result.
@@ -33,8 +37,9 @@ export interface State {
   // module after a run, a card from the FOLD embedded in its markup, a tour
   // from a program evaluated at build time.
   scene: FoldScene | null;
-  // Statement index, 0 to statements.length. 0 is the sheet before any
-  // statement ran; n means every statement has been applied.
+  // Where the stepper stands: 0 to writes.length. 0 is the sheet before any
+  // statement ran; n means every write has been applied. A binding statement
+  // moves the program and not the paper (ADR 0026), so it is no stop here.
   step: number;
   // The settled selection. A card lights several named entities at once and
   // the playground lights one; both are policies over this one list, and the

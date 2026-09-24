@@ -15,6 +15,7 @@ import rehypeCitePost from './src/lib/rehype-cite-post.ts';
 import { headSyncScript } from "./src/lib/paper-schemes.ts";
 import { notePopupScript } from "./src/lib/note-popups.ts";
 import { sidebarCollapseScript } from "./src/lib/sidebar-collapse.ts";
+import { DESCRIPTION } from "./src/lib/description.ts";
 
 // Anchor repo root to this file's location (packages/www/astro.config.mjs → two levels up).
 // Used by highlight-bel.ts to resolve the grammar wasm + web-tree-sitter runtime
@@ -123,7 +124,7 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: "Beloch",
-			description: "A declarative language for origami, built on the Huzita–Justin axioms.",
+			description: DESCRIPTION,
 			social: [{ icon: "github", label: "GitHub", href: "https://github.com/tophcodes/beloch" }],
 			sidebar: [
 				{

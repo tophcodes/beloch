@@ -58,7 +58,7 @@ let axis_item (verb : string) (cell : markable option ref) (it : raw_item) : boo
     =
   match it with
   | RiConstruction (c, sp) ->
-      slot verb "axis" cell sp (MMotion c);
+      slot verb "axis" cell sp (MConstruction c);
       true
   | RiLine (lo, mv, sp) ->
       (match mv with

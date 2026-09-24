@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { placeLabels, type LabelAnchor } from "../src/primitives/labels";
+import { besideLine, placeLabels, type LabelAnchor } from "../src/primitives/labels";
 
 const A = (x: number, y: number, text: string, key = text): LabelAnchor => ({
   x, y, text, key, preferOffset: [10, -8],
@@ -41,4 +41,45 @@ test("dense but distinct anchors get separated (no two boxes overlap)", () => {
 
 test("empty input yields no labels", () => {
   expect(placeLabels([])).toEqual([]);
+});
+
+test("names of different kinds at one spot stay two labels", () => {
+  // A construction's midpoint on the point it was built through: two things
+  // meet there, and reading them as one name says there is one.
+  const out = placeLabels(
+    [
+      { ...A(100, 100, ".o"), group: "point" },
+      { ...A(100, 100, "--mid"), group: "line:mid" },
+    ],
+    { epsilon: 6 },
+  );
+  expect(out.map((l) => l.text).sort()).toEqual([".o", "--mid"].sort());
+  // and the placement keeps them apart
+  expect(out[0]!.x !== out[1]!.x || out[0]!.y !== out[1]!.y).toBe(true);
+});
+
+test("an anchor carries its own attributes into the placed label", () => {
+  const out = placeLabels([{ ...A(10, 10, "--v"), attrs: { fill: "#123456" } }], {});
+  expect(out[0]!.attrs).toEqual({ fill: "#123456" });
+});
+
+test("a line's name sits beside the line rather than on it", () => {
+  // A horizontal line: the offset is perpendicular to it, which is up here.
+  expect(besideLine([0, 0], [100, 0], 10)).toEqual([0, -10]);
+  // A vertical one: the offset is sideways, and the same side either way the
+  // line was drawn.
+  expect(besideLine([0, 0], [0, 100], 10)).toEqual([-10, 0]);
+  expect(besideLine([0, 100], [0, 0], 10)).toEqual([-10, 0]);
+});
+
+test("names a reader picked keep their own labels where they coincide", () => {
+  // Four corners on one folded pixel, all four asked for: each gets a label of
+  // its own, and the ring walks them apart.
+  const out = placeLabels(
+    [A(100, 100, ".a"), A(101, 100, ".b"), A(100, 101, ".c"), A(101, 99, ".d")],
+    { cluster: false },
+  );
+  expect(out.map((l) => l.text).sort()).toEqual([".a", ".b", ".c", ".d"]);
+  const spots = new Set(out.map((l) => `${l.x},${l.y},${l.anchor}`));
+  expect(spots.size).toBe(4);
 });

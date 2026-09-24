@@ -9,10 +9,10 @@ fold (map .a onto .c) as --bd
 reverse (map .b onto .c) as --h
 reverse (map .d onto .c) as --v
 
-.o = free on --bd from .b at 1/2
+.o = --h * --v
 --mid = (through .c .o)
 
-.sr = free on --ab from .a at 1/2
+.sr = --ab * --h
 reverse (map .sr onto --mid through .c)
 
 ; assert steps = 4

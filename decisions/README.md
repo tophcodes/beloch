@@ -67,3 +67,4 @@ See also: `../notes/` (design journal), `../antipatterns.md` (dead ends),
 - [0020](0020-multifold-research-package.md) — Multifold research package: separate repository, one-way dependency on core
 - [0021](0021-reference-documents-replace-specification.md) — The reference documents replace SPECIFICATION.md
 - [0022](0022-constructions-are-alignment-sets.md) — A construction is its alignment set; an axiom number names one
+- [0027](0027-the-meet-is-an-intersection-of-point-sets.md) — The meet is the intersection of its operands as point sets

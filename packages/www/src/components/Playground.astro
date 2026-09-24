@@ -16,7 +16,7 @@ interface Props {
   code?: string;
   height?: number;
   // Build-time-rendered SVG markup shown in `.pg-result` before any live
-  // evaluation has run (e.g. a static hero fold rendered via evalBelToFold,
+  // evaluation has run (e.g. a static fold rendered via evalBelToFold,
   // the same build-time path `<Beloch>` uses). Optional — default behavior
   // (the "Run drücken" notice) is unchanged when absent.
   seed?: string;
@@ -29,13 +29,8 @@ interface Props {
   // pulls) until the user actually clicks Run, instead of on mount. Optional
   // — default is today's eager boot.
   lazy?: boolean;
-  // "hero" is the landing's card: the program and the drawing, and nothing to
-  // operate. No run button, no step rail, no paper choice, no export, and the
-  // source is read-only. A visitor who wants to change something goes to the
-  // playground, which is the one surface with an editor.
-  variant?: "full" | "hero";
 }
-const { code = "", height = 320, seed, seedFold, lazy = false, variant = "full" } = Astro.props;
+const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
 
 // The program, coloured at build time by the same grammar the editor will use
 // (lib/highlight-bel.ts). It stands in the pane until the editor's parser has
@@ -46,12 +41,25 @@ const codeLines = code ? code.split("\n").length : 0;
 ---
 
 <div
-  class={`beloch-playground${variant === "hero" ? " is-hero" : ""}`}
+  class="beloch-playground"
   style={`--pg-height:${height}px`}
   data-lazy={lazy ? "true" : "false"}
-  data-variant={variant}
 >
   <div class="pg-pane pg-editor">
+    <button type="button" class="pg-run" aria-label="Run" title="Run">
+      <svg class="pg-run-play" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
+        <path d="M3 2 L13 8 L3 14 Z" fill="currentColor" />
+      </svg>
+      <span class="pg-run-spinner" aria-hidden="true"></span>
+    </button>
+    <div class="pg-run-hint" role="status" aria-live="polite"></div>
+    <button
+      type="button"
+      class="pg-debug"
+      aria-pressed="false"
+      disabled
+      title="Show the values the program binds (Ctrl/Cmd+Shift+D)"
+    >values</button>
     <div class="pg-source">
       <template class="pg-source-seed">{code}</template>
       {code ? (
@@ -62,13 +70,46 @@ const codeLines = code ? code.split("\n").length : 0;
   </div>
   <div class="pg-pane pg-output">
     <div class="pg-toolbar pg-toolbar-output">
-      <div class="pg-toolbar-views" role="tablist" aria-label="View">
+      <div class="pg-toolbar-views pg-segmented" role="tablist" aria-label="View">
         <button type="button" role="tab" class="pg-view" data-view="cp" aria-selected="false">crease pattern</button>
         <button type="button" role="tab" class="pg-view is-active" data-view="folded" aria-selected="true">folded</button>
       </div>
       <div class="pg-toolbar-tools">
-        <div class="pg-swatches" role="group" aria-label="Paper"></div>
-        <button type="button" class="pg-export-toggle" aria-expanded="false">export</button>
+        <div class="pg-menu">
+          <button type="button" class="pg-menu-toggle pg-view-toggle" aria-expanded="false" aria-haspopup="true">
+            <span class="pg-menu-swatch" aria-hidden="true"></span>view<span class="pg-menu-caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="pg-menu-panel pg-view-panel" hidden>
+            <div class="pg-menu-group">
+              <p class="pg-menu-head" aria-hidden="true">Paper</p>
+              <div class="pg-swatches" role="group" aria-label="Paper"></div>
+              <p class="pg-menu-note"></p>
+            </div>
+            <div class="pg-menu-group">
+              <p class="pg-menu-head" aria-hidden="true">Lines</p>
+              <div class="pg-segmented pg-styles" role="group" aria-label="Line style">
+                <button type="button" class="pg-style" data-style="colour" aria-pressed="false">color</button>
+                <button type="button" class="pg-style is-active" data-style="mono" aria-pressed="true">mono</button>
+              </div>
+            </div>
+            <label class="pg-menu-check">
+              <span>hidden lines</span>
+              <input type="checkbox" class="pg-hidden-lines" />
+            </label>
+          </div>
+        </div>
+        <div class="pg-menu">
+          <button type="button" class="pg-menu-toggle pg-export-toggle" aria-expanded="false" aria-haspopup="true">
+            export<span class="pg-menu-caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="pg-menu-panel pg-export" hidden>
+            <p class="pg-export-step"></p>
+            <button type="button" data-export="download">Download SVG</button>
+            <button type="button" data-export="copy">Copy SVG</button>
+            <button type="button" data-export="link">Copy link to program + step</button>
+            <p class="pg-export-said" role="status"></p>
+          </div>
+        </div>
       </div>
     </div>
     <div
@@ -76,10 +117,6 @@ const codeLines = code ? code.split("\n").length : 0;
       role="group"
       aria-label="Drawing. Arrow keys step, plus and minus zoom, 0 resets the view."
     >
-      <div class="pg-viewer-controls">
-        <button type="button" class="pg-cycle pg-cycle-style">mono</button>
-        <button type="button" class="pg-cycle pg-cycle-occl">hidden: off</button>
-      </div>
       <div class="pg-canvas">
         {seed ? <Fragment set:html={seed} /> : <p class="pg-notice pg-notice-info">Press “Run” to evaluate.</p>}
       </div>
@@ -95,15 +132,8 @@ const codeLines = code ? code.split("\n").length : 0;
           <path d="M12.5 1.5 L12.5 5 L9 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
-      <div class="pg-export" hidden>
-        <p class="pg-export-step"></p>
-        <button type="button" data-export="download">Download SVG</button>
-        <button type="button" data-export="copy">Copy SVG</button>
-        <button type="button" data-export="link">Copy link to program + step</button>
-        <p class="pg-export-said" role="status"></p>
-      </div>
+      <aside class="pg-card" aria-label="Selection" hidden></aside>
     </div>
-    <aside class="pg-inspect" hidden></aside>
     <div class="pg-error" role="alert" hidden></div>
     <div class="pg-steps" hidden>
       <div class="pg-step-timeline">
@@ -122,13 +152,6 @@ const codeLines = code ? code.split("\n").length : 0;
       <span class="pg-step-label"></span>
     </div>
   </div>
-  <button type="button" class="pg-run" aria-label="Run" title="Run">
-    <svg class="pg-run-play" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
-      <path d="M3 2 L13 8 L3 14 Z" fill="currentColor" />
-    </svg>
-    <span class="pg-run-spinner" aria-hidden="true"></span>
-  </button>
-  <div class="pg-run-hint" role="status" aria-live="polite"></div>
 </div>
 
 <style>
@@ -147,10 +170,6 @@ const codeLines = code ? code.split("\n").length : 0;
     /* Opt the rendered paper's SVG backdrop rect out of its white default
        (WEB_THEME reads --bel-paper-background) so the paper lies on the transparent pane. */
     --bel-paper-background: transparent;
-    /* The editor's step-marker gutter, in one place: the CodeMirror gutter
-       reads it, and so does the static copy that stands in before the editor
-       mounts, so the two cannot drift apart horizontally. */
-    --pg-step-gutter: 14px;
   }
   /* Under the break the drawing goes above the code (B3.7), and the editor
      keeps a height that reaches past the fold, so the cut-off line at the
@@ -159,72 +178,6 @@ const codeLines = code ? code.split("\n").length : 0;
     .beloch-playground { grid-template-columns: 1fr; }
     .pg-output { order: 1; }
     .pg-editor { order: 2; }
-    /* With the panes stacked there is no seam to sit on, so the run button
-       goes into the corner of the pane it acts on. */
-    .pg-run {
-      left: auto;
-      right: 14px;
-      top: auto;
-      bottom: 14px;
-      transform: none;
-    }
-    .pg-run-hint {
-      left: auto;
-      right: 14px;
-      top: auto;
-      bottom: 66px;
-      transform: none;
-    }
-  }
-
-  /* The hero: program and drawing, and nothing to operate. It carries no card
-     edge, because on the landing the page is its frame. Every token it uses
-     the docs already have (8.1 of the conditions). */
-  .beloch-playground.is-hero {
-    /* Wide enough that the hero's program needs no horizontal scrollbar, and
-       still the smaller of the two columns, so the drawing leads. */
-    grid-template-columns: minmax(0, 460px) minmax(0, 1fr);
-    gap: 40px;
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    overflow: visible;
-  }
-  .is-hero .pg-editor {
-    border-right: none;
-    border-radius: var(--bel-radius-card);
-    overflow: hidden;
-    align-self: center;
-  }
-  .is-hero .pg-toolbar,
-  .is-hero .pg-run,
-  .is-hero .pg-run-hint,
-  .is-hero .pg-steps,
-  .is-hero .pg-inspect,
-  .is-hero .pg-error,
-  .is-hero .pg-reset,
-  .is-hero .pg-viewer-controls,
-  .is-hero .pg-export {
-    display: none;
-  }
-  /* The hero's row is sized by its two panes, so the drawing needs a height to
-     fit into rather than a floor to grow from. The SVG's own `max-height:100%`
-     resolves to nothing against a parent whose height is its content, so
-     without a definite height up the chain the drawing draws at natural size
-     and runs off the page. */
-  .is-hero .pg-output {
-    height: var(--pg-height, 320px);
-  }
-  .is-hero .pg-result {
-    min-height: 0;
-    cursor: default;
-  }
-  @media (max-width: 720px) {
-    .beloch-playground.is-hero {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 24px;
-    }
-    .is-hero .pg-editor { border-top: none; }
   }
 
   .pg-pane {
@@ -234,6 +187,7 @@ const codeLines = code ? code.split("\n").length : 0;
   }
 
   .pg-editor {
+    position: relative;
     background: var(--bel-ui-code-surface);
     border-right: 1px solid var(--bel-ui-divider);
   }
@@ -264,38 +218,67 @@ const codeLines = code ? code.split("\n").length : 0;
     gap: 8px 16px;
     margin-left: auto;
   }
-  .pg-toolbar-views {
+
+
+  /* A set of states one control chooses between is drawn as one control: the
+     segments carry the border between them, and the chosen one is filled
+     rather than outlined, so the pair reads as a switch and not as two
+     buttons that happen to touch. */
+  .pg-segmented {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 4px;
+    border: 1px solid var(--bel-ui-divider);
+    border-radius: var(--bel-radius-control);
+    overflow: hidden;
   }
-
-  /* Line style and paper are siblings: which ink the diagram uses, and what it
-     is drawn on. A paper whose contrast the coloured style cannot hold
-     switches that button off (see colorOk in lib/paper-schemes) and says why
-     in its title, rather than dropping it and leaving a gap. */
-  /* The two drawing switches sit over the paper rather than in the header
-     row: they change what the reader is looking at, so they belong where
-     the looking happens. Each is one button carrying its own state, cycled
-     by clicking — see updateCycleButtons. Top left, opposite the reset
-     button at top right. */
-  .pg-viewer-controls {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    z-index: 2;
-    display: flex;
-    gap: 6px;
-  }
-  .pg-cycle {
-    background: color-mix(in srgb, var(--bel-ui-surface) 78%, transparent);
-  }
-  .pg-view,
-  .pg-cycle,
-  .pg-export-toggle {
+  .pg-segmented > button {
     font: inherit;
     font-size: var(--bel-text-xs);
+    padding: 4px 10px;
+    border: 0;
+    background: var(--bel-ui-surface);
+    color: var(--bel-ui-text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color var(--bel-duration-state) var(--bel-ease), background var(--bel-duration-state) var(--bel-ease);
+  }
+  .pg-segmented > button + button {
+    border-left: 1px solid var(--bel-ui-divider);
+  }
+  /* In a menu the control runs the width of the panel, so its segments split
+     that width rather than sitting in the corner of it. */
+  .pg-view-panel .pg-segmented > button { flex: 1; }
+  .pg-segmented > button:hover:not(:disabled) { color: var(--bel-ui-accent); }
+  .pg-segmented > button.is-active {
+    background: var(--bel-ui-quiet);
+    color: var(--bel-ui-text);
+  }
+  /* A paper the coloured style cannot hold switches that segment off (see
+     colorOk in lib/paper-schemes) and the note under the swatches says why,
+     rather than dropping it and leaving a gap. */
+  .pg-segmented > button:disabled {
+    cursor: default;
+    color: var(--bel-ui-text-faint);
+  }
+  .pg-segmented > button:focus-visible {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: -2px;
+  }
+
+  /* A menu is a word in the bar and a panel under it. Two of them: what the
+     drawing looks like, and what leaves the page. Both hold choices a reader
+     makes rarely, which is why they are folded away and the bar stays short
+     enough to read in one pass. */
+  .pg-menu {
+    position: relative;
+    display: flex;
+  }
+  .pg-menu-toggle {
+    font: inherit;
+    font-size: var(--bel-text-xs);
+    display: flex;
+    align-items: center;
+    gap: var(--bel-space-1);
     padding: 3px 10px;
     border-radius: var(--bel-radius-control);
     border: 1px solid var(--bel-ui-control-border);
@@ -305,55 +288,149 @@ const codeLines = code ? code.split("\n").length : 0;
     white-space: nowrap;
     transition: color var(--bel-duration-state) var(--bel-ease), border-color var(--bel-duration-state) var(--bel-ease);
   }
-  .pg-view:hover,
-  .pg-cycle:hover:not(:disabled),
-  .pg-export-toggle:hover {
-    color: var(--bel-ui-accent);
-  }
-  .pg-view.is-active,
-  .pg-export-toggle[aria-expanded="true"] {
+  .pg-menu-toggle:hover { color: var(--bel-ui-accent); }
+  .pg-menu-toggle[aria-expanded="true"] {
     border-color: var(--bel-ui-accent);
     color: var(--bel-ui-text);
   }
-  .pg-cycle:disabled {
-    cursor: default;
-    border-color: var(--bel-ui-divider);
-    color: var(--bel-ui-text-faint);
+  .pg-menu-toggle:focus-visible {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: 2px;
   }
-  .pg-view:focus-visible,
-  .pg-cycle:focus-visible,
-  .pg-export-toggle:focus-visible {
+  .pg-menu-caret { font-size: var(--bel-text-2xs); }
+  /* The paper the drawing is on, shown in the closed menu: the choice is
+     visible without opening what made it. */
+  .pg-menu-swatch {
+    width: 11px;
+    height: 11px;
+    border-radius: 2px;
+    border: 1px solid var(--bel-ui-control-border);
+  }
+  .pg-menu-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 5;
+    background: var(--bel-ui-surface);
+    border: 1px solid var(--bel-ui-divider);
+    border-radius: var(--bel-radius-card);
+    box-shadow: var(--bel-shadow-overlay);
+    font-family: var(--bel-font-mono);
+  }
+  .pg-menu-panel[hidden] { display: none; }
+  .pg-view-panel {
+    width: 232px;
+    padding: var(--bel-space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--bel-space-2);
+  }
+  .pg-menu-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--bel-space-1);
+  }
+  .pg-menu-head {
+    margin: 0;
+    font-size: var(--bel-text-2xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--bel-ui-text-muted);
+  }
+  .pg-menu-note {
+    margin: 0;
+    font-size: var(--bel-text-2xs);
+    color: var(--bel-ui-text-muted);
+    min-height: 1em;
+  }
+  .pg-menu-check {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--bel-space-1);
+    font-size: var(--bel-text-xs);
+    color: var(--bel-ui-text);
+    cursor: pointer;
+  }
+  /* A switch nothing can be said about is still shown, with the reason in its
+     title: hidden lines mean nothing on a flat sheet. */
+  .pg-menu-check:has(input:disabled) {
+    color: var(--bel-ui-text-faint);
+    cursor: default;
+  }
+  .pg-menu-check input {
+    accent-color: var(--bel-ui-accent);
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    cursor: inherit;
+  }
+  .pg-menu-check input:focus-visible {
     outline: 2px solid var(--bel-ui-accent);
     outline-offset: 2px;
   }
 
+  /* The button sits in the top right of the program it runs. On the seam
+     between the panes it stood over the drawing's left edge, which is where
+     the paper is widest; a program's first lines are short, so the corner over
+     the code is the quietest place on the card. It takes the code surface's
+     own palette, because that is the surface it lies on. */
+  /* The debug toggle, under the Run button on the code surface: the mode is
+     the editor's, so the control stands with the editor rather than in the
+     toolbar over the drawing. */
+  .pg-debug {
+    position: absolute;
+    top: 10px;
+    right: 58px;
+    z-index: 2;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--bel-ui-code-gutter) 45%, transparent);
+    background: color-mix(in srgb, var(--bel-ui-code-surface) 92%, transparent);
+    color: var(--bel-ui-code-text);
+    font-family: var(--bel-font-mono);
+    font-size: var(--bel-text-2xs);
+    cursor: pointer;
+    transition:
+      color var(--bel-duration-state) var(--bel-ease),
+      border-color var(--bel-duration-state) var(--bel-ease);
+  }
+  .pg-debug:hover:not(:disabled) { color: var(--bel-ui-code-accent); }
+  .pg-debug.is-active {
+    color: var(--bel-ui-code-accent);
+    border-color: var(--bel-ui-code-accent);
+  }
+  .pg-debug:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
   .pg-run {
     position: absolute;
-    left: 44%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+    top: 10px;
+    right: 10px;
     z-index: 2;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     padding: 0;
     border-radius: 50%;
-    border: 1px solid var(--bel-ui-accent);
-    background: var(--bel-ui-surface);
-    color: var(--bel-ui-accent);
+    border: 1px solid var(--bel-ui-code-accent);
+    background: color-mix(in srgb, var(--bel-ui-code-surface) 82%, transparent);
+    color: var(--bel-ui-code-accent);
     cursor: pointer;
     transition: background var(--bel-duration-state) var(--bel-ease), color var(--bel-duration-state) var(--bel-ease);
   }
   .pg-run:hover:not(:disabled) {
-    background: var(--bel-ui-accent);
-    color: var(--bel-ui-accent-text);
+    background: var(--bel-ui-code-accent);
+    color: var(--bel-ui-code-surface);
   }
   .pg-run:disabled {
     cursor: default;
-    border-color: var(--bel-ui-divider);
-    color: var(--bel-ui-text-faint);
+    border-color: var(--bel-ui-code-gutter);
+    color: var(--bel-ui-code-gutter);
   }
   .pg-run-spinner {
     display: none;
@@ -363,6 +440,11 @@ const codeLines = code ? code.split("\n").length : 0;
     border: 2px solid currentColor;
     border-top-color: transparent;
     animation: pg-spin 0.7s linear infinite;
+  }
+  .pg-run-play {
+    /* A triangle carries its mass to the left of its box, so the optical
+       centre of the circle is two pixels right of the geometric one. */
+    margin-left: 2px;
   }
   .pg-run.is-loading .pg-run-play { display: none; }
   .pg-run.is-loading .pg-run-spinner { display: block; }
@@ -380,19 +462,19 @@ const codeLines = code ? code.split("\n").length : 0;
 
   .pg-run-hint {
     position: absolute;
-    left: 44%;
-    top: calc(50% + 36px);
-    transform: translateX(-50%);
+    top: 56px;
+    right: 10px;
     z-index: 2;
-    max-width: calc(100% - 24px);
+    max-width: calc(100% - 20px);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     font-family: var(--bel-font-mono);
     font-size: var(--bel-text-2xs);
-    color: var(--bel-ui-text-muted);
-    background: var(--bel-ui-surface);
-    border: 1px solid var(--bel-ui-divider);
+    /* Beside the button, so both read as one control on the code surface. */
+    color: var(--bel-ui-code-text);
+    background: color-mix(in srgb, var(--bel-ui-code-surface) 92%, transparent);
+    border: 1px solid color-mix(in srgb, var(--bel-ui-code-gutter) 45%, transparent);
     border-radius: 999px;
     padding: 3px 10px;
     opacity: 0;
@@ -428,7 +510,7 @@ const codeLines = code ? code.split("\n").length : 0;
      to agree. */
   .pg-source-static {
     display: grid;
-    grid-template-columns: var(--pg-step-gutter) auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr);
     flex: 1;
     min-height: 0;
     margin: 0;
@@ -441,9 +523,9 @@ const codeLines = code ? code.split("\n").length : 0;
     white-space: pre;
   }
   .pg-static-gutter {
-    grid-column: 2;
+    grid-column: 1;
     padding-right: 3px;
-    padding-left: 5px;
+    padding-left: 12px;
     margin-right: 18px;
     border-right: 1px solid rgba(255, 255, 255, 0.08);
     min-width: 20px;
@@ -460,9 +542,6 @@ const codeLines = code ? code.split("\n").length : 0;
   .pg-source :global(.cm-scroller) {
     overflow: auto;
   }
-  .pg-source :global(.cm-step-gutter) {
-    width: var(--pg-step-gutter);
-  }
   /* basicSetup brings a fold gutter. Folding needs a language to supply the
      ranges, and this editor colours through decorations rather than through a
      CodeMirror language, so that gutter can never show a marker. Hidden, it
@@ -474,54 +553,52 @@ const codeLines = code ? code.split("\n").length : 0;
   .pg-source :global(.cm-foldGutter) {
     display: none !important;
   }
-  /* The editor sits on the code surface, so the step marker takes that
-     surface's fixed accent rather than the one that follows the mode. */
-  .pg-source :global(.cm-step-dot) {
-    display: block;
-    width: 8px;
-    height: 8px;
-    margin: 6px auto 0;
-    border-radius: 50%;
-    background: var(--bel-ui-code-accent);
-  }
-  /* Every step the program has, in the column the reader already reads it in:
-     one bar over the source each step stands for, the one on screen drawn
-     solid. Clicking a bar is the same move as clicking its dot on the
-     scrubber, and pointing at one lights what that step built. */
-  .pg-source :global(.cm-step-gutter) {
-    width: 14px;
-    cursor: pointer;
-  }
-  .pg-source :global(.cm-step-gutter .cm-gutterElement) {
-    position: relative;
-  }
-  .pg-source :global(.cm-step-bar) {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 5px;
-    width: 2px;
-    background: color-mix(in srgb, var(--bel-ui-code-accent) 30%, transparent);
-  }
-  /* The ends of a block pull in, so two steps that meet read as two bars. */
-  .pg-source :global(.cm-step-bar.is-head) {
-    top: 3px;
-    border-radius: 1px 1px 0 0;
-  }
-  .pg-source :global(.cm-step-bar.is-tail) {
-    bottom: 3px;
-    border-radius: 0 0 1px 1px;
-  }
-  .pg-source :global(.cm-step-bar.is-hover) {
-    background: color-mix(in srgb, var(--bel-ui-code-accent) 60%, transparent);
-  }
-  .pg-source :global(.cm-step-bar.is-current) {
-    left: 4px;
-    width: 4px;
-    background: var(--bel-ui-code-accent);
-  }
+  /* The line the drawing stands at, marked in the column the reader already
+     reads the program in. The editor sits on the code surface, so the mark
+     takes that surface's fixed accent rather than the one that follows the
+     mode. */
   .pg-source :global(.cm-step-line) {
     background: color-mix(in srgb, var(--bel-ui-code-accent) 15%, transparent);
+  }
+  /* A word that binds a value, while debug mode is on: the target a reader
+     aims at, drawn on the characters rather than the line, since a statement
+     binds where it spells the name. One word per box, which is also what keeps
+     the outline whole: the editor cuts a mark at every syntax span, so a box
+     over a whole statement would be drawn once per token. The selected ones
+     are filled. */
+  .pg-source :global(.cm-debug-box) {
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--bel-ui-code-accent) 50%, transparent);
+    cursor: pointer;
+  }
+  /* What the sheet brings, under the line that declares the paper: the four
+     corners and the four edges, which no statement binds and which the source
+     therefore has nowhere to box. Chips rather than text, so the row reads as
+     part of the editor's chrome and not as a line of the program. */
+  /* The rows read as lines of the program: the editor's type, its line height,
+     its indent, and the colours the grammar gives a point and a line. What
+     marks the names as targets is the box every other target carries. The
+     block takes a ground of its own, because these values come with the sheet
+     rather than from the text above them. */
+  .pg-source :global(.cm-debug-chips) {
+    background: color-mix(in srgb, var(--bel-ui-code-accent) 7%, transparent);
+    box-shadow: inset 2px 0 0 color-mix(in srgb, var(--bel-ui-code-accent) 35%, transparent);
+  }
+  .pg-source :global(.cm-debug-chip-row) {
+    /* The indent of a line of code, so the names stand under the program. */
+    padding: 0 18px;
+    white-space: pre;
+  }
+  .pg-source :global(.cm-debug-chip) {
+    margin-right: 1ch;
+    cursor: pointer;
+  }
+  .pg-source :global(.cm-debug-note) {
+    margin-left: 1ch;
+  }
+  .pg-source :global(.cm-debug-box.is-on) {
+    background: color-mix(in srgb, var(--bel-ui-code-accent) 30%, transparent);
+    box-shadow: 0 0 0 1px var(--bel-ui-code-accent);
   }
   /* Every place the clicked bundle is named: the operands of a construction,
      the arguments of a flatten, a filter. Marked on the characters rather
@@ -583,20 +660,6 @@ const codeLines = code ? code.split("\n").length : 0;
     width: auto;
     height: auto;
   }
-  /* What a piece of source built, lit in the highlight palette: one colour per
-     entity, the same six that carry a caption's inline code (B1.10 in
-     docs/brand/design-language.md). Declared before .bel-hl so a hovered or
-     pinned entity keeps the interface accent where both land on it. */
-  .pg-canvas :global(line.bel-em),
-  .pg-canvas :global(.bel-em line) {
-    stroke: var(--bel-em);
-    stroke-width: 3.5;
-  }
-  .pg-canvas :global(circle.bel-em),
-  .pg-canvas :global(text.bel-em),
-  .pg-canvas :global(.bel-em text) {
-    fill: var(--bel-em);
-  }
   /* Cursor→SVG side of the bidirectional entity highlight: outlines the
      crease segment(s) whose provenance span covers the editor's cursor
      line. Overrides the per-segment stroke/stroke-width attributes
@@ -604,6 +667,23 @@ const codeLines = code ? code.split("\n").length : 0;
   .pg-canvas :global(.bel-hl) {
     stroke: var(--bel-ui-accent);
     stroke-width: 4;
+  }
+  /* A name is read rather than followed, so it takes the accent as its colour.
+     The stroke above would put a four-pixel outline around every glyph and
+     close the letters up. The white halo underneath stays: it is what keeps
+     the name legible over a crease. */
+  .pg-canvas :global(text.bel-hl) {
+    fill: var(--bel-ui-accent);
+    stroke: white;
+    stroke-width: 2.5;
+    paint-order: stroke;
+  }
+  /* The dot of a highlighted point is filled rather than outlined, for the
+     same reason: at three pixels across, a four-pixel stroke is all there is
+     of it. */
+  .pg-canvas :global(circle.bel-hl) {
+    fill: var(--bel-ui-accent);
+    stroke: none;
   }
   /* Occluded segments of a highlighted bundle, drawn from inspect data since
      they have no rendered line — dashed + semi-transparent to read as "behind". */
@@ -683,82 +763,88 @@ const codeLines = code ? code.split("\n").length : 0;
     display: none;
   }
 
-  /* Cursor-following tooltip (task 8): fixed positioning, left/top driven
-     from the pointer event each mousemove. `pointer-events: none` while
-     following — the tooltip sits right where the cursor is, so if it could
-     receive pointer events, hovering it would itself register as "leaving"
-     the crease underneath and flicker the tooltip shut. Anchoring re-enables
-     them (the close button + segment rows need clicks). */
-  /* The inspector is a rail under the drawing. It keeps one place, so it does
-     not move under the pointer as the answer changes, it covers no paper
-     (B3.11), and it stays where it is across a step change. Below the break
-     it is the same rail in the same place. */
-  .pg-inspect {
-    position: relative;
-    max-height: 40vh;
-    overflow: auto;
+  /* The selection card stands on the drawing at the place the reader clicked,
+     so the answer sits next to the line it is about. It is positioned in the
+     stage rather than in the canvas, which keeps it at reading size at every
+     zoom; the script moves it with the pan and the zoom. */
+  .pg-card {
+    position: absolute;
+    z-index: 5;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0 10px;
+    /* An absolute box shrinks to the room right of its anchor; the card
+       grows left as often as right, so it sizes to its content instead. */
+    width: max-content;
+    max-width: min(420px, 90%);
+    padding: 8px 8px 8px 12px;
     background: var(--bel-ui-surface);
-    border-top: 1px solid var(--bel-ui-divider);
-    padding: 10px 16px;
-    font: 12px/1.5 var(--bel-font-mono);
-    color: var(--bel-ui-text-muted);
+    border: 1px solid var(--bel-ui-divider);
+    border-radius: var(--bel-radius-card);
+    box-shadow: var(--bel-shadow-overlay);
+    font: 12.5px/1.45 var(--bel-font-mono);
+    font-variant-ligatures: none;
+    color: var(--bel-ui-text);
+    cursor: auto;
   }
-  .pg-inspect[hidden] {
+  .pg-card[hidden] {
     display: none;
-  }
-  /* The rail holds the height of an answer while it has none, so pointing at a
-     crease fills it instead of pushing the step bar down the card. */
-  .pg-inspect {
-    min-height: 62px;
-  }
-  .pg-inspect :global(.pg-inspect-rest) {
-    color: var(--bel-ui-text-faint);
   }
   /* These children are injected via innerHTML, so they never carry Astro's
      scope attribute — the rules MUST be :global (like .bel-hl / .bel-hit above),
      or they silently don't apply. */
-  .pg-inspect :global(h4) {
-    margin: 0 0 4px;
-    font-size: var(--bel-text-xs);
-    color: var(--bel-ui-text);
-    padding-right: 18px; /* room for the close button */
+  .pg-card :global(.pg-card-body) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
   }
-  .pg-inspect :global(.pg-inspect-sub) {
+  .pg-card :global(.pg-card-head) {
+    display: flex;
+    gap: 8px;
+    font-size: 11px;
     color: var(--bel-ui-text-muted);
-    margin-bottom: 4px;
   }
-  .pg-inspect :global(.pg-inspect-close) {
-    position: absolute;
-    top: 2px;
-    right: 4px;
-    z-index: 1;
-    appearance: none;
-    -webkit-appearance: none;
-    border: 0;
-    background: transparent;
-    box-shadow: none;
-    color: var(--bel-ui-text);
-    font: 18px/1 ui-sans-serif, system-ui, sans-serif;
-    cursor: pointer;
-    padding: 4px;
-    opacity: 0.5;
+  .pg-card :global(.pg-card-name) {
+    color: var(--bel-ui-accent);
   }
-  .pg-inspect :global(.pg-inspect-close:hover) {
-    opacity: 1;
+  .pg-card :global(.pg-card-text) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .pg-inspect :global(.pg-inspect-close:focus-visible) {
-    outline: 2px solid var(--bel-ui-accent);
+  .pg-card :global(.pg-card-close) {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--bel-ui-divider);
     border-radius: var(--bel-radius-control);
-  }
-  .pg-inspect :global(.seg) {
-    border-top: 1px solid var(--bel-ui-divider);
-    margin: 4px -12px 0;
-    padding: 5px 12px 4px;
+    background: var(--bel-ui-surface);
+    color: var(--bel-ui-text-muted);
+    font: inherit;
     cursor: pointer;
   }
-  .pg-inspect :global(.seg:hover) {
+  .pg-card :global(.pg-card-close:hover) {
+    border-color: var(--bel-ui-control-border);
+  }
+  .pg-card :global(.pg-card-close:focus-visible) {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: 1px;
+  }
+  /* The segments of a bundle, and the lines a pixel offers, as rows under the
+     answer: the stack picker lives in the card. */
+  .pg-card :global(.seg) {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--bel-ui-divider);
+    margin: 6px -8px 0 -12px;
+    padding: 5px 12px 0;
+    color: var(--bel-ui-text-muted);
+    cursor: pointer;
+  }
+  .pg-card :global(.seg:hover) {
     color: var(--bel-ui-text);
-    background: color-mix(in srgb, var(--bel-ui-text) 10%, transparent);
+    background: var(--bel-ui-quiet);
   }
 
   .pg-canvas :global(.pg-notice) {
@@ -811,21 +897,12 @@ const codeLines = code ? code.split("\n").length : 0;
     stroke-opacity: 0.4;
   }
 
-  /* Export sits in the quiet zone beside the reset button: it is reachable
-     without the drawing moving, and it covers paper only while it is open. */
+  /* What leaves the page hangs under the word that offers it, so nothing is
+     laid over the drawing while the reader is choosing. */
   .pg-export {
-    position: absolute;
-    top: 10px;
-    right: 48px;
-    z-index: 5;
     width: 240px;
     padding: 8px 12px 10px;
-    background: var(--bel-ui-surface);
-    border: 1px solid var(--bel-ui-divider);
-    border-radius: var(--bel-radius-card);
-    font-family: var(--bel-font-mono);
   }
-  .pg-export[hidden] { display: none; }
   .pg-export-step {
     margin: 0 0 2px;
     font-size: var(--bel-text-2xs);
@@ -1018,10 +1095,17 @@ const codeLines = code ? code.split("\n").length : 0;
   import {
     stepMarkerExtensions,
     setStepLineOn,
-    setStepSlotsOn,
     setErrorLineOn,
-    type StepSlot,
   } from "../lib/cm-step-marker";
+  import {
+    debugExtensions,
+    debugIsOn,
+    setDebugBoxesOn,
+    setDebugChipsOn,
+    setDebugModeOn,
+    type DebugBox,
+    type DebugChip,
+  } from "../lib/cm-debug-boxes";
   import { refMarkExtensions, setRefSpansOn } from "../lib/cm-ref-marks";
   import { initBelHighlight, belHighlighting } from "../lib/cm-bel-highlight";
   import { parseFold, type FoldScene, type Statement, type Vec2 } from "@beloch/scene";
@@ -1032,22 +1116,29 @@ const codeLines = code ? code.split("\n").length : 0;
     WEB_THEME,
     type Theme,
   } from "@beloch/render-svg";
-  import { createRuntime, renderCommand, type View } from "@beloch/runtime";
+  import {
+    createRuntime,
+    renderCommand,
+    sameEntity,
+    toggleEntity,
+    type View,
+  } from "@beloch/runtime";
   import { SCHEMES, STORAGE_KEY, DEFAULT_ID, applyScheme, resolveScheme } from "../lib/paper-schemes";
-  import { lineOfSpan, lookupEntity, type EntityRef } from "../lib/inspect-lookup";
+  import { lookupEntity, type EntityRef } from "../lib/inspect-lookup";
   import { segMatchesLine } from "../lib/stack-picker";
   import { hoverSummary, segmentRows, edgeSegmentRows } from "../lib/tooltip-content";
+  import { cardContent, cardPlacement } from "../lib/selection-card";
   import { bundleElements } from "../lib/bundle-highlight";
   import {
-    blockOfStep,
+    debugTargets,
     entitiesAtLine,
-    entitiesIn,
     refSpansFor,
     sourceLineOf,
+    type DebugTarget,
+    type SpanPos,
   } from "@beloch/runtime-editor";
   import { createPick } from "@beloch/runtime-pick";
   import {
-    applyEmphasis,
     clearHighlight,
     commandToSvg,
     createDomRenderer,
@@ -1081,13 +1172,21 @@ const codeLines = code ? code.split("\n").length : 0;
         fontSize: "var(--bel-code-size)",
         lineHeight: "var(--bel-code-line)",
       },
-      ".cm-content": { padding: "14px 18px", caretColor: "var(--bel-ui-code-text)" },
+      // The padding is on the line rather than on the content, so a line's box
+      // starts where the gutter ends. The step block's bar is drawn at that
+      // edge, which gives it a lane of its own instead of a place against the
+      // first character.
+      ".cm-content": { padding: "14px 0", caretColor: "var(--bel-ui-code-text)" },
+      ".cm-line": { padding: "0 18px", position: "relative" },
+      // Opaque, because the gutter stays put while a long line scrolls
+      // sideways, and the code would otherwise show through it.
       ".cm-gutters": {
-        backgroundColor: "transparent",
+        backgroundColor: "var(--bel-ui-code-surface)",
         color: "var(--bel-ui-code-gutter)",
         border: "none",
         borderRight: "1px solid rgba(255, 255, 255, 0.08)",
       },
+      ".cm-lineNumbers .cm-gutterElement": { padding: "0 3px 0 12px" },
       ".cm-activeLine": { backgroundColor: "rgba(255, 255, 255, 0.04)" },
       ".cm-activeLineGutter": { backgroundColor: "rgba(255, 255, 255, 0.04)" },
       "&.cm-focused": { outline: "none" },
@@ -1113,6 +1212,7 @@ const codeLines = code ? code.split("\n").length : 0;
     viewport: HTMLElement,
     target: HTMLElement,
     resetBtn: HTMLElement,
+    onMove: () => void,
   ) {
     const MIN = 0.2;
     const MAX = 8;
@@ -1135,6 +1235,7 @@ const codeLines = code ? code.split("\n").length : 0;
 
     function apply() {
       target.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+      onMove();
     }
     function reset() {
       scale = 1;
@@ -1252,17 +1353,19 @@ const codeLines = code ? code.split("\n").length : 0;
     const stepLabel = root.querySelector<HTMLSpanElement>(".pg-step-label");
     const stepPrev = root.querySelector<HTMLButtonElement>(".pg-step-prev");
     const stepNext = root.querySelector<HTMLButtonElement>(".pg-step-next");
-    const inspectPanel = root.querySelector<HTMLElement>(".pg-inspect");
+    const card = root.querySelector<HTMLElement>(".pg-card");
     const errorBox = root.querySelector<HTMLDivElement>(".pg-error");
+    const debugBtn = root.querySelector<HTMLButtonElement>(".pg-debug");
     const exportToggle = root.querySelector<HTMLButtonElement>(".pg-export-toggle");
     const exportPanel = root.querySelector<HTMLDivElement>(".pg-export");
     // Queried here rather than beside the export wiring below, because
     // renderStep reaches for them through updateExportPanel and runs first.
     const exportSaid = exportPanel?.querySelector<HTMLParagraphElement>(".pg-export-said") ?? null;
     const exportStepLine = exportPanel?.querySelector<HTMLParagraphElement>(".pg-export-step") ?? null;
-    if (!sourceMount || !runBtn || !result || !canvas || !resetBtn || !runHint || !stepsBar || !stepDots || !stepLabel || !stepPrev || !stepNext || !inspectPanel || !errorBox || !exportToggle || !exportPanel) return;
+    if (!sourceMount || !runBtn || !result || !canvas || !resetBtn || !runHint || !stepsBar || !stepDots || !stepLabel || !stepPrev || !stepNext || !card || !errorBox || !exportToggle || !exportPanel || !debugBtn) return;
 
-    const panZoom = createPanZoom(result, canvas, resetBtn);
+    const panZoom = createPanZoom(result, canvas, resetBtn, () => placeCard());
+    new ResizeObserver(() => placeCard()).observe(result);
     // A build-time `seed` SVG is already in the canvas; enable pan/zoom + the
     // reset affordance for it. The "Run drücken" notice is not pannable.
     {
@@ -1292,10 +1395,15 @@ const codeLines = code ? code.split("\n").length : 0;
     // Run — focusing or editing the code must not, on its own, kick off a run
     // or pull in the wasm module.
     const lazy = root.dataset.lazy === "true";
-    // The hero shows a program and its drawing and offers nothing to operate:
-    // the controls are hidden, so the behaviour behind them is not wired up
-    // either, and the source is read-only.
-    const hero = root.dataset.variant === "hero";
+
+    // Debug mode's state. It stands here because the run button's own update
+    // reads it, and that runs while the editor is being built.
+    //
+    // `documentSource` is the source the document in the slot was evaluated
+    // from: the spans it carries point into that text, so the mode is offered
+    // only while the editor still holds it.
+    let documentSource: string | null = null;
+    let debugList: DebugTarget[] = [];
 
     // The phases, both limits and the in-flight run belong to
     // @beloch/runtime-eval. What is held here is the last state it reported,
@@ -1321,24 +1429,19 @@ const codeLines = code ? code.split("\n").length : 0;
       // visible" philosophy as the Run button itself).
       if (editor.state.doc.toString() !== runState.answered) {
         setStepLineOn(editor, null);
-        setStepSlotsOn(editor, []);
       }
+      updateDebugButton();
     }
 
     const editor = new EditorView({
       state: EditorState.create({
         doc: initialCode,
         extensions: [
-          // Clicking a slot in the gutter is the same move as clicking its dot
-          // on the scrubber.
-          ...stepMarkerExtensions({
-            onPickStep: (step) => renderStep(step, true, true),
-            onHoverStep: (step) => emphasiseStep(step),
-          }),
+          ...stepMarkerExtensions(),
+          ...debugExtensions({ onPick: (id) => pickDebugTarget(id) }),
           ...refMarkExtensions,
           basicSetup,
           ...(highlighter ? [belHighlighting(highlighter)] : []),
-          EditorView.editable.of(!hero),
           // Above basicSetup, which binds Mod-Enter to insertBlankLine in
           // CodeMirror's default keymap. Precedence goes by position in this
           // list, so a binding added after it never fires.
@@ -1348,6 +1451,13 @@ const codeLines = code ? code.split("\n").length : 0;
                 key: "Mod-Enter",
                 run: () => {
                   runBtn.click();
+                  return true;
+                },
+              },
+              {
+                key: "Mod-Shift-d",
+                run: () => {
+                  debugBtn.click();
                   return true;
                 },
               },
@@ -1384,7 +1494,11 @@ const codeLines = code ? code.split("\n").length : 0;
     let lineStyleId: "mono" | "colour" = "mono";
     // What the folded view does with the crease segments that lie under other
     // layers. The flat sheet occludes nothing, so this only bites in "folded".
-    let hiddenMode: "hide" | "dashed" | "depth" = "hide";
+    // Two states, so a checkbox: a buried segment is either drawn or it is
+    // not. Drawn means `depth`, which fades a segment by how deep it lies;
+    // `dashed` drew every buried run alike and is given up with the switch
+    // that cycled through the three.
+    let hiddenMode: "hide" | "depth" = "hide";
     // Which drawing of the current state is on the stage. Both are the same
     // state: the crease pattern is the flat sheet with the creases that exist
     // by this step, the folded view is that state seen from above with the
@@ -1427,45 +1541,49 @@ const codeLines = code ? code.split("\n").length : 0;
     // rather than which state it shows, so the view and the step stay put.
     function rerenderCurrent(fade: FadeLength | null = null) {
       if (!currentScene()) return;
-      if (currentStatements().length > 0) renderStep(currentStep(), true, fade !== null, fade);
+      if (currentWrites().length > 0) renderStep(currentStep(), true, fade !== null, fade);
       else drawCurrent(true, fade);
     }
 
-    // The two drawing switches over the paper. Each button carries its own
-    // state as its label and steps to the next on click, so the pair takes
-    // the width of two words instead of five. A state the current paper or
-    // view cannot hold disables the button rather than hiding it, and the
-    // title says why.
-    const styleBtn = root.querySelector<HTMLButtonElement>(".pg-cycle-style");
-    const occlBtn = root.querySelector<HTMLButtonElement>(".pg-cycle-occl");
-    const OCCL_LABEL: Record<typeof hiddenMode, string> = {
-      hide: "hidden: off",
-      dashed: "hidden: dashed",
-      depth: "hidden: depth",
-    };
-    const OCCL_TITLE: Record<typeof hiddenMode, string> = {
-      hide: "Buried crease segments are not drawn. Click for dashed.",
-      dashed: "Buried crease segments drawn alike. Click to fade them by depth.",
-      depth: "Buried crease segments fade with the layers over them. Click to stop drawing them.",
-    };
-    function updateCycleButtons() {
+    // What the drawing looks like, folded into one menu: the paper it is on,
+    // the ink it is drawn with, and whether a buried segment is drawn at all.
+    // Each is a choice a reader makes rarely, so the bar carries one word for
+    // all three and the panel holds them.
+    const viewToggle = root.querySelector<HTMLButtonElement>(".pg-view-toggle");
+    const menuSwatch = root.querySelector<HTMLSpanElement>(".pg-menu-swatch");
+    const stylesBar = root.querySelector<HTMLDivElement>(".pg-styles");
+    const paperNote = root.querySelector<HTMLParagraphElement>(".pg-menu-note");
+    const hiddenBox = root.querySelector<HTMLInputElement>(".pg-hidden-lines");
+    function updateViewMenu() {
       const scheme = resolveScheme(currentSchemeId);
-      if (styleBtn) {
-        styleBtn.textContent = lineStyleId;
-        styleBtn.disabled = !scheme.colorOk;
-        styleBtn.title = !scheme.colorOk
-          ? `Only monochrome on ${scheme.label}: every crease colour falls below 2:1 on this paper`
-          : lineStyleId === "mono"
-            ? "Yoshizawa-Randlett notation, monochrome. Click for one colour per fold direction."
-            : "One colour per fold direction. Click for monochrome.";
+      // The closed menu carries the paper it chose, so the choice is visible
+      // without opening what made it.
+      if (menuSwatch) menuSwatch.style.background = scheme.swatch;
+      if (viewToggle) viewToggle.title = `Drawn on ${scheme.label}, ${lineStyleId}`;
+      if (paperNote) {
+        paperNote.textContent = scheme.colorOk
+          ? scheme.label
+          : `${scheme.label} · monochrome only, every crease colour falls below 2:1 on it`;
       }
-      if (occlBtn) {
+      stylesBar?.querySelectorAll<HTMLButtonElement>(".pg-style").forEach((b) => {
+        const on = b.dataset.style === lineStyleId;
+        b.classList.toggle("is-active", on);
+        b.setAttribute("aria-pressed", String(on));
+        b.disabled = b.dataset.style === "colour" && !scheme.colorOk;
+        b.title =
+          b.dataset.style === "mono"
+            ? "Yoshizawa-Randlett notation, monochrome"
+            : scheme.colorOk
+              ? "One colour per fold direction"
+              : `Not on ${scheme.label}: every crease colour falls below 2:1 on this paper`;
+      });
+      if (hiddenBox) {
         const flat = currentView === "cp";
-        occlBtn.textContent = OCCL_LABEL[hiddenMode];
-        occlBtn.disabled = flat;
-        occlBtn.title = flat
+        hiddenBox.checked = hiddenMode === "depth";
+        hiddenBox.disabled = flat;
+        hiddenBox.title = flat
           ? "The crease pattern is one flat sheet: nothing is buried"
-          : OCCL_TITLE[hiddenMode];
+          : "Buried crease segments fade with the layers over them";
       }
     }
     const viewsBar = root.querySelector<HTMLDivElement>(".pg-toolbar-views");
@@ -1483,26 +1601,27 @@ const codeLines = code ? code.split("\n").length : 0;
       if (v === currentView) return;
       currentView = v;
       updateViewTabs();
-      updateCycleButtons();
+      updateViewMenu();
       // Two views of one state, so the shorter of the two lengths.
       rerenderCurrent("view");
     });
     updateViewTabs();
 
-    styleBtn?.addEventListener("click", () => {
-      if (styleBtn.disabled) return;
-      lineStyleId = lineStyleId === "mono" ? "colour" : "mono";
-      updateCycleButtons();
+    stylesBar?.addEventListener("click", (e: MouseEvent) => {
+      const b = (e.target as Element).closest<HTMLButtonElement>(".pg-style");
+      if (!b || b.disabled) return;
+      const style = b.dataset.style === "colour" ? "colour" : "mono";
+      if (style === lineStyleId) return;
+      lineStyleId = style;
+      updateViewMenu();
       rerenderCurrent();
     });
-    const OCCL_CYCLE = ["hide", "dashed", "depth"] as const;
-    occlBtn?.addEventListener("click", () => {
-      if (occlBtn.disabled) return;
-      hiddenMode = OCCL_CYCLE[(OCCL_CYCLE.indexOf(hiddenMode) + 1) % OCCL_CYCLE.length]!;
-      updateCycleButtons();
+    hiddenBox?.addEventListener("change", () => {
+      hiddenMode = hiddenBox.checked ? "depth" : "hide";
+      updateViewMenu();
       rerenderCurrent();
     });
-    updateCycleButtons();
+    updateViewMenu();
 
     const swatchBar = root.querySelector<HTMLDivElement>(".pg-swatches");
     if (swatchBar) {
@@ -1524,7 +1643,7 @@ const codeLines = code ? code.split("\n").length : 0;
           // to one of those papers takes the drawing back to monochrome
           // instead of leaving an unreadable one on screen.
           if (!s.colorOk && lineStyleId === "colour") lineStyleId = "mono";
-          updateCycleButtons();
+          updateViewMenu();
           rerenderCurrent();
           swatchBar.querySelectorAll(".pg-swatch").forEach((el) => {
             el.classList.toggle("is-active", el === b);
@@ -1542,7 +1661,8 @@ const codeLines = code ? code.split("\n").length : 0;
     const runtime = createRuntime();
     const renderer = createDomRenderer(canvas);
     const currentScene = (): FoldScene | null => runtime.state.scene;
-    const currentStatements = (): Statement[] => runtime.state.scene?.statements ?? [];
+    // What the stepper walks: the statements that changed the paper (ADR 0026).
+    const currentWrites = (): Statement[] => runtime.state.scene?.writes ?? [];
     const currentStep = (): number => runtime.state.step;
     // The step a shared `?s=` names, held until the run behind it produces one
     // (see the bottom of setup).
@@ -1571,16 +1691,153 @@ const codeLines = code ? code.split("\n").length : 0;
     // (see renderChoice).
     const pick = createPick(runtime);
 
+    // Debug mode: what the program binds, boxed in the source, with a click
+    // adding that value to the selection. The spans come out of the document
+    // the run answered, so the mode is only offered while the text in the
+    // editor is the text that was run; entering it turns the editor read-only,
+    // which keeps the two from parting company while it is on.
+    //
+    // The selection it fills is the core's, the same list a pick in the drawing
+    // settles. Neither side knows about the other: both dispatch the same
+    // event.
+    const offsetsOf = (span: SpanPos): { from: number; to: number } | null => {
+      const doc = editor.state.doc;
+      if (span.fromLine < 1 || span.fromLine > doc.lines) return null;
+      if (span.toLine < span.fromLine || span.toLine > doc.lines) return null;
+      const from = doc.line(span.fromLine).from + span.fromCol - 1;
+      const to = doc.line(span.toLine).from + span.toCol - 1;
+      return to > from && to <= doc.length ? { from, to } : null;
+    };
+
+    // Where a target's box goes: the word the statement binds, found inside the
+    // statement, which is a name at the head of a binding (`.o = …`) and a name
+    // at the end of a write (`fold … as --bd`). A statement that binds a name
+    // without spelling it gets no box, which an `apply` a name was exported
+    // from is.
+    //
+    // A write that named nothing has only its own statement to point at, and
+    // the box covers it whole.
+    const isNameChar = (c: string | undefined): boolean =>
+      c !== undefined && /[A-Za-z0-9_\-.!]/.test(c);
+
+    function boxOf(target: DebugTarget): { from: number; to: number } | null {
+      const at = target.span === null ? null : offsetsOf(target.span);
+      if (at === null) return null;
+      if (target.spelling === null) return at;
+      const text = editor.state.doc.sliceString(at.from, at.to);
+      // The name stands on its own rather than inside a longer one, so the
+      // character after it is not one a name is spelled with.
+      for (let i = text.indexOf(target.spelling); i >= 0;
+           i = text.indexOf(target.spelling, i + 1)) {
+        if (!isNameChar(text[i + target.spelling.length])) {
+          return { from: at.from + i, to: at.from + i + target.spelling.length };
+        }
+      }
+      return null;
+    }
+
+    // A document is in the slot and the editor still holds the text it was
+    // evaluated from. A function declaration rather than a const, because the
+    // run button asks this while the editor is being built.
+    function debugAvailable(): boolean {
+      return documentSource !== null && documentSource === editor.state.doc.toString();
+    }
+
+    function buildDebugTargets() {
+      const scene = currentScene();
+      debugList =
+        scene === null
+          ? []
+          : debugTargets(scene).filter((t) => t.span === null || boxOf(t) !== null);
+    }
+
+    // The line that declares the paper, under which the values it brings are
+    // offered. A program without one puts them at the top, which is where the
+    // paper would have stood.
+    function paperLine(): number {
+      for (let n = 1; n <= editor.state.doc.lines; n++) {
+        if (/^\s*paper\b/.test(editor.state.doc.line(n).text)) return n;
+      }
+      return 1;
+    }
+
+    function refreshDebugBoxes() {
+      const selection = runtime.state.selection;
+      const isOn = (target: DebugTarget) =>
+        selection.some((e) => sameEntity(e, target.entity));
+      const boxes: DebugBox[] = [];
+      // What the sheet brings has no place in the source, so it stands under
+      // the paper line instead: the points in one row, the lines in the other,
+      // written in the classes the colouring gives those two kinds.
+      const points: DebugChip[] = [];
+      const lines: DebugChip[] = [];
+      debugList.forEach((target, id) => {
+        if (target.span === null) {
+          if (target.spelling === null) return;
+          const chip = { id, text: target.spelling, on: isOn(target) };
+          if (target.spelling.startsWith("--")) lines.push({ ...chip, cls: "bel-line" });
+          else points.push({ ...chip, cls: "bel-point" });
+          return;
+        }
+        const at = boxOf(target);
+        if (at === null) return;
+        boxes.push({ ...at, id, on: isOn(target) });
+      });
+      setDebugBoxesOn(editor, boxes);
+      const rows = [points, lines];
+      setDebugChipsOn(
+        editor,
+        rows.some((row) => row.length > 0)
+          ? { line: paperLine(), rows, note: "; prelude values" }
+          : null,
+      );
+    }
+
+    // A click takes a value in or out, and several stand at once. The order of
+    // the list follows the order of the clicks, which is the order the drawing
+    // lights them in.
+    function pickDebugTarget(id: number) {
+      const target = debugList[id];
+      if (target === undefined) return;
+      const entities = toggleEntity(runtime.state.selection, target.entity);
+      runtime.dispatch({ type: "selection/set", entities });
+      relight();
+      refreshDebugBoxes();
+    }
+
+    function updateDebugButton() {
+      const on = debugIsOn(editor.state);
+      debugBtn!.disabled = !on && !debugAvailable();
+      debugBtn!.classList.toggle("is-active", on);
+      debugBtn!.setAttribute("aria-pressed", on ? "true" : "false");
+    }
+
+    // Leaving the mode leaves the selection standing and takes the boxes away.
+    function setDebugOn(on: boolean) {
+      if (on && !debugAvailable()) return;
+      if (on) buildDebugTargets();
+      setDebugModeOn(editor, on);
+      if (on) refreshDebugBoxes();
+      updateDebugButton();
+    }
+
+    debugBtn.addEventListener("click", () => setDebugOn(!debugIsOn(editor.state)));
+    // A selection settled in the drawing lights its box too, so the two
+    // sides show one answer.
+    runtime.subscribe(() => {
+      if (debugIsOn(editor.state)) refreshDebugBoxes();
+    });
+
     // A scene with statements has a timeline, and every step of it goes
     // through the occlusion pipeline, step 0's flat sheet included. A scene
     // without them has one drawing, the crease pattern. So the statement list
     // doubles as the view accessor, with no separate mode flag.
-    const inFoldedView = () => currentStatements().length > 0;
+    const inFoldedView = () => currentWrites().length > 0;
     // beloch:inspect carries the FINAL fold's geometry only; the stepper renders
     // a different (partial) placement per step, so any inspect-geometry path
     // (proximity detection, ghosting hidden segments) is valid only on the last
     // step. Off it, hover falls back to the per-step DOM data-crease-id.
-    const onFinalStep = () => currentStatements().length === 0 || currentStep() === currentStatements().length;
+    const onFinalStep = () => currentWrites().length === 0 || currentStep() === currentWrites().length;
 
     // Tolerance shared by proximity detection and the hidden-segment test,
     // in SVG user units (~px at 1:1 zoom). pointSegDist comes from
@@ -1660,101 +1917,164 @@ const codeLines = code ? code.split("\n").length : 0;
       return name ? { kind: "edge", name } : null;
     };
 
-    // Renders `ref` into the tooltip, or hides it for null/an entity the
-    // current scene has no `inspect` data for (e.g. a scene evaluated
-    // before beloch:inspect was emitted, or a mark tick whose crease has no
-    // inspect entry). `anchored` selects the content: a crease's anchored
-    // view is the segment-row list (subsumes the Task 7 stack picker);
-    // everything else (hover preview, and face/vertex regardless of
-    // anchoring) is the lightweight one-line summary from hoverSummary.
-    // With nothing to answer, the rail says what it is for. It keeps its place
-    // either way: a rail that appeared and vanished under the pointer would
-    // move the step bar every time the reader crossed a crease.
-    function restInspect() {
-      inspectPanel!.innerHTML =
-        '<div class="pg-inspect-rest">Point at a crease, or press Enter on one, to see the statement that made it.</div>';
-      inspectPanel!.hidden = !currentScene();
+    // The card says what a click in the drawing settled, at the place that
+    // was clicked. `cardAnchor` is that place in the SVG's own user space, so
+    // it holds still on the paper while the stage pans and zooms, and
+    // `cardEntity` is what the card stands for: the one settled entity, or
+    // null while it offers the lines a pixel holds. Hovering lights the
+    // drawing and nothing more; a selection of several, which the debug mode
+    // makes, has the editor to show it and takes no card.
+    let cardAnchor: Vec2 | null = null;
+    let cardEntity: EntityRef | null = null;
+
+    function hideCard() {
+      card!.hidden = true;
+      card!.innerHTML = "";
+      cardAnchor = null;
+      cardEntity = null;
     }
 
-    function renderInspect(ref: EntityRef | null, anchored: boolean) {
+    function placeCard() {
+      if (card!.hidden || !cardAnchor) return;
+      const ctm = canvas!.querySelector("svg")?.getScreenCTM();
+      if (!ctm) return;
+      const at = new DOMPoint(cardAnchor[0], cardAnchor[1]).matrixTransform(ctm);
+      const box = result!.getBoundingClientRect();
+      const place = cardPlacement(at.x - box.left, at.y - box.top, box.width, box.height);
+      card!.style.left = place.left;
+      card!.style.top = place.top;
+      card!.style.transform = place.transform;
+    }
+
+    function showCard(html: string, anchor: Vec2) {
+      card!.innerHTML = html + `<button type="button" class="pg-card-close" aria-label="Clear selection">✕</button>`;
+      card!.hidden = false;
+      cardAnchor = anchor;
+      placeCard();
+    }
+
+    // The line of the program that made an entity: a crease by its span, a
+    // named value by the statement that binds it.
+    function lineOfEntity(scene: FoldScene, ref: EntityRef): number | null {
+      const line = sourceLineOf(scene, ref);
+      if (line !== null) return line;
+      return debugTargets(scene).find((t) => sameEntity(t.entity, ref))?.span?.fromLine ?? null;
+    }
+
+    // One segment is the whole bundle and needs no rows; several each get one,
+    // which is the stack picker.
+    function segmentRowsHtml(ref: EntityRef): string {
       const insp = currentScene()?.inspect;
-      if (!ref || !insp) {
-        restInspect();
+      if (!insp) return "";
+      const rows =
+        ref.kind === "crease" ? segmentRows(insp, ref.creaseId, inFoldedView())
+        : ref.kind === "edge" ? edgeSegmentRows(insp, ref.name)
+        : [];
+      if (rows.length < 2) return "";
+      const owner =
+        ref.kind === "crease" ? `data-pick-crease="${escapeHtml(ref.creaseId)}"`
+        : ref.kind === "edge" ? `data-pick-edge="${escapeHtml(ref.name)}"`
+        : "";
+      return rows
+        .map((r, n) => `<div class="seg" data-pick-seg="${r.index}" ${owner}>segment ${n + 1} · ${escapeHtml(r.assignment)}</div>`)
+        .join("");
+    }
+
+    function renderCard(ref: EntityRef, anchor: Vec2) {
+      const scene = currentScene();
+      const summary = scene?.inspect ? hoverSummary(ref, scene.inspect) : null;
+      if (!scene || !summary) {
+        hideCard();
         return;
       }
-      const closeBtn = anchored ? `<button type="button" class="pg-inspect-close" aria-label="Close">×</button>` : "";
-      let html: string;
-      if (ref.kind === "crease" && anchored) {
-        const c = insp.creases[ref.creaseId];
-        if (!c) {
-          restInspect();
-          return;
-        }
-        // Named -> its name; unnamed (an unbound fold's result) -> "unnamed
-        // line" plus the source line that constructed it, so the user can find
-        // and bind/assign it.
-        const title = c.name ? `--${c.name}` : "unnamed line";
-        const srcLine = c.name ? null : lineOfSpan(c.span);
-        const rows = segmentRows(insp, ref.creaseId, inFoldedView());
-        html =
-          closeBtn +
-          `<h4>${escapeHtml(title)}</h4>` +
-          `<div class="pg-inspect-sub">${srcLine ? `at line ${srcLine} · ` : ""}${rows.length} segment${rows.length === 1 ? "" : "s"}</div>` +
-          // One segment = the whole bundle; no per-segment picker needed.
-          (rows.length > 1
-            ? rows
-                .map(
-                  (r, n) =>
-                    `<div class="seg" data-pick-seg="${r.index}" data-pick-crease="${escapeHtml(ref.creaseId)}">` +
-                    `Segment ${n + 1} · ${escapeHtml(r.assignment)}</div>`,
-                )
-                .join("")
-            : "");
-      } else if (ref.kind === "edge" && anchored) {
-        // Anchored view for a paper-boundary edge bundle (task 9) — same
-        // subsuming-the-stack-picker idea as the crease branch above, but
-        // simpler: a boundary segment has one face (no l|r, no provenance
-        // axiom/sources — it's the sheet's edge, not a fold).
-        const e = insp.edges[ref.name];
-        if (!e) {
-          restInspect();
-          return;
-        }
-        const rows = edgeSegmentRows(insp, ref.name);
-        html =
-          closeBtn +
-          `<h4>${escapeHtml(`--${e.name}`)}</h4>` +
-          `<div class="pg-inspect-sub">${rows.length} segment${rows.length === 1 ? "" : "s"}</div>` +
-          (rows.length > 1
-            ? rows
-                .map(
-                  (r, n) =>
-                    `<div class="seg" data-pick-seg="${r.index}" data-pick-edge="${escapeHtml(ref.name)}">` +
-                    `Segment ${n + 1} · ${escapeHtml(r.assignment)}</div>`,
-                )
-                .join("")
-            : "");
-      } else {
-        const summary = hoverSummary(ref, insp);
-        if (!summary) {
-          restInspect();
-          return;
-        }
-        html =
-          closeBtn +
-          `<h4>${escapeHtml(summary.title)}</h4>` +
-          (summary.detail ? `<div>${escapeHtml(summary.detail)}</div>` : "");
+      const c = cardContent(summary, lineOfEntity(scene, ref), runState.answered ?? documentSource);
+      showCard(
+        `<div class="pg-card-body">` +
+          `<div class="pg-card-head"><span class="pg-card-name">${escapeHtml(c.name)}</span>` +
+          (c.line === null ? "" : `<span>line ${c.line}</span>`) +
+          `</div>` +
+          (c.text === null ? "" : `<div class="pg-card-text">${escapeHtml(c.text)}</div>`) +
+          `</div>`,
+        anchor,
+      );
+      card!.insertAdjacentHTML("beforeend", segmentRowsHtml(ref));
+      cardEntity = ref;
+    }
+
+    // After the drawing is redrawn the settled entity may stand elsewhere, as
+    // it does when a step folds the paper under it. The card moves to the
+    // point of that entity's lit drawing nearest to where it stood, and goes
+    // away while nothing of it is drawn; the selection stays either way.
+    function reanchorCard() {
+      if (card!.hidden || !cardAnchor) return;
+      if (cardEntity === null) {
+        placeCard();
+        return;
       }
-      inspectPanel!.innerHTML = html;
-      inspectPanel!.hidden = false;
+      const near = nearestLitPoint(cardAnchor);
+      if (!near) {
+        hideCard();
+        return;
+      }
+      cardAnchor = near;
+      placeCard();
+    }
+
+    function nearestLitPoint([px, py]: Vec2): Vec2 | null {
+      let best: Vec2 | null = null;
+      let bestD = Infinity;
+      canvas!.querySelectorAll<SVGGraphicsElement>(`.${HL_CLASS}`).forEach((el) => {
+        const p = nearestOn(el, px, py);
+        const d = Math.hypot(p[0] - px, p[1] - py);
+        if (d < bestD) {
+          bestD = d;
+          best = p;
+        }
+      });
+      return best;
+    }
+
+    // The point of a drawn element nearest to (px, py): the foot of the
+    // perpendicular on a line, the centre of anything else.
+    function nearestOn(el: SVGGraphicsElement, px: number, py: number): Vec2 {
+      if (el.tagName === "line") {
+        const ax = Number(el.getAttribute("x1")), ay = Number(el.getAttribute("y1"));
+        const bx = Number(el.getAttribute("x2")), by = Number(el.getAttribute("y2"));
+        const dx = bx - ax, dy = by - ay;
+        const len2 = dx * dx + dy * dy;
+        const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
+        return [ax + t * dx, ay + t * dy];
+      }
+      const b = el.getBBox();
+      return [b.x + b.width / 2, b.y + b.height / 2];
+    }
+
+    // Where a key press on a crease puts the card, having no pointer to go by.
+    function middleOf(el: SVGGraphicsElement): Vec2 {
+      if (el.tagName === "line") {
+        return [
+          (Number(el.getAttribute("x1")) + Number(el.getAttribute("x2"))) / 2,
+          (Number(el.getAttribute("y1")) + Number(el.getAttribute("y2"))) / 2,
+        ];
+      }
+      const b = el.getBBox();
+      return [b.x + b.width / 2, b.y + b.height / 2];
     }
 
     function closeAnchor() {
       pick.close();
+      hideCard();
       pin(null);
-      restInspect();
       setRefSpansOn(editor, []);
     }
+
+    // A selection the card no longer stands for takes the card with it: the
+    // debug mode adding a second value, or a run filling the slot anew.
+    runtime.subscribe(() => {
+      if (cardEntity === null) return;
+      const sel = runtime.state.selection;
+      if (sel.length !== 1 || !sameEntity(sel[0]!, cardEntity)) hideCard();
+    });
 
     // Distinct crease/edge entities whose line lies under a screen point.
     // Multiple lines (e.g. a construction crease and a paper edge) can project
@@ -1767,6 +2087,7 @@ const codeLines = code ? code.split("\n").length : 0;
       r.kind === "crease" ? `c:${r.creaseId}`
       : r.kind === "edge" ? `e:${r.name}`
       : r.kind === "face" ? `f:${r.index}`
+      : r.kind === "construction" ? `l:${r.name}`
       : `v:${r.index}`;
     // Map a screen (client) point into the SVG's own user space, where the
     // rendered line coords and makeLayout output live. getScreenCTM folds in
@@ -1824,43 +2145,39 @@ const codeLines = code ? code.split("\n").length : 0;
       return out;
     };
 
-    // Anchor one entity's tooltip at (x,y): shared tail of a direct single
-    // click and a chooser-row pick.
-    const anchorEntity = (ref: EntityRef) => {
+    // Settle one entity and put the card at `anchor`: shared tail of a
+    // direct click, a key press on a crease and a pick from the lines a pixel
+    // offered.
+    const anchorEntity = (ref: EntityRef, anchor: Vec2) => {
       pick.close();
       pin(ref);
       markRefsFor([ref]);
-      renderInspect(ref, true);
+      renderCard(ref, anchor);
       const scene = currentScene();
       const ln = scene ? sourceLineOf(scene, ref) : null;
-      // Mark the statement that built this entity, but leave the editor where
-      // the reader left it: they clicked the drawing, not the code.
-      if (ln) setStepLineOn(editor, ln, { reveal: false });
+      // Mark the statement that built this entity.
+      if (ln) setStepLineOn(editor, ln);
     };
 
-    // The coincident-line chooser: a materialized list of the overlapping
-    // entities. Clicking a row (inspectPanel listener) drills into that one via
-    // anchorEntity; hovering a row previews its bundle highlight.
-    // The coincident-line chooser content — shared by hover (anchored=false: a
-    // live preview that follows the cursor, so hover and click show the SAME
-    // "N Linien hier") and click (anchored=true: pinned, with an X and
-    // clickable rows to drill into one). Hovering a row previews its bundle.
-    const renderChoice = (ents: EntityRef[], anchored: boolean) => {
+    // The lines a pixel holds, offered as rows in the card at the click.
+    // Picking a row settles that one where the card stands; pointing at a row
+    // lights its bundle.
+    const renderChoice = (ents: EntityRef[], anchor: Vec2) => {
       const insp = currentScene()?.inspect;
       if (!insp) return;
-      const closeBtn = anchored
-        ? `<button type="button" class="pg-inspect-close" aria-label="Close">×</button>`
-        : "";
-      inspectPanel!.innerHTML =
-        closeBtn +
-        `<h4>${ents.length} lines here</h4>` +
+      showCard(
+        `<div class="pg-card-body"><div class="pg-card-head">${ents.length} lines here</div></div>`,
+        anchor,
+      );
+      card!.insertAdjacentHTML(
+        "beforeend",
         ents
           .map((r, i) => {
             const t = hoverSummary(r, insp)?.title ?? entityKey(r);
             return `<div class="seg" data-choice-idx="${i}">${escapeHtml(t)}</div>`;
           })
-          .join("");
-      inspectPanel!.hidden = false;
+          .join(""),
+      );
     };
 
     // The reverse direction of the click→line jump above: moving the
@@ -1873,39 +2190,38 @@ const codeLines = code ? code.split("\n").length : 0;
       lightEntities(canvas, scene, entitiesAtLine(scene, line));
     };
 
-    // Hover previews the entity under the cursor, following it with the
-    // tooltip and (for a crease) the whole-bundle highlight; anchored
-    // (pinned) suppresses this entirely. isDragging() (not wasDrag()) is
-    // the right guard here — it reflects whether a pan is happening RIGHT
-    // NOW, so hover resumes as soon as the drag actually ends rather than
-    // staying suppressed until the next pointerdown (see createPanZoom).
-    if (!hero) result.addEventListener("mousemove", (e: MouseEvent) => {
+    // Hover lights what is under the pointer and says nothing else; the card
+    // is for a click. A settled selection suppresses it entirely.
+    // isDragging() (not wasDrag()) is the right guard here — it reflects
+    // whether a pan is happening RIGHT NOW, so hover resumes as soon as the
+    // drag actually ends rather than staying suppressed until the next
+    // pointerdown (see createPanZoom).
+    result.addEventListener("mousemove", (e: MouseEvent) => {
       if (pinned() || pick.state.open || panZoom.isDragging()) return;
+      if (card.contains(e.target as Node)) return;
       // Same proximity detection as the click, so hover and click agree.
       const outcome = pick.report(lineEntitiesAtPoint(e.clientX, e.clientY), "hover");
       if (outcome.kind === "several") {
-        // Preview the choice so hover already shows "N lines here" rather than
-        // one entity that then surprises with a chooser on click. The
-        // candidates are not a selection, so the drawing is lit from here.
+        // The candidates are not a selection, so the drawing is lit from here.
         hover(null);
         const scene = currentScene();
         if (scene) lightEntities(canvas, scene, outcome.candidates);
-        renderChoice(outcome.candidates, false);
         return;
       }
       hover(outcome.kind === "one" ? outcome.entity : resolveRef(e.target as Element));
-      renderInspect(runtime.state.hover, false);
     });
-    // A click anchors (materializes) the tooltip at the click position — it
-    // stops following the cursor and gains a close (X) button; only that X
-    // clears it now (see closeAnchor). Clicking empty paper (no entity under
-    // the cursor) is a no-op rather than clearing an existing anchor — the
-    // old "background click unpins" behavior is replaced by X-to-close.
+    // A click settles what is under it and puts the card where it landed;
+    // only the card's close button clears it (see closeAnchor). Clicking empty
+    // paper (no entity under the cursor) is a no-op rather than clearing an
+    // existing answer.
     // Pan gestures must not register as a click here — wasDrag() is only
     // true after the pointer actually moved past the pan threshold during
     // this press.
-    if (!hero) result.addEventListener("click", (e: MouseEvent) => {
+    result.addEventListener("click", (e: MouseEvent) => {
       if (panZoom.wasDrag()) return;
+      if (card.contains(e.target as Node)) return;
+      const at = svgLocalPoint(e.clientX, e.clientY);
+      if (!at) return;
       // Multiple distinct lines stacked at the click → anchor the chooser
       // (same content the hover was already previewing). The module clears the
       // selection for it: the reader has been asked and has not answered.
@@ -1915,12 +2231,12 @@ const codeLines = code ? code.split("\n").length : 0;
         const scene = currentScene();
         if (scene) lightEntities(canvas, scene, outcome.candidates);
         markRefsFor(outcome.candidates);
-        renderChoice(outcome.candidates, true);
+        renderChoice(outcome.candidates, at);
         return;
       }
       const ref = outcome.kind === "one" ? outcome.entity : resolveRef(e.target as Element);
       if (!ref) return;
-      anchorEntity(ref);
+      anchorEntity(ref, at);
     });
 
     // Picking a segment row (anchored crease view only) highlights the SVG
@@ -1980,9 +2296,11 @@ const codeLines = code ? code.split("\n").length : 0;
       // Picked an occluded segment (no rendered line) → ghost it so it shows.
       if (!matched) ghostSegment(p0[0], p0[1], p1[0], p1[1]);
     };
-    inspectPanel.addEventListener("click", (e: MouseEvent) => {
+    // The card sits inside the stage, so a press on it must not start a pan.
+    card.addEventListener("pointerdown", (e: PointerEvent) => e.stopPropagation());
+    card.addEventListener("click", (e: MouseEvent) => {
       const target = e.target as Element;
-      if (target.closest(".pg-inspect-close")) {
+      if (target.closest(".pg-card-close")) {
         e.stopPropagation();
         closeAnchor();
         return;
@@ -1991,8 +2309,9 @@ const codeLines = code ? code.split("\n").length : 0;
       const choice = target.closest<HTMLElement>("[data-choice-idx]");
       if (choice) {
         e.stopPropagation();
+        const at = cardAnchor;
         const ref = pick.choose(Number(choice.dataset.choiceIdx));
-        if (ref) anchorEntity(ref);
+        if (ref && at) anchorEntity(ref, at);
         return;
       }
       const row = target.closest<HTMLElement>("[data-pick-seg]");
@@ -2000,7 +2319,7 @@ const codeLines = code ? code.split("\n").length : 0;
       e.stopPropagation();
       pickSegment(row);
     });
-    inspectPanel.addEventListener("mouseover", (e: MouseEvent) => {
+    card.addEventListener("mouseover", (e: MouseEvent) => {
       const target = e.target as Element;
       const row = target.closest<HTMLElement>("[data-pick-seg]");
       if (row) {
@@ -2048,25 +2367,6 @@ const codeLines = code ? code.split("\n").length : 0;
     // element (the transform target) survives innerHTML swaps, so stepping
     // through the timeline keeps the user's framing. A fresh run passes
     // keepView=false to re-fit the newly-parsed paper.
-    // Pointing at a step's bar in the gutter lights what that step built, in
-    // the palette whose statement is that a word and a thing in the drawing
-    // are the same thing. The bar is a target the reader aims at, so reading
-    // the program recolours nothing.
-    //
-    // This is the reader asking about the text, so it yields to what they
-    // picked in the drawing: the accent of a hover or a pin wins on its own
-    // entity, which the stylesheet settles.
-    let emphasisStep: number | null = null;
-    const emphasisFor = (step: number | null) => {
-      const scene = currentScene();
-      if (!scene || step === null) return null;
-      return entitiesIn(scene, blockOfStep(scene, step));
-    };
-    const emphasiseStep = (step: number | null) => {
-      emphasisStep = step;
-      applyEmphasis(canvas, emphasisFor(step));
-    };
-
     // What the runtime says to draw, drawn, and nothing else. The renderer
     // compares this against what it last drew, so an event that only moves the
     // highlight re-lights the drawing on screen rather than rebuilding it.
@@ -2084,39 +2384,21 @@ const codeLines = code ? code.split("\n").length : 0;
       // The renderer owns the markup and the hit targets over it. What stays
       // here is the stage around the drawing.
       relight(fade);
-      // The drawing is new, so what the reader was pointing at in the source
-      // has to be lit again on it.
-      applyEmphasis(canvas, emphasisFor(emphasisStep));
       makeCreasesReachable();
       reapplyChoiceHl();
-      // A drawing on the stage means the rail has something to stand for. A
-      // pinned answer survives a step change, so the rail keeps it.
-      if (!hero && !pinned() && !pick.state.open) restInspect();
+      // A settled answer survives a step change, and its card follows it.
+      reanchorCard();
       if (!keepView) panZoom.reset();
       panZoom.setEnabled(true);
       resetBtn.hidden = false;
     };
 
-    // Rebuilds the scrubber's dots for a freshly-parsed set of statements
-    // (called once per successful run, not per statement-click). The timeline
-    // has n+1 stops: index 0 is the flat starting sheet, 1..n each statement.
-    // Hidden when there's nothing to navigate (no statements at all).
-    // The same stops in the editor's gutter: one bar per step, over the source
-    // that step stands for. A program with nothing above its first statement
-    // gets no bar for step 0, whose block is empty.
-    function buildStepSlots(scene: FoldScene) {
-      const slots: StepSlot[] = [];
-      for (let step = 0; step <= scene.statements.length; step++) {
-        const block = blockOfStep(scene, step);
-        const toLine = block.toLine ?? editor.state.doc.lines;
-        if (toLine < block.fromLine) continue;
-        slots.push({ step, fromLine: block.fromLine, toLine });
-      }
-      setStepSlotsOn(editor, slots);
-    }
-
-    function buildStepsUI(statements: Statement[]) {
-      const n = statements.length;
+    // Rebuilds the scrubber's dots for a freshly-parsed set of writes (called
+    // once per successful run, not per step-click). The timeline has n+1 stops:
+    // index 0 is the flat starting sheet, 1..n each write. Hidden when there is
+    // nothing to navigate, which a program that folds nothing asks for.
+    function buildStepsUI(writes: Statement[]) {
+      const n = writes.length;
       stepDots!.innerHTML = "";
       if (n < 1) {
         stepsBar!.hidden = true;
@@ -2141,9 +2423,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // hover and any open choice with it, and the modules watch the slot
     // themselves.
     function clearStepsUI() {
-      setStepSlotsOn(editor, []);
-      inspectPanel!.hidden = true;
-      inspectPanel!.textContent = "";
+      hideCard();
       clearHighlight(canvas!);
       setRefSpansOn(editor, []);
       stepsBar!.hidden = true;
@@ -2152,19 +2432,22 @@ const codeLines = code ? code.split("\n").length : 0;
 
     // Cheap per-step-change update: toggles the active dot + label text,
     // without touching event listeners (buildStepsUI owns those).
-    function updateStepsUI(i: number, statements: Statement[]) {
-      const n = statements.length;
+    function updateStepsUI(i: number, writes: Statement[]) {
+      const n = writes.length;
       stepDots!.querySelectorAll<HTMLButtonElement>(".pg-step-dot").forEach((dot, idx) => {
         dot.classList.toggle("is-active", idx === i);
         dot.classList.toggle("is-past", idx < i);
         dot.setAttribute("aria-current", idx === i ? "true" : "false");
       });
       stepDots!.style.setProperty("--pg-progress", n > 0 ? `${(i / n) * 100}%` : "0%");
-      if (i === 0) {
-        stepLabel!.textContent = `Step 0/${n} · empty paper`;
-      } else {
-        stepLabel!.textContent = `Step ${i}/${n}`;
-      }
+      // The statement the drawing stands for, in the words the program used
+      // for it. It comes out of the source the evaluator answered rather than
+      // the text in the editor, because the two part company on the next
+      // keystroke and the drawing belongs to the run.
+      const line = i === 0 ? null : writes[i - 1]?.sourceLine ?? null;
+      const said = line === null ? null : (runState.answered?.split("\n")[line - 1] ?? null);
+      stepLabel!.textContent =
+        i === 0 ? `0/${n} · empty paper` : `${i}/${n} · ${said?.trim() || `step ${i}`}`;
       stepPrev!.disabled = i <= 0;
       stepNext!.disabled = i >= n;
     }
@@ -2182,16 +2465,13 @@ const codeLines = code ? code.split("\n").length : 0;
     // the tab, or the line style, shows the same state drawn differently.
     function renderStep(i: number, keepView = true, animate = false, fadeOverride: FadeLength | null = null) {
       const scene = currentScene();
-      const statements = currentStatements();
-      if (!scene || statements.length === 0) return;
+      const writes = currentWrites();
+      if (!scene || writes.length === 0) return;
       // Out-of-range steps are the runtime's to clamp, so a shared link with a
       // step from a longer program lands on the last one.
       runtime.dispatch({ type: "step/to", index: i });
       const clamped = currentStep();
-      const stmt = clamped === 0 ? null : statements[clamped - 1]!;
-      // The source this step stands for, which is its own line and everything
-      // under it until the next statement (see @beloch/runtime-editor).
-      const block = blockOfStep(scene, clamped);
+      const stmt = clamped === 0 ? null : writes[clamped - 1]!;
       // A mark folds nothing, so it changes the view rather than the paper. A
       // crease pattern never folds either: the sheet stays flat and gains a
       // line. Step 0 arrives at the sheet, which is no fold either.
@@ -2199,12 +2479,12 @@ const codeLines = code ? code.split("\n").length : 0;
         currentView === "cp" || stmt === null || stmt.kind !== "fold" ? "view" : "fold";
       try {
         drawCurrent(keepView, fadeOverride ?? (animate ? stepFade : null));
-        setStepLineOn(editor, block.fromLine, { through: block.toLine ?? editor.state.doc.lines });
+        setStepLineOn(editor, stmt === null ? null : stmt.sourceLine);
       } catch (err) {
         showError(`Render error: ${err instanceof Error ? err.message : String(err)}`);
         return;
       }
-      updateStepsUI(clamped, statements);
+      updateStepsUI(clamped, writes);
       updateExportPanel();
     }
 
@@ -2213,12 +2493,21 @@ const codeLines = code ? code.split("\n").length : 0;
     // the build embedded, so both build the scrubber the same way.
     function showDocument(scene: FoldScene) {
       clearStepsUI();
-      if (scene.statements.length > 0) {
-        buildStepsUI(scene.statements);
-        buildStepSlots(scene);
+      // The spans in the document point into the source it was evaluated from,
+      // which is the editor's text at this moment: a run answers the text that
+      // was sent, and the seed path parses the FOLD the build made of the text
+      // the pane opened with.
+      documentSource = runState.answered ?? editor.state.doc.toString();
+      if (debugIsOn(editor.state)) {
+        buildDebugTargets();
+        refreshDebugBoxes();
+      }
+      updateDebugButton();
+      if (scene.writes.length > 0) {
+        buildStepsUI(scene.writes);
         const target = pendingSharedStep;
         pendingSharedStep = null;
-        renderStep(target ?? scene.statements.length, false);
+        renderStep(target ?? scene.writes.length, false);
       } else {
         // No fold and no mark statement: one drawing, no timeline.
         drawCurrent();
@@ -2338,7 +2627,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // the panel is shut (B3.11).
     function updateExportPanel() {
       if (!exportStepLine) return;
-      const n = currentStatements().length;
+      const n = currentWrites().length;
       exportStepLine.textContent = n > 0 ? `step ${currentStep()} of ${n}` : "crease pattern";
     }
 
@@ -2346,27 +2635,48 @@ const codeLines = code ? code.split("\n").length : 0;
       if (exportSaid) exportSaid.textContent = text;
     };
 
-    const setExportOpen = (open: boolean) => {
-      exportPanel!.hidden = !open;
-      exportToggle!.setAttribute("aria-expanded", String(open));
-      if (open) {
-        updateExportPanel();
-        say("");
+    // One menu open at a time. A panel is a choice in progress, and two of
+    // them standing open would be two.
+    const menus: { toggle: HTMLButtonElement; panel: HTMLElement }[] = [];
+    const closeMenus = () => {
+      for (const m of menus) {
+        m.panel.hidden = true;
+        m.toggle.setAttribute("aria-expanded", "false");
       }
     };
-
-    exportToggle.addEventListener("click", () => setExportOpen(exportPanel!.hidden));
-    // Clicking away shuts the panel; it covers paper only while it is in use.
-    document.addEventListener("click", (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (exportPanel!.hidden) return;
-      if (exportPanel!.contains(t) || exportToggle!.contains(t)) return;
-      setExportOpen(false);
+    const wireMenu = (toggle: HTMLButtonElement, panel: HTMLElement, opened?: () => void) => {
+      menus.push({ toggle, panel });
+      toggle.addEventListener("click", () => {
+        const opening = panel.hidden;
+        closeMenus();
+        if (!opening) return;
+        panel.hidden = false;
+        toggle.setAttribute("aria-expanded", "true");
+        opened?.();
+      });
+      // Escape takes the question back and leaves the reader on the word that
+      // asked it.
+      const onEscape = (e: KeyboardEvent) => {
+        if (e.key !== "Escape" || panel.hidden) return;
+        closeMenus();
+        toggle.focus();
+      };
+      toggle.addEventListener("keydown", onEscape);
+      panel.addEventListener("keydown", onEscape);
+    };
+    wireMenu(exportToggle, exportPanel, () => {
+      updateExportPanel();
+      say("");
     });
-    exportPanel.addEventListener("keydown", (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      setExportOpen(false);
-      exportToggle!.focus();
+    const viewPanel = root.querySelector<HTMLElement>(".pg-view-panel");
+    if (viewToggle && viewPanel) wireMenu(viewToggle, viewPanel);
+    // Clicking anywhere else shuts what is open: a menu covers the card only
+    // while it is in use. Another card's menu on the same page is somewhere
+    // else, which is why this asks about this card first.
+    document.addEventListener("click", (e: MouseEvent) => {
+      const t = e.target as Element;
+      if (root.contains(t) && t.closest(".pg-menu")) return;
+      closeMenus();
     });
 
     // base64url of the UTF-8 bytes, so a program with umlauts or a long line
@@ -2436,7 +2746,7 @@ const codeLines = code ? code.split("\n").length : 0;
       const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
       const a = document.createElement("a");
       a.href = url;
-      a.download = currentStatements().length > 0 ? `beloch-step-${currentStep()}.svg` : "beloch.svg";
+      a.download = currentWrites().length > 0 ? `beloch-step-${currentStep()}.svg` : "beloch.svg";
       a.click();
       URL.revokeObjectURL(url);
       say("SVG downloaded");
@@ -2449,7 +2759,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // and the vertical arrows move from one crease to the next, so a drawing
     // with twenty creases does not put twenty tab stops between this card and
     // the rest of the page.
-    if (!hero) result.tabIndex = 0;
+    result.tabIndex = 0;
     result.addEventListener("keydown", (e: KeyboardEvent) => {
       // A control inside the stage keeps its own keys.
       if (e.target !== result) return;
@@ -2486,7 +2796,6 @@ const codeLines = code ? code.split("\n").length : 0;
     // with the SVG. One of them holds the tab stop; the rest are reachable
     // from it.
     function makeCreasesReachable() {
-      if (hero) return;
       const insp = currentScene()?.inspect;
       hitLines().forEach((el, i) => {
         el.setAttribute("tabindex", i === 0 ? "0" : "-1");
@@ -2506,7 +2815,7 @@ const codeLines = code ? code.split("\n").length : 0;
 
     canvas.addEventListener("keydown", (e: KeyboardEvent) => {
       const el = e.target as Element;
-      if (hero || !el.classList?.contains(HIT_CLASS)) return;
+      if (!el.classList?.contains(HIT_CLASS)) return;
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         const lines = hitLines();
         const i = lines.indexOf(el as SVGElement);
@@ -2520,7 +2829,7 @@ const codeLines = code ? code.split("\n").length : 0;
       }
       if (e.key === "Enter" || e.key === " ") {
         const ref = resolveRef(el);
-        if (ref) anchorEntity(ref);
+        if (ref) anchorEntity(ref, middleOf(el as SVGGraphicsElement));
         e.preventDefault();
         return;
       }

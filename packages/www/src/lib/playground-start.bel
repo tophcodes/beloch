@@ -8,23 +8,23 @@ reverse (map .b onto .c) as --h
 reverse (map .d onto .c) as --v
 
 ; apex O, the paper centre
-.o = free on --bd from .b at 1/2
+.o = --h * --v
 
 ; centre line of the base
 --mid = (through .c .o)
 
 ; front-right corner: paper (1/2,0) table (1,1/2)
-.sr = free on --ab from .a at 1/2
+.sr = --ab * --h
 reverse (map .sr onto --mid through .c)
 
 ; front-left corner: paper (0,1/2) table (1/2,1)
-.sl = free on --da from .a at 1/2
+.sl = --da * --v
 reverse (map .sl onto --mid through .c)
 
 ; back-right corner: paper (1, 1/2)
-.br = free on --bc from .b at 1/2
+.br = --bc * --h
 reverse (map .br onto --mid through .c)
 
 ; back-left corner: paper (1/2, 1)
-.bl = free on --cd from .c at 1/2
+.bl = --cd * --v
 reverse (map .bl onto --mid through .c)

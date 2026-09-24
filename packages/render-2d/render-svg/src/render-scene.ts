@@ -4,14 +4,14 @@
 // sheet vs folded step), so the presets stay byte-identical — the composition
 // knobs (texture.upToStatement filtering, ghosted future creases) are strictly
 // additive and dormant for the presets.
-import type { FoldScene, Mark, Vec2, Isometry as FaceMatrix } from "@beloch/scene";
+import type { EdgeProvenance, FoldScene, Mark, Vec2, Isometry as FaceMatrix } from "@beloch/scene";
 import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
 import { DEFAULT_THEME, Theme, LineStyle, HighlightColor } from "./theme";
 import { sceneLayout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
-import { coverageDepth, coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly, pointCovered, pointInPolygonInclusive, segInsideIntervals, paperClippedIntervals } from "./geometry";
+import { coverageDepth, coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly, paperAssignment, paperEdgeSegments, pointCovered, pointInPolygonInclusive, segInsideIntervals, paperClippedIntervals } from "./geometry";
 import { resolveIsometry, type Isometry } from "./isometry";
-import { placeLabels, type LabelAnchor } from "./primitives/labels";
+import { besideLine, placeLabels, type LabelAnchor } from "./primitives/labels";
 
 export interface TextureOptions {
   upToStatement: number | "all"; // filter creases by scoring statement ≤ this (flat/ghost)
@@ -32,6 +32,15 @@ export interface SceneOptions {
   texture: TextureOptions;
   title?: string | undefined;
   labels?: string[] | undefined; // construction overlay selection: ["--v", ".p"]
+  // Whose names the drawing writes out, spelled as the selection is (".o",
+  // "--mid"). Absent labels every name the picture carries, which is what a
+  // figure in the documentation wants; a list labels those names alone, and an
+  // empty one leaves the drawing without a word on it. The dots and the lines
+  // are drawn either way: this is about the text.
+  // A crease the program never named is spelled `#<crease id>` here, and the
+  // drawing writes out the line of the statement that scored it instead of a
+  // name it does not have.
+  annotate?: string[] | undefined;
   // Entities to emphasise: ".p" / "--l" join the construction overlay, "#[.p]"
   // fills the faces of the flap carrying every listed point.
   highlight?: string[] | undefined;
@@ -79,6 +88,39 @@ function flapFaces(
   return faces;
 }
 
+// The names a drawing carries, placed so that two of them cannot land on each
+// other and written in the colour of the thing each one names. Every branch
+// collects its anchors and ends here, which is what keeps a crease's name and
+// a construction's name looking alike.
+function emitLabels(
+  annotations: { children: SvgNode[] },
+  anchors: LabelAnchor[],
+  fontSize: number,
+  cluster: boolean,
+): void {
+  for (const lab of placeLabels(anchors, { fontSize, cluster })) {
+    const attrs: Record<string, string | number> = {
+      x: lab.x, y: lab.y,
+      "font-size": fontSize, "font-weight": 600,
+      // The halo is what keeps a name legible where it crosses a line.
+      stroke: "white", "stroke-width": 2.5, "paint-order": "stroke",
+      ...lab.attrs,
+    };
+    if (lab.anchor !== "start") attrs["text-anchor"] = lab.anchor;
+    annotations.children.push(el("text", attrs, [], lab.text));
+  }
+}
+
+// What a crease the program never named is written as: the line of the
+// statement that scored it. The reader can act on that — it is where the
+// crease was made and where a name would go — and it invents no binding the
+// program does not have.
+function sourceMark(scene: FoldScene, prov: EdgeProvenance | null): string {
+  const stmt = prov?.statement ?? null;
+  const line = stmt === null ? null : scene.statements[stmt]?.sourceLine ?? null;
+  return line === null ? "@?" : `@${line}`;
+}
+
 export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
   const theme: Theme = { ...DEFAULT_THEME, ...opts.theme };
   // A `.p` / `--l` highlight is the construction overlay the `labels` option
@@ -93,6 +135,20 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     highlight.map((h, i) => [h, palette[i % palette.length]!]),
   );
   const highlightFaces = flapFaces(scene, colorOf);
+  // Whether the drawing writes this name out.
+  const labelled = (name: string): boolean =>
+    opts.annotate === undefined || opts.annotate.includes(name);
+  // Whether the reader settled on this one. A caller that names nothing has
+  // named no selection either, so nothing counts as picked.
+  const selected = (name: string): boolean =>
+    opts.annotate !== undefined && opts.annotate.includes(name);
+  // The sheet's own edges, by name. A crease name spelled with two letters
+  // would otherwise be read as a pair of corners and drawn as an edge that
+  // does not exist.
+  const paperEdges = scene.inspect?.edges ?? {};
+  const pickedPaperEdges = (opts.annotate ?? [])
+    .filter((n) => n.startsWith("--") && paperEdges[n.slice(2)] !== undefined)
+    .map((n) => n.slice(2));
   // The frame both views of this scene share: the paper's footprint together
   // with every folded frame's, so a folded subset renders in place at true
   // relative size on the flat sheet's baseline.
@@ -211,6 +267,38 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       return !(pos && neg); // faces all on one side → boundary of the silhouette
     };
 
+    // Every name this drawing writes out, placed in one pass at the end of the
+    // branch so that two of them cannot land on each other, whatever drew
+    // them: a crease, a construction the paper does not carry, a named point.
+    const labelAnchors: LabelAnchor[] = [];
+    // The longest drawn run of each named crease, which is where its name
+    // goes: a bundle is drawn in pieces, and the widest piece is the one with
+    // room for a word beside it.
+    const creaseRuns = new Map<
+      string,
+      { a: Vec2; b: Vec2; len: number; stroke: string; text: string; name: string | null }
+    >();
+    // Where a picked paper edge runs in this frame, in the frame's own
+    // coordinates. The sheet's edges carry no name in the graph, so a run is
+    // recognised as one of them by lying along it.
+    const pickedEdgeRuns = new Map<string, [Vec2, Vec2][]>();
+    for (const name of pickedPaperEdges) {
+      const runs = paperEdgeSegments(scene, frame, name);
+      if (runs.length > 0) pickedEdgeRuns.set(name, runs);
+    }
+    const pickedEdges: [Vec2, Vec2][] = [...pickedEdgeRuns.values()].flat();
+    const EDGE_EPS = 1e-6;
+    const onPickedEdge = (p: Vec2, q: Vec2): boolean =>
+      pickedEdges.some(([a, b]) => {
+        const along = (r: Vec2) => {
+          const dx = b[0] - a[0], dy = b[1] - a[1];
+          const len2 = dx * dx + dy * dy;
+          const t = len2 ? Math.max(0, Math.min(1, ((r[0] - a[0]) * dx + (r[1] - a[1]) * dy) / len2)) : 0;
+          return Math.hypot(r[0] - (a[0] + t * dx), r[1] - (a[1] + t * dy));
+        };
+        return along(p) <= EDGE_EPS && along(q) <= EDGE_EPS;
+      });
+
     if (opts.texture.creases) {
       E.forEach((e, i) => {
         const faces = incident[i]!;
@@ -257,9 +345,33 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
           if (name) attrs["data-bel-name"] = name;
           if (cid !== null) attrs["data-crease-id"] = cid;
           creases.children.push(el("line", attrs));
+          const writes = name
+            ? labelled(`--${name}`)
+            : cid !== null && labelled(`#${cid}`);
+          if (writes) {
+            const key = name ?? `#${cid}`;
+            const pa: Vec2 = [mx(p0[0]), ty(p0[1])], pb: Vec2 = [mx(p1[0]), ty(p1[1])];
+            const len = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]);
+            const best = creaseRuns.get(key);
+            if (!best || len > best.len) {
+              creaseRuns.set(key, {
+                a: pa, b: pb, len, stroke: style.stroke,
+                text: name ? `--${name}` : sourceMark(scene, prov[i] ?? null),
+                name: name ?? null,
+              });
+            }
+          }
         }
 
-        if (showHidden) {
+        // What the reader picked is never hidden: where it runs under a
+        // higher layer it is drawn dashed, so the line they asked about keeps
+        // its whole length whatever the hidden mode says.
+        const picked = name
+          ? selected(`--${name}`)
+          : cid !== null
+            ? selected(`#${cid}`)
+            : assignment === "B" && onPickedEdge(a0, b0);
+        if (showHidden || picked) {
           const isB = assignment === "B";
           const stroke = isB ? "#475569" : "#94a3b8";
           const dashWgt = isB ? 2 : 1.2;
@@ -273,9 +385,16 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
               x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
               stroke, "stroke-width": dashWgt, "stroke-dasharray": dash, "stroke-linecap": "round",
             };
-            if (depth) { attrs["data-depth"] = depth; attrs["opacity"] = depthOpacity(depth); }
+            if (depth && showHidden) {
+              attrs["data-depth"] = depth;
+              attrs["opacity"] = depthOpacity(depth);
+            }
             if (name) attrs["data-name"] = name;
             if (name) attrs["data-bel-name"] = name;
+            // The same crease as the visible run it continues. A host resolves
+            // what the reader pointed at from the line's own attributes, and a
+            // drawn segment that answers nothing is a target that lies.
+            if (cid !== null) attrs["data-crease-id"] = cid;
             dashedLines.push(el("line", attrs));
           }
         }
@@ -370,36 +489,29 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       return pointCovered(fverts[i]!, order, refPos, F, V, bottom);
     };
     const MUTED = "#94a3b8"; // matches occluded (non-boundary) crease grey
-    const occludedNames = new Set<string>();
-    const labelAnchors: LabelAnchor[] = [];
     frame.verticesNames.forEach((nm, i) => {
       if (!nm) return;
       const p = fverts[i]!;
       const buried = occludedPt(i);
       if (buried && !showHidden) return; // "hide": drop dot + label
-      if (buried) occludedNames.add(nm);
       const circle: Record<string, string | number> = {
         cx: mx(p[0]), cy: ty(p[1]), r: 3, fill: buried ? MUTED : theme.ink,
         "data-bel-name": nm, "data-kind": "point", "data-vertex": i,
       };
       if (buried) circle["data-occluded"] = "true";
       annotations.children.push(el("circle", circle));
+      if (!labelled(`.${nm}`)) return;
       const ox = p[0] < centreX ? -16 : 10, oy = p[1] < centreY ? 18 : -8;
-      labelAnchors.push({
-        x: mx(p[0]), y: ty(p[1]), text: `.${nm}`, key: nm, preferOffset: [ox, oy],
-      });
-    });
-    for (const lab of placeLabels(labelAnchors, { fontSize: 17 })) {
-      const buried = occludedNames.has(lab.keys[0]!);
       const attrs: Record<string, string | number> = {
-        x: lab.x, y: lab.y, "font-size": 17, "font-weight": 600,
         fill: buried ? MUTED : theme.ink,
-        "data-bel-name": lab.keys[0]!, "data-kind": "point-label",
+        "data-bel-name": nm, "data-kind": "point-label",
       };
       if (buried) attrs["data-occluded"] = "true";
-      if (lab.anchor !== "start") attrs["text-anchor"] = lab.anchor;
-      annotations.children.push(el("text", attrs, [], lab.text));
-    }
+      labelAnchors.push({
+        x: mx(p[0]), y: ty(p[1]), text: `.${nm}`, key: `.${nm}`,
+        preferOffset: [ox, oy], group: "point", attrs,
+      });
+    });
 
     // Mark overlay: project one mark's paper-space geometry onto the folded
     // faces via each face's own isometry — same paper->table technique as
@@ -468,7 +580,40 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       }
     }
 
-    appendConstructions(doc, scene, layout, theme, selection, { frame }, colorOf);
+    labelAnchors.push(
+      ...appendConstructions(doc, scene, layout, theme, selection, { frame }, colorOf, opts.annotate),
+    );
+    // A picked paper edge writes its name out too. It carries no name in the
+    // graph, so it is not among the creases above; where it runs in this frame
+    // is what the anchor is taken from.
+    for (const [name, runs] of pickedEdgeRuns) {
+      const longest = runs.reduce((best, r) =>
+        Math.hypot(r[1][0] - r[0][0], r[1][1] - r[0][1]) >
+        Math.hypot(best[1][0] - best[0][0], best[1][1] - best[0][1]) ? r : best);
+      const a: Vec2 = [mx(longest[0][0]), ty(longest[0][1])];
+      const b: Vec2 = [mx(longest[1][0]), ty(longest[1][1])];
+      labelAnchors.push({
+        x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2,
+        text: `--${name}`, key: `--${name}`,
+        preferOffset: besideLine(a, b, 14),
+        group: `line:${name}`,
+        attrs: { fill: theme.boundary, "data-bel-name": name, "data-kind": "line-label" },
+      });
+    }
+    for (const [key, run] of creaseRuns) {
+      const attrs: Record<string, string | number> = {
+        fill: run.stroke, "data-kind": "line-label",
+      };
+      if (run.name !== null) attrs["data-bel-name"] = run.name;
+      labelAnchors.push({
+        x: (run.a[0] + run.b[0]) / 2, y: (run.a[1] + run.b[1]) / 2,
+        text: run.text, key,
+        preferOffset: besideLine(run.a, run.b, 14),
+        group: `line:${key}`,
+        attrs,
+      });
+    }
+    emitLabels(annotations, labelAnchors, 17, opts.annotate === undefined);
   } else {
     // ===== flat crease-pattern geometry (ported from renderCP) =====
     if (opts.texture.faces !== "none") {
@@ -484,9 +629,15 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     }
 
     if (opts.texture.creases) {
+      // The sheet as it stands after statement `upTo`: a crease a later fold
+      // lays flat again, or turns over, still carries the assignment it has
+      // at that step. The crease pattern's own assignments are the final ones.
+      const stepFrame =
+        typeof upTo === "number" ? scene.steps[scene.statements[upTo]?.frameIndex ?? -1]?.frame : undefined;
+      const assignmentAtStep = stepFrame ? paperAssignment(stepFrame) : null;
       E.forEach(([a, b], i) => {
         if (!showCrease(i)) return;
-        const assignment = A[i]!;
+        const assignment = assignmentAtStep?.(V[a]!, V[b]!) ?? A[i]!;
         const name = prov[i]?.name;
         const cid = prov[i]?.creaseId ?? null;
         const style = theme.lineStyle(assignment, theme);
@@ -551,30 +702,24 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       });
     }
 
-    // Which vertices exist by this statement. A paper corner is there from
-    // the start; a crossing exists once a crease that carves it is drawn; a
-    // named point once the statement that bound it has run. Boundary edges
-    // are drawn at every step (they are the sheet itself), so they cannot
-    // date a vertex — the foot of a crease sits on one, and it arrives with
-    // the crease, not with the paper.
-    const madeByCrease = new Set<number>();
-    if (typeof upTo === "number") {
-      E.forEach(([a, b], i) => {
-        if (A[i] === "B" || !showCrease(i)) return;
-        madeByCrease.add(a);
-        madeByCrease.add(b);
-      });
-    }
+    // Which points a drawing of the sheet at this statement marks: the paper's
+    // corners, and the points the program has named by then. The vertices are
+    // the final crease pattern's, carved by every crease the program will ever
+    // score, so a crossing cannot be dated by the creases drawn so far; a
+    // point the program has not named yet is left unmarked.
     const showVertex = (i: number, nm: string | null): boolean => {
       if (typeof upTo !== "number") return true;
       if (cornerLabel(V[i]!)) return true;
-      if (madeByCrease.has(i)) return true;
       if (!nm) return false;
       const np = scene.namedPoints.find((q) => q.name === nm);
       // No point statement to read (a FOLD from before the field): show it,
       // the same promise the crease filter makes.
       return np ? np.statement == null || np.statement <= upTo : false;
     };
+
+    // Every name this drawing writes out, placed in one pass at the end of the
+    // branch, as in the folded one above.
+    const labelAnchors: LabelAnchor[] = [];
 
     // vertex dots + corner labels
     V.forEach((p, i) => {
@@ -585,18 +730,23 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       };
       if (nm) { circleAttrs["data-bel-name"] = nm; circleAttrs["data-kind"] = "point"; }
       annotations.children.push(el("circle", circleAttrs));
-      const lab = cornerLabel(p);
+      // Which name this vertex is written out under. A caller that named the
+      // ones it wants gets any named point; without such a list the drawing
+      // labels the paper's corners, as it always has, and leaves the points a
+      // program bound to the construction overlay.
+      const lab = opts.annotate === undefined ? cornerLabel(p) : nm ?? cornerLabel(p);
       // A highlighted corner is already labelled by the construction overlay,
       // in its palette colour and at nearly this offset; drawing the plain
       // label too would set one name on top of the other.
-      if (lab && !colorOf.has(`.${nm}`)) {
+      if (lab && !colorOf.has(`.${lab}`) && labelled(`.${lab}`)) {
         const ox = p[0] < 0.5 ? -16 : 10, oy = p[1] < 0.5 ? 18 : -8;
-        const labelAttrs: Record<string, string | number> = {
-          x: tx(p[0]) + ox, y: ty(p[1]) + oy,
-          "font-size": 17, "font-weight": 600, fill: theme.ink,
-        };
+        const labelAttrs: Record<string, string | number> = { fill: theme.ink };
         if (nm) labelAttrs["data-bel-name"] = nm;
-        annotations.children.push(el("text", labelAttrs, [], `.${lab}`));
+        labelAttrs["data-kind"] = "point-label";
+        labelAnchors.push({
+          x: tx(p[0]), y: ty(p[1]), text: `.${lab}`, key: `.${lab}`,
+          preferOffset: [ox, oy], group: "point", attrs: labelAttrs,
+        });
       }
     });
 
@@ -605,18 +755,32 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     const onB = (p: Vec2) =>
       Math.abs(p[0] - minX) < B_EPS || Math.abs(p[0] - maxX) < B_EPS ||
       Math.abs(p[1] - minY) < B_EPS || Math.abs(p[1] - maxY) < B_EPS;
-    const creaseGroups = new Map<string, { vs: Set<number>; col: string }>();
+    const creaseGroups = new Map<
+      string,
+      { vs: Set<number>; col: string; text: string; name: string | null }
+    >();
     E.forEach(([a, b], i) => {
-      const nm = prov[i]?.name;
-      if (!nm || !showCrease(i)) return;
-      if (!creaseGroups.has(nm)) {
-        creaseGroups.set(nm, { vs: new Set(), col: theme.lineStyle(A[i]!, theme).stroke });
+      if (!showCrease(i)) return;
+      const nm = prov[i]?.name ?? null;
+      const cid = prov[i]?.creaseId ?? null;
+      // A crease the program never named is grouped by its id and written out
+      // as the line that scored it.
+      const key = nm ?? (cid === null ? null : `#${cid}`);
+      if (key === null) return;
+      if (!creaseGroups.has(key)) {
+        creaseGroups.set(key, {
+          vs: new Set(),
+          col: theme.lineStyle(A[i]!, theme).stroke,
+          text: nm ? `--${nm}` : sourceMark(scene, prov[i] ?? null),
+          name: nm,
+        });
       }
-      const grp = creaseGroups.get(nm)!;
+      const grp = creaseGroups.get(key)!;
       grp.vs.add(a);
       grp.vs.add(b);
     });
-    for (const [nm, { vs, col }] of creaseGroups) {
+    for (const [key, { vs, col, text, name: nm }] of creaseGroups) {
+      if (!labelled(key.startsWith("#") ? key : `--${key}`)) continue;
       const list = [...vs];
       let ends = list.filter((j) => onB(V[j]!));
       if (ends.length < 2) {
@@ -628,16 +792,38 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
         ends = best;
       }
       const P = V[ends[0]!]!, C = V[ends[1]!]!, t = 0.18;
-      const px = tx(P[0] + (C[0] - P[0]) * t), py = ty(P[1] + (C[1] - P[1]) * t);
-      annotations.children.push(el("text", {
-        x: px, y: py, "font-size": 13, "font-weight": 600, fill: col,
-        stroke: "white", "stroke-width": 3, "paint-order": "stroke",
-        "text-anchor": "middle", "dominant-baseline": "middle",
-        "data-kind": "crease-label", "data-name": nm,
-      }, [], `--${nm}`));
+      const a: Vec2 = [tx(P[0]), ty(P[1])], b: Vec2 = [tx(C[0]), ty(C[1])];
+      const attrs: Record<string, string | number> = {
+        fill: col, "data-kind": "line-label",
+      };
+      if (nm !== null) { attrs["data-bel-name"] = nm; attrs["data-name"] = nm; }
+      labelAnchors.push({
+        x: tx(P[0] + (C[0] - P[0]) * t), y: ty(P[1] + (C[1] - P[1]) * t),
+        text, key,
+        preferOffset: besideLine(a, b, 14),
+        group: `line:${key}`,
+        attrs,
+      });
     }
 
-    appendConstructions(doc, scene, layout, theme, selection, null, colorOf);
+    // A picked paper edge writes its name out, at the side it runs along.
+    for (const name of pickedPaperEdges) {
+      const longest = paperEdgeSegments(scene, scene.cp, name)[0];
+      if (!longest) continue;
+      const a: Vec2 = [tx(longest[0][0]), ty(longest[0][1])];
+      const b: Vec2 = [tx(longest[1][0]), ty(longest[1][1])];
+      labelAnchors.push({
+        x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2,
+        text: `--${name}`, key: `--${name}`,
+        preferOffset: besideLine(a, b, 14),
+        group: `line:${name}`,
+        attrs: { fill: theme.boundary, "data-bel-name": name, "data-kind": "line-label" },
+      });
+    }
+    labelAnchors.push(
+      ...appendConstructions(doc, scene, layout, theme, selection, null, colorOf, opts.annotate),
+    );
+    emitLabels(annotations, labelAnchors, 17, opts.annotate === undefined);
   }
 
   if (opts.title) appendTitle(doc, theme, opts.title);

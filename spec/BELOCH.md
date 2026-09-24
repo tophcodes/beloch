@@ -71,6 +71,16 @@ on`), and the filter operators (`&`, `\`, `[…]`), which form a Boolean
 algebra on the segments of a bundle: intersection with an incidence
 predicate, difference, union.
 
+**The meet.** `--x * --y`, and `.[--x --y --z]` for more operands, is the
+one paper point the operands have in common as sets of paper points
+([def-meet](/model/#def-meet)). An operand may lie on several paper lines,
+as a crease scored through several layers does; on the preliminary base
+`--h * --v` is the centre of the paper. A paper edge such as `--ab` counts
+as its side of the sheet. The meet is an error when the operands have no
+common point, when they share a stretch of paper, and when they have two or
+more common points; the last message lists the points in paper coordinates,
+and `&` narrows an operand to the pieces that cross at the one meant.
+
 ## Parameter types
 
 A write takes typed arguments. Four of the types are value sorts of the
@@ -91,7 +101,7 @@ placement a menu of four entries.
 | intent | mountain, valley; an annotation for the crease pattern, no part of the state | `mark` |
 | letter | mountain, valley as a constraint on a ray ([def-letter](/model/#def-letter)) | `flatten` |
 | order | one sector over another | `flatten` |
-| selection | toward a point ([def-motion](/model/#def-motion)) | constructions, `flatten` |
+| selection | toward a point ([def-selection](/model/#def-selection)) | constructions, `flatten` |
 
 Line and crease are two sorts under one sigil, and the binding tells them
 apart: `--l = …` is a line, `… as --l` is a crease. A crease stands where a

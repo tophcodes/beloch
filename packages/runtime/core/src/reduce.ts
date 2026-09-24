@@ -1,22 +1,39 @@
 import type { Event } from "./events";
 import type { EntityRef, State } from "./state";
 
-// Statement index range: 0 is the sheet before any statement ran, n means
-// every statement has been applied.
-const clampStep = (index: number, statements: number): number =>
-  Math.max(0, Math.min(index, statements));
+// Step range: 0 is the sheet before any statement ran, n means every write has
+// been applied. The stepper walks the writes (ADR 0026), so a binding statement
+// is no stop of its own.
+const clampStep = (index: number, writes: number): number =>
+  Math.max(0, Math.min(index, writes));
 
-const sameEntity = (a: EntityRef | null, b: EntityRef | null): boolean => {
+// Whether two references name the same thing. A consumer holding a list of
+// them needs this to answer "is it already in", which is what a reader toggling
+// one value at a time asks on every click.
+export const sameEntity = (a: EntityRef | null, b: EntityRef | null): boolean => {
   if (a === null || b === null) return a === b;
   if (a.kind !== b.kind) return false;
   if (a.kind === "crease" && b.kind === "crease") return a.creaseId === b.creaseId;
   if (a.kind === "edge" && b.kind === "edge") return a.name === b.name;
   if (a.kind === "face" && b.kind === "face") return a.index === b.index;
+  if (a.kind === "construction" && b.kind === "construction") return a.name === b.name;
   // A vertex is the same vertex at the same index; the name rides along for a
   // reader and adds nothing to the identity.
   if (a.kind === "vertex" && b.kind === "vertex") return a.index === b.index;
   return false;
 };
+
+// A selection with `entity` taken out where it was in, and appended where it
+// was not: one click of a reader picking values one at a time. The order of the
+// list follows the order of the clicks, which is the order a consumer lighting
+// several entities shows them in.
+export const toggleEntity = (
+  selection: readonly EntityRef[],
+  entity: EntityRef,
+): EntityRef[] =>
+  selection.some((e) => sameEntity(e, entity))
+    ? selection.filter((e) => !sameEntity(e, entity))
+    : [...selection, entity];
 
 // Order carries meaning here: a consumer that lights several entities decides
 // what the list means, and two orders are two answers.
@@ -39,7 +56,7 @@ export function reduce(state: State, event: Event): State {
       return {
         ...state,
         scene: event.scene,
-        step: event.scene === null ? 0 : event.scene.statements.length,
+        step: event.scene === null ? 0 : event.scene.writes.length,
         selection: [],
         hover: null,
       };
@@ -48,7 +65,7 @@ export function reduce(state: State, event: Event): State {
       // Without a document there is no range to clamp against, so the step
       // has nothing to mean yet.
       if (!state.scene) return state;
-      const step = clampStep(event.index, state.scene.statements.length);
+      const step = clampStep(event.index, state.scene.writes.length);
       if (step === state.step) return state;
       return { ...state, step };
     }

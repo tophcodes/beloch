@@ -3,10 +3,9 @@ import type { Theme } from "@beloch/render-svg";
 import type { RenderCommand } from "@beloch/runtime";
 import { applyHighlight } from "./highlight";
 import { enhanceHits } from "./hits";
-import { commandToSvg } from "./svg";
+import { commandToSvg, labelledNames } from "./svg";
 import { swapDrawing, type FadeLength } from "./swap";
 
-export * from "./emphasis";
 export * from "./highlight";
 export * from "./hits";
 export * from "./match";
@@ -28,10 +27,11 @@ export interface DomRenderer {
   draw(scene: FoldScene, command: RenderCommand, options: DrawOptions): void;
 }
 
-// Do the two commands ask for the same picture? The highlight is left out: it
-// is put on the drawing afterwards and changing it costs no redraw. Mark lists
-// are compared by identity, since a statement hands out the same array every
-// time it is asked.
+// Do the two commands ask for the same picture? The highlight is left out of
+// the shape of the drawing: it is put on afterwards and changing it costs no
+// redraw. What it does decide is which names the drawing writes out, and that
+// is compared beside this (see `draw`). Mark lists are compared by identity,
+// since a statement hands out the same array every time it is asked.
 function samePicture(a: RenderCommand, b: RenderCommand): boolean {
   switch (a.kind) {
     case "cp-only":
@@ -65,13 +65,20 @@ function samePicture(a: RenderCommand, b: RenderCommand): boolean {
 // The viewport is the host's: pan, zoom and the element that carries the
 // transform survive these swaps untouched.
 export function createDomRenderer(host: HTMLElement): DomRenderer {
-  let drawn: { scene: FoldScene; command: RenderCommand; theme: Partial<Theme> } | null = null;
+  let drawn:
+    | { scene: FoldScene; command: RenderCommand; theme: Partial<Theme>; labels: string }
+    | null = null;
   return {
     draw(scene, command, options) {
+      // A settled selection decides which names are written out, so the
+      // drawing is rebuilt when that set changes. A hover leaves it empty and
+      // costs no rebuild.
+      const labels = labelledNames(scene, command).join(" ");
       const rebuild =
         drawn === null ||
         drawn.scene !== scene ||
         drawn.theme !== options.theme ||
+        drawn.labels !== labels ||
         !samePicture(drawn.command, command);
       if (rebuild) {
         swapDrawing(host, commandToSvg(scene, command, options.theme), options.fade);
@@ -81,7 +88,7 @@ export function createDomRenderer(host: HTMLElement): DomRenderer {
       const live = host.querySelector("svg") ?? host;
       if (rebuild) enhanceHits(live);
       applyHighlight(live, scene, command);
-      drawn = { scene, command, theme: options.theme };
+      drawn = { scene, command, theme: options.theme, labels };
     },
   };
 }

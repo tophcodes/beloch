@@ -13,19 +13,19 @@ fold (map .a onto .c) as --bd           ; triangle
 reverse (map .b onto .c) as --h         ; preliminary base
 reverse (map .d onto .c) as --v
 
-.o = free on --bd from .b at 1/2        ; apex O, the paper centre
+.o = --h * --v                          ; apex O, the paper centre
 --mid = (through .c .o)                 ; centre line of the base
 
-.sr = free on --ab from .a at 1/2       ; front-right side corner: paper (1/2, 0), table (1, 1/2)
+.sr = --ab * --h                        ; front-right side corner: paper (1/2, 0), table (1, 1/2)
 reverse (map .sr onto --mid through .c)
 
-.sl = free on --da from .a at 1/2       ; front-left side corner: paper (0, 1/2), table (1/2, 1)
+.sl = --da * --v                        ; front-left side corner: paper (0, 1/2), table (1/2, 1)
 reverse (map .sl onto --mid through .c)
 
-.br = free on --bc from .b at 1/2       ; back-right side corner: paper (1, 1/2)
+.br = --bc * --h                        ; back-right side corner: paper (1, 1/2)
 reverse (map .br onto --mid through .c)
 
-.bl = free on --cd from .c at 1/2       ; back-left side corner: paper (1/2, 1)
+.bl = --cd * --v                        ; back-left side corner: paper (1/2, 1)
 reverse (map .bl onto --mid through .c)
 
 ; assert steps = 7

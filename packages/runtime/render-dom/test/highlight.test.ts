@@ -32,6 +32,21 @@ const drawing = (): Element => {
 const crease: EntityRef = { kind: "crease", creaseId: "3" };
 const edge: EntityRef = { kind: "edge", name: "ab" };
 
+// What the renderer leaves behind for a construction line the paper does not
+// carry, and for a point the program named: both are marked by that name.
+const named = (): Element => {
+  const host = document.createElement("div");
+  host.innerHTML =
+    `<svg><g data-layer="constructions">` +
+    `<line class="construction" data-construction="mid" x1="0" y1="0" x2="1" y2="1"></line>` +
+    `<line class="${HIT_CLASS}" data-construction="mid" x1="0" y1="0" x2="1" y2="1"></line>` +
+    `</g><g data-layer="points">` +
+    `<circle data-bel-name="o" data-kind="point" cx="0" cy="0" r="3"></circle>` +
+    `<circle data-vertex="4" cx="1" cy="1" r="3"></circle>` +
+    `</g></svg>`;
+  return host;
+};
+
 // The folded drawing of the last statement, which is the one the inspect
 // geometry describes.
 const command = (highlight: EntityRef[], settled: boolean, frame = 1): RenderCommand => ({
@@ -52,6 +67,23 @@ test("a crease lights every line of its bundle, never a hit twin", () => {
   expect(lit.length).toBe(1);
   expect(lit[0]!.getAttribute("data-kind")).toBe("crease");
   expect(host.querySelector(`.${HIT_CLASS}`)!.classList.contains(HL_CLASS)).toBe(false);
+});
+
+test("a construction line lights under the name the program gave it", () => {
+  const host = named();
+  applyHighlight(host, scene, command([{ kind: "construction", name: "mid" }], true));
+  const lit = host.querySelectorAll(`.${HL_CLASS}`);
+  expect(lit.length).toBe(1);
+  expect(lit[0]!.classList.contains("construction")).toBe(true);
+});
+
+test("a named point lights, and a vertex the program never named lights nothing", () => {
+  const host = named();
+  applyHighlight(host, scene, command([{ kind: "vertex", index: 0, name: "o" }], true));
+  expect(host.querySelectorAll(`.${HL_CLASS}`).length).toBe(1);
+  const bare = named();
+  applyHighlight(bare, scene, command([{ kind: "vertex", index: 4, name: null }], true));
+  expect(bare.querySelectorAll(`.${HL_CLASS}`).length).toBe(0);
 });
 
 test("a paper boundary carries no id and is found by its geometry", () => {

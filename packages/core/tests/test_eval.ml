@@ -7,8 +7,6 @@ let pt x y = { Geom.x = q x; y = q y }
 (* Eval.named_points/named_lines are (name, value, step) triples (step = the
    0-based creation step, task A1); these tests don't care about the step, so
    look up by name like the old 2-tuple assoc list did. *)
-let assoc3 k l = List.find_map (fun (k', v, _) -> if k' = k then Some v else None) l
-let mem_assoc3 k l = List.exists (fun (k', _, _) -> k' = k) l
 (* named_points carries a frame step AND a statement index, so it needs its
    own arity; named_lines still uses the three-wide pair above. *)
 let assoc4 k l = List.find_map (fun (k', v, _, _) -> if k' = k then Some v else None) l
@@ -706,19 +704,8 @@ let test_eval_folded_quarter_accordion () =
   Alcotest.(check int) "an accordion mountain appears" 1
     (count_assign Fold_state.M fd.Eval.state)
 
-(* a crease scored through two layers marks two DIFFERENT lines in the paper
-   (mirror-image scars) — bare cross must refuse and point at `at` *)
-let[@warning "-32"] test_eval_cross_multilayer_needs_at () =
-  expect_error "different lines" (fun () ->
-      ignore
-        (Eval.eval_folded
-           (Beloch.parse ~filename:"t.bel"
-              "paper square\n\
-               fold (map .c onto .a) (moving .c)\n\
-               mark (map .b onto .a) as --v\n\
-               .mid = --v * --ab\n")))
-
-(* same setup, `at #(.a)` picks the bottom layer's scar: the crossing is the
+(* a crease scored through two layers marks two different lines in the paper;
+   `& #[.a]` picks the bottom layer's scar: the crossing is the
    material point (1/2, 0), independent of the folded state *)
 let test_eval_cross_multilayer_with_at () =
   let fd =
@@ -737,7 +724,7 @@ let test_eval_cross_multilayer_with_at () =
 
 (* paper is opaque: lines crossing beyond the marks' extent is not a crossing *)
 let test_eval_cross_mark_does_not_reach () =
-  expect_error "does not reach" (fun () ->
+  expect_error "no common point" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
@@ -751,7 +738,7 @@ let test_scope_basic_lookup () =
     "paper square\n\
      mark (through .a .c) as --d\n\
      .m = --d * --ab\n") in
-  let has_d = assoc3 "d" r.Eval.named_lines <> None in
+  let has_d = assoc4 "d" r.Eval.named_lines <> None in
   let has_m = assoc4 "m" r.Eval.named_points <> None in
   Alcotest.(check bool) "d defined" true has_d;
   Alcotest.(check bool) "m defined" true has_m
@@ -787,7 +774,7 @@ let test_eval_temp_crease_unnamed () =
   let fd = eval_src "mark (through .a .c) as --_t\n" in
   Alcotest.(check bool)
     "temp line not in named_lines" true
-    (not (mem_assoc3 "_t" fd.Eval.named_lines));
+    (not (mem_assoc4 "_t" fd.Eval.named_lines));
   Alcotest.(check bool)
     "temp crease provenance unnamed" true
     (Array.for_all
@@ -912,7 +899,7 @@ let test_eval_member_point_access () =
        mark (through .im .c) as --thru\n"
   in
   Alcotest.(check bool) "crease thru exists" true
-    (mem_assoc3 "thru" fd.Eval.named_lines)
+    (mem_assoc4 "thru" fd.Eval.named_lines)
 
 let test_eval_member_line_access () =
   let fd =
@@ -942,14 +929,14 @@ let test_eval_export_selective () =
   Alcotest.(check bool) "m landed" true
     (mem_assoc4 "m" fd.Eval.named_points);
   Alcotest.(check bool) "l1 landed" true
-    (mem_assoc3 "l1" fd.Eval.named_lines);
+    (mem_assoc4 "l1" fd.Eval.named_lines);
   Alcotest.(check bool) "l2 not landed" true
-    (not (mem_assoc3 "l2" fd.Eval.named_lines))
+    (not (mem_assoc4 "l2" fd.Eval.named_lines))
 
 let test_eval_export_all () =
   let fd = eval_src (def_d ^ "export $i\n") in
   Alcotest.(check bool) "l2 landed too" true
-    (mem_assoc3 "l2" fd.Eval.named_lines)
+    (mem_assoc4 "l2" fd.Eval.named_lines)
 
 let test_eval_export_rename () =
   let fd = eval_src (def_d ^ "export { .m as .mid } $i\n") in
@@ -973,7 +960,7 @@ let test_eval_export_bang_shadows () =
     eval_src ("mark (through .a .b) as --l1\n" ^ def_d ^ "export { --l1! } $i\n")
   in
   Alcotest.(check bool) "l1 present" true
-    (mem_assoc3 "l1" fd.Eval.named_lines)
+    (mem_assoc4 "l1" fd.Eval.named_lines)
 
 let test_eval_export_bang_without_conflict () =
   expect_error "nothing to shadow" (fun () ->
@@ -1191,7 +1178,7 @@ let test_ax5_no_viable () =
    y=x diagonal (through a and c, off the (1,0) corner) *)
 let test_ax5_bind_x_on_l2 () =
   let fd = eval_src "mark (map --da onto --ab toward .b) as --k\n" in
-  match assoc3 "k" fd.Eval.named_lines with
+  match assoc4 "k" fd.Eval.named_lines with
   | Some k ->
       Alcotest.(check bool) "--k passes through (0,0)" true
         (Geom.side_of_line k (pt 0 0) = 0);
@@ -1205,7 +1192,7 @@ let test_ax5_bind_x_on_l2 () =
    creases (x+y=1/2 vs x−y=1/2 — opposite sides of (1,1)) *)
 let test_ax5_bind_endpoint_directions () =
   let k src =
-    match assoc3 "k" (eval_src src).Eval.named_lines with
+    match assoc4 "k" (eval_src src).Eval.named_lines with
     | Some k -> k
     | None -> Alcotest.fail "expected --k"
   in
@@ -1308,7 +1295,7 @@ let test_new_mark_precrease () =
 let test_new_mark_named () =
   let fd = eval_src "mark (map .a onto .c) as --d\n" in
   Alcotest.(check bool) "named crease bound" true
-    (mem_assoc3 "d" fd.Eval.named_lines);
+    (mem_assoc4 "d" fd.Eval.named_lines);
   Alcotest.(check int) "one mark" 1 (Array.length (Fold_state.marks fd.Eval.state))
 
 let test_new_fold_motion () =
@@ -1320,7 +1307,7 @@ let test_new_fold_motion () =
 let test_new_fold_named () =
   let fd = eval_src "fold (map .b onto .a) (moving .b) as --d\n" in
   Alcotest.(check bool) "named crease bound" true
-    (mem_assoc3 "d" fd.Eval.named_lines);
+    (mem_assoc4 "d" fd.Eval.named_lines);
   Alcotest.(check int) "one valley edge" 1 (count_assign Fold_state.V fd.Eval.state)
 
 (* fold along an existing crease: mark it under a name, then fold along the
@@ -1400,7 +1387,7 @@ let test_resume_equals_full () =
 let folded src = Eval.eval_folded (Beloch.parse ~filename:"t.bel" src)
 
 let line_of (fd : Eval.folded) (n : string) : Geom.line =
-  match assoc3 n fd.Eval.named_lines with
+  match assoc4 n fd.Eval.named_lines with
   | Some l -> l
   | None -> Alcotest.fail ("no line bound to --" ^ n)
 
@@ -1764,8 +1751,8 @@ let test_sort_crease_where_a_line_is_wanted () =
        mark (--d) as --e\n\
        mark (perp --d through .b) as --f\n"
   in
-  Alcotest.(check bool) "--e was scored" true (mem_assoc3 "e" fd.Eval.named_lines);
-  Alcotest.(check bool) "--f was scored" true (mem_assoc3 "f" fd.Eval.named_lines)
+  Alcotest.(check bool) "--e was scored" true (mem_assoc4 "e" fd.Eval.named_lines);
+  Alcotest.(check bool) "--f was scored" true (mem_assoc4 "f" fd.Eval.named_lines)
 
 let () =
   Alcotest.run "beloch-eval"

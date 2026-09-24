@@ -78,9 +78,9 @@ test("a FOLD without the statement field shows every crease at every step", () =
 });
 
 // The flat sheet draws a dot per vertex of the FINAL topology, so without a
-// filter every state shows every point that will ever exist. A vertex is
-// dated by the creases that make it; a named point by its own statement.
-test("progressive-flat shows a vertex once something makes it", () => {
+// filter every state shows every point that will ever exist. A drawing of an
+// earlier statement marks the corners and the points named by then.
+test("progressive-flat marks the corners and the points named so far", () => {
   const scene = parseFold({
     // unit square, split by a vertical crease (statement 0) and a horizontal
     // one (statement 1). Vertex 8 is their crossing; 4..7 are the four points
@@ -122,8 +122,8 @@ test("progressive-flat shows a vertex once something makes it", () => {
     }).toString().match(/data-vertex=/g) ?? []).length;
 
   expect(dots(-1)).toBe(4); // empty paper: its four corners and nothing else
-  expect(dots(0)).toBe(7); // the vertical crease brings its two feet and the centre
-  expect(dots(1)).toBe(10); // the horizontal crease and the named point .s
+  expect(dots(0)).toBe(4); // the vertical crease names no point
+  expect(dots(1)).toBe(5); // the named point .s arrives with its statement
   expect(dots("all")).toBe(10);
 });
 
@@ -207,4 +207,22 @@ test("cp and folded share one frame: one viewBox, one scale, one baseline", asyn
     m[1]!.split(" ").map((p) => Number(p.split(",")[0])),
   );
   expect(Math.min(...xs)).toBeGreaterThanOrEqual(PAD - 1e-6);
+});
+
+// A crease is drawn with the assignment it has at the step shown. In the bird
+// base with its petals lifted, the preliminary base's reverse fold scores --h
+// as a valley right to the paper's edge, and lifting the petals lays its outer
+// pieces flat again: at the step that scores it, every crease drawn is folded.
+test("progressive-flat draws a crease with its assignment at that step", async () => {
+  const scene = parseFold(await golden("bird-base-petal.fold"));
+  const draw = (upToStatement: number | "all") =>
+    renderScene(scene, {
+      isometry: { kind: "flat" },
+      texture: { upToStatement, creases: true, marks: false, points: false, lines: false, faces: "outline" },
+    }).toString();
+  const flat = (s: string) => count(s, /class="crease-F"/g);
+  const scoring = scene.statements.findIndex((s) => s.sourceLine === 12);
+  expect(scoring).toBeGreaterThanOrEqual(0);
+  expect(flat(draw(scoring))).toBe(0);
+  expect(flat(draw("all"))).toBeGreaterThan(0);
 });

@@ -1,6 +1,7 @@
 import {
   Assignment, Crease, EdgeProvenance, FoldScene, Frame, Inspect, LineCoeffs,
-  Mark, NamedLine, NamedPoint, SceneError, SourceRef, Statement, Step, StepNotFoundError, Vec2,
+  Mark, NamedLine, NamedPoint, SceneError, SourceRef, Statement, StatementKind, Step,
+  StepNotFoundError, Vec2,
 } from "./types";
 
 function frameFrom(raw: Record<string, unknown>): Frame {
@@ -66,8 +67,11 @@ function statementsFrom(fold: Record<string, unknown>): Statement[] {
   const raw = (fold["beloch:statements"] ?? []) as Record<string, unknown>[];
   return raw.map((s, index) => ({
     index,
-    kind: s["kind"] as "fold" | "mark",
+    // A FOLD written before the second axis existed logged writes alone, so an
+    // entry without a kind is a write.
+    kind: (s["kind"] ?? "fold") as StatementKind,
     sourceLine: s["source_line"] as number,
+    span: (s["span"] ?? null) as string | null,
     frameIndex: s["frame_index"] as number,
     mark: s["mark"] ? markFrom(s["mark"] as Record<string, unknown>) : null,
     keptMarks: ((s["kept_marks"] ?? []) as Record<string, unknown>[]).map(markFrom),
@@ -107,8 +111,12 @@ export function parseFold(input: string | object): FoldScene {
   }));
   const namedLines: NamedLine[] = Object.entries(
     (fold["beloch:named_lines"] ?? {}) as
-      Record<string, { coeffs: LineCoeffs; step?: number }>,
-  ).map(([name, v]) => ({ name, coeffs: v.coeffs, step: v.step ?? 0 }));
+      Record<string, { coeffs: LineCoeffs; step?: number; statement?: number }>,
+  ).map(([name, v]) => ({
+    name, coeffs: v.coeffs,
+    step: v.step ?? 0,
+    statement: v.statement ?? null,
+  }));
   // `edges` is a task-9 addition to beloch:inspect; default it to {} for a
   // fold produced by a core build predating it, same treatment the rest of
   // this parse gives every other optional beloch: field.
@@ -117,8 +125,13 @@ export function parseFold(input: string | object): FoldScene {
   const inspect: Inspect | null = rawInspect
     ? { ...rawInspect, edges: rawInspect.edges ?? {} }
     : null;
+  const statements = statementsFrom(fold);
   return {
-    cp, steps, statements: statementsFrom(fold), references, namedPoints, namedLines,
+    cp, steps, statements,
+    // The stepper stops where the paper changed. The entries keep their index
+    // in `statements`, so a join on a statement index reads either list.
+    writes: statements.filter((s) => s.kind !== "bind"),
+    references, namedPoints, namedLines,
     creases: groupCreases(cp), marks: marksFrom(fold), inspect,
   };
 }

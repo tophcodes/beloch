@@ -1,0 +1,187 @@
+---
+// The landing's hero: the introduction (the default slot) beside the crease
+// pattern a program ends on, and under both the program's folding sequence,
+// one card per write, as a folding diagram lays out its steps. Pointing at a
+// card, or focusing it, shows the crease pattern as it stands after that
+// step, with the creases it adds at full strength. A click selects the step,
+// so its pattern stays when the pointer moves on; a second click lets it go.
+//
+// Every drawing is made at build time (lib/hero-steps.ts), so the script
+// below only swaps which one is shown.
+import { heroSequence } from "../lib/hero-steps";
+import { highlightBel } from "../lib/highlight-bel";
+
+interface Props {
+  src: string;
+}
+const { final, steps } = heroSequence(Astro.props.src);
+// Coloured by the grammar the docs and the editor colour with.
+const code = await Promise.all(steps.map((s) => Promise.all(s.lines.map(highlightBel))));
+---
+
+<div class="hero-sequence">
+  <div class="hs-top">
+    <div class="hs-intro"><slot /></div>
+    <figure class="hs-figure" aria-label="Crease pattern">
+      <div class="hs-drawing" data-step="0" set:html={final} />
+      {steps.map((s, i) => <div class="hs-drawing" data-step={i + 1} hidden set:html={s.figure} />)}
+    </figure>
+  </div>
+  <ol class="hs-steps" aria-label="Folding sequence">
+    {steps.map((s, i) => (
+      <li class="hs-step" data-step={i + 1} tabindex="0" role="button" aria-pressed="false">
+        <div class="hs-thumb" set:html={s.thumb} />
+        <span class="hs-num">{String(i + 1).padStart(2, "0")}</span>
+        <div class="hs-code">
+          {code[i]!.map((html) => <code class="hs-line" set:html={html} />)}
+        </div>
+      </li>
+    ))}
+  </ol>
+</div>
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>(".hero-sequence")) {
+    const drawings = root.querySelectorAll<HTMLElement>(".hs-drawing");
+    const cards = root.querySelectorAll<HTMLElement>(".hs-step");
+    // The selected step, or null for the whole pattern. What is shown is the
+    // step under the pointer or the focus, and this one when there is none.
+    let selected: string | null = null;
+    const show = (step: string | null) => {
+      const shown = step ?? selected ?? "0";
+      for (const d of drawings) d.hidden = d.dataset.step !== shown;
+      for (const c of cards) {
+        c.classList.toggle("is-on", c.dataset.step === step);
+        c.classList.toggle("is-selected", c.dataset.step === selected);
+        c.setAttribute("aria-pressed", String(c.dataset.step === selected));
+      }
+    };
+    const toggle = (step: string) => {
+      selected = selected === step ? null : step;
+      show(step);
+    };
+    for (const card of cards) {
+      const step = card.dataset.step!;
+      card.addEventListener("pointerenter", () => show(step));
+      card.addEventListener("pointerleave", () => show(null));
+      card.addEventListener("focus", () => show(step));
+      card.addEventListener("blur", () => show(null));
+      card.addEventListener("click", () => toggle(step));
+      card.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        toggle(step);
+      });
+    }
+  }
+</script>
+
+<style>
+  /* The drawings lie on the page, and on a card's ground when it is lit,
+     rather than on a sheet of their own (WEB_THEME reads this). */
+  .hero-sequence {
+    --bel-paper-background: transparent;
+  }
+  .hs-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 400px);
+    gap: 72px;
+    align-items: center;
+  }
+  .hs-figure {
+    margin: 0;
+  }
+  .hs-drawing :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .hs-steps {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    row-gap: 28px;
+    gap: 12px;
+    margin: 72px 0 0;
+    padding: 28px 0 0;
+    list-style: none;
+    border-top: 1px solid var(--bel-ui-divider);
+  }
+  .hs-step {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+    border-radius: var(--bel-radius-card);
+    cursor: pointer;
+  }
+  .hs-step.is-on {
+    background: var(--bel-ui-quiet);
+  }
+  .hs-step.is-selected {
+    background: var(--bel-ui-accent-low);
+    box-shadow: inset 0 0 0 1px var(--bel-ui-accent);
+  }
+  .hs-step:focus-visible {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: 2px;
+  }
+  .hs-thumb :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-bottom: 4px;
+  }
+  /* At a card's size the drawing's own stroke widths would thin to a hair,
+     so the lines keep their width in screen pixels. */
+  .hs-thumb :global(line) {
+    vector-effect: non-scaling-stroke;
+  }
+  .hs-num {
+    font-family: var(--bel-font-mono);
+    font-size: var(--bel-text-2xs);
+    color: var(--bel-ui-text-muted);
+  }
+  .hs-step.is-on .hs-num,
+  .hs-step.is-selected .hs-num {
+    color: var(--bel-ui-accent);
+  }
+  /* The syntax colours are drawn for the code surface, so the lines stand on
+     it here too. */
+  .hs-code {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: var(--bel-radius-control);
+    background: var(--bel-ui-code-surface);
+    color: var(--bel-ui-code-text);
+  }
+  .hs-line {
+    font-family: var(--bel-font-mono);
+    font-size: var(--bel-text-2xs);
+    line-height: 1.45;
+    font-variant-ligatures: none;
+  }
+  /* A line breaks between tokens only: `--bd` split after its hyphens would
+     read as two. */
+  .hs-line :global(span) {
+    white-space: nowrap;
+  }
+
+  /* Stacked, the drawing follows the introduction, and the sequence runs
+     sideways at a card size that still reads. */
+  @media (max-width: 720px) {
+    .hs-top {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 32px;
+    }
+    .hs-steps {
+      grid-template-columns: none;
+      grid-auto-flow: column;
+      grid-auto-columns: 132px;
+      overflow-x: auto;
+      margin-top: 40px;
+    }
+  }
+</style>

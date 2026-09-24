@@ -26,6 +26,7 @@ export function statement(index: number, spec: StatementSpec = {}): Statement {
     index,
     kind: spec.kind ?? "fold",
     sourceLine: spec.sourceLine ?? index + 1,
+    span: null,
     frameIndex: spec.frameIndex ?? index + 1,
     mark: null,
     keptMarks: spec.keptMarks ?? [],
@@ -38,6 +39,7 @@ export const namedLine = (name: string, step: number): NamedLine => ({
   name,
   coeffs: [1, 0, 0],
   step,
+  statement: null,
 });
 
 export function sceneOf(statements: Statement[], namedLines: NamedLine[] = []): FoldScene {
@@ -45,6 +47,7 @@ export function sceneOf(statements: Statement[], namedLines: NamedLine[] = []): 
     cp: emptyFrame(),
     steps: statements.map((s) => ({ index: s.frameIndex, sourceLine: s.sourceLine, frame: emptyFrame() })),
     statements,
+    writes: statements.filter((s) => s.kind !== "bind"),
     references: [],
     namedPoints: [],
     namedLines,

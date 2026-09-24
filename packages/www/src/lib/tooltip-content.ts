@@ -42,6 +42,9 @@ export function hoverSummary(ref: EntityRef, insp: Inspect): HoverSummary | null
     if (!f) return null;
     return { title: `face ${ref.index}`, detail: `flap ${f.flap} · rank ${f.rank}` };
   }
+  // A construction line the paper does not carry: the program named it, and
+  // the name is all there is to say about it.
+  if (ref.kind === "construction") return { title: `--${ref.name}`, detail: "construction" };
   const p = ref.name ? insp.points[ref.name] : null;
   return {
     title: ref.name ? `.${ref.name}` : `vertex ${ref.index}`,

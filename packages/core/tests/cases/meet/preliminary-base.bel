@@ -1,0 +1,22 @@
+; A meet reads the crossing of two bundles as point sets. On the preliminary
+; base --h and --v each lie on two paper lines, a scar and its mirror image,
+; and each pair below still crosses in exactly one point.
+paper square
+
+fold (map .a onto .c) as --bd
+reverse (map .b onto .c) as --h
+reverse (map .d onto .c) as --v
+
+.o = --h * --v
+.o2 = --bd * --h
+.sr = --ab * --h
+.br = --bc * --h
+.sl = --da * --v
+.bl = --cd * --v
+
+; assert .o paper = (1/2, 1/2)
+; assert .o2 paper = (1/2, 1/2)
+; assert .sr paper = (1/2, 0)
+; assert .br paper = (1, 1/2)
+; assert .sl paper = (0, 1/2)
+; assert .bl paper = (1/2, 1)

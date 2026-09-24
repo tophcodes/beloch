@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { createRuntime, renderCommand, type EntityRef } from "../src/index";
+import { createRuntime, renderCommand, toggleEntity, type EntityRef } from "../src/index";
 
 const folded = { view: "folded", hidden: "hide" } as const;
 import { sceneOf, statement } from "./scene-fixture";
@@ -86,4 +86,18 @@ test("the same vertex under another name is the same vertex", () => {
   rt.subscribe(() => told++);
   rt.dispatch({ type: "hover/set", entity: { kind: "vertex", index: 7, name: "m" } });
   expect(told).toBe(0);
+});
+
+test("a click takes a value into the selection and out of it again", () => {
+  const rt = createRuntime();
+  rt.dispatch({ type: "document/set", scene: sceneOf([statement(0)]) });
+  const pick = (entity: EntityRef) =>
+    rt.dispatch({ type: "selection/set", entities: toggleEntity(rt.state.selection, entity) });
+  const line: EntityRef = { kind: "construction", name: "mid" };
+  pick(crease("3"));
+  pick(line);
+  // The order of the list follows the order of the clicks.
+  expect(rt.state.selection).toEqual([crease("3"), line]);
+  pick(crease("3"));
+  expect(rt.state.selection).toEqual([line]);
 });

@@ -6,6 +6,10 @@
 // The fixture names no construction lines, so the overlay the command adds is
 // empty here and the two sides stay comparable. What the overlay draws lives
 // in constructions.test.ts.
+//
+// The reference calls pass `annotate: []` because that is what a command with
+// nothing selected asks for: the drawing writes a name out only for what the
+// reader settled on (see `labelledNames`).
 import { test, expect } from "bun:test";
 import { parseFold, type FoldScene, type Mark } from "@beloch/scene";
 import { DEFAULT_THEME, renderCP, renderFolded, renderScene, WEB_THEME } from "@beloch/render-svg";
@@ -27,7 +31,9 @@ const fromCommand = (scene: FoldScene, step: number, view: View, hidden: HiddenM
 // The playground's own step-to-SVG, verbatim but for the values it reads out
 // of its closure.
 const svgForStep = (scene: FoldScene, i: number, view: View, hidden: HiddenMode): string => {
-  if (scene.statements.length === 0) return renderCP(scene, { theme: WEB_THEME }).toString();
+  if (scene.statements.length === 0) {
+    return renderCP(scene, { theme: WEB_THEME, annotate: [] }).toString();
+  }
   const stmt = i === 0 ? null : scene.statements[i - 1]!;
   const activeMarks = stmt ? stmt.keptMarks : [];
   const newestCreaseId = activeMarks.at(-1)?.creaseId;
@@ -43,16 +49,18 @@ const svgForStep = (scene: FoldScene, i: number, view: View, hidden: HiddenMode)
         lines: true,
         faces: "outline",
       },
+      annotate: [],
       markOverlay: { marks: activeMarks, newestCreaseId },
     }).toString();
   }
   if (!stmt) {
-    return renderFolded(scene, { theme: WEB_THEME, step: "0", hidden }).toString();
+    return renderFolded(scene, { theme: WEB_THEME, step: "0", hidden, annotate: [] }).toString();
   }
   return renderFolded(scene, {
     theme: WEB_THEME,
     step: String(stmt.frameIndex),
     hidden,
+    annotate: [],
     markOverlay: activeMarks.length > 0 ? { marks: activeMarks, newestCreaseId } : undefined,
   }).toString();
 };
@@ -77,7 +85,7 @@ test("the hidden mode reaches the folded drawing", async () => {
 
 test("a program with no statements draws its crease pattern in either view", async () => {
   const scene = await fixture("square.fold");
-  const cp = renderCP(scene, { theme: WEB_THEME }).toString();
+  const cp = renderCP(scene, { theme: WEB_THEME, annotate: [] }).toString();
   expect(fromCommand(scene, 0, "cp", "hide")).toBe(cp);
   expect(fromCommand(scene, 0, "folded", "hide")).toBe(cp);
 });
