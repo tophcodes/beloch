@@ -219,38 +219,41 @@ fold axiom, in the classic numbering; it is Hull's basic operation O2
 only to locate a crossing still has to be `mark`ed (a non-subdividing
 `between`/`at` record, §4.6, is enough; it need not subdivide anything).
 
-*(since v0.19-dev)* The crossing is computed in **paper space**: a crease is a
-scar in the material, and two scars cross (or don't) independently of how the
-sheet happens to be folded. There are no table-space point values in the
-language — paper is opaque, so a "crossing" seen only because layers overlap on
-the table is not a crossing at all: no layer shows both marks. (This replaces
-the v0.7-dev rule that resolved a table-space intersection to the topmost
-covering layer, `Q2-B`.) Consequences:
+The meet is computed in **paper space**: a crease is a scar in the material,
+and two scars cross or miss each other independently of how the sheet happens
+to be folded. There are no table-space point values in the language. Paper is
+opaque, so layers that only overlap on the table show no crossing: no layer
+carries both marks. (`Q2-B` in `notes/antipatterns.md` records the table-space
+rule this avoids.)
 
-- Each operand must carry a **single material line**. A crease bent on the
-  table by later folds still qualifies bare — its scar is one straight line in
-  the paper. A crease scored through several layers marks **different lines on
-  different layers** (mirror images) and must be projected to one segment with
-  `&` (§4.8).
-- The crossing must lie **on the marks**: for each crease operand, on one of
-  its segments (endpoints count). Two supporting lines meeting beyond the
-  marks' extent is an error — there is nothing to see there on the sheet.
-- A paper-edge operand (a prelude edge `--ab`, or a `--[.a .b]` selection) is a
-  boundary line; for it the crossing must merely lie on the paper. The same
-  holds for a reference-only boundary crease (one that cut no face).
-- The meet is therefore **fold-state-independent**: folding never moves a mark
-  within the sheet. Only name resolution (the `&` filter) reads the folded
-  state.
+The meet is the **intersection of the operands as sets of paper points**,
+defined when it is exactly one point ([def-meet](/model/#def-meet), ADR 0027):
+
+- An operand may lie on **any number of paper lines**. A crease scored through
+  several layers marks a scar and its mirror images; it meets bare, and only
+  the number of common points counts. On the preliminary base `--h * --v` is
+  the paper centre.
+- The common point lies **on the marks** of every crease operand (endpoints
+  count). Supporting lines that cross beyond the marks give no common point.
+- A paper-edge operand (a prelude edge `--ab`, or a `--[.a .b]` selection) is
+  a boundary line; it contributes the points of that line on the paper. The
+  same holds for a reference-only boundary crease (one that cut no face).
+- The meet is **fold-state-independent**: folding never moves a mark within
+  the sheet. Only name resolution (the `&` filter) reads the folded state.
+- `.[l+]` with more operands is the one point common to all of them.
+- Narrowing an operand with `&` (§4.8) keeps a meet valid as long as the
+  narrowed operand still holds the crossing, and is needed only to choose
+  among several crossings.
 
 **Errors:**
 
-- the two lines are **parallel** (no intersection);
-- a crease operand marks **different lines on different layers** (select a
-  segment with `&`);
-- the marks **do not reach** the crossing (supporting lines meet beyond a
-  crease's segments);
-- the intersection is **off the paper** (paper-edge / boundary-reference
-  operands; exact point-in-polygon test; the boundary counts as on the paper).
+- **no common point**: the operands are **parallel**, or the lines they lie
+  on cross beyond their marks or off the paper (exact point-in-polygon test;
+  the boundary counts as on the paper);
+- **ambiguous**: two or more common points; the message lists them in paper
+  coordinates and suggests narrowing an operand with `&`;
+- **overlap**: the operands share a stretch of paper (a segment) or lie on one
+  boundary line.
 
 ### 4.3a Free point on a line — `free on … from … at …` *(since v0.25-dev)*
 
@@ -1771,11 +1774,10 @@ and the process exits non-zero:
 - parse error;
 - axiom 1 or 2 whose two points are at the **same place** (coincident — which can
   also happen *after* folds bring two material points together);
-- meet (`*` / `.[]`) on parallel creases (no intersection);
-- meet (`*` / `.[]`) on a crease that marks **different lines on different layers**
-  (project to one segment with `&`);
-- meet (`*` / `.[]`) whose marks **do not reach** the crossing, or whose intersection is
-  **off the paper**;
+- meet (`*` / `.[]`) whose operands have **no common point** (parallel, or
+  their lines cross beyond the marks or off the paper), **two or more** common
+  points (ambiguous; narrow an operand with `&`), or **share a stretch** of
+  paper (§4.3);
 - `map --l1 onto --l2` (axiom 5): with `toward` omitted, both surviving
   bisectors land on the paper (ambiguous) or neither does (no fold to make); a
   `toward` point lying on `--l1`; with `toward` given, no candidate moves the

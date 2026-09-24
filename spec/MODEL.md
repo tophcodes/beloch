@@ -660,13 +660,40 @@ by the same step. Which of them the language will carry, and whether a
 two-fold write is one write or a pair, is not decided.
 :::
 
-::: {.definition #def-selector name="selector" uses="def-read def-flap def-point def-bundle"}
+::: {.definition #def-selector name="selector" uses="def-read def-flap def-point def-bundle def-meet"}
 A *selector* is a read of sort flap or point that resolves a description by
 incidence in paper coordinates: the flap whose faces contain every listed
-point; the point where two bundles meet, their intersection when it is a
-single point; the point on a bundle of a single piece at a given fraction of
-that piece's length from a named endpoint. Each is defined exactly when the
-description picks out one thing.
+point; the point where bundles meet ([#def-meet]); the point on a bundle of a
+single piece at a given fraction of that piece's length from a named
+endpoint. Each is defined exactly when the description picks out one thing.
+:::
+
+::: {.definition #def-meet name="meet" uses="def-read def-sheet def-bundle" defines="term-meet"}
+Let $b_1, \dots, b_n$ be bundles, $n \ge 2$, where a side of the sheet
+between two corners counts as the bundle of its points. Their *meet* is the
+read of sort point
+$$ m(s, b_1, \dots, b_n) = p \quad \text{when } b_1 \cap \dots \cap b_n = \{p\}, $$
+undefined otherwise. The intersection is taken in the paper frame, so the
+value does not depend on the state $s$: a fold changes where $p$ lies on the
+table and never whether the bundles meet. A point of $b_1 \cap b_2$ lies on
+both bundles in the same paper, so a layer that carries it carries both. A
+bundle may lie on any number of paper lines, as a crease scored through
+several layers does; only the number of common points counts. The meet is
+undefined in three cases: the intersection is empty, it holds two or more
+points, or it contains a segment, where the bundles share a stretch of paper.
+:::
+
+::: {.figure #fig-meet caption="`--h` and `--v` each lie on two paper lines after the reverse folds, a scar and its mirror image, and have one point in common, the centre `.o`." views="cp folded" highlight="--h --v .o"}
+paper square
+fold (map .a onto .c) as --bd
+reverse (map .b onto .c) as --h
+reverse (map .d onto .c) as --v
+.o = --h * --v
+:::
+
+::: {.term #term-meet name="meet"}
+The one paper point that two or more bundles have in common; a read defined
+exactly when their intersection is a single point.
 :::
 
 ::: {.definition #def-filter name="filter" uses="def-read def-bundle def-line def-flap"}
