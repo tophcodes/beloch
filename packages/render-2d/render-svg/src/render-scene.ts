@@ -137,6 +137,10 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
   // Whether the drawing writes this name out.
   const labelled = (name: string): boolean =>
     opts.annotate === undefined || opts.annotate.includes(name);
+  // Whether the reader settled on this one. A caller that names nothing has
+  // named no selection either, so nothing counts as picked.
+  const selected = (name: string): boolean =>
+    opts.annotate !== undefined && opts.annotate.includes(name);
   // The frame both views of this scene share: the paper's footprint together
   // with every folded frame's, so a folded subset renders in place at true
   // relative size on the flat sheet's baseline.
@@ -331,7 +335,11 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
           }
         }
 
-        if (showHidden) {
+        // What the reader picked is never hidden: where it runs under a
+        // higher layer it is drawn dashed, so the line they asked about keeps
+        // its whole length whatever the hidden mode says.
+        const picked = name ? selected(`--${name}`) : cid !== null && selected(`#${cid}`);
+        if (showHidden || picked) {
           const isB = assignment === "B";
           const stroke = isB ? "#475569" : "#94a3b8";
           const dashWgt = isB ? 2 : 1.2;
@@ -345,7 +353,10 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
               x1: mx(p0[0]), y1: ty(p0[1]), x2: mx(p1[0]), y2: ty(p1[1]),
               stroke, "stroke-width": dashWgt, "stroke-dasharray": dash, "stroke-linecap": "round",
             };
-            if (depth) { attrs["data-depth"] = depth; attrs["opacity"] = depthOpacity(depth); }
+            if (depth && showHidden) {
+              attrs["data-depth"] = depth;
+              attrs["opacity"] = depthOpacity(depth);
+            }
             if (name) attrs["data-name"] = name;
             if (name) attrs["data-bel-name"] = name;
             // The same crease as the visible run it continues. A host resolves
