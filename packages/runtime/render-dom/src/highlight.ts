@@ -7,7 +7,7 @@ import type { FoldScene, InspectSegment } from "@beloch/scene";
 import { sceneLayout } from "@beloch/render-svg";
 import type { EntityRef, RenderCommand } from "@beloch/runtime";
 import { CREASE_SELECTOR, HIT_CLASS } from "./hits";
-import { edgeOfLine, pointSegDist, type DrawnLine } from "./match";
+import { edgeOfLine, pointSegDist, type DrawnLine, type PaperSpace } from "./match";
 
 export const HL_CLASS = "bel-hl";
 export const GHOST_CLASS = "bel-hl-ghost";
@@ -48,24 +48,34 @@ function namedElements(root: ParentNode, attribute: string, value: string): Elem
   ).filter((el) => !el.classList.contains(HIT_CLASS));
 }
 
-function edgeElements(root: ParentNode, scene: FoldScene, name: string): Element[] {
+function edgeElements(
+  root: ParentNode,
+  scene: FoldScene,
+  name: string,
+  space: PaperSpace,
+): Element[] {
   const inspect = scene.inspect;
   if (!inspect) return [];
   const layout = sceneLayout(scene);
   return Array.from(root.querySelectorAll(CREASE_SELECTOR)).filter(
-    (el) => edgeOfLine(inspect.edges, coordsOf(el), layout) === name,
+    (el) => edgeOfLine(inspect.edges, coordsOf(el), layout, space) === name,
   );
 }
 
 // A face is left dark: a filled face under a lit crease would compete with the
 // paper it stands on. A vertex the program never named is left dark too, since
 // the drawing has no mark to light for it.
-const elementsFor = (root: ParentNode, scene: FoldScene, ref: EntityRef): Element[] => {
+const elementsFor = (
+  root: ParentNode,
+  scene: FoldScene,
+  ref: EntityRef,
+  space: PaperSpace,
+): Element[] => {
   switch (ref.kind) {
     case "crease":
       return bundleElements(root, ref.creaseId);
     case "edge":
-      return edgeElements(root, scene, ref.name);
+      return edgeElements(root, scene, ref.name, space);
     case "construction":
       return namedElements(root, "data-construction", ref.name);
     case "vertex":
@@ -78,10 +88,15 @@ const elementsFor = (root: ParentNode, scene: FoldScene, ref: EntityRef): Elemen
 // Lights what `refs` names, without clearing first and without ghosts. A
 // caller offering several entities at once uses this: a chooser previewing the
 // lines that share a pixel, or an editor showing what one source line built.
-export function lightEntities(root: Element, scene: FoldScene, refs: EntityRef[]): Element[] {
+export function lightEntities(
+  root: Element,
+  scene: FoldScene,
+  refs: EntityRef[],
+  space: PaperSpace = "table",
+): Element[] {
   const lit: Element[] = [];
   for (const ref of refs) {
-    for (const el of elementsFor(root, scene, ref)) {
+    for (const el of elementsFor(root, scene, ref, space)) {
       el.classList.add(HL_CLASS);
       lit.push(el);
     }
@@ -151,8 +166,12 @@ export function applyHighlight(root: Element, scene: FoldScene, command: RenderC
   clearHighlight(root);
   const svg = root.tagName.toLowerCase() === "svg" ? root : root.querySelector("svg");
   const ghosts = command.settled && svg !== null && drawsFinalFold(scene, command);
+  // A flat sheet is drawn in the paper's own coordinates; a folded frame in the
+  // table's. A paper boundary is found by where it runs, so it has to be
+  // measured in the space the drawing used.
+  const space: PaperSpace = command.kind === "folded" ? "table" : "paper";
   for (const ref of command.highlight) {
-    const drawn = lightEntities(root, scene, [ref]);
+    const drawn = lightEntities(root, scene, [ref], space);
     if (ghosts && svg) ghostBuried(svg, scene, ref, drawn);
   }
 }
