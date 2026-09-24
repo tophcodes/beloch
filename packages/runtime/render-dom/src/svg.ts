@@ -50,8 +50,10 @@ function constructionLabels(
 const nameOf = (scene: FoldScene, ref: EntityRef): string | null => {
   switch (ref.kind) {
     case "crease": {
+      // A crease the program never named is asked for by its id; the drawing
+      // writes out the line that scored it (see `sourceMark`).
       const name = scene.inspect?.creases[ref.creaseId]?.name ?? null;
-      return name === null ? null : `--${name}`;
+      return name === null ? `#${ref.creaseId}` : `--${name}`;
     }
     case "construction":
       return `--${ref.name}`;

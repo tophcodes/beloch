@@ -4,7 +4,7 @@
 // sheet vs folded step), so the presets stay byte-identical — the composition
 // knobs (texture.upToStatement filtering, ghosted future creases) are strictly
 // additive and dormant for the presets.
-import type { FoldScene, Mark, Vec2, Isometry as FaceMatrix } from "@beloch/scene";
+import type { EdgeProvenance, FoldScene, Mark, Vec2, Isometry as FaceMatrix } from "@beloch/scene";
 import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
 import { DEFAULT_THEME, Theme, LineStyle, HighlightColor } from "./theme";
 import { sceneLayout } from "./layout";
@@ -37,6 +37,9 @@ export interface SceneOptions {
   // figure in the documentation wants; a list labels those names alone, and an
   // empty one leaves the drawing without a word on it. The dots and the lines
   // are drawn either way: this is about the text.
+  // A crease the program never named is spelled `#<crease id>` here, and the
+  // drawing writes out the line of the statement that scored it instead of a
+  // name it does not have.
   annotate?: string[] | undefined;
   // Entities to emphasise: ".p" / "--l" join the construction overlay, "#[.p]"
   // fills the faces of the flap carrying every listed point.
@@ -105,6 +108,16 @@ function emitLabels(
     if (lab.anchor !== "start") attrs["text-anchor"] = lab.anchor;
     annotations.children.push(el("text", attrs, [], lab.text));
   }
+}
+
+// What a crease the program never named is written as: the line of the
+// statement that scored it. The reader can act on that — it is where the
+// crease was made and where a name would go — and it invents no binding the
+// program does not have.
+function sourceMark(scene: FoldScene, prov: EdgeProvenance | null): string {
+  const stmt = prov?.statement ?? null;
+  const line = stmt === null ? null : scene.statements[stmt]?.sourceLine ?? null;
+  return line === null ? "@?" : `@${line}`;
 }
 
 export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
@@ -249,7 +262,10 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     // The longest drawn run of each named crease, which is where its name
     // goes: a bundle is drawn in pieces, and the widest piece is the one with
     // room for a word beside it.
-    const creaseRuns = new Map<string, { a: Vec2; b: Vec2; len: number; stroke: string }>();
+    const creaseRuns = new Map<
+      string,
+      { a: Vec2; b: Vec2; len: number; stroke: string; text: string; name: string | null }
+    >();
 
     if (opts.texture.creases) {
       E.forEach((e, i) => {
@@ -297,12 +313,20 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
           if (name) attrs["data-bel-name"] = name;
           if (cid !== null) attrs["data-crease-id"] = cid;
           creases.children.push(el("line", attrs));
-          if (name && labelled(`--${name}`)) {
+          const writes = name
+            ? labelled(`--${name}`)
+            : cid !== null && labelled(`#${cid}`);
+          if (writes) {
+            const key = name ?? `#${cid}`;
             const pa: Vec2 = [mx(p0[0]), ty(p0[1])], pb: Vec2 = [mx(p1[0]), ty(p1[1])];
             const len = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]);
-            const best = creaseRuns.get(name);
+            const best = creaseRuns.get(key);
             if (!best || len > best.len) {
-              creaseRuns.set(name, { a: pa, b: pb, len, stroke: style.stroke });
+              creaseRuns.set(key, {
+                a: pa, b: pb, len, stroke: style.stroke,
+                text: name ? `--${name}` : sourceMark(scene, prov[i] ?? null),
+                name: name ?? null,
+              });
             }
           }
         }
@@ -516,13 +540,17 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     labelAnchors.push(
       ...appendConstructions(doc, scene, layout, theme, selection, { frame }, colorOf, opts.annotate),
     );
-    for (const [nm, run] of creaseRuns) {
+    for (const [key, run] of creaseRuns) {
+      const attrs: Record<string, string | number> = {
+        fill: run.stroke, "data-kind": "line-label",
+      };
+      if (run.name !== null) attrs["data-bel-name"] = run.name;
       labelAnchors.push({
         x: (run.a[0] + run.b[0]) / 2, y: (run.a[1] + run.b[1]) / 2,
-        text: `--${nm}`, key: `--${nm}`,
+        text: run.text, key,
         preferOffset: besideLine(run.a, run.b, 14),
-        group: `line:${nm}`,
-        attrs: { fill: run.stroke, "data-bel-name": nm, "data-kind": "line-label" },
+        group: `line:${key}`,
+        attrs,
       });
     }
     emitLabels(annotations, labelAnchors, 17);
@@ -671,19 +699,32 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     const onB = (p: Vec2) =>
       Math.abs(p[0] - minX) < B_EPS || Math.abs(p[0] - maxX) < B_EPS ||
       Math.abs(p[1] - minY) < B_EPS || Math.abs(p[1] - maxY) < B_EPS;
-    const creaseGroups = new Map<string, { vs: Set<number>; col: string }>();
+    const creaseGroups = new Map<
+      string,
+      { vs: Set<number>; col: string; text: string; name: string | null }
+    >();
     E.forEach(([a, b], i) => {
-      const nm = prov[i]?.name;
-      if (!nm || !showCrease(i)) return;
-      if (!creaseGroups.has(nm)) {
-        creaseGroups.set(nm, { vs: new Set(), col: theme.lineStyle(A[i]!, theme).stroke });
+      if (!showCrease(i)) return;
+      const nm = prov[i]?.name ?? null;
+      const cid = prov[i]?.creaseId ?? null;
+      // A crease the program never named is grouped by its id and written out
+      // as the line that scored it.
+      const key = nm ?? (cid === null ? null : `#${cid}`);
+      if (key === null) return;
+      if (!creaseGroups.has(key)) {
+        creaseGroups.set(key, {
+          vs: new Set(),
+          col: theme.lineStyle(A[i]!, theme).stroke,
+          text: nm ? `--${nm}` : sourceMark(scene, prov[i] ?? null),
+          name: nm,
+        });
       }
-      const grp = creaseGroups.get(nm)!;
+      const grp = creaseGroups.get(key)!;
       grp.vs.add(a);
       grp.vs.add(b);
     });
-    for (const [nm, { vs, col }] of creaseGroups) {
-      if (!labelled(`--${nm}`)) continue;
+    for (const [key, { vs, col, text, name: nm }] of creaseGroups) {
+      if (!labelled(key.startsWith("#") ? key : `--${key}`)) continue;
       const list = [...vs];
       let ends = list.filter((j) => onB(V[j]!));
       if (ends.length < 2) {
@@ -696,12 +737,16 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       }
       const P = V[ends[0]!]!, C = V[ends[1]!]!, t = 0.18;
       const a: Vec2 = [tx(P[0]), ty(P[1])], b: Vec2 = [tx(C[0]), ty(C[1])];
+      const attrs: Record<string, string | number> = {
+        fill: col, "data-kind": "line-label",
+      };
+      if (nm !== null) { attrs["data-bel-name"] = nm; attrs["data-name"] = nm; }
       labelAnchors.push({
         x: tx(P[0] + (C[0] - P[0]) * t), y: ty(P[1] + (C[1] - P[1]) * t),
-        text: `--${nm}`, key: `--${nm}`,
+        text, key,
         preferOffset: besideLine(a, b, 14),
-        group: `line:${nm}`,
-        attrs: { fill: col, "data-bel-name": nm, "data-name": nm, "data-kind": "line-label" },
+        group: `line:${key}`,
+        attrs,
       });
     }
 
