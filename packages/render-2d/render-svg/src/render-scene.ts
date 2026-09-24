@@ -142,6 +142,13 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
   // named no selection either, so nothing counts as picked.
   const selected = (name: string): boolean =>
     opts.annotate !== undefined && opts.annotate.includes(name);
+  // The sheet's own edges, by name. A crease name spelled with two letters
+  // would otherwise be read as a pair of corners and drawn as an edge that
+  // does not exist.
+  const paperEdges = scene.inspect?.edges ?? {};
+  const pickedPaperEdges = (opts.annotate ?? [])
+    .filter((n) => n.startsWith("--") && paperEdges[n.slice(2)] !== undefined)
+    .map((n) => n.slice(2));
   // The frame both views of this scene share: the paper's footprint together
   // with every folded frame's, so a folded subset renders in place at true
   // relative size on the flat sheet's baseline.
@@ -274,9 +281,12 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     // Where a picked paper edge runs in this frame, in the frame's own
     // coordinates. The sheet's edges carry no name in the graph, so a run is
     // recognised as one of them by lying along it.
-    const pickedEdges: [Vec2, Vec2][] = (opts.annotate ?? [])
-      .filter((n) => n.startsWith("--"))
-      .flatMap((n) => paperEdgeSegments(scene, frame, n.slice(2)));
+    const pickedEdgeRuns = new Map<string, [Vec2, Vec2][]>();
+    for (const name of pickedPaperEdges) {
+      const runs = paperEdgeSegments(scene, frame, name);
+      if (runs.length > 0) pickedEdgeRuns.set(name, runs);
+    }
+    const pickedEdges: [Vec2, Vec2][] = [...pickedEdgeRuns.values()].flat();
     const EDGE_EPS = 1e-6;
     const onPickedEdge = (p: Vec2, q: Vec2): boolean =>
       pickedEdges.some(([a, b]) => {
@@ -573,6 +583,23 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     labelAnchors.push(
       ...appendConstructions(doc, scene, layout, theme, selection, { frame }, colorOf, opts.annotate),
     );
+    // A picked paper edge writes its name out too. It carries no name in the
+    // graph, so it is not among the creases above; where it runs in this frame
+    // is what the anchor is taken from.
+    for (const [name, runs] of pickedEdgeRuns) {
+      const longest = runs.reduce((best, r) =>
+        Math.hypot(r[1][0] - r[0][0], r[1][1] - r[0][1]) >
+        Math.hypot(best[1][0] - best[0][0], best[1][1] - best[0][1]) ? r : best);
+      const a: Vec2 = [mx(longest[0][0]), ty(longest[0][1])];
+      const b: Vec2 = [mx(longest[1][0]), ty(longest[1][1])];
+      labelAnchors.push({
+        x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2,
+        text: `--${name}`, key: `--${name}`,
+        preferOffset: besideLine(a, b, 14),
+        group: `line:${name}`,
+        attrs: { fill: theme.boundary, "data-bel-name": name, "data-kind": "line-label" },
+      });
+    }
     for (const [key, run] of creaseRuns) {
       const attrs: Record<string, string | number> = {
         fill: run.stroke, "data-kind": "line-label",
@@ -783,6 +810,20 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       });
     }
 
+    // A picked paper edge writes its name out, at the side it runs along.
+    for (const name of pickedPaperEdges) {
+      const longest = paperEdgeSegments(scene, scene.cp, name)[0];
+      if (!longest) continue;
+      const a: Vec2 = [tx(longest[0][0]), ty(longest[0][1])];
+      const b: Vec2 = [tx(longest[1][0]), ty(longest[1][1])];
+      labelAnchors.push({
+        x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2,
+        text: `--${name}`, key: `--${name}`,
+        preferOffset: besideLine(a, b, 14),
+        group: `line:${name}`,
+        attrs: { fill: theme.boundary, "data-bel-name": name, "data-kind": "line-label" },
+      });
+    }
     labelAnchors.push(
       ...appendConstructions(doc, scene, layout, theme, selection, null, colorOf, opts.annotate),
     );

@@ -19,7 +19,10 @@ import { renderFolded, WEB_THEME } from "@beloch/render-svg";
 
 const fold = evalBelToFold(HERO_SRC);
 const scene = parseFold(fold as object);
-const heroSvg = renderFolded(scene, { theme: WEB_THEME }).toString();
+// Drawn as the client will draw it the moment it boots: the names belong to
+// what a reader picks, and nothing is picked yet. A seed that labelled every
+// name would show them for the length of one paint and then take them away.
+const heroSvg = renderFolded(scene, { theme: WEB_THEME, annotate: [] }).toString();
 const heroFoldJson = JSON.stringify(fold);
 
 const DESCRIPTION = "A declarative language for origami, built on the Huzita–Justin axioms.";
