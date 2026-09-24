@@ -15,8 +15,10 @@ import { parseSpan, type SpanPos } from "./spans";
 
 export interface DebugTarget {
   entity: EntityRef;
-  // The statement that binds the value.
-  span: SpanPos;
+  // The statement that binds the value, or null for one the sheet brings: the
+  // paper's corners and its four edges are bound by no statement, so the
+  // source has nothing to point at and a host offers them some other way.
+  span: SpanPos | null;
   // The name that statement binds, where it binds one: `.o`, `--mid`. A host
   // that can read the text finds the word inside the span and boxes that,
   // which is the target a reader aims at; the statement's own span is the
@@ -50,15 +52,22 @@ export function debugTargets(scene: FoldScene): DebugTarget[] {
   const targets: DebugTarget[] = [];
 
   for (const point of scene.namedPoints) {
-    const statement = spanOfStatement(scene, point.statement);
-    if (statement === null) continue;
     const index = scene.cp.verticesNames.indexOf(point.name);
     if (index < 0) continue;
+    // A point no statement bound came with the sheet, which its corners do.
+    const statement = point.statement === null ? null : spanOfStatement(scene, point.statement);
+    if (statement === null && point.statement !== null) continue;
     targets.push({
       entity: { kind: "vertex", index, name: point.name },
       span: statement,
       spelling: `.${point.name}`,
     });
+  }
+
+  // The paper's own edges. The program names them (`--ab`) and no statement
+  // binds them, so they are offered beside the corners.
+  for (const name of Object.keys(scene.inspect?.edges ?? {})) {
+    targets.push({ entity: { kind: "edge", name }, span: null, spelling: `--${name}` });
   }
 
   // Every crease the paper carries, under the name the write that made it
@@ -103,7 +112,13 @@ export function debugTargets(scene: FoldScene): DebugTarget[] {
     targets.push({ entity: { kind: "crease", creaseId }, span, spelling: null });
   }
 
-  return targets.sort((a, b) =>
-    a.span.fromLine - b.span.fromLine || a.span.fromCol - b.span.fromCol,
-  );
+  // Source order, with what the sheet brings ahead of the program that folds
+  // it.
+  return targets.sort((a, b) => {
+    if (a.span === null || b.span === null) {
+      return (a.span === null ? 0 : 1) - (b.span === null ? 0 : 1) ||
+        (a.spelling ?? "").localeCompare(b.spelling ?? "");
+    }
+    return a.span.fromLine - b.span.fromLine || a.span.fromCol - b.span.fromCol;
+  });
 }

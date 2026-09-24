@@ -15,12 +15,19 @@ const source = (await Bun.file(
 
 // What a host does to place a box: take the statement's text and find the name
 // in it. A statement that does not spell the name it binds gets no box.
-const spanText = (target: ReturnType<typeof debugTargets>[number]): string =>
-  source[target.span.fromLine - 1]!.slice(target.span.fromCol - 1, target.span.toCol - 1);
-const boxable = (target: ReturnType<typeof debugTargets>[number]): boolean =>
-  target.spelling === null || spanText(target).includes(target.spelling);
+type Target = ReturnType<typeof debugTargets>[number];
+const spanText = (target: Target): string =>
+  target.span === null
+    ? ""
+    : source[target.span.fromLine - 1]!.slice(target.span.fromCol - 1, target.span.toCol - 1);
+const boxable = (target: Target): boolean =>
+  target.span !== null && (target.spelling === null || spanText(target).includes(target.spelling));
 
-const targets = debugTargets(scene);
+// What the program binds, which is every target that stands somewhere in the
+// source. The sheet's own corners and edges are the rest; they are tested
+// below.
+const all = debugTargets(scene);
+const targets = all.filter((t) => t.span !== null);
 const boxes = targets.filter(boxable);
 
 test("every binding the program makes is offered as a target", () => {
@@ -77,7 +84,23 @@ test("a name the statement spells is where its box goes", () => {
 
 test("a span that binds nothing is offered to nobody", () => {
   // `paper square` on line 1 binds no name and scores nothing.
-  expect(targets.some((t) => t.span.fromLine === 1)).toBe(false);
+  expect(targets.some((t) => t.span!.fromLine === 1)).toBe(false);
+});
+
+// What the sheet brings: no statement binds the corners or the edges, so
+// there is nothing in the source to box and a host offers them beside it.
+test("the paper's corners and edges are targets without a place in the source", () => {
+  const sheet = all.filter((t) => t.span === null);
+  expect(sheet.map((t) => t.spelling).sort()).toEqual(
+    [".a", ".b", ".c", ".d", "--ab", "--bc", "--cd", "--da"].sort(),
+  );
+  expect(sheet.find((t) => t.spelling === "--ab")!.entity).toEqual({ kind: "edge", name: "ab" });
+  expect(sheet.find((t) => t.spelling === ".a")!.entity.kind).toBe("vertex");
+});
+
+test("what the sheet brings comes before what the program folds", () => {
+  expect(all.findIndex((t) => t.span === null)).toBe(0);
+  expect(all.findIndex((t) => t.span !== null)).toBe(8);
 });
 
 // What the stepper marks in the editor: the line of the statement the drawing

@@ -9,6 +9,7 @@ import {
   debugExtensions,
   debugIsOn,
   setDebugBoxesOn,
+  setDebugChipsOn,
   setDebugModeOn,
   type DebugBox,
 } from "./cm-debug-boxes";
@@ -114,4 +115,42 @@ test("a box wraps the colouring rather than each token", () => {
   setDebugBoxesOn(view, [{ from: 0, to: 12, id: 0, on: false }]);
   expect(view.dom.querySelectorAll(".cm-debug-box").length).toBe(1);
   expect(view.dom.querySelector(".cm-debug-box")!.querySelectorAll(".tok-a, .tok-b").length).toBe(2);
+});
+
+// What the sheet brings: the paper's corners and edges, which no statement
+// binds and which therefore have nowhere in the source to be boxed.
+const CHIPS = {
+  line: 1,
+  chips: [
+    { id: 7, text: ".a", on: false },
+    { id: 8, text: "--ab", on: true },
+  ],
+};
+
+test("the chips stand under the paper line, and only while the mode is on", () => {
+  const view = mountEditor();
+  setDebugChipsOn(view, CHIPS);
+  expect(view.dom.querySelector(".cm-debug-chip")).toBeNull();
+  setDebugModeOn(view, true);
+  const chips = Array.from(view.dom.querySelectorAll(".cm-debug-chip"));
+  expect(chips.map((c) => c.textContent)).toEqual([".a", "--ab"]);
+  expect(chips.map((c) => c.classList.contains("is-on"))).toEqual([false, true]);
+});
+
+test("clicking a chip reports it like a box", () => {
+  const picked: number[] = [];
+  const view = mountEditor((id) => picked.push(id));
+  setDebugModeOn(view, true);
+  setDebugChipsOn(view, CHIPS);
+  view.dom.querySelectorAll(".cm-debug-chip")[1]!
+    .dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+  expect(picked).toEqual([8]);
+});
+
+test("clearing the chips takes the row away", () => {
+  const view = mountEditor();
+  setDebugModeOn(view, true);
+  setDebugChipsOn(view, CHIPS);
+  setDebugChipsOn(view, null);
+  expect(view.dom.querySelector(".cm-debug-chips")).toBeNull();
 });

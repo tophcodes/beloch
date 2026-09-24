@@ -627,6 +627,28 @@ const codeLines = code ? code.split("\n").length : 0;
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--bel-ui-code-accent) 50%, transparent);
     cursor: pointer;
   }
+  /* What the sheet brings, under the line that declares the paper: the four
+     corners and the four edges, which no statement binds and which the source
+     therefore has nowhere to box. Chips rather than text, so the row reads as
+     part of the editor's chrome and not as a line of the program. */
+  .pg-source :global(.cm-debug-chips) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px 0 6px 12px;
+  }
+  .pg-source :global(.cm-debug-chip) {
+    padding: 1px 6px;
+    border-radius: 2px;
+    font-size: 0.9em;
+    color: var(--bel-ui-code-text);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--bel-ui-code-accent) 50%, transparent);
+    cursor: pointer;
+  }
+  .pg-source :global(.cm-debug-chip.is-on) {
+    background: color-mix(in srgb, var(--bel-ui-code-accent) 30%, transparent);
+    box-shadow: 0 0 0 1px var(--bel-ui-code-accent);
+  }
   .pg-source :global(.cm-debug-box.is-on) {
     background: color-mix(in srgb, var(--bel-ui-code-accent) 30%, transparent);
     box-shadow: 0 0 0 1px var(--bel-ui-code-accent);
@@ -1126,6 +1148,7 @@ const codeLines = code ? code.split("\n").length : 0;
     debugExtensions,
     debugIsOn,
     setDebugBoxesOn,
+    setDebugChipsOn,
     setDebugModeOn,
     type DebugBox,
   } from "../lib/cm-debug-boxes";
@@ -1743,7 +1766,7 @@ const codeLines = code ? code.split("\n").length : 0;
       c !== undefined && /[A-Za-z0-9_\-.!]/.test(c);
 
     function boxOf(target: DebugTarget): { from: number; to: number } | null {
-      const at = offsetsOf(target.span);
+      const at = target.span === null ? null : offsetsOf(target.span);
       if (at === null) return null;
       if (target.spelling === null) return at;
       const text = editor.state.doc.sliceString(at.from, at.to);
@@ -1767,22 +1790,43 @@ const codeLines = code ? code.split("\n").length : 0;
 
     function buildDebugTargets() {
       const scene = currentScene();
-      debugList = scene === null ? [] : debugTargets(scene).filter((t) => boxOf(t) !== null);
+      debugList =
+        scene === null
+          ? []
+          : debugTargets(scene).filter((t) => t.span === null || boxOf(t) !== null);
+    }
+
+    // The line that declares the paper, under which the values it brings are
+    // offered. A program without one puts them at the top, which is where the
+    // paper would have stood.
+    function paperLine(): number {
+      for (let n = 1; n <= editor.state.doc.lines; n++) {
+        if (/^\s*paper\b/.test(editor.state.doc.line(n).text)) return n;
+      }
+      return 1;
     }
 
     function refreshDebugBoxes() {
       const selection = runtime.state.selection;
+      const isOn = (target: DebugTarget) =>
+        selection.some((e) => sameEntity(e, target.entity));
       const boxes: DebugBox[] = [];
+      const chips: { id: number; text: string; on: boolean }[] = [];
       debugList.forEach((target, id) => {
+        // What the sheet brings has no place in the source, so it stands as a
+        // chip rather than as a box.
+        if (target.span === null) {
+          if (target.spelling !== null) {
+            chips.push({ id, text: target.spelling, on: isOn(target) });
+          }
+          return;
+        }
         const at = boxOf(target);
         if (at === null) return;
-        boxes.push({
-          ...at,
-          id,
-          on: selection.some((e) => sameEntity(e, target.entity)),
-        });
+        boxes.push({ ...at, id, on: isOn(target) });
       });
       setDebugBoxesOn(editor, boxes);
+      setDebugChipsOn(editor, chips.length > 0 ? { line: paperLine(), chips } : null);
     }
 
     // A click takes a value in or out, and several stand at once. The order of
