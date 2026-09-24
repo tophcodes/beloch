@@ -121,9 +121,9 @@ test("a box wraps the colouring rather than each token", () => {
 // binds and which therefore have nowhere in the source to be boxed.
 const CHIPS = {
   line: 1,
-  chips: [
-    { id: 7, text: ".a", on: false },
-    { id: 8, text: "--ab", on: true },
+  rows: [
+    [{ id: 7, text: ".a", on: false, cls: "bel-point" }],
+    [{ id: 8, text: "--ab", on: true, cls: "bel-line" }],
   ],
 };
 
@@ -135,6 +135,12 @@ test("the chips stand under the paper line, and only while the mode is on", () =
   const chips = Array.from(view.dom.querySelectorAll(".cm-debug-chip"));
   expect(chips.map((c) => c.textContent)).toEqual([".a", "--ab"]);
   expect(chips.map((c) => c.classList.contains("is-on"))).toEqual([false, true]);
+  // One row per kind, each name in the class the colouring gives it, and the
+  // same box every other target carries.
+  expect(view.dom.querySelectorAll(".cm-debug-chip-row").length).toBe(2);
+  expect(chips.map((c) => c.classList.contains("cm-debug-box"))).toEqual([true, true]);
+  expect(chips[0]!.classList.contains("bel-point")).toBe(true);
+  expect(chips[1]!.classList.contains("bel-line")).toBe(true);
 });
 
 test("clicking a chip reports it like a box", () => {

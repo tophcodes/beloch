@@ -21,41 +21,66 @@ export interface DebugBox {
 }
 
 // The values the sheet brings, which no statement binds: the paper's corners
-// and its edges. They have nowhere in the source to be boxed, so they stand as
-// chips under the line that declares the paper.
+// and its edges. They have nowhere in the source to be boxed, so they stand
+// under the line that declares the paper, written as the program would write
+// them — the editor's own type, the editor's own colours, one row per kind.
+export interface DebugChip {
+  id: number;
+  text: string;
+  on: boolean;
+  // The class the colouring gives this kind of name, so the row reads as code
+  // rather than as a control of its own.
+  cls?: string;
+}
+
 export interface DebugChips {
   line: number;
-  chips: { id: number; text: string; on: boolean }[];
+  rows: DebugChip[][];
 }
 
 export const setDebugMode = StateEffect.define<boolean>();
 export const setDebugBoxes = StateEffect.define<DebugBox[]>();
 export const setDebugChips = StateEffect.define<DebugChips | null>();
 
+const sameChips = (a: DebugChip[][], b: DebugChip[][]): boolean =>
+  a.length === b.length &&
+  a.every((row, i) => {
+    const other = b[i]!;
+    return (
+      row.length === other.length &&
+      row.every((c, j) => {
+        const o = other[j]!;
+        return c.id === o.id && c.text === o.text && c.on === o.on && c.cls === o.cls;
+      })
+    );
+  });
+
 class ChipsWidget extends WidgetType {
-  constructor(readonly chips: DebugChips["chips"]) {
+  constructor(readonly rows: DebugChip[][]) {
     super();
   }
   override eq(other: ChipsWidget) {
-    return (
-      this.chips.length === other.chips.length &&
-      this.chips.every((c, i) => {
-        const o = other.chips[i]!;
-        return c.id === o.id && c.text === o.text && c.on === o.on;
-      })
-    );
+    return sameChips(this.rows, other.rows);
   }
   override toDOM() {
-    const row = document.createElement("div");
-    row.className = "cm-debug-chips";
-    for (const chip of this.chips) {
-      const el = document.createElement("span");
-      el.className = "cm-debug-chip" + (chip.on ? " is-on" : "");
-      el.dataset.debug = String(chip.id);
-      el.textContent = chip.text;
-      row.appendChild(el);
+    const block = document.createElement("div");
+    block.className = "cm-debug-chips";
+    for (const chips of this.rows) {
+      if (chips.length === 0) continue;
+      const row = document.createElement("div");
+      row.className = "cm-debug-chip-row";
+      for (const chip of chips) {
+        const el = document.createElement("span");
+        el.className =
+          "cm-debug-box cm-debug-chip" + (chip.on ? " is-on" : "") +
+          (chip.cls ? ` ${chip.cls}` : "");
+        el.dataset.debug = String(chip.id);
+        el.textContent = chip.text;
+        row.appendChild(el);
+      }
+      block.appendChild(row);
     }
-    return row;
+    return block;
   }
   override ignoreEvent() {
     // The chips answer the pointer themselves, like the boxes.
@@ -85,10 +110,11 @@ function decorationsFor(
         attributes: { "data-debug": String(b.id) },
       }).range(b.from, b.to),
     );
-  if (chips && chips.chips.length > 0 && chips.line >= 1 && chips.line <= doc.lines) {
+  const hasChips = chips !== null && chips.rows.some((row) => row.length > 0);
+  if (chips && hasChips && chips.line >= 1 && chips.line <= doc.lines) {
     ranges.push(
       Decoration.widget({
-        widget: new ChipsWidget(chips.chips),
+        widget: new ChipsWidget(chips.rows),
         block: true,
         side: 1,
       }).range(doc.line(chips.line).to),

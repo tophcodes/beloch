@@ -631,23 +631,16 @@ const codeLines = code ? code.split("\n").length : 0;
      corners and the four edges, which no statement binds and which the source
      therefore has nowhere to box. Chips rather than text, so the row reads as
      part of the editor's chrome and not as a line of the program. */
-  .pg-source :global(.cm-debug-chips) {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 4px 0 6px 12px;
+  /* The row reads as a line of the program: the editor's type, the editor's
+     line height, the colours the grammar gives a point and a line. What marks
+     the names as targets is the box every other target carries. */
+  .pg-source :global(.cm-debug-chip-row) {
+    padding: 0 2px 0 6px;
+    white-space: pre;
   }
   .pg-source :global(.cm-debug-chip) {
-    padding: 1px 6px;
-    border-radius: 2px;
-    font-size: 0.9em;
-    color: var(--bel-ui-code-text);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--bel-ui-code-accent) 50%, transparent);
+    margin-right: 1ch;
     cursor: pointer;
-  }
-  .pg-source :global(.cm-debug-chip.is-on) {
-    background: color-mix(in srgb, var(--bel-ui-code-accent) 30%, transparent);
-    box-shadow: 0 0 0 1px var(--bel-ui-code-accent);
   }
   .pg-source :global(.cm-debug-box.is-on) {
     background: color-mix(in srgb, var(--bel-ui-code-accent) 30%, transparent);
@@ -1151,6 +1144,7 @@ const codeLines = code ? code.split("\n").length : 0;
     setDebugChipsOn,
     setDebugModeOn,
     type DebugBox,
+    type DebugChip,
   } from "../lib/cm-debug-boxes";
   import { refMarkExtensions, setRefSpansOn } from "../lib/cm-ref-marks";
   import { initBelHighlight, belHighlighting } from "../lib/cm-bel-highlight";
@@ -1811,14 +1805,17 @@ const codeLines = code ? code.split("\n").length : 0;
       const isOn = (target: DebugTarget) =>
         selection.some((e) => sameEntity(e, target.entity));
       const boxes: DebugBox[] = [];
-      const chips: { id: number; text: string; on: boolean }[] = [];
+      // What the sheet brings has no place in the source, so it stands under
+      // the paper line instead: the points in one row, the lines in the other,
+      // written in the classes the colouring gives those two kinds.
+      const points: DebugChip[] = [];
+      const lines: DebugChip[] = [];
       debugList.forEach((target, id) => {
-        // What the sheet brings has no place in the source, so it stands as a
-        // chip rather than as a box.
         if (target.span === null) {
-          if (target.spelling !== null) {
-            chips.push({ id, text: target.spelling, on: isOn(target) });
-          }
+          if (target.spelling === null) return;
+          const chip = { id, text: target.spelling, on: isOn(target) };
+          if (target.spelling.startsWith("--")) lines.push({ ...chip, cls: "bel-line" });
+          else points.push({ ...chip, cls: "bel-point" });
           return;
         }
         const at = boxOf(target);
@@ -1826,7 +1823,11 @@ const codeLines = code ? code.split("\n").length : 0;
         boxes.push({ ...at, id, on: isOn(target) });
       });
       setDebugBoxesOn(editor, boxes);
-      setDebugChipsOn(editor, chips.length > 0 ? { line: paperLine(), chips } : null);
+      const rows = [points, lines];
+      setDebugChipsOn(
+        editor,
+        rows.some((row) => row.length > 0) ? { line: paperLine(), rows } : null,
+      );
     }
 
     // A click takes a value in or out, and several stand at once. The order of
