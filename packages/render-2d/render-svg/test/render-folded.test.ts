@@ -81,6 +81,17 @@ test("occluded named-vertex dots: dashed greys them, hide drops them", async () 
   expect((hidden.match(/data-kind="point-label"/g) ?? []).length).toBe(1);
 });
 
+// A point the reader picked is drawn whatever the hidden mode says, as a
+// picked crease is: covered, greyed and flagged, with its label.
+test("a picked point under a higher layer keeps its dot and its label under hide", async () => {
+  const scene = parseFold(await golden("fold-quarter.fold"));
+  const svg = renderFolded(scene, { hidden: "hide", annotate: [".a"] }).toString();
+  expect(svg).toMatch(/data-bel-name="a" data-kind="point"[^>]*data-occluded="true"/);
+  expect(svg).toMatch(/data-bel-name="a" data-kind="point-label"[^>]*data-occluded="true"/);
+  // The other covered corners stay hidden.
+  expect(svg).not.toMatch(/data-bel-name="b" data-kind="point"/);
+});
+
 test("bottom view mirrors x", async () => {
   const scene = parseFold(await golden("fold-quarter.fold"));
   const top = renderFolded(scene, { view: "top" }).toString();

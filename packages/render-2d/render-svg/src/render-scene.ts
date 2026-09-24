@@ -475,7 +475,8 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
 
     // named-vertex dots + decluttered labels. Occluded like creases: a dot
     // sitting under a higher face is greyed + flagged under hidden="dashed",
-    // and dropped entirely (dot + label) under "hide".
+    // and dropped entirely (dot + label) under "hide" unless the reader picked
+    // it, which keeps it greyed and flagged the way a picked crease is kept.
     const fverts = frame.vertices;
     const centreX = (minX + maxX) / 2;
     const centreY = (minY + maxY) / 2;
@@ -493,7 +494,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       if (!nm) return;
       const p = fverts[i]!;
       const buried = occludedPt(i);
-      if (buried && !showHidden) return; // "hide": drop dot + label
+      if (buried && !showHidden && !selected(`.${nm}`)) return; // "hide": drop dot + label
       const circle: Record<string, string | number> = {
         cx: mx(p[0]), cy: ty(p[1]), r: 3, fill: buried ? MUTED : theme.ink,
         "data-bel-name": nm, "data-kind": "point", "data-vertex": i,
