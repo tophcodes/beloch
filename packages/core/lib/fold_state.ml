@@ -1177,9 +1177,9 @@ let rec pick_two_distinct = function
    possibly opposite normal — every consumer must be sign-insensitive
    (side_of_line = 0 tests, drawing between clip points). A future consumer
    needing an oriented normal must canonicalize first. *)
-let crease_axis (g : t) (cid : int) (l_orig : Geom.line) :
+let axis_of_table_points (pts : Geom.point list) (l_orig : Geom.line) :
     [ `Line of Geom.line | `Bent | `Empty | `Collapsed ] =
-  match crease_table_endpoints g cid with
+  match pts with
   | [] -> `Empty
   | pts ->
       if List.for_all (fun p -> Geom.side_of_line l_orig p = 0) pts then
@@ -1192,6 +1192,14 @@ let crease_axis (g : t) (cid : int) (l_orig : Geom.line) :
             if List.for_all (fun p -> Geom.side_of_line l p = 0) pts then
               `Line l
             else `Bent)
+
+let crease_axis (g : t) (cid : int) (l_orig : Geom.line) =
+  axis_of_table_points (crease_table_endpoints g cid) l_orig
+
+let edge_axis (g : t) (line : Geom.line) =
+  axis_of_table_points
+    (List.concat_map (fun s -> [ s.ta; s.tb ]) (edge_boundary_segments g line))
+    line
 
 let crease_paper_axis (g : t) (cid : int) :
     [ `Line of Geom.line | `Bent | `Empty ] =

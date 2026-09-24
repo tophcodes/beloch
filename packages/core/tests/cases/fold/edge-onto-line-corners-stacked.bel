@@ -1,0 +1,15 @@
+; The kite fold of the bird base on the preliminary base (issue #6): all four
+; corners sit on .c, so the corners of --ab name no table line, but both
+; pieces of --ab lie on the table line through .c and its midpoint .s.
+paper square
+fold (map .a onto .c) as --bd
+reverse (map .b onto .c) as --h
+reverse (map .d onto .c) as --v
+
+.o = --h * --v
+--mid = (through .c .o)
+.s = --ab * --h
+fold (map --ab onto --mid) (moving .s) as --k
+
+; assert steps = 4
+; assert .c incident --k

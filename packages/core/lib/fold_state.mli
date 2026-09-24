@@ -393,6 +393,12 @@ val crease_axis :
     pieces but they have all folded onto a single table point (so it no longer
     names a line — distinct from [`Empty], where there is nothing to name). *)
 
+val edge_axis :
+  t -> Geom.line -> [ `Line of Geom.line | `Bent | `Empty | `Collapsed ]
+(** [crease_axis] for the paper edge on [line]: classifies the table images
+    of its [edge_boundary_segments], with [line] itself as the original
+    table-space line. *)
+
 val crease_paper_axis : t -> int -> [ `Line of Geom.line | `Bent | `Empty ]
 (** The single PAPER-space line carrying every material segment of [cid], if
     one exists; [`Bent] if segments born on different layers are mirror-image
