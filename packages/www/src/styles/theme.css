@@ -388,12 +388,13 @@ h3:target + p { box-shadow: none; }
  * color-scheme.
  * ────────────────────────────────────────────────────────────────────────── */
 :root {
-	/* The page is one ground. Starlight gives the header and the sidebar a
-	   second surface (gray-6 / gray-7); here a 1px divider does that work. */
-	--sl-color-bg:         var(--bel-ui-surface);
-	--sl-color-black:      var(--bel-ui-surface);   /* Starlight's name for the page ground: the search dialog, the mobile panels */
-	--sl-color-bg-nav:     var(--bel-ui-surface);
-	--sl-color-bg-sidebar: var(--bel-ui-surface);
+	/* The page is one ground, and cards of surface lie on it. Starlight gives
+	   the header and the sidebar a second surface (gray-6 / gray-7); here a
+	   1px divider does that work. */
+	--sl-color-bg:         var(--bel-ui-ground);
+	--sl-color-black:      var(--bel-ui-ground);   /* Starlight's name for the page ground: the search dialog, the mobile panels */
+	--sl-color-bg-nav:     var(--bel-ui-ground);
+	--sl-color-bg-sidebar: var(--bel-ui-ground);
 
 	/* Starlight's grey ramp is a text ramp at the top and a line ramp at the
 	   bottom, so it lands on the three text roles and the two border roles.

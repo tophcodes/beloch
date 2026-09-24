@@ -378,11 +378,10 @@ Decided with Christopher, and not to be re-litigated:
 - Nothing the playground can do today is dropped. The brief is about how it
   looks, and pan, zoom, the keyboard path to a crease and the share link stay.
 
-Two loose ends from phase 1. The dark column of the token layer is still cool
-against a warm light column, and the design covers only light. And
-`--bel-ui-ground` is defined and connected to nothing: the page itself is
-Starlight's `--sl-color-bg`, so warming the ground touches every document page
-and wants Christopher's eyes before it lands.
+One loose end from phase 1: the dark column of the token layer is still cool
+against a warm light column, and the design covers only light.
+`--bel-ui-ground` is the ground of every page, the Starlight ones included, and
+cards of `--bel-ui-surface` lie on it.
 
 One flake, unrelated and older than this work: `remark-bel.test.ts` fails with
 `Incompatible language version 0` in perhaps half of the runs, when several
