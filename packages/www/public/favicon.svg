@@ -3,4 +3,4 @@
 <path d="M23.333 23.333L58 26" stroke-width="4"/>
 <path d="M23.333 23.333L19 6M23.333 23.333L6 58M23.333 23.333L58 58" stroke-width="4"/>
 <circle cx="23.333" cy="23.333" r="3.5" fill="#171A21" stroke="none"/>
-<style>path,rect,circle{stroke:#171A21}circle{fill:#171A21}@media(prefers-color-scheme:dark){path,rect,circle{stroke:#E7EAF2}circle{fill:#E7EAF2}}</style></svg>
+<style>path,rect,circle{stroke:#171A21}circle{fill:#171A21}@media(prefers-color-scheme:dark){path,rect,circle{stroke:#EDE9E1}circle{fill:#EDE9E1}}</style></svg>

@@ -149,24 +149,24 @@
 	   what a card is made of, ground is the page it lies on, and quiet is the
 	   fill of a control that is on. The dark column keeps the cool neutrals it
 	   had; warming it is its own pass with its own four checks. */
-	--bel-ui-surface:       light-dark(#FFFFFF, #171B24);
-	--bel-ui-ground:        light-dark(#FBFAF7, #12151C);
-	--bel-ui-quiet:         light-dark(#F1EFEA, #1F2533);
-	--bel-ui-text:          light-dark(#1A1D22, #E7EAF2);   /* 16.9:1 on surface */
-	--bel-ui-text-muted:    light-dark(#5C6068, #8D93A6);   /*  6.3:1 on surface */
+	--bel-ui-surface:       light-dark(#FFFFFF, #1C1A17);
+	--bel-ui-ground:        light-dark(#FBFAF7, #13110F);   /* dE76 2.3 · 4.4 from surface */
+	--bel-ui-quiet:         light-dark(#F1EFEA, #2D2925);   /* dE76 6.1 · 7.6 from surface */
+	--bel-ui-text:          light-dark(#1A1D22, #EDE9E1);   /* 16.9:1 · 14.3:1 on surface */
+	--bel-ui-text-muted:    light-dark(#5C6068, #A09A92);   /*  6.3:1 ·  6.2:1 on surface */
 	/* The text of a switched-off control, carried together with the divider
 	   outline: the pair reads as "not available here" without the control
 	   disappearing, and the reason is in its title. At 2.2:1 it is the weakest
 	   role in the file, which is what a control nobody can use should be. */
-	--bel-ui-text-faint:    light-dark(#B5B0A6, #656B7E);
+	--bel-ui-text-faint:    light-dark(#B5B0A6, #56514B);
 
 	/* Two border roles, because they answer to different thresholds. A line
 	   between two areas only has to be found, so it stays quiet at 1.38:1
-	   light and 1.31:1 dark. The outline of a control is what says where the
-	   control is and needs 3:1, which these hold at 3.56:1 and 4.57:1 against
+	   light and 1.32:1 dark. The outline of a control is what says where the
+	   control is and needs 3:1, which these hold at 3.56:1 and 4.50:1 against
 	   surface. */
-	--bel-ui-divider:        light-dark(#DFDBD2, #2A3040);
-	--bel-ui-control-border: light-dark(#8E877A, #79839A);
+	--bel-ui-divider:        light-dark(#DFDBD2, #33302B);
+	--bel-ui-control-border: light-dark(#8E877A, #878179);
 
 	/* Accent and error. Kept clear of the crease colours so a focus ring next
 	   to a drawing cannot read as a valley fold: in the dark column the accent
@@ -180,17 +180,17 @@
 	   rather than on the page: the anchor a link just jumped to, a callout,
 	   a badge. Measured against --bel-ui-text, --bel-ui-text-muted and the
 	   colour that carries the tint.
-	     accent-low  text 14.54:1 · 11.69:1   muted 4.96:1 · 4.59:1   accent rule 6.30:1 · 8.15:1
-	     error-low   text 14.62:1 · 13.05:1   muted 4.98:1 · 5.13:1   error  rule 4.15:1 · 6.25:1
-	   Against --bel-ui-surface they hold dE76 6.5 / 15.8 and 7.3 / 15.5, far
+	     accent-low  text 14.54:1 · 12.03:1   muted 4.96:1 · 5.23:1   accent rule 6.30:1 · 8.44:1
+	     error-low   text 14.62:1 · 12.37:1   muted 4.98:1 · 5.37:1   error  rule 4.15:1 · 5.95:1
+	   Against --bel-ui-surface they hold dE76 6.5 / 13.0 and 7.3 / 11.8, far
 	   enough to be seen as a field and near enough not to read as a second
 	   page colour. */
-	--bel-ui-accent-low:    light-dark(#E2EDEA, #16302C);
-	--bel-ui-error-low:     light-dark(#F4E9E5, #301F1A);
+	--bel-ui-accent-low:    light-dark(#E2EDEA, #162D29);
+	--bel-ui-error-low:     light-dark(#F4E9E5, #36221C);
 
 	/* Inline code stands inside a paragraph, not on the code panel: the dark
-	   surface would be a hole in the line. Text holds 14.81:1 and 12.25:1. */
-	--bel-ui-code-inline:   light-dark(#E9EDF2, #222836);
+	   surface would be a hole in the line. Text holds 14.81:1 and 11.29:1. */
+	--bel-ui-code-inline:   light-dark(#E9EDF2, #312D28);
 
 	/* The code surface is the one dark area the light mode keeps, so every role
 	   that lands on it holds one value in both modes and is measured against
