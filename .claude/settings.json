@@ -6,9 +6,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/check-commit-subject.sh\"",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/check-commit-subjects.sh\" --hook",
             "timeout": 10,
-            "statusMessage": "Checking the commit subject"
+            "statusMessage": "Checking the subjects about to be pushed"
           }
         ]
       }

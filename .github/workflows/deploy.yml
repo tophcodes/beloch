@@ -56,22 +56,6 @@ jobs:
         run: nix build .#beloch
       - name: Put beloch on PATH
         run: echo "$PWD/result/bin" >> "$GITHUB_PATH"
-      # The kernel suites, including the BELOCH.md reference corpus. Not a
-      # plain `nix flake check`: four cases are red on issue #51 and would
-      # fail every push, so the failures are held against the baseline in
-      # scripts/known-failures.txt and anything else fails the build. This
-      # step becomes `nix flake check` once #51 has landed.
-      - name: Run kernel tests
-        run: nix develop --command bash scripts/run-ocaml-tests.sh
-      # odoc pages under packages/www/public/api and the register that the
-      # spec pages read for their `.include` blocks and "Realized by" lines.
-      - uses: oven-sh/setup-bun@v2
-      - name: Build API docs and register
-        run: nix develop --command scripts/build-api-docs.sh
-      # The register's parse of the spec documents and its keyword comparison
-      # against packages/core/lib/lexer.ml, plus scripts/api-register.test.ts.
-      - name: Run script tests
-        run: nix develop --command bun test scripts
       # Regenerate the js_of_ocaml playground bundle from the current
       # packages/core/lib/+packages/eval-web/ on every deploy, so the committed
       # artifact (packages/www/public/beloch/beloch-eval.js)
@@ -82,15 +66,15 @@ jobs:
         run: |
           nix develop --command dune build packages/eval-web/ --profile release
           cp _build/default/packages/eval-web/beloch_web.bc.js packages/www/public/beloch/beloch-eval.js
-      # The landing page's example programs are shipped as text and evaluated
-      # only when a visitor clicks one, so nothing else here would notice them
-      # going stale against the language.
-      - name: Run site tests
-        working-directory: packages/www
-        run: bun install && bun test
-      - name: Build site
-        working-directory: packages/www
-        run: bun run build
+      # The same checks a push is held to locally (scripts/check-all.sh): the
+      # kernel suites against the baseline of issue #51 in
+      # scripts/known-failures.txt, the runtime and site tests, the API docs
+      # and register, the script tests and the site build.
+      - name: Check
+        run: nix develop --command check-all
+      # wrangler-action picks its package manager from packages/www/bun.lock,
+      # outside the devshell.
+      - uses: oven-sh/setup-bun@v2
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
