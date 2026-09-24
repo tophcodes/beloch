@@ -9,7 +9,7 @@ import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
 import { DEFAULT_THEME, Theme, LineStyle, HighlightColor } from "./theme";
 import { sceneLayout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
-import { coverageDepth, coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly, paperEdgeSegments, pointCovered, pointInPolygonInclusive, segInsideIntervals, paperClippedIntervals } from "./geometry";
+import { coverageDepth, coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly, paperAssignment, paperEdgeSegments, pointCovered, pointInPolygonInclusive, segInsideIntervals, paperClippedIntervals } from "./geometry";
 import { resolveIsometry, type Isometry } from "./isometry";
 import { besideLine, placeLabels, type LabelAnchor } from "./primitives/labels";
 
@@ -629,9 +629,15 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     }
 
     if (opts.texture.creases) {
+      // The sheet as it stands after statement `upTo`: a crease a later fold
+      // lays flat again, or turns over, still carries the assignment it has
+      // at that step. The crease pattern's own assignments are the final ones.
+      const stepFrame =
+        typeof upTo === "number" ? scene.steps[scene.statements[upTo]?.frameIndex ?? -1]?.frame : undefined;
+      const assignmentAtStep = stepFrame ? paperAssignment(stepFrame) : null;
       E.forEach(([a, b], i) => {
         if (!showCrease(i)) return;
-        const assignment = A[i]!;
+        const assignment = assignmentAtStep?.(V[a]!, V[b]!) ?? A[i]!;
         const name = prov[i]?.name;
         const cid = prov[i]?.creaseId ?? null;
         const style = theme.lineStyle(assignment, theme);
@@ -696,24 +702,14 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       });
     }
 
-    // Which vertices exist by this statement. A paper corner is there from
-    // the start; a crossing exists once a crease that carves it is drawn; a
-    // named point once the statement that bound it has run. Boundary edges
-    // are drawn at every step (they are the sheet itself), so they cannot
-    // date a vertex — the foot of a crease sits on one, and it arrives with
-    // the crease, not with the paper.
-    const madeByCrease = new Set<number>();
-    if (typeof upTo === "number") {
-      E.forEach(([a, b], i) => {
-        if (A[i] === "B" || !showCrease(i)) return;
-        madeByCrease.add(a);
-        madeByCrease.add(b);
-      });
-    }
+    // Which points a drawing of the sheet at this statement marks: the paper's
+    // corners, and the points the program has named by then. The vertices are
+    // the final crease pattern's, carved by every crease the program will ever
+    // score, so a crossing cannot be dated by the creases drawn so far; a
+    // point the program has not named yet is left unmarked.
     const showVertex = (i: number, nm: string | null): boolean => {
       if (typeof upTo !== "number") return true;
       if (cornerLabel(V[i]!)) return true;
-      if (madeByCrease.has(i)) return true;
       if (!nm) return false;
       const np = scene.namedPoints.find((q) => q.name === nm);
       // No point statement to read (a FOLD from before the field): show it,

@@ -1,7 +1,7 @@
 // Pure geometry helpers ported from tools/fold2svg.mjs — logic unchanged
 // (same epsilons, same tie-breaks), typed. `foldedFrame` is deliberately not
 // ported: @beloch/scene's parseFold + pickStep replace it (Task 2).
-import type { FaceOrder, FoldScene, Frame, Isometry, LineCoeffs, Vec2 } from "@beloch/scene";
+import type { Assignment, FaceOrder, FoldScene, Frame, Isometry, LineCoeffs, Vec2 } from "@beloch/scene";
 
 // Topologically sort faces into a bottom->top order consistent with faceOrders.
 // [f,g,s]: s=+1 => f above g (edge g->f), s=-1 => f below g (edge f->g).
@@ -66,6 +66,52 @@ export const lineToFace = (
   const B = a * m10 + b * m11;
   return [A, B, c + A * tx + B * ty];
 };
+
+// The assignment a folded frame gives the paper segment from p to q, or null
+// when no edge of the frame lies along it. The frame's vertices stand on the
+// table; each face's paper→table isometry t = M·p + T is inverted as
+// p = Mᵀ·(t − T), M being orthogonal, so every edge is compared in paper
+// space. A segment of a finer mesh (the crease pattern's) matches the edge it
+// lies inside, which is tested at its midpoint. A frame without matrices is
+// the flat sheet and answers nothing.
+export function paperAssignment(frame: Frame): (p: Vec2, q: Vec2) => Assignment | null {
+  const FM = frame.facesMatrix;
+  if (!FM) return () => null;
+  const edgeOf = faceEdgeIndex(frame.edgesVertices);
+  const toPaper = ([m00, m01, m10, m11, tx, ty]: Isometry, [x, y]: Vec2): Vec2 =>
+    [m00 * (x - tx) + m10 * (y - ty), m01 * (x - tx) + m11 * (y - ty)];
+  const segs: { a: Vec2; b: Vec2; assignment: Assignment }[] = [];
+  const seen = new Set<number>();
+  frame.facesVertices.forEach((face, fi) => {
+    const M = FM[fi];
+    if (!M) return;
+    face.forEach((u, k) => {
+      const v = face[(k + 1) % face.length]!;
+      const e = edgeOf.get(u < v ? `${u}-${v}` : `${v}-${u}`);
+      if (e === undefined || seen.has(e)) return;
+      seen.add(e);
+      segs.push({
+        a: toPaper(M, frame.vertices[u]!),
+        b: toPaper(M, frame.vertices[v]!),
+        assignment: frame.edgesAssignment[e]!,
+      });
+    });
+  });
+  const EPS = 1e-7;
+  return (p, q) => {
+    const m: Vec2 = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+    for (const { a, b, assignment } of segs) {
+      const dx = b[0] - a[0], dy = b[1] - a[1];
+      const len2 = dx * dx + dy * dy;
+      if (len2 < EPS) continue;
+      const t = ((m[0] - a[0]) * dx + (m[1] - a[1]) * dy) / len2;
+      if (t < -EPS || t > 1 + EPS) continue;
+      const off = Math.abs((m[0] - a[0]) * dy - (m[1] - a[1]) * dx) / Math.sqrt(len2);
+      if (off < 1e-6) return assignment;
+    }
+    return null;
+  };
+}
 
 // Shoelace signed area; >0 = CCW (front side up in folded coords).
 export function signedArea(poly: Vec2[]): number {
