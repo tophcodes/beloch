@@ -365,17 +365,25 @@ and seg_incident (ctx : Ctx.ctx) (sel : Ast.selector) (s : Fold_state.crease_seg
    a table-space line (for use as a fold axis, the returned value) plus
    PAPER-space endpoints + line + optional marks — incidence is a material
    question, checked in paper space like `seg_incident`, so folded-stacked
-   candidates stay distinct. Edges are markless (None). *)
+   candidates stay distinct. Edges are markless (None). An edge whose pieces
+   lie on one table line is one candidate; a fold that bent it makes each
+   piece a candidate of its own, as a crease's segments are. *)
 and select_candidates (ctx : Ctx.ctx) :
     (Geom.line * (Geom.point * Geom.point)
     * Geom.line * (Geom.point * Geom.point) list option) list =
   let edges =
-    List.map
+    List.concat_map
       (fun (a, b) ->
         let ca = corner_point a and cb = corner_point b in
-        let ta = Fold_state.table_position !(ctx.state) ca
-        and tb = Fold_state.table_position !(ctx.state) cb in
-        (Geom.line_through ta tb, (ca, cb), Geom.line_through ca cb, None))
+        let pl = Geom.line_through ca cb in
+        match Fold_state.edge_axis !(ctx.state) pl with
+        | `Line l -> [ (l, (ca, cb), pl, None) ]
+        | `Bent | `Empty | `Collapsed ->
+            List.map
+              (fun (s : Fold_state.crease_segment) ->
+                ( Geom.line_through s.Fold_state.ta s.Fold_state.tb,
+                  (s.Fold_state.pa, s.Fold_state.pb), pl, None ))
+              (Fold_state.edge_boundary_segments !(ctx.state) pl))
       [ ("a", "b"); ("b", "c"); ("c", "d"); ("d", "a") ]
   in
   let creases =

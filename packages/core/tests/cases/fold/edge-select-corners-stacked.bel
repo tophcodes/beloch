@@ -1,0 +1,15 @@
+; The kite fold of edge-onto-line-corners-stacked.bel with the edge picked by a
+; --[…] selector: the candidate's table line comes from the edge's pieces, as
+; the named edge's does.
+paper square
+fold (map .a onto .c) as --bd
+reverse (map .b onto .c) as --h
+reverse (map .d onto .c) as --v
+
+.o = --h * --v
+--mid = (through .c .o)
+.s = --ab * --h
+fold (map --[.a .s] onto --mid) (moving .s) as --k
+
+; assert steps = 4
+; assert .c incident --k
