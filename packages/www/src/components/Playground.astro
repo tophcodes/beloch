@@ -2030,7 +2030,7 @@ const codeLines = code ? code.split("\n").length : 0;
         hideCard();
         return;
       }
-      const c = cardContent(summary, lineOfEntity(scene, ref), runState.answered ?? documentSource);
+      const c = cardContent(summary, lineOfEntity(scene, ref), documentSource);
       showCard(
         `<div class="pg-card-body">` +
           `<div class="pg-card-head"><span class="pg-card-name">${escapeHtml(c.name)}</span>` +
@@ -2497,11 +2497,12 @@ const codeLines = code ? code.split("\n").length : 0;
       });
       stepDots!.style.setProperty("--pg-progress", n > 0 ? `${(i / n) * 100}%` : "0%");
       // The statement the drawing stands for, in the words the program used
-      // for it. It comes out of the source the evaluator answered rather than
-      // the text in the editor, because the two part company on the next
-      // keystroke and the drawing belongs to the run.
+      // for it. It comes out of the source the document was made from rather
+      // than the text in the editor, because the two part company on the next
+      // keystroke and the drawing belongs to the document: the source a run
+      // answered, or on the seed path the text the pane opened with.
       const line = i === 0 ? null : writes[i - 1]?.sourceLine ?? null;
-      const said = line === null ? null : (runState.answered?.split("\n")[line - 1] ?? null);
+      const said = line === null ? null : (documentSource?.split("\n")[line - 1] ?? null);
       stepLabel!.textContent =
         i === 0 ? `0/${n} · empty paper` : `${i}/${n} · ${said?.trim() || `step ${i}`}`;
       stepPrev!.disabled = i <= 0;
