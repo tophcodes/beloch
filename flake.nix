@@ -104,6 +104,7 @@
             # committed parser and wasm
             pkgs.tree-sitter
           ];
+          # `check` and `check-all` run scripts/check.sh and scripts/check-all.sh.
           # Link @beloch/render-svg's `beloch-render` bin globally so the
           # OCaml `beloch render` subcommand (packages/core/bin/main.ml) can execvp it, and
           # shim a bare `beloch` onto PATH that always runs the freshly
@@ -119,6 +120,10 @@
 exec dune exec --display=quiet --root "$root" beloch -- "\$@"
 EOF
             chmod +x "$root/.direnv/bin/beloch"
+            for c in check check-all; do
+              printf '#!/usr/bin/env bash\nexec "%s/scripts/%s.sh" "$@"\n' "$root" "$c" > "$root/.direnv/bin/$c"
+              chmod +x "$root/.direnv/bin/$c"
+            done
             export PATH="$root/.direnv/bin:$PATH"
           '';
         };
