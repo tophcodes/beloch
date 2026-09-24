@@ -51,12 +51,28 @@ export const systemScheduler: Scheduler = {
   },
 };
 
+// A stretch of the source, 1-based, its end one past the last character. The
+// field names are the ones the editor reads spans in.
+export interface ProgramSpan {
+  fromLine: number;
+  fromCol: number;
+  toLine: number;
+  toCol: number;
+}
+
 // What went wrong, said in kinds rather than in sentences: the wording is the
 // host's, because it is the one with a reader.
 export type Diagnostic =
-  // The evaluator rejected the program, with its own message and the line it
-  // named.
-  | { kind: "program"; message: string; line: number | null }
+  // The evaluator rejected the program, with its own message, the one thing
+  // it suggests writing instead where it has one (ADR 0028), the line it named
+  // and the whole span where the answer carries one.
+  | {
+      kind: "program";
+      message: string;
+      hint: string | null;
+      line: number | null;
+      span: ProgramSpan | null;
+    }
   // Beyond the browser fragment: an irrational through √ or ∛.
   | { kind: "native" }
   // The evaluation ran past its limit and was cut off.
