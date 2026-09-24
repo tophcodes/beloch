@@ -330,7 +330,7 @@ let test_real_roots_field_and_rat () =
 
 let test_field_mul_cube () =
   let mu = Poly.of_list [ Q.of_int (-2); Q.zero; Q.zero; Q.one ] in
-  let gen = { Num.mu; lo = Q.one; hi = Q.of_int 2 } in
+  let gen = Num.mk_gen ~mu ~lo:Q.one ~hi:(Q.of_int 2) in
   let alpha = Num.Field { gen; coords = Poly.of_list [ Q.zero; Q.one ] } in
   let a2 = Num.mul alpha alpha in
   Alcotest.(check bool) "α² is irrational" true
@@ -340,7 +340,7 @@ let test_field_mul_cube () =
 
 let test_field_add_canonicalizes () =
   let mu = Poly.of_list [ Q.of_int (-2); Q.zero; Q.zero; Q.one ] in
-  let gen = { Num.mu; lo = Q.one; hi = Q.of_int 2 } in
+  let gen = Num.mk_gen ~mu ~lo:Q.one ~hi:(Q.of_int 2) in
   let alpha = Num.Field { gen; coords = Poly.of_list [ Q.zero; Q.one ] } in
   Alcotest.(check bool) "α−α = 0" true (Num.equal (Num.sub alpha alpha) Num.zero);
   Alcotest.(check bool) "α+1−1 = α" true
@@ -348,7 +348,7 @@ let test_field_add_canonicalizes () =
 
 let test_field_sign_and_inv () =
   let mu = Poly.of_list [ Q.of_int (-2); Q.zero; Q.zero; Q.one ] in
-  let gen = { Num.mu; lo = Q.one; hi = Q.of_int 2 } in
+  let gen = Num.mk_gen ~mu ~lo:Q.one ~hi:(Q.of_int 2) in
   let alpha = Num.Field { gen; coords = Poly.of_list [ Q.zero; Q.one ] } in
   Alcotest.(check int) "sign(α−1)" 1 (Num.sign (Num.sub alpha Num.one));
   Alcotest.(check int) "sign(α−2)" (-1) (Num.sign (Num.sub alpha (Num.of_int 2)));
@@ -382,7 +382,7 @@ let test_field_routing_from_qq () =
 
 let test_field_compare () =
   let mu = Poly.of_list [ Q.one; Q.of_int (-4); Q.one ] in
-  let gen = { Num.mu; lo = Q.zero; hi = Q.one } in
+  let gen = Num.mk_gen ~mu ~lo:Q.zero ~hi:Q.one in
   let beta = Num.Field { gen; coords = Poly.of_list [ Q.zero; Q.one ] } in
   Alcotest.(check bool) "β > 1/4" true
     (Num.compare beta (Num.of_q (Q.of_ints 1 4)) > 0);
