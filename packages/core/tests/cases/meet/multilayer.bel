@@ -1,0 +1,8 @@
+; --v is scored through two layers, so on the paper it is two perpendicular
+; stretches. Only one of them reaches --ab, and the meet is that crossing.
+paper square
+fold (map .c onto .a) (moving .c)
+mark (map .b onto .a) as --v
+.mid = --v * --ab
+
+; assert .mid paper = (1/2, 0)

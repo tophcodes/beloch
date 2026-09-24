@@ -704,19 +704,8 @@ let test_eval_folded_quarter_accordion () =
   Alcotest.(check int) "an accordion mountain appears" 1
     (count_assign Fold_state.M fd.Eval.state)
 
-(* a crease scored through two layers marks two DIFFERENT lines in the paper
-   (mirror-image scars) — bare cross must refuse and point at `at` *)
-let[@warning "-32"] test_eval_cross_multilayer_needs_at () =
-  expect_error "different lines" (fun () ->
-      ignore
-        (Eval.eval_folded
-           (Beloch.parse ~filename:"t.bel"
-              "paper square\n\
-               fold (map .c onto .a) (moving .c)\n\
-               mark (map .b onto .a) as --v\n\
-               .mid = --v * --ab\n")))
-
-(* same setup, `at #(.a)` picks the bottom layer's scar: the crossing is the
+(* a crease scored through two layers marks two different lines in the paper;
+   `& #[.a]` picks the bottom layer's scar: the crossing is the
    material point (1/2, 0), independent of the folded state *)
 let test_eval_cross_multilayer_with_at () =
   let fd =
@@ -735,7 +724,7 @@ let test_eval_cross_multilayer_with_at () =
 
 (* paper is opaque: lines crossing beyond the marks' extent is not a crossing *)
 let test_eval_cross_mark_does_not_reach () =
-  expect_error "does not reach" (fun () ->
+  expect_error "no common point" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"

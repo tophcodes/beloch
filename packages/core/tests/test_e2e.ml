@@ -586,35 +586,6 @@ let test_inspect_enumerates_crease_segments () =
   Alcotest.(check bool) "boundary point .mid flap is null" true
     (mid |> member "flap" = `Null)
 
-(* cross is material: a crease scored through several layers marks different
-   lines in the paper, so bare cross must error — with a hint toward the
-   #(...) flap escape hatch. (A merely table-bent scar crosses fine bare;
-   see test_eval_cross_table_bent_scar_ok.) *)
-let[@warning "-32"] test_multilayer_crease_bare_cross_errors () =
-  let src =
-    "paper square\n\
-     fold (map .c onto .a) (moving .c)\n\
-     mark (map .b onto .a) as --v\n\
-     .mid = --v * --ab\n"
-  in
-  match Beloch.fold_string ~filename:"t.bel" src with
-  | exception Error.Beloch_error (_, msg) ->
-      Alcotest.(check bool)
-        "mentions different lines" true
-        (let re = Str.regexp_string "different lines" in
-         try
-           ignore (Str.search_forward re msg 0);
-           true
-         with Not_found -> false);
-      Alcotest.(check bool)
-        "hints the flap escape hatch" true
-        (let re = Str.regexp_string "#(" in
-         try
-           ignore (Str.search_forward re msg 0);
-           true
-         with Not_found -> false)
-  | _ -> Alcotest.fail "expected a multilayer-crease error"
-
 (* #50: `at #(...)` selects one segment of a bent crease bundle. Two different
    flaps pick two different segments, so the resulting perp axis genuinely
    differs — the selection is load-bearing, not vacuous. *)

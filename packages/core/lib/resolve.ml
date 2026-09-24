@@ -162,11 +162,83 @@ let face_of_points (ctx : Ctx.ctx) (pts : Geom.point list) :
   Array.iteri (fun i _ -> if contains i then hits := i :: !hits) faces_arr;
   match !hits with [ i ] -> `Face i | [] -> `Zero | _ -> `Ambiguous
 
+(* A meet operand as a set of paper points (spec/MODEL.md, def-meet): closed
+   segments for anything with material, a whole line for a boundary operand
+   (a paper edge, a markless `--[…]` selection, a crease that cut no face).
+   [Pt] arises only while intersecting. *)
+type meet_piece =
+  | Pt of Geom.point
+  | Seg of Geom.point * Geom.point
+  | Whole of Geom.line
+
+let in_unit (t : Num.t) = Num.sign t >= 0 && Num.compare t Num.one <= 0
+
+let point_at ((p, q) : Geom.point * Geom.point) (t : Num.t) : Geom.point =
+  { Geom.x = Num.add p.Geom.x (Num.mul t (Num.sub q.Geom.x p.Geom.x));
+    y = Num.add p.Geom.y (Num.mul t (Num.sub q.Geom.y p.Geom.y)) }
+
+let on_segment ((p, q) as s) (r : Geom.point) =
+  Geom.side_of_line (Geom.line_through p q) r = 0 && in_unit (Geom.seg_param s r)
+
+(* the exact intersection of two pieces, itself a piece, or None when they
+   are disjoint *)
+let meet_two (a : meet_piece) (b : meet_piece) : meet_piece option =
+  match (a, b) with
+  | Pt p, Pt q -> if Geom.point_equal p q then Some (Pt p) else None
+  | Pt p, Seg (s, t) | Seg (s, t), Pt p ->
+      if on_segment (s, t) p then Some (Pt p) else None
+  | Pt p, Whole l | Whole l, Pt p ->
+      if Geom.side_of_line l p = 0 then Some (Pt p) else None
+  | Whole l, Whole m -> (
+      match Geom.intersection l m with
+      | Some r -> Some (Pt r)
+      | None -> if Geom.same_line l m then Some (Whole l) else None)
+  | Seg (p, q), Whole l | Whole l, Seg (p, q) -> (
+      let sl = Geom.line_through p q in
+      match Geom.intersection sl l with
+      | Some r -> if in_unit (Geom.seg_param (p, q) r) then Some (Pt r) else None
+      | None -> if Geom.same_line sl l then Some (Seg (p, q)) else None)
+  | Seg (p1, q1), Seg (p2, q2) -> (
+      let l1 = Geom.line_through p1 q1 and l2 = Geom.line_through p2 q2 in
+      match Geom.intersection l1 l2 with
+      | Some r ->
+          if in_unit (Geom.seg_param (p1, q1) r) && in_unit (Geom.seg_param (p2, q2) r)
+          then Some (Pt r)
+          else None
+      | None ->
+          if not (Geom.same_line l1 l2) then None
+          else
+            (* collinear: the second segment's parameter interval on the
+               first, clipped to [0, 1] *)
+            let ta = Geom.seg_param (p1, q1) p2 and tb = Geom.seg_param (p1, q1) q2 in
+            let lo = if Num.compare ta tb <= 0 then ta else tb
+            and hi = if Num.compare ta tb <= 0 then tb else ta in
+            let lo = if Num.sign lo < 0 then Num.zero else lo
+            and hi = if Num.compare hi Num.one > 0 then Num.one else hi in
+            let c = Num.compare lo hi in
+            if c > 0 then None
+            else if c = 0 then Some (Pt (point_at (p1, q1) lo))
+            else Some (Seg (point_at (p1, q1) lo, point_at (p1, q1) hi)))
+
+let num_str (x : Num.t) : string =
+  try Num.to_rational_string x
+  with Invalid_argument _ -> Printf.sprintf "%.6g" (Num.to_float x)
+
+let point_str (p : Geom.point) : string =
+  Printf.sprintf "(%s, %s)" (num_str p.Geom.x) (num_str p.Geom.y)
+
+(* "a and b", "a, b and c" *)
+let and_list (xs : string list) : string =
+  match List.rev xs with
+  | [] -> ""
+  | [ x ] -> x
+  | last :: rest -> String.concat ", " (List.rev rest) ^ " and " ^ last
+
 (* resolve a point operand to its material PAPER coordinate, a line operand to
-   its TABLE-space line (fold axes align current table positions). `cross` is
-   the exception: it is a material construction, so its operands resolve to
-   PAPER-space lines via resolve_paper_line — folding never moves a mark
-   within the sheet, so the crossing is fold-state-independent. *)
+   its TABLE-space line (fold axes align current table positions). The meet
+   is the exception: it is a material read, so its operands resolve to sets
+   of PAPER points via meet_pieces; folding never moves a mark within the
+   sheet, so the meet point is fold-state-independent. *)
 let rec resolve_point (ctx : Ctx.ctx) (po : Ast.point_operand) : Geom.point =
   match po with
   | Ast.PNamed pr -> lookup_point ctx pr
@@ -343,43 +415,119 @@ and select_line (ctx : Ctx.ctx) (sels : Ast.selector list) (span : Error.span) :
 and select_point (ctx : Ctx.ctx) (los : Ast.line_operand list) (span : Error.span) : Geom.point =
   match los with
   | [] | [ _ ] -> Error.fail span ".[…] needs at least two lines to meet"
-  | _ ->
-      let resolved = List.map (fun lo -> (lo, resolve_paper_line ctx lo)) los in
-      let lines = List.map (fun (_, (l, _)) -> l) resolved in
-      let l1, l2 =
-        match lines with a :: b :: _ -> (a, b) | _ -> assert false
-      in
-      let pp =
-        match Geom.intersection l1 l2 with
-        | Some p -> p
-        | None -> Error.fail span "the lines are parallel; no meet point"
-      in
-      (* concurrency: every listed line passes through the crossing *)
-      List.iter
-        (fun l ->
-          if Geom.side_of_line l pp <> 0 then
-            Error.fail span "the lines are not concurrent; no common point")
-        lines;
-      (* the crossing must be physically real: each operand's mark must reach
-         it (marked creases), or it must be on the sheet (markless edges) *)
-      let on_chord (a, b) =
-        let t = Geom.seg_param (a, b) pp in
-        Num.compare t Num.zero >= 0 && Num.compare t Num.one <= 0
+  | _ -> (
+      (* the meet is the intersection of the operands as sets of paper
+         points, defined when it is exactly one point (spec/MODEL.md,
+         def-meet) *)
+      let sets = List.map (meet_pieces ctx) los in
+      let names = and_list (List.map lstr los) in
+      let common =
+        match sets with
+        | first :: rest ->
+            List.fold_left
+              (fun acc s ->
+                List.concat_map (fun a -> List.filter_map (meet_two a) s) acc)
+              first rest
+        | [] -> []
       in
       List.iter
-        (fun (lo, (_, marks)) ->
-          match marks with
-          | Some chords ->
-              if not (List.exists on_chord chords) then
-                Error.fail span
-                  (Printf.sprintf "the mark of %s does not reach the crossing"
-                     (lstr lo))
-          | None ->
-              if not (Fold_state.on_paper !(ctx.state) pp) then
-                Error.fail span
-                  (Printf.sprintf "%s is off the paper" (lstr lo)))
-        resolved;
-      pp
+        (function
+          | Pt _ -> ()
+          | Seg (p, q) ->
+              Error.fail span
+                (Printf.sprintf
+                   "%s overlap from %s to %s; a meet needs a single common \
+                    point"
+                   names (point_str p) (point_str q))
+          | Whole _ ->
+              Error.fail span
+                (Printf.sprintf
+                   "%s lie on one line; a meet needs a single common point"
+                   names))
+        common;
+      let pts =
+        List.fold_left
+          (fun acc -> function
+            | Pt p when not (List.exists (Geom.point_equal p) acc) -> p :: acc
+            | _ -> acc)
+          [] common
+        |> List.rev
+        |> List.filter (Fold_state.on_paper !(ctx.state))
+      in
+      match pts with
+      | [ p ] -> p
+      | [] ->
+          (* some operand's pieces all run parallel to another's *)
+          let lines s =
+            List.filter_map
+              (function
+                | Seg (p, q) -> Some (Geom.line_through p q)
+                | Whole l -> Some l
+                | Pt _ -> None)
+              s
+          in
+          let parallel_to s o =
+            lines s <> [] && lines o <> []
+            && List.for_all
+                 (fun l -> List.for_all (Geom.parallel l) (lines o))
+                 (lines s)
+          in
+          let rec parallel_pair = function
+            | [] -> false
+            | s :: others ->
+                List.exists (parallel_to s) others || parallel_pair others
+          in
+          if parallel_pair sets then
+            Error.fail span
+              (Printf.sprintf "%s are parallel; they have no common point" names)
+          else
+            Error.fail span
+              (Printf.sprintf
+                 "%s have no common point; the lines they lie on cross \
+                  beyond their marks or off the paper"
+                 names)
+      | many ->
+          Error.fail span
+            (Printf.sprintf
+               "the meet of %s is ambiguous: they cross at %d points, %s; \
+                narrow an operand with & so that one crossing remains"
+               names (List.length many) (and_list (List.map point_str many))))
+and meet_pieces (ctx : Ctx.ctx) (lo : Ast.line_operand) : meet_piece list =
+  let of_segments =
+    List.map (fun (s : Fold_state.crease_segment) ->
+        Seg (s.Fold_state.pa, s.Fold_state.pb))
+  in
+  match lo with
+  | Ast.LNamed cr -> (
+      match lookup_crease ctx cr with
+      | Bundle expr -> meet_pieces ctx expr
+      | Frozen _ ->
+          Error.fail cr.Ast.cspan
+            (Printf.sprintf "--%s is a line; the meet needs a crease"
+               cr.Ast.cname)
+      | Edge (a, b) ->
+          [ Whole (Geom.line_through (corner_point a) (corner_point b)) ]
+      | Mark (cid, _) ->
+          List.map
+            (fun (a, b) -> Seg (a, b))
+            (Fold_state.mark_chords !(ctx.state) cid)
+      | Material (cid, l_orig) -> (
+          match Fold_state.crease_segments !(ctx.state) cid with
+          (* a crease that cut no face (e.g. on the paper boundary) has no
+             pieces; it reads as its birth line, as materialize_crease does *)
+          | [] -> [ Whole l_orig ]
+          | segs -> of_segments segs))
+  | Ast.LFilter _ | Ast.LUnion _ -> (
+      match snd (bundle_segments ctx lo) with
+      | [] ->
+          Error.fail (span_of_line lo)
+            (Printf.sprintf "no segment of %s matches" (lstr lo))
+      | segs -> of_segments segs)
+  | Ast.LSelect (sels, span) -> (
+      let _, _, pl, pm = select_cand ctx sels span in
+      match pm with
+      | None -> [ Whole pl ]
+      | Some chords -> List.map (fun (a, b) -> Seg (a, b)) chords)
 and span_of_line (lo : Ast.line_operand) : Error.span =
   match lo with
   | Ast.LNamed cr -> cr.Ast.cspan

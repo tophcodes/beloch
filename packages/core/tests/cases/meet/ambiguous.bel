@@ -1,0 +1,6 @@
+; The union of two edges crosses the vertical midline twice.
+paper square
+mark (map .a onto .b) as --m
+.p = [--ab --cd] * --m
+
+; expect error "(1/2, 0) and (1/2, 1)"

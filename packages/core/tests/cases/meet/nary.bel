@@ -1,0 +1,8 @@
+; .[l+] is the point common to all operands.
+paper square
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+mark (map .a onto .b) as --m
+.o = .[--ac --bd --m]
+
+; assert .o paper = (1/2, 1/2)
