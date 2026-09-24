@@ -39,3 +39,7 @@ packages/core/lib/parser.conflicts
 
 # Snapshot directories for notation-cutover slices
 packages/core/tests/golden/_pre_slice1/
+
+# Specs and plans the brainstorming and planning skills write; they belong
+# in the session scratchpad and never in the tree (CLAUDE.md)
+docs/superpowers/
