@@ -121,15 +121,10 @@ const codeLines = code ? code.split("\n").length : 0;
         {seed ? <Fragment set:html={seed} /> : <p class="pg-notice pg-notice-info">Press “Run” to evaluate.</p>}
       </div>
       <button type="button" class="pg-reset" hidden aria-label="Reset view" title="Reset view">
-        <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
-          <path
-            d="M8 3.5a4.5 4.5 0 1 0 4.24 3"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.6"
-            stroke-linecap="round"
-          />
-          <path d="M12.5 1.5 L12.5 5 L9 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+        {/* Unicons `focus`, the set Starlight's icons are drawn from: the
+            frame the drawing is fitted back into. */}
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+          <path d="M8,2H3A1,1,0,0,0,2,3V8A1,1,0,0,0,4,8V4H8A1,1,0,0,0,8,2ZM8,20H4V16a1,1,0,0,0-2,0v5a1,1,0,0,0,1,1H8a1,1,0,0,0,0-2ZM21,2H16a1,1,0,0,0,0,2h4V8a1,1,0,0,0,2,0V3A1,1,0,0,0,21,2Zm0,13a1,1,0,0,0-1,1v4H16a1,1,0,0,0,0,2h5a1,1,0,0,0,1-1V16A1,1,0,0,0,21,15Z" />
         </svg>
       </button>
       <aside class="pg-card" aria-label="Selection" hidden></aside>
