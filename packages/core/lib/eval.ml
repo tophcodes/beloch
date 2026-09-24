@@ -923,7 +923,12 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
   List.iter
     (fun stmt ->
       let logged = List.length ctx.statements_rev in
-      eval_stmt ctx stmt;
+      (* a kernel precondition the language checks missed (a zero inverse, a
+         point in no face) is reported against the statement that hit it *)
+      (try eval_stmt ctx stmt
+       with Invalid_argument msg ->
+         Error.fail (Spine.span_of_stmt stmt)
+           (Printf.sprintf "internal error in this statement: %s" msg));
       if List.length ctx.statements_rev = logged then
         Ctx.push_bind ctx (Spine.span_of_stmt stmt);
       on_step ctx)
