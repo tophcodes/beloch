@@ -1,8 +1,9 @@
 (** Exact real algebraic numbers. A value is an exact rational [Rat q]
-    (fast path: axioms 1–4 never leave ℚ), an element of a single quadratic/
-    cubic extension [Field {gen; coords}] = coords(α) with α the root of the
-    monic irreducible [gen.mu] isolated in [(gen.lo, gen.hi)] (fast path for
-    axiom-5/6/7 roots, [bpr2006 §12.4]), or a general real algebraic number
+    (fast path: axioms 1–4 never leave ℚ), an element of a single extension
+    of degree ≤ [field_degree_cap] [Field {gen; coords}] = coords(α) with α
+    the root of the monic irreducible [gen.mu] isolated in [(gen.lo, gen.hi)]
+    (fast path for axiom-5/6/7 roots, [bpr2006 §12.4]), or a general real
+    algebraic number
     [Qq] backed by FLINT's qqbar (canonical minimal polynomial + certified
     ball; cross-field arithmetic, composite extensions). Invariant: [Qq] is
     irrational — rationals collapse to [Rat]. [to_float] is the only float,
@@ -178,13 +179,21 @@ let make (poly : Poly.t) (lo : Q.t) (hi : Q.t) : t =
               (* tighten isolated exactly one root of s in (lo,hi) *)
               assert false))
 
-(* Upgrade an irrational Qq of degree ≤ 3 to the Field fast path: FLINT's
-   canonical minimal polynomial is irreducible; refine the certified
-   enclosure until it isolates this root of mu (rational endpoints are
-   never roots of an irreducible deg-≥2 mu). Deterministic per value. *)
+(* The largest degree a Qq is upgraded to a Field generator at. Degree 4 is
+   what a square root nested in a quadratic field produces (an axiom-5 or
+   axiom-6 crease on a √2 base: √(4 − 2√2)); a value above the cap stays Qq
+   and pays qqbar's canonicalizing arithmetic on every operation. *)
+let field_degree_cap = 4
+
+(* Upgrade an irrational Qq of degree ≤ field_degree_cap to the Field fast
+   path. Sound at any degree: FLINT's canonical minimal polynomial is
+   irreducible, so mu is a valid single generator; the certified enclosure
+   is refined until it isolates this root of mu (rational endpoints are
+   never roots of an irreducible deg-≥2 mu). Deterministic per value, so
+   two upgrades of one value yield the same generator. *)
 let field_upgrade (x : t) : t =
   match x with
-  | Qq q when Qqbar.degree q <= 3 ->
+  | Qq q when Qqbar.degree q <= field_degree_cap ->
       let mu = Qqbar.minpoly q in
       let seq = Poly.sturm_sequence mu in
       let rec go prec =
@@ -269,9 +278,10 @@ let to_rational_string (x : t) : string =
   | Qq _ | Field _ -> invalid_arg "Num.to_rational_string: not a rational value"
 
 (* A single-generator field ℚ(α) that might contain x: reuse a Field's own
-   generator; upgrade an irrational Qq of degree ≤ 3 (field_upgrade); rationals
-   carry no generator. Used to route cross-representation +/* through the
-   factorization-free Field path instead of generic qqbar (#57). *)
+   generator; upgrade an irrational Qq within field_degree_cap
+   (field_upgrade); rationals carry no generator. Used to route
+   cross-representation +/* through the factorization-free Field path
+   instead of generic qqbar (#57). *)
 let field_gen (x : t) : gen option =
   match x with
   | Field { gen; _ } -> Some gen
@@ -288,18 +298,27 @@ let coords_over (g : gen) (alpha : Qqbar.t) (x : t) : Poly.t option =
   | Field _ | Qq _ -> Qqbar.express_over ~gen:alpha (to_qq x)
 
 (* Combine x and y inside a common single-generator field, or None if no such
-   field is found (independent irrationals / degree > 3): pick a candidate
-   generator from either operand, express both over it, and reduce with
-   [combine] (Poly.add for addition, rem∘mul for product). Never wrong — a None
-   simply defers to the qqbar fallback in the caller. *)
+   field is found (independent irrationals / degree above field_degree_cap):
+   try the operands' generators, the higher degree first, express both over
+   it, and reduce with [combine] (Poly.add for addition, rem∘mul for
+   product). Higher degree first because a degree-2 value expresses inside a
+   degree-4 field while the reverse never succeeds and only spends an LLL
+   search per precision rung. Never wrong — a None simply defers to the
+   qqbar fallback in the caller. *)
 let via_field (combine : gen -> Poly.t -> Poly.t -> Poly.t) (x : t) (y : t) : t option =
-  match (match field_gen x with Some _ as g -> g | None -> field_gen y) with
-  | None -> None
-  | Some g -> (
-      let alpha = qq_of_gen g in
-      match (coords_over g alpha x, coords_over g alpha y) with
-      | Some cx, Some cy -> Some (mk_field g (combine g cx cy))
-      | _ -> None)
+  let gens =
+    List.filter_map Fun.id [ field_gen x; field_gen y ]
+    |> List.stable_sort (fun a b -> compare (Poly.degree b.mu) (Poly.degree a.mu))
+  in
+  let rec go = function
+    | [] -> None
+    | g :: rest -> (
+        let alpha = qq_of_gen g in
+        match (coords_over g alpha x, coords_over g alpha y) with
+        | Some cx, Some cy -> Some (mk_field g (combine g cx cy))
+        | _ -> go rest)
+  in
+  go gens
 
 let add (x : t) (y : t) : t =
   match (x, y) with

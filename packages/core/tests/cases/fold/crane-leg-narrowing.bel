@@ -1,0 +1,61 @@
+; Ida's Orikoto crane, steps 2-14 [ida2020, Fig. 7.19]: the bird base
+; (examples/bases/bird-base.bel), the two petal-style folds that bring the
+; front and back flaps down (steps 9 and 10), then the four leg-narrowing
+; folds (steps 11-14). Each narrowing crease is an angle bisector between a
+; kite crease (the side corner reversed onto --mid) and the centre line,
+; and its coordinates carry sqrt(4 - 2 sqrt 2), a degree-4 number nesting
+; the base's sqrt 2. The number kernel guard (#13): every fold from step 11
+; on does its overlap tests in that degree-4 field, and the whole program
+; took a minute before Field generators of degree 4 were admitted. The
+; exact facts below hold only if that arithmetic is right.
+
+paper square
+
+fold (map .a onto .c) as --bd           ; triangle
+reverse (map .b onto .c) as --h         ; preliminary base
+reverse (map .d onto .c) as --v
+
+.o = --h * --v                          ; apex O, the paper centre
+--mid = (through .c .o)                 ; centre line of the base
+
+.sr = --ab * --h                        ; front-right side corner: paper (1/2, 0), table (1, 1/2)
+reverse (map .sr onto --mid through .c) as --rsr
+
+.sl = --da * --v                        ; front-left side corner: paper (0, 1/2), table (1/2, 1)
+reverse (map .sl onto --mid through .c) as --rsl
+
+.br = --bc * --h                        ; back-right side corner: paper (1, 1/2)
+reverse (map .br onto --mid through .c) as --rbr
+
+.bl = --cd * --v                        ; back-left side corner: paper (1/2, 1)
+reverse (map .bl onto --mid through .c) as --rbl
+
+fold (perp --mid through .sr) (moving .a) as --pf       ; step 9
+fold (perp --mid through .sr) (moving .c) (mountain) as --pb  ; step 10
+
+.e1 = (--rsr & .b) * --pf
+fold (map --rsr & .b onto --mid) (moving .e1) as --n1                  ; step 11
+.e2 = (--rsl & .d) * --pf
+fold (map --rsl & .d onto --mid) (moving .e2) as --n2                  ; step 12
+.e3 = (--rbr & .b) * --pb
+fold (map --rbr & .b onto --mid) (moving .e3) (mountain) as --n3       ; step 13
+.e4 = (--rbl & .d) * --pb
+fold (map --rbl & .d onto --mid) (moving .e4) (mountain) as --n4       ; step 14
+
+; assert steps = 13
+; assert faces = 36
+
+; the bird base underneath is intact
+; assert .o = (1/2, 1/2)
+; assert .a = .c
+; assert .sr = .sl
+; assert .sr = .br
+; assert .sr = .bl
+
+; front and back legs narrow along the same lines on the table, and the
+; four pivots meet at one point of the centre line
+; assert --n1 = --n3
+; assert --n2 = --n4
+; assert .e1 = .e2
+; assert .e1 = .e3
+; assert .e1 = .e4
