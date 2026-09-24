@@ -12,19 +12,19 @@ fold (map .a onto .c) as --bd           ; triangle
 reverse (map .b onto .c) as --h         ; preliminary base
 reverse (map .d onto .c) as --v
 
-.o = --bd * (--h & --bc)                ; apex O, the paper centre
+.o = --h * --v                          ; apex O, the paper centre
 --mid = (through .c .o)                 ; centre line of the base
 
-.sr = --ab * (--h & --ab)
+.sr = --ab * --h
 reverse (map .sr onto --mid through .c)
 
-.sl = --da * (--v & --da)
+.sl = --da * --v
 reverse (map .sl onto --mid through .c)
 
-.br = --bc * (--h & --bc)
+.br = --bc * --h
 reverse (map .br onto --mid through .c)
 
-.bl = --cd * (--v & --cd)
+.bl = --cd * --v
 reverse (map .bl onto --mid through .c)
 
 fold (perp --mid through .sr) (moving .a) as --pf              ; front petal

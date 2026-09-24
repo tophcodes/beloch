@@ -5,17 +5,17 @@ fold (map .a onto .c) as --bd
 reverse (map .b onto .c) as --h
 reverse (map .d onto .c) as --v
 
-.o = --bd * (--h & --bc)
+.o = --h * --v
 --mid = (through .c .o)
 
 ; the four side corners onto the centre line
-.sr = --ab * (--h & --ab)
+.sr = --ab * --h
 reverse (map .sr onto --mid through .c)
-.sl = --da * (--v & --da)
+.sl = --da * --v
 reverse (map .sl onto --mid through .c)
-.br = --bc * (--h & --bc)
+.br = --bc * --h
 reverse (map .br onto --mid through .c)
-.bl = --cd * (--v & --cd)
+.bl = --cd * --v
 reverse (map .bl onto --mid through .c)
 
 ; lift the petals, front and back
