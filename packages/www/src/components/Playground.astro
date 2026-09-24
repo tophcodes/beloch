@@ -2431,7 +2431,9 @@ const codeLines = code ? code.split("\n").length : 0;
       if (!scene) return;
       const command = renderCommand(runtime.state, { view: currentView, hidden: hiddenMode });
       if (!command) return;
-      renderer.draw(scene, command, { theme: renderTheme(), fade });
+      // A new drawing has new hit targets, and every one of them needs its
+      // place in the keyboard path again, whether a step or a pick asked for it.
+      if (renderer.draw(scene, command, { theme: renderTheme(), fade })) makeCreasesReachable();
     }
 
     const drawCurrent = (keepView = false, fade: FadeLength | null = null) => {
@@ -2439,7 +2441,6 @@ const codeLines = code ? code.split("\n").length : 0;
       // The renderer owns the markup and the hit targets over it. What stays
       // here is the stage around the drawing.
       relight(fade);
-      makeCreasesReachable();
       reapplyChoiceHl();
       // A settled answer survives a step change, and its card follows it.
       reanchorCard();
@@ -2884,7 +2885,20 @@ const codeLines = code ? code.split("\n").length : 0;
       }
       if (e.key === "Enter" || e.key === " ") {
         const ref = resolveRef(el);
-        if (ref) anchorEntity(ref, middleOf(el as SVGGraphicsElement));
+        if (ref) {
+          anchorEntity(ref, middleOf(el as SVGGraphicsElement));
+          // Settling rebuilds the drawing, so the element that had focus is
+          // gone; its successor for the same entity takes the focus back.
+          const again = el.isConnected ? null : hitLines().find((h) => {
+            const r = resolveRef(h);
+            return r !== null && sameEntity(r, ref);
+          });
+          if (again) {
+            hitLines().forEach((h) => h.setAttribute("tabindex", "-1"));
+            again.setAttribute("tabindex", "0");
+            again.focus();
+          }
+        }
         e.preventDefault();
         return;
       }

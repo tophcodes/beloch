@@ -108,3 +108,16 @@ test("another theme is another drawing", () => {
   renderer.draw(scene, commandAt(2), { theme: { ...WEB_THEME, ink: "#123456" }, fade: null });
   expect(host.querySelector("svg")).not.toBe(svg);
 });
+
+test("draw says whether it built a new drawing, so a host can dress the new hit targets", () => {
+  const host = mount();
+  const renderer = createDomRenderer(host);
+  expect(renderer.draw(scene, commandAt(2), { theme: WEB_THEME, fade: null })).toBe(true);
+  const svg = host.querySelector("svg")!;
+  const creaseId = svg.querySelector(`${CREASE_SELECTOR}[data-crease-id]`)!
+    .getAttribute("data-crease-id")!;
+  const ref: EntityRef = { kind: "crease", creaseId };
+  // A hover re-lights the drawing that is up.
+  expect(renderer.draw(scene, commandAt(2, [ref]), { theme: WEB_THEME, fade: null })).toBe(false);
+  expect(renderer.draw(scene, commandAt(1), { theme: WEB_THEME, fade: null })).toBe(true);
+});

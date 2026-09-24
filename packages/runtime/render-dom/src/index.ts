@@ -23,8 +23,10 @@ export interface DrawOptions {
 }
 
 export interface DomRenderer {
-  // Draws `command` of `scene` into the host element.
-  draw(scene: FoldScene, command: RenderCommand, options: DrawOptions): void;
+  // Draws `command` of `scene` into the host element. Returns whether it built
+  // a new drawing, whose hit targets are new elements, or re-lit the one that
+  // was up.
+  draw(scene: FoldScene, command: RenderCommand, options: DrawOptions): boolean;
 }
 
 // Do the two commands ask for the same picture? The highlight is left out of
@@ -89,6 +91,7 @@ export function createDomRenderer(host: HTMLElement): DomRenderer {
       if (rebuild) enhanceHits(live);
       applyHighlight(live, scene, command);
       drawn = { scene, command, theme: options.theme, labels };
+      return rebuild;
     },
   };
 }
