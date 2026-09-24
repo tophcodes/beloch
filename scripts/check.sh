@@ -7,5 +7,6 @@ cd "$(dirname "$0")/.."
 
 dune build
 bash scripts/run-ocaml-tests.sh
+(cd packages/render-2d && bun install --silent --frozen-lockfile && bun test)
 (cd packages/runtime && bun install --silent --frozen-lockfile && bun test)
 (cd packages/www && bun install --silent --frozen-lockfile && bun test)
