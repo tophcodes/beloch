@@ -12,15 +12,18 @@ const UNIT: Vec2[] = [
   [0, 1],
 ];
 
+// The sheet as one unfolded face, with its corners named: a paper edge is
+// found by where it runs in the frame that is drawn, so the frame has to
+// carry the paper it is a fold of.
 const frame = (): Frame => ({
   vertices: UNIT,
   edgesVertices: [],
   edgesAssignment: [],
   edgesProvenance: [],
-  verticesNames: [],
-  facesVertices: [],
+  verticesNames: ["a", "b", "c", "d"],
+  facesVertices: [[0, 1, 2, 3]],
   faceOrders: [],
-  facesMatrix: null,
+  facesMatrix: [[1, 0, 0, 1, 0, 0]],
 });
 
 export const segment = (a: Vec2, b: Vec2): InspectSegment => ({
@@ -31,9 +34,12 @@ export const segment = (a: Vec2, b: Vec2): InspectSegment => ({
 });
 
 // The bundle's two segments: one the drawing shows, one buried under a flap.
-export const DRAWN = segment([0, 0], [1, 0]);
-export const BURIED = segment([0, 1], [1, 1]);
-export const EDGE_AB = segment([0, 0], [0, 1]);
+// Neither runs along a side of the paper, so the edge below is the only thing
+// lying on one, and they do not meet, so the buried one is not taken for the
+// drawn one where they cross.
+export const DRAWN = segment([0, 0], [1, 1]);
+export const BURIED = segment([0, 0.25], [1, 0.25]);
+export const EDGE_AB = segment([0, 0], [1, 0]);
 
 const statement = (index: number): Statement => ({
   index,

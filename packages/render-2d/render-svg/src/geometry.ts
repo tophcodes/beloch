@@ -1,7 +1,7 @@
 // Pure geometry helpers ported from tools/fold2svg.mjs — logic unchanged
 // (same epsilons, same tie-breaks), typed. `foldedFrame` is deliberately not
 // ported: @beloch/scene's parseFold + pickStep replace it (Task 2).
-import type { FaceOrder, Isometry, LineCoeffs, Vec2 } from "@beloch/scene";
+import type { FaceOrder, FoldScene, Frame, Isometry, LineCoeffs, Vec2 } from "@beloch/scene";
 
 // Topologically sort faces into a bottom->top order consistent with faceOrders.
 // [f,g,s]: s=+1 => f above g (edge g->f), s=-1 => f below g (edge f->g).
@@ -303,4 +303,40 @@ export function clipLineToPoly(
   }
   const uniq = pts.filter((p, i) => !pts.slice(0, i).some((q) => Math.hypot(p[0] - q[0], p[1] - q[1]) < 1e-8));
   return uniq.length >= 2 ? [uniq[0]!, uniq[uniq.length - 1]!] : null;
+}
+
+// Where a paper edge runs in one frame of a scene, as segments in that frame's
+// own coordinates.
+//
+// `beloch:inspect` answers this for the final fold alone, and a reader stepping
+// through the sequence points at the sheet's edge on every step. The frame
+// carries what is needed: each face's isometry from the paper, so the edge's
+// line in paper space is mapped into the face and clipped to it, which is the
+// same route the construction overlay takes for a named line. A frame without
+// matrices is the flat sheet, where the edge is the side itself.
+export function paperEdgeSegments(
+  scene: FoldScene,
+  frame: Frame,
+  name: string,
+): [Vec2, Vec2][] {
+  const corners = [...name].map((letter) => {
+    const i = scene.cp.verticesNames.indexOf(letter);
+    return i < 0 ? null : scene.cp.vertices[i] ?? null;
+  });
+  const [p, q] = corners;
+  if (!p || !q) return [];
+  // The line through the two corners the name spells, in paper space.
+  const a = q[1] - p[1], b = p[0] - q[0], c = a * p[0] + b * p[1];
+  const FM = frame.facesMatrix;
+  if (!FM) return [[p, q]];
+  const out: [Vec2, Vec2][] = [];
+  frame.facesVertices.forEach((face, fi) => {
+    const M = FM[fi];
+    if (!M) return;
+    const poly = face.map((vi) => frame.vertices[vi]!);
+    const [ta, tb, tc] = lineToFace(M, a, b, c);
+    const seg = clipLineToPoly(ta, tb, tc, poly);
+    if (seg) out.push(seg);
+  });
+  return out;
 }

@@ -9,7 +9,7 @@ import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
 import { DEFAULT_THEME, Theme, LineStyle, HighlightColor } from "./theme";
 import { sceneLayout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
-import { coverageDepth, coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly, pointCovered, pointInPolygonInclusive, segInsideIntervals, paperClippedIntervals } from "./geometry";
+import { coverageDepth, coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly, paperEdgeSegments, pointCovered, pointInPolygonInclusive, segInsideIntervals, paperClippedIntervals } from "./geometry";
 import { resolveIsometry, type Isometry } from "./isometry";
 import { besideLine, placeLabels, type LabelAnchor } from "./primitives/labels";
 
@@ -271,6 +271,23 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       string,
       { a: Vec2; b: Vec2; len: number; stroke: string; text: string; name: string | null }
     >();
+    // Where a picked paper edge runs in this frame, in the frame's own
+    // coordinates. The sheet's edges carry no name in the graph, so a run is
+    // recognised as one of them by lying along it.
+    const pickedEdges: [Vec2, Vec2][] = (opts.annotate ?? [])
+      .filter((n) => n.startsWith("--"))
+      .flatMap((n) => paperEdgeSegments(scene, frame, n.slice(2)));
+    const EDGE_EPS = 1e-6;
+    const onPickedEdge = (p: Vec2, q: Vec2): boolean =>
+      pickedEdges.some(([a, b]) => {
+        const along = (r: Vec2) => {
+          const dx = b[0] - a[0], dy = b[1] - a[1];
+          const len2 = dx * dx + dy * dy;
+          const t = len2 ? Math.max(0, Math.min(1, ((r[0] - a[0]) * dx + (r[1] - a[1]) * dy) / len2)) : 0;
+          return Math.hypot(r[0] - (a[0] + t * dx), r[1] - (a[1] + t * dy));
+        };
+        return along(p) <= EDGE_EPS && along(q) <= EDGE_EPS;
+      });
 
     if (opts.texture.creases) {
       E.forEach((e, i) => {
@@ -339,7 +356,11 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
         // What the reader picked is never hidden: where it runs under a
         // higher layer it is drawn dashed, so the line they asked about keeps
         // its whole length whatever the hidden mode says.
-        const picked = name ? selected(`--${name}`) : cid !== null && selected(`#${cid}`);
+        const picked = name
+          ? selected(`--${name}`)
+          : cid !== null
+            ? selected(`#${cid}`)
+            : assignment === "B" && onPickedEdge(a0, b0);
         if (showHidden || picked) {
           const isB = assignment === "B";
           const stroke = isB ? "#475569" : "#94a3b8";

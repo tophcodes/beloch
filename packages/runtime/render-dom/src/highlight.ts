@@ -3,11 +3,11 @@
 // A crease is a bundle (ADR-0014): every segment sharing its id lights at
 // once, across flaps and layers, rather than the one under the cursor. A paper
 // boundary carries no id, so its lines are found by geometry instead.
-import type { FoldScene, InspectSegment } from "@beloch/scene";
-import { sceneLayout } from "@beloch/render-svg";
+import type { FoldScene, Frame, InspectSegment } from "@beloch/scene";
+import { paperEdgeSegments, sceneLayout } from "@beloch/render-svg";
 import type { EntityRef, RenderCommand } from "@beloch/runtime";
 import { CREASE_SELECTOR, HIT_CLASS } from "./hits";
-import { edgeOfLine, pointSegDist, type DrawnLine, type PaperSpace } from "./match";
+import { pointSegDist, type DrawnLine } from "./match";
 
 export const HL_CLASS = "bel-hl";
 export const GHOST_CLASS = "bel-hl-ghost";
@@ -15,6 +15,9 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 // Tolerance for "a line runs here", in SVG user units (about a pixel at 1:1
 // zoom).
 const EPS = 6;
+// A drawn boundary run sits ON the edge it belongs to, so the tolerance there
+// is tight: two paper edges of a folded state can lie a few pixels apart.
+const EDGE_EPS = 1.5;
 
 const coordsOf = (el: Element): DrawnLine => [
   Number(el.getAttribute("x1")),
@@ -48,18 +51,29 @@ function namedElements(root: ParentNode, attribute: string, value: string): Elem
   ).filter((el) => !el.classList.contains(HIT_CLASS));
 }
 
+// Every line the drawing has along this paper edge. Where the edge runs in
+// this picture comes from the frame it draws, so it answers on every step
+// rather than on the final fold alone.
 function edgeElements(
   root: ParentNode,
   scene: FoldScene,
   name: string,
-  space: PaperSpace,
+  frame: Frame,
 ): Element[] {
-  const inspect = scene.inspect;
-  if (!inspect) return [];
   const layout = sceneLayout(scene);
-  return Array.from(root.querySelectorAll(CREASE_SELECTOR)).filter(
-    (el) => edgeOfLine(inspect.edges, coordsOf(el), layout, space) === name,
+  const segments = paperEdgeSegments(scene, frame, name).map(
+    ([p, q]) =>
+      [layout.tx(p[0]), layout.ty(p[1]), layout.tx(q[0]), layout.ty(q[1])] as const,
   );
+  if (segments.length === 0) return [];
+  return Array.from(root.querySelectorAll(CREASE_SELECTOR)).filter((el) => {
+    const [x1, y1, x2, y2] = coordsOf(el);
+    return segments.some(
+      ([ax, ay, bx, by]) =>
+        pointSegDist(x1, y1, ax, ay, bx, by) <= EDGE_EPS &&
+        pointSegDist(x2, y2, ax, ay, bx, by) <= EDGE_EPS,
+    );
+  });
 }
 
 // A face is left dark: a filled face under a lit crease would compete with the
@@ -69,13 +83,13 @@ const elementsFor = (
   root: ParentNode,
   scene: FoldScene,
   ref: EntityRef,
-  space: PaperSpace,
+  frame: Frame,
 ): Element[] => {
   switch (ref.kind) {
     case "crease":
       return bundleElements(root, ref.creaseId);
     case "edge":
-      return edgeElements(root, scene, ref.name, space);
+      return edgeElements(root, scene, ref.name, frame);
     case "construction":
       return namedElements(root, "data-construction", ref.name);
     case "vertex":
@@ -92,11 +106,11 @@ export function lightEntities(
   root: Element,
   scene: FoldScene,
   refs: EntityRef[],
-  space: PaperSpace = "table",
+  frame: Frame = scene.cp,
 ): Element[] {
   const lit: Element[] = [];
   for (const ref of refs) {
-    for (const el of elementsFor(root, scene, ref, space)) {
+    for (const el of elementsFor(root, scene, ref, frame)) {
       el.classList.add(HL_CLASS);
       lit.push(el);
     }
@@ -166,12 +180,15 @@ export function applyHighlight(root: Element, scene: FoldScene, command: RenderC
   clearHighlight(root);
   const svg = root.tagName.toLowerCase() === "svg" ? root : root.querySelector("svg");
   const ghosts = command.settled && svg !== null && drawsFinalFold(scene, command);
-  // A flat sheet is drawn in the paper's own coordinates; a folded frame in the
-  // table's. A paper boundary is found by where it runs, so it has to be
-  // measured in the space the drawing used.
-  const space: PaperSpace = command.kind === "folded" ? "table" : "paper";
+  // Which frame this picture draws: the flat sheet, or the folded state at one
+  // step. A paper boundary is found by where it runs, so the frame is what
+  // says where to look.
+  const frame =
+    command.kind === "folded"
+      ? scene.steps.find((s) => s.index === command.frame)?.frame ?? scene.cp
+      : scene.cp;
   for (const ref of command.highlight) {
-    const drawn = lightEntities(root, scene, [ref], space);
+    const drawn = lightEntities(root, scene, [ref], frame);
     if (ghosts && svg) ghostBuried(svg, scene, ref, drawn);
   }
 }

@@ -3,11 +3,14 @@
 // them at once is a second drawing over the first. The fixture names one
 // before the first fold (`--diag`), one after it (`--slant`), and folds two
 // more into creases (`--bd`, `--ac`).
-import { test, expect } from "bun:test";
+import { test, expect, beforeAll } from "bun:test";
+import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { parseFold, type FoldScene } from "@beloch/scene";
 import { WEB_THEME } from "@beloch/render-svg";
 import { createRuntime, renderCommand, type EntityRef, type RenderOptions } from "@beloch/runtime";
 import { commandToSvg } from "../src/svg";
+
+beforeAll(() => { if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register(); });
 
 const scene: FoldScene = parseFold(
   await Bun.file(new URL("./fixtures/constructions.fold", import.meta.url)).text(),
@@ -73,4 +76,25 @@ test("a construction carries its name into the drawing once it is selected", () 
   expect(svg).toContain("--slant");
   // The one that was not picked stays out of the picture.
   expect(svg).not.toContain("--diag");
+});
+
+// A paper edge carries no id in the graph, so it is found by where it runs.
+// Where that is comes from the frame the picture draws, which is what lets it
+// answer on a step in the middle of the sequence rather than on the last one
+// alone.
+test("a paper edge lights at every step, in both views", async () => {
+  const { applyHighlight, HL_CLASS } = await import("../src/highlight");
+  const rt = createRuntime();
+  rt.dispatch({ type: "document/set", scene });
+  rt.dispatch({ type: "selection/set", entities: [{ kind: "edge", name: "ab" }] });
+  for (let step = 0; step <= scene.writes.length; step++) {
+    rt.dispatch({ type: "step/to", index: step });
+    for (const options of [cp, folded]) {
+      const command = renderCommand(rt.state, options)!;
+      const host = document.createElement("div");
+      host.innerHTML = commandToSvg(scene, command, WEB_THEME);
+      applyHighlight(host, scene, command);
+      expect(host.querySelectorAll(`.${HL_CLASS}`).length).toBeGreaterThan(0);
+    }
+  }
 });
