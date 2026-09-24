@@ -54,9 +54,9 @@ export interface ErrorMark {
 
 export const setError = StateEffect.define<ErrorMark | null>();
 
-// Held as document offsets, so an edit before the run answers again carries
-// the marks along with the text they point at. `to` is clipped to the first
-// line: the caret row can only stand under one.
+// Held as document offsets; `to` is clipped to the first line, since the caret
+// row can only stand under one. Any edit drops the marks: they describe the
+// text the run saw, and the next run says what holds for the new one.
 interface ErrorValue {
   at: { from: number; to: number } | null;
   message: string;
@@ -154,11 +154,7 @@ const errorField = StateField.define<ErrorValue>({
         : { at: offsetsOf(tr.state, e.value), message: e.value.message, hint: e.value.hint };
     }
     if (next === null) {
-      if (!tr.docChanged || !value.at) return value;
-      next = {
-        ...value,
-        at: { from: tr.changes.mapPos(value.at.from), to: tr.changes.mapPos(value.at.to) },
-      };
+      return tr.docChanged && value.at ? noError : value;
     }
     return { ...next, deco: errorDecorations(tr.state, next) };
   },

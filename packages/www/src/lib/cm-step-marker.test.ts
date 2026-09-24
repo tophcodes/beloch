@@ -128,10 +128,11 @@ test("clearing takes every mark away", () => {
   }
 });
 
-test("an edit above the error carries the marks along", () => {
-  const view = mountEditor("paper square\nfold --dx\n");
-  setErrorOn(view, { ...failed, hint: null });
+test("an edit takes the marks away: the text they described is gone", () => {
+  const view = mountEditor("paper square\nfold --dx\nfold Y\n");
+  setErrorOn(view, failed);
   view.dispatch({ changes: { from: 0, insert: "; note\n" } });
-  expect(view.dom.querySelector(".cm-error-word")!.textContent).toBe("--dx");
-  expect(view.dom.querySelector(".cm-line.cm-error-line")!.textContent).toBe("fold --dx");
+  for (const cls of ["cm-error-line", "cm-error-word", "cm-error-caret", "cm-after-error"]) {
+    expect(view.dom.querySelector(`.${cls}`)).toBeNull();
+  }
 });

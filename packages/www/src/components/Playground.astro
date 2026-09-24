@@ -1507,6 +1507,13 @@ const codeLines = code ? code.split("\n").length : 0;
           editorTheme,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) updateRunButtonState();
+            // The editor dropped its marks for the failed run on this edit;
+            // the words a screen reader holds for them go with them.
+            if (update.docChanged && errorBox!.classList.contains("is-in-code")) {
+              errorBox!.hidden = true;
+              errorBox!.textContent = "";
+              errorBox!.classList.remove("is-in-code");
+            }
             if (update.selectionSet) highlightCreasesOnLine(update.state.doc.lineAt(update.state.selection.main.head).number);
           }),
         ],
