@@ -71,3 +71,15 @@ test("a line's name sits beside the line rather than on it", () => {
   expect(besideLine([0, 0], [0, 100], 10)).toEqual([-10, 0]);
   expect(besideLine([0, 100], [0, 0], 10)).toEqual([-10, 0]);
 });
+
+test("names a reader picked keep their own labels where they coincide", () => {
+  // Four corners on one folded pixel, all four asked for: each gets a label of
+  // its own, and the ring walks them apart.
+  const out = placeLabels(
+    [A(100, 100, ".a"), A(101, 100, ".b"), A(100, 101, ".c"), A(101, 99, ".d")],
+    { cluster: false },
+  );
+  expect(out.map((l) => l.text).sort()).toEqual([".a", ".b", ".c", ".d"]);
+  const spots = new Set(out.map((l) => `${l.x},${l.y},${l.anchor}`));
+  expect(spots.size).toBe(4);
+});

@@ -43,6 +43,12 @@ export interface LabelOptions {
   fontSize?: number; // default 15 (governs bbox height + char width)
   epsilon?: number; // coincidence radius px, default 6
   charW?: number; // per-char advance px, default 0.62*fontSize
+  // Whether names that share a point merge into one label. A drawing that
+  // labels everything it carries does merge them, or four corner names stack
+  // on one pixel of a folded state. A drawing that labels what a reader picked
+  // does not: they asked for each of those names, so each gets its own label
+  // and the ring below walks them apart. Default true.
+  cluster?: boolean;
 }
 
 interface Box {
@@ -109,7 +115,7 @@ export function placeLabels(
   opts: LabelOptions = {},
 ): PlacedLabel[] {
   const fontSize = opts.fontSize ?? 15;
-  const eps = opts.epsilon ?? 6;
+  const eps = opts.cluster === false ? -1 : opts.epsilon ?? 6;
   const charW = opts.charW ?? 0.62 * fontSize;
   const h = fontSize;
 

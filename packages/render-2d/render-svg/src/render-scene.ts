@@ -96,8 +96,9 @@ function emitLabels(
   annotations: { children: SvgNode[] },
   anchors: LabelAnchor[],
   fontSize: number,
+  cluster: boolean,
 ): void {
-  for (const lab of placeLabels(anchors, { fontSize })) {
+  for (const lab of placeLabels(anchors, { fontSize, cluster })) {
     const attrs: Record<string, string | number> = {
       x: lab.x, y: lab.y,
       "font-size": fontSize, "font-weight": 600,
@@ -564,7 +565,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
         attrs,
       });
     }
-    emitLabels(annotations, labelAnchors, 17);
+    emitLabels(annotations, labelAnchors, 17, opts.annotate === undefined);
   } else {
     // ===== flat crease-pattern geometry (ported from renderCP) =====
     if (opts.texture.faces !== "none") {
@@ -764,7 +765,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     labelAnchors.push(
       ...appendConstructions(doc, scene, layout, theme, selection, null, colorOf, opts.annotate),
     );
-    emitLabels(annotations, labelAnchors, 17);
+    emitLabels(annotations, labelAnchors, 17, opts.annotate === undefined);
   }
 
   if (opts.title) appendTitle(doc, theme, opts.title);
