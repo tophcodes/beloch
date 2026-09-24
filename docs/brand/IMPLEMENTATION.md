@@ -268,6 +268,23 @@ Two questions the mode raised, and their answers:
 - **The mode is reached from the toolbar and from a key**, so it is findable by
   a reader who has never seen it and cheap for one who uses it all day.
 
+## A failed run in the code
+
+A program the evaluator rejects is shown where it went wrong. The line it names
+carries a cross in the gutter and the error tint, the span the evaluator names
+is underlined in a wave, and two rows stand under the line: a caret under the
+span with the message, and the hint, quieter, beneath it (ADR 0028). The lines
+after it are dimmed to 45 %, because the run never reached them.
+
+- **The drawing stays.** The last good drawing is what the reader holds the
+  message against (B3.5). The box beside it keeps the words for a screen
+  reader and is hidden from the eye, since the editor's rows are hidden from a
+  screen reader.
+- **An edit takes it all away.** The marks describe the text the run saw, and
+  on the next keystroke that text is gone. The next run says what holds.
+- **Long rows scroll with the code.** A hint wider than the pane scrolls
+  sideways like a long line of the program rather than wrapping under it.
+
 ## The selection card
 
 A click in the drawing answers on the drawing. A card stands at the place the
@@ -319,6 +336,9 @@ far it has got, and the control transitions take the duration tokens.
 
 ## Not built, and why
 
+- **A warm dark column.** The light neutrals of the token layer are warm, and
+  the dark ones are still the cool values they were. The design that warmed
+  them covers only light, so the dark column waits for a design of its own.
 - **A view of the crease pattern in the docs card independent of its folded
   twin.** The card's stepper moves both drawings together, because they are two
   drawings of one state.
