@@ -52,18 +52,26 @@ let minpoly (x : t) : Poly.t =
   Poly.monic (Poly.normalize coeffs)
 
 (* x as a ℚ-polynomial (low-first) in gen, exactly, or None if x ∉ ℚ(gen)
-   or the search precision is too low (one retry at a higher bound). The int
-   arg drives FLINT's LLL search precision (the C stub passes it as prec);
-   a too-low value can only yield a false None, never a wrong polynomial —
-   FLINT re-verifies res(gen) = x exactly before reporting success. *)
+   or every search precision on the ladder is too low. The int arg drives
+   FLINT's LLL search precision (the C stub passes it as prec); a too-low
+   value can only yield a false None, never a wrong polynomial — FLINT
+   re-verifies res(gen) = x exactly before reporting success. The ladder
+   starts small because the LLL cost grows with the precision and the
+   coordinates of fold geometry are a few bits wide: FLINT's own advice is
+   to call this repeatedly with increasing precision. The 4096 and 65536
+   rungs remain for coordinates with large heights; a value outside ℚ(gen)
+   walks the whole ladder, so the callers try a generator that can hold
+   both operands first. *)
 let express_over ~(gen : t) (x : t) : Poly.t option =
   let parse a = Poly.of_list (Array.to_list (Array.map Q.of_string a)) in
-  match express_in_field_raw gen x 4096 with
-  | Some a -> Some (parse a)
-  | None -> (
-      match express_in_field_raw gen x 65536 with
-      | Some a -> Some (parse a)
-      | None -> None)
+  let rec go = function
+    | [] -> None
+    | prec :: rest -> (
+        match express_in_field_raw gen x prec with
+        | Some a -> Some (parse a)
+        | None -> go rest)
+  in
+  go [ 16; 64; 256; 1024; 4096; 65536 ]
 
 let enclosure (x : t) ~(prec : int) : Q.t * Q.t =
   let a, b, e = enclosure_strs x prec in

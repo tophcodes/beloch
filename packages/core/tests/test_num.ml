@@ -511,6 +511,51 @@ let test_num_sqrt2_sqrt5_identities () =
   Alcotest.(check bool) "sqrt2*sqrt5 = sqrt10" true
     (Num.equal (Num.mul s2 s5) s10)
 
+(* A square root nested in a quadratic field: α = √(4 − 2√2) has degree 4
+   and, being within field_degree_cap, becomes a Field generator; √2 is
+   expressed inside ℚ(α) so mixed arithmetic never leaves the Field path.
+   The identities hold exactly; the loop is the #13 regression guard, each
+   pass being what one convex-overlap projection costs in the crane. *)
+let test_field_degree4_nested_sqrt () =
+  let s2 = Num.sqrt (n 2) in
+  let alpha = Num.sqrt (Num.sub (n 4) (Num.mul (n 2) s2)) in
+  Alcotest.(check bool) "α² = 4 − 2√2 exactly" true
+    (Num.equal (Num.mul alpha alpha) (Num.sub (n 4) (Num.mul (n 2) s2)));
+  Alcotest.(check bool) "(4 − α²)/2 = √2 exactly" true
+    (Num.equal (Num.div (Num.sub (n 4) (Num.mul alpha alpha)) (n 2)) s2);
+  Alcotest.(check int) "α < √2" (-1) (Num.compare alpha s2);
+  Alcotest.(check bool) "1/α · α = 1" true
+    (Num.equal (Num.mul (Num.inv alpha) alpha) Num.one);
+  let t0 = Unix.gettimeofday () in
+  let acc = ref Num.zero in
+  for i = 1 to 2000 do
+    let v = Num.add (Num.mul s2 alpha) (Num.mul (n i) s2) in
+    if Num.compare v !acc > 0 then acc := v
+  done;
+  let dt = Unix.gettimeofday () -. t0 in
+  Alcotest.(check int) "max is the last term" 1 (Num.compare !acc (n 2828));
+  check_under "2000 mixed degree-2/degree-4 ops" 1.0 dt
+
+(* The crane through step 14 (tests/cases/fold/crane-leg-narrowing.bel):
+   the end-to-end guard for the same path, four folds whose overlap tests
+   run in the degree-4 field. Took a minute with degree-4 values kept in
+   generic qqbar; the bound leaves room for a slow machine, and an
+   order-of-magnitude regression still trips it. *)
+let test_field_degree4_crane_fast () =
+  let root =
+    match Sys.getenv_opt "DUNE_SOURCEROOT" with
+    | Some r -> r
+    | None -> "../../../../.."
+  in
+  let rel = "packages/core/tests/cases/fold/crane-leg-narrowing.bel" in
+  let src = In_channel.with_open_text (Filename.concat root rel) In_channel.input_all in
+  let t0 = Unix.gettimeofday () in
+  let fd = Eval.eval_folded (Beloch.parse ~filename:rel src) in
+  let dt = Unix.gettimeofday () -. t0 in
+  Alcotest.(check int) "36 faces after step 14" 36
+    (Array.length (Fold_state.faces fd.Eval.state));
+  check_under "crane through step 14" 30.0 dt
+
 let test_num_deg27_smoke () =
   let cbrt k =
     match Num.real_roots [| n (-k); Num.zero; Num.zero; Num.one |] with
@@ -732,5 +777,9 @@ let () =
           Alcotest.test_case "field routing from qq (#57)" `Quick
             test_field_routing_from_qq;
           Alcotest.test_case "compare" `Quick test_field_compare;
+          Alcotest.test_case "degree-4 nested sqrt stays in the field (#13)"
+            `Quick test_field_degree4_nested_sqrt;
+          Alcotest.test_case "crane through step 14 fast (#13)" `Slow
+            test_field_degree4_crane_fast;
         ] );
     ]
