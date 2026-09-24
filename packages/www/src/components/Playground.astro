@@ -616,9 +616,12 @@ const codeLines = code ? code.split("\n").length : 0;
   .pg-source :global(.cm-step-line) {
     background: color-mix(in srgb, var(--bel-ui-code-accent) 15%, transparent);
   }
-  /* A span that binds a value, while debug mode is on: a box the reader aims
-     at, drawn on the characters rather than the line, since a statement binds
-     where it spells the name. The selected ones are filled. */
+  /* A word that binds a value, while debug mode is on: the target a reader
+     aims at, drawn on the characters rather than the line, since a statement
+     binds where it spells the name. One word per box, which is also what keeps
+     the outline whole: the editor cuts a mark at every syntax span, so a box
+     over a whole statement would be drawn once per token. The selected ones
+     are filled. */
   .pg-source :global(.cm-debug-box) {
     border-radius: 2px;
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--bel-ui-code-accent) 50%, transparent);
@@ -695,6 +698,23 @@ const codeLines = code ? code.split("\n").length : 0;
   .pg-canvas :global(.bel-hl) {
     stroke: var(--bel-ui-accent);
     stroke-width: 4;
+  }
+  /* A name is read rather than followed, so it takes the accent as its colour.
+     The stroke above would put a four-pixel outline around every glyph and
+     close the letters up. The white halo underneath stays: it is what keeps
+     the name legible over a crease. */
+  .pg-canvas :global(text.bel-hl) {
+    fill: var(--bel-ui-accent);
+    stroke: white;
+    stroke-width: 2.5;
+    paint-order: stroke;
+  }
+  /* The dot of a highlighted point is filled rather than outlined, for the
+     same reason: at three pixels across, a four-pixel stroke is all there is
+     of it. */
+  .pg-canvas :global(circle.bel-hl) {
+    fill: var(--bel-ui-accent);
+    stroke: none;
   }
   /* Occluded segments of a highlighted bundle, drawn from inspect data since
      they have no rendered line — dashed + semi-transparent to read as "behind". */
@@ -1397,6 +1417,15 @@ const codeLines = code ? code.split("\n").length : 0;
     // either, and the source is read-only.
     const hero = root.dataset.variant === "hero";
 
+    // Debug mode's state. It stands here because the run button's own update
+    // reads it, and that runs while the editor is being built.
+    //
+    // `documentSource` is the source the document in the slot was evaluated
+    // from: the spans it carries point into that text, so the mode is offered
+    // only while the editor still holds it.
+    let documentSource: string | null = null;
+    let debugList: DebugTarget[] = [];
+
     // The phases, both limits and the in-flight run belong to
     // @beloch/runtime-eval. What is held here is the last state it reported,
     // because the button is drawn from a snapshot rather than from a module
@@ -1693,18 +1722,6 @@ const codeLines = code ? code.split("\n").length : 0;
     // The selection it fills is the core's, the same list a pick in the drawing
     // settles. Neither side knows about the other: both dispatch the same
     // event.
-    let documentSource: string | null = null;
-    let debugList: DebugTarget[] = [];
-
-    const textAt = (span: SpanPos): string | null => {
-      const doc = editor.state.doc;
-      if (span.fromLine < 1 || span.fromLine > doc.lines) return null;
-      if (span.toLine !== span.fromLine) return null;
-      const line = doc.line(span.fromLine);
-      if (span.toCol - 1 > line.length) return null;
-      return line.text.slice(span.fromCol - 1, span.toCol - 1);
-    };
-
     const offsetsOf = (span: SpanPos): { from: number; to: number } | null => {
       const doc = editor.state.doc;
       if (span.fromLine < 1 || span.fromLine > doc.lines) return null;
@@ -1714,25 +1731,50 @@ const codeLines = code ? code.split("\n").length : 0;
       return to > from && to <= doc.length ? { from, to } : null;
     };
 
-    // A target whose span was derived from the head of a statement claims what
-    // it should spell; a statement that does not spell it there binds the name
-    // somewhere else, and the write's own box covers the value instead.
-    const spellsItself = (target: DebugTarget): boolean =>
-      target.spelling === null || textAt(target.span) === target.spelling;
+    // Where a target's box goes: the word the statement binds, found inside the
+    // statement, which is a name at the head of a binding (`.o = …`) and a name
+    // at the end of a write (`fold … as --bd`). A statement that binds a name
+    // without spelling it gets no box, which an `apply` a name was exported
+    // from is.
+    //
+    // A write that named nothing has only its own statement to point at, and
+    // the box covers it whole.
+    const isNameChar = (c: string | undefined): boolean =>
+      c !== undefined && /[A-Za-z0-9_\-.!]/.test(c);
 
-    const debugAvailable = (): boolean =>
-      currentScene() !== null && documentSource === editor.state.doc.toString();
+    function boxOf(target: DebugTarget): { from: number; to: number } | null {
+      const at = offsetsOf(target.span);
+      if (at === null) return null;
+      if (target.spelling === null) return at;
+      const text = editor.state.doc.sliceString(at.from, at.to);
+      // The name stands on its own rather than inside a longer one, so the
+      // character after it is not one a name is spelled with.
+      for (let i = text.indexOf(target.spelling); i >= 0;
+           i = text.indexOf(target.spelling, i + 1)) {
+        if (!isNameChar(text[i + target.spelling.length])) {
+          return { from: at.from + i, to: at.from + i + target.spelling.length };
+        }
+      }
+      return null;
+    }
+
+    // A document is in the slot and the editor still holds the text it was
+    // evaluated from. A function declaration rather than a const, because the
+    // run button asks this while the editor is being built.
+    function debugAvailable(): boolean {
+      return documentSource !== null && documentSource === editor.state.doc.toString();
+    }
 
     function buildDebugTargets() {
       const scene = currentScene();
-      debugList = scene === null ? [] : debugTargets(scene).filter(spellsItself);
+      debugList = scene === null ? [] : debugTargets(scene).filter((t) => boxOf(t) !== null);
     }
 
     function refreshDebugBoxes() {
       const selection = runtime.state.selection;
       const boxes: DebugBox[] = [];
       debugList.forEach((target, id) => {
-        const at = offsetsOf(target.span);
+        const at = boxOf(target);
         if (at === null) return;
         boxes.push({
           ...at,

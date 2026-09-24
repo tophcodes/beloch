@@ -15,14 +15,14 @@ import { parseSpan, type SpanPos } from "./spans";
 
 export interface DebugTarget {
   entity: EntityRef;
+  // The statement that binds the value.
   span: SpanPos;
-  // What the text under `span` spells, where the span was derived from the head
-  // of a statement rather than recorded by the emitter: `.o`, `--mid`. A
-  // binding statement begins with the name it binds, so the head of its span
-  // is that name; a host that can read the text checks the two agree before it
-  // draws a box. That check is what keeps a box off a statement the
-  // document dates the name to without the name standing there, which a name
-  // exported from an `apply` does.
+  // The name that statement binds, where it binds one: `.o`, `--mid`. A host
+  // that can read the text finds the word inside the span and boxes that,
+  // which is the target a reader aims at; the statement's own span is the
+  // target only where nothing is named. A statement that does not spell the
+  // name is no target at all, which is what keeps a box off the `apply` a
+  // name was exported from.
   spelling: string | null;
 }
 
@@ -31,14 +31,6 @@ const spanOfStatement = (scene: FoldScene, index: number | null): SpanPos | null
   const span = scene.statements[index]?.span ?? null;
   return span === null ? null : parseSpan(span);
 };
-
-// The name at the head of its binding statement, as a span of its own.
-const headOf = (statement: SpanPos, spelling: string): SpanPos => ({
-  fromLine: statement.fromLine,
-  fromCol: statement.fromCol,
-  toLine: statement.fromLine,
-  toCol: statement.fromCol + spelling.length,
-});
 
 // The crease a write scored, by the join the document offers: every crease edge
 // records the statement that scored it. A mark that never graduated into a
@@ -62,42 +54,52 @@ export function debugTargets(scene: FoldScene): DebugTarget[] {
     if (statement === null) continue;
     const index = scene.cp.verticesNames.indexOf(point.name);
     if (index < 0) continue;
-    const spelling = `.${point.name}`;
     targets.push({
       entity: { kind: "vertex", index, name: point.name },
-      span: headOf(statement, spelling),
-      spelling,
+      span: statement,
+      spelling: `.${point.name}`,
     });
   }
 
-  // A named line is a crease where the write that made it bound the name, and a
-  // construction otherwise. The crease is the identity to prefer: it is the
-  // bundle every segment of the line shares (ADR-0014), and the drawing carries
-  // the line as those segments rather than as a construction.
-  const creaseByName = new Map<string, string>();
+  // Every crease the paper carries, under the name the write that made it
+  // bound, or under its statement where it bound none. The creases are read
+  // here rather than from the named lines, because a line whose crease a later
+  // fold bends is left out of that map and its name would go with it.
+  const covered = new Set<string>();
+  const creaseNames = new Set<string>();
   for (const [id, crease] of Object.entries(scene.inspect?.creases ?? {})) {
-    if (crease.name !== null) creaseByName.set(crease.name, id);
-  }
-  for (const line of scene.namedLines) {
-    const statement = spanOfStatement(scene, line.statement);
-    if (statement === null) continue;
-    const creaseId = creaseByName.get(line.name);
-    const spelling = `--${line.name}`;
+    const span = crease.span === null ? null : parseSpan(crease.span);
+    if (span === null) continue;
+    covered.add(id);
+    if (crease.name !== null) creaseNames.add(crease.name);
     targets.push({
-      entity:
-        creaseId === undefined
-          ? { kind: "construction", name: line.name }
-          : { kind: "crease", creaseId },
-      span: headOf(statement, spelling),
-      spelling,
+      entity: { kind: "crease", creaseId: id },
+      span,
+      spelling: crease.name === null ? null : `--${crease.name}`,
     });
   }
 
+  // A line the program named and the paper never carried: a construction, held
+  // by its name alone.
+  for (const line of scene.namedLines) {
+    if (creaseNames.has(line.name)) continue;
+    const span = spanOfStatement(scene, line.statement);
+    if (span === null) continue;
+    targets.push({
+      entity: { kind: "construction", name: line.name },
+      span,
+      spelling: `--${line.name}`,
+    });
+  }
+
+  // A mark that never graduated into a crease edge: the inspect inventory has
+  // no entry for it, so its write is what says where it was scored.
   for (const write of scene.writes) {
     const span = spanOfStatement(scene, write.index);
     if (span === null) continue;
     const creaseId = creaseOfWrite(scene, write.index);
-    if (creaseId === null) continue;
+    if (creaseId === null || covered.has(creaseId)) continue;
+    covered.add(creaseId);
     targets.push({ entity: { kind: "crease", creaseId }, span, spelling: null });
   }
 

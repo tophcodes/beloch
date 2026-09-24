@@ -8,6 +8,7 @@ import { renderScene } from "./render-scene";
 export interface RenderOptions {
   title?: string | undefined;
   labels?: string[] | undefined; // ["--v", ".e"]; undefined = none
+  annotate?: string[] | undefined; // whose names the drawing writes out; undefined = every name it carries
   highlight?: string[] | undefined; // entities to emphasise: ["--v", ".e", "#[.p]"]
   theme?: Partial<Theme> | undefined;
   legend?: boolean | undefined; // default false
@@ -26,6 +27,7 @@ export function renderCP(scene: FoldScene, opts: RenderOptions = {}): SvgDoc {
     },
     title: opts.title,
     labels: opts.labels,
+    annotate: opts.annotate,
     highlight: opts.highlight,
     legend: opts.legend,
     theme: opts.theme,

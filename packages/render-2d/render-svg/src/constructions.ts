@@ -8,6 +8,7 @@ import { clipLineBox, clipLineToPoly, lineToFace } from "./geometry";
 import { PAD } from "./layout";
 import type { Layout } from "./layout";
 import type { HighlightColor, Theme } from "./theme";
+import { besideLine, type LabelAnchor } from "./primitives/labels";
 
 // A named line that's also a real crease highlights in that crease's own
 // assignment color (bolder, dashed on top) rather than a separate hue — the
@@ -29,7 +30,16 @@ export function appendConstructions(
   // selection entry (".p", "--l"). An entry outside it keeps the crease or
   // construction colour it had.
   highlightOf: Map<string, HighlightColor> = new Map(),
-): void {
+  // The names the drawing writes out; absent writes them all. See
+  // `SceneOptions.annotate`.
+  annotate?: string[] | undefined,
+): LabelAnchor[] {
+  // The overlay draws the shapes and hands the names back: every label in a
+  // drawing goes through one placement pass, so two of them cannot land on
+  // each other (see `placeLabels`).
+  const anchors: LabelAnchor[] = [];
+  const labelled = (name: string): boolean =>
+    annotate === undefined || annotate.includes(name);
   const annotations = doc.layer("annotations");
   const { tx, ty, minX, maxX, minY, maxY } = layout;
 
@@ -76,14 +86,17 @@ export function appendConstructions(
           }));
           drawn.push([t1, t2]);
         }
-        if (drawn.length > 0) {
+        if (drawn.length > 0 && labelled(`--${name}`)) {
           const [[x1, y1], [x2, y2]] = drawn[0]!;
-          g.push(el("text", {
-            x: tx((x1 + x2) / 2), y: ty((y1 + y2) / 2) - 6,
-            "font-size": 12, "font-weight": 600, fill: color,
-            stroke: "white", "stroke-width": 2.5, "paint-order": "stroke",
-            "text-anchor": "middle",
-          }, [], `--${name}`));
+          const a: Vec2 = [tx(x1), ty(y1)], b: Vec2 = [tx(x2), ty(y2)];
+          anchors.push({
+            x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2,
+            text: `--${name}`, key: `--${name}`,
+            preferOffset: besideLine(a, b, 12),
+            group: `line:${name}`,
+            attrs: { fill: color, "data-bel-name": name, "data-construction": name,
+                     "data-kind": "line-label" },
+          });
         }
       } else {
         const color = hl?.stroke ?? creaseColor(scene.cp, name, theme) ?? theme.construction;
@@ -95,12 +108,17 @@ export function appendConstructions(
           stroke: color, "stroke-width": 3,
           "stroke-dasharray": "6 3", opacity: 0.8,
         }));
-        g.push(el("text", {
-          x: tx((x1 + x2) / 2), y: ty((y1 + y2) / 2) - 6,
-          "font-size": 12, "font-weight": 600, fill: color,
-          stroke: "white", "stroke-width": 2.5, "paint-order": "stroke",
-          "text-anchor": "middle",
-        }, [], `--${name}`));
+        if (labelled(`--${name}`)) {
+          const a: Vec2 = [tx(x1), ty(y1)], b: Vec2 = [tx(x2), ty(y2)];
+          anchors.push({
+            x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2,
+            text: `--${name}`, key: `--${name}`,
+            preferOffset: besideLine(a, b, 12),
+            group: `line:${name}`,
+            attrs: { fill: color, "data-bel-name": name, "data-construction": name,
+                     "data-kind": "line-label" },
+          });
+        }
       }
       if (g.length) {
         annotations.children.push(el("g", {
@@ -119,16 +137,19 @@ export function appendConstructions(
       annotations.children.push(el("g", {
         class: "construction", "data-construction": name,
         "data-kind": "point", "data-name": name,
-      }, [
-        el("circle", { cx: tx(px), cy: ty(py), r: 4.5, fill: color, opacity: 0.85 }),
-        el("text", {
-          x: tx(px) + ox, y: ty(py) + oy,
-          "font-size": 13, "font-weight": 600, fill: color,
-          stroke: "white", "stroke-width": 2.5, "paint-order": "stroke",
-        }, [], `.${name}`),
-      ]));
+      }, [el("circle", { cx: tx(px), cy: ty(py), r: 4.5, fill: color, opacity: 0.85 })]));
+      if (labelled(`.${name}`)) {
+        anchors.push({
+          x: tx(px), y: ty(py), text: `.${name}`, key: `.${name}`,
+          preferOffset: [ox, oy],
+          group: "point",
+          attrs: { fill: color, "data-bel-name": name, "data-construction": name,
+                   "data-kind": "point-label" },
+        });
+      }
     }
   }
+  return anchors;
 }
 
 // fold2svg.mjs:450-453
