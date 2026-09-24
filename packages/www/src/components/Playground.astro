@@ -1227,8 +1227,10 @@ const codeLines = code ? code.split("\n").length : 0;
       // first character.
       ".cm-content": { padding: "14px 0", caretColor: "var(--bel-ui-code-text)" },
       ".cm-line": { padding: "0 18px", position: "relative" },
+      // Opaque, because the gutter stays put while a long line scrolls
+      // sideways, and the code would otherwise show through it.
       ".cm-gutters": {
-        backgroundColor: "transparent",
+        backgroundColor: "var(--bel-ui-code-surface)",
         color: "var(--bel-ui-code-gutter)",
         border: "none",
         borderRight: "1px solid rgba(255, 255, 255, 0.08)",
