@@ -36,6 +36,8 @@ export interface DebugChip {
 export interface DebugChips {
   line: number;
   rows: DebugChip[][];
+  // A word on what this block is, written where a comment would stand.
+  note?: string;
 }
 
 export const setDebugMode = StateEffect.define<boolean>();
@@ -56,15 +58,16 @@ const sameChips = (a: DebugChip[][], b: DebugChip[][]): boolean =>
   });
 
 class ChipsWidget extends WidgetType {
-  constructor(readonly rows: DebugChip[][]) {
+  constructor(readonly rows: DebugChip[][], readonly note: string | undefined) {
     super();
   }
   override eq(other: ChipsWidget) {
-    return sameChips(this.rows, other.rows);
+    return this.note === other.note && sameChips(this.rows, other.rows);
   }
   override toDOM() {
     const block = document.createElement("div");
     block.className = "cm-debug-chips";
+    let first = true;
     for (const chips of this.rows) {
       if (chips.length === 0) continue;
       const row = document.createElement("div");
@@ -78,6 +81,13 @@ class ChipsWidget extends WidgetType {
         el.textContent = chip.text;
         row.appendChild(el);
       }
+      if (first && this.note !== undefined) {
+        const note = document.createElement("span");
+        note.className = "cm-debug-note bel-comment";
+        note.textContent = this.note;
+        row.appendChild(note);
+      }
+      first = false;
       block.appendChild(row);
     }
     return block;
@@ -114,7 +124,7 @@ function decorationsFor(
   if (chips && hasChips && chips.line >= 1 && chips.line <= doc.lines) {
     ranges.push(
       Decoration.widget({
-        widget: new ChipsWidget(chips.rows),
+        widget: new ChipsWidget(chips.rows, chips.note),
         block: true,
         side: 1,
       }).range(doc.line(chips.line).to),

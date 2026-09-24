@@ -125,6 +125,7 @@ const CHIPS = {
     [{ id: 7, text: ".a", on: false, cls: "bel-point" }],
     [{ id: 8, text: "--ab", on: true, cls: "bel-line" }],
   ],
+  note: "; prelude values",
 };
 
 test("the chips stand under the paper line, and only while the mode is on", () => {
@@ -141,6 +142,8 @@ test("the chips stand under the paper line, and only while the mode is on", () =
   expect(chips.map((c) => c.classList.contains("cm-debug-box"))).toEqual([true, true]);
   expect(chips[0]!.classList.contains("bel-point")).toBe(true);
   expect(chips[1]!.classList.contains("bel-line")).toBe(true);
+  // And a word on what the block is, where a comment would stand.
+  expect(view.dom.querySelector(".cm-debug-note")!.textContent).toBe("; prelude values");
 });
 
 test("clicking a chip reports it like a box", () => {

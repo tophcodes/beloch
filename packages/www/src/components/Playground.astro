@@ -631,16 +631,26 @@ const codeLines = code ? code.split("\n").length : 0;
      corners and the four edges, which no statement binds and which the source
      therefore has nowhere to box. Chips rather than text, so the row reads as
      part of the editor's chrome and not as a line of the program. */
-  /* The row reads as a line of the program: the editor's type, the editor's
-     line height, the colours the grammar gives a point and a line. What marks
-     the names as targets is the box every other target carries. */
+  /* The rows read as lines of the program: the editor's type, its line height,
+     its indent, and the colours the grammar gives a point and a line. What
+     marks the names as targets is the box every other target carries. The
+     block takes a ground of its own, because these values come with the sheet
+     rather than from the text above them. */
+  .pg-source :global(.cm-debug-chips) {
+    background: color-mix(in srgb, var(--bel-ui-code-accent) 7%, transparent);
+    box-shadow: inset 2px 0 0 color-mix(in srgb, var(--bel-ui-code-accent) 35%, transparent);
+  }
   .pg-source :global(.cm-debug-chip-row) {
-    padding: 0 2px 0 6px;
+    /* The indent of a line of code, so the names stand under the program. */
+    padding: 0 18px;
     white-space: pre;
   }
   .pg-source :global(.cm-debug-chip) {
     margin-right: 1ch;
     cursor: pointer;
+  }
+  .pg-source :global(.cm-debug-note) {
+    margin-left: 1ch;
   }
   .pg-source :global(.cm-debug-box.is-on) {
     background: color-mix(in srgb, var(--bel-ui-code-accent) 30%, transparent);
@@ -1826,7 +1836,9 @@ const codeLines = code ? code.split("\n").length : 0;
       const rows = [points, lines];
       setDebugChipsOn(
         editor,
-        rows.some((row) => row.length > 0) ? { line: paperLine(), rows } : null,
+        rows.some((row) => row.length > 0)
+          ? { line: paperLine(), rows, note: "; prelude values" }
+          : null,
       );
     }
 
