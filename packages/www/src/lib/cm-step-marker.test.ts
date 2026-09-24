@@ -2,7 +2,7 @@ import { test, expect, beforeAll } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "codemirror";
-import { stepMarkerExtensions, setStepLineOn, setErrorLineOn } from "./cm-step-marker";
+import { stepMarkerExtensions, setStepLineOn, setErrorOn } from "./cm-step-marker";
 
 beforeAll(() => { if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register(); });
 
@@ -41,7 +41,7 @@ test("moving to a different line clears the previous marker", () => {
 test("the step line and the error line stand at once", () => {
   const view = mountEditor("paper square\nfold X\nfold Y\n");
   setStepLineOn(view, 2);
-  setErrorLineOn(view, 3);
+  setErrorOn(view, { line: 3, span: null, message: "boom", hint: null });
   expect(view.dom.querySelector(".cm-step-line")).not.toBeNull();
   expect(view.dom.querySelector(".cm-error-line")).not.toBeNull();
 });
@@ -70,4 +70,68 @@ test("marking a line dispatches once and scrolls nothing", () => {
 test("clearing dispatches once either way", () => {
   const view = mountEditor("paper square\nfold X\n");
   expect(countDispatches(view, () => setStepLineOn(view, null))).toBe(1);
+});
+
+// A failed run, shown in the code: the offending word underlined, a caret row
+// with the message and a hint row under its line, and the rest dimmed.
+const failed = {
+  line: 2,
+  span: { fromLine: 2, fromCol: 6, toLine: 2, toCol: 10 },
+  message: "unknown line --dx",
+  hint: "in scope: --ab --bc",
+};
+
+test("the span a failed run names is underlined, and only it", () => {
+  const view = mountEditor("paper square\nfold --dx\nfold Y\n");
+  setErrorOn(view, failed);
+  const words = view.dom.querySelectorAll(".cm-error-word");
+  expect(words.length).toBe(1);
+  expect(words[0]!.textContent).toBe("--dx");
+});
+
+test("the caret row stands under the word with the message, the hint under it", () => {
+  const view = mountEditor("paper square\nfold --dx\nfold Y\n");
+  setErrorOn(view, failed);
+  const caret = view.dom.querySelector(".cm-error-caret")!;
+  expect(caret.textContent).toBe("     ^~~~ unknown line --dx");
+  expect(view.dom.querySelector(".cm-error-hint")!.textContent).toBe("     in scope: --ab --bc");
+});
+
+test("no hint, no hint row", () => {
+  const view = mountEditor("paper square\nfold --dx\n");
+  setErrorOn(view, { ...failed, hint: null });
+  expect(view.dom.querySelector(".cm-error-caret")).not.toBeNull();
+  expect(view.dom.querySelector(".cm-error-hint")).toBeNull();
+});
+
+test("the lines after the failed one are dimmed, the ones before are not", () => {
+  const view = mountEditor("paper square\nfold --dx\nfold Y\nfold Z\n");
+  setErrorOn(view, failed);
+  expect(view.dom.querySelectorAll(".cm-after-error").length).toBe(3);
+  expect(view.dom.querySelector(".cm-line.cm-after-error")?.textContent).toBe("fold Y");
+});
+
+test("an error without a span marks its line and writes the message under it", () => {
+  const view = mountEditor("paper square\nfold X\n");
+  setErrorOn(view, { line: 2, span: null, message: "boom", hint: null });
+  expect(view.dom.querySelector(".cm-error-line")).not.toBeNull();
+  expect(view.dom.querySelector(".cm-error-word")).toBeNull();
+  expect(view.dom.querySelector(".cm-error-caret")!.textContent).toBe("boom");
+});
+
+test("clearing takes every mark away", () => {
+  const view = mountEditor("paper square\nfold --dx\nfold Y\n");
+  setErrorOn(view, failed);
+  setErrorOn(view, null);
+  for (const cls of ["cm-error-line", "cm-error-word", "cm-error-caret", "cm-after-error"]) {
+    expect(view.dom.querySelector(`.${cls}`)).toBeNull();
+  }
+});
+
+test("an edit above the error carries the marks along", () => {
+  const view = mountEditor("paper square\nfold --dx\n");
+  setErrorOn(view, { ...failed, hint: null });
+  view.dispatch({ changes: { from: 0, insert: "; note\n" } });
+  expect(view.dom.querySelector(".cm-error-word")!.textContent).toBe("--dx");
+  expect(view.dom.querySelector(".cm-line.cm-error-line")!.textContent).toBe("fold --dx");
 });
