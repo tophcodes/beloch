@@ -12,6 +12,7 @@ import {
   type EvaluatorBackend,
   type EvaluatorHost,
   type EvaluatorState,
+  type ProgramSpan,
   type Scheduler,
   type SpawnEvaluator,
 } from "./backend";
@@ -63,10 +64,21 @@ interface Envelope {
   fold?: unknown;
   kind?: string;
   message?: string;
+  hint?: string;
   line?: number;
+  column?: number;
+  endLine?: number;
+  endColumn?: number;
 }
 
 const said = (err: unknown): string => (err instanceof Error ? err.message : String(err));
+
+// An answer from before the span's end was carried names a line and a column
+// only, and makes no span.
+const spanOf = (e: Envelope): ProgramSpan | null =>
+  e.line === undefined || e.column === undefined || e.endLine === undefined || e.endColumn === undefined
+    ? null
+    : { fromLine: e.line, fromCol: e.column, toLine: e.endLine, toCol: e.endColumn };
 
 export function createEvaluator(options: EvaluatorOptions): Evaluator {
   const { runtime, spawn, host } = options;
@@ -167,7 +179,9 @@ export function createEvaluator(options: EvaluatorOptions): Evaluator {
       host.diagnostic({
         kind: "program",
         message: envelope.message ?? "Unknown error.",
+        hint: envelope.hint ?? null,
         line: envelope.line ?? null,
+        span: spanOf(envelope),
       });
       return;
     }

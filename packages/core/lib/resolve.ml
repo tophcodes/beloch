@@ -55,9 +55,8 @@ let materialize_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (cv 
     Geom.line =
   match cv with
   | Bundle _ ->
-      Error.fail span
-        (Printf.sprintf
-           "--%s is a bundle; restrict it to one segment with & or \\" name)
+      Error.fail ~hint:"restrict it to one segment with & or \\" span
+        (Printf.sprintf "--%s is a bundle" name)
   | Edge (a, b) ->
       let pa = Fold_state.table_position !(ctx.state) (corner_point a)
       and pb = Fold_state.table_position !(ctx.state) (corner_point b) in
@@ -73,10 +72,12 @@ let materialize_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (cv 
                "--%s has collapsed to a point under folding, so it no longer \
                 names a line" name)
       | `Bent ->
-          Error.fail span
-            (Printf.sprintf
-               "--%s is bent by a fold; narrow it to one piece with &, e.g. \
-                --%s & .p" name name))
+          Error.fail
+            ~hint:
+              (Printf.sprintf "narrow it to one piece with &, e.g. --%s & .p"
+                 name)
+            span
+            (Printf.sprintf "--%s is bent by a fold" name))
   | Material (cid, l_orig) -> (
       match Fold_state.crease_axis !(ctx.state) cid l_orig with
       | `Line l -> l
@@ -90,11 +91,13 @@ let materialize_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (cv 
                "--%s has collapsed to a point under folding, so it no longer \
                 names a line" name)
       | `Bent ->
-          Error.fail span
-            (Printf.sprintf
-               "--%s is no longer straight after folding; narrow it to one \
-                piece with &, e.g. --%s & .p or --%s & --ab"
-               name name name))
+          Error.fail
+            ~hint:
+              (Printf.sprintf
+                 "narrow it to one piece with &, e.g. --%s & .p or --%s & --ab"
+                 name name)
+            span
+            (Printf.sprintf "--%s is no longer straight after folding" name))
 
 (* a cross operand resolved to PAPER space: the one material line carrying
    the crease's marks, plus those marks' paper chords (None when the operand
@@ -103,9 +106,8 @@ let paper_line_of_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (c
     : Geom.line * (Geom.point * Geom.point) list option =
   match cv with
   | Bundle _ ->
-      Error.fail span
-        (Printf.sprintf
-           "--%s is a bundle; restrict it to one segment with & or \\" name)
+      Error.fail ~hint:"restrict it to one segment with & or \\" span
+        (Printf.sprintf "--%s is a bundle" name)
   | Frozen _ ->
       Error.fail span
         (Printf.sprintf "--%s is a line; the meet needs a crease" name)
@@ -135,11 +137,13 @@ let paper_line_of_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (c
          does for reference-only boundary creases *)
       | `Empty -> (l_orig, None)
       | `Bent ->
-          Error.fail span
-            (Printf.sprintf
-               "--%s marks different lines on different layers; narrow it \
-                to one piece with &, e.g. --%s & .p"
-               name name))
+          Error.fail
+            ~hint:
+              (Printf.sprintf "narrow it to one piece with &, e.g. --%s & .p"
+                 name)
+            span
+            (Printf.sprintf "--%s marks different lines on different layers"
+               name))
 
 (* the unique FACE (the fine ADR-0014 partition, not a flap/coplanar
    cluster) whose paper polygon contains every point in [pts]. Unlike
@@ -308,10 +312,8 @@ and material_cid (ctx : Ctx.ctx) (cr : Ast.crease_ref) : int =
       promote_crease ctx cr.Ast.cname (Material (cid, line));
       cid
   | Bundle _ ->
-      Error.fail cr.Ast.cspan
-        (Printf.sprintf
-           "--%s is a bundle, not a single crease; restrict it with & or \\"
-           cr.Ast.cname)
+      Error.fail ~hint:"restrict it with & or \\" cr.Ast.cspan
+        (Printf.sprintf "--%s is a bundle, not a single crease" cr.Ast.cname)
   | Frozen _ ->
       Error.fail cr.Ast.cspan
         (Printf.sprintf "--%s is a line; the filter needs a crease"
@@ -389,8 +391,8 @@ and cand_incident (ctx : Ctx.ctx) (sel : Ast.selector) (_l, (pa, pb), _pl, _pm) 
       | Some ip -> on (Geom.seg_param (pa, pb) ip)
       | None -> false)
   | Ast.SelFlap (Ast.FByPoints (_, fspan)) ->
-      Error.fail fspan
-        "a flap is not a valid --[…] constraint; use & to filter a crease"
+      Error.fail ~hint:"use & to filter a crease" fspan
+        "a flap is not a valid --[…] constraint"
 and select_cand (ctx : Ctx.ctx) (sels : Ast.selector list) (span : Error.span) :
     Geom.line * (Geom.point * Geom.point)
     * Geom.line * (Geom.point * Geom.point) list option =
@@ -405,9 +407,8 @@ and select_cand (ctx : Ctx.ctx) (sels : Ast.selector list) (span : Error.span) :
         (Printf.sprintf "no crease or edge is incident to all of %s"
            (selstr sels))
   | many ->
-      Error.fail span
-        (Printf.sprintf
-           "--[…] is ambiguous: %d creases/edges match %s; add a constraint"
+      Error.fail ~hint:"add a constraint" span
+        (Printf.sprintf "--[…] is ambiguous: %d creases/edges match %s"
            (List.length many) (selstr sels))
 and select_line (ctx : Ctx.ctx) (sels : Ast.selector list) (span : Error.span) : Geom.line =
   let l, _, _, _ = select_cand ctx sels span in
@@ -487,10 +488,10 @@ and select_point (ctx : Ctx.ctx) (los : Ast.line_operand list) (span : Error.spa
                   beyond their marks or off the paper"
                  names)
       | many ->
-          Error.fail span
+          Error.fail
+            ~hint:"narrow an operand with & so that one crossing remains" span
             (Printf.sprintf
-               "the meet of %s is ambiguous: they cross at %d points, %s; \
-                narrow an operand with & so that one crossing remains"
+               "the meet of %s is ambiguous: they cross at %d points, %s"
                names (List.length many) (and_list (List.map point_str many))))
 and meet_pieces (ctx : Ctx.ctx) (lo : Ast.line_operand) : meet_piece list =
   let of_segments =
@@ -554,9 +555,9 @@ and bundle_segments (ctx : Ctx.ctx) (lo : Ast.line_operand) :
   | Ast.LUnion (los, _) ->
       (None, List.concat_map (fun l -> snd (bundle_segments ctx l)) los)
   | Ast.LSelect _ ->
-      Error.fail (span_of_line lo)
-        "a --[…] result is a single line, not a segment bundle; filter a \
-         named crease with & instead"
+      Error.fail ~hint:"filter a named crease with & instead"
+        (span_of_line lo)
+        "a --[…] result is a single line, not a segment bundle"
 and coerce_one_segment (ctx : Ctx.ctx) (lo : Ast.line_operand) : Fold_state.crease_segment =
   match snd (bundle_segments ctx lo) with
   | [ s ] -> s
@@ -564,8 +565,8 @@ and coerce_one_segment (ctx : Ctx.ctx) (lo : Ast.line_operand) : Fold_state.crea
       Error.fail (span_of_line lo)
         (Printf.sprintf "no segment of %s matches" (lstr lo))
   | many ->
-      Error.fail (span_of_line lo)
-        (Printf.sprintf "%s is ambiguous: %d segments match; add a selector"
+      Error.fail ~hint:"add a selector" (span_of_line lo)
+        (Printf.sprintf "%s is ambiguous: %d segments match"
            (lstr lo) (List.length many))
 
 let table_of (ctx : Ctx.ctx) (po : Ast.point_operand) : Geom.point =
@@ -596,10 +597,8 @@ let resolve_flap_cluster (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span)
           match List.sort_uniq compare (List.map (fun f -> cl.(f)) faces) with
           | [ id ] -> List.filter (fun f -> cl.(f) = id) (List.init n Fun.id)
           | ids ->
-              Error.fail span
-                (Printf.sprintf
-                   "%s lies on a crease shared by %d flaps; name the flap \
-                    with #[...]"
+              Error.fail ~hint:"name the flap with #[...]" span
+                (Printf.sprintf "%s lies on a crease shared by %d flaps"
                    (fstr fa) (List.length ids))))
   | Ast.FlapSpec (Ast.FByPoints (pts, fspan)) ->
       flap_lookup_result fspan
@@ -641,9 +640,8 @@ let resolve_flap_cluster (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span)
           match cluster_ids with
           | [ id ] -> List.filter (fun f -> cl.(f) = id) (List.init n Fun.id)
           | many ->
-              Error.fail span
-                (Printf.sprintf
-                   "%s touches %d flaps; add a point, e.g. #[.p]" (fstr fa)
+              Error.fail ~hint:"add a point, e.g. #[.p]" span
+                (Printf.sprintf "%s touches %d flaps" (fstr fa)
                    (List.length many))))
 
 (* face-precise resolution for collapse's `over`/`under`: a sector around a
@@ -659,10 +657,8 @@ let resolve_sector_face (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span) 
       | [] ->
           Error.fail span (Printf.sprintf "%s is not on the paper" (fstr fa))
       | many ->
-          Error.fail span
-            (Printf.sprintf
-               "%s lies on a crease shared by %d flaps; name the flap with \
-                #[...]"
+          Error.fail ~hint:"name the flap with #[...]" span
+            (Printf.sprintf "%s lies on a crease shared by %d flaps"
                (fstr fa) (List.length many)))
   | Ast.FlapSpec (Ast.FByPoints (pts, fspan)) ->
       flap_lookup_result fspan
@@ -701,9 +697,8 @@ let side_of_flap_arg (ctx : Ctx.ctx) (axis : Geom.line) (fa : Ast.flap_arg)
   match side_of_flap_arg_res ctx axis fa span with
   | Ok s -> s
   | Error `Straddles ->
-      Error.fail span
-        (Printf.sprintf
-           "%s straddles the fold axis; anchor with a point instead" (fstr fa))
+      Error.fail ~hint:"anchor with a point instead" span
+        (Printf.sprintf "%s straddles the fold axis" (fstr fa))
   | Error `OnAxis -> (
       match fa with
       | Ast.FlapPoint _ -> Error.fail span "the moving point lies on the fold axis"
@@ -864,18 +859,18 @@ let into_crease (ctx : Ctx.ctx) (n : string) (sp : Error.span) :
         Error.fail sp
           (Printf.sprintf "into needs a scored crease; --%s is a paper edge" n)
     | None ->
-        Error.fail sp
-          (Printf.sprintf
-             "--%s is not bound; write as --%s to name a new crease" n n)
+        Error.fail
+          ~hint:(Printf.sprintf "write as --%s to name a new crease" n)
+          sp
+          (Printf.sprintf "--%s is not bound" n)
   in
   let cid = match cv with Material (c, _) | Mark (c, _) -> c | _ -> assert false in
   ( cid,
     fun axis ->
       if not (crease_carries ctx cv axis) then
-        Error.fail sp
+        Error.fail ~hint:"name it with as instead" sp
           (Printf.sprintf
-             "the material this scores lies on no segment of --%s; name it \
-              with as instead" n) )
+             "the material this scores lies on no segment of --%s" n) )
 
 (* Behaviour 3: the flap (coplanar cluster, as its face list) a partial
    mark's extent is written onto. An explicit layer wins; a point or a line
@@ -895,7 +890,7 @@ let resolve_mark_flap (ctx : Ctx.ctx) (layer_opt : Ast.flap_arg option)
       with
       | `Cluster fs -> fs
       | `Zero -> Error.fail fspan "those points aren't all on one flap"
-      | `Ambiguous -> Error.fail fspan "ambiguous flap; add another point")
+      | `Ambiguous -> Error.fail ~hint:"add another point" fspan "ambiguous flap")
   | None -> (
       match faces_containing ctx rep with
       | [] -> Error.fail span "the mark's extent is not on the paper"
@@ -906,10 +901,9 @@ let resolve_mark_flap (ctx : Ctx.ctx) (layer_opt : Ast.flap_arg option)
           match List.sort_uniq compare (List.map (fun f -> cl.(f)) faces) with
           | [ id ] -> List.filter (fun f -> cl.(f) = id) (List.init n Fun.id)
           | ids ->
-              Error.fail span
+              Error.fail ~hint:"name the flap with #[...]" span
                 (Printf.sprintf
-                   "the mark's endpoint lies on a crease shared by %d \
-                    flaps; name the flap with #[...]"
+                   "the mark's endpoint lies on a crease shared by %d flaps"
                    (List.length ids))))
 
 (* ---- placed folds ---- *)
@@ -938,8 +932,8 @@ let placed_fold_plan (ctx : Ctx.ctx) (axis : Geom.line) ~(anchor : Ast.flap_arg)
     if block.(fi) then piece (-move_side) fi else Fold_state.table_polygon_ccw st fi
   in
   if List.for_all (fun fi -> Array.length (stay_piece fi) < 3) target_cluster then
-    Error.fail span
-      "the placement target moves with the fold; name a stationary flap";
+    Error.fail ~hint:"name a stationary flap" span
+      "the placement target moves with the fold";
   (* landing footprint: the block's move-side pieces reflected across the axis *)
   let landing =
     List.filter_map

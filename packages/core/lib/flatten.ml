@@ -19,7 +19,9 @@ let e_infeasible = "vertex not flat-foldable toward that side"
 
 let e_toward_ambiguous =
   "`toward` does not pick a side — the point is collinear with a crease through \
-   the vertex; aim it off the creases"
+   the vertex"
+
+let e_toward_ambiguous_hint = "aim it off the creases"
 
 (* The +1-eigenvector direction of a reflection's linear part. A reflection
    fixing the origin is a symmetric orthogonal matrix (m01 = m10), so either

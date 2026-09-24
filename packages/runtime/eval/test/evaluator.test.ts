@@ -136,7 +136,9 @@ test("a rejected program is a diagnostic and leaves the document standing", () =
   backend.events().answer(
     JSON.stringify({ ok: false, message: "unknown point .z", line: 4 }),
   );
-  expect(told.diagnostics).toEqual([{ kind: "program", message: "unknown point .z", line: 4 }]);
+  expect(told.diagnostics).toEqual([
+    { kind: "program", message: "unknown point .z", hint: null, line: 4, span: null },
+  ]);
   expect(runtime.state.scene).toBe(before);
   expect(told.documents).toEqual([]);
 });
@@ -144,7 +146,34 @@ test("a rejected program is a diagnostic and leaves the document standing", () =
 test("a rejected program without a line is a diagnostic without one", () => {
   const { backend, told } = throughToDocument();
   backend.events().answer(JSON.stringify({ ok: false, message: "no paper declared" }));
-  expect(told.diagnostics).toEqual([{ kind: "program", message: "no paper declared", line: null }]);
+  expect(told.diagnostics).toEqual([
+    { kind: "program", message: "no paper declared", hint: null, line: null, span: null },
+  ]);
+});
+
+test("a rejected program carries its hint and the whole span it names", () => {
+  const { backend, told } = throughToDocument();
+  backend.events().answer(
+    JSON.stringify({
+      ok: false,
+      kind: "error",
+      message: "unknown line --dx",
+      hint: "in scope: --ab --bc",
+      line: 21,
+      column: 20,
+      endLine: 21,
+      endColumn: 24,
+    }),
+  );
+  expect(told.diagnostics).toEqual([
+    {
+      kind: "program",
+      message: "unknown line --dx",
+      hint: "in scope: --ab --bc",
+      line: 21,
+      span: { fromLine: 21, fromCol: 20, toLine: 21, toCol: 24 },
+    },
+  ]);
 });
 
 test("a program the browser fragment cannot evaluate says so on its own", () => {

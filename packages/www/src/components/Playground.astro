@@ -121,15 +121,10 @@ const codeLines = code ? code.split("\n").length : 0;
         {seed ? <Fragment set:html={seed} /> : <p class="pg-notice pg-notice-info">Press “Run” to evaluate.</p>}
       </div>
       <button type="button" class="pg-reset" hidden aria-label="Reset view" title="Reset view">
-        <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
-          <path
-            d="M8 3.5a4.5 4.5 0 1 0 4.24 3"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.6"
-            stroke-linecap="round"
-          />
-          <path d="M12.5 1.5 L12.5 5 L9 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+        {/* Unicons `focus`, the set Starlight's icons are drawn from: the
+            frame the drawing is fitted back into. */}
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+          <path d="M8,2H3A1,1,0,0,0,2,3V8A1,1,0,0,0,4,8V4H8A1,1,0,0,0,8,2ZM8,20H4V16a1,1,0,0,0-2,0v5a1,1,0,0,0,1,1H8a1,1,0,0,0,0-2ZM21,2H16a1,1,0,0,0,0,2h4V8a1,1,0,0,0,2,0V3A1,1,0,0,0,21,2Zm0,13a1,1,0,0,0-1,1v4H16a1,1,0,0,0,0,2h5a1,1,0,0,0,1-1V16A1,1,0,0,0,21,15Z" />
         </svg>
       </button>
       <aside class="pg-card" aria-label="Selection" hidden></aside>
@@ -615,6 +610,37 @@ const codeLines = code ? code.split("\n").length : 0;
     background: color-mix(in srgb, var(--bel-ui-code-error) 12%, transparent);
     box-shadow: inset 3px 0 0 var(--bel-ui-code-error);
   }
+  /* The rest of a failed run, in the code (ADR 0028). The word the evaluator
+     named is underlined; under its line stand a caret row with the message
+     and a quieter row with the hint, on the error line's own tint so the
+     three read as one block; the lines after it are dimmed, because the run
+     never reached them. */
+  .pg-source :global(.cm-error-word) {
+    text-decoration: underline wavy var(--bel-ui-code-error) 1px;
+    text-underline-offset: 3px;
+  }
+  .pg-source :global(.cm-error-detail) {
+    padding: 0 18px 2px;
+    white-space: pre-wrap;
+    background: color-mix(in srgb, var(--bel-ui-code-error) 12%, transparent);
+    box-shadow: inset 3px 0 0 var(--bel-ui-code-error);
+  }
+  .pg-source :global(.cm-error-caret) {
+    color: var(--bel-ui-code-text);
+    font-weight: 600;
+  }
+  .pg-source :global(.cm-error-hint) {
+    color: var(--bel-ui-code-gutter);
+  }
+  .pg-source :global(.cm-after-error) {
+    opacity: 0.45;
+  }
+  .pg-source :global(.cm-lineNumbers .cm-error-gutter) {
+    color: var(--bel-ui-code-error);
+  }
+  .pg-source :global(.cm-lineNumbers .cm-error-gutter)::before {
+    content: "✕ ";
+  }
 
   .pg-output {
     background: transparent;
@@ -948,6 +974,15 @@ const codeLines = code ? code.split("\n").length : 0;
     color: var(--bel-ui-text);
   }
   .pg-error[hidden] { display: none; }
+  /* Shown in the code already; the box stays for a screen reader. */
+  .pg-error.is-in-code {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
   .pg-error :global(.pg-error-where) {
     color: var(--bel-ui-error);
     font-weight: 600;
@@ -1095,7 +1130,8 @@ const codeLines = code ? code.split("\n").length : 0;
   import {
     stepMarkerExtensions,
     setStepLineOn,
-    setErrorLineOn,
+    setErrorOn,
+    type ErrorMark,
   } from "../lib/cm-step-marker";
   import {
     debugExtensions,
@@ -1466,6 +1502,13 @@ const codeLines = code ? code.split("\n").length : 0;
           editorTheme,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) updateRunButtonState();
+            // The editor dropped its marks for the failed run on this edit;
+            // the words a screen reader holds for them go with them.
+            if (update.docChanged && errorBox!.classList.contains("is-in-code")) {
+              errorBox!.hidden = true;
+              errorBox!.textContent = "";
+              errorBox!.classList.remove("is-in-code");
+            }
             if (update.selectionSet) highlightCreasesOnLine(update.state.doc.lineAt(update.state.selection.main.head).number);
           }),
         ],
@@ -2344,25 +2387,37 @@ const codeLines = code ? code.split("\n").length : 0;
 
     // A diagnostic goes beside the drawing, never in its place: the last valid
     // drawing is what the reader is holding the message against, and wiping it
-    // takes that away at the moment it is needed (B3.5). The line the
-    // evaluator named is marked in the editor at the same time.
+    // takes that away at the moment it is needed (B3.5). A program error with a
+    // line is shown in the code instead, under the line it names (ADR 0028);
+    // the box beside the drawing then only speaks it to a screen reader, since
+    // the editor's own rows are hidden from one.
     //
     // The alert region is written before it is shown, and hidden before it is
     // emptied. A screen reader announces whatever lands in a live region, so
     // emptying a visible one reads the clearing out as a message of its own.
-    const showDiagnostic = (message: string, where: string, line: number | null) => {
-      errorBox!.innerHTML = `<span class="pg-error-where">${escapeHtml(where)}</span>${escapeHtml(message)}`;
+    const showDiagnostic = (message: string, where: string, mark: ErrorMark | null) => {
+      const said = mark?.hint ? `${message}. ${mark.hint}` : message;
+      errorBox!.innerHTML = `<span class="pg-error-where">${escapeHtml(where)}</span>${escapeHtml(said)}`;
+      errorBox!.classList.toggle("is-in-code", mark !== null);
       errorBox!.hidden = false;
-      setErrorLineOn(editor, line);
+      setErrorOn(editor, mark);
     };
     const clearDiagnostic = () => {
       errorBox!.hidden = true;
       errorBox!.textContent = "";
-      setErrorLineOn(editor, null);
+      setErrorOn(editor, null);
     };
     const showInfo = (message: string) => showDiagnostic(message, "note", null);
-    const showError = (message: string, line: number | null = null) =>
-      showDiagnostic(message, line === null ? "error" : `line ${line}`, line);
+    const showError = (message: string) => showDiagnostic(message, "error", null);
+    const showProgramError = (d: Extract<Diagnostic, { kind: "program" }>) =>
+      d.line === null
+        ? showError(d.message)
+        : showDiagnostic(d.message, `line ${d.line}`, {
+            line: d.line,
+            span: d.span,
+            message: d.message,
+            hint: d.hint,
+          });
     // keepView leaves the current pan/zoom transform in place — the canvas
     // element (the transform target) survives innerHTML swaps, so stepping
     // through the timeline keeps the user's framing. A fresh run passes
@@ -2531,7 +2586,7 @@ const codeLines = code ? code.split("\n").length : 0;
     function sayDiagnostic(diagnostic: Diagnostic) {
       switch (diagnostic.kind) {
         case "program":
-          showError(diagnostic.message, diagnostic.line);
+          showProgramError(diagnostic);
           return;
         case "native":
           showInfo(

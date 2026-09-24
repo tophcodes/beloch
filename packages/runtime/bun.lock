@@ -14,12 +14,27 @@
     "core": {
       "name": "@beloch/runtime",
     },
+    "editor": {
+      "name": "@beloch/runtime-editor",
+    },
+    "eval": {
+      "name": "@beloch/runtime-eval",
+    },
+    "pick": {
+      "name": "@beloch/runtime-pick",
+    },
     "render-dom": {
       "name": "@beloch/runtime-render-dom",
     },
   },
   "packages": {
     "@beloch/runtime": ["@beloch/runtime@workspace:core"],
+
+    "@beloch/runtime-editor": ["@beloch/runtime-editor@workspace:editor"],
+
+    "@beloch/runtime-eval": ["@beloch/runtime-eval@workspace:eval"],
+
+    "@beloch/runtime-pick": ["@beloch/runtime-pick@workspace:pick"],
 
     "@beloch/runtime-render-dom": ["@beloch/runtime-render-dom@workspace:render-dom"],
 

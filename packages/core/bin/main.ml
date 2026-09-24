@@ -43,8 +43,8 @@ let eval_bel_file file =
       exit 1
   | src -> (
       try Beloch.fold_string ~filename:file src
-      with Error.Beloch_error (span, msg) ->
-        prerr_string (Diagnostic.render ~source:src ~span ~msg);
+      with Error.Beloch_error (span, msg, hint) ->
+        prerr_string (Diagnostic.render ~source:src ~span ~msg ~hint);
         exit 1)
 
 (* .bel -> FOLD JSON string, no temp file: piped straight into
@@ -146,8 +146,8 @@ let run_fold_watch file =
           let n = Session.last_ran session in
           Printf.eprintf "[watch] refolded %s (%d statement%s recomputed)\n%!" file n
             (if n = 1 then "" else "s")
-        with Error.Beloch_error (span, msg) ->
-          prerr_string (Diagnostic.render ~source:src ~span ~msg))
+        with Error.Beloch_error (span, msg, hint) ->
+          prerr_string (Diagnostic.render ~source:src ~span ~msg ~hint))
   in
   while true do
     (match (Unix.stat file).Unix.st_mtime with

@@ -64,9 +64,8 @@ let axis_item (verb : string) (cell : markable option ref) (it : raw_item) : boo
       (match mv with
       | MvFree -> ()
       | MvMountain | MvValley ->
-          Error.fail sp
-            "an axis item takes no mountain or valley; write (mountain) as its \
-             own item");
+          Error.fail ~hint:"write (mountain) as its own item" sp
+            "an axis item takes no mountain or valley");
       slot verb "axis" cell sp (MLine lo);
       true
   | _ -> false
@@ -128,7 +127,7 @@ let fold (items : raw_item list) (out : output) (span : Error.span) : stmt =
     items;
   (match (!place, !bottom, !up_to) with
   | Some _, Some sp, _ ->
-      Error.fail sp "a placed fold derives its direction; drop mountain"
+      Error.fail ~hint:"drop mountain" sp "a placed fold derives its direction"
   | Some _, None, Some (_, sp) ->
       Error.fail sp
         "a placed fold moves the anchor flap only; up to is not supported here"

@@ -710,7 +710,7 @@ let test_fold_scoped_parity () =
     Fold_state.select_scope g1 ~axis:ax2 ~move_side:(-1) ~valley:true
       ~anchor:top ~target:(Fold_state.TargetFace top)
   with
-  | Error e -> Alcotest.fail e
+  | Error (e, _) -> Alcotest.fail e
   | Ok moving ->
       let g = Fold_state.fold g1 ~axis:ax2 ~move_side:(-1) ~valley:true
           ~moving_parents:moving ~prov:None in
@@ -1217,7 +1217,7 @@ let test_select_scope_parity () =
   match Fold_state.select_scope g ~axis ~move_side:(-1) ~valley:true
       ~anchor:top ~target:(Fold_state.TargetFace top) with
   | Ok m -> Alcotest.(check (array bool)) "moving set" [| false; false; false; true |] m
-  | Error e -> Alcotest.failf "expected Ok, got: %s" e
+  | Error (e, _) -> Alcotest.failf "expected Ok, got: %s" e
 
 (* Plan 3c Task 1: TargetHinged select_scope (frontier BFS + predicate — the
    `up to <named crease>` machinery). Reuses test_select_scope_parity's
@@ -1268,12 +1268,12 @@ let test_select_scope_target_hinged_parity () =
   (match Fold_state.select_scope g ~axis ~move_side:(-1) ~valley:true
       ~anchor:top ~target:(Fold_state.TargetHinged pred) with
   | Ok m -> Alcotest.(check (array bool)) "moving set" [| true; true; true; true |] m
-  | Error e -> Alcotest.failf "expected Ok, got: %s" e);
+  | Error (e, _) -> Alcotest.failf "expected Ok, got: %s" e);
   (* error path: a predicate no face satisfies must exhaust the frontier *)
   let never _ = false in
   match Fold_state.select_scope g ~axis ~move_side:(-1) ~valley:true
       ~anchor:top ~target:(Fold_state.TargetHinged never) with
-  | Error e ->
+  | Error (e, _) ->
       let contains hay needle =
         let nh = String.length hay and nn = String.length needle in
         let rec go i = i + nn <= nh && (String.sub hay i nn = needle || go (i + 1)) in

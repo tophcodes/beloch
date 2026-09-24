@@ -251,7 +251,7 @@ defined when it is exactly one point ([def-meet](/model/#def-meet), ADR 0027):
   on cross beyond their marks or off the paper (exact point-in-polygon test;
   the boundary counts as on the paper);
 - **ambiguous**: two or more common points; the message lists them in paper
-  coordinates and suggests narrowing an operand with `&`;
+  coordinates, and the hint suggests narrowing an operand with `&`;
 - **overlap**: the operands share a stretch of paper (a segment) or lie on one
   boundary line.
 
@@ -413,24 +413,25 @@ overrides it, and is still required to break a straddle or to scope an
 - the two lines are the **same line** ("lines are identical");
 - intersecting, `toward` omitted, both surviving candidates land on the paper
   — ambiguous ("map --l1 onto --l2 is ambiguous: both bisectors land on the
-  paper; add `toward .p` to pick the direction");
+  paper", hint "add `toward .p` to pick the direction");
 - intersecting, `toward` omitted, no candidate lands on the paper ("map --l1
   onto --l2: neither bisector lands on the paper — no fold to make");
 - `toward .p` names a point **on `--l1`** ("`toward .p` lies on --l1; `toward`
-  names where the fold goes — pick a point off --l1");
+  names where the fold goes", hint "pick a point off --l1");
 - `toward` given, no candidate moves the swinging material that way ("no fold
   of --l1 onto --l2 moves its material toward .p"; with an explicit
   `(moving .c)` anchor, "no fold of --l1 onto --l2 moves .c toward .p");
 - the straddle case, both candidates viable ("map --l1 onto --l2 toward .p is
   ambiguous: --l1 straddles the crossing, so both bisectors move material
-  toward .p"), extended with a fix-it clause — "select the swinging segment
-  of --l1 with `&`" for a bind, "add `moving` to pick the swinging flap" for
-  a fold, or, when an explicit `moving` anchor still sits in both flaps,
-  "anchor with a point in only one flap";
+  toward .p"), with the hint "select the swinging segment of --l1 with `&`"
+  for a bind or "add `moving` to pick the swinging flap" for a fold; when an
+  explicit `moving` anchor still sits in both flaps, the message is "map --l1
+  onto --l2 toward .p is ambiguous even with `moving .c`: it lies in both
+  swinging flaps", hint "anchor with a point in only one flap";
 - a fold whose `--l1` has no material on the paper at all ("--l1 has no
   material on the paper to fold"), or (no `toward`, no explicit `moving`)
-  whose material straddles the axis ("--l1 straddles the fold line; add
-  `moving` to pick the swinging flap").
+  whose material straddles the axis ("--l1 straddles the fold line", hint
+  "add `moving` to pick the swinging flap").
 
 This is the first axiom whose result leaves ℚ — the bisector of two rational
 lines is generally irrational (slope `√2−1` for `y=0` and `y=x`). Results are
@@ -510,7 +511,7 @@ own (`examples/bases/bird-base.bel`).
 Errors: the lines/points being out of reach (`dist(p',D) > |p'p|`) raises *out of
 reach*; two surviving solutions without `toward` raises an ambiguity error
 naming the selector ("two folds place .p onto --d through .p', both landing on
-the paper; add 'toward .x'"); no surviving solution raises "map .p onto --d
+the paper", hint "add 'toward .x'"); no surviving solution raises "map .p onto --d
 through .p': no crease lands on the paper — no fold to make"; `.p` and `.p'`
 being the same point raises *no fold exists*. When `.p` already lies on `--d`,
 the identity landing is dropped and the mirror landing gives the crease.
@@ -560,7 +561,7 @@ remains a separate, unstarted pass.
   ill-defined; Beloch raises an error.
 - Two or more **surviving** solutions and **`toward` omitted** — ambiguous;
   Beloch raises an ambiguity error naming the selector ("N folds place .p onto
-  --d and .q onto --e, all landing on the paper; add 'toward .x'").
+  --d and .q onto --e, all landing on the paper", hint "add 'toward .x'").
 - **No surviving solution**: the cubic has real roots, and every one of them
   misses the paper ("map .p onto --d and .q onto --e: no crease lands on the
   paper — no fold to make"). Distinct from *out of reach*, where there is no
@@ -688,10 +689,10 @@ since folding a line onto another needs no material crossing.
 
 - a **point** — the flap carrying it. No flap contains it → error (`.p is not
   on the paper`); the point sits on a crease shared by several flaps → error
-  naming the count and pointing at `#[...]` (`.p lies on a crease shared by 2
-  flaps; name the flap with #[...]`).
+  naming the count, with a hint pointing at `#[...]` (`.p lies on a crease
+  shared by 2 flaps`, hint `name the flap with #[...]`).
 - a **line** — the flap hinged on it. Usually ambiguous, since a hinge has two
-  sides (`--d touches 2 flaps; add a point, e.g. #[.p]`); resolves only when
+  sides (`--d touches 2 flaps`, hint `add a point, e.g. #[.p]`); resolves only when
   exactly one flap touches it.
 - **`#[...]`** — explicit incidence constraints: the unique flap containing
   every listed point (`(moving #[.b .c])`), same resolution rule as `&`'s
@@ -755,8 +756,8 @@ order in the crease region**, counted from the outside — top for valley,
 bottom for mountain. A **buried anchor** — a stationary flap covering it in the
 crease region — is an error regardless of how the end state looks (its material
 would pierce the covering layer mid-rotation): "a simple fold cannot move a
-buried flap: face *N* covers the anchor in the crease region — include the
-covering flap (anchor the fold there) or fold less." The default scope is
+buried flap: face *N* covers the anchor in the crease region", hint "include
+the covering flap (anchor the fold there) or fold less". The default scope is
 itself an outer-contiguous prefix by construction (it grows outward from the
 anchor flap), so it satisfies the prefix rule; a genuine tear (the anchor
 flap hinged to a stationary layer off the axis) is caught by the same
@@ -811,7 +812,7 @@ Folds along a crease already on the paper (a bundle, §4.8) instead of
 re-stating the construction that produced it (§4.1–§4.5c). `moving` is **always
 required** — a material crease implies no side. Material resolution is per
 flap, as for any crease reference (§4.8): a crease **bent** under the moving
-set is an error ("the crease is bent under the moving flaps; select a
+set is an error ("the crease is bent under the moving flaps", hint "select a
 straight segment with `&` or move fewer flaps") — select a straight segment
 with `--d & ...` instead. `fold` (with no construction) composes with `up to` to
 crease every layer while folding only some — the motivating case, *crease
@@ -853,11 +854,12 @@ target resolves by incidence to a flap that must be stationary and must
 overlap the footprint the block lands on; of its overlapping faces
 the lowest-ranked anchors `under`, the highest-ranked `over`. The fold's
 direction is a consequence of the placement, never stated: `mountain` beside
-`over`/`under` is a parse error (`a placed fold derives its direction; drop
-mountain`), and so is `up to` (`a placed fold moves the anchor flap only; up
+`over`/`under` is a parse error (`a placed fold derives its direction`, hint
+`drop mountain`), and so is `up to` (`a placed fold moves the anchor flap only; up
 to is not supported here`).
 
-Errors: `the placement target moves with the fold; name a stationary flap`;
+Errors: `the placement target moves with the fold` (hint `name a stationary
+flap`);
 `` <T>'s flap does not cover where the moved material lands ``; `` placing
 the moved material under <T> would pierce layer <n> `` (`over` likewise).
 
@@ -901,8 +903,8 @@ in sequence: after one half moves, the spine joins a reflected face to an
 unreflected one along no common segment, so the two halves move together.
 
 Errors: `reverse needs a tip folded along one spine; the moving material
-does not split into two halves`; `the tip can be reversed at <n> spines;
-fold less so that one remains`; `the two halves are hinged to interleaved
+does not split into two halves`; `the tip can be reversed at <n> spines`
+(hint `fold less so that one remains`); `the two halves are hinged to interleaved
 layers; that is not a reverse fold`; `reversing the tip would pierce layer
 <n>`.
 
@@ -1085,31 +1087,31 @@ to an existing material crease at all (a joined selector like `.a * .b`, or a
 cross-crease union with no single crease to fold along) errors: *"collapse
 folds along existing creases; `<operand>` is not a material crease"* (the
 shipped message text predates the rename — an internal string, not a
-user-facing keyword; every error text quoted in this section is reproduced
-verbatim from the evaluator, several still say "collapse" for the same
+user-facing keyword; every message and hint quoted in this section is
+reproduced verbatim from the evaluator, several still say "collapse" for the same
 reason). `&` stays *required* only where distinct surviving combinations
 still contradict each other after every filter — the error then names the
-element and suggests it: `` <name> is ambiguous at the vertex; select a
-segment with `&` ``.
+element (`` <name> is ambiguous at the vertex ``) and its hint suggests it
+(`` select a segment with `&` ``).
 
 **Checks, roughly in evaluation order (see the note below on checks 12–14):**
 
-| # | check | shipped error text |
-|---|---|---|
-| 1 | element is not a material crease | `collapse folds along existing creases; <operand> is not a material crease` |
-| 2 | bare element resolves to zero material segments | `--<name> has no material segment` |
-| 3 | filtered/unioned element matches no segment | `` no segment of <expr> matches `` |
-| 4 | segments don't all share one strictly-interior common endpoint O | `no common interior vertex` |
-| 5 | (`staying` given) the flap's material doesn't touch the vertex fan | `the staying flap does not touch the vertex` |
-| 6 | a layer under the flatten region doesn't carry the attempted combination's crease on the same line (all-layers rule, below) | `collapse through unaligned layers` |
-| 7 | the ray count is even and below 4 | `` count (hint: use `fold` for n = 2) `` |
-| 8 | (odd ray count) no geometric completion closes the vertex at all, on either side | `vertex not flat-foldable toward that side` |
-| 9 | a segment's far endpoint is not on the paper boundary (would leave a degree-1 vertex mid-sheet) | `crease ends inside the sheet` |
-| 10 | two elements resolve to the same ray — the same direction from O | `duplicate ray in collapse` |
-| 11 | Kawasaki fails — the reflection composition around O does not close (exact) [[hull2020]](#ref-hull2020) ch. 5 | `vertex not flat-foldable (angles)` |
-| 12 | the leading two elements' folded rays are collinear and no `staying` is given — the convention has no side to anchor | `` collinear leading creases don't pick a stayer; add (staying <flap>) `` |
-| 13 | no realization keeps the stayer still — every candidate × Maekawa pattern died before a stacking closed | `no realization keeps the staying flap still` |
-| 14 | two different segment combinations (Resolution, above) both survive with valid realizations | `` <name> is ambiguous at the vertex; select a segment with `&` `` |
+| # | check | shipped message | shipped hint |
+|---|---|---|---|
+| 1 | element is not a material crease | `collapse folds along existing creases; <operand> is not a material crease` | |
+| 2 | bare element resolves to zero material segments | `--<name> has no material segment` | |
+| 3 | filtered/unioned element matches no segment | `` no segment of <expr> matches `` | |
+| 4 | segments don't all share one strictly-interior common endpoint O | `no common interior vertex` | |
+| 5 | (`staying` given) the flap's material doesn't touch the vertex fan | `the staying flap does not touch the vertex` | |
+| 6 | a layer under the flatten region doesn't carry the attempted combination's crease on the same line (all-layers rule, below) | `collapse through unaligned layers` | |
+| 7 | the ray count is even and below 4 | `count` | `` use `fold` for n = 2 `` |
+| 8 | (odd ray count) no geometric completion closes the vertex at all, on either side | `vertex not flat-foldable toward that side` | |
+| 9 | a segment's far endpoint is not on the paper boundary (would leave a degree-1 vertex mid-sheet) | `crease ends inside the sheet` | |
+| 10 | two elements resolve to the same ray — the same direction from O | `duplicate ray in collapse` | |
+| 11 | Kawasaki fails — the reflection composition around O does not close (exact) [[hull2020]](#ref-hull2020) ch. 5 | `vertex not flat-foldable (angles)` | |
+| 12 | the leading two elements' folded rays are collinear and no `staying` is given — the convention has no side to anchor | `` collinear leading creases don't pick a stayer `` | `add (staying <flap>)` |
+| 13 | no realization keeps the stayer still — every candidate × Maekawa pattern died before a stacking closed | `no realization keeps the staying flap still` | |
+| 14 | two different segment combinations (Resolution, above) both survive with valid realizations | `` <name> is ambiguous at the vertex `` | `` select a segment with `&` `` |
 
 Checks 7–11 run against a **candidate ray set** — the given rays, plus one
 emergent candidate when the count is odd (The pipeline, below) — and never
@@ -1197,8 +1199,8 @@ stack are a follow-up (Appendix B).
   parse error (`only one staying item per flatten`). A collinear leading
   pair (opposite rays of one line — both candidate arcs read as exactly
   180°) leaves the convention with no side to pick, so `staying` is then
-  required, not optional: `` collinear leading creases don't pick a stayer;
-  add (staying <flap>) ``.
+  required, not optional: `` collinear leading creases don't pick a
+  stayer `` (hint `` add (staying <flap>) ``).
 
 **The pipeline.** Kawasaki's Theorem [hull2020, §5.3, Thm 5.17] says a single
 interior vertex with consecutive sector angles `α₀ … α₂ₙ₋₁` is flat-foldable
@@ -1281,7 +1283,7 @@ the stayer (State construction, above).
      `` collapse folds a flap off the paper (no seating keeps it in the
      sheet) `` if any candidate failed that way; else whichever of
      `` collapse through unaligned layers ``, `` collinear leading creases
-     don't pick a stayer; add (staying <flap>) ``, or `` no realization
+     don't pick a stayer ``, or `` no realization
      keeps the staying flap still `` appears first in the failure pool
      (checks 6, 12, 13); else, odd count, `` the derived crease does not
      close the vertex ``; else (even count) the pool's own dominant
@@ -1302,7 +1304,8 @@ stage first needs it, and is required once any stage does:
    `(centroid(moved faces) − O) · (p − O)`. Two distinct classes tying on
    that dot product means `p` is collinear with a crease through O —
    genuinely can't pick a side:
-   `` `toward` does not pick a side — the point is collinear with a crease through the vertex; aim it off the creases ``.
+   `` `toward` does not pick a side — the point is collinear with a crease through the vertex ``,
+   hint `` aim it off the creases ``.
 2. **Min-mountain canon** (within the winning class): keep only the
    realizations with the fewest derived mountains among the **user-given**
    creases (a freshly-materialized emergent crease is never a given crease,
@@ -1320,7 +1323,8 @@ stage first needs it, and is required once any stage does:
 
 If `toward` is absent, only stage 2's canon runs (stages 1 and 3 both need
 a point); a surviving singleton folds, otherwise:
-`` flatten is ambiguous: <N> realizations; add (toward .p) to pick the fold direction ``,
+`` flatten is ambiguous: <N> realizations ``, hint
+`` add (toward .p) to pick the fold direction ``,
 `N` being the post-canon count. (`Collapse`'s own single-result contract,
 `` ambiguous stacking (<k> orders) ``, is the kernel-internal building block
 `collapse_all` wraps for a single distinct-signature dedup — unreachable from
@@ -1768,8 +1772,9 @@ frame 0 by default and a folded form with `--folded`.
 
 ## 8. Errors *(since v0.0)*
 
-Every error is a compile error with a source span; the first matching error wins
-and the process exits non-zero:
+Every error is a compile error with a source span, a message stating what is
+wrong and, where one helps, a hint stating what to write instead (ADR 0028);
+the first matching error wins and the process exits non-zero:
 
 - parse error;
 - axiom 1 or 2 whose two points are at the **same place** (coincident — which can
@@ -1790,7 +1795,8 @@ and the process exits non-zero:
   extent that would cross an already-folded (`M`/`V`) crease to reach its
   endpoint; a `between` extent dangling mid-face at **both** ends in different
   faces of the same flap (§4.6);
-- reference to an undefined point or crease name.
+- reference to an undefined point or crease name; the hint lists the names of
+  that kind in scope, sorted, at most twelve before an ellipsis.
 
 ---
 

@@ -130,10 +130,35 @@ type ctx = {
    pushed, so the length of the log is that statement's own index. *)
 let stmt_index (ctx : ctx) : int = List.length ctx.statements_rev
 
+(* The hint for an unknown name: every name of that kind visible from the
+   current scope, sorted, at most [in_scope_cap] of them before an ellipsis.
+   None when nothing of that kind is in scope. *)
+let in_scope_cap = 12
+
+let in_scope_hint (sigil : string) (names : string list) : string option =
+  match List.sort_uniq String.compare names with
+  | [] -> None
+  | names ->
+      let shown = List.filteri (fun i _ -> i < in_scope_cap) names in
+      let more = if List.length names > in_scope_cap then " …" else "" in
+      Some
+        ("in scope: "
+        ^ String.concat " " (List.map (fun n -> sigil ^ n) shown)
+        ^ more)
+
+let scope_names (tbl : scope -> (string, 'a) Hashtbl.t) (ctx : ctx) : string list =
+  List.concat_map
+    (fun s -> Hashtbl.fold (fun k _ acc -> k :: acc) (tbl s) [])
+    ctx.scopes
+
 let lookup_point (ctx : ctx) (pr : Ast.point_ref) : Geom.point =
   match List.find_map (fun s -> Hashtbl.find_opt s.points pr.Ast.name) ctx.scopes with
   | Some p -> p
-  | None   -> Error.fail pr.Ast.span (Printf.sprintf "undefined point .%s" pr.Ast.name)
+  | None ->
+      Error.fail
+        ?hint:(in_scope_hint "." (scope_names (fun s -> s.points) ctx))
+        pr.Ast.span
+        (Printf.sprintf "undefined point .%s" pr.Ast.name)
 
 let find_crease_by_name (ctx : ctx) (name : string) : crease_val option =
   List.find_map (fun s -> Hashtbl.find_opt s.lines name) ctx.scopes
@@ -153,7 +178,11 @@ let lookup_crease (ctx : ctx) (cr : Ast.crease_ref) : crease_val =
   | Some cv ->
       record_reference ctx cr.Ast.cspan cv;
       cv
-  | None -> Error.fail cr.Ast.cspan (Printf.sprintf "undefined crease --%s" cr.Ast.cname)
+  | None ->
+      Error.fail
+        ?hint:(in_scope_hint "--" (scope_names (fun s -> s.lines) ctx))
+        cr.Ast.cspan
+        (Printf.sprintf "undefined crease --%s" cr.Ast.cname)
 
 let lookup_instance (ctx : ctx) (name : string) (span : Error.span) : instance =
   match
@@ -177,7 +206,7 @@ let flap_lookup_result (span : Error.span)
   match r with
   | `Found v -> v
   | `Zero -> Error.fail span "those points aren't all on one flap"
-  | `Ambiguous -> Error.fail span "ambiguous flap; add another point"
+  | `Ambiguous -> Error.fail ~hint:"add another point" span "ambiguous flap"
 
 let bind_point (ctx : ctx) (name : string) (span : Error.span) (p : Geom.point)
     =
@@ -210,11 +239,13 @@ let bind_output (ctx : ctx) (name : string) ~(rebind : bool)
   if not (is_temp name) then begin
     let bound = Hashtbl.mem cur.lines name in
     if bound && not rebind then
-      Error.fail span
-        (Printf.sprintf "--%s is bound; write as --%s! to rebind" name name);
+      Error.fail
+        ~hint:(Printf.sprintf "write as --%s! to rebind" name)
+        span
+        (Printf.sprintf "--%s is bound" name);
     if rebind && not bound then
-      Error.fail span
-        (Printf.sprintf "nothing to rebind with --%s!; drop the !" name)
+      Error.fail ~hint:"drop the !" span
+        (Printf.sprintf "nothing to rebind with --%s!" name)
   end;
   (* The statement's own index, taken here rather than in the closure: the
      clause is read ahead of the write, so the write has not logged its entry

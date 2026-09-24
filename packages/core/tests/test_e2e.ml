@@ -38,7 +38,7 @@ let expect_error msg_substr thunk =
   try
     ignore (thunk ());
     Alcotest.fail ("expected error containing: " ^ msg_substr)
-  with Error.Beloch_error (_, m) ->
+  with Error.Beloch_error (_, m, _) ->
     Alcotest.(check bool)
       ("error mentions " ^ msg_substr)
       true
@@ -601,7 +601,7 @@ let[@warning "-32"] test_at_selects_bent_segment () =
   let q_axis src =
     let open Yojson.Safe.Util in
     match Beloch.fold_string ~filename:"t.bel" src with
-    | exception Error.Beloch_error (_, msg) ->
+    | exception Error.Beloch_error (_, msg, _) ->
         Alcotest.failf "at should resolve, got error: %s" msg
     | j -> j |> member "beloch:named_lines" |> member "q" |> member "coeffs" |> to_list
   in
@@ -624,7 +624,7 @@ let test_bundle_ops_equiv_at () =
   let q_axis src =
     let open Yojson.Safe.Util in
     match Beloch.fold_string ~filename:"t.bel" src with
-    | exception Error.Beloch_error (_, msg) ->
+    | exception Error.Beloch_error (_, msg, _) ->
         Alcotest.failf "should resolve, got error: %s" msg
     | j -> j |> member "beloch:named_lines" |> member "q" |> member "coeffs" |> to_list
   in
@@ -638,7 +638,7 @@ let test_bind_bundle_roundtrip () =
   let q_axis src =
     let open Yojson.Safe.Util in
     match Beloch.fold_string ~filename:"t.bel" src with
-    | exception Error.Beloch_error (_, msg) ->
+    | exception Error.Beloch_error (_, msg, _) ->
         Alcotest.failf "should resolve, got error: %s" msg
     | j -> j |> member "beloch:named_lines" |> member "q" |> member "coeffs" |> to_list
   in

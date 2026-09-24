@@ -174,7 +174,7 @@ let verify_block (preludes : (string * string) list) (b : block) : (unit, string
               match Eval.eval_folded (Beloch.parse ~filename:"BELOCH.md" program) with
               | (_ : Eval.folded) ->
                   Error (Printf.sprintf "expected an error containing %S, but eval succeeded" substr)
-              | exception Error.Beloch_error (_, msg) -> (
+              | exception Error.Beloch_error (_, msg, _) -> (
                   match Bel_assert.check_error_message ~expected:substr msg with
                   | () -> Ok ()
                   | exception Bel_assert.Harness_fail m -> Error m))
@@ -184,7 +184,7 @@ let verify_block (preludes : (string * string) list) (b : block) : (unit, string
                   match List.iter (fun (_, a) -> Bel_assert.check fd a) parsed with
                   | () -> Ok ()
                   | exception Bel_assert.Harness_fail msg -> Error msg)
-              | exception Error.Beloch_error (_, msg) ->
+              | exception Error.Beloch_error (_, msg, _) ->
                   Error (Printf.sprintf "unexpected evaluation error: %s" msg))))
 
 let check_ok label result =
@@ -291,7 +291,7 @@ let test_assertion_stripping_matches_bel_assert () =
 
 let test_failure_does_not_fold () =
   let b = { tag = Whole; body = "paper square\nfold (map .a onto .c) (moving .a) (over .b) (mountain)\n"; fence_line = 0 } in
-  check_error_containing "does-not-fold" "drop mountain" (verify_block [] b)
+  check_error_containing "does-not-fold" "derives its direction" (verify_block [] b)
 
 let test_failure_expect_error_succeeds () =
   let b =

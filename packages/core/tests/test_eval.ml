@@ -16,7 +16,7 @@ let expect_error msg_substr thunk =
   try
     ignore (thunk ());
     Alcotest.fail ("expected error containing: " ^ msg_substr)
-  with Error.Beloch_error (_, m) ->
+  with Error.Beloch_error (_, m, _) ->
     Alcotest.(check bool)
       ("error mentions " ^ msg_substr)
       true
@@ -24,6 +24,21 @@ let expect_error msg_substr thunk =
          ignore (Str.search_forward (Str.regexp_string msg_substr) m 0);
          true
        with Not_found -> false)
+
+(* an error whose message contains [msg_substr] and whose hint is [hint] *)
+let expect_error_hint msg_substr hint thunk =
+  try
+    ignore (thunk ());
+    Alcotest.fail ("expected error containing: " ^ msg_substr)
+  with Error.Beloch_error (_, m, h) ->
+    Alcotest.(check bool)
+      ("error mentions " ^ msg_substr)
+      true
+      (try
+         ignore (Str.search_forward (Str.regexp_string msg_substr) m 0);
+         true
+       with Not_found -> false);
+    Alcotest.(check (option string)) "hint" (Some hint) h
 
 let count_assign a (st : Fold_state.t) =
   let hs = Fold_state.hinges st in
@@ -331,7 +346,7 @@ let test_flatten_staying_accepted () =
 (* n = 2: two diagonals through the same center point, each named as a single
    `at`-selected segment — a real fold, not a flatten; hint toward @fold *)
 let test_flatten_count_two () =
-  expect_error "use `fold`" (fun () ->
+  expect_error_hint "count" "use `fold` for n = 2" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
@@ -652,7 +667,7 @@ let test_layer_all_examples_valid () =
       if not (skip_example f path) then
         match
           try `Ok (Beloch.fold_string ~filename:path (read_file path))
-          with Error.Beloch_error (_, m) -> `Err m
+          with Error.Beloch_error (_, m, _) -> `Err m
         with
         | `Err m -> Alcotest.failf "example %s failed to evaluate: %s" f m
         | `Ok _ -> ())
@@ -747,8 +762,38 @@ let eval_src src =
   Eval.eval_folded (Beloch.parse ~filename:"t.bel" ("paper square\n" ^ src))
 
 let test_eval_dup_crease_error () =
-  expect_error "--x is bound; write as --x! to rebind" (fun () ->
+  expect_error_hint "--x is bound" "write as --x! to rebind" (fun () ->
       eval_src "mark (through .a .b) as --x\nmark (through .a .c) as --x\n")
+
+(* an unknown name hints at the names of its kind in scope, sorted *)
+let test_eval_unknown_crease_in_scope () =
+  expect_error_hint "undefined crease --zz" "in scope: --ab --ac --bc --cd --da"
+    (fun () -> eval_src "mark (through .a .c) as --ac\nfold (--zz)\n")
+
+let test_eval_unknown_point_in_scope () =
+  expect_error_hint "undefined point .q" "in scope: .a .b .c .d" (fun () ->
+      eval_src "mark (through .q .a)\n")
+
+(* past twelve names the list stops at an ellipsis *)
+let test_eval_unknown_point_in_scope_capped () =
+  let binds =
+    String.concat ""
+      (List.init 10 (fun i -> Printf.sprintf ".e%d = --ac * --bd\n" i))
+  in
+  expect_error_hint "undefined point .q"
+    "in scope: .a .b .c .d .e0 .e1 .e2 .e3 .e4 .e5 .e6 .e7 …" (fun () ->
+      eval_src
+        ("mark (through .a .c) as --ac\nmark (through .b .d) as --bd\n" ^ binds
+       ^ "mark (through .q .a)\n"))
+
+(* a point on a crease shared by two flaps names no flap on its own *)
+let test_eval_shared_crease_hint () =
+  expect_error_hint "lies on a crease shared by 2 flaps"
+    "name the flap with #[...]" (fun () ->
+      eval_src
+        "fold (map .b onto .a) (moving .b) as --v\n\
+         .p = --v * --cd\n\
+         fold (map .c onto .a) (moving .c) (up to .p)\n")
 
 let test_eval_dup_point_error () =
   expect_error "already bound" (fun () ->
@@ -952,7 +997,7 @@ let test_eval_export_rename () =
    as a geometry-free frame bump, which no longer exists. *)
 
 let test_eval_export_collision_needs_bang () =
-  expect_error "use ! to shadow" (fun () ->
+  expect_error_hint "exists" "use ! to shadow" (fun () ->
       eval_src ("mark (through .a .b) as --l1\n" ^ def_d ^ "export { --l1 } $i\n"))
 
 let test_eval_export_bang_shadows () =
@@ -971,7 +1016,7 @@ let test_eval_export_unknown_member () =
       eval_src (def_d ^ "export { .ghost } $i\n"))
 
 let test_eval_export_all_collision () =
-  expect_error "use ! to shadow" (fun () ->
+  expect_error_hint "exists" "use ! to shadow" (fun () ->
       eval_src (def_d ^ "$j = apply d(.a .c .b)\nexport $i\nexport $j\n"))
 
 (* A temp landing name rebinds freely: no [!] needed and no collision even
@@ -1037,7 +1082,8 @@ let test_eval_up_to_range () =
 
 (* anchoring below a covering flap is a buried-anchor error *)
 let test_eval_buried_anchor () =
-  expect_error "cover" (fun () ->
+  expect_error_hint "a simple fold cannot move a buried flap"
+    "include the covering flap (anchor the fold there) or fold less" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
@@ -1204,7 +1250,8 @@ let test_ax5_bind_endpoint_directions () =
 (* bind, hinge at the sheet centre (two midlines crossing): both candidates
    swing material toward .b → E5-bind, hinting `at` *)
 let test_ax5_bind_center_ambiguous () =
-  expect_error "with `at`" (fun () ->
+  expect_error_hint "straddles the crossing"
+    "select the swinging segment of --v with `&`" (fun () ->
       eval_src
         "mark (map .a onto .b) as --v\n\
          mark (map .b onto .c) as --h\n\
@@ -1551,7 +1598,8 @@ let test_recognition_refusals () =
   expect_error "a construction over named fold lines is not evaluated yet"
     (fun () ->
       ignore (folded "paper square\nmark (align --f (.a onto .c)) as --z\n"));
-  expect_error "this construction determines one line; drop toward" (fun () ->
+  expect_error_hint "this construction determines one line" "drop toward"
+    (fun () ->
       ignore
         (folded
            "paper square\nmark (align (through .a) (through .c) toward .b)\n"))
@@ -1559,7 +1607,7 @@ let test_recognition_refusals () =
 (* ---- the output clause ---- *)
 
 let test_output_as_on_bound_name () =
-  expect_error "--f is bound; write as --f! to rebind" (fun () ->
+  expect_error_hint "--f is bound" "write as --f! to rebind" (fun () ->
       ignore
         (folded
            "paper square\n\
@@ -1567,7 +1615,7 @@ let test_output_as_on_bound_name () =
             mark (through .b .d) as --f\n"))
 
 let test_output_bang_on_free_name () =
-  expect_error "nothing to rebind with --f!; drop the !" (fun () ->
+  expect_error_hint "nothing to rebind with --f!" "drop the !" (fun () ->
       ignore (folded "paper square\nmark (through .a .c) as --f!\n"))
 
 let test_output_bang_rebinds () =
@@ -1604,13 +1652,13 @@ let test_output_into_a_paper_edge () =
       ignore (folded "paper square\nmark (through .a .b) into --ab\n"))
 
 let test_output_into_unbound () =
-  expect_error "--l is not bound; write as --l to name a new crease" (fun () ->
+  expect_error_hint "--l is not bound" "write as --l to name a new crease"
+    (fun () ->
       ignore (folded "paper square\nmark (through .a .c) into --l\n"))
 
 let test_output_into_off_the_crease () =
-  expect_error
-    "the material this scores lies on no segment of --d; name it with as \
-     instead" (fun () ->
+  expect_error_hint "the material this scores lies on no segment of --d"
+    "name it with as instead" (fun () ->
       ignore
         (folded
            "paper square\n\
@@ -1677,9 +1725,8 @@ let test_output_into_flatten_emergent () =
     (List.length named_spine)
 
 let test_output_into_flatten_off_the_line () =
-  expect_error
-    "the material this scores lies on no segment of --diag; name it with as \
-     instead" (fun () ->
+  expect_error_hint "the material this scores lies on no segment of --diag"
+    "name it with as instead" (fun () ->
       ignore
         (folded
            (ear_prelude
@@ -1688,8 +1735,8 @@ let test_output_into_flatten_off_the_line () =
 (* An even ray count closes the vertex on its own, so the flatten scores no
    new crease and `into` has nothing to add. *)
 let test_output_into_flatten_even () =
-  expect_error "flatten with an even ray count scores no new crease; drop into"
-    (fun () ->
+  expect_error_hint "flatten with an even ray count scores no new crease"
+    "drop into" (fun () ->
       ignore
         (folded
            "paper square\n\
@@ -1733,7 +1780,7 @@ let test_sort_error_at_the_name () =
     (try
        ignore (folded src);
        None
-     with Error.Beloch_error ((st, _), _) -> Some st)
+     with Error.Beloch_error ((st, _), _, _) -> Some st)
   with
   | None -> Alcotest.fail "expected a sort error"
   | Some st ->
@@ -1924,6 +1971,14 @@ let () =
             test_eval_export_unknown_member;
           Alcotest.test_case "export all collision" `Quick
             test_eval_export_all_collision;
+          Alcotest.test_case "unknown crease hints in scope" `Quick
+            test_eval_unknown_crease_in_scope;
+          Alcotest.test_case "unknown point hints in scope" `Quick
+            test_eval_unknown_point_in_scope;
+          Alcotest.test_case "in-scope hint is capped" `Quick
+            test_eval_unknown_point_in_scope_capped;
+          Alcotest.test_case "shared crease hints #[...]" `Quick
+            test_eval_shared_crease_hint;
           Alcotest.test_case "export temp target" `Quick
             test_eval_export_temp_target;
           Alcotest.test_case "up to = anchor: top flap only" `Quick

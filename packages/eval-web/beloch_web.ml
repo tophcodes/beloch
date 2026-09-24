@@ -7,10 +7,13 @@
       irrational (qqbar) value, which the js_of_ocaml build can't compute
       (see [qqbar_shim.js] and decisions/0013-flint-qqbar-backend.md) — the
       caller should fall back to the native evaluator.
-    - [{"ok":false,"kind":"error","message":...,"line":...,"column":...}] for a
-      Beloch_error (language/program error); [line] and [column] are the 1-based
-      start of the span the error carries, so the caller can mark the offending
-      line in its editor. An exception with no span omits both fields.
+    - [{"ok":false,"kind":"error","message":...,"hint":...,"line":...,"column":...,
+      "endLine":...,"endColumn":...}] for a Beloch_error (language/program
+      error). [line] and [column] are the 1-based start of the span the error
+      carries, [endLine] and [endColumn] the position one past its end, so the
+      caller can mark the offending word in its editor. [hint] is present when
+      the error suggests something to write instead (ADR 0028). An exception
+      with no span omits all position fields.
 
     Pure-rational programs (incl. the axiom-7 cube-root fragment) round-trip
     fully in-browser; only ops that force a [Qqbar.t] canonical form hit the
@@ -38,15 +41,17 @@ let fold_string_js (src : Js_of_ocaml.Js.js_string Js_of_ocaml.Js.t) :
     | Failure m when starts_with ~prefix:irrational_prefix m ->
         `Assoc
           [ ("ok", `Bool false); ("kind", `String "native"); ("message", `String m) ]
-    | Beloch.Error.Beloch_error ((start, _), m) ->
+    | Beloch.Error.Beloch_error ((start, stop), m, hint) ->
+        let col (p : Lexing.position) = p.pos_cnum - p.pos_bol + 1 in
         `Assoc
-          [
-            ("ok", `Bool false);
-            ("kind", `String "error");
-            ("message", `String m);
-            ("line", `Int start.Lexing.pos_lnum);
-            ("column", `Int (start.Lexing.pos_cnum - start.Lexing.pos_bol + 1));
-          ]
+          ([ ("ok", `Bool false); ("kind", `String "error"); ("message", `String m) ]
+          @ (match hint with Some h -> [ ("hint", `String h) ] | None -> [])
+          @ [
+              ("line", `Int start.Lexing.pos_lnum);
+              ("column", `Int (col start));
+              ("endLine", `Int stop.Lexing.pos_lnum);
+              ("endColumn", `Int (col stop));
+            ])
     | e ->
         `Assoc
           [

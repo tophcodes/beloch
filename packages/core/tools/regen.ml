@@ -28,7 +28,7 @@ let () =
            try
              Yojson.Safe.pretty_to_string
                (Beloch.fold_string ~filename:(Filename.basename name) src)
-           with Error.Beloch_error (_, msg) -> "ERROR: " ^ msg
+           with Error.Beloch_error (_, msg, _) -> "ERROR: " ^ msg
          in
          let path = out ^ Filename.chop_suffix name ".bel" ^ ".fold" in
          mkdir_p (Filename.dirname path);

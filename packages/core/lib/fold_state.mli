@@ -434,7 +434,7 @@ val select_scope :
   valley:bool ->
   anchor:int ->
   target:scope_target ->
-  (bool array, string) result
+  (bool array, string * string option) result
 (** Moving-set selection for a scoped ("up to") simple fold: the
     outer-contiguous prefix of layers over the crease region ending at the
     target — the static shadow of a collision-free 180° rotation
@@ -443,8 +443,8 @@ val select_scope :
     judged between those pieces (depth may vary along the crease). The
     moving set is closed under both the outer-prefix rule and cohesion (a
     candidate in the same coplanar cluster as a moving face must move too —
-    ADR 0017). Errors are user-facing messages; the caller attaches the
-    span. *)
+    ADR 0017). Errors are user-facing messages with an optional hint
+    (ADR 0028); the caller attaches the span. *)
 
 val default_scope :
   t ->

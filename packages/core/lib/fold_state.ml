@@ -905,8 +905,7 @@ let reverse_failure_to_string = function
       "reverse needs a tip folded along one spine; the moving material does \
        not split into two halves"
   | Several_spines n ->
-      Printf.sprintf
-        "the tip can be reversed at %d spines; fold less so that one remains" n
+      Printf.sprintf "the tip can be reversed at %d spines" n
   | Bodies_interleaved ->
       "the two halves are hinged to interleaved layers; that is not a reverse \
        fold"
@@ -1291,7 +1290,7 @@ type scope_target = TargetFace of int | TargetHinged of (int -> bool)
    directly. *)
 let select_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
     ~(valley : bool) ~(anchor : int) ~(target : scope_target) :
-    (bool array, string) result =
+    (bool array, string * string option) result =
   let n = Array.length g.faces in
   let cl = coplanar_clusters g in
   let tp = Array.init n (table_polygon g) in
@@ -1316,13 +1315,16 @@ let select_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
     overlap i j && rel_m i j = (if valley then Above else Below)
   in
   if not (cand anchor) then
-    Error "the moving flap has no material on the moving side of the fold axis"
+    Error
+      ("the moving flap has no material on the moving side of the fold axis", None)
   else
-    let find_targets () : (int list, string) result =
+    let find_targets () : (int list, string * string option) result =
       match target with
       | TargetFace t ->
           if not (cand t) then
-            Error "`up to`: the target flap is not on the moving side of the fold"
+            Error
+              ( "`up to`: the target flap is not on the moving side of the fold",
+                None )
           else Ok [ t ]
       | TargetHinged pred ->
           if pred anchor then Ok [ anchor ]
@@ -1347,8 +1349,9 @@ let select_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
                     result :=
                       Some
                         (Error
-                           "`up to`: no flap hinged on that crease is \
-                            reachable from the anchor over the crease region")
+                           ( "`up to`: no flap hinged on that crease is \
+                              reachable from the anchor over the crease region",
+                             None ))
                   else List.iter (fun gi -> visited.(gi) <- true) !frontier
               | hits -> result := Some (Ok hits)
             done;
@@ -1376,8 +1379,9 @@ let select_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
         done;
         if not inm.(anchor) then
           Error
-            "`up to`: the target is not reachable from the anchor over the \
-             crease region"
+            ( "`up to`: the target is not reachable from the anchor over the \
+               crease region",
+              None )
         else begin
           let buried = ref None in
           for m = 0 to n - 1 do
@@ -1387,10 +1391,11 @@ let select_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
           match !buried with
           | Some m ->
               Error
-                (Printf.sprintf
-                   "a simple fold cannot move a buried flap: face %d covers \
-                    the anchor in the crease region — include the covering \
-                    flap (anchor the fold there) or fold less" m)
+                ( Printf.sprintf
+                    "a simple fold cannot move a buried flap: face %d covers \
+                     the anchor in the crease region" m,
+                  Some "include the covering flap (anchor the fold there) or \
+                        fold less" )
           | None -> Ok inm
         end
 

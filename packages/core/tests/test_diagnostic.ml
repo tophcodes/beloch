@@ -18,7 +18,7 @@ let src = "line one\nline two\n--l = through .a .a\nline four\n"
 let test_basic () =
   (* underline "through .a .a" on line 3: cols 6..19 (0-based) => cnum 24..37 *)
   let span = (pos "f.bel" 3 18 24, pos "f.bel" 3 18 37) in
-  let out = Diagnostic.render ~source:src ~span ~msg:"lines are identical" in
+  let out = Diagnostic.render ~source:src ~span ~msg:"lines are identical" ~hint:None in
   Alcotest.(check bool) "header" true (contains out "error: lines are identical");
   Alcotest.(check bool) "location" true (contains out "--> f.bel:3:7");
   Alcotest.(check bool)
@@ -36,9 +36,24 @@ let test_basic () =
 let test_top_of_file () =
   (* error on line 1: no prior context, no crash *)
   let span = (pos "f.bel" 1 0 0, pos "f.bel" 1 0 4) in
-  let out = Diagnostic.render ~source:src ~span ~msg:"boom" in
+  let out = Diagnostic.render ~source:src ~span ~msg:"boom" ~hint:None in
   Alcotest.(check bool) "line 1 shown" true (contains out "1 | line one");
   Alcotest.(check bool) "header" true (contains out "error: boom")
+
+let test_hint () =
+  (* a hint is printed as a help line under the caret line; none, no line *)
+  let span = (pos "f.bel" 3 18 24, pos "f.bel" 3 18 37) in
+  let out =
+    Diagnostic.render ~source:src ~span ~msg:"lines are identical"
+      ~hint:(Some "name two distinct points")
+  in
+  Alcotest.(check bool) "help line" true
+    (contains out "= help: name two distinct points");
+  let caret_at = Str.search_forward (Str.regexp_string "^^^") out 0 in
+  let help_at = Str.search_forward (Str.regexp_string "= help:") out 0 in
+  Alcotest.(check bool) "help after caret" true (help_at > caret_at);
+  let bare = Diagnostic.render ~source:src ~span ~msg:"x" ~hint:None in
+  Alcotest.(check bool) "no help without hint" false (contains bare "help:")
 
 (* a real evaluator error carries a real span through fold_string; render it *)
 let test_integration () =
@@ -47,8 +62,8 @@ let test_integration () =
     try
       ignore (Beloch.fold_string ~filename:"t.bel" source);
       "NO ERROR"
-    with Error.Beloch_error (span, msg) ->
-      Diagnostic.render ~source ~span ~msg
+    with Error.Beloch_error (span, msg, hint) ->
+      Diagnostic.render ~source ~span ~msg ~hint
   in
   Alcotest.(check bool) "renders an error block" true (contains rendered "error:");
   Alcotest.(check bool)
@@ -65,6 +80,7 @@ let () =
         [
           Alcotest.test_case "basic block" `Quick test_basic;
           Alcotest.test_case "top of file" `Quick test_top_of_file;
+          Alcotest.test_case "hint as help line" `Quick test_hint;
           Alcotest.test_case "integration via fold_string" `Quick test_integration;
         ] );
     ]
