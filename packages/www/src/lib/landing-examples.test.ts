@@ -61,7 +61,7 @@ function stripProvenance(value: unknown): unknown {
 // text) is what lets the two files differ in comments while still guaranteeing
 // the display copy's statements stay identical in effect to the corpus's.
 test.each([
-  ["landing hero", HERO_SRC, "fish-base.bel"],
+  ["landing hero", HERO_SRC, "bird-base-petal.bel"],
   ["playground start", PLAYGROUND_SRC, "bird-base.bel"],
 ])("%s matches its corpus file semantically", (_name, src, corpus) => {
   const corpusSrc = readFileSync(join(repoRoot, "examples", "bases", corpus), "utf-8");

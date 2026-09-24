@@ -8,11 +8,9 @@
  *  evaluates to the same FOLD as its corpus file, so a display copy cannot
  *  drift from the corpus in anything but comments.
  *
- *  The two differ in length on purpose. The hero has to show its program and
- *  its drawing complete at 1280 by 800 with the drawing still holding half the
- *  width, which a program with ninety-character lines cannot do; the fish base
- *  is twelve short lines. The playground has an editor, the height for it and
- *  a reader who came to read, so it starts on the bird base. */
+ *  The playground starts on the bird base, and the hero goes one step further
+ *  and lifts its petals. The hero's copy keeps its lines short enough for its
+ *  narrower column, and wraps a statement where one would run past it. */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -27,7 +25,7 @@ const siteDir = process.env.BELOCH_REPO_ROOT
 
 const read = (name: string) => readFileSync(join(siteDir, "src", "lib", name), "utf-8");
 
-/** The landing hero's program: a display copy of examples/bases/fish-base.bel. */
+/** The landing hero's program: a display copy of examples/bases/bird-base-petal.bel. */
 export const HERO_SRC = read("landing-hero.bel");
 
 /** The playground's starting program: a display copy of examples/bases/bird-base.bel. */
