@@ -1,0 +1,8 @@
+; A fold through the midpoint of --ab bends it: its two pieces no longer lie on
+; one table line, so it cannot serve as an alignment operand.
+paper square
+.m = free on --ab from .a at 1/2
+fold (through .c .m) (moving .b)
+mark (map --ab onto --cd)
+
+; expect error "--ab is no longer straight after folding"

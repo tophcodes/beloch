@@ -51,6 +51,25 @@ let crease_of (ctx : Ctx.ctx) (cr : Ast.crease_ref) ~(slot : string)
         (Printf.sprintf "--%s is a line; %s needs a crease" cr.Ast.cname slot)
   | cv -> cv
 
+(* the table line of a crease or paper edge whose pieces [crease_axis] or
+   [edge_axis] classified; [bent_hint] names the narrowing the caller's
+   operand accepts *)
+let axis_or_fail ~(name : string) (span : Error.span) ~(bent_hint : string)
+    (l_orig : Geom.line) = function
+  | `Line l -> l
+  (* a crease that cut no face (e.g. lies on the paper boundary) has no
+     material pieces but is still flat at its original line — byte-stable
+     and lets reference-only boundary creases resolve *)
+  | `Empty -> l_orig
+  | `Collapsed ->
+      Error.fail span
+        (Printf.sprintf
+           "--%s has collapsed to a point under folding, so it no longer \
+            names a line" name)
+  | `Bent ->
+      Error.fail ~hint:bent_hint span
+        (Printf.sprintf "--%s is no longer straight after folding" name)
+
 let materialize_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (cv : crease_val) :
     Geom.line =
   match cv with
@@ -58,9 +77,14 @@ let materialize_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (cv 
       Error.fail ~hint:"restrict it to one segment with & or \\" span
         (Printf.sprintf "--%s is a bundle" name)
   | Edge (a, b) ->
-      let pa = Fold_state.table_position !(ctx.state) (corner_point a)
-      and pb = Fold_state.table_position !(ctx.state) (corner_point b) in
-      Geom.line_through pa pb
+      (* the edge's pieces, not its corners: folding can stack both corners
+         on one table point while the pieces still lie on one line *)
+      let line = Geom.line_through (corner_point a) (corner_point b) in
+      Fold_state.edge_axis !(ctx.state) line
+      |> axis_or_fail ~name span line
+           ~bent_hint:
+             (Printf.sprintf "narrow it to one piece with &, e.g. --%s & .p"
+                name)
   | Frozen l -> l
   | Mark (cid, line) -> (
       match Fold_state.mark_axis_current !(ctx.state) cid with
@@ -78,26 +102,13 @@ let materialize_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (cv 
                  name)
             span
             (Printf.sprintf "--%s is bent by a fold" name))
-  | Material (cid, l_orig) -> (
-      match Fold_state.crease_axis !(ctx.state) cid l_orig with
-      | `Line l -> l
-      (* a crease that cut no face (e.g. lies on the paper boundary) has no
-         material pieces but is still flat at its original line — byte-stable
-         and lets reference-only boundary creases resolve *)
-      | `Empty -> l_orig
-      | `Collapsed ->
-          Error.fail span
-            (Printf.sprintf
-               "--%s has collapsed to a point under folding, so it no longer \
-                names a line" name)
-      | `Bent ->
-          Error.fail
-            ~hint:
-              (Printf.sprintf
-                 "narrow it to one piece with &, e.g. --%s & .p or --%s & --ab"
-                 name name)
-            span
-            (Printf.sprintf "--%s is no longer straight after folding" name))
+  | Material (cid, l_orig) ->
+      Fold_state.crease_axis !(ctx.state) cid l_orig
+      |> axis_or_fail ~name span l_orig
+           ~bent_hint:
+             (Printf.sprintf
+                "narrow it to one piece with &, e.g. --%s & .p or --%s & --ab"
+                name name)
 
 (* a cross operand resolved to PAPER space: the one material line carrying
    the crease's marks, plus those marks' paper chords (None when the operand
