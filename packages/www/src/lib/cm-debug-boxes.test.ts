@@ -1,6 +1,8 @@
 import { test, expect, beforeAll } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
-import { EditorState } from "@codemirror/state";
+import { EditorState, RangeSetBuilder } from "@codemirror/state";
+import { Decoration, ViewPlugin } from "@codemirror/view";
+import type { DecorationSet } from "@codemirror/view";
 import { insertNewlineAndIndent } from "@codemirror/commands";
 import { EditorView } from "codemirror";
 import {
@@ -79,4 +81,37 @@ test("leaving the mode takes the boxes away and keeps them for the next time", (
   expect(view.dom.querySelector(".cm-debug-box")).toBeNull();
   setDebugModeOn(view, true);
   expect(view.dom.querySelectorAll(".cm-debug-box").length).toBe(2);
+});
+
+// The colouring is a view plugin that marks every token, and of two marks over
+// one range the later one wraps the other. A box that lost that race is cut
+// into one span per token and draws its border once per word, which is what
+// the reader sees. Asserted on the DOM, since nothing else shows it.
+const tokens = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
+    constructor() { this.decorations = this.build(); }
+    update() { this.decorations = this.build(); }
+    build() {
+      const b = new RangeSetBuilder<Decoration>();
+      b.add(0, 5, Decoration.mark({ class: "tok-a" }));
+      b.add(6, 13, Decoration.mark({ class: "tok-b" }));
+      return b.finish();
+    }
+  },
+  { decorations: (v) => v.decorations },
+);
+
+test("a box wraps the colouring rather than each token", () => {
+  const state = EditorState.create({
+    doc: "paper square\n",
+    extensions: [...debugExtensions(), tokens],
+  });
+  const parent = document.createElement("div");
+  document.body.appendChild(parent);
+  const view = new EditorView({ state, parent });
+  setDebugModeOn(view, true);
+  setDebugBoxesOn(view, [{ from: 0, to: 12, id: 0, on: false }]);
+  expect(view.dom.querySelectorAll(".cm-debug-box").length).toBe(1);
+  expect(view.dom.querySelector(".cm-debug-box")!.querySelectorAll(".tok-a, .tok-b").length).toBe(2);
 });

@@ -8,7 +8,7 @@
 // the clicks, and holds the mode.
 import { Decoration, EditorView } from "@codemirror/view";
 import type { DecorationSet } from "@codemirror/view";
-import { EditorState, StateEffect, StateField } from "@codemirror/state";
+import { EditorState, Prec, StateEffect, StateField } from "@codemirror/state";
 import type { Extension } from "@codemirror/state";
 
 // One box: a range of the document, the id the host knows it by, and whether
@@ -50,7 +50,11 @@ const debugField = StateField.define<DebugValue>({
     return { on, boxes, deco: decorationsFor(boxes, on, tr.state.doc.length) };
   },
   provide: (f) => [
-    EditorView.decorations.from(f, (v) => v.deco),
+    // Lowest precedence, which is what puts the box OUTSIDE the syntax
+    // colouring rather than inside each token: of two marks over one range,
+    // the one later in the decoration order wraps the other, and a box cut
+    // into one span per token draws its border once per word.
+    Prec.lowest(EditorView.decorations.from(f, (v) => v.deco)),
     // The mode is what makes the editor read-only, so leaving it gives the
     // text back without the host having to remember it did that.
     EditorState.readOnly.from(f, (v) => v.on),
