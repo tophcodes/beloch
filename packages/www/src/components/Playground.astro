@@ -132,8 +132,8 @@ const codeLines = code ? code.split("\n").length : 0;
           <path d="M12.5 1.5 L12.5 5 L9 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
+      <aside class="pg-card" aria-label="Selection" hidden></aside>
     </div>
-    <aside class="pg-inspect" hidden></aside>
     <div class="pg-error" role="alert" hidden></div>
     <div class="pg-steps" hidden>
       <div class="pg-step-timeline">
@@ -763,82 +763,88 @@ const codeLines = code ? code.split("\n").length : 0;
     display: none;
   }
 
-  /* Cursor-following tooltip (task 8): fixed positioning, left/top driven
-     from the pointer event each mousemove. `pointer-events: none` while
-     following — the tooltip sits right where the cursor is, so if it could
-     receive pointer events, hovering it would itself register as "leaving"
-     the crease underneath and flicker the tooltip shut. Anchoring re-enables
-     them (the close button + segment rows need clicks). */
-  /* The inspector is a rail under the drawing. It keeps one place, so it does
-     not move under the pointer as the answer changes, it covers no paper
-     (B3.11), and it stays where it is across a step change. Below the break
-     it is the same rail in the same place. */
-  .pg-inspect {
-    position: relative;
-    max-height: 40vh;
-    overflow: auto;
+  /* The selection card stands on the drawing at the place the reader clicked,
+     so the answer sits next to the line it is about. It is positioned in the
+     stage rather than in the canvas, which keeps it at reading size at every
+     zoom; the script moves it with the pan and the zoom. */
+  .pg-card {
+    position: absolute;
+    z-index: 5;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0 10px;
+    /* An absolute box shrinks to the room right of its anchor; the card
+       grows left as often as right, so it sizes to its content instead. */
+    width: max-content;
+    max-width: min(420px, 90%);
+    padding: 8px 8px 8px 12px;
     background: var(--bel-ui-surface);
-    border-top: 1px solid var(--bel-ui-divider);
-    padding: 10px 16px;
-    font: 12px/1.5 var(--bel-font-mono);
-    color: var(--bel-ui-text-muted);
+    border: 1px solid var(--bel-ui-divider);
+    border-radius: var(--bel-radius-card);
+    box-shadow: var(--bel-shadow-overlay);
+    font: 12.5px/1.45 var(--bel-font-mono);
+    font-variant-ligatures: none;
+    color: var(--bel-ui-text);
+    cursor: auto;
   }
-  .pg-inspect[hidden] {
+  .pg-card[hidden] {
     display: none;
-  }
-  /* The rail holds the height of an answer while it has none, so pointing at a
-     crease fills it instead of pushing the step bar down the card. */
-  .pg-inspect {
-    min-height: 62px;
-  }
-  .pg-inspect :global(.pg-inspect-rest) {
-    color: var(--bel-ui-text-faint);
   }
   /* These children are injected via innerHTML, so they never carry Astro's
      scope attribute — the rules MUST be :global (like .bel-hl / .bel-hit above),
      or they silently don't apply. */
-  .pg-inspect :global(h4) {
-    margin: 0 0 4px;
-    font-size: var(--bel-text-xs);
-    color: var(--bel-ui-text);
-    padding-right: 18px; /* room for the close button */
+  .pg-card :global(.pg-card-body) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
   }
-  .pg-inspect :global(.pg-inspect-sub) {
+  .pg-card :global(.pg-card-head) {
+    display: flex;
+    gap: 8px;
+    font-size: 11px;
     color: var(--bel-ui-text-muted);
-    margin-bottom: 4px;
   }
-  .pg-inspect :global(.pg-inspect-close) {
-    position: absolute;
-    top: 2px;
-    right: 4px;
-    z-index: 1;
-    appearance: none;
-    -webkit-appearance: none;
-    border: 0;
-    background: transparent;
-    box-shadow: none;
-    color: var(--bel-ui-text);
-    font: 18px/1 ui-sans-serif, system-ui, sans-serif;
-    cursor: pointer;
-    padding: 4px;
-    opacity: 0.5;
+  .pg-card :global(.pg-card-name) {
+    color: var(--bel-ui-accent);
   }
-  .pg-inspect :global(.pg-inspect-close:hover) {
-    opacity: 1;
+  .pg-card :global(.pg-card-text) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .pg-inspect :global(.pg-inspect-close:focus-visible) {
-    outline: 2px solid var(--bel-ui-accent);
+  .pg-card :global(.pg-card-close) {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--bel-ui-divider);
     border-radius: var(--bel-radius-control);
-  }
-  .pg-inspect :global(.seg) {
-    border-top: 1px solid var(--bel-ui-divider);
-    margin: 4px -12px 0;
-    padding: 5px 12px 4px;
+    background: var(--bel-ui-surface);
+    color: var(--bel-ui-text-muted);
+    font: inherit;
     cursor: pointer;
   }
-  .pg-inspect :global(.seg:hover) {
+  .pg-card :global(.pg-card-close:hover) {
+    border-color: var(--bel-ui-control-border);
+  }
+  .pg-card :global(.pg-card-close:focus-visible) {
+    outline: 2px solid var(--bel-ui-accent);
+    outline-offset: 1px;
+  }
+  /* The segments of a bundle, and the lines a pixel offers, as rows under the
+     answer: the stack picker lives in the card. */
+  .pg-card :global(.seg) {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--bel-ui-divider);
+    margin: 6px -8px 0 -12px;
+    padding: 5px 12px 0;
+    color: var(--bel-ui-text-muted);
+    cursor: pointer;
+  }
+  .pg-card :global(.seg:hover) {
     color: var(--bel-ui-text);
-    background: color-mix(in srgb, var(--bel-ui-text) 10%, transparent);
+    background: var(--bel-ui-quiet);
   }
 
   .pg-canvas :global(.pg-notice) {
@@ -1118,9 +1124,10 @@ const codeLines = code ? code.split("\n").length : 0;
     type View,
   } from "@beloch/runtime";
   import { SCHEMES, STORAGE_KEY, DEFAULT_ID, applyScheme, resolveScheme } from "../lib/paper-schemes";
-  import { lineOfSpan, lookupEntity, type EntityRef } from "../lib/inspect-lookup";
+  import { lookupEntity, type EntityRef } from "../lib/inspect-lookup";
   import { segMatchesLine } from "../lib/stack-picker";
   import { hoverSummary, segmentRows, edgeSegmentRows } from "../lib/tooltip-content";
+  import { cardContent, cardPlacement } from "../lib/selection-card";
   import { bundleElements } from "../lib/bundle-highlight";
   import {
     debugTargets,
@@ -1205,6 +1212,7 @@ const codeLines = code ? code.split("\n").length : 0;
     viewport: HTMLElement,
     target: HTMLElement,
     resetBtn: HTMLElement,
+    onMove: () => void,
   ) {
     const MIN = 0.2;
     const MAX = 8;
@@ -1227,6 +1235,7 @@ const codeLines = code ? code.split("\n").length : 0;
 
     function apply() {
       target.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+      onMove();
     }
     function reset() {
       scale = 1;
@@ -1344,7 +1353,7 @@ const codeLines = code ? code.split("\n").length : 0;
     const stepLabel = root.querySelector<HTMLSpanElement>(".pg-step-label");
     const stepPrev = root.querySelector<HTMLButtonElement>(".pg-step-prev");
     const stepNext = root.querySelector<HTMLButtonElement>(".pg-step-next");
-    const inspectPanel = root.querySelector<HTMLElement>(".pg-inspect");
+    const card = root.querySelector<HTMLElement>(".pg-card");
     const errorBox = root.querySelector<HTMLDivElement>(".pg-error");
     const debugBtn = root.querySelector<HTMLButtonElement>(".pg-debug");
     const exportToggle = root.querySelector<HTMLButtonElement>(".pg-export-toggle");
@@ -1353,9 +1362,10 @@ const codeLines = code ? code.split("\n").length : 0;
     // renderStep reaches for them through updateExportPanel and runs first.
     const exportSaid = exportPanel?.querySelector<HTMLParagraphElement>(".pg-export-said") ?? null;
     const exportStepLine = exportPanel?.querySelector<HTMLParagraphElement>(".pg-export-step") ?? null;
-    if (!sourceMount || !runBtn || !result || !canvas || !resetBtn || !runHint || !stepsBar || !stepDots || !stepLabel || !stepPrev || !stepNext || !inspectPanel || !errorBox || !exportToggle || !exportPanel || !debugBtn) return;
+    if (!sourceMount || !runBtn || !result || !canvas || !resetBtn || !runHint || !stepsBar || !stepDots || !stepLabel || !stepPrev || !stepNext || !card || !errorBox || !exportToggle || !exportPanel || !debugBtn) return;
 
-    const panZoom = createPanZoom(result, canvas, resetBtn);
+    const panZoom = createPanZoom(result, canvas, resetBtn, () => placeCard());
+    new ResizeObserver(() => placeCard()).observe(result);
     // A build-time `seed` SVG is already in the canvas; enable pan/zoom + the
     // reset affordance for it. The "Run drücken" notice is not pannable.
     {
@@ -1907,101 +1917,164 @@ const codeLines = code ? code.split("\n").length : 0;
       return name ? { kind: "edge", name } : null;
     };
 
-    // Renders `ref` into the tooltip, or hides it for null/an entity the
-    // current scene has no `inspect` data for (e.g. a scene evaluated
-    // before beloch:inspect was emitted, or a mark tick whose crease has no
-    // inspect entry). `anchored` selects the content: a crease's anchored
-    // view is the segment-row list (subsumes the Task 7 stack picker);
-    // everything else (hover preview, and face/vertex regardless of
-    // anchoring) is the lightweight one-line summary from hoverSummary.
-    // With nothing to answer, the rail says what it is for. It keeps its place
-    // either way: a rail that appeared and vanished under the pointer would
-    // move the step bar every time the reader crossed a crease.
-    function restInspect() {
-      inspectPanel!.innerHTML =
-        '<div class="pg-inspect-rest">Point at a crease, or press Enter on one, to see the statement that made it.</div>';
-      inspectPanel!.hidden = !currentScene();
+    // The card says what a click in the drawing settled, at the place that
+    // was clicked. `cardAnchor` is that place in the SVG's own user space, so
+    // it holds still on the paper while the stage pans and zooms, and
+    // `cardEntity` is what the card stands for: the one settled entity, or
+    // null while it offers the lines a pixel holds. Hovering lights the
+    // drawing and nothing more; a selection of several, which the debug mode
+    // makes, has the editor to show it and takes no card.
+    let cardAnchor: Vec2 | null = null;
+    let cardEntity: EntityRef | null = null;
+
+    function hideCard() {
+      card!.hidden = true;
+      card!.innerHTML = "";
+      cardAnchor = null;
+      cardEntity = null;
     }
 
-    function renderInspect(ref: EntityRef | null, anchored: boolean) {
+    function placeCard() {
+      if (card!.hidden || !cardAnchor) return;
+      const ctm = canvas!.querySelector("svg")?.getScreenCTM();
+      if (!ctm) return;
+      const at = new DOMPoint(cardAnchor[0], cardAnchor[1]).matrixTransform(ctm);
+      const box = result!.getBoundingClientRect();
+      const place = cardPlacement(at.x - box.left, at.y - box.top, box.width, box.height);
+      card!.style.left = place.left;
+      card!.style.top = place.top;
+      card!.style.transform = place.transform;
+    }
+
+    function showCard(html: string, anchor: Vec2) {
+      card!.innerHTML = html + `<button type="button" class="pg-card-close" aria-label="Clear selection">✕</button>`;
+      card!.hidden = false;
+      cardAnchor = anchor;
+      placeCard();
+    }
+
+    // The line of the program that made an entity: a crease by its span, a
+    // named value by the statement that binds it.
+    function lineOfEntity(scene: FoldScene, ref: EntityRef): number | null {
+      const line = sourceLineOf(scene, ref);
+      if (line !== null) return line;
+      return debugTargets(scene).find((t) => sameEntity(t.entity, ref))?.span?.fromLine ?? null;
+    }
+
+    // One segment is the whole bundle and needs no rows; several each get one,
+    // which is the stack picker.
+    function segmentRowsHtml(ref: EntityRef): string {
       const insp = currentScene()?.inspect;
-      if (!ref || !insp) {
-        restInspect();
+      if (!insp) return "";
+      const rows =
+        ref.kind === "crease" ? segmentRows(insp, ref.creaseId, inFoldedView())
+        : ref.kind === "edge" ? edgeSegmentRows(insp, ref.name)
+        : [];
+      if (rows.length < 2) return "";
+      const owner =
+        ref.kind === "crease" ? `data-pick-crease="${escapeHtml(ref.creaseId)}"`
+        : ref.kind === "edge" ? `data-pick-edge="${escapeHtml(ref.name)}"`
+        : "";
+      return rows
+        .map((r, n) => `<div class="seg" data-pick-seg="${r.index}" ${owner}>segment ${n + 1} · ${escapeHtml(r.assignment)}</div>`)
+        .join("");
+    }
+
+    function renderCard(ref: EntityRef, anchor: Vec2) {
+      const scene = currentScene();
+      const summary = scene?.inspect ? hoverSummary(ref, scene.inspect) : null;
+      if (!scene || !summary) {
+        hideCard();
         return;
       }
-      const closeBtn = anchored ? `<button type="button" class="pg-inspect-close" aria-label="Close">×</button>` : "";
-      let html: string;
-      if (ref.kind === "crease" && anchored) {
-        const c = insp.creases[ref.creaseId];
-        if (!c) {
-          restInspect();
-          return;
-        }
-        // Named -> its name; unnamed (an unbound fold's result) -> "unnamed
-        // line" plus the source line that constructed it, so the user can find
-        // and bind/assign it.
-        const title = c.name ? `--${c.name}` : "unnamed line";
-        const srcLine = c.name ? null : lineOfSpan(c.span);
-        const rows = segmentRows(insp, ref.creaseId, inFoldedView());
-        html =
-          closeBtn +
-          `<h4>${escapeHtml(title)}</h4>` +
-          `<div class="pg-inspect-sub">${srcLine ? `at line ${srcLine} · ` : ""}${rows.length} segment${rows.length === 1 ? "" : "s"}</div>` +
-          // One segment = the whole bundle; no per-segment picker needed.
-          (rows.length > 1
-            ? rows
-                .map(
-                  (r, n) =>
-                    `<div class="seg" data-pick-seg="${r.index}" data-pick-crease="${escapeHtml(ref.creaseId)}">` +
-                    `Segment ${n + 1} · ${escapeHtml(r.assignment)}</div>`,
-                )
-                .join("")
-            : "");
-      } else if (ref.kind === "edge" && anchored) {
-        // Anchored view for a paper-boundary edge bundle (task 9) — same
-        // subsuming-the-stack-picker idea as the crease branch above, but
-        // simpler: a boundary segment has one face (no l|r, no provenance
-        // axiom/sources — it's the sheet's edge, not a fold).
-        const e = insp.edges[ref.name];
-        if (!e) {
-          restInspect();
-          return;
-        }
-        const rows = edgeSegmentRows(insp, ref.name);
-        html =
-          closeBtn +
-          `<h4>${escapeHtml(`--${e.name}`)}</h4>` +
-          `<div class="pg-inspect-sub">${rows.length} segment${rows.length === 1 ? "" : "s"}</div>` +
-          (rows.length > 1
-            ? rows
-                .map(
-                  (r, n) =>
-                    `<div class="seg" data-pick-seg="${r.index}" data-pick-edge="${escapeHtml(ref.name)}">` +
-                    `Segment ${n + 1} · ${escapeHtml(r.assignment)}</div>`,
-                )
-                .join("")
-            : "");
-      } else {
-        const summary = hoverSummary(ref, insp);
-        if (!summary) {
-          restInspect();
-          return;
-        }
-        html =
-          closeBtn +
-          `<h4>${escapeHtml(summary.title)}</h4>` +
-          (summary.detail ? `<div>${escapeHtml(summary.detail)}</div>` : "");
+      const c = cardContent(summary, lineOfEntity(scene, ref), runState.answered ?? documentSource);
+      showCard(
+        `<div class="pg-card-body">` +
+          `<div class="pg-card-head"><span class="pg-card-name">${escapeHtml(c.name)}</span>` +
+          (c.line === null ? "" : `<span>line ${c.line}</span>`) +
+          `</div>` +
+          (c.text === null ? "" : `<div class="pg-card-text">${escapeHtml(c.text)}</div>`) +
+          `</div>`,
+        anchor,
+      );
+      card!.insertAdjacentHTML("beforeend", segmentRowsHtml(ref));
+      cardEntity = ref;
+    }
+
+    // After the drawing is redrawn the settled entity may stand elsewhere, as
+    // it does when a step folds the paper under it. The card moves to the
+    // point of that entity's lit drawing nearest to where it stood, and goes
+    // away while nothing of it is drawn; the selection stays either way.
+    function reanchorCard() {
+      if (card!.hidden || !cardAnchor) return;
+      if (cardEntity === null) {
+        placeCard();
+        return;
       }
-      inspectPanel!.innerHTML = html;
-      inspectPanel!.hidden = false;
+      const near = nearestLitPoint(cardAnchor);
+      if (!near) {
+        hideCard();
+        return;
+      }
+      cardAnchor = near;
+      placeCard();
+    }
+
+    function nearestLitPoint([px, py]: Vec2): Vec2 | null {
+      let best: Vec2 | null = null;
+      let bestD = Infinity;
+      canvas!.querySelectorAll<SVGGraphicsElement>(`.${HL_CLASS}`).forEach((el) => {
+        const p = nearestOn(el, px, py);
+        const d = Math.hypot(p[0] - px, p[1] - py);
+        if (d < bestD) {
+          bestD = d;
+          best = p;
+        }
+      });
+      return best;
+    }
+
+    // The point of a drawn element nearest to (px, py): the foot of the
+    // perpendicular on a line, the centre of anything else.
+    function nearestOn(el: SVGGraphicsElement, px: number, py: number): Vec2 {
+      if (el.tagName === "line") {
+        const ax = Number(el.getAttribute("x1")), ay = Number(el.getAttribute("y1"));
+        const bx = Number(el.getAttribute("x2")), by = Number(el.getAttribute("y2"));
+        const dx = bx - ax, dy = by - ay;
+        const len2 = dx * dx + dy * dy;
+        const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
+        return [ax + t * dx, ay + t * dy];
+      }
+      const b = el.getBBox();
+      return [b.x + b.width / 2, b.y + b.height / 2];
+    }
+
+    // Where a key press on a crease puts the card, having no pointer to go by.
+    function middleOf(el: SVGGraphicsElement): Vec2 {
+      if (el.tagName === "line") {
+        return [
+          (Number(el.getAttribute("x1")) + Number(el.getAttribute("x2"))) / 2,
+          (Number(el.getAttribute("y1")) + Number(el.getAttribute("y2"))) / 2,
+        ];
+      }
+      const b = el.getBBox();
+      return [b.x + b.width / 2, b.y + b.height / 2];
     }
 
     function closeAnchor() {
       pick.close();
+      hideCard();
       pin(null);
-      restInspect();
       setRefSpansOn(editor, []);
     }
+
+    // A selection the card no longer stands for takes the card with it: the
+    // debug mode adding a second value, or a run filling the slot anew.
+    runtime.subscribe(() => {
+      if (cardEntity === null) return;
+      const sel = runtime.state.selection;
+      if (sel.length !== 1 || !sameEntity(sel[0]!, cardEntity)) hideCard();
+    });
 
     // Distinct crease/edge entities whose line lies under a screen point.
     // Multiple lines (e.g. a construction crease and a paper edge) can project
@@ -2072,42 +2145,39 @@ const codeLines = code ? code.split("\n").length : 0;
       return out;
     };
 
-    // Anchor one entity's tooltip at (x,y): shared tail of a direct single
-    // click and a chooser-row pick.
-    const anchorEntity = (ref: EntityRef) => {
+    // Settle one entity and put the card at `anchor`: shared tail of a
+    // direct click, a key press on a crease and a pick from the lines a pixel
+    // offered.
+    const anchorEntity = (ref: EntityRef, anchor: Vec2) => {
       pick.close();
       pin(ref);
       markRefsFor([ref]);
-      renderInspect(ref, true);
+      renderCard(ref, anchor);
       const scene = currentScene();
       const ln = scene ? sourceLineOf(scene, ref) : null;
       // Mark the statement that built this entity.
       if (ln) setStepLineOn(editor, ln);
     };
 
-    // The coincident-line chooser: a materialized list of the overlapping
-    // entities. Clicking a row (inspectPanel listener) drills into that one via
-    // anchorEntity; hovering a row previews its bundle highlight.
-    // The coincident-line chooser content — shared by hover (anchored=false: a
-    // live preview that follows the cursor, so hover and click show the SAME
-    // "N Linien hier") and click (anchored=true: pinned, with an X and
-    // clickable rows to drill into one). Hovering a row previews its bundle.
-    const renderChoice = (ents: EntityRef[], anchored: boolean) => {
+    // The lines a pixel holds, offered as rows in the card at the click.
+    // Picking a row settles that one where the card stands; pointing at a row
+    // lights its bundle.
+    const renderChoice = (ents: EntityRef[], anchor: Vec2) => {
       const insp = currentScene()?.inspect;
       if (!insp) return;
-      const closeBtn = anchored
-        ? `<button type="button" class="pg-inspect-close" aria-label="Close">×</button>`
-        : "";
-      inspectPanel!.innerHTML =
-        closeBtn +
-        `<h4>${ents.length} lines here</h4>` +
+      showCard(
+        `<div class="pg-card-body"><div class="pg-card-head">${ents.length} lines here</div></div>`,
+        anchor,
+      );
+      card!.insertAdjacentHTML(
+        "beforeend",
         ents
           .map((r, i) => {
             const t = hoverSummary(r, insp)?.title ?? entityKey(r);
             return `<div class="seg" data-choice-idx="${i}">${escapeHtml(t)}</div>`;
           })
-          .join("");
-      inspectPanel!.hidden = false;
+          .join(""),
+      );
     };
 
     // The reverse direction of the click→line jump above: moving the
@@ -2120,39 +2190,38 @@ const codeLines = code ? code.split("\n").length : 0;
       lightEntities(canvas, scene, entitiesAtLine(scene, line));
     };
 
-    // Hover previews the entity under the cursor, following it with the
-    // tooltip and (for a crease) the whole-bundle highlight; anchored
-    // (pinned) suppresses this entirely. isDragging() (not wasDrag()) is
-    // the right guard here — it reflects whether a pan is happening RIGHT
-    // NOW, so hover resumes as soon as the drag actually ends rather than
-    // staying suppressed until the next pointerdown (see createPanZoom).
+    // Hover lights what is under the pointer and says nothing else; the card
+    // is for a click. A settled selection suppresses it entirely.
+    // isDragging() (not wasDrag()) is the right guard here — it reflects
+    // whether a pan is happening RIGHT NOW, so hover resumes as soon as the
+    // drag actually ends rather than staying suppressed until the next
+    // pointerdown (see createPanZoom).
     result.addEventListener("mousemove", (e: MouseEvent) => {
       if (pinned() || pick.state.open || panZoom.isDragging()) return;
+      if (card.contains(e.target as Node)) return;
       // Same proximity detection as the click, so hover and click agree.
       const outcome = pick.report(lineEntitiesAtPoint(e.clientX, e.clientY), "hover");
       if (outcome.kind === "several") {
-        // Preview the choice so hover already shows "N lines here" rather than
-        // one entity that then surprises with a chooser on click. The
-        // candidates are not a selection, so the drawing is lit from here.
+        // The candidates are not a selection, so the drawing is lit from here.
         hover(null);
         const scene = currentScene();
         if (scene) lightEntities(canvas, scene, outcome.candidates);
-        renderChoice(outcome.candidates, false);
         return;
       }
       hover(outcome.kind === "one" ? outcome.entity : resolveRef(e.target as Element));
-      renderInspect(runtime.state.hover, false);
     });
-    // A click anchors (materializes) the tooltip at the click position — it
-    // stops following the cursor and gains a close (X) button; only that X
-    // clears it now (see closeAnchor). Clicking empty paper (no entity under
-    // the cursor) is a no-op rather than clearing an existing anchor — the
-    // old "background click unpins" behavior is replaced by X-to-close.
+    // A click settles what is under it and puts the card where it landed;
+    // only the card's close button clears it (see closeAnchor). Clicking empty
+    // paper (no entity under the cursor) is a no-op rather than clearing an
+    // existing answer.
     // Pan gestures must not register as a click here — wasDrag() is only
     // true after the pointer actually moved past the pan threshold during
     // this press.
     result.addEventListener("click", (e: MouseEvent) => {
       if (panZoom.wasDrag()) return;
+      if (card.contains(e.target as Node)) return;
+      const at = svgLocalPoint(e.clientX, e.clientY);
+      if (!at) return;
       // Multiple distinct lines stacked at the click → anchor the chooser
       // (same content the hover was already previewing). The module clears the
       // selection for it: the reader has been asked and has not answered.
@@ -2162,12 +2231,12 @@ const codeLines = code ? code.split("\n").length : 0;
         const scene = currentScene();
         if (scene) lightEntities(canvas, scene, outcome.candidates);
         markRefsFor(outcome.candidates);
-        renderChoice(outcome.candidates, true);
+        renderChoice(outcome.candidates, at);
         return;
       }
       const ref = outcome.kind === "one" ? outcome.entity : resolveRef(e.target as Element);
       if (!ref) return;
-      anchorEntity(ref);
+      anchorEntity(ref, at);
     });
 
     // Picking a segment row (anchored crease view only) highlights the SVG
@@ -2227,9 +2296,11 @@ const codeLines = code ? code.split("\n").length : 0;
       // Picked an occluded segment (no rendered line) → ghost it so it shows.
       if (!matched) ghostSegment(p0[0], p0[1], p1[0], p1[1]);
     };
-    inspectPanel.addEventListener("click", (e: MouseEvent) => {
+    // The card sits inside the stage, so a press on it must not start a pan.
+    card.addEventListener("pointerdown", (e: PointerEvent) => e.stopPropagation());
+    card.addEventListener("click", (e: MouseEvent) => {
       const target = e.target as Element;
-      if (target.closest(".pg-inspect-close")) {
+      if (target.closest(".pg-card-close")) {
         e.stopPropagation();
         closeAnchor();
         return;
@@ -2238,8 +2309,9 @@ const codeLines = code ? code.split("\n").length : 0;
       const choice = target.closest<HTMLElement>("[data-choice-idx]");
       if (choice) {
         e.stopPropagation();
+        const at = cardAnchor;
         const ref = pick.choose(Number(choice.dataset.choiceIdx));
-        if (ref) anchorEntity(ref);
+        if (ref && at) anchorEntity(ref, at);
         return;
       }
       const row = target.closest<HTMLElement>("[data-pick-seg]");
@@ -2247,7 +2319,7 @@ const codeLines = code ? code.split("\n").length : 0;
       e.stopPropagation();
       pickSegment(row);
     });
-    inspectPanel.addEventListener("mouseover", (e: MouseEvent) => {
+    card.addEventListener("mouseover", (e: MouseEvent) => {
       const target = e.target as Element;
       const row = target.closest<HTMLElement>("[data-pick-seg]");
       if (row) {
@@ -2314,9 +2386,8 @@ const codeLines = code ? code.split("\n").length : 0;
       relight(fade);
       makeCreasesReachable();
       reapplyChoiceHl();
-      // A drawing on the stage means the rail has something to stand for. A
-      // pinned answer survives a step change, so the rail keeps it.
-      if (!pinned() && !pick.state.open) restInspect();
+      // A settled answer survives a step change, and its card follows it.
+      reanchorCard();
       if (!keepView) panZoom.reset();
       panZoom.setEnabled(true);
       resetBtn.hidden = false;
@@ -2352,8 +2423,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // hover and any open choice with it, and the modules watch the slot
     // themselves.
     function clearStepsUI() {
-      inspectPanel!.hidden = true;
-      inspectPanel!.textContent = "";
+      hideCard();
       clearHighlight(canvas!);
       setRefSpansOn(editor, []);
       stepsBar!.hidden = true;
@@ -2759,7 +2829,7 @@ const codeLines = code ? code.split("\n").length : 0;
       }
       if (e.key === "Enter" || e.key === " ") {
         const ref = resolveRef(el);
-        if (ref) anchorEntity(ref);
+        if (ref) anchorEntity(ref, middleOf(el as SVGGraphicsElement));
         e.preventDefault();
         return;
       }

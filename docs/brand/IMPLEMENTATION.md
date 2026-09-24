@@ -268,6 +268,29 @@ Two questions the mode raised, and their answers:
 - **The mode is reached from the toolbar and from a key**, so it is findable by
   a reader who has never seen it and cheap for one who uses it all day.
 
+## The selection card
+
+A click in the drawing answers on the drawing. A card stands at the place the
+reader clicked and names what was settled, the line of the program that made
+it, and that line as the run answered it. The rail under the drawing it
+replaces sat a hand's width away from the line it was about and cost the stage
+its height whether or not anything was selected.
+
+- **The stack picker lives in the card.** A bundle of several segments lists
+  them as rows under the answer, and so do the lines a pixel holds when the
+  click could mean more than one of them.
+- **The card stands where the click landed.** A bundle has several segments
+  and a pixel can hold several lines, so the click is the only point that is
+  unambiguous. A key press on a crease has no click to go by and takes the
+  middle of the line. The card holds its place on the paper through a pan and
+  a zoom, and follows its entity to the nearest drawn point of it when a step
+  moves the paper.
+- **Hovering lights the drawing and nothing else.** A card that appeared and
+  vanished under the pointer would cover the lines the reader is moving
+  across.
+- **A selection of several takes no card.** The debug mode makes one, and the
+  boxes in the editor already say what it holds.
+
 ## The viewer pass
 
 `viewer-brief.md` put seven decisions to the design. The answer came back as
@@ -283,7 +306,7 @@ it has no editor and checking flat-foldability is a comparison.
 | 1 | Crease pattern and folded state | Tab pair in the playground, side by side in the docs card |
 | 2 | A line-style switch | Yes, beside the paper choice; a paper that cannot hold the coloured style switches that button off and says why in its title |
 | 3 | Export and sharing | The drawing as SVG to a file or the clipboard, and a link carrying the program and the step |
-| 4 | The inspector | A rail under the drawing, holding its place across a step change |
+| 4 | The inspector | A rail under the drawing, holding its place across a step change; since replaced by the selection card |
 | 5 | The landing hero | Its own job: a program and its drawing, and nothing to operate; the playground moved back to `/playground/` |
 | 6 | `--bel-ui-border` as two roles | `--bel-ui-divider` and `--bel-ui-control-border` |
 | 7 | Whether `--bel-ui-text-faint` stays | It stays, as the text of a switched-off control |

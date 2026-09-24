@@ -355,15 +355,11 @@ Phase 1 is done: the interface neutrals are warm in the token layer, with the
 contrast of each role recorded beside it. Two roles were added that the design
 needs, `--bel-ui-ground` and `--bel-ui-quiet`.
 
-What the brief still asks for, in the order to build it:
+Phases 2 and 3 are built and recorded in `docs/brand/IMPLEMENTATION.md`: the
+bars of the card, and the selection card with the stack picker in it. The step
+marker there marks one line, which the editor's debug mode made the right
+answer. What the brief still asks for:
 
-2. The card and its bars. A toolbar with two menus (view: paper, colour
-   against mono, hidden lines; export: SVG), a segmented control for crease
-   pattern against folded, the stepper moved under the stage with the current
-   statement's text beside it, and the step's block marked inside the code with
-   an inset bar.
-3. The selection card at the crease's midpoint, carrying the stack picker's
-   segment rows, in place of the inspector rail.
 4. The failed run shown in the code: a wavy underline under the word, a caret
    row with the message, a hint row, and the rest of the program dimmed.
 
