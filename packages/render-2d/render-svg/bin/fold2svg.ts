@@ -37,6 +37,16 @@ const widthFlag = flagVal("--width"); // PNG output width in px; default = doc w
 const FLAGS = new Set([
   "--title", "--view", "--hidden", "--labels", "--step", "--format", "--width",
 ]);
+const SWITCHES = new Set(["--flip", "--legend"]);
+// An option this CLI does not know would otherwise read as a positional, and
+// `-o out.svg` would write a file named `-o`. `-` alone is stdin.
+const unknown = args.find(
+  (a, i) => a.startsWith("-") && a !== "-" && !FLAGS.has(a) && !SWITCHES.has(a) && !FLAGS.has(args[i - 1]!),
+);
+if (unknown !== undefined) {
+  process.stderr.write(`beloch-render: unknown option '${unknown}'\n`);
+  process.exit(1);
+}
 const positional = args.filter((a, i) => !a.startsWith("--") && !FLAGS.has(args[i - 1]!));
 const [inPath, outPath] = positional;
 const format = formatFlag ?? (outPath?.endsWith(".png") ? "png" : "svg");

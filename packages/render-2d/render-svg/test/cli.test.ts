@@ -37,6 +37,15 @@ test("CLI: unknown --view value exits 1 with a plain error", async () => {
   expect(err).toContain("unknown --view value 'top' — expected cp or folded");
 });
 
+test("CLI: an unknown option exits 1 and writes no file", async () => {
+  const dir = await Bun.$`mktemp -d`.text();
+  const p = Bun.spawn(["bun", CLI, FIX, "-o", "out.svg"], { cwd: dir.trim(), stderr: "pipe" });
+  const err = await new Response(p.stderr).text();
+  expect(await p.exited).toBe(1);
+  expect(err).toContain("unknown option '-o'");
+  expect(await Bun.file(`${dir.trim()}/-o`).exists()).toBe(false);
+});
+
 test("CLI: stdin input", async () => {
   const p = Bun.spawn(["bun", CLI, "-"], { stdin: Bun.file(FIX) });
   const out = await new Response(p.stdout).text();
