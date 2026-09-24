@@ -16,7 +16,7 @@ interface Props {
   code?: string;
   height?: number;
   // Build-time-rendered SVG markup shown in `.pg-result` before any live
-  // evaluation has run (e.g. a static hero fold rendered via evalBelToFold,
+  // evaluation has run (e.g. a static fold rendered via evalBelToFold,
   // the same build-time path `<Beloch>` uses). Optional — default behavior
   // (the "Run drücken" notice) is unchanged when absent.
   seed?: string;
@@ -29,13 +29,8 @@ interface Props {
   // pulls) until the user actually clicks Run, instead of on mount. Optional
   // — default is today's eager boot.
   lazy?: boolean;
-  // "hero" is the landing's card: the program and the drawing, and nothing to
-  // operate. No run button, no step rail, no paper choice, no export, and the
-  // source is read-only. A visitor who wants to change something goes to the
-  // playground, which is the one surface with an editor.
-  variant?: "full" | "hero";
 }
-const { code = "", height = 320, seed, seedFold, lazy = false, variant = "full" } = Astro.props;
+const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
 
 // The program, coloured at build time by the same grammar the editor will use
 // (lib/highlight-bel.ts). It stands in the pane until the editor's parser has
@@ -46,10 +41,9 @@ const codeLines = code ? code.split("\n").length : 0;
 ---
 
 <div
-  class={`beloch-playground${variant === "hero" ? " is-hero" : ""}`}
+  class="beloch-playground"
   style={`--pg-height:${height}px`}
   data-lazy={lazy ? "true" : "false"}
-  data-variant={variant}
 >
   <div class="pg-pane pg-editor">
     <button type="button" class="pg-run" aria-label="Run" title="Run">
@@ -184,56 +178,6 @@ const codeLines = code ? code.split("\n").length : 0;
     .beloch-playground { grid-template-columns: 1fr; }
     .pg-output { order: 1; }
     .pg-editor { order: 2; }
-  }
-
-  /* The hero: program and drawing, and nothing to operate. It carries no card
-     edge, because on the landing the page is its frame. Every token it uses
-     the docs already have (8.1 of the conditions). */
-  .beloch-playground.is-hero {
-    /* Wide enough that the hero's program needs no horizontal scrollbar, and
-       still the smaller of the two columns, so the drawing leads. */
-    grid-template-columns: minmax(0, 460px) minmax(0, 1fr);
-    gap: 40px;
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    overflow: visible;
-  }
-  .is-hero .pg-editor {
-    border-right: none;
-    border-radius: var(--bel-radius-card);
-    overflow: hidden;
-    align-self: center;
-  }
-  .is-hero .pg-toolbar,
-  .is-hero .pg-run,
-  .is-hero .pg-debug,
-  .is-hero .pg-run-hint,
-  .is-hero .pg-steps,
-  .is-hero .pg-inspect,
-  .is-hero .pg-error,
-  .is-hero .pg-reset,
-  .is-hero .pg-menu-panel {
-    display: none;
-  }
-  /* The hero's row is sized by its two panes, so the drawing needs a height to
-     fit into rather than a floor to grow from. The SVG's own `max-height:100%`
-     resolves to nothing against a parent whose height is its content, so
-     without a definite height up the chain the drawing draws at natural size
-     and runs off the page. */
-  .is-hero .pg-output {
-    height: var(--pg-height, 320px);
-  }
-  .is-hero .pg-result {
-    min-height: 0;
-    cursor: default;
-  }
-  @media (max-width: 720px) {
-    .beloch-playground.is-hero {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 24px;
-    }
-    .is-hero .pg-editor { border-top: none; }
   }
 
   .pg-pane {
@@ -1441,10 +1385,6 @@ const codeLines = code ? code.split("\n").length : 0;
     // Run — focusing or editing the code must not, on its own, kick off a run
     // or pull in the wasm module.
     const lazy = root.dataset.lazy === "true";
-    // The hero shows a program and its drawing and offers nothing to operate:
-    // the controls are hidden, so the behaviour behind them is not wired up
-    // either, and the source is read-only.
-    const hero = root.dataset.variant === "hero";
 
     // Debug mode's state. It stands here because the run button's own update
     // reads it, and that runs while the editor is being built.
@@ -1492,7 +1432,6 @@ const codeLines = code ? code.split("\n").length : 0;
           ...refMarkExtensions,
           basicSetup,
           ...(highlighter ? [belHighlighting(highlighter)] : []),
-          EditorView.editable.of(!hero),
           // Above basicSetup, which binds Mod-Enter to insertBlankLine in
           // CodeMirror's default keymap. Precedence goes by position in this
           // list, so a binding added after it never fires.
@@ -1872,14 +1811,12 @@ const codeLines = code ? code.split("\n").length : 0;
       updateDebugButton();
     }
 
-    if (!hero) {
-      debugBtn.addEventListener("click", () => setDebugOn(!debugIsOn(editor.state)));
-      // A selection settled in the drawing lights its box too, so the two
-      // sides show one answer.
-      runtime.subscribe(() => {
-        if (debugIsOn(editor.state)) refreshDebugBoxes();
-      });
-    }
+    debugBtn.addEventListener("click", () => setDebugOn(!debugIsOn(editor.state)));
+    // A selection settled in the drawing lights its box too, so the two
+    // sides show one answer.
+    runtime.subscribe(() => {
+      if (debugIsOn(editor.state)) refreshDebugBoxes();
+    });
 
     // A scene with statements has a timeline, and every step of it goes
     // through the occlusion pipeline, step 0's flat sheet included. A scene
@@ -2189,7 +2126,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // the right guard here — it reflects whether a pan is happening RIGHT
     // NOW, so hover resumes as soon as the drag actually ends rather than
     // staying suppressed until the next pointerdown (see createPanZoom).
-    if (!hero) result.addEventListener("mousemove", (e: MouseEvent) => {
+    result.addEventListener("mousemove", (e: MouseEvent) => {
       if (pinned() || pick.state.open || panZoom.isDragging()) return;
       // Same proximity detection as the click, so hover and click agree.
       const outcome = pick.report(lineEntitiesAtPoint(e.clientX, e.clientY), "hover");
@@ -2214,7 +2151,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // Pan gestures must not register as a click here — wasDrag() is only
     // true after the pointer actually moved past the pan threshold during
     // this press.
-    if (!hero) result.addEventListener("click", (e: MouseEvent) => {
+    result.addEventListener("click", (e: MouseEvent) => {
       if (panZoom.wasDrag()) return;
       // Multiple distinct lines stacked at the click → anchor the chooser
       // (same content the hover was already previewing). The module clears the
@@ -2379,7 +2316,7 @@ const codeLines = code ? code.split("\n").length : 0;
       reapplyChoiceHl();
       // A drawing on the stage means the rail has something to stand for. A
       // pinned answer survives a step change, so the rail keeps it.
-      if (!hero && !pinned() && !pick.state.open) restInspect();
+      if (!pinned() && !pick.state.open) restInspect();
       if (!keepView) panZoom.reset();
       panZoom.setEnabled(true);
       resetBtn.hidden = false;
@@ -2472,10 +2409,7 @@ const codeLines = code ? code.split("\n").length : 0;
         currentView === "cp" || stmt === null || stmt.kind !== "fold" ? "view" : "fold";
       try {
         drawCurrent(keepView, fadeOverride ?? (animate ? stepFade : null));
-        // The hero offers nothing to operate, so it marks nothing: a line lit
-        // in a program the visitor cannot step through is a control that is
-        // not there.
-        if (!hero) setStepLineOn(editor, stmt === null ? null : stmt.sourceLine);
+        setStepLineOn(editor, stmt === null ? null : stmt.sourceLine);
       } catch (err) {
         showError(`Render error: ${err instanceof Error ? err.message : String(err)}`);
         return;
@@ -2755,7 +2689,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // and the vertical arrows move from one crease to the next, so a drawing
     // with twenty creases does not put twenty tab stops between this card and
     // the rest of the page.
-    if (!hero) result.tabIndex = 0;
+    result.tabIndex = 0;
     result.addEventListener("keydown", (e: KeyboardEvent) => {
       // A control inside the stage keeps its own keys.
       if (e.target !== result) return;
@@ -2792,7 +2726,6 @@ const codeLines = code ? code.split("\n").length : 0;
     // with the SVG. One of them holds the tab stop; the rest are reachable
     // from it.
     function makeCreasesReachable() {
-      if (hero) return;
       const insp = currentScene()?.inspect;
       hitLines().forEach((el, i) => {
         el.setAttribute("tabindex", i === 0 ? "0" : "-1");
@@ -2812,7 +2745,7 @@ const codeLines = code ? code.split("\n").length : 0;
 
     canvas.addEventListener("keydown", (e: KeyboardEvent) => {
       const el = e.target as Element;
-      if (hero || !el.classList?.contains(HIT_CLASS)) return;
+      if (!el.classList?.contains(HIT_CLASS)) return;
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         const lines = hitLines();
         const i = lines.indexOf(el as SVGElement);

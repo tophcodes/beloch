@@ -1,54 +1,30 @@
 ---
-// The landing at `/`. The hero shows a program and the drawing it produces,
-// and offers nothing to operate: what it has to say is that a line of this
-// language is a fold and that the geometry comes out exact. A visitor who
-// wants to change something goes to `/playground/`, which is the surface with
-// an editor. Both are drawn by the same component and speak the same
-// vocabulary, and the hero defines no token the docs do not have.
-//
-// The drawing is rendered at build time (the same evalBelToFold -> parseFold
-// -> render pipeline the docs cards use), so it is on the page at first paint
-// with no worker and no wasm.
+// The landing at `/`. The hero says what the language is, shows the crease
+// pattern its program ends on, and lays the program out as a folding diagram:
+// one card per fold, each with its lines and the pattern after it. What it has
+// to say is that a program names what it folds and that the geometry comes
+// out exact. A visitor who wants to change something goes to `/playground/`,
+// which is the surface with an editor. The hero defines no token the docs do
+// not have.
 import Shell from "../layouts/Shell.astro";
 import CitationMeta from "../components/CitationMeta.astro";
-import Playground from "../components/Playground.astro";
-import { evalBelToFold } from "../lib/eval-bel";
+import HeroSequence from "../components/HeroSequence.astro";
 import { HERO_SRC } from "../lib/landing-examples";
-import { parseFold } from "@beloch/scene";
-import { renderFolded, WEB_THEME } from "@beloch/render-svg";
-
-const fold = evalBelToFold(HERO_SRC);
-const scene = parseFold(fold as object);
-// Drawn as the client will draw it the moment it boots: the names belong to
-// what a reader picks, and nothing is picked yet. A seed that labelled every
-// name would show them for the length of one paint and then take them away.
-const heroSvg = renderFolded(scene, { theme: WEB_THEME, annotate: [] }).toString();
-const heroFoldJson = JSON.stringify(fold);
-
-const DESCRIPTION = "A declarative language for origami, built on the Huzita–Justin axioms.";
+import { DESCRIPTION } from "../lib/description";
 ---
 
 <Shell title="Beloch" description={DESCRIPTION} url="https://beloch.toph.so/">
   <CitationMeta slot="head" />
   <section class="hero">
-    <h1>beloch</h1>
-    <p class="pronunciation">beh-LOK · /be&#712;l&#596;k/</p>
-    <p class="hero-body">
-      A programming language in which every line is a fold. Beloch works out the
-      geometry exactly and gives you the crease pattern and the folded state.
-    </p>
-    <div class="hero-actions">
-      <a class="action action-primary" href="/playground/">Playground</a>
-      <a class="action" href="/language/">Docs</a>
-    </div>
-    <Playground
-      variant="hero"
-      lazy
-      seed={heroSvg}
-      seedFold={heroFoldJson}
-      code={HERO_SRC}
-      height={340}
-    />
+    <HeroSequence src={HERO_SRC}>
+      <h1>beloch</h1>
+      <p class="pronunciation">beh-LOK · /be&#712;l&#596;k/</p>
+      <p class="hero-body">{DESCRIPTION}</p>
+      <div class="hero-actions">
+        <a class="action action-primary" href="/playground/">Playground</a>
+        <a class="action" href="/language/">Docs</a>
+      </div>
+    </HeroSequence>
   </section>
 </Shell>
 
@@ -100,9 +76,5 @@ const DESCRIPTION = "A declarative language for origami, built on the Huzita–J
   .action:focus-visible {
     outline: 2px solid var(--bel-ui-accent);
     outline-offset: 2px;
-  }
-
-  .hero :global(.beloch-playground) {
-    margin-top: 36px;
   }
 </style>
