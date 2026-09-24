@@ -5,6 +5,8 @@
 // card, or focusing it, shows the crease pattern as it stands after that
 // step, with the creases it adds at full strength. A click selects the step,
 // so its pattern stays when the pointer moves on; a second click lets it go.
+// Narrow, the cards give way to a stepper under the drawing with the code of
+// its step under the arrows.
 //
 // Every drawing is made at build time (lib/hero-steps.ts), so the script
 // below only swaps which one is shown.
@@ -26,6 +28,28 @@ const code = await Promise.all(steps.map((s) => Promise.all(s.lines.map(highligh
       <div class="hs-drawing" data-step="0" set:html={final} />
       {steps.map((s, i) => <div class="hs-drawing" data-step={i + 1} hidden set:html={s.figure} />)}
     </figure>
+  </div>
+  <div class="hs-stepper" aria-label="Folding sequence" role="group">
+    <div class="hs-nav">
+      <button type="button" class="hs-go" aria-label="Previous step" disabled>
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+          <path d="M10 3 L5 8 L10 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+      <span class="hs-count" aria-live="polite"><span class="hs-at">1</span>/{steps.length}</span>
+      <button type="button" class="hs-go" aria-label="Next step">
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+          <path d="M6 3 L11 8 L6 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+    </div>
+    <div class="hs-now">
+      {steps.map((_, i) => (
+        <div class:list={["hs-code", { "is-at": i === 0 }]} data-step={i + 1}>
+          {code[i]!.map((html) => <code class="hs-line" set:html={html} />)}
+        </div>
+      ))}
+    </div>
   </div>
   <ol class="hs-steps" aria-label="Folding sequence">
     {steps.map((s, i) => (
@@ -60,6 +84,34 @@ const code = await Promise.all(steps.map((s) => Promise.all(s.lines.map(highligh
       selected = selected === step ? null : step;
       show(step);
     };
+
+    // Narrow, the cards give way to a stepper under the drawing, with the code
+    // of its step under the arrows. It moves only when the reader steps.
+    const narrow = window.matchMedia("(max-width: 720px)");
+    const at = root.querySelector<HTMLElement>(".hs-at")!;
+    const now = root.querySelectorAll<HTMLElement>(".hs-now .hs-code");
+    const [prev, next] = root.querySelectorAll<HTMLButtonElement>(".hs-go");
+    let current = 1;
+    const go = (n: number) => {
+      current = Math.min(now.length, Math.max(1, n));
+      at.textContent = String(current);
+      for (const c of now) c.classList.toggle("is-at", c.dataset.step === String(current));
+      prev!.disabled = current === 1;
+      next!.disabled = current === now.length;
+      selected = String(current);
+      show(null);
+    };
+    prev!.addEventListener("click", () => go(current - 1));
+    next!.addEventListener("click", () => go(current + 1));
+    // Wide again, the whole pattern stands until a card is chosen.
+    const fit = () => {
+      if (narrow.matches) return go(current);
+      selected = null;
+      show(null);
+    };
+    narrow.addEventListener("change", fit);
+    fit();
+
     for (const card of cards) {
       const step = card.dataset.step!;
       card.addEventListener("pointerenter", () => show(step));
@@ -169,19 +221,76 @@ const code = await Promise.all(steps.map((s) => Promise.all(s.lines.map(highligh
     white-space: nowrap;
   }
 
-  /* Stacked, the drawing follows the introduction, and the sequence runs
-     sideways at a card size that still reads. */
+  .hs-stepper {
+    display: none;
+  }
+
+  /* Stacked, the drawing follows the introduction, and the sequence is a
+     stepper under it: the step's number between two arrows, and its code
+     under them at the full width. Every step's code shares one cell, so the tallest sets the
+     height and a step change moves nothing on the page; each block keeps its
+     own height inside it. */
   @media (max-width: 720px) {
     .hs-top {
       grid-template-columns: minmax(0, 1fr);
       gap: 32px;
     }
     .hs-steps {
-      grid-template-columns: none;
-      grid-auto-flow: column;
-      grid-auto-columns: 132px;
-      overflow-x: auto;
-      margin-top: 40px;
+      display: none;
+    }
+    .hs-stepper {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .hs-nav {
+      flex: none;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-family: var(--bel-font-mono);
+      font-size: var(--bel-text-xs);
+      color: var(--bel-ui-text);
+      font-variant-numeric: tabular-nums;
+    }
+    .hs-count {
+      min-width: 3ch;
+      text-align: center;
+    }
+    .hs-go {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border-radius: var(--bel-radius-control);
+      border: 1px solid var(--bel-ui-control-border);
+      background: var(--bel-ui-surface);
+      color: var(--bel-ui-text);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .hs-go:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+    .hs-go:focus-visible {
+      outline: 2px solid var(--bel-ui-accent);
+      outline-offset: 2px;
+    }
+    .hs-now {
+      min-width: 0;
+      display: grid;
+      align-items: start;
+    }
+    .hs-now .hs-code {
+      grid-area: 1 / 1;
+      visibility: hidden;
+    }
+    .hs-now .hs-code.is-at {
+      visibility: visible;
     }
   }
 </style>
