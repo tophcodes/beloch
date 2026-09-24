@@ -6,4 +6,4 @@ paper square
 mark (map .a onto .b) as --vm             ; vertical midline x = 1/2
 --x = (map .a onto --cd and .c onto --vm)
 
-; expect error "3 folds place .a onto --cd and .c onto --vm, all landing on the paper; add 'toward .x'"
+; expect error "3 folds place .a onto --cd and .c onto --vm, all landing on the paper"

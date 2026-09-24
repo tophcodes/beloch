@@ -3,7 +3,8 @@ fold (map .b onto .a) (moving .b) as --v
 .p = --v * --cd
 
 ; .p sits on the v-crease, shared by the stationary and folded-over flaps;
-; naming it as the `up to` target must suggest the correct bracket token.
+; naming it as the `up to` target is ambiguous. The hint's bracket token is
+; checked in test_eval.ml, since `expect error` sees the message only.
 fold (map .c onto .a) (moving .c) (up to .p)
 
-; expect error "#["
+; expect error "lies on a crease shared by 2 flaps"

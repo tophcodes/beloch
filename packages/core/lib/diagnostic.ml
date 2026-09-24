@@ -1,7 +1,10 @@
-(** Render a Beloch_error as a rustc-style source-context block. Pure: source
-    text + span + message -> string. Uses whatever span the error carries. *)
+(** Render a Beloch_error as a rustc-style source-context block, with the hint
+    as a [help] line under the caret when there is one. Pure: source
+    text + span + message + hint -> string. Uses whatever span the error
+    carries. *)
 
-let render ~(source : string) ~(span : Error.span) ~(msg : string) : string =
+let render ~(source : string) ~(span : Error.span) ~(msg : string)
+    ~(hint : string option) : string =
   let start, finish = span in
   let lines = String.split_on_char '\n' source in
   let line_at n =
@@ -33,4 +36,7 @@ let render ~(source : string) ~(span : Error.span) ~(msg : string) : string =
   done;
   let caret = String.make start_col ' ' ^ String.make caret_w '^' in
   Buffer.add_string buf (Printf.sprintf "%s | %s %s\n" blank caret msg);
+  Option.iter
+    (fun h -> Buffer.add_string buf (Printf.sprintf "%s = help: %s\n" blank h))
+    hint;
   Buffer.contents buf

@@ -56,7 +56,7 @@ let test_one (dir : string) (name : string) () =
       match Eval.eval_folded (Beloch.parse ~filename:(Filename.basename name) src) with
       | (_ : Eval.folded) ->
           Alcotest.failf "%s: expected an error containing %S, but eval succeeded" name substr
-      | exception Error.Beloch_error (_, msg) -> (
+      | exception Error.Beloch_error (_, msg, _) -> (
           match Bel_assert.check_error_message ~expected:substr msg with
           | () -> ()
           | exception Bel_assert.Harness_fail m -> Alcotest.failf "%s: %s" name m))
@@ -68,7 +68,7 @@ let test_one (dir : string) (name : string) () =
               try Bel_assert.check fd a
               with Bel_assert.Harness_fail msg -> Alcotest.failf "%s: %S: %s" name line msg)
             parsed
-      | exception Error.Beloch_error (_, msg) ->
+      | exception Error.Beloch_error (_, msg, _) ->
           Alcotest.failf "%s: unexpected evaluation error: %s" name msg)
 
 let () =

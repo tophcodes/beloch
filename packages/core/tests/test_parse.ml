@@ -4,7 +4,7 @@ let[@warning "-32"] expect_error msg_substr thunk =
   try
     ignore (thunk ());
     Alcotest.fail ("expected error containing: " ^ msg_substr)
-  with Error.Beloch_error (_, m) ->
+  with Error.Beloch_error (_, m, _) ->
     Alcotest.(check bool)
       ("error mentions " ^ msg_substr)
       true
@@ -12,6 +12,21 @@ let[@warning "-32"] expect_error msg_substr thunk =
          ignore (Str.search_forward (Str.regexp_string msg_substr) m 0);
          true
        with Not_found -> false)
+
+(* an error whose message contains [msg_substr] and whose hint is [hint] *)
+let expect_error_hint msg_substr hint thunk =
+  try
+    ignore (thunk ());
+    Alcotest.fail ("expected error containing: " ^ msg_substr)
+  with Error.Beloch_error (_, m, h) ->
+    Alcotest.(check bool)
+      ("error mentions " ^ msg_substr)
+      true
+      (try
+         ignore (Str.search_forward (Str.regexp_string msg_substr) m 0);
+         true
+       with Not_found -> false);
+    Alcotest.(check (option string)) "hint" (Some hint) h
 
 (* ---- Span-free renderings of the tree ----
 
@@ -196,7 +211,7 @@ let test_parse_syntax_error () =
   try
     ignore (Beloch.parse ~filename:"t.bel" "paper square\nmark (map .a)\n");
     Alcotest.fail "expected a syntax error"
-  with Error.Beloch_error (_, _) -> ()
+  with Error.Beloch_error (_, _, _) -> ()
 
 let test_parse_perp () =
   Alcotest.(check (list string))
@@ -497,7 +512,7 @@ let test_parse_reference_writes () =
   List.iter
     (fun src ->
       try ignore (parse1 src)
-      with Error.Beloch_error (_, m) ->
+      with Error.Beloch_error (_, m, _) ->
         Alcotest.fail (Printf.sprintf "%s failed to parse: %s" src m))
     reference_writes
 
@@ -505,7 +520,7 @@ let test_parse_spec_corpus () =
   List.iter
     (fun (name, src) ->
       try ignore (Beloch.parse ~filename:(name ^ ".bel") src)
-      with Error.Beloch_error (_, m) ->
+      with Error.Beloch_error (_, m, _) ->
         Alcotest.fail (Printf.sprintf "%s failed to parse: %s" name m))
     spec_corpus
 
@@ -678,7 +693,7 @@ let test_parse_flatten_double_staying_rejected () =
   in
   match Beloch.parse ~filename:"t.bel" src with
   | _ -> Alcotest.fail "expected duplicate-staying error"
-  | exception Error.Beloch_error ((start, _), _) ->
+  | exception Error.Beloch_error ((start, _), _, _) ->
       Alcotest.(check int)
         "span points at the second `staying`, not the first"
         second_staying start.Lexing.pos_cnum
@@ -943,17 +958,18 @@ let test_err_no_ray_item () =
       Beloch.parse ~filename:"t.bel" "paper square\nflatten (staying .a)\n")
 
 let test_err_letter_on_an_axis_item () =
-  expect_error
-    "an axis item takes no mountain or valley; write (mountain) as its own item"
-    (fun () ->
+  expect_error_hint "an axis item takes no mountain or valley"
+    "write (mountain) as its own item" (fun () ->
       Beloch.parse ~filename:"t.bel" "paper square\nfold (--d mountain) (moving .a)\n")
 
 let test_err_placed_fold_rejects_mountain () =
-  expect_error "a placed fold derives its direction; drop mountain" (fun () ->
+  expect_error_hint "a placed fold derives its direction" "drop mountain"
+    (fun () ->
       Beloch.parse ~filename:"t.bel"
         "paper square\nfold (through .m .n) (moving .b) (over .p) (mountain)\n");
   (* and in the other order, since items carry no position *)
-  expect_error "a placed fold derives its direction; drop mountain" (fun () ->
+  expect_error_hint "a placed fold derives its direction" "drop mountain"
+    (fun () ->
       Beloch.parse ~filename:"t.bel"
         "paper square\nfold (through .m .n) (mountain) (over .p)\n")
 

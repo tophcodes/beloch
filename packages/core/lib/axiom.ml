@@ -71,7 +71,8 @@ let classify (c : Ast.construction) : classified =
     (* toward selects among the candidates of axioms 5, 6 and 7; the other
        four determine one line *)
     if c.Ast.c_toward <> None then
-      Error.fail c.Ast.c_span "this construction determines one line; drop toward"
+      Error.fail ~hint:"drop toward" c.Ast.c_span
+        "this construction determines one line"
   in
   if !other then unrecognised c
   else
@@ -189,11 +190,12 @@ let axis_of (ctx : Ctx.ctx) (span : Error.span) (c : Ast.construction) :
           let toward_str = Option.map Resolve.pstr p_opt in
           (match toward with
           | Some x when Geom.side_of_line la x = 0 ->
-              Error.fail span
+              Error.fail
+                ~hint:(Printf.sprintf "pick a point off %s" l1_str)
+                span
                 (Printf.sprintf
-                   "`toward %s` lies on %s; `toward` names where the fold \
-                    goes — pick a point off %s"
-                   (Option.get toward_str) l1_str l1_str)
+                   "`toward %s` lies on %s; `toward` names where the fold goes"
+                   (Option.get toward_str) l1_str)
           | _ -> ());
           let sources =
             [ l1_str; l2_str ]
@@ -238,10 +240,10 @@ let axis_of (ctx : Ctx.ctx) (span : Error.span) (c : Ast.construction) :
           | creases -> (
               match x_opt with
               | None ->
-                  Error.fail span
+                  Error.fail ~hint:"add 'toward .x'" span
                     (Printf.sprintf
                        "two folds place %s onto %s through %s, both landing on \
-                        the paper; add 'toward .x'"
+                        the paper"
                        (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr p'))
               | Some xo ->
                   let xt = Resolve.table_of ctx xo in
@@ -274,12 +276,14 @@ let axis_of (ctx : Ctx.ctx) (span : Error.span) (c : Ast.construction) :
       let base = [ Resolve.pstr p; Resolve.lstr d; Resolve.pstr q; Resolve.lstr e ] in
       (* degeneracy guards *)
       if Geom.side_of_line ee qq = 0 then
-        Error.fail span
-          (Printf.sprintf
-             "map %s onto %s and %s onto %s: %s already lies on %s — use \
-              axiom 6 (fold %s onto %s through a point) then axiom 4"
-             (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr q) (Resolve.lstr e) (Resolve.pstr q) (Resolve.lstr e) (Resolve.pstr p)
-             (Resolve.lstr d));
+        Error.fail
+          ~hint:
+            (Printf.sprintf
+               "use axiom 6 (fold %s onto %s through a point) then axiom 4"
+               (Resolve.pstr p) (Resolve.lstr d))
+          span
+          (Printf.sprintf "map %s onto %s and %s onto %s: %s already lies on %s"
+             (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr q) (Resolve.lstr e) (Resolve.pstr q) (Resolve.lstr e));
       if Geom.parallel dd ee then
         Error.fail span
           (Printf.sprintf
@@ -307,10 +311,10 @@ let axis_of (ctx : Ctx.ctx) (span : Error.span) (c : Ast.construction) :
           | creases -> (
               match x_opt with
               | None ->
-                  Error.fail span
+                  Error.fail ~hint:"add 'toward .x'" span
                     (Printf.sprintf
                        "%d folds place %s onto %s and %s onto %s, all landing \
-                        on the paper; add 'toward .x'"
+                        on the paper"
                        (List.length creases) (Resolve.pstr p) (Resolve.lstr d)
                        (Resolve.pstr q) (Resolve.lstr e))
               | Some xo ->
@@ -389,9 +393,10 @@ let ax5_filter (ctx : Ctx.ctx) (p : ax5_pending) : Geom.line list =
 
 let e2 (p : ax5_pending) =
   Printf.sprintf
-    "map %s onto %s is ambiguous: both bisectors land on the paper; add \
-     `toward .p` to pick the direction"
+    "map %s onto %s is ambiguous: both bisectors land on the paper"
     p.l1_str p.l2_str
+
+let e2_hint = "add `toward .p` to pick the direction"
 
 let e3 (p : ax5_pending) =
   Printf.sprintf
@@ -410,7 +415,7 @@ let select_axiom5_bind (ctx : Ctx.ctx) (span : Error.span) (p : ax5_pending) : G
   | None -> (
       match ax5_filter ctx p with
       | [ b ] -> b
-      | [ _; _ ] -> Error.fail span (e2 p)
+      | [ _; _ ] -> Error.fail ~hint:e2_hint span (e2 p)
       | _ -> Error.fail span (e3 p))
   | Some x ->
       let xside = Geom.side_of_line p.la x in
@@ -424,10 +429,11 @@ let select_axiom5_bind (ctx : Ctx.ctx) (span : Error.span) (p : ax5_pending) : G
             (Printf.sprintf "no fold of %s onto %s moves its material toward %s"
                p.l1_str p.l2_str xs)
       | _ ->
-          Error.fail span
-            (e5_head p xs
-            ^ Printf.sprintf "; select the swinging segment of %s with `at`"
-                p.l1_str))
+          Error.fail
+            ~hint:
+              (Printf.sprintf "select the swinging segment of %s with `&`"
+                 p.l1_str)
+            span (e5_head p xs))
 
 (* returns the chosen axis + an optional move-side override (Some when the
    direction is derived, not read off an explicit `moving`) *)
@@ -439,7 +445,7 @@ let select_axiom5_fold (ctx : Ctx.ctx) (span : Error.span) (p : ax5_pending)
       let b =
         match ax5_filter ctx p with
         | [ b ] -> b
-        | [ _; _ ] -> Error.fail span (e2 p)
+        | [ _; _ ] -> Error.fail ~hint:e2_hint span (e2 p)
         | _ -> Error.fail span (e3 p)
       in
       match fs.Ast.moving with
@@ -455,11 +461,8 @@ let select_axiom5_fold (ctx : Ctx.ctx) (span : Error.span) (p : ax5_pending)
           | true, false -> (b, Some 1)
           | false, true -> (b, Some (-1))
           | true, true ->
-              Error.fail span
-                (Printf.sprintf
-                   "%s straddles the fold line; add `moving` to pick the \
-                    swinging flap"
-                   p.l1_str)
+              Error.fail ~hint:"add `moving` to pick the swinging flap" span
+                (Printf.sprintf "%s straddles the fold line" p.l1_str)
           | false, false ->
               Error.fail span
                 (Printf.sprintf "%s has no material on the paper to fold"
@@ -492,8 +495,8 @@ let select_axiom5_fold (ctx : Ctx.ctx) (span : Error.span) (p : ax5_pending)
                    "no fold of %s onto %s moves its material toward %s"
                    p.l1_str p.l2_str xs)
           | _ ->
-              Error.fail span
-                (e5_head p xs ^ "; add `moving` to pick the swinging flap"))
+              Error.fail ~hint:"add `moving` to pick the swinging flap" span
+                (e5_head p xs))
       | Some fa ->
           (* the anchor's side of each candidate names the swinging half; a
              candidate is viable iff that half moves toward x. On-axis /
@@ -510,9 +513,8 @@ let select_axiom5_fold (ctx : Ctx.ctx) (span : Error.span) (p : ax5_pending)
                 (Printf.sprintf "no fold of %s onto %s moves %s toward %s"
                    p.l1_str p.l2_str (Resolve.fstr fa) xs)
           | _ ->
-              Error.fail span
+              Error.fail ~hint:"anchor with a point in only one flap" span
                 (Printf.sprintf
                    "map %s onto %s toward %s is ambiguous even with `moving \
-                    %s`: it lies in both swinging flaps; anchor with a point \
-                    in only one flap"
+                    %s`: it lies in both swinging flaps"
                    p.l1_str p.l2_str xs (Resolve.fstr fa))))

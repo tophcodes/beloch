@@ -272,13 +272,13 @@ A head that does not belong to the verb is an error naming the verb and
 the item; an item type given twice is an error at the second occurrence.
 `mountain` is a value of the placement type, so `(mountain)` beside `(over
 …)` puts two values in one slot; the placement item has already fixed the
-direction, and the error says so: `a placed fold derives its direction;
-drop mountain`.
+direction, and the error says so: `a placed fold derives its direction`,
+with the hint `drop mountain`.
 
 ```{.bel .frag}
 fold (map .a onto .c) (moving .a) (over .b) (mountain)
 
-; expect error "a placed fold derives its direction; drop mountain"
+; expect error "a placed fold derives its direction"
 ```
 
 Marking every argument as a block is what the model's operation signatures

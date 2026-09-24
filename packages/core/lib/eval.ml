@@ -46,12 +46,12 @@ type folded = {
 
 
 let tear_error span (ta, tb) =
-  Error.fail span
+  Error.fail
+    ~hint:"move those layers too, or fold along a crease on the axis" span
     (Printf.sprintf
        "the moving flap is joined to a stationary layer along a segment \
         ((%g,%g)-(%g,%g)) that is not on the fold axis — it cannot fold on \
-        its own without tearing the paper. Move those layers too, or fold \
-        along a crease on the axis."
+        its own without tearing the paper"
        (Num.to_float ta.Geom.x) (Num.to_float ta.Geom.y)
        (Num.to_float tb.Geom.x) (Num.to_float tb.Geom.y))
 
@@ -191,7 +191,7 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
         Fold_state.select_scope !(ctx.state) ~axis ~move_side ~valley ~anchor
           ~target
       with
-      | Error msg -> Error.fail span msg
+      | Error (msg, hint) -> Error.fail ?hint span msg
       | Ok moving_parents ->
           (match
              Fold_state.scoped_fold_hinge_closed !(ctx.state) ~axis
@@ -402,11 +402,13 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
                  "--%s has collapsed to a point under folding, so there \
                   is no line to fold along" cr.Ast.cname)
         | `Bent ->
-            Error.fail span
-              (Printf.sprintf
-                 "--%s is no longer straight after folding; narrow it to \
-                  one piece with &, e.g. --%s & .p"
-                 cr.Ast.cname cr.Ast.cname)
+            Error.fail
+              ~hint:
+                (Printf.sprintf "narrow it to one piece with &, e.g. --%s & .p"
+                   cr.Ast.cname)
+              span
+              (Printf.sprintf "--%s is no longer straight after folding"
+                 cr.Ast.cname)
       in
       let cid, check_axis, bind_out =
         crease_id_for ctx out ~fresh:Fold_state.fresh_crease_id
@@ -437,9 +439,9 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
                   "fold folds along one existing crease; a union spans \
                    several")
         | _ ->
-            Error.fail span
-              "fold folds along an existing crease; give a crease \
-               name, e.g. fold --d or fold --d & .p"
+            Error.fail
+              ~hint:"give a crease name, e.g. fold --d or fold --d & .p" span
+              "fold folds along an existing crease"
       in
       let axis = Resolve.resolve_line ctx lo in
       let cid, check_axis, bind_out =
@@ -458,9 +460,9 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
               && (Geom.side_of_line axis s.Fold_state.ta <> 0
                  || Geom.side_of_line axis s.Fold_state.tb <> 0)
             then
-              Error.fail span
-                "the crease is bent under the moving flaps; select a \
-                 straight segment with `at` or move fewer flaps")
+              Error.fail
+                ~hint:"select a straight segment with `&` or move fewer flaps"
+                span "the crease is bent under the moving flaps")
           (Fold_state.crease_segments !(ctx.state) along)
       in
       let prov : State.provenance option =
@@ -527,7 +529,14 @@ let eval_reverse (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
       Error.fail span (Printf.sprintf "reversing the tip would pierce layer %d" tortilla)
   | Error (Fold_state.Invalid (Fold_state.Taco_taco (_, _))) ->
       Error.fail span "reversing the tip would pierce another layer"
-  | Error e -> Error.fail span (Fold_state.reverse_failure_to_string e));
+  | Error e ->
+      Error.fail
+        ?hint:
+          (match e with
+          | Fold_state.Several_spines _ -> Some "fold less so that one remains"
+          | _ -> None)
+        span
+        (Fold_state.reverse_failure_to_string e));
   push_frame ctx (Some span);
   bind_out (Material (cid, axis))
 
@@ -618,12 +627,11 @@ let eval_export (ctx : Ctx.ctx) (entries_opt : Ast.export_entry list option)
     (if not (is_temp target) then
        match (target_exists, shadow) with
        | true, false ->
-           Error.fail espan
-             (Printf.sprintf "%s%s exists; use ! to shadow" sigil target)
+           Error.fail ~hint:"use ! to shadow" espan
+             (Printf.sprintf "%s%s exists" sigil target)
        | false, true ->
-           Error.fail espan
-             (Printf.sprintf "nothing to shadow with %s%s; remove !" sigil
-                target)
+           Error.fail ~hint:"remove !" espan
+             (Printf.sprintf "nothing to shadow with %s%s" sigil target)
        | _ -> ());
     (* the landed name is the SAME geometric object as the source member
        inside the def body: it carries the source's own creation step,

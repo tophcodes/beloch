@@ -9,7 +9,7 @@ let expect_error msg_substr thunk =
   try
     ignore (thunk ());
     Alcotest.fail ("expected error containing: " ^ msg_substr)
-  with Error.Beloch_error (_, m) ->
+  with Error.Beloch_error (_, m, _) ->
     Alcotest.(check bool)
       ("error mentions " ^ msg_substr)
       true

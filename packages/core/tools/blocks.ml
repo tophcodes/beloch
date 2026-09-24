@@ -213,7 +213,7 @@ let compute_outcome (filename : string) (preludes : (string * string) list) (b :
                        | () -> { text; verified = true; note = None }
                        | exception Bel_assert.Harness_fail msg -> { text; verified = false; note = Some msg })
                      parsed))
-        | exception Error.Beloch_error ((start, finish), msg) ->
+        | exception Error.Beloch_error ((start, finish), msg, hint) ->
             let expected =
               match expects with
               | None -> false
@@ -239,7 +239,7 @@ let compute_outcome (filename : string) (preludes : (string * string) list) (b :
                   in
                   Some
                     {
-                      diag_text = Diagnostic.render ~source:b.body ~span:fabricated ~msg;
+                      diag_text = Diagnostic.render ~source:b.body ~span:fabricated ~msg ~hint;
                       diag_line = body_line;
                       diag_col = start_col;
                       diag_end_col = end_col;

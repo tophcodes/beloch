@@ -363,10 +363,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
      non-empty pools -> the user must disambiguate with `&`. *)
   (match surviving with
   | _ :: _ :: _ ->
-      Error.fail span
-        (Printf.sprintf
-           "%s is ambiguous at the vertex; select a segment with `&`"
-           multiseg)
+      Error.fail ~hint:"select a segment with `&`" span
+        (Printf.sprintf "%s is ambiguous at the vertex" multiseg)
   | _ -> ());
   (* the winning combination (or the leading one when none survive, so the
      selection code's [rays]/[given_fars] are well-defined for the
@@ -399,8 +397,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     (match (into, emergent) with
     | Some (_, check_axis), Some (_, line) -> check_axis line
     | Some _, None ->
-        Error.fail span
-          "flatten with an even ray count scores no new crease; drop into"
+        Error.fail ~hint:"drop into" span
+          "flatten with an even ray count scores no new crease"
     | None, _ -> ());
     ctx.state := st;
     emergent_bind := emergent
@@ -429,13 +427,13 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
               || m = Collapse.e_stayer_dead)
             pool
         with
-      | Some m -> Error.fail span m
+      | Some m -> Error.fail ?hint:(Collapse.hint_of m) span m
       | None ->
       if odd then
         Error.fail span "the derived crease does not close the vertex"
       else begin
         match List.find_opt (fun m -> m <> Collapse.e_selfint) pool with
-        | Some m -> Error.fail span m
+        | Some m -> Error.fail ?hint:(Collapse.hint_of m) span m
         | None ->
             (* pool = [] only when every candidate's pin set was itself
                Maekawa-unsatisfiable (no pattern to even try); a pool of
@@ -519,10 +517,9 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
           match min_mountain_filter many with
           | [ r ] -> commit r
           | kept ->
-              Error.fail span
-                (Printf.sprintf
-                   "flatten is ambiguous: %d realizations; add (toward \
-                    .p) to pick the fold direction"
+              Error.fail ~hint:"add (toward .p) to pick the fold direction"
+                span
+                (Printf.sprintf "flatten is ambiguous: %d realizations"
                    (List.length kept)))
       | Some toward_po ->
           let toward_pt = Resolve.resolve_point ctx toward_po in
@@ -575,7 +572,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                 (* two DISTINCT position classes tie — toward is
                    collinear with a crease through O (the classes are
                    mirror-symmetric about it) *)
-                Error.fail span Flatten.e_toward_ambiguous
+                Error.fail ~hint:Flatten.e_toward_ambiguous_hint span
+                  Flatten.e_toward_ambiguous
             | (_, c) :: _ -> c
             | [] -> assert false (* [many] is non-empty here *)
           in
@@ -611,7 +609,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                   given_fars
               in
               if on_symmetry_axis then
-                Error.fail span Flatten.e_toward_ambiguous
+                Error.fail ~hint:Flatten.e_toward_ambiguous_hint span
+                  Flatten.e_toward_ambiguous
               else
                 let dipole (st, _, _) : Num.t =
                   let faces = Fold_state.faces st in
@@ -642,7 +641,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                 in
                 (match scored with
                 | (d0, _) :: (d1, _) :: _ when Num.compare d0 d1 = 0 ->
-                    Error.fail span Flatten.e_toward_ambiguous
+                    Error.fail ~hint:Flatten.e_toward_ambiguous_hint span
+                  Flatten.e_toward_ambiguous
                 | (_, r) :: _ -> commit r
                 | [] -> assert false (* [kept] has >= 2 elements *)))));
   (* run the output clause's binding step: with no emergent ray materialized

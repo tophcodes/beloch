@@ -2,9 +2,13 @@
 
 type span = Lexing.position * Lexing.position
 
-exception Beloch_error of span * string
+(** A rejected program: where, what is wrong, and optionally one thing the
+    author can write instead (ADR 0028). The message never carries the
+    suggestion itself. *)
+exception Beloch_error of span * string * string option
 
-let fail (span : span) (msg : string) : 'a = raise (Beloch_error (span, msg))
+let fail ?hint (span : span) (msg : string) : 'a =
+  raise (Beloch_error (span, msg, hint))
 
 let span_to_string ((start, stop) : span) : string =
   let open Lexing in

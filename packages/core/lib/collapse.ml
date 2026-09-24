@@ -8,7 +8,7 @@ type elem = { cid : int; ea : Geom.point; eb : Geom.point; valley : bool }
 
 (* --- error strings: spec §Errors table, verbatim ------------------------- *)
 let e_no_vertex = "no common interior vertex"
-let e_count = "count (hint: use `fold` for n = 2)"
+let e_count = "count"
 let e_midpaper = "crease ends inside the sheet"
 let e_kawasaki = "vertex not flat-foldable (angles)"
 let e_maekawa = "Maekawa violated by the stated assignment"
@@ -18,9 +18,14 @@ let e_dup_ray = "duplicate ray in collapse"
 let e_ambig k = Printf.sprintf "ambiguous stacking (%d orders)" k
 let e_out_of_paper =
   "collapse folds a flap off the paper (no seating keeps it in the sheet)"
-let e_stayer_collinear =
-  "collinear leading creases don't pick a stayer; add (staying <flap>)"
+let e_stayer_collinear = "collinear leading creases don't pick a stayer"
 let e_stayer_dead = "no realization keeps the staying flap still"
+
+(* the hint that goes with an error string above, where it has one (ADR 0028) *)
+let hint_of (m : string) : string option =
+  if m = e_count then Some "use `fold` for n = 2"
+  else if m = e_stayer_collinear then Some "add (staying <flap>)"
+  else None
 
 (* --- stayer: the material that does not move (design 2026-07-17) -----------
    Anchors the fan labeling geometrically instead of at [sort_ccw]'s arbitrary
