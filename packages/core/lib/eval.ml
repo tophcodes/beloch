@@ -404,8 +404,8 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
         | `Bent ->
             Error.fail span
               (Printf.sprintf
-                 "--%s is no longer straight after folding; select a \
-                  segment with `at`, e.g. --%s at #[.a .b .c]"
+                 "--%s is no longer straight after folding; narrow it to \
+                  one piece with &, e.g. --%s & .p"
                  cr.Ast.cname cr.Ast.cname)
       in
       let cid, check_axis, bind_out =

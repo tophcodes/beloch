@@ -75,8 +75,8 @@ let materialize_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (cv 
       | `Bent ->
           Error.fail span
             (Printf.sprintf
-               "--%s is bent by a fold; select a segment with `at`, e.g. \
-                --%s at #[.a .b .c]" name name))
+               "--%s is bent by a fold; narrow it to one piece with &, e.g. \
+                --%s & .p" name name))
   | Material (cid, l_orig) -> (
       match Fold_state.crease_axis !(ctx.state) cid l_orig with
       | `Line l -> l
@@ -92,8 +92,8 @@ let materialize_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (cv 
       | `Bent ->
           Error.fail span
             (Printf.sprintf
-               "--%s is no longer straight after folding; select a segment \
-                with `at`, e.g. --%s at #[.a .b .c] or --%s at .p"
+               "--%s is no longer straight after folding; narrow it to one \
+                piece with &, e.g. --%s & .p or --%s & --ab"
                name name name))
 
 (* a cross operand resolved to PAPER space: the one material line carrying
@@ -137,8 +137,8 @@ let paper_line_of_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (c
       | `Bent ->
           Error.fail span
             (Printf.sprintf
-               "--%s marks different lines on different layers; select a \
-                segment with `at`, e.g. --%s at #[.a .b .c]"
+               "--%s marks different lines on different layers; narrow it \
+                to one piece with &, e.g. --%s & .p"
                name name))
 
 (* the unique FACE (the fine ADR-0014 partition, not a flap/coplanar
