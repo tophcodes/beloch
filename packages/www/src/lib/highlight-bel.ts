@@ -29,24 +29,30 @@ const siteDir = process.env.BELOCH_REPO_ROOT
 const grammarDir = join(siteDir, "src", "grammar");
 const wtsDir = join(siteDir, "node_modules", "web-tree-sitter");
 
-let _lang: Language | null = null;
-let _query: Query | null = null;
-let _parser: Parser | null = null;
+let ready: Promise<{ parser: Parser; query: Query }> | null = null;
 
-async function ensure(): Promise<{ parser: Parser; query: Query }> {
-  if (_parser && _query) return { parser: _parser, query: _query };
-  // Locate web-tree-sitter's own runtime wasm for Node.
-  await Parser.init({
-    locateFile: (name: string) => join(wtsDir, name),
-  });
-  _lang = await Language.load(join(grammarDir, "tree-sitter-beloch.wasm"));
-  _query = new Query(
-    _lang,
-    readFileSync(join(grammarDir, "highlights.scm"), "utf8")
-  );
-  _parser = new Parser();
-  _parser.setLanguage(_lang);
-  return { parser: _parser, query: _query };
+// One load per process, shared by concurrent callers. Two overlapping
+// Parser.init calls each instantiate a wasm module and the last one to finish
+// becomes the global; a language loaded against the other then reads as
+// "Incompatible language version 0" (#35).
+function ensure(): Promise<{ parser: Parser; query: Query }> {
+  if (!ready) {
+    ready = (async () => {
+      // Locate web-tree-sitter's own runtime wasm for Node.
+      await Parser.init({
+        locateFile: (name: string) => join(wtsDir, name),
+      });
+      const lang = await Language.load(join(grammarDir, "tree-sitter-beloch.wasm"));
+      const query = new Query(
+        lang,
+        readFileSync(join(grammarDir, "highlights.scm"), "utf8")
+      );
+      const parser = new Parser();
+      parser.setLanguage(lang);
+      return { parser, query };
+    })();
+  }
+  return ready;
 }
 
 function esc(s: string): string {
