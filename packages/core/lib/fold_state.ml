@@ -43,6 +43,11 @@ type t = {
   isos : Isometry3.t array;  (* derived in [make] (memoized BFS); [t] abstract ⇒ cannot desync *)
   segs : (Geom.point * Geom.point) array;
       (* per-hinge shared paper segment; exposed via [hinge_segment] *)
+  tps : Geom.point array array;
+      (* per-face flat projection under [isos], derived in [make]; applying
+         the placement to every vertex is exact arithmetic, and the layer
+         queries ([rel], the scope searches, the emitted faceOrders) read
+         every face's projection many times per state *)
 }
 
 (* Mints internal crease ids; reset per eval so ids are a deterministic
@@ -192,12 +197,23 @@ let hinge_shared_segment (faces : face array) (h : hinge) :
 let to3 (p : Geom.point) : I3.point = { I3.x = p.Geom.x; y = p.Geom.y; z = Num.zero }
 let to2 (p : I3.point) : Geom.point = { Geom.x = p.I3.x; y = p.I3.y }
 
-(* Flat projection of face [i] under its derived placement, normalized to CCW:
-   a reflected placement reverses the winding, and
-   [Geom.segment_crosses_interior] requires CCW input. *)
-let table_polygon_ccw_raw (faces : face array) (isos : I3.t array) (i : int) :
+(* In-plane 2D restriction of a derived placement. Flat-first the motions
+   keep z = 0 invariant (angles ∈ {0, ±1}), so the upper-left block +
+   (tx, ty) IS the table placement as a 2D isometry. Stage B (partial angles)
+   lifts faces off the plane and must not use this. *)
+let iso2_of_iso3 (m : I3.t) : Isometry.t =
+  { Isometry.m00 = m.I3.m00; m01 = m.I3.m01; m10 = m.I3.m10; m11 = m.I3.m11;
+    tx = m.I3.tx; ty = m.I3.ty }
+
+(* Flat projection of face [i] under its derived placement. *)
+let project (faces : face array) (isos : I3.t array) (i : int) :
     Geom.point array =
-  let tp = Array.map (fun p -> to2 (I3.apply_point isos.(i) (to3 p))) faces.(i) in
+  Array.map (Isometry.apply_point (iso2_of_iso3 isos.(i))) faces.(i)
+
+(* CCW-normalized projection (the input itself when it is already CCW): a
+   reflected placement reverses the winding, and the clip/crossing helpers
+   in Geom require CCW input. *)
+let ccw (tp : Geom.point array) : Geom.point array =
   if Num.sign (Geom.signed_area tp) < 0 then begin
     let n = Array.length tp in
     Array.init n (fun k -> tp.(n - 1 - k))
@@ -277,6 +293,7 @@ let make ?(base = I3.identity) ?(marks = [||]) ~(faces : face array)
        coincidence (interior crossing / collinear overlap), so the compared
        faces genuinely overlap where they are compared. *)
     let n = Array.length faces in
+    let tps = Array.init n (project faces isos) in
     let tseg i =
       let p, q = segs.(i) in
       let place = isos.(hinges.(i).fa) in
@@ -293,8 +310,7 @@ let make ?(base = I3.identity) ?(marks = [||]) ~(faces : face array)
             if
               c <> h.fa && c <> h.fb
               && rank_between rank h.fa c h.fb
-              && Geom.segment_crosses_interior seg
-                   (table_polygon_ccw_raw faces isos c)
+              && Geom.segment_crosses_interior seg (ccw tps.(c))
             then raise (V (Taco_tortilla { tortilla = c; hinge = i }))
           done
         end)
@@ -347,6 +363,7 @@ let make ?(base = I3.identity) ?(marks = [||]) ~(faces : face array)
         marks = Array.copy marks;
         isos;
         segs;
+        tps;
       }
   with V v -> Error v
 
@@ -384,27 +401,14 @@ let mv (g : t) (i : int) : assign =
   if Num.sign h.angle = 0 then F
   else if above g h.fb h.fa = face_up g h.fa then V else M
 
-(* In-plane 2D restriction of face [i]'s derived placement. Flat-first the
-   motions keep z = 0 invariant (angles ∈ {0, ±1}), so the upper-left block +
-   (tx, ty) IS the table placement as a 2D isometry. Stage B (partial angles)
-   lifts faces off the plane and must not use this. *)
-let face_iso2 (g : t) (i : int) : Isometry.t =
-  let m = g.isos.(i) in
-  { Isometry.m00 = m.I3.m00; m01 = m.I3.m01; m10 = m.I3.m10; m11 = m.I3.m11;
-    tx = m.I3.tx; ty = m.I3.ty }
+(* In-plane 2D restriction of face [i]'s derived placement (see
+   [iso2_of_iso3] for why that restriction is the table placement). *)
+let face_iso2 (g : t) (i : int) : Isometry.t = iso2_of_iso3 g.isos.(i)
 
-let table_polygon (g : t) (i : int) : Geom.point array =
-  Array.map (Isometry.apply_point (face_iso2 g i)) g.faces.(i)
+let table_polygon (g : t) (i : int) : Geom.point array = Array.copy g.tps.(i)
 
-(* CCW-normalized (a reflected placement reverses winding); the clip/crossing
-   helpers in Geom require CCW input. *)
 let table_polygon_ccw (g : t) (i : int) : Geom.point array =
-  let tp = table_polygon g i in
-  if Num.sign (Geom.signed_area tp) < 0 then begin
-    let n = Array.length tp in
-    Array.init n (fun k -> tp.(n - 1 - k))
-  end
-  else tp
+  ccw (table_polygon g i)
 
 type rel = Above | Below | Apart
 
@@ -413,7 +417,7 @@ type rel = Above | Below | Apart
    is not overlap), Apart otherwise. *)
 let rel (g : t) (i : int) (j : int) : rel =
   if i = j then Apart
-  else if Geom.convex_overlap (table_polygon g i) (table_polygon g j) then
+  else if Geom.convex_overlap g.tps.(i) g.tps.(j) then
     if g.rank.(i) > g.rank.(j) then Above else Below
   else Apart
 
@@ -1294,20 +1298,13 @@ let line_cuts_paper (g : t) (l : Geom.line) : bool =
 
 type scope_target = TargetFace of int | TargetHinged of (int -> bool)
 
-(* Memoized table polygons: [tp] is built once; [rel_m] queries [rel]
-   directly. *)
 let select_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
     ~(valley : bool) ~(anchor : int) ~(target : scope_target) :
     (bool array, string * string option) result =
   let n = Array.length g.faces in
   let cl = coplanar_clusters g in
-  let tp = Array.init n (table_polygon g) in
-  let rel_m i j =
-    if i = j then Apart
-    else if Geom.convex_overlap tp.(i) tp.(j) then
-      if g.rank.(i) > g.rank.(j) then Above else Below
-    else Apart
-  in
+  let tp = g.tps in
+  let rel_m = rel g in
   let piece =
     Array.init n (fun i ->
         let sub = Geom.clip_convex_halfplane axis move_side tp.(i) in
@@ -1416,7 +1413,7 @@ let select_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
 let default_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
     ~(valley : bool) ~(seed : int list) : bool array =
   let n = Array.length g.faces in
-  let tp = Array.init n (table_polygon g) in
+  let tp = g.tps in
   let piece =
     Array.init n (fun i ->
         let sub = Geom.clip_convex_halfplane axis move_side tp.(i) in
@@ -1428,12 +1425,7 @@ let default_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
     | Some a, Some b -> Geom.convex_overlap a b
     | _ -> false
   in
-  let rel_m i j =
-    if i = j then Apart
-    else if Geom.convex_overlap tp.(i) tp.(j) then
-      if g.rank.(i) > g.rank.(j) then Above else Below
-    else Apart
-  in
+  let rel_m = rel g in
   (* gi is outside m: overlaps m and sits on the outer side (Above for valley) *)
   let outer gi m =
     overlap gi m && rel_m gi m = (if valley then Above else Below)

@@ -14,7 +14,16 @@ type t =
   | Qq of Qqbar.t
   | Field of { gen : gen; coords : Poly.t }
 
-and gen = { mu : Poly.t; lo : Q.t; hi : Q.t }
+and gen = {
+  mu : Poly.t;
+  lo : Q.t;
+  hi : Q.t;
+  alpha : Qqbar.t Lazy.t;
+      (* the root itself as a qqbar value; isolating it is a FLINT root
+         search over [mu], so a generator carries it and computes it at most
+         once. Derived from [mu], [lo], [hi]; only [mk_gen] and
+         [field_upgrade] build a generator. *)
+}
 
 let zero : t = Rat Q.zero
 let one : t = Rat Q.one
@@ -46,14 +55,18 @@ let of_qq (q : Qqbar.t) : t =
 
 (* the field generator α as a qqbar value: the unique real root of mu
    inside (lo, hi) *)
-let qq_of_gen (g : gen) : Qqbar.t =
+let isolate_gen (mu : Poly.t) (lo : Q.t) (hi : Q.t) : Qqbar.t =
   let inside r =
-    Qqbar.cmp_re r (Qqbar.of_q g.lo) > 0
-    && Qqbar.cmp_re r (Qqbar.of_q g.hi) < 0
+    Qqbar.cmp_re r (Qqbar.of_q lo) > 0 && Qqbar.cmp_re r (Qqbar.of_q hi) < 0
   in
-  match List.filter inside (Qqbar.real_roots_of_poly g.mu) with
+  match List.filter inside (Qqbar.real_roots_of_poly mu) with
   | [ r ] -> r
   | _ -> invalid_arg "Num: generator interval does not isolate a root"
+
+let mk_gen ~(mu : Poly.t) ~(lo : Q.t) ~(hi : Q.t) : gen =
+  { mu; lo; hi; alpha = lazy (isolate_gen mu lo hi) }
+
+let qq_of_gen (g : gen) : Qqbar.t = Lazy.force g.alpha
 
 let to_qq (x : t) : Qqbar.t =
   match x with
@@ -167,7 +180,7 @@ let make (poly : Poly.t) (lo : Q.t) (hi : Q.t) : t =
       let lo, hi = tighten lo hi in
       (match minimal_poly_in s lo hi with
       | Some mu ->
-          Field { gen = { mu; lo; hi }; coords = Poly.of_list [ Q.zero; Q.one ] }
+          Field { gen = mk_gen ~mu ~lo ~hi; coords = Poly.of_list [ Q.zero; Q.one ] }
       | None ->
           let inside r =
             Qqbar.cmp_re r (Qqbar.of_q lo) > 0
@@ -190,7 +203,8 @@ let field_degree_cap = 4
    irreducible, so mu is a valid single generator; the certified enclosure
    is refined until it isolates this root of mu (rational endpoints are
    never roots of an irreducible deg-≥2 mu). Deterministic per value, so
-   two upgrades of one value yield the same generator. *)
+   two upgrades of one value yield the same generator. The generator's
+   root is [q] itself, so no root search is needed for it. *)
 let field_upgrade (x : t) : t =
   match x with
   | Qq q when Qqbar.degree q <= field_degree_cap ->
@@ -202,7 +216,10 @@ let field_upgrade (x : t) : t =
           Poly.count_roots_in seq lo hi = 1
           && Poly.sign_at mu lo <> 0
           && Poly.sign_at mu hi <> 0
-        then Field { gen = { mu; lo; hi }; coords = Poly.of_list [ Q.zero; Q.one ] }
+        then
+          Field
+            { gen = { mu; lo; hi; alpha = Lazy.from_val q };
+              coords = Poly.of_list [ Q.zero; Q.one ] }
         else go (2 * prec)
       in
       go 64
@@ -277,44 +294,75 @@ let to_rational_string (x : t) : string =
   | Rat q -> Q.to_string q
   | Qq _ | Field _ -> invalid_arg "Num.to_rational_string: not a rational value"
 
-(* A single-generator field ℚ(α) that might contain x: reuse a Field's own
-   generator; upgrade an irrational Qq within field_degree_cap
-   (field_upgrade); rationals carry no generator. Used to route
-   cross-representation +/* through the factorization-free Field path
-   instead of generic qqbar (#57). *)
-let field_gen (x : t) : gen option =
-  match x with
-  | Field { gen; _ } -> Some gen
-  | Qq q -> (match field_upgrade (Qq q) with Field { gen; _ } -> Some gen | _ -> None)
-  | Rat _ -> None
+(* The embedding of ℚ(β) into ℚ(α): β as a polynomial in α, or None when
+   β ∉ ℚ(α). One LLL search per ordered generator pair, where expressing
+   each value of ℚ(β) over α on its own would spend one per value: a Field
+   value c(β) lands in ℚ(α) as c(e(α)) mod μ_α, rational polynomial
+   arithmetic only.
+
+   The table is keyed by the generators' defining data (μ and isolating
+   interval), which names a root uniquely, so an entry is a fact about two
+   numbers and stays valid across programs. It is process-global because the
+   browser worker and the LSP evaluate many programs in one process and the
+   same generators (√2, the crane's √(4 − 2√2)) recur between them; it is
+   bounded instead of scoped, dropped whole past [embed_cache_max] entries,
+   which is far above the handful of generators one program produces. *)
+let embed_cache : ((gen * gen) * Poly.t option) list ref = ref []
+let embed_cache_max = 64
+
+let embedding ~(into : gen) (beta : gen) : Poly.t option =
+  let hit ((a, b), _) = same_gen a into && same_gen b beta in
+  match List.find_opt hit !embed_cache with
+  | Some (_, e) -> e
+  | None ->
+      let e = Qqbar.express_over ~gen:(qq_of_gen into) (qq_of_gen beta) in
+      if List.length !embed_cache >= embed_cache_max then embed_cache := [];
+      embed_cache := ((into, beta), e) :: !embed_cache;
+      e
 
 (* x as a coordinate polynomial over α (the root of [g.mu] in [g.lo,g.hi]),
-   i.e. x ∈ ℚ(α), or None if x lies outside that field. express_over is exact
-   (FLINT re-verifies), so a Some result is always the true coordinates. *)
-let coords_over (g : gen) (alpha : Qqbar.t) (x : t) : Poly.t option =
+   i.e. x ∈ ℚ(α), or None if x lies outside that field. A Field value over
+   another generator β goes through the cached embedding of its field. When
+   ℚ(β) does not embed and its degree is prime (2 or 3), neither does x: an
+   irrational x ∈ ℚ(β) generates a subfield of degree > 1 dividing a prime,
+   so ℚ(x) = ℚ(β), and expressing x on its own would repeat the embedding
+   search. At degree 4 x may generate a quadratic subfield that does embed,
+   so x is expressed on its own then, as is a Qq above field_degree_cap.
+   express_over is exact (FLINT re-verifies), so a Some result is always
+   the true coordinates. *)
+let coords_over (g : gen) (x : t) : Poly.t option =
   match x with
   | Rat q -> Some (Poly.const q)
   | Field f when same_gen f.gen g -> Some f.coords
-  | Field _ | Qq _ -> Qqbar.express_over ~gen:alpha (to_qq x)
+  | Field f -> (
+      match embedding ~into:g f.gen with
+      | Some e -> Some (Poly.rem (Poly.compose f.coords e) g.mu)
+      | None when Poly.degree f.gen.mu <= 3 -> None
+      | None -> Qqbar.express_over ~gen:(qq_of_gen g) (to_qq x))
+  | Qq q -> Qqbar.express_over ~gen:(qq_of_gen g) q
 
 (* Combine x and y inside a common single-generator field, or None if no such
    field is found (independent irrationals / degree above field_degree_cap):
-   try the operands' generators, the higher degree first, express both over
-   it, and reduce with [combine] (Poly.add for addition, rem∘mul for
-   product). Higher degree first because a degree-2 value expresses inside a
-   degree-4 field while the reverse never succeeds and only spends an LLL
-   search per precision rung. Never wrong — a None simply defers to the
-   qqbar fallback in the caller. *)
+   upgrade a Qq operand within field_degree_cap to its own field
+   (field_upgrade; rationals carry no generator), try the operands'
+   generators, the higher degree first, express both over it, and reduce
+   with [combine] (Poly.add for addition, rem∘mul for product). Higher
+   degree first because a degree-2 value expresses inside a degree-4 field
+   while the reverse never succeeds and only spends an LLL search per
+   precision rung. Never wrong — a None simply defers to the qqbar fallback
+   in the caller. Routes cross-representation +/* through the
+   factorization-free Field path instead of generic qqbar (#57). *)
 let via_field (combine : gen -> Poly.t -> Poly.t -> Poly.t) (x : t) (y : t) : t option =
+  let x = field_upgrade x and y = field_upgrade y in
+  let gen_of = function Field f -> Some f.gen | Rat _ | Qq _ -> None in
   let gens =
-    List.filter_map Fun.id [ field_gen x; field_gen y ]
+    List.filter_map Fun.id [ gen_of x; gen_of y ]
     |> List.stable_sort (fun a b -> compare (Poly.degree b.mu) (Poly.degree a.mu))
   in
   let rec go = function
     | [] -> None
     | g :: rest -> (
-        let alpha = qq_of_gen g in
-        match (coords_over g alpha x, coords_over g alpha y) with
+        match (coords_over g x, coords_over g y) with
         | Some cx, Some cy -> Some (mk_field g (combine g cx cy))
         | _ -> go rest)
   in
