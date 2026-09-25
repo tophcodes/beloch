@@ -45,8 +45,10 @@ Commit subjects are checked when they are pushed. The types and scopes are
 those `scripts/check-commit-subjects.sh` prints; a package's scope is its
 directory under `packages/` or its npm name without `@beloch/`.
 
-A pull request lands as a merge commit, so every commit on its branch reaches
-`main` as it stands. A correction to a commit on a branch that is not merged
+A pull request of several commits lands as a merge commit, so every commit on
+its branch reaches `main` as it stands. A pull request of one commit lands by
+moving `main` onto it (`jj bookmark set main -r <change>`, then push); GitHub
+marks the pull request merged, and no merge commit repeats its title. A correction to a commit on a branch that is not merged
 yet folds into that commit (`jj squash --into <change>`) instead of following
 it as a new one; force-pushing that branch afterwards is fine.
 
