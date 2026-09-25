@@ -73,7 +73,9 @@ const LABELS: Record<string, string> = {
 // resources on the page (`/model/#def-…`), so the two fragment spaces stay apart.
 const PREFIX = "bm: https://belochlang.org/ns/model#";
 
-const FIGURE_VIEWS = ["cp", "folded"];
+// The views a figure may ask for, and the ones it gets when it names none.
+const FIGURE_VIEWS = ["cp", "folded", "candidates"];
+const DEFAULT_VIEWS = ["cp", "folded"];
 
 // `.p --l #[.p .q]`, the same reading scripts/render-figures.ts does: a flap
 // selector stays one entry although it has a space inside its brackets.
@@ -291,7 +293,7 @@ export default function remarkModelBlocks(
 				figures.set(block.id, {
 					id: block.id,
 					label: labels.get(block.id) as string,
-					views: views.length ? views : FIGURE_VIEWS,
+					views: views.length ? views : DEFAULT_VIEWS,
 					program: block.body.trim(),
 					showProgram: (block.attrs.program ?? (isModel ? "hidden" : "shown")) !== "hidden",
 					caption,
