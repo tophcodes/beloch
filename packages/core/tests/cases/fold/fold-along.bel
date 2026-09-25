@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 paper square
 mark (map .b onto .a) as --d
 fold (--d) (moving .b) into --d

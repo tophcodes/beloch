@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 ; A paper edge is a segment bundle (ADR 0014), and incidence is checked in
 ; PAPER space (material identity), so `--cd & .c` names the unique boundary
 ; segment of the top edge whose paper preimage contains corner .c — the

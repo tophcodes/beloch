@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 ; fish-base vertex: O = incenter of triangle abd, sitting ON the ac-diagonal.
 ; All three given rays are bare, hence unconstrained, so the solution space
 ; covers the M/V pattern and the stacking as well as the emergent ray's

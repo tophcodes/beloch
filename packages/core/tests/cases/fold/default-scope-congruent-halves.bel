@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 ; NOT a narrowing proof: congruent layers make old==new here by construction.
 ; This guards the option-(a) union path on fully-congruent layers; the actual
 ; scope-narrowing proof is ear-default-scope.bel (13 -> 9 faces).

@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 ; Same fish-base vertex as flatten-opposite-ray-toward-{b,d}.bel, but two of
 ; the three given rays are PINNED (`.b valley`, `.a mountain`) instead of
 ; left bare. Pinning narrows the whole 4-ray Maekawa search from 8 patterns

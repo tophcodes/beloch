@@ -1,5 +1,7 @@
 ; SYNTAX TEST "source.beloch"
 
+; AI-generated: this file was written by Claude, an AI model.
+
 def diagonals
 ; <- storage.type.beloch
 ;   ^^^^^^^^^ entity.name.function.beloch

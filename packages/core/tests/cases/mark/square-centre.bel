@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 ; The #26 headline: locate the square's centre by meeting two marked
 ; diagonals. Under the material-layer model the marks do NOT subdivide the
 ; working sheet (it stays one face while .ctr is located); they graduate to

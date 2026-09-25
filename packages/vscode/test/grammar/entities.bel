@@ -1,5 +1,7 @@
 ; SYNTAX TEST "source.beloch"
 
+; AI-generated: this file was written by Claude, an AI model.
+
 --pq through ._mb .s
 ; <- variable.other.crease.beloch
 ;            ^^^^ variable.other.point.temp.beloch

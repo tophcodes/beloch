@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 ; The mirror of tuck-under.bel: the same pocket tuck, named from below. .q sits
 ; on the base layer, so `over .q` lands the block immediately above the base —
 ; between the two layers, the same stack `under` the top layer's remainder

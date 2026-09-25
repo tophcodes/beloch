@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 paper square
 --edge = (through .a .b)
 mark (through .c .d) as --m

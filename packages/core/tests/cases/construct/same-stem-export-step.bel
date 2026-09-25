@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 ; M1 regression, export/land_name path: a line landed via `export` carries
 ; its OWN creation step from inside the def body (here step 0, bound before
 ; any fold), which must not be clobbered by a later point bound under the

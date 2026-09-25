@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 paper square
 ; scaffold: two midlines give the non-corner points .tm and .rm
 mark (map .a onto .b) as --vmid           ; x = 1/2

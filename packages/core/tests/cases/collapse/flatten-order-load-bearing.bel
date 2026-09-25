@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 ; Element order is semantic (design 2026-07-17). The convention-ordered
 ; incenter rabbit ear (--ea .a)(--ec .c) leading — whose <180 arc is the big
 ; stayer sector — folds cleanly (flatten-rabbit-ear-toward-a.bel). Reorder the

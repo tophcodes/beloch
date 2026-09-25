@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 ; (staying <flap>) overrides the leading-element convention. Same incenter
 ; rabbit ear as flatten-rabbit-ear-toward-a.bel, but the leading pair is
 ; SWAPPED to (--eb .b)(--ea .a) — an order whose <180 arc is a small folding

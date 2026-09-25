@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 ; The kite fold of the bird base on the preliminary base (issue #6): all four
 ; corners sit on .c, so the corners of --ab name no table line, but both
 ; pieces of --ab lie on the table line through .c and its midpoint .s.

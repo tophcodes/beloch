@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 ; Same fish-base vertex as flatten-opposite-ray-toward-b.bel (see its comment
 ; for the full derivation) — `(toward .d)` picks the position class's other
 ; side under the rank-dipole stage, giving the MIRROR realization of that

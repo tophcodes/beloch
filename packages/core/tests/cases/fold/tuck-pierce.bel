@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 ; A placement the stack cannot hold: fold the sheet in half, then try to slide
 ; the quarter-fold's block over .b. The target flap runs uncut across the fold
 ; axis, so the block would have to enclose it — the layer-order invariant

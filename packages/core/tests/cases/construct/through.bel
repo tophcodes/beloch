@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 paper square
 mark (map .a onto .b) as --vmid           ; x = 1/2
 mark (map .a onto .d) as --hmid           ; y = 1/2

@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 ; The inside case's geometry with `outside`: the line x = 3/8 runs parallel
 ; to the crest, so the whole spine lies beyond it and the two bodies are
 ; joined only through the tip. Wrapping the halves around the outside would

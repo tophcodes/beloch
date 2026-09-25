@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 ; Axiom 7 folding .a onto --cd and .c onto --da: the cubic has two common
 ; tangents, and only one of them cuts the sheet. The paper-incidence filter
 ; drops the other, so the fold resolves without `toward`.

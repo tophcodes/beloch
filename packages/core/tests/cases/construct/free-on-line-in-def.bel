@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 paper square
 def diagonal(.p .q) {
   mark (through .p .q) as --d

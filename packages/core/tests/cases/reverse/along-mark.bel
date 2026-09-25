@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 ; reverse along a mark: the mark's name repoints at the material crease, so a
 ; later fold along it does not mint a second coincident crease
 

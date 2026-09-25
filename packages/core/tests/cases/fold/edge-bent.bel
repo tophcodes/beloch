@@ -1,3 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
 ; A fold through the midpoint of --ab bends it: its two pieces no longer lie on
 ; one table line, so it cannot serve as an alignment operand.
 paper square
