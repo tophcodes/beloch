@@ -29,7 +29,7 @@ with "use Rust for *this* project" — the second doesn't follow from the first.
 - **Tooling edge in TypeScript.** LSP server wrapper, editor extensions,
   visualization/rendering, CLI polish, web playground.
 - **Boundary:** OCaml → JS via js_of_ocaml or Melange, exposing a typed API;
-  process boundaries cross via FOLD-extended / custom JSON (see [0002](0002-fold-extended-as-output.md)).
+  process boundaries cross via FOLD-extended / custom JSON (see [0002](archive/0002-fold-extended-as-output.md)).
 
 ## Alternatives considered
 
