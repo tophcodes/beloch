@@ -62,6 +62,11 @@ export class SvgDoc {
     return g;
   }
 
+  // The document as one node, layers in order, for embedding it in another.
+  node(): SvgNode {
+    return this.assembled();
+  }
+
   private assembled(): SvgNode {
     const ordered = LAYER_ORDER.map((n) => this.layers.get(n)).filter(
       (g): g is SvgNode => !!g,

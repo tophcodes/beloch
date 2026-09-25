@@ -1,7 +1,7 @@
 import {
   Assignment, Crease, EdgeProvenance, FoldScene, Frame, Inspect, LineCoeffs,
   Mark, NamedLine, NamedPoint, SceneError, SourceRef, Statement, StatementKind, Step,
-  StepNotFoundError, Vec2,
+  StepNotFoundError, TraceEntry, TraceError, Vec2,
 } from "./types";
 
 function frameFrom(raw: Record<string, unknown>): Frame {
@@ -80,6 +80,35 @@ function statementsFrom(fold: Record<string, unknown>): Statement[] {
   }));
 }
 
+function traceFrom(fold: Record<string, unknown>): TraceEntry[] {
+  const raw = (fold["beloch:trace"] ?? []) as Record<string, unknown>[];
+  return raw.map((e) => ({
+    statement: e["statement"] as number,
+    frameIndex: e["frame_index"] as number,
+    axiom: e["axiom"] as string,
+    toward: (e["toward"] ?? null) as Vec2 | null,
+    candidates: ((e["candidates"] ?? []) as Record<string, unknown>[]).map((c) => ({
+      line: c["line"] as LineCoeffs,
+      removedBy: (c["removed_by"] ?? null) as TraceEntry["candidates"][number]["removedBy"],
+      selected: c["selected"] === true,
+    })),
+    conics: ((e["conics"] ?? []) as { focus: Vec2; directrix: LineCoeffs }[]).map((c) => ({
+      focus: c.focus, directrix: c.directrix,
+    })),
+  }));
+}
+
+function errorFrom(fold: Record<string, unknown>): TraceError | null {
+  const e = fold["beloch:error"] as Record<string, unknown> | undefined;
+  if (!e) return null;
+  return {
+    message: String(e["message"] ?? ""),
+    hint: (e["hint"] ?? null) as string | null,
+    span: String(e["span"] ?? ""),
+    statement: e["statement"] as number,
+  };
+}
+
 export function parseFold(input: string | object): FoldScene {
   const fold = (typeof input === "string" ? JSON.parse(input) : input) as
     Record<string, unknown>;
@@ -135,6 +164,7 @@ export function parseFold(input: string | object): FoldScene {
     writes: statements.filter((s) => s.kind === "fold" || s.kind === "mark"),
     references, namedPoints, namedLines,
     creases: groupCreases(cp), marks: marksFrom(fold), inspect,
+    trace: traceFrom(fold), error: errorFrom(fold),
   };
 }
 
