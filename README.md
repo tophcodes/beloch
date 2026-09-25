@@ -53,16 +53,17 @@ Five verbs write to the paper. `mark` scores a crease and moves nothing,
 `fold` folds along it, `reverse` makes an inside or outside reverse fold,
 `flip` turns the paper over, and `flatten` folds a vertex flat along several
 rays at once; given an odd number of them, it derives the one ray that is
-missing.
-The evaluator works out where every layer goes and which creases end up
-mountain or valley. The full grammar is in [`spec/BELOCH.md`](spec/BELOCH.md)
+missing. The evaluator works out where every layer goes and which creases end
+up mountain or valley. The full grammar is in [`spec/BELOCH.md`](spec/BELOCH.md)
 and on the [language page](https://beloch.toph.so/language/).
 
 ## What is new
 
 A Beloch program is a finite sequence of Huzita-Justin constructions and
-folds. The language has no loops, no recursion and no host language, so every
-program terminates, and the statements of a program are its folding sequence
+folds. The language has no loops, no recursion (a `def` sees only earlier
+`def`s) and no host language, so the number of folds a program makes is fixed
+before it runs, every program terminates, and the statements of a program are
+its folding sequence
 ([decision 0009](decisions/0009-relationship-to-rabbit-ear.md)).
 
 The evaluator computes the folded state in exact real-algebraic arithmetic
@@ -97,18 +98,20 @@ Written origami languages predate computers: Smith's Origami Instruction
 Language ([1975](#references)) is executed by a human folder. Fisher
 ([1994](#references)) gave a textual folding language with its own syntax and
 a program that executes it and tracks face layering. Ida's Eos
-([Ida et al. 2009](#references); [Ida 2020](https://doi.org/10.1007/978-3-319-59189-6)) is the most complete
+([Ida et al. 2009](#references);
+[Ida 2020](https://doi.org/10.1007/978-3-319-59189-6)) is the most complete
 system. Its language Orikoto is a subset of the Wolfram Language inside
 Mathematica; it folds by the Huzita-Justin rules, maintains the superposition
 relation between faces, and proves constructions correct with Gröbner bases,
 while the folds themselves are solved numerically
-([Ida et al. 2008](https://doi.org/10.1016/j.entcs.2008.06.032)). Caruana and Pace ([2007](#references)) embed the
-axioms in Haskell for plane constructions and derive the preconditions a
-construction needs. eGami ([Fastag 2009](#references)) generates diagrams from
-direct manipulation. Rabbit Ear ([Kraft 2016](https://github.com/rabbit-ear/rabbit-ear)) is a JavaScript library
-with the seven axioms as functions, FOLD manipulation and folding simulation;
-a construction written with it is a JavaScript program, and it reads the FOLD
-files Beloch emits.
+([Ida et al. 2008](https://doi.org/10.1016/j.entcs.2008.06.032)). Caruana and
+Pace ([2007](#references)) embed the axioms in Haskell for plane constructions
+and derive the preconditions a construction needs. eGami
+([Fastag 2009](#references)) generates diagrams from direct manipulation.
+Rabbit Ear ([Kraft 2016](https://github.com/rabbit-ear/rabbit-ear)) is a
+JavaScript library with the seven axioms as functions, FOLD manipulation and
+folding simulation; a construction written with it is a JavaScript program,
+and it reads the FOLD files Beloch emits.
 
 Beloch combines what these hold separately: a standalone language that always
 terminates, evaluated to its folded state in exact arithmetic.
@@ -226,12 +229,6 @@ been measured. The corpus is listed at the top of
 
 </details>
 
-## Citing
-
-[`CITATION.cff`](CITATION.cff) holds the metadata, and GitHub's "Cite this
-repository" button reads it. DOI:
-[10.5281/zenodo.22884252](https://doi.org/10.5281/zenodo.22884252).
-
 ## Development
 
 The evaluator core is OCaml, the tooling around it TypeScript. A Nix flake
@@ -271,6 +268,22 @@ The kernel suites have known failures, recorded with their cause in
   Booklet No. 4.
 
 BibTeX for all of them is in [`paper/references.bib`](paper/references.bib).
+
+## Citing
+
+```bibtex
+@software{muehl_beloch,
+  author  = {M{\"u}hl, Christopher},
+  title   = {Beloch: a declarative language for origami},
+  version = {0.3.0},
+  year    = {2026},
+  doi     = {10.5281/zenodo.22884252},
+  url     = {https://github.com/tophcodes/beloch}
+}
+```
+
+GitHub's "Cite this repository" button offers the same entry and APA, read
+from [`CITATION.cff`](CITATION.cff).
 
 ## Name
 
