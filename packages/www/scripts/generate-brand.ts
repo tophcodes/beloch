@@ -23,10 +23,10 @@
 // --bel-ui-text, parsed out of src/styles/tokens.css (its light-dark() pair).
 // The glyphs are outlined from public/fonts/jetbrains-mono-600.woff2, the
 // SemiBold cut the site's --bel-font-mono serves at weight 600, through
-// fontkitten (a dependency of astro, resolved via node_modules hoisting),
-// which reads WOFF2 directly. The font is under the SIL Open Font License
-// 1.1 (public/fonts/OFL.txt), which permits converting glyphs to outlines in
-// an artwork like this one.
+// fontkitten (a devDependency of this package), which reads WOFF2
+// directly. The font is under the SIL Open Font License 1.1
+// (public/fonts/OFL.txt), which permits converting glyphs to outlines in an
+// artwork like this one.
 //
 // Regenerate with:
 //   bun packages/www/scripts/generate-brand.ts
