@@ -138,6 +138,9 @@ type ctx = {
           newest first. *)
   mutable annots_rev : annot_entry list;
       (** Annotations whose statement has run, newest first. *)
+  mutable trace_rev : Trace.entry list;
+      (** Every construction's candidates, newest first (spec/FOLD.md, "The
+          trace"). *)
   mutable parent : int option;
       (** The log entry of the [apply] whose body is running, [None] at the
           top level: the [sl_parent] of every entry logged meanwhile. *)
@@ -213,6 +216,27 @@ val push_bind : ctx -> Error.span -> unit
 (** Log a statement that bound a name and moved no paper, at its own span.
     Called once per executed statement that logged nothing of its own, so
     every statement appears on the second axis. *)
+
+val push_entry : ctx -> stmt_kind -> Error.span -> unit
+(** Log a statement of the given kind that pushed no frame and recorded no
+    mark: a binding, or a statement that failed before logging itself. *)
+
+val kind_of_stmt : Ast.stmt -> stmt_kind
+(** The axis a statement moves, read off its syntax. *)
+
+val record_trace :
+  ctx ->
+  axiom:string ->
+  toward:Geom.point option ->
+  ?conics:Trace.conic list ->
+  Trace.candidate list ->
+  unit
+(** Record the candidates of the construction the current statement
+    evaluates. *)
+
+val create : unit -> ctx
+(** A context on the flat square, with the four corners and the four edges
+    bound in the root scope. *)
 
 val push_apply : ctx -> string -> Error.span -> int
 (** Log an [apply] of the named def at its own span, ahead of its body's

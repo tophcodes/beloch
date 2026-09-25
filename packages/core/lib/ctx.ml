@@ -145,6 +145,8 @@ type ctx = {
   mutable annots_pending : annot_entry list;
       (* read, waiting for the statement they belong to; newest first *)
   mutable annots_rev : annot_entry list;
+  mutable trace_rev : Trace.entry list;
+      (* every construction's candidates, newest first *)
   mutable parent : int option;
       (* the log entry of the [apply] whose body is running, [None] at the
          top level: the [sl_parent] of every entry logged meanwhile *)
@@ -315,6 +317,7 @@ type snapshot = {
   s_pending : bool;
   s_annots_pending : annot_entry list;
   s_annots_rev : annot_entry list;
+  s_trace_rev : Trace.entry list;
   s_state : Fold_state.t;
   s_next_id : int;
 }
@@ -355,6 +358,7 @@ let snapshot (ctx : ctx) : snapshot =
         s_pending = ctx.pending;
         s_annots_pending = ctx.annots_pending;
         s_annots_rev = ctx.annots_rev;
+        s_trace_rev = ctx.trace_rev;
         s_state = !(ctx.state);
         s_next_id = Fold_state.next_id_value ();
       }
@@ -390,6 +394,7 @@ let restore (ctx : ctx) (s : snapshot) : unit =
       ctx.pending <- s.s_pending;
       ctx.annots_pending <- s.s_annots_pending;
       ctx.annots_rev <- s.s_annots_rev;
+      ctx.trace_rev <- s.s_trace_rev;
       ctx.parent <- None;
       ctx.state := s.s_state;
       Fold_state.set_next_id s.s_next_id
@@ -401,15 +406,59 @@ let restore (ctx : ctx) (s : snapshot) : unit =
    which is what lets a reader of the program be told what each statement
    binds. It reads against the frame already on screen and carries the marks
    the statement before it left dangling. *)
-let push_bind (ctx : ctx) (sp : Error.span) =
+let push_entry (ctx : ctx) (kind : stmt_kind) (sp : Error.span) =
   let kept =
     match ctx.statements_rev with prev :: _ -> prev.sl_kept | [] -> []
   in
   ctx.statements_rev <-
-    { sl_kind = SBind; sl_span = sp;
+    { sl_kind = kind; sl_span = sp;
       sl_frame_index = List.length ctx.frames_rev; sl_mark = None;
       sl_kept = kept; sl_parent = ctx.parent }
     :: ctx.statements_rev
+
+let push_bind (ctx : ctx) (sp : Error.span) = push_entry ctx SBind sp
+
+(* The axis a statement would have moved, read off its syntax: the entry a
+   statement that failed before logging itself gets. *)
+let kind_of_stmt : Ast.stmt -> stmt_kind = function
+  | Ast.Fold _ | Ast.Reverse _ | Ast.Flatten _ | Ast.Flip _ -> SFold
+  | Ast.Mark _ -> SMark
+  | Ast.Apply (_, defname, _, _) -> SApply defname
+  | Ast.Annotation _ | Ast.BindLine _ | Ast.BindBundle _ | Ast.Point _
+  | Ast.Def _ | Ast.Export _ ->
+      SBind
+
+let record_trace (ctx : ctx) ~axiom ~toward ?(conics = []) candidates =
+  ctx.trace_rev <-
+    { Trace.statement = stmt_index ctx; frame = List.length ctx.frames_rev;
+      axiom; toward; candidates; conics }
+    :: ctx.trace_rev
+
+(* A context on the flat square: the four corners and the four edges bound in
+   the root scope, nothing folded. *)
+let create () : ctx =
+  let root = make_scope () in
+  List.iter (fun (n, p) -> Hashtbl.replace root.points n p) corners;
+  List.iter
+    (fun (n, a, b) -> Hashtbl.replace root.lines n (Edge (a, b)))
+    [ ("ab", "a", "b"); ("bc", "b", "c"); ("cd", "c", "d"); ("da", "d", "a") ];
+  {
+    scopes = [ root ];
+    name_ctx = Root;
+    cur_def_idx = None;
+    next_def_idx = 0;
+    defs = Hashtbl.create 4;
+    state = ref Fold_state.init_square;
+    frames_rev = [];
+    statements_rev = [];
+    free_points_rev = [];
+    references_rev = [];
+    annots_pending = [];
+    annots_rev = [];
+    trace_rev = [];
+    parent = None;
+    pending = true;
+  }
 
 let push_apply (ctx : ctx) (defname : string) (sp : Error.span) : int =
   let kept =

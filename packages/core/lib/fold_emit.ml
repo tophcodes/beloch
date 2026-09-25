@@ -565,7 +565,7 @@ let beloch_inspect_json (state : Fold_state.t)
       ("edges", `Assoc edges_json);
     ]
 
-let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
+let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
   let disp, kept_marks = cp_display fd.Eval.state in
   let faces = Fold_state.faces disp in
   (* dedup vertices by paper coord; remember paper coord per vertex, for the
@@ -701,7 +701,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
          fd.Eval.free_points)
   in
   `Assoc
-    [
+    ([
       ("file_spec", `Float 1.1);
       ("file_creator", `String ("beloch " ^ Version.version));
       ("frame_classes", `List [ `String "creasePattern" ]);
@@ -734,3 +734,4 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
                  folded_frame_of_state named_points_2 st span)
                fd.Eval.frames) );
     ]
+    @ if trace then [ ("beloch:trace", `List (List.map Trace.to_json fd.Eval.trace)) ] else [])

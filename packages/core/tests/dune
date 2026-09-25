@@ -94,3 +94,8 @@
  (name test_annotation)
  (modules test_annotation)
  (libraries beloch alcotest yojson str))
+
+(test
+ (name test_trace)
+ (modules test_trace)
+ (libraries beloch alcotest yojson str))
