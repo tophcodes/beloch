@@ -1,4 +1,6 @@
 (comment) @comment
+(annotation_key) @annotation
+(text) @text
 (keyword) @keyword
 (point) @point
 (point_bracket) @point

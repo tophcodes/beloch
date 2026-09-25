@@ -570,6 +570,10 @@
       "required": false,
       "types": [
         {
+          "type": "annotation_key",
+          "named": true
+        },
+        {
           "type": "comment",
           "named": true
         },
@@ -619,6 +623,10 @@
         },
         {
           "type": "punct",
+          "named": true
+        },
+        {
+          "type": "text",
           "named": true
         },
         {
@@ -787,6 +795,10 @@
     "named": false
   },
   {
+    "type": "annotation_key",
+    "named": true
+  },
+  {
     "type": "apply",
     "named": false
   },
@@ -922,6 +934,10 @@
   {
     "type": "staying",
     "named": false
+  },
+  {
+    "type": "text",
+    "named": true
   },
   {
     "type": "through",
