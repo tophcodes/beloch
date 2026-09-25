@@ -26,9 +26,10 @@ state, a crease pattern and a <a href="https://github.com/edemaine/fold">FOLD</a
 
 The traditional crane, flat, in sixteen statements:
 [`examples/crane.bel`](examples/crane.bel). It follows steps 2 to 17 of Ida's
-crane program [ida2020, Fig. 7.19]; her last two steps open the wings in 3D,
-which Beloch does not model yet. The native evaluator folds it; the browser
-playground cannot evaluate it yet.
+crane program
+([Ida 2020](https://doi.org/10.1007/978-3-319-59189-6), Fig. 7.19); her last
+two steps open the wings in 3D, which Beloch does not model yet. The native
+evaluator folds it; the browser playground cannot evaluate it yet.
 
 ## Reading a program
 
@@ -93,23 +94,24 @@ named; the swivel rabbit ear below is one.
 ## Related work
 
 Written origami languages predate computers: Smith's Origami Instruction
-Language [smith1975oil] is executed by a human folder. Fisher [fisher1994]
-gave a textual folding language with its own syntax and a program that
-executes it and tracks face layering. Ida's Eos [ida2009eos; ida2020] is the
-most complete system. Its language Orikoto is a subset of the Wolfram Language
-inside Mathematica; it folds by the Huzita-Justin rules, maintains the
-superposition relation between faces, and proves constructions correct with
-Gröbner bases, while the folds themselves are solved numerically
-[ida2008entcs]. Caruana and Pace [caruana2007] embed the axioms in Haskell for
-plane constructions and derive the preconditions a construction needs. eGami
-[fastag2009egami] generates diagrams from direct manipulation. Rabbit Ear
-[kraft-rabbitear] is a JavaScript library with the seven axioms as functions,
-FOLD manipulation and folding simulation; a construction written with it is a
-JavaScript program, and it reads the FOLD files Beloch emits.
+Language ([1975](#references)) is executed by a human folder. Fisher
+([1994](#references)) gave a textual folding language with its own syntax and
+a program that executes it and tracks face layering. Ida's Eos
+([Ida et al. 2009](#references); [Ida 2020](https://doi.org/10.1007/978-3-319-59189-6)) is the most complete
+system. Its language Orikoto is a subset of the Wolfram Language inside
+Mathematica; it folds by the Huzita-Justin rules, maintains the superposition
+relation between faces, and proves constructions correct with Gröbner bases,
+while the folds themselves are solved numerically
+([Ida et al. 2008](https://doi.org/10.1016/j.entcs.2008.06.032)). Caruana and Pace ([2007](#references)) embed the
+axioms in Haskell for plane constructions and derive the preconditions a
+construction needs. eGami ([Fastag 2009](#references)) generates diagrams from
+direct manipulation. Rabbit Ear ([Kraft 2016](https://github.com/rabbit-ear/rabbit-ear)) is a JavaScript library
+with the seven axioms as functions, FOLD manipulation and folding simulation;
+a construction written with it is a JavaScript program, and it reads the FOLD
+files Beloch emits.
 
 Beloch combines what these hold separately: a standalone language that always
-terminates, evaluated to its folded state in exact arithmetic. The citation
-keys resolve in [`paper/references.bib`](paper/references.bib).
+terminates, evaluated to its folded state in exact arithmetic.
 
 The write-up in [`paper/`](paper/) goes to programming-languages venues first
 and to the computational-origami community at OSME (Origami Science,
@@ -244,6 +246,31 @@ check-all             # what CI runs, adding docs, README drawings, site
 
 The kernel suites have known failures, recorded with their cause in
 `scripts/known-failures.txt`; a failure beyond them fails the check.
+
+## References
+
+- Caruana, G. and Pace, G. J. (2007). Embedded Languages for Origami-Based
+  Geometry. *Proceedings of the Computer Science Annual Workshop (CSAW)*,
+  University of Malta.
+- Fastag, J. (2009). eGami: Virtual Paperfolding and Diagramming Software. In
+  R. J. Lang (ed.), *Origami⁴*, A K Peters, 273–283.
+- Fisher, D. (1994). *Origami On Computer*. Honours thesis, Basser Department
+  of Computer Science, University of Sydney.
+- Ida, T. (2020). *An Introduction to Computational Origami*. Springer.
+  [doi:10.1007/978-3-319-59189-6](https://doi.org/10.1007/978-3-319-59189-6)
+- Ida, T., Marin, M., Takahashi, H. and Ghourabi, F. (2008). Computational
+  Origami Construction as Constraint Solving and Rewriting. *Electronic Notes
+  in Theoretical Computer Science* 216, 31–44.
+  [doi:10.1016/j.entcs.2008.06.032](https://doi.org/10.1016/j.entcs.2008.06.032)
+- Ida, T., Takahashi, H., Marin, M., Kasem, A. and Ghourabi, F. (2009).
+  Computational Origami System Eos. In R. J. Lang (ed.), *Origami⁴*,
+  A K Peters, 285–293.
+- Kraft, R. (2016–). *Rabbit Ear*, a computational origami library.
+  [github.com/rabbit-ear/rabbit-ear](https://github.com/rabbit-ear/rabbit-ear)
+- Smith, J. S. (1975). *Origami Instruction Language*. British Origami Society
+  Booklet No. 4.
+
+BibTeX for all of them is in [`paper/references.bib`](paper/references.bib).
 
 ## Name
 
