@@ -57,41 +57,6 @@ missing. The evaluator works out where every layer goes and which creases end
 up mountain or valley. The full grammar is in [`spec/BELOCH.md`](spec/BELOCH.md)
 and on the [language page](https://belochlang.org/language/).
 
-## What is new
-
-A Beloch program is a finite sequence of Huzita-Justin constructions and
-folds. The language has no loops, no recursion (a `def` sees only earlier
-`def`s) and no host language, so the number of folds a program makes is fixed
-before it runs, every program terminates, and the statements of a program are
-its folding sequence
-([decision 0009](decisions/0009-relationship-to-rabbit-ear.md)).
-
-The evaluator computes the folded state in exact real-algebraic arithmetic
-(FLINT `qqbar`), including the stacking order of the layers and the mountain
-or valley assignment of each crease. A coincidence such as "this point lies on
-this line" is decided exactly, and a √2 or an axiom-7 cube root stays exact
-through every later fold.
-
-`flatten` folds every sector around a vertex at once, constrained by letters
-on its rays and an order between its sectors. Given an odd number of rays, it
-adds the ray that Kawasaki's condition forces and scores it as a new crease.
-That expresses folds no axiom constructs from the points a program has
-named; the swivel rabbit ear below is one.
-
-## Status
-
-- **Implemented:** all seven axioms, the five verbs, FOLD output, crease
-  pattern and folded-state rendering, a browser build. The programs in
-  [`examples/`](examples/) evaluate end to end, up to the flat crane, and most
-  of them carry assertions the test suite checks.
-- **Formalised:** [`spec/MODEL.md`](spec/MODEL.md) defines folded states and
-  the operations on them. Its first sections are reviewed; the section on
-  operations is a draft, and two of its lemmas, among them that a fold
-  introduces no crossing, have pending proofs.
-- **Not yet:** Yoshizawa-Randlett folding diagrams, 3D states
-  ([decision 0015](decisions/0015-flat-folded-states-only.md)), and
-  measurements on programs longer than a few dozen statements.
-
 ## Related work
 
 Written origami languages predate computers: Smith's Origami Instruction
@@ -115,6 +80,42 @@ and it reads the FOLD files Beloch emits.
 
 Beloch combines what these hold separately: a standalone language that always
 terminates, evaluated to its folded state in exact arithmetic.
+
+## What is new
+
+The evaluator computes the folded state of a folding sequence in exact
+real-algebraic arithmetic (FLINT `qqbar`): where every layer lies, the stacking
+order of the layers, and which creases end up mountain or valley. A coincidence
+such as "this corner lies on this crease" is decided, and a √2 from axiom 5 or
+the cube root of axiom 7 stays exact through every later fold. Fisher's
+executor places lines near vertices by tolerance and Eos solves each fold
+numerically; here the question is decided exactly.
+
+`flatten` folds a vertex flat along several rays at once. Given an odd number
+of rays, it derives the ray that Kawasaki's condition forces and scores it as
+a new crease. This expresses folds no Huzita-Justin axiom constructs from the
+points a program has named; the swivel rabbit ear below is one.
+
+Both rest on the language: a program is a finite sequence of constructions and
+folds, with no loops, no recursion (a `def` sees only earlier `def`s) and no
+host language
+([decision 0009](decisions/0009-relationship-to-rabbit-ear.md)). Every program
+terminates, its statements are its folding sequence, and every crease in the
+FOLD output names the statement and the construction that made it.
+
+## Status
+
+- **Implemented:** all seven axioms, the five verbs, FOLD output, crease
+  pattern and folded-state rendering, a browser build. The programs in
+  [`examples/`](examples/) evaluate end to end, up to the flat crane, and most
+  of them carry assertions the test suite checks.
+- **Formalised:** [`spec/MODEL.md`](spec/MODEL.md) defines folded states and
+  the operations on them. Its first sections are reviewed; the section on
+  operations is a draft, and two of its lemmas, among them that a fold
+  introduces no crossing, have pending proofs.
+- **Not yet:** Yoshizawa-Randlett folding diagrams, 3D states
+  ([decision 0015](decisions/0015-flat-folded-states-only.md)), and
+  measurements on programs longer than a few dozen statements.
 
 ## More programs
 
