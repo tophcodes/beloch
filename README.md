@@ -17,7 +17,7 @@ state, a crease pattern and a <a href="https://github.com/edemaine/fold">FOLD</a
 <a href="https://belochlang.org/playground/"><b>Playground</b></a> ·
 <a href="https://belochlang.org/language/">Language</a> ·
 <a href="https://belochlang.org/model/">Model</a> ·
-<a href="https://doi.org/10.5281/zenodo.22884252"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.22884252.svg" alt="DOI" align="top"></a>
+<a href="https://doi.org/10.5281/zenodo.22884252"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.22884252.svg" alt="DOI" align="absmiddle"></a>
 </p>
 
 | crease pattern | folded |
