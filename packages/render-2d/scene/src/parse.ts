@@ -1,7 +1,7 @@
 import {
   Assignment, Crease, EdgeProvenance, FoldScene, Frame, Inspect, LineCoeffs,
   Mark, NamedLine, NamedPoint, SceneError, SourceRef, Statement, StatementKind, Step,
-  StepNotFoundError, TraceEntry, TraceError, Vec2,
+  StepNotFoundError, TraceEntry, TraceError, Vec2, WriteCandidate, WriteEntry, WriteTerms,
 } from "./types";
 
 function frameFrom(raw: Record<string, unknown>): Frame {
@@ -82,7 +82,7 @@ function statementsFrom(fold: Record<string, unknown>): Statement[] {
 
 function traceFrom(fold: Record<string, unknown>): TraceEntry[] {
   const raw = (fold["beloch:trace"] ?? []) as Record<string, unknown>[];
-  return raw.map((e) => ({
+  return raw.filter((e) => e["write"] === undefined).map((e) => ({
     statement: e["statement"] as number,
     frameIndex: e["frame_index"] as number,
     axiom: e["axiom"] as string,
@@ -96,6 +96,31 @@ function traceFrom(fold: Record<string, unknown>): TraceEntry[] {
       focus: c.focus, directrix: c.directrix,
     })),
   }));
+}
+
+function writeTraceFrom(fold: Record<string, unknown>): WriteEntry[] {
+  const raw = (fold["beloch:trace"] ?? []) as Record<string, unknown>[];
+  return raw.filter((e) => e["write"] !== undefined).map((e) => {
+    const t = (e["terms"] ?? {}) as Record<string, unknown>;
+    const terms = { ...t, write: e["write"], target: t["target"] ?? null } as WriteTerms;
+    return {
+      statement: e["statement"] as number,
+      frameIndex: e["frame_index"] as number,
+      terms,
+      candidates: ((e["candidates"] ?? []) as Record<string, unknown>[]).map((c): WriteCandidate => ({
+        // a candidate frame is a foldedForm frame like those in file_frames
+        frame: c["frame"] ? frameFrom({ ...fold, ...(c["frame"] as Record<string, unknown>) }) : null,
+        removedBy: (c["removed_by"] ?? null) as WriteCandidate["removedBy"],
+        selected: c["selected"] === true,
+        spine: (c["spine"] ?? null) as WriteCandidate["spine"],
+        halves: (c["halves"] ?? null) as WriteCandidate["halves"],
+        bodies: (c["bodies"] ?? null) as WriteCandidate["bodies"],
+        rays: (c["rays"] ?? []) as WriteCandidate["rays"],
+        emergent: (c["emergent"] ?? null) as WriteCandidate["emergent"],
+        stayer: (c["stayer"] ?? null) as WriteCandidate["stayer"],
+      })),
+    };
+  });
 }
 
 function errorFrom(fold: Record<string, unknown>): TraceError | null {
@@ -164,7 +189,7 @@ export function parseFold(input: string | object): FoldScene {
     writes: statements.filter((s) => s.kind === "fold" || s.kind === "mark"),
     references, namedPoints, namedLines,
     creases: groupCreases(cp), marks: marksFrom(fold), inspect,
-    trace: traceFrom(fold), error: errorFrom(fold),
+    trace: traceFrom(fold), writeTrace: writeTraceFrom(fold), error: errorFrom(fold),
   };
 }
 

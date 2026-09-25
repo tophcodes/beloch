@@ -153,6 +153,39 @@ export interface TraceEntry {
   candidates: TraceCandidate[];
   conics: Conic[];
 }
+// The entries of beloch:trace that a write left: the terms of its definition
+// on the state it read, and the states it chose from, each with the rule that
+// removed it. Regions are one polygon per face, in table coordinates.
+export type Region = Vec2[][];
+export type Segment = [Vec2, Vec2];
+export type WriteRemoval =
+  | "halves" | "bodies" | "interleaved" | "crossing"          // reverse
+  | "opposite" | "toward" | "mountains" | "top";              // flatten
+export type WriteTerms =
+  | {
+      write: "fold"; axis: LineCoeffs; side: number; moving: Region;
+      placement: "top" | "bottom" | "over" | "under";
+      target: Region | null;                                   // for over and under
+    }
+  | { write: "reverse"; axis: LineCoeffs; side: number; kind: "inside" | "outside"; tip: Region }
+  | { write: "flatten"; point: Vec2 };
+export interface WriteCandidate {
+  frame: Frame | null;                                       // the candidate state; null where none exists
+  removedBy: WriteRemoval | null;
+  selected: boolean;
+  spine: Segment | null;                                     // reverse
+  halves: [Region, Region] | null;                           // reverse, the half at the lower body first
+  bodies: [Region, Region] | null;                           // reverse, the lower body first
+  rays: Segment[];                                           // flatten, the rays the program gave
+  emergent: Segment | null;                                  // flatten
+  stayer: Segment | null;                                    // flatten, the ends of the rays that bound it, counter-clockwise
+}
+export interface WriteEntry {
+  statement: number;                                         // index into scene.statements
+  frameIndex: number;                                        // index into scene.steps: the state before the write
+  terms: WriteTerms;
+  candidates: WriteCandidate[];
+}
 // beloch:error: why a traced program stopped.
 export interface TraceError {
   message: string;
@@ -172,7 +205,8 @@ export interface FoldScene {
   creases: Crease[];                                         // grouped by provenance name on the CP frame
   marks: Mark[];                                              // beloch:marks, paper-space, CP frame only
   inspect: Inspect | null;                                   // beloch:inspect, entity inspector data
-  trace: TraceEntry[];                                       // beloch:trace; [] when the file was written without --trace
+  trace: TraceEntry[];                                       // the constructions in beloch:trace; [] when the file was written without --trace
+  writeTrace: WriteEntry[];                                  // the writes in beloch:trace
   error: TraceError | null;                                  // beloch:error; null unless a traced program failed
 }
 
