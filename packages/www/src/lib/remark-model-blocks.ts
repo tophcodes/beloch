@@ -71,7 +71,7 @@ const LABELS: Record<string, string> = {
 // generates, so the bindings cover them all.
 // The vocabulary lives under the docs site; the statements themselves are
 // resources on the page (`/model/#def-…`), so the two fragment spaces stay apart.
-const PREFIX = "bm: https://beloch.toph.so/ns/model#";
+const PREFIX = "bm: https://belochlang.org/ns/model#";
 
 const FIGURE_VIEWS = ["cp", "folded"];
 

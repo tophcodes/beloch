@@ -19,16 +19,19 @@
  * Type. The monospace is shipped rather than asked for: it is load-bearing
  * here, because a reader has to tell `.a` from `.o`, `--` from `-`, `1` from
  * `l` and `!` from `|` in a language where each of those means something
- * different. Prose takes a system stack; a paragraph does not carry that
- * weight. Mathematics stays on KaTeX's own fonts.
+ * different. Prose is shipped as well, so a page reads the same on every
+ * system: TeX Gyre Pagella, the free Palatino, subset and served as
+ * "Beloch Pagella". An installed Pagella or Palatino only stands in when the
+ * webfont does not load. Mathematics stays on KaTeX's own fonts, and the PDF
+ * sets its own type.
  *
  * One line height for prose on every surface, landing and docs alike.
- * Palatino runs narrower than a system sans, so 1.55 holds a paragraph
+ * Pagella runs narrower than a system sans, so 1.55 holds a paragraph
  * together where Starlight's own 1.75 opens it up.
  * ────────────────────────────────────────────────────────────────────────── */
 :root {
 	--bel-font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
-	--bel-font-prose: Palatino, 'Palatino Linotype', 'URW Palladio L', Georgia, serif;
+	--bel-font-prose: 'Beloch Pagella', 'TeX Gyre Pagella', Palatino, 'Palatino Linotype', 'URW Palladio L', Georgia, serif;
 
 	--bel-line-height: 1.55;
 

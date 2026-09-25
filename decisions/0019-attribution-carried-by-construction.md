@@ -126,7 +126,7 @@ our own tools.
   copyright) is real but **not yet sourced in `refs/`**. This ADR deliberately
   does not state it from memory (a wrong attribution has happened before — see
   CLAUDE.md). To cite it in the paper or spec, drop `refs/<citekey>.txt` +
-  `paper/references.bib`; until then this is a marked gap, not a claim.
+  `bibliography/references.bib`; until then this is a marked gap, not a claim.
 
 ## Alternatives considered
 

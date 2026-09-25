@@ -26,6 +26,34 @@
 	font-display: swap;
 }
 
+/* The three shipped cuts of TeX Gyre Pagella, the prose face: regular, italic
+ * for emphasis and statement names, bold for run-in heads and the small-caps
+ * labels set at 600. Subset and renamed "Beloch Pagella" as the GUST Font
+ * License asks of a derived font; the licence and the regeneration command sit
+ * in public/fonts/README.md.
+ */
+@font-face {
+	font-family: 'Beloch Pagella';
+	src: url('/fonts/pagella-400.woff2') format('woff2');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'Beloch Pagella';
+	src: url('/fonts/pagella-400-italic.woff2') format('woff2');
+	font-weight: 400;
+	font-style: italic;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'Beloch Pagella';
+	src: url('/fonts/pagella-700.woff2') format('woff2');
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+
 /* One query turns motion off everywhere. The loading indicator then has to say
    in words what it is waiting for, because a still spinner says nothing. */
 @media (prefers-reduced-motion: reduce) {
@@ -350,28 +378,6 @@ h3:target + p { box-shadow: none; }
   box-shadow: var(--bel-shadow-overlay);
 }
 .note-popup p { margin: 0; }
-
-/* Collapsed sidebar (desktop only; the mobile drawer keeps its own toggle).
-   The sidebar width variable stays as it is because the right-hand table of
-   contents derives its width from it; only the content offset and the
-   two-column split drop the sidebar. The pane is hidden with visibility so
-   the toggle button inside it can stay visible. */
-@media (min-width: 50rem) {
-  html[data-sidebar-collapsed] {
-    --sl-content-inline-start: 0px;
-  }
-  html[data-sidebar-collapsed] .sidebar-pane {
-    visibility: hidden;
-  }
-}
-@media (min-width: 72rem) {
-  html[data-sidebar-collapsed] .right-sidebar-container {
-    width: max(var(--sl-sidebar-width), calc((100% - var(--sl-content-width)) / 2));
-  }
-  html[data-sidebar-collapsed][data-has-sidebar][data-has-toc] .main-pane {
-    width: min(100%, calc(var(--sl-content-width) + (100% - var(--sl-content-width)) / 2));
-  }
-}
 
 /* ──────────────────────────────────────────────────────────────────────────
  * The Starlight bridge.

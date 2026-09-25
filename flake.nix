@@ -96,7 +96,7 @@
             pkgs.bun
             # msolve subprocess driver (separate research package)
             pkgs.msolve
-            # spec/MODEL.md -> PDF with citations from paper/references.bib
+            # spec/MODEL.md -> PDF with citations from bibliography/references.bib
             # (scripts/render-model.sh); typst is pandoc's PDF engine here
             pkgs.pandoc
             pkgs.typst

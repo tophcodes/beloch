@@ -553,7 +553,9 @@ drei Erlaubnisse stehen darin. Das Projekt ist MIT-lizenziert; ein Fork muss die
 Seite bauen und das Paper setzen können. "Free for personal use" fällt aus.
 
 **B4.18** Webfonts liegen als woff2 vor, auf den gesetzten Zeichenvorrat
-reduziert, und jede Familie kommt mit höchstens zwei Schnitten aus.
+reduziert. Die Monospace kommt mit höchstens zwei Schnitten aus, die
+Prosaschrift mit höchstens drei: Regular, Italic und Bold, weil Bold die
+Kapitälchen-Labels und die Überschriften im Absatz trägt.
 *Prüfung:* Dateiliste und Gesamtgröße. Eine Schriftfamilie mit neun Gewichten im
 Build ist ein Fehlschlag.
 
@@ -823,7 +825,7 @@ Dinge wie die Zeichnung.
 
 ## 8.6 Konferenzfolien
 
-Existieren noch nicht (`paper/README.md`, 9OSME Xi'an, August 2027).
+Existieren noch nicht (Publikationsplan in `beloch-research`, `paper/README.md`; 9OSME Xi'an, August 2027).
 
 *Übertragbar:* Tokens, Typografie, Wortmarke, Artefaktregeln, die Strichsprache.
 *Eigene Regeln:* Projektionsbedingungen. Ein Beamer in einem hellen Saal frisst

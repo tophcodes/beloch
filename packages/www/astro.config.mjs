@@ -14,7 +14,6 @@ import rehypeCitation from 'rehype-citation/node/rehype-citation.mjs';
 import rehypeCitePost from './src/lib/rehype-cite-post.ts';
 import { headSyncScript } from "./src/lib/paper-schemes.ts";
 import { notePopupScript } from "./src/lib/note-popups.ts";
-import { sidebarCollapseScript } from "./src/lib/sidebar-collapse.ts";
 import { DESCRIPTION } from "./src/lib/description.ts";
 
 // Anchor repo root to this file's location (packages/www/astro.config.mjs → two levels up).
@@ -51,7 +50,7 @@ export default defineConfig({
 	// The canonical domain (DEPLOY.md). Starlight only emits `og:url` and the
 	// per-page canonical link when `site` is set, and an absolute `og:image`
 	// needs a known origin to resolve against.
-	site: 'https://beloch.toph.so',
+	site: 'https://belochlang.org',
 	vite: {
 		resolve: {
 			alias: {
@@ -106,9 +105,9 @@ export default defineConfig({
 				// `bibliography` is joined onto `path`; an absolute path here
 				// would be appended to the cwd and fail to resolve.
 				path: repoRoot,
-				bibliography: join('paper', 'references.bib'),
+				bibliography: join('bibliography', 'references.bib'),
 				// note style: a footnote marker in the text, the locator in the note
-				csl: join('paper', 'chicago-notes-bibliography.csl'),
+				csl: join('bibliography', 'chicago-notes-bibliography.csl'),
 				linkCitations: true,
 			}],
 			rehypeCitePost,
@@ -138,7 +137,6 @@ export default defineConfig({
 				},
 			],
 			components: {
-				Sidebar: './src/components/Sidebar.astro',
 				// One header on every page. The mobile drawer picks up the text
 				// links the compact header drops.
 				Header: './src/components/DocsHeader.astro',
@@ -157,7 +155,7 @@ export default defineConfig({
 				// project, not individually illustrated pages.
 				{
 					tag: "meta",
-					attrs: { property: "og:image", content: "https://beloch.toph.so/og-image.png" },
+					attrs: { property: "og:image", content: "https://belochlang.org/og-image.png" },
 				},
 				{
 					tag: "meta",
@@ -169,15 +167,11 @@ export default defineConfig({
 				},
 				{
 					tag: "meta",
-					attrs: { name: "twitter:image", content: "https://beloch.toph.so/og-image.png" },
+					attrs: { name: "twitter:image", content: "https://belochlang.org/og-image.png" },
 				},
 				{
 					tag: "script",
 					content: headSyncScript(),
-				},
-				{
-					tag: "script",
-					content: sidebarCollapseScript(),
 				},
 				{
 					tag: "script",

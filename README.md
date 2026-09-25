@@ -1,58 +1,133 @@
-Beloch, named after [Margherita Piazzola Beloch][mpb], is a declarative language for origami, built on the [Huzita-Justin axioms][huzita-justin], that evaluates source models into folded states and crease patterns.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="packages/www/public/brand/mark-dark.svg">
+    <img src="packages/www/public/brand/mark-light.svg" alt="" width="72">
+  </picture>
+</p>
 
-[mpb]: https://en.wikipedia.org/wiki/Margherita_Piazzola_Beloch
-[huzita-justin]: https://langorigami.com/article/huzita-justin-axioms/
+<h1 align="center">beloch</h1>
 
-A program is a sequence of folds. Each line applies one of the seven axioms to
-the points and creases the sheet already carries, or collapses a vertex flat,
-and the evaluator works out where the paper ends up. Coordinates stay exact,
-so "does this point lie on this line" has an answer rather than a tolerance.
-Those seven constructions and three writing verbs are the whole language.
+<p align="center">
+A declarative language for origami. A program names points and creases and
+folds along constructions that align them. Beloch evaluates it exactly, step by
+step, into a <a href="https://github.com/edemaine/fold">FOLD</a> file, the
+exchange format of computational-origami tools. Its own renderer draws crease
+patterns and folded states from that file, and other FOLD tools can open it.
+</p>
 
-> **Status:** the evaluator implements all seven Huzita-Justin axioms over an
-> exact real-algebraic number kernel and emits [FOLD][fold-spec]. The language
-> reference is [`spec/BELOCH.md`](spec/BELOCH.md), the mathematics
-> [`spec/MODEL.md`](spec/MODEL.md), the architecture
-> [`decisions/`](decisions/), the design journal [`notes/`](notes/). Licensed
-> MIT ([`LICENSE.md`](LICENSE.md)). Try it at
-> **[beloch.toph.so](https://beloch.toph.so)**.
+<p align="center">
+<a href="https://belochlang.org/playground/"><b>Playground</b></a> ·
+<a href="https://belochlang.org/language/">Language</a> ·
+<a href="https://belochlang.org/model/">Model</a> ·
+<a href="https://doi.org/10.5281/zenodo.22884252"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.22884252.svg" alt="DOI" align="absmiddle"></a>
+</p>
 
-[fold-spec]: https://github.com/edemaine/fold
+| crease pattern | folded |
+| --- | --- |
+| ![crane.bel as a crease pattern](examples/crane-cp.svg) | ![crane.bel folded flat](examples/crane-folded.svg) |
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22884252.svg)](https://doi.org/10.5281/zenodo.22884252)
+The traditional crane, flat, in sixteen statements:
+[`examples/crane.bel`](examples/crane.bel). It follows steps 2 to 17 of Ida's
+crane program
+([Ida 2020](https://doi.org/10.1007/978-3-319-59189-6), Fig. 7.19); her last
+two steps open the wings in 3D, which Beloch does not model yet. The native
+evaluator folds it; the browser playground cannot evaluate it yet.
 
 ## Reading a program
 
-Everything below uses six pieces of notation. The full grammar is in
-[`spec/BELOCH.md`](spec/BELOCH.md).
+```
+paper square
 
-| | |
-|---|---|
-| `paper square` | the unit square. It pre-binds the corners `.a` `.b` `.c` `.d` counter-clockwise from the origin, and the edges between them as `--ab` `--bc` `--cd` `--da`. |
-| `.name` | a point. |
-| `--name` | a crease, whose geometric value is an infinite line. |
-| `(…)` | a construction: `(through .a .c)` is the line through two points, `(map .a onto .c)` the fold that carries one point onto another, `(map --ab onto --diag)` the one that carries one line onto another. Each is an axiom; the table under [a note on axiom numbering](spec/SPECIFICATION.md#a-note-on-axiom-numbering) maps all seven onto the rival schemes, because Wikipedia's numbering disagrees with this one. |
-| `as --name` | binds the crease a statement scores, so later statements can name it. |
-| `--l \ .p` | the part of a crease bundle *away from* a point. `--ba \ .a` is the ray of `--ba` that does not run through `.a`. |
+fold (map .a onto .c) as --bd           ; triangle: corner a onto corner c
+reverse (map .b onto .c) as --h         ; corner b tucked inside, onto c
+reverse (map .d onto .c) as --v         ; corner d likewise
+```
 
-Three verbs write: `mark` scores a crease without moving paper, `fold` moves
-paper, and `flatten` collapses a vertex flat. `flatten` is the one that does
-more than apply an axiom: given the rays that meet at a vertex, it derives the
-crease that closes it, which is how a program expresses a fold no axiom
-constructs from the points it has named.
+That is the preliminary base
+([`examples/bases/preliminary-reverse.bel`](examples/bases/preliminary-reverse.bel)).
+`paper square` gives the unit square with corners `.a` `.b` `.c` `.d`
+counter-clockwise from the origin. A name with a dot is a point, a name with
+two dashes is a crease. `(map .a onto .c)` is the fold line that carries one
+point onto another, one of the seven Huzita-Justin axioms; `as --bd` names the
+crease so later statements can use it.
 
-Every program emits a [FOLD][fold-spec] file, which renders into the pairs
-below. The crease pattern shows the sheet as it is folded: mountains and
-valleys are derived from the layer order, and the construction lines that were
-only scored stay flat.
+Five verbs write to the paper. `mark` scores a crease and moves nothing,
+`fold` folds along it, `reverse` makes an inside or outside reverse fold,
+`flip` turns the paper over, and `flatten` folds a vertex flat along several
+rays at once; given an odd number of them, it derives the one ray that is
+missing. The evaluator works out where every layer goes and which creases end
+up mountain or valley. The full grammar is in [`spec/BELOCH.md`](spec/BELOCH.md)
+and on the [language page](https://belochlang.org/language/).
 
-## Bases
+## Related work
 
-### Fish base
+Written origami languages predate computers: Smith's Origami Instruction
+Language ([1975](#references)) is executed by a human folder. Fisher
+([1994](#references)) gave a textual folding language with its own syntax and
+a program that executes it and tracks face layering. Ida's Eos
+([Ida et al. 2009](#references);
+[Ida 2020](https://doi.org/10.1007/978-3-319-59189-6)) is the most complete
+system. Its language Orikoto is a subset of the Wolfram Language inside
+Mathematica; it folds by the Huzita-Justin rules, maintains the superposition
+relation between faces, and proves constructions correct with Gröbner bases,
+while the folds themselves are solved numerically
+([Ida et al. 2008](https://doi.org/10.1016/j.entcs.2008.06.032)). Caruana and
+Pace ([2007](#references)) embed the axioms in Haskell for plane constructions
+and derive the preconditions a construction needs. eGami
+([Fastag 2009](#references)) generates diagrams from direct manipulation.
+Rabbit Ear ([Kraft 2016](https://github.com/rabbit-ear/rabbit-ear)) is a
+JavaScript library with the seven axioms as functions, FOLD manipulation and
+folding simulation; a construction written with it is a JavaScript program,
+and it reads the FOLD files Beloch emits.
 
-Two long flaps from opposite corners. Each half of the diagonal is collapsed
-with `flatten`, which derives the crease that closes the vertex: the one
-crease here that no axiom constructs from the named points.
+Beloch combines what these hold separately: a standalone language that always
+terminates, evaluated to its folded state in exact arithmetic.
+
+## What is new
+
+The evaluator computes the folded state of a folding sequence in exact
+real-algebraic arithmetic (FLINT `qqbar`): where every layer lies, the stacking
+order of the layers, and which creases end up mountain or valley. A coincidence
+such as "this corner lies on this crease" is decided, and a √2 from axiom 5 or
+the cube root of axiom 7 stays exact through every later fold. Fisher's
+executor places lines near vertices by tolerance and Eos solves each fold
+numerically; here the question is decided exactly.
+
+`flatten` folds a vertex flat along several rays at once. Given an odd number
+of rays, it derives the ray that Kawasaki's condition forces and scores it as
+a new crease. This expresses folds no Huzita-Justin axiom constructs from the
+points a program has named; the swivel rabbit ear below is one.
+
+Both rest on the language: a program is a finite sequence of constructions and
+folds, with no loops, no recursion (a `def` sees only earlier `def`s) and no
+host language
+([decision 0009](decisions/0009-relationship-to-rabbit-ear.md)). Every program
+terminates, its statements are its folding sequence, and every crease in the
+FOLD output names the statement and the construction that made it.
+
+## Status
+
+- **Implemented:** all seven axioms, the five verbs, FOLD output, crease
+  pattern and folded-state rendering, a browser build. The programs in
+  [`examples/`](examples/) evaluate end to end, up to the flat crane, and most
+  of them carry assertions the test suite checks.
+- **Formalised:** [`spec/MODEL.md`](spec/MODEL.md) defines folded states and
+  the operations on them. Its first sections are reviewed; the section on
+  operations is a draft, and two of its lemmas, among them that a fold
+  introduces no crossing, have pending proofs.
+- **Not yet:** Yoshizawa-Randlett folding diagrams, 3D states
+  ([decision 0015](decisions/0015-flat-folded-states-only.md)), and
+  measurements on programs longer than a few dozen statements.
+
+## More programs
+
+| | | |
+| --- | --- | --- |
+| [![bird base](examples/bases/bird-base-cp.svg)](examples/bases/bird-base.bel) | [![fish base](examples/bases/fish-base-cp.svg)](examples/bases/fish-base.bel) | [![swivel rabbit ear](examples/bases/swivel-rabbit-cp.svg)](examples/bases/swivel-rabbit.bel) |
+| **Bird base**, seven statements, exact √2 coordinates | **Fish base**, closed with two `flatten`s | **Swivel rabbit ear**, whose fourth ray no axiom constructs |
+
+<details>
+<summary>The fish base program</summary>
 
 ```
 paper square
@@ -69,27 +144,17 @@ mark (map --bc onto --diag) as --l4
 flatten (--l3) (--l4) (--ray) (toward .d)
 ```
 
-| crease pattern | folded |
-| --- | --- |
-| ![fish-base.bel as a crease pattern: the a-c diagonal, four kite creases folded onto it, and the two emergent creases that close the vertices](examples/bases/fish-base-cp.svg) | ![fish-base.bel folded: two narrow flaps from opposite corners](examples/bases/fish-base-folded.svg) |
+![fish-base.bel folded: two narrow flaps from opposite corners](examples/bases/fish-base-folded.svg)
 
-Both drawings above are the output of the renderer, checked into the
-repository and reproduced by:
+</details>
 
-```sh
-beloch render examples/bases/fish-base.bel fish-base-cp.svg --view cp --legend
-beloch render examples/bases/fish-base.bel fish-base-folded.svg --view folded --legend
-```
+<details>
+<summary>The swivel rabbit ear program</summary>
 
-### Swivel rabbit ear
-
-A rabbit ear whose hinges sit at a free height on the side edges rather than
-at the triangle's angle bisectors. Only three of the four rays at the hinge
-vertex are given, and flat-foldability forces the fourth, so the crease that
-closes the vertex is not constructible by any Huzita axiom from the named
-points. `flatten` solves for it and binds it to `--ear`.
-
-The scaffolding is what locates the hinge height; it is scored and stays flat.
+The hinges sit at a free height on the side edges. Three of the four rays at
+the hinge vertex are given, flat-foldability forces the fourth, and `flatten`
+solves for it and binds it to `--ear`. The scaffolding lines, prefixed `--_`,
+locate the hinge height and stay flat.
 
 ```
 paper square
@@ -112,24 +177,43 @@ mark (through .b .[--da --lowerh]) as --bb   ; hinge from b, same height
 flatten (--ba \ .a) (--bb \ .b) (--v \ .m) (toward .c) as --ear
 ```
 
-| crease pattern | folded |
-| --- | --- |
-| ![swivel-rabbit.bel as a crease pattern: scaffolding lines flat, two hinge valleys, and the single emergent mountain](examples/bases/swivel-rabbit-cp.svg) | ![swivel-rabbit.bel folded: the ear swivelled to one side](examples/bases/swivel-rabbit-folded.svg) |
+![swivel-rabbit.bel folded: the ear swivelled to one side](examples/bases/swivel-rabbit-folded.svg)
 
-More programs, from a kite to the bird base, are in [`examples/`](examples/).
-Most of them end in `; assert` lines (`assert steps = 2`,
-`assert --bd is mountain`), which the test suite checks, so a corpus program
-states what it is supposed to produce and fails the build when it stops.
+</details>
 
-## What exact arithmetic costs
+Every drawing on this page is the renderer's output for the linked program.
+`scripts/render-readme-figures.sh` redraws them, and CI fails when one no
+longer matches its program.
 
-Coordinates are real-algebraic numbers, so a cube root stays a cube root and a
-coincidence either holds or does not. That is the reason to use this over a
-floating-point tool, and it is paid for in evaluation time. Measured on the
-benchmark corpus with `dune exec packages/core/bench/bench_fold.exe`, on one
-developer machine:
+## Running it
 
-| program | |
+The [playground](https://belochlang.org/playground/) needs no install. It runs
+the same evaluator, compiled to JavaScript with js_of_ocaml and backed by a
+WebAssembly build of FLINT. An operation that forces a value the browser
+backend cannot canonicalise says so and asks for the native evaluator; it
+never returns a wrong answer.
+
+With Nix, the evaluator runs without a checkout:
+
+```sh
+nix run github:tophcodes/beloch -- fold program.bel    # FOLD JSON on stdout
+```
+
+Rendering needs the development shell (below), which puts the renderer on
+`PATH`:
+
+```sh
+beloch render examples/crane.bel crane.svg --view cp   # or --view folded
+beloch render examples/crane.bel --open                # render and open it
+```
+
+<details>
+<summary>What exact arithmetic costs</summary>
+
+Exactness is paid for in evaluation time. Measured on the benchmark corpus
+with `dune exec packages/core/bench/bench_fold.exe`, on one developer machine:
+
+| program | time |
 |---|---|
 | fish base (√2 throughout) | 0.24 s |
 | swivel rabbit ear | 0.13 s |
@@ -139,60 +223,72 @@ developer machine:
 
 These are programs of ten to thirty statements. How the kernel behaves on
 chained cubic folds, or on a crease pattern with hundreds of vertices, has not
-been measured. The benchmark runs a fixed corpus, listed at the top of
-`packages/core/bench/bench_fold.ml`; measuring another program means adding it
-there.
+been measured. The corpus is listed at the top of
+`packages/core/bench/bench_fold.ml`.
 
-## Running a program
-
-```sh
-beloch fold   examples/bases/fish-base.bel            # FOLD JSON on stdout
-beloch render examples/bases/fish-base.bel out.svg    # SVG, --view cp|folded
-beloch render examples/bases/fish-base.bel --open     # render and open it
-```
-
-The browser playground at [beloch.toph.so](https://beloch.toph.so) runs the
-same evaluator, compiled to JavaScript with js_of_ocaml and backed by a
-WebAssembly build of FLINT for the algebraic numbers. It carries one limit: an
-operation that forces a value the browser backend cannot canonicalise says so
-and asks for the native evaluator, rather than returning a wrong answer.
-Rational programs, the axiom-7 cube-root fragment included, round-trip in the
-browser.
+</details>
 
 ## Development
 
-The evaluator core is OCaml; tooling lives at the edges in TypeScript (see
-[decision 0001](decisions/0001-ocaml-core-typescript-edge.md)). A Nix flake
-provides the OCaml toolchain (dune, menhir, sedlex, ocaml-lsp, …), so Nix and
-[direnv](https://direnv.net/) are the only prerequisites:
+The evaluator core is OCaml, the tooling around it TypeScript. A Nix flake
+provides both toolchains, so Nix and [direnv](https://direnv.net/) are the only
+prerequisites:
 
 ```sh
 direnv allow          # or: nix develop
-dune build
-dune exec beloch -- --help
+check                 # every test suite
+check-all             # what CI runs, adding docs, README drawings, site
 ```
 
-Tests run with `scripts/run-ocaml-tests.sh`, which holds the alcotest suites
-against a recorded baseline in `scripts/known-failures.txt`. The suite is not
-green: four cases fail on one defect in flatten's tier pre-mask (issue #51),
-and the baseline exists so that a new failure anywhere still fails the build
-while that one is open. The TypeScript side runs with `bun test` in each
-package.
+The kernel suites have known failures, recorded with their cause in
+`scripts/known-failures.txt`; a failure beyond them fails the check.
 
-## Layout
+## References
 
+- Caruana, G. and Pace, G. J. (2007). Embedded Languages for Origami-Based
+  Geometry. *Proceedings of the Computer Science Annual Workshop (CSAW)*,
+  University of Malta.
+- Fastag, J. (2009). eGami: Virtual Paperfolding and Diagramming Software. In
+  R. J. Lang (ed.), *Origami⁴*, A K Peters, 273–283.
+- Fisher, D. (1994). *Origami On Computer*. Honours thesis, Basser Department
+  of Computer Science, University of Sydney.
+- Ida, T. (2020). *An Introduction to Computational Origami*. Springer.
+  [doi:10.1007/978-3-319-59189-6](https://doi.org/10.1007/978-3-319-59189-6)
+- Ida, T., Marin, M., Takahashi, H. and Ghourabi, F. (2008). Computational
+  Origami Construction as Constraint Solving and Rewriting. *Electronic Notes
+  in Theoretical Computer Science* 216, 31–44.
+  [doi:10.1016/j.entcs.2008.06.032](https://doi.org/10.1016/j.entcs.2008.06.032)
+- Ida, T., Takahashi, H., Marin, M., Kasem, A. and Ghourabi, F. (2009).
+  Computational Origami System Eos. In R. J. Lang (ed.), *Origami⁴*,
+  A K Peters, 285–293.
+- Kraft, R. (2016–). *Rabbit Ear*, a computational origami library.
+  [github.com/rabbit-ear/rabbit-ear](https://github.com/rabbit-ear/rabbit-ear)
+- Smith, J. S. (1975). *Origami Instruction Language*. British Origami Society
+  Booklet No. 4.
+
+BibTeX for all of them is in [`bibliography/references.bib`](bibliography/references.bib).
+
+## Citing
+
+```bibtex
+@software{muehl_beloch,
+  author  = {M{\"u}hl, Christopher},
+  title   = {Beloch: a declarative language for origami},
+  year    = {2026},
+  doi     = {10.5281/zenodo.22884252},
+  url     = {https://github.com/tophcodes/beloch}
+}
 ```
-packages/core/      evaluator core + `beloch` CLI (OCaml)
-packages/render-2d/ FOLD→SVG render engine (bun)
-packages/www/       landing + docs + Playground site
-packages/eval-web/  js_of_ocaml browser eval bundle
-packages/grammar/   tree-sitter grammar
-packages/vscode/    editor extension
-spec/         BELOCH.md the language, MODEL.md the mathematics, KERNEL.md the
-              implementation, FOLD.md the output; SPECIFICATION.md holds what
-              has not moved into those yet
-decisions/    architecture decision records (ADRs)
-notes/        dated design journal (+ antipatterns.md dead ends)
-examples/     .bel programs, tagged works / aspirational / anti
-paper/        the eventual write-up (arXiv / JOSS / OSME) + references.bib
-```
+
+GitHub's "Cite this repository" button offers the same entry and APA, read
+from [`CITATION.cff`](CITATION.cff).
+
+## Name
+
+Beloch is named after [Margherita Piazzola Beloch][mpb], whose 1936 work
+showed that folding solves general cubic equations. Axiom 7 is the Beloch
+fold.
+
+[mpb]: https://en.wikipedia.org/wiki/Margherita_Piazzola_Beloch
+
+Licensed MIT ([`LICENSE.md`](LICENSE.md)).

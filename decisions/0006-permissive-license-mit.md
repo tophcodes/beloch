@@ -34,4 +34,4 @@ Ship under a **permissive license — MIT** (already in `LICENSE.md`).
 
 - Minimal friction for academic/lab adoption and citation.
 - Pairs with the publication strategy (arXiv preprint + JOSS + eventually 9OSME,
-  ~2028) — see a future ADR / `../paper/` when that work begins.
+  ~2028) — the plan lives in the `beloch-research` repository (`paper/`).

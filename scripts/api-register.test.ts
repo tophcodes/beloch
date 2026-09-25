@@ -49,7 +49,7 @@ test("@see lines become realizations and leave the prose", () => {
 	expect(item("Sample.t").doc).toBe("");
 	expect(item("Sample.t").realizes).toEqual([
 		{
-			url: "https://beloch.toph.so/model/#def-flat-state",
+			url: "https://belochlang.org/model/#def-flat-state",
 			id: "def-flat-state",
 			text: "realizes the flat folded state",
 		},

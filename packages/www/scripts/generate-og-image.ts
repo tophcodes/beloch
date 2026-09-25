@@ -10,7 +10,7 @@
 // hero shows, rendered fresh through the project's headless render path
 // (`beloch fold` -> `beloch-render` -> resvg, packages/render-2d/render-svg/
 // bin/fold2svg.ts) and framed on the dark panel background from
-// packages/www/src/styles/theme.css with the "Beloch" wordmark in the site's
+// packages/www/src/styles/theme.css with the "beloch" wordmark in the site's
 // own header font. No color here is invented: the fold keeps
 // packages/render-2d/render-svg/src/theme.ts's DEFAULT_THEME colors, and the
 // panel/ink values are copied from theme.css's dark theme.
@@ -21,19 +21,24 @@
 // Requires the `beloch` binary on PATH (`nix develop`, same requirement
 // src/lib/eval-bel.ts has for the rest of the site build), @resvg/resvg-js
 // (a dependency of packages/render-2d/render-svg, resolved here via
-// node_modules hoisting), and a monospace font resvg's font database can
-// resolve "IBM Plex Mono, monospace" against, the same font stack the
-// site's CSS already asks browsers for.
+// node_modules hoisting), and fontkitten. The wordmark is outlined from
+// public/fonts/jetbrains-mono-600.woff2, the cut the site header sets it in,
+// and the tagline from public/fonts/pagella-400.woff2, the prose face, so the
+// image needs no installed font. fontkitten maps characters to glyphs without
+// shaping, so the tagline is set without kerning or ligatures; a shaper
+// (harfbuzzjs) would add both.
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
+import { create, type Font } from "fontkitten";
 
 const repoRoot = join(fileURLToPath(import.meta.url), "..", "..", "..", "..");
 const markPath = join(repoRoot, "packages", "www", "public", "brand", "mark.svg");
 const sourceBel = join(repoRoot, "examples", "bases", "bird-base.bel");
 const fold2svgBin = join(repoRoot, "packages", "render-2d", "render-svg", "bin", "fold2svg.ts");
 const outPath = join(repoRoot, "packages", "www", "public", "og-image.png");
+const fontsDir = join(repoRoot, "packages", "www", "public", "fonts");
 
 // theme.css dark theme: --bel-ui-surface and --bel-ui-text.
 const PANEL_BG = "#1C1A17";
@@ -86,13 +91,26 @@ const markInner = readFileSync(markPath, "utf8")
   .replaceAll("currentColor", INK)
   .trim();
 
+// A line of text as outline paths, its baseline at (x, baseline).
+const monoFont = create(readFileSync(join(fontsDir, "jetbrains-mono-600.woff2"))) as Font;
+const proseFont = create(readFileSync(join(fontsDir, "pagella-400.woff2"))) as Font;
+function outlinePath(font: Font, text: string, px: number, x: number, baseline: number): string {
+  const scale = px / font.unitsPerEm;
+  let d = "";
+  for (const glyph of font.glyphsForString(text)) {
+    d += glyph.path.scale(scale, -scale).translate(x, baseline).toSVG();
+    x += glyph.advanceWidth * scale;
+  }
+  return d;
+}
+
 const composed = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <rect width="${WIDTH}" height="${HEIGHT}" fill="${PANEL_BG}"/>
   <g transform="translate(96, ${MARK_Y}) scale(${MARK_SIZE / 64})" fill="none" stroke="${INK}" stroke-linecap="round">
     ${markInner}
   </g>
-  <text x="96" y="${MARK_Y + MARK_SIZE + 84}" font-family="IBM Plex Mono, monospace" font-size="72" font-weight="600" fill="${INK}">Beloch</text>
-  <text x="96" y="${MARK_Y + MARK_SIZE + 128}" font-family="IBM Plex Sans, sans-serif" font-size="22" fill="${INK}" opacity="0.7">A declarative language for origami</text>
+  <path fill="${INK}" d="${outlinePath(monoFont, "beloch", 72, 96, MARK_Y + MARK_SIZE + 84)}"/>
+  <path fill="${INK}" opacity="0.7" d="${outlinePath(proseFont, "A declarative language for origami", 22, 96, MARK_Y + MARK_SIZE + 128)}"/>
   <g transform="translate(${cardX}, ${cardY}) scale(${scale})">
     ${cardBg}
     ${innerMarkup}

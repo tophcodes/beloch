@@ -16,10 +16,11 @@ Cloudflare Pages project name: **`beloch-docs`** (see `packages/www/wrangler.tom
 1. **Cloudflare Actions secrets.** Set `CLOUDFLARE_API_TOKEN` (Pages-scoped:
    **Account → Cloudflare Pages → Edit**) and `CLOUDFLARE_ACCOUNT_ID` as repo
    Actions secrets.
-2. **DNS for `beloch.toph.so`.** The `toph.so` zone ("l") in
-   `fleet/tofu/cloudflare` still has a `TODO_toph_so_zone_id`. Add a `CNAME`
-   `beloch` → `beloch-docs.pages.dev` (via the CF dashboard, or complete the
-   tofu records for that zone).
+2. **DNS for `belochlang.org`.** The zone is on Cloudflare, and the apex is a
+   custom domain of the Pages project (the **Custom domains** tab creates the
+   record). `beloch.toph.so`, the site's first address, stays mapped to the
+   project and redirects to `belochlang.org` with a Cloudflare redirect rule,
+   so links in the Zenodo record and elsewhere keep resolving.
 3. **A `workflow`-scoped push.** The current `gh` tokens lack `workflow`
    scope, so `.github/workflows/deploy.yml` can't be pushed by automation —
    push it yourself, or grant the scope.
@@ -41,7 +42,7 @@ The workflow lives at `.github/workflows/deploy.yml` and runs on every push to
 If a Cloudflare Pages project for this repo has Git-integration **connected**,
 **disconnect it** — otherwise CF will also try to build on push and fail (no
 `beloch` on its bun-only builder). Pages should only receive builds via the
-Wrangler upload in the Actions job. Map the custom domain `beloch.toph.so` in
+Wrangler upload in the Actions job. Map the custom domain `belochlang.org` in
 the Pages project's **Custom domains** tab (creates/uses the CNAME from
 prerequisite 2) — that mapping is independent of which build path pushes to
 the project.

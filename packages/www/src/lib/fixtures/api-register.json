@@ -9,7 +9,7 @@
       "doc": "",
       "realizes": [
         {
-          "url": "https://beloch.toph.so/model/#def-flat-state",
+          "url": "https://belochlang.org/model/#def-flat-state",
           "id": "def-flat-state",
           "text": "realizes the flat folded state"
         }
@@ -45,7 +45,7 @@
       "doc": "hinges i and j interleave",
       "realizes": [
         {
-          "url": "https://beloch.toph.so/model/#def-sheet",
+          "url": "https://belochlang.org/model/#def-sheet",
           "id": "def-sheet",
           "text": "realizes the sheet"
         }
