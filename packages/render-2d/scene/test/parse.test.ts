@@ -79,6 +79,21 @@ test("parseFold: statements carries kept_marks per statement", async () => {
   expect(scene.statements[1]!.keptMarks.map((m) => m.creaseId)).toEqual([0, 1]);
 });
 
+test("parseFold: an apply entry is no write, and its body names it as parent", () => {
+  const fold = {
+    vertices_coords: [[0, 0], [1, 0], [1, 1], [0, 1]],
+    "beloch:statements": [
+      { kind: "apply", def: "half", parent: null, source_line: 5, frame_index: 0, mark: null, kept_marks: [] },
+      { kind: "bind", parent: 0, source_line: 2, frame_index: 0, mark: null, kept_marks: [] },
+      { kind: "fold", parent: 0, source_line: 3, frame_index: 1, mark: null, kept_marks: [] },
+    ],
+  };
+  const scene = parseFold(fold);
+  expect(scene.writes.map((s) => s.index)).toEqual([2]);
+  expect(scene.statements.map((s) => s.parent)).toEqual([null, 0, 0]);
+  expect(scene.statements.map((s) => s.def)).toEqual(["half", null, null]);
+});
+
 test("pickStep: no label falls back to last step", async () => {
   const scene = parseFold(await golden("fold-quarter.fold"));
   expect(pickStep(scene)).toBe(scene.steps[scene.steps.length - 1]);

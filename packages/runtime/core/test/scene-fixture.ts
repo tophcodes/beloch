@@ -30,6 +30,8 @@ export function statement(index: number, spec: StatementSpec = {}): Statement {
     frameIndex: spec.frameIndex ?? index + 1,
     mark: null,
     keptMarks: spec.keptMarks ?? [],
+    parent: null,
+    def: null,
   };
 }
 

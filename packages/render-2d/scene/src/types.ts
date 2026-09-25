@@ -30,13 +30,14 @@ export interface Step {
   frame: Frame;                                              // self-contained (merged over root)
 }
 
-// Which axis a statement moves (ADR 0026). "fold" and "mark" are the writes:
+// Which axis a statement moves (ADR 0030). "fold" and "mark" are the writes:
 // the paper moved, or it was scored and stands where it was. "bind" moves the
 // program alone — a point, a construction line, a bundle, a definition, an
-// export.
-export type StatementKind = "fold" | "mark" | "bind";
+// export. "apply" runs a def; its body's entries follow it.
+export type StatementKind = "fold" | "mark" | "bind" | "apply";
 
-// beloch:statements — one entry per top-level statement, source order. A mark
+// beloch:statements — one entry per executed statement, execution order,
+// the statements of an apply's body flat after the apply (ADR 0030). A mark
 // entry embeds its OWN mark geometry as recorded at that statement (not a
 // beloch:marks lookup — a mark that later graduates into a real crease is
 // dropped from beloch:marks, but its Statement.mark here is unaffected).
@@ -49,6 +50,8 @@ export interface Statement {
   frameIndex: number;                                        // beloch:statements[i].frame_index — index into scene.steps
   mark: Mark | null;                                          // present only for kind: "mark"
   keptMarks: Mark[];                                          // beloch:statements[i].kept_marks — marks still dangling as of this statement (not yet graduated into a real crease)
+  parent: number | null;                                     // index of the apply entry this statement runs under; null at the top level
+  def: string | null;                                        // the def an apply entry runs; null for every other kind
 }
 
 // beloch:references — where the program names a crease. `span` is the

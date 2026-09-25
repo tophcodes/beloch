@@ -49,6 +49,8 @@ const statement = (index: number): Statement => ({
   frameIndex: index + 1,
   mark: null,
   keptMarks: [],
+  parent: null,
+  def: null,
 });
 
 // One statement, so frame 1 is the final fold and frame 0 the sheet before it.
