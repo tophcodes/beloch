@@ -20,6 +20,27 @@ objections came up:
 2. JavaScript is Turing-complete, so Rabbit Ear is "more capable" than a small
    declarative language.
 
+Both routes this decision weighs have been taken before.
+
+- **Embedded, in a full host language.** Eos ([ida2009eos](../paper/references.bib),
+  [ida2020](../paper/references.bib)) is the most complete origami construction
+  system. Its language Orikoto is a subset of the Wolfram Language and runs
+  inside Mathematica with the whole host available [ida2020, §2.2.1, §3.8.1].
+  It computes the superposition of faces, proves constructions correct with
+  Gröbner bases, and gives its commands a denotational semantics
+  [ida2020, App. B.2]. It solves the folds themselves numerically and keeps
+  the constraints symbolic for the proofs [ida2008entcs]. Caruana and Pace
+  ([caruana2007](../paper/references.bib)) embed the axioms in Haskell for
+  plane constructions.
+- **Standalone.** Fisher ([fisher1994](../paper/references.bib)) gave a textual
+  folding language with its own syntax and an executor that tracks face
+  layering; its fold types are Huzita's. Multiple folds were designed and not
+  implemented.
+
+Beloch cannot claim to be the first standalone origami language or the first
+with a formal semantics. What it adds to Fisher's route is exact evaluation of
+the folded state and a language that guarantees termination.
+
 ## Decision
 
 Beloch is a **standalone, declarative, deliberately non-Turing-complete**
