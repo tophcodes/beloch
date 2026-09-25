@@ -225,6 +225,17 @@ let test_flatten_odd () =
 
 (* .d lands at (1/2, ±√3/2); every point of y = 0 is as near to one landing
    as to the other, so `toward .b` selects nothing *)
+let test_landing () =
+  let json, _ = fold_traced (triangle " toward .c") in
+  let lands =
+    candidates (List.nth (entries json) 1) |> List.map (fun c -> c |> member "landing" |> floats)
+  in
+  (* .d = (0, 1) folded through .a lands on x = 1/2 at distance 1 from .a *)
+  List.iter
+    (fun l -> Alcotest.(check (float 1e-9)) "on --ef" 0.5 (List.hd l)) lands;
+  Alcotest.(check (list (float 1e-9))) "one above, one below" [ -0.8660254037844386; 0.8660254037844386 ]
+    (List.sort compare (List.map (fun l -> List.nth l 1) lands))
+
 let test_toward_tie () =
   let json, failed = fold_traced (triangle " toward .b") in
   Alcotest.(check bool) "the program fails" true failed;
@@ -263,6 +274,7 @@ let () =
           Alcotest.test_case "a single solution is one selected candidate" `Quick
             test_single_solution;
           Alcotest.test_case "axiom 5 in a binding" `Quick test_axiom5_bind;
+          Alcotest.test_case "axiom 6 records where the point lands" `Quick test_landing;
           Alcotest.test_case "a toward point on the boundary selects nothing" `Quick
             test_toward_tie;
           Alcotest.test_case "without --trace nothing changes" `Quick
