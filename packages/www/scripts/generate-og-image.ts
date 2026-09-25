@@ -23,8 +23,10 @@
 // (a dependency of packages/render-2d/render-svg, resolved here via
 // node_modules hoisting), and fontkitten. The wordmark is outlined from
 // public/fonts/jetbrains-mono-600.woff2, the cut the site header sets it in,
-// so it needs no installed font; the tagline is set in the prose stack of
-// --bel-font-prose and takes whichever of those fonts resvg finds.
+// and the tagline from public/fonts/pagella-400.woff2, the prose face, so the
+// image needs no installed font. fontkitten maps characters to glyphs without
+// shaping, so the tagline is set without kerning or ligatures; a shaper
+// (harfbuzzjs) would add both.
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -36,7 +38,7 @@ const markPath = join(repoRoot, "packages", "www", "public", "brand", "mark.svg"
 const sourceBel = join(repoRoot, "examples", "bases", "bird-base.bel");
 const fold2svgBin = join(repoRoot, "packages", "render-2d", "render-svg", "bin", "fold2svg.ts");
 const outPath = join(repoRoot, "packages", "www", "public", "og-image.png");
-const fontPath = join(repoRoot, "packages", "www", "public", "fonts", "jetbrains-mono-600.woff2");
+const fontsDir = join(repoRoot, "packages", "www", "public", "fonts");
 
 // theme.css dark theme: --bel-ui-surface and --bel-ui-text.
 const PANEL_BG = "#1C1A17";
@@ -89,12 +91,13 @@ const markInner = readFileSync(markPath, "utf8")
   .replaceAll("currentColor", INK)
   .trim();
 
-// The wordmark as outline paths, the word's baseline at (x, baseline).
-const font = create(readFileSync(fontPath)) as Font;
-function wordmarkPath(word: string, px: number, x: number, baseline: number): string {
+// A line of text as outline paths, its baseline at (x, baseline).
+const monoFont = create(readFileSync(join(fontsDir, "jetbrains-mono-600.woff2"))) as Font;
+const proseFont = create(readFileSync(join(fontsDir, "pagella-400.woff2"))) as Font;
+function outlinePath(font: Font, text: string, px: number, x: number, baseline: number): string {
   const scale = px / font.unitsPerEm;
   let d = "";
-  for (const glyph of font.glyphsForString(word)) {
+  for (const glyph of font.glyphsForString(text)) {
     d += glyph.path.scale(scale, -scale).translate(x, baseline).toSVG();
     x += glyph.advanceWidth * scale;
   }
@@ -106,8 +109,8 @@ const composed = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" heigh
   <g transform="translate(96, ${MARK_Y}) scale(${MARK_SIZE / 64})" fill="none" stroke="${INK}" stroke-linecap="round">
     ${markInner}
   </g>
-  <path fill="${INK}" d="${wordmarkPath("beloch", 72, 96, MARK_Y + MARK_SIZE + 84)}"/>
-  <text x="96" y="${MARK_Y + MARK_SIZE + 128}" font-family="Palatino, 'Palatino Linotype', 'URW Palladio L', Georgia, serif" font-size="22" fill="${INK}" opacity="0.7">A declarative language for origami</text>
+  <path fill="${INK}" d="${outlinePath(monoFont, "beloch", 72, 96, MARK_Y + MARK_SIZE + 84)}"/>
+  <path fill="${INK}" opacity="0.7" d="${outlinePath(proseFont, "A declarative language for origami", 22, 96, MARK_Y + MARK_SIZE + 128)}"/>
   <g transform="translate(${cardX}, ${cardY}) scale(${scale})">
     ${cardBg}
     ${innerMarkup}
