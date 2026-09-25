@@ -134,11 +134,58 @@ let ax5_sources (p : ax5_pending) : string list = p.sources
 
 (* axis line + provenance (axiom tag, source names), evaluated against the
    current table positions *)
-let axis_of (ctx : Ctx.ctx) (span : Error.span) (c : Ast.construction) :
+(* One candidate, the one the construction yields. *)
+let only (l : Geom.line) : Trace.candidate list =
+  [ { Trace.line = l; removed_by = None; selected = true } ]
+
+(* The selection axioms 6 and 7 share: drop the candidates that crease no
+   face (a line on the abstract plane has nothing to fold), keep a single
+   survivor, and among several take the one whose landing of [moved] lies
+   nearest the `toward` point, by exact squared distance. Records every
+   candidate with the rule that removed it before failing or returning. *)
+let pick (ctx : Ctx.ctx) ~trace span t ~conics ~(moved : Geom.point) ~x_opt
+    ~base ~none_msg ~ambig_msg (cands : Geom.line list) : axis_result =
+  let cuts = List.map (fun c -> (c, Fold_state.line_cuts_paper !(ctx.state) c)) cands in
+  let kept = List.filter_map (fun (c, ok) -> if ok then Some c else None) cuts in
+  let xt = Option.map (Resolve.table_of ctx) x_opt in
+  let dist2 (xt : Geom.point) (c : Geom.line) =
+    let im = Geom.reflect_point c moved in
+    let ex = Num.sub im.Geom.x xt.Geom.x and ey = Num.sub im.Geom.y xt.Geom.y in
+    Num.add (Num.mul ex ex) (Num.mul ey ey)
+  in
+  let chosen =
+    match (kept, xt) with
+    | [ c ], _ -> Some c
+    | c0 :: (_ :: _ as rest), Some xt ->
+        Some
+          (List.fold_left
+             (fun b c -> if Num.compare (dist2 xt c) (dist2 xt b) < 0 then c else b)
+             c0 rest)
+    | _ -> None
+  in
+  if trace then
+    Ctx.record_trace ctx ~axiom:t ~toward:xt ~conics
+      (List.map
+         (fun (c, ok) ->
+           let selected = match chosen with Some s -> s == c | None -> false in
+           let removed_by =
+             if not ok then Some Trace.By_paper
+             else if chosen <> None && not selected then Some Trace.By_toward
+             else None
+           in
+           { Trace.line = c; removed_by; selected })
+         cuts);
+  match (kept, chosen, x_opt) with
+  | [], _, _ -> Error.fail span none_msg
+  | [ _ ], Some c, _ -> Axis (c, t, base)
+  | _, Some c, Some xo -> Axis (c, t, base @ [ Resolve.pstr xo ])
+  | _ -> Error.fail ~hint:"add 'toward .x'" span ambig_msg
+
+let axis_of ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (c : Ast.construction) :
     classified * axis_result =
   let cl = classify c in
   let t = tag cl in
-  ( cl,
+  let res =
   match cl with
   | Ax1 (p, q) ->
       let pp = Resolve.table_of ctx p and qq = Resolve.table_of ctx q in
@@ -221,55 +268,28 @@ let axis_of (ctx : Ctx.ctx) (span : Error.span) (c : Ast.construction) :
               fold exists"
              (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr p') (Resolve.pstr p) (Resolve.pstr p'));
       let base = [ Resolve.pstr p; Resolve.lstr d; Resolve.pstr p' ] in
+      let conics = [ { Trace.focus = pp; directrix = dd } ] in
       match Geom.beloch_creases pp dd pp' with
       | [] ->
+          if trace then
+            Ctx.record_trace ctx ~axiom:t
+              ~toward:(Option.map (Resolve.table_of ctx) x_opt) ~conics [];
           Error.fail span
             (Printf.sprintf "cannot fold %s onto %s through %s: out of reach"
                (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr p'))
-      | candidates -> (
-          (* a candidate that creases no face is a line on the abstract plane
-             with nothing to fold; same paper-incidence filter as axiom 5 *)
-          match List.filter (Fold_state.line_cuts_paper !(ctx.state)) candidates with
-          | [] ->
-              Error.fail span
-                (Printf.sprintf
-                   "map %s onto %s through %s: no crease lands on the paper — \
-                    no fold to make"
-                   (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr p'))
-          | [ c ] -> Axis (c, t, base)
-          | creases -> (
-              match x_opt with
-              | None ->
-                  Error.fail ~hint:"add 'toward .x'" span
-                    (Printf.sprintf
-                       "two folds place %s onto %s through %s, both landing on \
-                        the paper"
-                       (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr p'))
-              | Some xo ->
-                  let xt = Resolve.table_of ctx xo in
-                  (* pick the crease whose landing (the reflection of p across
-                     it) is nearest x; exact squared-distance comparison *)
-                  let dist2 (c : Geom.line) =
-                    let im = Geom.reflect_point c pp in
-                    let ex = Num.sub im.Geom.x xt.Geom.x
-                    and ey = Num.sub im.Geom.y xt.Geom.y in
-                    Num.add (Num.mul ex ex) (Num.mul ey ey)
-                  in
-                  let best =
-                    List.fold_left
-                      (fun acc c ->
-                        match acc with
-                        | None -> Some c
-                        | Some b ->
-                            if Num.compare (dist2 c) (dist2 b) < 0 then Some c
-                            else acc)
-                      None creases
-                  in
-                  match best with
-                  | Some c -> Axis (c, t, base @ [ Resolve.pstr xo ])
-                  (* unreachable: this arm only runs with ≥2 creases, so the
-                     fold over a non-empty list always yields [Some]. *)
-                  | None -> assert false)))
+      | candidates ->
+          pick ctx ~trace span t ~conics ~moved:pp ~x_opt ~base
+            ~none_msg:
+              (Printf.sprintf
+                 "map %s onto %s through %s: no crease lands on the paper — \
+                  no fold to make"
+                 (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr p'))
+            ~ambig_msg:
+              (Printf.sprintf
+                 "two folds place %s onto %s through %s, both landing on the \
+                  paper"
+                 (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr p'))
+            candidates)
   | Ax7 (p, d, q, e, x_opt) -> (
       let pp = Resolve.table_of ctx p and dd = Resolve.resolve_line ctx d in
       let qq = Resolve.table_of ctx q and ee = Resolve.resolve_line ctx e in
@@ -290,56 +310,41 @@ let axis_of (ctx : Ctx.ctx) (span : Error.span) (c : Ast.construction) :
              "map %s onto %s and %s onto %s: %s and %s are parallel — \
               degenerate, no general cubic fold"
              (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr q) (Resolve.lstr e) (Resolve.lstr d) (Resolve.lstr e));
+      let conics =
+        [ { Trace.focus = pp; directrix = dd }; { Trace.focus = qq; directrix = ee } ]
+      in
       match Geom.beloch7_creases pp dd qq ee with
       | [] ->
+          if trace then
+            Ctx.record_trace ctx ~axiom:t
+              ~toward:(Option.map (Resolve.table_of ctx) x_opt) ~conics [];
           Error.fail span
             (Printf.sprintf
                "cannot fold %s onto %s and %s onto %s: out of reach (no \
                 common tangent)"
                (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr q) (Resolve.lstr e))
-      | candidates -> (
-          (* a common tangent that creases no face is a line on the abstract
-             plane with nothing to fold; same paper-incidence filter as axiom 5 *)
-          match List.filter (Fold_state.line_cuts_paper !(ctx.state)) candidates with
-          | [] ->
-              Error.fail span
-                (Printf.sprintf
-                   "map %s onto %s and %s onto %s: no crease lands on the \
-                    paper — no fold to make"
-                   (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr q) (Resolve.lstr e))
-          | [ c ] -> Axis (c, t, base)
-          | creases -> (
-              match x_opt with
-              | None ->
-                  Error.fail ~hint:"add 'toward .x'" span
-                    (Printf.sprintf
-                       "%d folds place %s onto %s and %s onto %s, all landing \
-                        on the paper"
-                       (List.length creases) (Resolve.pstr p) (Resolve.lstr d)
-                       (Resolve.pstr q) (Resolve.lstr e))
-              | Some xo ->
-                  let xt = Resolve.table_of ctx xo in
-                  (* nearest landing of the first point p, exact squared
-                     distance *)
-                  let dist2 (c : Geom.line) =
-                    let im = Geom.reflect_point c pp in
-                    let ex = Num.sub im.Geom.x xt.Geom.x
-                    and ey = Num.sub im.Geom.y xt.Geom.y in
-                    Num.add (Num.mul ex ex) (Num.mul ey ey)
-                  in
-                  let best =
-                    List.fold_left
-                      (fun acc c ->
-                        match acc with
-                        | None -> Some c
-                        | Some b ->
-                            if Num.compare (dist2 c) (dist2 b) < 0 then Some c
-                            else acc)
-                      None creases
-                  in
-                  match best with
-                  | Some c -> Axis (c, t, base @ [ Resolve.pstr xo ])
-                  | None -> assert false))) )
+      | candidates ->
+          (* the landing of the first point p decides among several *)
+          pick ctx ~trace span t ~conics ~moved:pp ~x_opt ~base
+            ~none_msg:
+              (Printf.sprintf
+                 "map %s onto %s and %s onto %s: no crease lands on the \
+                  paper — no fold to make"
+                 (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr q) (Resolve.lstr e))
+            ~ambig_msg:
+              (Printf.sprintf
+                 "%d folds place %s onto %s and %s onto %s, all landing on the \
+                  paper"
+                 (List.length
+                    (List.filter (Fold_state.line_cuts_paper !(ctx.state)) candidates))
+                 (Resolve.pstr p) (Resolve.lstr d) (Resolve.pstr q) (Resolve.lstr e))
+            candidates)
+  in
+  (match (cl, res) with
+  | (Ax1 _ | Ax2 _ | Ax3 _ | Ax4 _ | Ax5 _), Axis (l, _, _) when trace ->
+      Ctx.record_trace ctx ~axiom:t ~toward:None (only l)
+  | _ -> ());
+  (cl, res)
 
 (* ---- axiom-5 bisector selection (direction + paper incidence) ---- *)
 (* l1's swinging material as table-space segments *)
@@ -409,11 +414,28 @@ let e5_head (p : ax5_pending) (x : string) =
      both bisectors move material toward %s"
     p.l1_str p.l2_str x p.l1_str x
 
-let select_axiom5_bind (ctx : Ctx.ctx) (span : Error.span) (p : ax5_pending) : Geom.line =
+(* Record both bisectors: those in [kept] survived the selection, the others
+   were removed by [removal]; [chosen] is the one the construction yields. *)
+let trace5 (ctx : Ctx.ctx) ~trace (p : ax5_pending) ~removal ~kept chosen =
+  if trace then
+    let b1, b2 = p.cands in
+    Ctx.record_trace ctx ~axiom:"axiom5" ~toward:p.toward
+      (List.map
+         (fun b ->
+           { Trace.line = b;
+             removed_by = (if List.memq b kept then None else Some removal);
+             selected = (match chosen with Some c -> c == b | None -> false) })
+         [ b1; b2 ])
+
+let select_axiom5_bind ?(trace = true) (ctx : Ctx.ctx) (span : Error.span)
+    (p : ax5_pending) : Geom.line =
   let b1, b2 = p.cands in
   match p.toward with
   | None -> (
-      match ax5_filter ctx p with
+      let kept = ax5_filter ctx p in
+      let one = match kept with [ b ] -> Some b | _ -> None in
+      trace5 ctx ~trace p ~removal:Trace.By_paper ~kept one;
+      match kept with
       | [ b ] -> b
       | [ _; _ ] -> Error.fail ~hint:e2_hint span (e2 p)
       | _ -> Error.fail span (e3 p))
@@ -422,7 +444,10 @@ let select_axiom5_bind (ctx : Ctx.ctx) (span : Error.span) (p : ax5_pending) : G
       let mat = ax5_material ctx p in
       let xs = Option.get p.toward_str in
       let viable_c b = viable ~la:p.la ~xside mat b 1 || viable ~la:p.la ~xside mat b (-1) in
-      (match List.filter viable_c [ b1; b2 ] with
+      let kept = List.filter viable_c [ b1; b2 ] in
+      let one = match kept with [ b ] -> Some b | _ -> None in
+      trace5 ctx ~trace p ~removal:Trace.By_toward ~kept one;
+      (match kept with
       | [ b ] -> b
       | [] ->
           Error.fail span
@@ -440,13 +465,19 @@ let select_axiom5_bind (ctx : Ctx.ctx) (span : Error.span) (p : ax5_pending) : G
 let select_axiom5_fold (ctx : Ctx.ctx) (span : Error.span) (p : ax5_pending)
     ~(fs : Ast.fold_spec) : Geom.line * int option =
   let b1, b2 = p.cands in
+  let trace5 = trace5 ctx ~trace:true p in
   match p.toward with
   | None -> (
+      let kept = ax5_filter ctx p in
       let b =
-        match ax5_filter ctx p with
-        | [ b ] -> b
-        | [ _; _ ] -> Error.fail ~hint:e2_hint span (e2 p)
-        | _ -> Error.fail span (e3 p)
+        match kept with
+        | [ b ] -> trace5 ~removal:Trace.By_paper ~kept (Some b); b
+        | [ _; _ ] ->
+            trace5 ~removal:Trace.By_paper ~kept None;
+            Error.fail ~hint:e2_hint span (e2 p)
+        | _ ->
+            trace5 ~removal:Trace.By_paper ~kept None;
+            Error.fail span (e3 p)
       in
       match fs.Ast.moving with
       | Some _ -> (b, None) (* explicit moving: side read off the anchor *)
@@ -471,9 +502,11 @@ let select_axiom5_fold (ctx : Ctx.ctx) (span : Error.span) (p : ax5_pending)
       let xside = Geom.side_of_line p.la x in
       let mat = ax5_material ctx p in
       let xs = Option.get p.toward_str in
-      if mat = [] then
+      if mat = [] then begin
+        trace5 ~removal:Trace.By_toward ~kept:[ b1; b2 ] None;
         Error.fail span
-          (Printf.sprintf "%s has no material on the paper to fold" p.l1_str);
+          (Printf.sprintf "%s has no material on the paper to fold" p.l1_str)
+      end;
       (match fs.Ast.moving with
       | None ->
           (* geometry guarantees ≤1 viable side per candidate *)
@@ -487,14 +520,17 @@ let select_axiom5_fold (ctx : Ctx.ctx) (span : Error.span) (p : ax5_pending)
               (fun b -> Option.map (fun s -> (b, s)) (cand_side b))
               [ b1; b2 ]
           in
+          let kept = List.map fst viables in
           (match viables with
-          | [ (b, s) ] -> (b, Some s)
+          | [ (b, s) ] -> trace5 ~removal:Trace.By_toward ~kept (Some b); (b, Some s)
           | [] ->
+              trace5 ~removal:Trace.By_toward ~kept None;
               Error.fail span
                 (Printf.sprintf
                    "no fold of %s onto %s moves its material toward %s"
                    p.l1_str p.l2_str xs)
           | _ ->
+              trace5 ~removal:Trace.By_toward ~kept None;
               Error.fail ~hint:"add `moving` to pick the swinging flap" span
                 (e5_head p xs))
       | Some fa ->
@@ -506,13 +542,16 @@ let select_axiom5_fold (ctx : Ctx.ctx) (span : Error.span) (p : ax5_pending)
             | Ok s -> viable ~la:p.la ~xside mat b s
             | Error _ -> false
           in
-          (match List.filter viable_c [ b1; b2 ] with
-          | [ b ] -> (b, None) (* side resolved normally via the anchor *)
+          let kept = List.filter viable_c [ b1; b2 ] in
+          (match kept with
+          | [ b ] -> trace5 ~removal:Trace.By_moving ~kept (Some b); (b, None) (* side resolved normally via the anchor *)
           | [] ->
+              trace5 ~removal:Trace.By_moving ~kept None;
               Error.fail span
                 (Printf.sprintf "no fold of %s onto %s moves %s toward %s"
                    p.l1_str p.l2_str (Resolve.fstr fa) xs)
           | _ ->
+              trace5 ~removal:Trace.By_moving ~kept None;
               Error.fail ~hint:"anchor with a point in only one flap" span
                 (Printf.sprintf
                    "map %s onto %s toward %s is ambiguous even with `moving \

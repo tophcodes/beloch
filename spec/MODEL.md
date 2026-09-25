@@ -649,6 +649,13 @@ A table line that satisfies every alignment of a construction in a state and
 crosses paper; a line off the paper is none.
 :::
 
+::: {.figure #fig-candidates caption="`map .d onto --ef through .a` has two candidates, the two tangents from `.a` to the parabola with focus `.d` and directrix `--ef`. Both cross the paper, so no line is reached until the program selects one; with `toward .c` the steep one remains, the start of the largest equilateral triangle in the square [@ida2020, §2.2.3, Fig. 2.17]." views="candidates" at="choose"}
+paper square
+mark (map .a onto .b) as --ef
+@label choose
+fold (map .d onto --ef through .a) as --s
+:::
+
 ::: {.open #open-several-sought-lines name="constructions that seek more than one line" uses="def-construction def-alignment"}
 [#def-construction] puts its alignments on one sought line, which is where
 the seven Huzita-Justin axioms live. The same alignments distributed over two

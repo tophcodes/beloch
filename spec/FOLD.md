@@ -131,6 +131,42 @@ What the language knows about a state and FOLD cannot say:
 Everything under `beloch:` is optional to a FOLD reader that does not know
 Beloch; the standard fields alone describe each state completely.
 
+## The trace
+
+`beloch fold --trace FILE.bel` adds what the evaluator considered on the way
+to each result: every candidate a selection chose from, and what removed the
+others. Figures that explain an operation read it (issue #51), and so can an
+editor that shows the candidates while a program is typed. Without `--trace`
+none of this appears, and every other field is the same with and without it.
+
+- `beloch:trace`: one entry per construction the program evaluates, in the
+  order they run, a construction inside a `fold` or `mark` and one on the
+  right-hand side of a binding alike. Each entry carries the `statement` it
+  belongs to as an index into `beloch:statements`, the `frame_index` of the
+  state the construction read (for a `fold` the state before it, where the
+  statement's own `frame_index` names the state after), the `axiom` tag as
+  in `beloch:edges`, the `toward` point when the construction names one, and
+  `candidates`: every line that satisfies the construction's alignments, each
+  with its `line` (the table line's `coeffs` in that state) and `removed_by`:
+  `"paper"` for a line that creases no face, which the model does not count
+  as a candidate at all ([def-construction](/model/#def-construction)),
+  `"toward"` for one the `toward` point ruled out, `"moving"` for one the
+  anchor of a `fold` ruled out, and null for one no rule removed. `selected`
+  is true on the line the construction yields. For axioms 6 and 7 the entry
+  also carries `conics`: the parabolas whose tangents these lines are, each
+  as a `focus` point and a `directrix` line.
+- `beloch:error`: present when the program fails, with the `message`, the
+  `hint`, the `span` and the `statement` index of the statement that failed.
+
+With `--trace`, a program that fails still writes a file: the frames up to
+the state the failing statement read, its entry in `beloch:statements`, and
+its trace entry. An ambiguous construction leaves several candidates with
+`removed_by` null and none `selected`; that is the state a figure draws to
+show why the program has to choose. The exit code is that of the failure.
+
+Writes get trace entries of their own, the terms of their definitions and
+the states they chose from, with the operation view of issue #51.
+
 ## What this document will grow into
 
 A worked file for the preliminary base, frame by frame, with the fields

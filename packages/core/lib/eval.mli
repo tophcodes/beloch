@@ -63,6 +63,9 @@ type folded = {
   annotations : Ctx.annot_entry list;
       (** every annotation in the order it was read, each with the log entry
           of the statement it belongs to (ADR 0029) *)
+  trace : Trace.entry list;
+      (** every construction's candidates in the order they were evaluated
+          (spec/FOLD.md, "The trace") *)
   free_points : (string * free_info) list;
       (** One entry per `free on` point, recorded at bind time — a running
           log (like [statements]), not reconstructed from scope state at
@@ -77,3 +80,12 @@ val eval_program :
 
 val eval_folded : Ast.program -> folded
 (** [eval_program] with no resume/on_step. *)
+
+val run_program : Ctx.ctx -> (Ctx.ctx -> unit) -> Ast.program -> unit
+(** Run the statements of [prog] on [ctx], calling the second argument after
+    each. A failing statement raises [Error.Beloch_error] with its log entry
+    already written. *)
+
+val build_output : Ctx.ctx -> Ctx.scope -> folded
+(** The result of the statements run so far, with the root scope the names
+    are read from. *)

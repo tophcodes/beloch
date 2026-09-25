@@ -44,14 +44,16 @@ type axis_result =
   | Axis of Geom.line * string * string list
   | Ax5 of ax5_pending
 
-val axis_of : Ctx.ctx -> Error.span -> Ast.construction -> classified * axis_result
+val axis_of :
+  ?trace:bool -> Ctx.ctx -> Error.span -> Ast.construction -> classified * axis_result
 (** Axis line + provenance (axiom tag, source names), evaluated against the
     current table positions. Recognises the construction with {!classify}
     first, so the tag is {!tag}'s and the sources are the operands that
     recognition hands back; the classification comes back with the axis for
     callers that read the operands again ({!implied_point}). *)
 
-val select_axiom5_bind : Ctx.ctx -> Error.span -> ax5_pending -> Geom.line
+val select_axiom5_bind :
+  ?trace:bool -> Ctx.ctx -> Error.span -> ax5_pending -> Geom.line
 (** Resolve a deferred axiom-5 axis for a `bind`/`mark` (no fold spec to
     read a `moving` anchor from). *)
 

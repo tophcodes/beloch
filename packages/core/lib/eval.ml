@@ -38,6 +38,7 @@ type folded = {
   statements : stmt_log_entry list;
   references : Ctx.reference list;
   annotations : Ctx.annot_entry list;
+  trace : Trace.entry list;
   free_points : (string * free_info) list;
       (* one entry per `free on` point, recorded at bind time in the [PsFree]
          arm — a running log (like [statements]), not reconstructed from
@@ -836,7 +837,13 @@ and eval_logged (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
         List.map (fun a -> { a with an_target = logged }) ctx.annots_pending
         @ ctx.annots_rev;
       ctx.annots_pending <- [];
-      eval_stmt ctx stmt;
+      (try eval_stmt ctx stmt
+       with Error.Beloch_error _ as e ->
+         (* a statement that fails before logging itself still gets its
+            entry, so a traced run can point at it *)
+         if List.length ctx.statements_rev = logged then
+           Ctx.push_entry ctx (Ctx.kind_of_stmt stmt) (Spine.span_of_stmt stmt);
+         raise e);
       if List.length ctx.statements_rev = logged then
         Ctx.push_bind ctx (Spine.span_of_stmt stmt)
 
@@ -918,33 +925,10 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
   { state = !(ctx.state); named_points; named_lines; named_line_cids; frames;
     statements; free_points;
     references = List.rev ctx.references_rev;
-    annotations = List.rev ctx.annots_rev }
+    annotations = List.rev ctx.annots_rev;
+    trace = List.rev ctx.trace_rev }
 
-let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> ())
-    (prog : Ast.program) : folded =
-  (match resume with None -> Fold_state.reset_ids () | Some _ -> ());
-  let root_scope = make_scope () in
-  List.iter (fun (n, p) -> Hashtbl.replace root_scope.points n p) corners;
-  List.iter
-    (fun (n, a, b) -> Hashtbl.replace root_scope.lines n (Edge (a, b)))
-    [ ("ab", "a", "b"); ("bc", "b", "c"); ("cd", "c", "d"); ("da", "d", "a") ];
-  let ctx = {
-    scopes = [root_scope];
-    name_ctx = Root;
-    cur_def_idx = None;
-    next_def_idx = 0;
-    defs = Hashtbl.create 4;
-    state  = ref Fold_state.init_square;
-    frames_rev = [];
-    statements_rev = [];
-    free_points_rev = [];
-    references_rev = [];
-    annots_pending = [];
-    annots_rev = [];
-    parent = None;
-    pending = true;
-  } in
-  (match resume with Some s -> restore ctx s | None -> ());
+let run_program (ctx : Ctx.ctx) on_step (prog : Ast.program) : unit =
   List.iter
     (fun stmt ->
       (* a kernel precondition the language checks missed (a zero inverse, a
@@ -954,7 +938,14 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
          Error.fail (Spine.span_of_stmt stmt)
            (Printf.sprintf "internal error in this statement: %s" msg));
       on_step ctx)
-    prog;
-  build_output ctx root_scope
+    prog
+
+let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> ())
+    (prog : Ast.program) : folded =
+  (match resume with None -> Fold_state.reset_ids () | Some _ -> ());
+  let ctx = Ctx.create () in
+  (match resume with Some s -> restore ctx s | None -> ());
+  run_program ctx on_step prog;
+  build_output ctx (List.hd ctx.scopes)
 
 let eval_folded (prog : Ast.program) : folded = eval_program prog

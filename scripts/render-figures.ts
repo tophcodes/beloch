@@ -6,7 +6,8 @@
 // with the `beloch` binary and renders the requested views through
 // packages/render-2d, the same functions the docs site's <Beloch> card uses.
 //
-// Output goes to _build/spec/figures: `<id>-cp.svg`, `<id>-folded.svg`, and
+// Output goes to _build/spec/figures: one `<id>-<view>.svg` per view (`cp`,
+// `folded`, `candidates`), and
 // index.json (one entry per figure, with the files it produced and the reason
 // if it produced none). Both renderers of the documents read the SVG files and
 // fall back to a placeholder, so a figure that fails here never fails a build:
@@ -24,11 +25,13 @@
 import { readdirSync, readFileSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { parseFold } from "../packages/render-2d/scene/src/index.ts";
-import { renderCP, renderFolded } from "../packages/render-2d/render-svg/src/index.ts";
+import { renderCandidates, renderCP, renderFolded } from "../packages/render-2d/render-svg/src/index.ts";
 import { evalBelToFold } from "../packages/www/src/lib/eval-bel.ts";
 
-const VIEWS = ["cp", "folded"] as const;
+const VIEWS = ["cp", "folded", "candidates"] as const;
 type View = (typeof VIEWS)[number];
+// What a figure that names no views gets.
+const DEFAULT_VIEWS: View[] = ["cp", "folded"];
 
 export interface FigureEntry {
 	/** The document the block is written in, relative to the repo root. */
@@ -52,6 +55,8 @@ export interface FigureBlock {
 	id: string;
 	views: View[];
 	highlight: string[];
+	/** The `@label` of the statement the `candidates` view shows. */
+	at?: string | undefined;
 	program: string;
 }
 
@@ -79,6 +84,7 @@ export function scanFigures(source: string): FigureBlock[] {
 				id,
 				views: words(attrs.views).filter((v): v is View => VIEWS.includes(v as View)),
 				highlight: highlightNames(attrs.highlight),
+				at: attrs.at,
 				program: lines.slice(i + 1, j).join("\n").trim(),
 			});
 		}
@@ -126,8 +132,22 @@ export function unknownHighlights(
 	return unknown;
 }
 
+// The statement a program labels with `@label WORD` (spec/BELOCH.md,
+// Annotations), as an index into its statements.
+export function labelledStatement(fold: Record<string, unknown>, label: string): number | undefined {
+	const annotations = (fold["beloch:annotations"] ?? []) as {
+		key: string;
+		namespace: string | null;
+		args: { word?: string }[];
+		target: [number, number];
+	}[];
+	return annotations.find(
+		(a) => a.key === "label" && a.namespace === null && a.args[0]?.word === label,
+	)?.target[0];
+}
+
 export function renderFigure(block: FigureBlock, outDir: string, source: string): FigureEntry {
-	const views = block.views.length ? block.views : [...VIEWS];
+	const views = block.views.length ? block.views : DEFAULT_VIEWS;
 	const entry: FigureEntry = {
 		source,
 		views,
@@ -135,12 +155,22 @@ export function renderFigure(block: FigureBlock, outDir: string, source: string)
 		files: {},
 		error: null,
 	};
+	let fold: Record<string, unknown>;
 	let scene: ReturnType<typeof parseFold>;
 	try {
-		scene = parseFold(evalBelToFold(block.program) as object);
+		fold = evalBelToFold(block.program, { trace: views.includes("candidates") }) as Record<string, unknown>;
+		scene = parseFold(fold);
 	} catch (err) {
 		entry.error = (err as Error).message;
 		return entry;
+	}
+	let statement: number | undefined;
+	if (block.at !== undefined) {
+		statement = labelledStatement(fold, block.at);
+		if (statement === undefined) {
+			entry.error = `figure ${block.id} shows the statement labelled ${block.at}, which its program does not label`;
+			return entry;
+		}
 	}
 	const unknown = unknownHighlights(scene, block.highlight);
 	if (unknown.length) {
@@ -153,7 +183,10 @@ export function renderFigure(block: FigureBlock, outDir: string, source: string)
 		const file = `${block.id}-${view}.svg`;
 		try {
 			const opts = { highlight: block.highlight };
-			const doc = view === "cp" ? renderCP(scene, opts) : renderFolded(scene, opts);
+			const doc =
+				view === "cp" ? renderCP(scene, opts)
+				: view === "candidates" ? renderCandidates(scene, { ...opts, statement })
+				: renderFolded(scene, opts);
 			writeFileSync(join(outDir, file), doc.toString());
 			entry.files[view] = file;
 		} catch (err) {

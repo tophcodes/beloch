@@ -68,6 +68,8 @@ export function inspectScene(): FoldScene {
     namedLines: [],
     creases: [],
     marks: [],
+    trace: [],
+    error: null,
     inspect: {
       creases: {
         "3": { name: "v", axiom: null, sources: [], span: null, segments: [DRAWN, BURIED] },

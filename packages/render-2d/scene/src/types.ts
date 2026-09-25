@@ -134,6 +134,33 @@ export interface Inspect {
   edges: Record<string, InspectEdge>;
 }
 
+// beloch:trace, written by `beloch fold --trace` (spec/FOLD.md, "The trace"):
+// every candidate line of a construction, in the table coordinates of the
+// frame the construction read (`frameIndex`; for a fold the state before it),
+// with the rule that removed it.
+export type Removal = "paper" | "toward" | "moving";
+export interface TraceCandidate {
+  line: LineCoeffs;
+  removedBy: Removal | null;
+  selected: boolean;
+}
+export interface Conic { focus: Vec2; directrix: LineCoeffs; }            // a parabola
+export interface TraceEntry {
+  statement: number;                                         // index into scene.statements
+  frameIndex: number;                                        // index into scene.steps: the state the construction read
+  axiom: string;
+  toward: Vec2 | null;
+  candidates: TraceCandidate[];
+  conics: Conic[];
+}
+// beloch:error: why a traced program stopped.
+export interface TraceError {
+  message: string;
+  hint: string | null;
+  span: string;
+  statement: number;
+}
+
 export interface FoldScene {
   cp: Frame;
   steps: Step[];                                             // one per foldedForm frame, file order
@@ -145,6 +172,8 @@ export interface FoldScene {
   creases: Crease[];                                         // grouped by provenance name on the CP frame
   marks: Mark[];                                              // beloch:marks, paper-space, CP frame only
   inspect: Inspect | null;                                   // beloch:inspect, entity inspector data
+  trace: TraceEntry[];                                       // beloch:trace; [] when the file was written without --trace
+  error: TraceError | null;                                  // beloch:error; null unless a traced program failed
 }
 
 export class SceneError extends Error {}

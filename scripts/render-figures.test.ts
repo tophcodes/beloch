@@ -3,7 +3,7 @@
 // defines. Needs the `beloch` binary, so it runs inside the flake devshell:
 //   nix develop -c bun test scripts
 import { test, expect } from "bun:test";
-import { mkdtempSync, readdirSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { renderFigure, scanFigures, highlightNames } from "./render-figures.ts";
@@ -55,4 +55,40 @@ test("scanFigures keeps the block body verbatim", () => {
   expect(blocks).toHaveLength(1);
   expect(blocks[0]!.program).toBe(SQUARE);
   expect(blocks[0]!.highlight).toEqual(["--ac"]);
+});
+
+const TRIANGLE = [
+	"paper square",
+	"mark (map .a onto .b) as --ef",
+	"@label choose",
+	"fold (map .d onto --ef through .a) as --s",
+].join("\n");
+
+test("a candidates figure draws the choices of a program that stops at them", () => {
+	const entry = renderFigure(
+		{ id: "fig-choice", views: ["candidates"], highlight: [], at: "choose", program: TRIANGLE },
+		outDir,
+		"spec/TEST.md",
+	);
+	expect(entry.error).toBeNull();
+	expect(entry.files.candidates).toBe("fig-choice-candidates.svg");
+	const svg = readFileSync(join(outDir, "fig-choice-candidates.svg"), "utf8");
+	expect((svg.match(/data-status="open"/g) ?? []).length).toBe(2);
+});
+
+test("a figure that shows an unlabelled statement is an error", () => {
+	const entry = renderFigure(
+		{ id: "fig-noat", views: ["candidates"], highlight: [], at: "nope", program: TRIANGLE },
+		outDir,
+		"spec/TEST.md",
+	);
+	expect(entry.error).toContain("nope");
+});
+
+test("scanFigures reads the at attribute", () => {
+	const [block] = scanFigures(
+		'::: {.figure #fig-x caption="x" views="candidates" at="choose"}\npaper square\n:::\n',
+	);
+	expect(block?.at).toBe("choose");
+	expect(block?.views).toEqual(["candidates"]);
 });

@@ -17,6 +17,7 @@ let usage () =
 
 usage:
   beloch fold   FILE.bel              evaluate and emit FOLD (stdout)
+  beloch fold --trace FILE.bel      the same, with every candidate a selection chose from
   beloch check  FILE.bel              parse and type-check only        (not yet implemented)
   beloch lsp                          run as an LSP server             (not yet implemented)
   beloch render FILE.fold|FILE.bel    render to a visual output (SVG/PNG) — see `beloch render --help`%s
@@ -127,6 +128,29 @@ let run_render args =
 let run_fold file =
   print_endline (Yojson.Safe.pretty_to_string (eval_bel_file file))
 
+(* `beloch fold --trace FILE`: the FOLD with every construction's candidates
+   (spec/FOLD.md, "The trace"). A program that fails still prints the file up
+   to the failing statement, then the diagnostic, and exits 1. *)
+let run_fold_trace file =
+  match In_channel.with_open_text file In_channel.input_all with
+  | exception Sys_error msg ->
+      Printf.eprintf "%s\n" msg;
+      exit 1
+  | src -> (
+      match Beloch.fold_traced ~filename:file src with
+      | exception Error.Beloch_error (span, msg, hint) ->
+          prerr_string (Diagnostic.render ~source:src ~span ~msg ~hint);
+          exit 1
+      | json, failure -> (
+          print_endline (Yojson.Safe.pretty_to_string json);
+          match failure with
+          | None -> ()
+          | Some f ->
+              prerr_string
+                (Diagnostic.render ~source:src ~span:f.Beloch.f_span
+                   ~msg:f.Beloch.f_message ~hint:f.Beloch.f_hint);
+              exit 1))
+
 (* `beloch fold --watch FILE`: keeps one incremental `Session.t` across
    re-folds and recomputes only the suffix invalidated by the edit (see
    lib/session.ml). Polls mtime rather than inotify — no new dependency
@@ -162,6 +186,7 @@ let () =
   match Array.to_list Sys.argv with
   | _ :: ("--version" | "-v") :: _ -> print_endline Beloch.version
   | _ :: "fold" :: "--watch" :: file :: _ -> run_fold_watch file
+  | _ :: "fold" :: "--trace" :: file :: _ -> run_fold_trace file
   | _ :: "fold" :: file :: _ -> run_fold file
   | _ :: "check" :: _ -> todo "check"
   | _ :: "lsp" :: _ -> todo "lsp"

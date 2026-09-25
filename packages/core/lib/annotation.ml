@@ -133,9 +133,11 @@ let value (ctx : Ctx.ctx) (arg : Ast.annot_arg) : Ctx.annot_value =
   | Ast.AvLine lo -> Ctx.AvLine (Resolve.resolve_line ctx lo, crease_id ctx lo)
   | Ast.AvConstruction c ->
       let line =
-        match snd (Axiom.axis_of ctx arg.Ast.av_span c) with
+        (* an annotation reads a line and evaluates no construction of the
+           program, so it leaves the trace alone *)
+        match snd (Axiom.axis_of ~trace:false ctx arg.Ast.av_span c) with
         | Axiom.Axis (axis, _, _) -> axis
-        | Axiom.Ax5 p -> Axiom.select_axiom5_bind ctx arg.Ast.av_span p
+        | Axiom.Ax5 p -> Axiom.select_axiom5_bind ~trace:false ctx arg.Ast.av_span p
       in
       Ctx.AvLine (line, None)
   | Ast.AvFlap f ->
