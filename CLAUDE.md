@@ -45,6 +45,11 @@ Commit subjects are checked when they are pushed. The types and scopes are
 those `scripts/check-commit-subjects.sh` prints; a package's scope is its
 directory under `packages/` or its npm name without `@beloch/`.
 
+A pull request lands as a merge commit, so every commit on its branch reaches
+`main` as it stands. A correction to a commit on a branch that is not merged
+yet folds into that commit (`jj squash --into <change>`) instead of following
+it as a new one; force-pushing that branch afterwards is fine.
+
 ## Web pages
 
 Dev server: in `packages/www`, `bunx astro dev --host 127.0.0.1 --port <n>`. In
