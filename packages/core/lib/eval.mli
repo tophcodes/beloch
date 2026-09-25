@@ -8,7 +8,7 @@ type snapshot = Ctx.snapshot
 (** Opaque incremental-eval checkpoint; see {!snapshot} / {!restore} and
     [Session]. *)
 
-type stmt_kind = Ctx.stmt_kind = SFold | SMark | SBind
+type stmt_kind = Ctx.stmt_kind = SFold | SMark | SBind | SApply of string
 
 type stmt_log_entry = Ctx.stmt_log_entry = {
   sl_kind : stmt_kind;
@@ -25,6 +25,9 @@ type stmt_log_entry = Ctx.stmt_log_entry = {
   sl_kept : Fold_state.mark list;
       (** Marks still dangling (not yet graduated into a real crease) as of
           immediately after this statement. *)
+  sl_parent : int option;
+      (** The entry of the [apply] this statement runs under, [None] at the
+          top level (ADR 0030). *)
 }
 
 type free_info = Ctx.free_info = {

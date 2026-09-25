@@ -69,14 +69,20 @@ What the language knows about a state and FOLD cannot say:
   (ADR 0019).
 - `beloch:source_line`, on each folded frame: the source line of the
   statement that produced the frame.
-- `beloch:statements`: one entry per top-level statement in source order, a
-  sourcemap from the program to the frames. Each entry carries the `kind` that
-  says which axis it moves (ADR 0026), its `source_line` and its `span`, and
-  the `frame_index` of the frame it reads against. `fold` and `mark` are the
-  writes: the paper moved, or it was scored and stands where it was. `bind`
-  moves the program alone, which a point, a construction line, a bundle, a
-  definition and an export all do. A reader stepping through the fold sequence
-  walks the writes; a reader of the program walks every entry.
+- `beloch:statements`: one entry per executed statement in the order the
+  statements run, a sourcemap from the program to the frames (ADR 0030). Each
+  entry carries the `kind` that says which axis it moves, its `source_line`
+  and its `span`, the `frame_index` of the frame it reads against, and its
+  `parent`. `fold` and `mark` are the writes: the paper moved, or it was
+  scored and stands where it was. `bind` moves the program alone, which a
+  point, a construction line, a bundle, a definition and an export all do.
+  `apply` runs a definition and names it in `def`; the statements of its
+  body follow it, each with the index of the `apply` entry as its `parent`,
+  once per execution, and with the span where the body writes them.
+  `parent` is null at the top level. A reader stepping through the fold
+  sequence walks the writes; a reader of the program walks every entry. A
+  FOLD written before `parent` existed carries neither `apply` entries nor
+  the bindings of a body.
 - `beloch:references`: one entry per resolved mention of a crease name in the
   source, each with the `span` it occupies and what it names: a `crease_id`,
   or `edge` for a paper boundary. The arguments of a `flatten`, the operands

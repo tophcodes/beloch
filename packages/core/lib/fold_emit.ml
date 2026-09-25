@@ -272,6 +272,11 @@ let beloch_statements_json (statements : Eval.stmt_log_entry list) : Yojson.Safe
   `List
     (List.map
        (fun (s : Eval.stmt_log_entry) ->
+         let def =
+           match s.Eval.sl_kind with
+           | Eval.SApply name -> [ ("def", `String name) ]
+           | Eval.SFold | Eval.SMark | Eval.SBind -> []
+         in
          let common =
            [
              ( "kind",
@@ -279,12 +284,16 @@ let beloch_statements_json (statements : Eval.stmt_log_entry list) : Yojson.Safe
                  (match s.Eval.sl_kind with
                  | Eval.SFold -> "fold"
                  | Eval.SMark -> "mark"
-                 | Eval.SBind -> "bind") );
+                 | Eval.SBind -> "bind"
+                 | Eval.SApply _ -> "apply") );
+             ( "parent",
+               match s.Eval.sl_parent with Some i -> `Int i | None -> `Null );
              ("source_line", `Int (fst s.Eval.sl_span).Lexing.pos_lnum);
              ("span", `String (Error.span_to_string s.Eval.sl_span));
              ("frame_index", `Int s.Eval.sl_frame_index);
              ("kept_marks", `List (List.map mark_json s.Eval.sl_kept));
            ]
+           @ def
          in
          match s.Eval.sl_mark with
          | None -> `Assoc (("mark", `Null) :: common)

@@ -718,6 +718,38 @@ let test_beloch_statements () =
     "kept_marks grows through the mark run, then both graduate at the fold"
     [ 1; 2; 0 ] (List.map kept_count_of stmts)
 
+(* ADR 0030: the log is flat. An apply has its own entry ahead of its body,
+   and every statement of the body, bindings included, follows it with the
+   apply as its parent, once per execution. *)
+let test_beloch_statements_flat () =
+  let src =
+    "paper square\n\
+     def half(.p .q) {\n\
+    \  --l = (through .p .q)\n\
+    \  fold (map .p onto .q)\n\
+     }\n\
+     apply half(.a .b)\n\
+     apply half(.b .c)\n"
+  in
+  let json = Beloch.fold_string ~filename:"t" src in
+  let open Yojson.Safe.Util in
+  let stmts = json |> member "beloch:statements" |> to_list in
+  let kind_of j = j |> member "kind" |> to_string in
+  Alcotest.(check (list string)) "def, then each apply ahead of its body"
+    [ "bind"; "apply"; "bind"; "fold"; "apply"; "bind"; "fold" ]
+    (List.map kind_of stmts);
+  let parent_of j = j |> member "parent" |> to_option to_int in
+  Alcotest.(check (list (option int))) "body entries name their apply"
+    [ None; None; Some 1; Some 1; None; Some 4; Some 4 ]
+    (List.map parent_of stmts);
+  let def_of j = j |> member "def" |> to_option to_string in
+  Alcotest.(check (list (option string))) "an apply names its def"
+    [ None; Some "half"; None; None; Some "half"; None; None ]
+    (List.map def_of stmts);
+  let line_of j = j |> member "source_line" |> to_int in
+  Alcotest.(check (list int)) "a body entry carries the span inside the def"
+    [ 2; 6; 3; 4; 7; 3; 4 ] (List.map line_of stmts)
+
 let test_e2e_faces_matrix_and_frame () =
   let json =
     Beloch.fold_string ~filename:"square.bel" (read_case "mark/square.bel")
@@ -1155,6 +1187,8 @@ let () =
             test_multiframe;
           Alcotest.test_case "beloch:statements sourcemap" `Quick
             test_beloch_statements;
+          Alcotest.test_case "beloch:statements is flat" `Quick
+            test_beloch_statements_flat;
           Alcotest.test_case "e2e faces_matrix + frame" `Quick
             test_e2e_faces_matrix_and_frame;
           Alcotest.test_case

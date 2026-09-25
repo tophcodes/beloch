@@ -8,11 +8,12 @@
 val corners : (string * Geom.point) list
 (** The four paper corners, keyed "a" "b" "c" "d". *)
 
-type stmt_kind = SFold | SMark | SBind
-(** Which axis a statement moves (ADR 0026). [SFold] and [SMark] are writes:
+type stmt_kind = SFold | SMark | SBind | SApply of string
+(** Which axis a statement moves (ADR 0030). [SFold] and [SMark] are writes:
     the paper moved, or it was scored and stands where it was. [SBind] moves
     the program alone — a point, a construction line, a bundle, a definition,
-    an apply that folds nothing, an export. *)
+    an export. [SApply] is an [apply] of the named def; its body's statements
+    follow it in the log, each naming it as their parent. *)
 
 type stmt_log_entry = {
   sl_kind : stmt_kind;
@@ -34,6 +35,9 @@ type stmt_log_entry = {
           [SFold] recomputes fresh via [Fold_state.mark_graduates] against
           the just-folded state; [SBind] inherits it unchanged, since a
           binding leaves every mark where it was. *)
+  sl_parent : int option;
+      (** The entry of the [apply] this statement runs under, [None] at the
+          top level (ADR 0030). *)
 }
 
 type free_info = {
@@ -107,6 +111,9 @@ type ctx = {
   mutable statements_rev : stmt_log_entry list;
   mutable free_points_rev : (string * free_info) list;
   mutable references_rev : reference list;
+  mutable parent : int option;
+      (** The log entry of the [apply] whose body is running, [None] at the
+          top level: the [sl_parent] of every entry logged meanwhile. *)
   mutable pending : bool;
       (** True when the current state hasn't been captured in a frame yet;
           drives the conditional final push (see [Eval.eval_program]). *)
@@ -177,7 +184,11 @@ val stmt_index : ctx -> int
 
 val push_bind : ctx -> Error.span -> unit
 (** Log a statement that bound a name and moved no paper, at its own span.
-    Called once per top-level statement that logged nothing of its own, so
+    Called once per executed statement that logged nothing of its own, so
     every statement appears on the second axis. *)
+
+val push_apply : ctx -> string -> Error.span -> int
+(** Log an [apply] of the named def at its own span, ahead of its body's
+    entries, and return the entry's index for them to name as parent. *)
 
 val push_frame : ctx -> Error.span option -> unit
