@@ -14,7 +14,7 @@ not have to re-derive it.
 | 3 | Code surface stays dark in both modes | already true |
 | 4 | Engine values win over web tokens | `render-svg/src/theme.ts` |
 | 5 | Kraft and indigo get the monochrome style only | `colorOk` in `paper-schemes.ts` |
-| 6 | Monospace shipped, prose on a system stack | `public/fonts/`, `--bel-font-*` |
+| 6 | The web ships both families, monospace and prose; the PDF keeps its own setting | `public/fonts/`, `--bel-font-*` |
 | 7 | Wordmark stays monospace | unchanged, already true |
 | 8 | A fold animates as a crossfade of two flat states | `lib/crossfade.ts` |
 | 9 | Ten syntax roles | `--bel-syntax-*` in `tokens.css` |
@@ -54,6 +54,17 @@ not have to re-derive it.
 - **JetBrains Mono NL**, two weights, subset, with `OFL.txt` and a regeneration
   command in `public/fonts/README.md`. NL is the no-ligature cut, which matters
   because `--` opens a crease name.
+- **TeX Gyre Pagella** for prose, the free Palatino under the GUST Font
+  License. Three cuts ship, regular, italic and bold, one more than B4.18
+  allows: bold carries the run-in heads and the small-caps labels set at 600,
+  which a synthesised bold would smear. They are subset and renamed
+  "Beloch Pagella" as that licence asks of a derived font, with the licence
+  texts and a regeneration command in `public/fonts/README.md`. The subset
+  keeps the real small caps and drops `dlig`, the feature that would join `--`
+  into an en dash. Its x-height is 1.09 of KaTeX Main's, measured on the `x`
+  outline, inside B4.3's band. An installed Pagella or Palatino stands in only
+  when the webfont does not load. The PDF is set by typst and does not use
+  these files.
 - **Highlight palette**, six measured colours, each wash derived by lightening
   its stroke towards white by 0.25, the ratio the previous palette used.
   `HIGHLIGHT_TEXT` carries darkened variants for caption text at 4.5:1 on the
@@ -117,7 +128,7 @@ not have to re-derive it.
   page title. This is the one place the integration goes past supplying a
   value.
 - **One line height for prose.** Starlight sets 1.75 and the landing set 1.5.
-  Palatino runs narrow, and `--bel-line-height` is 1.55 on both surfaces.
+  Pagella runs narrow, and `--bel-line-height` is 1.55 on both surfaces.
 - **One elevation value.** The system separates with 1px lines. The case a
   line cannot carry is a panel lying over the text it covers, so
   `--bel-shadow-overlay` exists for the mobile menu, the mobile table of
