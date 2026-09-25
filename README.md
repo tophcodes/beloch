@@ -116,10 +116,6 @@ and it reads the FOLD files Beloch emits.
 Beloch combines what these hold separately: a standalone language that always
 terminates, evaluated to its folded state in exact arithmetic.
 
-The write-up in [`paper/`](paper/) goes to programming-languages venues first
-and to the computational-origami community at OSME (Origami Science,
-Mathematics and Education) after.
-
 ## More programs
 
 | | | |
