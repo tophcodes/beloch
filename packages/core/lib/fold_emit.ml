@@ -734,4 +734,8 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
                  folded_frame_of_state named_points_2 st span)
                fd.Eval.frames) );
     ]
-    @ if trace then [ ("beloch:trace", `List (List.map Trace.to_json fd.Eval.trace)) ] else [])
+    @
+    if trace then
+      let frame st = folded_frame_of_state named_points_2 st None in
+      [ ("beloch:trace", `List (List.map (Trace.to_json ~frame) fd.Eval.trace)) ]
+    else [])

@@ -431,7 +431,13 @@ let kind_of_stmt : Ast.stmt -> stmt_kind = function
 let record_trace (ctx : ctx) ~axiom ~toward ?(conics = []) candidates =
   ctx.trace_rev <-
     { Trace.statement = stmt_index ctx; frame = List.length ctx.frames_rev;
-      axiom; toward; candidates; conics }
+      body = Trace.Construction { axiom; toward; candidates; conics } }
+    :: ctx.trace_rev
+
+let record_write (ctx : ctx) terms states =
+  ctx.trace_rev <-
+    { Trace.statement = stmt_index ctx; frame = List.length ctx.frames_rev;
+      body = Trace.Write { terms; states } }
     :: ctx.trace_rev
 
 (* A context on the flat square: the four corners and the four edges bound in
