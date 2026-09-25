@@ -36,6 +36,7 @@ not have to re-derive it.
 | 25 | Choices a reader makes rarely fold into a menu: a word in the bar, a panel under it, one open at a time | `.pg-menu` in `Playground.astro` |
 | 26 | A two-state choice is a checkbox, which is the first form control the system names | `.pg-menu-check` |
 | 27 | The step a drawing stands for is marked in the code by a bar down the block's left edge | `.cm-step-line` |
+| 28 | Where `currentColor` cannot resolve, the mark and the lockup exist as standalone files in literal ink | `public/brand/*-light.svg`, `*-dark.svg`, `scripts/generate-brand.ts` |
 
 ## Built
 
