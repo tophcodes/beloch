@@ -141,7 +141,8 @@ let only (l : Geom.line) : Trace.candidate list =
 (* The selection axioms 6 and 7 share: drop the candidates that crease no
    face (a line on the abstract plane has nothing to fold), keep a single
    survivor, and among several take the one whose landing of [moved] lies
-   nearest the `toward` point, by exact squared distance. Records every
+   nearest the `toward` point, by exact squared distance. A point as near to
+   two landings selects nothing (spec/MODEL.md, def-selection). Records every
    candidate with the rule that removed it before failing or returning. *)
 let pick (ctx : Ctx.ctx) ~trace span t ~conics ~(moved : Geom.point) ~x_opt
     ~base ~none_msg ~ambig_msg (cands : Geom.line list) : axis_result =
@@ -153,16 +154,19 @@ let pick (ctx : Ctx.ctx) ~trace span t ~conics ~(moved : Geom.point) ~x_opt
     let ex = Num.sub im.Geom.x xt.Geom.x and ey = Num.sub im.Geom.y xt.Geom.y in
     Num.add (Num.mul ex ex) (Num.mul ey ey)
   in
-  let chosen =
+  (* the candidates whose landing lies nearest the `toward` point; several
+     when the point is as near to one landing as to another *)
+  let nearest =
     match (kept, xt) with
-    | [ c ], _ -> Some c
-    | c0 :: (_ :: _ as rest), Some xt ->
-        Some
-          (List.fold_left
-             (fun b c -> if Num.compare (dist2 xt c) (dist2 xt b) < 0 then c else b)
-             c0 rest)
-    | _ -> None
+    | _ :: _ :: _, Some xt ->
+        let d = List.map (fun c -> (dist2 xt c, c)) kept in
+        let m =
+          List.fold_left (fun m (x, _) -> if Num.compare x m < 0 then x else m) (fst (List.hd d)) d
+        in
+        List.filter_map (fun (x, c) -> if Num.compare x m = 0 then Some c else None) d
+    | _ -> kept
   in
+  let chosen = match nearest with [ c ] -> Some c | _ -> None in
   if trace then
     Ctx.record_trace ctx ~axiom:t ~toward:xt ~conics
       (List.map
@@ -170,7 +174,7 @@ let pick (ctx : Ctx.ctx) ~trace span t ~conics ~(moved : Geom.point) ~x_opt
            let selected = match chosen with Some s -> s == c | None -> false in
            let removed_by =
              if not ok then Some Trace.By_paper
-             else if chosen <> None && not selected then Some Trace.By_toward
+             else if not (List.memq c nearest) then Some Trace.By_toward
              else None
            in
            { Trace.line = c; removed_by; selected })
@@ -179,6 +183,12 @@ let pick (ctx : Ctx.ctx) ~trace span t ~conics ~(moved : Geom.point) ~x_opt
   | [], _, _ -> Error.fail span none_msg
   | [ _ ], Some c, _ -> Axis (c, t, base)
   | _, Some c, Some xo -> Axis (c, t, base @ [ Resolve.pstr xo ])
+  | _, None, Some xo ->
+      Error.fail ~hint:"name a toward point nearer to one of them" span
+        (Printf.sprintf
+           "toward %s lies as near to where one fold moves the point as to \
+            where another does"
+           (Resolve.pstr xo))
   | _ -> Error.fail ~hint:"add 'toward .x'" span ambig_msg
 
 let axis_of ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (c : Ast.construction) :

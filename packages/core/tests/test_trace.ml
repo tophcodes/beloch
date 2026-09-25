@@ -223,6 +223,19 @@ let test_flatten_odd () =
   Alcotest.(check int) "three given rays" 3 (List.length (s |> member "rays" |> to_list));
   Alcotest.(check int) "an emergent ray" 2 (List.length (s |> member "emergent" |> to_list))
 
+(* .d lands at (1/2, ±√3/2); every point of y = 0 is as near to one landing
+   as to the other, so `toward .b` selects nothing *)
+let test_toward_tie () =
+  let json, failed = fold_traced (triangle " toward .b") in
+  Alcotest.(check bool) "the program fails" true failed;
+  let cs = candidates (List.nth (entries json) 1) in
+  Alcotest.(check int) "both stay open" 2 (count (fun c -> removed c = None) cs);
+  Alcotest.(check int) "none selected" 0 (count selected cs);
+  let err = json |> member "beloch:error" in
+  Alcotest.(check bool) "the error names the tie" true
+    (Str.string_match (Str.regexp ".*as near") (err |> member "message" |> to_string) 0);
+  Alcotest.(check bool) "with a hint" true (err |> member "hint" <> `Null)
+
 let test_untraced_unchanged () =
   let src = triangle " toward .c" in
   let plain = Beloch.fold_string ~filename:"t.bel" src in
@@ -250,6 +263,8 @@ let () =
           Alcotest.test_case "a single solution is one selected candidate" `Quick
             test_single_solution;
           Alcotest.test_case "axiom 5 in a binding" `Quick test_axiom5_bind;
+          Alcotest.test_case "a toward point on the boundary selects nothing" `Quick
+            test_toward_tie;
           Alcotest.test_case "without --trace nothing changes" `Quick
             test_untraced_unchanged;
         ] );
