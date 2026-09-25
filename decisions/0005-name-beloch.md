@@ -60,9 +60,9 @@ historical corrective, and near-zero search collision.
 
 ## Consequences
 
-- Domain/TLD still open. `beloch.it` was the preferred read (nationality plus
-  "Beloch [solves] it") and is taken; `beloch.co.it` is free and reads badly.
-  `beloch.dev` remains the fallback. `beloch.toph.so` serves the site today.
-  The choice has to close before the first citable publication, because a paper
-  fixes the URL.
+- The domain is `belochlang.org`. It names the project as a language, in the
+  pattern of `julialang.org` and `rust-lang.org`. `beloch.it`, the preferred
+  read (nationality plus "Beloch [solves] it"), is taken; `belochfold.org`
+  collides with the Beloch fold, the name of axiom 7. The site's first address,
+  `beloch.toph.so`, redirects to it.
 - README one-liner and license already updated to the new name.
