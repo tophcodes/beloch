@@ -1,0 +1,70 @@
+; The traditional crane, flat, by the Eos route [ida2020, Fig. 7.19]: the
+; bird base of examples/bases/bird-base.bel (Ida's steps 2-8), then her
+; steps 9-17. Her steps 18 and 19 open the wings, which is 3D and out of
+; scope (ADR 0015). Checked against her figures in
+; notes/2026-09-25-crane-oracle.md.
+
+paper square
+
+fold (map .a onto .c) as --bd           ; triangle
+reverse (map .b onto .c) as --h         ; preliminary base
+reverse (map .d onto .c) as --v
+
+.o = --h * --v                          ; the paper centre
+--mid = (through .c .o)                 ; centre line of the base
+
+.sr = --ab * --h                        ; the four side corners, reversed onto --mid
+reverse (map .sr onto --mid through .c) as --rsr
+.sl = --da * --v
+reverse (map .sl onto --mid through .c) as --rsl
+.br = --bc * --h
+reverse (map .br onto --mid through .c) as --rbr
+.bl = --cd * --v
+reverse (map .bl onto --mid through .c) as --rbl
+
+; the bird base: front and back flap folded down across the kite's width,
+; which leaves the legs .b and .d at the apex
+fold (perp --mid through .sr) (moving .a) as --pf
+fold (perp --mid through .sr) (moving .c) (mountain) as --pb
+
+; narrow the legs: each outer edge onto the centre line, front layers as
+; valleys, back layers as mountains. Each fold is anchored on a point of the
+; layer it moves; without the anchor the front fold takes the back layers too.
+.e1 = (--rsr & .b) * --pf
+fold (map --rsr & .b onto --mid) (moving .e1) as --n1
+.e2 = (--rsl & .d) * --pf
+fold (map --rsl & .d onto --mid) (moving .e2) as --n2
+.e3 = (--rbr & .b) * --pb
+fold (map --rbr & .b onto --mid) (moving .e3) (mountain) as --n3
+.e4 = (--rbl & .d) * --pb
+fold (map --rbl & .d onto --mid) (moving .e4) (mountain) as --n4
+
+; neck and tail: each leg reversed about the perpendicular to its own
+; narrowed edge through the point where the side corners landed. These are
+; Ida's rays for steps 15 and 16 exactly.
+reverse (perp --n1 through .sr) (moving .b) as --neck
+reverse (perp --n2 through .sr) (moving .d) as --tail
+
+; head: a free choice in folding practice, so two free points carry it.
+; .hp is where the head bends, .ht sets its angle. Ida's ray for step 17
+; passes within 0.0011 of .ht at 1/2 and bends the neck at 0.2346 of its
+; length from the tip.
+.hp = free on --bd & .b from .b at 1/4
+.ht = free on --rsl & .a from .a at 1/2
+reverse (through .hp .ht) (moving .b) as --head
+
+; assert steps = 16
+; assert faces = 60
+
+; the two wings lie together at the far end, the paper centre stays put
+; assert .a = .c
+; assert .o = (1/2, 1/2)
+
+; the four side corners and the four narrowing anchors each share one point
+; of the centre line
+; assert .sr = .sl
+; assert .sr = .br
+; assert .sr = .bl
+; assert .e1 = .e2
+; assert .e1 = .e3
+; assert .e1 = .e4
