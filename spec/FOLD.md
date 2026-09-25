@@ -158,7 +158,10 @@ none of this appears, and every other field is the same with and without it.
   out, and null for one no rule removed. `selected` is true on the line the
   construction yields. For axioms 6 and 7 the entry also carries `conics`:
   the parabolas whose tangents these lines are, each as a `focus` point and a
-  `directrix` line.
+  `directrix` line, and each candidate that crosses paper carries its
+  `landing`: the table point its fold moves the point to. `toward` keeps the
+  candidate whose landing lies nearest the `toward` point, and a point as
+  near to two landings selects nothing.
 - A write's entry carries `write`, one of `"fold"`, `"reverse"` and
   `"flatten"`, the `terms` of the write's definition in the state it read,
   and the `candidates` it chose from. A region of paper in the terms is a

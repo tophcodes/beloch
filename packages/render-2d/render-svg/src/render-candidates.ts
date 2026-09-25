@@ -10,7 +10,7 @@ import { createDoc, el, SvgDoc } from "./svgdoc";
 import type { SvgNode } from "./svgdoc";
 import { colorLineStyle, DEFAULT_THEME } from "./theme";
 import type { Theme } from "./theme";
-import { clipLineToPoly } from "./geometry";
+import { clipHalfPlane, clipLineToPoly } from "./geometry";
 import { sceneLayout } from "./layout";
 import type { Layout } from "./layout";
 import { renderFolded } from "./render-folded";
@@ -97,6 +97,50 @@ function lineOnFaces(line: LineCoeffs, faces: Vec2[][]): [Vec2, Vec2][] {
     .filter((s): s is [Vec2, Vec2] => s !== null);
 }
 
+// `toward` keeps the candidate whose landing lies nearest the point, so the
+// points nearer one landing than any other form that candidate's cell, and
+// the boundaries between cells are the points as near to two landings, where
+// `toward` selects nothing. Points nearer landing p than q: n·x ≥ c.
+function nearer(p: Vec2, q: Vec2): [Vec2, number] {
+  return [[p[0] - q[0], p[1] - q[1]], (p[0] ** 2 + p[1] ** 2 - q[0] ** 2 - q[1] ** 2) / 2];
+}
+
+function landingsOf(entry: TraceEntry): Vec2[] {
+  return entry.candidates.flatMap((c) => (c.landing ? [c.landing] : []));
+}
+
+function cellOf(landing: Vec2, landings: Vec2[], faces: Vec2[][]): Vec2[][] {
+  return faces
+    .map((f) => landings.reduce((poly, q) =>
+      q === landing ? poly : clipHalfPlane(poly, ...nearer(landing, q)), f))
+    .filter((p) => p.length >= 3);
+}
+
+// The part of a segment where n·x ≥ c.
+function clipSegment([a, b]: [Vec2, Vec2], n: Vec2, c: number): [Vec2, Vec2] | null {
+  const sa = n[0] * a[0] + n[1] * a[1] - c, sb = n[0] * b[0] + n[1] * b[1] - c;
+  if (sa < 0 && sb < 0) return null;
+  if (sa >= 0 && sb >= 0) return [a, b];
+  const t = sa / (sa - sb);
+  const m: Vec2 = [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])];
+  return sa >= 0 ? [a, m] : [m, b];
+}
+
+function boundaries(landings: Vec2[], faces: Vec2[][]): [Vec2, Vec2][] {
+  const out: [Vec2, Vec2][] = [];
+  landings.forEach((p, i) => landings.forEach((q, j) => {
+    if (j <= i) return;
+    const [n, c] = nearer(p, q);
+    for (const s of lineOnFaces([n[0], n[1], c], faces)) {
+      // a Voronoi edge: the part where no third landing is nearer
+      const kept = landings.reduce<[Vec2, Vec2] | null>((seg, r) =>
+        !seg || r === p || r === q ? seg : clipSegment(seg, ...nearer(p, r)), s);
+      if (kept) out.push(kept);
+    }
+  }));
+  return out;
+}
+
 function overlay(
   entry: TraceEntry, cand: TraceCandidate, index: number, faces: Vec2[][],
   lay: Layout, theme: Theme,
@@ -114,6 +158,26 @@ function overlay(
   }
   const live = cand.removedBy === null;
   const accent = theme.highlightPalette[1 % theme.highlightPalette.length]!.stroke;
+  const landings = landingsOf(entry);
+  if (cand.landing && landings.length >= 2) {
+    for (const poly of cellOf(cand.landing, landings, faces)) {
+      nodes.push(el("polygon", {
+        "data-kind": "cell", points: pts(poly), fill: accent, "fill-opacity": 0.12, stroke: "none",
+      }));
+    }
+    for (const [p, q] of boundaries(landings, faces)) {
+      nodes.push(el("line", {
+        "data-kind": "boundary", x1: tx(p[0]), y1: ty(p[1]), x2: tx(q[0]), y2: ty(q[1]),
+        stroke: theme.ink, "stroke-width": 1.5, "stroke-dasharray": "2 4", opacity: 0.8,
+      }));
+    }
+  }
+  if (cand.landing) {
+    nodes.push(el("circle", {
+      "data-kind": "landing", cx: tx(cand.landing[0]), cy: ty(cand.landing[1]), r: 5,
+      fill: live ? accent : theme.flat, stroke: "none",
+    }));
+  }
   for (const [p, q] of lineOnFaces(cand.line, faces)) {
     nodes.push(el("line", {
       "data-kind": "candidate", "data-status": status(cand),

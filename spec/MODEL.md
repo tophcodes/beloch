@@ -656,6 +656,15 @@ mark (map .a onto .b) as --ef
 fold (map .d onto --ef through .a) as --s
 :::
 
+::: {.figure #fig-toward-boundary caption="`map .d onto --ef through .p`, with `.p` a quarter of the way along `--bd` from `.d`: `.d` lands at the centre under one candidate and on the top edge under the other. `toward` keeps the candidate whose landing lies nearer, so the points as near to both landings, dotted, cut the paper in two, and each panel shades the part where a `toward` point selects its candidate. `.c` lies above the line; a point on it selects nothing." views="candidates" at="choose"}
+paper square
+mark (map .a onto .b) as --ef
+mark (through .b .d) as --bd
+.p = free on --bd from .d at 1/4
+@label choose
+fold (map .d onto --ef through .p toward .c) as --s
+:::
+
 ::: {.open #open-several-sought-lines name="constructions that seek more than one line" uses="def-construction def-alignment"}
 [#def-construction] puts its alignments on one sought line, which is where
 the seven Huzita-Justin axioms live. The same alignments distributed over two

@@ -14,6 +14,7 @@ type candidate = {
   line : Geom.line;
   removed_by : removal option;
   selected : bool;
+  landing : Geom.point option;
 }
 
 type conic = { focus : Geom.point; directrix : Geom.line }
@@ -141,11 +142,14 @@ let to_json ~frame (e : entry) : Yojson.Safe.t =
                 (List.map
                    (fun c ->
                      `Assoc
-                       [
-                         ("line", line c.line);
-                         ("removed_by", removal_json c.removed_by);
-                         ("selected", `Bool c.selected);
-                       ])
+                       ([
+                          ("line", line c.line);
+                          ("removed_by", removal_json c.removed_by);
+                          ("selected", `Bool c.selected);
+                        ]
+                       @ match c.landing with
+                         | Some p -> [ ("landing", point p) ]
+                         | None -> []))
                    candidates) );
           ]
         @

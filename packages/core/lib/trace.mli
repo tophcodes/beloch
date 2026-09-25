@@ -20,6 +20,9 @@ type candidate = {
   line : Geom.line;  (** in table coordinates *)
   removed_by : removal option;
   selected : bool;
+  landing : Geom.point option;
+      (** where the fold moves the point a `toward` compares, for axioms 6
+          and 7 *)
 }
 
 type conic = { focus : Geom.point; directrix : Geom.line }

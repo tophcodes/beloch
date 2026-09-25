@@ -136,7 +136,7 @@ let ax5_sources (p : ax5_pending) : string list = p.sources
    current table positions *)
 (* One candidate, the one the construction yields. *)
 let only (l : Geom.line) : Trace.candidate list =
-  [ { Trace.line = l; removed_by = None; selected = true } ]
+  [ { Trace.line = l; removed_by = None; selected = true; landing = None } ]
 
 (* The selection axioms 6 and 7 share: drop the candidates that crease no
    face (a line on the abstract plane has nothing to fold), keep a single
@@ -177,7 +177,8 @@ let pick (ctx : Ctx.ctx) ~trace span t ~conics ~(moved : Geom.point) ~x_opt
              else if not (List.memq c nearest) then Some Trace.By_toward
              else None
            in
-           { Trace.line = c; removed_by; selected })
+           { Trace.line = c; removed_by; selected;
+             landing = (if ok then Some (Geom.reflect_point c moved) else None) })
          cuts);
   match (kept, chosen, x_opt) with
   | [], _, _ -> Error.fail span none_msg
@@ -434,7 +435,8 @@ let trace5 (ctx : Ctx.ctx) ~trace (p : ax5_pending) ~removal ~kept chosen =
          (fun b ->
            { Trace.line = b;
              removed_by = (if List.memq b kept then None else Some removal);
-             selected = (match chosen with Some c -> c == b | None -> false) })
+             selected = (match chosen with Some c -> c == b | None -> false);
+             landing = None })
          [ b1; b2 ])
 
 let select_axiom5_bind ?(trace = true) (ctx : Ctx.ctx) (span : Error.span)
