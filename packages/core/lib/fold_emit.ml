@@ -640,7 +640,7 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
   `Assoc
     [
       ("file_spec", `Float 1.1);
-      ("file_creator", `String "beloch 0.3.0-dev");
+      ("file_creator", `String ("beloch " ^ Version.version));
       ("frame_classes", `List [ `String "creasePattern" ]);
       ("vertices_coords", `List verts_paper);
       ("edges_vertices", `List edges_vertices);
