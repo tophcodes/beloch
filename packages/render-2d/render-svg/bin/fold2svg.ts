@@ -7,9 +7,10 @@
 //   bun bin/fold2svg.ts input.fold [out.svg|out.png] [--title "..."]
 //   bun bin/fold2svg.ts f.fold --view folded [--flip] [--hidden dashed|hide]
 //   beloch fold --trace f.bel | bun bin/fold2svg.ts - --view candidates [--statement N]
+//   beloch fold --trace f.bel | bun bin/fold2svg.ts - --view op [--statement N]
 //   beloch fold f.bel | bun bin/fold2svg.ts - out.png --title f.bel
 import { parseFold, SceneError, StepNotFoundError } from "@beloch/scene";
-import { renderCandidates, renderCP, renderFolded } from "@beloch/render-svg";
+import { renderCandidates, renderCP, renderFolded, renderOperation } from "@beloch/render-svg";
 
 const args = process.argv.slice(2);
 const flagVal = (name: string): string | undefined => {
@@ -18,13 +19,13 @@ const flagVal = (name: string): string | undefined => {
 };
 
 const title = flagVal("--title") || "";
-const viewFlag = flagVal("--view"); // undefined | "cp" | "folded" | "candidates"
-if (viewFlag !== undefined && viewFlag !== "cp" && viewFlag !== "folded" && viewFlag !== "candidates") {
+const viewFlag = flagVal("--view"); // undefined | "cp" | "folded" | "candidates" | "op"
+if (viewFlag !== undefined && !["cp", "folded", "candidates", "op"].includes(viewFlag)) {
   // process.stderr.write, not console.error — Bun's console.error unconditionally
   // ANSI-colors its argument even when stderr is piped (non-TTY), which would break
   // the plain-text stderr assertions below.
   process.stderr.write(
-    `beloch-render: unknown --view value '${viewFlag}' — expected cp, folded or candidates\n`,
+    `beloch-render: unknown --view value '${viewFlag}' — expected cp, folded, candidates or op\n`,
   );
   process.exit(1);
 }
@@ -68,6 +69,8 @@ try {
     ? renderFolded(scene, { ...opts, view: flip ? "bottom" : "top", hidden, step })
     : viewFlag === "candidates"
       ? renderCandidates(scene, { ...opts, statement })
+      : viewFlag === "op"
+        ? renderOperation(scene, { ...opts, statement })
       : renderCP(scene, opts);
   const svg = doc.toString();
 

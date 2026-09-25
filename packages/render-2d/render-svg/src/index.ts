@@ -7,3 +7,4 @@ export * from "./render-scene";
 export * from "./render-cp";
 export * from "./render-folded";
 export * from "./render-candidates";
+export * from "./render-operation";

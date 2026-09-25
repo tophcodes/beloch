@@ -81,6 +81,12 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
     | None, None -> None
   in
   let valley = fs.Ast.direction = Ast.Valley in
+  let record ~move_side moving placement =
+    Ctx.record_write ctx
+      (Trace.fold_terms !(ctx.state) ~axis ~move_side ~moving placement)
+      []
+  in
+  let outside = if valley then Fold_state.Top else Fold_state.Bottom in
   match (fs.Ast.place, fs.Ast.up_to) with
   | Some place, _ ->
       (* A placed fold: the anchor flap's material beyond the axis moves as one
@@ -98,6 +104,7 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
       let move_side, block, placement =
         Resolve.placed_fold_plan ctx axis ~anchor ~place span
       in
+      record ~move_side block placement;
       (match
          Fold_state.scoped_fold_hinge_closed !(ctx.state) ~axis ~move_side
            ~moving_parents:block
@@ -148,6 +155,7 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
       let moving_parents =
         Fold_state.default_scope !(ctx.state) ~axis ~move_side ~valley ~seed
       in
+      record ~move_side moving_parents outside;
       (match
          Fold_state.scoped_fold_hinge_closed !(ctx.state) ~axis ~move_side
            ~moving_parents
@@ -196,6 +204,7 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
       with
       | Error (msg, hint) -> Error.fail ?hint span msg
       | Ok moving_parents ->
+          record ~move_side moving_parents outside;
           (match
              Fold_state.scoped_fold_hinge_closed !(ctx.state) ~axis
                ~move_side ~moving_parents
@@ -523,10 +532,13 @@ let eval_reverse (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
     | None, None -> Error.fail span "this reverse needs `moving .p` to name the tip"
   in
   let move_side, tip = Resolve.tip_faces ctx axis ~anchor span in
-  (match
-     Fold_state.reverse ~crease_id:cid !(ctx.state) ~axis ~move_side ~tip
-       ~inside:(not rs.Ast.outside) ~prov
-   with
+  let st = !(ctx.state) and inside = not rs.Ast.outside in
+  let attempts =
+    Fold_state.reverse_attempts ~crease_id:cid st ~axis ~move_side ~tip ~inside ~prov
+  in
+  let terms, states = Trace.reverse_write st ~axis ~move_side ~tip ~inside attempts in
+  Ctx.record_write ctx terms states;
+  (match Fold_state.reverse_of_attempts attempts with
   | Ok st -> ctx.state := st
   | Error (Fold_state.Invalid (Fold_state.Taco_tortilla { tortilla; _ })) ->
       Error.fail span (Printf.sprintf "reversing the tip would pierce layer %d" tortilla)

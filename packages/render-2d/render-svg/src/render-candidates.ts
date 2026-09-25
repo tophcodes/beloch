@@ -1,31 +1,47 @@
-// Candidates view: one panel per candidate line of a construction, each on
-// its own copy of the state the construction read, as Ida draws the choices of
-// a fold [ida2020, Fig. 2.17]. Reads `beloch:trace` (spec/FOLD.md, "The
-// trace"), so the file has to be written by `beloch fold --trace`.
-import type { Conic, FoldScene, LineCoeffs, TraceCandidate, TraceEntry, Vec2 } from "@beloch/scene";
+// Candidates view: one panel per candidate of a statement. For a construction
+// the candidates are lines, each drawn on its own copy of the state the
+// construction read, as Ida draws the choices of a fold [ida2020, Fig. 2.17];
+// for a write they are states, drawn by what tells them apart. Reads
+// `beloch:trace` (spec/FOLD.md, "The trace"), so the file has to be written by
+// `beloch fold --trace`.
+import type { Conic, FoldScene, LineCoeffs, TraceCandidate, TraceEntry, Vec2, WriteEntry } from "@beloch/scene";
 import { SceneError } from "@beloch/scene";
 import { createDoc, el, SvgDoc } from "./svgdoc";
 import type { SvgNode } from "./svgdoc";
-import { DEFAULT_THEME } from "./theme";
+import { colorLineStyle, DEFAULT_THEME } from "./theme";
 import type { Theme } from "./theme";
 import { clipLineToPoly } from "./geometry";
 import { sceneLayout } from "./layout";
 import type { Layout } from "./layout";
 import { renderFolded } from "./render-folded";
 import type { RenderOptions } from "./render-cp";
+import { candidateNodes, candidateStatus, caption, paperFrame, withCandidateSteps } from "./render-operation";
+import { renderCP } from "./render-cp";
 
 export interface CandidatesOptions extends RenderOptions {
   // Index into scene.statements. Undefined: the statement a traced run failed
-  // at, else the last statement that evaluated a construction.
+  // at, else the last statement that chose from candidates.
   statement?: number | undefined;
+}
+
+function defaultStatement(scene: FoldScene): number | undefined {
+  const last = (es: { statement: number }[]) => es[es.length - 1]?.statement ?? -1;
+  const s = Math.max(last(scene.trace), last(scene.writeTrace.filter((e) => e.candidates.length > 0)));
+  return scene.error?.statement ?? (s >= 0 ? s : undefined);
+}
+
+// The write entry of a statement when the write chose from candidates. A fold
+// chooses none, so the candidates of a fold's statement are its construction's.
+export function writeCandidatesEntry(scene: FoldScene, statement?: number): WriteEntry | undefined {
+  const target = statement ?? defaultStatement(scene);
+  return scene.writeTrace.find((e) => e.statement === target && e.candidates.length > 0);
 }
 
 export function candidatesEntry(scene: FoldScene, statement?: number): TraceEntry {
   if (scene.trace.length === 0) {
     throw new SceneError("no beloch:trace in this file; write it with `beloch fold --trace`");
   }
-  const target =
-    statement ?? scene.error?.statement ?? scene.trace[scene.trace.length - 1]!.statement;
+  const target = statement ?? defaultStatement(scene);
   const entries = scene.trace.filter((e) => e.statement === target);
   const entry = entries[entries.length - 1];
   if (!entry) throw new SceneError(`statement ${target} evaluates no construction`);
@@ -122,7 +138,54 @@ function overlay(
   return nodes;
 }
 
+// Panels in rows of at most four.
+const COLS = 4;
+
+function grid(n: number, lay: Layout): { doc: SvgDoc; at: (i: number) => { x: number; y: number } } {
+  const cols = Math.min(Math.max(n, 1), COLS);
+  const rows = Math.ceil(Math.max(n, 1) / cols);
+  return {
+    doc: createDoc(lay.W * cols, lay.H * rows),
+    at: (i) => ({ x: (i % cols) * lay.W, y: Math.floor(i / cols) * lay.H }),
+  };
+}
+
+function renderWriteCandidates(scene: FoldScene, entry: WriteEntry, opts: CandidatesOptions): SvgDoc {
+  const [ext] = withCandidateSteps(scene, entry);
+  const theme: Theme = { ...DEFAULT_THEME, ...opts.theme };
+  const lay = sceneLayout(ext);
+  const { doc, at } = grid(entry.candidates.length, lay);
+  const before = ext.steps[entry.frameIndex];
+  if (!before) throw new SceneError(`frame ${entry.frameIndex} is not in the file`);
+  const faces = before.frame.facesVertices.map((f) => f.map((v) => before.frame.vertices[v]!));
+  entry.candidates.forEach((c, i) => {
+    // each panel draws what tells the candidates apart: the states of a
+    // flatten differ in their letters, which their crease patterns show; the
+    // spines of a reverse fold differ in where they cut the tip, which the
+    // state before the fold shows
+    const panelOpts = {
+      title: i === 0 ? opts.title : undefined, labels: opts.labels, theme: opts.theme,
+      highlight: opts.highlight,
+    };
+    const asPattern = entry.terms.write === "flatten" && c.frame !== null;
+    const base = (asPattern
+      ? renderCP({ ...ext, cp: paperFrame(c.frame!) }, {
+        ...panelOpts,
+        // in colour: a dash-dot mountain reads as a solid line at this size
+        theme: { lineStyle: colorLineStyle, ...opts.theme },
+      })
+      : renderFolded(ext, { ...panelOpts, step: String(entry.frameIndex) })).node();
+    const nodes = asPattern ? [] : candidateNodes(entry, c, faces, lay, theme);
+    doc.root.children.push(el("svg", { ...base.attrs, ...at(i), "data-status": candidateStatus(c) }, [
+      ...base.children, ...nodes, caption(`${i + 1} · ${candidateStatus(c)}`, lay, theme),
+    ]));
+  });
+  return doc;
+}
+
 export function renderCandidates(scene: FoldScene, opts: CandidatesOptions = {}): SvgDoc {
+  const write = writeCandidatesEntry(scene, opts.statement);
+  if (write) return renderWriteCandidates(scene, write, opts);
   const entry = candidatesEntry(scene, opts.statement);
   const step = scene.steps[entry.frameIndex];
   if (!step) throw new SceneError(`frame ${entry.frameIndex} is not in the file`);
@@ -138,11 +201,10 @@ export function renderCandidates(scene: FoldScene, opts: CandidatesOptions = {})
       highlight: opts.highlight,
       markOverlay: { marks },
     }).node();
-    return el("svg", { ...base.attrs, x: i * lay.W, y: 0 }, [...base.children, ...nodes]);
+    return el("svg", { ...base.attrs, ...at(i) }, [...base.children, ...nodes]);
   };
   const cands = entry.candidates;
-  const n = Math.max(cands.length, 1);
-  const doc = createDoc(lay.W * n, lay.H);
+  const { doc, at } = grid(cands.length, lay);
   if (cands.length === 0) {
     doc.root.children.push(panel([el("text", {
       x: lay.W / 2, y: lay.H - 16, "text-anchor": "middle", "font-size": 15, fill: theme.ink,

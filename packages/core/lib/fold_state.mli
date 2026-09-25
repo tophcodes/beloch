@@ -337,7 +337,40 @@ val reverse :
     outside: [Bottom] and [Top]. Exactly one candidate state passing the
     invariants is the result. [tip] must contain only parents with a piece on
     the moving side (the caller builds it so); a tip parent lying entirely on
-    the stationary side is not checked. *)
+    the stationary side is not checked. It is [reverse_of_attempts] of
+    [reverse_attempts]. *)
+
+type spine_outcome =
+  | Not_two_halves  (** removing the hinge leaves no two halves *)
+  | No_body  (** a half has no parent cut by the axis *)
+  | Interleaved  (** the halves' hinge layers share a rank range *)
+  | Crossing of violation  (** the two-block fold violated an invariant *)
+  | Reversed of t
+
+type spine_attempt = {
+  hinge : int;  (** the hinge tried as the spine *)
+  halves : (bool array * bool array) option;
+      (** parent masks, the half at the lower body first where the bodies
+          are separated *)
+  bodies : (int list * int list) option;
+      (** the parents of each half cut by the axis, in the order of [halves] *)
+  outcome : spine_outcome;
+}
+
+val reverse_attempts :
+  ?crease_id:int ->
+  t ->
+  axis:Geom.line ->
+  move_side:int ->
+  tip:bool array ->
+  inside:bool ->
+  prov:State.provenance option ->
+  spine_attempt list
+(** Every hinge {!reverse} tries as the spine, in hinge order, with what
+    became of it. *)
+
+val reverse_of_attempts : spine_attempt list -> (t, reverse_failure) result
+(** The one [Reversed] state, or the failure {!reverse} reports. *)
 
 val flip : t -> t
 (** Turn the whole sheet over: reflects across the footprint's vertical

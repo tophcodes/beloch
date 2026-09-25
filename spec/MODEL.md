@@ -963,6 +963,15 @@ fold (map .b onto .a)
 fold (through .p .q) (moving .b) as --f
 :::
 
+::: {.figure #fig-fold-op caption="The terms of `--f` in [#fig-fold-default] on the state it reads: the axis dashed and the moving set filled, the corner of the top layer alone. The layer beneath it is a candidate and stays, since the moving set grows outward from the anchor. On the right the state after the fold." views="op" at="f"}
+paper square
+fold (map .b onto .a)
+.p = free on --bc from .b at 1/4
+.q = free on --ab from .b at 1/4
+@label f
+fold (through .p .q) (moving .b) as --f
+:::
+
 ::: {.figure #fig-fold-depth caption="The same fold given the bottom layer as its depth: the moving set grows outward from there and both corners fold, valley on the face-up layer and mountain on the face-down one." views="cp folded" highlight="--f"}
 paper square
 fold (map .b onto .a)
@@ -1101,6 +1110,25 @@ reverse (map .b onto .c) as --h
 reverse (map .d onto .c) as --v
 :::
 
+::: {.figure #fig-reverse-op caption="The terms of `--h` in [#fig-reverse] on the triangle it reads: the axis dashed, the spine on `--bd`, the two halves of the tip hatched in two directions below the axis, where they lie on one another, and their bodies above it, each half and its body in one colour. On the right the state after the reverse fold." views="op" at="h"}
+paper square
+fold (map .a onto .c) as --bd
+@label h
+reverse (map .b onto .c) as --h
+reverse (map .d onto .c) as --v
+:::
+
+::: {.figure #fig-reverse-spines caption="A kite folded in half, its tip reversed: every folded hinge of the tip that reaches beyond the axis is tried as the spine. The kite fold `--k` cuts the tip into two halves whose bodies interleave in the stack, so it is removed; the diagonal remains, so the fold is defined." views="candidates" at="tip"}
+paper square
+mark (through .a .c) as --ac
+fold (map --ab onto --ac) (moving .b) as --k
+.e = free on --bc from .c at 1/2
+fold (--ac) (moving .e) as --m
+.s = free on --ac from .a at 1/3
+@label tip
+reverse (perp --ac through .s) (moving .a) as --r
+:::
+
 ::: {.corollary #cor-reverse-letters name="letters of a reverse fold" uses="def-reverse def-letter cor-fold-letters def-reflection"}
 The spine beyond the axis reverses its letter. The hinges the write scores
 on $\ell$ read, on both halves, the letter the spine had before for an
@@ -1202,6 +1230,36 @@ mark (map --da onto --bc) as --v
 .q = free on --ab from .a at 1/4
 .r = free on --ab from .b at 1/4
 flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+:::
+
+::: {.figure #fig-flatten-op caption="The terms of the collapse in [#fig-flatten]: the vertex at the centre, the six rays, and the stayer, the quarter between the rays on `--h` and `--v` that holds the diagonal to `.c`. Every other sector moves by the reflections across the rays between it and the stayer; on the right the state after the collapse." views="op" at="collapse"}
+paper square
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+mark (map --ab onto --cd) as --h
+mark (map --da onto --bc) as --v
+.q = free on --ab from .a at 1/4
+.r = free on --ab from .b at 1/4
+@label collapse
+flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+:::
+
+::: {.figure #fig-flatten-states caption="The candidate states of a four-ray vertex, the midline on both sides and the half-diagonals to `.c` and `.b`, each as its crease pattern, mountains red and valleys blue. The sectors are 45°, 135°, 135° and 45°, so opposite sectors sum to 180° and the vertex folds flat. Every state has three rays of one letter and one of the other. The three with three mountains are removed; the three with one mountain each remain, and without `toward` the program fails as ambiguous ([#open-flatten-selection])." views="candidates" at="vertex"}
+paper square
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+mark (map --ab onto --cd) as --h
+@label vertex
+flatten (--h & --bc) (--ac & .c) (--h & --da) (--bd & .b)
+:::
+
+::: {.figure #fig-flatten-toward caption="The same vertex with `toward .c`: of the three states with one mountain, two put less of the material toward `.c` on top than the third, which remains." views="candidates" at="vertex"}
+paper square
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+mark (map --ab onto --cd) as --h
+@label vertex
+flatten (--h & --bc) (--ac & .c) (--h & --da) (--bd & .b) (toward .c)
 :::
 
 ::: {.open #open-flatten-selection name="what selects among the candidates of a flatten" uses="def-flatten def-selection"}

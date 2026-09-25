@@ -7,7 +7,7 @@
 // packages/render-2d, the same functions the docs site's <Beloch> card uses.
 //
 // Output goes to _build/spec/figures: one `<id>-<view>.svg` per view (`cp`,
-// `folded`, `candidates`), and
+// `folded`, `candidates`, `op`), and
 // index.json (one entry per figure, with the files it produced and the reason
 // if it produced none). Both renderers of the documents read the SVG files and
 // fall back to a placeholder, so a figure that fails here never fails a build:
@@ -25,10 +25,10 @@
 import { readdirSync, readFileSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { parseFold } from "../packages/render-2d/scene/src/index.ts";
-import { renderCandidates, renderCP, renderFolded } from "../packages/render-2d/render-svg/src/index.ts";
+import { renderCandidates, renderCP, renderFolded, renderOperation } from "../packages/render-2d/render-svg/src/index.ts";
 import { evalBelToFold } from "../packages/www/src/lib/eval-bel.ts";
 
-const VIEWS = ["cp", "folded", "candidates"] as const;
+const VIEWS = ["cp", "folded", "candidates", "op"] as const;
 type View = (typeof VIEWS)[number];
 // What a figure that names no views gets.
 const DEFAULT_VIEWS: View[] = ["cp", "folded"];
@@ -55,7 +55,7 @@ export interface FigureBlock {
 	id: string;
 	views: View[];
 	highlight: string[];
-	/** The `@label` of the statement the `candidates` view shows. */
+	/** The `@label` of the statement the `candidates` and `op` views show. */
 	at?: string | undefined;
 	program: string;
 }
@@ -158,7 +158,7 @@ export function renderFigure(block: FigureBlock, outDir: string, source: string)
 	let fold: Record<string, unknown>;
 	let scene: ReturnType<typeof parseFold>;
 	try {
-		fold = evalBelToFold(block.program, { trace: views.includes("candidates") }) as Record<string, unknown>;
+		fold = evalBelToFold(block.program, { trace: views.includes("candidates") || views.includes("op") }) as Record<string, unknown>;
 		scene = parseFold(fold);
 	} catch (err) {
 		entry.error = (err as Error).message;
@@ -186,6 +186,7 @@ export function renderFigure(block: FigureBlock, outDir: string, source: string)
 			const doc =
 				view === "cp" ? renderCP(scene, opts)
 				: view === "candidates" ? renderCandidates(scene, { ...opts, statement })
+				: view === "op" ? renderOperation(scene, { ...opts, statement })
 				: renderFolded(scene, opts);
 			writeFileSync(join(outDir, file), doc.toString());
 			entry.files[view] = file;

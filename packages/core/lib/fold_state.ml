@@ -915,9 +915,23 @@ let reverse_failure_to_string = function
        fold"
   | Invalid v -> violation_to_string v
 
-let reverse ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
+type spine_outcome =
+  | Not_two_halves
+  | No_body
+  | Interleaved
+  | Crossing of violation
+  | Reversed of t
+
+type spine_attempt = {
+  hinge : int;
+  halves : (bool array * bool array) option;
+  bodies : (int list * int list) option;
+  outcome : spine_outcome;
+}
+
+let reverse_attempts ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
     ~(tip : bool array) ~(inside : bool) ~(prov : State.provenance option) :
-    (t, reverse_failure) result =
+    spine_attempt list =
   let n = Array.length g.faces in
   let nh = Array.length g.hinges in
   let internal =
@@ -974,7 +988,8 @@ let reverse ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
   in
   let attempt cut =
     let comp, k = components cut in
-    if k <> 2 then None
+    let tried halves bodies outcome = { hinge = cut; halves; bodies; outcome } in
+    if k <> 2 then tried None None Not_two_halves
     else begin
       let half c = Array.init n (fun i -> tip.(i) && comp.(i) = c) in
       let body c =
@@ -983,7 +998,8 @@ let reverse ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
           (List.init n Fun.id)
       in
       let b0 = body 0 and b1 = body 1 in
-      if b0 = [] || b1 = [] then None
+      if b0 = [] || b1 = [] then
+        tried (Some (half 0, half 1)) (Some (b0, b1)) No_body
       else
         let lo l = List.fold_left (fun a i -> min a g.rank.(i)) max_int l in
         let hi l = List.fold_left (fun a i -> max a g.rank.(i)) min_int l in
@@ -993,7 +1009,7 @@ let reverse ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
           else None
         in
         match arrangement with
-        | None -> Some (Error Bodies_interleaved)
+        | None -> tried (Some (half 0, half 1)) (Some (b0, b1)) Interleaved
         | Some (lower, upper, blo, bup) ->
             let topmost l =
               List.fold_left
@@ -1011,12 +1027,14 @@ let reverse ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
                   (half upper, Under (bottommost bup)) ]
               else [ (half lower, Bottom); (half upper, Top) ]
             in
-            Some
+            tried
+              (Some (half lower, half upper))
+              (Some (blo, bup))
               (match
                  fold_blocks ?crease_id ~blocks g ~axis ~move_side ~prov
                with
-              | Ok g' -> Ok g'
-              | Error v -> Error (Invalid v))
+              | Ok g' -> Reversed g'
+              | Error v -> Crossing v)
     end
   in
   (* Known ceiling: every candidate hinge pays a component walk plus a full
@@ -1025,19 +1043,34 @@ let reverse ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
      reverse a tip with dozens of layers, filter the candidates by geometry
      first — only hinges on the tip's outline can be spines — and attempt
      placements for those. *)
-  let results = List.filter_map attempt folded_internal in
+  List.map attempt folded_internal
+
+let reverse_of_attempts (attempts : spine_attempt list) :
+    (t, reverse_failure) result =
   let oks =
-    List.filter_map (function Ok g' -> Some g' | Error _ -> None) results
+    List.filter_map
+      (fun a -> match a.outcome with Reversed g' -> Some g' | _ -> None)
+      attempts
   in
   match oks with
   | [ g' ] -> Ok g'
   | _ :: _ :: _ -> Error (Several_spines (List.length oks))
   | [] -> (
       match
-        List.filter_map (function Error e -> Some e | Ok _ -> None) results
+        List.find_map
+          (fun a ->
+            match a.outcome with
+            | Interleaved -> Some Bodies_interleaved
+            | Crossing v -> Some (Invalid v)
+            | _ -> None)
+          attempts
       with
-      | e :: _ -> Error e
-      | [] -> Error No_spine)
+      | Some e -> Error e
+      | None -> Error No_spine)
+
+let reverse ?crease_id g ~axis ~move_side ~tip ~inside ~prov =
+  reverse_of_attempts
+    (reverse_attempts ?crease_id g ~axis ~move_side ~tip ~inside ~prov)
 
 (* Turn the whole sheet over: reflect across the footprint's vertical
    centerline (cosmetic internal axis), reverse the face

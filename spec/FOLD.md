@@ -139,33 +139,77 @@ others. Figures that explain an operation read it (issue #51), and so can an
 editor that shows the candidates while a program is typed. Without `--trace`
 none of this appears, and every other field is the same with and without it.
 
-- `beloch:trace`: one entry per construction the program evaluates, in the
-  order they run, a construction inside a `fold` or `mark` and one on the
-  right-hand side of a binding alike. Each entry carries the `statement` it
-  belongs to as an index into `beloch:statements`, the `frame_index` of the
-  state the construction read (for a `fold` the state before it, where the
-  statement's own `frame_index` names the state after), the `axiom` tag as
-  in `beloch:edges`, the `toward` point when the construction names one, and
-  `candidates`: every line that satisfies the construction's alignments, each
-  with its `line` (the table line's `coeffs` in that state) and `removed_by`:
-  `"paper"` for a line that creases no face, which the model does not count
-  as a candidate at all ([def-construction](/model/#def-construction)),
-  `"toward"` for one the `toward` point ruled out, `"moving"` for one the
-  anchor of a `fold` ruled out, and null for one no rule removed. `selected`
-  is true on the line the construction yields. For axioms 6 and 7 the entry
-  also carries `conics`: the parabolas whose tangents these lines are, each
-  as a `focus` point and a `directrix` line.
+- `beloch:trace`: one entry per construction and per write the program
+  evaluates, in the order they run. Every entry carries the `statement` it
+  belongs to as an index into `beloch:statements` and the `frame_index` of
+  the state it read: for a statement that moves paper the state before it,
+  where the statement's own `frame_index` names the state after. A statement
+  with a construction and a write, such as `fold (map .b onto .c)`, has two
+  entries, the construction's first.
+- A construction's entry covers a construction inside a `fold` or `mark` and
+  one on the right-hand side of a binding alike. It carries the `axiom` tag
+  as in `beloch:edges`, the `toward` point when the construction names one,
+  and `candidates`: every line that satisfies the construction's alignments,
+  each with its `line` (the table line's `coeffs` in that state) and
+  `removed_by`: `"paper"` for a line that creases no face, which the model
+  does not count as a candidate at all
+  ([def-construction](/model/#def-construction)), `"toward"` for one the
+  `toward` point ruled out, `"moving"` for one the anchor of a `fold` ruled
+  out, and null for one no rule removed. `selected` is true on the line the
+  construction yields. For axioms 6 and 7 the entry also carries `conics`:
+  the parabolas whose tangents these lines are, each as a `focus` point and a
+  `directrix` line.
+- A write's entry carries `write`, one of `"fold"`, `"reverse"` and
+  `"flatten"`, the `terms` of the write's definition in the state it read,
+  and the `candidates` it chose from. A region of paper in the terms is a
+  list of polygons, one per face, in table coordinates; a segment is a pair
+  of points. Each candidate carries its `frame`, the candidate state as a
+  `foldedForm` frame of the same shape as those in `file_frames`, or null
+  where no state exists; `removed_by`, the rule that removed it or null; and
+  `selected`, true on the state the write yields. Where several candidates
+  keep `removed_by` null and none is `selected`, the write was ambiguous and
+  the program failed.
+- `fold` ([def-fold](/model/#def-fold)): the `terms` are the `axis` as a
+  table line's `coeffs`, the `side` that moves as the sign, $1$ or $-1$, of
+  $ax + by - c$ there, the `moving` set, and the `placement`: `"top"`,
+  `"bottom"`, `"over"` or `"under"`, the last two with the `target` region
+  the block is placed against. The moving set is the region as it lies
+  before the fold. A fold chooses no state, so its `candidates` are empty and
+  the state after it is the statement's own frame. A fold that would tear the
+  paper still has its entry, and the file then ends before the fold.
+- `reverse` ([def-reverse](/model/#def-reverse)): the `terms` are the
+  `axis`, the `side`, the `kind`, `"inside"` or `"outside"`, and the `tip`.
+  There is one candidate per folded hinge of the tip that reaches beyond the
+  axis, each with its `spine` as a segment, its `halves` and `bodies` as two
+  regions each, the lower body first, and `removed_by`: `"halves"` when
+  removing the hinge does not leave exactly two halves, so that the hinge is
+  no spine in the model's sense, `"bodies"` when a half has no body,
+  `"interleaved"` when the bodies are not separated, and `"crossing"` when
+  the reflection is no state. `halves` and `bodies` are null on a candidate
+  removed before they exist, and `frame` is null on every removed candidate.
+- `flatten` ([def-flatten](/model/#def-flatten)): the `terms` are the
+  vertex `point`. There is one candidate per candidate state, each with the
+  `rays` of its fan that the program gave, its `emergent` ray or null, and
+  its `stayer` as the ends of the two rays that bound the stayer sector,
+  counter-clockwise; a ray is a segment from the vertex. The letters of a
+  candidate are the assignments in its frame. `removed_by` names the stage
+  of the selection
+  ([open-flatten-selection](/model/#open-flatten-selection)) that removed
+  it: `"opposite"` for an emergent ray on the far side of a given ray's
+  line, which the selection falls back to only when no emergent ray on a new
+  line closes the vertex, `"toward"` for a state whose moved material lies
+  farther from the `toward` point than another's, `"mountains"` for one with
+  more mountains on the given rays than another, and `"top"` for one that
+  puts less of the material toward the point on top.
 - `beloch:error`: present when the program fails, with the `message`, the
   `hint`, the `span` and the `statement` index of the statement that failed.
 
 With `--trace`, a program that fails still writes a file: the frames up to
 the state the failing statement read, its entry in `beloch:statements`, and
-its trace entry. An ambiguous construction leaves several candidates with
-`removed_by` null and none `selected`; that is the state a figure draws to
-show why the program has to choose. The exit code is that of the failure.
-
-Writes get trace entries of their own, the terms of their definitions and
-the states they chose from, with the operation view of issue #51.
+its trace entries. An ambiguous construction leaves several candidates with
+`removed_by` null and none `selected`, and so does an ambiguous write; that
+is the state a figure draws to show why the program has to choose. The exit
+code is that of the failure.
 
 ## What this document will grow into
 

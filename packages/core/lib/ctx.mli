@@ -234,6 +234,11 @@ val record_trace :
 (** Record the candidates of the construction the current statement
     evaluates. *)
 
+val record_write : ctx -> Trace.terms -> Trace.state_candidate list -> unit
+(** Record the terms of the write the current statement runs and the states
+    it chose from, on the state it reads. Call it before the write replaces
+    the state. *)
+
 val create : unit -> ctx
 (** A context on the flat square, with the four corners and the four edges
     bound in the root scope. *)

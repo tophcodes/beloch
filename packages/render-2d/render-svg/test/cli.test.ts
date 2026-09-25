@@ -34,7 +34,7 @@ test("CLI: unknown --view value exits 1 with a plain error", async () => {
   const p = Bun.spawn(["bun", CLI, FIX, "--view", "top"], { stderr: "pipe" });
   const err = await new Response(p.stderr).text();
   expect(await p.exited).toBe(1);
-  expect(err).toContain("unknown --view value 'top' — expected cp, folded or candidates");
+  expect(err).toContain("unknown --view value 'top' — expected cp, folded, candidates or op");
 });
 
 test("CLI: an unknown option exits 1 and writes no file", async () => {
