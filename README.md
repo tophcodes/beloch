@@ -275,7 +275,6 @@ BibTeX for all of them is in [`paper/references.bib`](paper/references.bib).
 @software{muehl_beloch,
   author  = {M{\"u}hl, Christopher},
   title   = {Beloch: a declarative language for origami},
-  version = {0.3.0},
   year    = {2026},
   doi     = {10.5281/zenodo.22884252},
   url     = {https://github.com/tophcodes/beloch}
