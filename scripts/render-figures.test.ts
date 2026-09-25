@@ -76,6 +76,21 @@ test("a candidates figure draws the choices of a program that stops at them", ()
 	expect((svg.match(/data-status="open"/g) ?? []).length).toBe(2);
 });
 
+test("an op figure draws the write of the labelled statement", () => {
+	const entry = renderFigure(
+		{
+			id: "fig-rev", views: ["op"], highlight: [], at: "rev",
+			program: "paper square\nfold (map .a onto .c) as --bd\n@label rev\nreverse (map .b onto .c) as --h\n",
+		},
+		outDir,
+		"spec/TEST.md",
+	);
+	expect(entry.error).toBeNull();
+	const svg = readFileSync(join(outDir, "fig-rev-op.svg"), "utf8");
+	expect(svg).toContain('data-kind="spine"');
+	expect(svg).toContain("reverse · inside");
+});
+
 test("a figure that shows an unlabelled statement is an error", () => {
 	const entry = renderFigure(
 		{ id: "fig-noat", views: ["candidates"], highlight: [], at: "nope", program: TRIANGLE },

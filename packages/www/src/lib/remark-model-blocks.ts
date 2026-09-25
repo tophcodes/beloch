@@ -74,7 +74,7 @@ const LABELS: Record<string, string> = {
 const PREFIX = "bm: https://belochlang.org/ns/model#";
 
 // The views a figure may ask for, and the ones it gets when it names none.
-const FIGURE_VIEWS = ["cp", "folded", "candidates"];
+const FIGURE_VIEWS = ["cp", "folded", "candidates", "op"];
 const DEFAULT_VIEWS = ["cp", "folded"];
 
 // `.p --l #[.p .q]`, the same reading scripts/render-figures.ts does: a flap
