@@ -26,6 +26,34 @@
 	font-display: swap;
 }
 
+/* The three shipped cuts of TeX Gyre Pagella, the prose face: regular, italic
+ * for emphasis and statement names, bold for run-in heads and the small-caps
+ * labels set at 600. Subset and renamed "Beloch Pagella" as the GUST Font
+ * License asks of a derived font; the licence and the regeneration command sit
+ * in public/fonts/README.md.
+ */
+@font-face {
+	font-family: 'Beloch Pagella';
+	src: url('/fonts/pagella-400.woff2') format('woff2');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'Beloch Pagella';
+	src: url('/fonts/pagella-400-italic.woff2') format('woff2');
+	font-weight: 400;
+	font-style: italic;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'Beloch Pagella';
+	src: url('/fonts/pagella-700.woff2') format('woff2');
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+
 /* One query turns motion off everywhere. The loading indicator then has to say
    in words what it is waiting for, because a still spinner says nothing. */
 @media (prefers-reduced-motion: reduce) {
