@@ -14,7 +14,6 @@ import rehypeCitation from 'rehype-citation/node/rehype-citation.mjs';
 import rehypeCitePost from './src/lib/rehype-cite-post.ts';
 import { headSyncScript } from "./src/lib/paper-schemes.ts";
 import { notePopupScript } from "./src/lib/note-popups.ts";
-import { sidebarCollapseScript } from "./src/lib/sidebar-collapse.ts";
 import { DESCRIPTION } from "./src/lib/description.ts";
 
 // Anchor repo root to this file's location (packages/www/astro.config.mjs → two levels up).
@@ -138,7 +137,6 @@ export default defineConfig({
 				},
 			],
 			components: {
-				Sidebar: './src/components/Sidebar.astro',
 				// One header on every page. The mobile drawer picks up the text
 				// links the compact header drops.
 				Header: './src/components/DocsHeader.astro',
@@ -174,10 +172,6 @@ export default defineConfig({
 				{
 					tag: "script",
 					content: headSyncScript(),
-				},
-				{
-					tag: "script",
-					content: sidebarCollapseScript(),
 				},
 				{
 					tag: "script",
