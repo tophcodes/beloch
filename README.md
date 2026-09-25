@@ -50,8 +50,9 @@ crease so later statements can use it.
 
 Five verbs write to the paper. `mark` scores a crease and moves nothing,
 `fold` folds along it, `reverse` makes an inside or outside reverse fold,
-`flip` turns the paper over, and `flatten` closes a vertex: given some of the
-rays that meet there, it derives the crease that makes the vertex fold flat.
+`flip` turns the paper over, and `flatten` folds a vertex flat along several
+rays at once; given an odd number of them, it derives the one ray that is
+missing.
 The evaluator works out where every layer goes and which creases end up
 mountain or valley. The full grammar is in [`spec/BELOCH.md`](spec/BELOCH.md)
 and on the [language page](https://beloch.toph.so/language/).
@@ -69,9 +70,11 @@ or valley assignment of each crease. A coincidence such as "this point lies on
 this line" is decided exactly, and a √2 or an axiom-7 cube root stays exact
 through every later fold.
 
-`flatten` states a flat vertex by constraints on its rays and solves for the
-crease that is missing. It expresses folds that no axiom constructs from the
-points a program has named; the swivel rabbit ear below is one.
+`flatten` folds every sector around a vertex at once, constrained by letters
+on its rays and an order between its sectors. Given an odd number of rays, it
+adds the ray that Kawasaki's condition forces and scores it as a new crease.
+That expresses folds no axiom constructs from the points a program has
+named; the swivel rabbit ear below is one.
 
 ## Status
 
