@@ -91,6 +91,7 @@ function traceFrom(fold: Record<string, unknown>): TraceEntry[] {
       line: c["line"] as LineCoeffs,
       removedBy: (c["removed_by"] ?? null) as TraceEntry["candidates"][number]["removedBy"],
       selected: c["selected"] === true,
+      landing: (c["landing"] ?? null) as Vec2 | null,
     })),
     conics: ((e["conics"] ?? []) as { focus: Vec2; directrix: LineCoeffs }[]).map((c) => ({
       focus: c.focus, directrix: c.directrix,

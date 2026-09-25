@@ -10,7 +10,7 @@ import { createDoc, el, SvgDoc } from "./svgdoc";
 import type { SvgNode } from "./svgdoc";
 import { DEFAULT_THEME } from "./theme";
 import type { Theme } from "./theme";
-import { clipLineToPoly } from "./geometry";
+import { clipHalfPlane, clipLineToPoly } from "./geometry";
 import { sceneLayout } from "./layout";
 import type { Layout } from "./layout";
 import { renderFolded } from "./render-folded";
@@ -141,18 +141,8 @@ export function caption(text: string, lay: Layout, theme: Theme): SvgNode {
 // The part of a convex polygon on the left of the directed line from `o`
 // through `p`.
 function leftOf(poly: Vec2[], o: Vec2, p: Vec2): Vec2[] {
-  const side = ([x, y]: Vec2) => (p[0] - o[0]) * (y - o[1]) - (p[1] - o[1]) * (x - o[0]);
-  const out: Vec2[] = [];
-  poly.forEach((a, i) => {
-    const b = poly[(i + 1) % poly.length]!;
-    const sa = side(a), sb = side(b);
-    if (sa >= 0) out.push(a);
-    if ((sa > 0 && sb < 0) || (sa < 0 && sb > 0)) {
-      const t = sa / (sa - sb);
-      out.push([a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]);
-    }
-  });
-  return out;
+  const dx = p[0] - o[0], dy = p[1] - o[1];
+  return clipHalfPlane(poly, [-dy, dx], dx * o[1] - dy * o[0]);
 }
 
 // The sector between two rays from `o`, counter-clockwise from `a` to `b`, on

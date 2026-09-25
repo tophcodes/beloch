@@ -386,3 +386,19 @@ export function paperEdgeSegments(
   });
   return out;
 }
+
+// The part of a convex polygon where n·x ≥ c.
+export function clipHalfPlane(poly: Vec2[], n: Vec2, c: number): Vec2[] {
+  const side = ([x, y]: Vec2) => n[0] * x + n[1] * y - c;
+  const out: Vec2[] = [];
+  poly.forEach((a, i) => {
+    const b = poly[(i + 1) % poly.length]!;
+    const sa = side(a), sb = side(b);
+    if (sa >= 0) out.push(a);
+    if ((sa > 0 && sb < 0) || (sa < 0 && sb > 0)) {
+      const t = sa / (sa - sb);
+      out.push([a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]);
+    }
+  });
+  return out;
+}

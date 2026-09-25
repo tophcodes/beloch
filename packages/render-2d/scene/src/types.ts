@@ -143,6 +143,7 @@ export interface TraceCandidate {
   line: LineCoeffs;
   removedBy: Removal | null;
   selected: boolean;
+  landing: Vec2 | null;                                     // where the fold moves the point `toward` compares (axioms 6 and 7)
 }
 export interface Conic { focus: Vec2; directrix: LineCoeffs; }            // a parabola
 export interface TraceEntry {

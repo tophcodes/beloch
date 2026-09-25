@@ -45,3 +45,18 @@ test("a file without a trace says how to get one", async () => {
   expect(() => renderCandidates(scene)).toThrow("beloch fold --trace");
   expect(() => renderCP(scene)).not.toThrow();
 });
+
+// `.d` onto --ef through a point a quarter of the way along --bd: `.d` lands
+// at the centre or on the top edge, and the points as near to both lie on
+// y = 3/4.
+test("each panel shades where a toward point selects its candidate", async () => {
+  const scene = parseFold(await fixture("trace-boundary.fold"));
+  expect(scene.trace.find((e) => e.axiom === "axiom6")!.candidates.map((c) => c.landing))
+    .toEqual([[0.5, 0.5], [0.5, 1]]);
+  const s = renderCandidates(scene).toString();
+  expect(count(s, /data-kind="cell"/g)).toBe(2);
+  expect(count(s, /data-kind="landing"/g)).toBe(2);
+  const ys = [...s.matchAll(/data-kind="boundary"[^>]*y1="([\d.]+)"[^>]*y2="([\d.]+)"/g)];
+  expect(ys.length).toBe(2);
+  for (const [, y1, y2] of ys) expect(y1).toBe(y2);
+});
