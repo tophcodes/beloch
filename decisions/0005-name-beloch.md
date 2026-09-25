@@ -38,6 +38,9 @@ Practical notes:
 
 - Pronunciation: Italian, ~"beh-LOK", stress on second syllable, hard `ch`/k.
 - File extension: **`.bel`**.
+- Spelling: **Beloch** in prose, since it is a person's name; **beloch** as the
+  wordmark, wherever the name stands alone as a mark: site header, landing
+  hero, social-preview image.
 - Language vs implementation split, if ever needed: **Beloch** the language,
   **belochc** (or **Piazzolla**, her middle name) the compiler.
 - `beloch fold file.bel` reads as English and is literally the operation — and

@@ -10,7 +10,7 @@
 // hero shows, rendered fresh through the project's headless render path
 // (`beloch fold` -> `beloch-render` -> resvg, packages/render-2d/render-svg/
 // bin/fold2svg.ts) and framed on the dark panel background from
-// packages/www/src/styles/theme.css with the "Beloch" wordmark in the site's
+// packages/www/src/styles/theme.css with the "beloch" wordmark in the site's
 // own header font. No color here is invented: the fold keeps
 // packages/render-2d/render-svg/src/theme.ts's DEFAULT_THEME colors, and the
 // panel/ink values are copied from theme.css's dark theme.
@@ -91,7 +91,7 @@ const composed = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" heigh
   <g transform="translate(96, ${MARK_Y}) scale(${MARK_SIZE / 64})" fill="none" stroke="${INK}" stroke-linecap="round">
     ${markInner}
   </g>
-  <text x="96" y="${MARK_Y + MARK_SIZE + 84}" font-family="IBM Plex Mono, monospace" font-size="72" font-weight="600" fill="${INK}">Beloch</text>
+  <text x="96" y="${MARK_Y + MARK_SIZE + 84}" font-family="IBM Plex Mono, monospace" font-size="72" font-weight="600" fill="${INK}">beloch</text>
   <text x="96" y="${MARK_Y + MARK_SIZE + 128}" font-family="IBM Plex Sans, sans-serif" font-size="22" fill="${INK}" opacity="0.7">A declarative language for origami</text>
   <g transform="translate(${cardX}, ${cardY}) scale(${scale})">
     ${cardBg}
