@@ -50,7 +50,7 @@ export default defineConfig({
 	// The canonical domain (DEPLOY.md). Starlight only emits `og:url` and the
 	// per-page canonical link when `site` is set, and an absolute `og:image`
 	// needs a known origin to resolve against.
-	site: 'https://beloch.toph.so',
+	site: 'https://belochlang.org',
 	vite: {
 		resolve: {
 			alias: {
@@ -155,7 +155,7 @@ export default defineConfig({
 				// project, not individually illustrated pages.
 				{
 					tag: "meta",
-					attrs: { property: "og:image", content: "https://beloch.toph.so/og-image.png" },
+					attrs: { property: "og:image", content: "https://belochlang.org/og-image.png" },
 				},
 				{
 					tag: "meta",
@@ -167,7 +167,7 @@ export default defineConfig({
 				},
 				{
 					tag: "meta",
-					attrs: { name: "twitter:image", content: "https://beloch.toph.so/og-image.png" },
+					attrs: { name: "twitter:image", content: "https://belochlang.org/og-image.png" },
 				},
 				{
 					tag: "script",

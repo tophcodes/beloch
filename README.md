@@ -14,9 +14,9 @@ state, a crease pattern and a <a href="https://github.com/edemaine/fold">FOLD</a
 </p>
 
 <p align="center">
-<a href="https://beloch.toph.so/playground/"><b>Playground</b></a> ·
-<a href="https://beloch.toph.so/language/">Language</a> ·
-<a href="https://beloch.toph.so/model/">Model</a> ·
+<a href="https://belochlang.org/playground/"><b>Playground</b></a> ·
+<a href="https://belochlang.org/language/">Language</a> ·
+<a href="https://belochlang.org/model/">Model</a> ·
 <a href="https://doi.org/10.5281/zenodo.22884252"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.22884252.svg" alt="DOI" align="top"></a>
 </p>
 
@@ -55,7 +55,7 @@ Five verbs write to the paper. `mark` scores a crease and moves nothing,
 rays at once; given an odd number of them, it derives the one ray that is
 missing. The evaluator works out where every layer goes and which creases end
 up mountain or valley. The full grammar is in [`spec/BELOCH.md`](spec/BELOCH.md)
-and on the [language page](https://beloch.toph.so/language/).
+and on the [language page](https://belochlang.org/language/).
 
 ## What is new
 
@@ -188,7 +188,7 @@ longer matches its program.
 
 ## Running it
 
-The [playground](https://beloch.toph.so/playground/) needs no install. It runs
+The [playground](https://belochlang.org/playground/) needs no install. It runs
 the same evaluator, compiled to JavaScript with js_of_ocaml and backed by a
 WebAssembly build of FLINT. An operation that forces a value the browser
 backend cannot canonicalise says so and asks for the native evaluator; it

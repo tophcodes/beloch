@@ -55,12 +55,12 @@ test("statements are numbered per section, shared across classes", () => {
 test("statement sections carry RDFa and keep their id", () => {
   expect(html).toContain(
     '<section class="stmt stmt-definition" id="def-flat-state" typeof="bm:Definition"' +
-      ' resource="#def-flat-state" prefix="bm: https://beloch.toph.so/ns/model#">',
+      ' resource="#def-flat-state" prefix="bm: https://belochlang.org/ns/model#">',
   );
   expect(html).toContain('<span class="stmt-name" property="bm:name">flat folded state</span>');
   expect(html).toContain(
     '<section class="term" id="term-table" typeof="bm:Term" resource="#term-table"' +
-      ' prefix="bm: https://beloch.toph.so/ns/model#">',
+      ' prefix="bm: https://belochlang.org/ns/model#">',
   );
 });
 
@@ -126,7 +126,7 @@ test("a figure inlines the rendered view and the caption", () => {
   const figure = html.slice(html.indexOf('id="fig-sheet"'), html.indexOf('id="fig-crease"'));
   expect(html).toContain(
     '<figure class="figure" id="fig-sheet" typeof="bm:Figure" resource="#fig-sheet"' +
-      ' prefix="bm: https://beloch.toph.so/ns/model#">',
+      ' prefix="bm: https://belochlang.org/ns/model#">',
   );
   expect(figure).toContain('<div class="figure-view" data-view="cp">');
   expect(figure).toContain('<rect class="dummy-cp"');
@@ -203,7 +203,7 @@ test(".include renders the register entry with RDFa and a Realizes line", async 
   const included = await render(join(fixtures, "model-include.md"), { register, model });
   expect(included).toContain(
     '<div class="api-item" about="/api/beloch/Beloch/Sample/index.html#type-t"' +
-      ' typeof="bm:CodeItem" prefix="bm: https://beloch.toph.so/ns/model#">',
+      ' typeof="bm:CodeItem" prefix="bm: https://belochlang.org/ns/model#">',
   );
   expect(included).toContain("<code class=\"language-ocaml\">type t\n</code>");
   // the label comes from the model document's numbering, not from the register

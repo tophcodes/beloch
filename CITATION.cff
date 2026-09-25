@@ -17,7 +17,7 @@ date-released: "2026-09-22"
 license: MIT
 doi: "10.5281/zenodo.22884252"
 repository-code: "https://github.com/tophcodes/beloch"
-url: "https://beloch.toph.so"
+url: "https://belochlang.org"
 keywords:
   - origami
   - computational origami
