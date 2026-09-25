@@ -553,7 +553,9 @@ drei Erlaubnisse stehen darin. Das Projekt ist MIT-lizenziert; ein Fork muss die
 Seite bauen und das Paper setzen können. "Free for personal use" fällt aus.
 
 **B4.18** Webfonts liegen als woff2 vor, auf den gesetzten Zeichenvorrat
-reduziert, und jede Familie kommt mit höchstens zwei Schnitten aus.
+reduziert. Die Monospace kommt mit höchstens zwei Schnitten aus, die
+Prosaschrift mit höchstens drei: Regular, Italic und Bold, weil Bold die
+Kapitälchen-Labels und die Überschriften im Absatz trägt.
 *Prüfung:* Dateiliste und Gesamtgröße. Eine Schriftfamilie mit neun Gewichten im
 Build ist ein Fehlschlag.
 

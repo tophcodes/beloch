@@ -55,8 +55,8 @@ not have to re-derive it.
   command in `public/fonts/README.md`. NL is the no-ligature cut, which matters
   because `--` opens a crease name.
 - **TeX Gyre Pagella** for prose, the free Palatino under the GUST Font
-  License. Three cuts ship, regular, italic and bold, one more than B4.18
-  allows: bold carries the run-in heads and the small-caps labels set at 600,
+  License. Three cuts ship, regular, italic and bold, the most B4.18 allows
+  for prose: bold carries the run-in heads and the small-caps labels set at 600,
   which a synthesised bold would smear. They are subset and renamed
   "Beloch Pagella" as that licence asks of a derived font, with the licence
   texts and a regeneration command in `public/fonts/README.md`. The subset
