@@ -1,10 +1,11 @@
 #!/usr/bin/env bun
 // Regenerates packages/www/public/og-image.png, the social-preview image for
-// the landing page and the Starlight docs (og:image / twitter:card). It is a
-// committed build artifact, same pattern as public/beloch/beloch-eval.js and
-// src/grammar/tree-sitter-beloch.wasm: the site build does not run this
-// script, so run it manually after the source program or the wordmark
-// changes.
+// the landing page and the Starlight docs (og:image / twitter:card), and
+// public/brand/github-social.png, the same image at the size GitHub's social
+// preview asks for. Both are committed build artifacts, same pattern as
+// public/beloch/beloch-eval.js and src/grammar/tree-sitter-beloch.wasm: the
+// site build does not run this script, so run it manually after the source
+// program or the wordmark changes.
 //
 // The image is the project's own bird-base fold, the same base the landing
 // hero shows, rendered fresh through the project's headless render path
@@ -37,15 +38,19 @@ const repoRoot = join(fileURLToPath(import.meta.url), "..", "..", "..", "..");
 const markPath = join(repoRoot, "packages", "www", "public", "brand", "mark.svg");
 const sourceBel = join(repoRoot, "examples", "bases", "bird-base.bel");
 const fold2svgBin = join(repoRoot, "packages", "render-2d", "render-svg", "bin", "fold2svg.ts");
-const outPath = join(repoRoot, "packages", "www", "public", "og-image.png");
 const fontsDir = join(repoRoot, "packages", "www", "public", "fonts");
 
 // theme.css dark theme: --bel-ui-surface and --bel-ui-text.
 const PANEL_BG = "#1C1A17";
 const INK = "#EDE9E1";
 
-const WIDTH = 1200;
-const HEIGHT = 630;
+// The site's og:image, and GitHub's social preview at the 2:1 size GitHub asks
+// for. GitHub has no API for the preview, so that file is uploaded by hand in
+// the repository settings.
+const OUTPUTS = [
+  { path: join(repoRoot, "packages", "www", "public", "og-image.png"), width: 1200, height: 630 },
+  { path: join(repoRoot, "packages", "www", "public", "brand", "github-social.png"), width: 1280, height: 640 },
+];
 
 function run(cmd: string, args: string[], input?: string): string {
   try {
@@ -74,17 +79,12 @@ const innerMarkup = cpSvg
   .replace(/<\/svg>\s*$/, "")
   .replace(/<rect width="\d+(?:\.\d+)?" height="\d+(?:\.\d+)?" fill="white"\/>/, "");
 
-const cardHeight = HEIGHT - 150;
-const scale = cardHeight / CANVAS;
-const cardX = WIDTH - cardHeight - 96;
-const cardY = (HEIGHT - cardHeight) / 2;
 const cardBg = `<rect width="${CANVAS}" height="${CANVAS}" fill="white"/>`;
 
 // The mark, from brand/mark.svg, which fold2logo.ts renders out of
 // brand/mark.bel. currentColor has no meaning inside a standalone SVG, so the
 // ink value is substituted in.
 const MARK_SIZE = 128;
-const MARK_Y = 168;
 const markInner = readFileSync(markPath, "utf8")
   .replace(/^<svg[^>]*>/, "")
   .replace(/<\/svg>\s*$/, "")
@@ -104,7 +104,16 @@ function outlinePath(font: Font, text: string, px: number, x: number, baseline: 
   return d;
 }
 
-const composed = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
+const { Resvg } = await import("@resvg/resvg-js");
+for (const { path: outPath, width: WIDTH, height: HEIGHT } of OUTPUTS) {
+  const cardHeight = HEIGHT - 150;
+  const scale = cardHeight / CANVAS;
+  const cardX = WIDTH - cardHeight - 96;
+  const cardY = (HEIGHT - cardHeight) / 2;
+  // The mark, wordmark and tagline stand as one block around the middle.
+  const MARK_Y = Math.round(HEIGHT / 2 - 147);
+
+  const composed = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <rect width="${WIDTH}" height="${HEIGHT}" fill="${PANEL_BG}"/>
   <g transform="translate(96, ${MARK_Y}) scale(${MARK_SIZE / 64})" fill="none" stroke="${INK}" stroke-linecap="round">
     ${markInner}
@@ -117,7 +126,7 @@ const composed = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" heigh
   </g>
 </svg>`;
 
-const { Resvg } = await import("@resvg/resvg-js");
-const png = new Resvg(composed, { fitTo: { mode: "width", value: WIDTH } }).render().asPng();
-writeFileSync(outPath, png);
-console.log(`Wrote ${outPath} (${(png.length / 1024).toFixed(1)} KiB, ${WIDTH}x${HEIGHT})`);
+  const png = new Resvg(composed, { fitTo: { mode: "width", value: WIDTH } }).render().asPng();
+  writeFileSync(outPath, png);
+  console.log(`Wrote ${outPath} (${(png.length / 1024).toFixed(1)} KiB, ${WIDTH}x${HEIGHT})`);
+}
