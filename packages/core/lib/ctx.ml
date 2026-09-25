@@ -33,6 +33,26 @@ type stmt_log_entry = {
          top level (ADR 0030) *)
 }
 
+(* An annotation with its arguments read against the state the statement
+   after it starts from (ADR 0029). [an_target] is that statement's entry in
+   the log, [-1] while the statement has not run yet. *)
+type annot_value =
+  | AvPoint of Geom.point * Geom.point  (* paper, table *)
+  | AvLine of Geom.line * int option    (* table line, crease id if a crease *)
+  | AvFlap of int list                  (* faces of the state it was read in *)
+  | AvText of string
+  | AvNumber of Q.t
+  | AvWord of string
+
+type annot_entry = {
+  an_ns : string option;
+  an_key : string;
+  an_args : (annot_value * Error.span) list;
+  an_span : Error.span;
+  an_frame_index : int;
+  an_target : int;
+}
+
 type free_info = {
   fi_t : Num.t;
   fi_p0 : Geom.point;  (* t = 0 endpoint (anchor) *)
@@ -122,6 +142,9 @@ type ctx = {
   mutable statements_rev : stmt_log_entry list;
   mutable free_points_rev : (string * free_info) list;
   mutable references_rev : reference list;
+  mutable annots_pending : annot_entry list;
+      (* read, waiting for the statement they belong to; newest first *)
+  mutable annots_rev : annot_entry list;
   mutable parent : int option;
       (* the log entry of the [apply] whose body is running, [None] at the
          top level: the [sl_parent] of every entry logged meanwhile *)
@@ -290,6 +313,8 @@ type snapshot = {
   s_free_points_rev : (string * free_info) list;
   s_references_rev : reference list;
   s_pending : bool;
+  s_annots_pending : annot_entry list;
+  s_annots_rev : annot_entry list;
   s_state : Fold_state.t;
   s_next_id : int;
 }
@@ -328,6 +353,8 @@ let snapshot (ctx : ctx) : snapshot =
         s_free_points_rev = ctx.free_points_rev;
         s_references_rev = ctx.references_rev;
         s_pending = ctx.pending;
+        s_annots_pending = ctx.annots_pending;
+        s_annots_rev = ctx.annots_rev;
         s_state = !(ctx.state);
         s_next_id = Fold_state.next_id_value ();
       }
@@ -361,6 +388,8 @@ let restore (ctx : ctx) (s : snapshot) : unit =
       ctx.free_points_rev <- s.s_free_points_rev;
       ctx.references_rev <- s.s_references_rev;
       ctx.pending <- s.s_pending;
+      ctx.annots_pending <- s.s_annots_pending;
+      ctx.annots_rev <- s.s_annots_rev;
       ctx.parent <- None;
       ctx.state := s.s_state;
       Fold_state.set_next_id s.s_next_id

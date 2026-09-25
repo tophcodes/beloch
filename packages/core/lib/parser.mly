@@ -28,6 +28,9 @@ let prose (span : Error.span) (kinds : (alignment_kind * Error.span) list)
 %token <string> INSTANCE
 %token <string> IDENT
 %token <Q.t> NUMBER
+%token <string option * string> ANNOT  (* @key / @ns:key *)
+%token <string> TEXT
+%token NEWLINE                         (* the end of an annotation's line *)
 
 %start <Ast.program> program
 
@@ -39,6 +42,7 @@ program:
 stmts:
   | { [] }
   | stmt stmts { $1 :: $2 }
+  | annotation stmts { Annotation $1 :: $2 }
 
 stmt:
   | body_stmt  { $1 }
@@ -48,6 +52,29 @@ stmt:
 body_stmts:
   | { [] }
   | body_stmt body_stmts { $1 :: $2 }
+  | annotation body_stmts { Annotation $1 :: $2 }
+
+(* spec/BELOCH.md, Annotations. Which key takes which arguments is checked
+   after parsing (Annotation.check), so a key is a name the grammar does
+   not reserve. *)
+annotation:
+  | ANNOT annot_args NEWLINE
+      { let (ns, key) = $1 in
+        { a_ns = ns; a_key = key; a_args = $2; a_span = $loc } }
+
+annot_args:
+  | { [] }
+  | annot_arg annot_args { $1 :: $2 }
+
+annot_arg:
+  | point_operand                    { { av = AvPoint $1; av_span = $loc } }
+  | line_operand                     { { av = AvLine $1; av_span = $loc } }
+  | flap_operand                     { { av = AvFlap $1; av_span = $loc } }
+  | LPAREN construction_body RPAREN  { { av = AvConstruction $2; av_span = $loc } }
+  | TEXT                             { { av = AvText $1; av_span = $loc } }
+  | NUMBER                           { { av = AvNumber $1; av_span = $loc } }
+  | IDENT                            { { av = AvWord $1; av_span = $loc } }
+  | UP                               { { av = AvWord "up"; av_span = $loc } }
 
 body_stmt:
   (* value binding: pure geometry, no material *)

@@ -60,6 +60,9 @@ type folded = {
   references : Ctx.reference list;
       (** Every resolved mention of a crease name, in source order — the
           sourcemap from a bundle back to the places the program names it. *)
+  annotations : Ctx.annot_entry list;
+      (** every annotation in the order it was read, each with the log entry
+          of the statement it belongs to (ADR 0029) *)
   free_points : (string * free_info) list;
       (** One entry per `free on` point, recorded at bind time — a running
           log (like [statements]), not reconstructed from scope state at

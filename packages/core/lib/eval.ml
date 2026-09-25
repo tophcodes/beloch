@@ -37,6 +37,7 @@ type folded = {
   frames : (Fold_state.t * Error.span option) list;
   statements : stmt_log_entry list;
   references : Ctx.reference list;
+  annotations : Ctx.annot_entry list;
   free_points : (string * free_info) list;
       (* one entry per `free on` point, recorded at bind time in the [PsFree]
          arm — a running log (like [statements]), not reconstructed from
@@ -683,6 +684,8 @@ let eval_export (ctx : Ctx.ctx) (entries_opt : Ast.export_entry list option)
 
 let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
   match stmt with
+  | Ast.Annotation a ->
+      ctx.annots_pending <- Annotation.resolve ctx a :: ctx.annots_pending
   | Ast.BindBundle (name, expr, span) ->
       bind_crease ctx name span (Bundle expr)
   | Ast.BindLine (n, c, span) ->
@@ -823,10 +826,19 @@ and eval_apply (ctx : Ctx.ctx) (bind_opt : string option) (defname : string)
    logs itself ahead of its body; a statement that logged nothing bound a
    name and moved no paper, and gets its entry here (ADR 0030). *)
 and eval_logged (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
-  let logged = List.length ctx.statements_rev in
-  eval_stmt ctx stmt;
-  if List.length ctx.statements_rev = logged then
-    Ctx.push_bind ctx (Spine.span_of_stmt stmt)
+  match stmt with
+  | Ast.Annotation _ -> eval_stmt ctx stmt
+  | _ ->
+      (* the annotations waiting for this statement take its entry, which is
+         the next one logged *)
+      let logged = List.length ctx.statements_rev in
+      ctx.annots_rev <-
+        List.map (fun a -> { a with an_target = logged }) ctx.annots_pending
+        @ ctx.annots_rev;
+      ctx.annots_pending <- [];
+      eval_stmt ctx stmt;
+      if List.length ctx.statements_rev = logged then
+        Ctx.push_bind ctx (Spine.span_of_stmt stmt)
 
 let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
   (* corners and other names never routed through bind_point/bind_crease (the
@@ -905,7 +917,8 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
   let free_points = List.rev ctx.free_points_rev in
   { state = !(ctx.state); named_points; named_lines; named_line_cids; frames;
     statements; free_points;
-    references = List.rev ctx.references_rev }
+    references = List.rev ctx.references_rev;
+    annotations = List.rev ctx.annots_rev }
 
 let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> ())
     (prog : Ast.program) : folded =
@@ -926,6 +939,8 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
     statements_rev = [];
     free_points_rev = [];
     references_rev = [];
+    annots_pending = [];
+    annots_rev = [];
     parent = None;
     pending = true;
   } in

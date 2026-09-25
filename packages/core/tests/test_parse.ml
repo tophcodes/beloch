@@ -159,6 +159,8 @@ let stmt_shape (s : Ast.stmt) : string =
   | Ast.Def (n, _, _, _) -> "def " ^ n
   | Ast.Apply (_, n, _, _) -> "apply " ^ n
   | Ast.Export (_, i, _) -> "export $" ^ i
+  | Ast.Annotation a ->
+      "annotation @" ^ (match a.Ast.a_ns with Some ns -> ns ^ ":" | None -> "") ^ a.Ast.a_key
 
 let parse1 (src : string) : Ast.stmt =
   match Beloch.parse ~filename:"t.bel" ("paper square\n" ^ src ^ "\n") with
@@ -1006,11 +1008,11 @@ let test_bare_keyword_arguments_retired () =
     ]
 
 let test_parse_at_retired () =
-  (* `@` is no longer a token at all: it's an unrecognised character, so the
-     lexer rejects it before the parser ever sees it. *)
-  expect_error "unexpected character" (fun () ->
+  (* `@` opens an annotation now, so the retired `@map` and `@fold` writes
+     read as annotations whose arguments do not parse. *)
+  expect_error "syntax error" (fun () ->
       Beloch.parse ~filename:"t.bel" "paper square\n@map .a onto .c moving .a\n");
-  expect_error "unexpected character" (fun () ->
+  expect_error "syntax error" (fun () ->
       Beloch.parse ~filename:"t.bel" "paper square\n@fold --d moving .a\n")
 
 let () =

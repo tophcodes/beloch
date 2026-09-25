@@ -77,6 +77,23 @@ history for output: the FOLD file carries one frame per statement in
 `file_frames`, and per edge the statement that scored it in `beloch:edges` and
 `beloch:source_line` (`SPECIFICATION.md` §7). No operation reads this record.
 
+## Annotations
+
+An annotation never changes the geometry (ADR 0029), and the kernel holds to
+that in two places. `Parse.parse` runs `Annotation.check`, which needs no
+state. The evaluator reads an annotation's arguments with
+`Annotation.resolve` when it reaches the annotation, and keeps the result
+until the next statement takes its log entry. Some reads change the context
+on their way: a filter on a crease that is still a mark subdivides the sheet
+along it first, and every crease name a read looks up is recorded as a
+reference. `Annotation.resolve` therefore reads inside a guard that puts the
+state, the crease-id counter, the crease bindings and the references back as
+it found them.
+
+A test in `packages/core/tests/test_annotation.ml` replaces every annotation
+of a program with spaces, which keeps every source span, and compares the two
+FOLD documents without `beloch:annotations`.
+
 ## Violations
 
 One constructor per check `Fold_state.make` runs, each carrying the model

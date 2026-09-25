@@ -108,7 +108,7 @@ function extractBlocks(src: string): Block[] {
 // the same rule; update all three when a tagged block is added to
 // BELOCH.md.
 const expectedInventory: Record<Tag, number> = {
-  whole: 0,
+  whole: 1,
   prelude: 6,
   frag: 7,
   construction: 1,

@@ -9,7 +9,7 @@ tableOfContents:
 `beloch fold FILE.bel` writes one JSON document in the FOLD format
 [@foldformat], extended with fields under the `beloch:` prefix as FOLD's
 custom-property rule allows. FOLD is the exchange format the origami tools
-read (ADR 0002); the extension carries what the model and the language know
+read (ADR 0029); the extension carries what the model and the language know
 and FOLD has no field for. `SPECIFICATION.md` §7 is the field-level contract;
 this document explains what the file represents.
 
@@ -91,6 +91,20 @@ What the language knows about a state and FOLD cannot say:
   these say where it is *used*, which no consumer can recover by re-reading
   the text, since one spelling names different creases inside a `def` body
   and after a `--x!` rebinding. Deduplicated by (target, span).
+- `beloch:annotations`: one entry per annotation in the order the statements
+  ran, an annotation in a `def` body once per execution (ADR 0029,
+  `BELOCH.md`, Annotations). Each carries its `key`, its `namespace` or null,
+  its `span` and `source_line`, and its `target`: the first and the last
+  index into `beloch:statements` it belongs to. The target is one entry,
+  the statement after the annotation, except for `step`, whose target runs
+  to the entry before the next `step` or to the last entry. `args` holds the
+  arguments in order, each an object with its `span` and one of `text`,
+  `number`, `word`, `point` (with `paper` and `table` coordinates), `line`
+  (with the table line's `coeffs` and the `crease_id` when the argument
+  names a crease) or `flap` (with its `faces`, indices into the faces of the
+  frame `frame_index`, the frame the arguments were read against). A reader
+  that removes this field has the FOLD of the same program without its
+  annotations.
 - `beloch:named_points[].statement` and `beloch:named_lines[].statement`: the
   statement that binds the name, as an index into `beloch:statements`. The
   `step` beside it counts frames and cannot separate two names bound between
