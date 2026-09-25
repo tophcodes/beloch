@@ -1,13 +1,24 @@
-# Beloch
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="packages/www/public/brand/mark-dark.svg">
+    <img src="packages/www/public/brand/mark-light.svg" alt="" width="72">
+  </picture>
+</p>
 
+<h1 align="center">beloch</h1>
+
+<p align="center">
 A declarative language for origami. A program names points and creases,
 folds along constructions that align them, and evaluates to an exact folded
-state, a crease pattern and a [FOLD][fold-spec] file.
+state, a crease pattern and a <a href="https://github.com/edemaine/fold">FOLD</a> file.
+</p>
 
-**[Playground](https://beloch.toph.so/playground/)** ·
-[Language](https://beloch.toph.so/language/) ·
-[Model](https://beloch.toph.so/model/) ·
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22884252.svg)](https://doi.org/10.5281/zenodo.22884252)
+<p align="center">
+<a href="https://beloch.toph.so/playground/"><b>Playground</b></a> ·
+<a href="https://beloch.toph.so/language/">Language</a> ·
+<a href="https://beloch.toph.so/model/">Model</a> ·
+<a href="https://doi.org/10.5281/zenodo.22884252"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.22884252.svg" alt="DOI" align="top"></a>
+</p>
 
 | crease pattern | folded |
 | --- | --- |
@@ -18,8 +29,6 @@ The traditional crane, flat, in sixteen statements:
 crane program [ida2020, Fig. 7.19]; her last two steps open the wings in 3D,
 which Beloch does not model yet. The native evaluator folds it; the browser
 playground cannot evaluate it yet.
-
-[fold-spec]: https://github.com/edemaine/fold
 
 ## Reading a program
 
