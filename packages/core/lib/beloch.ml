@@ -6,7 +6,7 @@
     [decisions/0003-restart-from-minimal-core.md] and
     [decisions/0007-evaluator-not-compiler.md]. *)
 
-let version = "0.4.0"
+let version = Version.version
 
 let parse ~(filename : string) (src : string) : Ast.program =
   Parse.parse ~filename src
