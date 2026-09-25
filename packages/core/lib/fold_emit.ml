@@ -272,6 +272,11 @@ let beloch_statements_json (statements : Eval.stmt_log_entry list) : Yojson.Safe
   `List
     (List.map
        (fun (s : Eval.stmt_log_entry) ->
+         let def =
+           match s.Eval.sl_kind with
+           | Eval.SApply name -> [ ("def", `String name) ]
+           | Eval.SFold | Eval.SMark | Eval.SBind -> []
+         in
          let common =
            [
              ( "kind",
@@ -279,17 +284,75 @@ let beloch_statements_json (statements : Eval.stmt_log_entry list) : Yojson.Safe
                  (match s.Eval.sl_kind with
                  | Eval.SFold -> "fold"
                  | Eval.SMark -> "mark"
-                 | Eval.SBind -> "bind") );
+                 | Eval.SBind -> "bind"
+                 | Eval.SApply _ -> "apply") );
+             ( "parent",
+               match s.Eval.sl_parent with Some i -> `Int i | None -> `Null );
              ("source_line", `Int (fst s.Eval.sl_span).Lexing.pos_lnum);
              ("span", `String (Error.span_to_string s.Eval.sl_span));
              ("frame_index", `Int s.Eval.sl_frame_index);
              ("kept_marks", `List (List.map mark_json s.Eval.sl_kept));
            ]
+           @ def
          in
          match s.Eval.sl_mark with
          | None -> `Assoc (("mark", `Null) :: common)
          | Some m -> `Assoc (("mark", mark_json m) :: common))
        statements)
+
+(* beloch:annotations — one entry per annotation read, in the order the
+   statements ran (ADR 0029, spec/FOLD.md). [target] is the range of
+   beloch:statements entries it belongs to: one entry, or for a step every
+   entry up to the next step. *)
+let beloch_annotations_json (annotations : Ctx.annot_entry list)
+    (n_statements : int) : Yojson.Safe.t =
+  let is_step (a : Ctx.annot_entry) = a.Ctx.an_ns = None && a.Ctx.an_key = "step" in
+  let step_starts =
+    List.filter_map (fun a -> if is_step a then Some a.Ctx.an_target else None) annotations
+  in
+  let range (a : Ctx.annot_entry) =
+    let t = a.Ctx.an_target in
+    if is_step a then
+      match List.filter (fun s -> s > t) step_starts with
+      | [] -> (t, n_statements - 1)
+      | next :: rest -> (t, List.fold_left min next rest - 1)
+    else (t, t)
+  in
+  let pt_json (p : Geom.point) = `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ] in
+  let value_json ((v : Ctx.annot_value), (span : Error.span)) =
+    let v =
+      match v with
+      | Ctx.AvPoint (paper, table) ->
+          ("point", `Assoc [ ("paper", pt_json paper); ("table", pt_json table) ])
+      | Ctx.AvLine (l, cid) ->
+          ( "line",
+            `Assoc
+              [
+                ("coeffs", `List [ q_to_json l.Geom.a; q_to_json l.Geom.b; q_to_json l.Geom.c ]);
+                ("crease_id", match cid with Some i -> `Int i | None -> `Null);
+              ] )
+      | Ctx.AvFlap faces -> ("flap", `Assoc [ ("faces", `List (List.map (fun f -> `Int f) faces)) ])
+      | Ctx.AvText t -> ("text", `String t)
+      | Ctx.AvNumber q -> ("number", `Float (Q.to_float q))
+      | Ctx.AvWord w -> ("word", `String w)
+    in
+    `Assoc [ v; ("span", `String (Error.span_to_string span)) ]
+  in
+  `List
+    (List.map
+       (fun (a : Ctx.annot_entry) ->
+         let from, until = range a in
+         `Assoc
+           [
+             ("key", `String a.Ctx.an_key);
+             ("namespace", match a.Ctx.an_ns with Some ns -> `String ns | None -> `Null);
+             ("target", `List [ `Int from; `Int until ]);
+             ("frame_index", `Int a.Ctx.an_frame_index);
+             ("source_line", `Int (fst a.Ctx.an_span).Lexing.pos_lnum);
+             ("span", `String (Error.span_to_string a.Ctx.an_span));
+             ("args", `List (List.map value_json a.Ctx.an_args));
+           ])
+       annotations)
 
 (* beloch:references — one entry per resolved mention of a crease name in the
    source: the span it occupies and the crease (or paper edge) it names. A
@@ -656,6 +719,8 @@ let to_json_folded (fd : Eval.folded) : Yojson.Safe.t =
       ("beloch:free", beloch_free);
       ("beloch:statements", beloch_statements_json fd.Eval.statements);
       ("beloch:references", beloch_references_json fd.Eval.references);
+      ( "beloch:annotations",
+        beloch_annotations_json fd.Eval.annotations (List.length fd.Eval.statements) );
       ( "file_frames",
         (* Step 0: the flat, unfolded sheet, so a folded-diagram stepper opens
            on the starting paper rather than on the first fold. It is a viewing

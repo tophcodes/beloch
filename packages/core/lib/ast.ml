@@ -158,7 +158,30 @@ type raw_item =
   | RiStaying of flap_arg * Error.span
   | RiSelection of point_operand * Error.span
 
+(* One argument of an annotation (spec/BELOCH.md, Annotations): any read the
+   language has, a text in double quotes, a number, or a bare word. *)
+type annot_value =
+  | AvPoint of point_operand
+  | AvLine of line_operand
+  | AvFlap of flap_operand
+  | AvConstruction of construction
+  | AvText of string
+  | AvNumber of Q.t
+  | AvWord of string
+
+type annot_arg = { av : annot_value; av_span : Error.span }
+
+(* `@key args` or `@ns:key args`, one line. It belongs to the statement that
+   follows it and never changes the geometry (ADR 0029). *)
+type annotation = {
+  a_ns : string option;
+  a_key : string;
+  a_args : annot_arg list;
+  a_span : Error.span;
+}
+
 type stmt =
+  | Annotation of annotation
   | BindLine of string * construction * Error.span
       (* --l = (map .a onto .b) : bind a pure line VALUE; no material effect *)
   | Mark of output * markable * extent * direction * flap_arg option * Error.span

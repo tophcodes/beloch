@@ -98,6 +98,7 @@
 
 
 .bel-comment { color: var(--bel-syntax-comment); font-style: italic; }
+.bel-text    { color: var(--bel-syntax-comment); }
 .bel-point   { color: var(--bel-syntax-point); }
 .bel-line    { color: var(--bel-syntax-line); }
 .bel-number  { color: var(--bel-syntax-number); }
@@ -122,7 +123,9 @@
 .bel-selection,
 .bel-output   { color: var(--bel-syntax-axiom); }
 
-/* Named values: instances, and the fold kinds spelled as words. */
+/* Named values: instances, the fold kinds spelled as words, and the key of
+   an annotation. */
+.bel-annotation,
 .bel-instance,
 .bel-intent,
 .bel-ray      { color: var(--bel-syntax-label); }

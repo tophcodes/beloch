@@ -352,7 +352,7 @@ let failure_mode_tests =
    Ceiling: this catches the OCaml extractor drifting from the document, not
    from the tree-sitter and build-side copies of the same rule; update the
    three together when a tagged block is added to BELOCH.md. *)
-let expected_inventory = [ ("construction", 1); ("frag", 7); ("prelude", 6); ("whole", 0) ]
+let expected_inventory = [ ("construction", 1); ("frag", 7); ("prelude", 6); ("whole", 1) ]
 
 let count_by_tag (blocks : block list) : (string * int) list =
   let base = List.map (fun (k, _) -> (k, 0)) expected_inventory in

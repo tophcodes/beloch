@@ -6,13 +6,14 @@ open Ctx
 (* Re-exported so the public [Eval] surface is unchanged for fold_emit,
    session, the test suites and packages/www/public/beloch/beloch-eval.js. *)
 type snapshot = Ctx.snapshot
-type stmt_kind = Ctx.stmt_kind = SFold | SMark | SBind
+type stmt_kind = Ctx.stmt_kind = SFold | SMark | SBind | SApply of string
 type stmt_log_entry = Ctx.stmt_log_entry = {
   sl_kind : stmt_kind;
   sl_span : Error.span;
   sl_frame_index : int;
   sl_mark : Fold_state.mark option;
   sl_kept : Fold_state.mark list;
+  sl_parent : int option;
 }
 type free_info = Ctx.free_info = {
   fi_t : Num.t;
@@ -36,6 +37,7 @@ type folded = {
   frames : (Fold_state.t * Error.span option) list;
   statements : stmt_log_entry list;
   references : Ctx.reference list;
+  annotations : Ctx.annot_entry list;
   free_points : (string * free_info) list;
       (* one entry per `free on` point, recorded at bind time in the [PsFree]
          arm — a running log (like [statements]), not reconstructed from
@@ -310,7 +312,7 @@ let eval_mark (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
     ctx.statements_rev <-
       { sl_kind = SMark; sl_span = span;
         sl_frame_index = List.length ctx.frames_rev; sl_mark = Some m;
-        sl_kept = prior_kept @ [ m ] }
+        sl_kept = prior_kept @ [ m ]; sl_parent = ctx.parent }
       :: ctx.statements_rev;
     bind_out (Mark (cid, paper_axis))
   in
@@ -682,6 +684,8 @@ let eval_export (ctx : Ctx.ctx) (entries_opt : Ast.export_entry list option)
 
 let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
   match stmt with
+  | Ast.Annotation a ->
+      ctx.annots_pending <- Annotation.resolve ctx a :: ctx.annots_pending
   | Ast.BindBundle (name, expr, span) ->
       bind_crease ctx name span (Bundle expr)
   | Ast.BindLine (n, c, span) ->
@@ -776,7 +780,10 @@ and eval_apply (ctx : Ctx.ctx) (bind_opt : string option) (defname : string)
      | Some _, Anon -> Anon
      | Some i, Root -> InInstance i
      | Some i, InInstance outer -> InInstance (outer ^ "." ^ i)));
-  List.iter (eval_stmt ctx) body;
+  let saved_parent = ctx.parent in
+  ctx.parent <- Some (push_apply ctx defname span);
+  List.iter (eval_logged ctx) body;
+  ctx.parent <- saved_parent;
   ctx.scopes <- saved_scopes;
   ctx.name_ctx <- saved_nctx;
   ctx.cur_def_idx <- saved_def_idx;
@@ -813,6 +820,25 @@ and eval_apply (ctx : Ctx.ctx) (bind_opt : string option) (defname : string)
         (fun k v -> if not (is_temp k) then Hashtbl.replace inst.iline_steps k v)
         body_scope.line_steps;
       Hashtbl.replace cur.instances iname inst)
+
+(* Evaluate one statement and give it its entry on the second axis. A write
+   logs itself as it pushes its frame or records its mark, and an [apply]
+   logs itself ahead of its body; a statement that logged nothing bound a
+   name and moved no paper, and gets its entry here (ADR 0030). *)
+and eval_logged (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
+  match stmt with
+  | Ast.Annotation _ -> eval_stmt ctx stmt
+  | _ ->
+      (* the annotations waiting for this statement take its entry, which is
+         the next one logged *)
+      let logged = List.length ctx.statements_rev in
+      ctx.annots_rev <-
+        List.map (fun a -> { a with an_target = logged }) ctx.annots_pending
+        @ ctx.annots_rev;
+      ctx.annots_pending <- [];
+      eval_stmt ctx stmt;
+      if List.length ctx.statements_rev = logged then
+        Ctx.push_bind ctx (Spine.span_of_stmt stmt)
 
 let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
   (* corners and other names never routed through bind_point/bind_crease (the
@@ -891,7 +917,8 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
   let free_points = List.rev ctx.free_points_rev in
   { state = !(ctx.state); named_points; named_lines; named_line_cids; frames;
     statements; free_points;
-    references = List.rev ctx.references_rev }
+    references = List.rev ctx.references_rev;
+    annotations = List.rev ctx.annots_rev }
 
 let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> ())
     (prog : Ast.program) : folded =
@@ -912,25 +939,20 @@ let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> 
     statements_rev = [];
     free_points_rev = [];
     references_rev = [];
+    annots_pending = [];
+    annots_rev = [];
+    parent = None;
     pending = true;
   } in
   (match resume with Some s -> restore ctx s | None -> ());
-  (* A statement that logged nothing of its own bound a name and moved no
-     paper, so it gets its entry here: the second axis counts every statement
-     (ADR 0026). A write logs itself as it pushes its frame or records its
-     mark, and an `apply` whose body folds logs those inner writes instead of
-     itself. *)
   List.iter
     (fun stmt ->
-      let logged = List.length ctx.statements_rev in
       (* a kernel precondition the language checks missed (a zero inverse, a
          point in no face) is reported against the statement that hit it *)
-      (try eval_stmt ctx stmt
+      (try eval_logged ctx stmt
        with Invalid_argument msg ->
          Error.fail (Spine.span_of_stmt stmt)
            (Printf.sprintf "internal error in this statement: %s" msg));
-      if List.length ctx.statements_rev = logged then
-        Ctx.push_bind ctx (Spine.span_of_stmt stmt);
       on_step ctx)
     prog;
   build_output ctx root_scope

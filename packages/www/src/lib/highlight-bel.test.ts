@@ -35,6 +35,12 @@ test("verb keywords and item parentheses are highlighted", async () => {
   expect(html).toContain('<span class="bel-punct">)</span>');
 });
 
+test("an annotation key and its text are highlighted", async () => {
+  const html = await highlightBel('@step "Fold \\"it\\"."\nfold (map .a onto .c)\n');
+  expect(html).toContain('<span class="bel-annotation">@step</span>');
+  expect(html).toContain('<span class="bel-text">"Fold \\"it\\"."</span>');
+});
+
 // A head word that no query reaches falls out of every span and renders
 // unstyled. The program below covers the whole vocabulary, so anything left
 // outside a span is a query that is missing or bound to the wrong parent.
@@ -49,6 +55,7 @@ test("no token in a program covering every head word renders unclassified", asyn
     "reverse (outside) (--d valley)",
     "flatten (--l mountain) (.q over .r) (staying .a) (toward .b)",
     "flip (--d mountain) (under .p) (valley) as --k",
+    "@yr:hold .a \"Hold it.\" 2",
     "mark (perp --l through .p)",
     "flatten (--l valley) (moving [.a .b])",
     "; a trailing comment",

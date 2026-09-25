@@ -176,6 +176,8 @@ module.exports = grammar({
 
     _token: $ => choice(
       $.comment,
+      $.annotation_key,
+      $.text,
       $.keyword,
       $.instance,
       $.crease,
@@ -191,6 +193,13 @@ module.exports = grammar({
 
     // `; ... ` to end of line
     comment: _ => token(seq(';', /[^\n]*/)),
+
+    // an annotation opens with `@key` or `@ns:key` and runs to the end of its
+    // line (spec/BELOCH.md, Annotations); its arguments are ordinary tokens
+    annotation_key: _ => token(seq('@', /[A-Za-z0-9_]+/, optional(seq(':', /[A-Za-z0-9_]+/)))),
+
+    // text in double quotes, an annotation's argument; `\"` and `\\` escape
+    text: _ => token(seq('"', repeat(choice(/[^"\\\n]/, /\\["\\]/)), '"')),
 
     // clause words and axiom names outside a write statement, see
     // lib/lexer.ml. The five verbs (mark, fold, reverse, flatten, flip) are

@@ -75,6 +75,8 @@ function statementsFrom(fold: Record<string, unknown>): Statement[] {
     frameIndex: s["frame_index"] as number,
     mark: s["mark"] ? markFrom(s["mark"] as Record<string, unknown>) : null,
     keptMarks: ((s["kept_marks"] ?? []) as Record<string, unknown>[]).map(markFrom),
+    parent: (s["parent"] ?? null) as number | null,
+    def: (s["def"] ?? null) as string | null,
   }));
 }
 
@@ -130,7 +132,7 @@ export function parseFold(input: string | object): FoldScene {
     cp, steps, statements,
     // The stepper stops where the paper changed. The entries keep their index
     // in `statements`, so a join on a statement index reads either list.
-    writes: statements.filter((s) => s.kind !== "bind"),
+    writes: statements.filter((s) => s.kind === "fold" || s.kind === "mark"),
     references, namedPoints, namedLines,
     creases: groupCreases(cp), marks: marksFrom(fold), inspect,
   };

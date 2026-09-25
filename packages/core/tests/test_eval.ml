@@ -1380,9 +1380,9 @@ let test_new_flatten_no_at () =
     (Array.length (Fold_state.faces fd.Eval.state))
 
 let test_new_at_is_gone () =
-  (* `@` is no longer a token (AT retired): unrecognised character, rejected
-     by the lexer before the parser runs. *)
-  expect_error "unexpected character" (fun () ->
+  (* `@` opens an annotation now (AT retired), so `@map` reads as an
+     annotation whose arguments do not parse. *)
+  expect_error "syntax error" (fun () ->
       eval_src "@map .a onto .c moving .a\n")
 
 (* `mark --ab` on a prelude edge must NOT promote it to Material: that would

@@ -408,9 +408,6 @@ turned on the page. It never changes the geometry. A program with its
 annotations removed evaluates to the same FOLD without the annotations, and
 the evaluator passes them into the FOLD unchanged (ADR 0029).
 
-The kernel does not parse annotations yet. The syntax is fixed here so that
-the first implementation needs no second form.
-
 ```grammar
 annotation := "@" WORD arg* NEWLINE
             | "@" WORD ":" WORD value* NEWLINE
@@ -486,7 +483,7 @@ every argument is a value and resolves it, and passes the annotation on.
 A bare word is not an argument here, because only the key could say what
 it means; an output that wants a keyword takes text, `@yr:arrow "push"`.
 
-```
+```beloch
 paper square
 
 @step "Fold the square in half along the diagonal."

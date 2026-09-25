@@ -4,6 +4,7 @@
   "scopeName": "source.beloch",
   "patterns": [
     { "include": "#comments" },
+    { "include": "#annotations" },
     { "include": "#definitions" },
     { "include": "#openers" },
     { "include": "#keywords" },
@@ -17,6 +18,18 @@
         {
           "match": ";.*$",
           "name": "comment.line.semicolon.beloch"
+        }
+      ]
+    },
+    "annotations": {
+      "patterns": [
+        {
+          "match": "@[A-Za-z0-9_]+(?::[A-Za-z0-9_]+)?",
+          "name": "storage.type.annotation.beloch"
+        },
+        {
+          "match": "\"(?:[^\"\\\\\\n]|\\\\[\"\\\\])*\"",
+          "name": "string.quoted.double.beloch"
         }
       ]
     },

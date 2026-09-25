@@ -7,7 +7,7 @@ let corners : (string * Geom.point) list =
     ("d", { Geom.x = q 0; y = q 1 });
   ]
 
-type stmt_kind = SFold | SMark | SBind
+type stmt_kind = SFold | SMark | SBind | SApply of string
 
 type stmt_log_entry = {
   sl_kind : stmt_kind;
@@ -28,6 +28,29 @@ type stmt_log_entry = {
          backdrop frame is fixed and strictly predates this mark, so
          graduation cannot apply yet. [SFold] recomputes fresh via
          [Fold_state.mark_graduates] against the just-folded state. *)
+  sl_parent : int option;
+      (* the entry of the [apply] this statement runs under, [None] at the
+         top level (ADR 0030) *)
+}
+
+(* An annotation with its arguments read against the state the statement
+   after it starts from (ADR 0029). [an_target] is that statement's entry in
+   the log, [-1] while the statement has not run yet. *)
+type annot_value =
+  | AvPoint of Geom.point * Geom.point  (* paper, table *)
+  | AvLine of Geom.line * int option    (* table line, crease id if a crease *)
+  | AvFlap of int list                  (* faces of the state it was read in *)
+  | AvText of string
+  | AvNumber of Q.t
+  | AvWord of string
+
+type annot_entry = {
+  an_ns : string option;
+  an_key : string;
+  an_args : (annot_value * Error.span) list;
+  an_span : Error.span;
+  an_frame_index : int;
+  an_target : int;
 }
 
 type free_info = {
@@ -119,6 +142,12 @@ type ctx = {
   mutable statements_rev : stmt_log_entry list;
   mutable free_points_rev : (string * free_info) list;
   mutable references_rev : reference list;
+  mutable annots_pending : annot_entry list;
+      (* read, waiting for the statement they belong to; newest first *)
+  mutable annots_rev : annot_entry list;
+  mutable parent : int option;
+      (* the log entry of the [apply] whose body is running, [None] at the
+         top level: the [sl_parent] of every entry logged meanwhile *)
   mutable pending : bool;
       (* true when the current state hasn't been captured in a frame yet;
          drives the conditional final push (see eval_folded) *)
@@ -284,6 +313,8 @@ type snapshot = {
   s_free_points_rev : (string * free_info) list;
   s_references_rev : reference list;
   s_pending : bool;
+  s_annots_pending : annot_entry list;
+  s_annots_rev : annot_entry list;
   s_state : Fold_state.t;
   s_next_id : int;
 }
@@ -322,6 +353,8 @@ let snapshot (ctx : ctx) : snapshot =
         s_free_points_rev = ctx.free_points_rev;
         s_references_rev = ctx.references_rev;
         s_pending = ctx.pending;
+        s_annots_pending = ctx.annots_pending;
+        s_annots_rev = ctx.annots_rev;
         s_state = !(ctx.state);
         s_next_id = Fold_state.next_id_value ();
       }
@@ -355,6 +388,9 @@ let restore (ctx : ctx) (s : snapshot) : unit =
       ctx.free_points_rev <- s.s_free_points_rev;
       ctx.references_rev <- s.s_references_rev;
       ctx.pending <- s.s_pending;
+      ctx.annots_pending <- s.s_annots_pending;
+      ctx.annots_rev <- s.s_annots_rev;
+      ctx.parent <- None;
       ctx.state := s.s_state;
       Fold_state.set_next_id s.s_next_id
   | _ -> failwith "Ctx.restore: expected a single root scope at a statement boundary"
@@ -372,8 +408,20 @@ let push_bind (ctx : ctx) (sp : Error.span) =
   ctx.statements_rev <-
     { sl_kind = SBind; sl_span = sp;
       sl_frame_index = List.length ctx.frames_rev; sl_mark = None;
-      sl_kept = kept }
+      sl_kept = kept; sl_parent = ctx.parent }
     :: ctx.statements_rev
+
+let push_apply (ctx : ctx) (defname : string) (sp : Error.span) : int =
+  let kept =
+    match ctx.statements_rev with prev :: _ -> prev.sl_kept | [] -> []
+  in
+  let idx = List.length ctx.statements_rev in
+  ctx.statements_rev <-
+    { sl_kind = SApply defname; sl_span = sp;
+      sl_frame_index = List.length ctx.frames_rev; sl_mark = None;
+      sl_kept = kept; sl_parent = ctx.parent }
+    :: ctx.statements_rev;
+  idx
 
 let push_frame (ctx : ctx) (span : Error.span option) =
   ctx.frames_rev <- (!(ctx.state), span) :: ctx.frames_rev;
@@ -388,6 +436,6 @@ let push_frame (ctx : ctx) (span : Error.span option) =
       ctx.statements_rev <-
         { sl_kind = SFold; sl_span = sp;
           sl_frame_index = List.length ctx.frames_rev; sl_mark = None;
-          sl_kept = kept }
+          sl_kept = kept; sl_parent = ctx.parent }
         :: ctx.statements_rev
   | None -> ())
