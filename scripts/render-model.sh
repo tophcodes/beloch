@@ -11,7 +11,7 @@
 # loop regenerates; packages/www/src/lib/remark-grammar.ts is its counterpart.
 #
 # Citations use pandoc's syntax, `[@key, §3, p. 176]`, resolved against
-# paper/references.bib. Math is `$...$` / `$$...$$`. The same source renders on
+# bibliography/references.bib. Math is `$...$` / `$$...$$`. The same source renders on
 # the docs site (packages/www) through remark-math, rehype-katex and
 # rehype-citation, so this script is only the offline, paginated view.
 #
@@ -38,8 +38,8 @@ for doc in MODEL KERNEL BELOCH FOLD; do
     --lua-filter "$root/scripts/model-blocks.lua" \
     --lua-filter "$root/scripts/grammar-blocks.lua" \
     --citeproc \
-    --bibliography "$root/paper/references.bib" \
-    --csl "$root/paper/chicago-notes-bibliography.csl" \
+    --bibliography "$root/bibliography/references.bib" \
+    --csl "$root/bibliography/chicago-notes-bibliography.csl" \
     --pdf-engine typst \
     --include-in-header "$root/scripts/typst-compat.typ" \
     --variable mainfont="Libertinus Serif" \

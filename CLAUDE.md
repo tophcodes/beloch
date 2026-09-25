@@ -60,7 +60,7 @@ nothing about the script on the page.
 Full-text papers/books live in `refs/` (gitignored, because they are
 copyrighted). Each file is named by its BibTeX cite key, with both `.pdf` and
 an extracted `.txt`/`.md` (e.g. `refs/caruana2007.txt`). Machine-readable
-metadata is in `paper/references.bib`.
+metadata is in `bibliography/references.bib`.
 
 **Citation discipline: look it up, don't guess.**
 
@@ -68,10 +68,10 @@ metadata is in `paper/references.bib`.
   `rg` over the `.txt`/`.md` files, which searches all sources at once) and
   cite by key + locator, e.g. `[caruana2007, §3]` or `[hull2020, p. 142]`.
 - If the relevant source **isn't in `refs/`**, say so explicitly and **ask the
-  user to drop it in** (`refs/<citekey>.txt` + add to `paper/references.bib`).
+  user to drop it in** (`refs/<citekey>.txt` + add to `bibliography/references.bib`).
   Do **not** answer origami-math/PL claims from memory. Memory has already
   produced a wrong attribution once, misremembering Caruana and Pace.
-- New source → add a `paper/references.bib` entry
+- New source → add a `bibliography/references.bib` entry
   in the same change.
 
 A 5-second `rg` to ground a sentence is always worth it, and a missing source

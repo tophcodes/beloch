@@ -263,7 +263,7 @@ The kernel suites have known failures, recorded with their cause in
 - Smith, J. S. (1975). *Origami Instruction Language*. British Origami Society
   Booklet No. 4.
 
-BibTeX for all of them is in [`paper/references.bib`](paper/references.bib).
+BibTeX for all of them is in [`bibliography/references.bib`](bibliography/references.bib).
 
 ## Citing
 

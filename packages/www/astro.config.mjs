@@ -105,9 +105,9 @@ export default defineConfig({
 				// `bibliography` is joined onto `path`; an absolute path here
 				// would be appended to the cwd and fail to resolve.
 				path: repoRoot,
-				bibliography: join('paper', 'references.bib'),
+				bibliography: join('bibliography', 'references.bib'),
 				// note style: a footnote marker in the text, the locator in the note
-				csl: join('paper', 'chicago-notes-bibliography.csl'),
+				csl: join('bibliography', 'chicago-notes-bibliography.csl'),
 				linkCitations: true,
 			}],
 			rehypeCitePost,

@@ -825,7 +825,7 @@ Dinge wie die Zeichnung.
 
 ## 8.6 Konferenzfolien
 
-Existieren noch nicht (`paper/README.md`, 9OSME Xi'an, August 2027).
+Existieren noch nicht (Publikationsplan in `beloch-research`, `paper/README.md`; 9OSME Xi'an, August 2027).
 
 *Übertragbar:* Tokens, Typografie, Wortmarke, Artefaktregeln, die Strichsprache.
 *Eigene Regeln:* Projektionsbedingungen. Ein Beamer in einem hellen Saal frisst

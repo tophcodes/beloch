@@ -22,17 +22,17 @@ objections came up:
 
 Both routes this decision weighs have been taken before.
 
-- **Embedded, in a full host language.** Eos ([ida2009eos](../paper/references.bib),
-  [ida2020](../paper/references.bib)) is the most complete origami construction
+- **Embedded, in a full host language.** Eos ([ida2009eos](../bibliography/references.bib),
+  [ida2020](../bibliography/references.bib)) is the most complete origami construction
   system. Its language Orikoto is a subset of the Wolfram Language and runs
   inside Mathematica with the whole host available [ida2020, §2.2.1, §3.8.1].
   It computes the superposition of faces, proves constructions correct with
   Gröbner bases, and gives its commands a denotational semantics
   [ida2020, App. B.2]. It solves the folds themselves numerically and keeps
   the constraints symbolic for the proofs [ida2008entcs]. Caruana and Pace
-  ([caruana2007](../paper/references.bib)) embed the axioms in Haskell for
+  ([caruana2007](../bibliography/references.bib)) embed the axioms in Haskell for
   plane constructions.
-- **Standalone.** Fisher ([fisher1994](../paper/references.bib)) gave a textual
+- **Standalone.** Fisher ([fisher1994](../bibliography/references.bib)) gave a textual
   folding language with its own syntax and an executor that tracks face
   layering; its fold types are Huzita's. Multiple folds were designed and not
   implemented.
@@ -71,7 +71,7 @@ problem.
 - Step-by-step YR folding-instruction generation (the program *is* a linear,
   analyzable op sequence).
 - Static / precondition analysis — cf. Caruana & Pace 2007
-  ([caruana2007](../paper/references.bib)), who did exactly this for their embedded
+  ([caruana2007](../bibliography/references.bib)), who did exactly this for their embedded
   origami DSL.
 - A clean LLM generation target (small grammar, every token meaningful).
 - Formal operational semantics → the paper.

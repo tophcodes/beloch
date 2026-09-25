@@ -11,7 +11,7 @@ and not a design doc.
   output contract.
 - Citations are clickable links to the [References](#references) section below;
   machine-readable entries live in
-  [`../paper/references.bib`](../paper/references.bib). A locator such as §1.5
+  [`../bibliography/references.bib`](../bibliography/references.bib). A locator such as §1.5
   points to a section *in that cited source*, not in this document. Full texts
   are in `../refs/` (gitignored).
 
@@ -1992,7 +1992,7 @@ outside reverse folds as two placed half-folds with derived letters (§4.6,
 
 ## References
 
-Machine-readable entries: [`../paper/references.bib`](../paper/references.bib).
+Machine-readable entries: [`../bibliography/references.bib`](../bibliography/references.bib).
 Each entry links to a public source where one exists, and to the local full text
 in `../refs/` (gitignored — local checkout only).
 
