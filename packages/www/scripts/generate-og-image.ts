@@ -21,19 +21,22 @@
 // Requires the `beloch` binary on PATH (`nix develop`, same requirement
 // src/lib/eval-bel.ts has for the rest of the site build), @resvg/resvg-js
 // (a dependency of packages/render-2d/render-svg, resolved here via
-// node_modules hoisting), and a monospace font resvg's font database can
-// resolve "IBM Plex Mono, monospace" against, the same font stack the
-// site's CSS already asks browsers for.
+// node_modules hoisting), and fontkitten. The wordmark is outlined from
+// public/fonts/jetbrains-mono-600.woff2, the cut the site header sets it in,
+// so it needs no installed font; the tagline is set in the prose stack of
+// --bel-font-prose and takes whichever of those fonts resvg finds.
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
+import { create, type Font } from "fontkitten";
 
 const repoRoot = join(fileURLToPath(import.meta.url), "..", "..", "..", "..");
 const markPath = join(repoRoot, "packages", "www", "public", "brand", "mark.svg");
 const sourceBel = join(repoRoot, "examples", "bases", "bird-base.bel");
 const fold2svgBin = join(repoRoot, "packages", "render-2d", "render-svg", "bin", "fold2svg.ts");
 const outPath = join(repoRoot, "packages", "www", "public", "og-image.png");
+const fontPath = join(repoRoot, "packages", "www", "public", "fonts", "jetbrains-mono-600.woff2");
 
 // theme.css dark theme: --bel-ui-surface and --bel-ui-text.
 const PANEL_BG = "#1C1A17";
@@ -86,13 +89,25 @@ const markInner = readFileSync(markPath, "utf8")
   .replaceAll("currentColor", INK)
   .trim();
 
+// The wordmark as outline paths, the word's baseline at (x, baseline).
+const font = create(readFileSync(fontPath)) as Font;
+function wordmarkPath(word: string, px: number, x: number, baseline: number): string {
+  const scale = px / font.unitsPerEm;
+  let d = "";
+  for (const glyph of font.glyphsForString(word)) {
+    d += glyph.path.scale(scale, -scale).translate(x, baseline).toSVG();
+    x += glyph.advanceWidth * scale;
+  }
+  return d;
+}
+
 const composed = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <rect width="${WIDTH}" height="${HEIGHT}" fill="${PANEL_BG}"/>
   <g transform="translate(96, ${MARK_Y}) scale(${MARK_SIZE / 64})" fill="none" stroke="${INK}" stroke-linecap="round">
     ${markInner}
   </g>
-  <text x="96" y="${MARK_Y + MARK_SIZE + 84}" font-family="IBM Plex Mono, monospace" font-size="72" font-weight="600" fill="${INK}">beloch</text>
-  <text x="96" y="${MARK_Y + MARK_SIZE + 128}" font-family="IBM Plex Sans, sans-serif" font-size="22" fill="${INK}" opacity="0.7">A declarative language for origami</text>
+  <path fill="${INK}" d="${wordmarkPath("beloch", 72, 96, MARK_Y + MARK_SIZE + 84)}"/>
+  <text x="96" y="${MARK_Y + MARK_SIZE + 128}" font-family="Palatino, 'Palatino Linotype', 'URW Palladio L', Georgia, serif" font-size="22" fill="${INK}" opacity="0.7">A declarative language for origami</text>
   <g transform="translate(${cardX}, ${cardY}) scale(${scale})">
     ${cardBg}
     ${innerMarkup}
