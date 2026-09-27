@@ -730,6 +730,15 @@ mark (through .b .d) as --bd
 fold (map .d onto --ef through .p) (.d toward .c) as --s
 :::
 
+::: {.figure #fig-toward-stages caption="The program of [#fig-toward-boundary], one row per stage of [#def-selection]; the fold names no heading, so stage 1 is skipped. Both candidates cross the paper and both keep the side of `.c`, so the side that folds over carries `.d`, and each fold carries `.d` onto `--ef`. The landing stage decides: `.d` lands on the top edge under one candidate and at the centre under the other, and the top edge lies nearer `.c`." views="stages" at="choose"}
+paper square
+mark (map .a onto .b) as --ef
+mark (through .b .d) as --bd
+.p = free on --bd from .d at 1/4
+@label choose
+fold (map .d onto --ef through .p) (.d toward .c) as --s
+:::
+
 ::: {.lemma #lem-selection-defined name="a selection is a partial function" uses="def-selection def-construction"}
 For every state, arguments and items, each stage of [#def-selection] is
 determined, and $\sigma$ is a partial function of the state, the arguments
