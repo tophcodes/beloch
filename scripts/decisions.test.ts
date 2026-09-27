@@ -5,14 +5,11 @@ import { join } from "node:path";
 const dir = join(import.meta.dir, "..", "decisions");
 const records = readdirSync(dir).filter((f) => /^\d{4}-.*\.md$/.test(f));
 
-// The first record that has to name its issue; earlier ones predate the field.
-const FIRST_WITH_ISSUE = 34;
-
-test("every record from 0034 on names its issue with owner and repository", () => {
-	const missing = records.filter((file) => {
-		if (Number(file.slice(0, 4)) < FIRST_WITH_ISSUE) return false;
+test("a record's issue names owner and repository", () => {
+	const malformed = records.filter((file) => {
 		const frontmatter = readFileSync(join(dir, file), "utf8").split(/^---$/m)[1] ?? "";
-		return !/^issue: *"?[\w.-]+\/[\w.-]+#\d+"? *$/m.test(frontmatter);
+		const issue = frontmatter.match(/^issue:(.*)$/m);
+		return issue !== null && !/^ *"?[\w.-]+\/[\w.-]+#\d+"? *$/.test(issue[1]);
 	});
-	expect(missing).toEqual([]);
+	expect(malformed).toEqual([]);
 });

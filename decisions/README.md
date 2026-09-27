@@ -20,7 +20,7 @@ id: "0008"                     # quoted: bare 0008 is an invalid octal literal i
 title: "Exact rational arithmetic (zarith) for the geometry engine"
 date: 2026-06-29               # optional
 status: accepted
-issue: tophcodes/beloch#62     # the issue that raised the decision; required from 0034 on
+issue: tophcodes/beloch#62     # optional: the issue that raised the decision
 checks:                        # optional
   - desc: Jede lib/*.ml hat eine .mli
     run: 'for f in lib/*.ml; do [ -f "${f}i" ] || exit 1; done'
@@ -28,13 +28,14 @@ checks:                        # optional
 ```
 
 The frontmatter is authoritative for `status`; `arch-check` reads `checks`.
-`issue` names the issue with owner and repository: inside a file in the
-repository GitHub links no bare `#n`, and issue numbers repeat across the
-repositories Beloch has used. Issues that carry the decision out name the
-record in their origin line (`ADR 0031`), so a search for the number finds
-them; the record does not list them.
 A check belongs to the record that decided it, so the rule cannot drift away
 from its reasoning and archiving the record retires the check in one move.
+
+A record raised by an issue names it in `issue`, with owner and repository:
+inside a file in the repository GitHub links no bare `#n`, and issue numbers
+repeat across the repositories Beloch has used. Issues that carry the decision
+out name the record in their origin line (`ADR 0031`), so a search for the
+number finds them; the record does not list them.
 
 Prose sections below it:
 
