@@ -3,6 +3,7 @@ id: "0034"
 title: "A warning reports a program that runs, in the shape of an error"
 date: 2026-09-27
 status: proposed
+issue: tophcodes/beloch#59
 ---
 
 # 0034: A warning reports a program that runs, in the shape of an error
