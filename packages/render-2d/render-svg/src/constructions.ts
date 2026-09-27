@@ -4,7 +4,7 @@
 // explicit opt-in list (see appendConstructions below).
 import type { Assignment, FoldScene, Frame, Vec2 } from "@beloch/scene";
 import { el, SvgDoc, SvgNode } from "./svgdoc";
-import { clipLineBox, clipLineToPoly, lineToFace } from "./geometry";
+import { namedSegments, segmentsInFrame } from "./geometry";
 import { PAD } from "./layout";
 import type { Layout } from "./layout";
 import type { HighlightColor, Theme } from "./theme";
@@ -48,84 +48,40 @@ export function appendConstructions(
   // crease, a paper corner) — the caller asked for it, so show it.
   const sel = selection ?? [];
 
-  // fold2svg.mjs:366-370 — the box-clip for the CP-mode line construction
-  // always uses the root/CP vertex bbox, regardless of view.
-  const rootV = scene.cp.vertices;
-  const pxs = rootV.map((p) => p[0]), pys = rootV.map((p) => p[1]);
-  const pMinX = Math.min(...pxs), pMaxX = Math.max(...pxs);
-  const pMinY = Math.min(...pys), pMaxY = Math.max(...pys);
-
   for (const s of sel) {
     // A highlighted entity is drawn in its own palette colour, in this view and
     // in the other view of the same scene, matching the caption's inline code.
     const hl = highlightOf.get(s);
     if (s.startsWith("--")) {
       const name = s.slice(2);
-      const line = scene.namedLines.find((l) => l.name === name);
-      if (!line) continue;
-      const [la, lb, lc] = line.coeffs;
-      const g: SvgNode[] = [];
-      if (folded) {
-        const color = hl?.stroke ?? creaseColor(folded.frame, name, theme) ?? theme.construction;
-        const F = folded.frame.facesVertices;
-        const V = folded.frame.vertices;
-        const FM = folded.frame.facesMatrix ?? [];
-        const drawn: [Vec2, Vec2][] = [];
-        for (let fi = 0; fi < F.length; fi++) {
-          const M = FM[fi];
-          if (!M) continue;
-          const tabPoly = F[fi]!.map((vi) => V[vi]!);
-          const [ta, tb, tc] = lineToFace(M, la, lb, lc);
-          const seg = clipLineToPoly(ta, tb, tc, tabPoly);
-          if (!seg) continue;
-          const [t1, t2] = seg;
-          g.push(el("line", {
-            x1: tx(t1[0]), y1: ty(t1[1]), x2: tx(t2[0]), y2: ty(t2[1]),
-            stroke: color, "stroke-width": 3,
-            "stroke-dasharray": "6 3", opacity: 0.8,
-          }));
-          drawn.push([t1, t2]);
-        }
-        if (drawn.length > 0 && labelled(`--${name}`)) {
-          const [[x1, y1], [x2, y2]] = drawn[0]!;
-          const a: Vec2 = [tx(x1), ty(y1)], b: Vec2 = [tx(x2), ty(y2)];
-          anchors.push({
-            x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2,
-            text: `--${name}`, key: `--${name}`,
-            preferOffset: besideLine(a, b, 12),
-            group: `line:${name}`,
-            attrs: { fill: color, "data-bel-name": name, "data-construction": name,
-                     "data-kind": "line-label" },
-          });
-        }
-      } else {
-        const color = hl?.stroke ?? creaseColor(scene.cp, name, theme) ?? theme.construction;
-        const seg = clipLineBox(la, lb, lc, pMinX, pMaxX, pMinY, pMaxY);
-        if (!seg) continue;
-        const [[x1, y1], [x2, y2]] = seg;
-        g.push(el("line", {
-          x1: tx(x1), y1: ty(y1), x2: tx(x2), y2: ty(y2),
-          stroke: color, "stroke-width": 3,
-          "stroke-dasharray": "6 3", opacity: 0.8,
-        }));
-        if (labelled(`--${name}`)) {
-          const a: Vec2 = [tx(x1), ty(y1)], b: Vec2 = [tx(x2), ty(y2)];
-          anchors.push({
-            x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2,
-            text: `--${name}`, key: `--${name}`,
-            preferOffset: besideLine(a, b, 12),
-            group: `line:${name}`,
-            attrs: { fill: color, "data-bel-name": name, "data-construction": name,
-                     "data-kind": "line-label" },
-          });
-        }
+      // Where the line lies on the paper: a crease's own scars, or the paper
+      // under a line bound with `=`. The folded view takes the same pieces to
+      // the table face by face, so both views draw one set of paper points.
+      const paper = namedSegments(scene, name);
+      const drawn = folded ? segmentsInFrame(folded.frame, paper) : paper;
+      if (drawn.length === 0) continue;
+      const color = hl?.stroke ?? creaseColor(folded?.frame ?? scene.cp, name, theme) ?? theme.construction;
+      const g: SvgNode[] = drawn.map(([[x1, y1], [x2, y2]]) => el("line", {
+        x1: tx(x1), y1: ty(y1), x2: tx(x2), y2: ty(y2),
+        stroke: color, "stroke-width": 3,
+        "stroke-dasharray": "6 3", opacity: 0.8,
+      }));
+      if (labelled(`--${name}`)) {
+        const [[x1, y1], [x2, y2]] = drawn[0]!;
+        const a: Vec2 = [tx(x1), ty(y1)], b: Vec2 = [tx(x2), ty(y2)];
+        anchors.push({
+          x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2,
+          text: `--${name}`, key: `--${name}`,
+          preferOffset: besideLine(a, b, 12),
+          group: `line:${name}`,
+          attrs: { fill: color, "data-bel-name": name, "data-construction": name,
+                   "data-kind": "line-label" },
+        });
       }
-      if (g.length) {
-        annotations.children.push(el("g", {
-          class: "construction", "data-construction": name,
-          "data-kind": "line", "data-name": name,
-        }, g));
-      }
+      annotations.children.push(el("g", {
+        class: "construction", "data-construction": name,
+        "data-kind": "line", "data-name": name,
+      }, g));
     } else if (s.startsWith(".")) {
       const name = s.slice(1);
       const pt = scene.namedPoints.find((p) => p.name === name);

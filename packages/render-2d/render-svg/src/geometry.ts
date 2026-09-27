@@ -67,6 +67,13 @@ export const lineToFace = (
   return [A, B, c + A * tx + B * ty];
 };
 
+// A face's isometry takes a paper point p to the table point t = M·p + T.
+// M is orthogonal, so the way back is p = Mᵀ·(t − T).
+export const toTable = ([m00, m01, m10, m11, tx, ty]: Isometry, [x, y]: Vec2): Vec2 =>
+  [m00 * x + m01 * y + tx, m10 * x + m11 * y + ty];
+export const toPaper = ([m00, m01, m10, m11, tx, ty]: Isometry, [x, y]: Vec2): Vec2 =>
+  [m00 * (x - tx) + m10 * (y - ty), m01 * (x - tx) + m11 * (y - ty)];
+
 // The assignment a folded frame gives the paper segment from p to q, or null
 // when no edge of the frame lies along it. The frame's vertices stand on the
 // table; each face's paper→table isometry t = M·p + T is inverted as
@@ -78,8 +85,6 @@ export function paperAssignment(frame: Frame): (p: Vec2, q: Vec2) => Assignment 
   const FM = frame.facesMatrix;
   if (!FM) return () => null;
   const edgeOf = faceEdgeIndex(frame.edgesVertices);
-  const toPaper = ([m00, m01, m10, m11, tx, ty]: Isometry, [x, y]: Vec2): Vec2 =>
-    [m00 * (x - tx) + m10 * (y - ty), m01 * (x - tx) + m11 * (y - ty)];
   const segs: { a: Vec2; b: Vec2; assignment: Assignment }[] = [];
   const seen = new Set<number>();
   frame.facesVertices.forEach((face, fi) => {
@@ -385,6 +390,89 @@ export function paperEdgeSegments(
     if (seg) out.push(seg);
   });
   return out;
+}
+
+// Where a named crease or line lies on the sheet, as segments in paper
+// coordinates. A crease is its own edges in the crease pattern, wherever later
+// folds took them. A line bound with `=` has no edges: its coefficients lie on
+// the table of the step its `step` names (step 0 is the flat sheet), and the paper
+// under that table line is found face by face and taken back through each
+// face's isometry. A name that is neither gives no segments.
+export function namedSegments(scene: FoldScene, name: string): [Vec2, Vec2][] {
+  const crease = scene.creases.find((c) => c.name === name);
+  if (crease) return crease.segments.map((s): [Vec2, Vec2] => [s.a, s.b]);
+  const line = scene.namedLines.find((l) => l.name === name);
+  if (!line) return [];
+  const frame = scene.steps[line.step]?.frame ?? (line.step === 0 ? scene.cp : undefined);
+  if (!frame) return [];
+  const [a, b, c] = line.coeffs;
+  const out: [Vec2, Vec2][] = [];
+  frame.facesVertices.forEach((face, fi) => {
+    const seg = clipLineToPoly(a, b, c, face.map((vi) => frame.vertices[vi]!));
+    if (!seg) return;
+    const M = frame.facesMatrix?.[fi];
+    out.push(M ? [toPaper(M, seg[0]), toPaper(M, seg[1])] : seg);
+  });
+  return distinctSegments(out);
+}
+
+// Paper segments as they lie in a frame, in that frame's coordinates: each
+// segment is cut to the paper of every face and taken to the table through the
+// face's isometry. A frame without matrices is the flat sheet, where paper and
+// table coincide.
+export function segmentsInFrame(frame: Frame, segments: [Vec2, Vec2][]): [Vec2, Vec2][] {
+  const FM = frame.facesMatrix;
+  if (!FM) return segments;
+  const out: [Vec2, Vec2][] = [];
+  frame.facesVertices.forEach((face, fi) => {
+    const M = FM[fi];
+    if (!M) return;
+    const paperPoly = face.map((vi) => toPaper(M, frame.vertices[vi]!));
+    for (const [p, q] of segments) {
+      const cut = clipSegmentToPoly(p, q, paperPoly);
+      if (cut) out.push([toTable(M, cut[0]), toTable(M, cut[1])]);
+    }
+  });
+  return distinctSegments(out);
+}
+
+// The part of the segment p→q inside a convex polygon of either orientation,
+// or null when less than a point of it is (Cyrus-Beck). A segment along an
+// edge of the polygon counts as inside.
+export function clipSegmentToPoly(p: Vec2, q: Vec2, poly: Vec2[]): [Vec2, Vec2] | null {
+  const eps = 1e-9, n = poly.length;
+  const s = signedArea(poly) < 0 ? -1 : 1;
+  const dx = q[0] - p[0], dy = q[1] - p[1];
+  let t0 = 0, t1 = 1;
+  for (let i = 0; i < n; i++) {
+    const [ax, ay] = poly[i]!, [bx, by] = poly[(i + 1) % n]!;
+    // Inward normal of edge a→b.
+    const nx = -(by - ay) * s, ny = (bx - ax) * s;
+    const num = nx * (p[0] - ax) + ny * (p[1] - ay);
+    const den = nx * dx + ny * dy;
+    if (Math.abs(den) < eps) {
+      if (num < -eps) return null;
+      continue;
+    }
+    const t = -num / den;
+    if (den > 0) t0 = Math.max(t0, t);
+    else t1 = Math.min(t1, t);
+    if (t0 > t1 - eps) return null;
+  }
+  return [[p[0] + t0 * dx, p[1] + t0 * dy], [p[0] + t1 * dx, p[1] + t1 * dy]];
+}
+
+// Drops a segment that repeats an earlier one, in either direction. A line
+// along an edge shared by two faces is cut once per face.
+function distinctSegments(segments: [Vec2, Vec2][]): [Vec2, Vec2][] {
+  const key = ([x, y]: Vec2) => `${x.toFixed(9)},${y.toFixed(9)}`;
+  const seen = new Set<string>();
+  return segments.filter(([p, q]) => {
+    const k = [key(p), key(q)].sort().join(" ");
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
 
 // The part of a convex polygon where n·x ≥ c.

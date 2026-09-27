@@ -9,7 +9,7 @@ import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
 import { DEFAULT_THEME, Theme, LineStyle, HighlightColor } from "./theme";
 import { sceneLayout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
-import { coverageDepth, coveredIntervals, faceEdgeIndex, sideUp, lineToFace, clipLineToPoly, paperAssignment, paperEdgeSegments, pointCovered, pointInPolygonInclusive, segInsideIntervals, paperClippedIntervals } from "./geometry";
+import { coverageDepth, coveredIntervals, faceEdgeIndex, sideUp, namedSegments, segmentsInFrame, paperAssignment, paperEdgeSegments, pointCovered, pointInPolygonInclusive, segInsideIntervals, paperClippedIntervals } from "./geometry";
 import { resolveIsometry, type Isometry } from "./isometry";
 import { besideLine, placeLabels, type LabelAnchor } from "./primitives/labels";
 
@@ -135,6 +135,10 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     highlight.map((h, i) => [h, palette[i % palette.length]!]),
   );
   const highlightFaces = flapFaces(scene, colorOf);
+  // A highlighted crease is named by the overlay, in its palette colour, so its
+  // own label is left out.
+  const namedByHighlight = (name: string | null): boolean =>
+    name !== null && highlight.includes(`--${name}`);
   // Whether the drawing writes this name out.
   const labelled = (name: string): boolean =>
     opts.annotate === undefined || opts.annotate.includes(name);
@@ -451,18 +455,9 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     const ghostTo =
       typeof upTo === "number" ? scene.statements[upTo]?.frameIndex ?? -1 : -1;
     if (opts.isometry.kind === "step" && ghostTo > opts.isometry.index) {
-      const FM = frame.facesMatrix ?? [];
       for (const nl of scene.namedLines) {
         if (nl.step <= opts.isometry.index || nl.step > ghostTo) continue;
-        const [la, lb, lc] = nl.coeffs;
-        for (let fi = 0; fi < F.length; fi++) {
-          const M = FM[fi];
-          if (!M) continue;
-          const tabPoly = F[fi]!.map((idx) => V[idx]!);
-          const [ta, tb, tc] = lineToFace(M, la, lb, lc);
-          const seg = clipLineToPoly(ta, tb, tc, tabPoly);
-          if (!seg) continue;
-          const [t1, t2] = seg;
+        for (const [t1, t2] of segmentsInFrame(frame, namedSegments(scene, nl.name))) {
           creases.children.push(el("line", {
             class: "ghost", "data-kind": "ghost", "data-name": nl.name,
             x1: mx(t1[0]), y1: ty(t1[1]), x2: mx(t2[0]), y2: ty(t2[1]),
@@ -602,6 +597,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       });
     }
     for (const [key, run] of creaseRuns) {
+      if (namedByHighlight(run.name)) continue;
       const attrs: Record<string, string | number> = {
         fill: run.stroke, "data-kind": "line-label",
       };
@@ -781,6 +777,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       grp.vs.add(b);
     });
     for (const [key, { vs, col, text, name: nm }] of creaseGroups) {
+      if (namedByHighlight(nm)) continue;
       if (!labelled(key.startsWith("#") ? key : `--${key}`)) continue;
       const list = [...vs];
       let ends = list.filter((j) => onB(V[j]!));
