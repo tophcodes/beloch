@@ -2,8 +2,9 @@
     per-statement logs ([frames_rev]/[statements_rev]/[free_points_rev]) that
     [Eval.eval_program] assembles into a folded result. [ctx] and its
     component record/variant types ([scope], [instance], [crease_val],
-    [name_ctx]) are concrete: [Resolve], [Axiom], [Flatten_solve] and [Eval]
-    all read their fields or pattern-match their constructors directly. *)
+    [name_ctx]) are concrete: [Resolve], [Axiom], [Flatten_solve], [Action]
+    and [Eval] all read their fields or pattern-match their constructors
+    directly. *)
 
 val corners : (string * Geom.point) list
 (** The four paper corners, keyed "a" "b" "c" "d". *)
