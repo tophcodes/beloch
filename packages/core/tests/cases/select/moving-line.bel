@@ -1,0 +1,11 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; moving with a line names the side of the line's material: --v lies left
+; of the fold line x = 3/4, so that side folds over and lands .m on .b.
+
+paper square
+mark (map .a onto .b) as --v
+.m = free on --ab from .a at 1/2
+fold (map .b onto .m) (moving --v)
+
+; assert .m = (1, 0)

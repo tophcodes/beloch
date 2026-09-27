@@ -77,6 +77,27 @@ history for output: the FOLD file carries one frame per statement in
 `file_frames`, and per edge the statement that scored it in `beloch:edges` and
 `beloch:source_line` (`SPECIFICATION.md` §7). No operation reads this record.
 
+## Selection
+
+`Axiom.axis_of` recognises a construction and solves it into its candidates
+and the objects it moves; `Axiom.select` runs the four stages of
+[def-selection](/model/#def-selection) on them with the side items of the
+statement that reads it, and `Axiom.fold_side_of_line` gives `toward` its
+meaning on a fold along an existing crease. The comparisons are exact:
+squared distances between points and segments, and squared cosines between
+lines, in `Num`. The side the selection fixes reaches the write as the
+moving side. Where the write has no anchor, `Resolve.placed_fold_plan` and
+`Resolve.tip_faces` take every layer on that side as the block or the tip,
+and an implied anchor on the side that stays is dropped, because the
+alignment it belongs to is carried out by the other object.
+
+The material of a line in an alignment, a `toward` or a `moving` is, for a
+crease, the crease's own segments, which can be fewer than all the paper on
+its table line ([def-material](/model/#def-material)); for a line bound by
+`=`, a paper edge or a mark, all the paper on it. A mark that ends mid-face
+therefore counts as its whole chord; what a mark's material should be is
+[issue #62](https://github.com/tophcodes/beloch/issues/62).
+
 ## Annotations
 
 An annotation never changes the geometry (ADR 0029), and the kernel holds to

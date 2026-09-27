@@ -92,7 +92,7 @@ placement a menu of four entries.
 
 | type | values | slots |
 |---|---|---|
-| line | a construction, a name bound by `=`, or a crease whose segments lie on one table line ([def-line](/model/#def-line)) | the operands of a construction, the axis of `mark` |
+| line | a construction, a name bound by `=`, or a crease whose segments lie on one table line ([def-line](/model/#def-line)) | the operands of a construction, `heading`, `toward`, the axis of `mark` |
 | crease | a name bound by `as`: the material scored under that name ([def-bundle](/model/#def-bundle)), or a selection from one | the axis `(--d)` of `fold` and `reverse`, the rays of `flatten`, the meet `*`, the filters `&` `\` `[…]`, `free on` |
 | flap | a point, a line, or `#[…]`, resolved by incidence ([def-selector](/model/#def-selector)) | `moving`, `up to`, `on`, `staying`, the target of `over` and `under` |
 | point | a named or selected point | `at`, `between`, `toward` |
@@ -102,7 +102,7 @@ placement a menu of four entries.
 | intent | mountain, valley; the direction the crease pattern draws, no part of the state | `mark` |
 | letter | mountain, valley as a constraint on a ray ([def-letter](/model/#def-letter)) | `flatten` |
 | order | one sector over another | `flatten` |
-| selection | toward a point ([def-selection](/model/#def-selection)) | constructions, `flatten` |
+| selection | `toward` a point or a line, the side that stays; `moving` a flap, the side that folds over; `heading` a line, the direction of the crease ([def-selection](/model/#def-selection)) | `toward` and `moving`: `mark`, `fold`, `reverse` and a binding over a construction; `toward` a point: `flatten`; `heading`: `align` |
 
 Line and crease are two sorts under one sigil, and the binding tells them
 apart: `--l = …` is a line, `… as --l` is a crease. A crease stands where a
@@ -136,14 +136,15 @@ current writes, ahead of their own sections:
 
 ```grammar
 fold_item    := axis
-              | "moving" flap_operand
+              | side_item
               | "up" "to" flap_operand
               | "mountain"
               | ( "over" | "under" ) flap_operand
 reverse_item := axis
-              | "moving" flap_operand
+              | side_item
               | "outside"
 mark_item    := axis
+              | side_item
               | "on" flap_operand
               | "between" point_operand point_operand
               | "at" point_operand
@@ -152,14 +153,18 @@ flatten_item := line_operand [ "mountain" | "valley" ]
               | flap_operand "over" flap_operand
               | "staying" flap_operand
               | "toward" point_operand
+side_item    := [ toward_subject ] "toward" ( point_operand | line_operand )
+              | "moving" flap_operand
 axis         := construction_body | line_operand
 ```
 
 `flip` takes no item. Round parentheses are items and braces are blocks
-(`def`, `on`, `export`); no item uses braces. The `toward` item of
-`flatten` selects among states rather than among lines
-([open-flatten-selection](/model/#open-flatten-selection)); a construction
-carries its own selection inside its item.
+(`def`, `on`, `export`); no item uses braces. The side items name the side
+of the axis that stays, `toward`, and the side that folds over, `moving`,
+and select among the candidates of a construction by them
+([Selection](#selection)). The `toward` item of `flatten` selects among
+states rather than among lines
+([open-flatten-selection](/model/#open-flatten-selection)).
 
 Six blocks follow, one group per verb, each a complete program that this page
 evaluates. `fold` and `reverse` take two blocks each, because the second form
@@ -344,12 +349,23 @@ distributed over two fold lines, give the 489 two-fold axioms [@alperin2006,
 number is the name of one such set.
 
 ```grammar
-construction_body := "align" CREASE_NAME* alignment+ [ "toward" point_operand ]
+construction_body := "align" CREASE_NAME* align_part+
                    | prose_axiom
+align_part        := alignment
+                   | "(" "heading" line_operand ")"
 alignment         := "(" [ CREASE_NAME ] object "onto" [ CREASE_NAME ] object ")"
                    | "(" [ CREASE_NAME ] "through" point_operand ")"
                    | "(" [ CREASE_NAME ] "perp" line_operand ")"
 object            := point_operand | line_operand
+prose_axiom       := "through" point_operand point_operand
+                   | "map" point_operand "onto" point_operand
+                   | "perp" line_operand "through" point_operand
+                   | "map" point_operand "onto" line_operand "perp" line_operand
+                   | "map" line_operand "onto" line_operand
+                   | "map" point_operand "onto" line_operand "through" point_operand
+                   | "map" point_operand "onto" line_operand
+                         "and" point_operand "onto" line_operand
+line_binding      := CREASE_NAME "=" "(" construction_body ")" side_item*
 ```
 
 ```{.bel .prelude name=axioms}
@@ -365,23 +381,33 @@ mark (through .a .c) as --ac
 (align (.a onto .c))                            ; axiom 2
 (align (through .a) (through .b))               ; axiom 1
 (align (perp --l) (through .p))                 ; axiom 3
-(align (.p onto --l) (through .q) toward .a)    ; axiom 6, with its selection
+(align (.p onto --l) (through .q)) (toward .a)  ; axiom 6, and the side that stays
 (align (.p onto --l) (perp --m))                ; axiom 4
-(align (--l onto --m) toward .p)                ; axiom 5, with its selection
+(align (--l onto --m)) (toward .c)              ; axiom 5, and the side that stays
 (align (.p onto --l) (.q onto --m))             ; axiom 7
 
 ; assert .p = (1/2, 1/2)
 ; assert .q = (1/2, 0)
 ```
 
-The prose forms of the seven axioms are sugar for these and stay as they
-are; they are the `prose_axiom` alternatives, spelled in `SPECIFICATION.md`
-§4.1 to §4.5c until their sections move here: `(map .a onto .c)`,
-`(through .a .b)`, `(perp --l through .p)`, `(map .p onto --l through
-.q)`, `(map .p onto --l perp --m)`, `(map --l onto --m toward .p)`, `(map
-.p onto --l and .q onto --m)`. A selection belongs to the construction and
-is written inside its item, because a bound line (`--l = (map --a onto --b
-toward .p)`) needs it without any write.
+The prose forms of the seven axioms are sugar for these, the
+`prose_axiom` alternatives: `(through .a .b)`, `(map .a onto .c)`, `(perp
+--l through .p)`, `(map .p onto --l perp --m)`, `(map --l onto --m)`,
+`(map .p onto --l through .q)`, `(map .p onto --l and .q onto --m)`. A
+prose form means what its `align` spelling means. The axiom number names
+one alignment set, recognised by the kinds of its alignments; it appears in
+error messages, in provenance (`"axiom": "axiom6"` in `beloch:edges`) and
+here, and it is no type of its own. A set that is none of the seven is an
+error naming its alignments.
+
+A construction holds what determines the line: its alignments and its
+`heading`. What determines the fold, `toward`, `moving` and the placement,
+are items of the statement that reads the construction (ADR 0031). A
+binding takes the side items as a write does, `--k = (map --v onto --h)
+(toward .b)`, so a bound line is selected the way a fold along it would
+be. A construction inside an expression takes no selection; it is bound
+first. A `toward` written inside a construction is an error, with the hint
+`write it as an item of the write: (toward .p)`.
 
 A construction over several fold lines names them and lets each alignment
 say which line folds: `(align --a --b (--a .p onto --l) (--b .q onto --m)
@@ -399,6 +425,186 @@ folds, `(--a .p onto --l)`, and a doubly folded alignment as `(--a .r onto
 alignment on a virtual point (Alperin and Lang's `AL10`) is written, is not
 decided and waits for the first two-fold construction the kernel can solve.
 :::
+
+### Selection
+
+Axioms 5, 6 and 7 leave finitely many candidate lines, usually more than
+one, and the statement that reads the construction keeps one of them
+([def-selection](/model/#def-selection)). A candidate creases a face of
+the current state; a line off the paper, or one grazing an edge or a
+corner, creases nothing and is no candidate. An `onto` alignment is an
+incidence: after the fold, one of its two objects lies on the other, and
+either may be the one that moves, so `(--l onto .p)` means `(.p onto
+--l)`. The stages run in order, numbered as in the model, and each error
+below names the stage that left no line or several.
+
+1. `(heading --l)` keeps the candidates whose line makes the smallest
+   angle with `--l`. The position of `--l` plays no part, and a tie passes
+   on to `toward`.
+2. `(toward …)` names the side of each candidate that stays: the side that
+   holds the point, or the side the line lies on. A point on the
+   candidate, or a line the candidate crosses on the paper, names no side
+   of it. `(moving …)` names the side that folds over: the side of its
+   first anchor point off the candidate, or the side of a line's material.
+   With both items, `moving` has to name the side opposite `toward`.
+3. A candidate remains when the fold with that side carries out every
+   alignment: one of its objects lies on the side that folds over and lands
+   on the other, where a line landing on a point needs paper at the place
+   that lands, or a point lies on the candidate and on its target line
+   already. A candidate for which stage 2 names no side does not remain.
+   With neither item, a candidate remains when either side carries the
+   construction out.
+4. Among several remaining candidates, `toward` keeps the one that lands
+   its material nearest it: everything that folds over, or with `(x toward
+   …)` only the part of `x`. Distances are between sets and compared
+   exactly.
+
+The side that stage 2 names is the side the fold moves. With no side item,
+the side that alone carries the construction out folds over, and where both
+do, the side of the first object as the program writes it: `fold (map .a
+onto .b)` folds `.a` onto `.b`, and `fold (map .a onto .b) (toward .a)`
+folds `.b` onto `.a`. Where that object names no side either, a line lying
+across the candidate or a point on it, the write needs `toward` or
+`moving`. `toward` names the side that stays on every write: on a
+construction of one line, on a fold along an existing crease, `fold (--v)
+(toward .b)`, on `reverse (--h) (toward .d)`, whose tip lies opposite `.d`,
+and on a placed fold, whose block is the material opposite the `toward`
+where the write has no anchor.
+
+```{.bel .frag}
+fold (map .a onto .b) (toward .a)
+
+; assert .b = (0, 0)
+```
+
+`(x toward .u)` names what goes toward `.u`. `x` is one of the objects of
+the construction's alignments, compared by place, and the candidates that
+do not fold `x` over drop out at stage 3.
+
+```grammar
+toward_subject := point_operand | line_operand
+```
+
+Errors, with the stage that raises them:
+
+- no candidate crosses the paper: "map .p onto --d through .q: no crease
+  lands on the paper, so there is no fold to make";
+- no candidate carries out the construction: with `toward`, "no fold of map
+  .p onto --d through .q keeps .x on the side that stays and carries out
+  its alignments"; with `moving` alone, "no fold of … moves .c and carries
+  out its alignments"; with neither, "no fold of … carries out all its
+  alignments at once";
+- `toward` and `moving` naming the same side: "toward .x and moving .c name
+  the same side of the fold line", hint "drop one of them";
+- a `toward` on a line that determines one: "toward .x names no side of the
+  fold line";
+- `(x toward …)` with an `x` that is no object of the construction: "x is
+  none of the objects of …";
+- two candidates landing their material equally near `toward`: "toward .x
+  lies as near to where one fold of … lands its material as to where
+  another does", hint "name what goes toward .x, e.g. (.p toward .x)";
+- several candidates remaining without `toward`: "map .p onto --d through .q
+  is ambiguous: 2 folds carry it out, all landing on the paper", hint "add
+  (toward .x) or a heading";
+- `heading` on a construction that determines one line, a parallel axiom 5
+  among them: "this construction determines one line", hint "drop heading";
+- `toward` or `moving` on a `mark` along an existing line, which selects
+  nothing and moves nothing.
+
+### Axiom 5, a line onto a line
+
+`(map --l1 onto --l2)` folds `--l1` onto `--l2` along an angle bisector
+[@justin1986, §8.1, operation ⑤], [@hull2020, §1.5]. Two lines that cross
+have two bisectors, perpendicular to each other. Two parallel lines have
+one midline, and two identical lines are an error, "lines are identical".
+A line's material is the segments of a crease, or the chord of the paper
+under a line bound by `=`. The kite base folds an edge onto the long
+diagonal; one bisector crosses the paper and the other touches it only at
+`.a`, so only the first is a candidate.
+
+```{.bel .frag}
+mark (through .a .c) as --ac
+fold (map --da onto --ac)
+
+; assert steps = 1
+```
+
+Where the two lines cross inside the material of `--l1`, each bisector has
+material of both lines on both sides. `(--l1 toward .x)` measures the part
+of `--l1` on the side away from `.x`: the two folds land it on the two rays
+of `--l2` from the crossing, and the nearer landing is kept. Two landings
+on the same ray, as long as each other, are equally near every point, and
+so are two landings on opposite rays for a point on the perpendicular to
+`--l2` through the crossing
+([lem-crossing-landing](/model/#lem-crossing-landing)). A bare `toward`
+measures the part of `--l2` that folds over too, and ties more often.
+`moving` then separates the candidates by the flap it names. A fold with no
+side item whose `--l1` lies across the fold line is an error, "--l1
+straddles the fold line", hint "add `moving` to pick the swinging flap".
+
+```{.bel .frag}
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+fold (map --ac onto --bd) (toward .b) (moving .c)
+
+; assert .c = .b
+```
+
+The bisector of two rational lines is irrational in general, slope
+$\sqrt2 - 1$ for $y = 0$ and $y = x$; equality, parallelism and the paper
+tests stay exact (`SPECIFICATION.md` §6).
+
+### Axiom 6, a point onto a line through a point
+
+`(map .p onto --d through .q)` folds `.p` onto `--d` with a crease through
+`.q` [@justin1986, §8.1, operation ⑥]. `.q` lies on the crease, so it is as
+far from `.p` as from the landing on `--d`, which lies on the circle about
+`.q` through `.p`: up to two landings, and a crease for each, the
+perpendicular bisector of `.p` and its landing. Square roots suffice; cube
+roots first appear with axiom 7.
+
+The bird base's kite crease is the case the paper settles: on the
+preliminary base, `map .sr onto --mid through .c` has two candidates, and
+the outward one meets the folded base only at `.c`
+(`examples/bases/bird-base.bel`). The largest equilateral triangle in the
+square needs `toward`, since both candidates cross the paper
+([fig-candidates](/model/#fig-candidates)).
+
+Errors of its own: `.p` and `.q` the same point, "…: .p and .q are the
+same point, so no fold exists"; the circle missing `--d`, "cannot fold .p
+onto --d through .q: out of reach". When `.p` lies on `--d` already, the
+identity landing is dropped and the mirror landing gives the crease.
+
+### Axiom 7, two points onto two lines
+
+`(map .p onto --d and .q onto --e)` folds `.p` onto `--d` and `.q` onto
+`--e` with one crease [@justin1986, §8.1, operation ⑦]. Each alignment
+traces a parabola with focus the point and directrix the line, and the
+crease is a common tangent of the two, a root of a cubic: up to three
+candidates [@hull2020, §2.3–2.4]. This is the operation that doubles the
+cube and trisects an angle, beyond ruler and compass. The crease is
+irrational in general, its coordinates in a field $\mathbb{Q}(\alpha)$ with
+$\alpha$ algebraic of degree 3, and they are compared exactly.
+
+A candidate with `.p` and `.q` on opposite sides still carries out both
+alignments when the side of `.p` folds over and has paper of `--e` at the
+place that lands on `.q`: `.p` lands on `--d`, and `--e` lands on `.q`.
+`(.p toward .x)` measures where `.p` lands.
+
+```{.bel .frag}
+mark (through .a .c) as --diag
+mark (through .b .d) as --anti
+fold (map .a onto --anti and .d onto --diag) (.a toward .b)
+
+; assert .a = (1, 0)
+; assert .d = (1, 1)
+```
+
+Errors of its own: `.q` on `--e` already, "…: .q already lies on --e",
+with a hint to use axiom 6 and axiom 4 instead; `--d` parallel to `--e`,
+"…: --d and --e are parallel, so the cubic degenerates and no fold exists";
+no common tangent, "cannot fold .p onto --d and .q onto --e: out of reach
+(no common tangent)".
 
 ## Annotations
 
@@ -530,7 +736,6 @@ with its home.
 ```grammar-external
 point_operand   ; SPECIFICATION.md Appendix A
 line_operand    ; SPECIFICATION.md Appendix A
-prose_axiom     ; SPECIFICATION.md §4.1 to §4.5c
 bind_stmt       ; SPECIFICATION.md Appendix A
 def_stmt        ; SPECIFICATION.md Appendix A
 apply_stmt      ; SPECIFICATION.md Appendix A

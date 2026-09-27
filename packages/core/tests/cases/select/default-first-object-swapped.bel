@@ -1,0 +1,8 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; The same alignment written the other way round moves the other edge.
+
+paper square
+fold (map --da onto --ab)
+
+; assert .d = (1, 0)

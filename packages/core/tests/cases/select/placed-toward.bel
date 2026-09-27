@@ -1,0 +1,11 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; A placed fold with toward and no moving: the block on the side opposite
+; .a, both layers above --h, is placed under the flap of .a.
+
+paper square
+fold (map .b onto .a) as --d
+mark (map .a onto .d) as --h
+fold (--h) (toward .a) (under #[.a])
+
+; assert .d = (0, 0)

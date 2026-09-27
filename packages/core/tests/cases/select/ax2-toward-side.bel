@@ -1,0 +1,10 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; toward names the side that stays on a construction of one line too: .c
+; stays, so the side of .a folds over and .a lands on .b.
+
+paper square
+fold (map .a onto .b) (toward .c)
+
+; assert steps = 1
+; assert .a = (1, 0)

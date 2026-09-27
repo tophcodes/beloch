@@ -1,0 +1,15 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; Axiom 7: both candidates carry out the two alignments, the horizontal one
+; by folding the corner .d onto --diag at .a and --anti onto .a. (.a toward
+; .b) keeps the candidate that folds .a over and lands it nearest .b: the
+; vertical one, which lands .a on .b and .d on .c (#58).
+
+paper square
+mark (through .a .c) as --diag
+mark (through .b .d) as --anti
+fold (map .a onto --anti and .d onto --diag) (.a toward .b)
+
+; assert steps = 1
+; assert .a = (1, 0)
+; assert .d = (1, 1)

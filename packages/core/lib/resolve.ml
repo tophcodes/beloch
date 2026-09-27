@@ -759,6 +759,15 @@ let default_move_side (ctx : Ctx.ctx) (axis : Geom.line) (fa : Ast.flap_arg) (sp
       | [] -> Error.fail span "empty flap selector")
   | Ast.FlapLine _ -> side_of_flap_arg ctx axis fa span
 
+(* The moving side a write reads: the one the side items fixed, else the one
+   its anchor names. *)
+let moving_side_of (ctx : Ctx.ctx) (axis : Geom.line) ~(anchor : Ast.flap_arg option)
+    ?side (span : Error.span) : int =
+  match (side, anchor) with
+  | Some s, _ -> s
+  | None, Some a -> default_move_side ctx axis a span
+  | None, None -> Error.fail span "this fold needs `moving .p` to choose the side"
+
 let target_of (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span) :
     Fold_state.scope_target =
   match fa with
@@ -927,16 +936,21 @@ let resolve_mark_flap (ctx : Ctx.ctx) (layer_opt : Ast.flap_arg option)
 
 (* ---- placed folds ---- *)
 
-let placed_fold_plan (ctx : Ctx.ctx) (axis : Geom.line) ~(anchor : Ast.flap_arg)
-    ~(place : Ast.place_dir * Ast.flap_arg) (span : Error.span) :
+let placed_fold_plan (ctx : Ctx.ctx) (axis : Geom.line) ~(anchor : Ast.flap_arg option)
+    ?side ~(place : Ast.place_dir * Ast.flap_arg) (span : Error.span) :
     int * bool array * Fold_state.placement =
   let st = !(ctx.state) in
   let n = Array.length (Fold_state.faces st) in
-  let move_side = default_move_side ctx axis anchor span in
+  let move_side = moving_side_of ctx axis ~anchor ?side span in
   let piece side fi =
     Geom.clip_convex_halfplane axis side (Fold_state.table_polygon_ccw st fi)
   in
-  let cluster = resolve_flap_cluster ctx anchor span in
+  (* without an anchor, every layer on the moving side is the block *)
+  let cluster =
+    match anchor with
+    | Some a -> resolve_flap_cluster ctx a span
+    | None -> List.init n Fun.id
+  in
   let block = Array.make n false in
   List.iter
     (fun fi -> if Array.length (piece move_side fi) >= 3 then block.(fi) <- true)
@@ -1003,18 +1017,22 @@ let placement_failure_message (dir : Ast.place_dir) (target : Ast.flap_arg)
         word (fstr target)
   | v -> Fold_state.violation_to_string v
 
-let tip_faces (ctx : Ctx.ctx) (axis : Geom.line) ~(anchor : Ast.flap_arg)
+let tip_faces (ctx : Ctx.ctx) (axis : Geom.line) ~(anchor : Ast.flap_arg option) ?side
     (span : Error.span) : int * bool array =
   let st = !(ctx.state) in
   let n = Array.length (Fold_state.faces st) in
-  let move_side = default_move_side ctx axis anchor span in
+  let move_side = moving_side_of ctx axis ~anchor ?side span in
   let beyond fi =
     Array.length
       (Geom.clip_convex_halfplane axis move_side (Fold_state.table_polygon_ccw st fi))
     >= 3
   in
   let tip = Array.make n false in
-  let seeds = List.filter beyond (anchor_faces ctx anchor span) in
+  (* without an anchor, the tip grows from every layer beyond the axis *)
+  let seeds =
+    List.filter beyond
+      (match anchor with Some a -> anchor_faces ctx a span | None -> List.init n Fun.id)
+  in
   if seeds = [] then
     Error.fail span "the moving flap has no material on the moving side";
   let hinges = Fold_state.hinges st in

@@ -90,7 +90,7 @@ let cstr (c : Ast.construction) : string =
   | [] -> ""
   | ns -> String.concat " " (List.map (fun n -> "--" ^ n) ns) ^ " ")
   ^ String.concat "; " (alignments c)
-  ^ match c.Ast.c_toward with None -> "" | Some p -> " toward " ^ pstr p
+  ^ match c.Ast.c_heading with None -> "" | Some l -> "; heading " ^ lstr l
 
 let mstr (m : Ast.markable) : string =
   match m with
@@ -106,6 +106,19 @@ let outstr (o : Ast.output) : string =
 
 let optstr f = function None -> "-" | Some v -> f v
 
+let towardstr (t : Ast.toward_item) : string =
+  (match t.Ast.subject with
+  | Some (Ast.AoPoint p) -> pstr p ^ " "
+  | Some (Ast.AoLine l) -> lstr l ^ " "
+  | None -> "")
+  ^ match t.Ast.target with Ast.TowardPoint p -> pstr p | Ast.TowardLine l -> lstr l
+
+(* the side items, printed only where given so the shapes without them stay
+   as they are *)
+let sidestr (toward : Ast.toward_item option) (moving : Ast.flap_arg option) : string =
+  (match toward with Some t -> " toward=" ^ towardstr t | None -> "")
+  ^ match moving with Some m -> " moving=" ^ fastr m | None -> ""
+
 let mvstr (d : Ast.mv_constraint) : string =
   match d with
   | Ast.MvFree -> "free"
@@ -115,10 +128,12 @@ let mvstr (d : Ast.mv_constraint) : string =
 (* every part of a statement a permutation test compares, spans dropped *)
 let stmt_shape (s : Ast.stmt) : string =
   match s with
-  | Ast.BindLine (n, c, _) -> Printf.sprintf "bind --%s = (%s)" n (cstr c)
+  | Ast.BindLine (n, c, sd, _) ->
+      Printf.sprintf "bind --%s = (%s)%s" n (cstr c)
+        (sidestr sd.Ast.s_toward sd.Ast.s_moving)
   | Ast.BindBundle (n, l, _) -> Printf.sprintf "bundle --%s = %s" n (lstr l)
-  | Ast.Mark (out, m, ext, dir, layer, _) ->
-      Printf.sprintf "mark %s %s extent=%s intent=%s on=%s" (outstr out)
+  | Ast.Mark (out, m, ext, dir, layer, sd, _) ->
+      Printf.sprintf "mark %s %s extent=%s intent=%s on=%s%s" (outstr out)
         (mstr m)
         (match ext with
         | Ast.Full -> "full"
@@ -126,8 +141,9 @@ let stmt_shape (s : Ast.stmt) : string =
         | Ast.At p -> "at " ^ pstr p)
         (match dir with Ast.Mountain -> "mountain" | Ast.Valley -> "valley")
         (optstr fastr layer)
+        (sidestr sd.Ast.s_toward sd.Ast.s_moving)
   | Ast.Fold (out, m, fs, _) ->
-      Printf.sprintf "fold %s %s moving=%s upto=%s dir=%s place=%s"
+      Printf.sprintf "fold %s %s moving=%s upto=%s dir=%s place=%s%s"
         (outstr out) (mstr m)
         (optstr fastr fs.Ast.moving)
         (optstr fastr fs.Ast.up_to)
@@ -139,10 +155,11 @@ let stmt_shape (s : Ast.stmt) : string =
              (match d with Ast.PlaceOver -> "over " | Ast.PlaceUnder -> "under ")
              ^ fastr f)
            fs.Ast.place)
+        (sidestr fs.Ast.toward None)
   | Ast.Reverse (out, m, rs, _) ->
-      Printf.sprintf "reverse %s %s moving=%s outside=%b" (outstr out) (mstr m)
+      Printf.sprintf "reverse %s %s moving=%s outside=%b%s" (outstr out) (mstr m)
         (optstr fastr rs.Ast.rmoving)
-        rs.Ast.outside
+        rs.Ast.outside (sidestr rs.Ast.rtoward None)
   | Ast.Flatten (out, elems, overs, staying, toward, _) ->
       Printf.sprintf "flatten %s rays=[%s] overs=[%s] staying=%s toward=%s"
         (outstr out)
@@ -172,10 +189,10 @@ let shape1 (src : string) : string = stmt_shape (parse1 src)
 (* the construction of a one-statement program whose verb carries a motion *)
 let construction1 (src : string) : Ast.construction =
   match parse1 src with
-  | Ast.Mark (_, Ast.MConstruction c, _, _, _, _)
+  | Ast.Mark (_, Ast.MConstruction c, _, _, _, _, _)
   | Ast.Fold (_, Ast.MConstruction c, _, _)
   | Ast.Reverse (_, Ast.MConstruction c, _, _)
-  | Ast.BindLine (_, c, _) ->
+  | Ast.BindLine (_, c, _, _) ->
       c
   | _ -> Alcotest.fail ("expected a construction in: " ^ src)
 
@@ -202,8 +219,8 @@ let test_parse_named_and_anon () =
   Alcotest.(check int) "three statements" 3 (List.length prog);
   match prog with
   | [
-   Ast.BindLine ("d1", _, _);
-   Ast.Mark (Ast.Anonymous, Ast.MConstruction _, Ast.Full, Ast.Valley, None, _);
+   Ast.BindLine ("d1", _, _, _);
+   Ast.Mark (Ast.Anonymous, Ast.MConstruction _, Ast.Full, Ast.Valley, None, _, _);
    Ast.Point ("center", Ast.PsExpr (Ast.PSelect _), _);
   ] ->
       ()
@@ -239,8 +256,9 @@ let test_parse_map_onto_line () =
 
 let test_parse_bisect () =
   Alcotest.(check string)
-    "line onto line with toward" "--v onto --h toward .a"
-    (cstr (construction1 "mark (map --v onto --h toward .a)"))
+    "line onto line, toward an item of the mark"
+    "mark anon construction{--v onto --h} extent=full intent=valley on=- toward=.a"
+    (shape1 "mark (map --v onto --h) (toward .a)")
 
 let test_parse_map_through () =
   Alcotest.(check string)
@@ -249,8 +267,9 @@ let test_parse_map_through () =
 
 let test_parse_map_through_toward () =
   Alcotest.(check string)
-    "map through toward" ".c onto --d; through .a toward .b"
-    (cstr (construction1 "mark (map .c onto --d through .a toward .b)"))
+    "map through toward"
+    "mark anon construction{.c onto --d; through .a} extent=full intent=valley on=- toward=.b"
+    (shape1 "mark (map .c onto --d through .a) (toward .b)")
 
 let test_parse_map_both () =
   Alcotest.(check string)
@@ -259,8 +278,9 @@ let test_parse_map_both () =
 
 let test_parse_map_both_toward () =
   Alcotest.(check string)
-    "map both toward" ".a onto --d; .c onto --e toward .b"
-    (cstr (construction1 "mark (map .a onto --d and .c onto --e toward .b)"))
+    "map both toward"
+    "mark anon construction{.a onto --d; .c onto --e} extent=full intent=valley on=- toward=.b"
+    (shape1 "mark (map .a onto --d and .c onto --e) (toward .b)")
 
 let test_parse_fold_action () =
   Alcotest.(check string)
@@ -302,9 +322,9 @@ let test_parse_shorthand_rhs () =
   Alcotest.(check int) "three statements" 3 (List.length prog);
   match prog with
   | [
-      Ast.BindLine ("d", _, _);
+      Ast.BindLine ("d", _, _, _);
       Ast.Point ("m", Ast.PsExpr (Ast.PSelect _), _);
-      Ast.BindLine ("e", _, _);
+      Ast.BindLine ("e", _, _, _);
     ] ->
       ()
   | _ -> Alcotest.fail "unexpected AST shape"
@@ -496,7 +516,7 @@ let reference_writes =
     "flatten (--ea) (--ec) (--eb) (toward .a) as --ear";
     "flatten (--ba \\ .a) (--bc \\ .c) as --r";
     "flip";
-    "--l = (map --a onto --b toward .p)";
+    "--l = (map --a onto --b) (toward .p)";
     "--x = [--ea --eb] & .a";
     "fold (align (.a onto .c)) (moving .a)";
     "fold (align (through .m) (through .n)) (moving .b) (under .p)";
@@ -505,7 +525,7 @@ let reference_writes =
     "mark (align (perp --l) (through .p))";
     "mark (align (.p onto --l) (through .q))";
     "mark (align (.p onto --l) (perp --m))";
-    "mark (align (--l onto --m) toward .p)";
+    "mark (align (--l onto --m)) (toward .p)";
     "mark (align (.p onto --l) (.q onto --m))";
     "mark (align --a --b (--a .p onto --l) (--b .q onto --m) (--a .r onto --b .s))";
   ]
@@ -780,7 +800,7 @@ let test_items_any_order_flatten () =
 
 (* axiom, prose spelling, align spelling, the alignment list the prose form
    fixes. The two spellings agree as multisets, which is what recognition
-   reads (ADR 0022). *)
+   reads (ADR 0031). *)
 let construction_pairs =
   [
     ( "axiom 1",
@@ -800,8 +820,8 @@ let construction_pairs =
       "mark (align (.p onto --l) (perp --m))",
       [ ".p onto --l"; "perp --m" ] );
     ( "axiom 5",
-      "mark (map --l onto --m toward .p)",
-      "mark (align (--l onto --m) toward .p)",
+      "mark (map --l onto --m) (toward .p)",
+      "mark (align (--l onto --m)) (toward .p)",
       [ "--l onto --m" ] );
     ( "axiom 6",
       "mark (map .p onto --l through .q)",
@@ -848,10 +868,23 @@ let test_align_alignment_order_is_free () =
     (alignment_set (construction1 "mark (align (.p onto --l) (through .q))"))
     (alignment_set (construction1 "mark (align (through .q) (.p onto --l))"))
 
-let test_align_toward_is_kept () =
+let test_align_heading_is_kept () =
   Alcotest.(check string)
-    "toward belongs to the construction" "--l onto --m toward .p"
-    (cstr (construction1 "mark (align (--l onto --m) toward .p)"))
+    "heading belongs to the construction" "--l onto --m; heading --n"
+    (cstr (construction1 "mark (align (--l onto --m) (heading --n)) (toward .p)"))
+
+let test_toward_inside_refused () =
+  List.iter
+    (fun src ->
+      match Beloch.parse ~filename:"t.bel" ("paper square\n" ^ src ^ "\n") with
+      | _ -> Alcotest.fail ("expected a refusal: " ^ src)
+      | exception Error.Beloch_error (_, message, hint) ->
+          Alcotest.(check string) "the message"
+            "toward selects the fold, not the line; it is an item of the write"
+            message;
+          Alcotest.(check (option string)) "the hint"
+            (Some "write it as an item of the write: (toward .p)") hint)
+    [ "mark (map --l onto --m toward .p)"; "mark (align (--l onto --m) toward .p)" ]
 
 let test_align_named_fold_lines_kept () =
   (* AL6ab8, the two-fold construction of BELOCH.md: the names in the head
@@ -874,8 +907,8 @@ let test_bind_line_takes_a_construction () =
 
 let test_bind_line_align () =
   Alcotest.(check string)
-    "a line binding in canonical form" "bind --l = (--a onto --b toward .p)"
-    (shape1 "--l = (align (--a onto --b) toward .p)")
+    "a line binding in canonical form" "bind --l = (--a onto --b) toward=.p"
+    (shape1 "--l = (align (--a onto --b)) (toward .p)")
 
 (* ---- The output clause ---- *)
 
@@ -1116,7 +1149,9 @@ let () =
             test_prose_and_align_agree_as_sets;
           Alcotest.test_case "alignment order is free" `Quick
             test_align_alignment_order_is_free;
-          Alcotest.test_case "toward is kept" `Quick test_align_toward_is_kept;
+          Alcotest.test_case "heading is kept" `Quick test_align_heading_is_kept;
+          Alcotest.test_case "toward inside a construction is refused" `Quick
+            test_toward_inside_refused;
           Alcotest.test_case "named fold lines are kept" `Quick
             test_align_named_fold_lines_kept;
           Alcotest.test_case "a line binding takes a construction" `Quick

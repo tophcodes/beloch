@@ -6,6 +6,9 @@ type removal =
   | By_paper   (** creases no face of the state *)
   | By_toward  (** ruled out by the `toward` point *)
   | By_moving  (** ruled out by the anchor of a `fold` *)
+  | By_heading  (** a direction farther from the `heading` line than another *)
+  | By_moved
+      (** its fold cannot move everything the construction moves at once *)
   | By_halves  (** the hinge does not cut the tip into two halves *)
   | By_bodies  (** a half of the tip has no body *)
   | By_interleaved  (** the bodies of the two halves are not separated *)

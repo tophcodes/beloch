@@ -1,0 +1,14 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; The same fold with a bare toward measures everything that folds over,
+; the part of --h as well. Both candidates land a part of --h on the lower
+; half of --v, equally near .u, so the selection names no line and the hint
+; names what to measure (ADR 0031).
+
+paper square
+mark (map .a onto .b) as --v
+mark (map .a onto .d) as --h
+.u = free on --ab from .b at 1/5
+fold (map --v onto --h) (toward .u)
+
+; expect error "toward .u lies as near to where one fold of map --v onto --h lands its material as to where another does"

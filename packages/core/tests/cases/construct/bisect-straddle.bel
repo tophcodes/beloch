@@ -3,7 +3,7 @@
 paper square
 mark (through .a .c) as --ac       ; TODO(pinch): landmark — replace with pinch when shipped
 mark (through .b .d) as --bd       ; TODO(pinch): landmark — replace with pinch when shipped
-fold (map --ac onto --bd toward .b) (moving .c)
+fold (map --ac onto --bd) (toward .b) (moving .c)
 
 ; assert faces = 2
 ; assert steps = 1

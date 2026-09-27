@@ -247,7 +247,7 @@ der Schnittpunkt. Die Faltlinie als Gerade, die P auf d und Q auf e spiegelt.
 Für die Zeichnung: P und sein Spiegelbild P' auf d, die Faltlinie ist die
 Mittelsenkrechte von PP'; dasselbe muss für Q und Q' auf e stimmen, mit
 derselben Faltlinie. Wer das exakt haben will, lässt Beloch die Linie rechnen
-(`map .p onto --d and .q onto --e toward .x`). Die beiden Parabeln, deren
+(`fold (map .p onto --d and .q onto --e) (.p toward .x)`). Die beiden Parabeln, deren
 Tangente die Faltlinie ist, erscheinen in der großen Fassung als feine
 Hüllkurven (Konstruktionsstil: gepunktet, 45 %); in der Favicon-Fassung fallen
 sie weg. Dann bleiben: zwei Punkte, zwei Linien, eine Faltlinie in Tal-Strich

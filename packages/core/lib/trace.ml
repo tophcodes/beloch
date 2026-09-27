@@ -2,6 +2,8 @@ type removal =
   | By_paper
   | By_toward
   | By_moving
+  | By_heading
+  | By_moved
   | By_halves
   | By_bodies
   | By_interleaved
@@ -91,6 +93,8 @@ let removal_json = function
         | By_paper -> "paper"
         | By_toward -> "toward"
         | By_moving -> "moving"
+        | By_heading -> "heading"
+        | By_moved -> "moved"
         | By_halves -> "halves"
         | By_bodies -> "bodies"
         | By_interleaved -> "interleaved"

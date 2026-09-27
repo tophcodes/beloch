@@ -1,0 +1,9 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; Two parallel lines determine one midline, so a heading has nothing to
+; select.
+
+paper square
+fold (align (--ab onto --cd) (heading --da))
+
+; expect error "this construction determines one line"

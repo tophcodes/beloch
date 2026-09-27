@@ -1,11 +1,11 @@
 ---
 id: "0031"
-title: "toward names the side that stays; along names the direction of the crease"
+title: "toward names the side that stays; heading names the direction of the crease"
 date: 2026-09-27
 status: accepted
 ---
 
-# 0031: toward names the side that stays; along names the direction of the crease
+# 0031: toward names the side that stays; heading names the direction of the crease
 
 ## Context
 
@@ -27,69 +27,100 @@ points at where it goes.
 
 ## Decision
 
+**An alignment is an incidence.** `x onto y` states that after the fold the
+image of `x` lies on `y`, which is the same as the image of `y` passing
+through `x`. It names no object as the one that moves; the program says
+which side moves with `toward` and `moving`.
+
 **`toward` names the side that stays.** For each candidate, the side of its
 line that holds the `toward` point stays and the other side folds over.
 `toward` takes a point or a line. A line names the side it lies on; a line
-that the candidate crosses on the paper names no side for that candidate.
+that the candidate crosses on the paper names no side for that candidate,
+and a point on the candidate names none either. A candidate for which
+`toward` names no side does not remain. **`moving` names the side that folds
+over**: the side of its anchor point, or of the first point of a `#[…]`
+selector off the line, or of the material of a line.
 
-**A fold keeps only the candidates it can perform.** Every `onto` alignment
-moves an object: a point, or the material of a line. A candidate remains when
-the fold along it carries out each of them: a moved point lies on the side
-that folds over, and a moved line has material on that side. The part of a
-line on the other side stays where it is; the part that folds over lands on
-the target. Folding a line onto a line it crosses moves the same part on
-paper.
-Whether the side that folds over comes from `toward` (the side opposite the
-point) or from `moving` (the side of the anchor), the condition is the same.
+**A fold keeps only the candidates it can perform.** A candidate remains
+when the fold along it, with the side that folds over, carries out every
+alignment: in each, one of the two objects lies on the side that folds over
+and lands on the other, or a point lies on the candidate and on its target
+line already. A point carried by a line needs paper of that line at the one
+place that lands on it. The part of a line on the other side stays where it
+is. With neither `toward` nor `moving`, a candidate remains when either side
+carries the construction out; the side that alone does so folds over, and
+where both do, the side of the first object of the first alignment folds
+over. That default belongs to the write and gives the alignment no
+direction.
 
-**Among several remaining candidates, `toward` keeps the one that lands the
-material that folds over nearest the `toward` point or line.** Equal
-distances leave the construction ambiguous. `moving` names no target and has
-no such stage: several candidates remaining after `moving` leave the fold
-ambiguous.
+**Among several remaining candidates, `toward` keeps the one that lands its
+material nearest the `toward` point or line**, measured as the distance
+between the two sets. `(toward .u)` measures everything that folds over;
+`(x toward .u)` measures only the part of `x`, one of the objects of the
+construction's alignments, and keeps only the candidates that fold `x`
+over. Equal distances leave the construction ambiguous, and the hint names
+the second form. `moving` names no target and has no such stage: several
+candidates remaining after `moving` leave the fold ambiguous.
 
-**`along` names the direction of the crease.** `along --l` keeps the
+**`heading` names the direction of the crease.** `heading --l` keeps the
 candidate whose line makes the smallest angle with `--l`. The position of
-`--l` plays no part. Equal angles leave the construction ambiguous.
+`--l` plays no part. Equal angles pass the tied candidates on to `toward`;
+without `toward` they leave the construction ambiguous.
 
-**`toward` and `moving` agree or the fold fails.** Both name a side; when they
-name the same side as staying and moving, the fold is an error. When they
-agree, `moving` still names the flap that moves, and it is redundant only
-where it names the flap the fold would take without it.
+**`toward` and `moving` agree or the fold fails.** Both name a side; a
+candidate for which they name the same side as staying and moving does not
+remain, and where that removes every candidate the fold is an error. When
+they agree, `moving` still names the flap that moves, and it is redundant
+only where it names the flap the fold would take without it.
 
-**Each word sits at the level it speaks about.** Alignments and `along`
+**`toward` names the side on every write.** On a fold along an existing
+crease, on `reverse` and on a placed fold, `toward` without `moving` names
+the side that stays. Where the write has no anchor, the material on the
+other side is the flap, the tip or the block that moves.
+
+**Each word sits at the level it speaks about.** Alignments and `heading`
 determine the line and stay inside the construction. `toward`, `moving` and
 the placement determine the fold and are items of the write, as `toward`
 already is in `flatten`. The canonical form parenthesises each part of a
 construction:
 
 ```beloch
-(align (.p onto --l) (through .q) (along --m))
+(align (.p onto --l) (through .q) (heading --m))
 fold (align (.d onto --ef) (through .p)) (toward .c) (moving .d)
-fold (map .d onto --ef through .p) (toward .c)
+fold (map .d onto --ef through .p) (.d toward .c)
 ```
 
 A binding takes items as a write does. `toward` there names the side that
 would stay and `moving` the side that would fold over, so both select as
-they do in a fold: `--k = (map --v onto --h) (toward .b)`. `mark` takes them
-the same way. Where no paper moves, `moving` names a side and no flap. A
-construction inside an expression takes no selection; it is bound first.
+they do in a fold: `--k = (map --v onto --h) (--v toward .b)`. `mark` takes
+them the same way. Where no paper moves, `moving` names a side and no flap.
+A construction inside an expression takes no selection; it is bound first.
 
 **This record supersedes ADR 0022** and carries forward what it decided
 apart from the selection. A construction is its set of alignments, together
-with its named fold lines and its `along`. The prose forms of the seven
+with its named fold lines and its `heading`. The prose forms of the seven
 axioms desugar to that set, and a prose form means what its `align` spelling
 means. An axiom number names one alignment set, recognised by the kinds of
 its alignments, and appears in error messages, provenance and documentation;
 it is no type of its own. A set that is none of the seven is an error naming
-its alignments. `toward` leaves the construction.
+its alignments. `(--l onto .p)` means `(.p onto --l)`. `toward`
+leaves the construction.
 
 ## Alternatives considered
 
+- **The first object of `onto` as the one that moves.** It reads intent
+  into the word order and drops folds that carry out the incidence by moving
+  the target: axiom 7 with its two points on opposite sides of the only
+  candidate, where the fold lands one point on its line and the other line
+  on its point. The word order keeps one role, the default side of a fold
+  that names none.
+- **`(toward .u)` measuring the first object only.** It ties the item at the
+  end of a statement to the first object inside it and reads oddly;
+  `(x toward .u)` names the object where the program needs one.
 - **The line nearest the point**, as `def-selection` stated it. It answers
   where the crease lies, where every other use of `toward` asks where the
   paper goes, and it disagrees with the landing rule on the first programs
-  #58 drew. Its question is served by `along`, which asks it without a
+  #58 drew. Its question is served by `heading`, which asks it without a
   position.
 - **The side of the moved line when a line moves, the landing point when
   points move.** Two rules for one word, and a separate case for a line that
@@ -101,7 +132,7 @@ its alignments. `toward` leaves the construction.
 - **A measure combining angle and position.** It needs a scale that trades
   degrees for lengths, and a reader of a program cannot predict it.
 - **A `select` or `choose` item grouping the selections**, or a sigil per
-  role. With `along` in the construction and `toward` in the write, the
+  role. With `heading` in the construction and `toward` in the write, the
   nesting already separates the roles. Beloch's sigils name sorts of values,
   and alignments and selections are parts of statements.
 - **`moving` with a landing stage.** `moving` names where the flap starts and
@@ -109,19 +140,22 @@ its alignments. `toward` leaves the construction.
 
 ## Consequences
 
-- `def-selection` in `spec/MODEL.md` states the two selections and the
-  condition every fold puts on its candidates. `spec/BELOCH.md` moves
-  `toward` out of the construction, adds `along`, parenthesises the parts of
-  `align`, and gives bindings items. The prose form of axiom 5 loses its
+- `def-selection` in `spec/MODEL.md` states the selection and the condition
+  every fold puts on its candidates. `spec/BELOCH.md` moves `toward` out of
+  the construction, adds `heading` and `(x toward …)`, parenthesises the parts
+  of `align`, and gives bindings items. The prose form of axiom 5 loses its
   `toward`.
-- One rule over the moved material covers axioms 5, 6 and 7. Axiom 7
-  measures both moved points. A line moved onto a line it meets at an oblique
-  angle can select another candidate than before, and tests on such programs
-  change. A line that crosses the other one on the paper becomes selectable:
-  each fold carries the part of it on the side away from `toward`, and the
-  selection is ambiguous only where both folds land that part on the same
-  half of the target.
-- `fig-toward-boundary` keeps its selection: both candidates remain for
+- One rule covers axioms 5, 6 and 7. A line moved onto a line it meets at an
+  oblique angle can select another candidate than before, and tests on such
+  programs change. A line that crosses the other one on the paper becomes
+  selectable: with `(x toward …)` each fold carries the part of `x` on the
+  side away from `toward`, and where the two folds land equally near is
+  stated in `lem-crossing-landing`. A bare `toward` measures the part of the
+  target line that folds over too, and ties more often there.
+- Axiom 7 keeps a candidate with its two points on opposite sides: the fold
+  lands one point on its line and the other line on its point. The figures
+  in #58 that drop such a candidate show the reading this record rejects.
+- `fig-toward-boundary` writes `(.d toward .c)`: both candidates remain for
   `.c`, and the landing stage keeps the one that lands `.d` on the top edge.
 - A redundant `moving` wants a warning. The language has errors with hints
   (ADR 0028) and no warnings; the channel is a decision of its own (#59).

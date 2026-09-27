@@ -8,8 +8,8 @@ let fold_traced src =
   (json, Option.is_some failure)
 
 let triangle toward =
-  "paper square\nmark (map .a onto .b) as --ef\nfold (map .d onto --ef through .a"
-  ^ toward ^ ") as --s\n"
+  "paper square\nmark (map .a onto .b) as --ef\nfold (map .d onto --ef through .a)"
+  ^ toward ^ " as --s\n"
 
 let entries json = json |> member "beloch:trace" |> to_list
 let candidates e = e |> member "candidates" |> to_list
@@ -29,7 +29,7 @@ let test_ambiguous_keeps_both () =
   Alcotest.(check int) "none selected" 0 (count selected cs);
   let err = json |> member "beloch:error" in
   Alcotest.(check bool) "error names the ambiguity" true
-    (Str.string_match (Str.regexp ".*two folds") (err |> member "message" |> to_string) 0);
+    (Str.string_match (Str.regexp ".*is ambiguous: 2 folds") (err |> member "message" |> to_string) 0);
   Alcotest.(check int) "error points at the failing statement" 1
     (err |> member "statement" |> to_int);
   let stmts = json |> member "beloch:statements" |> to_list in
@@ -37,7 +37,7 @@ let test_ambiguous_keeps_both () =
   Alcotest.(check int) "the error names that entry" 1 (e |> member "statement" |> to_int)
 
 let test_toward_selects () =
-  let json, failed = fold_traced (triangle " toward .c") in
+  let json, failed = fold_traced (triangle " (toward .c)") in
   Alcotest.(check bool) "the program succeeds" false failed;
   let cs = candidates (List.nth (entries json) 1) in
   Alcotest.(check int) "one selected" 1 (count selected cs);
@@ -48,7 +48,7 @@ let test_toward_selects () =
     (List.nth (entries json) 1 |> member "frame_index" |> to_int)
 
 let test_conic () =
-  let json, _ = fold_traced (triangle " toward .c") in
+  let json, _ = fold_traced (triangle " (toward .c)") in
   let conics = List.nth (entries json) 1 |> member "conics" |> to_list in
   Alcotest.(check int) "one parabola" 1 (List.length conics);
   let c = List.hd conics in
@@ -226,7 +226,7 @@ let test_flatten_odd () =
 (* .d lands at (1/2, ±√3/2); every point of y = 0 is as near to one landing
    as to the other, so `toward .b` selects nothing *)
 let test_landing () =
-  let json, _ = fold_traced (triangle " toward .c") in
+  let json, _ = fold_traced (triangle " (toward .c)") in
   let lands =
     candidates (List.nth (entries json) 1) |> List.map (fun c -> c |> member "landing" |> floats)
   in
@@ -237,7 +237,7 @@ let test_landing () =
     (List.sort compare (List.map (fun l -> List.nth l 1) lands))
 
 let test_toward_tie () =
-  let json, failed = fold_traced (triangle " toward .b") in
+  let json, failed = fold_traced (triangle " (.d toward .b)") in
   Alcotest.(check bool) "the program fails" true failed;
   let cs = candidates (List.nth (entries json) 1) in
   Alcotest.(check int) "both stay open" 2 (count (fun c -> removed c = None) cs);
@@ -248,7 +248,7 @@ let test_toward_tie () =
   Alcotest.(check bool) "with a hint" true (err |> member "hint" <> `Null)
 
 let test_untraced_unchanged () =
-  let src = triangle " toward .c" in
+  let src = triangle " (toward .c)" in
   let plain = Beloch.fold_string ~filename:"t.bel" src in
   Alcotest.(check bool) "no trace field without --trace" true
     (plain |> member "beloch:trace" = `Null);

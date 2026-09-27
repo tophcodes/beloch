@@ -1,5 +1,5 @@
-(** Axiom construction: the seven Huzita-Justin axioms and the axiom-5
-    bisector-selection path. Every stateful function takes
+(** Axiom construction: the seven Huzita-Justin axioms and the selection
+    among their candidates (ADR 0031). Every stateful function takes
     [(ctx : Ctx.ctx)] as its first parameter. *)
 
 type classified =
@@ -7,20 +7,18 @@ type classified =
   | Ax2 of Ast.point_operand * Ast.point_operand
   | Ax3 of Ast.point_operand * Ast.line_operand
   | Ax4 of Ast.point_operand * Ast.line_operand * Ast.line_operand
-  | Ax5 of Ast.line_operand * Ast.line_operand * Ast.point_operand option
-  | Ax6 of
-      Ast.point_operand * Ast.line_operand * Ast.point_operand
-      * Ast.point_operand option
+  | Ax5 of Ast.line_operand * Ast.line_operand
+  | Ax6 of Ast.point_operand * Ast.line_operand * Ast.point_operand
   | Ax7 of
-      Ast.point_operand * Ast.line_operand * Ast.point_operand
-      * Ast.line_operand * Ast.point_operand option
+      Ast.point_operand * Ast.line_operand * Ast.point_operand * Ast.line_operand
         (** A construction recognised as one of the seven axioms, carrying the
-            operands in the roles its solver reads them (ADR 0022). *)
+            operands in the roles its solver reads them (ADR 0031). *)
 
 val classify : Ast.construction -> classified
 (** Recognise the alignment set as one of the seven, by the multiset of its
     alignment kinds. Fails naming the alignments when the set matches none of
-    them, and when the head names fold lines. Order-insensitive across kinds;
+    them, when the head names fold lines, and when a construction that
+    determines one line names an `heading`. Order-insensitive across kinds;
     where a kind repeats, source order fixes the operand roles. *)
 
 val tag : classified -> string
@@ -32,36 +30,35 @@ val implied_point : classified -> Ast.point_operand option
     7, and [None] for the rest. Takes the classification {!axis_of} hands
     back, so a construction is recognised once per statement. *)
 
-type ax5_pending
-(** Axiom 5 (`map --l1 onto --l2`) needs its candidate bisectors selected
-    against the current fold state (material of l1, paper incidence,
-    `toward` direction), so {!axis_of} defers that choice: intersecting
-    lines yield [Ax5], everything else a fully-resolved [Axis]. Opaque —
-    only {!select_axiom5_bind}, {!select_axiom5_fold} and {!ax5_sources}
-    read it. *)
-
-type axis_result =
-  | Axis of Geom.line * string * string list
-  | Ax5 of ax5_pending
+type pending
+(** A construction's candidates in the current state, with what it moves,
+    waiting for the side items of the statement that reads it. *)
 
 val axis_of :
-  ?trace:bool -> Ctx.ctx -> Error.span -> Ast.construction -> classified * axis_result
-(** Axis line + provenance (axiom tag, source names), evaluated against the
-    current table positions. Recognises the construction with {!classify}
-    first, so the tag is {!tag}'s and the sources are the operands that
-    recognition hands back; the classification comes back with the axis for
-    callers that read the operands again ({!implied_point}). *)
+  ?trace:bool -> Ctx.ctx -> Error.span -> Ast.construction -> classified * pending
+(** Recognise the construction with {!classify} and solve it against the
+    current table positions. Fails where no candidate exists at all. *)
 
-val select_axiom5_bind :
-  ?trace:bool -> Ctx.ctx -> Error.span -> ax5_pending -> Geom.line
-(** Resolve a deferred axiom-5 axis for a `bind`/`mark` (no fold spec to
-    read a `moving` anchor from). *)
+type chosen = {
+  line : Geom.line;
+  fold_side : int option;
+      (** the sign of the side that folds over, when `toward` or a moved
+          line fixes it; [None] leaves the side to the anchor *)
+  sources : string list;  (** provenance *)
+}
 
-val select_axiom5_fold :
-  Ctx.ctx -> Error.span -> ax5_pending -> fs:Ast.fold_spec -> Geom.line * int option
-(** Resolve a deferred axiom-5 axis for a `fold`. Returns the chosen axis
-    plus an optional move-side override (`Some` when the direction is
-    derived, not read off an explicit `moving` anchor). *)
+val select :
+  ?trace:bool -> Ctx.ctx -> Error.span -> pending -> fold:bool -> Ast.sides -> chosen
+(** Keep one candidate (spec/MODEL.md, def-selection): those that cross the
+    paper, those nearest in direction to the `heading`, those whose fold
+    carries out every alignment with the side that stays named by `toward`
+    or the side that folds over named by `moving`, and among several the
+    one that lands the moved material nearest the `toward`. Fails naming the
+    stage that left none or several, and where `toward` and `moving` name
+    the same side. [fold] asks for a side the fold can take, which a moved
+    line lying across the fold line does not give. Records the candidates in
+    the trace unless [trace] is [false]. *)
 
-val ax5_sources : ax5_pending -> string list
-(** Provenance source names, including `toward` when present. *)
+val fold_side_of_line : Ctx.ctx -> Error.span -> Geom.line -> Ast.sides -> int option
+(** The side that folds over along an axis that is no construction: the one
+    opposite the `toward`, checked against `moving` when both are given. *)

@@ -7,7 +7,7 @@
 ; fold's mirror point instead, while .c (on the untouched half) stays put.
 paper square
 mark (map .a onto .b) as --v
-fold (map --cd & .d onto --v toward .a) (moving .d)
+fold (map --cd & .d onto --v) (toward .a) (moving .d)
 
 ; assert .d = (1/2, 1/2)
 ; assert .c = (1, 1)

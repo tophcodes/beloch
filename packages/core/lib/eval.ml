@@ -89,20 +89,16 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
   let outside = if valley then Fold_state.Top else Fold_state.Bottom in
   match (fs.Ast.place, fs.Ast.up_to) with
   | Some place, _ ->
-      (* A placed fold: the anchor flap's material beyond the axis moves as one
-         block and is spliced next to the target flap instead of at the outside
-         of the stack. The direction follows from the placement, so [valley] is
-         unused here. [side_override] is discarded: axiom 5 is its only source
-         and it is [None] whenever [moving] is present; with [moving] absent
-         and nothing implied this branch errors, so the override is never
-         live here. *)
-      let anchor =
-        match anchor_arg with
-        | Some fa -> fa
-        | None -> Error.fail span "a placed fold needs `moving .p` to name the flap"
-      in
+      (* A placed fold: the anchor flap's material beyond the axis, or with
+         no anchor every layer on the side the side items fixed, moves as one
+         block and is spliced next to the target flap instead of at the
+         outside of the stack. The direction follows from the placement, so
+         [valley] is unused here. *)
+      if anchor_arg = None && side_override = None then
+        Error.fail span "a placed fold needs `moving .p` or `toward .p` to name the flap";
       let move_side, block, placement =
-        Resolve.placed_fold_plan ctx axis ~anchor ~place span
+        Resolve.placed_fold_plan ctx axis ~anchor:anchor_arg ?side:side_override ~place
+          span
       in
       record ~move_side block placement;
       (match
@@ -247,13 +243,12 @@ let crease_id_for (ctx : Ctx.ctx) (out : Ast.output) ~(fresh : unit -> int) :
           | Material _ -> promote_crease ctx n cv
           | Frozen _ | Mark _ | Bundle _ | Edge _ -> () )
 
-(* Resolve a markable to either a fresh construction (axis + provenance + the
-   axiom-5 side override / implied-anchor, mirroring the old Crease arm) or
-   an existing line to fold/mark along. [fold_opt] is [Some fs] only when
-   called from a `fold` statement (axiom-5 direction resolution differs
-   between bind/mark and fold). *)
+(* Resolve a markable to either a fresh construction (axis, provenance, the
+   side that folds over where the side items fix it, and the implied anchor)
+   or an existing line to fold or mark along. [fold] is true for the writes
+   that move paper, which need a side the fold can take. *)
 let resolve_markable (ctx : Ctx.ctx) (span : Error.span) (out : Ast.output)
-    (fold_opt : Ast.fold_spec option) (m : Ast.markable) =
+    ~(fold : bool) (sides : Ast.sides) (m : Ast.markable) =
   match m with
   | Ast.MConstruction c ->
       let cid, check_axis, bind_out =
@@ -268,39 +263,42 @@ let resolve_markable (ctx : Ctx.ctx) (span : Error.span) (out : Ast.output)
             | Anon -> None)
         | _ -> None
       in
-      (* axiom 5 defers bisector choice to the fold state (direction / paper
-         incidence); every other axiom resolves its axis up front *)
-      let cl, axis_res = Axiom.axis_of ctx span c in
-      let axis, axiom, sources, side_override =
-        match axis_res with
-        | Axiom.Axis (axis, axiom, sources) -> (axis, axiom, sources, None)
-        | Axiom.Ax5 p ->
-            let axis, so =
-              match fold_opt with
-              | None -> (Axiom.select_axiom5_bind ctx span p, None)
-              | Some fs -> Axiom.select_axiom5_fold ctx span p ~fs
-            in
-            (axis, "axiom5", Axiom.ax5_sources p, so)
+      let cl, pending = Axiom.axis_of ctx span c in
+      let { Axiom.line = axis; fold_side = side_override; sources } =
+        Axiom.select ctx span pending ~fold sides
       in
+      let axiom = Axiom.tag cl in
       let prov : State.provenance option =
         Some { State.axiom; sources; span; name = prov_name; stmt = Ctx.stmt_index ctx }
       in
       check_axis axis;
-      `Fresh (cid, bind_out, axis, prov, side_override, Axiom.implied_point cl)
+      (* the implied anchor seeds the moving flap only where it lies on the
+         side that folds over; an alignment met by the other object leaves it
+         behind *)
+      let implied =
+        match (Axiom.implied_point cl, side_override) with
+        | Some po, Some s when Geom.side_of_line axis (Resolve.table_of ctx po) <> s -> None
+        | ip, _ -> ip
+      in
+      `Fresh (cid, bind_out, axis, prov, side_override, implied)
   | Ast.MLine lo -> `Existing lo
 
 let eval_mark (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
     (ext : Ast.extent) (dir : Ast.direction) (layer_opt : Ast.flap_arg option)
-    (span : Error.span) : unit =
+    (sides : Ast.sides) (span : Error.span) : unit =
   let intent = intent_of dir in
   (* a `mark` along an already-bound line records a material chord of its
      own: the axis slot of `mark` is line-sorted, so a Frozen name stands
      here where `fold`'s axis would refuse it. *)
   let cid, bind_out, table_axis, prov =
-    match resolve_markable ctx span out None m with
+    match resolve_markable ctx span out ~fold:false sides m with
     | `Fresh (cid, bind_out, axis, prov, _side_override, _implied) ->
         (cid, bind_out, axis, prov)
     | `Existing lo ->
+        if sides.Ast.s_toward <> None || sides.Ast.s_moving <> None then
+          Error.fail ~hint:"drop them" span
+            "a mark along an existing line has no candidates to select and moves \
+             nothing, so it takes no toward or moving";
         let axis = Resolve.resolve_line ctx lo in
         let cid, check_axis, bind_out =
           crease_id_for ctx out ~fresh:Fold_state.fresh_crease_id
@@ -383,7 +381,8 @@ let eval_mark (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
 
 let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
     (fs : Ast.fold_spec) (span : Error.span) : unit =
-  match resolve_markable ctx span out (Some fs) m with
+  let sides = { Ast.s_toward = fs.Ast.toward; s_moving = fs.Ast.moving } in
+  match resolve_markable ctx span out ~fold:true sides m with
   | `Fresh (cid, bind_out, axis, prov, side_override, implied) ->
       run_fold ctx ~span ~axis ~fs ~implied ~side_override ~crease_id:cid ~prov;
       (* push the frame BEFORE binding the name: a first-fold crease's
@@ -430,7 +429,8 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
         Some { State.axiom = "fold"; sources = [ "--" ^ cr.Ast.cname ];
                span; name = None; stmt = Ctx.stmt_index ctx }
       in
-      run_fold ctx ~span ~axis ~fs ~implied:None ~side_override:None
+      run_fold ctx ~span ~axis ~fs ~implied:None
+        ~side_override:(Axiom.fold_side_of_line ctx span axis sides)
         ~crease_id:cid ~prov;
       push_frame ctx (Some span);
       bind_out (Material (cid, axis))
@@ -487,26 +487,19 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
             stmt = Ctx.stmt_index ctx;
           }
       in
-      run_fold_checked ctx ~span ~axis ~fs ~implied:None ~side_override:None
+      run_fold_checked ctx ~span ~axis ~fs ~implied:None
+        ~side_override:(Axiom.fold_side_of_line ctx span axis sides)
         ~crease_id:cid ~prov ~check:(Some check_straight);
       push_frame ctx (Some span);
       bind_out (Material (cid, axis))
 
 let eval_reverse (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
     (rs : Ast.reverse_spec) (span : Error.span) : unit =
-  (* [fs_for_ax5] only carries what axiom-5 selection reads; its [direction] is
-     inert, since [Axiom] never reads it and a reverse fold's letters are
-     derived from the faces' orientation, never from the spec. *)
-  let fs_for_ax5 =
-    { Ast.moving = rs.Ast.rmoving; up_to = None; direction = Ast.Valley; place = None }
-  in
-  let cid, bind_out, axis, prov, implied =
-    match resolve_markable ctx span out (Some fs_for_ax5) m with
-    (* the discarded field is the axiom-5 side override: it is [None] whenever
-       [moving] is present, and with [moving] absent and nothing implied the
-       anchor below errors, so it is never live here. *)
-    | `Fresh (cid, bind_out, axis, prov, _, implied) ->
-        (cid, bind_out, axis, prov, implied)
+  let sides = { Ast.s_toward = rs.Ast.rtoward; s_moving = rs.Ast.rmoving } in
+  let cid, bind_out, axis, prov, side, implied =
+    match resolve_markable ctx span out ~fold:true sides m with
+    | `Fresh (cid, bind_out, axis, prov, side, implied) ->
+        (cid, bind_out, axis, prov, side, implied)
     | `Existing lo ->
         (match lo with
         | Ast.LNamed cr ->
@@ -515,6 +508,7 @@ let eval_reverse (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
                  cr.Ast.cspan)
         | _ -> ());
         let axis = Resolve.resolve_line ctx lo in
+        let side = Axiom.fold_side_of_line ctx span axis sides in
         let cid, check_axis, bind_out =
           crease_id_for ctx out ~fresh:Fold_state.fresh_crease_id
         in
@@ -523,15 +517,19 @@ let eval_reverse (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
           Some { State.axiom = "reverse"; sources = [ Resolve.lstr lo ]; span;
                  name = None; stmt = Ctx.stmt_index ctx }
         in
-        (cid, bind_out, axis, prov, None)
+        (cid, bind_out, axis, prov, side, None)
   in
+  (* the tip: the flap of the anchor, or with no anchor the material on the
+     side the side items fixed *)
   let anchor =
     match (rs.Ast.rmoving, implied) with
-    | Some fa, _ -> fa
-    | None, Some p -> Ast.FlapPoint p
-    | None, None -> Error.fail span "this reverse needs `moving .p` to name the tip"
+    | Some fa, _ -> Some fa
+    | None, Some p -> Some (Ast.FlapPoint p)
+    | None, None -> None
   in
-  let move_side, tip = Resolve.tip_faces ctx axis ~anchor span in
+  if anchor = None && side = None then
+    Error.fail span "this reverse needs `moving .p` or `toward .p` to name the tip";
+  let move_side, tip = Resolve.tip_faces ctx axis ~anchor ?side span in
   let st = !(ctx.state) and inside = not rs.Ast.outside in
   let attempts =
     Fold_state.reverse_attempts ~crease_id:cid st ~axis ~move_side ~tip ~inside ~prov
@@ -701,17 +699,16 @@ let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
       ctx.annots_pending <- Annotation.resolve ctx a :: ctx.annots_pending
   | Ast.BindBundle (name, expr, span) ->
       bind_crease ctx name span (Bundle expr)
-  | Ast.BindLine (n, c, span) ->
+  | Ast.BindLine (n, c, sides, span) ->
       (* pure value: resolve the construction to a line, bind Frozen, no
          subdivide *)
       let axis =
-        match snd (Axiom.axis_of ctx span c) with
-        | Axiom.Axis (axis, _, _) -> axis
-        | Axiom.Ax5 p -> Axiom.select_axiom5_bind ctx span p
+        (Axiom.select ctx span (snd (Axiom.axis_of ctx span c)) ~fold:false sides)
+          .Axiom.line
       in
       bind_crease ctx n span (Frozen axis)
-  | Ast.Mark (out, m, ext, dir, layer_opt, span) ->
-      eval_mark ctx out m ext dir layer_opt span
+  | Ast.Mark (out, m, ext, dir, layer_opt, sides, span) ->
+      eval_mark ctx out m ext dir layer_opt sides span
   | Ast.Fold (out, m, fs, span) -> eval_fold ctx out m fs span
   | Ast.Reverse (out, m, rs, span) -> eval_reverse ctx out m rs span
   | Ast.Point (n, Ast.PsExpr po, span) ->

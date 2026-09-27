@@ -110,7 +110,7 @@ function extractBlocks(src: string): Block[] {
 const expectedInventory: Record<Tag, number> = {
   whole: 1,
   prelude: 6,
-  frag: 7,
+  frag: 11,
   construction: 1,
 };
 
@@ -158,6 +158,7 @@ const itemNodes: [string, string][] = [
   ["flatten (.q over .r)", "order_item"],
   ["flatten (staying .a)", "stayer_item"],
   ["fold (toward .q)", "selection_item"],
+  ["fold (--v toward .q)", "selection_item"],
   ["mark (--d) as --x", "output_clause"],
   ["mark (--d) into --x", "output_clause"],
   // a head its verb rejects: `(outside)` is the reverse fold's, and `mark`

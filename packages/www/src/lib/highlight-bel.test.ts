@@ -49,9 +49,11 @@ test("an annotation key and its text are highlighted", async () => {
 test("no token in a program covering every head word renders unclassified", async () => {
   const src = [
     "paper square",
-    "mark (align --f (.a onto .c) (through .b) (perp --l) toward .q) as --g!",
+    "mark (align --f (.a onto .c) (through .b) (perp --l) (heading --m)) (toward .q) as --g!",
     "fold (map .a onto --cd and .c onto --da) (moving .a) (up to .c) (over .b) (mountain) into --h",
-    "fold (map .a onto --cd through .o toward .q) (between .m .o) (at .x) (on #[.c])",
+    "fold (map .a onto --cd through .o) (toward .q) (between .m .o) (at .x) (on #[.c])",
+    "--k = (map --v onto --h) (toward --l) (moving .a)",
+    "fold (map --v onto --h) (--v toward .u)",
     "reverse (outside) (--d valley)",
     "flatten (--l mountain) (.q over .r) (staying .a) (toward .b)",
     "flip (--d mountain) (under .p) (valley) as --k",

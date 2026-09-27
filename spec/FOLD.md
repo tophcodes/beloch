@@ -148,20 +148,24 @@ none of this appears, and every other field is the same with and without it.
   entries, the construction's first.
 - A construction's entry covers a construction inside a `fold` or `mark` and
   one on the right-hand side of a binding alike. It carries the `axiom` tag
-  as in `beloch:edges`, the `toward` point when the construction names one,
-  and `candidates`: every line that satisfies the construction's alignments,
-  each with its `line` (the table line's `coeffs` in that state) and
-  `removed_by`: `"paper"` for a line that creases no face, which the model
-  does not count as a candidate at all
-  ([def-construction](/model/#def-construction)), `"toward"` for one the
-  `toward` point ruled out, `"moving"` for one the anchor of a `fold` ruled
-  out, and null for one no rule removed. `selected` is true on the line the
-  construction yields. For axioms 6 and 7 the entry also carries `conics`:
-  the parabolas whose tangents these lines are, each as a `focus` point and a
-  `directrix` line, and each candidate that crosses paper carries its
-  `landing`: the table point its fold moves the point to. `toward` keeps the
-  candidate whose landing lies nearest the `toward` point, and a point as
-  near to two landings selects nothing.
+  as in `beloch:edges`, the `toward` point when the statement names one (a
+  `toward` line leaves it null), and `candidates`: every line that satisfies
+  the construction's alignments, each with its `line` (the table line's
+  `coeffs` in that state) and `removed_by`, the stage of the selection
+  ([def-selection](/model/#def-selection)) that removed it: `"paper"` for a
+  line that creases no face, which the model does not count as a candidate
+  at all ([def-construction](/model/#def-construction)); `"heading"` for one
+  farther in direction from the `heading` line than another; `"toward"` for
+  one whose side the `toward` names no fold of, or whose landing lies
+  farther from the `toward` than another's; `"moving"` for one whose side
+  the anchor of `moving` names no fold of; `"moved"` for one along which no
+  fold carries out every alignment; and null for one no stage
+  removed. `selected` is true on the line the construction yields. For
+  axioms 6 and 7 the entry also carries `conics`: the parabolas whose
+  tangents these lines are, each as a `focus` point and a `directrix` line,
+  and each candidate that crosses paper carries its `landing`: the
+  reflection across it of the first point of the first alignment, where
+  that point lands when it lies on the side that folds over.
 - A write's entry carries `write`, one of `"fold"`, `"reverse"` and
   `"flatten"`, the `terms` of the write's definition in the state it read,
   and the `candidates` it chose from. A region of paper in the terms is a

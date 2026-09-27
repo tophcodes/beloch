@@ -1,0 +1,11 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; Axiom 4 with the point on its target line already: the crease through
+; the point meets the alignment without moving it.
+
+paper square
+mark (through .a .c) as --ac
+.o = free on --ac from .a at 1/2
+mark (map .o onto --ac perp --ab) as --k
+
+; assert faces = 1

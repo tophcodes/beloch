@@ -2,6 +2,6 @@
 
 paper square
 mark (map .a onto .b) as --v   ; vertical midline x = 1/2
-mark (map --v onto --ab toward .b)
+mark (map --v onto --ab) (toward .b)
 
 ; assert faces = 1

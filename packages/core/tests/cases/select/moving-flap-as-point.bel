@@ -1,0 +1,14 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; On the flat sheet #[.b] is the whole sheet, and moving names the side of
+; its point, as (moving .b) does. That side folds over and carries a point
+; of --ef onto .d: the alignment holds as an incidence (ADR 0031).
+
+paper square
+mark (map .a onto .b) as --ef
+mark (through .b .d) as --bd
+.p = free on --bd from .d at 1/4
+fold (align (.d onto --ef) (through .p) (heading --ab)) (moving #[.b])
+
+; assert .b = (-1/2, 3/2)
+; assert .d = (0, 1)

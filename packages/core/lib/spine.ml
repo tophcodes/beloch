@@ -11,8 +11,8 @@
 (* All [Ast.stmt] variants carry their [Error.span] as the last field. *)
 let span_of_stmt : Ast.stmt -> Error.span = function
   | Ast.Annotation a -> a.Ast.a_span
-  | Ast.BindLine (_, _, sp)
-  | Ast.Mark (_, _, _, _, _, sp)
+  | Ast.BindLine (_, _, _, sp)
+  | Ast.Mark (_, _, _, _, _, _, sp)
   | Ast.Fold (_, _, _, sp)
   | Ast.Reverse (_, _, _, sp)
   | Ast.BindBundle (_, _, sp)

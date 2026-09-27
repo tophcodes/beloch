@@ -1,0 +1,10 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; The same alignment written point first: the side of .a folds over and .a
+; lands on --cd.
+
+paper square
+fold (align (.a onto --cd) (perp --da))
+
+; assert .a = (0, 1)
+; assert .d = (0, 1)

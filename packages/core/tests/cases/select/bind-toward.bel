@@ -1,0 +1,14 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; A binding selects its line as a fold along it would: --k is the diagonal
+; through .a and .c.
+
+paper square
+mark (map .a onto .b) as --v
+mark (map .a onto .d) as --h
+.u = free on --ab from .b at 1/5
+--k = (map --v onto --h) (--v toward .u)
+mark (--k) as --m
+.x = --m * --ab
+
+; assert .x = (0, 0)

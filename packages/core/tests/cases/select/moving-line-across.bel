@@ -1,0 +1,8 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; The top edge crosses the fold line, so it names no side of it.
+
+paper square
+fold (map .a onto .b) (moving --cd)
+
+; expect error "moving --cd names no side of the fold line of map .a onto .b"
