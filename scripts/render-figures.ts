@@ -1,8 +1,10 @@
 #!/usr/bin/env bun
-// The figures of the reference documents, drawn by Beloch's own pipeline.
+// The figures of the reference documents and the guide, drawn by Beloch's own
+// pipeline.
 //
-// Scans spec/*.md for `::: {.figure #fig-point caption="…" views="cp folded"
-// highlight=".p"}` blocks, whose body is a Beloch program, evaluates each one
+// Scans spec/*.md and the guide's pages for `::: {.figure #fig-point
+// caption="…" views="cp folded" highlight=".p"}` blocks, whose body is a
+// Beloch program, evaluates each one
 // with the `beloch` binary and renders the requested views through
 // packages/render-2d, the same functions the docs site's <Beloch> card uses.
 //
@@ -57,6 +59,8 @@ export interface FigureBlock {
 	highlight: string[];
 	/** The `@label` of the statement the `candidates` and `op` views show. */
 	at?: string | undefined;
+	/** An earlier figure of the same document whose program runs before this one's. */
+	after?: string | undefined;
 	program: string;
 }
 
@@ -85,6 +89,7 @@ export function scanFigures(source: string): FigureBlock[] {
 				views: words(attrs.views).filter((v): v is View => VIEWS.includes(v as View)),
 				highlight: highlightNames(attrs.highlight),
 				at: attrs.at,
+				after: attrs.after,
 				program: lines.slice(i + 1, j).join("\n").trim(),
 			});
 		}
@@ -197,26 +202,63 @@ export function renderFigure(block: FigureBlock, outDir: string, source: string)
 	return entry;
 }
 
+// The directories whose Markdown files carry figures, relative to the repo root.
+const DOCUMENT_DIRS = ["spec", "packages/www/src/content/docs/guide"];
+
+export function documentFiles(root: string): string[] {
+	return DOCUMENT_DIRS.flatMap((dir) =>
+		readdirSync(join(root, dir))
+			.filter((name) => name.endsWith(".md"))
+			.sort()
+			.map((name) => `${dir}/${name}`),
+	);
+}
+
+// Renders every figure of `files` (paths relative to `root`) into `outDir`, by
+// id. A figure with `after` evaluates the full program of that figure, then its
+// own body; the figure must come earlier in the same document, so a page can
+// build one program up section by section. Ids are shared by all documents,
+// since the site looks a figure up by id alone.
+export function renderDocuments(root: string, files: string[], outDir: string): Record<string, FigureEntry> {
+	const figures: Record<string, FigureEntry> = {};
+	for (const source of files) {
+		const programs = new Map<string, string>();
+		for (const block of scanFigures(readFileSync(join(root, source), "utf8"))) {
+			const failed = (error: string): FigureEntry =>
+				({ source, views: block.views, highlight: block.highlight, files: {}, error });
+			const earlier = figures[block.id];
+			if (earlier) {
+				figures[block.id] = failed(`figure ${block.id} is defined in ${earlier.source} and again in ${source}`);
+				continue;
+			}
+			let program = block.program;
+			if (block.after !== undefined) {
+				const before = programs.get(block.after);
+				if (before === undefined) {
+					figures[block.id] = failed(
+						`figure ${block.id} continues ${block.after}, which no earlier figure of ${source} defines`,
+					);
+					continue;
+				}
+				program = `${before}\n${block.program}`;
+			}
+			programs.set(block.id, program);
+			figures[block.id] = renderFigure({ ...block, program }, outDir, source);
+		}
+	}
+	return figures;
+}
+
 function main() {
 	const root = join(import.meta.dir, "..");
 	const flag = process.argv.indexOf("--out");
 	const outDir = flag >= 0 ? process.argv[flag + 1]! : join(root, "_build", "spec", "figures");
-	const specDir = join(root, "spec");
 
 	rmSync(outDir, { recursive: true, force: true });
 	mkdirSync(outDir, { recursive: true });
 
-	const figures: Record<string, FigureEntry> = {};
-	let failed = 0;
-	for (const name of readdirSync(specDir).sort()) {
-		if (!name.endsWith(".md")) continue;
-		const source = `spec/${name}`;
-		for (const block of scanFigures(readFileSync(join(specDir, name), "utf8"))) {
-			const entry = renderFigure(block, outDir, source);
-			if (entry.error) failed++;
-			figures[block.id] = entry;
-		}
-	}
+	const figures = renderDocuments(root, documentFiles(root), outDir);
+	const failed = Object.values(figures).filter((e) => e.error).length;
 	writeFileSync(join(outDir, "index.json"), `${JSON.stringify({ figures }, null, "\t")}\n`);
 	const drawn = Object.keys(figures).length - failed;
 	console.log(`${outDir}: ${drawn} figure(s)${failed ? `, ${failed} failed` : ""}`);
