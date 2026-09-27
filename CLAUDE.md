@@ -25,7 +25,25 @@ A skill that writes a spec or a plan to `docs/superpowers/` writes it to the
 session scratchpad instead; the path is ignored. Progress and handoffs go in
 the pull request description or the GitHub issue.
 
-Issues live on GitHub: `gh issue … -R tophcodes/beloch`.
+Issues live on GitHub: `gh issue … -R tophcodes/beloch`. They are tracked on
+the project board "Beloch" (`gh project … 3 --owner tophcodes`), whose fields
+Status and Topic say where an issue stands and what part of Beloch it belongs
+to.
+
+- Before starting on an issue, look it up on the board. If it is closed or its
+  Status is Done, stop and ask. Otherwise set its Status to In Progress.
+- A new issue starts from a template in `.github/ISSUE_TEMPLATE/`
+  (`gh issue create --template build|design|docs`), names the ADR it follows
+  from in its first line, and goes on the board with a Topic and one `kind:`
+  label.
+- A pull request body names its issue with `Closes #n` when the pull request
+  finishes it and `Refs #n` when it contributes to it, and the pull request
+  carries the issue's `kind:` label. A pull request without an issue carries
+  `no-issue` in place of the reference. The check on pull requests enforces
+  both; no other word (`For`, `Fixes`) counts.
+- Commit messages carry no issue references. The pull request links its
+  commits to the issue, and a `#n` in a commit adds a line to the issue's
+  timeline on every rewritten push.
 
 Every text in the repository is English: code, comments, docs, commit
 messages, PR and issue bodies, and drafts of any of these shown in chat.
@@ -45,6 +63,10 @@ The kernel suites have known failures, held against
 Commit subjects are checked when they are pushed. The types and scopes are
 those `scripts/check-commit-subjects.sh` prints; a package's scope is its
 directory under `packages/` or its npm name without `@beloch/`.
+
+Everything reaches `main` through a pull request, an ADR's acceptance and a
+chore included: the ruleset on `main` requires the pull request check, and a
+commit that has not passed it is refused.
 
 A pull request of several commits lands as a merge commit, so every commit on
 its branch reaches `main` as it stands. A pull request of one commit lands by
