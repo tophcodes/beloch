@@ -73,7 +73,9 @@
  (name test_reference_corpus)
  (modules test_reference_corpus bel_assert)
  (libraries beloch alcotest zarith)
- (deps (source_tree ../../../spec)))
+ (deps
+  (source_tree ../../../spec)
+  (source_tree ../../www/src/content/docs/guide)))
 
 (test
  (name test_spine)

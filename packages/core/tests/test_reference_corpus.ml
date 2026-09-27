@@ -361,25 +361,44 @@ let count_by_tag (blocks : block list) : (string * int) list =
       List.map (fun (k, n) -> if k = tag_key b.tag then (k, n + 1) else (k, n)) acc)
     base blocks
 
+let block_cases (blocks : block list) =
+  let preludes = prelude_table blocks in
+  let block_case (b : block) =
+    let name = Printf.sprintf "line %d (%s)" b.fence_line (tag_key b.tag) in
+    Alcotest.test_case name `Quick (fun () -> check_ok name (verify_block preludes b))
+  in
+  List.map block_case blocks
+
 let corpus_test_cases () =
   let path = Filename.concat source_root "spec/BELOCH.md" in
   let blocks = extract_blocks (read path) in
-  let preludes = prelude_table blocks in
   let inventory_case =
     Alcotest.test_case "block inventory matches the constant" `Quick (fun () ->
         Alcotest.(check (list (pair string int)))
           "counts per tag" (List.sort compare expected_inventory) (List.sort compare (count_by_tag blocks)))
   in
-  let block_case (b : block) =
-    let name = Printf.sprintf "line %d (%s)" b.fence_line (tag_key b.tag) in
-    Alcotest.test_case name `Quick (fun () -> check_ok name (verify_block preludes b))
-  in
-  inventory_case :: List.map block_case blocks
+  inventory_case :: block_cases blocks
+
+(* ---- The guide: every page under packages/www/src/content/docs/guide ---- *)
+
+(* The guide's blocks are held to the same checks, one suite per page, so a
+   change to the language fails here before the guide teaches it wrong. *)
+let guide_dir = "packages/www/src/content/docs/guide"
+
+let guide_suites () =
+  Sys.readdir (Filename.concat source_root guide_dir)
+  |> Array.to_list
+  |> List.filter (fun f -> Filename.check_suffix f ".md")
+  |> List.sort compare
+  |> List.map (fun f ->
+         let blocks = extract_blocks (read (Filename.concat source_root (Filename.concat guide_dir f))) in
+         ("guide/" ^ f, block_cases blocks))
 
 let () =
   Alcotest.run "reference_corpus"
-    [
-      ("extractor", extractor_tests);
-      ("failure modes", failure_mode_tests);
-      ("BELOCH.md", corpus_test_cases ());
-    ]
+    ([
+       ("extractor", extractor_tests);
+       ("failure modes", failure_mode_tests);
+       ("BELOCH.md", corpus_test_cases ());
+     ]
+    @ guide_suites ())

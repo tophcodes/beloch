@@ -15,12 +15,12 @@
 # from and which the keyword cross-check reads; it runs here so one command
 # still produces every generated input the spec documents read.
 #
-# scripts/render-figures.ts draws the `.figure` blocks of spec/ into
+# scripts/render-figures.ts draws the `.figure` blocks of spec/ and the guide into
 # _build/spec/figures, the other generated input both renderers of those
 # documents read. It needs the `beloch` binary on PATH.
 #
 # packages/core/tools/blocks.exe evaluates the tagged `.bel` blocks of
-# spec/BELOCH.md and writes _build/spec/blocks.json, which
+# spec/BELOCH.md and the guide and writes _build/spec/blocks.json, which
 # packages/www/src/lib/remark-bel.ts reads to render each block's outcome. It
 # reads and writes paths relative to the repo root, hence the `cd`.
 #
@@ -35,7 +35,7 @@ dune build --root "$root" @doc
 bun "$root/scripts/api-register.ts"
 bun "$root/scripts/grammar-register.ts"
 bun "$root/scripts/render-figures.ts"
-(cd "$root" && dune exec packages/core/tools/blocks.exe)
+(cd "$root" && dune exec packages/core/tools/blocks.exe -- spec/BELOCH.md packages/www/src/content/docs/guide/*.md)
 
 rm -rf "$dest"
 mkdir -p "$dest"
