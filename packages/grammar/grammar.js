@@ -20,7 +20,11 @@ module.exports = grammar({
   extras: $ => [/[ \t\r\n]+/, $.comment],
 
   rules: {
-    source_file: $ => repeat(choice($.write_statement, $.construction, $._token)),
+    // a binding of a construction takes `(toward …)` and `(moving …)` items
+    // after it, as a write does (ADR 0031)
+    source_file: $ => repeat(choice(
+      $.write_statement, $.construction, $.selection_item, $.anchor_item, $._token,
+    )),
 
     // the five writes: a verb, its items in any order, its output clause.
     // Each alternative is right-associative on its own repeat so that a
@@ -87,7 +91,7 @@ module.exports = grammar({
     _mv: _ => choice('mountain', 'valley'),
 
     // `(moving .a)`
-    anchor_item: $ => seq('(', 'moving', $._operand, ')'),
+    anchor_item: $ => prec(1, seq('(', 'moving', $._operand, ')')),
 
     // `(up to .c)`
     depth_item: $ => seq('(', 'up', 'to', $._operand, ')'),
@@ -116,15 +120,16 @@ module.exports = grammar({
     // `(staying .a)`
     stayer_item: $ => seq('(', 'staying', $._operand, ')'),
 
-    // `(toward .q)`
-    selection_item: $ => seq('(', 'toward', $._operand, ')'),
+    // `(toward .q)`, or `(--v toward .q)` naming what goes toward it
+    selection_item: $ => prec(1, seq('(', optional($._operand), 'toward', $._operand, ')')),
 
-    // a construction: the canonical `align` over its alignments, or one of
-    // the prose spellings that desugar to the same alignments (ADR 0022):
+    // a construction: the canonical `align` over its alignments and its
+    // `heading`, or one of the prose spellings that desugar to the same
+    // alignments (ADR 0031):
     // `(align (.a onto .c))`, `(map .a onto .c)`, `(through .a .b)`,
     // `(perp --l through .p)`
     construction: $ => prec(1, seq('(', choice(
-      seq('align', repeat($.crease), repeat1($.alignment), optional(seq('toward', $._operand))),
+      seq('align', repeat($.crease), repeat1($.alignment)),
       $._prose_axiom,
     ), ')')),
 
@@ -133,20 +138,21 @@ module.exports = grammar({
       seq('perp', $._operand, 'through', $._operand),
       seq('map', $._operand, 'onto', $._operand, optional(choice(
         seq('perp', $._operand),
-        seq('through', $._operand, optional(seq('toward', $._operand))),
-        seq('and', $._operand, 'onto', $._operand, optional(seq('toward', $._operand))),
-        seq('toward', $._operand),
+        seq('through', $._operand),
+        seq('and', $._operand, 'onto', $._operand),
       ))),
     ),
 
-    // one alignment inside `align`: `(.a onto .c)`, `(through .a)`,
+    // one part of an `align`: an alignment, `(.a onto .c)`, `(through .a)`,
     // `(perp --l)`, each optionally naming the fold line it constrains
-    // (`(--f through .a)`). The `onto` alternative takes that prefix through
-    // its own leading `_operand`, which a crease name can start.
+    // (`(--f through .a)`), or the direction of the crease, `(heading --l)`.
+    // The `onto` alternative takes that prefix through its own leading
+    // `_operand`, which a crease name can start.
     alignment: $ => seq('(', choice(
       seq(optional($.crease), 'through', $._operand),
       seq(optional($.crease), 'perp', $._operand),
       seq($._operand, 'onto', $._operand),
+      seq('heading', $._operand),
     ), ')'),
 
     // Operands inside an item stay unstructured: a run of the existing
@@ -208,7 +214,7 @@ module.exports = grammar({
     keyword: _ => choice(
       'paper', 'square',
       'def', 'apply', 'export',
-      'through', 'map', 'onto', 'perp', 'toward',
+      'through', 'map', 'onto', 'perp', 'toward', 'heading',
       'and', 'moving', 'up', 'to', 'mountain', 'valley', 'over', 'under', 'outside', 'staying',
       'between', 'at', 'as',
       'free', 'on', 'from',

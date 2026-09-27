@@ -570,6 +570,10 @@
       "required": false,
       "types": [
         {
+          "type": "anchor_item",
+          "named": true
+        },
+        {
           "type": "annotation_key",
           "named": true
         },
@@ -623,6 +627,10 @@
         },
         {
           "type": "punct",
+          "named": true
+        },
+        {
+          "type": "selection_item",
           "named": true
         },
         {
@@ -857,6 +865,10 @@
   },
   {
     "type": "from",
+    "named": false
+  },
+  {
+    "type": "heading",
     "named": false
   },
   {

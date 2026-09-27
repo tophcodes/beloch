@@ -15,9 +15,7 @@
 (write_statement ["mark" "fold" "reverse" "flatten" "flip"] @keyword)
 ["(" ")" "[" "]"] @punct
 (construction    ["align" "map" "through" "perp" "onto" "and"] @construction)
-; the same word and the same job as the selection item, so the same colour
-(construction    "toward" @selection)
-(alignment       ["onto" "through" "perp"] @alignment)
+(alignment       ["onto" "through" "perp" "heading"] @alignment)
 (anchor_item     "moving" @anchor)
 (depth_item      ["up" "to"] @depth)
 (placement_item  ["over" "under"] @placement)
