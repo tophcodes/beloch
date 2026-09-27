@@ -32,18 +32,21 @@ line that holds the `toward` point stays and the other side folds over.
 `toward` takes a point or a line. A line names the side it lies on; a line
 that the candidate crosses on the paper names no side for that candidate.
 
-**A fold keeps only the candidates it can perform.** The moved material of a
-construction is every object one of its `onto` alignments moves: a point, or
-the material of a line. A candidate remains when all of that material lies on
-the side that folds over. Whether that side comes from `toward` (the side
-opposite the point) or from `moving` (the side of the anchor), the condition
-is the same. A candidate whose material lies on both sides of its line never
-remains.
+**A fold keeps only the candidates it can perform.** Every `onto` alignment
+moves an object: a point, or the material of a line. A candidate remains when
+the fold along it carries out each of them: a moved point lies on the side
+that folds over, and a moved line has material on that side. The part of a
+line on the other side stays where it is; the part that folds over lands on
+the target. Folding a line onto a line it crosses moves the same part on
+paper.
+Whether the side that folds over comes from `toward` (the side opposite the
+point) or from `moving` (the side of the anchor), the condition is the same.
 
 **Among several remaining candidates, `toward` keeps the one that lands the
-moved material nearest the `toward` point or line.** Equal distances leave
-the construction ambiguous. `moving` names no target and has no such stage:
-several candidates remaining after `moving` leave the fold ambiguous.
+material that folds over nearest the `toward` point or line.** Equal
+distances leave the construction ambiguous. `moving` names no target and has
+no such stage: several candidates remaining after `moving` leave the fold
+ambiguous.
 
 **`along` names the direction of the crease.** `along --l` keeps the
 candidate whose line makes the smallest angle with `--l`. The position of
@@ -66,9 +69,11 @@ fold (align (.d onto --ef) (through .p)) (toward .c) (moving .d)
 fold (map .d onto --ef through .p) (toward .c)
 ```
 
-A binding takes items as a write does, and `toward` there names the side
-that would stay: `--k = (map --v onto --h) (toward .b)`. A construction
-inside an expression takes no selection; it is bound first.
+A binding takes items as a write does. `toward` there names the side that
+would stay and `moving` the side that would fold over, so both select as
+they do in a fold: `--k = (map --v onto --h) (toward .b)`. `mark` takes them
+the same way. Where no paper moves, `moving` names a side and no flap. A
+construction inside an expression takes no selection; it is bound first.
 
 **This record supersedes ADR 0022** and carries forward what it decided
 apart from the selection. A construction is its set of alignments, together
@@ -112,8 +117,10 @@ its alignments. `toward` leaves the construction.
 - One rule over the moved material covers axioms 5, 6 and 7. Axiom 7
   measures both moved points. A line moved onto a line it meets at an oblique
   angle can select another candidate than before, and tests on such programs
-  change. A line crossing the other one on the paper stays ambiguous, now as
-  a consequence of the rule.
+  change. A line that crosses the other one on the paper becomes selectable:
+  each fold carries the part of it on the side away from `toward`, and the
+  selection is ambiguous only where both folds land that part on the same
+  half of the target.
 - `fig-toward-boundary` keeps its selection: both candidates remain for
   `.c`, and the landing stage keeps the one that lands `.d` on the top edge.
 - A redundant `moving` wants a warning. The language has errors with hints
