@@ -46,15 +46,17 @@ Ctx → Resolve → { Axiom, Flatten_solve } → Eval
 - **`Axiom`** constructs axis lines for the seven Huzita-Justin axioms, and
   owns the axiom-5 path where bisector choice is deferred to the fold state.
 - **`Flatten_solve`** owns the flatten/collapse solver arm.
-- **`Eval`** holds the statement handlers, one named top-level function per
-  statement kind, plus `run_fold*`.
+- **`Eval`** holds the statement dispatch, the def/apply/export machinery,
+  and the assembly of the evaluated program into its output record. The
+  disposition verbs (`mark`, `fold`, `reverse`) and the fold-checking
+  primitive they share moved to `Action` (ADR 0034).
 
 Every stateful function takes `(ctx : Ctx.ctx)` as its first parameter rather
 than closing over it. Types crossing a module boundary are abstract unless a
 caller demonstrably reads them.
 
-The graph is acyclic and must stay so; `Eval` is the only module allowed to
-depend on all four others.
+The graph is acyclic and must stay so; each module depends only on modules
+earlier in the chain.
 
 ## Alternatives considered
 
@@ -82,13 +84,13 @@ while leaving the solver with no home of its own.
 - Abstract types surface dead code that nesting hid. Sealing `Axiom.ax5_pending`
   immediately exposed a record field with no reader (warning 69), which the
   fully-exported record had masked.
-- `run_fold*` deliberately stayed in `Eval`. Splitting the action model
-  (`mark`, `fold`, `run_fold*` — ADR 0011) from the instance machinery
-  (`def`, `apply`, `export`) is a plausible sixth module, deferred rather than
-  rejected.
+- `run_fold*` deliberately stayed in `Eval` at the time of this record.
+  Splitting the action model (`mark`, `fold`, `run_fold*`, ADR 0011) from the
+  instance machinery (`def`, `apply`, `export`) was the plausible sixth
+  module this record deferred; ADR 0034 made that split.
 - `Flatten_solve` may absorb more of `Flatten`'s caller-side logic later;
-  `Flatten_solve.run` is now the largest single function in the core and is
-  the next decomposition candidate.
+  `Flatten_solve.run` is the largest single function in the core and is the
+  next decomposition candidate.
 - The `.mli` check is scoped to these five modules, not to `packages/core/lib`
   as a whole: `geom.ml`, `num.ml`, `collapse.ml` and their neighbours predate
   this record and have no interfaces. A repo-wide check would be red the day
