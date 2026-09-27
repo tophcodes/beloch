@@ -91,6 +91,7 @@ and program_token (buf : Sedlexing.lexbuf) : token =
   | "at" -> AT
   | "as" -> AS
   | "align" -> ALIGN
+  | "heading" -> HEADING
   | "into" -> INTO
   | "free" -> FREE
   | "on" -> ON

@@ -119,13 +119,16 @@ val resolve_mark_flap :
 val placed_fold_plan :
   Ctx.ctx ->
   Geom.line ->
-  anchor:Ast.flap_arg ->
+  anchor:Ast.flap_arg option ->
+  ?side:int ->
   place:Ast.place_dir * Ast.flap_arg ->
   Error.span ->
   int * bool array * Fold_state.placement
 (** A placed fold (`fold … over/under <flap>`, spec §4.6): the moving side
-    (from the anchor, as for a default fold), the block (the anchor flap's
-    faces with a piece on that side, as a mask over parent faces) and the
+    ([side] where the side items fixed it, else from the anchor, as for a
+    default fold), the block (the anchor flap's faces with a piece on that
+    side, or every face with one when there is no anchor, as a mask over
+    parent faces) and the
     placement. The target flap must keep a stationary piece (a non-block
     face, or a block face the axis cuts: the anchor's own hinge layer) that
     overlaps the landing footprint (the block's move-side pieces reflected
@@ -140,9 +143,11 @@ val placement_failure_message :
     indices, not a face, so its message names no layer. *)
 
 val tip_faces :
-  Ctx.ctx -> Geom.line -> anchor:Ast.flap_arg -> Error.span -> int * bool array
-(** `reverse`'s tip (spec §4.6a): the moving side from the anchor, and the
-    mask of PARENT faces forming the connected material beyond the axis
-    that carries the anchor: the anchor's faces with a move-side piece,
-    closed under hinges whose table segment reaches strictly beyond the
-    axis. *)
+  Ctx.ctx -> Geom.line -> anchor:Ast.flap_arg option -> ?side:int -> Error.span
+  -> int * bool array
+(** `reverse`'s tip (spec §4.6a): the moving side ([side] where the side
+    items fixed it, else from the anchor), and the mask of PARENT faces
+    forming the connected material beyond the axis that carries the anchor:
+    the anchor's faces with a move-side piece (every face with one when
+    there is no anchor), closed under hinges whose table segment reaches
+    strictly beyond the axis. *)

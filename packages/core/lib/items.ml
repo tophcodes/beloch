@@ -81,17 +81,43 @@ let need_axis (verb : string) (cell : markable option ref) (span : Error.span) :
 let direction_of (mv : mv_constraint) : direction =
   match mv with MvMountain -> Mountain | MvValley | MvFree -> Valley
 
-(* ---- the five verbs ---- *)
+(* ---- the side items, shared by every statement over a construction ---- *)
+
+(* `(toward …)` and `(moving …)` name the side that stays and the side that
+   folds over (ADR 0031). *)
+let side_item (verb : string) ~(toward : toward_item option ref)
+    ~(moving : flap_arg option ref) (it : raw_item) : bool =
+  match it with
+  | RiSelection (t, sp) ->
+      slot verb "toward" toward sp t;
+      true
+  | RiMoving (fa, sp) ->
+      slot verb "moving" moving sp fa;
+      true
+  | _ -> false
+
+(* ---- the five verbs, and the binding of a construction ---- *)
+
+let bind (name : string) (c : construction) (items : raw_item list)
+    (span : Error.span) : stmt =
+  let verb = "a binding" in
+  let toward = ref None and moving = ref None in
+  List.iter
+    (fun it -> if not (side_item verb ~toward ~moving it) then refuse verb it)
+    items;
+  BindLine (name, c, { s_toward = !toward; s_moving = !moving }, span)
 
 let mark (items : raw_item list) (out : output) (span : Error.span) : stmt =
   let verb = "mark" in
   let axis = ref None
   and layer = ref None
   and extent = ref None
-  and intent = ref None in
+  and intent = ref None
+  and toward = ref None
+  and moving = ref None in
   List.iter
     (fun it ->
-      if not (axis_item verb axis it) then
+      if not (axis_item verb axis it || side_item verb ~toward ~moving it) then
         match it with
         | RiOn (fa, sp) -> slot verb "on" layer sp fa
         | RiExtent (e, sp) -> slot verb "extent" extent sp e
@@ -104,12 +130,14 @@ let mark (items : raw_item list) (out : output) (span : Error.span) : stmt =
       Option.value !extent ~default:Full,
       Option.value !intent ~default:Valley,
       !layer,
+      { s_toward = !toward; s_moving = !moving },
       span )
 
 let fold (items : raw_item list) (out : output) (span : Error.span) : stmt =
   let verb = "fold" in
   let axis = ref None
   and moving = ref None
+  and toward = ref None
   and up_to = ref None
   (* the placement slot holds one value: `over`/`under` a flap, or the
      bottom that `(mountain)` names *)
@@ -117,9 +145,8 @@ let fold (items : raw_item list) (out : output) (span : Error.span) : stmt =
   and place = ref None in
   List.iter
     (fun it ->
-      if not (axis_item verb axis it) then
+      if not (axis_item verb axis it || side_item verb ~toward ~moving it) then
         match it with
-        | RiMoving (fa, sp) -> slot verb "moving" moving sp fa
         | RiUpTo (fa, sp) -> slot verb "up to" up_to sp (fa, sp)
         | RiLetter (MvMountain, sp) -> slot verb "placement" bottom sp sp
         | RiPlace (d, fa, sp) -> slot verb "placement" place sp (d, fa)
@@ -137,6 +164,7 @@ let fold (items : raw_item list) (out : output) (span : Error.span) : stmt =
       need_axis verb axis span,
       {
         moving = !moving;
+        toward = !toward;
         up_to = Option.map fst !up_to;
         direction = (if !bottom = None then Valley else Mountain);
         place = !place;
@@ -145,19 +173,19 @@ let fold (items : raw_item list) (out : output) (span : Error.span) : stmt =
 
 let reverse (items : raw_item list) (out : output) (span : Error.span) : stmt =
   let verb = "reverse" in
-  let axis = ref None and moving = ref None and outside = ref None in
+  let axis = ref None and moving = ref None and toward = ref None
+  and outside = ref None in
   List.iter
     (fun it ->
-      if not (axis_item verb axis it) then
+      if not (axis_item verb axis it || side_item verb ~toward ~moving it) then
         match it with
-        | RiMoving (fa, sp) -> slot verb "moving" moving sp fa
         | RiOutside sp -> slot verb "outside" outside sp ()
         | it -> refuse verb it)
     items;
   Reverse
     ( out,
       need_axis verb axis span,
-      { rmoving = !moving; outside = !outside <> None },
+      { rmoving = !moving; rtoward = !toward; outside = !outside <> None },
       span )
 
 let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
@@ -172,7 +200,14 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
       | RiLine (lo, mv, _) -> rays := { cline = lo; cdir = mv } :: !rays
       | RiOrder (u, l, _) -> overs := (u, l) :: !overs
       | RiStaying (fa, sp) -> slot verb "staying" staying sp fa
-      | RiSelection (p, sp) -> slot verb "toward" toward sp p
+      | RiSelection ({ target = TowardPoint p; subject = None }, sp) ->
+          slot verb "toward" toward sp p
+      | RiSelection ({ subject = Some _; _ }, sp) ->
+          Error.fail ~hint:"write (toward .p)" sp
+            "the toward of flatten names no object"
+      | RiSelection ({ target = TowardLine _; _ }, sp) ->
+          Error.fail ~hint:"name a point" sp
+            "the toward of flatten takes a point, not a line"
       | it -> refuse verb it)
     items;
   if !rays = [] then Error.fail span "flatten needs at least one ray item";

@@ -135,9 +135,10 @@ let value (ctx : Ctx.ctx) (arg : Ast.annot_arg) : Ctx.annot_value =
       let line =
         (* an annotation reads a line and evaluates no construction of the
            program, so it leaves the trace alone *)
-        match snd (Axiom.axis_of ~trace:false ctx arg.Ast.av_span c) with
-        | Axiom.Axis (axis, _, _) -> axis
-        | Axiom.Ax5 p -> Axiom.select_axiom5_bind ~trace:false ctx arg.Ast.av_span p
+        let sp = arg.Ast.av_span in
+        (Axiom.select ~trace:false ctx sp (snd (Axiom.axis_of ~trace:false ctx sp c))
+           ~fold:false { Ast.s_toward = None; s_moving = None })
+          .Axiom.line
       in
       Ctx.AvLine (line, None)
   | Ast.AvFlap f ->

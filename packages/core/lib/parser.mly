@@ -2,10 +2,10 @@
 open Ast
 
 (* A prose construction: the alignments its spelling fixes, in the order the
-   spelling fixes them, over no named fold line (ADR 0022). An `align` writes
+   spelling fixes them, over no named fold line (ADR 0031). An `align` writes
    its own order; the two agree as sets, which is what recognition reads. *)
-let prose (span : Error.span) (kinds : (alignment_kind * Error.span) list)
-    (toward : point_operand option) : construction =
+let prose (span : Error.span) (kinds : (alignment_kind * Error.span) list) :
+    construction =
   {
     c_fold_lines = [];
     c_alignments =
@@ -13,15 +13,38 @@ let prose (span : Error.span) (kinds : (alignment_kind * Error.span) list)
         (fun (k, sp) ->
           { al_fold_line = None; al_fold_line2 = None; al_kind = k; al_span = sp })
         kinds;
-    c_toward = toward;
+    c_heading = None;
     c_span = span;
   }
+
+(* A part of an `align`: an alignment, or its `heading` *)
+type align_part = Part_alignment of alignment | Part_heading of line_operand * Error.span
+
+let align_body (span : Error.span) (heads : string list) (parts : align_part list)
+    : construction =
+  let heading = ref None in
+  let alignments =
+    List.filter_map
+      (function
+        | Part_alignment a -> Some a
+        | Part_heading (l, sp) ->
+            Items.slot "align" "heading" heading sp l;
+            None)
+      parts
+  in
+  if alignments = [] then Error.fail span "align needs at least one alignment";
+  { c_fold_lines = heads; c_alignments = alignments; c_heading = !heading; c_span = span }
+
+(* `toward` inside a construction, the spelling before ADR 0031 *)
+let toward_inside (span : Error.span) : 'a =
+  Error.fail ~hint:"write it as an item of the write: (toward .p)" span
+    "toward selects the fold, not the line; it is an item of the write"
 %}
 
 %token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD MOVING MOUNTAIN VALLEY FLIP RPAREN AND UP TO FOLD_KW
 %token DEF APPLY EXPORT AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
 %token FLATTEN OVER STAYING MARK BETWEEN AT UNDER REVERSE OUTSIDE
-%token FREE ON FROM ALIGN INTO
+%token FREE ON FROM ALIGN HEADING INTO
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN  (* --[ / .[ : the line/point select openers *)
 %token <string> POINT
 %token <string> CREASE
@@ -78,7 +101,8 @@ annot_arg:
 
 body_stmt:
   (* value binding: pure geometry, no material *)
-  | CREASE EQ LPAREN construction_body RPAREN { BindLine ($1, $4, $loc) }
+  | CREASE EQ LPAREN construction_body RPAREN items
+      { Items.bind $1 $4 $6 $loc }
   (* a bind takes the line operands an item takes, parenthesised or not; the
      parentheses of the construction form are the construction's, not the
      binding's. *)
@@ -133,7 +157,16 @@ item_body:
   | AT point_operand                    { Ast.RiExtent (At $2, $loc) }
   | STAYING flap_arg                    { Ast.RiStaying ($2, $loc) }
   | over_flap OVER over_flap            { Ast.RiOrder ($1, $3, $loc) }
-  | TOWARD point_operand                { Ast.RiSelection ($2, $loc) }
+  | TOWARD toward_target                { Ast.RiSelection ({ target = $2; subject = None }, $loc) }
+  | point_operand TOWARD toward_target
+      { Ast.RiSelection ({ target = $3; subject = Some (AoPoint $1) }, $loc) }
+  | line_operand TOWARD toward_target
+      { Ast.RiSelection ({ target = $3; subject = Some (AoLine $1) }, $loc) }
+
+(* what a `toward` names: a point, or a line whose side it lies on *)
+toward_target:
+  | point_operand { TowardPoint $1 }
+  | line_operand  { TowardLine $1 }
 
 params:
   | { [] }
@@ -156,25 +189,30 @@ flap_arg:
   | line_operand  { FlapLine $1 }
   | flap_operand  { FlapSpec $1 }
 
-(* A construction: the canonical `align` over its alignments, or one of the
-   seven prose spellings, which desugar to the same record (ADR 0022). *)
+(* A construction: the canonical `align` over its parts, or one of the seven
+   prose spellings, which desugar to the same record (ADR 0031). A `toward`
+   in either place is the spelling before that record and is refused with
+   its new place. *)
 construction_body:
-  | ALIGN fold_line_names alignments toward_opt
-      { { c_fold_lines = $2; c_alignments = $3; c_toward = $4; c_span = $loc } }
+  | ALIGN fold_line_names align_parts { align_body $loc $2 $3 }
+  | ALIGN fold_line_names align_parts TOWARD point_operand { toward_inside $loc($4) }
   | prose_axiom { $1 }
+  | prose_axiom TOWARD point_operand { toward_inside $loc($2) }
 
 fold_line_names:
   |                        { [] }
   | CREASE fold_line_names { $1 :: $2 }
 
-alignments:
-  | alignment            { [ $1 ] }
-  | alignment alignments { $1 :: $2 }
+align_parts:
+  | align_part             { [ $1 ] }
+  | align_part align_parts { $1 :: $2 }
 
-alignment:
+align_part:
   | LPAREN alignment_body RPAREN
       { let (f1, f2, k) = $2 in
-        { al_fold_line = f1; al_fold_line2 = f2; al_kind = k; al_span = $loc } }
+        Part_alignment
+          { al_fold_line = f1; al_fold_line2 = f2; al_kind = k; al_span = $loc } }
+  | LPAREN HEADING line_operand RPAREN { Part_heading ($3, $loc) }
 
 (* The fold-line prefix is left-factored into every alternative: an object
    can itself begin with a crease name, so an optional leading CREASE would
@@ -213,44 +251,26 @@ crease_object:
   | crease_object AMP selector        { LFilter ($1, Keep $3, $loc) }
   | crease_object BACKSLASH selector  { LFilter ($1, Drop $3, $loc) }
 
-toward_opt:
-  |                      { None }
-  | TOWARD point_operand { Some $2 }
-
 (* the seven prose spellings, each fixing its own alignment order *)
 prose_axiom:
   | THROUGH point_operand point_operand
-      { prose $loc [ (AlThrough $2, $loc($2)); (AlThrough $3, $loc($3)) ] None }
+      { prose $loc [ (AlThrough $2, $loc($2)); (AlThrough $3, $loc($3)) ] }
   | MAP point_operand ONTO point_operand
-      { prose $loc [ (AlOnto (AoPoint $2, AoPoint $4), $loc) ] None }
+      { prose $loc [ (AlOnto (AoPoint $2, AoPoint $4), $loc) ] }
   | MAP point_operand ONTO line_operand PERP line_operand
       { prose $loc
-          [ (AlOnto (AoPoint $2, AoLine $4), $loc($2)); (AlPerp $6, $loc($6)) ]
-          None }
+          [ (AlOnto (AoPoint $2, AoLine $4), $loc($2)); (AlPerp $6, $loc($6)) ] }
   | MAP point_operand ONTO line_operand THROUGH point_operand
       { prose $loc
-          [ (AlOnto (AoPoint $2, AoLine $4), $loc($2)); (AlThrough $6, $loc($6)) ]
-          None }
-  | MAP point_operand ONTO line_operand THROUGH point_operand TOWARD point_operand
-      { prose $loc
-          [ (AlOnto (AoPoint $2, AoLine $4), $loc($2)); (AlThrough $6, $loc($6)) ]
-          (Some $8) }
+          [ (AlOnto (AoPoint $2, AoLine $4), $loc($2)); (AlThrough $6, $loc($6)) ] }
   | MAP point_operand ONTO line_operand AND point_operand ONTO line_operand
       { prose $loc
           [ (AlOnto (AoPoint $2, AoLine $4), $loc($2));
-            (AlOnto (AoPoint $6, AoLine $8), $loc($6)) ]
-          None }
-  | MAP point_operand ONTO line_operand AND point_operand ONTO line_operand TOWARD point_operand
-      { prose $loc
-          [ (AlOnto (AoPoint $2, AoLine $4), $loc($2));
-            (AlOnto (AoPoint $6, AoLine $8), $loc($6)) ]
-          (Some $10) }
+            (AlOnto (AoPoint $6, AoLine $8), $loc($6)) ] }
   | PERP line_operand THROUGH point_operand
-      { prose $loc [ (AlPerp $2, $loc($2)); (AlThrough $4, $loc($4)) ] None }
+      { prose $loc [ (AlPerp $2, $loc($2)); (AlThrough $4, $loc($4)) ] }
   | MAP line_operand ONTO line_operand
-      { prose $loc [ (AlOnto (AoLine $2, AoLine $4), $loc) ] None }
-  | MAP line_operand ONTO line_operand TOWARD point_operand
-      { prose $loc [ (AlOnto (AoLine $2, AoLine $4), $loc) ] (Some $6) }
+      { prose $loc [ (AlOnto (AoLine $2, AoLine $4), $loc) ] }
 
 point_ref:
   | POINT { { name = $1; span = $loc } }

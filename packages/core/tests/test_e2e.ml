@@ -211,7 +211,7 @@ let test_eval_map_through_toward () =
       (Beloch.parse ~filename:"t.bel"
          "paper square\n\
           mark (through .a .b) as --bottom\n\
-          mark (map .d onto --bottom through .a toward .b)\n")
+          mark (map .d onto --bottom through .a) (toward .b)\n")
   in
   (* the axiom-6 crease is a full mark: it records as a chord (no fold-time
      edge), so read its line from the mark layer (the map crease is the last
@@ -310,7 +310,7 @@ let test_e2e_axiom7_rational_crease () =
     "paper square\n\
      mark (through .a .c) as --diag\n\
      mark (through .b .d) as --anti\n\
-     mark (map .a onto --anti and .d onto --diag toward .b)\n"
+     mark (map .a onto --anti and .d onto --diag) (.a toward .b)\n"
   in
   let json = Beloch.fold_string ~filename:"t.bel" src in
   let open Yojson.Safe.Util in

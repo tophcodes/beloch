@@ -1,0 +1,17 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; A line folded onto a line it crosses: each candidate folds over the part
+; of --v on the side away from toward, and (--v toward .u) measures where
+; that part lands. .u lies below the a–c diagonal and to
+; the right of --v, so the diagonal lands the upper half of --v on the right
+; half of --h, nearer .u than the left half the other diagonal lands it on
+; (#58). The side of .d folds over and .d lands on .b.
+
+paper square
+mark (map .a onto .b) as --v
+mark (map .a onto .d) as --h
+.u = free on --ab from .b at 1/5
+fold (map --v onto --h) (--v toward .u)
+
+; assert steps = 1
+; assert .d = (1, 0)

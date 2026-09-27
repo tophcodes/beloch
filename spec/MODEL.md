@@ -611,17 +611,78 @@ An incidence on the table that the line sought has to satisfy, with one side
 of it reflected across that line.
 :::
 
-::: {.definition #def-selection name="selection" uses="def-read" defines="term-selection"}
-A *selection* $\sigma$ is a read that keeps one table line out of a finite
-set of them: the line nearest a named point; the line whose fold moves a
-named point to a named side. A program that states none selects by the
-identity. Like every read, a selection is defined exactly where it answers,
-here when one line remains.
+::: {.definition #def-selection name="selection" uses="def-read def-alignment def-material def-flap" defines="term-selection term-folding-side"}
+Let $\ell$ be a table line, $\rho_\ell$ the reflection across it, and
+$H^+_\ell$, $H^-_\ell$ its two open half-planes. An alignment `x onto y` of
+a construction is an incidence ([#def-alignment]): $\rho_\ell(x)$ lies on
+$y$, equivalently $\rho_\ell(y)$ passes through $x$, so `x onto y` and
+`y onto x` are one alignment. Its objects are points, as their table
+positions, and lines, each with its material ([#def-material]) as a finite
+set of table segments.
+
+A point $t$ *names the side* of $\ell$ that holds it, and names none when
+$t \in \ell$. A set of segments $T$ names the side that holds
+$T \setminus \ell$, and names none when $T \setminus \ell$ is empty or meets
+both sides. A line names the side its material names: none when $\ell$
+crosses the line on the paper or contains it.
+
+A fold along $\ell$ with *folding side* $H$, one of $H^\pm_\ell$, *carries
+out* an alignment `x onto y` when one of three holds: $x$ lies in $H$ and
+lands on $y$; $y$ lies in $H$ and lands on $x$; or $x$ is a point on $\ell$
+and on the line $y$. For a point this means lying in $H$; for a line that
+lands on a line, having material in $H$; for a line that lands on a point
+$q$, having material at $\rho_\ell(q)$ in $H$. The fold carries out a
+construction when it carries out each of its `onto` alignments. The
+*landing* of an object is the image under $\rho_\ell$ of its part in
+$\overline{H}$, where $\overline{H}$ adds $\ell$ to $H$: a point in $H$, and
+the material of a line in $\overline{H}$. The part of a line on the other
+side stays where it is.
+
+A *selection* $\sigma$ is the read that keeps one line of the candidates
+$C$ of a construction ([#def-construction]), from the items a program
+states: a line $g$ as `heading`, a point or a line $\tau$ as `toward`,
+optionally with one object $x$ of the alignments as its subject, and a flap
+$m$ as `moving`, which names the side of its first anchor point off $\ell$,
+or of the material of a line. It runs four stages.
+
+1. *Direction.* With `heading`, only the $\ell \in C$ whose angle with $g$ is
+   least remain; a tie leaves all of them to the later stages.
+2. *Folding side.* With `toward`, the folding side of $\ell$ is the side
+   opposite the one $\tau$ names, undefined where $\tau$ names none; with
+   `moving` too, $m$ has to name that side, or the folding side is
+   undefined. With `moving` alone, it is the side $m$ names. With neither,
+   it is *open*.
+3. *Performance.* Only the $\ell$ remain whose folding side is defined and
+   whose fold with it carries out the construction, or whose folding side
+   is open and for which a fold with either side does. With a subject $x$,
+   $x$ has to have a landing. A remaining line with an open folding side
+   takes the side that alone carries the construction out, or, where both
+   do, the side of the first object of the first alignment as the program
+   writes it; that default belongs to the write ([#def-fold]). Where that
+   object names no side either, the write has no default and needs
+   `toward` or `moving`.
+4. *Landing.* With `toward`, among several remaining lines only those
+   remain whose landing lies nearest $\tau$, measured by the distance
+   between sets, $d(A, B) = \min_{a \in A, b \in B} |a - b|$: the landing
+   of $x$ with a subject, the union of the landings of all objects without.
+
+$\sigma$ is defined when exactly one line remains; its value is that line,
+and its folding side is the side a fold along it moves. A construction that
+determines one line by its alignments has $|C| = 1$ and takes no `heading`;
+`toward` and `moving` still pass it through stages 2 and 3.
 :::
 
 ::: {.term #term-selection name="selection"}
-The read that keeps one table line out of the finitely many a construction
-offers.
+The read that keeps one line out of the candidates of a construction: by
+direction with `heading`, by the side that folds over with `toward` or
+`moving`, by whether that fold carries out every alignment, and by where it
+lands the material that folds over.
+:::
+
+::: {.term #term-folding-side name="folding side"}
+The side of a candidate line that a fold along it moves: the one opposite
+`toward`, the one `moving` names, or with neither the side that carries
+the construction out.
 :::
 
 ::: {.definition #def-construction name="construction" uses="def-read def-alignment def-selection def-line def-material" defines="term-construction term-candidate"}
@@ -662,8 +723,115 @@ mark (map .a onto .b) as --ef
 mark (through .b .d) as --bd
 .p = free on --bd from .d at 1/4
 @label choose
-fold (map .d onto --ef through .p toward .c) as --s
+fold (map .d onto --ef through .p) (.d toward .c) as --s
 :::
+
+::: {.lemma #lem-selection-defined name="a selection is a partial function" uses="def-selection def-construction"}
+For every state, arguments and items, each stage of [#def-selection] is
+determined, and $\sigma$ is a partial function of the state, the arguments
+and the items. The line it keeps does not depend on the order in which the
+construction lists its alignments; the default folding side of stage 3,
+and with it whether a write without side items can take a side, does.
+
+*Proof.* The candidates are finitely many ([#def-construction]), so every
+stage filters a finite set. Stage 1 compares angles between lines, a
+function of the lines alone. In stage 2, a point either lies on $\ell$ or
+in exactly one of $H^\pm_\ell$, since the open half-planes and $\ell$
+partition the plane, so the side a point names is determined or undefined.
+The material of a line is a finite union of segments ([#def-material]);
+$T \setminus \ell$ is empty, or lies in one half-plane, or meets both, and
+these three cases are exclusive, so the side a line names is determined or
+undefined, never two. The side `moving` names is that of one point, its
+first anchor point off $\ell$, or of a line. Stage 3 tests, for finitely
+many points and segments, membership in a half-plane and incidence of a
+reflected point with a segment. In stage 4, a landing is a finite union of
+points and segments, each compact, and so is $\tau$; the distance between
+two non-empty compact sets is attained, so the minimum over the finitely
+many remaining lines exists. A line with an empty landing is not compared.
+Stages 1 to 4 read the alignments as a set of incidences and the landings
+as a union, and none reads their order; only the default folding side
+reads the first object. $\sigma$ keeps one line or none, so it is a
+partial function.
+:::
+
+In the kernel the comparisons are exact: squared distances between points
+and segments, and squared cosines between lines, are rational functions of
+the coordinates, so they stay in the field the coordinates lie in.
+
+::: {.lemma #lem-selection-carries-out name="a remaining line carries out its alignments" uses="def-selection def-alignment"}
+Let $\ell$ remain after stage 3 of [#def-selection] with folding side $H$.
+Reflecting the paper in $H$ across $\ell$ and leaving the rest in place
+makes every `onto` alignment of the construction hold as an incidence of
+the table positions. Conversely, an alignment whose two objects both lie
+outside $\overline{H}$ holds after the fold exactly when it held before.
+
+*Proof.* $\ell$ is a candidate, so it satisfies each alignment
+`x onto y` ([#def-alignment]): $\rho_\ell(x)$ lies on $y$, and since
+$\rho_\ell$ is an involution, $\rho_\ell(y)$ passes through $x$. Stage 3
+gives one of three cases for each alignment. If $x$ lies in $H$, what
+lands of it lies on $y$: a point $x$ lands at $\rho_\ell(x)$ on $y$, and the
+material of a line $x$ in $\overline{H}$ lands on the image of the line of
+$x$, which is the line of $y$. If $y$ lies in $H$, the same holds with the
+roles exchanged; where $y$ is a line and $x$ a point, stage 3 asks for
+material of $y$ at $\rho_\ell(x)$ in $H$, and that point lands on $x$. If
+$x$ is a point on $\ell$ and on the line $y$, it stays and lies on $y$. A
+point outside $\overline{H}$ is not reflected, so an alignment between two
+such objects holds after the fold exactly when it did before.
+:::
+
+The lemma speaks about the half-plane $H$ on the table. Which layers on
+$H$ a `fold` moves is its scope ([#def-fold]): the flap that carries the
+anchor and what lies outward of it, or every layer on $H$ where the write
+names only a side. An object that lies in $H$ under a layer the scope
+leaves behind stays behind with that layer.
+
+::: {.lemma #lem-crossing-landing name="where a crossing line lands" uses="def-selection"}
+Let a construction fold a line $m$ onto a line $n$, crossing at $X$, and
+let the material of $m$ be one segment whose interior contains $X$, with
+the parts $M_1$ and $M_2$ on either side of $X$. The candidates are the two
+bisectors $b_1 \perp b_2$ through $X$, where both cross the paper, as they
+do on the flat sheet when $X$ lies inside it, and `(m toward τ)` measures the
+landing of $m$: under each bisector, the part that folds over lands on one
+of the two rays of $n$ from $X$, as a segment from $X$ of the length of
+that part. Let $v$ be the unit direction of $n$ such that the landing under
+$b_1$ lies on $X + \mathbb{R}_{\ge 0}\, v$, let $\tau$ be a point on neither
+bisector, $s$ the coordinate along $v$ of its foot on $n$, counted from
+$X$, and $h$ its distance from $n$.
+
+1. If the landing under $b_2$ lies on the opposite ray, $\tau$ is as near
+   to one landing as to the other exactly when $s = 0$: $\tau$ lies on the
+   perpendicular to $n$ through $X$.
+2. If it lies on the same ray, with lengths $l_1 \le l_2$ of the two
+   landings, $\tau$ is as near to one as to the other exactly when
+   $l_1 = l_2$ or $s \le l_1$.
+
+*Proof.* Every point of $m$ apart from $X$ lies on one side of each
+bisector, so each bisector has material of $m$ on both sides; stage 3
+keeps both with any folding side, and $m$ has a landing under both. For
+perpendicular lines through $X$, $\rho_{b_1} \circ \rho_{b_2} = R_X$, the
+half-turn about $X$, so $\rho_{b_2} = \rho_{b_1} \circ R_X$. If
+$\rho_{b_1}$ sends the ray of $M_1$ to the ray of $n$ in direction $v$, it
+sends the ray of $M_2$ to $-v$, and $\rho_{b_2}$ sends $M_1$ to $-v$ and
+$M_2$ to $v$. Each part is a segment from $X$, and a reflection keeps its
+length.
+
+The squared distance from $\tau$ to $X + [0, l]\,v$ is
+$h^2 + \max(0, s - l)^2$ for $s \ge 0$ and $h^2 + s^2$ for $s < 0$, and to
+$X - [0, l]\,v$ it is $h^2 + \max(0, -s - l)^2$ for $s \le 0$ and
+$h^2 + s^2$ for $s > 0$. In case 1, with $s > 0$ the landing along $v$ is
+at squared distance $h^2 + \max(0, s - l_1)^2 < h^2 + s^2$, the distance
+to the one along $-v$, and $s < 0$ is the mirror case; the two agree at
+$s = 0$. In case 2, for $s \le l_1$ both squared distances are
+$h^2 + \min(0, s)^2$, equal; for $s > l_1$ the longer landing is strictly
+nearer unless $l_1 = l_2$.
+:::
+
+For `--v` folded onto `--h` in the square, the figures of issue #58, both
+parts of `--v` have length $\tfrac12$: with `(--v toward τ)` case 2 is a
+tie at every point, and case 1 ties on `--v` itself. A bare `toward`
+measures the landing of `--h` as well, which lands on the rays of `--v` by
+the same argument with the roles of the two lines exchanged, and adds ties
+of its own.
 
 ::: {.open #open-several-sought-lines name="constructions that seek more than one line" uses="def-construction def-alignment"}
 [#def-construction] puts its alignments on one sought line, which is where

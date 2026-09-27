@@ -4,7 +4,7 @@
 // for a write they are states, drawn by what tells them apart. Reads
 // `beloch:trace` (spec/FOLD.md, "The trace"), so the file has to be written by
 // `beloch fold --trace`.
-import type { Conic, FoldScene, LineCoeffs, TraceCandidate, TraceEntry, Vec2, WriteEntry } from "@beloch/scene";
+import type { Conic, FoldScene, LineCoeffs, Removal, TraceCandidate, TraceEntry, Vec2, WriteEntry } from "@beloch/scene";
 import { SceneError } from "@beloch/scene";
 import { createDoc, el, SvgDoc } from "./svgdoc";
 import type { SvgNode } from "./svgdoc";
@@ -48,15 +48,17 @@ export function candidatesEntry(scene: FoldScene, statement?: number): TraceEntr
   return entry;
 }
 
-const STATUS: Record<string, string> = {
+const STATUS: Record<Removal, string> = {
   paper: "removed: creases no face",
   toward: "removed by toward",
   moving: "removed by moving",
+  heading: "removed by heading",
+  moved: "removed: no fold carries out every alignment",
 };
 
 function status(c: TraceCandidate): string {
   if (c.selected) return "selected";
-  if (c.removedBy) return STATUS[c.removedBy]!;
+  if (c.removedBy) return STATUS[c.removedBy];
   return "open";
 }
 

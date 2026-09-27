@@ -9,6 +9,10 @@
     parser: [Error -> Ast -> Items -> Parser] (ADR 0018 covers the evaluator
     chain, which this module sits in front of). *)
 
+val bind : string -> Ast.construction -> Ast.raw_item list -> Error.span -> Ast.stmt
+(** A binding of a construction, [--name = (construction) items]: it takes
+    the `toward` and `moving` items and refuses every other head. *)
+
 val mark : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
 val fold : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
 val reverse : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt

@@ -1,0 +1,15 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; heading keeps the candidate whose line makes the smallest angle with the
+; given line (ADR 0031). Of the two tangents through .p, the one at 45° is
+; nearer the bottom edge's direction than the vertical one, and it lands .d
+; at the centre.
+
+paper square
+mark (map .a onto .b) as --ef
+mark (through .b .d) as --bd
+.p = free on --bd from .d at 1/4
+fold (align (.d onto --ef) (through .p) (heading --ab))
+
+; assert steps = 1
+; assert .d = (1/2, 1/2)

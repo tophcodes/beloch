@@ -1,0 +1,11 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; toward on a fold along an existing crease names the side that stays; the
+; other side folds over.
+
+paper square
+mark (map .a onto .b) as --v
+fold (--v) (toward .b)
+
+; assert steps = 1
+; assert .a = (1, 0)

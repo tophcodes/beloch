@@ -1,0 +1,11 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; An alignment is an incidence, so (--cd onto .a) is (.a onto --cd). With
+; no side item the side of the first object folds over: here the edge --cd,
+; which lands on .a (ADR 0031).
+
+paper square
+fold (align (--cd onto .a) (perp --da))
+
+; assert .d = (0, 0)
+; assert .a = (0, 0)

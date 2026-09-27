@@ -1,0 +1,11 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; heading --ab makes the same angle with both bisectors, and with no toward
+; the tie leaves the construction ambiguous.
+
+paper square
+mark (map .a onto .b) as --v
+mark (map .a onto .d) as --h
+fold (align (--v onto --h) (heading --ab))
+
+; expect error "map --v onto --h is ambiguous: 2 folds carry it out, all landing on the paper"

@@ -79,7 +79,7 @@ let test_eval_bisect_errors () =
               "paper square\n\
                mark (through .a .c) as --x\n\
                mark (through .a .c) as --y\n\
-               mark (map --x onto --y toward .b)\n")));
+               mark (map --x onto --y) (toward .b)\n")));
   expect_error "ambiguous" (fun () ->
       ignore
         (Eval.eval_folded
@@ -87,15 +87,7 @@ let test_eval_bisect_errors () =
               "paper square\n\
                mark (map .a onto .b) as --v\n\
                mark (map .b onto .c) as --h\n\
-               mark (map --v onto --h)\n")));
-  expect_error "names where the fold goes" (fun () ->
-      ignore
-        (Eval.eval_folded
-           (Beloch.parse ~filename:"t.bel"
-              "paper square\n\
-               mark (through .a .c) as --d\n\
-               mark (map .b onto .c) as --h\n\
-               mark (map --d onto --h toward .a)\n")))
+               mark (map --v onto --h)\n")))
 
 let test_eval_map_onto_line_parallel () =
   expect_error "parallel" (fun () ->
@@ -143,7 +135,7 @@ let test_eval_map_onto_line_ok () =
    anti-diagonal — cut the paper, so the paper-incidence filter leaves the
    ambiguity standing. *)
 let test_eval_map_through_ambiguous () =
-  expect_error "both landing on the paper" (fun () ->
+  expect_error "all landing on the paper" (fun () ->
       ignore
         (Eval.eval_folded
            (Beloch.parse ~filename:"t.bel"
@@ -1178,9 +1170,9 @@ let test_ax5_kite_toward () =
   let landing src =
     Fold_state.table_position (eval_src src).Eval.state (pt 0 1)
   in
-  let p1 = landing "mark (through .a .c) as --ac\nfold (map --da onto --ac toward .b)\n" in
+  let p1 = landing "mark (through .a .c) as --ac\nfold (map --da onto --ac) (toward .b)\n" in
   let p2 =
-    landing "mark (through .a .c) as --ac\nfold (map --da onto --ac toward .b) (moving .d)\n"
+    landing "mark (through .a .c) as --ac\nfold (map --da onto --ac) (toward .b) (moving .d)\n"
   in
   Alcotest.(check bool) "toward and toward+moving agree" true
     (Geom.point_equal p1 p2);
@@ -1194,36 +1186,39 @@ let test_ax5_straddle_moving_unique () =
   let fd =
     eval_src
       "mark (through .a .c) as --ac\nmark (through .b .d) as --bd\n\
-       fold (map --ac onto --bd toward .b) (moving .c)\n"
+       fold (map --ac onto --bd) (toward .b) (moving .c)\n"
   in
   Alcotest.(check bool) ".c lands on (1,0)" true
     (Geom.point_equal (Fold_state.table_position fd.Eval.state (pt 1 1)) (pt 1 0))
 
-(* .d lies in both swinging flaps of the straddle → genuinely ambiguous *)
+(* .d agrees with .b under both candidates, and both land the part of --ac
+   that folds over on the segment from the centre to .b: toward .b lies as
+   near to one landing as to the other (ADR 0031) *)
 let test_ax5_straddle_moving_both () =
-  expect_error "both swinging flaps" (fun () ->
+  expect_error "lies as near" (fun () ->
       eval_src
         "mark (through .a .c) as --ac\nmark (through .b .d) as --bd\n\
-         fold (map --ac onto --bd toward .b) (moving .d)\n")
+         fold (map --ac onto --bd) (toward .b) (moving .d)\n")
 
-(* straddle without `moving`: both bisectors move material toward .b *)
+(* straddle without `moving`: both candidates land the part of --ac that folds
+   over on the same half of --bd, so toward .b selects nothing *)
 let test_ax5_straddle_no_moving () =
-  expect_error "straddles the crossing" (fun () ->
+  expect_error "lies as near" (fun () ->
       eval_src
         "mark (through .a .c) as --ac\nmark (through .b .d) as --bd\n\
-         fold (map --ac onto --bd toward .b)\n")
+         fold (map --ac onto --bd) (toward .b)\n")
 
-(* moving .b: neither candidate swings .b's flap toward .b *)
+(* moving .b names the side toward .b keeps, under both candidates *)
 let test_ax5_no_viable () =
-  expect_error "no fold of" (fun () ->
+  expect_error_hint "toward .b and moving .b name the same side" "drop one of them" (fun () ->
       eval_src
         "mark (through .a .c) as --ac\nmark (through .b .d) as --bd\n\
-         fold (map --ac onto --bd toward .b) (moving .b)\n")
+         fold (map --ac onto --bd) (toward .b) (moving .b)\n")
 
 (* `toward .b` names a point ON l2 (bottom edge) — legal now; --k binds the
    y=x diagonal (through a and c, off the (1,0) corner) *)
 let test_ax5_bind_x_on_l2 () =
-  let fd = eval_src "mark (map --da onto --ab toward .b) as --k\n" in
+  let fd = eval_src "mark (map --da onto --ab) (toward .b) as --k\n" in
   match assoc4 "k" fd.Eval.named_lines with
   | Some k ->
       Alcotest.(check bool) "--k passes through (0,0)" true
@@ -1242,27 +1237,52 @@ let test_ax5_bind_endpoint_directions () =
     | Some k -> k
     | None -> Alcotest.fail "expected --k"
   in
-  let ka = k "mark (map .a onto .b) as --v\nmark (map --v onto --ab toward .a) as --k\n" in
-  let kb = k "mark (map .a onto .b) as --v\nmark (map --v onto --ab toward .b) as --k\n" in
+  let ka = k "mark (map .a onto .b) as --v\nmark (map --v onto --ab) (toward .a) as --k\n" in
+  let kb = k "mark (map .a onto .b) as --v\nmark (map --v onto --ab) (toward .b) as --k\n" in
   Alcotest.(check bool) "toward .a and toward .b differ" true
     (Geom.side_of_line ka (pt 1 1) <> Geom.side_of_line kb (pt 1 1))
 
-(* bind, hinge at the sheet centre (two midlines crossing): both candidates
-   swing material toward .b → E5-bind, hinting `at` *)
-let test_ax5_bind_center_ambiguous () =
-  expect_error_hint "straddles the crossing"
-    "select the swinging segment of --v with `&`" (fun () ->
-      eval_src
-        "mark (map .a onto .b) as --v\n\
-         mark (map .b onto .c) as --h\n\
-         mark (map --v onto --h toward .b) as --k\n")
+(* bind, hinge at the sheet centre (two midlines crossing): .b lies on the
+   anti-diagonal candidate and names no side of it, so the a–c diagonal
+   remains (#58, the figure of a line folding over in part) *)
+let test_ax5_bind_center_toward_corner () =
+  let fd =
+    eval_src
+      "mark (map .a onto .b) as --v\n\
+       mark (map .b onto .c) as --h\n\
+       mark (map --v onto --h) (toward .b) as --k\n"
+  in
+  match assoc4 "k" fd.Eval.named_lines with
+  | Some k ->
+      Alcotest.(check bool) "--k passes through .a and .c" true
+        (Geom.side_of_line k (pt 0 0) = 0 && Geom.side_of_line k (pt 1 1) = 0)
+  | None -> Alcotest.fail "expected --k"
 
-(* `toward .c` names a point ON l1 (the a–c diagonal) → E1 *)
+(* `toward .a` names a point on the moved line, which names a side of each
+   candidate like any other point. Both candidates cross the diagonal at the
+   centre, and `(--d toward .a)` measures the part of --d that folds over:
+   the steep one lands it on the left half of --h, nearer .a than the right
+   half the shallow one lands it on. *)
+let test_ax5_toward_on_moved_line () =
+  let fd =
+    eval_src
+      "mark (through .a .c) as --d\n\
+       mark (map .b onto .c) as --h\n\
+       mark (map --d onto --h) (--d toward .a) as --k\n"
+  in
+  match assoc4 "k" fd.Eval.named_lines with
+  | Some k ->
+      Alcotest.(check bool) "--k is the steep bisector" true
+        (Num.compare (Num.mul k.Geom.a k.Geom.a) (Num.mul k.Geom.b k.Geom.b) > 0)
+  | None -> Alcotest.fail "expected --k"
+
+(* toward .c on the moved diagonal: both candidates land the part of --ac
+   that folds over at the same distance from .c *)
 let test_ax5_toward_on_l1 () =
-  expect_error "names where the fold goes" (fun () ->
+  expect_error "lies as near" (fun () ->
       eval_src
         "mark (through .a .c) as --ac\nmark (through .b .d) as --bd\n\
-         fold (map --ac onto --bd toward .c)\n")
+         fold (map --ac onto --bd) (toward .c)\n")
 
 (* kite, `up to` with no `moving` and no implied anchor (axiom-5 folds have no
    implied anchor point — only line operands): the paper-incidence filter
@@ -1272,24 +1292,6 @@ let test_ax5_up_to_needs_moving () =
   expect_error "needs `moving" (fun () ->
       eval_src
         "mark (through .a .c) as --ac\nfold (map --da onto --ac) (up to .c)\n")
-
-(* NOTE: E3 (no bisector lands on the paper) and E7 (implied-moving material
-   straddles the crease) are geometrically unreachable on the flat square —
-   both need an off-paper hinge — so they have no positive test here; the
-   branches stay in eval.ml as defensive guards.
-
-   The `toward`-given, `moving`-omitted "no fold ... moves its material
-   toward" branch (the empty-viables case in select_axiom5_fold's `Some x`
-   arm) is also unreachable here: the two candidate bisectors of an
-   intersecting `l1`/`l2` pair always send l1's material to *opposite* rays
-   of l2 (one bisector preserves the traversal order from the hinge, the
-   other reverses it), and those two rays sit on opposite sides of l1. So for
-   any off-l1 `toward` target, exactly one candidate always matches — the
-   branch would need a degenerate hinge (material grazing a bisector exactly,
-   side 0) to fire, which — like E3/E7 — needs geometry off the flat square.
-   Confirmed by brute-force CLI sweep over all edge/diagonal l1×l2 pairs and
-   corner `toward` targets (including derived bisector lines as l1/l2): no
-   combination reached this branch. *)
 
 (* the join selector --[.a .b] finds the same bottom edge as the prelude --ab *)
 let test_select_edge () =
@@ -1310,8 +1312,8 @@ let test_select_edge () =
          (Str.global_replace (Str.regexp_string "--ab") "EDGE" drop_refs))
   in
   Alcotest.(check string) "--[.a .b] == --ab"
-    (fold (base ^ "mark (map --v onto --ab toward .a)\n"))
-    (fold (base ^ "mark (map --v onto --[.a .b] toward .a)\n"))
+    (fold (base ^ "mark (map --v onto --ab) (toward .a)\n"))
+    (fold (base ^ "mark (map --v onto --[.a .b]) (toward .a)\n"))
 
 (* --[.a .c] names the diagonal, on which no crease or edge exists → error
    (no sight-lines) *)
@@ -1319,7 +1321,7 @@ let test_select_no_sightline () =
   expect_error "incident" (fun () ->
       ignore
         (Beloch.fold_string ~filename:"t.bel"
-           "paper square\nmark (map .a onto .b) as --v\nmark (map --v onto --[.a .c] toward .a)\n"))
+           "paper square\nmark (map .a onto .b) as --v\nmark (map --v onto --[.a .c]) (toward .a)\n"))
 
 (* ---- Notation cutover: mark/fold/flatten verbs replace @/bare-axiom (#24) ---- *)
 
@@ -1429,7 +1431,7 @@ let test_resume_equals_full () =
   let resumed = fold_str (Eval.eval_program ~resume suffix) in
   Alcotest.(check string) "resumed FOLD == full FOLD" full resumed
 
-(* ---- Recognition, sorts and the output clause (ADR 0022) ---- *)
+(* ---- Recognition, sorts and the output clause (ADR 0031) ---- *)
 
 let folded src = Eval.eval_folded (Beloch.parse ~filename:"t.bel" src)
 
@@ -1532,7 +1534,7 @@ let test_axiom7_source_order () =
 (* The implied anchor: axioms 2, 6 and 7 move a point, so a `reverse` over
    one needs no `moving` to name its tip; the other four have none. *)
 let test_implied_point () =
-  expect_error "this reverse needs `moving .p` to name the tip" (fun () ->
+  expect_error "this reverse needs `moving .p` or `toward .p` to name the tip" (fun () ->
       ignore (folded "paper square\nreverse (align (through .a) (through .c))\n"));
   expect_error "does not split into two halves" (fun () ->
       ignore
@@ -1592,17 +1594,17 @@ let test_align_table_total () =
             (fun () -> ignore (folded src)))
     sets
 
-(* `align` over named fold lines, and `toward` on a construction that
+(* `align` over named fold lines, and `heading` on a construction that
    determines one line. *)
 let test_recognition_refusals () =
   expect_error "a construction over named fold lines is not evaluated yet"
     (fun () ->
       ignore (folded "paper square\nmark (align --f (.a onto .c)) as --z\n"));
-  expect_error_hint "this construction determines one line" "drop toward"
+  expect_error_hint "this construction determines one line" "drop heading"
     (fun () ->
       ignore
         (folded
-           "paper square\nmark (align (through .a) (through .c) toward .b)\n"))
+           "paper square\nmark (align (through .a) (through .c) (heading --ab))\n"))
 
 (* ---- the output clause ---- *)
 
@@ -1867,8 +1869,10 @@ let () =
             test_ax5_bind_x_on_l2;
           Alcotest.test_case "ax5 bind endpoint hinge directions" `Quick
             test_ax5_bind_endpoint_directions;
-          Alcotest.test_case "ax5 bind centre ambiguous" `Quick
-            test_ax5_bind_center_ambiguous;
+          Alcotest.test_case "ax5 bind centre, toward a corner" `Quick
+            test_ax5_bind_center_toward_corner;
+          Alcotest.test_case "ax5 toward on the moved line" `Quick
+            test_ax5_toward_on_moved_line;
           Alcotest.test_case "ax5 toward point on l1" `Quick
             test_ax5_toward_on_l1;
           Alcotest.test_case "ax5 up to needs moving" `Quick

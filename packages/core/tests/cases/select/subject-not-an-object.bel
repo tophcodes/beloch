@@ -1,0 +1,8 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; (x toward …) names an object of the construction; .c is none.
+
+paper square
+fold (map .a onto .b) (.c toward .d)
+
+; expect error ".c is none of the objects of map .a onto .b"

@@ -1,0 +1,11 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; reverse with toward and no moving: the tip on the side opposite .d is
+; reversed, as (moving .b) would name it.
+
+paper square
+fold (map .a onto .c) as --bd
+mark (map .b onto .c) as --h
+reverse (--h) (toward .d)
+
+; assert .b = .c

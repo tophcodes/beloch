@@ -1,0 +1,9 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; (.a toward .a) keeps .a on the side that stays, so .a never folds over
+; and no candidate remains.
+
+paper square
+fold (map .a onto .b) (.a toward .a)
+
+; expect error "no fold of map .a onto .b keeps .a on the side that stays, folds .a over and carries out its alignments"

@@ -1,0 +1,9 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; A mark along an existing line selects nothing and moves nothing.
+
+paper square
+mark (map .a onto .b) as --v
+mark (--v) (toward .b)
+
+; expect error "a mark along an existing line has no candidates to select"

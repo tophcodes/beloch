@@ -47,10 +47,10 @@ and flap_operand = FByPoints of point_operand list * Error.span
 type arg = APoint of point_operand | ALine of line_operand
 
 (* A construction, the read of sort line a write's axis comes from: the set
-   of alignments that together determine the fold line (ADR 0022). The seven
-   prose spellings desugar to this record at parse time; [Axiom.classify]
-   recognises the alignment set as one of the seven axioms where a solver is
-   needed. *)
+   of alignments that together determine the fold line, with its `heading`
+   (ADR 0031). The seven prose spellings desugar to this record at parse
+   time; [Axiom.classify] recognises the alignment set as one of the seven
+   axioms where a solver is needed. *)
 type align_object = AoPoint of point_operand | AoLine of line_operand
 
 and alignment_kind =
@@ -68,9 +68,17 @@ and alignment = {
 and construction = {
   c_fold_lines : string list;     (* CREASE_NAME* in the align head *)
   c_alignments : alignment list;  (* source order, one entry per alignment *)
-  c_toward : point_operand option;
+  c_heading : line_operand option;  (* the direction the crease keeps *)
   c_span : Error.span;
 }
+
+(* What a `toward` item names: the side of each candidate that holds the
+   point, or the side the line lies on (ADR 0031). *)
+type toward = TowardPoint of point_operand | TowardLine of line_operand
+
+(* `(toward .u)`, or `(x toward .u)` naming the object of the construction
+   whose landing the selection measures *)
+type toward_item = { target : toward; subject : align_object option }
 
 type direction = Valley | Mountain
 
@@ -94,8 +102,14 @@ type flap_arg =
    target flap *)
 type place_dir = PlaceOver | PlaceUnder
 
+(* The items of a write, a binding or a mark that name the side of the
+   construction's line that stays and the side that folds over; they select
+   among its candidates as they do in a fold (ADR 0031). *)
+type sides = { s_toward : toward_item option; s_moving : flap_arg option }
+
 type fold_spec = {
   moving : flap_arg option;
+  toward : toward_item option;
   up_to : flap_arg option;
   direction : direction;
   place : (place_dir * flap_arg) option;
@@ -106,7 +120,11 @@ type fold_spec = {
 (* reverse <markable> [moving <flap>] [outside]: the tip beyond the line is
    cut in two at its spine, both halves reflected, each placed next to its
    own hinge layer (inside) or on the far outside (outside). *)
-type reverse_spec = { rmoving : flap_arg option; outside : bool }
+type reverse_spec = {
+  rmoving : flap_arg option;
+  rtoward : toward_item option;
+  outside : bool;
+}
 
 (* A collapse element's M/V constraint: a bare element is
    unconstrained — the solver assigns its M/V. `mountain`/`valley`
@@ -156,7 +174,7 @@ type raw_item =
   | RiExtent of extent * Error.span            (* (between …) / (at …) *)
   | RiOrder of flap_arg * flap_arg * Error.span
   | RiStaying of flap_arg * Error.span
-  | RiSelection of point_operand * Error.span
+  | RiSelection of toward_item * Error.span
 
 (* One argument of an annotation (spec/BELOCH.md, Annotations): any read the
    language has, a text in double quotes, a number, or a bare word. *)
@@ -182,11 +200,14 @@ type annotation = {
 
 type stmt =
   | Annotation of annotation
-  | BindLine of string * construction * Error.span
-      (* --l = (map .a onto .b) : bind a pure line VALUE; no material effect *)
-  | Mark of output * markable * extent * direction * flap_arg option * Error.span
+  | BindLine of string * construction * sides * Error.span
+      (* --l = (map .a onto .b) [(toward …)] [(moving …)] : bind a pure line
+         VALUE; no material effect *)
+  | Mark of output * markable * extent * direction * flap_arg option * sides
+            * Error.span
       (* mark (<construction>|(--l)) [(between .a .b) | (at .p)] [(mountain)]
-         [(on <flap>)] [as --n | into --n]; flat crease. Full extent
+         [(on <flap>)] [(toward …)] [(moving …)] [as --n | into --n]; flat
+         crease. Full extent
          subdivides (emits F); a mid-face extent records (no subdivide). *)
   | Fold of output * markable * fold_spec * Error.span
       (* fold (<construction>|(--l)) [(moving …)][(up to …)][(mountain)] : on

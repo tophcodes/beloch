@@ -1,0 +1,12 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; heading --ab makes the same angle with both bisectors, so the tie passes on
+; to toward, which keeps the diagonal through .a and .c (ADR 0031).
+
+paper square
+mark (map .a onto .b) as --v
+mark (map .a onto .d) as --h
+.u = free on --ab from .b at 1/5
+fold (align (--v onto --h) (heading --ab)) (--v toward .u)
+
+; assert .d = (1, 0)

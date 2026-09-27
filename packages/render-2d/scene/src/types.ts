@@ -138,7 +138,7 @@ export interface Inspect {
 // every candidate line of a construction, in the table coordinates of the
 // frame the construction read (`frameIndex`; for a fold the state before it),
 // with the rule that removed it.
-export type Removal = "paper" | "toward" | "moving";
+export type Removal = "paper" | "heading" | "toward" | "moving" | "moved";
 export interface TraceCandidate {
   line: LineCoeffs;
   removedBy: Removal | null;
