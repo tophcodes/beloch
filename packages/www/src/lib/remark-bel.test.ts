@@ -116,3 +116,31 @@ test("a document with no blocks.json entry renders no outcomes at all", async ()
   );
   expect(rendered).not.toContain("bel-outcome");
 });
+
+// Inline code the highlighter covers completely is Beloch and is coloured
+// like a fenced block; anything it leaves text over for, a path or an OCaml
+// identifier, stays plain inline code.
+async function renderInline(markdown: string): Promise<string> {
+  return String(
+    await unified()
+      .use(remarkParse)
+      .use(remarkBel, { blocks: blocksWithEntries, doc: "spec/OTHER.md" })
+      .use(remarkRehype, { allowDangerousHtml: true })
+      .use(rehypeStringify, { allowDangerousHtml: true })
+      .process(markdown),
+  );
+}
+
+test("inline Beloch is highlighted", async () => {
+  const rendered = await renderInline("Fold with `fold (--ac) (moving .b)` here.");
+  expect(rendered).toContain('<code class="bel-inline">');
+  expect(rendered).toContain('<span class="bel-keyword">fold</span>');
+  expect(rendered).toContain('<span class="bel-point" data-bel-name="b">.b</span>');
+});
+
+test("inline code that is not Beloch stays plain", async () => {
+  const rendered = await renderInline("See `examples/crane.bel` and `Fold_state.t`.");
+  expect(rendered).not.toContain("bel-inline");
+  expect(rendered).toContain("<code>examples/crane.bel</code>");
+  expect(rendered).toContain("<code>Fold_state.t</code>");
+});

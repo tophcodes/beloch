@@ -232,3 +232,11 @@ test("an item the register does not have renders a visible placeholder", async (
       " run scripts/api-register.ts.</p>",
   );
 });
+
+// Caption code that names no highlighted entity is Beloch like any other inline
+// code in the page, and takes the same token colours.
+test("other caption code is highlighted as Beloch", () => {
+  const crease = html.slice(html.indexOf('id="fig-crease"'), html.indexOf("Prose between"));
+  expect(crease).toContain('<code class="bel-inline"><span class="bel-keyword">mark</span></code>');
+  expect(crease).toContain('<code class="figure-hl-0">--ac</code>');
+});

@@ -51,7 +51,7 @@
 // Astro caches rendered content entries in node_modules/.astro; after changing
 // this file, delete that directory (and .astro/) or the old output is served.
 import { readFileSync, realpathSync } from "node:fs";
-import { highlightBel } from "./highlight-bel.ts";
+import { highlightBel, highlightBelInline } from "./highlight-bel.ts";
 import { join } from "node:path";
 import { visit } from "unist-util-visit";
 
@@ -417,6 +417,23 @@ function colorCaption(caption: any[], highlight: string[]) {
 	});
 }
 
+// The rest of the caption's inline code is highlighted as Beloch where it is
+// Beloch, the way remark-bel.ts treats inline code in the running text.
+async function highlightCaption(caption: any[]) {
+	const nodes: any[] = [];
+	visit({ type: "root", children: caption } as any, "inlineCode", (node: any) => {
+		if (!node.data?.hProperties) nodes.push(node);
+	});
+	await Promise.all(
+		nodes.map(async (node) => {
+			const html = await highlightBelInline(String(node.value));
+			if (html === null) return;
+			node.type = "html";
+			node.value = `<code class="bel-inline">${html}</code>`;
+		}),
+	);
+}
+
 // Resolve the written relations and derive their reverses.
 function link(statements: Map<string, Statement>, terms: Map<string, Term>) {
 	for (const s of statements.values()) {
@@ -595,6 +612,7 @@ function expandSugar(
 // Expressive Code claims every `pre > code` it finds and rewrites it, which
 // would drop the RDFa.
 async function figureNode(f: Figure, figuresPath: string): Promise<any> {
+	await highlightCaption(f.caption);
 	const views = f.views.map((view) => {
 		let svg: string;
 		try {
