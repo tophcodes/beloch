@@ -63,6 +63,7 @@ let test_render_help_mentions_flags () =
     [
       "beloch render";
       "--view cp|folded";
+      "--view candidates|op";
       "--flip";
       "--legend";
       "--labels";

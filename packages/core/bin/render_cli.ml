@@ -31,6 +31,14 @@ what gets rendered:
   --view cp|folded          cp (default): crease pattern, the flat unfolded
                             state. folded: the folded state (2D; 3D planned
                             for later, not this release).
+  --view candidates|op      drawn from the trace of `beloch fold --trace`,
+                            which a .bel file gets here; a program that fails
+                            is drawn up to the failure. candidates: one panel
+                            per candidate of a statement. op: a write's terms
+                            and its result.
+  --statement N             the statement those views draw, as an index into
+                            beloch:statements (default: the one that failed,
+                            else the last that chose)
   --flip                    view the folded state from the other side
                             (ignored/no-op with --view cp)
 
