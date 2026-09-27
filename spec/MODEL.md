@@ -1,5 +1,5 @@
 ---
-title: The model
+title: Model
 description: What a Beloch program talks about. States, values, and the operations on both.
 tableOfContents:
   minHeadingLevel: 2

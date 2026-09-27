@@ -127,12 +127,18 @@ export default defineConfig({
 			social: [{ icon: "github", label: "GitHub", href: "https://github.com/tophcodes/beloch" }],
 			sidebar: [
 				{
-					label: "Reference",
+					label: "Specification",
 					items: [
-						{ label: "The model", link: "/model/" },
-						{ label: "The kernel", link: "/kernel/" },
-						{ label: "The language", link: "/language/" },
-						{ label: "The output", link: "/output/" },
+						{ label: "Model", link: "/model/" },
+						{ label: "Language", link: "/language/" },
+						{ label: "Output format", link: "/output/" },
+					],
+				},
+				{
+					label: "Reference implementation",
+					items: [
+						{ label: "The OCaml kernel", link: "/kernel/" },
+						{ label: "Command-line interface", link: "/cli/" },
 					],
 				},
 			],

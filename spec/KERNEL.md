@@ -1,5 +1,5 @@
 ---
-title: The kernel
+title: The OCaml kernel
 description: How packages/core represents the states of the model, which statements it realizes, and where it stops short.
 tableOfContents:
   minHeadingLevel: 2
