@@ -1,5 +1,5 @@
 ---
-title: The output
+title: Output format
 description: What `beloch fold` writes. A FOLD file with one frame per state of the program, extended with Beloch's own fields under the `beloch:` prefix.
 tableOfContents:
   minHeadingLevel: 2

@@ -1,0 +1,81 @@
+---
+title: Command-line interface
+description: The `beloch` command of the reference implementation. Folding a program to FOLD, tracing its selections, watching a file, and rendering.
+tableOfContents:
+  minHeadingLevel: 2
+  maxHeadingLevel: 2
+---
+
+`beloch` is the command of the reference implementation. It evaluates a
+program with the OCaml kernel (`KERNEL.md`) and writes the file `FOLD.md`
+specifies. Like `KERNEL.md`, this document describes one implementation and
+binds no other.
+
+Inside the devshell (`nix develop`) the command is on the `PATH`. Without an
+argument it prints its usage and exits with 2.
+
+## `beloch fold`
+
+```sh
+beloch fold FILE.bel
+```
+
+Evaluates `FILE.bel` and writes the FOLD document to standard output. A
+program that fails writes nothing to standard output, prints a diagnostic to
+standard error, with the source line, the span and a hint where the
+evaluator has one, and exits with 1.
+
+```sh
+beloch fold --trace FILE.bel
+```
+
+Writes the same document with the trace added: every candidate a selection
+chose from and what removed the others (`FOLD.md`, "The trace"). A program
+that fails still writes the file up to the failing statement, then prints the
+diagnostic and exits with 1, so the candidates of an ambiguous statement can
+be read.
+
+```sh
+beloch fold --watch FILE.bel
+```
+
+Folds the file, then folds it again each time it is saved and prints each
+result. A fold after an edit recomputes only the statements from the first
+changed one on; a line on standard error says how many that were. An error
+prints its diagnostic and the watch goes on. The command runs until it is
+interrupted.
+
+## `beloch render`
+
+```sh
+beloch render FILE.bel|FILE.fold [OUT] [flags]
+```
+
+Draws a program or a FOLD file as SVG or PNG. A `.bel` file is folded first,
+as by `beloch fold`. The drawing is done by a second program,
+`beloch-render`, from `packages/render-2d`; the devshell puts it on the
+`PATH`, and without it the command stops with a message saying so.
+
+Without `OUT` the drawing goes to standard output; otherwise the extension of
+`OUT` picks the format.
+
+| Flag | Effect |
+|---|---|
+| `--view cp` | The crease pattern, the flat sheet with every crease. The default. |
+| `--view folded` | The folded state, seen from above. |
+| `--flip` | The folded state seen from the other side. |
+| `--labels a,b` | Draws the named points and lines, and only those. |
+| `--legend` | Adds the legend of crease kinds: mountain, valley, border, unassigned. |
+| `--title TEXT` | A caption in the top-left corner. |
+| `--hidden dashed\|hide` | Draws covered creases of the folded state dashed, or leaves them out (the default). |
+| `--format svg\|png` | Overrides the format `OUT` implies. |
+| `--width N` | Width of a PNG in pixels. |
+| `--open` | Writes to a temporary file and opens it. |
+
+`beloch render --help` prints the same list.
+
+## Other commands
+
+`beloch --version` prints the version. `beloch check` and `beloch lsp` are
+reserved for a type check without evaluation and a language server; both
+exit with 1 and say they are not implemented.
