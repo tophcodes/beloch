@@ -1,7 +1,9 @@
 // Highlight ```beloch / ```bel fenced code blocks with the shared tree-sitter
 // highlighter, turning them into raw HTML so Expressive Code leaves them alone,
 // then render the outcome the build-side capture tool recorded for it (design
-// doc "Rendering the outcome", Acceptance 10 and 11).
+// doc "Rendering the outcome", Acceptance 10 and 11). Inline code that the
+// highlighter covers completely gets the same colours; any other inline code,
+// a path or an identifier, is left to the page.
 //
 // spec/BELOCH.md's example blocks carry pandoc's attribute form of the info
 // string, `{.bel .frag prelude=triangle}` (design doc "Marking the blocks"),
@@ -20,7 +22,7 @@
 import { visit } from "unist-util-visit";
 import { readFileSync, realpathSync } from "node:fs";
 import { join, relative } from "node:path";
-import { highlightBel } from "./highlight-bel.ts";
+import { highlightBel, highlightBelInline } from "./highlight-bel.ts";
 
 const BARE_LANGS = new Set(["beloch", "bel"]);
 
@@ -147,6 +149,19 @@ export default function remarkBel(options: { blocks?: string; doc?: string } = {
       }
       targets.push({ node, blockIndex });
     });
+
+    const inline: any[] = [];
+    visit(tree, "inlineCode", (node: any) => {
+      inline.push(node);
+    });
+    await Promise.all(
+      inline.map(async (node) => {
+        const html = await highlightBelInline(String(node.value ?? ""));
+        if (html === null) return;
+        node.type = "html";
+        node.value = `<code class="bel-inline">${html}</code>`;
+      })
+    );
 
     await Promise.all(
       targets.map(async ({ node, blockIndex }) => {

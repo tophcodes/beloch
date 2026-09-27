@@ -181,6 +181,16 @@
 	white-space: pre;
 }
 
+/* Inline Beloch in prose (remark-bel), on the same dark surface as the blocks,
+   since the token colours above are set for that surface and several of them
+   would vanish on the light page. */
+.sl-markdown-content code.bel-inline {
+	background: var(--bel-ui-code-surface);
+	color: var(--bel-ui-code-text);
+	border-radius: 4px;
+	padding: 0.1em 0.35em;
+}
+
 /* Block-outcome markers (remark-bel): what compute_outcome in blocks.ml
    decided about a tagged block, rendered directly under its highlighted
    program on the same always-dark code panel as .bel-block. One unscoped

@@ -64,20 +64,42 @@ function esc(s: string): string {
 
 /** Highlight Beloch source to an HTML string of <span class="bel-*"> tokens. */
 export async function highlightBel(source: string): Promise<string> {
+  return (await render(source)).html;
+}
+
+/**
+ * Highlight an inline fragment, or `null` when it is not Beloch. A fragment
+ * counts as Beloch when the highlighter covers every character outside
+ * whitespace; a path such as `examples/crane.bel` leaves text over and stays
+ * plain.
+ */
+export async function highlightBelInline(source: string): Promise<string | null> {
+  const { html, covered } = await render(source);
+  return covered ? html : null;
+}
+
+// The highlighted HTML, and whether every character outside whitespace fell
+// inside a token.
+async function render(source: string): Promise<{ html: string; covered: boolean }> {
   const { parser, query } = await ensure();
   const tree = parser.parse(source);
-  if (!tree) return esc(source);
+  if (!tree) return { html: esc(source), covered: false };
   let out = "";
   let pos = 0;
+  let covered = true;
+  const gap = (text: string) => {
+    if (text.trim() !== "") covered = false;
+    out += esc(text);
+  };
   for (const t of belTokens(query.captures(tree.rootNode))) {
-    if (t.from > pos) out += esc(source.slice(pos, t.from));
+    if (t.from > pos) gap(source.slice(pos, t.from));
     const tokenText = source.slice(t.from, t.to);
     const belName = belEntityName(t.name, tokenText);
     const dataAttr = belName ? ` data-bel-name="${belName}"` : "";
     out += `<span class="bel-${t.name}"${dataAttr}>${esc(tokenText)}</span>`;
     pos = t.to;
   }
-  if (pos < source.length) out += esc(source.slice(pos));
+  if (pos < source.length) gap(source.slice(pos));
   tree.delete();
-  return out;
+  return { html: out, covered };
 }

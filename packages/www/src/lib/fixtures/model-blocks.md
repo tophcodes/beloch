@@ -15,7 +15,7 @@ paper square
 mark --ac = through .a .c
 :::
 
-::: {.figure #fig-crease caption="The crease `--ac` runs to the corner `.a`." views="cp" highlight="--ac .a" program="shown"}
+::: {.figure #fig-crease caption="The crease `--ac` runs to the corner `.a`, scored by `mark`." views="cp" highlight="--ac .a" program="shown"}
 paper square
 mark --ac = through .a .c
 :::

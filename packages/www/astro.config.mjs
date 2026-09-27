@@ -127,6 +127,13 @@ export default defineConfig({
 			social: [{ icon: "github", label: "GitHub", href: "https://github.com/tophcodes/beloch" }],
 			sidebar: [
 				{
+					label: "Guide",
+					items: [
+						{ label: "First folds", link: "/guide/first-folds/" },
+						{ label: "Reading the crane", link: "/guide/reading-the-crane/" },
+					],
+				},
+				{
 					label: "Specification",
 					items: [
 						{ label: "Model", link: "/model/" },

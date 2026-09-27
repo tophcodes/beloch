@@ -1,6 +1,7 @@
 (* tools/blocks.ml: the build-side reference-corpus capture (design doc
    "The three runners", build side; Acceptance 10). Selects and assembles
-   the tagged blocks of spec/BELOCH.md by the same rule
+   the tagged blocks of each document it is given (spec/BELOCH.md when
+   given none) by the same rule
    packages/core/tests/test_reference_corpus.ml uses, evaluates each one in
    process, and writes one entry per block to _build/spec/blocks.json, the
    input packages/www/src/lib/remark-bel.ts reads to render the outcome
@@ -8,8 +9,8 @@
    that is what the kernel-side corpus test guards; this tool exists so the
    site still builds and shows the failure.
 
-   Run from the repo root:
-     dune exec packages/core/tools/blocks.exe *)
+   Run from the repo root, with the documents as paths from there:
+     dune exec packages/core/tools/blocks.exe -- spec/BELOCH.md <doc.md>... *)
 
 open Beloch
 
@@ -310,15 +311,17 @@ let rec mkdir_p d =
 
 let read path = In_channel.with_open_text path In_channel.input_all
 
-let () =
-  let doc = if Array.length Sys.argv > 1 then Sys.argv.(1) else "spec/BELOCH.md" in
+let entries_of (doc : string) : Yojson.Basic.t =
   let filename = Filename.basename doc in
   let blocks = extract_blocks (read doc) in
   let preludes = prelude_table blocks in
-  let entries =
-    List.mapi (fun index b -> json_of_entry index (compute_outcome filename preludes b)) blocks
+  `List (List.mapi (fun index b -> json_of_entry index (compute_outcome filename preludes b)) blocks)
+
+let () =
+  let docs =
+    match Array.to_list Sys.argv with _ :: (_ :: _ as docs) -> docs | _ -> [ "spec/BELOCH.md" ]
   in
-  let json : Yojson.Basic.t = `Assoc [ (doc, `List entries) ] in
+  let json : Yojson.Basic.t = `Assoc (List.map (fun doc -> (doc, entries_of doc)) docs) in
   mkdir_p "_build/spec";
   Out_channel.with_open_text "_build/spec/blocks.json" (fun oc ->
       Out_channel.output_string oc (Yojson.Basic.pretty_to_string json))

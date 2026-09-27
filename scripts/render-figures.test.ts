@@ -3,10 +3,10 @@
 // defines. Needs the `beloch` binary, so it runs inside the flake devshell:
 //   nix develop -c bun test scripts
 import { test, expect } from "bun:test";
-import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { renderFigure, scanFigures, highlightNames } from "./render-figures.ts";
+import { dirname, join } from "node:path";
+import { documentFiles, renderDocuments, renderFigure, scanFigures, highlightNames } from "./render-figures.ts";
 
 const outDir = mkdtempSync(join(tmpdir(), "beloch-figures-"));
 
@@ -107,3 +107,62 @@ test("scanFigures reads the at attribute", () => {
 	expect(block?.at).toBe("choose");
 	expect(block?.views).toEqual(["candidates"]);
 });
+
+test("scanFigures reads the after attribute", () => {
+	const [block] = scanFigures('::: {.figure #fig-y caption="y" after="fig-x"}\nfold (map .a onto .c)\n:::\n');
+	expect(block?.after).toBe("fig-x");
+});
+
+// A document of figures under a scratch root, for renderDocuments.
+function scratchDocs(files: Record<string, string>): string {
+	const root = mkdtempSync(join(tmpdir(), "beloch-docs-"));
+	for (const [path, text] of Object.entries(files)) {
+		mkdirSync(join(root, dirname(path)), { recursive: true });
+		writeFileSync(join(root, path), text);
+	}
+	return root;
+}
+
+test("a figure with after evaluates the earlier figure's program before its own", () => {
+	const root = scratchDocs({
+		"doc.md": [
+			'::: {.figure #fig-first caption="a"}',
+			"paper square\nfold (map .a onto .c) as --bd",
+			":::",
+			"",
+			'::: {.figure #fig-second caption="b" highlight="--h" after="fig-first"}',
+			"reverse (map .b onto .c) as --h",
+			":::",
+			"",
+		].join("\n"),
+	});
+	const figures = renderDocuments(root, ["doc.md"], mkdtempSync(join(tmpdir(), "beloch-figures-")));
+	expect(figures["fig-second"]?.error).toBeNull();
+	expect(figures["fig-second"]?.files.folded).toBe("fig-second-folded.svg");
+});
+
+test("an after naming no earlier figure of the document is an error", () => {
+	const root = scratchDocs({
+		"one.md": '::: {.figure #fig-one caption="a"}\npaper square\n:::\n',
+		"two.md": '::: {.figure #fig-two caption="b" after="fig-one"}\nfold (map .a onto .c)\n:::\n',
+	});
+	const figures = renderDocuments(root, ["one.md", "two.md"], mkdtempSync(join(tmpdir(), "beloch-figures-")));
+	expect(figures["fig-two"]?.error).toContain("fig-one");
+});
+
+test("a figure id used twice is an error", () => {
+	const root = scratchDocs({
+		"one.md": '::: {.figure #fig-same caption="a"}\npaper square\n:::\n',
+		"two.md": '::: {.figure #fig-same caption="b"}\npaper square\n:::\n',
+	});
+	const figures = renderDocuments(root, ["one.md", "two.md"], mkdtempSync(join(tmpdir(), "beloch-figures-")));
+	expect(figures["fig-same"]?.error).toContain("two.md");
+});
+
+test("every figure of the documents renders", () => {
+	const root = join(import.meta.dir, "..");
+	const figures = renderDocuments(root, documentFiles(root), mkdtempSync(join(tmpdir(), "beloch-figures-")));
+	const failed = Object.entries(figures).filter(([, e]) => e.error).map(([id, e]) => `${id}: ${e.error}`);
+	expect(failed).toEqual([]);
+	expect(Object.values(figures).some((e) => e.source.startsWith("packages/www/src/content/docs/guide/"))).toBe(true);
+}, 120_000);

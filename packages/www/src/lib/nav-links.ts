@@ -2,7 +2,7 @@
 // footer all read this list, so a link is added in one place.
 export const NAV_LINKS = [
   { label: "Playground", href: "/playground/" },
-  { label: "Docs", href: "/language/" },
+  { label: "Docs", href: "/guide/first-folds/" },
 ] as const;
 
 // The repository stands in the footer only.
