@@ -2,7 +2,7 @@
 id: "0033"
 title: "A line reads as the bundle it names; a mark's bundle is its extent"
 date: 2026-09-27
-status: proposed
+status: accepted
 ---
 
 # 0033: A line reads as the bundle it names; a mark's bundle is its extent
