@@ -2,7 +2,7 @@
 # Run every alcotest suite through dune and hold the result against
 # scripts/known-failures.txt.
 #
-# The suite is not green: issue #51 (flatten tier pooling) leaves four cases
+# The suite is not green: issue #11 (flatten tier pooling) leaves four cases
 # red, and they stay red until that slice lands. A plain `dune runtest` in CI
 # would therefore fail on every push and guard nothing. This compares the
 # failure count per suite against a recorded baseline instead, so a new
