@@ -1,0 +1,7 @@
+{
+ "ax6": {"src": "paper square\nmark (map .a onto .b) as --ef\nmark (through .b .d) as --bd\n.p = free on --bd from .d at 1/4\nfold (map .d onto --ef through .p toward TOWARD) as --s\n", "towards": [".a", ".c"]},
+ "ax7": {"src": "paper square\nmark (through .a .c) as --diag\nmark (through .b .d) as --anti\nmark (map .a onto --anti and .d onto --diag toward TOWARD)\n", "towards": [".b", ".d"]},
+ "ax5e": {"src": "paper square\nmark (map .a onto .b) as --v\nmark (map --v onto --ab toward TOWARD) as --k\n", "towards": [".a", ".b"]},
+ "ax5c": {"src": "paper square\nmark (map .a onto .b) as --v\nmark (map .a onto .d) as --h\nmark (map --v onto --h toward TOWARD) as --k\n", "towards": [".a", ".b"]},
+ "ax5o": {"src": "paper square\nmark (map .a onto .b) as --v\n.m = --v * --ab\nmark (through .m .c) as --mc\nmark (through .b .d) as --bd\n.t = free on --bd from .b at 2/5\nmark (map --mc onto --ab toward TOWARD) as --k\n", "towards": [".a", ".t"]}
+}
