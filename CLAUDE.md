@@ -5,9 +5,10 @@ that evaluates `.bel` source into folded states, crease patterns, and YR-style
 folding diagrams. Architecture decisions live in `decisions/` (ADRs); read those
 before proposing anything structural. Design journal in `notes/`, dead ends in
 `notes/antipatterns.md`. The contracts live in `spec/`: `MODEL.md` what a
-program means, `KERNEL.md` what `packages/core` realizes, `BELOCH.md` the
-language, `FOLD.md` the output. `SPECIFICATION.md` is being dissolved into
-`BELOCH.md` and `KERNEL.md` (ADR 0021): add nothing to it, and move a section
+program means, `BELOCH.md` the language, `FOLD.md` the output. Beside them,
+binding no other implementation: `KERNEL.md` what `packages/core` realizes,
+`CLI.md` the `beloch` command. `SPECIFICATION.md` is being dissolved into
+`BELOCH.md` and `KERNEL.md` (ADR 0032): add nothing to it, and move a section
 you have to touch.
 
 ## Where work goes

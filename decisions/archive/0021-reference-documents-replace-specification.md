@@ -2,10 +2,12 @@
 id: "0021"
 title: "The reference documents replace SPECIFICATION.md"
 date: 2026-09-13
-status: accepted
+status: superseded
 ---
 
 # 0021: The reference documents replace SPECIFICATION.md
+
+**Status:** Superseded by [0032](../0032-the-specification-binds-every-implementation.md)
 
 ## Context
 

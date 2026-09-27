@@ -1,17 +1,18 @@
 ---
-title: The language
+title: Language
 description: Beloch as the signature of the model. Which sorts a program names, which operations it applies, and how the surface syntax marks the difference.
 tableOfContents:
   minHeadingLevel: 2
   maxHeadingLevel: 2
 ---
 
-Three documents describe Beloch. `MODEL.md` is the mathematics: the states,
-the values and the operations, stated so that they can be proven about.
-`KERNEL.md` is the implementation: how `packages/core` holds a state and
-which statements of the model each part realizes. This document is the
-language: the signature of the model, and how the written form of a program
-reflects it. It is the language reference (ADR 0021): the concrete grammar,
+Three documents specify Beloch (ADR 0032). `MODEL.md` is the mathematics:
+the states, the values and the operations, stated so that they can be proven
+about. `FOLD.md` is the output format. This document is the language: the
+signature of the model, and how the written form of a program reflects it.
+How the reference implementation in `packages/core` realizes the model is
+the subject of `KERNEL.md`, which binds no other implementation. This
+document is also the language reference: the concrete grammar,
 every keyword, how an operand resolves, and the errors, one section per
 sort and per write. `SPECIFICATION.md` holds the sections that have not
 moved here yet.
