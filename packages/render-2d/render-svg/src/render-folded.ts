@@ -6,12 +6,16 @@ import { SvgDoc } from "./svgdoc";
 import { renderScene } from "./render-scene";
 import type { MarkOverlay } from "./render-scene";
 import type { RenderOptions } from "./render-cp";
+import type { Layout } from "./layout";
 
 export interface FoldedOptions extends RenderOptions {
   view?: "top" | "bottom" | undefined; // default "top"
   hidden?: "dashed" | "hide" | "depth" | undefined; // default "hide"
   step?: string | undefined;   // frame index (numeric string); undefined/out-of-range → final state
   markOverlay?: MarkOverlay | undefined; // project these marks onto the step's faces (newest highlighted)
+  dots?: "annotated" | undefined;     // see SceneOptions.dots
+  quiet?: boolean | undefined;        // see SceneOptions.quiet
+  layout?: Layout | undefined;        // see SceneOptions.layout
 }
 
 export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc {
@@ -34,9 +38,12 @@ export function renderFolded(scene: FoldScene, opts: FoldedOptions = {}): SvgDoc
     title: opts.title,
     labels: opts.labels,
     annotate: opts.annotate,
+    dots: opts.dots,
+    quiet: opts.quiet,
     highlight: opts.highlight,
     legend: opts.legend,
     theme: opts.theme,
     markOverlay: opts.markOverlay,
+    layout: opts.layout,
   });
 }

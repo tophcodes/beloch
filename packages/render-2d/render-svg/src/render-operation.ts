@@ -72,9 +72,9 @@ export function candidateStatus(c: { selected: boolean; removedBy: string | null
   return "open";
 }
 
-type Paint = { stroke: string; wash: string };
+export type Paint = { stroke: string; wash: string };
 
-function paint(theme: Theme, i: number): Paint {
+export function paint(theme: Theme, i: number): Paint {
   return theme.highlightPalette[i % theme.highlightPalette.length]!;
 }
 
@@ -114,7 +114,7 @@ function hatchNodes(region: Region, p: Paint, lay: Layout, kind: string, dir: 1 
   return nodes;
 }
 
-function segmentNode([[x1, y1], [x2, y2]]: Segment, stroke: string, lay: Layout, kind: string,
+export function segmentNode([[x1, y1], [x2, y2]]: Segment, stroke: string, lay: Layout, kind: string,
   width = 3, dashed = false): SvgNode {
   return el("line", {
     "data-kind": kind, x1: lay.tx(x1), y1: lay.ty(y1), x2: lay.tx(x2), y2: lay.ty(y2),

@@ -1,0 +1,7 @@
+paper square
+mark (map .a onto .b) as --v
+mark (through .b .d) as --bd
+mark (through .a .c) as --ac
+.u = free on --ab from .a at 1/3
+.w = free on --da from .a at 1/3
+fold (align (.a onto --bd) (.u onto --v) (heading --ac)) (toward .w) as --s

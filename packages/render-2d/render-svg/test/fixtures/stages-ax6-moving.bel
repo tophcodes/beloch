@@ -1,0 +1,5 @@
+paper square
+mark (map .a onto .b) as --ef
+mark (through .b .d) as --bd
+.p = free on --bd from .d at 1/4
+fold (map .d onto --ef through .p) (moving .a) as --s

@@ -1,0 +1,4 @@
+paper square
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+fold (map --ac onto --bd) as --s
