@@ -135,6 +135,10 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     highlight.map((h, i) => [h, palette[i % palette.length]!]),
   );
   const highlightFaces = flapFaces(scene, colorOf);
+  // A highlighted crease is named by the overlay, in its palette colour, so its
+  // own label is left out.
+  const namedByHighlight = (name: string | null): boolean =>
+    name !== null && highlight.includes(`--${name}`);
   // Whether the drawing writes this name out.
   const labelled = (name: string): boolean =>
     opts.annotate === undefined || opts.annotate.includes(name);
@@ -593,6 +597,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       });
     }
     for (const [key, run] of creaseRuns) {
+      if (namedByHighlight(run.name)) continue;
       const attrs: Record<string, string | number> = {
         fill: run.stroke, "data-kind": "line-label",
       };
@@ -772,6 +777,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       grp.vs.add(b);
     });
     for (const [key, { vs, col, text, name: nm }] of creaseGroups) {
+      if (namedByHighlight(nm)) continue;
       if (!labelled(key.startsWith("#") ? key : `--${key}`)) continue;
       const list = [...vs];
       let ends = list.filter((j) => onB(V[j]!));

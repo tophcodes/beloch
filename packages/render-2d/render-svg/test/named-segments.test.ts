@@ -59,3 +59,13 @@ test("a highlighted crease is drawn along its scars in both views", () => {
   expect(highlighted(renderCP(scar, { highlight: ["--h"] }).toString(), "h")).toBe(2);
   expect(highlighted(renderFolded(scar, { highlight: ["--h"] }).toString(), "h")).toBeGreaterThan(0);
 });
+
+// The highlight writes the name in its palette colour, so the crease does not
+// write it a second time.
+test("a highlighted crease is named once in each view", () => {
+  const names = (svg: string) => (svg.match(/>--h<\/text>/g) ?? []).length;
+  expect(names(renderCP(scar, { highlight: ["--h"] }).toString())).toBe(1);
+  expect(names(renderFolded(scar, { highlight: ["--h"] }).toString())).toBe(1);
+  // Without the highlight the crease still names itself.
+  expect(names(renderCP(scar).toString())).toBe(1);
+});
