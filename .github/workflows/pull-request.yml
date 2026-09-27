@@ -1,0 +1,16 @@
+name: Pull request
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  issue-and-kind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check that the pull request names its issue and its kind
+        run: bash scripts/check-pull-request.sh < "$GITHUB_EVENT_PATH"
