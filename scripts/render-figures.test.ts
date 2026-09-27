@@ -166,3 +166,16 @@ test("every figure of the documents renders", () => {
 	expect(failed).toEqual([]);
 	expect(Object.values(figures).some((e) => e.source.startsWith("packages/www/src/content/docs/guide/"))).toBe(true);
 }, 120_000);
+
+test("a highlight may name a crease that a later fold bends", () => {
+	const entry = renderFigure(
+		{
+			id: "fig-bent", views: ["cp", "folded"], highlight: ["--bd"],
+			program: "paper square\nfold (map .a onto .c) as --bd\nreverse (map .b onto .c) as --h",
+		},
+		outDir,
+		"spec/TEST.md",
+	);
+	expect(entry.error).toBeNull();
+	expect(readFileSync(join(outDir, "fig-bent-cp.svg"), "utf8")).toContain('data-construction="bd"');
+});

@@ -108,17 +108,18 @@ export function highlightNames(value: string | undefined): string[] {
 	return [...(value ?? "").matchAll(/#\[[^\]]*\]|\S+/g)].map((m) => m[0]);
 }
 
-// The entities of `highlight` the program never names. A crease resolves
-// against the named lines, a point against the named points, and a flap
-// selector against the points it lists. A paper edge such as `--ab` is no named
-// line and counts as unknown, which is what the drawing does with it too: the
-// construction overlay has no line to draw for it.
+// The entities of `highlight` the program never names. A line or crease
+// resolves against the named lines and the creases of the crease pattern, a
+// point against the named points, and a flap selector against the points it
+// lists. A paper edge such as `--ab` is no named line and counts as unknown,
+// which is what the drawing does with it too: the construction overlay has no
+// line to draw for it.
 export function unknownHighlights(
 	scene: ReturnType<typeof parseFold>,
 	highlight: string[],
 ): string[] {
 	const points = new Set(scene.namedPoints.map((p) => p.name));
-	const lines = new Set(scene.namedLines.map((l) => l.name));
+	const lines = new Set([...scene.namedLines, ...scene.creases].map((l) => l.name));
 	const unknown: string[] = [];
 	for (const entry of highlight) {
 		if (entry.startsWith("#[")) {
