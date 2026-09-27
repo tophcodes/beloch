@@ -69,6 +69,7 @@ and construction = {
   c_fold_lines : string list;     (* CREASE_NAME* in the align head *)
   c_alignments : alignment list;  (* source order, one entry per alignment *)
   c_heading : line_operand option;  (* the direction the crease keeps *)
+  c_heading_span : Error.span option;  (* the `(heading …)` part *)
   c_span : Error.span;
 }
 
@@ -105,7 +106,16 @@ type place_dir = PlaceOver | PlaceUnder
 (* The items of a write, a binding or a mark that name the side of the
    construction's line that stays and the side that folds over; they select
    among its candidates as they do in a fold (ADR 0031). *)
-type sides = { s_toward : toward_item option; s_moving : flap_arg option }
+type sides = {
+  s_toward : toward_item option;
+  s_moving : flap_arg option;
+  s_spans : side_spans;
+}
+
+(* where the side items stand in the source, for the trace *)
+and side_spans = { toward_span : Error.span option; moving_span : Error.span option }
+
+let no_side_spans = { toward_span = None; moving_span = None }
 
 type fold_spec = {
   moving : flap_arg option;
@@ -115,6 +125,7 @@ type fold_spec = {
   place : (place_dir * flap_arg) option;
       (* Some: `over`/`under` given; direction is then derived and [direction]
          is ignored; the parser rejects `mountain` and `up to` beside it *)
+  spans : side_spans;
 }
 
 (* reverse <markable> [moving <flap>] [outside]: the tip beyond the line is
@@ -124,6 +135,7 @@ type reverse_spec = {
   rmoving : flap_arg option;
   rtoward : toward_item option;
   outside : bool;
+  rspans : side_spans;
 }
 
 (* A collapse element's M/V constraint: a bare element is

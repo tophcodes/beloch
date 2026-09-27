@@ -170,6 +170,44 @@ none of this appears, and every other field is the same with and without it.
   and each candidate that crosses paper carries its `landing`: the
   reflection across it of the first point of the first alignment, where
   that point lands when it lies on the side that folds over.
+- A construction's entry also records what each stage of the selection
+  found, so that a figure can draw the stages without repeating them. The
+  entry carries `alignments`, the `onto` alignments in the order the
+  candidates' `attempts` index them, each with its `span` and its two
+  `objects`: a `name`, and a `point` or the table `segments` of a line's
+  material ([def-material](/model/#def-material)). `spans` holds the source
+  spans of every alignment (`alignments`, `onto` or not) and of the
+  `heading`, `toward` and `moving` items, each span covering the item
+  inside its parentheses, or null where the program has no such item.
+  `operands` lists the points and lines the construction is built from, the
+  point of a `through` included, each an object as in `alignments` and
+  placed in the state the construction read. `toward_name`, `moving_name` and `subject` spell the
+  `toward` target, the `moving` operand and the `x` of `(x toward …)`.
+  `moving_point` is where the anchor of `moving` lies on the table when it
+  names a point, and null otherwise. `heading_name` and `heading_line` give
+  the `heading` line and its `coeffs`, and `toward_segments` holds the
+  material of a `toward` line, empty for a `toward` point. Each
+  candidate carries `removed_at`, the stage that removed it: `"paper"`,
+  `"heading"`, `"side"` (the side items name no side of it, or name the
+  same side twice), `"moved"` (the fold with its side does not carry
+  out every alignment) or `"landing"` (it does not fold the subject of
+  `(x toward …)` over, or lands farther from the `toward` than another), and null for one no stage removed. A field of a
+  stage the candidate did not reach, or the program does not use, is null
+  or empty. `angle` is the angle in degrees between the candidate and the
+  `heading` line. `side` is the side that folds over, as the sign in
+  `terms`, and `side_from` says where it came from: `"toward"`,
+  `"moving"`, `"alone"` for the only side whose fold carries out every
+  alignment, and `"first"` for the side of the first object of the first
+  alignment where both sides do. `attempts` lists the sides the
+  moved-material stage tried, two without side items and one otherwise, each
+  with its `side` and one value per alignment: `0` or `1` for the object
+  that folds onto the other, `"already"` for a point that lies on the
+  candidate and on its target line, and null where the fold does neither.
+  `subject_folds` says whether that side folds the subject of
+  `(x toward …)` over. `landed` is the landed material the landing stage
+  measured, as segments, a point as a segment of length zero,
+  `distance` its distance to the `toward`, and `nearest` the pair of
+  points that distance lies between, the landed one first.
 - A write's entry carries `write`, one of `"fold"`, `"reverse"` and
   `"flatten"`, the `terms` of the write's definition in the state it read,
   and the `candidates` it chose from. A region of paper in the terms is a

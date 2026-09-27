@@ -85,16 +85,21 @@ let direction_of (mv : mv_constraint) : direction =
 
 (* `(toward …)` and `(moving …)` name the side that stays and the side that
    folds over (ADR 0031). *)
-let side_item (verb : string) ~(toward : toward_item option ref)
-    ~(moving : flap_arg option ref) (it : raw_item) : bool =
+let side_item (verb : string) ~(toward : (toward_item * Error.span) option ref)
+    ~(moving : (flap_arg * Error.span) option ref) (it : raw_item) : bool =
   match it with
   | RiSelection (t, sp) ->
-      slot verb "toward" toward sp t;
+      slot verb "toward" toward sp (t, sp);
       true
   | RiMoving (fa, sp) ->
-      slot verb "moving" moving sp fa;
+      slot verb "moving" moving sp (fa, sp);
       true
   | _ -> false
+
+(* the side items a verb collected, apart from where they stand *)
+let sides_of toward moving : sides =
+  { s_toward = Option.map fst !toward; s_moving = Option.map fst !moving;
+    s_spans = { toward_span = Option.map snd !toward; moving_span = Option.map snd !moving } }
 
 (* ---- the five verbs, and the binding of a construction ---- *)
 
@@ -105,7 +110,7 @@ let bind (name : string) (c : construction) (items : raw_item list)
   List.iter
     (fun it -> if not (side_item verb ~toward ~moving it) then refuse verb it)
     items;
-  BindLine (name, c, { s_toward = !toward; s_moving = !moving }, span)
+  BindLine (name, c, sides_of toward moving, span)
 
 let mark (items : raw_item list) (out : output) (span : Error.span) : stmt =
   let verb = "mark" in
@@ -130,7 +135,7 @@ let mark (items : raw_item list) (out : output) (span : Error.span) : stmt =
       Option.value !extent ~default:Full,
       Option.value !intent ~default:Valley,
       !layer,
-      { s_toward = !toward; s_moving = !moving },
+      sides_of toward moving,
       span )
 
 let fold (items : raw_item list) (out : output) (span : Error.span) : stmt =
@@ -163,8 +168,9 @@ let fold (items : raw_item list) (out : output) (span : Error.span) : stmt =
     ( out,
       need_axis verb axis span,
       {
-        moving = !moving;
-        toward = !toward;
+        moving = Option.map fst !moving;
+        toward = Option.map fst !toward;
+        spans = (sides_of toward moving).s_spans;
         up_to = Option.map fst !up_to;
         direction = (if !bottom = None then Valley else Mountain);
         place = !place;
@@ -185,7 +191,9 @@ let reverse (items : raw_item list) (out : output) (span : Error.span) : stmt =
   Reverse
     ( out,
       need_axis verb axis span,
-      { rmoving = !moving; rtoward = !toward; outside = !outside <> None },
+      (let sd = sides_of toward moving in
+       { rmoving = sd.s_moving; rtoward = sd.s_toward; outside = !outside <> None;
+         rspans = sd.s_spans }),
       span )
 
 let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =

@@ -479,7 +479,8 @@ fold (map .a onto .b) (toward .a)
 
 `(x toward .u)` names what goes toward `.u`. `x` is one of the objects of
 the construction's alignments, compared by place, and the candidates that
-do not fold `x` over drop out at stage 3.
+do not fold `x` over drop out at stage 4, where `x` is measured, also when
+no other candidate is left to compare.
 
 ```grammar
 toward_subject := point_operand | line_operand

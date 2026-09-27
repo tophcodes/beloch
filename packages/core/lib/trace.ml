@@ -12,16 +12,30 @@ type removal =
   | By_mountains
   | By_top
 
+type segment = Geom.point * Geom.point
+type stage = Paper | Heading | Side | Moved | Landing
+type side_from = From_toward | From_moving | Alone | First
+type meets = Moves of int | Already | Misses
+type attempt = { fold_side : int; meets : meets list }
+
 type candidate = {
   line : Geom.line;
   removed_by : removal option;
+  removed_at : stage option;
   selected : bool;
   landing : Geom.point option;
+  angle : float option;
+  side : int option;
+  side_from : side_from option;
+  attempts : attempt list;
+  subject_folds : bool option;
+  landed : segment list option;
+  distance : float option;
+  nearest : (Geom.point * Geom.point) option;
 }
 
 type conic = { focus : Geom.point; directrix : Geom.line }
 type region = Geom.point array list
-type segment = Geom.point * Geom.point
 type placement = Top | Bottom | Over of region | Under of region
 
 type terms =
@@ -55,14 +69,41 @@ type state_candidate = {
 
 type entry = { statement : int; frame : int; body : body }
 
-and body =
-  | Construction of {
-      axiom : string;
-      toward : Geom.point option;
-      candidates : candidate list;
-      conics : conic list;
-    }
-  | Write of { terms : terms; states : state_candidate list }
+and body = Construction of construction | Write of { terms : terms; states : state_candidate list }
+and obj = { name : string; point : Geom.point option; segments : segment list }
+
+and alignment = { objects : obj * obj; span : Error.span option }
+
+and construction = {
+  axiom : string;
+  toward : Geom.point option;
+  toward_segments : segment list;
+  toward_name : string option;
+  subject : string option;
+  moving_name : string option;
+  moving_point : Geom.point option;
+  operands : obj list;
+  heading_line : Geom.line option;
+  heading_name : string option;
+  alignments : alignment list;
+  spans : spans;
+  candidates : candidate list;
+  conics : conic list;
+}
+
+and spans = {
+  alignment_spans : Error.span list;
+  heading : Error.span option;
+  toward_span : Error.span option;
+  moving_span : Error.span option;
+}
+
+let construction ~axiom ~conics =
+  { axiom; toward = None; toward_segments = []; toward_name = None; subject = None;
+    moving_name = None; moving_point = None; operands = []; heading_line = None; heading_name = None; alignments = [];
+    spans = { alignment_spans = []; heading = None; toward_span = None;
+              moving_span = None };
+    candidates = []; conics }
 
 let faces_region st ?clip keep =
   List.filter_map
@@ -103,6 +144,19 @@ let removal_json = function
         | By_mountains -> "mountains"
         | By_top -> "top")
 
+let stage_name = function
+  | Paper -> "paper"
+  | Heading -> "heading"
+  | Side -> "side"
+  | Moved -> "moved"
+  | Landing -> "landing"
+
+let side_from_name = function
+  | From_toward -> "toward"
+  | From_moving -> "moving"
+  | Alone -> "alone"
+  | First -> "first"
+
 let terms_json = function
   | Fold { axis; side; moving; placement } ->
       let kind, target =
@@ -135,29 +189,72 @@ let detail_json = function
 let to_json ~frame (e : entry) : Yojson.Safe.t =
   let head = [ ("statement", `Int e.statement); ("frame_index", `Int e.frame) ] in
   match e.body with
-  | Construction { axiom; toward; candidates; conics } ->
+  | Construction c ->
+      let opt f = function Some x -> f x | None -> `Null in
+      let str s = `String s in
+      let span sp = `String (Error.span_to_string sp) in
+      let segments ss = `List (List.map segment ss) in
+      let obj o =
+        `Assoc
+          [ ("name", str o.name); ("point", opt point o.point);
+            ("segments", segments o.segments) ]
+      in
+      let meets = function Moves i -> `Int i | Already -> str "already" | Misses -> `Null in
+      let candidate k =
+        `Assoc
+          ([
+             ("line", line k.line);
+             ("removed_by", removal_json k.removed_by);
+             ("removed_at", opt (fun st -> str (stage_name st)) k.removed_at);
+             ("selected", `Bool k.selected);
+             ("angle", opt (fun a -> `Float a) k.angle);
+             ("side", opt (fun s -> `Int s) k.side);
+             ("side_from", opt (fun f -> str (side_from_name f)) k.side_from);
+             ( "attempts",
+               `List
+                 (List.map
+                    (fun a ->
+                      `Assoc
+                        [ ("side", `Int a.fold_side);
+                          ("alignments", `List (List.map meets a.meets)) ])
+                    k.attempts) );
+             ("subject_folds", opt (fun b -> `Bool b) k.subject_folds);
+             ("landed", opt segments k.landed);
+             ("distance", opt (fun d -> `Float d) k.distance);
+             ("nearest", opt (fun (u, v) -> `List [ point u; point v ]) k.nearest);
+           ]
+          @ match k.landing with Some p -> [ ("landing", point p) ] | None -> [])
+      in
       `Assoc
         (head
         @ [
-            ("axiom", `String axiom);
-            ("toward", match toward with Some p -> point p | None -> `Null);
-            ( "candidates",
+            ("axiom", str c.axiom);
+            ("toward", opt point c.toward);
+            ("toward_segments", segments c.toward_segments);
+            ("toward_name", opt str c.toward_name);
+            ("subject", opt str c.subject);
+            ("moving_name", opt str c.moving_name);
+            ("moving_point", opt point c.moving_point);
+            ("operands", `List (List.map obj c.operands));
+            ("heading_line", opt line c.heading_line);
+            ("heading_name", opt str c.heading_name);
+            ( "alignments",
               `List
                 (List.map
-                   (fun c ->
-                     `Assoc
-                       ([
-                          ("line", line c.line);
-                          ("removed_by", removal_json c.removed_by);
-                          ("selected", `Bool c.selected);
-                        ]
-                       @ match c.landing with
-                         | Some p -> [ ("landing", point p) ]
-                         | None -> []))
-                   candidates) );
+                   (fun a ->
+                     let x, y = a.objects in
+                     `Assoc [ ("objects", `List [ obj x; obj y ]); ("span", opt span a.span) ])
+                   c.alignments) );
+            ( "spans",
+              `Assoc
+                [ ("alignments", `List (List.map span c.spans.alignment_spans));
+                  ("heading", opt span c.spans.heading);
+                  ("toward", opt span c.spans.toward_span);
+                  ("moving", opt span c.spans.moving_span) ] );
+            ("candidates", `List (List.map candidate c.candidates));
           ]
         @
-        match conics with
+        match c.conics with
         | [] -> []
         | cs ->
             [

@@ -652,16 +652,17 @@ or of the material of a line. It runs four stages.
    `moving` too, $m$ has to name that side, or the folding side is
    undefined. With `moving` alone, it is the side $m$ names. With neither,
    it is *open*.
-3. *Performance.* Only the $\ell$ remain whose folding side is defined and
+3. *Moved material.* Only the $\ell$ remain whose folding side is defined and
    whose fold with it carries out the construction, or whose folding side
-   is open and for which a fold with either side does. With a subject $x$,
-   $x$ has to have a landing. A remaining line with an open folding side
+   is open and for which a fold with either side does. A remaining line with an open folding side
    takes the side that alone carries the construction out, or, where both
    do, the side of the first object of the first alignment as the program
    writes it; that default belongs to the write ([#def-fold]). Where that
    object names no side either, the write has no default and needs
    `toward` or `moving`.
-4. *Landing.* With `toward`, among several remaining lines only those
+4. *Landing.* With a subject $x$, only the $\ell$ remain whose fold gives
+   $x$ a landing, however many remain; the others would have nothing of $x$
+   to measure. With `toward`, among several remaining lines only those
    remain whose landing lies nearest $\tau$, measured by the distance
    between sets, $d(A, B) = \min_{a \in A, b \in B} |a - b|$: the landing
    of $x$ with a subject, the union of the landings of all objects without.
@@ -744,7 +745,8 @@ these three cases are exclusive, so the side a line names is determined or
 undefined, never two. The side `moving` names is that of one point, its
 first anchor point off $\ell$, or of a line. Stage 3 tests, for finitely
 many points and segments, membership in a half-plane and incidence of a
-reflected point with a segment. In stage 4, a landing is a finite union of
+reflected point with a segment. In stage 4, whether the landing of $x$ is
+empty is again a test of half-planes, and a landing is a finite union of
 points and segments, each compact, and so is $\tau$; the distance between
 two non-empty compact sets is attained, so the minimum over the finitely
 many remaining lines exists. A line with an empty landing is not compared.

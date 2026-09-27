@@ -338,7 +338,7 @@ let eval_mark (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
 
 let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
     (fs : Ast.fold_spec) (span : Error.span) : unit =
-  let sides = { Ast.s_toward = fs.Ast.toward; s_moving = fs.Ast.moving } in
+  let sides = { Ast.s_toward = fs.Ast.toward; s_moving = fs.Ast.moving; s_spans = fs.Ast.spans } in
   match resolve_markable ctx span out ~fold:true sides m with
   | `Fresh (cid, bind_out, axis, prov, side_override, implied) ->
       run_fold ctx ~span ~axis ~fs ~implied ~side_override ~crease_id:cid ~prov;
@@ -452,7 +452,7 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
 
 let eval_reverse (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
     (rs : Ast.reverse_spec) (span : Error.span) : unit =
-  let sides = { Ast.s_toward = rs.Ast.rtoward; s_moving = rs.Ast.rmoving } in
+  let sides = { Ast.s_toward = rs.Ast.rtoward; s_moving = rs.Ast.rmoving; s_spans = rs.Ast.rspans } in
   let cid, bind_out, axis, prov, side, implied =
     match resolve_markable ctx span out ~fold:true sides m with
     | `Fresh (cid, bind_out, axis, prov, side, implied) ->

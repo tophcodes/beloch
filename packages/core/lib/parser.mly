@@ -14,6 +14,7 @@ let prose (span : Error.span) (kinds : (alignment_kind * Error.span) list) :
           { al_fold_line = None; al_fold_line2 = None; al_kind = k; al_span = sp })
         kinds;
     c_heading = None;
+    c_heading_span = None;
     c_span = span;
   }
 
@@ -28,12 +29,14 @@ let align_body (span : Error.span) (heads : string list) (parts : align_part lis
       (function
         | Part_alignment a -> Some a
         | Part_heading (l, sp) ->
-            Items.slot "align" "heading" heading sp l;
+            Items.slot "align" "heading" heading sp (l, sp);
             None)
       parts
   in
   if alignments = [] then Error.fail span "align needs at least one alignment";
-  { c_fold_lines = heads; c_alignments = alignments; c_heading = !heading; c_span = span }
+  { c_fold_lines = heads; c_alignments = alignments;
+    c_heading = Option.map fst !heading; c_heading_span = Option.map snd !heading;
+    c_span = span }
 
 (* `toward` inside a construction, the spelling before ADR 0031 *)
 let toward_inside (span : Error.span) : 'a =
@@ -212,7 +215,7 @@ align_part:
       { let (f1, f2, k) = $2 in
         Part_alignment
           { al_fold_line = f1; al_fold_line2 = f2; al_kind = k; al_span = $loc } }
-  | LPAREN HEADING line_operand RPAREN { Part_heading ($3, $loc) }
+  | LPAREN HEADING line_operand RPAREN { Part_heading ($3, ($startpos($2), $endpos($3))) }
 
 (* The fold-line prefix is left-factored into every alternative: an object
    can itself begin with a crease name, so an optional leading CREASE would
@@ -256,21 +259,25 @@ prose_axiom:
   | THROUGH point_operand point_operand
       { prose $loc [ (AlThrough $2, $loc($2)); (AlThrough $3, $loc($3)) ] }
   | MAP point_operand ONTO point_operand
-      { prose $loc [ (AlOnto (AoPoint $2, AoPoint $4), $loc) ] }
+      { prose $loc [ (AlOnto (AoPoint $2, AoPoint $4), ($startpos($2), $endpos($4))) ] }
   | MAP point_operand ONTO line_operand PERP line_operand
       { prose $loc
-          [ (AlOnto (AoPoint $2, AoLine $4), $loc($2)); (AlPerp $6, $loc($6)) ] }
+          [ (AlOnto (AoPoint $2, AoLine $4), ($startpos($2), $endpos($4)));
+            (AlPerp $6, ($startpos($5), $endpos($6))) ] }
   | MAP point_operand ONTO line_operand THROUGH point_operand
       { prose $loc
-          [ (AlOnto (AoPoint $2, AoLine $4), $loc($2)); (AlThrough $6, $loc($6)) ] }
+          [ (AlOnto (AoPoint $2, AoLine $4), ($startpos($2), $endpos($4)));
+            (AlThrough $6, ($startpos($5), $endpos($6))) ] }
   | MAP point_operand ONTO line_operand AND point_operand ONTO line_operand
       { prose $loc
-          [ (AlOnto (AoPoint $2, AoLine $4), $loc($2));
-            (AlOnto (AoPoint $6, AoLine $8), $loc($6)) ] }
+          [ (AlOnto (AoPoint $2, AoLine $4), ($startpos($2), $endpos($4)));
+            (AlOnto (AoPoint $6, AoLine $8), ($startpos($6), $endpos($8))) ] }
   | PERP line_operand THROUGH point_operand
-      { prose $loc [ (AlPerp $2, $loc($2)); (AlThrough $4, $loc($4)) ] }
+      { prose $loc
+          [ (AlPerp $2, ($startpos($1), $endpos($2)));
+            (AlThrough $4, ($startpos($3), $endpos($4))) ] }
   | MAP line_operand ONTO line_operand
-      { prose $loc [ (AlOnto (AoLine $2, AoLine $4), $loc) ] }
+      { prose $loc [ (AlOnto (AoLine $2, AoLine $4), ($startpos($2), $endpos($4))) ] }
 
 point_ref:
   | POINT { { name = $1; span = $loc } }

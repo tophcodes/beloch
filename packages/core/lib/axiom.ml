@@ -126,6 +126,10 @@ type pending = {
   heading : (Geom.line * string) option;
   base : string list;  (* provenance sources *)
   conics : Trace.conic list;
+  al_spans : Error.span list;  (* every alignment, in source order *)
+  onto_spans : Error.span list;  (* the `onto` alignments, one per [aligns] entry *)
+  heading_span : Error.span option;
+  operands : Trace.obj list;  (* the points and lines it is built from, for the trace *)
 }
 
 (* The material of a line operand on the table: the segments of a crease,
@@ -155,7 +159,7 @@ let axis_of ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (c : Ast.constru
   let obj_l lo = let ll = ln lo in Obj_line (ll, line_material ctx lo ll, l lo) in
   let one ?(aligns = []) what line base =
     { tag = t; what; cands = [ line ]; single = true; aligns;
-      heading = None; base; conics = [] }
+      heading = None; base; conics = []; al_spans = []; onto_spans = []; heading_span = None; operands = [] }
   in
   let pend =
     match cl with
@@ -207,7 +211,8 @@ let axis_of ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (c : Ast.constru
             one ~aligns what (Geom.parallel_midline la lb) base
         | Some (b1, b2) ->
             { tag = t; what; cands = [ b1; b2 ]; single = false; aligns;
-              heading = None; base; conics = [] })
+              heading = None; base; conics = []; al_spans = []; onto_spans = [];
+              heading_span = None; operands = [] })
     | Ax6 (a, d, q) ->
         let aa = pt a and dd = ln d and qq = pt q in
         if Geom.point_equal aa qq then
@@ -220,13 +225,14 @@ let axis_of ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (c : Ast.constru
         let what = Printf.sprintf "map %s onto %s through %s" (p a) (l d) (p q) in
         let cands = Geom.beloch_creases aa dd qq in
         if cands = [] then begin
-          if trace then Ctx.record_trace ctx ~axiom:t ~toward:None ~conics [];
+          if trace then Ctx.record_trace ctx (Trace.construction ~axiom:t ~conics);
           Error.fail span
             (Printf.sprintf "cannot fold %s onto %s through %s: out of reach"
                (p a) (l d) (p q))
         end;
         { tag = t; what; cands; single = false;
-          aligns = [ (Obj_point (aa, p a), obj_l d) ]; heading = None; base = [ p a; l d; p q ]; conics }
+          aligns = [ (Obj_point (aa, p a), obj_l d) ]; heading = None; base = [ p a; l d; p q ];
+          conics; al_spans = []; onto_spans = []; heading_span = None; operands = [] }
     | Ax7 (a, d, q, e) ->
         let aa = pt a and dd = ln d and qq = pt q and ee = ln e in
         let what =
@@ -250,7 +256,7 @@ let axis_of ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (c : Ast.constru
         in
         let cands = Geom.beloch7_creases aa dd qq ee in
         if cands = [] then begin
-          if trace then Ctx.record_trace ctx ~axiom:t ~toward:None ~conics [];
+          if trace then Ctx.record_trace ctx (Trace.construction ~axiom:t ~conics);
           Error.fail span
             (Printf.sprintf
                "cannot fold %s onto %s and %s onto %s: out of reach (no common \
@@ -260,7 +266,8 @@ let axis_of ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (c : Ast.constru
         { tag = t; what; cands; single = false;
           aligns = [ (Obj_point (aa, p a), obj_l d); (Obj_point (qq, p q), obj_l e) ];
           heading = None;
-          base = [ p a; l d; p q; l e ]; conics }
+          base = [ p a; l d; p q; l e ]; conics; al_spans = []; onto_spans = [];
+          heading_span = None; operands = [] }
   in
   (* the objects in the order the program writes them: a line onto a point
      keeps the line first, which is what the default side reads *)
@@ -282,7 +289,26 @@ let axis_of ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (c : Ast.constru
     | Ax1 _ | Ax2 _ | Ax3 _ | Ax5 _ -> pend.aligns
   in
   let heading = Option.map (fun lo -> (ln lo, l lo)) c.Ast.c_heading in
-  (cl, { pend with heading; aligns })
+  let al_spans = List.map (fun (a : Ast.alignment) -> a.Ast.al_span) c.Ast.c_alignments in
+  let onto_spans =
+    List.filter_map
+      (fun (a : Ast.alignment) ->
+        match a.Ast.al_kind with Ast.AlOnto _ -> Some a.Ast.al_span | _ -> None)
+      c.Ast.c_alignments
+  in
+  let op_p po = { Trace.name = p po; point = Some (pt po); segments = [] } in
+  let op_l lo = { Trace.name = l lo; point = None; segments = line_material ctx lo (ln lo) } in
+  let operands =
+    match cl with
+    | Ax1 (a, b) | Ax2 (a, b) -> [ op_p a; op_p b ]
+    | Ax3 (a, m) -> [ op_p a; op_l m ]
+    | Ax4 (a, l1, l2) -> [ op_p a; op_l l1; op_l l2 ]
+    | Ax5 (l1, l2) -> [ op_l l1; op_l l2 ]
+    | Ax6 (a, d, q) -> [ op_p a; op_l d; op_p q ]
+    | Ax7 (a, d, q, e) -> [ op_p a; op_l d; op_p q; op_l e ]
+  in
+  (cl, { pend with heading; aligns; al_spans; onto_spans; heading_span = c.Ast.c_heading_span;
+         operands })
 
 
 (* ---- exact distances on the table ---- *)
@@ -294,17 +320,25 @@ let dist2 (u : Geom.point) (v : Geom.point) : Num.t =
 let num_min (xs : Num.t list) : Num.t =
   List.fold_left (fun m x -> if Num.compare x m < 0 then x else m) (List.hd xs) xs
 
-(* the squared distance from a point to a segment, which may be a point *)
-let dist2_point_segment (r : Geom.point) ((a, b) : Geom.segment) : Num.t =
-  if Geom.point_equal a b then dist2 r a
+(* the point of a segment, which may be a point, nearest to [r] *)
+let nearest_on_segment (r : Geom.point) ((a, b) : Geom.segment) : Geom.point =
+  if Geom.point_equal a b then a
   else
     let t = Geom.seg_param (a, b) r in
-    if Num.sign t <= 0 then dist2 r a
-    else if Num.compare t Num.one >= 0 then dist2 r b
+    if Num.sign t <= 0 then a
+    else if Num.compare t Num.one >= 0 then b
     else
-      dist2 r
-        { Geom.x = Num.add a.Geom.x (Num.mul t (Num.sub b.Geom.x a.Geom.x));
-          y = Num.add a.Geom.y (Num.mul t (Num.sub b.Geom.y a.Geom.y)) }
+      { Geom.x = Num.add a.Geom.x (Num.mul t (Num.sub b.Geom.x a.Geom.x));
+        y = Num.add a.Geom.y (Num.mul t (Num.sub b.Geom.y a.Geom.y)) }
+
+(* the pair of [ps] with the least squared distance, the first on a tie *)
+let least_pair (ps : (Geom.point * Geom.point) list) : Num.t * (Geom.point * Geom.point) =
+  List.fold_left
+    (fun (m, best) (u, v) ->
+      let d = dist2 u v in
+      if Num.compare d m < 0 then (d, (u, v)) else (m, best))
+    (let u, v = List.hd ps in (dist2 u v, (u, v)))
+    ps
 
 (* Two segments that cross share a point; collinear ones never count as
    crossing here, and the endpoint distances cover their overlap. *)
@@ -316,17 +350,30 @@ let segments_cross ((a, b) : Geom.segment) ((c, d) : Geom.segment) : bool =
   let sa = Geom.side_of_line l2 a and sb = Geom.side_of_line l2 b in
   (sc <> 0 || sd <> 0) && sc * sd <= 0 && sa * sb <= 0
 
-let dist2_segments (s : Geom.segment) (u : Geom.segment) : Num.t =
-  if segments_cross s u then Num.zero
-  else
-    let a, b = s and c, d = u in
-    num_min
-      [ dist2_point_segment a u; dist2_point_segment b u;
-        dist2_point_segment c s; dist2_point_segment d s ]
+(* The squared distance between two segments and the nearest pair, the
+   point of [s] first: the crossing where they cross, else an end of one and
+   its nearest point on the other. *)
+let nearest_segments (s : Geom.segment) (u : Geom.segment) : Num.t * (Geom.point * Geom.point) =
+  let a, b = s and c, d = u in
+  match
+    if segments_cross s u then
+      Geom.intersection (Geom.line_through a b) (Geom.line_through c d)
+    else None
+  with
+  | Some x -> (Num.zero, (x, x))
+  | None ->
+      least_pair
+        [ (a, nearest_on_segment a u); (b, nearest_on_segment b u);
+          (nearest_on_segment c s, c); (nearest_on_segment d s, d) ]
 
-(* the squared distance between two sets of segments, both non-empty *)
-let dist2_sets (xs : Geom.segment list) (ys : Geom.segment list) : Num.t =
-  num_min (List.concat_map (fun x -> List.map (dist2_segments x) ys) xs)
+(* The squared distance between two sets of segments, both non-empty, and
+   the nearest pair, the point of [xs] first; the first pair on a tie. *)
+let nearest_sets (xs : Geom.segment list) (ys : Geom.segment list)
+    : Num.t * (Geom.point * Geom.point) =
+  let all = List.concat_map (fun x -> List.map (nearest_segments x) ys) xs in
+  List.fold_left
+    (fun (m, best) (d, pr) -> if Num.compare d m < 0 then (d, pr) else (m, best))
+    (List.hd all) all
 
 (* ---- the selection (ADR 0031) ---- *)
 
@@ -474,6 +521,37 @@ let subject_objs (ctx : Ctx.ctx) (span : Error.span) (p : pending) (x : Ast.alig
       (Printf.sprintf "%s is none of the objects of %s" xs p.what);
   (matching, xs)
 
+(* What the stages of a selection found for one candidate, for the trace. *)
+type found = {
+  mutable at : (Trace.removal * Trace.stage) option;
+  mutable angle : float option;
+  mutable side : int option;
+  mutable side_from : Trace.side_from option;
+  mutable attempts : Trace.attempt list;
+  mutable subject_folds : bool option;
+  mutable landed : Geom.segment list option;
+  mutable distance : float option;
+  mutable nearest : (Geom.point * Geom.point) option;
+}
+
+(* how the fold along [c] with folding side [s] meets each alignment *)
+let meets (c : Geom.line) (s : int) (aligns : (obj * obj) list) : Trace.meets list =
+  List.map
+    (fun (x, y) ->
+      if carries c s x y then Trace.Moves 0
+      else if carries c s y x then Trace.Moves 1
+      else if already c x y then Trace.Already
+      else Trace.Misses)
+    aligns
+
+let trace_obj (o : obj) : Trace.obj =
+  match o with
+  | Obj_point (q, name) -> { Trace.name; point = Some q; segments = [] }
+  | Obj_line (_, segs, name) -> { Trace.name; point = None; segments = segs }
+
+let degrees (cos2 : Num.t) : float =
+  Float.acos (Float.min 1. (Float.sqrt (Num.to_float cos2))) *. 180. /. Float.pi
+
 type chosen = {
   line : Geom.line;
   fold_side : int option;
@@ -484,8 +562,16 @@ type chosen = {
 
 let select ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (p : pending)
     ~(fold : bool) (sides : Ast.sides) : chosen =
-  let removed = ref [] in
-  let remove why cs = List.iter (fun c -> removed := (c, why) :: !removed) cs in
+  let found =
+    List.map
+      (fun c ->
+        ( c,
+          { at = None; angle = None; side = None; side_from = None; attempts = [];
+            subject_folds = None; landed = None; distance = None; nearest = None } ))
+      p.cands
+  in
+  let f c = List.assq c found in
+  let remove why stage cs = List.iter (fun c -> (f c).at <- Some (why, stage)) cs in
   let t = Option.map (fun (ti : Ast.toward_item) -> toward_obj ctx ti.Ast.target) sides.Ast.s_toward in
   let subject =
     match sides.Ast.s_toward with
@@ -495,20 +581,51 @@ let select ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (p : pending)
   let moving = sides.Ast.s_moving in
   let finish chosen =
     if trace then
-      Ctx.record_trace ctx ~axiom:p.tag
-        ~toward:(Option.bind t (fun t -> t.t_point))
-        ~conics:p.conics
-        (List.map
-           (fun c ->
-             let removed_by = List.assq_opt c !removed in
-             { Trace.line = c; removed_by;
-               selected = (match chosen with Some s -> s == c | None -> false);
-               landing =
-                 (match p.aligns with
-                 | (Obj_point (q, _), _) :: _ when removed_by <> Some Trace.By_paper ->
-                     Some (Geom.reflect_point c q)
-                 | _ -> None) })
-           p.cands)
+      let aligns =
+        List.mapi
+          (fun i (x, y) ->
+            { Trace.objects = (trace_obj x, trace_obj y);
+              span = List.nth_opt p.onto_spans i })
+          p.aligns
+      in
+      Ctx.record_trace ctx
+        { Trace.axiom = p.tag;
+          toward = Option.bind t (fun t -> t.t_point);
+          toward_segments =
+            (match t with Some { t_point = None; t_segs; _ } -> t_segs | _ -> []);
+          toward_name = Option.map (fun t -> t.t_str) t;
+          subject = Option.map snd subject;
+          moving_name = Option.map Resolve.fstr moving;
+          moving_point =
+            (match moving with
+            | Some (Ast.FlapPoint po) | Some (Ast.FlapSpec (Ast.FByPoints (po :: _, _))) ->
+                Some (Resolve.table_of ctx po)
+            | _ -> None);
+          operands = p.operands;
+          heading_line = Option.map fst p.heading;
+          heading_name = Option.map snd p.heading;
+          alignments = aligns;
+          spans =
+            { Trace.alignment_spans = p.al_spans; heading = p.heading_span;
+              toward_span = sides.Ast.s_spans.Ast.toward_span;
+              moving_span = sides.Ast.s_spans.Ast.moving_span };
+          conics = p.conics;
+          candidates =
+            List.map
+              (fun c ->
+                let k = f c in
+                let removed_by = Option.map fst k.at in
+                { Trace.line = c; removed_by; removed_at = Option.map snd k.at;
+                  selected = (match chosen with Some s -> s == c | None -> false);
+                  landing =
+                    (match p.aligns with
+                    | (Obj_point (q, _), _) :: _ when removed_by <> Some Trace.By_paper ->
+                        Some (Geom.reflect_point c q)
+                    | _ -> None);
+                  angle = k.angle; side = k.side; side_from = k.side_from;
+                  attempts = k.attempts; subject_folds = k.subject_folds;
+                  landed = k.landed; distance = k.distance; nearest = k.nearest })
+              p.cands }
   in
   let fail ?hint msg =
     finish None;
@@ -523,7 +640,7 @@ let select ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (p : pending)
       let on, off =
         List.partition (Fold_state.line_cuts_paper !(ctx.state)) p.cands
       in
-      remove Trace.By_paper off;
+      remove Trace.By_paper Trace.Paper off;
       on
   in
   if kept = [] then
@@ -534,8 +651,9 @@ let select ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (p : pending)
   let kept =
     match p.heading with
     | Some (la, _) when not p.single ->
+        List.iter (fun c -> (f c).angle <- Some (degrees (cos2 c la))) kept;
         let near = least (fun c -> Num.neg (cos2 c la)) kept in
-        remove Trace.By_heading (List.filter (fun c -> not (List.memq c near)) kept);
+        remove Trace.By_heading Trace.Heading (List.filter (fun c -> not (List.memq c near)) kept);
         near
     | _ -> kept
   in
@@ -588,17 +706,32 @@ let select ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (p : pending)
     | None -> true
     | Some (objs, _) -> List.exists (fun o -> landed_of c s o <> []) objs
   in
+  let tried c sides =
+    (f c).attempts <- List.map (fun s -> { Trace.fold_side = s; meets = meets c s p.aligns }) sides
+  in
   let sided =
     List.filter_map
       (fun c ->
+        let k = f c in
         match side_of c with
-        | Error why -> remove why [ c ]; None
+        | Error why -> remove why Trace.Side [ c ]; None
         | Ok None -> (
+            tried c [ 1; -1 ];
             match default_side c with
-            | Some fs -> Some (c, fs)
-            | None -> remove why_fail [ c ]; None)
-        | Ok (Some s) when performs c s p.aligns && subject_folds c s -> Some (c, Some s)
-        | Ok (Some _) -> remove why_fail [ c ]; None)
+            | Some fs ->
+                k.side <- fs;
+                k.side_from <-
+                  Some
+                    (if performs c 1 p.aligns && performs c (-1) p.aligns then Trace.First
+                     else Trace.Alone);
+                Some (c, fs)
+            | None -> remove why_fail Trace.Moved [ c ]; None)
+        | Ok (Some s) ->
+            k.side <- Some s;
+            k.side_from <- Some (if t <> None then Trace.From_toward else Trace.From_moving);
+            tried c [ s ];
+            if performs c s p.aligns then Some (c, Some s)
+            else (remove why_fail Trace.Moved [ c ]; None))
       kept
   in
   if sided = [] then
@@ -613,25 +746,41 @@ let select ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (p : pending)
             t.t_str (Resolve.fstr fa)
       | Some t, _ when p.single && toward_side (List.hd kept) t = None ->
           Printf.sprintf "toward %s names no side of the fold line of %s" t.t_str p.what
-      | Some t, _ -> (
-          match subject with
-          | Some (_, xs) ->
-              Printf.sprintf
-                "no fold of %s keeps %s on the side that stays, folds %s over and \
-                 carries out its alignments"
-                p.what t.t_str xs
-          | None ->
-              Printf.sprintf
-                "no fold of %s keeps %s on the side that stays and carries out its \
-                 alignments"
-                p.what t.t_str)
+      | Some t, _ ->
+          Printf.sprintf
+            "no fold of %s keeps %s on the side that stays and carries out its \
+             alignments"
+            p.what t.t_str
       | None, Some fa ->
           Printf.sprintf "no fold of %s moves %s and carries out its alignments" p.what
             (Resolve.fstr fa)
       | None, None ->
           Printf.sprintf "no fold of %s carries out all its alignments at once" p.what);
-  (* 4. toward keeps the candidate that lands its material nearest it: what
-     folds over, or only the named object's part of it *)
+  (* 4. with a subject, only the folds that fold it over, since the others
+     land nothing of it; a single remaining candidate is held to this too *)
+  let sided =
+    match subject with
+    | None -> sided
+    | Some (_, xs) ->
+        let folds =
+          List.filter
+            (fun (c, s) ->
+              let yes = subject_folds c (Option.get s) in
+              (f c).subject_folds <- Some yes;
+              if not yes then remove Trace.By_toward Trace.Landing [ c ];
+              yes)
+            sided
+        in
+        if folds = [] then
+          fail
+            (Printf.sprintf
+               "no fold of %s keeps %s on the side that stays, folds %s over and \
+                carries out its alignments"
+               p.what (match t with Some t -> t.t_str | None -> "") xs);
+        folds
+  in
+  (* then toward keeps the candidate that lands its material nearest it: the
+     objects of the alignments, or only the named object's part of them *)
   let sided =
     match (sided, t) with
     | _ :: _ :: _, Some t ->
@@ -642,9 +791,15 @@ let select ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (p : pending)
         let d =
           List.filter_map
             (fun (c, s) ->
-              match landing c (Option.get s) with
-              | [] -> remove Trace.By_toward [ c ]; None
-              | l -> Some ((c, s), dist2_sets l t.t_segs))
+              let l = landing c (Option.get s) in
+              (f c).landed <- Some l;
+              match l with
+              | [] -> remove Trace.By_toward Trace.Landing [ c ]; None
+              | l ->
+                  let d, pair = nearest_sets l t.t_segs in
+                  (f c).distance <- Some (Float.sqrt (Num.to_float d));
+                  (f c).nearest <- Some pair;
+                  Some ((c, s), d))
             sided
         in
         if d = [] then []
@@ -653,7 +808,7 @@ let select ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (p : pending)
           List.filter_map
             (fun ((c, s), x) ->
               if Num.compare x m = 0 then Some (c, s)
-              else (remove Trace.By_toward [ c ]; None))
+              else (remove Trace.By_toward Trace.Landing [ c ]; None))
             d
     | _ -> sided
   in
