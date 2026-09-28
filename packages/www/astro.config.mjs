@@ -146,6 +146,7 @@ export default defineConfig({
 					items: [
 						{ label: "The OCaml kernel", link: "/kernel/" },
 						{ label: "Command-line interface", link: "/cli/" },
+						{ label: "The stages view", link: "/cli/stages/" },
 					],
 				},
 			],

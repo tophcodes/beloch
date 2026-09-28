@@ -74,6 +74,9 @@ Without `OUT` the drawing goes to standard output; otherwise the extension of
 
 `beloch render --help` prints the same list.
 
+A view that draws the selection of one construction stage by stage is being
+built; [The stages view](/cli/stages/) states its rules.
+
 ## Other commands
 
 `beloch --version` prints the version. `beloch check` and `beloch lsp` are

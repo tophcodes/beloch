@@ -16,7 +16,8 @@ The reference implementation is documented beside them and binds nothing:
 
 - **`KERNEL.md`**: how `packages/core` realizes the model, statement by
   statement, and where it stops short.
-- **`CLI.md`**: the `beloch` command.
+- **`CLI.md`**: the `beloch` command, and beside it `CLI-STAGES.md`, the
+  stages view of `beloch render`.
 
 `SPECIFICATION.md` is the previous single specification and is being
 dissolved into these documents in the order ADR 0032 gives. A section
