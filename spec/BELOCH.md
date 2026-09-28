@@ -506,9 +506,10 @@ Errors, with the stage that raises them:
   fold line";
 - `(x toward …)` with an `x` that is no object of the construction: "x is
   none of the objects of …";
-- two candidates landing their material equally near `toward`: "toward .x
-  lies as near to where one fold of … lands its material as to where
-  another does", hint "name what goes toward .x, e.g. (.p toward .x)";
+- two candidates landing equally near `toward`: "toward .x lies as near to
+  where one fold of … lands the objects of its alignments as to where
+  another does", with `(x toward …)` naming `x` in place of the objects,
+  hint "name what goes toward .x, e.g. (.p toward .x)";
 - several candidates remaining without `toward`: "map .p onto --d through .q
   is ambiguous: 2 folds carry it out, all landing on the paper", hint "add
   (toward .x) or a heading";
@@ -516,6 +517,18 @@ Errors, with the stage that raises them:
   among them: "this construction determines one line", hint "drop heading";
 - `toward` or `moving` on a `mark` along an existing line, which selects
   nothing and moves nothing.
+
+When several candidates remain, the trace (`FOLD.md`, "The trace") carries
+one suggestion per remaining candidate: an item that, added to the
+statement, keeps that candidate alone. Without `toward`, the selection runs
+again with `(toward x)` for each named point in scope and then each named
+line, in program order, and the suggestion is the first `x` after which
+exactly that candidate remains. After a tie at stage 4 of a bare `toward`,
+it tries `(x toward …)` over the objects of the alignments in the order the
+program writes them. A candidate no such item keeps alone has no
+suggestion, and a selection that ends with no candidate has none. A
+suggestion is checked for its own statement only; a later statement that
+fails with it reports that failure where it happens.
 
 ### Axiom 5, a line onto a line
 

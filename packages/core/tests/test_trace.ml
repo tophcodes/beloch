@@ -34,6 +34,9 @@ let test_ambiguous_keeps_both () =
   Alcotest.(check int) "two candidates" 2 (List.length cs);
   Alcotest.(check int) "none removed" 2 (count (fun c -> removed c = None) cs);
   Alcotest.(check int) "none selected" 0 (count selected cs);
+  Alcotest.(check (list (option string))) "a toward that keeps each alone"
+    [ Some "(toward .a)"; Some "(toward .c)" ]
+    (List.map (fun c -> c |> member "suggestion" |> to_string_option) cs);
   let err = json |> member "beloch:error" in
   Alcotest.(check bool) "error names the ambiguity" true
     (Str.string_match (Str.regexp ".*is ambiguous: 2 folds") (err |> member "message" |> to_string) 0);
@@ -404,6 +407,63 @@ let test_toward_tie () =
     (Str.string_match (Str.regexp ".*as near") (err |> member "message" |> to_string) 0);
   Alcotest.(check bool) "with a hint" true (err |> member "hint" <> `Null)
 
+(* After a tie of a bare toward, a suggestion names what goes toward it: the
+   objects of the alignments in the order the program writes them. *)
+let test_tie_suggests_subject () =
+  let json, failed =
+    fold_traced
+      "paper square\nmark (map .a onto .b) as --v\nmark (map .a onto .d) as --h\n\
+       .u = free on --ab from .b at 1/5\nfold (map --v onto --h) (toward .u)\n"
+  in
+  Alcotest.(check bool) "the program fails" true failed;
+  let cs = candidates (List.nth (entries json) 2) in
+  Alcotest.(check (list (option string))) "--v measured alone keeps the first"
+    [ Some "(--v toward .u)"; None ]
+    (List.map (fun c -> c |> member "suggestion" |> to_string_option) cs)
+
+(* A program with one candidate left carries no suggestion. *)
+let test_no_suggestion_when_decided () =
+  let json, _ = fold_traced (kite " (toward .c)") in
+  let cs = candidates (List.nth (entries json) 1) in
+  Alcotest.(check int) "none" 0
+    (count (fun c -> c |> member "suggestion" <> `Null) cs)
+
+(* Axiom 6 records its circle, and each side tried records what moves and
+   where it lands. *)
+let test_motions_and_circle () =
+  let json, _ = fold_traced (kite "") in
+  let e = List.nth (entries json) 1 in
+  let circle = e |> member "circle" in
+  Alcotest.(check (list (float 1e-9))) "the centre is .q" [ 0.; 0.4 ]
+    (circle |> member "centre" |> floats);
+  Alcotest.(check (list (float 1e-9))) "through .d" [ 0.; 1. ]
+    (circle |> member "through" |> floats);
+  List.iter
+    (fun c ->
+      let landing = c |> member "landing" |> floats in
+      List.iter
+        (fun a ->
+          match a |> member "motions" |> to_list with
+          | [ m ] when m <> `Null -> (
+              match
+                ( m |> member "source" |> to_list |> List.map (fun sg -> sg |> to_list |> List.map floats),
+                  m |> member "image" |> to_list |> List.map (fun sg -> sg |> to_list |> List.map floats) )
+              with
+              | [ [ src; _ ] ], [ [ img; _ ] ] ->
+                  (* .d onto --ef, or --ef onto .d: the place of --ef that
+                     lands on .d is where .d would land *)
+                  let d = [ 0.; 1. ] in
+                  let moved, landed =
+                    if (a |> member "alignments" |> to_list) = [ `Int 0 ] then (src, img)
+                    else (img, src)
+                  in
+                  Alcotest.(check (list (float 1e-9))) ".d" d moved;
+                  Alcotest.(check (list (float 1e-9))) "the landing" landing landed
+              | _ -> Alcotest.fail "one place moves")
+          | _ -> ())
+        (c |> member "attempts" |> to_list))
+    (candidates e)
+
 let test_untraced_unchanged () =
   let src = triangle " (toward .c)" in
   let plain = Beloch.fold_string ~filename:"t.bel" src in
@@ -436,6 +496,10 @@ let () =
             test_toward_tie;
           Alcotest.test_case "without --trace nothing changes" `Quick
             test_untraced_unchanged;
+          Alcotest.test_case "a tie suggests a subject" `Quick test_tie_suggests_subject;
+          Alcotest.test_case "a decided selection suggests nothing" `Quick
+            test_no_suggestion_when_decided;
+          Alcotest.test_case "motions and the circle of axiom 6" `Quick test_motions_and_circle;
         ] );
       ( "stages",
         [

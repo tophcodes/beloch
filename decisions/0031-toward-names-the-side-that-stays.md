@@ -66,6 +66,14 @@ keeps only the candidates that fold `x` over. Equal distances leave the construc
 the second form. `moving` names no target and has no such stage: several
 candidates remaining after `moving` leave the fold ambiguous.
 
+**An ambiguous selection suggests what to write.** For each remaining
+candidate the kernel runs the selection again with one added item, and the
+trace carries the first item after which exactly that candidate remains.
+Without `toward` the items are `(toward x)` over the named points in scope,
+then the named lines, in program order; after a tie of a bare `toward` they
+are `(x toward …)` over the objects of the alignments as the program writes
+them. A suggestion is checked for its own statement only.
+
 **`heading` names the direction of the crease.** `heading --l` keeps the
 candidate whose line makes the smallest angle with `--l`. The position of
 `--l` plays no part. Equal angles pass the tied candidates on to `toward`;
@@ -154,6 +162,9 @@ leaves the construction.
   at, where a line that folds onto a point already needs paper at the place
   that lands. Constructing the target line first states the landing in the
   program.
+- **Suggestions that search every item and every combination.** One item
+  per object, in a fixed order, is what a reader can repeat by hand, and
+  the first that keeps a candidate alone is the one the figure names.
 
 ## Consequences
 
@@ -180,6 +191,9 @@ leaves the construction.
   candidate at the moved-material stage. On the square with the midlines
   `--v` and `--h`, `fold (map .a onto --v and .c onto --h)` has three
   candidates without that condition and none with it.
+- The stages view of `beloch render` shows the suggestions in its closing
+  block; the kernel computes them, and the view repeats none of the
+  selection.
 - Comments and notes that cite ADR 0022 for the alignment set and the prose
   forms cite this record instead.
 - `flatten` keeps its selection stages (`open-flatten-selection`). Whether

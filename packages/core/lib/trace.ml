@@ -16,7 +16,8 @@ type segment = Geom.point * Geom.point
 type stage = Paper | Heading | Side | Moved | Landing
 type side_from = From_toward | From_moving | Alone | First
 type meets = Moves of int | Already | Misses
-type attempt = { fold_side : int; meets : meets list }
+type motion = { source : (Geom.point * Geom.point) list; image : (Geom.point * Geom.point) list }
+type attempt = { fold_side : int; meets : meets list; motions : motion option list }
 
 type candidate = {
   line : Geom.line;
@@ -32,6 +33,7 @@ type candidate = {
   landed : segment list option;
   distance : float option;
   nearest : (Geom.point * Geom.point) option;
+  suggestion : string option;
 }
 
 type conic = { focus : Geom.point; directrix : Geom.line }
@@ -89,6 +91,7 @@ and construction = {
   spans : spans;
   candidates : candidate list;
   conics : conic list;
+  circle : (Geom.point * Geom.point) option;
 }
 
 and spans = {
@@ -103,7 +106,7 @@ let construction ~axiom ~conics =
     moving_name = None; moving_point = None; operands = []; heading_line = None; heading_name = None; alignments = [];
     spans = { alignment_spans = []; heading = None; toward_span = None;
               moving_span = None };
-    candidates = []; conics }
+    candidates = []; conics; circle = None }
 
 let faces_region st ?clip keep =
   List.filter_map
@@ -200,6 +203,9 @@ let to_json ~frame (e : entry) : Yojson.Safe.t =
             ("segments", segments o.segments) ]
       in
       let meets = function Moves i -> `Int i | Already -> str "already" | Misses -> `Null in
+      let motion m =
+        `Assoc [ ("source", segments m.source); ("image", segments m.image) ]
+      in
       let candidate k =
         `Assoc
           ([
@@ -216,12 +222,14 @@ let to_json ~frame (e : entry) : Yojson.Safe.t =
                     (fun a ->
                       `Assoc
                         [ ("side", `Int a.fold_side);
-                          ("alignments", `List (List.map meets a.meets)) ])
+                          ("alignments", `List (List.map meets a.meets));
+                          ("motions", `List (List.map (opt motion) a.motions)) ])
                     k.attempts) );
              ("subject_folds", opt (fun b -> `Bool b) k.subject_folds);
              ("landed", opt segments k.landed);
              ("distance", opt (fun d -> `Float d) k.distance);
              ("nearest", opt (fun (u, v) -> `List [ point u; point v ]) k.nearest);
+             ("suggestion", opt str k.suggestion);
            ]
           @ match k.landing with Some p -> [ ("landing", point p) ] | None -> [])
       in
@@ -252,6 +260,8 @@ let to_json ~frame (e : entry) : Yojson.Safe.t =
                   ("toward", opt span c.spans.toward_span);
                   ("moving", opt span c.spans.moving_span) ] );
             ("candidates", `List (List.map candidate c.candidates));
+            ( "circle",
+              opt (fun (o, t) -> `Assoc [ ("centre", point o); ("through", point t) ]) c.circle );
           ]
         @
         match c.conics with
