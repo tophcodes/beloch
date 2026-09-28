@@ -432,11 +432,17 @@ let on_side (c : Geom.line) (s : int) (segs : Geom.segment list) : bool =
   List.exists (fun (u, v) -> Geom.side_of_line c u = s || Geom.side_of_line c v = s) segs
 
 (* A fold along [c] with folding side [s] makes [x] meet [y] by moving [x]:
-   a point on that side, or a line's material there. A line that carries
-   the point [y] has to have paper at the one place that lands on it. *)
+   a point on that side, or a line's material there. Whoever moves lands on
+   the paper of the other: a point lands on the material of its target
+   line, and a line that carries the point [y] has to have paper at the one
+   place that lands on it. *)
 let carries (c : Geom.line) (s : int) (x : obj) (y : obj) : bool =
   match (x, y) with
-  | Obj_point (p, _), _ -> Geom.side_of_line c p = s
+  | Obj_point (p, _), Obj_line (_, segs, _) ->
+      Geom.side_of_line c p = s
+      && (let r = Geom.reflect_point c p in
+          List.exists (fun sg -> Geom.on_segment sg r) segs)
+  | Obj_point (p, _), Obj_point _ -> Geom.side_of_line c p = s
   | Obj_line (_, segs, _), Obj_point (q, _) ->
       let r = Geom.reflect_point c q in
       Geom.side_of_line c r = s && List.exists (fun sg -> Geom.on_segment sg r) segs

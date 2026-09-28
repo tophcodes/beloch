@@ -629,9 +629,12 @@ crosses the line on the paper or contains it.
 A fold along $\ell$ with *folding side* $H$, one of $H^\pm_\ell$, *carries
 out* an alignment `x onto y` when one of three holds: $x$ lies in $H$ and
 lands on $y$; $y$ lies in $H$ and lands on $x$; or $x$ is a point on $\ell$
-and on the line $y$. For a point this means lying in $H$; for a line that
-lands on a line, having material in $H$; for a line that lands on a point
-$q$, having material at $\rho_\ell(q)$ in $H$. The fold carries out a
+and on the line $y$. For a point that lands on a point this means lying
+in $H$; for a point $p$ that lands on a line, lying in $H$ with
+$\rho_\ell(p)$ in the material of the line; for a line that lands on a line,
+having material in $H$; for a line that lands on a point $q$, having
+material at $\rho_\ell(q)$ in $H$. Whoever moves lands on the paper of the
+other object. The fold carries out a
 construction when it carries out each of its `onto` alignments. The
 *landing* of an object is the image under $\rho_\ell$ of its part in
 $\overline{H}$, where $\overline{H}$ adds $\ell$ to $H$: a point in $H$, and
@@ -771,7 +774,8 @@ outside $\overline{H}$ holds after the fold exactly when it held before.
 `x onto y` ([#def-alignment]): $\rho_\ell(x)$ lies on $y$, and since
 $\rho_\ell$ is an involution, $\rho_\ell(y)$ passes through $x$. Stage 3
 gives one of three cases for each alignment. If $x$ lies in $H$, what
-lands of it lies on $y$: a point $x$ lands at $\rho_\ell(x)$ on $y$, and the
+lands of it lies on $y$: a point $x$ lands at $\rho_\ell(x)$ on $y$, on its
+material where $y$ is a line, and the
 material of a line $x$ in $\overline{H}$ lands on the image of the line of
 $x$, which is the line of $y$. If $y$ lies in $H$, the same holds with the
 roles exchanged; where $y$ is a line and $x$ a point, stage 3 asks for

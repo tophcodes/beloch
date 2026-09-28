@@ -1,0 +1,13 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; Axiom 7 on the midlines: every common tangent would land .a or .c beside
+; the part of its line that lies on the paper, so no fold carries out both
+; alignments (ADR 0031). A program that wants such a landing constructs the
+; target line first.
+
+paper square
+mark (map .a onto .b) as --v
+mark (map .a onto .d) as --h
+fold (map .a onto --v and .c onto --h)
+
+; expect error "no fold of map .a onto --v and .c onto --h carries out all its alignments at once"

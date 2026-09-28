@@ -1,0 +1,14 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; A point that folds onto a line lands on the paper of that line (ADR 0031).
+; The circle about .q through .d meets --ef at (1/2, 5/6) and at (1/2, -1/2);
+; the second lies beside the paper, so the fold that would take .d there
+; drops out at the moved-material stage, and the other remains.
+
+paper square
+mark (map .a onto .b) as --ef
+.q = free on --da from .a at 1/6
+fold (map .d onto --ef through .q) (moving .d)
+
+; assert steps = 1
+; assert .d = (1/2, 5/6)

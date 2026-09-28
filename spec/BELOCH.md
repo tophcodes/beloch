@@ -384,7 +384,7 @@ mark (through .a .c) as --ac
 (align (.p onto --l) (through .q)) (toward .a)  ; axiom 6, and the side that stays
 (align (.p onto --l) (perp --m))                ; axiom 4
 (align (--l onto --m)) (toward .c)              ; axiom 5, and the side that stays
-(align (.p onto --l) (.q onto --m))             ; axiom 7
+(align (.a onto --m) (.c onto --l))             ; axiom 7
 
 ; assert .p = (1/2, 1/2)
 ; assert .q = (1/2, 0)
@@ -449,9 +449,12 @@ below names the stage that left no line or several.
    With both items, `moving` has to name the side opposite `toward`.
 3. A candidate remains when the fold with that side carries out every
    alignment: one of its objects lies on the side that folds over and lands
-   on the other, where a line landing on a point needs paper at the place
-   that lands, or a point lies on the candidate and on its target line
-   already. A candidate for which stage 2 names no side does not remain.
+   on the paper of the other, or a point lies on the candidate and on its
+   target line already. A point that folds onto a line lands on the part of
+   the line that lies on the paper, and a line that folds onto a point has
+   paper at the place that lands on it. A landing on a line's extension
+   beyond the edge cannot be made by eye; a program that wants one
+   constructs the target line first. A candidate for which stage 2 names no side does not remain.
    With neither item, a candidate remains when either side carries the
    construction out.
 4. Among several remaining candidates, `toward` keeps the one that lands
