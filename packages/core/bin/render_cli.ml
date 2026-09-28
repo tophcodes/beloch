@@ -31,14 +31,21 @@ what gets rendered:
   --view cp|folded          cp (default): crease pattern, the flat unfolded
                             state. folded: the folded state (2D; 3D planned
                             for later, not this release).
-  --view candidates|op      drawn from the trace of `beloch fold --trace`,
+  --view candidates|op|stages
+                            drawn from the trace of `beloch fold --trace`,
                             which a .bel file gets here; a program that fails
                             is drawn up to the failure. candidates: one panel
                             per candidate of a statement. op: a write's terms
-                            and its result.
+                            and its result. stages: one construction's
+                            selection, one row per stage.
   --statement N             the statement those views draw, as an index into
                             beloch:statements (default: the one that failed,
                             else the last that chose)
+  --source FILE             the program text the stages view prints; a .bel
+                            input passes itself
+  --stage N                 stages: draw stage N (0 to 4) alone
+  --checks                  stages: add the rows that say what each stage
+                            checks
   --flip                    view the folded state from the other side
                             (ignored/no-op with --view cp)
 
@@ -65,4 +72,5 @@ examples:
   beloch render kite.bel --view folded out.png
   beloch render kite.bel --view folded --flip out.png
   beloch render kite.bel --view folded --open
+  beloch render kite.bel --view stages out.svg
 |}
