@@ -1,7 +1,7 @@
 import {
   Assignment, Crease, EdgeProvenance, FoldScene, Frame, Inspect, LineCoeffs,
   Mark, NamedLine, NamedPoint, SceneError, SourceRef, Statement, StatementKind, Step,
-  Meets, Segment, SideFrom, Stage, StepNotFoundError, TraceEntry, TraceError, TraceObject, TraceSpans,
+  Meets, Motion, Segment, SideFrom, Stage, StepNotFoundError, TraceEntry, TraceError, TraceObject, TraceSpans,
   Vec2, WriteCandidate, WriteEntry, WriteTerms,
 } from "./types";
 
@@ -131,15 +131,18 @@ function traceFrom(fold: Record<string, unknown>): TraceEntry[] {
       attempts: ((c["attempts"] ?? []) as Record<string, unknown>[]).map((a) => ({
         side: a["side"] as number,
         alignments: a["alignments"] as Meets[],
+        motions: ((a["motions"] ?? []) as (Motion | null)[]).map((m) => m ?? null),
       })),
       subjectFolds: (c["subject_folds"] ?? null) as boolean | null,
       landed: (c["landed"] ?? null) as Segment[] | null,
       distance: (c["distance"] ?? null) as number | null,
       nearest: (c["nearest"] ?? null) as [Vec2, Vec2] | null,
+      suggestion: (c["suggestion"] ?? null) as string | null,
     })),
     conics: ((e["conics"] ?? []) as { focus: Vec2; directrix: LineCoeffs }[]).map((c) => ({
       focus: c.focus, directrix: c.directrix,
     })),
+    circle: (e["circle"] ?? null) as TraceEntry["circle"],
   }));
 }
 
