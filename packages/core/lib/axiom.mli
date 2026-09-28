@@ -53,7 +53,7 @@ val select :
     paper, those nearest in direction to the `heading`, those whose fold
     carries out every alignment with the side that stays named by `toward`
     or the side that folds over named by `moving`, and among several the
-    one that lands the moved material nearest the `toward`. Fails naming the
+    one that lands the objects of its alignments nearest the `toward`. Fails naming the
     stage that left none or several, and where `toward` and `moving` name
     the same side. [fold] asks for a side the fold can take, which a moved
     line lying across the fold line does not give. Records the candidates in

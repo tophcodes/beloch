@@ -53,12 +53,13 @@ where both do, the side of the first object of the first alignment folds
 over. That default belongs to the write and gives the alignment no
 direction.
 
-**Among several remaining candidates, `toward` keeps the one that lands its
-material nearest the `toward` point or line**, measured as the distance
-between the two sets. `(toward .u)` measures everything that folds over;
-`(x toward .u)` measures only the part of `x`, one of the objects of the
-construction's alignments, and keeps only the candidates that fold `x`
-over. Equal distances leave the construction ambiguous, and the hint names
+**Among several remaining candidates, `toward` keeps the one that lands the
+objects of its alignments nearest the `toward` point or line**, measured as
+the distance between the two sets. `(toward .u)` measures the landing of
+every object: the points that fold over and the parts of the lines that
+fold over, where they land. The rest of the flap goes unmeasured.
+`(x toward .u)` measures only the part of `x`, one of the objects, and
+keeps only the candidates that fold `x` over. Equal distances leave the construction ambiguous, and the hint names
 the second form. `moving` names no target and has no such stage: several
 candidates remaining after `moving` leave the fold ambiguous.
 
@@ -135,6 +136,14 @@ leaves the construction.
   role. With `heading` in the construction and `toward` in the write, the
   nesting already separates the roles. Beloch's sigils name sorts of values,
   and alignments and selections are parts of statements.
+- **The landing of the whole flap**, all paper that folds over. The flap
+  lands on the side that stays, where the `toward` point lies, so two
+  candidates whose flaps both cover the point tie at distance zero: with `.p`
+  a quarter along `--bd` from `.d`, `fold (map .d onto --ef through .p)
+  (toward .c)` keeps one candidate by the objects and none by the flap. A
+  `mark` moves no paper and has no flap to measure, and in a folded state the
+  flap needs a rule for which layers belong to it. The objects are what the
+  program names, so a reader can find what is measured in the statement.
 - **`moving` with a landing stage.** `moving` names where the flap starts and
   gives no target to measure against.
 

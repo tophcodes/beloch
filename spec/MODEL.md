@@ -677,7 +677,7 @@ determines one line by its alignments has $|C| = 1$ and takes no `heading`;
 The read that keeps one line out of the candidates of a construction: by
 direction with `heading`, by the side that folds over with `toward` or
 `moving`, by whether that fold carries out every alignment, and by where it
-lands the material that folds over.
+lands the objects of the alignments.
 :::
 
 ::: {.term #term-folding-side name="folding side"}
