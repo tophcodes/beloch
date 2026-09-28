@@ -63,6 +63,10 @@ Without `OUT` the drawing goes to standard output; otherwise the extension of
 |---|---|
 | `--view cp` | The crease pattern, the flat sheet with every crease. The default. |
 | `--view folded` | The folded state, seen from above. |
+| `--view stages` | How the selection of one construction went, one row per stage; [The stages view](/cli/stages/) states its rules. A `.bel` input is evaluated with its trace, and a program that fails is drawn up to its failure. |
+| `--statement N` | The statement the stages view draws, as an index into `beloch:statements`; by default the one that failed, else the last that chose from candidates. |
+| `--stage N` | With `--view stages`, draws stage `N` alone, with the program and the legend. |
+| `--checks` | With `--view stages`, adds the rows that say what each stage checks. |
 | `--flip` | The folded state seen from the other side. |
 | `--labels a,b` | Draws the named points and lines, and only those. |
 | `--legend` | Adds the legend of crease kinds: mountain, valley, border, unassigned. |
@@ -73,9 +77,6 @@ Without `OUT` the drawing goes to standard output; otherwise the extension of
 | `--open` | Writes to a temporary file and opens it. |
 
 `beloch render --help` prints the same list.
-
-A view that draws the selection of one construction stage by stage is being
-built; [The stages view](/cli/stages/) states its rules.
 
 ## Other commands
 

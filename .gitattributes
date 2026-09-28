@@ -1,0 +1,10 @@
+# Files a script writes, collapsed in diffs and left out of the language
+# statistics on GitHub.
+
+# FOLD files that `beloch fold` writes for the tests
+**/fixtures/*.fold linguist-generated=true
+
+# the browser evaluator, written by packages/www/scripts/build-eval.sh
+packages/www/public/beloch/beloch-eval.js linguist-generated=true
+packages/www/public/beloch/qqbar-wasm.js linguist-generated=true
+packages/www/public/beloch/runtime-manifest.json linguist-generated=true

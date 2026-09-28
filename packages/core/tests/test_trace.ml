@@ -11,6 +11,13 @@ let triangle toward =
   "paper square\nmark (map .a onto .b) as --ef\nfold (map .d onto --ef through .a)"
   ^ toward ^ " as --s\n"
 
+(* .d onto --ef through .q, where both landings of .d lie on --ef on the
+   paper, mirrored in the line y = 2/5 that holds .q and .t *)
+let kite items =
+  "paper square\nmark (map .a onto .b) as --ef\n.q = free on --da from .a at 2/5\n\
+   .t = free on --bc from .b at 2/5\nfold (map .d onto --ef through .q)"
+  ^ items ^ " as --s\n"
+
 let entries json = json |> member "beloch:trace" |> to_list
 let candidates e = e |> member "candidates" |> to_list
 let removed c = c |> member "removed_by" |> to_string_option
@@ -19,7 +26,7 @@ let count p l = List.length (List.filter p l)
 let floats j = j |> to_list |> List.map to_number
 
 let test_ambiguous_keeps_both () =
-  let json, failed = fold_traced (triangle "") in
+  let json, failed = fold_traced (kite "") in
   Alcotest.(check bool) "the program fails" true failed;
   let e = List.nth (entries json) 1 in
   Alcotest.(check string) "axiom" "axiom6" (e |> member "axiom" |> to_string);
@@ -27,14 +34,17 @@ let test_ambiguous_keeps_both () =
   Alcotest.(check int) "two candidates" 2 (List.length cs);
   Alcotest.(check int) "none removed" 2 (count (fun c -> removed c = None) cs);
   Alcotest.(check int) "none selected" 0 (count selected cs);
+  Alcotest.(check (list (option string))) "a toward that keeps each alone"
+    [ Some "(toward .a)"; Some "(toward .c)" ]
+    (List.map (fun c -> c |> member "suggestion" |> to_string_option) cs);
   let err = json |> member "beloch:error" in
   Alcotest.(check bool) "error names the ambiguity" true
     (Str.string_match (Str.regexp ".*is ambiguous: 2 folds") (err |> member "message" |> to_string) 0);
-  Alcotest.(check int) "error points at the failing statement" 1
+  Alcotest.(check int) "error points at the failing statement" 3
     (err |> member "statement" |> to_int);
   let stmts = json |> member "beloch:statements" |> to_list in
-  Alcotest.(check int) "the failing statement has its log entry" 2 (List.length stmts);
-  Alcotest.(check int) "the error names that entry" 1 (e |> member "statement" |> to_int)
+  Alcotest.(check int) "the failing statement has its log entry" 4 (List.length stmts);
+  Alcotest.(check int) "the error names that entry" 3 (e |> member "statement" |> to_int)
 
 let test_toward_selects () =
   let json, failed = fold_traced (triangle " (toward .c)") in
@@ -171,7 +181,7 @@ let test_side_from_toward () =
      = [ `Null ])
 
 let test_landing_distance () =
-  let json, _ = fold_traced (triangle " (.d toward .b)") in
+  let json, _ = fold_traced (kite " (.d toward .t)") in
   let cs = candidates (List.nth (entries json) 1) in
   let ds = List.map (fun c -> c |> member "distance" |> to_number) cs in
   Alcotest.(check int) "both measured" 2 (List.length ds);
@@ -185,7 +195,7 @@ let test_landing_distance () =
       (* the landed .d and .b itself, as far apart as the distance says *)
       match c |> member "nearest" |> to_list |> List.map floats with
       | [ [ x1; y1 ]; [ x2; y2 ] ] ->
-          Alcotest.(check (list (float 1e-9))) "the toward end is .b" [ 1.; 0. ] [ x2; y2 ];
+          Alcotest.(check (list (float 1e-9))) "the toward end is .t" [ 1.; 0.4 ] [ x2; y2 ];
           Alcotest.(check (float 1e-9)) "the pair lies the distance apart"
             (c |> member "distance" |> to_number) (Float.hypot (x1 -. x2) (y1 -. y2))
       | _ -> Alcotest.fail "nearest is a pair of points")
@@ -387,7 +397,7 @@ let test_landing () =
     (List.sort compare (List.map (fun l -> List.nth l 1) lands))
 
 let test_toward_tie () =
-  let json, failed = fold_traced (triangle " (.d toward .b)") in
+  let json, failed = fold_traced (kite " (.d toward .t)") in
   Alcotest.(check bool) "the program fails" true failed;
   let cs = candidates (List.nth (entries json) 1) in
   Alcotest.(check int) "both stay open" 2 (count (fun c -> removed c = None) cs);
@@ -396,6 +406,63 @@ let test_toward_tie () =
   Alcotest.(check bool) "the error names the tie" true
     (Str.string_match (Str.regexp ".*as near") (err |> member "message" |> to_string) 0);
   Alcotest.(check bool) "with a hint" true (err |> member "hint" <> `Null)
+
+(* After a tie of a bare toward, a suggestion names what goes toward it: the
+   objects of the alignments in the order the program writes them. *)
+let test_tie_suggests_subject () =
+  let json, failed =
+    fold_traced
+      "paper square\nmark (map .a onto .b) as --v\nmark (map .a onto .d) as --h\n\
+       .u = free on --ab from .b at 1/5\nfold (map --v onto --h) (toward .u)\n"
+  in
+  Alcotest.(check bool) "the program fails" true failed;
+  let cs = candidates (List.nth (entries json) 2) in
+  Alcotest.(check (list (option string))) "--v measured alone keeps the first"
+    [ Some "(--v toward .u)"; None ]
+    (List.map (fun c -> c |> member "suggestion" |> to_string_option) cs)
+
+(* A program with one candidate left carries no suggestion. *)
+let test_no_suggestion_when_decided () =
+  let json, _ = fold_traced (kite " (toward .c)") in
+  let cs = candidates (List.nth (entries json) 1) in
+  Alcotest.(check int) "none" 0
+    (count (fun c -> c |> member "suggestion" <> `Null) cs)
+
+(* Axiom 6 records its circle, and each side tried records what moves and
+   where it lands. *)
+let test_motions_and_circle () =
+  let json, _ = fold_traced (kite "") in
+  let e = List.nth (entries json) 1 in
+  let circle = e |> member "circle" in
+  Alcotest.(check (list (float 1e-9))) "the centre is .q" [ 0.; 0.4 ]
+    (circle |> member "centre" |> floats);
+  Alcotest.(check (list (float 1e-9))) "through .d" [ 0.; 1. ]
+    (circle |> member "through" |> floats);
+  List.iter
+    (fun c ->
+      let landing = c |> member "landing" |> floats in
+      List.iter
+        (fun a ->
+          match a |> member "motions" |> to_list with
+          | [ m ] when m <> `Null -> (
+              match
+                ( m |> member "source" |> to_list |> List.map (fun sg -> sg |> to_list |> List.map floats),
+                  m |> member "image" |> to_list |> List.map (fun sg -> sg |> to_list |> List.map floats) )
+              with
+              | [ [ src; _ ] ], [ [ img; _ ] ] ->
+                  (* .d onto --ef, or --ef onto .d: the place of --ef that
+                     lands on .d is where .d would land *)
+                  let d = [ 0.; 1. ] in
+                  let moved, landed =
+                    if (a |> member "alignments" |> to_list) = [ `Int 0 ] then (src, img)
+                    else (img, src)
+                  in
+                  Alcotest.(check (list (float 1e-9))) ".d" d moved;
+                  Alcotest.(check (list (float 1e-9))) "the landing" landing landed
+              | _ -> Alcotest.fail "one place moves")
+          | _ -> ())
+        (c |> member "attempts" |> to_list))
+    (candidates e)
 
 let test_untraced_unchanged () =
   let src = triangle " (toward .c)" in
@@ -429,6 +496,10 @@ let () =
             test_toward_tie;
           Alcotest.test_case "without --trace nothing changes" `Quick
             test_untraced_unchanged;
+          Alcotest.test_case "a tie suggests a subject" `Quick test_tie_suggests_subject;
+          Alcotest.test_case "a decided selection suggests nothing" `Quick
+            test_no_suggestion_when_decided;
+          Alcotest.test_case "motions and the circle of axiom 6" `Quick test_motions_and_circle;
         ] );
       ( "stages",
         [

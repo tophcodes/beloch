@@ -147,7 +147,10 @@ export type SideFrom = "toward" | "moving" | "alone" | "first";
 // How a fold meets one alignment: the object (0 or 1) that folds onto the other,
 // a point already on the fold line and its target, or null for neither.
 export type Meets = 0 | 1 | "already" | null;
-export interface Attempt { side: number; alignments: Meets[]; }
+// What a fold moves to carry out one alignment, and where it lands; a point is
+// a segment of length zero.
+export interface Motion { source: Segment[]; image: Segment[]; }
+export interface Attempt { side: number; alignments: Meets[]; motions: (Motion | null)[]; }
 export interface TraceCandidate {
   line: LineCoeffs;
   removedBy: Removal | null;
@@ -162,6 +165,7 @@ export interface TraceCandidate {
   landed: Segment[] | null;                                 // the material the landing stage measured
   distance: number | null;                                  // from landed to the toward
   nearest: [Vec2, Vec2] | null;                             // the landed point and the toward point that distance lies between
+  suggestion: string | null;                                // where several remain, the item that keeps this one alone
 }
 export interface Conic { focus: Vec2; directrix: LineCoeffs; }            // a parabola
 // An object of an `onto` alignment: a point, or a line's material.
@@ -190,6 +194,7 @@ export interface TraceEntry {
   spans: TraceSpans;
   candidates: TraceCandidate[];
   conics: Conic[];
+  circle: { centre: Vec2; through: Vec2 } | null;           // axiom 6: about the point on the crease, through the point that moves
 }
 // The entries of beloch:trace that a write left: the terms of its definition
 // on the state it read, and the states it chose from, each with the rule that

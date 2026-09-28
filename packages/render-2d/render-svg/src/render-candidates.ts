@@ -65,7 +65,7 @@ function status(c: TraceCandidate): string {
 // The parabola with this focus and directrix as polylines inside the frame,
 // sampled along the directrix: the point above the foot q lies at distance
 // |q − f|² / 2d from it, with d the focus's distance from the directrix.
-function parabola(conic: Conic, lay: Layout): Vec2[][] {
+export function parabola(conic: Conic, lay: Layout): Vec2[][] {
   const [a, b, c] = conic.directrix;
   const len = Math.hypot(a, b);
   const [fx, fy] = conic.focus;
@@ -119,7 +119,7 @@ function cellOf(landing: Vec2, landings: Vec2[], faces: Vec2[][]): Vec2[][] {
 }
 
 // The part of a segment where n·x ≥ c.
-function clipSegment([a, b]: [Vec2, Vec2], n: Vec2, c: number): [Vec2, Vec2] | null {
+export function clipSegment([a, b]: [Vec2, Vec2], n: Vec2, c: number): [Vec2, Vec2] | null {
   const sa = n[0] * a[0] + n[1] * a[1] - c, sb = n[0] * b[0] + n[1] * b[1] - c;
   if (sa < 0 && sb < 0) return null;
   if (sa >= 0 && sb >= 0) return [a, b];

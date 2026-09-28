@@ -136,10 +136,11 @@ let run_render args =
              since its trace is what shows why it failed *)
           let view = view_of rest in
           let json_str =
-            if List.mem view [ Some "candidates"; Some "op" ] then
+            if List.mem view [ Some "candidates"; Some "op"; Some "stages" ] then
               Yojson.Safe.to_string (fst (eval_bel_file_traced file))
             else eval_to_fold_json file
           in
+          let rest = if view = Some "stages" then rest @ [ "--source"; file ] else rest in
           if open_flag then begin
             let out_path = Filename.temp_file "beloch-render" (format_ext rest) in
             let code = run_render_piped resolved json_str (out_path :: rest) in

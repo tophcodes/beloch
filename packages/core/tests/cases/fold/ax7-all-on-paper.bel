@@ -1,11 +1,12 @@
 ; AI-generated: this file was written by Claude, an AI model.
 
 ; Axiom 7 folding .a onto --cd and .c onto --vm: the cubic has three real
-; common tangents and every one of them cuts the sheet, so the
-; paper-incidence filter settles nothing and the ambiguity stands.
+; common tangents and every one of them cuts the sheet, so the paper filter
+; keeps all three. Each lands .a or .c beside the paper of its line, so no
+; fold carries out both alignments (ADR 0031).
 
 paper square
 mark (map .a onto .b) as --vm             ; vertical midline x = 1/2
 --x = (map .a onto --cd and .c onto --vm)
 
-; expect error "map .a onto --cd and .c onto --vm is ambiguous: 3 folds carry it out, all landing on the paper"
+; expect error "no fold of map .a onto --cd and .c onto --vm carries out all its alignments at once"

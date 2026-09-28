@@ -11,4 +11,4 @@ mark (map .a onto .d) as --h
 .u = free on --ab from .b at 1/5
 fold (map --v onto --h) (toward .u)
 
-; expect error "toward .u lies as near to where one fold of map --v onto --h lands its material as to where another does"
+; expect error "toward .u lies as near to where one fold of map --v onto --h lands the objects of its alignments as to where another does"

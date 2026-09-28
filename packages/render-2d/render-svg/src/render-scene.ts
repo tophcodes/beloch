@@ -8,6 +8,7 @@ import type { EdgeProvenance, FoldScene, Mark, Vec2, Isometry as FaceMatrix } fr
 import { createDoc, el, SvgDoc, SvgNode } from "./svgdoc";
 import { DEFAULT_THEME, Theme, LineStyle, HighlightColor } from "./theme";
 import { sceneLayout } from "./layout";
+import type { Layout } from "./layout";
 import { appendConstructions, appendLegend, appendTitle } from "./constructions";
 import { coverageDepth, coveredIntervals, faceEdgeIndex, sideUp, namedSegments, segmentsInFrame, paperAssignment, paperEdgeSegments, pointCovered, pointInPolygonInclusive, segInsideIntervals, paperClippedIntervals } from "./geometry";
 import { resolveIsometry, type Isometry } from "./isometry";
@@ -41,6 +42,13 @@ export interface SceneOptions {
   // drawing writes out the line of the statement that scored it instead of a
   // name it does not have.
   annotate?: string[] | undefined;
+  // "annotated": a named point is drawn only when `annotate` names it, dot
+  // and label alike, for a drawing that shows the points one step reads and
+  // no others. Absent: every named point gets its dot.
+  dots?: "annotated" | undefined;
+  // true: the paper's outline thin and light, and no crease inside it, for a
+  // drawing that draws the lines it is about itself.
+  quiet?: boolean | undefined;
   // Entities to emphasise: ".p" / "--l" join the construction overlay, "#[.p]"
   // fills the faces of the flap carrying every listed point.
   highlight?: string[] | undefined;
@@ -50,6 +58,9 @@ export interface SceneOptions {
   hidden?: "dashed" | "hide" | "depth" | undefined; // folded only: drop buried segments,
   // draw them uniformly, or fade each by how many layers cover it
   markOverlay?: MarkOverlay | undefined; // draw these marks instead of the scene's final ones — projected onto the step's faces when folded, in paper space when flat
+  // The frame to draw in; absent, the scene's own (sceneLayout). A view that
+  // draws beyond the paper, or at another scale, passes its own.
+  layout?: Layout | undefined;
 }
 
 // fold2svg.mjs:217 — hardcoded unit-square corners, normalized paper space.
@@ -121,6 +132,9 @@ function sourceMark(scene: FoldScene, prov: EdgeProvenance | null): string {
   return line === null ? "@?" : `@${line}`;
 }
 
+// The paper's outline in a quiet drawing.
+const QUIET_OUTLINE = (theme: Theme): LineStyle => ({ stroke: theme.flat, strokeWidth: 1.2 });
+
 export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
   const theme: Theme = { ...DEFAULT_THEME, ...opts.theme };
   // A `.p` / `--l` highlight is the construction overlay the `labels` option
@@ -156,7 +170,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
   // The frame both views of this scene share: the paper's footprint together
   // with every folded frame's, so a folded subset renders in place at true
   // relative size on the flat sheet's baseline.
-  const layout = sceneLayout(scene);
+  const layout = opts.layout ?? sceneLayout(scene);
   const { tx, ty, minX, maxX, minY, maxY } = layout;
   const doc = createDoc(layout.W, layout.H);
 
@@ -314,10 +328,14 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
         // Paper edges keep their bold solid style; other silhouette edges (folded
         // creases now on the outline) also go solid black, just a touch lighter;
         // only genuine on-paper creases keep the dashed assignment style.
+        const outline = assignment === "B" || onSilhouette(a0, b0, faces);
+        if (opts.quiet && !outline) return;
         const style: LineStyle =
-          assignment === "B"
+          opts.quiet
+            ? QUIET_OUTLINE(theme)
+            : assignment === "B"
             ? theme.lineStyle("B", theme)
-            : onSilhouette(a0, b0, faces)
+            : outline
               ? { stroke: theme.boundary, strokeWidth: 2 }
               : theme.lineStyle(assignment, theme);
         const refPos = bottom
@@ -487,6 +505,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     const MUTED = "#94a3b8"; // matches occluded (non-boundary) crease grey
     frame.verticesNames.forEach((nm, i) => {
       if (!nm) return;
+      if (opts.dots === "annotated" && !labelled(`.${nm}`)) return;
       const p = fverts[i]!;
       const buried = occludedPt(i);
       if (buried && !showHidden && !selected(`.${nm}`)) return; // "hide": drop dot + label
@@ -635,9 +654,10 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       E.forEach(([a, b], i) => {
         if (!showCrease(i)) return;
         const assignment = assignmentAtStep?.(V[a]!, V[b]!) ?? A[i]!;
+        if (opts.quiet && assignment !== "B") return;
         const name = prov[i]?.name;
         const cid = prov[i]?.creaseId ?? null;
-        const style = theme.lineStyle(assignment, theme);
+        const style = opts.quiet ? QUIET_OUTLINE(theme) : theme.lineStyle(assignment, theme);
         const attrs: Record<string, string | number> = {
           class: `crease-${assignment}`,
           "data-kind": "crease",
@@ -722,6 +742,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     V.forEach((p, i) => {
       const nm = scene.cp.verticesNames[i] ?? null;
       if (!showVertex(i, nm)) return;
+      if (opts.dots === "annotated" && !labelled(`.${nm ?? cornerLabel(p) ?? ""}`)) return;
       const circleAttrs: Record<string, string | number> = {
         cx: tx(p[0]), cy: ty(p[1]), r: 3, fill: theme.ink, "data-vertex": i,
       };

@@ -168,8 +168,11 @@ none of this appears, and every other field is the same with and without it.
   axioms 6 and 7 the entry also carries `conics`: the parabolas whose
   tangents these lines are, each as a `focus` point and a `directrix` line,
   and each candidate that crosses paper carries its `landing`: the
-  reflection across it of the first point of the first alignment, where
-  that point lands when it lies on the side that folds over.
+  reflection across it of the point of the first alignment, where that
+  point lands when it lies on the side that folds over. For axiom 6 the
+  entry carries `circle`, with the `centre`, the point the crease passes
+  through, and `through`, the point that moves: its landings lie where the
+  circle meets the target line.
 - A construction's entry also records what each stage of the selection
   found, so that a figure can draw the stages without repeating them. The
   entry carries `alignments`, the `onto` alignments in the order the
@@ -203,11 +206,22 @@ none of this appears, and every other field is the same with and without it.
   with its `side` and one value per alignment: `0` or `1` for the object
   that folds onto the other, `"already"` for a point that lies on the
   candidate and on its target line, and null where the fold does neither.
+  Beside them each attempt lists `motions`, one per alignment: null where
+  no object moves, and otherwise the `source` that moves and its `image`,
+  both as segments: a point and where it lands; for a line that lands on a
+  point, the place of the line that lands there and the point; for a line
+  that lands on a line, the part of it on the side that folds over and
+  that part reflected.
   `subject_folds` says whether that side folds the subject of
   `(x toward …)` over. `landed` is the landed material the landing stage
   measured, as segments, a point as a segment of length zero,
   `distance` its distance to the `toward`, and `nearest` the pair of
-  points that distance lies between, the landed one first.
+  points that distance lies between, the landed one first. Where several
+  candidates remain, each carries `suggestion`: the item that keeps it
+  alone, as the program would write it (`"(toward .d)"`,
+  `"(--v toward .u)"`), chosen as `BELOCH.md` states beside the errors of
+  the selection; null where none does, and on every candidate of a
+  selection that decided.
 - A write's entry carries `write`, one of `"fold"`, `"reverse"` and
   `"flatten"`, the `terms` of the write's definition in the state it read,
   and the `candidates` it chose from. A region of paper in the terms is a

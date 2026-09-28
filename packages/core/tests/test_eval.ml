@@ -1474,8 +1474,8 @@ let sugar_cases =
         "(align (.a onto --bc) (through .d))";
         "(align (through .d) (.a onto --bc))" ] );
     ( "axiom7",
-      [ "(map .a onto --bc and .d onto --ab)";
-        "(align (.a onto --bc) (.d onto --ab))" ] );
+      [ "(map .a onto --bc and .c onto --ab)";
+        "(align (.a onto --bc) (.c onto --ab))" ] );
   ]
 
 let test_sugar_is_sugar () =
@@ -1525,11 +1525,11 @@ let test_axiom7_source_order () =
       "z"
   in
   Alcotest.(check (list string)) "the roles follow the alignments"
-    [ ".a"; "--bc"; ".d"; "--ab" ]
-    (sources "(.a onto --bc) (.d onto --ab)");
+    [ ".a"; "--bc"; ".c"; "--ab" ]
+    (sources "(.a onto --bc) (.c onto --ab)");
   Alcotest.(check (list string)) "and swap with them"
-    [ ".d"; "--ab"; ".a"; "--bc" ]
-    (sources "(.d onto --ab) (.a onto --bc)")
+    [ ".c"; "--ab"; ".a"; "--bc" ]
+    (sources "(.c onto --ab) (.a onto --bc)")
 
 (* The implied anchor: axioms 2, 6 and 7 move a point, so a `reverse` over
    one needs no `moving` to name its tip; the other four have none. *)
@@ -1539,7 +1539,7 @@ let test_implied_point () =
   expect_error "does not split into two halves" (fun () ->
       ignore
         (folded
-           "paper square\nreverse (align (.a onto --bc) (.d onto --ab))\n"))
+           "paper square\nreverse (align (.a onto --bc) (.c onto --ab))\n"))
 
 (* Acceptance 4. The recognition table is total over the alignment multisets
    of size one and two: each is one of the seven or reaches the unrecognised
@@ -1547,9 +1547,9 @@ let test_implied_point () =
 (* two spellings per kind, so a set that repeats a kind stays non-degenerate *)
 let align_kinds =
   [ ("pp", [| "(.a onto .c)"; "(.b onto .d)" |]);
-    ("pl", [| "(.a onto --bc)"; "(.d onto --ab)" |]);
+    ("pl", [| "(.a onto --bc)"; "(.c onto --ab)" |]);
     ("ll", [| "(--ab onto --bc)"; "(--cd onto --da)" |]);
-    ("th", [| "(through .c)"; "(through .a)" |]);
+    ("th", [| "(through .d)"; "(through .a)" |]);
     ("pe", [| "(perp --ab)"; "(perp --bc)" |]) ]
 
 let align_table =

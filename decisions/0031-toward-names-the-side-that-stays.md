@@ -44,10 +44,13 @@ selector off the line, or of the material of a line.
 **A fold keeps only the candidates it can perform.** A candidate remains
 when the fold along it, with the side that folds over, carries out every
 alignment: in each, one of the two objects lies on the side that folds over
-and lands on the other, or a point lies on the candidate and on its target
-line already. A point carried by a line needs paper of that line at the one
-place that lands on it. The part of a line on the other side stays where it
-is. With neither `toward` nor `moving`, a candidate remains when either side
+and lands on the paper of the other, or a point lies on the candidate and on
+its target line already. A point that folds onto a line lands on the part of
+the line that lies on the paper, and a line that carries a point needs paper
+of that line at the one place that lands on it. A landing on a line's
+extension beyond the edge cannot be made by eye, so a program that wants one
+constructs the target line first. The part of a line on the other side stays
+where it is. With neither `toward` nor `moving`, a candidate remains when either side
 carries the construction out; the side that alone does so folds over, and
 where both do, the side of the first object of the first alignment folds
 over. That default belongs to the write and gives the alignment no
@@ -62,6 +65,14 @@ fold over, where they land. The rest of the flap goes unmeasured.
 keeps only the candidates that fold `x` over. Equal distances leave the construction ambiguous, and the hint names
 the second form. `moving` names no target and has no such stage: several
 candidates remaining after `moving` leave the fold ambiguous.
+
+**An ambiguous selection suggests what to write.** For each remaining
+candidate the kernel runs the selection again with one added item, and the
+trace carries the first item after which exactly that candidate remains.
+Without `toward` the items are `(toward x)` over the named points in scope,
+then the named lines, in program order; after a tie of a bare `toward` they
+are `(x toward …)` over the objects of the alignments as the program writes
+them. A suggestion is checked for its own statement only.
 
 **`heading` names the direction of the crease.** `heading --l` keeps the
 candidate whose line makes the smallest angle with `--l`. The position of
@@ -146,6 +157,14 @@ leaves the construction.
   program names, so a reader can find what is measured in the statement.
 - **`moving` with a landing stage.** `moving` names where the flap starts and
   gives no target to measure against.
+- **A point landing anywhere on the line of its target**, the extension
+  beyond the paper included. The fold then has nothing on the paper to aim
+  at, where a line that folds onto a point already needs paper at the place
+  that lands. Constructing the target line first states the landing in the
+  program.
+- **Suggestions that search every item and every combination.** One item
+  per object, in a fixed order, is what a reader can repeat by hand, and
+  the first that keeps a candidate alone is the one the figure names.
 
 ## Consequences
 
@@ -168,6 +187,13 @@ leaves the construction.
   `.c`, and the landing stage keeps the one that lands `.d` on the top edge.
 - A redundant `moving` wants a warning. The language has errors with hints
   (ADR 0028) and no warnings; the channel is a decision of its own (#59).
+- A point that would land beside the paper of its line removes the
+  candidate at the moved-material stage. On the square with the midlines
+  `--v` and `--h`, `fold (map .a onto --v and .c onto --h)` has three
+  candidates without that condition and none with it.
+- The stages view of `beloch render` shows the suggestions in its closing
+  block; the kernel computes them, and the view repeats none of the
+  selection.
 - Comments and notes that cite ADR 0022 for the alignment set and the prose
   forms cite this record instead.
 - `flatten` keeps its selection stages (`open-flatten-selection`). Whether

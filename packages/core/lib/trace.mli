@@ -40,7 +40,16 @@ type meets =
   | Already  (** a point on the fold line lies on its target line *)
   | Misses
 
-type attempt = { fold_side : int; meets : meets list  (** one per alignment *) }
+type motion = { source : segment list; image : segment list }
+(** What a fold moves to carry out one alignment, and where it lands: a
+    point, the place of a line that lands on a point, or the part of a line
+    that folds over onto a line. A point is a segment of length zero. *)
+
+type attempt = {
+  fold_side : int;
+  meets : meets list;  (** one per alignment *)
+  motions : motion option list;  (** one per alignment, where an object moves *)
+}
 (** A folding side the moved-material stage tried. *)
 
 type candidate = {
@@ -49,7 +58,7 @@ type candidate = {
   removed_at : stage option;
   selected : bool;
   landing : Geom.point option;
-      (** where the fold moves the first point of the first alignment *)
+      (** where the fold moves the point of the first alignment *)
   angle : float option;  (** degrees to the `heading` line, on reaching that stage *)
   side : int option;  (** the side that folds over, where one is fixed *)
   side_from : side_from option;
@@ -62,6 +71,8 @@ type candidate = {
   nearest : (Geom.point * Geom.point) option;
       (** the point of [landed] and the point of the `toward` that [distance]
           lies between *)
+  suggestion : string option;
+      (** where several candidates remain, the item that keeps this one *)
 }
 
 type conic = { focus : Geom.point; directrix : Geom.line }
@@ -136,6 +147,8 @@ and construction = {
   spans : spans;
   candidates : candidate list;
   conics : conic list;
+  circle : (Geom.point * Geom.point) option;
+      (** axiom 6: the centre on the crease, and the point that moves *)
 }
 
 and spans = {

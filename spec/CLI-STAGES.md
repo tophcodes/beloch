@@ -13,10 +13,6 @@ and the one that remains, or why none or several remain. Like the rest of
 `CLI.md`, this page describes the reference implementation and binds no
 other.
 
-`beloch render` does not draw this view yet. [Issue
-#63](https://github.com/tophcodes/beloch/issues/63) builds it, and this
-page states the rules it follows.
-
 The view reads the trace that `beloch fold --trace` writes (`FOLD.md`, "The
 trace") and repeats no part of the selection. Every candidate, side,
 landing and distance it draws is one the trace carries.

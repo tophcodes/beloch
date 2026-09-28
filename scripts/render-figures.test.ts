@@ -57,16 +57,18 @@ test("scanFigures keeps the block body verbatim", () => {
   expect(blocks[0]!.highlight).toEqual(["--ac"]);
 });
 
-const TRIANGLE = [
+// both landings of .d lie on the paper of --ef, so two folds carry it out
+const AMBIGUOUS = [
 	"paper square",
 	"mark (map .a onto .b) as --ef",
+	".q = free on --da from .a at 2/5",
 	"@label choose",
-	"fold (map .d onto --ef through .a) as --s",
+	"fold (map .d onto --ef through .q) as --s",
 ].join("\n");
 
 test("a candidates figure draws the choices of a program that stops at them", () => {
 	const entry = renderFigure(
-		{ id: "fig-choice", views: ["candidates"], highlight: [], at: "choose", program: TRIANGLE },
+		{ id: "fig-choice", views: ["candidates"], highlight: [], at: "choose", program: AMBIGUOUS },
 		outDir,
 		"spec/TEST.md",
 	);
@@ -93,7 +95,7 @@ test("an op figure draws the write of the labelled statement", () => {
 
 test("a figure that shows an unlabelled statement is an error", () => {
 	const entry = renderFigure(
-		{ id: "fig-noat", views: ["candidates"], highlight: [], at: "nope", program: TRIANGLE },
+		{ id: "fig-noat", views: ["candidates"], highlight: [], at: "nope", program: AMBIGUOUS },
 		outDir,
 		"spec/TEST.md",
 	);
