@@ -139,18 +139,55 @@ export interface Inspect {
 // frame the construction read (`frameIndex`; for a fold the state before it),
 // with the rule that removed it.
 export type Removal = "paper" | "heading" | "toward" | "moving" | "moved";
+// The stage of the selection that removed a candidate (spec/MODEL.md, def-selection).
+export type Stage = "paper" | "heading" | "side" | "moved" | "landing";
+// Where the side that folds over came from; "alone" and "first" are the default
+// of a write without side items.
+export type SideFrom = "toward" | "moving" | "alone" | "first";
+// How a fold meets one alignment: the object (0 or 1) that folds onto the other,
+// a point already on the fold line and its target, or null for neither.
+export type Meets = 0 | 1 | "already" | null;
+export interface Attempt { side: number; alignments: Meets[]; }
 export interface TraceCandidate {
   line: LineCoeffs;
   removedBy: Removal | null;
+  removedAt: Stage | null;
   selected: boolean;
   landing: Vec2 | null;                                     // where the fold moves the point `toward` compares (axioms 6 and 7)
+  angle: number | null;                                     // degrees to the heading line
+  side: number | null;                                      // the side that folds over, as the sign of a·x + b·y − c
+  sideFrom: SideFrom | null;
+  attempts: Attempt[];                                      // the sides the moved-material stage tried
+  subjectFolds: boolean | null;                             // whether the fold folds the x of (x toward …) over
+  landed: Segment[] | null;                                 // the material the landing stage measured
+  distance: number | null;                                  // from landed to the toward
+  nearest: [Vec2, Vec2] | null;                             // the landed point and the toward point that distance lies between
 }
 export interface Conic { focus: Vec2; directrix: LineCoeffs; }            // a parabola
+// An object of an `onto` alignment: a point, or a line's material.
+export interface TraceObject { name: string; point: Vec2 | null; segments: Segment[]; }
+export interface TraceAlignment { objects: [TraceObject, TraceObject]; span: string | null; }
+export interface TraceSpans {
+  alignments: string[];                                      // every alignment, onto or not
+  heading: string | null;
+  toward: string | null;
+  moving: string | null;
+}
 export interface TraceEntry {
   statement: number;                                         // index into scene.statements
   frameIndex: number;                                        // index into scene.steps: the state the construction read
   axiom: string;
   toward: Vec2 | null;
+  towardSegments: Segment[];                                 // the material of a toward line
+  towardName: string | null;
+  subject: string | null;                                    // the x of (x toward …)
+  movingName: string | null;
+  movingPoint: Vec2 | null;                                  // the anchor of moving, when it is a point
+  operands: TraceObject[];                                   // the points and lines the construction is built from
+  headingLine: LineCoeffs | null;
+  headingName: string | null;
+  alignments: TraceAlignment[];                              // the onto alignments, as attempts index them
+  spans: TraceSpans;
   candidates: TraceCandidate[];
   conics: Conic[];
 }

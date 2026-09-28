@@ -1,7 +1,8 @@
 import {
   Assignment, Crease, EdgeProvenance, FoldScene, Frame, Inspect, LineCoeffs,
   Mark, NamedLine, NamedPoint, SceneError, SourceRef, Statement, StatementKind, Step,
-  StepNotFoundError, TraceEntry, TraceError, Vec2, WriteCandidate, WriteEntry, WriteTerms,
+  Meets, Segment, SideFrom, Stage, StepNotFoundError, TraceEntry, TraceError, TraceObject, TraceSpans,
+  Vec2, WriteCandidate, WriteEntry, WriteTerms,
 } from "./types";
 
 function frameFrom(raw: Record<string, unknown>): Frame {
@@ -80,6 +81,24 @@ function statementsFrom(fold: Record<string, unknown>): Statement[] {
   }));
 }
 
+function objectFrom(o: Record<string, unknown>): TraceObject {
+  return {
+    name: o["name"] as string,
+    point: (o["point"] ?? null) as Vec2 | null,
+    segments: (o["segments"] ?? []) as Segment[],
+  };
+}
+
+// A FOLD written before the stage fields existed carries no spans.
+function spansFrom(s: Record<string, unknown>): TraceSpans {
+  return {
+    alignments: (s["alignments"] ?? []) as string[],
+    heading: (s["heading"] ?? null) as string | null,
+    toward: (s["toward"] ?? null) as string | null,
+    moving: (s["moving"] ?? null) as string | null,
+  };
+}
+
 function traceFrom(fold: Record<string, unknown>): TraceEntry[] {
   const raw = (fold["beloch:trace"] ?? []) as Record<string, unknown>[];
   return raw.filter((e) => e["write"] === undefined).map((e) => ({
@@ -87,11 +106,36 @@ function traceFrom(fold: Record<string, unknown>): TraceEntry[] {
     frameIndex: e["frame_index"] as number,
     axiom: e["axiom"] as string,
     toward: (e["toward"] ?? null) as Vec2 | null,
+    towardSegments: (e["toward_segments"] ?? []) as Segment[],
+    towardName: (e["toward_name"] ?? null) as string | null,
+    subject: (e["subject"] ?? null) as string | null,
+    movingName: (e["moving_name"] ?? null) as string | null,
+    movingPoint: (e["moving_point"] ?? null) as Vec2 | null,
+    operands: ((e["operands"] ?? []) as Record<string, unknown>[]).map(objectFrom),
+    headingLine: (e["heading_line"] ?? null) as LineCoeffs | null,
+    headingName: (e["heading_name"] ?? null) as string | null,
+    alignments: ((e["alignments"] ?? []) as Record<string, unknown>[]).map((a) => ({
+      objects: (a["objects"] as Record<string, unknown>[]).map(objectFrom) as [TraceObject, TraceObject],
+      span: (a["span"] ?? null) as string | null,
+    })),
+    spans: spansFrom((e["spans"] ?? {}) as Record<string, unknown>),
     candidates: ((e["candidates"] ?? []) as Record<string, unknown>[]).map((c) => ({
       line: c["line"] as LineCoeffs,
       removedBy: (c["removed_by"] ?? null) as TraceEntry["candidates"][number]["removedBy"],
+      removedAt: (c["removed_at"] ?? null) as Stage | null,
       selected: c["selected"] === true,
       landing: (c["landing"] ?? null) as Vec2 | null,
+      angle: (c["angle"] ?? null) as number | null,
+      side: (c["side"] ?? null) as number | null,
+      sideFrom: (c["side_from"] ?? null) as SideFrom | null,
+      attempts: ((c["attempts"] ?? []) as Record<string, unknown>[]).map((a) => ({
+        side: a["side"] as number,
+        alignments: a["alignments"] as Meets[],
+      })),
+      subjectFolds: (c["subject_folds"] ?? null) as boolean | null,
+      landed: (c["landed"] ?? null) as Segment[] | null,
+      distance: (c["distance"] ?? null) as number | null,
+      nearest: (c["nearest"] ?? null) as [Vec2, Vec2] | null,
     })),
     conics: ((e["conics"] ?? []) as { focus: Vec2; directrix: LineCoeffs }[]).map((c) => ({
       focus: c.focus, directrix: c.directrix,

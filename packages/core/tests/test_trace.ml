@@ -94,6 +94,156 @@ let test_axiom5_bind () =
   Alcotest.(check int) "both bisectors kept open" 2
     (count (fun c -> removed c = None) (candidates e))
 
+(* ---- what each stage of the selection found ---- *)
+
+(* the source text a one-line span "t.bel:L:C1-C2" covers *)
+let spanned src sp =
+  Scanf.sscanf sp "t.bel:%d:%d-%d" (fun l c1 c2 ->
+      String.sub (List.nth (String.split_on_char '\n' src) (l - 1)) (c1 - 1) (c2 - c1))
+
+let stage c = c |> member "removed_at" |> to_string_option
+
+let test_spans () =
+  let src = triangle " (.d toward .c) (moving .d)" in
+  let json, _ = fold_traced src in
+  let e = List.nth (entries json) 1 in
+  let spans = e |> member "spans" in
+  Alcotest.(check (list string)) "each alignment whole"
+    [ ".d onto --ef"; "through .a" ]
+    (spans |> member "alignments" |> to_list |> List.map (fun j -> spanned src (to_string j)));
+  Alcotest.(check string) "the toward item" ".d toward .c"
+    (spanned src (spans |> member "toward" |> to_string));
+  Alcotest.(check string) "the moving item" "moving .d"
+    (spanned src (spans |> member "moving" |> to_string));
+  Alcotest.(check bool) "no heading" true (spans |> member "heading" = `Null);
+  Alcotest.(check (option string)) "the subject" (Some ".d")
+    (e |> member "subject" |> to_string_option);
+  Alcotest.(check (option string)) "the toward" (Some ".c")
+    (e |> member "toward_name" |> to_string_option);
+  Alcotest.(check (list string)) "the operands, the through point included"
+    [ ".d"; "--ef"; ".a" ]
+    (e |> member "operands" |> to_list |> List.map (fun o -> o |> member "name" |> to_string));
+  Alcotest.(check (list (float 1e-9))) "the moving anchor" [ 0.; 1. ]
+    (e |> member "moving_point" |> floats);
+  match e |> member "alignments" |> to_list with
+  | [ a ] ->
+      let names = a |> member "objects" |> to_list |> List.map (fun o -> o |> member "name" |> to_string) in
+      Alcotest.(check (list string)) "the objects" [ ".d"; "--ef" ] names;
+      Alcotest.(check string) "the onto alignment's span" ".d onto --ef"
+        (spanned src (a |> member "span" |> to_string))
+  | l -> Alcotest.failf "expected one onto alignment, got %d" (List.length l)
+
+let test_heading_angle () =
+  let src =
+    "paper square\nmark (map .a onto .b) as --ef\n\
+     fold (align (.d onto --ef) (through .a) (heading --ab)) as --s\n"
+  in
+  let json, _ = fold_traced src in
+  let e = List.nth (entries json) 1 in
+  Alcotest.(check string) "the heading item" "heading --ab"
+    (spanned src (e |> member "spans" |> member "heading" |> to_string));
+  let cs = candidates e in
+  let angle c = c |> member "angle" |> to_number in
+  (* .d lands at (1/2, ±√3/2), so the creases run at 15 and 75 degrees to --ab *)
+  Alcotest.(check (list (float 1e-9))) "each angle" [ 15.; 75. ]
+    (List.sort compare (List.map angle cs));
+  let steep = List.find (fun c -> angle c > 45.) cs in
+  Alcotest.(check (option string)) "the steeper one removed by heading" (Some "heading")
+    (stage steep)
+
+let test_side_from_toward () =
+  let json, _ = fold_traced (triangle " (toward .c)") in
+  let cs = candidates (List.nth (entries json) 1) in
+  List.iter
+    (fun c ->
+      Alcotest.(check (option string)) "from toward" (Some "toward")
+        (c |> member "side_from" |> to_string_option);
+      let a = List.hd (c |> member "attempts" |> to_list) in
+      Alcotest.(check int) "tried the side it folds" (c |> member "side" |> to_int)
+        (a |> member "side" |> to_int))
+    cs;
+  (* the side opposite .c cannot carry .d onto --ef on one of them *)
+  let lost = List.find (fun c -> not (selected c)) cs in
+  Alcotest.(check (option string)) "removed at the moved-material stage" (Some "moved")
+    (stage lost);
+  Alcotest.(check bool) "with the alignment missed" true
+    ((List.hd (lost |> member "attempts" |> to_list)) |> member "alignments" |> to_list
+     = [ `Null ])
+
+let test_landing_distance () =
+  let json, _ = fold_traced (triangle " (.d toward .b)") in
+  let cs = candidates (List.nth (entries json) 1) in
+  let ds = List.map (fun c -> c |> member "distance" |> to_number) cs in
+  Alcotest.(check int) "both measured" 2 (List.length ds);
+  Alcotest.(check (float 1e-9)) "equally near" (List.hd ds) (List.nth ds 1);
+  List.iter
+    (fun c ->
+      Alcotest.(check int) "the landed .d is one point" 1
+        (List.length (c |> member "landed" |> to_list));
+      Alcotest.(check (option bool)) ".d folds over" (Some true)
+        (c |> member "subject_folds" |> to_bool_option);
+      (* the landed .d and .b itself, as far apart as the distance says *)
+      match c |> member "nearest" |> to_list |> List.map floats with
+      | [ [ x1; y1 ]; [ x2; y2 ] ] ->
+          Alcotest.(check (list (float 1e-9))) "the toward end is .b" [ 1.; 0. ] [ x2; y2 ];
+          Alcotest.(check (float 1e-9)) "the pair lies the distance apart"
+            (c |> member "distance" |> to_number) (Float.hypot (x1 -. x2) (y1 -. y2))
+      | _ -> Alcotest.fail "nearest is a pair of points")
+    cs
+
+(* (.a toward .b) measures where .a lands, so a fold that leaves .a where it
+   is drops out at the landing stage, even with nothing left to compare *)
+let test_subject_at_landing () =
+  let json, failed =
+    fold_traced
+      "paper square\nmark (through .a .c) as --diag\nmark (through .b .d) as --anti\n\
+       mark (map .a onto --anti and .d onto --diag) (.a toward .b)\n"
+  in
+  Alcotest.(check bool) "the program succeeds" false failed;
+  let cs = candidates (List.nth (entries json) 2) in
+  let out = List.filter (fun c -> not (selected c)) cs in
+  Alcotest.(check (list (option string))) "removed at the landing stage" [ Some "landing" ]
+    (List.map stage out);
+  Alcotest.(check (option bool)) "for not folding .a over" (Some false)
+    (List.hd out |> member "subject_folds" |> to_bool_option)
+
+let test_default_side () =
+  let json, _ =
+    fold_traced
+      "paper square\nmark (through .a .c) as --diag\nmark (through .b .d) as --anti\n\
+       mark (map .a onto --anti and .d onto --diag)\n"
+  in
+  let cs = candidates (List.nth (entries json) 2) in
+  List.iter
+    (fun c ->
+      if stage c <> Some "paper" then begin
+        Alcotest.(check int) "both sides tried" 2 (List.length (c |> member "attempts" |> to_list));
+        if stage c = None then
+          Alcotest.(check bool) "alone or first" true
+            (List.mem (c |> member "side_from" |> to_string) [ "alone"; "first" ])
+      end)
+    cs;
+  (* every tried side reports each of the two alignments *)
+  List.iter
+    (fun c ->
+      List.iter
+        (fun a -> Alcotest.(check int) "two alignments" 2 (List.length (a |> member "alignments" |> to_list)))
+        (c |> member "attempts" |> to_list))
+    cs
+
+let test_moving_meets () =
+  let json, _ = fold_traced (triangle " (moving .d)") in
+  let cs = candidates (List.nth (entries json) 1) in
+  List.iter
+    (fun c ->
+      if stage c = None then
+        let a = List.hd (c |> member "attempts" |> to_list) in
+        Alcotest.(check (list int)) ".d folds onto --ef" [ 0 ]
+          (a |> member "alignments" |> to_list |> List.map to_int))
+    cs;
+  Alcotest.(check bool) "every candidate from moving" true
+    (List.for_all (fun c -> c |> member "side_from" |> to_string_option = Some "moving") cs)
+
 (* ---- writes ---- *)
 
 let write_entries json =
@@ -279,6 +429,19 @@ let () =
             test_toward_tie;
           Alcotest.test_case "without --trace nothing changes" `Quick
             test_untraced_unchanged;
+        ] );
+      ( "stages",
+        [
+          Alcotest.test_case "the spans of the alignments and side items" `Quick test_spans;
+          Alcotest.test_case "heading records each angle" `Quick test_heading_angle;
+          Alcotest.test_case "toward fixes the side" `Quick
+            test_side_from_toward;
+          Alcotest.test_case "the landing stage measures each distance" `Quick
+            test_landing_distance;
+          Alcotest.test_case "the subject of toward is checked at the landing stage" `Quick
+            test_subject_at_landing;
+          Alcotest.test_case "without side items both sides are tried" `Quick test_default_side;
+          Alcotest.test_case "moving: which object folds onto which" `Quick test_moving_meets;
         ] );
       ( "writes",
         [

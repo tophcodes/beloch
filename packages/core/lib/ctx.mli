@@ -225,15 +225,9 @@ val push_entry : ctx -> stmt_kind -> Error.span -> unit
 val kind_of_stmt : Ast.stmt -> stmt_kind
 (** The axis a statement moves, read off its syntax. *)
 
-val record_trace :
-  ctx ->
-  axiom:string ->
-  toward:Geom.point option ->
-  ?conics:Trace.conic list ->
-  Trace.candidate list ->
-  unit
+val record_trace : ctx -> Trace.construction -> unit
 (** Record the candidates of the construction the current statement
-    evaluates. *)
+    evaluates, with what each stage of the selection found. *)
 
 val record_write : ctx -> Trace.terms -> Trace.state_candidate list -> unit
 (** Record the terms of the write the current statement runs and the states

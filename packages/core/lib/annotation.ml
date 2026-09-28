@@ -137,7 +137,7 @@ let value (ctx : Ctx.ctx) (arg : Ast.annot_arg) : Ctx.annot_value =
            program, so it leaves the trace alone *)
         let sp = arg.Ast.av_span in
         (Axiom.select ~trace:false ctx sp (snd (Axiom.axis_of ~trace:false ctx sp c))
-           ~fold:false { Ast.s_toward = None; s_moving = None })
+           ~fold:false { Ast.s_toward = None; s_moving = None; s_spans = Ast.no_side_spans })
           .Axiom.line
       in
       Ctx.AvLine (line, None)

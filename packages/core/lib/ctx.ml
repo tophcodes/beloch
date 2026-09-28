@@ -428,10 +428,10 @@ let kind_of_stmt : Ast.stmt -> stmt_kind = function
   | Ast.Def _ | Ast.Export _ ->
       SBind
 
-let record_trace (ctx : ctx) ~axiom ~toward ?(conics = []) candidates =
+let record_trace (ctx : ctx) (c : Trace.construction) =
   ctx.trace_rev <-
     { Trace.statement = stmt_index ctx; frame = List.length ctx.frames_rev;
-      body = Trace.Construction { axiom; toward; candidates; conics } }
+      body = Trace.Construction c }
     :: ctx.trace_rev
 
 let record_write (ctx : ctx) terms states =

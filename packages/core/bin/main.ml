@@ -52,6 +52,31 @@ let eval_bel_file file =
    beloch-render's stdin over a real Unix.pipe. *)
 let eval_to_fold_json file = Yojson.Safe.to_string (eval_bel_file file)
 
+(* A .bel file evaluated with its trace (spec/FOLD.md, "The trace"). A
+   program that fails still yields the file up to the failing statement; the
+   diagnostic goes to stderr and [true] says it failed. *)
+let eval_bel_file_traced file =
+  match In_channel.with_open_text file In_channel.input_all with
+  | exception Sys_error msg ->
+      Printf.eprintf "%s\n" msg;
+      exit 1
+  | src -> (
+      match Beloch.fold_traced ~filename:file src with
+      | exception Error.Beloch_error (span, msg, hint) ->
+          prerr_string (Diagnostic.render ~source:src ~span ~msg ~hint);
+          exit 1
+      | json, failure ->
+          Option.iter
+            (fun f ->
+              prerr_string
+                (Diagnostic.render ~source:src ~span:f.Beloch.f_span
+                   ~msg:f.Beloch.f_message ~hint:f.Beloch.f_hint))
+            failure;
+          (json, failure <> None))
+
+(* the value of `--view`, if given *)
+let rec view_of = function "--view" :: v :: _ -> Some v | _ :: t -> view_of t | [] -> None
+
 let run_render_piped prog json_str rest =
   let read_fd, write_fd = Unix.pipe ~cloexec:false () in
   Unix.set_close_on_exec write_fd;
@@ -107,7 +132,14 @@ let run_render args =
       let args = List.filter (fun a -> a <> "--open") args in
       match args with
       | file :: rest when Filename.check_suffix file ".bel" ->
-          let json_str = eval_to_fold_json file in
+          (* the views drawn from the trace render a failing program too,
+             since its trace is what shows why it failed *)
+          let view = view_of rest in
+          let json_str =
+            if List.mem view [ Some "candidates"; Some "op" ] then
+              Yojson.Safe.to_string (fst (eval_bel_file_traced file))
+            else eval_to_fold_json file
+          in
           if open_flag then begin
             let out_path = Filename.temp_file "beloch-render" (format_ext rest) in
             let code = run_render_piped resolved json_str (out_path :: rest) in
@@ -132,24 +164,9 @@ let run_fold file =
    (spec/FOLD.md, "The trace"). A program that fails still prints the file up
    to the failing statement, then the diagnostic, and exits 1. *)
 let run_fold_trace file =
-  match In_channel.with_open_text file In_channel.input_all with
-  | exception Sys_error msg ->
-      Printf.eprintf "%s\n" msg;
-      exit 1
-  | src -> (
-      match Beloch.fold_traced ~filename:file src with
-      | exception Error.Beloch_error (span, msg, hint) ->
-          prerr_string (Diagnostic.render ~source:src ~span ~msg ~hint);
-          exit 1
-      | json, failure -> (
-          print_endline (Yojson.Safe.pretty_to_string json);
-          match failure with
-          | None -> ()
-          | Some f ->
-              prerr_string
-                (Diagnostic.render ~source:src ~span:f.Beloch.f_span
-                   ~msg:f.Beloch.f_message ~hint:f.Beloch.f_hint);
-              exit 1))
+  let json, failed = eval_bel_file_traced file in
+  print_endline (Yojson.Safe.pretty_to_string json);
+  if failed then exit 1
 
 (* `beloch fold --watch FILE`: keeps one incremental `Session.t` across
    re-folds and recomputes only the suffix invalidated by the edit (see
