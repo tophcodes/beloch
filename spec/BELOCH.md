@@ -455,9 +455,11 @@ below names the stage that left no line or several.
    With neither item, a candidate remains when either side carries the
    construction out.
 4. Among several remaining candidates, `toward` keeps the one that lands
-   its material nearest it: everything that folds over, or with `(x toward
-   …)` only the part of `x`. Distances are between sets and compared
-   exactly.
+   the objects of its alignments nearest it: the points and the parts of
+   lines that fold over, where they land, or with `(x toward …)` only the
+   part of `x`.
+   The rest of the flap goes unmeasured. Distances are between sets and
+   compared exactly.
 
 The side that stage 2 names is the side the fold moves. With no side item,
 the side that alone carries the construction out folds over, and where both
