@@ -410,15 +410,15 @@ let test_stayer_picks_world () =
    [test_waterbomb_assignment], whose 8 rays include four opposite-collinear
    pairs. *)
 let test_duplicate_ray_rejected () =
-  let st, _, _, _ = precreased_plus () in
+  let st, cidh, cidv, _ = precreased_plus () in
   (* the rightward h-ray listed twice + the two v-rays: n = 4, even, and each
      line's reflection would otherwise close — only the repeat is wrong. *)
   let es =
     [
-      { Collapse.cid = 0; ea = o; eb = pt (q 1) half; valley = true };
-      { Collapse.cid = 0; ea = o; eb = pt (q 1) half; valley = false };
-      { Collapse.cid = 1; ea = o; eb = pt half (q 1); valley = true };
-      { Collapse.cid = 1; ea = o; eb = pt half (q 0); valley = false };
+      { Collapse.cid = cidh; ea = o; eb = pt (q 1) half; valley = true };
+      { Collapse.cid = cidh; ea = o; eb = pt (q 1) half; valley = false };
+      { Collapse.cid = cidv; ea = o; eb = pt half (q 1); valley = true };
+      { Collapse.cid = cidv; ea = o; eb = pt half (q 0); valley = false };
     ]
   in
   match Collapse.collapse st es ~over:[] ~stayer:(Collapse.Faces [ 0 ]) with

@@ -564,6 +564,12 @@ val mark_graduates : t -> mark -> bool
     on a face boundary in this state's current topology. Point marks never
     graduate. *)
 
+val endpoint_is_flap_boundary : t -> int list -> Geom.point -> bool
+(** [endpoint_is_flap_boundary g flap p] is [true] when paper point [p] lies
+    on the boundary of [flap] (a coplanar cluster, as its face indices): it is
+    strictly inside none of the flap's faces, and some edge of a flap face
+    through [p] is a raw paper edge or a folded (M/V) hinge. *)
+
 type mark_class =
   | CSubdivide of Geom.point * Geom.point
   | CRecord of mark_geom

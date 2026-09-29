@@ -1,0 +1,17 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; Four rays at the centre. The ray toward .d stops at .w, where it crosses
+; the flat crease --k: .w lies inside the sheet, on no raw or folded edge,
+; so the ray does not reach the boundary of its flap.
+
+paper square
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+.ctr = --ac * --bd
+.w = free on --bd from .d at 1/4
+mark (perp --bd through .w) as --k
+.e = --k * --da
+.z = free on (--k & .e) from .e at 1/4
+flatten (--ac & .a) (--ac & .c) (--bd & .b) (--bd & .w)
+
+; expect error "crease ends inside the sheet"

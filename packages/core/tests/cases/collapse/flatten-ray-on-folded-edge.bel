@@ -1,0 +1,24 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; A four-ray vertex on a book fold, scored through both layers. The ray
+; (--x & --m) ends at the centre of the paper, on the spine: a folded edge of
+; its flap, inside the square on the table. The four rays are two straight
+; lines, so the flatten equals folding along --x through both layers and then
+; along --y through the stack; the letters pick that candidate. The leading
+; pair (--x & --m) (--y & --ab) bounds the staying part of the book.
+
+paper square
+fold (map --ab onto --cd) (moving .a) as --m
+.f = --m * --bc
+mark (map --da onto --cd) (toward .f) (on #[.a]) as --x
+.p = free on --x from .a at 1/4
+mark (perp --x through .p) (on #[.a]) as --y
+mark (--x) (on #[.d]) into --x
+mark (--y) (on #[.d]) into --y
+flatten (--x & --m valley) (--y & --ab) (--x & .a valley) (--y & --da mountain)
+
+; assert faces = 8
+; assert .a = (1/4, 3/4)
+; assert .d = (1/4, 3/4)
+; assert .b = (1, 1)
+; assert .p = (1/8, 7/8)
