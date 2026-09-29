@@ -2,6 +2,7 @@ import { test, expect } from "bun:test";
 import { parseFold, SceneError } from "@beloch/scene";
 import { renderSide, sideSection } from "@beloch/render-svg";
 import type { Strip } from "@beloch/render-svg";
+import { sceneLayout } from "@beloch/render-svg";
 
 // Written with `beloch fold`: the three flat states of the six rays of the
 // preliminary base (#52), each picked by the letter of one ray, then a line
@@ -112,4 +113,27 @@ test("a named point is one paper point, and the other layers only land on it", a
   const svg = renderSide(scene, { along: "s" }).toString();
   expect((svg.match(/<circle data-kind="point" data-name="m"/g) ?? []).length).toBe(3);
   expect((svg.match(/>\.m</g) ?? []).length).toBe(2); // over the stack and in the crease pattern
+});
+
+test("the section runs left to right on the table, whatever sign the line's coefficients carry", async () => {
+  const scene = await fixture(1);
+  const order = (s: typeof scene) => sideSection(s, "s").points.sort((p, q) => p.t - q.t).map((p) => p.name);
+  const line = scene.namedLines.find((l) => l.name === "s")!;
+  const flipped = { ...scene, namedLines: [{ ...line, coeffs: line.coeffs.map((k) => -k) as typeof line.coeffs }] };
+  expect(order(flipped)).toEqual(order(scene));
+  // the points of the cut, in the order the section draws them, left to right
+  const x = (n: string) => scene.namedPoints.find((p) => p.name === n && p.step === scene.steps.length - 1)!.table[0];
+  const names = order(scene);
+  for (let i = 1; i < names.length; i++) expect(x(names[i]!)).toBeGreaterThan(x(names[i - 1]!));
+});
+
+test("the folded state beside the section carries the cut", async () => {
+  const scene = await fixture(1);
+  const svg = renderSide(scene, { along: "s" }).toString();
+  const cut = svg.match(/data-kind="cut" x1="([\d.]+)" y1="[\d.]+" x2="([\d.]+)"/);
+  expect(cut).not.toBeNull();
+  // the folded state is the first panel, left of the crease pattern
+  const W = sceneLayout(scene).W;
+  expect(Math.max(Number(cut![1]), Number(cut![2]))).toBeLessThan(W);
+  expect(svg).toContain(`width="${2 * W + 572}"`);
 });
