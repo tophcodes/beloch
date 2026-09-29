@@ -1,0 +1,11 @@
+paper square
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+mark (map --ab onto --cd) as --h
+mark (map --da onto --bc) as --v
+flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b mountain) (--bd & .d)
+.m = free on --bd from .b at 1/4
+--s = (perp --bd through .m)
+mark (--s) as --sm
+.e = --sm * --h
+.f = --sm * --v
