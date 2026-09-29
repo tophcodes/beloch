@@ -288,7 +288,7 @@ and material_cid (ctx : Ctx.ctx) (cr : Ast.crease_ref) : int =
   | Mark (mid, line) ->
       (* selecting a segment/ray of a mark is a folding-side operation
          (collapse `& .x`, fold-along, `at`): materialize the mark into a
-         real crease now (subdivide along its line), then treat it as
+         real crease now (subdivide along its extent), then treat it as
          Material. Pure-reference marks — never segment-selected — never
          reach here, so they stay non-subdividing records (#26). *)
       (* The mark's own id carries over, the way [cp_display] carries it
@@ -318,8 +318,17 @@ and material_cid (ctx : Ctx.ctx) (cr : Ast.crease_ref) : int =
             Some { State.axiom = "mark"; sources = [ "--" ^ cr.Ast.cname ];
                    span = cr.Ast.cspan; name = None; stmt = Ctx.stmt_index ctx }
       in
+      (* the paper is cut along each record's extent, those `into` added
+         included: on folded paper one table line is a different paper line
+         on every layer, and the line beyond an extent carries no mark
+         (ADR 0033) *)
       ctx.state :=
-        Fold_state.subdivide_paper !(ctx.state) line ~crease_id:cid ~prov;
+        (match Fold_state.mark_chords !(ctx.state) mid with
+        | [] -> Fold_state.subdivide_paper !(ctx.state) line ~crease_id:cid ~prov
+        | chords ->
+            List.fold_left
+              (fun st chord -> Fold_state.subdivide_paper_segment st chord ~crease_id:cid ~prov)
+              !(ctx.state) chords);
       promote_crease ctx cr.Ast.cname (Material (cid, line));
       cid
   | Bundle _ ->

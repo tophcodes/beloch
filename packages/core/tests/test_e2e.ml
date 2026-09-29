@@ -953,6 +953,37 @@ let test_mark_full_still_subdivides () =
   Alcotest.(check int) "full mark records (no fold-time edge)" 0 (edges_of src);
   Alcotest.(check int) "one record" 1 (marks_of src)
 
+(* A mark is drawn along its extent (ADR 0033). On the book fold the corner
+   bisector marked on the upper layer is the half diagonal from .a to the
+   centre, where the flap ends at the spine; its line runs on to .c across
+   the lower layer, which carries no mark (#105). *)
+let test_mark_draws_its_extent () =
+  let src =
+    "paper square\n\
+     fold (map --ab onto --cd) (moving .a) as --m\n\
+     .f = --m * --bc\n\
+     mark (map --da onto --cd) (toward .f) (on #[.a]) as --x\n"
+  in
+  let json = Beloch.fold_string ~filename:"t.bel" src in
+  let open Yojson.Safe.Util in
+  let vs =
+    json |> member "vertices_coords" |> to_list
+    |> List.map (fun v -> match to_list v with [ x; y ] -> (to_number x, to_number y) | _ -> assert false)
+    |> Array.of_list
+  in
+  let edges =
+    json |> member "edges_vertices" |> to_list
+    |> List.map (fun e -> match to_list e with [ i; j ] -> (vs.(to_int i), vs.(to_int j)) | _ -> assert false)
+  in
+  let on_diagonal lo hi ((x0, y0), (x1, y1)) =
+    let eq a b = Float.abs (a -. b) < 1e-9 in
+    eq x0 y0 && eq x1 y1 && Float.min x0 x1 >= lo -. 1e-9 && Float.max x0 x1 <= hi +. 1e-9
+  in
+  Alcotest.(check bool) "an edge along .a to the centre" true
+    (List.exists (on_diagonal 0. 0.5) edges);
+  Alcotest.(check bool) "no edge along the centre to .c" false
+    (List.exists (on_diagonal 0.5 1.) edges)
+
 (* fold the left half onto the right (valley crease x=1/2; .a/.d move, .b/.c
    don't). --hm = map .b onto .c is the y=1/2 line built from the two
    STATIONARY corners, so it still reads y=1/2 after the fold. Its `between`
@@ -1209,6 +1240,8 @@ let () =
             test_cp_folded_crease_uses_derived_mv;
           Alcotest.test_case "full mark still subdivides" `Quick
             test_mark_full_still_subdivides;
+          Alcotest.test_case "a mark is drawn along its extent" `Quick
+            test_mark_draws_its_extent;
           (* PENDING #27: full multilayer mark materialization — the setup meet
              `--hm * --da` can't reach across layers a carrying-flap-only chord *)
           Alcotest.test_case

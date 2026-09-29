@@ -245,6 +245,16 @@ val subdivide_paper :
 (** Like [subdivide], but [paper_axis] is a PAPER-space line: every face it
     crosses is split, regardless of current table placement. *)
 
+val subdivide_paper_segment :
+  ?crease_id:int ->
+  t ->
+  Geom.point * Geom.point ->
+  prov:State.provenance option ->
+  t
+(** Like [subdivide_paper], for the PAPER-space segment between the two
+    points: a face is split only where the segment crosses it from boundary
+    to boundary. The line beyond the segment splits nothing. *)
+
 type placement =
   | Top  (** outside: above every stationary layer in the footprint *)
   | Bottom  (** outside: below every stationary layer *)

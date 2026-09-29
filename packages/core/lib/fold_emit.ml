@@ -72,7 +72,7 @@ let beloch_edges_json edges : Yojson.Safe.t =
 (* Emit-time overlay (design §3.6). Graduates every mark whose MSeg endpoints
    both lie on a face boundary (corner / paper edge / real crease) into real
    creases by subdividing the state (in paper space,
-   fold-invariantly) along the mark's line. Returns the display state plus the
+   fold-invariantly) along the mark's extent. Returns the display state plus the
    marks that stay records for `beloch:marks`. A mark coincident with a real
    crease subdivides nothing, so it silently drops (the real crease supersedes).
    Applied to BOTH the crease-pattern frame and each folded frame — fold-time
@@ -93,8 +93,7 @@ let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
                call (beloch:inspect vs each folded frame) allocates a fresh id,
                and the inspector's data-crease-id on an F/U precrease no longer
                matches its beloch:inspect key. *)
-            Fold_state.subdivide_paper s
-              (Geom.line_through a b)
+            Fold_state.subdivide_paper_segment s (a, b)
               ~crease_id:m.Fold_state.mcrease_id ~prov:m.Fold_state.mprov
         | Fold_state.MPoint _ -> s)
       st grad

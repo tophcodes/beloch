@@ -681,6 +681,29 @@ let subdivide_paper ?crease_id (g : t) (paper_axis : Geom.line)
   in
   split_with_flat_hinges g ~cid ~prov ~cut_of
 
+let subdivide_paper_segment ?crease_id (g : t) ((a, b) : Geom.point * Geom.point)
+    ~(prov : State.provenance option) : t =
+  let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
+  let paper_axis = Geom.line_through a b in
+  let within (p : Geom.point) =
+    let t = Geom.seg_param (a, b) p in
+    Num.sign t >= 0 && Num.compare t Num.one <= 0
+  in
+  (* a face is cut where the segment crosses it from boundary to boundary;
+     the line beyond the segment, and a face the segment only enters, stay
+     whole *)
+  let cut_of fi =
+    let f = g.faces.(fi) in
+    let part k =
+      let sub = Geom.clip_convex_halfplane paper_axis k f in
+      if Array.length sub >= 3 then Some sub else None
+    in
+    match (part 1, part (-1), Geom.clip_line_to_convex paper_axis f) with
+    | Some pp, Some pm, Some (p, q) when within p && within q -> Some (pp, pm, (p, q))
+    | _ -> None
+  in
+  split_with_flat_hinges g ~cid ~prov ~cut_of
+
 (* Where a moved block lands in the rank after a fold. *)
 type placement = Top | Bottom | Over of int | Under of int
 

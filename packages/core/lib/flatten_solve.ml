@@ -108,6 +108,24 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   let far_at_o (a : Geom.point) (b : Geom.point) : Geom.point =
     if Geom.point_equal a o then b else a
   in
+  (* a crease scored through several layers has one piece per layer on the
+     same table ray; the solver reads rays in table space, so those pieces
+     are one ray and one candidate *)
+  let elem_cands_at_o =
+    List.map
+      (fun cands ->
+        List.fold_left
+          (fun kept ((cid, a, b, _) as c) ->
+            if
+              List.exists
+                (fun (cid', a', b', _) ->
+                  cid' = cid && Geom.point_equal (far_at_o a b) (far_at_o a' b'))
+                kept
+            then kept
+            else kept @ [ c ])
+          [] cands)
+      elem_cands_at_o
+  in
   let far_of_combo_elem (_, a, b, _) = far_at_o a b in
   (* combinations: one chosen segment per element (product; <= 2 per
      element in practice, so the corpus tops out at 2 combinations). *)
