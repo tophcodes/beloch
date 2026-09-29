@@ -1,9 +1,10 @@
 ; AI-generated: this file was written by Claude, an AI model.
 
-; A four-ray vertex near the corner of a book fold, scored on both layers:
-; the rays are marked on the upper layer, and `into` adds the lower layer's
-; piece of each to the same crease. On the paper each crease is a different
-; line per layer, and the flatten folds both corners as one stack (#105).
+; A four-ray vertex near the corner of a book fold, scored on the upper layer
+; alone. The rays end on the raw edges and none reaches the spine, so the
+; tip of the upper corner is that corner alone (ADR 0037): it folds onto
+; the top of the stack, and the lower corner stays flat at the bottom of
+; the stack, where it needs no rays.
 
 paper square
 fold (map --ab onto --cd) (moving .a) as --m
@@ -15,11 +16,9 @@ mark (perp --dg through .o) (on #[.a]) as --pp
 mark (perp --da through .o) (on #[.a]) as --hz
 mark (map --hz onto --dg) (toward .a) (on #[.a]) as --r2
 mark (map --hz onto --pp) (toward .e) (on #[.a]) as --r4
-mark (--dg) (on #[.d]) into --dg
-mark (--pp) (on #[.d]) into --pp
-mark (--r2) (on #[.d]) into --r2
-mark (--r4) (on #[.d]) into --r4
 .z = free on --ab from .b at 1/4
-flatten (--pp & --ab valley) (--r4 & --ab) (--dg & .a mountain) (--r2 & --da) (staying .z)
+flatten (--pp & --ab mountain) (--r4 & --ab) (--dg & .a valley) (--r2 & --da) (staying .z)
 
-; assert faces = 16
+; assert .d = (0, 1)
+; assert .b = (1, 1)
+; assert faces = 9

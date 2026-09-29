@@ -373,6 +373,73 @@ let test_flatten_all_layers_ok () =
   Alcotest.(check int) "vertex flatten leaves 4 sector faces" 4
     (Array.length (Fold_state.faces fd.Eval.state))
 
+(* A fan moves its tip (ADR 0037). On a book fold a four-ray vertex near the
+   corner, scored on one layer, folds that layer's corner and leaves the
+   other corner flat where it lies. [layer] is the flap the rays are marked
+   on and the anchor of the flatten; [edge] is that layer's raw edge. *)
+let book_corner_fan ?(pp = "valley") ?(dg = "mountain") ~layer ~corner ~edge ~stay () =
+  Printf.sprintf
+    "paper square\n\
+     fold (map --ab onto --cd) (moving .a) as --m\n\
+     .e = --m * --da\n\
+     .f = --m * --bc\n\
+     mark (map --da onto --cd) (toward .f) (on #[%s]) as --dg\n\
+     .o = free on --dg from %s at 1/4\n\
+     mark (perp --dg through .o) (on #[%s]) as --pp\n\
+     mark (perp --da through .o) (on #[%s]) as --hz\n\
+     mark (map --hz onto --dg) (toward %s) (on #[%s]) as --r2\n\
+     mark (map --hz onto --pp) (toward .e) (on #[%s]) as --r4\n\
+     .z = free on %s from %s at 1/4\n\
+     flatten (--pp & %s %s) (--r4 & %s) (--dg & %s %s) (--r2 & --da) \
+     (staying .z) (on #[%s])\n"
+    layer corner layer layer corner layer layer edge stay edge pp edge corner dg layer
+
+let face_at (st : Fold_state.t) (p : Geom.point) : int =
+  let faces = Fold_state.faces st in
+  let found = ref (-1) in
+  Array.iteri (fun i f -> if Geom.in_convex_polygon f p then found := i) faces;
+  !found
+
+let eighth k = Num.of_q (Q.of_ints k 8)
+
+let test_flatten_tip_upper_corner () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         (book_corner_fan ~pp:"mountain" ~dg:"valley" ~layer:".a" ~corner:".a"
+            ~edge:"--ab" ~stay:".b" ()))
+  in
+  let st = fd.Eval.state in
+  let near_a = { Geom.x = Num.of_q (Q.of_ints 1 100); y = Num.of_q (Q.of_ints 1 100) } in
+  let body = { Geom.x = Num.of_q (Q.of_ints 9 10); y = Num.of_q (Q.of_ints 1 10) } in
+  Alcotest.(check bool) "the upper corner lands on the upper layer" true
+    ((Fold_state.rank st).(face_at st near_a) > (Fold_state.rank st).(face_at st body));
+  let near_d = { Geom.x = Num.of_q (Q.of_ints 1 100); y = Num.of_q (Q.of_ints 99 100) } in
+  Alcotest.(check int) "the lower corner lies at the bottom of the stack" 0
+    (Fold_state.rank st).(face_at st near_d);
+  Alcotest.(check bool) "the lower corner stays" true
+    (Geom.point_equal (Fold_state.table_position st (pt 0 1)) (pt 0 1));
+  let a = Fold_state.table_position st (pt 0 0) in
+  Alcotest.(check bool) "the upper corner moves onto --hz" true
+    (Num.equal a.Geom.y (eighth 7) && Num.compare a.Geom.x (eighth 1) > 0)
+
+let test_flatten_tip_lower_corner_on () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"t.bel"
+         (book_corner_fan ~layer:".d" ~corner:".d" ~edge:"--cd" ~stay:".c" ()))
+  in
+  let st = fd.Eval.state in
+  let n = Array.length (Fold_state.faces st) in
+  let near_a = { Geom.x = Num.of_q (Q.of_ints 1 100); y = Num.of_q (Q.of_ints 1 100) } in
+  Alcotest.(check int) "the upper corner stays on top of the stack" (n - 1)
+    (Fold_state.rank st).(face_at st near_a);
+  Alcotest.(check bool) "the upper corner stays" true
+    (Geom.point_equal (Fold_state.table_position st (pt 0 0)) (pt 0 1));
+  let d = Fold_state.table_position st (pt 0 1) in
+  Alcotest.(check bool) "the lower corner moves onto --hz" true
+    (Num.equal d.Geom.y (eighth 7) && Num.compare d.Geom.x (eighth 1) > 0)
+
 (* ---- Fold_state ---- *)
 
 let test_fold_state_init () =
@@ -1853,6 +1920,10 @@ let () =
             test_flatten_not_material;
           Alcotest.test_case "@flatten all-layers guard happy path" `Quick
             test_flatten_all_layers_ok;
+          Alcotest.test_case "@flatten moves the tip of the upper corner" `Quick
+            test_flatten_tip_upper_corner;
+          Alcotest.test_case "@flatten on names the lower corner" `Quick
+            test_flatten_tip_lower_corner_on;
           Alcotest.test_case "ax5 kite paper-incidence filter" `Quick
             test_ax5_kite_filter;
           Alcotest.test_case "ax5 kite toward + moving agree" `Quick

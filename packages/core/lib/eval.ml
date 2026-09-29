@@ -216,7 +216,7 @@ let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
   | Ast.Apply (bind_opt, defname, args, span) ->
       eval_apply ctx bind_opt defname args span
   | Ast.Export (entries_opt, iname, span) -> eval_export ctx entries_opt iname span
-  | Ast.Flatten (out, elems, overs, staying_opt, toward_opt, span) ->
+  | Ast.Flatten (out, elems, overs, staying_opt, on_opt, toward_opt, span) ->
       (* the emergent crease is minted inside the solver, where the even case
          mints nothing, so the id this call returns (-1) has no reader.
          `into` hands the solver its own id and axis check: the emergent
@@ -227,7 +227,7 @@ let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
         | Ast.Into _ -> Some (cid, check_axis)
         | Ast.Anonymous | Ast.Named _ -> None
       in
-      Flatten_solve.run ctx ~into ~bind_out ~elems ~overs ~staying_opt
+      Flatten_solve.run ctx ~into ~bind_out ~elems ~overs ~staying_opt ~on_opt
         ~toward_opt span
 
 and eval_apply (ctx : Ctx.ctx) (bind_opt : string option) (defname : string)

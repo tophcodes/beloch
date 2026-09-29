@@ -1290,8 +1290,9 @@ when exactly one admissible spine yields a state.
 :::
 
 ::: {.term #term-tip name="tip, half"}
-The material beyond the axis of a reverse fold that is joined to the anchor;
-the spine cuts it into two halves.
+The material a reverse fold or a flatten moves: beyond the axis or outside
+the stayer's wedge, and joined to the anchor. The spine of a reverse fold
+cuts it into two halves.
 :::
 
 ::: {.term #term-spine name="spine"}
@@ -1356,12 +1357,12 @@ body exchange the letters. $\square$
 :::
 
 ::: {.definition #def-flatten name="flatten" uses="def-write def-flap def-score def-reflection def-letter def-noncrossing def-selection" defines="term-fan term-sector term-stayer term-emergent"}
-The write `flatten` takes a paper point $O$ interior to a flap $\Phi$, a
-finite set of *rays*: segments from $O$ to the boundary of $\Phi$ in
-pairwise distinct directions, a set of constraints, and a selection
-$\sigma$. Let $\rho_1, \ldots, \rho_k$ be the reflections of the table
-across the lines of the rays' images, in counter-clockwise order around
-$f(O)$.
+The write `flatten` takes a table point $O$, an *anchor*: a flap $\Phi$
+with a paper point over $O$, interior to $\Phi$ or on a folded edge of it, a
+finite set of *rays*: segments from $O$ to the boundary of the image of
+$\Phi$ in pairwise distinct directions, a set of constraints, and a
+selection $\sigma$. Let $\rho_1, \ldots, \rho_k$ be the reflections of the
+table across the lines of the rays, in counter-clockwise order around $O$.
 
 - If $k$ is even, the composition $\rho_1 \circ \cdots \circ \rho_k$ must be
   the identity; this is Kawasaki's condition that the alternating sum of the
@@ -1380,11 +1381,15 @@ by the program or by its convention. Set $m_0 = \mathrm{id}$ and
 $m_i = m_{i-1} \circ \rho_i$; Kawasaki's condition is $m_n = m_0$, so the
 motions close around $O$. Let $R$ be the image of $\Phi$ and let $C$ be the
 faces whose image meets $R$ in positive area, the layers under the fan.
-Score every face of $C$ along the rays' half-lines from $f(O)$, so that each
-piece lies in one wedge between consecutive rays. The map $f'$ is $m_i \circ
-f$ on every piece in the wedge of $S_i$ and $f$ elsewhere. A *candidate
-state* is a pair $(f', \lambda')$ with $\lambda'$ such that it satisfies
-[#def-noncrossing] and the constraints:
+Score every face of $C$ along the rays' half-lines from $O$, so that each
+piece lies in one wedge between consecutive rays, and call the pieces
+outside the wedge of $S_0$ the *candidates*. The *tip* $T$ is the least set
+of candidates that contains the candidates of $\Phi$ and is closed under
+hinges of any angle between candidates. The value keeps the scoring on the
+faces with a piece in $T$ and leaves the other faces whole. The map $f'$ is
+$m_i \circ f$ on every piece of $T$ in the wedge of $S_i$ and $f$
+elsewhere. A *candidate state* is a pair $(f', \lambda')$ with $\lambda'$
+such that it satisfies [#def-noncrossing] and the constraints:
 
 - a letter for a ray: the hinge between the two sectors of $\Phi$ on that ray
   has that letter;
@@ -1422,10 +1427,15 @@ rays between it and the stayer [@hull2020, chapter 5]. Kawasaki's theorem
 says that the closure condition is exactly flat-foldability of the vertex,
 and Maekawa's theorem, that the letters around $O$ differ in number by two,
 holds in every candidate state because a candidate state is a flat folded
-state [@hull2020, §5.2, §5.3]. Everything stacked over the fan moves with
-its sector; where a layer under the fan is hinged to stationary paper off
-the rays, hinge closure fails and the write is undefined, as for every
-reflection.
+state [@hull2020, §5.2, §5.3]. A layer under the fan moves with its sector
+when it hangs on $\Phi$ through the candidates, a flap of several layers
+hinged together beyond the fan included, and a separate flap stays where it
+lies: on a book fold, a fan near the corner whose rays end on the raw edges
+folds the corner of $\Phi$ alone, and a fan whose ray reaches the spine
+moves both layers. On a single sheet every piece is joined to $\Phi$, so
+the tip is every piece outside the stayer's wedge. Where a face of $T$ is
+hinged to a face in the stayer's wedge off the rays, hinge closure fails and
+the write is undefined, as for every reflection.
 
 ::: {.figure #fig-flatten caption="The preliminary base by one collapse at the centre: six rays fold, the diagonal through `.a` and `.c` stays flat, and the ordering constraint puts the a-quarter in front of the b-taco." views="cp folded" highlight=".a .c"}
 paper square
@@ -1478,16 +1488,6 @@ selection in the sense of [#def-selection]; the other two are conventions that
 pick a folder's habit out of several states that are all flat folded. Whether
 they belong in the model as named selections, or the language should ask for
 a constraint instead when several states remain, is not decided.
-:::
-
-::: {.remark #rem-all-layers name="the two rules for the layers under a crease" uses="def-fold def-flatten"}
-`fold` moves the outward closure of one flap and leaves the layers beneath
-it; `flatten` moves every layer under its fan. The two rules answer the same
-question, which layers under a crease move with it, and they answer it
-differently. A flatten that moves only the layers outward of a stayer, or a
-fold through every layer, are both expressible with the constructions above
-and neither is a write of the language; the model has no reason to prefer
-one rule, and the difference is a language decision.
 :::
 
 ## 6. Programs
