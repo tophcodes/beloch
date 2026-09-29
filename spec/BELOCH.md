@@ -152,6 +152,7 @@ mark_item    := axis
 flatten_item := line_operand [ "mountain" | "valley" ]
               | flap_operand "over" flap_operand
               | "staying" flap_operand
+              | "on" flap_operand
               | "toward" point_operand
 side_item    := [ toward_subject ] "toward" ( point_operand | line_operand )
               | "moving" flap_operand
@@ -164,7 +165,12 @@ of the axis that stays, `toward`, and the side that folds over, `moving`,
 and select among the candidates of a construction by them
 ([Selection](#selection)). The `toward` item of `flatten` selects among
 states rather than among lines
-([open-flatten-selection](/model/#open-flatten-selection)).
+([open-flatten-selection](/model/#open-flatten-selection)). The `on` item of
+`flatten` names its anchor, the flap anywhere in the stack under the vertex
+whose tip the fan moves; without it the anchor is the topmost flap there
+([def-flatten](/model/#def-flatten)). The other layers under the vertex stay
+where they lie and need no rays. `on` names a flap by incidence for both
+writes: the flap a `mark` scores, and the flap a `flatten` folds.
 
 Six blocks follow, one group per verb, each a complete program that this page
 evaluates. `fold` and `reverse` take two blocks each, because the second form
