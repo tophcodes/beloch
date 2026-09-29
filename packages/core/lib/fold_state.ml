@@ -1633,19 +1633,25 @@ let polygon_edge_at (poly : Geom.point array) (p : Geom.point) :
   in
   go 0
 
-(* Is the polygon edge of face [fi] passing through boundary point [p] a
+(* Is some polygon edge of face [fi] passing through boundary point [p] a
    genuine flap boundary — a bare paper edge (no hinge recorded at all) or a
    folded (M/V) hinge? A flat (angle 0) hinge never counts: within one flap
    every internal edge is flat by construction (coplanar clusters are exactly
    the flat-connected components), so a flat edge here always stays inside the
-   flap. *)
+   flap. At a vertex of the face both incident edges are asked, since one of
+   them may be a flat hinge while the other is the flap's boundary. *)
 let is_flap_boundary_at (g : t) (fi : int) (p : Geom.point) : bool =
-  match polygon_edge_at g.faces.(fi) p with
-  | None -> false (* [p] isn't even on this face's boundary *)
-  | Some (v1, v2) -> (
+  let poly = g.faces.(fi) in
+  let n = Array.length poly in
+  List.exists
+    (fun i ->
+      let v1 = poly.(i) and v2 = poly.((i + 1) mod n) in
+      Geom.on_segment (v1, v2) p
+      &&
       match hinge_between g fi v1 v2 with
       | None -> true
       | Some hi -> Num.sign g.hinges.(hi).angle <> 0)
+    (List.init n Fun.id)
 
 (* The flap face [p] is strictly interior to, if any. *)
 let strictly_interior_to_flap_face (g : t) (flap : int list) (p : Geom.point)

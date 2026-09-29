@@ -133,14 +133,41 @@ let closure_ok (o : Geom.point) (rays : (Geom.point * 'a) array) : bool =
   in
   is_identity prod
 
-(* --- boundary predicates (unit-square paper) ------------------------------ *)
+(* --- boundary predicates ---------------------------------------------------- *)
 
-let on_unit_boundary (p : Geom.point) : bool =
-  Geom.in_unit_square p
-  && (Num.sign p.Geom.x = 0
-     || Num.compare p.Geom.x Num.one = 0
-     || Num.sign p.Geom.y = 0
-     || Num.compare p.Geom.y Num.one = 0)
+(* The ray of [e] from O reaches the boundary of its flap (def-flatten): every
+   piece of crease [e.cid] that ends at the ray's far tip on the table, coming
+   from O's side, ends there on a raw paper edge or a folded edge of the flap
+   it lies in. The test runs in paper space, per layer, so a far tip on a
+   folded edge inside the table's square (a book fold's spine) counts. *)
+let far_on_flap_boundary (g : Fold_state.t) (o : Geom.point) (e : elem) : bool
+    =
+  let far = far_of o e in
+  let clusters = Fold_state.coplanar_clusters g in
+  let nf = Array.length (Fold_state.faces g) in
+  let flap_of fi =
+    List.filter (fun i -> clusters.(i) = clusters.(fi)) (List.init nf Fun.id)
+  in
+  let pieces =
+    List.filter_map
+      (fun (s : Fold_state.crease_segment) ->
+        if
+          Geom.point_equal s.Fold_state.tb far
+          && Geom.on_segment (o, far) s.Fold_state.ta
+        then Some (s.Fold_state.pb, s.Fold_state.faces)
+        else if
+          Geom.point_equal s.Fold_state.ta far
+          && Geom.on_segment (o, far) s.Fold_state.tb
+        then Some (s.Fold_state.pa, s.Fold_state.faces)
+        else None)
+      (Fold_state.crease_segments g e.cid)
+  in
+  pieces <> []
+  && List.for_all
+       (fun (p, (l, r)) ->
+         let flap = flap_of l @ if r >= 0 then flap_of r else [] in
+         Fold_state.endpoint_is_flap_boundary g flap p)
+       pieces
 
 let strictly_interior (p : Geom.point) : bool =
   Num.sign p.Geom.x > 0
@@ -286,7 +313,7 @@ let admissible_sectors ~(stayer : stayer) (o : Geom.point)
 (* geometry-only prechecks: everything rotation- AND valley-invariant. The
    Maekawa parity is the one per-pattern check, split into [maekawa_ok] so
    [collapse_all_patterns] can share this over every M/V pattern. *)
-let prepipeline_geom (es : elem list) :
+let prepipeline_geom (g : Fold_state.t) (es : elem list) :
     (Geom.point * (Geom.point * elem) array, string) result =
   let n = List.length es in
   match common_vertex es with
@@ -294,7 +321,7 @@ let prepipeline_geom (es : elem list) :
   | Some o when not (strictly_interior o) -> Error e_no_vertex
   | Some o ->
       if n < 4 || n mod 2 = 1 then Error e_count
-      else if List.exists (fun e -> not (on_unit_boundary (far_of o e))) es then
+      else if List.exists (fun e -> not (far_on_flap_boundary g o e)) es then
         Error e_midpaper
       else
         let rays = Array.of_list (sort_ccw o es) in
@@ -307,9 +334,9 @@ let maekawa_ok (valley : bool list) : bool =
   let nm = List.length (List.filter (fun v -> not v) valley) in
   abs ((n - nm) - nm) = 2
 
-let prepipeline (es : elem list) :
+let prepipeline (g : Fold_state.t) (es : elem list) :
     (Geom.point * (Geom.point * elem) array, string) result =
-  match prepipeline_geom es with
+  match prepipeline_geom g es with
   | Error _ as e -> e
   | Ok (o, rays) ->
       if maekawa_ok (List.map (fun e -> e.valley) es) then Ok (o, rays)
@@ -657,7 +684,7 @@ let pool_of_runs
 let collapse_runs (g : Fold_state.t) (es : elem list)
     ~(over : (int * int) list) ~(stayer : stayer) :
     (Fold_state.t list, string) result =
-  match prepipeline es with
+  match prepipeline g es with
   | Error e -> Error e
   | Ok (o, rays) -> (
       let faces = Fold_state.faces g in
@@ -697,7 +724,7 @@ let collapse_runs (g : Fold_state.t) (es : elem list)
 let collapse_all_patterns (g : Fold_state.t) (es : elem list)
     ~(over : (int * int) list) ~(stayer : stayer)
     ~(patterns : bool list list) : (Fold_state.t list, string) result list =
-  match prepipeline_geom es with
+  match prepipeline_geom g es with
   | Error e -> List.map (fun _ -> Error e) patterns
   | Ok (o, rays) -> (
       let faces = Fold_state.faces g in
