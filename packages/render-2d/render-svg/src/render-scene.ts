@@ -623,7 +623,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       if (run.name !== null) attrs["data-bel-name"] = run.name;
       labelAnchors.push({
         x: (run.a[0] + run.b[0]) / 2, y: (run.a[1] + run.b[1]) / 2,
-        text: run.text, key,
+        text: run.text, key: run.name !== null ? `--${run.name}` : key,
         preferOffset: besideLine(run.a, run.b, 14),
         group: `line:${key}`,
         attrs,
@@ -818,7 +818,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       if (nm !== null) { attrs["data-bel-name"] = nm; attrs["data-name"] = nm; }
       labelAnchors.push({
         x: tx(P[0] + (C[0] - P[0]) * t), y: ty(P[1] + (C[1] - P[1]) * t),
-        text, key,
+        text, key: nm !== null ? `--${nm}` : key,
         preferOffset: besideLine(a, b, 14),
         group: `line:${key}`,
         attrs,

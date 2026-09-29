@@ -46,6 +46,11 @@ what gets rendered:
   --stage N                 stages: draw stage N (0 to 4) alone
   --checks                  stages: add the rows that say what each stage
                             checks
+  --view side --along --l   the section along the line --l: the layers pulled
+                            apart, the top one first, beside the crease
+                            pattern with the same numbered pieces. --l is read
+                            on the table of the final state: bind it with =
+                            after the last fold.
   --flip                    view the folded state from the other side
                             (ignored/no-op with --view cp)
 

@@ -9,9 +9,10 @@
 //   beloch fold --trace f.bel | bun bin/fold2svg.ts - --view candidates [--statement N]
 //   beloch fold --trace f.bel | bun bin/fold2svg.ts - --view op [--statement N]
 //   beloch fold --trace f.bel | bun bin/fold2svg.ts - --view stages --source f.bel [--statement N] [--stage N] [--checks]
+//   beloch fold f.bel | bun bin/fold2svg.ts - --view side --along --s [--step K]
 //   beloch fold f.bel | bun bin/fold2svg.ts - out.png --title f.bel
 import { parseFold, SceneError, StepNotFoundError } from "@beloch/scene";
-import { renderCandidates, renderCP, renderFolded, renderOperation, renderStages } from "@beloch/render-svg";
+import { renderCandidates, renderCP, renderFolded, renderOperation, renderSide, renderStages } from "@beloch/render-svg";
 
 const args = process.argv.slice(2);
 const flagVal = (name: string): string | undefined => {
@@ -20,13 +21,13 @@ const flagVal = (name: string): string | undefined => {
 };
 
 const title = flagVal("--title") || "";
-const viewFlag = flagVal("--view"); // undefined | "cp" | "folded" | "candidates" | "op" | "stages"
-if (viewFlag !== undefined && !["cp", "folded", "candidates", "op", "stages"].includes(viewFlag)) {
+const viewFlag = flagVal("--view"); // undefined | "cp" | "folded" | "candidates" | "op" | "stages" | "side"
+if (viewFlag !== undefined && !["cp", "folded", "candidates", "op", "stages", "side"].includes(viewFlag)) {
   // process.stderr.write, not console.error — Bun's console.error unconditionally
   // ANSI-colors its argument even when stderr is piped (non-TTY), which would break
   // the plain-text stderr assertions below.
   process.stderr.write(
-    `beloch-render: unknown --view value '${viewFlag}' — expected cp, folded, candidates, op or stages\n`,
+    `beloch-render: unknown --view value '${viewFlag}' — expected cp, folded, candidates, op, stages or side\n`,
   );
   process.exit(1);
 }
@@ -39,7 +40,7 @@ const formatFlag = flagVal("--format"); // "svg"|"png", overrides outPath extens
 const widthFlag = flagVal("--width"); // PNG output width in px; default = doc width
 const FLAGS = new Set([
   "--title", "--view", "--hidden", "--labels", "--step", "--format", "--width", "--statement",
-  "--source", "--stage",
+  "--source", "--stage", "--along",
 ]);
 const SWITCHES = new Set(["--flip", "--legend", "--checks"]);
 // An option this CLI does not know would otherwise read as a positional, and
@@ -67,6 +68,13 @@ const sourceText = async (): Promise<string | undefined> => {
   return path === undefined ? undefined : await Bun.file(path).text();
 };
 
+// `--along --s` and `--along s` name the same line.
+const alongName = (): string => {
+  const along = flagVal("--along");
+  if (along === undefined) throw new SceneError("--view side needs --along and a line name");
+  return along.replace(/^--/, "");
+};
+
 try {
   const raw = !inPath || inPath === "-" ? await Bun.stdin.text() : await Bun.file(inPath).text();
   const scene = parseFold(raw);
@@ -85,6 +93,8 @@ try {
           stage: flagVal("--stage") !== undefined ? Number(flagVal("--stage")) : undefined,
           checks: args.includes("--checks"),
         })
+      : viewFlag === "side"
+        ? renderSide(scene, { ...opts, along: alongName(), step })
       : renderCP(scene, opts);
   const svg = doc.toString();
 

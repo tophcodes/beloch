@@ -63,6 +63,7 @@ Without `OUT` the drawing goes to standard output; otherwise the extension of
 |---|---|
 | `--view cp` | The crease pattern, the flat sheet with every crease. The default. |
 | `--view folded` | The folded state, seen from above. |
+| `--view side --along --l` | The section of the folded state along the line `--l`: the stack pulled apart, the top layer first, each layer a numbered strip and each folded hinge a turn, beside the crease pattern with the same numbered pieces. The line is read on the table of the state drawn: a line bound with `=` after the last fold. |
 | `--view stages` | How the selection of one construction went, one row per stage; [The stages view](/cli/stages/) states its rules. A `.bel` input is evaluated with its trace, and a program that fails is drawn up to its failure. |
 | `--statement N` | The statement the stages view draws, as an index into `beloch:statements`; by default the one that failed, else the last that chose from candidates. |
 | `--stage N` | With `--view stages`, draws stage `N` alone, with the program and the legend. |
