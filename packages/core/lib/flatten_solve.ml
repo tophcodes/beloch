@@ -7,7 +7,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     ~(bind_out : Ctx.crease_val -> unit)
     ~(elems : Ast.collapse_elem list)
     ~(overs : (Ast.flap_arg * Ast.flap_arg) list)
-    ~(staying_opt : Ast.flap_arg option)
+    ~(staying_opt : Ast.flap_arg option) ~(on_opt : Ast.flap_arg option)
     ~(toward_opt : Ast.point_operand option) (span : Error.span) : unit =
   (* materialize every collapse crease FIRST (a mark subdivides on
      segment-selection), so all of them cross and the shared collapse
@@ -161,6 +161,25 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
           Error.fail span "the staying flap does not touch the vertex"
         else Some (Collapse.Faces faces)
   in
+  (* the anchor flap `on` names, as paper polygons: the odd case scores the
+     emergent ray into a copy of the state, whose faces the kernel finds
+     inside these. The flap must lie under the vertex. *)
+  let anchor =
+    match on_opt with
+    | None -> None
+    | Some fa ->
+        let st = !(ctx.state) in
+        let faces = Resolve.resolve_flap_cluster ctx fa span in
+        let under =
+          List.exists
+            (fun f ->
+              Geom.in_convex_polygon (Fold_state.table_polygon_ccw st f) o)
+            faces
+        in
+        if not under then
+          Error.fail span "the on flap does not lie under the vertex"
+        else Some (List.map (fun f -> (Fold_state.faces st).(f)) faces)
+  in
   let n_given = List.length elems in
   let odd = n_given mod 2 = 1 in
   let prov : State.provenance option =
@@ -214,42 +233,6 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                rest)
     | None, _ -> true
   in
-  (* the all-layers congruence guard (spec §Semantics: "Material /
-     layers"), now judged per combination so a wrong-segment combination
-     is dropped rather than aborting the whole statement. For each chosen
-     element segment's table-space line, any face it actually cuts (not
-     just grazes) must already carry THAT element's crease on that line —
-     else the bundle is bent/missing on some layer and folding it as one
-     unit is unsound. Returns the guard error, or None if the combination
-     passes. *)
-  let all_layers_error combo =
-    let st = !(ctx.state) in
-    List.find_map
-      (fun (fcid, fea, feb, _) ->
-        let line = Geom.line_through fea feb in
-        let aligned_faces =
-          Fold_state.crease_segments st fcid
-          |> List.concat_map (fun (s : Fold_state.crease_segment) ->
-                 if
-                   Geom.side_of_line line s.Fold_state.ta = 0
-                   && Geom.side_of_line line s.Fold_state.tb = 0
-                 then
-                   let l, r = s.Fold_state.faces in
-                   l :: (if r >= 0 then [ r ] else [])
-                 else [])
-        in
-        let bad = ref false in
-        Array.iteri
-          (fun i _ ->
-            if
-              Geom.segment_cuts_polygon (fea, feb)
-                (Fold_state.table_polygon_ccw st i)
-              && not (List.mem i aligned_faces)
-            then bad := true)
-          (Fold_state.faces st);
-        if !bad then Some "collapse through unaligned layers" else None)
-      combo
-  in
   (* run one combination: pool every (state, tier, emergent-binding) that
      a candidate x M/V-pattern attempt closed, and every failure message.
      [given_fars] is this combination's given rays' far tips (the emergent
@@ -296,7 +279,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                     :: !local_real)
                 sts
           | Error msg -> local_err := msg :: !local_err)
-        (Collapse.collapse_all_patterns st' es_geom ~over ~stayer ~patterns)
+        (Collapse.collapse_all_patterns ?anchor st' es_geom ~over ~stayer
+           ~patterns)
     in
     (if odd then
        let fixed = Collapse.sort_ccw o elems_geom in
@@ -356,8 +340,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     (!local_real, !local_err, given_fars)
   in
   (* enumerate combinations; each yields realizations + errors. A
-     combination is dropped (contributes only errors) when the leading-arc
-     filter or the all-layers guard rejects it. *)
+     combination is dropped (contributes nothing) when the leading-arc filter
+     rejects it. *)
   let multiseg =
     let rec find els cands =
       match (els, cands) with
@@ -378,11 +362,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         if List.length combos > 1 && not (leading_arc_ok combo) then
           (combo, [], [])
         else
-          match all_layers_error combo with
-          | Some e -> (combo, [], [ e ])
-          | None ->
-              let r, e, _ = run_combo combo stayer in
-              (combo, r, e))
+          let r, e, _ = run_combo combo stayer in
+          (combo, r, e))
       combos
   in
   let surviving = List.filter (fun (_, r, _) -> r <> []) combo_runs in
@@ -473,13 +454,14 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         Error.fail span Collapse.e_out_of_paper
       else (
         match
-          (* eval-level and stayer diagnoses outrank the generic
-             "derived crease does not close": the all-layers guard
-             (a dropped combination), a collinear leading pair, and a
-             dead [staying] flap each name a specific fixable cause. *)
+          (* the tip and stayer diagnoses outrank the generic "derived
+             crease does not close": a layer of the tip without the rays,
+             an anchor with nothing to move, a collinear leading pair, and
+             a dead [staying] flap each name a specific fixable cause. *)
           List.find_opt
             (fun m ->
-              m = "collapse through unaligned layers"
+              m = Collapse.e_unaligned
+              || m = Collapse.e_anchor_stays
               || m = Collapse.e_stayer_collinear
               || m = Collapse.e_stayer_dead)
             pool

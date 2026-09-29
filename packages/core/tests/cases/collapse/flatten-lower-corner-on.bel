@@ -1,0 +1,23 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; The vertex of flatten-through-two-layers.bel, scored on the lower layer of
+; the book alone and folded with `on #[.d]`: the lower corner is the anchor,
+; its tip is that corner alone (ADR 0037, ADR 0040), and the upper corner
+; stays in place on top of the stack, where it needs no rays.
+
+paper square
+fold (map --ab onto --cd) (moving .a) as --m
+.e = --m * --da
+.f = --m * --bc
+mark (map --da onto --cd) (toward .f) (on #[.d]) as --dg
+.o = free on --dg from .d at 1/4
+mark (perp --dg through .o) (on #[.d]) as --pp
+mark (perp --da through .o) (on #[.d]) as --hz
+mark (map --hz onto --dg) (toward .d) (on #[.d]) as --r2
+mark (map --hz onto --pp) (toward .e) (on #[.d]) as --r4
+.z = free on --cd from .c at 1/4
+flatten (--pp & --cd valley) (--r4 & --cd) (--dg & .d mountain) (--r2 & --da) (staying .z) (on #[.d])
+
+; assert .a = (0, 1)
+; assert .c = (1, 1)
+; assert faces = 9

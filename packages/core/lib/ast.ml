@@ -239,12 +239,14 @@ type stmt =
   | Export of export_entry list option * string * Error.span
       (* None = export-all; the string is the instance name *)
   | Flatten of output * collapse_elem list * (flap_arg * flap_arg) list
-                * flap_arg option * point_operand option * Error.span
+                * flap_arg option * flap_arg option * point_operand option
+                * Error.span
       (* flatten <items>: single-vertex multi-crease fold, ONE solver
          pipeline (spec §4.9). elements = the given rays, each with an
          mv_constraint (MvFree = solver-assigned; mountain/valley = hard
          pin); over-pairs = (upper flap, lower flap) stacking constraints;
-         staying = the staying flap. An odd ray count
+         staying = the staying flap; on = the anchor flap, whose tip moves
+         (ADR 0037, ADR 0040). An odd ray count
          makes the emergent completing ray part of the solution space
          (Flatten.candidates). The realization space (candidate × Maekawa
          M/V pattern × stacking, via Collapse.collapse_all) is filtered by

@@ -202,12 +202,14 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
      order the first two rays' stayer convention reads (SPECIFICATION.md
      §4.9) is source order *)
   let rays = ref [] and overs = ref [] and staying = ref None and toward = ref None in
+  let on = ref None in
   List.iter
     (fun it ->
       match it with
       | RiLine (lo, mv, _) -> rays := { cline = lo; cdir = mv } :: !rays
       | RiOrder (u, l, _) -> overs := (u, l) :: !overs
       | RiStaying (fa, sp) -> slot verb "staying" staying sp fa
+      | RiOn (fa, sp) -> slot verb "on" on sp fa
       | RiSelection ({ target = TowardPoint p; subject = None }, sp) ->
           slot verb "toward" toward sp p
       | RiSelection ({ subject = Some _; _ }, sp) ->
@@ -219,7 +221,7 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
       | it -> refuse verb it)
     items;
   if !rays = [] then Error.fail span "flatten needs at least one ray item";
-  Flatten (out, List.rev !rays, List.rev !overs, !staying, !toward, span)
+  Flatten (out, List.rev !rays, List.rev !overs, !staying, !on, !toward, span)
 
 let flip (items : raw_item list) (out : output) (span : Error.span) : stmt =
   (match items with
