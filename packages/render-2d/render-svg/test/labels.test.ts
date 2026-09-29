@@ -83,3 +83,12 @@ test("names a reader picked keep their own labels where they coincide", () => {
   const spots = new Set(out.map((l) => `${l.x},${l.y},${l.anchor}`));
   expect(spots.size).toBe(4);
 });
+
+// #54: a point on two layers is two vertices with one name, and a crease on
+// two layers two segments with one name; the reader asked for the name once.
+test("one name at one spot is written once, however many anchors carry it", () => {
+  const out = placeLabels([A(100, 100, ".e"), A(100, 100, ".e"), A(101, 100, ".a")], { epsilon: 6 });
+  expect(out).toHaveLength(1);
+  expect(out[0]!.text).toBe(".a,.e");
+  expect(out[0]!.keys).toEqual([".a", ".e"]);
+});

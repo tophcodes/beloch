@@ -126,7 +126,13 @@ export function placeLabels(
     members: LabelAnchor[];
   }
   const clusters: Cluster[] = [];
+  // One name at one spot is one label: a point on several layers is several
+  // vertices with one name, a crease on several layers several segments.
+  const near = opts.epsilon ?? 6;
   for (const a of anchors) {
+    const named = clusters.some((cl) =>
+      cl.members.some((m) => m.key === a.key && Math.hypot(m.x - a.x, m.y - a.y) <= near));
+    if (named) continue;
     const c = clusters.find(
       (cl) =>
         (cl.members[0]!.group ?? "") === (a.group ?? "") &&

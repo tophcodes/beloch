@@ -321,3 +321,15 @@ test("a buried run carries the crease it belongs to", async () => {
   expect(buried.length).toBeGreaterThan(0);
   expect(buried.filter((l) => /data-crease-id="\d+"/.test(l)).length).toBe(buried.length);
 });
+
+// #54. Written with `beloch fold` from
+//   mark (map .a onto .b) as --ef
+//   fold (map .d onto --ef through .a) (toward .c)
+// The fold lays --ef on two layers, and the reader asks for it by name.
+test("a requested name on two layers is written once", async () => {
+  const scene = parseFold(await golden("label-twice.fold"));
+  const s = renderFolded(scene, { step: "1", labels: ["--ef"] }).toString();
+  expect(s.match(/>[^<]*--ef[^<]*</g)).toEqual([">--ef<"]);
+  const flat = renderFolded(scene, { step: "0", labels: [".a"] }).toString();
+  expect(flat.match(/>[^<]*\.a[^<]*</g)).toEqual([">.a<"]);
+});
