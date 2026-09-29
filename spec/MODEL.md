@@ -154,7 +154,7 @@ mark (map --da onto --bc) as --v
 flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b mountain) (--bd & .d)
 .m = free on --bd from .b at 1/4
 --s = (perp --bd through .m)
-mark (--s) as --sm
+mark (--s) (on #[.a]) as --sm
 .e = --sm * --h
 .f = --sm * --v
 :::
@@ -273,7 +273,7 @@ and never faces.
 paper square
 .m = free on --cd from .c at 1/4
 fold (map .a onto .b)
-mark (through .b .m) as --s
+mark (through .b .m) (on #[.c]) as --s
 :::
 
 ::: {.term #term-flap name="flap"}
@@ -809,9 +809,9 @@ such objects holds after the fold exactly when it did before.
 :::
 
 The lemma speaks about the half-plane $H$ on the table. Which layers on
-$H$ a `fold` moves is its scope ([#def-fold]): the flap that carries the
-anchor and what lies outward of it, or every layer on $H$ where the write
-names only a side. An object that lies in $H$ under a layer the scope
+$H$ a `fold` moves is its scope ([#def-fold]): every layer on $H$, or
+where the write names a depth, the flap it names, what lies outward of it
+and what is hinged to those off the axis. An object that lies in $H$ under a layer the scope
 leaves behind stays behind with that layer.
 
 ::: {.lemma #lem-crossing-landing name="where a crossing line lands" uses="def-selection"}
@@ -993,13 +993,17 @@ may score every face the axis crosses, moving or not; the hinges that end up
 between two stationary faces stay flat and vanish again under refinement.
 
 ::: {.definition #def-mark name="mark" uses="def-write def-score def-line def-flap def-bundle"}
-The write `mark` takes a line $\ell$, a flap $\phi$ and an extent: the whole
-of $\ell$, a segment of $\ell$ between two points, or a point of $\ell$. Its
-value is the state itself, up to refinement. Its effect is a crease value:
-the bundle of the material of $\ell$ in the faces of $\phi$, clipped to the
-extent. It is defined when that bundle is non-empty and the extent lies in
-the image of $\phi$; an extent that crosses a folded hinge of $\phi$ leaves
-the flap and is outside the domain.
+The write `mark` takes a line $\ell$, a flap $\phi$ or none, and an extent:
+the whole of $\ell$, a segment of $\ell$ between two points, or a point of
+$\ell$. Its value is the state itself, up to refinement. Its effect is a
+crease value. With $\phi$ it is the bundle of the material of $\ell$ in the
+faces of $\phi$, clipped to the extent, and it is defined when that bundle
+is non-empty and the extent lies in the image of $\phi$; an extent that
+crosses a folded hinge of $\phi$ leaves the flap and is outside the domain.
+Without $\phi$ it scores every layer under the extent: one piece per flap
+whose image the extent meets, the material of $\ell$ in the faces of that
+flap where its image lies under the extent. It is defined when there is at
+least one piece.
 :::
 
 `mark` is the identity on states. The read/write law of the language
@@ -1119,49 +1123,49 @@ later write can fold along again. Whether the language offers such a write
 is its decision.
 
 ::: {.definition #def-fold name="fold" uses="def-write def-reflection def-flap def-score def-line" defines="term-anchor term-depth"}
-The write `fold` takes a table line $\ell$, a side $H$ of it, an *anchor*
-flap $\alpha$ with material in $H$, a *depth* flap $\delta$ with material in
-$H$, which is $\alpha$ when the program names none, and a placement $\pi$.
-Score $\ell$ and call the faces lying in $H$ the candidates. The moving set
-$M$ is the least set of candidates that contains the faces of $\delta$ in
-$H$ and is closed under
+The write `fold` takes a table line $\ell$, a side $H$ of it, a *depth*
+flap $\delta$ with material in $H$ or none, and a placement $\pi$. Score
+$\ell$ and call the faces lying in $H$ the candidates. The moving set $M$
+is the least set of candidates that contains the faces of $\delta$ in $H$,
+or every candidate where there is no depth, and is closed under
 
-- cohesion: a candidate joined to a face of $M$ by a hinge of angle $0$ is
-  in $M$, so that a flap moves as a whole ([#def-flap]); and,
+- hinges off the axis: a candidate joined to a face of $M$ by a hinge,
+  folded or flat, whose image does not lie on $\ell$ is in $M$, since the
+  paper cannot tear there; with the flat hinges a flap moves as a whole
+  ([#def-flap]); and,
 - when $\pi$ is *top* or *bottom*, outward closure: a candidate that lies
   above a face of $M$ is in $M$ for *top*, and one that lies below a face of
   $M$ is in $M$ for *bottom*.
 
 The value of the write is the reflection of the single block $(M, \pi)$. It
-is defined when the faces of $\alpha$ in $H$ belong to $M$, when for *over
-$T$* and *under $T$* the set $T$ is the faces of a stationary flap, and when
-the reflection is a state. The crease the write scores is the bundle of the
-hinges of the result that lie on $\ell$ between a face of $M$ and a
-stationary face.
+is defined when for *over $T$* and *under $T$* the set $T$ is the faces of a
+stationary flap, and when the reflection is a state. The crease the write
+scores is the bundle of the hinges of the result that lie on $\ell$ between
+a face of $M$ and a stationary face.
 :::
 
 ::: {.term #term-anchor name="anchor"}
-The flap a fold is told to move; it fixes the side of the axis and must end
-up in the moving set.
+The point or flap a fold names its side by: the side of the axis its image
+lies on folds over. It names that side and nothing else.
 :::
 
 ::: {.term #term-depth name="depth"}
-The deepest flap a fold reaches; the moving set grows outward from it.
+The deepest flap a fold reaches where the program names one; the moving set
+grows outward from it. Without one, every layer on the moving side moves.
 :::
 
-The language derives $H$ and $\alpha$ from a point: the flap carrying it and
-the side its image lies on. A point on the axis names no side, and a flap
-that straddles the axis without a point names none either; both are outside
-the domain. `mountain` is the placement *bottom* and the default is *top*;
-`up to` names $\delta$; `over` and `under` name $T$. When $\delta$ is
-$\alpha$, the anchor condition holds by construction and the moving set is
-the outward closure of one flap: the layers above it move with it, the
-layers beneath it stay. When $\delta$ lies deeper, the moving set grows from
-$\delta$ outward and the anchor condition fails exactly when a stationary
-flap covers the anchor in the crease region; the fold would have to move
-paper it was not told to move.
+The language derives $H$ from the anchor: the point of a `moving` item, or
+the object a construction moves, and the side its image lies on. A point on
+the axis names no side, and a flap that straddles the axis without a point
+names none either; both are outside the domain. `mountain` is the placement
+*bottom* and the default is *top*; `up to` names $\delta$; `over` and
+`under` name $T$. Without $\delta$ the moving set is every layer on $H$, as
+a finger pressing a crease through the stack takes it. With $\delta$ it is
+the flap $\delta$, the layers outward of it, and every layer joined to
+those by a hinge off the axis, folded or flat: leaving such a layer behind
+would tear the paper, so the closure takes it along.
 
-::: {.figure #fig-fold-default caption="`--f` folds the corner of the top layer only: the moving set is the outward closure of the flap carrying `.b`, and the layer beneath it stays. The crease reads mountain because that layer lies face down." views="cp folded" highlight="--f .b"}
+::: {.figure #fig-fold-default caption="`--f` folds the corner through both layers: without `up to` the moving set is every layer on the side of `.b`. The crease reads valley on the face-up layer and mountain on the face-down one." views="cp folded" highlight="--f .b"}
 paper square
 fold (map .b onto .a)
 .p = free on --bc from .b at 1/4
@@ -1169,21 +1173,21 @@ fold (map .b onto .a)
 fold (through .p .q) (moving .b) as --f
 :::
 
-::: {.figure #fig-fold-op caption="The terms of `--f` in [#fig-fold-default] on the state it reads: the axis dashed and the moving set filled, the corner of the top layer alone. The layer beneath it is a candidate and stays, since the moving set grows outward from the anchor. On the right the state after the fold." views="op" at="f"}
+::: {.figure #fig-fold-depth caption="The same fold given the top layer as its depth: the moving set grows outward from the flap carrying `.b`, and the layer beneath it stays. The crease reads mountain because that layer lies face down." views="cp folded" highlight="--f"}
+paper square
+fold (map .b onto .a)
+.p = free on --bc from .b at 1/4
+.q = free on --ab from .b at 1/4
+fold (through .p .q) (moving .b) (up to .b) as --f
+:::
+
+::: {.figure #fig-fold-op caption="The terms of `--f` in [#fig-fold-depth] on the state it reads: the axis dashed and the moving set filled, the corner of the top layer alone. The layer beneath it is a candidate and stays, since the moving set grows outward from the depth. On the right the state after the fold." views="op" at="f"}
 paper square
 fold (map .b onto .a)
 .p = free on --bc from .b at 1/4
 .q = free on --ab from .b at 1/4
 @label f
-fold (through .p .q) (moving .b) as --f
-:::
-
-::: {.figure #fig-fold-depth caption="The same fold given the bottom layer as its depth: the moving set grows outward from there and both corners fold, valley on the face-up layer and mountain on the face-down one." views="cp folded" highlight="--f"}
-paper square
-fold (map .b onto .a)
-.p = free on --bc from .b at 1/4
-.q = free on --ab from .b at 1/4
-fold (through .p .q) (moving .b) (up to .a) as --f
+fold (through .p .q) (moving .b) (up to .b) as --f
 :::
 
 ::: {.corollary #cor-fold-letters name="letters of an outside fold" uses="def-fold def-letter def-reflection"}
@@ -1209,7 +1213,7 @@ fold (map .a onto .d)
 .m = free on --bc from .b at 1/2
 .n = free on --ab from .b at 1/2
 .p = free on --ab from .a at 1/4
-fold (through .m .n) (moving .b) (under .p) as --t
+fold (through .m .n) (moving .b) (up to .b) (under .p) as --t
 :::
 
 ::: {.remark #rem-simple-fold name="simple folds" uses="def-fold lem-noncrossing-adequate"}
@@ -1237,7 +1241,7 @@ every moving face lies outside every stationary face it overlaps. The two
 taco conditions need the case analysis at a crease image: a new taco on
 $\ell$ has its moving side outside its stationary side, and an old taco or
 tortilla lies wholly in $M$ or wholly outside it by outward closure and
-cohesion.
+the closure under hinges off the axis.
 :::
 
 ::: {.definition #def-flip name="flip" uses="def-write def-flat-state def-noncrossing"}

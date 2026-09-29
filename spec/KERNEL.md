@@ -86,9 +86,10 @@ statement that reads it, and `Axiom.fold_side_of_line` gives `toward` its
 meaning on a fold along an existing crease. The comparisons are exact:
 squared distances between points and segments, and squared cosines between
 lines, in `Num`. The side the selection fixes reaches the write as the
-moving side. Where the write has no anchor, `Resolve.placed_fold_plan` and
-`Resolve.tip_faces` take every layer on that side as the block or the tip,
-and an implied anchor on the side that stays is dropped, because the
+moving side. `Resolve.placed_fold_plan` takes every layer on that side as
+the block unless `up to` names a flap, and where the write has no anchor
+`Resolve.tip_faces` takes every layer on that side as the tip. An implied
+anchor on the side that stays is dropped, because the
 alignment it belongs to is carried out by the other object.
 
 The material of a line in an alignment, a `toward` or a `moving` is, for a
