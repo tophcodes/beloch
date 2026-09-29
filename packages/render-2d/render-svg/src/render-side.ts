@@ -2,9 +2,10 @@
 // section figures of the literature draw it. The paper the line crosses is one
 // path; a piece that runs flat is one horizontal strip, a folded hinge a turn
 // that wraps the turns inside it [langdemaine2009facet, Fig. 5; hull2020,
-// Fig. 7.9]. Beside it the crease pattern carries the same pieces where they
-// lie on the paper, numbered and coloured alike, so each strip can be found on
-// the sheet [hull2020, Fig. 7.9; demaine2007, Fig. 12.2].
+// Fig. 7.9]. Beside it the folded state shows where the cut is taken, and the
+// crease pattern carries the same pieces where they lie on the paper, numbered
+// and coloured alike, so each strip can be found on the sheet [hull2020,
+// Fig. 7.9; demaine2007, Fig. 12.2].
 import type { FoldScene, Vec2 } from "@beloch/scene";
 import { pickStep, SceneError } from "@beloch/scene";
 import { createDoc, el, SvgDoc } from "./svgdoc";
@@ -15,6 +16,7 @@ import { clipLineToPoly } from "./geometry";
 import { resolveIsometry } from "./isometry";
 import { sceneLayout } from "./layout";
 import { renderCP } from "./render-cp";
+import { renderFolded } from "./render-folded";
 import type { RenderOptions } from "./render-cp";
 
 export interface SideOptions extends RenderOptions {
@@ -41,7 +43,8 @@ export interface Turn { t: number; strips: [number, number]; out: 1 | -1 }
 export interface Spot { paper: Vec2; strip: number; own: boolean }
 export interface SectionPoint { name: string; t: number; spots: Spot[] }
 
-export interface Section { strips: Strip[]; turns: Turn[]; points: SectionPoint[] }
+// `ends` are the table points where the line enters and leaves the paper.
+export interface Section { strips: Strip[]; turns: Turn[]; points: SectionPoint[]; ends: [Vec2, Vec2] }
 
 export function sideSection(scene: FoldScene, along: string, stepLabel?: string): Section {
   const named = scene.namedLines.find((l) => l.name === along);
@@ -51,7 +54,9 @@ export function sideSection(scene: FoldScene, along: string, stepLabel?: string)
   const { frame, faceUp } = resolveIsometry(scene, { kind: "step", index: step.index });
   const [a, b, c] = named.coeffs;
   const len = Math.hypot(a, b);
-  const dir: Vec2 = [b / len, -a / len];
+  // the section runs left to right on the table, bottom to top on a vertical
+  // line, so it reads in the direction the folded state beside it does
+  const dir: Vec2 = b > EPS || (b > -EPS && a < 0) ? [b / len, -a / len] : [-b / len, a / len];
   const at = ([x, y]: Vec2) => x * dir[0] + y * dir[1];
   // a table point of a face, back on the paper: the linear part of the face's
   // isometry is orthogonal, so its inverse is its transpose
@@ -169,11 +174,14 @@ export function sideSection(scene: FoldScene, along: string, stepLabel?: string)
       }
       return { name: p.name, t, spots };
     });
-  return { strips, turns, points };
+  const foot: Vec2 = [(a * c) / (len * len), (b * c) / (len * len)];
+  const on = (t: number): Vec2 => [foot[0] + t * dir[0], foot[1] + t * dir[1]];
+  const ends: [Vec2, Vec2] = [on(Math.min(...pieces.map((p) => p.t0))), on(Math.max(...pieces.map((p) => p.t1)))];
+  return { strips, turns, points, ends };
 }
 
 export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
-  const { strips, turns, points } = sideSection(scene, opts.along, opts.step);
+  const { strips, turns, points, ends } = sideSection(scene, opts.along, opts.step);
   const theme: Theme = { ...DEFAULT_THEME, ...opts.theme };
   const colour = (s: Strip) => theme.highlightPalette[(s.number - 1) % theme.highlightPalette.length]!.stroke;
   const y = (level: number) => PAD + level * GAP;
@@ -292,12 +300,28 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
     }
   }
 
+  // the folded state the section is taken from, with the cut across it. Solid,
+  // since a dashed line on a folded state reads as a valley fold; it runs a
+  // little past the paper on both ends, as a section line does
+  const folded = renderFolded(scene, {
+    step: opts.step, labels: opts.labels, theme: opts.theme, highlight: opts.highlight, layout: lay,
+  }).node();
+  const [[e0x, e0y], [e1x, e1y]] = ends;
+  const over = 0.06 * lay.span / Math.hypot(e1x - e0x, e1y - e0y);
+  const cut: SvgNode[] = [el("line", {
+    "data-kind": "cut",
+    x1: lay.tx(e0x - over * (e1x - e0x)), y1: lay.ty(e0y - over * (e1y - e0y)),
+    x2: lay.tx(e1x + over * (e1x - e0x)), y2: lay.ty(e1y + over * (e1y - e0y)),
+    stroke: theme.ink, "stroke-width": 2.5, "stroke-linecap": "round",
+  })];
+
   const H = Math.max(lay.H, sideH);
-  const doc = createDoc(lay.W + SIDE_W, H);
+  const doc = createDoc(2 * lay.W + SIDE_W, H);
   doc.root.children.push(
-    el("rect", { width: lay.W + SIDE_W, height: H, fill: theme.background }),
-    el("svg", { ...cp.attrs, x: 0, y: 0 }, [...cp.children, ...marks]),
-    el("g", { transform: `translate(${lay.W} ${(H - sideH) / 2})` }, nodes),
+    el("rect", { width: 2 * lay.W + SIDE_W, height: H, fill: theme.background }),
+    el("svg", { ...folded.attrs, x: 0, y: 0 }, [...folded.children, ...cut]),
+    el("svg", { ...cp.attrs, x: lay.W, y: 0 }, [...cp.children, ...marks]),
+    el("g", { transform: `translate(${2 * lay.W} ${(H - sideH) / 2})` }, nodes),
   );
   return doc;
 }
