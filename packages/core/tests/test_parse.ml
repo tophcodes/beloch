@@ -1008,12 +1008,11 @@ let test_err_placed_fold_rejects_mountain () =
       Beloch.parse ~filename:"t.bel"
         "paper square\nfold (through .m .n) (mountain) (over .p)\n")
 
-let test_err_placed_fold_rejects_up_to () =
-  expect_error
-    "a placed fold moves the anchor flap only; up to is not supported here"
-    (fun () ->
-      Beloch.parse ~filename:"t.bel"
-        "paper square\nfold (through .m .n) (moving .b) (up to .c) (under .p)\n")
+(* `up to` names the flap a placed fold moves (ADR 0036) *)
+let test_placed_fold_takes_up_to () =
+  ignore
+    (Beloch.parse ~filename:"t.bel"
+       "paper square\nfold (through .m .n) (moving .b) (up to .c) (under .p)\n")
 
 let test_err_clause_on_flip () =
   expect_error "flip scores no crease, so it takes no as or into" (fun () ->
@@ -1178,8 +1177,8 @@ let () =
             test_err_letter_on_an_axis_item;
           Alcotest.test_case "placed fold rejects mountain" `Quick
             test_err_placed_fold_rejects_mountain;
-          Alcotest.test_case "placed fold rejects up to" `Quick
-            test_err_placed_fold_rejects_up_to;
+          Alcotest.test_case "placed fold takes up to" `Quick
+            test_placed_fold_takes_up_to;
           Alcotest.test_case "a clause on flip" `Quick test_err_clause_on_flip;
         ] );
       ( "export",

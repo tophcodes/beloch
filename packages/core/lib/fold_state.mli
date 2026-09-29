@@ -471,17 +471,23 @@ val line_material_segments : t -> Geom.line -> (Geom.point * Geom.point) list
 val line_cuts_paper : t -> Geom.line -> bool
 (** Whether table-space [l] strictly cuts the interior of some face. *)
 
-type scope_target = TargetFace of int | TargetHinged of (int -> bool)
-(** The endpoint of a scoped ("up to") fold's moving range: a specific face,
-    or the first face (walking inward from the anchor) satisfying a
-    predicate — e.g. "hinged on crease [cid]". *)
+type scope_target = TargetFaces of int list | TargetHinged of (int -> bool)
+(** The endpoint of a scoped ("up to") fold's moving range: the faces of a
+    flap, or the first faces (walking inward from the anchor) satisfying a
+    predicate, e.g. "hinged on crease [cid]". *)
+
+val close_off_axis :
+  t -> axis:Geom.line -> move_side:int -> bool array -> bool array
+(** [mask] closed under every hinge off [axis]: a hinge whose table segment
+    reaches strictly into the [move_side] half-plane joins its two faces, so
+    that a moving set never tears one. *)
 
 val select_scope :
   t ->
   axis:Geom.line ->
   move_side:int ->
   valley:bool ->
-  anchor:int ->
+  anchor:int option ->
   target:scope_target ->
   (bool array, string * string option) result
 (** Moving-set selection for a scoped ("up to") simple fold: the
@@ -492,8 +498,11 @@ val select_scope :
     judged between those pieces (depth may vary along the crease). The
     moving set is closed under both the outer-prefix rule and cohesion (a
     candidate in the same coplanar cluster as a moving face must move too —
-    ADR 0017). Errors are user-facing messages with an optional hint
-    (ADR 0028); the caller attaches the span. *)
+    ADR 0017), and under every hinge off the axis, folded or flat, which
+    cannot be torn ({!close_off_axis}). The anchor takes no part in the moving set (ADR 0036); it is
+    only where a [TargetHinged] walk starts, and that walk fails without one.
+    Errors are user-facing messages with an optional hint (ADR 0028); the
+    caller attaches the span. *)
 
 val default_scope :
   t ->
@@ -502,14 +511,12 @@ val default_scope :
   valley:bool ->
   seed:int list ->
   bool array
-(** Default (no [up to]) moving set: the outside-contiguous prefix of layers
-    down to and including the [seed] flap(s). "Outside" is top for valley,
-    bottom for mountain. [seed] is the faces carrying the anchor operand — more
-    than one when the operand point lies on a crease shared by several flaps
-    (design option (a)). Unlike {!select_scope} there is no anchor-inclusion or
-    buried-anchor check: the seed is the deepest included layer, and every
-    candidate outside it (or coplanar with a mover) moves too. Non-seed folds
-    still need {!scoped_fold_hinge_closed} — a strict subset can tear. *)
+(** The outside-contiguous prefix of layers down to and including the [seed]
+    faces that have a piece on [move_side], closed under cohesion. "Outside"
+    is top for valley, bottom for mountain. A fold without [up to] seeds it
+    with every face, so every layer on the moving side moves (ADR 0036). A
+    moving set short of every layer still needs {!scoped_fold_hinge_closed}:
+    a strict subset can tear. *)
 
 val scoped_fold_hinge_closed :
   t ->

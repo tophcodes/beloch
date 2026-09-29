@@ -297,7 +297,7 @@ let test_fold_tuck () =
     fold_traced
       "paper square\nfold (map .a onto .d)\n.m = free on --bc from .b at 1/2\n\
        .n = free on --ab from .b at 1/2\n.p = free on --ab from .a at 1/4\n\
-       fold (through .m .n) (moving .b) (under .p) as --t\n"
+       fold (through .m .n) (moving .b) (up to .b) (under .p) as --t\n"
   in
   Alcotest.(check bool) "the program succeeds" false failed;
   let e = List.nth (write_entries json) 1 in

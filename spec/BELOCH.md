@@ -188,7 +188,7 @@ mark (map --da onto --bc) as --d
 ```{.bel .frag prelude=sheet}
 fold    (--d) (moving .b) (up to .c)               ; along an existing crease
 fold    (map .a onto .d) (moving .a)
-fold    (through .m .n) (moving .b) (under .p)
+fold    (through .m .n) (moving .b) (up to .b) (under .p)
 fold    (map .a onto .b) (moving .a) (mountain)
 
 ; assert steps = 4
@@ -196,11 +196,20 @@ fold    (map .a onto .b) (moving .a) (mountain)
 ```
 
 ```{.bel .frag}
-fold    (map .c onto .b) (up to .d)                ; the depth names the anchor
+fold    (map .c onto .b) (up to .d)                ; the depth needs no moving
 
 ; assert steps = 1
 ; assert faces = 2
 ```
+
+`moving` names the side that folds over and nothing more: a `fold` takes
+every layer under its line on that side, and so does a placed fold.
+`(up to …)` narrows it to the flap it names, the layers outward of that
+flap, and every layer joined to those by a crease away from the fold line,
+which the paper could not leave behind without tearing
+([def-fold](/model/#def-fold)). A `mark` without `on` scores every layer
+under its line or its extent, one piece per layer; `(on …)` confines it to
+one flap ([def-mark](/model/#def-mark)).
 
 ```{.bel .prelude name=triangle}
 paper square
@@ -300,7 +309,7 @@ its own, so that highlighting colours an anchor, a placement and a
 construction differently, and a malformed item is contained by its
 parentheses instead of swallowing the rest of the statement.
 
-::: {.figure #fig-lang-fold caption="The first `fold` carries a single item, the construction `(map .b onto .a)`, and reads its anchor from the corner that alignment moves. The second carries two: `(through .p .q)` is the line the paper turns about, `(moving .b)` the corner that travels. With no placement item the block lands on top of the paper it was folded from, and `as --f` gives the crease a name later statements can select." views="cp folded" highlight="--f"}
+::: {.figure #fig-lang-fold caption="The first `fold` carries a single item, the construction `(map .b onto .a)`, and reads its anchor from the corner that alignment moves. The second carries two: `(through .p .q)` is the line the paper turns about, `(moving .b)` the side that folds over, whose layers all travel. With no placement item the block lands on top of the paper it was folded from, and `as --f` gives the crease a name later statements can select." views="cp folded" highlight="--f"}
 paper square
 fold (map .b onto .a)
 .p = free on --bc from .b at 1/4

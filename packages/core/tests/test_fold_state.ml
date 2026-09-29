@@ -708,7 +708,7 @@ let test_fold_scoped_parity () =
   in
   match
     Fold_state.select_scope g1 ~axis:ax2 ~move_side:(-1) ~valley:true
-      ~anchor:top ~target:(Fold_state.TargetFace top)
+      ~anchor:(Some top) ~target:(Fold_state.TargetFaces [ top ])
   with
   | Error (e, _) -> Alcotest.fail e
   | Ok moving ->
@@ -1215,8 +1215,10 @@ let test_select_scope_parity () =
   in
   let axis = vl (frac 3 8) in
   match Fold_state.select_scope g ~axis ~move_side:(-1) ~valley:true
-      ~anchor:top ~target:(Fold_state.TargetFace top) with
-  | Ok m -> Alcotest.(check (array bool)) "moving set" [| false; false; false; true |] m
+      ~anchor:(Some top) ~target:(Fold_state.TargetFaces [ top ]) with
+  (* the top face is hinged at x = 1/4, off the axis, to the layer below, and
+     so on down the pleat: every layer moves with it *)
+  | Ok m -> Alcotest.(check (array bool)) "moving set" [| true; true; true; true |] m
   | Error (e, _) -> Alcotest.failf "expected Ok, got: %s" e
 
 (* Plan 3c Task 1: TargetHinged select_scope (frontier BFS + predicate — the
@@ -1266,13 +1268,13 @@ let test_select_scope_target_hinged_parity () =
   in
   let axis = vl (frac 3 8) in
   (match Fold_state.select_scope g ~axis ~move_side:(-1) ~valley:true
-      ~anchor:top ~target:(Fold_state.TargetHinged pred) with
+      ~anchor:(Some top) ~target:(Fold_state.TargetHinged pred) with
   | Ok m -> Alcotest.(check (array bool)) "moving set" [| true; true; true; true |] m
   | Error (e, _) -> Alcotest.failf "expected Ok, got: %s" e);
   (* error path: a predicate no face satisfies must exhaust the frontier *)
   let never _ = false in
   match Fold_state.select_scope g ~axis ~move_side:(-1) ~valley:true
-      ~anchor:top ~target:(Fold_state.TargetHinged never) with
+      ~anchor:(Some top) ~target:(Fold_state.TargetHinged never) with
   | Error (e, _) ->
       let contains hay needle =
         let nh = String.length hay and nn = String.length needle in

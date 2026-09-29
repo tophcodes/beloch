@@ -11,7 +11,7 @@ reverse (map .d onto .c) as --v
 .o = --h * --v
 --mid = (through .c .o)
 .s = --ab * --h
-fold (map --ab onto --mid) (moving .s) as --k
+fold (map --ab onto --mid) (moving .s) (up to #[.s .a]) as --k
 
 ; assert steps = 4
 ; assert .c incident --k

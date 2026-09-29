@@ -120,16 +120,16 @@ val placed_fold_plan :
   Ctx.ctx ->
   Geom.line ->
   anchor:Ast.flap_arg option ->
+  depth:Ast.flap_arg option ->
   ?side:int ->
   place:Ast.place_dir * Ast.flap_arg ->
   Error.span ->
   int * bool array * Fold_state.placement
 (** A placed fold (`fold … over/under <flap>`, spec §4.6): the moving side
     ([side] where the side items fixed it, else from the anchor, as for a
-    default fold), the block (the anchor flap's faces with a piece on that
-    side, or every face with one when there is no anchor, as a mask over
-    parent faces) and the
-    placement. The target flap must keep a stationary piece (a non-block
+    default fold), the block (the faces of the [depth] flap with a piece on
+    that side, or every face with one when there is no depth, as a mask over
+    parent faces) and the placement. The target flap must keep a stationary piece (a non-block
     face, or a block face the axis cuts: the anchor's own hinge layer) that
     overlaps the landing footprint (the block's move-side pieces reflected
     across the axis); of its overlapping faces the lowest-ranked anchors

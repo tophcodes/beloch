@@ -157,12 +157,9 @@ let fold (items : raw_item list) (out : output) (span : Error.span) : stmt =
         | RiPlace (d, fa, sp) -> slot verb "placement" place sp (d, fa)
         | it -> refuse verb it)
     items;
-  (match (!place, !bottom, !up_to) with
-  | Some _, Some sp, _ ->
+  (match (!place, !bottom) with
+  | Some _, Some sp ->
       Error.fail ~hint:"drop mountain" sp "a placed fold derives its direction"
-  | Some _, None, Some (_, sp) ->
-      Error.fail sp
-        "a placed fold moves the anchor flap only; up to is not supported here"
   | _ -> ());
   Fold
     ( out,

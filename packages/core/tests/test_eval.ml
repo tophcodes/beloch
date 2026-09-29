@@ -1106,19 +1106,6 @@ let test_eval_up_to_top_flap () =
   in
   Alcotest.(check int) "3 faces" 3 (Array.length (Fold_state.faces fd.Eval.state))
 
-(* Since v0.24-dev the default (no `up to`) folds only the outside-contiguous
-   prefix down to the anchor flap, not all layers. After folding the square in
-   half, anchoring the second fold on corner .c (which belongs to the top paper
-   face only) seeds just the top layer; the bottom layer stays, so folding the
-   top alone tears along the y=1/2 spine. Folding both layers now needs an
-   explicit `up to` (contrast test_eval_up_to_top_flap's scoped fold above). *)
-let test_eval_default_corner_anchor_tears () =
-  expect_error "tearing the paper" (fun () ->
-      ignore
-        (Eval.eval_folded
-           (Beloch.parse ~filename:"t.bel"
-              "paper square\nfold (map .d onto .a)\nfold (map .c onto .d)\n")))
-
 (* four-layer stack, fold the top two: 6 faces (all-layers would be 8).
    --l/--bot are boundary reference creases and MUST be bound before the folds
    (afterwards .a/.b and .a/.d coincide on the table → "same place" error) *)
@@ -1138,36 +1125,6 @@ let test_eval_up_to_range () =
          (quarter_stack_prefix ^ "fold (through .p .q) (moving .d) (up to .c)\n"))
   in
   Alcotest.(check int) "6 faces" 6 (Array.length (Fold_state.faces fd.Eval.state))
-
-(* anchoring below a covering flap is a buried-anchor error *)
-let test_eval_buried_anchor () =
-  expect_error_hint "a simple fold cannot move a buried flap"
-    "include the covering flap (anchor the fold there) or fold less" (fun () ->
-      ignore
-        (Eval.eval_folded
-           (Beloch.parse ~filename:"t.bel"
-              (quarter_stack_prefix ^ "fold (through .p .q) (moving .c) (up to .b)\n"))))
-
-(* target flap entirely off the moving side, on the quarter-stack (4-layer,
-   all-full-fold) scaffold: `moving .a up to .c` walks inward from .a's flap
-   but never reaches a flap hinged on .c before the frontier runs dry. Under
-   ADR 0017 the point/flap target resolves through TargetHinged (a flap is a
-   coplanar cluster, possibly several faces), so the walk-based "no flap
-   hinged ... reachable" message covers this case — same message used when a
-   `--crease` target can't be reached (test_eval_up_to_crease_unreachable).
-   (The scaffold previously used here — two perpendicular folds where the
-   second was itself scoped `up to .c` — became a genuine tear once the
-   hinge-closure check landed, since that second fold's own axis crossed the
-   first fold's off-axis hinge; select_scope never even got to run. This
-   scaffold keeps both base folds full/unscoped, so their hinges sit on-axis
-   by construction and the tear check is a no-op — the "no flap hinged" error
-   comes from select_scope itself, before scoped_fold_hinge_closed runs.) *)
-let test_eval_up_to_wrong_side () =
-  expect_error "no flap hinged" (fun () ->
-      ignore
-        (Eval.eval_folded
-           (Beloch.parse ~filename:"t.bel"
-              (quarter_stack_prefix ^ "fold (through .p .q) (moving .a) (up to .c)\n"))))
 
 (* up to --crease with no reachable hinged flap *)
 let test_eval_up_to_crease_unreachable () =
@@ -1355,10 +1312,10 @@ let test_ax5_toward_on_l1 () =
    implied anchor point — only line operands): the paper-incidence filter
    picks the one viable candidate silently, but `up to` still needs an
    explicit `moving` to anchor the flap range *)
-let test_ax5_up_to_needs_moving () =
-  expect_error "needs `moving" (fun () ->
-      eval_src
-        "mark (through .a .c) as --ac\nfold (map --da onto --ac) (up to .c)\n")
+(* the construction names the side, so `up to` needs no `moving` *)
+let test_ax5_up_to_without_moving () =
+  ignore
+    (eval_src "mark (through .a .c) as --ac\nfold (map --da onto --ac) (up to .c)\n")
 
 (* the join selector --[.a .b] finds the same bottom edge as the prelude --ab *)
 let test_select_edge () =
@@ -1870,6 +1827,148 @@ let test_sort_crease_where_a_line_is_wanted () =
   Alcotest.(check bool) "--e was scored" true (mem_assoc4 "e" fd.Eval.named_lines);
   Alcotest.(check bool) "--f was scored" true (mem_assoc4 "f" fd.Eval.named_lines)
 
+(* ---- every layer under the axis (ADR 0036) ---- *)
+
+(* The book: the sheet folded in half, .a on top of .d. *)
+let book =
+  "paper square\n\
+   fold (map --ab onto --cd) (moving .a) as --m\n\
+   .f = --m * --bc\n"
+
+(* A state as text: per face its paper polygon, its table polygon, whether it
+   is face up and its rank, then every hinge's letter. Two programs that
+   reach one state by the same writes give the same text. *)
+let state_text (st : Fold_state.t) : string =
+  let p (pt : Geom.point) =
+    Printf.sprintf "(%g,%g)" (Num.to_float pt.Geom.x) (Num.to_float pt.Geom.y)
+  in
+  let poly a = String.concat "" (Array.to_list (Array.map p a)) in
+  let faces =
+    List.init (Array.length (Fold_state.faces st)) (fun i ->
+        Printf.sprintf "%s|%s|%b|%d"
+          (poly (Fold_state.faces st).(i))
+          (poly (Fold_state.table_polygon st i))
+          (Fold_state.face_up st i) (Fold_state.rank st).(i))
+  in
+  let hinges =
+    List.init (Array.length (Fold_state.hinges st)) (fun i ->
+        match Fold_state.mv st i with
+        | Fold_state.M -> "M"
+        | Fold_state.V -> "V"
+        | Fold_state.F -> "F")
+  in
+  String.concat "\n" (faces @ hinges)
+
+let test_fold_every_layer_by_default () =
+  let corner up_to =
+    folded
+      (book
+     ^ ".h = free on --da from .a at 1/4\n\
+        .g = free on --da from .d at 1/4\n\
+        fold (map --da onto --cd) (moving .h)" ^ up_to ^ " as --x\n")
+  in
+  let without = corner "" and with_depth = corner " (up to .g)" in
+  Alcotest.(check int) "both layers fold: 4 faces" 4
+    (Array.length (Fold_state.faces without.Eval.state));
+  Alcotest.(check string) "the same state as with (up to .g)"
+    (state_text with_depth.Eval.state)
+    (state_text without.Eval.state)
+
+let test_fold_up_to_the_anchor_folds_one_flap () =
+  let corner items =
+    folded
+      ("paper square\n\
+        fold (map .b onto .a)\n\
+        .p = free on --bc from .b at 1/4\n\
+        .q = free on --ab from .b at 1/4\n\
+        fold (through .p .q) (moving .b)" ^ items ^ " as --f\n")
+  in
+  Alcotest.(check int) "the top flap alone: 3 faces" 3
+    (Array.length (Fold_state.faces (corner " (up to .b)").Eval.state));
+  Alcotest.(check int) "moving alone takes both layers: 4 faces" 4
+    (Array.length (Fold_state.faces (corner "").Eval.state))
+
+(* the second fold's anchor .c lies on the top layer alone; the bottom layer
+   folds with it *)
+let test_fold_default_takes_the_hinged_layer () =
+  let fd = folded "paper square\nfold (map .d onto .a)\nfold (map .c onto .d)\n" in
+  Alcotest.(check int) "both layers fold: 4 faces" 4
+    (Array.length (Fold_state.faces fd.Eval.state))
+
+(* on the four-layer stack, the anchor names a side and nothing else: an
+   anchor below the depth and one above it fold the same layers *)
+let test_fold_anchor_names_a_side () =
+  let stack moving =
+    folded
+      ("paper square\n\
+        mark (through .a .d) as --l\n\
+        mark (through .a .b) as --bot\n\
+        fold (map .b onto .a) as --v\n\
+        fold (map .d onto .a) as --h\n\
+        .p = --l * --h\n\
+        .q = --v * --bot\n\
+        fold (through .p .q) (moving " ^ moving ^ ") (up to .b)\n")
+  in
+  Alcotest.(check string) "moving .c and moving .d fold the same layers"
+    (state_text (stack ".d").Eval.state)
+    (state_text (stack ".c").Eval.state)
+
+let test_mark_every_layer_by_default () =
+  let fd = folded (book ^ "mark (map --da onto --cd) (toward .f) as --x\n") in
+  let key (a, b) =
+    let s (pt : Geom.point) = (Num.to_float pt.Geom.x, Num.to_float pt.Geom.y) in
+    List.sort compare [ s a; s b ]
+  in
+  let chords =
+    Array.to_list (Fold_state.marks fd.Eval.state)
+    |> List.filter_map (fun (m : Fold_state.mark) ->
+           match m.Fold_state.mgeom with
+           | Fold_state.MSeg (a, b) -> Some (key (a, b))
+           | Fold_state.MPoint _ -> None)
+    |> List.sort compare
+  in
+  Alcotest.(check (list (list (pair (float 1e-9) (float 1e-9)))))
+    "the half diagonals .a-centre and .d-centre"
+    (List.sort compare [ [ (0., 0.); (0.5, 0.5) ]; [ (0., 1.); (0.5, 0.5) ] ])
+    chords
+
+(* between and at without `on`: a piece on every layer under the extent *)
+let test_mark_partial_every_layer () =
+  let fd =
+    folded
+      (book
+     ^ "--k = (map --da onto --cd) (toward .f)\n\
+        .e = free on --m from .f at 1/2\n\
+        mark (--k) (between .d .e) as --x\n\
+        mark (--k) (at .d) as --y\n")
+  in
+  let s (pt : Geom.point) = (Num.to_float pt.Geom.x, Num.to_float pt.Geom.y) in
+  let marks = Array.to_list (Fold_state.marks fd.Eval.state) in
+  let segs =
+    List.filter_map
+      (fun (m : Fold_state.mark) ->
+        match m.Fold_state.mgeom with
+        | Fold_state.MSeg (a, b) -> Some [ s a; s b ]
+        | Fold_state.MPoint _ -> None)
+      marks
+    |> List.sort compare
+  and points =
+    List.filter_map
+      (fun (m : Fold_state.mark) ->
+        match m.Fold_state.mgeom with
+        | Fold_state.MPoint p -> Some (s p)
+        | Fold_state.MSeg _ -> None)
+      marks
+    |> List.sort compare
+  in
+  let fl = Alcotest.float 1e-9 in
+  Alcotest.(check (list (list (pair fl fl))))
+    "between: the half diagonals from .d and from .a"
+    [ [ (0., 0.); (0.5, 0.5) ]; [ (0., 1.); (0.5, 0.5) ] ]
+    segs;
+  Alcotest.(check (list (pair fl fl))) "at: .d and the point above it"
+    [ (0., 0.); (0., 1.) ] points
+
 let () =
   Alcotest.run "beloch-eval"
     [
@@ -1946,8 +2045,8 @@ let () =
             test_ax5_toward_on_moved_line;
           Alcotest.test_case "ax5 toward point on l1" `Quick
             test_ax5_toward_on_l1;
-          Alcotest.test_case "ax5 up to needs moving" `Quick
-            test_ax5_up_to_needs_moving;
+          Alcotest.test_case "ax5 up to without moving" `Quick
+            test_ax5_up_to_without_moving;
         ] );
       ( "fold_state",
         [
@@ -2058,14 +2157,8 @@ let () =
             test_eval_export_temp_target;
           Alcotest.test_case "up to = anchor: top flap only" `Quick
             test_eval_up_to_top_flap;
-          Alcotest.test_case "default corner anchor tears (v0.24-dev)" `Quick
-            test_eval_default_corner_anchor_tears;
           Alcotest.test_case "up to range: fold top two of four" `Quick
             test_eval_up_to_range;
-          Alcotest.test_case "buried anchor errors" `Quick
-            test_eval_buried_anchor;
-          Alcotest.test_case "up to wrong side errors" `Quick
-            test_eval_up_to_wrong_side;
           Alcotest.test_case "up to crease unreachable errors" `Quick
             test_eval_up_to_crease_unreachable;
           Alcotest.test_case "up to crease target" `Quick
@@ -2144,5 +2237,20 @@ let () =
             test_sort_flap_operand;
           Alcotest.test_case "a crease stands where a line is wanted" `Quick
             test_sort_crease_where_a_line_is_wanted;
+        ] );
+      ( "every layer",
+        [
+          Alcotest.test_case "fold: every layer by default" `Quick
+            test_fold_every_layer_by_default;
+          Alcotest.test_case "fold: up to the anchor folds one flap" `Quick
+            test_fold_up_to_the_anchor_folds_one_flap;
+          Alcotest.test_case "fold: the hinged layer folds along" `Quick
+            test_fold_default_takes_the_hinged_layer;
+          Alcotest.test_case "fold: the anchor names a side" `Quick
+            test_fold_anchor_names_a_side;
+          Alcotest.test_case "mark: every layer by default" `Quick
+            test_mark_every_layer_by_default;
+          Alcotest.test_case "mark: a partial extent on every layer" `Quick
+            test_mark_partial_every_layer;
         ] );
     ]

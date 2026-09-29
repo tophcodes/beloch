@@ -781,8 +781,7 @@ let target_of (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span) :
     Fold_state.scope_target =
   match fa with
   | Ast.FlapPoint _ | Ast.FlapSpec _ ->
-      let cluster = resolve_flap_cluster ctx fa span in
-      Fold_state.TargetHinged (fun f -> List.mem f cluster)
+      Fold_state.TargetFaces (resolve_flap_cluster ctx fa span)
   | Ast.FlapLine lo -> (
       match lo with
       | Ast.LNamed cr ->
@@ -946,7 +945,8 @@ let resolve_mark_flap (ctx : Ctx.ctx) (layer_opt : Ast.flap_arg option)
 (* ---- placed folds ---- *)
 
 let placed_fold_plan (ctx : Ctx.ctx) (axis : Geom.line) ~(anchor : Ast.flap_arg option)
-    ?side ~(place : Ast.place_dir * Ast.flap_arg) (span : Error.span) :
+    ~(depth : Ast.flap_arg option) ?side ~(place : Ast.place_dir * Ast.flap_arg)
+    (span : Error.span) :
     int * bool array * Fold_state.placement =
   let st = !(ctx.state) in
   let n = Array.length (Fold_state.faces st) in
@@ -954,16 +954,18 @@ let placed_fold_plan (ctx : Ctx.ctx) (axis : Geom.line) ~(anchor : Ast.flap_arg 
   let piece side fi =
     Geom.clip_convex_halfplane axis side (Fold_state.table_polygon_ccw st fi)
   in
-  (* without an anchor, every layer on the moving side is the block *)
+  (* every layer on the moving side is the block, or with `up to` the flap
+     it names; the anchor names the side only (ADR 0036) *)
   let cluster =
-    match anchor with
-    | Some a -> resolve_flap_cluster ctx a span
+    match depth with
+    | Some d -> resolve_flap_cluster ctx d span
     | None -> List.init n Fun.id
   in
   let block = Array.make n false in
   List.iter
     (fun fi -> if Array.length (piece move_side fi) >= 3 then block.(fi) <- true)
     cluster;
+  let block = Fold_state.close_off_axis st ~axis ~move_side block in
   if not (Array.exists Fun.id block) then
     Error.fail span "the moving flap has no material on the moving side";
   let dir, target = place in

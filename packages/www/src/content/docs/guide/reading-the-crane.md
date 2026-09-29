@@ -81,20 +81,24 @@ square to the centre line through the side corners. That leaves the two long
 points, the future neck and tail, standing up in the middle: the bird base.
 
 ::: {.figure #fig-crane-bird caption="The bird base. `--pf` folds the front flap, `--pb` the back flap along the same line." views="cp folded" highlight="--pf --pb" after="fig-crane-sides"}
-fold (perp --mid through .sr) (moving .a) as --pf
-fold (perp --mid through .sr) (moving .c) (mountain) as --pb
+fold (perp --mid through .sr) (moving .a) (up to #[.a .o]) as --pf
+fold (perp --mid through .sr) (moving .c) (up to #[.c .o]) (mountain) as --pb
 :::
 
 `(perp --mid through .sr)` is the axiom for the line through a point,
 square to another line.
 
 The two folds follow the rule of
-[Which layers move](/guide/first-folds/#which-layers-move). `(moving .a)`
-anchors the first on the front flap, and a valley fold takes that flap and
-the layers on top of it, which is the front alone. The second is anchored
-on `.c`, which lies on the back, and `(mountain)` makes it fold away from
-the viewer, taking the back flap and the layers beneath it. Seen from the
-front, its crease is a ridge.
+[Which layers move](/guide/first-folds/#which-layers-move). Without `up to`
+each would take every layer below the line, front and back together.
+`#[.a .o]` is the flap that holds both the corner `.a` and the paper centre
+`.o`: the centre face of the front. `(up to #[.a .o])` makes the valley
+fold take that face and the layers on top of it. The side corners reversed
+beneath it are joined to it by creases away from the fold line, so they go
+along, and the front flap moves whole. The second fold names the centre
+face of the back, and `(mountain)` makes it fold away from the viewer,
+taking that face and the layers beneath it. Seen from the front, its crease
+is a ridge.
 
 The two long points left standing are the *legs* of the bird base. Their
 tips are the corners `.b` and `.d`.
@@ -107,13 +111,13 @@ has to move exactly one layer.
 
 ::: {.figure #fig-crane-legs caption="The legs narrowed. The front edges fold as valleys (`--n1`, `--n2`), the back edges as mountains." views="cp folded" highlight="--n1 --n2" after="fig-crane-bird"}
 .e1 = (--rsr & .b) * --pf
-fold (map --rsr & .b onto --mid) (moving .e1) as --n1
+fold (map --rsr & .b onto --mid) (moving .e1) (up to #[.e1 .b .o]) as --n1
 .e2 = (--rsl & .d) * --pf
-fold (map --rsl & .d onto --mid) (moving .e2) as --n2
+fold (map --rsl & .d onto --mid) (moving .e2) (up to #[.e2 .d .o]) as --n2
 .e3 = (--rbr & .b) * --pb
-fold (map --rbr & .b onto --mid) (moving .e3) (mountain) as --n3
+fold (map --rbr & .b onto --mid) (moving .e3) (up to #[.e3 .b .o]) (mountain) as --n3
 .e4 = (--rbl & .d) * --pb
-fold (map --rbl & .d onto --mid) (moving .e4) (mountain) as --n4
+fold (map --rbl & .d onto --mid) (moving .e4) (up to #[.e4 .d .o]) (mountain) as --n4
 :::
 
 `&` does the work here, as it picked the rays of the collapse on the first
@@ -124,12 +128,13 @@ folded over, its scars point in different directions, and "the line of
 the leg that ends in `.b`. That piece is straight, so it can be folded onto
 `--mid`.
 
-Each fold is anchored with `moving` on a point bound on the line before it,
-`.e1` to `.e4`: the point where that edge meets the crease of the flap it
-lies on. `.e1` lies on the front layer, so the valley fold takes the front
-layer and nothing beneath it. Anchored on the edge instead, the fold would
-take the back layers too, because the edge runs through them as well. The
-two back folds are anchored on the back layer and fold as mountains.
+Each fold names its side with `moving` on a point bound on the line before
+it, `.e1` to `.e4`: the point where that edge meets the crease of the flap
+it lies on. Its `up to` names the layer of the leg that holds that point,
+the leg's tip and the paper centre, so the valley fold takes the front
+layer and nothing beneath it. Without `up to` the fold would take the back
+layers too, because the edge runs through them as well. The two back folds
+name the back layer and fold as mountains.
 
 ## Neck and tail
 

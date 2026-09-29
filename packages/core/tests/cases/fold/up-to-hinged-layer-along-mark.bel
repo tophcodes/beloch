@@ -1,8 +1,11 @@
 ; AI-generated: this file was written by Claude, an AI model.
 
+; up-to-hinged-layer.bel along a mark scored through both layers: the layer
+; hinged to .c's off the axis folds with it.
 paper square
 fold (map .d onto .a)
 mark (map .c onto .d) as --m
 fold (--m) (moving .c) (up to .c) into --m
 
-; expect error "tear"
+; assert faces = 4
+; assert steps = 2

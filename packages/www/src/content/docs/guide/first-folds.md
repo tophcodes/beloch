@@ -161,19 +161,18 @@ happens, with a message and often a hint.
 
 ## Which layers move
 
-Once the paper is folded, a fold line crosses more than one layer, and a
-fold may move some of them and leave others. Beloch decides from the point
-that says which side moves, the *anchor*: the named corner of a `map`, or
-the point of a `moving` item. The fold moves the piece of paper that holds
-the anchor, and every layer lying on top of it. The layers beneath it stay.
-A mountain fold works the other way round and takes the layers beneath.
+Once the paper is folded, a fold line crosses more than one layer. A fold
+takes every layer under its line on the side that folds over, as a finger
+pressing a crease through the stack does. The point that says which side
+moves, the named corner of a `map` or the point of a `moving` item, names
+that side and nothing more.
 
-The book fold shows the difference. Folding the left edge onto the right
-edge puts the left half on top, so `.a` is on the top layer and `.b` on the
-bottom one. Folding the bottom onto the top with `.b` as the anchor takes
-both layers:
+The book fold shows it. Folding the left edge onto the right edge puts the
+left half on top, so `.a` is on the top layer and `.b` on the bottom one.
+Folding the bottom onto the top takes both layers, whichever of the two
+corners the program names:
 
-::: {.figure #fig-guide-book caption="The book fold, then the bottom onto the top. The anchor `.b` lies on the bottom layer, so both layers move." views="cp folded" highlight=".a .b"}
+::: {.figure #fig-guide-book caption="The book fold, then the bottom onto the top. Both layers move." views="cp folded" highlight=".a .b"}
 paper square
 fold (map --da onto --bc)
 fold (map .b onto .c)
@@ -181,17 +180,24 @@ fold (map .b onto .c)
 
 `(map --da onto --bc)` folds one edge onto the opposite one. The two edges
 are parallel, so there is one fold line, halfway between them. The same
-second fold with `.a` as the anchor would move only the top layer. That
-layer is still joined to the bottom one along the first fold, so it could
-only move by tearing the paper, and Beloch stops:
+second fold written as `fold (map .a onto .d)` gives the same state.
 
-```{.bel}
+To fold fewer layers, `(up to …)` names the deepest one the fold takes. That
+layer moves with every layer on top of it, or beneath it for a mountain
+fold. A layer joined to those by a crease away from the fold line goes
+along too, because the paper would have to tear to leave it behind. Here
+the corner of the top layer folds alone:
+
+::: {.figure #fig-guide-up-to caption="The sheet folded in half, then the corner of the top layer. `(up to .b)` names the top layer as the deepest the fold takes." views="cp folded" highlight=".b"}
 paper square
-fold (map --da onto --bc)
-fold (map .a onto .d)
+fold (map .b onto .a)
+.p = free on --bc from .b at 1/4
+.q = free on --ab from .b at 1/4
+fold (through .p .q) (moving .b) (up to .b)
+:::
 
-; expect error "cannot fold on its own without tearing the paper"
-```
+A `mark` works the same way: it scores every layer its line crosses, and
+`(on …)` confines it to one.
 
 The piece of paper that moves as a whole is a *flap*: faces joined by
 creases that are not folded, so that they lie flat against each other.

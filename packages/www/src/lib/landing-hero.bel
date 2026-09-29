@@ -11,15 +11,44 @@ reverse (map .d onto .c) as --v
 ; the four side corners onto the centre line
 .sr = --ab * --h
 reverse (map .sr onto --mid through .c)
+  as --rsr
 .sl = --da * --v
 reverse (map .sl onto --mid through .c)
+  as --rsl
 .br = --bc * --h
 reverse (map .br onto --mid through .c)
+  as --rbr
 .bl = --cd * --v
 reverse (map .bl onto --mid through .c)
+  as --rbl
 
-; lift the petals, front and back
+; the bird base: front and back flap down
 fold (perp --mid through .sr) (moving .a)
-  as --pf
+  (up to #[.a .o]) as --pf
 fold (perp --mid through .sr) (moving .c)
-  (mountain) as --pb
+  (up to #[.c .o]) (mountain) as --pb
+
+; narrow the legs onto the centre line
+.e1 = (--rsr & .b) * --pf
+fold (map --rsr & .b onto --mid) (moving .e1)
+  (up to #[.e1 .b .o]) as --n1
+.e2 = (--rsl & .d) * --pf
+fold (map --rsl & .d onto --mid) (moving .e2)
+  (up to #[.e2 .d .o]) as --n2
+.e3 = (--rbr & .b) * --pb
+fold (map --rbr & .b onto --mid) (moving .e3)
+  (up to #[.e3 .b .o]) (mountain) as --n3
+.e4 = (--rbl & .d) * --pb
+fold (map --rbl & .d onto --mid) (moving .e4)
+  (up to #[.e4 .d .o]) (mountain) as --n4
+
+; neck and tail
+reverse (perp --n1 through .sr) (moving .b)
+  as --neck
+reverse (perp --n2 through .sr) (moving .d)
+  as --tail
+
+; the head
+.hp = free on --bd & .b from .b at 1/4
+.ht = free on --rsl & .a from .a at 1/2
+reverse (through .hp .ht) (moving .b) as --head

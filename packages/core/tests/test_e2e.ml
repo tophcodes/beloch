@@ -356,10 +356,9 @@ let test_emit_folded_frames () =
    table position, degenerating the moving face to zero area — the "diagonal
    slash" render. Assert every folded-frame face has positive area.
 
-   The original repro here (fold-top-flap.bel) was a genuine tear and is now
-   rejected by the scoped-fold hinge-closure check (2026-07-14) before it ever
-   reaches emit, so it moved to
-   tests/cases/fold/tear-perpendicular-hinge.bel as an `expect error` case.
+   The original repro here (fold-top-flap.bel) moved one layer of a pair
+   joined off the axis. A moving set now takes such a layer along (ADR 0036),
+   and the program is tests/cases/fold/up-to-hinged-layer.bel.
    This test now exercises a *valid* scoped fold (fold-top-two.bel, 6 faces)
    instead.
 
