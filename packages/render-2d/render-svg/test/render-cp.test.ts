@@ -93,3 +93,15 @@ test("CP stamps data-bel-name on named creases and named vertex dots", async () 
   expect(s).toContain('data-bel-name="center"');            // the named crossing vertex
   expect(s).toMatch(/data-bel-name="d1"|data-bel-name="d2"/); // a named diagonal crease
 });
+
+// Written with `beloch fold` from
+//   mark (map .a onto .b) as --ef
+//   fold (map .d onto --ef through .a) (toward .c)
+// The overlay a reader asks for names the crease, which then leaves out its
+// own label.
+test("a crease picked with labels is named once, by the overlay", async () => {
+  const scene = parseFold(await golden("label-twice.fold"));
+  const s = renderCP(scene, { labels: ["--ef"] }).toString();
+  expect(s.match(/<text[^>]*>--ef</g)).toHaveLength(1);
+  expect(s).toMatch(/data-construction="ef"[^>]*>--ef</);
+});
