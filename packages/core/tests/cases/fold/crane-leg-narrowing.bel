@@ -32,17 +32,17 @@ reverse (map .br onto --mid through .c) as --rbr
 .bl = --cd * --v                        ; back-left side corner: paper (1/2, 1)
 reverse (map .bl onto --mid through .c) as --rbl
 
-fold (perp --mid through .sr) (moving .a) as --pf       ; step 9
-fold (perp --mid through .sr) (moving .c) (mountain) as --pb  ; step 10
+fold (perp --mid through .sr) (moving .a) (up to #[.a .o]) as --pf       ; step 9
+fold (perp --mid through .sr) (moving .c) (up to #[.c .o]) (mountain) as --pb  ; step 10
 
 .e1 = (--rsr & .b) * --pf
-fold (map --rsr & .b onto --mid) (moving .e1) as --n1                  ; step 11
+fold (map --rsr & .b onto --mid) (moving .e1) (up to #[.e1 .b .o]) as --n1      ; step 11
 .e2 = (--rsl & .d) * --pf
-fold (map --rsl & .d onto --mid) (moving .e2) as --n2                  ; step 12
+fold (map --rsl & .d onto --mid) (moving .e2) (up to #[.e2 .d .o]) as --n2      ; step 12
 .e3 = (--rbr & .b) * --pb
-fold (map --rbr & .b onto --mid) (moving .e3) (mountain) as --n3       ; step 13
+fold (map --rbr & .b onto --mid) (moving .e3) (up to #[.e3 .b .o]) (mountain) as --n3 ; step 13
 .e4 = (--rbl & .d) * --pb
-fold (map --rbl & .d onto --mid) (moving .e4) (mountain) as --n4       ; step 14
+fold (map --rbl & .d onto --mid) (moving .e4) (up to #[.e4 .d .o]) (mountain) as --n4 ; step 14
 
 ; assert steps = 13
 ; assert faces = 36

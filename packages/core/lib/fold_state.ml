@@ -1352,10 +1352,43 @@ let line_cuts_paper (g : t) (l : Geom.line) : bool =
     (fun i -> Geom.line_cuts_polygon l (table_polygon_ccw g i))
     (List.init (Array.length g.faces) Fun.id)
 
-type scope_target = TargetFace of int | TargetHinged of (int -> bool)
+type scope_target = TargetFaces of int list | TargetHinged of (int -> bool)
+
+(* Per face, the faces joined to it by a hinge off [axis]: one whose table
+   segment reaches strictly into the [move_side] half-plane. Such a hinge
+   cannot be torn, so a moving set holds both of its faces or neither. *)
+let off_axis_neighbours (g : t) ~(axis : Geom.line) ~(move_side : int) :
+    int list array =
+  let adj = Array.make (Array.length g.faces) [] in
+  Array.iteri
+    (fun hi (h : hinge) ->
+      let ta, tb = hinge_table_segment g hi in
+      if Geom.side_of_line axis ta = move_side || Geom.side_of_line axis tb = move_side
+      then begin
+        adj.(h.fa) <- h.fb :: adj.(h.fa);
+        adj.(h.fb) <- h.fa :: adj.(h.fb)
+      end)
+    g.hinges;
+  adj
+
+let close_off_axis (g : t) ~(axis : Geom.line) ~(move_side : int)
+    (mask : bool array) : bool array =
+  let adj = off_axis_neighbours g ~axis ~move_side in
+  let inm = Array.copy mask in
+  let rec visit f =
+    List.iter
+      (fun o ->
+        if not inm.(o) then begin
+          inm.(o) <- true;
+          visit o
+        end)
+      adj.(f)
+  in
+  Array.iteri (fun f b -> if b then visit f) mask;
+  inm
 
 let select_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
-    ~(valley : bool) ~(anchor : int) ~(target : scope_target) :
+    ~(valley : bool) ~(anchor : int option) ~(target : scope_target) :
     (bool array, string * string option) result =
   let n = Array.length g.faces in
   let cl = coplanar_clusters g in
@@ -1375,21 +1408,27 @@ let select_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
   let outer i j =
     overlap i j && rel_m i j = (if valley then Above else Below)
   in
-  if not (cand anchor) then
-    Error
-      ("the moving flap has no material on the moving side of the fold axis", None)
-  else
-    let find_targets () : (int list, string * string option) result =
-      match target with
-      | TargetFace t ->
-          if not (cand t) then
+  let find_targets () : (int list, string * string option) result =
+    match target with
+    | TargetFaces fs -> (
+        match List.filter cand fs with
+        | [] ->
             Error
               ( "`up to`: the target flap is not on the moving side of the fold",
                 None )
-          else Ok [ t ]
-      | TargetHinged pred ->
-          if pred anchor then Ok [ anchor ]
-          else begin
+        | ts -> Ok ts)
+    | TargetHinged pred -> (
+        match anchor with
+        | None ->
+            Error
+              ( "`up to` a crease needs `moving` to walk inward from",
+                Some "name the flap with a point instead" )
+        | Some anchor when not (cand anchor) ->
+            Error
+              ( "the moving flap has no material on the moving side of the fold axis",
+                None )
+        | Some anchor when pred anchor -> Ok [ anchor ]
+        | Some anchor ->
             let visited = Array.make n false in
             visited.(anchor) <- true;
             let result = ref None in
@@ -1416,56 +1455,35 @@ let select_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
                   else List.iter (fun gi -> visited.(gi) <- true) !frontier
               | hits -> result := Some (Ok hits)
             done;
-            Option.get !result
-          end
-    in
-    match find_targets () with
-    | Error e -> Error e
-    | Ok targets ->
-        let inm = Array.make n false in
-        List.iter (fun t -> inm.(t) <- true) targets;
-        let changed = ref true in
-        while !changed do
-          changed := false;
-          for gi = 0 to n - 1 do
-            if (not inm.(gi)) && cand gi then
-              for m = 0 to n - 1 do
-                if inm.(m) && (not inm.(gi)) && (outer gi m || cl.(gi) = cl.(m))
-                then begin
-                  inm.(gi) <- true;
-                  changed := true
-                end
-              done
-          done
-        done;
-        if not inm.(anchor) then
-          Error
-            ( "`up to`: the target is not reachable from the anchor over the \
-               crease region",
-              None )
-        else begin
-          let buried = ref None in
-          for m = 0 to n - 1 do
-            if !buried = None && inm.(m) && m <> anchor && outer m anchor then
-              buried := Some m
-          done;
-          match !buried with
-          | Some m ->
-              Error
-                ( Printf.sprintf
-                    "a simple fold cannot move a buried flap: face %d covers \
-                     the anchor in the crease region" m,
-                  Some "include the covering flap (anchor the fold there) or \
-                        fold less" )
-          | None -> Ok inm
-        end
+            Option.get !result)
+  in
+  match find_targets () with
+  | Error e -> Error e
+  | Ok targets ->
+      let joined = off_axis_neighbours g ~axis ~move_side in
+      let inm = Array.make n false in
+      List.iter (fun t -> inm.(t) <- true) targets;
+      let changed = ref true in
+      while !changed do
+        changed := false;
+        for gi = 0 to n - 1 do
+          if (not inm.(gi)) && cand gi then
+            for m = 0 to n - 1 do
+              if
+                inm.(m) && (not inm.(gi))
+                && (outer gi m || cl.(gi) = cl.(m) || List.mem m joined.(gi))
+              then begin
+                inm.(gi) <- true;
+                changed := true
+              end
+            done
+        done
+      done;
+      Ok inm
 
-(* Default (no `up to`) moving set: the outside-contiguous prefix of layers
-   down to and including the seed flap(s). "Outside" is top for valley, bottom
-   for mountain. Seed = the faces carrying the anchor operand (possibly several,
-   when the operand point lies on a shared crease — design option (a)). Unlike
-   [select_scope] there is no anchor-inclusion or buried check: the seed is the
-   *deepest* included layer and everything outside it moves with it. *)
+(* The outside-contiguous prefix of layers down to and including the seed
+   faces, closed under cohesion. "Outside" is top for valley, bottom for
+   mountain. *)
 let default_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
     ~(valley : bool) ~(seed : int list) : bool array =
   let n = Array.length g.faces in

@@ -44,18 +44,40 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
       []
   in
   let outside = if valley then Fold_state.Top else Fold_state.Bottom in
+  (* The moving side comes from the side items, else from the anchor; the
+     anchor names a side and nothing else (ADR 0036). *)
+  let move_side () =
+    match (side_override, anchor_arg) with
+    | Some s, _ -> s
+    | None, Some fa -> Resolve.default_move_side ctx axis fa span
+    | None, None -> Error.fail span "this fold needs `moving .p` to choose the side"
+  in
+  let apply ~move_side moving_parents =
+    record ~move_side moving_parents outside;
+    (match
+       Fold_state.scoped_fold_hinge_closed !(ctx.state) ~axis ~move_side
+         ~moving_parents
+     with
+    | Ok () -> ()
+    | Error t -> tear_error span t);
+    (match check with
+    | Some k -> k (fun fi -> moving_parents.(fi))
+    | None -> ());
+    ctx.state :=
+      Fold_state.fold !(ctx.state) ~moving_parents ~axis ~move_side ~valley
+        ~crease_id ~prov
+  in
   match (fs.Ast.place, fs.Ast.up_to) with
-  | Some place, _ ->
-      (* A placed fold: the anchor flap's material beyond the axis, or with
-         no anchor every layer on the side the side items fixed, moves as one
-         block and is spliced next to the target flap instead of at the
-         outside of the stack. The direction follows from the placement, so
-         [valley] is unused here. *)
+  | Some place, depth ->
+      (* A placed fold: every layer on the moving side, or with `up to` the
+         flap it names, moves as one block and is spliced next to the target
+         flap instead of at the outside of the stack. The direction follows
+         from the placement, so [valley] is unused here. *)
       if anchor_arg = None && side_override = None then
-        Error.fail span "a placed fold needs `moving .p` or `toward .p` to name the flap";
+        Error.fail span "a placed fold needs `moving .p` or `toward .p` to name the side";
       let move_side, block, placement =
-        Resolve.placed_fold_plan ctx axis ~anchor:anchor_arg ?side:side_override ~place
-          span
+        Resolve.placed_fold_plan ctx axis ~anchor:anchor_arg ~depth ?side:side_override
+          ~place span
       in
       record ~move_side block placement;
       (match
@@ -74,102 +96,42 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
           Error.fail span
             (Resolve.placement_failure_message (fst place) (snd place) v))
   | None, None ->
-      (* Default scope: the outside-contiguous prefix down to the flap(s)
-         carrying the anchor operand — not every layer on the side. *)
-      let move_side =
-        match side_override with
-        | Some s -> s
-        | None -> (
-            match anchor_arg with
-            | Some fa -> Resolve.default_move_side ctx axis fa span
-            | None ->
-                Error.fail span "this fold needs `moving .p` to choose the side")
-      in
-      let seed =
-        match anchor_arg with
-        | Some fa -> Resolve.anchor_faces ctx fa span
-        | None ->
-            (* No `moving` clause and no implied point (e.g. a bare axiom-5
-               line-onto-line fold): move_side above only succeeded because
-               side_override resolved the direction, so there is nothing to
-               anchor a prefix to. Fall back to every face with a piece on
-               move_side — default_scope's closure never removes an already-
-               seeded candidate, so this reproduces the pre-default_scope
-               "all layers on the side" behavior exactly. *)
-            let st = !(ctx.state) in
-            List.filter
-              (fun fi ->
-                Array.length
-                  (Geom.clip_convex_halfplane axis move_side
-                     (Fold_state.table_polygon st fi))
-                >= 3)
-              (List.init (Array.length (Fold_state.faces st)) Fun.id)
-      in
-      let moving_parents =
-        Fold_state.default_scope !(ctx.state) ~axis ~move_side ~valley ~seed
-      in
-      record ~move_side moving_parents outside;
-      (match
-         Fold_state.scoped_fold_hinge_closed !(ctx.state) ~axis ~move_side
-           ~moving_parents
-       with
-      | Ok () -> ()
-      | Error t -> tear_error span t);
-      (match check with
-      | Some k -> k (fun fi -> moving_parents.(fi))
-      | None -> ());
-      ctx.state :=
-        Fold_state.fold !(ctx.state) ~moving_parents ~axis ~move_side ~valley
-          ~crease_id ~prov
+      (* every layer on the moving side *)
+      let move_side = move_side () in
+      let seed = List.init (Array.length (Fold_state.faces !(ctx.state))) Fun.id in
+      apply ~move_side
+        (Fold_state.default_scope !(ctx.state) ~axis ~move_side ~valley ~seed)
   | None, Some tgt -> (
-      let move_side =
-        match side_override with
-        | Some s -> s
-        | None -> (
-            match anchor_arg with
-            | Some fa -> Resolve.side_of_flap_arg ctx axis fa span
-            | None ->
-                Error.fail span "this fold needs `moving .p` to choose the side")
-      in
-      let anchor =
-        match anchor_arg with
-        | Some fa ->
-            let st = !(ctx.state) in
-            let cluster = Resolve.resolve_flap_cluster ctx fa span in
-            (match
-               List.find_opt
-                 (fun f ->
-                   Array.length
-                     (Geom.clip_convex_halfplane axis move_side
-                        (Fold_state.table_polygon st f))
-                   >= 3)
-                 cluster
-             with
-            | Some f -> f
-            | None -> List.hd cluster)
-        | None ->
-            Error.fail span "`up to` needs `moving` to anchor the moving flaps"
-      in
+      (* the layers from the flap `up to` names outward *)
+      let move_side = move_side () in
       let target = Resolve.target_of ctx tgt span in
+      (* the anchor is where a walk to a crease target starts, and nothing
+         else: a face carrying it with a piece on the moving side *)
+      let anchor =
+        match (target, anchor_arg) with
+        | Fold_state.TargetHinged _, Some fa ->
+            let st = !(ctx.state) in
+            let faces = Resolve.anchor_faces ctx fa span in
+            Some
+              (match
+                 List.find_opt
+                   (fun f ->
+                     Array.length
+                       (Geom.clip_convex_halfplane axis move_side
+                          (Fold_state.table_polygon st f))
+                     >= 3)
+                   faces
+               with
+              | Some f -> f
+              | None -> List.hd faces)
+        | _ -> None
+      in
       match
         Fold_state.select_scope !(ctx.state) ~axis ~move_side ~valley ~anchor
           ~target
       with
       | Error (msg, hint) -> Error.fail ?hint span msg
-      | Ok moving_parents ->
-          record ~move_side moving_parents outside;
-          (match
-             Fold_state.scoped_fold_hinge_closed !(ctx.state) ~axis
-               ~move_side ~moving_parents
-           with
-          | Ok () -> ()
-          | Error t -> tear_error span t);
-          (match check with
-          | Some k -> k (fun fi -> moving_parents.(fi))
-          | None -> ());
-          ctx.state :=
-            Fold_state.fold !(ctx.state) ~moving_parents ~axis
-              ~move_side ~valley ~crease_id ~prov)
+      | Ok moving_parents -> apply ~move_side moving_parents)
 
 let run_fold (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line) ~(fs : Ast.fold_spec)
     ~(implied : Ast.point_operand option) ~(side_override : int option)
@@ -263,51 +225,74 @@ let eval_mark (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
         check_axis axis;
         (cid, bind_out, axis, None)
   in
-  let record mgeom paper_axis =
-    let m : Fold_state.mark =
-      { Fold_state.mgeom; mline = paper_axis; mintent = intent;
-        mcrease_id = cid; mprov = prov }
+  (* One mark per piece, all under [cid]: a piece per layer the mark scores.
+     The statement's own entry carries the first piece; every piece stays
+     kept. *)
+  let record_pieces pieces =
+    let ms =
+      List.map
+        (fun (mgeom, paper_axis) ->
+          { Fold_state.mgeom; mline = paper_axis; mintent = intent;
+            mcrease_id = cid; mprov = prov })
+        pieces
     in
-    ctx.state := Fold_state.add_mark !(ctx.state) m;
+    List.iter (fun m -> ctx.state := Fold_state.add_mark !(ctx.state) m) ms;
     let prior_kept =
       match ctx.statements_rev with
       | prev :: _ -> prev.sl_kept
       | [] -> []
     in
+    let first = List.hd ms in
     ctx.statements_rev <-
       { sl_kind = SMark; sl_span = span;
-        sl_frame_index = List.length ctx.frames_rev; sl_mark = Some m;
-        sl_kept = prior_kept @ [ m ]; sl_parent = ctx.parent }
+        sl_frame_index = List.length ctx.frames_rev; sl_mark = Some first;
+        sl_kept = prior_kept @ ms; sl_parent = ctx.parent }
       :: ctx.statements_rev;
-    bind_out (Mark (cid, paper_axis))
+    bind_out (Mark (cid, first.Fold_state.mline))
   in
-  (* A full mark is the whole line clipped to its flap; it records as a
-     material chord (never subdivides). Resolve the flap (explicit layer
-     wins; else the carrying flap of a rep point on the axis), then take
-     the extreme endpoints of the per-face paper clips. *)
+  let record mgeom paper_axis = record_pieces [ (mgeom, paper_axis) ] in
+  (* A full mark is the whole line clipped to each flap it scores; each
+     piece records as a material chord (never subdivides) between the
+     extreme endpoints of that flap's per-face paper clips. With `on` it
+     scores the named flap; without, every flap the line crosses, one piece
+     per flap (ADR 0036). *)
   let record_full () =
     let st = !(ctx.state) in
-    let clips =
-      List.init (Array.length (Fold_state.faces st)) Fun.id
-      |> List.filter_map (fun fi -> Fold_state.axis_chord_in_face st fi table_axis)
-    in
-    let rep =
-      match clips with
-      | (p, q) :: _ ->
-          { Geom.x = Num.div (Num.add p.Geom.x q.Geom.x) (Num.of_int 2);
-            y = Num.div (Num.add p.Geom.y q.Geom.y) (Num.of_int 2) }
-      | [] -> Error.fail span "the mark's line does not cross the paper"
-    in
-    let flap = Resolve.resolve_mark_flap ctx layer_opt rep span in
-    let pts =
+    let n = Array.length (Fold_state.faces st) in
+    let chord_of flap =
       List.filter_map
         (fun fi -> Fold_state.axis_chord_in_face st fi table_axis)
         flap
       |> List.concat_map (fun (p, q) -> [ p; q ])
+      |> Geom.extreme_pair
     in
-    match Geom.extreme_pair pts with
-    | Some (a, b) -> record (Fold_state.MSeg (a, b)) (Geom.line_through a b)
-    | None -> Error.fail span "the mark's line does not cross its flap"
+    let piece (a, b) = (Fold_state.MSeg (a, b), Geom.line_through a b) in
+    match layer_opt with
+    | Some _ -> (
+        let clips =
+          List.init n Fun.id
+          |> List.filter_map (fun fi -> Fold_state.axis_chord_in_face st fi table_axis)
+        in
+        let rep =
+          match clips with
+          | (p, q) :: _ ->
+              { Geom.x = Num.div (Num.add p.Geom.x q.Geom.x) (Num.of_int 2);
+                y = Num.div (Num.add p.Geom.y q.Geom.y) (Num.of_int 2) }
+          | [] -> Error.fail span "the mark's line does not cross the paper"
+        in
+        let flap = Resolve.resolve_mark_flap ctx layer_opt rep span in
+        match chord_of flap with
+        | Some ab -> record_pieces [ piece ab ]
+        | None -> Error.fail span "the mark's line does not cross its flap")
+    | None -> (
+        let cl = Fold_state.coplanar_clusters st in
+        let flaps =
+          List.sort_uniq compare (List.init n (fun fi -> cl.(fi)))
+          |> List.map (fun id -> List.filter (fun fi -> cl.(fi) = id) (List.init n Fun.id))
+        in
+        match List.filter_map chord_of flaps with
+        | [] -> Error.fail span "the mark's line does not cross the paper"
+        | chords -> record_pieces (List.map piece chords))
   in
   (* Behaviour 4: dispatch a partial extent's classification. Under the
      material-layer model NO mark subdivides — CSubdivide (a full chord
@@ -330,8 +315,95 @@ let eval_mark (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
               (it leaves its flap)"
              (Resolve.pstr a) (Resolve.pstr b))
   in
+  (* A partial extent without `on`: a piece on every flap under the extent,
+     its material of the axis clipped to the extent (ADR 0036). *)
+  let record_partial_every_layer extent_geom =
+    let st = !(ctx.state) in
+    let n = Array.length (Fold_state.faces st) in
+    let cl = Fold_state.coplanar_clusters st in
+    let flaps =
+      List.sort_uniq compare (List.init n (fun fi -> cl.(fi)))
+      |> List.map (fun id -> List.filter (fun fi -> cl.(fi) = id) (List.init n Fun.id))
+    in
+    let to_paper fi p = Isometry.apply_point (Isometry.inverse (Fold_state.face_iso2 st fi)) p in
+    let paper_axis_in fi =
+      match Fold_state.axis_chord_in_face st fi table_axis with
+      | Some (p, q) when not (Geom.point_equal p q) -> Some (Geom.line_through p q)
+      | _ -> None
+    in
+    let pieces =
+      match extent_geom with
+      | Fold_state.MPoint pp ->
+          let tp = Fold_state.table_position st pp in
+          List.filter_map
+            (fun flap ->
+              List.find_map
+                (fun fi ->
+                  let q = to_paper fi tp in
+                  if Geom.in_convex_polygon (Fold_state.faces st).(fi) q then
+                    Some
+                      ( Fold_state.MPoint q,
+                        match paper_axis_in fi with
+                        | Some l -> l
+                        | None -> table_axis )
+                  else None)
+                flap)
+            flaps
+      | Fold_state.MSeg (pa, pb) ->
+          let ta = Fold_state.table_position st pa
+          and tb = Fold_state.table_position st pb in
+          let d = { Geom.x = Num.sub tb.Geom.x ta.Geom.x; y = Num.sub tb.Geom.y ta.Geom.y } in
+          let param (p : Geom.point) =
+            Num.add
+              (Num.mul (Num.sub p.Geom.x ta.Geom.x) d.Geom.x)
+              (Num.mul (Num.sub p.Geom.y ta.Geom.y) d.Geom.y)
+          in
+          let len2 = param tb in
+          let at t =
+            let k = Num.div t len2 in
+            { Geom.x = Num.add ta.Geom.x (Num.mul k d.Geom.x);
+              y = Num.add ta.Geom.y (Num.mul k d.Geom.y) }
+          in
+          let nmax a b = if Num.compare a b >= 0 then a else b in
+          let nmin a b = if Num.compare a b <= 0 then a else b in
+          (* the part of face [fi]'s chord of the axis inside the extent, as
+             paper points *)
+          let clip fi =
+            match
+              Geom.clip_line_to_convex table_axis (Fold_state.table_polygon_ccw st fi)
+            with
+            | None -> []
+            | Some (c1, c2) ->
+                let t1 = param c1 and t2 = param c2 in
+                let lo = nmax Num.zero (nmin t1 t2) and hi = nmin len2 (nmax t1 t2) in
+                if Num.compare lo hi < 0 then [ to_paper fi (at lo); to_paper fi (at hi) ]
+                else []
+          in
+          List.filter_map
+            (fun flap ->
+              match Geom.extreme_pair (List.concat_map clip flap) with
+              | Some (a, b) ->
+                  (* ordered as the extent runs, from its first point *)
+                  let a, b =
+                    if
+                      Num.compare
+                        (param (Fold_state.table_position st a))
+                        (param (Fold_state.table_position st b))
+                      > 0
+                    then (b, a)
+                    else (a, b)
+                  in
+                  Some (Fold_state.MSeg (a, b), Geom.line_through a b)
+              | None -> None)
+            flaps
+    in
+    if pieces = [] then Error.fail span "the mark's extent is not on the paper";
+    record_pieces pieces
+  in
   match Resolve.resolve_mark_extent ctx table_axis ext span with
   | `Full -> record_full ()
+  | `Partial (extent_geom, _, _) when layer_opt = None ->
+      record_partial_every_layer extent_geom
   | `Partial (extent_geom, rep, paper_axis) ->
       let flap = Resolve.resolve_mark_flap ctx layer_opt rep span in
       dispatch_partial ~flap ~extent_geom ~paper_axis

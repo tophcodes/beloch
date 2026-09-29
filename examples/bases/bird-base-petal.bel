@@ -7,6 +7,8 @@
 ; where the four reversed side corners landed, so it is written through .sr.
 ; .a and .c come to the far end past the paper centre and form the upper
 ; points; .b and .d stay at the open end and form the legs.
+; Each `up to` names the centre face of its flap, which the side corners
+; reversed beneath it follow.
 
 paper square
 
@@ -29,8 +31,8 @@ reverse (map .br onto --mid through .c)
 .bl = --cd * --v
 reverse (map .bl onto --mid through .c)
 
-fold (perp --mid through .sr) (moving .a) as --pf              ; front petal
-fold (perp --mid through .sr) (moving .c) (mountain) as --pb   ; back petal
+fold (perp --mid through .sr) (moving .a) (up to #[.a .o]) as --pf              ; front petal
+fold (perp --mid through .sr) (moving .c) (up to #[.c .o]) (mountain) as --pb   ; back petal
 
 ; assert steps = 9
 ; assert faces = 16

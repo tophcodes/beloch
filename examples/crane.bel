@@ -25,21 +25,24 @@ reverse (map .br onto --mid through .c) as --rbr
 reverse (map .bl onto --mid through .c) as --rbl
 
 ; the bird base: front and back flap folded down across the kite's width,
-; which leaves the legs .b and .d at the apex
-fold (perp --mid through .sr) (moving .a) as --pf
-fold (perp --mid through .sr) (moving .c) (mountain) as --pb
+; which leaves the legs .b and .d at the apex. `up to` names the centre face of each
+; flap; the side corners reversed beneath it are hinged to it off the axis and
+; go with it
+fold (perp --mid through .sr) (moving .a) (up to #[.a .o]) as --pf
+fold (perp --mid through .sr) (moving .c) (up to #[.c .o]) (mountain) as --pb
 
 ; narrow the legs: each outer edge onto the centre line, front layers as
-; valleys, back layers as mountains. Each fold is anchored on a point of the
-; layer it moves; without the anchor the front fold takes the back layers too.
+; valleys, back layers as mountains. Each `up to` names the face of the leg
+; that holds its anchor, the leg's tip and the paper centre; without it the
+; front fold takes the back layers too.
 .e1 = (--rsr & .b) * --pf
-fold (map --rsr & .b onto --mid) (moving .e1) as --n1
+fold (map --rsr & .b onto --mid) (moving .e1) (up to #[.e1 .b .o]) as --n1
 .e2 = (--rsl & .d) * --pf
-fold (map --rsl & .d onto --mid) (moving .e2) as --n2
+fold (map --rsl & .d onto --mid) (moving .e2) (up to #[.e2 .d .o]) as --n2
 .e3 = (--rbr & .b) * --pb
-fold (map --rbr & .b onto --mid) (moving .e3) (mountain) as --n3
+fold (map --rbr & .b onto --mid) (moving .e3) (up to #[.e3 .b .o]) (mountain) as --n3
 .e4 = (--rbl & .d) * --pb
-fold (map --rbl & .d onto --mid) (moving .e4) (mountain) as --n4
+fold (map --rbl & .d onto --mid) (moving .e4) (up to #[.e4 .d .o]) (mountain) as --n4
 
 ; neck and tail: each leg reversed about the perpendicular to its own
 ; narrowed edge through the point where the side corners landed. These are

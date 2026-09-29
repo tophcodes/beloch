@@ -1,0 +1,11 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; The lower layer is joined to .c's layer by the first fold, along a hinge
+; off the axis of the second. A hinge off the axis cannot be torn, so the
+; moving set of `up to .c` takes the lower layer too, and both layers fold.
+paper square
+fold (map .d onto .a)
+fold (map .c onto .d) (up to .c)
+
+; assert faces = 4
+; assert steps = 2
