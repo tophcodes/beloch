@@ -20,6 +20,6 @@ reverse (map .bl onto --mid through .c)
 
 ; lift the petals, front and back
 fold (perp --mid through .sr) (moving .a)
-  as --pf
+  (up to #[.a .o]) as --pf
 fold (perp --mid through .sr) (moving .c)
-  (mountain) as --pb
+  (up to #[.c .o]) (mountain) as --pb
