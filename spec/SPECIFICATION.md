@@ -665,53 +665,9 @@ fold (through .m .n) (moving .b) (under .p)   ; the top layer's corner, tucked b
 
 ### 4.6a `reverse` — inside and outside reverse folds *(since v0.26-dev)*
 
-```
-reverse (<construction|crease>) [ (moving <flap>) ] [ (outside) ] [ "as" CREASE_NAME [ "!" ] | "into" CREASE_NAME ]
-```
-
-Take a flap folded along a crease, the *spine*, and a line across it meeting
-the spine at O; the *tip* is the material beyond that line. An inside
-reverse fold pushes the tip in between the flap's layers, an outside reverse
-fold wraps it around them; in both the spine beyond O ends up folded the
-other way. `reverse` is a disposition verb like `fold`: it takes a construction
-(computed in the table frame) or an existing material crease, is bindable,
-and implies `moving` from a map construction's moved point.
-
-The end state is defined in the table frame: the tip is cut into two halves
-at the spine, both halves are reflected across the line in one operation,
-and each half is placed relative to its own hinge layer: inside, each half
-lands next to its own body in the gap between the two bodies; outside, the
-half hinged to the lower body goes under everything and the other on top.
-The tip is the connected material beyond the line that carries the anchor;
-the spine is whichever folded hinge of the tip splits it into two halves
-whose hinge layers occupy separate rank ranges and whose placement passes
-the layer invariants. Exactly one such hinge must exist.
-
-Nothing is stated about mountain and valley. Each half flips over and keeps
-its rank position relative to the other, so at the spine beyond O the backs
-of the paper face each other where the fronts did: the derived letter
-reverses. The new crease reads, on both halves, the letter the spine had
-before the fold for an inside reverse and the opposite letter for an outside
-reverse. A reverse fold is not two placed folds
-in sequence: after one half moves, the spine joins a reflected face to an
-unreflected one along no common segment, so the two halves move together.
-
-Errors: `reverse needs a tip folded along one spine; the moving material
-does not split into two halves`; `the tip can be reversed at <n> spines`
-(hint `fold less so that one remains`); `the two halves are hinged to interleaved
-layers; that is not a reverse fold`; `reversing the tip would pierce layer
-<n>`.
-
-```
-fold (map .a onto .c) as --bd              ; triangle
-reverse (map .b onto .c) as --h            ; tip b between the layers
-reverse (map .d onto .c) as --v            ; tip d likewise: the preliminary base
-```
-
-[`examples/bases/preliminary-reverse.bel`](../examples/bases/preliminary-reverse.bel)
-folds the preliminary base this way, the Eos route [ida2020, §7.4.3]; it
-agrees pointwise with the `flatten` construction in
-[`examples/bases/preliminary.bel`](../examples/bases/preliminary.bel).
+Moved to `KERNEL.md`, "Reverse"; the model is
+[def-reverse](/model/#def-reverse) (ADR 0043), the syntax `BELOCH.md`, Write
+statements.
 
 ### 4.7 `flip` — turn the sheet over *(since v0.7-dev)*
 

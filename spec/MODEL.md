@@ -1275,44 +1275,72 @@ flip
 fold (map .a onto .c) as --g
 :::
 
-::: {.definition #def-reverse name="reverse fold" uses="def-write def-reflection def-fold def-flap def-letter" defines="term-tip term-spine term-body"}
+::: {.definition #def-reverse name="reverse fold" uses="def-write def-reflection def-fold def-flap def-letter def-flat-state" defines="term-tip term-opening term-block term-spine term-body"}
 The write `reverse` takes a table line $\ell$, a side $H$, an anchor flap
-$\alpha$ with material in $H$, and a kind, *inside* or *outside*. Score
-$\ell$ and call the faces in $H$ the candidates. The *tip* $T$ is the least
-set of candidates that contains the faces of $\alpha$ in $H$ and is closed
-under hinges of any angle between candidates. A *spine* is a folded hinge
-between two faces of $T$ whose removal from the hinge graph of $T$ leaves
-exactly two connected components, the *halves* $T_1$ and $T_2$. The *body*
-$B_i$ of a half is the set of stationary faces joined to a face of $T_i$ by
-a hinge on $\ell$. The spine is admissible when both bodies are non-empty
-and separated: every face of $B_1$ lies below every face of $B_2$ it
-overlaps, after renaming so that $B_1$ is the lower body. The value of the
-write is the reflection of the two blocks
-$(T_1, \text{over } B_1)$ and $(T_2, \text{under } B_2)$ for *inside*, and
-$(T_1, \text{bottom})$ and $(T_2, \text{top})$ for *outside*. It is defined
-when exactly one admissible spine yields a state.
+$\alpha$ with material in $H$, a kind, *inside* or *outside*, and a finite
+set of letters, each a letter on hinges of the state. Score $\ell$ and call
+the faces in $H$ the candidates. The *tip* $T$ is the least set of
+candidates that contains the faces of $\alpha$ in $H$ and is closed under
+hinges of any angle between candidates. An *opening* is a place between two
+faces of $T$ that are consecutive in $\lambda$ restricted to $T$, such that
+every hinge between a face below it and a face above it is folded and lies
+on one table line $s$ that meets $H$. The opening cuts $T$ into the *blocks*
+$T_1$ below it and $T_2$ above it. The *body* $B_i$ of a block is the set of
+stationary faces joined to a face of $T_i$ by a hinge on $\ell$. An opening
+is admissible when both bodies are non-empty and separated: every face of
+$B_1$ lies below every face of $B_2$ it overlaps. Its state is the
+reflection of the two blocks $(T_1, \text{over } B_1)$ and
+$(T_2, \text{under } B_2)$ for *inside*, and $(T_1, \text{bottom})$ and
+$(T_2, \text{top})$ for *outside*; it meets a letter when every hinge of $T$
+the letter names has that letter in it. The value of the write is the one
+state the admissible openings that meet every letter give, two states that
+order every overlapping pair alike counting as one ([#def-flat-state]). It
+is undefined when there is none or more than one.
 :::
 
-::: {.term #term-tip name="tip, half"}
+::: {.term #term-tip name="tip"}
 The material a reverse fold or a flatten moves: beyond the axis or outside
-the stayer's wedge, and joined to the anchor. The spine of a reverse fold
-cuts it into two halves.
+the stayer's wedge, and joined to the anchor.
+:::
+
+::: {.term #term-opening name="opening"}
+The place between two layers of the tip where a reverse fold opens it: every
+hinge that crosses it is folded and lies on the spine.
+:::
+
+::: {.term #term-block name="block"}
+The layers of the tip on one side of the opening, reflected as a whole.
 :::
 
 ::: {.term #term-spine name="spine"}
-The folded hinge of the tip along which the two halves lie on each other and
-which the reverse fold turns the other way.
+The table line the hinges across the opening lie on. The reverse fold turns
+those hinges the other way.
 :::
 
 ::: {.term #term-body name="body"}
-The stationary faces a half of the tip is hinged to along the axis.
+The stationary faces a block of the tip is hinged to along the axis.
 :::
 
-The two halves move in one reflection and never one after the other: once
-one half has moved, the spine joins a reflected face to an unreflected one
-along no common segment, and hinge closure fails. Inside, each half lands
-next to its own body in the gap between the two bodies; outside, the lower
-half goes under everything and the upper half on top.
+The two blocks move in one reflection and never one after the other: once
+one block has moved, a hinge across the opening joins a reflected face to an
+unreflected one along no common segment, and hinge closure fails. Inside,
+each block lands next to its own body in the gap between the two bodies;
+outside, the lower block goes under everything and the upper block on top.
+
+A tip of one flap folded once has one opening, between its two layers. A
+tip of several layers can have several: the square of [#fig-reverse-open]
+opens between its two inner layers or below its outermost one, and the
+write is undefined until a letter keeps one of them. A letter names a hinge
+of the spine by its crease and a point on it, as a letter of a flatten names
+a ray.
+
+A reverse fold is the fan ([#def-flatten]) at the point where $\ell$ meets
+$s$, a point of the projective table that lies off the paper or at infinity
+where $\ell$ does not cross $s$ on the paper. Its rays are $s$ on the side
+of the body, whose hinges stay; $s$ on the side of the tip, whose hinges
+across the opening turn and whose other hinges stay; and $\ell$ on either
+side of $s$, which adds a crease through every layer of the tip. *Inside*
+and *outside* are the placements the write hands to the fan.
 
 ::: {.figure #fig-reverse caption="The preliminary base by two inside reverse folds [@ida2020, §7.4.3]: the diagonal fold makes a triangle whose spine is `--bd`, and each acute corner is reversed to the right-angle corner in turn." views="cp folded" highlight="--h --v --bd"}
 paper square
@@ -1321,7 +1349,7 @@ reverse (map .b onto .c) as --h
 reverse (map .d onto .c) as --v
 :::
 
-::: {.figure #fig-reverse-op caption="The terms of `--h` in [#fig-reverse] on the triangle it reads: the axis dashed, the spine on `--bd`, the two halves of the tip hatched in two directions below the axis, where they lie on one another, and their bodies above it, each half and its body in one colour. On the right the state after the reverse fold." views="op" at="h"}
+::: {.figure #fig-reverse-op caption="The terms of `--h` in [#fig-reverse] on the triangle it reads: the axis dashed, the spine on `--bd`, the two blocks of the tip hatched in two directions below the axis, where they lie on one another, and their bodies above it, each block and its body in one colour. On the right the state after the reverse fold." views="op" at="h"}
 paper square
 fold (map .a onto .c) as --bd
 @label h
@@ -1329,44 +1357,63 @@ reverse (map .b onto .c) as --h
 reverse (map .d onto .c) as --v
 :::
 
-::: {.figure #fig-reverse-spines caption="A kite folded in half, its tip reversed: every folded hinge of the tip that reaches beyond the axis is tried as the spine. The kite fold `--k` cuts the tip into two halves whose bodies interleave in the stack, so it is removed; the diagonal remains, so the fold is defined." views="candidates" at="tip"}
+::: {.figure #fig-reverse-open caption="A square folded in half twice in the same direction, its lower half inside-reversed along the middle, cut along the top edge. The tip opens between its two inner layers, and the letter on the inner hinge of `--e` through `.q` keeps that opening: both hinges on the spine turn, 5|8 and 6|7, nested inside 2|3 and 1|4, and the lower half's layers read 8, 7, 6, 5 between 3 and 2. On the other edge the hinge 7|8 keeps its letter." views="side" along="--top"}
 paper square
-mark (through .a .c) as --ac
-fold (map --ab onto --ac) (moving .b) as --k
-.e = free on --bc from .c at 1/2
-fold (--ac) (moving .e) as --m
-.s = free on --ac from .a at 1/3
-@label tip
-reverse (perp --ac through .s) (moving .a) as --r
+fold (map .b onto .a) as --d
+fold (map --d onto --da) as --e
+.q = free on --cd from .c at 1/4
+reverse (map .a onto .d) (--e & .q valley) as --r
+.p = free on --cd from .d at 1/4
+--top = (through .d .p)
+:::
+
+::: {.figure #fig-reverse-open-outer caption="The same square with a mountain on the inner hinge: the tip opens below its outermost layer. Only the outer hinge 5|6 turns, the inner one, 7|8, keeps its letter, and the three inner layers of the lower half go in as one block, 8, 7, 6 between 2 and 5." views="side" along="--top"}
+paper square
+fold (map .b onto .a) as --d
+fold (map --d onto --da) as --e
+.q = free on --cd from .c at 1/4
+reverse (map .a onto .d) (--e & .q mountain) as --r
+.p = free on --cd from .d at 1/4
+--top = (through .d .p)
 :::
 
 ::: {.corollary #cor-reverse-letters name="letters of a reverse fold" uses="def-reverse def-letter cor-fold-letters def-reflection"}
-The spine beyond the axis reverses its letter. The hinges the write scores
-on $\ell$ read, on both halves, the letter the spine had before for an
+Every hinge across the opening reverses its letter, and every other hinge of
+the tip keeps its letter. Where a hinge across the opening crosses $\ell$,
+the hinges the write scores there read the letter it had before for an
 *inside* reverse and the opposite letter for an *outside* reverse.
 
-*Proof.* The spine joins a face $A$ of $T_1$ to a face $B$ of $T_2$. Both
-are reflected, so the face-up one becomes face down and the other face up;
-the two blocks keep their relative order, since $B_1$ lies below $B_2$ and
-each half is placed at its own body. The face-up face of the spine has
-therefore changed and its side has not: the letter reverses. A face of
-$T_i$ is face up exactly when its body is, because they are joined by a
-flat hinge before the fold, and the bodies have opposite orientations
-because the spine continues between them as a folded hinge. Let the lower
-body be face up; the spine is then a valley. Inside, $T_1$ lands above the
-face-up $B_1$ and $T_2$ below the face-down $B_2$: by [#cor-fold-letters]
-both new hinges are valleys. Outside, $T_1$ lands below the face-up $B_1$
-and $T_2$ above the face-down $B_2$: both mountains. For a face-down lower
-body exchange the letters. $\square$
+*Proof.* Both blocks are reflected, so in each the face-up faces become face
+down and the face-down ones face up. Inside a block the reflection also
+reverses the order of the layers, so a hinge with both faces in one block
+keeps its letter by [#cor-fold-letters]. A hinge across the opening joins a
+face $A$ of $T_1$ to a face $C$ of $T_2$; the blocks keep their relative
+order, since $B_1$ lies below $B_2$ and each block is placed at its own
+body, so $A$ stays below $C$ while both change side: the letter reverses.
+Where the hinge crosses $\ell$, $A$ and $C$ are hinged on $\ell$ to faces
+$A'$ of $B_1$ and $C'$ of $B_2$, flat before the fold, so $A'$ and $C'$ are
+joined by the part of the hinge on the body's side, with its letter. Let
+$A'$ be face up; that hinge is then a valley. Inside, $A$ lands above
+$A'$ and $C$ below the face-down $C'$: by [#cor-fold-letters] both new
+hinges are valleys. Outside, $A$ lands below everything and $C$ above: both
+mountains. For a face-down $A'$ exchange the letters. $\square$
 :::
 
 ::: {.definition #def-flatten name="flatten" uses="def-write def-flap def-score def-reflection def-letter def-noncrossing def-selection" defines="term-fan term-sector term-stayer term-emergent"}
-The write `flatten` takes a table point $O$, an *anchor*: a flap $\Phi$
-with a paper point over $O$, interior to $\Phi$ or on a folded edge of it, a
-finite set of *rays*: segments from $O$ to the boundary of the image of
-$\Phi$ in pairwise distinct directions, a set of constraints, and a
-selection $\sigma$. Let $\rho_1, \ldots, \rho_k$ be the reflections of the
-table across the lines of the rays, in counter-clockwise order around $O$.
+The write `flatten` takes a point $O$ of the projective table: a table
+point, or a point at infinity, one for each direction (ADR 0041). It takes
+an *anchor*: a flap $\Phi$ whose image meets the rays, a finite set of
+*rays*: segments on lines through $O$, from $O$ where $O$ lies on the image
+of $\Phi$ and from the edge of that image where it does not, to the other
+edge, in pairwise distinct directions, a set of constraints, and a
+selection $\sigma$. At a point at infinity the lines of the rays are
+parallel and the sectors between them are strips. Let
+$\rho_1, \ldots, \rho_k$ be the reflections of the table across the lines
+of the rays, in counter-clockwise order around $O$, or in order across the
+strips at a point at infinity. The closure condition below applies only
+when $O$ lies inside the image of $\Phi$, where the paper surrounds it; a
+fan whose vertex lies on the edge, off the paper or at infinity has no
+condition at its vertex and no emergent ray.
 
 - If $k$ is even, the composition $\rho_1 \circ \cdots \circ \rho_k$ must be
   the identity; this is Kawasaki's condition that the alternating sum of the
@@ -1399,6 +1446,11 @@ such that it satisfies [#def-noncrossing] and the constraints:
   has that letter;
 - one sector over another: the two sectors of $\Phi$ are so ordered;
 - the stayer, which only fixes $m_0$ and so the table position.
+
+A ray may run along hinges of $T$ that are already folded, as the spine of
+a reverse fold does ([#def-reverse]). Such a hinge *stays* when it keeps its
+letter and *turns* when it takes the other one; a letter for the ray says
+which.
 
 The value of the write is the one candidate state $\sigma$ selects from the
 set of all candidate states of all candidate fans; it is undefined when
