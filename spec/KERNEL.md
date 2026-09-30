@@ -115,16 +115,20 @@ staying sector`. `on` reaches the kernel as the paper polygons of the flap it
 names, so the anchor survives the scoring of an emergent ray.
 
 The stacking ranks sectors, as `Collapse.linear_extensions` enumerates them.
-The faces the fan leaves in place that lie outside the stayer's wedge are
-ranked as blocks of their own, one per piece joined by flat hinges, and keep
-their order where they overlap one another or the stayer's sector. Two
-ceilings remain:
+The stayer's sector holds the faces of the stayer's wedge the tip hangs
+from: every piece of the wedge, joined by flat hinges inside it, that is
+hinged to a face of the tip, and the whole wedge when none is. Every other
+face the fan leaves in place, inside the stayer's wedge or outside it, is
+ranked in a block of its own, one per piece joined by flat hinges, and keeps
+its order where it overlaps another face that stays. The tip can land
+between two such layers: on a book fold with the rays marked on both
+layers, the upper corner folds in between the upper and the lower layer.
+Two ceilings remain:
 
-- The faces in the stayer's wedge rank as one block, the tip's and the
-  others alike. A tip that has to lie between two layers that both reach
-  into the stayer's wedge has no stacking, which is the case on a book fold
-  when the rays are marked on both layers and only one corner is the tip
-  ([issue #121](https://github.com/tophcodes/beloch/issues/121)).
+- The pieces of the stayer's wedge the tip hangs from rank as one block. A
+  tip hinged to two of them cannot land between them, which the halves of
+  an inside reverse fold made as a fan need
+  ([issue #119](https://github.com/tophcodes/beloch/issues/119)).
 - The emergent ray of a fan with an odd number of given rays is scored
   through every layer on its side, the layers outside the tip included
   ([issue #122](https://github.com/tophcodes/beloch/issues/122)).

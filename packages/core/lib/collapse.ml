@@ -453,19 +453,57 @@ let tip_of (g : Fold_state.t) ~(sec : int array) ~(anchor : bool array) :
   done;
   tip
 
+(* The faces of the stayer's wedge that the tip hangs from: every piece of
+   the wedge, joined by flat hinges inside it, that holds a face hinged to a
+   face of the tip. When no face of the wedge is hinged to the tip, the whole
+   wedge. *)
+let tip_base (g : Fold_state.t) ~(sec : int array) ~(tip : bool array) :
+    bool array =
+  let nf = Array.length sec in
+  let hinges = Fold_state.hinges g in
+  let base = Array.make nf false in
+  Array.iter
+    (fun (h : Fold_state.hinge) ->
+      let a = h.Fold_state.fa and b = h.Fold_state.fb in
+      if tip.(a) && sec.(b) = 0 then base.(b) <- true;
+      if tip.(b) && sec.(a) = 0 then base.(a) <- true)
+    hinges;
+  if not (Array.exists Fun.id base) then Array.map (fun s -> s = 0) sec
+  else begin
+    let grown = ref true in
+    while !grown do
+      grown := false;
+      Array.iter
+        (fun (h : Fold_state.hinge) ->
+          let a = h.Fold_state.fa and b = h.Fold_state.fb in
+          if Num.sign h.Fold_state.angle = 0 && sec.(a) = 0 && sec.(b) = 0
+             && base.(a) <> base.(b)
+          then begin
+            base.(a) <- true;
+            base.(b) <- true;
+            grown := true
+          end)
+        hinges
+    done;
+    base
+  end
+
 (* The units the stacking ranks. Sector k < n holds the tip's faces in that
-   sector, and sector 0 the faces in the stayer's wedge. Every other face is
-   a layer the fan leaves where it lies; those faces form one more unit per
-   piece joined by flat hinges, since a moving sector cannot pass between two
-   faces of one flat piece. Between the stationary units, the order of
-   overlapping faces is kept; units that overlap both ways are merged, into
-   sector 0 when it takes part. Returns the unit of each face, the unit
-   count and the (upper, lower) order between stationary units. *)
+   sector, and sector 0 the faces of the stayer's wedge the tip hangs from
+   ([tip_base]). Every other face is a layer the fan leaves where it lies,
+   inside the stayer's wedge or outside it; those faces form one more unit
+   per piece joined by flat hinges, since a moving sector cannot pass between
+   two faces of one flat piece, and the tip can land between them and sector
+   0. Between the stationary units, the order of overlapping faces is kept;
+   units that overlap both ways are merged, into sector 0 when it takes
+   part. Returns the unit of each face, the unit count and the (upper, lower)
+   order between stationary units. *)
 let stacking_units (g : Fold_state.t) ~(n : int) ~(sec : int array)
     ~(tip : bool array) : int array * int * (int * int) list =
   let nf = Array.length sec in
+  let base = tip_base g ~sec ~tip in
   let unit =
-    Array.init nf (fun i -> if tip.(i) || sec.(i) = 0 then sec.(i) else -1)
+    Array.init nf (fun i -> if tip.(i) || base.(i) then sec.(i) else -1)
   in
   if Array.for_all (fun u -> u >= 0) unit then (unit, n, [])
   else begin
