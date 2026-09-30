@@ -22,6 +22,37 @@ petal fold opens creases too.
 Pleat and crimp stand on no rung of their own. A pleat is two rung-1 folds and
 a crimp two rung-2 reverse folds, so each is at most a `def`.
 
+## The ladder has two axes
+
+The rungs mix two questions, and neither orders the manoeuvres alone. The
+first is how many vertices the step creases at: none, where one line crosses
+the paper; one; or several. The second is what the step does to a crease
+that is folded already. Fisher's `multifold` gives each such crease one of
+three specifiers [fisher1994, §3.3.2], and the kernel's fan operation of #52
+takes them over: the crease stays, turns the other way, or opens.
+
+| folded creases | a line, no vertex | one vertex | several vertices |
+|---|---|---|---|
+| stay; all creases new | `fold` (rung 1) | `flatten`, rabbit ear (rung 3) | a base in one step from the creased flat sheet (rung 5) |
+| one turns | none | `reverse` (rung 2) | sink (rung 5) |
+| one opens | none | squash (rung 4) | petal (rung 5) |
+
+A line turns or opens a folded crease only at a vertex where it meets that
+crease, so the first column has one entry.
+
+`reverse` and `flatten` are not comparable. `reverse` turns a crease and
+adds only the two halves of its axis; `flatten` turns nothing and derives a
+ray the program does not name. The rung numbers are one linear order laid
+over this table.
+
+`fold` stays a write of its own and is no fan with two opposite rays. The
+geometry would allow it, since two opposite rays satisfy Kawasaki's
+condition at any point of the line. The rules for the moving set keep them
+apart: a single crease moves every layer under it, and a fan moves its tip
+(ADR 0036, ADR 0037). The tip depends on the point the fan sits at, and a
+line fixes no such point. A fold under the tip rule would move the layers
+that an arbitrary point on its line selects.
+
 ## Where the named manoeuvres sit, by Fisher's own specifications
 
 Fisher writes squash, petal and sink as `multifold` statements that list every

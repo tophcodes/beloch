@@ -15,6 +15,26 @@ binding) would let library authors lock down implementation details.
 
 Revisit when shared `.bel` libraries / distribution is on the table.
 
+## Verbs with an item signature
+
+A `def` is called with `apply name(args)`, which drops the item syntax of
+the writes: a petal written by a program would read
+`apply petal(… (toward .o))` where a verb of the language reads
+`petal (…) (toward .o)`. A `def` could instead declare its items, typed by
+their head token as a write's items are, and be called like a write.
+
+The grammar would not grow. A write is already `verb item*`, with items in
+parentheses, in any order, classified by their first token; a user verb
+parses the same way, and only the check of which items a verb takes moves
+from the parser into the evaluator. The FOLD log keeps an `apply` entry for
+each call (ADR 0030), so a renderer still sees the repetition.
+
+It needs parameter types beyond point and line first (#143), and a bare
+alignment such as `squash (--h onto --ac)` needs a read that finds the
+vertex the write completes it with (ADR 0038). Revisit when a model needs
+a manoeuvre the specification has no verb for, or when shared libraries
+are on the table.
+
 ## Geometric destructuring
 
 `export { .p1 } from --line`: pulling the defining points back out of a line
