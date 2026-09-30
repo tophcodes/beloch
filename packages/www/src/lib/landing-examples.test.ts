@@ -60,12 +60,17 @@ function stripProvenance(value: unknown): unknown {
 // line instead of a comment block. Comparing evaluated FOLD output (not source
 // text) is what lets the two files differ in comments while still guaranteeing
 // the display copy's statements stay identical in effect to the corpus's.
+// Evaluating the crane twice takes longer than bun's default of 5 s on CI.
 test.each([
   ["landing hero", HERO_SRC, "crane.bel"],
   ["playground start", PLAYGROUND_SRC, "bases/bird-base.bel"],
-])("%s matches its corpus file semantically", (_name, src, corpus) => {
-  const corpusSrc = readFileSync(join(repoRoot, "examples", corpus), "utf-8");
-  expect(stripProvenance(evalBelToFold(src))).toEqual(
-    stripProvenance(evalBelToFold(corpusSrc)),
-  );
-});
+])(
+  "%s matches its corpus file semantically",
+  (_name, src, corpus) => {
+    const corpusSrc = readFileSync(join(repoRoot, "examples", corpus), "utf-8");
+    expect(stripProvenance(evalBelToFold(src))).toEqual(
+      stripProvenance(evalBelToFold(corpusSrc)),
+    );
+  },
+  30_000,
+);
