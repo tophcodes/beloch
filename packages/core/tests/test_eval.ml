@@ -1246,6 +1246,53 @@ let test_eval_moving_flap_straddle_dissolves () =
 (* kite: left edge onto the a–c diagonal, no `toward`, no `moving` — the paper
    filter drops the −22.5° candidate (it only touches corner .a); .d lands at
    (√2⁄2, √2⁄2) via the 67.5° crease *)
+(* A square folded in half twice in the same direction, then its lower half
+   reversed along the horizontal middle (ADR 0043). The tip opens in two
+   places: between its two inner layers, where both hinges on the spine's
+   line turn, and below its outermost layer, where the outer one turns
+   alone. A letter on the inner hinge of --e, through .q, picks one. The
+   pieces carry the side view's numbers of the unfolded square: 1, 4, 3, 2
+   across the upper half from left to right, 5 to 8 across the lower half.
+   Read along the top edge, top first. *)
+let square_reverse item =
+  Printf.sprintf
+    "paper square\n\
+     fold (map .b onto .a) as --d\n\
+     fold (map --d onto --da) as --e\n\
+     .q = free on --cd from .c at 1/4\n\
+     reverse (map .a onto .d)%s as --r\n"
+    item
+
+let square_top_edge item =
+  let st =
+    (Eval.eval_folded (Beloch.parse ~filename:"t.bel" (square_reverse item))).Eval.state
+  in
+  let piece (p : Geom.point) =
+    let upper = Num.compare p.Geom.y (Num.of_q (Q.of_ints 1 2)) > 0 in
+    let quarter =
+      List.length
+        (List.filter
+           (fun k -> Num.compare p.Geom.x (Num.of_q (Q.of_ints k 4)) > 0)
+           [ 1; 2; 3 ])
+    in
+    if upper then List.nth [ 1; 4; 3; 2 ] quarter else 5 + quarter
+  in
+  let top_edge = { Geom.x = Num.of_q (Q.of_ints 1 8); y = Num.of_q (Q.of_ints 99 100) } in
+  List.rev_map piece (layers_at st top_edge)
+
+let test_reverse_opens_between_inner_layers () =
+  Alcotest.(check (list int)) "both hinges turn" [ 4; 3; 7; 6; 5; 8; 2; 1 ]
+    (square_top_edge " (--e & .q valley)")
+
+let test_reverse_opens_below_outer_layer () =
+  Alcotest.(check (list int)) "the outer hinge turns alone" [ 4; 3; 2; 8; 7; 6; 5; 1 ]
+    (square_top_edge " (--e & .q mountain)")
+
+let test_reverse_two_openings_ambiguous () =
+  expect_error_hint "the tip opens at 2 places"
+    "add one letter, which keeps one opening: (--e & .q mountain) or (--e & .q valley)"
+    (fun () -> Eval.eval_folded (Beloch.parse ~filename:"t.bel" (square_reverse "")))
+
 let test_ax5_kite_filter () =
   let fd = eval_src "mark (through .a .c) as --ac\nfold (map --da onto --ac)\n" in
   let p = Fold_state.table_position fd.Eval.state (pt 0 1) in
@@ -2091,6 +2138,12 @@ let () =
             test_flatten_tip_lower_corner_on;
           Alcotest.test_case "@flatten puts the tip between two layers" `Quick
             test_flatten_tip_between_layers;
+          Alcotest.test_case "@reverse opens between the inner layers" `Quick
+            test_reverse_opens_between_inner_layers;
+          Alcotest.test_case "@reverse opens below the outer layer" `Quick
+            test_reverse_opens_below_outer_layer;
+          Alcotest.test_case "@reverse with two openings is ambiguous" `Quick
+            test_reverse_two_openings_ambiguous;
           Alcotest.test_case "ax5 kite paper-incidence filter" `Quick
             test_ax5_kite_filter;
           Alcotest.test_case "ax5 kite toward + moving agree" `Quick

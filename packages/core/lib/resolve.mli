@@ -57,6 +57,9 @@ val paper_line_of_crease :
     the crease's marks, plus those marks' paper chords ([None] for a
     constructed line / boundary reference with no marks). *)
 
+val point_str : Geom.point -> string
+(** A point as the evaluator prints it: "(x, y)", exact where rational. *)
+
 val bundle_segments :
   Ctx.ctx -> Ast.line_operand -> int option * Fold_state.crease_segment list
 (** Every material segment a line operand names, plus the single crease id
@@ -145,7 +148,7 @@ val placement_failure_message :
 val tip_faces :
   Ctx.ctx -> Geom.line -> anchor:Ast.flap_arg option -> ?side:int -> Error.span
   -> int * bool array
-(** `reverse`'s tip (spec §4.6a): the moving side ([side] where the side
+(** `reverse`'s tip (`spec/KERNEL.md`, "Reverse"): the moving side ([side] where the side
     items fixed it, else from the anchor), and the mask of PARENT faces
     forming the connected material beyond the axis that carries the anchor:
     the anchor's faces with a move-side piece (every face with one when

@@ -9,9 +9,9 @@ type removal =
   | By_heading  (** a direction farther from the `heading` line than another *)
   | By_moved
       (** its fold cannot move everything the construction moves at once *)
-  | By_halves  (** the hinge does not cut the tip into two halves *)
-  | By_bodies  (** a half of the tip has no body *)
-  | By_interleaved  (** the bodies of the two halves are not separated *)
+  | By_letter  (** a letter item gives a hinge of the spine's line another letter *)
+  | By_bodies  (** a block of the tip has no body *)
+  | By_interleaved  (** the bodies of the two blocks are not separated *)
   | By_crossing  (** the reflection violates a non-crossing condition *)
   | By_opposite
       (** an emergent ray on a given ray's line, while one on a new line
@@ -185,9 +185,11 @@ val reverse_write :
   move_side:int ->
   tip:bool array ->
   inside:bool ->
+  keeps:(Fold_state.spine_attempt -> bool) ->
   Fold_state.spine_attempt list ->
   terms * state_candidate list
-(** The terms of a reverse fold and one candidate per spine it tried. *)
+(** The terms of a reverse fold and one candidate per opening it found;
+    [keeps] tells the openings its letter items keep. *)
 
 val fan :
   pre:Fold_state.t ->

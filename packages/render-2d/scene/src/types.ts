@@ -202,7 +202,7 @@ export interface TraceEntry {
 export type Region = Vec2[][];
 export type Segment = [Vec2, Vec2];
 export type WriteRemoval =
-  | "halves" | "bodies" | "interleaved" | "crossing"          // reverse
+  | "letter" | "bodies" | "interleaved" | "crossing"          // reverse
   | "opposite" | "toward" | "mountains" | "top";              // flatten
 export type WriteTerms =
   | {

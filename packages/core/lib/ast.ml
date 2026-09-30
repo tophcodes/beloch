@@ -128,13 +128,16 @@ type fold_spec = {
   spans : side_spans;
 }
 
-(* reverse <markable> [moving <flap>] [outside]: the tip beyond the line is
-   cut in two at its spine, both halves reflected, each placed next to its
-   own hinge layer (inside) or on the far outside (outside). *)
+(* reverse <markable> [moving <flap>] [outside] [(<crease> <letter>)…]: the
+   tip beyond the line opens between two of its layers (ADR 0043), its two
+   blocks reflected, each placed next to its own hinge layer (inside) or on
+   the far outside (outside). A letter on a hinge of the spine's line keeps
+   the openings that give the hinge that letter. *)
 type reverse_spec = {
   rmoving : flap_arg option;
   rtoward : toward_item option;
   outside : bool;
+  rletters : (line_operand * bool * Error.span) list;  (* true: valley *)
   rspans : side_spans;
 }
 
