@@ -10,6 +10,7 @@ Antipattern
 Antipatterns
 Antisymmetry
 Arity
+Basser
 Basu
 Beloch
 Benchmarked
@@ -55,6 +56,7 @@ Dogfood
 Dogfooding
 Dogfoods
 Evaluator
+Fastag
 Favicon
 Foldability
 Forgejo
@@ -103,6 +105,7 @@ Ortac
 Pagella
 Palatino
 Paperfolding
+Piazzola
 Planarize
 Planarized
 Planarizes
@@ -274,7 +277,9 @@ preprint
 preprocessor
 qqbar
 queryable
+quotiented
 reachability
+realizability
 rebindable
 recurse
 recurses
@@ -308,8 +313,11 @@ tooltips
 typst
 unconstructible
 uncreased
+unflipped
 univariate
 unrepresentable
+unscored
+unstretched
 viewport
 wasm
 waterbomb
@@ -317,4 +325,5 @@ webfont
 webview
 wordmark
 worktree
+write's
 zarith

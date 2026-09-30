@@ -77,7 +77,7 @@ it as a new one; force-pushing that branch afterwards is fine.
 
 ## Web pages
 
-Dev server: in `packages/www`, `bunx astro dev --host 127.0.0.1 --port <n>`. In
+Development server: in `packages/www`, `bunx astro dev --host 127.0.0.1 --port <n>`. In
 a fresh jj workspace, run `bun scripts/render-figures.ts` from the repository
 root first, or the figures are missing.
 

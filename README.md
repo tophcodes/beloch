@@ -66,7 +66,7 @@ Language ([1975](#references)) is executed by a human folder. Fisher
 ([1994](#references)) gave a textual folding language with its own syntax and
 a program that executes it and tracks face layering. Ida's Eos
 ([Ida et al. 2009](#references);
-[Ida 2020](https://doi.org/10.1007/978-3-319-59189-6)) is the most complete
+[Ida 2020](https://doi.org/10.1007/978-3-319-59189-6)) is the most comprehensive
 system. Its language Orikoto is a subset of the Wolfram Language inside
 Mathematica; it folds by the Huzita-Justin rules, maintains the superposition
 relation between faces, and proves constructions correct with Gröbner bases,

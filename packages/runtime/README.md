@@ -68,8 +68,8 @@ as a crease is something only the drawing knows.
 
 A command carries no scene, no theme and no geometry. The scene is in the
 state the renderer already reads, colours are the renderer's, and the motion
-of a flap between two frames comes from the scene's `facesMatrix`. So a
-command is a small comparable value, which is what a headless test asserts
+of a flap between two frames comes from the scene's `facesMatrix`. A
+command is therefore a small comparable value, which is what a headless test asserts
 against and what a renderer diffs to decide how to animate.
 
 ## Events
