@@ -440,6 +440,72 @@ let test_flatten_tip_lower_corner_on () =
   Alcotest.(check bool) "the lower corner moves onto --hz" true
     (Num.equal d.Geom.y (eighth 7) && Num.compare d.Geom.x (eighth 1) > 0)
 
+(* The paper points stacked over table point [p], bottom to top. *)
+let layers_at (st : Fold_state.t) (p : Geom.point) : Geom.point list =
+  let rank = Fold_state.rank st in
+  Fold_state.paper_preimages st p
+  |> List.map (fun q -> (rank.(face_at st q), q))
+  |> List.sort (fun (a, _) (b, _) -> compare a b)
+  |> List.map snd
+
+(* The issue's book corner with the rays marked on both layers: the upper
+   corner is the tip and folds in between the two layers, which both reach
+   into the stayer's wedge. The stack is the same as with the rays on the
+   upper layer alone, at every sampled table point. The sample coordinates
+   (odd/58, odd/62) avoid every crease of the program. *)
+let test_flatten_tip_between_layers () =
+  let program ~both =
+    Printf.sprintf
+      "paper square\n\
+       fold (map --ab onto --cd) (moving .a) as --m\n\
+       .e = --m * --da\n\
+       .f = --m * --bc\n\
+       mark (map --da onto --cd) (toward .f) (on #[.a]) as --dg\n\
+       .o = free on --dg from .a at 1/4\n\
+       mark (perp --dg through .o) (on #[.a]) as --pp\n\
+       mark (perp --da through .o) (on #[.a]) as --hz\n\
+       mark (map --hz onto --dg) (toward .a) (on #[.a]) as --r2\n\
+       mark (map --hz onto --pp) (toward .e) (on #[.a]) as --r4\n\
+       %s.z = free on --ab from .b at 1/4\n\
+       flatten (--pp & --ab valley) (--r4 & --ab) (--dg & .a mountain) (--r2 \
+       & --da) (staying .z)\n"
+      (if both then
+         "mark (--dg) (on #[.d]) into --dg\n\
+          mark (--pp) (on #[.d]) into --pp\n\
+          mark (--r2) (on #[.d]) into --r2\n\
+          mark (--r4) (on #[.d]) into --r4\n"
+       else "")
+  in
+  let state both =
+    (Eval.eval_folded (Beloch.parse ~filename:"t.bel" (program ~both))).Eval.state
+  in
+  let upper = state false and both = state true in
+  let near_a = { Geom.x = Num.of_q (Q.of_ints 1 100); y = Num.of_q (Q.of_ints 1 100) } in
+  let over_a = Fold_state.table_position both near_a in
+  (match layers_at both over_a with
+   | [ _; mid; _ ] ->
+       Alcotest.(check bool) "the upper corner lies between the layers" true
+         (Geom.point_equal mid near_a)
+   | l ->
+       Alcotest.failf "three layers expected over the upper corner, got %d"
+         (List.length l));
+  for i = 0 to 28 do
+    for j = 0 to 30 do
+      if 2 * i + 1 <> 29 && 2 * j + 1 <> 31 then begin
+        let p =
+          { Geom.x = Num.of_q (Q.of_ints ((2 * i) + 1) 58);
+            y = Num.of_q (Q.of_ints ((2 * j) + 1) 62) }
+        in
+        let a = layers_at upper p and b = layers_at both p in
+        Alcotest.(check bool)
+          (Printf.sprintf "same stack at (%d/58, %d/62)" ((2 * i) + 1)
+             ((2 * j) + 1))
+          true
+          (List.length a = List.length b && List.for_all2 Geom.point_equal a b)
+      end
+    done
+  done
+
 (* ---- Fold_state ---- *)
 
 let test_fold_state_init () =
@@ -2023,6 +2089,8 @@ let () =
             test_flatten_tip_upper_corner;
           Alcotest.test_case "@flatten on names the lower corner" `Quick
             test_flatten_tip_lower_corner_on;
+          Alcotest.test_case "@flatten puts the tip between two layers" `Quick
+            test_flatten_tip_between_layers;
           Alcotest.test_case "ax5 kite paper-incidence filter" `Quick
             test_ax5_kite_filter;
           Alcotest.test_case "ax5 kite toward + moving agree" `Quick

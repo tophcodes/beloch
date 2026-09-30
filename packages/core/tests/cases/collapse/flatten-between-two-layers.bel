@@ -1,0 +1,29 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; The vertex of flatten-through-two-layers.bel with its rays marked on both
+; layers of the book, and the letters that fold the upper corner inward. The
+; upper corner is the tip (ADR 0037) and lands between the upper and the
+; lower layer, both of which reach into the stayer's wedge; the lower corner
+; stays flat at the bottom of the stack and carries its rays as unfolded
+; marks.
+
+paper square
+fold (map --ab onto --cd) (moving .a) as --m
+.e = --m * --da
+.f = --m * --bc
+mark (map --da onto --cd) (toward .f) (on #[.a]) as --dg
+.o = free on --dg from .a at 1/4
+mark (perp --dg through .o) (on #[.a]) as --pp
+mark (perp --da through .o) (on #[.a]) as --hz
+mark (map --hz onto --dg) (toward .a) (on #[.a]) as --r2
+mark (map --hz onto --pp) (toward .e) (on #[.a]) as --r4
+mark (--dg) (on #[.d]) into --dg
+mark (--pp) (on #[.d]) into --pp
+mark (--r2) (on #[.d]) into --r2
+mark (--r4) (on #[.d]) into --r4
+.z = free on --ab from .b at 1/4
+flatten (--pp & --ab valley) (--r4 & --ab) (--dg & .a mountain) (--r2 & --da) (staying .z)
+
+; assert .d = (0, 1)
+; assert .b = (1, 1)
+; assert faces = 16
