@@ -84,6 +84,19 @@ test("CLI: --view side --along draws the layers along a named line", async () =>
   expect(out).toContain('data-kind="layer"');
 });
 
+test("CLI: --far-side sees the section from the other side of the line", async () => {
+  const fix = new URL("./fixtures/side-reverse.fold", import.meta.url).pathname;
+  const run = async (...flags: string[]) => {
+    const p = Bun.spawn(["bun", CLI, fix, "--view", "side", "--along", "--k", ...flags]);
+    const out = await new Response(p.stdout).text();
+    expect(await p.exited).toBe(0);
+    return out;
+  };
+  const [near, far] = [await run(), await run("--far-side")];
+  expect(near).toContain('data-kind="view"');
+  expect(far).not.toEqual(near);
+});
+
 test("CLI: --view side without --along exits 1 with a plain error", async () => {
   const p = Bun.spawn(["bun", CLI, FIX, "--view", "side"], { stderr: "pipe" });
   const err = await new Response(p.stderr).text();

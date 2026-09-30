@@ -63,7 +63,9 @@ Without `OUT` the drawing goes to standard output; otherwise the extension of
 |---|---|
 | `--view cp` | The crease pattern, the flat sheet with every crease. The default. |
 | `--view folded` | The folded state, seen from above. |
-| `--view side --along --l` | The section of the folded state along the line `--l`: the stack pulled apart, the top layer first, each layer a numbered strip and each folded hinge a turn, beside the crease pattern with the same numbered pieces. The line is read on the table of the state drawn: a line bound with `=` after the last fold. |
+| `--view side --along --l` | The section of the folded state along the line `--l`: the stack pulled apart, the top layer first, each layer a strip and each folded hinge a turn, beside the crease pattern with the same pieces and hinges named. The line is read on the table of the state drawn: a line bound with `=` after the last fold. [The side view](#the-side-view) states how it is seen and named. |
+| `--step N` | With `--view folded` or `--view side`, draws the state after the `N`th write, `0` being the flat sheet; by default the last state. |
+| `--far-side` | With `--view side`, sees the section from the other side of the line: the section is mirrored and the arrows on the cut turn round. |
 | `--view stages` | How the selection of one construction went, one row per stage; [The stages view](/cli/stages/) states its rules. A `.bel` input is evaluated with its trace, and a program that fails is drawn up to its failure. |
 | `--statement N` | The statement the stages view draws, as an index into `beloch:statements`; by default the one that failed, else the last that chose from candidates. |
 | `--stage N` | With `--view stages`, draws stage `N` alone, with the program and the legend. |
@@ -78,6 +80,34 @@ Without `OUT` the drawing goes to standard output; otherwise the extension of
 | `--open` | Writes to a temporary file and opens it. |
 
 `beloch render --help` prints the same list.
+
+### The side view
+
+The folded state beside the section carries the cut, with an arrow at each
+end that points the way the section is seen. The eye stands on the table
+beside the line, looks across it, and sees the stack with the top layer up;
+the section runs from the eye's left to its right.
+
+By default the section is seen from outside the paper. The outline of the
+state reaches out to some distance on each side of the line, measured along
+the line's normal; the eye stands on the side where that distance is
+smaller. A line along an edge of the outline is seen from outside that edge,
+where the distance is zero. Where both sides reach equally far, the eye
+stands on the side from which the section runs left to right on the table,
+or bottom to top on a vertical line. `--far-side` puts the eye on the other
+side.
+
+Every piece of paper the line crosses is named after the face of the crease
+pattern it lies in, the pattern with every crease the program makes, by that
+face's position in the pattern, counted from 1. A hinge is named by the two
+pieces it joins, the smaller name first (`3|4`), in the section beside its
+turn and in the crease pattern where it crosses the line. Every state of one
+program reads the same crease pattern, so a piece has one name in every
+drawing it appears in, and the sections before and after a write can be
+compared piece by piece. A piece that a later crease splits is drawn as the
+parts it will split into, each with its own name, divided by a short tick.
+The crease pattern beside it draws the creases of the state drawn and none
+that a later write scores.
 
 ## Other commands
 
