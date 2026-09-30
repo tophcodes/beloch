@@ -5,7 +5,7 @@ date: 2026-09-23
 status: accepted
 ---
 
-# 0025 — Construction, candidate, selection and material stand on their own
+# 0025: Construction, candidate, selection and material stand on their own
 
 ## Context
 
@@ -46,7 +46,7 @@ one crossing from table space to paper space, carrying one piece per flap.
 
 **The composition keeps a name, and the name is `construction`.** ADR 0022
 already puts the word on the read rather than on the set of alignments alone,
-and the grammar wants the same word. So the read of sort bundle stays, and
+and the grammar wants the same word. The read of sort bundle therefore stays, and
 alignment, candidate and selection are lifted out of its body into definitions
 of their own.
 

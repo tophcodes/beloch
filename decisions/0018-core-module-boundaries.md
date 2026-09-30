@@ -10,7 +10,7 @@ checks:
     run: '[ "$(wc -l < packages/core/lib/eval.ml)" -lt 900 ]'
 ---
 
-# 0018 — Core module boundaries: Ctx, Resolve, Axiom, Flatten_solve, Eval
+# 0018: Core module boundaries: `Ctx`, `Resolve`, `Axiom`, `Flatten_solve`, `Eval`
 
 ## Context
 
@@ -19,14 +19,14 @@ function of 2416 lines: the evaluation context lived in its closure, and every
 statement kind, every name lookup, every axiom construction and the whole
 flatten solver were nested `let`s inside it.
 
-The cost was not aesthetic. Every slice — new axiom, new selector, fold-scope
-change — landed in that one function, so each one had to carry the entire file
+The cost was not aesthetic. Every slice (new axiom, new selector, fold-scope
+change) landed in that one function, so each one had to carry the entire file
 as context to change forty lines of it, and no interface existed to say which
 of the surrounding forty helpers a change was allowed to touch. Nesting also
 suppressed the compiler's usual warnings: a value reachable from a closure is
 never unused.
 
-The phases were already there in reading order — build a context, resolve
+The phases were already there in reading order: build a context, resolve
 names against it, construct an axis, solve a flattening, apply the result.
 They just had no names.
 
@@ -67,11 +67,11 @@ already outgrown what a single change could hold in context.
 
 **A functor over the context.** Parameterise the phases over a context
 signature instead of passing `ctx` explicitly. Rejected as a heavier
-abstraction than the problem needs — there is exactly one context type and no
+abstraction than the problem needs: there is exactly one context type and no
 prospect of a second, so the functor would buy nothing but indirection at
 every call site.
 
-**Split by statement kind instead of by phase** — a module per `mark`, `fold`,
+**Split by statement kind instead of by phase**: a module per `mark`, `fold`,
 `def`, `apply`. Rejected because the statement kinds share the phases rather
 than the other way round: `mark` and `fold` both resolve names, both construct
 an axis, and a split by kind would duplicate all four phases five times over

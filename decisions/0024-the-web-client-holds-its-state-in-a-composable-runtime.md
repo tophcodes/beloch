@@ -10,7 +10,7 @@ checks:
     run: '! rg -q "from \"@beloch/runtime-" packages/runtime/core/src'
 ---
 
-# 0024 — The web client holds its state in a composable runtime
+# 0024: The web client holds its state in a composable runtime
 
 ## Context
 

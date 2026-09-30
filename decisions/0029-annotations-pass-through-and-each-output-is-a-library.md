@@ -71,8 +71,8 @@ A step group groups and scopes nothing. Names bound inside it stay visible
 after it, and a `def` body is still the only scope.
 
 **The FOLD is the only data layer.** FOLD stays the output format, with
-Beloch's fields under the `beloch:` prefix. There are no page files beside the
-program and no second file format. The frames, `beloch:statements` and the
+Beloch's fields under the `beloch:` prefix. No page files sit beside the
+program, and no second file format exists. The frames, `beloch:statements` and the
 annotations together are everything an output reads. The annotations live in
 one top-level field, one entry per annotation, each naming its target as a
 range of indices into `beloch:statements`. A range fits the step group, which
@@ -139,7 +139,7 @@ favour of the libraries; its editor boundary, LSP, stands in ADR 0007 as
   only place that can catch it, and each library should report the keys it
   does not know.
 - An output that the default function does not serve costs its author code.
-  There is no layout that can be adjusted without programming.
+  No layout can be adjusted without programming.
 - The libraries evaluate nothing. They take an evaluated FOLD, so they run in
   the browser and in the CLI alike, and `beloch render`
   reads a FOLD file as ADR 0007 describes.

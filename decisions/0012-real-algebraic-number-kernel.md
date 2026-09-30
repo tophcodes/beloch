@@ -4,15 +4,15 @@ title: "Real-algebraic number kernel"
 status: accepted
 ---
 
-# 0012 — Real-algebraic number kernel
+# 0012: Real-algebraic number kernel
 
 **Status:** Accepted (supersedes [0010](archive/0010-constructible-real-numbers.md); `Alg` representation superseded by [0013](0013-flint-qqbar-backend.md))
 
 ## Context
 
 [ADR 0010](archive/0010-constructible-real-numbers.md) gave `Num` a quadratic-extension
-tower (`Rat | Ext(a,b,d)` = a+b√d) — the constructible reals, enough for axioms
-1–6 (square roots only) — and explicitly deferred the degree-3 kernel until
+tower (`Rat | Ext(a,b,d)` = a+b√d), the constructible reals, enough for axioms
+1–6 (square roots only), and explicitly deferred the degree-3 kernel until
 axioms 6/7 forced it.
 
 Axiom 7 (Justin ⑦, the Beloch fold) forces it. Its crease is a common tangent to
@@ -43,13 +43,13 @@ open interval `(lo, hi)`; the root is irrational (rationals collapse to `Rat`).
   `[bpr2006 Ch. 2, 9, 10]`.
 - **Rational fast-path** (`Rat`) keeps axioms 1–4 in ℚ with no resultant cost.
 - New constructor `real_roots` returns the real roots (ascending) of a
-  polynomial with `Num` coefficients — what axiom 7 calls.
+  polynomial with `Num` coefficients. Axiom 7 calls it.
 
 The elegant `Ext` tower is **retired**: one representation for all irrationals.
 
 ## Alternatives considered
 
-- **`Cbrt` generator.** Rejected: casus irreducibilis — real radicals cannot
+- **`Cbrt` generator.** Rejected: casus irreducibilis; real radicals cannot
   express the 3-real-root case, which is exactly trisection / heptagon.
 - **Keep `Ext` as a quadratic fast-path under the algebraic layer.** Rejected
   now (YAGNI): reintroduces the dual-irrational-path complexity we are
@@ -60,7 +60,7 @@ The elegant `Ext` tower is **retired**: one representation for all irrationals.
 ## Consequences
 
 - √-heavy axioms 5/6 lose the closed-form `a+b√d` speed (resultants are
-  heavier); deep nesting grows defining-polynomial degree. Accepted —
+  heavier); deep nesting grows defining-polynomial degree. Accepted:
   correctness over speed, the same bargain as ADR 0010, now paid in full. The
   `Rat` fast-path keeps the common case free.
 - The public `Num` interface is unchanged (plus `real_roots`), so the geometry

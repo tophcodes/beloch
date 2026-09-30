@@ -51,7 +51,7 @@ hints in the same change that introduces them, and the error table in
 - **Split the string in the reader**, at the first semicolon or at `(hint:`.
   Each message would have to keep the punctuation the splitter expects, and
   nothing checks that it does.
-- **A list of notes and helps per error**, as rustc has. No message so far
+- **A list of notes and helps per error**, as `rustc` has. No message so far
   needs more than one suggestion, and one optional hint is a strict subset
   that can grow into a list later.
 - **Move suggestions as their messages are next touched.** The two styles

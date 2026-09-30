@@ -4,7 +4,7 @@ title: "Beloch is an evaluator, not a compiler; CLI shape"
 status: accepted
 ---
 
-# 0007 — Beloch is an evaluator, not a compiler; CLI shape
+# 0007: Beloch is an evaluator, not a compiler; CLI shape
 
 ## Context
 
@@ -25,17 +25,17 @@ consumers of a well-specified artifact.
 
 - Call it an **evaluator** in prose, design docs, and the paper. "Compiler" is
   fine colloquially, but strict use confuses PL-literate readers.
-- Internally, three phases: (1) front-end — lex, parse, name-resolve,
-  type-check → typed AST (standard, boring); (2) **geometric evaluation** — walk
+- Internally, three phases: (1) front-end: lex, parse, name-resolve,
+  type-check → typed AST (standard, boring); (2) **geometric evaluation**: walk
   the AST applying folds to a geometric state, resolve multi-solution axioms,
-  track layer ordering (the novel phase, what a paper is about); (3) emitter —
+  track layer ordering (the novel phase, what a paper is about); (3) emitter:
   serialize to FOLD-extended (mechanical).
 - **CLI:** a single `beloch` binary with git/nix-style subcommands:
-  - `beloch fold file.bel` — evaluate, emit FOLD-extended (primary op; reads as
+  - `beloch fold file.bel`: evaluate, emit FOLD-extended (primary op; reads as
     English; "fold" = the domain word = the FP reduce the evaluator performs)
-  - `beloch check file.bel` — front-end only, no geometric eval (editor/CI)
-  - `beloch lsp` — run as an LSP server
-  - `beloch render file.fold --as=yr` — render to a visual output (probably a
+  - `beloch check file.bel`: front-end only, no geometric evaluation (editor/CI)
+  - `beloch lsp`: run as an LSP server
+  - `beloch render file.fold --as=yr`: render to a visual output (probably a
     separate binary/tool eventually; subcommand is fine to start)
 
 ## Alternatives considered
@@ -47,6 +47,6 @@ consumers of a well-specified artifact.
 
 - Keeps the language declarative (see scope discipline in
   [0003](0003-restart-from-minimal-core.md)); resist Turing-completeness
-  temptation in the core — put generation in a host language emitting `.bel`.
+  temptation in the core; put generation in a host language emitting `.bel`.
 - The "fold" subcommand triple-puns (paper fold / FP reduce / English verb),
   which is the kind of vocabulary coherence worth keeping.

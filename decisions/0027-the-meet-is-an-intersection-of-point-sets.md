@@ -66,7 +66,7 @@ nothing of the folded state; only name resolution, the `&` filter, does.
 Every meet the single-line rule accepted keeps its point. Two operands that
 each lie on one line, whose lines cross at a point on both marks, have exactly
 that point in common. Narrowing with `&` stays valid for the same reason and
-becomes optional wherever the unnarrowed operands already share one point.
+becomes optional wherever the operands already share one point without narrowing.
 
 ## Alternatives considered
 

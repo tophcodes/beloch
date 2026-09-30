@@ -5,13 +5,13 @@ date: 2026-06-29
 status: accepted
 ---
 
-# 0011 — Beloch is an action model (folding), not only crease-pattern construction
+# 0011: Beloch is an action model (folding), not only crease-pattern construction
 
 ## Context
 Beloch v0.0–v0.4 was a crease-pattern *construction* language: Huzita-Justin axioms
 on the flat sheet, evaluated order-independently into a flat crease pattern. The
 planned mountain/valley *annotation* slice exposed two facts: (1) there is no mountain
-fold on a flat desk — M/V is relative to a side, not intrinsic to the act of folding;
+fold on a flat desk: M/V is relative to a side, not intrinsic to the act of folding;
 (2) the original intent was to describe the *actions* performed on real paper, including
 folding through all layers of an already-folded stack.
 

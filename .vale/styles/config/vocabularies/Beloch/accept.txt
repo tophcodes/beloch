@@ -2,6 +2,7 @@ ADR
 ADR's
 ADRs
 Acyclicity
+Affero
 Affordance
 Akitaya
 Alperin
@@ -32,6 +33,7 @@ Composable
 Compositum
 Crossfade
 Crossfades
+Ctx
 Cubic
 Cubics
 Cutover
@@ -55,9 +57,11 @@ Docstring
 Dogfood
 Dogfooding
 Dogfoods
+Eval
 Evaluator
 Fastag
 Favicon
+Flatten_solve
 Foldability
 Forgejo
 Frameless
@@ -77,6 +81,7 @@ Jackowski
 Johansson
 Junctor
 Kasem
+Kleinlaut
 Labelings
 Layerings
 Lexing
@@ -97,6 +102,7 @@ Neusis
 Nonterminal
 Nowacki
 OCaml
+Ori
 Orientable
 Origametry
 Orikoto
@@ -106,6 +112,7 @@ Pagella
 Palatino
 Paperfolding
 Piazzola
+Piazzolla
 Planarize
 Planarized
 Planarizes
@@ -191,6 +198,7 @@ composable
 compositum
 config
 coords
+copyleft
 crossfade
 crossfades
 cubic
@@ -225,11 +233,14 @@ foldformat
 frameless
 frontmatter
 gitignored
+granularities
 greppable
+hoc
 idempotency
 iff
 incenter
 inextensibility
+inlined
 inlining
 irreducibilis
 jj
@@ -246,6 +257,7 @@ monospace
 msolve
 multifold
 multifolds
+multiplicatively
 multiset
 multisets
 namespace
@@ -258,6 +270,7 @@ nonterminal
 npm
 odoc
 orientable
+overclaim
 paperfolding
 params
 parens
@@ -283,11 +296,15 @@ realizability
 rebindable
 recurse
 recurses
+reimplement
+relitigate
 renderer
 renderers
+reparsing
 repo
 ruleset
 sedlex
+sigils
 sourcemap
 squarefree
 squarefreeness
@@ -305,15 +322,20 @@ subprocess
 subresultant
 substring
 superset
+swappable
 tokenizer
 toolchain
 toolchains
 tooltip
 tooltips
 typst
+unbuilt
 unconstructible
 uncreased
+underdetermined
+unextractable
 unflipped
+unioning
 univariate
 unrepresentable
 unscored

@@ -5,7 +5,7 @@ date: 2026-09-23
 status: accepted
 ---
 
-# 0026 — A program has two axes, and the FOLD carries both
+# 0026: A program has two axes, and the FOLD carries both
 
 ## Context
 
@@ -71,7 +71,7 @@ gives the runtime core a document slot rather than an evaluator.
 
 - **Reading the structure from the client's syntax tree.** The web client
   already loads the tree-sitter grammar to colour the editor, so the statement
-  boundaries are there for free, and they are there while the program is being
+  boundaries are there at no cost, and they are there while the program is being
   typed and even when it does not run. It was rejected because it makes the
   structure a property of one code editor. A consumer with no parser, which is
   every other renderer, would be left without it.

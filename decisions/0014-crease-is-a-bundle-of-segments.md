@@ -5,13 +5,13 @@ date: 2026-07-03
 status: accepted
 ---
 
-# 0014 — A crease is a bundle of segments
+# 0014: A crease is a bundle of segments
 
 ## Context
 After #28 a named crease was `Material(crease_id, line)` and was treated as a
 single line at every use-site. But creating a crease runs `subdivide`, which cuts
 **every face the axis crosses** and tags each resulting edge with one shared
-`crease_id`. So a crease was *already* — materially — a **set** of edges; the
+`crease_id`. A crease was therefore *already*, materially, a **set** of edges; the
 language merely collapsed it to its supporting line.
 
 This became unavoidable when designing how to reference *one* segment of a crease
@@ -20,7 +20,7 @@ and clashed grammatically with `--( … )` line-construction. The deeper facts a
 single "line" hides:
 
 - a crease drawn across a stack of N layers is **N segments**, one per layer;
-- those segments are collinear **only** in the folded configuration at creation —
+- those segments are collinear **only** in the folded configuration at creation:
   folds are reflections, so on unfold each maps to a differently placed and
   oriented preimage, scattering across the crease pattern;
 - each segment is the axis clipped to its face polygon, so they generally have
@@ -62,11 +62,11 @@ bundle model itself. Full design:
 - **A dedicated sigil for segments** (distinct from `--` creases). Rejected: a
   segment is not a different *kind* of entity, only a projection of a bundle, and
   a set-of-segments never becomes a value you pass around (see the deferral).
-  Surface spelling — sigil vs. keyword operator — is a specification/slice detail,
+  Surface spelling (sigil vs. keyword operator) is a specification/slice detail,
   out of scope for this ADR (per the ADR scope rule).
 - **Make the segment-set first-class now.** Rejected as premature: it is the one
   case that would justify an array datatype, and it is rare. Deferred until a real
-  need forces it, keeping the type surface at line + segment.
+  need forces it; this keeps the type surface at line + segment.
 
 ## Consequences
 - Supersedes #28's `--( --d #(...) )` / `#(...)` restrict escape hatch, folded
@@ -78,7 +78,7 @@ bundle model itself. Full design:
   stacked copies.
 - ">1 ambiguous" becomes a routine outcome, so bundle **inspection** (enumerate a
   crease's segments, in folded and CP coordinates) becomes a needed
-  evaluator/tooling affordance — not a language construct.
+  evaluator/tooling affordance, not a language construct.
 - Implementation is mostly additive: `fold_state` edges already carry `crease_id`
   + endpoints, so `at` is a query over the existing subdivision; `pinch` is a
   narrowed `subdivide` plus a display flag on the edge.

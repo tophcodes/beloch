@@ -5,7 +5,7 @@ date: 2026-07-05
 status: accepted
 ---
 
-# 0016 — Typed operands: bundle values, singleton slots
+# 0016: Typed operands: bundle values, singleton slots
 
 ## Context
 Designing the fold-scope refinement (`moving`, `up to`, `@fold`) surfaced a
@@ -14,7 +14,7 @@ resolves ambiguity?
 
 The evidence was scattered but consistent:
 
-- `moving .b` was always flap-valued with a point as sugar — "move the flap
+- `moving .b` was always flap-valued with a point as sugar: "move the flap
   carrying `.b`", never "move `.b`". The evaluator even discards the material
   identity today (`eval.ml` projects to table space and keeps only the side).
 - ADR 0014 already established the pattern for creases: a name denotes a
@@ -30,12 +30,12 @@ The evidence was scattered but consistent:
 ## Decision
 One operand model for the whole language:
 
-1. **Every operand slot is typed** — point, line (segment-bundle), flap
+1. **Every operand slot is typed**: point, line (segment-bundle), flap
    (flap-bundle), segment. Every axiom/statement is a function with typed
    slots.
 
 2. **Bindable values are time-stable identities only**: points and bundles.
-   Splits stay inside the name — a segment splits and its bundle grows; a flap
+   Splits stay inside the name: a segment splits and its bundle grows; a flap
    splits and its flap-bundle contains both parts. Cardinality is a function of
    time; identity is not.
 
@@ -52,7 +52,7 @@ One operand model for the whole language:
 
 5. **Two resolution mechanisms, both already in the language:**
    - **Incidence** for material selection: `at (…)` for segments, `#(…)` for
-     flaps — the same operation at two types: "the unique X coincident with all
+     flaps, the same operation at two types: "the unique X coincident with all
      listed constructs". A bare point or line in a bundle-typed slot is sugar
      for a one-element constraint list (`.p` ≡ `#(.p)`, `--d` ≡ `#(--d)`).
    - **Metric** (`toward .x`) only where incidence cannot discriminate:
@@ -66,7 +66,7 @@ One operand model for the whole language:
 
 ## Consequences
 - A line is a legal flap operand everywhere. `moving --d` will usually fail
-  with a multi-match ("two sides — add a constraint: `#(--d .p)`"); `up to
+  with a multi-match ("two sides; add a constraint: `#(--d .p)`"); `up to
   --d` resolves. No position-specific grammar rules, no fold history needed.
 - Flap-bundles get the same tooling as segment-bundles: cardinality-over-time
   is known per step, so the LSP can show bundle lifetimes (#65) and lint
