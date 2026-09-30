@@ -261,8 +261,8 @@ let bind_crease ?stmt (ctx : ctx) (name : string) (span : Error.span)
   Hashtbl.replace s.line_steps name
     (List.length ctx.frames_rev, Some (Option.value stmt ~default:(stmt_index ctx)))
 
-(* The binding step of an `as NAME` / `as NAME!` output clause (BELOCH.md,
-   Write statements). The name is checked when the clause is read, ahead of
+(* The binding step of an `as NAME` / `as NAME!` output clause
+   (BELOCH-WRITES.md). The name is checked when the clause is read, ahead of
    the write, and bound when the returned step runs, after it. *)
 let bind_output (ctx : ctx) (name : string) ~(rebind : bool)
     (span : Error.span) : crease_val -> unit =

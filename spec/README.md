@@ -8,8 +8,10 @@ refers to the others by statement id or section:
   numbered definitions and lemmas with citations. The contract.
 - **`BELOCH.md`**: how a program is written. The language as the signature
   of the model: one section per sort and per write, with the model
-  statement it realizes, the concrete grammar, operand resolution, errors
-  and a worked example.
+  statement it realizes, operand resolution, errors and a worked example.
+  It spans several pages: `BELOCH.md` is the overview, each `BELOCH-*.md`
+  beside it is one page, and `BELOCH-GRAMMAR.md` holds the grammar (ADR
+  0045).
 - **`FOLD.md`**: the output format.
 
 The reference implementation is documented beside them and binds nothing:

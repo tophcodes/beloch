@@ -1,6 +1,6 @@
 /**
  * The tree-sitter side of the reference corpus test (design doc "The three
- * runners"): every tagged block in spec/BELOCH.md, extracted by the same
+ * runners"): every tagged block of the language pages, spec/BELOCH*.md, extracted by the same
  * rule as packages/core/tests/test_reference_corpus.ml, parses with the
  * shipped wasm and produces no ERROR node. Unlike the kernel runner this
  * stays parse-only: a block is parsed on its own, without its prelude
@@ -8,7 +8,7 @@
  * would bind.
  */
 import { test, expect } from "bun:test";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { Parser, Language } from "web-tree-sitter";
@@ -102,40 +102,47 @@ function extractBlocks(src: string): Block[] {
   return blocks;
 }
 
-// Block inventory of spec/BELOCH.md, by tag (matches test_reference_corpus.ml's
-// expected_inventory). Ceiling: this catches the tree-sitter extractor
-// drifting from the document, not from the OCaml and build-side copies of
-// the same rule; update all three when a tagged block is added to
-// BELOCH.md.
-const expectedInventory: Record<Tag, number> = {
-  whole: 1,
-  prelude: 7,
-  frag: 13,
-  construction: 1,
+// Block inventory of each language page, spec/BELOCH*.md, by tag (matches
+// test_reference_corpus.ml's expected_inventories). Ceiling: this catches the
+// tree-sitter extractor drifting from the pages, not from the OCaml and
+// build-side copies of the same rule; update all three when a tagged block is
+// added to a page.
+const expectedInventories: Record<string, Record<Tag, number>> = {
+  "BELOCH.md": { whole: 0, prelude: 0, frag: 0, construction: 0 },
+  "BELOCH-WRITES.md": { whole: 0, prelude: 6, frag: 9, construction: 0 },
+  "BELOCH-CONSTRUCTIONS.md": { whole: 0, prelude: 1, frag: 4, construction: 1 },
+  "BELOCH-ANNOTATIONS.md": { whole: 1, prelude: 0, frag: 0, construction: 0 },
+  "BELOCH-GRAMMAR.md": { whole: 0, prelude: 0, frag: 0, construction: 0 },
 };
 
-test("BELOCH.md reference corpus: every tagged block parses with no ERROR node", async () => {
-  const src = readFileSync(join(repoRoot, "spec", "BELOCH.md"), "utf8");
-  const blocks = extractBlocks(src);
+const languagePages = readdirSync(join(repoRoot, "spec"))
+  .filter((f) => f.startsWith("BELOCH") && f.endsWith(".md"))
+  .sort();
 
-  const inventory: Record<Tag, number> = { whole: 0, prelude: 0, frag: 0, construction: 0 };
-  for (const b of blocks) inventory[b.tag]++;
-  expect(inventory).toEqual(expectedInventory);
+for (const page of languagePages) {
+  test(`${page} reference corpus: every tagged block parses with no ERROR node`, async () => {
+    const src = readFileSync(join(repoRoot, "spec", page), "utf8");
+    const blocks = extractBlocks(src);
 
-  const p = await parser();
-  for (const b of blocks) {
-    const tree = p.parse(b.body);
-    expect(tree).not.toBeNull();
-    if (!tree) continue;
-    try {
-      if (tree.rootNode.hasError) {
-        throw new Error(`line ${b.fenceLine} (${b.tag}) has an ERROR node: ${tree.rootNode.toString()}`);
+    const inventory: Record<Tag, number> = { whole: 0, prelude: 0, frag: 0, construction: 0 };
+    for (const b of blocks) inventory[b.tag]++;
+    expect(inventory).toEqual(expectedInventories[page]);
+
+    const p = await parser();
+    for (const b of blocks) {
+      const tree = p.parse(b.body);
+      expect(tree).not.toBeNull();
+      if (!tree) continue;
+      try {
+        if (tree.rootNode.hasError) {
+          throw new Error(`line ${b.fenceLine} (${b.tag}) has an ERROR node: ${tree.rootNode.toString()}`);
+        }
+      } finally {
+        tree.delete();
       }
-    } finally {
-      tree.delete();
     }
-  }
-});
+  });
+}
 
 // The corpus test above pins permissiveness: a grammar with no rule that can
 // fail parses every lexable program. These pin the structure the highlighting

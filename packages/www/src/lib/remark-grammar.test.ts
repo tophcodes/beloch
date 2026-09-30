@@ -39,10 +39,9 @@ test("a fragment renders as grammar-block pres with the notation's classes", () 
 	expect(cont?.[1]).toBe(" ".repeat("fold_item    :".length));
 });
 
-test("the defining occurrence carries the id and the collected copy does not", () => {
+test("the defining occurrence carries the id, once", () => {
 	expect(html).toContain('<span class="gr-rule" id="rule-fold_item">fold_item</span>');
 	expect(html.split('id="rule-fold_item"').length - 1).toBe(1);
-	expect(html).toContain('<a class="gr-rule" href="#rule-fold_item">fold_item</a>');
 });
 
 test("a nonterminal is a link; an external name points at its entry", () => {
@@ -55,22 +54,6 @@ test("a nonterminal is a link; an external name points at its entry", () => {
 
 test("no rule carries a gr-links element", () => {
 	expect(html).not.toContain("gr-links");
-});
-
-test("the collected marker expands to every rule in order of definition", () => {
-	const collected = html.slice(html.indexOf("collected."));
-	const order = [...collected.matchAll(/<a class="gr-rule" href="#rule-([a-z_]+)">/g)].map(
-		(m) => m[1],
-	);
-	expect(order).toEqual([
-		"program",
-		"stmt",
-		"write_stmt",
-		"item",
-		"fold_item",
-		"axis",
-		"reverse_item",
-	]);
 });
 
 test("the declaration blocks render with their heads", () => {

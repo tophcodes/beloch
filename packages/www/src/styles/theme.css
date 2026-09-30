@@ -159,7 +159,7 @@
 .figure-hl-5 { color: light-dark(#5f6600, #808905); }
 
 /* Beloch fenced code blocks (```beloch) highlighted by the remark plugin, and
-   the grammar fragments of spec/BELOCH.md (```grammar), so a rule and a program
+   the grammar fragments of the language pages (```grammar), so a rule and a program
    read as one system. Both lie on the page and take the on-page code values
    from tokens.css; the divider marks their edge against the page surface. */
 .bel-block,

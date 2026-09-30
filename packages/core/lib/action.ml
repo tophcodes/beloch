@@ -139,7 +139,7 @@ let run_fold (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line) ~(fs : Ast
   run_fold_checked ctx ~span ~axis ~fs ~implied ~side_override ~crease_id ~prov
     ~check:None
 
-(* ---- the output clause (BELOCH.md, Write statements) ---- *)
+(* ---- the output clause (BELOCH-WRITES.md) ---- *)
 
 (* The crease id a write scores under, the check its axis has to pass before
    the write runs, and the binding step to run once the write has succeeded.

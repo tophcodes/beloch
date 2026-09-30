@@ -1,6 +1,6 @@
 (** The `.bel` inline-assertion format: its grammar, tokenizer and checker,
     shared by the `.bel` corpus runner
-    (test_bel_assert.ml) and the BELOCH.md reference-corpus runner
+    (test_bel_assert.ml) and the reference-corpus runner of the language pages
     (test_reference_corpus.ml), so both check assertions through one
     implementation. *)
 

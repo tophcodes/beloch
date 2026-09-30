@@ -169,7 +169,7 @@ type markable =
   | MLine of line_operand     (* an existing material crease or bound value *)
 
 (* The clause after a write's items, naming what becomes of the one crease
-   the write scores (BELOCH.md, Write statements). *)
+   the write scores (BELOCH-WRITES.md). *)
 type output =
   | Anonymous
   | Named of string * bool * Error.span   (* as --f, [true] for the ! rebind *)
@@ -191,7 +191,7 @@ type raw_item =
   | RiStaying of flap_arg * Error.span
   | RiSelection of toward_item * Error.span
 
-(* One argument of an annotation (spec/BELOCH.md, Annotations): any read the
+(* One argument of an annotation (spec/BELOCH-ANNOTATIONS.md): any read the
    language has, a text in double quotes, a number, or a bare word. *)
 type annot_value =
   | AvPoint of point_operand

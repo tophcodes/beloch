@@ -65,7 +65,7 @@ points and lines already on the paper: through two points, one point onto
 another, one line onto another, and four more. They are the Huzita-Justin
 axioms. Beloch writes each as a *construction* in round brackets, and the
 language reference lists all seven under
-[Constructions](/language/#constructions).
+[Constructions](/language/constructions/).
 
 The fold moves the side that holds `.a`, the first thing the construction
 names, and lays it over the rest. A fold without further items is a valley
@@ -145,7 +145,7 @@ The opposite item is `toward`: it names a point on the side that stays.
 `fold (through .a .c) (toward .d)` is the same fold. When a construction
 has several solutions that all crease paper, the same two items choose among
 them, and the reference explains how under
-[Selection](/language/#selection).
+[Selection](/language/constructions/#selection).
 
 A crease that is already there can be the fold line itself. The crease goes
 in round brackets like a construction, and it needs a side for the same
@@ -281,7 +281,7 @@ records that any spot on that stretch would do, and the program uses this
 one.
 
 `flatten` handles one vertex per statement. The reference describes the
-rest under [Write statements](/language/#write-statements).
+rest under [Write statements](/language/writes/).
 
 ## Points from creases
 

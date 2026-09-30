@@ -93,7 +93,7 @@ What the language knows about a state and FOLD cannot say:
   and after a `--x!` rebinding. Deduplicated by (target, span).
 - `beloch:annotations`: one entry per annotation in the order the statements
   ran, an annotation in a `def` body once per execution (ADR 0029,
-  `BELOCH.md`, Annotations). Each carries its `key`, its `namespace` or null,
+  `BELOCH-ANNOTATIONS.md`). Each carries its `key`, its `namespace` or null,
   its `span` and `source_line`, and its `target`: the first and the last
   index into `beloch:statements` it belongs to. The target is one entry,
   the statement after the annotation, except for `step`, whose target runs
@@ -219,7 +219,7 @@ none of this appears, and every other field is the same with and without it.
   points that distance lies between, the landed one first. Where several
   candidates remain, each carries `suggestion`: the item that keeps it
   alone, as the program would write it (`"(toward .d)"`,
-  `"(--v toward .u)"`), chosen as `BELOCH.md` states beside the errors of
+  `"(--v toward .u)"`), chosen as `BELOCH-CONSTRUCTIONS.md` states beside the errors of
   the selection; null where none does, and on every candidate of a
   selection that decided.
 - A write's entry carries `write`, one of `"fold"`, `"reverse"` and

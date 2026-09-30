@@ -13,10 +13,10 @@ const root = join(import.meta.dir, "..");
 const register = buildGrammarRegister(DOCUMENTS);
 const lexerSource = readFileSync(join(root, LEXER), "utf8");
 
-const beloch = register.documents.find((d) => d.path === "spec/BELOCH.md");
-if (!beloch) throw new Error("spec/BELOCH.md missing from the register");
+const beloch = register.documents.find((d) => d.path === "spec/BELOCH-GRAMMAR.md");
+if (!beloch) throw new Error("spec/BELOCH-GRAMMAR.md missing from the register");
 
-test("spec/BELOCH.md yields 23 rules and 6 external names", () => {
+test("spec/BELOCH-GRAMMAR.md yields 23 rules and 6 external names", () => {
 	expect(beloch.fragments.flatMap((f) => f.rules).length).toBe(23);
 	expect(beloch.external.length).toBe(6);
 	expect(beloch.external.map((e) => e.name)).toEqual([
@@ -77,7 +77,7 @@ test("a documented keyword the lexer lacks fails, naming where it is stated", ()
 	const failures = crossCheck(register, unlexed, LEXER);
 	expect(failures).toEqual([
 		expect.stringMatching(
-			/^keyword "align" is stated in spec\/BELOCH\.md:\d+ and packages\/core\/lib\/lexer\.ml does not lex it$/,
+			/^keyword "align" is stated in spec\/BELOCH-GRAMMAR\.md:\d+ and packages\/core\/lib\/lexer\.ml does not lex it$/,
 		),
 	]);
 });
@@ -92,14 +92,14 @@ test("a lexed keyword no documented rule states fails, naming the keyword", () =
 test("a planned keyword the lexer already has fails, naming its entry", () => {
 	const stale = {
 		documents: register.documents.map((d) =>
-			d.path === "spec/BELOCH.md"
+			d.path === "spec/BELOCH-GRAMMAR.md"
 				? { ...d, planned: [...d.planned, { keyword: "map", line: 275, note: "" }] }
 				: d,
 		),
 	};
 	const failures = crossCheck(stale, lexerSource, LEXER);
 	expect(failures).toEqual([
-		'keyword "map" is declared planned in spec/BELOCH.md:275 and packages/core/lib/lexer.ml ' +
+		'keyword "map" is declared planned in spec/BELOCH-GRAMMAR.md:275 and packages/core/lib/lexer.ml ' +
 			"lexes it; remove the entry",
 	]);
 });

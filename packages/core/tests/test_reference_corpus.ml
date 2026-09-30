@@ -1,6 +1,6 @@
-(* tests/test_reference_corpus.ml: the guard that holds the kernel to
-   spec/BELOCH.md (design doc "The reference corpus test", kernel side of
-   "The three runners"). Every tagged block in the document is extracted,
+(* tests/test_reference_corpus.ml: the guard that holds the kernel to the
+   pages of the language, spec/BELOCH*.md, and to the guide. Every tagged
+   block of a page is extracted,
    assembled with its prelude, evaluated in process, and checked against its
    own `; assert` / `; expect error` lines through [Bel_assert]: the same
    checker the `.bel` corpus runner uses. *)
@@ -345,21 +345,28 @@ let failure_mode_tests =
     Alcotest.test_case "a clean block passes" `Quick test_success_case;
   ]
 
-(* ---- The real corpus: spec/BELOCH.md ---- *)
+(* ---- The real corpus: the pages of the language, spec/BELOCH*.md ---- *)
 
-(* Block inventory of spec/BELOCH.md, by tag (Task 5's count: 6 preludes, 7
-   fragments, 2 under the default prelude, 5 named, and 1 construction).
-   Ceiling: this catches the OCaml extractor drifting from the document, not
-   from the tree-sitter and build-side copies of the same rule; update the
-   three together when a tagged block is added to BELOCH.md. *)
-let expected_inventory = [ ("construction", 1); ("frag", 13); ("prelude", 7); ("whole", 1) ]
+(* Block inventory of each language page, by tag; a page with no entry fails
+   its inventory case. Ceiling: this catches the OCaml extractor drifting
+   from the pages, not from the tree-sitter and build-side copies of the same
+   rule; update the three together when a tagged block is added to a page. *)
+let expected_inventories =
+  let counts construction frag prelude whole =
+    [ ("construction", construction); ("frag", frag); ("prelude", prelude); ("whole", whole) ]
+  in
+  [
+    ("BELOCH.md", counts 0 0 0 0);
+    ("BELOCH-WRITES.md", counts 0 9 6 0);
+    ("BELOCH-CONSTRUCTIONS.md", counts 1 4 1 0);
+    ("BELOCH-ANNOTATIONS.md", counts 0 0 0 1);
+    ("BELOCH-GRAMMAR.md", counts 0 0 0 0);
+  ]
+
+let tags = [ "construction"; "frag"; "prelude"; "whole" ]
 
 let count_by_tag (blocks : block list) : (string * int) list =
-  let base = List.map (fun (k, _) -> (k, 0)) expected_inventory in
-  List.fold_left
-    (fun acc b ->
-      List.map (fun (k, n) -> if k = tag_key b.tag then (k, n + 1) else (k, n)) acc)
-    base blocks
+  List.map (fun k -> (k, List.length (List.filter (fun b -> tag_key b.tag = k) blocks))) tags
 
 let block_cases (blocks : block list) =
   let preludes = prelude_table blocks in
@@ -369,15 +376,25 @@ let block_cases (blocks : block list) =
   in
   List.map block_case blocks
 
-let corpus_test_cases () =
-  let path = Filename.concat source_root "spec/BELOCH.md" in
-  let blocks = extract_blocks (read path) in
-  let inventory_case =
-    Alcotest.test_case "block inventory matches the constant" `Quick (fun () ->
-        Alcotest.(check (list (pair string int)))
-          "counts per tag" (List.sort compare expected_inventory) (List.sort compare (count_by_tag blocks)))
-  in
-  inventory_case :: block_cases blocks
+let is_language_page f = String.starts_with ~prefix:"BELOCH" f && Filename.check_suffix f ".md"
+
+(* One suite per page; a prelude resolves within its page. *)
+let language_suites () =
+  Sys.readdir (Filename.concat source_root "spec")
+  |> Array.to_list
+  |> List.filter is_language_page
+  |> List.sort compare
+  |> List.map (fun f ->
+         let blocks = extract_blocks (read (Filename.concat source_root (Filename.concat "spec" f))) in
+         let inventory_case =
+           Alcotest.test_case "block inventory matches the constant" `Quick (fun () ->
+               match List.assoc_opt f expected_inventories with
+               | None -> Alcotest.failf "%s has no entry in expected_inventories" f
+               | Some expected ->
+                   Alcotest.(check (list (pair string int)))
+                     "counts per tag" (List.sort compare expected) (count_by_tag blocks))
+         in
+         (f, inventory_case :: block_cases blocks))
 
 (* ---- The guide: every page under packages/www/src/content/docs/guide ---- *)
 
@@ -399,6 +416,5 @@ let () =
     ([
        ("extractor", extractor_tests);
        ("failure modes", failure_mode_tests);
-       ("BELOCH.md", corpus_test_cases ());
      ]
-    @ guide_suites ())
+    @ language_suites () @ guide_suites ())

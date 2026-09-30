@@ -24,7 +24,7 @@ val into_crease : Ctx.ctx -> string -> Error.span -> int * (Geom.line -> unit)
     the check that the write's axis lies on that crease's own material,
     which the caller runs before the write. Fails when the name is bound to
     a line, to a selection, to a paper edge, or is not bound at all
-    (spec/BELOCH.md, Write statements). *)
+    (spec/BELOCH-WRITES.md). *)
 
 val resolve_point : Ctx.ctx -> Ast.point_operand -> Geom.point
 (** Resolve a point operand to its material PAPER coordinate. *)
