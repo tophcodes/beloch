@@ -7,7 +7,7 @@ let full src =
 
 (* `mark` statements evaluate cleanly (subdivide, no `moving .p`, never throw).
    `paper square` is the header, not a statement, so an N-mark program has N
-   statements and N keys — the counts below reflect that. *)
+   statements and N keys: the counts below reflect that. *)
 
 let test_equivalence () =
   let s = Session.create () in
@@ -22,12 +22,12 @@ let test_append_recomputes_one () =
   ignore (Session.eval s ~filename:"t.bel" a);
   let gotb = Session.eval s ~filename:"t.bel" b in
   Alcotest.(check int) "only the appended statement ran" 1 (Session.last_ran s);
-  (* warmed (prefix=1) resume must byte-match a cold eval *)
+  (* warmed (prefix=1) resume must byte-match a cold evaluation *)
   Alcotest.(check string) "warmed append == cold eval" (full b) (fold_str gotb)
 
 let test_edit_invalidates_from_k () =
   let s = Session.create () in
-  (* 3 statements; edit the 2nd — statement 1 is reused, 2 and 3 recomputed *)
+  (* 3 statements; edit the 2nd: statement 1 is reused, 2 and 3 recomputed *)
   let a =
     "paper square\nmark (through .a .c)\nmark (through .b .d)\nmark (map .a onto .b)\n"
   in
@@ -37,7 +37,7 @@ let test_edit_invalidates_from_k () =
   ignore (Session.eval s ~filename:"t.bel" a);
   let gotb = Session.eval s ~filename:"t.bel" b in
   Alcotest.(check int) "recomputed 2 of 3" 2 (Session.last_ran s);
-  (* the WARMED session resumed from snaps[0]; output must equal a cold eval *)
+  (* the WARMED session resumed from snaps[0]; output must equal a cold evaluation *)
   Alcotest.(check string) "warmed edit resume == cold eval" (full b) (fold_str gotb)
 
 let test_unchanged_reuses_all () =
@@ -49,8 +49,8 @@ let test_unchanged_reuses_all () =
 
 let test_resume_byte_identical_many_named () =
   (* enough named creases to exceed the initial 8-bucket hashtable layout, so
-     restore's rebuilt iteration order would diverge from a fresh eval unless
-     output is canonicalized. Marks eval cleanly (no `moving .p`). *)
+     [restore]'s rebuilt iteration order would diverge from a fresh evaluation
+     unless output is canonicalized. Marks evaluate cleanly (no `moving .p`). *)
   let src =
     "paper square\n\
      mark (through .a .c) as --l1\n\
@@ -63,7 +63,7 @@ let test_resume_byte_identical_many_named () =
   in
   let s = Session.create () in
   (* warm the session, then edit the LAST statement so resume replays from a
-     deep prefix (>6) — the regime where bucket order diverges *)
+     deep prefix (>6): the regime where bucket order diverges *)
   ignore (Session.eval s ~filename:"t.bel" src);
   let src2 = src ^ "mark (map .b onto .d) as --l8\n" in
   let warmed = fold_str (Session.eval s ~filename:"t.bel" src2) in

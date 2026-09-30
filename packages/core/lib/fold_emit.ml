@@ -7,7 +7,7 @@ let mark_assign_str = function
   | Fold_state.V -> "V"
   | Fold_state.F -> "F"
 
-(* One `beloch:marks`-shaped entry — shared by the global (final-state) list
+(* One `beloch:marks`-shaped entry: shared by the global (final-state) list
    and each statement-log entry's embedded as-recorded mark. *)
 let mark_json (m : Fold_state.mark) : Yojson.Safe.t =
   let line =
@@ -46,7 +46,7 @@ let vertices_names_json (vpaper : Geom.point Dynarray.t)
            | Some (name, _) -> `String name
            | None -> `Null))
 
-(* beloch:edges array from an (ia, ib, assign, prov, cid) edge list *)
+(* beloch:edges array from an ([ia], ib, assign, prov, [cid]) edge list *)
 let beloch_edges_json edges : Yojson.Safe.t =
   `List
     (List.map
@@ -69,13 +69,13 @@ let beloch_edges_json edges : Yojson.Safe.t =
                @ (match cid with Some c -> [ ("crease_id", `Int c) ] | None -> [])))
        edges)
 
-(* Emit-time overlay (design §3.6). Graduates every mark whose MSeg endpoints
+(* Emit-time overlay (design §3.6). Graduates every mark whose [MSeg] endpoints
    both lie on a face boundary (corner / paper edge / real crease) into real
    creases by subdividing the state (in paper space,
    fold-invariantly) along the mark's extent. Returns the display state plus the
    marks that stay records for `beloch:marks`. A mark coincident with a real
    crease subdivides nothing, so it silently drops (the real crease supersedes).
-   Applied to BOTH the crease-pattern frame and each folded frame — fold-time
+   Applied to BOTH the crease-pattern frame and each folded frame: fold-time
    algorithms never see it (emit-only). Partial (mid-segment) graduation is
    deferred: a whole mark graduates or it does not. *)
 let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
@@ -88,8 +88,8 @@ let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
       (fun s (m : Fold_state.mark) ->
         match m.Fold_state.mgeom with
         | Fold_state.MSeg (a, b) ->
-            (* reuse the mark's own crease_id so a graduated precrease keeps a
-               stable identity across every cp_display call — otherwise each
+            (* reuse the mark's own [crease_id] so a graduated precrease keeps a
+               stable identity across every [cp_display] call: otherwise each
                call (beloch:inspect vs each folded frame) allocates a fresh id,
                and the inspector's data-crease-id on an F/U precrease no longer
                matches its beloch:inspect key. *)
@@ -100,9 +100,9 @@ let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
   in
   (disp, kept)
 
-(* Build one self-contained foldedForm frame for a given state. Its topology is
+(* Build one self-contained [foldedForm] frame for a given state. Its topology is
    this state's faces (earlier steps have fewer faces than the final CP, so the
-   frame cannot inherit the parent's vertex/face set — frame_inherit is false). *)
+   frame cannot inherit the parent's vertex/face set: [frame_inherit] is false). *)
 let folded_frame_of_state (named_points : (string * Geom.point) list)
     (state : Fold_state.t)
     (span : Error.span option) : Yojson.Safe.t =
@@ -110,15 +110,15 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
      scored precrease shows in the folded frame; emit-only, like the CP frame *)
   let state, _ = cp_display state in
   let faces = Fold_state.faces state in
-  (* dedup vertices by (paper coord, table coord) together, remembering both per
+  (* dedup vertices by (paper [coord], table [coord]) together, remembering both per
      vertex. Two faces sharing a paper corner merge only when their isometries
-     agree there (same table position) — the case of a shared crease on a
+     agree there (same table position): the case of a shared crease on a
      full-chord flat fold. A scoped ("up to") fold cuts only some layers, so the
      stationary layer and the moving flap can share a paper corner OFF the fold
-     axis, where their isometries disagree; keying on table coord too gives each
+     axis, where their isometries disagree; keying on table [coord] too gives each
      face its own reflected copy instead of collapsing the moving flap onto the
      stationary layer's position (which degenerated the moving face to zero area
-     — the "diagonal slash" render). *)
+     : the "diagonal slash" render). *)
   let vpaper = Dynarray.create () and vtable = Dynarray.create () in
   let vindex (fi : int) (p : Geom.point) : int =
     let t = Isometry.apply_point (Fold_state.face_iso2 state fi) p in
@@ -148,7 +148,7 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
     || (Num.equal a.Geom.y z && Num.equal b.Geom.y z)
     || (Num.equal a.Geom.y o && Num.equal b.Geom.y o)
   in
-  (* collect unique edges with (assignment string, provenance) *)
+  (* collect unique edges with (assignment string, [provenance]) *)
   let hs = Fold_state.hinges state in
   let edge_tbl = Hashtbl.create 64 in
   let edges = ref [] in
@@ -206,8 +206,8 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
     |> List.map (fun idxs ->
         `List (Array.to_list (Array.map (fun i -> `Int i) idxs)))
   in
-  (* faceOrders read directly from the folded state's partial order. For a pair
-     (fi < gi) that overlaps, sign follows FOLD's convention keyed to gi's normal
+  (* [faceOrders] read directly from the folded state's partial order. For a pair
+     ([fi] < gi) that overlaps, sign follows FOLD's convention keyed to [gi]'s normal
      (its face_up-ness): a "below" relation with gi facing up is -1, etc. *)
   let nf = Array.length faces in
   let face_orders = ref [] in
@@ -257,7 +257,7 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
     ]
 
 (* One entry per fold- or mark-producing top-level statement, in source
-   order — a statement-level sourcemap for the Playground step player. A
+   order: a statement-level sourcemap for the Playground step player. A
    mark statement embeds its OWN mark geometry as recorded at that point,
    independent of whether it later graduates into a real crease (which only
    ever happens at some LATER fold statement). The field is contracted in
@@ -299,7 +299,7 @@ let beloch_statements_json (statements : Eval.stmt_log_entry list) : Yojson.Safe
          | Some m -> `Assoc (("mark", mark_json m) :: common))
        statements)
 
-(* beloch:annotations — one entry per annotation read, in the order the
+(* beloch:annotations: one entry per annotation read, in the order the
    statements ran (ADR 0029, spec/FOLD.md). [target] is the range of
    beloch:statements entries it belongs to: one entry, or for a step every
    entry up to the next step. *)
@@ -353,7 +353,7 @@ let beloch_annotations_json (annotations : Ctx.annot_entry list)
            ])
        annotations)
 
-(* beloch:references — one entry per resolved mention of a crease name in the
+(* beloch:references: one entry per resolved mention of a crease name in the
    source: the span it occupies and the crease (or paper edge) it names. A
    reader asking "where is this bundle referenced" gets the answer from the
    emitter instead of re-lexing the program, which cannot tell two scopes
@@ -381,7 +381,7 @@ let beloch_references_json (refs : Ctx.reference list) : Yojson.Safe.t =
   in
   `List out
 
-(* beloch:inspect — crease_id-keyed inventory of the final display state:
+(* beloch:inspect: [crease_id]-keyed inventory of the final display state:
    each crease's segment bundle (with per-segment M/V/F), each face's flap
    (coplanar cluster) + stacking rank, and each named point's carrying
    face + flap. Entity Inspector slice B (playground). *)
@@ -392,23 +392,23 @@ let beloch_inspect_json (state : Fold_state.t)
   let rank = Fold_state.rank state in
   let clusters = Fold_state.coplanar_clusters state in
   let hinges = Fold_state.hinges state in
-  (* crease_id -> user's variable name. A FOLDED crease's hinge provenance
+  (* [crease_id] -> user's variable name. A FOLDED crease's hinge [provenance]
      drops the name the `--h =` binding gave it (only marks keep it in prov),
      so the name would show as null for every folded crease; recover it from
-     the eval's authoritative name<->cid table. *)
+     the evaluation's authoritative name<->cid table. *)
   let name_by_cid = Hashtbl.create 16 in
   List.iter (fun (n, cid) -> Hashtbl.replace name_by_cid cid n) named_line_cids;
   let pt_json (p : Geom.point) = `List [ q_to_json p.Geom.x; q_to_json p.Geom.y ] in
-  (* one representative hinge per crease_id, for name/axiom/span/sources *)
+  (* one representative hinge per [crease_id], for name/axiom/span/sources *)
   let by_cid = Hashtbl.create 16 in
   Array.iter
     (fun (h : Fold_state.hinge) ->
       if not (Hashtbl.mem by_cid h.Fold_state.crease_id) then
         Hashtbl.replace by_cid h.Fold_state.crease_id h)
     hinges;
-  (* per-SEGMENT assignment, keyed by (crease_id, its two faces). A scoped fold
+  (* per-SEGMENT assignment, keyed by ([crease_id], its two faces). A scoped fold
      folds some layers and leaves others flat, so the fold state varies per
-     segment — a single per-crease representative (the old code) was wrong and
+     segment: a single per-crease representative (the old code) was wrong and
      collapsed a mixed crease to one value. Use the segment's own hinge fold
      state (`mv`): a folded layer reads V/M, a still-flat one reads F. NOT
      `intent`, whose default is V, which would paint every reference/
@@ -480,7 +480,7 @@ let beloch_inspect_json (state : Fold_state.t)
          faces)
   in
   (* A point on a shared face boundary (crease crossing, corner) lies in
-     several polygons — in_convex_polygon is boundary-inclusive. Only resolve
+     several polygons: [in_convex_polygon] is boundary-inclusive. Only resolve
      to a face when EXACTLY one polygon contains it; otherwise `None` (the
      point straddles a boundary and has no single carrying face/flap). *)
   let face_of (p : Geom.point) =
@@ -567,7 +567,7 @@ let beloch_inspect_json (state : Fold_state.t)
 let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
   let disp, kept_marks = cp_display fd.Eval.state in
   let faces = Fold_state.faces disp in
-  (* dedup vertices by paper coord; remember paper coord per vertex, for the
+  (* dedup vertices by paper [coord]; remember paper [coord] per vertex, for the
      top-level crease-pattern frame (built from the final state). *)
   let vpaper = Dynarray.create () in
   let vindex (p : Geom.point) : int =
@@ -593,7 +593,7 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
     || (Num.equal a.Geom.y z && Num.equal b.Geom.y z)
     || (Num.equal a.Geom.y o && Num.equal b.Geom.y o)
   in
-  (* collect unique edges with (assignment string, provenance) *)
+  (* collect unique edges with (assignment string, [provenance]) *)
   let hs = Fold_state.hinges disp in
   let edge_tbl = Hashtbl.create 64 in
   let edges = ref [] in
@@ -641,7 +641,7 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
         `List (Array.to_list (Array.map (fun i -> `Int i) idxs)))
   in
   let beloch_edges = beloch_edges_json edges in
-  (* the step-annotated 3-tuple is only needed for beloch_named_points below;
+  (* the step-annotated 3-tuple is only needed for [beloch_named_points] below;
      everywhere else strips it to keep the 2-tuple helper signature. *)
   let named_points_2 = List.map (fun (n, p, _, _) -> (n, p)) fd.Eval.named_points in
   let beloch_vertices_names = vertices_names_json vpaper named_points_2 in
@@ -676,7 +676,7 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
   (* record marks (non-subdividing; see Fold_state.mark) *)
   let beloch_marks = kept_marks |> List.map mark_json in
   (* forward-compat hook for a future renderer slider (issue #70); no
-     renderer consumes this yet — see [Eval.free_info]. *)
+     renderer consumes this yet: see [Eval.free_info]. *)
   let beloch_free =
     `Assoc
       (List.map
@@ -723,7 +723,7 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
       ( "file_frames",
         (* Step 0: the flat, unfolded sheet, so a folded-diagram stepper opens
            on the starting paper rather than on the first fold. It is a viewing
-           frame only — not counted as a fold (the `steps` assertion reads
+           frame only: not counted as a fold (the `steps` assertion reads
            Eval.frames, which excludes it). *)
         `List
           (folded_frame_of_state named_points_2 Fold_state.init_square

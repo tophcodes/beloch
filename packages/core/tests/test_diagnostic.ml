@@ -16,7 +16,7 @@ let contains hay needle =
 let src = "line one\nline two\n--l = through .a .a\nline four\n"
 
 let test_basic () =
-  (* underline "through .a .a" on line 3: cols 6..19 (0-based) => cnum 24..37 *)
+  (* underline "through .a .a" on line 3: cols 6..19 (0-based) => [cnum] 24..37 *)
   let span = (pos "f.bel" 3 18 24, pos "f.bel" 3 18 37) in
   let out = Diagnostic.render ~source:src ~span ~msg:"lines are identical" ~hint:None in
   Alcotest.(check bool) "header" true (contains out "error: lines are identical");
@@ -55,7 +55,7 @@ let test_hint () =
   let bare = Diagnostic.render ~source:src ~span ~msg:"x" ~hint:None in
   Alcotest.(check bool) "no help without hint" false (contains bare "help:")
 
-(* a real evaluator error carries a real span through fold_string; render it *)
+(* a real evaluator error carries a real span through [fold_string]; render it *)
 let test_integration () =
   let source = "paper square\nmark --l = through .a .a\n" in
   let rendered =

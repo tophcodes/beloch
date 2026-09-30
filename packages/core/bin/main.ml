@@ -97,7 +97,7 @@ let run_render_piped prog json_str rest =
   | _, Unix.WEXITED code -> code
   | _, (Unix.WSIGNALED _ | Unix.WSTOPPED _) -> 1
 
-(* `--format` value from already-parsed rest args, defaulting to svg -
+(* `--format` value from already-parsed rest [args], defaulting to [svg] -
    used to pick the temp file extension for `--open`. *)
 let format_ext rest =
   let rec find = function
@@ -115,7 +115,7 @@ let xdg_open path =
   | Some xdg -> ignore (Unix.create_process xdg [| "xdg-open"; path |] Unix.stdin Unix.stdout Unix.stderr)
 
 (* `beloch render` hands off to `beloch-render`, the @beloch/render-svg CLI
-   (linked onto PATH by the Nix devShell) — see packages/render-2d/README.md. `.fold`
+   (linked onto PATH by the Nix devShell). See packages/render-2d/README.md. `.fold`
    inputs pass straight through; `.bel` inputs are evaluated here first and
    the resulting FOLD JSON is piped into beloch-render's stdin. *)
 let run_render args =
@@ -171,7 +171,7 @@ let run_fold_trace file =
 
 (* `beloch fold --watch FILE`: keeps one incremental `Session.t` across
    re-folds and recomputes only the suffix invalidated by the edit (see
-   lib/session.ml). Polls mtime rather than inotify — no new dependency
+   lib/session.ml). Polls [mtime] rather than inotify: no new dependency
    beyond `unix`, and .bel edits are human-paced so a 200ms poll is
    imperceptible. *)
 let run_fold_watch file =

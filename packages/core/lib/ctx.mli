@@ -12,7 +12,7 @@ val corners : (string * Geom.point) list
 type stmt_kind = SFold | SMark | SBind | SApply of string
 (** Which axis a statement moves (ADR 0030). [SFold] and [SMark] are writes:
     the paper moved, or it was scored and stands where it was. [SBind] moves
-    the program alone — a point, a construction line, a bundle, a definition,
+    the program alone: a point, a construction line, a bundle, a definition,
     an export. [SApply] is an [apply] of the named def; its body's statements
     follow it in the log, each naming it as their parent. *)
 
@@ -21,11 +21,11 @@ type stmt_log_entry = {
   sl_span : Error.span;
   sl_frame_index : int;
       (** Index into [ctx.frames_rev] (reversed) of the frame this
-          statement's geometry reads against — the just-pushed frame for
+          statement's geometry reads against: the just-pushed frame for
           [SFold], the most-recently pushed frame for [SMark] and [SBind]
           (neither folds anything). *)
   sl_mark : Fold_state.mark option;
-      (** The mark AS RECORDED by this statement, captured at record-time —
+      (** The mark AS RECORDED by this statement, captured at record-time:
           independent of whether it later graduates into a real crease
           (which only happens at some LATER fold statement, or never). [None]
           for [SFold] and [SBind]. *)
@@ -45,7 +45,7 @@ type stmt_log_entry = {
     after it starts from (ADR 0029). *)
 type annot_value =
   | AvPoint of Geom.point * Geom.point  (** paper, table *)
-  | AvLine of Geom.line * int option    (** table line, crease id if a crease *)
+  | AvLine of Geom.line * int option    (** the table line, crease id if a crease *)
   | AvFlap of int list                  (** faces of the state it was read in *)
   | AvText of string
   | AvNumber of Q.t
@@ -118,7 +118,7 @@ type reference =
   | REdge of string * Error.span
 (** One resolved mention of a crease name in the source: where it stands and
     what it names. The sourcemap behind "show me every reference to this
-    bundle" — not recoverable from the text, since one spelling means
+    bundle": not recoverable from the text, since one spelling means
     different creases inside a [def] body and after a [--x!] rebinding. *)
 
 type name_ctx = Root | InInstance of string | Anon
@@ -126,7 +126,7 @@ type name_ctx = Root | InInstance of string | Anon
 type ctx = {
   mutable scopes : scope list;  (** head = innermost *)
   mutable name_ctx : name_ctx;
-  mutable cur_def_idx : int option;  (** [Some k] while running def k's body *)
+  mutable cur_def_idx : int option;  (** [Some k] while running def [k]'s body *)
   mutable next_def_idx : int;
   defs : (string, int * Ast.param list * Ast.stmt list) Hashtbl.t;
   state : Fold_state.t ref;
@@ -192,7 +192,7 @@ val promote_crease : ctx -> string -> crease_val -> unit
     materialised crease (e.g. `mark --d` on a pure value-bound line), so a
     later `fold --d` can find it. Not a user-facing rebind: no dup check. *)
 
-(** {1 Incremental checkpoint: snapshot / restore of the whole ctx} *)
+(** {1 Incremental checkpoint: snapshot / restore of the whole [ctx]} *)
 
 type snapshot
 (** Opaque; produced by {!snapshot}, consumed by {!restore}. [Session]
@@ -200,7 +200,7 @@ type snapshot
 
 val snapshot : ctx -> snapshot
 (** Snapshots are taken between top-level statements, where [ctx.scopes] is a
-    single root scope — fails otherwise. *)
+    single root scope: fails otherwise. *)
 
 val restore : ctx -> snapshot -> unit
 (** Restores a snapshot INTO the existing root-scope tables (not fresh
@@ -209,7 +209,7 @@ val restore : ctx -> snapshot -> unit
 
 val stmt_index : ctx -> int
 (** Index the statement currently being evaluated will occupy in the
-    `beloch:statements` log. Provenance records are built while their
+    `beloch:statements` log. [Provenance] records are built while their
     statement runs, strictly before its log entry is pushed, so the current
     log length is that statement's own index. *)
 
@@ -219,7 +219,7 @@ val push_bind : ctx -> Error.span -> unit
     every statement appears on the second axis. *)
 
 val push_entry : ctx -> stmt_kind -> Error.span -> unit
-(** Log a statement of the given kind that pushed no frame and recorded no
+(** Log a statement of kind [stmt_kind] that pushed no frame and recorded no
     mark: a binding, or a statement that failed before logging itself. *)
 
 val kind_of_stmt : Ast.stmt -> stmt_kind

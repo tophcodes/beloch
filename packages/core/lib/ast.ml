@@ -14,9 +14,9 @@ type export_entry = {
 }
 
 (* Operands are mutually recursive: a named leaf, or a selection over existing
-   geometry. PSelect = meet (`--x * --y` / `.[l+]`), a point on the listed lines;
-   LSelect = join/select (`--[c+]` / `.a * .b`), an existing crease/edge. A plain
-   `.a` is PNamed; a plain `--l` is LNamed. *)
+   geometry. [PSelect] = meet (`--x * --y` / `.[l+]`), a point on the listed lines;
+   [LSelect] = join/select (`--[c+]` / `.a * .b`), an existing crease/edge. A plain
+   `.a` is [PNamed]; a plain `--l` is [LNamed]. *)
 type point_operand =
   | PNamed of point_ref
   | PSelect of line_operand list * Error.span
@@ -26,8 +26,8 @@ type point_operand =
 and line_operand =
   | LNamed of crease_ref
   | LFilter of line_operand * filter_elt * Error.span
-    (* bundle & sel (Keep) | bundle \ sel (Drop): the segments of the bundle
-       incident / not incident to sel. Chains left-to-right. *)
+    (* bundle & [sel] (Keep) | bundle \ [sel] (Drop): the segments of the bundle
+       incident / not incident to [sel]. Chains left-to-right. *)
   | LUnion of line_operand list * Error.span
     (* [a b …]: union of same-typed crease bundles *)
   | LSelect of selector list * Error.span
@@ -38,7 +38,7 @@ and filter_elt = Keep of selector | Drop of selector
 
 and selector =
   | SelPoint of point_operand
-  | SelLine of line_operand   (* grammar produces only LNamed here *)
+  | SelLine of line_operand   (* grammar produces only [LNamed] here *)
   | SelFlap of flap_operand
 
 and flap_operand = FByPoints of point_operand list * Error.span
@@ -56,7 +56,7 @@ type align_object = AoPoint of point_operand | AoLine of line_operand
 and alignment_kind =
   | AlOnto of align_object * align_object   (* an object onto an object *)
   | AlThrough of point_operand              (* the fold line through a point *)
-  | AlPerp of line_operand                  (* the fold line perp to a line *)
+  | AlPerp of line_operand                  (* the fold line [perp] to a line *)
 
 and alignment = {
   al_fold_line : string option;   (* CREASE_NAME in front of the first object *)
@@ -84,7 +84,7 @@ type toward_item = { target : toward; subject : align_object option }
 type direction = Valley | Mountain
 
 (* mark extent (spec §4). Full = the construction's whole chord (subdivides as before);
-   Between/At are partial — record iff they end mid-face. *)
+   Between/At are partial: record iff they end mid-face. *)
 type extent =
   | Full
   | Between of point_operand * point_operand
@@ -92,7 +92,7 @@ type extent =
 
 (* A flap-typed operand slot (ADR 0016). A point is sugar for "the flap
    carrying the point"; a line for "the flap hinged on the crease/segment"
-   (usually a multi-match for `moving`, resolvable for `up to`); #(...) lists
+   (usually a multi-match for `moving`, resolvable for `up to`); #(…) lists
    explicit incidence constraints. *)
 type flap_arg =
   | FlapPoint of point_operand
@@ -142,7 +142,7 @@ type reverse_spec = {
 }
 
 (* A collapse element's M/V constraint: a bare element is
-   unconstrained — the solver assigns its M/V. `mountain`/`valley`
+   unconstrained: the solver assigns its M/V. `mountain`/`valley`
    pin it explicitly. Distinct from [direction] (Mark/Fold's own two-state
    fold direction), which stays two-state. *)
 type mv_constraint = MvFree | MvMountain | MvValley
@@ -204,7 +204,7 @@ type annot_value =
 
 type annot_arg = { av : annot_value; av_span : Error.span }
 
-(* `@key args` or `@ns:key args`, one line. It belongs to the statement that
+(* `@key [args]` or `@ns:key [args]`, one line. It belongs to the statement that
    follows it and never changes the geometry (ADR 0029). *)
 type annotation = {
   a_ns : string option;
@@ -237,8 +237,8 @@ type stmt =
   | Flip of Error.span
   | Def of string * param list * stmt list * Error.span
   | Apply of string option * string * arg list * Error.span
-      (* Apply (Some "p1", "petal", args, span) = $p1 = apply petal(...)
-         Apply (None, ...) = naked apply *)
+      (* Apply (Some "p1", "petal", [args], span) = $p1 = apply petal(…)
+         Apply (None, …) = naked apply *)
   | Export of export_entry list option * string * Error.span
       (* None = export-all; the string is the instance name *)
   | Flatten of output * collapse_elem list * (flap_arg * flap_arg) list
@@ -246,14 +246,14 @@ type stmt =
                 * Error.span
       (* flatten <items>: single-vertex multi-crease fold, ONE solver
          pipeline (spec §4.9). elements = the given rays, each with an
-         mv_constraint (MvFree = solver-assigned; mountain/valley = hard
+         [mv_constraint] (MvFree = solver-assigned; mountain/valley = hard
          pin); over-pairs = (upper flap, lower flap) stacking constraints;
          staying = the staying flap; on = the anchor flap, whose tip moves
          (ADR 0037, ADR 0040). An odd ray count
          makes the emergent completing ray part of the solution space
          (Flatten.candidates). The realization space (candidate × Maekawa
          M/V pattern × stacking, via Collapse.collapse_all) is filtered by
-         the hard constraints; the `(toward .p)` item (the point_operand
+         the hard constraints; the `(toward .p)` item (the [point_operand]
          option) selects among survivors by the three-stage rule (position
          class, min-mountain canon, centered-rank dipole). an `as` output
          binds the name to the emergent crease (when one was materialized) or the

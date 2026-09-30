@@ -7,7 +7,7 @@
 open Beloch
 
 type assertion
-(** A parsed `; assert ...` or `; expect error "..."` line. *)
+(** A parsed `; assert …` or `; expect error "…"` line. *)
 
 exception Harness_fail of string
 (** Raised by [extract], [expected_error] and [check] on anything that keeps

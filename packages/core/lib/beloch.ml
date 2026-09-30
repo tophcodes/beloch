@@ -1,4 +1,4 @@
-(** Beloch — evaluator core.
+(** Beloch: evaluator core.
 
     The library is intentionally empty until the minimal core (v0.0) is
     specified in [spec/10-core-v0.md]: one square of paper, axiom 1 only, a

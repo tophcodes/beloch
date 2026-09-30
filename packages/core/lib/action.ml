@@ -20,7 +20,7 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
     ~(side_override : int option) ~(crease_id : int)
     ~(prov : State.provenance option)
     ~(check : ((int -> bool) -> unit) option) : unit =
-  (* A degenerate fold: the crease is a supporting line of the convex paper —
+  (* A degenerate fold: the crease is a supporting line of the convex paper:
      collinear with a boundary edge, or tangent at a single corner (zero-length
      crease). Either way one open half-plane holds no material, so there is no
      second flap to reflect. Structurally impossible (issue #39), an error, not
@@ -162,7 +162,7 @@ let crease_id_for (ctx : Ctx.ctx) (out : Ast.output) ~(fresh : unit -> int) :
           | Material _ -> promote_crease ctx n cv
           | Frozen _ | Mark _ | Bundle _ | Edge _ -> () )
 
-(* Resolve a markable to either a fresh construction (axis, provenance, the
+(* Resolve a [markable] to either a fresh construction (axis, [provenance], the
    side that folds over where the side items fix it, and the implied anchor)
    or an existing line to fold or mark along. [fold] is true for the writes
    that move paper, which need a side the fold can take. *)
@@ -295,8 +295,8 @@ let eval_mark (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
         | chords -> record_pieces (List.map piece chords))
   in
   (* Behaviour 4: dispatch a partial extent's classification. Under the
-     material-layer model NO mark subdivides — CSubdivide (a full chord
-     between two boundary points) records exactly like CRecord. Only
+     material-layer model NO mark subdivides: [CSubdivide] (a full chord
+     between two boundary points) records exactly like [CRecord]. Only
      `Ast.Between` can ever yield [CCrossesFold]. *)
   let dispatch_partial ~flap ~extent_geom ~paper_axis =
     match
@@ -416,7 +416,7 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
       run_fold ctx ~span ~axis ~fs ~implied ~side_override ~crease_id:cid ~prov;
       (* push the frame BEFORE binding the name: a first-fold crease's
          creation step must count that fold (step 1), not the
-         pre-fold count (step 0) — see scope.line_steps. *)
+         pre-fold count (step 0): see scope.line_steps. *)
       push_frame ctx (Some span);
       bind_out (Material (cid, axis))
   | `Existing (Ast.LNamed cr)
@@ -424,7 +424,7 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
           | Mark _ -> true
           | _ -> false) ->
       (* fold along a MARK: marks never subdivide, so there is no existing
-         crease to fold along — materialize a fresh real crease on the
+         crease to fold along: materialize a fresh real crease on the
          mark's line. At emit the coincident mark is superseded by this
          crease. *)
       let mark_cid, mark_line =
@@ -490,7 +490,7 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
       in
       check_axis axis;
       (* per-flap material check: every segment of the bundle carried by
-         a moving flap must lie on the axis — a crease bent under the
+         a moving flap must lie on the axis: a crease bent under the
          moving set cannot fold (#28) *)
       let check_straight (moves : int -> bool) =
         List.iter

@@ -1,8 +1,8 @@
 open Beloch
 
-(* Task 4: `flatten` becomes bindable (`--r = flatten ...`), mirroring the
+(* Task 4: `flatten` becomes bindable (`--r = flatten …`), mirroring the
    `Fold`/`Mark` name slot. The bound name resolves to a selectable bundle of
-   the given rays (validate mode) — the emergent-crease refinement of what
+   the rays (validate mode): the emergent-crease refinement of what
    the bundle contains is a later task. *)
 
 let expect_error msg_substr thunk =
@@ -18,7 +18,7 @@ let expect_error msg_substr thunk =
          true
        with Not_found -> false)
 
-(* same "+" vertex fixture as test_eval.ml's test_flatten_all_layers_ok:
+(* same "+" vertex fixture as test_eval.ml's [test_flatten_all_layers_ok]:
    two full creases through the center, subdivided into 4 rays, flattened as
    one vertex. Here the flatten is bound to --r. *)
 let vertex_src =
@@ -35,11 +35,11 @@ let test_flatten_bind_parses_and_evals () =
 
 (* the bound name occupies the crease namespace like any other bind: a
    second bind of the same name is rejected exactly like
-   test_eval_dup_crease_error's `mark --x` / `mark --x`. This is the same
+   [test_eval_dup_crease_error]'s `mark --x` / `mark --x`. This is the same
    "is this name bound" proof the rest of the suite uses (no dedicated
-   Env/has_bundle accessor exists — bind_crease's own dup-check is it).
-   Rebinding via a bundle expr (`[--h]`) rather than `mark`/axiom keeps this
-   test purely about namespace occupancy: bind_crease's dup-check fires
+   Env/has_bundle accessor exists: [bind_crease]'s own dup-check is it).
+   Rebinding via a bundle expression (`[--h]`) rather than `mark`/axiom keeps this
+   test purely about namespace occupancy: [bind_crease]'s dup-check fires
    before any geometry is evaluated, so it can't be confused with an
    unrelated axiom error. *)
 let test_flatten_bind_registers_name () =
@@ -49,11 +49,11 @@ let test_flatten_bind_registers_name () =
 
 (* the bound name resolves as a genuine selectable bundle, not a dead label:
    filtering it down to one of its constituent rays (crease & flap, same
-   two-level selector shape the flatten's own elements used) and crossing
+   two-level selector shape the [flatten]'s own elements used) and crossing
    two such rays with `*` exercises the same bundle_segments/resolve_line
    path a directly-named crease would, proving --r isn't special-cased or
-   inert. (A single #[...] flap filter alone is ambiguous here — two of the
-   four rays border the same sector face — so the crease selector narrows
+   inert. (A single #[…] flap filter alone is ambiguous here: two of the
+   four rays border the same sector face, so the crease selector narrows
    it the same way the flatten statement itself did.) *)
 let test_flatten_bind_selects_ray () =
   let fd =
@@ -64,7 +64,7 @@ let test_flatten_bind_selects_ray () =
   Alcotest.(check bool) "z bound via bound-bundle selection" true
     (List.exists (fun (n, _, _, _) -> n = "z") fd.Eval.named_points)
 
-(* unbound `flatten ...` (no name) must keep parsing — the name is optional,
+(* unbound `flatten …` (no name) must keep parsing: the name is optional,
    not required. *)
 let test_flatten_unbound_still_parses () =
   let fd =
@@ -79,15 +79,15 @@ let test_flatten_unbound_still_parses () =
   Alcotest.(check int) "unbound flatten still leaves 4 sector faces" 4
     (Array.length (Fold_state.faces fd.Eval.state))
 
-(* ONE pipeline for both parities — an ODD ray
+(* ONE pipeline for both parities: an ODD ray
    count adds an emergent-ray candidate ([Flatten.candidates]); the solver
    enumerates Maekawa-consistent M/V patterns ([Flatten.mv_patterns]) through
    [Collapse.collapse_all] and `{toward}` selects among the pooled
    realizations by the three-stage rule (position class, min-mountain canon,
    rank dipole). *)
 
-(* `\` (Drop) must be accepted inside a flatten item exactly like `&` (Keep)
-   — both are ordinary line_operand LFilter productions, not new grammar;
+(* `\` (Drop) must be accepted inside a flatten item exactly like `&` (Keep):
+   both are ordinary [line_operand] [LFilter] productions, not new grammar;
    this is the "first verify" parse-only smoke check the task calls for. *)
 let test_flatten_item_accepts_backslash_filter () =
   let prog =
@@ -106,14 +106,14 @@ let test_flatten_item_accepts_backslash_filter () =
 (* Direct unit test of the candidate GENERATOR ([Flatten.candidates] no
    longer picks a winner; that is the caller's job) on
    the exact spike vertex V = (1/2, √5−2) with the ALL-`\` surface (rays
-   pointing AWAY from the two base corners + the down-spine, fars ≈25.3°,
+   pointing AWAY from the two base corners + the down-spine, far-tips ≈25.3°,
    ≈154.7°, 270°). This is the proven configuration of
-   tests/spike_flatten.ml. Fed those three fars, [candidates] must include
-   the GENUINE emergent swivel crease among its results — a line
-   axiom-unconstructible from the three givens — the ≈320.55° line meeting
+   tests/spike_flatten.ml. Fed those three far-tips, [candidates] must include
+   the GENUINE emergent swivel crease among its results, a line
+   axiom-unconstructible from the three givens, the ≈320.55° line meeting
    the base near x≈0.787 (verified empirically: `Flatten.candidates` returns
-   3 entries here — this one, its ≈219.45°-mirror, and the up-spine
-   opposite-ray reuse — matching 364660f's "tier 1 = {320.5°, 219.5°}"
+   3 entries here (this one, its ≈219.45°-mirror, and the up-spine
+   opposite-ray reuse), matching 364660f's "tier 1 = {320.5°, 219.5°}"
    finding; this test only pins down the GENUINE one's properties, not the
    full set). *)
 let test_flatten_derive_unit () =
@@ -124,7 +124,7 @@ let test_flatten_derive_unit () =
   let a = mk Num.zero Num.zero
   and b = mk Num.one Num.zero
   and m = mk half Num.one in
-  (* fars AWAY from each landmark = 2·V − landmark (opposite ray through V) *)
+  (* far-tips AWAY from each landmark = 2·V − landmark (opposite ray through V) *)
   let refl p =
     mk
       (Num.sub (Num.mul (Num.of_int 2) v.Geom.x) p.Geom.x)
@@ -141,7 +141,7 @@ let test_flatten_derive_unit () =
   let fixed = Collapse.sort_ccw v es in
   let cands = Flatten.candidates v ~fixed in
   (* the four-ray vertex (a candidate + the three givens) is Kawasaki-flat iff
-     the reflection product over the CCW-sorted rays is the identity — exactly
+     the reflection product over the CCW-sorted rays is the identity: exactly
      one of a candidate's two ends closes (closure is order-sensitive), so try
      both; a genuine candidate must also be distinct from all three given
      lines (spine x=1/2, bisector-a, bisector-b). *)
@@ -177,7 +177,7 @@ let test_flatten_derive_unit () =
 
 (* the classic rabbit-ear vertex end-to-end: incenter O of triangle a/b/m,
    two angle bisectors + the down-spine as the three GIVEN rays, all in the
-   ALL-`\` (away-from-corner) surface so the emergent crease is genuinely new
+   ALL-`\` (away-from-corner) surface so the emergent crease is new
    (not collinear with a given ray). Proves the full parse→derive→materialize
    →collapse pipeline reaches a valid flat state AND leaves a real emergent
    crease distinct from every given ray. *)
@@ -196,13 +196,13 @@ let test_flatten_derive_e2e () =
     Eval.eval_folded (Beloch.parse ~filename:"t.bel" rabbit_ear_derive_src)
   in
   (* [Fold_state.t] is abstract and constructed only via [make], which enforces
-     every state invariant — so [fd]'s successful evaluation already IS the
+     every state invariant: so [fd]'s successful evaluation already IS the
      validity proof (no separate [validity_error] probe exists on the new
      core; see the dictionary in the 3c port plan). *)
-  (* prove a GENUINELY new crease was materialised: the incenter O and the
+  (* prove a NEW crease was materialised: the incenter O and the
      three given lines (spine x=1/2 and the two bisectors through O) are known;
      assert some crease segment is incident to O in paper space on a line
-     PARALLEL to none of them — i.e. the emergent swivel crease, not just a
+     PARALLEL to none of them: i.e. the emergent swivel crease, not just a
      re-use of a given ray. *)
   let mk x y = { Geom.x; y } in
   let o = mk (Num.of_q (Q.of_ints 1 2))
@@ -213,9 +213,9 @@ let test_flatten_derive_e2e () =
       { Geom.a = Num.one; b = Num.zero; c = Num.of_q (Q.of_ints 1 2) };
       (* spine x=1/2 *)
       Geom.line_through o (mk Num.zero Num.zero);
-      (* bisector-a: O–a *)
+      (* bisector-a: O-a *)
       Geom.line_through o (mk Num.one Num.zero);
-      (* bisector-b: O–b *)
+      (* bisector-b: O-b *)
     ]
   in
   let st = fd.Eval.state in
@@ -235,20 +235,20 @@ let test_flatten_derive_e2e () =
     "a genuinely-distinct emergent crease is incident to O" true emergent_exists
 
 (* --ear occupies the crease namespace exactly like the validate-mode bind
-   (Task 4) — same dup-check proof, no dedicated Env/has_bundle accessor. *)
+   (Task 4): same dup-check proof, no dedicated Env/has_bundle accessor. *)
 let test_flatten_derive_registers_name () =
   expect_error "already bound" (fun () ->
       Eval.eval_folded
         (Beloch.parse ~filename:"t.bel" (rabbit_ear_derive_src ^ "--ear = [--v]\n")))
 
 (* Task 6: the bound name in DERIVE mode must resolve to the EMERGENT crease,
-   not the given rays — so a meet-point selector against it (`.[--ear --da]`)
+   not the rays: so a meet-point selector against it (`.[--ear --da]`)
    finds the tip where the emergent crease reaches the paper edge. For
-   rabbit_ear_derive_src's O = (1/2, (sqrt5-1)/4) ~= (0.5, 0.309017), the
-   emergent ray (the genuinely-new crease test_flatten_derive_e2e already
-   proves exists) runs to the LEFT edge --da (x=0), not the base --ab — a
+   [rabbit_ear_derive_src]'s O = (1/2, (sqrt5-1)/4) ~= (0.5, 0.309017), the
+   emergent ray (the new crease [test_flatten_derive_e2e] already
+   proves exists) runs to the LEFT edge --da (x=0), not the base --ab: a
    `.[--ear --ab]` meet is off the mark's chord and errors, which is how this
-   was first verified. If --ear still bound the given rays (a Bundle of
+   was first verified. If --ear still bound the rays (a Bundle of
    --ba/--bb/--v), `.[--ear --da]` would be ambiguous (3 segments, none of
    which reaches --da) instead of resolving to the one emergent tip. *)
 let test_flatten_tip () =
@@ -265,19 +265,19 @@ let test_flatten_tip () =
       Alcotest.(check (float 0.001)) "tip lands near y=0.059" 0.0590169944
         (Num.to_float p.Geom.y)
 
-(* The fish-base vertex: O = incenter of triangle abd on the ac-diagonal; the
-   true 4th ray is the diagonal's CONTINUATION O→c — collinear with the given
+(* The fish-base vertex: O = incenter of triangle [abd] on the ac-diagonal; the
+   true 4th ray is the diagonal's CONTINUATION O→c: collinear with the
    a-ray, i.e. a tier-2 OPPOSITE-RAY completion under the two-tier rule. Both
    tier-1 (line-new) candidates fold a flap off the paper for EVERY Maekawa
-   pattern, so the deciding set is tier-2's pooled realizations — 6 of them,
+   pattern, so the deciding set is tier-2's pooled realizations: 6 of them,
    all in ONE position class (placements depend only on ray LINES, verified
    by instrumentation). The three-stage selection then works purely on
    STACKING: the min-mountain canon keeps the three 1-given-mountain
    realizations, and the rank-dipole stage picks the one laying the
    toward-side material on top. `{toward .b}` and `{toward .d}` therefore
-   produce the two MIRROR realizations — same placements (every paper point
-   lands at the same table position!) but mirrored layer order — the spec's
-   whole point. The difference is observable in [Fold_state.rank], not in
+   produce the two MIRROR realizations: same placements (every paper point
+   lands at the same table position!) but mirrored layer order, which is the
+   spec's whole point. The difference is observable in [Fold_state.rank], not in
    table positions. *)
 let fish_base_src toward =
   Printf.sprintf
@@ -303,11 +303,11 @@ let test_flatten_derive_opposite_ray_fish_base () =
     "toward .b and toward .d pick DIFFERENT realizations (mirror stackings)"
     false (rank_b = rank_d)
 
-(* toward ON the vertex's reflective symmetry axis (fish: the ac-diagonal —
+(* toward ON the vertex's reflective symmetry axis (fish: the ac-diagonal,
    the given-ray direction set is invariant under reflection across it, b↔d)
-   cannot pick a side: the two flaps are genuinely indistinguishable there.
+   cannot pick a side: the two flaps are indistinguishable there.
    The explicit symmetry guard (rule doc §Ties) must reject with
-   e_toward_ambiguous rather than let the dipole's arbitrary null-direction
+   [e_toward_ambiguous] rather than let the dipole's arbitrary null-direction
    produce a strict-but-meaningless argmax. *)
 let test_flatten_fish_toward_on_axis_ambiguous () =
   expect_error "does not pick a side" (fun () ->
@@ -315,14 +315,14 @@ let test_flatten_fish_toward_on_axis_ambiguous () =
 
 (* Unit test of the same-DIRECTION genuine-filter: the PLUS vertex
    O = (1/2,1/2) with given rays right (1,1/2), up (1/2,1), down (1/2,0).
-   The only completion is the LEFT ray (0,1/2) — the OPPOSITE ray of the
-   given right ray's own line (y = 1/2). The old same-LINE filter dropped it
+   The only completion is the LEFT ray (0,1/2): the OPPOSITE ray of the
+   right ray's own line (y = 1/2). The old same-LINE filter dropped it
    ("extend a line already drawn"); the direction filter must keep it. No
    line-new candidate exists at all here, so [candidates] returns exactly one
-   entry, tagged `OppositeRay`. (V2: feasibility is no longer [Flatten]'s job
-   — [candidates] is a pure generator now — so the old
+   entry, tagged `OppositeRay`. (V2: feasibility is no longer [Flatten]'s job:
+   [candidates] is a pure generator now, so the old
    `feasible`-before-`toward` unit test has no Flatten-module-level
-   equivalent any more; its behavior is covered by the eval-level fish-base
+   equivalent any more; its behavior is covered by the evaluation-level fish-base
    test below, where the two LineNew candidates fail via
    `Collapse.collapse_all` returning `Error` for every pattern.) *)
 let test_flatten_derive_opposite_ray_unit () =
@@ -339,12 +339,12 @@ let test_flatten_derive_opposite_ray_unit () =
   let fixed = Collapse.sort_ccw o es in
   match Flatten.candidates o ~fixed with
   | [ (l, r, `OppositeRay) ] ->
-      (* the horizontal line y = 1/2 ... *)
+      (* the horizontal line y = 1/2 … *)
       Alcotest.(check bool) "emergent line is horizontal" true
         (Num.sign l.Geom.a = 0);
       Alcotest.(check int) "emergent line passes through O" 0
         (Geom.side_of_line l o);
-      (* ... and the LEFT ray of it (x decreasing from O) *)
+      (* … and the LEFT ray of it (x decreasing from O) *)
       Alcotest.(check bool) "emergent ray points left" true
         (Num.compare r.Geom.x o.Geom.x < 0)
   | cands ->
@@ -374,8 +374,8 @@ let test_flatten_derive_in_bounds () =
   let fd =
     Eval.eval_folded (Beloch.parse ~filename:"t.bel" swivel_rabbit_src)
   in
-  (* [fd]'s successful evaluation already proves validity — see
-     test_flatten_derive_e2e's comment. *)
+  (* [fd]'s successful evaluation already proves validity: see
+     [test_flatten_derive_e2e]'s comment. *)
   let st = fd.Eval.state in
   let nf = Array.length (Fold_state.faces st) in
   let all_in =
@@ -386,12 +386,12 @@ let test_flatten_derive_in_bounds () =
   Alcotest.(check bool)
     "every folded face stays within the unit-square paper" true all_in
 
-(* Task 3 step 1: [Flatten.candidates] unit on the fish-base vertex itself —
+(* Task 3 step 1: [Flatten.candidates] unit on the fish-base vertex itself:
    O = incenter-on-diagonal (1 − √2/2, 1 − √2/2), given rays toward b, d, a
-   (the geometry [fish_base_src] actually resolves to; verified by evaluating
+   (the geometry [fish_base_src] resolves to; verified by evaluating
    the marks up to just before the flatten and reading off named points).
    Must contain the opposite-ray candidate (O→c, the diagonal's continuation,
-   tagged `OppositeRay`) and the two side candidates (tagged `LineNew`) —
+   tagged `OppositeRay`) and the two side candidates (tagged `LineNew`):
    exactly the shape the brief names, independent of feasibility (feasibility
    is no longer this module's concern). *)
 let test_flatten_candidates_fish_vertex () =
@@ -416,8 +416,8 @@ let test_flatten_candidates_fish_vertex () =
   Alcotest.(check int) "two LineNew (the side candidates)" 2 (count `LineNew)
 
 (* Task 3 step 1: the pure Maekawa-consistent M/V pattern enumerator
-   ([Flatten.mv_patterns]). n=4: valid (M,V) splits are (3,1)/(1,3) —
-   |diff|=2 — never (2,2)/(4,0)/(0,4). *)
+   ([Flatten.mv_patterns]). n=4: valid (M,V) splits are (3,1)/(1,3), where
+   |diff|=2, never (2,2)/(4,0)/(0,4). *)
 let test_flatten_mv_patterns_all_free () =
   Alcotest.(check int) "4 free rays -> 8 Maekawa patterns" 8
     (List.length (Flatten.mv_patterns [ Ast.MvFree; Ast.MvFree; Ast.MvFree; Ast.MvFree ]))
@@ -431,8 +431,8 @@ let test_flatten_mv_patterns_one_pinned () =
        (Flatten.mv_patterns [ Ast.MvMountain; Ast.MvFree; Ast.MvFree; Ast.MvFree ]))
 
 let test_flatten_mv_patterns_beyond_maekawa () =
-  (* all four pinned to the SAME polarity (Mountain): nm=4, nv=0, diff=4 ≠ 2
-     — Maekawa-unsatisfiable regardless of free assignment (there is none;
+  (* all four pinned to the SAME polarity (Mountain): nm=4, nv=0, diff=4 ≠ 2:
+     Maekawa-unsatisfiable regardless of free assignment (there is none;
      everything is pinned) -> 0 patterns. *)
   Alcotest.(check int) "four pinned Mountain (beyond Maekawa) -> 0 patterns" 0
     (List.length
@@ -442,11 +442,11 @@ let test_flatten_mv_patterns_beyond_maekawa () =
 (* A flat (angle 0) hinge is a tortilla: its two faces are one continuous
    sheet across the hinge segment. Where that segment lies collinear on a
    FOLDED hinge's crease (a taco), the sheet must stay on one side of the
-   taco's mouth — one face ranked inside [taco.fa, taco.fb] and the other
+   taco's mouth: one face ranked inside [taco.fa, taco.fb] and the other
    outside means paper passes through paper. Fixture: the two-ear fish base
    with BOTH ears {toward .d}; before the flat-hinge taco-tortilla check this
    emitted a ghost state (second wing seated under the stationary strip, its
-   ear above it — physically impossible, spotted on the render). *)
+   ear above it: physically impossible, spotted on the render). *)
 let test_flatten_no_flat_hinge_splits_taco () =
   let src =
     "paper square\n\

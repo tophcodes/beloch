@@ -5,7 +5,7 @@ open Beloch
 let dir = "examples/" and out = "packages/core/tests/golden/"
 
 (* every .bel in examples/, recursively, as a path relative to `dir` (e.g.
-   "syntax/bisect-a.bel") — mirrors tests/test_golden.ml's walk. *)
+   "syntax/bisect-a.bel"): mirrors tests/test_golden.ml's walk. *)
 let rec example_names prefix =
   let d = dir ^ prefix in
   Sys.readdir d |> Array.to_list

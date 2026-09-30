@@ -1,4 +1,4 @@
-(** Primitive-element merge for real_roots: express algebraic coefficients over
+(** Primitive-element merge for [real_roots]: express algebraic coefficients over
     one generator γ of the field they span (compositum of independent folds),
     and form the ℚ[t] superset polynomial via a single resultant. The tier
     this sits in, and the gate that reaches it, are in [Num.real_roots]. *)
@@ -21,7 +21,7 @@ let extend (gen : Qqbar.t) (b : Qqbar.t) : Qqbar.t option =
       in
       search 1
 
-(* (mu_gamma, coords) with coords.(i)(gamma) = input.(i), or None. *)
+(* ([mu_gamma], coords) with coords.(i)(gamma) = input.(i), or None. *)
 let merge_generators (coeffs : Qqbar.t array) : (Poly.t * Poly.t array) option =
   (* distinct non-rational coefficients, in first-seen order *)
   let algs =
@@ -52,14 +52,14 @@ let merge_generators (coeffs : Qqbar.t array) : (Poly.t * Poly.t array) option =
             Some (Qqbar.minpoly gamma, coords))
 
 (* R(t) = Res_x(mu(x), F~(t,x)) where F~(t,x) = Σ_i coords.(i)(x)·t^i, a superset
-   of the true roots of the original polynomial. Computed by evaluation–
-   interpolation in t: sample R(t_j) = Res_x(mu, F~(t_j,·)) with the univariate
-   Poly.resultant, then interpolate. deg_t R ≤ deg(mu)·(len coords − 1).
+   of the true roots of the original polynomial. Computed by evaluation-
+   interpolation in t: sample R([t_j]) = Res_x(mu, F~([t_j],·)) with the univariate
+   Poly.resultant, then interpolate. [deg_t] R ≤ deg(mu)·([len] coords − 1).
 
-   Sampled only at t_j where F~(t_j,·) keeps its full formal x-degree: when the
-   leading x-coefficient of F~ (a polynomial in t) vanishes at t_j, Poly.resultant
+   Sampled only at [t_j] where F~([t_j],·) keeps its full formal x-degree: when the
+   leading x-coefficient of F~ (a polynomial in t) vanishes at [t_j], Poly.resultant
    would compute a reduced-degree resultant differing from the formal R(t_j) and
-   corrupt the interpolation. That leading coefficient has at most (len coords−1)
+   corrupt the interpolation. That leading coefficient has at most ([len] coords−1)
    roots, so enough good integer samples always exist.
 
    ~10× faster than the equivalent general multivariate resultant, which pays a
@@ -81,7 +81,7 @@ let resultant_superset ~(coords : Poly.t array) ~(mu : Poly.t) : Poly.t =
       coords;
     !acc
   in
-  (* collect deg_r + 1 samples that keep the full formal x-degree n *)
+  (* collect [deg_r] + 1 samples that keep the full formal x-degree n *)
   let pts = ref [] and got = ref 0 and k = ref 0 in
   while !got <= deg_r do
     let tj = Q.of_int !k in

@@ -15,7 +15,7 @@ let test_compose_is_apply_after () =
   Alcotest.(check bool) "id∘id = id on a point" true
     (peq (Isometry3.apply_point (Isometry3.compose i i) (p 1 2 3)) (p 1 2 3))
 
-(* a z=0 line ℓ: through (0,0) along (1,2). half_turn about it, on a z=0 point,
+(* a z=0 line ℓ: through (0,0) along (1,2). [half_turn] about it, on a z=0 point,
    must equal the 2D reflection across the same line. *)
 let test_half_turn_is_2d_reflection () =
   let on = p 0 0 0 and dir = p 1 2 0 in
@@ -36,8 +36,8 @@ let test_half_turn_is_involution () =
   Alcotest.(check bool) "h∘h = id on a point" true
     (peq (Isometry3.apply_point hh (p 5 7 (-3))) (p 5 7 (-3)))
 
-(* compose h1 h2 must apply as h1 (h2 p) — computed independently by nesting
-   apply_point — and two distinct half-turns must NOT commute. Axes must meet at
+(* compose h1 h2 must apply as h1 (h2 p) (computed independently by nesting
+   [apply_point]) and two distinct half-turns must NOT commute. Axes must meet at
    a non-right angle: half-turns about perpendicular axes (e.g. x- and y-axes)
    are both diagonal and DO commute, so we use x-axis and a 45° in-plane axis. *)
 let test_compose_order () =

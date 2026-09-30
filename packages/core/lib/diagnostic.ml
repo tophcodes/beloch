@@ -1,4 +1,4 @@
-(** Render a Beloch_error as a rustc-style source-context block, with the hint
+(** Render a [Beloch_error] as a rustc-style source-context block, with the hint
     as a [help] line under the caret when there is one. Pure: source
     text + span + message + hint -> string. Uses whatever span the error
     carries. *)

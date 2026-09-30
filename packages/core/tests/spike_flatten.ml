@@ -1,6 +1,6 @@
 (* Spike: single-emergent swivel derive on the rabbit-ear.bel geometry.
    Vertex V = (1/2, sqrt5 - 2); given lines --ba=(V,a), --bb=(V,b), --v=(V,m).
-   Hypothesis: R_ear = inverse(R_ba . R_bb . R_v) is a reflection through V whose
+   Hypothesis: [R_ear] = inverse(R_ba . [R_bb] . [R_v]) is a reflection through V whose
    axis is the emergent crease (~319 deg, meeting the base near x=0.766). *)
 
 open Beloch

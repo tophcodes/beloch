@@ -1,11 +1,11 @@
-(* Field-degree scaling benchmark — the honest measure for the 3^N wall.
+(* Field-degree scaling benchmark: the honest measure for the 3^N wall.
 
    A generic (irreducible-cubic) axiom-7 fold N sees a coefficient field of
    degree 3^(N-1). We probe the cost of ONE axiom-7 cubic as a function of that
-   degree, using a single clean generator px = 2^(1/D) (root of x^D − 2,
+   degree, using a single clean generator [px] = 2^(1/D) (root of x^D − 2,
    irreducible → degree exactly D). Prints end-to-end Num.real_roots plus the
    Tier-3 stage breakdown (merge / resultant / roots / filter), mirroring
-   bench_real_roots.
+   [bench_real_roots].
 
    Usage: dune exec packages/core/bench/bench_generic.exe -- [D1 D2 ...]   (default 3 9 27) *)
 open Beloch

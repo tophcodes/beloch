@@ -1,4 +1,4 @@
-(** Provenance carried on each crease: which axiom produced it, its source
+(** [Provenance] carried on each crease: which axiom produced it, its source
     inputs, the source span, the bound crease name (if any), and the index of
     the statement that scored it. *)
 

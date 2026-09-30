@@ -1,14 +1,14 @@
-(** js_of_ocaml entry point — exports a global [belochFoldString] that runs
+(** js_of_ocaml entry point: exports a global [belochFoldString] that runs
     the real evaluator ([Beloch.fold_string]) on a source string and returns
     a JSON-encoded, structured result:
 
     - [{"ok":true,"fold":<FOLD object>}] on success.
     - [{"ok":false,"kind":"native","message":...}] when evaluation hit an
       irrational (qqbar) value, which the js_of_ocaml build can't compute
-      (see [qqbar_shim.js] and decisions/0013-flint-qqbar-backend.md) — the
+      (see [qqbar_shim.js] and decisions/0013-flint-qqbar-backend.md); the
       caller should fall back to the native evaluator.
     - [{"ok":false,"kind":"error","message":...,"hint":...,"line":...,"column":...,
-      "endLine":...,"endColumn":...}] for a Beloch_error (language/program
+      "endLine":...,"endColumn":...}] for a [Beloch_error] (language/program
       error). [line] and [column] are the 1-based start of the span the error
       carries, [endLine] and [endColumn] the position one past its end, so the
       caller can mark the offending word in its editor. [hint] is present when

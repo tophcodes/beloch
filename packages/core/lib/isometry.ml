@@ -1,4 +1,4 @@
-(** Exact 2D isometry: an orthogonal 2×2 matrix (det ±1) plus a translation, all
+(** Exact 2D isometry: an orthogonal 2×2 matrix ([det] ±1) plus a translation, all
     in [Num]. Used to place each face of the paper onto the table. *)
 
 type t = {

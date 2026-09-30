@@ -23,7 +23,7 @@ let span_of_stmt : Ast.stmt -> Error.span = function
   | Ast.Export (_, _, sp)
   | Ast.Flatten (_, _, _, _, _, _, sp) -> sp
 
-(* collapse every run of whitespace to a single space and trim — so
+(* collapse every run of whitespace to a single space and trim: so
    reindentation / line breaks inside a statement do not change the key. *)
 let normalize_ws (s : string) : string =
   let b = Buffer.create (String.length s) in
@@ -43,7 +43,7 @@ let canon_stmt (src : string) (stmt : Ast.stmt) : string =
   let start, stop = span_of_stmt stmt in
   let a = start.Lexing.pos_cnum in
   let b = stop.Lexing.pos_cnum in
-  (* pos_cnum are byte offsets into [src]; clamp defensively *)
+  (* [pos_cnum] are byte offsets into [src]; clamp defensively *)
   let a = if a < 0 then 0 else a in
   let b = if b > String.length src then String.length src else b in
   let slice = if b > a then String.sub src a (b - a) else "" in

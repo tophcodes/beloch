@@ -3,18 +3,18 @@
    Runs ONE named case per invocation (so a walling case can be bounded with
    `timeout` by the runner) and prints:
      - a human-readable summary line
-     - a machine-readable `CSV,...` line for diffing across optimizations
+     - a machine-readable `CSV,…` line for diffing across optimizations
 
    Ground truth = end-to-end `Num.real_roots`. The per-stage breakdown
-   (merge / resultant / real_roots_of_poly / eval_p filter) reproduces the
-   Tier-3 pe_path via the public `Field_merge` API so we can attribute where
-   time goes; `filter` here is a faithful replica of num.ml's exact eval_p
-   check (it may drift if that check changes — trust `total` as the truth).
+   (merge / resultant / [real_roots_of_poly] / [eval_p] filter) reproduces the
+   Tier-3 [pe_path] via the public `Field_merge` API so we can attribute where
+   time goes; `filter` here is a faithful replica of num.ml's exact [eval_p]
+   check (it may drift if that check changes: trust `total` as the truth).
 
    Usage:
      dune exec packages/core/bench/bench_real_roots.exe -- <case>
      dune exec packages/core/bench/bench_real_roots.exe -- list      # names, one per line
-   Cases: rational | quad | independent | deepstack | stacked:<N>
+   Cases: rational | quad | independent | [deepstack] | stacked:<N>
    Or just run bench/run.sh for the whole corpus under per-case timeouts. *)
 open Beloch
 
@@ -53,7 +53,7 @@ let axiom7_cubic (px : Num.t) : Num.t array =
   let s = Num.sub (Num.add (Num.mul e.a q.x) (Num.mul e.b q.y)) e.c in
   psub (pscale s n2c) (pscale two (pmul dd lL))
 
-(* stacked chain: feed round k's first real root forward as round k+1's p.x *)
+(* stacked chain: feed round [k]'s first real root forward as round k+1's p.x *)
 let stacked_coeffs (rounds : int) : Num.t array =
   let px = ref (nq "1/2") in
   for _ = 1 to rounds - 1 do
@@ -68,7 +68,7 @@ let coeffs_of_case (case : string) : Num.t array =
       let s2 = Num.sqrt (nq "2") in
       [| Num.neg s2; nq "0"; nq "0"; nq "1" |]           (* x^3 - sqrt2 *)
   | "independent" ->
-      (* coeffs combine two INDEPENDENT folds sqrt2 and cbrt2 -> Q(sqrt2,cbrt2) *)
+      (* [coeffs] combine two INDEPENDENT folds sqrt2 and cbrt2 -> Q(sqrt2,cbrt2) *)
       let s2 = Num.sqrt (nq "2") in
       let c2 = List.hd (Num.real_roots [| nq "-2"; nq "0"; nq "0"; nq "1" |]) in
       [| Num.neg s2; c2; nq "0"; nq "1" |]               (* x^3 + cbrt2 x - sqrt2 *)
@@ -108,8 +108,8 @@ let () =
     | (Some (mu, coords), ms) ->
         let (r, rs) = time (fun () -> Field_merge.resultant_superset ~coords ~mu) in
         let (cands, cs) = time (fun () -> Qqbar.real_roots_of_poly r) in
-        (* mirror num.ml's pe_tier filter: rigorous interval pre-screen, then
-           exact eval_p confirm on survivors *)
+        (* mirror num.ml's [pe_tier] filter: rigorous interval pre-screen, then
+           exact [eval_p] confirm on survivors *)
         let prec = 128 in
         let qmin a b = if Q.compare a b <= 0 then a else b in
         let qmax a b = if Q.compare a b >= 0 then a else b in

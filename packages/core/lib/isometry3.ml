@@ -1,4 +1,4 @@
-(** Exact 3D rigid motion: a 3×3 orthogonal matrix (det ±1) plus a translation,
+(** Exact 3D rigid motion: a 3×3 orthogonal matrix ([det] ±1) plus a translation,
     all in [Num]. Places a face of the paper into 3-space. Flat folds use only
     [half_turn_about_line]; general rotation-by-θ (θ = rπ) is Stage B. *)
 
@@ -65,7 +65,7 @@ let inverse (i : t) : t =
 let half_turn_about_line ~(on : point) ~(dir : point) : t =
   let ( * ) = Num.mul and ( + ) = Num.add and ( - ) = Num.sub in
   let dd = (dir.x * dir.x) + (dir.y * dir.y) + (dir.z * dir.z) in
-  (* R = 2 (d dᵀ)/(d·d) − I ; entry (i,j) = 2 d_i d_j / dd − [i=j] *)
+  (* R = 2 (d dᵀ)/(d·d) − I ; entry (i,j) = 2 [d_i] [d_j] / dd − [i=j] *)
   let two = Num.of_int 2 in
   let e di dj diag =
     Num.sub (Num.div (Num.mul two (Num.mul di dj)) dd)

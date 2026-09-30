@@ -1,5 +1,5 @@
 (** Sparse multivariate polynomials over ℚ in a fixed number of variables
-    (indices 0 .. nvars-1). Built for Num.real_roots: it manufactures, by
+    (indices 0 .. [nvars]-1). Built for Num.real_roots: it manufactures, by
     Sylvester-resultant elimination of each algebraic coefficient's generator, a
     ℚ-polynomial in the root variable whose real roots are a SUPERSET of the true
     roots (spurious conjugate roots are removed later by exact evaluation). Only
@@ -9,8 +9,8 @@
     (Poly.det), and the multivariate result is recovered by Lagrange
     interpolation. Algorithms: [bpr2006 §4.2]. *)
 
-type mono = int array (* exponents, length = nvars *)
-type t = (mono * Q.t) list (* unique monomials, no zero coeffs *)
+type mono = int array (* exponents, length = [nvars] *)
+type t = (mono * Q.t) list (* unique monomials, no zero [coeffs] *)
 
 let mono_equal (a : mono) (b : mono) : bool =
   Array.length a = Array.length b
@@ -60,7 +60,7 @@ let mul (p : t) (q : t) : t =
 let one_of (nvars : int) : t = const nvars Q.one
 
 let pow (p : t) (k : int) : t =
-  (* requires k >= 0; p^0 needs an nvars to build `one`, so derive from p *)
+  (* requires k >= 0; p^0 needs an [nvars] to build `one`, so derive from p *)
   if k = 0 then
     match p with
     | (m, _) :: _ -> one_of (Array.length m)
@@ -77,7 +77,7 @@ let degree_in (p : t) (v : int) : int =
   List.fold_left (fun acc (m, _) -> max acc m.(v)) 0 p
 
 (* coefficients of p viewed as a univariate polynomial in variable v:
-   result.(k) is the Mpoly coefficient of x_v^k, with x_v stripped. *)
+   result.(k) is the [Mpoly] coefficient of [x_v]^k, with [x_v] stripped. *)
 let coeffs_in (p : t) (v : int) : t array =
   let d = degree_in p v in
   let out = Array.make (d + 1) zero in
@@ -91,8 +91,8 @@ let coeffs_in (p : t) (v : int) : t array =
   out
 
 (* substitute values for the variables in [point] (all variables except v
-   must be covered); returns the univariate ℚ-coefficient array of x_v,
-   low-first, length degree_in p v + 1 (fixed generic length — substitution
+   must be covered); returns the univariate ℚ-coefficient array of [x_v],
+   low-first, length [degree_in] p v + 1 (fixed generic length: substitution
    can only zero leading entries, never change the array shape). *)
 let specialize (p : t) (v : int) (point : (int * Q.t) list) : Q.t array =
   let d = degree_in p v in
@@ -112,13 +112,13 @@ let specialize (p : t) (v : int) (point : (int * Q.t) list) : Q.t array =
 
 (* Sylvester resultant of a and b with respect to variable v, by evaluation +
    interpolation: the Sylvester matrix layout is fixed by the generic
-   v-degrees (da, db), so specializing the remaining variables commutes with
-   taking the determinant — even where leading coefficients vanish at a
+   v-degrees ([da], db), so specializing the remaining variables commutes with
+   taking the determinant: even where leading coefficients vanish at a
    sample point. Each specialized determinant is a numeric Gaussian
    elimination over ℚ (Poly.det), and the multivariate result is recovered
    by tensor-grid Lagrange interpolation, one variable at a time. Degree
-   bound in each remaining variable x: db·deg_x(a) + da·deg_x(b) (every
-   determinant term multiplies db entries from a-rows and da from b-rows).
+   bound in each remaining variable x: db·deg_x(a) + [da]·deg_x(b) (every
+   determinant term multiplies db entries from a-rows and [da] from b-rows).
    Replaces the division-free Laplace expansion, which was factorial in the
    matrix size [bpr2006 §4.2 for the Sylvester construction]. *)
 let resultant (a : t) (b : t) (v : int) : t =
@@ -168,7 +168,7 @@ let resultant (a : t) (b : t) (v : int) : t =
           in
           List.fold_left
             (fun acc (xi, ri) ->
-              (* Lagrange basis L_i(x) = ∏_{j≠i} (x − xj)/(xi − xj), as Mpoly *)
+              (* Lagrange basis L_i(x) = ∏_{j≠i} (x − [xj])/(xi − [xj]), as [Mpoly] *)
               let li =
                 List.fold_left
                   (fun p (xj, _) ->

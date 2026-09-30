@@ -1,15 +1,15 @@
 (** The 3D-native folded-state core (issue #48, spec
     2026-07-15-fold-state-3d-rewrite). [t] is abstract: a folded state exists
-    only via [make], which enforces the state invariants — so a value of type
+    only via [make], which enforces the state invariants, so a value of type
     [t] IS a legal folded state. Flat-first: hinge angles (dihedral/π) are
     restricted to {0, ±1}; general rπ is Stage B. *)
 
 type face = Geom.point array
 (** 2D paper polygon, sheet coordinates; convex, CCW (same contract as the
-    construction kernel — not re-validated here). *)
+    construction kernel: not re-validated here). *)
 
 type assign = M | V | F
-(** Mountain / valley / flat. A hinge's assignment is always derived — see
+(** Mountain / valley / flat. A hinge's assignment is always derived: see
     {!mv}; this type is also a mark's stored [mintent]. *)
 
 type hinge = {
@@ -34,7 +34,7 @@ type mark = {
   mprov : State.provenance option;
 }
 (** Paper-space, fold-invariant reference/pinch record (moved verbatim from
-    the old Fold_state). No invariants of its own. *)
+    the old [Fold_state]). No invariants of its own. *)
 
 type t
 (** @see <https://belochlang.org/model/#def-flat-state>
@@ -42,7 +42,7 @@ type t
 
 type violation =
   | Bad_index of string
-      (** root or a hinge's face index out of range, or fa = fb. A check on
+      (** root or a hinge's face index out of range, or fa = [fb]. A check on
           the representation; the model has no statement behind it. *)
   | Bad_rank
       (** rank is not a permutation of 0..n-1
@@ -66,7 +66,7 @@ type violation =
             realizes the hinge-closure condition *)
   | Hinge_not_closed of int
       (** hinge i (a cycle edge): the derived placements contradict its
-          motion — folding would tear the sheet
+          motion: folding would tear the sheet
           @see <https://belochlang.org/model/#cond-hinge-closure>
             realizes the hinge-closure condition *)
   | Taco_tortilla of { tortilla : int; hinge : int }
@@ -91,8 +91,8 @@ val make :
   rank:int array ->
   unit ->
   (t, violation) result
-(** The only constructor. [rank].(i) is face i's stacking height (higher =
-    above), a permutation of 0..n-1. [base] is the root face's placement —
+(** The only constructor. [rank].(i) is face [i]'s stacking height (higher =
+    above), a permutation of 0..n-1. [base] is the root face's placement:
     ONE whole-sheet rigid motion (default identity); needed because after a
     pleat (fold, then fold moving the previously-stationary side) no face
     keeps an identity placement, and [flip] moves everything. No per-face
@@ -100,7 +100,7 @@ val make :
     checks are unaffected (a rigid motion of everything). [marks] is a
     paper-space, fold-invariant array of reference/pinch records (default
     empty). The trailing [unit] anchors the two leading optional arguments
-    — OCaml cannot erase omitted optionals followed only by labelled
+    : OCaml cannot erase omitted optionals followed only by labelled
     arguments. Checks in order: structure (indices, rank, angle domain,
     line non-degeneracy), connectivity, hinge adjacency (half-plane +
     shared edge), cycle closure, then the non-crossing conditions
@@ -119,7 +119,7 @@ val rank : t -> int array
       realizes the linear extension of the layer relation *)
 
 val above : t -> int -> int -> bool
-(** [above g i j]: face i stacked strictly above face j (rank comparison —
+(** [above g i j]: face i stacked strictly above face j (rank comparison:
     meaningful for faces that overlap in the flat projection). *)
 
 val hinge_motion : hinge -> Isometry3.t
@@ -145,16 +145,16 @@ val mv : t -> int -> assign
 (** Derived mountain/valley/flat of hinge [i], from placements + rank
     [hullzakharevich2023, §2.1]: valley iff the orientation-preserved side
     lies below its neighbour; [F] iff the hinge's angle is 0. Derived,
-    never stored — it cannot contradict the geometry. *)
+    never stored: it cannot contradict the geometry. *)
 
 val fresh_crease_id : unit -> int
 (** Mints a fresh internal crease id, unique within a reset cycle. *)
 
 val reset_ids : unit -> unit
-(** Resets the crease-id counter to 0 (called once per eval, so ids are a
+(** Resets the crease-id counter to 0 (called once per evaluation, so ids are a
     deterministic function of the program). *)
 
-(** [next_id_value ()] / [set_next_id n] — snapshot and restore the global
+(** [next_id_value ()] / [set_next_id n]: snapshot and restore the global
     crease-id counter, for the incremental evaluation cache (see
     [Session]). Ids are a deterministic function of the program prefix, so
     restoring the counter reproduces identical ids on resume. *)
@@ -165,13 +165,13 @@ val set_next_id : int -> unit
 
     Flat-first (hinge angles in {0, ±1}) motions keep z = 0 invariant, so a
     face's derived 3D placement restricted to the plane is exactly its table
-    placement as a 2D isometry — that is what this section exposes. Stage B
+    placement as a 2D isometry: that is what this section exposes. Stage B
     (partial angles) lifts faces off the plane; none of these must be used
     once that lands. *)
 
 val face_iso2 : t -> int -> Isometry.t
 (** In-plane 2D restriction of face [i]'s derived placement (the upper-left
-    2×2 block + translation of [face_iso]). Flat-first only — see above. *)
+    2×2 block + translation of [face_iso]). Flat-first only: see above. *)
 
 val table_polygon : t -> int -> Geom.point array
 (** Face [i]'s paper polygon placed on the table via [face_iso2]. Winding
@@ -187,7 +187,7 @@ type rel = Above | Below | Apart
 
 val rel : t -> int -> int -> rel
 (** [rel g i j]: [Above]/[Below] by rank where [i] and [j]'s table polygons
-    strictly overlap ([Geom.convex_overlap] — touching is not overlap);
+    strictly overlap ([Geom.convex_overlap]: touching is not overlap);
     [Apart] otherwise (including [i = j]).
     @see <https://belochlang.org/model/#def-flat-state>
       realizes the layer relation of the flat folded state *)
@@ -205,7 +205,7 @@ val table_position : t -> Geom.point -> Geom.point
     Raises [Invalid_argument] if the point lies in no face. *)
 
 val paper_preimages : t -> Geom.point -> Geom.point list
-(** Distinct paper-space points that currently map to table point [tp] — one
+(** Distinct paper-space points that currently map to table point [tp]: one
     per overlapping layer covering it. *)
 
 val on_paper : t -> Geom.point -> bool
@@ -214,9 +214,9 @@ val on_paper : t -> Geom.point -> bool
 (** {1 Construction operations}
 
     Each operation builds new faces/hinges and re-validates through [make]; a
-    violation raises {!Error.fail} at the given provenance span, since a
+    violation raises {!Error.fail} at [prov]'s span, since a
     program-level construction step is never expected to produce an invalid
-    state — reaching [Error] here is a bug, not user input to report softly. *)
+    state: reaching [Error] here is a bug, not user input to report softly. *)
 
 val init_square : t
 (** The unit square [0,1]², a single flat face, no hinges. *)
@@ -234,7 +234,7 @@ val subdivide :
     hinges over a split face are carried onto whichever child pair still
     shares a positive-length boundary segment. [keep_side:(guard, keep)]
     restricts the cut to the ray of [axis] on side [keep] of the
-    perpendicular [guard] line through the ray's origin — faces on the other
+    perpendicular [guard] line through the ray's origin: faces on the other
     side are left uncut. [only] restricts the cut to the faces it holds for;
     every other face is left whole. [crease_id] defaults to a fresh id. *)
 
@@ -308,17 +308,17 @@ val fold :
     the TABLE-space [axis] (restricted to [moving_parents]) are cut and
     hinged to their stationary counterpart with a new angle-1 hinge; any
     old hinge lying entirely on [axis] with exactly one moving side toggles
-    (a flat precrease upgrades to folded, keeping its [crease_id]; a folded
+    (a flat precrease upgrades to folded and keeps its [crease_id]; a folded
     hinge with no cut counterpart on the axis physically unfolds back to
-    angle 0). The rank is rebuilt in two blocks —
-    stationary faces keep their relative order, movers reverse theirs — with
+    angle 0). The rank is rebuilt in two blocks (
+    stationary faces keep their relative order, movers reverse theirs) with
     movers stacked above for a valley fold, below for a mountain fold. The
     root and [base] are chosen from a stationary child where one exists (its
     parent's placement is unchanged); only when every face moves is the base
     itself reflected across [axis]. *)
 
 val simple_fold : t -> axis:Geom.line -> move_side:int -> valley:bool -> t
-(** [fold] with no [crease_id]/[moving_parents] override and no provenance. *)
+(** [fold] with no [crease_id]/[moving_parents] override and no [provenance]. *)
 
 type reverse_failure =
   | No_spine  (** no place between the tip's layers opens along a spine *)
@@ -394,15 +394,15 @@ val reverse_of_attempts : spine_attempt list -> (t, reverse_failure) result
 
 val flip : t -> t
 (** Turn the whole sheet over: reflects across the footprint's vertical
-    centerline (an internal, cosmetic axis — which line is irrelevant, only
+    centerline (an internal, cosmetic axis: which line is irrelevant, only
     the substantive effect matters), reverses the face array (observable: FOLD
     emit enumerates faces by index) and the stack. The reflection is absorbed
-    into [base] — the ONE
+    into [base]: the ONE
     whole-sheet motion; no per-face isometry is stored. *)
 
 val add_mark : t -> mark -> t
 (** Append a paper-space mark. Marks carry no invariants, so this is a plain
-    record update — no re-validation through [make]. *)
+    record update: no re-validation through [make]. *)
 
 (** {1 Selectors} *)
 
@@ -444,7 +444,7 @@ val crease_axis :
     from two distinct table endpoints), [`Bent] if the pieces are not
     collinear, [`Empty] if the crease has no pieces, [`Collapsed] if it has
     pieces but they have all folded onto a single table point (so it no longer
-    names a line — distinct from [`Empty], where there is nothing to name). *)
+    names a line: distinct from [`Empty], where there is nothing to name). *)
 
 val edge_axis :
   t -> Geom.line -> [ `Line of Geom.line | `Bent | `Empty | `Collapsed ]
@@ -460,12 +460,12 @@ val crease_paper_axis : t -> int -> [ `Line of Geom.line | `Bent | `Empty ]
 val coplanar_clusters : t -> int array
 (** Component id per face, over the graph of hinges with angle 0 (flat,
     unfolded): two faces separated only by a flat hinge are the same flap.
-    Ids are union-find representatives — only same/different is meaningful,
+    Ids are union-find representatives: only same/different is meaningful,
     never their numeric value or the order clusters appear in. *)
 
 val cluster_of_points : t -> Geom.point list -> [ `Cluster of int list | `Zero | `Ambiguous ]
 (** The unique coplanar cluster (flap) whose union of paper-space polygons
-    contains every point in the list, as its face-index list — ascending by
+    contains every point in the list, as its face-index list: ascending by
     construction (built via [List.filter] over [List.init n Fun.id]).
     [`Zero] if no single cluster contains every point, [`Ambiguous] if more
     than one does (the empty point list is [`Zero]). *)
@@ -475,7 +475,7 @@ val flap_of_points : t -> Geom.point list -> [ `Cluster of int list | `Zero | `A
 
 val line_material_segments : t -> Geom.line -> (Geom.point * Geom.point) list
 (** The positive-length intersection of table-space [l] with each face,
-    table space. Stacked layers yield duplicate segments — fine for
+    table space. Stacked layers yield duplicate segments: fine for
     existence/sign tests; a future measure-based use must dedupe. *)
 
 val line_cuts_paper : t -> Geom.line -> bool
@@ -502,12 +502,12 @@ val select_scope :
   (bool array, string * string option) result
 (** Moving-set selection for a scoped ("up to") simple fold: the
     outer-contiguous prefix of layers over the crease region ending at the
-    target — the static shadow of a collision-free 180° rotation
+    target: the static shadow of a collision-free 180° rotation
     [demaine2007, §14.1]. "Outer" is top for valley, bottom for mountain.
     Candidates are the faces with a piece on the moving side; overlap is
     judged between those pieces (depth may vary along the crease). The
     moving set is closed under both the outer-prefix rule and cohesion (a
-    candidate in the same coplanar cluster as a moving face must move too —
+    candidate in the same coplanar cluster as a moving face must move too:
     ADR 0017), and under every hinge off the axis, folded or flat, which
     cannot be torn ({!close_off_axis}). The anchor takes no part in the moving set (ADR 0036); it is
     only where a [TargetHinged] walk starts, and that walk fails without one.
@@ -536,14 +536,14 @@ val scoped_fold_hinge_closed :
   (unit, Geom.point * Geom.point) result
 (** A scoped moving set is hinge-closed (validly foldable) iff every existing
     crease segment separating a moving face from a stationary face lies on
-    the fold axis, with no endpoint strictly on [move_side] — i.e. a mover's
-    material actually lifts only where it's cut. [Error (a, b)] carries the
+    the fold axis, with no endpoint strictly on [move_side], i.e. a mover's
+    material lifts only where it's cut. [Error (a, b)] carries the
     offending segment's table-space endpoints. Only meaningful (and only
     called) for scoped `up to` folds; default folds partition by the axis
     halfplane, so their mover/stayer boundaries are on the axis by
     construction. *)
 
-(** {1 Marks} (port of the old Fold_state mark machinery, fold_state.ml:591-823) *)
+(** {1 Marks} (port of the old [Fold_state] mark machinery, fold_state.ml:591-823) *)
 
 val mark_rep_point : mark -> Geom.point
 (** The mark's representative paper-space point: an [MSeg]'s first endpoint,
@@ -559,17 +559,17 @@ val mark_axis_current :
 (** The mark [cid]'s current TABLE-space axis, tracking folds/flips (its
     paper geometry is fold-invariant, so the current line is the paper chord
     mapped to the table). [`Bent] if a fold has bent the chord (its paper
-    midpoint no longer maps onto the straight table chord) — the caller must
+    midpoint no longer maps onto the straight table chord): the caller must
     pick a flap. [`Empty] if [cid] has no [MSeg] mark. [`Collapsed] if it has
     a chord but a fold has folded its endpoints onto a single table point, so
     it no longer names a line (distinct from [`Empty]: the mark exists, its
-    current geometry is a point — falling back to its flat-paper birth line
+    current geometry is a point: falling back to its flat-paper birth line
     would be stale). *)
 
 val mark_face : t -> mark -> int option
 (** The face whose PAPER polygon contains the mark's representative point;
     paper coordinates partition the sheet, so this is unique in the interior
-    (a point on a shared boundary may match several — first match wins,
+    (a point on a shared boundary may match several: first match wins,
     callers disambiguate). *)
 
 val point_on_polygon_boundary : Geom.point array -> Geom.point -> bool
@@ -577,7 +577,7 @@ val point_on_polygon_boundary : Geom.point array -> Geom.point -> bool
     [poly]. *)
 
 val mark_graduates : t -> mark -> bool
-(** Emit-time graduation test: true when a seg mark's endpoints already sit
+(** Emit-time graduation test: true when a [seg] mark's endpoints already sit
     on a face boundary in this state's current topology. Point marks never
     graduate. *)
 
@@ -592,9 +592,9 @@ type mark_class =
   | CRecord of mark_geom
   | CCrossesFold of Geom.point * Geom.point
 (** A mark's paper-space extent, classified against the flap (coplanar
-    cluster) it lives on: does it subdivide the flap (a FULL CHORD — both
+    cluster) it lives on: does it subdivide the flap (a FULL CHORD: both
     endpoints on the flap's outer boundary, crossing only flat hinges in
-    between), merely record (ANY endpoint strictly mid-face — the whole
+    between), merely record (ANY endpoint strictly mid-face: the whole
     contiguous extent becomes one non-subdividing record, splitting nothing,
     even where it crosses face-to-face in the middle), or is it illegal
     because it would leave the flap across a folded (M/V) hinge? *)
@@ -603,7 +603,7 @@ val classify_mark_extent :
   t -> flap:int list -> axis:Geom.line -> extent_geom:mark_geom -> mark_class
 (** Does a mark's paper-space [extent_geom] subdivide [flap], merely record
     onto it, or illegally cross a folded (M/V) hinge? [axis] is the extent's
-    own paper-space motion line (the line the segment/point lies on — e.g.
+    own paper-space motion line (the line the segment/point lies on, e.g.
     the line a [between] extent was cut from). A full-extent mark never
     reaches here (the caller handles that as a plain [subdivide]). [MPoint]
     never subdivides and always records. *)

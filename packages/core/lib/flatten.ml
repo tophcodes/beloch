@@ -2,7 +2,7 @@
     Given a set of material creases ("rays") sharing one interior vertex O, an
     ODD ray count means one emergent ray is part of the solution space;
     [candidates] generates the geometric completions that could close the vertex
-    — same-direction filter, per-line dedup, two-tier (`LineNew`/`OppositeRay`)
+   : same-direction filter, per-line dedup, two-tier (`LineNew`/`OppositeRay`)
     preference tag. It does NOT check feasibility or M/V and does NOT pick a
     winner.
 
@@ -33,9 +33,9 @@ let axis_direction (r : Isometry.t) : Num.t * Num.t =
   else if Num.sign (Num.sub r.Isometry.m00 Num.one) = 0 then (Num.one, Num.zero)
   else (Num.zero, Num.one)
 
-(* Does point [q] (read as a direction from [o]) lie strictly between rays
+(* Does point [q] (a direction from [o]) lie strictly between rays
    [lo] and [hi] going CCW from [lo] to [hi]? [lo]/[hi] are consecutive rays
-   in a CCW-sorted array, so exactly one cyclic pair — the array's own seam —
+   in a CCW-sorted array, so exactly one cyclic pair (the array's own seam)
    has [lo] sorting *after* [hi]; that is the wraparound gap, handled by the
    "or" branch instead of the ordinary "and" (Geom.ccw_compare's linear order
    has one cut, at the positive-x direction). *)
@@ -49,10 +49,10 @@ let in_gap (o : Geom.point) (lo : Geom.point) (hi : Geom.point) (q : Geom.point)
 (* The candidate GENERATOR (spec step 1's odd branch): every geometric
    completion of the given rays that closes Kawasaki at [o], tagged by the
    two-tier preference (§4.9: the emergent crease is "not
-   constructible by any Huzita axiom" — a completion that only re-uses a
+   constructible by any Huzita axiom": a completion that only re-uses a
    given line's far side is the degenerate, `OppositeRay` case; a completion
-   on a genuinely new line is `LineNew`). No feasibility check and no
-   [toward] selection — both are the caller's job now, over the pooled
+   on a new line is `LineNew`). No feasibility check and no
+   [toward] selection: both are the caller's job now, over the pooled
    realizations of every (candidate x M/V pattern). *)
 let candidates (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list) :
     (Geom.line * Geom.point * [ `LineNew | `OppositeRay ]) list =
@@ -63,7 +63,7 @@ let candidates (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list) :
     Isometry.reflect_across_line (Geom.line_through o far)
   in
   let compose_range lo hi =
-    (* R_lo ∘ R_(lo+1) ∘ … ∘ R_(hi-1), identity if lo >= hi *)
+    (* [R_lo] ∘ R_(lo+1) ∘ … ∘ R_(hi-1), identity if lo >= hi *)
     let acc = ref Isometry.identity in
     for i = lo to hi - 1 do
       acc := Isometry.compose !acc (refl i)
@@ -72,7 +72,7 @@ let candidates (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list) :
   in
   (* Each candidate carries its emergent LINE *and* the actual emergent RAY
      endpoint (the axis end that lands in its own gap). The ray direction is
-     geometrically fixed — chosen by [in_gap], a CCW test — unlike the
+     geometrically fixed (chosen by [in_gap], a CCW test) unlike the
      eigenvector's sign, which is arbitrary. *)
   let raw = ref [] in
   for j = 0 to k - 1 do
@@ -112,8 +112,8 @@ let candidates (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list) :
   in
   (* Drop candidates whose emergent RAY points in the same direction as a
      GIVEN ray: that is the degenerate "extend a line already drawn"
-     completion. The OPPOSITE ray of a given line is NOT degenerate — it is a
-     genuinely new crease — so this filters by direction, not by line
+     completion. The OPPOSITE ray of a given line is NOT degenerate: it is a
+     new crease, so this filters by direction, not by line
      ([Geom.ccw_compare] = 0 iff same direction from O). *)
   let genuine (_, ray) =
     not (Array.exists (fun (far, _) -> Geom.ccw_compare ~center:o far ray = 0) sorted)

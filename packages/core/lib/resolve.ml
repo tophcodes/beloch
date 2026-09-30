@@ -3,7 +3,7 @@
 
 open Ctx
 
-(* render an operand back to source text for provenance + error messages *)
+(* render an operand back to source text for [provenance] + error messages *)
 let rec pstr (po : Ast.point_operand) : string =
   match po with
   | Ast.PNamed pr -> "." ^ pr.Ast.name
@@ -58,7 +58,7 @@ let axis_or_fail ~(name : string) (span : Error.span) ~(bent_hint : string)
     (l_orig : Geom.line) = function
   | `Line l -> l
   (* a crease that cut no face (e.g. lies on the paper boundary) has no
-     material pieces but is still flat at its original line — byte-stable
+     material pieces but is still flat at its original line: byte-stable
      and lets reference-only boundary creases resolve *)
   | `Empty -> l_orig
   | `Collapsed ->
@@ -144,7 +144,7 @@ let paper_line_of_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (c
           in
           (l, Some chords)
       (* a crease that cut no face (e.g. lies on the paper boundary) has no
-         material marks; fall back to its birth line, as materialize_crease
+         material marks; fall back to its birth line, as [materialize_crease]
          does for reference-only boundary creases *)
       | `Empty -> (l_orig, None)
       | `Bent ->
@@ -252,7 +252,7 @@ let and_list (xs : string list) : string =
 (* resolve a point operand to its material PAPER coordinate, a line operand to
    its TABLE-space line (fold axes align current table positions). The meet
    is the exception: it is a material read, so its operands resolve to sets
-   of PAPER points via meet_pieces; folding never moves a mark within the
+   of PAPER points via [meet_pieces]; folding never moves a mark within the
    sheet, so the meet point is fold-state-independent. *)
 let rec resolve_point (ctx : Ctx.ctx) (po : Ast.point_operand) : Geom.point =
   match po with
@@ -289,7 +289,7 @@ and material_cid (ctx : Ctx.ctx) (cr : Ast.crease_ref) : int =
       (* selecting a segment/ray of a mark is a folding-side operation
          (collapse `& .x`, fold-along, `at`): materialize the mark into a
          real crease now (subdivide along its extent), then treat it as
-         Material. Pure-reference marks — never segment-selected — never
+         Material. Pure-reference marks (never segment-selected) never
          reach here, so they stay non-subdividing records (#26). *)
       (* The mark's own id carries over, the way [cp_display] carries it
          over when a mark graduates: one line keeps one identity whether it
@@ -299,10 +299,10 @@ and material_cid (ctx : Ctx.ctx) (cr : Ast.crease_ref) : int =
       let cid = mid in
       (* Two different questions, two different answers. WHAT DEFINED this
          line is the `mark` statement, so the crease inherits that mark's
-         own provenance — its construction, its inputs, its name and the
+         own [provenance]: its construction, its inputs, its name and the
          span a reader should be sent to. WHEN the crease exists is this
          statement, the one selecting a segment, so the statement index is
-         taken here. Minting provenance from the reference instead would
+         taken here. Minting [provenance] from the reference instead would
          report the use site as the definition and name the axiom "mark",
          which says nothing about how the line was built. *)
       let mark_prov =
@@ -344,7 +344,7 @@ and material_cid (ctx : Ctx.ctx) (cr : Ast.crease_ref) : int =
            cr.Ast.cname)
 (* Incidence is a MATERIAL question, so it is checked in PAPER space, never
    table space: all points are material (paper) identities, so a point
-   selector always names the one segment whose paper preimage it lies on —
+   selector always names the one segment whose paper preimage it lies on:
    even when folding has stacked several segments onto the same table locus
    (notes/2026-07-03-crease-layer-selection.md; ADR 0014's "table-space
    selector can't disambiguate" is why table space is wrong here). *)
@@ -372,7 +372,7 @@ and seg_incident (ctx : Ctx.ctx) (sel : Ast.selector) (s : Fold_state.crease_seg
 (* every existing straight line a --[…] selector may name: the four paper
    edges plus each material crease segment (ADR 0014). Each candidate carries
    a table-space line (for use as a fold axis, the returned value) plus
-   PAPER-space endpoints + line + optional marks — incidence is a material
+   PAPER-space endpoints + line + optional marks: incidence is a material
    question, checked in paper space like `seg_incident`, so folded-stacked
    candidates stay distinct. Edges are markless (None). An edge whose pieces
    lie on one table line is one candidate; a fold that bent it makes each
@@ -543,7 +543,7 @@ and meet_pieces (ctx : Ctx.ctx) (lo : Ast.line_operand) : meet_piece list =
       | Material (cid, l_orig) -> (
           match Fold_state.crease_segments !(ctx.state) cid with
           (* a crease that cut no face (e.g. on the paper boundary) has no
-             pieces; it reads as its birth line, as materialize_crease does *)
+             pieces; it reads as its birth line, as [materialize_crease] does *)
           | [] -> [ Whole l_orig ]
           | segs -> of_segments segs))
   | Ast.LFilter _ | Ast.LUnion _ -> (
@@ -609,7 +609,7 @@ let faces_containing (ctx : Ctx.ctx) (pp : Geom.point) : int list =
     (Fold_state.faces st);
   List.rev !acc
 
-(* resolve a flap operand to its unique current flap — a coplanar cluster of
+(* resolve a flap operand to its unique current flap: a coplanar cluster of
    faces (ADR 0017: two faces joined only by a still-unfolded F edge are the
    same flap). Slots demand uniqueness at cluster granularity; errors name
    the candidate flaps. *)
@@ -673,10 +673,10 @@ let resolve_flap_cluster (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span)
                    (List.length many))))
 
 (* face-precise resolution for collapse's `over`/`under`: a sector around a
-   collapse vertex is always one FACE (ADR 0017 non-goal — over/under
+   collapse vertex is always one FACE (ADR 0017 non-goal: over/under
    stacking order is not lifted to clusters), unlike `moving`/`up to`'s flap
-   operand. Mirrors resolve_flap_cluster's FlapPoint/FlapSpec branches but
-   via face_of_points, not the cluster-coarsened flap_of_points. *)
+   operand. Mirrors [resolve_flap_cluster]'s FlapPoint/FlapSpec branches but
+   via [face_of_points], not the cluster-coarsened [flap_of_points]. *)
 let resolve_sector_face (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span) : int =
   match fa with
   | Ast.FlapPoint po -> (
@@ -694,13 +694,13 @@ let resolve_sector_face (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span) 
         | `Face fi -> `Found fi
         | (`Zero | `Ambiguous) as bad -> bad)
   | Ast.FlapLine _ ->
-      (* over_flap's grammar never produces FlapLine *)
+      (* [over_flap]'s grammar never produces FlapLine *)
       Error.fail span
         (Printf.sprintf "%s cannot name an over/under sector" (fstr fa))
 
 (* which side of [axis] a flap anchor moves; point sugar keeps the existing
    side-of-the-point semantics. Resolution failures (point off paper, ambiguous
-   flap) raise WITHIN — they are candidate-independent; only the on-axis /
+   flap) raise WITHIN: they are candidate-independent; only the on-axis /
    straddle verdicts are returned so axiom-5 selection can reject a candidate
    without erroring. *)
 let side_of_flap_arg_res (ctx : Ctx.ctx) (axis : Geom.line) (fa : Ast.flap_arg)
@@ -732,9 +732,9 @@ let side_of_flap_arg (ctx : Ctx.ctx) (axis : Geom.line) (fa : Ast.flap_arg)
       | Ast.FlapPoint _ -> Error.fail span "the moving point lies on the fold axis"
       | _ -> Error.fail span (Printf.sprintf "%s lies on the fold axis" (fstr fa)))
 
-(* Default-scope anchor: the faces carrying the operand, as a UNION — a point on
+(* Default-scope anchor: the faces carrying the operand, as a UNION: a point on
    a crease shared by several flaps seeds all of them (design option (a)), so no
-   ambiguity error here (unlike resolve_flap_cluster). *)
+   ambiguity error here (unlike [resolve_flap_cluster]). *)
 let anchor_faces (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span) : int list =
   match fa with
   | Ast.FlapPoint po -> (
@@ -753,8 +753,8 @@ let anchor_faces (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span) : int l
 
 (* Moving side for the default branch. Operands carrying explicit point(s) take
    the point's side (a shared-crease flap straddles the axis, but the tip's side
-   is unambiguous — the point-anchor rule). A line operand falls back to the
-   cluster extent via side_of_flap_arg_res. *)
+   is unambiguous: the point-anchor rule). A line operand falls back to the
+   cluster extent via [side_of_flap_arg_res]. *)
 let default_move_side (ctx : Ctx.ctx) (axis : Geom.line) (fa : Ast.flap_arg) (span : Error.span) : int =
   let side_of_point po =
     let s = Geom.side_of_line axis (table_of ctx po) in
@@ -806,12 +806,12 @@ let target_of (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span) :
 
 (* A mark's extent (spec §4), resolved to PAPER-space geometry and checked
    against the construction's axis. [table_axis] is TABLE-space (as `resolve_line`
-   / `resolve_markable` produce — the current physical layout the fold acts
+   / `resolve_markable` produce: the current physical layout the fold acts
    on), but `resolve_point` always yields the fold-invariant PAPER
    coordinate, so the on-axis check goes through `table_of` to compare like
    spaces. `Full` needs nothing further (today's subdivide-the-whole-axis
    behaviour, unchanged). A partial extent also returns its PAPER-space
-   representative point (mark_rep_point's convention: the first point of a
+   representative point ([mark_rep_point]'s convention: the first point of a
    segment, or the point itself) and the PAPER-space line it lies on:
    Fold_state.classify_mark_extent and the resulting mark's [mline] both
    need paper space, which need not equal [table_axis] once the carrying
@@ -841,12 +841,12 @@ let resolve_mark_extent (ctx : Ctx.ctx) (table_axis : Geom.line) (ext : Ast.exte
       let pp = on_axis p in
       (* a lone point gives no second point to build its own paper-space
          line from; project [table_axis] into paper space via whichever of
-         the point's own faces it actually crosses the interior of (within
+         the point's own faces it crosses the interior of (within
          one flap every face shares one isometry, so any works). Falls back
          to the table-space axis itself if none do (an axis tangent to the
-         paper only at [pp] — believed unreachable via the grammar); [mline]
-         is display-only, so an imprecise fallback here is not
-         load-bearing. *)
+         paper only at [pp]: believed unreachable via the grammar); [mline]
+         is display-only, so an imprecise fallback here does not affect the
+         fold's correctness. *)
       let st = !(ctx.state) in
       let rec paper_axis_via = function
         | [] -> table_axis

@@ -1,8 +1,8 @@
-(* tests/test_reference_corpus.ml — the guard that holds the kernel to
+(* tests/test_reference_corpus.ml: the guard that holds the kernel to
    spec/BELOCH.md (design doc "The reference corpus test", kernel side of
    "The three runners"). Every tagged block in the document is extracted,
    assembled with its prelude, evaluated in process, and checked against its
-   own `; assert` / `; expect error` lines through Bel_assert — the same
+   own `; assert` / `; expect error` lines through [Bel_assert]: the same
    checker the `.bel` corpus runner uses. *)
 
 open Beloch
@@ -141,7 +141,7 @@ let wrap_construction (body : string) : string =
 
 (* The full program source a block evaluates as. A `.prelude` block is a
    program in its own right (design: "parses and evaluates under its own
-   prelude" — a prelude never itself carries `prelude=`, so this is the
+   prelude": a prelude never itself carries `prelude=`, so this is the
    [Whole] case under another name); the other three kinds prepend the
    resolved prelude, wrapping construction lines first. *)
 let assemble (preludes : (string * string) list) (b : block) : string =
@@ -154,7 +154,7 @@ let assemble (preludes : (string * string) list) (b : block) : string =
 (* ---- Evaluating and checking one block ---- *)
 
 (* [verify_block preludes b] is [Ok ()] when [b] assembles, evaluates and
-   checks clean, and [Error msg] naming the first thing that did not — the
+   checks clean, and [Error msg] naming the first thing that did not: the
    five failure modes of Acceptance 8: a block that does not fold, an
    `; expect error` block that succeeds or fails with the wrong message, a
    failing `; assert`, and a `prelude=` naming no block. A pure result
@@ -348,7 +348,7 @@ let failure_mode_tests =
 (* ---- The real corpus: spec/BELOCH.md ---- *)
 
 (* Block inventory of spec/BELOCH.md, by tag (Task 5's count: 6 preludes, 7
-   fragments — 2 under the default prelude, 5 named — and 1 construction).
+   fragments, 2 under the default prelude, 5 named, and 1 construction).
    Ceiling: this catches the OCaml extractor drifting from the document, not
    from the tree-sitter and build-side copies of the same rule; update the
    three together when a tagged block is added to BELOCH.md. *)

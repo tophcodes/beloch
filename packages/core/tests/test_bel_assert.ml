@@ -1,4 +1,4 @@
-(* tests/test_bel_assert.ml — runner for the `.bel` inline-assertion test
+(* tests/test_bel_assert.ml: runner for the `.bel` inline-assertion test
    format.
 
    The assertion grammar, tokenizer and checker live in bel_assert.ml, shared
@@ -8,7 +8,7 @@
 open Beloch
 
 (* Anchor to the source root of *this* build context, exactly like
-   test_eval.ml's example walk — dune sets DUNE_SOURCEROOT to the absolute
+   test_eval.ml's example walk: dune sets DUNE_SOURCEROOT to the absolute
    workspace root, so an in-repo worktree reads its own corpora rather than
    the main checkout's (#37). *)
 let source_root =
@@ -25,7 +25,7 @@ let corpora = [ ("cases", "packages/core/tests/cases"); ("examples", "examples")
 let corpus_dir (rel : string) = Filename.concat source_root rel ^ "/"
 
 (* every .bel under [dir] (recursively); names are relative paths (e.g.
-   "fold/basic-fold.bel") mirroring test_eval.ml's example_names walker. *)
+   "fold/basic-fold.bel") mirroring test_eval.ml's [example_names] walker. *)
 let bel_names (dir : string) =
   let rec walk prefix =
     let dir = dir ^ prefix in

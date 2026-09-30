@@ -4,11 +4,11 @@ let q = Num.of_int
 let half = Num.of_q (Q.of_ints 1 2)
 let pt x y = { Geom.x = q x; y = q y }
 
-(* Eval.named_points/named_lines are (name, value, step) triples (step = the
+(* [Eval].[named_points]/[named_lines] are (name, value, step) triples (step = the
    0-based creation step, task A1); these tests don't care about the step, so
    look up by name like the old 2-tuple assoc list did. *)
-(* named_points carries a frame step AND a statement index, so it needs its
-   own arity; named_lines still uses the three-wide pair above. *)
+(* [named_points] carries a frame step AND a statement index, so it needs its
+   own arity; [named_lines] still uses the three-wide pair above. *)
 let assoc4 k l = List.find_map (fun (k', v, _, _) -> if k' = k then Some v else None) l
 let mem_assoc4 k l = List.exists (fun (k', _, _, _) -> k' = k) l
 
@@ -47,7 +47,7 @@ let count_assign a (st : Fold_state.t) =
     (List.init (Array.length hs) Fun.id)
   |> List.length
 
-(* ---- Eval: error cases ---- *)
+(* ---- [Eval]: error cases ---- *)
 
 let test_eval_identical_points () =
   expect_error "same place" (fun () ->
@@ -131,8 +131,8 @@ let test_eval_map_onto_line_ok () =
         "axiom-4 crease passes through (1,1/2)" true
         (on { Geom.x = q 1; y = half })
 
-(* both creases through the sheet centre — the vertical midline and the
-   anti-diagonal — cut the paper, so the paper-incidence filter leaves the
+(* both creases through the sheet center (the vertical midline and the
+   anti-diagonal) cut the paper, so the paper-incidence filter leaves the
    ambiguity standing. *)
 let test_eval_map_through_ambiguous () =
   expect_error "all landing on the paper" (fun () ->
@@ -185,7 +185,7 @@ let test_axiom7_error_parallel_directrices () =
                mark (map .a onto --bot and .b onto --top)\n")))
 
 (* the migrated crease-flap-restrict scenario: select --b's piece on the upper
-   flap with `at #(.c .d)` and cross it with --v — must evaluate cleanly. *)
+   flap with `at #(.c .d)` and cross it with --v: must evaluate cleanly. *)
 let test_eval_at_flap () =
   ignore
     (Eval.eval_folded
@@ -197,7 +197,7 @@ let test_eval_at_flap () =
            mark (map .d onto .mid)\n"))
 
 (* cross is material: a crease bent on the TABLE by a later fold is still one
-   straight scar in the paper, so the bare bundle crosses fine — no `at` *)
+   straight scar in the paper, so the bare bundle crosses fine: no `at` *)
 let test_eval_cross_table_bent_scar_ok () =
   let fd =
     Eval.eval_folded
@@ -215,8 +215,8 @@ let test_eval_cross_table_bent_scar_ok () =
   | None -> Alcotest.fail "expected .mid"
 
 (* a selector that lands on no segment of the bundle is the 0-match error.
-   NOTE: deviates from the brief's literal source, which selected --b at .b
-   after folding .c onto .b — since that fold maps .c's endpoint of the
+   This deviates from the brief's literal source, which selected --b at .b
+   after folding .c onto .b, since that fold maps .c's endpoint of the
    diagonal exactly onto .b's table position, the selector coincidentally DID
    match (verified: it evaluates cleanly, .mid lands at (0.5,0.5)). .b is
    never on the unfolded diagonal --b = through .a .c (it's off that line
@@ -319,9 +319,9 @@ let test_fold_along_bent_under_moving () =
 
 let test_flatten_staying_accepted () =
   (* staying is wired (Task 3). Same valid "+" vertex flatten as
-     test_flatten_all_layers_ok, plus a staying clause. On the still-flat
+     [test_flatten_all_layers_ok], plus a staying clause. On the still-flat
      pre-collapse sheet every sector is one coplanar flap, so (staying .a)
-     names all four as stayer candidates — each a distinct fold — and {toward}
+     names all four as stayer candidates (each a distinct fold) and {toward}
      picks one; the fold must still evaluate to the same 4 sector faces. *)
   let fd =
     Eval.eval_folded
@@ -336,7 +336,7 @@ let test_flatten_staying_accepted () =
     (Array.length (Fold_state.faces fd.Eval.state))
 
 (* n = 2: two diagonals through the same center point, each named as a single
-   `at`-selected segment — a real fold, not a flatten; hint toward @fold *)
+   `at`-selected segment: a real fold, not a flatten; hint toward @fold *)
 let test_flatten_count_two () =
   expect_error_hint "count" "use `fold` for n = 2" (fun () ->
       ignore
@@ -356,8 +356,8 @@ let test_flatten_not_material () =
 (* all-layers congruence guard, happy path: a single flat sheet precreased
    along both perpendicular bisectors (the classic "+" vertex, same shape as
    test_collapse.ml's eassign-parity fixture, reached through named corners
-   via #(...) flap selectors instead of raw coordinates). Every face the
-   guard inspects borders an edge of the very crease it's checking, so it
+   via #(…) flap selectors instead of raw coordinates). Every face the
+   guard inspects borders an edge of the crease it's checking, so it
    must stay silent; the 3-mountain/1-valley assignment is the one the
    kernel fixture already proved folds to a unique order. *)
 let test_flatten_all_layers_ok () =
@@ -506,7 +506,7 @@ let test_flatten_tip_between_layers () =
     done
   done
 
-(* ---- Fold_state ---- *)
+(* ---- [Fold_state] ---- *)
 
 let test_fold_state_init () =
   let st = Fold_state.init_square in
@@ -533,7 +533,7 @@ let test_fold_state_half () =
   in
   Alcotest.(check bool) "folded footprint is the left half" true all_left
 
-(* index of the single face with the given det_sign in a 2-face state *)
+(* index of the single face with the [det_sign] in a 2-face state *)
 let face_with_det (st : Fold_state.t) (d : int) : int =
   let idxs = List.filter
     (fun i -> Isometry.det_sign (Fold_state.face_iso2 st i) = d)
@@ -556,7 +556,7 @@ let test_layer_mountain_moved_below () =
   Alcotest.(check bool) "moved face is Below stationary" true
     (Fold_state.rel st mv stt = Fold_state.Below)
 
-(* [Fold_state.rel]'s own negation, ported locally — the core has no
+(* [Fold_state.rel]'s own negation, ported locally: the core has no
    standalone sparse-order module; [rel] is derived directly from rank. *)
 let negate_rel = function
   | Fold_state.Above -> Fold_state.Below
@@ -619,10 +619,10 @@ let test_fold_records_valley () =
 
 (* Edges accumulate across folds (#26): to isolate the creases freshly cut by
    the second fold (as opposed to the first fold's crease carried/split
-   forward), filter st2's edges to those whose crease_id wasn't already
-   present in st1 — fresh cuts mint a fresh crease_id, carried/split edges
+   forward), filter st2's edges to those whose [crease_id] wasn't already
+   present in st1: fresh cuts mint a fresh [crease_id], carried/split edges
    keep their parent's. *)
-(* returns hinge INDICES (into [after]'s hinge array), not values — [mv] needs
+(* returns hinge INDICES (into [after]'s hinge array), not values: [mv] needs
    the state + index pair, not a detached hinge record. *)
 let new_edges_since (before : Fold_state.t) (after : Fold_state.t) : int list =
   let old_ids =
@@ -670,7 +670,7 @@ let test_fold_paper_preimages () =
   Alcotest.(check int) "two preimages in the folded overlap" 2 (List.length folded)
 
 (* #27: folding along a precrease (subdivide, then fold on the same axis) must
-   upgrade the abutting F crease to M/V — the fold cuts nothing, so the
+   upgrade the abutting F crease to M/V: the fold cuts nothing, so the
    upgrade comes from the carried on-axis edge, not from a new cut. *)
 let test_fold_precrease_upgrade () =
   let axis = { Geom.a = q 1; b = q 0; c = half } in
@@ -718,7 +718,7 @@ let test_fold_state_flip_involution () =
        (Fold_state.table_position twice (pt 0 0)))
 
 (* [Fold_state.t] is abstract and constructed only via [make], which enforces
-   every state invariant — [simple_fold] succeeding at all already IS the
+   every state invariant: [simple_fold] succeeding at all already IS the
    validity proof; there is no separate [validity_error] probe on the new
    core (see the 3c port plan's dictionary). *)
 let test_layer_valid_examples_ok () =
@@ -738,7 +738,7 @@ let read_file path =
      errors (the evaluator should reject them).
    - Files whose first line contains "; bench: slow" are known-slow (e.g. they
      trigger expensive irrational-coordinate arithmetic) and are skipped until
-     the underlying performance issue is fixed.  Tag a file with that marker to
+     the performance issue is fixed.  Tag a file with that marker to
      opt it out of this suite without hard-coding its name here. *)
 let first_line path =
   try
@@ -770,8 +770,8 @@ let examples_dir () =
   | None -> "../../../../../examples"
 
 (* every .bel under dir, recursively (examples/ nests into bases/, syntax/,
-   … — a flat readdir found none of them and starved this test; mirrors
-   test_golden.ml's example_names walker). *)
+   …: a flat [readdir] found none of them and starved this test; mirrors
+   test_golden.ml's [example_names] walker). *)
 let rec example_names dir prefix =
   let d = Filename.concat dir prefix in
   Sys.readdir d |> Array.to_list
@@ -798,7 +798,7 @@ let test_layer_all_examples_valid () =
         | `Ok _ -> ())
     files
 
-(* ---- Eval_folded ---- *)
+(* ---- [Eval_folded] ---- *)
 
 let test_eval_folded_half () =
   let fd =
@@ -1156,7 +1156,7 @@ let test_eval_export_temp_target () =
 (* up to = anchor: only the top flap of a 2-layer stack folds → 3 faces.
    The fold's own hinge (--hinge) is parallel to the fold axis, so folding
    .d back onto .h (a point ON --hinge) only lifts the material whose hinge
-   sits on the axis itself — hinge-closed, not a tear (contrast with the old
+   sits on the axis itself: hinge-closed, not a tear (contrast with the old
    fold-top-flap.bel, whose second fold's axis was perpendicular to the
    first fold's hinge; that program now lives in tests/cases/fold/ as an
    `expect error "tear"` case). *)
@@ -1211,9 +1211,9 @@ let test_eval_up_to_crease_target () =
     (Array.length (Fold_state.faces fd.Eval.state))
 
 (* moving --d: a hinge has two sides → multi-match error. Under ADR 0017,
-   --d's two faces must be GENUINELY different flaps (different coplanar
-   clusters) to be ambiguous — a bare precrease alone no longer suffices,
-   since both faces would still be one still-flat flap. So fold ON --d's own
+   --d's two faces must be DIFFERENT flaps (different coplanar
+   clusters) to be ambiguous: a bare precrease alone no longer suffices,
+   since both faces would still be one still-flat flap. Fold ON --d's own
    line first (`@map .b onto .a moving .b`), upgrading its edge F -> V and
    splitting the two faces into different clusters, before testing the
    multi-flap error on a second, unrelated fold. *)
@@ -1230,8 +1230,8 @@ let test_eval_moving_line_multimatch () =
 
 (* Since v0.24-dev an explicit flap selector whose faces straddle the axis no
    longer errors on the default path: `default_move_side` reads the side from the
-   anchor's own point(s), so `#[.a .b]` folds — .a/.b both lie on the flat sheet,
-   the anchor point's side picks the mover, giving a clean 2-face fold. *)
+   anchor's own point(s), so `#[.a .b]` folds: .a/.b both lie on the flat sheet,
+   the anchor point's side picks the mover, which gives a clean 2-face fold. *)
 let test_eval_moving_flap_straddle_dissolves () =
   let fd =
     Eval.eval_folded
@@ -1243,7 +1243,7 @@ let test_eval_moving_flap_straddle_dissolves () =
 (* ---- axiom 5: `toward` = direction semantics + paper-incidence filter ----
    Square corners a=(0,0), b=(1,0), c=(1,1), d=(0,1). *)
 
-(* kite: left edge onto the a–c diagonal, no `toward`, no `moving` — the paper
+(* kite: left edge onto the a-c diagonal, no `toward`, no `moving`: the paper
    filter drops the −22.5° candidate (it only touches corner .a); .d lands at
    (√2⁄2, √2⁄2) via the 67.5° crease *)
 (* A square folded in half twice in the same direction, then its lower half
@@ -1301,7 +1301,7 @@ let test_ax5_kite_filter () =
   Alcotest.(check bool) ".d lands at x^2 = 1/2" true
     (Num.equal (Num.mul p.Geom.x p.Geom.x) half)
 
-(* same kite selected by `toward .b`, with and without `moving .d` — both must
+(* same kite selected by `toward .b`, with and without `moving .d`: both must
    land .d at the same place as the filtered fold above *)
 let test_ax5_kite_toward () =
   let landing src =
@@ -1317,7 +1317,7 @@ let test_ax5_kite_toward () =
     (Num.equal p1.Geom.x p1.Geom.y
     && Num.equal (Num.mul p1.Geom.x p1.Geom.x) half)
 
-(* straddle (diagonal onto anti-diagonal, hinge = sheet centre): `moving .c`
+(* straddle (diagonal onto anti-diagonal, hinge = sheet center): `moving .c`
    disambiguates to the horizontal crease; .c swings onto (1,0) *)
 let test_ax5_straddle_moving_unique () =
   let fd =
@@ -1329,7 +1329,7 @@ let test_ax5_straddle_moving_unique () =
     (Geom.point_equal (Fold_state.table_position fd.Eval.state (pt 1 1)) (pt 1 0))
 
 (* .d agrees with .b under both candidates, and both land the part of --ac
-   that folds over on the segment from the centre to .b: toward .b lies as
+   that folds over on the segment from the center to .b: toward .b lies as
    near to one landing as to the other (ADR 0031) *)
 let test_ax5_straddle_moving_both () =
   expect_error "lies as near" (fun () ->
@@ -1352,7 +1352,7 @@ let test_ax5_no_viable () =
         "mark (through .a .c) as --ac\nmark (through .b .d) as --bd\n\
          fold (map --ac onto --bd) (toward .b) (moving .b)\n")
 
-(* `toward .b` names a point ON l2 (bottom edge) — legal now; --k binds the
+(* `toward .b` names a point ON l2 (bottom edge): legal now; --k binds the
    y=x diagonal (through a and c, off the (1,0) corner) *)
 let test_ax5_bind_x_on_l2 () =
   let fd = eval_src "mark (map --da onto --ab) (toward .b) as --k\n" in
@@ -1367,7 +1367,7 @@ let test_ax5_bind_x_on_l2 () =
   | None -> Alcotest.fail "expected --k"
 
 (* hinge at a segment endpoint: `toward .a` and `toward .b` bind different
-   creases (x+y=1/2 vs x−y=1/2 — opposite sides of (1,1)) *)
+   creases (x+y=1/2 vs x−y=1/2, opposite sides of (1,1)) *)
 let test_ax5_bind_endpoint_directions () =
   let k src =
     match assoc4 "k" (eval_src src).Eval.named_lines with
@@ -1379,8 +1379,8 @@ let test_ax5_bind_endpoint_directions () =
   Alcotest.(check bool) "toward .a and toward .b differ" true
     (Geom.side_of_line ka (pt 1 1) <> Geom.side_of_line kb (pt 1 1))
 
-(* bind, hinge at the sheet centre (two midlines crossing): .b lies on the
-   anti-diagonal candidate and names no side of it, so the a–c diagonal
+(* bind, hinge at the sheet center (two midlines crossing): .b lies on the
+   anti-diagonal candidate and names no side of it, so the a-c diagonal
    remains (#58, the figure of a line folding over in part) *)
 let test_ax5_bind_center_toward_corner () =
   let fd =
@@ -1397,7 +1397,7 @@ let test_ax5_bind_center_toward_corner () =
 
 (* `toward .a` names a point on the moved line, which names a side of each
    candidate like any other point. Both candidates cross the diagonal at the
-   centre, and `(--d toward .a)` measures the part of --d that folds over:
+   center, and `(--d toward .a)` measures the part of --d that folds over:
    the steep one lands it on the left half of --h, nearer .a than the right
    half the shallow one lands it on. *)
 let test_ax5_toward_on_moved_line () =
@@ -1422,7 +1422,7 @@ let test_ax5_toward_on_l1 () =
          fold (map --ac onto --bd) (toward .c)\n")
 
 (* kite, `up to` with no `moving` and no implied anchor (axiom-5 folds have no
-   implied anchor point — only line operands): the paper-incidence filter
+   implied anchor point: only line operands): the paper-incidence filter
    picks the one viable candidate silently, but `up to` still needs an
    explicit `moving` to anchor the flap range *)
 (* the construction names the side, so `up to` needs no `moving` *)
@@ -1436,7 +1436,7 @@ let test_select_edge () =
   let fold body =
     let j = Yojson.Safe.to_string (Beloch.fold_string ~filename:"t.bel" body) in
     (* the two spellings differ in source length, so their provenance spans end
-       at different columns — neutralize the span; this test is about which edge
+       at different columns: neutralize the span; this test is about which edge
        gets selected, not source geometry. beloch:references goes for the same
        reason and more strongly: it maps the NAMES the source uses, and only
        one of these two programs names an edge at all. *)
@@ -1504,7 +1504,7 @@ let test_new_fold_along () =
   in
   Alcotest.(check int) "one valley edge" 1 (count_assign Fold_state.V fd.Eval.state)
 
-(* flatten without @, same "+" vertex fixture as test_flatten_all_layers_ok,
+(* flatten without @, same "+" vertex fixture as [test_flatten_all_layers_ok],
    with the two supporting creases materialised via `mark` instead of the
    old bare-axiom precrease *)
 let test_new_flatten_no_at () =
@@ -1519,7 +1519,7 @@ let test_new_flatten_no_at () =
     (Array.length (Fold_state.faces fd.Eval.state))
 
 let test_new_at_is_gone () =
-  (* `@` opens an annotation now (AT retired), so `@map` reads as an
+  (* `@` opens an annotation now (AT retired), so `@map` parses as an
      annotation whose arguments do not parse. *)
   expect_error "syntax error" (fun () ->
       eval_src "@map .a onto .c moving .a\n")
@@ -1527,7 +1527,7 @@ let test_new_at_is_gone () =
 (* `mark --ab` on a prelude edge must NOT promote it to Material: that would
    leak the boundary edge into beloch:named_lines (violating the documented
    invariant that prelude edges are never emitted) and give it stale-snapshot
-   semantics. promote_crease is guarded to fire only on a prior Frozen
+   semantics. [promote_crease] is guarded to fire only on a prior Frozen
    binding (from `--d = <motion>`), never on Edge/Bundle/Material. *)
 let test_new_mark_edge_does_not_leak () =
   let j =
@@ -1652,7 +1652,7 @@ let sources_of (fd : Eval.folded) (n : string) : string list =
   | _ -> Alcotest.fail ("no provenance for --" ^ n)
 
 (* Axiom 7's two `point onto line` alignments are one kind twice, so source
-   order fixes the operand roles, and the first of them is the point a
+   order fixes the operand roles, and the first of them names the point a
    `fold` without `moving` takes as its anchor. *)
 let test_axiom7_source_order () =
   let sources body =
@@ -2114,7 +2114,7 @@ let () =
           Alcotest.test_case "@fold matches axiom restatement" `Quick
             test_fold_along_matches_restatement;
           (* PENDING #27: full multilayer mark materialization (a mark on a
-             folded sheet records only its carrying flap) — @fold face/F counts
+             folded sheet records only its carrying flap): @fold face/F counts
              differ from the old eager-subdivide path *)
           Alcotest.test_case "@fold needs moving" `Quick
             test_fold_along_needs_moving;
@@ -2200,7 +2200,7 @@ let () =
             test_eval_folded_moving_required;
           Alcotest.test_case "quarter accordion" `Quick
             test_eval_folded_quarter_accordion;
-          (* PENDING #27: full multilayer mark materialization — meet on a
+          (* PENDING #27: full multilayer mark materialization: meet on a
              multilayer mark no longer raises the "different lines" guard *)
           Alcotest.test_case "cross multilayer with at" `Quick
             test_eval_cross_multilayer_with_at;
