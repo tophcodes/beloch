@@ -214,7 +214,7 @@ let test_axiom7_irrational_crease_folds_fast () =
         (Geom.side_of_line e (Geom.reflect_point c qq)))
     creases
 
-(* ---- Geom2: ccw and area ---- *)
+(* ---- Geom2: [ccw] and area ---- *)
 
 let test_ccw_order () =
   let o = pt 0 0 in
@@ -237,7 +237,7 @@ let test_signed_area () =
     "cw negative (=-1)" true
     (Num.equal (Geom.signed_area cw) (Num.neg Num.one))
 
-(* ---- Fold_clip: half-plane clipping ---- *)
+(* ---- [Fold_clip]: half-plane clipping ---- *)
 
 let test_clip_halfplane () =
   let sq = [| pt 0 0; pt 1 0; pt 1 1; pt 0 1 |] in
@@ -281,7 +281,7 @@ let test_clip_on_vertex () =
   Alcotest.(check int) "upper triangle has 3 vertices" 3
     (Array.length (Geom.clip_convex_halfplane diag (-1) sq))
 
-(* ---- Fold_geom: reflect and side ---- *)
+(* ---- [Fold_geom]: reflect and side ---- *)
 
 let test_reflect_point () =
   let l = { Geom.a = q 1; b = q 0; c = half } in

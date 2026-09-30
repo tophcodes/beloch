@@ -33,7 +33,7 @@ let expect_error_hint msg_substr hint thunk =
    Items stand in any order, so two spellings of one statement differ in
    their spans and compare unequal structurally. Each rendering below prints
    the part of the tree a test asserts on, with spans dropped, so a
-   permutation test is a string equality and a construction test reads as
+   permutation test is a string equality and a construction test equals
    the alignment list itself. *)
 
 let rec pstr (p : Ast.point_operand) : string =
@@ -238,7 +238,7 @@ let test_parse_perp () =
     (alignments (construction1 "mark (perp --d through .b)"))
 
 (* A parenthesised operand is that operand, so a grouping the reader adds
-   for clarity parses as the ungrouped form does. The meet already required
+   parses as the ungrouped form does. The meet already required
    the parentheses in operand position; these give the other operands the
    same freedom. *)
 let test_parse_grouped_operand () =
@@ -1021,7 +1021,7 @@ let test_err_clause_on_flip () =
 (* ---- Notation cutover: the bare-keyword argument forms are gone ---- *)
 
 let test_bare_keyword_arguments_retired () =
-  (* An unparenthesised argument is a syntax error; the `verb --name =` bind
+  (* An unparenthesized argument is a syntax error; the `verb --name =` bind
      reaches the verb with an empty item list, so it is refused for the axis
      it never gave. *)
   List.iter

@@ -26,7 +26,7 @@ let cases_dir =
 let read_case name =
   In_channel.with_open_text (Filename.concat cases_dir name) In_channel.input_all
 
-(* file_frames now opens with a synthetic flat step-0 frame (the unfolded
+(* [file_frames] now opens with a synthetic flat step-0 frame (the unfolded
    sheet); the fully-folded state is the LAST frame. Tests that want "the
    folded frame" take the last, not List.hd. *)
 let last_frame json =
@@ -122,7 +122,7 @@ let test_e2e_perp () =
 
 let test_edges_carry_crease_id () =
   (* a single fold produces one crease bundle; its non-boundary edges all
-     carry the same integer crease_id *)
+     carry the same integer [crease_id] *)
   let json =
     Beloch.fold_string ~filename:"t.bel"
       "paper square\nfold (map .a onto .d) (moving .a) as --h\n"
@@ -322,7 +322,7 @@ let test_e2e_axiom7_rational_crease () =
   in
   Alcotest.(check bool) "axiom7 tag present" true (List.mem "axiom7" axioms)
 
-(* ---- Emit_folded ---- *)
+(* ---- [Emit_folded] ---- *)
 
 let test_emit_folded_frames () =
   let fd =
@@ -352,8 +352,8 @@ let test_emit_folded_frames () =
 (* Regression: a scoped ("up to") fold leaves the stationary layer and the
    moving flap sharing a paper corner that is NOT on the fold axis. The folded
    frame must give each face its own reflected copy of that corner. Deduping
-   vertices by paper coord alone collapses them onto the stationary layer's
-   table position, degenerating the moving face to zero area — the "diagonal
+   vertices by paper coordinate alone collapses them onto the stationary layer's
+   table position, degenerating the moving face to zero area: the "diagonal
    slash" render. Assert every folded-frame face has positive area.
 
    The original repro here (fold-top-flap.bel) moved one layer of a pair
@@ -363,20 +363,20 @@ let test_emit_folded_frames () =
    instead.
 
    Two findings from re-deriving this test:
-   (1) The original assertion read `List.hd (file_frames)` — for a 2-fold
+   (1) The original assertion read `List.hd (file_frames)`: for a 2-fold
    program that is the frame after the FIRST fold (2 faces), not the scoped
-   fold's frame (3 faces, where cc3184a's off-axis dedup fix actually bites).
-   So this regression test had been checking the wrong frame since it was
+   fold's frame (3 faces, where cc3184a's off-axis dedup fix bites).
+   As a result, this regression test had been checking the wrong frame since it was
    authored and passed vacuously regardless of the fix. Fixed here to check
    every frame, matching the comment's stated intent.
    (2) Even fixed, fold-top-two.bel empirically never produces an off-axis
    shared corner (verified against a scratch checkout with cc3184a's dedup
-   fix reverted: every face already had solidly nonzero area, buggy or not —
+   fix reverted: every face already had solidly nonzero area, buggy or not,
    identical numbers with and without the fix), and neither does the
-   hinge-closure design doc's positive-control example. So this test still
+   hinge-closure design doc's positive-control example. As a result, this test still
    guards the *shape* of the invariant (every folded face is non-degenerate)
    but, as far as we've found, no longer exercises cc3184a's (paper,
-   table)-keyed dedup at all — every remaining scoped-fold example lacks the
+   table)-keyed dedup at all: every remaining scoped-fold example lacks the
    off-axis-shared-corner geometry that fix targets. Flagged for separate
    review; do not remove the fix without a replacement regression. *)
 let test_emit_folded_scoped_fold_nondegenerate () =
@@ -439,7 +439,7 @@ let test_emit_folded_crease_name () =
 
 (* Task 7: record marks (from Fold_state.marks) are serialized into a
    top-level "beloch:marks" custom field. Reuses the program from
-   test_mark_point_records_no_edge, already proven to record exactly one
+   [test_mark_point_records_no_edge], already proven to record exactly one
    interior POINT mark (the value-line --vm re-marked with a point extent at
    .ctr, the meet of --vm and --hm). *)
 let test_beloch_marks_emitted () =
@@ -458,10 +458,10 @@ let test_beloch_marks_emitted () =
         (one |> member "intent" |> to_string)
   | _ -> Alcotest.fail "expected exactly one point mark"
 
-(* #36: mcrease_id for a non-graduating point mark must be deterministic per
-   eval -- a function of the program alone, not of how many creases were
-   minted by earlier evals in the same process (Fold_state's internal
-   crease-id counter, reset per eval via [Fold_state.reset_ids], is otherwise a
+(* #36: [mcrease_id] for a non-graduating point mark must be deterministic per
+   evaluation -- a function of the program alone, not of how many creases were
+   minted by earlier evaluations in the same process ([Fold_state]'s internal
+   crease-id counter, reset per evaluation via [Fold_state.reset_ids], is otherwise a
    process-lifetime global). Evaluate the point-mark program once for a
    baseline id, then again after deliberately polluting the global counter
    with unrelated real creases; the two ids must match. *)
@@ -503,12 +503,12 @@ let test_folded_provenance () =
   in
   let json = Beloch.fold_string ~filename:"prov.bel" src in
   let open Yojson.Safe.Util in
-  (* CP frame: vertices_names contains "center" *)
+  (* CP frame: [vertices_names] contains "center" *)
   let cp_names = json |> member "beloch:vertices_names" |> to_list in
   Alcotest.(check bool) "cp vertices_names has center" true
     (List.exists (fun v -> v = `String "center") cp_names);
   (* the folded frame (last, fully folded) carries beloch:edges AND
-     beloch:vertices_names — the flat step-0 frame predates .center *)
+     beloch:vertices_names: the flat step-0 frame predates .center *)
   let folded = last_frame json in
   Alcotest.(check bool) "folded frame has beloch:edges" true
     (match folded |> member "beloch:edges" with `Null -> false | _ -> true);
@@ -517,8 +517,8 @@ let test_folded_provenance () =
      |> List.exists (fun v -> v = `String "center"));
   (* Plan 3c Task 6 prov spot check: at least one folded crease's
      beloch:edges entry carries a non-null provenance record, and every one
-     of that record's axiom/sources/span fields is itself non-null (D14/D15
-     — beloch_edges_json in fold_emit.ml only omits `name`/`step`, never
+     of that record's axiom/sources/span fields is itself non-null (D14/D15:
+     [beloch_edges_json] in fold_emit.ml only omits `name`/`step`, never
      these three). *)
   let folded_edges = folded |> member "beloch:edges" |> to_list in
   let has_full_prov =
@@ -572,7 +572,7 @@ let test_inspect_enumerates_crease_segments () =
   (* points: a corner sits inside a single face → resolves to a unique
      Some index; but .mid = --h * --v is the crossing point shared by all
      four faces, so it lands on a shared boundary and MUST resolve to null
-     (face_of returns None unless exactly one polygon contains the point). *)
+     ([face_of] returns None unless exactly one polygon contains the point). *)
   let points = inspect |> member "points" in
   let corner = points |> member "a" in
   Alcotest.(check bool) "corner .a has a face" true
@@ -585,9 +585,9 @@ let test_inspect_enumerates_crease_segments () =
   Alcotest.(check bool) "boundary point .mid flap is null" true
     (mid |> member "flap" = `Null)
 
-(* #50: `at #(...)` selects one segment of a bent crease bundle. Two different
-   flaps pick two different segments, so the resulting perp axis genuinely
-   differs — the selection is load-bearing, not vacuous. *)
+(* #50: `at #(…)` selects one segment of a bent crease bundle. Two different
+   flaps pick two different segments, so the resulting [perp] axis differs:
+   the selection changes the result, so this test does not vacuously pass. *)
 let[@warning "-32"] test_at_selects_bent_segment () =
   let prog sel =
     Printf.sprintf
@@ -610,7 +610,7 @@ let[@warning "-32"] test_at_selects_bent_segment () =
 
 (* the new filter/diff operators must pick the same bent segment as `at`:
    `& #[.c .d]` keeps the upper segment; `\ #[.a .b]` drops the lower one,
-   leaving the same upper segment. Both must equal `at #(.c .d)`. *)
+   which leaves the same upper segment. Both must equal `at #(.c .d)`. *)
 let test_bundle_ops_equiv_at () =
   let base sel =
     Printf.sprintf
@@ -652,8 +652,8 @@ let test_bind_bundle_roundtrip () =
   Alcotest.(check bool) "bound bundle == inline" true
     (q_axis inline = q_axis bound)
 
-(* #42: one self-contained foldedForm frame per numeric frame, flat baseline
-   included. Frames are unlabelled — the retired `step` keyword no longer tags
+(* #42: one self-contained [foldedForm] frame per numeric frame, flat baseline
+   included. Frames are unlabelled: the retired `step` keyword no longer tags
    them (beloch:step is gone). *)
 let test_multiframe () =
   let src =
@@ -678,7 +678,7 @@ let test_multiframe () =
 
 (* Statement-level sourcemap for the Playground step player: one
    beloch:statements entry per mark/fold statement, each mark embedding its
-   OWN geometry — even when both marks in this source graduate into real
+   OWN geometry, even when both marks in this source graduate into real
    creases by the end (their endpoints are paper corners), so beloch:marks
    is empty while beloch:statements still carries their geometry. *)
 let test_beloch_statements () =
@@ -707,7 +707,7 @@ let test_beloch_statements () =
   Alcotest.(check (list bool)) "both marks carry embedded geometry, the fold does not"
     [ true; true; false ] (List.map mark_present stmts);
   (* the bug this design avoids: both marks graduate (their endpoints are
-     corners), so the global list is empty — but the statement log is
+     corners), so the global list is empty, but the statement log is
      unaffected, since it embeds geometry at record time, not by lookup. *)
   let global_marks = json |> member "beloch:marks" |> to_list in
   Alcotest.(check int) "both marks graduate — beloch:marks is empty" 0
@@ -788,11 +788,11 @@ let test_e2e_precrease_fold_emits_v () =
    DIFFERENT (but still-coplanar, U-joined) faces resolve to the one flap
    spanning them, instead of erroring "those points aren't all on one flap".
    --diag = map .b onto .d precreases the b-d diagonal (bare bind, U edge),
-   splitting the square into triangles abd/bcd; .a and .c sit on opposite
+   splitting the square into triangles [abd]/bcd; .a and .c sit on opposite
    triangles. `up to #(.a .c)` resolves that pair through
-   resolve_flap_cluster (the `moving`/`up to` operand path) — this is the
-   call site defect 1 actually manifests on; see the deviation note below on
-   why `at`'s `#(...)` selector keeps face-precise semantics instead. *)
+   [resolve_flap_cluster] (the `moving`/`up to` operand path): this is the
+   call site defect 1 manifests on; see the deviation note below on
+   why `at`'s `#(…)` selector keeps face-precise semantics instead. *)
 let test_e2e_flap_cluster_spans_precrease_split () =
   ignore
     (Beloch.fold_string ~filename:"t.bel"
@@ -805,12 +805,12 @@ let test_e2e_flap_cluster_spans_precrease_split () =
    the square into 4 quadrants (BL,BR,TL,TR), all ONE flap (bare binds, U
    edges only). The self-scoped fold at x=1/4 (anchor .a, up to .a) is a
    candidate on both BL and TL (each has material on the move side, x<1/4),
-   but BL and TL never geometrically overlap — they're side by side, not
-   stacked — so the pre-cohesion `outer` closure alone leaves TL out even
-   though it's BL's still-flat neighbour. Without cohesion, TL never enters
+   but BL and TL never geometrically overlap (they're side by side, not
+   stacked), so the pre-cohesion `outer` closure alone leaves TL out even
+   though it's [BL]'s still-flat neighbour. Without cohesion, TL never enters
    the moving set, and .d (uniquely inside TL) keeps its stale flat-sheet
    table position (0,1). With cohesion, TL moves with BL and .d reflects to
-   (1/2,1) — verified exactly (not just "differs"), confirmed empirically
+   (1/2,1): verified exactly (not just "differs"), confirmed empirically
    against the running evaluator before this test was written. *)
 let test_e2e_cohesion_moves_coplanar_sibling () =
   let fd =
@@ -830,10 +830,10 @@ let test_e2e_cohesion_moves_coplanar_sibling () =
     (Geom.point_equal d_pos { Geom.x = half; y = Num.of_int 1 })
 
 (* Task 2: a bare precrease (still flat, unfolded) emits FOLD assignment "F",
-   never "U" — U is dropped from the codebase entirely (design/mark-fold-notation).
-   Task 6 splits the CP colour (eintent, defaults V) from the folded-form
-   dihedral (eassign) — the "flat, never U" invariant lives in the folded
-   frame, since the top-level creasePattern frame now legitimately shows the
+   never "U": U is dropped from the codebase entirely (design/mark-fold-notation).
+   Task 6 splits the CP colour ([eintent], defaults V) from the folded-form
+   dihedral ([eassign]): the "flat, never U" invariant lives in the folded
+   frame, since the top-level [creasePattern] frame now legitimately shows the
    mark's (default) M/V intent instead. *)
 let json_cp_assignments (json : Yojson.Safe.t) : string list =
   let open Yojson.Safe.Util in
@@ -859,11 +859,11 @@ let edges_of src = Array.length (Fold_state.hinges (eval_bel src).Eval.state)
 let marks_of src = Array.length (Fold_state.marks (eval_bel src).Eval.state)
 let faces_of src = Array.length (Fold_state.faces (eval_bel src).Eval.state)
 
-(* an interior POINT mark records and adds no edge; comparing edges_of before
+(* an interior POINT mark records and adds no edge; comparing [edges_of] before
    and after isolates what the point mark itself contributes (the two named
    midlines --vm/--hm needed for the `.ctr` meet must themselves be marked
    -- i.e. materialized -- since `*` cannot meet a plain, non-physical value
-   line; see paper_line_of_crease's Frozen case). *)
+   line; see [paper_line_of_crease]'s Frozen case). *)
 let test_mark_point_records_no_edge () =
   let base =
     "paper square\nmark (map .a onto .b) as --vm\nmark (map .a onto .d) as --hm\n\
@@ -915,8 +915,8 @@ let test_mark_boundary_to_interior_records () =
 let test_mark_mountain_cp_intent () =
   (* map .a onto .d = horizontal midline y=1/2, full chord (boundary-to-
      boundary -> subdivides), marked mountain. Both frames show the sheet as
-     it is folded, and a precrease is flat in both — the marked direction
-     never reaches edges_assignment. *)
+     it is folded, and a precrease is flat in both: the marked direction
+     never reaches [edges_assignment]. *)
   let src = "paper square\nmark (map .a onto .d) (mountain)\n" in
   let json = Beloch.fold_string ~filename:"t.bel" src in
   Alcotest.(check bool) "CP frame keeps the mark F" false
@@ -954,7 +954,7 @@ let test_mark_full_still_subdivides () =
 
 (* A mark is drawn along its extent (ADR 0033). On the book fold the corner
    bisector marked on the upper layer is the half diagonal from .a to the
-   centre, where the flap ends at the spine; its line runs on to .c across
+   center, where the flap ends at the spine; its line runs on to .c across
    the lower layer, which carries no mark (#105). *)
 let test_mark_draws_its_extent () =
   let src =
@@ -1007,11 +1007,11 @@ let[@warning "-32"] test_mark_crosses_fold_errors () =
    `Invalid_argument` at fold_state.ml, then errored as CSpansCrease; under
    the new model ANY mid-face endpoint just records the whole extent as one
    mark, so this must now SUCCEED with exactly one record and no edge change
-   (see fold_state's
-   test_classify_spans_crease_both_interior_different_faces_records for the
-   same shape tested directly against classify_mark_extent). The extent's own
+   (see [fold_state]'s
+   [test_classify_spans_crease_both_interior_different_faces_records] for the
+   same shape tested directly against [classify_mark_extent]). The extent's own
    axis (the .a-.c diagonal) must be FRESH here -- never previously
-   subdivided boundary-to-boundary -- so it crosses face interiors rather
+   subdivided boundary-to-boundary -- it crosses face interiors rather
    than running along an existing crease; --bd/--vm/--cut1/--q2/--r1/--r2 are
    all transversal to it, used only to name .p1=(1/4,1/4) and .p2=(3/4,3/4)
    as the meets that pin the diagonal down without ever marking it
@@ -1039,11 +1039,11 @@ let test_mark_spans_internal_crease_records () =
 (* ---- Task 5: exact-incidence snapping (#50 slice 2) ------------------- *)
 
 (* Two full diagonals subdivide the square into four faces meeting at the
-   centre (1/2,1/2); a point mark placed there ("at .ctr", reusing the
+   center (1/2,1/2); a point mark placed there ("at .ctr", reusing the
    already-material --ac as its axis, same idiom as
-   test_mark_point_records_no_edge) must be incident to that shared vertex --
-   not a numerically distinct duplicate. Since resolve_point already yields
-   canonical rationals and Geom.point_equal is exact, this holds for free;
+   [test_mark_point_records_no_edge]) must be incident to that shared vertex --
+   not a numerically distinct duplicate. Since [resolve_point] already yields
+   canonical rationals and Geom.point_equal is exact, this holds automatically;
    the test pins the behaviour as a regression guard (task-5-brief.md: no
    tolerance/fuzzy logic, ever). *)
 let test_mark_endpoint_on_vertex_is_incident () =
@@ -1206,7 +1206,7 @@ let () =
             test_e2e_axiom7_rational_crease;
           Alcotest.test_case "precrease then fold emits V not U" `Quick
             test_e2e_precrease_fold_emits_v;
-          (* PENDING #27: full multilayer mark materialization — a mark on a
+          (* PENDING #27: full multilayer mark materialization: a mark on a
              folded sheet records only its carrying flap, so the multilayer
              meet guard and bent-segment selection differ from the old path *)
           Alcotest.test_case "& / \\ pick the same bent segment as at" `Quick
@@ -1241,7 +1241,7 @@ let () =
             test_mark_full_still_subdivides;
           Alcotest.test_case "a mark is drawn along its extent" `Quick
             test_mark_draws_its_extent;
-          (* PENDING #27: full multilayer mark materialization — the setup meet
+          (* PENDING #27: full multilayer mark materialization: the setup meet
              `--hm * --da` can't reach across layers a carrying-flap-only chord *)
           Alcotest.test_case
             "between extent spanning an internal crease records cleanly"

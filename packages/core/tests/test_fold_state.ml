@@ -69,9 +69,9 @@ let test_accordion () =
        { Isometry3.x = half; y = half; z = q 0 })
 
 (* DEFAULT SCOPE: single fold gives face0 (rank 0) under face1 (rank 1), both
-   overlapping [0,1]x[0,1]. Axis x=1/2 cuts both; move_side = +1 (x>1/2 side).
+   overlapping [0,1]x[0,1]. Axis x=1/2 cuts both; [move_side] = +1 (x>1/2 side).
    Seed on the bottom flap grows to the whole stack; seed on the top flap stays
-   a singleton — the outside-prefix-down-to-anchor rule. *)
+   a singleton: the outside-prefix-down-to-anchor rule. *)
 let test_default_scope () =
   let g =
     mk ~faces:(single_fold_faces ()) ~hinges:(single_fold_hinges ())
@@ -168,7 +168,7 @@ let quadrant_hinges ~last_angle =
 
 let test_cycle_closes_fold_in_quarters () =
   (* all four creases folded: reflections compose to identity around the
-     vertex — the classic fold-in-quarters; rank = physical stacking *)
+     vertex: the classic fold-in-quarters; rank = physical stacking *)
   let g =
     mk ~faces:(quadrant_faces ()) ~hinges:(quadrant_hinges ~last_angle:(q 1))
       ~rank:[| 0; 1; 2; 3 |] ()
@@ -179,7 +179,7 @@ let test_cycle_closes_fold_in_quarters () =
 
 let test_cycle_tear_rejected () =
   (* only 3 of the 4 creases at an interior vertex folded: the cycle cannot
-     close — the sheet would tear along the remaining hinge *)
+     close: the sheet would tear along the remaining hinge *)
   expect_error "3-of-4 folded tears"
     (function Fold_state.Hinge_not_closed _ -> true | _ -> false)
     ~faces:(quadrant_faces ())
@@ -188,7 +188,7 @@ let test_cycle_tear_rejected () =
 
 (* Wide-middle accordion: f0=[0,2] (double width), f1=[2,3], f2=[3,4]; both
    hinges folded. Table: f0=[0,2], f1=[1,2], f2=[1,2]; hinge1's crease maps to
-   table x=1 — which f0 straddles. Whether f0 crosses it depends on the rank. *)
+   table x=1, which f0 straddles. Whether f0 crosses it depends on the rank. *)
 let tortilla_faces () = [| strip_face 0 2; strip_face 2 1; strip_face 3 1 |]
 
 let tortilla_hinges () =
@@ -204,7 +204,7 @@ let test_taco_tortilla_fires () =
     ~root:0 ~rank:[| 1; 0; 2 |]
 
 let test_taco_tortilla_ok_outside () =
-  (* f0 below the whole taco — legal *)
+  (* f0 below the whole taco: legal *)
   let g =
     mk ~faces:(tortilla_faces ()) ~hinges:(tortilla_hinges ())
       ~rank:[| 0; 1; 2 |] ()
@@ -214,7 +214,7 @@ let test_taco_tortilla_ok_outside () =
 let test_taco_tortilla_fires_reflected_root () =
   (* same geometry, root=1: f0 is now placed by a REFLECTION (CW table
      winding). The check must normalize winding or it is blind on most real
-     folded states — regression for the CCW normalization. *)
+     folded states: regression for the CCW normalization. *)
   expect_error "reflected tortilla sandwiched in the taco"
     (function
       | Fold_state.Taco_tortilla { tortilla = 0; hinge = 1 } -> true
@@ -224,7 +224,7 @@ let test_taco_tortilla_fires_reflected_root () =
 
 (* Fold-in-quarters strip: f0..f3 = [k,k+1]×[0,1], hinges at x=1,2,3, all
    folded. All faces stack on [0,1]; hinge0's and hinge2's creases both map to
-   table x=1 — a taco-taco configuration decided by the rank. *)
+   table x=1: a taco-taco configuration decided by the rank. *)
 let quarters_faces () =
   [| strip_face 0 1; strip_face 1 1; strip_face 2 1; strip_face 3 1 |]
 
@@ -234,7 +234,7 @@ let quarters_hinges () =
      mkh 2 3 (vline 3) (q 1) |]
 
 let test_taco_taco_fires () =
-  (* f2 inside taco (f0|f1), f3 outside: the pairs interleave — the paper
+  (* f2 inside taco (f0|f1), f3 outside: the pairs interleave: the paper
      would have to pass through itself at table x=1 *)
   expect_error "interleaved tacos"
     (function Fold_state.Taco_taco (0, 2) -> true | _ -> false)
@@ -242,7 +242,7 @@ let test_taco_taco_fires () =
     ~root:0 ~rank:[| 1; 3; 2; 0 |]
 
 let test_taco_taco_ok_nested () =
-  (* taco (f2|f3) nests entirely inside taco (f0|f1) — legal wrap *)
+  (* taco (f2|f3) nests entirely inside taco (f0|f1): legal wrap *)
   let g =
     mk ~faces:(quarters_faces ()) ~hinges:(quarters_hinges ())
       ~rank:[| 0; 3; 2; 1 |] ()
@@ -250,7 +250,7 @@ let test_taco_taco_ok_nested () =
   ignore g
 
 let test_taco_taco_ok_separated () =
-  (* zigzag accordion: taco (f0|f1) entirely below taco (f2|f3) — legal *)
+  (* zigzag accordion: taco (f0|f1) entirely below taco (f2|f3): legal *)
   let g =
     mk ~faces:(quarters_faces ()) ~hinges:(quarters_hinges ())
       ~rank:[| 0; 1; 2; 3 |] ()
@@ -259,7 +259,7 @@ let test_taco_taco_ok_separated () =
 
 let test_faces_accessor_deep_copies () =
   (* mutating the array returned by [faces] must not desync the state's
-     memoized isos from the geometry the caller can now see. *)
+     memoized [isos] from the geometry the caller can now see. *)
   let g =
     mk ~faces:(single_fold_faces ()) ~hinges:(single_fold_hinges ())
       ~rank:[| 0; 1 |] ()
@@ -291,7 +291,7 @@ let test_rejects_degenerate_hinge_line () =
     ~faces:(single_fold_faces ()) ~hinges ~root:0 ~rank:[| 0; 1 |]
 
 let test_mv_single_fold_valley () =
-  (* f1 folded on TOP of face-up f0: the crease is a valley — the calibration
+  (* f1 folded on TOP of face-up f0: the crease is a valley: the calibration
      case (old evaluator: valley folds stack the mover above; fold_state.ml
      assign rule V ⟺ valley XOR reflected). *)
   let g =
@@ -332,7 +332,7 @@ let test_mv_accordion_zigzag () =
   Alcotest.(check bool) "hinge 1 is M" true (Fold_state.mv g 1 = Fold_state.M)
 
 (* Waterbomb-base 8-fan around the square's centre: sector faces
-   (c, p_k, p_{k+1}), hinges through c, all folded; the classic
+   (c, [p_k], p_{k+1}), hinges through c, all folded; the classic
    Kawasaki-satisfying single-vertex cycle. All coordinates rational. *)
 let half = Num.of_q (Q.of_ints 1 2)
 let gph x y : Geom.point = { Geom.x = x; y }
@@ -366,7 +366,7 @@ let test_waterbomb_constructs () =
       ~rank:[| 0; 1; 2; 3; 4; 5; 6; 7 |] ()
   in
   (* every face lands on sector 0: p3=(0,1), three hinges from the root,
-     must land on p1=(1,1) — trace: R(x+y=1)→(0,1); R(x=½)→(1,1); R(y=x)→(1,1) *)
+     must land on p1=(1,1). Trace: R(x+y=1)→(0,1); R(x=½)→(1,1); R(y=x)→(1,1) *)
   let isos = Fold_state.face_isos g in
   Alcotest.(check bool) "p3 lands on (1,1)" true
     (i3eq
@@ -409,7 +409,7 @@ let test_waterbomb_mv_maekawa () =
 
 let test_waterbomb_bad_wrap_rejected () =
   (* swapping the heights of f1 and f2 interleaves tacos {0,1} and {2,3} on
-     the y=x ray: rank intervals [0,2] and [1,3] cross — taco-taco *)
+     the y=x ray: rank intervals [0,2] and [1,3] cross: taco-taco *)
   expect_error "illegal wrap order"
     (function Fold_state.Taco_taco _ -> true | _ -> false)
     ~faces:(wb_faces ()) ~hinges:(wb_hinges ())
@@ -556,7 +556,7 @@ let test_subdivide_parity () =
   Alcotest.(check bool) "flat" true (Num.sign hs.(0).Fold_state.angle = 0)
 
 let test_subdivide_paper_parity () =
-  (* through subdivide_paper: paper-space clipping. *)
+  (* through [subdivide_paper]: paper-space clipping. *)
   Fold_state.reset_ids ();
   let diag = { Geom.a = q 1; b = q 1; c = q 1 } in  (* diagonal x+y=1 *)
   let g = Fold_state.subdivide_paper Fold_state.init_square diag ~prov:None in
@@ -579,7 +579,7 @@ let test_subdivide_carried_split () =
   let d1 = { Geom.a = q 1; b = q 1; c = q 1 } in
   let d2 = { Geom.a = q 1; b = q (-1); c = q 0 } in
   let g = Fold_state.subdivide (Fold_state.subdivide Fold_state.init_square d1 ~prov:None) d2 ~prov:None in
-  (* 4 faces; first crease now two hinge pieces sharing crease_id 0 *)
+  (* 4 faces; first crease now two hinge pieces sharing [crease_id] 0 *)
   let hs = Fold_state.hinges g in
   let pieces_of cid =
     Array.to_list hs |> List.filter (fun h -> h.Fold_state.crease_id = cid)
@@ -590,9 +590,10 @@ let test_subdivide_carried_split () =
 (* Was a parity test against the old model (Task 3); the old model is gone
    (Plan 3c Task 6), so the concrete face/hinge layout it proved equal is
    inlined directly, computed from THIS construction (verified via a scratch
-   run of the same fold graph, git history has the parity-checked provenance):
-   the guard confines the axis crease to the y>1/2 side, leaving the whole
-   bottom strip (face 2) unsplit and un-hinged to the axis crease. *)
+   run of the same fold graph, git history has the parity-checked
+   provenance): the guard confines the axis crease to the y>1/2 side, so the
+   whole bottom strip (face 2) stays unsplit and un-hinged to the axis
+   crease. *)
 let test_subdivide_keep_side () =
   Fold_state.reset_ids ();
   let half = Num.div Num.one (Num.of_int 2) in
@@ -603,7 +604,7 @@ let test_subdivide_keep_side () =
   let g = Fold_state.subdivide base_new axis ~keep_side:(guard, 1) ~prov:None in
   Alcotest.(check int) "3 faces (bottom strip stays whole)" 3
     (Array.length (Fold_state.faces g));
-  (* the axis crease (cid 1) only hinges the two ABOVE faces, never the
+  (* the axis crease ([cid] 1) only hinges the two ABOVE faces, never the
      unsplit bottom strip *)
   let hs = Fold_state.hinges g in
   let axis_hinges =
@@ -629,9 +630,10 @@ let vfold_new g ax = Fold_state.fold g ~axis:ax ~move_side:1 ~valley:true ~prov:
 
 (* The following fold tests were parity tests against the old model (Task 4);
    the old model is gone (Plan 3c Task 6). Each now asserts the concrete
-   face/hinge facts the parity previously proved equal — computed straight
+   face/hinge facts the parity previously proved equal, computed straight
    from [Fold_state.fold] itself (a scratch run pinned these, git history has
-   the parity-checked provenance) — instead of re-deriving them by hand. *)
+   the parity-checked provenance), instead of re-deriving them
+   by hand. *)
 
 let test_fold_parity_single () =
   Fold_state.reset_ids ();
@@ -651,7 +653,7 @@ let test_fold_parity_mountain () =
   Alcotest.(check bool) "hinge 0 is M" true (Fold_state.mv g 0 = Fold_state.M)
 
 let test_fold_parity_pleat () =
-  (* second fold refolds the packet — movers include previously-moved AND
+  (* second fold refolds the packet: movers include previously-moved AND
      previously-stationary material, so carried folded hinges move as a block
      (nontrivial base is exercised separately by the flip tests in Task 5) *)
   Fold_state.reset_ids ();
@@ -687,9 +689,9 @@ let test_fold_precrease_upgrade () =
 
 let test_fold_scoped_parity () =
   (* two layers via a book fold, then a scoped fold of ONLY the top layer's
-     free edge: fold the material LEFT of x=1/4 back to the right (move_side
+     free edge: fold the material LEFT of x=1/4 back to the right ([move_side]
      -1). The mover's only hinge to the stationary material is the book crease
-     at table x=1/2 — on the stay side, so the scoped fold is hinge-closed
+     at table x=1/2, on the stay side, so the scoped fold is hinge-closed
      (folding the x>1/4 side instead would tear at that hinge). *)
   Fold_state.reset_ids ();
   let half = Num.div Num.one (Num.of_int 2) in
@@ -720,7 +722,7 @@ let test_fold_scoped_parity () =
 
 let test_fold_then_subdivide_parity () =
   (* subdivide with a TABLE-space axis on a state whose moved faces have
-     det -1 placements *)
+     determinant -1 placements *)
   Fold_state.reset_ids ();
   let half = Num.div Num.one (Num.of_int 2) in
   let ax = { Geom.a = q 1; b = q 0; c = half } in
@@ -813,15 +815,15 @@ let test_fold_nothing_stationary_parity () =
   Alcotest.(check bool) "reflected across x=1" true
     (Geom.point_equal (Fold_state.table_polygon g 0).(0) (gp 2 0))
 
-(* --- Plan 3a Task 5: flip + add_mark -------------------------------------- *)
+(* --- Plan 3a Task 5: flip + [add_mark] ------------------------------------- *)
 
 let test_flip_parity () =
   Fold_state.reset_ids ();
   let ax = { Geom.a = q 1; b = q 0; c = Num.div Num.one (Num.of_int 2) } in
   let g = Fold_state.flip (vfold_new Fold_state.init_square ax) in
   Alcotest.(check int) "2 faces" 2 (Array.length (Fold_state.faces g));
-  (* flip doesn't change the derived letter (adjudicated — see
-     test_flip_leaves_derived_assignment_unchanged in test_collapse.ml for the
+  (* flip doesn't change the derived letter (adjudicated: see
+     [test_flip_leaves_derived_assignment_unchanged] in test_collapse.ml for the
      collapse-kernel analogue of this same finding) *)
   Alcotest.(check bool) "hinge 0 still V after flip" true (Fold_state.mv g 0 = Fold_state.V)
 
@@ -835,7 +837,7 @@ let test_fold_after_flip_parity () =
   Alcotest.(check int) "4 faces" 4 (Array.length (Fold_state.faces g));
   (* ax2 runs perpendicular to ax1 and cuts BOTH layers of the folded packet,
      so the original x=1/2 hinge splits into two pieces alongside the two new
-     y=1/2 pieces — 4 hinges total *)
+     y=1/2 pieces: 4 hinges total *)
   let letters =
     Array.to_list (Fold_state.hinges g)
     |> List.mapi (fun i _ -> Fold_state.mv g i)
@@ -848,7 +850,7 @@ let test_flip_nontrivial_base_parity () =
   (* the final flip's base compose has a NON-identity right operand (the root
      carries the first flip's reflection), and its axis (x=3/8) differs from
      that reflection's axis (x=1/4): the two compose orders differ by a
-     translation — the earlier flip tests cannot exercise this (their root
+     translation: the earlier flip tests cannot exercise this (their root
      placement is the identity). *)
   Fold_state.reset_ids ();
   let half = Num.div Num.one (Num.of_int 2) in
@@ -867,7 +869,7 @@ let test_flip_nontrivial_base_parity () =
   in
   Alcotest.(check bool) "letters are [V;V;M]" true
     (letters = [ Fold_state.M; Fold_state.V; Fold_state.V ]);
-  (* sanity: the pre-flip root placement really is non-identity — the guard
+  (* sanity: the pre-flip root placement is non-identity: the guard
      that makes this test order-sensitive; if this ever fails the test has
      silently degenerated to the order-insensitive case *)
   let pre =
@@ -906,10 +908,10 @@ let battery_hl c : Geom.line = { Geom.a = Num.zero; b = Num.one; c }
 
 (* This battery was a cross-op parity regression against the old model (Task
    6); the old model is gone (Plan 3c Task 6). Each scenario now asserts the
-   concrete face count + derived letters the parity previously proved equal
-   — pinned from a scratch run of the same op sequence (git history has the
-   parity-checked provenance) — as a smoke-test that the op chain still
-   produces the same shape. *)
+   concrete face count + derived letters the parity previously proved equal,
+   pinned from a scratch run of the same op sequence (git history has the
+   parity-checked provenance), as a smoke-test that the op chain
+   still produces the same shape. *)
 let letters_of g =
   Array.to_list (Fold_state.hinges g)
   |> List.mapi (fun i _ -> Fold_state.mv g i)
@@ -946,7 +948,7 @@ let test_battery () =
   Alcotest.(check int) "flip sandwich: 4 faces" 4 (Array.length (Fold_state.faces g));
   Alcotest.(check bool) "flip sandwich: letters [V;V;M;V]" true
     (letters_of g = [ Fold_state.M; Fold_state.V; Fold_state.V; Fold_state.V ]);
-  (* paper-space mark graduation path: subdivide_paper on a folded state *)
+  (* paper-space mark graduation path: [subdivide_paper] on a folded state *)
   let g = replay [ OFoldV (battery_vl (battery_frac 1 2), 1);
                    OSubPaper (battery_hl (battery_frac 1 4)) ] in
   Alcotest.(check int) "subdivide_paper folded: 4 faces" 4
@@ -959,8 +961,8 @@ let test_battery () =
     (letters_of g = [ Fold_state.M; Fold_state.V; Fold_state.V ])
 
 (* mark-then-fold: book fold, mark a segment on the STATIONARY region, fold
-   again, then check the mark's current table axis is a line that actually
-   passes through the mark's own current table position — self-consistency,
+   again, then check the mark's current table axis is a line that passes
+   through the mark's own current table position: self-consistency,
    in place of the old cross-model chord check. *)
 let test_battery_mark_then_fold () =
   let half = battery_frac 1 2 in
@@ -1001,7 +1003,7 @@ let test_add_mark () =
   let g' = Fold_state.fold g ~axis:ax ~move_side:1 ~valley:true ~prov:None in
   Alcotest.(check int) "mark carried" 1 (Array.length (Fold_state.marks g'))
 
-(* mark_graduates: a corner-to-corner seg mark graduates immediately (both
+(* [mark_graduates]: a corner-to-corner segment mark graduates immediately (both
    endpoints are already face-boundary vertices on the flat single-face
    sheet); an interior point mark never graduates. *)
 let test_mark_graduates () =
@@ -1042,7 +1044,7 @@ let pair_precrease_fold () =
 
 (* Was a parity test against the old model (Plan 3b Task 1); the old model is
    gone (Plan 3c Task 6). Asserts the concrete crease ids/segment counts the
-   parity previously proved equal — pinned from a scratch run of this exact
+   parity previously proved equal, pinned from a scratch run of this exact
    construction (git history has the parity-checked provenance). *)
 let test_crease_segments_parity () =
   let g = pair_precrease_fold () in
@@ -1100,7 +1102,7 @@ let test_neighbors_hinge_between () =
   let g = pair_precrease_fold () in
   let n = Array.length (Fold_state.faces g) in
   (* every hinge appears in both endpoints' neighbor lists, and
-     hinge_between finds it from its segment *)
+     [hinge_between] finds it from its segment *)
   Array.iteri
     (fun i (h : Fold_state.hinge) ->
       Alcotest.(check bool) (Printf.sprintf "nb fa %d" i) true
@@ -1146,7 +1148,7 @@ let test_flap_of_points_parity () =
 
 (* ambiguous-branch probe (carried minor from Task 2): a point exactly on the
    shared paper-space boundary between the stationary and moved clusters of
-   pair_precrease_fold's BL/BR faces belongs to both -> Ambiguous. *)
+   [pair_precrease_fold]'s BL/BR faces belongs to both -> Ambiguous. *)
 let test_flap_of_points_ambiguous () =
   let g = pair_precrease_fold () in
   let string_of = function
@@ -1170,7 +1172,7 @@ let test_line_material_parity () =
     (List.length (Fold_state.line_material_segments g l));
   Alcotest.(check bool) "line cuts the paper" true (Fold_state.line_cuts_paper g l)
 
-(* select_scope parity on a 3-layer state (pleat then check scoping) *)
+(* [select_scope] parity on a 3-layer state (pleat then check scoping) *)
 (* Was a parity test against the old model (Plan 3b Task 3); the old model is
    gone (Plan 3c Task 6). The moving-set result it proved equal, pinned from
    a scratch run of this construction (git history has the parity-checked
@@ -1187,15 +1189,15 @@ let test_select_scope_parity () =
   (* the top face over x in (1/4,1/2): this construction leaves all 4 faces
      spanning EXACTLY [1/4,1/2] on the table (a book fold's two layers have
      identical footprints, and cutting both again at 1/4 folds each one's
-     [0,1/4] piece exactly onto [1/4,1/2] too — verified: every face's table
+     [0,1/4] piece exactly onto [1/4,1/2] too, verified: every face's table
      polygon has vertices ONLY at x=1/4 and x=1/2, none strictly between).
      The brief's vertex-based candidacy check (a vertex strictly inside the
      open interval) therefore never matches ANY face and always yields
-     anchor=-1 — a test-construction bug, not a parity divergence (both
+     anchor=-1: a test-construction bug, not a parity divergence (both
      models crash identically on the out-of-range anchor). Judge candidacy
      by positive-area overlap with the open strip instead: all 4 faces
      qualify here, so this reduces to "the highest-ranked face", but stays
-     correct for a genuinely partial-overlap construction too. *)
+     correct for a partial-overlap construction too. *)
   let top =
     let n = Array.length (Fold_state.faces g) in
     let strip_lo = { Geom.a = q 1; b = q 0; c = frac 1 4 } in
@@ -1221,14 +1223,14 @@ let test_select_scope_parity () =
   | Ok m -> Alcotest.(check (array bool)) "moving set" [| true; true; true; true |] m
   | Error (e, _) -> Alcotest.failf "expected Ok, got: %s" e
 
-(* Plan 3c Task 1: TargetHinged select_scope (frontier BFS + predicate — the
-   `up to <named crease>` machinery). Reuses test_select_scope_parity's
-   3-layer pleat construction verbatim: book fold (axis 1/2, move_side 1)
-   then a second fold at axis 1/4, move_side -1, leaving 3 overlapping
-   layers. cid 0 is the book fold's crease, so the predicate below asks "is
-   this face hinged on the book-fold crease", built from crease_segments.
+(* Plan 3c Task 1: TargetHinged [select_scope] (frontier BFS + predicate: the
+   `up to <named crease>` machinery). Reuses [test_select_scope_parity]'s
+   3-layer pleat construction verbatim: book fold (axis 1/2, [move_side] 1)
+   then a second fold at axis 1/4, [move_side] -1, which leaves 3 overlapping
+   layers. [cid] 0 is the book fold's crease, so the predicate below asks "is
+   this face hinged on the book-fold crease", built from [crease_segments].
    Axis 3/8 (same as the TargetFace test): the anchor (face 3) is not itself
-   hinged on cid 0, so the `pred anchor` short-circuit is skipped and the
+   hinged on [cid] 0, so the `pred anchor` short-circuit is skipped and the
    frontier loop runs; the hinged faces 0/1 are hits in the FIRST frontier
    round (the visited-expansion multi-round branch remains uncovered here;
    end-to-end up-to cases cover it in 3c Task 4). An Ok case, as required. A
@@ -1306,10 +1308,10 @@ let test_scoped_hinge_closed_parity () =
   Alcotest.(check bool) "tear" true (Result.is_error bad)
 
 (* 3a carry-in: on-axis hinge with BOTH sides moving must NOT toggle (D8);
-   old model upgraded eassign here — accepted divergence, so assert the NEW
+   old model upgraded [eassign] here: accepted divergence, so assert the NEW
    behaviour directly, no parity. Corrected book-fold construction (see
-   task-3-brief.md correction note — the original 4-face sketch does not
-   actually reach both-sides-moving). *)
+   task-3-brief.md correction note: the original 4-face sketch does not
+   reach both-sides-moving). *)
 let test_both_sides_moving_no_toggle () =
   Fold_state.reset_ids ();
   let frac a b = Num.div (Num.of_int a) (Num.of_int b) in
@@ -1337,8 +1339,8 @@ let mclass_str = function
 
 (* Was a parity test against the old model (Plan 3b Task 4); the old model is
    gone (Plan 3c Task 6). Each case's classification, pinned from a scratch
-   run (git history has the parity-checked provenance), is asserted
-   directly. *)
+   run (git history has the parity-checked provenance), is
+   asserted directly. *)
 let test_classify_parity () =
   let g = pair_precrease_fold () in
   (* flap = the moved packet cluster: probe from a point on it *)
@@ -1418,8 +1420,8 @@ let paper_y_range (g : Fold_state.t) (i : int) : Num.t * Num.t =
   ( List.fold_left (fun a b -> if Num.compare b a < 0 then b else a) (List.hd ys) ys,
     List.fold_left (fun a b -> if Num.compare b a > 0 then b else a) (List.hd ys) ys )
 
-(* [find_by_range] alone cannot tell apart a horizontal cut's two children —
-   they share the same paper x-range — so this also matches the y-range. *)
+(* [find_by_range] alone cannot tell apart a horizontal cut's two children
+   (they share the same paper x-range), so this also matches the y-range. *)
 let find_by_box (g : Fold_state.t) xlo xhi ylo yhi : int =
   let n = Array.length (Fold_state.faces g) in
   let rec go i =
@@ -1441,7 +1443,7 @@ let three_halves = Num.of_q (Q.of_ints 3 2)
    face order is observable in FOLD output. Mountain (Bottom) on this exact
    mask has no matching literal: it wraps the moved corner under the
    full-width, uncut base, which the taco-tortilla check correctly rejects
-   ({!test_fold_blocks_bottom_pierces}) — so that direction is asserted as
+   ({!test_fold_blocks_bottom_pierces}), so that direction is asserted as
    the same rejection here, not as a second literal layout. *)
 let test_fold_blocks_top_bottom_match_old_fold () =
   let g = two_layer () in
@@ -1605,7 +1607,7 @@ let hinge_index_on (g : Fold_state.t) (line : Geom.line) (pred : int -> int -> b
    O = (1, 1/2), so the corner beyond O is a tip that reaches beyond the
    line and is a candidate spine. Covers the same ground as the
    [vline_half] fixture above (order, new-crease letters) plus the spine's
-   own letter beyond O; only the inside fold is realizable here — wrapping
+   own letter beyond O; only the inside fold is realizable here: wrapping
    the corner around the outside of the whole flap tears it, which the
    kernel rejects as taco-tortilla. *)
 let diag : Geom.line = { Geom.a = q 1; b = q 1; c = three_halves }
@@ -1670,7 +1672,7 @@ let test_reverse_spine_beyond_o () =
 (* Perpendicular-axis fixture: axis y=1/2 runs perpendicular to the spine
    (table and paper x=1, from (1,0) to (1,1)) instead of parallel to it, so
    the spine reaches beyond the axis and both layers are cut; the tip
-   (move_side:1) is the upper half of both layers. Children by paper box:
+   ([move_side]:1) is the upper half of both layers. Children by paper box:
    body-L = f0's stationary [0,1]x[0,1/2], tip-L = f0's moved [0,1]x[1/2,1],
    body-R = f1's stationary [1,2]x[0,1/2], tip-R = f1's moved [1,2]x[1/2,1].
    f1's fold across x=1 leaves y unchanged, so the axis and the cut line

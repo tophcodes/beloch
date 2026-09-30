@@ -19,7 +19,7 @@ let test_merge_single_generator () =
   | None -> Alcotest.fail "should merge Q(sqrt2)"
   | Some (mu, coords) ->
       (* reconstruct each coefficient from its coords over the SAME gamma.
-         gamma is a root of mu; verify by rebuilding coeffs and comparing. *)
+         gamma is a root of mu; verify by rebuilding [coeffs] and comparing. *)
       Alcotest.(check int) "3 coord polys" 3 (Array.length coords);
       (* mu has degree 2 (Q(sqrt2)) *)
       Alcotest.(check int) "mu degree 2" 2 (Poly.degree mu)
@@ -36,8 +36,8 @@ let test_merge_compositum_independent () =
       Alcotest.(check int) "3 coord polys" 3 (Array.length coords)
 
 let test_resultant_superset_cubic () =
-  (* cubic t^3 - 2 has coeffs all rational except none; use t^3 - sqrt2 whose
-     coeff sqrt2 lives in Q(sqrt2). R must vanish at the real cube-ish root. *)
+  (* cubic t^3 - 2 has [coeffs] all rational except none; use t^3 - sqrt2 whose
+     [coeff] sqrt2 lives in Q(sqrt2). R must vanish at the real cube-ish root. *)
   let s2 = Qqbar.sqrt (qq "2") in
   let coeffs = [| Qqbar.neg s2; qq "0"; qq "0"; qq "1" |] in
   match Field_merge.merge_generators coeffs with

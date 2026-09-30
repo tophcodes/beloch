@@ -15,7 +15,7 @@ let check_under name bound dt =
   if enforce then Alcotest.(check bool) msg true (dt < bound)
   else Printf.printf "  timing not enforced on CI: %s\n%!" msg
 
-(* ---- Num: basic arithmetic ---- *)
+(* ---- [Num]: basic arithmetic ---- *)
 
 let test_num_rational () =
   Alcotest.(check bool) "2+3=5" true (Num.equal (Num.add (n 2) (n 3)) (n 5));
@@ -97,7 +97,7 @@ let test_num_cross_field_fast () =
   let dt = Unix.gettimeofday () -. t0 in
   check_under "cross-field sequence" 1.0 dt
 
-(* ---- Num: real_roots ---- *)
+(* ---- [Num]: [real_roots] ---- *)
 
 let test_num_real_roots_cubic () =
   let coeffs = [| Num.of_int (-1); Num.of_int (-3); Num.zero; Num.one |] in
@@ -259,7 +259,7 @@ let test_poly_sign_variations () =
     (Poly.sign_variations (qp [ -1; 0; 0; 1 ]))
 
 let test_poly_descartes_test () =
-  (* p = (x−1)(x−2) on various intervals *)
+  (* p = (x−1)(x−2), checked on two example intervals *)
   let p = qp [ 2; -3; 1 ] in
   Alcotest.(check int) "no root in (3,4)" 0
     (Poly.descartes_test p (Q.of_int 3) (Q.of_int 4));
@@ -273,7 +273,7 @@ let test_poly_isolate_close_roots () =
   let iv = Poly.isolate_roots p in
   Alcotest.(check int) "four isolated roots" 4 (List.length iv)
 
-(* ---- Mpoly ---- *)
+(* ---- [Mpoly] ---- *)
 
 let test_mpoly_resultant_constant_free () =
   let nvars = 2 in
@@ -356,13 +356,13 @@ let test_field_sign_and_inv () =
     (Num.equal (Num.mul alpha (Num.inv alpha)) Num.one);
   Alcotest.(check (float 1e-9)) "to_float α" 1.2599210498948732 (Num.to_float alpha)
 
-(* Arithmetic on same-field irrationals that ENTER as Qq (e.g. from Num.sqrt)
+(* Arithmetic on same-field irrationals that ENTER as Qq (e.g. from [Num.sqrt])
    must route through the ℚ(α) fast path and yield Field, not fall back to
-   generic qqbar. Guards the #57 perf fix: the result representation proves the
+   generic qqbar. Guards the #57 performance fix: the result representation proves the
    factorization-free path engaged, and the value checks prove it stays exact. *)
 let test_field_routing_from_qq () =
   let r2 = Num.sqrt (n 2) in
-  (* precondition: sqrt builds a generic Qq, not a Field *)
+  (* precondition: [Num.sqrt] builds a generic Qq, not a Field *)
   Alcotest.(check bool) "√2 enters as Qq" true
     (match r2 with Num.Qq _ -> true | _ -> false);
   let sum = Num.add r2 r2 in
@@ -375,7 +375,7 @@ let test_field_routing_from_qq () =
     (match mixed with Num.Field _ -> true | _ -> false);
   Alcotest.(check bool) "√2·(√2+1) = 2+√2" true
     (Num.equal mixed (Num.add (n 2) r2));
-  (* independent fields do NOT force a bogus merge — √2·√3 stays exact *)
+  (* independent fields do NOT force a bogus merge: √2·√3 stays exact *)
   let r3 = Num.sqrt (n 3) in
   Alcotest.(check bool) "√2·√3 squared = 6" true
     (Num.equal (Num.mul (Num.mul r2 r3) (Num.mul r2 r3)) (n 6))
@@ -512,7 +512,7 @@ let test_num_sqrt2_sqrt5_identities () =
     (Num.equal (Num.mul s2 s5) s10)
 
 (* A square root nested in a quadratic field: α = √(4 − 2√2) has degree 4
-   and, being within field_degree_cap, becomes a Field generator; √2 is
+   and, being within [field_degree_cap], becomes a Field generator; √2 is
    expressed inside ℚ(α) so mixed arithmetic never leaves the Field path.
    The identities hold exactly; the loop is the #13 regression guard, each
    pass being what one convex-overlap projection costs in the crane. *)
@@ -574,7 +574,7 @@ let test_num_deg27_smoke () =
   check_under "deg-27 smoke" 1.0 dt
 
 let test_num_axiom7_style_algebraic_cubic_fast () =
-  (* cubic with coefficients in Q(sqrt2, sqrt3) — degree-4 coefficient field;
+  (* cubic with coefficients in Q(sqrt2, sqrt3): degree-4 coefficient field;
      was ~28s via generator elimination, FLINT 3.6 roots-first target < 1s *)
   let s2 = Num.sqrt (n 2) and s3 = Num.sqrt (n 3) in
   let gamma = Num.div (Num.add s2 s3) (n 8) in
@@ -602,7 +602,7 @@ let test_num_axiom7_style_algebraic_cubic_fast () =
 let test_real_roots_independent_folds () =
   (* a cubic whose coefficients combine two INDEPENDENT prior folds:
      sqrt2 and cbrt2. Coefficient field is Q(sqrt2, cbrt2), degree 6.
-     t^3 + (cbrt2)·t - sqrt2 = 0 — one real root, verified exactly. *)
+     t^3 + (cbrt2)·t - sqrt2 = 0: one real root, verified exactly. *)
   let s2 = Num.sqrt (n 2) in
   let c2 = Num.real_roots [| n (-2); n 0; n 0; n 1 |] |> List.hd in (* cbrt2 *)
   let coeffs = [| Num.neg s2; c2; n 0; n 1 |] in
@@ -616,7 +616,7 @@ let test_real_roots_independent_folds () =
       Alcotest.(check bool) "root verifies exactly" true (Num.equal v Num.zero))
     roots
 
-(* Horner eval shared by the pe_tier-routing tests below. *)
+(* Horner evaluation shared by the [pe_tier]-routing tests below. *)
 let eval_num (coeffs : Num.t array) (r : Num.t) : Num.t =
   let acc = ref Num.zero in
   for i = Array.length coeffs - 1 downto 0 do
@@ -625,10 +625,10 @@ let eval_num (coeffs : Num.t array) (r : Num.t) : Num.t =
   !acc
 
 let test_real_roots_quartic_independent_folds () =
-  (* Quartic (degree-in-z = 4 > 3) trips flint_first's own guard, so it
-     returns None regardless of max_deg, and control falls through to
-     pe_tier. Coefficients combine two INDEPENDENT prior folds — sqrt2 and
-     cbrt2 — so the coefficient field is the compositum Q(sqrt2, cbrt2)
+  (* Quartic (degree-in-z = 4 > 3) trips [flint_first]'s own guard, so it
+     returns None regardless of [max_deg], and control falls through to
+     [pe_tier]. Coefficients combine two INDEPENDENT prior folds (sqrt2 and
+     cbrt2), so the coefficient field is the compositum Q(sqrt2, cbrt2)
      (degree 6): x^4 + cbrt2*x^2 - sqrt2*x - 1. At x=0 the value is -1 and
      the quartic -> +inf as x -> +-inf, so a real root is guaranteed. *)
   let s2 = Num.sqrt (n 2) in
@@ -645,10 +645,10 @@ let test_real_roots_quartic_independent_folds () =
     roots
 
 let test_real_roots_degree5_coefficient () =
-  (* Cubic with a coefficient of individual Qqbar.degree 5 — the real root
-     of the irreducible quintic x^5 - x - 1 — pushes max_deg to 5, so the
-     `max_deg < 5` gate skips flint_first entirely (it is never called) and
-     goes straight to pe_tier: x^3 + quint*x - 2. At x=0 the value is -2 and
+  (* Cubic with a coefficient of individual Qqbar.degree 5 (the real root
+     of the irreducible quintic x^5 - x - 1) pushes [max_deg] to 5, so the
+     `max_deg < 5` gate skips [flint_first] entirely (it is never called) and
+     goes straight to [pe_tier]: x^3 + quint*x - 2. At x=0 the value is -2 and
      the cubic -> +inf as x -> +inf, so a real root is guaranteed. *)
   let quint =
     Num.real_roots [| n (-1); n (-1); n 0; n 0; n 0; n 1 |] |> List.hd
@@ -666,8 +666,8 @@ let test_real_roots_degree5_coefficient () =
 let test_real_roots_deep_stack_fast () =
   (* Cubic with a single coefficient of qqbar-degree 8: g = sqrt(sqrt2 +
      sqrt3). sqrt2+sqrt3 is degree 4 (Q(sqrt2,sqrt3) compositum), and its
-     square root doubles that to degree 8. max_deg = 8 >= 5, so the gate
-     skips flint_first entirely and routes through pe_tier — the case the
+     square root doubles that to degree 8. [max_deg] = 8 >= 5, so the gate
+     skips [flint_first] entirely and routes through [pe_tier]: the case the
      spike measured at ~9s via qqbar-native elimination vs ~0.2s via PE.
      x^3 + g*x - 2: at x=0 the value is -2 and the cubic -> +inf as x ->
      +inf, so a real root is guaranteed. *)

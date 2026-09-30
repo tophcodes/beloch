@@ -6,6 +6,7 @@ Acyclicity
 Affero
 Affordance
 Akitaya
+Alcotest
 Alperin
 Animatable
 Antipattern
@@ -43,6 +44,7 @@ Dedup
 Dedupe
 Deduped
 Dedupes
+Deduping
 Deduplicated
 Deduplicates
 Dedups
@@ -172,8 +174,10 @@ Waterbomb
 Webfont
 Webview
 Wordmark
+XOR'd
 Zakharevich
 Zenodo
+accessor
 acyclicity
 affordance
 animatable
@@ -182,6 +186,7 @@ antipattern
 antipatterns
 antisymmetry
 arXiv
+argmax
 arity
 belochc
 benchmarked
@@ -193,10 +198,12 @@ canonicalise
 canonicalising
 canonicalization
 canonicalize
+canonicalized
 canonicalizing
 casus
 centerline
 citekey
+codebase's
 collinearity
 composable
 compositum
@@ -232,6 +239,7 @@ dogfoods
 eGami
 eigenvector's
 enum
+errored
 erroring
 evaluator
 factorizer
@@ -245,6 +253,7 @@ gitignored
 granularities
 greppable
 halfplane
+hashtable
 hoc
 idempotency
 iff
@@ -289,6 +298,7 @@ operand's
 optionals
 orientable
 overclaim
+pandoc's
 paperfolding
 params
 parens
@@ -304,6 +314,7 @@ precrease
 precreased
 precreases
 preimage
+preimages
 prepended
 preprint
 preprocessor
@@ -349,10 +360,12 @@ substring
 superset
 swappable
 tokenizer
+tokenizes
 toolchain
 toolchains
 tooltip
 tooltips
+transversally
 typst
 unbuilt
 unconstructible
@@ -360,9 +373,11 @@ uncreased
 underdetermined
 unextractable
 unflipped
+ungrouped
 unioning
 univariate
 unnormalized
+unparenthesized
 unphysical
 unrepresentable
 unscored

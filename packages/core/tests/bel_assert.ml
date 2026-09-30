@@ -1,9 +1,9 @@
-(* tests/bel_assert.ml — the `.bel` inline-assertion format:
+(* tests/bel_assert.ml: the `.bel` inline-assertion format:
    grammar, tokenizer and checker, shared by test_bel_assert.ml and
    test_reference_corpus.ml. See bel_assert.mli for the module's contract.
 
    A test file is a normal program followed by trailing `;`-comment
-   assertions (`; assert ...` / `; expect error "..."`). The lexer already
+   assertions (`; assert …` / `; expect error "…"`). The lexer already
    ignores `;` comments, so extraction reads the raw file text independent of
    parsing, and the program is evaluated verbatim (comments included). *)
 
@@ -31,7 +31,7 @@ let is_assert_line (line : string) : string option =
 
 let is_assertion_line (line : string) : bool = Option.is_some (is_assert_line line)
 
-(* ---- Hand-rolled tokenizer (no Menhir — grammar is line-oriented, tiny) ---- *)
+(* ---- Hand-rolled tokenizer (no Menhir: grammar is line-oriented, tiny) ---- *)
 
 let tokenize (s : string) : string list =
   let n = String.length s in
@@ -210,9 +210,9 @@ let expected_error (assertions : assertion list) : string option =
 (* ---- Operand resolution against the evaluator's state ---- *)
 
 (* A line is the same line as another, up to a nonzero scalar, iff the
-   (a,b,c) triples are proportional — the 2x2 minors of the 2x3 matrix
+   (a,b,c) triples are proportional: the 2×2 minors of the 2×3 matrix
    vanish. Geom has no line-equality helper, so this compares up to scalar
-   multiple exactly (Num, no tolerances). *)
+   multiple exactly ([Num], no tolerances). *)
 let line_equal (l1 : Geom.line) (l2 : Geom.line) : bool =
   let open Geom in
   Num.equal (Num.mul l1.a l2.b) (Num.mul l2.a l1.b)
@@ -220,13 +220,13 @@ let line_equal (l1 : Geom.line) (l2 : Geom.line) : bool =
   && Num.equal (Num.mul l1.b l2.c) (Num.mul l2.b l1.c)
 
 (* v1 (non-goal note): boundary creases (the pristine paper edges) are never
-   recorded as a Fold_state.hinge — Fold_state.init_square starts with
+   recorded as a Fold_state.hinge: Fold_state.init_square starts with
    `hinges = [||]` and hinges are only minted by fold/subdivide. fold_emit.ml's
    own FOLD serialization hits the same gap and works around it with a purely
    geometric test (`on_unit_boundary`) rather than a hinge lookup. We follow
    that established idiom: a "boundary" line is one that coincides (up to
    scalar) with one of the four paper-frame edges x=0/x=1/y=0/y=1 in PAPER
-   space, checked directly against the resolved line — no hinge array lookup,
+   space, checked directly against the resolved line: no hinge array lookup,
    since Fold_state.assign has no B constructor and never will (B is
    emit-time-only in fold_emit.ml). *)
 let unit_boundary_lines : Geom.line list =
@@ -245,7 +245,7 @@ let unit_boundary_lines : Geom.line list =
 let is_unit_boundary_line (l : Geom.line) : bool =
   List.exists (line_equal l) unit_boundary_lines
 
-(* Eval.named_points and named_lines both carry a frame step and the index of
+(* Eval.named_points and [named_lines] both carry a frame step and the index of
    the statement that binds the name; look up by name, ignoring both. *)
 let assoc4 (name : string) (l : (string * 'a * int * 'b) list) : 'a option =
   List.find_map (fun (n, v, _, _) -> if n = name then Some v else None) l
@@ -279,9 +279,9 @@ let check_named_step (fd : Eval.folded) (v : value) (n : int) : unit =
   | Some s -> if s <> n then harness_fail "named-step %s = %d, expected %d" label s n
 
 (* Table projection of a PAPER point: the face(s) whose paper polygon
-   contains it, imaged through that face's isometry — the same idiom
+   contains it, imaged through that face's isometry: the same idiom
    fold_emit.folded_frame_of_state uses (Isometry.apply_point f.iso p) to
-   build vtable from vpaper. Ambiguity when containing faces disagree on the
+   build [vtable] from [vpaper]. Ambiguity when containing faces disagree on the
    image (a point under multiple, differently-folded layers) is a harness
    error per the design doc; v1 has no flap space to disambiguate it. *)
 let table_project (fd : Eval.folded) (p : Geom.point) : Geom.point =
@@ -323,7 +323,7 @@ let describe_value (v : value) : string =
 
 (* [=] : point=point / point=literal (both compared in the resolved space)
    or line=line (normalised, exact). Mismatched kinds (point vs line) are a
-   harness error — the grammar never intends that combination. *)
+   harness error: the grammar never intends that combination. *)
 let values_equal (fd : Eval.folded) (v1 : value) (v2 : value) : bool =
   match (resolve_value fd v1, resolve_value fd v2) with
   | RPoint p1, RPoint p2 -> Geom.point_equal p1 p2
@@ -364,10 +364,10 @@ let check_is (fd : Eval.folded) (name : string) (kw : assign_kw) : unit =
       let want = if kw = KMountain then Fold_state.M else Fold_state.V in
       let st = fd.Eval.state in
       let hs = Fold_state.hinges st in
-      (* Prefer the crease's IDENTITY: named_lines' coefficients are the
+      (* Prefer the crease's IDENTITY: [named_lines]' coefficients are the
          crease's CURRENT (table-space) line, which can coincide with another
-         crease's line once folds move material (e.g. a flatten's emergent
-         ray folded onto a mark's line) — a bare line filter then reads the
+         crease's line once folds move material (e.g. a [flatten]'s emergent
+         ray folded onto a mark's line): a bare line filter then reads the
          wrong hinges. Line filtering (paper space) remains the fallback for
          [Frozen] names, which have no crease id. *)
       let on_line i =
@@ -382,11 +382,11 @@ let check_is (fd : Eval.folded) (name : string) (kw : assign_kw) : unit =
                 (fun i -> hs.(i).Fold_state.crease_id = cid)
                 (List.init (Array.length hs) Fun.id)
             in
-            (* a through-fold carries one cid across several layers whose
+            (* a through-fold carries one [cid] across several layers whose
                derived letters alternate; the crease's user-facing letter is
-               the REFERENCE layer's — the hinge still lying (paper-space) on
+               the REFERENCE layer's: the hinge still lying (paper-space) on
                the named line. A crease whose hinge moved entirely (e.g. a
-               flatten's emergent ray) has no such hinge: judge all of them. *)
+               [flatten]'s emergent ray) has no such hinge: judge all of them. *)
             (match List.filter on_line by_cid with [] -> by_cid | ref -> ref)
         | None -> List.filter on_line (List.init (Array.length hs) Fun.id)
       in
@@ -413,9 +413,9 @@ let check (fd : Eval.folded) (a : assertion) : unit =
   | AIs (name, kw) -> check_is fd name kw
   | ACount (kind, n) -> check_count fd kind n
   | ANamedStep (v, n) -> check_named_step fd v n
-  | AExpectError _ -> assert false (* handled at the caller, via expected_error *)
+  | AExpectError _ -> assert false (* handled at the caller, via [expected_error] *)
 
-(* Substring test (like test_e2e.ml's expect_error, without pulling in Str). *)
+(* Substring test (like test_e2e.ml's [expect_error], without pulling in Str). *)
 let contains_substring (haystack : string) (needle : string) : bool =
   let hn = String.length haystack and nn = String.length needle in
   if nn = 0 then true

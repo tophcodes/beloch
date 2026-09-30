@@ -1,5 +1,5 @@
-(* End-to-end fold benchmark — the honest measure for the coordinate-arithmetic
-   hot path (#57). bench_real_roots probes the root-finding tier; this one folds
+(* End-to-end fold benchmark: the honest measure for the coordinate-arithmetic
+   hot path (#57). [bench_real_roots] probes the root-finding tier; this one folds
    whole .bel programs, so it sees the ℚ(α) fast path that Num.add/Num.mul route
    through. A √2 base (fish, rabbit ear) does hundreds of thousands of in-field
    +/*; before the fix each factored a polynomial in generic qqbar.
@@ -8,7 +8,7 @@
    run can be diffed across optimizations:
 
      dune exec packages/core/bench/bench_fold.exe > before.csv
-     ...apply optimization, rebuild...
+     …apply optimization, rebuild…
      dune exec packages/core/bench/bench_fold.exe > after.csv
      diff before.csv after.csv
 
@@ -20,7 +20,7 @@ let root =
   | None ->
     Filename.concat (Filename.dirname Sys.executable_name) "../../../../.."
 
-(* (name, path relative to repo root) — representative folds, √2-heavy first *)
+(* (name, path relative to repo root): representative folds, √2-heavy first *)
 let corpus =
   [ ("fish-base", "examples/bases/fish-base.bel");
     ("swivel-rabbit", "examples/bases/swivel-rabbit.bel");
