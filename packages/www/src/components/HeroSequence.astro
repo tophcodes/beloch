@@ -45,7 +45,7 @@ const code = await Promise.all(steps.map((s) => Promise.all(s.lines.map(highligh
     </div>
     <div class="hs-now">
       {steps.map((_, i) => (
-        <div class:list={["hs-code", { "is-at": i === 0 }]} data-step={i + 1}>
+        <div class:list={["hs-code", "bel-code-on-page", { "is-at": i === 0 }]} data-step={i + 1}>
           {code[i]!.map((html) => <code class="hs-line" set:html={html} />)}
         </div>
       ))}
@@ -56,7 +56,7 @@ const code = await Promise.all(steps.map((s) => Promise.all(s.lines.map(highligh
       <li class="hs-step" data-step={i + 1} tabindex="0" role="button" aria-pressed="false">
         <div class="hs-thumb" set:html={s.thumb} />
         <span class="hs-num">{String(i + 1).padStart(2, "0")}</span>
-        <div class="hs-code">
+        <div class="hs-code bel-code-on-page">
           {code[i]!.map((html) => <code class="hs-line" set:html={html} />)}
         </div>
       </li>
@@ -198,15 +198,12 @@ const code = await Promise.all(steps.map((s) => Promise.all(s.lines.map(highligh
   .hs-step.is-selected .hs-num {
     color: var(--bel-ui-accent);
   }
-  /* The syntax colours are drawn for the code surface, so the lines stand on
-     it here too. */
+  /* The lines take the on-page code values from tokens.css and stand on the
+     card's own ground, whichever state it is in. */
   .hs-code {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    padding: 8px 10px;
-    border-radius: var(--bel-radius-control);
-    background: var(--bel-ui-code-surface);
     color: var(--bel-ui-code-text);
   }
   .hs-line {

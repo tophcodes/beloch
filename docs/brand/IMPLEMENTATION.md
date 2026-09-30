@@ -11,7 +11,7 @@ not have to re-derive it.
 |---|---|---|
 | 1 | Interface accent is a teal outside the fold semantics | `--bel-ui-accent` in `tokens.css` |
 | 2 | Reference mode is light | `light-dark()` in `tokens.css`, `index.astro` |
-| 3 | Code surface stays dark in both modes | already true |
+| 3 | The navy code panel stays dark in both modes; code on the page takes a light syntax set in light mode | the on-page block at the end of `tokens.css` |
 | 4 | Engine values win over web tokens | `render-svg/src/theme.ts` |
 | 5 | Kraft and indigo get the monochrome style only | `colorOk` in `paper-schemes.ts` |
 | 6 | The web ships both families, monospace and prose; the PDF keeps its own setting | `public/fonts/`, `--bel-font-*` |
@@ -91,9 +91,16 @@ not have to re-derive it.
   light mountain colour, at 4.44:1 and ΔE76 13.2 from `mountain`, so an error
   message beside a drawing read as a fold direction. It is now `#b05641`, at
   4.68:1 and ΔE76 36.6, with 27.2 to the nearest other colour in the project.
-  Accent and error also land on the always-dark code surface, where the light
+  Accent and error also land on the navy code panel, where the light
   column reached 2.3:1 and 3.5:1, so that surface has its own pair alongside
   its text and gutter roles.
+- **Code on the page.** A fenced block, a grammar fragment, inline Beloch and
+  the step cards of the landing hero lie on the page, so in light mode they
+  take a second value for each of the ten syntax roles: a block on
+  `--bel-ui-surface` with a divider edge, inline code on `--bel-ui-quiet`.
+  Every value holds 4.6:1 or better on quiet and 5.3:1 or better on surface.
+  In dark mode they keep the panel's values, and the panel itself stays in the
+  docs card and the playground.
 - **Light as the reference mode.** Every interface role is one `light-dark()`
   declaration with the light value first, and `color-scheme` decides which half
   is handed out: with no stored choice the visitor's system decides, on the

@@ -160,11 +160,13 @@
 
 /* Beloch fenced code blocks (```beloch) highlighted by the remark plugin, and
    the grammar fragments of spec/BELOCH.md (```grammar), so a rule and a program
-   read as one system. */
+   read as one system. Both lie on the page and take the on-page code values
+   from tokens.css; the divider marks their edge against the page surface. */
 .bel-block,
 .grammar-block {
 	background: var(--bel-ui-code-surface);
 	color: var(--bel-ui-code-text);
+	border: 1px solid var(--bel-ui-divider);
 	padding: 16px 20px;
 	border-radius: 12px;
 	overflow-x: auto;
@@ -181,9 +183,8 @@
 	white-space: pre;
 }
 
-/* Inline Beloch in prose (remark-bel), on the same dark surface as the blocks,
-   since the token colours above are set for that surface and several of them
-   would vanish on the light page. */
+/* Inline Beloch in prose (remark-bel), on the on-page code values from
+   tokens.css, which set it on the quiet ground in light mode. */
 .sl-markdown-content code.bel-inline {
 	background: var(--bel-ui-code-surface);
 	color: var(--bel-ui-code-text);
@@ -193,12 +194,12 @@
 
 /* Block-outcome markers (remark-bel): what compute_outcome in blocks.ml
    decided about a tagged block, rendered directly under its highlighted
-   program on the same always-dark code panel as .bel-block. One unscoped
-   definition each, not re-scoped per site theme, same as the token classes
-   above. Verified/failed lean on the code surface's own accent and error, the
-   crease colours a reader already reads as good/bad fold direction, plus a
-   glyph and a left border so the distinction does not rest on hue alone. */
+   program on the same on-page code surface as .bel-block. Verified/failed
+   lean on the code surface's own accent and error, the crease colours a
+   reader already reads as good/bad fold direction, plus a glyph and a left
+   border so the distinction does not rest on hue alone. */
 .bel-outcome {
+	border: 1px solid var(--bel-ui-divider);
 	margin: 0 0 1.25rem;
 	font-family: var(--bel-font-mono);
 	font-size: 13px;
