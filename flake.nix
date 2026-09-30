@@ -162,11 +162,11 @@ EOF
           '';
         };
 
-        # The prose lint without the OCaml toolchain and FLINT, for the pull
-        # request job in .github/workflows/prose.yml.
+        # The prose lint for the pull request job in .github/workflows/prose.yml:
+        # Vale, and the compiler and dune for the comment masker, without FLINT.
         devShells.prose = pkgs.mkShell {
           name = "beloch-prose";
-          packages = [pkgs.vale pkgs.jq];
+          packages = [pkgs.vale pkgs.jq ocamlPkgs.ocaml ocamlPkgs.dune_3];
           shellHook = linkValeStyles;
         };
       }

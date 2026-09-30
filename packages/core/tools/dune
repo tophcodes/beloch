@@ -25,3 +25,9 @@
  (name blocks)
  (modules blocks bel_assert)
  (libraries beloch yojson))
+
+; The comment masker of the prose lint (scripts/prose.sh).
+(executable
+ (name prose_mask)
+ (modules prose_mask)
+ (libraries compiler-libs.common))

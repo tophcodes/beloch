@@ -227,6 +227,7 @@ idempotency
 iff
 incenter
 inextensibility
+inlining
 irreducibilis
 jj
 js_of_ocaml
@@ -235,6 +236,7 @@ labelings
 layerings
 lexing
 lookahead
+memoized
 minpoly
 monic
 monospace
@@ -242,6 +244,7 @@ msolve
 multifold
 multifolds
 multiset
+multisets
 namespace
 namespaced
 namespaces
@@ -266,6 +269,7 @@ precrease
 precreased
 precreases
 preimage
+prepended
 preprint
 preprocessor
 qqbar
@@ -294,6 +298,7 @@ subcommands
 subfields
 subprocess
 subresultant
+substring
 superset
 tokenizer
 toolchain
@@ -311,4 +316,5 @@ waterbomb
 webfont
 webview
 wordmark
+worktree
 zarith
