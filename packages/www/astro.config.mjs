@@ -137,7 +137,16 @@ export default defineConfig({
 					label: "Specification",
 					items: [
 						{ label: "Model", link: "/model/" },
-						{ label: "Language", link: "/language/" },
+						{
+							label: "Language",
+							items: [
+								{ label: "Overview", link: "/language/" },
+								{ label: "Write statements", link: "/language/writes/" },
+								{ label: "Constructions", link: "/language/constructions/" },
+								{ label: "Annotations", link: "/language/annotations/" },
+								{ label: "Grammar", link: "/language/grammar/" },
+							],
+						},
 						{ label: "Output format", link: "/output/" },
 					],
 				},

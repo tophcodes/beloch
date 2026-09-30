@@ -57,11 +57,3 @@ test.skipIf(!pandoc)("a missing register warns instead of rendering silently", (
 	expect(run.stderr.toString()).toContain("run scripts/grammar-register.ts");
 });
 
-test.skipIf(!pandoc)("the collected copy carries the rules and no second label", () => {
-	const out = typst();
-	// Same distinction as above: the collected copy links back to fold_item's
-	// definition rather than attaching a second label there.
-	const defs = [...out.matchAll(/(?<!#link\()<rule-fold_item>/g)];
-	expect(defs.length).toBe(1);
-	expect(out).not.toContain("Used by:");
-});

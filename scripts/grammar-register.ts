@@ -1,13 +1,13 @@
 #!/usr/bin/env bun
 // The grammar register: the documented grammar of spec/, parsed.
 //
-// Scans spec/BELOCH.md, the rendered document, and spec/SPECIFICATION.md,
-// whose Appendix A block carries the `grammar` tag and is read for its
-// keywords alone: no ids, no links, no collection, and its rules satisfy no
-// external declaration of BELOCH.md. Parsing both means the documented side of
-// the keyword cross-check is the whole documented grammar while the appendix
-// migrates into BELOCH.md, and the union shrinks to BELOCH.md by itself when
-// the appendix is empty.
+// Scans spec/BELOCH-GRAMMAR.md, the grammar of the language, and
+// spec/SPECIFICATION.md, whose Appendix A block carries the `grammar` tag and
+// is read for its keywords alone: no ids, no links, and its rules satisfy no
+// external declaration of the grammar page. Parsing both means the documented
+// side of the keyword cross-check is the whole documented grammar while the
+// appendix migrates into the grammar page, and the union shrinks to the
+// grammar page by itself when the appendix is empty.
 //
 // The parse is the one packages/www/src/lib/remark-grammar.ts renders from, so
 // the PDF (scripts/grammar-blocks.lua) and the page carry the same rules in the
@@ -34,7 +34,7 @@ export interface GrammarRegister {
 }
 
 export const DOCUMENTS: DocumentSpec[] = [
-	{ path: "spec/BELOCH.md", references: "check" },
+	{ path: "spec/BELOCH-GRAMMAR.md", references: "check" },
 	{ path: "spec/SPECIFICATION.md", references: "ignore" },
 ];
 

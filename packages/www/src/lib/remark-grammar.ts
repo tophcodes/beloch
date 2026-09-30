@@ -1,8 +1,6 @@
-// Grammar fragments of spec/BELOCH.md. `grammar`, `grammar-external`,
-// `grammar-planned` and `grammar-collected` fenced blocks become raw HTML:
-// every rule gets an id, every nonterminal on a right-hand side gets a link to
-// its rule, and the empty `grammar-collected` marker expands to every rule of
-// the page in order of definition.
+// Grammar fragments of spec/BELOCH-GRAMMAR.md. `grammar`, `grammar-external`
+// and `grammar-planned` fenced blocks become raw HTML: every rule gets an id,
+// and every nonterminal on a right-hand side gets a link to its rule.
 //
 // The parse comes from ./grammar-notation.ts rather than from
 // _build/grammar.json: `astro dev` has to work before any script has run, and a
@@ -20,13 +18,12 @@ import { visit } from "unist-util-visit";
 import {
 	GrammarError,
 	parseDocument,
-	renderCollected,
 	renderExternal,
 	renderFragment,
 	renderPlanned,
 } from "./grammar-notation.ts";
 
-const LANGS = new Set(["grammar", "grammar-external", "grammar-planned", "grammar-collected"]);
+const LANGS = new Set(["grammar", "grammar-external", "grammar-planned"]);
 
 export default function remarkGrammar() {
 	return (tree: any, file: any) => {
@@ -56,8 +53,7 @@ export default function remarkGrammar() {
 				}
 				html = renderFragment(fragment, doc);
 			} else if (node.lang === "grammar-external") html = renderExternal(doc);
-			else if (node.lang === "grammar-planned") html = renderPlanned(doc);
-			else html = renderCollected(doc);
+			else html = renderPlanned(doc);
 			node.type = "html";
 			node.value = html;
 			delete node.lang;

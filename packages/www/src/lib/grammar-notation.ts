@@ -321,15 +321,6 @@ export function parseDocument(
 				}
 				doc.planned.push({ keyword: entry.name, line: entry.line, note: entry.note });
 			}
-		} else if (block.lang === "grammar-collected") {
-			const offset = block.lines.findIndex((l) => l.trim() !== "");
-			if (offset >= 0) {
-				fail(
-					path,
-					block.line + offset,
-					"the grammar-collected block is generated; leave it empty",
-				);
-			}
 		}
 	}
 	check(doc, options.references ?? "check");
@@ -354,20 +345,13 @@ function spanHtml(span: Span, doc: GrammarDocument): string {
 	return `<span class="${span.class}">${escape(span.text)}</span>`;
 }
 
-export function renderRule(
-	rule: Rule,
-	doc: GrammarDocument,
-	options: { collected?: boolean } = {},
-): string {
-	const collected = options.collected === true;
+export function renderRule(rule: Rule, doc: GrammarDocument): string {
 	const body = rule.lines
 		.map((spans, i) =>
 			spans
 				.map((span, j) => {
 					if (i === 0 && j === 0 && span.class === "gr-rule") {
-						return collected
-							? `<a class="gr-rule" href="#${rule.id}">${escape(rule.name)}</a>`
-							: `<span class="gr-rule" id="${rule.id}">${escape(rule.name)}</span>`;
+						return `<span class="gr-rule" id="${rule.id}">${escape(rule.name)}</span>`;
 					}
 					return spanHtml(span, doc);
 				})
@@ -379,14 +363,6 @@ export function renderRule(
 
 export function renderFragment(fragment: Fragment, doc: GrammarDocument): string {
 	const rules = fragment.rules.map((rule) => renderRule(rule, doc)).join("\n");
-	return `<div class="grammar-fragment">\n${rules}\n</div>`;
-}
-
-export function renderCollected(doc: GrammarDocument): string {
-	const rules = doc.fragments
-		.flatMap((fragment) => fragment.rules)
-		.map((rule) => renderRule(rule, doc, { collected: true }))
-		.join("\n");
 	return `<div class="grammar-fragment">\n${rules}\n</div>`;
 }
 

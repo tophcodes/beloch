@@ -352,7 +352,16 @@ let failure_mode_tests =
    from the pages, not from the tree-sitter and build-side copies of the same
    rule; update the three together when a tagged block is added to a page. *)
 let expected_inventories =
-  [ ("BELOCH.md", [ ("construction", 1); ("frag", 13); ("prelude", 7); ("whole", 1) ]) ]
+  let counts construction frag prelude whole =
+    [ ("construction", construction); ("frag", frag); ("prelude", prelude); ("whole", whole) ]
+  in
+  [
+    ("BELOCH.md", counts 0 0 0 0);
+    ("BELOCH-WRITES.md", counts 0 9 6 0);
+    ("BELOCH-CONSTRUCTIONS.md", counts 1 4 1 0);
+    ("BELOCH-ANNOTATIONS.md", counts 0 0 0 1);
+    ("BELOCH-GRAMMAR.md", counts 0 0 0 0);
+  ]
 
 let tags = [ "construction"; "frag"; "prelude"; "whole" ]
 

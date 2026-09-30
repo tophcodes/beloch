@@ -1,7 +1,6 @@
 import { test, expect } from "bun:test";
 import { parseDocument } from "./grammar-notation.ts";
 import {
-	renderCollected,
 	renderExternal,
 	renderFragment,
 	renderPlanned,
@@ -36,7 +35,7 @@ const doc = parseDocument(source, "fixture.md");
 const rules = doc.fragments.flatMap((f) => f.rules);
 const byName = new Map(rules.map((r) => [r.name, r]));
 
-test("every rule of every fragment is collected, in order of definition", () => {
+test("every rule of every fragment is read, in order of definition", () => {
 	expect(rules.map((r) => r.name)).toEqual(["program", "stmt", "write_stmt", "axis"]);
 	expect(doc.fragments.map((f) => f.line)).toEqual([4, 9]);
 	expect(byName.get("write_stmt")?.line).toBe(9);
@@ -196,7 +195,6 @@ test("a `grammar` sample quoted inside a wider fence is not a fragment of its ow
 	expect(nested.fragments.map((f) => ({ line: f.line, rules: f.rules.map((r) => r.name) }))).toEqual(
 		[{ line: 13, rules: ["real"] }],
 	);
-	expect(renderCollected(nested)).not.toContain("rule-fake");
 });
 
 test("a `grammar2` info string is not a grammar block", () => {
@@ -260,12 +258,6 @@ test("a four-backtick block quoting an unclosed three-backtick fence parses with
 	expect(doc.fragments.map((f) => f.rules.map((r) => r.name))).toEqual([["real"]]);
 });
 
-test("content in the collected marker is an error", () => {
-	expect(parseFixture("grammar-error-collected.md")).toThrow(
-		`${at("grammar-error-collected.md", 8)}the grammar-collected block is generated; leave it empty`,
-	);
-});
-
 test("a line that is neither a rule head nor a continuation quotes the line", () => {
 	expect(parseFixture("grammar-error-line.md")).toThrow(
 		`${at("grammar-error-line.md", 4)}expected \`name :=\` or an indented continuation, ` +
@@ -299,15 +291,6 @@ test("a reference to an external name carries gr-external", () => {
 test("no rule carries a Used by line, whether or not other rules refer to it", () => {
 	expect(renderRule(byName.get("axis") as never, doc)).not.toContain("gr-links");
 	expect(renderRule(byName.get("program") as never, doc)).not.toContain("gr-links");
-});
-
-test("the collected copy links the name back and carries no id and no links line", () => {
-	const html = renderCollected(doc);
-	expect(html).toContain('<a class="gr-rule" href="#rule-program">program</a>');
-	expect(html).not.toContain('id="rule-program"');
-	expect(html).not.toContain("gr-links");
-	const order = [...html.matchAll(/<a class="gr-rule" href="#rule-([a-z_]+)">/g)].map((m) => m[1]);
-	expect(order).toEqual(["program", "stmt", "write_stmt", "axis"]);
 });
 
 test("a fragment wraps its rules and keeps its line breaks", () => {

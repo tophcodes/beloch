@@ -1,4 +1,4 @@
--- Grammar fragments of spec/BELOCH.md, pandoc side.
+-- Grammar fragments of spec/BELOCH-GRAMMAR.md, pandoc side.
 --
 -- The parse is shared with the docs site through _build/grammar.json
 -- (scripts/grammar-register.ts writes it; BELOCH_GRAMMAR_REGISTER overrides the
@@ -60,7 +60,6 @@ local GRAMMAR_CLASSES = {
   grammar = true,
   ["grammar-external"] = true,
   ["grammar-planned"] = true,
-  ["grammar-collected"] = true,
 }
 
 local function has_grammar_block(doc)
@@ -82,19 +81,17 @@ local function span_inline(span)
   return code(span.text, span.class)
 end
 
-local function head_inline(rule, span, collected)
-  local name = code(span.text, "gr-rule")
-  if collected then return pandoc.Link({ name }, "#" .. rule.id) end
-  return pandoc.Span({ name }, pandoc.Attr(rule.id))
+local function head_inline(rule, span)
+  return pandoc.Span({ code(span.text, "gr-rule") }, pandoc.Attr(rule.id))
 end
 
-local function rule_blocks(rule, collected)
+local function rule_blocks(rule)
   local inlines = {}
   for i, line in ipairs(rule.lines) do
     if i > 1 then inlines[#inlines + 1] = pandoc.LineBreak() end
     for j, span in ipairs(line) do
       if i == 1 and j == 1 and span.class == "gr-rule" then
-        inlines[#inlines + 1] = head_inline(rule, span, collected)
+        inlines[#inlines + 1] = head_inline(rule, span)
       else
         inlines[#inlines + 1] = span_inline(span)
       end
@@ -103,14 +100,6 @@ local function rule_blocks(rule, collected)
   return {
     pandoc.Div({ pandoc.Para(inlines) }, pandoc.Attr("", { "grammar-block" })),
   }
-end
-
-local function all_rules()
-  local out = {}
-  for _, fragment in ipairs(entry.fragments) do
-    for _, rule in ipairs(fragment.rules) do out[#out + 1] = rule end
-  end
-  return out
 end
 
 local function entry_blocks(head, rows, id_key, name_key)
@@ -147,13 +136,7 @@ local function code_block(block)
     end
     local blocks = {}
     for _, rule in ipairs(fragment.rules) do
-      for _, b in ipairs(rule_blocks(rule, false)) do blocks[#blocks + 1] = b end
-    end
-    return blocks
-  elseif class == "grammar-collected" then
-    local blocks = {}
-    for _, rule in ipairs(all_rules()) do
-      for _, b in ipairs(rule_blocks(rule, true)) do blocks[#blocks + 1] = b end
+      for _, b in ipairs(rule_blocks(rule)) do blocks[#blocks + 1] = b end
     end
     return blocks
   elseif class == "grammar-external" then
@@ -166,7 +149,12 @@ end
 
 function Pandoc(doc)
   local files = PANDOC_STATE and PANDOC_STATE.input_files or {}
-  entry = entry_for(load_register(), files[1] or "")
+  -- The language PDF is several pages in one; the first input with a register
+  -- entry is the grammar page.
+  local register = load_register()
+  for _, path in ipairs(files) do
+    entry = entry or entry_for(register, path)
+  end
   if not entry then
     if has_grammar_block(doc) then stale() end
     return nil

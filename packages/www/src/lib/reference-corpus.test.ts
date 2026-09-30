@@ -108,7 +108,11 @@ function extractBlocks(src: string): Block[] {
 // build-side copies of the same rule; update all three when a tagged block is
 // added to a page.
 const expectedInventories: Record<string, Record<Tag, number>> = {
-  "BELOCH.md": { whole: 1, prelude: 7, frag: 13, construction: 1 },
+  "BELOCH.md": { whole: 0, prelude: 0, frag: 0, construction: 0 },
+  "BELOCH-WRITES.md": { whole: 0, prelude: 6, frag: 9, construction: 0 },
+  "BELOCH-CONSTRUCTIONS.md": { whole: 0, prelude: 1, frag: 4, construction: 1 },
+  "BELOCH-ANNOTATIONS.md": { whole: 1, prelude: 0, frag: 0, construction: 0 },
+  "BELOCH-GRAMMAR.md": { whole: 0, prelude: 0, frag: 0, construction: 0 },
 };
 
 const languagePages = readdirSync(join(repoRoot, "spec"))

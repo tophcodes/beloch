@@ -30,11 +30,6 @@ reverse_item := axis | "outside"
 
 ## Grammar
 
-The fragments of the sections above, collected.
-
-```grammar-collected
-```
-
 ```grammar-external
 flap_operand   ; SPECIFICATION.md Appendix A
 ```

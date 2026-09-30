@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Render the four spec/ documents (MODEL, KERNEL, BELOCH, FOLD) to PDFs with resolved citations.
+# Render the four spec/ documents (MODEL, KERNEL, the language, FOLD) to PDFs with resolved citations.
 #
 # Statements and terms are pandoc fenced divs, `::: {.definition #id …}`;
 # scripts/model-blocks.lua numbers them and generates the cross-reference lines
 # and the Terms glossary. packages/www/src/lib/remark-model-blocks.ts is the
 # docs-site counterpart.
 #
-# The ```grammar fragments of BELOCH.md are rendered by
-# scripts/grammar-blocks.lua from _build/grammar.json, which the line above the
-# loop regenerates; packages/www/src/lib/remark-grammar.ts is its counterpart.
+# The ```grammar fragments of the grammar page are rendered by
+# scripts/grammar-blocks.lua from _build/grammar.json, which the script
+# regenerates first; packages/www/src/lib/remark-grammar.ts is its counterpart.
 #
 # Citations use pandoc's syntax, `[@key, §3, p. 176]`, resolved against
 # bibliography/references.bib. Math is `$...$` / `$$...$$`. The same source renders on
@@ -31,9 +31,33 @@ cd "$root"
 # can never be stale against the documents this loop reads.
 bun "$root/scripts/grammar-register.ts"
 
-for doc in MODEL KERNEL BELOCH FOLD; do
-  lower=$(echo "$doc" | tr "[:upper:]" "[:lower:]")
-  pandoc "$root/spec/$doc.md" \
+# The language is one PDF of its pages, in the order of the site's sidebar.
+# The pages go to pandoc as copies under $out/language/spec/, where
+# grammar-blocks.lua still finds the grammar page's register entry by its
+# path. A page after the first loses its front matter, since pandoc keeps the
+# title of the last one, and opens with its title as a level-1 heading
+# instead. The References headings leave the pages and one ends the last page,
+# where citeproc puts the bibliography.
+lang="$out/language"
+rm -rf "$lang"
+mkdir -p "$lang/spec"
+pages=()
+for page in spec/BELOCH.md spec/BELOCH-WRITES.md spec/BELOCH-CONSTRUCTIONS.md spec/BELOCH-ANNOTATIONS.md spec/BELOCH-GRAMMAR.md; do
+  copy="$lang/$page"
+  if [ ${#pages[@]} -eq 0 ]; then
+    grep -vx '## References' "$page" > "$copy"
+  else
+    title=$(sed -n '2,/^---$/s/^title: //p' "$page")
+    { printf '# %s\n' "$title"; awk 'NR == 1 && /^---$/ { skip = 1; next } skip && /^---$/ { skip = 0; next } !skip' "$page" | grep -vx '## References'; } > "$copy"
+  fi
+  pages+=("$copy")
+done
+printf '\n## References\n' >> "${pages[-1]}"
+
+render() {
+  local name=$1
+  shift
+  pandoc "$@" \
     --from markdown \
     --lua-filter "$root/scripts/model-blocks.lua" \
     --lua-filter "$root/scripts/grammar-blocks.lua" \
@@ -44,6 +68,11 @@ for doc in MODEL KERNEL BELOCH FOLD; do
     --include-in-header "$root/scripts/typst-compat.typ" \
     --variable mainfont="Libertinus Serif" \
     --metadata link-citations=true \
-    --output "$out/$lower.pdf"
-  echo "$out/$lower.pdf"
-done
+    --output "$out/$name.pdf"
+  echo "$out/$name.pdf"
+}
+
+render model "$root/spec/MODEL.md"
+render kernel "$root/spec/KERNEL.md"
+render beloch "${pages[@]}"
+render fold "$root/spec/FOLD.md"
