@@ -10,7 +10,7 @@
    site still builds and shows the failure.
 
    Run from the repo root, with the documents as paths from there:
-     dune exec packages/core/tools/blocks.exe -- spec/BELOCH.md <doc.md>… *)
+     dune exec packages/core/tools/blocks.exe -- spec/BELOCH*.md <doc.md>… *)
 
 open Beloch
 
