@@ -80,6 +80,14 @@
             hash = "sha256-W/eHlXklAVlAnY8nLPi/SIKsg8UUnH8UkH99BDo5yKk=";
           }}/write-good";
         };
+        # Links the pinned packages into .vale/styles, where git ignores them.
+        linkValeStyles = ''
+          root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+          ${pkgs.lib.concatStrings (pkgs.lib.mapAttrsToList (name: path: ''
+              ln -sfn ${path} "$root/.vale/styles/${name}"
+            '')
+            valeStyles)}
+        '';
       in {
         packages.default = beloch;
         packages.beloch = beloch;
@@ -145,16 +153,21 @@
 exec dune exec --display=quiet --root "$root" beloch -- "\$@"
 EOF
             chmod +x "$root/.direnv/bin/beloch"
-            ${pkgs.lib.concatStrings (pkgs.lib.mapAttrsToList (name: path: ''
-                ln -sfn ${path} "$root/.vale/styles/${name}"
-              '')
-              valeStyles)}
+            ${linkValeStyles}
             for c in check check-all prose; do
               printf '#!/usr/bin/env bash\nexec "%s/scripts/%s.sh" "$@"\n' "$root" "$c" > "$root/.direnv/bin/$c"
               chmod +x "$root/.direnv/bin/$c"
             done
             export PATH="$root/.direnv/bin:$PATH"
           '';
+        };
+
+        # The prose lint without the OCaml toolchain and FLINT, for the pull
+        # request job in .github/workflows/prose.yml.
+        devShells.prose = pkgs.mkShell {
+          name = "beloch-prose";
+          packages = [pkgs.vale pkgs.jq];
+          shellHook = linkValeStyles;
         };
       }
     );
