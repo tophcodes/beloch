@@ -210,3 +210,14 @@ test("seen from the far side, the section is mirrored and the arrows turn round"
   expect(arrows(false)).toEqual([1, 1]);
   expect(arrows(true)).toEqual([-1, -1]);
 });
+
+test("the crease pattern beside an earlier state draws the creases of that state alone", async () => {
+  const scene = await reverse();
+  // the panels in order: the folded state, then the crease pattern
+  const panel = (step: string) => renderSide(scene, { along: "k", step }).toString().split("<svg ")[3]!;
+  const creases = (svg: string) => (svg.match(/data-kind="crease"/g) ?? []).length;
+  // the sheet's outline in eight segments and --d in two; the reverse adds
+  // two more
+  expect(creases(panel("1"))).toBe(10);
+  expect(creases(panel("2"))).toBe(12);
+});

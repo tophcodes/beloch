@@ -22,7 +22,7 @@ import type { Theme } from "./theme";
 import { clipLineToPoly } from "./geometry";
 import { resolveIsometry } from "./isometry";
 import { sceneLayout } from "./layout";
-import { renderCP } from "./render-cp";
+import { renderScene } from "./render-scene";
 import { renderFolded } from "./render-folded";
 import type { RenderOptions } from "./render-cp";
 
@@ -330,7 +330,20 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
 
   // the crease pattern with the pieces of the paper the line crosses
   const lay = sceneLayout(scene);
-  const cp = renderCP(scene, { labels: opts.labels, theme: { lineStyle: colorLineStyle, ...opts.theme } }).node();
+  // with the creases of the state drawn alone: a crease a later write scores
+  // has no line yet, though the pieces it will split already carry its names
+  const stepIndex = pickStep(scene, opts.step)!.index;
+  const write = stepIndex === 0 ? null : scene.writes[stepIndex - 1] ?? null;
+  const cp = renderScene(scene, {
+    isometry: { kind: "flat" },
+    texture: {
+      upToStatement: write ? write.index : -1,
+      creases: true, marks: true, points: true, lines: true, faces: "outline",
+    },
+    markOverlay: { marks: write ? write.keptMarks : [] },
+    labels: opts.labels,
+    theme: { lineStyle: colorLineStyle, ...opts.theme },
+  }).node();
   const marks: SvgNode[] = [];
   for (const r of strips.flatMap((s) => s.pieces.flatMap((p) => p.parts))) {
     const [[ax, ay], [bx, by]] = r.paper;
