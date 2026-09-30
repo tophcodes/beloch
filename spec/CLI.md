@@ -106,8 +106,10 @@ program reads the same crease pattern, so a piece has one name in every
 drawing it appears in, and the sections before and after a write can be
 compared piece by piece. A piece that a later crease splits is drawn as the
 parts it will split into, each with its own name, divided by a short tick.
-The crease pattern beside it draws the creases of the state drawn and none
-that a later write scores.
+Two pieces joined by a flat hinge run on as one layer and are divided by the
+same tick. Two pieces of one layer whose raw edges meet share no hinge, and a
+small gap stands between them. The crease pattern beside the section draws
+the creases of the state drawn and none that a later write scores.
 
 ## Other commands
 
