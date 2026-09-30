@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="340" viewBox="0 0 1240 340" font-family="sans-serif"><rect width="100%" height="100%" fill="#fff"/><text x="225.0" y="22" text-anchor="middle" font-size="14" font-weight="bold">the tip before</text>
+<text x="225.0" y="40" text-anchor="middle" font-size="11" fill="#555">under the body 4, 3, 2, 1</text>
+<line x1="110" y1="70" x2="340" y2="70" stroke="#222" stroke-width="2"/><text x="225.0" y="65" font-size="11" text-anchor="middle">6</text>
+<line x1="110" y1="94" x2="340" y2="94" stroke="#222" stroke-width="2"/><text x="225.0" y="89" font-size="11" text-anchor="middle">7</text>
+<line x1="110" y1="118" x2="340" y2="118" stroke="#222" stroke-width="2"/><text x="225.0" y="113" font-size="11" text-anchor="middle">8</text>
+<line x1="110" y1="142" x2="340" y2="142" stroke="#222" stroke-width="2"/><text x="225.0" y="137" font-size="11" text-anchor="middle">5</text>
+<path d="M 110 70 A 36.0 36.0 0 0 0 110 142" fill="none" stroke="#7f8c8d" stroke-width="2.5"/><text x="69.0" y="104.0" font-size="10" text-anchor="end" fill="#7f8c8d">5|6</text>
+<path d="M 110 94 A 12.0 12.0 0 0 0 110 118" fill="none" stroke="#7f8c8d" stroke-width="2.5"/><text x="93.0" y="116.0" font-size="10" text-anchor="end" fill="#7f8c8d">7|8</text>
+<path d="M 340 70 A 12.0 12.0 0 0 1 340 94" fill="none" stroke="#222" stroke-width="2"/><text x="357.0" y="86.0" font-size="10">6|7</text>
+<line x1="50" y1="106.0" x2="370" y2="106.0" stroke="#2471a3" stroke-width="1.5" stroke-dasharray="6 4"/><text x="375" y="110.0" font-size="12" font-weight="bold" fill="#2471a3">A</text>
+<line x1="50" y1="130.0" x2="370" y2="130.0" stroke="#b9770e" stroke-width="1.5" stroke-dasharray="6 4"/><text x="375" y="134.0" font-size="12" font-weight="bold" fill="#b9770e">B</text><text x="625.0" y="22" text-anchor="middle" font-size="14" font-weight="bold">opening A</text>
+<text x="625.0" y="40" text-anchor="middle" font-size="11" fill="#555">blocks {6, 7} and {8, 5}; the paper's result</text>
+<line x1="510" y1="70" x2="740" y2="70" stroke="#222" stroke-width="2"/><text x="625.0" y="65" font-size="11" text-anchor="middle">4</text>
+<line x1="510" y1="94" x2="740" y2="94" stroke="#222" stroke-width="2"/><text x="625.0" y="89" font-size="11" text-anchor="middle">3</text>
+<line x1="510" y1="118" x2="740" y2="118" stroke="#222" stroke-width="2"/><text x="625.0" y="113" font-size="11" text-anchor="middle">7</text>
+<line x1="510" y1="142" x2="740" y2="142" stroke="#222" stroke-width="2"/><text x="625.0" y="137" font-size="11" text-anchor="middle">6</text>
+<line x1="510" y1="166" x2="740" y2="166" stroke="#222" stroke-width="2"/><text x="625.0" y="161" font-size="11" text-anchor="middle">5</text>
+<line x1="510" y1="190" x2="740" y2="190" stroke="#222" stroke-width="2"/><text x="625.0" y="185" font-size="11" text-anchor="middle">8</text>
+<line x1="510" y1="214" x2="740" y2="214" stroke="#222" stroke-width="2"/><text x="625.0" y="209" font-size="11" text-anchor="middle">2</text>
+<line x1="510" y1="238" x2="740" y2="238" stroke="#222" stroke-width="2"/><text x="625.0" y="233" font-size="11" text-anchor="middle">1</text>
+<path d="M 510 70 A 84.0 84.0 0 0 0 510 238" fill="none" stroke="#7f8c8d" stroke-width="2.5"/><text x="421.0" y="158.0" font-size="10" text-anchor="end" fill="#7f8c8d">1|4</text>
+<path d="M 510 94 A 60.0 60.0 0 0 0 510 214" fill="none" stroke="#7f8c8d" stroke-width="2.5"/><text x="445.0" y="158.0" font-size="10" text-anchor="end" fill="#7f8c8d">2|3</text>
+<path d="M 510 118 A 36.0 36.0 0 0 0 510 190" fill="none" stroke="#c0392b" stroke-width="2.5"/><text x="469.0" y="158.0" font-size="10" text-anchor="end" fill="#c0392b">7|8</text>
+<path d="M 510 142 A 12.0 12.0 0 0 0 510 166" fill="none" stroke="#c0392b" stroke-width="2.5"/><text x="493.0" y="158.0" font-size="10" text-anchor="end" fill="#c0392b">5|6</text>
+<path d="M 740 70 A 12.0 12.0 0 0 1 740 94" fill="none" stroke="#222" stroke-width="2"/><text x="757.0" y="86.0" font-size="10">3|4</text>
+<path d="M 740 118 A 12.0 12.0 0 0 1 740 142" fill="none" stroke="#222" stroke-width="2"/><text x="757.0" y="134.0" font-size="10">6|7</text><text x="1025.0" y="22" text-anchor="middle" font-size="14" font-weight="bold">opening B</text>
+<text x="1025.0" y="40" text-anchor="middle" font-size="11" fill="#555">blocks {6, 7, 8} and {5}</text>
+<line x1="910" y1="70" x2="1140" y2="70" stroke="#222" stroke-width="2"/><text x="1025.0" y="65" font-size="11" text-anchor="middle">4</text>
+<line x1="910" y1="94" x2="1140" y2="94" stroke="#222" stroke-width="2"/><text x="1025.0" y="89" font-size="11" text-anchor="middle">3</text>
+<line x1="910" y1="118" x2="1140" y2="118" stroke="#222" stroke-width="2"/><text x="1025.0" y="113" font-size="11" text-anchor="middle">2</text>
+<line x1="910" y1="142" x2="1140" y2="142" stroke="#222" stroke-width="2"/><text x="1025.0" y="137" font-size="11" text-anchor="middle">8</text>
+<line x1="910" y1="166" x2="1140" y2="166" stroke="#222" stroke-width="2"/><text x="1025.0" y="161" font-size="11" text-anchor="middle">7</text>
+<line x1="910" y1="190" x2="1140" y2="190" stroke="#222" stroke-width="2"/><text x="1025.0" y="185" font-size="11" text-anchor="middle">6</text>
+<line x1="910" y1="214" x2="1140" y2="214" stroke="#222" stroke-width="2"/><text x="1025.0" y="209" font-size="11" text-anchor="middle">5</text>
+<line x1="910" y1="238" x2="1140" y2="238" stroke="#222" stroke-width="2"/><text x="1025.0" y="233" font-size="11" text-anchor="middle">1</text>
+<path d="M 910 70 A 84.0 84.0 0 0 0 910 238" fill="none" stroke="#7f8c8d" stroke-width="2.5"/><text x="821.0" y="158.0" font-size="10" text-anchor="end" fill="#7f8c8d">1|4</text>
+<path d="M 910 94 A 12.0 12.0 0 0 0 910 118" fill="none" stroke="#7f8c8d" stroke-width="2.5"/><text x="893.0" y="110.0" font-size="10" text-anchor="end" fill="#7f8c8d">2|3</text>
+<path d="M 910 142 A 12.0 12.0 0 0 0 910 166" fill="none" stroke="#7f8c8d" stroke-width="2.5"/><text x="893.0" y="158.0" font-size="10" text-anchor="end" fill="#7f8c8d">7|8</text>
+<path d="M 910 190 A 12.0 12.0 0 0 0 910 214" fill="none" stroke="#c0392b" stroke-width="2.5"/><text x="893.0" y="206.0" font-size="10" text-anchor="end" fill="#c0392b">5|6</text>
+<path d="M 1140 70 A 12.0 12.0 0 0 1 1140 94" fill="none" stroke="#222" stroke-width="2"/><text x="1157.0" y="86.0" font-size="10">3|4</text>
+<path d="M 1140 166 A 12.0 12.0 0 0 1 1140 190" fill="none" stroke="#222" stroke-width="2"/><text x="1157.0" y="182.0" font-size="10">6|7</text><text x="10" y="312" font-size="11" fill="#555">A square folded in half twice, then an inside reverse of the lower half. Section along the top edge, seen from above, top layer first; the spine's edge is on the left.</text><text x="10" y="328" font-size="11" fill="#555">The tip has two openings. Red: the hinges that join the two blocks and turn. An opening between 6 and 7 would cross 6|7 on the other edge.</text></svg>

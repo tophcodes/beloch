@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="340" viewBox="0 0 720 340" font-family="sans-serif"><rect width="100%" height="100%" fill="#fff"/><text x="290.0" y="22" text-anchor="middle" font-size="14" font-weight="bold">the crane's head, before its reverse</text>
+<text x="290.0" y="40" text-anchor="middle" font-size="11" fill="#555">examples/crane.bel after the tail; section across the neck near its tip</text>
+<line x1="160" y1="70" x2="420" y2="70" stroke="#222" stroke-width="2"/><text x="290.0" y="65" font-size="11" text-anchor="middle">57</text>
+<line x1="160" y1="94" x2="420" y2="94" stroke="#222" stroke-width="2"/><text x="290.0" y="89" font-size="11" text-anchor="middle">58</text>
+<line x1="160" y1="118" x2="420" y2="118" stroke="#222" stroke-width="2"/><text x="290.0" y="113" font-size="11" text-anchor="middle">59</text>
+<line x1="160" y1="142" x2="420" y2="142" stroke="#222" stroke-width="2"/><text x="290.0" y="137" font-size="11" text-anchor="middle">60</text>
+<line x1="160" y1="166" x2="420" y2="166" stroke="#222" stroke-width="2"/><text x="290.0" y="161" font-size="11" text-anchor="middle">54</text>
+<line x1="160" y1="190" x2="420" y2="190" stroke="#222" stroke-width="2"/><text x="290.0" y="185" font-size="11" text-anchor="middle">53</text>
+<line x1="160" y1="214" x2="420" y2="214" stroke="#222" stroke-width="2"/><text x="290.0" y="209" font-size="11" text-anchor="middle">56</text>
+<line x1="160" y1="238" x2="420" y2="238" stroke="#222" stroke-width="2"/><text x="290.0" y="233" font-size="11" text-anchor="middle">55</text>
+<path d="M 160 70 A 84.0 84.0 0 0 0 160 238" fill="none" stroke="#c0392b" stroke-width="2.5"/><text x="71.0" y="158.0" font-size="10" text-anchor="end" fill="#c0392b">55|57</text>
+<path d="M 160 118 A 12.0 12.0 0 0 0 160 142" fill="none" stroke="#7f8c8d" stroke-width="2.5"/><text x="143.0" y="134.0" font-size="10" text-anchor="end" fill="#7f8c8d">59|60</text>
+<path d="M 160 166 A 12.0 12.0 0 0 0 160 190" fill="none" stroke="#7f8c8d" stroke-width="2.5"/><text x="143.0" y="182.0" font-size="10" text-anchor="end" fill="#7f8c8d">53|54</text>
+<path d="M 420 70 A 36.0 36.0 0 0 1 420 142" fill="none" stroke="#222" stroke-width="2"/><text x="461.0" y="110.0" font-size="10" dy="8">57|60</text>
+<path d="M 420 94 A 12.0 12.0 0 0 1 420 118" fill="none" stroke="#222" stroke-width="2"/><text x="437.0" y="110.0" font-size="10" dy="-8">58|59</text>
+<path d="M 420 166 A 36.0 36.0 0 0 1 420 238" fill="none" stroke="#222" stroke-width="2"/><text x="461.0" y="206.0" font-size="10" dy="8">54|55</text>
+<path d="M 420 190 A 12.0 12.0 0 0 1 420 214" fill="none" stroke="#222" stroke-width="2"/><text x="437.0" y="206.0" font-size="10" dy="-8">53|56</text>
+<line x1="100" y1="154.0" x2="450" y2="154.0" stroke="#2471a3" stroke-width="1.5" stroke-dasharray="6 4"/><text x="455" y="158.0" font-size="12" font-weight="bold" fill="#2471a3">the one opening</text><text x="10" y="312" font-size="11" fill="#555">59|60 and 53|54 lie inside the spine's taco 55|57, but each lies within one block.</text><text x="10" y="328" font-size="11" fill="#555">The only opening is between 60 and 54; every other place would cross a hinge on the right edge. Only 55|57 turns.</text></svg>
