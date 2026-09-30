@@ -100,7 +100,7 @@ placement a menu of four entries.
 | kind | inside, outside ([def-reverse](/model/#def-reverse)) | `reverse` |
 | extent | the whole line, between two points, at a point ([def-mark](/model/#def-mark)) | `mark` |
 | intent | mountain, valley; the direction the crease pattern draws, no part of the state | `mark` |
-| letter | mountain, valley as a constraint on a ray ([def-letter](/model/#def-letter)) | `flatten` |
+| letter | mountain, valley as a constraint on a ray, or on a hinge of the spine ([def-letter](/model/#def-letter)) | `flatten`, `reverse` |
 | order | one sector over another | `flatten` |
 | selection | `toward` a point or a line, the side that stays; `moving` a flap, the side that folds over; `heading` a line, the direction of the crease ([def-selection](/model/#def-selection)) | `toward` and `moving`: `mark`, `fold`, `reverse` and a binding over a construction; `toward` a point: `flatten`; `heading`: `align` |
 
@@ -143,6 +143,7 @@ fold_item    := axis
 reverse_item := axis
               | side_item
               | "outside"
+              | line_operand ( "mountain" | "valley" )
 mark_item    := axis
               | side_item
               | "on" flap_operand
@@ -268,6 +269,33 @@ flip
 
 ; assert steps = 2
 ; assert faces = 6
+```
+
+A tip of several layers can open in more than one place
+([def-reverse](/model/#def-reverse)). The reverse then fails, and its error
+offers one letter item per opening: a letter on a hinge of the spine, named
+by its crease and a point on it the way a ray of `flatten` is. On a square
+folded in half twice, `(--e & .q valley)` keeps the opening between the two
+inner layers, and `(--e & .q mountain)` the one below the outermost layer.
+
+```{.bel .prelude name=square-twice}
+paper square
+fold (map .b onto .a) as --d
+fold (map --d onto --da) as --e
+.q = free on --cd from .c at 1/4
+```
+
+```{.bel .frag prelude=square-twice}
+reverse (map .a onto .d)
+
+; expect error "the tip opens at 2 places"
+```
+
+```{.bel .frag prelude=square-twice}
+reverse (map .a onto .d) (--e & .q valley)
+
+; assert .a = .d
+; assert faces = 8
 ```
 
 The crease a write scores is its one output, and the clause after the
