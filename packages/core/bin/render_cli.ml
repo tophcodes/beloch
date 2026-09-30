@@ -48,9 +48,14 @@ what gets rendered:
                             checks
   --view side --along --l   the section along the line --l: the layers pulled
                             apart, the top one first, beside the crease
-                            pattern with the same numbered pieces. --l is read
-                            on the table of the final state: bind it with =
-                            after the last fold.
+                            pattern with the same pieces and hinges named.
+                            --l is read on the table of the final state: bind
+                            it with = after the last fold. Seen from outside
+                            the paper; arrows on the cut show the side.
+  --step N                  folded, side: draw the state after the Nth write
+                            (0: the flat sheet; default: the last state)
+  --far-side                side: see the section from the other side of the
+                            line (mirrored, arrows turned round)
   --flip                    view the folded state from the other side
                             (ignored/no-op with --view cp)
 
