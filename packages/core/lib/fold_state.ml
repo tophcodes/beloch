@@ -615,8 +615,8 @@ let split_with_flat_hinges (g : t) ~(cid : int)
   | Ok g' -> g'
   | Error v -> fail_of_violation prov v
 
-let subdivide ?crease_id ?keep_side (g : t) (axis : Geom.line)
-    ~(prov : State.provenance option) : t =
+let subdivide ?crease_id ?keep_side ?(only = fun _ -> true) (g : t)
+    (axis : Geom.line) ~(prov : State.provenance option) : t =
   let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
   let on_keep_side fi =
     match keep_side with
@@ -642,7 +642,7 @@ let subdivide ?crease_id ?keep_side (g : t) (axis : Geom.line)
      chord (its sign would depend on point order, see findings on commit
      1f0436f). *)
   let cut_of fi =
-    if not (on_keep_side fi) then None
+    if not (only fi && on_keep_side fi) then None
     else
       let iso2 = face_iso2 g fi in
       let inv = Isometry.inverse iso2 in
