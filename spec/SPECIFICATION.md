@@ -327,7 +327,7 @@ geometric precondition and never errors** (beyond undefined-name errors).
 
 ### 4.5 Axiom 5 — fold one line onto another *(since v0.3-dev)*
 
-Moved to `BELOCH.md`, Constructions, "Axiom 5, a line onto a line"; the
+Moved to `BELOCH-CONSTRUCTIONS.md`, "Axiom 5, a line onto a line"; the
 selection among its candidates is under "Selection" there (ADR 0031).
 
 ### 4.5a Axiom 4 — project a point onto a line *(since v0.4-dev)*
@@ -341,7 +341,7 @@ to** `--l2`. Equivalently, `.p` is moved **parallel to** `--l2` until it lands o
 `--l1` — the *projection of `.p` onto `--l1` parallel to `--l2`*
 [[justin1986]](#ref-justin1986) §8.1 (operation ④). At most **one** solution, so
 there is nothing to select; `toward` still names the side that stays
-(`BELOCH.md`, Constructions, Selection).
+(`BELOCH-CONSTRUCTIONS.md`, Selection).
 
 **Numbering.** This is classic Justin **axiom 4**, which is Wikipedia's
 Huzita-Hatori **O7** — *not* Wikipedia's O4 (that is Beloch's axiom 3,
@@ -357,12 +357,12 @@ The result stays in ℚ — no square roots
 
 ### 4.5b Axiom 6 — fold a point onto a line, crease through a fixed point *(since v0.8-dev)*
 
-Moved to `BELOCH.md`, Constructions, "Axiom 6, a point onto a line through a
+Moved to `BELOCH-CONSTRUCTIONS.md`, "Axiom 6, a point onto a line through a
 point" (ADR 0031).
 
 ### 4.5c Axiom 7 — cubic Beloch fold (two points, two lines) *(since v0.9-dev)*
 
-Moved to `BELOCH.md`, Constructions, "Axiom 7, two points onto two lines"
+Moved to `BELOCH-CONSTRUCTIONS.md`, "Axiom 7, two points onto two lines"
 (ADR 0031).
 
 ### 4.6 Marking and folding: `mark` / `fold` *(since v0.7-dev; `mark`/`fold` verbs since v0.21-dev; partial marks since v0.22-dev)*
@@ -494,12 +494,12 @@ since folding a line onto another needs no material crossing.
 when `moving` is omitted, here `.a`'s flap; `(moving <flap>)` overrides it
 (e.g. `(moving .c)` folds the other side instead). *(since v0.19-dev)* `fold
 (map --l1 onto --l2)` (axiom 5) similarly derives its anchor, from `--l1`'s own
-swinging material (`BELOCH.md`, Constructions); `moving`
+swinging material (`BELOCH-CONSTRUCTIONS.md`); `moving`
 still overrides it, and is still required when that material straddles the
 axis, or to scope an `up to` range. **Line-construction folds** (`fold
 (through …)`, `fold (perp …)`) and **folding along existing material**
 (below) have no natural anchor at all, so they need `moving`, or `toward`,
-which names the side that stays (`BELOCH.md`, Constructions, Selection);
+which names the side that stays (`BELOCH-CONSTRUCTIONS.md`, Selection);
 without either the error is "this fold needs `moving .p` to choose the
 side". A line- or `#[...]`-flap anchor that
 straddles the fold axis, or a `moving` point exactly on the axis, is also an
@@ -666,8 +666,7 @@ fold (through .m .n) (moving .b) (under .p)   ; the top layer's corner, tucked b
 ### 4.6a `reverse` — inside and outside reverse folds *(since v0.26-dev)*
 
 Moved to `KERNEL.md`, "Reverse"; the model is
-[def-reverse](/model/#def-reverse) (ADR 0043), the syntax `BELOCH.md`, Write
-statements.
+[def-reverse](/model/#def-reverse) (ADR 0043), the syntax `BELOCH-WRITES.md`.
 
 ### 4.7 `flip` — turn the sheet over *(since v0.7-dev)*
 
@@ -704,7 +703,7 @@ in a meet (`*`) its material paper-space mark — §4.3). Constraints, by incide
 
 Filtering is **incidence**: `&` keeps the segments the constraint is *on*. This is
 distinct from `toward`, which names the side of a fold that stays
-(`BELOCH.md`, Constructions, Selection). `&` binds tighter than the axiom keywords: `perp --l & --a through .b`
+(`BELOCH-CONSTRUCTIONS.md`, Selection). `&` binds tighter than the axiom keywords: `perp --l & --a through .b`
 reads as `perp (--l & --a) through .b`, and that grouping may be written out,
 since a parenthesised operand is that operand *(since v0.28-dev)*.
 
@@ -784,7 +783,7 @@ parse error (`` only one toward item per flatten ``).
 Every item is wrapped in parentheses unconditionally, even a bare element,
 because with `and` dropped an unparenthesised item's first token would
 collide with the first token of the *next* statement (a bind `--l =
-…`/`.p = …`) at one token of lookahead (BELOCH.md, Write statements).
+…`/`.p = …`) at one token of lookahead (BELOCH-WRITES.md).
 **Element order is semantic**: the first two elements' folded rays fix the
 stayer by convention (State construction, below), so which element is
 written first and which second changes the fold. Every other item — a
@@ -1405,11 +1404,11 @@ the first matching error wins and the process exits non-zero:
   points (ambiguous; narrow an operand with `&`), or **share a stretch** of
   paper (§4.3);
 - a construction of axiom 5, 6 or 7 whose selection leaves no candidate or
-  several (`BELOCH.md`, Constructions, Selection);
+  several (`BELOCH-CONSTRUCTIONS.md`, Selection);
 - a `fold` on a line construction (`fold (through …)`, `fold (perp …)`) with no
   `moving`, or a `moving` point lying on the fold axis (no side); an axiom-5
   fold (`fold (map --l1 onto --l2)`) whose `up to` range has no explicit `moving`
-  to anchor it (`moving` is otherwise derived, `BELOCH.md`, Constructions);
+  to anchor it (`moving` is otherwise derived, `BELOCH-CONSTRUCTIONS.md`);
 - a `mark`'s `between`/`at` extent point not lying on the mark's line; an
   extent that would cross an already-folded (`M`/`V`) crease to reach its
   endpoint; a `between` extent dangling mid-face at **both** ends in different
@@ -1444,7 +1443,7 @@ item_body     := markable
                | "between" point_operand point_operand             ; mark only
                | "at" point_operand                                ; mark only
 markable      := axiom | align | line_operand                     ; since v0.21-dev; align since v0.23-dev
-align         := "align" CREASE_NAME* align_part+                   ; see spec/BELOCH.md, Constructions; `toward` and `moving` are items there
+align         := "align" CREASE_NAME* align_part+                   ; see spec/BELOCH-CONSTRUCTIONS.md; `toward` and `moving` are items there
 output        := [ "as" CREASE_NAME [ "!" ] | "into" CREASE_NAME ]
 point_stmt    := POINT_NAME "=" line_operand "*" line_operand     ; meet (binary), bare at a binding's RHS: the point where two lines cross
                | POINT_NAME "=" ".[" line_operand+ "]"            ; meet (n-ary): the point on all listed lines

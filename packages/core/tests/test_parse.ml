@@ -495,7 +495,7 @@ let spec_corpus =
        }\n$t = apply thirds()\nexport $t\n" );
   ]
 
-(* the write statements of BELOCH.md ("Write statements", "Constructions")
+(* the write statements of BELOCH-WRITES.md and BELOCH-CONSTRUCTIONS.md
    and of the design's Examples, each a program of its own *)
 let reference_writes =
   [
@@ -887,7 +887,7 @@ let test_toward_inside_refused () =
     [ "mark (map --l onto --m toward .p)"; "mark (align (--l onto --m) toward .p)" ]
 
 let test_align_named_fold_lines_kept () =
-  (* AL6ab8, the two-fold construction of BELOCH.md: the names in the head
+  (* AL6ab8, the two-fold construction of BELOCH-CONSTRUCTIONS.md: the names in the head
      and the fold line in front of each folded object are parsed and kept *)
   let c =
     construction1

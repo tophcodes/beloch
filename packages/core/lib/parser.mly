@@ -80,7 +80,7 @@ body_stmts:
   | body_stmt body_stmts { $1 :: $2 }
   | annotation body_stmts { Annotation $1 :: $2 }
 
-(* spec/BELOCH.md, Annotations. Which key takes which arguments is checked
+(* spec/BELOCH-ANNOTATIONS.md. Which key takes which arguments is checked
    after parsing (Annotation.check), so a key is a name the grammar does
    not reserve. *)
 annotation:
@@ -127,7 +127,7 @@ body_stmt:
   | EXPORT INSTANCE                              { Export (None, $2, $loc) }
 
 (* the crease a write scores: bound to a new name, added to an existing
-   crease, or left anonymous (BELOCH.md, Write statements) *)
+   crease, or left anonymous (BELOCH-WRITES.md) *)
 output:
   |                    { Ast.Anonymous }
   | AS CREASE bang_opt { Ast.Named ($2, $3, $loc) }

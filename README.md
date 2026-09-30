@@ -56,8 +56,8 @@ Five verbs write to the paper. `mark` scores a crease and moves nothing,
 `flip` turns the paper over, and `flatten` folds a vertex flat along several
 rays at once; given an odd number of them, it derives the one ray that is
 missing. The evaluator works out where every layer goes and which creases end
-up mountain or valley. The full grammar is in [`spec/BELOCH.md`](spec/BELOCH.md)
-and on the [language page](https://belochlang.org/language/).
+up mountain or valley. The full grammar is in [`spec/BELOCH-GRAMMAR.md`](spec/BELOCH-GRAMMAR.md)
+and on the [grammar page](https://belochlang.org/language/grammar/).
 
 ## Related work
 

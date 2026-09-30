@@ -1,4 +1,4 @@
-(** Annotations (spec/BELOCH.md, Annotations; ADR 0029): what a reader of the
+(** Annotations (spec/BELOCH-ANNOTATIONS.md; ADR 0029): what a reader of the
     program is told beside the geometry. An annotation belongs to the
     statement after it and never changes what the program evaluates to. *)
 

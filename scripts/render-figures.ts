@@ -141,8 +141,7 @@ export function unknownHighlights(
 	return unknown;
 }
 
-// The statement a program labels with `@label WORD` (spec/BELOCH.md,
-// Annotations), as an index into its statements.
+// The statement a program labels with `@label WORD` (spec/BELOCH-ANNOTATIONS.md), as an index into its statements.
 export function labelledStatement(fold: Record<string, unknown>, label: string): number | undefined {
 	const annotations = (fold["beloch:annotations"] ?? []) as {
 		key: string;

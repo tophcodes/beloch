@@ -26,7 +26,7 @@ val eval_mark :
   Error.span ->
   unit
 (** Evaluate a `mark` statement: record a crease without moving paper
-    (spec/BELOCH.md, Write statements). *)
+    (spec/BELOCH-WRITES.md). *)
 
 val eval_fold :
   Ctx.ctx -> Ast.output -> Ast.markable -> Ast.fold_spec -> Error.span -> unit
