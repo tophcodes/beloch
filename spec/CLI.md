@@ -63,7 +63,7 @@ Without `OUT` the drawing goes to standard output; otherwise the extension of
 |---|---|
 | `--view cp` | The crease pattern, the flat sheet with every crease. The default. |
 | `--view folded` | The folded state, seen from above. |
-| `--view side --along --l` | The section of the folded state along the line `--l`: the stack pulled apart, the top layer first, each layer a numbered strip and each folded hinge a turn, beside the crease pattern with the same numbered pieces. The line is read on the table of the state drawn: a line bound with `=` after the last fold. [The side view](#the-side-view) states how it is seen. |
+| `--view side --along --l` | The section of the folded state along the line `--l`: the stack pulled apart, the top layer first, each layer a strip and each folded hinge a turn, beside the crease pattern with the same pieces and hinges named. The line is read on the table of the state drawn: a line bound with `=` after the last fold. [The side view](#the-side-view) states how it is seen and named. |
 | `--far-side` | With `--view side`, sees the section from the other side of the line: the section is mirrored and the arrows on the cut turn round. |
 | `--view stages` | How the selection of one construction went, one row per stage; [The stages view](/cli/stages/) states its rules. A `.bel` input is evaluated with its trace, and a program that fails is drawn up to its failure. |
 | `--statement N` | The statement the stages view draws, as an index into `beloch:statements`; by default the one that failed, else the last that chose from candidates. |
@@ -95,6 +95,16 @@ where the distance is zero. Where both sides reach equally far, the eye
 stands on the side from which the section runs left to right on the table,
 or bottom to top on a vertical line. `--far-side` puts the eye on the other
 side.
+
+Every piece of paper the line crosses is named after the face of the crease
+pattern it lies in, the pattern with every crease the program makes, by that
+face's position in the pattern, counted from 1. A hinge is named by the two
+pieces it joins, the smaller name first (`3|4`), in the section beside its
+turn and in the crease pattern where it crosses the line. Every state of one
+program reads the same crease pattern, so a piece has one name in every
+drawing it appears in, and the sections before and after a write can be
+compared piece by piece. A piece that a later crease splits is drawn as the
+parts it will split into, each with its own name, divided by a short tick.
 
 ## Other commands
 
