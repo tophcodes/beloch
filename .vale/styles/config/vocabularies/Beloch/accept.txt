@@ -1,6 +1,7 @@
 ADR
 ADR's
 ADRs
+Accessors
 Acyclicity
 Affero
 Affordance
@@ -89,6 +90,7 @@ Lexing
 Lookahead
 Maekawa
 Mathematica
+Memoizes
 Menhir
 Monic
 Monospace
@@ -216,6 +218,7 @@ dedups
 defs
 destructuring
 desugar
+desync
 developable
 devshell
 dipyramid
@@ -227,10 +230,13 @@ dogfood
 dogfooding
 dogfoods
 eGami
+eigenvector's
 enum
+erroring
 evaluator
 factorizer
 favicon
+finalizer
 foldability
 foldformat
 frameless
@@ -238,6 +244,7 @@ frontmatter
 gitignored
 granularities
 greppable
+halfplane
 hoc
 idempotency
 iff
@@ -245,6 +252,7 @@ incenter
 inextensibility
 inlined
 inlining
+inotify
 irreducibilis
 jj
 js_of_ocaml
@@ -253,7 +261,11 @@ labelings
 layerings
 lexing
 lookahead
+lossy
+markless
+meetable
 memoized
+memoizes
 minpoly
 misclassifies
 monic
@@ -273,6 +285,8 @@ nixpkgs
 nonterminal
 npm
 odoc
+operand's
+optionals
 orientable
 overclaim
 paperfolding
@@ -285,6 +299,7 @@ pointwise
 poset
 postcondition
 postconditions
+prechecks
 precrease
 precreased
 precreases
@@ -303,6 +318,7 @@ rebindable
 recurse
 recurses
 reimplement
+reindentation
 relaxable
 relitigate
 renderer
@@ -346,9 +362,11 @@ unextractable
 unflipped
 unioning
 univariate
+unnormalized
 unphysical
 unrepresentable
 unscored
+unsplit
 unstretched
 viewport
 walkthrough

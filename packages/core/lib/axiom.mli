@@ -22,7 +22,7 @@ val classify : Ast.construction -> classified
     where a kind repeats, source order fixes the operand roles. *)
 
 val tag : classified -> string
-(** The provenance tag, ["axiom1"] … ["axiom7"]. *)
+(** The [provenance] tag, ["axiom1"] … ["axiom7"]. *)
 
 val implied_point : classified -> Ast.point_operand option
 (** The point a map construction moves, which a `fold` takes as its anchor
@@ -44,7 +44,7 @@ type chosen = {
   fold_side : int option;
       (** the sign of the side that folds over, when `toward` or a moved
           line fixes it; [None] leaves the side to the anchor *)
-  sources : string list;  (** provenance *)
+  sources : string list;  (** [provenance] *)
 }
 
 val select :

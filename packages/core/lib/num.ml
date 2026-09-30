@@ -6,7 +6,7 @@
     algebraic number
     [Qq] backed by FLINT's qqbar (canonical minimal polynomial + certified
     ball; cross-field arithmetic, composite extensions). Invariant: [Qq] is
-    irrational — rationals collapse to [Rat]. [to_float] is the only float,
+    irrational: rationals collapse to [Rat]. [to_float] is the only float,
     output-only. See decisions/0013-flint-qqbar-backend.md. *)
 
 type t =
@@ -81,7 +81,7 @@ let to_qq (x : t) : Qqbar.t =
       done;
       !acc
 
-(* refine a generator's isolating interval once, keeping the unique root by the sign change. *)
+(* refine a generator's isolating interval once: keep the half where the sign changes. *)
 let refine_alg (poly : Poly.t) (lo : Q.t) (hi : Q.t) : Q.t * Q.t =
   let m = Q.div (Q.add lo hi) two_q in
   let sl = Poly.sign_at poly lo and sm = Poly.sign_at poly m in
@@ -90,7 +90,7 @@ let refine_alg (poly : Poly.t) (lo : Q.t) (hi : Q.t) : Q.t * Q.t =
   else (m, hi)
 
 (* Simplest rational (smallest denominator; among those, closest to 0) in the
-   closed interval [lo, hi], lo ≤ hi. Continued-fraction / Stern–Brocot
+   closed interval [lo, hi], lo ≤ hi. Continued-fraction / Stern-Brocot
    descent: strip the integer part, recurse on the inverted fractional part.
    Terminates in the continued-fraction depth of the endpoints. *)
 let rec simplest_in (lo : Q.t) (hi : Q.t) : Q.t =
@@ -112,10 +112,10 @@ let rec simplest_in (lo : Q.t) (hi : Q.t) : Q.t =
    lowest terms has denominator dividing the integer-cleared leading
    coefficient aₙ, and two distinct rationals with denominators ≤ aₙ differ
    by at least 1/aₙ². So: isolate the real roots, bisect each isolating
-   interval below that separation — then at most one rational with
+   interval below that separation: then at most one rational with
    denominator ≤ aₙ remains inside, and it is the simplest rational there.
    Verify by exact evaluation. Replaces divisor enumeration by trial
-   division, the #23 real_roots wall. *)
+   division, the #23 [real_roots] wall. *)
 let rational_roots_in (p : Poly.t) (lo : Q.t) (hi : Q.t) : Q.t list =
   if Poly.degree p < 1 then []
   else begin
@@ -161,7 +161,7 @@ let minimal_poly_in (p : Poly.t) (_lo : Q.t) (_hi : Q.t) : Poly.t option =
 (* Build a value from a defining polynomial and an interval bracketing the
    intended root. Rational roots collapse to Rat; a root whose irreducible
    minimal polynomial is elementarily available at degree 2/3
-   (minimal_poly_in) becomes a Field (single-generator fast path); anything
+   ([minimal_poly_in]) becomes a Field (single-generator fast path); anything
    else becomes a FLINT-backed Qq. *)
 let make (poly : Poly.t) (lo : Q.t) (hi : Q.t) : t =
   let s = Poly.squarefree_part poly in
@@ -198,7 +198,7 @@ let make (poly : Poly.t) (lo : Q.t) (hi : Q.t) : t =
    and pays qqbar's canonicalizing arithmetic on every operation. *)
 let field_degree_cap = 4
 
-(* Upgrade an irrational Qq of degree ≤ field_degree_cap to the Field fast
+(* Upgrade an irrational Qq of degree ≤ [field_degree_cap] to the Field fast
    path. Sound at any degree: FLINT's canonical minimal polynomial is
    irreducible, so mu is a valid single generator; the certified enclosure
    is refined until it isolates this root of mu (rational endpoints are
@@ -327,8 +327,8 @@ let embedding ~(into : gen) (beta : gen) : Poly.t option =
    irrational x ∈ ℚ(β) generates a subfield of degree > 1 dividing a prime,
    so ℚ(x) = ℚ(β), and expressing x on its own would repeat the embedding
    search. At degree 4 x may generate a quadratic subfield that does embed,
-   so x is expressed on its own then, as is a Qq above field_degree_cap.
-   express_over is exact (FLINT re-verifies), so a Some result is always
+   so x is expressed on its own then, as is a Qq above [field_degree_cap].
+   [express_over] is exact (FLINT re-verifies), so a Some result is always
    the true coordinates. *)
 let coords_over (g : gen) (x : t) : Poly.t option =
   match x with
@@ -342,14 +342,14 @@ let coords_over (g : gen) (x : t) : Poly.t option =
   | Qq q -> Qqbar.express_over ~gen:(qq_of_gen g) q
 
 (* Combine x and y inside a common single-generator field, or None if no such
-   field is found (independent irrationals / degree above field_degree_cap):
-   upgrade a Qq operand within field_degree_cap to its own field
-   (field_upgrade; rationals carry no generator), try the operands'
+   field is found (independent irrationals / degree above [field_degree_cap]):
+   upgrade a Qq operand within [field_degree_cap] to its own field
+   ([field_upgrade]; rationals carry no generator), try the operands'
    generators, the higher degree first, express both over it, and reduce
    with [combine] (Poly.add for addition, rem∘mul for product). Higher
    degree first because a degree-2 value expresses inside a degree-4 field
    while the reverse never succeeds and only spends an LLL search per
-   precision rung. Never wrong — a None simply defers to the qqbar fallback
+   precision rung. Never wrong: a None defers to the qqbar fallback
    in the caller. Routes cross-representation +/* through the
    factorization-free Field path instead of generic qqbar (#57). *)
 let via_field (combine : gen -> Poly.t -> Poly.t -> Poly.t) (x : t) (y : t) : t option =
@@ -409,7 +409,7 @@ let equal (x : t) (y : t) : bool = sign (sub x y) = 0
 (* real roots, ascending, of Σ coeffs.(i)·zⁱ. Rational-coefficient fast path
    keeps axioms 1–6 cheap. For algebraic (Qq) coefficients: manufacture a
    ℚ-superset polynomial R(z) by eliminating each distinct Qq coefficient's
-   generator with a Sylvester resultant (Mpoly), then keep only R's roots that
+   generator with a Sylvester resultant ([Mpoly]), then keep only R's roots that
    evaluate P to exactly zero in qqbar (ADR 0013). *)
 let real_roots (coeffs : t array) : t list =
   (* normalize Field coefficients to Qq so the rest of the function only sees Rat/Qq *)
@@ -428,8 +428,8 @@ let real_roots (coeffs : t array) : t list =
     (* rational fast path (unchanged behaviour) *)
     let q_of = function Rat q -> q | _ -> assert false in
     let p = Poly.of_list (Array.to_list (Array.map q_of coeffs)) in
-    (* isolate_roots returns ascending disjoint intervals and make keeps each
-       root inside its interval, so the list is already sorted — an exact
+    (* [isolate_roots] returns ascending disjoint intervals and make keeps each
+       root inside its interval, so the list is already sorted: an exact
        compare-based sort here would refine close roots for nothing (#23). *)
     Poly.isolate_roots p |> List.map (fun (lo, hi) -> make p lo hi)
   end
@@ -442,13 +442,13 @@ let real_roots (coeffs : t array) : t list =
       done;
       !acc
     in
-    (* FLINT 3.6 fast path: _qqbar_roots_poly_squarefree solves degree <= 3
-       coefficient-field cubics (axiom 6/7) in ~ms instead of the Mpoly
-       elimination's ~28s (ADR 0013). The primitive requires P squarefree —
+    (* FLINT 3.6 fast path: _[qqbar_roots_poly_squarefree ]solves degree <= 3
+       coefficient-field cubics (axiom 6/7) in ~ms instead of the [Mpoly]
+       elimination's ~28s (ADR 0013). The primitive requires P squarefree:
        for degree <= 3 that's exactly "discriminant nonzero", checked exactly
-       in qqbar — and its own degree/bits limits reject fields it can't
+       in qqbar, and its own degree/bits limits reject fields it can't
        handle (returns None instantly). Every candidate is re-verified with
-       the exact eval_p zero check, so a wrong FLINT result can never leak;
+       the exact [eval_p] zero check, so a wrong FLINT result can never leak;
        the only fallback risk is a missed root, foreclosed by the
        discriminant guard. *)
     let flint_first () : t list option =
@@ -499,15 +499,15 @@ let real_roots (coeffs : t array) : t list =
           let r = Field_merge.resultant_superset ~coords ~mu in
           if Poly.degree r < 1 then None
           else begin
-            (* Cheap rigorous pre-screen before the exact eval_p check. R is a
+            (* Cheap rigorous pre-screen before the exact [eval_p] check. R is a
                superset, so many candidates are extraneous; evaluating P at a
                high-degree candidate in qqbar is the dominant cost (~seconds
-               each). A rational-interval enclosure of P(z) — from FLINT's
-               rigorous qqbar enclosures, via interval Horner — that excludes 0
+               each). A rational-interval enclosure of P(z) (from FLINT's
+               rigorous qqbar enclosures, via interval Horner) that excludes 0
                proves z is NOT a root, rejecting it without any exact qqbar
                arithmetic. A true root (P(z)=0, interval straddles 0) is never
                rejected; an inconclusive interval falls through to the exact
-               check. Purely an optimization: the exact eval_p still decides
+               check. Purely an optimization: the exact [eval_p] still decides
                every kept root, so the returned set is identical. *)
             let prec = 128 in
             let qmin a b = if Q.compare a b <= 0 then a else b in
@@ -536,12 +536,12 @@ let real_roots (coeffs : t array) : t list =
               |> List.map (fun z -> field_upgrade (of_qq z)))
           end
     in
-    (* Gate: max_deg is the PER-COEFFICIENT degree, not the compositum degree
-       [ℚ(γ):ℚ] — a deliberate perf choice, never a correctness one. It only
-       decides which tier runs first; every tier ends in the exact eval_p
-       filter with the Mpoly path as terminal fallback, so a "wrong" gate can
-       at worst pick a slower path. flint_first's own d>3 guard independently
-       routes quartics-plus to pe_tier regardless of this threshold. *)
+    (* Gate: [max_deg] is the PER-COEFFICIENT degree, not the compositum degree
+       [ℚ(γ):ℚ]: a deliberate performance choice, never a correctness one. It only
+       decides which tier runs first; every tier ends in the exact [eval_p]
+       filter with the [Mpoly] path as terminal fallback, so a "wrong" gate can
+       at worst pick a slower path. [flint_first]'s own d>3 guard independently
+       routes quartics-plus to [pe_tier] regardless of this threshold. *)
     let tier12 = if max_deg < 5 then flint_first () else None in
     match tier12 with
     | Some roots -> roots
@@ -549,33 +549,33 @@ let real_roots (coeffs : t array) : t list =
         match pe_tier () with
         | Some roots -> roots
         | None ->
-    (* fallback: generator elimination (Mpoly) + exact verification.
+    (* fallback: generator elimination ([Mpoly]) + exact verification.
        Assign generator variables to distinct algebraic numbers in the coefficient
        set. Variable 0 is z; generators are 1.. .
        Key optimisation: if c = a + q·gen for rationals a,q (affine combination),
        express the coefficient as const(a) + const(q)·gen_var rather than allocating
        a new variable. This collapses e.g. {−√2, 1−√2, 1} all into one generator
-       (√2), keeping the Sylvester matrix small.
+       (√2) and keeps the Sylvester matrix small.
        Scalar multiple (a=0) and exact identity (a=0,q=1) are special cases.
        Affine extraction for degree-2 generators uses pure rational arithmetic on
-       polynomial coefficients (no Num resultant calls):
+       polynomial coefficients (no [Num] resultant calls):
          If gen.poly = [s_g; p_g; 1] and c.poly = [s_c; p_c; 1], both monic degree-2,
          then c = a + q·gen has:
-           q² = disc_c / disc_gen  (discriminants disc = p² - 4s)
+           q² = [disc_c] / [disc_gen]  (discriminants disc = p² - 4s)
            a  = (-p_c + q·p_g) / 2 (from trace identity: c+c̄ = -p_c = 2a + q·(-p_g))
-         q must be rational, and disc_c/disc_gen a perfect rational square.
+         q must be rational, and [disc_c]/[disc_gen] a perfect rational square.
          To confirm the sign of q (not just q²), we check against the enclosures.
        Falls through to a fresh generator for higher-degree or non-monic cases. *)
-    (* Table: (gen_value, var_index, gen_minpoly) in discovery order *)
+    (* Table: ([gen_value], [var_index], [gen_minpoly]) in discovery order *)
     let gens : (Qqbar.t * int * Poly.t) list ref = ref [] in
-    (* Try to express q as an exact rational from disc_c / disc_gen.
+    (* Try to express q as an exact rational from [disc_c] / [disc_gen].
        disc must be a perfect square in ℚ: disc = (p/q)² → num/den both perfect int squares. *)
     let rational_sqrt_q (r : Q.t) : Q.t option =
       if Q.sign r < 0 then None
       else if Q.sign r = 0 then Some Q.zero
       else begin
         let n = Q.num r and d = Q.den r in
-        (* Zarith: n and d are Z.t; Z.sqrt_rem gives (floor_sqrt, rem) *)
+        (* Zarith: n and d are Z.t; Z.sqrt_rem gives ([floor_sqrt], rem) *)
         let sn, rn = Z.sqrt_rem (Z.abs n) in
         let sd, rd = Z.sqrt_rem d in
         if Z.equal rn Z.zero && Z.equal rd Z.zero then
@@ -634,7 +634,7 @@ let real_roots (coeffs : t array) : t list =
               gens := !gens @ [ (cq, 1 + List.length !gens, Qqbar.minpoly cq) ])
       coeffs;
     let nvars = 1 + List.length !gens in
-    (* Build P as an Mpoly in [nvars] variables (var 0 = z, vars 1..nvars-1 = gens). *)
+    (* Build P as an [Mpoly] in [nvars] variables (var 0 = z, vars 1..nvars-1 = gens). *)
     let build_p_mpoly () =
       let zv = Mpoly.var nvars 0 in
       let cm c =
@@ -654,7 +654,7 @@ let real_roots (coeffs : t array) : t list =
       done;
       !pm
     in
-    (* Build a min-poly Mpoly for generator at variable v, in nvars-variable space. *)
+    (* Build a min-poly [Mpoly] for generator at variable v, in nvars-variable space. *)
     let build_minpoly_mpoly v minpoly =
       let m = ref Mpoly.zero in
       Array.iteri
@@ -676,14 +676,14 @@ let real_roots (coeffs : t array) : t list =
     else begin
       (* R is a ℚ-superset: every true root of P is among R's roots. Get the
          candidates exactly from FLINT and keep those where P evaluates to
-         exactly zero in qqbar — no separation bound, no H(Y) construction,
-         no interval refinement (the former certify pipeline's Mpoly Laplace
-         resultants were the measured 48s/900s wall; ADR 0013). coeffs_qq and
-         eval_p are defined above, shared with flint_first. *)
+         exactly zero in qqbar: no separation bound, no H(Y) construction,
+         no interval refinement (the former certify pipeline's [Mpoly] Laplace
+         resultants were the measured 48s/900s wall; ADR 0013). [coeffs_qq] and
+         [eval_p] are defined above, shared with [flint_first]. *)
       (* FLINT handles the non-squarefree superset R directly; the naive
          ℚ-gcd squarefree pass on a fat deg-81 R was a measured wall. Repeated
-         roots produce duplicate entries, which real_roots_of_poly deduplicates
-         exactly (cmp_re = 0 iff equal). *)
+         roots produce duplicate entries, which [real_roots_of_poly] deduplicates
+         exactly ([cmp_re] = 0 iff equal). *)
       Qqbar.real_roots_of_poly r
       |> List.filter (fun z -> Qqbar.is_zero (eval_p z))
       |> List.map (fun z -> field_upgrade (of_qq z))

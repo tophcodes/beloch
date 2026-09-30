@@ -13,7 +13,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
      segment-selection), so all of them cross and the shared collapse
      vertex is fully formed before any ray is selected. Selecting rays
      one-by-one would subdivide the first crease before the others exist,
-     leaving it unsplit at the vertex (`no common interior vertex`). *)
+     and leave it unsplit at the vertex (`no common interior vertex`). *)
   let rec force_material (lo : Ast.line_operand) =
     match lo with
     | Ast.LNamed cr ->
@@ -27,16 +27,16 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   (* a resolved ray keeps its M/V CONSTRAINT, which the solver below turns
      into a concrete valley, as a 4-tuple rather than [Collapse.elem] so
      its fields can't be confused with that type's same-named
-     cid/ea/eb once both are in scope below. *)
+     [cid]/ea/eb once both are in scope below. *)
   let fail_not_material (el : Ast.collapse_elem) () =
     Error.fail span
       (Printf.sprintf
          "collapse folds along existing creases; %s is not a material \
           crease" (Resolve.lstr el.Ast.cline))
   in
-  (* each element resolves to 1..k material SEGMENTS at the vertex — no
+  (* each element resolves to 1..k material SEGMENTS at the vertex, no
      eager multi-segment error any more: the stayer filter and the vertex
-     check prune the wrong segment combinations. Only genuinely-non-material operands error,
+     check prune the wrong segment combinations. Only non-material operands error,
      with the old zero-segment texts verbatim. *)
   let resolve_elem_candidates (el : Ast.collapse_elem) :
       (int * Geom.point * Geom.point * Ast.mv_constraint) list =
@@ -58,7 +58,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
               (Printf.sprintf "no segment of %s matches" (Resolve.lstr lo))
         | Some cid, segs -> List.map (seg_tuple cid) segs
         | None, _ ->
-            (* segments from a cross-crease union: no single cid to fold
+            (* segments from a cross-crease union: no single [cid] to fold
                along *)
             fail_not_material el ())
     | _ -> fail_not_material el ()
@@ -97,7 +97,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     | Some o -> o
     | None -> Error.fail span Collapse.e_no_vertex
   in
-  (* keep only the candidate segments that actually end at O; every
+  (* keep only the candidate segments that end at O; every
      element has >= 1 such by O's construction. *)
   let elem_cands_at_o =
     List.map
@@ -209,12 +209,12 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   (* KERNEL LIMITATION cover (Task-2 reviewer finding): the kernel's
      [admissible_sectors] cannot tell "the emergent splits the leading
      arc" (legitimate, 2 mirror worlds) from "another GIVEN element's ray
-     sits strictly inside the arc" (dead — stayed material cannot carry a
+     sits strictly inside the arc" (dead: stayed material cannot carry a
      folding crease, spec §Semantics). The latter kill is ours, done here
      over the GIVEN rays before the kernel runs. Gated on a genuine
      segment choice (>1 combination): with a single combination the input
      has no alternative and the pre-2026-07-17 convention behaviour stands.
-     Absent under [staying] — the convention carries no meaning then. *)
+     Absent under [staying]: the convention carries no meaning then. *)
   let leading_arc_ok combo =
     match (staying_opt, combo) with
     | Some _, _ -> true
@@ -224,7 +224,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         let c =
           Collapse.cross oc (f1.Geom.x, f1.Geom.y) (f2.Geom.x, f2.Geom.y)
         in
-        if Num.sign c = 0 then true (* collinear -> kernel: e_stayer_collinear *)
+        if Num.sign c = 0 then true (* collinear -> kernel: [e_stayer_collinear] *)
         else
           let a, b = if Num.sign c > 0 then (f1, f2) else (f2, f1) in
           not
@@ -506,7 +506,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   match deciding with
   | [] ->
       (* spec step 6: out-of-paper trumps everything; otherwise the
-         odd/even cases report differently — the odd case collapses
+         odd/even cases report differently: the odd case collapses
          every closure failure into one message (364660f's original
          differentiation, preserved verbatim); the even case surfaces
          the pool's own dominant kernel error instead, since there is
@@ -538,26 +538,26 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         | None ->
             (* pool = [] only when every candidate's pin set was itself
                Maekawa-unsatisfiable (no pattern to even try); a pool of
-               all-e_selfint falls back to e_selfint itself. *)
+               all-[e_selfint] falls back to [e_selfint] itself. *)
             Error.fail span
               (if pool = [] then Collapse.e_maekawa else Collapse.e_selfint)
       end)
   | [ r ] -> land_realization r
   | many ->
-      (* |deciding| > 1 — three-stage selection, derived empirically against
+      (* |deciding| > 1: three-stage selection, derived empirically against
          the fish mirror pair and the swivel golden:
          1. POSITION stage: placements depend only on ray LINES, so
             realizations group into position classes by moved-material
             centroid; (toward) picks the class by centroid dot.
          2. MIN-MOUNTAIN CANON: within the class, keep only the
             realizations with the fewest derived mountains among the
-            USER-GIVEN creases (a freshly-materialized emergent cid is
-            not a given cid, so it is excluded automatically; a
-            collinear-reuse emergent — the fish diagonal — IS a given
-            cid and counts, per the rule doc's fish derivation).
+            USER-GIVEN creases (a freshly-materialized emergent [cid] is
+            not a given [cid], so it is excluded automatically; a
+            collinear-reuse emergent (the fish diagonal) IS a given
+            [cid] and counts, per the rule doc's fish derivation).
          3. RANK-DIPOLE stage: if several remain, maximize
-            S(R) = Σ_faces area · (rank − (nf−1)/2) ·
-            ((table_centroid − O)·(toward − O)) — "the material lying
+            {m S(R) = Σ_faces area · (rank − (nf−1)/2) ·
+            ((table_centroid − O)·(toward − O)) }: "the material lying
             toward p ends up on top." Mirror realizations score ±equal,
             so any off-axis toward decides; toward ON a reflective
             symmetry axis of the given rays is guarded explicitly. *)
@@ -578,10 +578,10 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         let denom = Num.mul (Num.of_int 3) !a2 in
         ({ Geom.x = Num.div !cx denom; y = Num.div !cy denom }, area)
       in
-      (* stage-2 canon: derived (never stored) M/V per hinge —
+      (* stage-2 canon: derived (never stored) M/V per hinge:
          [Fold_state.mv] reads rank + orientation, so two stackings of
-         one pattern can differ. A given cid is a mountain iff some
-         FOLDED hinge of that cid derives M. *)
+         one pattern can differ. A given [cid] is a mountain iff some
+         FOLDED hinge of that [cid] derives M. *)
       let given_cids =
         List.sort_uniq compare (List.map (fun (c, _, _, _) -> c) rays)
       in
@@ -616,7 +616,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       | None -> (
           (* no class to pick without (toward); the min-mountain canon
              is toward-independent, so it may still single out THE
-             least-forced realization — only a post-canon surplus is a
+             least-forced realization: only a post-canon surplus is a
              genuine ambiguity (spec: "no (toward) while |S| > 1 after
              stage 2"). *)
           match min_mountain_filter many with
@@ -629,7 +629,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       | Some toward_po ->
           let toward_pt = Resolve.resolve_point ctx toward_po in
           let st_pre = !(ctx.state) in
-          (* stage 1 — moved-material centroid per realization; a pure
+          (* stage 1: moved-material centroid per realization; a pure
              function of table placement, shared within a class. *)
           let centroid_of (st_post, _, _, _) : Geom.point =
             let faces = Fold_state.faces st_post in
@@ -682,7 +682,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                          else None)
                        by_centroid)
                   many;
-                (* two DISTINCT position classes tie — toward is
+                (* two DISTINCT position classes tie: toward is
                    collinear with a crease through O (the classes are
                    mirror-symmetric about it) *)
                 Error.fail ~hint:Flatten.e_toward_ambiguous_hint span
@@ -702,12 +702,12 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
           | [] -> assert false (* filter of a non-empty list *)
           | [ r ] -> commit r
           | kept ->
-              (* stage 3 — but first the symmetry-axis guard (rule doc
+              (* stage 3, but first the symmetry-axis guard (rule doc
                  §Ties): the dipole's null direction is NOT the
                  geometric mirror axis, so an on-axis toward would get
-                 a strict-but-arbitrary argmax; if the given-ray
+                 a strict-but-arbitrary [argmax]; if the given-ray
                  direction set is invariant under reflection across the
-                 O–toward line, the sides are genuinely
+                 O-toward line, the sides are
                  indistinguishable. *)
               let on_symmetry_axis =
                 Geom.point_equal toward_pt o

@@ -10,7 +10,7 @@
    site still builds and shows the failure.
 
    Run from the repo root, with the documents as paths from there:
-     dune exec packages/core/tools/blocks.exe -- spec/BELOCH.md <doc.md>... *)
+     dune exec packages/core/tools/blocks.exe -- spec/BELOCH.md <doc.md>… *)
 
 open Beloch
 
@@ -123,7 +123,7 @@ let resolve_prelude (preludes : (string * string) list) (name_opt : string optio
       | Some body -> body
       | None -> extract_fail "prelude=%s names no block" name)
 
-(* Same wrapping rule as test_reference_corpus.ml's wrap_construction, plus
+(* Same wrapping rule as test_reference_corpus.ml's [wrap_construction], plus
    the mapping a diagnostic needs to point back at the block's own text:
    [orig_line.(k)] is the 1-based body line of the (k+1)-th wrapped line
    (0-based array index), since wrapping drops blank and assertion lines. *)
@@ -184,12 +184,12 @@ type outcome =
   | Ok_but_expected_error of string (* an `expect error` that never raised *)
   | Error_result of { message : string; expected : bool; diagnostic : diagnostic_info option }
 
-(* [expected] means what test_reference_corpus.ml's verify_block means:
+(* [expected] means what test_reference_corpus.ml's [verify_block] means:
    whether Bel_assert.check_error_message accepts the raised message against
    the block's `; expect error` substring, not merely whether the block
    carries one. A syntactic reading (does the block carry `; expect error`
    at all) would mark a block "expected" even when its message is the wrong
-   one, the exact case verify_block fails the build over. *)
+   one, the exact case [verify_block] fails the build over. *)
 let compute_outcome (filename : string) (preludes : (string * string) list) (b : block) : outcome =
   match b.tag with
   | Malformed msg ->

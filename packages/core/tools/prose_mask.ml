@@ -1,4 +1,4 @@
-(* prose_mask OUTDIR FILE...
+(* [prose_mask] OUTDIR FILE…
 
    Writes OUTDIR/FILE.txt for every OCaml source FILE: a copy in which only
    the prose of its comments is left. Every other character becomes a space
@@ -17,8 +17,8 @@
    - "{m ...}" and "{math ...}" math, with nested braces;
    - "{!ref}" references, and the target of "{{!ref} text}" and
      "{{:url} text}", whose text stays;
-   - the marker and the closing brace of any "{tag text}", e.g. "{b ...}",
-     "{i ...}", "{e ...}", "{1 ...}", "{ul ...}", "{- ...}"; the text stays.
+   - the marker and the closing brace of any "{tag text}", e.g. "{b …}",
+     "{i …}", "{e …}", "{1 …}", "{ul …}", "{- …}"; the text stays.
 
    Known limitations: "@param", "@raise" and "@see <url>" tags stay as they
    are, and a "\\" escape only protects the character after it. An unclosed

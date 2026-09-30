@@ -1,5 +1,5 @@
 (** Incremental evaluation session. Memoizes one [Eval.snapshot] per statement
-    along [Spine]'s prefix-stable hash chain: on re-eval, the longest matching
+    along [Spine]'s prefix-stable hash chain: on re-evaluation, the longest matching
     key prefix is reused and only the divergent suffix is recomputed.
 
     In-memory only (Phase 1). *)
@@ -7,7 +7,7 @@
 type t = {
   mutable keys : string array;        (* one hash-chain key per statement *)
   mutable snaps : Eval.snapshot array; (* snapshot taken AFTER each statement *)
-  mutable last_ran : int;             (* statements recomputed on the last eval *)
+  mutable last_ran : int;             (* statements recomputed on the last evaluation *)
 }
 
 let create () = { keys = [||]; snaps = [||]; last_ran = 0 }

@@ -129,7 +129,7 @@ and obj = { name : string; point : Geom.point option; segments : segment list }
 and alignment = { objects : obj * obj; span : Error.span option }
 
 and construction = {
-  axiom : string;  (** the provenance tag, ["axiom1"] … ["axiom7"] *)
+  axiom : string;  (** the [provenance] tag, ["axiom1"] … ["axiom7"] *)
   toward : Geom.point option;
   toward_segments : segment list;  (** the material of a `toward` line *)
   toward_name : string option;
@@ -163,7 +163,7 @@ val construction : axiom:string -> conics:conic list -> construction
 
 val faces_region : Fold_state.t -> ?clip:Geom.line * int -> (int -> bool) -> region
 (** The table polygons of the faces the predicate holds for, each clipped to
-    the given side of the line when [clip] is given; a face with no area on
+    [clip]'s side of the line when [clip] is given; a face with no area on
     that side is left out. *)
 
 val to_json : frame:(Fold_state.t -> Yojson.Safe.t) -> entry -> Yojson.Safe.t

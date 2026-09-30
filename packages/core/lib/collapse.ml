@@ -1,5 +1,5 @@
 (** Single-vertex collapse: fold along n >= 4 material crease segments sharing
-    one interior endpoint O — the flat end state of a multi-crease move
+    one interior endpoint O: the flat end state of a multi-crease move
     (rabbit ear [hull2020, Thm 8.5]). Skips the 3D intermediate entirely:
     checks the end state exists (reflection closure = Kawasaki, Maekawa),
     assigns per-sector isometries, enumerates valid layer orders. *)
@@ -65,7 +65,7 @@ let common_vertex (es : elem list) : Geom.point option =
 let far_of (o : Geom.point) (e : elem) : Geom.point =
   if Geom.point_equal e.ea o then e.eb else e.ea
 
-(* 2. rays: sort elems CCW by the direction (far tip − O), using the exact
+(* 2. rays: sort [elems] CCW by the direction (far tip − O), using the exact
    angular comparator in Geom (half classification then cross product). *)
 let sort_ccw (o : Geom.point) (es : elem list) : (Geom.point * elem) list =
   es
@@ -75,10 +75,10 @@ let sort_ccw (o : Geom.point) (es : elem list) : (Geom.point * elem) list =
 (* Two elements pointing in the SAME direction from O collapse to a zero-width
    sector: their reflections cancel in the closure product, so Kawasaki,
    Maekawa, and the n-count all pass on a self-contradictory vertex. After
-   [sort_ccw] such rays are adjacent, so a consecutive scan (ccw_compare = 0 ⇒
+   [sort_ccw] such rays are adjacent, so a consecutive scan ([ccw_compare] = 0 ⇒
    same half AND collinear ⇒ same direction) catches them. Opposite collinear
-   rays — the waterbomb's through-O lines — land in different halves, so
-   ccw_compare ≠ 0 and they stay legal. *)
+   rays (the waterbomb's through-O lines) land in different halves, so
+   [ccw_compare] ≠ 0 and they stay legal. *)
 let has_duplicate_ray (o : Geom.point) (rays : (Geom.point * 'a) array) : bool =
   let n = Array.length rays in
   let dup = ref false in
@@ -89,9 +89,9 @@ let has_duplicate_ray (o : Geom.point) (rays : (Geom.point * 'a) array) : bool =
   !dup
 
 (* 3. sector isometries. With rays r0..r_{n-1} CCW and Li = line through O along
-   ri, sector k (between rk and r_{k+1}) is placed by
-     T_0 = identity,  T_k = T_{k-1} ∘ R(L_k)   (crease r_k separates s_{k-1},s_k)
-   so T_k = R(L_1) ∘ … ∘ R(L_k) and det_sign(T_k) = (-1)^k. *)
+   [ri], sector k (between [rk] and r_{k+1}) is placed by
+     T_0 = identity,  [T_k] = T_{k-1} ∘ R(L_k)   (crease [r_k] separates s_{k-1},s_k)
+   so [T_k] = R(L_1) ∘ … ∘ R(L_k) and det_sign(T_k) = (-1)^k. *)
 let sector_isometries (o : Geom.point) (rays : (Geom.point * 'a) array) :
     Isometry.t array =
   let n = Array.length rays in
@@ -106,8 +106,8 @@ let sector_isometries (o : Geom.point) (rays : (Geom.point * 'a) array) :
 (* Effective valley of a crease whose LEFT (stayer) sector is placed by
    [sec_transform] over a stayer face already carrying [face_iso]. Mirrors
    [Fold_state.fold]'s CP-frame intent convention: a stored/effective valley is
-   the user's valley XORed with the parity of the stayer face's *final*
-   orientation — [sec_transform ∘ face_iso]. Folding in [face_iso] (not just
+   the user's valley [XORed] with the parity of the stayer face's *final*
+   orientation: [sec_transform ∘ face_iso]. Folding in [face_iso] (not just
    the sector transform) is what makes a prior `flip` invert M/V relative to
    the original front (spec §4.7): every pre-collapse face is
    orientation-reversed, so every effective valley flips. Shared by the
@@ -124,7 +124,7 @@ let is_identity (i : Isometry.t) : bool =
   List.for_all (fun p -> Geom.point_equal (Isometry.apply_point i p) p) probes
 
 (* closure: the full-loop reflection product over all n creases must be the
-   identity — this is exactly Kawasaki at O. Any cyclic rotation of the product
+   identity: this is exactly Kawasaki at O. Any cyclic rotation of the product
    is conjugate, so the starting ray does not matter; fold in ray order. *)
 let closure_ok (o : Geom.point) (rays : (Geom.point * 'a) array) : bool =
   let prod =
@@ -221,7 +221,7 @@ let linear_extensions (n : int) (constraints : (int * int) list) :
 (* --- the kernel: single-vertex collapse on the hinge-graph core (issue #48).
    Hinge angles and a total face rank are set directly;
    placements (and hence overlaps) are DERIVED by [Fold_state.make], not
-   composed by hand, so there is no [folded]/[faces_for_anchor] analogue —
+   composed by hand, so there is no [folded]/[faces_for_anchor] analogue:
    re-anchoring is just a different (root, base) into the same [make]. -- *)
 
 (* Sector membership of a placed polygon. Interior representative = vertex
@@ -286,7 +286,7 @@ let sector_of_poly_opt (o : Geom.point) (rays : (Geom.point * 'a) array)
 
 (* --- shared pipeline: every check and enumeration step common to [collapse]
    and [collapse_all], up to signature dedup. Returns, per distinct-signature
-   realization, the (sector-rank, face-rank) pair anchoring needs — anchoring
+   realization, the (sector-rank, face-rank) pair anchoring needs: anchoring
    itself is entry-point-specific ([collapse] takes the single rank or errors
    [e_ambig]; [collapse_all] anchors every rank, dropping ones with no
    in-bounds seating instead of erroring). Factored out so [collapse]'s
@@ -300,7 +300,7 @@ let in_ccw_arc (o : Geom.point) (a : Geom.point) (b : Geom.point)
   Num.sign (cross oc (a.Geom.x, a.Geom.y) (q.Geom.x, q.Geom.y)) > 0
   && Num.sign (cross oc (q.Geom.x, q.Geom.y) (b.Geom.x, b.Geom.y)) > 0
 
-(* rotate the ray labeling so that sector [s0] becomes sector 0 — the stayer
+(* rotate the ray labeling so that sector [s0] becomes sector 0: the stayer
    anchoring step. Sector k (between rays k, k+1) maps to k-s0; ray k to k-s0. *)
 let rotate_rays (rays : 'a array) (s0 : int) : 'a array =
   let n = Array.length rays in
@@ -341,7 +341,7 @@ let admissible_sectors ~(stayer : stayer) (o : Geom.point)
             && not (Geom.point_equal rk1 a))
           (List.init n Fun.id)
 
-(* checks common to every stayer run — vertex, count, boundary, duplicate ray,
+(* checks common to every stayer run: vertex, count, boundary, duplicate ray,
    Kawasaki closure, Maekawa. All rotation-invariant, so run once, before the
    admissible-sector fan-out. Returns the vertex O and the CCW-sorted rays. *)
 (* geometry-only prechecks: everything rotation- AND valley-invariant. The
@@ -399,7 +399,7 @@ type pipeline = {
    root, and the ray<->hinge matching. A mountain and a valley half-turn land
    every face in the SAME place (fold_state.ml: "the sign (M vs V) does NOT
    change the flat placement"), and the layering-validity check reads only
-   angles + rank — so none of this depends on the M/V letters. [collapse_all_
+   angles + rank: so none of this depends on the M/V letters. [collapse_all_
    patterns] builds it ONCE per vertex/sector and reuses it across every
    Maekawa pattern; [overlaps] (also placement-derived, hence valley- and
    rank-independent) is memoized lazily the first time a pattern needs it. *)
@@ -621,13 +621,13 @@ let mk_sector_geom (g : Fold_state.t) ~(o : Geom.point)
   (* Per-ray orientation representative feeding [effective_valley]. For ray [j]
      the stayer-side sector is [l = (j-1+n) mod n] (the sector CCW-before the
      ray). The M/V letter carried by ray [j] is about the *layer of stayer
-     material actually adjacent to that crease*, not an arbitrary face in a
+     material adjacent to that crease*, not an arbitrary face in a
      possibly mixed-orientation sector: pick the face in sector [l] whose table
-     polygon has an edge running from O out along the ray segment (O -> far_j).
+     polygon has an edge running from O out along the ray segment (O -> [far_j]).
      That edge is the crease itself, so its face is the layer the letter
-     describes. This is what lets a mixed sector — a stationary base strip
+     describes. This is what lets a mixed sector (a stationary base strip
      (det>0) with a folded stack (det<0) riding on it, e.g. the fish's
-     second-ear vertex — read parity from the crease-adjacent base layer rather
+     second-ear vertex) read parity from the crease-adjacent base layer rather
      than from whatever face happens to be first by array index (the old
      per-sector representative, which flipped one hinge constraint and starved
      the true stacking chain). *)
@@ -659,7 +659,7 @@ let mk_sector_geom (g : Fold_state.t) ~(o : Geom.point)
         (* Among crease-adjacent faces take the lowest prior rank. Several
            qualify only for a through-folded multi-layer crease (not in today's
            corpus); which layer's letter wins is #48 territory. If none
-           qualifies (should not happen — the crease bounds the sector), fall
+           qualifies (should not happen: the crease bounds the sector), fall
            back to the old first-in-sector representative rather than raise. *)
         let best = ref (-1) in
         for i = 0 to nf - 1 do
@@ -687,7 +687,7 @@ let mk_sector_geom (g : Fold_state.t) ~(o : Geom.point)
          every sector holds >= 1 face)";
     !found
   in
-  (* which ray (if any) each hinge carries — pure geometry, so matched once and
+  (* which ray (if any) each hinge carries: pure geometry, so matched once and
      reused: only the M/V *letter* stamped on it later varies by pattern. *)
   let old_hinges = Fold_state.hinges g in
   let hinge_ray =
@@ -717,7 +717,7 @@ let mk_sector_geom (g : Fold_state.t) ~(o : Geom.point)
 (* The valley-DEPENDENT half of the old [pipeline_at]: given the shared
    [sector_geom] and this pattern's per-ray valley, enumerate the layer
    stackings and dedup by overlap signature. Byte-identical to the fused
-   version — the split only hoists the geometry out of the pattern loop. *)
+   version: the split only hoists the geometry out of the pattern loop. *)
 let pipeline_solve (sg : sector_geom) ~(valley : bool array)
     ~(over : (int * int) list) : (pipeline, string) result =
   let n = sg.sg_n and nf = sg.sg_nf in
@@ -942,9 +942,9 @@ let anchor_faces (g : Fold_state.t) (o : Geom.point)
       Array.init nf (fun i -> !top >= 0 && cl.(i) = cl.(!top))
 
 (* run the pipeline once per admissible stayer sector (rotating that sector to
-   0), pooling every in-bounds anchored realization. No cross-run dedup — two
+   0), pooling every in-bounds anchored realization. No cross-run dedup (two
    admissible sectors are two different stayers, i.e. physically different
-   folds — while per-run signature dedup stays. *)
+   folds) while per-run signature dedup stays. *)
 let collapse_runs ?anchor (g : Fold_state.t) (es : elem list)
     ~(over : (int * int) list) ~(stayer : stayer) :
     (Fold_state.t list, string) result =
@@ -1021,9 +1021,9 @@ let collapse_all_patterns ?anchor ?sectors:only (g : Fold_state.t)
               sectors
           in
           (* map each pattern's valley (in [es] order) onto the sorted rays.
-             Match by far tip, NOT cid: a full crease through O subdivides into
+             Match by far tip, NOT [cid]: a full crease through O subdivides into
              two rays that share one crease id (the "+" vertex's --h/--v), so
-             cid is not unique per ray, but the far tip is (distinct ray
+             [cid] is not unique per ray, but the far tip is (distinct ray
              directions, boundary endpoints). *)
           let es_arr = Array.of_list es in
           let perm =

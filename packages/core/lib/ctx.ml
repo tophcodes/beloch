@@ -13,18 +13,18 @@ type stmt_log_entry = {
   sl_kind : stmt_kind;
   sl_span : Error.span;
   sl_frame_index : int;
-      (* file_frames index of the frame this statement's geometry reads
-         against — the just-pushed frame for [SFold], the most-recently
+      (* [file_frames] index of the frame this statement's geometry reads
+         against: the just-pushed frame for [SFold], the most-recently
          pushed frame for [SMark] (marks don't fold anything) *)
   sl_mark : Fold_state.mark option;
-      (* the mark AS RECORDED by this statement, captured at record-time —
+      (* the mark AS RECORDED by this statement, captured at record-time:
          independent of whether it later graduates into a real crease (which
          only happens at some LATER fold statement, or never). None for
          [SFold]. *)
   sl_kept : Fold_state.mark list;
       (* marks still dangling (not yet graduated into a real crease) as of
          immediately after this statement. [SMark] inherits the previous
-         statement's [sl_kept] and appends its own new mark, unchecked — the
+         statement's [sl_kept] and appends its own new mark, unchecked: the
          backdrop frame is fixed and strictly predates this mark, so
          graduation cannot apply yet. [SFold] recomputes fresh via
          [Fold_state.mark_graduates] against the just-folded state. *)
@@ -38,7 +38,7 @@ type stmt_log_entry = {
    the log, [-1] while the statement has not run yet. *)
 type annot_value =
   | AvPoint of Geom.point * Geom.point  (* paper, table *)
-  | AvLine of Geom.line * int option    (* table line, crease id if a crease *)
+  | AvLine of Geom.line * int option    (* the table line, crease id if a crease *)
   | AvFlap of int list                  (* faces of the state it was read in *)
   | AvText of string
   | AvNumber of Q.t
@@ -67,7 +67,7 @@ type crease_val =
   | Mark of int * Geom.line
       (* a materialized construction line backed by the mark layer: meetable
          by `*` (its chords live in Fold_state.marks), never subdividing the
-         working arrangement. [int] is the mark's mcrease_id. *)
+         working arrangement. [int] is the mark's [mcrease_id]. *)
   | Frozen of Geom.line
   | Bundle of Ast.line_operand
       (* a named crease bundle (--x = --l & .c | [--a --b]); resolves lazily as
@@ -84,7 +84,7 @@ type instance = {
       (* creation step of each member, copied from the def body's own
          [scope.point_steps]/[scope.line_steps] at apply-time; see those.
          Points and lines are separate namespaces (distinct sigils `.`/`--`),
-         so a point and a line may share a stem — kept in separate tables
+         so a point and a line may share a stem: kept in separate tables
          rather than one shared-key table so they can't clobber each
          other's step. *)
 }
@@ -103,7 +103,7 @@ type scope = {
          progressive drawing has to do. A pure construction statement is
          never logged, so its index is the one the NEXT state-changing
          statement takes: the first stop at which the point can matter. Scoped per-entry so
-         it saves/restores across `apply` exactly like points/lines do — a
+         it saves/restores across `apply` exactly like points/lines do: a
          def body's own bindings never clobber an outer scope's already-
          recorded step for the same name. Kept as two tables (not one keyed
          by bare name) because points and lines are separate namespaces: a
@@ -121,8 +121,8 @@ let make_scope () = {
 
 (* One resolved mention of a crease name in the source: where it stands, and
    what it turned out to name. This is the sourcemap a reader needs to see
-   every place a bundle is referenced — the arguments of a `flatten`, the
-   operands of a `map`, a filter — which no consumer can recover from the
+   every place a bundle is referenced (the arguments of a `flatten`, the
+   operands of a `map`, a filter) which no consumer can recover from the
    text, because the same spelling means different creases inside a `def`
    body and after a `--x!` rebinding. *)
 type reference =
@@ -134,7 +134,7 @@ type name_ctx = Root | InInstance of string | Anon
 type ctx = {
   mutable scopes : scope list;  (* head = innermost *)
   mutable name_ctx : name_ctx;
-  mutable cur_def_idx : int option; (* Some k while running def k's body *)
+  mutable cur_def_idx : int option; (* Some k while running def [k]'s body *)
   mutable next_def_idx : int;
   defs : (string, int * Ast.param list * Ast.stmt list) Hashtbl.t;
   state : Fold_state.t ref;
@@ -152,11 +152,11 @@ type ctx = {
          top level: the [sl_parent] of every entry logged meanwhile *)
   mutable pending : bool;
       (* true when the current state hasn't been captured in a frame yet;
-         drives the conditional final push (see eval_folded) *)
+         drives the conditional final push (see [eval_folded]) *)
 }
 
 (* Index the statement currently being evaluated will occupy in
-   [statements_rev] once it is logged. Every provenance record is built while
+   [statements_rev] once it is logged. Every [provenance] record is built while
    its statement runs, i.e. strictly before that statement's log entry is
    pushed, so the length of the log is that statement's own index. *)
 let stmt_index (ctx : ctx) : int = List.length ctx.statements_rev
@@ -229,7 +229,7 @@ let intent_of (dir : Ast.direction) : Fold_state.assign =
 
 (* Shared failure text for every "points must land on exactly one flap/face"
    lookup (FByPoints resolution): callers narrow their own success variant
-   (`Face of int, `Cluster of int list, ...) to `Found and pass through their
+   (`Face of int, `Cluster of int list, …) to `Found and pass through their
    `Zero/`Ambiguous as-is, so the 0-match/multi-match wording lives here once
    instead of being copied at each call site. *)
 let flap_lookup_result (span : Error.span)
@@ -298,7 +298,7 @@ let promote_crease (ctx : ctx) (name : string) (cv : crease_val) =
 
 (* ---- Evaluator ---- *)
 
-(* ---- Incremental checkpoint: snapshot / restore of the whole ctx ---- *)
+(* ---- Incremental checkpoint: snapshot / restore of the whole [ctx] ---- *)
 
 type snapshot = {
   s_points : (string, Geom.point) Hashtbl.t;
@@ -335,8 +335,8 @@ let copy_instances (tbl : (string, instance) Hashtbl.t) =
   t
 
 (* Snapshots are taken between top-level statements, where [ctx.scopes] is a
-   single root scope. Hashtable values (points, crease_vals, AST fragments)
-   are immutable, so a shallow copy suffices — except [instance]s, whose inner
+   single root scope. [Hashtable] values (points, [crease_vals], AST fragments)
+   are immutable, so a shallow copy suffices: except [instance]s, whose inner
    tables are mutable and must be deep-copied. *)
 let snapshot (ctx : ctx) : snapshot =
   match ctx.scopes with
@@ -403,7 +403,7 @@ let restore (ctx : ctx) (s : snapshot) : unit =
 (* A statement that moved the program and left the paper where it was: a
    point, a construction line, a bundle, a definition, an export, an apply
    whose body folds nothing. The second axis counts these as well (ADR 0026),
-   which is what lets a reader of the program be told what each statement
+   so a reader of the program can be told what each statement
    binds. It reads against the frame already on screen and carries the marks
    the statement before it left dangling. *)
 let push_entry (ctx : ctx) (kind : stmt_kind) (sp : Error.span) =

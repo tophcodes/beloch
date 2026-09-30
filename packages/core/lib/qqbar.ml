@@ -34,7 +34,7 @@ let of_q (q : Q.t) : t = of_q_str (Q.to_string q)
 let to_q (x : t) : Q.t option =
   if is_rational x then Some (Q.of_string (to_q_str x)) else None
 
-(* FLINT aborts the process on invalid input — guard here. *)
+(* FLINT aborts the process on invalid input : guard here. *)
 let inv (x : t) : t =
   if is_zero x then invalid_arg "Qqbar.inv: zero" else inv_unsafe x
 
@@ -52,9 +52,9 @@ let minpoly (x : t) : Poly.t =
   Poly.monic (Poly.normalize coeffs)
 
 (* x as a ℚ-polynomial (low-first) in gen, exactly, or None if x ∉ ℚ(gen)
-   or every search precision on the ladder is too low. The int arg drives
-   FLINT's LLL search precision (the C stub passes it as prec); a too-low
-   value can only yield a false None, never a wrong polynomial — FLINT
+   or every search precision on the ladder is too low. The int [arg] drives
+   FLINT's LLL search precision (the C stub passes it as [prec]); a too-low
+   value can only yield a false None, never a wrong polynomial : FLINT
    re-verifies res(gen) = x exactly before reporting success. The ladder
    starts small because the LLL cost grows with the precision and the
    coordinates of fold geometry are a few bits wide: FLINT's own advice is
@@ -99,7 +99,7 @@ let real_roots_of_poly (p : Poly.t) : t list =
 
 (* Real roots (ascending) of the SQUAREFREE polynomial with qqbar
    coefficients, low-first. None when FLINT's internal degree/bits limits
-   would be exceeded — the caller falls back to elimination. FLINT >= 3.6. *)
+   would be exceeded : the caller falls back to elimination. FLINT >= 3.6. *)
 let real_roots_of_qqbar_poly (coeffs : t array) : t list option =
   match roots_qqbar_poly_raw coeffs with
   | None -> None

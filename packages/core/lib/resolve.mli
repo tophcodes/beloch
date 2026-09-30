@@ -2,7 +2,7 @@
     Every stateful function takes [(ctx : Ctx.ctx)] as its first parameter. *)
 
 val pstr : Ast.point_operand -> string
-(** Render a point operand back to source text, for provenance and error
+(** Render a point operand back to source text, for [provenance] and error
     messages. *)
 
 val lstr : Ast.line_operand -> string
@@ -42,7 +42,7 @@ val resolve_paper_line :
 val material_cid : Ctx.ctx -> Ast.crease_ref -> int
 (** The crease id of a MATERIAL crease reference. A [Ctx.Mark] is
     materialized in place (subdivided along its line) on first use here,
-    promoting its binding to [Ctx.Material] — see [Ctx.promote_crease]. *)
+    promoting its binding to [Ctx.Material]: see [Ctx.promote_crease]. *)
 
 val table_of : Ctx.ctx -> Ast.point_operand -> Geom.point
 (** [resolve_point], mapped through the current table placement. *)
@@ -67,7 +67,7 @@ val bundle_segments :
     or a paper edge). *)
 
 val resolve_flap_cluster : Ctx.ctx -> Ast.flap_arg -> Error.span -> int list
-(** Resolve a flap operand to its unique current flap — a coplanar cluster of
+(** Resolve a flap operand to its unique current flap: a coplanar cluster of
     faces (ADR 0017: two faces joined only by a still-unfolded flat hinge are
     the same flap). Errors if the operand names more than one flap. *)
 
@@ -83,7 +83,7 @@ val side_of_flap_arg_res :
   Error.span ->
   (int, [ `OnAxis | `Straddles ]) result
 (** Which side of [axis] a flap anchor moves. Resolution failures (point off
-    paper, ambiguous flap) raise WITHIN — only the on-axis / straddle
+    paper, ambiguous flap) raise WITHIN: only the on-axis / straddle
     verdicts are returned, so axiom-5 selection can reject a candidate
     without erroring. *)
 
@@ -92,7 +92,7 @@ val side_of_flap_arg : Ctx.ctx -> Geom.line -> Ast.flap_arg -> Error.span -> int
     [`Straddles] instead of returning it. *)
 
 val anchor_faces : Ctx.ctx -> Ast.flap_arg -> Error.span -> int list
-(** Default-scope anchor: the faces carrying the operand, as a UNION — a
+(** Default-scope anchor: the faces carrying the operand, as a UNION: a
     point on a crease shared by several flaps seeds all of them (design
     option (a)). *)
 

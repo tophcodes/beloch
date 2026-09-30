@@ -5,7 +5,7 @@
     packages/www/public/beloch/beloch-eval.js. *)
 
 type snapshot = Ctx.snapshot
-(** Opaque incremental-eval checkpoint; see {!snapshot} / {!restore} and
+(** Opaque incremental-evaluation checkpoint; see {!snapshot} / {!restore} and
     [Session]. *)
 
 type stmt_kind = Ctx.stmt_kind = SFold | SMark | SBind | SApply of string
@@ -15,11 +15,11 @@ type stmt_log_entry = Ctx.stmt_log_entry = {
   sl_span : Error.span;
   sl_frame_index : int;
       (** Index into [frames] of the frame this statement's geometry reads
-          against — the just-pushed frame for [SFold], the
+          against: the just-pushed frame for [SFold], the
           most-recently pushed frame for [SMark] (marks don't fold
           anything). *)
   sl_mark : Fold_state.mark option;
-      (** The mark AS RECORDED by this statement, captured at record-time —
+      (** The mark AS RECORDED by this statement, captured at record-time:
           independent of whether it later graduates into a real crease.
           [None] for [SFold]. *)
   sl_kept : Fold_state.mark list;
@@ -52,13 +52,13 @@ type folded = {
       (** Name, current line, and the same two counters a named point
           carries: the creation frame and the statement that binds it. *)
   named_line_cids : (string * int) list;
-      (** Crease id per name for [Material]/[Mark] creases — the identity the
+      (** Crease id per name for [Material]/[Mark] creases: the identity the
           line coefficients in [named_lines] lose (a folded crease's current
           line can coincide with another crease's line). *)
   frames : (Fold_state.t * Error.span option) list;
   statements : stmt_log_entry list;
   references : Ctx.reference list;
-      (** Every resolved mention of a crease name, in source order — the
+      (** Every resolved mention of a crease name, in source order: the
           sourcemap from a bundle back to the places the program names it. *)
   annotations : Ctx.annot_entry list;
       (** every annotation in the order it was read, each with the log entry
@@ -67,14 +67,14 @@ type folded = {
       (** every construction's candidates in the order they were evaluated
           (spec/FOLD.md, "The trace") *)
   free_points : (string * free_info) list;
-      (** One entry per `free on` point, recorded at bind time — a running
+      (** One entry per `free on` point, recorded at bind time: a running
           log (like [statements]), not reconstructed from scope state at
           finalize. *)
 }
 
 val eval_program :
   ?resume:snapshot -> ?on_step:(Ctx.ctx -> unit) -> Ast.program -> folded
-(** Evaluate [prog]. [resume] restores an incremental-eval checkpoint before
+(** Evaluate [prog]. [resume] restores an incremental-evaluation checkpoint before
     the first statement; [on_step] runs after every statement (used by
     [Session] to collect a fresh snapshot per statement). *)
 

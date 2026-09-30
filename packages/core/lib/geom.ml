@@ -1,5 +1,5 @@
 (** Exact constructible-real plane geometry. A line a*x + b*y = c with a,b,c in
-    Num (the v0.3 constructible reals; rational on the fast-path). *)
+    [Num] (the v0.3 constructible reals; rational on the fast-path). *)
 
 type point = { x : Num.t; y : Num.t }
 type line = { a : Num.t; b : Num.t; c : Num.t }
@@ -30,7 +30,7 @@ let perpendicular_through (l : line) (p : point) : line =
 let parallel (l1 : line) (l2 : line) : bool =
   Num.equal (Num.sub (Num.mul l1.a l2.b) (Num.mul l2.a l1.b)) Num.zero
 
-(* two lines coincide when every 2x2 minor of their coefficients vanishes *)
+(* two lines coincide when every 2×2 minor of their coefficients vanishes *)
 let same_line (l1 : line) (l2 : line) : bool =
   let minor a b c d = Num.equal (Num.sub (Num.mul a d) (Num.mul c b)) Num.zero in
   minor l1.a l1.b l2.a l2.b && minor l1.a l1.c l2.a l2.c
@@ -45,9 +45,9 @@ let intersection (l1 : line) (l2 : line) : point option =
     Some { x; y }
 
 (* axiom 4: the crease that projects p onto l1 with the crease perpendicular to
-   l2 — p moves parallel to l2 until it lands on l1. None when l1 ∥ l2 (then
-   the move never meets l1, or — if p ∈ l1 — meets it everywhere). Exact, no
-   sqrt: every operation stays in ℚ. [justin1986 §8.1 operation ④] *)
+   l2: p moves parallel to l2 until it lands on l1. None when l1 ∥ l2 (then
+   the move never meets l1, or (if p ∈ l1) meets it everywhere). Exact, no
+   [sqrt]: every operation stays in ℚ. [justin1986 §8.1 operation ④] *)
 let project_crease (p : point) (l1 : line) (l2 : line) : line option =
   if parallel l1 l2 then None
   else
@@ -64,7 +64,7 @@ let project_crease (p : point) (l1 : line) (l2 : line) : line option =
    s = a·cx+b·cy−e and n2 = a²+b²; the half-chord² is (r2·n2 − s²)/n2, so the
    sign of r2·n2 − s² decides the count without dividing. The chord runs along
    the line direction (b,−a); the offset magnitude is √(r2·n2−s²)/n2. The only
-   sqrt — stays in the quadratic tower. [justin1986 §8.2c] *)
+   [sqrt]: stays in the quadratic tower. [justin1986 §8.2c] *)
 let circle_line_intersection (c : point) (r2 : Num.t) (l : line) : point list =
   let n2 = Num.add (Num.mul l.a l.a) (Num.mul l.b l.b) in
   let s = Num.sub (Num.add (Num.mul l.a c.x) (Num.mul l.b c.y)) l.c in
@@ -94,8 +94,8 @@ let beloch_creases (p : point) (d : line) (p' : point) : line list =
   |> List.map (fun q -> perpendicular_bisector p q)
 
 (* axiom 7 (Justin ⑦): the crease(s) that simultaneously fold p onto line d and
-   q onto line e — a common tangent to the two parabolas (focus p, directrix d)
-   and (focus q, directrix e). Parametrize p's landing along d by t; the
+   q onto line e: a common tangent to the two parabolas (focus p, directrix d)
+   and (focus q, directrix e). Parametrize [p]'s landing along d by t; the
    "lands q on e" condition is a cubic F(t); each real root is a crease (the
    perpendicular bisector of p and its landing). 0, 1, or 3 creases.
    [justin1986 §2–3; hull2020 §2.4] *)
@@ -184,7 +184,7 @@ let extreme_pair (pts : point list) : (point * point) option =
   | _ -> None
 
 (* The furthest-out endpoint pair over a set of (possibly disjoint, possibly
-   duplicated) collinear chords — the material "bundle" of a line. In-between
+   duplicated) collinear chords: the material "bundle" of a line. In-between
    gaps are bridged; [None] iff there are no chords. *)
 let material_bundle (chords : (point * point) list) : (point * point) option =
   let pts = List.concat_map (fun (a, b) -> [ a; b ]) chords in
@@ -245,9 +245,9 @@ let signed_area (pts : point array) : Num.t =
   Num.div !s (Num.of_int 2)
 
 (* axiom 5: the two angle bisectors of l1, l2 (None if parallel). With
-   ni = √(ai²+bi²), points equidistant satisfy n2·L1 = ±n1·L2, giving lines
+   [ni] = √(ai²+bi²), points equidistant satisfy n2·L1 = ±n1·L2, so the lines are
      (n2 a1 ∓ n1 a2) x + (n2 b1 ∓ n1 b2) y = n2 c1 ∓ n1 c2.
-   bis_eq is the d1=d2 bisector (minus); bis_opp the d1=−d2 bisector (plus). *)
+   [bis_eq] is the d1=d2 bisector (minus); [bis_opp] the d1=−d2 bisector (plus). *)
 let angle_bisectors (l1 : line) (l2 : line) : (line * line) option =
   let det = Num.sub (Num.mul l1.a l2.b) (Num.mul l2.a l1.b) in
   if Num.sign det = 0 then None
@@ -274,7 +274,7 @@ let parallel_midline (l1 : line) (l2 : line) : line =
 let side_of_line (l : line) (p : point) : int =
   Num.sign (Num.sub (Num.add (Num.mul l.a p.x) (Num.mul l.b p.y)) l.c)
 
-(* reflect p across a·x + b·y = c:  p − 2·(a·px+b·py−c)/(a²+b²)·(a,b). Exact, no sqrt. *)
+(* reflect p across a·x + b·y = c:  p − 2·(a·px+b·py−c)/(a²+b²)·(a,b). Exact, no [sqrt]. *)
 let reflect_point (l : line) (p : point) : point =
   let n2 = Num.add (Num.mul l.a l.a) (Num.mul l.b l.b) in
   let d = Num.sub (Num.add (Num.mul l.a p.x) (Num.mul l.b p.y)) l.c in
@@ -282,7 +282,7 @@ let reflect_point (l : line) (p : point) : point =
   { x = Num.sub p.x (Num.mul k l.a); y = Num.sub p.y (Num.mul k l.b) }
 
 (* Keep the part of convex CCW [poly] on the side where [side_of_line l = keep]
-   (vertices on the line are kept). Sutherland–Hodgman against one half-plane;
+   (vertices on the line are kept). Sutherland-Hodgman against one half-plane;
    preserves convexity and CCW order. Returns [||] if no area remains. *)
 let clip_convex_halfplane (l : line) (keep : int) (poly : point array) :
     point array =
@@ -358,7 +358,7 @@ let convex_overlap (p : point array) (q : point array) : bool =
 
 (* Does segment [pa]-[pb] pass through the *interior* of convex CCW [poly]? True
    iff the portion of the segment inside [poly] has positive length and its
-   midpoint is strictly interior — a segment lying along a boundary edge (a crease
+   midpoint is strictly interior: a segment lying along a boundary edge (a crease
    bordering the face, i.e. a taco-taco situation) is excluded. Exact throughout:
    clip the parameter t∈[0,1] to every interior half-plane, then sign-test the
    midpoint. *)
@@ -422,17 +422,17 @@ let segments_overlap_collinear ((p1, q1) : point * point)
       let ohi = if Num.compare thi Num.one < 0 then thi else Num.one in
       Num.compare olo ohi < 0
 
-(* Cyrus–Beck, exact: line [l] ∩ convex CCW [poly] as a segment. Parametrize
+(* Cyrus-Beck, exact: line [l] ∩ convex CCW [poly] as a segment. Parametrize
    the line p(t) = p0 + t·dir with dir = (b,−a) and p0 the foot of the
-   perpendicular from the origin, ((a·c)/(a²+b²), (b·c)/(a²+b²)) — no sqrt.
+   perpendicular from the origin, ((a·c)/(a²+b²), (b·c)/(a²+b²)): no [sqrt].
    Each CCW edge (e_a,e_b) demands cross(e_b−e_a, p(t)−e_a) ≥ 0, linear in t;
    intersecting these half-line constraints gives [tmin,tmax]. An edge whose
    t-coefficient is zero and whose constant term is negative rules out the
-   whole line (it runs parallel to that edge, on the wrong side) — early
-   [None]. CLOSED semantics: [Some] iff tmin < tmax (strict — zero length is
+   whole line (it runs parallel to that edge, on the wrong side): early
+   [None]. CLOSED semantics: [Some] iff [tmin] < [tmax] (strict: zero length is
    no segment), so a line collinear with an edge clips to that edge. This is
    the "which material is here" question; see [line_cuts_polygon] for the
-   stricter "does this actually fold the face" test. *)
+   stricter "does this fold the face" test. *)
 let clip_line_to_convex (l : line) (poly : point array) : (point * point) option =
   let n = Array.length poly in
   let n2 = Num.add (Num.mul l.a l.a) (Num.mul l.b l.b) in
@@ -478,13 +478,13 @@ let clip_line_to_convex (l : line) (poly : point array) : (point * point) option
           Some (at ta, at tb)
       | _ -> None
 
-(* Does line [l] actually fold convex CCW [poly] — i.e. cut strictly through
+(* Does line [l] fold convex CCW [poly]: i.e. cut strictly through
    its interior, not just graze along an edge? Deliberately STRICTER than
    [clip_line_to_convex]'s closed semantics: a line collinear with a polygon
    edge clips to that edge (positive length ⇒ Some there), but a crease lying
    on the paper's own edge folds nothing (ADR 0014: an empty crease bundle is
    not a fold). Test: clip, then check the segment's midpoint strictly inside
-   every edge (cross > 0, not ≥ 0) — the midpoint suffices because the
+   every edge (cross > 0, not ≥ 0): the midpoint suffices because the
    polygon's interior is convex, so if it holds there it holds on the whole
    open segment. *)
 let midpoint_strictly_inside (poly : point array) (p : point) (r : point) : bool =

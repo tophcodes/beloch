@@ -1,6 +1,6 @@
 (** The 3D-native folded-state core (issue #48). Faces = 2D paper polygons; hinges = the face-adjacency graph. A
     face's 3D placement is DERIVED as the product of hinge motions along a path
-    from the root — so adjacent faces differ by exactly their hinge's motion and
+    from the root, so adjacent faces differ by exactly their hinge's motion and
     a torn state cannot be written down. Layer order is a rank permutation and
     M/V is derived from it (never stored). Flat-first: hinge angle (dihedral/π) ∈
     {0, ±1}; |angle|=1 folds via a half-turn about the crease line (= the 2D
@@ -24,7 +24,7 @@ type hinge = {
 type mark_geom = MSeg of Geom.point * Geom.point | MPoint of Geom.point
 
 (* Paper-space, fold-invariant reference/pinch record (moved verbatim from the
-   old Fold_state; see that module's doc comment). No invariants of its own. *)
+   old [Fold_state]; see that module's doc comment). No invariants of its own. *)
 type mark = {
   mgeom : mark_geom;
   mline : Geom.line;
@@ -38,7 +38,7 @@ type t = {
   hinges : hinge array;
   root : int;
   rank : int array;  (* stacking height per face, higher = above; permutation *)
-  base : Isometry3.t;  (* placement of the root face — ONE whole-sheet motion *)
+  base : Isometry3.t;  (* placement of the root face: ONE whole-sheet motion *)
   marks : mark array;
   isos : Isometry3.t array;  (* derived in [make] (memoized BFS); [t] abstract ⇒ cannot desync *)
   segs : (Geom.point * Geom.point) array;
@@ -46,11 +46,11 @@ type t = {
   tps : Geom.point array array;
       (* per-face flat projection under [isos], derived in [make]; applying
          the placement to every vertex is exact arithmetic, and the layer
-         queries ([rel], the scope searches, the emitted faceOrders) read
+         queries ([rel], the scope searches, the emitted [faceOrders]) read
          every face's projection many times per state *)
 }
 
-(* Mints internal crease ids; reset per eval so ids are a deterministic
+(* Mints internal crease ids; reset per evaluation so ids are a deterministic
    function of the program. *)
 let next_id = ref 0
 let reset_ids () = next_id := 0
@@ -109,16 +109,16 @@ let half_turn3_of_line (l : Geom.line) : I3.t =
 (* 3D motion a folded hinge applies (in the sheet frame): a half-turn about the
    crease line embedded in the z=0 plane. Flat crease (angle=0) → identity.
    Flat-first: |angle|=1 → half-turn; the sign (M vs V) does NOT change the flat
-   placement (±π about the same axis coincide) — M/V is the layer order. *)
+   placement (±π about the same axis coincide): M/V is the layer order. *)
 let hinge_motion (h : hinge) : I3.t =
   if Num.sign h.angle = 0 then I3.identity else half_turn3_of_line h.line
 
 (* Derived placements: BFS from [root] over the hinge graph; crossing a hinge
    composes its motion onto the already-placed face's placement. [hinge_motion]
-   is oriented fa→fb (iso.(fb) = compose iso.(fa) (hinge_motion h)); crossing
+   is oriented fa→[fb] (iso.([fb]) = compose iso.(fa) ([hinge_motion] h)); crossing
    fb→fa uses the inverse. Flat-first the two coincide (half-turns are
-   involutions), but the direction-awareness is what keeps this — and the
-   uniform closure check in [make] — valid for Stage B's non-involutive rπ
+   involutions), but the direction-awareness is what keeps this (and the
+   uniform closure check in [make]) valid for Stage B's non-involutive rπ
    rotations. [seen] doubles as the connectivity witness. *)
 let derive_isos ~(faces : face array) ~(hinges : hinge array) ~(root : int)
     ~(base : I3.t) : I3.t array * bool array =
@@ -147,13 +147,13 @@ let derive_isos ~(faces : face array) ~(hinges : hinge array) ~(root : int)
   (iso, seen)
 
 (* Parameter of an on-line point along [l]'s direction (-b, a); monotone along
-   the line — used to order and intersect on-line vertex intervals. *)
+   the line: used to order and intersect on-line vertex intervals. *)
 let line_param (l : Geom.line) (p : Geom.point) : Num.t =
   Num.sub (Num.mul l.Geom.a p.Geom.y) (Num.mul l.Geom.b p.Geom.x)
 
 (* The positive-length sub-segment of [h.line] shared by the boundaries of
    [h.fa] and [h.fb], provided the two faces lie in opposite closed half-planes
-   — i.e. [h] really hinges adjacent faces. Paper space. None otherwise. *)
+  : i.e. [h] hinges adjacent faces. Paper space. None otherwise. *)
 let hinge_shared_segment (faces : face array) (h : hinge) :
     (Geom.point * Geom.point) option =
   let fa = faces.(h.fa) and fb = faces.(h.fb) in
@@ -199,7 +199,7 @@ let to2 (p : I3.point) : Geom.point = { Geom.x = p.I3.x; y = p.I3.y }
 
 (* In-plane 2D restriction of a derived placement. Flat-first the motions
    keep z = 0 invariant (angles ∈ {0, ±1}), so the upper-left block +
-   (tx, ty) IS the table placement as a 2D isometry. Stage B (partial angles)
+   ([tx], [ty]) IS the table placement as a 2D isometry. Stage B (partial angles)
    lifts faces off the plane and must not use this. *)
 let iso2_of_iso3 (m : I3.t) : Isometry.t =
   { Isometry.m00 = m.I3.m00; m01 = m.I3.m01; m10 = m.I3.m10; m11 = m.I3.m11;
@@ -254,7 +254,7 @@ let check_structure ~(faces : face array) ~(hinges : hinge array) ~(root : int)
 (* [?base]/[?marks] are LEADING optional arguments with only labelled
    required arguments after them; OCaml can only erase omitted optional
    arguments when a positional argument follows, so [make] takes a trailing
-   [unit] to anchor that — existing call sites add a trailing [()]. *)
+   [unit] to anchor that: existing call sites add a trailing [()]. *)
 let make ?(base = I3.identity) ?(marks = [||]) ~(faces : face array)
     ~(hinges : hinge array) ~(root : int) ~(rank : int array) () :
     (t, violation) result =
@@ -274,7 +274,7 @@ let make ?(base = I3.identity) ?(marks = [||]) ~(faces : face array)
         hinges
     in
     (* cycle closure: the BFS fixed a spanning tree; every hinge must agree
-       with the placements — for non-tree (cycle) hinges this is the real
+       with the placements: for non-tree (cycle) hinges this is the real
        tear check. Tree hinges hold by construction in both traversal
        directions (a fb→fa step assigns iso.(fa) = iso.(fb) ∘ motion⁻¹, which
        is equivalent to this fa→fb equation), so the uniform check does not
@@ -291,7 +291,7 @@ let make ?(base = I3.identity) ?(marks = [||]) ~(faces : face array)
        cycles are unrepresentable; these two residual conditions remain. Rank
        comparison is sound here because each check first establishes geometric
        coincidence (interior crossing / collinear overlap), so the compared
-       faces genuinely overlap where they are compared. *)
+       faces overlap where they are compared. *)
     let n = Array.length faces in
     let tps = Array.init n (project faces isos) in
     let tseg i =
@@ -333,13 +333,13 @@ let make ?(base = I3.identity) ?(marks = [||]) ~(faces : face array)
     (* taco-tortilla, flat-hinge form: a FLAT hinge's two faces are one
        continuous sheet crossing its own segment. Where that segment lies
        collinear on a folded hinge's crease, the taco's leaves meet in a
-       closed joint spanning the mouth — a sheet crossing the axis there may
+       closed joint spanning the mouth: a sheet crossing the axis there may
        pass entirely OUTSIDE the mouth (wrapping the joint is fine), but any
        crossing face ranked strictly inside the mouth goes through the joint.
        The interior-crossing form above cannot see this: each sheet face only
        ABUTS the crease segment (it lies on their shared edge), never crosses
        it alone. Found via the two-ear fish base, both ears (toward .d): a
-       ghost seated one wing under the stationary strip with its ear above —
+       ghost seated one wing under the stationary strip with its ear above:
        front paper visibly sandwiched inside the ear's taco. *)
     for i = 0 to m - 1 do
       for j = 0 to m - 1 do
@@ -387,15 +387,15 @@ let face_up (g : t) (i : int) : bool = Num.sign g.isos.(i).I3.m22 > 0
 (* Derived M/V of hinge [i] [hullzakharevich2023, §2.1]: for a crease between
    U1 and U2 with U1's orientation preserved, the crease is a valley iff U1
    lies below U2 (the paper's λ(p,q) = 1 reads "p below q"). Here: V ⟺
-   above(fb, fa) = face_up(fa). Side-symmetric — read from fb, BOTH sides of
-   the equality negate (above by rank antisymmetry, face_up because a folded
+   above([fb], fa) = [face_up](fa). Side-symmetric: read from [fb], BOTH sides of
+   the equality negate (above by rank antisymmetry, [face_up] because a folded
    hinge separates one face-up from one face-down placement), so both
    readings give the same M/V. Flat hinges
    (angle = 0) derive F. Derived, never stored: rank and placements are
    the only inputs, so MV cannot contradict the geometry. Stage B: partial
-   angles (rπ) make m22 = cos(rπ) ≠ ±1 and "folded" non-binary — both this
+   angles (rπ) make m22 = cos(rπ) ≠ ±1 and "folded" non-binary: both this
    and [face_up] need revisiting when the angle domain widens (until then
-   [make]'s Bad_angle check keeps them unreachable). *)
+   [make]'s [Bad_angle] check keeps them unreachable). *)
 let mv (g : t) (i : int) : assign =
   let h = g.hinges.(i) in
   if Num.sign h.angle = 0 then F
@@ -413,7 +413,7 @@ let table_polygon_ccw (g : t) (i : int) : Geom.point array =
 type rel = Above | Below | Apart
 
 (* Layer relation of two faces: rank order where the flat projections overlap
-   (Geom.convex_overlap is SAT-based, winding-independent, strict — touching
+   (Geom.convex_overlap is SAT-based, winding-independent, strict: touching
    is not overlap), Apart otherwise. *)
 let rel (g : t) (i : int) (j : int) : rel =
   if i = j then Apart
@@ -460,7 +460,7 @@ let on_paper (g : t) (pp : Geom.point) : bool =
 (* ------------------------------------------------------------------ *)
 (* Construction operations. Each op builds new arrays and             *)
 (* re-validates through [make]; a violation raises [Error.fail] at the *)
-(* provenance span. Faces never carry isometries — a fold only sets    *)
+(* [provenance] span. Faces never carry isometries. A fold only sets   *)
 (* hinge angles and the rank.                                          *)
 (* ------------------------------------------------------------------ *)
 
@@ -486,7 +486,7 @@ let init_square : t =
    [inv] its inverse isometry back to paper); None if it misses (touches at
    most a point). Factored out of [axis_chord_in_face] so a caller that has
    already built [table]/[inv] (e.g. [subdivide]'s [cut_of]) need not rebuild
-   them — carry-in cleanup, pure equivalence. *)
+   them: carry-in cleanup, pure equivalence. *)
 let chord_of_table (table : Geom.point array) (inv : Isometry.t)
     (axis : Geom.line) : (Geom.point * Geom.point) option =
   let n = Array.length table in
@@ -508,7 +508,7 @@ let chord_of_table (table : Geom.point array) (inv : Isometry.t)
       (* Canonicalize the pair's order by position along [axis] (not the
          arbitrary boundary-walk order they were found in): the chord only
          feeds the new hinge's line (via [Geom.line_through]) and
-         [reattach_hinges]'s adjacency check, both sign-invariant — but a
+         [reattach_hinges]'s adjacency check, both sign-invariant, but a
          stable, deterministic order still matters so the same cut always
          mints the same hinge-line representation. Child order (plus vs
          minus) is decided upstream by clipping [axis] itself, not by this
@@ -532,7 +532,7 @@ let axis_chord_in_face (g : t) (i : int) (axis : Geom.line) :
 (* Re-attach the old hinges over a face split. [children_of p] lists the child
    indices of old face p (a single element when uncut). A candidate pair keeps
    the hinge iff its line still carries a positive shared boundary segment
-   between the two children (D7) — degenerate pieces drop out here. *)
+   between the two children (D7): degenerate pieces drop out here. *)
 let reattach_hinges ~(faces' : face array) ~(children_of : int -> int list)
     (hinges : hinge array) : hinge list =
   Array.to_list hinges
@@ -576,8 +576,8 @@ let split_with_flat_hinges (g : t) ~(cid : int)
        int ->
        (Geom.point array * Geom.point array * (Geom.point * Geom.point))
        option) : t =
-  let out = ref [] in (* (paper_poly, parent) — prepended, reversed at the end *)
-  let chords = ref [] in (* (parent, a, b) for each actually-cut face *)
+  let out = ref [] in (* ([paper_poly], parent): prepended, reversed at the end *)
+  let chords = ref [] in (* (parent, a, b) for each cut face *)
   Array.iteri
     (fun fi f ->
       match cut_of fi with
@@ -622,7 +622,7 @@ let subdivide ?crease_id ?keep_side ?(only = fun _ -> true) (g : t)
     match keep_side with
     | None -> true
     | Some (guard, keep) ->
-        (* table centroid of the face, old on_keep_side *)
+        (* table centroid of the face, old [on_keep_side] *)
         let tp = table_polygon g fi in
         let n = Array.length tp in
         let sx = ref Num.zero and sy = ref Num.zero in
@@ -638,7 +638,7 @@ let subdivide ?crease_id ?keep_side ?(only = fun _ -> true) (g : t)
   in
   (* PLUS child = axis side +1 IN TABLE SPACE (old-model convention): clip the
      face's table placement by [axis] directly, then map each part back to
-     paper via the face's own [face_iso2] — never reconstruct a line from the
+     paper via the face's own [face_iso2]: never reconstruct a line from the
      chord (its sign would depend on point order, see findings on commit
      1f0436f). *)
   let cut_of fi =
@@ -664,7 +664,7 @@ let subdivide ?crease_id ?keep_side ?(only = fun _ -> true) (g : t)
 let subdivide_paper ?crease_id (g : t) (paper_axis : Geom.line)
     ~(prov : State.provenance option) : t =
   let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
-  (* PLUS child = paper_axis side +1 (old-model convention): clip the paper
+  (* PLUS child = [paper_axis] side +1 (old-model convention): clip the paper
      polygon directly, no isometry. *)
   let cut_of fi =
     let f = g.faces.(fi) in
@@ -734,10 +734,10 @@ let fold_blocks ?crease_id ~(blocks : (bool array * placement) list) (g : t)
   (* 1. split: stationary children (stay side + every non-block parent) and,
      per block, its moved children. Accumulation order is observable (FOLD
      emit enumerates faces by array index) and must reproduce [fold]'s: the
-     stay list is reversed at the end, each block's mov list is not. *)
-  let stay = ref [] in (* (paper_poly, parent) *)
-  let movs = Array.make (max nb 1) [] in (* per block, (paper_poly, parent) *)
-  let chords = ref [] in (* (parent, a, b) for each face actually cut *)
+     stay list is reversed at the end, each block's moving list is not. *)
+  let stay = ref [] in (* ([paper_poly], parent) *)
+  let movs = Array.make (max nb 1) [] in (* per block, ([paper_poly], parent) *)
+  let chords = ref [] in (* (parent, a, b) for each face cut *)
   Array.iteri
     (fun fi f ->
       let b = block_of_parent fi in
@@ -844,7 +844,7 @@ let fold_blocks ?crease_id ~(blocks : (bool array * placement) list) (g : t)
          g.hinges)
     |> List.concat
   in
-  (* 4. rank: stationaries keep parent order; each block's movers, reversed,
+  (* 4. rank: stationary faces keep parent order; each block's movers, reversed,
      spliced in at the block's placement *)
   let by_parent_rank asc i j =
     let ri = g.rank.(parent.(i)) and rj = g.rank.(parent.(j)) in
@@ -1121,7 +1121,7 @@ let reverse ?crease_id g ~axis ~move_side ~tip ~inside ~prov =
 (* Turn the whole sheet over: reflect across the footprint's vertical
    centerline (cosmetic internal axis), reverse the face
    array (observable: FOLD emit enumerates faces by index), reverse the
-   stack. base absorbs the reflection —
+   stack. base absorbs the reflection:
    the ONE whole-sheet motion. *)
 let flip (g : t) : t =
   let n = Array.length g.faces in
@@ -1257,8 +1257,8 @@ let rec pick_two_distinct = function
 (* CAVEAT (here and in [crease_paper_axis]): the reconstructed line's
    coefficient SIGN is hinge-array-order dependent ([pick_two_distinct] over
    endpoints collected in hinge order, which is unspecified). Same line,
-   possibly opposite normal — every consumer must be sign-insensitive
-   (side_of_line = 0 tests, drawing between clip points). A future consumer
+   possibly opposite normal: every consumer must be sign-insensitive
+   ([side_of_line] = 0 tests, drawing between clip points). A future consumer
    needing an oriented normal must canonicalize first. *)
 let axis_of_table_points (pts : Geom.point list) (l_orig : Geom.line) :
     [ `Line of Geom.line | `Bent | `Empty | `Collapsed ] =
@@ -1305,7 +1305,7 @@ let crease_paper_axis (g : t) (cid : int) :
    faces separated only by a flat (angle 0) hinge are the same flap; the
    instant that hinge folds (angle -> ±1) the flap splits there, exactly and
    only there (ADR 0017). Recomputed from the current hinge-angle set on
-   every call — no incremental cache, so a future `unfold` (which merges
+   every call: no incremental cache, so a future `unfold` (which merges
    clusters) needs no extra bookkeeping. O(faces + hinges) per call. *)
 let coplanar_clusters (g : t) : int array =
   let n = Array.length g.faces in
@@ -1361,7 +1361,7 @@ let cluster_of_points (g : t) (pts : Geom.point list) :
 let flap_of_points = cluster_of_points
 
 (* on-paper material of a table-space line: its positive-length intersection
-   with each face, table space. Stacked layers yield duplicate segments —
+   with each face, table space. Stacked layers yield duplicate segments:
    fine for existence/sign tests, any future measure-based use must dedupe. *)
 let line_material_segments (g : t) (l : Geom.line) :
     (Geom.point * Geom.point) list =
@@ -1369,7 +1369,7 @@ let line_material_segments (g : t) (l : Geom.line) :
     (fun i -> Geom.clip_line_to_convex l (table_polygon_ccw g i))
     (List.init (Array.length g.faces) Fun.id)
 
-(* the line actually creases some face (strict interior cut) *)
+(* the line creases some face (strict interior cut) *)
 let line_cuts_paper (g : t) (l : Geom.line) : bool =
   List.exists
     (fun i -> Geom.line_cuts_polygon l (table_polygon_ccw g i))
@@ -1570,15 +1570,15 @@ let scoped_fold_hinge_closed (g : t) ~(axis : Geom.line) ~(move_side : int)
   in
   check (all_crease_ids g)
 
-(* Port of the old Fold_state mark machinery (fold_state.ml:591-823); see that
-   module's doc comments for the algorithm — only the face/edge-lookup
+(* Port of the old [Fold_state] mark machinery (fold_state.ml:591-823); see that
+   module's doc comments for the algorithm: only the face/edge-lookup
    substrate changes here (faces are bare polygons, edges are hinges). *)
 
 let mark_rep_point (m : mark) : Geom.point =
   match m.mgeom with MSeg (a, _) -> a | MPoint p -> p
 
-(* Paper-space chords (segment endpoints) of every MSeg mark carrying [cid].
-   Point marks (MPoint) contribute no chord. Used by the meet operator to test
+(* Paper-space chords (segment endpoints) of every [MSeg] mark carrying [cid].
+   Point marks ([MPoint]) contribute no chord. Used by the meet operator to test
    that a marked line physically reaches a crossing. *)
 let mark_chords (g : t) (cid : int) : (Geom.point * Geom.point) list =
   Array.to_list g.marks
@@ -1590,7 +1590,7 @@ let mark_chords (g : t) (cid : int) : (Geom.point * Geom.point) list =
 (* The mark [cid]'s current TABLE-space axis, tracking folds/flips (its paper
    geometry is fold-invariant, so the current line is the paper chord mapped to
    the table). [`Bent] if a fold has bent the chord (its paper midpoint no
-   longer maps onto the straight table chord) — the caller must pick a flap. *)
+   longer maps onto the straight table chord): the caller must pick a flap. *)
 let mark_axis_current (g : t) (cid : int) :
     [ `Line of Geom.line | `Bent | `Empty | `Collapsed ] =
   match mark_chords g cid with
@@ -1609,7 +1609,7 @@ let mark_axis_current (g : t) (cid : int) :
 
 (* the face whose PAPER polygon contains the mark's representative point; paper
    coordinates partition the sheet, so this is unique in the interior (a point on
-   a shared boundary may match several — first match wins, callers disambiguate). *)
+   a shared boundary may match several: first match wins, callers disambiguate). *)
 let mark_face (g : t) (m : mark) : int option =
   let p = mark_rep_point m in
   let n = Array.length g.faces in
@@ -1621,9 +1621,9 @@ let mark_face (g : t) (m : mark) : int option =
   go 0
 
 (* A mark's paper-space extent, classified against the flap (coplanar cluster)
-   it lives on: does it subdivide the flap (a FULL CHORD — both endpoints on
+   it lives on: does it subdivide the flap (a FULL CHORD: both endpoints on
    the flap's outer boundary, crossing only F edges in between), merely
-   record (ANY endpoint strictly mid-face — the whole contiguous extent
+   record (ANY endpoint strictly mid-face: the whole contiguous extent
    becomes one non-subdividing record, splitting nothing, even where it
    crosses face-to-face in the middle), or is it illegal because it would
    leave the flap across a folded (M/V) crease? *)
@@ -1646,8 +1646,8 @@ let point_on_polygon_boundary (poly : Geom.point array) (p : Geom.point) : bool
   go 0
 
 (* Emit-time graduation test (design §3.6, packages/core/lib/fold_emit.ml's
-   cp_display): true when a seg mark's endpoints already sit on a face
-   boundary in this state's current topology — i.e. it's indistinguishable
+   [cp_display]): true when a [seg] mark's endpoints already sit on a face
+   boundary in this state's current topology, i.e. it's indistinguishable
    from a real crease and should stop being drawn as a dangling record.
    Point marks never graduate. *)
 let mark_graduates (st : t) (m : mark) : bool =
@@ -1659,7 +1659,7 @@ let mark_graduates (st : t) (m : mark) : bool =
   | MPoint _ -> false
 
 (* The polygon edge (as its two vertices) of convex CCW [poly] that contains
-   point [p], assumed to lie on the boundary. First match wins — at a vertex
+   point [p], assumed to lie on the boundary. First match wins: at a vertex
    this picks one of the two incident edges arbitrarily, which is fine here:
    every caller only needs the *no-crease vs M/V* status of whichever real
    crease (if any) meets the flap at [p]. *)
@@ -1675,7 +1675,7 @@ let polygon_edge_at (poly : Geom.point array) (p : Geom.point) :
   go 0
 
 (* Is some polygon edge of face [fi] passing through boundary point [p] a
-   genuine flap boundary — a bare paper edge (no hinge recorded at all) or a
+   genuine flap boundary: a bare paper edge (no hinge recorded at all) or a
    folded (M/V) hinge? A flat (angle 0) hinge never counts: within one flap
    every internal edge is flat by construction (coplanar clusters are exactly
    the flat-connected components), so a flat edge here always stays inside the
@@ -1772,14 +1772,14 @@ let classify_seg (g : t) ~(flap : int list) ~(axis : Geom.line)
     if a_boundary && b_boundary then CSubdivide (a, b)
     else
       (* at least one endpoint strictly mid-face: the whole contiguous extent
-         records as one stub, splitting nothing — even the faces it crosses
+         records as one stub, splitting nothing, even the faces it crosses
          boundary-to-boundary in the middle. *)
       CRecord (MSeg (a, b))
 
 (* Does a mark's paper-space [extent_geom] subdivide [flap] (the coplanar
    cluster it lives on), merely record onto it, do both, or illegally cross a
    folded (M/V) crease? [axis] is the extent's own paper-space motion line
-   (the line the segment/point lies on — e.g. the line a [between] extent was
+   (the line the segment/point lies on, e.g. the line a [between] extent was
    cut from). A full-extent mark never reaches here (the caller handles that
    as a plain [subdivide]).
 
@@ -1787,11 +1787,11 @@ let classify_seg (g : t) ~(flap : int list) ~(axis : Geom.line)
    always records. For [MSeg (a, b)]: walk the sub-segments of [axis] clipped
    to each flap face's paper polygon and to [a,b] itself; a gap, or an
    internal crossing over a non-flat hinge, means the extent leaves the flap
-   (illegal — [CCrossesFold]); full coverage plus both endpoints on the
+   (illegal: [CCrossesFold]); full coverage plus both endpoints on the
    flap's true boundary (a bare paper edge or an M/V hinge, never a flat
    hinge) subdivides (a full chord); full coverage with at least one endpoint
    strictly mid-face records the whole contiguous extent as one stub,
-   splitting nothing — even faces it crosses boundary-to-boundary in the
+   splitting nothing, even faces it crosses boundary-to-boundary in the
    middle. *)
 let classify_mark_extent (g : t) ~(flap : int list) ~(axis : Geom.line)
     ~(extent_geom : mark_geom) : mark_class =

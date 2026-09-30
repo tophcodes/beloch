@@ -3,7 +3,7 @@
 
 open Ctx
 
-(* Re-exported so the public [Eval] surface is unchanged for fold_emit,
+(* Re-exported so the public [Eval] surface is unchanged for [fold_emit],
    session, the test suites and packages/www/public/beloch/beloch-eval.js. *)
 type snapshot = Ctx.snapshot
 type stmt_kind = Ctx.stmt_kind = SFold | SMark | SBind | SApply of string
@@ -31,7 +31,7 @@ type folded = {
          time); see [scope.point_steps]/[scope.line_steps] *)
   named_lines : (string * Geom.line * int * int option) list;
   named_line_cids : (string * int) list;
-      (* crease id per name for [Material]/[Mark] creases — the identity the
+      (* crease id per name for [Material]/[Mark] creases: the identity the
          line coefficients in [named_lines] lose (a folded crease's current
          line can coincide with another crease's line) *)
   frames : (Fold_state.t * Error.span option) list;
@@ -41,7 +41,7 @@ type folded = {
   trace : Trace.entry list;
   free_points : (string * free_info) list;
       (* one entry per `free on` point, recorded at bind time in the [PsFree]
-         arm — a running log (like [statements]), not reconstructed from
+         arm: a running log (like [statements]), not reconstructed from
          scope state at finalize (unlike [named_points]), since [free_info]
          carries per-placement data the point's final bound value alone
          doesn't retain. *)
@@ -83,12 +83,12 @@ let eval_free_point (ctx : Ctx.ctx) (n : string) (line : Ast.line_operand)
   let px = Num.add e0.Geom.x (Num.mul tv (Num.sub e1.Geom.x e0.Geom.x)) in
   let py = Num.add e0.Geom.y (Num.mul tv (Num.sub e1.Geom.y e0.Geom.y)) in
   bind_point ctx n span { Geom.x = px; y = py };
-  (* namespace the emitted name the same way prov_name qualifies crease
-     provenance (~1439-1445): a bare name collides across independent
+  (* namespace the emitted name the same way [prov_name] qualifies crease
+     [provenance] (~1439-1445): a bare name collides across independent
      `apply` instances of the same def, since [free_points_rev] is one
-     flat list across the whole eval, not scoped per instance. Temp
-     names are dropped, mirroring the is_temp filter that already keeps
-     `_`-prefixed names out of named_points/named_lines. *)
+     flat list across the whole evaluation, not scoped per instance. Temp
+     names are dropped, mirroring the [is_temp] filter that already keeps
+     `_`-prefixed names out of named_points/[named_lines]. *)
   (match ctx.name_ctx with
   | _ when is_temp n -> ()
   | Root ->
@@ -246,7 +246,7 @@ and eval_apply (ctx : Ctx.ctx) (bind_opt : string option) (defname : string)
     Error.fail span
       (Printf.sprintf "def %s takes %d argument(s), got %d" defname
          (List.length params) (List.length args));
-  (* resolve args in the CALLER scope, then swap in the closed scope *)
+  (* resolve [args] in the CALLER scope, then swap in the closed scope *)
   let body_scope = make_scope () in
   List.iter2
     (fun (p : Ast.param) (a : Ast.arg) ->
@@ -355,7 +355,7 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
      prelude corners/edges, set up directly via Hashtbl.replace above) have no
      entry in root_scope.point_steps/.line_steps; they default to step 0.
      Reads root_scope.point_steps/.line_steps the same way named_points/
-     named_lines below read root_scope.points/.lines — scoped tables, saved/
+     [named_lines] below read root_scope.points/.lines: scoped tables, saved/
      restored across `apply` exactly like those. Kept separate (not one
      shared-key table) because points and lines are separate namespaces: a
      point and a line may share a stem (`.m` / `--m`) without clobbering each
@@ -371,10 +371,10 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
     | None -> (0, None)
   in
   (* Sorted by name: Hashtbl.fold/iter order depends on internal bucket
-     layout, which differs between a fresh eval (insert in program order)
+     layout, which differs between a fresh evaluation (insert in program order)
      and a restored session (Hashtbl.reset + Hashtbl.iter replace). Sorting
      here makes the emitted overlay arrays independent of that iteration
-     order, so fresh and resumed evals of the same program are byte-identical. *)
+     order, so fresh and resumed evaluations of the same program are byte-identical. *)
   let named_points =
     Hashtbl.fold
       (fun k v acc ->

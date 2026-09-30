@@ -150,7 +150,7 @@ and qpow (c : Q.t) (k : int) : Q.t =
 let rec gcd (p : t) (q : t) : t =
   if is_zero q then monic p else gcd q (rem p q)
 
-(* Squarefree part = p / gcd(p, p'), monic. *)
+(* Squarefree part = p / [gcd](p, p'), monic. *)
 let squarefree_part (p : t) : t =
   if degree p < 1 then monic p
   else
@@ -159,7 +159,7 @@ let squarefree_part (p : t) : t =
 
 (* inverse of a modulo m, where m is irreducible over ℚ and a ≢ 0 (mod m):
    the unique u with deg u < deg m and u·a ≡ 1 (mod m). Extended Euclid:
-   maintain (r, s) with s·a ≡ r (mod m); gcd is a nonzero constant since m is
+   maintain (r, s) with s·a ≡ r (mod m); [gcd] is a nonzero constant since m is
    irreducible and a ≢ 0. *)
 let inv_mod (a : t) (m : t) : t =
   let rec ext r0 s0 r1 s1 =
@@ -173,7 +173,7 @@ let inv_mod (a : t) (m : t) : t =
 
 let sign_at (p : t) (x : Q.t) : int = Q.sign (eval p x)
 
-(* Standard Sturm chain: s0 = p, s1 = p', s_{k+1} = -rem(s_{k-1}, s_k). *)
+(* Standard Sturm chain: s0 = p, s1 = p', s_{k+1} = -rem(s_{k-1}, [s_k]). *)
 let sturm_sequence (p : t) : t list =
   let s0 = p and s1 = derivative p in
   let rec aux acc a b =
@@ -264,7 +264,7 @@ let interpolate (pts : (Q.t * Q.t) list) : t =
   let xs = List.map fst pts in
   List.fold_left
     (fun acc (xi, yi) ->
-      (* basis polynomial L_i(x) = ∏_{j≠i} (x − xj)/(xi − xj) *)
+      (* basis polynomial L_i(x) = ∏_{j≠i} (x − [xj])/(xi − [xj]) *)
       let li =
         List.fold_left
           (fun p xj ->

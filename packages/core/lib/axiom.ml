@@ -55,7 +55,7 @@ let classify (c : Ast.construction) : classified =
       | Ast.AlOnto (Ast.AoPoint p, Ast.AoPoint q) -> onto_pp := (p, q) :: !onto_pp
       | Ast.AlOnto (Ast.AoPoint p, Ast.AoLine l) -> onto_pl := (p, l) :: !onto_pl
       | Ast.AlOnto (Ast.AoLine l, Ast.AoLine m) -> onto_ll := (l, m) :: !onto_ll
-      (* an incidence: a line onto a point is the point onto the line *)
+      (* an incidence: a line onto a point equals the point onto the line *)
       | Ast.AlOnto (Ast.AoLine l, Ast.AoPoint p) -> onto_pl := (p, l) :: !onto_pl
       | Ast.AlThrough p -> through := p :: !through
       | Ast.AlPerp l -> perp := l :: !perp)
@@ -124,7 +124,7 @@ type pending = {
          paper filter and no `heading`, only the side items *)
   aligns : (obj * obj) list;  (* the `onto` alignments, in source order *)
   heading : (Geom.line * string) option;
-  base : string list;  (* provenance sources *)
+  base : string list;  (* [provenance] sources *)
   conics : Trace.conic list;
   al_spans : Error.span list;  (* every alignment, in source order *)
   onto_spans : Error.span list;  (* the `onto` alignments, one per [aligns] entry *)
