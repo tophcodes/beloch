@@ -2,10 +2,11 @@
 // section figures of the literature draw it. The paper the line crosses is one
 // path; a piece that runs flat is one horizontal strip, a folded hinge a turn
 // that wraps the turns inside it [langdemaine2009facet, Fig. 5; hull2020,
-// Fig. 7.9]. Beside it the folded state shows where the cut is taken, and the
-// crease pattern carries the same pieces where they lie on the paper, numbered
-// and coloured alike, so each strip can be found on the sheet [hull2020,
-// Fig. 7.9; demaine2007, Fig. 12.2].
+// Fig. 7.9]. Beside it the folded state shows where the cut is taken and, with
+// an arrow at each end, which side it is seen from; the crease pattern carries
+// the same pieces where they lie on the paper, numbered and coloured alike, so
+// each strip can be found on the sheet [hull2020, Fig. 7.9; demaine2007,
+// Fig. 12.2].
 import type { FoldScene, Vec2 } from "@beloch/scene";
 import { pickStep, SceneError } from "@beloch/scene";
 import { createDoc, el, SvgDoc } from "./svgdoc";
@@ -25,6 +26,8 @@ export interface SideOptions extends RenderOptions {
   // state.
   along: string;
   step?: string | undefined; // frame index; undefined → final state
+  // See the section from the other side of the cut than the default one.
+  farSide?: boolean | undefined;
 }
 
 const EPS = 1e-9;
@@ -43,10 +46,11 @@ export interface Turn { t: number; strips: [number, number]; out: 1 | -1 }
 export interface Spot { paper: Vec2; strip: number; own: boolean }
 export interface SectionPoint { name: string; t: number; spots: Spot[] }
 
-// `ends` are the table points where the line enters and leaves the paper.
-export interface Section { strips: Strip[]; turns: Turn[]; points: SectionPoint[]; ends: [Vec2, Vec2] }
+// `ends` are the table points where the line enters and leaves the paper,
+// `view` the unit normal of the line that points from it toward the eye.
+export interface Section { strips: Strip[]; turns: Turn[]; points: SectionPoint[]; ends: [Vec2, Vec2]; view: Vec2 }
 
-export function sideSection(scene: FoldScene, along: string, stepLabel?: string): Section {
+export function sideSection(scene: FoldScene, along: string, stepLabel?: string, farSide = false): Section {
   const named = scene.namedLines.find((l) => l.name === along);
   if (!named) throw new SceneError(`the program names no line --${along}`);
   const step = pickStep(scene, stepLabel);
@@ -54,9 +58,19 @@ export function sideSection(scene: FoldScene, along: string, stepLabel?: string)
   const { frame, faceUp } = resolveIsometry(scene, { kind: "step", index: step.index });
   const [a, b, c] = named.coeffs;
   const len = Math.hypot(a, b);
-  // the section runs left to right on the table, bottom to top on a vertical
-  // line, so it reads in the direction the folded state beside it does
-  const dir: Vec2 = b > EPS || (b > -EPS && a < 0) ? [b / len, -a / len] : [-b / len, a / len];
+  // The section is seen from outside the paper: from the side of the line on
+  // which the outline of the state reaches less far, which is the outside of
+  // the edge when the line runs along one. Where both sides reach equally far,
+  // from the side that makes the section run left to right on the table,
+  // bottom to top on a vertical line.
+  const reach = (sign: number) => Math.max(0, ...frame.vertices.map(([x, y]) => sign * (a * x + b * y - c) / len));
+  const tie = b > EPS || (b > -EPS && a < 0) ? -1 : 1;
+  const near = reach(1) < reach(-1) - 1e-7 ? 1 : reach(-1) < reach(1) - 1e-7 ? -1 : tie;
+  const eye = farSide ? -near : near;
+  const view: Vec2 = [eye * a / len, eye * b / len];
+  // seen along -view with the table's normal up, the section runs to the
+  // eye's right: `view` turned a quarter anticlockwise
+  const dir: Vec2 = [-view[1], view[0]];
   const at = ([x, y]: Vec2) => x * dir[0] + y * dir[1];
   // a table point of a face, back on the paper: the linear part of the face's
   // isometry is orthogonal, so its inverse is its transpose
@@ -177,11 +191,11 @@ export function sideSection(scene: FoldScene, along: string, stepLabel?: string)
   const foot: Vec2 = [(a * c) / (len * len), (b * c) / (len * len)];
   const on = (t: number): Vec2 => [foot[0] + t * dir[0], foot[1] + t * dir[1]];
   const ends: [Vec2, Vec2] = [on(Math.min(...pieces.map((p) => p.t0))), on(Math.max(...pieces.map((p) => p.t1)))];
-  return { strips, turns, points, ends };
+  return { strips, turns, points, ends, view };
 }
 
 export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
-  const { strips, turns, points, ends } = sideSection(scene, opts.along, opts.step);
+  const { strips, turns, points, ends, view } = sideSection(scene, opts.along, opts.step, opts.farSide);
   const theme: Theme = { ...DEFAULT_THEME, ...opts.theme };
   const colour = (s: Strip) => theme.highlightPalette[(s.number - 1) % theme.highlightPalette.length]!.stroke;
   const y = (level: number) => PAD + level * GAP;
@@ -302,18 +316,36 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
 
   // the folded state the section is taken from, with the cut across it. Solid,
   // since a dashed line on a folded state reads as a valley fold; it runs a
-  // little past the paper on both ends, as a section line does
+  // little past the paper on both ends, as a section line does, and at each
+  // end an arrow on the side the section is seen from points the way the eye
+  // looks
   const folded = renderFolded(scene, {
     step: opts.step, labels: opts.labels, theme: opts.theme, highlight: opts.highlight, layout: lay,
   }).node();
   const [[e0x, e0y], [e1x, e1y]] = ends;
   const over = 0.06 * lay.span / Math.hypot(e1x - e0x, e1y - e0y);
+  const tips: Vec2[] = [
+    [e0x - over * (e1x - e0x), e0y - over * (e1y - e0y)],
+    [e1x + over * (e1x - e0x), e1y + over * (e1y - e0y)],
+  ];
   const cut: SvgNode[] = [el("line", {
     "data-kind": "cut",
-    x1: lay.tx(e0x - over * (e1x - e0x)), y1: lay.ty(e0y - over * (e1y - e0y)),
-    x2: lay.tx(e1x + over * (e1x - e0x)), y2: lay.ty(e1y + over * (e1y - e0y)),
+    x1: lay.tx(tips[0]![0]), y1: lay.ty(tips[0]![1]), x2: lay.tx(tips[1]![0]), y2: lay.ty(tips[1]![1]),
     stroke: theme.ink, "stroke-width": 2.5, "stroke-linecap": "round",
   })];
+  for (const [ex, ey] of tips) {
+    const [tipX, tipY] = [lay.tx(ex + 0.02 * lay.span * view[0]), lay.ty(ey + 0.02 * lay.span * view[1])];
+    const [tailX, tailY] = [lay.tx(ex + 0.11 * lay.span * view[0]), lay.ty(ey + 0.11 * lay.span * view[1])];
+    const l = Math.hypot(tipX - tailX, tipY - tailY);
+    const [ux, uy] = [(tipX - tailX) / l, (tipY - tailY) / l];
+    const [bx, by] = [tipX - 10 * ux, tipY - 10 * uy];
+    cut.push(el("g", { "data-kind": "view" }, [
+      el("line", { x1: tailX, y1: tailY, x2: bx, y2: by, stroke: theme.ink, "stroke-width": 2 }),
+      el("path", {
+        d: `M ${tipX} ${tipY} L ${bx - 5 * uy} ${by + 5 * ux} L ${bx + 5 * uy} ${by - 5 * ux} Z`, fill: theme.ink,
+      }),
+    ]));
+  }
 
   const H = Math.max(lay.H, sideH);
   const doc = createDoc(2 * lay.W + SIDE_W, H);

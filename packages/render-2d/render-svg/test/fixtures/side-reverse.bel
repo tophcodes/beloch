@@ -1,0 +1,5 @@
+paper square
+fold (map .b onto .a) as --d
+.s = free on --cd from .d at 1/4
+--k = (perp --da through .s)
+reverse (map .a onto .d)

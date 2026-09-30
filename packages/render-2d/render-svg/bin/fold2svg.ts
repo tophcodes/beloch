@@ -9,7 +9,7 @@
 //   beloch fold --trace f.bel | bun bin/fold2svg.ts - --view candidates [--statement N]
 //   beloch fold --trace f.bel | bun bin/fold2svg.ts - --view op [--statement N]
 //   beloch fold --trace f.bel | bun bin/fold2svg.ts - --view stages --source f.bel [--statement N] [--stage N] [--checks]
-//   beloch fold f.bel | bun bin/fold2svg.ts - --view side --along --s [--step K]
+//   beloch fold f.bel | bun bin/fold2svg.ts - --view side --along --s [--step K] [--far-side]
 //   beloch fold f.bel | bun bin/fold2svg.ts - out.png --title f.bel
 import { parseFold, SceneError, StepNotFoundError } from "@beloch/scene";
 import { renderCandidates, renderCP, renderFolded, renderOperation, renderSide, renderStages } from "@beloch/render-svg";
@@ -42,7 +42,7 @@ const FLAGS = new Set([
   "--title", "--view", "--hidden", "--labels", "--step", "--format", "--width", "--statement",
   "--source", "--stage", "--along",
 ]);
-const SWITCHES = new Set(["--flip", "--legend", "--checks"]);
+const SWITCHES = new Set(["--flip", "--legend", "--checks", "--far-side"]);
 // An option this CLI does not know would otherwise read as a positional, and
 // `-o out.svg` would write a file named `-o`. `-` alone is stdin.
 const unknown = args.find(
@@ -94,7 +94,7 @@ try {
           checks: args.includes("--checks"),
         })
       : viewFlag === "side"
-        ? renderSide(scene, { ...opts, along: alongName(), step })
+        ? renderSide(scene, { ...opts, along: alongName(), step, farSide: args.includes("--far-side") })
       : renderCP(scene, opts);
   const svg = doc.toString();
 
