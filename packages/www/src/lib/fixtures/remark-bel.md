@@ -43,3 +43,12 @@ mark (through .a .c) as --ac3
 
 ; expect error "something that never happens"
 ```
+
+A fragment whose asserts all hold.
+
+```{.bel .frag}
+mark (through .a .c) as --ac4
+
+; assert steps = 1
+; assert faces = 1
+```

@@ -192,15 +192,17 @@
 	--bel-ui-error-low:     light-dark(#F4E9E5, #36221C);
 
 	/* Inline code stands inside a paragraph, not on the code panel: the dark
-	   surface would be a hole in the line. Text holds 14.81:1 and 11.29:1. */
-	--bel-ui-code-inline:   light-dark(#E9EDF2, #312D28);
+	   surface would be a hole in the line. The light value is quiet, the same
+	   ground inline Beloch takes. Text holds 14.70:1 and 11.29:1. */
+	--bel-ui-code-inline:   light-dark(#F1EFEA, #312D28);
 
-	/* The code surface is the one dark area the light mode keeps, so every role
-	   that lands on it holds one value in both modes and is measured against
-	   this ground alone. That includes accent and error: a verified assertion
-	   and a failed one are printed on the panel, where the light column's
-	   values reach 2.3:1 and 3.5:1. Line numbers are text and hold 4.5:1 like
-	   any other. */
+	/* The code panel (the docs card and the playground) is
+	   the one dark area the light mode keeps; code that lies in prose takes the
+	   values at the end of this file. Every role that lands on the panel holds
+	   one value in both modes and is measured against this ground alone. That
+	   includes accent and error: the playground prints its diagnostics on the
+	   panel, where the light column's values reach 2.3:1 and 3.5:1. Line
+	   numbers are text and hold 4.5:1 like any other. */
 	--bel-ui-code-surface: #101C2E;
 	--bel-ui-code-text:    #C9D2DE;   /* 11.2:1 */
 	--bel-ui-code-gutter:  #7E889A;   /*  4.8:1 */
@@ -241,4 +243,43 @@
 	--bel-syntax-number:   #B9D97A;  /* 0.5 12 */
 	--bel-syntax-label:    #E3CFA0;  /* square hex, mountain valley */
 	--bel-syntax-comment:  #79937F;  /* ; to end of line */
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Code on the page. A program that lies in prose (a fenced block, a grammar
+ * fragment, inline Beloch, the outcome under a block) sits on the page rather
+ * than on the navy panel, so in light mode it takes a second value for every
+ * code role. The dark column keeps the panel's values, so a block in the dark
+ * docs is the panel it was. Code outside the prose that lies on the page, the
+ * step cards of the landing hero, opts in with .bel-code-on-page.
+ *
+ * A block is a card of --bel-ui-surface on the docs page's --bel-ui-ground,
+ * and inline code sits on --bel-ui-quiet inside the line. Every syntax value
+ * holds 4.5:1 on both; the ratios below are on surface · quiet. Error sits on
+ * blocks only. Comment stays italic, which carries it the rest of the way
+ * from punct and label.
+ * ────────────────────────────────────────────────────────────────────────── */
+.bel-code-on-page,
+.bel-block,
+.grammar-block,
+.bel-outcome,
+code.bel-inline {
+	--bel-ui-code-surface: light-dark(#FFFFFF, #101C2E);   /* = surface */
+	--bel-ui-code-text:    light-dark(#1A1D22, #C9D2DE);   /* = text */
+	--bel-ui-code-accent:  light-dark(#0D5F54, #7ED4CB);   /* = accent, 7.6:1 */
+	--bel-ui-code-error:   light-dark(#b05641, #ff7d5e);   /* = error,  4.9:1 */
+
+	--bel-syntax-keyword:  light-dark(#1A1D22, #E8EDF5);   /* 16.9 · 14.7 */
+	--bel-syntax-axiom:    light-dark(#0A6B78, #7FD1C1);   /*  6.2 ·  5.4 */
+	--bel-syntax-point:    light-dark(#A35200, #F2B45C);   /*  5.6 ·  4.9 */
+	--bel-syntax-line:     light-dark(#2C58B0, #8FB8F5);   /*  6.7 ·  5.8 */
+	--bel-syntax-selector: light-dark(#8B3DAF, #D89CF0);   /*  6.2 ·  5.4 */
+	--bel-syntax-sigil:    light-dark(#B8322E, #F08E7A);   /*  5.9 ·  5.2 */
+	--bel-syntax-punct:    light-dark(#626C80, #9AA9BF);   /*  5.3 ·  4.6 */
+	--bel-syntax-number:   light-dark(#43700C, #B9D97A);   /*  5.9 ·  5.1 */
+	--bel-syntax-label:    light-dark(#7A6440, #E3CFA0);   /*  5.6 ·  4.9 */
+	--bel-syntax-comment:  light-dark(#666960, #79937F);   /*  5.6 ·  4.9 */
+}
+code.bel-inline {
+	--bel-ui-code-surface: light-dark(#F1EFEA, #101C2E);   /* = quiet */
 }
