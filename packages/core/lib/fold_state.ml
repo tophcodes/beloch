@@ -923,38 +923,40 @@ let simple_fold (g : t) ~(axis : Geom.line) ~(move_side : int)
 
 type reverse_failure =
   | No_spine
-  | Several_spines of int
+  | Several_openings of spine_attempt list
   | Bodies_interleaved
   | Invalid of violation
 
-let reverse_failure_to_string = function
-  | No_spine ->
-      "reverse needs a tip folded along one spine; the moving material does \
-       not split into two halves"
-  | Several_spines n ->
-      Printf.sprintf "the tip can be reversed at %d spines" n
-  | Bodies_interleaved ->
-      "the two halves are hinged to interleaved layers; that is not a reverse \
-       fold"
-  | Invalid v -> violation_to_string v
-
-type spine_outcome =
-  | Not_two_halves
+and spine_outcome =
   | No_body
   | Interleaved
   | Crossing of violation
   | Reversed of t
 
-type spine_attempt = {
+and spine_attempt = {
+  crease : int;
   hinge : int;
-  halves : (bool array * bool array) option;
+  turning : int list;
+  halves : bool array * bool array;
   bodies : (int list * int list) option;
   outcome : spine_outcome;
 }
 
+let reverse_failure_to_string = function
+  | No_spine ->
+      "reverse needs a tip folded along one spine; the moving material does \
+       not split into two halves"
+  | Several_openings attempts ->
+      Printf.sprintf "the tip opens at %d places" (List.length attempts)
+  | Bodies_interleaved ->
+      "the two halves are hinged to interleaved layers; that is not a reverse \
+       fold"
+  | Invalid v -> violation_to_string v
+
 let reverse_attempts ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
     ~(tip : bool array) ~(inside : bool) ~(prov : State.provenance option) :
     spine_attempt list =
+  let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
   let n = Array.length g.faces in
   let nh = Array.length g.hinges in
   let internal =
@@ -964,120 +966,141 @@ let reverse_attempts ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
         tip.(h.fa) && tip.(h.fb))
       (List.init nh Fun.id)
   in
-  let folded_internal =
-    List.filter
-      (fun hi ->
-        Num.sign g.hinges.(hi).angle <> 0
-        &&
-        (* the spine must reach beyond the line: its far part is what reverses *)
-        let ta, tb = hinge_table_segment g hi in
-        Geom.side_of_line axis ta = move_side || Geom.side_of_line axis tb = move_side)
-      internal
+  let reaches_beyond hi =
+    let ta, tb = hinge_table_segment g hi in
+    Geom.side_of_line axis ta = move_side || Geom.side_of_line axis tb = move_side
   in
-  (* connected components of the tip parents under [internal] minus [cut] *)
-  let components cut =
-    let comp = Array.make n (-1) in
-    let next = ref 0 in
-    for s = 0 to n - 1 do
-      if tip.(s) && comp.(s) < 0 then begin
-        let c = !next in
-        incr next;
-        comp.(s) <- c;
-        let stack = ref [ s ] in
-        while !stack <> [] do
-          let f = List.hd !stack in
-          stack := List.tl !stack;
-          List.iter
-            (fun hi ->
-              if hi <> cut then begin
-                let h = g.hinges.(hi) in
-                let other =
-                  if h.fa = f then h.fb else if h.fb = f then h.fa else -1
-                in
-                if other >= 0 && comp.(other) < 0 then begin
-                  comp.(other) <- c;
-                  stack := other :: !stack
-                end
-              end)
-            internal
-        done
-      end
-    done;
-    (comp, !next)
+  let line_of hi =
+    let ta, tb = hinge_table_segment g hi in
+    Geom.line_through ta tb
   in
   let has_stay_piece fi =
     let table = table_polygon g fi in
     Array.length (Geom.clip_convex_halfplane axis (-move_side) table) >= 3
   in
-  let attempt cut =
-    let comp, k = components cut in
-    let tried halves bodies outcome = { hinge = cut; halves; bodies; outcome } in
-    if k <> 2 then tried None None Not_two_halves
-    else begin
-      let half c = Array.init n (fun i -> tip.(i) && comp.(i) = c) in
-      let body c =
-        List.filter
-          (fun i -> tip.(i) && comp.(i) = c && has_stay_piece i)
-          (List.init n Fun.id)
-      in
-      let b0 = body 0 and b1 = body 1 in
-      if b0 = [] || b1 = [] then
-        tried (Some (half 0, half 1)) (Some (b0, b1)) No_body
-      else
-        let lo l = List.fold_left (fun a i -> min a g.rank.(i)) max_int l in
-        let hi l = List.fold_left (fun a i -> max a g.rank.(i)) min_int l in
-        let arrangement =
-          if hi b0 < lo b1 then Some (0, 1, b0, b1)
-          else if hi b1 < lo b0 then Some (1, 0, b1, b0)
-          else None
-        in
-        match arrangement with
-        | None -> tried (Some (half 0, half 1)) (Some (b0, b1)) Interleaved
-        | Some (lower, upper, blo, bup) ->
-            let topmost l =
-              List.fold_left
-                (fun a i -> if g.rank.(i) > g.rank.(a) then i else a)
-                (List.hd l) l
-            in
-            let bottommost l =
-              List.fold_left
-                (fun a i -> if g.rank.(i) < g.rank.(a) then i else a)
-                (List.hd l) l
-            in
-            let blocks =
-              if inside then
-                [ (half lower, Over (topmost blo));
-                  (half upper, Under (bottommost bup)) ]
-              else [ (half lower, Bottom); (half upper, Top) ]
-            in
-            tried
-              (Some (half lower, half upper))
-              (Some (blo, bup))
-              (match
-                 fold_blocks ?crease_id ~blocks g ~axis ~move_side ~prov
-               with
-              | Ok g' -> Reversed g'
-              | Error v -> Crossing v)
-    end
+  (* the layers of the tip, bottom to top *)
+  let layers =
+    List.filter (fun i -> tip.(i)) (List.init n Fun.id)
+    |> List.sort (fun i j -> compare g.rank.(i) g.rank.(j))
   in
-  (* Known ceiling: every candidate hinge pays a component walk plus a full
-     [fold_blocks] and [make], with the latter's quadratic layer checks. Tips
-     are a handful of faces on the crane path, so the cost stays small. To
-     reverse a tip with dozens of layers, filter the candidates by geometry
-     first — only hinges on the tip's outline can be spines — and attempt
-     placements for those. *)
-  List.map attempt folded_internal
+  (* An opening lies between two neighbouring layers of the tip where every
+     hinge joining a layer below to a layer above is folded and lies on one
+     table line, the spine's, which reaches beyond the axis (ADR 0043). *)
+  let openings =
+    List.filter_map
+      (fun k ->
+        let below = Array.make n false in
+        List.iteri (fun p i -> if p < k then below.(i) <- true) layers;
+        let crossing =
+          List.filter
+            (fun hi -> below.(g.hinges.(hi).fa) <> below.(g.hinges.(hi).fb))
+            internal
+        in
+        match crossing with
+        | [] -> None
+        | h0 :: _ ->
+            if
+              List.for_all
+                (fun hi ->
+                  Num.sign g.hinges.(hi).angle <> 0
+                  && Geom.same_line (line_of h0) (line_of hi))
+                crossing
+              && List.exists reaches_beyond crossing
+            then
+              Some
+                ( crossing,
+                  Array.init n (fun i -> tip.(i) && below.(i)),
+                  Array.init n (fun i -> tip.(i) && not below.(i)) )
+            else None)
+      (List.init (max 0 (List.length layers - 1)) (fun k -> k + 1))
+  in
+  let attempt (crossing, lower, upper) =
+    let body half =
+      List.filter (fun i -> half.(i) && has_stay_piece i) (List.init n Fun.id)
+    in
+    let tried bodies outcome =
+      { crease = cid; hinge = List.hd crossing; turning = crossing; halves = (lower, upper);
+        bodies; outcome }
+    in
+    let blo = body lower and bup = body upper in
+    if blo = [] || bup = [] then tried (Some (blo, bup)) No_body
+    else
+      let lo l = List.fold_left (fun a i -> min a g.rank.(i)) max_int l in
+      let hi l = List.fold_left (fun a i -> max a g.rank.(i)) min_int l in
+      if not (hi blo < lo bup) then tried (Some (blo, bup)) Interleaved
+      else
+        let topmost l =
+          List.fold_left
+            (fun a i -> if g.rank.(i) > g.rank.(a) then i else a)
+            (List.hd l) l
+        in
+        let bottommost l =
+          List.fold_left
+            (fun a i -> if g.rank.(i) < g.rank.(a) then i else a)
+            (List.hd l) l
+        in
+        (* each block is reflected as a whole and keeps its place against
+           the other, so every hinge across the opening turns *)
+        let blocks =
+          if inside then
+            [ (lower, Over (topmost blo)); (upper, Under (bottommost bup)) ]
+          else [ (lower, Bottom); (upper, Top) ]
+        in
+        tried (Some (blo, bup))
+          (match fold_blocks ~crease_id:cid ~blocks g ~axis ~move_side ~prov with
+          | Ok g' -> Reversed g'
+          | Error v -> Crossing v)
+  in
+  List.map attempt openings
+
+let reverse_letter (g : t) (a : spine_attempt) (hi : int) : assign =
+  let l = mv g hi in
+  if not (List.mem hi a.turning) then l
+  else match l with V -> M | M -> V | F -> F
 
 let reverse_of_attempts (attempts : spine_attempt list) :
     (t, reverse_failure) result =
   let oks =
     List.filter_map
-      (fun a -> match a.outcome with Reversed g' -> Some g' | _ -> None)
+      (fun a -> match a.outcome with Reversed g' -> Some (a, g') | _ -> None)
       attempts
   in
-  match oks with
-  | [ g' ] -> Ok g'
-  | _ :: _ :: _ -> Error (Several_spines (List.length oks))
+  (* openings whose states stack every overlapping pair alike are one state
+     (def-flat-state) *)
+  let same g1 g2 =
+    let n = Array.length g1.faces in
+    Array.length g2.faces = n
+    && List.for_all
+         (fun i -> List.for_all (fun j -> rel g1 i j = rel g2 i j) (List.init n Fun.id))
+         (List.init n Fun.id)
+  in
+  let groups =
+    List.fold_left
+      (fun acc ((_, g') as x) ->
+        match List.partition (fun grp -> same (snd (List.hd grp)) g') acc with
+        | [ grp ], rest -> (grp @ [ x ]) :: rest
+        | _, rest -> [ x ] :: rest)
+      [] oks
+    |> List.rev
+  in
+  (* of one state, the rank that keeps each tip layer closest to the layer
+     it is hinged to across the axis *)
+  let spread (a, g') =
+    Array.fold_left
+      (fun acc (h : hinge) ->
+        if Num.sign h.angle <> 0 && h.crease_id = a.crease then
+          acc + abs (g'.rank.(h.fa) - g'.rank.(h.fb))
+        else acc)
+      0 g'.hinges
+  in
+  match groups with
+  | [ grp ] ->
+      Ok
+        (snd
+           (List.fold_left
+              (fun best x -> if spread x < spread best then x else best)
+              (List.hd grp) grp))
+  | _ :: _ :: _ -> Error (Several_openings (List.map (fun grp -> fst (List.hd grp)) groups))
   | [] -> (
       match
         List.find_map

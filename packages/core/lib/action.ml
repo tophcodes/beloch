@@ -522,6 +522,76 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
       push_frame ctx (Some span);
       bind_out (Material (cid, axis))
 
+(* One letter item per opening that keeps that opening alone (ADR 0043): a
+   hinge on the spine's line whose letter after the fold differs from its
+   letter under every other opening, named by its crease and a named point
+   on its segment. Where no named point lies on the segment alone, the item
+   names `.p` and says where on the paper it lies. *)
+let opening_items (ctx : Ctx.ctx) (st : Fold_state.t)
+    (reps : Fold_state.spine_attempt list) : string =
+  let hs = Fold_state.hinges st in
+  let hinges = List.sort_uniq compare (List.concat_map (fun (a : Fold_state.spine_attempt) -> a.Fold_state.turning) reps) in
+  let letter a h = Fold_state.reverse_letter st a h in
+  let word = function Fold_state.V -> "valley" | Fold_state.M -> "mountain" | Fold_state.F -> "flat" in
+  let crease_name cid =
+    List.find_map
+      (fun (s : Ctx.scope) ->
+        Hashtbl.fold
+          (fun name cv acc ->
+            match (acc, cv) with
+            | None, Ctx.Material (c, _) when c = cid -> Some name
+            | _ -> acc)
+          s.Ctx.lines None)
+      ctx.Ctx.scopes
+  in
+  let item (a : Fold_state.spine_attempt) =
+    match
+      List.find_opt
+        (fun h ->
+          List.for_all (fun b -> b == a || letter b h <> letter a h) reps)
+        hinges
+    with
+    | None -> None
+    | Some h -> (
+        let cid = hs.(h).Fold_state.crease_id in
+        match crease_name cid with
+        | None -> None
+        | Some name ->
+            let segs = Fold_state.crease_segments st cid in
+            let pa, pb = Fold_state.hinge_segment st h in
+            let alone p =
+              List.length
+                (List.filter
+                   (fun (s : Fold_state.crease_segment) ->
+                     Geom.on_segment (s.Fold_state.pa, s.Fold_state.pb) p)
+                   segs)
+              = 1
+              && Geom.on_segment (pa, pb) p
+            in
+            let named =
+              List.find_map
+                (fun (s : Ctx.scope) ->
+                  Hashtbl.fold
+                    (fun n p acc -> if acc = None && alone p then Some n else acc)
+                    s.Ctx.points None)
+                ctx.Ctx.scopes
+            in
+            let letter = word (letter a h) in
+            Some
+              (match named with
+              | Some n -> Printf.sprintf "(--%s & .%s %s)" name n letter
+              | None ->
+                  let mid =
+                    { Geom.x = Num.div (Num.add pa.Geom.x pb.Geom.x) (Num.of_int 2);
+                      y = Num.div (Num.add pa.Geom.y pb.Geom.y) (Num.of_int 2) }
+                  in
+                  Printf.sprintf "(--%s & .p %s) with .p at %s" name letter
+                    (Resolve.point_str mid)))
+  in
+  "add one letter, which keeps one opening: "
+  ^ String.concat " or "
+      (List.map (fun a -> Option.value (item a) ~default:"(no letter tells it apart)") reps)
+
 let eval_reverse (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
     (rs : Ast.reverse_spec) (span : Error.span) : unit =
   let sides = { Ast.s_toward = rs.Ast.rtoward; s_moving = rs.Ast.rmoving; s_spans = rs.Ast.rspans } in
@@ -558,26 +628,56 @@ let eval_reverse (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
   in
   if anchor = None && side = None then
     Error.fail span "this reverse needs `moving .p` or `toward .p` to name the tip";
+  (* the letter items: each names hinges by their crease segments *)
+  let letters =
+    List.map
+      (fun (lo, valley, sp) ->
+        let _, segs = Resolve.bundle_segments ctx lo in
+        let hs = Fold_state.hinges !(ctx.state) in
+        let idx (s : Fold_state.crease_segment) =
+          let fa, fb = s.Fold_state.faces in
+          let found = ref [] in
+          Array.iteri
+            (fun i (h : Fold_state.hinge) ->
+              if h.Fold_state.fa = fa && h.Fold_state.fb = fb then found := i :: !found)
+            hs;
+          !found
+        in
+        (List.concat_map idx segs, (if valley then Fold_state.V else Fold_state.M), sp))
+      rs.Ast.rletters
+  in
   let move_side, tip = Resolve.tip_faces ctx axis ~anchor ?side span in
   let st = !(ctx.state) and inside = not rs.Ast.outside in
+  let hs = Fold_state.hinges st in
+  let in_tip i = tip.(hs.(i).Fold_state.fa) && tip.(hs.(i).Fold_state.fb) in
+  let letters =
+    List.map
+      (fun (ids, l, sp) ->
+        match List.filter in_tip ids with
+        | [] -> Error.fail sp "the letter names no hinge of the tip"
+        | ids -> (ids, l))
+      letters
+  in
   let attempts =
     Fold_state.reverse_attempts ~crease_id:cid st ~axis ~move_side ~tip ~inside ~prov
   in
-  let terms, states = Trace.reverse_write st ~axis ~move_side ~tip ~inside attempts in
+  (* an opening is kept where every lettered hinge takes its letter *)
+  let keeps (a : Fold_state.spine_attempt) =
+    List.for_all
+      (fun (ids, l) -> List.for_all (fun i -> Fold_state.reverse_letter st a i = l) ids)
+      letters
+  in
+  let terms, states = Trace.reverse_write st ~axis ~move_side ~tip ~inside ~keeps attempts in
   Ctx.record_write ctx terms states;
-  (match Fold_state.reverse_of_attempts attempts with
+  (match Fold_state.reverse_of_attempts (List.filter keeps attempts) with
   | Ok st -> ctx.state := st
   | Error (Fold_state.Invalid (Fold_state.Taco_tortilla { tortilla; _ })) ->
       Error.fail span (Printf.sprintf "reversing the tip would pierce layer %d" tortilla)
   | Error (Fold_state.Invalid (Fold_state.Taco_taco (_, _))) ->
       Error.fail span "reversing the tip would pierce another layer"
-  | Error e ->
-      Error.fail
-        ?hint:
-          (match e with
-          | Fold_state.Several_spines _ -> Some "fold less so that one remains"
-          | _ -> None)
-        span
-        (Fold_state.reverse_failure_to_string e));
+  | Error (Fold_state.Several_openings reps as e) ->
+      Error.fail ~hint:(opening_items ctx st reps) span
+        (Fold_state.reverse_failure_to_string e)
+  | Error e -> Error.fail span (Fold_state.reverse_failure_to_string e));
   push_frame ctx (Some span);
   bind_out (Material (cid, axis))

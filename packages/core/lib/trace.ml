@@ -4,7 +4,7 @@ type removal =
   | By_moving
   | By_heading
   | By_moved
-  | By_halves
+  | By_letter
   | By_bodies
   | By_interleaved
   | By_crossing
@@ -139,7 +139,7 @@ let removal_json = function
         | By_moving -> "moving"
         | By_heading -> "heading"
         | By_moved -> "moved"
-        | By_halves -> "halves"
+        | By_letter -> "letter"
         | By_bodies -> "bodies"
         | By_interleaved -> "interleaved"
         | By_crossing -> "crossing"
@@ -319,38 +319,40 @@ let fold_terms st ~axis ~move_side ~moving placement =
   in
   Fold { axis; side = move_side; moving = block; placement }
 
-let reverse_write st ~axis ~move_side ~tip ~inside attempts =
+let reverse_write st ~axis ~move_side ~tip ~inside ~keeps attempts =
   let moving mask = faces_region st ~clip:(axis, move_side) (fun fi -> mask.(fi)) in
   let staying faces =
     faces_region st ~clip:(axis, -move_side) (fun fi -> List.mem fi faces)
   in
-  let reversed =
-    List.length
-      (List.filter
-         (fun (a : Fold_state.spine_attempt) ->
-           match a.outcome with Fold_state.Reversed _ -> true | _ -> false)
-         attempts)
+  let chosen =
+    match Fold_state.reverse_of_attempts (List.filter keeps attempts) with
+    | Ok st' -> Some st'
+    | Error _ -> None
   in
   let candidate (a : Fold_state.spine_attempt) =
     let state, removed =
       match a.outcome with
-      | Fold_state.Reversed st' -> (Some st', None)
-      | Fold_state.Not_two_halves -> (None, Some By_halves)
+      | Fold_state.Reversed st' when keeps a -> (Some st', None)
+      | Fold_state.Reversed _ -> (None, Some By_letter)
       | Fold_state.No_body -> (None, Some By_bodies)
       | Fold_state.Interleaved -> (None, Some By_interleaved)
       | Fold_state.Crossing _ -> (None, Some By_crossing)
     in
+    let lower, upper = a.halves in
     {
       state;
       detail =
         Spine
           {
             spine = Fold_state.hinge_table_segment st a.hinge;
-            halves = Option.map (fun (h1, h2) -> (moving h1, moving h2)) a.halves;
+            halves = Some (moving lower, moving upper);
             bodies = Option.map (fun (b1, b2) -> (staying b1, staying b2)) a.bodies;
           };
       removed;
-      chosen = state <> None && reversed = 1;
+      chosen =
+        (match (state, chosen) with
+        | Some s, Some c -> removed = None && s == c
+        | _ -> false);
     }
   in
   ( Reverse { axis; side = move_side; inside; tip = moving tip },

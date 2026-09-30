@@ -242,14 +242,15 @@ none of this appears, and every other field is the same with and without it.
   paper still has its entry, and the file then ends before the fold.
 - `reverse` ([def-reverse](/model/#def-reverse)): the `terms` are the
   `axis`, the `side`, the `kind`, `"inside"` or `"outside"`, and the `tip`.
-  There is one candidate per folded hinge of the tip that reaches beyond the
-  axis, each with its `spine` as a segment, its `halves` and `bodies` as two
-  regions each, the lower body first, and `removed_by`: `"halves"` when
-  removing the hinge does not leave exactly two halves, so that the hinge is
-  no spine in the model's sense, `"bodies"` when a half has no body,
-  `"interleaved"` when the bodies are not separated, and `"crossing"` when
-  the reflection is no state. `halves` and `bodies` are null on a candidate
-  removed before they exist, and `frame` is null on every removed candidate.
+  There is one candidate per opening of the tip, from the bottom of the tip
+  up, each with `spine`, a hinge across the opening, as a segment, its
+  `halves`, the lower and the upper block, and its `bodies` as two regions
+  each, the lower first, and `removed_by`: `"letter"` when a letter item
+  gives a hinge of the spine's line another letter, `"bodies"` when a block
+  has no body, `"interleaved"` when the bodies are not separated, and
+  `"crossing"` when the reflection is no state. `bodies` is null on a
+  candidate removed before it exists, and `frame` is null on every removed
+  candidate.
 - `flatten` ([def-flatten](/model/#def-flatten)): the `terms` are the
   vertex `point`. There is one candidate per candidate state, each with the
   `rays` of its fan that the program gave, its `emergent` ray or null, and

@@ -126,9 +126,7 @@ layers, the upper corner folds in between the upper and the lower layer.
 Two ceilings remain:
 
 - The pieces of the stayer's wedge the tip hangs from rank as one block. A
-  tip hinged to two of them cannot land between them, which the halves of
-  an inside reverse fold made as a fan need
-  ([issue #119](https://github.com/tophcodes/beloch/issues/119)).
+  tip hinged to two of them cannot land between them.
 - The emergent ray of a fan with an odd number of given rays is scored
   through every layer on its side, the layers outside the tip included
   ([issue #122](https://github.com/tophcodes/beloch/issues/122)).
@@ -279,6 +277,59 @@ the stayer (`SPECIFICATION.md` §4.9, State construction).
    - \|S\| = 1 → fold it. A `toward` item present is redundant, never an error.
    - \|S\| > 1 → **selection** (`SPECIFICATION.md` §4.9, Selecting among
      survivors).
+
+## Reverse
+
+`Action.eval_reverse` realizes [def-reverse](/model/#def-reverse) with
+`Fold_state.reverse_attempts`, the state as it stands, and no scoring of
+its own beyond the axis.
+
+The tip is `Resolve.tip_faces`: the anchor's faces with a piece on the moving
+side, or every such face when there is no anchor, closed under hinges whose
+table segment reaches strictly beyond the axis. The openings are read off
+the rank: the faces of the tip in rank order, and a cut between two
+consecutive ones is an opening where every hinge between two faces of the
+tip that crosses it is folded, all of them lie on one table line, and one
+of them reaches beyond the axis. A cut crossed by a flat hinge is none.
+
+Each opening is folded with `Fold_state.fold_blocks`: the lower block over
+the topmost face of its body and the upper block under the bottommost face
+of its body for `inside`, the lower block at the bottom and the upper block
+on top for `outside`. The body of a block is its faces that the axis cuts,
+whose stationary pieces stay. Where one body is empty the opening is
+removed, and where the two bodies' ranks overlap at all, overlapping on the
+table or not, it is removed as interleaved: the kernel's test is stricter
+than the model's.
+
+A letter item names hinges by the segments `&` selects from a crease; the
+hinges of the tip among them are the ones it constrains. An opening keeps
+the letter where each such hinge has it after the fold: the letter it had
+before where the hinge does not cross the opening, the other one where it
+does. The hinges on the axis are left to the placement.
+
+The states of the kept openings are compared with `Fold_state.rel`: two that
+order every overlapping pair of faces alike are one state
+([def-flat-state](/model/#def-flat-state)). Of one state, the kernel stores
+the rank of the opening that keeps the new hinges on the axis shortest in
+the stack, the sum over them of the rank distance between their two faces;
+ties go to the lowest opening. More than one state fails with a hint that
+names one letter item per state: a hinge on the spine's line whose letter
+differs from its letter in every other state, named by its crease and a
+named point that lies on its segment alone, or `.p` with the paper point
+where it lies when no named point does.
+
+| message | hint |
+|---|---|
+| `reverse needs a tip folded along one spine; the moving material does not split into two halves` | |
+| `the tip opens at <n> places` | `add one letter, which keeps one opening: (--e & .q mountain) or …` |
+| `the two halves are hinged to interleaved layers; that is not a reverse fold` | |
+| `the letter names no hinge of the tip` | |
+| `reversing the tip would pierce layer <n>` | |
+| `reversing the tip would pierce another layer` | |
+
+The first is the failure when no opening gives a state and none was
+removed as interleaved or by a violation. Otherwise the lowest such opening
+names the failure: interleaved bodies, or the violation its fold met.
 
 ## Annotations
 

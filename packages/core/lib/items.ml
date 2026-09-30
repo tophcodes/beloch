@@ -177,20 +177,24 @@ let fold (items : raw_item list) (out : output) (span : Error.span) : stmt =
 let reverse (items : raw_item list) (out : output) (span : Error.span) : stmt =
   let verb = "reverse" in
   let axis = ref None and moving = ref None and toward = ref None
-  and outside = ref None in
+  and outside = ref None and letters = ref [] in
   List.iter
     (fun it ->
-      if not (axis_item verb axis it || side_item verb ~toward ~moving it) then
-        match it with
-        | RiOutside sp -> slot verb "outside" outside sp ()
-        | it -> refuse verb it)
+      match it with
+      | RiLine (lo, (MvMountain | MvValley as mv), sp) ->
+          letters := (lo, mv = MvValley, sp) :: !letters
+      | _ ->
+          if not (axis_item verb axis it || side_item verb ~toward ~moving it) then
+            match it with
+            | RiOutside sp -> slot verb "outside" outside sp ()
+            | it -> refuse verb it)
     items;
   Reverse
     ( out,
       need_axis verb axis span,
       (let sd = sides_of toward moving in
        { rmoving = sd.s_moving; rtoward = sd.s_toward; outside = !outside <> None;
-         rspans = sd.s_spans }),
+         rletters = List.rev !letters; rspans = sd.s_spans }),
       span )
 
 let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =

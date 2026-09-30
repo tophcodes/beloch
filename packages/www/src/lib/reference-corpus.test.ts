@@ -109,8 +109,8 @@ function extractBlocks(src: string): Block[] {
 // BELOCH.md.
 const expectedInventory: Record<Tag, number> = {
   whole: 1,
-  prelude: 6,
-  frag: 11,
+  prelude: 7,
+  frag: 13,
   construction: 1,
 };
 

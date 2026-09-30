@@ -319,11 +319,29 @@ val simple_fold : t -> axis:Geom.line -> move_side:int -> valley:bool -> t
 (** [fold] with no [crease_id]/[moving_parents] override and no provenance. *)
 
 type reverse_failure =
-  | No_spine  (** no folded hinge of the tip splits it into two halves *)
-  | Several_spines of int  (** that many cuts give a valid fold *)
+  | No_spine  (** no place between the tip's layers opens along a spine *)
+  | Several_openings of spine_attempt list
+      (** the openings that give different states, one each *)
   | Bodies_interleaved
-      (** the halves' hinge layers do not form two separate rank ranges *)
+      (** the blocks' hinge layers do not form two separate rank ranges *)
   | Invalid of violation  (** the one candidate's state violated an invariant *)
+
+and spine_outcome =
+  | No_body  (** a block has no parent cut by the axis *)
+  | Interleaved  (** the blocks' hinge layers share a rank range *)
+  | Crossing of violation  (** the two-block fold violated an invariant *)
+  | Reversed of t
+
+and spine_attempt = {
+  crease : int;  (** the crease id of the new hinges on the axis *)
+  hinge : int;  (** the first hinge across the opening, on the spine's line *)
+  turning : int list;  (** every hinge across the opening *)
+  halves : bool array * bool array;
+      (** parent masks: the lower block, then the upper block *)
+  bodies : (int list * int list) option;
+      (** the parents of each block cut by the axis, in the order of [halves] *)
+  outcome : spine_outcome;
+}
 
 val reverse_failure_to_string : reverse_failure -> string
 
@@ -337,35 +355,21 @@ val reverse :
   prov:State.provenance option ->
   (t, reverse_failure) result
 (** Reverse fold of the material [tip] (a mask over PARENT faces) across the
-    TABLE-space [axis]: every folded hinge joining two tip faces and reaching
-    beyond the axis is tried as the spine; a cut that leaves exactly two
-    connected halves, each with at least one parent cut by the axis (its
-    hinge layers), whose hinge layers occupy two separate rank ranges, yields
-    a candidate {!fold_blocks} with
-    two blocks. Inside: the lower half [Over] the lower body's topmost
-    layer and the upper half [Under] the upper body's bottommost layer;
-    outside: [Bottom] and [Top]. Exactly one candidate state passing the
-    invariants is the result. [tip] must contain only parents with a piece on
-    the moving side (the caller builds it so); a tip parent lying entirely on
-    the stationary side is not checked. It is [reverse_of_attempts] of
-    [reverse_attempts]. *)
-
-type spine_outcome =
-  | Not_two_halves  (** removing the hinge leaves no two halves *)
-  | No_body  (** a half has no parent cut by the axis *)
-  | Interleaved  (** the halves' hinge layers share a rank range *)
-  | Crossing of violation  (** the two-block fold violated an invariant *)
-  | Reversed of t
-
-type spine_attempt = {
-  hinge : int;  (** the hinge tried as the spine *)
-  halves : (bool array * bool array) option;
-      (** parent masks, the half at the lower body first where the bodies
-          are separated *)
-  bodies : (int list * int list) option;
-      (** the parents of each half cut by the axis, in the order of [halves] *)
-  outcome : spine_outcome;
-}
+    TABLE-space [axis] (ADR 0043). An opening lies between two neighbouring
+    layers of the tip, in rank order, where every hinge joining a layer below
+    to a layer above is folded and lies on one table line that reaches beyond
+    the axis. It cuts the tip into a lower and an upper block, each with at
+    least one parent cut by the axis (its hinge layers), whose hinge layers
+    must occupy two separate rank ranges. Each opening yields a candidate
+    {!fold_blocks} with the two blocks. Inside: the lower block [Over] the
+    lower body's topmost layer and the upper block [Under] the upper body's
+    bottommost layer; outside: [Bottom] and [Top]. Every hinge across the
+    opening keeps the order of its faces and so turns; every other hinge of
+    the tip keeps its letter. Candidates that agree on every overlapping pair
+    are one state, ranked by the candidate that keeps the tip closest to its
+    hinge layers; exactly one state is the result. [tip] must contain only
+    parents with a piece on the moving side (the caller builds it so). It is
+    [reverse_of_attempts] of [reverse_attempts]. *)
 
 val reverse_attempts :
   ?crease_id:int ->
@@ -376,11 +380,15 @@ val reverse_attempts :
   inside:bool ->
   prov:State.provenance option ->
   spine_attempt list
-(** Every hinge {!reverse} tries as the spine, in hinge order, with what
+(** Every opening {!reverse} finds, from the bottom of the tip up, with what
     became of it. *)
 
+val reverse_letter : t -> spine_attempt -> int -> assign
+(** The letter hinge [i] of the tip has after the attempt's reverse fold:
+    reversed across the opening, kept elsewhere. *)
+
 val reverse_of_attempts : spine_attempt list -> (t, reverse_failure) result
-(** The one [Reversed] state, or the failure {!reverse} reports. *)
+(** The one state, or the failure {!reverse} reports. *)
 
 val flip : t -> t
 (** Turn the whole sheet over: reflects across the footprint's vertical
