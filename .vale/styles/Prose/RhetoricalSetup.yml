@@ -1,0 +1,9 @@
+# A sentence that announces weight instead of carrying information.
+extends: existence
+message: "Rhetorical setup: '%s'. Delete it or state the claim."
+level: error
+ignorecase: true
+nonword: true
+tokens:
+  - '\b(?:is|that is|that''s) (?:exactly )?the point\b'
+  - '\bwhich is what (?:makes|lets|allows|turns|gives)\b'

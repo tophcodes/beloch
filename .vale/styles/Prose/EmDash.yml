@@ -1,0 +1,8 @@
+# The em dash stands in for a period, a colon or a comma, and saves the writer
+# from finishing the thought.
+extends: existence
+message: "Em dash: '%s'. Use a period, a colon or a comma."
+level: error
+nonword: true
+tokens:
+  - '—'

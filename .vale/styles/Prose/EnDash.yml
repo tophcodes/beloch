@@ -1,0 +1,8 @@
+# An en dash between words replaces an em dash, and Prose.EmDash only
+# catches the em dash. A number range (2020–2024) is left alone.
+extends: existence
+message: "En dash: '%s'. Use a period, a colon or a comma."
+level: error
+nonword: true
+tokens:
+  - '(?<![0-9])–(?![0-9])'

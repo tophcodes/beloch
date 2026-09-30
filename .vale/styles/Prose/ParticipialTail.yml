@@ -1,0 +1,11 @@
+# A present participle hung onto a finished clause, claiming a consequence the
+# sentence never shows: "runs again, ensuring no result is lost". Generated
+# text uses the construction about five times as often as human writing
+# (Reinhart et al., PNAS 2025). Say who ensures it and how, or cut it.
+extends: existence
+message: "Participial tail: '%s'. Name who does it and how, or cut it."
+level: warning
+ignorecase: true
+nonword: true
+tokens:
+  - ',\s+(?:ensuring|allowing|enabling|making|leaving|resulting in|highlighting|reflecting|underscoring|providing|keeping|giving)\b'

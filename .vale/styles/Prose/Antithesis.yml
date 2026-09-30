@@ -1,0 +1,11 @@
+# Defining a thing by what it is not. State what it is.
+extends: existence
+message: "Antithesis: '%s'. Rewrite it as a direct claim."
+level: error
+ignorecase: true
+nonword: true
+tokens:
+  - '\bnot just\b[^.!?]*\b(?:but|it)\b'
+  - '\bnot only\b[^.!?]*\bbut\b'
+  - '\b(?:isn''t|is not)\b[^.!?]*\.\s+(?:it''s|it is)\b'
+  - ', not [a-z][a-z-]*\.(?=\s|$)'

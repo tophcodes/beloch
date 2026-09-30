@@ -1,0 +1,9 @@
+# A PR or commit body opening on itself. The reader knows what they are
+# reading; start with what changes.
+extends: existence
+message: "'%s' narrates the change. Start with what changes."
+level: warning
+ignorecase: true
+nonword: true
+tokens:
+  - '\bthis (?:PR|pull request|MR|merge request|commit|change|patch) (?:introduces|aims to|is designed to|seeks to)\b'

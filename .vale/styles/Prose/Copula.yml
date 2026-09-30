@@ -1,0 +1,8 @@
+# "serves as" standing in for "is". The plain copula says the same thing.
+extends: existence
+message: "'%s' stands in for 'is'. Use 'is', or say what it does."
+level: warning
+ignorecase: true
+nonword: true
+tokens:
+  - '\b(?:serves|served|serving|stands|stood) as\b'

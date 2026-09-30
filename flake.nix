@@ -57,6 +57,29 @@
           # `nix build .#` — the number-kernel suite (Sturm/resultant/RUR) is slow.
           doCheck = false;
         };
+
+        # Vale packages the prose lint (.vale.ini) reads, pinned here in place
+        # of `vale sync`, which fetches them unpinned.
+        valeStyles = {
+          Slop = "${pkgs.fetchFromGitHub {
+            owner = "Syntaf";
+            repo = "vale-llm-slop";
+            rev = "4dda3ec6426efa219e493d88396ed5c0471f7454";
+            hash = "sha256-4B07P6W1bMRjelFVajWB54+G1NzK4j0Z5KKfSZ1+tfU=";
+          }}/styles/Slop";
+          proselint = "${pkgs.fetchFromGitHub {
+            owner = "errata-ai";
+            repo = "proselint";
+            rev = "v0.3.4";
+            hash = "sha256-ryKJDX1JrvDWVKLC5qQGctweDf74yuwEXxl/IqumM4s=";
+          }}/proselint";
+          write-good = "${pkgs.fetchFromGitHub {
+            owner = "errata-ai";
+            repo = "write-good";
+            rev = "v0.4.1";
+            hash = "sha256-W/eHlXklAVlAnY8nLPi/SIKsg8UUnH8UkH99BDo5yKk=";
+          }}/write-good";
+        };
       in {
         packages.default = beloch;
         packages.beloch = beloch;
@@ -103,8 +126,10 @@
             # the `generate` script of packages/grammar, which rebuilds the
             # committed parser and wasm
             pkgs.tree-sitter
+            # prose lint (.vale.ini, scripts/prose.sh)
+            pkgs.vale
           ];
-          # `check` and `check-all` run scripts/check.sh and scripts/check-all.sh.
+          # `check`, `check-all` and `prose` run the script of that name in scripts/.
           # Link @beloch/render-svg's `beloch-render` bin globally so the
           # OCaml `beloch render` subcommand (packages/core/bin/main.ml) can execvp it, and
           # shim a bare `beloch` onto PATH that always runs the freshly
@@ -120,7 +145,11 @@
 exec dune exec --display=quiet --root "$root" beloch -- "\$@"
 EOF
             chmod +x "$root/.direnv/bin/beloch"
-            for c in check check-all; do
+            ${pkgs.lib.concatStrings (pkgs.lib.mapAttrsToList (name: path: ''
+                ln -sfn ${path} "$root/.vale/styles/${name}"
+              '')
+              valeStyles)}
+            for c in check check-all prose; do
               printf '#!/usr/bin/env bash\nexec "%s/scripts/%s.sh" "$@"\n' "$root" "$c" > "$root/.direnv/bin/$c"
               chmod +x "$root/.direnv/bin/$c"
             done
