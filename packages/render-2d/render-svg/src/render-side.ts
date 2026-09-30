@@ -40,6 +40,8 @@ const EPS = 1e-9;
 const SIDE_W = 572, PAD = 56, GAP = 34, SPLIT = 10;
 // the room a hinge's name takes beside the crown of its turn
 const HINGE_LABEL = 30;
+// how far a strip stops short of a raw edge it meets in its own layer
+const APART = 4;
 
 // The stretch of a piece that lies in one face of the crease pattern, named by
 // that face: its index in the crease pattern, counted from 1.
@@ -260,12 +262,18 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
 
   const nodes: SvgNode[] = [];
   const at = (t: number, s: Strip) => (Math.abs(t - s.t1) < EPS ? -1 : 1);
+  // two strips of one level that meet share no hinge there, only raw edges:
+  // each stops short of the place, so a gap stands between them
+  const meets = (s: Strip, t: number) => strips.some((o) => o !== s && o.level === s.level &&
+    (Math.abs(o.t0 - t) < EPS || Math.abs(o.t1 - t) < EPS));
   for (const s of strips) {
     const parts = s.pieces.flatMap((p) => p.parts).sort((p, q) => p.t0 - q.t0);
     for (const r of parts) {
       // a part that ends inside the strip runs on to where the next one starts,
       // across a gap the strip stretches through
-      const [x0, x1] = [x(r.t0, 1), x(r.t1, Math.abs(r.t1 - s.t1) < EPS ? -1 : 1)];
+      const [first, last] = [Math.abs(r.t0 - s.t0) < EPS, Math.abs(r.t1 - s.t1) < EPS];
+      const x0 = x(r.t0, 1) + (first && meets(s, s.t0) ? APART : 0);
+      const x1 = x(r.t1, last ? -1 : 1) - (last && meets(s, s.t1) ? APART : 0);
       nodes.push(el("line", {
         "data-kind": "layer", "data-name": r.name, "data-level": s.level,
         x1: x0, y1: y(s.level), x2: x1, y2: y(s.level),

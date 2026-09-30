@@ -221,3 +221,50 @@ test("the crease pattern beside an earlier state draws the creases of that state
   expect(creases(panel("1"))).toBe(10);
   expect(creases(panel("2"))).toBe(12);
 });
+
+// Both sides folded to the middle and cut across, the cupboard fold:
+//
+//   paper square
+//   mark (map --da onto --bc) as --m
+//   .s = --m * --ab
+//   .t = free on --m from .s at 1/4
+//   fold (map --da onto --m)
+//   fold (map --bc onto --m)
+//   --k = (perp --m through .t)
+//
+// The two flaps meet on --m raw edge against raw edge; under them the sheet
+// runs flat across the mark --m.
+const cupboard = async () =>
+  parseFold(await Bun.file(new URL("./fixtures/side-cupboard.fold", import.meta.url)).text());
+
+// The layer lines of one level of the section, left to right, and the ticks.
+function drawn(svg: string, level: number) {
+  const lines = [...svg.matchAll(/data-kind="layer" data-name="(\d+)" data-level="(\d+)" x1="([\d.]+)" y1="[\d.]+" x2="([\d.]+)"/g)]
+    .filter((m) => Number(m[2]) === level)
+    .map((m) => ({ name: Number(m[1]), x1: Number(m[3]), x2: Number(m[4]) }))
+    .sort((p, q) => p.x1 - q.x1);
+  const ticks = [...svg.matchAll(/data-kind="seam" x1="([\d.]+)"/g)].map((m) => Number(m[1]));
+  return { lines, ticks };
+}
+
+test("two pieces of a layer that meet without a hinge are drawn with a gap between them", async () => {
+  const svg = renderSide(await cupboard(), { along: "k" }).toString();
+  const top = drawn(svg, 0), bottom = drawn(svg, 1);
+  // the flaps 3 and 4 on top: apart, and no tick between them
+  expect(top.lines.map((l) => l.name)).toEqual([3, 4]);
+  expect(top.lines[1]!.x1 - top.lines[0]!.x2).toBeGreaterThan(6);
+  // the sheet under them runs on across --m, with a tick there
+  expect(bottom.lines.map((l) => l.name)).toEqual([1, 2]);
+  expect(bottom.lines[1]!.x1).toBe(bottom.lines[0]!.x2);
+  expect(bottom.ticks).toEqual([bottom.lines[1]!.x1]);
+});
+
+test("a piece a later crease splits keeps its tick", async () => {
+  // the flat sheet before the first fold: one piece that --d splits into 2
+  // and 1, drawn as one run with a tick between them
+  const svg = renderSide(await reverse(), { along: "k", step: "0" }).toString();
+  const { lines, ticks } = drawn(svg, 0);
+  expect(lines.map((l) => l.name)).toEqual([2, 1]);
+  expect(lines[1]!.x1).toBe(lines[0]!.x2);
+  expect(ticks).toEqual([lines[1]!.x1]);
+});
