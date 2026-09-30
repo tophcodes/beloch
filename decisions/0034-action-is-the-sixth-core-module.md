@@ -10,7 +10,7 @@ checks:
     run: '[ "$(wc -l < packages/core/lib/eval.ml)" -lt 900 ]'
 ---
 
-# 0034 — Action is the sixth core module: the disposition verbs, split from Eval
+# 0034: Action is the sixth core module: the disposition verbs, split from `Eval`
 
 ## Context
 

@@ -4,7 +4,7 @@ title: "Multifold research package lives in a separate repository"
 status: accepted
 ---
 
-# 0020 — Multifold research package lives in a separate repository
+# 0020: Multifold research package lives in a separate repository
 
 ## Context
 

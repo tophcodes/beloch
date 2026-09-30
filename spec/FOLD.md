@@ -242,7 +242,7 @@ none of this appears, and every other field is the same with and without it.
   paper still has its entry, and the file then ends before the fold.
 - `reverse` ([def-reverse](/model/#def-reverse)): the `terms` are the
   `axis`, the `side`, the `kind`, `"inside"` or `"outside"`, and the `tip`.
-  There is one candidate per opening of the tip, from the bottom of the tip
+  The entry has one candidate per opening of the tip, from the bottom of the tip
   up, each with `spine`, a hinge across the opening, as a segment, its
   `halves`, the lower and the upper block, and its `bodies` as two regions
   each, the lower first, and `removed_by`: `"letter"` when a letter item
@@ -252,7 +252,7 @@ none of this appears, and every other field is the same with and without it.
   candidate removed before it exists, and `frame` is null on every removed
   candidate.
 - `flatten` ([def-flatten](/model/#def-flatten)): the `terms` are the
-  vertex `point`. There is one candidate per candidate state, each with the
+  vertex `point`. The entry has one candidate per candidate state, each with the
   `rays` of its fan that the program gave, its `emergent` ray or null, and
   its `stayer` as the ends of the two rays that bound the stayer sector,
   counter-clockwise; a ray is a segment from the vertex. The letters of a

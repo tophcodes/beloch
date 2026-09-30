@@ -5,13 +5,13 @@ date: 2026-07-06
 status: accepted
 ---
 
-# 0017 — A flap is a coplanar cluster of faces, not a single precrease polygon
+# 0017: A flap is a coplanar cluster of faces, not a single precrease polygon
 
 ## Status
-Accepted (2026-07-06) — implemented. Acceptance
+Accepted (2026-07-06); implemented. Acceptance
 clarified what `#(...)` *is*: a **region-disambiguation operator** ("pick out
 the region here"), not a value of fixed granularity. The region it denotes is
-the finest unit the **enclosing** operator addresses — a **flap** (coplanar
+the finest unit the **enclosing** operator addresses: a **flap** (coplanar
 cluster) for a scope operand (`moving`, `up to`), a **face** for a segment/
 sector address (`at #(...)`, `@collapse over/under #(...)`). See *What `#(...)`
 denotes* below. Originally filed Proposed (2026-07-06).
@@ -26,35 +26,39 @@ precedent for using it.
 
 ADR 0016 fixed the *operand type* consumed by `moving`, `up to`, and the
 `#(...)` incidence selector: a **flap**. The fold-scope design and the current
-evaluator resolve that flap type to a single **face** — one convex polygon in
+evaluator resolve that flap type to a single **face**: one convex polygon in
 the fixed partition `subdivide` carves. A face boundary is created the moment
 **any** crease crosses a polygon (ADR 0014: creasing runs `subdivide`, which
 cuts every face the axis crosses and tags each resulting edge with the shared
 `crease_id`). Crucially, that partition is cut by *precreases* too: a bare
 `map X onto Y` bind materialises a crease bundle and subdivides, even though
-nothing folds — the new edges are assignment `U` (unfolded), physically flat,
+nothing folds: the new edges are assignment `U` (unfolded), physically flat,
 coplanar with their neighbour across the edge (`lib/fold_state.ml`:
 `type assign = M | V | U`; `subdivide` emits `eassign = U`).
+
+<!-- vale proselint.Cliches = NO -->
 
 The spec chose this face-per-precrease-polygon granularity deliberately, to get
 partial-scope folds (`up to`, petal folds, top-flap-only) cheaply: the
 fold-scope design notes "the per-flap face sets give us [depth varying along the
 crease] for free" (§ *Validity*), and `select_scope`
-(`lib/fold_state.ml`) reuses that same fine face partition everywhere —
+(`lib/fold_state.ml`) reuses that same fine face partition everywhere,
 computing per-face `piece`s, `overlap`, and `outer` stack relations over raw
 face indices.
+
+<!-- vale proselint.Cliches = YES -->
 
 A debugging session on `examples/bases/rabbit-ear.bel` (verified empirically
 against the running evaluator, not reasoned from the source) found this
 granularity causes two concrete problems:
 
 **1. Surprising `#(...)` failures on a still-flat sheet.** The precrease step
-alone — three bare binds `--v = map .a onto .b`,
-`--ba = map --(.a .b) onto --(.a .m)`, `--bb = map --(.b .a) onto --(.b .m)` —
+alone (three bare binds `--v = map .a onto .b`,
+`--ba = map --(.a .b) onto --(.a .m)`, `--bb = map --(.b .a) onto --(.b .m)`)
 splits the square into 6 faces around the incenter `.o`, *before any `@fold`
 runs*. Two corners, `.a` and `.d`, land on two **different** face polygons
-(adjacent, edge-sharing, distinct). So `--bb at #(.a .d)` — meaning "the segment
-of `--bb` on the flap that holds both corners" — fails with
+(adjacent, edge-sharing, distinct). `--bb at #(.a .d)` (meaning "the segment
+of `--bb` on the flap that holds both corners") therefore fails with
 
 > those points aren't all on one flap
 
@@ -62,14 +66,14 @@ of `--bb` on the flap that holds both corners" — fails with
 through `at_matches`/`SelFlap` in `lib/eval.ml`). Direct instrumentation of
 `flap_of_points` confirmed this is *correct* for the current definition (no two
 faces contain both points), **not** a bug in that function. It is a granularity
-mismatch: the user's — and the physically natural — model is "nothing folded ⇒
+mismatch: the user's (and the physically natural) model is "nothing folded ⇒
 still one flap," while the implementation's model is "any precrease line, folded
 or not, is a flap boundary."
 
 **2. A confirmed lookup bug that is a direct symptom of (1).** After
 `@fold --ba moving .b mountain` folds one small corner flap, a second fold
 `@fold --bb at #(.d .m) moving #(.a .pl) up to #(.a .pl)` computes the
-**correct** isometry for the face carrying `.a` — verified by dumping the raw
+**correct** isometry for the face carrying `.a`; this was verified by dumping the raw
 `beloch:faces_matrix` output: the moved face gets the mathematically correct
 translation (e.g. `(0.5528, 0.8944)`, matching an isolated single-fold control
 run). But the FOLD table position reported for the named point `.a` still comes
@@ -85,26 +89,26 @@ straddling it.
 
 Both symptoms have the same root: the flap operand is defined at *precrease*
 granularity, but the meaningful physical unit is the *coplanar region*, which
-only fractures when a crease is actually **folded** (`U → M/V`).
+only fractures when a crease is **folded** (`U → M/V`).
 
 ## Decision
 
-Redefine **flap** — the operand type consumed by `moving`, `up to`, and the
-`#(...)` incidence selector (ADR 0016) — as a **maximal connected cluster of
+Redefine **flap** (the operand type consumed by `moving`, `up to`, and the
+`#(...)` incidence selector, ADR 0016) as a **maximal connected cluster of
 faces that are still physically coplanar**: faces reachable from one another
 through edges whose crease assignment is still `U` (unfolded). Two faces
 separated only by a `U` edge are the **same** flap. The instant that specific
-edge's assignment transitions `U → M/V` (its crease is actually folded), the
+edge's assignment transitions `U → M/V` (its crease is folded), the
 flap **splits into two** at exactly that edge, and stays split thereafter.
 
 Formally: over the current `Fold_state.t`, build the graph whose nodes are faces
 and whose edges are the interior face-adjacencies with `eassign = U`. A flap is
-one connected component of that graph. The split rule is local and exact — a
+one connected component of that graph. The split rule is local and exact: a
 flap divides at the precise edge whose assignment changes, at the moment the
 fold that changes it runs; no other flap is affected.
 
 **"Face" is unchanged.** The fine per-precrease-polygon partition (ADR 0014's
-subdivision granularity, needed for crease/segment bundle *addressing* — `at`,
+subdivision granularity, needed for crease/segment bundle *addressing*: `at`,
 `pinch`, `crease_segments`) keeps its current meaning and stays fine-grained.
 This ADR does **not** change how creases/segments subdivide the sheet, how
 edges carry `crease_id`, or how a bundle enumerates its segments. It changes
@@ -113,43 +117,43 @@ incidence.
 
 What changes, all to operate on coplanar-clusters instead of raw face indices:
 
-- **`flap_of_points` (`lib/fold_state.ml:352`)** — instead of "the unique face
+- **`flap_of_points` (`lib/fold_state.ml:352`)**: instead of "the unique face
   whose paper polygon contains every point," returns "the unique **flap**
   (coplanar cluster) containing every point." Points that fall on adjacent faces
   joined by a `U` edge now resolve to one flap. `Zero`/`Ambiguous` keep their
   meaning at cluster granularity.
-- **`#(...)` as a physical-flap operand (`resolve_flap_cluster`, `lib/eval.ml`)**
-  — `moving`'s point/line/`#(...)` sugar and the `up to` anchor/target become
+- **`#(...)` as a physical-flap operand (`resolve_flap_cluster`, `lib/eval.ml`)**:
+  `moving`'s point/line/`#(...)` sugar and the `up to` anchor/target become
   **cluster**-valued. Callers that today hold a single face index (to pick a fold
   side, or the scope anchor) hold a cluster (a set of faces), or a representative
-  the lookup needs. **`at #(...)` and `@collapse over/under #(...)` do NOT** —
+  the lookup needs. **`at #(...)` and `@collapse over/under #(...)` do NOT**:
   they stay face-fine (`face_of_points` / `resolve_sector_face`); see below.
-- **`moving` and `up to`** — the anchor and range are chosen among **flaps**
+- **`moving` and `up to`**: the anchor and range are chosen among **flaps**
   (clusters), then expanded to the constituent faces for the actual reflection.
   A point/line/`#(...)` operand resolves to the cluster it is incident to; the
   reflection still applies face-by-face underneath.
-- **`select_scope` (`lib/fold_state.ml:385`)** — the `piece` / `overlap` /
+- **`select_scope` (`lib/fold_state.ml:385`)**: the `piece` / `overlap` /
   `outer` / stack-walk machinery ranges over **clusters** where it currently
   ranges over faces: candidacy, overlap in the crease region, and the
   outer-contiguous-prefix (buried/`outer`) check are judged between coplanar
   clusters, so a cluster moves or stays as a unit. (Whether the per-face `piece`
   computation is kept and aggregated per cluster, or recomputed at cluster
-  granularity, is an implementation detail — see open questions on `depth may
+  granularity, is an implementation detail; see open questions on `depth may
   vary along the crease`.)
-- **Point→position lookup (`faces_containing` / `table_position`)** — a boundary
+- **Point→position lookup (`faces_containing` / `table_position`)**: a boundary
   vertex shared by faces in the same flap is unambiguous (they share an
   isometry, being coplanar), so the stale-position bug (2) disappears; a vertex
   on a *folded* edge legitimately belongs to two flaps and is disambiguated the
   same way stacked material already is (ADR 0014: layer identity).
 
 The split rule makes the "crease all, fold some" case (fold-scope design, and
-spec §4.6) fall out cleanly: a bare bind creases all layers (`U` edges — same
-flap, no split); `@fold … up to …` folds some (those edges become `M/V` — the
+spec §4.6) fall out cleanly: a bare bind creases all layers (`U` edges: same
+flap, no split); `@fold … up to …` folds some (those edges become `M/V`: the
 flap splits there, and only there).
 
 ### What `#(...)` denotes
 
-`#(...)` is a **region-disambiguation operator** — "pick out the region here" —
+`#(...)` is a **region-disambiguation operator** ("pick out the region here"),
 not a data type with a single fixed granularity. The region it denotes is the
 finest unit the **enclosing** operator addresses:
 
@@ -161,7 +165,7 @@ finest unit the **enclosing** operator addresses:
   sheet is one flap, so resolving these at flap granularity would name
   *everything* and lose the ability to pick one of several coplanar segments.
 
-So the same operator resolves at different granularities in different positions —
+The same operator therefore resolves at different granularities in different positions,
 by design, because it names "the region the surrounding operator cares about,"
 and those operators care about different-sized regions. `examples/syntax/
 collapse-midpaper.bel` makes the address case concrete: `--h at #(.q .tm)` picks
@@ -171,7 +175,7 @@ Implementation: `resolve_flap_cluster` (flap-valued) backs `moving` / `up to`;
 `face_of_points` / `resolve_sector_face` (face-valued) back `at` / `@collapse`.
 Consequence: this ADR's Context example `--bb at #(.a .d)` is an *address*, so it
 resolves at face granularity and still errors on a fully-flat sheet with
-`.a`/`.d` on distinct faces — as it should; the flat-sheet win is for the *scope*
+`.a`/`.d` on distinct faces, as it should; the flat-sheet win is for the *scope*
 uses, which is where both defects arose. `pinch` and `crease_segments` were
 already face-granular and unchanged.
 
@@ -183,7 +187,7 @@ already face-granular and unchanged.
   `#(.a .d)`-style failures on flat sheets, and every future scope/incidence
   site inherits the same trap.
 - **Merge precrease faces back into one polygon (undo the subdivision for flat
-  creases).** Rejected: it destroys ADR 0014's addressing granularity — the
+  creases).** Rejected: it destroys ADR 0014's addressing granularity; the
   segment bundle needs the fine partition to enumerate and select segments
   (`at`, `pinch`). Faces must stay fine; only the flap *grouping* should coarsen.
 - **Make the user disambiguate (`#(.a .d …)` with more points, or `at` with a
@@ -195,11 +199,11 @@ already face-granular and unchanged.
 ## Consequences
 
 - **Simpler for the user, matching physical intuition.** In
-  `examples/bases/rabbit-ear.bel`, `--bb at #(.a .d)` would very likely resolve:
+  `examples/bases/rabbit-ear.bel`, `--bb at #(.a .d)` would most likely resolve:
   before any `@fold`, `.a` and `.d` lie in faces joined only by `U` precreases,
   so they fall in the same coplanar cluster, and `flap_of_points` returns one
   flap. "Still flat ⇒ still one flap" becomes true in the implementation, not
-  just the mental model. (To be confirmed on the actual repro when implemented —
+  just the mental model. (To be confirmed on the actual repro when implemented;
   stated here as the expected outcome, not verified against a build.)
 - **The confirmed position bug (2) is eliminated by construction**, not patched:
   a point in a still-flat neighbourhood belongs to exactly one flap, which is
@@ -207,18 +211,18 @@ already face-granular and unchanged.
   a fold is unambiguous.
 - **New implementation machinery: a live coplanar-connected-components
   computation.** Most naturally: a graph over faces joined by `U`-assigned
-  interior edges, giving each face a flap (cluster) id. It must reflect the
+  interior edges, which gives each face a flap (cluster) id. It must reflect the
   current `Fold_state.t` at every resolution point.
-  **Folds don't only split clusters — `unfold` is on the roadmap
+  **Folds don't only split clusters: `unfold` is on the roadmap
   (spec Appendix B: "fold maneuvers (reverse/squash/sink/petal, via `unfold` +
   layer selection)"), and unfolding a crease (`M`/`V` reverting to `U`) merges
   two flaps back together.** Today's evaluator has no `unfold` yet, so within
-  the *current* language a fold only ever splits (this ADR's scope) — but that
+  the *current* language a fold only ever splits (this ADR's scope), but that
   is a fact about today's operation set, not a property of the model, and it
   will stop holding the moment `unfold` ships. Note also that this cuts the
   other way for the data structure, not just the direction of change:
   union-find is efficient at *merging* (`union`) and has no native support for
-  *splitting* — so a plain union-find is actually the wrong fit for the split
+  *splitting*, so a plain union-find is the wrong fit for the split
   a fold does today, and would only become a good fit for the merge `unfold`
   will eventually do. The robust choice either way is to recompute connected
   components from the current `U`-edge set on resolution (or incrementally
@@ -239,21 +243,22 @@ already face-granular and unchanged.
   of the crease. Whether the outer-contiguous-prefix test stays correct when the
   moving unit is a multi-face cluster spanning several depths is **not yet
   verified** and is the single most important thing to settle before
-  implementing — it is where the coarser flap and the still-fine
-  depth-along-crease model could genuinely conflict.
+  implementing: it is where the coarser flap and the still-fine
+  depth-along-crease model could conflict.
 - **Bent-crease detection.** `@fold` across a bent crease is already an error
   (ADR 0014, spec §4.6). Whether the coplanar-cluster split changes which folds
-  count as "bent under the moving set" — or leaves it unchanged, since that check
-  is over the crease bundle's segments, not flaps — needs checking, not assuming.
+  count as "bent under the moving set" needs a check before anyone relies on it.
+  The split may leave them unchanged, because that check runs over the crease
+  bundle's segments and never looks at flaps.
 - **Performance on large face counts.** Recomputing connected components at every
   flap resolution is `O(faces + edges)` per resolution; on large crease patterns
   this may matter. Whether recompute-each-time is acceptable or incremental
-  maintenance is required is an open question — flagged, not answered, because it
+  maintenance is required is an open question: flagged, not answered, because it
   has not been measured.
 
 ## References
 
-- ADR 0014 (a crease is a bundle of segments — why faces stay fine-grained)
+- ADR 0014 (a crease is a bundle of segments: why faces stay fine-grained)
 - ADR 0016 (typed operands: the flap operand type this ADR redefines)
 - `spec/SPECIFICATION.md` §4.6 (`@` / `@fold` / `moving` / `up to`), §4.8 (`at`)
 - `examples/bases/rabbit-ear.bel` (the repro for both findings)

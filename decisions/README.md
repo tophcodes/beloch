@@ -1,7 +1,7 @@
 # Decision records
 
 Architecture Decision Records (ADRs) for Beloch. One file per major decision,
-numbered, append-only. We don't delete ADRs — if a decision is reversed, a later
+numbered, append-only. We don't delete ADRs: if a decision is reversed, a later
 ADR supersedes it and the old one **moves to `archive/`**.
 
 The directory carries the status, not a banner inside the file: a `Superseded
@@ -12,7 +12,7 @@ The successor names its predecessor going forward.
 Scope: semantic and architectural choices (layer model, output format, language
 of implementation), **not** cosmetic ones (keyword spelling, file layout).
 
-Format per record — a YAML frontmatter block, then prose:
+Format per record: a YAML frontmatter block, then prose:
 
 ```yaml
 ---
@@ -39,10 +39,10 @@ number finds them; the record does not list them.
 
 Prose sections below it:
 
-- **Context** — the forces in play, what made the decision necessary
-- **Decision** — what we chose
-- **Alternatives considered** — what we rejected and why
-- **Consequences** — what this commits us to, good and bad
+- **Context**: the forces in play, what made the decision necessary
+- **Decision**: what we chose
+- **Alternatives considered**: what we rejected and why
+- **Consequences**: what this commits us to, good and bad
 
 A few records keep a `## Status` section as well, where the status carries
 narrative the single word cannot (0012, 0013, 0017, archive/0010).

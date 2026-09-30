@@ -179,7 +179,7 @@ distinct points $u$, $v$ fixes every point of the line through them, because
 a point of that line is determined by its distances to $u$ and $v$. A point
 $q$ off the line is sent to a point with the same distances to $u$ and $v$ as
 $q$, and there are exactly two such points, $q$ and its mirror image across
-the line. So $\psi$ is the identity or $\rho_e$, which is the claim.
+the line. Hence $\psi$ is the identity or $\rho_e$, which is the claim.
 :::
 
 ::: {.term #term-hinge name="hinge"}
@@ -243,8 +243,8 @@ $\{A_1 \cap A_2 : A_1 \in \mathcal{F}_1, A_2 \in \mathcal{F}_2\}$, with the
 pieces of empty interior dropped, consists of convex polygons with disjoint
 interiors covering $P$, since the intersection of two convex polygons is a
 convex polygon. Each piece $A_1 \cap A_2$ arises from $A_1$ by cutting along
-the lines through the edges of $A_2$, one at a time, and each cut is a split;
-so the overlay refines $\mathcal{F}_1$, and by the same argument
+the lines through the edges of $A_2$, one at a time, and each cut is a split.
+The overlay therefore refines $\mathcal{F}_1$, and by the same argument
 $\mathcal{F}_2$. The isometries and the values of $\lambda$ on the overlay
 are inherited from $\mathcal{F}$ through either side and agree, because both
 sides copied them from the same faces of $\mathcal{F}$. Reflexivity and
@@ -429,7 +429,7 @@ condition on the boundary curves is needed [@hull2020, Proposition 6.14].
 :::
 
 Sufficiency is what allows the model to define a flat folded state through
-$f$ and $\lambda$ alone: nothing about a state's physical realisability is
+$f$ and $\lambda$ alone: nothing about a state's physical realizability is
 left outside the definition.
 
 The last statement of this section connects the ordering on faces to the
@@ -468,8 +468,8 @@ read looks at the current state and computes a value; it changes nothing. If
 the state has no answer, the read fails, and the program stops there.
 
 Every value is a set of paper points, and a state says where those points
-lie on the table. So a fold moves every value with the paper, and no value
-has to be told about it. There are three sorts: point, bundle and flap.
+lie on the table. A fold therefore moves every value with the paper, and no value
+has to be told about it. Values come in three sorts: point, bundle and flap.
 
 ::: {.definition #def-point name="point value" uses="def-sheet def-flat-state" defines="term-point"}
 A value of sort *point* is a paper point $p \in P$. In a state

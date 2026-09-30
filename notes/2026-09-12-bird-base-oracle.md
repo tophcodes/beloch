@@ -46,6 +46,8 @@ comparison below is under this map.
 `file_frames[0]` is the flat sheet, a viewing frame that the `steps` assertion
 does not count, so Beloch frame $k$ is Ida step $k+1$.
 
+<!-- vale proselint.Typography = NO -->
+
 | Ida step | Ida command (Fig. 7.19) | Ida's picture | Beloch | faces (Ida / Beloch) | verdict |
 |---|---|---|---|---|---|
 | 1 | `NewOrigami[4]` | 7.20(a), the square | `paper square`, frame 0 | 1 / 1 | match |
@@ -56,6 +58,8 @@ does not count, so Beloch frame $k$ is Ida step $k+1$.
 | 6 | `InsideReverseFold[{24,7}, …]`, ray $(4,0) \to (6 - 2\sqrt2, 2)$ | 7.20(f), silhouette still the square | `reverse map .sl …`, frame 5 | not stated / 10 | outline matches, mirrored corner |
 | 7 | `InsideReverseFold[{8,9}, …]`, ray of step 5 | 7.20(g), the corner $(2,0)$ is gone | `reverse map .br …`, frame 6 | not stated / 12 | mirror image |
 | 8 | `InsideReverseFold[{5,16}, …]`, ray of step 6 | 7.20(h), the bird base kite | `reverse map .bl …`, frame 7 | not stated / 14 | match |
+
+<!-- vale proselint.Typography = YES -->
 
 The silhouette stays square through steps 5 and 6 because each of those folds
 moves the front layer of a side corner while the back layer still covers the
@@ -106,7 +110,7 @@ actions 3 and 4] would add two faces per command and give 4, 6, 8, 10, 12, 14,
 the sequence Beloch produces. The face identifiers contradict a consecutive
 reading of that model: step 5 names faces 12 and 13, which a consecutive
 allocator has not reached by then, while step 6 names face 7 and step 8 names
-face 5, both of which the same allocator would have consumed earlier. So Eos's
+face 5, both of which the same allocator would have consumed earlier. Hence Eos's
 identifiers are not consecutive and no count can be read out of them. Recorded
 as an open question below.
 

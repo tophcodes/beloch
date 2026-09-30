@@ -1,10 +1,10 @@
-# Beloch dev tools
+# Beloch development tools
 
 ## Rendering FOLD to SVG/PNG
 
 FOLD→SVG/PNG rendering lives in `packages/render-2d/render-svg/bin/fold2svg.ts` (the
-`@beloch/render-svg` package) — see `packages/render-2d/README.md`. The old Rabbit
-Ear-based dev tool that used to live here has been retired now that the
+`@beloch/render-svg` package); see `packages/render-2d/README.md`. The old Rabbit
+Ear-based development tool that used to live here has been retired now that the
 render engine's own SVG backend has reached parity.
 
 Setup (once; `bun` is in the Nix devshell):
@@ -28,9 +28,9 @@ dune exec beloch -- fold examples/syntax/fold-quarter.bel \
   | bun packages/render-2d/render-svg/bin/fold2svg.ts - folded.png --folded
 ```
 
-By default fold2svg draws **frame 0 — the crease pattern** (the flat sheet with
-its crease lines). Pass `--folded` to draw the **`foldedForm` frame** instead —
+By default fold2svg draws **frame 0, the crease pattern** (the flat sheet with
+its crease lines). Pass `--folded` to draw the **`foldedForm` frame** instead:
 the paper in its folded position. Flat folds stack layers in the same plane, so
-`--folded` shows the silhouette (the individual layers are not separated — a
+`--folded` shows the silhouette (the individual layers are not separated; a
 proper layered/exploded view is left to the future dedicated render engine). The
 axiom colour legend uses the current verbs (`map onto`, etc.).

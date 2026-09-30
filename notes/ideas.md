@@ -1,6 +1,6 @@
 # Ideas & deferred possibilities
 
-Concepts that came up during design but were set aside — not rejected, just not
+Concepts that came up during design but were set aside: not rejected, only not
 needed yet. Check here before reinventing. Unlike `antipatterns.md`, nothing here
 has been tried and found wanting; these are just parked.
 
@@ -9,15 +9,15 @@ has been tried and found wanting; these are just parked.
 ## Def interface / pub-priv
 
 Caller-side `export { .foo } $inst` plus `_`-temps already handle namespace
-control sufficiently for single-author use. Author-side interface declaration —
-a `pub { .foo --bar }` block at the end of a def, or a `priv` modifier per
-binding — would let library authors lock down implementation details.
+control sufficiently for single-author use. Author-side interface declaration
+(a `pub { .foo --bar }` block at the end of a def, or a `priv` modifier per
+binding) would let library authors lock down implementation details.
 
 Revisit when shared `.bel` libraries / distribution is on the table.
 
 ## Geometric destructuring
 
-`export { .p1 } from --line` — pulling the defining points back out of a line
+`export { .p1 } from --line`: pulling the defining points back out of a line
 after the fact. Redundant as long as you name the points at construction time.
 Could be useful if access patterns in real programs show that points frequently
 need to be recovered from a line that was kept but whose inputs weren't exported.
@@ -26,7 +26,7 @@ need to be recovered from a line that was kept but whose inputs weren't exported
 
 `apply name(args)` makes defs re-applicable (closed scope: parameters +
 earlier defs only). Useful patterns would need `repeat n { ... }` or
-`foreach .p in [...] { ... }`. Requires its own design — conditions,
+`foreach .p in [...] { ... }`. Requires its own design: conditions,
 iteration over paper elements, etc.
 
 ## Nested defs & namespace chaining
@@ -45,9 +45,9 @@ module/file namespacing.
 ## Degree compression via subfields (post-#33, only if needed)
 
 If the #33 benchmarks show degree creep in long models (values carrying ambient
-degree though they live in a proper subfield — e.g. √2·√5 = √10 at degree 4
+degree though they live in a proper subfield, e.g. √2·√5 = √10 at degree 4
 instead of 2), add a demotion pass: compute the element's own minimal polynomial
-(one resultant Res_x(gen(x), y − coords(x)) + gcd trick) and re-home it in the
+(one resultant Res_x(gen(x), y − coords(x)) + GCD trick) and re-home it in the
 smaller field. Full subfield enumeration (Szutkoski & van Hoeij, principal
 subfields) is overkill for this; pull that reference in only if per-element
 demotion proves insufficient.
@@ -56,13 +56,13 @@ demotion proves insufficient.
 
 If #33 shows real models hitting the 3^k degree ceiling: do NOT add a raw
 float kernel. Origami is dense in engineered coincidences (fold puts a point
-exactly on a line; cross/validity ask "exactly zero?") — float+ε misclassifies
+exactly on a line; cross/validity ask "exactly zero?"); float+ε misclassifies
 precisely those, yielding silently wrong topology instead of slowness. Instead:
 (1) floating-point interval FILTER over the exact kernel (CGAL/LEDA recipe):
-float-fast for generic sign queries, exact only when the interval straddles —
-no guarantee sacrificed; (2) honest degree budget with a clear error naming the
+float-fast for generic sign queries, exact only when the interval straddles
+(no guarantee sacrificed); (2) honest degree budget with a clear error naming the
 offending fold, rather than a silent-wrong mode; (3) rendering stays float via
-to_float as today. Revisit only with #33 benchmark data.
+`to_float` as today. Revisit only with #33 benchmark data.
 
 ## Named reusable preludes
 

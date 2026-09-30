@@ -34,7 +34,7 @@ as a predicate of the language. That would give Beloch a second half, one that
 talks about results rather than constructing them, and `spec/MODEL.md` would
 have to carry it. The gain did not justify that.
 
-Operands are the exception and get richer for free: as a statement, `assert`
+Operands are the exception and get richer at no extra cost: as a statement, `assert`
 inherits `point_operand` and `line_operand` from the grammar, so
 `assert .[--a --b] = .c` becomes expressible where the hand-rolled tokenizer
 accepted a bare name only.

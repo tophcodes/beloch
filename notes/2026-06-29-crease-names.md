@@ -1,4 +1,4 @@
-# 2026-06-29 — crease names in FOLD output + diagram labels
+# 2026-06-29: crease names in FOLD output + diagram labels
 
 `beloch:edges` now carries a `"name"` key per crease entry: the bound crease
 name (e.g. `"d1"`) when the statement was named (`--d1: …`), or `null` for an
@@ -6,11 +6,11 @@ anonymous crease.
 
 ## What shipped
 
-- `State.Provenance.name : string option` — set during eval from the binding
+- `State.Provenance.name : string option`: set during evaluation from the binding
   name in each crease statement.
-- `beloch:edges` `name` key (`string | null`) — emitted by `fold_emit`
+- `beloch:edges` `name` key (`string | null`): emitted by `fold_emit`
   alongside the existing `axiom`, `sources`, and `span` fields.
-- `tools/fold2svg.mjs` — labels named creases on the diagram: text placed on
+- `tools/fold2svg.mjs`: labels named creases on the diagram: text placed on
   the line, ~18% in from one end, with a white halo so it never collides with
   the corner labels.
 

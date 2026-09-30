@@ -4,18 +4,18 @@ title: "Relationship to Rabbit Ear; a constrained declarative language, not a li
 status: accepted
 ---
 
-# 0009 — Relationship to Rabbit Ear; a constrained declarative language, not a library or eDSL
+# 0009: Relationship to Rabbit Ear; a constrained declarative language, not a library or eDSL
 
 ## Context
 
 [Rabbit Ear](https://rabbitear.org) (Robby Kraft) is a mature JavaScript origami
 library: the seven axioms as functions, FOLD manipulation, crease-pattern math,
 SVG/WebGL rendering, and folding simulation. It is the closest existing work to
-Beloch and the obvious "why exist / why not just use it" challenge. Two sharp
+Beloch and the obvious "why exist / why not use it instead" challenge. Two sharp
 objections came up:
 
 1. Any `.bel` program could be written as an imperative Rabbit Ear `.js` script,
-   so the `.js` file is "also the model" — the source-as-artifact point seems to
+   so the `.js` file is "also the model", and the source-as-artifact point seems to
    collapse.
 2. JavaScript is Turing-complete, so Rabbit Ear is "more capable" than a small
    declarative language.
@@ -23,7 +23,7 @@ objections came up:
 Both routes this decision weighs have been taken before.
 
 - **Embedded, in a full host language.** Eos ([ida2009eos](../bibliography/references.bib),
-  [ida2020](../bibliography/references.bib)) is the most complete origami construction
+  [ida2020](../bibliography/references.bib)) is the most comprehensive origami construction
   system. Its language Orikoto is a subset of the Wolfram Language and runs
   inside Mathematica with the whole host available [ida2020, §2.2.1, §3.8.1].
   It computes the superposition of faces, proves constructions correct with
@@ -59,7 +59,7 @@ you do not want in a model description.
 ### Why `.js` is not equivalent to `.bel`
 
 Both are text files; the difference is **guarantees**. A `.bel` file is, by
-construction, a total, analyzable, declarative sequence of axiom operations —
+construction, a total, analyzable, declarative sequence of axiom operations:
 the source *is* the folding journey, diffs are semantically meaningful (one line
 = one changed fold), and there is no escape hatch. A general `.js` program
 guarantees none of this: loops, randomness, I/O, and abstraction make the diff
@@ -70,7 +70,7 @@ problem.
 
 - Step-by-step YR folding-instruction generation (the program *is* a linear,
   analyzable op sequence).
-- Static / precondition analysis — cf. Caruana & Pace 2007
+- Static / precondition analysis, cf. Caruana & Pace 2007
   ([caruana2007](../bibliography/references.bib)), who did exactly this for their embedded
   origami DSL.
 - A clean LLM generation target (small grammar, every token meaningful).
@@ -78,17 +78,17 @@ problem.
 - Multiple backends from one source (FOLD, YR diagrams, Rabbit Ear, 3D sim,
   print). A Rabbit Ear `.js` program is nailed to RE's runtime.
 
-### When computation is genuinely needed
+### When computation is needed
 
 Use a host language that **emits** `.bel` (parametric families, swept
-parameters), keeping Beloch declarative — TC generation *and* a clean artifact.
+parameters). This keeps Beloch declarative: TC generation *and* a clean artifact.
 Reaffirms [ADR 0007](0007-evaluator-not-compiler.md) (keep the language
 declarative; put cleverness in a host language).
 
 ### Rabbit Ear as consumer/backend
 
 RE is the ideal downstream consumer of Beloch's FOLD: rendering, folding
-simulation, and **face population** — it solves exactly what v0.0 defers (faces,
+simulation, and **face population**; it solves exactly what v0.0 defers (faces,
 mountain/valley folding, viewer), and it accepts our faces-less FOLD by computing
 faces itself. Implication: Beloch need not rebuild RE's presentation/compute
 stack in OCaml. The exact-rational OCaml core's value is **authoring and
@@ -104,7 +104,7 @@ architectural question for a later slice.
   the April 2026 design conversation).
 - **Embedded DSL in JS/Haskell** (cf. Caruana-Pace in Haskell). Rejected: an
   eDSL inherits the host's escape hatch and loses the totality/analyzability
-  guarantee. Only a standalone language with no escape hatch delivers it — that
+  guarantee. Only a standalone language with no escape hatch delivers it, and that
   *is* the differentiation.
 
 ## Consequences

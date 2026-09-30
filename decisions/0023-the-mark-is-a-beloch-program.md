@@ -4,7 +4,7 @@ title: "The mark is a Beloch program"
 status: accepted
 ---
 
-# 0023 — The mark is a Beloch program
+# 0023: The mark is a Beloch program
 
 ## Context
 
@@ -45,9 +45,9 @@ rejected before it could be rendered.
 
 ## Consequences
 
-- The mark ships in two fassungen. Above roughly 48 px it carries the renderer's
+- The mark ships in two variants. Above roughly 48 pixels it carries the renderer's
   crease notation, mountains and valleys distinguished by dash pattern. Below
-  that the patterns collapse into dotted noise, so a simplified fassung draws
+  that the patterns collapse into dotted noise, so a simplified variant draws
   every crease alike. The favicon is the simplified one.
 - Colour stays out of the mark. Mountain and valley carry meaning in this
   project, and a mark that used red or blue would spend colours that belong to

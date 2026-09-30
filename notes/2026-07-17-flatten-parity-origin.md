@@ -1,67 +1,67 @@
-# Flatten-Paritäten hängen am sort_ccw-Winkelursprung — Befund & Fix-Plan
+# Flatten parities depend on the `sort_ccw` angle origin: finding and fix plan
 
-**Kontext:** Zwei-Ear-fish-base (`tests/cases/collapse/flatten-two-ears-sequential.bel`,
-beide Ears `{toward .d}` bzw. `.d`/`.b`). Nach dem flat-hinge-Taco-Check
-(`ab8aa12`) hat das zweite Ear **keine** valide Realisierung mehr — der vorher
-emittierte Zustand war ein Ghost (Blatt durchs geschlossene Ear-Gelenk, von
-Toph am Render erkannt: Flügel unter dem stationären Streifen, Ear darüber).
+**Context:** Two-ear fish base (`tests/cases/collapse/flatten-two-ears-sequential.bel`,
+both ears `{toward .d}` or `.d`/`.b` respectively). After the flat-hinge taco check
+(`ab8aa12`), the second ear has **no** valid realization any more. The state
+emitted before that was a ghost (paper passing through the closed ear hinge,
+spotted by Toph on the render: wing below the stationary strip, ear above it).
 
-## Kausalkette (empirisch, BELOCH_COLLAPSE_DEBUG/BELOCH_TT_DEBUG-Instrumentierung)
+## Causal chain (empirical, BELOCH_COLLAPSE_DEBUG/BELOCH_TT_DEBUG instrumentation)
 
-1. Sektor-Paritäten kommen aus `sector_isometries`: `det(T_k) = (−1)^k` mit
-   k = CCW-Index ab `sort_ccw`s **absolutem Winkelursprung**. Die Zuordnung
-   proper/improper ist damit willkürlich, nicht geometrisch.
-2. Drei Konsumenten dieser Parität:
-   - **Anchor-Eligibility** (`anchor_realization`, nur det>0-Sektoren):
-     gefixt in `1a4f6d9` (improper-Fallback + reversed rank).
-   - **Validity-Filter** (`valid_srank`): stellt sich als unkritisch heraus —
-     alle `make`-Checks lesen rank nur über *betweenness*, die ist
-     reversal-invariant (Varianten-Experiment war deshalb ein No-op).
-   - **`effective_valley`** → Hinge-**Constraints** → `linear_extensions`:
-     HIER sitzt der eigentliche Schaden. Für den c-Vertex des zweiten Ears
-     erzeugt die Origin-Parität die Constraint-Richtungen der gespiegelten
-     Welt: über ALLE Maekawa-Patterns hinweg werden nur 16 der 24
-     Sektor-Ketten enumeriert; die physisch wahre Kette `[2,3,0,1]`
-     (stationär unten, Wing-Blöcke sauber darüber, Ear zuoberst) und ihre 7
-     Verwandten fehlen — und die fehlende Menge ist reversal-geschlossen,
-     also auch über Spiegel-Seating unerreichbar.
-3. Folge: jede enumerierte Kette verletzt (zu Recht!) einen Taco-Check —
-   64/64 KILL bei nf=12. Vor `ab8aa12` überlebten nur die 4 Ghosts.
+1. Sector parities come from `sector_isometries`: `det(T_k) = (−1)^k` with
+   k = CCW index counted from `sort_ccw`'s **absolute angle origin**. The
+   proper/improper assignment is therefore arbitrary and has no geometric basis.
+2. Three consumers of this parity:
+   - **Anchor eligibility** (`anchor_realization`, det>0 sectors only):
+     fixed in `1a4f6d9` (improper fallback + reversed rank).
+   - **Validity filter** (`valid_srank`): turns out to be uncritical.
+     All `make` checks read rank only through *betweenness*, which is
+     reversal-invariant (the variant experiment was a no-op for that reason).
+   - **`effective_valley`** → hinge **constraints** → `linear_extensions`:
+     HERE is where the damage sits. For the c-vertex of the second ear,
+     the origin parity produces the constraint directions of the mirrored
+     world: across ALL Maekawa patterns, only 16 of the 24
+     sector chains are enumerated; the physically true chain `[2,3,0,1]`
+     (stationary at the bottom, wing blocks cleanly above it, ear on top) and its 7
+     relatives are missing. The missing set is closed under reversal,
+     so mirror seating cannot reach it either.
+3. Consequence: every enumerated chain violates a taco check (rightly so!):
+   64/64 KILL at nf=12. Before `ab8aa12`, only the 4 ghosts survived.
 
-## Fix-Richtung (nächster Slice)
+## Fix direction (next slice)
 
-Parität konsequent pro Anker-Klasse rechnen statt global von der Origin:
-`collapse_pipeline ~mirror:bool` — bei `mirror` flippt `effective_valley`
-(und damit Constraints + `ray_assign`) sowie `intra`, geankert wird auf den
-det<0-Sektoren. `collapse_all` = pipeline(false) ∪ pipeline(true) mit
-Signatur-Dedup; `over` liest im mirror-Fall invertiert. Das ersetzt den
-reversed-rank-Fallback aus `1a4f6d9` durch ein konsistentes Modell (der
-Fallback bleibt als Spezialfall darin enthalten).
+Compute parity consistently per anchor class instead of globally from the origin:
+`collapse_pipeline ~mirror:bool`. With `mirror`, `effective_valley` flips
+(and with it the constraints + `ray_assign`), as does `intra`, and anchoring happens on the
+det<0 sectors. `collapse_all` = pipeline(false) ∪ pipeline(true) with
+signature dedup; `over` reads inverted in the mirror case. This replaces the
+reversed-rank fallback from `1a4f6d9` with a consistent model (the
+fallback remains contained in it as a special case).
 
-Erwartung danach: `flatten-two-ears-sequential.bel` grün (wahre Kette wird
-enumeriert, Ghosts bleiben tot), `test_flatten` derive-13 grün, keine
-Änderung an Einzel-flatten-Fällen (dort seatet die false-Pipeline wie heute).
+Expectation afterwards: `flatten-two-ears-sequential.bel` green (the true chain is
+enumerated, ghosts stay dead), `test_flatten` derive-13 green, no
+change to single-flatten cases (there the false pipeline seats as it does today).
 
-## Nebenbefunde
+## Side findings
 
-- `e_midpaper`/„crease ends inside the sheet" feuerte für 8 Patterns des
-  zweiten Ears — vermutlich der OppositeRay-Kandidat O2→center; nach dem
-  Paritäts-Fix neu bewerten (Interaktion mit Tier-Frage #51).
-- Debug-Hygiene: BELOCH_FLATTEN_DEBUG (eval), BELOCH_COLLAPSE_DEBUG
-  (valid_srank), BELOCH_TT_DEBUG (Taco-Raise) waren als temporäre
-  Instrumentierung nützlich; vor Commits entfernt. Bei Bedarf als dauerhafte
-  env-gated Traces wiedereinführen.
+- `e_midpaper`/"crease ends inside the sheet" fired for 8 patterns of the
+  second ear, presumably the OppositeRay candidate O2→center; reassess after the
+  parity fix (interaction with tier question #51).
+- Debug hygiene: BELOCH_FLATTEN_DEBUG (`eval`), BELOCH_COLLAPSE_DEBUG
+  (`valid_srank`), BELOCH_TT_DEBUG (taco raise) were useful as temporary
+  instrumentation; removed before commits. Reintroduce as permanent
+  env-gated traces if needed.
 
-## Aufgelöst (2026-07-18, staying-Slice)
+## Resolved (2026-07-18, staying slice)
 
-Sprachlösung statt ~mirror-Union: `(staying <flap>)` + Leading-Pair-Konvention
-verankern die Paritätsklasse semantisch (#52). Dabei
-dritte Repräsentanten-Arbitrarität gefunden und gefixt: `sector_iso` nahm das
-erste Face im Sektor als Orientierungs-Repräsentant — im gemischten
-Stayer-Sektor des zweiten Ears (Basis-Streifen det>0 + Ear-1-Stack det<0)
-las `effective_valley` dadurch die Spiegelwelt (Diagnose bestätigt: ein
-invertiertes Hinge-Constraint). Fix: pro Ray das crease-adjazente Face der
-Stayer-Seite. Die wahre Kette war nie ein Ghost: einmal enumeriert, besteht
-sie `make` + Taco-Checks. `flatten-two-ears-sequential` und derive-13 grün;
-Fallback aus 1a4f6d9 ersatzlos gestrichen. Nebenbefund e_midpaper: obsolet —
-LineNew-Emergent gewinnt regulär; #51-Trio bleibt als eigener Slice rot.
+Language-level solution instead of the ~mirror union: `(staying <flap>)` + leading-pair convention
+anchor the parity class semantically (#52). In the process, a
+third representative arbitrariness was found and fixed: `sector_iso` took the
+first face in the sector as the orientation representative. In the mixed
+stayer sector of the second ear (base strip det>0 + ear-1 stack det<0),
+`effective_valley` therefore read the mirror world (diagnosis confirmed: one
+inverted hinge constraint). Fix: per ray, the crease-adjacent face on the
+stayer side. The true chain was never a ghost: once enumerated, it passes
+`make` + taco checks. `flatten-two-ears-sequential` and derive-13 green;
+fallback from 1a4f6d9 removed without replacement. Side finding `e_midpaper`: obsolete,
+LineNew-Emergent wins in the regular way; #51 trio stays red as its own slice.

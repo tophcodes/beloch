@@ -2,12 +2,12 @@
 
 The site is a static Astro/Starlight build in `packages/www/dist`. Since the render-card
 work, `<Beloch>` evaluates inline `.bel` at build time by shelling the native
-`beloch` binary — the build now requires `beloch` on `PATH`, not just bun.
+`beloch` binary. The build now requires `beloch` on `PATH` in addition to bun.
 `packages/www/public/beloch/beloch-eval.js` (the in-browser evaluator for the live
 playground) remains a **committed artifact**; regenerate it manually with
 `packages/www/scripts/build-eval.sh` when the evaluator changes.
 
-Build command (from repo root, **inside `nix develop`** — see below):
+Build command (from repo root, **inside `nix develop`**; see below):
 `cd packages/www && bun install && bun run build` → output `packages/www/dist`.
 Cloudflare Pages project name: **`beloch-docs`** (see `packages/www/wrangler.toml`).
 
@@ -22,29 +22,29 @@ Cloudflare Pages project name: **`beloch-docs`** (see `packages/www/wrangler.tom
    project and redirects to `belochlang.org` with a Cloudflare redirect rule,
    so links in the Zenodo record and elsewhere keep resolving.
 3. **A `workflow`-scoped push.** The current `gh` tokens lack `workflow`
-   scope, so `.github/workflows/deploy.yml` can't be pushed by automation —
-   push it yourself, or grant the scope.
+   scope, so `.github/workflows/deploy.yml` can't be pushed by automation.
+   Push it yourself, or grant the scope.
 
 ## Canonical: GitHub Actions + wrangler
 
 CF Pages' Git-integration builder is **bun-only** and cannot shell out to a
-native `beloch` binary — since the build now depends on `beloch` being on
+native `beloch` binary. Since the build now depends on `beloch` being on
 `PATH`, Git-integration is **no longer a viable deploy path**. GitHub Actions
 is the only supported route: it builds `beloch` from the flake with Nix, puts
 it on `PATH`, then runs the bun build and uploads `packages/www/dist` via Wrangler.
 
 The workflow lives at `.github/workflows/deploy.yml` and runs on every push to
 `main` that touches `packages/www/**`, `packages/render-2d/**`, `packages/core/lib/**`, `packages/core/bin/**`, `flake.nix`,
-`flake.lock`, or the workflow file itself (also triggerable manually via
+`flake.lock`, or the workflow file itself (it can also be triggered manually via
 `workflow_dispatch`). It uses the `CLOUDFLARE_API_TOKEN` /
 `CLOUDFLARE_ACCOUNT_ID` secrets from prerequisite 1.
 
 If a Cloudflare Pages project for this repo has Git-integration **connected**,
-**disconnect it** — otherwise CF will also try to build on push and fail (no
+**disconnect it**. Otherwise CF will also try to build on push and fail (no
 `beloch` on its bun-only builder). Pages should only receive builds via the
 Wrangler upload in the Actions job. Map the custom domain `belochlang.org` in
 the Pages project's **Custom domains** tab (creates/uses the CNAME from
-prerequisite 2) — that mapping is independent of which build path pushes to
+prerequisite 2). That mapping is independent of which build path pushes to
 the project.
 
 After first pushing the workflow file, trigger it once via `workflow_dispatch`
