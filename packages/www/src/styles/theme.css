@@ -226,17 +226,40 @@
 .bel-outcome-unexpected::before { content: "\2717 "; }
 .bel-outcome-ok {
 	background: var(--bel-ui-code-surface);
-	padding: 8px 20px 12px;
+	padding: 8px 20px;
 	border-top: 1px solid var(--bel-ui-divider);
 }
+.bel-outcome-ok > summary {
+	cursor: pointer;
+	color: var(--bel-ui-code-accent);
+}
+.bel-outcome-ok[open] > summary { margin-bottom: 4px; }
+.bel-outcome-ok:has(.bel-assert-failed) > summary { color: var(--bel-ui-code-error); font-weight: 600; }
+.bel-assert code { background: none; padding: 0; }
+
+/* An outcome belongs to the block above it, so the two join into one card. */
+.sl-markdown-content .bel-block:has(+ .bel-outcome) {
+	margin-bottom: 0;
+	border-radius: 12px 12px 0 0;
+}
+.sl-markdown-content .bel-block + .bel-outcome { margin-top: 0; border-top-width: 0; }
+/* The rows of an outcome sit on the code grid, not on Starlight's gap between
+   blocks. The glyph takes the width of the hanging indent, so the text of every
+   row starts in one column. */
 .bel-assert {
+	margin-top: 2px;
 	padding-left: 1.4em;
 	text-indent: -1.4em;
 }
+.bel-assert::before {
+	display: inline-block;
+	width: 1.4em;
+	text-indent: 0;
+}
 .bel-assert-verified { color: var(--bel-ui-code-accent); }
-.bel-assert-verified::before { content: "\2713 "; }
+.bel-assert-verified::before { content: "\2713"; }
 .bel-assert-failed { color: var(--bel-ui-code-error); font-weight: 600; }
-.bel-assert-failed::before { content: "\2717 "; }
+.bel-assert-failed::before { content: "\2717"; }
 .bel-assert-message { font-weight: 400; font-style: italic; opacity: 0.85; }
 
 /* Grammar notation (remark-grammar). The token classes take the variables the

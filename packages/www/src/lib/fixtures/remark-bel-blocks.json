@@ -32,6 +32,15 @@
       "expected": true,
       "message": "expected an error containing \"something that never happens\", but eval succeeded",
       "asserts": []
+    },
+    {
+      "index": 6,
+      "status": "ok",
+      "expected": false,
+      "asserts": [
+        { "text": "assert steps = 1", "verified": true },
+        { "text": "assert faces = 1", "verified": true }
+      ]
     }
   ]
 }

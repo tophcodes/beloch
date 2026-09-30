@@ -37,6 +37,7 @@ not have to re-derive it.
 | 26 | A two-state choice is a checkbox, which is the first form control the system names | `.pg-menu-check` |
 | 27 | The step a drawing stands for is marked in the code by a bar down the block's left edge | `.cm-step-line` |
 | 28 | Where `currentColor` cannot resolve, the mark and the lockup exist as standalone files in literal ink | `public/brand/*-light.svg`, `*-dark.svg`, `scripts/generate-brand.ts` |
+| 29 | A block's assertions show as their results only, folded into one summary line that opens on a failure | `remark-bel.ts`, `.bel-outcome-ok` |
 
 ## Built
 

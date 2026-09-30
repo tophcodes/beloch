@@ -116,13 +116,32 @@ function outcomeHtml(entry: BlockEntry | undefined): string {
     return `<pre class="bel-outcome bel-outcome-error bel-outcome-unexpected">${esc(entry.message ?? "")}</pre>`;
   }
   if (entry.asserts.length === 0) return "";
+  const failed = entry.asserts.filter((a) => !a.verified).length;
+  const n = entry.asserts.length;
+  const noun = n === 1 ? "assertion" : "assertions";
+  const summary = failed === 0 ? `${n} ${noun} passed` : `${failed} of ${n} ${noun} failed`;
   const lines = entry.asserts
     .map((a) => {
       const explanation = !a.verified && a.message ? ` <span class="bel-assert-message">${esc(a.message)}</span>` : "";
       return `<div class="bel-assert ${a.verified ? "bel-assert-verified" : "bel-assert-failed"}"><code>${esc(a.text)}</code>${explanation}</div>`;
     })
     .join("");
-  return `<div class="bel-outcome bel-outcome-ok">${lines}</div>`;
+  // Closed while every assertion holds; a failure opens it, so a broken page
+  // shows what broke without a click.
+  return `<details class="bel-outcome bel-outcome-ok"${failed === 0 ? "" : " open"}><summary>${summary}</summary>${lines}</details>`;
+}
+
+// `; assert …` and `; expect …` lines, as packages/core's
+// Bel_assert.is_assertion_line reads them.
+const ASSERT_LINE = /^[ \t]*;[ \t]*(?:assert|expect)(?:[ \t]|$)/;
+
+// The program without its assertion lines and the blank lines they leave at
+// the end. A block drops them only when an outcome renders under it, so a page
+// built without blocks.json still shows what the block asserts.
+function withoutAssertions(src: string): string {
+  const lines = src.split("\n").filter((l) => !ASSERT_LINE.test(l));
+  while (lines.length > 0 && lines[lines.length - 1]!.trim() === "") lines.pop();
+  return lines.join("\n");
 }
 
 export default function remarkBel(options: { blocks?: string; doc?: string } = {}) {
@@ -165,10 +184,12 @@ export default function remarkBel(options: { blocks?: string; doc?: string } = {
 
     await Promise.all(
       targets.map(async ({ node, blockIndex }) => {
-        const html = await highlightBel(String(node.value ?? ""));
         const entry = entries.find((e) => e.index === blockIndex);
+        const src = String(node.value ?? "");
+        const outcome = outcomeHtml(entry);
+        const html = await highlightBel(outcome ? withoutAssertions(src) : src);
         node.type = "html";
-        node.value = `<pre class="bel-block"><code>${html}</code></pre>${outcomeHtml(entry)}`;
+        node.value = `<pre class="bel-block"><code>${html}</code></pre>${outcome}`;
         delete node.lang;
         delete node.meta;
       })

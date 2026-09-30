@@ -26,12 +26,12 @@ async function render(blocks: string): Promise<string> {
   );
 }
 
-// Isolates the single `<pre class="bel-outcome ...">...</pre>` (or `<div
+// Isolates the single `<pre class="bel-outcome ...">...</pre>` (or `<details
 // class="bel-outcome ...">`) element that contains `marker`, so an assertion
 // about one block's rendering does not accidentally hold or break over
 // another block's markup elsewhere in the document.
 function outcomeBlockContaining(html: string, marker: string): string {
-  const re = /<(pre|div) class="bel-outcome[^>]*>[\s\S]*?<\/\1>/g;
+  const re = /<(pre|details) class="bel-outcome[^>]*>[\s\S]*?<\/\1>/g;
   const found = [...html.matchAll(re)].find((m) => m[0].includes(marker));
   if (!found) throw new Error(`no bel-outcome block found containing ${JSON.stringify(marker)}`);
   return found[0];
@@ -81,9 +81,32 @@ test("an expect-error that never fired renders as a failure, inverted", () => {
 test("a block with no blocks.json entry renders as the program alone", () => {
   // the program itself is still highlighted and present
   expect(html).toContain("bd");
-  // four outcome blocks render (indices 1, 2, 4, 5 above); index 3, the
+  // five outcome blocks render (indices 1, 2, 4, 5, 6 above); index 3, the
   // `.bel .frag` block with no matching entry, adds none
-  expect(html.match(/class="bel-outcome/g)?.length).toBe(4);
+  expect(html.match(/class="bel-outcome/g)?.length).toBe(5);
+});
+
+// The outcome reports on the assertions, so the block leaves their lines out.
+test("a block with an outcome shows the program without its assertion lines", () => {
+  const blocks = [...html.matchAll(/<pre class="bel-block">[\s\S]*?<\/pre>/g)].map((m) => m[0]);
+  expect(blocks.some((b) => b.includes("ac3"))).toBe(true);
+  expect(blocks.some((b) => b.includes("ac4"))).toBe(true);
+  for (const b of blocks) {
+    expect(b).not.toContain("assert");
+    expect(b).not.toContain("expect");
+  }
+});
+
+test("passing asserts fold into a closed summary", () => {
+  const block = outcomeBlockContaining(html, "assert steps = 1");
+  expect(block).toStartWith('<details class="bel-outcome bel-outcome-ok">');
+  expect(block).toContain("<summary>2 assertions passed</summary>");
+});
+
+test("a failed assert opens the summary and counts the failures", () => {
+  const block = outcomeBlockContaining(html, "faces was 1, not 2");
+  expect(block).toStartWith('<details class="bel-outcome bel-outcome-ok" open>');
+  expect(block).toContain("<summary>1 of 2 assertions failed</summary>");
 });
 
 // Acceptance 11 (site half): a `.bel .prelude` block appears nowhere in the
