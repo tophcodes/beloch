@@ -1,0 +1,20 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; A three-ray fan near the upper corner of a book fold, scored on the upper
+; layer alone. The emergent ray runs from the vertex to the raw edge --bc
+; across the lower layer, which lies beneath and stays (ADR 0037). The
+; emergent ray is scored on the layers of the tip alone, so the lower layer
+; keeps a single face and gains no crease on the emergent ray's line.
+
+paper square
+fold (map --ab onto --cd) (moving .a) as --m
+.f = --m * --bc
+mark (map --da onto --cd) (toward .f) (on #[.a]) as --dg
+.o = free on --dg from .a at 1/4
+mark (perp --dg through .o) (on #[.a]) as --pp
+mark (perp --ab through .o) (on #[.a]) as --v
+.z = free on --bc from .b at 1/4
+flatten (--dg & .a valley) (--pp & --da) (--v & --ab) (staying .z) as --e
+
+; assert .d = (0, 1)
+; assert faces = 8

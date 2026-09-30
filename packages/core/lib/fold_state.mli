@@ -224,6 +224,7 @@ val init_square : t
 val subdivide :
   ?crease_id:int ->
   ?keep_side:Geom.line * int ->
+  ?only:(int -> bool) ->
   t ->
   Geom.line ->
   prov:State.provenance option ->
@@ -234,7 +235,8 @@ val subdivide :
     shares a positive-length boundary segment. [keep_side:(guard, keep)]
     restricts the cut to the ray of [axis] on side [keep] of the
     perpendicular [guard] line through the ray's origin — faces on the other
-    side are left uncut. [crease_id] defaults to a fresh id. *)
+    side are left uncut. [only] restricts the cut to the faces it holds for;
+    every other face is left whole. [crease_id] defaults to a fresh id. *)
 
 val subdivide_paper :
   ?crease_id:int ->

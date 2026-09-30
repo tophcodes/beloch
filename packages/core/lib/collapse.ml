@@ -987,8 +987,8 @@ let collapse_runs ?anchor (g : Fold_state.t) (es : elem list)
    valley in [es] order. Returns one result per pattern, parallel to
    [patterns]. Behaviorally identical to calling [collapse_all] once per
    pattern. *)
-let collapse_all_patterns ?anchor (g : Fold_state.t) (es : elem list)
-    ~(over : (int * int) list) ~(stayer : stayer)
+let collapse_all_patterns ?anchor ?sectors:only (g : Fold_state.t)
+    (es : elem list) ~(over : (int * int) list) ~(stayer : stayer)
     ~(patterns : bool list list) : (Fold_state.t list, string) result list =
   match prepipeline_geom g es with
   | Error e -> List.map (fun _ -> Error e) patterns
@@ -1007,6 +1007,11 @@ let collapse_all_patterns ?anchor (g : Fold_state.t) (es : elem list)
       | Error e -> List.map (fun _ -> Error e) patterns
       | Ok [] -> List.map (fun _ -> Error e_stayer_dead) patterns
       | Ok sectors ->
+          let sectors =
+            match only with
+            | None -> sectors
+            | Some l -> List.filter (fun s -> List.mem s l) sectors
+          in
           (* per-sector geometry, built ONCE and reused across all patterns *)
           let sgs =
             List.map
@@ -1055,6 +1060,29 @@ let collapse_all_patterns ?anchor (g : Fold_state.t) (es : elem list)
                 pool_of_runs (List.map run sgs)
               end)
             patterns)
+
+(* The tip of the fan on [g] for each admissible stayer sector (ADR 0037):
+   the sector, as [collapse_all_patterns ~sectors] takes it, and per face of
+   [g] whether the tip holds it. Empty when the fan fails before its tip is
+   defined; solving it then reports that failure. *)
+let tips ?anchor (g : Fold_state.t) (es : elem list) ~(stayer : stayer) :
+    (int * bool array) list =
+  match prepipeline_geom g es with
+  | Error _ -> []
+  | Ok (o, rays) -> (
+      let faces = Fold_state.faces g in
+      let nf = Array.length faces in
+      let sec_on rays =
+        Array.init nf (fun i ->
+            sector_of_poly_opt o rays (faces.(i), Fold_state.face_iso2 g i))
+      in
+      let anchor = anchor_faces g o anchor in
+      match admissible_sectors ~stayer o rays (sec_on rays) nf with
+      | exception Stayer_collinear -> []
+      | sectors ->
+          List.map
+            (fun s0 -> (s0, tip_of g ~sec:(sec_on (rotate_rays rays s0)) ~anchor))
+            sectors)
 
 let collapse ?anchor (g : Fold_state.t) (es : elem list)
     ~(over : (int * int) list) ~(stayer : stayer) :

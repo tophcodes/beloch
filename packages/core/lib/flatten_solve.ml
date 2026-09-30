@@ -254,7 +254,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     let given_rays =
       List.map (fun (_, a, b, _) -> (o, far_at_o a b)) combo
     in
-    let try_patterns (st' : Fold_state.t) (tier : [ `Tier1 | `Tier2 ])
+    let try_patterns ?sectors (st' : Fold_state.t) (tier : [ `Tier1 | `Tier2 ])
         (emergent : (int * Geom.line) option)
         (emergent_seg : Trace.segment option)
         (all_rays :
@@ -279,8 +279,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                     :: !local_real)
                 sts
           | Error msg -> local_err := msg :: !local_err)
-        (Collapse.collapse_all_patterns ?anchor st' es_geom ~over ~stayer
-           ~patterns)
+        (Collapse.collapse_all_patterns ?anchor ?sectors st' es_geom ~over
+           ~stayer ~patterns)
     in
     (if odd then
        let fixed = Collapse.sort_ccw o elems_geom in
@@ -302,16 +302,16 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                   segments, not [new_cid]. *)
                let guard = Geom.perpendicular_through line o in
                let keep = Geom.side_of_line guard ray_pt in
-               let st' =
+               let score only =
                  Fold_state.subdivide !(ctx.state) line
                    ~crease_id:(Lazy.force new_cid)
-                   ~keep_side:(guard, keep) ~prov
+                   ~keep_side:(guard, keep) ~only ~prov
                in
                let far_of_seg (s : Fold_state.crease_segment) =
                  if Geom.point_equal s.Fold_state.ta o then s.Fold_state.tb
                  else s.Fold_state.ta
                in
-               let matches =
+               let matches_in st' =
                  Fold_state.all_crease_ids st'
                  |> List.concat_map (fun cid ->
                         Fold_state.crease_segments st' cid
@@ -329,12 +329,74 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                                then Some (cid, far)
                                else None))
                in
+               (* the tip is read off the state scored through every layer
+                  on the ray's side, and the ray is then scored on the
+                  layers of the tip alone (ADR 0037): a face of the
+                  pre-flatten state is scored when a face of the tip lies
+                  in it. Stayer sectors whose tips differ are solved on
+                  states of their own. *)
+               let st_all = score (fun _ -> true) in
+               let pre = Fold_state.faces !(ctx.state) in
+               let centroid (f : Geom.point array) =
+                 let m = Num.of_int (Array.length f) in
+                 let sum get =
+                   Array.fold_left (fun acc p -> Num.add acc (get p)) Num.zero f
+                 in
+                 { Geom.x = Num.div (sum (fun p -> p.Geom.x)) m;
+                   y = Num.div (sum (fun p -> p.Geom.y)) m }
+               in
+               let parents_of (tip : bool array) =
+                 let faces = Fold_state.faces st_all in
+                 Array.map
+                   (fun (f : Geom.point array) ->
+                     let holds = ref false in
+                     Array.iteri
+                       (fun t (tf : Geom.point array) ->
+                         if tip.(t) && Geom.in_convex_polygon f (centroid tf)
+                         then holds := true)
+                       faces;
+                     !holds)
+                   pre
+               in
                List.iter
                  (fun (cid, far) ->
                    let emergent_ray = (cid, o, far, Ast.MvFree) in
-                   try_patterns st' tier (Some (cid, line)) (Some (o, far))
-                     (emergent_ray :: combo))
-                 matches)
+                   let all_rays = emergent_ray :: combo in
+                   let run ?sectors st' =
+                     try_patterns ?sectors st' tier (Some (cid, line))
+                       (Some (o, far)) all_rays
+                   in
+                   let es_geom =
+                     List.map
+                       (fun (fcid, fea, feb, _) ->
+                         elem_of (fcid, fea, feb, true))
+                       all_rays
+                   in
+                   let groups =
+                     List.fold_left
+                       (fun acc (s0, tip) ->
+                         let ps = parents_of tip in
+                         match List.partition (fun (p, _) -> p = ps) acc with
+                         | [ (_, ss) ], rest -> (ps, s0 :: ss) :: rest
+                         | _ -> (ps, [ s0 ]) :: acc)
+                       []
+                       (Collapse.tips ?anchor st_all es_geom ~stayer)
+                   in
+                   match groups with
+                   | [] -> run st_all
+                   | _ ->
+                       List.iter
+                         (fun (ps, ss) ->
+                           let st' = score (fun fi -> ps.(fi)) in
+                           let found =
+                             List.exists
+                               (fun (c, f) ->
+                                 c = cid && Geom.point_equal f far)
+                               (matches_in st')
+                           in
+                           run ~sectors:ss (if found then st' else st_all))
+                         (List.rev groups))
+                 (matches_in st_all))
              cands
      else try_patterns !(ctx.state) `Tier1 None None combo);
     (!local_real, !local_err, given_fars)

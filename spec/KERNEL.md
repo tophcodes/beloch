@@ -114,6 +114,14 @@ the stayer's wedge fails with `the anchor flap has no material outside the
 staying sector`. `on` reaches the kernel as the paper polygons of the flap it
 names, so the anchor survives the scoring of an emergent ray.
 
+`Flatten_solve.run` scores the emergent ray of an odd fan on the layers of
+the tip alone, where the program marks the rays it names. It scores the ray
+through every layer on its side of the vertex, reads the tip of each
+admissible stayer sector off that state with `Collapse.tips`, and scores the
+ray again on the state before the flatten, in each face that holds a face of
+the tip. Sectors whose tips hold different faces are solved on states of
+their own.
+
 The stacking ranks sectors, as `Collapse.linear_extensions` enumerates them.
 The stayer's sector holds the faces of the stayer's wedge the tip hangs
 from: every piece of the wedge, joined by flat hinges inside it, that is
@@ -123,13 +131,8 @@ ranked in a block of its own, one per piece joined by flat hinges, and keeps
 its order where it overlaps another face that stays. The tip can land
 between two such layers: on a book fold with the rays marked on both
 layers, the upper corner folds in between the upper and the lower layer.
-Two ceilings remain:
-
-- The pieces of the stayer's wedge the tip hangs from rank as one block. A
-  tip hinged to two of them cannot land between them.
-- The emergent ray of a fan with an odd number of given rays is scored
-  through every layer on its side, the layers outside the tip included
-  ([issue #122](https://github.com/tophcodes/beloch/issues/122)).
+One ceiling remains: the pieces of the stayer's wedge the tip hangs from
+rank as one block, so a tip hinged to two of them cannot land between them.
 
 ### Checks
 
