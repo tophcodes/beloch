@@ -141,9 +141,22 @@ ray again on the state before the flatten, in each face that holds a face of
 the tip. Sectors whose tips hold different faces are solved on states of
 their own.
 
-The stacking ranks sectors, as `Collapse.linear_extensions` enumerates them.
-The stayer's sector holds the faces of the stayer's wedge the tip hangs
-from: every piece of the wedge, joined by flat hinges inside it, that is
+`Collapse.mk_sector_geoms` gives each hinge of the tip on a ray a role
+(ADR 0044). A flat hinge of a ray's crease folds. A folded hinge of a ray's
+crease keeps or opens, and a hinge of another crease on a ray keeps or
+changes; the kernel tries every combination of these, so the work doubles
+with each of them. For each combination it moves every face by the
+reflections across the changing hinges on a path from a face outside the
+tip, found breadth-first, and drops the combination when two paths to a
+face disagree or nothing moves. Kawasaki's and Maekawa's conditions at the
+vertex run only where the anchor surrounds the vertex on the paper;
+elsewhere `Fold_state.make` checks that the paths close.
+
+The stacking ranks units, as `Collapse.linear_extensions` enumerates them. A
+unit of the tip holds the faces of one wedge that share one motion; the
+first motion in a wedge keeps the wedge's number, so on one sheet the units
+are the wedges. The stayer's unit holds the faces of the stayer's wedge the
+tip hangs from: every piece of the wedge, joined by flat hinges inside it, that is
 hinged to a face of the tip, and the whole wedge when none is. Every other
 face the fan leaves in place, inside the stayer's wedge or outside it, is
 ranked in a block of its own, one per piece joined by flat hinges, and keeps
@@ -169,8 +182,8 @@ on checks 12–14). Every message and hint is the evaluator's own text.
 | 7 | the ray count is even and below 4 | `count` | `` use `fold` for n = 2 `` |
 | 8 | (odd ray count) no geometric completion closes the vertex at all, on either side | `vertex not flat-foldable toward that side` | |
 | 9 | a segment's far endpoint is not on the paper boundary (would leave a degree-1 vertex mid-sheet) | `crease ends inside the sheet` | |
-| 10 | two elements resolve to the same ray (the same direction from O) | `duplicate ray in collapse` | |
-| 11 | Kawasaki fails: the reflection composition around O does not close (exact) [[hull2020]](#ref-hull2020) ch. 5 | `vertex not flat-foldable (angles)` | |
+| 10 | two elements of one crease resolve to the same ray (the same direction from O) | `duplicate ray in collapse` | |
+| 11 | Kawasaki fails: where the anchor surrounds O on the paper, the reflection composition around O does not close (exact) [[hull2020]](#ref-hull2020) ch. 5; elsewhere no combination of the hinges the fan may change closes its paper paths | `vertex not flat-foldable (angles)` | |
 | 12 | the leading two elements' folded rays are collinear and no `staying` is given; the convention has no side to anchor | `` collinear leading creases don't pick a stayer `` | `add (staying .p)` |
 | 13 | no realization keeps the stayer still: every candidate × Maekawa pattern died before a stacking closed | `no realization keeps the staying flap still` | |
 | 14 | two different segment combinations (`SPECIFICATION.md` §4.9, Resolution) both survive with valid realizations | `` <name> is ambiguous at the vertex `` | `` select a segment with `&` `` |
