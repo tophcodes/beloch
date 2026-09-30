@@ -1,7 +1,7 @@
 # Design: Dogfooding blog tooling (`build`)
 
 **Date:** 2026-06-28
-**Status:** approved (brainstorming) — pending implementation plan
+**Status:** approved (brainstorming); pending implementation plan
 
 ## Problem
 
@@ -18,11 +18,11 @@ renderer (`beloch render` is a stub).
 | Narrator | An **agent** (Claude) reads git/specs/examples and writes the prose. No prose-generation code. |
 | Renderer | **Rabbit Ear** (JS lib) directly: FOLD JSON → SVG. No own renderer in the OCaml core. |
 | Blog host | **Markdown in the repo** under `blog/`; generated SVGs alongside. SSG-agnostic, publishable later. |
-| Post unit | **Free / thematic** — the agent decides scope, references commits/files manually. |
+| Post unit | **Free / thematic**: the agent decides scope, references commits/files manually. |
 | Session logs | **Out of scope for v1.** git + specs + `.bel` examples only. |
 | Example embedding | **Both** inline ` ```bel ` fences *and* referenced `.bel` files. |
 | Tool | A single deterministic command, **`build`** (preprocessor + renderer). The agent is the scaffold; no `new`/scaffold command. |
-| Agent docs | **`blog/README.md`** — the single source of truth for conventions. |
+| Agent docs | **`blog/README.md`**: the single source of truth for conventions. |
 
 ## Architecture
 
@@ -42,11 +42,11 @@ them with no change here.
 
 ### Components (each one clear purpose)
 
-1. **`fold2svg`** (internal module) — input: FOLD JSON; output: SVG string, via
+1. **`fold2svg`** (internal module). Input: FOLD JSON; output: SVG string, via
    Rabbit Ear. Knows nothing about Markdown or git. Unit-testable in isolation
    against FOLD fixtures.
 
-2. **`build`** (the command) — Markdown preprocessor over `blog/*.md`:
+2. **`build`** (the command): Markdown preprocessor over `blog/*.md`:
    - Finds inline ` ```bel ` fenced blocks **and** `bel:<path>` file references.
    - For each: runs `beloch fold` (subprocess) → `fold2svg` → SVG.
    - Writes SVGs to `blog/assets/<post-slug>/<n>.svg`.
@@ -70,11 +70,11 @@ tools/blog/
 
 ### Embedding syntax (to be finalized in `blog/README.md`)
 
-- **Inline:** a fenced block tagged `bel` — its source is rendered and an image
+- **Inline:** a fenced block tagged `bel`; its source is rendered and an image
   inserted below it. Source stays visible (literate style); single source of
   truth, cannot drift from the image.
 - **Referenced:** a marker like `bel:examples/diagonals.bel` (exact form settled
-  during implementation) — renders that file and inserts the image; used for
+  during implementation): renders that file and inserts the image; used for
   shared/larger examples that live as real files.
 
 ## Output / format
@@ -97,7 +97,7 @@ prose generation, an OCaml-native renderer, a `new`/scaffold command.
 ## Open implementation details (for the plan)
 
 - Exact `bel:` reference marker syntax.
-- Node toolchain choice (plain tsc / tsx / bun) and how it's wired into the Nix
+- Node toolchain choice (plain `tsc` / `tsx` / `bun`) and how it's wired into the Nix
   devshell.
 - Whether `build` edits posts in place or writes to a separate output dir.
 - Rabbit Ear SVG styling defaults (stroke per assignment M/V/B/U, size).

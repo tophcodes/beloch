@@ -71,6 +71,7 @@ Ghourabi
 Gitignored
 Greppable
 Hatori
+Hoeij
 Horner
 Huzita
 Idempotency
@@ -131,6 +132,7 @@ Reachability
 Rebindable
 Recurse
 Recurses
+Reframe
 Renderer
 Renderers
 Ruleset
@@ -214,6 +216,7 @@ dedups
 defs
 destructuring
 desugar
+developable
 devshell
 dipyramid
 direnv
@@ -252,6 +255,7 @@ lexing
 lookahead
 memoized
 minpoly
+misclassifies
 monic
 monospace
 msolve
@@ -288,15 +292,18 @@ preimage
 prepended
 preprint
 preprocessor
+priori
 qqbar
 queryable
 quotiented
 reachability
 realizability
+rebase
 rebindable
 recurse
 recurses
 reimplement
+relaxable
 relitigate
 renderer
 renderers
@@ -304,6 +311,7 @@ reparsing
 repo
 ruleset
 sedlex
+serializer
 sigils
 sourcemap
 squarefree
@@ -315,6 +323,7 @@ stayers
 stderr
 stdin
 stdout
+subagents
 subcommand
 subcommands
 subfields
@@ -337,10 +346,12 @@ unextractable
 unflipped
 unioning
 univariate
+unphysical
 unrepresentable
 unscored
 unstretched
 viewport
+walkthrough
 wasm
 waterbomb
 webfont

@@ -58,7 +58,7 @@ program and which highlight explain a term.
 The transition between crease pattern and folded state is the only real
 animation, and it is small. Reflecting a flap across its hinge line is a
 scale by $-1$ perpendicular to that line, and the orthographic projection of
-a rotation by $\theta$ about the line is a scale by $\cos\theta$. So one fold
+a rotation by $\theta$ about the line is a scale by $\cos\theta$. Hence one fold
 step animates as an SVG `transform` on the moving flap, interpolated from
 $1$ to $-1$, with the layer order swapped when the factor crosses $0$. That
 is a `requestAnimationFrame` loop or a Web Animations API call on the

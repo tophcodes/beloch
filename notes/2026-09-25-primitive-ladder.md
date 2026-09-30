@@ -55,7 +55,7 @@ A paper that uses the word has to say which one it means.
   rung-1 folds only [fisher1994, §7.2]. The creases of a multifold are all
   given by the user; none is derived.
 - Eos has valley, mountain, inside and outside reverse and squash as built-in
-  commands [ida2009eos, p. 287; ida2020, §7.4.3, fn. 7].
+  commands [ida2009eos, p. 287; ida2020, §7.4.3, footnote 7].
 - eGami, an interactive simulator, offers inside, outside and asymmetric
   reverse, symmetric squash, symmetric petal, pleat and crimp as tools, with
   rabbit ear and sink under development at the time [fastag2009egami,
