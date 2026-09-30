@@ -58,18 +58,26 @@ test("paper that runs flat across a hinge is one strip, and every other hinge is
   expect(turns.length).toBe(6);
 });
 
-test("the strips are numbered along the paper, and the crease pattern carries the same numbers", async () => {
+test("each piece is named by its face of the crease pattern, and the crease pattern carries the same names", async () => {
   const scene = await fixture(1);
-  const { strips, turns } = sideSection(scene, "s");
-  const byNumber = new Map(strips.map((s, i) => [s.number, i]));
-  for (let n = 1; n < strips.length; n++) {
-    const [p, q] = [byNumber.get(n)!, byNumber.get(n + 1)!];
-    expect(turns.some((u) => u.strips.includes(p) && u.strips.includes(q))).toBe(true);
+  const { strips } = sideSection(scene, "s");
+  const parts = strips.flatMap((s) => s.pieces.flatMap((p) => p.parts));
+  // the line crosses each of the ten faces of the pattern it meets once
+  expect(new Set(parts.map((r) => r.name)).size).toBe(parts.length);
+  // a part's paper lies in the face it is named by
+  for (const r of parts) {
+    const face = scene.cp.facesVertices[r.name - 1]!.map((i) => scene.cp.vertices[i]!);
+    const [mx, my] = [(r.paper[0][0] + r.paper[1][0]) / 2, (r.paper[0][1] + r.paper[1][1]) / 2];
+    const sides = face.map(([ax, ay], k) => {
+      const [bx, by] = face[(k + 1) % face.length]!;
+      return Math.sign((bx - ax) * (my - ay) - (by - ay) * (mx - ax));
+    });
+    expect(sides.every((z) => z >= 0) || sides.every((z) => z <= 0)).toBe(true);
   }
   const svg = renderSide(scene, { along: "s" }).toString();
-  for (let n = 1; n <= strips.length; n++) {
-    expect(svg).toContain(`data-kind="layer" data-number="${n}"`);
-    expect(svg).toContain(`data-kind="piece" data-number="${n}"`);
+  for (const r of parts) {
+    expect(svg).toContain(`data-kind="layer" data-name="${r.name}"`);
+    expect(svg).toContain(`data-kind="piece" data-name="${r.name}"`);
   }
 });
 
@@ -152,9 +160,25 @@ test("the folded state beside the section carries the cut", async () => {
 const reverse = async () =>
   parseFold(await Bun.file(new URL("./fixtures/side-reverse.fold", import.meta.url)).text());
 
-// The faces of the layers over the whole line, top layer first.
+// The names of the layers over the whole line, top layer first.
 const layers = (strips: Strip[]) =>
-  [...strips].sort((p, q) => p.level - q.level).map((s) => s.pieces.map((p) => p.face).join("+"));
+  [...strips].sort((p, q) => p.level - q.level).map((s) => s.pieces.flatMap((p) => p.parts.map((r) => r.name)).join("+"));
+
+test("a piece keeps its name before and after a write, and each hinge is named by the pieces it joins", async () => {
+  const scene = await reverse();
+  const before = sideSection(scene, "k", "1"), after = sideSection(scene, "k", "2");
+  // the reverse leaves the upper halves where they were and tucks the lower
+  // halves between them
+  expect(layers(before.strips)).toEqual(["2", "1"]);
+  expect(layers(after.strips)).toEqual(["2", "4", "3", "1"]);
+  expect(before.turns.map((u) => u.name)).toEqual(["1|2"]);
+  expect(after.turns.map((u) => u.name).sort()).toEqual(["1|2", "3|4"]);
+  // hinge 1|2 is the same place on the paper in both
+  expect(before.turns[0]!.paper).toEqual(after.turns.find((u) => u.name === "1|2")!.paper);
+  // both are named in the section and in the crease pattern
+  const svg = renderSide(scene, { along: "k" }).toString();
+  for (const n of ["1|2", "3|4"]) expect(svg.split(`data-kind="hinge" data-name="${n}"`).length - 1).toBe(2);
+});
 
 test("a line along an edge of the state is seen from outside that edge", async () => {
   const scene = await reverse();

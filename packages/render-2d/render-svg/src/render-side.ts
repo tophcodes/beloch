@@ -4,9 +4,15 @@
 // that wraps the turns inside it [langdemaine2009facet, Fig. 5; hull2020,
 // Fig. 7.9]. Beside it the folded state shows where the cut is taken and, with
 // an arrow at each end, which side it is seen from; the crease pattern carries
-// the same pieces where they lie on the paper, numbered and coloured alike, so
+// the same pieces where they lie on the paper, named and coloured alike, so
 // each strip can be found on the sheet [hull2020, Fig. 7.9; demaine2007,
 // Fig. 12.2].
+//
+// A piece is named after the face of the crease pattern it lies in, the
+// pattern with every crease the program makes, and a hinge after the two
+// pieces it joins. Every state of one program reads the same pattern, so a
+// piece keeps its name in the drawing of each state it appears in; a piece
+// that a later crease splits shows the names of the parts it splits into.
 import type { FoldScene, Vec2 } from "@beloch/scene";
 import { pickStep, SceneError } from "@beloch/scene";
 import { createDoc, el, SvgDoc } from "./svgdoc";
@@ -32,13 +38,20 @@ export interface SideOptions extends RenderOptions {
 
 const EPS = 1e-9;
 const SIDE_W = 572, PAD = 56, GAP = 34, SPLIT = 10;
+// the room a hinge's name takes beside the crown of its turn
+const HINGE_LABEL = 30;
 
+// The stretch of a piece that lies in one face of the crease pattern, named by
+// that face: its index in the crease pattern, counted from 1.
+export interface Part { name: number; t0: number; t1: number; paper: [Vec2, Vec2] }
 // A face the line crosses: where along the line, and where on the paper.
-export interface Piece { face: number; t0: number; t1: number; paper: [Vec2, Vec2]; strip: number }
+export interface Piece { face: number; t0: number; t1: number; paper: [Vec2, Vec2]; strip: number; parts: Part[] }
 // Pieces that continue each other flat: one horizontal run in the drawing.
-export interface Strip { pieces: Piece[]; t0: number; t1: number; level: number; number: number }
-// A folded hinge on the line: two strips turn into each other at `t`.
-export interface Turn { t: number; strips: [number, number]; out: 1 | -1 }
+export interface Strip { pieces: Piece[]; t0: number; t1: number; level: number }
+// A folded hinge on the line: two strips turn into each other at `t`. It is
+// named by the parts it joins, the smaller name first; `paper` is where it
+// crosses the line on the paper.
+export interface Turn { t: number; strips: [number, number]; out: 1 | -1; name: string; paper: Vec2 }
 
 // A named point of the state drawn that lies on the line, at `t` along it.
 // Every layer the line crosses there holds one paper point at that place;
@@ -88,9 +101,32 @@ export function sideSection(scene: FoldScene, along: string, stepLabel?: string,
     if (!seg) return;
     const [p, q] = at(seg[0]) <= at(seg[1]) ? seg : [seg[1], seg[0]];
     if (at(q) - at(p) <= EPS) return;
-    pieces.push({ face, t0: at(p), t1: at(q), paper: [toPaper(face, p), toPaper(face, q)], strip: -1 });
+    pieces.push({ face, t0: at(p), t1: at(q), paper: [toPaper(face, p), toPaper(face, q)], strip: -1, parts: [] });
   });
   if (pieces.length === 0) throw new SceneError(`--${along} crosses no face of this state`);
+
+  // each piece cut where the faces of the crease pattern meet on the paper; a
+  // stretch that runs along a crease belongs to the first face that holds it
+  const cpFaces = scene.cp.facesVertices.map((f) => f.map((i) => scene.cp.vertices[i]!));
+  for (const piece of pieces) {
+    const [[px, py], [qx, qy]] = piece.paper;
+    const [dx, dy] = [qx - px, qy - py];
+    const d2 = dx * dx + dy * dy;
+    const u = ([x, y]: Vec2) => ((x - px) * dx + (y - py) * dy) / d2;
+    cpFaces.forEach((poly, k) => {
+      const chord = clipLineToPoly(-dy, dx, -dy * px + dx * py, poly);
+      if (!chord) return;
+      const [u0, u1] = [Math.max(0, Math.min(u(chord[0]), u(chord[1]))), Math.min(1, Math.max(u(chord[0]), u(chord[1])))];
+      if (u1 - u0 < 1e-7 || piece.parts.some((r) => {
+        const [r0, r1] = [(r.t0 - piece.t0) / (piece.t1 - piece.t0), (r.t1 - piece.t0) / (piece.t1 - piece.t0)];
+        return Math.min(r1, u1) - Math.max(r0, u0) > 1e-7;
+      })) return;
+      const on = (s: number): Vec2 => [px + s * dx, py + s * dy];
+      const t = (s: number) => piece.t0 + s * (piece.t1 - piece.t0);
+      piece.parts.push({ name: k + 1, t0: t(u0), t1: t(u1), paper: [on(u0), on(u1)] });
+    });
+    piece.parts.sort((r, s) => r.t0 - s.t0);
+  }
 
   // two pieces are hinged where their faces share an edge the line crosses at
   // an end of both; flat when they run on to opposite sides, folded when both
@@ -130,9 +166,19 @@ export function sideSection(scene: FoldScene, along: string, stepLabel?: string,
     return { pieces: ps, t0: Math.min(...ps.map((p) => p.t0)), t1: Math.max(...ps.map((p) => p.t1)), level: 0, number: 0 };
   });
   pieces.forEach((p, i) => { p.strip = roots.indexOf(find(i)); });
-  const turns: Turn[] = hinges.filter((h) => h.folded).map((h) => ({
-    t: h.t, strips: [pieces[h.p]!.strip, pieces[h.q]!.strip], out: away(pieces[h.p]!, h.t) === 1 ? -1 : 1,
-  }));
+  // the part of a piece that reaches the hinge at `t`
+  const partAt = (p: Piece, t: number) =>
+    p.parts.find((r) => Math.abs(r.t0 - t) < EPS || Math.abs(r.t1 - t) < EPS) ?? p.parts[0];
+  const turns: Turn[] = hinges.filter((h) => h.folded).map((h) => {
+    const [p, q] = [pieces[h.p]!, pieces[h.q]!];
+    const [r, s] = [partAt(p, h.t), partAt(q, h.t)];
+    const names = [r?.name, s?.name].map((n) => n ?? "?").sort((m, n) => Number(m) - Number(n));
+    const end = r ? (Math.abs(r.t0 - h.t) < EPS ? r.paper[0] : r.paper[1]) : p.paper[0];
+    return {
+      t: h.t, strips: [p.strip, q.strip], out: away(p, h.t) === 1 ? -1 : 1,
+      name: names.join("|"), paper: end,
+    };
+  });
 
   // f above g, globally: faceOrders' sign is keyed to g's normal
   const above = new Set<string>();
@@ -158,20 +204,6 @@ export function sideSection(scene: FoldScene, along: string, stepLabel?: string,
     return l;
   };
   strips.forEach((s, i) => { s.level = levelOf(i); });
-
-  // numbers follow the paper: from the end of an open path, or anywhere on a
-  // closed one, strip by strip through the turns
-  const next = (s: number) => turns.flatMap((u) =>
-    u.strips[0] === s ? [u.strips[1]] : u.strips[1] === s ? [u.strips[0]] : []);
-  let n = 0;
-  const seen = new Set<number>();
-  const starts = strips.map((_, i) => i).sort((i, j) => next(i).length - next(j).length || strips[i]!.t0 - strips[j]!.t0);
-  for (const start of starts) {
-    for (let s: number | undefined = start; s !== undefined && !seen.has(s); s = next(s).find((r) => !seen.has(r))) {
-      seen.add(s);
-      strips[s]!.number = ++n;
-    }
-  }
   const points = scene.namedPoints
     .filter((p) => p.step === step.index && Math.abs(a * p.table[0] + b * p.table[1] - c) / len < 1e-7)
     .map((p) => {
@@ -197,19 +229,21 @@ export function sideSection(scene: FoldScene, along: string, stepLabel?: string,
 export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
   const { strips, turns, points, ends, view } = sideSection(scene, opts.along, opts.step, opts.farSide);
   const theme: Theme = { ...DEFAULT_THEME, ...opts.theme };
-  const colour = (s: Strip) => theme.highlightPalette[(s.number - 1) % theme.highlightPalette.length]!.stroke;
+  const colour = (name: number) => theme.highlightPalette[(name - 1) % theme.highlightPalette.length]!.stroke;
+  const halo = { stroke: theme.background, "stroke-width": 4, "paint-order": "stroke" };
   const y = (level: number) => PAD + level * GAP;
   const radius = (u: Turn) => Math.abs(strips[u.strips[0]]!.level - strips[u.strips[1]]!.level) * GAP / 2;
 
   // where turns meet from both sides at one place, the drawing opens a gap
-  // there wide enough for both, and a strip running through it stretches
+  // there wide enough for both and their names, and a strip running through it
+  // stretches
   const tMin = Math.min(...strips.map((s) => s.t0)), tMax = Math.max(...strips.map((s) => s.t1));
   const widen = new Map<number, number>();
   for (const u of turns) {
     const both = turns.filter((v) => Math.abs(v.t - u.t) < EPS);
     if (both.some((v) => v.out === 1) && both.some((v) => v.out === -1)) {
       const reach = (o: 1 | -1) => Math.max(0, ...both.filter((v) => v.out === o).map(radius));
-      widen.set(u.t, reach(1) + reach(-1) + SPLIT);
+      widen.set(u.t, reach(1) + reach(-1) + SPLIT + 2 * HINGE_LABEL);
     }
   }
   const gaps = [...widen.entries()].sort(([s], [t]) => s - t);
@@ -227,16 +261,28 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
   const nodes: SvgNode[] = [];
   const at = (t: number, s: Strip) => (Math.abs(t - s.t1) < EPS ? -1 : 1);
   for (const s of strips) {
-    const [x0, x1] = [x(s.t0, 1), x(s.t1, -1)];
-    nodes.push(el("line", {
-      "data-kind": "layer", "data-number": s.number, "data-level": s.level,
-      x1: x0, y1: y(s.level), x2: x1, y2: y(s.level),
-      stroke: colour(s), "stroke-width": 3, "stroke-linecap": "round",
-    }));
-    nodes.push(el("text", {
-      "data-kind": "layer-number", x: x0 + 14, y: y(s.level) - 7, "text-anchor": "start",
-      "font-size": 13, "font-weight": 600, fill: colour(s),
-    }, [], String(s.number)));
+    const parts = s.pieces.flatMap((p) => p.parts).sort((p, q) => p.t0 - q.t0);
+    for (const r of parts) {
+      // a part that ends inside the strip runs on to where the next one starts,
+      // across a gap the strip stretches through
+      const [x0, x1] = [x(r.t0, 1), x(r.t1, Math.abs(r.t1 - s.t1) < EPS ? -1 : 1)];
+      nodes.push(el("line", {
+        "data-kind": "layer", "data-name": r.name, "data-level": s.level,
+        x1: x0, y1: y(s.level), x2: x1, y2: y(s.level),
+        stroke: colour(r.name), "stroke-width": 3, "stroke-linecap": "round",
+      }));
+      // at the start of the part, clear of the points and names over its middle
+      nodes.push(el("text", {
+        "data-kind": "layer-name", x: x0 + (Math.abs(r.t0 - s.t0) < EPS ? 14 : 8), y: y(s.level) - 7, "text-anchor": "start",
+        "font-size": 13, "font-weight": 600, fill: colour(r.name),
+      }, [], String(r.name)));
+      if (Math.abs(r.t0 - s.t0) > EPS) {
+        nodes.push(el("line", {
+          "data-kind": "seam", x1: x0, y1: y(s.level) - 5, x2: x0, y2: y(s.level) + 5,
+          stroke: theme.ink, "stroke-width": 1.2,
+        }));
+      }
+    }
   }
   for (const u of turns) {
     const [p, q] = [strips[u.strips[0]]!, strips[u.strips[1]]!];
@@ -248,6 +294,12 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
       d: `M ${xh} ${y0} A ${r} ${r} 0 0 ${(u.out === 1) === (y0 < y1) ? 1 : 0} ${xh} ${y1}`,
       fill: "none", stroke: theme.ink, "stroke-width": 2,
     }));
+    // the hinge's name beside the crown of its turn
+    nodes.push(el("text", {
+      "data-kind": "hinge", "data-name": u.name,
+      x: xh + u.out * (r + 4), y: (y0 + y1) / 2 + 4, "text-anchor": u.out === 1 ? "start" : "end",
+      "font-size": 12, fill: theme.ink, ...halo,
+    }, [], u.name));
   }
   // a named point on the line: where it stands across the whole stack, as Ida
   // marks the place of a fold line [ida2007modeling, Fig. 7]
@@ -280,22 +332,26 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
   const lay = sceneLayout(scene);
   const cp = renderCP(scene, { labels: opts.labels, theme: { lineStyle: colorLineStyle, ...opts.theme } }).node();
   const marks: SvgNode[] = [];
-  for (const s of strips) {
-    for (const p of s.pieces) {
-      const [[ax, ay], [bx, by]] = p.paper;
-      marks.push(el("line", {
-        "data-kind": "piece", "data-number": s.number,
-        x1: lay.tx(ax), y1: lay.ty(ay), x2: lay.tx(bx), y2: lay.ty(by),
-        stroke: colour(s), "stroke-width": 5, "stroke-linecap": "round",
-      }));
-    }
-    const p = s.pieces.reduce((m, q) => (q.t1 - q.t0 > m.t1 - m.t0 ? q : m));
-    const [[ax, ay], [bx, by]] = p.paper;
+  for (const r of strips.flatMap((s) => s.pieces.flatMap((p) => p.parts))) {
+    const [[ax, ay], [bx, by]] = r.paper;
+    marks.push(el("line", {
+      "data-kind": "piece", "data-name": r.name,
+      x1: lay.tx(ax), y1: lay.ty(ay), x2: lay.tx(bx), y2: lay.ty(by),
+      stroke: colour(r.name), "stroke-width": 5, "stroke-linecap": "round",
+    }));
     marks.push(el("text", {
-      "data-kind": "piece-number", x: (lay.tx(ax) + lay.tx(bx)) / 2, y: (lay.ty(ay) + lay.ty(by)) / 2 - 8,
-      "text-anchor": "middle", "font-size": 15, "font-weight": 600, fill: colour(s),
-      stroke: theme.background, "stroke-width": 4, "paint-order": "stroke",
-    }, [], String(s.number)));
+      "data-kind": "piece-name", x: (lay.tx(ax) + lay.tx(bx)) / 2, y: (lay.ty(ay) + lay.ty(by)) / 2 - 8,
+      "text-anchor": "middle", "font-size": 15, "font-weight": 600, fill: colour(r.name), ...halo,
+    }, [], String(r.name)));
+  }
+  // each hinge named where it crosses the line on the paper, above and to the
+  // left, since a point's name stands below and to the right
+  for (const u of turns) {
+    const [hx, hy] = u.paper;
+    marks.push(el("text", {
+      "data-kind": "hinge", "data-name": u.name, x: lay.tx(hx) - 6, y: lay.ty(hy) - 6,
+      "text-anchor": "end", "font-size": 13, fill: theme.ink, ...halo,
+    }, [], u.name));
   }
   // the point where it is on the paper, named; the paper points of the other
   // layers that land on it after folding, small and unnamed
@@ -308,8 +364,7 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
       }));
       if (!own) continue;
       marks.push(el("text", {
-        x: lay.tx(sx) + 8, y: lay.ty(sy) + 16, "font-size": 14, fill: theme.ink,
-        stroke: theme.background, "stroke-width": 4, "paint-order": "stroke",
+        x: lay.tx(sx) + 8, y: lay.ty(sy) + 16, "font-size": 14, fill: theme.ink, ...halo,
       }, [], `.${p.name}`));
     }
   }
