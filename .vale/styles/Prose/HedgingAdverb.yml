@@ -1,0 +1,12 @@
+# Adverbs that prop up a weak verb. Replace the verb.
+extends: existence
+message: "Hedging adverb: '%s'. Replace the verb it props up."
+level: error
+ignorecase: true
+tokens:
+  - really
+  - genuinely
+  - fundamentally
+  - inherently
+  - simply
+  - actually
