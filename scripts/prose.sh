@@ -33,8 +33,10 @@ if [ $# -gt 0 ]; then
 else
   # Test fixtures and the license are not prose of the project. The brand
   # documents are left out until the lint has rules for German.
+  # spec/SPECIFICATION.md is being dissolved into the other documents (ADR
+  # 0032); its sections are linted where they move to.
   mapfile -t targets < <(tracked | grep -E '\.(md|mdx|ml|mli)$' |
-    grep -vE '^(LICENSE\.md$|packages/www/src/lib/fixtures/|docs/brand/|scripts/fixtures/)')
+    grep -vE '^(LICENSE\.md$|packages/www/src/lib/fixtures/|docs/brand/|scripts/fixtures/|spec/SPECIFICATION\.md$)')
   # A failed file listing leaves the list empty; stop there, or the run
   # reports no alerts for a tree it never read.
   [ ${#targets[@]} -gt 0 ] || { echo "prose: no files listed" >&2; exit 1; }
