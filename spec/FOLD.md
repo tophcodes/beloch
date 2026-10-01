@@ -52,6 +52,9 @@ Each frame uses the FOLD vocabulary for what FOLD can express:
   face's normal. Pairs that do not overlap are absent, as in the model.
 - `frame_classes`, `frame_parent`, `frame_inherit`: FOLD's frame bookkeeping;
   every folded frame is a child of frame 0 without inheritance.
+- `frame_unit`: the unit the program's file declares (`BELOCH.md`,
+  "Sheets"), or `"unit"` when it declares none. It stands in frame 0, and
+  every coordinate of the file is in that unit.
 
 Exact coordinates are rounded to decimal only at serialisation; the values the
 kernel computes stay exact (ADR 0008, 0012).

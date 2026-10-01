@@ -141,23 +141,7 @@ This discrepancy set is also recorded in [antipatterns.md](../antipatterns.md).
 
 ## 2. The paper *(since v0.0)*
 
-A program begins by declaring its sheet:
-
-```
-paper square
-```
-
-`paper square` is the unit square with four pre-bound corner points, named
-counter-clockwise from the origin:
-
-| name | coordinates |
-|------|-------------|
-| `.a` | `(0, 0)` |
-| `.b` | `(1, 0)` |
-| `.c` | `(1, 1)` |
-| `.d` | `(0, 1)` |
-
-v0.0 supports no other paper shape.
+Moved to `BELOCH.md`, "Sheets" (ADR 0046).
 
 ---
 
@@ -257,52 +241,7 @@ defined when it is exactly one point ([def-meet](/model/#def-meet), ADR 0027):
 
 ### 4.3a Free point on a line — `free on … from … at …` *(since v0.25-dev)*
 
-```
-.p = free on --l from .x
-.p = free on --l from .x at 2/5
-```
-
-A **free point** is a reference point placed at a rational parameter `t` along
-`--l`'s material — "put a point roughly here on this line" without an explicit
-construction. `free` records *provenance* (how the point was placed, and that
-its exact position is not load-bearing), not a relaxation of the kernel: the
-result is an ordinary **exact** point, usable anywhere a point operand is
-accepted — `through .p`, `map … onto … at .p`, `mark (…) (at .p)`, perpendicular
-axioms, and so on (§6, all geometry is exact).
-
-**Domain.** The point lies on `--l`'s material in the current paper, taken as
-a single bundle: its two **furthest-out points** are the parameter endpoints,
-bridging any gaps between chords. For a plain constructed (unmarked) line, the
-bundle is simply where `--l` crosses the paper square. `t ∈ [0, 1]`; the seed
-point is `P0 + t·(P1 − P0)`, exact for rational `t`.
-
-**Orientation.** `from .x` is required: `.x` must be exactly one of the
-bundle's two furthest-out points, and fixes that end as `t = 0` — the opposite
-point is `t = 1`. The match is by exact incidence, not nearest-point. (In this
-version the bundle spans *all* of `--l`'s material as one furthest-out pair;
-genuinely disjoint re-entrant material is bridged, not separately selectable.)
-
-**Seed value.** `at <rational>` is optional; the default is `t = 1/2`, the
-bundle's midpoint. `<rational>` is a rational literal (`2/5`, `3`, …).
-
-```
-paper square
-mark (through .a .c) as --diag
-.m = free on --diag from .a         ; midpoint, (1/2, 1/2)
-.q = free on --diag from .a at 1/4  ; (1/4, 1/4)
-```
-
-**Errors:**
-
-- `--l` has no material on the paper — "the line has no material on the
-  paper";
-- `.x` is not one of the bundle's furthest-out points — "the anchor is not an
-  endpoint of the line's material";
-- `t` outside `[0, 1]` — "t is out of range (must be between 0 and 1)".
-
-**Output.** Every free point emits a `beloch:free` custom property (§7) — a
-forward-compatibility hook for a future renderer slider over `[P0, P1]`; no
-renderer consumes it in this version.
+Moved to `BELOCH.md`, "Free points".
 
 ### 4.4 Axiom 3 — perpendicular through a point *(since v0.2)*
 
@@ -1423,7 +1362,7 @@ the first matching error wins and the process exits non-zero:
 The Menhir grammar is authoritative once written; this sketch is a guide.
 
 ```grammar
-program       := "paper" "square" stmt*
+program       := "paper" sheet stmt*                              ; spec/BELOCH-GRAMMAR.md, "Programs"
 stmt          := crease_stmt | point_stmt | flip_stmt | flatten_stmt
               | def_stmt | instance_stmt | apply_stmt | export_stmt          ; since v0.16-dev
 crease_stmt   := CREASE_NAME "=" "(" axiom ")"                    ; a read — binds a line value, scores nothing
@@ -1447,7 +1386,7 @@ align         := "align" CREASE_NAME* align_part+                   ; see spec/B
 output        := [ "as" CREASE_NAME [ "!" ] | "into" CREASE_NAME ]
 point_stmt    := POINT_NAME "=" line_operand "*" line_operand     ; meet (binary), bare at a binding's RHS: the point where two lines cross
                | POINT_NAME "=" ".[" line_operand+ "]"            ; meet (n-ary): the point on all listed lines
-               | POINT_NAME "=" "free" "on" line_operand "from" point_operand [ "at" RATIONAL ]  ; free point, since v0.25-dev
+               | POINT_NAME "=" free_point                          ; free point: spec/BELOCH-GRAMMAR.md, "Free points"
 flip_stmt     := "flip"
 axiom         := "through" point_operand point_operand          ; axiom 1 — a read (construction, since v0.21-dev)
                | "map" point_operand "onto" point_operand       ; axiom 2
