@@ -120,26 +120,37 @@ therefore counts as its whole chord; what a mark's material should be is
 
 ## Fan
 
-`Flatten_solve.run` reads the rays of a `flatten` from material creases, and
-`Collapse` folds the tip of [def-flatten](/model/#def-flatten) on the state
-as it stands: it scores no layer itself. A face is placed in a sector when
-all of it lies in one wedge of the fan, and a face a ray's half-line runs
-through belongs to no sector. The tip grows from the anchor's faces outside
-the stayer's wedge over hinges of any angle. A face of the tip that belongs
-to no sector fails with `collapse through unaligned layers`, so the rays have
-to be marked on every layer of the tip, `into` the same crease where the tip
-holds several layers, and on no other layer. An anchor with nothing outside
-the stayer's wedge fails with `the anchor flap has no material outside the
-staying sector`. `on` reaches the kernel as the paper polygons of the flap it
-names, so the anchor survives the scoring of an emergent ray.
+`Flatten_solve.run` reads the rays of a `flatten` from material creases,
+scores them on the layers under the fan, and `Collapse` folds the tip of
+[def-flatten](/model/#def-flatten) on the scored state. The layers under
+the fan are the faces whose table image meets the anchor's in positive
+area. `Fold_state.subdivide_fan` scores each ray along its half-line from
+the vertex into the ray's own crease: a face that holds the vertex inside
+it is cut into the wedges between consecutive rays at once, and every other
+face a half-line crosses is cut along it. The pieces carry the flatten as
+the statement that scored them. A program therefore marks the rays on one
+layer, and the flatten carries them onto the others.
 
-`Flatten_solve.run` scores the emergent ray of an odd fan on the layers of
-the tip alone, where the program marks the rays it names. It scores the ray
-through every layer on its side of the vertex, reads the tip of each
-admissible stayer sector off that state with `Collapse.tips`, and scores the
-ray again on the state before the flatten, in each face that holds a face of
-the tip. Sectors whose tips hold different faces are solved on states of
-their own.
+The tip is read off the state scored through every layer under the fan,
+with `Collapse.tips` for each admissible stayer sector, and the rays are
+then scored again on the state before the flatten, in each face that holds
+a face of the tip; the other layers keep their faces whole. Sectors whose
+tips hold different faces are solved on states of their own. A face is
+placed in a sector when all of it lies in one wedge of the fan, and a face
+a ray's half-line runs through belongs to no sector. The tip grows from the
+anchor's faces outside the stayer's wedge over hinges of any angle. A face
+of the tip that still belongs to no sector, one outside the layers under
+the fan that a half-line runs through, fails with `collapse through
+unaligned layers`. An anchor with nothing outside the stayer's wedge fails
+with `the anchor flap has no material outside the staying sector`. `on`
+reaches the kernel as the paper polygons of the flap it names, so the
+anchor survives the scoring.
+
+An odd fan scores its emergent ray with the given rays, the same way. The
+emergent ray goes into the crease the program already scored along it on
+some layer, when there is exactly one, so that it is one crease on every
+layer of the tip; otherwise into a new crease, or into the crease `into`
+names.
 
 The stacking ranks sectors, as `Collapse.linear_extensions` enumerates them.
 The stayer's sector holds the faces of the stayer's wedge the tip hangs
@@ -165,7 +176,7 @@ on checks 12–14). Every message and hint is the evaluator's own text.
 | 3 | filtered/unioned element matches no segment | `` no segment of <expr> matches `` | |
 | 4 | segments don't all share one strictly-interior common endpoint O | `no common interior vertex` | |
 | 5 | (`staying` given) a point of `staying` lies on no face of the anchor | `<point> does not lie on the anchor` | `name a point on the flap the fan folds` |
-| 6 | a face of the tip does not carry the rays: a ray's half-line runs through it unscored, so it lies in no sector | `collapse through unaligned layers` | |
+| 6 | a face of the tip does not carry the rays after the scoring: it lies outside the layers under the fan and a ray's half-line runs through it, so it lies in no sector | `collapse through unaligned layers` | |
 | 7 | the ray count is even and below 4 | `count` | `` use `fold` for n = 2 `` |
 | 8 | (odd ray count) no geometric completion closes the vertex at all, on either side | `vertex not flat-foldable toward that side` | |
 | 9 | a segment's far endpoint is not on the paper boundary (would leave a degree-1 vertex mid-sheet) | `crease ends inside the sheet` | |
