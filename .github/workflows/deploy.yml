@@ -68,10 +68,11 @@ jobs:
         run: |
           nix develop --command dune build packages/eval-web/ --profile release
           cp _build/default/packages/eval-web/beloch_web.bc.js packages/www/public/beloch/beloch-eval.js
-      # The same checks a push is held to locally (scripts/check-all.sh): the
-      # kernel suites against the baseline of issue #51 in
-      # scripts/known-failures.txt, the runtime and site tests, the API docs
-      # and register, the script tests and the site build.
+      # The same checks a push is held to locally (scripts/check-all.sh):
+      # `check` (the kernel suites against scripts/known-failures.txt, the bun
+      # suites and the prose lint at level error, as the pull request job in
+      # build-and-test.yml runs it), then the API docs and register, the README
+      # drawings, the script tests and the site build.
       - name: Check
         run: nix develop --command check-all
       # wrangler-action picks its package manager from packages/www/bun.lock,

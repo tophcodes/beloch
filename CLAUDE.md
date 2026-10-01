@@ -52,10 +52,22 @@ messages, PR and issue bodies, and drafts of any of these shown in chat.
 
 Inside the devshell (`nix develop`, or direnv):
 
-- `check` runs every test suite. Run it after the last edit and before every
-  push.
-- `check-all` adds the API docs, the script tests and the site build. It is
-  what CI runs, and a push to `main` deploys the site.
+- `check` builds the kernel and runs its suites, the bun suites of
+  `packages/render-2d`, `packages/runtime` and `packages/www`, and the prose
+  lint at level error. Run it after the last edit and before every push.
+- `check-all` runs `check`, then the API docs and register, the README
+  drawings against their programs, the script tests (`bun test scripts`) and
+  the site build.
+
+Both run every step even after one has failed, end with a summary of the
+failed steps, and exit non-zero if there is one. Only the kernel suites wait
+for `dune build`.
+
+CI runs `check` on every pull request, in the job `build-and-test` of
+`.github/workflows/build-and-test.yml`. A push to `main` that touches the
+site, the kernel, `spec/`, `examples/`, `scripts/` or the flake runs
+`check-all` in the deploy job, which deploys the site when it passes; any
+other push to `main` runs only the commit subject check.
 
 The kernel suites have known failures, held against
 `scripts/known-failures.txt`; anything beyond them fails the check.
