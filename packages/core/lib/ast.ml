@@ -196,7 +196,7 @@ type raw_item =
   | RiOn of flap_arg * Error.span
   | RiExtent of extent * Error.span            (* (between …) / (at …) *)
   | RiOrder of flap_arg * flap_arg * Error.span
-  | RiStaying of flap_arg * Error.span
+  | RiStaying of point_operand list * Error.span
   | RiSelection of toward_item * Error.span
 
 (* One argument of an annotation (spec/BELOCH-ANNOTATIONS.md): any read the
@@ -250,13 +250,13 @@ type stmt =
   | Export of export_entry list option * string * Error.span
       (* None = export-all; the string is the instance name *)
   | Flatten of output * collapse_elem list * (flap_arg * flap_arg) list
-                * flap_arg option * flap_arg option * point_operand option
+                * point_operand list option * flap_arg option * point_operand option
                 * Error.span
       (* flatten <items>: single-vertex multi-crease fold, ONE solver
          pipeline (spec §4.9). elements = the given rays, each with an
          [mv_constraint] (MvFree = solver-assigned; mountain/valley = hard
          pin); over-pairs = (upper flap, lower flap) stacking constraints;
-         staying = the staying flap; on = the anchor flap, whose tip moves
+         staying = the points of the sector that stays (ADR 0048); on = the anchor flap, whose tip moves
          (ADR 0037, ADR 0040). An odd ray count
          makes the emergent completing ray part of the solution space
          (Flatten.candidates). The realization space (candidate × Maekawa

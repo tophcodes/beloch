@@ -23,19 +23,29 @@ let e_stayer_dead = "no realization keeps the staying flap still"
 let e_unaligned = "collapse through unaligned layers"
 let e_anchor_stays =
   "the anchor flap has no material outside the staying sector"
+let e_staying_none = "no sector of the fan holds every staying point"
+let e_staying_several = "the staying points lie in more than one sector"
+let e_staying_off_anchor = "the staying sector holds no material of the anchor"
 
 (* the hint that goes with an error string above, where it has one (ADR 0028) *)
 let hint_of (m : string) : string option =
   if m = e_count then Some "use `fold` for n = 2"
-  else if m = e_stayer_collinear then Some "add (staying <flap>)"
+  else if m = e_stayer_collinear then Some "add (staying .p)"
+  else if m = e_staying_several then
+    Some "add a point inside the sector that stays"
   else None
 
 (* --- stayer: the material that does not move (design 2026-07-17) -----------
    Anchors the fan labeling geometrically instead of at [sort_ccw]'s arbitrary
    east origin. [Arc (pa, pb)] = the far tips of the two leading elements'
    folded rays; the stayer region is the <π CCW arc between them. [Faces fs] =
-   the pre-collapse face indices carrying the stayed material. *)
-type stayer = Arc of Geom.point * Geom.point | Faces of int list
+   the pre-collapse face indices carrying the stayed material. [Points ps] =
+   the table images of the points of `staying` (ADR 0048): the stayer is the
+   one sector whose closed wedge holds all of them. *)
+type stayer =
+  | Arc of Geom.point * Geom.point
+  | Faces of int list
+  | Points of Geom.point list
 
 exception Stayer_collinear
 
@@ -300,6 +310,27 @@ let in_ccw_arc (o : Geom.point) (a : Geom.point) (b : Geom.point)
   Num.sign (cross oc (a.Geom.x, a.Geom.y) (q.Geom.x, q.Geom.y)) > 0
   && Num.sign (cross oc (q.Geom.x, q.Geom.y) (b.Geom.x, b.Geom.y)) > 0
 
+(* q in the closed wedge swept CCW around o from the ray through a to the ray
+   through b, of any angle below 2π: the vertex and both bounding rays
+   included. *)
+let in_closed_sector (o : Geom.point) (a : Geom.point) (b : Geom.point)
+    (q : Geom.point) : bool =
+  let oc = (o.Geom.x, o.Geom.y) in
+  let pt (p : Geom.point) = (p.Geom.x, p.Geom.y) in
+  let on_ray (r : Geom.point) =
+    Num.sign (cross oc (pt r) (pt q)) = 0
+    && Num.sign
+         (Num.add
+            (Num.mul (Num.sub r.Geom.x o.Geom.x) (Num.sub q.Geom.x o.Geom.x))
+            (Num.mul (Num.sub r.Geom.y o.Geom.y) (Num.sub q.Geom.y o.Geom.y)))
+       > 0
+  in
+  let c = Num.sign (cross oc (pt a) (pt b)) in
+  Geom.point_equal q o || on_ray a || on_ray b
+  || (if c > 0 then in_ccw_arc o a b q
+      else if c < 0 then not (in_ccw_arc o b a q)
+      else Num.sign (cross oc (pt a) (pt q)) > 0)
+
 (* rotate the ray labeling so that sector [s0] becomes sector 0: the stayer
    anchoring step. Sector k (between rays k, k+1) maps to k-s0; ray k to k-s0. *)
 let rotate_rays (rays : 'a array) (s0 : int) : 'a array =
@@ -340,6 +371,34 @@ let admissible_sectors ~(stayer : stayer) (o : Geom.point)
             && (not (Geom.point_equal rk b))
             && not (Geom.point_equal rk1 a))
           (List.init n Fun.id)
+  | Points ps ->
+      let n = Array.length rays in
+      List.filter
+        (fun k ->
+          let rk, _ = rays.(k) and rk1, _ = rays.((k + 1) mod n) in
+          List.for_all (in_closed_sector o rk rk1) ps)
+        (List.init n Fun.id)
+
+(* the sectors a run of the pipeline takes as stayer: [admissible_sectors],
+   held to exactly one sector carrying material of the anchor under [Points]
+   (ADR 0048) *)
+let stayer_sectors ~(stayer : stayer) ~(anchor : bool array) (o : Geom.point)
+    (rays : (Geom.point * 'a) array) (sec_orig : int array) (nf : int) :
+    (int list, string) result =
+  match admissible_sectors ~stayer o rays sec_orig nf with
+  | exception Stayer_collinear -> Error e_stayer_collinear
+  | sectors -> (
+      match (stayer, sectors) with
+      | Points _, [] -> Error e_staying_none
+      | Points _, [ s ] ->
+          if
+            Array.exists Fun.id
+              (Array.mapi (fun i a -> a && sec_orig.(i) = s) anchor)
+          then Ok sectors
+          else Error e_staying_off_anchor
+      | Points _, _ -> Error e_staying_several
+      | _, [] -> Error e_stayer_dead
+      | _ -> Ok sectors)
 
 (* checks common to every stayer run: vertex, count, boundary, duplicate ray,
    Kawasaki closure, Maekawa. All rotation-invariant, so run once, before the
@@ -976,12 +1035,8 @@ let collapse_runs ?anchor (g : Fold_state.t) (es : elem list)
             sector_of_poly_opt o rays (faces.(i), Fold_state.face_iso2 g i))
       in
       let anchor = anchor_faces g o anchor in
-      match
-        try Ok (admissible_sectors ~stayer o rays sec_orig nf)
-        with Stayer_collinear -> Error e_stayer_collinear
-      with
+      match stayer_sectors ~stayer ~anchor o rays sec_orig nf with
       | Error e -> Error e
-      | Ok [] -> Error e_stayer_dead
       | Ok sectors ->
           let run s0 =
             match
@@ -1018,12 +1073,8 @@ let collapse_all_patterns ?anchor ?sectors:only (g : Fold_state.t)
             sector_of_poly_opt o rays (faces.(i), Fold_state.face_iso2 g i))
       in
       let anchor = anchor_faces g o anchor in
-      match
-        try Ok (admissible_sectors ~stayer o rays sec_orig nf)
-        with Stayer_collinear -> Error e_stayer_collinear
-      with
+      match stayer_sectors ~stayer ~anchor o rays sec_orig nf with
       | Error e -> List.map (fun _ -> Error e) patterns
-      | Ok [] -> List.map (fun _ -> Error e_stayer_dead) patterns
       | Ok sectors ->
           let sectors =
             match only with
@@ -1095,9 +1146,9 @@ let tips ?anchor (g : Fold_state.t) (es : elem list) ~(stayer : stayer) :
             sector_of_poly_opt o rays (faces.(i), Fold_state.face_iso2 g i))
       in
       let anchor = anchor_faces g o anchor in
-      match admissible_sectors ~stayer o rays (sec_on rays) nf with
-      | exception Stayer_collinear -> []
-      | sectors ->
+      match stayer_sectors ~stayer ~anchor o rays (sec_on rays) nf with
+      | Error _ -> []
+      | Ok sectors ->
           List.map
             (fun s0 -> (s0, tip_of g ~sec:(sec_on (rotate_rays rays s0)) ~anchor))
             sectors)

@@ -7,7 +7,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     ~(bind_out : Ctx.crease_val -> unit)
     ~(elems : Ast.collapse_elem list)
     ~(overs : (Ast.flap_arg * Ast.flap_arg) list)
-    ~(staying_opt : Ast.flap_arg option) ~(on_opt : Ast.flap_arg option)
+    ~(staying_opt : Ast.point_operand list option) ~(on_opt : Ast.flap_arg option)
     ~(toward_opt : Ast.point_operand option) (span : Error.span) : unit =
   (* materialize every collapse crease FIRST (a mark subdivides on
      segment-selection), so all of them cross and the shared collapse
@@ -142,25 +142,6 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       (fun (u, l) -> (Resolve.resolve_sector_face ctx u span, Resolve.resolve_sector_face ctx l span))
       overs
   in
-  (* explicit staying: X's material is the stayer, order carries no
-     meaning. The flap must touch the vertex fan, else it names no stayer
-     sector at all (distinct from "no realization keeps it still"). *)
-  let staying_stayer =
-    match staying_opt with
-    | None -> None
-    | Some fa ->
-        let faces = Resolve.resolve_flap_cluster ctx fa span in
-        let touches =
-          List.exists
-            (fun f ->
-              Array.exists (Geom.point_equal o)
-                (Fold_state.table_polygon_ccw !(ctx.state) f))
-            faces
-        in
-        if not touches then
-          Error.fail span "the staying flap does not touch the vertex"
-        else Some (Collapse.Faces faces)
-  in
   (* the anchor flap `on` names, as paper polygons: the odd case scores the
      emergent ray into a copy of the state, whose faces the kernel finds
      inside these. The flap must lie under the vertex. *)
@@ -179,6 +160,35 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         if not under then
           Error.fail span "the on flap does not lie under the vertex"
         else Some (List.map (fun f -> (Fold_state.faces st).(f)) faces)
+  in
+  (* explicit staying (ADR 0048): points on the anchor, whose table images
+     name the one sector that stays; ray order carries no stayer meaning
+     then. The sector itself is checked per candidate fan by the kernel. *)
+  let staying_stayer =
+    match staying_opt with
+    | None -> None
+    | Some pos ->
+        let st = !(ctx.state) in
+        let on_anchor = Collapse.anchor_faces st o anchor in
+        let faces = Fold_state.faces st in
+        let images =
+          List.map
+            (fun po ->
+              let pp = Resolve.resolve_point ctx po in
+              let held = ref false in
+              Array.iteri
+                (fun i f ->
+                  if on_anchor.(i) && Geom.in_convex_polygon f pp then
+                    held := true)
+                faces;
+              if not !held then
+                Error.fail ~hint:"name a point on the flap the fan folds" span
+                  (Printf.sprintf "%s does not lie on the anchor"
+                     (Resolve.fstr (Ast.FlapPoint po)));
+              Fold_state.table_position st pp)
+            pos
+        in
+        Some (Collapse.Points images)
   in
   let n_given = List.length elems in
   let odd = n_given mod 2 = 1 in
@@ -525,7 +535,10 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
               m = Collapse.e_unaligned
               || m = Collapse.e_anchor_stays
               || m = Collapse.e_stayer_collinear
-              || m = Collapse.e_stayer_dead)
+              || m = Collapse.e_stayer_dead
+              || m = Collapse.e_staying_none
+              || m = Collapse.e_staying_several
+              || m = Collapse.e_staying_off_anchor)
             pool
         with
       | Some m -> Error.fail ?hint:(Collapse.hint_of m) span m
@@ -543,6 +556,30 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
               (if pool = [] then Collapse.e_maekawa else Collapse.e_selfint)
       end)
   | [ r ] -> land_realization r
+  | many
+    when (* the fan fixes its stayer before any selection stage runs (ADR
+            0048): states with different stayers leave the statement
+            ambiguous *)
+         let stayer_of (st, _, _, (rays, emergent)) =
+           match
+             Trace.fan ~pre:!(ctx.state) ~post:st ~point:o ~rays ~emergent
+           with
+           | Trace.Fan { stayer; _ } -> Some stayer
+           | _ -> None
+         in
+         let same (a, b) (c, d) = Geom.point_equal a c && Geom.point_equal b d in
+         let stayers =
+           List.fold_left
+             (fun acc r ->
+               match stayer_of r with
+               | Some s when not (List.exists (same s) acc) -> s :: acc
+               | _ -> acc)
+             [] many
+         in
+         List.length stayers > 1 ->
+      trace None;
+      Error.fail ~hint:"add (staying .p) with .p in the sector that stays" span
+        "flatten is ambiguous: its candidates hold different sectors still"
   | many ->
       (* |deciding| > 1: three-stage selection, derived empirically against
          the fish mirror pair and the swivel golden:

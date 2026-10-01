@@ -8,7 +8,9 @@
 ; median parallel to the spine are marked on the top layer only, and the fan
 ; keeps the sector along the spine (ADR 0037): no hinge joins the moving
 ; pieces of the two layers, so the tip is the top layer, and the bottom layer
-; stays one face.
+; stays one face. The top layer lies face down after the fold in half, so the
+; letters of a waterbomb base seen from above read inverted on it: mountain
+; diagonals and a valley median lay the flaps on top of the stack.
 
 paper rectangle 2 1
 fold (map .a onto .b) (moving .b) as --spine
@@ -18,8 +20,8 @@ mark (through .a .s1) (on #[.b]) as --d1
 mark (through .s0 .d) (on #[.b]) as --d2
 mark (map .a onto .s0) (on #[.b]) as --v
 .m = --d1 * --d2
-flatten (--d1 & .b) (--d1 & .s1) (--d2 & .s0) (--d2 \ .s0)
-  (--v & --ab mountain) (--v \ --ab mountain) (staying #[.s0 .s1 .m])
+flatten (--d1 & .b mountain) (--d1 & .s1 mountain) (--d2 & .s0 mountain)
+  (--d2 \ .s0 mountain) (--v & --ab valley) (--v \ --ab valley) (staying .s0 .s1)
 
 ; assert steps = 2
 ; assert faces = 7
