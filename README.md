@@ -8,7 +8,7 @@
 <h1 align="center">beloch</h1>
 
 <p align="center">
-A declarative language for origami. A program names points and creases and
+Origami folding sequences as programs. A program names points and creases and
 folds along constructions that align them. Beloch evaluates it exactly, step by
 step, into a <a href="https://github.com/edemaine/fold">FOLD</a> file, the
 exchange format of computational-origami tools. Its own renderer draws crease
@@ -273,7 +273,7 @@ BibTeX for all of them is in [`bibliography/references.bib`](bibliography/refere
 ```bibtex
 @software{muehl_beloch,
   author  = {M{\"u}hl, Christopher},
-  title   = {Beloch: a declarative language for origami},
+  title   = {Beloch: origami folding sequences as programs},
   year    = {2026},
   doi     = {10.5281/zenodo.22884252},
   url     = {https://github.com/tophcodes/beloch}

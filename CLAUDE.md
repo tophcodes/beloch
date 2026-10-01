@@ -1,8 +1,8 @@
 # CLAUDE.md: Beloch
 
-Beloch is a declarative language for origami, built on the Huzita-Justin axioms,
-that evaluates `.bel` source into folded states, crease patterns, and YR-style
-folding diagrams. Architecture decisions live in `decisions/` (ADRs); read those
+Beloch writes origami folding sequences as programs over the Huzita-Justin
+axioms. It evaluates `.bel` source into one FOLD file with the folded state after
+every step; crease patterns and YR-style folding diagrams are renderings of it. Architecture decisions live in `decisions/` (ADRs); read those
 before proposing anything structural. Design journal in `notes/`, dead ends in
 `notes/antipatterns.md`. The contracts live in `spec/`: `MODEL.md` what a
 program means, `BELOCH.md` the language, `FOLD.md` the output. Beside them,

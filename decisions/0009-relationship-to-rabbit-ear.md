@@ -1,10 +1,10 @@
 ---
 id: "0009"
-title: "Relationship to Rabbit Ear; a constrained declarative language, not a library or eDSL"
+title: "Relationship to Rabbit Ear; a constrained total language, not a library or eDSL"
 status: accepted
 ---
 
-# 0009: Relationship to Rabbit Ear; a constrained declarative language, not a library or eDSL
+# 0009: Relationship to Rabbit Ear; a constrained total language, not a library or eDSL
 
 ## Context
 
@@ -18,7 +18,7 @@ objections came up:
    so the `.js` file is "also the model", and the source-as-artifact point seems to
    collapse.
 2. JavaScript is Turing-complete, so Rabbit Ear is "more capable" than a small
-   declarative language.
+   total language.
 
 Both routes this decision weighs have been taken before.
 
@@ -43,7 +43,7 @@ the folded state and a language that guarantees termination.
 
 ## Decision
 
-Beloch is a **standalone, declarative, deliberately non-Turing-complete**
+Beloch is a **standalone, total, deliberately non-Turing-complete**
 language that compiles to FOLD. **Rabbit Ear is a consumer/backend, not a
 competitor.** We do **not** build Beloch as an embedded DSL inside JS/Rabbit Ear.
 
@@ -59,7 +59,7 @@ you do not want in a model description.
 ### Why `.js` is not equivalent to `.bel`
 
 Both are text files; the difference is **guarantees**. A `.bel` file is, by
-construction, a total, analyzable, declarative sequence of axiom operations:
+construction, a total, analyzable sequence of axiom operations:
 the source *is* the folding journey, diffs are semantically meaningful (one line
 = one changed fold), and there is no escape hatch. A general `.js` program
 guarantees none of this: loops, randomness, I/O, and abstraction make the diff
@@ -81,9 +81,9 @@ problem.
 ### When computation is needed
 
 Use a host language that **emits** `.bel` (parametric families, swept
-parameters). This keeps Beloch declarative: TC generation *and* a clean artifact.
+parameters). This keeps Beloch total: TC generation *and* a clean artifact.
 Reaffirms [ADR 0007](0007-evaluator-not-compiler.md) (keep the language
-declarative; put cleverness in a host language).
+total; put cleverness in a host language).
 
 ### Rabbit Ear as consumer/backend
 
@@ -99,7 +99,7 @@ architectural question for a later slice.
 ## Alternatives considered
 
 - **Just use Rabbit Ear; don't build Beloch.** Rejected: a library is not a
-  language; the declarative axiom-source-language niche stays empty (lineage:
+  language; the niche of a standalone axiom-based source language stays empty (lineage:
   [0003](0003-restart-from-minimal-core.md), [0005](0005-name-beloch.md), and
   the April 2026 design conversation).
 - **Embedded DSL in JS/Haskell** (cf. Caruana-Pace in Haskell). Rejected: an
@@ -110,7 +110,7 @@ architectural question for a later slice.
 ## Consequences
 
 - Differentiation is **"language vs library,"** not feature parity. Lean into the
-  declarative / instruction-generation / LLM-target / formal-semantics angles;
+  totality / instruction-generation / LLM-target / formal-semantics angles;
   do not reimplement RE's engine for its own sake.
 - Beloch's core stays non-TC (reaffirms [0007](0007-evaluator-not-compiler.md)).
 - Rabbit Ear is the recommended viewer/folder today (takes faces-less FOLD).

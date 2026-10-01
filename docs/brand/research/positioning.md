@@ -15,16 +15,18 @@ einen Abschnitt der Spezifikation, einen Decision Record.
 
 ## 1. Positionierungssatz
 
-> **Beloch is a declarative language for origami: a program is a sequence of
-> Huzita-Justin axiom operations, evaluated over exact real-algebraic
-> arithmetic into a crease pattern and a folded state.**
+> **Beloch writes origami folding sequences as programs: a program is a
+> sequence of Huzita-Justin constructions and folds, evaluated over exact
+> real-algebraic arithmetic into a FOLD file with the folded state after every
+> step.**
 
-Der Satz trägt drei prüfbare Angaben: die Sprachklasse (deklarativ), die
-Grundlage (die sieben Axiome) und das Ergebnis (zwei FOLD-Frames). Er enthält
+Der Satz trägt drei prüfbare Angaben: was ein Programm ist (eine Faltfolge),
+die Grundlage (die sieben Axiome) und das Ergebnis (eine FOLD-Datei mit einem
+Frame pro Schritt). Er enthält
 kein Werturteil und keinen Vergleich. Kurzform für Stellen mit wenig Platz, ein
 Nebensatz weniger:
 
-> A declarative language for origami, built on the Huzita-Justin axioms.
+> Origami folding sequences as programs.
 
 ## 2. Tagline-Kandidaten
 
@@ -32,7 +34,7 @@ Alle fünf sind als Zeile unter dem Wortmarken-Titel gedacht, ohne Punkt am Ende
 außer wo angegeben.
 
 1. **"A declarative language for origami, built on the Huzita-Justin axioms."**
-   Der Status quo auf Site und README. Vollständig beschreibend, null
+   Der frühere Slogan auf Site und README. Vollständig beschreibend, null
    Interpretationsspielraum, keine Geschichte. Sicherste Wahl, wenn nur eine
    Zeile existiert.
 2. **"The seven axioms, as a language."**
@@ -229,8 +231,8 @@ Sektion des Papers korrekt einordnen.
 
 ### Die Landing trägt drei Aussagen
 
-1. **Was es ist.** "A declarative language for origami, built on the
-   Huzita-Justin axioms. One line is one fold."
+1. **Was es ist.** "Origami folding sequences as programs. One line is one
+   fold."
 2. **Was gerade passiert ist.** Der Playground steht über der Zeile und hat
    schon gefaltet, bevor jemand etwas gelesen hat. Der Text darunter benennt
    das Ergebnis: "Describe a sheet and the creases you want. Beloch works out

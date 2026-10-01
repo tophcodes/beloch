@@ -1,6 +1,6 @@
 {
-  "title": "Beloch: a declarative language for origami",
-  "description": "<p>Beloch evaluates a declarative source program, written as a sequence of Huzita-Justin axiom operations, into a folded state and a crease pattern. The evaluator works over an exact real-algebraic number kernel, so constructed coincidences hold exactly rather than within a tolerance, and emits the FOLD interchange format.</p>",
+  "title": "Beloch: origami folding sequences as programs",
+  "description": "<p>Beloch evaluates a program, a sequence of Huzita-Justin constructions and folds, into a FOLD file with the folded state after every step. The evaluator works over an exact real-algebraic number kernel, so constructed coincidences hold exactly rather than within a tolerance, and emits the FOLD interchange format.</p>",
   "upload_type": "software",
   "license": "MIT",
   "creators": [
@@ -13,7 +13,7 @@
     "origami",
     "computational origami",
     "Huzita-Justin axioms",
-    "declarative language",
+    "domain-specific language",
     "exact arithmetic",
     "real algebraic numbers",
     "FOLD format",

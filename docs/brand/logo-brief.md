@@ -405,7 +405,7 @@ Ablageort im Repository: `docs/brand/logo/` (Vorschlag; endgültiger Ort bei
 | Repo-Avatar | PNG 512 x 512, quadratisch, auf Kreisbeschnitt geprüft | Forgejo `git.toph.so/toph/beloch` (Repo-Avatar); GitHub-Organisation, falls eine entsteht (`tophcodes/beloch` ist heute ein Nutzer-Repo) |
 | Wortmarke | `wordmark.svg`, Schrift als Pfad | Site-Header (heute Text in Plex Mono), Paper-Titel, Folien |
 | Kombination | `logo.svg` horizontal; `logo-stacked.svg` falls die Richtung es hergibt | Social-Preview, Titelfolie, README-Kopf |
-| Social-Preview | PNG 1280 x 640, dunkler Hintergrund `#101C2E`, Kombination plus Tagline "A declarative language for origami, built on the Huzita-Justin axioms." | GitHub Social Preview des Repos; `og:image` der Site (heute nicht gesetzt) |
+| Social-Preview | PNG 1280 x 640, dunkler Hintergrund `#101C2E`, Kombination plus Tagline "Origami folding sequences as programs." | GitHub Social Preview des Repos; `og:image` der Site (heute nicht gesetzt) |
 | Folien-Ecke | PNG 256 px, transparent, je eine Fassung Tinte hell und Tinte dunkel | Ecke jeder Vortragsfolie; Talk-Header mit "The seven axioms, as a language." |
 | Papier-Abbildung | PDF, Vektor, einfarbig Schwarz, ohne Transparenz | LaTeX `\includegraphics` im Paper (arXiv, JOSS, OSME); Druckfassung |
 | Konstruktionsblatt | eine Seite, SVG oder PDF: die Herleitung jeder Linie, Raster, Winkel, Abstände, Abstand Bildzeichen zu Wortmarke | Wartung und spätere Änderungen |
