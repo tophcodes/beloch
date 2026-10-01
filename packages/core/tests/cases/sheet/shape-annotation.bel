@@ -1,0 +1,11 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+shape noted(s) {
+  paper square s
+  @step "fold in half"
+  fold (map .a onto .b)
+  trim to .a
+}
+
+paper noted 1
+; expect error "a shape body holds no annotation"

@@ -103,6 +103,11 @@ let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
 (* Build one self-contained [foldedForm] frame for a given state. Its topology is
    this state's faces (earlier steps have fewer faces than the final CP, so the
    frame cannot inherit the parent's vertex/face set: [frame_inherit] is false). *)
+(* The assignment of a flat hinge: [J] where it only divides a non-convex
+   sheet into convex faces (FOLD's join edge), [F] where it is a crease. *)
+let flat_assign (sheet : Sheet.t) (h : Fold_state.hinge) : string =
+  if List.mem h.Fold_state.crease_id sheet.Sheet.joins then "J" else "F"
+
 let folded_frame_of_state (sheet : Sheet.t)
     (named_points : (string * Geom.point) list)
     (state : Fold_state.t)
@@ -165,7 +170,7 @@ let folded_frame_of_state (sheet : Sheet.t)
                     match Fold_state.mv state hi with
                     | Fold_state.M -> "M"
                     | Fold_state.V -> "V"
-                    | Fold_state.F -> "F"
+                    | Fold_state.F -> flat_assign sheet hs.(hi)
                   in
                   (a, hs.(hi).Fold_state.prov, Some hs.(hi).Fold_state.crease_id)
               | None -> ("F", None, None)
@@ -605,7 +610,11 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
                      so every edge is coloured by the DERIVED M/V. A precrease
                      is flat and therefore F, whatever direction it was marked
                      with. *)
-                  let a = mark_assign_str (Fold_state.mv disp hi) in
+                  let a =
+                    match Fold_state.mv disp hi with
+                    | Fold_state.F -> flat_assign sheet h
+                    | mv -> mark_assign_str mv
+                  in
                   (a, h.Fold_state.prov, Some h.Fold_state.crease_id)
               | None -> ("F", None, None)
           in
@@ -692,6 +701,7 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
       ("file_spec", `Float 1.1);
       ("file_creator", `String ("beloch " ^ Version.version));
       ("frame_classes", `List [ `String "creasePattern" ]);
+      ("frame_unit", `String fd.Eval.unit_name);
       ("vertices_coords", `List verts_paper);
       ("edges_vertices", `List edges_vertices);
       ("edges_assignment", `List edges_assignment);

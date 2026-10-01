@@ -69,6 +69,8 @@ type folded = {
   sheet : Sheet.t;
       (** The sheet the program opened; its unfolded state is the first
           frame of the output. *)
+  unit_name : string;
+      (** The unit the file declares, ["unit"] when it declares none. *)
   free_points : (string * free_info) list;
       (** One entry per `free on` point, recorded at bind time: a running
           log (like [statements]), not reconstructed from scope state at
@@ -76,17 +78,26 @@ type folded = {
 }
 
 val eval_program :
-  ?resume:snapshot -> ?on_step:(Ctx.ctx -> unit) -> Ast.program -> folded
-(** Evaluate [prog]. [resume] restores an incremental-evaluation checkpoint before
-    the first statement; [on_step] runs after every statement (used by
-    [Session] to collect a fresh snapshot per statement). *)
+  ?resume:snapshot ->
+  ?on_step:(Ctx.ctx -> unit) ->
+  ?prelude:Ast.shape_def list ->
+  Ast.program ->
+  folded
+(** Evaluate [prog]. [resume] restores an incremental-evaluation checkpoint
+    taken after a statement and runs the statements of [prog] from there;
+    without it the header runs first, the unit, the shapes of [prelude]
+    (default none) and of [prog], and the sheet [prog] opens. [on_step] runs
+    after every statement (used by [Session] to collect a fresh snapshot per
+    statement). *)
 
 val eval_folded : Ast.program -> folded
 (** [eval_program] with no resume/on_step. *)
 
-val run_program : Ctx.ctx -> (Ctx.ctx -> unit) -> Ast.program -> unit
-(** Run the statements of [prog] on [ctx], calling the second argument after
-    each. A failing statement raises [Error.Beloch_error] with its log entry
+val run_program :
+  ?prelude:Ast.shape_def list -> Ctx.ctx -> (Ctx.ctx -> unit) -> Ast.program -> unit
+(** Run [prog] on a fresh [ctx]: its header, as {!eval_program} does without
+    a checkpoint, then its statements, calling the second argument after each.
+    A failing statement raises [Error.Beloch_error] with its log entry
     already written. *)
 
 val build_output : Ctx.ctx -> Ctx.scope -> folded

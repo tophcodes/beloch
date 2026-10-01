@@ -11,7 +11,7 @@
 (test
  (name test_fold_state)
  (modules test_fold_state)
- (libraries beloch alcotest zarith))
+ (libraries beloch alcotest zarith yojson))
 
 (test
  (name test_geom)

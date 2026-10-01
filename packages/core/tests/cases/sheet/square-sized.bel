@@ -1,0 +1,10 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+paper square 2
+.p = free on --ab from .a by 3/2
+.q = free on --ab from .a by 0.5
+.r = free on --bc from .b at 1/4
+; assert .p = (3/2, 0)
+; assert .q = (1/2, 0)
+; assert .r = (2, 1/2)
+; assert .c = (2, 2)

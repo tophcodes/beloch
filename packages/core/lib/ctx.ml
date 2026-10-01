@@ -129,6 +129,13 @@ type ctx = {
   mutable cur_def_idx : int option; (* Some k while running def [k]'s body *)
   mutable next_def_idx : int;
   defs : (string, int * Ast.param list * Ast.stmt list) Hashtbl.t;
+  shapes : (string, int * Ast.shape_def) Hashtbl.t;
+      (* every shape the program sees, with its position among them: a
+         shape's body sees the shapes before it *)
+  mutable shape_params : (string * Q.t) list option;
+      (* the numbers of the shape whose body is running, [None] outside one *)
+  mutable unit_name : string;
+      (* the unit the file declares, "unit" when it declares none *)
   state : Fold_state.t ref;
   mutable sheet : Sheet.t;
       (* the sheet the program opened: its unfolded state and outline *)
@@ -301,6 +308,8 @@ type snapshot = {
   s_point_steps : (string, int * int option) Hashtbl.t;
   s_line_steps : (string, int * int option) Hashtbl.t;
   s_defs : (string, int * Ast.param list * Ast.stmt list) Hashtbl.t;
+  s_shapes : (string, int * Ast.shape_def) Hashtbl.t;
+  s_unit_name : string;
   s_name_ctx : name_ctx;
   s_cur_def_idx : int option;
   s_next_def_idx : int;
@@ -343,6 +352,8 @@ let snapshot (ctx : ctx) : snapshot =
         s_point_steps = Hashtbl.copy root.point_steps;
         s_line_steps = Hashtbl.copy root.line_steps;
         s_defs = Hashtbl.copy ctx.defs;
+        s_shapes = Hashtbl.copy ctx.shapes;
+        s_unit_name = ctx.unit_name;
         s_name_ctx = ctx.name_ctx;
         s_cur_def_idx = ctx.cur_def_idx;
         s_next_def_idx = ctx.next_def_idx;
@@ -380,6 +391,8 @@ let restore (ctx : ctx) (s : snapshot) : unit =
       restore_tbl root.point_steps s.s_point_steps;
       restore_tbl root.line_steps s.s_line_steps;
       restore_tbl ctx.defs s.s_defs;
+      restore_tbl ctx.shapes s.s_shapes;
+      ctx.unit_name <- s.s_unit_name;
       ctx.name_ctx <- s.s_name_ctx;
       ctx.cur_def_idx <- s.s_cur_def_idx;
       ctx.next_def_idx <- s.s_next_def_idx;
@@ -456,6 +469,9 @@ let create () : ctx =
     cur_def_idx = None;
     next_def_idx = 0;
     defs = Hashtbl.create 4;
+    shapes = Hashtbl.create 4;
+    shape_params = None;
+    unit_name = "unit";
     state = ref sheet.Sheet.start;
     sheet;
     frames_rev = [];
@@ -468,6 +484,21 @@ let create () : ctx =
     parent = None;
     pending = true;
   }
+
+(* Make [sheet] the sheet of [ctx], unfolded, with exactly [points] and
+   [lines] bound in the root scope. *)
+let open_sheet (ctx : ctx) (sheet : Sheet.t)
+    ~(points : (string * Geom.point) list)
+    ~(lines : (string * crease_val) list) : unit =
+  let root = List.hd ctx.scopes in
+  Hashtbl.reset root.points;
+  Hashtbl.reset root.lines;
+  Hashtbl.reset root.point_steps;
+  Hashtbl.reset root.line_steps;
+  List.iter (fun (n, p) -> Hashtbl.replace root.points n p) points;
+  List.iter (fun (n, cv) -> Hashtbl.replace root.lines n cv) lines;
+  ctx.sheet <- sheet;
+  ctx.state := sheet.Sheet.start
 
 let push_apply (ctx : ctx) (defname : string) (sp : Error.span) : int =
   let kept =

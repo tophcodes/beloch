@@ -1564,7 +1564,7 @@ let test_resume_equals_full () =
   let full = fold_str (Eval.eval_folded prog) in
   (* resume after statement 2 (index 1), replay statement 3 (index 2) *)
   let resume = snap_after 2 prog in
-  let suffix = List.filteri (fun i _ -> i >= 2) prog in
+  let suffix = { prog with Ast.p_stmts = List.filteri (fun i _ -> i >= 2) prog.Ast.p_stmts } in
   let resumed = fold_str (Eval.eval_program ~resume suffix) in
   Alcotest.(check string) "resumed FOLD == full FOLD" full resumed
 

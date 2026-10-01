@@ -1,0 +1,8 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+shape unfinished(s) {
+  paper square s
+}
+
+paper unfinished 1
+; expect error "a shape ends with `trim to`"

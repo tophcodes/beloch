@@ -28,7 +28,9 @@ let eval (t : t) ~(filename : string) (src : string) : Eval.folded =
   done;
   let prefix = !prefix in
   let resume = if prefix = 0 then None else Some t.snaps.(prefix - 1) in
-  let suffix = List.filteri (fun i _ -> i >= prefix) prog in
+  let suffix =
+    { prog with Ast.p_stmts = List.filteri (fun i _ -> i >= prefix) prog.Ast.p_stmts }
+  in
   (* collect one snapshot per suffix statement, in order *)
   let collected = ref [] in
   let on_step ctx = collected := Eval.snapshot ctx :: !collected in

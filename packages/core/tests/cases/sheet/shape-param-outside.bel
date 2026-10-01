@@ -1,0 +1,4 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+paper square w
+; expect error "`w` is no number"

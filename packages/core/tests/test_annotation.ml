@@ -2,6 +2,9 @@
 
 open Beloch
 
+(* the statements of a parsed program, after its header *)
+let parse_stmts ~filename src = (Beloch.parse ~filename src).Ast.p_stmts
+
 let fold src = Beloch.fold_string ~filename:"t.bel" src
 
 let expect_error msg_substr thunk =
@@ -24,7 +27,7 @@ let annotations json =
 
 let test_parse () =
   let prog =
-    Beloch.parse ~filename:"t.bel"
+    parse_stmts ~filename:"t.bel"
       "paper square\n\
        @step prelim \"Fold \\\"it\\\" in half.\" ; a comment\n\
        @yr:hold .a 2\n\
@@ -47,7 +50,7 @@ let test_parse () =
 
 let test_parse_in_body () =
   let prog =
-    Beloch.parse ~filename:"t.bel"
+    parse_stmts ~filename:"t.bel"
       "paper square\n\
        def half(.p .q) {\n\
       \  @say \"Fold it.\"\n\
@@ -169,7 +172,7 @@ let blank_annotations (src : string) : string =
         walk rest
     | _ :: rest -> walk rest
   in
-  walk (Beloch.parse ~filename:"t.bel" src);
+  walk (parse_stmts ~filename:"t.bel" src);
   Bytes.to_string b
 
 let without_annotations json =

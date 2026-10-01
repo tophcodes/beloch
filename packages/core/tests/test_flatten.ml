@@ -98,7 +98,7 @@ let test_flatten_item_accepts_backslash_filter () =
        flatten (--h \\ #[.b]) (--v & #[.c]) (--h & #[.d] mountain) (--v & \
        #[.a] mountain)\n"
   in
-  match List.rev prog with
+  match List.rev prog.Ast.p_stmts with
   | Ast.Flatten (Ast.Anonymous, elems, [], None, None, None, _) :: _ ->
       Alcotest.(check int) "4 elements" 4 (List.length elems)
   | _ -> Alcotest.fail "expected --h \\ #[.b] to parse as a flatten item"

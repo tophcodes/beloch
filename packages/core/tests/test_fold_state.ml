@@ -1743,9 +1743,78 @@ let test_reverse_no_spine () =
   | Error e -> Alcotest.failf "wrong failure %s" (Fold_state.reverse_failure_to_string e)
   | Ok _ -> Alcotest.fail "expected No_spine"
 
+(* ---- Trimming a sheet from a flap (Sheet.trim) ---- *)
+
+(* the unfolded grid of 3 by 3 of unit squares, face 3*j + i at column i, row j,
+   every neighbouring pair joined by a flat hinge of a crease of its own *)
+let grid3 () : Fold_state.t =
+  let face i j = sq (gp i j) (gp (i + 1) j) (gp (i + 1) (j + 1)) (gp i (j + 1)) in
+  let faces = Array.init 9 (fun k -> face (k mod 3) (k / 3)) in
+  let hinge fa fb line =
+    { Fold_state.fa; fb; line; angle = Num.zero;
+      crease_id = Fold_state.fresh_crease_id (); prov = None }
+  in
+  let hs = ref [] in
+  for j = 0 to 2 do
+    for i = 0 to 2 do
+      let k = (3 * j) + i in
+      if i < 2 then hs := hinge k (k + 1) (vline (i + 1)) :: !hs;
+      if j < 2 then hs := hinge k (k + 3) (hline (j + 1)) :: !hs
+    done
+  done;
+  Fold_state.flat ~hinges:(Array.of_list (List.rev !hs)) faces
+
+let test_trim_whole_grid () =
+  match Sheet.trim (grid3 ()) (List.init 9 Fun.id) ~folded:(fun _ -> false) with
+  | Ok sh ->
+      Alcotest.(check int) "nine faces" 9 (Array.length (Fold_state.faces sh.Sheet.start));
+      Alcotest.(check int) "twelve flat hinges" 12
+        (Array.length (Fold_state.hinges sh.Sheet.start));
+      Alcotest.(check int) "four boundary lines" 4 (List.length (Sheet.boundary_lines sh))
+  | Error `Hole -> Alcotest.fail "the whole grid has no hole"
+
+let test_trim_ring_has_hole () =
+  match
+    Sheet.trim (grid3 ()) [ 0; 1; 2; 3; 5; 6; 7; 8 ] ~folded:(fun _ -> false)
+  with
+  | Error `Hole -> ()
+  | Ok _ -> Alcotest.fail "the ring around the middle face has a hole"
+
+let test_trim_merges_folded_hinges () =
+  match Sheet.trim (grid3 ()) [ 0; 1; 2 ] ~folded:(fun _ -> true) with
+  | Ok sh ->
+      Alcotest.(check int) "one face" 1 (Array.length (Fold_state.faces sh.Sheet.start));
+      Alcotest.(check int) "no hinge" 0 (Array.length (Fold_state.hinges sh.Sheet.start))
+  | Error `Hole -> Alcotest.fail "a row has no hole"
+
+(* An L of three faces whose hinges belong to folded creases: the hinge in
+   the bar merges its faces, the one at the corner of the L cannot, and the
+   output writes it as a join edge. *)
+let test_trim_join_edge () =
+  match Sheet.trim (grid3 ()) [ 0; 1; 3 ] ~folded:(fun _ -> true) with
+  | Ok sh ->
+      Alcotest.(check int) "two faces" 2 (Array.length (Fold_state.faces sh.Sheet.start));
+      Alcotest.(check int) "one join crease" 1 (List.length sh.Sheet.joins);
+      let assignments =
+        let open Yojson.Safe.Util in
+        Fold_emit.folded_frame_of_state sh [] sh.Sheet.start None
+        |> member "edges_assignment" |> to_list |> List.map to_string
+      in
+      Alcotest.(check int) "one J edge" 1
+        (List.length (List.filter (( = ) "J") assignments));
+      Alcotest.(check bool) "no F edge" false (List.mem "F" assignments)
+  | Error `Hole -> Alcotest.fail "an L has no hole"
+
 let () =
   Alcotest.run "fold_graph"
-    [ ( "derive",
+    [ ( "trim",
+        [ Alcotest.test_case "whole grid" `Quick test_trim_whole_grid;
+          Alcotest.test_case "a ring has a hole" `Quick test_trim_ring_has_hole;
+          Alcotest.test_case "folded hinges merge" `Quick
+            test_trim_merges_folded_hinges;
+          Alcotest.test_case "an unmergeable hinge is a join edge" `Quick
+            test_trim_join_edge ] );
+      ( "derive",
         [ Alcotest.test_case "single fold" `Quick test_single_fold;
           Alcotest.test_case "accordion path" `Quick test_accordion ] );
       ( "make-structure",

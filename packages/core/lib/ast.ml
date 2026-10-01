@@ -151,17 +151,25 @@ type mv_constraint = MvFree | MvMountain | MvValley
    (ADR pending: collapse = simultaneous multi-crease fold). *)
 type collapse_elem = { cline : line_operand; cdir : mv_constraint }
 
+(* A number of the source (spec/BELOCH.md, Sheets): an exact rational
+   literal, or a parameter of the shape whose body it stands in. *)
+type number = NLit of Q.t * Error.span | NParam of string * Error.span
+
+(* where `free on` places its point: a fraction of the range or a distance
+   from its start *)
+type free_pos = FreeAt of number | FreeBy of number
+
 type point_expr =
   | PsExpr of point_operand (* the `.name = …` binding RHS: a meet/select/named point *)
   | PsFree of {
       line : line_operand;
       anchor : point_operand;
-      t : Num.t option;
+      pos : free_pos option;
       span : Error.span;
     }
-    (* `free on --l from .x [at <frac>]`: a point at fractional distance t
-       (default 1/2) along the line's material chord, measured from the
-       anchor endpoint. *)
+    (* `free on --l from .x [at <frac> | by <distance>]`: a point along the
+       line's material chord, measured from the anchor endpoint, at the
+       midpoint when neither is given. *)
 
 (* a thing that can be creased/folded: a fresh construction, or an existing line *)
 type markable =
@@ -259,4 +267,27 @@ type stmt =
          binds the name to the emergent crease (when one was materialized) or the
          given-ray bundle. *)
 
-type program = stmt list
+(* The sheet a `paper` line opens: the square of a side (1 when none is
+   given), or a shape with one number per parameter. *)
+type sheet =
+  | SSquare of number option * Error.span
+  | SShape of string * number list * Error.span
+
+(* `shape name(params) { paper …; … trim to <flap> }`: a program on one
+   sheet, cut down to one of its flaps (ADR 0046). *)
+type shape_def = {
+  sd_name : string;
+  sd_name_span : Error.span;
+  sd_params : (string * Error.span) list;
+  sd_sheet : sheet;
+  sd_body : stmt list;
+  sd_trim : flap_arg * Error.span;
+  sd_span : Error.span;
+}
+
+type program = {
+  p_unit : (string * Error.span) option;  (* `unit mm` *)
+  p_shapes : shape_def list;
+  p_sheet : sheet;
+  p_stmts : stmt list;
+}

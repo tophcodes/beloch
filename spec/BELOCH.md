@@ -92,7 +92,17 @@ differs from the parameters (`` `rectangle` takes 2 numbers, 1 given ``),
 a body that does not end with `trim to` (`` a shape ends with `trim to` ``),
 a trim elsewhere (`` `trim to` is the last statement of a shape ``), and a
 flap whose outline has a hole (`` the flap has a hole and is no sheet ``),
-which [def-sheet](/model/#def-sheet) excludes.
+which [def-sheet](/model/#def-sheet) excludes. A square whose side is not
+positive is an error (`` the side of a square is a positive number ``), and
+so is a unit the format does not name (`` `<unit>` is no unit; the units are
+in, pt, m, cm, mm, um, nm ``). A bare name where a number stands is an error
+outside a shape body (`` `<name>` is no number; a name stands for a number
+only in a shape body ``) and, inside one, where it names no parameter
+(`` `<name>` is no parameter of this shape ``). A shape body that holds an
+annotation or a `def` is an error (`` a shape body holds no annotation ``,
+`` a shape body holds no def ``). A second shape of a name is an error
+(`` shape <name> is already defined ``), and so is a `def` of a shape's name
+(`` <name> is already defined as a shape ``).
 
 **Units.** A file may name the unit of its numbers in a declaration before
 its first statement:

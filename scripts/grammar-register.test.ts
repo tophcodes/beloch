@@ -27,7 +27,7 @@ test("spec/BELOCH-GRAMMAR.md yields 29 rules and 6 external names", () => {
 		"apply_stmt",
 		"export_stmt",
 	]);
-	expect(beloch.planned.map((p) => p.keyword)).toEqual(["shape", "trim", "unit", "by"]);
+	expect(beloch.planned).toEqual([]);
 });
 
 test("a rule's lines are the rendering contract both renderers consume", () => {

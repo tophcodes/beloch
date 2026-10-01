@@ -128,6 +128,14 @@ type ctx = {
   mutable cur_def_idx : int option;  (** [Some k] while running def [k]'s body *)
   mutable next_def_idx : int;
   defs : (string, int * Ast.param list * Ast.stmt list) Hashtbl.t;
+  shapes : (string, int * Ast.shape_def) Hashtbl.t;
+      (** Every shape the program sees, with its position among them: a
+          shape's body sees the shapes before it. *)
+  mutable shape_params : (string * Q.t) list option;
+      (** The numbers of the shape whose body is running, [None] outside
+          one. *)
+  mutable unit_name : string;
+      (** The unit the file declares, ["unit"] when it declares none. *)
   state : Fold_state.t ref;
   mutable sheet : Sheet.t;
       (** The sheet the program opened: its unfolded state and outline. *)
@@ -238,6 +246,16 @@ val record_write : ctx -> Trace.terms -> Trace.state_candidate list -> unit
 val create : unit -> ctx
 (** A context on the unfolded square of side 1, with the four corners and
     the four edges bound in the root scope. *)
+
+val open_sheet :
+  ctx ->
+  Sheet.t ->
+  points:(string * Geom.point) list ->
+  lines:(string * crease_val) list ->
+  unit
+(** Make the sheet the sheet of the context, unfolded, with exactly the
+    given points and lines bound in the root scope. Called before the first
+    statement. *)
 
 val push_apply : ctx -> string -> Error.span -> int
 (** Log an [apply] of the named def at its own span, ahead of its body's

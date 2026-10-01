@@ -1,5 +1,8 @@
 open Beloch
 
+(* the statements of a parsed program, after its header *)
+let parse_stmts ~filename src = (Beloch.parse ~filename src).Ast.p_stmts
+
 let[@warning "-32"] expect_error msg_substr thunk =
   try
     ignore (thunk ());
@@ -180,7 +183,7 @@ let stmt_shape (s : Ast.stmt) : string =
       "annotation @" ^ (match a.Ast.a_ns with Some ns -> ns ^ ":" | None -> "") ^ a.Ast.a_key
 
 let parse1 (src : string) : Ast.stmt =
-  match Beloch.parse ~filename:"t.bel" ("paper square\n" ^ src ^ "\n") with
+  match parse_stmts ~filename:"t.bel" ("paper square\n" ^ src ^ "\n") with
   | [ s ] -> s
   | _ -> Alcotest.fail ("expected exactly one statement: " ^ src)
 
@@ -210,7 +213,7 @@ let test_error_roundtrip () =
 
 let test_parse_named_and_anon () =
   let prog =
-    Beloch.parse ~filename:"t.bel"
+    parse_stmts ~filename:"t.bel"
       "paper square\n\
        --d1 = (through .a .c)\n\
        mark (map .b onto .d)\n\
@@ -228,7 +231,7 @@ let test_parse_named_and_anon () =
 
 let test_parse_syntax_error () =
   try
-    ignore (Beloch.parse ~filename:"t.bel" "paper square\nmark (map .a)\n");
+    ignore (parse_stmts ~filename:"t.bel" "paper square\nmark (map .a)\n");
     Alcotest.fail "expected a syntax error"
   with Error.Beloch_error (_, _, _) -> ()
 
@@ -301,19 +304,19 @@ let test_parse_precrease_no_foldspec () =
     (shape1 "mark (map .a onto .c)")
 
 let test_parse_flip () =
-  match Beloch.parse ~filename:"t.bel" "paper square\nflip\n" with
+  match parse_stmts ~filename:"t.bel" "paper square\nflip\n" with
   | [ Ast.Flip _ ] -> ()
   | _ -> Alcotest.fail "expected a single Flip statement"
 
 let test_parse_eq_binding () =
   let prog =
-    Beloch.parse ~filename:"t.bel" "paper square\n--d1 = (through .a .c)\n"
+    parse_stmts ~filename:"t.bel" "paper square\n--d1 = (through .a .c)\n"
   in
   Alcotest.(check int) "one statement" 1 (List.length prog)
 
 let test_parse_shorthand_rhs () =
   let prog =
-    Beloch.parse ~filename:"t.bel"
+    parse_stmts ~filename:"t.bel"
       "paper square\n\
        --d = (through .a .c)\n\
        .m = --d * --ab\n\
@@ -333,7 +336,7 @@ let test_parse_shorthand_rhs () =
 
 let test_parse_def () =
   let prog =
-    Beloch.parse ~filename:"t.bel"
+    parse_stmts ~filename:"t.bel"
       "paper square\n\
        def petal(.p .q --base) {\n\
       \  fold (map .p onto .q) (moving .p)\n\
@@ -352,7 +355,7 @@ let test_parse_def () =
 
 let test_parse_def_zero_params () =
   match
-    Beloch.parse ~filename:"t.bel"
+    parse_stmts ~filename:"t.bel"
       "paper square\ndef thirds() {\n  --pq = (through .x .y)\n}\n"
   with
   | [ Ast.Def ("thirds", [], [ _ ], _) ] -> ()
@@ -360,26 +363,26 @@ let test_parse_def_zero_params () =
 
 let test_parse_def_in_def_rejected () =
   expect_error "syntax error" (fun () ->
-      Beloch.parse ~filename:"t.bel"
+      parse_stmts ~filename:"t.bel"
         "paper square\ndef a() {\n  def b() {\n  }\n}\n")
 
 let test_parse_kebab_rejected () =
   expect_error "unexpected character" (fun () ->
-      Beloch.parse ~filename:"t.bel"
+      parse_stmts ~filename:"t.bel"
         "paper square\n--foo-bar = (through .a .b)\n")
 
 (* ---- Apply ---- *)
 
 let test_parse_apply_bound () =
   match
-    Beloch.parse ~filename:"t.bel"
+    parse_stmts ~filename:"t.bel"
       "paper square\n$p1 = apply petal(.b .d .a * .c)\n"
   with
   | [ Ast.Apply (Some "p1", "petal", [ _; _; _ ], _) ] -> ()
   | _ -> Alcotest.fail "expected bound Apply with 3 args"
 
 let test_parse_apply_naked () =
-  match Beloch.parse ~filename:"t.bel" "paper square\napply thirds()\n" with
+  match parse_stmts ~filename:"t.bel" "paper square\napply thirds()\n" with
   | [ Ast.Apply (None, "thirds", [], _) ] -> ()
   | _ -> Alcotest.fail "expected naked zero-arg Apply"
 
@@ -387,7 +390,7 @@ let test_parse_apply_naked () =
 
 let test_parse_export_selective () =
   match
-    Beloch.parse ~filename:"t.bel"
+    parse_stmts ~filename:"t.bel"
       "paper square\nexport { .tip as .left_tip --pq .s! } $t\n"
   with
   | [ Ast.Export (Some [ e1; e2; e3 ], "t", _) ] ->
@@ -398,13 +401,13 @@ let test_parse_export_selective () =
   | _ -> Alcotest.fail "expected selective Export with 3 entries"
 
 let test_parse_export_all () =
-  match Beloch.parse ~filename:"t.bel" "paper square\nexport $t\n" with
+  match parse_stmts ~filename:"t.bel" "paper square\nexport $t\n" with
   | [ Ast.Export (None, "t", _) ] -> ()
   | _ -> Alcotest.fail "expected export-all"
 
 let test_parse_export_kind_mismatch_rename () =
   expect_error "keep the kind" (fun () ->
-      Beloch.parse ~filename:"t.bel"
+      parse_stmts ~filename:"t.bel"
         "paper square\nexport { .m as --m2 } $t\n")
 
 let test_parse_at_one_selector () =
@@ -419,7 +422,7 @@ let test_parse_at_two_selectors () =
 
 let test_parse_meet_stmt () =
   let prog =
-    Beloch.parse ~filename:"t.bel"
+    parse_stmts ~filename:"t.bel"
       "paper square\n\
        --d1 = (through .a .b)\n\
        --d2 = (through .c .d)\n\
@@ -541,7 +544,7 @@ let test_parse_reference_writes () =
 let test_parse_spec_corpus () =
   List.iter
     (fun (name, src) ->
-      try ignore (Beloch.parse ~filename:(name ^ ".bel") src)
+      try ignore (parse_stmts ~filename:(name ^ ".bel") src)
       with Error.Beloch_error (_, m, _) ->
         Alcotest.fail (Printf.sprintf "%s failed to parse: %s" name m))
     spec_corpus
@@ -603,7 +606,7 @@ let test_parse_union () =
 
 let test_parse_bind_bundle () =
   let prog =
-    Beloch.parse ~filename:"t.bel"
+    parse_stmts ~filename:"t.bel"
       "paper square\n--l = (through .a .b)\n--seg = --l & .c\n"
   in
   match List.rev prog with
@@ -630,7 +633,7 @@ let test_parse_line_select () =
 
 let test_parse_point_select () =
   let prog =
-    Beloch.parse ~filename:"t.bel"
+    parse_stmts ~filename:"t.bel"
       "paper square\n--x = (through .a .b)\n--y = (through .c .d)\n.o = .[--x --y]\n"
   in
   match List.rev prog with
@@ -654,7 +657,7 @@ let test_parse_join_star () =
    filtered crease resolves to one line before meet consumes it *)
 let test_parse_filter_binds_before_meet () =
   let prog =
-    Beloch.parse ~filename:"t.bel"
+    parse_stmts ~filename:"t.bel"
       "paper square\n\
        --l = (through .a .c)\n\
        --s = (through .b .d)\n\
@@ -687,7 +690,7 @@ let test_parse_flatten_followed_by_stmt () =
   (* regression: a flatten must not swallow the next statement's leading
      .point/--crease as a phantom over item *)
   let prog =
-    Beloch.parse ~filename:"t.bel"
+    parse_stmts ~filename:"t.bel"
       "paper square\nflatten (--a) (--b mountain)\n.x = --a * --b\n"
   in
   match prog with
@@ -706,14 +709,14 @@ let test_parse_flatten_toward_item () =
 let test_parse_flatten_double_staying_rejected () =
   let src = "paper square\nflatten (--a) (staying .p) (staying .q)\n" in
   expect_error "only one staying item per flatten" (fun () ->
-      Beloch.parse ~filename:"t.bel" src);
+      parse_stmts ~filename:"t.bel" src);
   (* the error must point at the duplicate (second, source-order) `staying`,
      not the first *)
   let first_staying = Str.search_forward (Str.regexp_string "staying") src 0 in
   let second_staying =
     Str.search_forward (Str.regexp_string "staying") src (first_staying + 1)
   in
-  match Beloch.parse ~filename:"t.bel" src with
+  match parse_stmts ~filename:"t.bel" src with
   | _ -> Alcotest.fail "expected duplicate-staying error"
   | exception Error.Beloch_error ((start, _), _, _) ->
       Alcotest.(check int)
@@ -722,18 +725,18 @@ let test_parse_flatten_double_staying_rejected () =
 
 let test_parse_flatten_double_toward_rejected () =
   expect_error "only one toward item per flatten" (fun () ->
-      Beloch.parse ~filename:"t.bel"
+      parse_stmts ~filename:"t.bel"
         "paper square\nflatten (--a) (toward .p) (toward .q)\n")
 
 let test_parse_flatten_brace_item_retired () =
   (* braces are blocks, never items: `{toward .s}` is gone with the rest of
      the brace items *)
   expect_error "syntax error" (fun () ->
-      Beloch.parse ~filename:"t.bel" "paper square\nflatten (--a) {toward .c}\n")
+      parse_stmts ~filename:"t.bel" "paper square\nflatten (--a) {toward .c}\n")
 
 let test_parse_flatten_trailing_toward_rejected () =
   expect_error "syntax error" (fun () ->
-      Beloch.parse ~filename:"t.bel"
+      parse_stmts ~filename:"t.bel"
         "paper square\nflatten (--a) (--b) toward .c\n")
 
 (* ---- Items stand in any order (Acceptance 2) ---- *)
@@ -876,7 +879,7 @@ let test_align_heading_is_kept () =
 let test_toward_inside_refused () =
   List.iter
     (fun src ->
-      match Beloch.parse ~filename:"t.bel" ("paper square\n" ^ src ^ "\n") with
+      match parse_stmts ~filename:"t.bel" ("paper square\n" ^ src ^ "\n") with
       | _ -> Alcotest.fail ("expected a refusal: " ^ src)
       | exception Error.Beloch_error (_, message, hint) ->
           Alcotest.(check string) "the message"
@@ -957,66 +960,66 @@ let test_fold_placed () =
 
 let test_err_head_the_verb_does_not_take () =
   expect_error "fold takes no (outside) item" (fun () ->
-      Beloch.parse ~filename:"t.bel"
+      parse_stmts ~filename:"t.bel"
         "paper square\nfold (map .a onto .c) (outside)\n")
 
 let test_err_items_on_flip () =
   expect_error "flip takes no items" (fun () ->
-      Beloch.parse ~filename:"t.bel" "paper square\nflip (moving .a)\n")
+      parse_stmts ~filename:"t.bel" "paper square\nflip (moving .a)\n")
 
 let test_err_second_item_of_one_type () =
   expect_error "only one moving item per fold" (fun () ->
-      Beloch.parse ~filename:"t.bel"
+      parse_stmts ~filename:"t.bel"
         "paper square\nfold (map .a onto .c) (moving .a) (moving .b)\n")
 
 let test_err_second_extent () =
   expect_error "only one extent item per mark" (fun () ->
-      Beloch.parse ~filename:"t.bel"
+      parse_stmts ~filename:"t.bel"
         "paper square\nmark (--l) (between .a .b) (at .m)\n")
 
 let test_err_second_selection () =
   expect_error "only one toward item per flatten" (fun () ->
-      Beloch.parse ~filename:"t.bel"
+      parse_stmts ~filename:"t.bel"
         "paper square\nflatten (--a) (--b) (toward .p) (toward .q)\n")
 
 let test_err_second_staying () =
   expect_error "only one staying item per flatten" (fun () ->
-      Beloch.parse ~filename:"t.bel"
+      parse_stmts ~filename:"t.bel"
         "paper square\nflatten (--a) (staying .p) (staying .q)\n")
 
 let test_err_no_axis_item () =
   expect_error "fold needs an axis item: a construction or a crease" (fun () ->
-      Beloch.parse ~filename:"t.bel" "paper square\nfold (moving .a)\n")
+      parse_stmts ~filename:"t.bel" "paper square\nfold (moving .a)\n")
 
 let test_err_no_ray_item () =
   expect_error "flatten needs at least one ray item" (fun () ->
-      Beloch.parse ~filename:"t.bel" "paper square\nflatten (staying .a)\n")
+      parse_stmts ~filename:"t.bel" "paper square\nflatten (staying .a)\n")
 
 let test_err_letter_on_an_axis_item () =
   expect_error_hint "an axis item takes no mountain or valley"
     "write (mountain) as its own item" (fun () ->
-      Beloch.parse ~filename:"t.bel" "paper square\nfold (--d mountain) (moving .a)\n")
+      parse_stmts ~filename:"t.bel" "paper square\nfold (--d mountain) (moving .a)\n")
 
 let test_err_placed_fold_rejects_mountain () =
   expect_error_hint "a placed fold derives its direction" "drop mountain"
     (fun () ->
-      Beloch.parse ~filename:"t.bel"
+      parse_stmts ~filename:"t.bel"
         "paper square\nfold (through .m .n) (moving .b) (over .p) (mountain)\n");
   (* and in the other order, since items carry no position *)
   expect_error_hint "a placed fold derives its direction" "drop mountain"
     (fun () ->
-      Beloch.parse ~filename:"t.bel"
+      parse_stmts ~filename:"t.bel"
         "paper square\nfold (through .m .n) (mountain) (over .p)\n")
 
 (* `up to` names the flap a placed fold moves (ADR 0036) *)
 let test_placed_fold_takes_up_to () =
   ignore
-    (Beloch.parse ~filename:"t.bel"
+    (parse_stmts ~filename:"t.bel"
        "paper square\nfold (through .m .n) (moving .b) (up to .c) (under .p)\n")
 
 let test_err_clause_on_flip () =
   expect_error "flip scores no crease, so it takes no as or into" (fun () ->
-      Beloch.parse ~filename:"t.bel" "paper square\nflip as --f\n")
+      parse_stmts ~filename:"t.bel" "paper square\nflip as --f\n")
 
 (* ---- Notation cutover: the bare-keyword argument forms are gone ---- *)
 
@@ -1027,7 +1030,7 @@ let test_bare_keyword_arguments_retired () =
   List.iter
     (fun (src, msg) ->
       expect_error msg (fun () ->
-          Beloch.parse ~filename:"t.bel" ("paper square\n" ^ src ^ "\n")))
+          parse_stmts ~filename:"t.bel" ("paper square\n" ^ src ^ "\n")))
     [
       ("fold map .a onto .c moving .a", "syntax error");
       ("mark map .a onto .c", "syntax error");
@@ -1043,14 +1046,42 @@ let test_parse_at_retired () =
   (* `@` opens an annotation now, so the retired `@map` and `@fold` writes
      read as annotations whose arguments do not parse. *)
   expect_error "syntax error" (fun () ->
-      Beloch.parse ~filename:"t.bel" "paper square\n@map .a onto .c moving .a\n");
+      parse_stmts ~filename:"t.bel" "paper square\n@map .a onto .c moving .a\n");
   expect_error "syntax error" (fun () ->
-      Beloch.parse ~filename:"t.bel" "paper square\n@fold --d moving .a\n")
+      parse_stmts ~filename:"t.bel" "paper square\n@fold --d moving .a\n")
+
+(* ---- Numbers and sheets (spec/BELOCH.md, "Sheets") ---- *)
+
+let test_decimal_and_point_name () =
+  match parse_stmts ~filename:"t.bel" "paper square\n.5 = free on --ab from .a at 0.25\n" with
+  | [ Ast.Point ("5", Ast.PsFree { pos = Some (Ast.FreeAt (Ast.NLit (q, _))); _ }, _) ] ->
+      Alcotest.(check string) "0.25 is exact" "1/4" (Q.to_string q)
+  | _ -> Alcotest.fail "expected the point .5 at the fraction 1/4"
+
+let test_header () =
+  let prog =
+    Beloch.parse ~filename:"t.bel"
+      "unit mm\nshape strip(w) {\n  paper square w\n  trim to .a\n}\npaper strip 15/2\n"
+  in
+  Alcotest.(check (option string)) "unit" (Some "mm") (Option.map fst prog.Ast.p_unit);
+  (match prog.Ast.p_shapes with
+  | [ { Ast.sd_name = "strip"; sd_params = [ ("w", _) ]; sd_body = []; _ } ] -> ()
+  | _ -> Alcotest.fail "expected the shape strip(w) with an empty body");
+  match prog.Ast.p_sheet with
+  | Ast.SShape ("strip", [ Ast.NLit (q, _) ], _) ->
+      Alcotest.(check string) "the opening's number" "15/2" (Q.to_string q)
+  | _ -> Alcotest.fail "expected paper strip 15/2"
 
 let () =
   Alcotest.run "beloch-parse"
     [
       ("error", [ Alcotest.test_case "span format" `Quick test_error_roundtrip ]);
+      ( "sheets",
+        [
+          Alcotest.test_case "a decimal, and .5 a point name" `Quick
+            test_decimal_and_point_name;
+          Alcotest.test_case "unit, shape and opening" `Quick test_header;
+        ] );
       ( "parse",
         [
           Alcotest.test_case "named and anonymous" `Quick

@@ -1,0 +1,23 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; Lines bound in a shape body carry over to the trimmed sheet: a
+; construction line where it crosses the sheet, and a bundle for its part
+; on the sheet. The bundle --lower is the half of the diagonal at .a; on the
+; band of height 1 the diagonal's material runs from .a to (1, 1).
+
+shape band(w h) {
+  paper square w
+  mark (through .a .c) as --diag
+  --lower = --diag & .a
+  .p = free on --da from .a by h
+  --mid = (map .a onto .p)
+  fold (perp --da through .p) (moving .d)
+  trim to .a
+}
+
+paper band 2 1
+.e = free on --lower from .a
+mark (--mid) as --m
+.f = --m * --da
+; assert .e = (1/2, 1/2)
+; assert .f = (0, 1/2)
