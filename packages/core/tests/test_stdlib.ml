@@ -40,14 +40,14 @@ let test_rectangle () =
   Alcotest.check coords "corners"
     [ [ 0.; 0. ]; [ 2.; 0. ]; [ 2.; 1. ]; [ 0.; 1. ] ]
     (corners json);
-  Alcotest.(check (list string)) "names" [ "a"; "b"; "p" ] (names json)
+  Alcotest.(check (list string)) "names" [ "a"; "b"; "c"; "d" ] (names json)
 
 let test_silver () =
   let json = open_sheet "paper silver 2\n" in
   Alcotest.check coords "corners, height 2 / sqrt 2"
     [ [ 0.; 0. ]; [ 2.; 0. ]; [ 2.; r2 ]; [ 0.; r2 ] ]
     (corners json);
-  Alcotest.(check (list string)) "names" [ "a"; "b" ] (names json)
+  Alcotest.(check (list string)) "names" [ "a"; "b"; "c"; "d" ] (names json)
 
 let test_triangle () =
   let json = open_sheet "paper triangle 2\n" in
@@ -75,17 +75,20 @@ let rectangle_in (rel : string) : string =
     else find (i + 1)
   in
   let i = find 0 in
-  let j = String.index_from src i '}' in
-  String.sub src i (j - i + 1)
+  let rec close j =
+    if src.[j] = '}' && src.[j - 1] = '\n' then j else close (j + 1)
+  in
+  String.sub src i (close i - i + 1)
 
-(* the language page and ADR 0046 state the rectangle of the library, and
-   it evaluates *)
+(* the language page and ADR 0047 state the rectangle of the library, ADR
+   0046 the one before its export list, and each evaluates *)
 let test_documented_rectangle () =
   let library = rectangle_in "packages/core/stdlib/shapes.bel" in
   List.iter
-    (fun rel ->
+    (fun (rel, same) ->
       let stated = rectangle_in rel in
-      Alcotest.(check string) (rel ^ " states the library's rectangle") library stated;
+      if same then
+        Alcotest.(check string) (rel ^ " states the library's rectangle") library stated;
       let json =
         Beloch.parse ~filename:"t.bel" (stated ^ "\npaper rectangle 2 1\n")
         |> Eval.eval_program ~prelude:[]
@@ -94,7 +97,11 @@ let test_documented_rectangle () =
       Alcotest.check coords (rel ^ ": corners")
         [ [ 0.; 0. ]; [ 2.; 0. ]; [ 2.; 1. ]; [ 0.; 1. ] ]
         (corners json))
-    [ "spec/BELOCH.md"; "decisions/0046-a-sheet-is-a-square-or-a-flap-cut-from-one.md" ]
+    [
+      ("spec/BELOCH.md", true);
+      ("decisions/0046-a-sheet-is-a-square-or-a-flap-cut-from-one.md", false);
+      ("decisions/0047-a-trim-exports-the-names-it-lists.md", true);
+    ]
 
 let () =
   Alcotest.run "stdlib"

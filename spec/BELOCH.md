@@ -59,8 +59,9 @@ ending with a trim to one flap of that sheet. The flap is the new sheet
 shape rectangle(w h) {
   paper square w
   .p = free on --da from .a by h
-  fold (perp --da through .p) (moving .d)
-  trim to .a
+  fold (perp --da through .p) (moving .d) as --top
+  .q = --top * --bc
+  trim to .a { .a .b .q as .c .p as .d --ab --bc --top as --cd --da }
 }
 ```
 

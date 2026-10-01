@@ -3,5 +3,10 @@
 paper rectangle 2 1
 ; assert .a = (0, 0)
 ; assert .b = (2, 0)
-; assert .p = (0, 1)
+; assert .c = (2, 1)
+; assert .d = (0, 1)
 ; assert faces = 1
+.m = free on --cd from .d
+.n = free on --bc from .b
+; assert .m = (1, 1)
+; assert .n = (2, 1/2)

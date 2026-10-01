@@ -1,0 +1,8 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+paper triangle 2
+.n = --bt * --ta
+.m = free on --ab from .a
+; assert .n = .t
+; assert .m = (1, 0)
+; assert faces = 1

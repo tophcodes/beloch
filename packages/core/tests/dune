@@ -109,4 +109,5 @@
  (deps
   ../stdlib/shapes.bel
   ../../../spec/BELOCH.md
-  ../../../decisions/0046-a-sheet-is-a-square-or-a-flap-cut-from-one.md))
+  ../../../decisions/0046-a-sheet-is-a-square-or-a-flap-cut-from-one.md
+  ../../../decisions/0047-a-trim-exports-the-names-it-lists.md))
