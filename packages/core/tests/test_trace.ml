@@ -81,6 +81,30 @@ let test_paper_filter () =
     (count (fun c -> removed c = Some "paper") cs);
   Alcotest.(check int) "the other selected" 1 (count selected cs)
 
+(* .a lies on --ab, so the cubic of axiom 7 has a root where .a lands on
+   itself; its bisector 0·x + 0·y = 0 is no line and is no candidate, so the
+   trace does not list it as one the paper removed. *)
+let test_axiom7_point_on_line () =
+  let json, failed =
+    fold_traced "paper square\n--x = (map .a onto --ab and .c onto --da)\n"
+  in
+  Alcotest.(check bool) "the program succeeds" false failed;
+  let e =
+    List.find (fun e -> e |> member "axiom" |> to_string = "axiom7") (entries json)
+  in
+  let cs = candidates e in
+  Alcotest.(check int) "one candidate" 1 (List.length cs);
+  Alcotest.(check int) "none removed by the paper" 0
+    (count (fun c -> removed c = Some "paper") cs);
+  Alcotest.(check bool) "every candidate is a line" true
+    (List.for_all
+       (fun c ->
+         match floats (c |> member "line") with
+         | a :: b :: _ -> a <> 0. || b <> 0.
+         | _ -> false)
+       cs);
+  Alcotest.(check int) "it is selected" 1 (count selected cs)
+
 let test_single_solution () =
   let json, _ = fold_traced "paper square\nfold (map .a onto .c)\n" in
   match entries json with
@@ -488,6 +512,8 @@ let () =
             test_toward_selects;
           Alcotest.test_case "axiom 6 carries its parabola" `Quick test_conic;
           Alcotest.test_case "the paper filter is recorded" `Quick test_paper_filter;
+          Alcotest.test_case "axiom 7 with the point on its line lists no non-line" `Quick
+            test_axiom7_point_on_line;
           Alcotest.test_case "a single solution is one selected candidate" `Quick
             test_single_solution;
           Alcotest.test_case "axiom 5 in a binding" `Quick test_axiom5_bind;

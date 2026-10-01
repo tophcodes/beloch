@@ -270,5 +270,7 @@ with a hint to use axiom 6 and axiom 4 instead; `--d` parallel to `--e`,
 "…: --d and --e are parallel, so the cubic degenerates and no fold exists";
 no common tangent, "cannot fold .p onto --d and .q onto --e: out of reach
 (no common tangent)".
+When `.p` lies on `--d` already, the cubic has a root where `.p` lands on
+itself; as in axiom 6, that identity landing is dropped.
 
 ## References
