@@ -212,12 +212,12 @@ module.exports = grammar({
     // anonymous tokens under write_statement instead, since a bare verb
     // word is never valid outside one.
     keyword: _ => choice(
-      'paper', 'square',
+      'paper', 'square', 'shape', 'trim', 'unit',
       'def', 'apply', 'export',
       'through', 'map', 'onto', 'perp', 'toward', 'heading',
       'and', 'moving', 'up', 'to', 'mountain', 'valley', 'over', 'under', 'outside', 'staying',
       'between', 'at', 'as',
-      'free', 'on', 'from',
+      'free', 'on', 'from', 'by',
     ),
 
     // sigils: `--name` is a crease, `.name` is a point, `$name` an instance
@@ -230,9 +230,9 @@ module.exports = grammar({
     point_bracket: _ => '.[',
     flap_bracket: _ => '#[',
 
-    // exact rationals / integers (not in current surface syntax, kept for
-    // robustness so a stray numeral doesn't break highlighting)
-    number: _ => /[0-9]+(\/[0-9]+)?/,
+    // exact rationals: an integer, a fraction or a decimal, which starts
+    // with a digit (`0.5`; `.5` is a point name)
+    number: _ => /[0-9]+(\/[0-9]+|\.[0-9]+)?/,
 
     // operators: `=` bind, `!` export-shadow, `&`/`\` bundle filter, `*` meet/join
     operator: _ => choice('=', '!', '&', '\\', '*'),

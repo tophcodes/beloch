@@ -823,6 +823,10 @@
     "named": false
   },
   {
+    "type": "by",
+    "named": false
+  },
+  {
     "type": "comment",
     "named": true,
     "extra": true
@@ -940,6 +944,10 @@
     "named": false
   },
   {
+    "type": "shape",
+    "named": false
+  },
+  {
     "type": "square",
     "named": false
   },
@@ -964,7 +972,15 @@
     "named": false
   },
   {
+    "type": "trim",
+    "named": false
+  },
+  {
     "type": "under",
+    "named": false
+  },
+  {
+    "type": "unit",
     "named": false
   },
   {
