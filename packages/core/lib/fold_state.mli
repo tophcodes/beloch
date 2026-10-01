@@ -243,6 +243,22 @@ val subdivide :
     side are left uncut. [only] restricts the cut to the faces it holds for;
     every other face is left whole. [crease_id] defaults to a fresh id. *)
 
+val subdivide_fan :
+  ?only:(int -> bool) ->
+  t ->
+  o:Geom.point ->
+  rays:(int * Geom.line * Geom.point) list ->
+  prov:State.provenance option ->
+  t
+(** Score the half-lines of a fan from the TABLE point [o]: each ray is
+    (crease id, its table line, a table point on it other than [o]), and is
+    scored into its own crease. A face that holds [o] in its interior is cut
+    into the wedges between consecutive rays at once, when every wedge is
+    narrower than a half-turn or exactly one, and is left whole otherwise;
+    every other face a ray's half-line crosses is cut along it as
+    [subdivide] cuts. Faces the line meets only on the far side of [o] are
+    left whole, and so is every face [only] does not hold for. *)
+
 val subdivide_paper :
   ?crease_id:int ->
   t ->

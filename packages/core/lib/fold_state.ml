@@ -660,6 +660,166 @@ let subdivide ?crease_id ?keep_side ?(only = fun _ -> true) (g : t)
   in
   split_with_flat_hinges g ~cid ~prov ~cut_of
 
+(* The splitter of [subdivide_fan]: [cut_of i] gives the paper children of
+   face i, and the new flat hinges between them as (child index within the
+   list, child index within the list, paper chord, crease id), or None to
+   keep the face whole. Returns the new state and the parent of each new
+   face. Children follow their parent in the given order, and the new hinges
+   precede the carried ones in the order of their faces, as in
+   [split_with_flat_hinges]. *)
+let split_faces (g : t) ~(prov : State.provenance option)
+    ~(cut_of :
+       int ->
+       (face list * (int * int * (Geom.point * Geom.point) * int) list) option)
+    : t * int array =
+  let out = ref [] in
+  let cuts = ref [] in
+  let next = ref 0 in
+  Array.iteri
+    (fun fi f ->
+      match cut_of fi with
+      | None ->
+          out := (f, fi) :: !out;
+          incr next
+      | Some (children, hs) ->
+          let first = !next in
+          List.iter
+            (fun c ->
+              out := (c, fi) :: !out;
+              incr next)
+            children;
+          cuts := (first, hs) :: !cuts)
+    g.faces;
+  let arr = Array.of_list (List.rev !out) in
+  let faces' = Array.map fst arr in
+  let parent = Array.map snd arr in
+  let children_of p =
+    let acc = ref [] in
+    Array.iteri (fun k pp -> if pp = p then acc := k :: !acc) parent;
+    List.rev !acc
+  in
+  let new_hinges =
+    List.concat_map
+      (fun (first, hs) ->
+        List.map
+          (fun (i, j, (a, b), cid) ->
+            { fa = first + i; fb = first + j; line = Geom.line_through a b;
+              angle = Num.zero; crease_id = cid; prov })
+          hs)
+      (List.rev !cuts)
+  in
+  let carried = reattach_hinges ~faces' ~children_of g.hinges in
+  let rank' = densify_rank ~old_rank:g.rank ~parent in
+  let root' = List.hd (children_of g.root) in
+  match
+    make ~base:g.base ~marks:g.marks ~faces:faces'
+      ~hinges:(Array.of_list (new_hinges @ carried)) ~root:root' ~rank:rank'
+      ()
+  with
+  | Ok g' -> (g', parent)
+  | Error v -> fail_of_violation prov v
+
+let subdivide_fan ?(only = fun _ -> true) (g : t) ~(o : Geom.point)
+    ~(rays : (int * Geom.line * Geom.point) list)
+    ~(prov : State.provenance option) : t =
+  let dir (p : Geom.point) =
+    (Num.sub p.Geom.x o.Geom.x, Num.sub p.Geom.y o.Geom.y)
+  in
+  let cross (ax, ay) (bx, by) = Num.sub (Num.mul ax by) (Num.mul ay bx) in
+  let dot (ax, ay) (bx, by) = Num.add (Num.mul ax bx) (Num.mul ay by) in
+  let offset (dx, dy) =
+    { Geom.x = Num.add o.Geom.x dx; y = Num.add o.Geom.y dy }
+  in
+  let table_of g fi =
+    Array.map (Isometry.apply_point (face_iso2 g fi)) g.faces.(fi)
+  in
+  (* 1. a face that holds O in its interior is cut into the wedges between
+     consecutive rays at once: one half-line alone does not divide it into
+     convex pieces. The rays then run from O on every face. *)
+  let sorted =
+    List.sort (fun (_, _, p) (_, _, q) -> Geom.ccw_compare ~center:o p q) rays
+    |> Array.of_list
+  in
+  let k = Array.length sorted in
+  let wedges_convex =
+    k >= 2
+    && Array.for_all Fun.id
+         (Array.init k (fun j ->
+              let _, _, p = sorted.(j) and _, _, q = sorted.((j + 1) mod k) in
+              let c = Num.sign (cross (dir p) (dir q)) in
+              c > 0 || (c = 0 && Num.sign (dot (dir p) (dir q)) < 0)))
+  in
+  let cut_wedges fi =
+    let table = table_of g fi and ccw = table_polygon_ccw g fi in
+    let n = Array.length ccw in
+    if not (wedges_convex && only fi && Geom.in_convex_polygon ccw o
+            && Array.for_all
+                 (fun i ->
+                   not (Geom.on_segment (ccw.(i), ccw.((i + 1) mod n)) o))
+                 (Array.init n Fun.id))
+    then None
+    else
+      let inv = Isometry.inverse (face_iso2 g fi) in
+      let back = Isometry.apply_point inv in
+      let wedge j =
+        let _, lj, p = sorted.(j) and _, lk, q = sorted.((j + 1) mod k) in
+        let dx, dy = dir p and ex, ey = dir q in
+        let left = offset (Num.neg dy, dx)
+        and right = offset (ey, Num.neg ex) in
+        let poly =
+          Geom.clip_convex_halfplane lj (Geom.side_of_line lj left) table
+          |> Geom.clip_convex_halfplane lk (Geom.side_of_line lk right)
+        in
+        Array.map back poly
+      in
+      let exit_of j =
+        let _, l, p = sorted.(j) in
+        match Geom.clip_line_to_convex l ccw with
+        | Some (a, b) -> if Num.sign (dot (dir a) (dir p)) > 0 then a else b
+        | None -> p
+      in
+      let children = List.init k wedge in
+      if List.exists (fun c -> Array.length c < 3) children then None
+      else
+        Some
+          ( children,
+            List.init k (fun j ->
+                let cid, _, _ = sorted.(j) in
+                ((j - 1 + k) mod k, j, (back o, back (exit_of j)), cid)) )
+  in
+  let g, parent = split_faces g ~prov ~cut_of:cut_wedges in
+  let only = Array.map only parent in
+  (* 2. every other face the half-line of a ray crosses is cut along it, as
+     [subdivide] cuts it: plus child first *)
+  let g, _ =
+    List.fold_left
+      (fun (g, only) (cid, axis, p) ->
+        let cut_of fi =
+          if not only.(fi) then None
+          else
+            let table = table_of g fi in
+            match Geom.clip_line_to_convex axis (table_polygon_ccw g fi) with
+            | Some (a, b)
+              when Num.sign (dot (dir a) (dir p)) >= 0
+                   && Num.sign (dot (dir b) (dir p)) >= 0 -> (
+                let part s =
+                  let sub = Geom.clip_convex_halfplane axis s table in
+                  if Array.length sub >= 3 then Some sub else None
+                in
+                let inv = Isometry.inverse (face_iso2 g fi) in
+                match (part 1, part (-1), chord_of_table table inv axis) with
+                | Some tp, Some tm, Some chord ->
+                    let back = Array.map (Isometry.apply_point inv) in
+                    Some ([ back tp; back tm ], [ (0, 1, chord, cid) ])
+                | _ -> None)
+            | _ -> None
+        in
+        let g', parent = split_faces g ~prov ~cut_of in
+        (g', Array.map (fun p -> only.(p)) parent))
+      (g, only) rays
+  in
+  g
+
 let subdivide_paper ?crease_id (g : t) (paper_axis : Geom.line)
     ~(prov : State.provenance option) : t =
   let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in

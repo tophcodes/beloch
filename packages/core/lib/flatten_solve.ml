@@ -197,11 +197,75 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       { State.axiom = "flatten"; sources = []; span; name = None;
         stmt = Ctx.stmt_index ctx }
   in
+  (* the layers under the fan (def-flatten's C): the faces of the state
+     before the flatten whose table image meets the image of the anchor in
+     positive area. Every scoring below stays inside them. *)
+  let pre_st = !(ctx.state) in
+  let pre = Fold_state.faces pre_st in
+  let under_fan =
+    let on_anchor = Collapse.anchor_faces pre_st o anchor in
+    let tp = Fold_state.table_polygon_ccw pre_st in
+    Array.init (Array.length pre) (fun i ->
+        let pi = tp i in
+        let hit = ref false in
+        Array.iteri
+          (fun j a ->
+            if a && not !hit then hit := Geom.convex_overlap pi (tp j))
+          on_anchor;
+        !hit)
+  in
+  let centroid (f : Geom.point array) =
+    let m = Num.of_int (Array.length f) in
+    let sum get =
+      Array.fold_left (fun acc p -> Num.add acc (get p)) Num.zero f
+    in
+    { Geom.x = Num.div (sum (fun p -> p.Geom.x)) m;
+      y = Num.div (sum (fun p -> p.Geom.y)) m }
+  in
+  (* a ray to score: its crease id, its table line, and a point on it past
+     O *)
+  let ray_cut cid (far : Geom.point) = (cid, Geom.line_through o far, far) in
+  (* score [cuts] into the state before the flatten, each ray into its own
+     crease along its half-line from O, on the faces [within] holds *)
+  let score_rays cuts (within : bool array) =
+    Fold_state.subdivide_fan pre_st ~o ~rays:cuts ~only:(fun i -> within.(i))
+      ~prov
+  in
+  (* the faces before the flatten that hold a face of [tip], a face set of
+     a scored state [st] *)
+  let parents_of (st : Fold_state.t) (tip : bool array) =
+    let faces = Fold_state.faces st in
+    Array.map
+      (fun (f : Geom.point array) ->
+        let holds = ref false in
+        Array.iteri
+          (fun t (tf : Geom.point array) ->
+            if tip.(t) && Geom.in_convex_polygon f (centroid tf) then
+              holds := true)
+          faces;
+        !holds)
+      pre
+  in
+  (* the tip of every admissible stayer sector of [st_all], grouped by the
+     faces before the flatten that hold it: sectors whose tips lie in the
+     same faces are solved on one state *)
+  let tip_groups st_all es_geom stayer =
+    List.rev
+      (List.fold_left
+         (fun acc (s0, tip) ->
+           let ps = parents_of st_all tip in
+           match List.partition (fun (p, _) -> p = ps) acc with
+           | [ (_, ss) ], rest -> (ps, s0 :: ss) :: rest
+           | _ -> (ps, [ s0 ]) :: acc)
+         []
+         (Collapse.tips ?anchor st_all es_geom ~stayer))
+  in
   (* the emergent crease id, fixed ONCE (odd case only; the even case
-     never materializes anything), so every candidate's probe subdivision
-     (below) and the eventual winner share one id instead of drifting the
-     global counter per candidate. Under `into` it is the named crease's
-     own id, so the emergent material lands on that crease. *)
+     scores its rays into their own creases and makes no new one), so every
+     candidate's probe subdivision (below) and the eventual winner share one
+     id instead of drifting the global counter per candidate. Under `into`
+     it is the named crease's own id, so the emergent material lands on that
+     crease. *)
   let new_cid =
     lazy
       (match into with
@@ -264,6 +328,9 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     let given_rays =
       List.map (fun (_, a, b, _) -> (o, far_at_o a b)) combo
     in
+    let given_cuts =
+      List.map (fun (cid, a, b, _) -> ray_cut cid (far_at_o a b)) combo
+    in
     let try_patterns ?sectors (st' : Fold_state.t) (tier : [ `Tier1 | `Tier2 ])
         (emergent : (int * Geom.line) option)
         (emergent_seg : Trace.segment option)
@@ -304,19 +371,14 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                  | `LineNew -> `Tier1
                  | `OppositeRay -> `Tier2
                in
-               (* materialize ONLY this candidate ray on a local copy of
-                  the pre-flatten state, then scan every crease ray now
-                  sitting at O on the kept side (the perpendicular guard
-                  confines the cut to [ray_pt]'s side). Collinear-reuse
-                  (the rabbit-ear up-spine) is found among EXISTING
-                  segments, not [new_cid]. *)
+               (* score this candidate ray with the given rays on a local
+                  copy of the pre-flatten state, then scan every crease ray
+                  now sitting at O on the candidate's side of the
+                  perpendicular [guard]. Collinear-reuse (the rabbit-ear
+                  up-spine) is found among EXISTING segments, not
+                  [new_cid]. *)
                let guard = Geom.perpendicular_through line o in
                let keep = Geom.side_of_line guard ray_pt in
-               let score only =
-                 Fold_state.subdivide !(ctx.state) line
-                   ~crease_id:(Lazy.force new_cid)
-                   ~keep_side:(guard, keep) ~only ~prov
-               in
                let far_of_seg (s : Fold_state.crease_segment) =
                  if Geom.point_equal s.Fold_state.ta o then s.Fold_state.tb
                  else s.Fold_state.ta
@@ -339,35 +401,33 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                                then Some (cid, far)
                                else None))
                in
+               (* the crease the emergent ray is scored into: a crease the
+                  program already scored along the ray on some layer, so
+                  that the ray is one crease on every layer of the tip, and
+                  a new one otherwise. Under `into` it is the named crease. *)
+               let emergent_cid =
+                 let fresh = Lazy.force new_cid in
+                 match into with
+                 | Some _ -> fresh
+                 | None -> (
+                     match
+                       List.sort_uniq compare
+                         (List.map fst (matches_in !(ctx.state)))
+                     with
+                     | [ cid ] -> cid
+                     | _ -> fresh)
+               in
+               (* the emergent ray first, then the given rays: on a state
+                  that carries the given rays on every layer already, their
+                  cuts change nothing *)
+               let cuts = (emergent_cid, line, ray_pt) :: given_cuts in
                (* the tip is read off the state scored through every layer
-                  on the ray's side, and the ray is then scored on the
-                  layers of the tip alone (ADR 0037): a face of the
-                  pre-flatten state is scored when a face of the tip lies
-                  in it. Stayer sectors whose tips differ are solved on
-                  states of their own. *)
-               let st_all = score (fun _ -> true) in
-               let pre = Fold_state.faces !(ctx.state) in
-               let centroid (f : Geom.point array) =
-                 let m = Num.of_int (Array.length f) in
-                 let sum get =
-                   Array.fold_left (fun acc p -> Num.add acc (get p)) Num.zero f
-                 in
-                 { Geom.x = Num.div (sum (fun p -> p.Geom.x)) m;
-                   y = Num.div (sum (fun p -> p.Geom.y)) m }
-               in
-               let parents_of (tip : bool array) =
-                 let faces = Fold_state.faces st_all in
-                 Array.map
-                   (fun (f : Geom.point array) ->
-                     let holds = ref false in
-                     Array.iteri
-                       (fun t (tf : Geom.point array) ->
-                         if tip.(t) && Geom.in_convex_polygon f (centroid tf)
-                         then holds := true)
-                       faces;
-                     !holds)
-                   pre
-               in
+                  under the fan, and the rays are then scored on the layers
+                  of the tip alone (ADR 0037): a face of the pre-flatten
+                  state is scored when a face of the tip lies in it. Stayer
+                  sectors whose tips differ are solved on states of their
+                  own. *)
+               let st_all = score_rays cuts under_fan in
                List.iter
                  (fun (cid, far) ->
                    let emergent_ray = (cid, o, far, Ast.MvFree) in
@@ -382,22 +442,12 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                          elem_of (fcid, fea, feb, true))
                        all_rays
                    in
-                   let groups =
-                     List.fold_left
-                       (fun acc (s0, tip) ->
-                         let ps = parents_of tip in
-                         match List.partition (fun (p, _) -> p = ps) acc with
-                         | [ (_, ss) ], rest -> (ps, s0 :: ss) :: rest
-                         | _ -> (ps, [ s0 ]) :: acc)
-                       []
-                       (Collapse.tips ?anchor st_all es_geom ~stayer)
-                   in
-                   match groups with
+                   match tip_groups st_all es_geom stayer with
                    | [] -> run st_all
-                   | _ ->
+                   | groups ->
                        List.iter
                          (fun (ps, ss) ->
-                           let st' = score (fun fi -> ps.(fi)) in
+                           let st' = score_rays cuts ps in
                            let found =
                              List.exists
                                (fun (c, f) ->
@@ -405,10 +455,33 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                                (matches_in st')
                            in
                            run ~sectors:ss (if found then st' else st_all))
-                         (List.rev groups))
-                 (matches_in st_all))
+                         groups)
+                 (* a ray scored through several layers has one piece per
+                    layer, all ending at the same table point: one
+                    candidate *)
+                 (List.fold_left
+                    (fun kept (c, f) ->
+                      if
+                        List.exists
+                          (fun (c', f') -> c = c' && Geom.point_equal f f')
+                          kept
+                      then kept
+                      else kept @ [ (c, f) ])
+                    [] (matches_in st_all)))
              cands
-     else try_patterns !(ctx.state) `Tier1 None None combo);
+     else
+       (* the even fan scores its given rays the same way: through every
+          layer under the fan to find the tip, then on the layers of the
+          tip alone. A fan that fails before its tip is defined is solved
+          on the state as it stands, which reports that failure. *)
+       match tip_groups (score_rays given_cuts under_fan) elems_geom stayer with
+       | [] -> try_patterns pre_st `Tier1 None None combo
+       | groups ->
+           List.iter
+             (fun (ps, ss) ->
+               try_patterns ~sectors:ss (score_rays given_cuts ps) `Tier1 None
+                 None combo)
+             groups);
     (!local_real, !local_err, given_fars)
   in
   (* enumerate combinations; each yields realizations + errors. A
