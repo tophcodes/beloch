@@ -155,8 +155,9 @@ rank as one block, so a tip hinged to two of them cannot land between them.
 
 ### Checks
 
-The checks of a `flatten`, roughly in evaluation order (see the note below
-on checks 12–14). Every message and hint is the evaluator's own text.
+The checks of a `flatten`. Every message and hint is the evaluator's own
+text. The numbers name the checks and keep their meaning as checks are
+added; the order the evaluator runs them in follows the tables.
 
 | # | check | shipped message | shipped hint |
 |---|---|---|---|
@@ -167,32 +168,35 @@ on checks 12–14). Every message and hint is the evaluator's own text.
 | 5 | (`staying` given) a point of `staying` lies on no face of the anchor | `<point> does not lie on the anchor` | `name a point on the flap the fan folds` |
 | 6 | a face of the tip does not carry the rays: a ray's half-line runs through it unscored, so it lies in no sector | `collapse through unaligned layers` | |
 | 7 | the ray count is even and below 4 | `count` | `` use `fold` for n = 2 `` |
-| 8 | (odd ray count) no geometric completion closes the vertex at all, on either side | `vertex not flat-foldable toward that side` | |
-| 9 | a segment's far endpoint is not on the paper boundary (would leave a degree-1 vertex mid-sheet) | `crease ends inside the sheet` | |
+| 8 | (odd ray count) no geometric completion closes the vertex at all, on either side | `the derived crease does not close the vertex` | |
+| 9 | a ray's far end lies inside a face of its flap, off its raw edges and folded edges; a flat crease there does not end the ray (it would leave a vertex of degree 1 inside the flap) | `crease ends inside the sheet` | |
 | 10 | two elements resolve to the same ray (the same direction from O) | `duplicate ray in collapse` | |
 | 11 | Kawasaki fails: the reflection composition around O does not close (exact) [[hull2020]](#ref-hull2020) ch. 5 | `vertex not flat-foldable (angles)` | |
 | 12 | the leading two elements' folded rays are collinear and no `staying` is given; the convention has no side to anchor | `` collinear leading creases don't pick a stayer `` | `add (staying .p)` |
 | 13 | no realization keeps the stayer still: every candidate × Maekawa pattern died before a stacking closed | `no realization keeps the staying flap still` | |
 | 14 | two different segment combinations (`SPECIFICATION.md` §4.9, Resolution) both survive with valid realizations | `` <name> is ambiguous at the vertex `` | `` select a segment with `&` `` |
 
-Checks 7–11 run against a **candidate ray set**: the given rays, plus one
-emergent candidate when the count is odd (Pipeline, below). They never
-depend on M/V: the count floor, Kawasaki closure, duplicate rays, and the
-boundary check are all properties of which lines and directions are given,
-not of which are marked mountain or valley. A candidate that fails any of
-these fails for **every** Maekawa pattern tried against it, and checks 7–11 have no
-per-pattern variant. Check 12 belongs to the same
-M/V-independent family (the leading pair's collinearity is a fact about the
-given rays alone, not about mountain/valley), but the evaluator probes it
-once per attempted Maekawa pattern rather than once per candidate
-(Pipeline, below): a difference in *where* the code checks it, not in what it
-tests. Check 13 is not a single up-front gate: it is the fallback the
-evaluator reports once every candidate and every Maekawa pattern has been
-tried and none produced a live realization (\|S\| = 0, under Pipeline). Check 14 runs
-once every segment combination has been attempted in full, before
-`toward` selection is ever reached, a genuine contradiction between
-combinations, distinct from the geometric/M/V selection stages that
-follow it.
+Checks 7 and 9–11 run against a **candidate ray set**: the given rays, plus
+one emergent candidate when the count is odd (Pipeline, below); check 8 is
+the odd count finding no candidate at all. They never depend on M/V: the
+count floor, the boundary check, duplicate rays and Kawasaki closure are
+properties of which lines and directions are given, not of which are marked
+mountain or valley. A candidate that fails any of them fails for **every**
+Maekawa pattern tried against it, and checks 7–11 have no per-pattern
+variant. With an odd count their own messages never reach the program: when
+no candidate survives, the evaluator reports
+`` the derived crease does not close the vertex `` for all of them, unless a
+more specific failure stands in the pool (Pipeline, step 4). Check 12
+belongs to the same M/V-independent family (the leading pair's collinearity
+is a fact about the given rays alone) and runs once per candidate, after
+checks 7–11 and before any Maekawa pattern is tried. Check 13 fails a
+candidate whose leading pair admits no stayer sector, and it is also the
+fallback the evaluator reports once every candidate and every Maekawa
+pattern has been tried and none produced a live realization (\|S\| = 0,
+under Pipeline). Check 14 runs once every segment combination has been
+attempted in full, before `toward` selection is ever reached: a genuine
+contradiction between combinations, distinct from the geometric/M/V
+selection stages that follow it.
 
 Two checks concern the anchor. They are numbered after the others so that
 the numbers above keep their meaning.
@@ -212,6 +216,16 @@ fan contributes any.
 | 18 | more than one sector's closed wedge holds them | `the staying points lie in more than one sector` | `add a point inside the sector that stays` |
 | 19 | the one sector holds no face of the anchor | `the staying sector holds no material of the anchor` | |
 | 20 | the candidate states left for the selection hold different sectors still | `flatten is ambiguous: its candidates hold different sectors still` | `add (staying .p) with .p in the sector that stays` |
+
+The evaluator runs the checks in this order. Checks 1–3 run per element, in
+source order, and check 4 once the elements are resolved; then check 15,
+when `on` is given, and check 5, when `staying` is given. Each segment
+combination runs check 8 (odd count only), and each candidate fan of it
+checks 7, 9, 10 and 11, then the stayer: check 12 or 13 under the
+leading-pair convention, checks 17, 19 and 18 under `staying`. Per admissible
+stayer sector follow check 16 and check 6, then per Maekawa pattern the
+stacking. Check 14 runs once every combination has been tried, and check 20
+once one combination's states reach the selection.
 
 ### Pipeline
 
@@ -272,7 +286,7 @@ the stayer (`SPECIFICATION.md` §4.9, State construction).
    its own slot; a pattern that can't satisfy Maekawa at all is never
    tried) and try each through the collapse oracle: Kawasaki closure
    (checks 7–11, already candidate-level and shared across every pattern),
-   the stayer sector's admissibility (checks 12–13), then, per pattern, Maekawa
+   the stayer sector's admissibility (checks 12, 13 and 17–19), then, per pattern, Maekawa
    itself, self-intersection, and `over`. A failing pattern contributes one
    of `` Maekawa violated by the stated assignment `` / `` assignment
    forces self-intersection `` / `` collapse folds a flap off the paper (no
@@ -302,9 +316,10 @@ the stayer (`SPECIFICATION.md` §4.9, State construction).
      sheet) `` if any candidate failed that way; else whichever of
      `` collapse through unaligned layers ``, `` the anchor flap has no
      material outside the staying sector ``, `` collinear leading creases
-     don't pick a stayer ``, or `` no realization
-     keeps the staying flap still `` appears first in the failure pool
-     (checks 6, 16, 12, 13); else, odd count, `` the derived crease does not
+     don't pick a stayer ``, `` no realization
+     keeps the staying flap still `` or the message of check 17, 18 or 19
+     appears first in the failure pool
+     (checks 6, 16, 12, 13, 17–19); else, odd count, `` the derived crease does not
      close the vertex ``; else (even count) the pool's own dominant
      failure: the first that isn't `` assignment forces self-intersection
      ``, falling back to that, or to `` Maekawa violated by the stated
