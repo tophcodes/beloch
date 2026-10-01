@@ -1,8 +1,10 @@
 name: Prose
 
 # Reports the prose lint (.vale.ini, scripts/prose.sh) on every pull request.
-# The job fails on an alert at level error, as `check-all` does; warnings and
-# suggestions are reported only. GitHub shows at most 10 annotations per level
+# The job fails on an alert at level error, as `check` (check.yml) does. It
+# adds the annotations and the counts, and its shell has no FLINT, so it
+# reports long before `check` finishes. Warnings and suggestions are reported
+# only. GitHub shows at most 10 annotations per level
 # and step, so the job summary holds the full count.
 
 on:
