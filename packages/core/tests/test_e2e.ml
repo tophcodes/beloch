@@ -1166,6 +1166,56 @@ let test_e2e_preliminary_routes_agree () =
         a b)
     [ (probe 4 5, "upper-left wedge"); (probe 5 4, "lower-right wedge") ]
 
+(* A flatten scores its rays on every layer under the fan (def-flatten), so
+   a fan whose rays are marked on the top layer alone folds the same state as
+   one whose rays are marked on both layers first: same faces, and the same
+   column of layers over every face of either state. *)
+let same_state (a : Fold_state.t) (b : Fold_state.t) =
+  let na = Array.length (Fold_state.faces a)
+  and nb = Array.length (Fold_state.faces b) in
+  Alcotest.(check int) "same face count" na nb;
+  let centroid (p : Geom.point array) =
+    let m = Num.of_int (Array.length p) in
+    let sum get =
+      Array.fold_left (fun acc v -> Num.add acc (get v)) Num.zero p
+    in
+    { Geom.x = Num.div (sum (fun v -> v.Geom.x)) m;
+      y = Num.div (sum (fun v -> v.Geom.y)) m }
+  in
+  let probes st =
+    List.init (Array.length (Fold_state.faces st)) (fun i ->
+        centroid (Fold_state.table_polygon_ccw st i))
+  in
+  List.iter
+    (fun t ->
+      let ca = column a t and cb = column b t in
+      Alcotest.(check int) "same layer count" (List.length ca) (List.length cb);
+      List.iter2
+        (fun (pa, ua) (pb, ub) ->
+          Alcotest.(check bool)
+            "same paper point" true (Geom.point_equal pa pb);
+          Alcotest.(check bool) "same orientation" ua ub)
+        ca cb)
+    (probes a @ probes b)
+
+let test_e2e_flatten_scores_under_fan () =
+  let run src =
+    (Eval.eval_folded (Beloch.parse ~filename:"t.bel" src)).Eval.state
+  in
+  let both = read_case "collapse/flatten-waterbomb-both-layers.bel" in
+  same_state
+    (run (read_case "collapse/flatten-waterbomb-rays-on-top-layer.bel"))
+    (run both);
+  (* the odd fan: the median's second half is the emergent ray *)
+  let drop sub s =
+    let i = Str.search_forward (Str.regexp_string sub) s 0 in
+    let j = i + String.length sub in
+    String.sub s 0 i ^ String.sub s j (String.length s - j)
+  in
+  same_state
+    (run (read_case "collapse/flatten-waterbomb-emergent-on-top-layer.bel"))
+    (run (drop " (--v \\ --ab mountain)" both))
+
 (* ---- Sheets (spec/BELOCH.md, "Sheets"; spec/FOLD.md, `frame_unit`) ---- *)
 
 let coords_of json =
@@ -1288,6 +1338,10 @@ let () =
           Alcotest.test_case
             "preliminary base: Eos route equals flatten route pointwise" `Quick
             test_e2e_preliminary_routes_agree;
+          Alcotest.test_case
+            "flatten scores its rays under the fan: top-layer marks fold \
+             as both-layer marks"
+            `Quick test_e2e_flatten_scores_under_fan;
         ] );
       ( "emit_folded",
         [

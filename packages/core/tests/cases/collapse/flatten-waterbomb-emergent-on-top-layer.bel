@@ -1,0 +1,32 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; flatten-waterbomb-rays-on-top-layer.bel with one half of the median left
+; out of the fan: five rays, and the sixth is the emergent ray that closes
+; the vertex. The median is marked on the top layer alone, so the emergent
+; ray runs along a crease of the top layer and is scored into that crease
+; on the bottom layer. The tip is both layers, and the flatten scores the
+; given rays and the emergent ray on the bottom layer, which carries none
+; of them before.
+
+paper rectangle 2 1
+fold (map .a onto .b) (moving .b) as --spine
+.s0 = --spine * --ab
+.s1 = free on --spine from .s0 at 1
+mark (through .a .s1) (on #[.b]) as --d1
+mark (through .s0 .d) (on #[.b]) as --d2
+mark (map .a onto .s0) (on #[.b]) as --v
+.m = (--d1 & .b) * --d2
+.e = free on --ab from .a at 1/4
+.f = free on --ab from .a at 3/4
+flatten (--d1 & .b valley) (--d1 & .s1 valley) (--d2 & .s0 valley) (--d2 \ .s0 valley)
+  (--v & --ab mountain) (staying .b .c)
+
+; assert steps = 2
+; assert faces = 12
+; assert .a = (0, 0)
+; assert .d = (0, 1)
+; assert .b = (0, 0)
+; assert .c = (0, 1)
+; assert .m = (1/2, 1/2)
+; assert .e = (0, 1/2)
+; assert .f = (0, 1/2)
