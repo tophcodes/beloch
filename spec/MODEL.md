@@ -1428,7 +1428,12 @@ condition at its vertex and no emergent ray.
 Call the $n$ rays of a candidate fan $r_1, \ldots, r_n$ and the parts of
 $\Phi$ between consecutive rays the *sectors* $S_0, \ldots, S_{n-1}$, with
 $S_i$ between $r_i$ and $r_{i+1}$. The *stayer* is one sector $S_0$, named
-by the program or by its convention. Set $m_0 = \mathrm{id}$ and
+by the program or by its convention. The program names it by points
+$p_1, \ldots, p_j$ of $\Phi$: $S_0$ is the sector whose closed wedge holds
+$f(p_1), \ldots, f(p_j)$, and the candidate fan has candidate states only
+when exactly one sector does and its wedge holds a piece of $\Phi$. The
+layers of the points play no further part; the tip decides which layers
+move. Set $m_0 = \mathrm{id}$ and
 $m_i = m_{i-1} \circ \rho_i$; Kawasaki's condition is $m_n = m_0$, so the
 motions close around $O$. Let $R$ be the image of $\Phi$ and let $C$ be the
 faces whose image meets $R$ in positive area, the layers under the fan.
@@ -1454,7 +1459,8 @@ which.
 
 The value of the write is the one candidate state $\sigma$ selects from the
 set of all candidate states of all candidate fans; it is undefined when
-that set is empty or $\sigma$ leaves more than one. The crease the write
+that set is empty, when its states differ in their stayer, or when
+$\sigma$ leaves more than one. The crease the write
 scores is the bundle of the hinges on the given rays when $k$ is even and
 the bundle of the hinges on the emergent ray when $k$ is odd.
 :::

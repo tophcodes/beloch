@@ -246,7 +246,8 @@ placement a menu of four entries.
 |---|---|---|
 | line | a construction, a name bound by `=`, or a crease whose segments lie on one table line ([def-line](/model/#def-line)) | the operands of a construction, `heading`, `toward`, the axis of `mark` |
 | crease | a name bound by `as`: the material scored under that name ([def-bundle](/model/#def-bundle)), or a selection from one | the axis `(--d)` of `fold` and `reverse`, the rays of `flatten`, the meet `*`, the filters `&` `\` `[…]`, `free on` |
-| flap | a point, a line, or `#[…]`, resolved by incidence ([def-selector](/model/#def-selector)) | `moving`, `up to`, `on`, `staying`, the target of `over` and `under` |
+| flap | a point, a line, or `#[…]`, resolved by incidence ([def-selector](/model/#def-selector)) | `moving`, `up to`, `on`, the target of `over` and `under` |
+| sector | one or more points on the anchor of a fan; the sector of the fan whose closed wedge holds them all ([def-flatten](/model/#def-flatten)) | `staying` |
 | point | a named or selected point | `at`, `between`, `toward` |
 | number | a number, or inside a shape one of its parameters | the side of `square`, `at` and `by` of `free on`, the values that open a shape |
 | placement | top, bottom, over a flap, under a flap ([def-reflection](/model/#def-reflection)) | `fold` |

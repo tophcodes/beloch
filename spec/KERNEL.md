@@ -164,14 +164,14 @@ on checks 12–14). Every message and hint is the evaluator's own text.
 | 2 | bare element resolves to zero material segments | `--<name> has no material segment` | |
 | 3 | filtered/unioned element matches no segment | `` no segment of <expr> matches `` | |
 | 4 | segments don't all share one strictly-interior common endpoint O | `no common interior vertex` | |
-| 5 | (`staying` given) the flap's material doesn't touch the vertex fan | `the staying flap does not touch the vertex` | |
+| 5 | (`staying` given) a point of `staying` lies on no face of the anchor | `<point> does not lie on the anchor` | `name a point on the flap the fan folds` |
 | 6 | a face of the tip does not carry the rays: a ray's half-line runs through it unscored, so it lies in no sector | `collapse through unaligned layers` | |
 | 7 | the ray count is even and below 4 | `count` | `` use `fold` for n = 2 `` |
 | 8 | (odd ray count) no geometric completion closes the vertex at all, on either side | `vertex not flat-foldable toward that side` | |
 | 9 | a segment's far endpoint is not on the paper boundary (would leave a degree-1 vertex mid-sheet) | `crease ends inside the sheet` | |
 | 10 | two elements resolve to the same ray (the same direction from O) | `duplicate ray in collapse` | |
 | 11 | Kawasaki fails: the reflection composition around O does not close (exact) [[hull2020]](#ref-hull2020) ch. 5 | `vertex not flat-foldable (angles)` | |
-| 12 | the leading two elements' folded rays are collinear and no `staying` is given; the convention has no side to anchor | `` collinear leading creases don't pick a stayer `` | `add (staying <flap>)` |
+| 12 | the leading two elements' folded rays are collinear and no `staying` is given; the convention has no side to anchor | `` collinear leading creases don't pick a stayer `` | `add (staying .p)` |
 | 13 | no realization keeps the stayer still: every candidate × Maekawa pattern died before a stacking closed | `no realization keeps the staying flap still` | |
 | 14 | two different segment combinations (`SPECIFICATION.md` §4.9, Resolution) both survive with valid realizations | `` <name> is ambiguous at the vertex `` | `` select a segment with `&` `` |
 
@@ -202,6 +202,17 @@ the numbers above keep their meaning.
 | 15 | (`on` given) no face of the named flap lies under the vertex | `the on flap does not lie under the vertex` | |
 | 16 | the anchor has no face outside the stayer's wedge, so the tip is empty | `the anchor flap has no material outside the staying sector` | |
 
+Four checks concern the stayer (ADR 0048). A candidate fan that fails 17,
+18 or 19 contributes no states, and the message surfaces when no candidate
+fan contributes any.
+
+| # | check | shipped message | shipped hint |
+|---|---|---|---|
+| 17 | no sector's closed wedge holds every point of `staying` | `no sector of the fan holds every staying point` | |
+| 18 | more than one sector's closed wedge holds them | `the staying points lie in more than one sector` | `add a point inside the sector that stays` |
+| 19 | the one sector holds no face of the anchor | `the staying sector holds no material of the anchor` | |
+| 20 | the candidate states left for the selection hold different sectors still | `flatten is ambiguous: its candidates hold different sectors still` | `add (staying .p) with .p in the sector that stays` |
+
 ### Pipeline
 
 Kawasaki's Theorem [hull2020, §5.3, Theorem 5.17] says a single
@@ -220,7 +231,9 @@ normally exactly one, unless the emergent ray itself falls inside the
 leading pair's arc and splits it in two; then both halves are admissible,
 and each is a different physical fold (a mirror world), not a
 duplicate to dedup away. A collinear leading pair (both candidate arcs
-exactly 180°) admits no sector at all without `staying` (check 12). The
+exactly 180°) admits no sector at all without `staying` (check 12). With
+`staying`, the admissible sector is the one sector whose closed wedge holds
+the table images of its points (checks 17 to 19). The
 evaluator rotates the ray labeling so the sector under test becomes sector 0
 before the fan construction runs, which is what anchors `T_0 = identity` on
 the stayer (`SPECIFICATION.md` §4.9, State construction).

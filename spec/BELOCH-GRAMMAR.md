@@ -82,7 +82,7 @@ mark_item    := axis
               | "mountain" | "valley"
 flatten_item := line_operand [ "mountain" | "valley" ]
               | flap_operand "over" flap_operand
-              | "staying" flap_operand
+              | "staying" point_operand+
               | "on" flap_operand
               | "toward" point_operand
 side_item    := [ toward_subject ] "toward" ( point_operand | line_operand )
