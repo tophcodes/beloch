@@ -231,9 +231,30 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
      O *)
   let ray_cut cid (far : Geom.point) = (cid, Geom.line_through o far, far) in
   (* score [cuts] into the state before the flatten, each ray into its own
-     crease along its half-line from O, on the faces [within] holds *)
+     crease along its half-line from O, on the faces [within] holds that
+     lie in no wedge of the rays by [Collapse.sector_of_poly_opt]: the
+     faces the kernel would otherwise reject as unaligned. A face that test
+     places in one wedge is left as it is, so a fan whose rays the program
+     marked on every layer it moves folds as before. *)
   let score_rays cuts (within : bool array) =
-    Fold_state.subdivide_fan pre_st ~o ~rays:cuts ~only:(fun i -> within.(i))
+    let dirs =
+      List.fold_left
+        (fun acc (_, _, far) ->
+          if List.exists (fun d -> Geom.ccw_compare ~center:o d far = 0) acc
+          then acc
+          else far :: acc)
+        [] cuts
+      |> List.sort (Geom.ccw_compare ~center:o)
+      |> List.map (fun d -> (d, ()))
+      |> Array.of_list
+    in
+    let unaligned i =
+      Collapse.sector_of_poly_opt o dirs
+        (pre.(i), Fold_state.face_iso2 pre_st i)
+      < 0
+    in
+    Fold_state.subdivide_fan pre_st ~o ~rays:cuts
+      ~only:(fun i -> within.(i) && unaligned i)
       ~prov
   in
   (* the faces before the flatten that hold a face of [tip], a face set of

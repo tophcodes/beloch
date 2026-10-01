@@ -131,6 +131,17 @@ face a half-line crosses is cut along it. The pieces carry the flatten as
 the statement that scored them. A program therefore marks the rays on one
 layer, and the flatten carries them onto the others.
 
+The kernel scores less than [def-flatten](/model/#def-flatten) states: of
+the layers under the fan it scores only the faces that
+`Collapse.sector_of_poly_opt` places in no wedge. That test checks the
+vertices of a face, so a face in a wedge wider than a half-turn, which a fan
+has when its vertex lies on a folded edge, can count as lying in that wedge
+while a ray crosses it between two of its vertices; such a face stays whole.
+On the squash of the folded preliminary base
+(`flatten-squash-on-folded-base.bel`) these are the two layers behind the
+flap: scored, their pieces would hang on the flap by the base's folded edge
+and join the tip, and the squash would fold them too.
+
 The tip is read off the state scored through every layer under the fan,
 with `Collapse.tips` for each admissible stayer sector, and the rays are
 then scored again on the state before the flatten, in each face that holds
