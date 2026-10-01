@@ -121,7 +121,7 @@ favour of the libraries; its editor boundary, LSP, stands in ADR 0007 as
   split apart. As an annotation, the step group cannot acquire a scope.
 - **Layout as configuration data instead of code.** Deciding which folds
   share a panel and where a row of panels breaks is a computation. ADR 0009 puts
-  computation in a host language and keeps `.bel` declarative, and the
+  computation in a host language and keeps `.bel` total, and the
   TypeScript edge is that host.
 
 ## Consequences

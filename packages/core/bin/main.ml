@@ -13,7 +13,7 @@ let render_hint () =
 
 let usage () =
   Printf.eprintf
-    {|beloch — a declarative language for origami
+    {|beloch — origami folding sequences as programs
 
 usage:
   beloch fold   FILE.bel              evaluate and emit FOLD (stdout)

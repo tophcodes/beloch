@@ -83,8 +83,15 @@ A paper that uses the word has to say which one it means.
 ## What other systems reach
 
 - Fisher designed `multifold` and left it unimplemented; his program performs
-  rung-1 folds only [fisher1994, §7.2]. The creases of a multifold are all
-  given by the user; none is derived.
+  rung-1 folds only [fisher1994, §7.2]. The design marks each crease `valley`,
+  `mountain`, `unfold` or `reverse`, lets the folder leave one crease per
+  interior vertex for the program to place from the angles about that vertex
+  (`mountain between b-g, e-g`), and resolves an ambiguous layering with
+  `tucking A under B` [fisher1994, §3.3.2, §5.3]. It leaves open which faces
+  move when the paper is already folded: "A complete algorithm for determining
+  the moving and folded faces in a multiple fold has not been discovered"
+  [fisher1994, §5.3]. With floating-point coordinates, alternate angles close
+  to $180°$ count as $180°$ [fisher1994, §7.1].
 - Eos has valley, mountain, inside and outside reverse and squash as built-in
   commands [ida2009eos, p. 287; ida2020, §7.4.3, footnote 7].
 - eGami, an interactive simulator, offers inside, outside and asymmetric
@@ -98,9 +105,11 @@ tools.
 
 ## The claim this supports
 
-Among the languages and systems we know, Beloch is the first in which a
-folding step is a general single-vertex fan whose missing crease is derived
-from Kawasaki's condition, so that named manoeuvres are instances of it.
+Among the languages and systems we know, Beloch is the first that executes a
+general single-vertex fan on folded, layered paper: the missing crease derived
+from Kawasaki's condition in exact arithmetic, and the moving faces decided by
+the tip rule (ADR 0037). Fisher designed the statement, the derived crease
+included; Eos executes named manoeuvres as fixed commands.
 
 The same move happened at the construction level. The seven Huzita-Justin
 axioms are instances of alignment sets (ADR 0022, [alperin2006, §3]); the

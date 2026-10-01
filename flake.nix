@@ -1,5 +1,5 @@
 {
-  description = "Beloch — a declarative language for origami";
+  description = "Beloch — origami folding sequences as programs";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

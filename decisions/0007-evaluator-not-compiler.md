@@ -45,7 +45,7 @@ consumers of a well-specified artifact.
 
 ## Consequences
 
-- Keeps the language declarative (see scope discipline in
+- Keeps the language total (see scope discipline in
   [0003](0003-restart-from-minimal-core.md)); resist Turing-completeness
   temptation in the core; put generation in a host language emitting `.bel`.
 - The "fold" subcommand triple-puns (paper fold / FP reduce / English verb),

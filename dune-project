@@ -6,7 +6,7 @@
 
 (package
  (name beloch)
- (synopsis "A declarative language for origami, built on the Huzita-Justin axioms")
+ (synopsis "Origami folding sequences as programs")
  (depends
   ocaml
   dune

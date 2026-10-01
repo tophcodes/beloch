@@ -119,7 +119,7 @@ for (const { path: outPath, width: WIDTH, height: HEIGHT } of OUTPUTS) {
     ${markInner}
   </g>
   <path fill="${INK}" d="${outlinePath(monoFont, "beloch", 72, 96, MARK_Y + MARK_SIZE + 84)}"/>
-  <path fill="${INK}" opacity="0.7" d="${outlinePath(proseFont, "A declarative language for origami", 22, 96, MARK_Y + MARK_SIZE + 128)}"/>
+  <path fill="${INK}" opacity="0.7" d="${outlinePath(proseFont, "Origami folding sequences as programs", 22, 96, MARK_Y + MARK_SIZE + 128)}"/>
   <g transform="translate(${cardX}, ${cardY}) scale(${scale})">
     ${cardBg}
     ${innerMarkup}
