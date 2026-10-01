@@ -219,31 +219,13 @@ let line_equal (l1 : Geom.line) (l2 : Geom.line) : bool =
   && Num.equal (Num.mul l1.a l2.c) (Num.mul l2.a l1.c)
   && Num.equal (Num.mul l1.b l2.c) (Num.mul l2.b l1.c)
 
-(* v1 (non-goal note): boundary creases (the pristine paper edges) are never
-   recorded as a Fold_state.hinge: Fold_state.init_square starts with
-   `hinges = [||]` and hinges are only minted by fold/subdivide. fold_emit.ml's
-   own FOLD serialization hits the same gap and works around it with a purely
-   geometric test (`on_unit_boundary`) rather than a hinge lookup. We follow
-   that established idiom: a "boundary" line is one that coincides (up to
-   scalar) with one of the four paper-frame edges x=0/x=1/y=0/y=1 in PAPER
-   space, checked directly against the resolved line: no hinge array lookup,
-   since Fold_state.assign has no B constructor and never will (B is
-   emit-time-only in fold_emit.ml). *)
-let unit_boundary_lines : Geom.line list =
-  let z = Num.zero and o = Num.one in
-  [
-    { Geom.a = o; b = z; c = z };
-    (* x = 0 *)
-    { Geom.a = o; b = z; c = o };
-    (* x = 1 *)
-    { Geom.a = z; b = o; c = z };
-    (* y = 0 *)
-    { Geom.a = z; b = o; c = o };
-    (* y = 1 *)
-  ]
-
-let is_unit_boundary_line (l : Geom.line) : bool =
-  List.exists (line_equal l) unit_boundary_lines
+(* Boundary creases (the pristine paper edges) are never recorded as a
+   Fold_state.hinge, since Fold_state.assign has no B constructor (B is
+   emit-time only in fold_emit.ml). A "boundary" line is one that coincides
+   (up to scalar) with a line the sheet's outline runs along, in PAPER space,
+   checked directly against the resolved line. *)
+let is_boundary_line (fd : Eval.folded) (l : Geom.line) : bool =
+  List.exists (fun (b, _) -> line_equal l b) (Sheet.boundary_lines fd.Eval.sheet)
 
 (* Eval.named_points and [named_lines] both carry a frame step and the index of
    the statement that binds the name; look up by name, ignoring both. *)
@@ -359,7 +341,7 @@ let check_is (fd : Eval.folded) (name : string) (kw : assign_kw) : unit =
   let l = lookup_line fd name in
   match kw with
   | KBoundary ->
-      if not (is_unit_boundary_line l) then harness_fail "--%s is not the paper boundary" name
+      if not (is_boundary_line fd l) then harness_fail "--%s is not the paper boundary" name
   | KMountain | KValley ->
       let want = if kw = KMountain then Fold_state.M else Fold_state.V in
       let st = fd.Eval.state in

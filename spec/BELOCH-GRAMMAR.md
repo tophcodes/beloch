@@ -27,11 +27,13 @@ stmt    := annotation* ( write_stmt | bind_stmt | def_stmt | apply_stmt | export
 [Sheets](/language/#sheets).
 
 ```grammar
+library    := [ unit_decl ] shape_def*
 unit_decl  := "unit" WORD
 sheet      := "square" [ number ]
             | WORD number*
 number     := RATIONAL | WORD
-shape_def  := "shape" WORD "(" WORD* ")" "{" "paper" sheet shape_stmt* "trim" "to" flap_operand "}"
+shape_def  := "shape" WORD "(" WORD* ")" "{" "paper" sheet shape_stmt*
+              "trim" "to" flap_operand [ "{" export_entry+ "}" ] "}"
 shape_stmt := write_stmt | bind_stmt | apply_stmt | export_stmt
 ```
 
@@ -138,16 +140,5 @@ bind_stmt       ; SPECIFICATION.md Appendix A
 def_stmt        ; SPECIFICATION.md Appendix A
 apply_stmt      ; SPECIFICATION.md Appendix A
 export_stmt     ; SPECIFICATION.md Appendix A
-```
-
-## Planned
-
-A keyword the grammar states and the parser does not read yet, with the
-record that decided it.
-
-```grammar-planned
-shape   ; ADR 0046
-trim    ; ADR 0046
-unit    ; ADR 0046
-by      ; ADR 0046
+export_entry    ; SPECIFICATION.md Appendix A
 ```

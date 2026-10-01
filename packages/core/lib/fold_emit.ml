@@ -103,7 +103,13 @@ let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
 (* Build one self-contained [foldedForm] frame for a given state. Its topology is
    this state's faces (earlier steps have fewer faces than the final CP, so the
    frame cannot inherit the parent's vertex/face set: [frame_inherit] is false). *)
-let folded_frame_of_state (named_points : (string * Geom.point) list)
+(* The assignment of a flat hinge: [J] where it only divides a non-convex
+   sheet into convex faces (FOLD's join edge), [F] where it is a crease. *)
+let flat_assign (sheet : Sheet.t) (h : Fold_state.hinge) : string =
+  if List.mem h.Fold_state.crease_id sheet.Sheet.joins then "J" else "F"
+
+let folded_frame_of_state (sheet : Sheet.t)
+    (named_points : (string * Geom.point) list)
     (state : Fold_state.t)
     (span : Error.span option) : Yojson.Safe.t =
   (* graduate marks into flat (F) creases for the folded diagram too, so a
@@ -141,13 +147,6 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
   in
   let face_idx = Array.mapi (fun fi f -> Array.map (vindex fi) f) faces in
   (* edge classification *)
-  let on_unit_boundary (a : Geom.point) (b : Geom.point) : bool =
-    let z = Num.zero and o = Num.one in
-    (Num.equal a.Geom.x z && Num.equal b.Geom.x z)
-    || (Num.equal a.Geom.x o && Num.equal b.Geom.x o)
-    || (Num.equal a.Geom.y z && Num.equal b.Geom.y z)
-    || (Num.equal a.Geom.y o && Num.equal b.Geom.y o)
-  in
   (* collect unique edges with (assignment string, [provenance]) *)
   let hs = Fold_state.hinges state in
   let edge_tbl = Hashtbl.create 64 in
@@ -163,7 +162,7 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
           Hashtbl.replace edge_tbl key ();
           let pa = f.(k) and pb = f.((k + 1) mod m) in
           let assign, prov, cid =
-            if on_unit_boundary pa pb then ("B", None, None)
+            if Sheet.on_boundary sheet pa pb then ("B", None, None)
             else
               match Fold_state.hinge_between state fi pa pb with
               | Some hi ->
@@ -171,7 +170,7 @@ let folded_frame_of_state (named_points : (string * Geom.point) list)
                     match Fold_state.mv state hi with
                     | Fold_state.M -> "M"
                     | Fold_state.V -> "V"
-                    | Fold_state.F -> "F"
+                    | Fold_state.F -> flat_assign sheet hs.(hi)
                   in
                   (a, hs.(hi).Fold_state.prov, Some hs.(hi).Fold_state.crease_id)
               | None -> ("F", None, None)
@@ -565,6 +564,7 @@ let beloch_inspect_json (state : Fold_state.t)
     ]
 
 let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
+  let sheet = fd.Eval.sheet in
   let disp, kept_marks = cp_display fd.Eval.state in
   let faces = Fold_state.faces disp in
   (* dedup vertices by paper [coord]; remember paper [coord] per vertex, for the
@@ -586,13 +586,6 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
   in
   let face_idx = Array.map (fun f -> Array.map vindex f) faces in
   (* edge classification *)
-  let on_unit_boundary (a : Geom.point) (b : Geom.point) : bool =
-    let z = Num.zero and o = Num.one in
-    (Num.equal a.Geom.x z && Num.equal b.Geom.x z)
-    || (Num.equal a.Geom.x o && Num.equal b.Geom.x o)
-    || (Num.equal a.Geom.y z && Num.equal b.Geom.y z)
-    || (Num.equal a.Geom.y o && Num.equal b.Geom.y o)
-  in
   (* collect unique edges with (assignment string, [provenance]) *)
   let hs = Fold_state.hinges disp in
   let edge_tbl = Hashtbl.create 64 in
@@ -608,7 +601,7 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
           Hashtbl.replace edge_tbl key ();
           let pa = f.(k) and pb = f.((k + 1) mod m) in
           let assign, prov, cid =
-            if on_unit_boundary pa pb then ("B", None, None)
+            if Sheet.on_boundary sheet pa pb then ("B", None, None)
             else
               match Fold_state.hinge_between disp fi pa pb with
               | Some hi ->
@@ -617,7 +610,11 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
                      so every edge is coloured by the DERIVED M/V. A precrease
                      is flat and therefore F, whatever direction it was marked
                      with. *)
-                  let a = mark_assign_str (Fold_state.mv disp hi) in
+                  let a =
+                    match Fold_state.mv disp hi with
+                    | Fold_state.F -> flat_assign sheet h
+                    | mv -> mark_assign_str mv
+                  in
                   (a, h.Fold_state.prov, Some h.Fold_state.crease_id)
               | None -> ("F", None, None)
           in
@@ -704,6 +701,7 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
       ("file_spec", `Float 1.1);
       ("file_creator", `String ("beloch " ^ Version.version));
       ("frame_classes", `List [ `String "creasePattern" ]);
+      ("frame_unit", `String fd.Eval.unit_name);
       ("vertices_coords", `List verts_paper);
       ("edges_vertices", `List edges_vertices);
       ("edges_assignment", `List edges_assignment);
@@ -726,15 +724,15 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
            frame only: not counted as a fold (the `steps` assertion reads
            Eval.frames, which excludes it). *)
         `List
-          (folded_frame_of_state named_points_2 Fold_state.init_square
+          (folded_frame_of_state sheet named_points_2 sheet.Sheet.start
              None
           :: List.map
                (fun (st, span) ->
-                 folded_frame_of_state named_points_2 st span)
+                 folded_frame_of_state sheet named_points_2 st span)
                fd.Eval.frames) );
     ]
     @
     if trace then
-      let frame st = folded_frame_of_state named_points_2 st None in
+      let frame st = folded_frame_of_state sheet named_points_2 st None in
       [ ("beloch:trace", `List (List.map (Trace.to_json ~frame) fd.Eval.trace)) ]
     else [])

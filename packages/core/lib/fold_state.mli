@@ -218,8 +218,13 @@ val on_paper : t -> Geom.point -> bool
     program-level construction step is never expected to produce an invalid
     state: reaching [Error] here is a bug, not user input to report softly. *)
 
-val init_square : t
-(** The unit square [0,1]², a single flat face, no hinges. *)
+val flat : ?hinges:hinge array -> ?marks:mark array -> face array -> t
+(** The unfolded state of a sheet given by its faces: every face in place,
+    joined by [hinges] (default none), which must all have angle 0, and
+    carrying [marks] (default none). Raises [Invalid_argument] when the
+    faces and hinges violate the state invariants.
+    @see <https://belochlang.org/model/#def-sheet>
+      realizes the sheet as convex faces joined by flat hinges *)
 
 val subdivide :
   ?crease_id:int ->

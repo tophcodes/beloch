@@ -1,0 +1,9 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+shape again(s) {
+  paper again s
+  trim to .a
+}
+
+paper again 1
+; expect error "`again` is no shape"

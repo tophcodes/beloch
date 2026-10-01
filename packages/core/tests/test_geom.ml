@@ -91,21 +91,27 @@ let test_parallel_lines () =
   | None -> ()
   | Some _ -> Alcotest.fail "expected none"
 
-let test_in_unit_square () =
-  Alcotest.(check bool) "center inside" true (Geom.in_unit_square (pt 0 0));
+let test_convex_hull () =
+  let hull =
+    Geom.convex_hull [ pt 0 0; pt 2 0; pt 1 1; pt 2 2; pt 0 2; pt 1 0; pt 2 2 ]
+  in
+  Alcotest.(check int) "four vertices, no collinear one" 4 (Array.length hull);
   Alcotest.(check bool)
-    "corner inside (boundary)" true
-    (Geom.in_unit_square { Geom.x = half; y = half });
-  Alcotest.(check bool) "outside" false (Geom.in_unit_square (pt 2 2))
+    "counter-clockwise from the lowest-leftmost" true
+    (List.for_all2 Geom.point_equal (Array.to_list hull)
+       [ pt 0 0; pt 2 0; pt 2 2; pt 0 2 ]);
+  Alcotest.(check bool) "interior point inside" true
+    (Geom.in_convex_polygon hull (pt 1 1));
+  Alcotest.(check bool) "outside" false (Geom.in_convex_polygon hull (pt 3 1))
 
 let test_clip_diagonal () =
-  let l = Geom.line_through (pt 0 0) (pt 1 1) in
-  match Geom.clip_to_unit_square l with
+  let l = Geom.line_through (pt 0 0) (pt 2 2) in
+  match Sheet.clip (Sheet.square (q 2)) l with
   | Some (p, qq) ->
       let has a = Geom.point_equal p a || Geom.point_equal qq a in
       Alcotest.(check bool)
         "endpoints are the two corners" true
-        (has (pt 0 0) && has (pt 1 1))
+        (has (pt 0 0) && has (pt 2 2))
   | None -> Alcotest.fail "diagonal should clip to a segment"
 
 let test_segment_intersection_center () =
@@ -481,7 +487,7 @@ let () =
           Alcotest.test_case "project parallel none" `Quick test_project_parallel_none;
           Alcotest.test_case "project point on l1" `Quick test_project_on_l1;
           Alcotest.test_case "parallel lines" `Quick test_parallel_lines;
-          Alcotest.test_case "point in unit square" `Quick test_in_unit_square;
+          Alcotest.test_case "convex hull" `Quick test_convex_hull;
           Alcotest.test_case "clip diagonal" `Quick test_clip_diagonal;
           Alcotest.test_case "segment intersection" `Quick
             test_segment_intersection_center;

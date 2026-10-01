@@ -1,0 +1,6 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+paper square
+fold (map .a onto .c)
+trim to .b
+; expect error "`trim to` is the last statement of a shape"

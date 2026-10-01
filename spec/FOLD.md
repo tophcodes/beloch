@@ -44,8 +44,9 @@ Each frame uses the FOLD vocabulary for what FOLD can express:
   paper coordinates, every other frame in table coordinates.
 - `edges_assignment`: `B` for the sheet boundary, `M` and `V` for folded
   creases with the letter derived from the state, `F` for a marked crease that
-  has not folded. `U` never occurs, since a state always knows a crease's
-  disposition.
+  has not folded, and `J` for a join edge: a flat edge that only divides a
+  non-convex sheet into convex faces, whose two faces FOLD counts as one. `U`
+  never occurs, since a state always knows a crease's disposition.
 - `edges_foldAngle`: $0$ or $\pm 180$, the hinge angles of the state.
 - `faceOrders`: the layer relation $\lambda$ as FOLD encodes it, one triple
   per pair of overlapping faces with the sign taken relative to the second

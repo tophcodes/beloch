@@ -509,14 +509,14 @@ let test_flatten_tip_between_layers () =
 (* ---- [Fold_state] ---- *)
 
 let test_fold_state_init () =
-  let st = Fold_state.init_square in
+  let st = (Fold_state.flat [| Sheet.square_corners Num.one |]) in
   Alcotest.(check int) "one face" 1 (Array.length (Fold_state.faces st));
   Alcotest.(check bool)
     "corner .a at (0,0) on the table" true
     (Geom.point_equal (Fold_state.table_position st (pt 0 0)) (pt 0 0))
 
 let test_fold_state_half () =
-  let st = Fold_state.init_square in
+  let st = (Fold_state.flat [| Sheet.square_corners Num.one |]) in
   let axis = { Geom.a = q 1; b = q 0; c = half } in
   let st = Fold_state.simple_fold st ~axis ~move_side:1 ~valley:true in
   Alcotest.(check int) "two faces after one fold" 2
@@ -541,7 +541,7 @@ let face_with_det (st : Fold_state.t) (d : int) : int =
   match idxs with [ i ] -> i | _ -> Alcotest.fail "expected exactly one such face"
 
 let test_layer_valley_moved_above () =
-  let st = Fold_state.init_square in
+  let st = (Fold_state.flat [| Sheet.square_corners Num.one |]) in
   let axis = { Geom.a = q 1; b = q 0; c = half } in
   let st = Fold_state.simple_fold st ~axis ~move_side:1 ~valley:true in
   let mv = face_with_det st (-1) and stt = face_with_det st 1 in
@@ -549,7 +549,7 @@ let test_layer_valley_moved_above () =
     (Fold_state.rel st mv stt = Fold_state.Above)
 
 let test_layer_mountain_moved_below () =
-  let st = Fold_state.init_square in
+  let st = (Fold_state.flat [| Sheet.square_corners Num.one |]) in
   let axis = { Geom.a = q 1; b = q 0; c = half } in
   let st = Fold_state.simple_fold st ~axis ~move_side:1 ~valley:false in
   let mv = face_with_det st (-1) and stt = face_with_det st 1 in
@@ -564,7 +564,7 @@ let negate_rel = function
   | Fold_state.Apart -> Fold_state.Apart
 
 let test_layer_antisymmetry () =
-  let st = Fold_state.init_square in
+  let st = (Fold_state.flat [| Sheet.square_corners Num.one |]) in
   let axis = { Geom.a = q 1; b = q 0; c = half } in
   let st = Fold_state.simple_fold st ~axis ~move_side:1 ~valley:true in
   let n = Array.length (Fold_state.faces st) in
@@ -600,7 +600,7 @@ let test_layer_fold_quarter_reversal () =
 
 let test_fold_subdivide () =
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let st = Fold_state.subdivide Fold_state.init_square axis ~prov:None in
+  let st = Fold_state.subdivide (Fold_state.flat [| Sheet.square_corners Num.one |]) axis ~prov:None in
   Alcotest.(check int) "two faces after subdivide" 2
     (Array.length (Fold_state.faces st));
   Alcotest.(check int) "one crease edge" 1 (Array.length (Fold_state.hinges st));
@@ -609,7 +609,7 @@ let test_fold_subdivide () =
 let test_fold_records_valley () =
   let axis = { Geom.a = q 1; b = q 0; c = half } in
   let st =
-    Fold_state.fold Fold_state.init_square ~axis ~move_side:1
+    Fold_state.fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis ~move_side:1
       ~valley:true ~prov:None
   in
   Alcotest.(check int) "one edge" 1 (Array.length (Fold_state.hinges st));
@@ -640,7 +640,7 @@ let count_assign_in (st : Fold_state.t) a (idxs : int list) =
 let test_fold_records_accordion () =
   let axis1 = { Geom.a = q 1; b = q 0; c = half } in
   let st1 =
-    Fold_state.simple_fold Fold_state.init_square ~axis:axis1 ~move_side:1
+    Fold_state.simple_fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis:axis1 ~move_side:1
       ~valley:true
   in
   let axis2 = { Geom.a = q 0; b = q 1; c = half } in
@@ -657,11 +657,11 @@ let test_fold_records_accordion () =
     (count_assign_in st2 Fold_state.M fresh)
 
 let test_fold_paper_preimages () =
-  let flat = Fold_state.paper_preimages Fold_state.init_square (pt 1 0) in
+  let flat = Fold_state.paper_preimages (Fold_state.flat [| Sheet.square_corners Num.one |]) (pt 1 0) in
   Alcotest.(check int) "one preimage when flat" 1 (List.length flat);
   let axis = { Geom.a = q 1; b = q 0; c = half } in
   let st =
-    Fold_state.simple_fold Fold_state.init_square ~axis ~move_side:1
+    Fold_state.simple_fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis ~move_side:1
       ~valley:true
   in
   let folded =
@@ -674,7 +674,7 @@ let test_fold_paper_preimages () =
    upgrade comes from the carried on-axis edge, not from a new cut. *)
 let test_fold_precrease_upgrade () =
   let axis = { Geom.a = q 1; b = q 0; c = half } in
-  let st1 = Fold_state.subdivide Fold_state.init_square axis ~prov:None in
+  let st1 = Fold_state.subdivide (Fold_state.flat [| Sheet.square_corners Num.one |]) axis ~prov:None in
   let st2 =
     Fold_state.fold st1 ~axis ~move_side:1 ~valley:true ~prov:None
   in
@@ -685,7 +685,7 @@ let test_fold_precrease_upgrade () =
 
 let test_fold_state_flip () =
   let st =
-    Fold_state.simple_fold Fold_state.init_square
+    Fold_state.simple_fold (Fold_state.flat [| Sheet.square_corners Num.one |])
       ~axis:{ Geom.a = q 1; b = q 0; c = half }
       ~move_side:1 ~valley:true
   in
@@ -706,7 +706,7 @@ let test_fold_state_flip () =
 
 let test_fold_state_flip_involution () =
   let st =
-    Fold_state.simple_fold Fold_state.init_square
+    Fold_state.simple_fold (Fold_state.flat [| Sheet.square_corners Num.one |])
       ~axis:{ Geom.a = q 1; b = q 0; c = half }
       ~move_side:1 ~valley:true
   in
@@ -722,7 +722,7 @@ let test_fold_state_flip_involution () =
    validity proof; there is no separate [validity_error] probe on the new
    core (see the 3c port plan's dictionary). *)
 let test_layer_valid_examples_ok () =
-  let st = Fold_state.init_square in
+  let st = (Fold_state.flat [| Sheet.square_corners Num.one |]) in
   let axis = { Geom.a = q 1; b = q 0; c = half } in
   let (_ : Fold_state.t) = Fold_state.simple_fold st ~axis ~move_side:1 ~valley:true in
   Alcotest.(check bool) "a simple valley fold is valid" true true
@@ -1564,7 +1564,7 @@ let test_resume_equals_full () =
   let full = fold_str (Eval.eval_folded prog) in
   (* resume after statement 2 (index 1), replay statement 3 (index 2) *)
   let resume = snap_after 2 prog in
-  let suffix = List.filteri (fun i _ -> i >= 2) prog in
+  let suffix = { prog with Ast.p_stmts = List.filteri (fun i _ -> i >= 2) prog.Ast.p_stmts } in
   let resumed = fold_str (Eval.eval_program ~resume suffix) in
   Alcotest.(check string) "resumed FOLD == full FOLD" full resumed
 

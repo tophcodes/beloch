@@ -39,6 +39,9 @@ type folded = {
   references : Ctx.reference list;
   annotations : Ctx.annot_entry list;
   trace : Trace.entry list;
+  sheet : Sheet.t;
+      (* the sheet the program opened, whose unfolded state is frame 0 *)
+  unit_name : string;  (* the unit the file declares, "unit" for none *)
   free_points : (string * free_info) list;
       (* one entry per `free on` point, recorded at bind time in the [PsFree]
          arm: a running log (like [statements]), not reconstructed from
@@ -47,8 +50,26 @@ type folded = {
          doesn't retain. *)
 }
 
+(* The value of a number of the source: a literal, or a parameter of the
+   shape whose body is running. *)
+let number_value (ctx : Ctx.ctx) (n : Ast.number) : Q.t =
+  match n with
+  | Ast.NLit (q, _) -> q
+  | Ast.NParam (w, sp) -> (
+      match ctx.shape_params with
+      | Some env -> (
+          match List.assoc_opt w env with
+          | Some q -> q
+          | None ->
+              Error.fail sp (Printf.sprintf "`%s` is no parameter of this shape" w))
+      | None ->
+          Error.fail sp
+            (Printf.sprintf
+               "`%s` is no number; a name stands for a number only in a shape body"
+               w))
+
 let eval_free_point (ctx : Ctx.ctx) (n : string) (line : Ast.line_operand)
-    (anchor : Ast.point_operand) (t : Num.t option) (span : Error.span) : unit =
+    (anchor : Ast.point_operand) (pos : Ast.free_pos option) (span : Error.span) : unit =
   (* `free on` measures along material, so its line slot is crease-sorted
      (spec/BELOCH.md, Parameter types). *)
   let l, chords_opt =
@@ -62,7 +83,7 @@ let eval_free_point (ctx : Ctx.ctx) (n : string) (line : Ast.line_operand)
   let p0raw, p1raw =
     match chords_opt with
     | None -> (
-        match Geom.clip_to_unit_square l with
+        match Sheet.clip ctx.sheet l with
         | Some (a, b) -> (a, b)
         | None -> Error.fail span "the line does not cross the paper")
     | Some chords -> (
@@ -77,9 +98,24 @@ let eval_free_point (ctx : Ctx.ctx) (n : string) (line : Ast.line_operand)
     else if Geom.point_equal ax p1raw then (p1raw, p0raw)
     else Error.fail span "the anchor is not an endpoint of the line's material"
   in
-  let tv = match t with Some v -> v | None -> Num.div Num.one (Num.of_int 2) in
-  if Num.sign tv < 0 || Num.compare tv Num.one > 0 then
-    Error.fail span "t is out of range (must be between 0 and 1)";
+  let tv =
+    match pos with
+    | None -> Num.div Num.one (Num.of_int 2)
+    | Some (Ast.FreeAt t) ->
+        let tv = Num.of_q (number_value ctx t) in
+        if Num.sign tv < 0 || Num.compare tv Num.one > 0 then
+          Error.fail span "t is out of range (must be between 0 and 1)";
+        tv
+    | Some (Ast.FreeBy d) ->
+        (* the distance as a fraction of the range's length, which the
+           kernel holds exactly (ADR 0012, 0013) *)
+        let d = Num.of_q (number_value ctx d) in
+        let dx = Num.sub e1.Geom.x e0.Geom.x and dy = Num.sub e1.Geom.y e0.Geom.y in
+        let len = Num.sqrt (Num.add (Num.mul dx dx) (Num.mul dy dy)) in
+        if Num.compare d len > 0 then
+          Error.fail span "the distance is longer than the line's material";
+        Num.div d len
+  in
   let px = Num.add e0.Geom.x (Num.mul tv (Num.sub e1.Geom.x e0.Geom.x)) in
   let py = Num.add e0.Geom.y (Num.mul tv (Num.sub e1.Geom.y e0.Geom.y)) in
   bind_point ctx n span { Geom.x = px; y = py };
@@ -109,6 +145,8 @@ let eval_def (ctx : Ctx.ctx) (name : string) (params : Ast.param list)
     (body : Ast.stmt list) (span : Error.span) : unit =
   if Hashtbl.mem ctx.defs name then
     Error.fail span (Printf.sprintf "def %s is already defined" name);
+  if Hashtbl.mem ctx.shapes name then
+    Error.fail span (Printf.sprintf "%s is already defined as a shape" name);
   let seen = Hashtbl.create 4 in
   List.iter
     (fun (p : Ast.param) ->
@@ -207,8 +245,8 @@ let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
   | Ast.Reverse (out, m, rs, span) -> Action.eval_reverse ctx out m rs span
   | Ast.Point (n, Ast.PsExpr po, span) ->
       bind_point ctx n span (Resolve.resolve_point ctx po)
-  | Ast.Point (n, Ast.PsFree { line; anchor; t; span }, _) ->
-      eval_free_point ctx n line anchor t span
+  | Ast.Point (n, Ast.PsFree { line; anchor; pos; span }, _) ->
+      eval_free_point ctx n line anchor pos span
   | Ast.Flip _ ->
       ctx.state := Fold_state.flip !(ctx.state);
       ctx.pending <- true
@@ -426,12 +464,12 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
   let statements = List.rev ctx.statements_rev in
   let free_points = List.rev ctx.free_points_rev in
   { state = !(ctx.state); named_points; named_lines; named_line_cids; frames;
-    statements; free_points;
+    statements; free_points; sheet = ctx.sheet; unit_name = ctx.unit_name;
     references = List.rev ctx.references_rev;
     annotations = List.rev ctx.annots_rev;
     trace = List.rev ctx.trace_rev }
 
-let run_program (ctx : Ctx.ctx) on_step (prog : Ast.program) : unit =
+let run_stmts (ctx : Ctx.ctx) on_step (stmts : Ast.stmt list) : unit =
   List.iter
     (fun stmt ->
       (* a kernel precondition the language checks missed (a zero inverse, a
@@ -441,14 +479,292 @@ let run_program (ctx : Ctx.ctx) on_step (prog : Ast.program) : unit =
          Error.fail (Spine.span_of_stmt stmt)
            (Printf.sprintf "internal error in this statement: %s" msg));
       on_step ctx)
-    prog
+    stmts
+
+(* ---- Sheets (spec/BELOCH.md, "Sheets") ---- *)
+
+(* the physical units of the FOLD format, each a rational multiple of the
+   millimetre *)
+let units = [ "in"; "pt"; "m"; "cm"; "mm"; "um"; "nm" ]
+
+(* A sheet with the names it comes with. *)
+type opened = {
+  o_sheet : Sheet.t;
+  o_points : (string * Geom.point) list;
+  o_lines : (string * Ctx.crease_val) list;
+}
+
+let square_opened (side : Num.t) : opened =
+  let sheet = Sheet.square side in
+  let name i = String.make 1 "abcd".[i mod 4] in
+  {
+    o_sheet = sheet;
+    o_points = Array.to_list (Array.mapi (fun i p -> (name i, p)) (Sheet.square_corners side));
+    o_lines =
+      List.mapi
+        (fun i (pa, pb) ->
+          let n = name i ^ name (i + 1) in
+          (n, Ctx.Edge (n, Geom.line_through pa pb)))
+        sheet.Sheet.outline;
+  }
+
+(* Whether the outline of [sheet] runs along [l] for a positive length. *)
+let outline_on (sheet : Sheet.t) (l : Geom.line) : bool =
+  List.exists (fun (b, _) -> Geom.same_line b l) (Sheet.boundary_lines sheet)
+
+(* A bundle keeps its expression, which reads the names [points] and
+   [lines] of [sheet]: there it names the part of its pieces on the sheet.
+   One that names no piece there, or reads a name that is gone, is gone
+   itself; dropping one can drop another that reads it, so the check repeats
+   until it holds. *)
+let settle_bundles (sheet : Sheet.t) (points : (string * Geom.point) list)
+    (lines : (string * Ctx.crease_val) list) : (string * Ctx.crease_val) list =
+  let names_pieces lines expr =
+    let sctx = Ctx.create () in
+    Ctx.open_sheet sctx sheet ~points ~lines;
+    match Resolve.bundle_segments sctx expr with
+    | _, _ :: _ -> true
+    | _, [] -> false
+    | exception Error.Beloch_error _ -> false
+  in
+  let rec settle lines =
+    let kept =
+      List.filter
+        (fun (_, cv) ->
+          match cv with Ctx.Bundle expr -> names_pieces lines expr | _ -> true)
+        lines
+    in
+    if List.length kept = List.length lines then lines else settle kept
+  in
+  settle lines
+
+(* The names of the body [bctx] that lie on the trimmed [sheet], cut from
+   the faces [flap] of the body's last state: a point on it, a line for its
+   part on it. A crease with flat hinges or marks left on the sheet stays a
+   crease, one that runs along the sheet's outline becomes an edge of it, a
+   bundle keeps its expression where that names a piece on the sheet, and
+   every other name, a temp among them, is gone. *)
+let trimmed_names (bctx : Ctx.ctx) (flap : int list) (sheet : Sheet.t) :
+    (string * Geom.point) list * (string * Ctx.crease_val) list =
+  let old_st = !(bctx.state) and st = sheet.Sheet.start in
+  let root = List.hd bctx.scopes in
+  let on_sheet p =
+    Array.exists (fun f -> Geom.in_convex_polygon f p) (Fold_state.faces st)
+  in
+  let sorted tbl =
+    Hashtbl.fold (fun k v acc -> if is_temp k then acc else (k, v) :: acc) tbl []
+    |> List.sort (fun (a, _) (b, _) -> String.compare a b)
+  in
+  let points = List.filter (fun (_, p) -> on_sheet p) (sorted root.points) in
+  let hinge_lines g keep cid =
+    let hs = Fold_state.hinges g in
+    List.filter_map
+      (fun i ->
+        let h = hs.(i) in
+        if h.Fold_state.crease_id = cid && keep h then
+          let a, b = Fold_state.hinge_segment g i in
+          Some (Geom.line_through a b)
+        else None)
+      (List.init (Array.length hs) Fun.id)
+  in
+  (* the line a crease runs along the outline of the sheet, if it does *)
+  let as_edge name cid =
+    let in_flap f = List.mem f flap in
+    match
+      hinge_lines old_st
+        (fun h -> in_flap h.Fold_state.fa <> in_flap h.Fold_state.fb)
+        cid
+    with
+    | l :: rest
+      when List.for_all (Geom.same_line l) rest && outline_on sheet l ->
+        Some (Ctx.Edge (name, l))
+    | _ -> None
+  in
+  let lines =
+    List.filter_map
+      (fun (k, cv) ->
+        let carried =
+          match cv with
+          | Ctx.Edge (_, l) -> if outline_on sheet l then Some (Ctx.Edge (k, l)) else None
+          | Ctx.Material (cid, _) -> (
+              match hinge_lines st (fun _ -> true) cid with
+              | l :: _ when not (List.mem cid sheet.Sheet.joins) ->
+                  Some (Ctx.Material (cid, l))
+              | _ -> as_edge k cid)
+          | Ctx.Mark (cid, _) -> (
+              match Fold_state.mark_chords st cid with
+              | (a, b) :: _ -> Some (Ctx.Mark (cid, Geom.line_through a b))
+              | [] -> None)
+          | Ctx.Frozen l -> (
+              match Sheet.clip sheet l with Some _ -> Some cv | None -> None)
+          | Ctx.Bundle _ -> Some cv
+        in
+        Option.map (fun cv -> (k, cv)) carried)
+      (sorted root.lines)
+  in
+  (points, settle_bundles sheet points lines)
+
+(* The names a trim's list exports (ADR 0047): each entry's name of the
+   body, which must lie on the trimmed sheet, under its landing name. *)
+let exported (bctx : Ctx.ctx) (sheet : Sheet.t)
+    ~(points : (string * Geom.point) list)
+    ~(lines : (string * Ctx.crease_val) list) (entries : Ast.export_entry list) :
+    (string * Geom.point) list * (string * Ctx.crease_val) list =
+  let root = List.hd bctx.scopes in
+  let landed = Hashtbl.create 8 in
+  let pick (e : Ast.export_entry) =
+    let sigil = match e.Ast.ekind with `Point -> "." | `Line -> "--" in
+    let src = e.Ast.esrc and dst = Option.value e.Ast.erename ~default:e.Ast.esrc in
+    if is_temp src then
+      Error.fail e.Ast.espan
+        (Printf.sprintf "`%s%s` is a temp; a trim exports no temp" sigil src);
+    if Hashtbl.mem landed (sigil ^ dst) then
+      Error.fail e.Ast.espan (Printf.sprintf "two entries land on `%s%s`" sigil dst);
+    Hashtbl.replace landed (sigil ^ dst) ();
+    let bound, carried =
+      match e.Ast.ekind with
+      | `Point ->
+          ( Hashtbl.mem root.points src,
+            Option.map (fun p -> `P (dst, p)) (List.assoc_opt src points) )
+      | `Line ->
+          ( Hashtbl.mem root.lines src,
+            Option.map
+              (fun cv ->
+                `L (dst, match cv with Ctx.Edge (_, l) -> Ctx.Edge (dst, l) | cv -> cv))
+              (List.assoc_opt src lines) )
+    in
+    match carried with
+    | Some c -> c
+    | None when bound ->
+        Error.fail e.Ast.espan
+          (Printf.sprintf "`%s%s` does not lie on the flap" sigil src)
+    | None ->
+        Error.fail e.Ast.espan
+          (Printf.sprintf "undefined %s %s%s"
+             (match e.Ast.ekind with `Point -> "point" | `Line -> "crease")
+             sigil src)
+  in
+  let picked = List.map (fun e -> (e, pick e)) entries in
+  let points = List.filter_map (fun (_, c) -> match c with `P x -> Some x | `L _ -> None) picked in
+  let lines = List.filter_map (fun (_, c) -> match c with `L x -> Some x | `P _ -> None) picked in
+  (* a listed bundle reads the names of the body; it must still name its
+     pieces through the names the list exports *)
+  let settled = settle_bundles sheet points lines in
+  List.iter
+    (fun ((e : Ast.export_entry), c) ->
+      match c with
+      | `L (dst, Ctx.Bundle _) when not (List.mem_assoc dst settled) ->
+          Error.fail e.Ast.espan
+            (Printf.sprintf "`--%s` reads a name the trim does not export" e.Ast.esrc)
+      | _ -> ())
+    picked;
+  (points, lines)
+
+(* The sheet a `paper` line opens, with the names it comes with. A shape is
+   opened by running its body on a context of its own, which sees the
+   shapes before it and its parameters, and trimming the body's last state
+   to the flap the body names. *)
+let rec open_sheet (ctx : Ctx.ctx) ~(visible : int) (sheet : Ast.sheet) : opened =
+  match sheet with
+  | Ast.SSquare (n, sp) ->
+      let side =
+        match n with Some n -> Num.of_q (number_value ctx n) | None -> Num.one
+      in
+      if Num.sign side <= 0 then
+        Error.fail sp "the side of a square is a positive number";
+      square_opened side
+  | Ast.SShape (name, args, sp) -> (
+      match Hashtbl.find_opt ctx.shapes name with
+      | Some (idx, sd) when idx < visible ->
+          let np = List.length sd.Ast.sd_params and na = List.length args in
+          if np <> na then
+            Error.fail sp
+              (Printf.sprintf "`%s` takes %d number%s, %d given" name np
+                 (if np = 1 then "" else "s")
+                 na);
+          let env =
+            List.map2 (fun (p, _) a -> (p, number_value ctx a)) sd.Ast.sd_params args
+          in
+          open_shape ctx ~idx ~env sd
+      | _ -> Error.fail sp (Printf.sprintf "`%s` is no shape" name))
+
+and open_shape (ctx : Ctx.ctx) ~(idx : int) ~(env : (string * Q.t) list)
+    (sd : Ast.shape_def) : opened =
+  let bctx = Ctx.create () in
+  Hashtbl.iter (fun k v -> Hashtbl.replace bctx.shapes k v) ctx.shapes;
+  bctx.shape_params <- Some env;
+  let o = open_sheet bctx ~visible:idx sd.Ast.sd_sheet in
+  Ctx.open_sheet bctx o.o_sheet ~points:o.o_points ~lines:o.o_lines;
+  run_stmts bctx ignore sd.Ast.sd_body;
+  let fa, tspan = sd.Ast.sd_trim in
+  let flap = Resolve.resolve_flap_cluster bctx fa tspan in
+  (* a crease the body folded at any point is no crease of the trimmed sheet *)
+  let folded = Hashtbl.create 8 in
+  List.iter
+    (fun (st, _) ->
+      Array.iter
+        (fun (h : Fold_state.hinge) ->
+          if Num.sign h.Fold_state.angle <> 0 then
+            Hashtbl.replace folded h.Fold_state.crease_id ())
+        (Fold_state.hinges st))
+    ((!(bctx.state), None) :: bctx.frames_rev);
+  match Sheet.trim !(bctx.state) flap ~folded:(Hashtbl.mem folded) with
+  | Error `Hole -> Error.fail tspan "the flap has a hole and is no sheet"
+  | Ok sheet ->
+      let points, lines = trimmed_names bctx flap sheet in
+      let points, lines =
+        match sd.Ast.sd_exports with
+        | None -> (points, lines)
+        | Some entries -> exported bctx sheet ~points ~lines entries
+      in
+      { o_sheet = sheet; o_points = points; o_lines = lines }
+
+(* The header of [prog] on a fresh [ctx]: the unit, the shapes of [prelude]
+   and of the program, and the sheet the program opens. *)
+let open_program (ctx : Ctx.ctx) ~(prelude : Ast.shape_def list)
+    (prog : Ast.program) : unit =
+  (match prog.Ast.p_unit with
+  | None -> ()
+  | Some (u, sp) ->
+      if not (List.mem u units) then
+        Error.fail sp
+          (Printf.sprintf "`%s` is no unit; the units are %s" u
+             (String.concat ", " units));
+      ctx.unit_name <- u);
+  List.iteri
+    (fun i (sd : Ast.shape_def) ->
+      if Hashtbl.mem ctx.shapes sd.Ast.sd_name then
+        Error.fail sd.Ast.sd_name_span
+          (Printf.sprintf "shape %s is already defined" sd.Ast.sd_name);
+      let seen = Hashtbl.create 4 in
+      List.iter
+        (fun (p, sp) ->
+          if Hashtbl.mem seen p then
+            Error.fail sp (Printf.sprintf "duplicate parameter %s" p);
+          Hashtbl.replace seen p ())
+        sd.Ast.sd_params;
+      Hashtbl.replace ctx.shapes sd.Ast.sd_name (i, sd))
+    (prelude @ prog.Ast.p_shapes);
+  let o = open_sheet ctx ~visible:max_int prog.Ast.p_sheet in
+  Ctx.open_sheet ctx o.o_sheet ~points:o.o_points ~lines:o.o_lines
+
+(* The whole program on a fresh [ctx]: its header, then its statements. *)
+let run_program ?prelude (ctx : Ctx.ctx) on_step (prog : Ast.program) : unit =
+  let prelude =
+    match prelude with Some p -> p | None -> Lazy.force Prelude.shapes
+  in
+  open_program ctx ~prelude prog;
+  run_stmts ctx on_step prog.Ast.p_stmts
 
 let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> ())
-    (prog : Ast.program) : folded =
+    ?prelude (prog : Ast.program) : folded =
   (match resume with None -> Fold_state.reset_ids () | Some _ -> ());
   let ctx = Ctx.create () in
-  (match resume with Some s -> restore ctx s | None -> ());
-  run_program ctx on_step prog;
+  (match resume with
+  | Some s ->
+      restore ctx s;
+      run_stmts ctx on_step prog.Ast.p_stmts
+  | None -> run_program ?prelude ctx on_step prog);
   build_output ctx (List.hd ctx.scopes)
 
 let eval_folded (prog : Ast.program) : folded = eval_program prog

@@ -97,7 +97,7 @@ let rec check_list (stmts : Ast.stmt list) : unit =
   in
   go [] stmts
 
-let check (prog : Ast.program) : unit = check_list prog
+let check (prog : Ast.program) : unit = check_list prog.Ast.p_stmts
 
 (* ---- reading the arguments ---- *)
 

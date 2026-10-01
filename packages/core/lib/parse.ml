@@ -21,3 +21,20 @@ let parse ~(filename : string) (src : string) : Ast.program =
   in
   Annotation.check prog;
   prog
+
+(** A library file, which holds shapes and no `paper` line, such as the
+    standard library: the unit it declares, and the shapes a program sees as
+    defined before its own first line. *)
+let library ~(filename : string) (src : string) :
+    (string * Error.span) option * Ast.shape_def list =
+  Lexer.reset ();
+  let lexbuf = Sedlexing.Utf8.from_string src in
+  Sedlexing.set_filename lexbuf filename;
+  let supplier = Sedlexing.with_tokenizer Lexer.token lexbuf in
+  let parser =
+    MenhirLib.Convert.Simplified.traditional2revised Parser.library
+  in
+  try parser supplier
+  with Parser.Error ->
+    let start, finish = Sedlexing.lexing_positions lexbuf in
+    Error.fail (start, finish) "syntax error"

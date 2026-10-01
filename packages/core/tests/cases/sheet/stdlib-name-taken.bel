@@ -1,0 +1,9 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+shape triangle(s) {
+  paper square s
+  trim to .a
+}
+
+paper triangle 1
+; expect error "shape triangle is already defined"

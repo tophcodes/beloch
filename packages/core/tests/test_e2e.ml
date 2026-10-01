@@ -1166,12 +1166,48 @@ let test_e2e_preliminary_routes_agree () =
         a b)
     [ (probe 4 5, "upper-left wedge"); (probe 5 4, "lower-right wedge") ]
 
+(* ---- Sheets (spec/BELOCH.md, "Sheets"; spec/FOLD.md, `frame_unit`) ---- *)
+
+let coords_of json =
+  let open Yojson.Safe.Util in
+  json |> member "vertices_coords" |> to_list
+  |> List.map (fun v -> List.map to_number (to_list v))
+
+let test_frame_unit () =
+  let unit_of src =
+    let open Yojson.Safe.Util in
+    Beloch.fold_string ~filename:"t.bel" src |> member "frame_unit" |> to_string
+  in
+  Alcotest.(check string) "no declaration" "unit" (unit_of "paper square\n");
+  Alcotest.(check string) "declared" "mm" (unit_of "unit mm\npaper square 150\n")
+
+let test_band_frame0 () =
+  let src =
+    "shape band(w h) {\n\
+    \  paper square w\n\
+    \  .p = free on --da from .a by h\n\
+    \  fold (perp --da through .p) (moving .d)\n\
+    \  trim to .a\n\
+     }\n\
+     paper band 2 1\n"
+  in
+  let json = Beloch.fold_string ~filename:"t.bel" src in
+  let corners = [ [ 0.; 0. ]; [ 2.; 0. ]; [ 2.; 1. ]; [ 0.; 1. ] ] in
+  Alcotest.(check (list (list (float 0.)))) "frame 0" corners (coords_of json);
+  let open Yojson.Safe.Util in
+  Alcotest.(check (list (list (float 0.))))
+    "the unfolded first step" corners
+    (coords_of (List.hd (json |> member "file_frames" |> to_list)))
+
 let () =
   Alcotest.run "beloch-e2e"
     [
       ( "e2e",
         [
           Alcotest.test_case "diagonals" `Quick test_e2e_diagonals;
+          Alcotest.test_case "frame_unit" `Quick test_frame_unit;
+          Alcotest.test_case "a trimmed band: frame 0 is the trimmed sheet" `Quick
+            test_band_frame0;
           Alcotest.test_case "diagonals four faces" `Quick
             test_e2e_diagonals_four_faces;
           Alcotest.test_case "perp end-to-end" `Quick test_e2e_perp;

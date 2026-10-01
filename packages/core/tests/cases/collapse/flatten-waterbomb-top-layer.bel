@@ -1,0 +1,29 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; Fisher's waterbomb base on the top layer alone: "folding a 2:1 rectangle
+; vertically in half then creating a waterbomb base on the top face only
+; leaving the bottom face unfolded" [fisher1994, §5.3]. The rectangle of
+; the standard library, corners .a to .d, folds
+; in half along --spine, the right half over the left. The diagonals and the
+; median parallel to the spine are marked on the top layer only, and the fan
+; keeps the sector along the spine (ADR 0037): no hinge joins the moving
+; pieces of the two layers, so the tip is the top layer, and the bottom layer
+; stays one face.
+
+paper rectangle 2 1
+fold (map .a onto .b) (moving .b) as --spine
+.s0 = --spine * --ab
+.s1 = free on --spine from .s0 at 1
+mark (through .a .s1) (on #[.b]) as --d1
+mark (through .s0 .d) (on #[.b]) as --d2
+mark (map .a onto .s0) (on #[.b]) as --v
+.m = --d1 * --d2
+flatten (--d1 & .b) (--d1 & .s1) (--d2 & .s0) (--d2 \ .s0)
+  (--v & --ab mountain) (--v \ --ab mountain) (staying #[.s0 .s1 .m])
+
+; assert steps = 2
+; assert faces = 7
+; assert .a = (0, 0)
+; assert .d = (0, 1)
+; assert .b = (1, 0)
+; assert .m = (1/2, 1/2)

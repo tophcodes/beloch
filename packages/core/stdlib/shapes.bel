@@ -1,0 +1,46 @@
+; The standard library of sheets (ADR 0046): shapes folded from a square and
+; trimmed to one flap. The file declares no unit, so its numbers are in the
+; unit of the program that opens one of its shapes. Each shape exports the
+; names a reader expects of it (ADR 0047): a rectangle the corners .a to .d
+; and the edges --ab to --da, counter-clockwise from the origin, as a square
+; binds them.
+
+; The rectangle of width w and height h, for h at most w: the square of side
+; w with the strip above height h folded away.
+shape rectangle(w h) {
+  paper square w
+  .p = free on --da from .a by h
+  fold (perp --da through .p) (moving .d) as --top
+  .q = --top * --bc
+  trim to .a { .a .b .q as .c .p as .d --ab --bc --top as --cd --da }
+}
+
+; The silver rectangle of width w and height w/sqrt(2), the proportion of
+; A4: the square of side w with the strip above height w/sqrt(2) folded
+; away. The line through .b that bisects --ab and the diagonal --_bd meets
+; --da at w(sqrt(2) - 1), and the fold that maps .d onto it, perpendicular
+; to --da, lies at height w/sqrt(2).
+shape silver(w) {
+  paper square w
+  --_bd = (through .b .d)
+  --_bisector = (map .a onto --_bd through .b)
+  fold (map .d onto --_bisector perp --da) (moving .d) as --top
+  .q = --top * --bc
+  .r = --top * --da
+  trim to .a { .a .b .q as .c .r as .d --ab --bc --top as --cd --da }
+}
+
+; The equilateral triangle of side s on --ab, with its apex .t and its sides
+; --ab, --bt and --ta: the square of side s with the two corners beyond the
+; sides through .a and .b folded away. The fold through .a maps .d onto the
+; horizontal midline, at distance s from .a, so it rises at 60 degrees, and
+; the apex lies on it at distance s from .a. Both folds run through a corner
+; of the triangle, so the trim names its flap by two corners.
+shape triangle(s) {
+  paper square s
+  --_mid = (map .a onto .d)
+  fold (map .d onto --_mid through .a) (moving .d) as --left
+  .t = free on --left from .a by s
+  fold (through .b .t) (moving .c) as --right
+  trim to #[.a .b] { .a .b .t --ab --right as --bt --left as --ta }
+}

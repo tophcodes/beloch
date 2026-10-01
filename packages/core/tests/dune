@@ -11,7 +11,7 @@
 (test
  (name test_fold_state)
  (modules test_fold_state)
- (libraries beloch alcotest zarith))
+ (libraries beloch alcotest zarith yojson))
 
 (test
  (name test_geom)
@@ -101,3 +101,13 @@
  (name test_trace)
  (modules test_trace)
  (libraries beloch alcotest yojson str))
+
+(test
+ (name test_stdlib)
+ (modules test_stdlib)
+ (libraries beloch alcotest yojson)
+ (deps
+  ../stdlib/shapes.bel
+  ../../../spec/BELOCH.md
+  ../../../decisions/0046-a-sheet-is-a-square-or-a-flap-cut-from-one.md
+  ../../../decisions/0047-a-trim-exports-the-names-it-lists.md))

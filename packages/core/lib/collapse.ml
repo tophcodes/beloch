@@ -851,11 +851,29 @@ let pipeline_at (g : Fold_state.t) ~(o : Geom.point)
       let valley = Array.map (fun (_, e) -> e.valley) rays in
       pipeline_solve sg ~valley ~over
 
-let in_bounds (gg : Fold_state.t) : bool =
+(* The convex hull of every table polygon of [g]: the outline a collapse of
+   [g] keeps its realizations within (ADR 0046). The last hull is kept,
+   since every realization of one collapse is tested against the same [g]. *)
+let hull_cache : (Fold_state.t * Geom.point array) option ref = ref None
+
+let table_hull (g : Fold_state.t) : Geom.point array =
+  match !hull_cache with
+  | Some (g', h) when g' == g -> h
+  | _ ->
+      let pts =
+        List.concat
+          (List.init (Array.length (Fold_state.faces g)) (fun i ->
+               Array.to_list (Fold_state.table_polygon g i)))
+      in
+      let h = Geom.convex_hull pts in
+      hull_cache := Some (g, h);
+      h
+
+let in_bounds (hull : Geom.point array) (gg : Fold_state.t) : bool =
   let nfg = Array.length (Fold_state.faces gg) in
   let ok = ref true in
   for i = 0 to nfg - 1 do
-    if not (Array.for_all Geom.in_unit_square (Fold_state.table_polygon gg i))
+    if not (Array.for_all (Geom.in_convex_polygon hull) (Fold_state.table_polygon gg i))
     then ok := false
   done;
   !ok
@@ -872,7 +890,7 @@ let anchor_realization (g : Fold_state.t) ~(root : int)
        (Fold_state.t, Fold_state.violation) result) (fr : int array) :
     (Fold_state.t, string) result =
   match candidate_at ~root ~base:(Fold_state.face_iso g root) fr with
-  | Ok gg when in_bounds gg -> Ok gg
+  | Ok gg when in_bounds (table_hull g) gg -> Ok gg
   | Ok _ -> Error e_out_of_paper
   | Error _ -> Error e_out_of_paper
 

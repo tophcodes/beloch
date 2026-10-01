@@ -1232,6 +1232,18 @@
         },
         {
           "type": "STRING",
+          "value": "shape"
+        },
+        {
+          "type": "STRING",
+          "value": "trim"
+        },
+        {
+          "type": "STRING",
+          "value": "unit"
+        },
+        {
+          "type": "STRING",
           "value": "def"
         },
         {
@@ -1329,6 +1341,10 @@
         {
           "type": "STRING",
           "value": "from"
+        },
+        {
+          "type": "STRING",
+          "value": "by"
         }
       ]
     },
@@ -1394,7 +1410,7 @@
     },
     "number": {
       "type": "PATTERN",
-      "value": "[0-9]+(\\/[0-9]+)?"
+      "value": "[0-9]+(\\/[0-9]+|\\.[0-9]+)?"
     },
     "operator": {
       "type": "CHOICE",

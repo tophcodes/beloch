@@ -1,0 +1,12 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+shape band(w h) {
+  paper square w
+  .p = free on --da from .a by h
+  fold (perp --da through .p) (moving .d) as --top
+  .q = --top * --bc
+  trim to .a { .a .q! as .c }
+}
+
+paper band 2 1
+; expect error "a trim shadows none; drop the !"

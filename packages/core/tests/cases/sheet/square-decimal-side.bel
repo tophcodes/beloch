@@ -1,0 +1,5 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+unit cm
+paper square 7.5
+; assert .c = (15/2, 15/2)

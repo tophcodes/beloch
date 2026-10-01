@@ -1,0 +1,21 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; A trim that lists its names exports exactly those, under their landing
+; names (ADR 0047): the band's corners become .a to .d, its edges --ab to
+; --da, and the body's .p and .q are gone.
+
+shape band(w h) {
+  paper square w
+  .p = free on --da from .a by h
+  fold (perp --da through .p) (moving .d) as --top
+  .q = --top * --bc
+  trim to .a { .a .b .q as .c .p as .d --ab --bc --top as --cd --da }
+}
+
+paper band 2 1
+.m = free on --cd from .d
+.n = free on --bc from .b
+; assert .c = (2, 1)
+; assert .d = (0, 1)
+; assert .m = (1, 1)
+; assert .n = (2, 1/2)

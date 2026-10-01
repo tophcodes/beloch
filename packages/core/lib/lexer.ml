@@ -30,6 +30,17 @@ let id_char = [%sedlex.regexp? 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_']
 let id = [%sedlex.regexp? Plus id_char]
 let number = [%sedlex.regexp? Plus '0' .. '9', Opt ('/', Plus '0' .. '9')]
 
+(* a decimal starts with a digit: `0.5` is a number, `.5` a point name *)
+let decimal = [%sedlex.regexp? Plus '0' .. '9', '.', Plus '0' .. '9']
+
+(* the exact rational a decimal literal writes *)
+let q_of_decimal (s : string) : Q.t =
+  let i = String.index s '.' in
+  let frac = String.sub s (i + 1) (String.length s - i - 1) in
+  Q.make
+    (Z.of_string (String.sub s 0 i ^ frac))
+    (Z.pow (Z.of_int 10) (String.length frac))
+
 let rec token (buf : Sedlexing.lexbuf) : token =
   if !in_annotation then annotation_token buf else program_token buf
 
@@ -96,6 +107,11 @@ and program_token (buf : Sedlexing.lexbuf) : token =
   | "free" -> FREE
   | "on" -> ON
   | "from" -> FROM
+  | "by" -> BY
+  | "shape" -> SHAPE
+  | "trim" -> TRIM
+  | "unit" -> UNIT
+  | decimal -> NUMBER (q_of_decimal (Sedlexing.Utf8.lexeme buf))
   | number -> NUMBER (Q.of_string (Sedlexing.Utf8.lexeme buf))
   | '=' -> EQ
   | '!' -> BANG

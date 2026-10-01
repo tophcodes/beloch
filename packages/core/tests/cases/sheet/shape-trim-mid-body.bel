@@ -1,0 +1,11 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+shape early(s) {
+  paper square s
+  trim to .a
+  fold (map .a onto .c)
+  trim to .b
+}
+
+paper early 1
+; expect error "`trim to` is the last statement of a shape"

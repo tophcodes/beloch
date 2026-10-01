@@ -509,7 +509,7 @@ let test_table_polygon_and_rel () =
   let g = folded_pair () in
   let tp1 = Fold_state.table_polygon g 1 in
   Alcotest.(check bool) "folded onto [0,1]^2" true
-    (Array.for_all Geom.in_unit_square tp1);
+    (Array.for_all (Geom.in_convex_polygon (Sheet.square_corners Num.one)) tp1);
   Alcotest.(check bool) "1 above 0" true (Fold_state.rel g 1 0 = Fold_state.Above);
   Alcotest.(check bool) "0 below 1" true (Fold_state.rel g 0 1 = Fold_state.Below);
   (* flat (unfolded) neighbours do not overlap -> Apart *)
@@ -549,7 +549,7 @@ let test_point_queries () =
 let test_subdivide_parity () =
   Fold_state.reset_ids ();
   let diag = { Geom.a = q 1; b = q 1; c = q 1 } in  (* diagonal x+y=1 *)
-  let g = Fold_state.subdivide Fold_state.init_square diag ~prov:None in
+  let g = Fold_state.subdivide (Fold_state.flat [| Sheet.square_corners Num.one |]) diag ~prov:None in
   (* the new F hinge exists and carries the id *)
   let hs = Fold_state.hinges g in
   Alcotest.(check int) "one hinge" 1 (Array.length hs);
@@ -559,7 +559,7 @@ let test_subdivide_paper_parity () =
   (* through [subdivide_paper]: paper-space clipping. *)
   Fold_state.reset_ids ();
   let diag = { Geom.a = q 1; b = q 1; c = q 1 } in  (* diagonal x+y=1 *)
-  let g = Fold_state.subdivide_paper Fold_state.init_square diag ~prov:None in
+  let g = Fold_state.subdivide_paper (Fold_state.flat [| Sheet.square_corners Num.one |]) diag ~prov:None in
   let hs = Fold_state.hinges g in
   Alcotest.(check int) "one hinge" 1 (Array.length hs);
   Alcotest.(check bool) "flat" true (Num.sign hs.(0).Fold_state.angle = 0);
@@ -578,7 +578,7 @@ let test_subdivide_carried_split () =
   Fold_state.reset_ids ();
   let d1 = { Geom.a = q 1; b = q 1; c = q 1 } in
   let d2 = { Geom.a = q 1; b = q (-1); c = q 0 } in
-  let g = Fold_state.subdivide (Fold_state.subdivide Fold_state.init_square d1 ~prov:None) d2 ~prov:None in
+  let g = Fold_state.subdivide (Fold_state.subdivide (Fold_state.flat [| Sheet.square_corners Num.one |]) d1 ~prov:None) d2 ~prov:None in
   (* 4 faces; first crease now two hinge pieces sharing [crease_id] 0 *)
   let hs = Fold_state.hinges g in
   let pieces_of cid =
@@ -600,7 +600,7 @@ let test_subdivide_keep_side () =
   let axis = { Geom.a = q 1; b = q 0; c = half } in    (* x = 1/2 *)
   let guard = { Geom.a = q 0; b = q 1; c = half } in   (* y = 1/2 *)
   (* pre-split horizontally so the guard has faces on both sides *)
-  let base_new = Fold_state.subdivide Fold_state.init_square guard ~prov:None in
+  let base_new = Fold_state.subdivide (Fold_state.flat [| Sheet.square_corners Num.one |]) guard ~prov:None in
   let g = Fold_state.subdivide base_new axis ~keep_side:(guard, 1) ~prov:None in
   Alcotest.(check int) "3 faces (bottom strip stays whole)" 3
     (Array.length (Fold_state.faces g));
@@ -638,7 +638,7 @@ let vfold_new g ax = Fold_state.fold g ~axis:ax ~move_side:1 ~valley:true ~prov:
 let test_fold_parity_single () =
   Fold_state.reset_ids ();
   let ax = { Geom.a = q 1; b = q 0; c = Num.div Num.one (Num.of_int 2) } in
-  let g = vfold_new Fold_state.init_square ax in
+  let g = vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) ax in
   Alcotest.(check int) "2 faces" 2 (Array.length (Fold_state.faces g));
   Alcotest.(check bool) "hinge 0 is V" true (Fold_state.mv g 0 = Fold_state.V);
   Alcotest.(check bool) "face 1 reflected onto face 0" true
@@ -647,7 +647,7 @@ let test_fold_parity_single () =
 let test_fold_parity_mountain () =
   Fold_state.reset_ids ();
   let ax = { Geom.a = q 1; b = q 0; c = Num.div Num.one (Num.of_int 2) } in
-  let g = Fold_state.fold Fold_state.init_square ~axis:ax ~move_side:1
+  let g = Fold_state.fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis:ax ~move_side:1
       ~valley:false ~prov:None in
   Alcotest.(check int) "2 faces" 2 (Array.length (Fold_state.faces g));
   Alcotest.(check bool) "hinge 0 is M" true (Fold_state.mv g 0 = Fold_state.M)
@@ -662,7 +662,7 @@ let test_fold_parity_pleat () =
   let ax2 = { Geom.a = q 1; b = q 0; c = quarter } in
   (* fold right half left over x=1/2, then fold everything right of x=1/4
      back over x=1/4, moving the packet to the left *)
-  let g = vfold_new (vfold_new Fold_state.init_square ax1) ax2 in
+  let g = vfold_new (vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) ax1) ax2 in
   Alcotest.(check int) "4 faces" 4 (Array.length (Fold_state.faces g));
   let letters =
     Array.to_list (Fold_state.hinges g)
@@ -677,7 +677,7 @@ let test_fold_precrease_upgrade () =
      (old #27 upgrade path) *)
   Fold_state.reset_ids ();
   let ax = { Geom.a = q 1; b = q 0; c = Num.div Num.one (Num.of_int 2) } in
-  let g0 = Fold_state.subdivide Fold_state.init_square ax ~prov:None in
+  let g0 = Fold_state.subdivide (Fold_state.flat [| Sheet.square_corners Num.one |]) ax ~prov:None in
   let g = vfold_new g0 ax in
   (* the upgraded hinge is folded and keeps its crease id 0 *)
   let hs = Fold_state.hinges g in
@@ -696,7 +696,7 @@ let test_fold_scoped_parity () =
   Fold_state.reset_ids ();
   let half = Num.div Num.one (Num.of_int 2) in
   let ax1 = { Geom.a = q 1; b = q 0; c = half } in
-  let g1 = vfold_new Fold_state.init_square ax1 in
+  let g1 = vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) ax1 in
   let quarter = Num.div Num.one (Num.of_int 4) in
   let ax2 = { Geom.a = q 1; b = q 0; c = quarter } in
   let top =
@@ -726,7 +726,7 @@ let test_fold_then_subdivide_parity () =
   Fold_state.reset_ids ();
   let half = Num.div Num.one (Num.of_int 2) in
   let ax = { Geom.a = q 1; b = q 0; c = half } in
-  let g1 = vfold_new Fold_state.init_square ax in
+  let g1 = vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) ax in
   let diag = { Geom.a = q 1; b = q 1; c = half } in  (* cuts both layers *)
   let g = Fold_state.subdivide g1 diag ~prov:None in
   Alcotest.(check int) "4 faces (both layers cut)" 4
@@ -740,7 +740,7 @@ let test_fold_unfold_toggle () =
   Fold_state.reset_ids ();
   let half = Num.div Num.one (Num.of_int 2) in
   let ax = { Geom.a = q 1; b = q 0; c = half } in
-  let g1 = Fold_state.fold Fold_state.init_square ~axis:ax ~move_side:1
+  let g1 = Fold_state.fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis:ax ~move_side:1
       ~valley:true ~prov:None in
   (* find the folded hinge and its moved-side face (the face that is Above) *)
   let hs = Fold_state.hinges g1 in
@@ -766,7 +766,7 @@ let test_fold_unfold_toggle () =
   Array.iteri
     (fun i _ ->
       Alcotest.(check bool) (Printf.sprintf "face %d back on sheet" i) true
-        (Array.for_all Geom.in_unit_square (Fold_state.table_polygon g2 i)))
+        (Array.for_all (Geom.in_convex_polygon (Sheet.square_corners Num.one)) (Fold_state.table_polygon g2 i)))
     (Fold_state.faces g2)
 
 (* A valley fold on a face-up sheet derives V, a mountain fold M; the letter
@@ -775,12 +775,12 @@ let test_fold_derived_letters () =
   Fold_state.reset_ids ();
   let half = Num.div Num.one (Num.of_int 2) in
   let ax = { Geom.a = q 1; b = q 0; c = half } in
-  let gv = Fold_state.fold Fold_state.init_square ~axis:ax ~move_side:1
+  let gv = Fold_state.fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis:ax ~move_side:1
       ~valley:true ~prov:None in
   Alcotest.(check bool) "valley derives V" true
     (Fold_state.mv gv 0 = Fold_state.V);
   Fold_state.reset_ids ();
-  let gm = Fold_state.fold Fold_state.init_square ~axis:ax ~move_side:1
+  let gm = Fold_state.fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis:ax ~move_side:1
       ~valley:false ~prov:None in
   Alcotest.(check bool) "mountain derives M" true
     (Fold_state.mv gm 0 = Fold_state.M)
@@ -789,7 +789,7 @@ let test_fold_root_moves_parity () =
   Fold_state.reset_ids ();
   let half = Num.div Num.one (Num.of_int 2) in
   let ax = { Geom.a = q 1; b = q 0; c = half } in
-  let g0 = Fold_state.subdivide Fold_state.init_square ax ~prov:None in
+  let g0 = Fold_state.subdivide (Fold_state.flat [| Sheet.square_corners Num.one |]) ax ~prov:None in
   let root = Fold_state.root g0 in
   let moving = Array.make (Array.length (Fold_state.faces g0)) false in
   moving.(root) <- true;
@@ -808,7 +808,7 @@ let test_fold_nothing_stationary_parity () =
   (* whole-sheet fold across a boundary line: every face moves (branch 3) *)
   Fold_state.reset_ids ();
   let ax = { Geom.a = q 1; b = q 0; c = q 1 } in  (* x = 1, right edge *)
-  let g = Fold_state.fold Fold_state.init_square ~axis:ax ~move_side:(-1)
+  let g = Fold_state.fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis:ax ~move_side:(-1)
       ~valley:true ~prov:None in
   Alcotest.(check int) "1 face (whole sheet moved, no stationary child)" 1
     (Array.length (Fold_state.faces g));
@@ -820,7 +820,7 @@ let test_fold_nothing_stationary_parity () =
 let test_flip_parity () =
   Fold_state.reset_ids ();
   let ax = { Geom.a = q 1; b = q 0; c = Num.div Num.one (Num.of_int 2) } in
-  let g = Fold_state.flip (vfold_new Fold_state.init_square ax) in
+  let g = Fold_state.flip (vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) ax) in
   Alcotest.(check int) "2 faces" 2 (Array.length (Fold_state.faces g));
   (* flip doesn't change the derived letter (adjudicated: see
      [test_flip_leaves_derived_assignment_unchanged] in test_collapse.ml for the
@@ -833,7 +833,7 @@ let test_fold_after_flip_parity () =
   let half = Num.div Num.one (Num.of_int 2) in
   let ax1 = { Geom.a = q 1; b = q 0; c = half } in
   let ax2 = { Geom.a = q 0; b = q 1; c = half } in
-  let g = vfold_new (Fold_state.flip (vfold_new Fold_state.init_square ax1)) ax2 in
+  let g = vfold_new (Fold_state.flip (vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) ax1)) ax2 in
   Alcotest.(check int) "4 faces" 4 (Array.length (Fold_state.faces g));
   (* ax2 runs perpendicular to ax1 and cuts BOTH layers of the folded packet,
      so the original x=1/2 hinge splits into two pieces alongside the two new
@@ -859,7 +859,7 @@ let test_flip_nontrivial_base_parity () =
   let ax2 = { Geom.a = q 1; b = q 0; c = quarter } in
   let g = Fold_state.flip
       (Fold_state.fold
-         (Fold_state.flip (vfold_new Fold_state.init_square ax1))
+         (Fold_state.flip (vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) ax1))
          ~axis:ax2 ~move_side:(-1) ~valley:true ~prov:None) in
   Alcotest.(check int) "4 faces" 4 (Array.length (Fold_state.faces g));
   let letters =
@@ -873,7 +873,7 @@ let test_flip_nontrivial_base_parity () =
      that makes this test order-sensitive; if this ever fails the test has
      silently degenerated to the order-insensitive case *)
   let pre =
-    Fold_state.fold (Fold_state.flip (vfold_new Fold_state.init_square ax1))
+    Fold_state.fold (Fold_state.flip (vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) ax1))
       ~axis:ax2 ~move_side:(-1) ~valley:true ~prov:None
   in
   Alcotest.(check bool) "pre-flip root placement non-identity" false
@@ -899,7 +899,7 @@ let replay ops =
       | OFoldV (l, s) -> Fold_state.fold g ~axis:l ~move_side:s ~valley:true ~prov:None
       | OFoldM (l, s) -> Fold_state.fold g ~axis:l ~move_side:s ~valley:false ~prov:None
       | OFlip -> Fold_state.flip g)
-    Fold_state.init_square
+    (Fold_state.flat [| Sheet.square_corners Num.one |])
     ops
 
 let battery_frac a b = Num.div (Num.of_int a) (Num.of_int b)
@@ -996,7 +996,7 @@ let test_add_mark () =
       mline = { Geom.a = q 1; b = q (-1); c = q 0 };
       mintent = Fold_state.V; mcrease_id = 9; mprov = None }
   in
-  let g = Fold_state.add_mark Fold_state.init_square m in
+  let g = Fold_state.add_mark (Fold_state.flat [| Sheet.square_corners Num.one |]) m in
   Alcotest.(check int) "one mark" 1 (Array.length (Fold_state.marks g));
   (* marks ride through a fold *)
   let ax = { Geom.a = q 1; b = q 0; c = Num.div Num.one (Num.of_int 2) } in
@@ -1013,7 +1013,7 @@ let test_mark_graduates () =
       mintent = Fold_state.V; mcrease_id = 0; mprov = None }
   in
   Alcotest.(check bool) "corner-to-corner seg graduates immediately" true
-    (Fold_state.mark_graduates Fold_state.init_square corner_seg);
+    (Fold_state.mark_graduates (Fold_state.flat [| Sheet.square_corners Num.one |]) corner_seg);
   let half = Num.div (q 1) (q 2) in
   let interior_seg =
     { Fold_state.mgeom = Fold_state.MSeg (gp 0 0, gph half half);
@@ -1021,14 +1021,14 @@ let test_mark_graduates () =
       mintent = Fold_state.V; mcrease_id = 1; mprov = None }
   in
   Alcotest.(check bool) "seg ending mid-face does not graduate" false
-    (Fold_state.mark_graduates Fold_state.init_square interior_seg);
+    (Fold_state.mark_graduates (Fold_state.flat [| Sheet.square_corners Num.one |]) interior_seg);
   let point =
     { Fold_state.mgeom = Fold_state.MPoint (gp 0 0);
       mline = { Geom.a = q 1; b = q (-1); c = q 0 };
       mintent = Fold_state.V; mcrease_id = 2; mprov = None }
   in
   Alcotest.(check bool) "point marks never graduate" false
-    (Fold_state.mark_graduates Fold_state.init_square point)
+    (Fold_state.mark_graduates (Fold_state.flat [| Sheet.square_corners Num.one |]) point)
 
 (* --- Plan 3b Task 1: crease queries --------------------------------------- *)
 
@@ -1039,7 +1039,7 @@ let pair_precrease_fold () =
   let vhalf = { Geom.a = q 1; b = q 0; c = half } in
   let hhalf = { Geom.a = q 0; b = q 1; c = half } in
   Fold_state.fold
-    (Fold_state.subdivide Fold_state.init_square hhalf ~prov:None)
+    (Fold_state.subdivide (Fold_state.flat [| Sheet.square_corners Num.one |]) hhalf ~prov:None)
     ~axis:vhalf ~move_side:1 ~valley:true ~prov:None
 
 (* Was a parity test against the old model (Plan 3b Task 1); the old model is
@@ -1184,7 +1184,7 @@ let test_select_scope_parity () =
   (* book fold then fold the packet edge back: 3 overlapping layers on part
      of the sheet *)
   let g = Fold_state.fold
-      (vfold_new Fold_state.init_square (vl (frac 1 2)))
+      (vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) (vl (frac 1 2)))
       ~axis:(vl (frac 1 4)) ~move_side:(-1) ~valley:true ~prov:None in
   (* the top face over x in (1/4,1/2): this construction leaves all 4 faces
      spanning EXACTLY [1/4,1/2] on the table (a book fold's two layers have
@@ -1243,7 +1243,7 @@ let test_select_scope_target_hinged_parity () =
   let frac a b = Num.div (Num.of_int a) (Num.of_int b) in
   let vl c = { Geom.a = Num.one; b = Num.zero; c } in
   let g = Fold_state.fold
-      (vfold_new Fold_state.init_square (vl (frac 1 2)))
+      (vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) (vl (frac 1 2)))
       ~axis:(vl (frac 1 4)) ~move_side:(-1) ~valley:true ~prov:None in
   let top =
     let n = Array.length (Fold_state.faces g) in
@@ -1294,7 +1294,7 @@ let test_scoped_hinge_closed_parity () =
   Fold_state.reset_ids ();
   let frac a b = Num.div (Num.of_int a) (Num.of_int b) in
   let vl c = { Geom.a = Num.one; b = Num.zero; c } in
-  let g = vfold_new Fold_state.init_square (vl (frac 1 2)) in
+  let g = vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) (vl (frac 1 2)) in
   let top = if Fold_state.rel g 0 1 = Fold_state.Above then 0 else 1 in
   let moving = Array.make 2 false in
   moving.(top) <- true;
@@ -1316,7 +1316,7 @@ let test_both_sides_moving_no_toggle () =
   Fold_state.reset_ids ();
   let frac a b = Num.div (Num.of_int a) (Num.of_int b) in
   let vl c = { Geom.a = Num.one; b = Num.zero; c } in
-  let g1 = vfold_new Fold_state.init_square (vl (frac 1 2)) in
+  let g1 = vfold_new (Fold_state.flat [| Sheet.square_corners Num.one |]) (vl (frac 1 2)) in
   let movers = Array.make (Array.length (Fold_state.faces g1)) true in
   let g = Fold_state.fold g1 ~axis:(vl (frac 1 2)) ~move_side:(-1)
       ~valley:true ~moving_parents:movers ~prov:None in
@@ -1734,7 +1734,7 @@ let test_reverse_perp_letters () =
 
 let test_reverse_no_spine () =
   (* a single flat sheet has no folded hinge to cut *)
-  let g = Fold_state.init_square in
+  let g = (Fold_state.flat [| Sheet.square_corners Num.one |]) in
   match
     Fold_state.reverse g ~axis:vline_half ~move_side:(-1) ~tip:[| true |]
       ~inside:true ~prov:None
@@ -1743,9 +1743,78 @@ let test_reverse_no_spine () =
   | Error e -> Alcotest.failf "wrong failure %s" (Fold_state.reverse_failure_to_string e)
   | Ok _ -> Alcotest.fail "expected No_spine"
 
+(* ---- Trimming a sheet from a flap (Sheet.trim) ---- *)
+
+(* the unfolded grid of 3 by 3 of unit squares, face 3*j + i at column i, row j,
+   every neighbouring pair joined by a flat hinge of a crease of its own *)
+let grid3 () : Fold_state.t =
+  let face i j = sq (gp i j) (gp (i + 1) j) (gp (i + 1) (j + 1)) (gp i (j + 1)) in
+  let faces = Array.init 9 (fun k -> face (k mod 3) (k / 3)) in
+  let hinge fa fb line =
+    { Fold_state.fa; fb; line; angle = Num.zero;
+      crease_id = Fold_state.fresh_crease_id (); prov = None }
+  in
+  let hs = ref [] in
+  for j = 0 to 2 do
+    for i = 0 to 2 do
+      let k = (3 * j) + i in
+      if i < 2 then hs := hinge k (k + 1) (vline (i + 1)) :: !hs;
+      if j < 2 then hs := hinge k (k + 3) (hline (j + 1)) :: !hs
+    done
+  done;
+  Fold_state.flat ~hinges:(Array.of_list (List.rev !hs)) faces
+
+let test_trim_whole_grid () =
+  match Sheet.trim (grid3 ()) (List.init 9 Fun.id) ~folded:(fun _ -> false) with
+  | Ok sh ->
+      Alcotest.(check int) "nine faces" 9 (Array.length (Fold_state.faces sh.Sheet.start));
+      Alcotest.(check int) "twelve flat hinges" 12
+        (Array.length (Fold_state.hinges sh.Sheet.start));
+      Alcotest.(check int) "four boundary lines" 4 (List.length (Sheet.boundary_lines sh))
+  | Error `Hole -> Alcotest.fail "the whole grid has no hole"
+
+let test_trim_ring_has_hole () =
+  match
+    Sheet.trim (grid3 ()) [ 0; 1; 2; 3; 5; 6; 7; 8 ] ~folded:(fun _ -> false)
+  with
+  | Error `Hole -> ()
+  | Ok _ -> Alcotest.fail "the ring around the middle face has a hole"
+
+let test_trim_merges_folded_hinges () =
+  match Sheet.trim (grid3 ()) [ 0; 1; 2 ] ~folded:(fun _ -> true) with
+  | Ok sh ->
+      Alcotest.(check int) "one face" 1 (Array.length (Fold_state.faces sh.Sheet.start));
+      Alcotest.(check int) "no hinge" 0 (Array.length (Fold_state.hinges sh.Sheet.start))
+  | Error `Hole -> Alcotest.fail "a row has no hole"
+
+(* An L of three faces whose hinges belong to folded creases: the hinge in
+   the bar merges its faces, the one at the corner of the L cannot, and the
+   output writes it as a join edge. *)
+let test_trim_join_edge () =
+  match Sheet.trim (grid3 ()) [ 0; 1; 3 ] ~folded:(fun _ -> true) with
+  | Ok sh ->
+      Alcotest.(check int) "two faces" 2 (Array.length (Fold_state.faces sh.Sheet.start));
+      Alcotest.(check int) "one join crease" 1 (List.length sh.Sheet.joins);
+      let assignments =
+        let open Yojson.Safe.Util in
+        Fold_emit.folded_frame_of_state sh [] sh.Sheet.start None
+        |> member "edges_assignment" |> to_list |> List.map to_string
+      in
+      Alcotest.(check int) "one J edge" 1
+        (List.length (List.filter (( = ) "J") assignments));
+      Alcotest.(check bool) "no F edge" false (List.mem "F" assignments)
+  | Error `Hole -> Alcotest.fail "an L has no hole"
+
 let () =
   Alcotest.run "fold_graph"
-    [ ( "derive",
+    [ ( "trim",
+        [ Alcotest.test_case "whole grid" `Quick test_trim_whole_grid;
+          Alcotest.test_case "a ring has a hole" `Quick test_trim_ring_has_hole;
+          Alcotest.test_case "folded hinges merge" `Quick
+            test_trim_merges_folded_hinges;
+          Alcotest.test_case "an unmergeable hinge is a join edge" `Quick
+            test_trim_join_edge ] );
+      ( "derive",
         [ Alcotest.test_case "single fold" `Quick test_single_fold;
           Alcotest.test_case "accordion path" `Quick test_accordion ] );
       ( "make-structure",

@@ -145,12 +145,6 @@ let beloch7_creases (p : point) (d : line) (q : point) (e : line) : line list =
          let pstar = { x = Num.add d0x (Num.mul t d.b); y = Num.sub d0y (Num.mul t d.a) } in
          perpendicular_bisector p pstar)
 
-let in_unit_square (p : point) : bool =
-  Num.sign p.x >= 0
-  && Num.compare p.x Num.one <= 0
-  && Num.sign p.y >= 0
-  && Num.compare p.y Num.one <= 0
-
 type segment = point * point
 
 let seg_param ((p, q) : segment) (r : point) : Num.t =
@@ -190,27 +184,6 @@ let material_bundle (chords : (point * point) list) : (point * point) option =
   let pts = List.concat_map (fun (a, b) -> [ a; b ]) chords in
   extreme_pair pts
 
-let clip_to_unit_square (l : line) : segment option =
-  let z = Num.zero and o = Num.one in
-  let cands = ref [] in
-  let add p = if in_unit_square p then cands := p :: !cands in
-  if Num.sign l.a <> 0 then begin
-    add { x = Num.div l.c l.a; y = z };
-    add { x = Num.div (Num.sub l.c l.b) l.a; y = o }
-  end;
-  if Num.sign l.b <> 0 then begin
-    add { x = z; y = Num.div l.c l.b };
-    add { x = o; y = Num.div (Num.sub l.c l.a) l.b }
-  end;
-  let uniq =
-    List.fold_left
-      (fun acc p -> if List.exists (point_equal p) acc then acc else p :: acc)
-      [] !cands
-  in
-  match uniq with
-  | p :: q :: _ when not (point_equal p q) -> Some (p, q)
-  | _ -> None
-
 let segment_intersection (s1 : segment) (s2 : segment) : point option =
   let p1, q1 = s1 and p2, q2 = s2 in
   match intersection (line_through p1 q1) (line_through p2 q2) with
@@ -220,7 +193,7 @@ let segment_intersection (s1 : segment) (s2 : segment) : point option =
         let t = seg_param s r in
         Num.sign t >= 0 && Num.compare t Num.one <= 0
       in
-      if on s1 && on s2 && in_unit_square r then Some r else None
+      if on s1 && on s2 then Some r else None
 
 let direction_half (dx : Num.t) (dy : Num.t) : int =
   if Num.sign dy > 0 || (Num.sign dy = 0 && Num.sign dx > 0) then 0 else 1
@@ -317,6 +290,39 @@ let in_convex_polygon (poly : point array) (p : point) : bool =
     if Num.sign cross < 0 then ok := false
   done;
   !ok
+
+(* The convex hull of [pts], counter-clockwise, without collinear vertices
+   (Andrew's monotone chain). Points that span no area give their two
+   extremes, or the one point. *)
+let convex_hull (pts : point list) : point array =
+  let cmp p q =
+    match Num.compare p.x q.x with 0 -> Num.compare p.y q.y | c -> c
+  in
+  let pts = List.sort_uniq cmp pts in
+  let cross o a b =
+    Num.sign
+      (Num.sub
+         (Num.mul (Num.sub a.x o.x) (Num.sub b.y o.y))
+         (Num.mul (Num.sub a.y o.y) (Num.sub b.x o.x)))
+  in
+  (* one chain as a stack, newest first: each point pops the points that
+     would make a turn other than left before it *)
+  let chain pts =
+    List.fold_left
+      (fun acc p ->
+        let rec pop = function
+          | b :: a :: rest when cross a b p <= 0 -> pop (a :: rest)
+          | acc -> acc
+        in
+        p :: pop acc)
+      [] pts
+  in
+  match pts with
+  | [] | [ _ ] -> Array.of_list pts
+  | _ ->
+      (* each chain ends on the point the other starts from *)
+      let lower = chain pts and upper = chain (List.rev pts) in
+      Array.of_list (List.rev (List.tl lower) @ List.rev (List.tl upper))
 
 (* p collinear with segment (a,b) and within it (endpoints included). *)
 let on_segment ((a, b) : segment) (p : point) : bool =

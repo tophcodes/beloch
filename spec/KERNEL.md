@@ -19,12 +19,31 @@ with the issue that tracks it.
 
 ## Sheet
 
-The language offers one sheet, `paper square`, the unit square with the four
-corners bound as `.a` to `.d`. The model's sheet
-([def-sheet](/model/#def-sheet)) allows any simple polygon. Faces are convex
-polygons in counter-clockwise order because `Geom` clips against half-planes
-and tests overlap on convex polygons only; a non-convex sheet would enter as
-several convex faces joined by hinges of angle $0$.
+A program opens one sheet ([Sheets](/language/#sheets)): the square of a
+side length, or the flap a shape trims. `Sheet.t` holds the unfolded state the
+program starts from and the outline of the sheet, its boundary sides in paper
+coordinates. The model's sheet ([def-sheet](/model/#def-sheet)) is any simple
+polygon. Faces are convex polygons in counter-clockwise order because `Geom`
+clips against half-planes and tests overlap on convex polygons only; a
+non-convex sheet enters as several convex faces joined by hinges of angle $0$.
+
+The square of side $s$ is one face with its corners at $(0,0)$, $(s,0)$,
+$(s,s)$ and $(0,s)$. `Sheet.trim` builds a trimmed sheet from the faces of the
+flap in paper coordinates, every face in place, with the flat hinges and the
+marks that lie on them. A flat hinge of a crease the shape body folded in any
+of its states merges its two faces into one where their union is convex. Where
+the union is not convex the hinge stays as a join edge, which divides the
+sheet into convex faces and is no crease of it: `Sheet.t` lists its crease in
+`joins`, the output assigns it `J`, and no name of the body carries over to
+it. A flap whose
+boundary is more than one loop has a hole and is refused.
+
+Three operations read the sheet and nothing else of its shape. Clipping a line
+to the sheet clips it to every face of the unfolded state and takes the two
+furthest-out points. The output assigns `B` to an edge that lies on a side of
+the outline. A collapse keeps the realizations whose faces lie on the table
+inside the convex hull of every table polygon of the state before the collapse
+(ADR 0046).
 
 ## State
 

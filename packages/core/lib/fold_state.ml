@@ -472,14 +472,13 @@ let fail_of_violation (prov : State.provenance option) (v : violation) : 'a =
   in
   Error.fail span (violation_to_string v)
 
-let init_square : t =
-  let p x y = { Geom.x = Num.of_int x; y = Num.of_int y } in
+let flat ?(hinges = [||]) ?(marks = [||]) (faces : face array) : t =
   match
-    make ~faces:[| [| p 0 0; p 1 0; p 1 1; p 0 1 |] |] ~hinges:[||] ~root:0
-      ~rank:[| 0 |] ()
+    make ~marks ~faces ~hinges ~root:0
+      ~rank:(Array.init (Array.length faces) Fun.id) ()
   with
   | Ok g -> g
-  | Error _ -> assert false
+  | Error v -> invalid_arg ("Fold_state.flat: " ^ violation_to_string v)
 
 (* The chord (in PAPER coordinates) where table-space [axis] crosses the
    interior of an already-placed [table] polygon (face [i]'s table placement,

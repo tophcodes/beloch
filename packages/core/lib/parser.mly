@@ -38,6 +38,43 @@ let align_body (span : Error.span) (heads : string list) (parts : align_part lis
     c_heading = Option.map fst !heading; c_heading_span = Option.map snd !heading;
     c_span = span }
 
+(* An item of a shape body: a statement, the trim, or what a body may not
+   hold, refused by name once the body is read *)
+type shape_item =
+  | Item_stmt of stmt
+  | Item_trim of flap_arg * export_entry list option * Error.span
+  | Item_annotation of Error.span
+  | Item_def of Error.span
+
+let misplaced_trim (span : Error.span) : 'a =
+  Error.fail span "`trim to` is the last statement of a shape"
+
+(* `shape name(params) { paper sheet items }`, read into its parts. The body
+   ends with its trim and holds no other, no annotation and no def. *)
+let shape_def ~(name : string) ~(name_span : Error.span)
+    ~(params : (string * Error.span) list) ~(sheet : sheet)
+    ~(items : shape_item list) ~(close : Error.span) (span : Error.span) :
+    shape_def =
+  let rec split acc = function
+    | [] -> Error.fail close "a shape ends with `trim to`"
+    | [ Item_trim (fa, ex, sp) ] -> (List.rev acc, (fa, sp), ex)
+    | Item_trim (_, _, sp) :: _ -> misplaced_trim sp
+    | Item_annotation sp :: _ ->
+        Error.fail sp "a shape body holds no annotation"
+    | Item_def sp :: _ -> Error.fail sp "a shape body holds no def"
+    | Item_stmt st :: rest -> split (st :: acc) rest
+  in
+  let body, trim, exports = split [] items in
+  Option.iter
+    (List.iter (fun (e : export_entry) ->
+         if e.eshadow then
+           Error.fail e.espan
+             "a trimmed sheet starts with no names, so a trim shadows none; drop the !"))
+    exports;
+  { sd_name = name; sd_name_span = name_span; sd_params = params;
+    sd_sheet = sheet; sd_body = body; sd_trim = trim; sd_exports = exports;
+    sd_span = span }
+
 (* `toward` inside a construction, the spelling before ADR 0031 *)
 let toward_inside (span : Error.span) : 'a =
   Error.fail ~hint:"write it as an item of the write: (toward .p)" span
@@ -48,6 +85,7 @@ let toward_inside (span : Error.span) : 'a =
 %token DEF APPLY EXPORT AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
 %token FLATTEN OVER STAYING MARK BETWEEN AT UNDER REVERSE OUTSIDE
 %token FREE ON FROM ALIGN HEADING INTO
+%token BY SHAPE TRIM UNIT
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN  (* --[ / .[ : the line/point select openers *)
 %token <string> POINT
 %token <string> CREASE
@@ -59,16 +97,70 @@ let toward_inside (span : Error.span) : 'a =
 %token NEWLINE                         (* the end of an annotation's line *)
 
 %start <Ast.program> program
+%start <(string * Error.span) option * Ast.shape_def list> library
 
 %%
 
 program:
-  | PAPER SQUARE stmts EOF { $3 }
+  | unit_decl shape_defs PAPER sheet stmts EOF
+      { { p_unit = $1; p_shapes = $2; p_sheet = $4; p_stmts = $5 } }
+
+(* a file of shapes alone, read as the shapes a program sees before its own *)
+library:
+  | unit_decl shape_defs EOF { ($1, $2) }
+
+unit_decl:
+  |            { None }
+  | UNIT IDENT { Some ($2, $loc($2)) }
+
+shape_defs:
+  | { [] }
+  | shape_def shape_defs { $1 :: $2 }
+
+shape_def:
+  | SHAPE IDENT LPAREN shape_params RPAREN LBRACE PAPER sheet shape_items RBRACE
+      { shape_def ~name:$2 ~name_span:$loc($2) ~params:$4 ~sheet:$8 ~items:$9
+          ~close:$loc($10) $loc }
+
+shape_params:
+  | { [] }
+  | IDENT shape_params { ($1, $loc($1)) :: $2 }
+
+shape_items:
+  | { [] }
+  | shape_item shape_items { $1 :: $2 }
+
+shape_item:
+  | body_stmt                  { Item_stmt $1 }
+  | TRIM TO flap_arg           { Item_trim ($3, None, $loc) }
+  | TRIM TO flap_arg LBRACE export_entries RBRACE
+                               { Item_trim ($3, Some $5, $loc) }
+  | annotation                 { Item_annotation $1.a_span }
+  | DEF IDENT LPAREN params RPAREN LBRACE body_stmts RBRACE { Item_def $loc }
+
+sheet:
+  | SQUARE              { SSquare (None, $loc) }
+  | SQUARE number       { SSquare (Some $2, $loc) }
+  | IDENT numbers       { SShape ($1, $2, $loc) }
+
+numbers:
+  | { [] }
+  | number numbers { $1 :: $2 }
+
+number:
+  | NUMBER { NLit ($1, $loc) }
+  | IDENT  { NParam ($1, $loc) }
+
+(* `trim to` outside a shape body: refused where it stands *)
+trim_elsewhere:
+  | TRIM TO flap_arg { misplaced_trim $loc }
+  | TRIM TO flap_arg LBRACE export_entries RBRACE { misplaced_trim $loc }
 
 stmts:
   | { [] }
   | stmt stmts { $1 :: $2 }
   | annotation stmts { Annotation $1 :: $2 }
+  | trim_elsewhere stmts { $1 :: $2 }
 
 stmt:
   | body_stmt  { $1 }
@@ -79,6 +171,7 @@ body_stmts:
   | { [] }
   | body_stmt body_stmts { $1 :: $2 }
   | annotation body_stmts { Annotation $1 :: $2 }
+  | trim_elsewhere body_stmts { $1 :: $2 }
 
 (* spec/BELOCH-ANNOTATIONS.md. Which key takes which arguments is checked
    after parsing (Annotation.check), so a key is a name the grammar does
@@ -286,11 +379,12 @@ point_expr:
   | line_operand STAR line_operand                { PsExpr (PSelect ([ $1; $3 ], $loc)) }
   | POINT_MEMBER_OPEN line_operand_list RBRACKET  { PsExpr (PSelect ($2, $loc)) }
   | FREE ON line_operand FROM point_operand at_frac_opt
-      { PsFree { line = $3; anchor = $5; t = $6; span = $loc } }
+      { PsFree { line = $3; anchor = $5; pos = $6; span = $loc } }
 
 at_frac_opt:
   |           { None }
-  | AT NUMBER { Some (Num.of_q $2) }
+  | AT number { Some (FreeAt $2) }
+  | BY number { Some (FreeBy $2) }
 
 point_operand:
   | point_ref { PNamed $1 }

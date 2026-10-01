@@ -1,8 +1,8 @@
 (** Per-statement hash chain for the incremental evaluation cache.
 
-    The chain has exactly one entry per [Ast.stmt] (the `paper square`
-    header, which the parser consumes without producing a statement, is
-    folded into the chain seed instead of getting its own key). Each entry
+    The chain has exactly one entry per [Ast.stmt] (the header before the
+    first statement, the unit, the shapes and the `paper` line, is folded
+    into the chain seed instead of getting its own key). Each entry
     folds in every entry before it, so the key at index [i] is a hash of
     everything up to and including [i]. Appending a statement leaves all
     earlier keys unchanged (full prefix reuse); editing statement [k]
@@ -49,14 +49,14 @@ let canon_stmt (src : string) (stmt : Ast.stmt) : string =
   let slice = if b > a then String.sub src a (b - a) else "" in
   normalize_ws slice
 
-(* `paper square` is the program header, not a statement, so it never appears
-   in [prog]. Seed the chain with the normalized source PREFIX before the first
+(* The unit, the shapes and the `paper` line are the program header, not
+   statements, so they never appear in [prog.p_stmts]. Seed the chain with the normalized source PREFIX before the first
    statement: editing it changes the seed and invalidates every key, while the
    returned list stays exactly one key per Ast.stmt (keys align 1:1 with
    statements and with Session's per-statement snapshots). *)
 let chain_keys (src : string) (prog : Ast.program) : string list =
   let first_start =
-    match prog with
+    match prog.Ast.p_stmts with
     | [] -> String.length src
     | stmt :: _ -> (fst (span_of_stmt stmt)).Lexing.pos_cnum
   in
@@ -75,4 +75,4 @@ let chain_keys (src : string) (prog : Ast.program) : string list =
         in
         go key (key :: acc) rest
   in
-  go seed [] prog
+  go seed [] prog.Ast.p_stmts

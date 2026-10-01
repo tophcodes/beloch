@@ -98,7 +98,7 @@ let test_flatten_item_accepts_backslash_filter () =
        flatten (--h \\ #[.b]) (--v & #[.c]) (--h & #[.d] mountain) (--v & \
        #[.a] mountain)\n"
   in
-  match List.rev prog with
+  match List.rev prog.Ast.p_stmts with
   | Ast.Flatten (Ast.Anonymous, elems, [], None, None, None, _) :: _ ->
       Alcotest.(check int) "4 elements" 4 (List.length elems)
   | _ -> Alcotest.fail "expected --h \\ #[.b] to parse as a flatten item"
@@ -380,7 +380,7 @@ let test_flatten_derive_in_bounds () =
   let nf = Array.length (Fold_state.faces st) in
   let all_in =
     Array.for_all
-      (fun i -> Array.for_all Geom.in_unit_square (Fold_state.table_polygon st i))
+      (fun i -> Array.for_all (Geom.in_convex_polygon (Sheet.square_corners Num.one)) (Fold_state.table_polygon st i))
       (Array.init nf Fun.id)
   in
   Alcotest.(check bool)

@@ -1,0 +1,16 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+shape marked(w h) {
+  paper square w
+  mark (through .a .c) as --diag
+  .p = free on --da from .a by h
+  fold (perp --da through .p) (moving .d)
+  trim to .a
+}
+
+paper marked 2 1
+.e = free on --diag from .a
+fold (--diag) (moving .b)
+; assert .a incident --diag
+; assert .e = (1/2, 1/2)
+; assert .b = (0, 2)
