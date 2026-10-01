@@ -27,6 +27,7 @@ stmt    := annotation* ( write_stmt | bind_stmt | def_stmt | apply_stmt | export
 [Sheets](/language/#sheets).
 
 ```grammar
+library    := [ unit_decl ] shape_def*
 unit_decl  := "unit" WORD
 sheet      := "square" [ number ]
             | WORD number*

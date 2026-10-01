@@ -90,7 +90,7 @@ let toward_inside (span : Error.span) : 'a =
 %token NEWLINE                         (* the end of an annotation's line *)
 
 %start <Ast.program> program
-%start <Ast.shape_def list> library
+%start <(string * Error.span) option * Ast.shape_def list> library
 
 %%
 
@@ -100,7 +100,7 @@ program:
 
 (* a file of shapes alone, read as the shapes a program sees before its own *)
 library:
-  | shape_defs EOF { $1 }
+  | unit_decl shape_defs EOF { ($1, $2) }
 
 unit_decl:
   |            { None }

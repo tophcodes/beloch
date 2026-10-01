@@ -101,3 +101,9 @@
  (name test_trace)
  (modules test_trace)
  (libraries beloch alcotest yojson str))
+
+(test
+ (name test_stdlib)
+ (modules test_stdlib)
+ (libraries beloch alcotest yojson)
+ (deps ../stdlib/shapes.bel))

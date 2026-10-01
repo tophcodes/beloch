@@ -104,6 +104,9 @@ annotation or a `def` is an error (`` a shape body holds no annotation ``,
 (`` shape <name> is already defined ``), and so is a `def` of a shape's name
 (`` <name> is already defined as a shape ``).
 
+A library file holds shapes and no `paper` line; the standard library is
+one.
+
 **Units.** A file may name the unit of its numbers in a declaration before
 its first statement:
 
