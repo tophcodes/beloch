@@ -1,0 +1,21 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; A mark takes no paper from other flaps (ADR 0033). The corner .c folds
+; onto the centre, and --x is marked on that flap alone, along the diagonal:
+; on the table it runs from the centre to (3/4, 3/4). The layer beneath
+; carries paper on the same table line from .a to (3/4, 3/4). The fold
+; line of map .a onto .o crosses the diagonal at (1/4, 1/4), on the lower
+; layer only, so --x lies on the side of the centre and names it: that side
+; stays and .a folds onto the centre. Read as all the paper on its table
+; line, --x would name no side.
+
+paper square
+mark (through .a .c) as --ac
+.o = free on --ac from .a at 1/2
+fold (map .c onto .o) (moving .c)
+mark (through .a .c) (on #[.c]) as --x
+fold (map .a onto .o) (toward --x)
+
+; assert .a = (1/2, 1/2)
+; assert .c = (1/2, 1/2)
+; assert .b = (1, 0)

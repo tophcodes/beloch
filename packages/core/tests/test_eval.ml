@@ -911,6 +911,19 @@ let test_eval_unknown_point_in_scope_capped () =
         ("mark (through .a .c) as --ac\nmark (through .b .d) as --bd\n" ^ binds
        ^ "mark (through .q .a)\n"))
 
+(* a moved mark that falls short of the point it would carry names the
+   place it has to reach, and hints at extending it there (ADR 0033) *)
+let test_eval_short_mark_hint () =
+  expect_error_hint
+    "--pinch does not reach (1/2, 0.866), the point of its line that lands on .d"
+    "extend --pinch to (1/2, 0.866)" (fun () ->
+      eval_src
+        "mark (through .a .c) as --ac\n\
+         .o = free on --ac from .a at 1/2\n\
+         .m = free on --ab from .a at 1/2\n\
+         mark (through .m .o) (between .m .o) as --pinch\n\
+         fold (map .d onto --pinch through .a) (moving --pinch) as --f\n")
+
 (* a point on a crease shared by two flaps names no flap on its own *)
 let test_eval_shared_crease_hint () =
   expect_error_hint "lies on a crease shared by 2 flaps"
@@ -2272,6 +2285,8 @@ let () =
             test_eval_unknown_point_in_scope;
           Alcotest.test_case "in-scope hint is capped" `Quick
             test_eval_unknown_point_in_scope_capped;
+          Alcotest.test_case "short mark hints at its reach" `Quick
+            test_eval_short_mark_hint;
           Alcotest.test_case "shared crease hints #[...]" `Quick
             test_eval_shared_crease_hint;
           Alcotest.test_case "export temp target" `Quick

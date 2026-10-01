@@ -1746,6 +1746,46 @@ let mark_chords (g : t) (cid : int) : (Geom.point * Geom.point) list =
            match m.mgeom with MSeg (a, b) -> Some (a, b) | MPoint _ -> None
          else None)
 
+(* The table pieces of the paper segment [(pa, pb)]: its positive-length
+   part in each face, carried by that face's placement. A segment that runs
+   along a hinge yields a piece from each face beside it. *)
+let paper_segment_pieces (g : t) ((pa, pb) : Geom.point * Geom.point) :
+    (Geom.point * Geom.point) list =
+  if Geom.point_equal pa pb then []
+  else
+    let l = Geom.line_through pa pb in
+    let at t =
+      { Geom.x = Num.add pa.Geom.x (Num.mul t (Num.sub pb.Geom.x pa.Geom.x));
+        y = Num.add pa.Geom.y (Num.mul t (Num.sub pb.Geom.y pa.Geom.y)) }
+    in
+    List.filter_map
+      (fun i ->
+        match Geom.clip_line_to_convex l (ccw g.faces.(i)) with
+        | None -> None
+        | Some (u, v) ->
+            let tu = Geom.seg_param (pa, pb) u and tv = Geom.seg_param (pa, pb) v in
+            let mx x y = if Num.compare x y >= 0 then x else y
+            and mn x y = if Num.compare x y <= 0 then x else y in
+            let lo = mx Num.zero (mn tu tv) and hi = mn Num.one (mx tu tv) in
+            if Num.compare lo hi >= 0 then None
+            else
+              let iso = face_iso2 g i in
+              Some (Isometry.apply_point iso (at lo), Isometry.apply_point iso (at hi)))
+      (List.init (Array.length g.faces) Fun.id)
+
+(* The bundle of the mark [cid] on the table (ADR 0033): its extent, one
+   piece per face it crosses, and a point mark as its point. *)
+let mark_material_segments (g : t) (cid : int) : (Geom.point * Geom.point) list =
+  Array.to_list g.marks
+  |> List.concat_map (fun m ->
+         if m.mcrease_id <> cid then []
+         else
+           match m.mgeom with
+           | MSeg (a, b) -> paper_segment_pieces g (a, b)
+           | MPoint p ->
+               let t = table_position g p in
+               [ (t, t) ])
+
 (* The mark [cid]'s current TABLE-space axis, tracking folds/flips (its paper
    geometry is fold-invariant, so the current line is the paper chord mapped to
    the table). [`Bent] if a fold has bent the chord (its paper midpoint no

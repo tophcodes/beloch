@@ -1,0 +1,17 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; The pinch of mark-moves-short.bel, made from the centre to the top edge:
+; it reaches the point of its line at height sqrt(3)/2, so the fold that
+; moves it lands that point on .d (ADR 0033). The side of the pinch folds
+; over, and .a and .d stay.
+
+paper square
+mark (through .a .c) as --ac
+.o = free on --ac from .a at 1/2
+.n = free on --cd from .d at 1/2
+mark (through .o .n) (between .o .n) as --pinch
+fold (map .d onto --pinch through .a) (moving --pinch) as --f
+
+; assert steps = 1
+; assert .a = (0, 0)
+; assert .d = (0, 1)

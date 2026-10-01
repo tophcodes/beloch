@@ -111,12 +111,19 @@ the block unless `up to` names a flap, and where the write has no anchor
 anchor on the side that stays is dropped, because the
 alignment it belongs to is carried out by the other object.
 
-The material of a line in an alignment, a `toward` or a `moving` is, for a
-crease, the crease's own segments, which can be fewer than all the paper on
-its table line ([def-material](/model/#def-material)); for a line bound by
-`=`, a paper edge or a mark, all the paper on it. A mark that ends mid-face
-therefore counts as its whole chord; what a mark's material should be is
-[issue #62](https://github.com/tophcodes/beloch/issues/62).
+`Axiom.line_material` reads the bundle of a line in an alignment, a
+`toward` or a `moving`: for a crease its own segments, for a mark its
+extent, and for a line bound by `=` or a paper edge all the paper on it.
+A state does not split its faces along a mark: `Fold_state` keeps each
+extent as a record in paper coordinates beside the faces, and
+`Fold_state.mark_material_segments` cuts the records into one table piece
+per face they cross, so a fold across a mark splits its bundle with the
+faces. A point that folds onto a line is tested against all the paper on
+the line's table line. Where a line would carry its point but its bundle
+stops short of the place that lands there, and nothing else keeps the fold
+from carrying out the construction, `Axiom.select` fails with that place,
+`--x does not reach (x, y), the point of its line that lands on .p`, and
+hints `extend --x to (x, y)`.
 
 ## Fan
 

@@ -110,10 +110,11 @@ let implied_point (cl : classified) : Ast.point_operand option =
 (* ---- the objects of a construction, and its candidates ---- *)
 
 (* An object of an `onto` alignment on the table: a point, or a line with
-   its material as table segments. *)
+   the bundle it names as table segments (ADR 0033), its name, and all the
+   paper on its table line, which a point that folds onto it lands on. *)
 type obj =
   | Obj_point of Geom.point * string
-  | Obj_line of Geom.line * Geom.segment list * string
+  | Obj_line of Geom.line * Geom.segment list * string * Geom.segment list
 
 type pending = {
   tag : string;
@@ -138,8 +139,10 @@ type pending = {
          writes them: the subjects a suggestion tries *)
 }
 
-(* The material of a line operand on the table: the segments of a crease,
-   or the chord of the paper under a line that is no crease. *)
+(* The bundle a line operand names, on the table (ADR 0033): the segments
+   of a crease, the extent of a mark in the flaps it was marked on, or all
+   the paper on the line of a construction, a name bound by `=` or a paper
+   edge. *)
 let line_material (ctx : Ctx.ctx) (lo : Ast.line_operand) (la : Geom.line) :
     Geom.segment list =
   let of_segments segs =
@@ -152,7 +155,8 @@ let line_material (ctx : Ctx.ctx) (lo : Ast.line_operand) (la : Geom.line) :
       match lookup_crease ctx cr with
       | Material (cid, _) -> of_segments (Fold_state.crease_segments !(ctx.state) cid)
       | Bundle _ -> of_segments (snd (Resolve.bundle_segments ctx (Ast.LNamed cr)))
-      | Edge _ | Mark _ | Frozen _ -> Fold_state.line_material_segments !(ctx.state) la)
+      | Mark (cid, _) -> Fold_state.mark_material_segments !(ctx.state) cid
+      | Edge _ | Frozen _ -> Fold_state.line_material_segments !(ctx.state) la)
   | Ast.LSelect _ -> Fold_state.line_material_segments !(ctx.state) la
   | (Ast.LFilter _ | Ast.LUnion _) as b -> of_segments (snd (Resolve.bundle_segments ctx b))
 
@@ -162,7 +166,7 @@ let axis_of ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (c : Ast.constru
   let t = tag cl in
   let p = Resolve.pstr and l = Resolve.lstr in
   let pt = Resolve.table_of ctx and ln = Resolve.resolve_line ctx in
-  let obj_l lo = let ll = ln lo in Obj_line (ll, line_material ctx lo ll, l lo) in
+  let obj_l lo = let ll = ln lo in Obj_line (ll, line_material ctx lo ll, l lo, Fold_state.line_material_segments !(ctx.state) ll) in
   let one ?(aligns = []) what line base =
     { tag = t; what; cands = [ line ]; single = true; aligns;
       heading = None; base; conics = []; al_spans = []; onto_spans = []; heading_span = None; operands = [];
@@ -450,26 +454,26 @@ let on_side (c : Geom.line) (s : int) (segs : Geom.segment list) : bool =
   List.exists (fun (u, v) -> Geom.side_of_line c u = s || Geom.side_of_line c v = s) segs
 
 (* A fold along [c] with folding side [s] makes [x] meet [y] by moving [x]:
-   a point on that side, or a line's material there. Whoever moves lands on
-   the paper of the other: a point lands on the material of its target
-   line, and a line that carries the point [y] has to have paper at the one
-   place that lands on it. *)
+   a point on that side, or a line's bundle there. Whoever moves lands on
+   the paper of the other: a point lands on the paper of its target line's
+   table line, and a line that carries the point [y] has to have its own
+   bundle at the one place that lands on it (ADR 0033). *)
 let carries (c : Geom.line) (s : int) (x : obj) (y : obj) : bool =
   match (x, y) with
-  | Obj_point (p, _), Obj_line (_, segs, _) ->
+  | Obj_point (p, _), Obj_line (_, _, _, segs) ->
       Geom.side_of_line c p = s
       && (let r = Geom.reflect_point c p in
           List.exists (fun sg -> Geom.on_segment sg r) segs)
   | Obj_point (p, _), Obj_point _ -> Geom.side_of_line c p = s
-  | Obj_line (_, segs, _), Obj_point (q, _) ->
+  | Obj_line (_, segs, _, _), Obj_point (q, _) ->
       let r = Geom.reflect_point c q in
       Geom.side_of_line c r = s && List.exists (fun sg -> Geom.on_segment sg r) segs
-  | Obj_line (_, segs, _), Obj_line _ -> on_side c s segs
+  | Obj_line (_, segs, _, _), Obj_line _ -> on_side c s segs
 
 (* a point on [c] and on its target line meets it without moving *)
 let already (c : Geom.line) (x : obj) (y : obj) : bool =
   match (x, y) with
-  | Obj_point (p, _), Obj_line (l, _, _) | Obj_line (l, _, _), Obj_point (p, _) ->
+  | Obj_point (p, _), Obj_line (l, _, _, _) | Obj_line (l, _, _, _), Obj_point (p, _) ->
       Geom.side_of_line c p = 0 && Geom.side_of_line l p = 0
   | _ -> false
 
@@ -477,6 +481,38 @@ let already (c : Geom.line) (x : obj) (y : obj) : bool =
    each, one object moves onto the other, or they meet already. *)
 let performs (c : Geom.line) (s : int) (aligns : (obj * obj) list) : bool =
   List.for_all (fun (x, y) -> carries c s x y || carries c s y x || already c x y) aligns
+
+(* Where a line [x] would carry its point [y] if it had paper there: the
+   place [r] of its line that lands on [y] lies on the paper of the line
+   but outside the bundle [x] names. *)
+let short_of (c : Geom.line) (s : int) (x : obj) (y : obj)
+    : (string * Geom.point * string) option =
+  match (x, y) with
+  | Obj_line (_, segs, name, paper), Obj_point (q, qn) ->
+      let r = Geom.reflect_point c q in
+      if
+        Geom.side_of_line c r = s
+        && List.exists (fun sg -> Geom.on_segment sg r) paper
+        && not (List.exists (fun sg -> Geom.on_segment sg r) segs)
+      then Some (name, r, qn)
+      else None
+  | _ -> None
+
+(* The fold along [c] with folding side [s] misses exactly the alignments
+   in which a line falls short of the point it would carry: the first such
+   line, the place it misses, and the point. *)
+let falls_short (c : Geom.line) (s : int) (aligns : (obj * obj) list)
+    : (string * Geom.point * string) option =
+  let short (x, y) = match short_of c s x y with Some r -> Some r | None -> short_of c s y x in
+  let met (x, y) = carries c s x y || carries c s y x || already c x y in
+  if List.for_all (fun a -> met a || short a <> None) aligns then
+    List.find_map (fun a -> if met a then None else short a) aligns
+  else None
+
+(* A table point for a message: exact where its coordinates are rational. *)
+let point_str (r : Geom.point) : string =
+  let n x = try Num.to_rational_string x with Invalid_argument _ -> Printf.sprintf "%.4g" (Num.to_float x) in
+  Printf.sprintf "(%s, %s)" (n r.Geom.x) (n r.Geom.y)
 
 (* What the fold along [c] with folding side [s] lands of the object [o]:
    a point on that side, and the part of a line on it, reflected. The part
@@ -500,7 +536,7 @@ let landed_of (c : Geom.line) (s : int) (o : obj) : Geom.segment list =
   let r = Geom.reflect_point c in
   match o with
   | Obj_point (p, _) -> if Geom.side_of_line c p = s then [ (r p, r p) ] else []
-  | Obj_line (_, segs, _) -> List.map (fun (u, v) -> (r u, r v)) (part_on c s segs)
+  | Obj_line (_, segs, _, _) -> List.map (fun (u, v) -> (r u, r v)) (part_on c s segs)
 
 (* How the fold along [c] with folding side [s] moves [m] onto [target], for
    the trace: a point and its image; for a line onto a point, the place of
@@ -512,7 +548,7 @@ let motion (c : Geom.line) (s : int) (m : obj) (target : obj) : Trace.motion =
   match (m, target) with
   | Obj_point (q, _), _ -> { Trace.source = at q; image = at (r q) }
   | Obj_line _, Obj_point (q, _) -> { Trace.source = at (r q); image = at q }
-  | Obj_line (_, segs, _), Obj_line _ ->
+  | Obj_line (_, segs, _, _), Obj_line _ ->
       let src = part_on c s segs in
       { Trace.source = src; image = List.map (fun (u, v) -> (r u, r v)) src }
 
@@ -528,7 +564,7 @@ let least (key : Geom.line -> Num.t) (xs : Geom.line list) : Geom.line list =
   let m = num_min (List.map fst ks) in
   List.filter_map (fun (k, c) -> if Num.compare k m = 0 then Some c else None) ks
 
-let obj_str (o : obj) : string = match o with Obj_point (_, s) | Obj_line (_, _, s) -> s
+let obj_str (o : obj) : string = match o with Obj_point (_, s) | Obj_line (_, _, s, _) -> s
 
 (* every object of the alignments, once *)
 let objects (p : pending) : obj list =
@@ -550,7 +586,7 @@ let subject_objs (ctx : Ctx.ctx) (span : Error.span) (p : pending) (x : Ast.alig
     | Ast.AoLine lo ->
         let m = Resolve.resolve_line ctx lo in
         ( List.filter
-            (function Obj_line (l, _, _) -> Geom.same_line m l | Obj_point _ -> false)
+            (function Obj_line (l, _, _, _) -> Geom.same_line m l | Obj_point _ -> false)
             (objects p),
           Resolve.lstr lo )
   in
@@ -590,7 +626,7 @@ let meets (c : Geom.line) (s : int) (aligns : (obj * obj) list) : Trace.meets li
 let trace_obj (o : obj) : Trace.obj =
   match o with
   | Obj_point (q, name) -> { Trace.name; point = Some q; segments = [] }
-  | Obj_line (_, segs, name) -> { Trace.name; point = None; segments = segs }
+  | Obj_line (_, segs, name, _) -> { Trace.name; point = None; segments = segs }
 
 let degrees (cos2 : Num.t) : float =
   Float.acos (Float.min 1. (Float.sqrt (Num.to_float cos2))) *. 180. /. Float.pi
@@ -777,7 +813,7 @@ let rec select ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (p : pending)
         | Some (Obj_point (q, _)) ->
             let s = Geom.side_of_line c q in
             Some (if s = 0 then None else Some s)
-        | Some (Obj_line (_, segs, _)) -> Some (side_of_segs c segs)
+        | Some (Obj_line (_, segs, _, _)) -> Some (side_of_segs c segs)
         | None -> Some None)
   in
   let why_fail = match (t, moving) with
@@ -804,6 +840,8 @@ let rec select ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (p : pending)
                 ms p.aligns })
         sides
   in
+  (* the candidates the moved-material stage removed, with the sides tried *)
+  let missed = ref [] in
   let sided =
     List.filter_map
       (fun c ->
@@ -820,16 +858,36 @@ let rec select ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (p : pending)
                     (if performs c 1 p.aligns && performs c (-1) p.aligns then Trace.First
                      else Trace.Alone);
                 Some (c, fs)
-            | None -> remove why_fail Trace.Moved [ c ]; None)
+            | None ->
+                missed := !missed @ [ (c, [ 1; -1 ]) ];
+                remove why_fail Trace.Moved [ c ]; None)
         | Ok (Some s) ->
             k.side <- Some s;
             k.side_from <- Some (if t <> None then Trace.From_toward else Trace.From_moving);
             tried c [ s ];
             if performs c s p.aligns then Some (c, Some s)
-            else (remove why_fail Trace.Moved [ c ]; None))
+            else (
+              missed := !missed @ [ (c, [ s ]) ];
+              remove why_fail Trace.Moved [ c ]; None))
       kept
   in
-  if sided = [] then
+  if sided = [] then begin
+    (* A line that moves onto a point lands only with its own bundle
+       (ADR 0033). Where the paper of its line reaches the place that lands
+       on the point and the bundle does not, and that alone keeps the fold
+       from carrying out the construction, the error names that place. *)
+    (match
+       List.find_map
+         (fun (c, sides) -> List.find_map (fun s -> falls_short c s p.aligns) sides)
+         !missed
+     with
+    | Some (name, r, q) ->
+        let at = point_str r in
+        fail
+          ~hint:(Printf.sprintf "extend %s to %s" name at)
+          (Printf.sprintf "%s does not reach %s, the point of its line that lands on %s"
+             name at q)
+    | None -> ());
     fail
       ?hint:(if !conflict then Some "drop one of them" else None)
       (match (t, moving) with
@@ -850,7 +908,8 @@ let rec select ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (p : pending)
           Printf.sprintf "no fold of %s moves %s and carries out its alignments" p.what
             (Resolve.fstr fa)
       | None, None ->
-          Printf.sprintf "no fold of %s carries out all its alignments at once" p.what);
+          Printf.sprintf "no fold of %s carries out all its alignments at once" p.what)
+  end;
   (* 4. with a subject, only the folds that fold it over, since the others
      land nothing of it; a single remaining candidate is held to this too *)
   let sided =
