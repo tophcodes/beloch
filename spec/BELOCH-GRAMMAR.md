@@ -32,7 +32,8 @@ unit_decl  := "unit" WORD
 sheet      := "square" [ number ]
             | WORD number*
 number     := RATIONAL | WORD
-shape_def  := "shape" WORD "(" WORD* ")" "{" "paper" sheet shape_stmt* "trim" "to" flap_operand "}"
+shape_def  := "shape" WORD "(" WORD* ")" "{" "paper" sheet shape_stmt*
+              "trim" "to" flap_operand [ "{" export_entry+ "}" ] "}"
 shape_stmt := write_stmt | bind_stmt | apply_stmt | export_stmt
 ```
 
@@ -139,4 +140,5 @@ bind_stmt       ; SPECIFICATION.md Appendix A
 def_stmt        ; SPECIFICATION.md Appendix A
 apply_stmt      ; SPECIFICATION.md Appendix A
 export_stmt     ; SPECIFICATION.md Appendix A
+export_entry    ; SPECIFICATION.md Appendix A
 ```

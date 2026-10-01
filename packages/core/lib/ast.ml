@@ -282,6 +282,9 @@ type shape_def = {
   sd_sheet : sheet;
   sd_body : stmt list;
   sd_trim : flap_arg * Error.span;
+  sd_exports : export_entry list option;
+      (* `trim to … { … }`: the names that reach the trimmed sheet, every
+         name on the flap when [None] (ADR 0047) *)
   sd_span : Error.span;
 }
 

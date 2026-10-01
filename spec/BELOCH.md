@@ -91,6 +91,27 @@ body marked on $F$ stay on it as unfolded marks, and a crease the body
 folded is no crease of the new sheet. The body's states belong to no
 program's path: a program that opens a shape starts at the trimmed sheet.
 
+**Exports.** A trim may list the names it exports, in braces after the flap
+operand (ADR 0047). An entry is a name of the body with its sigil,
+optionally `as` a landing name with its sigil, as in `export`, and takes no
+`!`: the trimmed sheet
+starts with no names, so a landing name may be one the body used off the
+flap.
+
+```
+trim to .a { .a .b .q as .c .p as .d --ab --bc --top as --cd --da }
+```
+
+With a list, exactly the listed names reach the trimmed sheet, under their
+landing names; a listed bundle reads the exported names. Without one, every
+name on the flap does. Errors: a listed name that does not lie on the flap
+(`` `.c` does not lie on the flap ``), a temp in the list
+(`` `._r` is a temp; a trim exports no temp ``), two entries with one
+landing name (`` two entries land on `.c` ``), a `!` (`` a trimmed sheet
+starts with no names, so a trim shadows none; drop the ! ``), and a listed
+bundle whose expression reads a name the list leaves out
+(`` `--edge` reads a name the trim does not export ``).
+
 Errors: `` `<name>` is no shape ``, an opening whose number of values
 differs from the parameters (`` `rectangle` takes 2 numbers, 1 given ``),
 a body that does not end with `trim to` (`` a shape ends with `trim to` ``),

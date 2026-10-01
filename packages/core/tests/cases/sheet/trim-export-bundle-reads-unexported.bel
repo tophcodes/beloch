@@ -1,0 +1,15 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; A listed bundle keeps its expression, and the expression reads the names
+; the trim exports: --edge reads --ab, which the list leaves out.
+
+shape band(w h) {
+  paper square w
+  .p = free on --da from .a by h
+  fold (perp --da through .p) (moving .d)
+  --edge = --ab & .a
+  trim to .a { .a .b --edge }
+}
+
+paper band 2 1
+; expect error "`--edge` reads a name the trim does not export"

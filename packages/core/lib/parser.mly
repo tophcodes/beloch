@@ -42,7 +42,7 @@ let align_body (span : Error.span) (heads : string list) (parts : align_part lis
    hold, refused by name once the body is read *)
 type shape_item =
   | Item_stmt of stmt
-  | Item_trim of flap_arg * Error.span
+  | Item_trim of flap_arg * export_entry list option * Error.span
   | Item_annotation of Error.span
   | Item_def of Error.span
 
@@ -57,16 +57,23 @@ let shape_def ~(name : string) ~(name_span : Error.span)
     shape_def =
   let rec split acc = function
     | [] -> Error.fail close "a shape ends with `trim to`"
-    | [ Item_trim (fa, sp) ] -> (List.rev acc, (fa, sp))
-    | Item_trim (_, sp) :: _ -> misplaced_trim sp
+    | [ Item_trim (fa, ex, sp) ] -> (List.rev acc, (fa, sp), ex)
+    | Item_trim (_, _, sp) :: _ -> misplaced_trim sp
     | Item_annotation sp :: _ ->
         Error.fail sp "a shape body holds no annotation"
     | Item_def sp :: _ -> Error.fail sp "a shape body holds no def"
     | Item_stmt st :: rest -> split (st :: acc) rest
   in
-  let body, trim = split [] items in
+  let body, trim, exports = split [] items in
+  Option.iter
+    (List.iter (fun (e : export_entry) ->
+         if e.eshadow then
+           Error.fail e.espan
+             "a trimmed sheet starts with no names, so a trim shadows none; drop the !"))
+    exports;
   { sd_name = name; sd_name_span = name_span; sd_params = params;
-    sd_sheet = sheet; sd_body = body; sd_trim = trim; sd_span = span }
+    sd_sheet = sheet; sd_body = body; sd_trim = trim; sd_exports = exports;
+    sd_span = span }
 
 (* `toward` inside a construction, the spelling before ADR 0031 *)
 let toward_inside (span : Error.span) : 'a =
@@ -125,7 +132,9 @@ shape_items:
 
 shape_item:
   | body_stmt                  { Item_stmt $1 }
-  | TRIM TO flap_arg           { Item_trim ($3, $loc) }
+  | TRIM TO flap_arg           { Item_trim ($3, None, $loc) }
+  | TRIM TO flap_arg LBRACE export_entries RBRACE
+                               { Item_trim ($3, Some $5, $loc) }
   | annotation                 { Item_annotation $1.a_span }
   | DEF IDENT LPAREN params RPAREN LBRACE body_stmts RBRACE { Item_def $loc }
 
@@ -145,6 +154,7 @@ number:
 (* `trim to` outside a shape body: refused where it stands *)
 trim_elsewhere:
   | TRIM TO flap_arg { misplaced_trim $loc }
+  | TRIM TO flap_arg LBRACE export_entries RBRACE { misplaced_trim $loc }
 
 stmts:
   | { [] }

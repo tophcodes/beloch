@@ -512,6 +512,32 @@ let square_opened (side : Num.t) : opened =
 let outline_on (sheet : Sheet.t) (l : Geom.line) : bool =
   List.exists (fun (b, _) -> Geom.same_line b l) (Sheet.boundary_lines sheet)
 
+(* A bundle keeps its expression, which reads the names [points] and
+   [lines] of [sheet]: there it names the part of its pieces on the sheet.
+   One that names no piece there, or reads a name that is gone, is gone
+   itself; dropping one can drop another that reads it, so the check repeats
+   until it holds. *)
+let settle_bundles (sheet : Sheet.t) (points : (string * Geom.point) list)
+    (lines : (string * Ctx.crease_val) list) : (string * Ctx.crease_val) list =
+  let names_pieces lines expr =
+    let sctx = Ctx.create () in
+    Ctx.open_sheet sctx sheet ~points ~lines;
+    match Resolve.bundle_segments sctx expr with
+    | _, _ :: _ -> true
+    | _, [] -> false
+    | exception Error.Beloch_error _ -> false
+  in
+  let rec settle lines =
+    let kept =
+      List.filter
+        (fun (_, cv) ->
+          match cv with Ctx.Bundle expr -> names_pieces lines expr | _ -> true)
+        lines
+    in
+    if List.length kept = List.length lines then lines else settle kept
+  in
+  settle lines
+
 (* The names of the body [bctx] that lie on the trimmed [sheet], cut from
    the faces [flap] of the body's last state: a point on it, a line for its
    part on it. A crease with flat hinges or marks left on the sheet stays a
@@ -576,28 +602,63 @@ let trimmed_names (bctx : Ctx.ctx) (flap : int list) (sheet : Sheet.t) :
         Option.map (fun cv -> (k, cv)) carried)
       (sorted root.lines)
   in
-  (* A bundle keeps its expression, which reads the carried names: on the
-     trimmed sheet it names the part of its pieces there. One that names no
-     piece there, or reads a name that is gone, is gone itself; dropping one
-     can drop another that reads it, so the check repeats until it holds. *)
-  let names_pieces lines expr =
-    let sctx = Ctx.create () in
-    Ctx.open_sheet sctx sheet ~points ~lines;
-    match Resolve.bundle_segments sctx expr with
-    | _, _ :: _ -> true
-    | _, [] -> false
-    | exception Error.Beloch_error _ -> false
-  in
-  let rec settle lines =
-    let kept =
-      List.filter
-        (fun (_, cv) ->
-          match cv with Ctx.Bundle expr -> names_pieces lines expr | _ -> true)
-        lines
+  (points, settle_bundles sheet points lines)
+
+(* The names a trim's list exports (ADR 0047): each entry's name of the
+   body, which must lie on the trimmed sheet, under its landing name. *)
+let exported (bctx : Ctx.ctx) (sheet : Sheet.t)
+    ~(points : (string * Geom.point) list)
+    ~(lines : (string * Ctx.crease_val) list) (entries : Ast.export_entry list) :
+    (string * Geom.point) list * (string * Ctx.crease_val) list =
+  let root = List.hd bctx.scopes in
+  let landed = Hashtbl.create 8 in
+  let pick (e : Ast.export_entry) =
+    let sigil = match e.Ast.ekind with `Point -> "." | `Line -> "--" in
+    let src = e.Ast.esrc and dst = Option.value e.Ast.erename ~default:e.Ast.esrc in
+    if is_temp src then
+      Error.fail e.Ast.espan
+        (Printf.sprintf "`%s%s` is a temp; a trim exports no temp" sigil src);
+    if Hashtbl.mem landed (sigil ^ dst) then
+      Error.fail e.Ast.espan (Printf.sprintf "two entries land on `%s%s`" sigil dst);
+    Hashtbl.replace landed (sigil ^ dst) ();
+    let bound, carried =
+      match e.Ast.ekind with
+      | `Point ->
+          ( Hashtbl.mem root.points src,
+            Option.map (fun p -> `P (dst, p)) (List.assoc_opt src points) )
+      | `Line ->
+          ( Hashtbl.mem root.lines src,
+            Option.map
+              (fun cv ->
+                `L (dst, match cv with Ctx.Edge (_, l) -> Ctx.Edge (dst, l) | cv -> cv))
+              (List.assoc_opt src lines) )
     in
-    if List.length kept = List.length lines then lines else settle kept
+    match carried with
+    | Some c -> c
+    | None when bound ->
+        Error.fail e.Ast.espan
+          (Printf.sprintf "`%s%s` does not lie on the flap" sigil src)
+    | None ->
+        Error.fail e.Ast.espan
+          (Printf.sprintf "undefined %s %s%s"
+             (match e.Ast.ekind with `Point -> "point" | `Line -> "crease")
+             sigil src)
   in
-  (points, settle lines)
+  let picked = List.map (fun e -> (e, pick e)) entries in
+  let points = List.filter_map (fun (_, c) -> match c with `P x -> Some x | `L _ -> None) picked in
+  let lines = List.filter_map (fun (_, c) -> match c with `L x -> Some x | `P _ -> None) picked in
+  (* a listed bundle reads the names of the body; it must still name its
+     pieces through the names the list exports *)
+  let settled = settle_bundles sheet points lines in
+  List.iter
+    (fun ((e : Ast.export_entry), c) ->
+      match c with
+      | `L (dst, Ctx.Bundle _) when not (List.mem_assoc dst settled) ->
+          Error.fail e.Ast.espan
+            (Printf.sprintf "`--%s` reads a name the trim does not export" e.Ast.esrc)
+      | _ -> ())
+    picked;
+  (points, lines)
 
 (* The sheet a `paper` line opens, with the names it comes with. A shape is
    opened by running its body on a context of its own, which sees the
@@ -651,6 +712,11 @@ and open_shape (ctx : Ctx.ctx) ~(idx : int) ~(env : (string * Q.t) list)
   | Error `Hole -> Error.fail tspan "the flap has a hole and is no sheet"
   | Ok sheet ->
       let points, lines = trimmed_names bctx flap sheet in
+      let points, lines =
+        match sd.Ast.sd_exports with
+        | None -> (points, lines)
+        | Some entries -> exported bctx sheet ~points ~lines entries
+      in
       { o_sheet = sheet; o_points = points; o_lines = lines }
 
 (* The header of [prog] on a fresh [ctx]: the unit, the shapes of [prelude]
