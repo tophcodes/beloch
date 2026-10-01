@@ -8,15 +8,16 @@
 ; so the &-selectors drop.
 ;
 ; STATUS (2026-07-18): CLOSES. The per-ray crease-adjacent orientation
-; representative (lib/collapse.ml pipeline_at) lets the second ear read parity
+; representative (lib/collapse.ml mk_sector_geoms) lets the second ear read parity
 ; from the stationary base strip riding in its mixed stayer sector, so the true
 ; stacking chain (strip low, wings, ear on top) is enumerated and survives the
 ; taco/self-int filters. Both ears (toward .d). See diagnosis-vertex2.md.
 ;
 ; The emergent rabbit-ear crease is selected by the tier rule LineNew >
 ; OppositeRay (spec §Solver; eval.ml deciding = tier1 else tier2). LineNew is
-; the only coherent realization here — forcing OppositeRay breaks the second
-; ear (--l4 loses its material segment). Verified physically: no paper through
+; the realization meant here. The OppositeRay realizations close only by
+; folding a further layer of the tip along the ray (ADR 0044), and the tier
+; rule removes them. Verified physically: no paper through
 ; the closed first-ear joint (derive-13 taco check green, Fold_state.make
 ; succeeds), clean fish-base silhouette.
 ;

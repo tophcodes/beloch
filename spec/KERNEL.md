@@ -141,9 +141,22 @@ ray again on the state before the flatten, in each face that holds a face of
 the tip. Sectors whose tips hold different faces are solved on states of
 their own.
 
-The stacking ranks sectors, as `Collapse.linear_extensions` enumerates them.
-The stayer's sector holds the faces of the stayer's wedge the tip hangs
-from: every piece of the wedge, joined by flat hinges inside it, that is
+`Collapse.mk_sector_geoms` gives each hinge of the tip on a ray a role
+(ADR 0044). A flat hinge of a ray's crease folds. A folded hinge of a ray's
+crease keeps or opens, and a hinge of another crease on a ray keeps or
+changes; the kernel tries every combination of these, so the work doubles
+with each of them. For each combination it moves every face by the
+reflections across the changing hinges on a path from a face outside the
+tip, found breadth-first, and drops the combination when two paths to a
+face disagree or nothing moves. Kawasaki's and Maekawa's conditions at the
+vertex run only where the anchor surrounds the vertex on the paper;
+elsewhere `Fold_state.make` checks that the paths close.
+
+The stacking ranks units, as `Collapse.linear_extensions` enumerates them. A
+unit of the tip holds the faces of one wedge that share one motion; the
+first motion in a wedge keeps the wedge's number, so on one sheet the units
+are the wedges. The stayer's unit holds the faces of the stayer's wedge the
+tip hangs from: every piece of the wedge, joined by flat hinges inside it, that is
 hinged to a face of the tip, and the whole wedge when none is. Every other
 face the fan leaves in place, inside the stayer's wedge or outside it, is
 ranked in a block of its own, one per piece joined by flat hinges, and keeps
@@ -170,10 +183,10 @@ added; the order the evaluator runs them in follows the tables.
 | 7 | the ray count is even and below 4 | `count` | `` use `fold` for n = 2 `` |
 | 8 | (odd ray count) no geometric completion closes the vertex at all, on either side | `the derived crease does not close the vertex` | |
 | 9 | a ray's far end lies inside a face of its flap, off its raw edges and folded edges; a flat crease there does not end the ray (it would leave a vertex of degree 1 inside the flap) | `crease ends inside the sheet` | |
-| 10 | two elements resolve to the same ray (the same direction from O) | `duplicate ray in collapse` | |
-| 11 | Kawasaki fails: the reflection composition around O does not close (exact) [[hull2020]](#ref-hull2020) ch. 5 | `vertex not flat-foldable (angles)` | |
+| 10 | two elements of one crease resolve to the same ray (the same direction from O) | `duplicate ray in collapse` | |
+| 11 | Kawasaki fails: where the anchor surrounds O on the paper, the reflection composition around O does not close (exact) [[hull2020]](#ref-hull2020) ch. 5; elsewhere no combination of the hinges the fan may change closes its paper paths, which surfaces as check 13 | `vertex not flat-foldable (angles)` | |
 | 12 | the leading two elements' folded rays are collinear and no `staying` is given; the convention has no side to anchor | `` collinear leading creases don't pick a stayer `` | `add (staying .p)` |
-| 13 | no realization keeps the stayer still: every candidate × Maekawa pattern died before a stacking closed | `no realization keeps the staying flap still` | |
+| 13 | no realization keeps the stayer still: every candidate × Maekawa pattern died before a stacking closed, the paper-path closure of check 11 included | `no realization keeps the staying flap still` | |
 | 14 | two different segment combinations (`SPECIFICATION.md` §4.9, Resolution) both survive with valid realizations | `` <name> is ambiguous at the vertex `` | `` select a segment with `&` `` |
 
 Checks 7 and 9–11 run against a **candidate ray set**: the given rays, plus
@@ -181,7 +194,11 @@ one emergent candidate when the count is odd (Pipeline, below); check 8 is
 the odd count finding no candidate at all. They never depend on M/V: the
 count floor, the boundary check, duplicate rays and Kawasaki closure are
 properties of which lines and directions are given, not of which are marked
-mountain or valley. A candidate that fails any of them fails for **every**
+mountain or valley. Check 11 runs here only where the anchor surrounds O on
+the paper. Elsewhere its test, whether some combination of the hinges the
+fan may change closes the paper paths (ADR 0044), runs per admissible
+stayer sector after checks 16 and 6, and a fan that fails it reports
+`` no realization keeps the staying flap still ``. A candidate that fails any of them fails for **every**
 Maekawa pattern tried against it, and checks 7–11 have no per-pattern
 variant. With an odd count their own messages never reach the program: when
 no candidate survives, the evaluator reports
@@ -223,8 +240,9 @@ when `on` is given, and check 5, when `staying` is given. Each segment
 combination runs check 8 (odd count only), and each candidate fan of it
 checks 7, 9, 10 and 11, then the stayer: check 12 or 13 under the
 leading-pair convention, checks 17, 19 and 18 under `staying`. Per admissible
-stayer sector follow check 16 and check 6, then per Maekawa pattern the
-stacking. Check 14 runs once every combination has been tried, and check 20
+stayer sector follow check 16, check 6 and, where the anchor does not
+surround O, the paper-path closure of check 11; then per Maekawa pattern
+the pattern's parity, where the anchor surrounds O, and the stacking. Check 14 runs once every combination has been tried, and check 20
 once one combination's states reach the selection.
 
 ### Pipeline
@@ -285,9 +303,11 @@ the stayer (`SPECIFICATION.md` §4.9, State construction).
    slots (\|M − V\| = 2 over the rays; a pinned `mountain`/`valley` fixes
    its own slot; a pattern that can't satisfy Maekawa at all is never
    tried) and try each through the collapse oracle: Kawasaki closure
-   (checks 7–11, already candidate-level and shared across every pattern),
-   the stayer sector's admissibility (checks 12, 13 and 17–19), then, per pattern, Maekawa
-   itself, self-intersection, and `over`. A failing pattern contributes one
+   (checks 7–11, already candidate-level and shared across every pattern,
+   where the anchor surrounds O), the stayer sector's admissibility
+   (checks 12, 13 and 17–19), the closure of the paper paths where the
+   anchor does not surround O, then, per pattern, Maekawa itself where it
+   does, self-intersection, and `over`. A failing pattern contributes one
    of `` Maekawa violated by the stated assignment `` / `` assignment
    forces self-intersection `` / `` collapse folds a flap off the paper (no
    seating keeps it in the sheet) `` / `` contradictory `over` `` to a

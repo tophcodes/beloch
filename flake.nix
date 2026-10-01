@@ -138,21 +138,28 @@
             pkgs.vale
           ];
           # `check`, `check-all` and `prose` run the script of that name in scripts/.
-          # Link @beloch/render-svg's `beloch-render` bin globally so the
-          # OCaml `beloch render` subcommand (packages/core/bin/main.ml) can execvp it, and
-          # shim a bare `beloch` onto PATH that always runs the freshly
-          # built binary (not a stale Nix-store copy) via `dune exec`.
+          # Shim `beloch` and `beloch-render` onto PATH from this checkout:
+          # `beloch` runs the freshly built binary (not a stale Nix-store
+          # copy) via `dune exec`, and `beloch-render`, which the OCaml
+          # `beloch render` subcommand (packages/core/bin/main.ml) execvps,
+          # runs this checkout's @beloch/render-svg CLI. Both live in the
+          # workspace's own .direnv/bin, so jj workspaces open side by side
+          # each run their own code, where a global `bun link` would point
+          # every shell at the workspace that entered last.
           shellHook = ''
-            export PATH="$(bun pm bin -g 2>/dev/null):$PATH"
             root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
             ( cd "$root/packages/render-2d" && bun install --silent ) >/dev/null 2>&1
-            ( cd "$root/packages/render-2d/render-svg" && bun link --silent ) >/dev/null 2>&1
             mkdir -p "$root/.direnv/bin"
             cat > "$root/.direnv/bin/beloch" <<EOF
 #!/usr/bin/env bash
 exec dune exec --display=quiet --root "$root" beloch -- "\$@"
 EOF
             chmod +x "$root/.direnv/bin/beloch"
+            cat > "$root/.direnv/bin/beloch-render" <<EOF
+#!/usr/bin/env bash
+exec bun "$root/packages/render-2d/render-svg/bin/fold2svg.ts" "\$@"
+EOF
+            chmod +x "$root/.direnv/bin/beloch-render"
             ${linkValeStyles}
             for c in check check-all prose; do
               printf '#!/usr/bin/env bash\nexec "%s/scripts/%s.sh" "$@"\n' "$root" "$c" > "$root/.direnv/bin/$c"

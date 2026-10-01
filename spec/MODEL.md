@@ -1403,17 +1403,20 @@ mountains. For a face-down $A'$ exchange the letters. $\square$
 The write `flatten` takes a point $O$ of the projective table: a table
 point, or a point at infinity, one for each direction (ADR 0041). It takes
 an *anchor*: a flap $\Phi$ whose image meets the rays, a finite set of
-*rays*: segments on lines through $O$, from $O$ where $O$ lies on the image
-of $\Phi$ and from the edge of that image where it does not, to the other
-edge, in pairwise distinct directions, a set of constraints, and a
-selection $\sigma$. At a point at infinity the lines of the rays are
-parallel and the sectors between them are strips. Let
-$\rho_1, \ldots, \rho_k$ be the reflections of the table across the lines
-of the rays, in counter-clockwise order around $O$, or in order across the
-strips at a point at infinity. The closure condition below applies only
-when $O$ lies inside the image of $\Phi$, where the paper surrounds it; a
-fan whose vertex lies on the edge, off the paper or at infinity has no
-condition at its vertex and no emergent ray.
+*rays*: segments of creases on lines through $O$, from $O$ where $O$ lies on
+the image of $\Phi$ and from the edge of that image where it does not, to
+the other edge, no two of one crease in one direction, a set of
+constraints, and a selection $\sigma$. Rays of different creases in one
+direction lie in different layers and count as one direction below. At a
+point at infinity the lines of the rays are parallel and the wedges
+between them are strips. Let $\rho_1, \ldots, \rho_k$ be the reflections of
+the table across the lines of the rays' directions, in counter-clockwise
+order around $O$, or in order across the strips at a point at infinity.
+The closure condition below applies only where $\Phi$ surrounds $O$ on the
+paper: the paper point of $\Phi$ under $O$ lies inside the sheet and on no
+folded hinge. A fan whose vertex lies on the edge, on a folded edge, off
+the paper or at infinity has no condition at its vertex and no emergent
+ray; only the closure of its paper paths below applies (ADR 0044).
 
 - If $k$ is even, the composition $\rho_1 \circ \cdots \circ \rho_k$ must be
   the identity; this is Kawasaki's condition that the alternating sum of the
@@ -1425,37 +1428,48 @@ condition at its vertex and no emergent ray.
   ray; adding it makes the composition close. Each choice is a candidate
   fan.
 
-Call the $n$ rays of a candidate fan $r_1, \ldots, r_n$ and the parts of
-$\Phi$ between consecutive rays the *sectors* $S_0, \ldots, S_{n-1}$, with
-$S_i$ between $r_i$ and $r_{i+1}$. The *stayer* is one sector $S_0$, named
-by the program or by its convention. The program names it by points
-$p_1, \ldots, p_j$ of $\Phi$: $S_0$ is the sector whose closed wedge holds
-$f(p_1), \ldots, f(p_j)$, and the candidate fan has candidate states only
-when exactly one sector does and its wedge holds a piece of $\Phi$. The
-layers of the points play no further part; the tip decides which layers
-move. Set $m_0 = \mathrm{id}$ and
-$m_i = m_{i-1} \circ \rho_i$; Kawasaki's condition is $m_n = m_0$, so the
-motions close around $O$. Let $R$ be the image of $\Phi$ and let $C$ be the
-faces whose image meets $R$ in positive area, the layers under the fan.
-Score every face of $C$ along the rays' half-lines from $O$, so that each
-piece lies in one wedge between consecutive rays, and call the pieces
-outside the wedge of $S_0$ the *candidates*. The *tip* $T$ is the least set
-of candidates that contains the candidates of $\Phi$ and is closed under
-hinges of any angle between candidates. The value keeps the scoring on the
-faces with a piece in $T$ and leaves the other faces whole. The map $f'$ is
-$m_i \circ f$ on every piece of $T$ in the wedge of $S_i$ and $f$
-elsewhere. A *candidate state* is a pair $(f', \lambda')$ with $\lambda'$
-such that it satisfies [#def-noncrossing] and the constraints:
+Call the $n$ directions of a candidate fan $r_1, \ldots, r_n$ and the
+regions of the table between consecutive ones the *wedges*
+$W_0, \ldots, W_{n-1}$, with $W_i$ between $r_i$ and $r_{i+1}$. The
+*stayer* is one wedge $W_0$, named by the program or by its convention.
+The program names it by points $p_1, \ldots, p_j$ of $\Phi$: $W_0$ is the
+wedge whose closure holds $f(p_1), \ldots, f(p_j)$, and the candidate fan has
+candidate states only when exactly one wedge does and it holds a piece of
+$\Phi$. The layers of the points play no further part; the tip decides which
+layers move. Let
+$R$ be the image of $\Phi$ and let $C$ be the faces whose image meets $R$
+in positive area, the layers under the fan. Score every face of $C$ along
+the rays' half-lines from $O$, so that each piece lies in one wedge, and
+call the pieces outside $W_0$ the *candidates*. The *tip* $T$ is the least
+set of candidates that contains the candidates of $\Phi$ and is closed
+under hinges of any angle between candidates. The value keeps the scoring
+on the faces with a piece in $T$ and leaves the other faces whole.
 
-- a letter for a ray: the hinge between the two sectors of $\Phi$ on that ray
-  has that letter;
-- one sector over another: the two sectors of $\Phi$ are so ordered;
-- the stayer, which only fixes $m_0$ and so the table position.
+A hinge on a ray with a piece of $T$ on one side *changes* when it goes
+from flat to folded or from folded to flat, and *keeps* otherwise. A flat
+hinge of a ray's crease on that ray changes. A folded hinge of a ray's
+crease, and a hinge of another crease on a ray, changes or keeps; each
+choice is a candidate fan. The *motion* $m_p$ of a piece $p$ is the
+composition of the reflections across the changing hinges that a path on
+the paper crosses from a piece outside $T$ to $p$, in order
+[@hull2020, Def. 6.5], and the identity outside $T$. A choice is a
+candidate only when every such path gives $p$ the same motion, which is
+Kawasaki's condition at every paper point the paths enclose
+[@hull2020, Thm. 6.6], and when some piece of $T$ moves. The map $f'$ is
+$m_p \circ f$ on every piece $p$. A *candidate state* is a pair
+$(f', \lambda')$ with $\lambda'$ such that it satisfies [#def-noncrossing]
+and the constraints:
+
+- a letter for a ray: of the hinges of the ray's crease on that ray that do
+  not open, the one whose face on the clockwise side lies lowest has that
+  letter;
+- one sector over another: the two pieces are so ordered;
+- the stayer, which only fixes where the result lies on the table.
 
 A ray may run along hinges of $T$ that are already folded, as the spine of
-a reverse fold does ([#def-reverse]). Such a hinge *stays* when it keeps its
-letter and *turns* when it takes the other one; a letter for the ray says
-which.
+a reverse fold does ([#def-reverse]). Such a hinge *stays* when it keeps
+its angle and its letter, *turns* when it keeps its angle and takes the
+other letter, and *opens* when it changes, as the spine of a squash does.
 
 The value of the write is the one candidate state $\sigma$ selects from the
 set of all candidate states of all candidate fans; it is undefined when
@@ -1470,12 +1484,13 @@ The segments from one vertex along which a flatten folds at once.
 :::
 
 ::: {.term #term-sector name="sector"}
-The part of the flap between two consecutive rays of a fan.
+A piece of the tip between the hinges on the rays of a fan. It moves by the
+creases on its paper path from the stayer (ADR 0044).
 :::
 
 ::: {.term #term-stayer name="stayer"}
-The sector of a flatten that keeps its isometry; it fixes where the result
-lies on the table.
+The wedge of a flatten whose pieces keep their place; it fixes where the
+result lies on the table.
 :::
 
 ::: {.term #term-emergent name="emergent ray"}
@@ -1483,11 +1498,17 @@ The ray a flatten with an odd number of given rays has to add for the vertex
 to fold flat.
 :::
 
-The construction is the single-vertex fan of flat-folding theory: the
-isometry of each sector is the composition of the reflections across the
-rays between it and the stayer [@hull2020, chapter 5]. Kawasaki's theorem
-says that the closure condition is exactly flat-foldability of the vertex,
-and Maekawa's theorem, that the letters around $O$ differ in number by two,
+The construction is the folding map of flat-folding theory, restricted to
+the hinges the fan changes [@hull2020, Def. 6.5]. On a single sheet a path
+from the stayer to a piece crosses the rays between the stayer's wedge and
+the piece's wedge, so every piece of a wedge moves by the composition of the
+reflections across those rays, the single-vertex fan of
+[@hull2020, chapter 5]. On folded paper two pieces of one wedge can move
+differently: the squash of one flap of the preliminary base turns a piece of
+the top layer about the vertex and reflects the piece of the second layer
+beside it across the axis. Kawasaki's theorem says that the closure
+condition is exactly flat-foldability of a vertex the paper surrounds, and
+Maekawa's theorem, that the letters around it differ in number by two,
 holds in every candidate state because a candidate state is a flat folded
 state [@hull2020, §5.2, §5.3]. A layer under the fan moves with its sector
 when it hangs on $\Phi$ through the candidates, a flap of several layers
@@ -1496,7 +1517,7 @@ lies: on a book fold, a fan near the corner whose rays end on the raw edges
 folds the corner of $\Phi$ alone, and a fan whose ray reaches the spine
 moves both layers. On a single sheet every piece is joined to $\Phi$, so
 the tip is every piece outside the stayer's wedge. Where a face of $T$ is
-hinged to a face in the stayer's wedge off the rays, hinge closure fails and
+hinged to a face in the stayer's wedge off the rays, the paths disagree and
 the write is undefined, as for every reflection.
 
 ::: {.figure #fig-flatten caption="The preliminary base by one collapse at the centre: six rays fold, the diagonal through `.a` and `.c` stays flat, and the ordering constraint puts the a-quarter in front of the b-taco." views="cp folded" highlight=".a .c"}
