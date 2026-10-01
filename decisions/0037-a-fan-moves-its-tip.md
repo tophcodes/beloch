@@ -42,8 +42,13 @@ on the two sides of its spine and, as far as the diagram shows, hang
 together there, which puts both in one tip. Fisher leaves the moving faces of a multiple fold
 undecided [fisher1994, §5.3], and names the waterbomb base on one layer of a
 folded rectangle and through both as two things his syntax cannot tell
-apart; there the two layers hang together at the fold inside the fan, so
-their tip holds both as well.
+apart. Under this rule the stayer tells them apart. When the spine lies along
+the edge of the staying sector, the pieces beside it stay, no hinge joins the
+moving pieces of the two layers, and the tip is the top layer alone. When the
+stayer lies away from the spine, the spine's pieces move with the fan and
+join both layers into one tip. A square folded in half cannot show the first
+case: the spine runs past a waterbomb base on any sub-square and joins the
+layers there (#150, #151).
 
 ## Decision
 
