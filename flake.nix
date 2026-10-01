@@ -49,7 +49,13 @@
             ocamlPkgs.menhirLib
             flint
           ];
-          checkInputs = [ocamlPkgs.alcotest];
+          # qcheck: the property tests (packages/core/tests/test_prop_*.ml),
+          # run as alcotest cases through qcheck-alcotest.
+          checkInputs = [
+            ocamlPkgs.alcotest
+            ocamlPkgs.qcheck-core
+            ocamlPkgs.qcheck-alcotest
+          ];
           # msolve is a subprocess dependency of the separate research package, for
           # tests only, so it belongs at test time (nativeCheckInputs), not linked in.
           nativeCheckInputs = [pkgs.msolve];
@@ -113,6 +119,8 @@
             ocamlPkgs.yojson
             ocamlPkgs.zarith
             ocamlPkgs.alcotest
+            ocamlPkgs.qcheck-core
+            ocamlPkgs.qcheck-alcotest
             # js_of_ocaml (packages/eval-web/) — browser eval bundle, rational fragment
             ocamlPkgs.js_of_ocaml
             ocamlPkgs.js_of_ocaml-compiler
