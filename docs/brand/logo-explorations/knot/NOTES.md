@@ -189,7 +189,7 @@ cd packages/render-2d/render-svg && bun bin/fold2svg.ts /tmp/logo.fold /tmp/logo
 herausfällt, trägt genau die Winkel und die Berg-Tal-Zuweisung, die oben
 stehen. Der Evaluator ist damit die Prüfinstanz für diese beiden Entwürfe:
 Kawasaki und Maekawa sind Teil seines Pipelines, ein Knoten, der sie verletzt,
-wird abgelehnt (`spec/SPECIFICATION.md` §4.9, Prüfungen 11 und die
+wird abgelehnt (`spec/KERNEL.md`, Abschnitt Fan, Prüfung 11 und die
 Maekawa-Aufzählung in Schritt 2).
 
 Zwei Einschränkungen, damit der Beleg nicht mehr behauptet, als er hält.
