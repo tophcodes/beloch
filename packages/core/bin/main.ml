@@ -31,8 +31,8 @@ let todo name =
 
 let render_unavailable_msg =
   Printf.sprintf
-    "beloch render: `%s` not found on PATH — run `nix develop` (or `cd \
-     packages/render-2d/render-svg && bun link`)\n"
+    "beloch render: `%s` not found on PATH — run `nix develop`, whose \
+     shell puts this checkout's renderer there\n"
     render_bin
 
 (* Shared by `run_fold` and `.bel` render dispatch: read + evaluate a .bel
