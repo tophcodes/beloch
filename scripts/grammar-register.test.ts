@@ -16,8 +16,8 @@ const lexerSource = readFileSync(join(root, LEXER), "utf8");
 const beloch = register.documents.find((d) => d.path === "spec/BELOCH-GRAMMAR.md");
 if (!beloch) throw new Error("spec/BELOCH-GRAMMAR.md missing from the register");
 
-test("spec/BELOCH-GRAMMAR.md yields 23 rules and 6 external names", () => {
-	expect(beloch.fragments.flatMap((f) => f.rules).length).toBe(23);
+test("spec/BELOCH-GRAMMAR.md yields 29 rules and 6 external names", () => {
+	expect(beloch.fragments.flatMap((f) => f.rules).length).toBe(29);
 	expect(beloch.external.length).toBe(6);
 	expect(beloch.external.map((e) => e.name)).toEqual([
 		"point_operand",
@@ -27,15 +27,15 @@ test("spec/BELOCH-GRAMMAR.md yields 23 rules and 6 external names", () => {
 		"apply_stmt",
 		"export_stmt",
 	]);
-	expect(beloch.planned).toEqual([]);
+	expect(beloch.planned.map((p) => p.keyword)).toEqual(["shape", "trim", "unit", "by"]);
 });
 
 test("a rule's lines are the rendering contract both renderers consume", () => {
 	const program = beloch.fragments.flatMap((f) => f.rules).find((r) => r.name === "program");
 	expect(program?.id).toBe("rule-program");
-	expect(program?.keywords).toEqual(["paper", "square"]);
+	expect(program?.keywords).toEqual(["paper"]);
 	expect(program?.symbols).toEqual([]);
-	expect(program?.uses).toEqual(["stmt"]);
+	expect(program?.uses).toEqual(["unit_decl", "shape_def", "sheet", "stmt"]);
 	expect(program?.usedBy).toEqual([]);
 	expect(program?.lines).toEqual([
 		[
@@ -43,9 +43,18 @@ test("a rule's lines are the rendering contract both renderers consume", () => {
 			{ class: "gr-plain", text: " " },
 			{ class: "gr-operator", text: ":=" },
 			{ class: "gr-plain", text: " " },
+			{ class: "gr-operator", text: "[" },
+			{ class: "gr-plain", text: " " },
+			{ class: "gr-nonterminal", text: "unit_decl", ref: "rule-unit_decl" },
+			{ class: "gr-plain", text: " " },
+			{ class: "gr-operator", text: "]" },
+			{ class: "gr-plain", text: " " },
+			{ class: "gr-nonterminal", text: "shape_def", ref: "rule-shape_def" },
+			{ class: "gr-operator", text: "*" },
+			{ class: "gr-plain", text: " " },
 			{ class: "gr-keyword", text: '"paper"' },
 			{ class: "gr-plain", text: " " },
-			{ class: "gr-keyword", text: '"square"' },
+			{ class: "gr-nonterminal", text: "sheet", ref: "rule-sheet" },
 			{ class: "gr-plain", text: " " },
 			{ class: "gr-nonterminal", text: "stmt", ref: "rule-stmt" },
 			{ class: "gr-operator", text: "*" },
@@ -67,8 +76,7 @@ test("the lexer's keyword table is read from its sedlex branches", () => {
 	expect(lexed.has("--[")).toBe(false);
 });
 
-test("the documented keywords and the lexer agree, with no keyword declared planned", () => {
-	expect(register.documents.every((d) => d.planned.length === 0)).toBe(true);
+test("the documented keywords and the lexer agree, counting the planned ones", () => {
 	expect(crossCheck(register, lexerSource, LEXER)).toEqual([]);
 });
 

@@ -18,8 +18,29 @@ that says what its rules mean.
 [Overview](/language/).
 
 ```grammar
-program := "paper" "square" stmt*
+program := [ unit_decl ] shape_def* "paper" sheet stmt*
 stmt    := annotation* ( write_stmt | bind_stmt | def_stmt | apply_stmt | export_stmt )
+```
+
+## Sheets
+
+[Sheets](/language/#sheets).
+
+```grammar
+unit_decl  := "unit" WORD
+sheet      := "square" [ number ]
+            | WORD number*
+number     := RATIONAL | WORD
+shape_def  := "shape" WORD "(" WORD* ")" "{" "paper" sheet shape_stmt* "trim" "to" flap_operand "}"
+shape_stmt := write_stmt | bind_stmt | apply_stmt | export_stmt
+```
+
+## Free points
+
+[Free points](/language/#free-points).
+
+```grammar
+free_point := "free" "on" line_operand "from" point_operand [ ( "at" | "by" ) number ]
 ```
 
 ## Operands
@@ -117,4 +138,16 @@ bind_stmt       ; SPECIFICATION.md Appendix A
 def_stmt        ; SPECIFICATION.md Appendix A
 apply_stmt      ; SPECIFICATION.md Appendix A
 export_stmt     ; SPECIFICATION.md Appendix A
+```
+
+## Planned
+
+A keyword the grammar states and the parser does not read yet, with the
+record that decided it.
+
+```grammar-planned
+shape   ; ADR 0046
+trim    ; ADR 0046
+unit    ; ADR 0046
+by      ; ADR 0046
 ```

@@ -25,6 +25,92 @@ state ([def-flat-state](/model/#def-flat-state)) and either produces the next
 one or fails with a reason. The program's meaning is the finite sequence of
 states it passes through; its result is the last state.
 
+## Sheets
+
+A program opens its sheet with `paper`, followed by the sheet: the square,
+or a shape defined earlier in the file.
+
+```
+paper square            ; the square of side 1
+paper square 15         ; the square of side 15
+paper rectangle 2 1     ; the shape rectangle, opened with w = 2 and h = 1
+```
+
+**The square.** `square s` is the square of side $s$, and `square` alone is
+the square of side 1. Its corners are bound counter-clockwise from the
+origin, and its edges by the corners they join, `--ab` to `--da`:
+
+| name | coordinates |
+|------|-------------|
+| `.a` | $(0, 0)$ |
+| `.b` | $(s, 0)$ |
+| `.c` | $(s, s)$ |
+| `.d` | $(0, s)$ |
+
+The side length is a positive number. A number is an integer (`15`), a
+fraction (`15/2`) or a decimal (`7.5`), each an exact rational. A decimal
+starts with a digit: `0.5` is a number and `.5` is a point name.
+
+**Shapes.** A shape is a definition whose body is a program on one sheet,
+ending with a trim to one flap of that sheet. The flap is the new sheet
+([def-flap](/model/#def-flap)):
+
+```
+shape rectangle(w h) {
+  paper square w
+  .p = free on --da from .a by h
+  fold (align (through .p) (--da onto --da)) (moving .d)
+  trim to .a
+}
+```
+
+- A shape stands at the top level of a file, and its name is a bare
+  identifier in the namespace of definitions. A second shape or `def` of
+  the same name is an error.
+- Its parameters are numbers, named without a sigil, and an opening
+  `paper rectangle 2 1` supplies one number per parameter, matched by
+  position. Inside the body a parameter stands wherever a number does.
+- The body sees its parameters and the definitions written earlier in the
+  file, nothing else, so a shape cannot open itself. It holds the
+  statements of a program and no `def`, `shape` or annotation, and it
+  starts with its own `paper` line.
+- `trim to` takes a flap operand, resolved against the last state of the
+  body as for `moving` ([def-selector](/model/#def-selector)). It is the
+  last statement of the body and stands nowhere else.
+
+The trimmed sheet is the part $F \subseteq P$ of the body's sheet that the
+flap covers, in paper coordinates. It is unfolded: the program that opens
+it starts from the flat state of $F$. A name whose point or line lies in
+$F$ keeps its meaning and its coordinates, for a line the part of it in
+$F$; every other name of the body, and every temp, is gone. Creases the
+body marked on $F$ stay on it as unfolded marks, and a crease the body
+folded is no crease of the new sheet. The body's states belong to no
+program's path: a program that opens a shape starts at the trimmed sheet.
+
+Errors: `` `<name>` is no shape ``, an opening whose number of values
+differs from the parameters (`` `rectangle` takes 2 numbers, 1 given ``),
+a body that does not end with `trim to` (`` a shape ends with `trim to` ``),
+a trim elsewhere (`` `trim to` is the last statement of a shape ``), and a
+flap whose outline has a hole (`` the flap has a hole and is no sheet ``),
+which [def-sheet](/model/#def-sheet) excludes.
+
+**Units.** A file may name the unit of its numbers in a declaration before
+its first statement:
+
+```
+unit mm
+paper square 150
+```
+
+The unit is one of the physical units the FOLD format names: `in`, `pt`,
+`m`, `cm`, `mm`, `um`, `nm`. It changes no coordinate; the output writes
+it as `frame_unit` ([Output format](/output/)), and as `"unit"` when the file names
+none. A file without a declaration takes the unit of the file that loads
+it, and a loaded file with another unit has its numbers converted exactly,
+each of these units being a rational multiple of the millimetre. Beloch
+does not load files yet, so these two rules wait for the import
+(ADR 0046).
+
 ## Reads and writes
 
 One law organises the surface syntax (`SPECIFICATION.md` §4.10): an
@@ -66,11 +152,54 @@ common point, when they share a stretch of paper, and when they have two or
 more common points; the last message lists the points in paper coordinates,
 and `&` narrows an operand to the pieces that cross at the one meant.
 
+## Free points
+
+```
+.p = free on --l from .x
+.p = free on --l from .x at 2/5
+.p = free on --l from .x by 3
+```
+
+A free point is a point placed on the material of a line without a
+construction that says why it lies there. `free` records how the point was
+placed and that the author chose its position by eye; the point is an
+exact point like any other and stands wherever a point does.
+
+**Domain.** The point lies on the material of `--l` in the current state,
+taken as one bundle: its two furthest-out points are the ends of the
+range, and gaps between its segments are bridged. For a line no `mark` has
+scored, the bundle is where the line crosses the sheet. `from .x` names
+one of the two ends, matched by exact incidence, and that end is where the
+range starts.
+
+**Position.** `at t` places the point at the fraction $t$ of the range,
+$P_0 + t\,(P_1 - P_0)$ for $t \in [0, 1]$. `by d` places it at the
+distance $d$ from the start, measured along the line, for
+$0 \le d \le |P_1 - P_0|$; the point is exact whatever $d$ is, since the
+kernel holds the length of the range exactly (ADR 0012, 0013). Without
+either, the point is the midpoint.
+
+```
+paper square 4
+mark (through .a .c) as --diag
+.m = free on --diag from .a           ; the midpoint, (2, 2)
+.q = free on --diag from .a at 1/4    ; (1, 1)
+.e = free on --ab from .a by 3        ; (3, 0)
+```
+
+Errors: `` the line has no material on the paper ``, `` the anchor is not
+an endpoint of the line's material ``, `` t is out of range (must be
+between 0 and 1) ``, and `` the distance is longer than the line's
+material ``.
+
+Each free point is written to the output as a `beloch:free` field, so that
+a renderer can offer a slider over the range; no renderer reads it yet.
+
 ## Parameter types
 
-A write takes typed arguments. Four of the types are value sorts of the
-model and are supplied by a read; the others are enumerations that occur
-only as an argument of a write. The type of a slot is what a graphical
+A statement takes typed arguments. Four of the types are value sorts of the
+model and are supplied by a read; a number is written in the source; the
+others are enumerations that occur only as an argument of a write. The type of a slot is what a graphical
 editor binds to: a slot of type flap gets a flap picker, a slot of type
 placement a menu of four entries.
 
@@ -80,6 +209,7 @@ placement a menu of four entries.
 | crease | a name bound by `as`: the material scored under that name ([def-bundle](/model/#def-bundle)), or a selection from one | the axis `(--d)` of `fold` and `reverse`, the rays of `flatten`, the meet `*`, the filters `&` `\` `[…]`, `free on` |
 | flap | a point, a line, or `#[…]`, resolved by incidence ([def-selector](/model/#def-selector)) | `moving`, `up to`, `on`, `staying`, the target of `over` and `under` |
 | point | a named or selected point | `at`, `between`, `toward` |
+| number | a number, or inside a shape one of its parameters | the side of `square`, `at` and `by` of `free on`, the values that open a shape |
 | placement | top, bottom, over a flap, under a flap ([def-reflection](/model/#def-reflection)) | `fold` |
 | kind | inside, outside ([def-reverse](/model/#def-reverse)) | `reverse` |
 | extent | the whole line, between two points, at a point ([def-mark](/model/#def-mark)) | `mark` |
