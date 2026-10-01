@@ -592,6 +592,10 @@ val endpoint_is_flap_boundary : t -> int list -> Geom.point -> bool
     strictly inside none of the flap's faces, and some edge of a flap face
     through [p] is a raw paper edge or a folded (M/V) hinge. *)
 
+val on_raw_edge : t -> Geom.point -> bool
+(** [on_raw_edge g p] is [true] when paper point [p] lies on a raw edge of
+    the sheet: an edge of some face that no hinge joins to another face. *)
+
 type mark_class =
   | CSubdivide of Geom.point * Geom.point
   | CRecord of mark_geom
