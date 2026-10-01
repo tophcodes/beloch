@@ -173,7 +173,8 @@ let stmt_shape (s : Ast.stmt) : string =
               elems))
         (String.concat " "
            (List.map (fun (u, l) -> fastr u ^ ">" ^ fastr l) overs))
-        (optstr fastr staying) (optstr pstr toward)
+        (optstr (fun ps -> String.concat " " (List.map pstr ps)) staying)
+        (optstr pstr toward)
   | Ast.Flip _ -> "flip"
   | Ast.Point (n, _, _) -> "point ." ^ n
   | Ast.Def (n, _, _, _) -> "def " ^ n

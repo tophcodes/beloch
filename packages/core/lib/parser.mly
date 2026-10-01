@@ -75,6 +75,11 @@ let shape_def ~(name : string) ~(name_span : Error.span)
     sd_sheet = sheet; sd_body = body; sd_trim = trim; sd_exports = exports;
     sd_span = span }
 
+(* `staying` names points since ADR 0048; a flap names no sector *)
+let staying_flap (span : Error.span) : 'a =
+  Error.fail ~hint:"list the points: (staying .p .q)" span
+    "staying takes points on the anchor, which name the sector that stays"
+
 (* `toward` inside a construction, the spelling before ADR 0031 *)
 let toward_inside (span : Error.span) : 'a =
   Error.fail ~hint:"write it as an item of the write: (toward .p)" span
@@ -251,7 +256,8 @@ item_body:
   | ON flap_arg                         { Ast.RiOn ($2, $loc) }
   | BETWEEN point_operand point_operand { Ast.RiExtent (Between ($2, $3), $loc) }
   | AT point_operand                    { Ast.RiExtent (At $2, $loc) }
-  | STAYING flap_arg                    { Ast.RiStaying ($2, $loc) }
+  | STAYING point_operand_list          { Ast.RiStaying ($2, $loc) }
+  | STAYING flap_operand                { staying_flap $loc($2) }
   | over_flap OVER over_flap            { Ast.RiOrder ($1, $3, $loc) }
   | TOWARD toward_target                { Ast.RiSelection ({ target = $2; subject = None }, $loc) }
   | point_operand TOWARD toward_target

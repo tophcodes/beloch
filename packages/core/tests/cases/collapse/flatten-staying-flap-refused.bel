@@ -1,0 +1,17 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; The fan of flatten-waterbomb-top-layer.bel, held by a flap. A flap names no
+; sector of the fan, so `staying` refuses it (ADR 0048).
+
+paper rectangle 2 1
+fold (map .a onto .b) (moving .b) as --spine
+.s0 = --spine * --ab
+.s1 = free on --spine from .s0 at 1
+mark (through .a .s1) (on #[.b]) as --d1
+mark (through .s0 .d) (on #[.b]) as --d2
+mark (map .a onto .s0) (on #[.b]) as --v
+.m = --d1 * --d2
+flatten (--d1 & .b) (--d1 & .s1) (--d2 & .s0) (--d2 \ .s0)
+  (--v & --ab mountain) (--v \ --ab mountain) (staying #[.s0 .s1 .m])
+
+; expect error "staying takes points on the anchor"

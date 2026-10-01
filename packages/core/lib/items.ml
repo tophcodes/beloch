@@ -209,7 +209,7 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
       match it with
       | RiLine (lo, mv, _) -> rays := { cline = lo; cdir = mv } :: !rays
       | RiOrder (u, l, _) -> overs := (u, l) :: !overs
-      | RiStaying (fa, sp) -> slot verb "staying" staying sp fa
+      | RiStaying (ps, sp) -> slot verb "staying" staying sp ps
       | RiOn (fa, sp) -> slot verb "on" on sp fa
       | RiSelection ({ target = TowardPoint p; subject = None }, sp) ->
           slot verb "toward" toward sp p

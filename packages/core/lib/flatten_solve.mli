@@ -11,7 +11,7 @@ val run :
   bind_out:(Ctx.crease_val -> unit) ->
   elems:Ast.collapse_elem list ->
   overs:(Ast.flap_arg * Ast.flap_arg) list ->
-  staying_opt:Ast.flap_arg option ->
+  staying_opt:Ast.point_operand list option ->
   on_opt:Ast.flap_arg option ->
   (** [on_opt] names the anchor flap, whose tip the flatten moves; [None]
       takes the topmost flap under the vertex (ADR 0040). *)
