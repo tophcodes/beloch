@@ -63,6 +63,39 @@ let test_folds_on_a_shape () =
   Alcotest.(check int) "two faces" 2
     (json |> member "faces_vertices" |> to_list |> List.length)
 
+(* The rectangle as a page states it: the text from `shape rectangle(w h) {`
+   to its closing brace. *)
+let rectangle_in (rel : string) : string =
+  let src = In_channel.with_open_text (Filename.concat source_root rel) In_channel.input_all in
+  let start = "shape rectangle(w h) {" in
+  let rec find i =
+    if i + String.length start > String.length src then
+      Alcotest.failf "%s states no rectangle" rel
+    else if String.sub src i (String.length start) = start then i
+    else find (i + 1)
+  in
+  let i = find 0 in
+  let j = String.index_from src i '}' in
+  String.sub src i (j - i + 1)
+
+(* the language page and ADR 0046 state the rectangle of the library, and
+   it evaluates *)
+let test_documented_rectangle () =
+  let library = rectangle_in "packages/core/stdlib/shapes.bel" in
+  List.iter
+    (fun rel ->
+      let stated = rectangle_in rel in
+      Alcotest.(check string) (rel ^ " states the library's rectangle") library stated;
+      let json =
+        Beloch.parse ~filename:"t.bel" (stated ^ "\npaper rectangle 2 1\n")
+        |> Eval.eval_program ~prelude:[]
+        |> Fold_emit.to_json_folded
+      in
+      Alcotest.check coords (rel ^ ": corners")
+        [ [ 0.; 0. ]; [ 2.; 0. ]; [ 2.; 1. ]; [ 0.; 1. ] ]
+        (corners json))
+    [ "spec/BELOCH.md"; "decisions/0046-a-sheet-is-a-square-or-a-flap-cut-from-one.md" ]
+
 let () =
   Alcotest.run "stdlib"
     [
@@ -72,5 +105,7 @@ let () =
           Alcotest.test_case "silver 2" `Quick test_silver;
           Alcotest.test_case "triangle 2" `Quick test_triangle;
           Alcotest.test_case "a fold on the rectangle" `Quick test_folds_on_a_shape;
+          Alcotest.test_case "the rectangle the pages state" `Quick
+            test_documented_rectangle;
         ] );
     ]

@@ -59,7 +59,7 @@ ending with a trim to one flap of that sheet. The flap is the new sheet
 shape rectangle(w h) {
   paper square w
   .p = free on --da from .a by h
-  fold (align (through .p) (--da onto --da)) (moving .d)
+  fold (perp --da through .p) (moving .d)
   trim to .a
 }
 ```

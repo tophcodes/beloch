@@ -59,7 +59,7 @@ A flap whose outline has a hole is an error, because
 shape rectangle(w h) {
   paper square w
   .p = free on --da from .a by h
-  fold (align (through .p) (--da onto --da)) (moving .d)
+  fold (perp --da through .p) (moving .d)
   trim to .a
 }
 

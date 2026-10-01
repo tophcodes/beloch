@@ -106,4 +106,7 @@
  (name test_stdlib)
  (modules test_stdlib)
  (libraries beloch alcotest yojson)
- (deps ../stdlib/shapes.bel))
+ (deps
+  ../stdlib/shapes.bel
+  ../../../spec/BELOCH.md
+  ../../../decisions/0046-a-sheet-is-a-square-or-a-flap-cut-from-one.md))
