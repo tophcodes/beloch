@@ -164,7 +164,7 @@ added; the order the evaluator runs them in follows the tables.
 | 1 | element is not a material crease | `collapse folds along existing creases; <operand> is not a material crease` | |
 | 2 | bare element resolves to zero material segments | `--<name> has no material segment` | |
 | 3 | filtered/unioned element matches no segment | `` no segment of <expr> matches `` | |
-| 4 | segments don't all share one strictly-interior common endpoint O | `no common interior vertex` | |
+| 4 | segments don't all share one common endpoint O, or O lies on the sheet's raw edge in some layer (read on the paper, whatever the sheet's shape and wherever folding placed it) | `no common interior vertex` | |
 | 5 | (`staying` given) a point of `staying` lies on no face of the anchor | `<point> does not lie on the anchor` | `name a point on the flap the fan folds` |
 | 6 | a face of the tip does not carry the rays: a ray's half-line runs through it unscored, so it lies in no sector | `collapse through unaligned layers` | |
 | 7 | the ray count is even and below 4 | `count` | `` use `fold` for n = 2 `` |

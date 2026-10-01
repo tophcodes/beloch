@@ -67,14 +67,19 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   let elem_of (fcid, fea, feb, valley) =
     { Collapse.cid = fcid; ea = fea; eb = feb; valley }
   in
-  (* vertex O: the strictly-interior point shared by >= 1 candidate
-     segment of EVERY element (generalizes [Collapse.common_vertex] to the
-     per-element candidate lists). *)
-  let strictly_interior_pt (p : Geom.point) =
-    Num.sign p.Geom.x > 0
-    && Num.compare p.Geom.x Num.one < 0
-    && Num.sign p.Geom.y > 0
-    && Num.compare p.Geom.y Num.one < 0
+  (* vertex O: the point shared by >= 1 candidate segment of EVERY element,
+     off the sheet's raw edge on the paper (generalizes
+     [Collapse.common_vertex] to the per-element candidate lists). *)
+  let interior_pt (p : Geom.point) =
+    let cids =
+      List.concat_map
+        (List.filter_map (fun (cid, a, b, _) ->
+             if Geom.point_equal a p || Geom.point_equal b p then Some cid
+             else None))
+        elem_cands
+      |> List.sort_uniq compare
+    in
+    Collapse.interior_vertex !(ctx.state) cids p
   in
   let o =
     let shared_by_all p =
@@ -91,7 +96,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     in
     match
       List.find_opt
-        (fun p -> strictly_interior_pt p && shared_by_all p)
+        (fun p -> shared_by_all p && interior_pt p)
         endpoints
     with
     | Some o -> o

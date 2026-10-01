@@ -182,11 +182,26 @@ let far_on_flap_boundary (g : Fold_state.t) (o : Geom.point) (e : elem) : bool
          Fold_state.endpoint_is_flap_boundary g flap p)
        pieces
 
-let strictly_interior (p : Geom.point) : bool =
-  Num.sign p.Geom.x > 0
-  && Num.compare p.Geom.x Num.one < 0
-  && Num.sign p.Geom.y > 0
-  && Num.compare p.Geom.y Num.one < 0
+(* check 4: table point [o] is an interior vertex of the creases [cids] when
+   each of them has a segment ending at [o], and every such segment's paper
+   point lies off the sheet's raw edge. Read on the paper, not the table, so
+   the sheet's shape and where folding has placed it do not matter. *)
+let interior_vertex (g : Fold_state.t) (cids : int list) (o : Geom.point) :
+    bool =
+  List.for_all
+    (fun cid ->
+      let papers =
+        List.filter_map
+          (fun (s : Fold_state.crease_segment) ->
+            if Geom.point_equal s.Fold_state.ta o then Some s.Fold_state.pa
+            else if Geom.point_equal s.Fold_state.tb o then
+              Some s.Fold_state.pb
+            else None)
+          (Fold_state.crease_segments g cid)
+      in
+      papers <> []
+      && List.for_all (fun p -> not (Fold_state.on_raw_edge g p)) papers)
+    cids
 
 (* --- enumeration of sector stackings -------------------------------------- *)
 
@@ -411,7 +426,8 @@ let prepipeline_geom (g : Fold_state.t) (es : elem list) :
   let n = List.length es in
   match common_vertex es with
   | None -> Error e_no_vertex
-  | Some o when not (strictly_interior o) -> Error e_no_vertex
+  | Some o when not (interior_vertex g (List.map (fun e -> e.cid) es) o) ->
+      Error e_no_vertex
   | Some o ->
       if n < 4 || n mod 2 = 1 then Error e_count
       else if List.exists (fun e -> not (far_on_flap_boundary g o e)) es then

@@ -1693,6 +1693,20 @@ let is_flap_boundary_at (g : t) (fi : int) (p : Geom.point) : bool =
       | Some hi -> Num.sign g.hinges.(hi).angle <> 0)
     (List.init n Fun.id)
 
+(* [p] lies on an edge of some face that no hinge joins to another face: the
+   raw edge of the sheet, whatever its shape. *)
+let on_raw_edge (g : t) (p : Geom.point) : bool =
+  let on_face_raw_edge fi =
+    let poly = g.faces.(fi) in
+    let n = Array.length poly in
+    List.exists
+      (fun i ->
+        let v1 = poly.(i) and v2 = poly.((i + 1) mod n) in
+        Geom.on_segment (v1, v2) p && hinge_between g fi v1 v2 = None)
+      (List.init n Fun.id)
+  in
+  List.exists on_face_raw_edge (List.init (Array.length g.faces) Fun.id)
+
 (* The flap face [p] is strictly interior to, if any. *)
 let strictly_interior_to_flap_face (g : t) (flap : int list) (p : Geom.point)
     : int option =
