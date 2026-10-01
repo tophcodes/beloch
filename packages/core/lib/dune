@@ -10,3 +10,16 @@
 (menhir
  (modules parser)
  (flags --explain))
+
+; the standard library of sheets, compiled in as the shapes every program
+; sees before its own first line (Prelude)
+(rule
+ (target stdlib_source.ml)
+ (deps ../stdlib/shapes.bel)
+ (action
+  (with-stdout-to
+   %{target}
+   (progn
+    (echo "let source = {beloch|")
+    (cat %{deps})
+    (echo "|beloch}\n")))))

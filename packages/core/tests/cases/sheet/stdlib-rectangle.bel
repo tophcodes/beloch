@@ -1,0 +1,7 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+paper rectangle 2 1
+; assert .a = (0, 0)
+; assert .b = (2, 0)
+; assert .p = (0, 1)
+; assert faces = 1

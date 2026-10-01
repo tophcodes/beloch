@@ -86,7 +86,8 @@ val eval_program :
 (** Evaluate [prog]. [resume] restores an incremental-evaluation checkpoint
     taken after a statement and runs the statements of [prog] from there;
     without it the header runs first, the unit, the shapes of [prelude]
-    (default none) and of [prog], and the sheet [prog] opens. [on_step] runs
+    (default the standard library, {!Prelude.shapes}) and of [prog], and
+    the sheet [prog] opens. [on_step] runs
     after every statement (used by [Session] to collect a fresh snapshot per
     statement). *)
 

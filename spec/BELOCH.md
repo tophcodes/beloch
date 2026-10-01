@@ -78,6 +78,10 @@ shape rectangle(w h) {
   body as for `moving` ([def-selector](/model/#def-selector)). It is the
   last statement of the body and stands nowhere else.
 
+Every program sees the shapes of the standard library as if they were
+defined before its first line. Their names are taken: a program that
+defines a shape of one of them gets `` shape <name> is already defined ``.
+
 The trimmed sheet is the part $F \subseteq P$ of the body's sheet that the
 flap covers, in paper coordinates. It is unfolded: the program that opens
 it starts from the flat state of $F$. A name whose point or line lies in

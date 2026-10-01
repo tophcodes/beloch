@@ -683,20 +683,22 @@ let open_program (ctx : Ctx.ctx) ~(prelude : Ast.shape_def list)
   Ctx.open_sheet ctx o.o_sheet ~points:o.o_points ~lines:o.o_lines
 
 (* The whole program on a fresh [ctx]: its header, then its statements. *)
-let run_program ?(prelude = []) (ctx : Ctx.ctx) on_step (prog : Ast.program) :
-    unit =
+let run_program ?prelude (ctx : Ctx.ctx) on_step (prog : Ast.program) : unit =
+  let prelude =
+    match prelude with Some p -> p | None -> Lazy.force Prelude.shapes
+  in
   open_program ctx ~prelude prog;
   run_stmts ctx on_step prog.Ast.p_stmts
 
 let eval_program ?(resume : snapshot option) ?(on_step : ctx -> unit = fun _ -> ())
-    ?(prelude = []) (prog : Ast.program) : folded =
+    ?prelude (prog : Ast.program) : folded =
   (match resume with None -> Fold_state.reset_ids () | Some _ -> ());
   let ctx = Ctx.create () in
   (match resume with
   | Some s ->
       restore ctx s;
       run_stmts ctx on_step prog.Ast.p_stmts
-  | None -> run_program ~prelude ctx on_step prog);
+  | None -> run_program ?prelude ctx on_step prog);
   build_output ctx (List.hd ctx.scopes)
 
 let eval_folded (prog : Ast.program) : folded = eval_program prog
