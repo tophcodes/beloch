@@ -35,11 +35,6 @@ and fstr (fa : Ast.flap_arg) : string =
   | Ast.FlapSpec (Ast.FByPoints (pts, _)) ->
       Printf.sprintf "#[%s]" (String.concat " " (List.map pstr pts))
 
-let corner_point (n : string) : Geom.point =
-  match List.assoc_opt n corners with
-  | Some p -> p
-  | None -> assert false (* Edge is only ever built from a,b,c,d *)
-
 (* The sort check (spec/BELOCH.md, Parameter types): a slot that wants a
    crease reads the binding's constructor and nothing else. A [Frozen] name
    is a line, and a line has no material until a `mark` scores it. *)
@@ -76,10 +71,9 @@ let materialize_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (cv 
   | Bundle _ ->
       Error.fail ~hint:"restrict it to one segment with & or \\" span
         (Printf.sprintf "--%s is a bundle" name)
-  | Edge (a, b) ->
+  | Edge (_, line) ->
       (* the edge's pieces, not its corners: folding can stack both corners
          on one table point while the pieces still lie on one line *)
-      let line = Geom.line_through (corner_point a) (corner_point b) in
       Fold_state.edge_axis !(ctx.state) line
       |> axis_or_fail ~name span line
            ~bent_hint:
@@ -131,8 +125,7 @@ let paper_line_of_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (c
         match chords with (a, b) :: _ -> Geom.line_through a b | [] -> line
       in
       (paper_line, Some chords)
-  | Edge (a, b) ->
-      (Geom.line_through (corner_point a) (corner_point b), None)
+  | Edge (_, line) -> (line, None)
   | Material (cid, l_orig) -> (
       match Fold_state.crease_paper_axis !(ctx.state) cid with
       | `Line l ->
@@ -369,8 +362,8 @@ and seg_incident (ctx : Ctx.ctx) (sel : Ast.selector) (s : Fold_state.crease_seg
             let l, r = s.Fold_state.faces in
             `Found (l = fi || r = fi)
         | (`Zero | `Ambiguous) as bad -> bad)
-(* every existing straight line a --[…] selector may name: the four paper
-   edges plus each material crease segment (ADR 0014). Each candidate carries
+(* every existing straight line a --[…] selector may name: the sheet's
+   edges, one per line its outline runs along, plus each material crease segment (ADR 0014). Each candidate carries
    a table-space line (for use as a fold axis, the returned value) plus
    PAPER-space endpoints + line + optional marks: incidence is a material
    question, checked in paper space like `seg_incident`, so folded-stacked
@@ -382,9 +375,7 @@ and select_candidates (ctx : Ctx.ctx) :
     * Geom.line * (Geom.point * Geom.point) list option) list =
   let edges =
     List.concat_map
-      (fun (a, b) ->
-        let ca = corner_point a and cb = corner_point b in
-        let pl = Geom.line_through ca cb in
+      (fun (pl, (ca, cb)) ->
         match Fold_state.edge_axis !(ctx.state) pl with
         | `Line l -> [ (l, (ca, cb), pl, None) ]
         | `Bent | `Empty | `Collapsed ->
@@ -393,7 +384,7 @@ and select_candidates (ctx : Ctx.ctx) :
                 ( Geom.line_through s.Fold_state.ta s.Fold_state.tb,
                   (s.Fold_state.pa, s.Fold_state.pb), pl, None ))
               (Fold_state.edge_boundary_segments !(ctx.state) pl))
-      [ ("a", "b"); ("b", "c"); ("c", "d"); ("d", "a") ]
+      (Sheet.boundary_lines ctx.sheet)
   in
   let creases =
     List.concat_map
@@ -534,8 +525,7 @@ and meet_pieces (ctx : Ctx.ctx) (lo : Ast.line_operand) : meet_piece list =
           Error.fail cr.Ast.cspan
             (Printf.sprintf "--%s is a line; the meet needs a crease"
                cr.Ast.cname)
-      | Edge (a, b) ->
-          [ Whole (Geom.line_through (corner_point a) (corner_point b)) ]
+      | Edge (_, line) -> [ Whole line ]
       | Mark (cid, _) ->
           List.map
             (fun (a, b) -> Seg (a, b))
@@ -567,10 +557,8 @@ and bundle_segments (ctx : Ctx.ctx) (lo : Ast.line_operand) :
   | Ast.LNamed cr -> (
       match lookup_crease ctx cr with
       | Bundle expr -> bundle_segments ctx expr
-      | Edge (a, b) ->
-          ( None,
-            Fold_state.edge_boundary_segments !(ctx.state)
-              (Geom.line_through (corner_point a) (corner_point b)) )
+      | Edge (_, line) ->
+          (None, Fold_state.edge_boundary_segments !(ctx.state) line)
       | _ ->
           let cid = material_cid ctx cr in
           (Some cid, Fold_state.crease_segments !(ctx.state) cid))

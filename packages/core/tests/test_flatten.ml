@@ -380,7 +380,7 @@ let test_flatten_derive_in_bounds () =
   let nf = Array.length (Fold_state.faces st) in
   let all_in =
     Array.for_all
-      (fun i -> Array.for_all Geom.in_unit_square (Fold_state.table_polygon st i))
+      (fun i -> Array.for_all (Geom.in_convex_polygon (Sheet.square_corners Num.one)) (Fold_state.table_polygon st i))
       (Array.init nf Fun.id)
   in
   Alcotest.(check bool)

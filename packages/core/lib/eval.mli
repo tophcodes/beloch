@@ -66,6 +66,9 @@ type folded = {
   trace : Trace.entry list;
       (** every construction's candidates in the order they were evaluated
           (spec/FOLD.md, "The trace") *)
+  sheet : Sheet.t;
+      (** The sheet the program opened; its unfolded state is the first
+          frame of the output. *)
   free_points : (string * free_info) list;
       (** One entry per `free on` point, recorded at bind time: a running
           log (like [statements]), not reconstructed from scope state at

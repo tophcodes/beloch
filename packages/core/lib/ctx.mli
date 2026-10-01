@@ -6,9 +6,6 @@
     and [Eval] all read their fields or pattern-match their constructors
     directly. *)
 
-val corners : (string * Geom.point) list
-(** The four paper corners, keyed "a" "b" "c" "d". *)
-
 type stmt_kind = SFold | SMark | SBind | SApply of string
 (** Which axis a statement moves (ADR 0030). [SFold] and [SMark] are writes:
     the paper moved, or it was scored and stands where it was. [SBind] moves
@@ -84,9 +81,11 @@ type crease_val =
       (** A named crease bundle (`--x = --l & .c | [--a --b]`); resolves
           lazily as its expression, so the name behaves exactly like
           inlining it. *)
-  | Edge of string * string
-      (** A paper boundary edge, named by its two corners; resolves live (the
-          edge moves under folding) through the current corner positions. *)
+  | Edge of string * Geom.line
+      (** The boundary of the sheet along a paper line, with the name a
+          reference to it records; resolves live (the edge moves under
+          folding) through the boundary pieces of the current state on that
+          line. *)
 
 type instance = {
   ipoints : (string, Geom.point) Hashtbl.t;
@@ -130,6 +129,8 @@ type ctx = {
   mutable next_def_idx : int;
   defs : (string, int * Ast.param list * Ast.stmt list) Hashtbl.t;
   state : Fold_state.t ref;
+  mutable sheet : Sheet.t;
+      (** The sheet the program opened: its unfolded state and outline. *)
   mutable frames_rev : (Fold_state.t * Error.span option) list;
   mutable statements_rev : stmt_log_entry list;
   mutable free_points_rev : (string * free_info) list;
@@ -235,8 +236,8 @@ val record_write : ctx -> Trace.terms -> Trace.state_candidate list -> unit
     the state. *)
 
 val create : unit -> ctx
-(** A context on the flat square, with the four corners and the four edges
-    bound in the root scope. *)
+(** A context on the unfolded square of side 1, with the four corners and
+    the four edges bound in the root scope. *)
 
 val push_apply : ctx -> string -> Error.span -> int
 (** Log an [apply] of the named def at its own span, ahead of its body's

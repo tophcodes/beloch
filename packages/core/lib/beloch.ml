@@ -64,6 +64,7 @@ module Geom = Geom
 module Isometry = Isometry
 module Isometry3 = Isometry3
 module Fold_state = Fold_state
+module Sheet = Sheet
 module Ast = Ast
 module Lexer = Lexer
 module Parser = Parser

@@ -39,6 +39,8 @@ type folded = {
   references : Ctx.reference list;
   annotations : Ctx.annot_entry list;
   trace : Trace.entry list;
+  sheet : Sheet.t;
+      (* the sheet the program opened, whose unfolded state is frame 0 *)
   free_points : (string * free_info) list;
       (* one entry per `free on` point, recorded at bind time in the [PsFree]
          arm: a running log (like [statements]), not reconstructed from
@@ -62,7 +64,7 @@ let eval_free_point (ctx : Ctx.ctx) (n : string) (line : Ast.line_operand)
   let p0raw, p1raw =
     match chords_opt with
     | None -> (
-        match Geom.clip_to_unit_square l with
+        match Sheet.clip ctx.sheet l with
         | Some (a, b) -> (a, b)
         | None -> Error.fail span "the line does not cross the paper")
     | Some chords -> (
@@ -426,7 +428,7 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
   let statements = List.rev ctx.statements_rev in
   let free_points = List.rev ctx.free_points_rev in
   { state = !(ctx.state); named_points; named_lines; named_line_cids; frames;
-    statements; free_points;
+    statements; free_points; sheet = ctx.sheet;
     references = List.rev ctx.references_rev;
     annotations = List.rev ctx.annots_rev;
     trace = List.rev ctx.trace_rev }

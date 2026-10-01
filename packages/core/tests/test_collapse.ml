@@ -27,7 +27,7 @@ let precreased () =
       let cid = Fold_state.fresh_crease_id () in
       let st' = Fold_state.subdivide ~crease_id:cid st l ~prov:None in
       (st', rays @ List.map (fun f -> (f, cid)) fars))
-    (Fold_state.init_square, [])
+    ((Fold_state.flat [| Sheet.square_corners Num.one |]), [])
     line_specs
 
 (* build elements for the 8 rays given a valley assignment ([bool] array length 8) *)
@@ -267,7 +267,7 @@ let precreased_plus () =
   let hline = Geom.line_through (pt (q 0) half) (pt (q 1) half) in
   let vline = Geom.line_through (pt half (q 0)) (pt half (q 1)) in
   let cidh = Fold_state.fresh_crease_id () in
-  let st = Fold_state.subdivide ~crease_id:cidh Fold_state.init_square hline ~prov:None in
+  let st = Fold_state.subdivide ~crease_id:cidh (Fold_state.flat [| Sheet.square_corners Num.one |]) hline ~prov:None in
   let cidv = Fold_state.fresh_crease_id () in
   let st = Fold_state.subdivide ~crease_id:cidv st vline ~prov:None in
   (* rays CCW-ish order: right(h), up(v), left(h), down(v) *)
@@ -447,7 +447,7 @@ let test_intrinsic_convention_pin () =
   List.iter
     (fun valley ->
       let s =
-        Fold_state.simple_fold Fold_state.init_square ~axis ~move_side:1
+        Fold_state.simple_fold (Fold_state.flat [| Sheet.square_corners Num.one |]) ~axis ~move_side:1
           ~valley
       in
       let hs = Fold_state.hinges s in
