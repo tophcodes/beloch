@@ -1323,8 +1323,8 @@ let test_cicada_flaps () =
   let flaps = List.length (List.filter (fun i -> find i = i) (List.init n Fun.id)) in
   Alcotest.(check int) "flaps" 38 flaps
 
-(* The penguin folds to its last flat state in seven frames: its mark and
-   its two turns over join the frame of the fold after them. Every hinge of
+(* The penguin folds to its last flat state in nine frames: one for each of
+   its seven folds and two turns over, none for its mark. Every hinge of
    that state is folded, the step 1 mark included, so each face is a flap of
    its own (def-flap). *)
 let test_penguin_flaps () =
@@ -1333,7 +1333,7 @@ let test_penguin_flaps () =
       (Beloch.parse ~filename:"penguin.bel" (read_example "penguin.bel"))
   in
   let st = fd.Eval.state in
-  Alcotest.(check int) "one frame per fold" 7 (List.length fd.Eval.frames);
+  Alcotest.(check int) "one frame per fold and flip" 9 (List.length fd.Eval.frames);
   let n = Array.length (Fold_state.faces st) in
   let parent = Array.init n Fun.id in
   let rec find i = if parent.(i) = i then i else find parent.(i) in

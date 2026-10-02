@@ -247,9 +247,10 @@ let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
       bind_point ctx n span (Resolve.resolve_point ctx po)
   | Ast.Point (n, Ast.PsFree { line; anchor; pos; span }, _) ->
       eval_free_point ctx n line anchor pos span
-  | Ast.Flip _ ->
+  | Ast.Flip span ->
+      (* a flip is a write (ADR 0030): it gets a frame and an entry of its own *)
       ctx.state := Fold_state.flip !(ctx.state);
-      ctx.pending <- true
+      Ctx.push_frame ctx (Some span)
   | Ast.Def (name, params, body, span) -> eval_def ctx name params body span
   | Ast.Apply (bind_opt, defname, args, span) ->
       eval_apply ctx bind_opt defname args span
