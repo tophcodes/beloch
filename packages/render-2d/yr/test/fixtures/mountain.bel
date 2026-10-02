@@ -1,0 +1,9 @@
+@author "Claude (Anthropic)"
+; A mountain fold: the upper half goes behind the lower half.
+
+paper square
+
+@say "Mountain-fold the upper half behind."
+fold (map --cd onto --ab) (mountain)
+
+@say "Folded in half."

@@ -1,0 +1,11 @@
+@author "Claude (Anthropic)"
+; A tuck: the top layer's corner goes between the two layers of a folded
+; square. The diagram refuses it.
+
+paper square
+
+fold (map .a onto .d)
+.m = free on --bc from .b at 1/2
+.n = free on --ab from .b at 1/2
+.p = free on --ab from .a at 1/4
+fold (through .m .n) (moving .b) (up to .b) (under .p)

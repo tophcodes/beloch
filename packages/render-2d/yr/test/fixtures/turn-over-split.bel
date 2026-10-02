@@ -1,0 +1,11 @@
+@author "Claude (Anthropic)"
+; A step that folds, turns the model over and folds again: the turn-over
+; takes a panel of its own, so the step is drawn as 1a, 1b and 1c, and no
+; hint is due.
+
+paper square
+
+@step "Fold in half, turn over and fold in half again."
+fold (map --ab onto --cd)
+flip
+fold (map --bc onto --da)

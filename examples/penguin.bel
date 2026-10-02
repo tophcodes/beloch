@@ -63,7 +63,7 @@ reverse (through .h .e) (moving .c) (outside) as --head  ; step 7
 ; the finished penguin stands on its folded edge, the head up
 @orient .a .h up
 
-; assert steps = 7
+; assert steps = 9
 
 ; Every crease of the program is folded, so no hinge is flat and each face
 ; is a flap of its own: the flap count is the face count.

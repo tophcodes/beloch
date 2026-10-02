@@ -1,7 +1,8 @@
 // The marks of the YR notation, in page pixels [lang1991conventions]: the
 // valley and mountain lines, the existing crease, the valley arrow, the
-// fold-and-unfold arrow, whose tail carries Montroll's hollow double head, and
-// the arrows of the reverse folds.
+// fold-and-unfold arrow, whose tail carries Montroll's hollow double head, the
+// arrows of the reverse folds, the mountain arrow, the hooked tail of a fold
+// of some layers, and the turn-over arrow.
 import type { Vec2 } from "@beloch/scene";
 import { el } from "@beloch/render-svg";
 import type { SvgNode } from "@beloch/render-svg";
@@ -66,7 +67,7 @@ function arrow(kind: string, tail: Vec2, tip: Vec2, toward: Vec2 | null, unfold:
   return el("g", { "data-kind": kind }, [stem, ...heads]);
 }
 
-// The arrow of a valley fold: from the corner that moves to where it lands,
+// The arrow of a valley fold: from the point that moves to where it lands,
 // bent toward `toward`, the middle of the fold line.
 export const valleyArrow = (tail: Vec2, tip: Vec2, toward: Vec2 | null, ink: Ink) =>
   arrow("valley-arrow", tail, tip, toward, false, ink);
@@ -155,4 +156,100 @@ export function wrapArrows(open: Vec2, folded: Vec2, up: Vec2, ink: Ink): SvgNod
   });
   const mountain = el("g", { "data-kind": "mountain-arrow" }, [...runs.map((r) => path(r.pts, r.behind)), halfHead]);
   return [valley, mountain];
+}
+
+const unit = (v: Vec2): Vec2 => { const l = Math.hypot(v[0], v[1]); return [v[0] / l, v[1] / l]; };
+const at = (p: Vec2, ...terms: [number, Vec2][]): Vec2 =>
+  terms.reduce<Vec2>((q, [k, v]) => [q[0] + k * v[0], q[1] + k * v[1]], p);
+const pt = (p: Vec2) => `${fmt(p[0])},${fmt(p[1])}`;
+const cubic = (from: Vec2, ...rest: Vec2[]) => `M${pt(from)} C${rest.map(pt).join(" ")}`;
+
+// The hook at the tail of an arrow that moves some layers of a stack: the
+// stem runs on past `tail`, away from `from`, and curls back to the edge
+// against the direction `away`, around the layers that move
+// [lang1991conventions, Part II].
+function hook(tail: Vec2, from: Vec2, away: Vec2, ink: Ink): SvgNode {
+  const t = unit([tail[0] - from[0], tail[1] - from[1]]);
+  let n: Vec2 = [-t[1], t[0]];
+  if (n[0] * away[0] + n[1] * away[1] > 0) n = [-n[0], -n[1]];
+  const r = 16;
+  return el("path", {
+    "data-kind": "hook",
+    d: cubic(tail, at(tail, [1.5 * r, t]), at(tail, [1.5 * r, t], [r, n]), at(tail, [r, n])),
+    fill: "none", stroke: ink.ink, "stroke-width": 2,
+  });
+}
+
+// The arrow of a valley fold with its tail hooked around the layers that move.
+export function hookedValleyArrow(tail: Vec2, tip: Vec2, toward: Vec2 | null, ink: Ink): SvgNode {
+  const node = valleyArrow(tail, tip, toward, ink);
+  // the hook keeps turning the way the stem bends, away from its bulge
+  const c = bend(tail, tip, toward);
+  node.children.push(hook(tail, c, [c[0] - (tail[0] + tip[0]) / 2, c[1] - (tail[1] + tip[1]) / 2], ink));
+  return node;
+}
+
+// A hollow half head on the end of a stem at `base`, pointing along `dir`:
+// one barb, on the side of `side` only, 1.5 times the length of a valley head.
+function hollowHalfHead(base: Vec2, dir: Vec2, side: Vec2, ink: Ink): SvgNode {
+  const u = unit(dir);
+  let n: Vec2 = [-u[1], u[0]];
+  if (n[0] * side[0] + n[1] * side[1] < 0) n = [-n[0], -n[1]];
+  return el("polygon", {
+    points: [base, at(base, [24, u]), at(base, [12, n])].map(pt).join(" "),
+    fill: ink.paper, stroke: ink.ink, "stroke-width": 1.5, "stroke-linejoin": "round",
+  });
+}
+
+// The arrow of a mountain fold [lang1991conventions, Part II]: from the
+// centroid `tail` of the moving paper straight away from the crease to the
+// paper's outer edge at `edge`, over that edge, and down behind it into a
+// hollow half head. The head lies behind the paper `paper` (polygons in page
+// pixels): its point reaches a third of its length past the edge, and the
+// part of it over the paper is hidden, so the paper's edge passes in front of
+// it. `id` names the mask that hides it and must be unique in the document. A
+// hooked fold also hooks the tail around the layers that move.
+export function mountainArrow(
+  tail: Vec2, edge: Vec2, hooked: boolean, paper: Vec2[][], id: string, ink: Ink,
+): SvgNode {
+  const d = unit([edge[0] - tail[0], edge[1] - tail[1]]);
+  // the curl turns toward the right of the page, or up the page when the
+  // arrow runs across it
+  let n: Vec2 = [-d[1], d[0]];
+  if (n[0] < -1e-9 || (Math.abs(n[0]) <= 1e-9 && n[1] > 0)) n = [-n[0], -n[1]];
+  const r = 17;
+  const end = at(edge, [16, d], [3 * r, n]);
+  const c1 = at(edge, [2.8 * r, d]), c2 = at(end, [1.8 * r, d]);
+  const stem = el("path", { d: cubic(tail, c1, c2, end), fill: "none", stroke: ink.ink, "stroke-width": 2 });
+  const mask = el("mask", { id, maskUnits: "userSpaceOnUse", x: -10000, y: -10000, width: 20000, height: 20000 }, [
+    el("rect", { x: -10000, y: -10000, width: 20000, height: 20000, fill: "white" }),
+    ...paper.map((poly) => el("polygon", { points: poly.map(pt).join(" "), fill: "black" })),
+  ]);
+  const behind = el("g", { mask: `url(#${id})` }, [hollowHalfHead(end, [end[0] - c2[0], end[1] - c2[1]], n, ink)]);
+  const children = [mask, stem, behind];
+  if (hooked) children.push(hook(tail, c1, n, ink));
+  return el("g", { "data-kind": "mountain-arrow" }, children);
+}
+
+export type TurnDirection = "side-to-side" | "top-to-bottom";
+
+// Turn the model over: a valley arrow with a loop in its stem, lying across
+// the page for a turn from side to side and along it for a turn from top to
+// bottom, centered on `center` [lang1991conventions, Part III].
+export function turnOverArrow(center: Vec2, direction: TurnDirection, ink: Ink): SvgNode {
+  const [cx, cy] = center, a = 60, b = 20, r = 13;
+  // drawn across the page, then turned a quarter for top to bottom
+  const place = ([x, y]: Vec2): Vec2 => (direction === "side-to-side" ? [x, y] : [cx - (y - cy), cy + (x - cx)]);
+  const apex: Vec2 = [cx, cy - b], low: Vec2 = [cx, cy - b + 2 * r];
+  const across: Vec2[] = [
+    [cx - a, cy + b], [cx - a, cy - 0.6 * b], [cx - 0.45 * a, cy - b], apex,
+    [cx + 1.33 * r, cy - b], [cx + 1.33 * r, low[1]], low,
+    [cx - 1.33 * r, low[1]], [cx - 1.33 * r, cy - b], apex,
+    [cx + 0.45 * a, cy - b], [cx + a, cy - 0.6 * b], [cx + a, cy + b],
+  ];
+  const pts = across.map(place);
+  const stem = el("path", { d: cubic(pts[0]!, ...pts.slice(1)), fill: "none", stroke: ink.ink, "stroke-width": 2 });
+  return el("g", { "data-kind": "turn-over-arrow", "data-direction": direction }, [
+    stem, head(pts[12]!, pts[11]!, false, ink),
+  ]);
 }

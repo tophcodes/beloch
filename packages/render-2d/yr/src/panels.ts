@@ -2,7 +2,7 @@
 // any group, and one for the final state (spec/BELOCH-ANNOTATIONS.md).
 import type { Annotation, FoldScene, Statement, Vec2 } from "@beloch/scene";
 import { clipSegmentToPoly, pointInPolygon } from "@beloch/render-svg";
-import { foldMotion, overlapArea } from "./motion";
+import { foldMotion, overlapArea, turnOver } from "./motion";
 
 export interface Panel {
   number: string;          // "3", or "3a" when a step group is split
@@ -27,9 +27,10 @@ const textOf = (a: Annotation | undefined): string | null => {
 // yields; a mark stands on the state it scores.
 const baseOf = (w: Statement) => (w.kind === "fold" ? w.frameIndex - 1 : w.frameIndex);
 
-// The paper a write moves, as convex paper polygons; a mark moves none.
+// The paper a write moves, as convex paper polygons; a mark moves none, and a
+// turn-over is counted apart by `split`.
 const movedBy = (scene: FoldScene, w: Statement): Vec2[][] =>
-  w.kind === "fold" ? foldMotion(scene, w).moved : [];
+  w.kind === "fold" && turnOver(scene, w) === null ? foldMotion(scene, w).moved : [];
 
 // Whether the write folds or scores paper that one of `moved` covers.
 function touches(scene: FoldScene, w: Statement, moved: Vec2[][]): boolean {
@@ -47,22 +48,33 @@ function touches(scene: FoldScene, w: Statement, moved: Vec2[][]): boolean {
   });
 }
 
+const isTurnOver = (scene: FoldScene, w: Statement) => w.kind === "fold" && turnOver(scene, w) !== null;
+
 // Splits the writes of one step group where a write touches paper an earlier
 // write of the same part moved: the earlier one has to be drawn folded first.
-function split(scene: FoldScene, writes: Statement[]): Statement[][] {
+// `touched` says whether that happened. A turn-over is always a part of its
+// own, drawn on the state the writes before it leave, so that the folder sees
+// the result before turning the paper over [lang1991conventions, Part I].
+function split(scene: FoldScene, writes: Statement[]): { parts: Statement[][]; touched: boolean } {
   const parts: Statement[][] = [];
   let moved: Vec2[][] = [];
+  let alone = false;
+  let touched = false;
   for (const w of writes) {
     const current = parts[parts.length - 1];
-    if (!current || touches(scene, w, moved)) {
+    const turn = isTurnOver(scene, w);
+    const touching = !turn && touches(scene, w, moved);
+    if (!current || alone || turn || touching) {
+      if (current && touching && !alone) touched = true;
       parts.push([w]);
       moved = movedBy(scene, w);
     } else {
       current.push(w);
       moved = [...moved, ...movedBy(scene, w)];
     }
+    alone = turn;
   }
-  return parts;
+  return { parts, touched };
 }
 
 export function panels(scene: FoldScene): { panels: Panel[]; hints: string[] } {
@@ -84,16 +96,19 @@ export function panels(scene: FoldScene): { panels: Panel[]; hints: string[] } {
     if (done.has(group)) continue;
     done.add(group);
     const writes = scene.writes.filter((x) => range(group)![0] <= x.index && x.index <= range(group)![1]);
-    const parts = split(scene, writes);
+    const { parts, touched } = split(scene, writes);
     const number = String(++n);
     const says = (ws: Statement[]) => ws.map((x) => sayOn(x.index)).filter((t) => t !== null).join(" ") || null;
     if (parts.length > 1) {
       const names = parts.map((_, k) => number + String.fromCharCode(97 + k));
       const listed = names.length === 2 ? `${names[0]} and ${names[1]}` : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
-      hints.push(
-        `the step on line ${group.sourceLine} folds paper an earlier fold of the step moved; it is drawn as ${listed}. ` +
-        `Give each of its folds an @say, or split the step`,
-      );
+      // a turn-over in its own panel is the rule and earns no hint
+      if (touched) {
+        hints.push(
+          `the step on line ${group.sourceLine} folds paper an earlier fold of the step moved; it is drawn as ${listed}. ` +
+          `Give each of its folds an @say, or split the step`,
+        );
+      }
       // A part says what its own folds do. The step's sentence covers all of
       // them, so it stands once, under the first part, and a part without a
       // sentence of its own stays blank: under every part, it would tell the

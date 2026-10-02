@@ -1,7 +1,10 @@
 import { test, expect } from "bun:test";
 import { parseFold } from "@beloch/scene";
 import type { Vec2 } from "@beloch/scene";
-import { CREASE_GAP, foldMotion, panelHalves, panels, panelView, renderYr, turnFraction } from "@beloch/yr";
+import { resolveIsometry } from "@beloch/render-svg";
+import {
+  CREASE_GAP, foldMotion, panelHalves, panels, panelView, renderYr, turnFraction, turnOver, turnOverArrow,
+} from "@beloch/yr";
 
 const scene = async (name: string) =>
   parseFold(await Bun.file(new URL(`./fixtures/${name}.fold`, import.meta.url)).text());
@@ -32,14 +35,19 @@ test("the kite is one panel per step group and one for the result", async () => 
   expect(hints).toEqual([]);
 });
 
-test("a fold's arrow runs from the moving corner to where it lands", async () => {
+test("a fold's arrow runs from the center of the moving paper to where it lands", async () => {
   const s = await scene("kite");
   const m = foldMotion(s, s.statements[1]!);
   expect(m.before).toBe(0);
   expect(m.after).toBe(1);
-  // fold (map --da onto --ac) carries .d onto the diagonal
-  near(m.tail, [0, 1]);
-  near(m.head, [Math.SQRT1_2, Math.SQRT1_2]);
+  // fold (map --da onto --ac) moves the triangle .a, .d, (√2 − 1, 1); the
+  // arrow starts at its centroid and ends at the centroid's mirror image
+  // across the hinge, the line x = (√2 − 1)·y
+  const k = Math.SQRT2 - 1;
+  near(m.tail, [k / 3, 2 / 3]);
+  const u = [k / Math.hypot(k, 1), 1 / Math.hypot(k, 1)] as const;
+  const along = m.tail[0] * u[0] + m.tail[1] * u[1];
+  near(m.head, [2 * along * u[0] - m.tail[0], 2 * along * u[1] - m.tail[1]]);
   expect(m.hinge.length).toBeGreaterThan(0);
   // the hinge runs from .a through (√2 − 1, 1) on the top edge
   for (const [p, q] of m.hinge) {
@@ -182,9 +190,9 @@ test("an outside reverse fold draws a push arrow and two arrows that wrap around
 
 // The drawings beside the programs are what the pull request shows; this
 // keeps them equal to what the library draws. To write them again:
-//   for f in kite book-twice rotate shrink inside-reverse outside-reverse; do bun cli/bin/fold2svg.ts yr/test/fixtures/$f.fold yr/test/fixtures/$f-yr.svg --view yr; done
+//   for f in kite book-twice rotate shrink inside-reverse outside-reverse mountain top-layer turn-over; do bun cli/bin/fold2svg.ts yr/test/fixtures/$f.fold yr/test/fixtures/$f-yr.svg --view yr; done
 test("the committed drawings are the library's output", async () => {
-  for (const name of ["kite", "book-twice", "rotate", "shrink", "inside-reverse", "outside-reverse"]) {
+  for (const name of ["kite", "book-twice", "rotate", "shrink", "inside-reverse", "outside-reverse", "mountain", "top-layer", "turn-over"]) {
     const drawn = renderYr(await scene(name)).doc.toString();
     const committed = await Bun.file(new URL(`./fixtures/${name}-yr.svg`, import.meta.url)).text();
     expect(drawn).toBe(committed);
@@ -254,4 +262,91 @@ test("an existing crease touches the edge it runs under", async () => {
   expect(ys[1]).toBeCloseTo(190.73, 2);
   // the renderer under the panel draws no crease of its own
   expect(three).not.toMatch(/class="crease-F"[^>]*opacity="0.55"/);
+});
+
+test("a fold that lays its paper under the paper that stays is a mountain fold", async () => {
+  const s = await scene("mountain");
+  const m = foldMotion(s, s.statements[0]!);
+  expect(m.kind).toBe("mountain");
+  expect(m.hooked).toBe(false);
+  // the arrow runs from the centroid of the upper half to its top edge
+  near(m.tail, [0.5, 0.75]);
+  near(m.edge, [0.5, 1]);
+  const one = panelSvg(renderYr(s).doc.toString(), "1");
+  expect(count(one, "mountain-line")).toBeGreaterThan(0);
+  expect(count(one, "mountain-arrow")).toBe(1);
+  expect(count(one, "valley-line") + count(one, "valley-arrow")).toBe(0);
+});
+
+test("a fold of the top layer of a stack hooks the tail of its arrow", async () => {
+  const s = await scene("top-layer");
+  const [first, second] = [0, 1].map((i) => foldMotion(s, s.writes[i]!));
+  expect(first!.kind).toBe("valley");
+  expect(first!.hooked).toBe(false);
+  expect(second!.kind).toBe("valley");
+  expect(second!.hooked).toBe(true);
+  // the hook wraps the top layer's upper edge, which lands on the middle line
+  near(second!.edge, [0.5, 1]);
+  near(second!.edgeHead, [0.5, 0.5]);
+  const svg = renderYr(s).doc.toString();
+  expect(count(panelSvg(svg, "1"), "hook")).toBe(0);
+  expect(count(panelSvg(svg, "2"), "hook")).toBe(1);
+  expect(count(panelSvg(svg, "2"), "valley-arrow")).toBe(1);
+});
+
+test("a flip turns the model over from side to side", async () => {
+  const s = await scene("turn-over");
+  const flip = s.writes[1]!;
+  expect(turnOver(s, flip)).toEqual({ statement: flip.index, before: 1, after: 2, axis: expect.any(Array) });
+  expect(() => foldMotion(s, flip)).toThrow();
+  const { panels: ps, hints } = panels(s);
+  // the flip takes a panel of its own, on the state the fold leaves; that
+  // split is the rule and earns no hint
+  expect(ps.map((p) => p.number)).toEqual(["1a", "1b", "2", "3"]);
+  expect(ps.map((p) => p.writes.map((w) => w.index))).toEqual([[0], [1], [2], []]);
+  expect(ps.map((p) => p.base)).toEqual([0, 1, 2, 3]);
+  expect(ps.map((p) => p.text)).toEqual([
+    "Fold in half upward.", "Turn the model over.", "Fold in half from left to right.", "Done.",
+  ]);
+  expect(hints).toEqual([]);
+  const svg = renderYr(s).doc.toString();
+  const [fold, turn] = ["1a", "1b"].map((n) => panelSvg(svg, n));
+  expect(count(fold!, "valley-arrow")).toBe(1);
+  expect(count(fold!, "turn-over-arrow")).toBe(0);
+  expect(count(turn!, "valley-arrow") + count(turn!, "valley-line")).toBe(0);
+  expect(turn).toContain('data-kind="turn-over-arrow" data-direction="side-to-side"');
+  // the panel after the flip shows the other side of every face
+  const up = (i: number) => resolveIsometry(s, { kind: "step", index: i }).faceUp;
+  expect(up(2).filter((x) => x).length).toBe(up(1).filter((x) => !x).length);
+});
+
+test("the turn-over arrow lies across the page for side to side and along it for top to bottom", () => {
+  const ink = { ink: "#000", paper: "#fff" };
+  const side = turnOverArrow([100, 100], "side-to-side", ink);
+  const top = turnOverArrow([100, 100], "top-to-bottom", ink);
+  expect(side.attrs["data-direction"]).toBe("side-to-side");
+  expect(top.attrs["data-direction"]).toBe("top-to-bottom");
+  // the width and height of the points the stem's path passes through
+  const span = (n: typeof side) => {
+    const d = String(n.children[0]!.attrs["d"]);
+    const pts = [...d.matchAll(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g)].map((m) => [Number(m[1]), Number(m[2])]);
+    const xs = pts.map((p) => p[0]!), ys = pts.map((p) => p[1]!);
+    return [Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)];
+  };
+  const [sw, sh] = span(side), [tw, th] = span(top);
+  expect(sw).toBeGreaterThan(sh!);
+  expect(th).toBeGreaterThan(tw!);
+});
+
+test("a fold that lays its paper between layers that stay is refused", async () => {
+  const s = await scene("between");
+  expect(() => foldMotion(s, s.writes[1]!)).toThrow(/between layers/);
+  expect(() => renderYr(s)).toThrow(/between layers/);
+});
+
+test("a turn-over inside a step is a panel of its own, without a hint", async () => {
+  const { panels: ps, hints } = panels(await scene("turn-over-split"));
+  expect(ps.map((p) => p.number)).toEqual(["1a", "1b", "1c", "2"]);
+  expect(ps.map((p) => p.writes.map((w) => w.index))).toEqual([[0], [1], [2], []]);
+  expect(hints).toEqual([]);
 });
