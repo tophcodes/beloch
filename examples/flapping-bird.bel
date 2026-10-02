@@ -1,0 +1,125 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; The traditional flapping bird, after the 17 steps of Nick Robinson's
+; diagram [robinson2025bird]. The diagram holds the paper as a diamond and
+; turns the model over at step 9 to fold the back; the program folds the
+; back from the front with mountain folds instead. Steps 5 to 7 and step 10
+; crease lines and unfold them again; a flat state needs no precrease, so
+; the program folds steps 8 and 11 along those lines directly, the way the
+; crane does [ida2020, Fig. 7.19].
+;
+; The kernel folds the model through step 13. Step 14 does not fold yet
+; (#208): it is written out below, commented, with the error it gives, and
+; steps 15 to 17 wait on it. The last state the program reaches is the
+; diagram's picture at step 14.
+
+paper square
+
+; steps 1 and 3 crease the diagonals and the midlines, with the paper
+; turned over between them (step 2), so the two sets fold in opposite
+; directions when step 4 collapses them
+mark (through .a .c) as --ac                ; step 1
+mark (through .b .d) as --bd                ; step 1
+mark (map --ab onto --cd) as --h            ; step 3
+mark (map --da onto --bc) as --v            ; step 3
+
+; step 4: collapse into the square base. .q and .r only name the quarters
+; at .a and .b, so that the quarter at .a comes to lie over the one at .b;
+; the quarter at .c stays where it lies, and its corner is the open end
+; where all four corners meet
+.q = free on --ab from .a at 1/4
+.r = free on --ab from .b at 1/4
+flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (staying .c) (toward .q)    ; step 4
+
+.o = --h * --v                              ; the paper center, the closed end
+--mid = (through .c .o)                     ; center line of the base
+
+; step 8, the petal fold of the front: each front side corner reversed
+; inside along the line of step 5, which takes the raw edge onto the center
+; line, then the bottom corner .a lifted along the line of step 6, the
+; perpendicular to the center line through the point where the side corners
+; landed. `up to` names the center face of the flap; the side corners
+; reversed beneath it follow.
+.sr = --ab * --v
+.sl = --da * --h
+reverse (map .sr onto --mid through .c) as --rsr      ; step 8
+reverse (map .sl onto --mid through .c) as --rsl      ; step 8
+fold (perp --mid through .sr) (moving .a) (up to #[.a .o]) as --pf     ; step 8
+
+; step 11, the petal fold of the back, the same three folds behind
+.br = --bc * --h
+.bl = --cd * --v
+reverse (map .br onto --mid through .c) as --rbr      ; step 11
+reverse (map .bl onto --mid through .c) as --rbl      ; step 11
+fold (perp --mid through .sr) (moving .c) (up to #[.c .o]) (mountain) as --pb      ; step 11
+
+; step 12 turns the front left flap over to the right like the page of a
+; book, then the back one to the left. Each page holds half of a petal and
+; one leg, the flap whose tip is .d in front and .b behind. The crease runs
+; along the center line: it folds the petal in half and opens the leg flat.
+; `up to` names the flap that holds the leg's tip, a side vertex and the
+; paper center. .kl, .kr, .kh and .kv are the four side vertices of the
+; base, where the lines of steps 5 and 6 meet.
+.kl = --rsl * --pf
+.kr = --rsr * --pf
+.kh = --rbr * --pb
+.kv = --rbl * --pb
+fold (through .c .o) (moving .kl) (up to #[.d .kl .o]) as --bkf      ; step 12, front
+fold (through .c .o) (moving .kh) (up to #[.b .kh .o]) (mountain) as --bkb      ; step 12, back
+
+; step 13: the legs, now the flaps at the bottom, folded up along the line
+; of step 6, the front one in front and the back one behind. They become
+; the wings.
+fold (perp --mid through .sr) (moving .d) (up to #[.d .kl .o]) as --wf      ; step 13, front
+fold (perp --mid through .sr) (moving .b) (up to #[.b .kh .o]) (mountain) as --wb      ; step 13, back
+
+; step 14 pulls the half petal that stands between the wings on the left
+; out and flattens it as the tail, so that its bottom edge lines up with
+; the edge at the foot of the wing. That turns the flap about the bottom
+; center of the body, the point .sr, by 45 degrees, and a turn is two
+; reflections: the half petal folded back down along the line of step 6,
+; then reversed up along the perpendicular to its outer edge through .sr,
+; the crease that puts that edge in line. The first of the two fails: the
+; line lies along the bottom edge of the model.
+;
+; .pm = --pf * --bkf
+; fold (perp --mid through .sr) (moving .a) (up to #[.a .kl .pm]) as --ut       ; step 14
+;   error: this fold is degenerate: the crease line lies along the edge of
+;   the paper and does not separate it into two flaps to reflect
+; reverse (perp --rsl & .a through .sr) (moving .a) as --tail                   ; step 14
+;
+; Folded before step 13, while the line still crosses the model, the same
+; fold takes the other half petal along with it. A single reverse of the
+; upright half petal, from .sr to the middle of its outer edge, folds and
+; puts the tip at 45 degrees, but keeps the whole flap above the line of
+; step 6, where the diagram shows part of it below that line from step 15
+; on.
+;
+; Step 15 pulls out the half petal on the right as the neck, step 16
+; creases the head at a point the diagram leaves to the eye, and step 17
+; reverses the head along that crease.
+
+; turned the way the diagram draws the bird from step 14 to the end: the
+; bottom center of the body down, the wing tips up
+@orient .sr .d up
+
+; assert steps = 11
+
+; Pieces of the marks of steps 1 and 3 lie flat in this state, so the 24
+; faces make 20 flaps; a test in test_e2e.ml counts them.
+; assert faces = 24
+
+; all four corners of the square meet at the top: the tips of the two
+; wings and of the two half petals between them
+; assert .a = .c
+; assert .b = .d
+; assert .a = .b
+; assert .o = (1/2, 1/2)
+
+; the outline is a triangle on the line of step 6: the four side corners
+; meet at its middle, and the side vertices lie in pairs at its two ends
+; assert .sr = .sl
+; assert .sr = .br
+; assert .sr = .bl
+; assert .kl = .kr
+; assert .kh = .kv
