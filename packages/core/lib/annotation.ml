@@ -116,7 +116,7 @@ let rec check_list ~(body : bool) (stmts : Ast.stmt list) : unit =
         List.iter
           (fun (a : Ast.annotation) ->
             match (a.Ast.a_ns, a.Ast.a_key) with
-            | None, (("step" | "label" | "say") as key) ->
+            | None, (("step" | "label") as key) ->
                 Error.fail a.Ast.a_span
                   (Printf.sprintf
                      "@%s belongs to the statement after it, and none follows"

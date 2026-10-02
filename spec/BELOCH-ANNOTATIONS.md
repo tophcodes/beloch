@@ -25,9 +25,10 @@ top level and inside a `def` body; in a body it applies once per `apply`
 that runs the body, to the statements of that execution (ADR 0030). An
 annotation after the last statement of the program belongs to the final
 state, and one after the last statement of a body to the state that
-execution of the body leaves. `call`, `orient` and the annotations of an
-output may stand there; `step`, `label` and `say` name a statement, and
-one with no statement after it is an error.
+execution of the body leaves. `call`, `orient`, `say` and the annotations
+of an output may stand there; a `say` there is the sentence for that
+state, such as the name of the finished model. `step` and `label` name a
+statement, and one with no statement after it is an error.
 
 Three keys belong to the program as a whole: `author`, `design` and
 `source` (ADR 0051). They stand at the top level before the first
@@ -53,7 +54,7 @@ key is an error, and so are arguments that do not fit the key.
 |---|---|---|
 | `step` | `[WORD] [TEXT]` | opens a step group: the following statements are one step for the reader. The word labels the step, the text is its instruction. |
 | `label` | `WORD` | names the following statement, so that an output can refer to it |
-| `say` | `TEXT` | the instruction sentence for the following statement |
+| `say` | `TEXT` | the instruction sentence for the following statement, or at the end the sentence for the state there |
 | `call` | `value TEXT` | the name a reader knows the entity by |
 | `orient` | `value [value] direction`, or `value axis` | how the model is turned on the page |
 | `author` | `TEXT` | who wrote the program |
