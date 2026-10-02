@@ -102,17 +102,25 @@ let toward_inside (span : Error.span) : 'a =
 %token NEWLINE                         (* the end of an annotation's line *)
 
 %start <Ast.program> program
-%start <(string * Error.span) option * Ast.shape_def list> library
+%start <Ast.annotation list * (string * Error.span) option * Ast.shape_def list> library
 
 %%
 
+(* The annotations at the head of a file, before `unit`, its shapes and
+   `paper`, belong to the statement after them like any other; they lead
+   [p_stmts]. *)
 program:
-  | unit_decl shape_defs PAPER sheet stmts EOF
-      { { p_unit = $1; p_shapes = $2; p_sheet = $4; p_stmts = $5 } }
+  | head_annotations unit_decl shape_defs PAPER sheet stmts EOF
+      { { p_unit = $2; p_shapes = $3; p_sheet = $5;
+          p_stmts = List.map (fun a -> Annotation a) $1 @ $6 } }
 
 (* a file of shapes alone, read as the shapes a program sees before its own *)
 library:
-  | unit_decl shape_defs EOF { ($1, $2) }
+  | head_annotations unit_decl shape_defs EOF { ($1, $2, $3) }
+
+head_annotations:
+  | { [] }
+  | annotation head_annotations { $1 :: $2 }
 
 unit_decl:
   |            { None }

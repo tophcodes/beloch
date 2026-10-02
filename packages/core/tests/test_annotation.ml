@@ -93,6 +93,30 @@ let test_errors () =
   expect_error "undefined point .zz" (fun () ->
       fold (program "@call .zz \"nowhere\"\n"))
 
+(* ---- the program as a whole (ADR 0051) ---- *)
+
+let test_program_errors () =
+  expect_error "@author belongs before the first statement" (fun () ->
+      fold "paper square\nfold (map .a onto .c)\n@author \"X\"\nfold (map .b onto .d)\n");
+  expect_error "@design belongs before the first statement" (fun () ->
+      fold "paper square\nfold (map .a onto .c)\n@design traditional\n");
+  expect_error "@source belongs before the first statement" (fun () ->
+      fold "paper square\ndef f(.p) {\n  fold (map .p onto .c)\n}\n@source \"Ida\"\napply f(.a)\n");
+  expect_error "@author belongs to the program and stands before its first statement, not in a def body"
+    (fun () -> fold "paper square\ndef f(.p) {\n  @author \"X\"\n  fold (map .p onto .c)\n}\napply f(.a)\n");
+  expect_error "@author stands once in a program" (fun () ->
+      fold "@author \"X\"\npaper square\n@author \"Y\"\nfold (map .a onto .c)\n");
+  expect_error "@design stands once in a program" (fun () ->
+      fold (program "@design traditional\n@design \"Y\"\n"));
+  expect_error "@author takes one text" (fun () -> fold (program "@author Claude\n"));
+  expect_error "@design takes the word traditional or one text" (fun () ->
+      fold (program "@design modern\n"));
+  expect_error "@source takes one text" (fun () -> fold (program "@source ida2020\n"));
+  expect_error "@source takes one text" (fun () ->
+      fold (program "@source \"[ida2020]\" \"Fig. 7.19\"\n"));
+  expect_error "@author stands once in a program" (fun () ->
+      Parse.library ~filename:"lib.bel" "@author \"X\"\n@author \"Y\"\n")
+
 (* ---- output ---- *)
 
 let test_emit () =
@@ -202,6 +226,40 @@ let test_emit_trailing_in_body () =
     (fun j -> Alcotest.(check bool) "no target" true (j |> member "target" = `Null))
     anns
 
+(* The keys of the program stand before `paper` or after it, before the first
+   statement. [author] fills FOLD's [file_author], and every one of them has the
+   target "program". *)
+let test_emit_program () =
+  let json =
+    fold
+      "@author \"Claude (Anthropic)\"\n\
+       @design traditional\n\
+       @source \"[ida2020, Fig. 7.19]\"\n\
+       unit cm\n\
+       paper square 15\n\
+       @source \"[candia2025cicada]\"\n\
+       @step\n\
+       fold (map .a onto .c)\n"
+  in
+  let open Yojson.Safe.Util in
+  Alcotest.(check string) "file_author" "Claude (Anthropic)"
+    (json |> member "file_author" |> to_string);
+  let anns = annotations json in
+  Alcotest.(check (list string)) "keys in reading order"
+    [ "author"; "design"; "source"; "source"; "step" ]
+    (List.map (fun j -> j |> member "key" |> to_string) anns);
+  Alcotest.(check (list string)) "the program is the target of its keys"
+    [ "\"program\""; "\"program\""; "\"program\""; "\"program\""; "[0,0]" ]
+    (List.map (fun j -> j |> member "target" |> Yojson.Safe.to_string) anns);
+  let design = List.nth anns 1 in
+  Alcotest.(check string) "traditional is a word" "traditional"
+    (List.hd (design |> member "args" |> to_list) |> member "word" |> to_string);
+  let source = List.nth anns 2 in
+  Alcotest.(check (list string)) "the source is one text" [ "[ida2020, Fig. 7.19]" ]
+    (List.map (fun a -> a |> member "text" |> to_string) (source |> member "args" |> to_list));
+  Alcotest.(check bool) "no file_author without @author" true
+    (fold "paper square\nfold (map .a onto .c)\n" |> member "file_author" = `Null)
+
 (* ---- the geometry never depends on an annotation (ADR 0029) ---- *)
 
 (* Every annotation replaced by spaces, line breaks kept, so every span of
@@ -226,11 +284,19 @@ let blank_annotations (src : string) : string =
 
 let without_annotations json =
   match json with
-  | `Assoc fields -> `Assoc (List.filter (fun (k, _) -> k <> "beloch:annotations") fields)
+  | `Assoc fields ->
+      `Assoc
+        (List.filter (fun (k, _) -> k <> "beloch:annotations" && k <> "file_author") fields)
   | j -> j
 
 let invariant_programs =
   [
+    ( "the keys of the program",
+      "@author \"Claude (Anthropic)\"\n\
+       @design \"Someone\"\n\
+       paper square\n\
+       @source \"[ida2020, Fig. 7.19]\"\n\
+       fold (map .a onto .c) as --bd\n" );
     ( "the vocabulary",
       "paper square\n\
        @step prelim \"Fold the diagonal.\"\n\
@@ -282,13 +348,18 @@ let () =
           Alcotest.test_case "keys, namespaces, text" `Quick test_parse;
           Alcotest.test_case "inside a def body" `Quick test_parse_in_body;
         ] );
-      ("check", [ Alcotest.test_case "static and read errors" `Quick test_errors ]);
+      ( "check",
+        [
+          Alcotest.test_case "static and read errors" `Quick test_errors;
+          Alcotest.test_case "the keys of the program" `Quick test_program_errors;
+        ] );
       ( "emit",
         [
           Alcotest.test_case "beloch:annotations" `Quick test_emit;
           Alcotest.test_case "once per execution of a body" `Quick test_emit_in_body;
           Alcotest.test_case "after the last statement" `Quick test_emit_trailing;
           Alcotest.test_case "after a body's last statement" `Quick test_emit_trailing_in_body;
+          Alcotest.test_case "the keys of the program" `Quick test_emit_program;
         ] );
       ( "invariance",
         [ Alcotest.test_case "the geometry ignores annotations" `Quick test_invariant ] );

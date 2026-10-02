@@ -13,7 +13,16 @@ let shape_of (a : Ast.annot_arg) : shape =
   | Ast.AvNumber _ -> Number
   | Ast.AvWord w -> Word w
 
-let vocabulary = [ "step"; "label"; "say"; "call"; "orient" ]
+let vocabulary = [ "step"; "label"; "say"; "call"; "orient"; "author"; "design"; "source" ]
+
+(* the keys that belong to the program as a whole (ADR 0051) *)
+let program_keys = [ "author"; "design"; "source" ]
+
+(* the program keys that stand once in a program *)
+let once_keys = [ "author"; "design" ]
+
+let is_program_key (a : Ast.annotation) =
+  a.Ast.a_ns = None && List.mem a.Ast.a_key program_keys
 let directions = [ "up"; "right"; "down"; "left" ]
 let axes = [ "vertical"; "horizontal" ]
 
@@ -53,6 +62,13 @@ let check_args (a : Ast.annotation) : unit =
             "a point and a direction, two points and a direction, or a line \
              and an axis; a direction is up, right, down or left, an axis \
              vertical or horizontal"
+      | "author", [ Text ] -> ()
+      | "author", _ -> wrong "one text, the name of who wrote the program"
+      | "design", ([ Word "traditional" ] | [ Text ]) -> ()
+      | "design", _ ->
+          wrong "the word traditional or one text, the name of the model's designer"
+      | "source", [ Text ] -> ()
+      | "source", _ -> wrong "one text, the published sequence the program follows"
       | key, _ ->
           Error.fail
             ~hint:
@@ -68,9 +84,31 @@ let label_of (a : Ast.annotation) : (string * Error.span) option =
   | None, ("label" | "step"), { Ast.av = Ast.AvWord w; av_span } :: _ -> Some (w, av_span)
   | _ -> None
 
+(* A program key stands at the top level before the first statement, and
+   [author] and [design] once each. [head] is true while no statement of the
+   list has been seen, and is false throughout a def body. *)
+let check_placement ~(head : bool) ~(body : bool) (seen : (string, unit) Hashtbl.t)
+    (a : Ast.annotation) : unit =
+  if is_program_key a then begin
+    let key = a.Ast.a_key in
+    if body then
+      Error.fail a.Ast.a_span
+        (Printf.sprintf
+           "@%s belongs to the program and stands before its first statement, \
+            not in a def body"
+           key);
+    if not head then
+      Error.fail a.Ast.a_span (Printf.sprintf "@%s belongs before the first statement" key);
+    if List.mem key once_keys && Hashtbl.mem seen key then
+      Error.fail a.Ast.a_span (Printf.sprintf "@%s stands once in a program" key);
+    Hashtbl.replace seen key ()
+  end
+
 (* one statement list: the top level or one def body *)
-let rec check_list (stmts : Ast.stmt list) : unit =
+let rec check_list ~(body : bool) (stmts : Ast.stmt list) : unit =
   let labels = Hashtbl.create 8 in
+  let program_seen = Hashtbl.create 2 in
+  let head = ref true in
   let rec go (run : Ast.annotation list) = function
     | [] ->
         (* an annotation at the end of the list belongs to the state after
@@ -87,6 +125,7 @@ let rec check_list (stmts : Ast.stmt list) : unit =
           (List.rev run)
     | Ast.Annotation a :: rest ->
         check_args a;
+        check_placement ~head:!head ~body program_seen a;
         (match label_of a with
         | Some (w, sp) ->
             if Hashtbl.mem labels w then
@@ -97,14 +136,20 @@ let rec check_list (stmts : Ast.stmt list) : unit =
            && List.exists (fun (b : Ast.annotation) -> b.Ast.a_ns = None && b.Ast.a_key = "step") run
         then Error.fail a.Ast.a_span "a statement opens at most one step";
         go (a :: run) rest
-    | Ast.Def (_, _, body, _) :: rest ->
-        check_list body;
+    | Ast.Def (_, _, stmts, _) :: rest ->
+        head := false;
+        check_list ~body:true stmts;
         go [] rest
-    | _ :: rest -> go [] rest
+    | _ :: rest ->
+        head := false;
+        go [] rest
   in
   go [] stmts
 
-let check (prog : Ast.program) : unit = check_list prog.Ast.p_stmts
+let check (prog : Ast.program) : unit = check_list ~body:false prog.Ast.p_stmts
+
+let check_head (annotations : Ast.annotation list) : unit =
+  check_list ~body:false (List.map (fun a -> Ast.Annotation a) annotations)
 
 (* ---- reading the arguments ---- *)
 

@@ -323,10 +323,14 @@ let beloch_statements_json (statements : Eval.stmt_log_entry list) : Yojson.Safe
          | Some m -> `Assoc (("mark", mark_json m) :: common))
        statements)
 
+let is_program_annotation (a : Ctx.annot_entry) =
+  a.Ctx.an_ns = None && List.mem a.Ctx.an_key Annotation.program_keys
+
 (* beloch:annotations: one entry per annotation read, in the order the
    statements ran (ADR 0029, spec/FOLD.md). [target] is the range of
    beloch:statements entries it belongs to: one entry, or for a step every
-   entry up to the next step. *)
+   entry up to the next step; the string "program" for a key of the program
+   as a whole; null after the last statement of its list. *)
 let beloch_annotations_json (annotations : Ctx.annot_entry list)
     (n_statements : int) : Yojson.Safe.t =
   let is_step (a : Ctx.annot_entry) = a.Ctx.an_ns = None && a.Ctx.an_key = "step" in
@@ -370,7 +374,9 @@ let beloch_annotations_json (annotations : Ctx.annot_entry list)
              ("key", `String a.Ctx.an_key);
              ("namespace", match a.Ctx.an_ns with Some ns -> `String ns | None -> `Null);
              ( "target",
-               if a.Ctx.an_target < 0 then `Null else `List [ `Int from; `Int until ] );
+               if is_program_annotation a then `String "program"
+               else if a.Ctx.an_target < 0 then `Null
+               else `List [ `Int from; `Int until ] );
              ("frame_index", `Int a.Ctx.an_frame_index);
              ("source_line", `Int (fst a.Ctx.an_span).Lexing.pos_lnum);
              ("span", `String (Error.span_to_string a.Ctx.an_span));
@@ -729,10 +735,22 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
                ] ))
          fd.Eval.free_points)
   in
+  (* FOLD's [file_author]: who wrote the program, from its [@author] *)
+  let file_author =
+    List.find_map
+      (fun (a : Ctx.annot_entry) ->
+        match (a.Ctx.an_ns, a.Ctx.an_key, a.Ctx.an_args) with
+        | None, "author", [ (Ctx.AvText t, _) ] -> Some ("file_author", `String t)
+        | _ -> None)
+      fd.Eval.annotations
+  in
   `Assoc
     ([
       ("file_spec", `Float 1.1);
       ("file_creator", `String ("beloch " ^ Version.version));
+    ]
+    @ Option.to_list file_author
+    @ [
       ("frame_classes", `List [ `String "creasePattern" ]);
       ("frame_unit", `String fd.Eval.unit_name);
       ("vertices_coords", `List verts_paper);
