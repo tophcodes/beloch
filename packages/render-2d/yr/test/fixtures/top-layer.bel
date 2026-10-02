@@ -1,0 +1,15 @@
+@author "Claude (Anthropic)"
+; A fold of the top layer of a folded square: the arrow hooks its tail
+; around the layer that moves.
+
+paper square
+
+@say "Fold in half upward."
+fold (map --ab onto --cd)
+
+.p = free on --da from .a at 1/4
+.q = free on --bc from .b at 1/4
+@say "Fold the top layer down along the middle."
+fold (through .p .q) (moving .a) (up to .a)
+
+@say "Done."

@@ -14,11 +14,12 @@ or folded-occlusion diagrams out. The input contract is `spec/FOLD.md`.
   Rabbit Ear-based development tool this CLI replaced.
 - **`yr/`** (`@beloch/yr`): the YR-style folding diagram (ADR 0029).
   `panels` selects one panel per step group, `foldMotion` reads what a fold
-  moves and whether it is a valley or a reverse fold from the standard FOLD,
-  the primitives in `draw.ts` draw the lines and arrows of the notation,
-  `existingCreaseSegments` the creases already in the paper,
-  `rotationSymbol` the turn between two panels, and `renderYr` stacks the
-  panels in one column, at a scale that grows as the model shrinks.
+  moves and whether it is a valley, a mountain or a reverse fold from the
+  standard FOLD, `turnOver` recognizes a `flip`, the primitives in `draw.ts`
+  draw the lines and arrows of the notation, `existingCreaseSegments` the
+  creases already in the paper, `rotationSymbol` the turn between two
+  panels, and `renderYr` stacks the panels in one column, at a scale that
+  grows as the model shrinks.
 - **`cli/`** (`@beloch/render-cli`): the `beloch-render` command over the
   packages above. It sits in a package of its own so that every output
   library is a dependency of the command and none of another.

@@ -1,0 +1,17 @@
+@author "Claude (Anthropic)"
+; Turning the model over: the fold and the flip of the first step are drawn
+; as 1a and 1b, the turn-over arrow on the folded state, and the panel after
+; it shows the other side.
+
+paper square
+
+@step "Fold in half upward, then turn the model over."
+@say "Fold in half upward."
+fold (map --ab onto --cd)
+@say "Turn the model over."
+flip
+
+@step "Fold in half from left to right."
+fold (map --bc onto --da)
+
+@say "Done."
