@@ -1,0 +1,11 @@
+@author "Claude (Anthropic)"
+
+; The square folded in half lies beside its crease --d. unfold turns the
+; layer of .b back over --d, and the folded hinge on --d opens.
+paper square
+fold (map .b onto .a) as --d
+unfold (--d) (moving .b)
+
+; assert .b = (1, 0)
+; assert .a = (0, 0)
+; assert steps = 2

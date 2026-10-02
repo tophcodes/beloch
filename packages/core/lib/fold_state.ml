@@ -1533,6 +1533,16 @@ let line_cuts_paper (g : t) (l : Geom.line) : bool =
     (fun i -> Geom.line_cuts_polygon l (table_polygon_ccw g i))
     (List.init (Array.length g.faces) Fun.id)
 
+(* material strictly on each side of the line: the faces need not be cut by
+   it, since a face split along it lies on one side *)
+let paper_on_both_sides (g : t) (l : Geom.line) : bool =
+  let sides =
+    List.concat_map
+      (fun i -> Array.to_list (Array.map (Geom.side_of_line l) (table_polygon_ccw g i)))
+      (List.init (Array.length g.faces) Fun.id)
+  in
+  List.mem 1 sides && List.mem (-1) sides
+
 type scope_target = TargetFaces of int list | TargetHinged of (int -> bool)
 
 (* Per face, the faces joined to it by a hinge off [axis]: one whose table

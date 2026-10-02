@@ -1,5 +1,5 @@
-(** The disposition verbs that write to the fold state: `mark`, `fold` and
-    `reverse` (ADR 0011), plus the checked-fold primitive `fold` and
+(** The disposition verbs that write to the fold state: `mark`, `fold`,
+    `unfold` and `reverse` (ADR 0011), plus the checked-fold primitive `fold` and
     `reverse` share. Every stateful function takes [(ctx : Ctx.ctx)] as its
     first parameter. *)
 
@@ -20,15 +20,19 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
     ~(side_override : int option) ~(crease_id : int)
     ~(prov : State.provenance option)
     ~(check : ((int -> bool) -> unit) option) : unit =
-  (* A degenerate fold: the crease is a supporting line of the convex paper:
-     collinear with a boundary edge, or tangent at a single corner (zero-length
-     crease). Either way one open half-plane holds no material, so there is no
-     second flap to reflect. Structurally impossible (issue #39), an error, not
-     a no-op. `line_cuts_paper` is false iff no face is strictly cut. *)
-  if not (Fold_state.line_cuts_paper !(ctx.state) axis) then
-    Error.fail span
-      "this fold is degenerate — the crease line lies along the edge of the \
-       paper and does not separate it into two flaps to reflect";
+  (* With all of the paper on one side of the line (along the edge of the
+     paper, through a single corner, or along hinges with every layer on one
+     side) a fold would reflect every layer and open or close nothing, so it
+     is an error; turning some layers over such a line is `unfold`
+     (ADR 0053). A line along hinges with paper on both sides folds: the
+     hinges on it toggle (`lem-toggle`). *)
+  if not (Fold_state.paper_on_both_sides !(ctx.state) axis) then
+    Error.fail
+      ~hint:"unfold (…) (moving .p) turns the layers of .p over the line"
+      span
+      "every layer lies on one side of this line, so it does not separate the \
+       paper into two flaps and a fold along it has nothing to fold over; to \
+       turn layers over it about the hinges on it, write unfold";
   (* [side_override] fixes the moving side (axiom-5 derived direction), so the
      anchor is only needed to scope an `up to` range *)
   let anchor_arg =
@@ -681,3 +685,135 @@ let eval_reverse (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
   | Error e -> Error.fail span (Fold_state.reverse_failure_to_string e));
   push_frame ctx (Some span);
   bind_out (Material (cid, axis))
+
+(* `unfold` (ADR 0053): the moving layers cross the axis, so every hinge on
+   it between a moving and a staying layer opens. The moving set is the one
+   `def-fold` gives for a depth: the flap `up to` names, else the flap
+   `moving` names, every layer outward of it (above, or below for
+   `(moving … down)`) and every layer joined to those by a hinge off the axis. With
+   `toward` alone, the same closure run inward from the flap `toward` names
+   is what stays, and every other layer on its side moves. *)
+let eval_unfold (ctx : Ctx.ctx) (lo : Ast.line_operand) (fs : Ast.fold_spec)
+    (span : Error.span) : unit =
+  (match lo with
+  | Ast.LNamed cr ->
+      ignore (Resolve.crease_of ctx cr ~slot:"the axis of unfold" cr.Ast.cspan)
+  | _ -> ());
+  let axis = Resolve.resolve_line ctx lo in
+  let st = !(ctx.state) in
+  let n = Array.length (Fold_state.faces st) in
+  let valley = fs.Ast.direction = Ast.Valley in
+  let stayer =
+    match fs.Ast.toward with
+    | None -> None
+    | Some { Ast.target = Ast.TowardPoint p; subject = None } -> Some p
+    | Some _ ->
+        Error.fail ~hint:"write (toward .p)" span
+          "the toward of unfold names a point of a layer that stays"
+  in
+  let depth = match fs.Ast.up_to with Some d -> Some d | None -> fs.Ast.moving in
+  let move_side =
+    match (fs.Ast.moving, depth, stayer) with
+    | Some fa, _, _ | None, Some fa, _ -> Resolve.default_move_side ctx axis fa span
+    | None, None, Some p ->
+        let s = Geom.side_of_line axis (Resolve.table_of ctx p) in
+        if s = 0 then Error.fail span "the toward point lies on the axis" else s
+    | None, None, None ->
+        Error.fail
+          ~hint:"name a layer that turns with (moving .p), or one that stays with (toward .p)"
+          span "unfold needs to know which layers turn over the line"
+  in
+  let cand f =
+    Array.length
+      (Geom.clip_convex_halfplane axis move_side (Fold_state.table_polygon st f))
+    >= 3
+  in
+  let scope ~valley ~anchor target =
+    match Fold_state.select_scope st ~axis ~move_side ~valley ~anchor ~target with
+    | Ok m -> m
+    | Error (msg, hint) -> Error.fail ?hint span msg
+  in
+  let moving =
+    match depth with
+    | Some d ->
+        let target = Resolve.target_of ctx d span in
+        let anchor =
+          match (target, fs.Ast.moving) with
+          | Fold_state.TargetHinged _, Some fa -> (
+              match Resolve.anchor_faces ctx fa span with
+              | [] -> None
+              | f :: _ as fs -> Some (Option.value (List.find_opt cand fs) ~default:f))
+          | _ -> None
+        in
+        scope ~valley ~anchor target
+    | None ->
+        let p = Option.get stayer in
+        let stay =
+          scope ~valley:(not valley) ~anchor:None
+            (Resolve.target_of ctx (Ast.FlapPoint p) span)
+        in
+        Array.init n (fun f -> cand f && not stay.(f))
+  in
+  (match (stayer, depth) with
+  | Some p, Some _ ->
+      if
+        List.exists
+          (fun f -> moving.(f))
+          (Resolve.resolve_flap_cluster ctx (Ast.FlapPoint p) span)
+      then
+        Error.fail span
+          (Printf.sprintf "the layer of %s that toward names would turn with the moving layers"
+             (Resolve.pstr p))
+  | _ -> ());
+  let hs = Fold_state.hinges st in
+  let on_axis hi =
+    let a, b = Fold_state.hinge_table_segment st hi in
+    Geom.side_of_line axis a = 0 && Geom.side_of_line axis b = 0
+  in
+  let between hi = moving.(hs.(hi).Fold_state.fa) <> moving.(hs.(hi).Fold_state.fb) in
+  let hinge_ids = List.init (Array.length hs) Fun.id in
+  (* A moving layer that runs across the axis, or meets a staying layer at a
+     flat hinge on it, would be folded there instead of crossing it whole. *)
+  if
+    List.exists
+      (fun f -> moving.(f) && Geom.line_cuts_polygon axis (Fold_state.table_polygon_ccw st f))
+      (List.init n Fun.id)
+  then
+    Error.fail ~hint:"fold along the line to crease that layer" span
+      "a layer that unfold moves runs across the axis, so part of it would \
+       not cross it; unfold turns layers over whole";
+  if
+    List.exists
+      (fun hi -> between hi && on_axis hi && Num.sign hs.(hi).Fold_state.angle = 0)
+      hinge_ids
+  then
+    Error.fail
+      ~hint:"fold along the line: it folds the flat hinges on it and opens the folded ones"
+      span
+      "a layer that unfold moves lies flat beside a layer that stays across \
+       the axis, so it would not cross the axis alone: turning it over folds \
+       the hinge between them";
+  (match Fold_state.scoped_fold_hinge_closed st ~axis ~move_side ~moving_parents:moving with
+  | Ok () -> ()
+  | Error t -> tear_error span t);
+  if not (List.exists (fun hi -> between hi && on_axis hi) hinge_ids) then
+    Error.fail
+      ~hint:"name fewer layers with moving or up to, or a layer that stays with toward"
+      span
+      "no hinge on the axis lies between a layer that moves and one that \
+       stays, so unfold would open none";
+  let placement = if valley then Fold_state.Top else Fold_state.Bottom in
+  Ctx.record_write ctx (Trace.fold_terms st ~axis ~move_side ~moving placement) [];
+  (match
+     Fold_state.fold_blocks ~blocks:[ (moving, placement) ] st ~axis ~move_side
+       ~prov:None
+   with
+  | Ok st' -> ctx.state := st'
+  | Error (Fold_state.Taco_tortilla { tortilla; _ }) ->
+      Error.fail ~hint:"turn the layers the other way with (moving … down) or (moving … up), or name more of them"
+        span (Printf.sprintf "turning these layers over would pierce layer %d" tortilla)
+  | Error (Fold_state.Taco_taco (_, _)) ->
+      Error.fail ~hint:"turn the layers the other way with (moving … down) or (moving … up), or name more of them"
+        span "turning these layers over would pierce another layer"
+  | Error v -> Error.fail span (Fold_state.violation_to_string v));
+  push_frame ctx (Some span)
