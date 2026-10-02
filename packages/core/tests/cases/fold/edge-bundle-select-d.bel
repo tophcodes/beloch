@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; Companion to edge-bundle-select-c.bel: selecting the OTHER
 ; boundary segment of --cd (`.d` instead of `.c`) folds the opposite half,

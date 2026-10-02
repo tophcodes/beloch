@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; An alignment is an incidence, so (--cd onto .a) is (.a onto --cd). With
 ; no side item the side of the first object folds over: here the edge --cd,

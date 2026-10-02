@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; Axiom 7: both candidates carry out the two alignments, the horizontal one
 ; by folding the corner .d onto --diag at .a and --anti onto .a. (.a toward

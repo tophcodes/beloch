@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; M1 regression: point .m and line --m share a bare stem but live in
 ; separate namespaces (`.` vs `--`), so they may be bound at DIFFERENT

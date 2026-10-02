@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; On the flat sheet #[.b] is the whole sheet, and moving names the side of
 ; its point, as (moving .b) does. That side folds over and carries a point

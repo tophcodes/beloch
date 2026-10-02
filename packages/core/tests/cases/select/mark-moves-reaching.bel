@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; The pinch of mark-moves-short.bel, made from the center to the top edge:
 ; it reaches the point of its line at height sqrt(3)/2, so the fold that

@@ -1,7 +1,9 @@
 {
   "file_spec": 1.1,
-  "file_creator": "beloch 0.3.0-dev",
+  "file_creator": "beloch 0.4.0",
+  "file_author": "Claude (Anthropic)",
   "frame_classes": [ "creasePattern" ],
+  "frame_unit": "unit",
   "vertices_coords": [
     [ 0.7071067811865476, 0.2928932188134525 ],
     [ 1.0, 0.41421356237309503 ],
@@ -35,6 +37,28 @@
     "V", "B", "F", "F", "V", "F", "B", "V", "F", "V", "B", "F", "B", "B",
     "F", "B"
   ],
+  "edges_foldAngle": [
+    180.0, 0.0, 0.0, 0.0, 180.0, 0.0, 0.0, 180.0, 0.0, 180.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0
+  ],
+  "edges_faces": [
+    [ 0, 6 ],
+    [ 0 ],
+    [ 0, 2 ],
+    [ 0, 1 ],
+    [ 1, 7 ],
+    [ 1, 3 ],
+    [ 2 ],
+    [ 2, 4 ],
+    [ 2, 3 ],
+    [ 3, 5 ],
+    [ 4 ],
+    [ 4, 5 ],
+    [ 5 ],
+    [ 6 ],
+    [ 6, 7 ],
+    [ 7 ]
+  ],
   "faces_vertices": [
     [ 0, 1, 2, 3 ],
     [ 4, 0, 3 ],
@@ -49,7 +73,7 @@
     {
       "axiom": "axiom5",
       "sources": [ "--ab", "--ac" ],
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:7:1-26",
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:8:1-26",
       "statement": 5,
       "name": null,
       "crease_id": 3
@@ -58,7 +82,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:2:1-29",
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
       "statement": 0,
       "name": "ac",
       "crease_id": 0
@@ -66,7 +90,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".d" ],
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:4:1-29",
       "statement": 1,
       "name": "bd",
       "crease_id": 1
@@ -74,7 +98,7 @@
     {
       "axiom": "axiom5",
       "sources": [ "--ab", "--ac" ],
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:7:1-26",
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:8:1-26",
       "statement": 5,
       "name": null,
       "crease_id": 3
@@ -82,7 +106,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:2:1-29",
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
       "statement": 0,
       "name": "ac",
       "crease_id": 0
@@ -91,7 +115,7 @@
     {
       "axiom": "axiom5",
       "sources": [ "--da", "--ac" ],
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:6:1-26",
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:7:1-26",
       "statement": 4,
       "name": null,
       "crease_id": 2
@@ -99,7 +123,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".d" ],
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:4:1-29",
       "statement": 1,
       "name": "bd",
       "crease_id": 1
@@ -107,7 +131,7 @@
     {
       "axiom": "axiom5",
       "sources": [ "--da", "--ac" ],
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:6:1-26",
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:7:1-26",
       "statement": 4,
       "name": null,
       "crease_id": 2
@@ -116,7 +140,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".d" ],
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:4:1-29",
       "statement": 1,
       "name": "bd",
       "crease_id": 1
@@ -126,7 +150,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".d" ],
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:4:1-29",
       "statement": 1,
       "name": "bd",
       "crease_id": 1
@@ -139,7 +163,7 @@
         "name": "bd",
         "axiom": "axiom1",
         "sources": [ ".b", ".d" ],
-        "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
+        "span": "packages/runtime/editor/test/fixtures/bindings.bel:4:1-29",
         "segments": [
           {
             "faces": [ 6, 7 ],
@@ -189,7 +213,7 @@
         "name": "ac",
         "axiom": "axiom1",
         "sources": [ ".a", ".c" ],
-        "span": "packages/runtime/editor/test/fixtures/bindings.bel:2:1-29",
+        "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
         "segments": [
           {
             "faces": [ 1, 3 ],
@@ -209,7 +233,7 @@
         "name": null,
         "axiom": "axiom5",
         "sources": [ "--ab", "--ac" ],
-        "span": "packages/runtime/editor/test/fixtures/bindings.bel:7:1-26",
+        "span": "packages/runtime/editor/test/fixtures/bindings.bel:8:1-26",
         "segments": [
           {
             "faces": [ 1, 7 ],
@@ -239,7 +263,7 @@
         "name": null,
         "axiom": "axiom5",
         "sources": [ "--da", "--ac" ],
-        "span": "packages/runtime/editor/test/fixtures/bindings.bel:6:1-26",
+        "span": "packages/runtime/editor/test/fixtures/bindings.bel:7:1-26",
         "segments": [
           {
             "faces": [ 3, 5 ],
@@ -476,8 +500,9 @@
         "crease_id": 0
       },
       "kind": "mark",
-      "source_line": 2,
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:2:1-29",
+      "parent": null,
+      "source_line": 3,
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
       "frame_index": 0,
       "kept_marks": [
         {
@@ -500,33 +525,9 @@
         "crease_id": 1
       },
       "kind": "mark",
-      "source_line": 3,
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
-      "frame_index": 0,
-      "kept_marks": [
-        {
-          "kind": "seg",
-          "a": [ 0.0, 0.0 ],
-          "b": [ 1.0, 1.0 ],
-          "line": [ 1.0, -1.0, 0.0 ],
-          "intent": "V",
-          "crease_id": 0
-        },
-        {
-          "kind": "seg",
-          "a": [ 1.0, 0.0 ],
-          "b": [ 0.0, 1.0 ],
-          "line": [ 1.0, 1.0, 1.0 ],
-          "intent": "V",
-          "crease_id": 1
-        }
-      ]
-    },
-    {
-      "mark": null,
-      "kind": "bind",
+      "parent": null,
       "source_line": 4,
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:4:1-26",
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:4:1-29",
       "frame_index": 0,
       "kept_marks": [
         {
@@ -550,8 +551,35 @@
     {
       "mark": null,
       "kind": "bind",
+      "parent": null,
       "source_line": 5,
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:5:1-19",
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:5:1-26",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 6,
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:6:1-19",
       "frame_index": 0,
       "kept_marks": [
         {
@@ -575,44 +603,62 @@
     {
       "mark": null,
       "kind": "fold",
-      "source_line": 6,
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:6:1-26",
+      "parent": null,
+      "source_line": 7,
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:7:1-26",
       "frame_index": 1,
       "kept_marks": []
     },
     {
       "mark": null,
       "kind": "fold",
-      "source_line": 7,
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:7:1-26",
+      "parent": null,
+      "source_line": 8,
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:8:1-26",
       "frame_index": 2,
       "kept_marks": []
     }
   ],
   "beloch:references": [
     {
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:5:8-12",
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:6:8-12",
       "crease_id": 0
     },
     {
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:5:15-19",
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:6:15-19",
       "crease_id": 1
     },
     {
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:6:11-15",
-      "edge": "da"
-    },
-    {
-      "span": "packages/runtime/editor/test/fixtures/bindings.bel:6:21-25",
-      "crease_id": 0
-    },
-    {
       "span": "packages/runtime/editor/test/fixtures/bindings.bel:7:11-15",
-      "edge": "ab"
+      "edge": "da"
     },
     {
       "span": "packages/runtime/editor/test/fixtures/bindings.bel:7:21-25",
       "crease_id": 0
+    },
+    {
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:8:11-15",
+      "edge": "ab"
+    },
+    {
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:8:21-25",
+      "crease_id": 0
+    }
+  ],
+  "beloch:annotations": [
+    {
+      "key": "author",
+      "namespace": null,
+      "target": "program",
+      "frame_index": 0,
+      "source_line": 1,
+      "span": "packages/runtime/editor/test/fixtures/bindings.bel:1:1-2:1",
+      "args": [
+        {
+          "text": "Claude (Anthropic)",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:1:9-29"
+        }
+      ]
     }
   ],
   "file_frames": [
@@ -626,6 +672,7 @@
       "edges_vertices": [ [ 0, 1 ], [ 1, 2 ], [ 2, 3 ], [ 3, 0 ] ],
       "edges_assignment": [ "B", "B", "B", "B" ],
       "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0 ],
+      "edges_faces": [ [ 0 ], [ 0 ], [ 0 ], [ 0 ] ],
       "faces_vertices": [ [ 0, 1, 2, 3 ] ],
       "beloch:faces_matrix": [ [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ] ],
       "faceOrders": [],
@@ -666,6 +713,20 @@
       "edges_foldAngle": [
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 180.0, 0.0, 180.0, 0.0, 0.0, 0.0
       ],
+      "edges_faces": [
+        [ 0 ],
+        [ 0, 2 ],
+        [ 0, 1 ],
+        [ 1 ],
+        [ 1, 3 ],
+        [ 2 ],
+        [ 2, 4 ],
+        [ 2, 3 ],
+        [ 3, 5 ],
+        [ 4 ],
+        [ 4, 5 ],
+        [ 5 ]
+      ],
       "faces_vertices": [
         [ 0, 1, 2 ],
         [ 3, 0, 2 ],
@@ -689,13 +750,13 @@
         ]
       ],
       "faceOrders": [ [ 2, 4, 1 ], [ 2, 5, 1 ], [ 3, 5, 1 ] ],
-      "beloch:source_line": 6,
+      "beloch:source_line": 7,
       "beloch:edges": [
         null,
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "packages/runtime/editor/test/fixtures/bindings.bel:2:1-29",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
           "statement": 0,
           "name": "ac",
           "crease_id": 0
@@ -703,7 +764,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".d" ],
-          "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:4:1-29",
           "statement": 1,
           "name": "bd",
           "crease_id": 1
@@ -712,7 +773,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "packages/runtime/editor/test/fixtures/bindings.bel:2:1-29",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
           "statement": 0,
           "name": "ac",
           "crease_id": 0
@@ -721,7 +782,7 @@
         {
           "axiom": "axiom5",
           "sources": [ "--da", "--ac" ],
-          "span": "packages/runtime/editor/test/fixtures/bindings.bel:6:1-26",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:7:1-26",
           "statement": 4,
           "name": null,
           "crease_id": 2
@@ -729,7 +790,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".d" ],
-          "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:4:1-29",
           "statement": 1,
           "name": "bd",
           "crease_id": 1
@@ -737,7 +798,7 @@
         {
           "axiom": "axiom5",
           "sources": [ "--da", "--ac" ],
-          "span": "packages/runtime/editor/test/fixtures/bindings.bel:6:1-26",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:7:1-26",
           "statement": 4,
           "name": null,
           "crease_id": 2
@@ -746,7 +807,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".d" ],
-          "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:4:1-29",
           "statement": 1,
           "name": "bd",
           "crease_id": 1
@@ -796,6 +857,24 @@
         180.0, 0.0, 0.0, 0.0, 180.0, 0.0, 0.0, 180.0, 0.0, 180.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0
       ],
+      "edges_faces": [
+        [ 0, 6 ],
+        [ 0 ],
+        [ 0, 2 ],
+        [ 0, 1 ],
+        [ 1, 7 ],
+        [ 1, 3 ],
+        [ 2 ],
+        [ 2, 4 ],
+        [ 2, 3 ],
+        [ 3, 5 ],
+        [ 4 ],
+        [ 4, 5 ],
+        [ 5 ],
+        [ 6 ],
+        [ 6, 7 ],
+        [ 7 ]
+      ],
       "faces_vertices": [
         [ 0, 1, 2, 3 ],
         [ 4, 0, 3 ],
@@ -836,12 +915,12 @@
         [ 2, 5, 1 ],
         [ 3, 5, 1 ]
       ],
-      "beloch:source_line": 7,
+      "beloch:source_line": 8,
       "beloch:edges": [
         {
           "axiom": "axiom5",
           "sources": [ "--ab", "--ac" ],
-          "span": "packages/runtime/editor/test/fixtures/bindings.bel:7:1-26",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:8:1-26",
           "statement": 5,
           "name": null,
           "crease_id": 3
@@ -850,7 +929,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "packages/runtime/editor/test/fixtures/bindings.bel:2:1-29",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
           "statement": 0,
           "name": "ac",
           "crease_id": 0
@@ -858,7 +937,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".d" ],
-          "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:4:1-29",
           "statement": 1,
           "name": "bd",
           "crease_id": 1
@@ -866,7 +945,7 @@
         {
           "axiom": "axiom5",
           "sources": [ "--ab", "--ac" ],
-          "span": "packages/runtime/editor/test/fixtures/bindings.bel:7:1-26",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:8:1-26",
           "statement": 5,
           "name": null,
           "crease_id": 3
@@ -874,7 +953,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "packages/runtime/editor/test/fixtures/bindings.bel:2:1-29",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
           "statement": 0,
           "name": "ac",
           "crease_id": 0
@@ -883,7 +962,7 @@
         {
           "axiom": "axiom5",
           "sources": [ "--da", "--ac" ],
-          "span": "packages/runtime/editor/test/fixtures/bindings.bel:6:1-26",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:7:1-26",
           "statement": 4,
           "name": null,
           "crease_id": 2
@@ -891,7 +970,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".d" ],
-          "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:4:1-29",
           "statement": 1,
           "name": "bd",
           "crease_id": 1
@@ -899,7 +978,7 @@
         {
           "axiom": "axiom5",
           "sources": [ "--da", "--ac" ],
-          "span": "packages/runtime/editor/test/fixtures/bindings.bel:6:1-26",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:7:1-26",
           "statement": 4,
           "name": null,
           "crease_id": 2
@@ -908,7 +987,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".d" ],
-          "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:4:1-29",
           "statement": 1,
           "name": "bd",
           "crease_id": 1
@@ -918,7 +997,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".d" ],
-          "span": "packages/runtime/editor/test/fixtures/bindings.bel:3:1-29",
+          "span": "packages/runtime/editor/test/fixtures/bindings.bel:4:1-29",
           "statement": 1,
           "name": "bd",
           "crease_id": 1

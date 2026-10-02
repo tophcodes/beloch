@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; A mark takes no paper from other flaps (ADR 0033). The corner .c folds
 ; onto the center, and --x is marked on that flap alone, along the diagonal:

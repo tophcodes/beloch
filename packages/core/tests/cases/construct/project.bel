@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 paper square
 ; scaffold: two midlines give the non-corner points .tm and .rm

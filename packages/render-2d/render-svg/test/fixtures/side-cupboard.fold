@@ -1,7 +1,9 @@
 {
   "file_spec": 1.1,
   "file_creator": "beloch 0.4.0",
+  "file_author": "Claude (Anthropic)",
   "frame_classes": [ "creasePattern" ],
+  "frame_unit": "unit",
   "vertices_coords": [
     [ 0.25, 0.0 ],
     [ 0.5, 0.0 ],
@@ -32,6 +34,24 @@
   "edges_assignment": [
     "B", "F", "B", "V", "B", "V", "B", "B", "B", "B", "B", "B", "B"
   ],
+  "edges_foldAngle": [
+    0.0, 0.0, 0.0, 180.0, 0.0, 180.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+  ],
+  "edges_faces": [
+    [ 0 ],
+    [ 0, 1 ],
+    [ 0 ],
+    [ 0, 2 ],
+    [ 1 ],
+    [ 1, 3 ],
+    [ 1 ],
+    [ 2 ],
+    [ 2 ],
+    [ 2 ],
+    [ 3 ],
+    [ 3 ],
+    [ 3 ]
+  ],
   "faces_vertices": [
     [ 0, 1, 2, 3 ], [ 1, 4, 5, 2 ], [ 6, 0, 3, 7 ], [ 4, 8, 9, 5 ]
   ],
@@ -40,7 +60,7 @@
     {
       "axiom": "axiom5",
       "sources": [ "--da", "--bc" ],
-      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:2:1-33",
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:3:1-33",
       "statement": 0,
       "name": "m",
       "crease_id": 0
@@ -49,7 +69,7 @@
     {
       "axiom": "axiom5",
       "sources": [ "--da", "--m" ],
-      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:5:1-25",
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:6:1-25",
       "statement": 3,
       "name": null,
       "crease_id": 1
@@ -58,7 +78,7 @@
     {
       "axiom": "axiom5",
       "sources": [ "--bc", "--m" ],
-      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:6:1-25",
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:7:1-25",
       "statement": 4,
       "name": null,
       "crease_id": 2
@@ -77,7 +97,7 @@
         "name": null,
         "axiom": "axiom5",
         "sources": [ "--da", "--m" ],
-        "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:5:1-25",
+        "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:6:1-25",
         "segments": [
           {
             "faces": [ 0, 2 ],
@@ -91,7 +111,7 @@
         "name": "m",
         "axiom": "axiom5",
         "sources": [ "--da", "--bc" ],
-        "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:2:1-33",
+        "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:3:1-33",
         "segments": [
           {
             "faces": [ 0, 1 ],
@@ -105,7 +125,7 @@
         "name": null,
         "axiom": "axiom5",
         "sources": [ "--bc", "--m" ],
-        "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:6:1-25",
+        "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:7:1-25",
         "segments": [
           {
             "faces": [ 1, 3 ],
@@ -292,7 +312,7 @@
     "t": {
       "t": "1/4",
       "endpoints": [ [ 0.5, 0.0 ], [ 0.5, 1.0 ] ],
-      "source_line": 4
+      "source_line": 5
     }
   },
   "beloch:statements": [
@@ -307,26 +327,8 @@
       },
       "kind": "mark",
       "parent": null,
-      "source_line": 2,
-      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:2:1-33",
-      "frame_index": 0,
-      "kept_marks": [
-        {
-          "kind": "seg",
-          "a": [ 0.5, 1.0 ],
-          "b": [ 0.5, 0.0 ],
-          "line": [ -1.0, 0.0, -0.5 ],
-          "intent": "V",
-          "crease_id": 0
-        }
-      ]
-    },
-    {
-      "mark": null,
-      "kind": "bind",
-      "parent": null,
       "source_line": 3,
-      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:3:1-16",
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:3:1-33",
       "frame_index": 0,
       "kept_marks": [
         {
@@ -344,7 +346,25 @@
       "kind": "bind",
       "parent": null,
       "source_line": 4,
-      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:4:1-32",
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:4:1-16",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.5, 1.0 ],
+          "b": [ 0.5, 0.0 ],
+          "line": [ -1.0, 0.0, -0.5 ],
+          "intent": "V",
+          "crease_id": 0
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "bind",
+      "parent": null,
+      "source_line": 5,
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:5:1-32",
       "frame_index": 0,
       "kept_marks": [
         {
@@ -361,8 +381,8 @@
       "mark": null,
       "kind": "fold",
       "parent": null,
-      "source_line": 5,
-      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:5:1-25",
+      "source_line": 6,
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:6:1-25",
       "frame_index": 1,
       "kept_marks": []
     },
@@ -370,8 +390,8 @@
       "mark": null,
       "kind": "fold",
       "parent": null,
-      "source_line": 6,
-      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:6:1-25",
+      "source_line": 7,
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:7:1-25",
       "frame_index": 2,
       "kept_marks": []
     },
@@ -379,55 +399,70 @@
       "mark": null,
       "kind": "bind",
       "parent": null,
-      "source_line": 7,
-      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:7:1-28",
+      "source_line": 8,
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:8:1-28",
       "frame_index": 2,
       "kept_marks": []
     }
   ],
   "beloch:references": [
     {
-      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:2:11-15",
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:3:11-15",
       "edge": "da"
     },
     {
-      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:2:21-25",
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:3:21-25",
       "edge": "bc"
     },
     {
-      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:3:6-9",
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:4:6-9",
       "crease_id": 0
     },
     {
-      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:3:12-16",
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:4:12-16",
       "edge": "ab"
     },
     {
-      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:4:14-17",
-      "crease_id": 0
-    },
-    {
-      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:5:11-15",
-      "edge": "da"
-    },
-    {
-      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:5:21-24",
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:5:14-17",
       "crease_id": 0
     },
     {
       "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:6:11-15",
-      "edge": "bc"
+      "edge": "da"
     },
     {
       "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:6:21-24",
       "crease_id": 0
     },
     {
-      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:7:13-16",
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:7:11-15",
+      "edge": "bc"
+    },
+    {
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:7:21-24",
+      "crease_id": 0
+    },
+    {
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:8:13-16",
       "crease_id": 0
     }
   ],
-  "beloch:annotations": [],
+  "beloch:annotations": [
+    {
+      "key": "author",
+      "namespace": null,
+      "target": "program",
+      "frame_index": 0,
+      "source_line": 1,
+      "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:1:1-2:1",
+      "args": [
+        {
+          "text": "Claude (Anthropic)",
+          "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:1:9-29"
+        }
+      ]
+    }
+  ],
   "file_frames": [
     {
       "frame_classes": [ "foldedForm" ],
@@ -439,6 +474,7 @@
       "edges_vertices": [ [ 0, 1 ], [ 1, 2 ], [ 2, 3 ], [ 3, 0 ] ],
       "edges_assignment": [ "B", "B", "B", "B" ],
       "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0 ],
+      "edges_faces": [ [ 0 ], [ 0 ], [ 0 ], [ 0 ] ],
       "faces_vertices": [ [ 0, 1, 2, 3 ] ],
       "beloch:faces_matrix": [ [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ] ],
       "faceOrders": [],
@@ -478,6 +514,18 @@
       "edges_foldAngle": [
         0.0, 0.0, 0.0, 180.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
       ],
+      "edges_faces": [
+        [ 0 ],
+        [ 0, 1 ],
+        [ 0 ],
+        [ 0, 2 ],
+        [ 1 ],
+        [ 1 ],
+        [ 1 ],
+        [ 2 ],
+        [ 2 ],
+        [ 2 ]
+      ],
       "faces_vertices": [ [ 0, 1, 2, 3 ], [ 1, 4, 5, 2 ], [ 6, 0, 3, 7 ] ],
       "beloch:faces_matrix": [
         [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ],
@@ -485,13 +533,13 @@
         [ -1.0, 0.0, 0.0, 1.0, 0.5, 0.0 ]
       ],
       "faceOrders": [ [ 0, 2, 1 ] ],
-      "beloch:source_line": 5,
+      "beloch:source_line": 6,
       "beloch:edges": [
         null,
         {
           "axiom": "axiom5",
           "sources": [ "--da", "--bc" ],
-          "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:2:1-33",
+          "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:3:1-33",
           "statement": 0,
           "name": "m",
           "crease_id": 0
@@ -500,7 +548,7 @@
         {
           "axiom": "axiom5",
           "sources": [ "--da", "--m" ],
-          "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:5:1-25",
+          "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:6:1-25",
           "statement": 3,
           "name": null,
           "crease_id": 1
@@ -551,6 +599,21 @@
       "edges_foldAngle": [
         0.0, 0.0, 0.0, 180.0, 0.0, 180.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
       ],
+      "edges_faces": [
+        [ 0 ],
+        [ 0, 1 ],
+        [ 0 ],
+        [ 0, 2 ],
+        [ 1 ],
+        [ 1, 3 ],
+        [ 1 ],
+        [ 2 ],
+        [ 2 ],
+        [ 2 ],
+        [ 3 ],
+        [ 3 ],
+        [ 3 ]
+      ],
       "faces_vertices": [
         [ 0, 1, 2, 3 ], [ 1, 4, 5, 2 ], [ 6, 0, 3, 7 ], [ 4, 8, 9, 5 ]
       ],
@@ -561,13 +624,13 @@
         [ -1.0, 0.0, 0.0, 1.0, 1.5, 0.0 ]
       ],
       "faceOrders": [ [ 0, 2, 1 ], [ 1, 3, 1 ] ],
-      "beloch:source_line": 6,
+      "beloch:source_line": 7,
       "beloch:edges": [
         null,
         {
           "axiom": "axiom5",
           "sources": [ "--da", "--bc" ],
-          "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:2:1-33",
+          "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:3:1-33",
           "statement": 0,
           "name": "m",
           "crease_id": 0
@@ -576,7 +639,7 @@
         {
           "axiom": "axiom5",
           "sources": [ "--da", "--m" ],
-          "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:5:1-25",
+          "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:6:1-25",
           "statement": 3,
           "name": null,
           "crease_id": 1
@@ -585,7 +648,7 @@
         {
           "axiom": "axiom5",
           "sources": [ "--bc", "--m" ],
-          "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:6:1-25",
+          "span": "packages/render-2d/render-svg/test/fixtures/side-cupboard.bel:7:1-25",
           "statement": 4,
           "name": null,
           "crease_id": 2

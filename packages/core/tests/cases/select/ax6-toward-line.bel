@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; A toward line names the side it lies on. The vertical candidate crosses
 ; the bottom edge, so the edge names no side of it and it drops out; the

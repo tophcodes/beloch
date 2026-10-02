@@ -1,3 +1,4 @@
+@author "Claude (Anthropic)"
 paper square
 fold (map .a onto .c) as --bd
 @orient .b down

@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; toward .c names the side of .c as the one that stays, moving .c names it
 ; as the one that folds over: the fold fails (ADR 0031).

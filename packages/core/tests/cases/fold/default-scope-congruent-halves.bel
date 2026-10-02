@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; NOT a narrowing proof: congruent layers make old==new here by construction.
 ; This guards the option-(a) union path on fully-congruent layers; the actual

@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; The mirror of tuck-under.bel: the same pocket tuck, named from below. .q sits
 ; on the base layer, so `over .q` lands the block immediately above the base —

@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; Same fish-base vertex as flatten-opposite-ray-toward-b.bel (see its comment
 ; for the full derivation) — `(toward .d)` picks the position class's other

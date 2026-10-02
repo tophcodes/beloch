@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; Check 4 reads the vertex on the paper: the vertex of a fan lies off the
 ; sheet's raw edge in every layer under it. On a 2:1 rectangle the fan sits

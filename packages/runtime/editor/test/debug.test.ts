@@ -32,12 +32,12 @@ const boxes = targets.filter(boxable);
 
 test("every binding the program makes is offered as a target", () => {
   expect(targets.map((t) => t.spelling)).toEqual([
-    // line 2 and 3: the marks bind `--ac` and `--bd`, so their creases are
+    // line 3 and 4: the marks bind `--ac` and `--bd`, so their creases are
     // targets under those names rather than under the statement.
     "--ac", "--bd",
-    // line 4 and 5: the construction line and the point.
+    // line 5 and 6: the construction line and the point.
     "--vert", ".mid",
-    // line 6 and 7: the folds bind no name, so each statement is its own target.
+    // line 7 and 8: the folds bind no name, so each statement is its own target.
     null, null,
   ]);
 });
@@ -66,12 +66,12 @@ test("a write that bound no name is a target for the crease it scored", () => {
     { kind: "crease", creaseId: "3" },
   ]);
   // The whole statement, which is all the source says about that crease.
-  expect(folds[0]!.span).toEqual({ fromLine: 6, fromCol: 1, toLine: 6, toCol: 26 });
+  expect(folds[0]!.span).toEqual({ fromLine: 7, fromCol: 1, toLine: 7, toCol: 26 });
 });
 
 test("a write that bound a name is a target once, under the name", () => {
   const ids = targets.map((t) => (t.entity.kind === "crease" ? t.entity.creaseId : null));
-  // Crease 0 is `--ac`, scored by the mark on line 2: one target, not two.
+  // Crease 0 is `--ac`, scored by the mark on line 3: one target, not two.
   expect(ids.filter((id) => id === "0")).toEqual(["0"]);
 });
 
@@ -83,8 +83,8 @@ test("a name the statement spells is where its box goes", () => {
 });
 
 test("a span that binds nothing is offered to nobody", () => {
-  // `paper square` on line 1 binds no name and scores nothing.
-  expect(targets.some((t) => t.span!.fromLine === 1)).toBe(false);
+  // `paper square` on line 2 binds no name and scores nothing.
+  expect(targets.some((t) => t.span!.fromLine === 2)).toBe(false);
 });
 
 // What the sheet brings: no statement binds the corners or the edges, so
@@ -106,6 +106,6 @@ test("what the sheet brings comes before what the program folds", () => {
 // What the stepper marks in the editor: the line of the statement the drawing
 // stands at, which is the write's own line at every step, the mark included.
 test("a step stands for the line of its own statement", () => {
-  expect(scene.writes.map((w) => w.sourceLine)).toEqual([2, 3, 6, 7]);
+  expect(scene.writes.map((w) => w.sourceLine)).toEqual([3, 4, 7, 8]);
   expect(scene.writes.map((w) => w.kind)).toEqual(["mark", "mark", "fold", "fold"]);
 });

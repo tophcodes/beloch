@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; Ida's Orikoto crane, steps 2-14 [ida2020, Fig. 7.19]: the bird base
 ; (packages/core/tests/cases/bases/bird-base.bel), the two petal-style folds that bring the

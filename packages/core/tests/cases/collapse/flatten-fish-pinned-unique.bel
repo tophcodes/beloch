@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; Same fish-base vertex as flatten-opposite-ray-toward-{b,d}.bel, but two of
 ; the three given rays are PINNED (`.b valley`, `.a mountain`) instead of

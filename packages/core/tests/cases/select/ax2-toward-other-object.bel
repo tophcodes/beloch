@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; toward .a keeps the side of .a where it is. An alignment is an incidence,
 ; so the side of .b folds over and lands .b on .a, which carries out

@@ -1,7 +1,9 @@
 {
   "file_spec": 1.1,
   "file_creator": "beloch 0.4.0",
+  "file_author": "Claude (Anthropic)",
   "frame_classes": [ "creasePattern" ],
+  "frame_unit": "unit",
   "vertices_coords": [
     [ 0.21132486540511763, 0.7886751345948824 ],
     [ 0.1547005383791884, 1.0 ],
@@ -40,6 +42,31 @@
     "V", "B", "F", "B", "V", "F", "V", "B", "B", "F", "F", "B", "F", "B",
     "F", "B", "F", "B", "F"
   ],
+  "edges_foldAngle": [
+    180.0, 0.0, 0.0, 0.0, 180.0, 0.0, 180.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+  ],
+  "edges_faces": [
+    [ 0, 6 ],
+    [ 0 ],
+    [ 0, 2 ],
+    [ 1 ],
+    [ 1, 7 ],
+    [ 1, 2 ],
+    [ 2, 8 ],
+    [ 2 ],
+    [ 3 ],
+    [ 3, 4 ],
+    [ 3, 5 ],
+    [ 4 ],
+    [ 4, 6 ],
+    [ 5 ],
+    [ 5, 7 ],
+    [ 6 ],
+    [ 6, 8 ],
+    [ 7 ],
+    [ 7, 8 ]
+  ],
   "faces_vertices": [
     [ 0, 1, 2 ],
     [ 3, 4, 5 ],
@@ -55,7 +82,7 @@
     {
       "axiom": "axiom7",
       "sources": [ ".a", "--bd", ".u", "--v", "--ac", ".w" ],
-      "span": "stages-ax7-heading.bel:7:1-76",
+      "span": "stages-ax7-heading.bel:8:1-76",
       "statement": 5,
       "name": "s",
       "crease_id": 3
@@ -64,7 +91,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".d" ],
-      "span": "stages-ax7-heading.bel:3:1-29",
+      "span": "stages-ax7-heading.bel:4:1-29",
       "statement": 1,
       "name": "bd",
       "crease_id": 1
@@ -73,7 +100,7 @@
     {
       "axiom": "axiom7",
       "sources": [ ".a", "--bd", ".u", "--v", "--ac", ".w" ],
-      "span": "stages-ax7-heading.bel:7:1-76",
+      "span": "stages-ax7-heading.bel:8:1-76",
       "statement": 5,
       "name": "s",
       "crease_id": 3
@@ -81,7 +108,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "stages-ax7-heading.bel:4:1-29",
+      "span": "stages-ax7-heading.bel:5:1-29",
       "statement": 2,
       "name": "ac",
       "crease_id": 2
@@ -89,7 +116,7 @@
     {
       "axiom": "axiom7",
       "sources": [ ".a", "--bd", ".u", "--v", "--ac", ".w" ],
-      "span": "stages-ax7-heading.bel:7:1-76",
+      "span": "stages-ax7-heading.bel:8:1-76",
       "statement": 5,
       "name": "s",
       "crease_id": 3
@@ -99,7 +126,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "stages-ax7-heading.bel:4:1-29",
+      "span": "stages-ax7-heading.bel:5:1-29",
       "statement": 2,
       "name": "ac",
       "crease_id": 2
@@ -107,7 +134,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".d" ],
-      "span": "stages-ax7-heading.bel:3:1-29",
+      "span": "stages-ax7-heading.bel:4:1-29",
       "statement": 1,
       "name": "bd",
       "crease_id": 1
@@ -116,7 +143,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".b" ],
-      "span": "stages-ax7-heading.bel:2:1-29",
+      "span": "stages-ax7-heading.bel:3:1-29",
       "statement": 0,
       "name": "v",
       "crease_id": 0
@@ -125,7 +152,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".b" ],
-      "span": "stages-ax7-heading.bel:2:1-29",
+      "span": "stages-ax7-heading.bel:3:1-29",
       "statement": 0,
       "name": "v",
       "crease_id": 0
@@ -134,7 +161,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".b", ".d" ],
-      "span": "stages-ax7-heading.bel:3:1-29",
+      "span": "stages-ax7-heading.bel:4:1-29",
       "statement": 1,
       "name": "bd",
       "crease_id": 1
@@ -143,7 +170,7 @@
     {
       "axiom": "axiom1",
       "sources": [ ".a", ".c" ],
-      "span": "stages-ax7-heading.bel:4:1-29",
+      "span": "stages-ax7-heading.bel:5:1-29",
       "statement": 2,
       "name": "ac",
       "crease_id": 2
@@ -155,7 +182,7 @@
         "name": "bd",
         "axiom": "axiom1",
         "sources": [ ".b", ".d" ],
-        "span": "stages-ax7-heading.bel:3:1-29",
+        "span": "stages-ax7-heading.bel:4:1-29",
         "segments": [
           {
             "faces": [ 6, 8 ],
@@ -193,7 +220,7 @@
         "name": "v",
         "axiom": "axiom2",
         "sources": [ ".a", ".b" ],
-        "span": "stages-ax7-heading.bel:2:1-29",
+        "span": "stages-ax7-heading.bel:3:1-29",
         "segments": [
           {
             "faces": [ 5, 7 ],
@@ -219,7 +246,7 @@
         "name": "s",
         "axiom": "axiom7",
         "sources": [ ".a", "--bd", ".u", "--v", "--ac", ".w" ],
-        "span": "stages-ax7-heading.bel:7:1-76",
+        "span": "stages-ax7-heading.bel:8:1-76",
         "segments": [
           {
             "faces": [ 2, 8 ],
@@ -263,7 +290,7 @@
         "name": "ac",
         "axiom": "axiom1",
         "sources": [ ".a", ".c" ],
-        "span": "stages-ax7-heading.bel:4:1-29",
+        "span": "stages-ax7-heading.bel:5:1-29",
         "segments": [
           {
             "faces": [ 7, 8 ],
@@ -529,12 +556,12 @@
     "u": {
       "t": "1/3",
       "endpoints": [ [ 0.0, 0.0 ], [ 1.0, 0.0 ] ],
-      "source_line": 5
+      "source_line": 6
     },
     "w": {
       "t": "1/3",
       "endpoints": [ [ 0.0, 0.0 ], [ 0.0, 1.0 ] ],
-      "source_line": 6
+      "source_line": 7
     }
   },
   "beloch:statements": [
@@ -549,8 +576,8 @@
       },
       "kind": "mark",
       "parent": null,
-      "source_line": 2,
-      "span": "stages-ax7-heading.bel:2:1-29",
+      "source_line": 3,
+      "span": "stages-ax7-heading.bel:3:1-29",
       "frame_index": 0,
       "kept_marks": [
         {
@@ -574,8 +601,8 @@
       },
       "kind": "mark",
       "parent": null,
-      "source_line": 3,
-      "span": "stages-ax7-heading.bel:3:1-29",
+      "source_line": 4,
+      "span": "stages-ax7-heading.bel:4:1-29",
       "frame_index": 0,
       "kept_marks": [
         {
@@ -607,42 +634,8 @@
       },
       "kind": "mark",
       "parent": null,
-      "source_line": 4,
-      "span": "stages-ax7-heading.bel:4:1-29",
-      "frame_index": 0,
-      "kept_marks": [
-        {
-          "kind": "seg",
-          "a": [ 0.5, 0.0 ],
-          "b": [ 0.5, 1.0 ],
-          "line": [ 1.0, 0.0, 0.5 ],
-          "intent": "V",
-          "crease_id": 0
-        },
-        {
-          "kind": "seg",
-          "a": [ 1.0, 0.0 ],
-          "b": [ 0.0, 1.0 ],
-          "line": [ 1.0, 1.0, 1.0 ],
-          "intent": "V",
-          "crease_id": 1
-        },
-        {
-          "kind": "seg",
-          "a": [ 0.0, 0.0 ],
-          "b": [ 1.0, 1.0 ],
-          "line": [ 1.0, -1.0, 0.0 ],
-          "intent": "V",
-          "crease_id": 2
-        }
-      ]
-    },
-    {
-      "mark": null,
-      "kind": "bind",
-      "parent": null,
       "source_line": 5,
-      "span": "stages-ax7-heading.bel:5:1-33",
+      "span": "stages-ax7-heading.bel:5:1-29",
       "frame_index": 0,
       "kept_marks": [
         {
@@ -707,22 +700,71 @@
     },
     {
       "mark": null,
-      "kind": "fold",
+      "kind": "bind",
       "parent": null,
       "source_line": 7,
-      "span": "stages-ax7-heading.bel:7:1-76",
+      "span": "stages-ax7-heading.bel:7:1-33",
+      "frame_index": 0,
+      "kept_marks": [
+        {
+          "kind": "seg",
+          "a": [ 0.5, 0.0 ],
+          "b": [ 0.5, 1.0 ],
+          "line": [ 1.0, 0.0, 0.5 ],
+          "intent": "V",
+          "crease_id": 0
+        },
+        {
+          "kind": "seg",
+          "a": [ 1.0, 0.0 ],
+          "b": [ 0.0, 1.0 ],
+          "line": [ 1.0, 1.0, 1.0 ],
+          "intent": "V",
+          "crease_id": 1
+        },
+        {
+          "kind": "seg",
+          "a": [ 0.0, 0.0 ],
+          "b": [ 1.0, 1.0 ],
+          "line": [ 1.0, -1.0, 0.0 ],
+          "intent": "V",
+          "crease_id": 2
+        }
+      ]
+    },
+    {
+      "mark": null,
+      "kind": "fold",
+      "parent": null,
+      "source_line": 8,
+      "span": "stages-ax7-heading.bel:8:1-76",
       "frame_index": 1,
       "kept_marks": []
     }
   ],
   "beloch:references": [
-    { "span": "stages-ax7-heading.bel:5:14-18", "edge": "ab" },
-    { "span": "stages-ax7-heading.bel:6:14-18", "edge": "da" },
-    { "span": "stages-ax7-heading.bel:7:22-26", "crease_id": 1 },
-    { "span": "stages-ax7-heading.bel:7:37-40", "crease_id": 0 },
-    { "span": "stages-ax7-heading.bel:7:51-55", "crease_id": 2 }
+    { "span": "stages-ax7-heading.bel:6:14-18", "edge": "ab" },
+    { "span": "stages-ax7-heading.bel:7:14-18", "edge": "da" },
+    { "span": "stages-ax7-heading.bel:8:22-26", "crease_id": 1 },
+    { "span": "stages-ax7-heading.bel:8:37-40", "crease_id": 0 },
+    { "span": "stages-ax7-heading.bel:8:51-55", "crease_id": 2 }
   ],
-  "beloch:annotations": [],
+  "beloch:annotations": [
+    {
+      "key": "author",
+      "namespace": null,
+      "target": "program",
+      "frame_index": 0,
+      "source_line": 1,
+      "span": "stages-ax7-heading.bel:1:1-2:1",
+      "args": [
+        {
+          "text": "Claude (Anthropic)",
+          "span": "stages-ax7-heading.bel:1:9-29"
+        }
+      ]
+    }
+  ],
   "file_frames": [
     {
       "frame_classes": [ "foldedForm" ],
@@ -734,6 +776,7 @@
       "edges_vertices": [ [ 0, 1 ], [ 1, 2 ], [ 2, 3 ], [ 3, 0 ] ],
       "edges_assignment": [ "B", "B", "B", "B" ],
       "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0 ],
+      "edges_faces": [ [ 0 ], [ 0 ], [ 0 ], [ 0 ] ],
       "faces_vertices": [ [ 0, 1, 2, 3 ] ],
       "beloch:faces_matrix": [ [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ] ],
       "faceOrders": [],
@@ -787,6 +830,27 @@
         180.0, 0.0, 0.0, 0.0, 180.0, 0.0, 180.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
       ],
+      "edges_faces": [
+        [ 0, 6 ],
+        [ 0 ],
+        [ 0, 2 ],
+        [ 1 ],
+        [ 1, 7 ],
+        [ 1, 2 ],
+        [ 2, 8 ],
+        [ 2 ],
+        [ 3 ],
+        [ 3, 4 ],
+        [ 3, 5 ],
+        [ 4 ],
+        [ 4, 6 ],
+        [ 5 ],
+        [ 5, 7 ],
+        [ 6 ],
+        [ 6, 8 ],
+        [ 7 ],
+        [ 7, 8 ]
+      ],
       "faces_vertices": [
         [ 0, 1, 2 ],
         [ 3, 4, 5 ],
@@ -838,12 +902,12 @@
         [ 2, 7, 1 ],
         [ 2, 8, 1 ]
       ],
-      "beloch:source_line": 7,
+      "beloch:source_line": 8,
       "beloch:edges": [
         {
           "axiom": "axiom7",
           "sources": [ ".a", "--bd", ".u", "--v", "--ac", ".w" ],
-          "span": "stages-ax7-heading.bel:7:1-76",
+          "span": "stages-ax7-heading.bel:8:1-76",
           "statement": 5,
           "name": "s",
           "crease_id": 3
@@ -852,7 +916,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".d" ],
-          "span": "stages-ax7-heading.bel:3:1-29",
+          "span": "stages-ax7-heading.bel:4:1-29",
           "statement": 1,
           "name": "bd",
           "crease_id": 1
@@ -861,7 +925,7 @@
         {
           "axiom": "axiom7",
           "sources": [ ".a", "--bd", ".u", "--v", "--ac", ".w" ],
-          "span": "stages-ax7-heading.bel:7:1-76",
+          "span": "stages-ax7-heading.bel:8:1-76",
           "statement": 5,
           "name": "s",
           "crease_id": 3
@@ -869,7 +933,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "stages-ax7-heading.bel:4:1-29",
+          "span": "stages-ax7-heading.bel:5:1-29",
           "statement": 2,
           "name": "ac",
           "crease_id": 2
@@ -877,7 +941,7 @@
         {
           "axiom": "axiom7",
           "sources": [ ".a", "--bd", ".u", "--v", "--ac", ".w" ],
-          "span": "stages-ax7-heading.bel:7:1-76",
+          "span": "stages-ax7-heading.bel:8:1-76",
           "statement": 5,
           "name": "s",
           "crease_id": 3
@@ -887,7 +951,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "stages-ax7-heading.bel:4:1-29",
+          "span": "stages-ax7-heading.bel:5:1-29",
           "statement": 2,
           "name": "ac",
           "crease_id": 2
@@ -895,7 +959,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".d" ],
-          "span": "stages-ax7-heading.bel:3:1-29",
+          "span": "stages-ax7-heading.bel:4:1-29",
           "statement": 1,
           "name": "bd",
           "crease_id": 1
@@ -904,7 +968,7 @@
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".b" ],
-          "span": "stages-ax7-heading.bel:2:1-29",
+          "span": "stages-ax7-heading.bel:3:1-29",
           "statement": 0,
           "name": "v",
           "crease_id": 0
@@ -913,7 +977,7 @@
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".b" ],
-          "span": "stages-ax7-heading.bel:2:1-29",
+          "span": "stages-ax7-heading.bel:3:1-29",
           "statement": 0,
           "name": "v",
           "crease_id": 0
@@ -922,7 +986,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".b", ".d" ],
-          "span": "stages-ax7-heading.bel:3:1-29",
+          "span": "stages-ax7-heading.bel:4:1-29",
           "statement": 1,
           "name": "bd",
           "crease_id": 1
@@ -931,7 +995,7 @@
         {
           "axiom": "axiom1",
           "sources": [ ".a", ".c" ],
-          "span": "stages-ax7-heading.bel:4:1-29",
+          "span": "stages-ax7-heading.bel:5:1-29",
           "statement": 2,
           "name": "ac",
           "crease_id": 2
@@ -965,11 +1029,11 @@
             { "name": ".a", "point": [ 0.0, 0.0 ], "segments": [] },
             { "name": ".b", "point": [ 1.0, 0.0 ], "segments": [] }
           ],
-          "span": "stages-ax7-heading.bel:2:11-21"
+          "span": "stages-ax7-heading.bel:3:11-21"
         }
       ],
       "spans": {
-        "alignments": [ "stages-ax7-heading.bel:2:11-21" ],
+        "alignments": [ "stages-ax7-heading.bel:3:11-21" ],
         "heading": null,
         "toward": null,
         "moving": null
@@ -1034,7 +1098,7 @@
       "alignments": [],
       "spans": {
         "alignments": [
-          "stages-ax7-heading.bel:3:15-17", "stages-ax7-heading.bel:3:18-20"
+          "stages-ax7-heading.bel:4:15-17", "stages-ax7-heading.bel:4:18-20"
         ],
         "heading": null,
         "toward": null,
@@ -1081,7 +1145,7 @@
       "alignments": [],
       "spans": {
         "alignments": [
-          "stages-ax7-heading.bel:4:15-17", "stages-ax7-heading.bel:4:18-20"
+          "stages-ax7-heading.bel:5:15-17", "stages-ax7-heading.bel:5:18-20"
         ],
         "heading": null,
         "toward": null,
@@ -1124,7 +1188,7 @@
         {
           "name": "--bd",
           "point": null,
-          "segments": [ [ [ 0.0, 1.0 ], [ 1.0, 0.0 ] ] ]
+          "segments": [ [ [ 1.0, 0.0 ], [ 0.0, 1.0 ] ] ]
         },
         {
           "name": ".u",
@@ -1134,7 +1198,7 @@
         {
           "name": "--v",
           "point": null,
-          "segments": [ [ [ 0.5, 1.0 ], [ 0.5, 0.0 ] ] ]
+          "segments": [ [ [ 0.5, 0.0 ], [ 0.5, 1.0 ] ] ]
         }
       ],
       "heading_line": [ 1.0, -1.0, 0.0 ],
@@ -1146,10 +1210,10 @@
             {
               "name": "--bd",
               "point": null,
-              "segments": [ [ [ 0.0, 1.0 ], [ 1.0, 0.0 ] ] ]
+              "segments": [ [ [ 1.0, 0.0 ], [ 0.0, 1.0 ] ] ]
             }
           ],
-          "span": "stages-ax7-heading.bel:7:13-27"
+          "span": "stages-ax7-heading.bel:8:13-27"
         },
         {
           "objects": [
@@ -1161,18 +1225,18 @@
             {
               "name": "--v",
               "point": null,
-              "segments": [ [ [ 0.5, 1.0 ], [ 0.5, 0.0 ] ] ]
+              "segments": [ [ [ 0.5, 0.0 ], [ 0.5, 1.0 ] ] ]
             }
           ],
-          "span": "stages-ax7-heading.bel:7:28-41"
+          "span": "stages-ax7-heading.bel:8:28-41"
         }
       ],
       "spans": {
         "alignments": [
-          "stages-ax7-heading.bel:7:13-27", "stages-ax7-heading.bel:7:28-41"
+          "stages-ax7-heading.bel:8:13-27", "stages-ax7-heading.bel:8:28-41"
         ],
-        "heading": "stages-ax7-heading.bel:7:43-55",
-        "toward": "stages-ax7-heading.bel:7:59-68",
+        "heading": "stages-ax7-heading.bel:8:43-55",
+        "toward": "stages-ax7-heading.bel:8:59-68",
         "moving": null
       },
       "candidates": [
@@ -1300,8 +1364,8 @@
               [ 0.21132486540511763, 0.7886751345948824 ]
             ],
             [
-              [ -0.1443375672976117, 0.8273502691894237 ],
-              [ 0.3556624327023883, -0.038675134594882365 ]
+              [ 0.3556624327023883, -0.038675134594882365 ],
+              [ -0.1443375672976117, 0.8273502691894237 ]
             ]
           ],
           "distance": 0.08627301503575367,

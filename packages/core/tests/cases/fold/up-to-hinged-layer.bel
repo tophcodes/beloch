@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; The lower layer is joined to .c's layer by the first fold, along a hinge
 ; off the axis of the second. A hinge off the axis cannot be torn, so the

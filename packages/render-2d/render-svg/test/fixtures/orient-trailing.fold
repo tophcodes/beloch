@@ -1,6 +1,7 @@
 {
   "file_spec": 1.1,
   "file_creator": "beloch 0.4.0",
+  "file_author": "Claude (Anthropic)",
   "frame_classes": [ "creasePattern" ],
   "frame_unit": "unit",
   "vertices_coords": [
@@ -17,7 +18,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".c" ],
-      "span": "packages/render-2d/render-svg/test/fixtures/orient-trailing.bel:2:1-30",
+      "span": "packages/render-2d/render-svg/test/fixtures/orient-trailing.bel:3:1-30",
       "statement": 0,
       "name": "bd",
       "crease_id": 0
@@ -31,7 +32,7 @@
         "name": "bd",
         "axiom": "axiom2",
         "sources": [ ".a", ".c" ],
-        "span": "packages/render-2d/render-svg/test/fixtures/orient-trailing.bel:2:1-30",
+        "span": "packages/render-2d/render-svg/test/fixtures/orient-trailing.bel:3:1-30",
         "segments": [
           {
             "faces": [ 0, 1 ],
@@ -149,8 +150,8 @@
       "mark": null,
       "kind": "fold",
       "parent": null,
-      "source_line": 2,
-      "span": "packages/render-2d/render-svg/test/fixtures/orient-trailing.bel:2:1-30",
+      "source_line": 3,
+      "span": "packages/render-2d/render-svg/test/fixtures/orient-trailing.bel:3:1-30",
       "frame_index": 1,
       "kept_marks": []
     }
@@ -158,20 +159,34 @@
   "beloch:references": [],
   "beloch:annotations": [
     {
+      "key": "author",
+      "namespace": null,
+      "target": "program",
+      "frame_index": 0,
+      "source_line": 1,
+      "span": "packages/render-2d/render-svg/test/fixtures/orient-trailing.bel:1:1-2:1",
+      "args": [
+        {
+          "text": "Claude (Anthropic)",
+          "span": "packages/render-2d/render-svg/test/fixtures/orient-trailing.bel:1:9-29"
+        }
+      ]
+    },
+    {
       "key": "orient",
       "namespace": null,
       "target": null,
       "frame_index": 1,
-      "source_line": 3,
-      "span": "packages/render-2d/render-svg/test/fixtures/orient-trailing.bel:3:1-4:1",
+      "source_line": 4,
+      "span": "packages/render-2d/render-svg/test/fixtures/orient-trailing.bel:4:1-5:1",
       "args": [
         {
           "point": { "paper": [ 1.0, 0.0 ], "table": [ 1.0, 0.0 ] },
-          "span": "packages/render-2d/render-svg/test/fixtures/orient-trailing.bel:3:9-11"
+          "span": "packages/render-2d/render-svg/test/fixtures/orient-trailing.bel:4:9-11"
         },
         {
           "word": "down",
-          "span": "packages/render-2d/render-svg/test/fixtures/orient-trailing.bel:3:12-16"
+          "span": "packages/render-2d/render-svg/test/fixtures/orient-trailing.bel:4:12-16"
         }
       ]
     }
@@ -211,14 +226,14 @@
         [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ], [ 0.0, -1.0, -1.0, 0.0, 1.0, 1.0 ]
       ],
       "faceOrders": [ [ 0, 1, 1 ] ],
-      "beloch:source_line": 2,
+      "beloch:source_line": 3,
       "beloch:edges": [
         null,
         null,
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".c" ],
-          "span": "packages/render-2d/render-svg/test/fixtures/orient-trailing.bel:2:1-30",
+          "span": "packages/render-2d/render-svg/test/fixtures/orient-trailing.bel:3:1-30",
           "statement": 0,
           "name": "bd",
           "crease_id": 0

@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; Either side carries out (map --ab onto --da); with no side item the side
 ; of the first object folds over, so --ab lands on --da and .b on .d.

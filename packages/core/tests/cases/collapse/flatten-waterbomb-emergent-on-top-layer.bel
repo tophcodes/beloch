@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; flatten-waterbomb-rays-on-top-layer.bel with one half of the median left
 ; out of the fan: five rays, and the sixth is the emergent ray that closes

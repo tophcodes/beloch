@@ -1,3 +1,5 @@
+@author "Claude (Anthropic)"
+
 ; The standard library of sheets (ADR 0046): shapes folded from a square and
 ; trimmed to one flap. The file declares no unit, so its numbers are in the
 ; unit of the program that opens one of its shapes. Each shape exports the
