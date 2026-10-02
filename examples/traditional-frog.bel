@@ -1,0 +1,102 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; The traditional frog after the 19 steps of Kelly Tan's diagram
+; [tan-frog], https://origami.me/traditional-frog/. Steps 1 to 5 fold the
+; preliminary base, steps 6 to 12 turn it into the frog base by four squash
+; folds and four petal folds, steps 13 to 18 narrow the four legs and
+; reverse-fold them, and step 19 folds the head down.
+;
+; The program stops after step 7. Step 8 turns half of a squashed flap over
+; to the other side about the hinges it already has. The line of such a fold
+; crosses no face, and the kernel refuses it (#205). The first statement of
+; step 8 stands below, commented out, with the error it gives.
+;
+; Smith writes the frog base in OIL from the preliminary base
+; [smith1975oil, §5.4]: one fold instruction per squash and three per petal
+; fold. This program writes a squash as two marks and a flatten.
+
+paper square
+
+; steps 1 to 3 crease the square in half both ways and along both
+; diagonals. Step 2 turns the paper over and step 4 turns it back, so the
+; program turns nothing: the square keeps the side up that step 1 starts
+; with.
+mark (map --da onto --bc) as --v                 ; step 1: in half and unfold
+mark (map --ab onto --cd) as --h                 ; step 2: in half the other way
+mark (through .a .c) as --ac                     ; step 3: one diagonal
+mark (through .b .d) as --bd                     ; step 3: the other diagonal
+
+; points on the raw edges, a quarter in from a corner, that name the layers
+; of the base below: .q and .f lie on the a-quarter, .n and .k on the
+; b-quarter, .g and .z on the c-quarter, .e on the d-quarter
+.q = free on --ab from .a at 1/4
+.n = free on --ab from .b at 1/4
+.k = free on --bc from .b at 1/4
+.g = free on --bc from .c at 1/4
+.z = free on --cd from .c at 1/4
+.e = free on --da from .d at 1/4
+.f = free on --da from .a at 1/4
+
+; step 5: collapse into the preliminary base. All four corners meet at .c,
+; the paper center .o is the closed point, and the a-quarter lies in front.
+flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .n) (toward .q)
+
+.o = --h * --v
+--mid = (through .o .c)                          ; center line of the base
+.ml = --v * --cd                                 ; the two side corners
+.mr = --v * --ab
+.x6 = --h * --da                                 ; the ends of the folded edges
+.x7 = --h * --bc                                 ; that steps 6 and 7 open
+
+; step 6: squash the front flap whose folded edge is --h & --da. The edge
+; opens and lands on the center line; each of the flap's two layers creases
+; along the line that halves the angle between the edge and the center
+; line, --s1 on the outer layer and --t1 on the inner one.
+mark (map (--h & --da) onto --mid) (on #[.f]) as --s1         ; step 6
+mark (map (--h & --da) onto --mid) (on #[.e]) as --t1         ; step 6
+flatten (--h & --da) (--s1 & --da) (--t1 & --da) (--ac & .a) (on #[.f]) (staying .q)    ; step 6
+
+; step 7: the model turned over, the same squash on the back flap of the
+; other side, whose folded edge is --h & --bc. The program does not turn
+; the model; `on` names the back flap.
+mark (map (--h & --bc) onto --mid) (on #[.g]) as --s2         ; step 7
+mark (map (--h & --bc) onto --mid) (on #[.k]) as --t2         ; step 7
+flatten (--h & --bc) (--s2 & --bc) (--t2 & --bc) (--ac & .c) (on #[.g]) (staying .z)    ; step 7
+
+; step 8, seen from the back: turn the half of the back squash that lies on
+; the side of .k over to the other side about the center line, then squash
+; the flap it uncovered. The fold below runs along hinges only and is
+; refused:
+;
+;   .u = free on --t2 from .o at 1/2
+;   fold (--h & --bc) (moving .u) (up to #[.u]) (mountain)       ; step 8
+;
+;   error: this fold is degenerate
+;
+; The kernel asks the line of a fold to cross a face, and every face lies
+; on one side of the center line here.
+
+; the base stands with its closed point up, as the diagram draws it from
+; step 6 on
+@orient .o up
+
+; a mark moves no paper, so each flatten makes one step
+; assert steps = 3
+
+; Each squash opens one folded edge, so two hinges lie flat and the 12 faces
+; make 10 flaps.
+; assert faces = 12
+
+; the outline is the square of the base: the closed point .o, the side
+; corners .ml and .mr, and the four paper corners at the open end
+; assert .o = (1/2, 1/2)
+; assert .ml = (1/2, 1)
+; assert .mr = (1, 1/2)
+; assert .a = (1, 1)
+; assert .b = .a
+; assert .c = .a
+; assert .d = .a
+
+; the opened edges of steps 6 and 7 end on one point of the center line,
+; the front squash over the back one. Its coordinates carry sqrt(2).
+; assert .x6 = .x7
