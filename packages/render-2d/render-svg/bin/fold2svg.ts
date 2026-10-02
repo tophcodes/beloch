@@ -10,9 +10,10 @@
 //   beloch fold --trace f.bel | bun bin/fold2svg.ts - --view op [--statement N]
 //   beloch fold --trace f.bel | bun bin/fold2svg.ts - --view stages --source f.bel [--statement N] [--stage N] [--checks]
 //   beloch fold f.bel | bun bin/fold2svg.ts - --view side --along --s [--step K] [--far-side]
+//   beloch fold f.bel | bun bin/fold2svg.ts - --view faces [--step K]
 //   beloch fold f.bel | bun bin/fold2svg.ts - out.png --title f.bel
 import { parseFold, SceneError, StepNotFoundError } from "@beloch/scene";
-import { renderCandidates, renderCP, renderFolded, renderOperation, renderSide, renderStages } from "@beloch/render-svg";
+import { renderCandidates, renderCP, renderFaces, renderFolded, renderOperation, renderSide, renderStages } from "@beloch/render-svg";
 
 const args = process.argv.slice(2);
 const flagVal = (name: string): string | undefined => {
@@ -21,13 +22,13 @@ const flagVal = (name: string): string | undefined => {
 };
 
 const title = flagVal("--title") || "";
-const viewFlag = flagVal("--view"); // undefined | "cp" | "folded" | "candidates" | "op" | "stages" | "side"
-if (viewFlag !== undefined && !["cp", "folded", "candidates", "op", "stages", "side"].includes(viewFlag)) {
+const viewFlag = flagVal("--view"); // undefined | "cp" | "folded" | "candidates" | "op" | "stages" | "side" | "faces"
+if (viewFlag !== undefined && !["cp", "folded", "candidates", "op", "stages", "side", "faces"].includes(viewFlag)) {
   // process.stderr.write, not console.error — Bun's console.error unconditionally
   // ANSI-colors its argument even when stderr is piped (non-TTY), which would break
   // the plain-text stderr assertions below.
   process.stderr.write(
-    `beloch-render: unknown --view value '${viewFlag}' — expected cp, folded, candidates, op, stages or side\n`,
+    `beloch-render: unknown --view value '${viewFlag}' — expected cp, folded, candidates, op, stages, side or faces\n`,
   );
   process.exit(1);
 }
@@ -95,6 +96,8 @@ try {
         })
       : viewFlag === "side"
         ? renderSide(scene, { ...opts, along: alongName(), step, farSide: args.includes("--far-side") })
+      : viewFlag === "faces"
+        ? renderFaces(scene, { ...opts, step })
       : renderCP(scene, opts);
   const svg = doc.toString();
 

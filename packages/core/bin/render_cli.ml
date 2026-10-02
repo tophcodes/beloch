@@ -52,8 +52,12 @@ what gets rendered:
                             --l is read on the table of the final state: bind
                             it with = after the last fold. Seen from outside
                             the paper; arrows on the cut show the side.
-  --step N                  folded, side: draw the state after the Nth write
-                            (0: the flat sheet; default: the last state)
+  --view faces              the face graphs of the folded state: faces that
+                            share a hinge, on the paper, and faces that
+                            overlap on the table, the top layer first
+  --step N                  folded, side, faces: draw the state after the
+                            Nth write (0: the flat sheet; default: the last
+                            state)
   --far-side                side: see the section from the other side of the
                             line (mirrored, arrows turned round)
   --flip                    view the folded state from the other side

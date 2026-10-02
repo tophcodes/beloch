@@ -64,7 +64,8 @@ Without `OUT` the drawing goes to standard output; otherwise the extension of
 | `--view cp` | The crease pattern, the flat sheet with every crease. The default. |
 | `--view folded` | The folded state, seen from above. |
 | `--view side --along --l` | The section of the folded state along the line `--l`: the stack pulled apart, the top layer first, each layer a strip and each folded hinge a turn, beside the crease pattern with the same pieces and hinges named. The line is read on the table of the state drawn: a line bound with `=` after the last fold. [The side view](#the-side-view) states how it is seen and named. |
-| `--step N` | With `--view folded` or `--view side`, draws the state after `N` writes, `0` being the flat sheet; by default the last state. |
+| `--view faces` | The face graphs of the folded state: which faces share a hinge, drawn on the paper, and which overlap on the table, the top layer first. [The face graphs](#the-face-graphs) states how they are drawn. |
+| `--step N` | With `--view folded`, `--view side` or `--view faces`, draws the state after `N` writes, `0` being the flat sheet; by default the last state. |
 | `--far-side` | With `--view side`, sees the section from the other side of the line: the section is mirrored and the arrows on the cut turn round. |
 | `--view stages` | How the selection of one construction went, one row per stage; [The stages view](/cli/stages/) states its rules. A `.bel` input is evaluated with its trace, and a program that fails is drawn up to its failure. |
 | `--statement N` | The statement the stages view draws, as an index into `beloch:statements`; by default the one that failed, else the last that chose from candidates. |
@@ -110,6 +111,40 @@ Two pieces joined by a flat hinge run on as one layer and are divided by the
 same tick. Two pieces of one layer whose raw edges meet share no hinge, and a
 small gap stands between them. The crease pattern beside the section draws
 the creases of the state drawn and none that a later write scores.
+
+### The face graphs
+
+Two graphs side by side, each with a node for every face of the state as
+FOLD counts faces: the faces a `J` edge joins, which only divide a non-convex
+sheet into convex pieces, are one node. A face is numbered by its place in the
+state's `faces_vertices`, counted from 1, and a node carries the smallest
+number among its faces. A node is shaded when its faces lie face down.
+
+On the left, adjacency, drawn on the paper: each node stands at the centre of
+its largest face, which lies inside the node whatever shape its faces make
+together, and two nodes that share a hinge are joined by a path through the
+middle of the hinge, red for a mountain, blue for a valley, and dashed grey
+for a flat hinge. Where faces are too small to hold their nodes apart, as at
+the points of a crane, a node moves off its face and keeps a thin line back to
+it.
+
+The graphs read `edges_faces`, so a FOLD file written before that field
+existed stops with a message that asks to fold it again.
+
+On the right, superposition: the pairs of nodes whose faces overlap on the
+table, as `faceOrders` lists them. A line joins two nodes only when no third
+node lies between them; every other overlapping pair follows from those
+lines. Each node stands in a row below every node above it, the top layer in
+the first row. The rows are found in two passes. First each node stands one
+row below the lowest node above it. Then each node moves, between the row
+below the lowest node above it and the row above the highest node below it,
+to the end where more of its lines go, and to the lower end when as many go
+up as down. A short column beside a long one thus ends in the row where the
+long one ends, as the tail of the crane ends beside its neck. A line that
+spans several rows bends in each row between, at a place in that row beside
+the nodes, so no line runs through a node. Nodes that lie over one another in
+a cycle share a row, and the lines between them carry arrows from the node
+above to the node below.
 
 ## Other commands
 

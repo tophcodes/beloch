@@ -34,7 +34,7 @@ test("CLI: unknown --view value exits 1 with a plain error", async () => {
   const p = Bun.spawn(["bun", CLI, FIX, "--view", "top"], { stderr: "pipe" });
   const err = await new Response(p.stderr).text();
   expect(await p.exited).toBe(1);
-  expect(err).toContain("unknown --view value 'top' — expected cp, folded, candidates, op, stages or side");
+  expect(err).toContain("unknown --view value 'top' — expected cp, folded, candidates, op, stages, side or faces");
 });
 
 test("CLI: an unknown option exits 1 and writes no file", async () => {
@@ -102,4 +102,16 @@ test("CLI: --view side without --along exits 1 with a plain error", async () => 
   const err = await new Response(p.stderr).text();
   expect(await p.exited).toBe(1);
   expect(err).toContain("--view side needs --along and a line name");
+});
+
+test("CLI: --view faces draws the face graphs of a state, --step picks the state", async () => {
+  const run = async (...flags: string[]) => {
+    const fix = new URL("./fixtures/fold-quarter-faces.fold", import.meta.url).pathname;
+    const p = Bun.spawn(["bun", CLI, fix, "--view", "faces", ...flags]);
+    const out = await new Response(p.stdout).text();
+    expect(await p.exited).toBe(0);
+    return out;
+  };
+  expect(await run()).toContain("adjacency: 4 faces, 4 hinges");
+  expect(await run("--step", "1")).toContain("adjacency: 2 faces, 1 hinge<");
 });
