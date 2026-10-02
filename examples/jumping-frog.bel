@@ -1,0 +1,147 @@
+@author "Claude (Anthropic)"
+@design traditional
+@source "[saydak2026frog]"
+
+; The traditional jumping frog, after the 22 steps of Peter Saydak's diagram
+; [saydak2026frog]. The program folds steps 1 to 16. Step 17 does not fold
+; yet, and the steps after it wait for it (see the end of the file).
+;
+; The diagram starts with the white side up. It turns the model round at
+; step 11; the program keeps its coordinates, so from step 12 on the
+; diagram's "bottom" is the side of .c here, its "up" is toward .a, and its
+; left and right trade places with the program's left and right. Where
+; the diagram leaves a position to the eye (step 10), a free point carries
+; it.
+
+paper square
+
+mark (map --ab onto --cd) as --h            ; step 1: crease the horizontal half
+fold (map .a onto .b) as --spine            ; step 2: left half over the right
+mark (map --spine onto --bc) as --v         ; step 3: crease the vertical half
+
+; steps 4 and 5 crease the diagonals of the bottom square of the
+; rectangle, through both layers
+.s0 = --spine * --ab                        ; bottom corner on the folded edge
+.r = --h * --bc                             ; right end of the step 1 crease
+.q = --h * --spine                          ; left end of the step 1 crease
+.rf = --h * --da                            ; .r on the front layer
+mark (through .s0 .r) as --d1               ; step 4
+mark (through .b .q) as --d2                ; step 5
+
+; steps 6 to 8 crease the bottom square in half across, with the paper
+; turned over so the crease folds the other way from the diagonals. The
+; collapse of step 9 gives every crease its direction, so the program
+; neither turns the paper nor letters the mark.
+mark (map .s0 onto .q) as --m               ; steps 6 to 8
+
+; step 9: the waterbomb base on the bottom square, through both layers.
+; The bottom edge rises to the step 1 crease, and the sides fold in between.
+; .o, the center of the square on the back layer, becomes the tip of the
+; triangle. The front layer lies face down, so the letters read inverted on
+; it: valley diagonals and a mountain crosswise bring the flaps to the front.
+; `(staying .q .rf)` keeps the triangle under the step 1 crease, named by the
+; front layer's corners on its two bounding rays.
+.o = (--d1 & .r) * --d2
+flatten (--d1 & .s0 valley) (--d1 & .r valley) (--d2 & .b valley) (--d2 & .q valley)
+  (--m & --spine mountain) (--m & --bc mountain) (staying .q .rf)          ; step 9
+
+; step 10: the two front flaps down and out as the front legs. Each crease
+; runs from .mm, the middle of the triangle's top edge, to a point on the
+; triangle's side. The diagram sets the angle to the eye; its figure puts
+; that point about 3/8 of the way from the top corner to the tip, which turns
+; each leg about 30 degrees off the center line. `up to` names the deepest
+; layer of each front flap, so the back of the triangle stays.
+.mm = (--v & .o) * --h
+.ml = --m * --spine
+.mr = --m * --bc
+.p = free on --d2 & .q & .o from .q at 3/8
+.pr = free on --d1 & .r from .r at 3/8
+fold (through .mm .p) (moving .s0) (up to #[.s0 .ml .o]) as --fl        ; step 10, left
+fold (through .mm .pr) (moving .b) (up to #[.b .mr]) as --fr            ; step 10, right
+
+; step 11 turns the model round; the program does not.
+
+; step 12: the far edge of the body onto the base of the legs. `over` lays
+; the folded strip on the front layer of the body, which is where it lands;
+; that place in the stack order leaves room for step 13 to slide the sides
+; of the body under the legs.
+.v0 = (--v & .o) * --ab
+fold (map .c onto .r) (over #[.q .rf]) as --s12                          ; step 12
+
+; step 13: each side of the body onto the center line, under the legs. The
+; back of the triangle folds with it; the front flaps and the legs stay on
+; top. Left and right are the program's: the left side, on the folded edge of
+; step 2, is the diagram's right. `up to` names the back layer of the body,
+; and `under` the deepest layer of the front flap on that side. The fold
+; takes every layer between the two: on the left the folded edge of step 2
+; also hinges the front layer to the back one, on the right the two meet at
+; raw edges.
+.pb = (--fl & .v0) * --d1                   ; outer corner of the left leg
+fold (map .q onto .mm) (up to #[.q .r]) (under #[.ml .o .pb]) as --s13l  ; step 13, left
+
+.pbr = (--fr & .v0) * --d2                  ; outer corner of the right leg
+fold (map .r onto .mm) (up to #[.r .mm .o]) (under #[.mr .o .pbr]) as --s13r  ; step 13, right
+
+; steps 14 to 16 fold the near half of the body up to .mm, crease its
+; corners down to its folded edge through every layer, and unfold it. What
+; they leave is creases: --c14 across the body halfway between .mm and .e,
+; the middle of its near edge, and a diamond from .mm through the corners
+; .cl and .cr of --c14 to .e. The collapse of step 17 gives them their
+; directions.
+.e = free on --bc from .b at 3/4            ; middle of the near edge
+.kl = free on --h from .rf at 5/8           ; on --h, at the foot of --s13l
+.kr = free on --h from .rf at 7/8           ; on --h, at the foot of --s13r
+mark (map .e onto .mm) as --c14             ; step 14
+.cl = --c14 * (--s13l & .kl)
+.cr = --c14 * (--s13r & .kr)
+mark (through .cl .mm) (between .cl .mm) as --t15l    ; step 15, left
+mark (through .cr .mm) (between .cr .mm) as --t15r    ; step 15, right
+mark (through .cl .e) (between .cl .e) as --u15l      ; step 15, left
+mark (through .cr .e) (between .cr .e) as --u15r      ; step 15, right
+
+; Step 17 does not fold yet. It pushes .e up to .mm along --c14 and swings
+; the lower halves of the sides of step 13 out, a collapse at the two
+; vertices .cl and .cr, which --c14 joins. `flatten` takes one vertex, and
+; a fan at .cl alone has rays that end inside the sheet, --c14 at .cr and
+; --t15l at .mm:
+;
+;   flatten (--c14 & .cl valley) (--t15l & .cl valley) (--u15l & .cl mountain)
+;     (--s13l & .cl) (staying .q)                                ; step 17
+;
+;   error: crease ends inside the sheet
+;
+; Steps 18 to 22 follow it: the sides of the near half down along --t15l
+; and --t15r (step 18), the back legs narrowed and folded up (steps 19 and
+; 20), the pleat of step 21, and the model turned over (step 22).
+
+; the jumping frog stands with its center line upright, the tip of the
+; triangle up, the way the diagram draws it finished
+@orient .mm .o up
+
+; Seven of the writes fold; the ten marks leave the paper flat.
+; assert steps = 7
+
+; The marks of steps 1 and 3 stay flat across the body and join faces into
+; one flap: 40 faces make 34 flaps, which test_e2e.ml counts.
+; assert faces = 40
+
+; the legs: tips .s0 and .b, the folded corners of the two front flaps.
+; Each leg edge runs 2 * atan(3/5) off the top edge of the triangle. The
+; corner .pb of the left leg stands out past the side of the body, as in
+; the diagram.
+; assert .s0 = (43/68, 19/68)
+; assert .b = (59/68, 19/68)
+; assert .a = .b
+; assert .pb = (19/32, 13/32)
+; assert .o = (3/4, 1/4)
+
+; step 12 lays the far edge on the base of the legs, step 13 both sides
+; on the center line
+; assert .c = .r
+; assert .r = (3/4, 1/2)
+; assert .q = (3/4, 1/2)
+
+; steps 14 to 16 crease the near half of the body
+; assert .e = (3/4, 3/4)
+; assert .cl = (5/8, 5/8)
+; assert .cr = (7/8, 5/8)
