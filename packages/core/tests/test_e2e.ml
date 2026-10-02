@@ -1344,6 +1344,48 @@ let test_penguin_flaps () =
   let flaps = List.length (List.filter (fun i -> find i = i) (List.init n Fun.id)) in
   Alcotest.(check int) "flaps" 14 flaps
 
+(* The samurai helmet folds to its last flat state in ten writes; its last
+   write tucks the bottom corner of the back layer between the front and the
+   back layer. The flaps are counted as for the cicada. The tuck is checked
+   on the layer relation of the flaps that hold three paper points: one in
+   the tucked corner, one in the front layer and one in the back layer, both
+   above the bottom edge. *)
+let test_samurai_helmet_tuck () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"samurai-helmet.bel" (read_example "samurai-helmet.bel"))
+  in
+  let st = fd.Eval.state in
+  Alcotest.(check int) "one frame per write" 10
+    (List.length fd.Eval.frames);
+  let n = Array.length (Fold_state.faces st) in
+  let parent = Array.init n Fun.id in
+  let rec find i = if parent.(i) = i then i else find parent.(i) in
+  Array.iter
+    (fun (h : Fold_state.hinge) ->
+      if Num.equal h.angle Num.zero then parent.(find h.fa) <- find h.fb)
+    (Fold_state.hinges st);
+  let flaps = List.length (List.filter (fun i -> find i = i) (List.init n Fun.id)) in
+  Alcotest.(check int) "flaps" 18 flaps;
+  (* the flap of the paper point (n/d, n/d) *)
+  let flap n d =
+    let c = Num.of_q (Q.of_ints n d) in
+    match Fold_state.flap_of_points st [ { Geom.x = c; y = c } ] with
+    | `Cluster fs -> fs
+    | _ -> Alcotest.failf "no single flap holds (%d/%d, %d/%d)" n d n d
+  in
+  (* the relations of the overlapping face pairs of two flaps *)
+  let rels a b =
+    List.concat_map (fun i -> List.map (fun j -> Fold_state.rel st i j) b) a
+    |> List.filter (fun r -> r <> Fold_state.Apart)
+  in
+  let tucked = flap 1 6 and front = flap 2 3 and back = flap 2 5 in
+  let under_front = rels tucked front and on_back = rels tucked back in
+  Alcotest.(check bool) "the tucked corner lies under the front layer" true
+    (under_front <> [] && List.for_all (( = ) Fold_state.Below) under_front);
+  Alcotest.(check bool) "the tucked corner lies on the back layer" true
+    (on_back <> [] && List.for_all (( = ) Fold_state.Above) on_back)
+
 let () =
   Alcotest.run "beloch-e2e"
     [
@@ -1359,6 +1401,8 @@ let () =
             test_cicada_flaps;
           Alcotest.test_case "the penguin folds to 14 flaps" `Quick
             test_penguin_flaps;
+          Alcotest.test_case "the samurai helmet tucks its back corner inside" `Quick
+            test_samurai_helmet_tuck;
           Alcotest.test_case "diagonals four faces" `Quick
             test_e2e_diagonals_four_faces;
           Alcotest.test_case "perp end-to-end" `Quick test_e2e_perp;

@@ -1,0 +1,81 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; The traditional samurai helmet, after the seven steps of the diagram on
+; origami.me [saydak2010samurai]. The diagram holds the paper as a diamond
+; with .c at the top and .a at the bottom, so "down" below means toward .a.
+; It gives no paper size. Where it leaves a position to the eye (steps 4
+; and 5), a free point carries it. The diagram's last picture opens the
+; helmet, which is 3D and out of scope (ADR 0015); the program stops at
+; step 7.
+
+paper square
+
+fold (map .c onto .a) as --bd               ; step 1: top corner down onto the bottom
+
+fold (map .d onto .a) as --l                ; step 2: left corner down to the bottom
+fold (map .b onto .a) as --r                ; step 2: right corner down to the bottom
+
+; step 3 folds the tips of both flaps up to the top corner .o, along the
+; line through the side corners .sl and .sr. `up to` names the lower layer
+; of each flap, so the square under it stays.
+.o = --r * --l
+--mid = (through .o .c)
+.sl = --l * --da                            ; left side corner
+.sr = --r * --ab                            ; right side corner
+.el = --l * --cd                            ; the side corners again, on the front layer
+.er = --r * --bc
+fold (through .sl .sr) (moving .d) (up to #[.d .el]) as --wl   ; step 3, left
+fold (through .sl .sr) (moving .b) (up to #[.b .er]) as --wr   ; step 3, right
+
+; step 4 folds the tips that step 3 raised out to the sides. Each crease
+; runs from the bottom of the tip's inner edge, where step 3 crosses the
+; center line, to a point of its upper edge a third of the way from the
+; tip; the diagram sets the angle by eye. `up to` names the lower layer of
+; each tip, the one that holds a side corner, so the flap under the tip
+; stays.
+.ml = --wl * --bd
+.mr = --wr * --bd
+.ql = free on --da & .d from .d at 1/3
+.qr = free on --ab & .b from .b at 1/3
+fold (through .ml .ql) (moving .d) (up to #[.d .sl]) as --hl   ; step 4, left
+fold (through .mr .qr) (moving .b) (up to #[.b .sr]) as --hr   ; step 4, right
+
+; step 5: the bottom corner of the front layer up. The diagram sets the
+; crease by eye; here it crosses the edge a quarter of the way from the
+; side corner .er down to the bottom corner .c, 3/8 of the edge from .c.
+.x = free on --bc from .c at 3/8
+fold (perp --mid through .x) (moving .c) (up to #[.c]) as --s5     ; step 5
+
+; step 6: the strip of the front layers below the side corners up along
+; the line through them. `up to` names the front layer, so the back layer
+; stays.
+fold (through .sl .sr) (moving .x) (up to #[.o .x]) as --s6       ; step 6
+
+; step 7: the bottom corner of the back layer up along the same line and
+; inside the model. The diagram draws this crease a hair below the bottom
+; edge; here it is the bottom edge. `under` places the corner beneath the
+; front layer above that edge, the flap of .o, .el and .er, and so between
+; the front and the back layer.
+fold (through .sl .sr) (moving .a) (up to #[.a]) (under #[.o .el .er]) as --s7   ; step 7
+
+; the finished helmet stands with its crown .o up
+@orient .o up
+
+; assert steps = 10
+; assert faces = 18
+
+; step 5 lands the front corner on the center line, step 7 tucks the back
+; corner up to the crown
+; assert .c = (3/8, 3/8)
+; assert .a = .o
+
+; the outline, symmetric about the center line: the crown .o, the upper
+; edges of the horns from .ql and .qr out to the tips .d and .b, and the
+; bottom edge from .sl to .sr
+; assert .o = (1/2, 1/2)
+; assert .ql = (1/3, 1/2)
+; assert .qr = (1/2, 1/3)
+; assert .d = (1/5, 3/5)
+; assert .b = (3/5, 1/5)
+; assert .sl = (0, 1/2)
+; assert .sr = (1/2, 0)
