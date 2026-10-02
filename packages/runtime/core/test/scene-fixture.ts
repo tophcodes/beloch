@@ -8,6 +8,7 @@ const emptyFrame = (): Frame => ({
   edgesVertices: [],
   edgesAssignment: [],
   edgesProvenance: [],
+  edgesFaces: null,
   verticesNames: [],
   facesVertices: [],
   faceOrders: [],

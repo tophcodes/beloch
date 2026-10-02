@@ -20,6 +20,7 @@ const frame = (): Frame => ({
   edgesVertices: [],
   edgesAssignment: [],
   edgesProvenance: [],
+  edgesFaces: null,
   verticesNames: ["a", "b", "c", "d"],
   facesVertices: [[0, 1, 2, 3]],
   faceOrders: [],
