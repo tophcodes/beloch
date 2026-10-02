@@ -1,8 +1,7 @@
 #!/usr/bin/env bun
 // fold2svg-compatible CLI: FOLD -> labeled SVG/PNG diagram, on top of
-// @beloch/scene + @beloch/render-svg. Flag parsing ported from
-// tools/fold2svg.mjs:162-184 (minus the rabbit-ear load-check — the OCaml
-// emitter's own tests own FOLD validity).
+// @beloch/scene + @beloch/render-svg. It does not validate the FOLD input;
+// the OCaml emitter's own tests own FOLD validity.
 // Usage:
 //   bun bin/fold2svg.ts input.fold [out.svg|out.png] [--title "..."]
 //   bun bin/fold2svg.ts f.fold --view folded [--flip] [--hidden dashed|hide]

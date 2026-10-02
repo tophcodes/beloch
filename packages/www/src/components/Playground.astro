@@ -746,7 +746,7 @@ const codeLines = code ? code.split("\n").length : 0;
   }
   /* Everything grabs the paper by default (see .pg-result above) — creases
      (and their hit-area twins) are the one thing you can click, so they get
-     their own cursor to signal that. Task 9: paper boundary lines are
+     their own cursor to signal that. Paper boundary lines are
      selectable too but carry no data-crease-id, so this also matches on
      data-kind="crease" directly (a superset of the data-crease-id case). */
   .pg-canvas :global([data-crease-id]),
@@ -1368,7 +1368,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // apart from a genuine click.
     //
     // isDragging() is different: it reflects the LIVE `dragging` flag, for
-    // the hover tooltip's `mousemove` handler (task 8) — that one needs to
+    // the hover tooltip's `mousemove` handler. That handler needs to
     // know whether a pan is happening RIGHT NOW (so it doesn't flicker the
     // tooltip while the pointer crosses creases mid-drag), not whether the
     // gesture that JUST ended was a pan (wasDrag() stays true until the
@@ -1943,7 +1943,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // (crease/face/vertex, attr-based); if that's null AND the target is a
     // crease-layer line or its `.bel-hit` twin, fall back to geometry — this
     // is the only way to identify a paper-boundary line, which carries no
-    // data-crease-id at all (task 9).
+    // data-crease-id at all.
     const resolveRef = (target: Element): EntityRef | null => {
       const ref = lookupEntity(target);
       if (ref) return ref;
@@ -2284,7 +2284,7 @@ const codeLines = code ? code.split("\n").length : 0;
 
     // Picking a segment row (anchored crease view only) highlights the SVG
     // line(s) it corresponds to by GEOMETRY, not a data-seg index (there is
-    // none — dropped in Task 4). The segment's `table` endpoints are in the
+    // none). The segment's `table` endpoints are in the
     // evaluator's table space; a rendered crease `<line>`'s x1/y1/x2/y2 are
     // in SVG pixel space, produced by render-scene.ts as
     // `mx(tx(x)), ty(y)` off the layout `sceneLayout(scene)` builds
@@ -2301,10 +2301,9 @@ const codeLines = code ? code.split("\n").length : 0;
     // Hovering OR clicking a row narrows the highlight to just that segment
     // (removing it from the rest of the bundle); a click additionally
     // stopPropagation()s so it doesn't bubble into result's click handler
-    // above and re-anchor on whatever's under the tooltip (Task 7 already
-    // learned this).
+    // above and re-anchor on whatever's under the tooltip.
     //
-    // Task 9: a row now comes from either a crease bundle (`data-pick-crease`
+    // A row comes from either a crease bundle (`data-pick-crease`
     // — re-identify candidate lines by `[data-crease-id]`, via
     // bundleElements) or a paper-boundary edge bundle (`data-pick-edge` — no
     // id to select by, so every crease-layer line is a candidate, narrowed

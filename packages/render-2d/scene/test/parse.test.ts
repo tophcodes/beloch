@@ -149,7 +149,7 @@ test("malformed input throws SceneError naming the field", () => {
   expect(() => parseFold("{}")).toThrow(/vertices_coords/);
 });
 
-// Task 8 (mark/fold slice 2): beloch:marks — non-subdividing record marks.
+// beloch:marks: non-subdividing record marks.
 // Fixture generated via `dune exec bin/main.exe -- fold` on a program that
 // records exactly one `seg` mark (a between-clip stub dangling mid-face) and
 // one point mark (an `at .p` reference on --vm); see
@@ -190,8 +190,7 @@ test("folded step frames carry crease provenance names", async () => {
   expect(hasNamedCrease).toBe(true);
 });
 
-// Task 3 (entity inspector, playground slice B): beloch:inspect + per-edge
-// crease_id.
+// beloch:inspect + per-edge crease_id.
 test("parse surfaces inspect and edge crease id", () => {
   const fold = {
     vertices_coords: [[0, 0], [1, 0]], edges_vertices: [[0, 1]],
@@ -240,8 +239,7 @@ test("no beloch:inspect field parses to a null inspect", async () => {
   expect(scene.inspect).toBeNull();
 });
 
-// Task 9 (entity inspector, playground slice B): beloch:inspect.edges — the
-// paper-boundary bundles (--ab/--bc/--cd/--da).
+// beloch:inspect.edges: the paper-boundary bundles (--ab/--bc/--cd/--da).
 test("parse surfaces inspect.edges", () => {
   const fold = {
     vertices_coords: [[0, 0], [1, 0]], edges_vertices: [[0, 1]],

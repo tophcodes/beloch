@@ -88,11 +88,11 @@ test("stepping moves both drawings of the state at once", async () => {
 });
 
 test("stepper selects by index, not by (possibly null) step label", async () => {
-  // def-diagonals's first step has a null label. Under the old label-based
-  // code, `renderFolded` falls back to the LAST step whenever the selected
-  // step's label is undefined — so index 0 and the last index render
-  // identically (both show the final frame) even though the label text
-  // still claims the right index. Selecting by index fixes that desync.
+  // def-diagonals's first step has a null label. Selecting by label would
+  // make `renderFolded` fall back to the LAST step whenever the selected
+  // step's label is undefined, so index 0 and the last index would render
+  // identically (both the final frame) while the label text still claims
+  // the right index. The stepper selects by index to keep them in step.
   await import("./beloch-figure");
   const el = mountCard(diagonalsFoldJson);
   (el as any).hydrate();
@@ -168,10 +168,10 @@ test("selection survives a re-render (a step change)", async () => {
 });
 
 test("deselecting a non-last name frees its color slot instead of shifting into an active one", async () => {
-  // Reviewer's collision case: select A,B,C (colors P0,P1,P2 by insertion
+  // Collision case: select A,B,C (colors P0,P1,P2 by insertion
   // order), deselect B (a non-LIFO slot) — colorOf.size drops to 2 — then
-  // select D. Under the old `PALETTE[colorOf.size % PALETTE.length]` scheme,
-  // D would get PALETTE[2], which is still held by the active C, so C and D
+  // select D. A `PALETTE[colorOf.size % PALETTE.length]` scheme would give
+  // D PALETTE[2], which is still held by the active C, so C and D
   // would render with an identical --bel-sel color. The free-slot picker
   // must instead notice PALETTE[1] (B's old slot) is free and hand it to D.
   await import("./beloch-figure");

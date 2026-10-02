@@ -3,8 +3,8 @@ import { stripHtml } from "./strip-html";
 
 test("decodes the numeric ampersand entity Astro emits for `&`", () => {
   // regression: Astro renders `&` (the keep/filter operator) as `&#x26;`, which
-  // the old named-only decoder left intact → `beloch fold` lexed a literal
-  // `&#x26;` and died on "unexpected character".
+  // a decoder of named entities only leaves intact, and `beloch fold` then
+  // lexes a literal `&#x26;` and fails with "unexpected character".
   expect(stripHtml("fold map (--cd &#x26; .c) onto --v")).toBe(
     "fold map (--cd & .c) onto --v",
   );

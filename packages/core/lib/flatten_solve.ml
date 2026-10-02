@@ -34,10 +34,10 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
          "collapse folds along existing creases; %s is not a material \
           crease" (Resolve.lstr el.Ast.cline))
   in
-  (* each element resolves to 1..k material SEGMENTS at the vertex, no
-     eager multi-segment error any more: the stayer filter and the vertex
-     check prune the wrong segment combinations. Only non-material operands error,
-     with the old zero-segment texts verbatim. *)
+  (* each element resolves to 1..k material SEGMENTS at the vertex, and
+     several segments are no error: the stayer filter and the vertex check
+     prune the wrong segment combinations. Only non-material operands error,
+     with the zero-segment texts. *)
   let resolve_elem_candidates (el : Ast.collapse_elem) :
       (int * Geom.point * Geom.point * Ast.mv_constraint) list =
     let seg_tuple cid (s : Fold_state.crease_segment) =

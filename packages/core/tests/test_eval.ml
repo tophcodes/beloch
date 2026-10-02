@@ -5,8 +5,8 @@ let half = Num.of_q (Q.of_ints 1 2)
 let pt x y = { Geom.x = q x; y = q y }
 
 (* [Eval].[named_points]/[named_lines] are (name, value, step) triples (step = the
-   0-based creation step, task A1); these tests don't care about the step, so
-   look up by name like the old 2-tuple assoc list did. *)
+   0-based creation step); these tests don't care about the step, so
+   look up by name. *)
 (* [named_points] carries a frame step AND a statement index, so it needs its
    own arity; [named_lines] still uses the three-wide pair above. *)
 let assoc4 k l = List.find_map (fun (k', v, _, _) -> if k' = k then Some v else None) l
@@ -318,7 +318,7 @@ let test_fold_along_bent_under_moving () =
 (* ---- @flatten ---- *)
 
 let test_flatten_staying_accepted () =
-  (* staying is wired (Task 3). Same valid "+" vertex flatten as
+  (* Same valid "+" vertex flatten as
      [test_flatten_all_layers_ok], plus a staying clause. On the still-flat
      pre-collapse sheet every sector is one coplanar flap, so (staying .a)
      names all four as stayer candidates (each a distinct fold) and {toward}
@@ -556,7 +556,7 @@ let test_layer_mountain_moved_below () =
   Alcotest.(check bool) "moved face is Below stationary" true
     (Fold_state.rel st mv stt = Fold_state.Below)
 
-(* [Fold_state.rel]'s own negation, ported locally: the core has no
+(* [Fold_state.rel]'s own negation, implemented again here: the core has no
    standalone sparse-order module; [rel] is derived directly from rank. *)
 let negate_rel = function
   | Fold_state.Above -> Fold_state.Below
@@ -1169,10 +1169,8 @@ let test_eval_export_temp_target () =
 (* up to = anchor: only the top flap of a 2-layer stack folds → 3 faces.
    The fold's own hinge (--hinge) is parallel to the fold axis, so folding
    .d back onto .h (a point ON --hinge) only lifts the material whose hinge
-   sits on the axis itself: hinge-closed, not a tear (contrast with the old
-   fold-top-flap.bel, whose second fold's axis was perpendicular to the
-   first fold's hinge; that program now lives in tests/cases/fold/ as an
-   `expect error "tear"` case). *)
+   sits on the axis itself: hinge-closed, not a tear (a second fold whose
+   axis is perpendicular to the first fold's hinge is a tear). *)
 let test_eval_up_to_top_flap () =
   let fd =
     Eval.eval_folded
@@ -2128,7 +2126,7 @@ let () =
             test_fold_along_matches_restatement;
           (* PENDING #27: full multilayer mark materialization (a mark on a
              folded sheet records only its carrying flap): @fold face/F counts
-             differ from the old eager-subdivide path *)
+             differ from eager subdivision *)
           Alcotest.test_case "@fold needs moving" `Quick
             test_fold_along_needs_moving;
           Alcotest.test_case "@fold requires a material crease" `Quick

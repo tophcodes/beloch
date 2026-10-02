@@ -97,7 +97,7 @@ export interface PointMark {
 }
 export type Mark = SegMark | PointMark;
 
-// beloch:inspect — entity inspector data (playground slice B); keyed by
+// beloch:inspect — the playground's entity inspector data; keyed by
 // crease_id / face index / point name as emitted by the core.
 //
 // `faces` is `number[]` rather than a strict 2-tuple: a crease segment
@@ -124,7 +124,7 @@ export interface InspectFace {
 }
 // beloch:inspect.edges — the four paper-boundary bundles (--ab/--bc/--cd/
 // --da), one entry per edge that exists; a crossing crease splits an edge
-// into several segments (task 9, playground slice B).
+// into several segments.
 export interface InspectEdge {
   name: string;
   assignment: string;

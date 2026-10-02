@@ -1,9 +1,9 @@
-// Boundary-edge geometry lookup (playground slice B, task 9): paper
+// Boundary-edge geometry lookup: paper
 // boundary lines (assignment "B") carry no data-crease-id — render-scene.ts
 // only tags real creases (M/V/F) with one, since there's no per-edge id for
 // a boundary. So a boundary line's rendered `<line>` is otherwise
 // indistinguishable from any other crease-layer line via attributes alone;
-// it must be re-identified by GEOMETRY instead, the same way Task 7's stack
+// it must be re-identified by GEOMETRY instead, the same way the stack
 // picker re-identifies a crease segment without a data-seg attribute: match
 // its rendered endpoints (SVG pixel space) against an `InspectEdge`'s
 // `table` coordinates, run through the SAME layout the renderer used

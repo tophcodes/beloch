@@ -1,4 +1,4 @@
-// Entity inspector tooltip content (playground slice B, task 8): pure data
+// Entity inspector tooltip content: pure data
 // selection for the cursor-following tooltip, split from HTML templating
 // (which stays in Playground.astro so `escapeHtml` is applied at the one
 // place user-derived strings — names, sources — get written into innerHTML).
@@ -10,8 +10,7 @@ import { segRank } from "./stack-picker";
 // for all three entity kinds. Crease -> name (or id) + the bundle's TRUE
 // segment count (`insp.creases[id].segments.length`, even if fewer are
 // drawn this step under occlusion). Face -> flap/rank. Vertex -> name (+
-// face/flap if known) — this is the same lightweight info Task 5's fixed
-// panel showed for these two kinds, just now living in the follow-tooltip.
+// face/flap if known).
 // Returns null when the current scene's `inspect` has nothing for `ref`
 // (e.g. a scene evaluated before `beloch:inspect` was emitted).
 export interface HoverSummary {
@@ -52,9 +51,8 @@ export function hoverSummary(ref: EntityRef, insp: Inspect): HoverSummary | null
   };
 }
 
-// The anchored tooltip's segment list for one crease bundle — subsumes the
-// Task 7 stack picker (which lived as a separate panel section) into one
-// list. `sortByRank` mirrors the Task 5/7 rule: the folded view stacks
+// The anchored tooltip's segment list for one crease bundle. `sortByRank`
+// follows the stack picker's rule: the folded view stacks
 // coincident segments at the same projected position, so ordering
 // top-of-stack first (via `segRank`, descending) reads like the physical
 // layer order; the CP view has no stacking (segments are spatially
@@ -83,7 +81,7 @@ export function segmentRows(insp: Inspect, creaseId: string, sortByRank: boolean
 }
 
 // The anchored tooltip's segment list for one paper-boundary edge bundle
-// (task 9) — same shape/purpose as segmentRows above, but a boundary
+// has the same shape and purpose as segmentRows above, but a boundary
 // segment borders only ONE face (there's no far side, it's the sheet's
 // edge — see InspectSegment's comment in types.ts), so there's no l|r pair
 // and no stacking rank to speak of; the row is just `face <fi> · B`.
