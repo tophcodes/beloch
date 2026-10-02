@@ -1,0 +1,14 @@
+# Spelling against Hunspell's en_US dictionary, which the devshell links into
+# .vale/dictionaries (flake.nix). Vale's own dictionary accepts British forms
+# such as colour and parenthesised; this one does not. The dicpath is read
+# relative to the working directory, and scripts/prose.sh runs from the
+# repository root. A possessive is checked by its stem: the vocabulary lists
+# crease, and crease's is no entry of its own.
+extends: spelling
+message: "Did you really mean '%s'?"
+level: error
+dicpath: .vale/dictionaries
+dictionaries:
+  - en_US
+filters:
+  - '^\w+(?:''|’)s$'
