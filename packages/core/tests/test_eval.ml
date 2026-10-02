@@ -769,8 +769,8 @@ let examples_dir () =
   | Some root -> Filename.concat root "examples"
   | None -> "../../../../../examples"
 
-(* every .bel under dir, recursively (examples/ nests into bases/, syntax/,
-   …: a flat [readdir] found none of them and starved this test; mirrors
+(* every .bel under dir, recursively (examples/ nests into syntax/, …: a
+   flat [readdir] found none of them and starved this test; mirrors
    test_golden.ml's [example_names] walker). *)
 let rec example_names dir prefix =
   let d = Filename.concat dir prefix in

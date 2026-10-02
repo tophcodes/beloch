@@ -33,7 +33,7 @@ Or manually:
 code --extensionDevelopmentPath=$(pwd)
 ```
 
-In the new window, open a `.bel` file (e.g. `examples/bases/kite.bel`) and
+In the new window, open a `.bel` file (e.g. `packages/core/tests/cases/bases/kite.bel`) and
 check that it is highlighted.
 
 To install into your normal VSCode instead of a development host:

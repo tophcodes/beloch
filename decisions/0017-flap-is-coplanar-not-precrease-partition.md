@@ -18,7 +18,7 @@ denotes* below. Originally filed Proposed (2026-07-06).
 
 This is the repository's first `Proposed` ADR (0001–0016 are all `Accepted`).
 It records a design change that came out of a live debugging session on
-`examples/bases/rabbit-ear.bel`; it has **not** been implemented or accepted.
+`packages/core/tests/cases/bases/rabbit-ear.bel`; it has **not** been implemented or accepted.
 The format lists it (`Proposed`) as a valid status; this entry sets the
 precedent for using it.
 
@@ -48,7 +48,7 @@ face indices.
 
 <!-- vale proselint.Cliches = YES -->
 
-A debugging session on `examples/bases/rabbit-ear.bel` (verified empirically
+A debugging session on `packages/core/tests/cases/bases/rabbit-ear.bel` (verified empirically
 against the running evaluator, not reasoned from the source) found this
 granularity causes two concrete problems:
 
@@ -199,7 +199,7 @@ already face-granular and unchanged.
 ## Consequences
 
 - **Simpler for the user, matching physical intuition.** In
-  `examples/bases/rabbit-ear.bel`, `--bb at #(.a .d)` would most likely resolve:
+  `packages/core/tests/cases/bases/rabbit-ear.bel`, `--bb at #(.a .d)` would most likely resolve:
   before any `@fold`, `.a` and `.d` lie in faces joined only by `U` precreases,
   so they fall in the same coplanar cluster, and `flap_of_points` returns one
   flap. "Still flat ⇒ still one flap" becomes true in the implementation, not
@@ -261,7 +261,7 @@ already face-granular and unchanged.
 - ADR 0014 (a crease is a bundle of segments: why faces stay fine-grained)
 - ADR 0016 (typed operands: the flap operand type this ADR redefines)
 - `spec/SPECIFICATION.md` §4.6 (`@` / `@fold` / `moving` / `up to`), §4.8 (`at`)
-- `examples/bases/rabbit-ear.bel` (the repro for both findings)
+- `packages/core/tests/cases/bases/rabbit-ear.bel` (the repro for both findings)
 - `lib/fold_state.ml` (`flap_of_points` :352, `select_scope` :385,
   `type assign`, `subdivide`); `lib/eval.ml` (`resolve_flap_face`,
   `at_matches`/`SelFlap` ~306–435)

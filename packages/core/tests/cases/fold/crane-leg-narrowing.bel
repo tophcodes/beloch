@@ -1,7 +1,7 @@
 ; AI-generated: this file was written by Claude, an AI model.
 
 ; Ida's Orikoto crane, steps 2-14 [ida2020, Fig. 7.19]: the bird base
-; (examples/bases/bird-base.bel), the two petal-style folds that bring the
+; (packages/core/tests/cases/bases/bird-base.bel), the two petal-style folds that bring the
 ; front and back flaps down (steps 9 and 10), then the four leg-narrowing
 ; folds (steps 11-14). Each narrowing crease is an angle bisector between a
 ; kite crease (the side corner reversed onto --mid) and the center line,

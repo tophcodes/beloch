@@ -4,7 +4,7 @@ import { faceGraphs, layerGraph, renderFaces, spreadNodes } from "@beloch/render
 
 // `fold-quarter-faces.fold`: the square folded in half and in half again, so
 // its four faces lie in one stack. `bird-base.fold`:
-// examples/bases/bird-base.bel. Both written with `beloch fold`.
+// packages/core/tests/cases/bases/bird-base.bel. Both written with `beloch fold`.
 // `join-edge.fold`, written by hand: an L-shaped sheet of three faces, two
 // joined by a `J` edge and the third across a marked `F` crease.
 // `fold-quarter.fold` was written before `edges_faces` existed.

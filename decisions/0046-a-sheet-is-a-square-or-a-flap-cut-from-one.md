@@ -144,7 +144,7 @@ sheet itself; the bound needs no knowledge of the sheet's shape.
   polygon and a point-in-polygon test, and a non-convex sheet forbids a
   collapse into its own notch.
 - **No collapse bound.** Rejected: six programs of the corpus stop with
-  an ambiguous collapse, `examples/bases/fish-base.bel` among them.
+  an ambiguous collapse, `packages/core/tests/cases/bases/fish-base.bel` among them.
 
 ## Consequences
 
