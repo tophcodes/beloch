@@ -48,7 +48,7 @@ work, including things inherited as warnings from the 2018 attempt.)
   (Beloch axiom 4). Translate before comparing any Eos construction with a
   `.bel` program.
 - **ℚ stops being closed at axioms 5, 6 and 7.** Exact rational arithmetic
-  ([ADR 0008](decisions/0008-exact-rational-arithmetic.md)) covers axioms 1–2
+  ([ADR 0008](../decisions/0008-exact-rational-arithmetic.md)) covers axioms 1–2
   and line intersection perfectly, but square roots (axioms 5 and 6) and cubic roots
   (axiom 7) leave ℚ. Don't assume the rational engine extends to the full axiom
   set; that boundary needs a constructible/algebraic number representation,

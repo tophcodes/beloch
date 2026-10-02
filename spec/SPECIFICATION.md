@@ -135,7 +135,7 @@ Three traps this table defuses:
   the first to require cube roots. Justin's own §8.1: ①–④ give dyadic rationals,
   ①–⑤ the field K₁, ①–⑥ = ruler-and-compass (K₂), ①–⑦ the larger K₃.
 
-This discrepancy set is also recorded in [antipatterns.md](../antipatterns.md).
+This discrepancy set is also recorded in [antipatterns.md](../notes/antipatterns.md).
 
 ---
 
@@ -909,7 +909,7 @@ needed for the odd case, only the requirement that the ray count be odd. See
 [`examples/bases/swivel-rabbit.bel`](../examples/bases/swivel-rabbit.bel) for
 a full worked case where the emergent crease is genuinely non-constructible
 (the hinges sit at an arbitrary height, not a bisector angle), and
-[`tests/cases/collapse/flatten-opposite-ray-toward-b.bel`](../tests/cases/collapse/flatten-opposite-ray-toward-b.bel)
+[`tests/cases/collapse/flatten-opposite-ray-toward-b.bel`](../packages/core/tests/cases/collapse/flatten-opposite-ray-toward-b.bel)
 (with its `-toward-d` sibling) for a vertex where `toward` genuinely picks
 between two *different* end states — same face count and table positions,
 mirrored stacking.
@@ -954,7 +954,7 @@ even-count case: several stackings of the one Maekawa pattern survive
 Kawasaki, and `over`, not `toward`, narrows them to one, since `over`
 operates inside the collapse oracle itself (step 2 of the pipeline), before
 `flatten`'s own selection ever sees more than one candidate.
-[`tests/cases/collapse/flatten-fish-pinned-unique.bel`](../tests/cases/collapse/flatten-fish-pinned-unique.bel)
+[`tests/cases/collapse/flatten-fish-pinned-unique.bel`](../packages/core/tests/cases/collapse/flatten-fish-pinned-unique.bel)
 shows the odd-count case pinned tightly enough that no `toward` is needed
 at all: two of the fish-base vertex's three given rays are pinned explicitly,
 narrowing the Maekawa search until exactly one realization survives before
