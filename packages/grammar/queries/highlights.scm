@@ -12,7 +12,7 @@
 (punct) @punct
 (flap_bracket) @punct
 
-(write_statement ["mark" "fold" "reverse" "flatten" "flip"] @keyword)
+(write_statement ["mark" "fold" "unfold" "reverse" "flatten" "flip"] @keyword)
 ["(" ")" "[" "]"] @punct
 (construction    ["align" "map" "through" "perp" "onto" "and"] @construction)
 (alignment       ["onto" "through" "perp" "heading"] @alignment)

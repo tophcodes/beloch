@@ -3,7 +3,7 @@
  *
  * Deliberately error-tolerant: alongside the lexical tokens the real
  * evaluator recognizes (see lib/lexer.ml, lib/parser.mly), it structures
- * write statements (`mark`/`fold`/`reverse`/`flatten`/`flip`) into one named
+ * write statements (`mark`/`fold`/`unfold`/`reverse`/`flatten`/`flip`) into one named
  * node per item type, matching the union-of-heads shape of `lib/parser.mly`'s
  * `item_body`: every head is accepted under every verb, so a head the verb
  * rejects still parses into a named node and the diagnostic comes from the
@@ -26,7 +26,7 @@ module.exports = grammar({
       $.write_statement, $.construction, $.selection_item, $.anchor_item, $._token,
     )),
 
-    // the five writes: a verb, its items in any order, its output clause.
+    // the six writes: a verb, its items in any order, its output clause.
     // Each alternative is right-associative on its own repeat so that a
     // trailing `as`/`into`/`(` is always shifted into the same statement
     // rather than read as the start of the next top-level thing (a bare
@@ -35,6 +35,7 @@ module.exports = grammar({
     write_statement: $ => choice(
       prec.right(seq('mark',    repeat($._axis_item), optional($.output_clause))),
       prec.right(seq('fold',    repeat($._axis_item), optional($.output_clause))),
+      prec.right(seq('unfold',  repeat($._axis_item), optional($.output_clause))),
       prec.right(seq('reverse', repeat($._axis_item), optional($.output_clause))),
       prec.right(seq('flatten', repeat($._ray_item),  optional($.output_clause))),
       prec.right(seq('flip',    repeat($._axis_item), optional($.output_clause))),
@@ -48,7 +49,7 @@ module.exports = grammar({
     ),
 
     // _axis_item and _ray_item are the same union of heads and differ in one
-    // alternative: the bare-line item is `axis_item` under the four axis
+    // alternative: the bare-line item is `axis_item` under the five axis
     // verbs and `flatten_element` under `flatten`.
     _axis_item: $ => choice(
       $.construction,
@@ -208,7 +209,7 @@ module.exports = grammar({
     text: _ => token(seq('"', repeat(choice(/[^"\\\n]/, /\\["\\]/)), '"')),
 
     // clause words and axiom names outside a write statement, see
-    // lib/lexer.ml. The five verbs (mark, fold, reverse, flatten, flip) are
+    // lib/lexer.ml. The six verbs (mark, fold, unfold, reverse, flatten, flip) are
     // anonymous tokens under write_statement instead, since a bare verb
     // word is never valid outside one.
     keyword: _ => choice(
