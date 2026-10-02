@@ -108,6 +108,18 @@ let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
 let flat_assign (sheet : Sheet.t) (h : Fold_state.hinge) : string =
   if List.mem h.Fold_state.crease_id sheet.Sheet.joins then "J" else "F"
 
+(* FOLD's [edges_faces]: per edge, the faces on its sides, in ascending
+   order. [faces_of] maps an edge's sorted vertex pair to the faces the
+   classification loop found for it: a hinge's two faces, or the one face a
+   boundary edge bounds. *)
+let edges_faces_json faces_of edges : Yojson.Safe.t =
+  `List
+    (List.map
+       (fun (a, b, _, _, _) ->
+         let fs = Hashtbl.find faces_of (min a b, max a b) in
+         `List (List.map (fun f -> `Int f) (List.sort_uniq compare fs)))
+       edges)
+
 (* [edges_foldAngle] from the emitted assignments, FOLD's sign convention:
    a valley is +180, a mountain -180, and a flat, join or boundary edge 0.
    Every frame emits it, the crease pattern included, where it is the target
@@ -173,13 +185,14 @@ let folded_frame_of_state (sheet : Sheet.t)
         let ia = idxs.(k) and ib = idxs.((k + 1) mod m) in
         let key = (min ia ib, max ia ib) in
         if not (Hashtbl.mem edge_tbl key) then begin
-          Hashtbl.replace edge_tbl key ();
+          Hashtbl.replace edge_tbl key [ fi ];
           let pa = f.(k) and pb = f.((k + 1) mod m) in
           let assign, prov, cid =
             if Sheet.on_boundary sheet pa pb then ("B", None, None)
             else
               match Fold_state.hinge_between state fi pa pb with
               | Some hi ->
+                  Hashtbl.replace edge_tbl key [ hs.(hi).Fold_state.fa; hs.(hi).Fold_state.fb ];
                   let a =
                     match Fold_state.mv state hi with
                     | Fold_state.M -> "M"
@@ -190,6 +203,11 @@ let folded_frame_of_state (sheet : Sheet.t)
               | None -> ("F", None, None)
           in
           edges := (ia, ib, assign, prov, cid) :: !edges
+        end
+        else begin
+          (* a second face on an edge no hinge named *)
+          let fs = Hashtbl.find edge_tbl key in
+          if not (List.mem fi fs) then Hashtbl.replace edge_tbl key (fi :: fs)
         end
       done)
     faces;
@@ -250,6 +268,7 @@ let folded_frame_of_state (sheet : Sheet.t)
       ("edges_vertices", `List edges_vertices);
       ("edges_assignment", `List edges_assignment);
       ("edges_foldAngle", `List edges_fold_angle);
+      ("edges_faces", edges_faces_json edge_tbl edges);
       ("faces_vertices", `List faces_vertices);
       ("beloch:faces_matrix", `List beloch_faces_matrix);
       ("faceOrders", `List (List.rev !face_orders));
@@ -604,7 +623,7 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
         let ia = idxs.(k) and ib = idxs.((k + 1) mod m) in
         let key = (min ia ib, max ia ib) in
         if not (Hashtbl.mem edge_tbl key) then begin
-          Hashtbl.replace edge_tbl key ();
+          Hashtbl.replace edge_tbl key [ fi ];
           let pa = f.(k) and pb = f.((k + 1) mod m) in
           let assign, prov, cid =
             if Sheet.on_boundary sheet pa pb then ("B", None, None)
@@ -612,6 +631,7 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
               match Fold_state.hinge_between disp fi pa pb with
               | Some hi ->
                   let h = hs.(hi) in
+                  Hashtbl.replace edge_tbl key [ h.Fold_state.fa; h.Fold_state.fb ];
                   (* The crease pattern shows what the model looks like folded,
                      so every edge is coloured by the DERIVED M/V. A precrease
                      is flat and therefore F, whatever direction it was marked
@@ -625,6 +645,11 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
               | None -> ("F", None, None)
           in
           edges := (ia, ib, assign, prov, cid) :: !edges
+        end
+        else begin
+          (* a second face on an edge no hinge named *)
+          let fs = Hashtbl.find edge_tbl key in
+          if not (List.mem fi fs) then Hashtbl.replace edge_tbl key (fi :: fs)
         end
       done)
     faces;
@@ -713,6 +738,7 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
       ("edges_vertices", `List edges_vertices);
       ("edges_assignment", `List edges_assignment);
       ("edges_foldAngle", `List edges_fold_angle);
+      ("edges_faces", edges_faces_json edge_tbl edges);
       ("faces_vertices", `List faces_vertices);
       ("beloch:edges", beloch_edges);
       ("beloch:inspect", beloch_inspect_json disp fd.Eval.named_points fd.Eval.named_line_cids);

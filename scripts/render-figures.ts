@@ -9,7 +9,7 @@
 // packages/render-2d, the same functions the docs site's <Beloch> card uses.
 //
 // Output goes to _build/spec/figures: one `<id>-<view>.svg` per view (`cp`,
-// `folded`, `candidates`, `op`, `stages`, `side`), and
+// `folded`, `candidates`, `op`, `stages`, `side`, `faces`), and
 // index.json (one entry per figure, with the files it produced and the reason
 // if it produced none). Both renderers of the documents read the SVG files and
 // fall back to a placeholder, so a figure that fails here never fails a build:
@@ -27,10 +27,10 @@
 import { readdirSync, readFileSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { parseFold } from "../packages/render-2d/scene/src/index.ts";
-import { renderCandidates, renderCP, renderFolded, renderOperation, renderSide, renderStages } from "../packages/render-2d/render-svg/src/index.ts";
+import { renderCandidates, renderCP, renderFaces, renderFolded, renderOperation, renderSide, renderStages } from "../packages/render-2d/render-svg/src/index.ts";
 import { evalBelToFold } from "../packages/www/src/lib/eval-bel.ts";
 
-const VIEWS = ["cp", "folded", "candidates", "op", "stages", "side"] as const;
+const VIEWS = ["cp", "folded", "candidates", "op", "stages", "side", "faces"] as const;
 type View = (typeof VIEWS)[number];
 // What a figure that names no views gets.
 const DEFAULT_VIEWS: View[] = ["cp", "folded"];
@@ -198,6 +198,7 @@ export function renderFigure(block: FigureBlock, outDir: string, source: string)
 				: view === "op" ? renderOperation(scene, { ...opts, statement })
 				: view === "stages" ? renderStages(scene, { ...opts, statement, source: block.program, checks: true })
 				: view === "side" ? renderSide(scene, { ...opts, along: block.along ?? "" })
+				: view === "faces" ? renderFaces(scene, opts)
 				: renderFolded(scene, opts);
 			writeFileSync(join(outDir, file), doc.toString());
 			entry.files[view] = file;

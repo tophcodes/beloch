@@ -1,5 +1,5 @@
 export type Vec2 = [number, number];
-export type Assignment = "B" | "M" | "V" | "F" | "U";
+export type Assignment = "B" | "M" | "V" | "F" | "J" | "U";  // J: a join edge, spec/FOLD.md
 export type LineCoeffs = [number, number, number];           // a·x + b·y = c
 export type Isometry = [number, number, number, number, number, number]; // [m00,m01,m10,m11,tx,ty]
 export type FaceOrder = [number, number, number];            // [f, g, s], FOLD faceOrders
@@ -18,6 +18,9 @@ export interface Frame {
   edgesVertices: [number, number][];
   edgesAssignment: Assignment[];
   edgesProvenance: (EdgeProvenance | null)[];                // same length as edgesVertices
+  // edges_faces: per edge, the faces on its sides, one for a boundary edge;
+  // null when the file was written before the field existed
+  edgesFaces: number[][] | null;
   verticesNames: (string | null)[];                          // beloch:vertices_names, per vertex
   facesVertices: number[][];
   faceOrders: FaceOrder[];                                   // [] on the CP frame

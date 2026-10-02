@@ -5,7 +5,10 @@ import {
   Vec2, WriteCandidate, WriteEntry, WriteTerms,
 } from "./types";
 
-function frameFrom(raw: Record<string, unknown>): Frame {
+// `own` is the frame's own dictionary where `raw` is merged over the root: a
+// frame's edges_faces is read from the frame alone, since the root's names
+// the faces of the crease pattern.
+function frameFrom(raw: Record<string, unknown>, own: Record<string, unknown> = raw): Frame {
   const vertices = raw["vertices_coords"] as Vec2[] | undefined;
   if (!Array.isArray(vertices)) throw new SceneError("missing vertices_coords");
   const edgesVertices = (raw["edges_vertices"] ?? []) as [number, number][];
@@ -32,6 +35,9 @@ function frameFrom(raw: Record<string, unknown>): Frame {
       { length: vertices.length },
       (_, i) => vnames[i] ?? null,
     ),
+    edgesFaces: Array.isArray(own["edges_faces"]) && (own["edges_faces"] as unknown[]).length === n
+      ? (own["edges_faces"] as number[][])
+      : null,
     facesVertices: (raw["faces_vertices"] ?? []) as number[][],
     faceOrders: (raw["faceOrders"] ?? []) as Frame["faceOrders"],
     facesMatrix: (raw["beloch:faces_matrix"] ?? null) as Frame["facesMatrix"],
@@ -157,7 +163,9 @@ function writeTraceFrom(fold: Record<string, unknown>): WriteEntry[] {
       terms,
       candidates: ((e["candidates"] ?? []) as Record<string, unknown>[]).map((c): WriteCandidate => ({
         // a candidate frame is a foldedForm frame like those in file_frames
-        frame: c["frame"] ? frameFrom({ ...fold, ...(c["frame"] as Record<string, unknown>) }) : null,
+        frame: c["frame"]
+          ? frameFrom({ ...fold, ...(c["frame"] as Record<string, unknown>) }, c["frame"] as Record<string, unknown>)
+          : null,
         removedBy: (c["removed_by"] ?? null) as WriteCandidate["removedBy"],
         selected: c["selected"] === true,
         spine: (c["spine"] ?? null) as WriteCandidate["spine"],
@@ -195,7 +203,7 @@ export function parseFold(input: string | object): FoldScene {
       return {
         index,
         sourceLine: (f["beloch:source_line"] ?? null) as number | null,
-        frame: frameFrom(merged),
+        frame: frameFrom(merged, f),
       };
     });
   const namedPoints: NamedPoint[] = Object.entries(

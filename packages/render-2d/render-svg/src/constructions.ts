@@ -122,9 +122,9 @@ export function appendTitle(doc: SvgDoc, theme: Theme, title: string): void {
 // fold2svg.mjs:455-463 — assignments (M/V/B/U/F) present in this diagram,
 // styled the same as the creases themselves via theme.lineStyle.
 const ASSIGNMENT_LABEL: Record<Assignment, string> = {
-  B: "boundary", M: "mountain", V: "valley", F: "flat", U: "unassigned",
+  B: "boundary", M: "mountain", V: "valley", F: "flat", J: "join", U: "unassigned",
 };
-const ASSIGNMENT_ORDER: Assignment[] = ["B", "M", "V", "F", "U"];
+const ASSIGNMENT_ORDER: Assignment[] = ["B", "M", "V", "F", "J", "U"];
 
 export function appendLegend(doc: SvgDoc, layout: Layout, theme: Theme, frame: Frame): void {
   const seen = new Set(frame.edgesAssignment);

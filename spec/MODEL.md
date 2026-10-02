@@ -187,6 +187,23 @@ A boundary segment of positive length shared by two faces, with an angle of
 $0$ (flat crease) or $\pm\pi$ (folded crease).
 :::
 
+A state relates its faces in two ways, and each relation is a graph with the
+faces as nodes. In the first, two faces are joined when they share a hinge;
+it lives on the paper and says how the sheet hangs together. In the second,
+two faces are joined when they overlap on the table, which is a pair
+$(A, B) \in \Omega$ of [#def-flat-state], and $\lambda$ gives the edge its
+direction, from the face above to the face below. The first is fixed by where
+the creases run; the second is what the folding did with them.
+
+::: {.figure #fig-face-graphs caption="The face graphs of the preliminary base folded by one collapse, the state of [#fig-flat-state-layers] before the line `--s` is marked. Left, adjacency on the paper: each face is a node inside its own polygon, numbered from 1, and each hinge a path from one face through the middle of the hinge into the other, red where the hinge is a mountain, blue where it is a valley and dashed where it is flat. The two flat hinges lie on the diagonal through `.a` and `.c`, which stays flat. Right, superposition, the top layer first: a face stands one row below the lowest face above it, and a line joins two faces only when no third face lies between them, since every other pair follows from those. The base lies in two stacks that do not overlap, 1, 4, 3, 7 and 2, 6, 5, 8, so twelve of the 28 pairs of faces overlap, and $\Omega$ holds each of them in both orders. A shaded node is a face that lies face down." views="faces"}
+paper square
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+mark (map --ab onto --cd) as --h
+mark (map --da onto --bc) as --v
+flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b mountain) (--bd & .d)
+:::
+
 ::: {.example #ex-half-square name="a square folded in half" uses="def-flat-state lem-hinge-cases"}
 Let $P$ be the unit square with corners `.a` $= (0, 0)$, `.b` $= (1, 0)$,
 `.c` $= (1, 1)$, `.d` $= (0, 1)$; let $A$ be its left half, $B$ its right
