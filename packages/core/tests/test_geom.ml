@@ -190,6 +190,28 @@ let test_beloch7_lands_on_both () =
       Alcotest.(check int) "q lands on e" 0 (Geom.side_of_line e qim))
     creases
 
+(* p on d: the cubic has a root where p lands on itself, whose perpendicular
+   bisector is 0·x + 0·y = 0. That identity landing is dropped, as axiom 6
+   drops its own; the one fold left is x = 1/2, which carries p to (1, 0)
+   on d and q to (1, 1) on e. Found by the axiom-7 soundness property in
+   test_prop_axiom.ml. *)
+let test_beloch7_p_on_line_dropped () =
+  let p = pt 0 0 and qq = pt 0 1 in
+  let d = Geom.line_through (pt 0 0) (pt 1 0) in
+  let e = Geom.line_through (pt 0 0) (pt 1 1) in
+  match Geom.beloch7_creases p d qq e with
+  | [ c ] ->
+      Alcotest.(check bool) "the crease is x = 1/2" true
+        (Geom.same_line c { Geom.a = q 1; b = q 0; c = Num.of_q (Q.of_ints 1 2) })
+  | creases ->
+      Alcotest.failf "expected one crease, got %d: %s" (List.length creases)
+        (String.concat "; "
+           (List.map
+              (fun (c : Geom.line) ->
+                Printf.sprintf "%g x + %g y = %g" (Num.to_float c.Geom.a)
+                  (Num.to_float c.Geom.b) (Num.to_float c.Geom.c))
+              creases))
+
 let test_messer_cube_root () =
   let cC = pt 1 1 in
   let ab = { Geom.a = q 0; b = q 1; c = q 0 } in
@@ -499,6 +521,8 @@ let () =
           Alcotest.test_case "beloch p on line" `Quick test_beloch_p_on_line_dropped;
           Alcotest.test_case "beloch7 lands on both lines" `Quick
             test_beloch7_lands_on_both;
+          Alcotest.test_case "beloch7 p on line: identity landing dropped" `Quick
+            test_beloch7_p_on_line_dropped;
           Alcotest.test_case "beloch7 irrational crease folds fast" `Quick
             test_axiom7_irrational_crease_folds_fast;
           Alcotest.test_case "messer cube root of two (AC/CB = cbrt 2)" `Quick

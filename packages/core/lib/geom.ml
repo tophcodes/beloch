@@ -97,7 +97,7 @@ let beloch_creases (p : point) (d : line) (p' : point) : line list =
    q onto line e: a common tangent to the two parabolas (focus p, directrix d)
    and (focus q, directrix e). Parametrize [p]'s landing along d by t; the
    "lands q on e" condition is a cubic F(t); each real root is a crease (the
-   perpendicular bisector of p and its landing). 0, 1, or 3 creases.
+   perpendicular bisector of p and its landing). At most 3 creases.
    [justin1986 §2–3; hull2020 §2.4] *)
 let beloch7_creases (p : point) (d : line) (q : point) (e : line) : line list =
   (* polynomials in t as Num.t arrays, low-first *)
@@ -140,10 +140,13 @@ let beloch7_creases (p : point) (d : line) (q : point) (e : line) : line list =
   let s = Num.sub (Num.add (Num.mul e.a q.x) (Num.mul e.b q.y)) e.c in
   (* F(t) = S·n2c − 2·dd·L *)
   let fF = psub (pscale s n2c) (pscale two (pmul dd lL)) in
+  (* With p on d, F has a root where p lands on itself: that landing is the
+     identity (no fold), its perpendicular bisector 0·x + 0·y = 0 is no line,
+     and it is dropped, as axiom 6 drops its own. *)
   Num.real_roots fF
-  |> List.map (fun t ->
+  |> List.filter_map (fun t ->
          let pstar = { x = Num.add d0x (Num.mul t d.b); y = Num.sub d0y (Num.mul t d.a) } in
-         perpendicular_bisector p pstar)
+         if point_equal pstar p then None else Some (perpendicular_bisector p pstar))
 
 type segment = point * point
 

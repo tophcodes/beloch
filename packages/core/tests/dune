@@ -111,3 +111,24 @@
   ../../../spec/BELOCH.md
   ../../../decisions/0046-a-sheet-is-a-square-or-a-flap-cut-from-one.md
   ../../../decisions/0047-a-trim-exports-the-names-it-lists.md))
+
+; property tests (QCheck, run as alcotest cases); arb.ml holds the generators
+(test
+ (name test_prop_num)
+ (modules test_prop_num arb)
+ (libraries beloch alcotest qcheck-core qcheck-alcotest zarith unix))
+
+(test
+ (name test_prop_motion)
+ (modules test_prop_motion arb)
+ (libraries beloch alcotest qcheck-core qcheck-alcotest zarith unix))
+
+(test
+ (name test_prop_geom)
+ (modules test_prop_geom arb)
+ (libraries beloch alcotest qcheck-core qcheck-alcotest zarith unix))
+
+(test
+ (name test_prop_axiom)
+ (modules test_prop_axiom arb)
+ (libraries beloch alcotest qcheck-core qcheck-alcotest zarith unix))
