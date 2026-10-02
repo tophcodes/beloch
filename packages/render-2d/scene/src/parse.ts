@@ -199,7 +199,7 @@ function annotationsFrom(fold: Record<string, unknown>): Annotation[] {
   return raw.map((a) => ({
     key: a["key"] as string,
     namespace: (a["namespace"] ?? null) as string | null,
-    target: a["target"] as [number, number],
+    target: (a["target"] ?? null) as [number, number] | null,
     frameIndex: a["frame_index"] as number,
     sourceLine: a["source_line"] as number,
     span: String(a["span"] ?? ""),
