@@ -194,7 +194,7 @@ let test_e2e_bisect_select () =
 let test_e2e_kite () =
   let open Yojson.Safe.Util in
   let json =
-    Beloch.fold_string ~filename:"kite.bel" (read_example "bases/kite.bel")
+    Beloch.fold_string ~filename:"kite.bel" (read_case "bases/kite.bel")
   in
   let axioms =
     json |> member "beloch:edges" |> to_list
@@ -958,7 +958,7 @@ let test_mark_mountain_cp_intent () =
 let test_cp_folded_crease_uses_derived_mv () =
   let json =
     Beloch.fold_string ~filename:"swivel-rabbit.bel"
-      (read_example "bases/swivel-rabbit.bel")
+      (read_case "bases/swivel-rabbit.bel")
   in
   let count l a = List.length (List.filter (fun x -> x = a) l) in
   let cp = json_cp_assignments json in
@@ -1166,7 +1166,7 @@ let column (st : Fold_state.t) (t : Geom.point) : (Geom.point * bool) list =
 
 let test_e2e_preliminary_routes_agree () =
   let run name =
-    (Eval.eval_folded (Beloch.parse ~filename:name (read_example name)))
+    (Eval.eval_folded (Beloch.parse ~filename:name (read_case name)))
       .Eval.state
   in
   let flat = run "bases/preliminary.bel"

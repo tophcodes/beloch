@@ -28,5 +28,5 @@ const read = (name: string) => readFileSync(join(siteDir, "src", "lib", name), "
 /** The landing hero's program: a display copy of examples/crane.bel. */
 export const HERO_SRC = read("landing-hero.bel");
 
-/** The playground's starting program: a display copy of examples/bases/bird-base.bel. */
+/** The playground's starting program: a display copy of packages/core/tests/cases/bases/bird-base.bel. */
 export const PLAYGROUND_SRC = read("playground-start.bel");

@@ -33,6 +33,10 @@ crane program
 two steps open the wings in 3D, which Beloch does not model yet. The native
 evaluator folds it; the browser playground cannot evaluate it yet.
 
+Both drawings are the renderer's output for the linked program.
+`scripts/render-readme-figures.sh` redraws them, and CI fails when one no
+longer matches its program.
+
 ## Reading a program
 
 ```
@@ -44,7 +48,7 @@ reverse (map .d onto .c) as --v         ; corner d likewise
 ```
 
 That is the preliminary base
-([`examples/bases/preliminary-reverse.bel`](examples/bases/preliminary-reverse.bel)).
+([`packages/core/tests/cases/bases/preliminary-reverse.bel`](packages/core/tests/cases/bases/preliminary-reverse.bel)).
 `paper square` gives the unit square with corners `.a` `.b` `.c` `.d`
 counter-clockwise from the origin. A name with a dot is a point, a name with
 two dashes is a crease. `(map .a onto .c)` is the fold line that carries one
@@ -118,72 +122,6 @@ FOLD output names the statement and the construction that made it.
 - **Not yet:** Yoshizawa-Randlett folding diagrams, 3D states
   ([decision 0015](decisions/0015-flat-folded-states-only.md)), and
   measurements on programs longer than a few dozen statements.
-
-## More programs
-
-| | | |
-| --- | --- | --- |
-| [![bird base](examples/bases/bird-base-cp.svg)](examples/bases/bird-base.bel) | [![fish base](examples/bases/fish-base-cp.svg)](examples/bases/fish-base.bel) | [![swivel rabbit ear](examples/bases/swivel-rabbit-cp.svg)](examples/bases/swivel-rabbit.bel) |
-| **Bird base**, seven statements, exact √2 coordinates | **Fish base**, closed with two `flatten`s | **Swivel rabbit ear**, whose fourth ray no axiom constructs |
-
-<details>
-<summary>The fish base program</summary>
-
-```
-paper square
-
-mark (map .a onto .c) as --diag
-mark (through .a .c) as --ray
-
-mark (map --ab onto --diag) as --l1
-mark (map --da onto --diag) as --l2
-flatten (--l1) (--l2) (--ray) (toward .d)
-
-mark (map --cd onto --diag) as --l3
-mark (map --bc onto --diag) as --l4
-flatten (--l3) (--l4) (--ray) (toward .d)
-```
-
-![fish-base.bel folded: two narrow flaps from opposite corners](examples/bases/fish-base-folded.svg)
-
-</details>
-
-<details>
-<summary>The swivel rabbit ear program</summary>
-
-The hinges sit at a free height on the side edges. Three of the four rays at
-the hinge vertex are given, flat-foldability forces the fourth, and `flatten`
-solves for it and binds it to `--ear`. The scaffolding lines, prefixed `--_`,
-locate the hinge height and stay flat.
-
-```
-paper square
-
-mark (map .a onto .b) as --v      ; x = 1/2: spine, also the symmetry axis
-.m = --v * --cd                   ; apex (1/2, 1)
-
-mark (through .a .m) as --_am     ; scaffolding: locates the hinge height
-mark (through .b .m) as --_bm
-mark (map --ab onto --_am) as --_ba
-mark (map --ab onto --_bm) as --_bb
-.o = --_ba * --_bb
-
-.lowerp = --_ba * --_bm
-mark (perp --bc through .lowerp) as --lowerh
-
-mark (through .a .[--bc --lowerh]) as --ba   ; hinge from a, free height
-mark (through .b .[--da --lowerh]) as --bb   ; hinge from b, same height
-
-flatten (--ba \ .a) (--bb \ .b) (--v \ .m) (toward .c) as --ear
-```
-
-![swivel-rabbit.bel folded: the ear swiveled to one side](examples/bases/swivel-rabbit-folded.svg)
-
-</details>
-
-Every drawing on this page is the renderer's output for the linked program.
-`scripts/render-readme-figures.sh` redraws them, and CI fails when one no
-longer matches its program.
 
 ## Running it
 

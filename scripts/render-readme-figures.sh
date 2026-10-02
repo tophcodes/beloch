@@ -16,10 +16,6 @@ fold2svg=packages/render-2d/render-svg/bin/fold2svg.ts
 
 programs=(
   examples/crane.bel
-  examples/bases/bird-base.bel
-  examples/bases/fish-base.bel
-  examples/bases/preliminary-reverse.bel
-  examples/bases/swivel-rabbit.bel
 )
 
 out=.

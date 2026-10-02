@@ -62,12 +62,12 @@ function stripProvenance(value: unknown): unknown {
 // the display copy's statements stay identical in effect to the corpus's.
 // Evaluating the crane twice takes longer than bun's default of 5 s on CI.
 test.each([
-  ["landing hero", HERO_SRC, "crane.bel"],
-  ["playground start", PLAYGROUND_SRC, "bases/bird-base.bel"],
+  ["landing hero", HERO_SRC, "examples/crane.bel"],
+  ["playground start", PLAYGROUND_SRC, "packages/core/tests/cases/bases/bird-base.bel"],
 ])(
   "%s matches its corpus file semantically",
   (_name, src, corpus) => {
-    const corpusSrc = readFileSync(join(repoRoot, "examples", corpus), "utf-8");
+    const corpusSrc = readFileSync(join(repoRoot, corpus), "utf-8");
     expect(stripProvenance(evalBelToFold(src))).toEqual(
       stripProvenance(evalBelToFold(corpusSrc)),
     );

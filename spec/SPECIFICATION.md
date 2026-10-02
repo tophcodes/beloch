@@ -906,7 +906,7 @@ Here `--ba \ .a`/`--bb \ .b`/`--v \ .m` are the rays *away* from `.a`/`.b`/`.m`
 — three given rays (odd), so the pipeline's step 1 adds the emergent fourth.
 `\` and `&` are the shipped filter/drop selectors (§4.8); no new operator is
 needed for the odd case, only the requirement that the ray count be odd. See
-[`examples/bases/swivel-rabbit.bel`](../examples/bases/swivel-rabbit.bel) for
+[`packages/core/tests/cases/bases/swivel-rabbit.bel`](../packages/core/tests/cases/bases/swivel-rabbit.bel) for
 a full worked case where the emergent crease is genuinely non-constructible
 (the hinges sit at an arbitrary height, not a bisector angle), and
 [`tests/cases/collapse/flatten-opposite-ray-toward-b.bel`](../tests/cases/collapse/flatten-opposite-ray-toward-b.bel)
@@ -942,7 +942,7 @@ can differ, ray by ray, from what was written in source — see the caveat
 comments in the shipped examples.
 
 **Examples.**
-[`examples/bases/swivel-rabbit.bel`](../examples/bases/swivel-rabbit.bel)
+[`packages/core/tests/cases/bases/swivel-rabbit.bel`](../packages/core/tests/cases/bases/swivel-rabbit.bel)
 (n = 3 given + 1 emergent) is the worked case above — its golden FOLD output
 is the regression anchor for the whole selection pipeline: a bare-M/V
 solve whose material-centroid metric must still land on the same right-hand

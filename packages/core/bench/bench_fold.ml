@@ -22,8 +22,8 @@ let root =
 
 (* (name, path relative to repo root): representative folds, √2-heavy first *)
 let corpus =
-  [ ("fish-base", "examples/bases/fish-base.bel");
-    ("swivel-rabbit", "examples/bases/swivel-rabbit.bel");
+  [ ("fish-base", "packages/core/tests/cases/bases/fish-base.bel");
+    ("swivel-rabbit", "packages/core/tests/cases/bases/swivel-rabbit.bel");
     ("rabbit-ear", "packages/core/tests/cases/collapse/flatten-rabbit-ear-toward-a.bel");
     ("two-ear-fish", "packages/core/tests/cases/collapse/flatten-two-ears-sequential.bel");
     ("cube-root", "packages/core/tests/cases/fold/cube-root.bel") ]

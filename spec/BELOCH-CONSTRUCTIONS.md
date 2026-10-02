@@ -231,7 +231,7 @@ roots first appear with axiom 7.
 The bird base's kite crease is the case the paper settles: on the
 preliminary base, `map .sr onto --mid through .c` has two candidates, and
 the outward one meets the folded base only at `.c`
-(`examples/bases/bird-base.bel`). The largest equilateral triangle in the
+(`packages/core/tests/cases/bases/bird-base.bel`). The largest equilateral triangle in the
 square needs `toward`, since both candidates cross the paper
 ([fig-candidates](/model/#fig-candidates)).
 
