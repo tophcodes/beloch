@@ -62,7 +62,7 @@ Without `OUT` the drawing goes to standard output; otherwise the extension of
 | Flag | Effect |
 |---|---|
 | `--view cp` | The crease pattern, the flat sheet with every crease. The default. |
-| `--view folded` | The folded state, seen from above. |
+| `--view folded` | The folded state, seen from above and turned by the `@orient` in force at the state drawn. |
 | `--view side --along --l` | The section of the folded state along the line `--l`: the stack pulled apart, the top layer first, each layer a strip and each folded hinge a turn, beside the crease pattern with the same pieces and hinges named. The line is read on the table of the state drawn: a line bound with `=` after the last fold. [The side view](#the-side-view) states how it is seen and named. |
 | `--view faces` | The face graphs of the folded state: which faces share a hinge, drawn on the paper, and which overlap on the table, the top layer first. [The face graphs](#the-face-graphs) states how they are drawn. |
 | `--step N` | With `--view folded`, `--view side` or `--view faces`, draws the state after `N` writes, `0` being the flat sheet; by default the last state. |
@@ -73,7 +73,8 @@ Without `OUT` the drawing goes to standard output; otherwise the extension of
 | `--checks` | With `--view stages`, adds the rows that say what each stage checks. |
 | `--flip` | The folded state seen from the other side. |
 | `--labels a,b` | Draws the named points and lines, and only those. |
-| `--legend` | Adds the legend of crease kinds: mountain, valley, border, unassigned. |
+| `--legend` | Adds the legend of crease kinds to the crease pattern: mountain, valley, border, unassigned. The folded view draws no legend. |
+| `--plain` | Writes out no names and draws no point dots and no background: the paper and its creases alone. |
 | `--title TEXT` | A caption in the top-left corner. |
 | `--hidden dashed\|hide` | Draws covered creases of the folded state dashed, or leaves them out (the default). |
 | `--format svg\|png` | Overrides the format `OUT` implies. |

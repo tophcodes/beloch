@@ -113,7 +113,9 @@ What the language knows about a state and FOLD cannot say:
   its `span` and `source_line`, and its `target`: the first and the last
   index into `beloch:statements` it belongs to. The target is one entry,
   the statement after the annotation, except for `step`, whose target runs
-  to the entry before the next `step` or to the last entry. `args` holds the
+  to the entry before the next `step` or to the last entry. An annotation
+  after the last statement of the program or of a `def` body belongs to a
+  state, and its target is null; `frame_index` names that state. `args` holds the
   arguments in order, each an object with its `span` and one of `text`,
   `number`, `word`, `point` (with `paper` and `table` coordinates), `line`
   (with the table line's `coeffs` and the `crease_id` when the argument

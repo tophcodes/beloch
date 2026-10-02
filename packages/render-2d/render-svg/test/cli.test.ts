@@ -115,3 +115,34 @@ test("CLI: --view faces draws the face graphs of a state, --step picks the state
   expect(await run()).toContain("adjacency: 4 faces, 4 hinges");
   expect(await run("--step", "1")).toContain("adjacency: 2 faces, 1 hinge<");
 });
+
+test("CLI: --plain draws paper and creases without names or point dots", async () => {
+  const run = async (...flags: string[]) => {
+    const p = Bun.spawn(["bun", CLI, FIX, ...flags]);
+    const out = await new Response(p.stdout).text();
+    expect(await p.exited).toBe(0);
+    return out;
+  };
+  for (const view of ["cp", "folded"]) {
+    const named = await run("--view", view, "--hidden", "dashed");
+    const plain = await run("--view", view, "--hidden", "dashed", "--plain");
+    expect(named).toMatch(/<circle[^>]*data-vertex=/);
+    expect(named).toContain("<text");
+    expect(plain).not.toMatch(/<circle/);
+    expect(plain).not.toContain("<text");
+    expect(plain).toContain('data-kind="crease"');
+  }
+});
+
+test("CLI: --plain draws no background in either view", async () => {
+  for (const view of ["cp", "folded"]) {
+    const run = async (...flags: string[]) => {
+      const p = Bun.spawn(["bun", CLI, FIX, "--view", view, ...flags]);
+      const out = await new Response(p.stdout).text();
+      expect(await p.exited).toBe(0);
+      return out;
+    };
+    expect(await run()).toMatch(/<rect width="\d+" height="\d+" fill="white"\/>/);
+    expect(await run("--plain")).not.toContain("<rect");
+  }
+});

@@ -36,7 +36,7 @@ export interface Theme {
   construction: string;    // "#4f46e5"
   highlightPalette: HighlightColor[]; // one color per entity the caller emphasizes
   ink: string;             // "#0f172a"  (dots, labels, title)
-  background: string;      // "white"    (full-canvas backdrop rect fill)
+  background: string;      // "white"    (full-canvas backdrop rect fill; "none" draws no rect)
   lineStyle: LineStyleFn;
 }
 

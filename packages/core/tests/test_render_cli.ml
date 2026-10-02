@@ -69,6 +69,7 @@ let test_render_help_mentions_flags () =
       "--checks";
       "--flip";
       "--legend";
+      "--plain";
       "--labels";
       "--format svg|png";
       "--width";

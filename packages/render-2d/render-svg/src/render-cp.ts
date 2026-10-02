@@ -12,6 +12,7 @@ export interface RenderOptions {
   highlight?: string[] | undefined; // entities to emphasize: ["--v", ".e", "#[.p]"]
   theme?: Partial<Theme> | undefined;
   legend?: boolean | undefined; // default false
+  dots?: "annotated" | undefined; // see SceneOptions.dots
 }
 
 export function renderCP(scene: FoldScene, opts: RenderOptions = {}): SvgDoc {
@@ -28,6 +29,7 @@ export function renderCP(scene: FoldScene, opts: RenderOptions = {}): SvgDoc {
     title: opts.title,
     labels: opts.labels,
     annotate: opts.annotate,
+    dots: opts.dots,
     highlight: opts.highlight,
     legend: opts.legend,
     theme: opts.theme,

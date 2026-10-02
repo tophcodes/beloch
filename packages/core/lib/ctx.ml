@@ -26,7 +26,9 @@ type stmt_log_entry = {
 
 (* An annotation with its arguments read against the state the statement
    after it starts from (ADR 0029). [an_target] is that statement's entry in
-   the log, [-1] while the statement has not run yet. *)
+   the log, [-1] while the statement has not run yet and for an annotation at
+   the end of a statement list, which belongs to the state [an_frame_index]
+   its last statement left. *)
 type annot_value =
   | AvPoint of Geom.point * Geom.point  (* paper, table *)
   | AvLine of Geom.line * int option    (* the table line, crease id if a crease *)

@@ -24,7 +24,7 @@ export function appendConstructions(
   layout: Layout,
   theme: Theme,
   selection: string[] | undefined,
-  folded: null | { frame: Frame },
+  folded: null | { frame: Frame; place?: ((p: Vec2) => Vec2) | undefined },
   // The palette color of each entity the caller highlights, keyed by the
   // selection entry (".p", "--l"). An entry outside it keeps the crease or
   // construction color it had.
@@ -85,7 +85,7 @@ export function appendConstructions(
       const name = s.slice(1);
       const pt = scene.namedPoints.find((p) => p.name === name);
       if (!pt) continue;
-      const [px, py] = folded ? pt.table : pt.paper;
+      const [px, py] = folded ? (folded.place?.(pt.table) ?? pt.table) : pt.paper;
       const color = hl?.stroke ?? theme.ink;
       const ox = px < (minX + maxX) / 2 ? -14 : 10;
       const oy = py < (minY + maxY) / 2 ? 16 : -7;

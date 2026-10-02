@@ -58,6 +58,9 @@ reverse (perp --n2 through .sr) (moving .d) as --tail
 .ht = free on --rsl & .a from .a at 1/2
 reverse (through .hp .ht) (moving .b) as --head
 
+; the finished crane stands on its center line, the wing tip .c up
+@orient .o .c up
+
 ; assert steps = 16
 ; assert faces = 60
 

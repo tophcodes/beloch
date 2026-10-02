@@ -80,8 +80,12 @@ let test_errors () =
          fold (map .b onto .d)\n");
   expect_error "a statement opens at most one step" (fun () ->
       fold (program "@step\n@step\n"));
-  expect_error "none follows" (fun () ->
+  expect_error "@say belongs to the statement after it, and none follows" (fun () ->
       fold "paper square\nfold (map .a onto .c)\n@say \"Done.\"\n");
+  expect_error "@step belongs to the statement after it, and none follows" (fun () ->
+      fold "paper square\nfold (map .a onto .c)\n@step\n");
+  expect_error "@label belongs to the statement after it" (fun () ->
+      fold "paper square\ndef f(.p) {\n  fold (map .p onto .c)\n  @label done\n}\napply f(.a)\n");
   expect_error "@orient takes" (fun () -> fold (program "@orient .a sideways\n"));
   expect_error "@orient takes" (fun () -> fold (program "@orient .a vertical\n"));
   expect_error "@call takes" (fun () -> fold (program "@call \"corner\" .a\n"));
@@ -153,6 +157,51 @@ let test_emit_in_body () =
     [ [ 2; 2 ]; [ 4; 4 ] ]
     (List.map (fun j -> j |> member "target" |> to_list |> List.map to_int) anns)
 
+(* An annotation after the last statement belongs to the final state: no
+   target, read against the last frame. *)
+let test_emit_trailing () =
+  let json =
+    fold
+      "paper square\n\
+       fold (map .a onto .c) as --bd\n\
+       @orient .a up\n\
+       @yr:hold .a\n"
+  in
+  let open Yojson.Safe.Util in
+  let frames = json |> member "file_frames" |> to_list |> List.length in
+  let anns = annotations json in
+  Alcotest.(check (list string)) "both entries" [ "orient"; "hold" ]
+    (List.map (fun j -> j |> member "key" |> to_string) anns);
+  List.iter
+    (fun j ->
+      Alcotest.(check bool) "no target" true (j |> member "target" = `Null);
+      Alcotest.(check int) "the final frame" (frames - 1) (j |> member "frame_index" |> to_int))
+    anns;
+  let point = List.hd (anns |> List.hd |> member "args" |> to_list) |> member "point" in
+  Alcotest.(check (list (float 1e-9))) ".a on .c in the final state" [ 1.; 1. ]
+    (point |> member "table" |> to_list |> List.map to_number)
+
+(* At the end of a def body an annotation belongs to the state the body left,
+   once per execution. *)
+let test_emit_trailing_in_body () =
+  let json =
+    fold
+      "paper square\n\
+       def half(.p .q) {\n\
+      \  fold (map .p onto .q)\n\
+      \  @call .p \"tip\"\n\
+       }\n\
+       apply half(.a .b)\n\
+       apply half(.b .c)\n"
+  in
+  let open Yojson.Safe.Util in
+  let anns = annotations json in
+  Alcotest.(check (list int)) "after each execution's fold" [ 1; 2 ]
+    (List.map (fun j -> j |> member "frame_index" |> to_int) anns);
+  List.iter
+    (fun j -> Alcotest.(check bool) "no target" true (j |> member "target" = `Null))
+    anns
+
 (* ---- the geometry never depends on an annotation (ADR 0029) ---- *)
 
 (* Every annotation replaced by spaces, line breaks kept, so every span of
@@ -192,7 +241,8 @@ let invariant_programs =
        @say \"Reverse-fold the side.\"\n\
        reverse (map .b onto .c) as --h\n\
        @orient .a .c up\n\
-       reverse (map .d onto .c) as --v\n" );
+       reverse (map .d onto .c) as --v\n\
+       @orient .a down\n" );
     ( "reads that materialize a mark on their way",
       "paper square\n\
        mark (through .a .c) as --m\n\
@@ -237,6 +287,8 @@ let () =
         [
           Alcotest.test_case "beloch:annotations" `Quick test_emit;
           Alcotest.test_case "once per execution of a body" `Quick test_emit_in_body;
+          Alcotest.test_case "after the last statement" `Quick test_emit_trailing;
+          Alcotest.test_case "after a body's last statement" `Quick test_emit_trailing_in_body;
         ] );
       ( "invariance",
         [ Alcotest.test_case "the geometry ignores annotations" `Quick test_invariant ] );

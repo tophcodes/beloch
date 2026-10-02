@@ -21,11 +21,16 @@ its only escapes. `RATIONAL` is a number as everywhere else.
 An annotation belongs to the statement that follows it. It may stand at the
 top level and inside a `def` body; in a body it applies once per `apply`
 that runs the body, to the statements of that execution (ADR 0030). An
-annotation with no statement after it is an error.
+annotation after the last statement of the program belongs to the final
+state, and one after the last statement of a body to the state that
+execution of the body leaves. `call`, `orient` and the annotations of an
+output may stand there; `step`, `label` and `say` name a statement, and
+one with no statement after it is an error.
 
 A value is any read the language has: a name, a selector such as `#[.c]` or
 `--a \ .b`, a meet, a construction. It is evaluated against the state the
-following statement starts from, and a read that fails is an error at the
+following statement starts from, or the state an annotation at the end
+belongs to, and a read that fails is an error at the
 annotation. Reads write nothing, so the rule above holds for every value.
 
 ## The vocabulary
@@ -70,7 +75,11 @@ has its own "petal tip".
   must be a single table line in the state; a crease a fold has bent is an
   error, as it is wherever a line is wanted.
 
-The orientation holds until the next `@orient`. An output turns its
+The orientation holds until the next `@orient`. It turns the drawing of
+the state its values are read against and of every later state by one
+rotation, the one fixed on that first state. The centroid of the outline is
+the centroid of the area the folded state covers on the table, each point
+counted once however many layers lie on it. An output turns its
 drawing; the frames of the FOLD stay where the evaluator put them.
 
 ## Annotations of an output

@@ -72,12 +72,19 @@ let label_of (a : Ast.annotation) : (string * Error.span) option =
 let rec check_list (stmts : Ast.stmt list) : unit =
   let labels = Hashtbl.create 8 in
   let rec go (run : Ast.annotation list) = function
-    | [] -> (
-        match List.rev run with
-        | first :: _ ->
-            Error.fail first.Ast.a_span
-              "an annotation belongs to the statement after it, and none follows"
-        | [] -> ())
+    | [] ->
+        (* an annotation at the end of the list belongs to the state after
+           its last statement; the keys that name a statement need one *)
+        List.iter
+          (fun (a : Ast.annotation) ->
+            match (a.Ast.a_ns, a.Ast.a_key) with
+            | None, (("step" | "label" | "say") as key) ->
+                Error.fail a.Ast.a_span
+                  (Printf.sprintf
+                     "@%s belongs to the statement after it, and none follows"
+                     key)
+            | _ -> ())
+          (List.rev run)
     | Ast.Annotation a :: rest ->
         check_args a;
         (match label_of a with

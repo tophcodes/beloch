@@ -325,6 +325,10 @@ and eval_apply (ctx : Ctx.ctx) (bind_opt : string option) (defname : string)
   let saved_parent = ctx.parent in
   ctx.parent <- Some (push_apply ctx defname span);
   List.iter (eval_logged ctx) body;
+  (* the annotations after the body's last statement belong to the state it
+     left; they keep the target -1 *)
+  ctx.annots_rev <- ctx.annots_pending @ ctx.annots_rev;
+  ctx.annots_pending <- [];
   ctx.parent <- saved_parent;
   ctx.scopes <- saved_scopes;
   ctx.name_ctx <- saved_nctx;
@@ -466,7 +470,9 @@ let build_output (ctx : Ctx.ctx) (root_scope : Ctx.scope) : folded =
   { state = !(ctx.state); named_points; named_lines; named_line_cids; frames;
     statements; free_points; sheet = ctx.sheet; unit_name = ctx.unit_name;
     references = List.rev ctx.references_rev;
-    annotations = List.rev ctx.annots_rev;
+    (* the annotations after the program's last statement belong to the final
+       state; they keep the target -1 *)
+    annotations = List.rev (ctx.annots_pending @ ctx.annots_rev);
     trace = List.rev ctx.trace_rev }
 
 let run_stmts (ctx : Ctx.ctx) on_step (stmts : Ast.stmt list) : unit =

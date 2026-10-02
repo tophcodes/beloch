@@ -71,6 +71,7 @@ export function inspectScene(): FoldScene {
     marks: [],
     trace: [],
     writeTrace: [],
+    annotations: [],
     error: null,
     inspect: {
       creases: {

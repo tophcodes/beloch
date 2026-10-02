@@ -240,6 +240,26 @@ export interface TraceError {
   statement: number;
 }
 
+// beloch:annotations: one entry per annotation, in the order the statements
+// ran (spec/FOLD.md). A point or line argument was read against the state
+// `frameIndex`, the one the annotated statement starts from.
+export type AnnotationArg =
+  | { kind: "text"; text: string }
+  | { kind: "number"; number: number }
+  | { kind: "word"; word: string }
+  | { kind: "point"; paper: Vec2; table: Vec2 }
+  | { kind: "line"; coeffs: LineCoeffs; creaseId: number | null }
+  | { kind: "flap"; faces: number[] };
+export interface Annotation {
+  key: string;
+  namespace: string | null;
+  target: [number, number] | null;                           // first and last index into scene.statements; null after the last statement of its list, where it belongs to the state frameIndex
+  frameIndex: number;                                        // index into scene.steps: the state the arguments were read against
+  sourceLine: number;
+  span: string;
+  args: AnnotationArg[];
+}
+
 export interface FoldScene {
   cp: Frame;
   steps: Step[];                                             // one per foldedForm frame, file order
@@ -254,6 +274,7 @@ export interface FoldScene {
   trace: TraceEntry[];                                       // the constructions in beloch:trace; [] when the file was written without --trace
   writeTrace: WriteEntry[];                                  // the writes in beloch:trace
   error: TraceError | null;                                  // beloch:error; null unless a traced program failed
+  annotations: Annotation[];                                 // beloch:annotations; [] when the program has none
 }
 
 export class SceneError extends Error {}

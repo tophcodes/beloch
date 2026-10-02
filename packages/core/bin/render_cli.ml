@@ -30,7 +30,8 @@ file selection:
 what gets rendered:
   --view cp|folded          cp (default): crease pattern, the flat unfolded
                             state. folded: the folded state (2D; 3D planned
-                            for later, not this release).
+                            for later, not this release), turned by the
+                            @orient in force at the state drawn.
   --view candidates|op|stages
                             drawn from the trace of `beloch fold --trace`,
                             which a .bel file gets here; a program that fails
@@ -70,7 +71,10 @@ labels (named points/lines):
                             also a crease. Default: no overlay.
 
 display options:
-  --legend                  show the M/V/B/U crease-type legend (default: off)
+  --legend                  show the M/V/B/U crease-type legend in the crease
+                            pattern (default: off; the folded view has none)
+  --plain                   write out no names; draw no point dots and no
+                            background
   --title TEXT              caption drawn in the top-left corner
   --hidden dashed|hide      how occluded creases are drawn in folded view
                             (default: hide)

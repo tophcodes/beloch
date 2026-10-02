@@ -58,6 +58,9 @@ fold (perp --mid through .x) (moving .tr) as --s6           ; step 6
 fold (through .u .v) (moving .sr) (mountain) as --kr        ; step 7, right
 fold (through .ul .vl) (moving .sl) (mountain) as --kl      ; step 7, left
 
+; the finished cicada stands with .o, the bottom corner, down
+@orient .o down
+
 ; assert steps = 10
 
 ; Every crease of the program is folded, so no hinge is flat and each face

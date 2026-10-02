@@ -369,7 +369,8 @@ let beloch_annotations_json (annotations : Ctx.annot_entry list)
            [
              ("key", `String a.Ctx.an_key);
              ("namespace", match a.Ctx.an_ns with Some ns -> `String ns | None -> `Null);
-             ("target", `List [ `Int from; `Int until ]);
+             ( "target",
+               if a.Ctx.an_target < 0 then `Null else `List [ `Int from; `Int until ] );
              ("frame_index", `Int a.Ctx.an_frame_index);
              ("source_line", `Int (fst a.Ctx.an_span).Lexing.pos_lnum);
              ("span", `String (Error.span_to_string a.Ctx.an_span));
