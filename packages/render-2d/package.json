@@ -2,7 +2,7 @@
   "name": "beloch-render",
   "private": true,
   "type": "module",
-  "workspaces": ["scene", "render-svg", "yr"],
+  "workspaces": ["scene", "render-svg", "yr", "cli"],
   "scripts": { "test": "bun test", "typecheck": "bun x tsc --noEmit" },
   "devDependencies": { "typescript": "^5.5.0", "@types/bun": "^1.1.0" }
 }

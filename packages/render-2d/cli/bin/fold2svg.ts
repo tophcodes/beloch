@@ -12,8 +12,10 @@
 //   beloch fold f.bel | bun bin/fold2svg.ts - --view faces [--step K]
 //   beloch fold f.bel | bun bin/fold2svg.ts - out.png --title f.bel
 //   beloch fold f.bel | bun bin/fold2svg.ts - --view folded --plain   paper and creases, no names or point dots
+//   beloch fold f.bel | bun bin/fold2svg.ts - --view yr               the YR folding diagram, one panel per step
 import { parseFold, SceneError, StepNotFoundError } from "@beloch/scene";
 import { renderCandidates, renderCP, renderFaces, renderFolded, renderOperation, renderSide, renderStages } from "@beloch/render-svg";
+import { renderYr } from "@beloch/yr";
 
 const args = process.argv.slice(2);
 const flagVal = (name: string): string | undefined => {
@@ -22,13 +24,13 @@ const flagVal = (name: string): string | undefined => {
 };
 
 const title = flagVal("--title") || "";
-const viewFlag = flagVal("--view"); // undefined | "cp" | "folded" | "candidates" | "op" | "stages" | "side" | "faces"
-if (viewFlag !== undefined && !["cp", "folded", "candidates", "op", "stages", "side", "faces"].includes(viewFlag)) {
+const viewFlag = flagVal("--view"); // undefined | "cp" | "folded" | "candidates" | "op" | "stages" | "side" | "faces" | "yr"
+if (viewFlag !== undefined && !["cp", "folded", "candidates", "op", "stages", "side", "faces", "yr"].includes(viewFlag)) {
   // process.stderr.write, not console.error — Bun's console.error unconditionally
   // ANSI-colors its argument even when stderr is piped (non-TTY), which would break
   // the plain-text stderr assertions below.
   process.stderr.write(
-    `beloch-render: unknown --view value '${viewFlag}' — expected cp, folded, candidates, op, stages, side or faces\n`,
+    `beloch-render: unknown --view value '${viewFlag}' — expected cp, folded, candidates, op, stages, side, faces or yr\n`,
   );
   process.exit(1);
 }
@@ -90,7 +92,13 @@ try {
   };
   const statementFlag = flagVal("--statement");
   const statement = statementFlag !== undefined ? Number(statementFlag) : undefined;
-  const doc = viewFlag === "folded"
+  // The diagram reports how it laid out the steps, such as a step group split
+  // into 2a and 2b, as hints on stderr; the drawing is written either way.
+  const yr = viewFlag === "yr"
+    ? renderYr(scene, args.includes("--plain") ? { theme: { background: "none" } } : {})
+    : null;
+  for (const hint of yr?.hints ?? []) process.stderr.write(`beloch-render: hint: ${hint}\n`);
+  const doc = yr ? yr.doc : viewFlag === "folded"
     ? renderFolded(scene, { ...opts, view: flip ? "bottom" : "top", hidden, step, orient: true })
     : viewFlag === "candidates"
       ? renderCandidates(scene, { ...opts, statement })

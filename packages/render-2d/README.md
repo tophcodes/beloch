@@ -16,16 +16,19 @@ or folded-occlusion diagrams out. The input contract is `spec/FOLD.md`.
   `panels` selects one panel per step group, `foldMotion` reads what a fold
   moves from the standard FOLD, the primitives in `draw.ts` draw the lines
   and arrows of the notation, and `renderYr` stacks the panels in one column.
+- **`cli/`** (`@beloch/render-cli`): the `beloch-render` command over the
+  packages above. It sits in a package of its own so that every output
+  library is a dependency of the command and none of another.
 
 ## CLI
 
-`render-svg/bin/fold2svg.ts` is the flag-compatible successor to the retired
-`tools/` Rabbit Ear-based renderer, built on the two packages above (no
+`cli/bin/fold2svg.ts` is the flag-compatible successor to the retired
+`tools/` Rabbit Ear-based renderer, built on the packages above (no
 Rabbit Ear load-check; the OCaml emitter's own tests own FOLD validity):
 
 ```
-bun packages/render-2d/render-svg/bin/fold2svg.ts <in.fold|-> [out.svg|out.png]
-  [--title "..."] [--view cp|folded] [--flip] [--hidden dashed|hide]
+bun packages/render-2d/cli/bin/fold2svg.ts <in.fold|-> [out.svg|out.png]
+  [--title "..."] [--view cp|folded|yr] [--flip] [--hidden dashed|hide]
   [--labels "--v,.e"] [--step <label|N>] [--legend] [--plain]
 ```
 

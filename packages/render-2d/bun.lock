@@ -9,14 +9,22 @@
         "typescript": "^5.5.0",
       },
     },
-    "render-svg": {
-      "name": "@beloch/render-svg",
+    "cli": {
+      "name": "@beloch/render-cli",
       "bin": {
         "beloch-render": "./bin/fold2svg.ts",
       },
       "dependencies": {
+        "@beloch/render-svg": "workspace:*",
         "@beloch/scene": "workspace:*",
+        "@beloch/yr": "workspace:*",
         "@resvg/resvg-js": "^2.6.2",
+      },
+    },
+    "render-svg": {
+      "name": "@beloch/render-svg",
+      "dependencies": {
+        "@beloch/scene": "workspace:*",
       },
       "devDependencies": {
         "@xmldom/xmldom": "^0.9.10",
@@ -34,6 +42,8 @@
     },
   },
   "packages": {
+    "@beloch/render-cli": ["@beloch/render-cli@workspace:cli"],
+
     "@beloch/render-svg": ["@beloch/render-svg@workspace:render-svg"],
 
     "@beloch/scene": ["@beloch/scene@workspace:scene"],

@@ -12,7 +12,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-fold2svg=packages/render-2d/render-svg/bin/fold2svg.ts
+fold2svg=packages/render-2d/cli/bin/fold2svg.ts
 
 programs=(
   examples/crane.bel

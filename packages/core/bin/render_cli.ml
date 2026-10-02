@@ -56,7 +56,10 @@ what gets rendered:
   --view faces              the face graphs of the folded state: faces that
                             share a hinge, on the paper, and faces that
                             overlap on the table, the top layer first
-  --step N                  folded, side, faces: draw the state after the
+  --view yr                 the YR folding diagram: one panel per step
+                            group in one column, with valley lines and
+                            arrows; a split step is reported as a hint
+  --step N                 folded, side, faces: draw the state after the
                             Nth write (0: the flat sheet; default: the last
                             state)
   --far-side                side: see the section from the other side of the

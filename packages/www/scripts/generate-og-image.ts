@@ -9,8 +9,8 @@
 //
 // The image is the project's own bird-base fold, the same base the landing
 // hero shows, rendered fresh through the project's headless render path
-// (`beloch fold` -> `beloch-render` -> resvg, packages/render-2d/render-svg/
-// bin/fold2svg.ts) and framed on the dark panel background from
+// (`beloch fold` -> `beloch-render` -> resvg, packages/render-2d/cli/bin/
+// fold2svg.ts) and framed on the dark panel background from
 // packages/www/src/styles/theme.css with the "beloch" wordmark in the site's
 // own header font. No color here is invented: the fold keeps
 // packages/render-2d/render-svg/src/theme.ts's DEFAULT_THEME colors, and the
@@ -37,7 +37,7 @@ import { create, type Font } from "fontkitten";
 const repoRoot = join(fileURLToPath(import.meta.url), "..", "..", "..", "..");
 const markPath = join(repoRoot, "packages", "www", "public", "brand", "mark.svg");
 const sourceBel = join(repoRoot, "examples", "bases", "bird-base.bel");
-const fold2svgBin = join(repoRoot, "packages", "render-2d", "render-svg", "bin", "fold2svg.ts");
+const fold2svgBin = join(repoRoot, "packages", "render-2d", "cli", "bin", "fold2svg.ts");
 const fontsDir = join(repoRoot, "packages", "www", "public", "fonts");
 
 // theme.css dark theme: --bel-ui-surface and --bel-ui-text.
