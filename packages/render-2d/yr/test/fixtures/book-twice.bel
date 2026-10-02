@@ -1,0 +1,9 @@
+@author "Claude (Anthropic)"
+; Two folds in one step, the second folding paper the first moved: the
+; library draws them as steps 1a and 1b.
+
+paper square
+
+@step "Fold in half, then in half again."
+fold (map --ab onto --cd)
+fold (map --bc onto --da)

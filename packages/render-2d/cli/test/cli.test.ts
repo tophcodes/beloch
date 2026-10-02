@@ -1,8 +1,8 @@
 import { test, expect } from "bun:test";
 
 const CLI = new URL("../bin/fold2svg.ts", import.meta.url).pathname;
-const FIX = new URL("./fixtures/fold-quarter.fold", import.meta.url).pathname;
-const CUBE_ROOT = new URL("./fixtures/cube-root.fold", import.meta.url).pathname;
+const FIX = new URL("../../render-svg/test/fixtures/fold-quarter.fold", import.meta.url).pathname;
+const CUBE_ROOT = new URL("../../render-svg/test/fixtures/cube-root.fold", import.meta.url).pathname;
 
 test("CLI: fold → SVG on stdout", async () => {
   const p = Bun.spawn(["bun", CLI, FIX]);
@@ -34,7 +34,7 @@ test("CLI: unknown --view value exits 1 with a plain error", async () => {
   const p = Bun.spawn(["bun", CLI, FIX, "--view", "top"], { stderr: "pipe" });
   const err = await new Response(p.stderr).text();
   expect(await p.exited).toBe(1);
-  expect(err).toContain("unknown --view value 'top' — expected cp, folded, candidates, op, stages, side or faces");
+  expect(err).toContain("unknown --view value 'top' — expected cp, folded, candidates, op, stages, side, faces or yr");
 });
 
 test("CLI: an unknown option exits 1 and writes no file", async () => {
@@ -77,7 +77,7 @@ test("CLI: unmatched --step exits 1 with the available frame count", async () =>
 });
 
 test("CLI: --view side --along draws the layers along a named line", async () => {
-  const fix = new URL("./fixtures/side-preliminary-1.fold", import.meta.url).pathname;
+  const fix = new URL("../../render-svg/test/fixtures/side-preliminary-1.fold", import.meta.url).pathname;
   const p = Bun.spawn(["bun", CLI, fix, "--view", "side", "--along", "--s"]);
   const out = await new Response(p.stdout).text();
   expect(await p.exited).toBe(0);
@@ -85,7 +85,7 @@ test("CLI: --view side --along draws the layers along a named line", async () =>
 });
 
 test("CLI: --far-side sees the section from the other side of the line", async () => {
-  const fix = new URL("./fixtures/side-reverse.fold", import.meta.url).pathname;
+  const fix = new URL("../../render-svg/test/fixtures/side-reverse.fold", import.meta.url).pathname;
   const run = async (...flags: string[]) => {
     const p = Bun.spawn(["bun", CLI, fix, "--view", "side", "--along", "--k", ...flags]);
     const out = await new Response(p.stdout).text();
@@ -106,7 +106,7 @@ test("CLI: --view side without --along exits 1 with a plain error", async () => 
 
 test("CLI: --view faces draws the face graphs of a state, --step picks the state", async () => {
   const run = async (...flags: string[]) => {
-    const fix = new URL("./fixtures/fold-quarter-faces.fold", import.meta.url).pathname;
+    const fix = new URL("../../render-svg/test/fixtures/fold-quarter-faces.fold", import.meta.url).pathname;
     const p = Bun.spawn(["bun", CLI, fix, "--view", "faces", ...flags]);
     const out = await new Response(p.stdout).text();
     expect(await p.exited).toBe(0);
@@ -145,4 +145,17 @@ test("CLI: --plain draws no background in either view", async () => {
     expect(await run()).toMatch(/<rect width="\d+" height="\d+" fill="white"\/>/);
     expect(await run("--plain")).not.toContain("<rect");
   }
+});
+
+test("CLI: --view yr draws one panel per step and reports a split step as a hint", async () => {
+  const yr = (name: string) => new URL(`../../yr/test/fixtures/${name}.fold`, import.meta.url).pathname;
+  const kite = Bun.spawn(["bun", CLI, yr("kite"), "--view", "yr"], { stderr: "pipe" });
+  const svg = await new Response(kite.stdout).text();
+  expect(await kite.exited).toBe(0);
+  expect(svg.match(/data-panel="/g)).toHaveLength(3);
+  expect(await new Response(kite.stderr).text()).toBe("");
+  const book = Bun.spawn(["bun", CLI, yr("book-twice"), "--view", "yr"], { stderr: "pipe" });
+  await new Response(book.stdout).text();
+  expect(await book.exited).toBe(0);
+  expect(await new Response(book.stderr).text()).toContain("hint: ");
 });

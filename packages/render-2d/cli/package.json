@@ -1,0 +1,12 @@
+{
+  "name": "@beloch/render-cli",
+  "private": true,
+  "type": "module",
+  "bin": { "beloch-render": "./bin/fold2svg.ts" },
+  "dependencies": {
+    "@beloch/scene": "workspace:*",
+    "@beloch/render-svg": "workspace:*",
+    "@beloch/yr": "workspace:*",
+    "@resvg/resvg-js": "^2.6.2"
+  }
+}

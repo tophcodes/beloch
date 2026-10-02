@@ -172,7 +172,7 @@ EOF
             chmod +x "$root/.direnv/bin/beloch"
             cat > "$root/.direnv/bin/beloch-render" <<EOF
 #!/usr/bin/env bash
-exec bun "$root/packages/render-2d/render-svg/bin/fold2svg.ts" "\$@"
+exec bun "$root/packages/render-2d/cli/bin/fold2svg.ts" "\$@"
 EOF
             chmod +x "$root/.direnv/bin/beloch-render"
             ${linkValeStyles}

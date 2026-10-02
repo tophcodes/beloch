@@ -2,7 +2,7 @@
 
 ## Rendering FOLD to SVG/PNG
 
-FOLD→SVG/PNG rendering lives in `packages/render-2d/render-svg/bin/fold2svg.ts` (the
+FOLD→SVG/PNG rendering lives in `packages/render-2d/cli/bin/fold2svg.ts` (the
 `@beloch/render-svg` package); see `packages/render-2d/README.md`. The old Rabbit
 Ear-based development tool that used to live here has been retired now that the
 render engine's own SVG backend has reached parity.
@@ -18,14 +18,14 @@ Use:
 ```sh
 # a .bel straight to a PNG
 nix develop --command dune exec beloch -- fold examples/syntax/bisect-a.bel \
-  | bun packages/render-2d/render-svg/bin/fold2svg.ts - bisect-a.png
+  | bun packages/render-2d/cli/bin/fold2svg.ts - bisect-a.png
 
 # or from a .fold file; omit the output path for SVG on stdout
-bun packages/render-2d/render-svg/bin/fold2svg.ts out.fold out.svg
+bun packages/render-2d/cli/bin/fold2svg.ts out.fold out.svg
 
 # render the FOLDED state (the foldedForm frame) instead of the crease pattern
 dune exec beloch -- fold examples/syntax/fold-quarter.bel \
-  | bun packages/render-2d/render-svg/bin/fold2svg.ts - folded.png --folded
+  | bun packages/render-2d/cli/bin/fold2svg.ts - folded.png --folded
 ```
 
 By default fold2svg draws **frame 0, the crease pattern** (the flat sheet with

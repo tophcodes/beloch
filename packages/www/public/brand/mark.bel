@@ -4,7 +4,7 @@
 ;
 ;   nix develop --command dune exec beloch -- fold \
 ;     packages/www/public/brand/mark.bel > /tmp/logo.fold
-;   cd packages/render-2d/render-svg && bun bin/fold2svg.ts /tmp/logo.fold /tmp/logo-cp.svg
+;   cd packages/render-2d/cli && bun bin/fold2svg.ts /tmp/logo.fold /tmp/logo-cp.svg
 ;
 ; Three marked lines meet at .o = (1/3, 2/3). Three of the six rays there are
 ; given; `flatten` solves for the fourth, which no Huzita axiom constructs from

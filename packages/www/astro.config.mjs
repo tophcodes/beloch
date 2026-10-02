@@ -31,10 +31,10 @@ process.env.BELOCH_REPO_ROOT = repoRoot;
 // published package, so instead of a `file:` dependency (raw TS sitting in
 // node_modules usually isn't transpiled by the consumer's bundler), we alias
 // the package names straight to their source entrypoints and let Vite
-// transpile them like any other project source. render-svg's only Node-native
-// dependency (@resvg/resvg-js, for PNG rasterization) is a dynamic `import()`
-// confined to bin/fold2svg.ts — not reachable from src/index.ts — so it never
-// enters the client bundle.
+// transpile them like any other project source. The renderer's only
+// Node-native dependency (@resvg/resvg-js, for PNG rasterization) belongs to
+// the command in packages/render-2d/cli, which src/index.ts does not reach,
+// so it never enters the client bundle.
 const sceneRoot = join(repoRoot, 'packages', 'render-2d', 'scene', 'src', 'index.ts');
 const renderSvgRoot = join(repoRoot, 'packages', 'render-2d', 'render-svg', 'src', 'index.ts');
 // The runtime (packages/runtime) is the same kind of package: browser-safe TS

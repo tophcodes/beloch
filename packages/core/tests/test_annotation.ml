@@ -80,8 +80,6 @@ let test_errors () =
          fold (map .b onto .d)\n");
   expect_error "a statement opens at most one step" (fun () ->
       fold (program "@step\n@step\n"));
-  expect_error "@say belongs to the statement after it, and none follows" (fun () ->
-      fold "paper square\nfold (map .a onto .c)\n@say \"Done.\"\n");
   expect_error "@step belongs to the statement after it, and none follows" (fun () ->
       fold "paper square\nfold (map .a onto .c)\n@step\n");
   expect_error "@label belongs to the statement after it" (fun () ->
@@ -189,12 +187,13 @@ let test_emit_trailing () =
       "paper square\n\
        fold (map .a onto .c) as --bd\n\
        @orient .a up\n\
-       @yr:hold .a\n"
+       @yr:hold .a\n\
+       @say \"Done.\"\n"
   in
   let open Yojson.Safe.Util in
   let frames = json |> member "file_frames" |> to_list |> List.length in
   let anns = annotations json in
-  Alcotest.(check (list string)) "both entries" [ "orient"; "hold" ]
+  Alcotest.(check (list string)) "every entry" [ "orient"; "hold"; "say" ]
     (List.map (fun j -> j |> member "key" |> to_string) anns);
   List.iter
     (fun j ->

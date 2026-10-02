@@ -9,11 +9,22 @@
         "typescript": "^5.5.0",
       },
     },
+    "cli": {
+      "name": "@beloch/render-cli",
+      "bin": {
+        "beloch-render": "./bin/fold2svg.ts",
+      },
+      "dependencies": {
+        "@beloch/render-svg": "workspace:*",
+        "@beloch/scene": "workspace:*",
+        "@beloch/yr": "workspace:*",
+        "@resvg/resvg-js": "^2.6.2",
+      },
+    },
     "render-svg": {
       "name": "@beloch/render-svg",
       "dependencies": {
         "@beloch/scene": "workspace:*",
-        "@resvg/resvg-js": "^2.6.2",
       },
       "devDependencies": {
         "@xmldom/xmldom": "^0.9.10",
@@ -22,11 +33,22 @@
     "scene": {
       "name": "@beloch/scene",
     },
+    "yr": {
+      "name": "@beloch/yr",
+      "dependencies": {
+        "@beloch/render-svg": "workspace:*",
+        "@beloch/scene": "workspace:*",
+      },
+    },
   },
   "packages": {
+    "@beloch/render-cli": ["@beloch/render-cli@workspace:cli"],
+
     "@beloch/render-svg": ["@beloch/render-svg@workspace:render-svg"],
 
     "@beloch/scene": ["@beloch/scene@workspace:scene"],
+
+    "@beloch/yr": ["@beloch/yr@workspace:yr"],
 
     "@resvg/resvg-js": ["@resvg/resvg-js@2.6.2", "", { "optionalDependencies": { "@resvg/resvg-js-android-arm-eabi": "2.6.2", "@resvg/resvg-js-android-arm64": "2.6.2", "@resvg/resvg-js-darwin-arm64": "2.6.2", "@resvg/resvg-js-darwin-x64": "2.6.2", "@resvg/resvg-js-linux-arm-gnueabihf": "2.6.2", "@resvg/resvg-js-linux-arm64-gnu": "2.6.2", "@resvg/resvg-js-linux-arm64-musl": "2.6.2", "@resvg/resvg-js-linux-x64-gnu": "2.6.2", "@resvg/resvg-js-linux-x64-musl": "2.6.2", "@resvg/resvg-js-win32-arm64-msvc": "2.6.2", "@resvg/resvg-js-win32-ia32-msvc": "2.6.2", "@resvg/resvg-js-win32-x64-msvc": "2.6.2" } }, "sha512-xBaJish5OeGmniDj9cW5PRa/PtmuVU3ziqrbr5xJj901ZDN4TosrVaNZpEiLZAxdfnhAe7uQ7QFWfjPe9d9K2Q=="],
 
