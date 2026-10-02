@@ -1,0 +1,12 @@
+---
+// Checks for scripts/prose.test.ts: the comments on line 5, 8 and 11 hold a
+// British spelling; the same word in code and in markup must pass.
+const colour = "colour";
+// The colour of a crease in prose.
+---
+<p class="colour">colour</p>
+<!-- A markup comment on the colour of the sheet. -->
+<style>
+  .colour { color: red; }
+  /* The style comment on the colour of the sheet. */
+</style>

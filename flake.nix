@@ -181,10 +181,11 @@ EOF
         };
 
         # The prose lint for the pull request job in .github/workflows/prose.yml:
-        # Vale, and the compiler and dune for the comment masker, without FLINT.
+        # Vale, bun and the compiler and dune for the comment maskers, without
+        # FLINT.
         devShells.prose = pkgs.mkShell {
           name = "beloch-prose";
-          packages = [pkgs.vale pkgs.jq ocamlPkgs.ocaml ocamlPkgs.dune_3];
+          packages = [pkgs.vale pkgs.jq pkgs.bun ocamlPkgs.ocaml ocamlPkgs.dune_3];
           shellHook = linkValeStyles;
         };
       }
