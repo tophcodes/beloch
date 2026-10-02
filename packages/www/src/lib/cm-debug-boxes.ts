@@ -23,12 +23,12 @@ export interface DebugBox {
 // The values the sheet brings, which no statement binds: the paper's corners
 // and its edges. They have nowhere in the source to be boxed, so they stand
 // under the line that declares the paper, written as the program would write
-// them — the editor's own type, the editor's own colours, one row per kind.
+// them — the editor's own type, the editor's own colors, one row per kind.
 export interface DebugChip {
   id: number;
   text: string;
   on: boolean;
-  // The class the colouring gives this kind of name, so the row reads as code
+  // The class the coloring gives this kind of name, so the row reads as code
   // rather than as a control of its own.
   cls?: string;
 }
@@ -149,7 +149,7 @@ const debugField = StateField.define<DebugValue>({
   },
   provide: (f) => [
     // Lowest precedence, which is what puts the box OUTSIDE the syntax
-    // colouring rather than inside each token: of two marks over one range,
+    // coloring rather than inside each token: of two marks over one range,
     // the one later in the decoration order wraps the other, and a box cut
     // into one span per token draws its border once per word.
     Prec.lowest(EditorView.decorations.from(f, (v) => v.deco)),

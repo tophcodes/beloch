@@ -158,14 +158,14 @@ test("outside the model a figure's program is shown without asking", async () =>
 });
 
 // Requirement D: the caption's inline code for a highlighted entity carries the
-// palette colour that entity is drawn in, by its position in the list.
+// palette color that entity is drawn in, by its position in the list.
 test("caption code for a highlighted entity carries its palette class", () => {
   const crease = html.slice(html.indexOf('id="fig-crease"'), html.indexOf("Prose between"));
   expect(crease).toContain('<code class="figure-hl-0">--ac</code>');
   expect(crease).toContain('<code class="figure-hl-1">.a</code>');
 });
 
-test("caption code that names no highlighted entity stays uncoloured", () => {
+test("caption code that names no highlighted entity stays uncolored", () => {
   const sheet = html.slice(html.indexOf('id="fig-sheet"'), html.indexOf('id="fig-crease"'));
   expect(sheet).not.toContain("figure-hl-");
 });
@@ -234,7 +234,7 @@ test("an item the register does not have renders a visible placeholder", async (
 });
 
 // Caption code that names no highlighted entity is Beloch like any other inline
-// code in the page, and takes the same token colours.
+// code in the page, and takes the same token colors.
 test("other caption code is highlighted as Beloch", () => {
   const crease = html.slice(html.indexOf('id="fig-crease"'), html.indexOf("Prose between"));
   expect(crease).toContain('<code class="bel-inline"><span class="bel-keyword">mark</span></code>');

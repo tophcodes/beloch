@@ -12,7 +12,7 @@
 // `edges_faces`): one face, or the faces a `J` edge joins, which FOLD counts as
 // one. A node is named by the smallest number among its faces, each face
 // numbered by its place in `faces_vertices` from 1, and it stands at the
-// centre of its largest face, which lies inside the node however its faces
+// center of its largest face, which lies inside the node however its faces
 // are shaped.
 //
 // The adjacency graph stands on the paper: each node inside its faces, and
@@ -142,12 +142,12 @@ export function faceGraphs(scene: FoldScene, stepLabel?: string): FaceGraphs {
     const largest = fs.reduce((a, b) => (Math.abs(signedArea(polygon(b))) > Math.abs(signedArea(polygon(a))) ? b : a));
     return {
       name: fs[0]! + 1, faces: fs.map((f) => f + 1), paper: fs.map(polygon),
-      at: centre(polygon(largest)), up: faceUp[fs[0]!]!,
+      at: center(polygon(largest)), up: faceUp[fs[0]!]!,
     };
   });
   const hinges: Hinge[] = [];
   graph.nodes.forEach((_, a) => {
-    for (const b of graph.neighbours(a)) {
+    for (const b of graph.neighbors(a)) {
       if (b < a) continue;
       for (const e of graph.edgesBetween(a, b)) {
         const [u, v] = frame.edgesVertices[e]!;
@@ -175,7 +175,7 @@ export function faceGraphs(scene: FoldScene, stepLabel?: string): FaceGraphs {
   return { nodes, hinges, layers: { above: named(above), covers: named(covers), level } };
 }
 
-const centre = (poly: Vec2[]): Vec2 =>
+const center = (poly: Vec2[]): Vec2 =>
   [poly.reduce((s, p) => s + p[0], 0) / poly.length, poly.reduce((s, p) => s + p[1], 0) / poly.length];
 
 const many = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -212,7 +212,7 @@ export function spreadNodes(anchors: Vec2[], gap = 2 * R + 2): Vec2[] {
   return p;
 }
 
-// The colour and dash of a hinge: its letter, dashed when it is flat.
+// The color and dash of a hinge: its letter, dashed when it is flat.
 function hingeStyle(h: Hinge, theme: Theme): Record<string, string | number> {
   if (h.assignment === "M" || h.assignment === "V") {
     return { stroke: colorLineStyle(h.assignment, theme).stroke, "stroke-width": 2 };

@@ -78,7 +78,7 @@ of those read as if the model skipped checking its own writes.
 `<construction>`, which is what is written there, and the core's `MMotion`
 constructor is renamed with it.
 
-**Every term the text italicises as a definition carries a glossary entry**,
+**Every term the text italicizes as a definition carries a glossary entry**,
 and each entry carries what kind of object it is, as an RDF class rather than
 a string: `structure`, `value`, `read`, `write`, `relation`, each a subclass of
 `bm:Term`. Where a signature exists the entry states it, with partiality

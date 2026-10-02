@@ -31,7 +31,7 @@ const numbers = (s: string, status: string, kind = "number") =>
   [...s.matchAll(new RegExp(`data-kind="${kind}" data-index="(\\d+)" data-status="${status}"`, "g"))].map((m) => Number(m[1]));
 const legend = (s: string) => [...s.matchAll(/data-legend="([\w-]+)"/g)].map((m) => m[1]);
 
-test("every stage keeps its place: drawn where it is used, a short grey row where not", async () => {
+test("every stage keeps its place: drawn where it is used, a short gray row where not", async () => {
   expect(rows(await stages("ax5-heading"))).toEqual(
     ["paper:drawn", "heading:drawn", "side:drawn", "moved:drawn", "landing:drawn"]);
   const e = await stages("ax5-ambiguous");

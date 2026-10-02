@@ -113,7 +113,7 @@ It does not rely on law.
 - **First-party tooling leads by example.** The official playgrounds and
   renderers display declared attribution by default. This is the whole
   enforcement mechanism: not a legal duty on anyone, but Beloch's own surfaces
-  modelling the norm.
+  modeling the norm.
 - **Honest limit: no overclaim.** Beloch cannot stop anyone from stripping
   credit, and this ADR says so plainly. Its reach is exactly two things: make
   declaring provenance easy, and show it by default in first-party surfaces.

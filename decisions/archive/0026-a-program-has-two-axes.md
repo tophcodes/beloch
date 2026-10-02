@@ -70,7 +70,7 @@ gives the runtime core a document slot rather than an evaluator.
 ## Alternatives considered
 
 - **Reading the structure from the client's syntax tree.** The web client
-  already loads the tree-sitter grammar to colour the editor, so the statement
+  already loads the tree-sitter grammar to color the editor, so the statement
   boundaries are there at no cost, and they are there while the program is being
   typed and even when it does not run. It was rejected because it makes the
   structure a property of one code editor. A consumer with no parser, which is

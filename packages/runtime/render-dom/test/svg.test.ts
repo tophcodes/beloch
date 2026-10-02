@@ -104,7 +104,7 @@ test("the marks dangling at a statement are drawn over both of its views", async
   for (const view of ["cp", "folded"] as const) {
     const drawn = fromCommand(scene, 1, view, "hide");
     expect(drawn).toBe(svgForStep(scene, 1, view, "hide"));
-    // The newest mark is drawn in the construction colour, which is what
+    // The newest mark is drawn in the construction color, which is what
     // carrying `newestCreaseId` through the command buys.
     expect(drawn).toContain(DEFAULT_THEME.construction);
   }

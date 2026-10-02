@@ -42,12 +42,12 @@ document embedded in its markup, a tour from a program evaluated at build time.
 A consumer that never evaluates carries no evaluator.
 
 **How a state is drawn is an argument to the drawing request.** Which view,
-which occlusion mode, which colours. The core derives a render command as plain
+which occlusion mode, which colors. The core derives a render command as plain
 data, and a consumer showing two drawings of one document asks twice. The card
 therefore draws the crease pattern and the folded form side by side from a
 single state.
 
-**A view is a renderer the consumer plugs in.** The core names no colours, no
+**A view is a renderer the consumer plugs in.** The core names no colors, no
 geometry and no element. A DOM host takes the renderer this project ships; a
 host with another surface writes its own and the core does not learn about it.
 

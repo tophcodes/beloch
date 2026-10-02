@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Render every .bel program in the given corpus directories to normalized
-# FOLD into OUTDIR (required first arg), for before/after diffing across a
+# FOLD into OUTDIR (required first argument), for before/after diffing across a
 # notation cutover. Corpus directories default to the whole corpus:
 # examples/ and packages/core/tests/cases/. Runs dune through the flake
 # devshell, so it works standalone (bare `dune` is not on PATH in this repo).

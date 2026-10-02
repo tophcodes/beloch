@@ -9,7 +9,7 @@ tableOfContents:
 This page reads a whole model: the traditional crane, folded flat, by the
 sequence Ida gives in her book [@ida2020, Fig. 7.19]. It reaches the bird
 base with reverse folds and uses no petal fold, so it differs from the
-diagrams most folders learnt the crane from, and ends in the same bird base.
+diagrams most folders learned the crane from, and ends in the same bird base.
 It assumes
 [First folds](/guide/first-folds/), and it adds the rest of what the crane
 needs where it first appears. The full program is
@@ -21,10 +21,10 @@ Beloch describes paper that lies flat. The crane ends where its last flat
 step ends, with the wings still closed; spreading them makes the model
 three-dimensional, which the language does not model.
 
-## The base and its centre line
+## The base and its center line
 
 The program starts where the first page ended: the preliminary base, with
-the centre of the paper named `.o`.
+the center of the paper named `.o`.
 
 ::: {.figure #fig-crane-base caption="The preliminary base. `--mid` runs from the loose corners at `.c` to the closed tip `.o`." views="cp folded" highlight=".o --mid"}
 paper square
@@ -36,9 +36,9 @@ reverse (map .d onto .c) as --v
 :::
 
 On the table the base is a small square. The four corners of the sheet lie
-together at one of its corners, `.c`, the *loose corners*. The centre of the
+together at one of its corners, `.c`, the *loose corners*. The center of the
 sheet is the opposite corner, `.o`, the *closed tip*, where no paper edge
-reaches. `--mid` is the line between them, the *centre line* of the base.
+reaches. `--mid` is the line between them, the *center line* of the base.
 It is bound with `=`, so it has no crease under it. The next folds bring
 paper onto it, and a line you only fold onto never needs to be scored.
 
@@ -48,9 +48,9 @@ The two remaining corners of the base square are its *side corners*. Each
 is two layers thick, one on the front of the base and one on the back, so
 there are four: `.sr` and `.sl` on the front, right and left, `.br` and
 `.bl` on the back. Each is reverse-folded inside, so that its edge lies
-along the centre line.
+along the center line.
 
-::: {.figure #fig-crane-sides caption="The four side corners reversed onto the centre line. Each crease runs from the loose corners at `.c`." views="cp folded" highlight="--mid" after="fig-crane-base"}
+::: {.figure #fig-crane-sides caption="The four side corners reversed onto the center line. Each crease runs from the loose corners at `.c`." views="cp folded" highlight="--mid" after="fig-crane-base"}
 .sr = --ab * --h
 reverse (map .sr onto --mid through .c) as --rsr
 .sl = --da * --v
@@ -63,7 +63,7 @@ reverse (map .bl onto --mid through .c) as --rbl
 
 `.sr = --ab * --h` finds a side corner as a crossing on the unfolded sheet.
 [First folds](/guide/first-folds/#points-from-creases) showed that `--h`
-left two scars, one of them running from the centre down to the bottom
+left two scars, one of them running from the center down to the bottom
 edge. That scar meets the bottom edge `--ab` at $(1/2, 0)$, the middle of
 the bottom edge, and on the base this spot is the right side corner of the
 front layer. `.sl`, `.br` and `.bl` are the other three the same way, each
@@ -77,7 +77,7 @@ item to choose.
 ## The bird base
 
 The front flap and the back flap are folded over along the same line,
-square to the centre line through the side corners. That leaves the two long
+square to the center line through the side corners. That leaves the two long
 points, the future neck and tail, standing up in the middle: the bird base.
 
 ::: {.figure #fig-crane-bird caption="The bird base. `--pf` folds the front flap, `--pb` the back flap along the same line." views="cp folded" highlight="--pf --pb" after="fig-crane-sides"}
@@ -91,11 +91,11 @@ square to another line.
 The two folds follow the rule of
 [Which layers move](/guide/first-folds/#which-layers-move). Without `up to`
 each would take every layer below the line, front and back together.
-`#[.a .o]` is the flap that holds both the corner `.a` and the paper centre
-`.o`: the centre face of the front. `(up to #[.a .o])` makes the valley
+`#[.a .o]` is the flap that holds both the corner `.a` and the paper center
+`.o`: the center face of the front. `(up to #[.a .o])` makes the valley
 fold take that face and the layers on top of it. The side corners reversed
 beneath it are joined to it by creases away from the fold line, so they go
-along, and the front flap moves whole. The second fold names the centre
+along, and the front flap moves whole. The second fold names the center
 face of the back, and `(mountain)` makes it fold away from the viewer,
 taking that face and the layers beneath it. Seen from the front, its crease
 is a ridge.
@@ -106,7 +106,7 @@ tips are the corners `.b` and `.d`.
 ## Narrowing the legs
 
 Each of the two long points gets narrower by folding its outer edges onto
-the centre line, on the front and on the back. That is four folds, and each
+the center line, on the front and on the back. That is four folds, and each
 has to move exactly one layer.
 
 ::: {.figure #fig-crane-legs caption="The legs narrowed. The front edges fold as valleys (`--n1`, `--n2`), the back edges as mountains." views="cp folded" highlight="--n1 --n2" after="fig-crane-bird"}
@@ -131,7 +131,7 @@ the leg that ends in `.b`. That piece is straight, so it can be folded onto
 Each fold names its side with `moving` on a point bound on the line before
 it, `.e1` to `.e4`: the point where that edge meets the crease of the flap
 it lies on. Its `up to` names the layer of the leg that holds that point,
-the leg's tip and the paper centre, so the valley fold takes the front
+the leg's tip and the paper center, so the valley fold takes the front
 layer and nothing beneath it. Without `up to` the fold would take the back
 layers too, because the edge runs through them as well. The two back folds
 name the back layer and fold as mountains.

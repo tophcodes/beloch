@@ -84,7 +84,7 @@ test("leaving the mode takes the boxes away and keeps them for the next time", (
   expect(view.dom.querySelectorAll(".cm-debug-box").length).toBe(2);
 });
 
-// The colouring is a view plugin that marks every token, and of two marks over
+// The coloring is a view plugin that marks every token, and of two marks over
 // one range the later one wraps the other. A box that lost that race is cut
 // into one span per token and draws its border once per word, which is what
 // the reader sees. Asserted on the DOM, since nothing else shows it.
@@ -103,7 +103,7 @@ const tokens = ViewPlugin.fromClass(
   { decorations: (v) => v.decorations },
 );
 
-test("a box wraps the colouring rather than each token", () => {
+test("a box wraps the coloring rather than each token", () => {
   const state = EditorState.create({
     doc: "paper square\n",
     extensions: [...debugExtensions(), tokens],
@@ -136,7 +136,7 @@ test("the chips stand under the paper line, and only while the mode is on", () =
   const chips = Array.from(view.dom.querySelectorAll(".cm-debug-chip"));
   expect(chips.map((c) => c.textContent)).toEqual([".a", "--ab"]);
   expect(chips.map((c) => c.classList.contains("is-on"))).toEqual([false, true]);
-  // One row per kind, each name in the class the colouring gives it, and the
+  // One row per kind, each name in the class the coloring gives it, and the
   // same box every other target carries.
   expect(view.dom.querySelectorAll(".cm-debug-chip-row").length).toBe(2);
   expect(chips.map((c) => c.classList.contains("cm-debug-box"))).toEqual([true, true]);

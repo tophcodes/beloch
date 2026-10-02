@@ -25,10 +25,10 @@
 -- default.
 --
 -- `highlight` lists the entities the caption refers to. Each takes its own
--- colour from the palette in @beloch/render-svg's DEFAULT_THEME, by its
--- position in the list; the SVG carries that colour and the caption's inline
+-- color from the palette in @beloch/render-svg's DEFAULT_THEME, by its
+-- position in the list; the SVG carries that color and the caption's inline
 -- code for the entity carries the matching `figure-hl-<n>` class, which
--- scripts/typst-compat.typ colours the same way.
+-- scripts/typst-compat.typ colors the same way.
 --
 -- `::: {.include api="Fold_state.violation"}` is replaced by the API register's
 -- entry for that item (scripts/api-register.ts writes it; BELOCH_API_REGISTER
@@ -154,7 +154,7 @@ local function figure_programs()
   return figurePrograms
 end
 
--- A link to a model statement is labelled from this document when this is the
+-- A link to a model statement is labeled from this document when this is the
 -- model, and from the model document otherwise.
 local function label_of(id)
   if statements[id] then return statements[id].label end
@@ -432,7 +432,7 @@ local function figure_div(id, f)
 
   -- The caption's inline code for a highlighted entity carries that entity's
   -- palette class, so the name in the caption and the thing drawn share a
-  -- colour. The index is the entity's position in the `highlight` list, the
+  -- color. The index is the entity's position in the `highlight` list, the
   -- same index the renderer assigns.
   local hl = {}
   for i, name in ipairs(f.highlight or {}) do hl[name] = i - 1 end
@@ -537,7 +537,7 @@ local function place_glossary(blocks)
   return blocks
 end
 
--- `[#some-id]` reaches the filter inside a single Str, since there is no link
+-- `[#some-id]` reaches the filter inside a single `Str`, since there is no link
 -- reference by that name. An id with no block behind it stays as written.
 local function expand_sugar(elem)
   local text = elem.text

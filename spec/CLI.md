@@ -120,10 +120,10 @@ sheet into convex pieces, are one node. A face is numbered by its place in the
 state's `faces_vertices`, counted from 1, and a node carries the smallest
 number among its faces. A node is shaded when its faces lie face down.
 
-On the left, adjacency, drawn on the paper: each node stands at the centre of
+On the left, adjacency, drawn on the paper: each node stands at the center of
 its largest face, which lies inside the node whatever shape its faces make
 together, and two nodes that share a hinge are joined by a path through the
-middle of the hinge, red for a mountain, blue for a valley, and dashed grey
+middle of the hinge, red for a mountain, blue for a valley, and dashed gray
 for a flat hinge. Where faces are too small to hold their nodes apart, as at
 the points of a crane, a node moves off its face and keeps a thin line back to
 it.

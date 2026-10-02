@@ -77,7 +77,7 @@ const cornerLabel = (p: Vec2): string | undefined =>
 // `beloch:inspect`, which describes the final state, so it addresses the faces
 // of the crease pattern and of the last folded step; an earlier step has its
 // own face decomposition and is left unhighlighted. Each face is mapped to the
-// colour of the selector that claimed it, so two highlighted flaps stay apart.
+// color of the selector that claimed it, so two highlighted flaps stay apart.
 function flapFaces(
   scene: FoldScene,
   colorOf: Map<string, HighlightColor>,
@@ -100,7 +100,7 @@ function flapFaces(
 }
 
 // The names a drawing carries, placed so that two of them cannot land on each
-// other and written in the colour of the thing each one names. Every branch
+// other and written in the color of the thing each one names. Every branch
 // collects its anchors and ends here, which is what keeps a crease's name and
 // a construction's name looking alike.
 function emitLabels(
@@ -142,7 +142,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
   // clipped per face in a folded frame so what shows is the line's material.
   const highlight = opts.highlight ?? [];
   const selection = [...(opts.labels ?? []), ...highlight.filter((h) => !h.startsWith("#["))];
-  // One palette colour per highlighted entity, by its position in the list, in
+  // One palette color per highlighted entity, by its position in the list, in
   // this view and in the other view of the same scene.
   const palette = theme.highlightPalette;
   const colorOf = new Map<string, HighlightColor>(
@@ -154,7 +154,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
   const namedByOverlay = (name: string | null): boolean =>
     name !== null && selection.includes(`--${name}`);
   // Whether the drawing writes this name out.
-  const labelled = (name: string): boolean =>
+  const labeled = (name: string): boolean =>
     opts.annotate === undefined || opts.annotate.includes(name);
   // Whether the reader settled on this one. A caller that names nothing has
   // named no selection either, so nothing counts as picked.
@@ -368,8 +368,8 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
           if (cid !== null) attrs["data-crease-id"] = cid;
           creases.children.push(el("line", attrs));
           const writes = name
-            ? labelled(`--${name}`)
-            : cid !== null && labelled(`#${cid}`);
+            ? labeled(`--${name}`)
+            : cid !== null && labeled(`#${cid}`);
           if (writes) {
             const key = name ?? `#${cid}`;
             const pa: Vec2 = [mx(p0[0]), ty(p0[1])], pb: Vec2 = [mx(p1[0]), ty(p1[1])];
@@ -487,9 +487,9 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     }
 
     // named-vertex dots + decluttered labels. Occluded like creases: a dot
-    // sitting under a higher face is greyed + flagged under hidden="dashed",
+    // sitting under a higher face is grayed + flagged under hidden="dashed",
     // and dropped entirely (dot + label) under "hide" unless the reader picked
-    // it, which keeps it greyed and flagged the way a picked crease is kept.
+    // it, which keeps it grayed and flagged the way a picked crease is kept.
     const fverts = frame.vertices;
     const centreX = (minX + maxX) / 2;
     const centreY = (minY + maxY) / 2;
@@ -502,10 +502,10 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       const refPos = bottom ? Math.min(...ps) : Math.max(...ps);
       return pointCovered(fverts[i]!, order, refPos, F, V, bottom);
     };
-    const MUTED = "#94a3b8"; // matches occluded (non-boundary) crease grey
+    const MUTED = "#94a3b8"; // matches occluded (non-boundary) crease gray
     frame.verticesNames.forEach((nm, i) => {
       if (!nm) return;
-      if (opts.dots === "annotated" && !labelled(`.${nm}`)) return;
+      if (opts.dots === "annotated" && !labeled(`.${nm}`)) return;
       const p = fverts[i]!;
       const buried = occludedPt(i);
       if (buried && !showHidden && !selected(`.${nm}`)) return; // "hide": drop dot + label
@@ -515,7 +515,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       };
       if (buried) circle["data-occluded"] = "true";
       annotations.children.push(el("circle", circle));
-      if (!labelled(`.${nm}`)) return;
+      if (!labeled(`.${nm}`)) return;
       const ox = p[0] < centreX ? -16 : 10, oy = p[1] < centreY ? 18 : -8;
       const attrs: Record<string, string | number> = {
         fill: buried ? MUTED : theme.ink,
@@ -742,7 +742,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     V.forEach((p, i) => {
       const nm = scene.cp.verticesNames[i] ?? null;
       if (!showVertex(i, nm)) return;
-      if (opts.dots === "annotated" && !labelled(`.${nm ?? cornerLabel(p) ?? ""}`)) return;
+      if (opts.dots === "annotated" && !labeled(`.${nm ?? cornerLabel(p) ?? ""}`)) return;
       const circleAttrs: Record<string, string | number> = {
         cx: tx(p[0]), cy: ty(p[1]), r: 3, fill: theme.ink, "data-vertex": i,
       };
@@ -753,10 +753,10 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
       // labels the paper's corners, as it always has, and leaves the points a
       // program bound to the construction overlay.
       const lab = opts.annotate === undefined ? cornerLabel(p) : nm ?? cornerLabel(p);
-      // A highlighted corner is already labelled by the construction overlay,
-      // in its palette colour and at nearly this offset; drawing the plain
+      // A highlighted corner is already labeled by the construction overlay,
+      // in its palette color and at nearly this offset; drawing the plain
       // label too would set one name on top of the other.
-      if (lab && !colorOf.has(`.${lab}`) && labelled(`.${lab}`)) {
+      if (lab && !colorOf.has(`.${lab}`) && labeled(`.${lab}`)) {
         const ox = p[0] < 0.5 ? -16 : 10, oy = p[1] < 0.5 ? 18 : -8;
         const labelAttrs: Record<string, string | number> = { fill: theme.ink };
         if (nm) labelAttrs["data-bel-name"] = nm;
@@ -799,7 +799,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     });
     for (const [key, { vs, col, text, name: nm }] of creaseGroups) {
       if (namedByOverlay(nm)) continue;
-      if (!labelled(key.startsWith("#") ? key : `--${key}`)) continue;
+      if (!labeled(key.startsWith("#") ? key : `--${key}`)) continue;
       const list = [...vs];
       let ends = list.filter((j) => onB(V[j]!));
       if (ends.length < 2) {

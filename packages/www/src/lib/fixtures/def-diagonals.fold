@@ -198,7 +198,7 @@
         [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ]
       ],
       "faceOrders": [],
-      "beloch:step": "centre",
+      "beloch:step": "center",
       "beloch:source_line": null,
       "beloch:edges": [
         {

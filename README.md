@@ -177,7 +177,7 @@ mark (through .b .[--da --lowerh]) as --bb   ; hinge from b, same height
 flatten (--ba \ .a) (--bb \ .b) (--v \ .m) (toward .c) as --ear
 ```
 
-![swivel-rabbit.bel folded: the ear swivelled to one side](examples/bases/swivel-rabbit-folded.svg)
+![swivel-rabbit.bel folded: the ear swiveled to one side](examples/bases/swivel-rabbit-folded.svg)
 
 </details>
 

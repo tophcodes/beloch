@@ -32,9 +32,9 @@ interface Props {
 }
 const { code = "", height = 320, seed, seedFold, lazy = false } = Astro.props;
 
-// The program, coloured at build time by the same grammar the editor will use
+// The program, colored at build time by the same grammar the editor will use
 // (lib/highlight-bel.ts). It stands in the pane until the editor's parser has
-// loaded, so the first paint already carries the syntax colours and mounting
+// loaded, so the first paint already carries the syntax colors and mounting
 // the editor never takes them away again. Line numbers are known here too.
 const highlightedCode = code ? await highlightBel(code) : "";
 const codeLines = code ? code.split("\n").length : 0;
@@ -88,7 +88,7 @@ const codeLines = code ? code.split("\n").length : 0;
             <div class="pg-menu-group">
               <p class="pg-menu-head" aria-hidden="true">Lines</p>
               <div class="pg-segmented pg-styles" role="group" aria-label="Line style">
-                <button type="button" class="pg-style" data-style="colour" aria-pressed="false">color</button>
+                <button type="button" class="pg-style" data-style="color" aria-pressed="false">color</button>
                 <button type="button" class="pg-style is-active" data-style="mono" aria-pressed="true">mono</button>
               </div>
             </div>
@@ -248,7 +248,7 @@ const codeLines = code ? code.split("\n").length : 0;
     background: var(--bel-ui-quiet);
     color: var(--bel-ui-text);
   }
-  /* A paper the coloured style cannot hold switches that segment off (see
+  /* A paper the colored style cannot hold switches that segment off (see
      colorOk in lib/paper-schemes) and the note under the swatches says why,
      rather than dropping it and leaving a gap. */
   .pg-segmented > button:disabled {
@@ -438,7 +438,7 @@ const codeLines = code ? code.split("\n").length : 0;
   }
   .pg-run-play {
     /* A triangle carries its mass to the left of its box, so the optical
-       centre of the circle is two pixels right of the geometric one. */
+       center of the circle is two pixels right of the geometric one. */
     margin-left: 2px;
   }
   .pg-run.is-loading .pg-run-play { display: none; }
@@ -538,7 +538,7 @@ const codeLines = code ? code.split("\n").length : 0;
     overflow: auto;
   }
   /* basicSetup brings a fold gutter. Folding needs a language to supply the
-     ranges, and this editor colours through decorations rather than through a
+     ranges, and this editor colors through decorations rather than through a
      CodeMirror language, so that gutter can never show a marker. Hidden, it
      stops taking ten pixels that the static copy would otherwise have to
      reproduce to keep the swap from moving the text.
@@ -571,7 +571,7 @@ const codeLines = code ? code.split("\n").length : 0;
      therefore has nowhere to box. Chips rather than text, so the row reads as
      part of the editor's chrome and not as a line of the program. */
   /* The rows read as lines of the program: the editor's type, its line height,
-     its indent, and the colours the grammar gives a point and a line. What
+     its indent, and the colors the grammar gives a point and a line. What
      marks the names as targets is the box every other target carries. The
      block takes a ground of its own, because these values come with the sheet
      rather than from the text above them. */
@@ -604,7 +604,7 @@ const codeLines = code ? code.split("\n").length : 0;
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--bel-ui-code-accent) 45%, transparent);
   }
   /* The line a failed run named, on the same always-dark surface and in that
-     surface's own error colour. It stands next to the step line rather than
+     surface's own error color. It stands next to the step line rather than
      replacing it: the drawing the step marks is still on screen. */
   .pg-source :global(.cm-error-line) {
     background: color-mix(in srgb, var(--bel-ui-code-error) 12%, transparent);
@@ -666,8 +666,8 @@ const codeLines = code ? code.split("\n").length : 0;
      height is definite and the SVG's own `max-height: 100%` has something to
      resolve against. Against a parent whose height is its content that
      percentage resolves to nothing and a large drawing renders at natural size
-     and gets clipped. The drawing stays centred because this is itself a
-     centring flex container, and the pan/zoom maths reads this element's live
+     and gets clipped. The drawing stays centered because this is itself a
+     centering flex container, and the pan/zoom math reads this element's live
      rect, so a bigger box changes nothing there. */
   .pg-canvas {
     display: flex;
@@ -694,7 +694,7 @@ const codeLines = code ? code.split("\n").length : 0;
     stroke: var(--bel-ui-accent);
     stroke-width: 4;
   }
-  /* A name is read rather than followed, so it takes the accent as its colour.
+  /* A name is read rather than followed, so it takes the accent as its color.
      The stroke above would put a four-pixel outline around every glyph and
      close the letters up. The white halo underneath stays: it is what keeps
      the name legible over a crease. */
@@ -898,7 +898,7 @@ const codeLines = code ? code.split("\n").length : 0;
     outline: 2px solid var(--bel-ui-accent);
     outline-offset: 2px;
   }
-  /* The chosen paper carries a ring in the panel colour and then the accent,
+  /* The chosen paper carries a ring in the panel color and then the accent,
      so the mark reads against a swatch of any lightness. */
   .pg-swatches :global(.pg-swatch.is-active) {
     box-shadow:
@@ -1260,7 +1260,7 @@ const codeLines = code ? code.split("\n").length : 0;
     let pointerId = -1;
     let lastX = 0;
     let lastY = 0;
-    // Total displacement since pointerdown, past which a gesture counts as a
+    // Total displacement since `pointerdown`, past which a gesture counts as a
     // pan rather than a click — read by the entity-inspector click handler
     // (below) so a pan-and-release doesn't also pin whatever entity happens
     // to sit under the cursor at drop.
@@ -1341,7 +1341,7 @@ const codeLines = code ? code.split("\n").length : 0;
       if (!dragMoved && Math.hypot(e.clientX - downX, e.clientY - downY) > DRAG_THRESHOLD) {
         dragMoved = true;
         // Capture the pointer only once a genuine drag starts — NOT on
-        // pointerdown. Capturing on down retargets the synthesized `click` to
+        // `pointerdown`. Capturing on down retargets the synthesized `click` to
         // the viewport, so a plain click's `e.target` is no longer the crease
         // line and the inspector can't anchor. A pure click never crosses the
         // threshold, so it never captures and keeps its real target.
@@ -1362,17 +1362,17 @@ const codeLines = code ? code.split("\n").length : 0;
     viewport.addEventListener("pointercancel", endDrag);
     resetBtn.addEventListener("click", reset);
 
-    // wasDrag() is read by the click handler, which fires AFTER pointerup
+    // wasDrag() is read by the click handler, which fires AFTER `pointerup`
     // (and thus after endDrag() has already reset `dragging`) — dragMoved
     // survives that reset so the click handler can still tell a pan-release
     // apart from a genuine click.
     //
     // isDragging() is different: it reflects the LIVE `dragging` flag, for
-    // the hover tooltip's mousemove handler (task 8) — that one needs to
+    // the hover tooltip's `mousemove` handler (task 8) — that one needs to
     // know whether a pan is happening RIGHT NOW (so it doesn't flicker the
     // tooltip while the pointer crosses creases mid-drag), not whether the
     // gesture that JUST ended was a pan (wasDrag() stays true until the
-    // NEXT pointerdown, which would wrongly suppress hover for a while
+    // NEXT `pointerdown`, which would wrongly suppress hover for a while
     // after a finished pan).
     return { reset, setEnabled, zoomBy, wasDrag: () => dragMoved, isDragging: () => dragging };
   }
@@ -1417,12 +1417,12 @@ const codeLines = code ? code.split("\n").length : 0;
 
     const seed = sourceMount.querySelector<HTMLTemplateElement>(".pg-source-seed");
     const initialCode = seed?.content.textContent ?? "";
-    // The server's coloured copy stays in the pane until the editor is built,
+    // The server's colored copy stays in the pane until the editor is built,
     // and goes in the same frame the editor goes in, so the reader sees the
-    // program in its colours from the first paint through to typing in it.
+    // program in its colors from the first paint through to typing in it.
     const staticSource = sourceMount.querySelector<HTMLElement>(".pg-source-static");
     const highlighter = await initBelHighlight().catch((err) => {
-      // A grammar that fails to load costs the colours, not the editor.
+      // A grammar that fails to load costs the colors, not the editor.
       console.warn("playground: syntax highlighting unavailable", err);
       return null;
     });
@@ -1525,8 +1525,8 @@ const codeLines = code ? code.split("\n").length : 0;
     };
 
     // Which paper the drawing is on, and which of the two line styles draws on
-    // it. They belong together: the coloured style is only offered where the
-    // paper holds the crease colours (colorOk in lib/paper-schemes), so
+    // it. They belong together: the colored style is only offered where the
+    // paper holds the crease colors (colorOk in lib/paper-schemes), so
     // picking a paper can decide the style.
     let currentSchemeId: string;
     try {
@@ -1534,7 +1534,7 @@ const codeLines = code ? code.split("\n").length : 0;
     } catch {
       currentSchemeId = DEFAULT_ID;
     }
-    let lineStyleId: "mono" | "colour" = "mono";
+    let lineStyleId: "mono" | "color" = "mono";
     // What the folded view does with the crease segments that lie under other
     // layers. The flat sheet occludes nothing, so this only bites in "folded".
     // Two states, so a checkbox: a buried segment is either drawn or it is
@@ -1552,18 +1552,18 @@ const codeLines = code ? code.split("\n").length : 0;
     // Run to see.
     let currentView: View = "folded";
 
-    // The theme the stage draws with: the engine's own colours, resolved by
+    // The theme the stage draws with: the engine's own colors, resolved by
     // the page through CSS variables, under the chosen line style. Monochrome
     // is the Yoshizawa-Randlett notation a printed diagram uses and carries
-    // mountain against valley in the dash pattern; coloured carries it in the
+    // mountain against valley in the dash pattern; colored carries it in the
     // hue and reads faster where the paper allows it.
     // One object per style rather than a fresh one per call: the renderer
     // compares the theme by identity to tell a redraw from a re-light.
-    const COLOUR_THEME: Partial<Theme> = { ...WEB_THEME, lineStyle: colorLineStyle };
+    const COLOR_THEME: Partial<Theme> = { ...WEB_THEME, lineStyle: colorLineStyle };
     const renderTheme = (): Partial<Theme> =>
-      lineStyleId === "colour" ? COLOUR_THEME : WEB_THEME;
+      lineStyleId === "color" ? COLOR_THEME : WEB_THEME;
 
-    // The same drawing with every colour spelled out, for a file that leaves
+    // The same drawing with every color spelled out, for a file that leaves
     // the page. `background: transparent` emits no backdrop behind the paper,
     // so the sheet is what lands in a slide or an issue (B3.10, B3.11).
     const literalTheme = (): Partial<Theme> => {
@@ -1576,7 +1576,7 @@ const codeLines = code ? code.split("\n").length : 0;
         ink: scheme.ink ?? DEFAULT_THEME.ink,
         boundary: scheme.ink ?? DEFAULT_THEME.boundary,
         background: "transparent",
-        lineStyle: lineStyleId === "colour" ? colorLineStyle : DEFAULT_THEME.lineStyle,
+        lineStyle: lineStyleId === "color" ? colorLineStyle : DEFAULT_THEME.lineStyle,
       };
     };
 
@@ -1606,19 +1606,19 @@ const codeLines = code ? code.split("\n").length : 0;
       if (paperNote) {
         paperNote.textContent = scheme.colorOk
           ? scheme.label
-          : `${scheme.label} · monochrome only, every crease colour falls below 2:1 on it`;
+          : `${scheme.label} · monochrome only, every crease color falls below 2:1 on it`;
       }
       stylesBar?.querySelectorAll<HTMLButtonElement>(".pg-style").forEach((b) => {
         const on = b.dataset.style === lineStyleId;
         b.classList.toggle("is-active", on);
         b.setAttribute("aria-pressed", String(on));
-        b.disabled = b.dataset.style === "colour" && !scheme.colorOk;
+        b.disabled = b.dataset.style === "color" && !scheme.colorOk;
         b.title =
           b.dataset.style === "mono"
             ? "Yoshizawa-Randlett notation, monochrome"
             : scheme.colorOk
-              ? "One colour per fold direction"
-              : `Not on ${scheme.label}: every crease colour falls below 2:1 on this paper`;
+              ? "One color per fold direction"
+              : `Not on ${scheme.label}: every crease color falls below 2:1 on this paper`;
       });
       if (hiddenBox) {
         const flat = currentView === "cp";
@@ -1653,7 +1653,7 @@ const codeLines = code ? code.split("\n").length : 0;
     stylesBar?.addEventListener("click", (e: MouseEvent) => {
       const b = (e.target as Element).closest<HTMLButtonElement>(".pg-style");
       if (!b || b.disabled) return;
-      const style = b.dataset.style === "colour" ? "colour" : "mono";
+      const style = b.dataset.style === "color" ? "color" : "mono";
       if (style === lineStyleId) return;
       lineStyleId = style;
       updateViewMenu();
@@ -1682,10 +1682,10 @@ const codeLines = code ? code.split("\n").length : 0;
         b.addEventListener("click", () => {
           applyScheme(s.id);
           currentSchemeId = s.id;
-          // The coloured style falls below 2:1 on kraft and indigo, so a move
+          // The colored style falls below 2:1 on kraft and indigo, so a move
           // to one of those papers takes the drawing back to monochrome
           // instead of leaving an unreadable one on screen.
-          if (!s.colorOk && lineStyleId === "colour") lineStyleId = "mono";
+          if (!s.colorOk && lineStyleId === "color") lineStyleId = "mono";
           updateViewMenu();
           rerenderCurrent();
           swatchBar.querySelectorAll(".pg-swatch").forEach((el) => {
@@ -1711,7 +1711,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // (see the bottom of setup).
     let pendingSharedStep: number | null = null;
     // The anchored entity is the runtime's settled selection. While one is
-    // set, hover no longer overrides the tooltip (see the mousemove handler
+    // set, hover no longer overrides the tooltip (see the `mousemove` handler
     // below) and the tooltip stops following the cursor. It is cleared by the
     // tooltip's own close (X) button or by a fresh run; a background click
     // leaves it alone.
@@ -1780,7 +1780,7 @@ const codeLines = code ? code.split("\n").length : 0;
     }
 
     // A document is in the slot and the editor still holds the text it was
-    // evaluated from. A function declaration rather than a const, because the
+    // evaluated from. A function declaration rather than a `const`, because the
     // run button asks this while the editor is being built.
     function debugAvailable(): boolean {
       return documentSource !== null && documentSource === editor.state.doc.toString();
@@ -1811,7 +1811,7 @@ const codeLines = code ? code.split("\n").length : 0;
       const boxes: DebugBox[] = [];
       // What the sheet brings has no place in the source, so it stands under
       // the paper line instead: the points in one row, the lines in the other,
-      // written in the classes the colouring gives those two kinds.
+      // written in the classes the coloring gives those two kinds.
       const points: DebugChip[] = [];
       const lines: DebugChip[] = [];
       debugList.forEach((target, id) => {
@@ -2077,8 +2077,8 @@ const codeLines = code ? code.split("\n").length : 0;
       return best;
     }
 
-    // The point of a drawn element nearest to (px, py): the foot of the
-    // perpendicular on a line, the centre of anything else.
+    // The point of a drawn element nearest to (`px`, `py`): the foot of the
+    // perpendicular on a line, the center of anything else.
     function nearestOn(el: SVGGraphicsElement, px: number, py: number): Vec2 {
       if (el.tagName === "line") {
         const ax = Number(el.getAttribute("x1")), ay = Number(el.getAttribute("y1"));
@@ -2238,7 +2238,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // isDragging() (not wasDrag()) is the right guard here — it reflects
     // whether a pan is happening RIGHT NOW, so hover resumes as soon as the
     // drag actually ends rather than staying suppressed until the next
-    // pointerdown (see createPanZoom).
+    // `pointerdown` (see createPanZoom).
     result.addEventListener("mousemove", (e: MouseEvent) => {
       if (pinned() || pick.state.open || panZoom.isDragging()) return;
       if (card.contains(e.target as Node)) return;
@@ -2678,7 +2678,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // ── Export ───────────────────────────────────────────────────────────
     // What leaves the page is what the render path produces, re-rendered from
     // the scene rather than lifted out of the DOM: the stage's copy carries
-    // hit lines, highlight classes and colours that are CSS variables, none of
+    // hit lines, highlight classes and colors that are CSS variables, none of
     // which mean anything in a file (B3.10). The trigger sits in the quiet
     // zone beside the reset button, so nothing is laid over the drawing while
     // the panel is shut (B3.11).

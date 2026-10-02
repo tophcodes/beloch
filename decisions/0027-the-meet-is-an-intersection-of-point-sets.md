@@ -28,7 +28,7 @@ images, and the meet refused it with the advice to narrow it to one segment.
 
 The single-line requirement is a property of that computation and protects
 nothing on its own. On the preliminary base `--h` and `--v` each lie on two
-paper lines, and the two creases have exactly one point in common, the centre
+paper lines, and the two creases have exactly one point in common, the center
 of the paper. The program still had to write `--bd * (--h & --bc)` to reach
 it, naming a segment the reader does not care about, and the bird base
 located its four side corners with `free on … at 1/2` instead of as the

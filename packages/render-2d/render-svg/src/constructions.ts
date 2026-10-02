@@ -26,9 +26,9 @@ export function appendConstructions(
   theme: Theme,
   selection: string[] | undefined,
   folded: null | { frame: Frame },
-  // The palette colour of each entity the caller highlights, keyed by the
+  // The palette color of each entity the caller highlights, keyed by the
   // selection entry (".p", "--l"). An entry outside it keeps the crease or
-  // construction colour it had.
+  // construction color it had.
   highlightOf: Map<string, HighlightColor> = new Map(),
   // The names the drawing writes out; absent writes them all. See
   // `SceneOptions.annotate`.
@@ -38,7 +38,7 @@ export function appendConstructions(
   // drawing goes through one placement pass, so two of them cannot land on
   // each other (see `placeLabels`).
   const anchors: LabelAnchor[] = [];
-  const labelled = (name: string): boolean =>
+  const labeled = (name: string): boolean =>
     annotate === undefined || annotate.includes(name);
   const annotations = doc.layer("annotations");
   const { tx, ty, minX, maxX, minY, maxY } = layout;
@@ -49,7 +49,7 @@ export function appendConstructions(
   const sel = selection ?? [];
 
   for (const s of sel) {
-    // A highlighted entity is drawn in its own palette colour, in this view and
+    // A highlighted entity is drawn in its own palette color, in this view and
     // in the other view of the same scene, matching the caption's inline code.
     const hl = highlightOf.get(s);
     if (s.startsWith("--")) {
@@ -66,7 +66,7 @@ export function appendConstructions(
         stroke: color, "stroke-width": 3,
         "stroke-dasharray": "6 3", opacity: 0.8,
       }));
-      if (labelled(`--${name}`)) {
+      if (labeled(`--${name}`)) {
         const [[x1, y1], [x2, y2]] = drawn[0]!;
         const a: Vec2 = [tx(x1), ty(y1)], b: Vec2 = [tx(x2), ty(y2)];
         anchors.push({
@@ -94,7 +94,7 @@ export function appendConstructions(
         class: "construction", "data-construction": name,
         "data-kind": "point", "data-name": name,
       }, [el("circle", { cx: tx(px), cy: ty(py), r: 4.5, fill: color, opacity: 0.85 })]));
-      if (labelled(`.${name}`)) {
+      if (labeled(`.${name}`)) {
         anchors.push({
           x: tx(px), y: ty(py), text: `.${name}`, key: `.${name}`,
           preferOffset: [ox, oy],

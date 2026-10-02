@@ -1,13 +1,13 @@
 ; AI-generated: this file was written by Claude, an AI model.
 
-; Axiom 6 from the sheet centre: the circle around .o through .a meets --bc at
+; Axiom 6 from the sheet center: the circle around .o through .a meets --bc at
 ; both .b and .c, so the two creases are the vertical midline and the
 ; anti-diagonal. Both cut the paper's interior, so the paper-incidence filter
 ; settles nothing and the ambiguity stands.
 
 paper square
 mark (through .a .c) as --ac
-.o = free on --ac from .a at 1/2        ; the sheet centre, (1/2, 1/2)
+.o = free on --ac from .a at 1/2        ; the sheet center, (1/2, 1/2)
 --x = (map .a onto --bc through .o)
 
 ; expect error "map .a onto --bc through .o is ambiguous: 2 folds carry it out, all landing on the paper"

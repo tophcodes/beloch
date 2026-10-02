@@ -210,7 +210,7 @@ let test_eval_cross_table_bent_scar_ok () =
   in
   match assoc4 "mid" fd.Eval.named_points with
   | Some p ->
-      Alcotest.(check bool) "mid is the material centre" true
+      Alcotest.(check bool) "mid is the material center" true
         (Geom.point_equal p { Geom.x = half; y = half })
   | None -> Alcotest.fail "expected .mid"
 
@@ -2054,7 +2054,7 @@ let test_mark_every_layer_by_default () =
     |> List.sort compare
   in
   Alcotest.(check (list (list (pair (float 1e-9) (float 1e-9)))))
-    "the half diagonals .a-centre and .d-centre"
+    "the half diagonals .a-center and .d-center"
     (List.sort compare [ [ (0., 0.); (0.5, 0.5) ]; [ (0., 1.); (0.5, 0.5) ] ])
     chords
 
@@ -2173,7 +2173,7 @@ let () =
             test_ax5_bind_x_on_l2;
           Alcotest.test_case "ax5 bind endpoint hinge directions" `Quick
             test_ax5_bind_endpoint_directions;
-          Alcotest.test_case "ax5 bind centre, toward a corner" `Quick
+          Alcotest.test_case "ax5 bind center, toward a corner" `Quick
             test_ax5_bind_center_toward_corner;
           Alcotest.test_case "ax5 toward on the moved line" `Quick
             test_ax5_toward_on_moved_line;

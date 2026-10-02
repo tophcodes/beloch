@@ -79,5 +79,5 @@ When axiom 5 yields two bisectors and `toward` is omitted:
 ## Spec impact
 
 `spec/SPECIFICATION.md` §5 (axiom 5 solutions/`toward`, ~lines 186–192) and
-the error catalogue (~line 686) need the filter step and the new zero-candidate
+the error catalog (~line 686) need the filter step and the new zero-candidate
 error.

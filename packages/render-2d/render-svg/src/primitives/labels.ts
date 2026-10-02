@@ -22,7 +22,7 @@ export interface LabelAnchor {
   // happen to meet there are two things, and reading them as ".o,--mid" says
   // there is one.
   group?: string;
-  // What the emitted text says about itself: its colour, the name it carries,
+  // What the emitted text says about itself: its color, the name it carries,
   // whether the thing it names is buried. A cluster takes these from its first
   // member, so a merged label reads as the first name it folded in.
   attrs?: Record<string, string | number>;

@@ -814,7 +814,7 @@
           "landing": [ 0.5, 1.0 ]
         }
       ],
-      "circle": { "centre": [ 0.25, 0.75 ], "through": [ 0.0, 1.0 ] },
+      "circle": { "center": [ 0.25, 0.75 ], "through": [ 0.0, 1.0 ] },
       "conics": [ { "focus": [ 0.0, 1.0 ], "directrix": [ 1.0, 0.0, 0.5 ] } ]
     },
     {

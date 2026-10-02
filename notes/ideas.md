@@ -32,7 +32,7 @@ each call (ADR 0030), so a renderer still sees the repetition.
 It needs parameter types beyond point and line first (#143), and a bare
 alignment such as `squash (--h onto --ac)` needs a read that finds the
 vertex the write completes it with (ADR 0038). Revisit when a model needs
-a manoeuvre the specification has no verb for, or when shared libraries
+a maneuver the specification has no verb for, or when shared libraries
 are on the table.
 
 ## Geometric destructuring

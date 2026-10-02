@@ -48,7 +48,7 @@ export type StatementKind = "fold" | "mark" | "bind" | "apply";
 export interface Statement {
   index: number;
   kind: StatementKind;
-  sourceLine: number;                                        // beloch:statements[i].source_line — always present (every stmt has a span)
+  sourceLine: number;                                        // beloch:statements[i].source_line — always present (every statement has a span)
   span: string | null;                                       // beloch:statements[i].span; null on a FOLD written before the field existed
   frameIndex: number;                                        // beloch:statements[i].frame_index — index into scene.steps
   mark: Mark | null;                                          // present only for kind: "mark"
@@ -197,7 +197,7 @@ export interface TraceEntry {
   spans: TraceSpans;
   candidates: TraceCandidate[];
   conics: Conic[];
-  circle: { centre: Vec2; through: Vec2 } | null;           // axiom 6: about the point on the crease, through the point that moves
+  circle: { center: Vec2; through: Vec2 } | null;           // axiom 6: about the point on the crease, through the point that moves
 }
 // The entries of beloch:trace that a write left: the terms of its definition
 // on the state it read, and the states it chose from, each with the rule that

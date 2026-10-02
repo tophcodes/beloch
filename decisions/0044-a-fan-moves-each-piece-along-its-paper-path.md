@@ -12,7 +12,7 @@ issue: tophcodes/beloch#133
 
 By ADR 0040 a fan sits at a table point, and every layer under it is scored
 along the fan's lines. `def-flatten` then gives one motion to each wedge of
-the table between two neighbouring rays: every piece in the wedge moves by
+the table between two neighboring rays: every piece in the wedge moves by
 the reflections across the rays between it and the stayer. Around the table
 point the motions have to close, which is Kawasaki's condition, and ADR 0041
 drops the condition where the vertex lies on the paper's edge, off the paper
@@ -28,7 +28,7 @@ The vertex of a reverse fold and the vertex of a squash lie on a folded edge
 
   | piece | layer of the base | before, on the table | motion |
   |---|---|---|---|
-  | 1 | top | (0.74, 0.83) | reflection across the centre line |
+  | 1 | top | (0.74, 0.83) | reflection across the center line |
   | 2 | top | (0.57, 0.83) | rotation by 45° about the vertex |
   | 7 | second | (0.57, 0.83) | reflection across the axis |
 
@@ -102,7 +102,7 @@ medians of the preliminary base fold the quarter fold.
   and `squash` gets a path of its own. Against #52, which made the three one
   operation in the kernel.
 - **The program names the hinges that change.** A squash would name its
-  opening spine and the centre line besides its axis, which the bare
+  opening spine and the center line besides its axis, which the bare
   alignment of ADR 0038 exists to leave out.
 
 ## Consequences
@@ -115,7 +115,7 @@ medians of the preliminary base fold the quarter fold.
   reaches the body across the axis once and moves by the reflection across
   it, and the hinges across the opening keep and turn. `reverse` can move
   onto the path of `flatten` without a case of its own.
-- The squash of #115 is a fan whose axis, opening spine and centre line are
+- The squash of #115 is a fan whose axis, opening spine and center line are
   found by trying the hinges; its bare alignment (ADR 0038) needs no more.
 - The kernel builds each candidate as a state from hinge angles, which
   `Fold_state` checks for closure. The number of combinations doubles with

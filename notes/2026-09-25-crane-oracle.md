@@ -76,7 +76,7 @@ stacked pieces pass through `.b`.
 
 Ida's ray for step 17 runs from $(\tfrac34, 0)$, a table point outside the
 folded model, at about $130.5^\circ$, which is no multiple of
-$11.25^\circ$. It crosses the neck's centre line at $0.23463$ of the neck's
+$11.25^\circ$. It crosses the neck's center line at $0.23463$ of the neck's
 length from the tip, numerically $1 - 2\sin(\pi/8)$, and passes $0.0011$ from
 the midpoint of the body edge `--rsl & .a`. No construction from the lines at
 hand reproduces it, and in folding practice the head's position and angle are

@@ -56,7 +56,7 @@ const ROW_GAP = 26;
 const GLYPH_R = 8;
 const EPS = 1e-9;
 
-// The candidates' colours, in the order they are numbered: blue, orange and
+// The candidates' colors, in the order they are numbered: blue, orange and
 // purple of the highlight palette. Green and red read as pass and fail.
 const CANDIDATE_HUES = [4, 3, 2];
 const hue = (k: number) => CANDIDATE_HUES[k % CANDIDATE_HUES.length]!;
@@ -64,10 +64,10 @@ const stroke = (theme: Theme, k: number) =>
   theme.highlightPalette[hue(k) % theme.highlightPalette.length]!.stroke;
 const textColour = (k: number) => HIGHLIGHT_TEXT[hue(k)] ?? "#0f172a";
 // Each candidate hatches its folding side at its own angle, so the sides
-// tell apart without colour.
+// tell apart without color.
 const HATCH_ANGLES = [45, -45, 90, 0];
 
-// What a stage reads or constructs is slate, and never a candidate's colour.
+// What a stage reads or constructs is slate, and never a candidate's color.
 const slate = (theme: Theme) => theme.flat;
 
 // ---- the stages the construction uses ----
@@ -189,7 +189,7 @@ function frameRect(a: Area): Vec2[] {
 
 // ---- marks ----
 
-// A rim of the page colour behind a label, so a line under it does not cut
+// A rim of the page color behind a label, so a line under it does not cut
 // through its letters.
 const halo = (theme: Theme) => ({
   stroke: theme.background, "stroke-width": 4, "stroke-linejoin": "round", "paint-order": "stroke",
@@ -229,7 +229,7 @@ function glyph(x: number, y: number, k: number, state: GlyphState, theme: Theme,
 // An arrow from p to q in px, bent to one side so that it reads as a motion
 // and stays off a straight line under it, with its head as a triangle: a
 // <marker> needs an id, and the site inlines several figures into one page.
-function arrowPx(x1: number, y1: number, x2: number, y2: number, colour: string, width: number,
+function arrowPx(x1: number, y1: number, x2: number, y2: number, color: string, width: number,
   bend = 1 / 5): { nodes: SvgNode[]; at: [number, number] } {
   const len = Math.hypot(x2 - x1, y2 - y1);
   if (len < 2) return { nodes: [], at: [x1, y1] };
@@ -243,9 +243,9 @@ function arrowPx(x1: number, y1: number, x2: number, y2: number, colour: string,
   return {
     nodes: [
       el("path", { d: `M ${f2(x1)} ${f2(y1)} Q ${f2(cx)} ${f2(cy)} ${f2(bx)} ${f2(by)}`,
-        fill: "none", stroke: colour, "stroke-width": width, "data-kind": "arrow" }),
+        fill: "none", stroke: color, "stroke-width": width, "data-kind": "arrow" }),
       el("polygon", { points: [[x2, y2], [bx - w * uy, by + w * ux], [bx + w * uy, by - w * ux]]
-        .map(([x, y]) => `${f2(x!)},${f2(y!)}`).join(" "), fill: colour }),
+        .map(([x, y]) => `${f2(x!)},${f2(y!)}`).join(" "), fill: color }),
     ],
     at: [0.25 * x1 + 0.5 * cx + 0.25 * bx, 0.25 * y1 + 0.5 * cy + 0.25 * by],
   };
@@ -369,7 +369,7 @@ function statementNodes(st: StatementText, marks: [number, number][], x: number,
 // ---- text rows ----
 
 interface Run { text: string; bold?: boolean }
-interface Line { glyphs: [number, GlyphState][]; runs: Run[]; grey?: boolean }
+interface Line { glyphs: [number, GlyphState][]; runs: Run[]; gray?: boolean }
 interface Row { label: string; lines: Line[] }
 
 const plain = (s: string): Line => ({ glyphs: [], runs: [{ text: s }] });
@@ -390,7 +390,7 @@ function lineNodes(line: Line, x: number, y: number, width: number, theme: Theme
     rows[rows.length - 1]!.push(w);
     n += w.text.length;
   }
-  const fill = line.grey ? theme.flat : theme.ink;
+  const fill = line.gray ? theme.flat : theme.ink;
   const nodes: SvgNode[] = [];
   line.glyphs.forEach(([k, s], i) =>
     nodes.push(...glyph(x + GLYPH_R + i * (2 * GLYPH_R + 3), y - 4.5, k, s, theme, GLYPH_R, "row-number")));
@@ -462,14 +462,14 @@ interface Ctx {
 function candidateNodes(cx: Ctx, k: number, state: GlyphState): SvgNode[] {
   const { area, theme } = cx;
   const c = cx.cands[k]!;
-  const colour = stroke(theme, k);
+  const color = stroke(theme, k);
   const width = state === "out" ? 1 : 2.6;
   const dash: Record<string, string> = state !== "kept" ? {}
     : cx.keptStyle === "valley" ? { "stroke-dasharray": "7 4" }
     : cx.keptStyle === "mountain" ? { "stroke-dasharray": "9 3 2 3" }
     : { "stroke-dasharray": "1.5 3.5" };
   const nodes: SvgNode[] = onFaces(c.line, area.faces).map(([p, q]) =>
-    seg(area, p, q, { stroke: colour, "stroke-width": width, ...dash, "data-kind": "candidate",
+    seg(area, p, q, { stroke: color, "stroke-width": width, ...dash, "data-kind": "candidate",
       "data-index": k + 1, "data-status": state }));
   const at = cx.numberAt[k];
   const ends = chord(c.line, area.faces);
@@ -478,7 +478,7 @@ function candidateNodes(cx: Ctx, k: number, state: GlyphState): SvgNode[] {
     const [x1, y1] = P(area, end), [x2, y2] = P(area, at);
     const l = Math.hypot(x2 - x1, y2 - y1) || 1;
     nodes.push(el("line", { x1, y1, x2: f2(x2 - ((x2 - x1) / l) * GLYPH_R * 1.2),
-      y2: f2(y2 - ((y2 - y1) / l) * GLYPH_R * 1.2), stroke: colour, "stroke-width": 1 }));
+      y2: f2(y2 - ((y2 - y1) / l) * GLYPH_R * 1.2), stroke: color, "stroke-width": 1 }));
     nodes.push(...glyph(x2, y2, k, state, theme, GLYPH_R * 1.2));
   }
   cx.used.add(state === "out" ? "removed" : state === "kept" ? "kept" : "candidate");
@@ -509,13 +509,13 @@ function placeNumbers(cands: TraceCandidate[], area: Area): Vec2[] {
 function readNodes(cx: Ctx, o: { name: string; point: Vec2 | null; segments: [Vec2, Vec2][] },
   label = o.name): SvgNode[] {
   const { area, theme } = cx;
-  const colour = slate(theme);
+  const color = slate(theme);
   const nodes: SvgNode[] = [];
   if (o.point) {
     const [x, y] = P(area, o.point);
-    nodes.push(el("circle", { cx: x, cy: y, r: 3.5, fill: colour, "data-kind": "reads" }));
+    nodes.push(el("circle", { cx: x, cy: y, r: 3.5, fill: color, "data-kind": "reads" }));
     // a paper corner carries its name already
-    if (!cx.corners.has(label)) nodes.push(text(x + 7, y - 7, label, colour, theme, { "data-kind": "reads-label" }));
+    if (!cx.corners.has(label)) nodes.push(text(x + 7, y - 7, label, color, theme, { "data-kind": "reads-label" }));
     cx.used.add("reads");
     return nodes;
   }
@@ -528,17 +528,17 @@ function readNodes(cx: Ctx, o: { name: string; point: Vec2 | null; segments: [Ve
     if (edge) {
       const inward = inwardNormal(s, area.faces);
       const off = mul(inward, 5 / area.scale);
-      nodes.push(seg(area, add(s[0], off), add(s[1], off), { stroke: colour, "stroke-width": 1.3,
+      nodes.push(seg(area, add(s[0], off), add(s[1], off), { stroke: color, "stroke-width": 1.3,
         "data-kind": "edge-reads" }));
     } else {
-      nodes.push(seg(area, s[0], s[1], { stroke: colour, "stroke-width": 1.4, "data-kind": "reads" }));
+      nodes.push(seg(area, s[0], s[1], { stroke: color, "stroke-width": 1.4, "data-kind": "reads" }));
     }
   }
   cx.used.add(edge ? "edge" : "reads");
   const at = add(longest[0], mul(sub(longest[1], longest[0]), edge ? 0.5 : 0.22));
   const n = edge ? inwardNormal(longest, area.faces) : unit([-(longest[1][1] - longest[0][1]), longest[1][0] - longest[0][0]]);
   const [x, y] = P(area, add(at, mul(n, 14 / area.scale)));
-  nodes.push(text(x - 8, y + 4, label, colour, theme, { "data-kind": "reads-label" }));
+  nodes.push(text(x - 8, y + 4, label, color, theme, { "data-kind": "reads-label" }));
   return nodes;
 }
 
@@ -555,7 +555,7 @@ function inwardNormal([p, q]: [Vec2, Vec2], faces: Vec2[][]): Vec2 {
 }
 
 // The `toward` or `moving` target: a point as a filled diamond, a line as
-// what the stage reads, both labelled with the item.
+// what the stage reads, both labeled with the item.
 function targetNodes(cx: Ctx, which: "toward" | "moving"): SvgNode[] {
   const { entry, area, theme } = cx;
   const name = which === "toward" ? entry.towardName : entry.movingName;
@@ -589,7 +589,7 @@ function foldingSide(c: TraceCandidate, faces: Vec2[][]): Vec2[][] {
 // its number inside.
 function hatchNodes(cx: Ctx, k: number, region: Vec2[][]): SvgNode[] {
   const { area, theme } = cx;
-  const colour = stroke(theme, k);
+  const color = stroke(theme, k);
   const ang = ((HATCH_ANGLES[k % HATCH_ANGLES.length]!) * Math.PI) / 180;
   const d: Vec2 = [Math.cos(ang), Math.sin(ang)];
   const n: Vec2 = [-d[1], d[0]];
@@ -600,9 +600,9 @@ function hatchNodes(cx: Ctx, k: number, region: Vec2[][]): SvgNode[] {
     const lo = Math.min(...proj), hi = Math.max(...proj);
     for (let t = Math.ceil(lo / step) * step; t <= hi; t += step) {
       const s = clipLineToPoly(n[0], n[1], t, poly);
-      if (s) nodes.push(seg(area, s[0], s[1], { stroke: colour, "stroke-width": 0.8, opacity: 0.8 }));
+      if (s) nodes.push(seg(area, s[0], s[1], { stroke: color, "stroke-width": 0.8, opacity: 0.8 }));
     }
-    nodes.push(el("polygon", { points: poly.map((p) => P(area, p).join(",")).join(" "), fill: colour,
+    nodes.push(el("polygon", { points: poly.map((p) => P(area, p).join(",")).join(" "), fill: color,
       "fill-opacity": 0.07, stroke: "none", "data-kind": "folds-over", "data-index": k + 1 }));
   }
   const largest = [...region].sort((p, q) => area2(q) - area2(p))[0];
@@ -624,12 +624,12 @@ const area2 = (poly: Vec2[]) => Math.abs(poly.reduce((s, p, i) => {
 const centroid = (poly: Vec2[]): Vec2 => mul(poly.reduce((s, p) => add(s, p), [0, 0] as Vec2), 1 / poly.length);
 
 // An angle between two lines at their meeting point, as an arc in the
-// candidate's colour between the two directions nearest `toward`, with its
+// candidate's color between the two directions nearest `toward`, with its
 // value.
 function angleArc(cx: Ctx, at: Vec2, u: Vec2, v: Vec2, r: number, k: number, label: string,
   ticks = false): SvgNode[] {
   const { area, theme } = cx;
-  const colour = stroke(theme, k);
+  const color = stroke(theme, k);
   const [x, y] = P(area, at);
   const a1 = Math.atan2(-u[1], u[0]);
   let delta = Math.atan2(-v[1], v[0]) - a1;
@@ -639,13 +639,13 @@ function angleArc(cx: Ctx, at: Vec2, u: Vec2, v: Vec2, r: number, k: number, lab
     const a = a1 + (delta * i) / 24;
     return `${f2(x + r * Math.cos(a))},${f2(y + r * Math.sin(a))}`;
   });
-  const nodes: SvgNode[] = [el("polyline", { points: pts.join(" "), fill: "none", stroke: colour,
+  const nodes: SvgNode[] = [el("polyline", { points: pts.join(" "), fill: "none", stroke: color,
     "stroke-width": 1.3, "data-kind": "angle" })];
   if (ticks) {
     for (const t of [0.25, 0.75]) {
       const a = a1 + delta * t;
       nodes.push(el("line", { x1: f2(x + (r - 4) * Math.cos(a)), y1: f2(y + (r - 4) * Math.sin(a)),
-        x2: f2(x + (r + 4) * Math.cos(a)), y2: f2(y + (r + 4) * Math.sin(a)), stroke: colour, "stroke-width": 1.3 }));
+        x2: f2(x + (r + 4) * Math.cos(a)), y2: f2(y + (r + 4) * Math.sin(a)), stroke: color, "stroke-width": 1.3 }));
     }
   }
   const am = a1 + delta / 2;
@@ -690,7 +690,7 @@ function stage0(cx: Ctx): { squares: SvgNode[][]; rows: Row[] } {
   const yields: Line[] = [];
   let constructs = "The construction determines one line.";
   const axiom = entry.axiom;
-  const labelled: [number, number][] = [];
+  const labeled: [number, number][] = [];
   if (axiom === "axiom5" && cands.length === 2) {
     const [o1, o2] = [operand(0), operand(1)];
     const [l1, l2] = [lineOf(o1), lineOf(o2)];
@@ -707,9 +707,9 @@ function stage0(cx: Ctx): { squares: SvgNode[][]; rows: Row[] } {
       nodes.push(...angleArc(cx, x, pick(l1), pick(l2), 34 + 12 * k, k, `${v} | ${v}`, true));
     });
   } else if (axiom === "axiom6" && entry.circle) {
-    const { centre, through } = entry.circle;
-    const r = dist(centre, through);
-    const [x, y] = P(area, centre);
+    const { center, through } = entry.circle;
+    const r = dist(center, through);
+    const [x, y] = P(area, center);
     const point = entry.operands[0], target = entry.operands[1], pivot = entry.operands[2];
     constructs = `Every crease through ${pivot?.name} that folds ${point?.name} onto ${target?.name} `
       + `is the perpendicular bisector of ${point?.name} and one landing: a point of ${target?.name} `
@@ -721,23 +721,23 @@ function stage0(cx: Ctx): { squares: SvgNode[][]; rows: Row[] } {
       const s = clipLineToPoly(tl[0], tl[1], tl[2], frameRect(area));
       if (s) nodes.push(seg(area, s[0], s[1], { stroke: slate(theme), "stroke-width": 1, "data-kind": "construction" }));
     }
-    const lab = add(centre, mul(unit([1, -1]), r));
+    const lab = add(center, mul(unit([1, -1]), r));
     const [lx, ly] = P(area, lab);
     nodes.push(text(lx + 6, ly + 4, `circle about ${pivot?.name}`, slate(theme), theme),
       text(lx + 6, ly + 19, `through ${point?.name}`, slate(theme), theme));
     cx.used.add("construction");
     cands.forEach((c, k) => {
       if (!c.landing) return;
-      const colour = stroke(theme, k);
-      nodes.push(seg(area, through, c.landing, { stroke: colour, "stroke-width": 1, "data-kind": "landing-line" }));
+      const color = stroke(theme, k);
+      nodes.push(seg(area, through, c.landing, { stroke: color, "stroke-width": 1, "data-kind": "landing-line" }));
       const m = mid(through, c.landing);
       const u = unit(sub(c.landing, through)), v = direction(c.line);
       const s = 6 / area.scale;
       const sq = [m, add(m, mul(u, s)), add(add(m, mul(u, s)), mul(v, s)), add(m, mul(v, s))];
       nodes.push(el("polyline", { points: sq.slice(1).map((p) => P(area, p).join(",")).join(" "), fill: "none",
-        stroke: colour, "stroke-width": 1 }));
+        stroke: color, "stroke-width": 1 }));
       const [lx2, ly2] = P(area, c.landing);
-      nodes.push(el("circle", { cx: lx2, cy: ly2, r: 5, fill: theme.background, stroke: colour,
+      nodes.push(el("circle", { cx: lx2, cy: ly2, r: 5, fill: theme.background, stroke: color,
         "stroke-width": 2, "data-kind": "landing" }));
       nodes.push(...glyph(lx2 + 14, ly2 - 4, k, "on", theme, 6.5, "tag"));
     });
@@ -757,8 +757,8 @@ function stage0(cx: Ctx): { squares: SvgNode[][]; rows: Row[] } {
         if (r === 0 && at) {
           let [x, y] = P(area, at);
           y = Math.max(y + 16, area.lay.ty(area.lay.minY) + 16);
-          while (labelled.some(([lx, ly]) => Math.abs(lx - x) < 130 && Math.abs(ly - y) < 14)) y += 15;
-          labelled.push([x, y]);
+          while (labeled.some(([lx, ly]) => Math.abs(lx - x) < 130 && Math.abs(ly - y) < 14)) y += 15;
+          labeled.push([x, y]);
           nodes.push(text(x, y, `parabola: ${focus?.name ?? "focus"}, ${dir?.name ?? "directrix"}`,
             slate(theme), theme, { "text-anchor": "middle", "data-kind": "construction-label" }));
         }
@@ -806,7 +806,7 @@ function stage1(cx: Ctx): { squares: SvgNode[][]; rows: Row[] } {
       nodes.push(...angleArc(cx, x, toward(dh), toward(dc), 24 + 12 * k, k, fmt(c.angle)));
     }
     const tie = !out && passing.length > 1 && passing[passing.length - 1]![1] === k ? ", a tie passes on" : "";
-    lines.push({ glyphs: [[k, out ? "out" : "on"]], grey: out,
+    lines.push({ glyphs: [[k, out ? "out" : "on"]], gray: out,
       runs: [{ text: out ? "eliminated" : "passes", bold: true },
         { text: `: ${fmt(c.angle ?? 0)} to ${name}${tie}` }] });
   }
@@ -843,7 +843,7 @@ function stage2(cx: Ctx): { squares: SvgNode[][]; rows: Row[] } {
       why = conflict ? `toward ${t} and moving ${m} name the same side`
         : p ? `${m} lies on it, so it names no side` : `${m} crosses it, so it names no side`;
     }
-    lines.push({ glyphs: [[k, out ? "out" : "on"]], grey: out,
+    lines.push({ glyphs: [[k, out ? "out" : "on"]], gray: out,
       runs: [{ text: out ? "eliminated" : "passes", bold: true }, { text: `: ${why}` }] });
   }
   if (t) nodes.push(...targetNodes(cx, "toward"));
@@ -873,18 +873,18 @@ const prime = (name: string) => `${name}′`;
 // A motion drawn: a point as a filled dot, an arrow and a ring where it
 // lands; a piece of line as a filled bar, an arrow and an outlined bar.
 function motionNodes(cx: Ctx, k: number, m: Motion, name: string, line: LineCoeffs,
-  labelled = true): SvgNode[] {
+  labeled = true): SvgNode[] {
   const { area, theme } = cx;
-  const colour = stroke(theme, k);
+  const color = stroke(theme, k);
   const nodes: SvgNode[] = [];
   const src = m.source.filter(([p, q]) => dist(p, q) >= 0 && Number.isFinite(p[0]));
   const img = m.image;
   const barHalf = 11 / area.scale;
   const bar = (p: Vec2, d: Vec2): [Vec2, Vec2] => [sub(p, mul(d, barHalf)), add(p, mul(d, barHalf))];
   const filledBar = ([p, q]: [Vec2, Vec2]) =>
-    seg(area, p, q, { stroke: colour, "stroke-width": 4.5, "data-kind": "moves" });
+    seg(area, p, q, { stroke: color, "stroke-width": 4.5, "data-kind": "moves" });
   const hollowBar = ([p, q]: [Vec2, Vec2]) => [
-    seg(area, p, q, { stroke: colour, "stroke-width": 6, "data-kind": "lands" }),
+    seg(area, p, q, { stroke: color, "stroke-width": 6, "data-kind": "lands" }),
     seg(area, p, q, { stroke: theme.background, "stroke-width": 3 }),
   ];
   let from: Vec2, to: Vec2;
@@ -892,7 +892,7 @@ function motionNodes(cx: Ctx, k: number, m: Motion, name: string, line: LineCoef
     // a point
     from = src[0]![0]; to = img[0]![0];
     const [x, y] = P(area, from);
-    nodes.push(el("circle", { cx: x, cy: y, r: 4.5, fill: colour, "data-kind": "moves" }));
+    nodes.push(el("circle", { cx: x, cy: y, r: 4.5, fill: color, "data-kind": "moves" }));
     cx.used.add("moves-point");
   } else if (zeroLength(src)) {
     // the place of a line that lands on a point
@@ -900,7 +900,7 @@ function motionNodes(cx: Ctx, k: number, m: Motion, name: string, line: LineCoef
     const d = direction(line);
     nodes.push(filledBar(bar(from, d)));
     const [x, y] = P(area, from);
-    nodes.push(el("circle", { cx: x, cy: y, r: 3.5, fill: colour }));
+    nodes.push(el("circle", { cx: x, cy: y, r: 3.5, fill: color }));
     const dImg = direction(lineThrough(reflectAcross(cx, k, add(from, d)), reflectAcross(cx, k, from)));
     nodes.push(...hollowBar(bar(to, dImg)));
     cx.used.add("moves-line");
@@ -916,14 +916,14 @@ function motionNodes(cx: Ctx, k: number, m: Motion, name: string, line: LineCoef
     cx.used.add("moves-line");
   }
   const [x1, y1] = P(area, from), [x2, y2] = P(area, to);
-  const a = arrowPx(x1, y1, x2, y2, colour, 1.5);
+  const a = arrowPx(x1, y1, x2, y2, color, 1.5);
   nodes.push(...a.nodes);
   if (zeroLength(src) && name.startsWith(".")) {
-    nodes.push(el("circle", { cx: x2, cy: y2, r: 5, fill: theme.background, stroke: colour,
+    nodes.push(el("circle", { cx: x2, cy: y2, r: 5, fill: theme.background, stroke: color,
       "stroke-width": 2.2, "data-kind": "lands" }));
   }
   nodes.push(...glyph(a.at[0], a.at[1], k, "on", theme, 6.5, "tag"));
-  if (labelled) {
+  if (labeled) {
     // a point's image is named beside its ring, a line's at the middle of
     // its image, off the line
     const at = zeroLength(src) && name.startsWith(".") ? [x2 + 9, y2 + 16]
@@ -947,13 +947,13 @@ function reflectAcross(cx: Ctx, k: number, p: Vec2): Vec2 {
 // a thin arrow, and a label naming what is missing.
 function missingNodes(cx: Ctx, k: number, from: Vec2, to: Vec2, cross: Vec2, label: string): SvgNode[] {
   const { area, theme } = cx;
-  const colour = stroke(theme, k);
+  const color = stroke(theme, k);
   const [x1, y1] = P(area, from), [x2, y2] = P(area, to), [cxp, cyp] = P(area, cross);
   cx.used.add("missing");
   return [
-    ...arrowPx(x1, y1, x2, y2, colour, 1).nodes,
+    ...arrowPx(x1, y1, x2, y2, color, 1).nodes,
     el("path", { d: `M ${cxp - 6} ${cyp - 6} L ${cxp + 6} ${cyp + 6} M ${cxp - 6} ${cyp + 6} L ${cxp + 6} ${cyp - 6}`,
-      stroke: colour, "stroke-width": 1.8, "data-kind": "missing" }),
+      stroke: color, "stroke-width": 1.8, "data-kind": "missing" }),
     text(cxp + 10, cyp - 8, label, textColour(k), theme, { "data-kind": "missing-label" }),
   ];
 }
@@ -1050,7 +1050,7 @@ function stage3(cx: Ctx): { squares: SvgNode[][]; rows: Row[] } {
       const first = entry.alignments[0]?.objects[0]?.name ?? "the first object";
       tail = ` (either side carries it out; the side of ${first} folds over, as the statement reads)`;
     } else if (!out && c.sideFrom === "alone") tail = " (only this side carries it out)";
-    return { glyphs: [[k, out ? "out" : "on"]], grey: out,
+    return { glyphs: [[k, out ? "out" : "on"]], gray: out,
       runs: [{ text: out ? "eliminated" : "passes", bold: true }, { text: `: ${said.text}${tail}` }] };
   });
   const rows: Row[] = [];
@@ -1080,16 +1080,16 @@ function stage4(cx: Ctx): { squares: SvgNode[][]; rows: Row[] } {
     nodes.push(...candidateNodes(cx, k, out ? "out" : c.selected ? "kept" : "on"));
     if (c.nearest && c.distance !== null) {
       const [p, q] = c.nearest;
-      const colour = stroke(theme, k);
+      const color = stroke(theme, k);
       const [x1, y1] = P(area, p), [x2, y2] = P(area, q);
-      nodes.push(el("line", { x1, y1, x2, y2, stroke: colour, "stroke-width": 1.2, "data-kind": "distance" }),
-        el("circle", { cx: x1, cy: y1, r: 3, fill: colour }));
+      nodes.push(el("line", { x1, y1, x2, y2, stroke: color, "stroke-width": 1.2, "data-kind": "distance" }),
+        el("circle", { cx: x1, cy: y1, r: 3, fill: color }));
       const label = fmt(c.distance);
       const w = label.length * 7 + 26;
       // the tag beside the middle of the distance, kept inside the drawing
       const mx = Math.min((x1 + x2) / 2, area.lay.W - w - 10), my = (y1 + y2) / 2 + 14;
       nodes.push(el("rect", { x: f2(mx + 6), y: f2(my - 10), width: w, height: 20, rx: 3,
-        fill: theme.background, stroke: colour, "stroke-width": 1 }),
+        fill: theme.background, stroke: color, "stroke-width": 1 }),
         ...glyph(mx + 16, my, k, "on", theme, 6.5, "tag"),
         text(mx + 26, my + 4.5, label, textColour(k), theme, { "font-weight": 700, "data-kind": "distance-label" }));
       cx.used.add("distance");
@@ -1103,7 +1103,7 @@ function stage4(cx: Ctx): { squares: SvgNode[][]; rows: Row[] } {
       const tie = !out && passing.length > 1 && passing[passing.length - 1]![1] === k ? ", a tie" : "";
       say = `${entry.subject ? `${entry.subject} ` : ""}lands ${fmt(c.distance ?? 0)} from ${t}${tie}`;
     }
-    lines.push({ glyphs: [[k, out ? "out" : "on"]], grey: out,
+    lines.push({ glyphs: [[k, out ? "out" : "on"]], gray: out,
       runs: [{ text: out ? "eliminated" : "passes", bold: true }, { text: `: ${say}` }] });
   }
   const rows: Row[] = [];
@@ -1261,8 +1261,8 @@ export function renderStages(scene: FoldScene, opts: StagesOptions = {}): SvgDoc
     }
   }
   if (entry.circle) {
-    const r = dist(entry.circle.centre, entry.circle.through);
-    extra.push(add(entry.circle.centre, [r, r]), sub(entry.circle.centre, [r, r]));
+    const r = dist(entry.circle.center, entry.circle.through);
+    extra.push(add(entry.circle.center, [r, r]), sub(entry.circle.center, [r, r]));
   }
   if (entry.toward) extra.push(entry.toward);
   const area = drawingArea(faces, extra);

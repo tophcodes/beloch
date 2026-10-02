@@ -33,7 +33,7 @@ home than a single file ordered by feature:
   This is the model.
 - the language reference: the grammar, every keyword, how an operand
   resolves to a side and a flap, program structure (`def`, `apply`,
-  `export`, temporary names), the error catalogue. This is what `BELOCH.md`
+  `export`, temporary names), the error catalog. This is what `BELOCH.md`
   announces it will grow into.
 - implementation mechanics: the order in which checks run, the solver
   pipeline of `flatten`, the messages the evaluator ships. This belongs
@@ -79,7 +79,7 @@ The reference content must arrive in `BELOCH.md` before `SPECIFICATION.md`
 shrinks, so that at no point the grammar is nowhere.
 
 1. `BELOCH.md` absorbs the grammar, keywords, resolution rules, program
-   structure and error catalogue, section by section, each pointing at its
+   structure and error catalog, section by section, each pointing at its
    model statement. The corresponding sections of `SPECIFICATION.md` are
    deleted as they land.
 2. Mechanics move to `KERNEL.md` or to doc comments; history to the
@@ -99,7 +99,7 @@ shrinks, so that at no point the grammar is nowhere.
   language as the model's signature. Two documents for the surface would
   reproduce the drift this decision removes.
 - **Delete `SPECIFICATION.md` now and migrate afterwards.** Rejected: the
-  grammar and the error catalogue live nowhere else yet.
+  grammar and the error catalog live nowhere else yet.
 
 ## Consequences
 

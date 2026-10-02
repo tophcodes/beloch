@@ -27,7 +27,7 @@ so a reader cannot tell the contract from the notes on one realization of it.
 
 `BELOCH.md` is also due to grow by most of `SPECIFICATION.md`: the grammar,
 the keywords, the resolution rules, program structure and the error
-catalogue. One page of that size is hard to navigate.
+catalog. One page of that size is hard to navigate.
 
 ## Decision
 
@@ -51,7 +51,7 @@ bug in the implementation or a gap in the model, never a rule.
 
 **The language may span several pages.** It is divided along its own
 sections, by sort, by write, and with the collected grammar and the error
-catalogue on pages of their own. It is never divided by layer into
+catalog on pages of their own. It is never divided by layer into
 vocabulary, syntax and semantics: each construct keeps its syntax,
 resolution, errors and example together, and its meaning stays in the model.
 
@@ -71,7 +71,7 @@ content must arrive in the language document before `SPECIFICATION.md`
 shrinks, so that at no point the grammar is nowhere.
 
 1. The language document absorbs the grammar, keywords, resolution rules,
-   program structure and error catalogue, section by section, each pointing
+   program structure and error catalog, section by section, each pointing
    at its model statement. The corresponding sections of `SPECIFICATION.md`
    are deleted as they land.
 2. Implementation mechanics worth stating as ceilings move to `KERNEL.md`,

@@ -21,18 +21,18 @@ test("every frame reads edges_faces, one face on a boundary edge and two on a cr
   }
 });
 
-test("a sheet folded in quarters: four nodes in a ring, one edge between neighbours", async () => {
+test("a sheet folded in quarters: four nodes in a ring, one edge between neighbors", async () => {
   const scene = await fixture("fold-quarter-faces.fold");
   const g = faceGraph(scene.steps[scene.steps.length - 1]!.frame);
   expect(g.nodes).toEqual([[0], [1], [2], [3]]);
   expect(g.nodeOf).toEqual([0, 1, 2, 3]);
-  expect(g.nodes.map((_, k) => g.neighbours(k).length)).toEqual([2, 2, 2, 2]);
+  expect(g.nodes.map((_, k) => g.neighbors(k).length)).toEqual([2, 2, 2, 2]);
   for (let a = 0; a < 4; a++) {
-    for (const b of g.neighbours(a)) expect(g.edgesBetween(a, b).length).toBe(1);
+    for (const b of g.neighbors(a)) expect(g.edgesBetween(a, b).length).toBe(1);
     expect(g.edgesBetween(a, a)).toEqual([]);
   }
   // nodes across the ring share no edge
-  const far = [0, 1, 2, 3].find((b) => b !== 0 && !g.neighbours(0).includes(b))!;
+  const far = [0, 1, 2, 3].find((b) => b !== 0 && !g.neighbors(0).includes(b))!;
   expect(g.edgesBetween(0, far)).toEqual([]);
 });
 
@@ -42,8 +42,8 @@ test("faces joined across a J edge are one node; an F edge separates nodes", asy
     const g = faceGraph(frame);
     expect(g.nodes).toEqual([[0, 1], [2]]);
     expect(g.nodeOf).toEqual([0, 0, 1]);
-    expect(g.neighbours(0)).toEqual([1]);
-    expect(g.neighbours(1)).toEqual([0]);
+    expect(g.neighbors(0)).toEqual([1]);
+    expect(g.neighbors(1)).toEqual([0]);
     // the F edge, and not the J edge inside the first node
     expect(g.edgesBetween(0, 1)).toEqual([6]);
     expect(g.edgesBetween(1, 0)).toEqual([6]);

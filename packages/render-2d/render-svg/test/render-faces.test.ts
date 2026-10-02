@@ -26,7 +26,7 @@ test("the flat sheet is one face, with no hinge and no overlap", async () => {
 test("a square folded in half twice is a stack of four, each face on the next", async () => {
   const g = faceGraphs(await fixture("fold-quarter-faces.fold"));
   expect(g.nodes.length).toBe(4);
-  // every two faces overlap, and only the neighbours in the stack are drawn
+  // every two faces overlap, and only the neighbors in the stack are drawn
   expect(g.layers.above.length).toBe(6);
   expect(g.layers.covers.length).toBe(3);
   expect([...g.layers.level].sort()).toEqual([0, 1, 2, 3]);
@@ -86,7 +86,7 @@ test("faces joined by a J edge are one node, named by its first face and standin
   const scene = await fixture("join-edge.fold");
   const g = faceGraphs(scene);
   expect(g.nodes.map((n) => [n.name, n.faces])).toEqual([[1, [1, 2]], [3, [3]]]);
-  // the bar, face 1, is the larger of the two; its centre lies inside the L
+  // the bar, face 1, is the larger of the two; its center lies inside the L
   expect(g.nodes[0]!.at).toEqual([1, 0.6]);
   expect(g.hinges).toEqual([{ nodes: [1, 3], edge: 6, assignment: "F", paper: [[1, 2], [0, 2]] }]);
   const s = renderFaces(scene).toString();

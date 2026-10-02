@@ -941,7 +941,7 @@
           "landing": [ 0.5, 1.0741657386773942 ]
         }
       ],
-      "circle": { "centre": [ 0.3, 0.7 ], "through": [ 0.0, 1.0 ] },
+      "circle": { "center": [ 0.3, 0.7 ], "through": [ 0.0, 1.0 ] },
       "conics": [ { "focus": [ 0.0, 1.0 ], "directrix": [ 1.0, 0.0, 0.5 ] } ]
     },
     {

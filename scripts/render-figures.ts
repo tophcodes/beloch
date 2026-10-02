@@ -177,7 +177,7 @@ export function renderFigure(block: FigureBlock, outDir: string, source: string)
 	if (block.at !== undefined) {
 		statement = labelledStatement(fold, block.at);
 		if (statement === undefined) {
-			entry.error = `figure ${block.id} shows the statement labelled ${block.at}, which its program does not label`;
+			entry.error = `figure ${block.id} shows the statement labeled ${block.at}, which its program does not label`;
 			return entry;
 		}
 	}

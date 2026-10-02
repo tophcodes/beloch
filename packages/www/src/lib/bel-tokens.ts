@@ -6,7 +6,7 @@
  * cm-bel-highlight.ts builds CodeMirror decorations in the browser for the
  * playground editor. They run different runtimes and produce different output,
  * so the one thing they share is this: which capture wins where, and what the
- * class is called. A token the editor colours differently from the card next
+ * class is called. A token the editor colors differently from the card next
  * to it is the failure this file exists to prevent.
  */
 

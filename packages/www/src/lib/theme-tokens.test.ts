@@ -7,7 +7,7 @@ const read = (p: string) => Bun.file(new URL(p, import.meta.url)).text();
 // the renderer has to carry every one of these as a literal and the stylesheet
 // carries it a second time for the surfaces that do resolve var(); nothing but
 // this test holds the two copies equal. `highlightPalette` and `lineStyle` are
-// out: neither is a single colour, and the highlights have their own test
+// out: neither is a single color, and the highlights have their own test
 // below.
 const PAPER_ROLES = [
   "fill",
@@ -55,19 +55,19 @@ test("the paper layer and the renderer's Theme carry the same values", async () 
 });
 
 // The caption of a figure names entities the drawing highlights, and the name
-// has to be printed in the colour the drawing uses. Three surfaces carry the
+// has to be printed in the color the drawing uses. Three surfaces carry the
 // value, because neither the SVG in the PDF nor the typst show rule resolves a
 // variable.
 test("figure highlight captions carry HIGHLIGHT_TEXT on the web and in print", async () => {
   const css = await read("../styles/theme.css");
   const typ = await read("../../../../scripts/typst-compat.typ");
 
-  HIGHLIGHT_TEXT.forEach((colour, i) => {
-    expect(css).toContain(`.figure-hl-${i} { color: light-dark(${colour},`);
-    expect(typ).toContain(`#show raw.where(lang: "figure-hl-${i}"): it => text(fill: rgb("${colour}"))`);
+  HIGHLIGHT_TEXT.forEach((color, i) => {
+    expect(css).toContain(`.figure-hl-${i} { color: light-dark(${color},`);
+    expect(typ).toContain(`#show raw.where(lang: "figure-hl-${i}"): it => text(fill: rgb("${color}"))`);
   });
 
-  // No seventh colour on either side: a caption that asks for one wraps round
+  // No seventh color on either side: a caption that asks for one wraps round
   // to the first, and a stray rule would silently give it its own.
   expect(css).not.toContain(`.figure-hl-${HIGHLIGHT_TEXT.length}`);
   expect(typ).not.toContain(`figure-hl-${HIGHLIGHT_TEXT.length}`);

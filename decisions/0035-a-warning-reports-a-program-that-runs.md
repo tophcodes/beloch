@@ -59,7 +59,7 @@ flag suppresses them.
   `warnings`, each with the message, the hint and the whole span, start and
   end.
 - The playground shows a warning where it would show an error: the word
-  underlined, a row with the message and a row with the hint, in a colour
+  underlined, a row with the message and a row with the hint, in a color
   of its own, and it draws the program's result as usual.
 - A language server reports a warning with the severity Warning and the
   same span, and puts the hint where it puts the hint of an error.
@@ -87,7 +87,7 @@ whatever the selection does without `moving`. A `moving` in a fold without
   record.
 - **A code per warning, and annotations that suppress one.** Under the rule
   above, the author can silence every warning by following its hint. Codes
-  become necessary only for a warning that asks for a judgement, and this
+  become necessary only for a warning that asks for a judgment, and this
   record admits none.
 - **A warning with a message and no hint.** The hint is what the author
   acts on, and the shape of ADR 0028 carries it at no cost.

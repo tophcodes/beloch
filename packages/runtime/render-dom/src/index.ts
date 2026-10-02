@@ -13,7 +13,7 @@ export * from "./svg";
 export * from "./swap";
 
 export interface DrawOptions {
-  // The colours to draw in. Compared by identity, so a host that builds a
+  // The colors to draw in. Compared by identity, so a host that builds a
   // fresh theme object per call redraws on every event; one theme object per
   // style is what lets a hover cost a class change.
   theme: Partial<Theme>;

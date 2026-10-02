@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// fold2svg-compatible CLI: FOLD -> labelled SVG/PNG diagram, on top of
+// fold2svg-compatible CLI: FOLD -> labeled SVG/PNG diagram, on top of
 // @beloch/scene + @beloch/render-svg. Flag parsing ported from
 // tools/fold2svg.mjs:162-184 (minus the rabbit-ear load-check — the OCaml
 // emitter's own tests own FOLD validity).

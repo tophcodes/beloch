@@ -3,8 +3,8 @@
 paper square
 mark (map .a onto .b) as --vmid           ; x = 1/2
 mark (map .a onto .d) as --hmid           ; y = 1/2
-.ctr = --vmid * --hmid               ; sheet centre, (1/2, 1/2)
-; fold the centre onto the bottom edge, crease through corner .b
+.ctr = --vmid * --hmid               ; sheet center, (1/2, 1/2)
+; fold the center onto the bottom edge, crease through corner .b
 fold (map .ctr onto --ab through .b) (toward .a)
 
 ; the landing point (1 − 1/√2, 0) is irrational, and bare --ab (the builtin

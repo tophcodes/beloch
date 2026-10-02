@@ -1125,7 +1125,7 @@ let anchor_realization (g : Fold_state.t) ~(root : int)
   | Ok _ -> Error e_out_of_paper
   | Error _ -> Error e_out_of_paper
 
-(* pool the per-sector runs: any in-bounds realization wins (Ok pool); an empty
+(* pool the per-sector runs: any in-bounds realization wins ([Ok] pool); an empty
    pool surfaces [e_contra] > [e_out_of_paper] > [e_stayer_dead]. Shared by the
    single-valley [collapse_runs] and the pattern-sharing path. *)
 let pool_of_runs

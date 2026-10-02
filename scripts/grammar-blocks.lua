@@ -8,7 +8,7 @@
 -- The rendering is duplicated rather than shared, because the typst writer
 -- needs a different tree: a Code with a class becomes
 -- `#raw(lang:"gr-keyword", "…")`, which preserves internal spacing and carries
--- the class as a language for scripts/typst-compat.typ to colour, and the
+-- the class as a language for scripts/typst-compat.typ to color, and the
 -- writer drops the id of a Code. So a rule becomes a Div of class
 -- grammar-block holding one Para, one Code per span, pandoc.LineBreak between
 -- lines; a nonterminal is wrapped in a Link, which the writer emits as

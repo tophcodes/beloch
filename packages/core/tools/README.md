@@ -33,4 +33,4 @@ its crease lines). Pass `--folded` to draw the **`foldedForm` frame** instead:
 the paper in its folded position. Flat folds stack layers in the same plane, so
 `--folded` shows the silhouette (the individual layers are not separated; a
 proper layered/exploded view is left to the future dedicated render engine). The
-axiom colour legend uses the current verbs (`map onto`, etc.).
+axiom color legend uses the current verbs (`map onto`, etc.).

@@ -34,7 +34,7 @@ review (2026-09-17): the state is a triple, $\lambda$ is a signed function
 on ordered pairs, refinement has its lemma. Section 3 read and accepted for
 now (2026-09-18); the primary source Justin 1997 is still missing. Section 4
 rewritten on review (2026-09-18): every value is a set of paper points, the
-line sort is gone in favour of the material of a table line and the line of
+line sort is gone in favor of the material of a table line and the line of
 a straight bundle, and the former open point on a line value across states
 is closed by that. Section 5 is a draft; it still writes states as pairs
 $(f, \lambda)$ and takes lines rather than bundles as arguments.
@@ -145,7 +145,7 @@ layers, and $\lambda$ says for each pair which is above: $\lambda(A, B) = +1$
 puts $A$ above $B$.
 :::
 
-::: {.figure #fig-flat-state-layers caption="The preliminary base as a flat folded state, cut along `--s` across the diagonal, from `.e` to `.f`. Left, the folded state with the line, and arrows that show the side the section is seen from. Middle, the crease pattern with the paper the line crosses, each piece named by the face of the pattern it lies in and each folded hinge by the two pieces it joins, with `.e`, `.m` and `.f` where they are on the paper and a small circle wherever another layer lands on one of them. Right, the section with the stack pulled apart, the top layer first: each piece is a horizontal strip in its colour, each folded hinge a turn from one strip into the next, each point a dashed line across the stack, and a dot on the layer it belongs to. The path is closed, since the line runs round the point of the base. Between `.m` and `.f` the layers are 1, 6, 5, 9, the quarters of `.a`, `.b`, `.b` and `.c`; between `.e` and `.m` they are 3, 8, 7, 10. The top and the bottom strip run flat across the diagonal at `.m`, from 3 into 1 and from 10 into 9, and the quarters of `.b` and `.d` are folded in half along it." views="side" along="--s" highlight="--s .e .m .f"}
+::: {.figure #fig-flat-state-layers caption="The preliminary base as a flat folded state, cut along `--s` across the diagonal, from `.e` to `.f`. Left, the folded state with the line, and arrows that show the side the section is seen from. Middle, the crease pattern with the paper the line crosses, each piece named by the face of the pattern it lies in and each folded hinge by the two pieces it joins, with `.e`, `.m` and `.f` where they are on the paper and a small circle wherever another layer lands on one of them. Right, the section with the stack pulled apart, the top layer first: each piece is a horizontal strip in its color, each folded hinge a turn from one strip into the next, each point a dashed line across the stack, and a dot on the layer it belongs to. The path is closed, since the line runs round the point of the base. Between `.m` and `.f` the layers are 1, 6, 5, 9, the quarters of `.a`, `.b`, `.b` and `.c`; between `.e` and `.m` they are 3, 8, 7, 10. The top and the bottom strip run flat across the diagonal at `.m`, from 3 into 1 and from 10 into 9, and the quarters of `.b` and `.d` are folded in half along it." views="side" along="--s" highlight="--s .e .m .f"}
 paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd
@@ -279,7 +279,7 @@ refinement are the same state.
 ::: {.definition #def-flap name="flap" uses="def-flat-state def-refinement" defines="term-flap"}
 A *flap* of a state is a maximal set of faces in which any two are joined by
 a chain of hinges of angle $0$. Flaps partition the faces, and they are the
-pieces of paper that lie flat as one: neighbouring faces of angle $0$ share
+pieces of paper that lie flat as one: neighboring faces of angle $0$ share
 their isometry, so on the union of a flap's faces $f$ is one isometry. A
 split of [#def-refinement] adds a hinge of angle $0$ inside a face, so flaps
 are invariant under refinement, which is why the language addresses flaps
@@ -357,13 +357,13 @@ hinge, open away from it.
 :::
 
 ::: {.term #term-tortilla name="tortilla"}
-A face whose image covers a neighbourhood of a point of a folded hinge's
+A face whose image covers a neighborhood of a point of a folded hinge's
 image without that hinge being its own edge.
 :::
 
 ::: {.condition #cond-taco-tortilla name="taco-tortilla condition" uses="def-flat-state cond-order" defines="term-taco term-tortilla"}
 Let $A$ and $B$ be joined by a folded hinge $h$, and let $C$ be a face whose
-image contains a neighbourhood of an interior point of $f(h)$, so that $C$
+image contains a neighborhood of an interior point of $f(h)$, so that $C$
 overlaps both $A$ and $B$ there. Then $C$ lies on the same side of both:
 $\lambda(A, C) = \lambda(B, C)$. A face cannot lie between the two sides of a
 fold.
@@ -760,7 +760,7 @@ mark (map .a onto .b) as --ef
 fold (map .d onto --ef through .a) as --s
 :::
 
-::: {.figure #fig-toward-boundary caption="`map .d onto --ef through .p`, with `.p` a quarter of the way along `--bd` from `.d`: `.d` lands at the centre under one candidate and on the top edge under the other. `toward` keeps the candidate whose landing lies nearer, so the points as near to both landings, dotted, cut the paper in two, and each panel shades the part where a `toward` point selects its candidate. `.c` lies above the line; a point on it selects nothing." views="candidates" at="choose"}
+::: {.figure #fig-toward-boundary caption="`map .d onto --ef through .p`, with `.p` a quarter of the way along `--bd` from `.d`: `.d` lands at the center under one candidate and on the top edge under the other. `toward` keeps the candidate whose landing lies nearer, so the points as near to both landings, dotted, cut the paper in two, and each panel shades the part where a `toward` point selects its candidate. `.c` lies above the line; a point on it selects nothing." views="candidates" at="choose"}
 paper square
 mark (map .a onto .b) as --ef
 mark (through .b .d) as --bd
@@ -769,7 +769,7 @@ mark (through .b .d) as --bd
 fold (map .d onto --ef through .p) (.d toward .c) as --s
 :::
 
-::: {.figure #fig-toward-stages caption="The program of [#fig-toward-boundary], one row per stage of [#def-selection]; the fold names no heading, so stage 1 is skipped. Both candidates cross the paper and both keep the side of `.c`, so the side that folds over carries `.d`, and each fold carries `.d` onto `--ef`. The landing stage decides: `.d` lands on the top edge under one candidate and at the centre under the other, and the top edge lies nearer `.c`." views="stages" at="choose"}
+::: {.figure #fig-toward-stages caption="The program of [#fig-toward-boundary], one row per stage of [#def-selection]; the fold names no heading, so stage 1 is skipped. Both candidates cross the paper and both keep the side of `.c`, so the side that folds over carries `.d`, and each fold carries `.d` onto `--ef`. The landing stage decides: `.d` lands on the top edge under one candidate and at the center under the other, and the top edge lies nearer `.c`." views="stages" at="choose"}
 paper square
 mark (map .a onto .b) as --ef
 mark (through .b .d) as --bd
@@ -921,7 +921,7 @@ undefined in three cases: the intersection is empty, it holds two or more
 points, or it contains a segment, where the bundles share a stretch of paper.
 :::
 
-::: {.figure #fig-meet caption="`--h` and `--v` each lie on two paper lines after the reverse folds, a scar and its mirror image, and have one point in common, the centre `.o`." views="cp folded" highlight="--h --v .o"}
+::: {.figure #fig-meet caption="`--h` and `--v` each lie on two paper lines after the reverse folds, a scar and its mirror image, and have one point in common, the center `.o`." views="cp folded" highlight="--h --v .o"}
 paper square
 fold (map .a onto .c) as --bd
 reverse (map .b onto .c) as --h
@@ -1374,7 +1374,7 @@ reverse (map .b onto .c) as --h
 reverse (map .d onto .c) as --v
 :::
 
-::: {.figure #fig-reverse-op caption="The terms of `--h` in [#fig-reverse] on the triangle it reads: the axis dashed, the spine on `--bd`, the two blocks of the tip hatched in two directions below the axis, where they lie on one another, and their bodies above it, each block and its body in one colour. On the right the state after the reverse fold." views="op" at="h"}
+::: {.figure #fig-reverse-op caption="The terms of `--h` in [#fig-reverse] on the triangle it reads: the axis dashed, the spine on `--bd`, the two blocks of the tip hatched in two directions below the axis, where they lie on one another, and their bodies above it, each block and its body in one color. On the right the state after the reverse fold." views="op" at="h"}
 paper square
 fold (map .a onto .c) as --bd
 @label h
@@ -1545,7 +1545,7 @@ the tip is every piece outside the stayer's wedge. Where a face of $T$ is
 hinged to a face in the stayer's wedge off the rays, the paths disagree and
 the write is undefined, as for every reflection.
 
-::: {.figure #fig-flatten caption="The preliminary base by one collapse at the centre: six rays fold, the diagonal through `.a` and `.c` stays flat, and the ordering constraint puts the a-quarter in front of the b-taco." views="cp folded" highlight=".a .c"}
+::: {.figure #fig-flatten caption="The preliminary base by one collapse at the center: six rays fold, the diagonal through `.a` and `.c` stays flat, and the ordering constraint puts the a-quarter in front of the b-taco." views="cp folded" highlight=".a .c"}
 paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd
@@ -1556,7 +1556,7 @@ mark (map --da onto --bc) as --v
 flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
 :::
 
-::: {.figure #fig-flatten-op caption="The terms of the collapse in [#fig-flatten]: the vertex at the centre, the six rays, and the stayer, the quarter between the rays on `--h` and `--v` that holds the diagonal to `.c`. Every other sector moves by the reflections across the rays between it and the stayer; on the right the state after the collapse." views="op" at="collapse"}
+::: {.figure #fig-flatten-op caption="The terms of the collapse in [#fig-flatten]: the vertex at the center, the six rays, and the stayer, the quarter between the rays on `--h` and `--v` that holds the diagonal to `.c`. Every other sector moves by the reflections across the rays between it and the stayer; on the right the state after the collapse." views="op" at="collapse"}
 paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd

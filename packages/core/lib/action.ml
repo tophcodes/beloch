@@ -294,7 +294,7 @@ let eval_mark (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
         | [] -> Error.fail span "the mark's line does not cross the paper"
         | chords -> record_pieces (List.map piece chords))
   in
-  (* Behaviour 4: dispatch a partial extent's classification. Under the
+  (* Behavior 4: dispatch a partial extent's classification. Under the
      material-layer model NO mark subdivides: [CSubdivide] (a full chord
      between two boundary points) records exactly like [CRecord]. Only
      `Ast.Between` can ever yield [CCrossesFold]. *)

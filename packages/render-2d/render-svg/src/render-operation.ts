@@ -155,7 +155,7 @@ function sectorOnFaces(o: Vec2, a: Vec2, b: Vec2, faces: Vec2[][]): Region {
 // The detail of one candidate on the state before it: a reverse fold's spine,
 // halves and bodies, a flatten's rays and stayer. The two halves of a tip lie
 // on one another, as do the two bodies, so each pair is hatched in two
-// directions, a half and its body in one colour.
+// directions, a half and its body in one color.
 export function candidateNodes(entry: WriteEntry, c: WriteCandidate, faces: Vec2[][], lay: Layout,
   theme: Theme): SvgNode[] {
   const nodes: SvgNode[] = [];

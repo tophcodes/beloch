@@ -15,7 +15,7 @@ test("parses bisect-a: CP frame, provenance, named points/lines, creases", async
   expect(scene.cp.edgesProvenance[3]?.axiom).toBe("axiom2");
   expect(scene.cp.edgesProvenance[3]?.name).toBe("v");
   // named constructions
-  // Beloch has no line sign convention (see lib/geom.ml): coeffs are whatever
+  // Beloch has no line sign convention (see lib/geom.ml): `coeffs` are whatever
   // construction order produces. This "v" line comes from record_full's
   // extreme_pair(a,b) over the face clip endpoints, which orders b=(0.5,1)
   // before a=(0.5,0) here, giving [-1,0,-0.5] (same line as [1,0,0.5], sign
@@ -151,7 +151,7 @@ test("malformed input throws SceneError naming the field", () => {
 
 // Task 8 (mark/fold slice 2): beloch:marks — non-subdividing record marks.
 // Fixture generated via `dune exec bin/main.exe -- fold` on a program that
-// records exactly one seg mark (a between-clip stub dangling mid-face) and
+// records exactly one `seg` mark (a between-clip stub dangling mid-face) and
 // one point mark (an `at .p` reference on --vm); see
 // render-svg/test/marks.test.ts for the full .bel source.
 const fixture = (p: string) =>
