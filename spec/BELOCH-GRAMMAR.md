@@ -59,9 +59,9 @@ flap_operand  := point_operand | line_operand | "#[" point_operand+ "]"
 
 ```grammar
 write_stmt := verb item* [ "as" CREASE_NAME [ "!" ] | "into" CREASE_NAME ]
-verb       := "mark" | "fold" | "reverse" | "flatten" | "flip"
+verb       := "mark" | "fold" | "unfold" | "reverse" | "flatten" | "flip"
 item       := "(" item_body ")"
-item_body  := fold_item | reverse_item | mark_item | flatten_item
+item_body  := fold_item | unfold_item | reverse_item | mark_item | flatten_item
 ```
 
 ```grammar
@@ -70,6 +70,10 @@ fold_item    := axis
               | "up" "to" flap_operand
               | "mountain"
               | ( "over" | "under" ) flap_operand
+unfold_item  := line_operand
+              | [ toward_subject ] "toward" ( point_operand | line_operand )
+              | "moving" flap_operand [ "up" | "down" ]
+              | "up" "to" flap_operand
 reverse_item := axis
               | side_item
               | "outside"
