@@ -58,21 +58,16 @@ test("paper that runs flat across a hinge is one strip, and every other hinge is
   expect(turns.length).toBe(6);
 });
 
-test("each piece is named by its face of the crease pattern, and the crease pattern carries the same names", async () => {
+test("the parts are numbered 1 to n in the order of the paper along the cut, and the crease pattern carries the same numbers", async () => {
   const scene = await fixture(1);
   const { strips } = sideSection(scene, "s");
-  const parts = strips.flatMap((s) => s.pieces.flatMap((p) => p.parts));
-  // the line crosses each of the ten faces of the pattern it meets once
-  expect(new Set(parts.map((r) => r.name)).size).toBe(parts.length);
-  // a part's paper lies in the face it is named by
-  for (const r of parts) {
-    const face = scene.cp.facesVertices[r.name - 1]!.map((i) => scene.cp.vertices[i]!);
-    const [mx, my] = [(r.paper[0][0] + r.paper[1][0]) / 2, (r.paper[0][1] + r.paper[1][1]) / 2];
-    const sides = face.map(([ax, ay], k) => {
-      const [bx, by] = face[(k + 1) % face.length]!;
-      return Math.sign((bx - ax) * (my - ay) - (by - ay) * (mx - ax));
-    });
-    expect(sides.every((z) => z >= 0) || sides.every((z) => z <= 0)).toBe(true);
+  const parts = strips.flatMap((s) => s.pieces.flatMap((p) => p.parts)).sort((r, s) => r.name - s.name);
+  expect(parts.map((r) => r.name)).toEqual(parts.map((_, i) => i + 1));
+  // the section of the base is one closed path on the paper: each part starts
+  // where the one numbered before it ends
+  const same = (u: number[], v: number[]) => Math.hypot(u[0]! - v[0]!, u[1]! - v[1]!) < 1e-7;
+  for (let i = 1; i < parts.length; i++) {
+    expect(parts[i]!.paper.some((e) => parts[i - 1]!.paper.some((f) => same(e, f)))).toBe(true);
   }
   const svg = renderSide(scene, { along: "s" }).toString();
   for (const r of parts) {
@@ -164,20 +159,16 @@ const reverse = async () =>
 const layers = (strips: Strip[]) =>
   [...strips].sort((p, q) => p.level - q.level).map((s) => s.pieces.flatMap((p) => p.parts.map((r) => r.name)).join("+"));
 
-test("a piece keeps its name before and after a write, and each hinge is named by the pieces it joins", async () => {
+test("the reverse tucks the lower halves between the upper ones, and no hinge is named", async () => {
   const scene = await reverse();
   const before = sideSection(scene, "k", "1"), after = sideSection(scene, "k", "2");
-  // the reverse leaves the upper halves where they were and tucks the lower
-  // halves between them
+  // step 1: the top edge of the sheet, numbered from .d; step 2 adds the
+  // bottom edge, numbered first since it starts at .a
   expect(layers(before.strips)).toEqual(["2", "1"]);
-  expect(layers(after.strips)).toEqual(["2", "4", "3", "1"]);
-  expect(before.turns.map((u) => u.name)).toEqual(["1|2"]);
-  expect(after.turns.map((u) => u.name).sort()).toEqual(["1|2", "3|4"]);
-  // hinge 1|2 is the same place on the paper in both
-  expect(before.turns[0]!.paper).toEqual(after.turns.find((u) => u.name === "1|2")!.paper);
-  // both are named in the section and in the crease pattern
-  const svg = renderSide(scene, { along: "k" }).toString();
-  for (const n of ["1|2", "3|4"]) expect(svg.split(`data-kind="hinge" data-name="${n}"`).length - 1).toBe(2);
+  expect(layers(after.strips)).toEqual(["4", "2", "1", "3"]);
+  expect(before.turns.length).toBe(1);
+  expect(after.turns.length).toBe(2);
+  expect(renderSide(scene, { along: "k" }).toString()).not.toContain(`data-kind="hinge"`);
 });
 
 test("a line along an edge of the state is seen from outside that edge", async () => {
@@ -250,21 +241,75 @@ function drawn(svg: string, level: number) {
 test("two pieces of a layer that meet without a hinge are drawn with a gap between them", async () => {
   const svg = renderSide(await cupboard(), { along: "k" }).toString();
   const top = drawn(svg, 0), bottom = drawn(svg, 1);
-  // the flaps 3 and 4 on top: apart, and no tick between them
-  expect(top.lines.map((l) => l.name)).toEqual([3, 4]);
+  // the flaps 1 and 4 on top: apart, and no tick between them
+  expect(top.lines.map((l) => l.name)).toEqual([1, 4]);
   expect(top.lines[1]!.x1 - top.lines[0]!.x2).toBeGreaterThan(6);
   // the sheet under them runs on across --m, with a tick there
-  expect(bottom.lines.map((l) => l.name)).toEqual([1, 2]);
+  expect(bottom.lines.map((l) => l.name)).toEqual([2, 3]);
   expect(bottom.lines[1]!.x1).toBe(bottom.lines[0]!.x2);
   expect(bottom.ticks).toEqual([bottom.lines[1]!.x1]);
 });
 
 test("a piece a later crease splits keeps its tick", async () => {
-  // the flat sheet before the first fold: one piece that --d splits into 2
-  // and 1, drawn as one run with a tick between them
+  // the flat sheet before the first fold: one piece that --d splits into 1
+  // and 2, drawn as one run with a tick between them
   const svg = renderSide(await reverse(), { along: "k", step: "0" }).toString();
   const { lines, ticks } = drawn(svg, 0);
-  expect(lines.map((l) => l.name)).toEqual([2, 1]);
+  expect(lines.map((l) => l.name)).toEqual([1, 2]);
   expect(lines[1]!.x1).toBe(lines[0]!.x2);
   expect(ticks).toEqual([lines[1]!.x1]);
+});
+
+test("two programs that fold the same flaps in another order number the layers alike", async () => {
+  // the swapped cupboard folds --bc to the middle before --da, so the crease
+  // pattern holds the two flaps' faces in the other order
+  const swapped = parseFold(await Bun.file(new URL("./fixtures/side-cupboard-swapped.fold", import.meta.url)).text());
+  const scene = await cupboard();
+  const flaps = (s: typeof scene) => s.cp.facesVertices.map((f) => f.map((i) => s.cp.vertices[i]![0]))
+    .map((xs) => xs.reduce((m, x) => m + x, 0) / xs.length);
+  expect(flaps(swapped)).not.toEqual(flaps(scene));
+  // each strip by its level and its numbers
+  const drawnAs = (s: typeof scene) => sideSection(s, "k").strips
+    .map((st) => `${st.level}: ${st.pieces.flatMap((p) => p.parts.map((r) => r.name)).join("+")}`).sort();
+  expect(drawnAs(swapped)).toEqual(drawnAs(scene));
+});
+
+// Two marks 1/64 of the sheet apart, and a line across both:
+//
+//   paper square
+//   .p = free on --ab from .a at 1/2
+//   .q = free on --ab from .a at 33/64
+//   mark (perp --ab through .p) as --u
+//   mark (perp --ab through .q) as --w
+//   .e = free on --da from .a at 1/2
+//   --k = (perp --da through .e)
+test("the numbers of one level stand apart where two faces of the crease pattern lie close together", async () => {
+  const scene = parseFold(await Bun.file(new URL("./fixtures/side-close.fold", import.meta.url)).text());
+  const svg = renderSide(scene, { along: "k" }).toString();
+  const numbers = [...svg.matchAll(/data-kind="layer-name" data-name="(\d+)" x="([\d.]+)"/g)]
+    .map((m) => ({ name: m[1]!, x: Number(m[2]) })).sort((m, n) => m.x - n.x);
+  expect(numbers.map((m) => m.name)).toEqual(["1", "2", "3"]);
+  // the part between the marks is narrower than its number
+  const lines = drawn(svg, 0).lines;
+  expect(lines[1]!.x2 - lines[1]!.x1).toBeLessThan(8);
+  // each number starts past the end of the one before it, at 8 px a digit
+  for (let i = 1; i < numbers.length; i++) {
+    expect(numbers[i]!.x - numbers[i - 1]!.x).toBeGreaterThanOrEqual(8 * numbers[i - 1]!.name.length);
+  }
+});
+
+// A sheet with a mark down its middle, folded in half across it, cut along
+// the mark:
+//
+//   paper square
+//   mark (map --da onto --bc) as --m
+//   fold (map --ab onto --cd)
+test("a line along a crease draws each layer once", async () => {
+  const scene = parseFold(await Bun.file(new URL("./fixtures/side-along.fold", import.meta.url)).text());
+  const { strips, turns } = sideSection(scene, "m");
+  // the faces on both sides of --m touch the line; one side of each layer is
+  // drawn, the two layers joined by the fold
+  expect(strips.length).toBe(2);
+  expect(strips.map((s) => s.level).sort()).toEqual([0, 1]);
+  expect(turns.length).toBe(1);
 });

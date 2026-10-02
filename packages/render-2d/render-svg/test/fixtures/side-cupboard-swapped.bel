@@ -1,0 +1,8 @@
+@author "Claude (Anthropic)"
+paper square
+mark (map --da onto --bc) as --m
+.s = --m * --ab
+.t = free on --m from .s at 1/4
+fold (map --bc onto --m)
+fold (map --da onto --m)
+--k = (perp --m through .t)
