@@ -147,7 +147,11 @@
             pkgs.tree-sitter
             # prose lint (.vale.ini, scripts/prose.sh)
             pkgs.vale
-          ];
+            # kernel profile (packages/core/bench/profile.sh)
+            pkgs.inferno
+            pkgs.graphviz
+          ]
+          ++ pkgs.lib.optionals pkgs.stdenv.isLinux [pkgs.perf];
           # `check`, `check-all` and `prose` run the script of that name in scripts/.
           # Shim `beloch` and `beloch-render` onto PATH from this checkout:
           # `beloch` runs the freshly built binary (not a stale Nix-store
