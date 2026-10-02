@@ -90,11 +90,101 @@ test("a split step's parts take the sentences of their own folds", async () => {
   expect(ps.map((p) => p.text)).toEqual(["Fold in half.", "Fold in half again.", null]);
 });
 
+test("a fold that lays the moving paper on top is a valley fold", async () => {
+  const s = await scene("kite");
+  const m = foldMotion(s, s.statements[1]!);
+  expect(m.kind).toBe("valley");
+  expect(m.reverse).toBeNull();
+});
+
+// The fixtures fold the kite base in half along --ac, a narrow flap with its
+// tip at .a and the folded edge on --ac, and reverse the tip along a crease
+// from (1/4, 1/4) on the folded edge to the open edges.
+test("a fold that tucks the tip between the layers is an inside reverse fold", async () => {
+  const s = await scene("inside-reverse");
+  const m = foldMotion(s, s.writes.at(-1)!);
+  expect(m.kind).toBe("inside-reverse");
+  // the crease x = 1/4 reflects the tip .a onto (1/2, 0)
+  near(m.tail, [0, 0]);
+  near(m.head, [0.5, 0]);
+  const r = m.reverse!;
+  near(r.at, [0.25, 0.25]);
+  near(r.open, [0.25, (Math.SQRT2 - 1) / 4]);
+  // the folded edge is the fold along --ac, its end at the tip second
+  for (const [x, y] of r.edge) expect(x).toBeCloseTo(y, 9);
+  near(r.edge[1], [0, 0]);
+  expect(r.near.length).toBeGreaterThan(0);
+  for (const [p, q] of r.near) for (const [x] of [p, q]) expect(x).toBeCloseTo(0.25, 9);
+  // the layers of the tip lie on each other, so nothing of the far one shows
+  expect(r.far).toEqual([]);
+});
+
+test("a fold that wraps the tip around the layers is an outside reverse fold", async () => {
+  const s = await scene("outside-reverse");
+  const m = foldMotion(s, s.writes.at(-1)!);
+  expect(m.kind).toBe("outside-reverse");
+  near(m.reverse!.at, [0.25, 0.25]);
+  near(m.reverse!.edge[1], [0, 0]);
+  near(m.tail, [0, 0]);
+});
+
+// The drawn reverse fold of a fixture: its panel's svg, and the ends of the
+// crease line on the near layer, the one at the folded edge first. Both
+// fixtures turn the folded edge up the page, so that end lies nearer the tip
+// of the push arrow across the page.
+async function reversePanel(name: string, line: string) {
+  const s = await scene(name);
+  const panel = panels(s).panels.find((p) => p.writes.some((w) => w.index === s.writes.at(-1)!.index))!;
+  const svg = panelSvg(renderYr(s).doc.toString(), panel.number);
+  const [x1, y1, x2, y2] = svg.match(new RegExp(`data-kind="${line}" data-statement="\\d+" x1="([\\d.-]+)" y1="([\\d.-]+)" x2="([\\d.-]+)" y2="([\\d.-]+)"`))!.slice(1).map(Number);
+  const push = svg.match(/data-kind="push-arrow" points="(-?[\d.]+),(-?[\d.]+)/)!.slice(1).map(Number) as Vec2;
+  const ends: Vec2[] = [[x1!, y1!], [x2!, y2!]];
+  const d = (p: Vec2) => Math.abs(p[0] - push[0]);
+  const [at, open] = d(ends[0]!) < d(ends[1]!) ? ends : [ends[1]!, ends[0]!];
+  return { svg, at: at!, open: open!, push };
+}
+// The points of every stem path of the arrow of kind `kind`.
+const pathPoints = (svg: string, kind: string): Vec2[] => {
+  const group = svg.slice(svg.indexOf(`data-kind="${kind}"`)).split("</g>")[0]!;
+  return [...group.matchAll(/<path d="([^"]+)"/g)].flatMap((d) =>
+    [...d[1]!.matchAll(/(-?[\d.]+),(-?[\d.]+)/g)].map((m): Vec2 => [Number(m[1]), Number(m[2])]));
+};
+
+test("an inside reverse fold draws a mountain line, a valley line beyond the edge, a push arrow and a valley arrow", async () => {
+  const { svg, at, open, push } = await reversePanel("inside-reverse", "mountain-line");
+  expect(count(svg, "mountain-line")).toBeGreaterThan(0);
+  expect(count(svg, "valley-line")).toBeGreaterThan(0);
+  expect(count(svg, "push-arrow")).toBe(1);
+  expect(count(svg, "valley-arrow")).toBe(1);
+  expect(count(svg, "mountain-arrow")).toBe(0);
+  // the push arrow comes from the side away from the open edges; the arrow of
+  // motion bends away from the crease
+  expect(Math.sign(push[0] - at[0])).toBe(-Math.sign(open[0] - at[0]));
+  const [tail, control, tip] = pathPoints(svg, "valley-arrow");
+  const side = (p: Vec2) => Math.sign((tip![0] - tail![0]) * (p[1] - tail![1]) - (tip![1] - tail![1]) * (p[0] - tail![0]));
+  expect(side(control!)).toBe(-side([(at[0] + open[0]) / 2, (at[1] + open[1]) / 2]));
+});
+
+test("an outside reverse fold draws a push arrow and two arrows that wrap around the flap", async () => {
+  const { svg, at, open } = await reversePanel("outside-reverse", "valley-line");
+  expect(count(svg, "valley-line")).toBeGreaterThan(0);
+  expect(count(svg, "push-arrow")).toBe(1);
+  expect(count(svg, "valley-arrow")).toBe(1);
+  expect(count(svg, "mountain-arrow")).toBe(1);
+  // each loop reaches beyond the open edges and beyond the folded edge
+  const [lo, hi] = [Math.min(at[0], open[0]), Math.max(at[0], open[0])];
+  for (const kind of ["valley-arrow", "mountain-arrow"]) {
+    const xs = pathPoints(svg, kind).map((p) => p[0]);
+    expect(Math.min(...xs)).toBeLessThan(lo);
+    expect(Math.max(...xs)).toBeGreaterThan(hi);
+  }
+});
+
 // The drawings beside the programs are what the pull request shows; this
 // keeps them equal to what the library draws. To write them again:
-//   for f in kite book-twice rotate shrink; do bun cli/bin/fold2svg.ts yr/test/fixtures/$f.fold yr/test/fixtures/$f-yr.svg --view yr; done
+//   for f in kite book-twice rotate shrink inside-reverse outside-reverse; do bun cli/bin/fold2svg.ts yr/test/fixtures/$f.fold yr/test/fixtures/$f-yr.svg --view yr; done
 test("the committed drawings are the library's output", async () => {
-  for (const name of ["kite", "book-twice", "rotate", "shrink"]) {
+  for (const name of ["kite", "book-twice", "rotate", "shrink", "inside-reverse", "outside-reverse"]) {
     const drawn = renderYr(await scene(name)).doc.toString();
     const committed = await Bun.file(new URL(`./fixtures/${name}-yr.svg`, import.meta.url)).text();
     expect(drawn).toBe(committed);

@@ -9,9 +9,12 @@ import {
 } from "@beloch/render-svg";
 import type { Layout, LineStyle, SvgDoc, SvgNode, Theme } from "@beloch/render-svg";
 import { existingCreaseSegments } from "./creases";
-import { existingCrease, foldAndUnfoldArrow, valleyArrow, valleyLine } from "./draw";
+import {
+  existingCrease, foldAndUnfoldArrow, mountainLine, pushArrow, valleyArrow, valleyLine, wrapArrows,
+} from "./draw";
 import type { Ink } from "./draw";
 import { foldMotion } from "./motion";
+import type { FoldMotion } from "./motion";
 import { panels } from "./panels";
 import type { Panel } from "./panels";
 import { rotationSymbol, turnFraction } from "./rotation";
@@ -78,6 +81,61 @@ function markArrow(outline: Vec2[], [a, b]: [Vec2, Vec2]): [Vec2, Vec2] {
   return [left, [left[0] + (2 * d * dy) / L, left[1] - (2 * d * dx) / L]];
 }
 
+// How far the valley line of an inside reverse fold runs beyond the edge and
+// the gap between the push arrow and the edge it points at, in page pixels;
+// and where the push arrow of an inside reverse fold points, as a fraction of
+// the folded edge from the crease to the tip.
+const BEYOND = 36, PUSH_GAP = 6, PUSH_ALONG = 0.4;
+
+const unit = (from: Vec2, to: Vec2): Vec2 => {
+  const dx = to[0] - from[0], dy = to[1] - from[1], l = Math.hypot(dx, dy);
+  return [dx / l, dy / l];
+};
+
+// The lines and arrows of a reverse fold [lang1991conventions, Parts IV and
+// V; lang2011secrets, Figs. 2.21 and 2.22]. Both draw a push arrow that
+// crosses the folded edge square, from outside the paper. Inside: the
+// mountain line on the near layer, the valley line on the far layer where it
+// shows and beyond the edge where the layers open, the push arrow on the
+// folded edge between the crease and the tip, and a valley arrow from the tip
+// to where it lands, bent away from the crease so that its stem stays off the
+// paper. Outside: the valley line on the near layer, the mountain line on the
+// far layer where it shows, the push arrow where the crease meets the folded
+// edge, and the two loops of `wrapArrows` around the flap.
+function reverseOverlays(motion: FoldMotion, statement: number, view: PanelView, ink: Ink): SvgNode[] {
+  const r = motion.reverse!;
+  const px = (segs: [Vec2, Vec2][]) => segs.map(([p, q]): [Vec2, Vec2] => [view.px(p), view.px(q)]);
+  const near = px(r.near), far = px(r.far);
+  const at = view.px(r.at), open = view.px(r.open), tipEnd = view.px(r.edge[1]);
+  const along = unit(view.px(r.edge[0]), tipEnd);
+  // the normal of the folded edge, toward the open edges
+  let n: Vec2 = [-along[1], along[0]];
+  if (n[0] * (open[0] - at[0]) + n[1] * (open[1] - at[1]) < 0) n = [-n[0], -n[1]];
+  const push = (p: Vec2) => pushArrow([p[0] - n[0] * PUSH_GAP, p[1] - n[1] * PUSH_GAP], n, ink);
+
+  if (motion.kind === "outside-reverse") {
+    const width = (open[0] - at[0]) * n[0] + (open[1] - at[1]) * n[1];
+    return [
+      ...near.map((s) => valleyLine(s, statement, ink)),
+      ...far.map((s) => mountainLine(s, statement, ink)),
+      push(at),
+      ...wrapArrows([at[0] + n[0] * width, at[1] + n[1] * width], at, unit(at, tipEnd), ink),
+    ];
+  }
+  const out = unit(at, open);
+  const beyond: [Vec2, Vec2] = [open, [open[0] + out[0] * BEYOND, open[1] + out[1] * BEYOND]];
+  const pushAt: Vec2 = [at[0] + (tipEnd[0] - at[0]) * PUSH_ALONG, at[1] + (tipEnd[1] - at[1]) * PUSH_ALONG];
+  const tail = view.px(motion.tail), head = view.px(motion.head);
+  const crease = mid(near) ?? at;
+  const away: Vec2 = [tail[0] + head[0] - crease[0], tail[1] + head[1] - crease[1]];
+  return [
+    ...near.map((s) => mountainLine(s, statement, ink)),
+    ...[...far, beyond].map((s) => valleyLine(s, statement, ink)),
+    push(pushAt),
+    valleyArrow(tail, head, away, ink),
+  ];
+}
+
 function overlays(scene: FoldScene, panel: Panel, view: PanelView, ink: Ink): SvgNode[] {
   const out: SvgNode[] = [];
   const toPx = (segs: [Vec2, Vec2][]) => segs.map(([p, q]): [Vec2, Vec2] => [view.px(p), view.px(q)]);
@@ -92,6 +150,10 @@ function overlays(scene: FoldScene, panel: Panel, view: PanelView, ink: Ink): Sv
   for (const w of panel.writes) {
     if (w.kind === "fold") {
       const motion = foldMotion(scene, w);
+      if (motion.reverse) {
+        out.push(...reverseOverlays(motion, w.index, view, ink));
+        continue;
+      }
       const hinge = toPx(motion.hinge);
       for (const s of hinge) out.push(valleyLine(s, w.index, ink));
       out.push(valleyArrow(view.px(motion.tail), view.px(motion.head), mid(hinge), ink));

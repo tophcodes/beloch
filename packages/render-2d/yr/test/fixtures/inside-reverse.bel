@@ -1,0 +1,24 @@
+@author "Claude (Anthropic)"
+; The kite base folded in half along its axis, a narrow flap, then its tip
+; inside-reverse-folded between the layers.
+
+paper square
+
+@orient .c .a up
+@step "Fold in half along the diagonal and unfold."
+mark (through .a .c) as --ac
+
+@step "Fold both lower edges to the center line."
+fold (map --da onto --ac) as --l
+fold (map --ab onto --ac) as --r
+
+.q = free on --cd from .c at 1/4
+@step "Fold in half."
+fold (--ac) (moving .q)
+
+.s = free on --ac from .a at 1/4
+.e = free on --r from .a at 1/4
+@step "Inside-reverse-fold the tip."
+reverse (through .s .e) (moving .a)
+
+@say "Done."
