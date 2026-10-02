@@ -89,6 +89,7 @@ and program_token (buf : Sedlexing.lexbuf) : token =
   | "fold" -> FOLD_KW
   | "flip" -> FLIP
   | "reverse" -> REVERSE
+  | "unfold" -> UNFOLD
   | "outside" -> OUTSIDE
   | "def" -> DEF
   | "apply" -> APPLY

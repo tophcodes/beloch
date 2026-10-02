@@ -1141,11 +1141,11 @@ angle $\pm\pi$. For a folded hinge, $f|_B = f|_A \circ r$ and
 $f'|_A = f|_A \circ r = f|_B$: angle $0$. $\square$
 :::
 
-The lemma is why the model needs no unfold: reflecting a block back across
-a folded hinge returns that hinge to angle $0$, and the crease is then a flat
-hinge that refinement forgets. What survives is the crease value, which a
-later write can fold along again. Whether the language offers such a write
-is its decision.
+The lemma is why an unfold needs no construction of its own: reflecting a
+block back across a folded hinge returns that hinge to angle $0$, and the
+crease is then a flat hinge that refinement forgets. What survives is the
+crease value, which a later write can fold along again. The language offers
+the write as `unfold` ([#def-unfold]).
 
 ::: {.definition #def-fold name="fold" uses="def-write def-reflection def-flap def-score def-line" defines="term-anchor term-depth"}
 The write `fold` takes a table line $\ell$, a side $H$ of it, a *depth*
@@ -1188,7 +1188,10 @@ names none either; both are outside the domain. `mountain` is the placement
 a finger pressing a crease through the stack takes it. With $\delta$ it is
 the flap $\delta$, the layers outward of it, and every layer joined to
 those by a hinge off the axis, folded or flat: leaving such a layer behind
-would tear the paper, so the closure takes it along.
+would tear the paper, so the closure takes it along. A line with all of the paper on
+one side of it is outside the domain the language gives `fold`: without
+$\delta$ every layer would move and no hinge would change. `unfold`
+([#def-unfold]) turns some of the layers over such a line.
 
 ::: {.figure #fig-fold-default caption="`--f` folds the corner through both layers: without `up to` the moving set is every layer on the side of `.b`. The crease reads valley on the face-up layer and mountain on the face-down one." views="cp folded" highlight="--f .b"}
 paper square
@@ -1267,6 +1270,54 @@ taco conditions need the case analysis at a crease image: a new taco on
 $\ell$ has its moving side outside its stationary side, and an old taco or
 tortilla lies wholly in $M$ or wholly outside it by outward closure and
 the closure under hinges off the axis.
+:::
+
+::: {.definition #def-unfold name="unfold" uses="def-write def-fold def-reflection def-flap lem-toggle"}
+The write `unfold` takes a table line $\ell$, a side $H$ of it, a placement
+$\pi$ that is *top* or *bottom*, a depth flap $\delta$ or none, and a
+staying flap $\sigma$ or none, at least one of the two given, each with
+material in $H$. Score $\ell$ and call the faces lying in $H$ the
+candidates. With $\delta$, the moving set $M$ is the moving set
+[#def-fold] gives for $\ell$, $H$, $\delta$ and $\pi$. With $\sigma$ alone,
+let $S$ be the least set of candidates that contains the faces of $\sigma$
+in $H$ and is closed under the hinges off the axis and under inward closure:
+a candidate that lies below a face of $S$ is in $S$ for *top*, one that lies
+above a face of $S$ for *bottom*. Then $M$ is every candidate outside $S$.
+
+The value of the write is the reflection of the single block $(M, \pi)$. It
+is defined when $M$ contains no face of $\sigma$, when every hinge on $\ell$
+between a face of $M$ and a stationary face is folded and at least one
+exists, and when the reflection is a state.
+:::
+
+::: {.corollary #cor-unfold-opens name="an unfold opens and folds nothing" uses="def-unfold lem-toggle cond-hinge-closure"}
+In the value of an unfold, every hinge on $\ell$ between a face of $M$ and a
+stationary face has angle $0$, and every other hinge keeps its angle.
+
+*Proof.* By [#lem-toggle] a hinge on $\ell$ between a moving and a
+stationary face changes between $0$ and $\pm\pi$, and the domain asks each
+of them to be folded, so each becomes flat. A hinge between two moving or
+two stationary faces keeps its angle by the same lemma. A hinge off $\ell$
+between a moving and a stationary face fails hinge closure
+([#cond-hinge-closure]), so the reflection is no state there. $\square$
+:::
+
+The language takes the side $H$ from the point of the `moving` item, else
+from the flap `up to` names, else from the point of the `toward` item; `up
+to` names $\delta$, else `moving` does, and `toward` names $\sigma$.
+`mountain` is the placement *bottom* and the default is *top*. The axis is a
+crease the program has scored, since the hinges an unfold opens lie on the
+paper already. A hinge on $\ell$ that is flat, or a face of $M$ the axis
+cuts, which scoring joins to a stationary face by a flat hinge on $\ell$,
+puts the write outside its domain: turning that layer over folds the hinge,
+and `fold` writes that.
+
+::: {.figure #fig-unfold caption="After two folds in the same direction every layer lies beside `--q`. `unfold` turns the layer of `.b` back over it, with the two layers above, which would be swept through otherwise: the hinge on `--q` between those layers and the bottom layer opens, and the hinge on `--q` among the moving layers stays folded." views="cp folded" highlight="--q .b"}
+paper square
+fold (map .b onto .a) as --d
+.m = --d * --ab
+fold (map .m onto .a) as --q
+unfold (--q) (moving .b)
 :::
 
 ::: {.definition #def-flip name="flip" uses="def-write def-flat-state def-noncrossing"}

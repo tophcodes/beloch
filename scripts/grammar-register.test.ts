@@ -16,8 +16,8 @@ const lexerSource = readFileSync(join(root, LEXER), "utf8");
 const beloch = register.documents.find((d) => d.path === "spec/BELOCH-GRAMMAR.md");
 if (!beloch) throw new Error("spec/BELOCH-GRAMMAR.md missing from the register");
 
-test("spec/BELOCH-GRAMMAR.md yields 30 rules and 7 external names", () => {
-	expect(beloch.fragments.flatMap((f) => f.rules).length).toBe(30);
+test("spec/BELOCH-GRAMMAR.md yields 31 rules and 7 external names", () => {
+	expect(beloch.fragments.flatMap((f) => f.rules).length).toBe(31);
 	expect(beloch.external.length).toBe(7);
 	expect(beloch.external.map((e) => e.name)).toEqual([
 		"point_operand",

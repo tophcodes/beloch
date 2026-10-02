@@ -502,6 +502,11 @@ val line_material_segments : t -> Geom.line -> (Geom.point * Geom.point) list
 val line_cuts_paper : t -> Geom.line -> bool
 (** Whether table-space [l] strictly cuts the interior of some face. *)
 
+val paper_on_both_sides : t -> Geom.line -> bool
+(** Whether material lies strictly on each side of table-space [l]. Every
+    face may lie on one side of [l] while the paper reaches both, where [l]
+    runs along hinges. *)
+
 type scope_target = TargetFaces of int list | TargetHinged of (int -> bool)
 (** The endpoint of a scoped ("up to") fold's moving range: the faces of a
     flap, or the first faces (walking inward from the anchor) satisfying a

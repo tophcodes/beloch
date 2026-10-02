@@ -430,6 +430,32 @@ The first is the failure when no opening gives a state and none was
 removed as interleaved or by a violation. Otherwise the lowest such opening
 names the failure: interleaved bodies, or the violation its fold met.
 
+## Unfold
+
+`Action.eval_unfold` realizes [def-unfold](/model/#def-unfold) on the state
+as it stands; its axis is the current table line of the crease it names. The
+moving set with a depth is `Fold_state.select_scope`, the selection a fold
+with `up to` uses, from the flap `up to` names or else the flap `moving`
+names. With `toward` alone, `select_scope` runs from the flap of the
+`toward` point in the other direction, and the moving set is every face with
+material on the moving side outside its result. The block is reflected with
+`Fold_state.fold_blocks`, placed `Top`, or `Bottom` with `mountain`; it cuts
+no face, so the write adds no hinge, and each hinge on the axis between a
+moving and a staying face goes to angle $0$.
+
+`fold` refuses its line where `Fold_state.paper_on_both_sides` is false: every
+vertex of every face lies on the line or on one side of it.
+
+| message | hint |
+|---|---|
+| `unfold needs to know which layers turn over the line` | `name a layer that turns with (moving .p), or one that stays with (toward .p)` |
+| `a layer that unfold moves runs across the axis, so part of it would not cross it; unfold turns layers over whole` | `fold along the line to crease that layer` |
+| `a layer that unfold moves lies flat beside a layer that stays across the axis, …` | `fold along the line: it folds the flat hinges on it and opens the folded ones` |
+| `no hinge on the axis lies between a layer that moves and one that stays, so unfold would open none` | `name fewer layers with moving or up to, or a layer that stays with toward` |
+| `the layer of <p> that toward names would turn with the moving layers` | |
+| `turning these layers over would pierce layer <n>` | `turn the layers the other way with (mountain), or name more of them` |
+| `every layer lies on one side of this line, …, write unfold` (from `fold`) | `unfold (…) (moving .p) turns the layers of .p over the line` |
+
 ## Annotations
 
 An annotation never changes the geometry (ADR 0029), and the kernel holds to

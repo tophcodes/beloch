@@ -263,6 +263,8 @@ none of this appears, and every other field is the same with and without it.
   before the fold. A fold chooses no state, so its `candidates` are empty and
   the state after it is the statement's own frame. A fold that would tear the
   paper still has its entry, and the file then ends before the fold.
+  An `unfold` ([def-unfold](/model/#def-unfold)) reflects one block as a
+  fold does, and its entry has the same shape, with `write` `"fold"`.
 - `reverse` ([def-reverse](/model/#def-reverse)): the `terms` are the
   `axis`, the `side`, the `kind`, `"inside"` or `"outside"`, and the `tip`.
   The entry has one candidate per opening of the tip, from the bottom of the tip

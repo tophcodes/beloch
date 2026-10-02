@@ -170,7 +170,7 @@ value sorts of the model's section on values; each a value computed in the
 current state and carried in paper coordinates, so it survives later folds.
 
 **Writes.** The operations of the model's section on operations, named by
-the verbs `mark`, `fold`, `reverse`, `flatten` and `flip`. Each is a
+the verbs `mark`, `fold`, `unfold`, `reverse`, `flatten` and `flip`. Each is a
 partial function on states with its own domain; the domain is the
 language's notion of a safe operation, and the model states it. A *write
 statement* is a verb followed by its arguments; its shape is given under
@@ -245,18 +245,18 @@ placement a menu of four entries.
 | type | values | slots |
 |---|---|---|
 | line | a construction, a name bound by `=`, or a crease whose segments lie on one table line ([def-line](/model/#def-line)) | the operands of a construction, `heading`, `toward`, the axis of `mark` |
-| crease | a name bound by `as`: the material scored under that name ([def-bundle](/model/#def-bundle)), or a selection from one | the axis `(--d)` of `fold` and `reverse`, the rays of `flatten`, the meet `*`, the filters `&` `\` `[…]`, `free on` |
+| crease | a name bound by `as`: the material scored under that name ([def-bundle](/model/#def-bundle)), or a selection from one | the axis `(--d)` of `fold`, `unfold` and `reverse`, the rays of `flatten`, the meet `*`, the filters `&` `\` `[…]`, `free on` |
 | flap | a point, a line, or `#[…]`, resolved by incidence ([def-selector](/model/#def-selector)) | `moving`, `up to`, `on`, the target of `over` and `under` |
 | sector | one or more points on the anchor of a fan; the sector of the fan whose closed wedge holds them all ([def-flatten](/model/#def-flatten)) | `staying` |
 | point | a named or selected point | `at`, `between`, `toward` |
 | number | a number, or inside a shape one of its parameters | the side of `square`, `at` and `by` of `free on`, the values that open a shape |
-| placement | top, bottom, over a flap, under a flap ([def-reflection](/model/#def-reflection)) | `fold` |
+| placement | top, bottom, over a flap, under a flap ([def-reflection](/model/#def-reflection)) | `fold`; top and bottom: `unfold` |
 | kind | inside, outside ([def-reverse](/model/#def-reverse)) | `reverse` |
 | extent | the whole line, between two points, at a point ([def-mark](/model/#def-mark)) | `mark` |
 | intent | mountain, valley; the direction the crease pattern draws, no part of the state | `mark` |
 | letter | mountain, valley as a constraint on a ray, or on a hinge of the spine ([def-letter](/model/#def-letter)) | `flatten`, `reverse` |
 | order | one sector over another | `flatten` |
-| selection | `toward` a point or a line, the side that stays; `moving` a flap, the side that folds over; `heading` a line, the direction of the crease ([def-selection](/model/#def-selection)) | `toward` and `moving`: `mark`, `fold`, `reverse` and a binding over a construction; `toward` a point: `flatten`; `heading`: `align` |
+| selection | `toward` a point or a line, the side that stays; `moving` a flap, the side that folds over; `heading` a line, the direction of the crease ([def-selection](/model/#def-selection)) | `toward` and `moving`: `mark`, `fold`, `reverse` and a binding over a construction; `toward` a point and `moving` a flap, the layers that stay and the flap the moving layers grow from: `unfold`; `toward` a point: `flatten`; `heading`: `align` |
 
 Line and crease are two sorts under one sigil, and the binding tells them
 apart: `--l = …` is a line, `… as --l` is a crease. A crease stands where a

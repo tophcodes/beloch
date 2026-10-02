@@ -2093,6 +2093,103 @@ let test_mark_partial_every_layer () =
   Alcotest.(check (list (pair fl fl))) "at: .d and the point above it"
     [ (0., 0.); (0., 1.) ] points
 
+
+(* ---- unfold (ADR 0053) ---- *)
+
+let two_folds =
+  "paper square\n\
+   fold (map .b onto .a) as --d\n\
+   .m = --d * --ab\n\
+   fold (map .m onto .a) as --q\n"
+
+(* the hinges of crease [n] in the final state, as (flat, folded) counts *)
+let hinges_of (fd : Eval.folded) (n : string) : int * int =
+  let cid = List.assoc n fd.Eval.named_line_cids in
+  Array.fold_left
+    (fun (flat, folded) (h : Fold_state.hinge) ->
+      if h.Fold_state.crease_id <> cid then (flat, folded)
+      else if Num.sign h.Fold_state.angle = 0 then (flat + 1, folded)
+      else (flat, folded + 1))
+    (0, 0) (Fold_state.hinges fd.Eval.state)
+
+let table_of (fd : Eval.folded) (n : string) : float * float =
+  match assoc4 n fd.Eval.named_points with
+  | Some p ->
+      let t = Fold_state.table_position fd.Eval.state p in
+      (Num.to_float t.Geom.x, Num.to_float t.Geom.y)
+  | None -> Alcotest.fail ("no point ." ^ n)
+
+let pt = Alcotest.(pair (float 1e-9) (float 1e-9))
+let flat_folded = Alcotest.(pair int int)
+
+(* The program of #205: the layer of .b turns over --q with the two layers
+   above it. Of the two hinges on --q, the one between the moving layers and
+   the bottom layer opens; the other joins two moving layers and stays
+   folded. *)
+let test_unfold_two_folds () =
+  let before = folded two_folds in
+  Alcotest.check flat_folded "both hinges on --q folded before" (0, 2) (hinges_of before "q");
+  let fd = folded (two_folds ^ "unfold (--q) (moving .b)\n") in
+  Alcotest.check flat_folded "one hinge on --q opens" (1, 1) (hinges_of fd "q");
+  Alcotest.check flat_folded "the hinge on --d stays folded" (0, 1) (hinges_of fd "d");
+  Alcotest.check pt ".a stays" (0., 0.) (table_of fd "a");
+  Alcotest.check pt ".b crosses --q" (0.5, 0.) (table_of fd "b")
+
+(* with mountain the layer below .b turns along, and both hinges on --q open *)
+let test_unfold_two_folds_mountain () =
+  let fd = folded (two_folds ^ "unfold (--q) (moving .b) (mountain)\n") in
+  Alcotest.check flat_folded "both hinges on --q open" (2, 0) (hinges_of fd "q");
+  Alcotest.check pt ".a crosses --q" (0.5, 0.) (table_of fd "a")
+
+(* toward alone names the layer that stays: the bottom layer, so the three
+   above it turn, as with (moving .b) *)
+let test_unfold_toward () =
+  let fd = folded (two_folds ^ "unfold (--q) (toward .a)\n") in
+  Alcotest.check flat_folded "one hinge on --q opens" (1, 1) (hinges_of fd "q");
+  Alcotest.check pt ".b crosses --q" (0.5, 0.) (table_of fd "b")
+
+let half = "paper square\nfold (map .b onto .a) as --d\n"
+
+let test_unfold_folded_half () =
+  let fd = folded (half ^ "unfold (--d) (moving .b)\n") in
+  Alcotest.check pt ".b back at its corner" (1., 0.) (table_of fd "b");
+  Alcotest.check flat_folded "the hinge on --d opens" (1, 0) (hinges_of fd "d")
+
+let test_fold_beside_every_layer_names_unfold () =
+  expect_error "write unfold" (fun () -> folded (half ^ "fold (--d) (moving .b)\n"));
+  expect_error "write unfold" (fun () -> folded "paper square\nfold (through .a .b)\n")
+
+(* a hinge on the line lies flat and the paper lies on both sides: fold
+   folds it again *)
+let test_fold_along_flat_hinge () =
+  let fd = folded (half ^ "unfold (--d) (moving .b)\nfold (--d) (moving .b)\n") in
+  Alcotest.check pt ".b on .a" (0., 0.) (table_of fd "b");
+  Alcotest.check flat_folded "the hinge on --d folds" (0, 1) (hinges_of fd "d")
+
+let test_unfold_errors () =
+  (* every layer moves: the layer of .a is the bottom one, and the layer
+     above it turns with it *)
+  expect_error "no hinge on the axis lies between"
+    (fun () -> folded (half ^ "unfold (--d) (moving .a)\n"));
+  (* the hinge on --d lies flat after the first unfold *)
+  expect_error "lies flat beside a layer that stays"
+    (fun () ->
+      folded (half ^ "unfold (--d) (moving .b)\nunfold (--d) (moving .b)\n"));
+  (* a mark scores no face, so its line runs across the sheet *)
+  expect_error "runs across the axis"
+    (fun () -> folded "paper square\nmark (map .b onto .a) as --m\nunfold (--m) (moving .b)\n");
+  (* .c lies on the layer of .b, which moves *)
+  expect_error "that toward names would turn"
+    (fun () -> folded (two_folds ^ "unfold (--q) (moving .b) (toward .c)\n"));
+  expect_error "needs to know which layers"
+    (fun () -> folded (half ^ "unfold (--d)\n"));
+  expect_error "not a construction"
+    (fun () -> folded (half ^ "unfold (map .b onto .a) (moving .b)\n"));
+  expect_error "takes no as or into"
+    (fun () -> folded (half ^ "unfold (--d) (moving .b) as --e\n"));
+  expect_error "unfold takes no (over) item"
+    (fun () -> folded (half ^ "unfold (--d) (moving .b) (over .a)\n"))
+
 let () =
   Alcotest.run "beloch-eval"
     [
@@ -2386,5 +2483,17 @@ let () =
             test_mark_every_layer_by_default;
           Alcotest.test_case "mark: a partial extent on every layer" `Quick
             test_mark_partial_every_layer;
+        ] );
+      ( "unfold",
+        [
+          Alcotest.test_case "two folds: one hinge on --q opens" `Quick test_unfold_two_folds;
+          Alcotest.test_case "two folds, mountain: both hinges open" `Quick
+            test_unfold_two_folds_mountain;
+          Alcotest.test_case "toward names the layer that stays" `Quick test_unfold_toward;
+          Alcotest.test_case "the folded half returns .b" `Quick test_unfold_folded_half;
+          Alcotest.test_case "fold beside every layer names unfold" `Quick
+            test_fold_beside_every_layer_names_unfold;
+          Alcotest.test_case "fold along a flat hinge folds" `Quick test_fold_along_flat_hinge;
+          Alcotest.test_case "errors" `Quick test_unfold_errors;
         ] );
     ]

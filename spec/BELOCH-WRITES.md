@@ -25,10 +25,10 @@ whose tip the fan moves; without it the anchor is the topmost flap there
 where they lie and need no rays. `on` names a flap by incidence for both
 writes: the flap a `mark` scores, and the flap a `flatten` folds.
 
-Six blocks follow, one group per verb, each a complete program that this page
-evaluates. `fold` and `reverse` take two blocks each, because the second form
-of either needs a sheet of its own, and the last block carries `flatten` with
-`flip`.
+The blocks below follow in one group per verb, each a complete program that
+this page evaluates. `fold`, `unfold` and `reverse` take several blocks each,
+because a second form needs a sheet of its own, and the last block of the
+group carries `flatten` with `flip`.
 
 ```{.bel .prelude name=sheet}
 paper square
@@ -63,6 +63,57 @@ which the paper could not leave behind without tearing
 ([def-fold](/model/#def-fold)). A `mark` without `on` scores every layer
 under its line or its extent, one piece per layer; `(on …)` confines it to
 one flap ([def-mark](/model/#def-mark)).
+
+`unfold` turns layers back over a crease that every one of them lies
+beside, and opens the folded hinges on it between the layers that turn and
+the layers that stay ([def-unfold](/model/#def-unfold)). Its axis is a crease
+the program has scored, and it scores none, so it takes no `as` or `into`.
+`(moving …)` names the flap the turning layers grow from, and the layers
+outward of it turn with it: the layers above it, or with `(mountain)` the
+layers below it. `(up to …)` names a deeper flap to grow from. `(toward …)`
+names a layer that stays; alone, it turns every layer on its side of the
+crease that the same closure, run inward from it, leaves behind.
+
+```{.bel .prelude name=two-folds}
+paper square
+fold (map .b onto .a) as --d
+.m = --d * --ab
+fold (map .m onto .a) as --q
+```
+
+```{.bel .frag prelude=two-folds}
+unfold (--q) (moving .b)                   ; the layer of .b and the two above it
+
+; assert .b = (1/2, 0)
+; assert .a = (0, 0)
+; assert steps = 3
+```
+
+```{.bel .frag prelude=two-folds}
+unfold (--q) (toward .a)                   ; every layer but the one of .a
+
+; assert .b = (1/2, 0)
+; assert .a = (0, 0)
+```
+
+```{.bel .frag prelude=two-folds}
+unfold (--q) (moving .b) (mountain)        ; the layer of .b and the one below it
+
+; assert .a = (1/2, 0)
+; assert .b = (1/2, 0)
+```
+
+A fold along a line with all of the paper on one side of it fails, and its
+message names `unfold`. A fold along hinges with paper on both sides of
+them folds: the hinges on the line between the moving and the staying layers
+open where they were folded and fold where they were flat. An `unfold` whose
+layers would fold a flat hinge fails, and its message names `fold`.
+
+```{.bel .frag prelude=two-folds}
+fold (--q) (moving .b)
+
+; expect error "write unfold"
+```
 
 ```{.bel .prelude name=triangle}
 paper square
