@@ -62,7 +62,8 @@ messages, PR and issue bodies, and drafts of any of these shown in chat.
 Inside the devshell (`nix develop`, or direnv):
 
 - `check` builds the kernel and runs its suites, the bun suites of
-  `packages/render-2d`, `packages/runtime` and `packages/www`, the prose
+  `packages/render-2d`, `packages/runtime` and `packages/www`, the type
+  check (`tsc`) of `packages/render-2d` and `packages/runtime`, the prose
   lint at level error, and the check that every program states its credits
   (ADR 0051). Run it after the last edit and before every push.
 - `check-all` runs `check`, then the API docs and register, the README

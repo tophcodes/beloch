@@ -16,13 +16,21 @@ bun_suite() {
   (cd "packages/$1" && bun install --silent --frozen-lockfile && bun test)
 }
 
+# bun runs TypeScript without checking its types, so a type error passes the
+# suites; this step runs the package's own `typecheck` script.
+bun_typecheck() {
+  (cd "packages/$1" && bun run --silent typecheck)
+}
+
 if step "dune build" dune build; then
   step "kernel suites" bash scripts/run-ocaml-tests.sh
 else
   skip "kernel suites" "dune build failed"
 fi
 step "bun test packages/render-2d" bun_suite render-2d
+step "tsc packages/render-2d" bun_typecheck render-2d
 step "bun test packages/runtime" bun_suite runtime
+step "tsc packages/runtime" bun_typecheck runtime
 step "bun test packages/www" bun_suite www
 step "prose lint at level error" bash scripts/prose.sh --minAlertLevel=error
 step "program credits" bash scripts/check-program-credits.sh
