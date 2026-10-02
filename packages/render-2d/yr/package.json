@@ -1,0 +1,10 @@
+{
+  "name": "@beloch/yr",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@beloch/scene": "workspace:*",
+    "@beloch/render-svg": "workspace:*"
+  }
+}

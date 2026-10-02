@@ -1,0 +1,11 @@
+@author "Claude (Anthropic)"
+; A split step whose folds say what they do: each part takes its own
+; sentence in place of the step's.
+
+paper square
+
+@step "Fold in half, then in half again."
+@say "Fold in half."
+fold (map --ab onto --cd)
+@say "Fold in half again."
+fold (map --bc onto --da)

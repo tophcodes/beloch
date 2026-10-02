@@ -1,0 +1,15 @@
+@author "Claude (Anthropic)"
+; The kite base as a YR diagram: a fold-and-unfold, then two valley folds
+; that touch no paper the other moves, drawn as one step.
+
+paper square
+
+@orient .a .c up
+@step "Fold in half along the diagonal and unfold."
+mark (through .a .c) as --ac
+
+@step "Fold both lower edges to the center line."
+fold (map --da onto --ac)
+fold (map --ab onto --ac)
+
+@say "The kite base."

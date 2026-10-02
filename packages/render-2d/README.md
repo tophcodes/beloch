@@ -12,6 +12,10 @@ or folded-occlusion diagrams out. The input contract is `spec/FOLD.md`.
   a `FoldScene` onto an `SvgDoc` (layered SVG builder: `paper` / `creases` /
   `annotations` / `hud`), originally ported line-for-line from the retired
   Rabbit Ear-based development tool this CLI replaced.
+- **`yr/`** (`@beloch/yr`): the YR-style folding diagram (ADR 0029).
+  `panels` selects one panel per step group, `foldMotion` reads what a fold
+  moves from the standard FOLD, the primitives in `draw.ts` draw the lines
+  and arrows of the notation, and `renderYr` stacks the panels in one column.
 
 ## CLI
 
