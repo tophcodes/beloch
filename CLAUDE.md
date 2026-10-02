@@ -41,6 +41,15 @@ to.
   carries the issue's `kind:` label. A pull request without an issue carries
   `no-issue` in place of the reference. The check on pull requests enforces
   both; no other word (`For`, `Fixes`) counts.
+- A pull request that changes what a renderer draws, or adds or changes a
+  model in `examples/`, shows the drawings in its body: each affected figure
+  as an image linked at the pull request's head commit
+  (`https://raw.githubusercontent.com/tophcodes/beloch/<sha>/<path>`), the
+  figure before the change beside it where one existed. A reviewer judges a
+  drawing by looking at it.
+- Annotation keys such as `@orient` go in backticks in a pull request or
+  issue body, and stay out of titles and commit subjects, which render no
+  code spans: GitHub links a bare `@word` to the user of that name.
 - Commit messages carry no issue references. The pull request links its
   commits to the issue, and a `#n` in a commit adds a line to the issue's
   timeline on every rewritten push.
