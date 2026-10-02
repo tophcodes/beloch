@@ -52,3 +52,6 @@ reverse (perp --n2 through .sr) (moving .d)
 .hp = free on --bd & .b from .b at 1/4
 .ht = free on --rsl & .a from .a at 1/2
 reverse (through .hp .ht) (moving .b) as --head
+
+; stand it on its center line
+@orient .o .c up
