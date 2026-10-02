@@ -1,0 +1,80 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; The traditional cicada, after the seven steps of Jimena Candia's diagram
+; [candia2025cicada]. The diagram holds the paper as a diamond with .a at
+; the bottom and .c at the top, so "up" below means toward .c. It asks for
+; 15 cm paper and measures step 6 in centimeters, hence the unit. Where the
+; diagram leaves a position to the eye (steps 3, 4, 6 and 7), a free point
+; carries it.
+
+unit cm
+paper square 15
+
+fold (map .a onto .c) as --bd               ; step 1: bottom corner onto top
+
+fold (map .b onto .c) as --r                ; step 2: right corner up to the top
+fold (map .d onto .c) as --l                ; step 2: left corner up to the top
+
+; step 3 folds the tips of both flaps down past the bottom of the square.
+; Each crease runs from a side corner to one point .p of the center line,
+; 5/12 of the way up from the bottom corner .o, a little below the line
+; between the side corners. .q, the point step 4 lands on, is bound before
+; step 3 bends the center crease --bd.
+.o = --r * --l
+--mid = (through .o .c)
+.sr = --r * --bc                            ; right side corner
+.sl = --l * --cd                            ; left side corner
+.er = --r * --ab
+.el = --l * --da
+.p = free on --bd & .b from .o at 5/12
+.q = free on --bd & .b from .o at 3/8
+; `up to` names the lower layer of each flap, so the square under it stays
+fold (through .sr .p) (moving .b) (up to #[.b .er]) as --wr    ; step 3, right
+fold (through .sl .p) (moving .d) (up to #[.d .el]) as --wl    ; step 3, left
+
+; step 4: the top corner of the front layer down onto the center line,
+; at .q, a little below where the wings meet
+fold (map .a onto .q) (moving .a) (up to #[.a]) as --s4      ; step 4
+
+; step 5: the corner of the back layer down onto the line between the
+; side corners, which leaves a strip of step 4 showing above it
+--hd = (through .sl .sr)
+fold (map .c onto --hd perp --mid) (moving .c) as --s5      ; step 5
+
+; step 6: the top edge down by 1.2 cm. The right edge runs at 45 degrees
+; to the top edge, so the crease meets it 17/10 cm below the top corner .tr.
+.tr = --s5 * --bc
+.x = free on --bc & .sr & .tr from .tr by 17/10
+fold (perp --mid through .x) (moving .tr) as --s6           ; step 6
+
+; step 7: both side corners behind. The angle is free: each crease runs from
+; a quarter in from the end of the top edge to the middle of the wing's
+; outer edge. The four points are bound before either fold bends --s6.
+.xl = --s6 * (--cd & .sl)
+.u = free on --s6 & .x & .xl from .x at 1/4
+.v = free on --bc & .b & .sr from .sr at 1/2
+.ul = free on --s6 & .x & .xl from .xl at 1/4
+.vl = free on --cd & .d & .sl from .sl at 1/2
+fold (through .u .v) (moving .sr) (mountain) as --kr        ; step 7, right
+fold (through .ul .vl) (moving .sl) (mountain) as --kl      ; step 7, left
+
+; assert steps = 10
+
+; Every crease of the program is folded, so no hinge is flat and each face
+; is a flap of its own: the flap count is the face count.
+; assert faces = 38
+
+; step 4 lands on the center line, step 5 on the middle of the square
+; assert .a = .q
+; assert .c = (45/4, 45/4)
+
+; the outline, symmetric about the center line: the top edge from .ul to
+; .u, the sides down to .vl and .v, the wing tips .d and .b, which reach
+; past the bottom corner .o
+; assert .u = (1091/80, 873/80)
+; assert .ul = (873/80, 1091/80)
+; assert .v = (1695/148, 465/74)
+; assert .vl = (465/74, 1695/148)
+; assert .b = (585/74, 375/74)
+; assert .d = (375/74, 585/74)
+; assert .o = (15/2, 15/2)
