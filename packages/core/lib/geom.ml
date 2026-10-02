@@ -329,6 +329,9 @@ let convex_hull (pts : point list) : point array =
 
 (* p collinear with segment (a,b) and within it (endpoints included). *)
 let on_segment ((a, b) : segment) (p : point) : bool =
+  (* a segment of length zero, a point mark's bundle, holds its one point *)
+  if point_equal a b then point_equal a p
+  else
   let cross =
     Num.sub
       (Num.mul (Num.sub b.x a.x) (Num.sub p.y a.y))

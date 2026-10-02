@@ -1,0 +1,15 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; A mark reads as its extent (ADR 0033). The fold line crosses the diagonal
+; at three quarters of its length, so it crosses the chord of the diagonal,
+; but --half runs from .a to the centre only and lies on the side of .a.
+; toward --half keeps that side, and the corner .c folds onto the centre.
+
+paper square
+mark (through .a .c) as --ac
+.o = free on --ac from .a at 1/2
+mark (through .a .c) (between .a .o) as --half
+fold (map .c onto .o) (toward --half)
+
+; assert .c = (1/2, 1/2)
+; assert .a = (0, 0)

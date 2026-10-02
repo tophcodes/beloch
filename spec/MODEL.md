@@ -625,34 +625,42 @@ An incidence on the table that the line sought has to satisfy, with one side
 of it reflected across that line.
 :::
 
-::: {.definition #def-selection name="selection" uses="def-read def-alignment def-material def-flap" defines="term-selection term-folding-side"}
+::: {.definition #def-selection name="selection" uses="def-read def-alignment def-bundle def-material def-line def-crease def-mark def-flap" defines="term-selection term-folding-side"}
 Let $\ell$ be a table line, $\rho_\ell$ the reflection across it, and
 $H^+_\ell$, $H^-_\ell$ its two open half-planes. An alignment `x onto y` of
 a construction is an incidence ([#def-alignment]): $\rho_\ell(x)$ lies on
 $y$, equivalently $\rho_\ell(y)$ passes through $x$, so `x onto y` and
 `y onto x` are one alignment. Its objects are points, as their table
-positions, and lines, each with its material ([#def-material]) as a finite
-set of table segments.
+positions, and lines. A line is the bundle the program holds under its name
+([#def-bundle]), and every read of its paper below takes that bundle, as a
+finite set of table segments: a crease's scored segments
+([#def-crease]), a mark's extent in the flaps it was marked on
+([#def-mark]), and for a construction, a name bound to one and a paper
+edge, all the paper on their line ([#def-material]). The line of the bundle
+([#def-line]) is the object of the incidence.
 
 A point $t$ *names the side* of $\ell$ that holds it, and names none when
 $t \in \ell$. A set of segments $T$ names the side that holds
 $T \setminus \ell$, and names none when $T \setminus \ell$ is empty or meets
-both sides. A line names the side its material names: none when $\ell$
-crosses the line on the paper or contains it.
+both sides. A line names the side its bundle names: none when $\ell$
+crosses the bundle or contains it. A mark that ends short of $\ell$ names
+the side it lies on, though $\ell$ crosses its line on the paper.
 
 A fold along $\ell$ with *folding side* $H$, one of $H^\pm_\ell$, *carries
 out* an alignment `x onto y` when one of three holds: $x$ lies in $H$ and
 lands on $y$; $y$ lies in $H$ and lands on $x$; or $x$ is a point on $\ell$
 and on the line $y$. For a point that lands on a point this means lying
 in $H$; for a point $p$ that lands on a line, lying in $H$ with
-$\rho_\ell(p)$ in the material of the line; for a line that lands on a line,
-having material in $H$; for a line that lands on a point $q$, having
-material at $\rho_\ell(q)$ in $H$. Whoever moves lands on the paper of the
-other object. The fold carries out a
+$\rho_\ell(p)$ in the material of the line's table line ([#def-material]),
+which the line's bundle need not reach; for a line that lands on a line,
+having part of its bundle in $H$; for a line that lands on a point $q$,
+having its bundle at $\rho_\ell(q)$ in $H$. Whoever moves lands on the
+paper of the other object, and a line that moves lands only with its
+bundle: a mark carries out an alignment only where marked paper lands. The fold carries out a
 construction when it carries out each of its `onto` alignments. The
 *landing* of an object is the image under $\rho_\ell$ of its part in
 $\overline{H}$, where $\overline{H}$ adds $\ell$ to $H$: a point in $H$, and
-the material of a line in $\overline{H}$. The part of a line on the other
+the bundle of a line in $\overline{H}$. The part of a line on the other
 side stays where it is.
 
 A *selection* $\sigma$ is the read that keeps one line of the candidates
@@ -660,7 +668,7 @@ $C$ of a construction ([#def-construction]), from the items a program
 states: a line $g$ as `heading`, a point or a line $\tau$ as `toward`,
 optionally with one object $x$ of the alignments as its subject, and a flap
 $m$ as `moving`, which names the side of its first anchor point off $\ell$,
-or of the material of a line. It runs four stages.
+or of the bundle of a line. It runs four stages.
 
 1. *Direction.* With `heading`, only the $\ell \in C$ whose angle with $g$ is
    least remain; a tie leaves all of them to the later stages.
@@ -765,7 +773,7 @@ stage filters a finite set. Stage 1 compares angles between lines, a
 function of the lines alone. In stage 2, a point either lies on $\ell$ or
 in exactly one of $H^\pm_\ell$, since the open half-planes and $\ell$
 partition the plane, so the side a point names is determined or undefined.
-The material of a line is a finite union of segments ([#def-material]);
+The bundle of a line is a finite union of segments ([#def-bundle]);
 $T \setminus \ell$ is empty, or lies in one half-plane, or meets both, and
 these three cases are exclusive, so the side a line names is determined or
 undefined, never two. The side `moving` names is that of one point, its
@@ -797,12 +805,12 @@ outside $\overline{H}$ holds after the fold exactly when it held before.
 `x onto y` ([#def-alignment]): $\rho_\ell(x)$ lies on $y$, and since
 $\rho_\ell$ is an involution, $\rho_\ell(y)$ passes through $x$. Stage 3
 gives one of three cases for each alignment. If $x$ lies in $H$, what
-lands of it lies on $y$: a point $x$ lands at $\rho_\ell(x)$ on $y$, on its
-material where $y$ is a line, and the
-material of a line $x$ in $\overline{H}$ lands on the image of the line of
+lands of it lies on $y$: a point $x$ lands at $\rho_\ell(x)$ on $y$, on the
+paper of its table line where $y$ is a line, and the
+bundle of a line $x$ in $\overline{H}$ lands on the image of the line of
 $x$, which is the line of $y$. If $y$ lies in $H$, the same holds with the
 roles exchanged; where $y$ is a line and $x$ a point, stage 3 asks for
-material of $y$ at $\rho_\ell(x)$ in $H$, and that point lands on $x$. If
+the bundle of $y$ at $\rho_\ell(x)$ in $H$, and that point lands on $x$. If
 $x$ is a point on $\ell$ and on the line $y$, it stays and lies on $y$. A
 point outside $\overline{H}$ is not reflected, so an alignment between two
 such objects holds after the fold exactly when it did before.
@@ -816,7 +824,7 @@ leaves behind stays behind with that layer.
 
 ::: {.lemma #lem-crossing-landing name="where a crossing line lands" uses="def-selection"}
 Let a construction fold a line $m$ onto a line $n$, crossing at $X$, and
-let the material of $m$ be one segment whose interior contains $X$, with
+let the bundle of $m$ be one segment whose interior contains $X$, with
 the parts $M_1$ and $M_2$ on either side of $X$. The candidates are the two
 bisectors $b_1 \perp b_2$ through $X$, where both cross the paper, as they
 do on the flat sheet when $X$ lies inside it, and `(m toward τ)` measures the
@@ -835,7 +843,7 @@ $X$, and $h$ its distance from $n$.
    $l_1 = l_2$ or $s \le l_1$.
 
 *Proof.* Every point of $m$ apart from $X$ lies on one side of each
-bisector, so each bisector has material of $m$ on both sides; stage 3
+bisector, so each bisector has paper of $m$ on both sides; stage 3
 keeps both with any folding side, and $m$ has a landing under both. For
 perpendicular lines through $X$, $\rho_{b_1} \circ \rho_{b_2} = R_X$, the
 half-turn about $X$, so $\rho_{b_2} = \rho_{b_1} \circ R_X$. If

@@ -575,6 +575,11 @@ val mark_chords : t -> int -> (Geom.point * Geom.point) list
     [cid]. [MPoint] marks contribute no chord. Used by the meet operator to
     test that a marked line physically reaches a crossing. *)
 
+val mark_material_segments : t -> int -> (Geom.point * Geom.point) list
+(** The bundle of mark [cid] on the table (ADR 0033): every [MSeg] extent
+    cut into one table piece per face it crosses, and every [MPoint] as a
+    segment of length zero at its table position. *)
+
 val mark_axis_current :
   t -> int -> [ `Line of Geom.line | `Bent | `Empty | `Collapsed ]
 (** The mark [cid]'s current TABLE-space axis, tracking folds/flips (its

@@ -1,0 +1,15 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; A mark that moves carries out an alignment only with marked paper
+; (ADR 0033). The pinch runs from the middle of the bottom edge to the
+; centre. The fold that moving --pinch keeps would land the point of the
+; pinch's line at height sqrt(3)/2 on .d, and the pinch does not reach it.
+
+paper square
+mark (through .a .c) as --ac
+.o = free on --ac from .a at 1/2
+.m = free on --ab from .a at 1/2
+mark (through .m .o) (between .m .o) as --pinch
+fold (map .d onto --pinch through .a) (moving --pinch) as --f
+
+; expect error "--pinch does not reach (1/2, 0.866), the point of its line that lands on .d"

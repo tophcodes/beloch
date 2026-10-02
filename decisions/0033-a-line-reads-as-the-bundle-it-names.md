@@ -65,7 +65,10 @@ piece of it.
 a construction folds a mark over onto a point, the paper that lands on the
 point has to belong to the mark. A candidate whose landing falls on the
 unmarked continuation of the mark's line does not remain. A point folded onto
-the line of a mark needs the line only, as ADR 0031 has it for every line.
+the line of a mark needs the paper on that line, marked or not, as ADR 0031
+has it for every line: the point lands on the paper of its target, and the
+mark only tells where the line runs. The same holds for a crease: a point
+folded onto it needs paper on its line, not the crease's own segments.
 
 **How a state stores a bundle is outside this record.** The pieces of a
 bundle are read off the state by `def-bundle`, from the set of paper points
@@ -82,6 +85,12 @@ with its face.
   any flap comes to lie on the mark's table line, which is the reading of a
   crease as its line that ADR 0014 retired. `def-mark` and the meet would
   have to change with it.
+- **A point lands only on the bundle of its target line**, so a point folded
+  onto a mark needs marked paper where it lands, as a mark that moves does.
+  A folder lays a corner onto the line a pinch points along, past the end
+  of the pinch, and the pinch program below with `(moving .d)` would fail
+  where it folds by eye. ADR 0031 asks only that the landing lie on the
+  paper.
 - **A reading per operation**, the extent for the meet and the chord for the
   selection. Two answers to one question, and a program cannot tell from the
   name which one a statement uses.
@@ -120,6 +129,10 @@ with its face.
   pinch has to reach. Folders pinch only where a later fold needs a
   reference, to keep the interior of the sheet free of creases
   [@hull2020, pp. 15–16].
+- A point folded onto a crease is tested against all the paper on the
+  crease's line. Before this record the kernel tested it against the
+  crease's own segments, which can be fewer where the crease was scored on
+  some layers only.
 - A mark takes no paper from other flaps. After a fold stacks paper along
   the mark's table line, `toward` and `moving` with the mark read the marked
   layer only.
