@@ -108,6 +108,20 @@ let cp_display (st : Fold_state.t) : Fold_state.t * Fold_state.mark list =
 let flat_assign (sheet : Sheet.t) (h : Fold_state.hinge) : string =
   if List.mem h.Fold_state.crease_id sheet.Sheet.joins then "J" else "F"
 
+(* [edges_foldAngle] from the emitted assignments, FOLD's sign convention:
+   a valley is +180, a mountain -180, and a flat, join or boundary edge 0.
+   Every frame emits it, the crease pattern included, where it is the target
+   angle of each crease (the final state's), so a consumer can fold the
+   pattern without guessing the angles from its flat geometry. *)
+let fold_angles_json edges : Yojson.Safe.t list =
+  List.map
+    (fun (_, _, a, _, _) ->
+      match a with
+      | "V" -> `Float 180.0
+      | "M" -> `Float (-180.0)
+      | _ -> `Float 0.0)
+    edges
+
 let folded_frame_of_state (sheet : Sheet.t)
     (named_points : (string * Geom.point) list)
     (state : Fold_state.t)
@@ -191,15 +205,7 @@ let folded_frame_of_state (sheet : Sheet.t)
     List.map (fun (a, b, _, _, _) -> `List [ `Int a; `Int b ]) edges
   in
   let edges_assignment = List.map (fun (_, _, a, _, _) -> `String a) edges in
-  let edges_fold_angle =
-    List.map
-      (fun (_, _, a, _, _) ->
-        match a with
-        | "V" -> `Float 180.0
-        | "M" -> `Float (-180.0)
-        | _ -> `Float 0.0)
-      edges
-  in
+  let edges_fold_angle = fold_angles_json edges in
   let faces_vertices =
     Array.to_list face_idx
     |> List.map (fun idxs ->
@@ -632,6 +638,7 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
     List.map (fun (a, b, _, _, _) -> `List [ `Int a; `Int b ]) edges
   in
   let edges_assignment = List.map (fun (_, _, a, _, _) -> `String a) edges in
+  let edges_fold_angle = fold_angles_json edges in
   let faces_vertices =
     Array.to_list face_idx
     |> List.map (fun idxs ->
@@ -705,6 +712,7 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
       ("vertices_coords", `List verts_paper);
       ("edges_vertices", `List edges_vertices);
       ("edges_assignment", `List edges_assignment);
+      ("edges_foldAngle", `List edges_fold_angle);
       ("faces_vertices", `List faces_vertices);
       ("beloch:edges", beloch_edges);
       ("beloch:inspect", beloch_inspect_json disp fd.Eval.named_points fd.Eval.named_line_cids);

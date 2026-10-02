@@ -248,6 +248,31 @@ let test_e2e_fold_quarter () =
   Alcotest.(check bool) "accordion produced a mountain crease" true
     (List.mem "M" assigns)
 
+(* #45: the crease-pattern frame carries [edges_foldAngle], the target angle
+   of each crease, so a FOLD consumer folds the pattern from it instead of
+   reading 0 everywhere off the flat geometry. FOLD's sign: valley +180,
+   mountain -180, and 0 for F, J and B; one angle per edge. *)
+let test_e2e_cp_fold_angles () =
+  let open Yojson.Safe.Util in
+  let check_frame label j =
+    let assigns = j |> member "edges_assignment" |> to_list |> List.map to_string in
+    let angles = j |> member "edges_foldAngle" |> to_list |> List.map to_number in
+    Alcotest.(check int) (label ^ ": one angle per edge")
+      (List.length assigns) (List.length angles);
+    List.iter2
+      (fun a x ->
+        let want = match a with "V" -> 180. | "M" -> -180. | _ -> 0. in
+        Alcotest.(check (float 1e-9)) (label ^ ": angle of " ^ a) want x)
+      assigns angles;
+    assigns
+  in
+  let json = Beloch.fold_string ~filename:"crane.bel" (read_example "crane.bel") in
+  let assigns = check_frame "crane CP" json in
+  Alcotest.(check bool) "crane CP has mountains and valleys" true
+    (List.mem "M" assigns && List.mem "V" assigns);
+  (* the same convention the folded frames already use *)
+  ignore (check_frame "crane last frame" (last_frame json))
+
 let test_e2e_flip_mountain () =
   let fd =
     Eval.eval_folded
@@ -1277,6 +1302,8 @@ let () =
           Alcotest.test_case "fold quarter accordion" `Quick test_e2e_fold_quarter;
           Alcotest.test_case "fold-quarter faceOrders sign golden" `Quick
             test_faceorders_stable_fold_quarter;
+          Alcotest.test_case "crease pattern carries target fold angles" `Quick
+            test_e2e_cp_fold_angles;
           Alcotest.test_case "flip makes a mountain" `Quick test_e2e_flip_mountain;
           Alcotest.test_case "flip keeps the CP size" `Quick
             test_e2e_flip_cp_counts;
