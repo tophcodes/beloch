@@ -1274,6 +1274,37 @@ let test_band_frame0 () =
     "the unfolded first step" corners
     (coords_of (List.hd (json |> member "file_frames" |> to_list)))
 
+(* Every frame of the crane carries [edges_faces]: a boundary edge lists one
+   face, every other edge two, and each face listed holds both vertices of
+   the edge. *)
+let test_crane_edges_faces () =
+  let open Yojson.Safe.Util in
+  let json = Beloch.fold_string ~filename:"crane.bel" (read_example "crane.bel") in
+  let frames = json :: (json |> member "file_frames" |> to_list) in
+  List.iteri
+    (fun k frame ->
+      let ints l = l |> to_list |> List.map to_int in
+      let edges = frame |> member "edges_vertices" |> to_list |> List.map ints in
+      let assigns = frame |> member "edges_assignment" |> to_list |> List.map to_string in
+      let faces = frame |> member "faces_vertices" |> to_list |> List.map ints in
+      let edges_faces = frame |> member "edges_faces" |> to_list |> List.map ints in
+      Alcotest.(check int)
+        (Printf.sprintf "frame %d: one entry per edge" k)
+        (List.length edges) (List.length edges_faces);
+      List.iteri
+        (fun e (vs, fs) ->
+          let what = Printf.sprintf "frame %d, edge %d" k e in
+          Alcotest.(check int) (what ^ ": faces on its sides")
+            (if List.nth assigns e = "B" then 1 else 2)
+            (List.length fs);
+          List.iter
+            (fun f ->
+              Alcotest.(check bool) (what ^ ": the face holds the edge") true
+                (List.for_all (fun v -> List.mem v (List.nth faces f)) vs))
+            fs)
+        (List.combine edges edges_faces))
+    frames
+
 let () =
   Alcotest.run "beloch-e2e"
     [
@@ -1283,6 +1314,8 @@ let () =
           Alcotest.test_case "frame_unit" `Quick test_frame_unit;
           Alcotest.test_case "a trimmed band: frame 0 is the trimmed sheet" `Quick
             test_band_frame0;
+          Alcotest.test_case "every frame of the crane carries edges_faces" `Quick
+            test_crane_edges_faces;
           Alcotest.test_case "diagonals four faces" `Quick
             test_e2e_diagonals_four_faces;
           Alcotest.test_case "perp end-to-end" `Quick test_e2e_perp;

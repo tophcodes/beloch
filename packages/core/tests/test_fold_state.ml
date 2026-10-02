@@ -1795,14 +1795,27 @@ let test_trim_join_edge () =
   | Ok sh ->
       Alcotest.(check int) "two faces" 2 (Array.length (Fold_state.faces sh.Sheet.start));
       Alcotest.(check int) "one join crease" 1 (List.length sh.Sheet.joins);
+      let frame = Fold_emit.folded_frame_of_state sh [] sh.Sheet.start None in
       let assignments =
         let open Yojson.Safe.Util in
-        Fold_emit.folded_frame_of_state sh [] sh.Sheet.start None
-        |> member "edges_assignment" |> to_list |> List.map to_string
+        frame |> member "edges_assignment" |> to_list |> List.map to_string
       in
       Alcotest.(check int) "one J edge" 1
         (List.length (List.filter (( = ) "J") assignments));
-      Alcotest.(check bool) "no F edge" false (List.mem "F" assignments)
+      Alcotest.(check bool) "no F edge" false (List.mem "F" assignments);
+      (* [edges_faces]: the J edge lists both of its faces, every other edge,
+         on the boundary, its one *)
+      let edges_faces =
+        let open Yojson.Safe.Util in
+        frame |> member "edges_faces" |> to_list
+        |> List.map (fun l -> l |> to_list |> List.map to_int)
+      in
+      List.iter2
+        (fun a fs ->
+          Alcotest.(check (list int)) ("faces of a " ^ a ^ " edge")
+            (if a = "J" then [ 0; 1 ] else [ List.hd fs ])
+            fs)
+        assignments edges_faces
   | Error `Hole -> Alcotest.fail "an L has no hole"
 
 let () =

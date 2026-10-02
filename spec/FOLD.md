@@ -47,6 +47,11 @@ Each frame uses the FOLD vocabulary for what FOLD can express:
   has not folded, and `J` for a join edge: a flat edge that only divides a
   non-convex sheet into convex faces, whose two faces FOLD counts as one. `U`
   never occurs, since a state always knows a crease's disposition.
+- `edges_faces`: per edge, the faces on its sides as indices into
+  `faces_vertices`, ascending: one face for a boundary edge, two for every
+  other edge, a `J` edge included. Faces joined across `J` edges are what FOLD
+  counts as one face, so a reader that wants FOLD's faces merges them there,
+  and `M`, `V` and `F` edges separate them.
 - `edges_foldAngle`: $0$ or $\pm 180$ in degrees, with FOLD's sign: $+180$
   for `V`, $-180$ for `M`, $0$ for `F`, `J` and `B`, so the sign always
   matches `edges_assignment`. On a folded frame these are the hinge angles of
