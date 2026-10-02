@@ -1323,6 +1323,27 @@ let test_cicada_flaps () =
   let flaps = List.length (List.filter (fun i -> find i = i) (List.init n Fun.id)) in
   Alcotest.(check int) "flaps" 38 flaps
 
+(* The penguin folds to its last flat state in seven frames: its mark and
+   its two turns over join the frame of the fold after them. Every hinge of
+   that state is folded, the step 1 mark included, so each face is a flap of
+   its own (def-flap). *)
+let test_penguin_flaps () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"penguin.bel" (read_example "penguin.bel"))
+  in
+  let st = fd.Eval.state in
+  Alcotest.(check int) "one frame per fold" 7 (List.length fd.Eval.frames);
+  let n = Array.length (Fold_state.faces st) in
+  let parent = Array.init n Fun.id in
+  let rec find i = if parent.(i) = i then i else find parent.(i) in
+  Array.iter
+    (fun (h : Fold_state.hinge) ->
+      if Num.equal h.angle Num.zero then parent.(find h.fa) <- find h.fb)
+    (Fold_state.hinges st);
+  let flaps = List.length (List.filter (fun i -> find i = i) (List.init n Fun.id)) in
+  Alcotest.(check int) "flaps" 14 flaps
+
 let () =
   Alcotest.run "beloch-e2e"
     [
@@ -1336,6 +1357,8 @@ let () =
             test_crane_edges_faces;
           Alcotest.test_case "the cicada folds to 38 flaps" `Quick
             test_cicada_flaps;
+          Alcotest.test_case "the penguin folds to 14 flaps" `Quick
+            test_penguin_flaps;
           Alcotest.test_case "diagonals four faces" `Quick
             test_e2e_diagonals_four_faces;
           Alcotest.test_case "perp end-to-end" `Quick test_e2e_perp;
