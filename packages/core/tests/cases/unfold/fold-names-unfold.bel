@@ -1,0 +1,9 @@
+@author "Claude (Anthropic)"
+
+; Every layer of the folded half lies beside --d, so a fold along it has
+; nothing to fold over, and its error names unfold.
+paper square
+fold (map .b onto .a) as --d
+fold (--d) (moving .b)
+
+; expect error "write unfold"

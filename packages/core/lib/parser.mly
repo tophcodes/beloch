@@ -88,7 +88,7 @@ let toward_inside (span : Error.span) : 'a =
 
 %token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD MOVING MOUNTAIN VALLEY FLIP RPAREN AND UP TO FOLD_KW
 %token DEF APPLY EXPORT AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
-%token FLATTEN OVER STAYING MARK BETWEEN AT UNDER REVERSE OUTSIDE
+%token FLATTEN OVER STAYING MARK BETWEEN AT UNDER REVERSE OUTSIDE UNFOLD
 %token FREE ON FROM ALIGN HEADING INTO
 %token BY SHAPE TRIM UNIT
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN  (* --[ / .[ : the line/point select openers *)
@@ -216,7 +216,7 @@ body_stmt:
      parentheses of the construction form are the construction's, not the
      binding's. *)
   | CREASE EQ line_operand                    { BindBundle ($1, $3, $loc) }
-  (* the five writes: a verb, its items in any order, its output clause.
+  (* the six writes: a verb, its items in any order, its output clause.
      Every verb takes the union of item bodies and Items classifies the list
      against the verb, so a head the verb does not take is reported by name
      at its own span. `flip items` for the same reason: `flip (moving .a)`
@@ -224,6 +224,7 @@ body_stmt:
   | MARK    items output { Items.mark    $2 $3 $loc }
   | FOLD_KW items output { Items.fold    $2 $3 $loc }
   | REVERSE items output { Items.reverse $2 $3 $loc }
+  | UNFOLD  items output { Items.unfold  $2 $3 $loc }
   | FLATTEN items output { Items.flatten $2 $3 $loc }
   | FLIP    items output { Items.flip    $2 $3 $loc }
   | POINT EQ point_expr  { Point ($1, $3, $loc) }

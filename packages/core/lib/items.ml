@@ -101,7 +101,7 @@ let sides_of toward moving : sides =
   { s_toward = Option.map fst !toward; s_moving = Option.map fst !moving;
     s_spans = { toward_span = Option.map snd !toward; moving_span = Option.map snd !moving } }
 
-(* ---- the five verbs, and the binding of a construction ---- *)
+(* ---- the six verbs, and the binding of a construction ---- *)
 
 let bind (name : string) (c : construction) (items : raw_item list)
     (span : Error.span) : stmt =
@@ -195,6 +195,49 @@ let reverse (items : raw_item list) (out : output) (span : Error.span) : stmt =
       (let sd = sides_of toward moving in
        { rmoving = sd.s_moving; rtoward = sd.s_toward; outside = !outside <> None;
          rletters = List.rev !letters; rspans = sd.s_spans }),
+      span )
+
+(* `unfold` opens hinges that are already there (ADR 0053): its axis is a line
+   the program has, and it scores no crease, so it takes no construction and
+   no output clause. Its items are those of `fold` without a placement beside
+   the stack. *)
+let unfold (items : raw_item list) (out : output) (span : Error.span) : stmt =
+  let verb = "unfold" in
+  let axis = ref None and moving = ref None and toward = ref None
+  and up_to = ref None and bottom = ref None in
+  List.iter
+    (fun it ->
+      match it with
+      | RiConstruction (_, sp) ->
+          Error.fail ~hint:"name the crease the hinges lie on" sp
+            "unfold opens hinges on a crease the program already has; it takes \
+             a crease, not a construction"
+      | _ ->
+          if not (axis_item verb axis it || side_item verb ~toward ~moving it) then
+            match it with
+            | RiUpTo (fa, sp) -> slot verb "up to" up_to sp (fa, sp)
+            | RiLetter (MvMountain, sp) -> slot verb "mountain" bottom sp sp
+            | it -> refuse verb it)
+    items;
+  (match out with
+  | Anonymous -> ()
+  | Named (_, _, sp) | Into (_, sp) ->
+      Error.fail sp "unfold scores no crease, so it takes no as or into");
+  let lo =
+    match need_axis verb axis span with
+    | MLine lo -> lo
+    | MConstruction _ -> assert false
+  in
+  Unfold
+    ( lo,
+      {
+        moving = Option.map fst !moving;
+        toward = Option.map fst !toward;
+        spans = (sides_of toward moving).s_spans;
+        up_to = Option.map fst !up_to;
+        direction = (if !bottom = None then Valley else Mountain);
+        place = None;
+      },
       span )
 
 let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =

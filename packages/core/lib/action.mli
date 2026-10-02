@@ -1,5 +1,5 @@
-(** The disposition verbs that write to the fold state: `mark`, `fold` and
-    `reverse` (ADR 0011), plus the checked-fold primitive `fold` and
+(** The disposition verbs that write to the fold state: `mark`, `fold`,
+    `unfold` and `reverse` (ADR 0011), plus the checked-fold primitive `fold` and
     `reverse` share. Every stateful function takes [(ctx : Ctx.ctx)] as its
     first parameter. *)
 
@@ -32,6 +32,13 @@ val eval_fold :
   Ctx.ctx -> Ast.output -> Ast.markable -> Ast.fold_spec -> Error.span -> unit
 (** Evaluate a `fold` statement: reflect the moving flaps over the axis and
     advance the fold state (spec/MODEL.md, def-fold). *)
+
+val eval_unfold :
+  Ctx.ctx -> Ast.line_operand -> Ast.fold_spec -> Error.span -> unit
+(** Evaluate an `unfold` statement: turn the selected layers over a line
+    that every one of them lies on one side of, opening the folded hinges on
+    it between them and the layers that stay (spec/MODEL.md, def-fold;
+    ADR 0053). *)
 
 val eval_reverse :
   Ctx.ctx ->

@@ -16,6 +16,7 @@ val bind : string -> Ast.construction -> Ast.raw_item list -> Error.span -> Ast.
 val mark : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
 val fold : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
 val reverse : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
+val unfold : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
 val flatten : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
 val flip : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
 (** Walk the items into the slots of the verb, left to right, and build the
