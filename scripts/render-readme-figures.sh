@@ -21,6 +21,7 @@ programs=(
   examples/samurai-helmet.bel
   examples/flapping-bird.bel
   examples/traditional-frog.bel
+  examples/jumping-frog.bel
 )
 
 out=.
