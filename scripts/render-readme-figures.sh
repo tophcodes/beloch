@@ -19,6 +19,7 @@ programs=(
   examples/cicada.bel
   examples/penguin.bel
   examples/samurai-helmet.bel
+  examples/traditional-frog.bel
 )
 
 out=.
