@@ -844,6 +844,10 @@
     "named": false
   },
   {
+    "type": "down",
+    "named": false
+  },
+  {
     "type": "export",
     "named": false
   },
@@ -977,6 +981,10 @@
   },
   {
     "type": "under",
+    "named": false
+  },
+  {
+    "type": "unfold",
     "named": false
   },
   {

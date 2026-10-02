@@ -35,6 +35,11 @@ test("verb keywords and item parentheses are highlighted", async () => {
   expect(html).toContain('<span class="bel-punct">)</span>');
 });
 
+test("unfold is a verb keyword", async () => {
+  const html = await highlightBel("unfold (--q) (moving .b)\n");
+  expect(html).toContain('<span class="bel-keyword">unfold</span>');
+});
+
 test("an annotation key and its text are highlighted", async () => {
   const html = await highlightBel('@step "Fold \\"it\\"."\nfold (map .a onto .c)\n');
   expect(html).toContain('<span class="bel-annotation">@step</span>');
@@ -55,6 +60,8 @@ test("no token in a program covering every head word renders unclassified", asyn
     "--k = (map --v onto --h) (toward --l) (moving .a)",
     "fold (map --v onto --h) (--v toward .u)",
     "reverse (outside) (--d valley)",
+    "unfold (--q) (moving .b down) (up to .c) (toward .a)",
+    "unfold (--q) (moving .b up)",
     "flatten (--l mountain) (.q over .r) (staying .a) (toward .b)",
     "flip (--d mountain) (under .p) (valley) as --k",
     "@yr:hold .a \"Hold it.\" 2",

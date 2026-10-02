@@ -12,11 +12,11 @@
 (punct) @punct
 (flap_bracket) @selector
 
-(write_statement ["mark" "fold" "reverse" "flatten" "flip"] @keyword)
+(write_statement ["mark" "fold" "unfold" "reverse" "flatten" "flip"] @keyword)
 ["(" ")" "[" "]"] @punct
 (construction    ["align" "map" "through" "perp" "onto" "and"] @construction)
 (alignment       ["onto" "through" "perp" "heading"] @alignment)
-(anchor_item     "moving" @anchor)
+(anchor_item     ["moving" "up" "down"] @anchor)
 (depth_item      ["up" "to"] @depth)
 (placement_item  ["over" "under"] @placement)
 (kind_item       "outside" @kind)
