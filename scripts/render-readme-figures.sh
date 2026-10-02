@@ -18,6 +18,7 @@ programs=(
   examples/crane.bel
   examples/cicada.bel
   examples/penguin.bel
+  examples/samurai-helmet.bel
 )
 
 out=.
