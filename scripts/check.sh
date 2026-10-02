@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# The checks to run before a push: every test suite and the prose lint at
-# level error, without the site build. `check-all` adds what the deploy job
-# adds on top. Run inside the devshell, where both are on PATH.
+# The checks to run before a push: every test suite, the prose lint at level
+# error and the credits of the programs, without the site build. `check-all`
+# adds what the deploy job adds on top. Run inside the devshell, where both
+# are on PATH.
 #
 # Every step runs even when an earlier one failed, so a red kernel suite does
 # not hide a red bun suite. The summary at the end names the failed steps,
@@ -24,5 +25,6 @@ step "bun test packages/render-2d" bun_suite render-2d
 step "bun test packages/runtime" bun_suite runtime
 step "bun test packages/www" bun_suite www
 step "prose lint at level error" bash scripts/prose.sh --minAlertLevel=error
+step "program credits" bash scripts/check-program-credits.sh
 
 finish check
