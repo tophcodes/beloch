@@ -14,6 +14,10 @@ export interface Panel {
 const neutral = (scene: FoldScene, key: string) =>
   scene.annotations.filter((a) => a.namespace === null && a.key === key);
 
+// The statements an annotation belongs to, or null for one that belongs to a
+// state or to the program as a whole.
+const range = (a: Annotation): [number, number] | null => (Array.isArray(a.target) ? a.target : null);
+
 const textOf = (a: Annotation | undefined): string | null => {
   const arg = a?.args.find((x) => x.kind === "text");
   return arg?.kind === "text" ? arg.text : null;
@@ -62,10 +66,10 @@ function split(scene: FoldScene, writes: Statement[]): Statement[][] {
 }
 
 export function panels(scene: FoldScene): { panels: Panel[]; hints: string[] } {
-  const steps = neutral(scene, "step").filter((a) => a.target !== null);
+  const steps = neutral(scene, "step").filter((a) => range(a) !== null);
   const says = neutral(scene, "say");
-  const sayOn = (i: number) => textOf(says.find((a) => a.target?.[0] === i));
-  const groupOf = (i: number) => steps.find((a) => a.target![0] <= i && i <= a.target![1]);
+  const sayOn = (i: number) => textOf(says.find((a) => range(a)?.[0] === i));
+  const groupOf = (i: number) => steps.find((a) => range(a)![0] <= i && i <= range(a)![1]);
 
   const out: Panel[] = [];
   const hints: string[] = [];
@@ -79,7 +83,7 @@ export function panels(scene: FoldScene): { panels: Panel[]; hints: string[] } {
     }
     if (done.has(group)) continue;
     done.add(group);
-    const writes = scene.writes.filter((x) => group.target![0] <= x.index && x.index <= group.target![1]);
+    const writes = scene.writes.filter((x) => range(group)![0] <= x.index && x.index <= range(group)![1]);
     const parts = split(scene, writes);
     const number = String(++n);
     const says = (ws: Statement[]) => ws.map((x) => sayOn(x.index)).filter((t) => t !== null).join(" ") || null;
