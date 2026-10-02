@@ -1,0 +1,9 @@
+@author "Claude (Anthropic)"
+; Two folds in half with a quarter turn between them: the orient annotation
+; turns the second panel, and the diagram marks the turn between the panels.
+
+paper square
+
+fold (map --ab onto --cd)
+@orient .c .d up
+fold (map --bc onto --da)

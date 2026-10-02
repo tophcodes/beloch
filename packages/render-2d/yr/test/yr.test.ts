@@ -1,7 +1,7 @@
 import { test, expect } from "bun:test";
 import { parseFold } from "@beloch/scene";
 import type { Vec2 } from "@beloch/scene";
-import { foldMotion, panels, panelView, renderYr } from "@beloch/yr";
+import { CREASE_GAP, foldMotion, panelHalves, panels, panelView, renderYr, turnFraction } from "@beloch/yr";
 
 const scene = async (name: string) =>
   parseFold(await Bun.file(new URL(`./fixtures/${name}.fold`, import.meta.url)).text());
@@ -92,11 +92,76 @@ test("a split step's parts take the sentences of their own folds", async () => {
 
 // The drawings beside the programs are what the pull request shows; this
 // keeps them equal to what the library draws. To write them again:
-//   for f in kite book-twice; do bun cli/bin/fold2svg.ts yr/test/fixtures/$f.fold yr/test/fixtures/$f-yr.svg --view yr; done
+//   for f in kite book-twice rotate shrink; do bun cli/bin/fold2svg.ts yr/test/fixtures/$f.fold yr/test/fixtures/$f-yr.svg --view yr; done
 test("the committed drawings are the library's output", async () => {
-  for (const name of ["kite", "book-twice"]) {
+  for (const name of ["kite", "book-twice", "rotate", "shrink"]) {
     const drawn = renderYr(await scene(name)).doc.toString();
     const committed = await Bun.file(new URL(`./fixtures/${name}-yr.svg`, import.meta.url)).text();
     expect(drawn).toBe(committed);
   }
+});
+
+test("a quarter turn clockwise between two panels is Shall's symbol with 1/4", async () => {
+  const svg = renderYr(await scene("rotate")).doc.toString();
+  const symbols = [...svg.matchAll(/data-kind="rotation" data-turn="([^"]+)" data-direction="([^"]+)"/g)];
+  expect(symbols.map((m) => [m[1], m[2]])).toEqual([["1/4", "clockwise"]]);
+  // between the first panel and the second
+  const at = svg.indexOf('data-kind="rotation"');
+  expect(svg.indexOf('data-panel="1"')).toBeLessThan(at);
+  expect(at).toBeLessThan(svg.indexOf('data-panel="2"'));
+});
+
+test("an orient in force from the first panel on draws no rotation symbol", async () => {
+  expect(renderYr(await scene("kite")).doc.toString()).not.toContain('data-kind="rotation"');
+});
+
+test("a turn is the nearest fraction with a denominator of at most 24", () => {
+  expect(turnFraction(-Math.PI / 2)).toEqual({ num: 1, den: 4, clockwise: true });
+  expect(turnFraction(Math.PI / 4)).toEqual({ num: 1, den: 8, clockwise: false });
+  expect(turnFraction(Math.PI)).toEqual({ num: 1, den: 2, clockwise: false });
+  expect(turnFraction((-3 * Math.PI) / 4)).toEqual({ num: 3, den: 8, clockwise: true });
+  expect(turnFraction(Math.PI / 8)).toEqual({ num: 1, den: 16, clockwise: false });
+});
+
+test("the scale doubles once the model is less than half its size on the first panel", async () => {
+  const s = await scene("shrink");
+  const ps = panels(s).panels;
+  // diameters 1.41, 1.12, 0.71 (exactly half: no change), 0.56, 0.35
+  const h = panelHalves(s, ps);
+  [0.5, 0.5, 0.5, 0.25, 0.25].forEach((x, i) => expect(h[i]).toBeCloseTo(x, 9));
+});
+
+test("the kite keeps one scale", async () => {
+  const s = await scene("kite");
+  const h = panelHalves(s, panels(s).panels);
+  for (const x of h) expect(x).toBeCloseTo(Math.SQRT1_2, 9);
+});
+
+// The end points of the existing creases of a panel, in page pixels.
+const creaseEnds = (svg: string): number[][] =>
+  [...svg.matchAll(/data-kind="existing-crease" x1="([^"]+)" y1="([^"]+)" x2="([^"]+)" y2="([^"]+)"/g)]
+    .map((m) => m.slice(1, 5).map(Number));
+
+test("an existing crease ends short of the edges it ends on", async () => {
+  const two = panelSvg(renderYr(await scene("kite")).doc.toString(), "2");
+  // the diagonal runs from corner to corner, 56 to 516 on the page
+  const [[x1, y1, x2, y2]] = creaseEnds(two) as [number[]];
+  expect(x1).toBeCloseTo(286, 2);
+  expect(x2).toBeCloseTo(286, 2);
+  const ys = [y1!, y2!].sort((a, b) => a - b);
+  expect(ys[0]).toBeCloseTo(56 + CREASE_GAP, 2);
+  expect(ys[1]).toBeCloseTo(516 - CREASE_GAP, 2);
+});
+
+test("an existing crease touches the edge it runs under", async () => {
+  const three = panelSvg(renderYr(await scene("kite")).doc.toString(), "3");
+  // the diagonal shows from the top corner down to the edges of the two flaps
+  const ends = creaseEnds(three);
+  expect(ends).toHaveLength(1);
+  const [, y1, , y2] = ends[0]!;
+  const ys = [y1!, y2!].sort((a, b) => a - b);
+  expect(ys[0]).toBeCloseTo(56 + CREASE_GAP, 2);
+  expect(ys[1]).toBeCloseTo(190.73, 2);
+  // the renderer under the panel draws no crease of its own
+  expect(three).not.toMatch(/class="crease-F"[^>]*opacity="0.55"/);
 });

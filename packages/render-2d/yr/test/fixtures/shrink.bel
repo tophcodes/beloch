@@ -1,0 +1,10 @@
+@author "Claude (Anthropic)"
+; Four folds in half: once the model is less than half the size it had on
+; the first panel, the diagram draws it at a larger scale.
+
+paper square
+
+fold (map --ab onto --cd) as --h
+fold (map --bc onto --da) as --v
+fold (map --h onto --cd)
+fold (map --v onto --da)
