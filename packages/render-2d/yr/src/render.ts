@@ -1,17 +1,20 @@
 // The default YR output: every panel of the program in one column, each the
 // state it draws turned by the `@orient` in force, with the lines and arrows
-// of its writes, its number above and its instruction below.
+// of its writes, its number above and its instruction below. Where the turn
+// changes between two panels, the rotation symbol stands between them.
 import type { Assignment, FoldScene, Statement, Vec2 } from "@beloch/scene";
 import { orientationAt, SceneError } from "@beloch/scene";
 import {
   createDoc, DEFAULT_THEME, el, makeLayout, renderFolded, segmentsInFrame, turnFrame,
 } from "@beloch/render-svg";
 import type { Layout, LineStyle, SvgDoc, SvgNode, Theme } from "@beloch/render-svg";
+import { existingCreaseSegments } from "./creases";
 import { existingCrease, foldAndUnfoldArrow, valleyArrow, valleyLine } from "./draw";
 import type { Ink } from "./draw";
 import { foldMotion } from "./motion";
 import { panels } from "./panels";
 import type { Panel } from "./panels";
+import { rotationSymbol, turnFraction } from "./rotation";
 
 export interface YrOptions {
   theme?: Partial<Theme> | undefined;
@@ -49,15 +52,11 @@ export function panelView(scene: FoldScene, panel: Panel, half?: number): PanelV
   };
 }
 
-// The paper in a panel: its outline and the edges of its folded layers in
-// ink, existing creases thin, join edges not at all.
-const panelLineStyle = (assignment: Assignment, theme: Theme): LineStyle => {
-  switch (assignment) {
-    case "B": case "M": case "V": return { stroke: theme.ink, strokeWidth: 2.2 };
-    case "J": return { stroke: theme.ink, strokeWidth: 0, opacity: 0 };
-    default: return { stroke: theme.ink, strokeWidth: 1, opacity: 0.55 };
-  }
-};
+// The paper in a panel: its outline in ink. The renderer draws the edges of
+// folded layers in its own outline style and asks this style only for the
+// creases that lie flat, which the panel leaves to existingCreaseSegments.
+const panelLineStyle = (assignment: Assignment, theme: Theme): LineStyle =>
+  assignment === "B" ? { stroke: theme.ink, strokeWidth: 2.2 } : { stroke: theme.ink, strokeWidth: 0, opacity: 0 };
 
 const mid = (segs: [Vec2, Vec2][]): Vec2 | null => {
   if (segs.length === 0) return null;
@@ -82,15 +81,13 @@ function markArrow(outline: Vec2[], [a, b]: [Vec2, Vec2]): [Vec2, Vec2] {
 function overlays(scene: FoldScene, panel: Panel, view: PanelView, ink: Ink): SvgNode[] {
   const out: SvgNode[] = [];
   const toPx = (segs: [Vec2, Vec2][]) => segs.map(([p, q]): [Vec2, Vec2] => [view.px(p), view.px(q)]);
-  const base = scene.steps[panel.base]!.frame;
 
-  // the scored lines that stand in the panel's state and are no edge of it
+  // the creases of the panel's state, and the scored lines that stand in it
+  // and are no edge of it
   const first = panel.writes[0]?.index ?? scene.statements.length;
   const standing: Statement | undefined = scene.statements[first - 1];
-  for (const m of standing?.keptMarks ?? []) {
-    if (m.kind !== "seg") continue;
-    for (const s of toPx(segmentsInFrame(base, [[m.a, m.b]]))) out.push(existingCrease(s, ink));
-  }
+  const marks = (standing?.keptMarks ?? []).flatMap((m): [Vec2, Vec2][] => (m.kind === "seg" ? [[m.a, m.b]] : []));
+  for (const s of existingCreaseSegments(scene, panel.base, marks, view.px)) out.push(existingCrease(s, ink));
 
   for (const w of panel.writes) {
     if (w.kind === "fold") {
@@ -121,17 +118,49 @@ function wrap(text: string, width: number): string[] {
   return lines;
 }
 
-const CAPTION = 22, LINE = 28, WRAP = 44;
+const CAPTION = 22, LINE = 28, WRAP = 44, ROTATION = 88;
+
+// The size of a state: the greatest distance between two of its vertices,
+// which a rotation on the page leaves unchanged. Known ceiling: every pair of
+// vertices is measured, O(V²), which a few thousand vertices keep fast.
+function size(scene: FoldScene, panel: Panel): number {
+  const V = scene.steps[panel.base]!.frame.vertices;
+  let d = 0;
+  for (let i = 0; i < V.length; i++) {
+    for (let j = i + 1; j < V.length; j++) d = Math.max(d, Math.hypot(V[i]![0] - V[j]![0], V[i]![1] - V[j]![1]));
+  }
+  return d;
+}
+
+// The half side, in table units, of the square each panel is drawn in (see
+// panelView). Panels share a scale until the model is less than half the size
+// it had on the first panel of that scale; that panel starts a new one, and a
+// scale fits the largest of its panels [lang1991conventions, Part III].
+export function panelHalves(scene: FoldScene, list: Panel[]): number[] {
+  const runs: Panel[][] = [];
+  let reference = 0;
+  for (const p of list) {
+    const d = size(scene, p);
+    if (runs.length === 0 || d < reference / 2 - 1e-9) {
+      runs.push([]);
+      reference = d;
+    }
+    runs[runs.length - 1]!.push(p);
+  }
+  return runs.flatMap((run) => {
+    const half = Math.max(...run.map((p) => turned(scene, p).half));
+    return run.map(() => half);
+  });
+}
 
 export function renderYr(scene: FoldScene, opts: YrOptions = {}): { doc: SvgDoc; hints: string[] } {
   const theme: Theme = { ...DEFAULT_THEME, ...opts.theme };
   const ink: Ink = { ink: theme.ink, paper: theme.front };
   const { panels: list, hints } = panels(scene);
 
-  // one scale for every panel, so that a fold shows the model getting smaller
-  const half = Math.max(...list.map((p) => turned(scene, p).half));
-  const drawn = list.map((panel) => {
-    const view = panelView(scene, panel, half);
+  const halves = panelHalves(scene, list);
+  const drawn = list.map((panel, i) => {
+    const view = panelView(scene, panel, halves[i]);
     const doc = renderFolded(scene, {
       step: String(panel.base), orient: true, layout: view.layout,
       annotate: [], dots: "annotated", hidden: "hide",
@@ -139,15 +168,25 @@ export function renderYr(scene: FoldScene, opts: YrOptions = {}): { doc: SvgDoc;
     });
     doc.layer("annotations").children.push(...overlays(scene, panel, view, ink));
     const caption = panel.text === null ? [] : wrap(panel.text, WRAP);
-    return { panel, doc, caption, height: view.layout.H + caption.length * LINE + 16 };
+    return { panel, doc, caption, turn: view.turn, height: view.layout.H + caption.length * LINE + 16 };
+  });
+  // the turn from the previous panel to each panel, where there is one
+  const turns = drawn.map((d, i) => {
+    const delta = i === 0 ? 0 : d.turn - drawn[i - 1]!.turn;
+    return Math.abs(Math.atan2(Math.sin(delta), Math.cos(delta))) > 1e-9 ? turnFraction(delta) : null;
   });
 
   const W = drawn[0]?.doc.width ?? 0;
-  const H = drawn.reduce((s, d) => s + d.height, 0);
+  const H = drawn.reduce((s, d, i) => s + d.height + (turns[i] ? ROTATION : 0), 0);
   const column = createDoc(W, H);
   if (theme.background !== "none") column.root.children.push(el("rect", { width: W, height: H, fill: theme.background }));
   let y = 0;
-  for (const { panel, doc, caption, height } of drawn) {
+  drawn.forEach(({ panel, doc, caption, height }, i) => {
+    const turn = turns[i];
+    if (turn) {
+      column.root.children.push(rotationSymbol([W / 2, y + ROTATION / 2], turn, ink));
+      y += ROTATION;
+    }
     const svg = doc.node();
     const lines = caption.map((t, i) =>
       el("text", {
@@ -160,6 +199,6 @@ export function renderYr(scene: FoldScene, opts: YrOptions = {}): { doc: SvgDoc;
       ...lines,
     ]));
     y += height;
-  }
+  });
   return { doc: column, hints };
 }
