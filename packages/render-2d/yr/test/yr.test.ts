@@ -89,3 +89,14 @@ test("a split step's parts take the sentences of their own folds", async () => {
   const { panels: ps } = panels(await scene("book-twice-said"));
   expect(ps.map((p) => p.text)).toEqual(["Fold in half.", "Fold in half again.", null]);
 });
+
+// The drawings beside the programs are what the pull request shows; this
+// keeps them equal to what the library draws. To write them again:
+//   for f in kite book-twice; do bun cli/bin/fold2svg.ts yr/test/fixtures/$f.fold yr/test/fixtures/$f-yr.svg --view yr; done
+test("the committed drawings are the library's output", async () => {
+  for (const name of ["kite", "book-twice"]) {
+    const drawn = renderYr(await scene(name)).doc.toString();
+    const committed = await Bun.file(new URL(`./fixtures/${name}-yr.svg`, import.meta.url)).text();
+    expect(drawn).toBe(committed);
+  }
+});
