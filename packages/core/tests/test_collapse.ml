@@ -40,7 +40,7 @@ let prefix pre s =
   let lp = String.length pre in
   String.length s >= lp && String.sub s 0 lp = pre
 
-(* -- Step 1 tests --------------------------------------------------------- *)
+(* -- flat-foldability ----------------------------------------------------- *)
 
 let all_rays () = snd (precreased ())
 
@@ -141,22 +141,18 @@ let test_waterbomb_assignment () =
         ("waterbomb assignment is realizable (Ok or ambiguous), got: " ^ e)
         true (prefix "ambiguous stacking" e)
 
-(* -- over resolves ambiguity (merged from test_collapse_graph.ml, Plan 3c
-   Task 6: that file's old-vs-new parity harness is gone; this is its
-   new-side content) ---------------------------------------------------- *)
+(* -- over resolves ambiguity ---------------------------------------------- *)
 
 (* The 8-ray cross, valley pattern [V;V;M;M;V;M;M;M]: |nm-nv| = |5-3| = 2
    (Maekawa holds) but the stacking is ambiguous without `over`; over=[(3,4)]
-   (face 3 above face 4) resolves it to a unique Ok. Both facts were
-   originally verified against the certified old kernel (Plan 3b Task 5); the
-   old kernel is gone, so the exact resolved facts it proved are pinned here
-   as literals instead. *)
+   (face 3 above face 4) resolves it to a unique Ok. Both facts are pinned
+   here as literals, verified against an earlier certified kernel. *)
 let over_valleys = [| true; true; false; false; true; false; false; false |]
 
-(* The `over` pair (3,4) was pinned as face-index literals against the old
-   kernel's un-rotated [sort_ccw] labeling, where the anchor sat in fan sector
-   0. The stayer-anchored kernel rotates the labeling to the stayer sector, so
-   to keep this pin's intent we anchor on the material in sector 0: the first
+(* The `over` pair (3,4) is pinned as face-index literals against the
+   un-rotated [sort_ccw] labeling, where the anchor sits in fan sector 0. The
+   stayer-anchored kernel rotates the labeling to the stayer sector, so to
+   keep this pin's intent we anchor on the material in sector 0: the first
    pre-collapse face there. [Collapse.Faces [f]] then rotates by 0 (a no-op),
    reproducing the exact labeling the over-literals were calibrated for. *)
 let sector0_face st es =
@@ -200,8 +196,8 @@ let test_over_resolves_ambiguity () =
       Alcotest.(check int) "derived letters satisfy Maekawa (|M-V|=2)" 2
         (abs (m - v))
 
-(* -- [collapse_all]: enumerating entry point (Plan flatten-derive-v2 Task 2).
-   [collapse] becomes a wrapper over the same shared pipeline: single distinct
+(* -- [collapse_all]: enumerating entry point.
+   [collapse] is a wrapper over the same shared pipeline: single distinct
    rank -> [Ok], multiple -> [e_ambig], error -> [passthrough]. [collapse_all]
    instead anchors EVERY distinct rank independently and returns all that seat
    in-bounds. Reuses the 8-ray cross + [over_valleys] fixture above, which
@@ -280,13 +276,11 @@ let precreased_plus () =
 (* [Fold_state.mv] is derived, never stored, so there is no separate
    [effective_valley] parity step to hand-verify against: on this fixture
    (no prior flip) the derived letter equals the raw declared valley/mountain
-   for every ray. ADJUDICATED (Toph, 2026-07-16, Plan 3c Task 3b-5 / Task 4):
-   the OLD stored `eassign` applied an extra per-ray-index parity correction
-   (`effective_valley`) that did not track the actual geometry: it
-   contradicted the old codebase's own `intrinsic_valley` probe on this
+   for every ray. ADJUDICATED (Toph, 2026-07-16): a stored `eassign` with an
+   extra per-ray-index parity correction (`effective_valley`) does not track
+   the actual geometry: it contradicts an `intrinsic_valley` probe on this
    fixture (see [test_derived_mv_matches_declared] below, which pins the
-   adjudicated finding; the old kernel that exhibited the contradiction no
-   longer exists, per Plan 3c Task 6). Worked example, assignment
+   adjudicated finding). Worked example, assignment
    [M;V;M;M] on the "+" vertex (ray order right,up,left,down): all four rays'
    derived [mv] equal their raw declared letter: right=M, up=V, left=M,
    down=M. The horizontal crease carries two M; the vertical crease
@@ -317,17 +311,12 @@ let test_eassign_parity () =
       in
       Alcotest.(check bool) "no folded crease left as F" false has_u
 
-(* Merged from test_collapse_graph.ml's [test_old_eassign_divergence] (Plan 3c
-   Task 6: that file's old-vs-new parity harness is gone). Pins the Task 5
-   adjudication directly: on the "+" vertex with no prior flip, EVERY ray
+(* Pins the 2026-07-16 adjudication directly: on the "+" vertex with no prior flip, EVERY ray
    hinge's derived [Fold_state.mv] equals the raw user-declared letter: no
    effective_valley-style parity correction applies to the derived letter
-   (the old kernel's stored `eassign` DID apply such a correction and, per
-   the Task 5 finding, contradicted its own [intrinsic_valley] probe on this
-   fixture; that old kernel and probe no longer exist to re-run). This
-   duplicates [test_eassign_parity]'s per-crease check above via a per-ray
-   check instead: kept as its own test because it is the direct successor
-   of the merged file's divergence pin, not because the coverage is new. *)
+   (such a correction contradicts an [intrinsic_valley] probe on this
+   fixture). This duplicates [test_eassign_parity]'s per-crease check above
+   via a per-ray check, so the adjudication has a test of its own. *)
 let test_derived_mv_matches_declared () =
   let st, _, _, rays = precreased_plus () in
   let valleys = [| false; true; false; false |] in
@@ -364,7 +353,7 @@ let test_derived_mv_matches_declared () =
         hs;
       Alcotest.(check int) "all four ray hinges checked" 4 !checked
 
-(* -- Task 2 (flatten-staying): the stayer picks the physical world ----------
+(* -- the stayer picks the physical world -------------------------------------
    The stayer is the material that does NOT move: identity, front-up, where it
    lay. Two Arc stayers on adjacent sectors of the same "+" vertex both solve;
    their sectors have opposite fan parity, so anchoring the identity on each
@@ -401,7 +390,7 @@ let test_stayer_picks_world () =
   | Error e, _ -> Alcotest.fail ("arc_a stayer must solve: " ^ e)
   | _, Error e -> Alcotest.fail ("arc_b stayer must solve: " ^ e)
 
-(* -- C1: duplicate ray (zero-width sector) ---------------------------------- *)
+(* -- duplicate ray (zero-width sector) ------------------------------------ *)
 
 (* Two elements pointing the SAME direction from O fold a zero-width sector; the
    doubled reflection cancels in the closure product, so Kawasaki/Maekawa/count
@@ -428,7 +417,7 @@ let test_duplicate_ray_rejected () =
         ("duplicate-ray error: " ^ e) true
         (prefix "duplicate ray in collapse" e)
 
-(* -- C2: orientation-preserving normalization ------------------------------- *)
+(* -- orientation-preserving normalization --------------------------------- *)
 
 (* Intrinsic (geometry-only) M/V of a crease: the crease is a valley iff the
    UPPER of its two incident faces is front-down (not [face_up]): no
@@ -473,14 +462,14 @@ let test_intrinsic_convention_pin () =
 
 (* A 3-valley / 5-mountain waterbomb variant whose solved stack seats an
    ORIENTATION-REVERSING sector at the bottom (verified: bottom-by-rank sector
-   is not [face_up]). The old normalization anchored [tb_inv] there, mirroring
-   every face's front/back while the letters, correctly derived in the fixed
-   global frame, stayed put, so the emitted geometry became the M/V mirror of
-   the declared collapse. After the fix (anchor = lowest-ranked orientation-
-   PRESERVING sector) the geometry realizes the declared fold: every crease's
-   intrinsic M/V equals what was declared. Checked via face orientation and
-   layer relation alone. Under the pre-fix anchor this check fails on
-   all 8 creases. *)
+   is not [face_up]). Anchoring [tb_inv] there would mirror every face's
+   front/back while the letters, derived in the fixed global frame, stay
+   put, so the emitted geometry would be the M/V mirror of the declared
+   collapse. With the anchor on the lowest-ranked orientation-PRESERVING
+   sector the geometry realizes the declared fold: every crease's intrinsic
+   M/V equals what was declared. Checked via face orientation and layer
+   relation alone. Anchoring on the bottom sector fails this check on all 8
+   creases. *)
 let c2_valleys = [| true; true; true; false; false; false; false; false |]
 
 let test_c2_declared_mountain_intrinsic () =
@@ -513,7 +502,7 @@ let test_c2_declared_mountain_intrinsic () =
           (intrinsic_valley s (face_in l) (face_in j))
       done
 
-(* -- I1: flip-awareness (parity relative to the original front) ------------- *)
+(* -- flip-awareness (parity relative to the original front) --------------- *)
 
 let collapse_letters valleys ~flip =
   let st, _, _, rays = precreased_plus () in
@@ -531,16 +520,15 @@ let collapse_letters valleys ~flip =
              | Fold_state.M -> Some false
              | Fold_state.F -> None)
 
-(* OLD model (spec §4.7, "mountain = turn over, then valley"): a prior [flip]
-   was believed to invert every collapse crease's letter, because the STORED
+(* Spec §4.7 ("mountain = turn over, then valley") suggests a prior [flip]
+   inverts every collapse crease's letter, because the STORED
    [eassign] is [ray_assign]: user valley XOR'd with the pre-collapse sector's
    placement parity ([effective_valley]), and flip toggles that parity for
-   every sector uniformly. ADJUDICATED (Toph, 2026-07-16, Plan 3c Task 4): the
-   new kernel's [intent] (CP-frame, = old eintent/eassign, matches the old
-   model bit-for-bit, see [test_eassign_parity] above) DOES still flip this
-   way, but the DERIVED [Fold_state.mv] does not: [mv] reads only the
+   every sector uniformly. ADJUDICATED (Toph, 2026-07-16): the kernel's
+   [intent] (CP-frame, = eintent/eassign, see [test_eassign_parity] above)
+   DOES flip this way, but the DERIVED [Fold_state.mv] does not: [mv] reads only the
    constructed hinge's rank + [face_up], an invariant of the realized
-   physical fold: the same "old per-ray parity term belongs to [intent], not
+   physical fold: the same "per-ray parity term belongs to [intent], not
    to the physically-derived letter" finding as [test_eassign_parity], just
    exercised through a prior [flip] instead of a prior [subdivide]. (Compare
    test_fold_graph.ml's [test_flip_parity]: a hinge carried through a LATER

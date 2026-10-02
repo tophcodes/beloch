@@ -1,7 +1,6 @@
-// Palette lifted verbatim from tools/fold2svg.mjs:200-215, 227, 365, then
-// switched from axiom-provenance coloring to FOLD edges_assignment (M/V/B/U/F)
-// — provenance is a construction-history detail, not what a folder reading a
-// diagram needs.
+// Creases are colored by FOLD edges_assignment (M/V/B/U/F), which is what a
+// folder reading a diagram needs; axiom provenance is a construction-history
+// detail and gets no color.
 import type { Assignment } from "@beloch/scene";
 
 export interface LineStyle {
@@ -103,9 +102,8 @@ export const HIGHLIGHT_TEXT: string[] = [
   "#1C6B33", "#c2004f", "#8a2fd6", "#b25600", "#0b6fb0", "#5f6600",
 ];
 
-// flat, unassigned and construction were re-measured against the paper
-// schemes and darkened: the old values sat at 2.45, 2.05 and below 3:1 on
-// white, so a crease could not be told from the sheet it was drawn on.
+// flat, unassigned and construction need a contrast of at least 3:1 on
+// white; below that a crease cannot be told from the sheet it is drawn on.
 export const DEFAULT_THEME: Theme = {
   boundary: "#1f2937",
   mountain: "#dc2626",

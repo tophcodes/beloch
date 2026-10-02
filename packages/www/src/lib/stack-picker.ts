@@ -1,8 +1,8 @@
-// Folded-view stack picker (playground slice B, task 7): when several
+// Folded-view stack picker: when several
 // `beloch:inspect` crease segments coincide in the folded projection (the
 // same bundle stacked across layers), order them by layer rank so the panel
 // lists top-of-stack first, and let a picked row's SVG line(s) be found by
-// geometry — there is NO `data-seg` attribute (dropped in Task 4), so a
+// geometry. There is NO `data-seg` attribute, so a
 // segment can only be re-identified by matching its `table` endpoints
 // against the rendered `<line>`'s x1/y1/x2/y2, in the SAME (rendered SVG
 // pixel) coordinate space. Pure, DOM-free functions so both are unit

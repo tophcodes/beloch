@@ -58,7 +58,7 @@ class BelochFigure extends HTMLElement {
   // Bidirectional hover + persistent multi-selection, delegated on the whole
   // card so it works for both the code panel's spans and the injected SVG's
   // creases/vertex dots, and survives re-renders (view/step changes) via the
-  // afterRender hook (Task 5).
+  // afterRender hook.
   //
   // NB: mouseenter/mouseleave (not mouseover/mouseout) — they don't bubble
   // natively, so delegation needs the *capture* phase, which always sees

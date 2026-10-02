@@ -1,9 +1,9 @@
 open Beloch
 
-(* Task 4: `flatten` becomes bindable (`--r = flatten …`), mirroring the
-   `Fold`/`Mark` name slot. The bound name resolves to a selectable bundle of
-   the rays (validate mode): the emergent-crease refinement of what
-   the bundle contains is a later task. *)
+(* `flatten` is bindable (`--r = flatten …`), mirroring the `Fold`/`Mark`
+   name slot. In validate mode the bound name resolves to a selectable bundle
+   of the rays; in derive mode it resolves to the emergent crease (see
+   [test_flatten_derive_registers_name] and below). *)
 
 let expect_error msg_substr thunk =
   try
@@ -234,14 +234,14 @@ let test_flatten_derive_e2e () =
   Alcotest.(check bool)
     "a genuinely-distinct emergent crease is incident to O" true emergent_exists
 
-(* --ear occupies the crease namespace exactly like the validate-mode bind
-   (Task 4): same dup-check proof, no dedicated Env/has_bundle accessor. *)
+(* --ear occupies the crease namespace exactly like the validate-mode bind:
+   same dup-check proof, no dedicated Env/has_bundle accessor. *)
 let test_flatten_derive_registers_name () =
   expect_error "already bound" (fun () ->
       Eval.eval_folded
         (Beloch.parse ~filename:"t.bel" (rabbit_ear_derive_src ^ "--ear = [--v]\n")))
 
-(* Task 6: the bound name in DERIVE mode must resolve to the EMERGENT crease,
+(* The bound name in DERIVE mode must resolve to the EMERGENT crease,
    not the rays: so a meet-point selector against it (`.[--ear --da]`)
    finds the tip where the emergent crease reaches the paper edge. For
    [rabbit_ear_derive_src]'s O = (1/2, (sqrt5-1)/4) ~= (0.5, 0.309017), the
@@ -316,14 +316,13 @@ let test_flatten_fish_toward_on_axis_ambiguous () =
 (* Unit test of the same-DIRECTION genuine-filter: the PLUS vertex
    O = (1/2,1/2) with given rays right (1,1/2), up (1/2,1), down (1/2,0).
    The only completion is the LEFT ray (0,1/2): the OPPOSITE ray of the
-   right ray's own line (y = 1/2). The old same-LINE filter dropped it
+   right ray's own line (y = 1/2). A same-LINE filter would drop it
    ("extend a line already drawn"); the direction filter must keep it. No
    line-new candidate exists at all here, so [candidates] returns exactly one
-   entry, tagged `OppositeRay`. (V2: feasibility is no longer [Flatten]'s job:
-   [candidates] is a pure generator now, so the old
-   `feasible`-before-`toward` unit test has no Flatten-module-level
-   equivalent any more; its behavior is covered by the evaluation-level fish-base
-   test below, where the two LineNew candidates fail via
+   entry, tagged `OppositeRay`. (Feasibility is not [Flatten]'s job:
+   [candidates] is a pure generator, so `feasible`-before-`toward` has no
+   Flatten-module-level unit test; the evaluation-level fish-base
+   test below covers it, where the two LineNew candidates fail via
    `Collapse.collapse_all` returning `Error` for every pattern.) *)
 let test_flatten_derive_opposite_ray_unit () =
   let mk x y = { Geom.x; y } in
@@ -386,7 +385,7 @@ let test_flatten_derive_in_bounds () =
   Alcotest.(check bool)
     "every folded face stays within the unit-square paper" true all_in
 
-(* Task 3 step 1: [Flatten.candidates] unit on the fish-base vertex itself:
+(* [Flatten.candidates] unit on the fish-base vertex itself:
    O = incenter-on-diagonal (1 − √2/2, 1 − √2/2), given rays toward b, d, a
    (the geometry [fish_base_src] resolves to; verified by evaluating
    the marks up to just before the flatten and reading off named points).
@@ -415,7 +414,7 @@ let test_flatten_candidates_fish_vertex () =
   Alcotest.(check int) "one OppositeRay (O→c)" 1 (count `OppositeRay);
   Alcotest.(check int) "two LineNew (the side candidates)" 2 (count `LineNew)
 
-(* Task 3 step 1: the pure Maekawa-consistent M/V pattern enumerator
+(* The pure Maekawa-consistent M/V pattern enumerator
    ([Flatten.mv_patterns]). n=4: valid (M,V) splits are (3,1)/(1,3), where
    |diff|=2, never (2,2)/(4,0)/(0,4). *)
 let test_flatten_mv_patterns_all_free () =

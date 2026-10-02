@@ -1,7 +1,6 @@
 // Labels overlay (named points/lines), title and legend — shared by renderCP
-// and renderFolded. Originally ported verbatim from tools/fold2svg.mjs:342-463;
-// the auto-all/dedup behavior from that port has since been replaced by an
-// explicit opt-in list (see appendConstructions below).
+// and renderFolded. Labels are drawn from an explicit opt-in list (see
+// appendConstructions below).
 import type { Assignment, FoldScene, Frame, Vec2 } from "@beloch/scene";
 import { el, SvgDoc, SvgNode } from "./svgdoc";
 import { namedSegments, segmentsInFrame } from "./geometry";
@@ -108,7 +107,7 @@ export function appendConstructions(
   return anchors;
 }
 
-// fold2svg.mjs:450-453
+// Title badge in the `hud` layer.
 export function appendTitle(doc: SvgDoc, theme: Theme, title: string): void {
   const hud = doc.layer("hud");
   hud.children.push(el("rect", {
@@ -119,7 +118,7 @@ export function appendTitle(doc: SvgDoc, theme: Theme, title: string): void {
   }, [], title));
 }
 
-// fold2svg.mjs:455-463 — assignments (M/V/B/U/F) present in this diagram,
+// Legend: assignments (M/V/B/U/F) present in this diagram,
 // styled the same as the creases themselves via theme.lineStyle.
 const ASSIGNMENT_LABEL: Record<Assignment, string> = {
   B: "boundary", M: "mountain", V: "valley", F: "flat", J: "join", U: "unassigned",

@@ -63,7 +63,7 @@ export interface SceneOptions {
   layout?: Layout | undefined;
 }
 
-// fold2svg.mjs:217 — hardcoded unit-square corners, normalized paper space.
+// Hardcoded unit-square corners, normalized paper space.
 const CORNER: [number, number, string][] = [
   [0, 0, "a"], [1, 0, "b"], [1, 1, "c"], [0, 1, "d"],
 ];
@@ -174,7 +174,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
   const { tx, ty, minX, maxX, minY, maxY } = layout;
   const doc = createDoc(layout.W, layout.H);
 
-  // fold2svg.mjs:222-223 — background + shadow filter (shared by both views)
+  // Background + shadow filter (shared by both views)
   doc.root.children.push(el("rect", { width: layout.W, height: layout.H, fill: theme.background }));
   doc.root.children.push(el("defs", {}, [
     el("filter", { id: "layerShadow", x: "-20%", y: "-20%", width: "140%", height: "140%" }, [
@@ -208,7 +208,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
   const annotations = doc.layer("annotations");
 
   if (occlude) {
-    // ===== folded step geometry (ported from renderFolded) =====
+    // ===== folded step geometry =====
     const bottom = opts.view === "bottom";
     const mx = (x: number) => (bottom ? layout.W - tx(x) : tx(x));
     const paint = bottom ? [...order].reverse() : order;
@@ -631,7 +631,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     }
     emitLabels(annotations, labelAnchors, 17, opts.annotate === undefined);
   } else {
-    // ===== flat crease-pattern geometry (ported from renderCP) =====
+    // ===== flat crease-pattern geometry =====
     if (opts.texture.faces !== "none") {
       F.forEach((f, i) => {
         const lit = highlightFaces.get(i);

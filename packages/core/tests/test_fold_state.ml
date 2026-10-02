@@ -18,7 +18,7 @@ let hline k : Geom.line = { Geom.a = q 0; b = q 1; c = q k }
 (* line x = 1/2 *)
 let vline_half : Geom.line = { Geom.a = q 1; b = q 0; c = Num.of_q (Q.of_ints 1 2) }
 
-(* Task 1 helper: metadata-carrying hinge literal with defaults *)
+(* metadata-carrying hinge literal with defaults *)
 let mkh ?(cid = -1) ?(prov = None) fa fb line angle =
   { Fold_state.fa; fb; line; angle; crease_id = cid; prov }
 
@@ -424,7 +424,7 @@ let test_waterbomb_tear_rejected () =
     (function Fold_state.Hinge_not_closed _ -> true | _ -> false)
     ~faces:(wb_faces ()) ~hinges ~root:0 ~rank:[| 0; 1; 2; 3; 4; 5; 6; 7 |]
 
-(* --- Plan 3a Task 1: metadata, marks, base ------------------------------- *)
+(* --- metadata, marks, base ----------------------------------------------- *)
 
 let test_metadata_carried () =
   let faces = single_fold_faces () in
@@ -490,7 +490,7 @@ let test_next_id_roundtrip () =
   Alcotest.(check int) "set to 7" 7 (Fold_state.next_id_value ());
   Alcotest.(check int) "next alloc is 7" 7 (Fold_state.fresh_crease_id ())
 
-(* --- Plan 3a Task 2: 2D access ------------------------------------------- *)
+(* --- 2D access ----------------------------------------------------------- *)
 
 (* single fold: face1 = [1,2]x[0,1] folded across x=1 onto face0 = [0,1]x[0,1] *)
 let folded_pair () =
@@ -544,7 +544,7 @@ let test_point_queries () =
   Alcotest.(check bool) "off paper" false
     (Fold_state.on_paper g { Geom.x = q 5; y = q 5 })
 
-(* --- Plan 3a Task 3: subdivision ------------------------------------------ *)
+(* --- subdivision --------------------------------------------------------- *)
 
 let test_subdivide_parity () =
   Fold_state.reset_ids ();
@@ -587,11 +587,8 @@ let test_subdivide_carried_split () =
   Alcotest.(check int) "crease 0 split in two" 2 (List.length (pieces_of 0));
   Alcotest.(check int) "crease 1 in two" 2 (List.length (pieces_of 1))
 
-(* Was a parity test against the old model (Task 3); the old model is gone
-   (Plan 3c Task 6), so the concrete face/hinge layout it proved equal is
-   inlined directly, computed from THIS construction (verified via a scratch
-   run of the same fold graph, git history has the parity-checked
-   provenance): the guard confines the axis crease to the y>1/2 side, so the
+(* Asserts the concrete face/hinge layout of THIS construction, pinned from
+   a scratch run of the same fold graph: the guard confines the axis crease to the y>1/2 side, so the
    whole bottom strip (face 2) stays unsplit and un-hinged to the axis
    crease. *)
 let test_subdivide_keep_side () =
@@ -624,16 +621,13 @@ let test_subdivide_keep_side () =
      not (List.mem ax_h.Fold_state.fa below_faces)
      && not (List.mem ax_h.Fold_state.fb below_faces))
 
-(* --- Plan 3a Task 4: fold -------------------------------------------------- *)
+(* --- fold ---------------------------------------------------------------- *)
 
 let vfold_new g ax = Fold_state.fold g ~axis:ax ~move_side:1 ~valley:true ~prov:None
 
-(* The following fold tests were parity tests against the old model (Task 4);
-   the old model is gone (Plan 3c Task 6). Each now asserts the concrete
-   face/hinge facts the parity previously proved equal, computed straight
-   from [Fold_state.fold] itself (a scratch run pinned these, git history has
-   the parity-checked provenance), instead of re-deriving them
-   by hand. *)
+(* The following fold tests assert concrete face/hinge facts computed
+   straight from [Fold_state.fold] itself (pinned from a scratch run),
+   instead of re-deriving them by hand. *)
 
 let test_fold_parity_single () =
   Fold_state.reset_ids ();
@@ -655,7 +649,7 @@ let test_fold_parity_mountain () =
 let test_fold_parity_pleat () =
   (* second fold refolds the packet: movers include previously-moved AND
      previously-stationary material, so carried folded hinges move as a block
-     (nontrivial base is exercised separately by the flip tests in Task 5) *)
+     (nontrivial base is exercised separately by the flip tests below) *)
   Fold_state.reset_ids ();
   let quarter = Num.div Num.one (Num.of_int 4) in
   let ax1 = { Geom.a = q 1; b = q 0; c = Num.div Num.one (Num.of_int 2) } in
@@ -732,7 +726,7 @@ let test_fold_then_subdivide_parity () =
   Alcotest.(check int) "4 faces (both layers cut)" 4
     (Array.length (Fold_state.faces g))
 
-(* --- Task 4 coverage: unfold toggle, root/base branches ------------------ *)
+(* --- fold coverage: unfold toggle, root/base branches -------------------- *)
 
 let test_fold_unfold_toggle () =
   (* book fold, then re-fold along the SAME axis moving only the top layer
@@ -815,7 +809,7 @@ let test_fold_nothing_stationary_parity () =
   Alcotest.(check bool) "reflected across x=1" true
     (Geom.point_equal (Fold_state.table_polygon g 0).(0) (gp 2 0))
 
-(* --- Plan 3a Task 5: flip + [add_mark] ------------------------------------- *)
+(* --- flip + [add_mark] --------------------------------------------------- *)
 
 let test_flip_parity () =
   Fold_state.reset_ids ();
@@ -880,7 +874,7 @@ let test_flip_nontrivial_base_parity () =
     (Isometry3.equal (Fold_state.face_iso pre (Fold_state.root pre))
        Isometry3.identity)
 
-(* --- Plan 3a Task 6: cross-op old-vs-new parity battery -------------------- *)
+(* --- cross-op battery ---------------------------------------------------- *)
 
 type battery_op =
   | OSub of Geom.line
@@ -906,12 +900,9 @@ let battery_frac a b = Num.div (Num.of_int a) (Num.of_int b)
 let battery_vl c : Geom.line = { Geom.a = Num.one; b = Num.zero; c }
 let battery_hl c : Geom.line = { Geom.a = Num.zero; b = Num.one; c }
 
-(* This battery was a cross-op parity regression against the old model (Task
-   6); the old model is gone (Plan 3c Task 6). Each scenario now asserts the
-   concrete face count + derived letters the parity previously proved equal,
-   pinned from a scratch run of the same op sequence (git history has the
-   parity-checked provenance), as a smoke-test that the op chain
-   still produces the same shape. *)
+(* Each battery scenario asserts the concrete face count + derived letters,
+   pinned from a scratch run of the same op sequence, as a smoke-test that
+   the op chain still produces the same shape. *)
 let letters_of g =
   Array.to_list (Fold_state.hinges g)
   |> List.mapi (fun i _ -> Fold_state.mv g i)
@@ -962,8 +953,7 @@ let test_battery () =
 
 (* mark-then-fold: book fold, mark a segment on the STATIONARY region, fold
    again, then check the mark's current table axis is a line that passes
-   through the mark's own current table position: self-consistency,
-   in place of the old cross-model chord check. *)
+   through the mark's own current table position: self-consistency. *)
 let test_battery_mark_then_fold () =
   let half = battery_frac 1 2 in
   let quarter = battery_frac 1 4 in
@@ -982,8 +972,7 @@ let test_battery_mark_then_fold () =
   (match Fold_state.mark_axis_current g 99 with
   | `Line l ->
       (* self-consistency: the reported axis must contain the mark's own two
-         paper endpoints' CURRENT table positions (was checked against the
-         old model's chords; the invariant is model-independent) *)
+         paper endpoints' CURRENT table positions *)
       Alcotest.(check int) "axis contains seg_a's table position" 0
         (Geom.side_of_line l (Fold_state.table_position g seg_a));
       Alcotest.(check int) "axis contains seg_b's table position" 0
@@ -1030,9 +1019,9 @@ let test_mark_graduates () =
   Alcotest.(check bool) "point marks never graduate" false
     (Fold_state.mark_graduates (Fold_state.flat [| Sheet.square_corners Num.one |]) point)
 
-(* --- Plan 3b Task 1: crease queries --------------------------------------- *)
+(* --- crease queries ------------------------------------------------------ *)
 
-(* build a precrease + fold state (was matched old/new states) *)
+(* build a precrease + fold state *)
 let pair_precrease_fold () =
   Fold_state.reset_ids ();
   let half = Num.div Num.one (Num.of_int 2) in
@@ -1042,10 +1031,8 @@ let pair_precrease_fold () =
     (Fold_state.subdivide (Fold_state.flat [| Sheet.square_corners Num.one |]) hhalf ~prov:None)
     ~axis:vhalf ~move_side:1 ~valley:true ~prov:None
 
-(* Was a parity test against the old model (Plan 3b Task 1); the old model is
-   gone (Plan 3c Task 6). Asserts the concrete crease ids/segment counts the
-   parity previously proved equal, pinned from a scratch run of this exact
-   construction (git history has the parity-checked provenance). *)
+(* Asserts the concrete crease ids/segment counts, pinned from a scratch run
+   of this exact construction. *)
 let test_crease_segments_parity () =
   let g = pair_precrease_fold () in
   let ids = List.sort compare (Fold_state.all_crease_ids g) in
@@ -1067,8 +1054,7 @@ let test_crease_axes_parity () =
       Alcotest.(check string) (Printf.sprintf "axis class cid %d" cid) "line"
         (string_of n);
       (* self-consistency: the reconstructed line must contain every one of
-         the crease's OWN segment table endpoints (was checked against the
-         old model's endpoints; the invariant is model-independent) *)
+         the crease's OWN segment table endpoints *)
       (match n with
       | `Line nl ->
           List.iter
@@ -1114,11 +1100,9 @@ let test_neighbors_hinge_between () =
     (Fold_state.hinges g);
   ignore n
 
-(* --- Plan 3b Task 2: clusters/flaps ---------------------------------------- *)
+(* --- clusters/flaps ------------------------------------------------------ *)
 
-(* Was a parity test against the old model (Plan 3b Task 2); the old model is
-   gone (Plan 3c Task 6). The partition it proved equal, pinned from a
-   scratch run: faces 0,1 (the unmoved bottom-ish faces) cluster together,
+(* The partition, pinned from a scratch run: faces 0,1 (the unmoved bottom-ish faces) cluster together,
    faces 2,3 (the moved ones) cluster together, and the two groups differ. *)
 let test_clusters_parity () =
   let g = pair_precrease_fold () in
@@ -1146,7 +1130,7 @@ let test_flap_of_points_parity () =
     "zero" "spanning two flaps";
   probe [ { Geom.x = q 5; y = q 5 } ] "zero" "off paper"
 
-(* ambiguous-branch probe (carried minor from Task 2): a point exactly on the
+(* ambiguous-branch probe: a point exactly on the
    shared paper-space boundary between the stationary and moved clusters of
    [pair_precrease_fold]'s BL/BR faces belongs to both -> Ambiguous. *)
 let test_flap_of_points_ambiguous () =
@@ -1163,7 +1147,7 @@ let test_flap_of_points_ambiguous () =
   Alcotest.(check string) "boundary point is Ambiguous" "ambiguous"
     (string_of (Fold_state.flap_of_points g [ p ]))
 
-(* --- Plan 3b Task 3: line material + scope ---------------------------------- *)
+(* --- line material + scope ----------------------------------------------- *)
 
 let test_line_material_parity () =
   let g = pair_precrease_fold () in
@@ -1172,11 +1156,9 @@ let test_line_material_parity () =
     (List.length (Fold_state.line_material_segments g l));
   Alcotest.(check bool) "line cuts the paper" true (Fold_state.line_cuts_paper g l)
 
-(* [select_scope] parity on a 3-layer state (pleat then check scoping) *)
-(* Was a parity test against the old model (Plan 3b Task 3); the old model is
-   gone (Plan 3c Task 6). The moving-set result it proved equal, pinned from
-   a scratch run of this construction (git history has the parity-checked
-   provenance), is asserted directly. *)
+(* [select_scope] on a 3-layer state (pleat then check scoping) *)
+(* The moving-set result, pinned from a scratch run of this construction, is
+   asserted directly. *)
 let test_select_scope_parity () =
   Fold_state.reset_ids ();
   let frac a b = Num.div (Num.of_int a) (Num.of_int b) in
@@ -1191,10 +1173,9 @@ let test_select_scope_parity () =
      identical footprints, and cutting both again at 1/4 folds each one's
      [0,1/4] piece exactly onto [1/4,1/2] too, verified: every face's table
      polygon has vertices ONLY at x=1/4 and x=1/2, none strictly between).
-     The brief's vertex-based candidacy check (a vertex strictly inside the
-     open interval) therefore never matches ANY face and always yields
-     anchor=-1: a test-construction bug, not a parity divergence (both
-     models crash identically on the out-of-range anchor). Judge candidacy
+     A vertex-based candidacy check (a vertex strictly inside the open
+     interval) therefore never matches ANY face and always yields anchor=-1,
+     which crashes on the out-of-range anchor. Judge candidacy
      by positive-area overlap with the open strip instead: all 4 faces
      qualify here, so this reduces to "the highest-ranked face", but stays
      correct for a partial-overlap construction too. *)
@@ -1223,7 +1204,7 @@ let test_select_scope_parity () =
   | Ok m -> Alcotest.(check (array bool)) "moving set" [| true; true; true; true |] m
   | Error (e, _) -> Alcotest.failf "expected Ok, got: %s" e
 
-(* Plan 3c Task 1: TargetHinged [select_scope] (frontier BFS + predicate: the
+(* TargetHinged [select_scope] (frontier BFS + predicate: the
    `up to <named crease>` machinery). Reuses [test_select_scope_parity]'s
    3-layer pleat construction verbatim: book fold (axis 1/2, [move_side] 1)
    then a second fold at axis 1/4, [move_side] -1, which leaves 3 overlapping
@@ -1233,11 +1214,10 @@ let test_select_scope_parity () =
    hinged on [cid] 0, so the `pred anchor` short-circuit is skipped and the
    frontier loop runs; the hinged faces 0/1 are hits in the FIRST frontier
    round (the visited-expansion multi-round branch remains uncovered here;
-   end-to-end up-to cases cover it in 3c Task 4). An [Ok] case, as required. A
-   second call with an unsatisfiable predicate then exercises the
-   frontier-exhausted error path. Was a parity test against the old model;
-   the moving-set/error-string results it proved equal are now asserted
-   directly, pinned from a scratch run (git history has the provenance). *)
+   the end-to-end up-to cases cover it). An [Ok] case. A second call with an
+   unsatisfiable predicate then exercises the frontier-exhausted error path.
+   The moving-set/error-string results are asserted directly, pinned from a
+   scratch run. *)
 let test_select_scope_target_hinged_parity () =
   Fold_state.reset_ids ();
   let frac a b = Num.div (Num.of_int a) (Num.of_int b) in
@@ -1287,9 +1267,7 @@ let test_select_scope_target_hinged_parity () =
         (contains e "no flap hinged")
   | Ok _ -> Alcotest.fail "expected Error for unsatisfiable predicate"
 
-(* Was a parity test against the old model (Plan 3b Task 3); the old model is
-   gone (Plan 3c Task 6). Both branches' Ok/Error outcome is now asserted
-   directly. *)
+(* Both branches' Ok/Error outcome is asserted directly. *)
 let test_scoped_hinge_closed_parity () =
   Fold_state.reset_ids ();
   let frac a b = Num.div (Num.of_int a) (Num.of_int b) in
@@ -1307,11 +1285,9 @@ let test_scoped_hinge_closed_parity () =
       ~move_side:1 ~moving_parents:moving in
   Alcotest.(check bool) "tear" true (Result.is_error bad)
 
-(* 3a carry-in: on-axis hinge with BOTH sides moving must NOT toggle (D8);
-   old model upgraded [eassign] here: accepted divergence, so assert the NEW
-   behavior directly, no parity. Corrected book-fold construction (see
-   task-3-brief.md correction note: the original 4-face sketch does not
-   reach both-sides-moving). *)
+(* On-axis hinge with BOTH sides moving must NOT toggle (D8); [eassign]
+   stays as it is here. Uses a book-fold construction, since a 4-face sketch
+   does not reach both-sides-moving. *)
 let test_both_sides_moving_no_toggle () =
   Fold_state.reset_ids ();
   let frac a b = Num.div (Num.of_int a) (Num.of_int b) in
@@ -1332,15 +1308,13 @@ let test_both_sides_moving_no_toggle () =
            (Fold_state.table_polygon g i)))
     (Fold_state.faces g)
 
-(* --- Plan 3b Task 4: marks -------------------------------------------------- *)
+(* --- marks --------------------------------------------------------------- *)
 
 let mclass_str = function
   | `Sub -> "subdivide" | `Rec -> "record" | `Cross -> "crossesfold"
 
-(* Was a parity test against the old model (Plan 3b Task 4); the old model is
-   gone (Plan 3c Task 6). Each case's classification, pinned from a scratch
-   run (git history has the parity-checked provenance), is
-   asserted directly. *)
+(* Each case's classification, pinned from a scratch run, is asserted
+   directly. *)
 let test_classify_parity () =
   let g = pair_precrease_fold () in
   (* flap = the moved packet cluster: probe from a point on it *)
@@ -1369,8 +1343,7 @@ let test_classify_parity () =
   (* point: record *)
   case "point" { Geom.a = q 0; b = q 1; c = quarter } (Fold_state.MPoint mid) `Rec
 
-(* Was a parity test against the old model (Plan 3b Task 4); the old model is
-   gone (Plan 3c Task 6). The mark's two paper endpoints happen to map to the
+(* The mark's two paper endpoints happen to map to the
    SAME table point on this fixture (the book fold at x=1/2 reflects x=1 onto
    x=0, and both endpoints sit at y=1/4), so the mark has a chord but it has
    folded onto a single point: [mark_axis_current] reports `Collapsed (a
@@ -1386,7 +1359,7 @@ let test_mark_axis_current_parity () =
   let str = function `Line _ -> "line" | `Bent -> "bent" | `Empty -> "empty" | `Collapsed -> "collapsed" in
   Alcotest.(check string) "mark axis class" "collapsed" (str (Fold_state.mark_axis_current g 77))
 
-(* ---- Task 1: placement ---- *)
+(* ---- placement ---- *)
 
 (* Two layers: f0 = [0,1]x[0,1] flat on the table, f1 = [1,2]x[0,1] folded
    across x=1 onto it (rank 1, face-down). Fold f1's table-left piece
@@ -1438,8 +1411,8 @@ let find_by_box (g : Fold_state.t) xlo xhi ylo yhi : int =
 
 let three_halves = Num.of_q (Q.of_ints 3 2)
 
-(* Literal regression contract: this is the face order and rank the old
-   `fold` produced for a valley (Top) fold of the two-layer state, and the
+(* Literal regression contract: this is the pinned face order and rank of
+   a valley (Top) fold of the two-layer state, and the
    face order is observable in FOLD output. Mountain (Bottom) on this exact
    mask has no matching literal: it wraps the moved corner under the
    full-width, uncut base, which the taco-tortilla check correctly rejects
@@ -1569,7 +1542,7 @@ let test_fold_blocks_bottom_pierces () =
   | Error v -> Alcotest.failf "Bottom: wrong violation %s" (Fold_state.violation_to_string v)
 
 
-(* ---- Task 2: reverse ---- *)
+(* ---- reverse ---- *)
 
 let reverse_two_layer inside =
   let g = two_layer () in

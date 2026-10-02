@@ -1,11 +1,6 @@
-// Ported from tools/test/foldview.test.mjs — pure geometry helpers only.
-// `foldedFrame` (fold2svg.mjs merge-over-root helper) is not ported; its job
-// is done by @beloch/scene's parseFold + pickStep (Task 2). Tests that only
-// used foldedFrame as setup are adapted to build a Frame that way; tests that
-// exercised the full fold2svg CLI (SVG string assertions on --hidden dashed,
-// data-step/data-construction hooks, crease-M/V/U classes, --step selection)
-// are NOT ported here — they test CLI/SVG-generation behavior outside this
-// task's scope (pure geometry helpers), not the ported functions themselves.
+// Pure geometry helpers only. Tests that need a Frame build it with
+// @beloch/scene's parseFold + pickStep. SVG output and CLI behavior are
+// tested elsewhere.
 import { test, expect } from "bun:test";
 import { parseFold, pickStep } from "@beloch/scene";
 import type { Vec2 } from "@beloch/scene";

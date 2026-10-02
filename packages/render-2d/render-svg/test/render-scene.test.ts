@@ -152,9 +152,9 @@ test("faces:none draws no face polygons", async () => {
 });
 
 test("crease lines carry data-crease-id (bundle-grouped); boundary edges don't; points carry data-vertex", () => {
-  // None of the checked-in fixtures predate Task 3's `crease_id` emission, so
-  // none carry it — build a minimal scene directly, same style as
-  // scene/test/parse.test.ts's Task 3 tests. A single crease bundle (id 4) is
+  // No checked-in fixture carries `crease_id`, so build a minimal scene
+  // directly, same style as the beloch:inspect tests in
+  // scene/test/parse.test.ts. A single crease bundle (id 4) is
   // split across TWO collinear edges (0-4 and 4-2, the diagonal through the
   // midpoint 4); the fourth edge is a null-provenance boundary.
   const scene = parseFold({

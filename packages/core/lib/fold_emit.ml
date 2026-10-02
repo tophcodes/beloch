@@ -408,7 +408,7 @@ let beloch_references_json (refs : Ctx.reference list) : Yojson.Safe.t =
 (* beloch:inspect: [crease_id]-keyed inventory of the final display state:
    each crease's segment bundle (with per-segment M/V/F), each face's flap
    (coplanar cluster) + stacking rank, and each named point's carrying
-   face + flap. Entity Inspector slice B (playground). *)
+   face + flap. The playground's entity inspector reads it. *)
 let beloch_inspect_json (state : Fold_state.t)
     (named_points : (string * Geom.point * int * int option) list)
     (named_line_cids : (string * int) list) : Yojson.Safe.t =
@@ -432,8 +432,8 @@ let beloch_inspect_json (state : Fold_state.t)
     hinges;
   (* per-SEGMENT assignment, keyed by ([crease_id], its two faces). A scoped fold
      folds some layers and leaves others flat, so the fold state varies per
-     segment: a single per-crease representative (the old code) was wrong and
-     collapsed a mixed crease to one value. Use the segment's own hinge fold
+     segment, and a single per-crease representative would collapse a mixed
+     crease to one value. Use the segment's own hinge fold
      state (`mv`): a folded layer reads V/M, a still-flat one reads F. NOT
      `intent`, whose default is V, which would paint every reference/
      construction line valley. *)

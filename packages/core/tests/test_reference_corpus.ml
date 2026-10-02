@@ -131,8 +131,7 @@ let resolve_prelude (preludes : (string * string) list) (name_opt : string optio
 (* A `.construction` body carries one item per line, a trailing comment, and
    may carry `; assert`/`; expect error` lines. Blank lines and assertion
    lines are stripped before each remaining line is wrapped as `mark
-   <line>` (Task 5's block inventory report, "Two requirements on Task 6's
-   extractor"). *)
+   <line>`. *)
 let wrap_construction (body : string) : string =
   String.split_on_char '\n' body
   |> List.filter (fun l -> String.trim l <> "" && not (Bel_assert.is_assertion_line l))

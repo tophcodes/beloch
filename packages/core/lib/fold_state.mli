@@ -33,8 +33,8 @@ type mark = {
   mcrease_id : int;
   mprov : State.provenance option;
 }
-(** Paper-space, fold-invariant reference/pinch record (moved verbatim from
-    the old [Fold_state]). No invariants of its own. *)
+(** Paper-space, fold-invariant reference/pinch record. No invariants of its
+    own. *)
 
 type t
 (** @see <https://belochlang.org/model/#def-flat-state>
@@ -564,7 +564,7 @@ val scoped_fold_hinge_closed :
     halfplane, so their mover/stayer boundaries are on the axis by
     construction. *)
 
-(** {1 Marks} (port of the old [Fold_state] mark machinery, fold_state.ml:591-823) *)
+(** {1 Marks} *)
 
 val mark_rep_point : mark -> Geom.point
 (** The mark's representative paper-space point: an [MSeg]'s first endpoint,

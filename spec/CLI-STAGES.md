@@ -128,8 +128,7 @@ carries its number: arrows, images, distances, hatched sides. A label never
 covers a line; it sits in a tag or at the end of a leader.
 
 Every distinction above holds in black on white, where the numbers, the
-hatch angles and the line weights carry what color carries on screen
-([B1.14](https://github.com/tophcodes/beloch/blob/main/docs/brand/design-language.md)).
+hatch angles and the line weights carry what color carries on screen.
 
 ## Stage by stage
 

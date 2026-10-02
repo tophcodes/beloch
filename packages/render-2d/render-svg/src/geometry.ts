@@ -1,6 +1,5 @@
-// Pure geometry helpers ported from tools/fold2svg.mjs — logic unchanged
-// (same epsilons, same tie-breaks), typed. `foldedFrame` is deliberately not
-// ported: @beloch/scene's parseFold + pickStep replace it (Task 2).
+// Pure geometry helpers for the SVG renderer. Frame selection lives in
+// @beloch/scene (parseFold + pickStep), not here.
 import type { Assignment, FaceOrder, FoldScene, Frame, Isometry, LineCoeffs, Vec2 } from "@beloch/scene";
 
 // Topologically sort faces into a bottom->top order consistent with faceOrders.

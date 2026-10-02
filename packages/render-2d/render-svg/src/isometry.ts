@@ -19,9 +19,9 @@ export interface ResolvedFrame {
 
 // Resolve an isometry to the concrete frame + stack it draws from. The flat
 // sheet is the CP frame (identity paper→table, no layer occlusion); a step is
-// scene.steps[k].frame with its layer ordering decoded exactly as the ported
-// fold2svg occlusion pass did (faceOrders sign is keyed to each face normal, so
-// faceUp must be threaded through linearExtension).
+// scene.steps[k].frame with its layer ordering decoded by linearExtension
+// (faceOrders sign is keyed to each face normal, so faceUp must be threaded
+// through it).
 export function resolveIsometry(scene: FoldScene, iso: Isometry): ResolvedFrame {
   if (iso.kind === "flat") {
     const frame = scene.cp;

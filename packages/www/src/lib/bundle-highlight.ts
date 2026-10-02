@@ -1,4 +1,4 @@
-// Whole-bundle crease highlight (playground slice B, task 8): a `--var`
+// Whole-bundle crease highlight: a `--var`
 // named line is ONE crease_id whose segments are the bundle (ADR-0014) —
 // hovering any one segment must highlight every segment sharing that id,
 // across flaps/layers, not just the one under the cursor.

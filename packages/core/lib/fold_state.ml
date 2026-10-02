@@ -1383,8 +1383,7 @@ let crease_table_endpoints (g : t) (cid : int) : Geom.point list =
   List.concat_map (fun s -> [ s.ta; s.tb ]) (crease_segments g cid)
 
 (* Boundary pieces of a paper edge [line]: walk every face's polygon sides on
-   [line] not paired with a neighbor across a hinge (port of the old function;
-   see its doc comment in fold_state.ml). *)
+   [line] not paired with a neighbor across a hinge. *)
 let edge_boundary_segments (g : t) (line : Geom.line) : crease_segment list =
   let acc = ref [] in
   Array.iteri
@@ -1729,9 +1728,8 @@ let scoped_fold_hinge_closed (g : t) ~(axis : Geom.line) ~(move_side : int)
   in
   check (all_crease_ids g)
 
-(* Port of the old [Fold_state] mark machinery (fold_state.ml:591-823); see that
-   module's doc comments for the algorithm: only the face/edge-lookup
-   substrate changes here (faces are bare polygons, edges are hinges). *)
+(* Mark machinery. Faces are bare polygons and edges are hinges; the
+   face and edge queries below work on that substrate. *)
 
 let mark_rep_point (m : mark) : Geom.point =
   match m.mgeom with MSeg (a, _) -> a | MPoint p -> p

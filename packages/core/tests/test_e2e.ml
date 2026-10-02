@@ -462,7 +462,7 @@ let test_emit_folded_crease_name () =
   Alcotest.(check bool) "crease carries name m" true
     (List.exists (fun n -> n = `String "m") names)
 
-(* Task 7: record marks (from Fold_state.marks) are serialized into a
+(* Record marks (from Fold_state.marks) are serialized into a
    top-level "beloch:marks" custom field. Reuses the program from
    [test_mark_point_records_no_edge], already proven to record exactly one
    interior POINT mark (the value-line --vm re-marked with a point extent at
@@ -515,7 +515,7 @@ let test_beloch_marks_crease_id_deterministic () =
     "point mark crease_id is deterministic regardless of prior minting (#36)"
     baseline polluted
 
-(* render-card slice 2 task 1: folded frames must carry the same name/edge
+(* Folded frames must carry the same name/edge
    provenance the CP frame already carries, so the render pipeline can
    address elements by source name instead of by float coordinate. *)
 let test_folded_provenance () =
@@ -540,7 +540,7 @@ let test_folded_provenance () =
   Alcotest.(check bool) "folded frame vertices_names has center" true
     (folded |> member "beloch:vertices_names" |> to_list
      |> List.exists (fun v -> v = `String "center"));
-  (* Plan 3c Task 6 prov spot check: at least one folded crease's
+  (* Provenance spot check: at least one folded crease's
      beloch:edges entry carries a non-null provenance record, and every one
      of that record's axiom/sources/span fields is itself non-null (D14/D15:
      [beloch_edges_json] in fold_emit.ml only omits `name`/`step`, never
@@ -854,12 +854,11 @@ let test_e2e_cohesion_moves_coplanar_sibling () =
     true
     (Geom.point_equal d_pos { Geom.x = half; y = Num.of_int 1 })
 
-(* Task 2: a bare precrease (still flat, unfolded) emits FOLD assignment "F",
-   never "U": U is dropped from the codebase entirely (design/mark-fold-notation).
-   Task 6 splits the CP color ([eintent], defaults V) from the folded-form
-   dihedral ([eassign]): the "flat, never U" invariant lives in the folded
-   frame, since the top-level [creasePattern] frame now legitimately shows the
-   mark's (default) M/V intent instead. *)
+(* A bare precrease (still flat, unfolded) emits FOLD assignment "F",
+   never "U": Beloch never emits U. The CP color ([eintent], defaults V) is
+   separate from the folded-form dihedral ([eassign]): the "flat, never U"
+   invariant lives in the folded frame, since the top-level [creasePattern]
+   frame shows the mark's (default) M/V intent instead. *)
 let json_cp_assignments (json : Yojson.Safe.t) : string list =
   let open Yojson.Safe.Util in
   json |> member "edges_assignment" |> to_list |> List.map to_string
@@ -877,7 +876,7 @@ let test_e2e_bare_precrease_emits_f () =
   Alcotest.(check bool) "no U in output" false (List.mem "U" assigns);
   Alcotest.(check bool) "has an F crease" true (List.mem "F" assigns)
 
-(* ---- Task 4: mark extent dispatch (partial marks / pinch, #50 slice 2) --- *)
+(* ---- mark extent dispatch (partial marks / pinch, #50) ------------------ *)
 
 let eval_bel src = Eval.eval_folded (Beloch.parse ~filename:"t.bel" src)
 let edges_of src = Array.length (Fold_state.hinges (eval_bel src).Eval.state)
@@ -904,10 +903,10 @@ let test_mark_point_records_no_edge () =
   Alcotest.(check int) "two marks before point" 2 (marks_of base);
   Alcotest.(check int) "point mark adds one record" 3 (marks_of with_point_mark)
 
-(* Under the new mark-classification model (partial marks / pinch, slice 2
-   refinement), a `between` extent with one boundary endpoint and one
-   mid-face endpoint is no longer split into a subdividing boundary portion
-   plus a recorded stub -- ANY mid-face endpoint makes the WHOLE contiguous
+(* Under the mark-classification model (partial marks / pinch, #50), a
+   `between` extent with one boundary endpoint and one mid-face endpoint is
+   not split into a subdividing boundary portion plus a recorded stub: ANY
+   mid-face endpoint makes the WHOLE contiguous
    extent a single non-subdividing record. Nothing gets cut, not even the
    boundary-to-boundary faces the extent crosses in the middle.
 
@@ -1026,12 +1025,10 @@ let[@warning "-32"] test_mark_crosses_fold_errors () =
   expect_error "crosses a folded crease" (fun () ->
       Beloch.fold_string ~filename:"t.bel" src)
 
-(* Task 3 review finding, end to end, now updated for the new classification
-   model: a `between` extent whose ends are both non-boundary but sit in
-   different faces of the same (never-folded, still all-F) flap used to
-   `Invalid_argument` at fold_state.ml, then errored as CSpansCrease; under
-   the new model ANY mid-face endpoint just records the whole extent as one
-   mark, so this must now SUCCEED with exactly one record and no edge change
+(* End to end: a `between` extent whose ends are both non-boundary but sit
+   in different faces of the same (never-folded, still all-F) flap. ANY
+   mid-face endpoint records the whole extent as one mark, so this must
+   SUCCEED with exactly one record and no edge change
    (see [fold_state]'s
    [test_classify_spans_crease_both_interior_different_faces_records] for the
    same shape tested directly against [classify_mark_extent]). The extent's own
@@ -1061,7 +1058,7 @@ let test_mark_spans_internal_crease_records () =
   Alcotest.(check int) "the whole extent is recorded as one mark"
     (marks_of setup + 1) (marks_of full)
 
-(* ---- Task 5: exact-incidence snapping (#50 slice 2) ------------------- *)
+(* ---- exact-incidence snapping (#50) ------------------------------------- *)
 
 (* Two full diagonals subdivide the square into four faces meeting at the
    center (1/2,1/2); a point mark placed there ("at .ctr", reusing the
@@ -1069,8 +1066,8 @@ let test_mark_spans_internal_crease_records () =
    [test_mark_point_records_no_edge]) must be incident to that shared vertex --
    not a numerically distinct duplicate. Since [resolve_point] already yields
    canonical rationals and Geom.point_equal is exact, this holds automatically;
-   the test pins the behavior as a regression guard (task-5-brief.md: no
-   tolerance/fuzzy logic, ever). *)
+   the test pins the behavior as a regression guard (no tolerance/fuzzy
+   logic, ever). *)
 let test_mark_endpoint_on_vertex_is_incident () =
   let src =
     "paper square\n\
@@ -1354,7 +1351,7 @@ let () =
             test_e2e_precrease_fold_emits_v;
           (* PENDING #27: full multilayer mark materialization: a mark on a
              folded sheet records only its carrying flap, so the multilayer
-             meet guard and bent-segment selection differ from the old path *)
+             meet guard and bent-segment selection differ from full materialization *)
           Alcotest.test_case "& / \\ pick the same bent segment as at" `Quick
             test_bundle_ops_equiv_at;
           Alcotest.test_case "bound bundle == inline" `Quick

@@ -1,4 +1,4 @@
-// The padded-canvas transform from tools/fold2svg.mjs:192-198.
+// The padded-canvas transform.
 import type { FoldScene, Vec2 } from "@beloch/scene";
 
 export const PAD = 56;

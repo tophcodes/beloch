@@ -1,4 +1,4 @@
-// Task 8 (mark/fold slice 2): render beloch:marks in the CP view.
+// Render beloch:marks in the CP view.
 //
 // Fixture `fixtures/marks-demo.fold` was generated via the OCaml pipeline
 // (`nix develop -c dune exec bin/main.exe -- fold`) on:

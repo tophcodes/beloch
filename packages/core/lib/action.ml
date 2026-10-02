@@ -464,7 +464,7 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
       push_frame ctx (Some span);
       bind_out (Material (cid, axis))
   | `Existing lo ->
-      (* fold along an existing material crease (the old FoldAlong path).
+      (* fold along an existing material crease.
          The write scores no crease of its own, so the output clause names
          the crease that is already there rather than a fresh id. *)
       let along =
