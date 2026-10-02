@@ -11,6 +11,7 @@
 //   beloch fold f.bel | bun bin/fold2svg.ts - --view side --along --s [--step K] [--far-side]
 //   beloch fold f.bel | bun bin/fold2svg.ts - --view faces [--step K]
 //   beloch fold f.bel | bun bin/fold2svg.ts - out.png --title f.bel
+//   beloch fold f.bel | bun bin/fold2svg.ts - --view folded --plain   paper and creases, no names or point dots
 import { parseFold, SceneError, StepNotFoundError } from "@beloch/scene";
 import { renderCandidates, renderCP, renderFaces, renderFolded, renderOperation, renderSide, renderStages } from "@beloch/render-svg";
 
@@ -42,7 +43,7 @@ const FLAGS = new Set([
   "--title", "--view", "--hidden", "--labels", "--step", "--format", "--width", "--statement",
   "--source", "--stage", "--along",
 ]);
-const SWITCHES = new Set(["--flip", "--legend", "--checks", "--far-side"]);
+const SWITCHES = new Set(["--flip", "--legend", "--checks", "--far-side", "--plain"]);
 // An option this CLI does not know would otherwise read as a positional, and
 // `-o out.svg` would write a file named `-o`. `-` alone is stdin.
 const unknown = args.find(
@@ -78,11 +79,19 @@ const alongName = (): string => {
 try {
   const raw = !inPath || inPath === "-" ? await Bun.stdin.text() : await Bun.file(inPath).text();
   const scene = parseFold(raw);
-  const opts = { title, labels, legend };
+  // --plain: no name written out (annotate: []) and so no point dot either
+  // (dots: "annotated" draws the dots of written names alone), and no
+  // backdrop, so the page the drawing sits on shows through.
+  const opts = {
+    title, labels, legend,
+    ...(args.includes("--plain")
+      ? { annotate: [] as string[], dots: "annotated" as const, theme: { background: "none" } }
+      : {}),
+  };
   const statementFlag = flagVal("--statement");
   const statement = statementFlag !== undefined ? Number(statementFlag) : undefined;
   const doc = viewFlag === "folded"
-    ? renderFolded(scene, { ...opts, view: flip ? "bottom" : "top", hidden, step })
+    ? renderFolded(scene, { ...opts, view: flip ? "bottom" : "top", hidden, step, orient: true })
     : viewFlag === "candidates"
       ? renderCandidates(scene, { ...opts, statement })
       : viewFlag === "op"
