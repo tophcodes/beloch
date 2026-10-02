@@ -4,15 +4,16 @@
 // that wraps the turns inside it [langdemaine2009facet, Fig. 5; hull2020,
 // Fig. 7.9]. Beside it the folded state shows where the cut is taken and, with
 // an arrow at each end, which side it is seen from; the crease pattern carries
-// the same pieces where they lie on the paper, named and colored alike, so
+// the same pieces where they lie on the paper, numbered and colored alike, so
 // each strip can be found on the sheet [hull2020, Fig. 7.9; demaine2007,
 // Fig. 12.2].
 //
-// A piece is named after the face of the crease pattern it lies in, the
-// pattern with every crease the program makes, and a hinge after the two
-// pieces it joins. Every state of one program reads the same pattern, so a
-// piece keeps its name in the drawing of each state it appears in; a piece
-// that a later crease splits shows the names of the parts it splits into.
+// A piece is cut into parts where it crosses the faces of the crease pattern,
+// the pattern with every crease the program makes, and the parts are numbered
+// by their order on the paper along the cut. Two programs that leave the same
+// paper under the cut number it alike, whatever order they score their
+// creases in. Hinges carry no names; the numbers of the strips they join
+// identify them.
 import type { FoldScene, Vec2 } from "@beloch/scene";
 import { pickStep, SceneError } from "@beloch/scene";
 import { createDoc, el, SvgDoc } from "./svgdoc";
@@ -38,22 +39,21 @@ export interface SideOptions extends RenderOptions {
 
 const EPS = 1e-9;
 const SIDE_W = 572, PAD = 56, GAP = 34, SPLIT = 10;
-// the room a hinge's name takes beside the crown of its turn
-const HINGE_LABEL = 30;
 // how far a strip stops short of a raw edge it meets in its own layer
 const APART = 4;
+// the width of one digit of a strip's number, and the room left between two
+// numbers on one level
+const DIGIT = 8, NUMBER_GAP = 4;
 
-// The stretch of a piece that lies in one face of the crease pattern, named by
-// that face: its index in the crease pattern, counted from 1.
+// The stretch of a piece that lies in one face of the crease pattern. `name`
+// is its number in the order of the paper along the cut, counted from 1.
 export interface Part { name: number; t0: number; t1: number; paper: [Vec2, Vec2] }
 // A face the line crosses: where along the line, and where on the paper.
 export interface Piece { face: number; t0: number; t1: number; paper: [Vec2, Vec2]; strip: number; parts: Part[] }
 // Pieces that continue each other flat: one horizontal run in the drawing.
 export interface Strip { pieces: Piece[]; t0: number; t1: number; level: number }
-// A folded hinge on the line: two strips turn into each other at `t`. It is
-// named by the parts it joins, the smaller name first; `paper` is where it
-// crosses the line on the paper.
-export interface Turn { t: number; strips: [number, number]; out: 1 | -1; name: string; paper: Vec2 }
+// A folded hinge on the line: two strips turn into each other at `t`.
+export interface Turn { t: number; strips: [number, number]; out: 1 | -1 }
 
 // A named point of the state drawn that lies on the line, at `t` along it.
 // Every layer the line crosses there holds one paper point at that place;
@@ -97,10 +97,19 @@ export function sideSection(scene: FoldScene, along: string, stepLabel?: string,
     return [m00 * dx + m10 * dy, m01 * dx + m11 * dy];
   };
 
+  // A face the line runs along an edge of, without entering it, is drawn when
+  // it lies on the side away from the default eye, where the paper reaches
+  // farther: the section is taken just inside such an edge, and `farSide`
+  // mirrors that same section. Otherwise the faces on both sides of a crease
+  // the line runs along would each give the same stretch of paper, and the
+  // section would draw that layer twice.
+  const side = ([x, y]: Vec2) => near * (a * x + b * y - c) / len;
   const pieces: Piece[] = [];
   frame.facesVertices.forEach((f, face) => {
-    const seg = clipLineToPoly(a, b, c, f.map((i) => frame.vertices[i]!));
+    const poly = f.map((i) => frame.vertices[i]!);
+    const seg = clipLineToPoly(a, b, c, poly);
     if (!seg) return;
+    if (!poly.some((v) => side(v) < -1e-7)) return;
     const [p, q] = at(seg[0]) <= at(seg[1]) ? seg : [seg[1], seg[0]];
     if (at(q) - at(p) <= EPS) return;
     pieces.push({ face, t0: at(p), t1: at(q), paper: [toPaper(face, p), toPaper(face, q)], strip: -1, parts: [] });
@@ -115,18 +124,18 @@ export function sideSection(scene: FoldScene, along: string, stepLabel?: string,
     const [dx, dy] = [qx - px, qy - py];
     const d2 = dx * dx + dy * dy;
     const u = ([x, y]: Vec2) => ((x - px) * dx + (y - py) * dy) / d2;
-    cpFaces.forEach((poly, k) => {
+    for (const poly of cpFaces) {
       const chord = clipLineToPoly(-dy, dx, -dy * px + dx * py, poly);
-      if (!chord) return;
+      if (!chord) continue;
       const [u0, u1] = [Math.max(0, Math.min(u(chord[0]), u(chord[1]))), Math.min(1, Math.max(u(chord[0]), u(chord[1])))];
       if (u1 - u0 < 1e-7 || piece.parts.some((r) => {
         const [r0, r1] = [(r.t0 - piece.t0) / (piece.t1 - piece.t0), (r.t1 - piece.t0) / (piece.t1 - piece.t0)];
         return Math.min(r1, u1) - Math.max(r0, u0) > 1e-7;
-      })) return;
+      })) continue;
       const on = (s: number): Vec2 => [px + s * dx, py + s * dy];
       const t = (s: number) => piece.t0 + s * (piece.t1 - piece.t0);
-      piece.parts.push({ name: k + 1, t0: t(u0), t1: t(u1), paper: [on(u0), on(u1)] });
-    });
+      piece.parts.push({ name: 0, t0: t(u0), t1: t(u1), paper: [on(u0), on(u1)] });
+    }
     piece.parts.sort((r, s) => r.t0 - s.t0);
   }
 
@@ -168,19 +177,51 @@ export function sideSection(scene: FoldScene, along: string, stepLabel?: string,
     return { pieces: ps, t0: Math.min(...ps.map((p) => p.t0)), t1: Math.max(...ps.map((p) => p.t1)), level: 0, number: 0 };
   });
   pieces.forEach((p, i) => { p.strip = roots.indexOf(find(i)); });
-  // the part of a piece that reaches the hinge at `t`
-  const partAt = (p: Piece, t: number) =>
-    p.parts.find((r) => Math.abs(r.t0 - t) < EPS || Math.abs(r.t1 - t) < EPS) ?? p.parts[0];
   const turns: Turn[] = hinges.filter((h) => h.folded).map((h) => {
-    const [p, q] = [pieces[h.p]!, pieces[h.q]!];
-    const [r, s] = [partAt(p, h.t), partAt(q, h.t)];
-    const names = [r?.name, s?.name].map((n) => n ?? "?").sort((m, n) => Number(m) - Number(n));
-    const end = r ? (Math.abs(r.t0 - h.t) < EPS ? r.paper[0] : r.paper[1]) : p.paper[0];
-    return {
-      t: h.t, strips: [p.strip, q.strip], out: away(p, h.t) === 1 ? -1 : 1,
-      name: names.join("|"), paper: end,
-    };
+    const p = pieces[h.p]!;
+    return { t: h.t, strips: [p.strip, pieces[h.q]!.strip], out: away(p, h.t) === 1 ? -1 : 1 };
   });
+
+  // The parts numbered in the order of the paper along the cut. Parts that
+  // share a point on the paper continue each other there, across a hinge or a
+  // crease of the pattern, so the cut traces paths on the paper. Each path is
+  // walked from one end, the one that lies first along the cut on the table,
+  // and where two ends lie at one place there, the one with the smaller paper
+  // x, then y. The paths are numbered one after another in the order of their
+  // starting ends; a path that closes on itself starts at its first point by
+  // the same order. Every part gets a number of its own, also where one piece
+  // spans several faces of the crease pattern, since the drawing labels parts.
+  // The numbers depend on the paper under the cut and its folded state alone:
+  // two programs that reach them by creases in another order number alike.
+  const parts = pieces.flatMap((p) => p.parts);
+  const spot = ([x, y]: Vec2) => `${Math.round(x * 1e6)},${Math.round(y * 1e6)}`;
+  const meeting = new Map<string, Part[]>();
+  for (const r of parts) for (const e of r.paper) meeting.set(spot(e), [...meeting.get(spot(e)) ?? [], r]);
+  // an end of a part: the part and which of its two ends
+  type End = { r: Part; k: 0 | 1 };
+  // where an end lies: along the cut on the table, then on the paper
+  const place = (r: Part, k: 0 | 1) => [k === 0 ? r.t0 : r.t1, r.paper[k][0], r.paper[k][1]];
+  const order = (p: number[], q: number[]) => {
+    const i = p.findIndex((z, j) => Math.abs(z - q[j]!) > 1e-7);
+    return i < 0 ? 0 : p[i]! - q[i]!;
+  };
+  // two parts from one point: the one whose far end comes first
+  const first = (u: End, v: End) =>
+    order(place(u.r, u.k), place(v.r, v.k)) || order(place(u.r, (1 - u.k) as 0 | 1), place(v.r, (1 - v.k) as 0 | 1));
+  const numbered = new Set<Part>();
+  const open = (e: Vec2) => meeting.get(spot(e))!.filter((r) => !numbered.has(r));
+  while (numbered.size < parts.length) {
+    const ends: End[] = parts.filter((r) => !numbered.has(r)).flatMap((r) => [{ r, k: 0 as const }, { r, k: 1 as const }]);
+    const loose = ends.filter((u) => open(u.r.paper[u.k]).length === 1);
+    let next: End | undefined = (loose.length > 0 ? loose : ends).sort(first)[0];
+    while (next) {
+      const { r, k }: End = next;
+      r.name = numbered.size + 1;
+      numbered.add(r);
+      const far: Vec2 = r.paper[1 - k]!;
+      next = open(far).map((s): End => ({ r: s, k: spot(s.paper[0]) === spot(far) ? 0 : 1 })).sort(first)[0];
+    }
+  }
 
   // f above g, globally: faceOrders' sign is keyed to g's normal
   const above = new Set<string>();
@@ -237,15 +278,14 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
   const radius = (u: Turn) => Math.abs(strips[u.strips[0]]!.level - strips[u.strips[1]]!.level) * GAP / 2;
 
   // where turns meet from both sides at one place, the drawing opens a gap
-  // there wide enough for both and their names, and a strip running through it
-  // stretches
+  // there wide enough for both, and a strip running through it stretches
   const tMin = Math.min(...strips.map((s) => s.t0)), tMax = Math.max(...strips.map((s) => s.t1));
   const widen = new Map<number, number>();
   for (const u of turns) {
     const both = turns.filter((v) => Math.abs(v.t - u.t) < EPS);
     if (both.some((v) => v.out === 1) && both.some((v) => v.out === -1)) {
       const reach = (o: 1 | -1) => Math.max(0, ...both.filter((v) => v.out === o).map(radius));
-      widen.set(u.t, reach(1) + reach(-1) + SPLIT + 2 * HINGE_LABEL);
+      widen.set(u.t, reach(1) + reach(-1) + SPLIT);
     }
   }
   const gaps = [...widen.entries()].sort(([s], [t]) => s - t);
@@ -266,6 +306,7 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
   // each stops short of the place, so a gap stands between them
   const meets = (s: Strip, t: number) => strips.some((o) => o !== s && o.level === s.level &&
     (Math.abs(o.t0 - t) < EPS || Math.abs(o.t1 - t) < EPS));
+  const numbers: { name: number; level: number; x: number }[] = [];
   for (const s of strips) {
     const parts = s.pieces.flatMap((p) => p.parts).sort((p, q) => p.t0 - q.t0);
     for (const r of parts) {
@@ -280,10 +321,7 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
         stroke: color(r.name), "stroke-width": 3, "stroke-linecap": "round",
       }));
       // at the start of the part, clear of the points and names over its middle
-      nodes.push(el("text", {
-        "data-kind": "layer-name", x: x0 + (Math.abs(r.t0 - s.t0) < EPS ? 14 : 8), y: y(s.level) - 7, "text-anchor": "start",
-        "font-size": 13, "font-weight": 600, fill: color(r.name),
-      }, [], String(r.name)));
+      numbers.push({ name: r.name, level: s.level, x: x0 + (first ? 14 : 8) });
       if (Math.abs(r.t0 - s.t0) > EPS) {
         nodes.push(el("line", {
           "data-kind": "seam", x1: x0, y1: y(s.level) - 5, x2: x0, y2: y(s.level) + 5,
@@ -292,6 +330,22 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
       }
     }
   }
+  // The numbers of one level stand in the order of their parts, each where its
+  // part starts, unless the number before it on the level would overlap it:
+  // then it moves right until it stands clear of that number. A part too short
+  // for its number has it standing past its end, still in order and in its
+  // color.
+  numbers.sort((m, n) => m.level - n.level || m.x - n.x);
+  numbers.forEach((m, i) => {
+    const before = numbers[i - 1];
+    if (before && before.level === m.level) {
+      m.x = Math.max(m.x, before.x + String(before.name).length * DIGIT + NUMBER_GAP);
+    }
+    nodes.push(el("text", {
+      "data-kind": "layer-name", "data-name": m.name, x: m.x, y: y(m.level) - 7, "text-anchor": "start",
+      "font-size": 13, "font-weight": 600, fill: color(m.name),
+    }, [], String(m.name)));
+  });
   for (const u of turns) {
     const [p, q] = [strips[u.strips[0]]!, strips[u.strips[1]]!];
     const xh = x(u.t, at(u.t, p));
@@ -302,12 +356,6 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
       d: `M ${xh} ${y0} A ${r} ${r} 0 0 ${(u.out === 1) === (y0 < y1) ? 1 : 0} ${xh} ${y1}`,
       fill: "none", stroke: theme.ink, "stroke-width": 2,
     }));
-    // the hinge's name beside the crown of its turn
-    nodes.push(el("text", {
-      "data-kind": "hinge", "data-name": u.name,
-      x: xh + u.out * (r + 4), y: (y0 + y1) / 2 + 4, "text-anchor": u.out === 1 ? "start" : "end",
-      "font-size": 12, fill: theme.ink, ...halo,
-    }, [], u.name));
   }
   // a named point on the line: where it stands across the whole stack, as Ida
   // marks the place of a fold line [ida2007modeling, Fig. 7]
@@ -339,7 +387,8 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
   // the crease pattern with the pieces of the paper the line crosses
   const lay = sceneLayout(scene);
   // with the creases of the state drawn alone: a crease a later write scores
-  // has no line yet, though the pieces it will split already carry its names
+  // has no line yet, though the pieces it will split already carry the
+  // numbers of its parts
   const stepIndex = pickStep(scene, opts.step)!.index;
   const write = stepIndex === 0 ? null : scene.writes[stepIndex - 1] ?? null;
   const cp = renderScene(scene, {
@@ -364,15 +413,6 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
       "data-kind": "piece-name", x: (lay.tx(ax) + lay.tx(bx)) / 2, y: (lay.ty(ay) + lay.ty(by)) / 2 - 8,
       "text-anchor": "middle", "font-size": 15, "font-weight": 600, fill: color(r.name), ...halo,
     }, [], String(r.name)));
-  }
-  // each hinge named where it crosses the line on the paper, above and to the
-  // left, since a point's name stands below and to the right
-  for (const u of turns) {
-    const [hx, hy] = u.paper;
-    marks.push(el("text", {
-      "data-kind": "hinge", "data-name": u.name, x: lay.tx(hx) - 6, y: lay.ty(hy) - 6,
-      "text-anchor": "end", "font-size": 13, fill: theme.ink, ...halo,
-    }, [], u.name));
   }
   // the point where it is on the paper, named; the paper points of the other
   // layers that land on it after folding, small and unnamed

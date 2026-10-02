@@ -49,7 +49,7 @@ what gets rendered:
                             checks
   --view side --along --l   the section along the line --l: the layers pulled
                             apart, the top one first, beside the crease
-                            pattern with the same pieces and hinges named.
+                            pattern with the same parts numbered.
                             --l is read on the table of the final state: bind
                             it with = after the last fold. Seen from outside
                             the paper; arrows on the cut show the side.

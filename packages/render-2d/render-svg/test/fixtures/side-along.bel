@@ -1,0 +1,4 @@
+@author "Claude (Anthropic)"
+paper square
+mark (map --da onto --bc) as --m
+fold (map --ab onto --cd)

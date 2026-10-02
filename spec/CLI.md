@@ -63,7 +63,7 @@ Without `OUT` the drawing goes to standard output; otherwise the extension of
 |---|---|
 | `--view cp` | The crease pattern, the flat sheet with every crease. The default. |
 | `--view folded` | The folded state, seen from above and turned by the `@orient` in force at the state drawn. |
-| `--view side --along --l` | The section of the folded state along the line `--l`: the stack pulled apart, the top layer first, each layer a strip and each folded hinge a turn, beside the crease pattern with the same pieces and hinges named. The line is read on the table of the state drawn: a line bound with `=` after the last fold. [The side view](#the-side-view) states how it is seen and named. |
+| `--view side --along --l` | The section of the folded state along the line `--l`: the stack pulled apart, the top layer first, each layer a strip and each folded hinge a turn, beside the crease pattern with the same parts numbered. The line is read on the table of the state drawn: a line bound with `=` after the last fold. [The side view](#the-side-view) states how it is seen and numbered. |
 | `--view faces` | The face graphs of the folded state: which faces share a hinge, drawn on the paper, and which overlap on the table, the top layer first. [The face graphs](#the-face-graphs) states how they are drawn. |
 | `--view yr` | The YR-style folding diagram (ADR 0029), one panel per step group in one column. A panel draws the state its step starts from, turned by the orient annotation in force, with a fold line and an arrow for every fold of the step, a fold-and-unfold arrow for a mark, its number above and its instruction below; the last panel shows the final state. A fold that lays its paper on top draws a valley line and a valley arrow, one that lays it underneath a mountain line and a mountain arrow, and a fold of some of the layers on its moving side hooks its arrow's tail around them. An inside reverse fold draws a mountain line on the near layer, a valley line on the far layer where it shows and beyond the edge where the layers open, a push arrow at the folded edge and a valley arrow; an outside reverse fold draws a valley line on the near layer, a push arrow at the folded edge, and a valley arrow and a mountain arrow that wrap around the flap. An existing crease ends short of an edge it ends on and touches an edge it runs under. A `flip` gets a panel of its own: the state the writes before it leave, with the turn-over arrow, and the panel after it shows the other side. Where the turn the orient annotation sets differs from the previous panel's, a circle with arrows and the fraction of the turn stands between the two panels. Panels share one scale until the model is less than half the size it had on the first panel of that scale, measured as the greatest distance between two of its vertices; that panel starts a larger scale. A step that holds a `flip` is split there, `2a` and `2b`, without a hint. A step whose later fold folds paper an earlier fold of the same step moved is split the same way, with a hint on standard error. A fold that lays paper between layers that stay and is no reverse fold is refused. |
 | `--step N` | With `--view folded`, `--view side` or `--view faces`, draws the state after `N` writes, `0` being the flat sheet; by default the last state. |
@@ -100,19 +100,33 @@ stands on the side from which the section runs left to right on the table,
 or bottom to top on a vertical line. `--far-side` puts the eye on the other
 side.
 
-Every piece of paper the line crosses is named after the face of the crease
-pattern it lies in, the pattern with every crease the program makes, by that
-face's position in the pattern, counted from 1. A hinge is named by the two
-pieces it joins, the smaller name first (`3|4`), in the section beside its
-turn and in the crease pattern where it crosses the line. Every state of one
-program reads the same crease pattern, so a piece has one name in every
-drawing it appears in, and the sections before and after a write can be
-compared piece by piece. A piece that a later crease splits is drawn as the
-parts it will split into, each with its own name, divided by a short tick.
-Two pieces joined by a flat hinge run on as one layer and are divided by the
-same tick. Two pieces of one layer whose raw edges meet share no hinge, and a
-small gap stands between them. The crease pattern beside the section draws
-the creases of the state drawn and none that a later write scores.
+The faces of the crease pattern, the pattern with every crease the program
+makes, cut the paper the line crosses into parts. The parts are numbered from 1
+in the order of the paper along the cut: parts that share a point on the paper
+continue each other there, so the cut traces paths on the paper, and each path
+is numbered from its end that lies first along the cut, the eye's left. Where
+two ends lie at one place, the one with the smaller paper x comes first, then
+the smaller y. The paths follow each other in the order of their first ends,
+and a path that closes on itself starts at its first point by the same order.
+The numbers depend on the paper under the cut and the state drawn alone, so two
+programs that fold the same state with creases scored in another order number
+it alike. A strip carries the number of each of its parts where the part
+starts; where the number before it on the level would overlap it, the number
+moves right until it stands clear. Hinges carry no names. The crease pattern
+beside the section carries the same parts with the same numbers and colors.
+
+A part that a later crease splits is drawn as the parts it will split into,
+divided by a short tick. Two pieces joined by a flat hinge run on as one layer
+and are divided by the same tick. Two pieces of one layer whose raw edges meet
+share no hinge, and a small gap stands between them. The crease pattern beside
+the section draws the creases of the state drawn and none that a later write
+scores.
+
+A line that runs along an edge of the folded state, a crease or a raw edge,
+touches the faces on both sides of it without entering them. The section takes
+the faces on the side where the outline of the state reaches farther, as if the
+line lay just inside that edge, so each layer there is drawn once. With
+`--far-side` the same section is seen mirrored.
 
 ### The face graphs
 

@@ -1,0 +1,8 @@
+@author "Claude (Anthropic)"
+paper square
+.p = free on --ab from .a at 1/2
+.q = free on --ab from .a at 33/64
+mark (perp --ab through .p) as --u
+mark (perp --ab through .q) as --w
+.e = free on --da from .a at 1/2
+--k = (perp --da through .e)
