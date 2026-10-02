@@ -131,8 +131,9 @@ val placed_fold_plan :
 (** A placed fold (`fold … over/under <flap>`, spec §4.6): the moving side
     ([side] where the side items fixed it, else from the anchor, as for a
     default fold), the block (the faces of the [depth] flap with a piece on
-    that side, or every face with one when there is no depth, as a mask over
-    parent faces) and the placement. The target flap must keep a stationary piece (a non-block
+    that side, or every face with one when there is no depth, closed under
+    hinges off the axis and outward up to the target flap, ADR 0052, as a
+    mask over parent faces) and the placement. The target flap must keep a stationary piece (a non-block
     face, or a block face the axis cuts: the anchor's own hinge layer) that
     overlaps the landing footprint (the block's move-side pieces reflected
     across the axis); of its overlapping faces the lowest-ranked anchors

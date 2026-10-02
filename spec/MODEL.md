@@ -1158,9 +1158,12 @@ or every candidate where there is no depth, and is closed under
   folded or flat, whose image does not lie on $\ell$ is in $M$, since the
   paper cannot tear there; with the flat hinges a flap moves as a whole
   ([#def-flap]); and,
-- when $\pi$ is *top* or *bottom*, outward closure: a candidate that lies
-  above a face of $M$ is in $M$ for *top*, and one that lies below a face of
-  $M$ is in $M$ for *bottom*.
+- outward closure: a candidate that lies above a face of $M$ is in $M$ for
+  *top*, and one that lies below a face of $M$ is in $M$ for *bottom*. For
+  *under $T$* a candidate outside $T$ that lies above a face of $M$ and
+  below every face of $T$ it overlaps is in $M$, and for *over $T$* one that
+  lies below a face of $M$ and above every face of $T$ it overlaps. The
+  faces of $T$ and the layers beyond them stay.
 
 The value of the write is the reflection of the single block $(M, \pi)$. It
 is defined when for *over $T$* and *under $T$* the set $T$ is the faces of a
@@ -1176,7 +1179,8 @@ lies on folds over. It names that side and nothing else.
 
 ::: {.term #term-depth name="depth"}
 The deepest flap a fold reaches where the program names one; the moving set
-grows outward from it. Without one, every layer on the moving side moves.
+grows outward from it, up to the target of a placed fold. Without one, every
+layer on the moving side moves.
 :::
 
 The language derives $H$ from the anchor: the point of a `moving` item, or
@@ -1188,7 +1192,11 @@ names none either; both are outside the domain. `mountain` is the placement
 a finger pressing a crease through the stack takes it. With $\delta$ it is
 the flap $\delta$, the layers outward of it, and every layer joined to
 those by a hinge off the axis, folded or flat: leaving such a layer behind
-would tear the paper, so the closure takes it along.
+would tear the paper, so the closure takes it along. For a fold placed
+`over` or `under` a flap, the layers outward of $\delta$ end at that flap:
+the fold takes every layer between $\delta$ and the target, hinged to
+$\delta$ or not, as a folder lifts the flap with what lies on it and slides
+it in beside the target. The target and the layers beyond it stay.
 
 ::: {.figure #fig-fold-default caption="`--f` folds the corner through both layers: without `up to` the moving set is every layer on the side of `.b`. The crease reads valley on the face-up layer and mountain on the face-down one." views="cp folded" highlight="--f .b"}
 paper square
