@@ -953,11 +953,54 @@ let placed_fold_plan (ctx : Ctx.ctx) (axis : Geom.line) ~(anchor : Ast.flap_arg 
   List.iter
     (fun fi -> if Array.length (piece move_side fi) >= 3 then block.(fi) <- true)
     cluster;
-  let block = Fold_state.close_off_axis st ~axis ~move_side block in
-  if not (Array.exists Fun.id block) then
-    Error.fail span "the moving flap has no material on the moving side";
   let dir, target = place in
   let target_cluster = resolve_flap_cluster ctx target span in
+  (* Outward closure bounded by the target (ADR 0052): under T, a candidate
+     above a face of the block and below every face of T it overlaps joins
+     the block; over T, the same with above and below exchanged. T itself
+     stays. Alternates with the hinge closure until neither adds a face.
+     [outward c f]: c lies on the side of f the block is placed toward, above
+     it under T and below it over T. *)
+  let under = dir = Ast.PlaceUnder in
+  let outward c f = Fold_state.above st c f = under in
+  let in_target = Array.make n false in
+  List.iter (fun fi -> in_target.(fi) <- true) target_cluster;
+  let pieces =
+    Array.init n (fun fi ->
+        let p = piece move_side fi in
+        if Array.length p >= 3 then Some p else None)
+  in
+  (* a candidate's piece on the moving side overlaps a block face's piece
+     there, and the whole of a face of T, which the axis may cut *)
+  let joins block c =
+    match pieces.(c) with
+    | Some pc when (not block.(c)) && not in_target.(c) ->
+        List.for_all
+          (fun t ->
+            (not (outward c t))
+            || not (Geom.convex_overlap pc (Fold_state.table_polygon_ccw st t)))
+          target_cluster
+        && List.exists
+             (fun m ->
+               block.(m) && outward c m
+               && match pieces.(m) with
+                  | Some pm -> Geom.convex_overlap pc pm
+                  | None -> false)
+             (List.init n Fun.id)
+    | _ -> false
+  in
+  let rec close block =
+    let block = Fold_state.close_off_axis st ~axis ~move_side block in
+    match List.filter (joins block) (List.init n Fun.id) with
+    | [] -> block
+    | added ->
+        let block = Array.copy block in
+        List.iter (fun c -> block.(c) <- true) added;
+        close block
+  in
+  let block = close block in
+  if not (Array.exists Fun.id block) then
+    Error.fail span "the moving flap has no material on the moving side";
   (* a target face must keep a stationary piece: any non-block face, or a
      block face the axis cuts (the anchor's own hinge layer, for a tuck) *)
   let stay_piece fi =

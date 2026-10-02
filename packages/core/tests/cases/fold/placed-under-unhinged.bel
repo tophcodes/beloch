@@ -1,0 +1,33 @@
+@author "Claude (Anthropic)"
+
+; A fold placed under a flap takes the layers between its depth and that
+; flap, also where no hinge joins them. The strip is folded in half and in
+; half again, so four layers lie over its right quarter. Right of --t the
+; two lower layers end in raw edges, and no hinge joins them there: each is
+; hinged at its left end to one of the two upper layers. `up to .b` names
+; the lowest layer, `under .u` the third. The second layer lies above the
+; first and below the third, so it folds with the first; the third and
+; fourth stay.
+
+paper rectangle 2 1
+
+.h = free on --ab from .a at 1/2            ; (1, 0): the first fold's hinge
+.e = free on --da from .a at 1/2            ; (0, 1/2)
+.p = free on --ab from .a at 3/4            ; (3/2, 0)
+.q = free on --cd from .c at 1/4            ; (3/2, 1)
+.r = free on --ab from .a at 7/8            ; (7/4, 0) on the lowest layer
+.s = free on --cd from .c at 1/8            ; (7/4, 1) on the lowest layer
+.u = free on --ab from .a at 3/8            ; (3/4, 0): on the third layer
+fold (map .a onto .b)                       ; left half over, raw edges at the right
+fold (through .p .q) (moving .h)            ; left half of the stack over again
+fold (through .r .s) (moving .b) (up to .b) (under .u) as --t
+
+--cut = (perp --t through .e)
+
+; assert steps = 3
+; assert faces = 6
+; assert .b = (3/2, 0)
+; assert .a = (3/2, 0)
+; assert .c = (3/2, 1)
+; assert .u = (7/4, 0)
+; assert --t is valley
