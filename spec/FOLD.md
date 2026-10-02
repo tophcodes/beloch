@@ -47,7 +47,14 @@ Each frame uses the FOLD vocabulary for what FOLD can express:
   has not folded, and `J` for a join edge: a flat edge that only divides a
   non-convex sheet into convex faces, whose two faces FOLD counts as one. `U`
   never occurs, since a state always knows a crease's disposition.
-- `edges_foldAngle`: $0$ or $\pm 180$, the hinge angles of the state.
+- `edges_foldAngle`: $0$ or $\pm 180$ in degrees, with FOLD's sign: $+180$
+  for `V`, $-180$ for `M`, $0$ for `F`, `J` and `B`, so the sign always
+  matches `edges_assignment`. On a folded frame these are the hinge angles of
+  that state. Frame 0 carries them too, read from the final state: there they
+  are the target angle of each crease, which FOLD allows on a crease pattern.
+  Without them a consumer that folds the pattern (Origami Simulator, for one)
+  would take the angles from frame 0's geometry, which lies flat and gives $0$
+  everywhere.
 - `faceOrders`: the layer relation $\lambda$ as FOLD encodes it, one triple
   per pair of overlapping faces with the sign taken relative to the second
   face's normal. Pairs that do not overlap are absent, as in the model.
