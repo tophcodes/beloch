@@ -17,7 +17,7 @@ import { renderFolded, WEB_THEME } from "@beloch/render-svg";
 const fold = evalBelToFold(PLAYGROUND_SRC);
 const scene = parseFold(fold as object);
 // Drawn as the client will draw it the moment it boots: the names belong to
-// what a reader picks, and nothing is picked yet. A seed that labelled every
+// what a reader picks, and nothing is picked yet. A seed that labeled every
 // name would show them for the length of one paint and then take them away.
 const seedSvg = renderFolded(scene, { theme: WEB_THEME, annotate: [] }).toString();
 const seedFoldJson = JSON.stringify(fold);

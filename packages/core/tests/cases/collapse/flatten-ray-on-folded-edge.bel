@@ -1,7 +1,7 @@
 ; AI-generated: this file was written by Claude, an AI model.
 
 ; A four-ray vertex on a book fold, scored through both layers. The ray
-; (--x & --m) ends at the centre of the paper, on the spine: a folded edge of
+; (--x & --m) ends at the center of the paper, on the spine: a folded edge of
 ; its flap, inside the square on the table. The four rays are two straight
 ; lines, so the flatten equals folding along --x through both layers and then
 ; along --y through the stack; the letters pick that candidate. The leading

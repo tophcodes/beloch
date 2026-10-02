@@ -65,7 +65,7 @@ let overlap_self =
       Geom.convex_overlap p p)
 
 (* The centroid of [p]'s vertices lies strictly inside [p]; if it lies strictly
-   inside [q] too, the two share a neighbourhood of it, so positive area. *)
+   inside [q] too, the two share a neighborhood of it, so positive area. *)
 let overlap_shared_interior_point =
   Arb.make ~name:"a common interior point means overlap" ~count:60
     ~print:print_poly2 poly2 (fun (p, q) ->

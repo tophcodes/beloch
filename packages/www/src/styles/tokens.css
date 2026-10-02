@@ -1,14 +1,14 @@
 /* Beloch — the token layer. One list of values, in one place (B1.1).
  *
- * Three colour layers that never borrow from each other:
+ * Three color layers that never borrow from each other:
  *
- *   --bel-paper-*   what lies in the artefact: the sheet, the ink, the creases
+ *   --bel-paper-*   what lies in the artifact: the sheet, the ink, the creases
  *   --bel-ui-*      the interface around it: surfaces, borders, text, state
- *   --bel-syntax-*  the token colours of Beloch code
+ *   --bel-syntax-*  the token colors of Beloch code
  *
  * A role that would fit two layers is two roles: the text of a paragraph is
- * --bel-ui-text, the ink of a drawing is --bel-paper-ink, and a crease colour
- * never carries a control. The scales without a colour sit in none of the
+ * --bel-ui-text, the ink of a drawing is --bel-paper-ink, and a crease color
+ * never carries a control. The scales without a color sit in none of the
  * three and keep the bare prefix.
  *
  * This file holds declarations only. Component rules, @font-face and the
@@ -36,10 +36,10 @@
 	--bel-line-height: 1.55;
 
 	/* The type scale. The interface sizes are the ones the surfaces already
-	   used, named: a status line and a step label at 2xs, toolbar controls and
-	   the inspector at xs, an action and the footer at sm, navigation at base,
-	   a lede and docs prose at md, the hero paragraph at lg, the wordmark at
-	   xl. The code grid keeps its own pair below, because a program is set on
+	   used, named: a status line and a step label at `2xs`, toolbar controls and
+	   the inspector at `xs`, an action and the footer at `sm`, navigation at `base`,
+	   a lede and docs prose at `md`, the hero paragraph at `lg`, the wordmark at
+	   `xl`. The code grid keeps its own pair below, because a program is set on
 	   a grid rather than at a size. */
 	--bel-text-2xs:  11px;
 	--bel-text-xs:   12px;
@@ -109,7 +109,7 @@
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
- * Paper layer: everything that lies in the artefact — the sheet, the ink on
+ * Paper layer: everything that lies in the artifact — the sheet, the ink on
  * it, the creases. One value per role in both modes, because a crease is
  * always drawn on paper and the paper scheme sets the ground under it, never
  * the panel behind the drawing. paper-schemes.ts writes fill, front, back,
@@ -135,7 +135,7 @@
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
- * Interface layer. Light is the reference: the artefact is ink on paper, the
+ * Interface layer. Light is the reference: the artifact is ink on paper, the
  * renderer's own default is dark ink on a near-white sheet, three of the four
  * paper schemes are light, and the paper is printed on paper. Take the dark
  * column away and a complete site remains.
@@ -147,8 +147,8 @@
 :root {
 	color-scheme: light dark;
 
-	/* The light column's neutrals are warm: the artefact is paper, and a card
-	   of paper on a cool grey page reads as a screenshot of paper. Surface is
+	/* The light column's neutrals are warm: the artifact is paper, and a card
+	   of paper on a cool gray page reads as a screenshot of paper. Surface is
 	   what a card is made of, ground is the page it lies on, and quiet is the
 	   fill of a control that is on. The dark column keeps the cool neutrals it
 	   had; warming it is its own pass with its own four checks. */
@@ -171,9 +171,9 @@
 	--bel-ui-divider:        light-dark(#DFDBD2, #33302B);
 	--bel-ui-control-border: light-dark(#8E877A, #878179);
 
-	/* Accent and error. Kept clear of the crease colours so a focus ring next
+	/* Accent and error. Kept clear of the crease colors so a focus ring next
 	   to a drawing cannot read as a valley fold: in the dark column the accent
-	   sits at dE76 30.1 from the nearest paper colour, and at L* 35.8 against
+	   sits at dE76 30.1 from the nearest paper color, and at L* 35.8 against
 	   mountain 47.9 and valley 46.1, so it stays separate desaturated too. */
 	--bel-ui-accent:        light-dark(#0D5F54, #7ED4CB);
 	--bel-ui-accent-text:   light-dark(#FFFFFF, #08221E);
@@ -182,12 +182,12 @@
 	/* Two tinted grounds, one per meaning, for text that sits on a field
 	   rather than on the page: the anchor a link just jumped to, a callout,
 	   a badge. Measured against --bel-ui-text, --bel-ui-text-muted and the
-	   colour that carries the tint.
+	   color that carries the tint.
 	     accent-low  text 14.54:1 · 12.03:1   muted 4.96:1 · 5.23:1   accent rule 6.30:1 · 8.44:1
 	     error-low   text 14.62:1 · 12.37:1   muted 4.98:1 · 5.37:1   error  rule 4.15:1 · 5.95:1
 	   Against --bel-ui-surface they hold dE76 6.5 / 13.0 and 7.3 / 11.8, far
 	   enough to be seen as a field and near enough not to read as a second
-	   page colour. */
+	   page color. */
 	--bel-ui-accent-low:    light-dark(#E2EDEA, #162D29);
 	--bel-ui-error-low:     light-dark(#F4E9E5, #36221C);
 
@@ -226,7 +226,7 @@
 /* ──────────────────────────────────────────────────────────────────────────
  * Syntax layer — ten roles on the navy panel, so they carry one value each.
  *
- * There were 22 colours here, of which 18 pairs sat below dE76 15: the eye
+ * There were 22 colors here, of which 18 pairs sat below dE76 15: the eye
  * could not use distinctions the stylesheet was making. The roles are grouped
  * by what a token does instead of by which grammar rule produced it, which is
  * also what a reader needs: an axiom operator reads as an axiom operator,
@@ -257,7 +257,7 @@
  * and inline code sits on --bel-ui-quiet inside the line. Every syntax value
  * holds 4.5:1 on both; the ratios below are on surface · quiet. Error sits on
  * blocks only. Comment stays italic, which carries it the rest of the way
- * from punct and label.
+ * from `punct` and `label`.
  * ────────────────────────────────────────────────────────────────────────── */
 .bel-code-on-page,
 .bel-block,

@@ -18,7 +18,7 @@ const GHOST = "bel-fade-ghost";
 export type FadeLength = "view" | "fold";
 
 // An element the browser never painted (a card below the fold, a background
-// tab) fires no transitionend, so a fade also carries a deadline. It sits well
+// tab) fires no `transitionend`, so a fade also carries a deadline. It sits well
 // past the longest duration token.
 const DEADLINE_MS = 2000;
 

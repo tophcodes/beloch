@@ -63,7 +63,7 @@ test("hidden=dashed draws occluded sub-segments, hide does not", async () => {
   expect((hidden.match(/data-occluded="true"/g) ?? []).length).toBe(0);
 });
 
-test("occluded named-vertex dots: dashed greys them, hide drops them", async () => {
+test("occluded named-vertex dots: dashed grays them, hide drops them", async () => {
   // fold-quarter folds paper corners a,b,c under the top flap; only d stays
   // exposed. Named-vertex dots must occlude like creases do.
   const scene = parseFold(await golden("fold-quarter.fold"));
@@ -82,7 +82,7 @@ test("occluded named-vertex dots: dashed greys them, hide drops them", async () 
 });
 
 // A point the reader picked is drawn whatever the hidden mode says, as a
-// picked crease is: covered, greyed and flagged, with its label.
+// picked crease is: covered, grayed and flagged, with its label.
 test("a picked point under a higher layer keeps its dot and its label under hide", async () => {
   const scene = parseFold(await golden("fold-quarter.fold"));
   const svg = renderFolded(scene, { hidden: "hide", annotate: [".a"] }).toString();

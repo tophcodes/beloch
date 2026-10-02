@@ -2,7 +2,7 @@
 
 ; A mark that moves carries out an alignment only with marked paper
 ; (ADR 0033). The pinch runs from the middle of the bottom edge to the
-; centre. The fold that moving --pinch keeps would land the point of the
+; center. The fold that moving --pinch keeps would land the point of the
 ; pinch's line at height sqrt(3)/2 on .d, and the pinch does not reach it.
 
 paper square

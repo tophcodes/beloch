@@ -148,7 +148,7 @@ and construction = {
   candidates : candidate list;
   conics : conic list;
   circle : (Geom.point * Geom.point) option;
-      (** axiom 6: the centre on the crease, and the point that moves *)
+      (** axiom 6: the center on the crease, and the point that moves *)
 }
 
 and spans = {

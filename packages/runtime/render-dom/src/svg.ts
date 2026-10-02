@@ -1,5 +1,5 @@
 // A render command as SVG markup. The command says what to draw, the theme
-// says in which colours, and the scene carries the geometry both of them talk
+// says in which colors, and the scene carries the geometry both of them talk
 // about. Pure: a caller that wants markup without a document to put it in
 // stops here (the static build of a card does exactly that).
 import type { FoldScene, Frame, Mark } from "@beloch/scene";

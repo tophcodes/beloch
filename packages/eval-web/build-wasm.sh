@@ -150,7 +150,7 @@ _malloc,_free"
 # GROWABLE_ARRAYBUFFERS=0 is load-bearing: emscripten 6's default (1) makes the
 # heap views sit on a *resizable* ArrayBuffer (wasmMemory.toResizableBuffer()).
 # Firefox's TextDecoder.decode rejects views backed by resizable buffers, so any
-# FLINT string result marshalled via UTF8ToString throws a TypeError in Firefox.
+# FLINT string result marshaled via UTF8ToString throws a TypeError in Firefox.
 # =0 keeps ALLOW_MEMORY_GROWTH (on-demand growth) but via classic copy-on-grow
 # into a fresh non-resizable buffer — no upfront reservation, cross-browser safe.
 #
@@ -160,7 +160,7 @@ _malloc,_free"
 # added in #57 (compute in-field +/* over ℚ(α)) trapped with "indirect call
 # signature mismatch" / "null function" in ALL engines — every √2-class fold in
 # the playground died once #57 started calling it. =1 routes indirect calls
-# through signature-adapting thunks, restoring correct behaviour.
+# through signature-adapting thunks, restoring correct behavior.
 echo "=== compiling packages/eval-web/qqbar_wasm.c to packages/www/public/beloch/qqbar-wasm.js ==="
 nix shell nixpkgs#emscripten --command bash -c "
 emcc '$SCRIPT_DIR/qqbar_wasm.c' $CFLAGS_COMMON -I'$PREFIX/include' -L'$PREFIX/lib' -lflint -lmpfr -lgmp \

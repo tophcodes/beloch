@@ -47,7 +47,7 @@ test("a file without a trace says how to get one", async () => {
 });
 
 // `.d` onto --ef through a point a quarter of the way along --bd: `.d` lands
-// at the centre or on the top edge, and the points as near to both lie on
+// at the center or on the top edge, and the points as near to both lie on
 // y = 3/4.
 test("each panel shades where a toward point selects its candidate", async () => {
   const scene = parseFold(await fixture("trace-boundary.fold"));

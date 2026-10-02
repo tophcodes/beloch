@@ -86,9 +86,12 @@
             hash = "sha256-W/eHlXklAVlAnY8nLPi/SIKsg8UUnH8UkH99BDo5yKk=";
           }}/write-good";
         };
-        # Links the pinned packages into .vale/styles, where git ignores them.
+        # Links the pinned packages into .vale/styles and the Hunspell dictionary
+        # that Beloch.Spelling reads (.vale/styles/Beloch/Spelling.yml) into
+        # .vale/dictionaries; git ignores both.
         linkValeStyles = ''
           root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+          ln -sfn ${pkgs.hunspellDicts.en_US-large}/share/hunspell "$root/.vale/dictionaries"
           ${pkgs.lib.concatStrings (pkgs.lib.mapAttrsToList (name: path: ''
               ln -sfn ${path} "$root/.vale/styles/${name}"
             '')
@@ -178,10 +181,11 @@ EOF
         };
 
         # The prose lint for the pull request job in .github/workflows/prose.yml:
-        # Vale, and the compiler and dune for the comment masker, without FLINT.
+        # Vale, bun and the compiler and dune for the comment maskers, without
+        # FLINT.
         devShells.prose = pkgs.mkShell {
           name = "beloch-prose";
-          packages = [pkgs.vale pkgs.jq ocamlPkgs.ocaml ocamlPkgs.dune_3];
+          packages = [pkgs.vale pkgs.jq pkgs.bun ocamlPkgs.ocaml ocamlPkgs.dune_3];
           shellHook = linkValeStyles;
         };
       }

@@ -8,7 +8,7 @@
 @import './tokens.css';
 
 /* The two shipped cuts of JetBrains Mono NL. NL is the no-ligature cut, which
- * matters because `--` opens a crease name. Subset, two weights; the licence
+ * matters because `--` opens a crease name. Subset, two weights; the license
  * and the regeneration command sit in public/fonts/README.md.
  */
 @font-face {
@@ -29,7 +29,7 @@
 /* The three shipped cuts of TeX Gyre Pagella, the prose face: regular, italic
  * for emphasis and statement names, bold for run-in heads and the small-caps
  * labels set at 600. Subset and renamed "Beloch Pagella" as the GUST Font
- * License asks of a derived font; the licence and the regeneration command sit
+ * License asks of a derived font; the license and the regeneration command sit
  * in public/fonts/README.md.
  */
 @font-face {
@@ -131,7 +131,7 @@
 .bel-ray      { color: var(--bel-syntax-label); }
 
 /* Figure highlights (remark-model-blocks). A figure's `highlight` attribute
-   lists the entities its caption refers to; each takes the colour at its
+   lists the entities its caption refers to; each takes the color at its
    position in this palette, in the crease pattern, in the folded form and in
    the caption's inline code, so a name and the thing drawn read as one.
 
@@ -143,7 +143,7 @@
    until it holds 4.5:1 for the dark page. theme-tokens.test.ts keeps the three
    lists of light values equal. Measured on the dark set: 4.51 to 4.73 against
    the panel, L* 54.5 to 55.9, ΔE76 54.4 between any two and 20.4 to every other
-   colour in the project.
+   color in the project.
 
    Highlight 0 is the one light value that is not the stroke darkened in place:
    the stroke is teal-green and so is --bel-ui-accent, and on a light ground
@@ -195,7 +195,7 @@
 /* Block-outcome markers (remark-bel): what compute_outcome in blocks.ml
    decided about a tagged block, rendered directly under its highlighted
    program on the same on-page code surface as .bel-block. Verified/failed
-   lean on the code surface's own accent and error, the crease colours a
+   lean on the code surface's own accent and error, the crease colors a
    reader already reads as good/bad fold direction, plus a glyph and a left
    border so the distinction does not rest on hue alone. */
 .bel-outcome {
@@ -290,7 +290,7 @@
 .beloch-stepper button:focus-visible { outline: 2px solid var(--bel-ui-accent); outline-offset: 2px; border-radius: var(--bel-radius-control); }
 
 /* active step line — the accent that carries "active" everywhere else rather
- * than a colour of its own, in the code surface's fixed column because the
+ * than a color of its own, in the code surface's fixed column because the
  * gutter sits on that panel. */
 .beloch-gutter [data-line].bel-step-line {
 	color: var(--bel-ui-code-accent);
@@ -301,7 +301,7 @@
 [data-bel-name].bel-hover { outline: 2px solid var(--bel-ui-text-muted); outline-offset: 1px; }
 svg [data-bel-name].bel-hover { outline: none; filter: drop-shadow(0 0 3px var(--bel-ui-text-muted)); }
 
-/* selection — per-name colour via --bel-sel */
+/* selection — per-name color via --bel-sel */
 .beloch-code-panel [data-bel-name].bel-selected {
 	background: color-mix(in srgb, var(--bel-sel) 32%, transparent);
 	border-radius: 4px; box-shadow: 0 0 0 1px var(--bel-sel);
@@ -422,11 +422,11 @@ h3:target + p { box-shadow: none; }
  * Starlight reads its own custom properties and this stylesheet is already
  * loaded as customCss, so the docs take the same surface as the landing and
  * the playground by supplying those properties — no component is overridden
- * for a colour. The bridge is one-way: --bel-* is the source, --sl-* is only
+ * for a color. The bridge is one-way: --bel-* is the source, --sl-* is only
  * supplied, so there stays one list of values rather than two.
  *
  * The block sits outside Starlight's cascade layers, so a single :root answers
- * for both of its colour columns: Starlight defines them dark first and flips
+ * for both of its color columns: Starlight defines them dark first and flips
  * them on :root[data-theme='light'], while light-dark() does that job from
  * color-scheme.
  * ────────────────────────────────────────────────────────────────────────── */
@@ -439,7 +439,7 @@ h3:target + p { box-shadow: none; }
 	--sl-color-bg-nav:     var(--bel-ui-ground);
 	--sl-color-bg-sidebar: var(--bel-ui-ground);
 
-	/* Starlight's grey ramp is a text ramp at the top and a line ramp at the
+	/* Starlight's gray ramp is a text ramp at the top and a line ramp at the
 	   bottom, so it lands on the three text roles and the two border roles.
 	   `--sl-color-text` is defined as gray-2, which is why that step has to
 	   be the body text value rather than a step below it. */
@@ -489,9 +489,9 @@ h3:target + p { box-shadow: none; }
 	--sl-content-pad-x:  var(--bel-shell-pad-x);
 
 	/* The system separates with lines. The one case a line cannot carry is a
-	   panel lying over the text it covers. md and lg reach the mobile menu,
+	   panel lying over the text it covers. `md` and `lg` reach the mobile menu,
 	   the mobile table of contents and the search dialog. The pagination
-	   links take md as well and keep a shadow they do not need. */
+	   links take `md` as well and keep a shadow they do not need. */
 	--sl-shadow-sm: none;
 	--sl-shadow-md: var(--bel-shadow-overlay);
 	--sl-shadow-lg: var(--bel-shadow-overlay);
@@ -502,11 +502,11 @@ h3:target + p { box-shadow: none; }
 	   beside a drawing would then read as a fold direction, the mistake
 	   --bel-ui-error was introduced to undo.
 
-	   The rows therefore collapse onto the two chrome colours that are already
+	   The rows therefore collapse onto the two chrome colors that are already
 	   clear of the fold semantics: accent carries note, tip and a positive
 	   badge, error carries caution and danger. Two kinds of callout read alike
-	   in colour and are told apart by their icon and their title word, which
-	   is the rule anyway — no distinction here rests on colour alone (B1.2). */
+	   in color and are told apart by their icon and their title word, which
+	   is the rule anyway — no distinction here rests on color alone (B1.2). */
 	--sl-color-blue-low:   var(--bel-ui-accent-low);
 	--sl-color-blue:       var(--bel-ui-accent);
 	--sl-color-blue-high:  var(--bel-ui-text);

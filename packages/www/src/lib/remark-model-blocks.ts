@@ -23,7 +23,7 @@
 // scripts/render-figures.ts keeps evaluating it.
 //
 // `highlight` lists the entities the caption refers to. Each takes its own
-// colour from the palette in @beloch/render-svg's DEFAULT_THEME, by its
+// color from the palette in @beloch/render-svg's DEFAULT_THEME, by its
 // position in the list, and the caption's inline code for that entity carries
 // the matching `.figure-hl-<n>` class from styles/theme.css.
 //
@@ -265,7 +265,7 @@ export default function remarkModelBlocks(
 
 		const api = register(registerPath);
 		const labels = number(raw, sectionStarts);
-		// A link to a model statement is labelled from this document when this is
+		// A link to a model statement is labeled from this document when this is
 		// the model, and from the model document otherwise.
 		const labelOf = (id: string) => labels.get(id) ?? labelMap(modelPath).get(id) ?? id;
 		// The per-document default for a figure's program text: hidden in the
@@ -404,8 +404,8 @@ function highlightNames(value: string | undefined): string[] {
 }
 
 // The caption's inline code for a highlighted entity takes that entity's
-// palette colour, so the name a reader finds in the caption and the thing drawn
-// in the two views carry one colour. The class index is the entity's position
+// palette color, so the name a reader finds in the caption and the thing drawn
+// in the two views carry one color. The class index is the entity's position
 // in the `highlight` list, the same index the renderer assigns.
 function colorCaption(caption: any[], highlight: string[]) {
 	if (highlight.length === 0) return;
@@ -633,7 +633,7 @@ async function figureNode(f: Figure, figuresPath: string): Promise<any> {
 
 	// The program is the figure. It runs through the same highlighter as a
 	// ```beloch fence and lands on the same code surface, so the names a
-	// caption points at are the colours the drawing above it uses.
+	// caption points at are the colors the drawing above it uses.
 	const program = f.showProgram
 		? `<pre class="bel-block figure-source" property="bm:program"><code>${await highlightBel(f.program)}</code></pre>`
 		: "";

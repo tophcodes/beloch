@@ -65,7 +65,7 @@ kept every helper one screen away from its caller. Rejected because the cost
 scales with the number of slices, not the size of any one slice: the file had
 already outgrown what a single change could hold in context.
 
-**A functor over the context.** Parameterise the phases over a context
+**A functor over the context.** Parameterize the phases over a context
 signature instead of passing `ctx` explicitly. Rejected as a heavier
 abstraction than the problem needs: there is exactly one context type and no
 prospect of a second, so the functor would buy nothing but indirection at
@@ -92,7 +92,7 @@ while leaving the solver with no home of its own.
   `Flatten_solve.run` is the largest single function in the core and is the
   next decomposition candidate.
 - The `.mli` check is scoped to these five modules, not to `packages/core/lib`
-  as a whole: `geom.ml`, `num.ml`, `collapse.ml` and their neighbours predate
+  as a whole: `geom.ml`, `num.ml`, `collapse.ml` and their neighbors predate
   this record and have no interfaces. A repo-wide check would be red the day
   it landed, which teaches everyone to ignore checks.
 - These are the repository's first executable `checks:`. Records 0001–0017

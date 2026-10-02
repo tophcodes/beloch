@@ -31,7 +31,7 @@ rendered prose carries, and keep the layout features the site uses: `kern`,
 Pagella is copyright 2007-2018 B. Jackowski, J. M. Nowacki et al., on behalf
 of the TeX Users Groups, and licensed under the GUST Font License, see
 `GUST-FONT-LICENSE.txt`, which is an instance of the LaTeX Project Public
-License 1.3c, see `lppl.txt`. A subset is a derived work under that licence, so
+License 1.3c, see `lppl.txt`. A subset is a derived work under that license, so
 the files carry the family name **Beloch Pagella**, as the GUST Font License
 asks, and each says in its description name record what was changed and where
 the unmodified fonts are:

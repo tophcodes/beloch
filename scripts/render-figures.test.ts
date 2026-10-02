@@ -78,7 +78,7 @@ test("a candidates figure draws the choices of a program that stops at them", ()
 	expect((svg.match(/data-status="open"/g) ?? []).length).toBe(2);
 });
 
-test("an op figure draws the write of the labelled statement", () => {
+test("an op figure draws the write of the labeled statement", () => {
 	const entry = renderFigure(
 		{
 			id: "fig-rev", views: ["op"], highlight: [], at: "rev",

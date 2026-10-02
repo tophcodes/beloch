@@ -17,7 +17,7 @@ interface Props {
   src: string;
 }
 const { final, steps } = heroSequence(Astro.props.src);
-// Coloured by the grammar the docs and the editor colour with.
+// Colored by the grammar the docs and the editor color with.
 const code = await Promise.all(steps.map((s) => Promise.all(s.lines.map(highlightBel))));
 ---
 

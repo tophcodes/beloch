@@ -13,11 +13,11 @@ export interface PaperScheme {
   back: string;   // --bel-paper-back (folded: back side)
   ink?: string;   // --bel-paper-ink + --bel-paper-boundary; only dark papers set it
   swatch: string; // display color of the toolbar swatch
-  // Whether the coloured line style may be offered on this paper. On kraft and
-  // indigo every crease colour falls below 2:1 against the sheet (max 1.86), so
+  // Whether the colored line style may be offered on this paper. On kraft and
+  // indigo every crease color falls below 2:1 against the sheet (max 1.86), so
   // those papers get the monochrome Yoshizawa-Randlett style only, where the
   // dash pattern carries mountain against valley. The renderer draws monochrome
-  // throughout today; this flag is what a style switch has to honour.
+  // throughout today; this flag is what a style switch has to honor.
   colorOk: boolean;
 }
 

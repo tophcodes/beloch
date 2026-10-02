@@ -4,7 +4,7 @@
 // that wraps the turns inside it [langdemaine2009facet, Fig. 5; hull2020,
 // Fig. 7.9]. Beside it the folded state shows where the cut is taken and, with
 // an arrow at each end, which side it is seen from; the crease pattern carries
-// the same pieces where they lie on the paper, named and coloured alike, so
+// the same pieces where they lie on the paper, named and colored alike, so
 // each strip can be found on the sheet [hull2020, Fig. 7.9; demaine2007,
 // Fig. 12.2].
 //
@@ -231,7 +231,7 @@ export function sideSection(scene: FoldScene, along: string, stepLabel?: string,
 export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
   const { strips, turns, points, ends, view } = sideSection(scene, opts.along, opts.step, opts.farSide);
   const theme: Theme = { ...DEFAULT_THEME, ...opts.theme };
-  const colour = (name: number) => theme.highlightPalette[(name - 1) % theme.highlightPalette.length]!.stroke;
+  const color = (name: number) => theme.highlightPalette[(name - 1) % theme.highlightPalette.length]!.stroke;
   const halo = { stroke: theme.background, "stroke-width": 4, "paint-order": "stroke" };
   const y = (level: number) => PAD + level * GAP;
   const radius = (u: Turn) => Math.abs(strips[u.strips[0]]!.level - strips[u.strips[1]]!.level) * GAP / 2;
@@ -277,12 +277,12 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
       nodes.push(el("line", {
         "data-kind": "layer", "data-name": r.name, "data-level": s.level,
         x1: x0, y1: y(s.level), x2: x1, y2: y(s.level),
-        stroke: colour(r.name), "stroke-width": 3, "stroke-linecap": "round",
+        stroke: color(r.name), "stroke-width": 3, "stroke-linecap": "round",
       }));
       // at the start of the part, clear of the points and names over its middle
       nodes.push(el("text", {
         "data-kind": "layer-name", x: x0 + (Math.abs(r.t0 - s.t0) < EPS ? 14 : 8), y: y(s.level) - 7, "text-anchor": "start",
-        "font-size": 13, "font-weight": 600, fill: colour(r.name),
+        "font-size": 13, "font-weight": 600, fill: color(r.name),
       }, [], String(r.name)));
       if (Math.abs(r.t0 - s.t0) > EPS) {
         nodes.push(el("line", {
@@ -358,11 +358,11 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
     marks.push(el("line", {
       "data-kind": "piece", "data-name": r.name,
       x1: lay.tx(ax), y1: lay.ty(ay), x2: lay.tx(bx), y2: lay.ty(by),
-      stroke: colour(r.name), "stroke-width": 5, "stroke-linecap": "round",
+      stroke: color(r.name), "stroke-width": 5, "stroke-linecap": "round",
     }));
     marks.push(el("text", {
       "data-kind": "piece-name", x: (lay.tx(ax) + lay.tx(bx)) / 2, y: (lay.ty(ay) + lay.ty(by)) / 2 - 8,
-      "text-anchor": "middle", "font-size": 15, "font-weight": 600, fill: colour(r.name), ...halo,
+      "text-anchor": "middle", "font-size": 15, "font-weight": 600, fill: color(r.name), ...halo,
     }, [], String(r.name)));
   }
   // each hinge named where it crosses the line on the paper, above and to the

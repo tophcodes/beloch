@@ -95,7 +95,7 @@ sizes the loading program sees. The FOLD output writes the unit as
 `frame_unit`, which the FOLD format defines for that purpose, and writes
 `"unit"` when no file declares one. A program that loads another file
 converts that file's sizes exactly into its own unit; every physical unit
-FOLD names is a rational multiple of the millimetre. A file without a unit
+FOLD names is a rational multiple of the millimeter. A file without a unit
 takes the unit of the file that loads it, which is how the standard
 library is written. Beloch has no import yet, so this rule binds the import
 when it is built.

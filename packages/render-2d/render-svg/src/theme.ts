@@ -11,7 +11,7 @@ export interface LineStyle {
   opacity?: number;
 }
 
-// Pluggable per-assignment styling: callers can pass their own fn via
+// Pluggable per-assignment styling: callers can pass their own function via
 // `theme.lineStyle`, or pick one of the two below.
 export type LineStyleFn = (assignment: Assignment, theme: Theme) => LineStyle;
 
@@ -35,7 +35,7 @@ export interface Theme {
   front: string;           // "#fafaf7"  (folded: paper front)
   back: string;            // "#dbe4ee"  (folded: paper back)
   construction: string;    // "#4f46e5"
-  highlightPalette: HighlightColor[]; // one colour per entity the caller emphasizes
+  highlightPalette: HighlightColor[]; // one color per entity the caller emphasizes
   ink: string;             // "#0f172a"  (dots, labels, title)
   background: string;      // "white"    (full-canvas backdrop rect fill)
   lineStyle: LineStyleFn;
@@ -67,18 +67,18 @@ export const yrLineStyle: LineStyleFn = (assignment, theme) => {
   }
 };
 
-// The entities a figure's caption refers to, one colour each, taken in the
-// order the `highlight` attribute lists them. The same six colours carry the
+// The entities a figure's caption refers to, one color each, taken in the
+// order the `highlight` attribute lists them. The same six colors carry the
 // caption's inline code on the docs site (`.figure-hl-<n>` in
 // packages/www/src/styles/theme.css) and in the PDF (scripts/typst-compat.typ),
 // so a name in the caption and the thing drawn read as one. They are literals
 // here because typst places the SVG into the PDF and resolves no var().
 // Each stroke sits at L* 49 to 56, which keeps it legible on the paper of a
 // drawing and on a page of either site theme, at least ΔE76 19 from every
-// Beloch token colour and ΔE76 50 from the others here. A `highlight` longer
-// than the palette wraps round to the first colour and two entities then share
+// Beloch token color and ΔE76 50 from the others here. A `highlight` longer
+// than the palette wraps round to the first color and two entities then share
 // one; six is well past the two the documents use today.
-// Six colours a caption can point with. Measured: L* 50.1 to 55.9, at least
+// Six colors a caption can point with. Measured: L* 50.1 to 55.9, at least
 // dE76 55.3 from each other, 34.9 from mountain and valley, 27.2 from the
 // interface accent, so a highlight is never mistaken for a fold or a control.
 // Each wash is its stroke lightened towards white by 0.25, the ratio the

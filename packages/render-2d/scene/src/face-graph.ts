@@ -13,7 +13,7 @@ export interface FaceGraph {
   // the node of each face
   nodeOf: number[];
   // the nodes that share an edge with `node`, ascending
-  neighbours(node: number): number[];
+  neighbors(node: number): number[];
   // the indices of the edges between nodes `a` and `b`, ascending; [] when
   // they share none, and when `a` is `b`
   edgesBetween(a: number, b: number): number[];
@@ -57,7 +57,7 @@ export function faceGraph(frame: Frame): FaceGraph {
   return {
     nodes,
     nodeOf,
-    neighbours: (node) => [...(adjacent[node] ?? [])].sort((x, y) => x - y),
+    neighbors: (node) => [...(adjacent[node] ?? [])].sort((x, y) => x - y),
     edgesBetween: (a, b) => between.get(a < b ? `${a},${b}` : `${b},${a}`) ?? [],
   };
 }

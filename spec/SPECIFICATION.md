@@ -216,7 +216,7 @@ defined when it is exactly one point ([def-meet](/model/#def-meet), ADR 0027):
 - An operand may lie on **any number of paper lines**. A crease scored through
   several layers marks a scar and its mirror images; it meets bare, and only
   the number of common points counts. On the preliminary base `--h * --v` is
-  the paper centre.
+  the paper center.
 - The common point lies **on the marks** of every crease operand (endpoints
   count). Supporting lines that cross beyond the marks give no common point.
 - A paper-edge operand (a prelude edge `--ab`, or a `--[.a .b]` selection) is
@@ -361,7 +361,7 @@ marks." Anchor one end to a boundary, or split it into two marks, instead.
 
 **Direction on a record mark.** `mark … (valley|mountain)` (default valley) still
 applies to a record mark exactly as to a subdividing one: the mark is always
-`F` in the folded-form frame (nothing has moved), and its M/V **intent** colours
+`F` in the folded-form frame (nothing has moved), and its M/V **intent** colors
 the crease-pattern frame only — the same creasePattern/foldedForm split used
 for subdividing marks (§7).
 
@@ -462,7 +462,7 @@ when its flap straddles the axis.
   flap; if the layers beneath it must move too, the fold tears (the
   hinge-closure check below fires) and the fold needs an explicit `up to`. On a
   single-layer region (e.g. a first fold on flat paper) the prefix is that one
-  flap — identical to the pre-v0.24-dev behaviour. The one gap: a bare axiom-5
+  flap — identical to the pre-v0.24-dev behavior. The one gap: a bare axiom-5
   line-onto-line fold with no `moving` and no implied point (the direction comes
   from `side_override` alone, so there is nothing to anchor a prefix to) still
   falls back to every layer on the side — and that fallback set is now gated by
@@ -1273,7 +1273,7 @@ internal edge is a crease.
   collision-free across repeated `apply`s of the same `def`. `"name"` is
   `null` for creases bound to a `_`-temp (§5a.1) and for creases produced by a
   naked (unbound) `apply`. Additive: stock FOLD consumers ignore the field;
-  `render/render-svg` uses `"name"` to colour/label creases.
+  `render/render-svg` uses `"name"` to color/label creases.
 - `beloch:marks` — custom property *(since v0.22-dev)* carrying the
   **non-subdividing record marks** (§4.6) that a `between`/`at` extent ending
   mid-face produces — reference/pinch creases that are not part of
@@ -1512,7 +1512,7 @@ and layer-order validity, with `over` for stacking ties; `standing` parses
 but is not yet implemented (§4.9); the **notation cutover** — reads become
 operators (`*` meet/join, `&` filter, `\` drop, `[]` union, the `.[] --[] #[]`
 selectors), the one write was the keyword `through`, and bracket member access
-retires in favour of `export` (§4.10, design doc). *(v0.21-dev)* the
+retires in favor of `export` (§4.10, design doc). *(v0.21-dev)* the
 **mark/fold notation cutover** — `map`/`through`/`perp` constructions become pure
 reads (joining the v0.20-dev operators); the writes are the keyword verbs
 `mark` (crease flat, FOLD `F`) and `fold` (crease and fold, FOLD `M`/`V`);

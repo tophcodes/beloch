@@ -237,7 +237,7 @@ function renderWriteCandidates(scene: FoldScene, entry: WriteEntry, opts: Candid
     const base = (asPattern
       ? renderCP({ ...ext, cp: paperFrame(c.frame!) }, {
         ...panelOpts,
-        // in colour: a dash-dot mountain reads as a solid line at this size
+        // in color: a dash-dot mountain reads as a solid line at this size
         theme: { lineStyle: colorLineStyle, ...opts.theme },
       })
       : renderFolded(ext, { ...panelOpts, step: String(entry.frameIndex) })).node();

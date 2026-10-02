@@ -4,7 +4,7 @@
 ; each of the four side corners inside-reversed along the kite crease through
 ; .c, the open end where the raw edges meet. `map <corner> onto --mid through
 ; .c` has two solutions (the circle around .c through the corner meets the
-; centre line twice); the outward one meets the base only at .c and creases
+; center line twice); the outward one meets the base only at .c and creases
 ; nothing, so the paper-incidence filter leaves the inward one as the single
 ; survivor and no `toward` is needed. The kite vertices carry sqrt(2)
 ; coordinates, handled exactly. --ac is never creased on this route.
@@ -15,8 +15,8 @@ fold (map .a onto .c) as --bd           ; triangle
 reverse (map .b onto .c) as --h         ; preliminary base
 reverse (map .d onto .c) as --v
 
-.o = --h * --v                          ; apex O, the paper centre
---mid = (through .c .o)                 ; centre line of the base
+.o = --h * --v                          ; apex O, the paper center
+--mid = (through .c .o)                 ; center line of the base
 
 .sr = --ab * --h                        ; front-right side corner: paper (1/2, 0), table (1, 1/2)
 reverse (map .sr onto --mid through .c)

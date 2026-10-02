@@ -140,7 +140,7 @@ test("a document with no blocks.json entry renders no outcomes at all", async ()
   expect(rendered).not.toContain("bel-outcome");
 });
 
-// Inline code the highlighter covers completely is Beloch and is coloured
+// Inline code the highlighter covers completely is Beloch and is colored
 // like a fenced block; anything it leaves text over for, a path or an OCaml
 // identifier, stays plain inline code.
 async function renderInline(markdown: string): Promise<string> {

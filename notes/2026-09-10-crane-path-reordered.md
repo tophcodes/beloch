@@ -67,7 +67,7 @@ the per-side stacking, never on face and order counts.
 
 The run needed three things the spec already has: non-collinear leading
 elements, an `over` clause between sector points to put the `a`-quarter in
-front, and `{toward}` with a point off every crease through the centre. Every
+front, and `{toward}` with a point off every crease through the center. Every
 named point (corners, edge midpoints) lies on such a crease, so both operands
 are free points on an edge.
 

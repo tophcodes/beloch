@@ -224,7 +224,7 @@ around the outside of the layers instead of tucking it between them.
 
 One more reverse fold for the corner `.d` finishes the base.
 
-::: {.figure #fig-guide-prelim caption="The preliminary base. The paper is a square a quarter the size of the sheet, all four corners lie together at `.c`, and the creases `--h` and `--v` cross at the paper's centre." views="cp folded" highlight="--v" after="fig-guide-reverse"}
+::: {.figure #fig-guide-prelim caption="The preliminary base. The paper is a square a quarter the size of the sheet, all four corners lie together at `.c`, and the creases `--h` and `--v` cross at the paper's center." views="cp folded" highlight="--v" after="fig-guide-reverse"}
 reverse (map .d onto .c) as --v
 :::
 
@@ -244,10 +244,10 @@ triangle, and `--v` for the vertical one.
 
 Folders often reach the preliminary base another way: crease the diagonals
 and the middle lines first, then push the paper together so that all the
-creases around the centre fold at once. `flatten` does that. It folds every
+creases around the center fold at once. `flatten` does that. It folds every
 crease through one point, the *vertex*, in a single step.
 
-::: {.figure #fig-guide-flatten caption="The preliminary base in one `flatten`. Six rays around the centre fold; the diagonal from `.a` to `.c` stays flat. `(.q over .r)` puts the quarter with `.q` in front of the one with `.r`." views="cp folded" highlight=".q .r"}
+::: {.figure #fig-guide-flatten caption="The preliminary base in one `flatten`. Six rays around the center fold; the diagonal from `.a` to `.c` stays flat. `(.q over .r)` puts the quarter with `.q` in front of the one with `.r`." views="cp folded" highlight=".q .r"}
 paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd
@@ -261,7 +261,7 @@ flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab)
 
 The four `mark` lines score the creases. The items of `flatten` then name
 the *rays*, the pieces of crease that run out from the vertex. Each marked
-line through the centre is two rays, and `&` picks one of them:
+line through the center is two rays, and `&` picks one of them:
 `--h & --bc` is the piece of `--h` that reaches the right edge `--bc`.
 
 The rays say where the paper folds; Beloch works out which of them become
@@ -274,7 +274,7 @@ Several flat results can remain, and the other items choose among them.
 `(.q over .r)` says that the paper around `.q` lies over the paper around
 `.r`, and `(toward .q)` picks one of the results that are still left. Both
 need points that lie in one quarter of the sheet and on none of the
-creases through the centre. The corners and crossings named so far all lie
+creases through the center. The corners and crossings named so far all lie
 on such a crease. `free on --ab from .a at 1/4`
 is a point a quarter of the way along the bottom edge from `.a`; `free`
 records that any spot on that stretch would do, and the program uses this
@@ -288,7 +288,7 @@ rest under [Write statements](/language/writes/).
 A point does not have to be a corner. `*` gives the point where two creases
 cross on the paper:
 
-::: {.figure #fig-guide-centre caption="`.o`, the point where `--h` and `--v` cross: the centre of the sheet, and the closed tip of the base." views="cp folded" highlight=".o" after="fig-guide-prelim"}
+::: {.figure #fig-guide-center caption="`.o`, the point where `--h` and `--v` cross: the center of the sheet, and the closed tip of the base." views="cp folded" highlight=".o" after="fig-guide-prelim"}
 .o = --h * --v
 :::
 
@@ -306,12 +306,12 @@ unfolded sheet, where the creases are scored.
 
 On the unfolded sheet, one crease can be several lines. `--h` was folded
 through both layers of the triangle at once and left a *scar* in each.
-Unfolded, the scar in the upper layer runs from the centre to the right
+Unfolded, the scar in the upper layer runs from the center to the right
 edge, and the scar in the lower layer, which lay folded over the diagonal,
-runs from the centre down to the bottom edge. A crease is all of its scars
+runs from the center down to the bottom edge. A crease is all of its scars
 together, and `*` looks for a crossing among all of them. The crease pattern
 of the preliminary base shows this: `--h` and `--v` each bend at the
-centre.
+center.
 
 ## Where to go from here
 

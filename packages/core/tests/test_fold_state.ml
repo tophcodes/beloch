@@ -331,7 +331,7 @@ let test_mv_accordion_zigzag () =
   Alcotest.(check bool) "hinge 0 is V" true (Fold_state.mv g 0 = Fold_state.V);
   Alcotest.(check bool) "hinge 1 is M" true (Fold_state.mv g 1 = Fold_state.M)
 
-(* Waterbomb-base 8-fan around the square's centre: sector faces
+(* Waterbomb-base 8-fan around the square's center: sector faces
    (c, [p_k], p_{k+1}), hinges through c, all folded; the classic
    Kawasaki-satisfying single-vertex cycle. All coordinates rational. *)
 let half = Num.of_q (Q.of_ints 1 2)
@@ -373,8 +373,8 @@ let test_waterbomb_constructs () =
        (Isometry3.apply_point isos.(3)
           { Isometry3.x = q 0; y = q 1; z = q 0 })
        (p3 1 1 0));
-  (* centre is fixed by every placement *)
-  Alcotest.(check bool) "centre fixed under iso 5" true
+  (* center is fixed by every placement *)
+  Alcotest.(check bool) "center fixed under iso 5" true
     (i3eq
        (Isometry3.apply_point isos.(5)
           { Isometry3.x = half; y = half; z = q 0 })
@@ -512,7 +512,7 @@ let test_table_polygon_and_rel () =
     (Array.for_all (Geom.in_convex_polygon (Sheet.square_corners Num.one)) tp1);
   Alcotest.(check bool) "1 above 0" true (Fold_state.rel g 1 0 = Fold_state.Above);
   Alcotest.(check bool) "0 below 1" true (Fold_state.rel g 0 1 = Fold_state.Below);
-  (* flat (unfolded) neighbours do not overlap -> Apart *)
+  (* flat (unfolded) neighbors do not overlap -> Apart *)
   let flat =
     mk ~faces:(single_fold_faces ())
       ~hinges:[| mkh 0 1 (vline 1) (q 0) |] ~rank:[| 0; 1 |] ()
@@ -1233,7 +1233,7 @@ let test_select_scope_parity () =
    hinged on [cid] 0, so the `pred anchor` short-circuit is skipped and the
    frontier loop runs; the hinged faces 0/1 are hits in the FIRST frontier
    round (the visited-expansion multi-round branch remains uncovered here;
-   end-to-end up-to cases cover it in 3c Task 4). An Ok case, as required. A
+   end-to-end up-to cases cover it in 3c Task 4). An [Ok] case, as required. A
    second call with an unsatisfiable predicate then exercises the
    frontier-exhausted error path. Was a parity test against the old model;
    the moving-set/error-string results it proved equal are now asserted
@@ -1309,7 +1309,7 @@ let test_scoped_hinge_closed_parity () =
 
 (* 3a carry-in: on-axis hinge with BOTH sides moving must NOT toggle (D8);
    old model upgraded [eassign] here: accepted divergence, so assert the NEW
-   behaviour directly, no parity. Corrected book-fold construction (see
+   behavior directly, no parity. Corrected book-fold construction (see
    task-3-brief.md correction note: the original 4-face sketch does not
    reach both-sides-moving). *)
 let test_both_sides_moving_no_toggle () =
@@ -1746,7 +1746,7 @@ let test_reverse_no_spine () =
 (* ---- Trimming a sheet from a flap (Sheet.trim) ---- *)
 
 (* the unfolded grid of 3 by 3 of unit squares, face 3*j + i at column i, row j,
-   every neighbouring pair joined by a flat hinge of a crease of its own *)
+   every neighboring pair joined by a flat hinge of a crease of its own *)
 let grid3 () : Fold_state.t =
   let face i j = sq (gp i j) (gp (i + 1) j) (gp (i + 1) (j + 1)) (gp i (j + 1)) in
   let faces = Array.init 9 (fun k -> face (k mod 3) (k / 3)) in

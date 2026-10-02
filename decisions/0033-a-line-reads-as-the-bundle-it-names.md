@@ -36,7 +36,7 @@ fold (map .c onto .o) (toward --half)
 The fold line crosses the diagonal at three quarters of its length. The
 chord of `--half` crosses it and names no side; the stretch from `.a` to `.o`
 lies on the side of `.a`, and a folder reading the program folds the corner
-`.c` onto the centre.
+`.c` onto the center.
 
 Two costs weighed against reading the extent. The kernel splits faces only
 along whole chords, so the extent of a partial mark is held beside the faces;
@@ -106,9 +106,9 @@ with its face.
   the `toward` and `moving` lines their bundles in place of the material of
   their table lines. For creases this states what the kernel already does;
   for marks it changes the kernel, and the program of #62 folds `.c` onto the
-  centre. The paragraph in `spec/KERNEL.md` that points at #62 goes.
+  center. The paragraph in `spec/KERNEL.md` that points at #62 goes.
 - A program that moves a partial mark can lose the candidate it had. The
-  pinch below runs from the middle of the bottom edge to the centre. Of the
+  pinch below runs from the middle of the bottom edge to the center. Of the
   two candidates, `moving` keeps the one that folds the pinch over, and it
   lands the point of the pinch's line at height $\sqrt{3}/2$ on `.d`:
 

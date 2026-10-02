@@ -11,11 +11,11 @@
 //   .lm = --hm * --da
 //   mark --h34 = map .d onto .lm
 //   .end = --v34 * --h34
-//   mark through .a .c between .a .end   ; dangles mid-face -> seg record
+//   mark through .a .c between .a .end   ; dangles mid-face -> `seg` record
 //   .ctr = --vm * --hm
 //   mark --vm at .ctr                    ; -> point record, ticked along --vm (x=0.5)
 //
-// which records exactly one "seg" mark ((0.5,0.5)->(0.75,0.75)) and one
+// which records exactly one `seg` mark ((0.5,0.5)->(0.75,0.75)) and one
 // "point" mark (at (0.5,0.5), oriented along the vertical line x=0.5).
 import { test, expect } from "bun:test";
 import { parseFold } from "@beloch/scene";

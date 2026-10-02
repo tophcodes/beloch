@@ -11,7 +11,7 @@ the default.
 ## The catch-22 we are removing
 
 For the ear, `.b` is the tip and it lands on the b-o crease shared by the ear's
-two layers (folded faces f1 = {centre, b, o}, f2 = {b, (0.586,0.586), o}). So:
+two layers (folded faces f1 = {center, b, o}, f2 = {b, (0.586,0.586), o}). So:
 
 - `fold map .b onto .o up to .b` → `.b lies on a crease shared by 2 flaps; name
   the flap with #[...]` (the error text mis-says `#(...)`).

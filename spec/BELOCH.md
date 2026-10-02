@@ -146,7 +146,7 @@ The unit is one of the physical units the FOLD format names: `in`, `pt`,
 it as `frame_unit` ([Output format](/output/)), and as `"unit"` when the file names
 none. A file without a declaration takes the unit of the file that loads
 it, and a loaded file with another unit has its numbers converted exactly,
-each of these units being a rational multiple of the millimetre. Beloch
+each of these units being a rational multiple of the millimeter. Beloch
 does not load files yet, so these two rules wait for the import
 (ADR 0046).
 
@@ -185,7 +185,7 @@ predicate, difference, union.
 one paper point the operands have in common as sets of paper points
 ([def-meet](/model/#def-meet)). An operand may lie on several paper lines,
 as a crease scored through several layers does; on the preliminary base
-`--h * --v` is the centre of the paper. A paper edge such as `--ab` counts
+`--h * --v` is the center of the paper. A paper edge such as `--ab` counts
 as its side of the sheet. The meet is an error when the operands have no
 common point, when they share a stretch of paper, and when they have two or
 more common points; the last message lists the points in paper coordinates,

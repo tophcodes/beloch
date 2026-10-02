@@ -49,9 +49,9 @@ rejected before it could be rendered.
   crease notation, mountains and valleys distinguished by dash pattern. Below
   that the patterns collapse into dotted noise, so a simplified variant draws
   every crease alike. The favicon is the simplified one.
-- Colour stays out of the mark. Mountain and valley carry meaning in this
-  project, and a mark that used red or blue would spend colours that belong to
-  content. The mark takes the ink colour of whatever it sits on.
+- Color stays out of the mark. Mountain and valley carry meaning in this
+  project, and a mark that used red or blue would spend colors that belong to
+  content. The mark takes the ink color of whatever it sits on.
 - The favicon cannot use `currentColor`: a favicon renders with no CSS context
   and would fall back to black on a dark tab. It carries an embedded
   `prefers-color-scheme` rule instead.

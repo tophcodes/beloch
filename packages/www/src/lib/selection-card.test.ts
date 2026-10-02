@@ -1,7 +1,7 @@
 import { test, expect } from "bun:test";
 import { cardContent, cardPlacement } from "./selection-card";
 
-test("a card in the middle of the stage stands centred above its anchor", () => {
+test("a card in the middle of the stage stands centered above its anchor", () => {
   expect(cardPlacement(200, 300, 400, 400)).toEqual({
     left: "200px",
     top: "300px",

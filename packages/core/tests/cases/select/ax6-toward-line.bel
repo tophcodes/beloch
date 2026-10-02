@@ -3,7 +3,7 @@
 ; A toward line names the side it lies on. The vertical candidate crosses
 ; the bottom edge, so the edge names no side of it and it drops out; the
 ; other candidate keeps the edge on the side that stays and folds .d over,
-; onto the centre (ADR 0031).
+; onto the center (ADR 0031).
 
 paper square
 mark (map .a onto .b) as --ef

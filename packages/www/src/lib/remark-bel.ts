@@ -2,7 +2,7 @@
 // highlighter, turning them into raw HTML so Expressive Code leaves them alone,
 // then render the outcome the build-side capture tool recorded for it (design
 // doc "Rendering the outcome", Acceptance 10 and 11). Inline code that the
-// highlighter covers completely gets the same colours; any other inline code,
+// highlighter covers completely gets the same colors; any other inline code,
 // a path or an identifier, is left to the page.
 //
 // spec/BELOCH.md's example blocks carry pandoc's attribute form of the info
@@ -51,7 +51,7 @@ function repoRoot(): string {
 // src/content/docs/ (e.g. language.md -> ../../../../../spec/BELOCH.md).
 // Resolving the path before comparing keeps a symlinked page keyed off the
 // spec/ path blocks.ml wrote entries under, instead of its own content
-// path. `null` when the file carries no path at all (e.g. a VFile built
+// path. `null` when the file carries no path at all (e.g. a `VFile` built
 // straight from a string), left to the caller.
 function docPathOf(file: any): string | null {
   const raw = file?.path ?? file?.history?.[0];

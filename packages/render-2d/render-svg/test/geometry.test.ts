@@ -25,7 +25,7 @@ const quarterRaw = await Bun.file(
 ).text();
 const quarterScene = parseFold(quarterRaw);
 
-test("linearExtension yields the true global bottom→top stack (honours g's normal)", () => {
+test("linearExtension yields the true global bottom→top stack (honors g's normal)", () => {
   const ff = pickStep(quarterScene)!.frame;
   const V = ff.vertices;
   const F = ff.facesVertices;
@@ -123,7 +123,7 @@ test("coverageDepth counts the layers over each sub-segment", () => {
     [0.5, 0], [1.5, 0], [1.5, 1], [0.5, 1], // face 2, x in [0.5, 1.5]
   ];
   const order = [0, 1, 2];
-  // Parameterise x in [-1, 2] so t = (x + 1) / 3.
+  // Parameterize x in [-1, 2] so t = (x + 1) / 3.
   const t = (x: number) => (x + 1) / 3;
   const d = coverageDepth([-1, 0.5], [2, 0.5], order, 0, F, V);
   expect(d.map((s) => s.depth)).toEqual([1, 2, 1]);

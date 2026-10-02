@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Prose lint (.vale.ini) over the Markdown of the repository and the comments
-# of its OCaml sources.
+# of its sources.
 #
-#   prose              every tracked .md, .mdx, .ml and .mli file
+#   prose              every tracked .md, .mdx, .ml, .mli, .ts, .css, .lua,
+#                      .astro, .typ and .sh file
 #   prose <path>...    the named files or directories; a directory lints its
 #                      Markdown only
 #
@@ -14,7 +15,9 @@
 # of each .ml and .mli file into a temporary directory in which everything
 # but the prose of the comments is blank, at the same line and column. Vale
 # lints the copies as plain text, and the reported paths are rewritten to the
-# source files.
+# source files. scripts/prose-mask.ts does the same for the TypeScript, CSS,
+# Astro, Typst, Lua and shell sources, whose comments are checked for
+# spelling only (.vale.ini).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -35,26 +38,32 @@ else
   # documents are left out until the lint has rules for German.
   # spec/SPECIFICATION.md is being dissolved into the other documents (ADR
   # 0032); its sections are linted where they move to.
-  mapfile -t targets < <(tracked | grep -E '\.(md|mdx|ml|mli)$' |
+  mapfile -t targets < <(tracked | grep -E '\.(md|mdx|ml|mli|ts|css|lua|astro|typ|sh)$' |
     grep -vE '^(LICENSE\.md$|packages/www/src/lib/fixtures/|docs/brand/|scripts/fixtures/|spec/SPECIFICATION\.md$)')
   # A failed file listing leaves the list empty; stop there, or the run
   # reports no alerts for a tree it never read.
   [ ${#targets[@]} -gt 0 ] || { echo "prose: no files listed" >&2; exit 1; }
 fi
 
-files=() ocaml=()
+files=() ocaml=() code=()
 for f in "${targets[@]}"; do
   case "$f" in
     *.ml | *.mli) ocaml+=("$f") ;;
+    *.ts | *.css | *.lua | *.astro | *.typ | *.sh) code+=("$f") ;;
     *) files+=("$f") ;;
   esac
 done
 
-if [ ${#ocaml[@]} -gt 0 ]; then
+if [ ${#ocaml[@]} -gt 0 ] || [ ${#code[@]} -gt 0 ]; then
   masked=$(mktemp -d)
   trap 'rm -rf "$masked"' EXIT
-  dune exec --display=quiet ./packages/core/tools/prose_mask.exe -- "$masked" "${ocaml[@]}"
-  for f in "${ocaml[@]}"; do files+=("$masked/$f.txt"); done
+  if [ ${#ocaml[@]} -gt 0 ]; then
+    dune exec --display=quiet ./packages/core/tools/prose_mask.exe -- "$masked" "${ocaml[@]}"
+  fi
+  if [ ${#code[@]} -gt 0 ]; then
+    bun scripts/prose-mask.ts "$masked" "${code[@]}"
+  fi
+  for f in "${ocaml[@]}" "${code[@]}"; do files+=("$masked/$f.txt"); done
   vale "${flags[@]}" "${files[@]}" | sed "s#$masked/\([^[:space:]\"]*\)\.txt#\1#g"
 else
   exec vale "${flags[@]}" "${files[@]}"

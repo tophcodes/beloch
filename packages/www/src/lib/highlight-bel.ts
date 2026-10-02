@@ -6,12 +6,12 @@
  * cannot run in a browser; the playground editor highlights through
  * cm-bel-highlight.ts, which loads the same grammar and the same query over
  * the network. Both take their token ranges from bel-tokens.ts, so the editor
- * and the card beside it cannot colour one token differently.
+ * and the card beside it cannot color one token differently.
  *
  * A capture named `x` becomes the CSS class `bel-x`, so the class list is
  * whatever packages/grammar/queries/highlights.scm captures: the token classes
  * of the flat grammar (comment, keyword, point, line, instance, number,
- * operator, punct) and one per item type under a write statement.
+ * operator, `punct`) and one per item type under a write statement.
  */
 import { Parser, Language, Query } from "web-tree-sitter";
 import { belTokens, belEntityName } from "./bel-tokens";

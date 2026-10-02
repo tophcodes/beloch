@@ -4,10 +4,10 @@
 // slide, a badge. They are committed build artifacts, same pattern as
 // public/og-image.png: the site build does not run this script, so run it
 // manually after brand/mark.svg, the wordmark, the mono font or the ink
-// colour changes.
+// color changes.
 //
 //   mark-light.svg,   mark-dark.svg    brand/mark.svg with currentColor
-//                                       replaced by a literal ink colour
+//                                       replaced by a literal ink color
 //   lockup-light.svg, lockup-dark.svg  the mark beside the word "beloch",
 //                                       laid out as src/components/
 //                                       Wordmark.astro lays it out at the
@@ -15,7 +15,7 @@
 //                                       cut, with the word as outline paths
 //
 // An SVG loaded through <img> resolves neither currentColor nor a web font,
-// so every colour here is literal and the word carries no <text>. The
+// so every color here is literal and the word carries no <text>. The
 // backgrounds are transparent: "light" is the ink for a light page, "dark"
 // the ink for a dark one.
 //
@@ -94,10 +94,10 @@ function markInkBox(): { x0: number; y0: number; x1: number; y1: number } {
   return box;
 }
 
-// The word as one path in lockup px. Wordmark.astro centres the text's line
+// The word as one path in lockup px. Wordmark.astro centers the text's line
 // box on the mark (align-items: center), and a line box puts the baseline
 // half of (ascent - descent) below its middle whatever the line height is.
-// This font's hhea and OS/2 typo metrics agree, so either rule a browser
+// This font's `hhea` and OS/2 typo metrics agree, so either rule a browser
 // follows lands on the same baseline.
 function wordPath(font: Font, x: number): { d: string; x0: number; y0: number; x1: number; y1: number } {
   const scale = FONT_PX / font.unitsPerEm;

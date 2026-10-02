@@ -14,7 +14,7 @@ test("captures come back in source order whatever order they arrived in", () => 
 
 // The build-time and the browser highlighter render the same token list on two
 // different runtimes. If one of them kept an overlapping capture the other
-// dropped, a token would carry one colour in the docs card and another in the
+// dropped, a token would carry one color in the docs card and another in the
 // editor beside it.
 test("an overlapping capture is dropped, the earlier one keeps the text", () => {
   const out = belTokens([cap("construction", 0, 20), cap("point", 5, 7)]);

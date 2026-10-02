@@ -3,7 +3,7 @@
 Finished showcase models. Every program here evaluates end-to-end and is
 expressivity evidence for the paper; a feature has to be one the
 result depends on, or it doesn't belong in the file. Programs that probe a single
-behaviour (including the ones that must be *rejected*) live in
+behavior (including the ones that must be *rejected*) live in
 [`packages/core/tests/cases/`](../../packages/core/tests/cases/) with inline
 assertions instead.
 

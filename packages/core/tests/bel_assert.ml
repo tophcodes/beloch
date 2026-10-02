@@ -397,7 +397,7 @@ let check (fd : Eval.folded) (a : assertion) : unit =
   | ANamedStep (v, n) -> check_named_step fd v n
   | AExpectError _ -> assert false (* handled at the caller, via [expected_error] *)
 
-(* Substring test (like test_e2e.ml's [expect_error], without pulling in Str). *)
+(* Substring test (like test_e2e.ml's [expect_error], without pulling in [Str]). *)
 let contains_substring (haystack : string) (needle : string) : bool =
   let hn = String.length haystack and nn = String.length needle in
   if nn = 0 then true

@@ -10,7 +10,7 @@ oracle check the crane-path note left open
 Verdict: **match.** One benign difference: Ida folds the four side corners in
 the order left, right, left, right and the program folds them right, left,
 right, left, so the states after Ida's steps 5 to 7 and Beloch's frames 4 to 6
-are mirror images across the base's centre line. The states after the fourth
+are mirror images across the base's center line. The states after the fourth
 reverse fold coincide.
 
 ## Ida's step numbering
@@ -29,7 +29,7 @@ the unfolded square and the bird base is $O_8$, Fig. 7.20(h).
 Ida's sheet is the $4 \times 4$ square with $A = (0,0)$, $B = (4,0)$,
 $C = (4,4)$, $D = (0,4)$. The first valley fold runs on the ray from $(4,4)$
 to $(0,0)$ and carries $D$ onto $B$, which is why the bottom corner is
-labelled $D$ from Fig. 7.20(b) on. The preliminary base $O_4$ is the square
+labeled $D$ from Fig. 7.20(b) on. The preliminary base $O_4$ is the square
 $[2,4] \times [0,2]$ with its apex at $(4,0)$.
 
 Beloch folds `.a` onto `.c`, so the two labelings differ by a reflection. The
@@ -37,7 +37,7 @@ similarity that carries Ida's table coordinates to Beloch's unit square is
 
 $$(X, Y) \mapsto \left(\tfrac{X}{4},\; 1 - \tfrac{Y}{4}\right).$$
 
-Apex $(4,0) \mapsto (1,1) = $ `.c`, paper centre $(2,2) \mapsto (1/2,1/2) = $
+Apex $(4,0) \mapsto (1,1) = $ `.c`, paper center $(2,2) \mapsto (1/2,1/2) = $
 `.o`, side corners $(2,0) \mapsto (1/2,1)$ and $(4,2) \mapsto (1,1/2)$. Every
 comparison below is under this map.
 
@@ -78,7 +78,7 @@ under the map above:
 | $(1,1)$ | $(4,0)$ | apex, all four paper corners |
 | $(1/2, \frac{3-\sqrt2}{2})$ | $(2, 2\sqrt2 - 2)$ | side vertex, endpoint of one reverse ray |
 | $(\frac{3-\sqrt2}{2}, 1/2)$ | $(6 - 2\sqrt2, 2)$ | side vertex, endpoint of the other |
-| $(1/2,1/2)$ | $(2,2)$ | far vertex, the paper centre |
+| $(1/2,1/2)$ | $(2,2)$ | far vertex, the paper center |
 | $(1 - \frac{\sqrt2}{4}, 1 - \frac{\sqrt2}{4})$ | $(4 - \sqrt2, \sqrt2)$ | where the four reversed corners land |
 
 The two side vertices are Ida's ray endpoints read straight off Fig. 7.19,
@@ -99,7 +99,7 @@ reversed corner.
 ## Face counts
 
 Ida states no face count for any step, and the figures are renderings rather
-than labelled partitions, so only steps 1 and 2 are forced: one face, then the
+than labeled partitions, so only steps 1 and 2 are forced: one face, then the
 two halves of the diagonal fold, which Fig. 7.19 confirms by handing step 3
 the face list `{2, 3}`.
 
@@ -192,9 +192,9 @@ Every one of these was read out of the evaluator's output first:
 
 - `.c = (1, 1)`, `.a = .c`, `.b = .c`, `.d = .c`: all four paper corners at
   the kite apex.
-- `.o = (1/2, 1/2)`: the paper centre is the kite's far vertex.
+- `.o = (1/2, 1/2)`: the paper center is the kite's far vertex.
 - `.sr = .sl`, `.sr = .br`, `.sr = .bl`: the four reversed side corners land
-  on one point of the centre line.
+  on one point of the center line.
 - `--bd is mountain`: the spine reverses on both halves.
 
 The two side vertices carry $\sqrt2$ coordinates and v1 of the assertion

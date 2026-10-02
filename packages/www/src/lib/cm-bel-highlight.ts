@@ -1,11 +1,11 @@
 /**
- * Beloch syntax colouring for the playground editor.
+ * Beloch syntax coloring for the playground editor.
  *
  * The browser half of the pair described in highlight-bel.ts: the same grammar
  * wasm and the same highlights.scm, parsed with web-tree-sitter and handed to
  * CodeMirror as line decorations rather than as HTML. Token ranges come from
  * bel-tokens.ts, so a token here carries the class it carries in a <Beloch>
- * card, and theme.css colours both from the same --bel-syntax-* role.
+ * card, and theme.css colors both from the same --bel-syntax-* role.
  *
  * This is decorations, not a CodeMirror `Language`. A Language would need a
  * Lezer parser, and the grammar this project maintains is a tree-sitter one;
@@ -32,8 +32,8 @@ let ready: Promise<{ parser: Parser; query: Query }> | null = null;
 
 /**
  * Loads the parser, once per page. The playground awaits this before it mounts
- * the editor: the server already rendered the program with its colours, and
- * mounting an uncoloured editor over that would take them away and give them
+ * the editor: the server already rendered the program with its colors, and
+ * mounting an uncolored editor over that would take them away and give them
  * back a moment later, on the one element the reader is looking at.
  */
 export function initBelHighlight(): Promise<{ parser: Parser; query: Query }> {
@@ -61,12 +61,12 @@ function markFor(name: string): Decoration {
 
 /**
  * The extension. Pass the value `initBelHighlight()` resolved to, so the
- * editor is built with colouring already in place rather than gaining it on a
+ * editor is built with coloring already in place rather than gaining it on a
  * later transaction.
  *
  * Every build parses the whole document. Reusing the previous tree would mean
  * applying each change to it with `tree.edit()` first; handing over an
- * unedited tree makes tree-sitter keep the old ranges, and the colouring then
+ * unedited tree makes tree-sitter keep the old ranges, and the coloring then
  * describes the text as it was before the keystroke. At the size a program in
  * this editor reaches, a full parse with its captures takes about 0.15 ms, so
  * the ceiling is a document long enough for that to show between two
@@ -93,7 +93,7 @@ export function belHighlighting({ parser, query }: { parser: Parser; query: Quer
         try {
           tree = parser.parse(text);
         } catch {
-          // A parse that throws leaves the previous colouring standing rather
+          // A parse that throws leaves the previous coloring standing rather
           // than stripping the editor back to plain text mid-edit.
           return this.decorations ?? Decoration.none;
         }

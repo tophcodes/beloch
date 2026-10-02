@@ -3,7 +3,7 @@ import type { EntityRef, HiddenMode, RenderOptions, State } from "./state";
 
 // What to draw of the current document, as plain data. The core decides it,
 // a renderer executes it, and a headless test reads it without a view
-// existing. It names no colours and no geometry: a theme is the renderer's,
+// existing. It names no colors and no geometry: a theme is the renderer's,
 // and the frames are in the scene the state already holds.
 // Carried by every shape of command: the entities the drawing should light,
 // already resolved from the selection and the hover.

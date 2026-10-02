@@ -43,7 +43,7 @@ in the existing full-chord polygon model. The "shortness" is a **display**
 property: the crease carries a `pinch` **flag** (plus its reference point `.p`) as
 edge metadata, the same channel that already carries `name`/`axiom`/`sources`/
 `span` on `beloch:edges` (see `2026-06-29-crease-names.md`). The renderer
-(`tools/fold2svg.mjs`) reads the flag and draws a **short segment centred on
+(`tools/fold2svg.mjs`) reads the flag and draws a **short segment centered on
 `.p`**, not a line spanning the whole CP. This keeps the CP legible and (since
 pinch marks sit at distinct points) keeps them visually separable, which is
 exactly what the click-to-disambiguate UX (see companion note's debugging section)

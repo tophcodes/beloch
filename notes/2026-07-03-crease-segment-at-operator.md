@@ -88,7 +88,7 @@ Si.** Incidence per kind:
 
 - **point** `.p` on `--l`: matches the segment(s) it lies on. Interior to a
   sub-segment → matches **one** (standalone, complete). On a subdivision **vertex**
-  (a crease crossing `--l`) → matches the **two** neighbours sharing that vertex,
+  (a crease crossing `--l`) → matches the **two** neighbors sharing that vertex,
   so it needs a second selector. The cases never overlap, so the universal
   cardinality rule covers both. A vertex point is **equivalent to the crease
   through it** as a selector (same locus `--a ∩ --l`); no need to name that crease.

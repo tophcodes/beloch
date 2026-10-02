@@ -64,7 +64,7 @@ what gets rendered:
                             (ignored/no-op with --view cp)
 
 labels (named points/lines):
-  --labels a,b,c            draw these named points/lines as labelled overlay
+  --labels a,b,c            draw these named points/lines as labeled overlay
                             (comma-separated). Draws exactly what's named,
                             even a point on a paper corner or a line that's
                             also a crease. Default: no overlay.

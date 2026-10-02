@@ -42,7 +42,7 @@ export function linearExtension(
 }
 
 // "a-b" key (sorted) -> edge index, for mapping a face outline segment to a
-// FOLD edge (to recover its colour/assignment).
+// FOLD edge (to recover its color/assignment).
 export function faceEdgeIndex(edgesVertices: [number, number][]): Map<string, number> {
   const m = new Map<string, number>();
   (edgesVertices || []).forEach(([a, b], i) => {
@@ -145,7 +145,7 @@ export function pointInPolygon(pt: Vec2, poly: Vec2[]): boolean {
   return inside;
 }
 
-// Same test, but a point ON an edge (within eps) also counts as inside.
+// Same test, but a point ON an edge (within `eps`) also counts as inside.
 // pointInPolygon's ray-cast is undefined right on a boundary — fine for its
 // existing callers, but a Beloch mark's endpoints are usually constructed to
 // land exactly on a face's boundary (an existing crease or the paper edge),
@@ -269,7 +269,7 @@ export interface DepthSpan {
 }
 
 // The same covered set as coveredIntervals, cut at every point where the
-// number of covering faces changes and labelled with that number. A renderer
+// number of covering faces changes and labeled with that number. A renderer
 // uses it to say how deeply an edge is buried rather than only that it is.
 // Cost is O(cuts x spans); both are the count of faces above the edge, which
 // is small enough that a sweep structure would only add code.

@@ -2,8 +2,8 @@
 
 ; A mark reads as its extent (ADR 0033). The fold line crosses the diagonal
 ; at three quarters of its length, so it crosses the chord of the diagonal,
-; but --half runs from .a to the centre only and lies on the side of .a.
-; toward --half keeps that side, and the corner .c folds onto the centre.
+; but --half runs from .a to the center only and lies on the side of .a.
+; toward --half keeps that side, and the corner .c folds onto the center.
 
 paper square
 mark (through .a .c) as --ac

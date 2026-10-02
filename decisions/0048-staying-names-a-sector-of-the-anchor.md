@@ -79,7 +79,7 @@ and two half-planes.
   flap in `on` and `moving`, a face in `over`, and a sector in `staying`, all
   three possibly in one statement.
 - **Several sectors as alternatives.** The selection stages then pick where
-  the paper is held, which is the behaviour this record ends.
+  the paper is held, which is the behavior this record ends.
 - **Several sectors held at once.** Two sectors both keep their place only
   when the reflections across the rays between them compose to the identity;
   the second sector then stays without being named, and otherwise no state

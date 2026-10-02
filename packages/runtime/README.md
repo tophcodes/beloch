@@ -67,7 +67,7 @@ the list by the step and stops there: whether a name is already in the picture
 as a crease is something only the drawing knows.
 
 A command carries no scene, no theme and no geometry. The scene is in the
-state the renderer already reads, colours are the renderer's, and the motion
+state the renderer already reads, colors are the renderer's, and the motion
 of a flap between two frames comes from the scene's `facesMatrix`. A
 command is therefore a small comparable value, which is what a headless test asserts
 against and what a renderer diffs to decide how to animate.
@@ -75,7 +75,7 @@ against and what a renderer diffs to decide how to animate.
 ## Events
 
 `dispatch` takes an intention, never an assignment: `document/set`,
-`step/to`, `selection/set`, `hover/set`. An intention the core cannot honour
+`step/to`, `selection/set`, `hover/set`. An intention the core cannot honor
 is clamped or ignored rather than rejected, so a caller may hand over a step
 remembered from a shorter program.
 

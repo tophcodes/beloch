@@ -9,7 +9,7 @@ const foldJson = await Bun.file(
   new URL("./fixtures/x-midpoint.fold", import.meta.url),
 ).text();
 
-// def-diagonals has 4 steps in file order [null, null, "diagonals", "centre"]
+// def-diagonals has 4 steps in file order [null, null, "diagonals", "center"]
 // — step 0 is the flat sheet, and a null-labeled non-final step exercises the
 // index-vs-label stepper bug.
 const diagonalsFoldJson = await Bun.file(
@@ -167,12 +167,12 @@ test("selection survives a re-render (a step change)", async () => {
   expect(svgEl.style.getPropertyValue("--bel-sel")).not.toBe("");
 });
 
-test("deselecting a non-last name frees its colour slot instead of shifting into an active one", async () => {
-  // Reviewer's collision case: select A,B,C (colours P0,P1,P2 by insertion
+test("deselecting a non-last name frees its color slot instead of shifting into an active one", async () => {
+  // Reviewer's collision case: select A,B,C (colors P0,P1,P2 by insertion
   // order), deselect B (a non-LIFO slot) — colorOf.size drops to 2 — then
   // select D. Under the old `PALETTE[colorOf.size % PALETTE.length]` scheme,
   // D would get PALETTE[2], which is still held by the active C, so C and D
-  // would render with an identical --bel-sel colour. The free-slot picker
+  // would render with an identical --bel-sel color. The free-slot picker
   // must instead notice PALETTE[1] (B's old slot) is free and hand it to D.
   await import("./beloch-figure");
   const el = mountCard(foldJson);
