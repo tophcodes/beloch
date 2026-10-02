@@ -1,0 +1,86 @@
+; AI-generated: this file was written by Claude, an AI model.
+
+; The traditional penguin, after the seven steps of Kelly Tan's diagram
+; [tanpenguin] at https://origami.me/penguin/. The diagram holds the paper
+; as a diamond with .a at the bottom and .c at the top, and turns it over
+; twice. It asks for 15 cm paper, hence the unit. Where the diagram leaves a
+; position to the eye (steps 2, 4 and 7), a free point carries it.
+
+unit cm
+paper square 15
+
+; step 1: the vertical diagonal, folded and unfolded with the colored side
+; up, then the paper turned over. .h, where step 7 bends the head, is bound
+; on it now, a fifth of the way down from the top corner.
+mark (through .a .c) (valley) as --mid      ; step 1: fold and unfold
+.h = free on --mid from .c at 1/5
+flip                                        ; step 1: turn over
+
+; step 2: both top edges in toward the center line, short of it. Each crease
+; runs from the top corner to a point of the lower edge 3/10 of the way from
+; the side corner to the bottom corner, which leaves the gap the diagram
+; shows between the folded edges.
+.p = free on --ab from .b at 3/10
+.pl = free on --da from .d at 3/10
+fold (through .c .p) (moving .b) as --wr    ; step 2, right
+fold (through .c .pl) (moving .d) as --wl   ; step 2, left
+
+; The points of steps 4 and 7 on the creases of step 2, bound before step 4
+; bends them. --wr is the right edge of the kite in step 4 and the outer
+; edge of the body in step 7. Step 4 runs from a fifth of the way up that
+; edge from the side corner .p to the middle of the lower edge; step 7
+; meets it 2/5 of the way down from the top corner.
+.u = free on --wr from .p at 1/5
+.ul = free on --wl from .pl at 1/5
+.v = free on --ab & .a from .p at 1/2
+.vl = free on --da & .a from .pl at 1/2
+.e = free on --wr from .c at 2/5
+
+flip                                        ; step 3: turn over
+
+fold (through .u .v) (moving .p) as --cr    ; step 4, right side corner in
+fold (through .ul .vl) (moving .pl) as --cl ; step 4, left side corner in
+
+; step 5: the bottom corner up on the line through the lower ends of the
+; step 4 creases
+fold (through .v .vl) (moving .a) as --s5   ; step 5
+.z = --mid * --s5                           ; the bottom of the center line
+
+; step 6: in half on the crease of step 1, the left half onto the right
+fold (--mid) (moving .ul) into --mid        ; step 6
+
+; step 7: the top corner outside reverse folded into the head, on the line
+; from .h on the folded edge to .e on the outer edge. The diagram draws that
+; line about 21 degrees off the perpendicular to the folded edge; .h and .e
+; set it at 23. Its drawing of the finished model shows a larger and more
+; level head than its line of step 7 gives. Both halves wrap around the
+; outside of the body, so .h becomes the top of the head and .c the tip of
+; the beak.
+reverse (through .h .e) (moving .c) (outside) as --head  ; step 7
+
+; the finished penguin stands on its folded edge, the head up
+@orient .a .h up
+
+; assert steps = 7
+
+; Every crease of the program is folded, so no hinge is flat and each face
+; is a flap of its own: the flap count is the face count.
+; assert faces = 14
+
+; step 5 lands the bottom corner on the center line, and step 6 lays each
+; point of the left half on its partner of the right half
+; assert .a = (21/4, 21/4)
+; assert .ul = .u
+; assert .vl = .v
+; assert .pl = .p
+; assert .d = .b
+
+; the corners of the outline, clockwise from the top of the head .h: the
+; back of the head .e, the side corner .u, the bottom corner .v, the bottom
+; of the folded edge .z, and the tip of the beak .c
+; assert .h = (12, 12)
+; assert .e = (66/5, 9)
+; assert .u = (57/5, 3)
+; assert .v = (21/4, 0)
+; assert .z = (21/8, 21/8)
+; assert .c = (225/29, 351/29)
