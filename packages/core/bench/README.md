@@ -85,3 +85,39 @@ Optimization targets (see `notes/2026-07-03-calcium-pe-spike.md`):
 3. **stacked-cubic true-root confirm**: OPEN. `stacked:6`'s 5.3s is 3 exact
    `eval_p` evaluations of degree-32 true roots (~1.75s each). Only
    tower/number-field arithmetic in ℚ(γ, z) would cut it.
+
+## Profile
+
+`profile.sh` answers two questions about the kernel: where the time goes, and
+how many modules depend on each module. It samples `bench_fold` with `perf`
+and writes three files into `_build/profile/` (or the directory given as the
+first argument):
+
+```sh
+bench/profile.sh                      # whole bench_fold corpus
+bench/profile.sh /tmp/p fish-base     # one case, other output directory
+```
+
+- **`flamegraph.svg`**: every sampled call stack, merged. A frame's width is
+  its share of the run, including the functions it calls. Open it in a
+  browser to zoom and search.
+- **`modules.svg`**: the dependency graph of `packages/core/lib`. A path from
+  A to B means A depends on B; edges implied by a longer path are left out.
+  Each module shows its self time and its fan-in as `direct/transitive`:
+  the modules that name it, and all modules that reach it over any path. The
+  fill turns orange with self time and saturates at 10 %.
+- **`self-time.txt`**: the time the processor spent inside each kernel module
+  or library, not counting the functions it called.
+
+The devshell carries `perf` (Linux only), `inferno` and `graphviz`. `perf`
+needs `kernel.perf_event_paranoid` at 2 or lower, the default on most
+distributions.
+
+The compiler is built without frame pointers, so `perf` cannot unwind a stack
+across a call from OCaml into C. Every sample taken inside Zarith, GMP or
+FLINT ends at `caml_c_call` and forms the separate block at the left of the
+flame graph. Self time stays exact. The width of a kernel frame in the flame
+graph is a lower bound, since it misses the C time of the functions below it.
+
+The results are a snapshot of one machine and one commit. Put the numbers that
+justify a change into its pull request, and keep them out of the tree.
