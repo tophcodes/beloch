@@ -106,7 +106,9 @@ meaning on a fold along an existing crease. The comparisons are exact:
 squared distances between points and segments, and squared cosines between
 lines, in `Num`. The side the selection fixes reaches the write as the
 moving side. `Resolve.placed_fold_plan` takes every layer on that side as
-the block unless `up to` names a flap, and where the write has no anchor
+the block unless `up to` names a flap, then closes the block under hinges
+off the axis and outward up to the target, as
+[def-fold](/model/#def-fold) states; where the write has no anchor
 `Resolve.tip_faces` takes every layer on that side as the tip. An implied
 anchor on the side that stays is dropped, because the
 alignment it belongs to is carried out by the other object.

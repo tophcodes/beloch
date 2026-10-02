@@ -60,7 +60,10 @@ every layer under its line on that side, and so does a placed fold.
 `(up to …)` narrows it to the flap it names, the layers outward of that
 flap, and every layer joined to those by a crease away from the fold line,
 which the paper could not leave behind without tearing
-([def-fold](/model/#def-fold)). A `mark` without `on` scores every layer
+([def-fold](/model/#def-fold)). For a fold placed `over` or `under` a flap,
+the layers outward of the `up to` flap end at that flap: the fold takes
+every layer between the two, hinged to the `up to` flap or not, and the
+target and the layers beyond it stay. A `mark` without `on` scores every layer
 under its line or its extent, one piece per layer; `(on …)` confines it to
 one flap ([def-mark](/model/#def-mark)).
 
