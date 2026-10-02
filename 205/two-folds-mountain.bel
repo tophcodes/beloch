@@ -1,0 +1,9 @@
+@author "Claude (Anthropic)"
+
+paper square
+fold (map .b onto .a) as --d
+.m = --d * --ab
+fold (map .m onto .a) as --q
+unfold (--q) (moving .b) (mountain)
+.e = free on --da from .a at 1/2
+--cut = (perp --da through .e)
