@@ -484,7 +484,7 @@ let run_stmts (ctx : Ctx.ctx) on_step (stmts : Ast.stmt list) : unit =
 (* ---- Sheets (spec/BELOCH.md, "Sheets") ---- *)
 
 (* the physical units of the FOLD format, each a rational multiple of the
-   millimetre *)
+   millimeter *)
 let units = [ "in"; "pt"; "m"; "cm"; "mm"; "um"; "nm" ]
 
 (* A sheet with the names it comes with. *)

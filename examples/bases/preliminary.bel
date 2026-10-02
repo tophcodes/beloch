@@ -1,6 +1,6 @@
 ; AI-generated: this file was written by Claude, an AI model.
 
-; Preliminary (square) base: one flatten at the centre vertex.
+; Preliminary (square) base: one flatten at the center vertex.
 ;
 ; Six rays fold, not eight. The half-diagonals toward .b and .d fold 180
 ; degrees: each becomes a two-layer taco, one per side of the base. The
@@ -10,7 +10,7 @@
 ; half again (every face in one 45-degree wedge); the four medians alone give
 ; the quarter fold, which becomes this base only after a squash.
 ;
-; Every named point lies on a crease through the centre, so the stacking
+; Every named point lies on a crease through the center, so the stacking
 ; needs points inside sectors: .q in the a-quarter, .r in the b-quarter.
 ; (.q over .r) puts the a-quarter on top of the b-taco, i.e. in front.
 

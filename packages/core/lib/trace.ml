@@ -261,7 +261,7 @@ let to_json ~frame (e : entry) : Yojson.Safe.t =
                   ("moving", opt span c.spans.moving_span) ] );
             ("candidates", `List (List.map candidate c.candidates));
             ( "circle",
-              opt (fun (o, t) -> `Assoc [ ("centre", point o); ("through", point t) ]) c.circle );
+              opt (fun (o, t) -> `Assoc [ ("center", point o); ("through", point t) ]) c.circle );
           ]
         @
         match c.conics with

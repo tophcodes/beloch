@@ -97,7 +97,7 @@ reverse (map .d onto .c) as --v
 @step sides
 @orient .o .c down
 .sr = --ab * --h
-@say "Reverse-fold the right side corner to the centre line."
+@say "Reverse-fold the right side corner to the center line."
 @yr:hold .o
 reverse (map .sr onto --mid through .c)
 ```

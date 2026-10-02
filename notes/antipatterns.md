@@ -78,7 +78,7 @@ work, including things inherited as warnings from the 2018 attempt.)
   abstraction when a second shape lands.
 - **e2e test fixture path** (`../../../examples/`) is a brittle sandbox-relative
   climb; harden with a dune `deps` stanza if the layout ever shifts.
-- **`Faces.index_in` returns -1 silently** (v0.1). If a neighbour is ever absent
+- **`Faces.index_in` returns -1 silently** (v0.1). If a neighbor is ever absent
   from a vertex ring (can't happen with the current symmetric, clipped graph),
   `next` walks a wrong half-edge instead of failing. Add `assert (i >= 0)` before
   axiom 3 introduces richer interior geometry. (Whole-branch review recommendation.)
@@ -92,7 +92,7 @@ _(none yet; append as they happen)_
 
 ## Axiom 3 is the perpendicular-through-a-point, not the angle bisector
 
-An early journal note (`notes/2026-06-28-3.md`) labelled "axiom 3" as the
+An early journal note (`notes/2026-06-28-3.md`) labeled "axiom 3" as the
 angle bisector (line onto line). That is wrong. The authoritative classic table
 is [justin1986] §8.1: operation ③ `(P → P, D → D)` is "perpendicular drawn from
 P to D": the fold through a point perpendicular to a line (Hull's O5). The angle

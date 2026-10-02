@@ -120,7 +120,7 @@ let test_maekawa_rejected () =
    (see the kernel's exact enumeration) EVERY |M−V|=2 pattern on this vertex is
    flat-foldable: 0 self-intersections across all 56 of them; 16 fold to a
    unique layer order, 96 are ambiguous (need `over`). The 5-valley/3-mountain
-   contiguous pattern below is one of the unique-order ones: collapse returns Ok.
+   contiguous pattern below is one of the unique-order ones: collapse returns [Ok].
    NB: refs/hull2020.txt is not present in this worktree (refs/ is gitignored),
    so the |M−V|=2 relation is taken from the spec's citation, not re-derived from
    the source text; the realizability is proved by the kernel itself. *)
@@ -202,7 +202,7 @@ let test_over_resolves_ambiguity () =
 
 (* -- [collapse_all]: enumerating entry point (Plan flatten-derive-v2 Task 2).
    [collapse] becomes a wrapper over the same shared pipeline: single distinct
-   rank -> Ok, multiple -> [e_ambig], error -> [passthrough]. [collapse_all]
+   rank -> [Ok], multiple -> [e_ambig], error -> [passthrough]. [collapse_all]
    instead anchors EVERY distinct rank independently and returns all that seat
    in-bounds. Reuses the 8-ray cross + [over_valleys] fixture above, which
    [test_over_resolves_ambiguity] already established is ambiguous (4 distinct
@@ -477,7 +477,7 @@ let test_intrinsic_convention_pin () =
    every face's front/back while the letters, correctly derived in the fixed
    global frame, stayed put, so the emitted geometry became the M/V mirror of
    the declared collapse. After the fix (anchor = lowest-ranked orientation-
-   PRESERVING sector) the geometry realises the declared fold: every crease's
+   PRESERVING sector) the geometry realizes the declared fold: every crease's
    intrinsic M/V equals what was declared. Checked via face orientation and
    layer relation alone. Under the pre-fix anchor this check fails on
    all 8 creases. *)
@@ -539,7 +539,7 @@ let collapse_letters valleys ~flip =
    new kernel's [intent] (CP-frame, = old eintent/eassign, matches the old
    model bit-for-bit, see [test_eassign_parity] above) DOES still flip this
    way, but the DERIVED [Fold_state.mv] does not: [mv] reads only the
-   constructed hinge's rank + [face_up], an invariant of the realised
+   constructed hinge's rank + [face_up], an invariant of the realized
    physical fold: the same "old per-ray parity term belongs to [intent], not
    to the physically-derived letter" finding as [test_eassign_parity], just
    exercised through a prior [flip] instead of a prior [subdivide]. (Compare

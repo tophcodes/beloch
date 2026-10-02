@@ -241,7 +241,7 @@ let test_parse_perp () =
     "perp alignments" [ "perp --d"; "through .b" ]
     (alignments (construction1 "mark (perp --d through .b)"))
 
-(* A parenthesised operand is that operand, so a grouping the reader adds
+(* A parenthesized operand is that operand, so a grouping the reader adds
    parses as the ungrouped form does. The meet already required
    the parentheses in operand position; these give the other operands the
    same freedom. *)

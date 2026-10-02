@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Render every .bel program in the given corpus directories to normalised
+# Render every .bel program in the given corpus directories to normalized
 # FOLD into OUTDIR (required first arg), for before/after diffing across a
 # notation cutover. Corpus directories default to the whole corpus:
 # examples/ and packages/core/tests/cases/. Runs dune through the flake
 # devshell, so it works standalone (bare `dune` is not on PATH in this repo).
 #
-# Normalisation strips the source-position fields that carry no geometry:
+# Normalization strips the source-position fields that carry no geometry:
 # the "span" strings under beloch:edges and beloch:inspect, the
 # beloch:source_line integer per frame, and every source_line integer
 # (beloch:statements entries and beloch:free points alike). Everything

@@ -399,7 +399,7 @@ let inv (x : t) : t =
   | Rat q ->
       if Q.equal q Q.zero then invalid_arg "Num.inv: zero" else Rat (Q.inv q)
   | Field { gen; coords } -> mk_field gen (Poly.inv_mod coords gen.mu)
-  | Qq q -> Qq (Qqbar.inv q) (* Qq is irrational hence nonzero; inv stays irrational *)
+  | Qq q -> Qq (Qqbar.inv q) (* Qq is irrational hence nonzero; [inv] stays irrational *)
 
 let div (x : t) (y : t) : t = mul x (inv y)
 
@@ -425,7 +425,7 @@ let real_roots (coeffs : t array) : t list =
   let n = Array.length coeffs in
   if n <= 1 then [] (* zero polynomial or nonzero constant: no isolated roots *)
   else if Array.for_all (function Rat _ -> true | _ -> false) coeffs then begin
-    (* rational fast path (unchanged behaviour) *)
+    (* rational fast path (unchanged behavior) *)
     let q_of = function Rat q -> q | _ -> assert false in
     let p = Poly.of_list (Array.to_list (Array.map q_of coeffs)) in
     (* [isolate_roots] returns ascending disjoint intervals and make keeps each
@@ -552,7 +552,7 @@ let real_roots (coeffs : t array) : t list =
     (* fallback: generator elimination ([Mpoly]) + exact verification.
        Assign generator variables to distinct algebraic numbers in the coefficient
        set. Variable 0 is z; generators are 1.. .
-       Key optimisation: if c = a + q·gen for rationals a,q (affine combination),
+       Key optimization: if c = a + q·gen for rationals a,q (affine combination),
        express the coefficient as const(a) + const(q)·gen_var rather than allocating
        a new variable. This collapses e.g. {−√2, 1−√2, 1} all into one generator
        (√2) and keeps the Sylvester matrix small.

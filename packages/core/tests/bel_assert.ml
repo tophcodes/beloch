@@ -304,7 +304,7 @@ let describe_value (v : value) : string =
   | VPoint (name, Paper) -> Printf.sprintf ".%s paper" name
 
 (* [=] : point=point / point=literal (both compared in the resolved space)
-   or line=line (normalised, exact). Mismatched kinds (point vs line) are a
+   or line=line (normalized, exact). Mismatched kinds (point vs line) are a
    harness error: the grammar never intends that combination. *)
 let values_equal (fd : Eval.folded) (v1 : value) (v2 : value) : bool =
   match (resolve_value fd v1, resolve_value fd v2) with
@@ -397,7 +397,7 @@ let check (fd : Eval.folded) (a : assertion) : unit =
   | ANamedStep (v, n) -> check_named_step fd v n
   | AExpectError _ -> assert false (* handled at the caller, via [expected_error] *)
 
-(* Substring test (like test_e2e.ml's [expect_error], without pulling in Str). *)
+(* Substring test (like test_e2e.ml's [expect_error], without pulling in [Str]). *)
 let contains_substring (haystack : string) (needle : string) : bool =
   let hn = String.length haystack and nn = String.length needle in
   if nn = 0 then true

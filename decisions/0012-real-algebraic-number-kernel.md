@@ -22,7 +22,7 @@ irreducibilis* applies: the real roots cannot be written with real radicals
 (Cardano routes through complex cube roots). A `Cbrt` generator is therefore
 provably insufficient. Justin names the target field exactly: K₃ is the smallest
 real field closed under the real roots of `x³ + px + q = 0` `[justin1986 §8.4d]`;
-`[hull2020]` characterises origami numbers by their minimal polynomials.
+`[hull2020]` characterizes origami numbers by their minimal polynomials.
 
 ## Decision
 

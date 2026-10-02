@@ -251,7 +251,7 @@ let check_structure ~(faces : face array) ~(hinges : hinge array) ~(root : int)
       if r < 0 || r >= n || hit.(r) then raise (V Bad_rank) else hit.(r) <- true)
     rank
 
-(* [?base]/[?marks] are LEADING optional arguments with only labelled
+(* [?base]/[?marks] are LEADING optional arguments with only labeled
    required arguments after them; OCaml can only erase omitted optional
    arguments when a positional argument follows, so [make] takes a trailing
    [unit] to anchor that: existing call sites add a trailing [()]. *)
@@ -1142,7 +1142,7 @@ let reverse_attempts ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
     List.filter (fun i -> tip.(i)) (List.init n Fun.id)
     |> List.sort (fun i j -> compare g.rank.(i) g.rank.(j))
   in
-  (* An opening lies between two neighbouring layers of the tip where every
+  (* An opening lies between two neighboring layers of the tip where every
      hinge joining a layer below to a layer above is folded and lies on one
      table line, the spine's, which reaches beyond the axis (ADR 0043). *)
   let openings =
@@ -1682,7 +1682,7 @@ let default_scope (g : t) ~(axis : Geom.line) ~(move_side : int)
     | _ -> false
   in
   let rel_m = rel g in
-  (* gi is outside m: overlaps m and sits on the outer side (Above for valley) *)
+  (* [gi] is outside [m]: overlaps m and sits on the outer side (Above for valley) *)
   let outer gi m =
     overlap gi m && rel_m gi m = (if valley then Above else Below)
   in

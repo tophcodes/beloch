@@ -288,7 +288,7 @@ let bind_output (ctx : ctx) (name : string) ~(rebind : bool)
     bind_crease ~stmt ctx name span cv
 
 (* `mark --d` on an already-bound name (e.g. a pure `--d = <construction>` value)
-   promotes its binding in place to the freshly materialised crease, so a
+   promotes its binding in place to the freshly materialized crease, so a
    later `fold --d` can find it. Not a user-facing rebind (no dup check): the
    name already resolved to [lo], we're just upgrading what it points to. *)
 let promote_crease (ctx : ctx) (name : string) (cv : crease_val) =

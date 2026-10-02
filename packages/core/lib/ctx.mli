@@ -198,7 +198,7 @@ val bind_output :
 
 val promote_crease : ctx -> string -> crease_val -> unit
 (** Promotes an already-bound name's binding in place to a freshly
-    materialised crease (e.g. `mark --d` on a pure value-bound line), so a
+    materialized crease (e.g. `mark --d` on a pure value-bound line), so a
     later `fold --d` can find it. Not a user-facing rebind: no dup check. *)
 
 (** {1 Incremental checkpoint: snapshot / restore of the whole [ctx]} *)

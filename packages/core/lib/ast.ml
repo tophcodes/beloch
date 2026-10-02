@@ -49,7 +49,7 @@ type arg = APoint of point_operand | ALine of line_operand
 (* A construction, the read of sort line a write's axis comes from: the set
    of alignments that together determine the fold line, with its `heading`
    (ADR 0031). The seven prose spellings desugar to this record at parse
-   time; [Axiom.classify] recognises the alignment set as one of the seven
+   time; [Axiom.classify] recognizes the alignment set as one of the seven
    axioms where a solver is needed. *)
 type align_object = AoPoint of point_operand | AoLine of line_operand
 
@@ -183,7 +183,7 @@ type output =
   | Named of string * bool * Error.span   (* as --f, [true] for the ! rebind *)
   | Into of string * Error.span           (* into --l *)
 
-(* One parenthesised argument of a write, classified by its head only. The
+(* One parenthesized argument of a write, classified by its head only. The
    verb decides what each head means; Items holds that table. *)
 type raw_item =
   | RiConstruction of construction * Error.span

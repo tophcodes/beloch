@@ -8,7 +8,7 @@ reverse (map .d onto .c) as --v
 .o = --h * --v
 --mid = (through .c .o)
 
-; the four side corners onto the centre line
+; the four side corners onto the center line
 .sr = --ab * --h
 reverse (map .sr onto --mid through .c)
   as --rsr
@@ -28,7 +28,7 @@ fold (perp --mid through .sr) (moving .a)
 fold (perp --mid through .sr) (moving .c)
   (up to #[.c .o]) (mountain) as --pb
 
-; narrow the legs onto the centre line
+; narrow the legs onto the center line
 .e1 = (--rsr & .b) * --pf
 fold (map --rsr & .b onto --mid) (moving .e1)
   (up to #[.e1 .b .o]) as --n1

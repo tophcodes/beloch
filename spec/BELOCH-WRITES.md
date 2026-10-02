@@ -7,7 +7,7 @@ tableOfContents:
 ---
 
 A write statement is a verb followed by its *items*. An item is a
-parenthesised block whose first token names its type; items may stand in
+parenthesized block whose first token names its type; items may stand in
 any order. The construction that supplies the axis is an item like the
 others, so every slot of a write's signature is one block in the source,
 delimited on both sides and classified by its head.
@@ -185,7 +185,7 @@ fold (map .a onto .c) (moving .a) (over .b) (mountain)
 Marking every argument as a block is what the model's operation signatures
 ask for: one item per parameter, the same shape for every write. For the
 tools it means that an item is one node of the syntax tree with a type of
-its own, so that highlighting colours an anchor, a placement and a
+its own, so that highlighting colors an anchor, a placement and a
 construction differently, and a malformed item is contained by its
 parentheses instead of swallowing the rest of the statement.
 
@@ -212,7 +212,7 @@ mark (through .a .c) as --ac
 mark (map --ab onto --cd) (on #[.c]) (between .m .o) (mountain) as --h
 :::
 
-::: {.figure #fig-lang-flatten caption="One `flatten` collapses six of the eight rays at the paper centre into the preliminary base, and the diagonal through `.a` and `.c` stays flat. Each ray item picks a piece of a marked crease with `&`, `(.q over .r)` fixes which quarter comes to the front, and `(toward .q)` chooses one of the flat states the rays allow." views="cp folded" highlight=".a .c"}
+::: {.figure #fig-lang-flatten caption="One `flatten` collapses six of the eight rays at the paper center into the preliminary base, and the diagonal through `.a` and `.c` stays flat. Each ray item picks a piece of a marked crease with `&`, `(.q over .r)` fixes which quarter comes to the front, and `(toward .q)` chooses one of the flat states the rays allow." views="cp folded" highlight=".a .c"}
 paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd

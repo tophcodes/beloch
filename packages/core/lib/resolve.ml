@@ -152,7 +152,7 @@ let paper_line_of_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (c
 (* the unique FACE (the fine ADR-0014 partition, not a flap/coplanar
    cluster) whose paper polygon contains every point in [pts]. Unlike
    `moving`/`up to`'s flap operand (ADR 0017: coarsened to a coplanar
-   cluster so a still-flat neighbourhood is one flap), `at`'s `#[...]`
+   cluster so a still-flat neighborhood is one flap), `at`'s `#[...]`
    incidence check and `collapse`'s `over`/`under` sector clause both need
    FACE precision even on a still-flat, multiply-precreased sheet: they
    disambiguate BETWEEN a crease bundle's own segments / a vertex's own
@@ -288,7 +288,7 @@ and material_cid (ctx : Ctx.ctx) (cr : Ast.crease_ref) : int =
          over when a mark graduates: one line keeps one identity whether it
          reaches the arrangement by graduation or by segment selection. A
          fresh id here would split a name's references into a before and an
-         after around the statement that materialises it. *)
+         after around the statement that materializes it. *)
       let cid = mid in
       (* Two different questions, two different answers. WHAT DEFINED this
          line is the `mark` statement, so the crease inherits that mark's
@@ -798,7 +798,7 @@ let target_of (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span) :
    on), but `resolve_point` always yields the fold-invariant PAPER
    coordinate, so the on-axis check goes through `table_of` to compare like
    spaces. `Full` needs nothing further (today's subdivide-the-whole-axis
-   behaviour, unchanged). A partial extent also returns its PAPER-space
+   behavior, unchanged). A partial extent also returns its PAPER-space
    representative point ([mark_rep_point]'s convention: the first point of a
    segment, or the point itself) and the PAPER-space line it lies on:
    Fold_state.classify_mark_extent and the resulting mark's [mline] both
@@ -896,7 +896,7 @@ let into_crease (ctx : Ctx.ctx) (n : string) (sp : Error.span) :
           (Printf.sprintf
              "the material this scores lies on no segment of --%s" n) )
 
-(* Behaviour 3: the flap (coplanar cluster, as its face list) a partial
+(* Behavior 3: the flap (coplanar cluster, as its face list) a partial
    mark's extent is written onto. An explicit layer wins; a point or a line
    there resolves through the flap resolver every other flap slot uses (ADR
    0016 §5). Without one, default to the carrying flap: the cluster

@@ -46,7 +46,7 @@ let vertices_names_json (vpaper : Geom.point Dynarray.t)
            | Some (name, _) -> `String name
            | None -> `Null))
 
-(* beloch:edges array from an ([ia], ib, assign, prov, [cid]) edge list *)
+(* beloch:edges array from an ([ia], [ib], assign, prov, [cid]) edge list *)
 let beloch_edges_json edges : Yojson.Safe.t =
   `List
     (List.map
@@ -206,8 +206,8 @@ let folded_frame_of_state (sheet : Sheet.t)
         `List (Array.to_list (Array.map (fun i -> `Int i) idxs)))
   in
   (* [faceOrders] read directly from the folded state's partial order. For a pair
-     ([fi] < gi) that overlaps, sign follows FOLD's convention keyed to [gi]'s normal
-     (its face_up-ness): a "below" relation with gi facing up is -1, etc. *)
+     ([fi] < [gi]) that overlaps, sign follows FOLD's convention keyed to [gi]'s normal
+     (its face_up-ness): a "below" relation with [gi] facing up is -1, etc. *)
   let nf = Array.length faces in
   let face_orders = ref [] in
   for fi = 0 to nf - 1 do
@@ -607,7 +607,7 @@ let to_json_folded ?(trace = false) (fd : Eval.folded) : Yojson.Safe.t =
               | Some hi ->
                   let h = hs.(hi) in
                   (* The crease pattern shows what the model looks like folded,
-                     so every edge is coloured by the DERIVED M/V. A precrease
+                     so every edge is colored by the DERIVED M/V. A precrease
                      is flat and therefore F, whatever direction it was marked
                      with. *)
                   let a =

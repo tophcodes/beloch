@@ -1,12 +1,12 @@
 # 2026-09-25: The ladder of folding primitives
 
 A step of a folding sequence changes the crease pattern locally. Two
-questions sort every named manoeuvre: at how many interior vertices the
+questions sort every named maneuver: at how many interior vertices the
 crease pattern changes in that step, and whether an existing crease opens as
 well as new ones forming. The answers give a ladder, and each rung needs a
 capability the rung below does not have.
 
-| Rung | What the step does | Named manoeuvres | Beloch |
+| Rung | What the step does | Named maneuvers | Beloch |
 |---|---|---|---|
 | 1 | one line through all selected layers | valley, mountain, tuck (`over`/`under`) | `fold` |
 | 2 | one line, and a folded hinge (the spine) turns the other way | inside and outside reverse | `reverse` |
@@ -24,7 +24,7 @@ a crimp two rung-2 reverse folds, so each is at most a `def`.
 
 ## The ladder has two axes
 
-The rungs mix two questions, and neither orders the manoeuvres alone. The
+The rungs mix two questions, and neither orders the maneuvers alone. The
 first is how many vertices the step creases at: none, where one line crosses
 the paper; one; or several. The second is what the step does to a crease
 that is folded already. Fisher's `multifold` gives each such crease one of
@@ -53,7 +53,7 @@ apart: a single crease moves every layer under it, and a fan moves its tip
 line fixes no such point. A fold under the tip rule would move the layers
 that an arbitrary point on its line selects.
 
-## Where the named manoeuvres sit, by Fisher's own specifications
+## Where the named maneuvers sit, by Fisher's own specifications
 
 Fisher writes squash, petal and sink as `multifold` statements that list every
 crease the step touches [fisher1994, p. 24]. The creases name their vertices,
@@ -70,7 +70,7 @@ so the rung can be read off:
 
 The word names two different things in the sources this project reads.
 
-- Fisher's `multifold` is a manoeuvre: several creases fold in one step
+- Fisher's `multifold` is a maneuver: several creases fold in one step
   [fisher1994, §3.3]. Rungs 2 to 5 are all multifolds in his sense.
 - Alperin and Lang's multi-fold axioms are constructions: alignments
   distributed over two or more fold lines determine those lines together
@@ -109,11 +109,11 @@ Among the languages and systems we know, Beloch is the first that executes a
 general single-vertex fan on folded, layered paper: the missing crease derived
 from Kawasaki's condition in exact arithmetic, and the moving faces decided by
 the tip rule (ADR 0037). Fisher designed the statement, the derived crease
-included; Eos executes named manoeuvres as fixed commands.
+included; Eos executes named maneuvers as fixed commands.
 
 The same move happened at the construction level. The seven Huzita-Justin
 axioms are instances of alignment sets (ADR 0022, [alperin2006, §3]); the
-rung-3 manoeuvres are instances of a flat-foldable fan ([hull2020, ch. 5],
+rung-3 maneuvers are instances of a flat-foldable fan ([hull2020, ch. 5],
 `spec/MODEL.md`, definition of `flatten`). Both levels replace a list of
 named operations by the mathematical object the list enumerates.
 

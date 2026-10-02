@@ -20,9 +20,6 @@ Benchmarked
 Bindable
 Callout
 Callouts
-Canonicalisation
-Canonicalise
-Canonicalising
 Canonicalization
 Canonicalize
 Canonicalizing
@@ -193,9 +190,6 @@ benchmarked
 bindable
 callout
 callouts
-canonicalisation
-canonicalise
-canonicalising
 canonicalization
 canonicalize
 canonicalized

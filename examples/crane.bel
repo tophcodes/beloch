@@ -25,15 +25,15 @@ reverse (map .br onto --mid through .c) as --rbr
 reverse (map .bl onto --mid through .c) as --rbl
 
 ; the bird base: front and back flap folded down across the kite's width,
-; which leaves the legs .b and .d at the apex. `up to` names the centre face of each
+; which leaves the legs .b and .d at the apex. `up to` names the center face of each
 ; flap; the side corners reversed beneath it are hinged to it off the axis and
 ; go with it
 fold (perp --mid through .sr) (moving .a) (up to #[.a .o]) as --pf
 fold (perp --mid through .sr) (moving .c) (up to #[.c .o]) (mountain) as --pb
 
-; narrow the legs: each outer edge onto the centre line, front layers as
+; narrow the legs: each outer edge onto the center line, front layers as
 ; valleys, back layers as mountains. Each `up to` names the face of the leg
-; that holds its anchor, the leg's tip and the paper centre; without it the
+; that holds its anchor, the leg's tip and the paper center; without it the
 ; front fold takes the back layers too.
 .e1 = (--rsr & .b) * --pf
 fold (map --rsr & .b onto --mid) (moving .e1) (up to #[.e1 .b .o]) as --n1
@@ -61,12 +61,12 @@ reverse (through .hp .ht) (moving .b) as --head
 ; assert steps = 16
 ; assert faces = 60
 
-; the two wings lie together at the far end, the paper centre stays put
+; the two wings lie together at the far end, the paper center stays put
 ; assert .a = .c
 ; assert .o = (1/2, 1/2)
 
 ; the four side corners and the four narrowing anchors each share one point
-; of the centre line
+; of the center line
 ; assert .sr = .sl
 ; assert .sr = .br
 ; assert .sr = .bl

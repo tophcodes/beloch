@@ -199,7 +199,7 @@ let test_flatten_derive_e2e () =
      every state invariant: so [fd]'s successful evaluation already IS the
      validity proof (no separate [validity_error] probe exists on the new
      core; see the dictionary in the 3c port plan). *)
-  (* prove a NEW crease was materialised: the incenter O and the
+  (* prove a NEW crease was materialized: the incenter O and the
      three given lines (spine x=1/2 and the two bisectors through O) are known;
      assert some crease segment is incident to O in paper space on a line
      PARALLEL to none of them: i.e. the emergent swivel crease, not just a

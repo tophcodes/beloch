@@ -345,7 +345,7 @@ let test_flatten_even () =
   Alcotest.(check bool) "the program succeeds" false failed;
   let e = only_write json in
   Alcotest.(check string) "write" "flatten" (e |> member "write" |> to_string);
-  Alcotest.(check (list (float 1e-9))) "the vertex is the centre" [ 0.5; 0.5 ]
+  Alcotest.(check (list (float 1e-9))) "the vertex is the center" [ 0.5; 0.5 ]
     (terms e |> member "point" |> floats);
   let cs = candidates e in
   Alcotest.(check int) "one selected" 1 (count selected cs);
@@ -434,8 +434,8 @@ let test_motions_and_circle () =
   let json, _ = fold_traced (kite "") in
   let e = List.nth (entries json) 1 in
   let circle = e |> member "circle" in
-  Alcotest.(check (list (float 1e-9))) "the centre is .q" [ 0.; 0.4 ]
-    (circle |> member "centre" |> floats);
+  Alcotest.(check (list (float 1e-9))) "the center is .q" [ 0.; 0.4 ]
+    (circle |> member "center" |> floats);
   Alcotest.(check (list (float 1e-9))) "through .d" [ 0.; 1. ]
     (circle |> member "through" |> floats);
   List.iter

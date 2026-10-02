@@ -4,7 +4,7 @@
 ; (examples/bases/bird-base.bel), the two petal-style folds that bring the
 ; front and back flaps down (steps 9 and 10), then the four leg-narrowing
 ; folds (steps 11-14). Each narrowing crease is an angle bisector between a
-; kite crease (the side corner reversed onto --mid) and the centre line,
+; kite crease (the side corner reversed onto --mid) and the center line,
 ; and its coordinates carry sqrt(4 - 2 sqrt 2), a degree-4 number nesting
 ; the base's sqrt 2. The number kernel guard (#13): every fold from step 11
 ; on does its overlap tests in that degree-4 field, and the whole program
@@ -55,7 +55,7 @@ fold (map --rbl & .d onto --mid) (moving .e4) (up to #[.e4 .d .o]) (mountain) as
 ; assert .sr = .bl
 
 ; front and back legs narrow along the same lines on the table, and the
-; four pivots meet at one point of the centre line
+; four pivots meet at one point of the center line
 ; assert --n1 = --n3
 ; assert --n2 = --n4
 ; assert .e1 = .e2

@@ -29,7 +29,7 @@ single "line" hides:
 "Crease = line" is therefore true only in one fleeting collinear moment.
 
 ## Decision
-A crease name denotes a **bundle**: one `crease_id` realised as a set of material
+A crease name denotes a **bundle**: one `crease_id` realized as a set of material
 segments (one per crossed face, further split by later crossings). The bundle,
 not the line, is the durable referent of a crease name.
 

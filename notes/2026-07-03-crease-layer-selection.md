@@ -3,7 +3,7 @@
 Companion to `2026-07-03-crease-segment-at-operator.md`. That note covers
 *referencing* a segment (`at`, a bundle → length-1 bundle projection). This one is
 the **creation-time** side: when a crease is laid across a stack, how much of it
-materialises. **Converged 2026-07-04**: the mark-vs-fold pass below closed the
+materializes. **Converged 2026-07-04**: the mark-vs-fold pass below closed the
 last open questions; `pinch` is now spec-ready (see *Resolved* at the end).
 
 ## No `crease` keyword
@@ -24,7 +24,7 @@ default**, not a missing feature. No `all` keyword needed.
 
 ## The gap: one segment → `pinch`
 
-The complement (materialise **just one** segment, not the whole bundle) has no
+The complement (materialize **just one** segment, not the whole bundle) has no
 home today. That is the reference-crease / pinch-mark operation:
 
 ```
@@ -34,7 +34,7 @@ pinch (through .a .b) at .c    ; subdivide restricted to .c's segment only
 `pinch <line> at <selector>` = `subdivide` narrowed to the single face carrying
 the `at`-selected segment. On a flat single sheet the line meets one face, so
 `at` is optional; on a stack it is required (pick which layer). Good keyword:
-`pinch` is the origami term for a small localised reference crease.
+`pinch` is the origami term for a small localized reference crease.
 
 **Material vs. display.** Materially a pinch is a normal length-1 crease: it cuts
 the **full chord** of its face and subdivides it, exactly like `bind` (just one
@@ -43,7 +43,7 @@ in the existing full-chord polygon model. The "shortness" is a **display**
 property: the crease carries a `pinch` **flag** (plus its reference point `.p`) as
 edge metadata, the same channel that already carries `name`/`axiom`/`sources`/
 `span` on `beloch:edges` (see `2026-06-29-crease-names.md`). The renderer
-(`tools/fold2svg.mjs`) reads the flag and draws a **short segment centred on
+(`tools/fold2svg.mjs`) reads the flag and draws a **short segment centered on
 `.p`**, not a line spanning the whole CP. This keeps the CP legible and (since
 pinch marks sit at distinct points) keeps them visually separable, which is
 exactly what the click-to-disambiguate UX (see companion note's debugging section)
@@ -87,7 +87,7 @@ The focused mark-vs-fold pass closed every open question. Four decisions:
    stays with `@`; `pinch` only lays reference geometry.
 
 2. **Layer chosen by `at`, not `moving`.** `pinch` reuses the companion note's
-   `at` keyword to pick which face materialises; it does **not** borrow the fold
+   `at` keyword to pick which face materializes; it does **not** borrow the fold
    model's `moving`. `moving` selects a side to *move*; `pinch` moves nothing, so
    `moving` would be meaningless here. One keyword (`at`), two incidence contexts:
    selecting a segment of an existing bundle (companion note) and selecting the
@@ -112,6 +112,6 @@ The focused mark-vs-fold pass closed every open question. Four decisions:
 4. **Grammar.** `pinch <line> [at <selector>]`, a statement, optionally bound to
    `--name`; the result is a length-1 bundle usable anywhere `at` output is. The
    `at` selector is unambiguous for simple lines (`through .a .b` takes exactly two
-   points), so parens are optional there; **parenthesise the line once it carries
+   points), so parens are optional there; **parenthesize the line once it carries
    its own axis selectors** (`pinch (perp --l through .p) at .c`), so `at` binds
    to the `pinch`, not the inner axiom.

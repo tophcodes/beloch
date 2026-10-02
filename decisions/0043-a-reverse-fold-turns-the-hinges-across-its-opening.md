@@ -44,7 +44,7 @@ Conventions"; not in `refs/`).
 ## Decision
 
 **A reverse fold opens its tip at one *opening*.** An opening is a place
-between two neighbouring layers of the tip where every hinge that joins a
+between two neighboring layers of the tip where every hinge that joins a
 layer above it to a layer below it lies on the line of the spine. The
 opening cuts the tip into an upper and a lower block. Each block is
 reflected across the axis as a whole; every hinge that joins the two blocks

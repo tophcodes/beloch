@@ -59,7 +59,7 @@ let project_crease (p : point) (l1 : line) (l2 : line) : line option =
         if point_equal p q then Some (perpendicular_through l2 p)
         else Some (perpendicular_bisector p q)
 
-(* circle (centre c, radius² r2) ∩ line a·x+b·y=e : 0, 1, or 2 points. The foot
+(* circle (center c, radius² r2) ∩ line a·x+b·y=e : 0, 1, or 2 points. The foot
    of the perpendicular from c to the line is c − (s/n2)·(a,b) with
    s = a·cx+b·cy−e and n2 = a²+b²; the half-chord² is (r2·n2 − s²)/n2, so the
    sign of r2·n2 − s² decides the count without dividing. The chord runs along
@@ -83,7 +83,7 @@ let circle_line_intersection (c : point) (r2 : Num.t) (l : line) : point list =
 
 (* axiom 6 (Justin ⑥): the crease(s) folding p onto line d with a crease through
    the fixed point p'. p' is on the crease, so it is equidistant from p and the
-   image q of p, putting q on the circle (centre p', radius |p'p|) ∩ d; the
+   image q of p, putting q on the circle (center p', radius |p'p|) ∩ d; the
    crease is the perpendicular bisector of p and q. 0, 1, or 2 creases. A
    landing q = p is the identity (no fold) and is dropped. Square roots only. *)
 let beloch_creases (p : point) (d : line) (p' : point) : line list =
@@ -95,7 +95,7 @@ let beloch_creases (p : point) (d : line) (p' : point) : line list =
 
 (* axiom 7 (Justin ⑦): the crease(s) that simultaneously fold p onto line d and
    q onto line e: a common tangent to the two parabolas (focus p, directrix d)
-   and (focus q, directrix e). Parametrize [p]'s landing along d by t; the
+   and (focus q, directrix e). Parameterize [p]'s landing along d by t; the
    "lands q on e" condition is a cubic F(t); each real root is a crease (the
    perpendicular bisector of p and its landing). 0, 1, or 3 creases.
    [justin1986 §2–3; hull2020 §2.4] *)
@@ -428,7 +428,7 @@ let segments_overlap_collinear ((p1, q1) : point * point)
       let ohi = if Num.compare thi Num.one < 0 then thi else Num.one in
       Num.compare olo ohi < 0
 
-(* Cyrus-Beck, exact: line [l] ∩ convex CCW [poly] as a segment. Parametrize
+(* Cyrus-Beck, exact: line [l] ∩ convex CCW [poly] as a segment. Parameterize
    the line p(t) = p0 + t·dir with dir = (b,−a) and p0 the foot of the
    perpendicular from the origin, ((a·c)/(a²+b²), (b·c)/(a²+b²)): no [sqrt].
    Each CCW edge (e_a,e_b) demands cross(e_b−e_a, p(t)−e_a) ≥ 0, linear in t;

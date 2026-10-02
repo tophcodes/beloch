@@ -31,12 +31,12 @@ Alperin and Lang's names.
 The question this record settles is what the syntax tree keeps. Two options
 were designed side by side:
 
-- A: recognise an `align` form in the parser and map it onto the existing
+- A: recognize an `align` form in the parser and map it onto the existing
   seven constructors; the alignment set is a surface object and is gone after
   parsing.
 - B: the alignment set is the one representation of a construction in the
   tree; the prose forms desugar to it at parse time; the seven sets are
-  recognised where a solver is needed.
+  recognized where a solver is needed.
 
 Two sites in library code match on the seven constructors today,
 `Axiom.axis_of` with seven arms and the implied-anchor derivation in `Eval`

@@ -13,7 +13,7 @@ issue: tophcodes/beloch#52
 A squash opens a flap of two layers hinged at a folded edge, its *spine*,
 and presses it flat so that the spine lands on a target. On the preliminary
 base the kernel folds the squash of one flap as an eight-ray fan at the
-paper centre:
+paper center:
 
 ```beloch
 paper square
@@ -27,7 +27,7 @@ mark (align (--h onto --bd) (heading --h)) as --t
 flatten (--h & --bc valley) (--v & --cd valley) (--bd & .d mountain) (--t & --da valley) (--s & --da mountain) (--ac & .a valley) (--v & --ab valley) (--bd & .b mountain) (staying .z)
 ```
 
-The spine `--h & --da` opens and lands on the centre line of the base, where
+The spine `--h & --da` opens and lands on the center line of the base, where
 `--ac` and `--bd` lie. The new creases `--s & --da` and `--t & --da` lie one
 on each layer of the flap. Before the squash the two layers lie on each
 other, mirrored at the spine, and the mirror image of `--s` is `--t`: the two

@@ -313,7 +313,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
      folding crease, spec §Semantics). The latter kill is ours, done here
      over the GIVEN rays before the kernel runs. Gated on a genuine
      segment choice (>1 combination): with a single combination the input
-     has no alternative and the pre-2026-07-17 convention behaviour stands.
+     has no alternative and the pre-2026-07-17 convention behavior stands.
      Absent under [staying]: the convention carries no meaning then. *)
   let leading_arc_ok combo =
     match (staying_opt, combo) with

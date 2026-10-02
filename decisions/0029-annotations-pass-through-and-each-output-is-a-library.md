@@ -96,7 +96,7 @@ writes a function of their own against the same primitives.
 
 **This record supersedes ADR 0002**, which moves to `archive/`. Its FOLD
 decision holds and is restated above; its instruction JSON is dropped in
-favour of the libraries; its editor boundary, LSP, stands in ADR 0007 as
+favor of the libraries; its editor boundary, LSP, stands in ADR 0007 as
 `beloch lsp`.
 
 ## Alternatives considered

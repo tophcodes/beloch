@@ -653,7 +653,7 @@ let test_bind_bundle_roundtrip () =
     (q_axis inline = q_axis bound)
 
 (* #42: one self-contained [foldedForm] frame per numeric frame, flat baseline
-   included. Frames are unlabelled: the retired `step` keyword no longer tags
+   included. Frames are unlabeled: the retired `step` keyword no longer tags
    them (beloch:step is gone). *)
 let test_multiframe () =
   let src =
@@ -807,7 +807,7 @@ let test_e2e_flap_cluster_spans_precrease_split () =
    candidate on both BL and TL (each has material on the move side, x<1/4),
    but BL and TL never geometrically overlap (they're side by side, not
    stacked), so the pre-cohesion `outer` closure alone leaves TL out even
-   though it's [BL]'s still-flat neighbour. Without cohesion, TL never enters
+   though it's [BL]'s still-flat neighbor. Without cohesion, TL never enters
    the moving set, and .d (uniquely inside TL) keeps its stale flat-sheet
    table position (0,1). With cohesion, TL moves with BL and .d reflects to
    (1/2,1): verified exactly (not just "differs"), confirmed empirically
@@ -831,7 +831,7 @@ let test_e2e_cohesion_moves_coplanar_sibling () =
 
 (* Task 2: a bare precrease (still flat, unfolded) emits FOLD assignment "F",
    never "U": U is dropped from the codebase entirely (design/mark-fold-notation).
-   Task 6 splits the CP colour ([eintent], defaults V) from the folded-form
+   Task 6 splits the CP color ([eintent], defaults V) from the folded-form
    dihedral ([eassign]): the "flat, never U" invariant lives in the folded
    frame, since the top-level [creasePattern] frame now legitimately shows the
    mark's (default) M/V intent instead. *)
@@ -926,7 +926,7 @@ let test_mark_mountain_cp_intent () =
   Alcotest.(check bool) "folded frame keeps the mark F" true
     (json_folded_assignments json |> List.mem "F")
 
-(* A FOLDED crease is coloured by the derived M/V, not by the letter frozen
+(* A FOLDED crease is colored by the derived M/V, not by the letter frozen
    into [intent] when the fold ran: later steps restack the sheet and the
    stored letter does not follow. swivel-rabbit is symmetric about --v, so
    its two hinges must agree, and only the emergent ear is a mountain. *)
@@ -978,9 +978,9 @@ let test_mark_draws_its_extent () =
     let eq a b = Float.abs (a -. b) < 1e-9 in
     eq x0 y0 && eq x1 y1 && Float.min x0 x1 >= lo -. 1e-9 && Float.max x0 x1 <= hi +. 1e-9
   in
-  Alcotest.(check bool) "an edge along .a to the centre" true
+  Alcotest.(check bool) "an edge along .a to the center" true
     (List.exists (on_diagonal 0. 0.5) edges);
-  Alcotest.(check bool) "no edge along the centre to .c" false
+  Alcotest.(check bool) "no edge along the center to .c" false
     (List.exists (on_diagonal 0.5 1.) edges)
 
 (* fold the left half onto the right (valley crease x=1/2; .a/.d move, .b/.c
@@ -1044,7 +1044,7 @@ let test_mark_spans_internal_crease_records () =
    [test_mark_point_records_no_edge]) must be incident to that shared vertex --
    not a numerically distinct duplicate. Since [resolve_point] already yields
    canonical rationals and Geom.point_equal is exact, this holds automatically;
-   the test pins the behaviour as a regression guard (task-5-brief.md: no
+   the test pins the behavior as a regression guard (task-5-brief.md: no
    tolerance/fuzzy logic, ever). *)
 let test_mark_endpoint_on_vertex_is_incident () =
   let src =
@@ -1321,7 +1321,7 @@ let () =
             `Quick test_mark_boundary_to_interior_records;
           Alcotest.test_case "mark mountain: CP frame M, folded frame F"
             `Quick test_mark_mountain_cp_intent;
-          Alcotest.test_case "CP colours folded creases by derived MV" `Quick
+          Alcotest.test_case "CP colors folded creases by derived MV" `Quick
             test_cp_folded_crease_uses_derived_mv;
           Alcotest.test_case "full mark still subdivides" `Quick
             test_mark_full_still_subdivides;

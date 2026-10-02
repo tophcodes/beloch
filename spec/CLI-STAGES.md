@@ -53,7 +53,7 @@ The figure is one column, read from top to bottom.
   left and on the right the title, the statement with the part the stage
   reads underlined, and the text rows. A long statement wraps between its
   items.
-- **A stage the construction does not use** keeps its place as a short grey
+- **A stage the construction does not use** keeps its place as a short gray
   row: its title and one line, "Skipped, as the fold names no heading."
   A stage the construction uses keeps its full row even when it removes
   nothing.
@@ -90,9 +90,9 @@ is no candidate: stage 0 does not draw or number it.
 
 The number is the candidate's identity. It stands in a circle at one end of
 the line, outside the paper, and in front of every text row about the
-candidate. Colour repeats the number: blue, orange and purple from the
-highlight colours, in that order. Green and red are left out, since they
-read as pass and fail. Only candidates are coloured; what a stage reads or
+candidate. Color repeats the number: blue, orange and purple from the
+highlight colors, in that order. Green and red are left out, since they
+read as pass and fail. Only candidates are colored; what a stage reads or
 constructs is slate.
 
 | State | Line | Number |
@@ -110,16 +110,16 @@ line drawn on the paper and not folded.
 
 | Role | Mark |
 |---|---|
-| what a stage reads | a thin solid slate line, always labelled |
-| an edge a stage reads | a slate rail set inside the paper, parallel to the edge, labelled |
+| what a stage reads | a thin solid slate line, always labeled |
+| an edge a stage reads | a slate rail set inside the paper, parallel to the edge, labeled |
 | a construction | thin slate: the circle of axiom 6, the parabolas of axiom 7 |
-| the `toward` or `moving` target | a filled black diamond, labelled |
-| the side that folds over | hatching in the candidate's colour, its number inside; each candidate has its own hatch angle |
-| a point that moves | a filled dot, an arrow, and an outlined ring where it lands, labelled with a prime: `.d` becomes `.d′` |
-| a piece of line that moves | a filled bar, an arrow, and an outlined bar where it lands, labelled `--ef′` |
+| the `toward` or `moving` target | a filled black diamond, labeled |
+| the side that folds over | hatching in the candidate's color, its number inside; each candidate has its own hatch angle |
+| a point that moves | a filled dot, an arrow, and an outlined ring where it lands, labeled with a prime: `.d` becomes `.d′` |
+| a piece of line that moves | a filled bar, an arrow, and an outlined bar where it lands, labeled `--ef′` |
 | a motion the paper cannot make | a thin arrow from a cross where the missing paper would be, and a label naming it |
 | where a point can land (stage 0) | a thin line from the point to the landing, with a right-angle mark where the candidate crosses it |
-| an angle | an arc in the candidate's colour, with its value |
+| an angle | an arc in the candidate's color, with its value |
 | a distance | a line from a dot on the nearest landed point to the target, its value in a tag with the candidate's number |
 
 A source is filled and its image is the same shape outlined, so a thing and
@@ -128,7 +128,7 @@ carries its number: arrows, images, distances, hatched sides. A label never
 covers a line; it sits in a tag or at the end of a leader.
 
 Every distinction above holds in black on white, where the numbers, the
-hatch angles and the line weights carry what colour carries on screen
+hatch angles and the line weights carry what color carries on screen
 ([B1.14](https://github.com/tophcodes/beloch/blob/main/docs/brand/design-language.md)).
 
 ## Stage by stage
@@ -196,7 +196,7 @@ of the alignments; `(x toward …)` measures `x` alone.
 A Result line starts with the candidate's number, drawn in the state it has
 in the square, then the verdict: `passes` or `eliminated`, and in the
 Outcome `holds`. The verdict is bold; the line of an eliminated candidate
-is grey. A value shows as many decimals as it takes to tell two different
+is gray. A value shows as many decimals as it takes to tell two different
 values apart, at least two. Values that print alike are a tie in the exact
 comparison, and the line says so.
 

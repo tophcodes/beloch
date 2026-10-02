@@ -1,6 +1,6 @@
 ; AI-generated: this file was written by Claude, an AI model.
 
-; Four rays at the centre. The ray toward .d stops at .w, where it crosses
+; Four rays at the center. The ray toward .d stops at .w, where it crosses
 ; the flat crease --k: .w lies inside the sheet, on no raw or folded edge,
 ; so the ray does not reach the boundary of its flap.
 

@@ -18,7 +18,7 @@ let source_root =
 
 (* The `.bel` corpora this runner covers: the dedicated case files and the
    docs examples. Both carry inline assertions and are checked identically, so
-   a behaviour test that is also a showcase lives in examples/ alone. A file
+   a behavior test that is also a showcase lives in examples/ alone. A file
    with no assertion line is still evaluated (it must not error). *)
 let corpora = [ ("cases", "packages/core/tests/cases"); ("examples", "examples") ]
 

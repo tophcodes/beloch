@@ -57,7 +57,7 @@ Each frame uses the FOLD vocabulary for what FOLD can express:
   "Sheets"), or `"unit"` when it declares none. It stands in frame 0, and
   every coordinate of the file is in that unit.
 
-Exact coordinates are rounded to decimal only at serialisation; the values the
+Exact coordinates are rounded to decimal only at serialization; the values the
 kernel computes stay exact (ADR 0008, 0012).
 
 ## Beloch's fields
@@ -174,7 +174,7 @@ none of this appears, and every other field is the same with and without it.
   and each candidate that crosses paper carries its `landing`: the
   reflection across it of the point of the first alignment, where that
   point lands when it lies on the side that folds over. For axiom 6 the
-  entry carries `circle`, with the `centre`, the point the crease passes
+  entry carries `circle`, with the `center`, the point the crease passes
   through, and `through`, the point that moves: its landings lie where the
   circle meets the target line.
 - A construction's entry also records what each stage of the selection

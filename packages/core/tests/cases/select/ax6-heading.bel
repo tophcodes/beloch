@@ -3,7 +3,7 @@
 ; heading keeps the candidate whose line makes the smallest angle with the
 ; given line (ADR 0031). Of the two tangents through .p, the one at 45° is
 ; nearer the bottom edge's direction than the vertical one, and it lands .d
-; at the centre.
+; at the center.
 
 paper square
 mark (map .a onto .b) as --ef

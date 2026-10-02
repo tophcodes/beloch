@@ -3,11 +3,11 @@
 ; The bird base with its petals lifted: bird-base.bel, then Ida's steps 9 and
 ; 10 [ida2020, Fig. 7.19], the front flap valley-folded up along the line
 ; through the two side vertices and the back flap mountain-folded behind along
-; the same line. That line is perpendicular to the centre line and meets it
+; the same line. That line is perpendicular to the center line and meets it
 ; where the four reversed side corners landed, so it is written through .sr.
-; .a and .c come to the far end past the paper centre and form the upper
+; .a and .c come to the far end past the paper center and form the upper
 ; points; .b and .d stay at the open end and form the legs.
-; Each `up to` names the centre face of its flap, which the side corners
+; Each `up to` names the center face of its flap, which the side corners
 ; reversed beneath it follow.
 
 paper square
@@ -37,7 +37,7 @@ fold (perp --mid through .sr) (moving .c) (up to #[.c .o]) (mountain) as --pb   
 ; assert steps = 9
 ; assert faces = 16
 
-; the legs stay at the open end, the petals meet past the centre
+; the legs stay at the open end, the petals meet past the center
 ; assert .b = (1, 1)
 ; assert .d = .b
 ; assert .a = .c

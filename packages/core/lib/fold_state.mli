@@ -100,7 +100,7 @@ val make :
     checks are unaffected (a rigid motion of everything). [marks] is a
     paper-space, fold-invariant array of reference/pinch records (default
     empty). The trailing [unit] anchors the two leading optional arguments
-    : OCaml cannot erase omitted optionals followed only by labelled
+    : OCaml cannot erase omitted optionals followed only by labeled
     arguments. Checks in order: structure (indices, rank, angle domain,
     line non-degeneracy), connectivity, hinge adjacency (half-plane +
     shared edge), cycle closure, then the non-crossing conditions
@@ -144,7 +144,7 @@ val face_up : t -> int -> bool
 val mv : t -> int -> assign
 (** Derived mountain/valley/flat of hinge [i], from placements + rank
     [hullzakharevich2023, §2.1]: valley iff the orientation-preserved side
-    lies below its neighbour; [F] iff the hinge's angle is 0. Derived,
+    lies below its neighbor; [F] iff the hinge's angle is 0. Derived,
     never stored: it cannot contradict the geometry. *)
 
 val fresh_crease_id : unit -> int
@@ -378,7 +378,7 @@ val reverse :
   prov:State.provenance option ->
   (t, reverse_failure) result
 (** Reverse fold of the material [tip] (a mask over PARENT faces) across the
-    TABLE-space [axis] (ADR 0043). An opening lies between two neighbouring
+    TABLE-space [axis] (ADR 0043). An opening lies between two neighboring
     layers of the tip, in rank order, where every hinge joining a layer below
     to a layer above is folded and lies on one table line that reaches beyond
     the axis. It cuts the tip into a lower and an upper block, each with at

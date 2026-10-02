@@ -31,9 +31,9 @@ the fixed partition `subdivide` carves. A face boundary is created the moment
 **any** crease crosses a polygon (ADR 0014: creasing runs `subdivide`, which
 cuts every face the axis crosses and tags each resulting edge with the shared
 `crease_id`). Crucially, that partition is cut by *precreases* too: a bare
-`map X onto Y` bind materialises a crease bundle and subdivides, even though
+`map X onto Y` bind materializes a crease bundle and subdivides, even though
 nothing folds: the new edges are assignment `U` (unfolded), physically flat,
-coplanar with their neighbour across the edge (`lib/fold_state.ml`:
+coplanar with their neighbor across the edge (`lib/fold_state.ml`:
 `type assign = M | V | U`; `subdivide` emits `eassign = U`).
 
 <!-- vale proselint.Cliches = NO -->
@@ -83,7 +83,7 @@ still coplanar with it (its dividing edge is a `U` precrease) but was not in
 this fold's scope. The point→position lookup (`faces_containing` /
 `table_position`) picks the wrong owning face when a shared boundary vertex's
 two adjacent faces diverge in movement state. This cannot occur if a flap is a
-coplanar cluster: `.a`'s whole still-flat neighbourhood is one flap, so it is
+coplanar cluster: `.a`'s whole still-flat neighborhood is one flap, so it is
 either entirely inside or entirely outside a fold's moving set, never
 straddling it.
 
@@ -206,7 +206,7 @@ already face-granular and unchanged.
   just the mental model. (To be confirmed on the actual repro when implemented;
   stated here as the expected outcome, not verified against a build.)
 - **The confirmed position bug (2) is eliminated by construction**, not patched:
-  a point in a still-flat neighbourhood belongs to exactly one flap, which is
+  a point in a still-flat neighborhood belongs to exactly one flap, which is
   wholly inside or wholly outside any fold's moving set, so its owning face after
   a fold is unambiguous.
 - **New implementation machinery: a live coplanar-connected-components

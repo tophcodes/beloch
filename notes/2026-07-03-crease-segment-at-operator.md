@@ -88,7 +88,7 @@ Si.** Incidence per kind:
 
 - **point** `.p` on `--l`: matches the segment(s) it lies on. Interior to a
   sub-segment → matches **one** (standalone, complete). On a subdivision **vertex**
-  (a crease crossing `--l`) → matches the **two** neighbours sharing that vertex,
+  (a crease crossing `--l`) → matches the **two** neighbors sharing that vertex,
   so it needs a second selector. The cases never overlap, so the universal
   cardinality rule covers both. A vertex point is **equivalent to the crease
   through it** as a selector (same locus `--a ∩ --l`); no need to name that crease.
@@ -112,7 +112,7 @@ material fold of it (another layer, or a pure reference line).
 
 **Two selectors join with `and`** (already axiom 7's junctor). Nested context
 (`map .p onto (--l at --a and --b) and .q onto --e`) needs the inner `and` bound
-to `at`, outer to `map`: resolve by parenthesising the `at` expression or by
+to `at`, outer to `map`: resolve by parenthesizing the `at` expression or by
 binding it to a temp crease first (`--seg = --l at --a and --b`, then use
 `--seg`).
 

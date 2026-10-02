@@ -59,7 +59,7 @@ Design surface, when it gets its slice:
   `.[…]` as "points are never a set", but this is a *single* parametric point, not
   a set, so `.[…]` for "the point this expression determines" may be fine, or it
   may want its own spelling. Resolve when designed.
-- Possible generalisation: absolute rational coordinates (`.[3/4, 1/2]`) as well as
+- Possible generalization: absolute rational coordinates (`.[3/4, 1/2]`) as well as
   parametric-along. Start with `along`; only add coordinates if a use appears.
 
 ## Why both are worth the law
