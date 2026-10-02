@@ -36,13 +36,16 @@ test("a rule's lines are the rendering contract both renderers consume", () => {
 	expect(program?.id).toBe("rule-program");
 	expect(program?.keywords).toEqual(["paper"]);
 	expect(program?.symbols).toEqual([]);
-	expect(program?.uses).toEqual(["unit_decl", "shape_def", "sheet", "stmt"]);
+	expect(program?.uses).toEqual(["annotation", "unit_decl", "shape_def", "sheet", "stmt"]);
 	expect(program?.usedBy).toEqual([]);
 	expect(program?.lines).toEqual([
 		[
 			{ class: "gr-rule", text: "program" },
 			{ class: "gr-plain", text: " " },
 			{ class: "gr-operator", text: ":=" },
+			{ class: "gr-plain", text: " " },
+			{ class: "gr-nonterminal", text: "annotation", ref: "rule-annotation" },
+			{ class: "gr-operator", text: "*" },
 			{ class: "gr-plain", text: " " },
 			{ class: "gr-operator", text: "[" },
 			{ class: "gr-plain", text: " " },

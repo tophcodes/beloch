@@ -369,7 +369,7 @@ test("@orient --l vertical takes the rotation nearer the orientation in force", 
   expect(orientationAt(scene, 1)).toBeCloseTo((3 * Math.PI) / 4, 9);
   expect(b[0]).toBeCloseTo(d[0], 6);
   expect(b[1]).toBeLessThan(d[1]);
-  scene.annotations.shift();
+  scene.annotations.splice(scene.annotations.findIndex((a) => a.key === "orient"), 1);
   expect(orientationAt(scene, 1)).toBeCloseTo(-Math.PI / 4, 9);
 });
 
@@ -398,7 +398,7 @@ test("a turned drawing sits centered and fills the canvas", async () => {
 // it: from the centroid (2/3, 2/3) of the triangle .b .c .d to .b points down.
 test("an @orient after the last statement turns the final state", async () => {
   const scene = parseFold(await golden("orient-trailing.fold"));
-  expect(scene.annotations[0]!.target).toBeNull();
+  expect(scene.annotations.find((a) => a.key === "orient")!.target).toBeNull();
   expect(orientationAt(scene, 0)).toBe(0);
   expect(orientationAt(scene, 1)).toBeCloseTo(-Math.PI / 2 - Math.atan2(-2, 1), 9);
 });

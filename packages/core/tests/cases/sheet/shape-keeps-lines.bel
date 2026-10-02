@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; Lines bound in a shape body carry over to the trimmed sheet: a
 ; construction line where it crosses the sheet, and a bundle for its part

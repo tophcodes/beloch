@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; .c already lies on --ac, so the identity landing is dropped and the mirror
 ; landing (-1, -1) leaves one crease: the anti-diagonal direction through .a.

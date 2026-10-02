@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; A line folded onto a line it crosses: each candidate folds over the part
 ; of --v on the side away from toward, and (--v toward .u) measures where

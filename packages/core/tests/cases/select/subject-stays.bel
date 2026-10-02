@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; (.a toward .a) keeps .a on the side that stays, so .a never folds over
 ; and no candidate remains.

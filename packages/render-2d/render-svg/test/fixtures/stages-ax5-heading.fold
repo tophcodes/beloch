@@ -1,7 +1,9 @@
 {
   "file_spec": 1.1,
   "file_creator": "beloch 0.4.0",
+  "file_author": "Claude (Anthropic)",
   "frame_classes": [ "creasePattern" ],
+  "frame_unit": "unit",
   "vertices_coords": [
     [ 1.0, 0.5 ],
     [ 1.0, 1.0 ],
@@ -32,6 +34,25 @@
   "edges_assignment": [
     "B", "V", "F", "B", "B", "F", "B", "V", "B", "F", "B", "B", "F", "B"
   ],
+  "edges_foldAngle": [
+    0.0, 180.0, 0.0, 0.0, 0.0, 0.0, 0.0, 180.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+  ],
+  "edges_faces": [
+    [ 0 ],
+    [ 0, 3 ],
+    [ 0, 1 ],
+    [ 1 ],
+    [ 1 ],
+    [ 1, 2 ],
+    [ 2 ],
+    [ 2, 5 ],
+    [ 3 ],
+    [ 3, 4 ],
+    [ 4 ],
+    [ 4 ],
+    [ 4, 5 ],
+    [ 5 ]
+  ],
   "faces_vertices": [
     [ 0, 1, 2 ],
     [ 3, 4, 0, 2 ],
@@ -45,7 +66,7 @@
     {
       "axiom": "axiom5",
       "sources": [ "--v", "--h", "--ab", ".u" ],
-      "span": "stages-ax5-heading.bel:5:1-66",
+      "span": "stages-ax5-heading.bel:6:1-66",
       "statement": 3,
       "name": "s",
       "crease_id": 2
@@ -53,7 +74,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".d" ],
-      "span": "stages-ax5-heading.bel:3:1-29",
+      "span": "stages-ax5-heading.bel:4:1-29",
       "statement": 1,
       "name": "h",
       "crease_id": 1
@@ -63,7 +84,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".b" ],
-      "span": "stages-ax5-heading.bel:2:1-29",
+      "span": "stages-ax5-heading.bel:3:1-29",
       "statement": 0,
       "name": "v",
       "crease_id": 0
@@ -72,7 +93,7 @@
     {
       "axiom": "axiom5",
       "sources": [ "--v", "--h", "--ab", ".u" ],
-      "span": "stages-ax5-heading.bel:5:1-66",
+      "span": "stages-ax5-heading.bel:6:1-66",
       "statement": 3,
       "name": "s",
       "crease_id": 2
@@ -81,7 +102,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".b" ],
-      "span": "stages-ax5-heading.bel:2:1-29",
+      "span": "stages-ax5-heading.bel:3:1-29",
       "statement": 0,
       "name": "v",
       "crease_id": 0
@@ -91,7 +112,7 @@
     {
       "axiom": "axiom2",
       "sources": [ ".a", ".d" ],
-      "span": "stages-ax5-heading.bel:3:1-29",
+      "span": "stages-ax5-heading.bel:4:1-29",
       "statement": 1,
       "name": "h",
       "crease_id": 1
@@ -104,7 +125,7 @@
         "name": "h",
         "axiom": "axiom2",
         "sources": [ ".a", ".d" ],
-        "span": "stages-ax5-heading.bel:3:1-29",
+        "span": "stages-ax5-heading.bel:4:1-29",
         "segments": [
           {
             "faces": [ 4, 5 ],
@@ -124,7 +145,7 @@
         "name": "v",
         "axiom": "axiom2",
         "sources": [ ".a", ".b" ],
-        "span": "stages-ax5-heading.bel:2:1-29",
+        "span": "stages-ax5-heading.bel:3:1-29",
         "segments": [
           {
             "faces": [ 3, 4 ],
@@ -144,7 +165,7 @@
         "name": "s",
         "axiom": "axiom5",
         "sources": [ "--v", "--h", "--ab", ".u" ],
-        "span": "stages-ax5-heading.bel:5:1-66",
+        "span": "stages-ax5-heading.bel:6:1-66",
         "segments": [
           {
             "faces": [ 2, 5 ],
@@ -325,7 +346,7 @@
     "u": {
       "t": "1/5",
       "endpoints": [ [ 1.0, 0.0 ], [ 0.0, 0.0 ] ],
-      "source_line": 4
+      "source_line": 5
     }
   },
   "beloch:statements": [
@@ -340,8 +361,8 @@
       },
       "kind": "mark",
       "parent": null,
-      "source_line": 2,
-      "span": "stages-ax5-heading.bel:2:1-29",
+      "source_line": 3,
+      "span": "stages-ax5-heading.bel:3:1-29",
       "frame_index": 0,
       "kept_marks": [
         {
@@ -365,8 +386,8 @@
       },
       "kind": "mark",
       "parent": null,
-      "source_line": 3,
-      "span": "stages-ax5-heading.bel:3:1-29",
+      "source_line": 4,
+      "span": "stages-ax5-heading.bel:4:1-29",
       "frame_index": 0,
       "kept_marks": [
         {
@@ -391,8 +412,8 @@
       "mark": null,
       "kind": "bind",
       "parent": null,
-      "source_line": 4,
-      "span": "stages-ax5-heading.bel:4:1-33",
+      "source_line": 5,
+      "span": "stages-ax5-heading.bel:5:1-33",
       "frame_index": 0,
       "kept_marks": [
         {
@@ -417,20 +438,35 @@
       "mark": null,
       "kind": "fold",
       "parent": null,
-      "source_line": 5,
-      "span": "stages-ax5-heading.bel:5:1-66",
+      "source_line": 6,
+      "span": "stages-ax5-heading.bel:6:1-66",
       "frame_index": 1,
       "kept_marks": []
     }
   ],
   "beloch:references": [
-    { "span": "stages-ax5-heading.bel:4:14-18", "edge": "ab" },
-    { "span": "stages-ax5-heading.bel:5:14-17", "crease_id": 0 },
-    { "span": "stages-ax5-heading.bel:5:23-26", "crease_id": 1 },
-    { "span": "stages-ax5-heading.bel:5:37-41", "edge": "ab" },
-    { "span": "stages-ax5-heading.bel:5:45-48", "crease_id": 0 }
+    { "span": "stages-ax5-heading.bel:5:14-18", "edge": "ab" },
+    { "span": "stages-ax5-heading.bel:6:14-17", "crease_id": 0 },
+    { "span": "stages-ax5-heading.bel:6:23-26", "crease_id": 1 },
+    { "span": "stages-ax5-heading.bel:6:37-41", "edge": "ab" },
+    { "span": "stages-ax5-heading.bel:6:45-48", "crease_id": 0 }
   ],
-  "beloch:annotations": [],
+  "beloch:annotations": [
+    {
+      "key": "author",
+      "namespace": null,
+      "target": "program",
+      "frame_index": 0,
+      "source_line": 1,
+      "span": "stages-ax5-heading.bel:1:1-2:1",
+      "args": [
+        {
+          "text": "Claude (Anthropic)",
+          "span": "stages-ax5-heading.bel:1:9-29"
+        }
+      ]
+    }
+  ],
   "file_frames": [
     {
       "frame_classes": [ "foldedForm" ],
@@ -442,6 +478,7 @@
       "edges_vertices": [ [ 0, 1 ], [ 1, 2 ], [ 2, 3 ], [ 3, 0 ] ],
       "edges_assignment": [ "B", "B", "B", "B" ],
       "edges_foldAngle": [ 0.0, 0.0, 0.0, 0.0 ],
+      "edges_faces": [ [ 0 ], [ 0 ], [ 0 ], [ 0 ] ],
       "faces_vertices": [ [ 0, 1, 2, 3 ] ],
       "beloch:faces_matrix": [ [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ] ],
       "faceOrders": [],
@@ -487,6 +524,22 @@
         0.0, 180.0, 0.0, 0.0, 0.0, 0.0, 0.0, 180.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         0.0
       ],
+      "edges_faces": [
+        [ 0 ],
+        [ 0, 3 ],
+        [ 0, 1 ],
+        [ 1 ],
+        [ 1 ],
+        [ 1, 2 ],
+        [ 2 ],
+        [ 2, 5 ],
+        [ 3 ],
+        [ 3, 4 ],
+        [ 4 ],
+        [ 4 ],
+        [ 4, 5 ],
+        [ 5 ]
+      ],
       "faces_vertices": [
         [ 0, 1, 2 ],
         [ 3, 4, 0, 2 ],
@@ -504,13 +557,13 @@
         [ 0.0, 1.0, 1.0, 0.0, 0.0, 0.0 ]
       ],
       "faceOrders": [ [ 0, 3, 1 ], [ 1, 4, 1 ], [ 2, 5, 1 ] ],
-      "beloch:source_line": 5,
+      "beloch:source_line": 6,
       "beloch:edges": [
         null,
         {
           "axiom": "axiom5",
           "sources": [ "--v", "--h", "--ab", ".u" ],
-          "span": "stages-ax5-heading.bel:5:1-66",
+          "span": "stages-ax5-heading.bel:6:1-66",
           "statement": 3,
           "name": "s",
           "crease_id": 2
@@ -518,7 +571,7 @@
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".d" ],
-          "span": "stages-ax5-heading.bel:3:1-29",
+          "span": "stages-ax5-heading.bel:4:1-29",
           "statement": 1,
           "name": "h",
           "crease_id": 1
@@ -528,7 +581,7 @@
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".b" ],
-          "span": "stages-ax5-heading.bel:2:1-29",
+          "span": "stages-ax5-heading.bel:3:1-29",
           "statement": 0,
           "name": "v",
           "crease_id": 0
@@ -537,7 +590,7 @@
         {
           "axiom": "axiom5",
           "sources": [ "--v", "--h", "--ab", ".u" ],
-          "span": "stages-ax5-heading.bel:5:1-66",
+          "span": "stages-ax5-heading.bel:6:1-66",
           "statement": 3,
           "name": "s",
           "crease_id": 2
@@ -546,7 +599,7 @@
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".b" ],
-          "span": "stages-ax5-heading.bel:2:1-29",
+          "span": "stages-ax5-heading.bel:3:1-29",
           "statement": 0,
           "name": "v",
           "crease_id": 0
@@ -556,7 +609,7 @@
         {
           "axiom": "axiom2",
           "sources": [ ".a", ".d" ],
-          "span": "stages-ax5-heading.bel:3:1-29",
+          "span": "stages-ax5-heading.bel:4:1-29",
           "statement": 1,
           "name": "h",
           "crease_id": 1
@@ -591,11 +644,11 @@
             { "name": ".a", "point": [ 0.0, 0.0 ], "segments": [] },
             { "name": ".b", "point": [ 1.0, 0.0 ], "segments": [] }
           ],
-          "span": "stages-ax5-heading.bel:2:11-21"
+          "span": "stages-ax5-heading.bel:3:11-21"
         }
       ],
       "spans": {
-        "alignments": [ "stages-ax5-heading.bel:2:11-21" ],
+        "alignments": [ "stages-ax5-heading.bel:3:11-21" ],
         "heading": null,
         "toward": null,
         "moving": null
@@ -663,11 +716,11 @@
             { "name": ".a", "point": [ 0.0, 0.0 ], "segments": [] },
             { "name": ".d", "point": [ 0.0, 1.0 ], "segments": [] }
           ],
-          "span": "stages-ax5-heading.bel:3:11-21"
+          "span": "stages-ax5-heading.bel:4:11-21"
         }
       ],
       "spans": {
-        "alignments": [ "stages-ax5-heading.bel:3:11-21" ],
+        "alignments": [ "stages-ax5-heading.bel:4:11-21" ],
         "heading": null,
         "toward": null,
         "moving": null
@@ -727,12 +780,12 @@
         {
           "name": "--v",
           "point": null,
-          "segments": [ [ [ 0.5, 1.0 ], [ 0.5, 0.0 ] ] ]
+          "segments": [ [ [ 0.5, 0.0 ], [ 0.5, 1.0 ] ] ]
         },
         {
           "name": "--h",
           "point": null,
-          "segments": [ [ [ 0.0, 0.5 ], [ 1.0, 0.5 ] ] ]
+          "segments": [ [ [ 1.0, 0.5 ], [ 0.0, 0.5 ] ] ]
         }
       ],
       "heading_line": [ 0.0, -1.0, 0.0 ],
@@ -743,21 +796,21 @@
             {
               "name": "--v",
               "point": null,
-              "segments": [ [ [ 0.5, 1.0 ], [ 0.5, 0.0 ] ] ]
+              "segments": [ [ [ 0.5, 0.0 ], [ 0.5, 1.0 ] ] ]
             },
             {
               "name": "--h",
               "point": null,
-              "segments": [ [ [ 0.0, 0.5 ], [ 1.0, 0.5 ] ] ]
+              "segments": [ [ [ 1.0, 0.5 ], [ 0.0, 0.5 ] ] ]
             }
           ],
-          "span": "stages-ax5-heading.bel:5:13-27"
+          "span": "stages-ax5-heading.bel:6:13-27"
         }
       ],
       "spans": {
-        "alignments": [ "stages-ax5-heading.bel:5:13-27" ],
-        "heading": "stages-ax5-heading.bel:5:29-41",
-        "toward": "stages-ax5-heading.bel:5:45-58",
+        "alignments": [ "stages-ax5-heading.bel:6:13-27" ],
+        "heading": "stages-ax5-heading.bel:6:29-41",
+        "toward": "stages-ax5-heading.bel:6:45-58",
         "moving": null
       },
       "candidates": [

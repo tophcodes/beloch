@@ -253,7 +253,7 @@ export type AnnotationArg =
 export interface Annotation {
   key: string;
   namespace: string | null;
-  target: [number, number] | null;                           // first and last index into scene.statements; null after the last statement of its list, where it belongs to the state frameIndex
+  target: [number, number] | "program" | null;               // first and last index into scene.statements; "program" for a key of the program as a whole (author, design, source); null after the last statement of its list, where it belongs to the state frameIndex
   frameIndex: number;                                        // index into scene.steps: the state the arguments were read against
   sourceLine: number;
   span: string;

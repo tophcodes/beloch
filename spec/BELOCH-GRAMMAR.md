@@ -18,7 +18,7 @@ that says what its rules mean.
 [Overview](/language/).
 
 ```grammar
-program := [ unit_decl ] shape_def* "paper" sheet stmt*
+program := annotation* [ unit_decl ] shape_def* "paper" sheet stmt*
 stmt    := annotation* ( write_stmt | bind_stmt | def_stmt | apply_stmt | export_stmt )
 ```
 
@@ -27,7 +27,7 @@ stmt    := annotation* ( write_stmt | bind_stmt | def_stmt | apply_stmt | export
 [Sheets](/language/#sheets).
 
 ```grammar
-library    := [ unit_decl ] shape_def*
+library    := annotation* [ unit_decl ] shape_def*
 unit_decl  := "unit" WORD
 sheet      := "square" [ number ]
             | WORD number*

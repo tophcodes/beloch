@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 paper square 0
 ; expect error "the side of a square is a positive number"

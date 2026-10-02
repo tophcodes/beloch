@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; heading --ab makes the same angle with both bisectors, so the tie passes on
 ; to toward, which keeps the diagonal through .a and .c (ADR 0031).

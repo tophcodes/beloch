@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; A listed bundle keeps its expression, and the expression reads the names
 ; the trim exports: --edge reads --ab, which the list leaves out.

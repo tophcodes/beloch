@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; A point that folds onto a line lands on the paper of that line (ADR 0031).
 ; The circle about .q through .d meets --ef at (1/2, 5/6) and at (1/2, -1/2);

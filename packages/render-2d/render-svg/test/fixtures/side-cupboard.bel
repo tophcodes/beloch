@@ -1,3 +1,4 @@
+@author "Claude (Anthropic)"
 paper square
 mark (map --da onto --bc) as --m
 .s = --m * --ab

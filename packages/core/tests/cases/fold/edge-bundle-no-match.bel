@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; .a is not incident to the top edge --cd, so
 ; filtering the edge's segment bundle to it must select nothing (same

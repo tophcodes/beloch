@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; Fisher's waterbomb base through both layers in one statement, the variant
 ; his syntax cannot tell apart from flatten-waterbomb-top-layer.bel

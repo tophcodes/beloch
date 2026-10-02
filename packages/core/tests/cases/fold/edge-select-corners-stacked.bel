@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; The kite fold of edge-onto-line-corners-stacked.bel with the edge picked by a
 ; --[…] selector: the candidate's table line comes from the edge's pieces, as

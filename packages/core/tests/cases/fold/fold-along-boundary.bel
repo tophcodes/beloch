@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; A crease along a paper edge is a supporting line of the (convex) hull: all
 ; material lies in one closed half-plane, so there is no second flap to reflect.

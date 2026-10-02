@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; A binding selects its line as a fold along it would: --k is the diagonal
 ; through .a and .c.

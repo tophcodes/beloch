@@ -24,7 +24,8 @@ let parse ~(filename : string) (src : string) : Ast.program =
 
 (** A library file, which holds shapes and no `paper` line, such as the
     standard library: the unit it declares, and the shapes a program sees as
-    defined before its own first line. *)
+    defined before its own first line. The annotations at its head are
+    checked as those of a program without statements and then dropped. *)
 let library ~(filename : string) (src : string) :
     (string * Error.span) option * Ast.shape_def list =
   Lexer.reset ();
@@ -34,7 +35,11 @@ let library ~(filename : string) (src : string) :
   let parser =
     MenhirLib.Convert.Simplified.traditional2revised Parser.library
   in
-  try parser supplier
-  with Parser.Error ->
-    let start, finish = Sedlexing.lexing_positions lexbuf in
-    Error.fail (start, finish) "syntax error"
+  let annotations, unit, shapes =
+    try parser supplier
+    with Parser.Error ->
+      let start, finish = Sedlexing.lexing_positions lexbuf in
+      Error.fail (start, finish) "syntax error"
+  in
+  Annotation.check_head annotations;
+  (unit, shapes)

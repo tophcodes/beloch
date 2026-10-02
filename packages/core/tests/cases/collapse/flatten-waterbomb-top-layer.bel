@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; Fisher's waterbomb base on the top layer alone: "folding a 2:1 rectangle
 ; vertically in half then creating a waterbomb base on the top face only

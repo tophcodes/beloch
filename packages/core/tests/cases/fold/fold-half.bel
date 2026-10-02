@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 paper square
 fold (map .b onto .a) (moving .b) as --half

@@ -5,8 +5,8 @@ date: 2026-10-02
 status: accepted
 issue: tophcodes/beloch#183
 checks:
-  - desc: Every program in examples/ cites the sequence it folds
-    run: 'for f in examples/*.bel; do rg -q "\[[a-z]+[0-9]{4}[a-z]*[,\]]|https://" "$f" || { echo "$f"; exit 1; }; done'
+  - desc: Every program in examples/ names the sequence it folds in a source annotation whose cite keys are in references.bib (ADR 0051)
+    run: 'bash scripts/check-program-credits.sh'
 ---
 
 # 0049: The examples are popular models, each folding a published sequence

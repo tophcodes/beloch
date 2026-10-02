@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; moving with a line names the side of the line's material: --v lies left
 ; of the fold line x = 3/4, so that side folds over and lands .m on .b.

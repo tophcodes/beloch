@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; (staying <flap>) overrides the leading-element convention. Same incenter
 ; rabbit ear as flatten-rabbit-ear-toward-a.bel, but the leading pair is

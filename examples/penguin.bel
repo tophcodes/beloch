@@ -1,4 +1,6 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
+@design traditional
+@source "[tanpenguin]"
 
 ; The traditional penguin, after the seven steps of Kelly Tan's diagram
 ; [tanpenguin] at https://origami.me/penguin/. The diagram holds the paper

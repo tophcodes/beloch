@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; The kite fold of the bird base on the preliminary base (issue #6): all four
 ; corners sit on .c, so the corners of --ab name no table line, but both

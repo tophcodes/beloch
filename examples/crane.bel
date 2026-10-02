@@ -1,4 +1,6 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
+@design traditional
+@source "[ida2020, Fig. 7.19]"
 
 ; The traditional crane, flat, by the Eos route [ida2020, Fig. 7.19]: the
 ; bird base of packages/core/tests/cases/bases/bird-base.bel (Ida's steps 2-8), then her

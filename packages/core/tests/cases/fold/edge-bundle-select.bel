@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; A paper edge is a segment bundle (ADR 0014), and incidence is checked in
 ; PAPER space (material identity), so `--cd & .c` names the unique boundary

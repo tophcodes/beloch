@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; The fan of flatten-waterbomb-top-layer.bel folds the top layer, its
 ; anchor. .a is the corner of the bottom layer, so it names no sector of the

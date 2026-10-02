@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; Collinear leading creases cannot pick a stayer side. A legal 4-ray vertex
 ; (the two square diagonals crossing at the center — a waterbomb-style vertex,

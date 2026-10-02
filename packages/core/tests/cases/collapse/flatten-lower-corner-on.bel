@@ -1,4 +1,4 @@
-; AI-generated: this file was written by Claude, an AI model.
+@author "Claude (Anthropic)"
 
 ; The vertex of flatten-through-two-layers.bel, scored on the lower layer of
 ; the book alone and folded with `on #[.d]`: the lower corner is the anchor,
