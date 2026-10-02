@@ -72,7 +72,7 @@ algorithms need it [@ida2020, p. 176].
 ::: {.open #open-sheet-shapes name="sheet shapes beyond polygons" uses="def-sheet def-flat-state"}
 The language design for sheets as values names the circle as a shape. A disc is no polygon and has no decomposition into finitely
 many convex polygons, so [#def-sheet] and [#def-flat-state] exclude it as
-written. The generalisation is a sheet bounded by finitely many algebraic
+written. The generalization is a sheet bounded by finitely many algebraic
 arcs and faces that are convex regions bounded by segments and arcs of the
 sheet boundary; convexity survives cuts by lines, so the rest of the model
 stands. Whether to widen the definitions now or when a circular sheet is

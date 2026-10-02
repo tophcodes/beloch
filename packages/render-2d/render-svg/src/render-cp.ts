@@ -9,7 +9,7 @@ export interface RenderOptions {
   title?: string | undefined;
   labels?: string[] | undefined; // ["--v", ".e"]; undefined = none
   annotate?: string[] | undefined; // whose names the drawing writes out; undefined = every name it carries
-  highlight?: string[] | undefined; // entities to emphasise: ["--v", ".e", "#[.p]"]
+  highlight?: string[] | undefined; // entities to emphasize: ["--v", ".e", "#[.p]"]
   theme?: Partial<Theme> | undefined;
   legend?: boolean | undefined; // default false
 }

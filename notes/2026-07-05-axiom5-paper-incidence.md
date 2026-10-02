@@ -69,7 +69,7 @@ When axiom 5 yields two bisectors and `toward` is omitted:
   the same region the statement operates on, which ties into the fold-scope
   design (`2026-07-05-fold-scope.md`, ADR 0016). The rule should be phrased
   once, against that region, not ad hoc per axiom.
-- **Generalise to axioms 6/7.** `MapThrough` / `beloch_creases` have the same
+- **Generalize to axioms 6/7.** `MapThrough` / `beloch_creases` have the same
   shape (finite candidate set, `toward` selector). The same incidence filter
   applies verbatim and would remove `toward` from more programs. Separate
   slice.

@@ -25,7 +25,7 @@ let kind_name (k : Ast.alignment_kind) : string =
   | Ast.AlThrough _ -> "through a point"
   | Ast.AlPerp _ -> "perp to a line"
 
-let unrecognised (c : Ast.construction) : 'a =
+let unrecognized (c : Ast.construction) : 'a =
   Error.fail c.Ast.c_span
     ("these alignments are not one of the seven axioms: "
     ^ String.concat ", "
@@ -88,7 +88,7 @@ let classify (c : Ast.construction) : classified =
     | [], [], [ (l, m) ], [], [] -> Ax5 (l, m)
     | [], [ (p, d) ], [], [ q ], [] -> Ax6 (p, d, q)
     | [], [ (p, d); (q, e) ], [], [], [] -> Ax7 (p, d, q, e)
-    | _ -> unrecognised c
+    | _ -> unrecognized c
 
 let tag (cl : classified) : string =
   match cl with

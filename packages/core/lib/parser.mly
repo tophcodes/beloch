@@ -204,7 +204,7 @@ body_stmt:
   (* value binding: pure geometry, no material *)
   | CREASE EQ LPAREN construction_body RPAREN items
       { Items.bind $1 $4 $6 $loc }
-  (* a bind takes the line operands an item takes, parenthesised or not; the
+  (* a bind takes the line operands an item takes, parenthesized or not; the
      parentheses of the construction form are the construction's, not the
      binding's. *)
   | CREASE EQ line_operand                    { BindBundle ($1, $3, $loc) }

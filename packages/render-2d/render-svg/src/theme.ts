@@ -35,7 +35,7 @@ export interface Theme {
   front: string;           // "#fafaf7"  (folded: paper front)
   back: string;            // "#dbe4ee"  (folded: paper back)
   construction: string;    // "#4f46e5"
-  highlightPalette: HighlightColor[]; // one colour per entity the caller emphasises
+  highlightPalette: HighlightColor[]; // one colour per entity the caller emphasizes
   ink: string;             // "#0f172a"  (dots, labels, title)
   background: string;      // "white"    (full-canvas backdrop rect fill)
   lineStyle: LineStyleFn;

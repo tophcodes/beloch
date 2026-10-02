@@ -54,7 +54,7 @@ explicitly with `(staying <flap>)`, replacing the reserved `standing` slot;
 and `{toward <point>}`, an item in braces rather than a trailing keyword,
 selects among survivors by a three-stage rule (position class, min-mountain
 canon, rank dipole) only when more than one remains — never mandatory. The
-item list drops `and` for parenthesised juxtaposition (`flatten (--a & .p)
+item list drops `and` for parenthesized juxtaposition (`flatten (--a & .p)
 (--b & .q) …`); `flatten` is bindable, so an emergent crease — otherwise
 unconstructible — gets a name, and its tip point becomes selectable);
 **v0.22-dev** (**partial marks — the pinch** — `mark
@@ -624,7 +624,7 @@ A direction argument may be added later when the animation renderer needs it.
 
 ### 4.8 Filtering a crease bundle: `&` (and `\`, `[]`) *(since v0.17-dev)*
 
-A crease name is a **bundle**: one crease realised as a set of segments — one per
+A crease name is a **bundle**: one crease realized as a set of segments — one per
 layer the crease line crossed, further split by later creases. The segments are
 collinear only in the folded moment of creation; once (un)folding scatters them
 they point every which way in the crease pattern. So a crease name is not a single
@@ -644,7 +644,7 @@ Filtering is **incidence**: `&` keeps the segments the constraint is *on*. This 
 distinct from `toward`, which names the side of a fold that stays
 (`BELOCH-CONSTRUCTIONS.md`, Selection). `&` binds tighter than the axiom keywords: `perp --l & --a through .b`
 reads as `perp (--l & --a) through .b`, and that grouping may be written out,
-since a parenthesised operand is that operand *(since v0.28-dev)*.
+since a parenthesized operand is that operand *(since v0.28-dev)*.
 
 Chaining conjoins: when one point sits on a crease crossing (two adjacent
 segments share it), pin the unique segment incident to *both* constraints by
@@ -720,7 +720,7 @@ position among the other items, and at most once; a second occurrence is a
 parse error (`` only one toward item per flatten ``).
 
 Every item is wrapped in parentheses unconditionally, even a bare element,
-because with `and` dropped an unparenthesised item's first token would
+because with `and` dropped an unparenthesized item's first token would
 collide with the first token of the *next* statement (a bind `--l =
 …`/`.p = …`) at one token of lookahead (BELOCH-WRITES.md).
 **Element order is semantic**: the first two elements' folded rays fix the
@@ -1398,7 +1398,7 @@ axiom         := "through" point_operand point_operand          ; axiom 1 — a 
                      "and" point_operand "onto" line_operand    ; axiom 7
 flap_operand  := point_operand | line_operand | "#[" point_operand+ "]"              ; since v0.18-dev
 point_operand := POINT_NAME                                      ; named
-               | "(" line_operand "*" line_operand ")"           ; meet (binary), as an operand: parenthesised — bare only at a binding's RHS (point_stmt, above)
+               | "(" line_operand "*" line_operand ")"           ; meet (binary), as an operand: parenthesized — bare only at a binding's RHS (point_stmt, above)
                | ".[" line_operand+ "]"                          ; meet (n-ary): the point on all listed lines
                | "(" point_operand ")"                           ; grouping (since v0.28-dev)
 line_operand  := CREASE_NAME                                     ; named crease, or a prelude edge (--ab --bc --cd --da)
@@ -1418,7 +1418,7 @@ INSTANCE_NAME := "$" ident
 ; paren-juxtaposition items, bindable v0.23-dev; one-pipeline model,
 ; the `toward` item (was a trailing keyword), `valley` marker v0.23-dev;
 ; stayer convention, `staying` replaces reserved `standing` v0.23-dev;
-; `toward` moves from a braced clause to a parenthesised item like the
+; `toward` moves from a braced clause to a parenthesized item like the
 ; rest, and binding moves from a `CREASE_NAME "="` prefix to the `output`
 ; clause above, v0.27-dev
 flatten_stmt  := "flatten" flatten_item+ output
@@ -1519,7 +1519,7 @@ reads (joining the v0.20-dev operators); the writes are the keyword verbs
 `@collapse` is renamed `collapse`; `@` is retired entirely from the grammar;
 `U` is no longer emitted (§7).
 *(v0.23-dev)* **`flatten` generalizes `collapse`, one solver pipeline** —
-`collapse` is renamed `flatten`; the item list drops `and` for parenthesised
+`collapse` is renamed `flatten`; the item list drops `and` for parenthesized
 juxtaposition (`flatten (--a & .p) (--b & .q) …`); `flatten` is bindable
 (§4.9); and, given an odd set of rays sharing a vertex, `flatten` solves for
 the one emergent crease flat-foldability forces (the composed reflection of

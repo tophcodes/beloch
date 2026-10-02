@@ -288,7 +288,7 @@ and material_cid (ctx : Ctx.ctx) (cr : Ast.crease_ref) : int =
          over when a mark graduates: one line keeps one identity whether it
          reaches the arrangement by graduation or by segment selection. A
          fresh id here would split a name's references into a before and an
-         after around the statement that materialises it. *)
+         after around the statement that materializes it. *)
       let cid = mid in
       (* Two different questions, two different answers. WHAT DEFINED this
          line is the `mark` statement, so the crease inherits that mark's

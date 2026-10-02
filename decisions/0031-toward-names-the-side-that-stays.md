@@ -93,7 +93,7 @@ other side is the flap, the tip or the block that moves.
 **Each word sits at the level it speaks about.** Alignments and `heading`
 determine the line and stay inside the construction. `toward`, `moving` and
 the placement determine the fold and are items of the write, as `toward`
-already is in `flatten`. The canonical form parenthesises each part of a
+already is in `flatten`. The canonical form parenthesizes each part of a
 construction:
 
 ```beloch
@@ -112,7 +112,7 @@ A construction inside an expression takes no selection; it is bound first.
 apart from the selection. A construction is its set of alignments, together
 with its named fold lines and its `heading`. The prose forms of the seven
 axioms desugar to that set, and a prose form means what its `align` spelling
-means. An axiom number names one alignment set, recognised by the kinds of
+means. An axiom number names one alignment set, recognized by the kinds of
 its alignments, and appears in error messages, provenance and documentation;
 it is no type of its own. A set that is none of the seven is an error naming
 its alignments. `(--l onto .p)` means `(.p onto --l)`. `toward`
@@ -170,7 +170,7 @@ leaves the construction.
 
 - `def-selection` in `spec/MODEL.md` states the selection and the condition
   every fold puts on its candidates. `spec/BELOCH.md` moves `toward` out of
-  the construction, adds `heading` and `(x toward …)`, parenthesises the parts
+  the construction, adds `heading` and `(x toward …)`, parenthesizes the parts
   of `align`, and gives bindings items. The prose form of axiom 5 loses its
   `toward`.
 - One rule covers axioms 5, 6 and 7. A line moved onto a line it meets at an

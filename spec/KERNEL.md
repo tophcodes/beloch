@@ -98,7 +98,7 @@ history for output: the FOLD file carries one frame per statement in
 
 ## Selection
 
-`Axiom.axis_of` recognises a construction and solves it into its candidates
+`Axiom.axis_of` recognizes a construction and solves it into its candidates
 and the objects it moves; `Axiom.select` runs the four stages of
 [def-selection](/model/#def-selection) on them with the side items of the
 statement that reads it, and `Axiom.fold_side_of_line` gives `toward` its

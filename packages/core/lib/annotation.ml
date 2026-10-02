@@ -102,7 +102,7 @@ let check (prog : Ast.program) : unit = check_list prog.Ast.p_stmts
 (* ---- reading the arguments ---- *)
 
 (* Runs [f] and puts back everything a read may touch on its way: the state
-   and the crease-id counter a materialised mark advances, the binding it
+   and the crease-id counter a materialized mark advances, the binding it
    promotes, and the references it records. *)
 let read_only (ctx : Ctx.ctx) (f : unit -> 'a) : 'a =
   let state = !(ctx.Ctx.state) in

@@ -11,11 +11,11 @@ type classified =
   | Ax6 of Ast.point_operand * Ast.line_operand * Ast.point_operand
   | Ax7 of
       Ast.point_operand * Ast.line_operand * Ast.point_operand * Ast.line_operand
-        (** A construction recognised as one of the seven axioms, carrying the
+        (** A construction recognized as one of the seven axioms, carrying the
             operands in the roles its solver reads them (ADR 0031). *)
 
 val classify : Ast.construction -> classified
-(** Recognise the alignment set as one of the seven, by the multiset of its
+(** Recognize the alignment set as one of the seven, by the multiset of its
     alignment kinds. Fails naming the alignments when the set matches none of
     them, when the head names fold lines, and when a construction that
     determines one line names an `heading`. Order-insensitive across kinds;
@@ -28,7 +28,7 @@ val implied_point : classified -> Ast.point_operand option
 (** The point a map construction moves, which a `fold` takes as its anchor
     when the program names no `moving`: the first operand of axioms 2, 6 and
     7, and [None] for the rest. Takes the classification {!axis_of} hands
-    back, so a construction is recognised once per statement. *)
+    back, so a construction is recognized once per statement. *)
 
 type pending
 (** A construction's candidates in the current state, with what it moves,
@@ -36,7 +36,7 @@ type pending
 
 val axis_of :
   ?trace:bool -> Ctx.ctx -> Error.span -> Ast.construction -> classified * pending
-(** Recognise the construction with {!classify} and solve it against the
+(** Recognize the construction with {!classify} and solve it against the
     current table positions. Fails where no candidate exists at all. *)
 
 type chosen = {

@@ -193,7 +193,7 @@ let invariant_programs =
        reverse (map .b onto .c) as --h\n\
        @orient .a .c up\n\
        reverse (map .d onto .c) as --v\n" );
-    ( "reads that materialise a mark on their way",
+    ( "reads that materialize a mark on their way",
       "paper square\n\
        mark (through .a .c) as --m\n\
        @call --m & .a \"the diagonal\"\n\

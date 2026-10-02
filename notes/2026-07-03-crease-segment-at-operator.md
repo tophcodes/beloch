@@ -112,7 +112,7 @@ material fold of it (another layer, or a pure reference line).
 
 **Two selectors join with `and`** (already axiom 7's junctor). Nested context
 (`map .p onto (--l at --a and --b) and .q onto --e`) needs the inner `and` bound
-to `at`, outer to `map`: resolve by parenthesising the `at` expression or by
+to `at`, outer to `map`: resolve by parenthesizing the `at` expression or by
 binding it to a temp crease first (`--seg = --l at --a and --b`, then use
 `--seg`).
 

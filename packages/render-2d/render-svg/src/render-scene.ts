@@ -49,7 +49,7 @@ export interface SceneOptions {
   // true: the paper's outline thin and light, and no crease inside it, for a
   // drawing that draws the lines it is about itself.
   quiet?: boolean | undefined;
-  // Entities to emphasise: ".p" / "--l" join the construction overlay, "#[.p]"
+  // Entities to emphasize: ".p" / "--l" join the construction overlay, "#[.p]"
   // fills the faces of the flap carrying every listed point.
   highlight?: string[] | undefined;
   legend?: boolean | undefined;
@@ -298,7 +298,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     >();
     // Where a picked paper edge runs in this frame, in the frame's own
     // coordinates. The sheet's edges carry no name in the graph, so a run is
-    // recognised as one of them by lying along it.
+    // recognized as one of them by lying along it.
     const pickedEdgeRuns = new Map<string, [Vec2, Vec2][]>();
     for (const name of pickedPaperEdges) {
       const runs = paperEdgeSegments(scene, frame, name);

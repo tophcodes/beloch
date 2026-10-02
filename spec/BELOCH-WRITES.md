@@ -7,7 +7,7 @@ tableOfContents:
 ---
 
 A write statement is a verb followed by its *items*. An item is a
-parenthesised block whose first token names its type; items may stand in
+parenthesized block whose first token names its type; items may stand in
 any order. The construction that supplies the axis is an item like the
 others, so every slot of a write's signature is one block in the source,
 delimited on both sides and classified by its head.

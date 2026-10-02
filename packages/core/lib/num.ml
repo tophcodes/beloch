@@ -552,7 +552,7 @@ let real_roots (coeffs : t array) : t list =
     (* fallback: generator elimination ([Mpoly]) + exact verification.
        Assign generator variables to distinct algebraic numbers in the coefficient
        set. Variable 0 is z; generators are 1.. .
-       Key optimisation: if c = a + q·gen for rationals a,q (affine combination),
+       Key optimization: if c = a + q·gen for rationals a,q (affine combination),
        express the coefficient as const(a) + const(q)·gen_var rather than allocating
        a new variable. This collapses e.g. {−√2, 1−√2, 1} all into one generator
        (√2) and keeps the Sylvester matrix small.

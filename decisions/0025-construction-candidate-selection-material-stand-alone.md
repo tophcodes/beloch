@@ -96,7 +96,7 @@ and `line` as partial from a state and a bundle to a table line.
 - **Naming the write group by listing it**, as fold, flip, reverse and
   flatten. The list goes stale the first time a write is added; the property
   does not.
-- **Rationalising `material` away.** It is the only place where the table and
+- **Rationalizing `material` away.** It is the only place where the table and
   the paper meet, and it carries the decomposition into one piece per flap. A
   bundle is already a subset of the sheet, so a material of a bundle would be
   the identity: nothing is missing there, under multifold either.

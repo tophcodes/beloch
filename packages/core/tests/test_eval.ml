@@ -1518,7 +1518,7 @@ let test_new_fold_along () =
   Alcotest.(check int) "one valley edge" 1 (count_assign Fold_state.V fd.Eval.state)
 
 (* flatten without @, same "+" vertex fixture as [test_flatten_all_layers_ok],
-   with the two supporting creases materialised via `mark` instead of the
+   with the two supporting creases materialized via `mark` instead of the
    old bare-axiom precrease *)
 let test_new_flatten_no_at () =
   let fd =
@@ -1692,7 +1692,7 @@ let test_implied_point () =
            "paper square\nreverse (align (.a onto --bc) (.c onto --ab))\n"))
 
 (* Acceptance 4. The recognition table is total over the alignment multisets
-   of size one and two: each is one of the seven or reaches the unrecognised
+   of size one and two: each is one of the seven or reaches the unrecognized
    message. *)
 (* two spellings per kind, so a set that repeats a kind stays non-degenerate *)
 let align_kinds =

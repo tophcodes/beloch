@@ -152,7 +152,7 @@ does not load files yet, so these two rules wait for the import
 
 ## Reads and writes
 
-One law organises the surface syntax (`SPECIFICATION.md` §4.10): an
+One law organizes the surface syntax (`SPECIFICATION.md` §4.10): an
 operation that changes the state is a keyword verb, sequenced in program
 order; an operation that only computes something from the current state is
 an operator, a bracket, or a construction, and may appear anywhere a value

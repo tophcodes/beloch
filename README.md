@@ -111,7 +111,7 @@ FOLD output names the statement and the construction that made it.
   pattern and folded-state rendering, a browser build. The programs in
   [`examples/`](examples/) evaluate end to end, up to the flat crane, and most
   of them carry assertions the test suite checks.
-- **Formalised:** [`spec/MODEL.md`](spec/MODEL.md) defines folded states and
+- **Formalized:** [`spec/MODEL.md`](spec/MODEL.md) defines folded states and
   the operations on them. Its first sections are reviewed; the section on
   operations is a draft, and two of its lemmas, among them that a fold
   introduces no crossing, have pending proofs.
@@ -190,7 +190,7 @@ longer matches its program.
 The [playground](https://belochlang.org/playground/) needs no install. It runs
 the same evaluator, compiled to JavaScript with js_of_ocaml and backed by a
 WebAssembly build of FLINT. An operation that forces a value the browser
-backend cannot canonicalise says so and asks for the native evaluator; it
+backend cannot canonicalize says so and asks for the native evaluator; it
 never returns a wrong answer.
 
 With Nix, the evaluator runs without a checkout:
