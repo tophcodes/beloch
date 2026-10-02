@@ -13,7 +13,7 @@
 ; it.
 
 paper square
-.k = free on --bc from .b at 15/32
+.k = free on --bc from .b at 1/8
 
 mark (map --ab onto --cd) as --h            ; step 1: crease the horizontal half
 fold (map .a onto .b) as --spine            ; step 2: left half over the right
