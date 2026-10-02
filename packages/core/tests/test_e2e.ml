@@ -1302,6 +1302,27 @@ let test_crane_edges_faces () =
         (List.combine edges edges_faces))
     frames
 
+(* The cicada folds to its last flat state in ten writes. Every hinge of
+   that state is folded, so each face is a flap of its own (def-flap): the
+   flaps are the components of the faces joined by hinges of angle 0. *)
+let test_cicada_flaps () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"cicada.bel" (read_example "cicada.bel"))
+  in
+  let st = fd.Eval.state in
+  Alcotest.(check int) "one frame per write" 10
+    (List.length fd.Eval.frames);
+  let n = Array.length (Fold_state.faces st) in
+  let parent = Array.init n Fun.id in
+  let rec find i = if parent.(i) = i then i else find parent.(i) in
+  Array.iter
+    (fun (h : Fold_state.hinge) ->
+      if Num.equal h.angle Num.zero then parent.(find h.fa) <- find h.fb)
+    (Fold_state.hinges st);
+  let flaps = List.length (List.filter (fun i -> find i = i) (List.init n Fun.id)) in
+  Alcotest.(check int) "flaps" 38 flaps
+
 let () =
   Alcotest.run "beloch-e2e"
     [
@@ -1313,6 +1334,8 @@ let () =
             test_band_frame0;
           Alcotest.test_case "every frame of the crane carries edges_faces" `Quick
             test_crane_edges_faces;
+          Alcotest.test_case "the cicada folds to 38 flaps" `Quick
+            test_cicada_flaps;
           Alcotest.test_case "diagonals four faces" `Quick
             test_e2e_diagonals_four_faces;
           Alcotest.test_case "perp end-to-end" `Quick test_e2e_perp;

@@ -16,6 +16,7 @@ fold2svg=packages/render-2d/render-svg/bin/fold2svg.ts
 
 programs=(
   examples/crane.bel
+  examples/cicada.bel
 )
 
 out=.
