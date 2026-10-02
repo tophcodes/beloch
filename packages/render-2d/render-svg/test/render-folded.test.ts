@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { parseFold, SceneError, type Mark } from "@beloch/scene";
+import { orientationAt, parseFold, SceneError, type Mark } from "@beloch/scene";
 import { renderFolded, WEB_THEME, DEFAULT_THEME } from "@beloch/render-svg";
 import { makeLayout, PAD, SZ } from "../src/layout";
 import { pointInPolygon } from "../src/geometry";
@@ -183,16 +183,11 @@ test("scene without folded steps throws SceneError", async () => {
   }
 });
 
-test("legend hidden by default", async () => {
+// The folded view draws no fold kinds, so it has no legend to show.
+test("the folded view draws no legend, legend: true included", async () => {
   const scene = parseFold(await golden("fold-quarter.fold"));
-  const s = renderFolded(scene).toString();
-  expect(s).not.toContain('class="legend-panel"');
-});
-
-test("legend: true shows the legend panel", async () => {
-  const scene = parseFold(await golden("fold-quarter.fold"));
-  const s = renderFolded(scene, { legend: true }).toString();
-  expect(s).toContain('class="legend-panel"');
+  expect(renderFolded(scene).toString()).not.toContain('class="legend-panel"');
+  expect(renderFolded(scene, { legend: true }).toString()).not.toContain('class="legend-panel"');
 });
 
 test("folded stamps data-bel-name on named vertex dots and keeps occluded creases", async () => {
@@ -332,4 +327,69 @@ test("a requested name on two layers is written once", async () => {
   expect(s.match(/>[^<]*--ef[^<]*</g)).toEqual([">--ef<"]);
   const flat = renderFolded(scene, { step: "0", labels: [".a"] }).toString();
   expect(flat.match(/>[^<]*\.a[^<]*</g)).toEqual([">.a<"]);
+});
+
+// @orient, its three forms. Each fixture folds .a onto .c, which leaves the
+// triangle .b .c .d; the drawing is turned about the center of the
+// triangle's bounding box, which lies halfway between .b and .d.
+const dot = (svg: string, name: string): [number, number] => {
+  const m = new RegExp(`<circle cx="([-0-9.]+)" cy="([-0-9.]+)"[^>]*data-bel-name="${name}"`).exec(svg);
+  if (!m) throw new Error(`no dot for .${name}`);
+  return [Number(m[1]), Number(m[2])];
+};
+const turned = async (fixture: string, orient = true) => {
+  const scene = parseFold(await golden(fixture));
+  const svg = renderFolded(scene, { orient, hidden: "dashed" }).toString();
+  return { scene, b: dot(svg, "b"), d: dot(svg, "d") };
+};
+
+// `@orient .b down` on the flat sheet: the direction from the centroid of
+// the square to .b, 45 degrees below the x axis, turns to point down.
+test("@orient .a down turns the folded drawing so .a lies below the centroid", async () => {
+  const { scene, b, d } = await turned("orient-point.fold");
+  expect(orientationAt(scene, 1)).toBeCloseTo(-Math.PI / 4, 9);
+  expect(b[0]).toBeCloseTo(d[0], 6);
+  expect(b[1]).toBeGreaterThan(d[1]);           // SVG y grows downward
+});
+
+// `@orient .d .b right`: the direction from .d to .b turns to point right.
+test("@orient .a .b right turns the direction from .a to .b to the right", async () => {
+  const { scene, b, d } = await turned("orient-points.fold");
+  expect(orientationAt(scene, 1)).toBeCloseTo(Math.PI / 4, 9);
+  expect(b[1]).toBeCloseTo(d[1], 6);
+  expect(b[0]).toBeGreaterThan(d[0]);
+});
+
+// `@orient .d .b up` turns by 135 degrees; `@orient --bd vertical` then has
+// -45 and 135 degrees to choose from and keeps the one nearer the turn in
+// force, 135. Without the earlier @orient it would choose -45.
+test("@orient --l vertical takes the rotation nearer the orientation in force", async () => {
+  const { scene, b, d } = await turned("orient-axis.fold");
+  expect(orientationAt(scene, 0)).toBeCloseTo((3 * Math.PI) / 4, 9);
+  expect(orientationAt(scene, 1)).toBeCloseTo((3 * Math.PI) / 4, 9);
+  expect(b[0]).toBeCloseTo(d[0], 6);
+  expect(b[1]).toBeLessThan(d[1]);
+  scene.annotations.shift();
+  expect(orientationAt(scene, 1)).toBeCloseTo(-Math.PI / 4, 9);
+});
+
+test("without orient the folded drawing keeps the table's axes", async () => {
+  const { b, d } = await turned("orient-point.fold", false);
+  expect(b[0]).toBeGreaterThan(d[0]);
+  expect(b[1]).toBeGreaterThan(d[1]);
+});
+
+// A turned drawing takes its frame from the turned faces: their bounds are
+// centered on the canvas and the longer side spans the drawing area.
+test("a turned drawing sits centered and fills the canvas", async () => {
+  const scene = parseFold(await golden("orient-point.fold"));
+  const svg = renderFolded(scene, { orient: true }).toString();
+  const pts = [...svg.matchAll(/<polygon points="([^"]+)"/g)].flatMap((m) =>
+    m[1]!.split(" ").map((p) => p.split(",").map(Number) as [number, number]));
+  expect(pts.length).toBeGreaterThan(0);
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  expect((x0 + x1) / 2).toBeCloseTo(PAD + SZ / 2, 6);
+  expect((y0 + y1) / 2).toBeCloseTo(PAD + SZ / 2, 6);
+  expect(Math.max(x1 - x0, y1 - y0)).toBeCloseTo(SZ, 6);
 });

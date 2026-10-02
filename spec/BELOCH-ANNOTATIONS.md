@@ -70,7 +70,11 @@ has its own "petal tip".
   must be a single table line in the state; a crease a fold has bent is an
   error, as it is wherever a line is wanted.
 
-The orientation holds until the next `@orient`. An output turns its
+The orientation holds until the next `@orient`. It turns the drawing of
+the state its statement starts from and of every later state by one
+rotation, the one fixed on that first state. The centroid of the outline is
+the centroid of the area the folded state covers on the table, each point
+counted once however many layers lie on it. An output turns its
 drawing; the frames of the FOLD stay where the evaluator put them.
 
 ## Annotations of an output

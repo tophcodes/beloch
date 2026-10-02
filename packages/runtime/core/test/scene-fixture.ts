@@ -59,6 +59,7 @@ export function sceneOf(statements: Statement[], namedLines: NamedLine[] = []): 
     inspect: null,
     trace: [],
     writeTrace: [],
+    annotations: [],
     error: null,
   };
 }

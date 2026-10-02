@@ -184,7 +184,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     ]),
   ]));
 
-  const { frame, order, occlude } = resolveIsometry(scene, opts.isometry);
+  const { frame, order, occlude, place } = resolveIsometry(scene, opts.isometry);
   const upTo = opts.texture.upToStatement;
 
   const V = frame.vertices;
@@ -596,7 +596,7 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
     }
 
     labelAnchors.push(
-      ...appendConstructions(doc, scene, layout, theme, selection, { frame }, colorOf, opts.annotate),
+      ...appendConstructions(doc, scene, layout, theme, selection, { frame, place }, colorOf, opts.annotate),
     );
     // A picked paper edge writes its name out too. It carries no name in the
     // graph, so it is not among the creases above; where it runs in this frame

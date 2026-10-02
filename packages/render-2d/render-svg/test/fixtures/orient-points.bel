@@ -1,0 +1,3 @@
+paper square
+@orient .d .b right
+fold (map .a onto .c) as --bd

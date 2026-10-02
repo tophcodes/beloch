@@ -1,5 +1,5 @@
 import {
-  Assignment, Crease, EdgeProvenance, FoldScene, Frame, Inspect, LineCoeffs,
+  Annotation, AnnotationArg, Assignment, Crease, EdgeProvenance, FoldScene, Frame, Inspect, LineCoeffs,
   Mark, NamedLine, NamedPoint, SceneError, SourceRef, Statement, StatementKind, Step,
   Meets, Motion, Segment, SideFrom, Stage, StepNotFoundError, TraceEntry, TraceError, TraceObject, TraceSpans,
   Vec2, WriteCandidate, WriteEntry, WriteTerms,
@@ -179,6 +179,34 @@ function writeTraceFrom(fold: Record<string, unknown>): WriteEntry[] {
   });
 }
 
+function argFrom(a: Record<string, unknown>): AnnotationArg {
+  if ("point" in a) {
+    const p = a["point"] as { paper: Vec2; table: Vec2 };
+    return { kind: "point", paper: p.paper, table: p.table };
+  }
+  if ("line" in a) {
+    const l = a["line"] as { coeffs: LineCoeffs; crease_id?: number | null };
+    return { kind: "line", coeffs: l.coeffs, creaseId: l.crease_id ?? null };
+  }
+  if ("flap" in a) return { kind: "flap", faces: (a["flap"] as { faces: number[] }).faces };
+  if ("number" in a) return { kind: "number", number: a["number"] as number };
+  if ("word" in a) return { kind: "word", word: a["word"] as string };
+  return { kind: "text", text: String(a["text"] ?? "") };
+}
+
+function annotationsFrom(fold: Record<string, unknown>): Annotation[] {
+  const raw = (fold["beloch:annotations"] ?? []) as Record<string, unknown>[];
+  return raw.map((a) => ({
+    key: a["key"] as string,
+    namespace: (a["namespace"] ?? null) as string | null,
+    target: a["target"] as [number, number],
+    frameIndex: a["frame_index"] as number,
+    sourceLine: a["source_line"] as number,
+    span: String(a["span"] ?? ""),
+    args: ((a["args"] ?? []) as Record<string, unknown>[]).map(argFrom),
+  }));
+}
+
 function errorFrom(fold: Record<string, unknown>): TraceError | null {
   const e = fold["beloch:error"] as Record<string, unknown> | undefined;
   if (!e) return null;
@@ -246,6 +274,7 @@ export function parseFold(input: string | object): FoldScene {
     references, namedPoints, namedLines,
     creases: groupCreases(cp), marks: marksFrom(fold), inspect,
     trace: traceFrom(fold), writeTrace: writeTraceFrom(fold), error: errorFrom(fold),
+    annotations: annotationsFrom(fold),
   };
 }
 
