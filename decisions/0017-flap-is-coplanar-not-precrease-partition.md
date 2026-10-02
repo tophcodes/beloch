@@ -31,7 +31,7 @@ the fixed partition `subdivide` carves. A face boundary is created the moment
 **any** crease crosses a polygon (ADR 0014: creasing runs `subdivide`, which
 cuts every face the axis crosses and tags each resulting edge with the shared
 `crease_id`). Crucially, that partition is cut by *precreases* too: a bare
-`map X onto Y` bind materialises a crease bundle and subdivides, even though
+`map X onto Y` bind materializes a crease bundle and subdivides, even though
 nothing folds: the new edges are assignment `U` (unfolded), physically flat,
 coplanar with their neighbour across the edge (`lib/fold_state.ml`:
 `type assign = M | V | U`; `subdivide` emits `eassign = U`).

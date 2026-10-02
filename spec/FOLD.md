@@ -57,7 +57,7 @@ Each frame uses the FOLD vocabulary for what FOLD can express:
   "Sheets"), or `"unit"` when it declares none. It stands in frame 0, and
   every coordinate of the file is in that unit.
 
-Exact coordinates are rounded to decimal only at serialisation; the values the
+Exact coordinates are rounded to decimal only at serialization; the values the
 kernel computes stay exact (ADR 0008, 0012).
 
 ## Beloch's fields

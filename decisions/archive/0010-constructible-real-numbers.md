@@ -20,7 +20,7 @@ coefficients lie in a degree-2-or-less extension of the base field
 [hull2020, Lemma 3.9, ll. 2046–2052]. Repeated application builds a tower of
 quadratic extensions: exactly the constructible numbers.
 
-[hull2020] §3.2 Theorem 3.10 characterises the full origami number field: a
+[hull2020] §3.2 Theorem 3.10 characterizes the full origami number field: a
 number is constructible by origami (all seven axioms) if and only if it lies in a
 2-3 tower of field extensions over ℚ. The degree-2 part of that tower (the
 quadratic tower) covers Beloch axioms 1–5 completely; cube roots arise only at
@@ -43,7 +43,7 @@ Key properties:
   tower height.
 - **Equality without canonicalization.** Two values are equal iff
   `sign(x − y) = 0`. Values are not put into a canonical form
-  (e.g. `√8` and `2√2` are recognised equal only via the sign test on their
+  (e.g. `√8` and `2√2` are recognized equal only via the sign test on their
   difference, not by rewriting). This avoids the complexity of a canonical form
   while keeping equality exact.
 - **Rational fast-path.** Arithmetic on two `Rat` values stays `Rat`; the `Ext`
@@ -83,4 +83,4 @@ geometry core migrates onto this interface in v0.4.
   `Cbrt` or a polynomial-root constructor). The narrow `Num` interface is
   designed to absorb this extension without changing callers.
 - `to_float` is the only place a `float` appears in the numeric core; it is
-  output-only (serialisation to FOLD JSON), never fed back into computation.
+  output-only (serialization to FOLD JSON), never fed back into computation.

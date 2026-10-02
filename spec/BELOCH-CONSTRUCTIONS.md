@@ -45,7 +45,7 @@ The prose forms of the seven axioms are sugar for these, the
 --l through .p)`, `(map .p onto --l perp --m)`, `(map --l onto --m)`,
 `(map .p onto --l through .q)`, `(map .p onto --l and .q onto --m)`. A
 prose form means what its `align` spelling means. The axiom number names
-one alignment set, recognised by the kinds of its alignments; it appears in
+one alignment set, recognized by the kinds of its alignments; it appears in
 error messages, in provenance (`"axiom": "axiom6"` in `beloch:edges`) and
 here, and it is no type of its own. A set that is none of the seven is an
 error naming its alignments.

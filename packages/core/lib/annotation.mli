@@ -13,5 +13,5 @@ val resolve : Ctx.ctx -> Ast.annotation -> Ctx.annot_entry
 (** Reads the arguments against the current state, which is the state the
     statement after the annotation starts from. A read that fails is an error
     at the argument. The context is left as it was found: a read that
-    materialises a mark on its way, or records a reference, is undone, so
+    materializes a mark on its way, or records a reference, is undone, so
     the program evaluates to the same geometry with or without it. *)

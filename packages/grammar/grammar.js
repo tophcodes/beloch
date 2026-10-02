@@ -156,7 +156,7 @@ module.exports = grammar({
     ), ')'),
 
     // Operands inside an item stay unstructured: a run of the existing
-    // token classes plus a matched parenthesised or bracketed group,
+    // token classes plus a matched parenthesized or bracketed group,
     // excluding the head keywords and `over`: where the literal is a valid
     // token at that position, tree-sitter gives it higher lexing precedence
     // than the identical-length `identifier` regex, so `over` ends the run

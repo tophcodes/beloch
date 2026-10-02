@@ -304,7 +304,7 @@ let describe_value (v : value) : string =
   | VPoint (name, Paper) -> Printf.sprintf ".%s paper" name
 
 (* [=] : point=point / point=literal (both compared in the resolved space)
-   or line=line (normalised, exact). Mismatched kinds (point vs line) are a
+   or line=line (normalized, exact). Mismatched kinds (point vs line) are a
    harness error: the grammar never intends that combination. *)
 let values_equal (fd : Eval.folded) (v1 : value) (v2 : value) : bool =
   match (resolve_value fd v1, resolve_value fd v2) with

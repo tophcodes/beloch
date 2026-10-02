@@ -139,7 +139,7 @@ without showing it. Arithmetic as above.
 
 **Where it breaks.** Without the edge the paper is missing, and with it the
 only statement that separates the vertex from a sign for "branching". At 16
-pixels the figure is recognisable and unmistakable, but it stands in the tab
+pixels the figure is recognizable and unmistakable, but it stands in the tab
 without an area and vanishes next to favicons that have one. The direction
 needs a wordmark beside it.
 
@@ -270,7 +270,7 @@ Size and reduction
 - [x] At 16 pixels, in greyscale, distinguishable from square, circle, star
       and crosshair. Rastered directly against each other.
 - [x] At 16 pixels no dash pattern needed; the `-16` version is included.
-- [x] At 32 pixels the fold is recognisable: the vertex and four rays of
+- [x] At 32 pixels the fold is recognizable: the vertex and four rays of
       unequal length stand. Mountain and valley stand only from 48 pixels.
 - [x] At 24 pixels height next to 18 pt text it does not disturb the text,
       in the `-16` version.

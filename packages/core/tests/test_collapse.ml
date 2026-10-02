@@ -477,7 +477,7 @@ let test_intrinsic_convention_pin () =
    every face's front/back while the letters, correctly derived in the fixed
    global frame, stayed put, so the emitted geometry became the M/V mirror of
    the declared collapse. After the fix (anchor = lowest-ranked orientation-
-   PRESERVING sector) the geometry realises the declared fold: every crease's
+   PRESERVING sector) the geometry realizes the declared fold: every crease's
    intrinsic M/V equals what was declared. Checked via face orientation and
    layer relation alone. Under the pre-fix anchor this check fails on
    all 8 creases. *)
@@ -539,7 +539,7 @@ let collapse_letters valleys ~flip =
    new kernel's [intent] (CP-frame, = old eintent/eassign, matches the old
    model bit-for-bit, see [test_eassign_parity] above) DOES still flip this
    way, but the DERIVED [Fold_state.mv] does not: [mv] reads only the
-   constructed hinge's rank + [face_up], an invariant of the realised
+   constructed hinge's rank + [face_up], an invariant of the realized
    physical fold: the same "old per-ray parity term belongs to [intent], not
    to the physically-derived letter" finding as [test_eassign_parity], just
    exercised through a prior [flip] instead of a prior [subdivide]. (Compare
