@@ -9,9 +9,11 @@ tableOfContents:
 An annotation tells a reader of the program something the geometry does not
 contain: which folds a diagram shows as one step, the sentence that tells
 the folder what to do, the name a reader knows a corner by, how the model is
-turned on the page. It never changes the geometry. A program with its
-annotations removed evaluates to the same FOLD without the annotations, and
-the evaluator passes them into the FOLD unchanged (ADR 0029).
+turned on the page, who wrote the program and whose model it folds. It never
+changes the geometry. A program with its annotations removed evaluates to the
+same FOLD without the annotations and without the `file_author` that
+`@author` fills, and the evaluator passes them into the FOLD unchanged
+(ADR 0029).
 
 An annotation is one line. It starts with `@`, and the end of the line ends
 it; a `;` comment may follow on the same line. `WORD` is a name without a
@@ -26,6 +28,15 @@ state, and one after the last statement of a body to the state that
 execution of the body leaves. `call`, `orient` and the annotations of an
 output may stand there; `step`, `label` and `say` name a statement, and
 one with no statement after it is an error.
+
+Three keys belong to the program as a whole: `author`, `design` and
+`source` (ADR 0051). They stand at the top level before the first
+statement, either at the head of the file, before `unit`, the shapes and
+`paper`, or after `paper`. `author` and `design` stand once each, and
+`source` once per sequence the program follows. One in a `def` body, one
+after the first statement, and a second `author` or `design` are errors
+that name the key. A library file of shapes, such as the standard library,
+carries them at its head.
 
 A value is any read the language has: a name, a selector such as `#[.c]` or
 `--a \ .b`, a meet, a construction. It is evaluated against the state the
@@ -45,6 +56,9 @@ key is an error, and so are arguments that do not fit the key.
 | `say` | `TEXT` | the instruction sentence for the following statement |
 | `call` | `value TEXT` | the name a reader knows the entity by |
 | `orient` | `value [value] direction`, or `value axis` | how the model is turned on the page |
+| `author` | `TEXT` | who wrote the program |
+| `design` | `traditional`, or `TEXT` | who designed the model the program folds: the word `traditional` for a model with no known designer, or the designer's name |
+| `source` | `TEXT` | a published sequence the program follows |
 
 **`step`.** A step group runs from the statement after `@step` to the next
 `@step` in the order the statements execute, or to the end of the program.
@@ -82,6 +96,15 @@ the centroid of the area the folded state covers on the table, each point
 counted once however many layers lie on it. An output turns its
 drawing; the frames of the FOLD stay where the evaluator put them.
 
+**`author`, `design`, `source`.** The kernel checks their arguments and
+their place, and asks for none of them. The Beloch repository has a rule of
+its own: every `.bel` file in it states `author`, every program in
+`examples/` states `design` and a `source`, and a source cites in the
+bracket form of the repository, `@source "[ida2020, Fig. 7.19]"`, with each
+cite key an entry of `bibliography/references.bib`. Its `check` enforces
+the rule. `author` fills FOLD's `file_author`, and all three reach
+`beloch:annotations` with the target `"program"` (`FOLD.md`).
+
 ## Annotations of an output
 
 A key with a namespace, `@yr:hold .a`, belongs to the output library that
@@ -91,6 +114,9 @@ A bare word is not an argument here, because only the key could say what
 it means; an output that wants a keyword takes text, `@yr:arrow "push"`.
 
 ```beloch
+@author "Claude (Anthropic)"
+@design traditional
+@source "[ida2020, Fig. 7.19]"
 paper square
 
 @step "Fold the square in half along the diagonal."

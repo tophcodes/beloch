@@ -445,7 +445,7 @@ it found them.
 
 A test in `packages/core/tests/test_annotation.ml` replaces every annotation
 of a program with spaces, which keeps every source span, and compares the two
-FOLD documents without `beloch:annotations`.
+FOLD documents without `beloch:annotations` and `file_author`.
 
 ## Violations
 

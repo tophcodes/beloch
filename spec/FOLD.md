@@ -65,6 +65,8 @@ Each frame uses the FOLD vocabulary for what FOLD can express:
   face's normal. Pairs that do not overlap are absent, as in the model.
 - `frame_classes`, `frame_parent`, `frame_inherit`: FOLD's frame bookkeeping;
   every folded frame is a child of frame 0 without inheritance.
+- `file_author`: the text of the program's `@author` annotation
+  (`BELOCH-ANNOTATIONS.md`), absent when the program has none.
 - `frame_unit`: the unit the program's file declares (`BELOCH.md`,
   "Sheets"), or `"unit"` when it declares none. It stands in frame 0, and
   every coordinate of the file is in that unit.
@@ -115,14 +117,17 @@ What the language knows about a state and FOLD cannot say:
   the statement after the annotation, except for `step`, whose target runs
   to the entry before the next `step` or to the last entry. An annotation
   after the last statement of the program or of a `def` body belongs to a
-  state, and its target is null; `frame_index` names that state. `args` holds the
+  state, and its target is null; `frame_index` names that state. The keys
+  `author`, `design` and `source` belong to the program as a whole
+  (ADR 0051), and their target is the string `"program"`; their
+  `frame_index` is 0. `args` holds the
   arguments in order, each an object with its `span` and one of `text`,
   `number`, `word`, `point` (with `paper` and `table` coordinates), `line`
   (with the table line's `coeffs` and the `crease_id` when the argument
   names a crease) or `flap` (with its `faces`, indices into the faces of the
   frame `frame_index`, the frame the arguments were read against). A reader
-  that removes this field has the FOLD of the same program without its
-  annotations.
+  that removes this field and `file_author` has the FOLD of the same program
+  without its annotations.
 - `beloch:named_points[].statement` and `beloch:named_lines[].statement`: the
   statement that binds the name, as an index into `beloch:statements`. The
   `step` beside it counts frames and cannot separate two names bound between
