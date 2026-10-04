@@ -1,0 +1,18 @@
+@author "Claude (Anthropic)"
+
+; After two folds in the same direction every layer lies beside --q, the
+; strips of the square stacked from the bottom: [0, 1/4], [3/4, 1],
+; [1/2, 3/4], [1/4, 1/2]. The layer of .b is the second from the bottom.
+; unfold turns it over --q with the two layers above it: the hinge on --q
+; at x = 1/4 of the paper opens, and the one at x = 3/4 stays folded among
+; the moving layers.
+paper square
+fold (map .b onto .a) as --d
+.m = --d * --ab
+fold (map .m onto .a) as --q
+unfold (--q) (moving .b)
+
+; assert .a = (0, 0)
+; assert .b = (1/2, 0)
+; assert .m = (1/2, 0)
+; assert steps = 3

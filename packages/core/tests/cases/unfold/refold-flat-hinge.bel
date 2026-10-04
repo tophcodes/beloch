@@ -1,0 +1,11 @@
+@author "Claude (Anthropic)"
+
+; After the unfold the hinge on --d lies flat and the paper lies on both
+; sides of it. A fold along it folds the hinge again.
+paper square
+fold (map .b onto .a) as --d
+unfold (--d) (moving .b)
+fold (--d) (moving .b)
+
+; assert .b = .a
+; assert steps = 3

@@ -159,6 +159,14 @@ let stmt_shape (s : Ast.stmt) : string =
              ^ fastr f)
            fs.Ast.place)
         (sidestr fs.Ast.toward None)
+  | Ast.Unfold (lo, fs, _) ->
+      Printf.sprintf "unfold %s moving=%s upto=%s dir=%s%s" (lstr lo)
+        (optstr fastr fs.Ast.moving)
+        (optstr fastr fs.Ast.up_to)
+        (match fs.Ast.direction with
+        | Ast.Mountain -> "mountain"
+        | Ast.Valley -> "valley")
+        (sidestr fs.Ast.toward None)
   | Ast.Reverse (out, m, rs, _) ->
       Printf.sprintf "reverse %s %s moving=%s outside=%b%s" (outstr out) (mstr m)
         (optstr fastr rs.Ast.rmoving)

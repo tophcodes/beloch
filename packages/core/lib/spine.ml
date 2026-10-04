@@ -15,6 +15,7 @@ let span_of_stmt : Ast.stmt -> Error.span = function
   | Ast.Mark (_, _, _, _, _, _, sp)
   | Ast.Fold (_, _, _, sp)
   | Ast.Reverse (_, _, _, sp)
+  | Ast.Unfold (_, _, sp)
   | Ast.BindBundle (_, _, sp)
   | Ast.Point (_, _, sp)
   | Ast.Flip sp

@@ -189,6 +189,9 @@ type raw_item =
   | RiConstruction of construction * Error.span
   | RiLine of line_operand * mv_constraint * Error.span
   | RiMoving of flap_arg * Error.span
+  | RiMovingDir of flap_arg * bool * Error.span
+      (* (moving <flap> up|down): true for up; the direction of the moving
+         set of `unfold` (ADR 0053) *)
   | RiUpTo of flap_arg * Error.span
   | RiLetter of mv_constraint * Error.span     (* (mountain) / (valley) *)
   | RiPlace of place_dir * flap_arg * Error.span
@@ -238,6 +241,11 @@ type stmt =
   | Reverse of output * markable * reverse_spec * Error.span
       (* reverse (<construction>|(--l)) [(moving …)][(outside)]: inside/outside
          reverse fold of the tip beyond the line *)
+  | Unfold of line_operand * fold_spec * Error.span
+      (* unfold (--l) [(moving … [up|down])][(up to …)][(toward …)]: the
+         selected layers turn across the line, opening the folded hinges on
+         it between them and the layers that stay (ADR 0053); [place] is
+         always [None] *)
   | BindBundle of string * line_operand * Error.span
       (* --x = <bundle expr>: name a crease bundle (union/filter of existing
          creases). Resolves lazily as its expression; slots coerce to one. *)

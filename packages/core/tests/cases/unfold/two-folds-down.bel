@@ -1,0 +1,14 @@
+@author "Claude (Anthropic)"
+
+; The two folds of two-folds.bel, and the layer of .b turned over --q the
+; other way: with down the layer below it turns along, and both hinges on
+; --q open.
+paper square
+fold (map .b onto .a) as --d
+.m = --d * --ab
+fold (map .m onto .a) as --q
+unfold (--q) (moving .b down)
+
+; assert .a = (1/2, 0)
+; assert .b = (1/2, 0)
+; assert .m = (0, 0)

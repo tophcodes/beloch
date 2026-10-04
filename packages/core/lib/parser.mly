@@ -88,7 +88,7 @@ let toward_inside (span : Error.span) : 'a =
 
 %token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD MOVING MOUNTAIN VALLEY FLIP RPAREN AND UP TO FOLD_KW
 %token DEF APPLY EXPORT AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
-%token FLATTEN OVER STAYING MARK BETWEEN AT UNDER REVERSE OUTSIDE
+%token FLATTEN OVER STAYING MARK BETWEEN AT UNDER REVERSE OUTSIDE UNFOLD DOWN
 %token FREE ON FROM ALIGN HEADING INTO
 %token BY SHAPE TRIM UNIT
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN  (* --[ / .[ : the line/point select openers *)
@@ -207,6 +207,7 @@ annot_arg:
   | NUMBER                           { { av = AvNumber $1; av_span = $loc } }
   | IDENT                            { { av = AvWord $1; av_span = $loc } }
   | UP                               { { av = AvWord "up"; av_span = $loc } }
+  | DOWN                             { { av = AvWord "down"; av_span = $loc } }
 
 body_stmt:
   (* value binding: pure geometry, no material *)
@@ -216,7 +217,7 @@ body_stmt:
      parentheses of the construction form are the construction's, not the
      binding's. *)
   | CREASE EQ line_operand                    { BindBundle ($1, $3, $loc) }
-  (* the five writes: a verb, its items in any order, its output clause.
+  (* the six writes: a verb, its items in any order, its output clause.
      Every verb takes the union of item bodies and Items classifies the list
      against the verb, so a head the verb does not take is reported by name
      at its own span. `flip items` for the same reason: `flip (moving .a)`
@@ -224,6 +225,7 @@ body_stmt:
   | MARK    items output { Items.mark    $2 $3 $loc }
   | FOLD_KW items output { Items.fold    $2 $3 $loc }
   | REVERSE items output { Items.reverse $2 $3 $loc }
+  | UNFOLD  items output { Items.unfold  $2 $3 $loc }
   | FLATTEN items output { Items.flatten $2 $3 $loc }
   | FLIP    items output { Items.flip    $2 $3 $loc }
   | POINT EQ point_expr  { Point ($1, $3, $loc) }
@@ -255,6 +257,8 @@ item_body:
   | construction_body                   { Ast.RiConstruction ($1, $loc) }
   | line_operand mv_opt                 { Ast.RiLine ($1, $2, $loc) }
   | MOVING flap_arg                     { Ast.RiMoving ($2, $loc) }
+  | MOVING flap_arg UP                  { Ast.RiMovingDir ($2, true, $loc) }
+  | MOVING flap_arg DOWN                { Ast.RiMovingDir ($2, false, $loc) }
   | UP TO flap_arg                      { Ast.RiUpTo ($3, $loc) }
   | MOUNTAIN                            { Ast.RiLetter (MvMountain, $loc) }
   | VALLEY                              { Ast.RiLetter (MvValley, $loc) }

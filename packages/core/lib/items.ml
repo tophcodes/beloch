@@ -17,7 +17,7 @@ let head_of (it : raw_item) : string =
   match it with
   | RiConstruction _ -> "construction"
   | RiLine _ -> "axis"
-  | RiMoving _ -> "moving"
+  | RiMoving _ | RiMovingDir _ -> "moving"
   | RiUpTo _ -> "up to"
   | RiLetter (MvMountain, _) -> "mountain"
   | RiLetter (_, _) -> "valley"
@@ -36,6 +36,7 @@ let span_of (it : raw_item) : Error.span =
   | RiConstruction (_, sp)
   | RiLine (_, _, sp)
   | RiMoving (_, sp)
+  | RiMovingDir (_, _, sp)
   | RiUpTo (_, sp)
   | RiLetter (_, sp)
   | RiPlace (_, _, sp)
@@ -94,6 +95,11 @@ let side_item (verb : string) ~(toward : (toward_item * Error.span) option ref)
   | RiMoving (fa, sp) ->
       slot verb "moving" moving sp (fa, sp);
       true
+  | RiMovingDir (_, up, sp) ->
+      Error.fail ~hint:"drop it; a fold places its layers with (mountain)" sp
+        (Printf.sprintf
+           "%s takes no direction on moving: `%s` selects the layers of unfold"
+           verb (if up then "up" else "down"))
   | _ -> false
 
 (* the side items a verb collected, apart from where they stand *)
@@ -101,7 +107,7 @@ let sides_of toward moving : sides =
   { s_toward = Option.map fst !toward; s_moving = Option.map fst !moving;
     s_spans = { toward_span = Option.map snd !toward; moving_span = Option.map snd !moving } }
 
-(* ---- the five verbs, and the binding of a construction ---- *)
+(* ---- the six verbs, and the binding of a construction ---- *)
 
 let bind (name : string) (c : construction) (items : raw_item list)
     (span : Error.span) : stmt =
@@ -195,6 +201,55 @@ let reverse (items : raw_item list) (out : output) (span : Error.span) : stmt =
       (let sd = sides_of toward moving in
        { rmoving = sd.s_moving; rtoward = sd.s_toward; outside = !outside <> None;
          rletters = List.rev !letters; rspans = sd.s_spans }),
+      span )
+
+(* `unfold` opens hinges that are already there (ADR 0053): its axis is a line
+   the program has, and it scores no crease, so it takes no construction and
+   no output clause. Its items are those of `fold` without a placement beside
+   the stack. *)
+let unfold (items : raw_item list) (out : output) (span : Error.span) : stmt =
+  let verb = "unfold" in
+  let axis = ref None and moving = ref None and toward = ref None
+  and up_to = ref None and down = ref false in
+  List.iter
+    (fun it ->
+      match it with
+      | RiConstruction (_, sp) ->
+          Error.fail ~hint:"name the crease the hinges lie on" sp
+            "unfold opens hinges on a crease the program already has; it takes \
+             a crease, not a construction"
+      | RiMovingDir (fa, up, sp) ->
+          slot verb "moving" moving sp (fa, sp);
+          if not up then down := true
+      | RiLetter (MvMountain, sp) ->
+          Error.fail ~hint:"write (moving .p down) to turn the layers below .p with it" sp
+            "unfold takes no (mountain): the direction of its layers goes on \
+             moving, as (moving … down)"
+      | _ ->
+          if not (axis_item verb axis it || side_item verb ~toward ~moving it) then
+            match it with
+            | RiUpTo (fa, sp) -> slot verb "up to" up_to sp (fa, sp)
+            | it -> refuse verb it)
+    items;
+  (match out with
+  | Anonymous -> ()
+  | Named (_, _, sp) | Into (_, sp) ->
+      Error.fail sp "unfold scores no crease, so it takes no as or into");
+  let lo =
+    match need_axis verb axis span with
+    | MLine lo -> lo
+    | MConstruction _ -> assert false
+  in
+  Unfold
+    ( lo,
+      {
+        moving = Option.map fst !moving;
+        toward = Option.map fst !toward;
+        spans = (sides_of toward moving).s_spans;
+        up_to = Option.map fst !up_to;
+        direction = (if !down then Mountain else Valley);
+        place = None;
+      },
       span )
 
 let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =

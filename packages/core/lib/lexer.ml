@@ -85,10 +85,12 @@ and program_token (buf : Sedlexing.lexbuf) : token =
   | "mountain" -> MOUNTAIN
   | "valley" -> VALLEY
   | "up" -> UP
+  | "down" -> DOWN
   | "to" -> TO
   | "fold" -> FOLD_KW
   | "flip" -> FLIP
   | "reverse" -> REVERSE
+  | "unfold" -> UNFOLD
   | "outside" -> OUTSIDE
   | "def" -> DEF
   | "apply" -> APPLY

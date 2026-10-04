@@ -105,6 +105,38 @@
             "members": [
               {
                 "type": "STRING",
+                "value": "unfold"
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_axis_item"
+                }
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "output_clause"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "PREC_RIGHT",
+          "value": 0,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
                 "value": "reverse"
               },
               {
@@ -436,6 +468,27 @@
           {
             "type": "SYMBOL",
             "name": "_operand"
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": "up"
+                  },
+                  {
+                    "type": "STRING",
+                    "value": "down"
+                  }
+                ]
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
           },
           {
             "type": "STRING",
@@ -1289,6 +1342,10 @@
         {
           "type": "STRING",
           "value": "up"
+        },
+        {
+          "type": "STRING",
+          "value": "down"
         },
         {
           "type": "STRING",
