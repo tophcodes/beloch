@@ -79,9 +79,9 @@ test("the parts are numbered 1 to n in the order of the paper along the cut, and
 test.each([1, 2, 3])("no two turns of state %i cross or touch, unless one wraps the other", async (n) => {
   const svg = renderSide(await fixture(n), { along: "s" }).toString();
   // the box of each turn: from its hinge out by its radius, between its levels
-  const boxes = [...svg.matchAll(/data-kind="turn" data-out="(-?1)" d="M ([\d.]+) ([\d.]+) A ([\d.]+) [\d.]+ 0 0 \d [\d.]+ ([\d.]+)"/g)]
+  const boxes = [...svg.matchAll(/data-kind="turn" data-out="(-?1)" data-x="([\d.]+)" data-r="([\d.]+)" data-y0="([\d.]+)" data-y1="([\d.]+)"/g)]
     .map((m) => {
-      const [out, x, y0, r, y1] = [1, 2, 3, 4, 5].map((k) => Number(m[k]));
+      const [out, x, r, y0, y1] = [1, 2, 3, 4, 5].map((k) => Number(m[k]));
       return { x: out! > 0 ? [x!, x! + r!] : [x! - r!, x!], y: [Math.min(y0!, y1!), Math.max(y0!, y1!)] };
     });
   expect(boxes.length).toBe(6);
@@ -139,7 +139,9 @@ test("the folded state beside the section carries the cut", async () => {
   // the folded state is the first panel, left of the crease pattern
   const W = sceneLayout(scene).W;
   expect(Math.max(Number(cut![1]), Number(cut![2]))).toBeLessThan(W);
-  expect(svg).toContain(`width="${2 * W + 572}"`);
+  // the section beside it is at least 572 px wide, wider where turns bulge
+  // out past the ends of the line
+  expect(Number(svg.match(/^<svg[^>]* width="([\d.]+)"/)![1])).toBeGreaterThanOrEqual(2 * W + 572);
 });
 
 // The half-folded sheet reversed (#119), cut along its top edge:
@@ -289,7 +291,8 @@ test("the numbers of one level stand apart where two faces of the crease pattern
   const numbers = [...svg.matchAll(/data-kind="layer-name" data-name="(\d+)" x="([\d.]+)"/g)]
     .map((m) => ({ name: m[1]!, x: Number(m[2]) })).sort((m, n) => m.x - n.x);
   expect(numbers.map((m) => m.name)).toEqual(["1", "2", "3"]);
-  // the part between the marks is narrower than its number
+  // the part between the marks, 1/64 of the line, is narrower than its
+  // number, since the drawing keeps the proportions of the paper
   const lines = drawn(svg, 0).lines;
   expect(lines[1]!.x2 - lines[1]!.x1).toBeLessThan(8);
   // each number starts past the end of the one before it, at 8 px a digit
@@ -313,3 +316,42 @@ test("a line along a crease draws each layer once", async () => {
   expect(strips.map((s) => s.level).sort()).toEqual([0, 1]);
   expect(turns.length).toBe(1);
 });
+
+// A sheet folded in half along a crease the program names, then in half
+// again along one it does not name, cut across both:
+//
+//   paper square
+//   fold (map .b onto .a) as --d
+//   .m = --d * --ab
+//   fold (map .m onto .a)
+//   .e = free on --da from .a at 1/2
+//   --k = (perp --da through .e)
+test("a turn on a crease the program names carries that name, and a turn on an unnamed crease none", async () => {
+  const scene = parseFold(await Bun.file(new URL("./fixtures/side-named.fold", import.meta.url)).text());
+  const { turns } = sideSection(scene, "k");
+  // one turn on --d, two on the unnamed second crease
+  expect(turns.map((u) => u.crease).sort()).toEqual(["d", null, null]);
+  const svg = renderSide(scene, { along: "k" }).toString();
+  expect([...svg.matchAll(/data-kind="crease-name" data-name="([^"]+)"/g)].map((m) => m[1])).toEqual(["--d"]);
+});
+
+test.each(["side-preliminary-1", "side-preliminary-2", "side-preliminary-3", "side-reverse", "side-cupboard", "side-named"])(
+  "no strip of %s reaches into a turn", async (name) => {
+    const scene = parseFold(await Bun.file(new URL(`./fixtures/${name}.fold`, import.meta.url)).text());
+    const svg = renderSide(scene, { along: (scene.namedLines.find((l) => l.name === "s") ? "s" : "k") }).toString();
+    // each turn a half circle of radius data-r from data-x, between y0 and y1
+    const turns = [...svg.matchAll(/data-kind="turn" data-out="(-?1)" data-x="([\d.]+)" data-r="([\d.]+)" data-y0="([\d.]+)" data-y1="([\d.]+)"/g)]
+      .map((m) => [1, 2, 3, 4, 5].map((k) => Number(m[k])) as [number, number, number, number, number]);
+    expect(turns.length).toBeGreaterThan(0);
+    const lines = [...svg.matchAll(/data-kind="layer" data-name="\d+" data-level="\d+" x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)"/g)]
+      .map((m) => ({ x: [Number(m[1]), Number(m[3])].sort((p, q) => p - q), y: Number(m[2]) }));
+    // a strip at a level strictly between the ends of a turn shares no width
+    // with the inside of the turn at that level
+    for (const [out, x, r, y0, y1] of turns) for (const l of lines) {
+      const [mid, h] = [(y0 + y1) / 2, Math.abs(y1 - y0) / 2];
+      if (Math.abs(l.y - mid) >= h - 1e-6) continue;
+      const reach = x + out * r * Math.sqrt(1 - ((l.y - mid) / h) ** 2);
+      const [a, b] = [Math.min(x, reach), Math.max(x, reach)];
+      expect(Math.min(l.x[1]!, b) - Math.max(l.x[0]!, a)).toBeLessThanOrEqual(1e-6);
+    }
+  });

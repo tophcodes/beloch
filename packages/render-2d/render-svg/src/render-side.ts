@@ -12,8 +12,8 @@
 // the pattern with every crease the program makes, and the parts are numbered
 // by their order on the paper along the cut. Two programs that leave the same
 // paper under the cut number it alike, whatever order they score their
-// creases in. Hinges carry no names; the numbers of the strips they join
-// identify them.
+// creases in. A folded hinge on a crease the program names carries that
+// name at its turn; other hinges carry none.
 import type { FoldScene, Vec2 } from "@beloch/scene";
 import { pickStep, SceneError } from "@beloch/scene";
 import { createDoc, el, SvgDoc } from "./svgdoc";
@@ -44,6 +44,12 @@ const APART = 4;
 // the width of one digit of a strip's number, and the room left between two
 // numbers on one level
 const DIGIT = 8, NUMBER_GAP = 4;
+// the least pitch of the layers, to which they move closer where half
+// circles would cross, and how many times its width the section may grow to
+// beyond that
+const MIN_PITCH = 22, MAX_WIDEN = 3;
+// the width of one character of a crease's name beside a turn, and its height
+const CHAR = 7, NAME_H = 14;
 
 // The stretch of a piece that lies in one face of the crease pattern. `name`
 // is its number in the order of the paper along the cut, counted from 1.
@@ -53,7 +59,9 @@ export interface Piece { face: number; t0: number; t1: number; paper: [Vec2, Vec
 // Pieces that continue each other flat: one horizontal run in the drawing.
 export interface Strip { pieces: Piece[]; t0: number; t1: number; level: number }
 // A folded hinge on the line: two strips turn into each other at `t`.
-export interface Turn { t: number; strips: [number, number]; out: 1 | -1 }
+// `crease` is the name the program gives the crease of the hinge, without
+// `--`, or null where it gives none.
+export interface Turn { t: number; strips: [number, number]; out: 1 | -1; crease: string | null }
 
 // A named point of the state drawn that lies on the line, at `t` along it.
 // Every layer the line crosses there holds one paper point at that place;
@@ -158,14 +166,16 @@ export function sideSection(scene: FoldScene, along: string, stepLabel?: string,
   const endsAt = (p: Piece, t: number) => Math.abs(p.t0 - t) < EPS || Math.abs(p.t1 - t) < EPS;
   const away = (p: Piece, t: number): 1 | -1 => (Math.abs(p.t0 - t) < EPS ? 1 : -1);
   const edges = pieces.map((p) => edgesOf(p.face));
-  const hinges: { p: number; q: number; t: number; folded: boolean }[] = [];
+  const hinges: { p: number; q: number; t: number; folded: boolean; edge: string }[] = [];
   pieces.forEach((p, i) => pieces.forEach((q, j) => {
     if (j <= i) return;
-    const t = [...edges[i]!].filter(([k]) => edges[j]!.has(k))
-      .map(([, e]) => crossing(e))
-      .find((s) => s !== undefined && endsAt(p, s) && endsAt(q, s));
-    if (t !== undefined) hinges.push({ p: i, q: j, t, folded: away(p, t) === away(q, t) });
+    const hit = [...edges[i]!].filter(([k]) => edges[j]!.has(k))
+      .map(([k, e]) => ({ k, t: crossing(e) }))
+      .find(({ t: s }) => s !== undefined && endsAt(p, s) && endsAt(q, s));
+    if (hit) hinges.push({ p: i, q: j, t: hit.t!, folded: away(p, hit.t!) === away(q, hit.t!), edge: hit.k });
   }));
+  // the name of the crease each edge of the frame lies on, where it has one
+  const creaseOf = new Map(frame.edgesVertices.map(([i, j], e) => [edgeKey(i, j), frame.edgesProvenance[e]?.name ?? null]));
 
   // strips: the pieces joined by flat hinges
   const parent = pieces.map((_, i) => i);
@@ -179,7 +189,10 @@ export function sideSection(scene: FoldScene, along: string, stepLabel?: string,
   pieces.forEach((p, i) => { p.strip = roots.indexOf(find(i)); });
   const turns: Turn[] = hinges.filter((h) => h.folded).map((h) => {
     const p = pieces[h.p]!;
-    return { t: h.t, strips: [p.strip, pieces[h.q]!.strip], out: away(p, h.t) === 1 ? -1 : 1 };
+    return {
+      t: h.t, strips: [p.strip, pieces[h.q]!.strip], out: away(p, h.t) === 1 ? -1 : 1,
+      crease: creaseOf.get(h.edge) ?? null,
+    };
   });
 
   // The parts numbered in the order of the paper along the cut. Parts that
@@ -274,54 +287,124 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
   const theme: Theme = { ...DEFAULT_THEME, ...opts.theme };
   const color = (name: number) => theme.highlightPalette[(name - 1) % theme.highlightPalette.length]!.stroke;
   const halo = { stroke: theme.background, "stroke-width": 4, "paint-order": "stroke" };
-  const y = (level: number) => PAD + level * GAP;
-  const radius = (u: Turn) => Math.abs(strips[u.strips[0]]!.level - strips[u.strips[1]]!.level) * GAP / 2;
-
-  // where turns meet from both sides at one place, the drawing opens a gap
-  // there wide enough for both, and a strip running through it stretches
-  const tMin = Math.min(...strips.map((s) => s.t0)), tMax = Math.max(...strips.map((s) => s.t1));
-  const widen = new Map<number, number>();
+  // A turn is a half circle on the place of its hinge along the line, from
+  // the end of one strip to the end of the other, bulging out past them; its
+  // radius is half the height between the two. Turns at one place that open to
+  // one side nest inside each other.
+  const span = (u: Turn) => {
+    const [l0, l1] = [strips[u.strips[0]]!.level, strips[u.strips[1]]!.level];
+    return [Math.min(l0, l1), Math.max(l0, l1)] as const;
+  };
+  // the crease names of the turns at one place on one side, one per crease,
+  // and the room they take
+  const namesAt = (us: Turn[]) => [...new Set(us.map((v) => v.crease).filter((c): c is string => c !== null))];
+  const nameW = (c: string) => (c.length + 2) * CHAR;
+  const named = (us: Turn[]) => Math.max(0, ...namesAt(us).map((c) => nameW(c) + 4));
+  type Group = { t: number; o: 1 | -1; us: Turn[] };
+  const groups: Group[] = [];
   for (const u of turns) {
-    const both = turns.filter((v) => Math.abs(v.t - u.t) < EPS);
-    if (both.some((v) => v.out === 1) && both.some((v) => v.out === -1)) {
-      const reach = (o: 1 | -1) => Math.max(0, ...both.filter((v) => v.out === o).map(radius));
-      widen.set(u.t, reach(1) + reach(-1) + SPLIT);
-    }
+    const g = groups.find((h) => Math.abs(h.t - u.t) < EPS && h.o === u.out);
+    if (g) g.us.push(u);
+    else groups.push({ t: u.t, o: u.out, us: [u] });
   }
-  const gaps = [...widen.entries()].sort(([s], [t]) => s - t);
-  const outer = (o: 1 | -1) => Math.max(0, ...turns.filter((u) => u.out === o && !widen.has(u.t)).map(radius));
-  const left = PAD + outer(-1), right = PAD + outer(1);
-  const room = SIDE_W - left - right - gaps.reduce((w, [, g]) => w + g, 0);
-  const scale = room / (tMax - tMin || 1);
-  // x of a place along the line; at a gap, the side a strip's material lies on
-  const x = (t: number, side: 1 | -1 = 1) =>
-    left + (t - tMin) * scale + gaps.reduce((w, [g, width]) =>
-      w + (g < t - EPS || (Math.abs(g - t) < EPS && side === 1) ? width : 0), 0);
+  const groupAt = (t: number, o: 1 | -1) => groups.find((g) => Math.abs(g.t - t) < EPS && g.o === o)!;
+  const tMin = Math.min(...strips.map((s) => s.t0)), tMax = Math.max(...strips.map((s) => s.t1));
+
+  // The layout for one pitch of the layers. Along the line the section keeps
+  // the proportions of the paper: one scale for the whole line, and the
+  // section grows wider for the turns that bulge out past its ends, so places that lie above one
+  // another in the folded state lie above one another in the section. Where
+  // turns open to both sides of one place, the half circles of one side would
+  // cover the strips that end there from the other side at every pitch and
+  // width; there alone the drawing opens a gap wide enough for both, and the
+  // strips that run on through the place stretch across it.
+  const twoSided = [...new Set(groups.filter((g) => g.o === 1 && groupAt(g.t, -1)).map((g) => g.t))].sort((m, n) => m - n);
+  const layout = (pitch: number, widen = 1) => {
+    const radius = (u: Turn) => (span(u)[1] - span(u)[0]) * pitch / 2;
+    const reach = (g: Group | undefined) => g ? Math.max(...g.us.map(radius)) + named(g.us) : 0;
+    const gaps = twoSided.map((t) => [t, reach(groupAt(t, 1)) + reach(groupAt(t, -1)) + SPLIT] as const);
+    const open = (g: Group) => !twoSided.some((t) => Math.abs(t - g.t) < EPS);
+    // the line itself takes the default width less the margins, stretched by
+    // `widen`; the margins, the gaps and the turns past the ends come on top
+    const scale = widen * (SIDE_W - 2 * PAD) / (tMax - tMin || 1);
+    const left = PAD + Math.max(0, ...groups.filter((g) => g.o === -1 && open(g)).map((g) => reach(g) - (g.t - tMin) * scale));
+    const right = PAD + Math.max(0, ...groups.filter((g) => g.o === 1 && open(g)).map((g) => reach(g) - (tMax - g.t) * scale));
+    const width = left + right + (tMax - tMin) * scale + gaps.reduce((w, [, d]) => w + d, 0);
+    // x of a place along the line; at a gap, on the side a strip's material
+    // lies on
+    const X = (t: number, side: 1 | -1 = 1) => left + (t - tMin) * scale + gaps.reduce((w, [g, d]) =>
+      w + (g < t - EPS || (Math.abs(g - t) < EPS && side === 1) ? d : 0), 0);
+    // the place the turns of a group stand on: the end of the strips they join
+    const foot = (g: Group) => X(g.t, (-g.o) as 1 | -1);
+    return { pitch, width, radius, X, foot, y: (level: number) => PAD + level * pitch };
+  };
+  // Whether a turn of this layout crosses a strip or the turn of another
+  // place: a strip at a level strictly between the ends of a turn must stay
+  // out of its half circle, and two half circles must not cut each other.
+  const crosses = ({ radius, X, foot, y }: ReturnType<typeof layout>) => {
+    const circles = turns.map((u) => {
+      const [lo, hi] = span(u);
+      return { u, o: u.out, cx: foot(groupAt(u.t, u.out)), cy: (y(lo) + y(hi)) / 2, r: radius(u), lo, hi };
+    });
+    for (const c of circles) {
+      for (const s of strips) {
+        if (s.level <= c.lo || s.level >= c.hi) continue;
+        const d = y(s.level) - c.cy;
+        const ext = Math.sqrt(Math.max(0, c.r * c.r - d * d));
+        const [a0, a1] = c.o === 1 ? [c.cx, c.cx + ext] : [c.cx - ext, c.cx];
+        if (Math.min(X(s.t1, -1), a1) - Math.max(X(s.t0, 1), a0) > 1) return true;
+      }
+      for (const e of circles) {
+        if (e === c || Math.abs(e.u.t - c.u.t) < EPS) continue;
+        const dd = Math.hypot(e.cx - c.cx, e.cy - c.cy);
+        if (dd >= c.r + e.r || dd <= Math.abs(c.r - e.r) || dd < 1e-9) continue;
+        // the two points where the circles meet, each on both half circles?
+        const k = (c.r * c.r - e.r * e.r + dd * dd) / (2 * dd);
+        const h = Math.sqrt(Math.max(0, c.r * c.r - k * k));
+        const [ux, uy] = [(e.cx - c.cx) / dd, (e.cy - c.cy) / dd];
+        for (const sgn of [1, -1]) {
+          const [px, py] = [c.cx + k * ux - sgn * h * uy, c.cy + k * uy + sgn * h * ux];
+          if (c.o * (px - c.cx) > 1 && e.o * (px - e.cx) > 1) return true;
+        }
+      }
+    }
+    return false;
+  };
+  // Where the half circles at the default pitch would cross, the layers move
+  // closer together, which makes every half circle smaller, down to a pitch of
+  // MIN_PITCH, the least that still holds a strip's number between two layers.
+  // Where they cross even there, the whole line grows longer at one scale,
+  // by a tenth at a time up to MAX_WIDEN times its length, which moves places
+  // apart and leaves the half circles as they are. Past that the half circles
+  // are drawn crossing.
+  let fit = layout(GAP);
+  for (let p = GAP - 2; p >= MIN_PITCH && crosses(fit); p -= 2) fit = layout(p);
+  for (let w = 1.1; w <= MAX_WIDEN + 1e-9 && crosses(fit); w += 0.1) fit = layout(MIN_PITCH, w);
+  const { radius, X, foot, y, pitch, width: sideW } = fit;
   const levels = Math.max(...strips.map((s) => s.level)) + 1;
-  const sideH = 2 * PAD + (levels - 1) * GAP + 28;
+  const sideH = 2 * PAD + (levels - 1) * pitch + 28;
 
   const nodes: SvgNode[] = [];
-  const at = (t: number, s: Strip) => (Math.abs(t - s.t1) < EPS ? -1 : 1);
   // two strips of one level that meet share no hinge there, only raw edges:
   // each stops short of the place, so a gap stands between them
   const meets = (s: Strip, t: number) => strips.some((o) => o !== s && o.level === s.level &&
     (Math.abs(o.t0 - t) < EPS || Math.abs(o.t1 - t) < EPS));
-  const numbers: { name: number; level: number; x: number }[] = [];
+  const numbers: { name: number; level: number; x: number; end: number }[] = [];
   for (const s of strips) {
     const parts = s.pieces.flatMap((p) => p.parts).sort((p, q) => p.t0 - q.t0);
     for (const r of parts) {
       // a part that ends inside the strip runs on to where the next one starts,
       // across a gap the strip stretches through
       const [first, last] = [Math.abs(r.t0 - s.t0) < EPS, Math.abs(r.t1 - s.t1) < EPS];
-      const x0 = x(r.t0, 1) + (first && meets(s, s.t0) ? APART : 0);
-      const x1 = x(r.t1, last ? -1 : 1) - (last && meets(s, s.t1) ? APART : 0);
+      const x0 = X(r.t0, 1) + (first && meets(s, s.t0) ? APART : 0);
+      const x1 = X(r.t1, last ? -1 : 1) - (last && meets(s, s.t1) ? APART : 0);
       nodes.push(el("line", {
         "data-kind": "layer", "data-name": r.name, "data-level": s.level,
         x1: x0, y1: y(s.level), x2: x1, y2: y(s.level),
         stroke: color(r.name), "stroke-width": 3, "stroke-linecap": "round",
       }));
       // at the start of the part, clear of the points and names over its middle
-      numbers.push({ name: r.name, level: s.level, x: x0 + (first ? 14 : 8) });
+      numbers.push({ name: r.name, level: s.level, x: x0 + 6, end: x1 });
       if (Math.abs(r.t0 - s.t0) > EPS) {
         nodes.push(el("line", {
           "data-kind": "seam", x1: x0, y1: y(s.level) - 5, x2: x0, y2: y(s.level) + 5,
@@ -331,12 +414,12 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
     }
   }
   // The numbers of one level stand in the order of their parts, each where its
-  // part starts, unless the number before it on the level would overlap it:
-  // then it moves right until it stands clear of that number. A part too short
-  // for its number has it standing past its end, still in order and in its
-  // color.
+  // part starts and short of its end, unless the number before it on the
+  // level would overlap it: then it moves right until it stands clear of that
+  // number. Numbers move; strips do not.
   numbers.sort((m, n) => m.level - n.level || m.x - n.x);
   numbers.forEach((m, i) => {
+    m.x = Math.max(m.x - 6, Math.min(m.x, m.end - String(m.name).length * DIGIT));
     const before = numbers[i - 1];
     if (before && before.level === m.level) {
       m.x = Math.max(m.x, before.x + String(before.name).length * DIGIT + NUMBER_GAP);
@@ -346,21 +429,47 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
       "font-size": 13, "font-weight": 600, fill: color(m.name),
     }, [], String(m.name)));
   });
-  for (const u of turns) {
-    const [p, q] = [strips[u.strips[0]]!, strips[u.strips[1]]!];
-    const xh = x(u.t, at(u.t, p));
-    const [y0, y1] = [y(p.level), y(q.level)];
-    const r = radius(u);
-    nodes.push(el("path", {
-      "data-kind": "turn", "data-out": u.out,
-      d: `M ${xh} ${y0} A ${r} ${r} 0 0 ${(u.out === 1) === (y0 < y1) ? 1 : 0} ${xh} ${y1}`,
-      fill: "none", stroke: theme.ink, "stroke-width": 2,
-    }));
+  for (const g of groups) {
+    const xf = foot(g), sweep = g.o === 1 ? 1 : 0;
+    for (const u of g.us) {
+      const [lo, hi] = span(u);
+      const [ya, yb, r] = [y(lo), y(hi), radius(u)];
+      nodes.push(el("path", {
+        "data-kind": "turn", "data-out": g.o, "data-x": xf, "data-r": r, "data-y0": ya, "data-y1": yb,
+        d: `M ${xf} ${ya} A ${r} ${r} 0 0 ${sweep} ${xf} ${yb}`,
+        fill: "none", stroke: theme.ink, "stroke-width": 2,
+      }));
+    }
+  }
+  // A crease's name stands once for each place and side, outside the
+  // outermost turn there, level with the middle of the outermost turn on that
+  // crease. Where it would overlap a name placed before it, it moves down by
+  // the height of a name until it stands clear of all of them.
+  const creaseNames: { name: string; x: number; y: number; w: number }[] = [];
+  for (const g of groups) {
+    const out = Math.max(...g.us.map(radius));
+    for (const c of namesAt(g.us)) {
+      const top = g.us.filter((v) => v.crease === c).sort((u, v) => radius(v) - radius(u))[0]!;
+      const [lo, hi] = span(top);
+      const w = nameW(c);
+      creaseNames.push({ name: `--${c}`, x: g.o === 1 ? foot(g) + out + 4 : foot(g) - out - 4 - w, y: (y(lo) + y(hi)) / 2 + 4, w });
+    }
+  }
+  const placed: { x: number; y: number; w: number }[] = [];
+  const clash = (m: { x: number; y: number; w: number }) => placed.some((o) =>
+    Math.min(o.x + o.w, m.x + m.w) - Math.max(o.x, m.x) > 0 && Math.abs(o.y - m.y) < NAME_H);
+  for (const m of creaseNames.sort((a, b) => a.y - b.y || a.x - b.x)) {
+    while (clash(m)) m.y += NAME_H;
+    placed.push(m);
+    nodes.push(el("text", {
+      "data-kind": "crease-name", "data-name": m.name, x: m.x, y: m.y, "text-anchor": "start",
+      "font-size": 12, fill: theme.ink, ...halo,
+    }, [], m.name));
   }
   // a named point on the line: where it stands across the whole stack, as Ida
   // marks the place of a fold line [ida2007modeling, Fig. 7]
   for (const p of points) {
-    const xp = (x(p.t, -1) + x(p.t, 1)) / 2;
+    const xp = (X(p.t, -1) + X(p.t, 1)) / 2;
     nodes.push(el("line", {
       "data-kind": "point", "data-name": p.name,
       x1: xp, y1: y(0) - 18, x2: xp, y2: y(levels - 1) + 10,
@@ -374,14 +483,14 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
     for (const s of p.spots.filter((s) => s.own)) {
       const u = turns.find((v) => Math.abs(v.t - p.t) < EPS && v.strips.includes(s.strip));
       const [cx, cy] = u
-        ? [x(u.t, at(u.t, strips[u.strips[0]]!)) + u.out * radius(u),
+        ? [foot(groupAt(u.t, u.out)) + u.out * radius(u),
           (y(strips[u.strips[0]]!.level) + y(strips[u.strips[1]]!.level)) / 2]
         : [xp, y(strips[s.strip]!.level)];
       nodes.push(el("circle", { "data-kind": "point-own", "data-name": p.name, cx, cy, r: 4.5, fill: theme.ink }));
     }
   }
   nodes.push(el("text", {
-    x: SIDE_W / 2, y: sideH - 12, "text-anchor": "middle", "font-size": 15, fill: theme.ink,
+    x: sideW / 2, y: sideH - 12, "text-anchor": "middle", "font-size": 15, fill: theme.ink,
   }, [], opts.title ?? `along --${opts.along}, top layer first`));
 
   // the crease pattern with the pieces of the paper the line crosses
@@ -464,9 +573,9 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
   }
 
   const H = Math.max(lay.H, sideH);
-  const doc = createDoc(2 * lay.W + SIDE_W, H);
+  const doc = createDoc(2 * lay.W + sideW, H);
   doc.root.children.push(
-    el("rect", { width: 2 * lay.W + SIDE_W, height: H, fill: theme.background }),
+    el("rect", { width: 2 * lay.W + sideW, height: H, fill: theme.background }),
     el("svg", { ...folded.attrs, x: 0, y: 0 }, [...folded.children, ...cut]),
     el("svg", { ...cp.attrs, x: lay.W, y: 0 }, [...cp.children, ...marks]),
     el("g", { transform: `translate(${2 * lay.W} ${(H - sideH) / 2})` }, nodes),

@@ -112,8 +112,24 @@ The numbers depend on the paper under the cut and the state drawn alone, so two
 programs that fold the same state with creases scored in another order number
 it alike. A strip carries the number of each of its parts where the part
 starts; where the number before it on the level would overlap it, the number
-moves right until it stands clear. Hinges carry no names. The crease pattern
-beside the section carries the same parts with the same numbers and colors.
+moves right until it stands clear. A folded hinge on a crease the program
+names carries that name, as the program writes it (`--q`): once for each crease
+at one place and side, outside the outermost turn there; where it would overlap
+a name placed before it, it moves down until it stands clear. Other hinges
+carry no name.
+
+Along the line the section keeps the proportions of the paper: one scale for
+the whole line, so places that lie above one another in the folded state lie
+above one another in the section. A turn is a half circle on the place of its
+hinge, from the end of one strip to the end of the other and bulging out past
+them; its radius is half the height between the two. Layers stand 34 px apart.
+Where a half circle would cross a strip or the half circle of another place,
+the layers move closer, 2 px at a time down to 22 px; where that is not
+enough, the line grows longer at the same scale, a tenth at a time up to
+three times its length. Where turns open to both sides of one place, the
+section opens a gap there wide enough for both, and a strip that runs on
+through the place stretches across it. The section grows wider than 572 px
+where turns bulge out past the ends of the line or the line grows longer.
 
 A part that a later crease splits is drawn as the parts it will split into,
 divided by a short tick. Two pieces joined by a flat hinge run on as one layer
