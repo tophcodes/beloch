@@ -6,9 +6,33 @@ name: Prose
 # so it reports long before `check` finishes. Warnings and suggestions are reported
 # only. GitHub shows at most 10 annotations per level
 # and step, so the job summary holds the full count.
+#
+# The job runs when a pull request changes a file the lint reads, or the
+# lint's own configuration. The ruleset on main does not require it, so a
+# path filter on the trigger leaves no check unreported.
 
 on:
   pull_request:
+    paths:
+      # The file types scripts/prose.sh lints.
+      - '**.md'
+      - '**.mdx'
+      - '**.ml'
+      - '**.mli'
+      - '**.ts'
+      - '**.css'
+      - '**.lua'
+      - '**.astro'
+      - '**.typ'
+      - '**.sh'
+      - '.vale.ini'
+      - '.vale/**'
+      # prose_mask, which masks the OCaml sources.
+      - 'packages/core/tools/**'
+      # Vale and the pinned styles.
+      - 'flake.nix'
+      - 'flake.lock'
+      - '.github/workflows/prose.yml'
 
 permissions:
   contents: read

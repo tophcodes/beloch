@@ -75,7 +75,8 @@ failed steps, and exit non-zero if there is one. Only the kernel suites wait
 for `dune build`.
 
 CI runs `check` on every pull request, in the job `build-and-test` of
-`.github/workflows/build-and-test.yml`. A push to `main` that touches the
+`.github/workflows/build-and-test.yml`, and skips it when the pull request
+changes only Markdown that no suite reads. A push to `main` that touches the
 site, the kernel, `spec/`, `examples/`, `scripts/` or the flake runs
 `check-all` in the deploy job, which deploys the site when it passes; any
 other push to `main` runs only the commit subject check.
