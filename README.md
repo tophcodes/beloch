@@ -26,14 +26,25 @@ patterns and folded states from that file, and other FOLD tools can open it.
 | --- | --- |
 | ![crane.bel as a crease pattern](examples/crane-cp.svg) | ![crane.bel folded flat](examples/crane-folded.svg) |
 
-The traditional crane, flat, in sixteen statements:
+The traditional crane, flat, in 28 statements:
 [`examples/crane.bel`](examples/crane.bel). It follows steps 2 to 17 of Ida's
 crane program
 ([Ida 2020](https://doi.org/10.1007/978-3-319-59189-6), Fig. 7.19); her last
 two steps open the wings in 3D, which Beloch does not model yet. The native
 evaluator folds it; the browser playground cannot evaluate it yet.
 
-Both drawings are the renderer's output for the linked program.
+## More programs
+
+| | | |
+| --- | --- | --- |
+| [![cicada.bel as a crease pattern](examples/cicada-cp.svg)](examples/cicada.bel) | [![penguin.bel as a crease pattern](examples/penguin-cp.svg)](examples/penguin.bel) | [![samurai-helmet.bel as a crease pattern](examples/samurai-helmet-cp.svg)](examples/samurai-helmet.bel) |
+| [![cicada.bel folded flat](examples/cicada-folded.svg)](examples/cicada.bel) | [![penguin.bel folded flat](examples/penguin-folded.svg)](examples/penguin.bel) | [![samurai-helmet.bel folded flat](examples/samurai-helmet-folded.svg)](examples/samurai-helmet.bel) |
+| **Cicada**, 26 statements: [`examples/cicada.bel`](examples/cicada.bel), after [Jimena Candia's diagram](https://origami.me/cicada/) | **Penguin**, 19 statements: [`examples/penguin.bel`](examples/penguin.bel), after [Kelly Tan's diagram](https://origami.me/penguin/) | **Samurai helmet**, 21 statements: [`examples/samurai-helmet.bel`](examples/samurai-helmet.bel), after [the diagram on origami.me](https://origami.me/samurai-helmet/) |
+
+All three are traditional models, each folded to its last flat state after
+a free diagram; the comments in a program name the diagram's steps.
+
+Every drawing in this README is the renderer's output for the linked program.
 `scripts/render-readme-figures.sh` redraws them, and CI fails when one no
 longer matches its program.
 
@@ -47,8 +58,8 @@ reverse (map .b onto .c) as --h         ; corner b tucked inside, onto c
 reverse (map .d onto .c) as --v         ; corner d likewise
 ```
 
-That is the preliminary base
-([`packages/core/tests/cases/bases/preliminary-reverse.bel`](packages/core/tests/cases/bases/preliminary-reverse.bel)).
+These are the first three statements of the crane
+([`examples/crane.bel`](examples/crane.bel)); they fold the preliminary base.
 `paper square` gives the unit square with corners `.a` `.b` `.c` `.d`
 counter-clockwise from the origin. A name with a dot is a point, a name with
 two dashes is a crease. `(map .a onto .c)` is the fold line that carries one
@@ -100,7 +111,9 @@ numerically; here the question is decided exactly.
 `flatten` folds a vertex flat along several rays at once. Given an odd number
 of rays, it derives the ray that Kawasaki's condition forces and scores it as
 a new crease. This expresses folds no Huzita-Justin axiom constructs from the
-points a program has named; the swivel rabbit ear below is one.
+points a program has named; the swivel rabbit ear
+([`packages/core/tests/cases/bases/swivel-rabbit.bel`](packages/core/tests/cases/bases/swivel-rabbit.bel))
+is one.
 
 Both rest on the language: a program is a finite sequence of constructions and
 folds, with no loops, no recursion (a `def` sees only earlier `def`s) and no
@@ -112,9 +125,11 @@ FOLD output names the statement and the construction that made it.
 ## Status
 
 - **Implemented:** all seven axioms, the five verbs, FOLD output, crease
-  pattern and folded-state rendering, a browser build. The programs in
-  [`examples/`](examples/) evaluate end to end, up to the flat crane, and most
-  of them carry assertions the test suite checks.
+  pattern and folded-state rendering, a browser build. Four traditional
+  models in [`examples/`](examples/) evaluate end to end to their last flat
+  state, and the test suite checks assertions on them. Programs for the
+  jumping frog, the flapping bird and the traditional frog are drafts; each
+  stops at a step the kernel cannot fold yet.
 - **Formalized:** [`spec/MODEL.md`](spec/MODEL.md) defines folded states and
   the operations on them. Its first sections are reviewed; the section on
   operations is a draft, and two of its lemmas, among them that a fold
