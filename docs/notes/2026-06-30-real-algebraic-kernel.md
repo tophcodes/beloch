@@ -1,7 +1,7 @@
 # 2026-06-30: Real-algebraic number kernel (slice 1 of axiom 7)
 
-Retired the quadratic `Ext` tower (ADR 0010) for a real-algebraic kernel
-(ADR 0012): a number is `Rat q` or the unique real root of a squarefree
+Retired the quadratic `Ext` tower ([[decision/0010]]) for a real-algebraic kernel
+([[decision/0012]]): a number is `Rat q` or the unique real root of a squarefree
 ℚ-polynomial in an isolating interval. New `lib/poly.ml` (ℚ-polynomials,
 Sylvester resultant, Euclidean gcd/squarefree, Sturm, isolation). `lib/num.ml`
 rewritten; public interface frozen (+ `real_roots`), so the geometry core

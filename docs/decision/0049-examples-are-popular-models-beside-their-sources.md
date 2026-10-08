@@ -23,7 +23,7 @@ models they know, folded to the end. A reader of a paper on Beloch wants
 programs long enough to measure, set beside the same model written in an
 earlier origami language.
 
-Beloch models flat-folded states only (ADR 0015), so a model counts when it
+Beloch models flat-folded states only ([[decision/0015]]), so a model counts when it
 is recognizable at its last flat state. Steps that open, inflate or shape the
 paper in 3D stay out of the program.
 

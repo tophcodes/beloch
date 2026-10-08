@@ -8,10 +8,10 @@ tableOfContents:
 
 The language spans several pages. This page states what a program is and
 the sorts and types a statement works with.
-[Write statements](/language/writes/) gives the verbs,
-[Constructions](/language/constructions/) the reads a write's axis comes
-from, [Annotations](/language/annotations/) what a program tells its
-reader beyond the geometry, and [Grammar](/language/grammar/) the grammar
+[[reference/beloch-writes]] gives the verbs,
+[[reference/beloch-constructions]] the reads a write's axis comes
+from, [[reference/beloch-annotations]] what a program tells its
+reader beyond the geometry, and [[reference/beloch-grammar]] the grammar
 of the language.
 
 The language refers to the model by statement ids and to the specification
@@ -19,9 +19,9 @@ by section. The model does not refer to the language.
 
 ## A program is a path
 
-A program starts from a sheet ([def-sheet](/model/#def-sheet)) and applies
+A program starts from a sheet ([[reference/model#def-sheet|def-sheet]]) and applies
 operations one after another. Each operation takes the current flat folded
-state ([def-flat-state](/model/#def-flat-state)) and either produces the next
+state ([[reference/model#def-flat-state|def-flat-state]]) and either produces the next
 one or fails with a reason. The program's meaning is the finite sequence of
 states it passes through; its result is the last state.
 
@@ -53,7 +53,7 @@ starts with a digit: `0.5` is a number and `.5` is a point name.
 
 **Shapes.** A shape is a definition whose body is a program on one sheet,
 ending with a trim to one flap of that sheet. The flap is the new sheet
-([def-flap](/model/#def-flap)):
+([[reference/model#def-flap|def-flap]]):
 
 ```
 shape rectangle(w h) {
@@ -76,7 +76,7 @@ shape rectangle(w h) {
   statements of a program and no `def`, `shape` or annotation, and it
   starts with its own `paper` line.
 - `trim to` takes a flap operand, resolved against the last state of the
-  body as for `moving` ([def-selector](/model/#def-selector)). It is the
+  body as for `moving` ([[reference/model#def-selector|def-selector]]). It is the
   last statement of the body and stands nowhere else.
 
 Every program sees the shapes of the standard library as if they were
@@ -93,7 +93,7 @@ folded is no crease of the new sheet. The body's states belong to no
 program's path: a program that opens a shape starts at the trimmed sheet.
 
 **Exports.** A trim may list the names it exports, in braces after the flap
-operand (ADR 0047). An entry is a name of the body with its sigil,
+operand ([[decision/0047]]). An entry is a name of the body with its sigil,
 optionally `as` a landing name with its sigil, as in `export`, and takes no
 `!`: the trimmed sheet
 starts with no names, so a landing name may be one the body used off the
@@ -118,7 +118,7 @@ differs from the parameters (`` `rectangle` takes 2 numbers, 1 given ``),
 a body that does not end with `trim to` (`` a shape ends with `trim to` ``),
 a trim elsewhere (`` `trim to` is the last statement of a shape ``), and a
 flap whose outline has a hole (`` the flap has a hole and is no sheet ``),
-which [def-sheet](/model/#def-sheet) excludes. A square whose side is not
+which [[reference/model#def-sheet|def-sheet]] excludes. A square whose side is not
 positive is an error (`` the side of a square is a positive number ``), and
 so is a unit the format does not name (`` `<unit>` is no unit; the units are
 in, pt, m, cm, mm, um, nm ``). A bare name where a number stands is an error
@@ -143,12 +143,12 @@ paper square 150
 
 The unit is one of the physical units the FOLD format names: `in`, `pt`,
 `m`, `cm`, `mm`, `um`, `nm`. It changes no coordinate; the output writes
-it as `frame_unit` ([Output format](/output/)), and as `"unit"` when the file names
+it as `frame_unit` ([[reference/fold]]), and as `"unit"` when the file names
 none. A file without a declaration takes the unit of the file that loads
 it, and a loaded file with another unit has its numbers converted exactly,
 each of these units being a rational multiple of the millimeter. Beloch
 does not load files yet, so these two rules wait for the import
-(ADR 0046).
+([[decision/0046]]).
 
 ## Reads and writes
 
@@ -159,8 +159,8 @@ an operator, a bracket, or a construction, and may appear anywhere a value
 is needed.
 
 In the terms of the model, the writes are the partial functions from states
-to states ([def-write](/model/#def-write)), and the reads are functions from
-a state into the value sorts ([def-read](/model/#def-read)). A read never
+to states ([[reference/model#def-write|def-write]]), and the reads are functions from
+a state into the value sorts ([[reference/model#def-read|def-read]]). A read never
 fails silently: where the state has no answer, such as a point that lies on
 no face or a construction with two solutions and no way to pick one, the
 read is an error.
@@ -174,7 +174,7 @@ the verbs `mark`, `fold`, `unfold`, `reverse`, `flatten` and `flip`. Each is a
 partial function on states with its own domain; the domain is the
 language's notion of a safe operation, and the model states it. A *write
 statement* is a verb followed by its arguments; its shape is given under
-[Write statements](/language/writes/).
+[[reference/beloch-writes]].
 
 **Reads.** Constructions (below), selectors (`#[…]`, `*`, `--[…]`, `free
 on`), and the filter operators (`&`, `\`, `[…]`), which form a Boolean
@@ -183,7 +183,7 @@ predicate, difference, union.
 
 **The meet.** `--x * --y`, and `.[--x --y --z]` for more operands, is the
 one paper point the operands have in common as sets of paper points
-([def-meet](/model/#def-meet)). An operand may lie on several paper lines,
+([[reference/model#def-meet|def-meet]]). An operand may lie on several paper lines,
 as a crease scored through several layers does; on the preliminary base
 `--h * --v` is the center of the paper. A paper edge such as `--ab` counts
 as its side of the sheet. The meet is an error when the operands have no
@@ -215,7 +215,7 @@ range starts.
 $P_0 + t\,(P_1 - P_0)$ for $t \in [0, 1]$. `by d` places it at the
 distance $d$ from the start, measured along the line, for
 $0 \le d \le |P_1 - P_0|$; the point is exact whatever $d$ is, since the
-kernel holds the length of the range exactly (ADR 0012, 0013). Without
+kernel holds the length of the range exactly ([[decision/0012]], 0013). Without
 either, the point is the midpoint.
 
 ```
@@ -244,24 +244,24 @@ placement a menu of four entries.
 
 | type | values | slots |
 |---|---|---|
-| line | a construction, a name bound by `=`, or a crease whose segments lie on one table line ([def-line](/model/#def-line)) | the operands of a construction, `heading`, `toward`, the axis of `mark` |
-| crease | a name bound by `as`: the material scored under that name ([def-bundle](/model/#def-bundle)), or a selection from one | the axis `(--d)` of `fold`, `unfold` and `reverse`, the rays of `flatten`, the meet `*`, the filters `&` `\` `[…]`, `free on` |
-| flap | a point, a line, or `#[…]`, resolved by incidence ([def-selector](/model/#def-selector)) | `moving`, `up to`, `on`, the target of `over` and `under` |
-| sector | one or more points on the anchor of a fan; the sector of the fan whose closed wedge holds them all ([def-flatten](/model/#def-flatten)) | `staying` |
+| line | a construction, a name bound by `=`, or a crease whose segments lie on one table line ([[reference/model#def-line\|def-line]]) | the operands of a construction, `heading`, `toward`, the axis of `mark` |
+| crease | a name bound by `as`: the material scored under that name ([[reference/model#def-bundle\|def-bundle]]), or a selection from one | the axis `(--d)` of `fold`, `unfold` and `reverse`, the rays of `flatten`, the meet `*`, the filters `&` `\` `[…]`, `free on` |
+| flap | a point, a line, or `#[…]`, resolved by incidence ([[reference/model#def-selector\|def-selector]]) | `moving`, `up to`, `on`, the target of `over` and `under` |
+| sector | one or more points on the anchor of a fan; the sector of the fan whose closed wedge holds them all ([[reference/model#def-flatten\|def-flatten]]) | `staying` |
 | point | a named or selected point | `at`, `between`, `toward` |
 | number | a number, or inside a shape one of its parameters | the side of `square`, `at` and `by` of `free on`, the values that open a shape |
-| placement | top, bottom, over a flap, under a flap ([def-reflection](/model/#def-reflection)) | `fold` |
-| kind | inside, outside ([def-reverse](/model/#def-reverse)) | `reverse` |
-| extent | the whole line, between two points, at a point ([def-mark](/model/#def-mark)) | `mark` |
+| placement | top, bottom, over a flap, under a flap ([[reference/model#def-reflection\|def-reflection]]) | `fold` |
+| kind | inside, outside ([[reference/model#def-reverse\|def-reverse]]) | `reverse` |
+| extent | the whole line, between two points, at a point ([[reference/model#def-mark\|def-mark]]) | `mark` |
 | intent | mountain, valley; the direction the crease pattern draws, no part of the state | `mark` |
-| letter | mountain, valley as a constraint on a ray, or on a hinge of the spine ([def-letter](/model/#def-letter)) | `flatten`, `reverse` |
+| letter | mountain, valley as a constraint on a ray, or on a hinge of the spine ([[reference/model#def-letter\|def-letter]]) | `flatten`, `reverse` |
 | order | one sector over another | `flatten` |
-| selection | `toward` a point or a line, the side that stays; `moving` a flap, the side that folds over; `heading` a line, the direction of the crease ([def-selection](/model/#def-selection)) | `toward` and `moving`: `mark`, `fold`, `reverse` and a binding over a construction; `toward` a point and `moving` a flap with `up` or `down`, the layers that stay and the layers that turn: `unfold`; `toward` a point: `flatten`; `heading`: `align` |
+| selection | `toward` a point or a line, the side that stays; `moving` a flap, the side that folds over; `heading` a line, the direction of the crease ([[reference/model#def-selection\|def-selection]]) | `toward` and `moving`: `mark`, `fold`, `reverse` and a binding over a construction; `toward` a point and `moving` a flap with `up` or `down`, the layers that stay and the layers that turn: `unfold`; `toward` a point: `flatten`; `heading`: `align` |
 
 Line and crease are two sorts under one sigil, and the binding tells them
 apart: `--l = …` is a line, `… as --l` is a crease. A crease stands where a
 line is wanted by projection to its table line, which exists while its
-segments are collinear (ADR 0014) and is an error once a fold has bent it.
+segments are collinear ([[decision/0014]]) and is an error once a fold has bent it.
 A line stands nowhere a crease is wanted: it has no material until a
 `mark` scores it. The check needs no geometry, so a program's sorts can be
 verified before it is evaluated.

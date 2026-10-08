@@ -44,7 +44,7 @@ Most of the machinery is in the repository:
   SVG in both directions, with a palette for multi-selection.
 - `@beloch/render-svg` renders folded frames with layer occlusion from
   `faceOrders`, so $\lambda$ is already in the renderer.
-- The model page is generated from `docs/reference/MODEL.md` by a plugin that turns
+- The model page is generated from [[reference/model]] by a plugin that turns
   the `{.definition #id ...}` blocks into numbered, cross-referenced
   sections. The attribute syntax is a natural place for a "what to show"
   annotation, should the tour live in the spec page.
@@ -92,7 +92,7 @@ follows the model review and changes with it.
 
 Not decided, deliberately. Two candidates:
 
-- Inside the page generated from `docs/reference/MODEL.md`, with the annotations in the
+- Inside the page generated from [[reference/model]], with the annotations in the
   definition blocks. Keeps text and picture together; puts presentation
   attributes into the specification document.
 - A separate page, possibly the Getting Started page itself, that quotes the

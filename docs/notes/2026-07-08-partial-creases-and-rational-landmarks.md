@@ -13,7 +13,7 @@ that starts and stops without spanning a whole face.
 **Under the law:** it scores paper → keyword verb. No notation question.
 
 **The catch:** this is exactly the "non-splitting reference edge" that the `pinch`
-design *rejected* (`docs/notes/2026-07-03-crease-layer-selection.md`, *Resolved* §3): an
+design *rejected* ([[notes/2026-07-03-crease-layer-selection]], *Resolved* §3): an
 edge that is not a face boundary breaks the every-edge-is-a-face-boundary
 invariant (#26), and `pinch` chose full-chord subdivision precisely to keep that
 invariant intact. Hence partial creases **reopen** that rejected option and must pay
@@ -43,7 +43,7 @@ line, written as a literal instead of derived by an explicit fold sequence.
 Sits with `*`, `&`, `\` on the read side.
 
 **Not a precision compromise.** 3/4 is constructible, so the real-algebraic kernel
-(ADR 0008 / 0012) yields the *exact* point. What you skip is *spelling out* the
+([[decision/0008]] / 0012) yields the *exact* point. What you skip is *spelling out* the
 construction (halve, halve, mark). The point stays exact. "Artistic / doesn't need to
 be exact" means *the designer didn't care to derive it*, and the result is exact
 anyway. This keeps it honest with the exact core: no floats sneak in; a rational

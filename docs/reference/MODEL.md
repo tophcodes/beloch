@@ -891,7 +891,7 @@ of its own.
 [#def-construction] puts its alignments on one sought line, which is where
 the seven Huzita-Justin axioms live. The same alignments distributed over two
 lines sought at once give the 489 two-fold axioms [@alperin2006, §3, §4],
-which `packages/multifold` (ADR 0020) enumerates. A candidate is then a pair
+which `packages/multifold` ([[decision/0020]]) enumerates. A candidate is then a pair
 of lines, a selection keeps one pair, and a write takes two axes and moves
 them together, so the definitions of candidate, selection and write all widen
 by the same step. Which of them the language will carry, and whether a
@@ -1008,7 +1008,7 @@ state, a write yields two states with a common refinement, so it induces a
 map there, and a score induces the identity while an effective write does
 not. The text argues the intuition for scoring below, that a write may score
 every face its axis crosses because scoring changes nothing, and
-`docs/reference/KERNEL.md` records that the representation does not quotient. The
+[[reference/kernel]] records that the representation does not quotient. The
 statement is not proved here, and nothing in the model rests on it.
 :::
 
@@ -1487,7 +1487,7 @@ mountains. For a face-down $A'$ exchange the letters. $\square$
 
 ::: {.definition #def-flatten name="flatten" uses="def-write def-flap def-score def-reflection def-letter def-noncrossing def-selection" defines="term-fan term-sector term-stayer term-emergent"}
 The write `flatten` takes a point $O$ of the projective table: a table
-point, or a point at infinity, one for each direction (ADR 0041). It takes
+point, or a point at infinity, one for each direction ([[decision/0041]]). It takes
 an *anchor*: a flap $\Phi$ whose image meets the rays, a finite set of
 *rays*: segments of creases on lines through $O$, from $O$ where $O$ lies on
 the image of $\Phi$ and from the edge of that image where it does not, to
@@ -1502,7 +1502,7 @@ The closure condition below applies only where $\Phi$ surrounds $O$ on the
 paper: the paper point of $\Phi$ under $O$ lies inside the sheet and on no
 folded hinge. A fan whose vertex lies on the edge, on a folded edge, off
 the paper or at infinity has no condition at its vertex and no emergent
-ray; only the closure of its paper paths below applies (ADR 0044).
+ray; only the closure of its paper paths below applies ([[decision/0044]]).
 
 - If $k$ is even, the composition $\rho_1 \circ \cdots \circ \rho_k$ must be
   the identity; this is Kawasaki's condition that the alternating sum of the
@@ -1571,7 +1571,7 @@ The segments from one vertex along which a flatten folds at once.
 
 ::: {.term #term-sector name="sector"}
 A piece of the tip between the hinges on the rays of a fan. It moves by the
-creases on its paper path from the stayer (ADR 0044).
+creases on its paper path from the stayer ([[decision/0044]]).
 :::
 
 ::: {.term #term-stayer name="stayer"}

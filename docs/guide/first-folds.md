@@ -65,7 +65,7 @@ points and lines already on the paper: through two points, one point onto
 another, one line onto another, and four more. They are the Huzita-Justin
 axioms. Beloch writes each as a *construction* in round brackets, and the
 language reference lists all seven under
-[Constructions](/language/constructions/).
+[[reference/beloch-constructions]].
 
 The fold moves the side that holds `.a`, the first thing the construction
 names, and lays it over the rest. A fold without further items is a valley
@@ -145,7 +145,7 @@ The opposite item is `toward`: it names a point on the side that stays.
 `fold (through .a .c) (toward .d)` is the same fold. When a construction
 has several solutions that all crease paper, the same two items choose among
 them, and the reference explains how under
-[Selection](/language/constructions/#selection).
+[[reference/beloch-constructions#selection]].
 
 A crease that is already there can be the fold line itself. The crease goes
 in round brackets like a construction, and it needs a side for the same
@@ -281,7 +281,7 @@ records that any spot on that stretch would do, and the program uses this
 one.
 
 `flatten` handles one vertex per statement. The reference describes the
-rest under [Write statements](/language/writes/).
+rest under [[reference/beloch-writes]].
 
 ## Points from creases
 
@@ -315,7 +315,7 @@ center.
 
 ## Where to go from here
 
-[Reading the crane](/guide/reading-the-crane/) continues this program into a
+[[guide/reading-the-crane]] continues this program into a
 traditional crane and introduces the rest of what it needs along the way.
 The [playground](/playground/) runs any program in the browser. The
-[language reference](/language/) defines every statement this page used.
+[[reference/beloch|language reference]] defines every statement this page used.

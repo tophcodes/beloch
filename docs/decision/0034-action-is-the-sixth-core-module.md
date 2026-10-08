@@ -14,8 +14,8 @@ checks:
 
 ## Context
 
-ADR 0018 named this split and deferred it: `run_fold*` stayed in `Eval`
-because splitting the action model (`mark`, `fold`, `run_fold*`, ADR 0011)
+[[decision/0018]] named this split and deferred it: `run_fold*` stayed in `Eval`
+because splitting the action model (`mark`, `fold`, `run_fold*`, [[decision/0011]])
 from the instance machinery (`def`, `apply`, `export`) was a plausible
 sixth module, not yet a necessary one.
 
@@ -29,7 +29,7 @@ hand.
 `eval_mark`, `eval_fold`, `eval_reverse`, and the checked-fold primitive
 `fold` and `reverse` share (`run_fold`, `run_fold_checked`). `reverse`
 joins `mark` and `fold` here rather than staying in `Eval`, because it
-mutates `ctx.state` the same way they do; ADR 0011's "disposition verb"
+mutates `ctx.state` the same way they do; [[decision/0011]]'s "disposition verb"
 covers all three.
 
 `free_point` stays in `Eval`. It binds a name to a point on a line and
@@ -45,7 +45,7 @@ Ctx → Resolve → { Axiom, Flatten_solve } → Action → Eval
 none of the disposition verbs construct or solve a flatten. `Eval` keeps
 the statement dispatch, the def/apply/export machinery (a mutually
 recursive group that cannot cross a module boundary without a heavier
-mechanism than the problem needs, the same reasoning ADR 0018 gave against
+mechanism than the problem needs, the same reasoning [[decision/0018]] gave against
 a functor), and the assembly of the evaluated program into its output
 record.
 

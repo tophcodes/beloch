@@ -82,7 +82,7 @@ problem.
 
 Use a host language that **emits** `.bel` (parametric families, swept
 parameters). This keeps Beloch total: TC generation *and* a clean artifact.
-Reaffirms [ADR 0007](0007-evaluator-not-compiler.md) (keep the language
+Reaffirms [[decision/0007]] (keep the language
 total; put cleverness in a host language).
 
 ### Rabbit Ear as consumer/backend
@@ -100,7 +100,7 @@ architectural question for a later slice.
 
 - **Just use Rabbit Ear; don't build Beloch.** Rejected: a library is not a
   language; the niche of a standalone axiom-based source language stays empty (lineage:
-  [0003](0003-restart-from-minimal-core.md), [0005](0005-name-beloch.md), and
+  [[decision/0003]], [[decision/0005]], and
   the April 2026 design conversation).
 - **Embedded DSL in JS/Haskell** (cf. Caruana-Pace in Haskell). Rejected: an
   eDSL inherits the host's escape hatch and loses the totality/analyzability
@@ -112,7 +112,7 @@ architectural question for a later slice.
 - Differentiation is **"language vs library,"** not feature parity. Lean into the
   totality / instruction-generation / LLM-target / formal-semantics angles;
   do not reimplement RE's engine for its own sake.
-- Beloch's core stays non-TC (reaffirms [0007](0007-evaluator-not-compiler.md)).
+- Beloch's core stays non-TC (reaffirms [[decision/0007]]).
 - Rabbit Ear is the recommended viewer/folder today (takes faces-less FOLD).
 - The paper's related-work section must cite and position against Rabbit Ear
   honestly: a JS library, floating-point, no standalone source format.

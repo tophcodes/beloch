@@ -62,7 +62,7 @@ or involves a composite / non-primitive extension, e.g. `∛2 + √3`) fall back
 the slower-but-exact `Alg` path. A general factorizer and primitive-element
 computation (to always find the single shared generator for a mix of algebraic
 numbers) would handle these; that is a future follow-up. The fallback is
-documented in the kernel source and in ADR 0012.
+documented in the kernel source and in [[decision/0012]].
 
 ## References
 

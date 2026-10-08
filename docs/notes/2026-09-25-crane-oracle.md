@@ -2,7 +2,7 @@
 
 `examples/crane.bel` continues `examples/bases/bird-base.bel` with Ida's steps
 9 to 17 [ida2020, Fig. 7.19, p. 193]. Steps 18 and 19 rotate faces by $\pi/2$
-to open the wings and stay out of scope (ADR 0015). The bird base itself was
+to open the wings and stay out of scope ([[decision/0015]]). The bird base itself was
 checked in `2026-09-12-bird-base-oracle.md`; this note uses its similarity from
 Ida's $4 \times 4$ table to Beloch's unit square,
 

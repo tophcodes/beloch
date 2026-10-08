@@ -44,7 +44,7 @@ Every reader carries both halves to its reader:
 
 No message carries a suggestion of its own. The existing suggestions move into
 hints in the same change that introduces them, and the error table in
-`docs/reference/SPECIFICATION.md` quotes message and hint in separate columns.
+[[reference/specification]] quotes message and hint in separate columns.
 
 ## Alternatives considered
 

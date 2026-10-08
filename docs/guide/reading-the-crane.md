@@ -11,7 +11,7 @@ sequence Ida gives in her book [@ida2020, Fig. 7.19]. It reaches the bird
 base with reverse folds and uses no petal fold, so it differs from the
 diagrams most folders learned the crane from, and ends in the same bird base.
 It assumes
-[First folds](/guide/first-folds/), and it adds the rest of what the crane
+[[guide/first-folds]], and it adds the rest of what the crane
 needs where it first appears. The full program is
 [`examples/crane.bel`](https://github.com/tophcodes/beloch/blob/main/examples/crane.bel)
 in the repository; the figures below build it up section by section, and
@@ -62,7 +62,7 @@ reverse (map .bl onto --mid through .c) as --rbl
 :::
 
 `.sr = --ab * --h` finds a side corner as a crossing on the unfolded sheet.
-[First folds](/guide/first-folds/#points-from-creases) showed that `--h`
+[[guide/first-folds#points-from-creases|First folds]] showed that `--h`
 left two scars, one of them running from the center down to the bottom
 edge. That scar meets the bottom edge `--ab` at $(1/2, 0)$, the middle of
 the bottom edge, and on the base this spot is the right side corner of the
@@ -89,7 +89,7 @@ fold (perp --mid through .sr) (moving .c) (up to #[.c .o]) (mountain) as --pb
 square to another line.
 
 The two folds follow the rule of
-[Which layers move](/guide/first-folds/#which-layers-move). Without `up to`
+[[guide/first-folds#which-layers-move]]. Without `up to`
 each would take every layer below the line, front and back together.
 `#[.a .o]` is the flap that holds both the corner `.a` and the paper center
 `.o`: the center face of the front. `(up to #[.a .o])` makes the valley

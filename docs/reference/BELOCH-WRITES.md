@@ -16,12 +16,12 @@ delimited on both sides and classified by its head.
 (`def`, `on`, `export`); no item uses braces. The side items name the side
 of the axis that stays, `toward`, and the side that folds over, `moving`,
 and select among the candidates of a construction by them
-([Selection](/language/constructions/#selection)). The `toward` item of `flatten` selects among
+([[reference/beloch-constructions#selection]]). The `toward` item of `flatten` selects among
 states rather than among lines
-([open-flatten-selection](/model/#open-flatten-selection)). The `on` item of
+([[reference/model#open-flatten-selection|open-flatten-selection]]). The `on` item of
 `flatten` names its anchor, the flap anywhere in the stack under the vertex
 whose tip the fan moves; without it the anchor is the topmost flap there
-([def-flatten](/model/#def-flatten)). The other layers under the vertex stay
+([[reference/model#def-flatten|def-flatten]]). The other layers under the vertex stay
 where they lie and need no rays. `on` names a flap by incidence for both
 writes: the flap a `mark` scores, and the flap a `flatten` folds.
 
@@ -60,16 +60,16 @@ every layer under its line on that side, and so does a placed fold.
 `(up to …)` narrows it to the flap it names, the layers outward of that
 flap, and every layer joined to those by a crease away from the fold line,
 which the paper could not leave behind without tearing
-([def-fold](/model/#def-fold)). For a fold placed `over` or `under` a flap,
+([[reference/model#def-fold|def-fold]]). For a fold placed `over` or `under` a flap,
 the layers outward of the `up to` flap end at that flap: the fold takes
 every layer between the two, hinged to the `up to` flap or not, and the
 target and the layers beyond it stay. A `mark` without `on` scores every layer
 under its line or its extent, one piece per layer; `(on …)` confines it to
-one flap ([def-mark](/model/#def-mark)).
+one flap ([[reference/model#def-mark|def-mark]]).
 
 `unfold` turns layers back over a crease that every one of them lies
 beside, and opens the folded hinges on it between the layers that turn and
-the layers that stay ([def-unfold](/model/#def-unfold)). Its axis is a crease
+the layers that stay ([[reference/model#def-unfold|def-unfold]]). Its axis is a crease
 the program has scored, and it scores none, so it takes no `as` or `into`.
 `(moving …)` names the flap the turning layers grow from, and a word after
 the flap says which layers turn with it: `(moving .b up)` the layers above
@@ -179,7 +179,7 @@ flip
 ```
 
 A tip of several layers can open in more than one place
-([def-reverse](/model/#def-reverse)). The reverse then fails, and its error
+([[reference/model#def-reverse|def-reverse]]). The reverse then fails, and its error
 offers one letter item per opening: a letter on a hinge of the spine, named
 by its crease and a point on it the way a ray of `flatten` is. On a square
 folded in half twice, `(--e & .q valley)` keeps the opening between the two

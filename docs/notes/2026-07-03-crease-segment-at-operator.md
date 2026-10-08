@@ -164,7 +164,7 @@ entrench.
 The singleton-target rule makes ">1 ambiguous" a routine outcome, so
 disambiguation must not be blind: the tooling has to show what is in a bundle.
 This is an **evaluator/tooling** affordance, never `.bel` surface syntax
-([[beloch-language-vs-implementation]]).
+(`beloch-language-vs-implementation`).
 
 - **Error enumeration.** When `at` (or a bare-bundle target) finds >1, the error
   lists the candidate segments with distinguishing attributes: `crease_id`,

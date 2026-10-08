@@ -22,7 +22,7 @@ Name the language **Beloch**, after **Margherita Piazzolla Beloch**.
 - Her 1936 work showed origami constructions solve general cubic equations,
   making paper-folding more powerful than straightedge-and-compass.
 - The **Beloch fold is axiom 7** in the Huzita-Justin numbering this project
-  uses (see "Numbering" in `docs/reference/SPECIFICATION.md`). Justin ordered the seven
+  uses (see "Numbering" in [[reference/specification]]). Justin ordered the seven
   axioms by algebraic power, so the Beloch fold is the last and strongest one:
   the single hardest thing in the language to handle, with up to three
   solutions, no closed form, and the disambiguation problem the design keeps
@@ -45,7 +45,7 @@ Practical notes:
   **belochc** (or **Piazzolla**, her middle name) the compiler.
 - `beloch fold file.bel` reads as English and is literally the operation, and
   "fold" is also the functional-programming reduce, which is what the evaluator
-  does. (See [0007](0007-evaluator-not-compiler.md).)
+  does. (See [[decision/0007]].)
 
 ## Alternatives considered
 

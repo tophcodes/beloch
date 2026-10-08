@@ -7,7 +7,7 @@ claims; kept as one note since they're cause → effect of each other.
 
 Origami (real, physical, folded-by-hand origami) reduces to a sequence of
 operations drawn from a small, finite alphabet: the Huzita-Justin axioms (see
-[[beloch-two-layer-design]] for the capability/sugar split over them), plus a
+`beloch-two-layer-design` for the capability/sugar split over them), plus a
 handful of structural modifiers (mountain/valley, fold-through-N-layers,
 crease-only vs fold). That's it. Nobody folds paper via an operation outside
 this set: the axioms are provably a complete basis for single-fold flat
@@ -21,7 +21,7 @@ discrete.
 ## Claim 2: the 2D idealization tracks the physical process closely enough
 
 Because the move-set is small *and* each move has a clean flat-folded
-mathematical idealization (ADR 0015: flat-folded states only), we can apply
+mathematical idealization ([[decision/0015]]: flat-folded states only), we can apply
 these operations **imperatively, in program order**, and get a data structure
 that corresponds to an actual foldable physical object, rather than just an abstract
 combinatorial artifact that happens to satisfy crease-pattern axioms.
@@ -29,7 +29,7 @@ combinatorial artifact that happens to satisfy crease-pattern axioms.
 That correspondence is the whole bet the language makes. It's what lets a
 `.bel` program read as a straight-line imperative script (statement N mutates
 global mesh state, no solver, no backtracking) instead of requiring physical
-simulation (see [[beloch-render-engine-design]] and the fold-sim note,
+simulation (see `beloch-render-engine-design` and the fold-sim note,
 `2026-07-03-fold-sim-dof.md`, for how much is thrown away by staying at the
 flat-folded idealization: thickness, friction, DOF-during-collapse are all
 punted to a *separate*, later, rendering-only concern).

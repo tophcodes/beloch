@@ -15,7 +15,7 @@ that says what its rules mean.
 
 ## Programs
 
-[Overview](/language/).
+[[reference/beloch|Overview]].
 
 ```grammar
 program := annotation* [ unit_decl ] shape_def* "paper" sheet stmt*
@@ -24,7 +24,7 @@ stmt    := annotation* ( write_stmt | bind_stmt | def_stmt | apply_stmt | export
 
 ## Sheets
 
-[Sheets](/language/#sheets).
+[[reference/beloch#sheets]].
 
 ```grammar
 library    := annotation* [ unit_decl ] shape_def*
@@ -39,7 +39,7 @@ shape_stmt := write_stmt | bind_stmt | apply_stmt | export_stmt
 
 ## Free points
 
-[Free points](/language/#free-points).
+[[reference/beloch#free-points]].
 
 ```grammar
 free_point := "free" "on" line_operand "from" point_operand [ ( "at" | "by" ) number ]
@@ -47,7 +47,7 @@ free_point := "free" "on" line_operand "from" point_operand [ ( "at" | "by" ) nu
 
 ## Operands
 
-[Parameter types](/language/#parameter-types).
+[[reference/beloch#parameter-types]].
 
 ```grammar
 flap_operand  := point_operand | line_operand | "#[" point_operand+ "]"
@@ -55,7 +55,7 @@ flap_operand  := point_operand | line_operand | "#[" point_operand+ "]"
 
 ## Write statements
 
-[Write statements](/language/writes/).
+[[reference/beloch-writes]].
 
 ```grammar
 write_stmt := verb item* [ "as" CREASE_NAME [ "!" ] | "into" CREASE_NAME ]
@@ -96,7 +96,7 @@ axis         := construction_body | line_operand
 
 ## Constructions
 
-[Constructions](/language/constructions/).
+[[reference/beloch-constructions]].
 
 ```grammar
 construction_body := "align" CREASE_NAME* align_part+
@@ -124,7 +124,7 @@ toward_subject := point_operand | line_operand
 
 ## Annotations
 
-[Annotations](/language/annotations/).
+[[reference/beloch-annotations]].
 
 ```grammar
 annotation := "@" WORD arg* NEWLINE

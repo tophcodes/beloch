@@ -46,7 +46,7 @@ Table space survives *only* as transient geometry inside axiom evaluation
 
 - Def line params: a named-crease argument now passes the `Material` crease
   value through instead of freezing its table line at apply time (`cross`
-  inside a body needs marks; ADR 0016 had flagged the freeze as a smell).
+  inside a body needs marks; [[decision/0016]] had flagged the freeze as a smell).
 - `crease_segment` gained paper endpoints `pa`/`pb`; `topmost_preimage` and
   its `order`-consulting machinery deleted.
 - `test_eval_up_to_wrong_side` had silently relied on the table fiction
@@ -54,5 +54,5 @@ Table space survives *only* as transient geometry inside axiom evaluation
   precrease.
 
 Spec: §4.3 rewritten, §4.8/§5a.3/§8 touched. See also
-`docs/notes/2026-07-03-crease-layer-selection.md` ("all points are material") and
-ADR 0014/0016.
+[[notes/2026-07-03-crease-layer-selection]] ("all points are material") and
+[[decision/0014]]/0016.

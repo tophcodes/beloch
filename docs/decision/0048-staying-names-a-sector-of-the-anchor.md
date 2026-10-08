@@ -12,7 +12,7 @@ issue: tophcodes/beloch#150
 
 A fan folds several creases through one point in one motion. Its rays cut
 the paper around the vertex into sectors, and one sector, the stayer, keeps
-its place. By ADR 0037 the stayer also decides which layers move: the
+its place. By [[decision/0037]] the stayer also decides which layers move: the
 candidates for the tip are the pieces outside the stayer's wedge, and the tip
 grows from the anchor over hinges between candidates. Fisher's waterbomb
 base on a 2:1 rectangle folded in half [fisher1994, §5.3] separates on the
@@ -63,7 +63,7 @@ only has to be the anchor's.
 
 At an odd fan the sectors are known per candidate fan, after its emergent ray
 is placed: a candidate fan contributes states when exactly one of its sectors
-holds every point. At a vertex at infinity (ADR 0041) the sectors are strips
+holds every point. At a vertex at infinity ([[decision/0041]]) the sectors are strips
 and two half-planes.
 
 ## Alternatives considered
@@ -87,9 +87,9 @@ and two half-planes.
 
 ## Consequences
 
-- The `staying` row of the selector table in `docs/reference/BELOCH.md` moves from
+- The `staying` row of the selector table in [[reference/beloch]] moves from
   flap to a sort of its own, one or more points, and `def-flatten` in
-  `docs/reference/MODEL.md` names the stayer by points with the errors above.
+  [[reference/model]] names the stayer by points with the errors above.
 - The fewest-mountains stage loses its effect on the stayer; tophcodes/beloch#99 removes
   the selection stages of `flatten` altogether.
 - `flatten-waterbomb-top-layer.bel` holds the rectangle with
@@ -103,5 +103,5 @@ and two half-planes.
   folded outward, below the stack, wrapped around the top layer's folded
   stack, inside the gap between the layers, and interleaved with the top
   layer's pieces. Doing it in one statement waits on the item that widens a
-  fan to separate flaps (ADR 0037); it changes no geometry, only which layer
+  fan to separate flaps ([[decision/0037]]); it changes no geometry, only which layer
   orders the statement admits.

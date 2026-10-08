@@ -10,11 +10,11 @@ issue: tophcodes/beloch#133
 
 ## Context
 
-By ADR 0040 a fan sits at a table point, and every layer under it is scored
+By [[decision/0040]] a fan sits at a table point, and every layer under it is scored
 along the fan's lines. `def-flatten` then gives one motion to each wedge of
 the table between two neighboring rays: every piece in the wedge moves by
 the reflections across the rays between it and the stayer. Around the table
-point the motions have to close, which is Kawasaki's condition, and ADR 0041
+point the motions have to close, which is Kawasaki's condition, and [[decision/0041]]
 drops the condition where the vertex lies on the paper's edge, off the paper
 or at infinity.
 
@@ -24,7 +24,7 @@ The vertex of a reverse fold and the vertex of a squash lie on a folded edge
 - **The motions of one wedge differ.** The squash of the flap with spine
   `--h & --da` on the folded preliminary base has its vertex at the base's
   closed corner. The kernel folds the same squash from the flat sheet
-  (ADR 0038); compared piece by piece with the base, three pieces move:
+  ([[decision/0038]]); compared piece by piece with the base, three pieces move:
 
   | piece | layer of the base | before, on the table | motion |
   |---|---|---|---|
@@ -50,7 +50,7 @@ rejected.
 ## Decision
 
 **A fan moves each piece by the creases on its paper path.** The fan keeps
-its lines on the table through its vertex (ADR 0040, ADR 0041), and every
+its lines on the table through its vertex ([[decision/0040]], [[decision/0041]]), and every
 layer of the tip is scored along them. A hinge on those lines *changes*
 when a flat hinge folds or a folded hinge opens, and *keeps* otherwise; a
 folded hinge that keeps may turn, as the spine of a reverse fold does. The
@@ -64,14 +64,14 @@ identity** [hull2020, Thm. 6.6]. Around a paper point that the paper
 surrounds, this is Kawasaki's condition at that point. The fan has no
 condition of its own at the table point. Where no paper point is surrounded,
 nothing is checked: the vertex on the paper's edge, off the paper and at
-infinity of ADR 0041 are cases of this rule. An emergent ray is the crease
+infinity of [[decision/0041]] are cases of this rule. An emergent ray is the crease
 that closes the path around a surrounded paper point.
 
 **The sectors of a fan are pieces of paper.** A sector is a piece of the tip
 between hinges on the fan's lines. The units the stacking orders are the
 pieces of one wedge of the table that share one motion, so two pieces in one
 wedge that move differently are ranked apart. The wedges still pick the
-stayer and the candidates of the tip (ADR 0037).
+stayer and the candidates of the tip ([[decision/0037]]).
 
 **Letters belong to hinges.** An item of a fan names the hinges of its
 crease on its ray, in every layer; its paper point picks the ray, as in
@@ -98,25 +98,25 @@ medians of the preliminary base fold the quarter fold.
   wedge and letters per hinge. The smallest change to `def-flatten`. Pieces 2
   and 7 of the squash share a wedge and need two motions, so the squash stays
   out of reach of the fan.
-- **Separate operations.** `reverse` keeps its opening and blocks (ADR 0043)
+- **Separate operations.** `reverse` keeps its opening and blocks ([[decision/0043]])
   and `squash` gets a path of its own. Against #52, which made the three one
   operation in the kernel.
 - **The program names the hinges that change.** A squash would name its
   opening spine and the center line besides its axis, which the bare
-  alignment of ADR 0038 exists to leave out.
+  alignment of [[decision/0038]] exists to leave out.
 
 ## Consequences
 
-- `def-flatten` in `docs/reference/MODEL.md` takes its motions from paper paths, its
+- `def-flatten` in [[reference/model]] takes its motions from paper paths, its
   closure from closed paths and its sectors as pieces. On the flat sheet a
   piece's path crosses the rays between the stayer and it, so every flatten
   on one sheet keeps its result.
-- The blocks of a reverse fold (ADR 0043) follow: every piece of the tip
+- The blocks of a reverse fold ([[decision/0043]]) follow: every piece of the tip
   reaches the body across the axis once and moves by the reflection across
   it, and the hinges across the opening keep and turn. `reverse` can move
   onto the path of `flatten` without a case of its own.
 - The squash of #115 is a fan whose axis, opening spine and center line are
-  found by trying the hinges; its bare alignment (ADR 0038) needs no more.
+  found by trying the hinges; its bare alignment ([[decision/0038]]) needs no more.
 - The kernel builds each candidate as a state from hinge angles, which
   `Fold_state` checks for closure. The number of combinations doubles with
   every hinge on the fan's lines in the tip.

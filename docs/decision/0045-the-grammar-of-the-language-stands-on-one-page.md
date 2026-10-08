@@ -11,13 +11,13 @@ checks:
 
 # 0045: The grammar of the language stands on one page
 
-This record replaces one sentence of ADR 0032, the one that has each
+This record replaces one sentence of [[decision/0032]], the one that has each
 construct keep its syntax together with its resolution, its errors and its
-example. The rest of ADR 0032 stands.
+example. The rest of [[decision/0032]] stands.
 
 ## Context
 
-ADR 0032 lets the language document span several pages, divided by sort
+[[decision/0032]] lets the language document span several pages, divided by sort
 and by write, and gives the collected grammar a page of its own. It also
 has each construct keep its syntax beside its resolution, errors and
 example, so every page stated its grammar in fragments and the grammar page
@@ -42,7 +42,7 @@ the grammar when the syntax matters.
 ## Alternatives considered
 
 - **Keep the fragments on their pages and collect them on the grammar
-  page**, as ADR 0032 has it. Rejected: every rule stands twice on the
+  page**, as [[decision/0032]] has it. Rejected: every rule stands twice on the
   site, and a reference across pages needs a resolver that reads every
   page of the language.
 

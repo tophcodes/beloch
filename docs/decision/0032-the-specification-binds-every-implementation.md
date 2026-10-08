@@ -7,12 +7,12 @@ status: accepted
 
 # 0032: The specification binds every implementation; the kernel document describes one
 
-This record supersedes ADR 0021 and carries forward its migration of
+This record supersedes [[decision/0021]] and carries forward its migration of
 `SPECIFICATION.md`, which is still under way.
 
 ## Context
 
-ADR 0021 made four reference documents the specification: `MODEL.md`,
+[[decision/0021]] made four reference documents the specification: `MODEL.md`,
 `BELOCH.md`, `KERNEL.md` and `FOLD.md`. Three of them state what any
 implementation of Beloch has to do. `KERNEL.md` states how one
 implementation, the OCaml kernel in `packages/core`, holds a state in memory,
@@ -55,7 +55,7 @@ catalog on pages of their own. It is never divided by layer into
 vocabulary, syntax and semantics: each construct keeps its syntax,
 resolution, errors and example together, and its meaning stays in the model.
 
-The rule of `docs/reference/README.md` holds: the documents are divided by role and
+The rule of [[reference/readme]] holds: the documents are divided by role and
 reader, never by increment. A slice that changes the language edits the
 document whose role it touches.
 
@@ -86,7 +86,7 @@ authoritative for the surface syntax, never for the meaning.
 
 ## Alternatives considered
 
-- **Keep the four documents as one specification (ADR 0021).** Rejected:
+- **Keep the four documents as one specification ([[decision/0021]]).** Rejected:
   it makes the representation choices of one kernel normative.
 - **Name the model something other than a specification, since it reads as
   a mathematical theory.** Rejected: its form is a theory, its role is the
@@ -95,7 +95,7 @@ authoritative for the surface syntax, never for the meaning.
   semantics.** Rejected: every construct would be spread over three pages,
   and the semantics already has its document in the model.
 - **Keep `SPECIFICATION.md` as the single source and treat the other
-  documents as commentary.** Rejected in ADR 0021 and still rejected: the
+  documents as commentary.** Rejected in [[decision/0021]] and still rejected: the
   model is the part that can be checked, cited by id, and realized by `@see`
   tags in the kernel; prose that restates it is the copy that drifts.
 

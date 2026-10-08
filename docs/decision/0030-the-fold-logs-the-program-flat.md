@@ -7,11 +7,11 @@ status: accepted
 
 # 0030: A program has two axes, and the FOLD logs every executed statement on them
 
-Supersedes ADR 0026, which logged the top-level statements only.
+Supersedes [[decision/0026]], which logged the top-level statements only.
 
 ## Context
 
-ADR 0026 split a position in a program into two axes. The model counts
+[[decision/0026]] split a position in a program into two axes. The model counts
 states, and a state changes with every write. The language counts statements,
 and a binding moves the program without moving paper. In the opening of the
 bird base, the first number is the folded state and the second counts the
@@ -36,7 +36,7 @@ first axis has no stop for.
 program that applies a `def` twice has two entries, and the statements of
 the body have none.
 
-Two uses need the body in full. ADR 0029 lets an annotation attach to a
+Two uses need the body in full. [[decision/0029]] lets an annotation attach to a
 statement, and the statement a diagram needs to talk about is often inside a
 `def`: the petal fold is written once and applied four times. A repetition in
 a diagram ("repeat steps 5 to 8 on the other side") is the second `apply` of
@@ -55,7 +55,7 @@ statement after a state, `3.10`, from the first, `3.1`.
 **The first axis counts writes.** Every `fold`, `reverse`, `flip`, `flatten`
 and `mark`. A score changes the paper as a fold does, and the axis stops at
 both. The difference that an effective write moves the state and a score
-leaves it standing up to refinement (ADR 0025) stays inside the axis, where a
+leaves it standing up to refinement ([[decision/0025]]) stays inside the axis, where a
 renderer needs it: a fold crossfades between two placements, a mark draws on
 the placement already there.
 
@@ -91,7 +91,7 @@ Entries 1 and 2 name entry 0 as their parent, entries 4 and 5 name entry 3.
 Entries 0 and 3 both name `petal`, which is how a renderer sees that the
 second application repeats the first.
 
-The reason for putting the structure into the document is the one ADR 0026
+The reason for putting the structure into the document is the one [[decision/0026]]
 gave: every renderer gets it, and none has to parse the program or re-run a
 body to learn what happened.
 
@@ -101,32 +101,32 @@ body to learn what happened.
   consumer would have to recurse to step through a program, and the frames,
   which are a flat sequence, would have to be joined to a tree. The parent
   index carries the same information in the flat form.
-- **An `apply` as a single entry,** as ADR 0026 had it. The body would have
+- **An `apply` as a single entry,** as [[decision/0026]] had it. The body would have
   no entries for an annotation to target, and a repetition would be
   invisible.
 - **Entries for the folds inside a body and none for its bindings.** A
   stepper would still stop at every fold, but a point that a body binds would
   have no entry, so an editor could not say where it appears and an
   annotation could not target the line that binds it.
-- **Reading the structure from the syntax tree,** rejected in ADR 0026 for
+- **Reading the structure from the syntax tree,** rejected in [[decision/0026]] for
   the same reason it is rejected here: a consumer without a parser would be
   left without it.
 
 ## Consequences
 
 - One source span can now occur in several entries, one per `apply` that ran
-  its statement. Consumers join on the entry index, which `docs/reference/FOLD.md`
+  its statement. Consumers join on the entry index, which [[reference/fold]]
   already asks of `beloch:edges`.
 - A renderer finds a repetition by grouping the `apply` entries by the `def`
   they name. The diagram library draws the second one as a repeat of the
   first, and no annotation is needed for it.
 - An annotation in a `def` body is emitted once per execution, targeting the
-  entries of that execution (ADR 0029).
+  entries of that execution ([[decision/0029]]).
 - `beloch:named_points[].statement` and `beloch:named_lines[].statement` stay
   the entry that binds the name. For a name bound in a body, that is the
   entry of the execution that bound it.
 - A FOLD written before this change carries no `apply` entries and no body
   bindings. A reader treats an entry without a parent as top-level, and an
-  entry without a kind as a write, as ADR 0026 already required.
-- The evaluator, `docs/reference/FOLD.md`, the scene parser and the runtime core change
+  entry without a kind as a write, as [[decision/0026]] already required.
+- The evaluator, [[reference/fold]], the scene parser and the runtime core change
   together. The stepper walks the writes as before and sees no difference.

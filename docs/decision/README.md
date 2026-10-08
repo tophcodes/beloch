@@ -47,5 +47,8 @@ Prose sections below it:
 A few records keep a `## Status` section as well, where the status carries
 narrative the single word cannot (0012, 0013, 0017, archive/0010).
 
+A document links to a record as `[[decision/NNNN]]` ([[decision/0054]]); the id
+stays valid when the record moves to `archive/`.
+
 See also: `../notes/` (design journal), `../antipatterns.md` (dead ends),
 `../reference/` (the language specification these decisions shape).

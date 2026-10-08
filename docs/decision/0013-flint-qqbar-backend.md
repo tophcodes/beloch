@@ -7,14 +7,14 @@ status: accepted
 # 0013: FLINT qqbar backend for irrational values
 
 **Status:** Accepted (supersedes the `Alg` representation of
-[0012](0012-real-algebraic-number-kernel.md); `Rat`/`Field` fast paths and
+[[decision/0012]]; `Rat`/`Field` fast paths and
 the `Mpoly` elimination pipeline of 0012 remain)
 
 ## Context
 
-ADR 0012's `Alg` (squarefree polynomial + isolating interval, resultant
+[[decision/0012]]'s `Alg` (squarefree polynomial + isolating interval, resultant
 arithmetic) was correct but had two walls, measured in
-`docs/notes/2026-07-03-flint-kernel-spike.md`: cross-field chains grow degree
+[[notes/2026-07-03-flint-kernel-spike]]: cross-field chains grow degree
 multiplicatively without normalization (comparing (∛2+√2)² against ∛2+√2:
 >120 s), and composite extensions of degree ≥ 4 were not representable
 without a polynomial factorizer. Building the D5-style fix ourselves
@@ -41,7 +41,7 @@ through `make` (Rat | Field via `minimal_poly_in` | Qq). FLINT 3.6's
 discriminant; the elimination path remains as fallback when FLINT's limits
 reject the field degree.
 
-Dependency: `flint3` (LGPL; linking is compatible with MIT, ADR 0006),
+Dependency: `flint3` (LGPL; linking is compatible with MIT, [[decision/0006]]),
 wired through the flake.
 
 ## Alternatives considered
@@ -64,4 +64,4 @@ wired through the flake.
   libraries (nix development shell / flake). `to_float` gains a sibling
   (`Qqbar.to_float`), still output-only.
 - #33's stacked-cubic ceiling question is re-answered by benchmark
-  (`docs/notes/2026-07-03-flint-kernel-spike.md` + the #33 verdict note).
+  ([[notes/2026-07-03-flint-kernel-spike]] + the #33 verdict note).

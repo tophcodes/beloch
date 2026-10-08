@@ -7,7 +7,7 @@ tableOfContents:
 ---
 
 `beloch render FILE --view stages` draws how the selection of one
-construction ([def-selection](/model/#def-selection)) went: which
+construction ([[reference/model#def-selection|def-selection]]) went: which
 candidates the construction produced, which stage removed each of them,
 and the one that remains, or why none or several remain. Like the rest of
 `CLI.md`, this page describes the reference implementation and binds no

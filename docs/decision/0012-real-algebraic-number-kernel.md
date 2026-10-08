@@ -6,11 +6,11 @@ status: accepted
 
 # 0012: Real-algebraic number kernel
 
-**Status:** Accepted (supersedes [0010](archive/0010-constructible-real-numbers.md); `Alg` representation superseded by [0013](0013-flint-qqbar-backend.md))
+**Status:** Accepted (supersedes [[decision/0010]]; `Alg` representation superseded by [[decision/0013]])
 
 ## Context
 
-[ADR 0010](archive/0010-constructible-real-numbers.md) gave `Num` a quadratic-extension
+[[decision/0010]] gave `Num` a quadratic-extension
 tower (`Rat | Ext(a,b,d)` = a+b√d), the constructible reals, enough for axioms
 1–6 (square roots only), and explicitly deferred the degree-3 kernel until
 axioms 6/7 forced it.
@@ -61,7 +61,7 @@ The elegant `Ext` tower is **retired**: one representation for all irrationals.
 
 - √-heavy axioms 5/6 lose the closed-form `a+b√d` speed (resultants are
   heavier); deep nesting grows defining-polynomial degree. Accepted:
-  correctness over speed, the same bargain as ADR 0010, now paid in full. The
+  correctness over speed, the same bargain as [[decision/0010]], now paid in full. The
   `Rat` fast-path keeps the common case free.
 - The public `Num` interface is unchanged (plus `real_roots`), so the geometry
   core migrated without API churn.
