@@ -1,4 +1,4 @@
-// The grammar notation of spec/BELOCH.md: a lexer over one line at a time, the
+// The grammar notation of docs/reference/BELOCH.md: a lexer over one line at a time, the
 // document checks, and the HTML renderers.
 //
 // A rule starts at column 0 and runs to the next line that starts at column 0

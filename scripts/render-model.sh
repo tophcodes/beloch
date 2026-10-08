@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Render the four spec/ documents (MODEL, KERNEL, the language, FOLD) to PDFs with resolved citations.
+# Render the four docs/reference/ documents (MODEL, KERNEL, the language, FOLD) to PDFs with resolved citations.
 #
 # Statements and terms are pandoc fenced divs, `::: {.definition #id …}`;
 # scripts/model-blocks.lua numbers them and generates the cross-reference lines
@@ -20,7 +20,7 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
-out="$root/_build/spec"
+out="$root/_build/reference"
 mkdir -p "$out"
 
 # typst reads a figure's SVG through a path rooted at the directory pandoc runs
@@ -32,7 +32,7 @@ cd "$root"
 bun "$root/scripts/grammar-register.ts"
 
 # The language is one PDF of its pages, in the order of the site's sidebar.
-# The pages go to pandoc as copies under $out/language/spec/, where
+# The pages go to pandoc as copies under $out/language/docs/reference/, where
 # grammar-blocks.lua still finds the grammar page's register entry by its
 # path. A page after the first loses its front matter, since pandoc keeps the
 # title of the last one, and opens with its title as a level-1 heading
@@ -40,9 +40,9 @@ bun "$root/scripts/grammar-register.ts"
 # where citeproc puts the bibliography.
 lang="$out/language"
 rm -rf "$lang"
-mkdir -p "$lang/spec"
+mkdir -p "$lang/docs/reference"
 pages=()
-for page in spec/BELOCH.md spec/BELOCH-WRITES.md spec/BELOCH-CONSTRUCTIONS.md spec/BELOCH-ANNOTATIONS.md spec/BELOCH-GRAMMAR.md; do
+for page in docs/reference/BELOCH.md docs/reference/BELOCH-WRITES.md docs/reference/BELOCH-CONSTRUCTIONS.md docs/reference/BELOCH-ANNOTATIONS.md docs/reference/BELOCH-GRAMMAR.md; do
   copy="$lang/$page"
   if [ ${#pages[@]} -eq 0 ]; then
     grep -vx '## References' "$page" > "$copy"
@@ -72,7 +72,7 @@ render() {
   echo "$out/$name.pdf"
 }
 
-render model "$root/spec/MODEL.md"
-render kernel "$root/spec/KERNEL.md"
+render model "$root/docs/reference/MODEL.md"
+render kernel "$root/docs/reference/KERNEL.md"
 render beloch "${pages[@]}"
-render fold "$root/spec/FOLD.md"
+render fold "$root/docs/reference/FOLD.md"

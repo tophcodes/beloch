@@ -1238,7 +1238,7 @@ let test_e2e_flatten_scores_under_fan () =
     (run (read_case "collapse/flatten-waterbomb-emergent-on-top-layer.bel"))
     (run (drop " (--v \\ --ab mountain)" both))
 
-(* ---- Sheets (spec/BELOCH.md, "Sheets"; spec/FOLD.md, `frame_unit`) ---- *)
+(* ---- Sheets (docs/reference/BELOCH.md, "Sheets"; docs/reference/FOLD.md, `frame_unit`) ---- *)
 
 let coords_of json =
   let open Yojson.Safe.Util in

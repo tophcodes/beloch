@@ -29,7 +29,7 @@ export function evalBelToFold(source: string, opts: { trace?: boolean } = {}): u
         code?: string; stdout?: Buffer | string; stderr?: Buffer | string; message?: string;
       };
       // Traced, a program that fails still writes its file, with the failure in
-      // `beloch:error` (spec/FOLD.md, "The trace"); a figure may draw that state.
+      // `beloch:error` (docs/reference/FOLD.md, "The trace"); a figure may draw that state.
       const partial = opts.trace ? e.stdout?.toString() : undefined;
       if (partial) return JSON.parse(partial);
       if (e.code === "ENOENT") {

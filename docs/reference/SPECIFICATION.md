@@ -1,0 +1,1583 @@
+# Beloch — Language Specification
+
+**This is the living specification.** It always describes the language *as it
+currently is*. It grows as each implementation slice lands; it is not a changelog
+and not a design doc.
+
+- Each section is tagged with the version it was introduced in, e.g. *(since v0.0)*.
+- **What**, not **why** or **how**: rationale for a choice lives in an ADR
+  (`../decision/`); how a slice is built lives in its (disposable) implementation
+  plan. This file is the durable source of truth for syntax, semantics, and the
+  output contract.
+- Citations are clickable links to the [References](#references) section below;
+  machine-readable entries live in
+  [`../bibliography/references.bib`](../bibliography/references.bib). A locator such as §1.5
+  points to a section *in that cited source*, not in this document. Full texts
+  are in `../refs/` (gitignored).
+
+Current version: **v0.27-dev** (paper-incidence filter for axioms 6 and 7:
+a candidate crease that cuts no face is dropped before the ambiguity check,
+the way axiom 5 already does it (§4.5); a single survivor is taken silently
+even when `toward` is written, `toward` selects among the survivors only, and
+an empty survivor list is its own error, distinct from *out of reach*);
+**v0.26-dev** (layer placement and the reverse fold:
+`fold … over/under <flap>` splices the moved block into the stack beside a
+named flap; `reverse` runs an inside or outside reverse fold as two placed
+half-folds over one line; both derive their crease letters from the finished
+stack);
+**v0.25-dev** (free point on a line — 1-DOF reference point
+along a line's material bundle; `.p = free on --l from .x at <rational>`, `at`
+optional (default `t = 1/2`); `free` is provenance, not a kernel relaxation —
+the result is an ordinary exact point; `beloch:free` FOLD emission, a
+forward-compat hook for a future renderer slider);
+**v0.24-dev** (default fold scope — no `moving`/`up to` folds
+the **outside-contiguous prefix** of the layer order down to and including the
+anchor flap, not every layer on the anchor's side; a point on a crease shared
+by several flaps seeds the whole contiguous run; `moving` now names the
+**deepest** flap of that prefix; a bare axiom-5 line-onto-line fold with no
+`moving` and no implied point still falls back to the all-layers set;
+`up to` is unchanged as the interim way to fold past the anchor flap; see
+[`docs/notes/2026-07-20-default-fold-scope.md`](../notes/2026-07-20-default-fold-scope.md));
+**v0.23-dev** (**`flatten` generalizes `collapse`, one
+solver pipeline, stayer convention** — single-vertex flat-folding is renamed
+`flatten`. Every statement runs one pipeline, no modes: `()` items state the
+rays (the shipped `&`/`\` selectors narrow a multi-segment crease when
+needed, but no longer must — the stayer filter prunes wrong segment choices
+on its own) and any known material facts (`mountain`/`valley`, `over`) as
+hard constraints; a bare element is solver-assigned, not defaulted to
+valley; the solver derives the M/V of every unmarked ray, the one emergent
+ray when the given ray count is odd — the swivel rabbit-ear move no Huzita
+axiom constructs directly — and the stacking, all subject to
+Maekawa/Kawasaki and anchored on the **stayer**, the material that does not
+move: fixed by convention (the leading two elements' <180° arc) or named
+explicitly with `(staying <flap>)`, replacing the reserved `standing` slot;
+and `{toward <point>}`, an item in braces rather than a trailing keyword,
+selects among survivors by a three-stage rule (position class, min-mountain
+canon, rank dipole) only when more than one remains — never mandatory. The
+item list drops `and` for parenthesized juxtaposition (`flatten (--a & .p)
+(--b & .q) …`); `flatten` is bindable, so an emergent crease — otherwise
+unconstructible — gets a name, and its tip point becomes selectable);
+**v0.22-dev** (**partial marks — the pinch** — `mark
+<construction> between .a .b` / `at .p` clip a mark's extent; an extent that ends
+mid-face is a non-subdividing *record* — splits no rays, can dangle mid-face —
+instead of subdividing everything it crosses, discriminated by
+boundary-incidence rather than which form was written; `mark … valley|mountain`
+sets a crease-pattern-frame M/V *intent* on records the same way it does on
+subdividing marks; `#[...]` picks the flap a record lands on; `mark --l =
+<construction> [extent] [dir] [#[...]]` combines bind-and-write; records emit into a
+`beloch:marks` FOLD custom field and `render-svg` draws them as a dashed
+reference line or short tick, distinct from live `F`/`M`/`V` edges);
+**v0.21-dev** (**mark/fold notation** — `map`/`through`/`perp`
+constructions are pure reads: bindable line values, touching nothing; the writes are
+the keyword verbs **`mark`** (crease and leave flat, FOLD `F`) and **`fold`**
+(crease and fold, FOLD `M`/`V`), alongside `collapse` and `flip`; `@` is
+retired entirely from the grammar — this completes the read/write law begun
+in the v0.20-dev cutover (through was its one write; now it too is a read));
+**v0.20-dev** (`@collapse` — single-vertex collapse: n ≥ 4
+material creases sharing one interior vertex fold straight to the flat end
+state in one step — rabbit ear, waterbomb — checked by Kawasaki/Maekawa/local
+validity, `over` disambiguates the layer order, `standing` is reserved
+syntax the evaluator does not yet implement; **notation cutover** — reads are
+operators (meet `*`, filter `&`, drop `\`, union `[]`, the incident-to-all
+selectors `.[] --[] #[]`), the one write was the keyword `through`);
+**v0.19-dev** (material crossings live in paper space, on the marks; no table-space point values; axiom 5 `toward` is a fold direction, not a sector, with a paper-incidence filter for the omitted case and a derived `moving`); **v0.18-dev** (fold scope — flap-typed `moving`, `up to` for some-layers simple folds, `@fold` along material creases); **v0.17-dev** (crease-segment selection — the `&` filter: a crease name is a bundle, projected to one segment by incidence); **v0.16-dev** (`def`/`apply`/instances, qualified access, `export`; `=` binding separator); **v0.9-dev** (axiom 7 — cubic Beloch fold, two points each onto a line); **v0.8-dev** (axiom 6 — fold a point onto a line, crease through a fixed point); **v0.4-dev** (axiom 4 — project a point onto a line); **v0.3-dev** (axiom 5 — angle bisector); **v0.2** (axiom 3 — perpendicular through a point); **v0.1** (faces); **v0.0** (minimal core).
+
+---
+
+## 1. Overview *(since v0.0)*
+
+Beloch is a declarative language for origami. A `.bel` program is **evaluated**
+(not compiled to an executable) into a data artifact describing a paper state,
+emitted as FOLD. See [ADR 0007](../decision/0007-evaluator-not-compiler.md).
+
+The language is built on the Huzita-Justin fold axioms
+[[justin1986]](#ref-justin1986), using them as primitive operations. *(since
+v0.7-dev)* It is an **action model**: a program is an imperative sequence of
+marking/folding actions on a stateful sheet (§4.6). The axioms (`map`,
+`through`, `perp`) locate *where* a crease could go — a pure read; `mark` and
+`fold` actually act on the paper (§4.10). A program evaluates to a folded
+state, emitted as a dual-frame FOLD file — the flat **crease pattern** and the
+**folded form** (§7). The flat crease pattern (a program with no `fold`
+actions) is the special case.
+See [ADR 0011](../decision/0011-action-model.md).
+
+### A note on axiom numbering
+
+Beloch uses the **classic Huzita-Justin numbering** [[justin1986]](#ref-justin1986)
+§8.1 — the numbering used by most origami-*math* references. It is chosen
+deliberately: Justin ordered the seven axioms **by algebraic power**, so the
+axiom number is also the rung on the number-kernel ladder (ℚ → √ → ∛; see §3).
+Two rival schemes exist and **do not** line up with ours; the table below is the
+authoritative cross-map so they are never re-conflated.
+
+| Beloch / Justin | The fold | Degree | Sols | Huzita-Hatori (Wikipedia) | Hull §1.5 |
+|:---:|---|:---:|:---:|:---:|:---:|
+| **①** | line through two points | 1 | 1 | 1 | O1 |
+| **②** | one point onto another (⟂ bisector) | 1 | 1 | 2 | O3 |
+| **③** | perpendicular through a point | 1 | 1,2 | 4 | O5 |
+| **④** | project a point onto a line (∥ another) | 1 | 0,1 | 7 | O8 |
+| **⑤** | one line onto another (angle bisector) | 2 | 1,2 | 3 | O4 |
+| **⑥** | point onto line, crease through a point | 2 | 0,1,2 | 5 | O6 |
+| **⑦** | two points each onto a line (cubic Beloch fold) | 3 | 0,1,2,3 | 6 | O7 |
+| — | *locate line ∩ line (not a fold)* | — | — | — | O2 |
+
+Three traps this table defuses:
+
+- **The Wikipedia clash.** Huzita-Hatori numbers the **cubic fold as axiom 6**;
+  Beloch numbers it **7**. Anyone cross-referencing Wikipedia will trip here.
+  When this spec says "axiom 7" it means the cubic Beloch fold — Wikipedia's O6.
+- **Hull's shift.** Hull inserts a non-fold ("locate the intersection of two
+  lines") as his **O2** and reorders 3/4/5, so his numbering matches *neither*
+  other scheme. When this spec writes "axiom 2" it means point-onto-point =
+  Hull's **O3**, and the angle bisector is **axiom 5** (Hull's O4), *not* axiom 3.
+- **Degree, not position, drives the kernel.** Axioms ①–④ are degree 1 and stay
+  in ℚ; **⑤** (bisector) is the first to require square roots (leaves ℚ); **⑦** is
+  the first to require cube roots. Justin's own §8.1: ①–④ give dyadic rationals,
+  ①–⑤ the field K₁, ①–⑥ = ruler-and-compass (K₂), ①–⑦ the larger K₃.
+
+This discrepancy set is also recorded in [antipatterns.md](../notes/antipatterns.md).
+
+---
+
+## 2. The paper *(since v0.0)*
+
+Moved to `BELOCH.md`, "Sheets" (ADR 0046).
+
+---
+
+## 3. Values *(since v0.0)*
+
+Two kinds of value, distinguished by sigil:
+
+- **Point** — `.name`. The four corners, plus any point derived by a
+  construction (§4.3), or *(since v0.25-dev)* a **free point on a line**
+  (§4.3a) — a 1-DOF reference point whose position is not load-bearing, but
+  whose value is an ordinary exact point like any other (§6).
+- **Crease / line** — `--name`. The geometric value of a fold: an (infinite)
+  line. On output it appears as the edges of the folded state's faces (§7);
+  `mark`/`fold` (§4.6) act on the paper with it.
+
+All geometry is exact (§6).
+
+---
+
+## 4. Operations
+
+### 4.1 Axiom 1 — line through two points *(since v0.0)*
+
+```
+through .x .y
+```
+
+The unique fold line passing through points `.x` and `.y`
+[[justin1986]](#ref-justin1986), [[hull2020]](#ref-hull2020) §1.5 (O1).
+**Error** if `.x` and `.y` are the same point (no unique line).
+
+### 4.2 Axiom 2 — fold one point onto another *(since v0.0)*
+
+```
+map .x onto .y
+```
+
+The fold that places `.x` onto `.y`: the perpendicular bisector of the segment
+`x–y` [[justin1986]](#ref-justin1986),
+[[hull2020]](#ref-hull2020) §1.5 (O3 in Hull's numbering; see §1).
+**Error** if `.x` and `.y` are the same point.
+
+*(since v0.6-dev: verb is `map … onto …`; was `fold … to …`.)*
+
+### 4.3 Meet — where two lines cross: `*` and `.[…]` *(since v0.0)*
+
+```
+--c1 * --c2        ; the meet point   ≡  .[--c1 --c2]
+```
+
+The point where the two creases' **material marks** cross on the sheet. Meet is
+a **read** (§4.10): the operator names existing geometry — a crossing — and
+scores nothing. `*` is the binary sugar; the n-ary form is the bracket `.[l+]`,
+the point incident to *all* the listed lines (concurrent lines → their common
+point), so `--x * --y` ≡ `.[--x --y]`. This is a point *construction*, not a
+fold axiom, in the classic numbering; it is Hull's basic operation O2
+[[hull2020]](#ref-hull2020) §1.5 (O2). A pure value binding (`--l = <construction>`,
+§4.10) has no mark to cross — meet needs **material** operands, so a line used
+only to locate a crossing still has to be `mark`ed (a non-subdividing
+`between`/`at` record, §4.6, is enough; it need not subdivide anything).
+
+The meet is computed in **paper space**: a crease is a scar in the material,
+and two scars cross or miss each other independently of how the sheet happens
+to be folded. There are no table-space point values in the language. Paper is
+opaque, so layers that only overlap on the table show no crossing: no layer
+carries both marks. (`Q2-B` in `docs/notes/antipatterns.md` records the table-space
+rule this avoids.)
+
+The meet is the **intersection of the operands as sets of paper points**,
+defined when it is exactly one point ([def-meet](/model/#def-meet), ADR 0027):
+
+- An operand may lie on **any number of paper lines**. A crease scored through
+  several layers marks a scar and its mirror images; it meets bare, and only
+  the number of common points counts. On the preliminary base `--h * --v` is
+  the paper center.
+- The common point lies **on the marks** of every crease operand (endpoints
+  count). Supporting lines that cross beyond the marks give no common point.
+- A paper-edge operand (a prelude edge `--ab`, or a `--[.a .b]` selection) is
+  a boundary line; it contributes the points of that line on the paper. The
+  same holds for a reference-only boundary crease (one that cut no face).
+- The meet is **fold-state-independent**: folding never moves a mark within
+  the sheet. Only name resolution (the `&` filter) reads the folded state.
+- `.[l+]` with more operands is the one point common to all of them.
+- Narrowing an operand with `&` (§4.8) keeps a meet valid as long as the
+  narrowed operand still holds the crossing, and is needed only to choose
+  among several crossings.
+
+**Errors:**
+
+- **no common point**: the operands are **parallel**, or the lines they lie
+  on cross beyond their marks or off the paper (exact point-in-polygon test;
+  the boundary counts as on the paper);
+- **ambiguous**: two or more common points; the message lists them in paper
+  coordinates, and the hint suggests narrowing an operand with `&`;
+- **overlap**: the operands share a stretch of paper (a segment) or lie on one
+  boundary line.
+
+### 4.3a Free point on a line — `free on … from … at …` *(since v0.25-dev)*
+
+Moved to `BELOCH.md`, "Free points".
+
+### 4.4 Axiom 3 — perpendicular through a point *(since v0.2)*
+
+```
+perp --l through .p
+```
+
+The fold line through point `.p`, perpendicular to crease `--l`
+[[justin1986]](#ref-justin1986) §8.1 (operation ③), [[hull2020]](#ref-hull2020)
+§1.5 (O5 in Hull's numbering; see §1). This is the first axiom taking a **crease**
+as an operand.
+
+**On the number of solutions.** Operation ③ admits *two* fold lines exactly when
+`.p` lies **on** `--l`: the perpendicular through `.p`, and `--l` itself (a
+reflection maps a line onto itself either across a perpendicular or across the
+line itself; both pass through `.p` only when `.p ∈ --l`). The second is the
+**trivial, identity-like** solution — re-creasing the existing line, producing no
+new geometry. Beloch always returns the **perpendicular**: it is unique and is
+the meaningful construction. We deliberately ignore the trivial solution,
+assuming the program wants the meaningful variant. Consequently `perp` has **no
+geometric precondition and never errors** (beyond undefined-name errors).
+
+### 4.5 Axiom 5 — fold one line onto another *(since v0.3-dev)*
+
+Moved to `BELOCH-CONSTRUCTIONS.md`, "Axiom 5, a line onto a line"; the
+selection among its candidates is under "Selection" there (ADR 0031).
+
+### 4.5a Axiom 4 — project a point onto a line *(since v0.4-dev)*
+
+```
+map .p onto --l1 perp --l2
+```
+
+The fold that places point `.p` onto line `--l1` with a crease **perpendicular
+to** `--l2`. Equivalently, `.p` is moved **parallel to** `--l2` until it lands on
+`--l1` — the *projection of `.p` onto `--l1` parallel to `--l2`*
+[[justin1986]](#ref-justin1986) §8.1 (operation ④). At most **one** solution, so
+there is nothing to select; `toward` still names the side that stays
+(`BELOCH-CONSTRUCTIONS.md`, Selection).
+
+**Numbering.** This is classic Justin **axiom 4**, which is Wikipedia's
+Huzita-Hatori **O7** — *not* Wikipedia's O4 (that is Beloch's axiom 3,
+perpendicular-through-a-point). See §1 and `antipatterns.md`.
+
+**Errors:** `--l1` and `--l2` are **parallel** — no fold exists (zero solutions;
+or, when `.p` lies on `--l1`, infinitely many — forbidden either way). When `.p`
+already lies on `--l1` and the lines are not parallel, the crease is the
+perpendicular to `--l2` through `.p` (one solution).
+
+The result stays in ℚ — no square roots
+[[justin1986]](#ref-justin1986) §8.2(a).
+
+### 4.5b Axiom 6 — fold a point onto a line, crease through a fixed point *(since v0.8-dev)*
+
+Moved to `BELOCH-CONSTRUCTIONS.md`, "Axiom 6, a point onto a line through a
+point" (ADR 0031).
+
+### 4.5c Axiom 7 — cubic Beloch fold (two points, two lines) *(since v0.9-dev)*
+
+Moved to `BELOCH-CONSTRUCTIONS.md`, "Axiom 7, two points onto two lines"
+(ADR 0031).
+
+### 4.6 Marking and folding: `mark` / `fold` *(since v0.7-dev; `mark`/`fold` verbs since v0.21-dev; partial marks since v0.22-dev)*
+
+A construction (`map`/`through`/`perp`, §4.1–§4.5c) is a pure read: it computes a
+line and touches nothing. `--l = (map .a onto .b)` binds a value; on its own it
+scores nothing. Acting on the paper needs one of two disposition keywords
+(§4.10):
+
+- **`mark`** — crease the line and leave the sheet **flat**: subdivides the
+  layers it crosses into flaps, but moves nothing. Emits FOLD `F` — present,
+  not folded (§7) — carrying an M/V *intent* in the crease-pattern frame.
+- **`fold`** — crease the line **and fold it**: subdivides and moves layers.
+  Emits FOLD `M`/`V` in both frames.
+
+```
+mark (map .a onto .b)                     ; crease, stays flat (valley intent)
+mark (through .a .c) as --d               ; named crease, stays flat
+fold (map .a onto .c) (moving .a)         ; fold the flap containing .a, valley
+fold (map .a onto .c) (moving .a) (mountain) ; ... as a mountain
+fold (perp --l through .p) (moving .q)    ; line-construction folds need `moving`
+```
+
+`@` is retired: there is no fold marker distinct from the verb itself.
+
+**`mark`'s extent — full, `between`, `at`** *(since v0.22-dev)*. A `mark`
+statement optionally clips the construction's line before creasing:
+
+```
+mark (<construction>)                        ; full chord (default)
+mark (<construction>) (between .a .b)        ; clip to the segment [.a, .b]
+mark (<construction>) (at .p)                ; a single reference point on the line
+```
+
+`between`/`at` points must already lie **on the mark's line** — off-line is an
+error (`.p is not on the mark's line`). The discriminator for what happens next
+is **boundary-incidence, not which form was written**: an extent that runs
+**boundary-to-boundary** across the flap it lands on — the default full chord,
+or a `between` whose two points both sit on that flap's boundary — **subdivides**
+exactly like before, emitting a standard `F` edge. An extent that **ends
+mid-face** — an `(at .p)` with `.p` interior to a face, or a `between` with one or
+both ends interior — does **not** subdivide: the boundary-reaching part (if any)
+still creases and splits its faces, but the dangling stub from the last boundary
+crossing to the interior endpoint becomes a **non-subdividing record** — a
+pinch or reference crease that **splits no rays** and can dangle mid-face
+without touching the flap graph at all. A record mark still rides folds with
+its flap like any other material; it just never counts as a flap boundary.
+
+An extent that would have to **cross an already-folded (`M`/`V`) crease** to
+reach its endpoint is an error — it would leave its flap: "the mark's extent
+from `.a` to `.b` crosses a folded crease (it leaves its flap)". A `between`
+whose **both** endpoints dangle mid-face in *different* faces of the same flap —
+spanning an internal (`F`) crease with neither end anchored to a boundary — is
+also an error this slice: "the mark's extent from `.a` to `.b` spans an internal
+crease with both ends mid-face; anchor an endpoint to a boundary or use two
+marks." Anchor one end to a boundary, or split it into two marks, instead.
+
+**Direction on a record mark.** `mark … (valley|mountain)` (default valley) still
+applies to a record mark exactly as to a subdividing one: the mark is always
+`F` in the folded-form frame (nothing has moved), and its M/V **intent** colors
+the crease-pattern frame only — the same creasePattern/foldedForm split used
+for subdividing marks (§7).
+
+**Layer selection — `#[...]`.** `mark (<construction>) [extent] (on #[...])` chooses which
+flap the mark is written onto, same resolution as `&`'s `#[...]` (§4.8):
+the unique flap containing every listed point. Omitted, it defaults to the
+**carrying flap** — the flap holding the extent's own geometry (the material
+the points/line were built from); if that geometry sits on a boundary shared by
+several stacked flaps, it is ambiguous and errors, naming the flap count and
+pointing at `#[...]`.
+
+**Combined bind-and-write.** `mark (<construction>) [extent] [dir] [(on #[...])] as
+--l` binds the crease name and marks in one statement, equivalent to the
+two-statement `--l = (<construction>)` *(pure value, §4.10)* followed by `mark
+(--l) [extent] [dir] [(on #[...])]`.
+
+```
+mark (map .a onto .c) (between .a .m) as --p           ; segment record, anchored at .a
+mark (map .a onto .c) (at .m) (mountain) as --p         ; single reference point
+mark (--q) (between .a .b) (on #[.c])                   ; named crease, explicit flap
+```
+
+**FOLD emission.** A subdividing mark (full chord, or a boundary-to-boundary
+`between`) emits exactly as any other `mark` — a standard `F` edge in
+`edges_assignment` (§7). A record mark instead emits into the custom
+`beloch:marks` field (§7) — never a fake display-length edge in the standard
+arrays — and `render-svg`'s crease-pattern view draws it distinctly from live
+creases (a dashed reference line or a short tick), so it is never mistaken for
+an `F`/`M`/`V` edge.
+
+**Known limits.** Exact-incidence only: a mark endpoint snaps onto an existing
+vertex on exact rational equality, never by tolerance — no fuzzy/"close
+enough" snapping this slice. The "spans an internal crease, both ends
+mid-face" case above is a real gap, not a design choice: anchoring one end to a
+boundary (or writing two marks) always works around it. And a partial mark
+does **not** let a scaffold skip creasing entirely — the meet operator (`*` /
+`.[…]`, §4.3) requires a **material** (marked) operand on each side; a pure
+value-bound line (`--l = <construction>`, no `mark`) has no mark to cross (`--l is
+not a physical crease, so it has no material mark to cross`, §4.3). So a line
+used only to *locate* a meet point still must be `mark`ed — `between`/`at`
+only controls whether that mark subdivides its flap, not whether it exists.
+Lines that only feed a `fold (map … onto --l)` (never a `*`) can stay pure values,
+since folding a line onto another needs no material crossing.
+
+*(since v0.18-dev)* Every `fold` has four ingredients:
+
+| Ingredient | What | Source |
+| --- | --- | --- |
+| axis | the fold line | a construction, or an existing material crease (`fold (--d)` with no construction, below) |
+| anchor | the deepest flap of the moving prefix | implied on map folds, or `moving` |
+| scope | which flaps move | default: outside-contiguous prefix down to the anchor; or `up to` |
+| direction | valley/mountain | `mountain` keyword; default valley |
+
+**Anchor.** `moving` takes a **flap operand** (ADR 0016) — a point, a line, or
+`#[...]`, the same three forms `&` (§4.8) resolves by incidence:
+
+- a **point** — the flap carrying it. No flap contains it → error (`.p is not
+  on the paper`); the point sits on a crease shared by several flaps → error
+  naming the count, with a hint pointing at `#[...]` (`.p lies on a crease
+  shared by 2 flaps`, hint `name the flap with #[...]`).
+- a **line** — the flap hinged on it. Usually ambiguous, since a hinge has two
+  sides (`--d touches 2 flaps`, hint `add a point, e.g. #[.p]`); resolves only when
+  exactly one flap touches it.
+- **`#[...]`** — explicit incidence constraints: the unique flap containing
+  every listed point (`(moving #[.b .c])`), same resolution rule as `&`'s
+  `#[...]` selector.
+
+**Map folds** (`fold (map .a onto .c)`) imply the anchor from the moved point
+when `moving` is omitted, here `.a`'s flap; `(moving <flap>)` overrides it
+(e.g. `(moving .c)` folds the other side instead). *(since v0.19-dev)* `fold
+(map --l1 onto --l2)` (axiom 5) similarly derives its anchor, from `--l1`'s own
+swinging material (`BELOCH-CONSTRUCTIONS.md`); `moving`
+still overrides it, and is still required when that material straddles the
+axis, or to scope an `up to` range. **Line-construction folds** (`fold
+(through …)`, `fold (perp …)`) and **folding along existing material**
+(below) have no natural anchor at all, so they need `moving`, or `toward`,
+which names the side that stays (`BELOCH-CONSTRUCTIONS.md`, Selection);
+without either the error is "this fold needs `moving .p` to choose the
+side". A line- or `#[...]`-flap anchor that
+straddles the fold axis, or a `moving` point exactly on the axis, is also an
+error (no side to pick); a point anchor disambiguates the side by itself, even
+when its flap straddles the axis.
+
+**Scope.**
+
+- **No `up to`** (default): *(since v0.24-dev)* the moving set is the
+  **outside-contiguous prefix** of the layer order over the crease region —
+  top for valley, bottom for mountain — down to **and including** the
+  flap(s) carrying the anchor operand. The anchor operand is `moving` when
+  present, or the implied source point on a map fold (`fold (map .b onto .o)`
+  → `.b`). It is *not* every layer on the anchor's side: deeper layers below
+  the anchor flap stay. The seed is resolved in **paper space**: the flap(s)
+  whose paper polygon contains the anchor point. A point on a shared paper
+  **edge** (as in the ear fold, where the tip sits on the crease between two
+  flaps) therefore seeds **all** those flaps — the whole contiguous run, so the
+  tip you would physically grab is a valid anchor. But a point interior to a
+  single paper face (a plain corner atop a folded stack) seeds only that one
+  flap; if the layers beneath it must move too, the fold tears (the
+  hinge-closure check below fires) and the fold needs an explicit `up to`. On a
+  single-layer region (e.g. a first fold on flat paper) the prefix is that one
+  flap — identical to the pre-v0.24-dev behavior. The one gap: a bare axiom-5
+  line-onto-line fold with no `moving` and no implied point (the direction comes
+  from `side_override` alone, so there is nothing to anchor a prefix to) still
+  falls back to every layer on the side — and that fallback set is now gated by
+  the same hinge-closure tear check.
+- **`(up to <flap>)`**: the contiguous range of flaps from the anchor through the
+  target flap, **inclusive**, walked in the stack order **over the crease
+  region** (depth may vary along a crease, so the walk compares only the
+  overlapping pieces):
+  ```
+  fold (map .d onto .a)
+  fold (map .c onto .d) (up to .c)   ; up to the anchor itself: exactly one flap moves
+  ```
+  A line target (`(up to --d)`) resolves even though `(moving --d)` alone usually
+  wouldn't: the anchor fixes the walk direction, so the first flap hinged on a
+  segment of `--d` reached from the anchor ends the range (ADR 0016, slot
+  context counts toward uniqueness). A target not reachable by the walk, or
+  not on the anchor's side, is an error.
+
+**Validity — outer-contiguous prefix.** A `fold` statement is a **simple
+fold** [demaine2007, §14.1]: a rigid 180° rotation of the moving layers under
+the crease segment, collision-free throughout the motion. The static shadow of
+that constraint: the moving set must be a **contiguous prefix of the layer
+order in the crease region**, counted from the outside — top for valley,
+bottom for mountain. A **buried anchor** — a stationary flap covering it in the
+crease region — is an error regardless of how the end state looks (its material
+would pierce the covering layer mid-rotation): "a simple fold cannot move a
+buried flap: face *N* covers the anchor in the crease region", hint "include
+the covering flap (anchor the fold there) or fold less". The default scope is
+itself an outer-contiguous prefix by construction (it grows outward from the
+anchor flap), so it satisfies the prefix rule; a genuine tear (the anchor
+flap hinged to a stationary layer off the axis) is caught by the same
+hinge-closure check the `up to` path uses. Construction outside the crease region
+is not checked — full motion validation is out of scope until an animatable
+(3D) viewer needs it.
+
+**Folded state.** The paper is a set of flat **faces** — each a convex polygon
+in paper coordinates plus a rigid isometry placing it on the table — carrying a
+**partial** stacking order: any two faces that overlap on the table are ordered
+above/below, while faces lying apart carry no relation (a sparse per-face poset,
+not a single bottom→top stack). A flat fold (±180°) keeps everything in the table
+plane, so the only "depth" is this per-overlap order. A simple fold reflects every
+layer in the moving set across the crease line (an exact reflection — no
+`sqrt`) and restacks: the moved layers, reversed, go on top (valley) or
+underneath (mountain). The default scope is the outside-contiguous prefix
+down to the anchor flap (see **Scope** above), not every layer on the
+anchor's side; `up to` widens it explicitly when a fold needs to reach
+deeper.
+
+**Derived mountain/valley.** Each crease's assignment is
+`valley XOR (the cutting face is back-up)`, fixed when the fold runs. Because
+stacked layers alternate front/back, one fold through a stack yields the correct
+**alternating** M/V across layers (the accordion). Earlier creases keep their
+assignment (material facts). This XOR rule is exact for a **simple fold** — one
+crease, one pre-fold parity check — and is *equivalent to* the more general
+rule below in that case.
+
+For a **multi-crease move** (`flatten`, §4.9 — several creases folding
+together at one vertex), the folded-form letter of each resulting crease is
+the **derived global-frame M/V** of the finished folded state: the
+mountain/valley assignment determined by the isometric folding map and its
+layer ordering together [hullzakharevich2023, §2.1] — which face is
+orientation-preserved and whether the two faces across the crease are above
+or below each other — the same notion the single-crease XOR is checking, just
+read off the finished state instead of computed per-ray during the fold. (An
+earlier implementation instead adjusted the per-ray XOR by a fan-index parity
+term to approximate this; that adjustment was a bug, not a spec rule, and is
+not carried into the 3D rewrite.) The derived letter is anchored to the
+crease pattern, not to which side of the paper is facing up: `flip` (§4.7)
+negates orientation and layer order together, so the derived M/V is
+unchanged — mountain stays mountain when the model is turned over.
+
+**Folding along existing material** — `fold` with no construction *(since
+v0.18-dev)*:
+
+```
+fold (<crease-operand>) [(moving <flap>)] [(up to <flap>)] [(mountain)]
+```
+
+Folds along a crease already on the paper (a bundle, §4.8) instead of
+re-stating the construction that produced it (§4.1–§4.5c). A material
+crease implies no side, so `moving` or `toward` names it. Material resolution is per
+flap, as for any crease reference (§4.8): a crease **bent** under the moving
+set is an error ("the crease is bent under the moving flaps", hint "select a
+straight segment with `&` or move fewer flaps") — select a straight segment
+with `--d & ...` instead. `fold` (with no construction) composes with `up to` to
+crease every layer while folding only some — the motivating case, *crease
+all, fold some*:
+
+```
+mark (map .b onto .a) as --d        ; mark: subdivides ALL layers, stays flat
+fold (--d) (moving .b) (up to .c)   ; fold only flaps .b through .c along it
+```
+
+Non-moving layers keep their flat crease mark (`"F"` in FOLD output, §7, since
+v0.21-dev — was `"U"` before); moving ones fold (their mark upgrades to
+`"M"`/`"V"`).
+
+See [ADR 0016](../decision/0016-typed-operands-bundle-values-singleton-slots.md)
+(typed operands: bundle values vs. singleton slots — the resolution rules
+behind `moving`, `up to`, and `#[...]`) and
+[ADR 0014](../decision/0014-crease-is-a-bundle-of-segments.md) (a crease is a
+bundle of segments — why folding along existing material checks for a bent
+crease and why `&` selection exists).
+
+**Placing the moved flap with `over` / `under`** *(since v0.26-dev)*.
+
+```
+fold (<construction|crease>) [ (moving <flap>) ] ( (over <flap>) | (under <flap>) )
+```
+
+A placed fold reflects the anchor flap's material beyond the axis, as any
+fold does, and inserts the moved block into the stack immediately above
+(`over`) or below (`under`) the target flap instead of on the outside. The
+crease it scores, the material it subdivides and the derived letters are
+unchanged. The moving set is the anchor flap's faces on the moving side,
+closed under coplanar clusters, with no outer-prefix rule: a tuck passes
+through a pocket that opens for it, so the rigid-rotation argument behind
+the prefix rule does not apply; the layer invariants of the end state
+decide. `moving` is optional here as in any fold: a map construction implies it
+from the moved point, and the fold errors when neither is available. The
+target resolves by incidence to a flap that must be stationary and must
+overlap the footprint the block lands on; of its overlapping faces
+the lowest-ranked anchors `under`, the highest-ranked `over`. The fold's
+direction is a consequence of the placement, never stated: `mountain` beside
+`over`/`under` is a parse error (`a placed fold derives its direction`, hint
+`drop mountain`), and so is `up to` (`a placed fold moves the anchor flap only; up
+to is not supported here`).
+
+Errors: `the placement target moves with the fold` (hint `name a stationary
+flap`);
+`` <T>'s flap does not cover where the moved material lands ``; `` placing
+the moved material under <T> would pierce layer <n> `` (`over` likewise).
+
+```
+fold (map .a onto .d)                         ; two layers
+fold (through .m .n) (moving .b) (under .p)   ; the top layer's corner, tucked between
+```
+
+
+### 4.6a `reverse` — inside and outside reverse folds *(since v0.26-dev)*
+
+Moved to `KERNEL.md`, "Reverse"; the model is
+[def-reverse](/model/#def-reverse) (ADR 0043), the syntax `BELOCH-WRITES.md`.
+
+### 4.7 `flip` — turn the sheet over *(since v0.7-dev)*
+
+```
+flip
+```
+
+Turns the whole sheet over: every face's orientation inverts and the stacking
+order reverses — every above/below relation negates, so a face previously at the
+bottom of its overlap column becomes reachable on top. Because
+orientation inverts, a *subsequent* valley command is derived as a **mountain**
+relative to the original front — i.e. "mountain = turn over, then valley." `flip`
+takes no axis: with named points, where the sheet lands is irrelevant, so the
+reflection uses an internal canonical axis (the footprint's vertical centerline).
+A direction argument may be added later when the animation renderer needs it.
+
+### 4.8 Filtering a crease bundle: `&` (and `\`, `[]`) *(since v0.17-dev)*
+
+A crease name is a **bundle**: one crease realized as a set of segments — one per
+layer the crease line crossed, further split by later creases. The segments are
+collinear only in the folded moment of creation; once (un)folding scatters them
+they point every which way in the crease pattern. So a crease name is not a single
+line.
+
+`--l & <constraint>` **filters** the bundle to the segments incident to the
+constraint. At a singleton slot (one that wants exactly one line, ADR 0016) it
+projects to the **one** segment and yields that segment's current supporting line
+(usable anywhere a line operand is; as a fold axis that is its table-space line,
+in a meet (`*`) its material paper-space mark — §4.3). Constraints, by incidence:
+
+- `--l & .p` — the segment the point `.p` lies on.
+- `--l & --a` — the segment whose span contains `--a`'s crossing of `--l`.
+- `--l & #[.a .b …]` — the segment lying on that flap.
+
+Filtering is **incidence**: `&` keeps the segments the constraint is *on*. This is
+distinct from `toward`, which names the side of a fold that stays
+(`BELOCH-CONSTRUCTIONS.md`, Selection). `&` binds tighter than the axiom keywords: `perp --l & --a through .b`
+reads as `perp (--l & --a) through .b`, and that grouping may be written out,
+since a parenthesized operand is that operand *(since v0.28-dev)*.
+
+Chaining conjoins: when one point sits on a crease crossing (two adjacent
+segments share it), pin the unique segment incident to *both* constraints by
+chaining — `--l & .p & --a`. Two related read operators complete the family:
+`\` is the **negated** filter (`--l \ .p` keeps the segments *not* through `.p`
+— e.g. the ray away from a split vertex), and `[a b …]` is the **union** of
+same-typed bundles (`[--x --y] & .p`). At a singleton slot the result must be a
+**single** segment: no match is an error ("no segment of `--l` matches …"); more
+than one is an error asking for a further constraint.
+
+`&` supersedes the earlier `--( --l #(…) )` restrict form (and the `at` operator
+it replaced). `&` *selects* a segment from an existing bundle; *creating* a single
+reference segment is the partial mark `mark (…) (at .p)` (§4.6) — an extent ending
+mid-face lays a non-subdividing record, no separate primitive.
+
+### 4.9 `flatten` — single-vertex flatten *(since v0.20-dev as `collapse`; renamed v0.23-dev; one-pipeline model v0.23-dev; stayer convention v0.23-dev)*
+
+Every other fold in the language performs one simple fold at a time. Some flat
+end states are not reachable that way: three angle bisectors of a triangle
+meet at the incenter O, and — with the altitude from O added — the vertex is
+flat-foldable (**Rabbit-Ear Theorem**, [[hull2020]](#ref-hull2020) Thm 8.5),
+but no *sequence* of single simple folds reaches that end state; flat-foldable
+and simple-foldable are different classes [demaine2007, §14.1.1]. `flatten`
+jumps straight from the precreased flat sheet to the flat end state of several
+creases folded at once, all meeting at one point — shipped as `collapse`
+(v0.20-dev), renamed `flatten` and generalized (v0.23-dev), then reworked
+into **one solver pipeline** (v0.23-dev).
+
+**One pipeline, no modes.** An earlier revision split `flatten` into a
+*validate* mode (every ray given, only checked) and a *derive* mode (an odd
+ray given, the missing one solved for, a trailing `toward` mandatory to pick
+a side). That split is gone: every `flatten` statement now runs the same
+solve. `()` items state the topology — the rays sharing the vertex — and any
+material facts already known (`mountain`/`valley`, `over`); these are **hard
+constraints** that *filter* the solution space, never pick a winner
+(`staying` — naming the stayer explicitly, State construction below —
+shares the item form and is another such constraint; a redundant one is a
+lint candidate, never an error). The solver fills in the rest — the M/V of every unmarked ray, the one
+emergent ray when the given count is odd (still not constructible by any
+Huzita axiom; it exists only because flat-foldability forces it), and the
+stacking — subject to Maekawa and Kawasaki, which act as the solve's oracle
+rather than separate checks you invoke. If more than one geometrically-valid
+outcome survives, `(toward <point>)` picks among them; omit it when the
+geometry is already unique — a disambiguator present but not needed is
+redundant, never an error (redundancy is lint-territory, not
+error-territory). See the pipeline in `KERNEL.md`, section Fan, for the
+mechanics.
+
+**Scope: one vertex per statement.** Deciding flat-foldability for a sheet
+with many interacting vertices is NP-hard
+([[hull2020]](#ref-hull2020) §6.6, Thm 6.17 — Bern–Hayes); the single-vertex
+case is exactly decidable and already covers rabbit ear, waterbomb/preliminary
+bases, and — later, at boundary vertices — squash-type moves. Multi-vertex
+flatten (e.g. bird base in one step) is deferred (Appendix B).
+
+**Syntax:**
+
+```
+flatten_stmt  := "flatten" flatten_item+ [ "as" CREASE_NAME [ "!" ] | "into" CREASE_NAME ]
+flatten_item  := "(" flatten_elem ")"
+               | "(" over_flap "over" over_flap ")"
+               | "(" "staying" flap_operand ")"
+               | "(" "toward" point_operand ")"
+flatten_elem  := line_operand [ "mountain" | "valley" ]
+over_flap     := point_operand | "#[" point_operand+ "]"
+```
+
+Every item states a constraint on the vertex — a ray, an M/V pin, an `over`
+order, or the `staying` flap (State construction, below) — and *filters*
+the solution space, with one exception: `(toward .p)` *selects* from
+whatever survives, rather than constraining it. It may appear in any
+position among the other items, and at most once; a second occurrence is a
+parse error (`` only one toward item per flatten ``).
+
+Every item is wrapped in parentheses unconditionally, even a bare element,
+because with `and` dropped an unparenthesized item's first token would
+collide with the first token of the *next* statement (a bind `--l =
+…`/`.p = …`) at one token of lookahead (BELOCH-WRITES.md).
+**Element order is semantic**: the first two elements' folded rays fix the
+stayer by convention (State construction, below), so which element is
+written first and which second changes the fold. Every other item — a
+third-or-later element, `over`, `staying`, `toward` — carries no positional
+meaning and may appear in any order, interleaved freely with the leading
+pair:
+
+```
+flatten (--ba & .a) (--bb & .b valley) (--e mountain) (.p over .q) (staying .r) (toward .s)
+```
+
+(`and` survives only as axiom-6's fixed binary joiner, `map … and … onto
+…` — an accepted asymmetry, since that `and` binds a fixed pair of operands,
+not an open item list.)
+
+- `flatten_elem`'s `line_operand` must resolve to a material crease — the
+  same operand forms `fold` (with no construction) accepts (`--name`, `--name &
+  <constraint>`, §4.8); a paper edge or a non-material selected line is
+  syntactically a `line_operand` too but errors at resolution (below).
+- A **bare element is unconstrained** — the solver assigns its M/V. This is
+  the one deliberate break from `collapse`'s old default (bare meant valley;
+  see the design doc's Migration note). `valley` joins `mountain` as an
+  explicit marker, symmetric now that bare implies neither.
+- `over_flap` deliberately excludes bare crease names: that is what makes the
+  first token inside an item's parens classify it unambiguously — a
+  crease-name start is an element, a point/`#[...]` start followed by `over`
+  is a stacking pair, `staying` is keyword-first. `staying`'s own operand is
+  the full `flap_operand` (point, line, or `#[...]`, as `moving` takes,
+  §4.6); a bare point `.a` is short for `#[.a]`.
+- A duplicate `staying` item in one `flatten` statement is a **parse
+  error** at the second occurrence (`` only one staying item per flatten ``) —
+  at most one per statement.
+- `flatten` is **bindable**: `as --r` names the result (§ Binding,
+  below) exactly like `mark`/`fold`; the name is optional either way.
+
+**Resolution.** Each element resolves to **every** material crease segment
+at the shared vertex its operand matches — a through-running crease
+subdivided at O by an earlier fold carries two, and (unlike `fold`'s own
+single-segment resolution, §4.6, §4.8) both become candidate combinations
+rather than an ambiguity error. `&`/`\` (§4.8) still narrow an operand to
+one segment when written, but writing them is no longer required to resolve
+a multi-segment crease: the **stayer filter** (State construction, below)
+prunes the combinations that contradict the stayer on its own. A
+combination survives resolution with zero matches only as an error: a bare
+crease name with no material segment errors *"--<name> has no
+material segment"*; a filtered or unioned operand that matches nothing
+errors *"no segment of `<expr>` matches"*. An operand that does not resolve
+to an existing material crease at all (a joined selector like `.a * .b`, or a
+cross-crease union with no single crease to fold along) errors: *"collapse
+folds along existing creases; `<operand>` is not a material crease"* (the
+shipped message text predates the rename — an internal string, not a
+user-facing keyword; every message and hint quoted in this section is
+reproduced verbatim from the evaluator, several still say "collapse" for the same
+reason). `&` stays *required* only where distinct surviving combinations
+still contradict each other after every filter — the error then names the
+element (`` <name> is ambiguous at the vertex ``) and its hint suggests it
+(`` select a segment with `&` ``).
+
+**Checks.** The checks of a `flatten`, with the messages and hints the
+evaluator ships, are listed in `KERNEL.md`, section Fan.
+
+**State construction.** Faces are the sectors around O. Sector *i*'s isometry
+is the composition of reflections across the rays bounding sectors `0..i`, in
+CCW order from a fixed sector 0 — exact, the standard single-vertex fan
+construction. There is **no `moving` item on `flatten`**: instead, sector 0
+is always the **stayer** — the ray labeling is rotated so the stayer sector
+takes position 0 *before* the composition runs (the pipeline, `KERNEL.md`
+section Fan), giving
+`T_0 = identity`, front face up, *by construction*. An orientation-reversing
+anchor is therefore impossible: every face's front/back reads off the stated
+flatten directly, never its mirror.
+
+**Definition.** The stayer is the material that does not move: identity
+isometry, front face up, exactly where it lay before the flatten. Without
+`(staying …)`, its region is the <180° arc at the vertex between the
+*folded rays* of the first two elements (Syntax, above — this is why element
+order is semantic). With `(staying X)`, `X`'s material is the stayer instead
+and element order carries no stayer meaning (a `staying` that merely
+restates what the convention would already pick is accepted silently — a
+lint candidate, never an error: redundancy is not an error, contradiction
+is). Its final **stack position** is a *consequence* of the solved M/V
+pattern, never part of the definition — a rabbit ear stacks everything on
+top of its stayer, but a mountain at the stayer's edge folds the neighbor
+*underneath* it instead.
+
+`effective_valley` reads a crease's M/V parity off a single face
+**representative** in the stayer-side sector adjacent to that ray. A sector
+can be **mixed-orientation** — at the fish's second-ear vertex the stayer
+sector holds both the stationary base strip (face-up) and the first ear's
+already-folded stack (face-down) riding on top of it — so taking the first
+face in the sector by array index can surface the wrong orientation and
+flip a hinge constraint, starving the true stacking chain. The
+representative is instead chosen per ray: the face in the stayer-side
+sector whose table polygon has an edge running from O out along that ray's
+own segment — the layer the crease's M/V letter is actually about — with
+ties (a through-folded multi-layer crease, not in today's corpus) broken
+toward the lowest stacking rank.
+
+The kernel enumerates every stacking consistent with the per-ray hinge
+directions and a layer-collision check (no two layers occupy the same
+space), applies any `over` clauses, then keeps only the stackings
+distinguishable by their overlapping-face order. Exactly one → this
+candidate contributes a single realization; several → each contributes one,
+pooled with every other candidate's — and every admissible stayer sector's
+(the pipeline, `KERNEL.md` section Fan) — into the set `flatten`'s own pipeline decides among
+— the kernel itself never errors ambiguous here.
+
+**v1 enumeration limitation.** Valid stackings only ever move whole
+*sector-blocks* relative to each other — a sector cannot be tucked *between*
+two layers belonging to another sector's block. This covers rabbit ear and
+the waterbomb base; forms that need one sector interleaved inside another's
+stack are a follow-up (Appendix B).
+
+**Clauses.**
+
+- **`<flap> over <flap>`** (repeatable): flap operands are a point or
+  `#[...]` (a point denotes its sector). Orders the two sectors in the final
+  stacking. Redundant `over` — already true in every surviving stacking — is
+  a silent no-op, not an error (a future lint hint, same category as other
+  implied-item lints); `over` that rules out every surviving stacking
+  errors `` contradictory `over` ``.
+- **`(staying <flap>)`**: names the stayer explicitly, overriding the
+  leading-element convention (State construction, above); once given,
+  element order carries no stayer meaning at all. The flap must touch the
+  vertex fan — a flap whose material never reaches O errors `` the staying
+  flap does not touch the vertex ``. At most one per statement; a second is a
+  parse error (`only one staying item per flatten`). A collinear leading
+  pair (opposite rays of one line — both candidate arcs read as exactly
+  180°) leaves the convention with no side to pick, so `staying` is then
+  required, not optional: `` collinear leading creases don't pick a
+  stayer `` (hint `` add (staying <flap>) ``).
+
+**The pipeline.** How the evaluator enumerates candidate fans, Maekawa
+patterns and stackings, and what it reports when none survives, is in
+`KERNEL.md`, section Fan.
+
+**Selecting among survivors (\|S\| > 1).** Exactly three stages, in order,
+each narrowing the deciding set further; `(toward .p)` is read at whichever
+stage first needs it, and is required once any stage does:
+
+1. **Position** (class choice): a realization's placement in the folded
+   state depends only on which ray *lines* were used, never on M/V, so
+   realizations group into *position classes* by their moved-material
+   centroid. `(toward .p)` picks the class maximizing
+   `(centroid(moved faces) − O) · (p − O)`. Two distinct classes tying on
+   that dot product means `p` is collinear with a crease through O —
+   genuinely can't pick a side:
+   `` `toward` does not pick a side — the point is collinear with a crease through the vertex ``,
+   hint `` aim it off the creases ``.
+2. **Min-mountain canon** (within the winning class): keep only the
+   realizations with the fewest derived mountains among the **user-given**
+   creases (a freshly-materialized emergent crease is never a given crease,
+   so it never counts; a collinear-reuse `OppositeRay` emergent does, since
+   it *is* a given crease's own line). This stage is `toward`-independent
+   and, alone, is sometimes already unique, including with `toward`
+   entirely absent (see step 3 below).
+3. **Rank dipole**: if several realizations still remain, maximize the exact
+   `S(R) = Σ_faces area · (rank − (n_faces−1)/2) · ((table_centroid − O) · (p − O))` —
+   "the material lying toward `p` ends up on top." Mirror realizations score
+   ±equal, so any off-axis `p` decides. Guarded first by a symmetry check: if
+   the given rays' direction set is invariant under reflection across the
+   O–`p` line (or `p = O`), the two sides are genuinely indistinguishable and
+   this errors the same way stage 1's tie does.
+
+If `toward` is absent, only stage 2's canon runs (stages 1 and 3 both need
+a point); a surviving singleton folds, otherwise:
+`` flatten is ambiguous: <N> realizations ``, hint
+`` add (toward .p) to pick the fold direction ``,
+`N` being the post-canon count. (`Collapse`'s own single-result contract,
+`` ambiguous stacking (<k> orders) ``, is the kernel-internal building block
+`collapse_all` wraps for a single distinct-signature dedup — unreachable from
+`flatten`, which always calls `collapse_all`, never `collapse`, directly; it
+survives only as an internal string, exercised by the `Collapse` module's own
+tests.)
+
+```
+flatten (--ba \ .a) (--bb \ .b) (--v \ .m) (toward .d) as --ear
+```
+
+Here `--ba \ .a`/`--bb \ .b`/`--v \ .m` are the rays *away* from `.a`/`.b`/`.m`
+— three given rays (odd), so the pipeline's step 1 adds the emergent fourth.
+`\` and `&` are the shipped filter/drop selectors (§4.8); no new operator is
+needed for the odd case, only the requirement that the ray count be odd. See
+[`packages/core/tests/cases/bases/swivel-rabbit.bel`](../packages/core/tests/cases/bases/swivel-rabbit.bel) for
+a full worked case where the emergent crease is genuinely non-constructible
+(the hinges sit at an arbitrary height, not a bisector angle), and
+[`tests/cases/collapse/flatten-opposite-ray-toward-b.bel`](../packages/core/tests/cases/collapse/flatten-opposite-ray-toward-b.bel)
+(with its `-toward-d` sibling) for a vertex where `toward` genuinely picks
+between two *different* end states — same face count and table positions,
+mirrored stacking.
+
+The generative solution-space selector `#{…}` (and `.{…}`/`--{…}`) and the
+`stays <flap>` sugar that would desugar to it are **deferred** — their own
+language-wide design pass, tracked as
+[issue #46](https://github.com/tophcodes/beloch/issues/46); v1 ships only the
+constructed-space ray-naming shown above. Multi-emergent-ray flatten (more
+than one crease forced at once) and the `onto <line>` exact-landing (petal)
+form are deferred alongside it (Appendix B).
+
+**Binding & the tip.** `flatten` **creates** creases, so — like `fold`,
+`mark`, and the axiom folds — it is bindable. With an even given count, the
+bound name resolves to the bundle of given rays the statement acted on. With
+an odd count, the name resolves to the **emergent** crease instead — the
+only construction that names it — so a further meet against it finds the
+point where the emergent crease reaches the paper boundary:
+
+```
+flatten (--ba \ .a) (--bb \ .b) (--v \ .m) (toward .d) as --ear
+.tip  = .[--ear --ab]        ; the emergent crease's tip on the base edge
+```
+
+**Output.** *(since v0.20-dev)* The `edges_assignment` (§7) a `flatten`
+produces is **global-frame** M/V: because a sector's isometry can be
+orientation-reversing, the kernel's parity rule inverts the stated
+mountain/valley on face-down sectors, so the M/V letters in the FOLD output
+can differ, ray by ray, from what was written in source — see the caveat
+comments in the shipped examples.
+
+**Examples.**
+[`packages/core/tests/cases/bases/swivel-rabbit.bel`](../packages/core/tests/cases/bases/swivel-rabbit.bel)
+(n = 3 given + 1 emergent) is the worked case above — its golden FOLD output
+is the regression anchor for the whole selection pipeline: a bare-M/V
+solve whose material-centroid metric must still land on the same right-hand
+swivel every time.
+`tests/test_collapse.ml`'s `test_over_resolves_ambiguity` (n = 8, center
+vertex — both diagonals and both midlines, all M/V pinned; unit-level
+against the shared `Collapse` kernel, not a `.bel` case) shows the
+even-count case: several stackings of the one Maekawa pattern survive
+Kawasaki, and `over`, not `toward`, narrows them to one, since `over`
+operates inside the collapse oracle itself (step 2 of the pipeline), before
+`flatten`'s own selection ever sees more than one candidate.
+[`tests/cases/collapse/flatten-fish-pinned-unique.bel`](../packages/core/tests/cases/collapse/flatten-fish-pinned-unique.bel)
+shows the odd-count case pinned tightly enough that no `toward` is needed
+at all: two of the fish-base vertex's three given rays are pinned explicitly,
+narrowing the Maekawa search until exactly one realization survives before
+selection is ever reached.
+
+See [ADR 0016](../decision/0016-typed-operands-bundle-values-singleton-slots.md)
+(flap operands),
+[ADR 0014](../decision/0014-crease-is-a-bundle-of-segments.md) (crease
+bundles, rays split at a crossing — the same machinery `fold` and `&`
+build on, and what the emergent crease's bundle joins), and ADR 0012/0013
+(the exact real-algebraic kernel the derive math needed no polynomial from,
+per the design doc above — reserved for the deferred multi-emergent case).
+
+### 4.10 The read/write law — constructions read, `mark`/`fold`/`flatten` write *(since v0.20-dev; completed v0.21-dev; `collapse` renamed `flatten` v0.23-dev)*
+
+One law governs the surface syntax: **an operation that mutates paper state —
+scores a crease, folds, and thereby re-segments existing references (ADR 0014)
+— is a keyword verb, sequenced in program order; an operation that only reads
+the current state, or only describes a geometric line without touching the
+paper, is a pure read, and is an operator, bracket, or construction.** Keywords are
+commits to the versioned sheet; reads are checkout queries against it, or (for
+constructions) descriptions not yet committed. The physical asymmetry the law
+encodes: *finding* where two creases cross is free, *describing* a line is
+free, *making* a crease costs a fold, so the notation looks different for the
+two.
+
+The **reads** are:
+
+- the symbols/brackets — meet `*` and `.[l+]`, join `--[c+]`, flap `#[c+]`,
+  filter `&`, drop `\`, union `[…]` — which **select existing geometry** and
+  error on no-match: meet `*`/`.[]` names an existing crossing, and the join
+  `--[.a .b]` (or its `.a * .b` sugar) resolves to a **real** crease or paper
+  edge through the two points, never conjuring a "sight-line."
+- the **constructions** — `map … onto …`, `through … …`, `perp … through …`
+  (§4.1–§4.5c) — which compute a line without touching the paper. `--l = map
+  .a onto .b` binds a value; on its own it scores nothing. *(since v0.21-dev)*
+  `through` (Huzita axiom 1) joins this side too: it used to be the sole
+  write, but it is no reflection, only a description — "the line through two
+  points" is exactly as inert as any other construction until a disposition verb
+  acts on it.
+
+The **writes** are the disposition keyword verbs (§4.6, §4.9):
+
+- **`mark`** — crease a construction (or an inline line) flat: subdivides the
+  sheet, emits FOLD `F`.
+- **`fold`** — crease a construction (or an existing material crease) and fold it:
+  subdivides *and* moves layers, emits FOLD `M`/`V`.
+- **`flatten`** — fold several existing material creases sharing one vertex
+  straight to the flat end state, optionally deriving the one crease
+  flat-foldability forces when the given ray set is odd (§4.9).
+
+`@` is retired entirely: it is no longer a marker anywhere in the grammar —
+the verb itself (`mark`/`fold`/`flatten`) carries the write, completing the
+notation cutover begun in v0.20-dev.
+
+Point-locating landmark constructions (a bisector foot, a reference apex) are
+currently scored as full `mark (through …) as …` creases, an interim that adds
+real geometry and moves the golden. The short-reference alternative is the
+partial mark `mark (…) (at .p)` (§4.6), whose mid-face extent lays a non-subdividing
+record instead of a full crease.
+
+---
+
+## 5. Naming and program structure *(since v0.0)*
+
+A program is `paper square` followed by statements, executed top to bottom. A
+name must be defined before it is used.
+
+- **Crease statement** — a construction binds a line value, named or anonymous,
+  scoring nothing; `mark`/`fold` (§4.6) act on the paper:
+  ```
+  --d1 = (through .a .c)             ; geometry only — scores nothing
+  mark (through .b .d) as --d2       ; named crease, stays flat
+  mark (map .a onto .c)              ; anonymous crease, stays flat
+  fold (map .a onto .c) (moving .a)  ; fold (valley)
+  ```
+- **Point statement** — binds a derived point:
+  ```
+  .center = --d1 * --d2            ; meet of two creases
+  ```
+- **Flip statement** *(since v0.7-dev)* — turns the sheet over (§4.7):
+  ```
+  flip
+  ```
+
+Derived points and named creases are usable in any later statement. `;` begins a
+line comment.
+
+*(since v0.16-dev)* The binding separator is `=` (was `:` before v0.16-dev; see
+`antipatterns.md`). Non-temp bindings are single-assignment: rebinding a
+non-temp name in the same scope is an error, **except** temp names (§5a.6).
+There is no `:=`.
+
+**Reads and constructions as RHS** *(since v0.16-dev; constructions since v0.21-dev)*: the
+read operators (§4.3, §4.8) and the constructions (§4.1–§4.5c: `map`/`through`/
+`perp`) are all values, usable directly as a binding's right-hand side — none
+of them touch the paper:
+
+```
+.s  = --rs * --cd            ; meet — a read (names an existing crossing)
+--e = (through .p1 .p2)      ; a construction — a line value; needs `mark (--e)` or
+                             ; `fold (--e)` to actually score it
+```
+
+**Identifiers** *(since v0.16-dev)* are `[a-zA-Z0-9_]+` — underscore, never
+`-`; kebab-case is reserved so it doesn't foreclose future numeric/arithmetic
+syntax (`repeat n`, ratios) or create whitespace ambiguity next to the `--`
+sigil.
+
+> Concrete syntax (keywords, sigils) is stable as of v0.0 but may still be
+> revised before v1.0.
+
+---
+
+## 5a. Defs, instances *(since v0.16-dev)*
+
+Three constructs extend program structure beyond flat top-to-bottom bindings.
+They share **one evaluation path**: `def` never runs (it only records a
+deferred body); `apply` is the *only* execution form — it folds immediately
+and yields a retained instance; `export` only reads from an instance, never
+re-runs anything.
+
+### 5a.1 Temp names: `_`
+
+A name whose identifier starts with `_` (`._mb`, `--_helper`) is a **temp**:
+it may be rebound in the same scope (each rebinding is legal, and the `_`
+marker makes it visible at every use site), and it is invisible from outside
+its scope — not reachable via qualified access (§5a.4), not copied by
+`export` (naming a temp in an export list is an error), and never named in
+FOLD output (§7). A fold bound to a temp crease still physically happens; it
+just appears unnamed in FOLD. This rule is uniform across scopes: root scope
+and `def` bodies both follow it.
+
+### 5a.2 `def`
+
+```
+def petal(.p .q --base) {
+  fold (map .p onto .q) (moving .p)
+  --pq = (through .p .q)
+  .tip = --pq * --base
+}
+```
+
+- Bare identifier, no sigil — a def name is never an operand, so it needs no
+  kind sigil. Def names live in their own namespace; defining the same name
+  twice is an error.
+- Top level only.
+- Parameters are sigil-typed (`.name` point, `--name` crease); the parameter
+  list only changes arity, never the evaluation model. Zero parameters is
+  written `def name() { … }` — the parentheses are always present.
+- **Closed scope.** A body sees exactly its parameters and defs defined
+  textually earlier — nothing else. In particular the corners `.a`–`.d` are
+  **not** visible (their referents are state-dependent after earlier folds);
+  a body that needs a corner takes it as a parameter. Because a body only
+  sees earlier defs, recursion is structurally impossible.
+- Allowed body statements: bindings, fold/construction actions, `flip`,
+  `apply`, `export`. Not allowed inside a body: `def`.
+- The body never runs at `def` time — only `apply` runs it (§5a.3).
+
+### 5a.3 `apply` and instances
+
+```
+$p1 = apply petal(.k1 .k2 --[.k1 .k3])   ; folds now; instance retained
+apply petal(.k2 .k4 --[.k2 .k1])          ; folds now; namespace discarded
+```
+
+- `$name` is the **instance** sigil — its only use. `apply` is the only RHS
+  a `$`-binding accepts; instances cannot be aliased or constructed any
+  other way.
+- Arguments are ordinary point/crease operands (named or inline forms),
+  matched to parameters by position; sigils must agree.
+- A named-crease argument passes the **crease itself** — its material identity,
+  not a snapshot of its line — so the body can meet it (`*`) or fold along it as
+  the sheet evolves. Selected lines (`--[…]` joins, `&` projections) pass
+  as fixed lines *(since v0.19-dev)*.
+- `apply` always executes the body immediately, against the current folded
+  state — a bare `apply name(args)` (no `$name =`) still folds; it just
+  discards the resulting namespace instead of retaining it.
+- The result is an **instance**: a namespace holding every non-temp binding
+  the body created.
+
+### 5a.4 Cross-instance access
+
+Cross-instance access is through `export` (§5a.5) only. The bracket
+member-access operators `.[$inst m]` / `--[$inst m]` are **removed** — the
+`--[…]` and `.[…]` brackets are now the join and meet selectors (§4.3, §4.8),
+which cannot also mean "read a member." To use an instance's members, `export`
+them into the current scope (renaming with `as` where names would collide) and
+then reference the landed names:
+
+```
+export { .tip as .tip1 } $p1
+export { .tip as .tip2 } $p2
+fold (map .tip1 onto .tip2)
+```
+
+`export` only reads from the instance — it never re-runs the body — so it is
+still a pure read of already-folded geometry; naming a **temp** member in an
+export list is an error (temps are never reachable through an instance).
+
+### 5a.5 `export`
+
+```
+export { .tip --pq } $t              ; selective
+export { .tip as .left_tip } $t      ; rename on landing
+export { .s! } $t                    ; intentional shadow
+export $t                            ; all non-temp members
+```
+
+- `export` copies members of an instance into the current scope; it never
+  executes anything.
+- Names in the export list carry their sigils; `as` needs a sigiled landing
+  name.
+- `export $t` (export-all) lands every non-temp member of `$t` and
+  validates **each landed name individually**, exactly like selective
+  export — two export-alls from two applies of the same `def` will collide
+  on every member name unless disambiguated with selective `as`.
+- `!` marks an intentional shadow and is validated both ways: binding an
+  existing name **without** `!` is an error ("name exists, use `!` to
+  shadow"); using `!` when the name does **not** already exist is an error
+  ("nothing to shadow, remove `!`"). Shadow validation applies only to
+  non-temp landing names: exporting onto a temp target (`export { .m as ._t }
+  $i`) rebinds it freely and needs no `!`, since temps are single-scope and
+  rebindable (§5a.1, §5a.6). Temps remain barred as export *sources*.
+
+### 5a.6 Rebinding rules
+
+One invariant, uniform across root scope, `def` bodies, and `export`
+landings: **a name without a `_` prefix is bound at most once per scope.**
+
+| Situation | Result |
+|---|---|
+| non-temp name bound twice in the same scope (root or `def` body) | error |
+| rebinding a corner `.a`–`.d` at root | error |
+| `def` name reused | error |
+| `export` lands an existing name without `!` | error |
+| `export` lands `!` onto a name that doesn't exist | error |
+| `._x = …` (temp) bound more than once | OK — temps are rebindable (§5a.1) |
+| `export` lands onto a temp target (`… as ._x`), with or without `!` | OK — temps rebind freely; no shadow check |
+
+---
+
+## 6. Exactness *(since v0.0)*
+
+All coordinates and line coefficients are **real numbers**; a line is
+`a·x + b·y = c`.
+
+**Geometric decisions MUST be exact.** A conforming implementation MUST decide
+every geometric predicate — equality of points and lines, parallelism,
+incidence, orientation, point-in-polygon — as if computed over the exact reals.
+No epsilon, no tolerance, no sampling. These decisions are **observable**: they
+fix vertex identity, layer membership, and on-paper tests, and therefore the
+emitted crease pattern and folded form (§7). Two implementations that agree on a
+program's predicates emit the same FOLD graph.
+
+The requirement is on the **decisions, not the number representation**. Exact
+arithmetic over the algebraic reals is one sufficient strategy; an
+exact-geometric-computation approach in the style of CGAL — interval arithmetic
+with an exact fallback only when an interval is inconclusive — is equally
+conforming. The spec constrains *what must be decided correctly*, never *how*.
+
+**Algebraic degree** *(informational).* The constructions bound how irrational a
+coordinate can become, which tells an implementation what field its decisions
+must cover:
+
+- Axioms 1–4 over rational inputs stay **rational** — no roots arise.
+- Axiom 5 (angle bisector) introduces **square roots**: degree-≤2 extensions of
+  the base field [[hull2020]](#ref-hull2020) §3.2.
+- Axiom 7 (the cubic Beloch fold) introduces **cube roots**; axioms 1–6 stay in
+  the quadratic tower.
+
+**Serialization is the only inexact step.** `vertices_coords` in the FOLD output
+(§7) is rendered to JSON decimal; non-terminating reals are rounded *in the
+output only*. No internal decision is ever taken on a truncated value.
+
+---
+
+## 7. Output: the FOLD contract *(since v0.0; dual-frame since v0.7-dev; multi-frame since v0.16-dev)*
+
+`beloch fold FILE.bel` emits a [FOLD](https://github.com/edemaine/fold) file
+[[foldformat]](#ref-foldformat) with **two or more frames** built from the
+folded state's faces: the flat **crease pattern** (frame 0, the top-level
+dictionary) and one or more **folded form** frames (`file_frames`). A program
+with no `fold` actions still emits at least one folded-form frame; it then
+coincides with the flat sheet.
+
+The planar graph is the face set: vertices are deduplicated by paper coordinate
+(vertices shared across faces along a crease coincide), each face is one polygon,
+edges are the deduplicated polygon edges. Square-boundary edges are `"B"`; an
+internal edge is a crease.
+
+**Frame 0 — `creasePattern`:**
+
+- `file_spec`, `file_creator: "beloch 0.3.0-dev"`,
+  `frame_classes: ["creasePattern"]`
+- `vertices_coords` — `[x, y]` per vertex, in **paper** coordinates. Exact values
+  are rendered to JSON decimal at serialization (non-terminating reals rounded
+  *in the output only*; internal values stay exact).
+- `edges_vertices` — `[v0, v1]` index pairs.
+- `edges_assignment` ([[foldformat]](#ref-foldformat) §"Edge information") — `"B"`
+  for paper-boundary edges, **derived `"M"`/`"V"`** for folded creases (§4.6),
+  and *(since v0.21-dev)* `"F"` — present but not folded — for a `mark`ed
+  crease (a crease line with no fold yet); its M/V *intent* still lives in the
+  crease-pattern frame. `"U"` is never emitted: Beloch always knows a crease's
+  disposition. One physical fold through several layers can yield different
+  M/V per layer (the accordion), since each crease edge carries its own
+  derived assignment.
+- `faces_vertices` — each face's vertex indices, counter-clockwise. A program
+  with no creases yields the single square face `[[0, 1, 2, 3]]`.
+- `beloch:edges` — custom property ([[foldformat]](#ref-foldformat) §"Custom
+  Properties") carrying, per crease edge, its originating operation (`"axiom1"`,
+  `"axiom2"`, `"axiom3"`, `"axiom5"`), the source point/crease names, the source
+  span, and the bound **`"name"`** (e.g. `"d1"` for `--d1 = …`, else `null`).
+  *(since v0.16-dev)* A crease bound inside a retained instance carries its
+  **qualified name** — `--pq` bound inside `$p1 = apply …` is named `"p1.pq"`,
+  collision-free across repeated `apply`s of the same `def`. `"name"` is
+  `null` for creases bound to a `_`-temp (§5a.1) and for creases produced by a
+  naked (unbound) `apply`. Additive: stock FOLD consumers ignore the field;
+  `render/render-svg` uses `"name"` to color/label creases.
+- `beloch:marks` — custom property *(since v0.22-dev)* carrying the
+  **non-subdividing record marks** (§4.6) that a `between`/`at` extent ending
+  mid-face produces — reference/pinch creases that are not part of
+  `edges_vertices`/`edges_assignment` at all. A list of `{"kind": "seg", "a",
+  "b", "line", "intent", "crease_id"}` (a dangling segment, exact paper
+  coordinates) or `{"kind": "point", "p", "line", "intent", "crease_id"}` (a
+  single reference point); `"line"` is the mark's supporting line, for
+  orientation only. Additive: stock FOLD consumers ignore it; `render/render-svg`
+  draws `seg` entries as a thin dashed reference line and `point` entries as a
+  short tick along `"line"`, both visually distinct from live `F`/`M`/`V` edges.
+- `beloch:free` — custom property *(since v0.25-dev)* carrying every **free
+  point** (§4.3a), keyed by point name (instance-qualified inside an applied
+  `def`, e.g. `"d1.m"`, matching `beloch:edges`' `"name"`). Each entry is
+  `{"t", "endpoints", "source_line"}`: `"t"` is the exact rational, emitted as
+  a **string** (e.g. `"1/2"`), not rounded to a JSON float, so a future
+  consumer can recover it exactly; `"endpoints"` is `[[x0, y0], [x1, y1]]`,
+  the bundle's two furthest-out points (`t=0`, `t=1`) in paper coordinates,
+  rendered to JSON decimal like `vertices_coords`. This is a
+  forward-compatibility hook for tooling — a future renderer MAY read it to
+  build a `t`-slider over the endpoints; no renderer consumes it yet.
+
+**`file_frames` — one `foldedForm` frame per fold**: a flat baseline frame for
+the unfolded sheet, followed by one frame per fold/collapse action, in program
+order (the numeric folding sequence). Each frame is **self-contained**
+(`frame_parent: 0`, `frame_inherit: false`) rather than inheriting the parent's
+topology — an earlier frame's state has fewer faces than the final crease
+pattern, so it cannot share the parent's vertex/face indexing. Each frame
+carries its own:
+
+- `vertices_coords` — this state's vertices in **table** (folded) coordinates:
+  each face's paper polygon through its isometry. Flat folds stay in the plane,
+  so these are 2D; stacking is conveyed by `faceOrders`, not a z-offset.
+- `edges_vertices`, `edges_assignment`, `faces_vertices` — this state's own
+  topology (indices are local to the frame, not shared with frame 0 or other
+  folded-form frames).
+- `edges_foldAngle` — `+180` for valley, `−180` for mountain, `0` otherwise; the
+  sign matches `edges_assignment`.
+- `faceOrders` — `[f, g, s]` layer-ordering triples for face pairs whose table
+  footprints **overlap**; `s = +1` if `f` is above `g` (toward `g`'s normal),
+  `−1` below ([[foldformat]](#ref-foldformat) §"Layer information"). Emitted only
+  for overlapping pairs (empty when nothing overlaps, e.g. a flat program).
+- `"beloch:source_line"` — the 1-based source line of the fold that produced
+  this frame, or `null` for the baseline frame; a statement-level source map
+  for a folding-diagram player.
+
+The top-level frame (frame 0) is always the final, cumulative crease pattern —
+it does not change with the number of frames. A program with no folds emits
+exactly one folded-form frame (the flat baseline), self-contained rather than
+`frame_inherit: true`.
+
+The renderer/animation client is a separate consumer; `render/render-svg` draws
+frame 0 by default and a folded form with `--folded`.
+
+---
+
+## 8. Errors *(since v0.0)*
+
+Every error is a compile error with a source span, a message stating what is
+wrong and, where one helps, a hint stating what to write instead (ADR 0028);
+the first matching error wins and the process exits non-zero:
+
+- parse error;
+- axiom 1 or 2 whose two points are at the **same place** (coincident — which can
+  also happen *after* folds bring two material points together);
+- meet (`*` / `.[]`) whose operands have **no common point** (parallel, or
+  their lines cross beyond the marks or off the paper), **two or more** common
+  points (ambiguous; narrow an operand with `&`), or **share a stretch** of
+  paper (§4.3);
+- a construction of axiom 5, 6 or 7 whose selection leaves no candidate or
+  several (`BELOCH-CONSTRUCTIONS.md`, Selection);
+- a `fold` on a line construction (`fold (through …)`, `fold (perp …)`) with no
+  `moving`, or a `moving` point lying on the fold axis (no side); an axiom-5
+  fold (`fold (map --l1 onto --l2)`) whose `up to` range has no explicit `moving`
+  to anchor it (`moving` is otherwise derived, `BELOCH-CONSTRUCTIONS.md`);
+- a `mark`'s `between`/`at` extent point not lying on the mark's line; an
+  extent that would cross an already-folded (`M`/`V`) crease to reach its
+  endpoint; a `between` extent dangling mid-face at **both** ends in different
+  faces of the same flap (§4.6);
+- reference to an undefined point or crease name; the hint lists the names of
+  that kind in scope, sorted, at most twelve before an ellipsis.
+
+---
+
+## Appendix A — grammar (informal) *(since v0.0)*
+
+The Menhir grammar is authoritative once written; this sketch is a guide.
+
+```grammar
+program       := "paper" sheet stmt*                              ; docs/reference/BELOCH-GRAMMAR.md, "Programs"
+stmt          := crease_stmt | point_stmt | flip_stmt | flatten_stmt
+              | def_stmt | instance_stmt | apply_stmt | export_stmt          ; since v0.16-dev
+crease_stmt   := CREASE_NAME "=" "(" axiom ")"                    ; a read — binds a line value, scores nothing
+               | CREASE_NAME "=" line_operand                     ; a read — binds an existing line: name, join, selector, filter or union
+               | "mark" item* output                              ; crease flat, an anonymous construction or an existing line as one of the items (item syntax, since v0.27-dev)
+               | "fold" item* output                               ; crease and fold
+               | "reverse" item* output                            ; reverse fold (since v0.26-dev)
+item          := "(" item_body ")"
+item_body     := markable
+               | "moving" flap_operand                             ; fold, reverse
+               | "up" "to" flap_operand                            ; fold only
+               | "mountain"                                        ; fold, mark
+               | "valley"                                          ; mark only
+               | ( "over" | "under" ) flap_operand                 ; fold only
+               | "outside"                                         ; reverse only
+               | "on" flap_operand                                 ; mark only
+               | "between" point_operand point_operand             ; mark only
+               | "at" point_operand                                ; mark only
+markable      := axiom | align | line_operand                     ; since v0.21-dev; align since v0.23-dev
+align         := "align" CREASE_NAME* align_part+                   ; see docs/reference/BELOCH-CONSTRUCTIONS.md; `toward` and `moving` are items there
+output        := [ "as" CREASE_NAME [ "!" ] | "into" CREASE_NAME ]
+point_stmt    := POINT_NAME "=" line_operand "*" line_operand     ; meet (binary), bare at a binding's RHS: the point where two lines cross
+               | POINT_NAME "=" ".[" line_operand+ "]"            ; meet (n-ary): the point on all listed lines
+               | POINT_NAME "=" free_point                          ; free point: docs/reference/BELOCH-GRAMMAR.md, "Free points"
+flip_stmt     := "flip"
+axiom         := "through" point_operand point_operand          ; axiom 1 — a read (construction, since v0.21-dev)
+               | "map" point_operand "onto" point_operand       ; axiom 2
+               | "perp" line_operand "through" point_operand     ; axiom 3
+               | "map" point_operand "onto" line_operand "perp" line_operand  ; axiom 4
+               | "map" line_operand "onto" line_operand       ; axiom 5
+               | "map" point_operand "onto" line_operand "through" point_operand  ; axiom 6
+               | "map" point_operand "onto" line_operand
+                     "and" point_operand "onto" line_operand    ; axiom 7
+flap_operand  := point_operand | line_operand | "#[" point_operand+ "]"              ; since v0.18-dev
+point_operand := POINT_NAME                                      ; named
+               | "(" line_operand "*" line_operand ")"           ; meet (binary), as an operand: parenthesized — bare only at a binding's RHS (point_stmt, above)
+               | ".[" line_operand+ "]"                          ; meet (n-ary): the point on all listed lines
+               | "(" point_operand ")"                           ; grouping (since v0.28-dev)
+line_operand  := CREASE_NAME                                     ; named crease, or a prelude edge (--ab --bc --cd --da)
+               | point_operand "*" point_operand                 ; join (binary), as an operand: bare, unlike the meet direction above — the existing crease/edge through two points, a read
+               | "(" line_operand ")"                            ; grouping (since v0.28-dev)
+               | "--[" constraint+ "]"                           ; join / line selector: crease/edge segments incident to all constraints
+               | line_operand "&" constraint                     ; filter to incident segments (since v0.17-dev)
+               | line_operand "\" constraint                     ; drop incident segments
+               | "[" line_operand+ "]"                           ; union of same-typed bundles
+
+constraint    := point_operand | CREASE_NAME | "#[" point_operand+ "]"  ; a bare crease name, not a general line_operand
+POINT_NAME    := "." ident
+CREASE_NAME   := "--" ident
+INSTANCE_NAME := "$" ident
+
+; since v0.20-dev — §4.9; `@` dropped v0.21-dev; renamed `collapse`→`flatten`,
+; paren-juxtaposition items, bindable v0.23-dev; one-pipeline model,
+; the `toward` item (was a trailing keyword), `valley` marker v0.23-dev;
+; stayer convention, `staying` replaces reserved `standing` v0.23-dev;
+; `toward` moves from a braced clause to a parenthesized item like the
+; rest, and binding moves from a `CREASE_NAME "="` prefix to the `output`
+; clause above, v0.27-dev
+flatten_stmt  := "flatten" flatten_item+ output
+flatten_item  := "(" flatten_elem ")"
+               | "(" over_flap "over" over_flap ")"
+               | "(" "staying" flap_operand ")"
+               | "(" "toward" point_operand ")"
+flatten_elem  := line_operand [ "mountain" | "valley" ]
+over_flap     := point_operand | "#[" point_operand+ "]"
+
+; since v0.16-dev — §5a
+def_stmt      := "def" ident "(" param* ")" "{" body_stmt* "}"
+param         := POINT_NAME | CREASE_NAME
+body_stmt     := stmt minus ( def_stmt )
+instance_stmt := INSTANCE_NAME "=" "apply" ident "(" operand* ")"
+apply_stmt    := "apply" ident "(" operand* ")"
+export_stmt   := "export" ( "{" export_entry+ "}" )? INSTANCE_NAME
+export_entry  := ( POINT_NAME | CREASE_NAME ) "!"? ( "as" ( POINT_NAME | CREASE_NAME ) )?
+```
+
+A construction (`through`/`map`/`perp`) is a pure read: it computes a line but
+touches nothing (§4.10). `mark` creases it flat; `fold` creases and folds it:
+its items state `(moving …)` to anchor the fold, `(up to …)` to scope it,
+`(mountain)` to set its direction (§4.6). Either verb, given a `line_operand`
+item instead of a construction, acts on an existing material crease instead of
+computing a new line. `flip` turns the whole sheet over (§4.7) and takes no
+item. *(since v0.7-dev)* Any operand may be an **inline read** (§4.10): `--x
+* --y` (or `.[--x --y]`) is the point where two lines meet; `.a * .b` (or
+`--[.a .b]`) is the existing crease/edge through two points; `--l & c` /
+`--l \ c` filter a bundle; `[…]` unions bundles. These select existing
+geometry, never score a crease, and nest freely; the polymorphic `*` reads
+as a meet when its operands are lines and a join when they are points.
+*(since v0.21-dev)* `@` is retired entirely: writing to the paper always
+goes through `mark`, `fold`, `reverse`, or `flatten`. A meet, a bundle read
+(a name, `&`/`\`, or `[…]`), and a construction are each also valid directly as a
+binding's right-hand side, matched to the sort they produce; see the RHS
+note in §5.
+
+---
+
+## Appendix B — not yet in the language
+
+Deferred, in rough order of likely arrival: non-flat (constructible-angle) folds ·
+`rotate` · squash/sink/petal maneuvers · `unfold` ·
+the 3D standing end state for `flatten` (the 3D isometry rework, ADR 0015 —
+retired `standing` keyword's successor form, unnamed until it lands) ·
+multi-vertex flatten (fish/bird base in one action) · boundary-vertex
+flatten (squash/petal preparation) · sector-block interleaving in
+`flatten`'s stacking enumeration (a sector tucked between another sector's
+layers) · multi-emergent-ray flatten (more than one crease forced at a single
+vertex) and the `onto <line>` exact-landing (petal) form of the odd-ray-count
+solve ·
+the generative solution-space selector `#{…}` (and `.{…}`/`--{…}`) and the
+`stays <flap>` sugar over it (its own language-wide design pass — [issue
+#46](https://github.com/tophcodes/beloch/issues/46)) · a `paper triangle`
+shape (a nicer rabbit-ear demo than the
+inscribed-triangle workaround) · `rabbitear` sugar `def` (intent-style,
+`toward`, inferring M/V) ·
+regions · parts/imports · nested `def`s and namespace chaining
+(deeper cross-instance access, spelling TBD now the brackets are selectors) ·
+re-export cascades · string labels in source (i18n stays
+external) · `pub`/`priv` interfaces · looping primitives · module/file-level
+namespacing · a dedicated render/animation engine · YR diagrams. These are not
+part of the language until a slice lands and this spec is extended.
+
+**Landed:** faces (v0.1); axiom 3 — perpendicular (v0.2); axiom 4 — projection (v0.4-dev); axiom 5 — angle
+bisector (v0.3-dev); the `map … onto …` verb and the `@` fold modifier
+(v0.6-dev); and *(v0.7-dev)* the **action model** — `@` fold execution, the
+folded-state runtime, derived mountain/valley, the dual `creasePattern` +
+`foldedForm` FOLD output, `flip`, and inline anonymous read operands
+(`.a * .b` join / `--x * --y` meet — spelled `--(.a .b)` / `.(--a --b)` before
+the v0.20-dev cutover). See
+[ADR 0011](../decision/0011-action-model.md). Mountain/valley is *derived* from
+fold actions, not a separate annotation pass. *(v0.8-dev)* axiom 6 — fold a
+point onto a line with the crease through a fixed point (`map .p onto --d through
+.p'`, optional `toward` for disambiguation). *(v0.9-dev)* axiom 7 — the cubic
+Beloch fold (`map .p onto --d and .q onto --e`, optional `toward`); irrational
+crease coordinates compared exactly (§6). *(v0.16-dev)*
+`=` replaces `:` as the binding separator; read-operator RHS;
+`def`/`apply`/instances with closed-scope bodies; `export` with shadow/rename
+validation (cross-instance access; the earlier bracket member access was
+removed in the v0.20-dev notation cutover, §5a.4);
+the uniform rebinding rule (see §5, §5a). *(v0.17-dev)*
+crease-segment selection — the `&` filter, projecting a crease name (a
+bundle of segments) to one segment by incidence (ADR 0014). *(v0.18-dev)* fold
+scope — flap-typed `moving` (point/line/`#[...]` anchor operands, ADR 0016),
+`up to` for some-layers simple folds, and `@fold` along an existing material
+crease. *(v0.20-dev)* `@collapse` — single-vertex flat collapse: n ≥ 4
+material creases sharing one interior vertex, checked by Kawasaki, Maekawa,
+and layer-order validity, with `over` for stacking ties; `standing` parses
+but is not yet implemented (§4.9); the **notation cutover** — reads become
+operators (`*` meet/join, `&` filter, `\` drop, `[]` union, the `.[] --[] #[]`
+selectors), the one write was the keyword `through`, and bracket member access
+retires in favor of `export` (§4.10, design doc). *(v0.21-dev)* the
+**mark/fold notation cutover** — `map`/`through`/`perp` constructions become pure
+reads (joining the v0.20-dev operators); the writes are the keyword verbs
+`mark` (crease flat, FOLD `F`) and `fold` (crease and fold, FOLD `M`/`V`);
+`@collapse` is renamed `collapse`; `@` is retired entirely from the grammar;
+`U` is no longer emitted (§7).
+*(v0.23-dev)* **`flatten` generalizes `collapse`, one solver pipeline** —
+`collapse` is renamed `flatten`; the item list drops `and` for parenthesized
+juxtaposition (`flatten (--a & .p) (--b & .q) …`); `flatten` is bindable
+(§4.9); and, given an odd set of rays sharing a vertex, `flatten` solves for
+the one emergent crease flat-foldability forces (the composed reflection of
+an odd ray set is itself a reflection; its axis is the new crease),
+materializes it, and folds the completed set — the swivel rabbit-ear move no
+Huzita axiom constructs directly. A same-day follow-up replaced the initial
+validate/derive mode split with **one pipeline**: bare elements are
+solver-assigned (not defaulted to valley), `mountain`/`valley` and `over`
+are hard constraints that filter the solution space, and `{toward .p}` —
+now a bracketed item, not a trailing keyword, and never mandatory — selects
+among survivors by a three-stage rule (position class, min-mountain canon,
+rank dipole) when more than one remains. A further same-cycle follow-up
+replaced `sort_ccw`'s arbitrary east origin with the **stayer** — the
+material that does not move, geometric-anchored instead of guessed: fixed
+by convention (the leading two elements' <180° arc) or named explicitly
+with `(staying <flap>)`, which retires the reserved `standing` slot
+entirely — and the fan labeling is anchored on it before layer solving
+runs, rather than derived from the solved stack afterward.
+*(v0.26-dev)* **layer placement**: `fold … over/under <flap>` inserts the
+moved flap between layers, and the **`reverse`** verb folds inside and
+outside reverse folds as two placed half-folds with derived letters (§4.6,
+§4.6a).
+
+---
+
+## References
+
+Machine-readable entries: [`../bibliography/references.bib`](../bibliography/references.bib).
+Each entry links to a public source where one exists, and to the local full text
+in `../refs/` (gitignored — local checkout only).
+
+<a id="ref-hull2020"></a>
+**[hull2020]** Thomas C. Hull. *Origametry: Mathematical Methods in Paper
+Folding.* Cambridge University Press, 2020.
+[doi.org/10.1017/9781108778633](https://doi.org/10.1017/9781108778633) ·
+[local PDF](../refs/hull2020.pdf).
+The fold axioms and Hull's Basic Origami Operations are in §1.5 "The Basic
+Origami Operations".
+
+<a id="ref-justin1986"></a>
+**[justin1986]** Jacques Justin. *Résolution par le pliage de l'équation du
+troisième degré et applications géométriques.* L'Ouvert, no. 42 (March 1986),
+pp. 9–19. [local PDF](../refs/justin1986.pdf).
+First complete statement of the seven fold axioms (classic numbering).
+
+<a id="ref-bpr2006"></a>
+**[bpr2006]** Saugata Basu, Richard Pollack, Marie-Françoise Roy. *Algorithms in
+Real Algebraic Geometry.* 2nd ed. Springer, 2006.
+[doi.org/10.1007/3-540-33099-2](https://doi.org/10.1007/3-540-33099-2) ·
+[local PDF](../refs/bpr2006.pdf).
+Separation/Cauchy bounds (§10.1–10.2); sign-at-roots certification in a real
+closed field (§10.4); Rational Univariate Representation (§12.4); doubly-exponential
+blowup of naive multivariate arithmetic (§12).
+
+<a id="ref-foldformat"></a>
+**[foldformat]** Erik D. Demaine, Jason S. Ku, Robert J. Lang. *FOLD File Format
+Specification* (v1.2).
+[github.com/edemaine/fold](https://github.com/edemaine/fold) ·
+[local copy](../refs/foldformat.md).
+Relevant sections: "Edge information: `edges_...`" (edge assignments) and
+"Custom Properties" (the `namespace:key` convention used by `beloch:*`).

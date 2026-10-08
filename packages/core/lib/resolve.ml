@@ -35,7 +35,7 @@ and fstr (fa : Ast.flap_arg) : string =
   | Ast.FlapSpec (Ast.FByPoints (pts, _)) ->
       Printf.sprintf "#[%s]" (String.concat " " (List.map pstr pts))
 
-(* The sort check (spec/BELOCH.md, Parameter types): a slot that wants a
+(* The sort check (docs/reference/BELOCH.md, Parameter types): a slot that wants a
    crease reads the binding's constructor and nothing else. A [Frozen] name
    is a line, and a line has no material until a `mark` scores it. *)
 let crease_of (ctx : Ctx.ctx) (cr : Ast.crease_ref) ~(slot : string)
@@ -170,7 +170,7 @@ let face_of_points (ctx : Ctx.ctx) (pts : Geom.point list) :
   Array.iteri (fun i _ -> if contains i then hits := i :: !hits) faces_arr;
   match !hits with [ i ] -> `Face i | [] -> `Zero | _ -> `Ambiguous
 
-(* A meet operand as a set of paper points (spec/MODEL.md, def-meet): closed
+(* A meet operand as a set of paper points (docs/reference/MODEL.md, def-meet): closed
    segments for anything with material, a whole line for a boundary operand
    (a paper edge, a markless `--[…]` selection, a crease that cut no face).
    [Pt] arises only while intersecting. *)
@@ -339,7 +339,7 @@ and material_cid (ctx : Ctx.ctx) (cr : Ast.crease_ref) : int =
    table space: all points are material (paper) identities, so a point
    selector always names the one segment whose paper preimage it lies on:
    even when folding has stacked several segments onto the same table locus
-   (notes/2026-07-03-crease-layer-selection.md; ADR 0014's "table-space
+   (docs/notes/2026-07-03-crease-layer-selection.md; ADR 0014's "table-space
    selector can't disambiguate" is why table space is wrong here). *)
 and seg_line (s : Fold_state.crease_segment) =
   Geom.line_through s.Fold_state.pa s.Fold_state.pb
@@ -437,7 +437,7 @@ and select_point (ctx : Ctx.ctx) (los : Ast.line_operand list) (span : Error.spa
   | [] | [ _ ] -> Error.fail span ".[…] needs at least two lines to meet"
   | _ -> (
       (* the meet is the intersection of the operands as sets of paper
-         points, defined when it is exactly one point (spec/MODEL.md,
+         points, defined when it is exactly one point (docs/reference/MODEL.md,
          def-meet) *)
       let sets = List.map (meet_pieces ctx) los in
       let names = and_list (List.map lstr los) in

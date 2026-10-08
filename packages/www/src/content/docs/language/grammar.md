@@ -1,1 +1,1 @@
-../../../../../../spec/BELOCH-GRAMMAR.md
+../../../../../../docs/reference/BELOCH-GRAMMAR.md

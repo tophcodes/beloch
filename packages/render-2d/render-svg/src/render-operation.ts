@@ -1,9 +1,9 @@
 // Operation view: one write drawn from its trace entry, as two panels. The
 // first is the state the write read with the terms of the write's definition
-// on it (spec/MODEL.md, §5): the axis, the moving set and the target of a
+// on it (docs/reference/MODEL.md, §5): the axis, the moving set and the target of a
 // fold; the axis, the tip, the spine, the halves and the bodies of a reverse
 // fold; the vertex, the rays and the stayer of a flatten. The second is the
-// state the write yields. Reads `beloch:trace` (spec/FOLD.md, "The trace").
+// state the write yields. Reads `beloch:trace` (docs/reference/FOLD.md, "The trace").
 import type { FoldScene, Frame, Region, Segment, Vec2, WriteCandidate, WriteEntry } from "@beloch/scene";
 import { SceneError } from "@beloch/scene";
 import { createDoc, el, SvgDoc } from "./svgdoc";

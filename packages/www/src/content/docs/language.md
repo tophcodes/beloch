@@ -1,1 +1,1 @@
-../../../../../spec/BELOCH.md
+../../../../../docs/reference/BELOCH.md

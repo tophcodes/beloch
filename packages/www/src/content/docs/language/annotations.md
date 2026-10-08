@@ -1,1 +1,1 @@
-../../../../../../spec/BELOCH-ANNOTATIONS.md
+../../../../../../docs/reference/BELOCH-ANNOTATIONS.md

@@ -65,7 +65,7 @@ type folded = {
           of the statement it belongs to (ADR 0029) *)
   trace : Trace.entry list;
       (** every construction's candidates in the order they were evaluated
-          (spec/FOLD.md, "The trace") *)
+          (docs/reference/FOLD.md, "The trace") *)
   sheet : Sheet.t;
       (** The sheet the program opened; its unfolded state is the first
           frame of the output. *)

@@ -1,6 +1,6 @@
 /**
  * The tree-sitter side of the reference corpus test (design doc "The three
- * runners"): every tagged block of the language pages, spec/BELOCH*.md, extracted by the same
+ * runners"): every tagged block of the language pages, docs/reference/BELOCH*.md, extracted by the same
  * rule as packages/core/tests/test_reference_corpus.ml, parses with the
  * shipped wasm and produces no ERROR node. Unlike the kernel runner this
  * stays parse-only: a block is parsed on its own, without its prelude
@@ -76,7 +76,7 @@ function parseTag(info: string): Tag | null {
   return null;
 }
 
-// Every fence in spec/*.md opens and closes with a bare ``` line (no longer
+// Every fence in docs/reference/*.md opens and closes with a bare ``` line (no longer
 // backtick run, no indentation); an unterminated fence is a malformed
 // document, not a block to silently drop.
 function extractBlocks(src: string): Block[] {
@@ -102,7 +102,7 @@ function extractBlocks(src: string): Block[] {
   return blocks;
 }
 
-// Block inventory of each language page, spec/BELOCH*.md, by tag (matches
+// Block inventory of each language page, docs/reference/BELOCH*.md, by tag (matches
 // test_reference_corpus.ml's expected_inventories). Ceiling: this catches the
 // tree-sitter extractor drifting from the pages, not from the OCaml and
 // build-side copies of the same rule; update all three when a tagged block is
@@ -115,13 +115,13 @@ const expectedInventories: Record<string, Record<Tag, number>> = {
   "BELOCH-GRAMMAR.md": { whole: 0, prelude: 0, frag: 0, construction: 0 },
 };
 
-const languagePages = readdirSync(join(repoRoot, "spec"))
+const languagePages = readdirSync(join(repoRoot, "docs", "reference"))
   .filter((f) => f.startsWith("BELOCH") && f.endsWith(".md"))
   .sort();
 
 for (const page of languagePages) {
   test(`${page} reference corpus: every tagged block parses with no ERROR node`, async () => {
-    const src = readFileSync(join(repoRoot, "spec", page), "utf8");
+    const src = readFileSync(join(repoRoot, "docs", "reference", page), "utf8");
     const blocks = extractBlocks(src);
 
     const inventory: Record<Tag, number> = { whole: 0, prelude: 0, frag: 0, construction: 0 };

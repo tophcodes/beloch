@@ -2,7 +2,7 @@ import { test, expect } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const dir = join(import.meta.dir, "..", "decisions");
+const dir = join(import.meta.dir, "..", "docs", "decision");
 const records = readdirSync(dir).filter((f) => /^\d{4}-.*\.md$/.test(f));
 
 test("a record's issue names owner and repository", () => {

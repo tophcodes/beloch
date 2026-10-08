@@ -1,5 +1,5 @@
 {
-  "spec/BELOCH.md": [
+  "docs/reference/BELOCH.md": [
     { "index": 0, "status": "ok", "expected": false, "asserts": [] },
     {
       "index": 1,

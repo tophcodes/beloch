@@ -31,7 +31,7 @@ jobs:
         with:
           fetch-depth: 0
       # A Markdown file counts as prose unless a suite reads it: the kernel
-      # and bun suites read spec/ and the guide under packages/, and a dune
+      # and bun suites read docs/reference/ and the guide under packages/, and a dune
       # file can name a decision as a test dependency.
       - name: Decide whether the pull request changes more than prose
         id: files
@@ -39,11 +39,11 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
-          read_by_suites=$(grep -rhoE 'decisions/[^ )]+\.md' --include=dune packages | sort -u)
+          read_by_suites=$(grep -rhoE 'docs/decision/[^ )]+\.md' --include=dune packages | sort -u)
           code=false
           while read -r f; do
             case "$f" in
-              spec/* | packages/*) code=true ;;
+              docs/reference/* | packages/*) code=true ;;
               *.md) if grep -qxF "$f" <<<"$read_by_suites"; then code=true; fi ;;
               *) code=true ;;
             esac

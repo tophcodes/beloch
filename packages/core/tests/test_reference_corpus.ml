@@ -1,5 +1,5 @@
 (* tests/test_reference_corpus.ml: the guard that holds the kernel to the
-   pages of the language, spec/BELOCH*.md, and to the guide. Every tagged
+   pages of the language, docs/reference/BELOCH*.md, and to the guide. Every tagged
    block of a page is extracted,
    assembled with its prelude, evaluated in process, and checked against its
    own `; assert` / `; expect error` lines through [Bel_assert]: the same
@@ -82,7 +82,7 @@ let parse_tag (info : string) : tag option =
   else None
 
 (* Scan [src] for fenced code blocks whose info string [parse_tag] resolves,
-   in document order. Every fence in spec/*.md opens and closes with a bare
+   in document order. Every fence in docs/reference/*.md opens and closes with a bare
    ``` line (no longer backtick run, no indentation); a block that never
    closes is a malformed document, not a block to silently drop. *)
 let extract_blocks (src : string) : block list =
@@ -344,7 +344,7 @@ let failure_mode_tests =
     Alcotest.test_case "a clean block passes" `Quick test_success_case;
   ]
 
-(* ---- The real corpus: the pages of the language, spec/BELOCH*.md ---- *)
+(* ---- The real corpus: the pages of the language, docs/reference/BELOCH*.md ---- *)
 
 (* Block inventory of each language page, by tag; a page with no entry fails
    its inventory case. Ceiling: this catches the OCaml extractor drifting

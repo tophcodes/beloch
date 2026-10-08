@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
-// The grammar register: the documented grammar of spec/, parsed.
+// The grammar register: the documented grammar of docs/reference/, parsed.
 //
-// Scans spec/BELOCH-GRAMMAR.md, the grammar of the language, and
-// spec/SPECIFICATION.md, whose Appendix A block carries the `grammar` tag and
+// Scans docs/reference/BELOCH-GRAMMAR.md, the grammar of the language, and
+// docs/reference/SPECIFICATION.md, whose Appendix A block carries the `grammar` tag and
 // is read for its keywords alone: no ids, no links, and its rules satisfy no
 // external declaration of the grammar page. Parsing both means the documented
 // side of the keyword cross-check is the whole documented grammar while the
@@ -34,8 +34,8 @@ export interface GrammarRegister {
 }
 
 export const DOCUMENTS: DocumentSpec[] = [
-	{ path: "spec/BELOCH-GRAMMAR.md", references: "check" },
-	{ path: "spec/SPECIFICATION.md", references: "ignore" },
+	{ path: "docs/reference/BELOCH-GRAMMAR.md", references: "check" },
+	{ path: "docs/reference/SPECIFICATION.md", references: "ignore" },
 ];
 
 /** The keyword table the cross-check reads. */

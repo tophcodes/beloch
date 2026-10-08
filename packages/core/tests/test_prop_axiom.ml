@@ -1,7 +1,7 @@
 (* Property tests for the seven axioms: every crease a construction returns
    carries out the alignment that was asked for, checked by reflecting in the
    crease rather than by repeating the construction. Beloch numbers the
-   axioms as spec/BELOCH.md does: 5 maps a line onto a line, 6 a point onto a
+   axioms as docs/reference/BELOCH.md does: 5 maps a line onto a line, 6 a point onto a
    line through a point, 7 two points onto two lines (Huzita-Justin 3, 5
    and 6).
 

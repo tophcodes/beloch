@@ -1,1 +1,1 @@
-../../../../../spec/CLI.md
+../../../../../docs/reference/CLI.md

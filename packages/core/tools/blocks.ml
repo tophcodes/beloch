@@ -1,16 +1,16 @@
 (* tools/blocks.ml: the build-side reference-corpus capture (design doc
    "The three runners", build side; Acceptance 10). Selects and assembles
-   the tagged blocks of each document it is given (spec/BELOCH.md when
+   the tagged blocks of each document it is given (docs/reference/BELOCH.md when
    given none) by the same rule
    packages/core/tests/test_reference_corpus.ml uses, evaluates each one in
-   process, and writes one entry per block to _build/spec/blocks.json, the
+   process, and writes one entry per block to _build/reference/blocks.json, the
    input packages/www/src/lib/remark-bel.ts reads to render the outcome
    under each program. Never exits nonzero over a block that fails to fold:
    that is what the kernel-side corpus test guards; this tool exists so the
    site still builds and shows the failure.
 
    Run from the repo root, with the documents as paths from there:
-     dune exec packages/core/tools/blocks.exe -- spec/BELOCH*.md <doc.md>… *)
+     dune exec packages/core/tools/blocks.exe -- docs/reference/BELOCH*.md <doc.md>… *)
 
 open Beloch
 
@@ -33,7 +33,7 @@ type tag =
           malformed), but [compute_outcome] turns it straight into an
           [Error_result] without assembling or evaluating it: a malformed tag
           must not stop the rest of the document from building (test
-          coverage: a throwaway fixture, not spec/BELOCH.md). *)
+          coverage: a throwaway fixture, not docs/reference/BELOCH.md). *)
 
 type block = { tag : tag; body : string; fence_line : int (* 1-based, the line the opening fence is on *) }
 
@@ -319,9 +319,9 @@ let entries_of (doc : string) : Yojson.Basic.t =
 
 let () =
   let docs =
-    match Array.to_list Sys.argv with _ :: (_ :: _ as docs) -> docs | _ -> [ "spec/BELOCH.md" ]
+    match Array.to_list Sys.argv with _ :: (_ :: _ as docs) -> docs | _ -> [ "docs/reference/BELOCH.md" ]
   in
   let json : Yojson.Basic.t = `Assoc (List.map (fun doc -> (doc, entries_of doc)) docs) in
-  mkdir_p "_build/spec";
-  Out_channel.with_open_text "_build/spec/blocks.json" (fun oc ->
+  mkdir_p "_build/reference";
+  Out_channel.with_open_text "_build/reference/blocks.json" (fun oc ->
       Out_channel.output_string oc (Yojson.Basic.pretty_to_string json))

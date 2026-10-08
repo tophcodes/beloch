@@ -186,7 +186,7 @@ body_stmts:
   | annotation body_stmts { Annotation $1 :: $2 }
   | trim_elsewhere body_stmts { $1 :: $2 }
 
-(* spec/BELOCH-ANNOTATIONS.md. Which key takes which arguments is checked
+(* docs/reference/BELOCH-ANNOTATIONS.md. Which key takes which arguments is checked
    after parsing (Annotation.check), so a key is a name the grammar does
    not reserve. *)
 annotation:

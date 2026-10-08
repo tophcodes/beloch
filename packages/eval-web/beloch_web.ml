@@ -5,7 +5,7 @@
     - [{"ok":true,"fold":<FOLD object>}] on success.
     - [{"ok":false,"kind":"native","message":...}] when evaluation hit an
       irrational (qqbar) value, which the js_of_ocaml build can't compute
-      (see [qqbar_shim.js] and decisions/0013-flint-qqbar-backend.md); the
+      (see [qqbar_shim.js] and docs/decision/0013-flint-qqbar-backend.md); the
       caller should fall back to the native evaluator.
     - [{"ok":false,"kind":"error","message":...,"hint":...,"line":...,"column":...,
       "endLine":...,"endColumn":...}] for a [Beloch_error] (language/program

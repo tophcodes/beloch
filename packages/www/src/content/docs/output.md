@@ -1,1 +1,1 @@
-../../../../../spec/FOLD.md
+../../../../../docs/reference/FOLD.md

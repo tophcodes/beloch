@@ -1059,7 +1059,7 @@ let test_parse_at_retired () =
   expect_error "syntax error" (fun () ->
       parse_stmts ~filename:"t.bel" "paper square\n@fold --d moving .a\n")
 
-(* ---- Numbers and sheets (spec/BELOCH.md, "Sheets") ---- *)
+(* ---- Numbers and sheets (docs/reference/BELOCH.md, "Sheets") ---- *)
 
 let test_decimal_and_point_name () =
   match parse_stmts ~filename:"t.bel" "paper square\n.5 = free on --ab from .a at 0.25\n" with

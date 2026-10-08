@@ -2,9 +2,9 @@
 
 Beloch writes origami folding sequences as programs over the Huzita-Justin
 axioms. It evaluates `.bel` source into one FOLD file with the folded state after
-every step; crease patterns and YR-style folding diagrams are renderings of it. Architecture decisions live in `decisions/` (ADRs); read those
-before proposing anything structural. Design journal in `notes/`, dead ends in
-`notes/antipatterns.md`. The contracts live in `spec/`: `MODEL.md` what a
+every step; crease patterns and YR-style folding diagrams are renderings of it. Architecture decisions live in `docs/decision/` (ADRs); read those
+before proposing anything structural. Design journal in `docs/notes/`, dead ends in
+`docs/notes/antipatterns.md`. The contracts live in `docs/reference/`: `MODEL.md` what a
 program means, `BELOCH.md` the language, `FOLD.md` the output. Beside them,
 binding no other implementation: `KERNEL.md` what `packages/core` realizes,
 `CLI.md` the `beloch` command. `SPECIFICATION.md` is being dissolved into
@@ -17,8 +17,8 @@ Per-slice design documents are not kept in the working tree. They were
 point-in-time records of how one slice was built, they went stale as the code
 moved on, and code comments pointing into them taught readers things that had
 stopped being true. What a slice decided belongs in an ADR, what it contracts
-in `spec/`, and what it is worth remembering about a dead end in
-`notes/antipatterns.md`. The documents themselves stay in the Git history;
+in `docs/reference/`, and what it is worth remembering about a dead end in
+`docs/notes/antipatterns.md`. The documents themselves stay in the Git history;
 `git log --diff-filter=D --stat -- docs/superpowers/specs` finds them.
 
 A skill that writes a spec or a plan to `docs/superpowers/` writes it to the
@@ -77,7 +77,7 @@ for `dune build`.
 CI runs `check` on every pull request, in the job `build-and-test` of
 `.github/workflows/build-and-test.yml`, and skips it when the pull request
 changes only Markdown that no suite reads. A push to `main` that touches the
-site, the kernel, `spec/`, `examples/`, `scripts/` or the flake runs
+site, the kernel, `docs/reference/`, `examples/`, `scripts/` or the flake runs
 `check-all` in the deploy job, which deploys the site when it passes; any
 other push to `main` runs only the commit subject check.
 
@@ -143,7 +143,7 @@ list of what needs Toph's decision or action, or say that nothing does.
 
 ## Math notation
 
-In `notes/`, `docs/` and memos, formulas are LaTeX math (`$...$` inline,
+In `docs/` and memos, formulas are LaTeX math (`$...$` inline,
 `$$...$$` display); GitHub, Forgejo and the VS Code preview render KaTeX.
 Symbol names (`AL8`), code identifiers and paths go in backticks, never bare.
 Chat gets words instead of LaTeX, since the terminal does not render it.

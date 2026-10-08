@@ -71,7 +71,7 @@ Five verbs write to the paper. `mark` scores a crease and moves nothing,
 `flip` turns the paper over, and `flatten` folds a vertex flat along several
 rays at once; given an odd number of them, it derives the one ray that is
 missing. The evaluator works out where every layer goes and which creases end
-up mountain or valley. The full grammar is in [`spec/BELOCH-GRAMMAR.md`](spec/BELOCH-GRAMMAR.md)
+up mountain or valley. The full grammar is in [`docs/reference/BELOCH-GRAMMAR.md`](docs/reference/BELOCH-GRAMMAR.md)
 and on the [grammar page](https://belochlang.org/language/grammar/).
 
 ## Related work
@@ -118,7 +118,7 @@ is one.
 Both rest on the language: a program is a finite sequence of constructions and
 folds, with no loops, no recursion (a `def` sees only earlier `def`s) and no
 host language
-([decision 0009](decisions/0009-relationship-to-rabbit-ear.md)). Every program
+([decision 0009](docs/decision/0009-relationship-to-rabbit-ear.md)). Every program
 terminates, its statements are its folding sequence, and every crease in the
 FOLD output names the statement and the construction that made it.
 
@@ -130,12 +130,12 @@ FOLD output names the statement and the construction that made it.
   state, and the test suite checks assertions on them. Programs for the
   jumping frog, the flapping bird and the traditional frog are drafts; each
   stops at a step the kernel cannot fold yet.
-- **Formalized:** [`spec/MODEL.md`](spec/MODEL.md) defines folded states and
+- **Formalized:** [`docs/reference/MODEL.md`](docs/reference/MODEL.md) defines folded states and
   the operations on them. Its first sections are reviewed; the section on
   operations is a draft, and two of its lemmas, among them that a fold
   introduces no crossing, have pending proofs.
 - **Not yet:** Yoshizawa-Randlett folding diagrams, 3D states
-  ([decision 0015](decisions/0015-flat-folded-states-only.md)), and
+  ([decision 0015](docs/decision/0015-flat-folded-states-only.md)), and
   measurements on programs longer than a few dozen statements.
 
 ## Running it

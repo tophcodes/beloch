@@ -1,1 +1,1 @@
-../../../../../../spec/BELOCH-CONSTRUCTIONS.md
+../../../../../../docs/reference/BELOCH-CONSTRUCTIONS.md

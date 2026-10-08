@@ -1,5 +1,5 @@
 export type Vec2 = [number, number];
-export type Assignment = "B" | "M" | "V" | "F" | "J" | "U";  // J: a join edge, spec/FOLD.md
+export type Assignment = "B" | "M" | "V" | "F" | "J" | "U";  // J: a join edge, docs/reference/FOLD.md
 export type LineCoeffs = [number, number, number];           // a·x + b·y = c
 export type Isometry = [number, number, number, number, number, number]; // [m00,m01,m10,m11,tx,ty]
 export type FaceOrder = [number, number, number];            // [f, g, s], FOLD faceOrders
@@ -44,7 +44,7 @@ export type StatementKind = "fold" | "mark" | "bind" | "apply";
 // entry embeds its OWN mark geometry as recorded at that statement (not a
 // beloch:marks lookup — a mark that later graduates into a real crease is
 // dropped from beloch:marks, but its Statement.mark here is unaffected).
-// Contract: spec/FOLD.md.
+// Contract: docs/reference/FOLD.md.
 export interface Statement {
   index: number;
   kind: StatementKind;
@@ -80,7 +80,7 @@ export interface CreaseSegment { edgeIndex: number; a: Vec2; b: Vec2; }
 export interface Crease { name: string; segments: CreaseSegment[]; }
 
 // beloch:marks — non-subdividing record marks (dangling segments + points);
-// see spec/FOLD.md.
+// see docs/reference/FOLD.md.
 export interface SegMark {
   kind: "seg";
   a: Vec2; b: Vec2;
@@ -137,12 +137,12 @@ export interface Inspect {
   edges: Record<string, InspectEdge>;
 }
 
-// beloch:trace, written by `beloch fold --trace` (spec/FOLD.md, "The trace"):
+// beloch:trace, written by `beloch fold --trace` (docs/reference/FOLD.md, "The trace"):
 // every candidate line of a construction, in the table coordinates of the
 // frame the construction read (`frameIndex`; for a fold the state before it),
 // with the rule that removed it.
 export type Removal = "paper" | "heading" | "toward" | "moving" | "moved";
-// The stage of the selection that removed a candidate (spec/MODEL.md, def-selection).
+// The stage of the selection that removed a candidate (docs/reference/MODEL.md, def-selection).
 export type Stage = "paper" | "heading" | "side" | "moved" | "landing";
 // Where the side that folds over came from; "alone" and "first" are the default
 // of a write without side items.
@@ -241,7 +241,7 @@ export interface TraceError {
 }
 
 // beloch:annotations: one entry per annotation, in the order the statements
-// ran (spec/FOLD.md). A point or line argument was read against the state
+// ran (docs/reference/FOLD.md). A point or line argument was read against the state
 // `frameIndex`, the one the annotated statement starts from.
 export type AnnotationArg =
   | { kind: "text"; text: string }

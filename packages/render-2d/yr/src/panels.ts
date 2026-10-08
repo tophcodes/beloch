@@ -1,5 +1,5 @@
 // Which panels a program becomes: one per step group, one per write outside
-// any group, and one for the final state (spec/BELOCH-ANNOTATIONS.md).
+// any group, and one for the final state (docs/reference/BELOCH-ANNOTATIONS.md).
 import type { Annotation, FoldScene, Statement, Vec2 } from "@beloch/scene";
 import { clipSegmentToPoly, pointInPolygon } from "@beloch/render-svg";
 import { foldMotion, overlapArea, turnOver } from "./motion";

@@ -32,7 +32,7 @@ set -uo pipefail
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
-OTHER_SCOPES=(spec decisions notes paper examples brand ci nix)
+OTHER_SCOPES=(reference decision notes paper examples brand ci nix)
 TYPES=(feat fix docs refactor test chore build ci perf style revert)
 
 package_scopes() {

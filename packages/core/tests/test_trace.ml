@@ -1,4 +1,4 @@
-(* The trace of a construction's candidates (spec/FOLD.md, "The trace"):
+(* The trace of a construction's candidates (docs/reference/FOLD.md, "The trace"):
    `beloch fold --trace` output, read as JSON the way a figure reads it. *)
 
 open Yojson.Safe.Util

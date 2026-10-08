@@ -1,1 +1,1 @@
-../../../../../spec/MODEL.md
+../../../../../docs/reference/MODEL.md

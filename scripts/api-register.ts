@@ -8,7 +8,7 @@
 // the item is documented on (scripts/build-api-docs.sh publishes that HTML
 // under /api/).
 //
-// The register is what `::: {.include api="Fold_state.t"}` blocks in spec/ are
+// The register is what `::: {.include api="Fold_state.t"}` blocks in docs/reference/ are
 // replaced by, on both renderers (packages/www/src/lib/remark-model-blocks.ts,
 // scripts/model-blocks.lua), and what gives the model page its "Realized by"
 // lines.

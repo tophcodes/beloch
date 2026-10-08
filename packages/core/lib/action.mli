@@ -26,18 +26,18 @@ val eval_mark :
   Error.span ->
   unit
 (** Evaluate a `mark` statement: record a crease without moving paper
-    (spec/BELOCH-WRITES.md). *)
+    (docs/reference/BELOCH-WRITES.md). *)
 
 val eval_fold :
   Ctx.ctx -> Ast.output -> Ast.markable -> Ast.fold_spec -> Error.span -> unit
 (** Evaluate a `fold` statement: reflect the moving flaps over the axis and
-    advance the fold state (spec/MODEL.md, def-fold). *)
+    advance the fold state (docs/reference/MODEL.md, def-fold). *)
 
 val eval_unfold :
   Ctx.ctx -> Ast.line_operand -> Ast.fold_spec -> Error.span -> unit
 (** Evaluate an `unfold` statement: turn the selected layers over a line
     that every one of them lies on one side of, opening the folded hinges on
-    it between them and the layers that stay (spec/MODEL.md, def-fold;
+    it between them and the layers that stay (docs/reference/MODEL.md, def-fold;
     ADR 0053). *)
 
 val eval_reverse :
@@ -48,4 +48,4 @@ val eval_reverse :
   Error.span ->
   unit
 (** Evaluate a `reverse` statement: fold a flap's tip back over the spine
-    that joins it to the rest of the paper (spec/MODEL.md, def-reverse). *)
+    that joins it to the rest of the paper (docs/reference/MODEL.md, def-reverse). *)

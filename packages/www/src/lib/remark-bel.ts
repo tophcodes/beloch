@@ -5,7 +5,7 @@
 // highlighter covers completely gets the same colors; any other inline code,
 // a path or an identifier, is left to the page.
 //
-// spec/BELOCH.md's example blocks carry pandoc's attribute form of the info
+// docs/reference/BELOCH.md's example blocks carry pandoc's attribute form of the info
 // string, `{.bel .frag prelude=triangle}` (design doc "Marking the blocks"),
 // because pandoc's markdown reader takes only a single bare word or a bracketed
 // attribute list. remark-parse splits an info string at its first space, so a
@@ -48,9 +48,9 @@ function repoRoot(): string {
 // The document a processed file corresponds to, relative to the repo root:
 // the same key packages/core/tools/blocks.ml writes into blocks.json. The
 // reference documents are reached through symlinks under
-// src/content/docs/ (e.g. language.md -> ../../../../../spec/BELOCH.md).
+// src/content/docs/ (e.g. language.md -> ../../../../../docs/reference/BELOCH.md).
 // Resolving the path before comparing keeps a symlinked page keyed off the
-// spec/ path blocks.ml wrote entries under, instead of its own content
+// docs/reference/ path blocks.ml wrote entries under, instead of its own content
 // path. `null` when the file carries no path at all (e.g. a `VFile` built
 // straight from a string), left to the caller.
 function docPathOf(file: any): string | null {
@@ -89,7 +89,7 @@ function parseFenceTag(
   return { isPrelude: classes.includes(".prelude") };
 }
 
-// `_build/spec/blocks.json`[doc] once no `.exe` has run yet: `astro dev` still
+// `_build/reference/blocks.json`[doc] once no `.exe` has run yet: `astro dev` still
 // has to work, so every block just falls through to the no-entry rendering.
 function loadEntries(path: string, doc: string): BlockEntry[] {
   try {
@@ -146,7 +146,7 @@ function withoutAssertions(src: string): string {
 
 export default function remarkBel(options: { blocks?: string; doc?: string } = {}) {
   return async (tree: any, file: any) => {
-    const blocksPath = options.blocks ?? join(repoRoot(), "_build", "spec", "blocks.json");
+    const blocksPath = options.blocks ?? join(repoRoot(), "_build", "reference", "blocks.json");
     const doc = options.doc ?? docPathOf(file) ?? "";
     const entries = loadEntries(blocksPath, doc);
 

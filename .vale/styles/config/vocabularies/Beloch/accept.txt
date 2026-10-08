@@ -518,3 +518,4 @@ XOR'd
 Zakharevich
 zarith
 Zenodo
+Spalier

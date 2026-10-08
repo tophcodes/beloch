@@ -49,7 +49,7 @@ type chosen = {
 
 val select :
   ?trace:bool -> Ctx.ctx -> Error.span -> pending -> fold:bool -> Ast.sides -> chosen
-(** Keep one candidate (spec/MODEL.md, def-selection): those that cross the
+(** Keep one candidate (docs/reference/MODEL.md, def-selection): those that cross the
     paper, those nearest in direction to the `heading`, those whose fold
     carries out every alignment with the side that stays named by `toward`
     or the side that folds over named by `moving`, and among several the

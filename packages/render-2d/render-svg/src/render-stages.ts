@@ -1,10 +1,10 @@
-// Stages view: how the selection of one construction went (spec/MODEL.md,
-// def-selection), drawn as spec/CLI-STAGES.md states it. One column: the
+// Stages view: how the selection of one construction went (docs/reference/MODEL.md,
+// def-selection), drawn as docs/reference/CLI-STAGES.md states it. One column: the
 // program, one row per stage with the paper on the left and on the right the
 // title, the statement with the part the stage reads underlined, and the
 // text rows; then the outcome and, where several candidates or none remain,
 // what to write next; then the legend of the marks the figure uses.
-// Everything drawn comes from `beloch:trace` (spec/FOLD.md, "The trace"):
+// Everything drawn comes from `beloch:trace` (docs/reference/FOLD.md, "The trace"):
 // the view repeats no part of the selection, and computes only where a mark
 // sits on the page.
 import type {

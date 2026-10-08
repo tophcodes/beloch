@@ -1,7 +1,7 @@
 (** Exact real algebraic numbers backed by FLINT 3's qqbar (Calcium):
     canonical minimal-polynomial representation with Arb ball certification.
     Values are immutable; the C finalizer frees the FLINT struct. ℚ crosses
-    the FFI as strings. See decisions/0013-flint-qqbar-backend.md. *)
+    the FFI as strings. See docs/decision/0013-flint-qqbar-backend.md. *)
 
 type t
 

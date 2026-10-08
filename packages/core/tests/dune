@@ -74,7 +74,7 @@
  (modules test_reference_corpus bel_assert)
  (libraries beloch alcotest zarith)
  (deps
-  (source_tree ../../../spec)
+  (source_tree ../../../docs/reference)
   (source_tree ../../www/src/content/docs/guide)))
 
 (test
@@ -108,9 +108,9 @@
  (libraries beloch alcotest yojson)
  (deps
   ../stdlib/shapes.bel
-  ../../../spec/BELOCH.md
-  ../../../decisions/0046-a-sheet-is-a-square-or-a-flap-cut-from-one.md
-  ../../../decisions/0047-a-trim-exports-the-names-it-lists.md))
+  ../../../docs/reference/BELOCH.md
+  ../../../docs/decision/0046-a-sheet-is-a-square-or-a-flap-cut-from-one.md
+  ../../../docs/decision/0047-a-trim-exports-the-names-it-lists.md))
 
 ; property tests (QCheck, run as alcotest cases); arb.ml holds the generators
 (test

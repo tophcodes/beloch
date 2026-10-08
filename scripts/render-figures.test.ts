@@ -16,7 +16,7 @@ test("a highlight the program defines renders both views", () => {
   const entry = renderFigure(
     { id: "fig-ok", views: ["cp"], highlight: ["--ac", ".a"], program: SQUARE },
     outDir,
-    "spec/TEST.md",
+    "docs/reference/TEST.md",
   );
   expect(entry.error).toBeNull();
   expect(entry.files.cp).toBe("fig-ok-cp.svg");
@@ -27,7 +27,7 @@ test("a highlight naming an entity the program does not define is an error", () 
   const entry = renderFigure(
     { id: "fig-bad", views: ["cp"], highlight: ["--ac", "--nope"], program: SQUARE },
     outDir,
-    "spec/TEST.md",
+    "docs/reference/TEST.md",
   );
   expect(entry.error).toContain("fig-bad");
   expect(entry.error).toContain("--nope");
@@ -38,7 +38,7 @@ test("an unknown point inside a flap selector is named too", () => {
   const entry = renderFigure(
     { id: "fig-flapless", views: ["cp"], highlight: ["#[.zz]"], program: SQUARE },
     outDir,
-    "spec/TEST.md",
+    "docs/reference/TEST.md",
   );
   expect(entry.error).toContain("fig-flapless");
   expect(entry.error).toContain(".zz");
@@ -70,7 +70,7 @@ test("a candidates figure draws the choices of a program that stops at them", ()
 	const entry = renderFigure(
 		{ id: "fig-choice", views: ["candidates"], highlight: [], at: "choose", program: AMBIGUOUS },
 		outDir,
-		"spec/TEST.md",
+		"docs/reference/TEST.md",
 	);
 	expect(entry.error).toBeNull();
 	expect(entry.files.candidates).toBe("fig-choice-candidates.svg");
@@ -85,7 +85,7 @@ test("an op figure draws the write of the labeled statement", () => {
 			program: "paper square\nfold (map .a onto .c) as --bd\n@label rev\nreverse (map .b onto .c) as --h\n",
 		},
 		outDir,
-		"spec/TEST.md",
+		"docs/reference/TEST.md",
 	);
 	expect(entry.error).toBeNull();
 	const svg = readFileSync(join(outDir, "fig-rev-op.svg"), "utf8");
@@ -97,7 +97,7 @@ test("a figure that shows an unlabelled statement is an error", () => {
 	const entry = renderFigure(
 		{ id: "fig-noat", views: ["candidates"], highlight: [], at: "nope", program: AMBIGUOUS },
 		outDir,
-		"spec/TEST.md",
+		"docs/reference/TEST.md",
 	);
 	expect(entry.error).toContain("nope");
 });
@@ -176,7 +176,7 @@ test("a highlight may name a crease that a later fold bends", () => {
 			program: "paper square\nfold (map .a onto .c) as --bd\nreverse (map .b onto .c) as --h",
 		},
 		outDir,
-		"spec/TEST.md",
+		"docs/reference/TEST.md",
 	);
 	expect(entry.error).toBeNull();
 	expect(readFileSync(join(outDir, "fig-bent-cp.svg"), "utf8")).toContain('data-construction="bd"');
