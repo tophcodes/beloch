@@ -147,6 +147,7 @@ export default defineConfig({
 							label: "Language",
 							items: [
 								{ label: "Overview", link: "/language/" },
+								{ label: "Names and definitions", link: "/language/names/" },
 								{ label: "Write statements", link: "/language/writes/" },
 								{ label: "Constructions", link: "/language/constructions/" },
 								{ label: "Annotations", link: "/language/annotations/" },
