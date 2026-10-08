@@ -36,7 +36,7 @@ target. A squash is fixed by that line and the flap it moves.
 
 Written as a `flatten`, the squash takes eight rays for a step a diagram
 gives with one word and an arrow. The anchor of a fan is the flap that
-carries its point, and a fan moves its tip (ADR 0037).
+carries its point, and a fan moves its tip ([[decision/0037]]).
 
 The axis of a squash passes through the *vertex*: the end of the spine
 inside the paper, where the other folded hinges of the flap meet. A spine
@@ -89,8 +89,8 @@ at any point along it, so nothing in the write fixes a second condition, and
 ## Consequences
 
 - The grammar gains the verb `squash` and its item, a bare alignment beside
-  the side items. `docs/reference/BELOCH.md` states it when the kernel folds it.
-- `docs/reference/MODEL.md` defines the squash as a fan (#52): its axis, its anchor and
+  the side items. [[reference/beloch]] states it when the kernel folds it.
+- [[reference/model]] defines the squash as a fan (#52): its axis, its anchor and
   the spine it opens.
 - A spine whose two ends both lie inside the paper has two vertices. Which
   one a bare alignment completes with is open until a model needs it.

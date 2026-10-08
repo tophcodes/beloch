@@ -49,7 +49,7 @@ Ctx → Resolve → { Axiom, Flatten_solve } → Eval
 - **`Eval`** holds the statement dispatch, the def/apply/export machinery,
   and the assembly of the evaluated program into its output record. The
   disposition verbs (`mark`, `fold`, `reverse`) and the fold-checking
-  primitive they share moved to `Action` (ADR 0034).
+  primitive they share moved to `Action` ([[decision/0034]]).
 
 Every stateful function takes `(ctx : Ctx.ctx)` as its first parameter rather
 than closing over it. Types crossing a module boundary are abstract unless a
@@ -85,9 +85,9 @@ while leaving the solver with no home of its own.
   immediately exposed a record field with no reader (warning 69), which the
   fully-exported record had masked.
 - `run_fold*` deliberately stayed in `Eval` at the time of this record.
-  Splitting the action model (`mark`, `fold`, `run_fold*`, ADR 0011) from the
+  Splitting the action model (`mark`, `fold`, `run_fold*`, [[decision/0011]]) from the
   instance machinery (`def`, `apply`, `export`) was the plausible sixth
-  module this record deferred; ADR 0034 made that split.
+  module this record deferred; [[decision/0034]] made that split.
 - `Flatten_solve` may absorb more of `Flatten`'s caller-side logic later;
   `Flatten_solve.run` is the largest single function in the core and is the
   next decomposition candidate.

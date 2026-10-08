@@ -6,11 +6,11 @@ status: superseded
 
 # 0010: Constructible real numbers for the irrational axioms
 
-**Status:** Superseded by [0012](../0012-real-algebraic-number-kernel.md)
+**Status:** Superseded by [[decision/0012|0012]]
 
 ## Context
 
-[ADR 0008](../0008-exact-rational-arithmetic.md) established ℚ (zarith) as the
+[[decision/0008]] established ℚ (zarith) as the
 number representation and noted explicitly that ℚ stops being closed at axiom 5
 (the angle bisector) and axiom 6 (the cubic). Axioms 1–4 are all rational: line
 through two points, perpendicular bisector, perpendicular through a point, and
@@ -57,7 +57,7 @@ geometry core migrates onto this interface in v0.4.
 
 ## Alternatives considered
 
-- **float64 + epsilon.** Rejected for the same reason as ADR 0008: tolerance
+- **float64 + epsilon.** Rejected for the same reason as [[decision/0008]]: tolerance
   comparisons reintroduce fuzziness at the foundation. Exact sign is the whole
   point.
 - **Real-algebraic numbers via minimal polynomial + interval arithmetic.** Correct

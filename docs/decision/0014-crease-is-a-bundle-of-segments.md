@@ -51,8 +51,8 @@ not the line, is the durable referent of a crease name.
 The surface mechanisms (`at`, `pinch`) and their exact syntax are a
 specification/slice concern, not this decision; the durable decision is the
 bundle model itself. Full design:
-`docs/notes/2026-07-03-crease-segment-at-operator.md` and
-`docs/notes/2026-07-03-crease-layer-selection.md`.
+[[notes/2026-07-03-crease-segment-at-operator]] and
+[[notes/2026-07-03-crease-layer-selection]].
 
 ## Alternatives considered
 - **Keep "crease = line", add a separate segment type.** Rejected: it denies what
@@ -82,5 +82,5 @@ bundle model itself. Full design:
 - Implementation is mostly additive: `fold_state` edges already carry `crease_id`
   + endpoints, so `at` is a query over the existing subdivision; `pinch` is a
   narrowed `subdivide` plus a display flag on the edge.
-- The spec (`docs/reference/SPECIFICATION.md`) is extended only when the implementing slice
+- The spec ([[reference/specification]]) is extended only when the implementing slice
   lands; until then this feature sits in Appendix B.

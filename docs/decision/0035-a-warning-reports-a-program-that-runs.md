@@ -11,8 +11,8 @@ issue: tophcodes/beloch#59
 ## Context
 
 The language reports a rejected program as a span, a message and an optional
-hint (ADR 0028), and it has no other kind of report. Some programs contain an
-item that changes nothing: the program means the same without it. ADR 0031
+hint ([[decision/0028]]), and it has no other kind of report. Some programs contain an
+item that changes nothing: the program means the same without it. [[decision/0031]]
 names the first such item, a `moving` that agrees with the fold's `toward`
 and names the flap the fold would take anyway. Failing the program would
 reject a program that means what its author wrote. Saying nothing leaves the
@@ -33,7 +33,7 @@ server is reserved and unbuilt.
 ## Decision
 
 **A warning is a report on a program that runs to its end.** It has the
-shape of an error (ADR 0028): a span, a message and an optional hint. The
+shape of an error ([[decision/0028]]): a span, a message and an optional hint. The
 span covers the item the warning is about, the message states what that
 item does to the program, and the hint states what to write instead. A
 warning changes neither the program's result nor the exit code.
@@ -90,10 +90,10 @@ whatever the selection does without `moving`. A `moving` in a fold without
   become necessary only for a warning that asks for a judgment, and this
   record admits none.
 - **A warning with a message and no hint.** The hint is what the author
-  acts on, and the shape of ADR 0028 carries it at no cost.
+  acts on, and the shape of [[decision/0028]] carries it at no cost.
 - **Warning on a `moving` without `toward` that names the default side.**
   The default side is the side of the first object of the first alignment
-  (ADR 0031). A `moving` that names it states in the write what the order
+  ([[decision/0031]]). A `moving` that names it states in the write what the order
   inside the alignment decides otherwise, and it keeps the side when
   someone reorders the alignment.
 
@@ -103,7 +103,7 @@ whatever the selection does without `moving`. A `moving` in a fold without
   log. A re-evaluation that reuses the result of unchanged statements
   reports their warnings again, in the command line's watch mode and in the
   playground alike.
-- `docs/reference/FOLD.md` gains `beloch:warnings`, and `docs/reference/CLI.md` states how
+- [[reference/fold]] gains `beloch:warnings`, and [[reference/cli]] states how
   warnings print and that they leave the exit code at 0. The browser
   evaluator's answer gains `warnings`; an answer without the field reads as
   before.

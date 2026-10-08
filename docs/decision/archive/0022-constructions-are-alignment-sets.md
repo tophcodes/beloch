@@ -22,10 +22,10 @@ onto line, the fold line through a point, the fold line perpendicular to a
 line. The seven axioms are the seven such sets that determine one fold line
 with finitely many solutions, and the same alignments distributed over two
 fold lines give the 489 two-fold axioms [alperin2006, §3, §4]. The language
-reference (`docs/reference/BELOCH.md`, Constructions) and the model (`MODEL.md`,
+reference ([[reference/beloch]], Constructions) and the model (`MODEL.md`,
 Definition 4.7) now state constructions in these terms: the alignment set is
 the canonical form, written `(align …)`, and the prose forms are sugar for
-it. `packages/multifold` (ADR 0020) enumerates the two-fold sets under
+it. `packages/multifold` ([[decision/0020]]) enumerates the two-fold sets under
 Alperin and Lang's names.
 
 The question this record settles is what the syntax tree keeps. Two options
@@ -69,7 +69,7 @@ constructor per axiom remains.
 - **A, recognition in the parser onto the seven constructors.** Rejected.
   The canonical form would exist in the documents and nowhere in the
   program's representation; a formatter could not print `align` from a tree
-  parsed from prose; and the two-fold constructions of ADR 0020 need the
+  parsed from prose; and the two-fold constructions of [[decision/0020]] need the
   alignment set in the tree, so a second representation would arrive with
   them and every consumer would handle both.
 - **Both representations, `align` as an eighth constructor beside the
@@ -84,7 +84,7 @@ constructor per axiom remains.
   untouched below `classify`.
 - The two-fold constructions of `packages/multifold` have a source-level
   object to bind to when they are wired into the kernel; the syntax for
-  naming fold lines inside `align` stays open in `docs/reference/BELOCH.md`
+  naming fold lines inside `align` stays open in [[reference/beloch]]
   (`#open-multifold-syntax`).
-- `docs/reference/MODEL.md` Definition 4.7 already states a construction as a set of
+- [[reference/model]] Definition 4.7 already states a construction as a set of
   alignments; nothing in the model changes.

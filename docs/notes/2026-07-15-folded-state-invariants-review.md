@@ -46,7 +46,7 @@ lives.
 
 ## Candidate models
 - **A. Hinge-graph folding map.** Faces partition the sheet; hinges carry
-  `folded : bool` (flat-only, ADR 0015). A face's isometry is DERIVED as the
+  `folded : bool` (flat-only, [[decision/0015]]). A face's isometry is DERIVED as the
   reflection-path product from a root face (= σf, [hull2020 Def 6.5]; already
   what `Collapse.sector_isometries` does for the fan). Makes tears, stale
   isometries, mover/stayer mismatch *unrepresentable*. Unifies

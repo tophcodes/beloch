@@ -11,7 +11,7 @@ status: accepted
 
 The timeline has one counter today. `beloch:statements` holds one entry per
 state-changing statement in source order, which means a `fold` or a `mark`
-(`docs/reference/FOLD.md`). A construction statement such as `.m = --v * --ab` changes no
+([[reference/fold]]). A construction statement such as `.m = --v * --ab` changes no
 state and is not logged; a named point records the index of the next
 state-changing statement, "the first stop at which the point can matter".
 
@@ -32,7 +32,7 @@ no notion of a program, a name or an order of statements.
 read, `--mid = (through .c .o)` binds another, `mark` writes without moving
 paper. All three advance the program. None of them moves the model's counter.
 
-The naming environment appears nowhere in `docs/reference/MODEL.md`, so the second axis
+The naming environment appears nowhere in [[reference/model]], so the second axis
 belongs to a layer the model does not have rather than being a distinction the
 interface invented.
 
@@ -46,7 +46,7 @@ standing on the second folded state.
 and `mark`. The axis asks whether the paper changed, and a score changes it:
 the sheet carries a scar it did not carry before, which the drawing shows and
 a reader steps to. That an effective write moves the state and a score leaves
-it standing up to refinement (ADR 0025) still separates the two inside the
+it standing up to refinement ([[decision/0025]]) still separates the two inside the
 axis, and a renderer needs that separation: a fold crossfades between two
 placements, a mark draws on the placement that is already there.
 
@@ -64,7 +64,7 @@ named point already does.
 The reason for putting it in the document rather than deriving it in the
 client: every renderer gets the structure. The card in the documents, a
 scroll-driven tour, an editor extension, a printed diagram. A consumer that
-draws should not have to parse the program, which is the same reason ADR 0024
+draws should not have to parse the program, which is the same reason [[decision/0024]]
 gives the runtime core a document slot rather than an evaluator.
 
 ## Alternatives considered
@@ -85,7 +85,7 @@ gives the runtime core a document slot rather than an evaluator.
 
 ## Consequences
 
-- The emitter, `docs/reference/FOLD.md`, the scene parser and the runtime core change
+- The emitter, [[reference/fold]], the scene parser and the runtime core change
   together. The kind on a statement is the new field a consumer must read to
   tell the axes apart.
 - A FOLD written before this change carries fewer entries. The parser keeps

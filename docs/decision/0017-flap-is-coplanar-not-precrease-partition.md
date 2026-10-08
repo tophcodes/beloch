@@ -24,11 +24,11 @@ precedent for using it.
 
 ## Context
 
-ADR 0016 fixed the *operand type* consumed by `moving`, `up to`, and the
+[[decision/0016]] fixed the *operand type* consumed by `moving`, `up to`, and the
 `#(...)` incidence selector: a **flap**. The fold-scope design and the current
 evaluator resolve that flap type to a single **face**: one convex polygon in
 the fixed partition `subdivide` carves. A face boundary is created the moment
-**any** crease crosses a polygon (ADR 0014: creasing runs `subdivide`, which
+**any** crease crosses a polygon ([[decision/0014]]: creasing runs `subdivide`, which
 cuts every face the axis crosses and tags each resulting edge with the shared
 `crease_id`). Crucially, that partition is cut by *precreases* too: a bare
 `map X onto Y` bind materializes a crease bundle and subdivides, even though
@@ -94,7 +94,7 @@ only fractures when a crease is **folded** (`U → M/V`).
 ## Decision
 
 Redefine **flap** (the operand type consumed by `moving`, `up to`, and the
-`#(...)` incidence selector, ADR 0016) as a **maximal connected cluster of
+`#(...)` incidence selector, [[decision/0016]]) as a **maximal connected cluster of
 faces that are still physically coplanar**: faces reachable from one another
 through edges whose crease assignment is still `U` (unfolded). Two faces
 separated only by a `U` edge are the **same** flap. The instant that specific
@@ -107,7 +107,7 @@ one connected component of that graph. The split rule is local and exact: a
 flap divides at the precise edge whose assignment changes, at the moment the
 fold that changes it runs; no other flap is affected.
 
-**"Face" is unchanged.** The fine per-precrease-polygon partition (ADR 0014's
+**"Face" is unchanged.** The fine per-precrease-polygon partition ([[decision/0014]]'s
 subdivision granularity, needed for crease/segment bundle *addressing*: `at`,
 `pinch`, `crease_segments`) keeps its current meaning and stays fine-grained.
 This ADR does **not** change how creases/segments subdivide the sheet, how
@@ -144,7 +144,7 @@ What changes, all to operate on coplanar-clusters instead of raw face indices:
   vertex shared by faces in the same flap is unambiguous (they share an
   isometry, being coplanar), so the stale-position bug (2) disappears; a vertex
   on a *folded* edge legitimately belongs to two flaps and is disambiguated the
-  same way stacked material already is (ADR 0014: layer identity).
+  same way stacked material already is ([[decision/0014]]: layer identity).
 
 The split rule makes the "crease all, fold some" case (fold-scope design, and
 spec §4.6) fall out cleanly: a bare bind creases all layers (`U` edges: same
@@ -187,7 +187,7 @@ already face-granular and unchanged.
   `#(.a .d)`-style failures on flat sheets, and every future scope/incidence
   site inherits the same trap.
 - **Merge precrease faces back into one polygon (undo the subdivision for flat
-  creases).** Rejected: it destroys ADR 0014's addressing granularity; the
+  creases).** Rejected: it destroys [[decision/0014]]'s addressing granularity; the
   segment bundle needs the fine partition to enumerate and select segments
   (`at`, `pinch`). Faces must stay fine; only the flap *grouping* should coarsen.
 - **Make the user disambiguate (`#(.a .d …)` with more points, or `at` with a
@@ -246,7 +246,7 @@ already face-granular and unchanged.
   implementing: it is where the coarser flap and the still-fine
   depth-along-crease model could conflict.
 - **Bent-crease detection.** `@fold` across a bent crease is already an error
-  (ADR 0014, spec §4.6). Whether the coplanar-cluster split changes which folds
+  ([[decision/0014]], spec §4.6). Whether the coplanar-cluster split changes which folds
   count as "bent under the moving set" needs a check before anyone relies on it.
   The split may leave them unchanged, because that check runs over the crease
   bundle's segments and never looks at flaps.
@@ -258,9 +258,9 @@ already face-granular and unchanged.
 
 ## References
 
-- ADR 0014 (a crease is a bundle of segments: why faces stay fine-grained)
-- ADR 0016 (typed operands: the flap operand type this ADR redefines)
-- `docs/reference/SPECIFICATION.md` §4.6 (`@` / `@fold` / `moving` / `up to`), §4.8 (`at`)
+- [[decision/0014]] (a crease is a bundle of segments: why faces stay fine-grained)
+- [[decision/0016]] (typed operands: the flap operand type this ADR redefines)
+- [[reference/specification]] §4.6 (`@` / `@fold` / `moving` / `up to`), §4.8 (`at`)
 - `packages/core/tests/cases/bases/rabbit-ear.bel` (the repro for both findings)
 - `lib/fold_state.ml` (`flap_of_points` :352, `select_scope` :385,
   `type assign`, `subdivide`); `lib/eval.ml` (`resolve_flap_face`,

@@ -17,7 +17,7 @@ The evidence was scattered but consistent:
 - `moving .b` was always flap-valued with a point as sugar: "move the flap
   carrying `.b`", never "move `.b`". The evaluator even discards the material
   identity today (`eval.ml` projects to table space and keeps only the side).
-- ADR 0014 already established the pattern for creases: a name denotes a
+- [[decision/0014]] already established the pattern for creases: a name denotes a
   **bundle** of segments, operations consume **length-1** bundles, and `at`
   projects by incidence with 0-match/multi-match errors.
 - Axioms ⑤/⑥ already carry a metric disambiguator: `toward .x` picks among
@@ -78,6 +78,6 @@ One operand model for the whole language:
   first.
 
 ## References
-- ADR 0011 (action model), ADR 0014 (crease = bundle of segments)
-- `docs/notes/2026-07-03-crease-layer-selection.md` (pinch/at convergence)
+- [[decision/0011]] (action model), [[decision/0014]] (crease = bundle of segments)
+- [[notes/2026-07-03-crease-layer-selection]] (pinch/at convergence)
 - [demaine2007, §14] for the simple-fold models motivating fold scope

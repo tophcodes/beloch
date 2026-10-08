@@ -11,7 +11,7 @@ issue: tophcodes/beloch#151
 ## Context
 
 The model admits any simple polygon as a sheet
-([def-sheet](/model/#def-sheet)). The language offers one, `paper square`,
+([[reference/model#def-sheet|def-sheet]]). The language offers one, `paper square`,
 the unit square with its corners bound as `.a` to `.d`, and the kernel
 builds that square into its starting state, its clipping and its collapse.
 
@@ -28,8 +28,8 @@ constructed from points and lines of the sheet.
 
 Whatever a second sheet shape looks like, later sheets build on it: other
 polygons, several sheets in one program
-([open-several-sheets](/model/#open-several-sheets)), and the circle
-([open-sheet-shapes](/model/#open-sheet-shapes)).
+([[reference/model#open-several-sheets|open-several-sheets]]), and the circle
+([[reference/model#open-sheet-shapes|open-sheet-shapes]]).
 
 ## Decision
 
@@ -53,7 +53,7 @@ paper coordinates, and a program opens it the way it opens a square. A
 name whose point lies on the flap keeps its meaning and its coordinate; a
 name off the flap is gone. Creases marked on the flap stay on it as marks.
 A flap whose outline has a hole is an error, because
-[def-sheet](/model/#def-sheet) excludes holes.
+[[reference/model#def-sheet|def-sheet]] excludes holes.
 
 ```
 shape rectangle(w h) {
@@ -71,7 +71,7 @@ The spelling above is the one the language page and the grammar state.
 The trim is the last statement of a shape and appears nowhere else, so the
 sheet it cuts from ends with it. The body names its flap, since the layer
 order of a state is partial and a bottom flap exists only when one flap
-covers all others ([rem-linear-extension](/model/#rem-linear-extension)).
+covers all others ([[reference/model#rem-linear-extension|rem-linear-extension]]).
 
 **A shape takes numbers, and a program writes no arithmetic.** The
 parameters of a shape are numbers, named without a sigil. A number reaches
@@ -79,7 +79,7 @@ the paper as a side length or as a distance along a line from one end of
 its material (`free … by`), beside the fraction of the line that `free …
 at` takes. Ratios that are not rational, such as the silver rectangle's
 $1 : \sqrt 2$, come from a constructed line, the way a folder makes them
-from a square. The kernel holds any such coordinate exactly (ADR 0012,
+from a square. The kernel holds any such coordinate exactly ([[decision/0012]],
 0013). Which other parameter types a `def` takes stays with
 tophcodes/beloch#143.
 
@@ -90,7 +90,7 @@ triangle and the others, sized by their parameters.
 **Sizes carry no unit in the language; the unit belongs to the file.** A
 file may declare its unit before its first statement, as a declaration of
 the language. An annotation cannot carry it: removing an annotation leaves
-the geometry unchanged (ADR 0029), and the unit of a loaded file scales the
+the geometry unchanged ([[decision/0029]]), and the unit of a loaded file scales the
 sizes the loading program sees. The FOLD output writes the unit as
 `frame_unit`, which the FOLD format defines for that purpose, and writes
 `"unit"` when no file declares one. A program that loads another file
@@ -138,7 +138,7 @@ sheet itself; the bound needs no knowledge of the sheet's shape.
 - **Algebraic literals** such as `sqrt 2`. Rejected: construction reaches
   the same ratios, and the source stays free of numbers it cannot state as
   fractions.
-- **The unit as an annotation.** Rejected: see the rule of ADR 0029 above.
+- **The unit as an annotation.** Rejected: see the rule of [[decision/0029]] above.
 - **The sheet's own polygon as the collapse bound.** It behaves the same
   on the corpus. Rejected because the kernel then needs the sheet's
   polygon and a point-in-polygon test, and a non-convex sheet forbids a

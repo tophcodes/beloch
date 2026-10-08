@@ -163,7 +163,7 @@ Layer census over the outline, which is the part the crane needs:
 Ida gives no letters for the reverse folds. Eos names a direction only on the
 plain folds, and the monograph describes `InsideReverseFold` as a split into
 two sub-origamis with a mountain fold on one and a valley fold on the other
-[ida2020, §7.4.3, p. 192]. Beloch derives the letters instead (ADR 0011), and
+[ida2020, §7.4.3, p. 192]. Beloch derives the letters instead ([[decision/0011]]), and
 the sequence it derives has the same shape as that description:
 
 | after | `--bd` | `--h` | `--v` | the four corner creases |
@@ -220,7 +220,7 @@ them.
   what `--mid` and the corner points already give. Steps 11 to 14 use the two
   rays from the apex again.
 - Ida's steps 18 and 19 rotate faces by $\pi/2$ and stay out of scope
-  (ADR 0015), so a flat crane ends at step 17.
+  ([[decision/0015]]), so a flat crane ends at step 17.
 
 ## Open questions
 

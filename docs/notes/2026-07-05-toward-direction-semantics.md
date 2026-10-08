@@ -45,7 +45,7 @@ near-parallel).
 
 For the *infinite* line, each candidate fold sends one ray of `--l1` to each
 side; side-of-l1 cannot discriminate. What makes it unique is the
-**material**: the crease/edge segment that swings (ADR 0014
+**material**: the crease/edge segment that swings ([[decision/0014]]
 segments + fold-scope `moving`). In the common case, with the hinge (the l1∩l2
 intersection) at the *end* of the material, e.g. a corner, exactly one
 piece swings and direction decides.

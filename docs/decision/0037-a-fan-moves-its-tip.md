@@ -10,7 +10,7 @@ issue: tophcodes/beloch#52
 
 ## Context
 
-ADR 0036 has every write reach every layer under its axis, `flatten`
+[[decision/0036]] has every write reach every layer under its axis, `flatten`
 included: a flatten without an anchor moves every layer under its fan. It
 left open whether a flatten with an anchor moves the tip, as `reverse` does.
 
@@ -31,7 +31,7 @@ separate the two rules.
   corner is that corner alone, and the lower corner stays in view.
 
 A single crease through a stack is what a folder makes with one hand pressing
-the whole stack, and ADR 0036 keeps it that way. A fan through several
+the whole stack, and [[decision/0036]] keeps it that way. A fan through several
 separate flaps would take a hand per flap and per crease. Smith's notation
 draws the same line: "where two or more layers are treated as one, then only
 valley and mountain folds are involved" [smith1975oil, p. 17]. Where a
@@ -66,12 +66,12 @@ any angle between candidates. The tip moves; every other layer stays.
   fan reaches the spine.
 - Separate flaps under the fan stay.
 
-**A single crease moves every layer under it**, as ADR 0036 states for
+**A single crease moves every layer under it**, as [[decision/0036]] states for
 `mark` and `fold`. The line between the two rules is the number of creases
 through one point, which is also what separates a fold from a fan in the
 language.
 
-This replaces the sentence of ADR 0036 that has a flatten without an anchor
+This replaces the sentence of [[decision/0036]] that has a flatten without an anchor
 move every layer under its fan; a flatten always has an anchor.
 
 **Open: an item that widens a fan to separate flaps.** No real case needs it
@@ -81,7 +81,7 @@ one it names. It is decided when a model needs it.
 
 ## Alternatives considered
 
-- **Every layer for every write**, as ADR 0036 left `flatten`. The squash of
+- **Every layer for every write**, as [[decision/0036]] left `flatten`. The squash of
   one flap of the preliminary base becomes two squashes, and a program that
   means one flap has no way to say so short of a narrowing item on every
   squash.
@@ -96,7 +96,7 @@ one it names. It is decided when a model needs it.
 
 ## Consequences
 
-- `def-flatten` in `docs/reference/MODEL.md` moves the tip of $\Phi$ in place of every
+- `def-flatten` in [[reference/model]] moves the tip of $\Phi$ in place of every
   face of $C$, and `rem-all-layers` is settled by this record. `def-reverse`
   already moves its tip and keeps its definition.
 - `flatten-through-two-layers.bel` changes its result: the upper corner

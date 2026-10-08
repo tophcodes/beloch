@@ -3,6 +3,7 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import remarkIdLinks from './src/lib/remark-id-links.ts';
 import remarkBel from './src/lib/remark-bel.ts';
 import remarkModelBlocks from './src/lib/remark-model-blocks.ts';
 import remarkGrammar from './src/lib/remark-grammar.ts';
@@ -89,6 +90,8 @@ export default defineConfig({
 		'/tutorials/layers/': '/kernel/',
 	},
 	markdown: {
+		// remark-id-links turns `[[decision/0032]]` and the other id links of ADR
+		// 0054 into links before any other plugin reads the text.
 		// Highlight ```beloch fences with the tree-sitter highlighter before
 		// Expressive Code sees them.
 		// remark-model-blocks turns the `::: {.definition #id …}` fenced divs of
@@ -96,7 +99,7 @@ export default defineConfig({
 		// remarkMath so the math inside a block body is still tokenized.
 		// remark-grammar turns the ```grammar fragments of docs/reference/BELOCH.md into
 		// linked rules and generates the collected grammar under `## Grammar`.
-		remarkPlugins: [remarkBel, remarkGrammar, remarkModelBlocks, remarkMath],
+		remarkPlugins: [remarkIdLinks, remarkBel, remarkGrammar, remarkModelBlocks, remarkMath],
 		// `$...$` math and `[@key, §3]` citations, the same syntax pandoc reads
 		// for scripts/render-model.sh; the bibliography is the paper's.
 		rehypePlugins: [

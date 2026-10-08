@@ -12,7 +12,7 @@ status: accepted
 The meet, `--x * --y` and its n-ary form `.[--x --y …]`, names the point
 where creases cross. Until v0.19 it intersected the operands' table lines and
 resolved the table point to the topmost layer covering it. That rule is
-recorded as a dead end in `docs/notes/antipatterns.md` (Q2-B) for two reasons.
+recorded as a dead end in [[notes/antipatterns]] (Q2-B) for two reasons.
 Paper is opaque, so the topmost layer may carry neither crease, and the rule
 named points that no layer of the paper shows. And a point construction came
 to depend on the folded state, while a crease is a scar whose crossings in the

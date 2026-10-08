@@ -10,15 +10,15 @@ checks:
 
 # 0054: A document is one of four kinds, and a link names an id
 
-This record keeps the division of ADR 0032 (the specification binds every
+This record keeps the division of [[decision/0032]] (the specification binds every
 implementation, the kernel document describes one) and places it inside a
-wider order. ADR 0032's manual, "a separate document with a separate reader,
+wider order. [[decision/0032]]'s manual, "a separate document with a separate reader,
 ordered by the folder's tasks", gets its place here.
 
 ## Context
 
 Beloch's prose lives in four places with four different orders. `spec/`
-holds the reference, divided by role (ADR 0032). `decisions/` holds the
+holds the reference, divided by role ([[decision/0032]]). `decisions/` holds the
 records of choices, numbered. `notes/` holds a dated design journal. The
 site adds two guide pages of
 its own and lists the reference under two headings, the specification and
@@ -42,7 +42,7 @@ reader. Its own guidance warns against creating the four sections empty
 and filling them by plan; the structure follows from the pages that exist.
 
 References between documents follow three conventions at once. The kernel's
-`@see` tags name site URLs. Prose names decisions by number, "ADR 0032",
+`@see` tags name site URLs. Prose names decisions by number, "[[decision/0032]]",
 in 85 places, and by path in 3. The notes carry links in double
 brackets to design documents that were deleted months ago, and nothing has
 reported them, because nothing resolves such a link.
@@ -61,7 +61,7 @@ kinds are those of Diátaxis, and the compass decides which a page is:
   FOLD file with the drawing library, adapt a diagram. It carries a program
   or a script the build runs.
 - A **reference** page states what a thing does. The specification and the
-  description of the reference implementation stay divided as ADR 0032 has
+  description of the reference implementation stay divided as [[decision/0032]] has
   them, as two groups within the reference. An API reference of a package
   is reference.
 - An **explanation** page gives the reader an understanding of a choice or
@@ -84,7 +84,7 @@ it becomes a group of its own when it outgrows the kind.
 `decisions/` becomes `docs/decision/`, `notes/` becomes `docs/notes/`;
 `docs/guide/`, `docs/manual/` and `docs/explanation/` hold the pages of
 their kind. The site's content directory links each page, as it links the
-reference today, and every URL ADR 0032 fixed stays.
+reference today, and every URL [[decision/0032]] fixed stays.
 
 **A link between documents names an id.** The id is the kind, which is
 the directory name under `docs/`, and the document's file stem, with `#`
@@ -94,14 +94,14 @@ stem is its number. An id names its document for as long as the document
 exists, through a rename and through a move into `archive/`; a tool that
 reads the documents resolves the same id under its own base. A resolver
 turns the id into a link on the site and in the rendered PDFs, and the
-reference pages keep the URLs ADR 0032 fixed. A check in `check` fails on
+reference pages keep the URLs [[decision/0032]] fixed. A check in `check` fails on
 an id that names no document or no anchor. In a file read on GitHub the id
 stands unresolved and still names its target. A decision resolves to its
 file in the repository.
 
 ## Alternatives considered
 
-- **Keep the order of ADR 0032 and add the manual beside the guide.**
+- **Keep the order of [[decision/0032]] and add the manual beside the guide.**
   Rejected: the guide would mix tutorials with tasks, and explanations
   would keep landing in decision records, where a reader of the site never
   finds them.

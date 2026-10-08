@@ -10,12 +10,12 @@ issue: tophcodes/beloch#195
 
 ## Context
 
-ADR 0015 keeps the evaluator to flat folded states and names 3D as a goal:
+[[decision/0015]] keeps the evaluator to flat folded states and names 3D as a goal:
 3D rigid motions in place of 2D isometries, 3D points, and coordinates per
 face and vertex. It does not say what a program writes to leave the plane, or
 what the kernel computes when it does.
 
-The models of ADR 0049 end in 3D: the crane spreads its wings, the penguin
+The models of [[decision/0049]] end in 3D: the crane spreads its wings, the penguin
 stands, the waterbomb and the frog are inflated. Their 3D steps fall into
 four kinds:
 
@@ -38,8 +38,8 @@ apart is who chooses the lines and the angles. A fold takes its line from an
 axiom. Nobody chooses where an inflated waterbomb bends; the stiffness of
 the paper and the forces on it do, and neither appears in the program.
 
-ADR 0008 decides every comparison the kernel makes exactly, with no
-tolerance, and ADR 0012 lets a float appear in the output only.
+[[decision/0008]] decides every comparison the kernel makes exactly, with no
+tolerance, and [[decision/0012]] lets a float appear in the output only.
 
 ## Decision
 
@@ -47,7 +47,7 @@ tolerance, and ADR 0012 lets a float appear in the output only.
 folded state as the kernel computes it today. A hinge is a line on the
 paper, shared by two blocks, with a fold angle. A hinge stores the cosine and
 the sine of its angle, which are real algebraic numbers in the sense of
-ADR 0012 for any angle that is a rational number of degrees, so 90° and 60°
+[[decision/0012]] for any angle that is a rational number of degrees, so 90° and 60°
 are exact.
 
 **A hinge fold turns a block to an angle.** It selects the layers that move
@@ -74,21 +74,21 @@ implementation, in the issue named above.
 **A program may leave degrees of freedom open.** How far an inflated model
 bulges is one. An open degree of freedom is not an error. A simulation may
 pick a shape for it numerically, for display and export, and its result never
-returns to the kernel, as ADR 0012 holds for floats. A later statement that
+returns to the kernel, as [[decision/0012]] holds for floats. A later statement that
 relies on a position the open degree of freedom moves needs that position
 fixed by an invariant the program states, such as a point that stays on a
 line. The simulation keeps the invariant, the kernel reads the invariant and
 never the simulated coordinates, and a later statement may name only what an
 invariant names. A program with no later statement needs no invariant.
 
-**ADR 0015 stays in force until a hinge fold evaluates.** The pull request
-that lands the first hinge fold moves ADR 0015 to `archive/`.
+**[[decision/0015]] stays in force until a hinge fold evaluates.** The pull request
+that lands the first hinge fold moves [[decision/0015]] to `archive/`.
 
 ## Alternatives considered
 
 **The kernel simulates bends and later statements read the result.** Bends
 would need no lines in the program. Every comparison on a simulated point
-would need a tolerance, which ADR 0008 rules out, and the meaning of a
+would need a tolerance, which [[decision/0008]] rules out, and the meaning of a
 program would depend on a model of paper stiffness that the program does
 not state.
 
@@ -99,7 +99,7 @@ language one statement form and no new kernel concept.
 **3D statements end a program.** The flat kernel would stay as it is, with
 the 3D part as a stage after it. The restriction protects nothing the
 invariants do not: they already fix what a later statement may rely on, and
-ADR 0015 changes the types of the flat kernel either way.
+[[decision/0015]] changes the types of the flat kernel either way.
 
 **Solve coupled vertices numerically.** Kind 3 is a system of polynomial
 equations in the cosines and sines of the angles. When the program fixes
@@ -111,7 +111,7 @@ This decision keeps kind 3 exact and leaves its solver to a later issue.
 ## Consequences
 
 - The kernel moves to 3D rigid motions and per-face vertex coordinates, as
-  ADR 0015 lists, and the flat folds become the case of angles 0° and 180°.
+  [[decision/0015]] lists, and the flat folds become the case of angles 0° and 180°.
 - FOLD output carries 3D vertex coordinates and `edges_foldAngle` in the
   frames after the first hinge fold.
 - The renderer needs a 3D view; the 2D renderer keeps drawing the flat

@@ -9,7 +9,7 @@ status: accepted
 
 ## Context
 
-The selection reads the material of a line (ADR 0031): a `toward` or
+The selection reads the material of a line ([[decision/0031]]): a `toward` or
 `moving` line names the side its material lies on, a moved line carries out
 an alignment where its material lands, and the landing stage measures that
 material. Three statements of what this material is were in force at once.
@@ -56,7 +56,7 @@ alignment and the axis of a write.
 `def-mark` states. A crease's bundle is its scored segments. A construction,
 a name bound to one by `=`, and a paper edge hold all the paper on their
 line, since that is their value (`def-construction`). One rule covers all of
-them, and a mark is a bundle in the sense of ADR 0014: a fold across it
+them, and a mark is a bundle in the sense of [[decision/0014]]: a fold across it
 splits it into pieces that move with their flaps, a fold that bends it
 leaves it without a line, and an operation that wants one segment wants one
 piece of it.
@@ -65,7 +65,7 @@ piece of it.
 a construction folds a mark over onto a point, the paper that lands on the
 point has to belong to the mark. A candidate whose landing falls on the
 unmarked continuation of the mark's line does not remain. A point folded onto
-the line of a mark needs the paper on that line, marked or not, as ADR 0031
+the line of a mark needs the paper on that line, marked or not, as [[decision/0031]]
 has it for every line: the point lands on the paper of its target, and the
 mark only tells where the line runs. The same holds for a crease: a point
 folded onto it needs paper on its line, not the crease's own segments.
@@ -83,13 +83,13 @@ with its face.
   program of #62 has to name its side with `toward .a`. The material of a
   mark then changes with every later fold, since it takes whatever paper of
   any flap comes to lie on the mark's table line, which is the reading of a
-  crease as its line that ADR 0014 retired. `def-mark` and the meet would
+  crease as its line that [[decision/0014]] retired. `def-mark` and the meet would
   have to change with it.
 - **A point lands only on the bundle of its target line**, so a point folded
   onto a mark needs marked paper where it lands, as a mark that moves does.
   A folder lays a corner onto the line a pinch points along, past the end
   of the pinch, and the pinch program below with `(moving .d)` would fail
-  where it folds by eye. ADR 0031 asks only that the landing lie on the
+  where it folds by eye. [[decision/0031]] asks only that the landing lie on the
   paper.
 - **A reading per operation**, the extent for the meet and the chord for the
   selection. Two answers to one question, and a program cannot tell from the
@@ -102,11 +102,11 @@ with its face.
 
 ## Consequences
 
-- `def-selection` in `docs/reference/MODEL.md` gives the objects of an alignment and
+- `def-selection` in [[reference/model]] gives the objects of an alignment and
   the `toward` and `moving` lines their bundles in place of the material of
   their table lines. For creases this states what the kernel already does;
   for marks it changes the kernel, and the program of #62 folds `.c` onto the
-  center. The paragraph in `docs/reference/KERNEL.md` that points at #62 goes.
+  center. The paragraph in [[reference/kernel]] that points at #62 goes.
 - A program that moves a partial mark can lose the candidate it had. The
   pinch below runs from the middle of the bottom edge to the center. Of the
   two candidates, `moving` keeps the one that folds the pinch over, and it
@@ -125,7 +125,7 @@ with its face.
   point, or with `(moving .d)`, which folds the corner onto the line of the
   pinch.
 - The error names the point of the mark's line that has to land, with a hint
-  to extend the mark to it (ADR 0028). A program learns from it how far a
+  to extend the mark to it ([[decision/0028]]). A program learns from it how far a
   pinch has to reach. Folders pinch only where a later fold needs a
   reference, to keep the interior of the sheet free of creases
   [@hull2020, pp. 15–16].

@@ -31,7 +31,7 @@ not a refactor of the test harness; the harness shrinking is a consequence.
 alternative was to make it general: `faces` as an expression anywhere,
 `paper` and `table` as spaces any point expression can be read in, incidence
 as a predicate of the language. That would give Beloch a second half, one that
-talks about results rather than constructing them, and `docs/reference/MODEL.md` would
+talks about results rather than constructing them, and [[reference/model]] would
 have to carry it. The gain did not justify that.
 
 Operands are the exception and get richer at no extra cost: as a statement, `assert`
@@ -75,9 +75,9 @@ nothing asks for one yet.
 - What remains of `bel_assert.ml` once extraction and tokenizing are gone, and
   whether the checking belongs in the evaluator (an assertion is evaluated) or
   stays beside the runners.
-- Whether `docs/reference/MODEL.md` §5 has to name a judgment alongside its operations,
+- Whether [[reference/model]] §5 has to name a judgment alongside its operations,
   given that every operation there produces state and an assertion does not.
-- The migration: 89 corpus files, the tagged blocks in `docs/reference/BELOCH.md`, the
+- The migration: 89 corpus files, the tagged blocks in [[reference/beloch]], the
   tree-sitter grammar, the highlighting queries and the three runners.
 
 ## Sequencing

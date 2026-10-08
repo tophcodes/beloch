@@ -10,8 +10,8 @@ issue: tophcodes/beloch#52
 
 ## Context
 
-By ADR 0036 a `mark` without `on` scores every layer its line crosses, and
-`on` names the one flap it scores. ADR 0036 left open what `on` means for a
+By [[decision/0036]] a `mark` without `on` scores every layer its line crosses, and
+`on` names the one flap it scores. [[decision/0036]] left open what `on` means for a
 mark the finger cannot make on the folded model: one layer of a flap that is
 hinged to other layers along the line.
 
@@ -43,7 +43,7 @@ the program, and the write succeeds.
 ## Alternatives considered
 
 - **`on` scores the tip of the named flap**, every layer that comes along
-  when the flap is creased, as a fan moves its tip (ADR 0037). Along `--x`
+  when the flap is creased, as a fan moves its tip ([[decision/0037]]). Along `--x`
   that scores both layers, and a mark on the upper layer alone has no
   statement.
 - **`on` scores the named flap and fails where it cannot move alone.** The
@@ -52,7 +52,7 @@ the program, and the write succeeds.
 
 ## Consequences
 
-- `def-mark` in `docs/reference/MODEL.md` keeps its reading for a mark with `on`.
+- `def-mark` in [[reference/model]] keeps its reading for a mark with `on`.
 - A step that creases one layer of a flap hinged to others along the line
   cannot be drawn as a plain crease in a folding diagram; it needs the
   opening shown or noted. The test that finds such a step is whether the

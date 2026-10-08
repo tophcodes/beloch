@@ -19,10 +19,10 @@ with the issue that tracks it.
 
 ## Sheet
 
-A program opens one sheet ([Sheets](/language/#sheets)): the square of a
+A program opens one sheet ([[reference/beloch#sheets]]): the square of a
 side length, or the flap a shape trims. `Sheet.t` holds the unfolded state the
 program starts from and the outline of the sheet, its boundary sides in paper
-coordinates. The model's sheet ([def-sheet](/model/#def-sheet)) is any simple
+coordinates. The model's sheet ([[reference/model#def-sheet|def-sheet]]) is any simple
 polygon. Faces are convex polygons in counter-clockwise order because `Geom`
 clips against half-planes and tests overlap on convex polygons only; a
 non-convex sheet enters as several convex faces joined by hinges of angle $0$.
@@ -43,7 +43,7 @@ to the sheet clips it to every face of the unfolded state and takes the two
 furthest-out points. The output assigns `B` to an edge that lies on a side of
 the outline. A collapse keeps the realizations whose faces lie on the table
 inside the convex hull of every table polygon of the state before the collapse
-(ADR 0046).
+([[decision/0046]]).
 
 ## State
 
@@ -51,7 +51,7 @@ inside the convex hull of every table polygon of the state before the collapse
 every operation builds a candidate and passes it through `make`: no value of
 type `Fold_state.t` exists that is not a legal state. `make` returns
 `Error violation` for anything outside the definition of the state and its
-non-crossing conditions ([def-noncrossing](/model/#def-noncrossing)); the
+non-crossing conditions ([[reference/model#def-noncrossing|def-noncrossing]]); the
 `violation` constructors and the conditions they check are listed under
 Violations.
 
@@ -68,7 +68,7 @@ faces it joins, its line and its angle in $\{0, \pm 1\}$ units of $\pi$:
 ::: {.include api="Fold_state.hinge"}
 :::
 
-Refinement equivalence ([def-refinement](/model/#def-refinement)) is not
+Refinement equivalence ([[reference/model#def-refinement|def-refinement]]) is not
 quotiented in the representation: `mark` adds faces and hinges of angle $0$,
 and two states equal up to refinement are two different values. Comparisons
 across programs are made pointwise on the folded geometry, as in the test
@@ -81,7 +81,7 @@ all faces, and `Fold_state.rel` reads *above*/*below* for a pair off the rank
 only when the two table polygons overlap in positive area; otherwise the pair
 is `Apart`. The rank is therefore a linear extension of $\lambda$ in the sense
 of the model's remark on linear extensions
-([rem-linear-extension](/model/#rem-linear-extension)), and two ranks with the
+([[reference/model#rem-linear-extension|rem-linear-extension]]), and two ranks with the
 same restriction to overlapping pairs represent the same state.
 
 Ceiling: a linear extension exists only for acyclic layerings, so states with
@@ -100,7 +100,7 @@ history for output: the FOLD file carries one frame per statement in
 
 `Axiom.axis_of` recognizes a construction and solves it into its candidates
 and the objects it moves; `Axiom.select` runs the four stages of
-[def-selection](/model/#def-selection) on them with the side items of the
+[[reference/model#def-selection|def-selection]] on them with the side items of the
 statement that reads it, and `Axiom.fold_side_of_line` gives `toward` its
 meaning on a fold along an existing crease. The comparisons are exact:
 squared distances between points and segments, and squared cosines between
@@ -108,7 +108,7 @@ lines, in `Num`. The side the selection fixes reaches the write as the
 moving side. `Resolve.placed_fold_plan` takes every layer on that side as
 the block unless `up to` names a flap, then closes the block under hinges
 off the axis and outward up to the target, as
-[def-fold](/model/#def-fold) states; where the write has no anchor
+[[reference/model#def-fold|def-fold]] states; where the write has no anchor
 `Resolve.tip_faces` takes every layer on that side as the tip. An implied
 anchor on the side that stays is dropped, because the
 alignment it belongs to is carried out by the other object.
@@ -131,7 +131,7 @@ hints `extend --x to (x, y)`.
 
 `Flatten_solve.run` reads the rays of a `flatten` from material creases,
 scores them on the layers under the fan, and `Collapse` folds the tip of
-[def-flatten](/model/#def-flatten) on the scored state. The layers under
+[[reference/model#def-flatten|def-flatten]] on the scored state. The layers under
 the fan are the faces whose table image meets the anchor's in positive
 area. `Fold_state.subdivide_fan` scores each ray along its half-line from
 the vertex into the ray's own crease: a face that holds the vertex inside
@@ -140,7 +140,7 @@ face a half-line crosses is cut along it. The pieces carry the flatten as
 the statement that scored them. A program therefore marks the rays on one
 layer, and the flatten carries them onto the others.
 
-The kernel scores less than [def-flatten](/model/#def-flatten) states: of
+The kernel scores less than [[reference/model#def-flatten|def-flatten]] states: of
 the layers under the fan it scores only the faces that
 `Collapse.sector_of_poly_opt` places in no wedge. That test checks the
 vertices of a face, so a face in a wedge wider than a half-turn, which a fan
@@ -173,7 +173,7 @@ layer of the tip; otherwise into a new crease, or into the crease `into`
 names.
 
 `Collapse.mk_sector_geoms` gives each hinge of the tip on a ray a role
-(ADR 0044). A flat hinge of a ray's crease folds. A folded hinge of a ray's
+([[decision/0044]]). A flat hinge of a ray's crease folds. A folded hinge of a ray's
 crease keeps or opens, and a hinge of another crease on a ray keeps or
 changes; the kernel tries every combination of these, so the work doubles
 with each of them. For each combination it moves every face by the
@@ -215,7 +215,7 @@ added; the order the evaluator runs them in follows the tables.
 | 8 | (odd ray count) no geometric completion closes the vertex at all, on either side | `the derived crease does not close the vertex` | |
 | 9 | a ray's far end lies inside a face of its flap, off its raw edges and folded edges; a flat crease there does not end the ray (it would leave a vertex of degree 1 inside the flap) | `crease ends inside the sheet` | |
 | 10 | two elements of one crease resolve to the same ray (the same direction from O) | `duplicate ray in collapse` | |
-| 11 | Kawasaki fails: where the anchor surrounds O on the paper, the reflection composition around O does not close (exact) [[hull2020]](#ref-hull2020) ch. 5; elsewhere no combination of the hinges the fan may change closes its paper paths, which surfaces as check 13 | `vertex not flat-foldable (angles)` | |
+| 11 | Kawasaki fails: where the anchor surrounds O on the paper, the reflection composition around O does not close (exact) [@hull2020](#ref-hull2020) ch. 5; elsewhere no combination of the hinges the fan may change closes its paper paths, which surfaces as check 13 | `vertex not flat-foldable (angles)` | |
 | 12 | the leading two elements' folded rays are collinear and no `staying` is given; the convention has no side to anchor | `` collinear leading creases don't pick a stayer `` | `add (staying .p)` |
 | 13 | no realization keeps the stayer still: every candidate × Maekawa pattern died before a stacking closed, the paper-path closure of check 11 included | `no realization keeps the staying flap still` | |
 | 14 | two different segment combinations (`SPECIFICATION.md` §4.9, Resolution) both survive with valid realizations | `` <name> is ambiguous at the vertex `` | `` select a segment with `&` `` |
@@ -227,7 +227,7 @@ count floor, the boundary check, duplicate rays and Kawasaki closure are
 properties of which lines and directions are given, not of which are marked
 mountain or valley. Check 11 runs here only where the anchor surrounds O on
 the paper. Elsewhere its test, whether some combination of the hinges the
-fan may change closes the paper paths (ADR 0044), runs per admissible
+fan may change closes the paper paths ([[decision/0044]]), runs per admissible
 stayer sector after checks 16 and 6, and a fan that fails it reports
 `` no realization keeps the staying flap still ``. A candidate that fails any of them fails for **every**
 Maekawa pattern tried against it, and checks 7–11 have no per-pattern
@@ -254,7 +254,7 @@ the numbers above keep their meaning.
 | 15 | (`on` given) no face of the named flap lies under the vertex | `the on flap does not lie under the vertex` | |
 | 16 | the anchor has no face outside the stayer's wedge, so the tip is empty | `the anchor flap has no material outside the staying sector` | |
 
-Four checks concern the stayer (ADR 0048). A candidate fan that fails 17,
+Four checks concern the stayer ([[decision/0048]]). A candidate fan that fails 17,
 18 or 19 contributes no states, and the message surfaces when no candidate
 fan contributes any.
 
@@ -381,7 +381,7 @@ the stayer (`SPECIFICATION.md` §4.9, State construction).
 
 ## Reverse
 
-`Action.eval_reverse` realizes [def-reverse](/model/#def-reverse) with
+`Action.eval_reverse` realizes [[reference/model#def-reverse|def-reverse]] with
 `Fold_state.reverse_attempts`, the state as it stands, and no scoring of
 its own beyond the axis.
 
@@ -410,7 +410,7 @@ does. The hinges on the axis are left to the placement.
 
 The states of the kept openings are compared with `Fold_state.rel`: two that
 order every overlapping pair of faces alike are one state
-([def-flat-state](/model/#def-flat-state)). Of one state, the kernel stores
+([[reference/model#def-flat-state|def-flat-state]]). Of one state, the kernel stores
 the rank of the opening that keeps the new hinges on the axis shortest in
 the stack, the sum over them of the rank distance between their two faces;
 ties go to the lowest opening. More than one state fails with a hint that
@@ -434,7 +434,7 @@ names the failure: interleaved bodies, or the violation its fold met.
 
 ## Unfold
 
-`Action.eval_unfold` realizes [def-unfold](/model/#def-unfold) on the state
+`Action.eval_unfold` realizes [[reference/model#def-unfold|def-unfold]] on the state
 as it stands; its axis is the current table line of the crease it names. The
 moving set with a depth is `Fold_state.select_scope`, the selection a fold
 with `up to` uses, from the flap `up to` names or else the flap `moving`
@@ -462,7 +462,7 @@ vertex of every face lies on the line or on one side of it.
 
 ## Annotations
 
-An annotation never changes the geometry (ADR 0029), and the kernel holds to
+An annotation never changes the geometry ([[decision/0029]]), and the kernel holds to
 that in two places. `Parse.parse` runs `Annotation.check`, which needs no
 state. The evaluator reads an annotation's arguments with
 `Annotation.resolve` when it reaches the annotation, and keeps the result

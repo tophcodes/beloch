@@ -8,11 +8,11 @@ issue: tophcodes/beloch#119
 
 # 0043: A reverse fold turns the hinges across its opening
 
-This record supersedes ADR 0042, which is in `archive/`.
+This record supersedes [[decision/0042]], which is in `archive/`.
 
 ## Context
 
-`def-reverse` in `docs/reference/MODEL.md` picks one *spine*: a folded hinge of the
+`def-reverse` in [[reference/model]] picks one *spine*: a folded hinge of the
 tip whose removal cuts the tip into two halves. It reflects the halves as
 two blocks, and every other hinge of the tip keeps its letter.
 
@@ -28,7 +28,7 @@ each opening gives](figures/0043-square.svg)
 
 The crane's head shows the other side. Its spine encloses two smaller tacos,
 which the neck's reverse carried inside it. On paper the head turns the
-outer taco alone. ADR 0042, which turned every folded hinge on the spine's
+outer taco alone. [[decision/0042]], which turned every folded hinge on the spine's
 line, leaves no flat state there.
 
 ![The crane's head before its reverse: one opening, one hinge across
@@ -59,13 +59,13 @@ letters: `(--e & .q valley)`. The square needs one; the crane's neck, tail
 and head have one opening each and need none.
 
 A reverse fold is the fan at the point where its axis meets the line of the
-spine (#119, ADR 0041).
+spine (#119, [[decision/0041]]).
 
 ## Alternatives considered
 
 - **One spine, as `def-reverse` states.** It reaches only the opening below
   the outermost layer.
-- **Every hinge on the spine's line turns**, ADR 0042, or **every hinge
+- **Every hinge on the spine's line turns**, [[decision/0042]], or **every hinge
   inside the spine's taco**, an earlier draft of this record. The crane's
   head has no flat state under either.
 - **A default opening.** None holds in general: the square folds either
@@ -77,7 +77,7 @@ spine (#119, ADR 0041).
 
 ## Consequences
 
-- `def-reverse` and `cor-reverse-letters` in `docs/reference/MODEL.md` define the
+- `def-reverse` and `cor-reverse-letters` in [[reference/model]] define the
   opening and its blocks in place of the spine and its halves.
 - The acceptance case of #119 is the square with the opening between the two
   inner layers: 4, 3, 7, 6, 5, 8, 2, 1 along the top edge. The crane keeps

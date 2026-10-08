@@ -26,7 +26,7 @@ work, including things inherited as warnings from the 2018 attempt.)
   `#region` to do both. We likely need both concepts, kept distinct.
 - **Accumulate features until expressive, then formalize.** This is how the 2018
   design hit mutual inconsistency at the layer problem and stalled. Replaced by
-  the minimal-formal-core approach (see docs/decision/0003-restart-from-minimal-core.md).
+  the minimal-formal-core approach (see [[decision/0003]]).
 - **"The fold is unique" (from the axiom phrasing).** False in general:
   axioms 5 and 6 have up to 2 solutions, axiom 7 up to 3. Disambiguation must be
   first-class and ergonomic, not an afterthought.
@@ -48,7 +48,7 @@ work, including things inherited as warnings from the 2018 attempt.)
   (Beloch axiom 4). Translate before comparing any Eos construction with a
   `.bel` program.
 - **ℚ stops being closed at axioms 5, 6 and 7.** Exact rational arithmetic
-  ([ADR 0008](../decision/0008-exact-rational-arithmetic.md)) covers axioms 1–2
+  ([[decision/0008]]) covers axioms 1–2
   and line intersection perfectly, but square roots (axioms 5 and 6) and cubic roots
   (axiom 7) leave ℚ. Don't assume the rational engine extends to the full axiom
   set; that boundary needs a constructible/algebraic number representation,
@@ -92,7 +92,7 @@ _(none yet; append as they happen)_
 
 ## Axiom 3 is the perpendicular-through-a-point, not the angle bisector
 
-An early journal note (`docs/notes/2026-06-28-3.md`) labeled "axiom 3" as the
+An early journal note ([[notes/2026-06-28-3]]) labeled "axiom 3" as the
 angle bisector (line onto line). That is wrong. The authoritative classic table
 is [justin1986] §8.1: operation ③ `(P → P, D → D)` is "perpendicular drawn from
 P to D": the fold through a point perpendicular to a line (Hull's O5). The angle
@@ -143,7 +143,7 @@ material.**
 Gospel writes a formal contract into the `.mli` as `(*@ requires / ensures *)`
 annotations; Ortac compiles that contract into runtime assertions and, via the
 `qcheck-stm` plugin, into a generated model-based test harness. The attraction
-was placement: `docs/reference/KERNEL.md` already pulls its content out of
+was placement: [[reference/kernel]] already pulls its content out of
 `fold_state.mli` through odoc, so the contract would live where the interface
 lives.
 
@@ -196,7 +196,7 @@ line is a legal program that evaluates, and then both report the same line,
 so the key identifies nothing.
 
 Fix: the emitter names the statement itself, as an index into
-`beloch:statements` (`beloch:edges[i].statement`; see `docs/reference/FOLD.md`). The
+`beloch:statements` (`beloch:edges[i].statement`; see [[reference/fold]]). The
 name lookup was deleted rather than repaired.
 
 Rules of thumb since: a join key has to be unique under the grammar, and the

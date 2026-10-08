@@ -31,7 +31,7 @@ expose it as one.
 Every rendering mode Beloch already has or plans is a **view over this
 history**, not a separate computation:
 
-- **CP view** ([[beloch-render-engine-design]], `renderCP`) = the union of all
+- **CP view** (`beloch-render-engine-design`, `renderCP`) = the union of all
   creases across the whole diff, flattened back onto flat-sheet coordinates.
   It's "git diff root..HEAD, but only the crease-touching hunks, applied as
   an overlay."
@@ -42,7 +42,7 @@ history**, not a separate computation:
   cute and starts being load-bearing: a YR diagram generator doesn't need new
   machinery, it needs to walk the existing history and render the diff of
   each commit.
-- **Fold scope** (ADR 0016, PR #67, [[beloch-fold-scope-and-operand-model]]):
+- **Fold scope** ([[decision/0016]], PR #67, `beloch-fold-scope-and-operand-model`):
   already, in effect, lets a statement select *which prior commits' resulting
   state* it operates against (mover/stayer partitioning per hinge). The
   commit-log framing was already implicit in shipped work; this note just
@@ -53,8 +53,8 @@ history**, not a separate computation:
 Should the *language* ever expose this history as an addressable object,
 e.g. "the crease introduced at step 3" as a first-class reference, the way
 `git log`/`git blame` expose history as queryable? Interesting, but a
-capability-layer question ([[beloch-two-layer-design]]), separate from
-current roadmap ([[beloch-workflow-and-roadmap]]). Flagging so it doesn't get
+capability-layer question (`beloch-two-layer-design`), separate from
+current roadmap (`beloch-workflow-and-roadmap`). Flagging so it doesn't get
 reinvented from scratch later.
 
 ## Non-citation note

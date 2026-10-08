@@ -22,7 +22,7 @@ The reference implementation is documented beside them and binds nothing:
   stages view of `beloch render`.
 
 `SPECIFICATION.md` is the previous single specification and is being
-dissolved into these documents in the order ADR 0032 gives. A section
+dissolved into these documents in the order [[decision/0032]] gives. A section
 that has moved is gone from it; a section still there is authoritative for
 the surface syntax until it moves, never for the meaning.
 

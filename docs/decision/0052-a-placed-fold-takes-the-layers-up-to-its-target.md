@@ -14,7 +14,7 @@ issue: tophcodes/beloch#203
 `up to` names. It adds every candidate joined to the set by a hinge off the
 axis, and for the placements *top* and *bottom* every candidate that lies
 outward of a face of the set: above it for *top*, below it for *bottom*.
-ADR 0036 gives `up to` the reading "this flap and outward". For a fold placed
+[[decision/0036]] gives `up to` the reading "this flap and outward". For a fold placed
 `over T` or `under T` the outward step is missing, so the moving set holds the
 depth flap and the layers hinged to it, and nothing else.
 
@@ -68,7 +68,7 @@ The closure under hinges off the axis is unchanged.
 - **`under T` without `up to` takes everything under T.** The step 13 fold
   would drop its `up to` and read "the side of the body, under the leg". This
   changes what a placed fold without `up to` means: today it takes every layer
-  on the moving side, as ADR 0036 decided for every fold, and a program would
+  on the moving side, as [[decision/0036]] decided for every fold, and a program would
   read the depth of a placed fold off its target instead of off `up to`. It
   also cannot leave a layer below the depth flap in place, which `up to` does.
 - **`up to` names several flaps.** The program would list the front and back
@@ -79,8 +79,8 @@ The closure under hinges off the axis is unchanged.
 
 ## Consequences
 
-- `def-fold` in `docs/reference/MODEL.md` states the closure for every placement, and
-  the paragraph after it and `up to` in `docs/reference/BELOCH-WRITES.md` say that a
+- `def-fold` in [[reference/model]] states the closure for every placement, and
+  the paragraph after it and `up to` in [[reference/beloch-writes]] say that a
   placed fold takes the layers between its depth and its target.
 - Every program that places a fold folds to the same FOLD file as before: the
   samurai helmet (step 7 tucks the back corner, and no layer lies between it

@@ -34,14 +34,14 @@ fold (map .m onto .a) as --q
 ```
 
 Turning the layer of `.b` back over `--q` opens hinges on `--q` and closes
-none. `lem-toggle` in `docs/reference/MODEL.md` says why: reflecting faces across a line
+none. `lem-toggle` in [[reference/model]] says why: reflecting faces across a line
 toggles every hinge on the line between a moving and a stationary face, and
-where every layer lies on one side, each such hinge is folded. ADR 0017 plans
+where every layer lies on one side, each such hinge is folded. [[decision/0017]] plans
 the write as "`unfold` + layer selection".
 
 `def-fold` already reflects such a set, given a depth, and the kernel's
 refusal stands in front of it. Without a depth `def-fold` moves every layer on
-the moving side, which is every layer, and toggles nothing. By ADR 0036
+the moving side, which is every layer, and toggles nothing. By [[decision/0036]]
 `moving` names a side, and where all of the paper lies on one side, the side
 names no layers.
 
@@ -97,7 +97,7 @@ and its message names `unfold`. A fold along hinges with paper on both sides
 reflects the layers on the moving side, and by `lem-toggle` the flat hinges
 on the axis between moving and staying layers fold and the folded ones open.
 
-**`docs/reference/MODEL.md` gets a definition of its own**, `def-unfold`, beside
+**[[reference/model]] gets a definition of its own**, `def-unfold`, beside
 `def-fold`. Its moving set with a depth is the one of `def-fold`; its moving
 set named by the layer that stays, and its domain, are its own. The domain
 asks that every hinge on the axis between the moving set and the stationary
@@ -131,11 +131,11 @@ every such hinge opens.
 
 ## Consequences
 
-- `docs/reference/BELOCH-GRAMMAR.md` adds the verb and its item; `docs/reference/BELOCH-WRITES.md`
-  states the write with a program; `docs/reference/MODEL.md` adds `def-unfold`.
+- [[reference/beloch-grammar]] adds the verb and its item; [[reference/beloch-writes]]
+  states the write with a program; [[reference/model]] adds `def-unfold`.
 - The trace records an unfold with the terms of a fold: axis, side, moving set
   and placement. The reflection is the one of `def-fold`.
-- Opening a hinge merges two flaps into one: the flaps of ADR 0017 are found
+- Opening a hinge merges two flaps into one: the flaps of [[decision/0017]] are found
   again from the flat hinges at every lookup, so a merge needs nothing more.
 - Step 8 of the traditional frog (#189) turns half of a squashed flap over
   the line where the spine of the squash lies flat. The paper lies on both

@@ -9,7 +9,7 @@ status: accepted
 
 ## Context
 
-`docs/reference/MODEL.md` defines four things inside the body of one definition. Read
+[[reference/model]] defines four things inside the body of one definition. Read
 `def-motion`: an *alignment* is an incidence on the table between two objects,
 one of them reflected across the line sought; a *construction* is a finite set
 of alignments that determines the line, with finitely many solutions and no
@@ -24,7 +24,7 @@ to know what an alignment is reads a definition about something else.
 Three forces made this worth settling.
 
 **Multifold.** The same alignments distributed over two fold lines give the
-489 two-fold axioms [@alperin2006, §3, §4], and `packages/multifold` (ADR 0020)
+489 two-fold axioms [@alperin2006, §3, §4], and `packages/multifold` ([[decision/0020]])
 enumerates them. A solution of a two-fold set is a pair of lines. A composition
 named for the material of *the* line hides the place where one line becomes a
 tuple, which is the place the work will happen.
@@ -44,13 +44,13 @@ relation and `selection` is a read, and the two read alike on the page.
 alignment, construction, candidate, selection. `material` stays as it is, the
 one crossing from table space to paper space, carrying one piece per flap.
 
-**The composition keeps a name, and the name is `construction`.** ADR 0022
+**The composition keeps a name, and the name is `construction`.** [[decision/0022]]
 already puts the word on the read rather than on the set of alignments alone,
 and the grammar wants the same word. The read of sort bundle therefore stays, and
 alignment, candidate and selection are lifted out of its body into definitions
 of their own.
 
-ADR 0022 phrases it as "the read that yields a fold line", which this record
+[[decision/0022]] phrases it as "the read that yields a fold line", which this record
 sharpens: a construction yields *candidates*, finitely many and usually more
 than one, and a line is reached only through a selection. The phrase also
 presumes a single sought line, which holds for the seven Huzita-Justin axioms
@@ -69,7 +69,7 @@ refinements of one state yields two states with a common refinement. That
 statement is recorded as an open question beside the definition.
 
 `motion` keeps its meaning and is not reused. The word is already load-bearing
-twice in `docs/reference/MODEL.md`, both times for movement the model does not model:
+twice in [[reference/model]], both times for movement the model does not model:
 "the model checks the end state and never the motion", and "immaterial for the
 state up to a motion of the table". A third meaning would have made the first
 of those read as if the model skipped checking its own writes.
@@ -106,7 +106,7 @@ and `line` as partial from a state and a bundle to a table line.
 ## Consequences
 
 - The model, the language reference and the core rename together.
-  `docs/reference/SPECIFICATION.md` carries `<motion>` as a syntax category in about ten
+  [[reference/specification]] carries `<motion>` as a syntax category in about ten
   places, so the rename is a documentation change before it is a code change.
 - A glossary entry can now disagree with the definition that owns it: a
   signature naming a sort the model does not define, or a kind that contradicts

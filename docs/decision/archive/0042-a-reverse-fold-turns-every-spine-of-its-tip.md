@@ -10,7 +10,7 @@ issue: tophcodes/beloch#119
 
 ## Context
 
-`def-reverse` in `docs/reference/MODEL.md` picks one *spine*: a folded hinge of the tip
+`def-reverse` in [[reference/model]] picks one *spine*: a folded hinge of the tip
 whose removal cuts the tip into two halves. It reflects the two halves as
 two blocks, one against each body, and every other hinge of the tip keeps
 its letter. The write is defined when exactly one admissible spine yields a
@@ -42,7 +42,7 @@ keeps its letter. For *inside* the tip goes in between the layers of the
 body, for *outside* it wraps around them.
 
 A reverse fold is the fan at the point where its axis meets the line of the
-spine (#119, ADR 0041). Its rays are the spine's line in the body, where
+spine (#119, [[decision/0041]]). Its rays are the spine's line in the body, where
 every hinge stays, the spine's line in the tip, where every hinge turns, and
 the axis on each side of the spine's line, where each layer takes a new
 crease. `inside` and `outside` are placements the write hands to the fan.
@@ -59,7 +59,7 @@ crease. `inside` and `outside` are placements the write hands to the fan.
 
 ## Consequences
 
-- `def-reverse` and `cor-reverse-letters` in `docs/reference/MODEL.md` change to the
+- `def-reverse` and `cor-reverse-letters` in [[reference/model]] change to the
   rule above; the halves and the admissible spine go.
 - The paper case above is the acceptance case of #119: `paper square`, two
   folds in half in the same direction, then `reverse (map .a onto .d)`, with

@@ -52,7 +52,7 @@ error naming its alignments.
 
 A construction holds what determines the line: its alignments and its
 `heading`. What determines the fold, `toward`, `moving` and the placement,
-are items of the statement that reads the construction (ADR 0031). A
+are items of the statement that reads the construction ([[decision/0031]]). A
 binding takes the side items as a write does, `--k = (map --v onto --h)
 (toward .b)`, so a bound line is selected the way a fold along it would
 be. A construction inside an expression takes no selection; it is bound
@@ -80,7 +80,7 @@ decided and waits for the first two-fold construction the kernel can solve.
 
 Axioms 5, 6 and 7 leave finitely many candidate lines, usually more than
 one, and the statement that reads the construction keeps one of them
-([def-selection](/model/#def-selection)). A candidate creases a face of
+([[reference/model#def-selection|def-selection]]). A candidate creases a face of
 the current state; a line off the paper, or one grazing an edge or a
 corner, creases nothing and is no candidate. An `onto` alignment is an
 incidence: after the fold, one of its two objects lies on the other, and
@@ -201,7 +201,7 @@ of `--l2` from the crossing, and the nearer landing is kept. Two landings
 on the same ray, as long as each other, are equally near every point, and
 so are two landings on opposite rays for a point on the perpendicular to
 `--l2` through the crossing
-([lem-crossing-landing](/model/#lem-crossing-landing)). A bare `toward`
+([[reference/model#lem-crossing-landing|lem-crossing-landing]]). A bare `toward`
 measures the part of `--l2` that folds over too, and ties more often.
 `moving` then separates the candidates by the flap it names. A fold with no
 side item whose `--l1` lies across the fold line is an error, "--l1
@@ -233,7 +233,7 @@ preliminary base, `map .sr onto --mid through .c` has two candidates, and
 the outward one meets the folded base only at `.c`
 (`packages/core/tests/cases/bases/bird-base.bel`). The largest equilateral triangle in the
 square needs `toward`, since both candidates cross the paper
-([fig-candidates](/model/#fig-candidates)).
+([[reference/model#fig-candidates|fig-candidates]]).
 
 Errors of its own: `.p` and `.q` the same point, "…: .p and .q are the
 same point, so no fold exists"; the circle missing `--d`, "cannot fold .p

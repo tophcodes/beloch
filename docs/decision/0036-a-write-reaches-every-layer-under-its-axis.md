@@ -18,7 +18,7 @@ and the three writes answer that differently today.
   carries a point of its line (`def-mark`).
 - `fold` moves the outward closure of one flap: the flap its anchor names and
   every layer above it (`def-fold`). `up to` names a deeper flap to start
-  from. By ADR 0031 `moving` names the side that folds over and the flap that
+  from. By [[decision/0031]] `moving` names the side that folds over and the flap that
   moves, so the item that picks a side also narrows the fold to one flap.
 - `flatten` moves every layer under its fan (`def-flatten`).
 
@@ -50,7 +50,7 @@ stack takes two more.
 **A write reaches every layer under its axis.**
 
 - `mark` without `on` scores every layer its line crosses. Its bundle is the
-  extent on each of those layers, one piece per layer (ADR 0033, ADR 0014).
+  extent on each of those layers, one piece per layer ([[decision/0033]], [[decision/0014]]).
 - `fold` moves every layer on the side that folds over. The moving set is
   every face under the axis on that side, closed under hinges of angle 0 so
   that a flap moves whole.
@@ -59,7 +59,7 @@ stack takes two more.
 
 **`moving` names the side that folds over.** It picks the side by its point,
 by the first point of a `#[…]` off the line, or by the material of a line, as
-ADR 0031 has it, and it narrows nothing. The part of ADR 0031 that has
+[[decision/0031]] has it, and it narrows nothing. The part of [[decision/0031]] that has
 `moving` name the flap that moves is replaced by this record.
 
 **`up to` narrows a fold to the layers from the flap it names outward.** The
@@ -89,10 +89,10 @@ belong to it.
 
 ## Consequences
 
-- `def-fold` in `docs/reference/MODEL.md` changes: without `up to` the depth is the
+- `def-fold` in [[reference/model]] changes: without `up to` the depth is the
   deepest layer under the axis on the moving side, and the anchor condition
   goes, since the anchor names a side only. `def-mark` takes every layer its
-  line crosses when no flap is given. `docs/reference/BELOCH.md` states `moving` as a
+  line crosses when no flap is given. [[reference/beloch]] states `moving` as a
   side, and its example `fold (map .c onto .b) (up to .d)` keeps its
   meaning.
 - A program that folds one flap of a folded stack with `moving` alone now

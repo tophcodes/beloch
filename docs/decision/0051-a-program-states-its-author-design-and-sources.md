@@ -18,14 +18,14 @@ this file was written by Claude (Anthropic).` No tool reads a comment, so
 nothing checked that the line was there, and a FOLD file evaluated from the
 program did not carry it.
 
-ADR 0049 asks a program in `examples/` to cite the sequence it folds and to
+[[decision/0049]] asks a program in `examples/` to cite the sequence it folds and to
 credit the designer of a model that has one. The citation sat in the head
 comment, where a regular expression looked for something shaped like a cite
-key, and no program said whether its model is traditional. ADR 0019 asks for
+key, and no program said whether its model is traditional. [[decision/0019]] asks for
 a declaration of who designed a model that the emitter carries into every
 export, and left its syntax to the annotations.
 
-An annotation (ADR 0029) belongs to the statement after it, or at the end of
+An annotation ([[decision/0029]]) belongs to the statement after it, or at the end of
 a program to the final state. Who wrote a program, who designed its model and
 which diagram it follows are facts about the whole program, and no statement
 is their target.
@@ -84,9 +84,9 @@ file.
 
 - A FOLD file evaluated from a program with its annotations removed differs
   in `file_author` too, besides `beloch:annotations`. The invariance test of
-  ADR 0029 compares the documents without both.
+  [[decision/0029]] compares the documents without both.
 - A `design` or `source` changes no geometry, and an output library can show
-  the credit beside a drawing, which ADR 0019 asks of Beloch's own tools.
+  the credit beside a drawing, which [[decision/0019]] asks of Beloch's own tools.
 - Programs outside the repository need no credits. The kernel accepts a
   program without them; only the repository's `check` requires them.
-- This record's check replaces the citation check of ADR 0049.
+- This record's check replaces the citation check of [[decision/0049]].

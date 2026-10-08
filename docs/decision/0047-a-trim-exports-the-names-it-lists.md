@@ -39,7 +39,7 @@ shape rectangle(w h) {
 
 - With a list, exactly the listed names reach the trimmed sheet, under
   their landing names. Without one, every name of the body that lies on the
-  flap does, as ADR 0046 states.
+  flap does, as [[decision/0046]] states.
 - An entry takes no `!`. The trimmed sheet is a fresh namespace, so a
   landing name may be one the body used for something off the flap, as
   `.q as .c` does.

@@ -34,7 +34,7 @@ close roots separated correctly.
 - **qqbar (Calcium, F. Johansson):** closed arithmetic over real ℚ̄ with
   canonical minimal polynomials per value + Arb ball certification. Plain C,
   one type at our `Num` boundary, `flint3` (3.5.0) in nixpkgs, LGPL (linking
-  fine for MIT, ADR 0006).
+  fine for MIT, [[decision/0006]]).
 
 ## Consequence
 

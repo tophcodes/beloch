@@ -10,7 +10,7 @@ issue: tophcodes/beloch#52
 
 ## Context
 
-By ADR 0040 a fan sits at a table point. `reverse` becomes a fan at the
+By [[decision/0040]] a fan sits at a table point. `reverse` becomes a fan at the
 point where its axis crosses the spine (#119). Three reverse folds in the
 test cases fold a sheet in half and reverse it along a line parallel to the
 crest: the strip between the axis and the crest goes in between the two
@@ -53,7 +53,7 @@ wherever that lies.
 
 ## Consequences
 
-- `def-flatten` in `docs/reference/MODEL.md` takes its vertex on the projective table
+- `def-flatten` in [[reference/model]] takes its vertex on the projective table
   and states the closure condition for a vertex inside the paper.
 - Off the paper, that the lines of a fan meet in one point carries no
   physical meaning: any two creases meet somewhere or are parallel. Three creases

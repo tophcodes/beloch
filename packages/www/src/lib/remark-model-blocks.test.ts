@@ -240,3 +240,27 @@ test("other caption code is highlighted as Beloch", () => {
   expect(crease).toContain('<code class="bel-inline"><span class="bel-keyword">mark</span></code>');
   expect(crease).toContain('<code class="figure-hl-0">--ac</code>');
 });
+
+// A block's body is parsed apart from the page, so the plugin resolves the id
+// links of ADR 0054 in it itself, against the repository's index.
+test("an id link inside a statement body resolves", async () => {
+  process.env.BELOCH_REPO_ROOT ??= join(import.meta.dir, "..", "..", "..", "..");
+  const source = [
+    "## 1. Paper",
+    "",
+    '::: {.definition #def-x name="x"}',
+    "Enumerated by `packages/multifold` ([[decision/0020]]); see [[reference/kernel]].",
+    ":::",
+  ].join("\n");
+  const out = String(
+    await unified()
+      .use(remarkParse)
+      .use(remarkModelBlocks, { register, model, figures })
+      .use(remarkMath)
+      .use(remarkRehype, { allowDangerousHtml: true })
+      .use(rehypeStringify, { allowDangerousHtml: true })
+      .process({ path: join(fixtures, "other.md"), value: source }),
+  );
+  expect(out).toContain('<a href="https://github.com/tophcodes/beloch/blob/main/docs/decision/0020-multifold-research-package.md">ADR 0020</a>');
+  expect(out).toContain('<a href="/kernel/">The OCaml kernel</a>');
+});

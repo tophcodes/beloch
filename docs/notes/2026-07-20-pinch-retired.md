@@ -25,7 +25,7 @@ language changes that between them cover its use case:
 
 ## Edits made
 
-- `docs/reference/SPECIFICATION.md` §4.8, §4.10 (the landmark-interim paragraph), and
+- [[reference/specification]] §4.8, §4.10 (the landmark-interim paragraph), and
   Appendix B: dropped the "forthcoming `pinch`" promises, redirected to the
   partial mark. Header l.49 already framed v0.22 as "partial marks: the pinch";
   left as-is.

@@ -10,7 +10,7 @@ status: accepted
 ## Context
 
 A construction yields candidates, finitely many and usually more than one,
-and a selection keeps one (ADR 0025). `toward` is the selection the language
+and a selection keeps one ([[decision/0025]]). `toward` is the selection the language
 offers, and it has to mean one thing for every construction that can leave
 more than one candidate: a point moved onto a line, two points moved onto
 two lines, and a line moved onto a line. Issue #58 drew the candidate rules
@@ -108,7 +108,7 @@ they do in a fold: `--k = (map --v onto --h) (--v toward .b)`. `mark` takes
 them the same way. Where no paper moves, `moving` names a side and no flap.
 A construction inside an expression takes no selection; it is bound first.
 
-**This record supersedes ADR 0022** and carries forward what it decided
+**This record supersedes [[decision/0022]]** and carries forward what it decided
 apart from the selection. A construction is its set of alignments, together
 with its named fold lines and its `heading`. The prose forms of the seven
 axioms desugar to that set, and a prose form means what its `align` spelling
@@ -168,8 +168,8 @@ leaves the construction.
 
 ## Consequences
 
-- `def-selection` in `docs/reference/MODEL.md` states the selection and the condition
-  every fold puts on its candidates. `docs/reference/BELOCH.md` moves `toward` out of
+- `def-selection` in [[reference/model]] states the selection and the condition
+  every fold puts on its candidates. [[reference/beloch]] moves `toward` out of
   the construction, adds `heading` and `(x toward …)`, parenthesizes the parts
   of `align`, and gives bindings items. The prose form of axiom 5 loses its
   `toward`.
@@ -186,7 +186,7 @@ leaves the construction.
 - `fig-toward-boundary` writes `(.d toward .c)`: both candidates remain for
   `.c`, and the landing stage keeps the one that lands `.d` on the top edge.
 - A redundant `moving` wants a warning. The language has errors with hints
-  (ADR 0028) and no warnings; the channel is a decision of its own (#59).
+  ([[decision/0028]]) and no warnings; the channel is a decision of its own (#59).
 - A point that would land beside the paper of its line removes the
   candidate at the moved-material stage. On the square with the midlines
   `--v` and `--h`, `fold (map .a onto --v and .c onto --h)` has three
@@ -194,7 +194,7 @@ leaves the construction.
 - The stages view of `beloch render` shows the suggestions in its closing
   block; the kernel computes them, and the view repeats none of the
   selection.
-- Comments and notes that cite ADR 0022 for the alignment set and the prose
+- Comments and notes that cite [[decision/0022]] for the alignment set and the prose
   forms cite this record instead.
 - `flatten` keeps its selection stages (`open-flatten-selection`). Whether
   its first stage is the landing stage of this record is open.

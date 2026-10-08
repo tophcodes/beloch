@@ -41,4 +41,4 @@ comparisons, with no epsilon anywhere.
 - ℚ stops being closed at axioms 5 and 6 (square roots, cubic roots). That is a
   **known future boundary**: it will force a move to a constructible/algebraic
   number representation or a hybrid, decided when those axioms are implemented.
-  Recorded as a watch-point in [antipatterns.md](../notes/antipatterns.md).
+  Recorded as a watch-point in [[notes/antipatterns|antipatterns.md]].

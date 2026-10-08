@@ -7,11 +7,11 @@ status: superseded
 
 # 0021: The reference documents replace SPECIFICATION.md
 
-**Status:** Superseded by [0032](../0032-the-specification-binds-every-implementation.md)
+**Status:** Superseded by [[decision/0032|0032]]
 
 ## Context
 
-`docs/reference/README.md` fixed one rule for the language documentation: there is one
+[[reference/readme]] fixed one rule for the language documentation: there is one
 living specification, `SPECIFICATION.md`, and every implementation slice
 folds its language-facing content into it under a version tag. The rule was
 aimed at fragmentation by increment, which had produced a per-slice spec
@@ -64,7 +64,7 @@ dissolved into them and deleted once empty.
 - Version history moves to the log and the changelog; the appendix of
   deferred features moves to issues, one per entry.
 
-The rule of `docs/reference/README.md` is restated: the documents are divided by role
+The rule of [[reference/readme]] is restated: the documents are divided by role
 and reader, never by increment. A slice that changes the language edits the
 document whose role it touches and adds no file.
 
@@ -103,7 +103,7 @@ shrinks, so that at no point the grammar is nowhere.
 
 ## Consequences
 
-- `docs/reference/README.md` changes from "one living specification" to the division
+- [[reference/readme]] changes from "one living specification" to the division
   by role. This ADR is the record that reverses that rule.
 - `BELOCH.md` grows from a sketch into the reference and becomes the
   document a graphical editor binds its actions to, as it announces.
