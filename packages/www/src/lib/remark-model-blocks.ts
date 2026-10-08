@@ -54,6 +54,7 @@ import { readFileSync, realpathSync } from "node:fs";
 import { highlightBel, highlightBelInline } from "./highlight-bel.ts";
 import { join } from "node:path";
 import { visit } from "unist-util-visit";
+import { getIndex, linkIds } from "./remark-id-links.ts";
 
 const LABELS: Record<string, string> = {
 	definition: "Definition",
@@ -289,6 +290,7 @@ export default function remarkModelBlocks(
 			if (block.classes.includes("figure")) {
 				const views = ids(block.attrs.views).filter((v) => FIGURE_VIEWS.includes(v));
 				const caption = processor.parse(block.attrs.caption ?? "").children;
+				linkIds({ type: "root", children: caption }, getIndex, file?.path);
 				colorCaption(caption, highlightNames(block.attrs.highlight));
 				figures.set(block.id, {
 					id: block.id,
@@ -301,7 +303,10 @@ export default function remarkModelBlocks(
 				order.push({ block, id: block.id, kind: "figure" });
 				continue;
 			}
+			// The body is parsed apart from the page, so the id links of ADR 0054
+			// are resolved here; the other plugins have nothing to do in it.
 			const body = processor.parse(block.body).children;
+			linkIds({ type: "root", children: body }, getIndex, file?.path);
 			if (block.classes.includes("term")) {
 				terms.set(block.id, {
 					id: block.id,

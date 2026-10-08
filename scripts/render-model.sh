@@ -31,6 +31,10 @@ cd "$root"
 # can never be stale against the documents this loop reads.
 bun "$root/scripts/grammar-register.ts"
 
+# The id links between documents (ADR 0054) resolve against the index of
+# _build/id-links.json through scripts/id-links.lua.
+bun "$root/scripts/id-links.ts" >/dev/null
+
 # The language is one PDF of its pages, in the order of the site's sidebar.
 # The pages go to pandoc as copies under $out/language/docs/reference/, where
 # grammar-blocks.lua still finds the grammar page's register entry by its
@@ -58,7 +62,8 @@ render() {
   local name=$1
   shift
   pandoc "$@" \
-    --from markdown \
+    --from markdown+wikilinks_title_after_pipe \
+    --lua-filter "$root/scripts/id-links.lua" \
     --lua-filter "$root/scripts/model-blocks.lua" \
     --lua-filter "$root/scripts/grammar-blocks.lua" \
     --citeproc \
