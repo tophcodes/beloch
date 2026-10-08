@@ -1,4 +1,4 @@
--- Typed cross-references for spec/MODEL.md, pandoc side.
+-- Typed cross-references for docs/reference/MODEL.md, pandoc side.
 --
 -- Pandoc reads `::: {.definition #def-sheet name="sheet" uses="…"}` as a Div,
 -- so this filter only has to number the statements, render the head and links
@@ -12,7 +12,7 @@
 --
 -- `::: {.figure #fig-point caption="…" views="cp folded"}` becomes the figure's
 -- pre-rendered views side by side, the caption, and the program as a code
--- block. The SVGs come from _build/spec/figures (scripts/render-figures.ts
+-- block. The SVGs come from _build/reference/figures (scripts/render-figures.ts
 -- writes them; BELOCH_FIGURES overrides the directory); a view with no file
 -- renders a placeholder. The program text is read from the source file rather
 -- than from the Div's content, because the markdown reader has already turned
@@ -37,7 +37,7 @@
 -- register an `.include` block renders a placeholder and no statement gets that
 -- line.
 --
--- Labels for links into the model come from spec/MODEL.md, which this filter
+-- Labels for links into the model come from docs/reference/MODEL.md, which this filter
 -- scans line by line when the document it is rendering is not the model itself;
 -- an id it cannot number is written as the id.
 
@@ -91,13 +91,13 @@ local function register()
   return api
 end
 
--- spec/MODEL.md's numbering, read from the source. The same counting rule as
+-- docs/reference/MODEL.md's numbering, read from the source. The same counting rule as
 -- `collect` below, over the fenced divs as they are written.
 local modelLabels = nil
 local function model_labels()
   if modelLabels then return modelLabels end
   modelLabels = {}
-  local file = io.open(root .. "/spec/MODEL.md", "r")
+  local file = io.open(root .. "/docs/reference/MODEL.md", "r")
   if not file then return modelLabels end
   local section, counters, figureCounters = 0, {}, {}
   for line in file:lines() do
@@ -404,7 +404,7 @@ local function figure_div(id, f)
   -- typst resolves a leading slash against its project root, which is the
   -- directory pandoc runs in; scripts/render-model.sh makes that the repo root,
   -- so the directory is named relative to it.
-  local dir = os.getenv("BELOCH_FIGURES") or "_build/spec/figures"
+  local dir = os.getenv("BELOCH_FIGURES") or "_build/reference/figures"
   local width = #f.views > 1 and "48%" or "70%"
   local views, missing = {}, {}
   for _, view in ipairs(f.views) do

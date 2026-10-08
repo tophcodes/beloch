@@ -539,7 +539,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   in
   let surviving = List.filter (fun (_, r, _) -> r <> []) combo_runs in
   (* the candidate states and the stage of the selection that removed each
-     (spec/FOLD.md, "The trace"), recorded once, when a state lands or the
+     (docs/reference/FOLD.md, "The trace"), recorded once, when a state lands or the
      statement fails *)
   let candidates = List.concat_map (fun (_, r, _) -> r) surviving in
   let removed = ref [] in

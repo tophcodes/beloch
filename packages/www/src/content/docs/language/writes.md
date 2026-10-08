@@ -1,1 +1,1 @@
-../../../../../../spec/BELOCH-WRITES.md
+../../../../../../docs/reference/BELOCH-WRITES.md

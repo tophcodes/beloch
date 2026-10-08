@@ -1,6 +1,6 @@
 (** The standard library of sheets (packages/core/stdlib/shapes.bel), whose
     shapes every program sees as if they were defined before its first line
-    (spec/BELOCH.md, "Sheets"). *)
+    (docs/reference/BELOCH.md, "Sheets"). *)
 
 let filename = "stdlib/shapes.bel"
 

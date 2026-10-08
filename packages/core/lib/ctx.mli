@@ -149,7 +149,7 @@ type ctx = {
   mutable annots_rev : annot_entry list;
       (** Annotations whose statement has run, newest first. *)
   mutable trace_rev : Trace.entry list;
-      (** Every construction's candidates, newest first (spec/FOLD.md, "The
+      (** Every construction's candidates, newest first (docs/reference/FOLD.md, "The
           trace"). *)
   mutable parent : int option;
       (** The log entry of the [apply] whose body is running, [None] at the

@@ -1,4 +1,4 @@
-// Grammar fragments of spec/BELOCH-GRAMMAR.md. `grammar`, `grammar-external`
+// Grammar fragments of docs/reference/BELOCH-GRAMMAR.md. `grammar`, `grammar-external`
 // and `grammar-planned` fenced blocks become raw HTML: every rule gets an id,
 // and every nonterminal on a right-hand side gets a link to its rule.
 //

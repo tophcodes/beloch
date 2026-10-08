@@ -10,7 +10,7 @@ assertions instead.
 Many of these will be ports of the 2018 issue examples (crane, bookmark,
 triangular dipyramid), used as the test suite that the ground-up core has to
 recover, not as design input (see
-[decision 0003](../../decisions/0003-restart-from-minimal-core.md)).
+[decision 0003](../../docs/decision/0003-restart-from-minimal-core.md)).
 
 The tell for success: the preliminary base, bird base, frog base, and a
 traditional crane all express cleanly and emit YR diagrams end-to-end.

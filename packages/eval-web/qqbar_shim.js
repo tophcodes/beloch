@@ -1,5 +1,5 @@
 // js_of_ocaml runtime shim for lib/qqbar.ml's C stubs (lib/qqbar_stubs.c,
-// FLINT/Calcium — see decisions/0013-flint-qqbar-backend.md). jsoo cannot
+// FLINT/Calcium — see docs/decision/0013-flint-qqbar-backend.md). jsoo cannot
 // compile C, so every `external ... = "ml_qqbar_*"` primitive is backed here
 // by calls into a real FLINT-wasm module (packages/eval-web/qqbar_wasm.c, built
 // by build-wasm.sh into packages/www/public/beloch/qqbar-wasm.js).

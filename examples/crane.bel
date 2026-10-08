@@ -6,7 +6,7 @@
 ; bird base of packages/core/tests/cases/bases/bird-base.bel (Ida's steps 2-8), then her
 ; steps 9-17. Her steps 18 and 19 open the wings, which is 3D and out of
 ; scope (ADR 0015). Checked against her figures in
-; notes/2026-09-25-crane-oracle.md.
+; docs/notes/2026-09-25-crane-oracle.md.
 
 paper square
 

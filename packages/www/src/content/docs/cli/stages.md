@@ -1,1 +1,1 @@
-../../../../../../spec/CLI-STAGES.md
+../../../../../../docs/reference/CLI-STAGES.md

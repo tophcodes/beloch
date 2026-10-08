@@ -61,7 +61,7 @@ let clip (sh : t) (l : Geom.line) : side option =
   |> List.filter_map (Geom.clip_line_to_convex l)
   |> Geom.material_bundle
 
-(* ---- A sheet trimmed from a flap (spec/BELOCH.md, "Sheets") ---- *)
+(* ---- A sheet trimmed from a flap (docs/reference/BELOCH.md, "Sheets") ---- *)
 
 let point_at ((p, q) : side) (t : Num.t) : Geom.point =
   { Geom.x = Num.add p.Geom.x (Num.mul t (Num.sub q.Geom.x p.Geom.x));

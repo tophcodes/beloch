@@ -1,4 +1,4 @@
-(* Annotations (spec/BELOCH-ANNOTATIONS.md; ADR 0029). *)
+(* Annotations (docs/reference/BELOCH-ANNOTATIONS.md; ADR 0029). *)
 
 open Beloch
 

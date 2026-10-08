@@ -1,4 +1,4 @@
-// Typed cross-references for spec/MODEL.md. Pandoc fenced divs
+// Typed cross-references for docs/reference/MODEL.md. Pandoc fenced divs
 //
 //   ::: {.definition #def-flat-state name="flat folded state" defines="term-table"}
 //   body
@@ -11,7 +11,7 @@
 //
 // `::: {.figure #fig-point caption="…" views="cp folded" highlight=".p"}` is a
 // Beloch program with its crease pattern and its folded form beside it. The
-// SVGs come pre-rendered from _build/spec/figures (scripts/render-figures.ts);
+// SVGs come pre-rendered from _build/reference/figures (scripts/render-figures.ts);
 // a figure with no files there renders a placeholder and the build carries on.
 // Figures are numbered per section on a counter of their own, so adding one
 // renumbers no statement.
@@ -96,7 +96,7 @@ function repoRoot(): string {
 
 // Whether the file being processed is the model document. The reference
 // documents are reached through symlinks under src/content/docs/ (model.md ->
-// ../../../../../spec/MODEL.md), so both sides are resolved before comparing.
+// ../../../../../docs/reference/MODEL.md), so both sides are resolved before comparing.
 function samePath(a: string | undefined, b: string): boolean {
 	if (!a) return false;
 	const real = (path: string) => {
@@ -244,8 +244,8 @@ export default function remarkModelBlocks(
 	const processor = this;
 	return async (tree: any, file: any) => {
 		const registerPath = options.register ?? join(repoRoot(), "_build", "api-register.json");
-		const modelPath = options.model ?? join(repoRoot(), "spec", "MODEL.md");
-		const figuresPath = options.figures ?? join(repoRoot(), "_build", "spec", "figures");
+		const modelPath = options.model ?? join(repoRoot(), "docs", "reference", "MODEL.md");
+		const figuresPath = options.figures ?? join(repoRoot(), "_build", "reference", "figures");
 		const source = String(file.value ?? "");
 		if (!source.includes(":::")) return;
 		const raw = scanBlocks(source).filter(

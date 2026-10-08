@@ -70,7 +70,7 @@ stacked:6     16   6.600s    0.379   1.004    (48)      0.005   5.259    3   ←
 stacked:7     32   WALLS (intrinsic 3·d³ growth)
 ```
 
-Optimization targets (see `notes/2026-07-03-calcium-pe-spike.md`):
+Optimization targets (see `docs/notes/2026-07-03-calcium-pe-spike.md`):
 1. **resultant**: ✅ DONE. `Mpoly.resultant` → univariate eval-interpolation in
    t (`Poly.resultant` per sample, sampled only where `F̃(t_j)` keeps full formal
    x-degree). Measured **10.08s → 1.00s** on `stacked:6`; total 15.8s → 6.8s.

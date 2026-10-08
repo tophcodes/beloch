@@ -19,7 +19,7 @@ async function render(blocks: string): Promise<string> {
   return String(
     await unified()
       .use(remarkParse)
-      .use(remarkBel, { blocks, doc: "spec/BELOCH.md" })
+      .use(remarkBel, { blocks, doc: "docs/reference/BELOCH.md" })
       .use(remarkRehype, { allowDangerousHtml: true })
       .use(rehypeStringify, { allowDangerousHtml: true })
       .process(readFileSync(doc, "utf8")),
@@ -124,7 +124,7 @@ test("a missing blocks.json is not fatal", async () => {
   expect(withoutBuild).not.toContain("sentinel-prelude-marker");
 });
 
-// Fix for a bug where the plugin always fell back to spec/BELOCH.md's
+// Fix for a bug where the plugin always fell back to docs/reference/BELOCH.md's
 // entries regardless of which document was being processed: a document with
 // no entry in blocks.json must render nothing, even when blocks.json holds
 // entries (for a different document) at the same indices.
@@ -132,7 +132,7 @@ test("a document with no blocks.json entry renders no outcomes at all", async ()
   const rendered = String(
     await unified()
       .use(remarkParse)
-      .use(remarkBel, { blocks: blocksWithEntries, doc: "spec/OTHER.md" })
+      .use(remarkBel, { blocks: blocksWithEntries, doc: "docs/reference/OTHER.md" })
       .use(remarkRehype, { allowDangerousHtml: true })
       .use(rehypeStringify, { allowDangerousHtml: true })
       .process(readFileSync(doc, "utf8")),
@@ -147,7 +147,7 @@ async function renderInline(markdown: string): Promise<string> {
   return String(
     await unified()
       .use(remarkParse)
-      .use(remarkBel, { blocks: blocksWithEntries, doc: "spec/OTHER.md" })
+      .use(remarkBel, { blocks: blocksWithEntries, doc: "docs/reference/OTHER.md" })
       .use(remarkRehype, { allowDangerousHtml: true })
       .use(rehypeStringify, { allowDangerousHtml: true })
       .process(markdown),

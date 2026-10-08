@@ -203,7 +203,7 @@ module.exports = grammar({
     comment: _ => token(seq(';', /[^\n]*/)),
 
     // an annotation opens with `@key` or `@ns:key` and runs to the end of its
-    // line (spec/BELOCH-ANNOTATIONS.md); its arguments are ordinary tokens
+    // line (docs/reference/BELOCH-ANNOTATIONS.md); its arguments are ordinary tokens
     annotation_key: _ => token(seq('@', /[A-Za-z0-9_]+/, optional(seq(':', /[A-Za-z0-9_]+/)))),
 
     // text in double quotes, an annotation's argument; `\"` and `\\` escape

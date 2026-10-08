@@ -151,7 +151,7 @@ type mv_constraint = MvFree | MvMountain | MvValley
    (ADR pending: collapse = simultaneous multi-crease fold). *)
 type collapse_elem = { cline : line_operand; cdir : mv_constraint }
 
-(* A number of the source (spec/BELOCH.md, Sheets): an exact rational
+(* A number of the source (docs/reference/BELOCH.md, Sheets): an exact rational
    literal, or a parameter of the shape whose body it stands in. *)
 type number = NLit of Q.t * Error.span | NParam of string * Error.span
 
@@ -202,7 +202,7 @@ type raw_item =
   | RiStaying of point_operand list * Error.span
   | RiSelection of toward_item * Error.span
 
-(* One argument of an annotation (spec/BELOCH-ANNOTATIONS.md): any read the
+(* One argument of an annotation (docs/reference/BELOCH-ANNOTATIONS.md): any read the
    language has, a text in double quotes, a number, or a bare word. *)
 type annot_value =
   | AvPoint of point_operand

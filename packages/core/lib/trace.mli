@@ -1,5 +1,5 @@
 (** What a selection chose from: every candidate of a construction or a write
-    and the rule that removed each one it did not keep (spec/FOLD.md, "The
+    and the rule that removed each one it did not keep (docs/reference/FOLD.md, "The
     trace"). Recorded on every evaluation and written only on request. *)
 
 type removal =
@@ -21,7 +21,7 @@ type removal =
 
 type segment = Geom.point * Geom.point
 
-(** The stage of the selection that removed a candidate (spec/MODEL.md,
+(** The stage of the selection that removed a candidate (docs/reference/MODEL.md,
     def-selection); [removal] says which item or rule did it. *)
 type stage = Paper | Heading | Side | Moved | Landing
 

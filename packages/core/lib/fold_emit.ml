@@ -285,7 +285,7 @@ let folded_frame_of_state (sheet : Sheet.t)
    mark statement embeds its OWN mark geometry as recorded at that point,
    independent of whether it later graduates into a real crease (which only
    ever happens at some LATER fold statement). The field is contracted in
-   spec/FOLD.md. *)
+   docs/reference/FOLD.md. *)
 (* The statement that bound a name, or null where none did: the four paper
    corners come with the sheet rather than from a statement. *)
 let stmt_json (stmt : int option) : Yojson.Safe.t =
@@ -327,7 +327,7 @@ let is_program_annotation (a : Ctx.annot_entry) =
   a.Ctx.an_ns = None && List.mem a.Ctx.an_key Annotation.program_keys
 
 (* beloch:annotations: one entry per annotation read, in the order the
-   statements ran (ADR 0029, spec/FOLD.md). [target] is the range of
+   statements ran (ADR 0029, docs/reference/FOLD.md). [target] is the range of
    beloch:statements entries it belongs to: one entry, or for a step every
    entry up to the next step; the string "program" for a key of the program
    as a whole; null after the last statement of its list. *)

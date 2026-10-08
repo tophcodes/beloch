@@ -1,5 +1,5 @@
 // Face graphs: the two relations between the faces of a flat folded state
-// (spec/MODEL.md, def-flat-state), each drawn as a graph. Adjacency joins two
+// (docs/reference/MODEL.md, def-flat-state), each drawn as a graph. Adjacency joins two
 // faces that share a hinge, an edge of the paper they both bound;
 // superposition joins two faces that overlap on the table, the pairs
 // `faceOrders` lists, the upper one above the lower. Ida draws graphs of these
@@ -59,7 +59,7 @@ export interface FaceGraphs { nodes: GraphNode[]; hinges: Hinge[]; layers: Layer
 
 // The levels and the covering pairs of an "above" relation on faces 0..n-1.
 // A flat-foldable state can have faces that lie over one another in a cycle
-// (spec/MODEL.md, rem-linear-extension); the faces of one cycle share a level.
+// (docs/reference/MODEL.md, rem-linear-extension); the faces of one cycle share a level.
 export function layerGraph(n: number, above: [number, number][]): { covers: [number, number][]; level: number[] } {
   const out: number[][] = Array.from({ length: n }, () => []);
   for (const [f, g] of above) if (!out[f]!.includes(g)) out[f]!.push(g);

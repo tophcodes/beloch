@@ -92,9 +92,9 @@ export default defineConfig({
 		// Highlight ```beloch fences with the tree-sitter highlighter before
 		// Expressive Code sees them.
 		// remark-model-blocks turns the `::: {.definition #id …}` fenced divs of
-		// spec/MODEL.md into numbered, cross-referenced sections; it runs before
+		// docs/reference/MODEL.md into numbered, cross-referenced sections; it runs before
 		// remarkMath so the math inside a block body is still tokenized.
-		// remark-grammar turns the ```grammar fragments of spec/BELOCH.md into
+		// remark-grammar turns the ```grammar fragments of docs/reference/BELOCH.md into
 		// linked rules and generates the collected grammar under `## Grammar`.
 		remarkPlugins: [remarkBel, remarkGrammar, remarkModelBlocks, remarkMath],
 		// `$...$` math and `[@key, §3]` citations, the same syntax pandoc reads
@@ -134,8 +134,11 @@ export default defineConfig({
 					],
 				},
 				{
-					label: "Specification",
+					label: "Reference",
 					items: [
+						{
+							label: "Specification",
+							items: [
 						{ label: "Model", link: "/model/" },
 						{
 							label: "Language",
@@ -148,14 +151,16 @@ export default defineConfig({
 							],
 						},
 						{ label: "Output format", link: "/output/" },
-					],
-				},
-				{
-					label: "Reference implementation",
-					items: [
+							],
+						},
+						{
+							label: "Reference implementation",
+							items: [
 						{ label: "The OCaml kernel", link: "/kernel/" },
 						{ label: "Command-line interface", link: "/cli/" },
 						{ label: "The stages view", link: "/cli/stages/" },
+							],
+						},
 					],
 				},
 			],

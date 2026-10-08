@@ -98,9 +98,9 @@ let test_documented_rectangle () =
         [ [ 0.; 0. ]; [ 2.; 0. ]; [ 2.; 1. ]; [ 0.; 1. ] ]
         (corners json))
     [
-      ("spec/BELOCH.md", true);
-      ("decisions/0046-a-sheet-is-a-square-or-a-flap-cut-from-one.md", false);
-      ("decisions/0047-a-trim-exports-the-names-it-lists.md", true);
+      ("docs/reference/BELOCH.md", true);
+      ("docs/decision/0046-a-sheet-is-a-square-or-a-flap-cut-from-one.md", false);
+      ("docs/decision/0047-a-trim-exports-the-names-it-lists.md", true);
     ]
 
 let () =

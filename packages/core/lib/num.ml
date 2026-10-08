@@ -7,7 +7,7 @@
     [Qq] backed by FLINT's qqbar (canonical minimal polynomial + certified
     ball; cross-field arithmetic, composite extensions). Invariant: [Qq] is
     irrational: rationals collapse to [Rat]. [to_float] is the only float,
-    output-only. See decisions/0013-flint-qqbar-backend.md. *)
+    output-only. See docs/decision/0013-flint-qqbar-backend.md. *)
 
 type t =
   | Rat of Q.t

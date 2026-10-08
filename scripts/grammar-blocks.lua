@@ -1,4 +1,4 @@
--- Grammar fragments of spec/BELOCH-GRAMMAR.md, pandoc side.
+-- Grammar fragments of docs/reference/BELOCH-GRAMMAR.md, pandoc side.
 --
 -- The parse is shared with the docs site through _build/grammar.json
 -- (scripts/grammar-register.ts writes it; BELOCH_GRAMMAR_REGISTER overrides the

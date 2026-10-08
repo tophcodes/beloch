@@ -16,7 +16,7 @@ val crease_of :
 (** The binding of [cr], when it is a crease. Fails with
     ["--l is a line; <slot> needs a crease"] when the binding is
     [Ctx.Frozen]. One sigil carries two sorts and the binding tells them
-    apart (spec/BELOCH.md, Parameter types); the check reads the
+    apart (docs/reference/BELOCH.md, Parameter types); the check reads the
     constructor and no geometry, and sits at the slot that wants a crease. *)
 
 val into_crease : Ctx.ctx -> string -> Error.span -> int * (Geom.line -> unit)
@@ -24,7 +24,7 @@ val into_crease : Ctx.ctx -> string -> Error.span -> int * (Geom.line -> unit)
     the check that the write's axis lies on that crease's own material,
     which the caller runs before the write. Fails when the name is bound to
     a line, to a selection, to a paper edge, or is not bound at all
-    (spec/BELOCH-WRITES.md). *)
+    (docs/reference/BELOCH-WRITES.md). *)
 
 val resolve_point : Ctx.ctx -> Ast.point_operand -> Geom.point
 (** Resolve a point operand to its material PAPER coordinate. *)
@@ -149,7 +149,7 @@ val placement_failure_message :
 val tip_faces :
   Ctx.ctx -> Geom.line -> anchor:Ast.flap_arg option -> ?side:int -> Error.span
   -> int * bool array
-(** `reverse`'s tip (`spec/KERNEL.md`, "Reverse"): the moving side ([side] where the side
+(** `reverse`'s tip (`docs/reference/KERNEL.md`, "Reverse"): the moving side ([side] where the side
     items fixed it, else from the anchor), and the mask of PARENT faces
     forming the connected material beyond the axis that carries the anchor:
     the anchor's faces with a move-side piece (every face with one when

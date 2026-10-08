@@ -71,7 +71,7 @@ let number_value (ctx : Ctx.ctx) (n : Ast.number) : Q.t =
 let eval_free_point (ctx : Ctx.ctx) (n : string) (line : Ast.line_operand)
     (anchor : Ast.point_operand) (pos : Ast.free_pos option) (span : Error.span) : unit =
   (* `free on` measures along material, so its line slot is crease-sorted
-     (spec/BELOCH.md, Parameter types). *)
+     (docs/reference/BELOCH.md, Parameter types). *)
   let l, chords_opt =
     match line with
     | Ast.LNamed cr -> (
@@ -489,7 +489,7 @@ let run_stmts (ctx : Ctx.ctx) on_step (stmts : Ast.stmt list) : unit =
       on_step ctx)
     stmts
 
-(* ---- Sheets (spec/BELOCH.md, "Sheets") ---- *)
+(* ---- Sheets (docs/reference/BELOCH.md, "Sheets") ---- *)
 
 (* the physical units of the FOLD format, each a rational multiple of the
    millimeter *)

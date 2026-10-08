@@ -52,7 +52,7 @@ let eval_bel_file file =
    beloch-render's stdin over a real Unix.pipe. *)
 let eval_to_fold_json file = Yojson.Safe.to_string (eval_bel_file file)
 
-(* A .bel file evaluated with its trace (spec/FOLD.md, "The trace"). A
+(* A .bel file evaluated with its trace (docs/reference/FOLD.md, "The trace"). A
    program that fails still yields the file up to the failing statement; the
    diagnostic goes to stderr and [true] says it failed. *)
 let eval_bel_file_traced file =
@@ -162,7 +162,7 @@ let run_fold file =
   print_endline (Yojson.Safe.pretty_to_string (eval_bel_file file))
 
 (* `beloch fold --trace FILE`: the FOLD with every construction's candidates
-   (spec/FOLD.md, "The trace"). A program that fails still prints the file up
+   (docs/reference/FOLD.md, "The trace"). A program that fails still prints the file up
    to the failing statement, then the diagnostic, and exits 1. *)
 let run_fold_trace file =
   let json, failed = eval_bel_file_traced file in

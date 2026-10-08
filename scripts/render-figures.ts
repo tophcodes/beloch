@@ -2,13 +2,13 @@
 // The figures of the reference documents and the guide, drawn by Beloch's own
 // pipeline.
 //
-// Scans spec/*.md and the guide's pages for `::: {.figure #fig-point
+// Scans docs/reference/*.md and the guide's pages for `::: {.figure #fig-point
 // caption="…" views="cp folded" highlight=".p"}` blocks, whose body is a
 // Beloch program, evaluates each one
 // with the `beloch` binary and renders the requested views through
 // packages/render-2d, the same functions the docs site's <Beloch> card uses.
 //
-// Output goes to _build/spec/figures: one `<id>-<view>.svg` per view (`cp`,
+// Output goes to _build/reference/figures: one `<id>-<view>.svg` per view (`cp`,
 // `folded`, `candidates`, `op`, `stages`, `side`, `faces`), and
 // index.json (one entry per figure, with the files it produced and the reason
 // if it produced none). Both renderers of the documents read the SVG files and
@@ -141,7 +141,7 @@ export function unknownHighlights(
 	return unknown;
 }
 
-// The statement a program labels with `@label WORD` (spec/BELOCH-ANNOTATIONS.md), as an index into its statements.
+// The statement a program labels with `@label WORD` (docs/reference/BELOCH-ANNOTATIONS.md), as an index into its statements.
 export function labelledStatement(fold: Record<string, unknown>, label: string): number | undefined {
 	const annotations = (fold["beloch:annotations"] ?? []) as {
 		key: string;
@@ -210,7 +210,7 @@ export function renderFigure(block: FigureBlock, outDir: string, source: string)
 }
 
 // The directories whose Markdown files carry figures, relative to the repo root.
-const DOCUMENT_DIRS = ["spec", "packages/www/src/content/docs/guide"];
+const DOCUMENT_DIRS = ["docs/reference", "packages/www/src/content/docs/guide"];
 
 export function documentFiles(root: string): string[] {
 	return DOCUMENT_DIRS.flatMap((dir) =>
@@ -259,7 +259,7 @@ export function renderDocuments(root: string, files: string[], outDir: string): 
 function main() {
 	const root = join(import.meta.dir, "..");
 	const flag = process.argv.indexOf("--out");
-	const outDir = flag >= 0 ? process.argv[flag + 1]! : join(root, "_build", "spec", "figures");
+	const outDir = flag >= 0 ? process.argv[flag + 1]! : join(root, "_build", "reference", "figures");
 
 	rmSync(outDir, { recursive: true, force: true });
 	mkdirSync(outDir, { recursive: true });

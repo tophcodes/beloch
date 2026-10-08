@@ -1,4 +1,4 @@
-// The face graph of a frame, read from `edges_faces` (spec/FOLD.md, "Standard
+// The face graph of a frame, read from `edges_faces` (docs/reference/FOLD.md, "Standard
 // fields"). A node is a set of faces joined across `J` edges: a join edge only
 // divides a non-convex sheet into convex faces, and FOLD counts the faces on
 // its two sides as one. Every other edge with two faces, `M`, `V` or `F`,

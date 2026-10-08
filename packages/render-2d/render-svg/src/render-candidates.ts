@@ -2,7 +2,7 @@
 // the candidates are lines, each drawn on its own copy of the state the
 // construction read, as Ida draws the choices of a fold [ida2020, Fig. 2.17];
 // for a write they are states, drawn by what tells them apart. Reads
-// `beloch:trace` (spec/FOLD.md, "The trace"), so the file has to be written by
+// `beloch:trace` (docs/reference/FOLD.md, "The trace"), so the file has to be written by
 // `beloch fold --trace`.
 import type { Conic, FoldScene, LineCoeffs, Removal, TraceCandidate, TraceEntry, Vec2, WriteEntry } from "@beloch/scene";
 import { SceneError } from "@beloch/scene";

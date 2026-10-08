@@ -1,5 +1,5 @@
 // How the model is turned on the page at a state: the `@orient` annotations
-// of spec/BELOCH-ANNOTATIONS.md, read into one rotation of the table plane.
+// of docs/reference/BELOCH-ANNOTATIONS.md, read into one rotation of the table plane.
 import type { Annotation, FoldScene, Frame, Vec2 } from "./types";
 
 const DIRECTION: Record<string, number> = {

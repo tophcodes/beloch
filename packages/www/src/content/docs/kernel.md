@@ -1,1 +1,1 @@
-../../../../../spec/KERNEL.md
+../../../../../docs/reference/KERNEL.md
