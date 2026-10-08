@@ -29,3 +29,5 @@
 (stayer_item     "staying" @stayer)
 (selection_item  "toward" @selection)
 (output_clause   ["as" "into" "!"] @output)
+(definition_head "def" @keyword)
+(application     "apply" @keyword)

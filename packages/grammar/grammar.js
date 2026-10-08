@@ -23,8 +23,17 @@ module.exports = grammar({
     // a binding of a construction takes `(toward …)` and `(moving …)` items
     // after it, as a write does (ADR 0031)
     source_file: $ => repeat(choice(
-      $.write_statement, $.construction, $.selection_item, $.anchor_item, $._token,
+      $.write_statement, $.definition_head, $.application, $.construction, $.selection_item, $.anchor_item, $._token,
     )),
+
+    // `def name(.p --l)`: the head of a definition, whose parameters are
+    // points and creases; its body in braces stays a flat run of tokens.
+    // `apply name(args)`: an application and its arguments, with or without
+    // the `$name =` that keeps the instance. Both take precedence over the
+    // bare keyword so that `(` after the name opens an argument list and no
+    // item (docs/reference/BELOCH-NAMES.md).
+    definition_head: $ => prec(1, seq('def', $.identifier, '(', repeat(choice($.point, $.crease)), ')')),
+    application: $ => prec(1, seq('apply', $.identifier, '(', optional($._operand), ')')),
 
     // the six writes: a verb, its items in any order, its output clause.
     // Each alternative is right-associative on its own repeat so that a

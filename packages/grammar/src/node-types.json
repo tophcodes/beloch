@@ -94,6 +94,53 @@
     }
   },
   {
+    "type": "application",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "crease",
+          "named": true
+        },
+        {
+          "type": "crease_bracket",
+          "named": true
+        },
+        {
+          "type": "flap_bracket",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "instance",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "operator",
+          "named": true
+        },
+        {
+          "type": "point",
+          "named": true
+        },
+        {
+          "type": "point_bracket",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "axis_item",
     "named": true,
     "fields": {},
@@ -186,6 +233,29 @@
         },
         {
           "type": "point_bracket",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "definition_head",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "crease",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "point",
           "named": true
         }
       ]
@@ -578,6 +648,10 @@
           "named": true
         },
         {
+          "type": "application",
+          "named": true
+        },
+        {
           "type": "comment",
           "named": true
         },
@@ -591,6 +665,10 @@
         },
         {
           "type": "crease_bracket",
+          "named": true
+        },
+        {
+          "type": "definition_head",
           "named": true
         },
         {

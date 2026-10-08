@@ -10,7 +10,7 @@
 (number) @number
 (operator) @operator
 (punct) @punct
-(flap_bracket) @selector
+(flap_bracket) @punct
 
 (write_statement ["mark" "fold" "unfold" "reverse" "flatten" "flip"] @keyword)
 ["(" ")" "[" "]"] @punct
@@ -29,3 +29,5 @@
 (stayer_item     "staying" @stayer)
 (selection_item  "toward" @selection)
 (output_clause   ["as" "into" "!"] @output)
+(definition_head "def" @keyword)
+(application     "apply" @keyword)
