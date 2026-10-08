@@ -36,8 +36,8 @@ if [ $# -gt 0 ]; then
 else
   # Test fixtures and the license are not prose of the project. The brand
   # documents are left out until the lint has rules for German.
-  # docs/reference/SPECIFICATION.md is being dissolved into the other documents (ADR
-  # 0032); its sections are linted where they move to.
+  # docs/reference/SPECIFICATION.md is being dissolved into the other documents (see
+  # decisions/the-specification-binds-every-implementation); its sections are linted where they move to.
   mapfile -t targets < <(tracked | grep -E '\.(md|mdx|ml|mli|ts|css|lua|astro|typ|sh)$' |
     grep -vE '^(LICENSE\.md$|packages/www/src/lib/fixtures/|scripts/fixtures/|docs/reference/SPECIFICATION\.md$)')
   # A failed file listing leaves the list empty; stop there, or the run

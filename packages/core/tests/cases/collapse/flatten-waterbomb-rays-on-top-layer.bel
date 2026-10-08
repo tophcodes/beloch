@@ -2,7 +2,7 @@
 
 ; flatten-waterbomb-both-layers.bel with its creases marked on the top layer
 ; alone. The fan keeps the sector along the raw edges, so the spine's pieces
-; move and the tip is both layers (ADR 0037); the flatten scores its rays on
+; move and the tip is both layers (decisions/a-fan-moves-its-tip); the flatten scores its rays on
 ; the bottom layer itself, as def-flatten scores every layer under the fan,
 ; and folds the same state as the program that marks them on both layers.
 ; The selectors of the diagonal through the corners name the top layer's

@@ -2,13 +2,13 @@
 
 Beloch writes origami folding sequences as programs over the Huzita-Justin
 axioms. It evaluates `.bel` source into one FOLD file with the folded state after
-every step; crease patterns and YR-style folding diagrams are renderings of it. Architecture decisions live in `docs/decision/` (ADRs); read those
+every step; crease patterns and YR-style folding diagrams are renderings of it. Architecture decisions live in `docs/decisions/` (ADRs); read those
 before proposing anything structural. Design journal in `docs/notes/`, dead ends in
 `docs/notes/antipatterns.md`. The contracts live in `docs/reference/`: `MODEL.md` what a
 program means, `BELOCH.md` the language, `FOLD.md` the output. Beside them,
 binding no other implementation: `KERNEL.md` what `packages/core` realizes,
 `CLI.md` the `beloch` command. `SPECIFICATION.md` is being dissolved into
-`BELOCH.md` and `KERNEL.md` (ADR 0032): add nothing to it, and move a section
+`BELOCH.md` and `KERNEL.md` (`decisions/the-specification-binds-every-implementation`): add nothing to it, and move a section
 you have to touch.
 
 ## Where work goes
@@ -33,8 +33,8 @@ to.
 - Before starting on an issue, look it up on the board. If it is closed or its
   Status is Done, stop and ask. Otherwise set its Status to In Progress.
 - A new issue starts from a template in `.github/ISSUE_TEMPLATE/`
-  (`gh issue create --template build|design|docs`), names the ADR it follows
-  from in its first line, and goes on the board with a Topic and one `kind:`
+  (`gh issue create --template build|design|docs`), names the decision it
+  follows from in its first line (`decisions/<slug>`), and goes on the board with a Topic and one `kind:`
   label.
 - A pull request body names its issue with `Closes #n` when the pull request
   finishes it and `Refs #n` when it contributes to it, and the pull request
@@ -65,7 +65,7 @@ Inside the devshell (`nix develop`, or direnv):
   `packages/render-2d`, `packages/runtime` and `packages/www`, the type
   check (`tsc`) of `packages/render-2d` and `packages/runtime`, the prose
   lint at level error, and the check that every program states its credits
-  (ADR 0051). Run it after the last edit and before every push.
+  (`decisions/a-program-states-its-author-design-and-sources`). Run it after the last edit and before every push.
 - `check-all` runs `check`, then the API docs and register, the README
   drawings against their programs, the script tests (`bun test scripts`) and
   the site build.

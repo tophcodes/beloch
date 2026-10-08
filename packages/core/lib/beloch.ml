@@ -3,8 +3,8 @@
     The library is intentionally empty until the minimal core (v0.0) is
     specified in [docs/reference/10-core-v0.md]: one square of paper, axiom 1 only, a
     crease-line type, output to FOLD-extended. See
-    [docs/decision/0003-restart-from-minimal-core.md] and
-    [docs/decision/0007-evaluator-not-compiler.md]. *)
+    [docs/decisions/20260628-restart-from-minimal-core.md] and
+    [docs/decisions/20260628-evaluator-not-compiler.md]. *)
 
 let version = Version.version
 

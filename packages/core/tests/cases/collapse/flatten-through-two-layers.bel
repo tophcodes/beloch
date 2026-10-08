@@ -2,7 +2,7 @@
 
 ; A four-ray vertex near the corner of a book fold, scored on the upper layer
 ; alone. The rays end on the raw edges and none reaches the spine, so the
-; tip of the upper corner is that corner alone (ADR 0037): it folds onto
+; tip of the upper corner is that corner alone (decisions/a-fan-moves-its-tip): it folds onto
 ; the top of the stack, and the lower corner stays flat at the bottom of
 ; the stack, where it needs no rays.
 

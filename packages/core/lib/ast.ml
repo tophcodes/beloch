@@ -48,7 +48,7 @@ type arg = APoint of point_operand | ALine of line_operand
 
 (* A construction, the read of sort line a write's axis comes from: the set
    of alignments that together determine the fold line, with its `heading`
-   (ADR 0031). The seven prose spellings desugar to this record at parse
+   (decisions/toward-names-the-side-that-stays). The seven prose spellings desugar to this record at parse
    time; [Axiom.classify] recognizes the alignment set as one of the seven
    axioms where a solver is needed. *)
 type align_object = AoPoint of point_operand | AoLine of line_operand
@@ -74,7 +74,7 @@ and construction = {
 }
 
 (* What a `toward` item names: the side of each candidate that holds the
-   point, or the side the line lies on (ADR 0031). *)
+   point, or the side the line lies on (decisions/toward-names-the-side-that-stays). *)
 type toward = TowardPoint of point_operand | TowardLine of line_operand
 
 (* `(toward .u)`, or `(x toward .u)` naming the object of the construction
@@ -90,7 +90,7 @@ type extent =
   | Between of point_operand * point_operand
   | At of point_operand
 
-(* A flap-typed operand slot (ADR 0016). A point is sugar for "the flap
+(* A flap-typed operand slot (decisions/typed-operands-bundle-values-singleton-slots). A point is sugar for "the flap
    carrying the point"; a line for "the flap hinged on the crease/segment"
    (usually a multi-match for `moving`, resolvable for `up to`); #(…) lists
    explicit incidence constraints. *)
@@ -105,7 +105,7 @@ type place_dir = PlaceOver | PlaceUnder
 
 (* The items of a write, a binding or a mark that name the side of the
    construction's line that stays and the side that folds over; they select
-   among its candidates as they do in a fold (ADR 0031). *)
+   among its candidates as they do in a fold (decisions/toward-names-the-side-that-stays). *)
 type sides = {
   s_toward : toward_item option;
   s_moving : flap_arg option;
@@ -129,7 +129,7 @@ type fold_spec = {
 }
 
 (* reverse <markable> [moving <flap>] [outside] [(<crease> <letter>)…]: the
-   tip beyond the line opens between two of its layers (ADR 0043), its two
+   tip beyond the line opens between two of its layers (decisions/a-reverse-fold-turns-the-hinges-across-its-opening), its two
    blocks reflected, each placed next to its own hinge layer (inside) or on
    the far outside (outside). A letter on a hinge of the spine's line keeps
    the openings that give the hinge that letter. *)
@@ -191,7 +191,7 @@ type raw_item =
   | RiMoving of flap_arg * Error.span
   | RiMovingDir of flap_arg * bool * Error.span
       (* (moving <flap> up|down): true for up; the direction of the moving
-         set of `unfold` (ADR 0053) *)
+         set of `unfold` (decisions/unfold-turns-layers-over-a-crease-and-opens-its-hinges) *)
   | RiUpTo of flap_arg * Error.span
   | RiLetter of mv_constraint * Error.span     (* (mountain) / (valley) *)
   | RiPlace of place_dir * flap_arg * Error.span
@@ -216,7 +216,7 @@ type annot_value =
 type annot_arg = { av : annot_value; av_span : Error.span }
 
 (* `@key [args]` or `@ns:key [args]`, one line. It belongs to the statement that
-   follows it and never changes the geometry (ADR 0029). *)
+   follows it and never changes the geometry (decisions/annotations-pass-through-and-each-output-is-a-library). *)
 type annotation = {
   a_ns : string option;
   a_key : string;
@@ -244,7 +244,7 @@ type stmt =
   | Unfold of line_operand * fold_spec * Error.span
       (* unfold (--l) [(moving … [up|down])][(up to …)][(toward …)]: the
          selected layers turn across the line, opening the folded hinges on
-         it between them and the layers that stay (ADR 0053); [place] is
+         it between them and the layers that stay (decisions/unfold-turns-layers-over-a-crease-and-opens-its-hinges); [place] is
          always [None] *)
   | BindBundle of string * line_operand * Error.span
       (* --x = <bundle expr>: name a crease bundle (union/filter of existing
@@ -264,8 +264,8 @@ type stmt =
          pipeline (spec §4.9). elements = the given rays, each with an
          [mv_constraint] (MvFree = solver-assigned; mountain/valley = hard
          pin); over-pairs = (upper flap, lower flap) stacking constraints;
-         staying = the points of the sector that stays (ADR 0048); on = the anchor flap, whose tip moves
-         (ADR 0037, ADR 0040). An odd ray count
+         staying = the points of the sector that stays (decisions/staying-names-a-sector-of-the-anchor); on = the anchor flap, whose tip moves
+         (decisions/a-fan-moves-its-tip, decisions/a-fan-sits-at-a-table-point-on-names-its-flap). An odd ray count
          makes the emergent completing ray part of the solution space
          (Flatten.candidates). The realization space (candidate × Maekawa
          M/V pattern × stacking, via Collapse.collapse_all) is filtered by
@@ -282,7 +282,7 @@ type sheet =
   | SShape of string * number list * Error.span
 
 (* `shape name(params) { paper …; … trim to <flap> }`: a program on one
-   sheet, cut down to one of its flaps (ADR 0046). *)
+   sheet, cut down to one of its flaps (decisions/a-sheet-is-a-square-or-a-flap-cut-from-one). *)
 type shape_def = {
   sd_name : string;
   sd_name_span : Error.span;
@@ -292,7 +292,7 @@ type shape_def = {
   sd_trim : flap_arg * Error.span;
   sd_exports : export_entry list option;
       (* `trim to … { … }`: the names that reach the trimmed sheet, every
-         name on the flap when [None] (ADR 0047) *)
+         name on the flap when [None] (decisions/a-trim-exports-the-names-it-lists) *)
   sd_span : Error.span;
 }
 

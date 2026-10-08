@@ -64,7 +64,7 @@ export interface ProgramSpan {
 // host's, because it is the one with a reader.
 export type Diagnostic =
   // The evaluator rejected the program, with its own message, the one thing
-  // it suggests writing instead where it has one (ADR 0028), the line it named
+  // it suggests writing instead where it has one (decisions/an-error-carries-its-hint-apart-from-its-message), the line it named
   // and the whole span where the answer carries one.
   | {
       kind: "program";

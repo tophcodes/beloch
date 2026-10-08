@@ -12,7 +12,7 @@ or folded-occlusion diagrams out. The input contract is `docs/reference/FOLD.md`
   a `FoldScene` onto an `SvgDoc` (layered SVG builder: `paper` / `creases` /
   `annotations` / `hud`), originally ported line-for-line from the retired
   Rabbit Ear-based development tool this CLI replaced.
-- **`yr/`** (`@beloch/yr`): the YR-style folding diagram (ADR 0029).
+- **`yr/`** (`@beloch/yr`): the YR-style folding diagram (`decisions/annotations-pass-through-and-each-output-is-a-library`).
   `panels` selects one panel per step group, `foldMotion` reads what a fold
   moves and whether it is a valley, a mountain or a reverse fold from the
   standard FOLD, `turnOver` recognizes a `flip`, the primitives in `draw.ts`

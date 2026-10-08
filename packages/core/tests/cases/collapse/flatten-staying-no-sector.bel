@@ -3,7 +3,7 @@
 ; The fan of flatten-waterbomb-top-layer.bel. .b lies on the ray toward the
 ; corner at the origin, .s0 on the ray toward the foot of the spine, and the
 ; sectors beside the one share none with the sectors beside the other, so no
-; sector holds both (ADR 0048).
+; sector holds both (decisions/staying-names-a-sector-of-the-anchor).
 
 paper rectangle 2 1
 fold (map .a onto .b) (moving .b) as --spine

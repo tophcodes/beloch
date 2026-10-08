@@ -42,7 +42,7 @@ history**, not a separate computation:
   cute and starts being load-bearing: a YR diagram generator doesn't need new
   machinery, it needs to walk the existing history and render the diff of
   each commit.
-- **Fold scope** ([[decision/0016]], PR #67, `beloch-fold-scope-and-operand-model`):
+- **Fold scope** ([[decisions/typed-operands-bundle-values-singleton-slots]], PR #67, `beloch-fold-scope-and-operand-model`):
   already, in effect, lets a statement select *which prior commits' resulting
   state* it operates against (mover/stayer partitioning per hinge). The
   commit-log framing was already implicit in shipped work; this note just

@@ -46,10 +46,10 @@ When axiom 5 yields two bisectors and `toward` is omitted:
 
 ## Why this fits the existing doctrine
 
-- **[[decision/0016]]**: "metric (`toward .x`) only where incidence cannot
+- **[[decisions/typed-operands-bundle-values-singleton-slots]]**: "metric (`toward .x`) only where incidence cannot
   discriminate". Paper incidence *does* discriminate here; demanding `toward`
   anyway contradicts the ADR's own selection ladder.
-- **[[decision/0014]]**: a crease is a bundle of segments. A line with no
+- **[[decisions/crease-is-a-bundle-of-segments]]**: a crease is a bundle of segments. A line with no
   positive-length segment on the paper is an empty bundle, which is no crease at
   all. The filter is the same test applied one step earlier, and it is
   consistent for both binds (`--x = map …`) and folds (`@map …`).
@@ -67,7 +67,7 @@ When axiom 5 yields two bisectors and `toward` is omitted:
 - **Which region to clip against after folds?** The flat sheet is the easy
   case. On a folded state, the candidate should presumably be clipped against
   the same region the statement operates on, which ties into the fold-scope
-  design (`2026-07-05-fold-scope.md`, [[decision/0016]]). The rule should be phrased
+  design (`2026-07-05-fold-scope.md`, [[decisions/typed-operands-bundle-values-singleton-slots]]). The rule should be phrased
   once, against that region, not ad hoc per axiom.
 - **Generalize to axioms 6/7.** `MapThrough` / `beloch_creases` have the same
   shape (finite candidate set, `toward` selector). The same incidence filter

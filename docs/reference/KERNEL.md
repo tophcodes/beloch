@@ -43,7 +43,7 @@ to the sheet clips it to every face of the unfolded state and takes the two
 furthest-out points. The output assigns `B` to an edge that lies on a side of
 the outline. A collapse keeps the realizations whose faces lie on the table
 inside the convex hull of every table polygon of the state before the collapse
-([[decision/0046]]).
+([[decisions/a-sheet-is-a-square-or-a-flap-cut-from-one]]).
 
 ## State
 
@@ -173,7 +173,7 @@ layer of the tip; otherwise into a new crease, or into the crease `into`
 names.
 
 `Collapse.mk_sector_geoms` gives each hinge of the tip on a ray a role
-([[decision/0044]]). A flat hinge of a ray's crease folds. A folded hinge of a ray's
+([[decisions/a-fan-moves-each-piece-along-its-paper-path]]). A flat hinge of a ray's crease folds. A folded hinge of a ray's
 crease keeps or opens, and a hinge of another crease on a ray keeps or
 changes; the kernel tries every combination of these, so the work doubles
 with each of them. For each combination it moves every face by the
@@ -227,7 +227,7 @@ count floor, the boundary check, duplicate rays and Kawasaki closure are
 properties of which lines and directions are given, not of which are marked
 mountain or valley. Check 11 runs here only where the anchor surrounds O on
 the paper. Elsewhere its test, whether some combination of the hinges the
-fan may change closes the paper paths ([[decision/0044]]), runs per admissible
+fan may change closes the paper paths ([[decisions/a-fan-moves-each-piece-along-its-paper-path]]), runs per admissible
 stayer sector after checks 16 and 6, and a fan that fails it reports
 `` no realization keeps the staying flap still ``. A candidate that fails any of them fails for **every**
 Maekawa pattern tried against it, and checks 7–11 have no per-pattern
@@ -254,7 +254,7 @@ the numbers above keep their meaning.
 | 15 | (`on` given) no face of the named flap lies under the vertex | `the on flap does not lie under the vertex` | |
 | 16 | the anchor has no face outside the stayer's wedge, so the tip is empty | `the anchor flap has no material outside the staying sector` | |
 
-Four checks concern the stayer ([[decision/0048]]). A candidate fan that fails 17,
+Four checks concern the stayer ([[decisions/staying-names-a-sector-of-the-anchor]]). A candidate fan that fails 17,
 18 or 19 contributes no states, and the message surfaces when no candidate
 fan contributes any.
 
@@ -462,7 +462,7 @@ vertex of every face lies on the line or on one side of it.
 
 ## Annotations
 
-An annotation never changes the geometry ([[decision/0029]]), and the kernel holds to
+An annotation never changes the geometry ([[decisions/annotations-pass-through-and-each-output-is-a-library]]), and the kernel holds to
 that in two places. `Parse.parse` runs `Annotation.check`, which needs no
 state. The evaluator reads an annotation's arguments with
 `Annotation.resolve` when it reaches the annotation, and keeps the result

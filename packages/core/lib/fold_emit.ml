@@ -327,7 +327,7 @@ let is_program_annotation (a : Ctx.annot_entry) =
   a.Ctx.an_ns = None && List.mem a.Ctx.an_key Annotation.program_keys
 
 (* beloch:annotations: one entry per annotation read, in the order the
-   statements ran (ADR 0029, docs/reference/FOLD.md). [target] is the range of
+   statements ran (decisions/annotations-pass-through-and-each-output-is-a-library, docs/reference/FOLD.md). [target] is the range of
    beloch:statements entries it belongs to: one entry, or for a step every
    entry up to the next step; the string "program" for a key of the program
    as a whole; null after the last statement of its list. *)

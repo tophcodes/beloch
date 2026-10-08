@@ -3,7 +3,7 @@
 ; The same fold with a bare toward measures every object of the alignment,
 ; the part of --h as well. Both candidates land a part of --h on the lower
 ; half of --v, equally near .u, so the selection names no line and the hint
-; names what to measure (ADR 0031).
+; names what to measure (decisions/toward-names-the-side-that-stays).
 
 paper square
 mark (map .a onto .b) as --v

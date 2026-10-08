@@ -27,7 +27,7 @@ type stmt_log_entry = Ctx.stmt_log_entry = {
           immediately after this statement. *)
   sl_parent : int option;
       (** The entry of the [apply] this statement runs under, [None] at the
-          top level (ADR 0030). *)
+          top level (decisions/the-fold-logs-the-program-flat). *)
 }
 
 type free_info = Ctx.free_info = {
@@ -45,7 +45,7 @@ type folded = {
   named_points : (string * Geom.point * int * int option) list;
       (** The 0-based creation step (index into [frames] at bind time) and
           the index of the statement that binds the point in the
-          `beloch:statements` log. Every statement is logged (ADR 0026), so
+          `beloch:statements` log. Every statement is logged (decisions/a-program-has-two-axes), so
           the index is the binding statement's own. [None] for a name no
           statement bound, which the four paper corners are. *)
   named_lines : (string * Geom.line * int * int option) list;
@@ -62,7 +62,7 @@ type folded = {
           sourcemap from a bundle back to the places the program names it. *)
   annotations : Ctx.annot_entry list;
       (** every annotation in the order it was read, each with the log entry
-          of the statement it belongs to (ADR 0029) *)
+          of the statement it belongs to (decisions/annotations-pass-through-and-each-output-is-a-library) *)
   trace : Trace.entry list;
       (** every construction's candidates in the order they were evaluated
           (docs/reference/FOLD.md, "The trace") *)

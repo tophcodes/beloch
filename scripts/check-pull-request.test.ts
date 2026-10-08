@@ -11,11 +11,11 @@ function check(labels: string[], body: string | null) {
 
 test("a kind label and Closes or Refs pass", () => {
 	expect(check(["kind:build"], "Closes #89. Adds the check.").ok).toBe(true);
-	expect(check(["kind:design"], "Adds ADR 0034.\n\nRefs #59").ok).toBe(true);
+	expect(check(["kind:design"], "Adds decisions/action-is-the-sixth-core-module.\n\nRefs #59").ok).toBe(true);
 });
 
 test("For and Fixes do not count as a reference", () => {
-	for (const body of ["For #59. Adds ADR 0034.", "Fixes #81."]) {
+	for (const body of ["For #59. Adds decisions/action-is-the-sixth-core-module.", "Fixes #81."]) {
 		const { ok, out } = check(["kind:build"], body);
 		expect(ok).toBe(false);
 		expect(out).toContain("names no issue");

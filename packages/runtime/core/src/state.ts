@@ -39,7 +39,7 @@ export interface State {
   scene: FoldScene | null;
   // Where the stepper stands: 0 to writes.length. 0 is the sheet before any
   // statement ran; n means every write has been applied. A binding statement
-  // moves the program and not the paper (ADR 0026), so it is no stop here.
+  // moves the program and not the paper (decisions/a-program-has-two-axes), so it is no stop here.
   step: number;
   // The settled selection. A card lights several named entities at once and
   // the playground lights one; both are policies over this one list, and the

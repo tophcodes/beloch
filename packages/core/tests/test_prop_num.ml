@@ -1,4 +1,4 @@
-(* Property tests for the number kernel [Num] (ADR 0012, ADR 0013): the field
+(* Property tests for the number kernel [Num] (decisions/real-algebraic-number-kernel, decisions/flint-qqbar-backend): the field
    axioms, the sign, the order, and agreement with FLINT's qqbar arithmetic
    as an oracle independent of [Num]'s rational and single-field fast
    paths. Generators in arb.ml. *)

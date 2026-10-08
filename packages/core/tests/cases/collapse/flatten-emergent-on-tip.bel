@@ -2,7 +2,7 @@
 
 ; A three-ray fan near the upper corner of a book fold, scored on the upper
 ; layer alone. The emergent ray runs from the vertex to the raw edge --bc
-; across the lower layer, which lies beneath and stays (ADR 0037). The
+; across the lower layer, which lies beneath and stays (decisions/a-fan-moves-its-tip). The
 ; emergent ray is scored on the layers of the tip alone, so the lower layer
 ; keeps a single face and gains no crease on the emergent ray's line.
 

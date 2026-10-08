@@ -4,8 +4,8 @@ about: Work an agent can start without further input
 labels: kind:build
 ---
 
-<!-- Where this comes from: the issues and the ADR it follows, a branch it builds on. "No ADR" if none applies. -->
-Follow-up to #n and ADR NNNN.
+<!-- Where this comes from: the issues and the ADR it follows, a branch it builds on. "No decision" if none applies. -->
+Follow-up to #n and `decisions/<slug>`.
 
 <!-- The problem, in prose: what a program or a reader runs into today. A short program and the output or error it gives, where one shows it. -->
 

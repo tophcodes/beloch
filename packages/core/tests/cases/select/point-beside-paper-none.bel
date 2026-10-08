@@ -2,7 +2,7 @@
 
 ; Axiom 7 on the midlines: every common tangent would land .a or .c beside
 ; the part of its line that lies on the paper, so no fold carries out both
-; alignments (ADR 0031). A program that wants such a landing constructs the
+; alignments (decisions/toward-names-the-side-that-stays). A program that wants such a landing constructs the
 ; target line first.
 
 paper square

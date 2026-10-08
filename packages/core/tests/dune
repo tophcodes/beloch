@@ -109,8 +109,8 @@
  (deps
   ../stdlib/shapes.bel
   ../../../docs/reference/BELOCH.md
-  ../../../docs/decision/0046-a-sheet-is-a-square-or-a-flap-cut-from-one.md
-  ../../../docs/decision/0047-a-trim-exports-the-names-it-lists.md))
+  ../../../docs/decisions/20261001-a-sheet-is-a-square-or-a-flap-cut-from-one.md
+  ../../../docs/decisions/20261001-a-trim-exports-the-names-it-lists.md))
 
 ; property tests (QCheck, run as alcotest cases); arb.ml holds the generators
 (test

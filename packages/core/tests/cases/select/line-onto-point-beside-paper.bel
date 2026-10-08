@@ -3,7 +3,7 @@
 ; The same construction with .d staying: --ef folds over and has to bring
 ; paper to .d. The fold whose image of .d lies at (1/2, -1/2) would need
 ; paper of --ef beside the sheet, so it drops out, and --ef folds onto .d
-; along the other (ADR 0031).
+; along the other (decisions/toward-names-the-side-that-stays).
 
 paper square
 mark (map .a onto .b) as --ef

@@ -93,7 +93,7 @@ folded is no crease of the new sheet. The body's states belong to no
 program's path: a program that opens a shape starts at the trimmed sheet.
 
 **Exports.** A trim may list the names it exports, in braces after the flap
-operand ([[decision/0047]]). An entry is a name of the body with its sigil,
+operand ([[decisions/a-trim-exports-the-names-it-lists]]). An entry is a name of the body with its sigil,
 optionally `as` a landing name with its sigil, as in `export`, and takes no
 `!`: the trimmed sheet
 starts with no names, so a landing name may be one the body used off the
@@ -148,7 +148,7 @@ none. A file without a declaration takes the unit of the file that loads
 it, and a loaded file with another unit has its numbers converted exactly,
 each of these units being a rational multiple of the millimeter. Beloch
 does not load files yet, so these two rules wait for the import
-([[decision/0046]]).
+([[decisions/a-sheet-is-a-square-or-a-flap-cut-from-one]]).
 
 ## Reads and writes
 
@@ -215,7 +215,7 @@ range starts.
 $P_0 + t\,(P_1 - P_0)$ for $t \in [0, 1]$. `by d` places it at the
 distance $d$ from the start, measured along the line, for
 $0 \le d \le |P_1 - P_0|$; the point is exact whatever $d$ is, since the
-kernel holds the length of the range exactly ([[decision/0012]], 0013). Without
+kernel holds the length of the range exactly ([[decisions/real-algebraic-number-kernel]], 0013). Without
 either, the point is the midpoint.
 
 ```
@@ -261,7 +261,7 @@ placement a menu of four entries.
 Line and crease are two sorts under one sigil, and the binding tells them
 apart: `--l = …` is a line, `… as --l` is a crease. A crease stands where a
 line is wanted by projection to its table line, which exists while its
-segments are collinear ([[decision/0014]]) and is an error once a fold has bent it.
+segments are collinear ([[decisions/crease-is-a-bundle-of-segments]]) and is an error once a fold has bent it.
 A line stands nowhere a crease is wanted: it has no material until a
 `mark` scores it. The check needs no geometry, so a program's sorts can be
 verified before it is evaluated.

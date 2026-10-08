@@ -1,5 +1,5 @@
 (** Axiom construction: the seven Huzita-Justin axioms and the selection
-    among their candidates (ADR 0031). Every stateful function takes
+    among their candidates (decisions/toward-names-the-side-that-stays). Every stateful function takes
     [(ctx : Ctx.ctx)] as its first parameter. *)
 
 open Ctx
@@ -110,7 +110,7 @@ let implied_point (cl : classified) : Ast.point_operand option =
 (* ---- the objects of a construction, and its candidates ---- *)
 
 (* An object of an `onto` alignment on the table: a point, or a line with
-   the bundle it names as table segments (ADR 0033), its name, and all the
+   the bundle it names as table segments (decisions/a-line-reads-as-the-bundle-it-names), its name, and all the
    paper on its table line, which a point that folds onto it lands on. *)
 type obj =
   | Obj_point of Geom.point * string
@@ -139,7 +139,7 @@ type pending = {
          writes them: the subjects a suggestion tries *)
 }
 
-(* The bundle a line operand names, on the table (ADR 0033): the segments
+(* The bundle a line operand names, on the table (decisions/a-line-reads-as-the-bundle-it-names): the segments
    of a crease, the extent of a mark in the flaps it was marked on, or all
    the paper on the line of a construction, a name bound by `=` or a paper
    edge. *)
@@ -397,7 +397,7 @@ let nearest_sets (xs : Geom.segment list) (ys : Geom.segment list)
     (fun (m, best) (d, pr) -> if Num.compare d m < 0 then (d, pr) else (m, best))
     (List.hd all) all
 
-(* ---- the selection (ADR 0031) ---- *)
+(* ---- the selection (decisions/toward-names-the-side-that-stays) ---- *)
 
 (* what a `toward` item names, on the table *)
 type toward_obj = { t_segs : Geom.segment list; t_point : Geom.point option; t_str : string }
@@ -457,7 +457,7 @@ let on_side (c : Geom.line) (s : int) (segs : Geom.segment list) : bool =
    a point on that side, or a line's bundle there. Whoever moves lands on
    the paper of the other: a point lands on the paper of its target line's
    table line, and a line that carries the point [y] has to have its own
-   bundle at the one place that lands on it (ADR 0033). *)
+   bundle at the one place that lands on it (decisions/a-line-reads-as-the-bundle-it-names). *)
 let carries (c : Geom.line) (s : int) (x : obj) (y : obj) : bool =
   match (x, y) with
   | Obj_point (p, _), Obj_line (_, _, _, segs) ->
@@ -802,7 +802,7 @@ let rec select ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (p : pending)
     | None, None -> Ok None
   in
   (* with no side item, the side that alone carries the construction out,
-     else the side of the first object (ADR 0031) *)
+     else the side of the first object (decisions/toward-names-the-side-that-stays) *)
   let default_side c =
     match (performs c 1 p.aligns, performs c (-1) p.aligns) with
     | true, false -> Some (Some 1)
@@ -873,7 +873,7 @@ let rec select ?(trace = true) (ctx : Ctx.ctx) (span : Error.span) (p : pending)
   in
   if sided = [] then begin
     (* A line that moves onto a point lands only with its own bundle
-       (ADR 0033). Where the paper of its line reaches the place that lands
+       (decisions/a-line-reads-as-the-bundle-it-names). Where the paper of its line reaches the place that lands
        on the point and the bundle does not, and that alone keeps the fold
        from carrying out the construction, the error names that place. *)
     (match

@@ -812,7 +812,7 @@ let test_items_any_order_flatten () =
 
 (* axiom, prose spelling, align spelling, the alignment list the prose form
    fixes. The two spellings agree as multisets, which is what recognition
-   reads (ADR 0031). *)
+   reads (decisions/toward-names-the-side-that-stays). *)
 let construction_pairs =
   [
     ( "axiom 1",
@@ -1020,7 +1020,7 @@ let test_err_placed_fold_rejects_mountain () =
       parse_stmts ~filename:"t.bel"
         "paper square\nfold (through .m .n) (mountain) (over .p)\n")
 
-(* `up to` names the flap a placed fold moves (ADR 0036) *)
+(* `up to` names the flap a placed fold moves (decisions/a-write-reaches-every-layer-under-its-axis) *)
 let test_placed_fold_takes_up_to () =
   ignore
     (parse_stmts ~filename:"t.bel"

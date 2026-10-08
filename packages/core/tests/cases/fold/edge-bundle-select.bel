@@ -1,6 +1,6 @@
 @author "Claude (Anthropic)"
 
-; A paper edge is a segment bundle (ADR 0014), and incidence is checked in
+; A paper edge is a segment bundle (decisions/crease-is-a-bundle-of-segments), and incidence is checked in
 ; PAPER space (material identity), so `--cd & .c` names the unique boundary
 ; segment of the top edge whose paper preimage contains corner .c — the
 ; right half (1,1)-(0.5,1) — even though `fold (map .a onto .b) as --v` has

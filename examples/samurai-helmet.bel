@@ -7,7 +7,7 @@
 ; with .c at the top and .a at the bottom, so "down" below means toward .a.
 ; It gives no paper size. Where it leaves a position to the eye (steps 4
 ; and 5), a free point carries it. The diagram's last picture opens the
-; helmet, which is 3D and out of scope (ADR 0015); the program stops at
+; helmet, which is 3D and out of scope (decisions/flat-folded-states-only); the program stops at
 ; step 7.
 
 paper square

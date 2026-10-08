@@ -18,7 +18,7 @@ valley fold; two inside reverse folds make the preliminary base; four inside
 reverse folds on the preliminary base's lower corners make the bird base, which
 replaces the petal fold; valley and mountain folds narrow the legs; three more
 inside reverse folds make neck, tail and head. Steps 18 and 19 open the wings
-with a face rotation of $\pi/2$, which is 3D and outside [[decision/0015]]. Squash and
+with a face rotation of $\pi/2$, which is 3D and outside [[decisions/flat-folded-states-only]]. Squash and
 petal do not occur.
 
 Ida also describes how Eos realizes the reverse fold: split the origami into
@@ -80,7 +80,7 @@ Route A, critical path:
 2. **Bird Base** (#32), route A: preliminary base plus four inside reverse
    folds.
 3. **Crane** (#35), flat: bird base, leg narrowing by `fold`, three inside
-   reverse folds. Wing opening stays out ([[decision/0015]]).
+   reverse folds. Wing opening stays out ([[decisions/flat-folded-states-only]]).
 
 Route B, second program for the same bird base, off the critical path:
 

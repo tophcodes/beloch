@@ -15,7 +15,7 @@ const modelSource = [
 	"",
 	"## 1. Paper",
 	"",
-	"A sheet, see [[reference/model#def-sheet]] and [[decision/0032|the record]].",
+	"A sheet, see [[reference/model#def-sheet]] and [[decisions/the-specification-binds-every-implementation|the record]].",
 	"",
 	'::: {.definition #def-sheet name="sheet"}',
 	"A sheet is a polygon. Compare [[reference/kernel#rank|rank]] and [[reference/kernel]].",
@@ -28,7 +28,7 @@ const modelSource = [
 
 const model = indexDocument(modelSource, "docs/reference/MODEL.md", "/model/");
 const kernel = indexDocument("---\ntitle: The OCaml kernel\n---\n\n## Rank\n", "docs/reference/KERNEL.md", "/kernel/");
-const adr = indexDocument("# 0032: The specification binds\n", "docs/decision/0032-the-specification-binds.md", null);
+const adr = indexDocument("# The specification binds\n", "docs/decisions/20260927-the-specification-binds-every-implementation.md", null);
 const index: Index = {
 	site: "https://belochlang.org",
 	repository: "https://github.com/tophcodes/beloch/blob/main",
@@ -53,14 +53,14 @@ test.skipIf(!pandoc)("an anchor in the rendered document links internally, the r
 	const r = html(modelSource);
 	expect(r.err).toBe("");
 	expect(r.out).toContain('<a href="#def-sheet">sheet</a>');
-	expect(r.out).toContain('<a href="https://github.com/tophcodes/beloch/blob/main/docs/decision/0032-the-specification-binds.md">the record</a>');
+	expect(r.out).toContain('<a href="https://github.com/tophcodes/beloch/blob/main/docs/decisions/20260927-the-specification-binds-every-implementation.md">the record</a>');
 	expect(r.out).toContain('<a href="https://belochlang.org/kernel/#rank">rank</a>');
 	expect(r.out).toContain('<a href="https://belochlang.org/kernel/">The OCaml kernel</a>');
 	expect(r.out).toContain('<td><a href="#def-sheet">in a cell</a></td>');
 });
 
 test.skipIf(!pandoc)("a target that resolves to nothing stops the render and names it", () => {
-	const r = html("See [[decision/9999]].");
+	const r = html("See [[decisions/nothing-of-the-kind]].");
 	expect(r.code).not.toBe(0);
-	expect(r.err).toContain("[[decision/9999]] names no document; there is no decision/9999 under docs/");
+	expect(r.err).toContain("[[decisions/nothing-of-the-kind]] names no document; there is no decisions/nothing-of-the-kind under docs/");
 });

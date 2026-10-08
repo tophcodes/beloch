@@ -21,7 +21,7 @@ discrete.
 ## Claim 2: the 2D idealization tracks the physical process closely enough
 
 Because the move-set is small *and* each move has a clean flat-folded
-mathematical idealization ([[decision/0015]]: flat-folded states only), we can apply
+mathematical idealization ([[decisions/flat-folded-states-only]]: flat-folded states only), we can apply
 these operations **imperatively, in program order**, and get a data structure
 that corresponds to an actual foldable physical object, rather than just an abstract
 combinatorial artifact that happens to satisfy crease-pattern axioms.

@@ -8,5 +8,5 @@ motivation section will need.
 
 Filename: `YYYY-MM-DD.md` (multiple entries per day → append, or `-2` suffix).
 
-Keep it informal. Link to decisions (`[[decision/NNNN]]`, [[decision/0054]]), examples, and
+Keep it informal. Link to decisions (`[[decisions/<slug>]]`), examples, and
 dead ends (`../antipatterns.md`) liberally.

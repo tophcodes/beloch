@@ -610,7 +610,7 @@ const codeLines = code ? code.split("\n").length : 0;
     background: color-mix(in srgb, var(--bel-ui-code-error) 12%, transparent);
     box-shadow: inset 3px 0 0 var(--bel-ui-code-error);
   }
-  /* The rest of a failed run, in the code (ADR 0028). The word the evaluator
+  /* The rest of a failed run, in the code (decisions/an-error-carries-its-hint-apart-from-its-message). The word the evaluator
      named is underlined; under its line stand a caret row with the message
      and a quieter row with the hint, on the error line's own tint so the
      three read as one block; the lines after it are dimmed, because the run
@@ -1704,7 +1704,7 @@ const codeLines = code ? code.split("\n").length : 0;
     const runtime = createRuntime();
     const renderer = createDomRenderer(canvas);
     const currentScene = (): FoldScene | null => runtime.state.scene;
-    // What the stepper walks: the statements that changed the paper (ADR 0026).
+    // What the stepper walks: the statements that changed the paper (decisions/a-program-has-two-axes).
     const currentWrites = (): Statement[] => runtime.state.scene?.writes ?? [];
     const currentStep = (): number => runtime.state.step;
     // The step a shared `?s=` names, held until the run behind it produces one
@@ -2387,7 +2387,7 @@ const codeLines = code ? code.split("\n").length : 0;
     // A diagnostic goes beside the drawing, never in its place: the last valid
     // drawing is what the reader is holding the message against, and wiping it
     // takes that away at the moment it is needed (B3.5). A program error with a
-    // line is shown in the code instead, under the line it names (ADR 0028);
+    // line is shown in the code instead, under the line it names (decisions/an-error-carries-its-hint-apart-from-its-message);
     // the box beside the drawing then only speaks it to a screen reader, since
     // the editor's own rows are hidden from one.
     //

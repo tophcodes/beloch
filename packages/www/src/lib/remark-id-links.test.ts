@@ -13,8 +13,8 @@ const model = indexDocument(
 	"/model/",
 );
 const adr = indexDocument(
-	["---", 'id: "0032"', 'title: "The specification binds"', "---", "", "# 0032: The specification binds"].join("\n"),
-	"docs/decision/0032-the-specification-binds-every-implementation.md",
+	["---", 'title: "The specification binds"', "---", "", "# The specification binds"].join("\n"),
+	"docs/decisions/20260927-the-specification-binds-every-implementation.md",
 	null,
 );
 const index: Index = {
@@ -36,17 +36,17 @@ async function render(source: string) {
 }
 
 test("a link to a page, an anchor and a decision renders with the default text", async () => {
-	const html = await render("See [[reference/model]], [[reference/model#def-sheet]] and [[decision/0032]].");
+	const html = await render("See [[reference/model]], [[reference/model#def-sheet]] and [[decisions/the-specification-binds-every-implementation]].");
 	expect(html).toBe(
 		'<p>See <a href="/model/">Model</a>, <a href="/model/#def-sheet">sheet</a> and ' +
-			'<a href="https://github.com/tophcodes/beloch/blob/main/docs/decision/0032-the-specification-binds-every-implementation.md">ADR 0032</a>.</p>',
+			'<a href="https://github.com/tophcodes/beloch/blob/main/docs/decisions/20260927-the-specification-binds-every-implementation.md">The specification binds</a>.</p>',
 	);
 });
 
 test("text after the pipe replaces the default, and code spans keep their brackets", async () => {
-	const html = await render("Read [[reference/model#1-paper|the paper section]]; write `[[decision/0032]]` to link it.");
+	const html = await render("Read [[reference/model#1-paper|the paper section]]; write `[[decisions/the-specification-binds-every-implementation]]` to link it.");
 	expect(html).toBe(
-		'<p>Read <a href="/model/#1-paper">the paper section</a>; write <code>[[decision/0032]]</code> to link it.</p>',
+		'<p>Read <a href="/model/#1-paper">the paper section</a>; write <code>[[decisions/the-specification-binds-every-implementation]]</code> to link it.</p>',
 	);
 });
 
@@ -56,7 +56,7 @@ test("the escaped pipe of a table cell reads as the pipe", async () => {
 });
 
 test("a link that resolves to nothing fails the build, naming the file and the target", async () => {
-	await expect(render("See [[decision/9999]].")).rejects.toThrow(
-		"docs/guide/first-folds.md: [[decision/9999]] names no document; there is no decision/9999 under docs/",
+	await expect(render("See [[decisions/nothing-of-the-kind]].")).rejects.toThrow(
+		"docs/guide/first-folds.md: [[decisions/nothing-of-the-kind]] names no document; there is no decisions/nothing-of-the-kind under docs/",
 	);
 });

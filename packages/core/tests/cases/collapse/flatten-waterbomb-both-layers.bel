@@ -4,9 +4,9 @@
 ; his syntax cannot tell apart from flatten-waterbomb-top-layer.bel
 ; [fisher1994, §5.3]. The creases are marked on both layers, and the fan
 ; keeps the sector along the raw edges: the spine's pieces lie outside it and
-; hinge the two layers together, so the tip is both layers (ADR 0037).
+; hinge the two layers together, so the tip is both layers (decisions/a-fan-moves-its-tip).
 ; `(staying .b .c)` names that sector by the two corners of the top layer,
-; the anchor, that lie on its bounding rays (ADR 0048). The valley letters
+; the anchor, that lie on its bounding rays (decisions/staying-names-a-sector-of-the-anchor). The valley letters
 ; on the diagonals keep one of the five layer orders that fan leaves.
 
 paper rectangle 2 1

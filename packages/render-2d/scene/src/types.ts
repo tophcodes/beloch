@@ -33,14 +33,14 @@ export interface Step {
   frame: Frame;                                              // self-contained (merged over root)
 }
 
-// Which axis a statement moves (ADR 0030). "fold" and "mark" are the writes:
+// Which axis a statement moves (decisions/the-fold-logs-the-program-flat). "fold" and "mark" are the writes:
 // the paper moved, or it was scored and stands where it was. "bind" moves the
 // program alone — a point, a construction line, a bundle, a definition, an
 // export. "apply" runs a def; its body's entries follow it.
 export type StatementKind = "fold" | "mark" | "bind" | "apply";
 
 // beloch:statements — one entry per executed statement, execution order,
-// the statements of an apply's body flat after the apply (ADR 0030). A mark
+// the statements of an apply's body flat after the apply (decisions/the-fold-logs-the-program-flat). A mark
 // entry embeds its OWN mark geometry as recorded at that statement (not a
 // beloch:marks lookup — a mark that later graduates into a real crease is
 // dropped from beloch:marks, but its Statement.mark here is unaffected).

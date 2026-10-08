@@ -3,7 +3,7 @@
 ; Axiom 7 folding .a onto --cd and .c onto --vm: the cubic has three real
 ; common tangents and every one of them cuts the sheet, so the paper filter
 ; keeps all three. Each lands .a or .c beside the paper of its line, so no
-; fold carries out both alignments (ADR 0031).
+; fold carries out both alignments (decisions/toward-names-the-side-that-stays).
 
 paper square
 mark (map .a onto .b) as --vm             ; vertical midline x = 1/2

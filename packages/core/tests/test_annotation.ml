@@ -1,4 +1,4 @@
-(* Annotations (docs/reference/BELOCH-ANNOTATIONS.md; ADR 0029). *)
+(* Annotations (docs/reference/BELOCH-ANNOTATIONS.md; decisions/annotations-pass-through-and-each-output-is-a-library). *)
 
 open Beloch
 
@@ -91,7 +91,7 @@ let test_errors () =
   expect_error "undefined point .zz" (fun () ->
       fold (program "@call .zz \"nowhere\"\n"))
 
-(* ---- the program as a whole (ADR 0051) ---- *)
+(* ---- the program as a whole (decisions/a-program-states-its-author-design-and-sources) ---- *)
 
 let test_program_errors () =
   expect_error "@author belongs before the first statement" (fun () ->
@@ -259,7 +259,7 @@ let test_emit_program () =
   Alcotest.(check bool) "no file_author without @author" true
     (fold "paper square\nfold (map .a onto .c)\n" |> member "file_author" = `Null)
 
-(* ---- the geometry never depends on an annotation (ADR 0029) ---- *)
+(* ---- the geometry never depends on an annotation (decisions/annotations-pass-through-and-each-output-is-a-library) ---- *)
 
 (* Every annotation replaced by spaces, line breaks kept, so every span of
    the rest of the program stays where it was. *)

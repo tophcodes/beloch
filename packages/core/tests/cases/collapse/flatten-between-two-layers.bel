@@ -2,7 +2,7 @@
 
 ; The vertex of flatten-through-two-layers.bel with its rays marked on both
 ; layers of the book, and the letters that fold the upper corner inward. The
-; upper corner is the tip (ADR 0037) and lands between the upper and the
+; upper corner is the tip (decisions/a-fan-moves-its-tip) and lands between the upper and the
 ; lower layer, both of which reach into the stayer's wedge; the lower corner
 ; stays flat at the bottom of the stack and carries its rays as unfolded
 ; marks.

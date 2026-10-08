@@ -5,7 +5,7 @@
 ; The traditional crane, flat, by the Eos route [ida2020, Fig. 7.19]: the
 ; bird base of packages/core/tests/cases/bases/bird-base.bel (Ida's steps 2-8), then her
 ; steps 9-17. Her steps 18 and 19 open the wings, which is 3D and out of
-; scope (ADR 0015). Checked against her figures in
+; scope (decisions/flat-folded-states-only). Checked against her figures in
 ; docs/notes/2026-09-25-crane-oracle.md.
 
 paper square

@@ -2,7 +2,7 @@
 
 ; The pinch of mark-moves-short.bel, made from the center to the top edge:
 ; it reaches the point of its line at height sqrt(3)/2, so the fold that
-; moves it lands that point on .d (ADR 0033). The side of the pinch folds
+; moves it lands that point on .d (decisions/a-line-reads-as-the-bundle-it-names). The side of the pinch folds
 ; over, and .a and .d stay.
 
 paper square

@@ -9,7 +9,7 @@ tableOfContents:
 `beloch fold FILE.bel` writes one JSON document in the FOLD format
 [@foldformat], extended with fields under the `beloch:` prefix as FOLD's
 custom-property rule allows. FOLD is the exchange format the origami tools
-read ([[decision/0029]]); the extension carries what the model and the language know
+read ([[decisions/annotations-pass-through-and-each-output-is-a-library]]); the extension carries what the model and the language know
 and FOLD has no field for. `SPECIFICATION.md` §7 is the field-level contract;
 this document explains what the file represents.
 
@@ -72,7 +72,7 @@ Each frame uses the FOLD vocabulary for what FOLD can express:
   every coordinate of the file is in that unit.
 
 Exact coordinates are rounded to decimal only at serialization; the values the
-kernel computes stay exact ([[decision/0008]], 0012).
+kernel computes stay exact ([[decisions/exact-rational-arithmetic]], 0012).
 
 ## Beloch's fields
 
@@ -84,11 +84,11 @@ What the language knows about a state and FOLD cannot say:
   was built from, and the crease's name if it has one. Consumers join on the
   index; two statements may share a source line, so the span alone leaves
   the join ambiguous. This is the attribution the model calls provenance
-  ([[decision/0019]]).
+  ([[decisions/attribution-carried-by-construction]]).
 - `beloch:source_line`, on each folded frame: the source line of the
   statement that produced the frame.
 - `beloch:statements`: one entry per executed statement in the order the
-  statements run, a sourcemap from the program to the frames ([[decision/0030]]). Each
+  statements run, a sourcemap from the program to the frames ([[decisions/the-fold-logs-the-program-flat]]). Each
   entry carries the `kind` that says which axis it moves, its `source_line`
   and its `span`, the `frame_index` of the frame it reads against, and its
   `parent`. `fold` and `mark` are the writes: the paper moved, or it was
@@ -110,7 +110,7 @@ What the language knows about a state and FOLD cannot say:
   the text, since one spelling names different creases inside a `def` body
   and after a `--x!` rebinding. Deduplicated by (target, span).
 - `beloch:annotations`: one entry per annotation in the order the statements
-  ran, an annotation in a `def` body once per execution ([[decision/0029]],
+  ran, an annotation in a `def` body once per execution ([[decisions/annotations-pass-through-and-each-output-is-a-library]],
   `BELOCH-ANNOTATIONS.md`). Each carries its `key`, its `namespace` or null,
   its `span` and `source_line`, and its `target`: the first and the last
   index into `beloch:statements` it belongs to. The target is one entry,
@@ -119,7 +119,7 @@ What the language knows about a state and FOLD cannot say:
   after the last statement of the program or of a `def` body belongs to a
   state, and its target is null; `frame_index` names that state. The keys
   `author`, `design` and `source` belong to the program as a whole
-  ([[decision/0051]]), and their target is the string `"program"`; their
+  ([[decisions/a-program-states-its-author-design-and-sources]]), and their target is the string `"program"`; their
   `frame_index` is 0. `args` holds the
   arguments in order, each an object with its `span` and one of `text`,
   `number`, `word`, `point` (with `paper` and `table` coordinates), `line`

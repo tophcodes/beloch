@@ -29,7 +29,7 @@ evaluates, so a consumer that never evaluates carries no evaluator.
 The **step**, from 0 to `writes.length`. 0 is the sheet before any statement
 ran; n means every write has been applied. The stepper stops where the paper
 changed, which a fold and a mark both do and a binding statement does not
-(ADR 0026). Frames are the renderer's business, reached through
+(`decisions/a-program-has-two-axes`). Frames are the renderer's business, reached through
 `writes[i].frameIndex`.
 
 The **selection** and the **hover**. A selection names entities by their

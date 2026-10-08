@@ -15,7 +15,7 @@ let shape_of (a : Ast.annot_arg) : shape =
 
 let vocabulary = [ "step"; "label"; "say"; "call"; "orient"; "author"; "design"; "source" ]
 
-(* the keys that belong to the program as a whole (ADR 0051) *)
+(* the keys that belong to the program as a whole (decisions/a-program-states-its-author-design-and-sources) *)
 let program_keys = [ "author"; "design"; "source" ]
 
 (* the program keys that stand once in a program *)

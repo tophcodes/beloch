@@ -1,5 +1,5 @@
 (** Axiom construction: the seven Huzita-Justin axioms and the selection
-    among their candidates (ADR 0031). Every stateful function takes
+    among their candidates (decisions/toward-names-the-side-that-stays). Every stateful function takes
     [(ctx : Ctx.ctx)] as its first parameter. *)
 
 type classified =
@@ -12,7 +12,7 @@ type classified =
   | Ax7 of
       Ast.point_operand * Ast.line_operand * Ast.point_operand * Ast.line_operand
         (** A construction recognized as one of the seven axioms, carrying the
-            operands in the roles its solver reads them (ADR 0031). *)
+            operands in the roles its solver reads them (decisions/toward-names-the-side-that-stays). *)
 
 val classify : Ast.construction -> classified
 (** Recognize the alignment set as one of the seven, by the multiset of its

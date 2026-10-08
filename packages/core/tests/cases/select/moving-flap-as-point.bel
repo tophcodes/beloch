@@ -2,7 +2,7 @@
 
 ; On the flat sheet #[.b] is the whole sheet, and moving names the side of
 ; its point, as (moving .b) does. That side folds over and carries a point
-; of --ef onto .d: the alignment holds as an incidence (ADR 0031).
+; of --ef onto .d: the alignment holds as an incidence (decisions/toward-names-the-side-that-stays).
 
 paper square
 mark (map .a onto .b) as --ef

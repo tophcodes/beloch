@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The credits every program in the repository states (ADR 0051): each .bel
+# The credits every program in the repository states (decisions/a-program-states-its-author-design-and-sources): each .bel
 # file carries an `@author` annotation, and each program in examples/ carries
 # `@design` and at least one `@source`. A source cites in the bracket form of
 # the repository, `@source "[ida2020, Fig. 7.19]"`, and every cite key in its

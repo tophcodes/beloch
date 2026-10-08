@@ -1,7 +1,7 @@
 @author "Claude (Anthropic)"
 
 ; heading keeps the candidate whose line makes the smallest angle with the
-; given line (ADR 0031). Of the two tangents through .p, the one at 45° is
+; given line (decisions/toward-names-the-side-that-stays). Of the two tangents through .p, the one at 45° is
 ; nearer the bottom edge's direction than the vertical one, and it lands .d
 ; at the center.
 

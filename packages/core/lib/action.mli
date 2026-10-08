@@ -1,5 +1,5 @@
 (** The disposition verbs that write to the fold state: `mark`, `fold`,
-    `unfold` and `reverse` (ADR 0011), plus the checked-fold primitive `fold` and
+    `unfold` and `reverse` (decisions/action-model), plus the checked-fold primitive `fold` and
     `reverse` share. Every stateful function takes [(ctx : Ctx.ctx)] as its
     first parameter. *)
 
@@ -38,7 +38,7 @@ val eval_unfold :
 (** Evaluate an `unfold` statement: turn the selected layers over a line
     that every one of them lies on one side of, opening the folded hinges on
     it between them and the layers that stay (docs/reference/MODEL.md, def-fold;
-    ADR 0053). *)
+    decisions/unfold-turns-layers-over-a-crease-and-opens-its-hinges). *)
 
 val eval_reverse :
   Ctx.ctx ->

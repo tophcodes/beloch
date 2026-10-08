@@ -345,7 +345,7 @@ function reverseOf(
   }
 
   // The folded edge the reverse turns is the hinge between the two blocks of
-  // the tip (ADR 0043): an edge of `B` between two faces of the tip whose
+  // the tip (decisions/a-reverse-fold-turns-the-hinges-across-its-opening): an edge of `B` between two faces of the tip whose
   // paper carries a crease of the other letter in `A`. Of those, the one
   // nearest the crease.
   const t0 = Math.min(...spans.map((s) => s.t0)), t1 = Math.max(...spans.map((s) => s.t1));

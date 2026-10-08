@@ -52,7 +52,7 @@ error naming its alignments.
 
 A construction holds what determines the line: its alignments and its
 `heading`. What determines the fold, `toward`, `moving` and the placement,
-are items of the statement that reads the construction ([[decision/0031]]). A
+are items of the statement that reads the construction ([[decisions/toward-names-the-side-that-stays]]). A
 binding takes the side items as a write does, `--k = (map --v onto --h)
 (toward .b)`, so a bound line is selected the way a fold along it would
 be. A construction inside an expression takes no selection; it is bound

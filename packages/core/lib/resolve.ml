@@ -151,7 +151,7 @@ let paper_line_of_crease (ctx : Ctx.ctx) ~(name : string) (span : Error.span) (c
 
 (* the unique FACE (the fine ADR-0014 partition, not a flap/coplanar
    cluster) whose paper polygon contains every point in [pts]. Unlike
-   `moving`/`up to`'s flap operand (ADR 0017: coarsened to a coplanar
+   `moving`/`up to`'s flap operand (decisions/flap-is-coplanar-not-precrease-partition: coarsened to a coplanar
    cluster so a still-flat neighborhood is one flap), `at`'s `#[...]`
    incidence check and `collapse`'s `over`/`under` sector clause both need
    FACE precision even on a still-flat, multiply-precreased sheet: they
@@ -314,7 +314,7 @@ and material_cid (ctx : Ctx.ctx) (cr : Ast.crease_ref) : int =
       (* the paper is cut along each record's extent, those `into` added
          included: on folded paper one table line is a different paper line
          on every layer, and the line beyond an extent carries no mark
-         (ADR 0033) *)
+         (decisions/a-line-reads-as-the-bundle-it-names) *)
       ctx.state :=
         (match Fold_state.mark_chords !(ctx.state) mid with
         | [] -> Fold_state.subdivide_paper !(ctx.state) line ~crease_id:cid ~prov
@@ -339,7 +339,7 @@ and material_cid (ctx : Ctx.ctx) (cr : Ast.crease_ref) : int =
    table space: all points are material (paper) identities, so a point
    selector always names the one segment whose paper preimage it lies on:
    even when folding has stacked several segments onto the same table locus
-   (docs/notes/2026-07-03-crease-layer-selection.md; ADR 0014's "table-space
+   (docs/notes/2026-07-03-crease-layer-selection.md; decisions/crease-is-a-bundle-of-segments's "table-space
    selector can't disambiguate" is why table space is wrong here). *)
 and seg_line (s : Fold_state.crease_segment) =
   Geom.line_through s.Fold_state.pa s.Fold_state.pb
@@ -363,7 +363,7 @@ and seg_incident (ctx : Ctx.ctx) (sel : Ast.selector) (s : Fold_state.crease_seg
             `Found (l = fi || r = fi)
         | (`Zero | `Ambiguous) as bad -> bad)
 (* every existing straight line a --[…] selector may name: the sheet's
-   edges, one per line its outline runs along, plus each material crease segment (ADR 0014). Each candidate carries
+   edges, one per line its outline runs along, plus each material crease segment (decisions/crease-is-a-bundle-of-segments). Each candidate carries
    a table-space line (for use as a fold axis, the returned value) plus
    PAPER-space endpoints + line + optional marks: incidence is a material
    question, checked in paper space like `seg_incident`, so folded-stacked
@@ -598,7 +598,7 @@ let faces_containing (ctx : Ctx.ctx) (pp : Geom.point) : int list =
   List.rev !acc
 
 (* resolve a flap operand to its unique current flap: a coplanar cluster of
-   faces (ADR 0017: two faces joined only by a still-unfolded F edge are the
+   faces (decisions/flap-is-coplanar-not-precrease-partition: two faces joined only by a still-unfolded F edge are the
    same flap). Slots demand uniqueness at cluster granularity; errors name
    the candidate flaps. *)
 let resolve_flap_cluster (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span) : int list =
@@ -661,7 +661,7 @@ let resolve_flap_cluster (ctx : Ctx.ctx) (fa : Ast.flap_arg) (span : Error.span)
                    (List.length many))))
 
 (* face-precise resolution for collapse's `over`/`under`: a sector around a
-   collapse vertex is always one FACE (ADR 0017 non-goal: over/under
+   collapse vertex is always one FACE (decisions/flap-is-coplanar-not-precrease-partition non-goal: over/under
    stacking order is not lifted to clusters), unlike `moving`/`up to`'s flap
    operand. Mirrors [resolve_flap_cluster]'s FlapPoint/FlapSpec branches but
    via [face_of_points], not the cluster-coarsened [flap_of_points]. *)
@@ -898,8 +898,8 @@ let into_crease (ctx : Ctx.ctx) (n : string) (sp : Error.span) :
 
 (* Behavior 3: the flap (coplanar cluster, as its face list) a partial
    mark's extent is written onto. An explicit layer wins; a point or a line
-   there resolves through the flap resolver every other flap slot uses (ADR
-   0016 §5). Without one, default to the carrying flap: the cluster
+   there resolves through the flap resolver every other flap slot uses (see
+   decisions/typed-operands-bundle-values-singleton-slots §5). Without one, default to the carrying flap: the cluster
    containing the extent's representative paper point, erroring if that
    point sits on a boundary shared by several flaps (ambiguous without a
    #[...] to disambiguate). *)
@@ -943,7 +943,7 @@ let placed_fold_plan (ctx : Ctx.ctx) (axis : Geom.line) ~(anchor : Ast.flap_arg 
     Geom.clip_convex_halfplane axis side (Fold_state.table_polygon_ccw st fi)
   in
   (* every layer on the moving side is the block, or with `up to` the flap
-     it names; the anchor names the side only (ADR 0036) *)
+     it names; the anchor names the side only (decisions/a-write-reaches-every-layer-under-its-axis) *)
   let cluster =
     match depth with
     | Some d -> resolve_flap_cluster ctx d span
@@ -955,7 +955,7 @@ let placed_fold_plan (ctx : Ctx.ctx) (axis : Geom.line) ~(anchor : Ast.flap_arg 
     cluster;
   let dir, target = place in
   let target_cluster = resolve_flap_cluster ctx target span in
-  (* Outward closure bounded by the target (ADR 0052): under T, a candidate
+  (* Outward closure bounded by the target (decisions/a-placed-fold-takes-the-layers-up-to-its-target): under T, a candidate
      above a face of the block and below every face of T it overlaps joins
      the block; over T, the same with above and below exchanged. T itself
      stays. Alternates with the hinge closure until neither adds a face.

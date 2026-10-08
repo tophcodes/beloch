@@ -43,7 +43,7 @@ line, written as a literal instead of derived by an explicit fold sequence.
 Sits with `*`, `&`, `\` on the read side.
 
 **Not a precision compromise.** 3/4 is constructible, so the real-algebraic kernel
-([[decision/0008]] / 0012) yields the *exact* point. What you skip is *spelling out* the
+([[decisions/exact-rational-arithmetic]] / 0012) yields the *exact* point. What you skip is *spelling out* the
 construction (halve, halve, mark). The point stays exact. "Artistic / doesn't need to
 be exact" means *the designer didn't care to derive it*, and the result is exact
 anyway. This keeps it honest with the exact core: no floats sneak in; a rational

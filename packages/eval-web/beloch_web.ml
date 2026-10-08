@@ -5,14 +5,14 @@
     - [{"ok":true,"fold":<FOLD object>}] on success.
     - [{"ok":false,"kind":"native","message":...}] when evaluation hit an
       irrational (qqbar) value, which the js_of_ocaml build can't compute
-      (see [qqbar_shim.js] and docs/decision/0013-flint-qqbar-backend.md); the
+      (see [qqbar_shim.js] and docs/decisions/20260703-flint-qqbar-backend.md); the
       caller should fall back to the native evaluator.
     - [{"ok":false,"kind":"error","message":...,"hint":...,"line":...,"column":...,
       "endLine":...,"endColumn":...}] for a [Beloch_error] (language/program
       error). [line] and [column] are the 1-based start of the span the error
       carries, [endLine] and [endColumn] the position one past its end, so the
       caller can mark the offending word in its editor. [hint] is present when
-      the error suggests something to write instead (ADR 0028). An exception
+      the error suggests something to write instead (decisions/an-error-carries-its-hint-apart-from-its-message). An exception
       with no span omits all position fields.
 
     Pure-rational programs (incl. the axiom-7 cube-root fragment) round-trip

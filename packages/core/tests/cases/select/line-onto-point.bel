@@ -2,7 +2,7 @@
 
 ; An alignment is an incidence, so (--cd onto .a) is (.a onto --cd). With
 ; no side item the side of the first object folds over: here the edge --cd,
-; which lands on .a (ADR 0031).
+; which lands on .a (decisions/toward-names-the-side-that-stays).
 
 paper square
 fold (align (--cd onto .a) (perp --da))

@@ -166,7 +166,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
           Error.fail span "the on flap does not lie under the vertex"
         else Some (List.map (fun f -> (Fold_state.faces st).(f)) faces)
   in
-  (* explicit staying (ADR 0048): points on the anchor, whose table images
+  (* explicit staying (decisions/staying-names-a-sector-of-the-anchor): points on the anchor, whose table images
      name the one sector that stays; ray order carries no stayer meaning
      then. The sector itself is checked per candidate fan by the kernel. *)
   let staying_stayer =
@@ -449,7 +449,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                let cuts = (emergent_cid, line, ray_pt) :: given_cuts in
                (* the tip is read off the state scored through every layer
                   under the fan, and the rays are then scored on the layers
-                  of the tip alone (ADR 0037): a face of the pre-flatten
+                  of the tip alone (decisions/a-fan-moves-its-tip): a face of the pre-flatten
                   state is scored when a face of the tip lies in it. Stayer
                   sectors whose tips differ are solved on states of their
                   own. *)
@@ -656,8 +656,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       end)
   | [ r ] -> land_realization r
   | many
-    when (* the fan fixes its stayer before any selection stage runs (ADR
-            0048): states with different stayers leave the statement
+    when (* the fan fixes its stayer before any selection stage runs (see
+            decisions/staying-names-a-sector-of-the-anchor): states with different stayers leave the statement
             ambiguous *)
          let stayer_of (st, _, _, (rays, emergent)) =
            match

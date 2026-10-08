@@ -1,6 +1,6 @@
 @author "Claude (Anthropic)"
 
-; A mark takes no paper from other flaps (ADR 0033). The corner .c folds
+; A mark takes no paper from other flaps (decisions/a-line-reads-as-the-bundle-it-names). The corner .c folds
 ; onto the center, and --x is marked on that flap alone, along the diagonal:
 ; on the table it runs from the center to (3/4, 3/4). The layer beneath
 ; carries paper on the same table line from .a to (3/4, 3/4). The fold

@@ -11,7 +11,7 @@ mark (map --bc onto --diag) as --ec
 flatten (--ea & .a) (--ec & .c) (--eb & .b) (toward .a)
 mark (map .d onto .b) as --l
 
-; without `up to` the fold takes every layer on the side of .b (ADR 0036)
+; without `up to` the fold takes every layer on the side of .b (decisions/a-write-reaches-every-layer-under-its-axis)
 fold (map .b onto .o)
 
 ; assert faces = 13

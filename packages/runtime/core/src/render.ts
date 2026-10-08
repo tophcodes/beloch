@@ -60,7 +60,7 @@ export function renderCommand(state: State, options: RenderOptions): RenderComma
   }
   // Step 0 is the sheet before any statement ran, so it carries no
   // statement's creases and no marks. The step counts writes; what a crease is
-  // dated by is the index of its statement in the program (ADR 0026), which is
+  // dated by is the index of its statement in the program (decisions/a-program-has-two-axes), which is
   // the index the write carries.
   const stmt = step === 0 ? null : scene.writes[step - 1] ?? null;
   const marks = stmt ? stmt.keptMarks : [];

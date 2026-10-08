@@ -2,7 +2,7 @@ import type { Event } from "./events";
 import type { EntityRef, State } from "./state";
 
 // Step range: 0 is the sheet before any statement ran, n means every write has
-// been applied. The stepper walks the writes (ADR 0026), so a binding statement
+// been applied. The stepper walks the writes (decisions/a-program-has-two-axes), so a binding statement
 // is no stop of its own.
 const clampStep = (index: number, writes: number): number =>
   Math.max(0, Math.min(index, writes));

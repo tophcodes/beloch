@@ -21,7 +21,7 @@ module.exports = grammar({
 
   rules: {
     // a binding of a construction takes `(toward …)` and `(moving …)` items
-    // after it, as a write does (ADR 0031)
+    // after it, as a write does (decisions/toward-names-the-side-that-stays)
     source_file: $ => repeat(choice(
       $.write_statement, $.construction, $.selection_item, $.anchor_item, $._token,
     )),
@@ -127,7 +127,7 @@ module.exports = grammar({
 
     // a construction: the canonical `align` over its alignments and its
     // `heading`, or one of the prose spellings that desugar to the same
-    // alignments (ADR 0031):
+    // alignments (decisions/toward-names-the-side-that-stays):
     // `(align (.a onto .c))`, `(map .a onto .c)`, `(through .a .b)`,
     // `(perp --l through .p)`
     construction: $ => prec(1, seq('(', choice(

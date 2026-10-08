@@ -88,7 +88,7 @@ selectors `.[] --[] #[]`), the one write was the keyword `through`);
 
 Beloch is a declarative language for origami. A `.bel` program is **evaluated**
 (not compiled to an executable) into a data artifact describing a paper state,
-emitted as FOLD. See [ADR 0007](../decision/0007-evaluator-not-compiler.md).
+emitted as FOLD. See [decisions/evaluator-not-compiler](../decision/0007-evaluator-not-compiler.md).
 
 The language is built on the Huzita-Justin fold axioms
 [[justin1986]](#ref-justin1986), using them as primitive operations. *(since
@@ -99,7 +99,7 @@ marking/folding actions on a stateful sheet (§4.6). The axioms (`map`,
 state, emitted as a dual-frame FOLD file — the flat **crease pattern** and the
 **folded form** (§7). The flat crease pattern (a program with no `fold`
 actions) is the special case.
-See [ADR 0011](../decision/0011-action-model.md).
+See [decisions/action-model](../decision/0011-action-model.md).
 
 ### A note on axiom numbering
 
@@ -141,7 +141,7 @@ This discrepancy set is also recorded in [antipatterns.md](../notes/antipatterns
 
 ## 2. The paper *(since v0.0)*
 
-Moved to `BELOCH.md`, "Sheets" (ADR 0046).
+Moved to `BELOCH.md`, "Sheets" (decisions/a-sheet-is-a-square-or-a-flap-cut-from-one).
 
 ---
 
@@ -211,7 +211,7 @@ carries both marks. (`Q2-B` in `docs/notes/antipatterns.md` records the table-sp
 rule this avoids.)
 
 The meet is the **intersection of the operands as sets of paper points**,
-defined when it is exactly one point ([def-meet](/model/#def-meet), ADR 0027):
+defined when it is exactly one point ([def-meet](/model/#def-meet), decisions/the-meet-is-an-intersection-of-point-sets):
 
 - An operand may lie on **any number of paper lines**. A crease scored through
   several layers marks a scar and its mirror images; it meets bare, and only
@@ -267,7 +267,7 @@ geometric precondition and never errors** (beyond undefined-name errors).
 ### 4.5 Axiom 5 — fold one line onto another *(since v0.3-dev)*
 
 Moved to `BELOCH-CONSTRUCTIONS.md`, "Axiom 5, a line onto a line"; the
-selection among its candidates is under "Selection" there (ADR 0031).
+selection among its candidates is under "Selection" there (decisions/toward-names-the-side-that-stays).
 
 ### 4.5a Axiom 4 — project a point onto a line *(since v0.4-dev)*
 
@@ -297,12 +297,12 @@ The result stays in ℚ — no square roots
 ### 4.5b Axiom 6 — fold a point onto a line, crease through a fixed point *(since v0.8-dev)*
 
 Moved to `BELOCH-CONSTRUCTIONS.md`, "Axiom 6, a point onto a line through a
-point" (ADR 0031).
+point" (decisions/toward-names-the-side-that-stays).
 
 ### 4.5c Axiom 7 — cubic Beloch fold (two points, two lines) *(since v0.9-dev)*
 
 Moved to `BELOCH-CONSTRUCTIONS.md`, "Axiom 7, two points onto two lines"
-(ADR 0031).
+(decisions/toward-names-the-side-that-stays).
 
 ### 4.6 Marking and folding: `mark` / `fold` *(since v0.7-dev; `mark`/`fold` verbs since v0.21-dev; partial marks since v0.22-dev)*
 
@@ -415,7 +415,7 @@ since folding a line onto another needs no material crossing.
 | scope | which flaps move | default: outside-contiguous prefix down to the anchor; or `up to` |
 | direction | valley/mountain | `mountain` keyword; default valley |
 
-**Anchor.** `moving` takes a **flap operand** (ADR 0016) — a point, a line, or
+**Anchor.** `moving` takes a **flap operand** (decisions/typed-operands-bundle-values-singleton-slots) — a point, a line, or
 `#[...]`, the same three forms `&` (§4.8) resolves by incidence:
 
 - a **point** — the flap carrying it. No flap contains it → error (`.p is not
@@ -477,7 +477,7 @@ when its flap straddles the axis.
   ```
   A line target (`(up to --d)`) resolves even though `(moving --d)` alone usually
   wouldn't: the anchor fixes the walk direction, so the first flap hinged on a
-  segment of `--d` reached from the anchor ends the range (ADR 0016, slot
+  segment of `--d` reached from the anchor ends the range (decisions/typed-operands-bundle-values-singleton-slots, slot
   context counts toward uniqueness). A target not reachable by the walk, or
   not on the anchor's side, is an error.
 
@@ -560,10 +560,10 @@ Non-moving layers keep their flat crease mark (`"F"` in FOLD output, §7, since
 v0.21-dev — was `"U"` before); moving ones fold (their mark upgrades to
 `"M"`/`"V"`).
 
-See [ADR 0016](../decision/0016-typed-operands-bundle-values-singleton-slots.md)
+See [decisions/typed-operands-bundle-values-singleton-slots](../decision/0016-typed-operands-bundle-values-singleton-slots.md)
 (typed operands: bundle values vs. singleton slots — the resolution rules
 behind `moving`, `up to`, and `#[...]`) and
-[ADR 0014](../decision/0014-crease-is-a-bundle-of-segments.md) (a crease is a
+[decisions/crease-is-a-bundle-of-segments](../decision/0014-crease-is-a-bundle-of-segments.md) (a crease is a
 bundle of segments — why folding along existing material checks for a bent
 crease and why `&` selection exists).
 
@@ -605,7 +605,7 @@ fold (through .m .n) (moving .b) (under .p)   ; the top layer's corner, tucked b
 ### 4.6a `reverse` — inside and outside reverse folds *(since v0.26-dev)*
 
 Moved to `KERNEL.md`, "Reverse"; the model is
-[def-reverse](/model/#def-reverse) (ADR 0043), the syntax `BELOCH-WRITES.md`.
+[def-reverse](/model/#def-reverse) (decisions/a-reverse-fold-turns-the-hinges-across-its-opening), the syntax `BELOCH-WRITES.md`.
 
 ### 4.7 `flip` — turn the sheet over *(since v0.7-dev)*
 
@@ -631,7 +631,7 @@ they point every which way in the crease pattern. So a crease name is not a sing
 line.
 
 `--l & <constraint>` **filters** the bundle to the segments incident to the
-constraint. At a singleton slot (one that wants exactly one line, ADR 0016) it
+constraint. At a singleton slot (one that wants exactly one line, decisions/typed-operands-bundle-values-singleton-slots) it
 projects to the **one** segment and yields that segment's current supporting line
 (usable anywhere a line operand is; as a fold axis that is its table-space line,
 in a meet (`*`) its material paper-space mark — §4.3). Constraints, by incidence:
@@ -960,18 +960,18 @@ at all: two of the fish-base vertex's three given rays are pinned explicitly,
 narrowing the Maekawa search until exactly one realization survives before
 selection is ever reached.
 
-See [ADR 0016](../decision/0016-typed-operands-bundle-values-singleton-slots.md)
+See [decisions/typed-operands-bundle-values-singleton-slots](../decision/0016-typed-operands-bundle-values-singleton-slots.md)
 (flap operands),
-[ADR 0014](../decision/0014-crease-is-a-bundle-of-segments.md) (crease
+[decisions/crease-is-a-bundle-of-segments](../decision/0014-crease-is-a-bundle-of-segments.md) (crease
 bundles, rays split at a crossing — the same machinery `fold` and `&`
-build on, and what the emergent crease's bundle joins), and ADR 0012/0013
+build on, and what the emergent crease's bundle joins), and decisions/real-algebraic-number-kernel/0013
 (the exact real-algebraic kernel the derive math needed no polynomial from,
 per the design doc above — reserved for the deferred multi-emergent case).
 
 ### 4.10 The read/write law — constructions read, `mark`/`fold`/`flatten` write *(since v0.20-dev; completed v0.21-dev; `collapse` renamed `flatten` v0.23-dev)*
 
 One law governs the surface syntax: **an operation that mutates paper state —
-scores a crease, folds, and thereby re-segments existing references (ADR 0014)
+scores a crease, folds, and thereby re-segments existing references (decisions/crease-is-a-bundle-of-segments)
 — is a keyword verb, sequenced in program order; an operation that only reads
 the current state, or only describes a geometric line without touching the
 paper, is a pure read, and is an operator, bracket, or construction.** Keywords are
@@ -1332,7 +1332,7 @@ frame 0 by default and a folded form with `--folded`.
 ## 8. Errors *(since v0.0)*
 
 Every error is a compile error with a source span, a message stating what is
-wrong and, where one helps, a hint stating what to write instead (ADR 0028);
+wrong and, where one helps, a hint stating what to write instead (decisions/an-error-carries-its-hint-apart-from-its-message);
 the first matching error wins and the process exits non-zero:
 
 - parse error;
@@ -1463,7 +1463,7 @@ note in §5.
 
 Deferred, in rough order of likely arrival: non-flat (constructible-angle) folds ·
 `rotate` · squash/sink/petal maneuvers · `unfold` ·
-the 3D standing end state for `flatten` (the 3D isometry rework, ADR 0015 —
+the 3D standing end state for `flatten` (the 3D isometry rework, decisions/flat-folded-states-only —
 retired `standing` keyword's successor form, unnamed until it lands) ·
 multi-vertex flatten (fish/bird base in one action) · boundary-vertex
 flatten (squash/petal preparation) · sector-block interleaving in
@@ -1491,7 +1491,7 @@ folded-state runtime, derived mountain/valley, the dual `creasePattern` +
 `foldedForm` FOLD output, `flip`, and inline anonymous read operands
 (`.a * .b` join / `--x * --y` meet — spelled `--(.a .b)` / `.(--a --b)` before
 the v0.20-dev cutover). See
-[ADR 0011](../decision/0011-action-model.md). Mountain/valley is *derived* from
+[decisions/action-model](../decision/0011-action-model.md). Mountain/valley is *derived* from
 fold actions, not a separate annotation pass. *(v0.8-dev)* axiom 6 — fold a
 point onto a line with the crease through a fixed point (`map .p onto --d through
 .p'`, optional `toward` for disambiguation). *(v0.9-dev)* axiom 7 — the cubic
@@ -1503,8 +1503,8 @@ validation (cross-instance access; the earlier bracket member access was
 removed in the v0.20-dev notation cutover, §5a.4);
 the uniform rebinding rule (see §5, §5a). *(v0.17-dev)*
 crease-segment selection — the `&` filter, projecting a crease name (a
-bundle of segments) to one segment by incidence (ADR 0014). *(v0.18-dev)* fold
-scope — flap-typed `moving` (point/line/`#[...]` anchor operands, ADR 0016),
+bundle of segments) to one segment by incidence (decisions/crease-is-a-bundle-of-segments). *(v0.18-dev)* fold
+scope — flap-typed `moving` (point/line/`#[...]` anchor operands, decisions/typed-operands-bundle-values-singleton-slots),
 `up to` for some-layers simple folds, and `@fold` along an existing material
 crease. *(v0.20-dev)* `@collapse` — single-vertex flat collapse: n ≥ 4
 material creases sharing one interior vertex, checked by Kawasaki, Maekawa,

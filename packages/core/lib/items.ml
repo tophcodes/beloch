@@ -85,7 +85,7 @@ let direction_of (mv : mv_constraint) : direction =
 (* ---- the side items, shared by every statement over a construction ---- *)
 
 (* `(toward …)` and `(moving …)` name the side that stays and the side that
-   folds over (ADR 0031). *)
+   folds over (decisions/toward-names-the-side-that-stays). *)
 let side_item (verb : string) ~(toward : (toward_item * Error.span) option ref)
     ~(moving : (flap_arg * Error.span) option ref) (it : raw_item) : bool =
   match it with
@@ -203,7 +203,7 @@ let reverse (items : raw_item list) (out : output) (span : Error.span) : stmt =
          rletters = List.rev !letters; rspans = sd.s_spans }),
       span )
 
-(* `unfold` opens hinges that are already there (ADR 0053): its axis is a line
+(* `unfold` opens hinges that are already there (decisions/unfold-turns-layers-over-a-crease-and-opens-its-hinges): its axis is a line
    the program has, and it scores no crease, so it takes no construction and
    no output clause. Its items are those of `fold` without a placement beside
    the stack. *)

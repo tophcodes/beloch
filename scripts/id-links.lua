@@ -1,5 +1,5 @@
--- The id links of ADR 0054 in the rendered PDFs. pandoc reads
--- `[[decision/0032]]` and `[[reference/model#def-sheet|the sheet]]` as
+-- The id links between documents in the rendered PDFs. pandoc reads
+-- `[[decisions/name-beloch]]` and `[[reference/model#def-sheet|the sheet]]` as
 -- links of class `wikilink` when it runs with
 -- `--from markdown+wikilinks_title_after_pipe`; this filter resolves the
 -- target against _build/id-links.json, written by scripts/id-links.ts. An
@@ -7,8 +7,7 @@
 -- internal link; everything else becomes the absolute URL of the page on the
 -- site, or of the file in the repository when the site does not serve it. A
 -- link with no text after the pipe gets the same default text the site
--- gives it: "ADR NNNN" for a decision, the anchor's label, or the page's
--- title. A target that resolves to nothing stops the render, naming it.
+-- gives it: the anchor's label, or the page's title. A target that resolves to nothing stops the render, naming it.
 --
 -- Known limit: pandoc numbers a heading's own id by its rules, which drop a
 -- leading number ("1. Paper" is #paper here and #1-paper on the site), so
@@ -46,8 +45,6 @@ end
 
 local function default_text(doc, anchor)
   if anchor then return doc.anchors[anchor] or anchor end
-  local n = doc.id:match("^decision/(%d%d%d%d)$")
-  if n then return "ADR " .. n end
   return doc.title
 end
 

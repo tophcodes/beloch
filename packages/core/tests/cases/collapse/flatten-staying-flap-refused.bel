@@ -1,7 +1,7 @@
 @author "Claude (Anthropic)"
 
 ; The fan of flatten-waterbomb-top-layer.bel, held by a flap. A flap names no
-; sector of the fan, so `staying` refuses it (ADR 0048).
+; sector of the fan, so `staying` refuses it (decisions/staying-names-a-sector-of-the-anchor).
 
 paper rectangle 2 1
 fold (map .a onto .b) (moving .b) as --spine

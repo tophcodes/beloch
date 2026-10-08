@@ -14,7 +14,7 @@ val run :
   staying_opt:Ast.point_operand list option ->
   on_opt:Ast.flap_arg option ->
   (** [on_opt] names the anchor flap, whose tip the flatten moves; [None]
-      takes the topmost flap under the vertex (ADR 0040). *)
+      takes the topmost flap under the vertex (decisions/a-fan-sits-at-a-table-point-on-names-its-flap). *)
   toward_opt:Ast.point_operand option ->
   Error.span ->
   unit

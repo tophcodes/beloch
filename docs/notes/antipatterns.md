@@ -5,7 +5,7 @@ research artifact: when you're stuck in eight months thinking "what if we just�
 check here first. Raw material for the paper's design-discussion section. Append
 ruthlessly: a dead end recorded is a dead end you don't walk twice.
 
-(For forward-looking decisions, see `docs/decision/`. This file is for what *didn't*
+(For forward-looking decisions, see `docs/decisions/`. This file is for what *didn't*
 work, including things inherited as warnings from the 2018 attempt.)
 
 ## Inherited from the 2018 design (OrigamiDL)
@@ -26,7 +26,7 @@ work, including things inherited as warnings from the 2018 attempt.)
   `#region` to do both. We likely need both concepts, kept distinct.
 - **Accumulate features until expressive, then formalize.** This is how the 2018
   design hit mutual inconsistency at the layer problem and stalled. Replaced by
-  the minimal-formal-core approach (see [[decision/0003]]).
+  the minimal-formal-core approach (see [[decisions/restart-from-minimal-core]]).
 - **"The fold is unique" (from the axiom phrasing).** False in general:
   axioms 5 and 6 have up to 2 solutions, axiom 7 up to 3. Disambiguation must be
   first-class and ergonomic, not an afterthought.
@@ -48,7 +48,7 @@ work, including things inherited as warnings from the 2018 attempt.)
   (Beloch axiom 4). Translate before comparing any Eos construction with a
   `.bel` program.
 - **ℚ stops being closed at axioms 5, 6 and 7.** Exact rational arithmetic
-  ([[decision/0008]]) covers axioms 1–2
+  ([[decisions/exact-rational-arithmetic]]) covers axioms 1–2
   and line intersection perfectly, but square roots (axioms 5 and 6) and cubic roots
   (axiom 7) leave ℚ. Don't assume the rational engine extends to the full axiom
   set; that boundary needs a constructible/algebraic number representation,

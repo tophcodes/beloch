@@ -40,7 +40,7 @@ const stepLineField = StateField.define<StepLineValue>({
   provide: (f) => EditorView.decorations.from(f, (v) => v.deco),
 });
 
-// A failed run, shown in the code (ADR 0028): its line marked, the span it
+// A failed run, shown in the code (decisions/an-error-carries-its-hint-apart-from-its-message): its line marked, the span it
 // names underlined, a caret row with the message and a hint row inserted under
 // that line, and every line after it dimmed. Its own effect and field, so the
 // step marker and this one never clear each other.

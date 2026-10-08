@@ -1,7 +1,7 @@
 @author "Claude (Anthropic)"
 
 ; A trim that lists its names exports exactly those, under their landing
-; names (ADR 0047): the band's corners become .a to .d, its edges --ab to
+; names (decisions/a-trim-exports-the-names-it-lists): the band's corners become .a to .d, its edges --ab to
 ; --da, and the body's .p and .q are gone.
 
 shape band(w h) {

@@ -1,10 +1,10 @@
-(** Annotations (docs/reference/BELOCH-ANNOTATIONS.md; ADR 0029): what a reader of the
+(** Annotations (docs/reference/BELOCH-ANNOTATIONS.md; decisions/annotations-pass-through-and-each-output-is-a-library): what a reader of the
     program is told beside the geometry. An annotation belongs to the
     statement after it and never changes what the program evaluates to. *)
 
 val program_keys : string list
 (** The keys without a namespace that belong to the program as a whole
-    (ADR 0051): [author], [design] and [source]. *)
+    (decisions/a-program-states-its-author-design-and-sources): [author], [design] and [source]. *)
 
 val check : Ast.program -> unit
 (** The checks that need no geometry, over the whole program and every
@@ -12,7 +12,7 @@ val check : Ast.program -> unit
     arguments fit it, a namespaced key takes no bare word, a label is unique
     in its statement list, at most one [@step] stands before a statement, and
     every annotation has a statement after it. The keys of the program as a
-    whole, [@author], [@design] and [@source] (ADR 0051), stand at the top
+    whole, [@author], [@design] and [@source] (decisions/a-program-states-its-author-design-and-sources), stand at the top
     level before the first statement, and [@author] and [@design] once. *)
 
 val check_head : Ast.annotation list -> unit

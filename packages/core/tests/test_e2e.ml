@@ -382,7 +382,7 @@ let test_emit_folded_frames () =
    slash" render. Assert every folded-frame face has positive area.
 
    The original repro here (fold-top-flap.bel) moved one layer of a pair
-   joined off the axis. A moving set now takes such a layer along (ADR 0036),
+   joined off the axis. A moving set now takes such a layer along (decisions/a-write-reaches-every-layer-under-its-axis),
    and the program is tests/cases/fold/up-to-hinged-layer.bel.
    This test now exercises a *valid* scoped fold (fold-top-two.bel, 6 faces)
    instead.
@@ -742,7 +742,7 @@ let test_beloch_statements () =
     "kept_marks grows through the mark run, then both graduate at the fold"
     [ 1; 2; 0 ] (List.map kept_count_of stmts)
 
-(* ADR 0030: the log is flat. An apply has its own entry ahead of its body,
+(* decisions/the-fold-logs-the-program-flat: the log is flat. An apply has its own entry ahead of its body,
    and every statement of the body, bindings included, follows it with the
    apply as its parent, once per execution. *)
 let test_beloch_statements_flat () =
@@ -809,7 +809,7 @@ let test_e2e_precrease_fold_emits_v () =
   Alcotest.(check bool) "the precrease folds as a valley" true
     (List.mem "V" assigns)
 
-(* ADR 0017 defect 1: on a still-flat sheet, two points that land on
+(* decisions/flap-is-coplanar-not-precrease-partition defect 1: on a still-flat sheet, two points that land on
    DIFFERENT (but still-coplanar, U-joined) faces resolve to the one flap
    spanning them, instead of erroring "those points aren't all on one flap".
    --diag = map .b onto .d precreases the b-d diagonal (bare bind, U edge),
@@ -825,7 +825,7 @@ let test_e2e_flap_cluster_spans_precrease_split () =
         mark (map .b onto .d) as --diag\n\
         fold (map .a onto .c) (moving .a) (up to #[.a .c])\n")
 
-(* ADR 0017 defect 2: a scoped self-fold must move its entire still-flat
+(* decisions/flap-is-coplanar-not-precrease-partition defect 2: a scoped self-fold must move its entire still-flat
    coplanar cluster, not just the face nearest the anchor. --v/--h precrease
    the square into 4 quadrants (BL,BR,TL,TR), all ONE flap (bare binds, U
    edges only). The self-scoped fold at x=1/4 (anchor .a, up to .a) is a
@@ -976,7 +976,7 @@ let test_mark_full_still_subdivides () =
   Alcotest.(check int) "full mark records (no fold-time edge)" 0 (edges_of src);
   Alcotest.(check int) "one record" 1 (marks_of src)
 
-(* A mark is drawn along its extent (ADR 0033). On the book fold the corner
+(* A mark is drawn along its extent (decisions/a-line-reads-as-the-bundle-it-names). On the book fold the corner
    bisector marked on the upper layer is the half diagonal from .a to the
    center, where the flap ends at the spine; its line runs on to .c across
    the lower layer, which carries no mark (#105). *)
@@ -1455,10 +1455,10 @@ let () =
           Alcotest.test_case "e2e faces_matrix + frame" `Quick
             test_e2e_faces_matrix_and_frame;
           Alcotest.test_case
-            "ADR 0017 defect 1: flap cluster spans a precrease split" `Quick
+            "decisions/flap-is-coplanar-not-precrease-partition defect 1: flap cluster spans a precrease split" `Quick
             test_e2e_flap_cluster_spans_precrease_split;
           Alcotest.test_case
-            "ADR 0017 defect 2: cohesion moves a coplanar sibling" `Quick
+            "decisions/flap-is-coplanar-not-precrease-partition defect 2: cohesion moves a coplanar sibling" `Quick
             test_e2e_cohesion_moves_coplanar_sibling;
           Alcotest.test_case "bare precrease emits F not U" `Quick
             test_e2e_bare_precrease_emits_f;

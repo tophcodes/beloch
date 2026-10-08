@@ -1,7 +1,7 @@
 @author "Claude (Anthropic)"
 
 ; heading --ab makes the same angle with both bisectors, so the tie passes on
-; to toward, which keeps the diagonal through .a and .c (ADR 0031).
+; to toward, which keeps the diagonal through .a and .c (decisions/toward-names-the-side-that-stays).
 
 paper square
 mark (map .a onto .b) as --v

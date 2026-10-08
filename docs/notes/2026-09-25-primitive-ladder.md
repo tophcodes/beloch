@@ -13,7 +13,7 @@ capability the rung below does not have.
 | 3 | a fan of creases at one vertex, all new | rabbit ear, preliminary base in one step | `flatten` |
 | 4 | a fan at one vertex that also opens an existing crease | squash | missing |
 | 5 | fans at several vertices at once | petal, sink, fish or bird base in one step | missing |
-| 6 | a state that is not flat | opening the crane's wings | out of scope ([[decision/0015]]) |
+| 6 | a state that is not flat | opening the crane's wings | out of scope ([[decisions/flat-folded-states-only]]) |
 
 Rung 4 is where the next work goes: `flatten` on material of several layers,
 allowed to open a crease that is folded now. Rung 5 needs rung 4, since the
@@ -49,7 +49,7 @@ over this table.
 geometry would allow it, since two opposite rays satisfy Kawasaki's
 condition at any point of the line. The rules for the moving set keep them
 apart: a single crease moves every layer under it, and a fan moves its tip
-([[decision/0036]], [[decision/0037]]). The tip depends on the point the fan sits at, and a
+([[decisions/a-write-reaches-every-layer-under-its-axis]], [[decisions/a-fan-moves-its-tip]]). The tip depends on the point the fan sits at, and a
 line fixes no such point. A fold under the tip rule would move the layers
 that an arbitrary point on its line selects.
 
@@ -74,9 +74,9 @@ The word names two different things in the sources this project reads.
   [fisher1994, §3.3]. Rungs 2 to 5 are all multifolds in his sense.
 - Alperin and Lang's multi-fold axioms are constructions: alignments
   distributed over two or more fold lines determine those lines together
-  [alperin2006, §4]. The research package of [[decision/0020]] works on these, and
+  [alperin2006, §4]. The research package of [[decisions/multifold-research-package]] works on these, and
   evaluating them in Beloch is its goal; the syntax tree already holds a
-  construction with named fold lines ([[decision/0022]]).
+  construction with named fold lines ([[decisions/constructions-are-alignment-sets]]).
 
 A paper that uses the word has to say which one it means.
 
@@ -108,16 +108,16 @@ tools.
 Among the languages and systems we know, Beloch is the first that executes a
 general single-vertex fan on folded, layered paper: the missing crease derived
 from Kawasaki's condition in exact arithmetic, and the moving faces decided by
-the tip rule ([[decision/0037]]). Fisher designed the statement, the derived crease
+the tip rule ([[decisions/a-fan-moves-its-tip]]). Fisher designed the statement, the derived crease
 included; Eos executes named maneuvers as fixed commands.
 
 The same move happened at the construction level. The seven Huzita-Justin
-axioms are instances of alignment sets ([[decision/0022]], [alperin2006, §3]); the
+axioms are instances of alignment sets ([[decisions/constructions-are-alignment-sets]], [alperin2006, §3]); the
 rung-3 maneuvers are instances of a flat-foldable fan ([hull2020, ch. 5],
 [[reference/model]], definition of `flatten`). Both levels replace a list of
 named operations by the mathematical object the list enumerates.
 
 On provenance: `flatten` was generalized in July 2026, and Fisher entered the
-project with the Origami⁴ pass on 2026-09-10 ([[decision/0011]], correction). The two
+project with the Origami⁴ pass on 2026-09-10 ([[decisions/action-model]], correction). The two
 designs converged independently; Fisher is the nearest precedent and gets
 cited as such.

@@ -2,7 +2,7 @@
 
 ; The fan of flatten-waterbomb-top-layer.bel folds the top layer, its
 ; anchor. .a is the corner of the bottom layer, so it names no sector of the
-; anchor (ADR 0048).
+; anchor (decisions/staying-names-a-sector-of-the-anchor).
 
 paper rectangle 2 1
 fold (map .a onto .b) (moving .b) as --spine

@@ -2,7 +2,7 @@
 
 ; The pinch of mark-moves-short.bel with the corner moving instead: a point
 ; folded onto the line of a mark needs paper on that line, not the mark
-; (ADR 0033), so .d folds over and lands on the line of the pinch above
+; (decisions/a-line-reads-as-the-bundle-it-names), so .d folds over and lands on the line of the pinch above
 ; its end, at height sqrt(3)/2; the side of .b and .c stays.
 
 paper square

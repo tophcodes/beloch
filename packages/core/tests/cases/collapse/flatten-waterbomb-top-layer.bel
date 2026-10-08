@@ -6,7 +6,7 @@
 ; the standard library, corners .a to .d, folds
 ; in half along --spine, the right half over the left. The diagonals and the
 ; median parallel to the spine are marked on the top layer only, and the fan
-; keeps the sector along the spine (ADR 0037): no hinge joins the moving
+; keeps the sector along the spine (decisions/a-fan-moves-its-tip): no hinge joins the moving
 ; pieces of the two layers, so the tip is the top layer, and the bottom layer
 ; stays one face. The top layer lies face down after the fold in half, so the
 ; letters of a waterbomb base seen from above read inverted on it: mountain

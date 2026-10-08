@@ -1,5 +1,5 @@
 (** The disposition verbs that write to the fold state: `mark`, `fold`,
-    `unfold` and `reverse` (ADR 0011), plus the checked-fold primitive `fold` and
+    `unfold` and `reverse` (decisions/action-model), plus the checked-fold primitive `fold` and
     `reverse` share. Every stateful function takes [(ctx : Ctx.ctx)] as its
     first parameter. *)
 
@@ -24,7 +24,7 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
      paper, through a single corner, or along hinges with every layer on one
      side) a fold would reflect every layer and open or close nothing, so it
      is an error; turning some layers over such a line is `unfold`
-     (ADR 0053). A line along hinges with paper on both sides folds: the
+     (decisions/unfold-turns-layers-over-a-crease-and-opens-its-hinges). A line along hinges with paper on both sides folds: the
      hinges on it toggle (`lem-toggle`). *)
   if not (Fold_state.paper_on_both_sides !(ctx.state) axis) then
     Error.fail
@@ -49,7 +49,7 @@ let run_fold_checked (ctx : Ctx.ctx) ~(span : Error.span) ~(axis : Geom.line)
   in
   let outside = if valley then Fold_state.Top else Fold_state.Bottom in
   (* The moving side comes from the side items, else from the anchor; the
-     anchor names a side and nothing else (ADR 0036). *)
+     anchor names a side and nothing else (decisions/a-write-reaches-every-layer-under-its-axis). *)
   let move_side () =
     match (side_override, anchor_arg) with
     | Some s, _ -> s
@@ -259,7 +259,7 @@ let eval_mark (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
      piece records as a material chord (never subdivides) between the
      extreme endpoints of that flap's per-face paper clips. With `on` it
      scores the named flap; without, every flap the line crosses, one piece
-     per flap (ADR 0036). *)
+     per flap (decisions/a-write-reaches-every-layer-under-its-axis). *)
   let record_full () =
     let st = !(ctx.state) in
     let n = Array.length (Fold_state.faces st) in
@@ -320,7 +320,7 @@ let eval_mark (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
              (Resolve.pstr a) (Resolve.pstr b))
   in
   (* A partial extent without `on`: a piece on every flap under the extent,
-     its material of the axis clipped to the extent (ADR 0036). *)
+     its material of the axis clipped to the extent (decisions/a-write-reaches-every-layer-under-its-axis). *)
   let record_partial_every_layer extent_geom =
     let st = !(ctx.state) in
     let n = Array.length (Fold_state.faces st) in
@@ -526,7 +526,7 @@ let eval_fold (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
       push_frame ctx (Some span);
       bind_out (Material (cid, axis))
 
-(* One letter item per opening that keeps that opening alone (ADR 0043): a
+(* One letter item per opening that keeps that opening alone (decisions/a-reverse-fold-turns-the-hinges-across-its-opening): a
    hinge on the spine's line whose letter after the fold differs from its
    letter under every other opening, named by its crease and a named point
    on its segment. Where no named point lies on the segment alone, the item
@@ -686,7 +686,7 @@ let eval_reverse (ctx : Ctx.ctx) (out : Ast.output) (m : Ast.markable)
   push_frame ctx (Some span);
   bind_out (Material (cid, axis))
 
-(* `unfold` (ADR 0053): the moving layers cross the axis, so every hinge on
+(* `unfold` (decisions/unfold-turns-layers-over-a-crease-and-opens-its-hinges): the moving layers cross the axis, so every hinge on
    it between a moving and a staying layer opens. The moving set is the one
    `def-fold` gives for a depth: the flap `up to` names, else the flap
    `moving` names, every layer outward of it (above, or below for

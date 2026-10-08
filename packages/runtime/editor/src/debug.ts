@@ -3,7 +3,7 @@
 // A reader debugging a program points at the line that binds `--mid` and wants
 // `--mid` in the drawing. That needs the map from statements to the values they
 // bind, which the document carries: every statement is logged with its span
-// (ADR 0026), and a named point, a named line and a crease each record the
+// (decisions/a-program-has-two-axes), and a named point, a named line and a crease each record the
 // statement that binds them.
 //
 // Free of the editor it serves, like the rest of this package: a target is a

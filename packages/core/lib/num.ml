@@ -7,7 +7,7 @@
     [Qq] backed by FLINT's qqbar (canonical minimal polynomial + certified
     ball; cross-field arithmetic, composite extensions). Invariant: [Qq] is
     irrational: rationals collapse to [Rat]. [to_float] is the only float,
-    output-only. See docs/decision/0013-flint-qqbar-backend.md. *)
+    output-only. See docs/decisions/20260703-flint-qqbar-backend.md. *)
 
 type t =
   | Rat of Q.t
@@ -410,7 +410,7 @@ let equal (x : t) (y : t) : bool = sign (sub x y) = 0
    keeps axioms 1–6 cheap. For algebraic (Qq) coefficients: manufacture a
    ℚ-superset polynomial R(z) by eliminating each distinct Qq coefficient's
    generator with a Sylvester resultant ([Mpoly]), then keep only R's roots that
-   evaluate P to exactly zero in qqbar (ADR 0013). *)
+   evaluate P to exactly zero in qqbar (decisions/flint-qqbar-backend). *)
 let real_roots (coeffs : t array) : t list =
   (* normalize Field coefficients to Qq so the rest of the function only sees Rat/Qq *)
   let coeffs =
@@ -444,7 +444,7 @@ let real_roots (coeffs : t array) : t list =
     in
     (* FLINT 3.6 fast path: _[qqbar_roots_poly_squarefree ]solves degree <= 3
        coefficient-field cubics (axiom 6/7) in ~ms instead of the [Mpoly]
-       elimination's ~28s (ADR 0013). The primitive requires P squarefree:
+       elimination's ~28s (decisions/flint-qqbar-backend). The primitive requires P squarefree:
        for degree <= 3 that's exactly "discriminant nonzero", checked exactly
        in qqbar, and its own degree/bits limits reject fields it can't
        handle (returns None instantly). Every candidate is re-verified with
@@ -678,7 +678,7 @@ let real_roots (coeffs : t array) : t list =
          candidates exactly from FLINT and keep those where P evaluates to
          exactly zero in qqbar: no separation bound, no H(Y) construction,
          no interval refinement (the former certify pipeline's [Mpoly] Laplace
-         resultants were the measured 48s/900s wall; ADR 0013). [coeffs_qq] and
+         resultants were the measured 48s/900s wall; decisions/flint-qqbar-backend). [coeffs_qq] and
          [eval_p] are defined above, shared with [flint_first]. *)
       (* FLINT handles the non-squarefree superset R directly; the naive
          ℚ-gcd squarefree pass on a fat deg-81 R was a measured wall. Repeated

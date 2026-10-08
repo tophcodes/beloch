@@ -1,7 +1,7 @@
 @author "Claude (Anthropic)"
 
 ; The fan of flatten-waterbomb-top-layer.bel. .s0 lies on a ray, in the two
-; sectors beside it, so it names neither alone (ADR 0048).
+; sectors beside it, so it names neither alone (decisions/staying-names-a-sector-of-the-anchor).
 
 paper rectangle 2 1
 fold (map .a onto .b) (moving .b) as --spine

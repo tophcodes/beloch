@@ -1,9 +1,9 @@
 @author "Claude (Anthropic)"
 
-; The standard library of sheets (ADR 0046): shapes folded from a square and
+; The standard library of sheets (decisions/a-sheet-is-a-square-or-a-flap-cut-from-one): shapes folded from a square and
 ; trimmed to one flap. The file declares no unit, so its numbers are in the
 ; unit of the program that opens one of its shapes. Each shape exports the
-; names a reader expects of it (ADR 0047): a rectangle the corners .a to .d
+; names a reader expects of it (decisions/a-trim-exports-the-names-it-lists): a rectangle the corners .a to .d
 ; and the edges --ab to --da, counter-clockwise from the origin, as a square
 ; binds them.
 

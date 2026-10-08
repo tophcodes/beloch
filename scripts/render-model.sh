@@ -31,7 +31,7 @@ cd "$root"
 # can never be stale against the documents this loop reads.
 bun "$root/scripts/grammar-register.ts"
 
-# The id links between documents (ADR 0054) resolve against the index of
+# The id links between documents resolve against the index of
 # _build/id-links.json through scripts/id-links.lua.
 bun "$root/scripts/id-links.ts" >/dev/null
 

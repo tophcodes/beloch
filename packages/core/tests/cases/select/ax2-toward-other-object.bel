@@ -2,7 +2,7 @@
 
 ; toward .a keeps the side of .a where it is. An alignment is an incidence,
 ; so the side of .b folds over and lands .b on .a, which carries out
-; (map .a onto .b) as well (ADR 0031).
+; (map .a onto .b) as well (decisions/toward-names-the-side-that-stays).
 
 paper square
 fold (map .a onto .b) (toward .a)

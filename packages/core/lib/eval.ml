@@ -108,7 +108,7 @@ let eval_free_point (ctx : Ctx.ctx) (n : string) (line : Ast.line_operand)
         tv
     | Some (Ast.FreeBy d) ->
         (* the distance as a fraction of the range's length, which the
-           kernel holds exactly (ADR 0012, 0013) *)
+           kernel holds exactly (decisions/real-algebraic-number-kernel, 0013) *)
         let d = Num.of_q (number_value ctx d) in
         let dx = Num.sub e1.Geom.x e0.Geom.x and dy = Num.sub e1.Geom.y e0.Geom.y in
         let len = Num.sqrt (Num.add (Num.mul dx dx) (Num.mul dy dy)) in
@@ -249,7 +249,7 @@ let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
   | Ast.Point (n, Ast.PsFree { line; anchor; pos; span }, _) ->
       eval_free_point ctx n line anchor pos span
   | Ast.Flip span ->
-      (* a flip is a write (ADR 0030): it gets a frame and an entry of its own *)
+      (* a flip is a write (decisions/the-fold-logs-the-program-flat): it gets a frame and an entry of its own *)
       ctx.state := Fold_state.flip !(ctx.state);
       Ctx.push_frame ctx (Some span)
   | Ast.Def (name, params, body, span) -> eval_def ctx name params body span
@@ -372,7 +372,7 @@ and eval_apply (ctx : Ctx.ctx) (bind_opt : string option) (defname : string)
 (* Evaluate one statement and give it its entry on the second axis. A write
    logs itself as it pushes its frame or records its mark, and an [apply]
    logs itself ahead of its body; a statement that logged nothing bound a
-   name and moved no paper, and gets its entry here (ADR 0030). *)
+   name and moved no paper, and gets its entry here (decisions/the-fold-logs-the-program-flat). *)
 and eval_logged (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
   match stmt with
   | Ast.Annotation _ -> eval_stmt ctx stmt
@@ -612,7 +612,7 @@ let trimmed_names (bctx : Ctx.ctx) (flap : int list) (sheet : Sheet.t) :
   in
   (points, settle_bundles sheet points lines)
 
-(* The names a trim's list exports (ADR 0047): each entry's name of the
+(* The names a trim's list exports (decisions/a-trim-exports-the-names-it-lists): each entry's name of the
    body, which must lie on the trimmed sheet, under its landing name. *)
 let exported (bctx : Ctx.ctx) (sheet : Sheet.t)
     ~(points : (string * Geom.point) list)

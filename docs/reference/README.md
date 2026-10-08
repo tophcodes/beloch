@@ -1,7 +1,7 @@
 # Specification
 
-Beloch is specified by three documents, divided by role and reader (ADR
-0032). Every implementation is bound by them. Each document has one job and
+Beloch is specified by three documents, divided by role and reader (see
+[[decisions/the-specification-binds-every-implementation]]). Every implementation is bound by them. Each document has one job and
 refers to the others by statement id or section:
 
 - **`MODEL.md`**: what a program means. States, values, reads and writes as
@@ -10,8 +10,8 @@ refers to the others by statement id or section:
   of the model: one section per sort and per write, with the model
   statement it realizes, operand resolution, errors and a worked example.
   It spans several pages: `BELOCH.md` is the overview, each `BELOCH-*.md`
-  beside it is one page, and `BELOCH-GRAMMAR.md` holds the grammar (ADR
-  0045).
+  beside it is one page, and `BELOCH-GRAMMAR.md` holds the grammar (see
+  [[decisions/the-grammar-of-the-language-stands-on-one-page]]).
 - **`FOLD.md`**: the output format.
 
 The reference implementation is documented beside them and binds nothing:
@@ -22,7 +22,7 @@ The reference implementation is documented beside them and binds nothing:
   stages view of `beloch render`.
 
 `SPECIFICATION.md` is the previous single specification and is being
-dissolved into these documents in the order [[decision/0032]] gives. A section
+dissolved into these documents in the order [[decisions/the-specification-binds-every-implementation]] gives. A section
 that has moved is gone from it; a section still there is authoritative for
 the surface syntax until it moves, never for the meaning.
 
@@ -30,7 +30,7 @@ Division of artifacts:
 
 - **`docs/reference/`**: *what* the language is, and how the reference implementation
   realizes it. Durable source of truth.
-- **`docs/decision/`** (ADRs): *why* a choice was made. Point-in-time.
+- **`docs/decisions/`** (ADRs): *why* a choice was made. Point-in-time.
 - **Design documents** (per slice, disposable): *how* a slice is built. They
   are obsolete once the slice has landed and the documents here reflect it,
   and they are not kept in the working tree; the Git history holds them.

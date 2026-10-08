@@ -1,7 +1,10 @@
-// The id links between documents (ADR 0054). A link `[[kind/stem]]`,
+// The id links between documents, as the decision record
+// `a-document-is-one-of-four-kinds-and-a-link-names-an-id` has them. A link
+// `[[kind/stem]]`,
 // `[[kind/stem#anchor]]` or `[[kind/stem|text]]` names a document under
 // docs/ by the directory it lives in and its file stem, case-folded; a
-// decision's stem is its number. In a table cell the pipe before the text is
+// decision's stem is its slug, after the date that opens its file name. In a
+// table cell the pipe before the text is
 // escaped, `[[kind/stem\|text]]`, so the table keeps its columns. The index
 // built here maps every document to the page the site serves it on, or to
 // its file on GitHub when the site does not serve it, and lists the anchors
@@ -47,8 +50,8 @@ export type Resolved = { url: string; text: string; document: Document; anchor: 
 const DOCS = "docs";
 const CONTENT = join("packages", "www", "src", "content", "docs");
 
-// Files the check does not read: SPECIFICATION.md is being dissolved (ADR
-// 0032) and carries citation keys in double brackets.
+// Files the check does not read: SPECIFICATION.md is being dissolved (see
+// decisions/the-specification-binds-every-implementation) and carries citation keys in double brackets.
 const UNCHECKED = new Set([join(DOCS, "reference", "SPECIFICATION.md")]);
 
 function walk(dir: string): string[] {
@@ -91,14 +94,12 @@ function frontmatterTitle(lines: string[]): string | null {
 	return null;
 }
 
+// A decision's file is dated, `YYYYMMDD-slug.md`, and its id is the slug.
 export function idOf(path: string): string {
 	const rel = relative(DOCS, path).split(sep);
 	const kind = rel[0]!;
-	const stem = rel[rel.length - 1]!.replace(/\.md$/, "");
-	if (kind === "decision") {
-		const m = /^(\d{4})/.exec(stem);
-		if (m) return `${kind}/${m[1]}`;
-	}
+	let stem = rel[rel.length - 1]!.replace(/\.md$/, "");
+	if (kind === "decisions") stem = stem.replace(/^\d{8}-/, "");
 	return `${kind}/${stem.toLowerCase()}`;
 }
 
@@ -240,8 +241,6 @@ export function parseTarget(target: string): { id: string; anchor: string | null
 
 export function defaultText(document: Document, anchor: string | null): string {
 	if (anchor !== null) return document.anchors[anchor] ?? anchor;
-	const d = /^decision\/(\d{4})$/.exec(document.id);
-	if (d) return `ADR ${d[1]}`;
 	return document.title;
 }
 

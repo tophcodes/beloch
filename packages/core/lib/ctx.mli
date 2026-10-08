@@ -7,7 +7,7 @@
     directly. *)
 
 type stmt_kind = SFold | SMark | SBind | SApply of string
-(** Which axis a statement moves (ADR 0030). [SFold] and [SMark] are writes:
+(** Which axis a statement moves (decisions/the-fold-logs-the-program-flat). [SFold] and [SMark] are writes:
     the paper moved, or it was scored and stands where it was. [SBind] moves
     the program alone: a point, a construction line, a bundle, a definition,
     an export. [SApply] is an [apply] of the named def; its body's statements
@@ -35,11 +35,11 @@ type stmt_log_entry = {
           binding leaves every mark where it was. *)
   sl_parent : int option;
       (** The entry of the [apply] this statement runs under, [None] at the
-          top level (ADR 0030). *)
+          top level (decisions/the-fold-logs-the-program-flat). *)
 }
 
 (** An annotation with its arguments read against the state the statement
-    after it starts from (ADR 0029). *)
+    after it starts from (decisions/annotations-pass-through-and-each-output-is-a-library). *)
 type annot_value =
   | AvPoint of Geom.point * Geom.point  (** paper, table *)
   | AvLine of Geom.line * int option    (** the table line, crease id if a crease *)

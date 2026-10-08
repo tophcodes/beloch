@@ -16,7 +16,7 @@
 ; The emergent rabbit-ear crease is selected by the tier rule LineNew >
 ; OppositeRay (spec §Solver; eval.ml deciding = tier1 else tier2). LineNew is
 ; the realization meant here. The OppositeRay realizations close only by
-; folding a further layer of the tip along the ray (ADR 0044), and the tier
+; folding a further layer of the tip along the ray (decisions/a-fan-moves-each-piece-along-its-paper-path), and the tier
 ; rule removes them. Verified physically: no paper through
 ; the closed first-ear joint (derive-13 taco check green, Fold_state.make
 ; succeeds), clean fish-base silhouette.

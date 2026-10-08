@@ -39,7 +39,7 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
-          read_by_suites=$(grep -rhoE 'docs/decision/[^ )]+\.md' --include=dune packages | sort -u)
+          read_by_suites=$(grep -rhoE 'docs/decisions/[^ )]+\.md' --include=dune packages | sort -u)
           code=false
           while read -r f; do
             case "$f" in
