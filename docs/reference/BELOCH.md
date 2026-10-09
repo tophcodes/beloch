@@ -12,7 +12,8 @@ the sorts and types a statement works with.
 [[reference/beloch-writes]] gives the verbs,
 [[reference/beloch-constructions]] the reads a write's axis comes
 from, [[reference/beloch-annotations]] what a program tells its
-reader beyond the geometry, and [[reference/beloch-grammar]] the grammar
+reader beyond the geometry, [[reference/beloch-errors]] the errors a program
+meets, and [[reference/beloch-grammar]] the grammar
 of the language.
 
 The language refers to the model by statement ids and to the specification

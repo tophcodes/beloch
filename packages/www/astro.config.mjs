@@ -151,6 +151,7 @@ export default defineConfig({
 								{ label: "Write statements", link: "/language/writes/" },
 								{ label: "Constructions", link: "/language/constructions/" },
 								{ label: "Annotations", link: "/language/annotations/" },
+								{ label: "Errors", link: "/language/errors/" },
 								{ label: "Grammar", link: "/language/grammar/" },
 							],
 						},

@@ -1150,34 +1150,6 @@ frame 0 by default and a folded form with `--folded`.
 
 ---
 
-## 8. Errors *(since v0.0)*
-
-Every error is a compile error with a source span, a message stating what is
-wrong and, where one helps, a hint stating what to write instead (ADR 0028);
-the first matching error wins and the process exits non-zero:
-
-- parse error;
-- axiom 1 or 2 whose two points are at the **same place** (coincident — which can
-  also happen *after* folds bring two material points together);
-- meet (`*` / `.[]`) whose operands have **no common point** (parallel, or
-  their lines cross beyond the marks or off the paper), **two or more** common
-  points (ambiguous; narrow an operand with `&`), or **share a stretch** of
-  paper (§4.3);
-- a construction of axiom 5, 6 or 7 whose selection leaves no candidate or
-  several (`BELOCH-CONSTRUCTIONS.md`, Selection);
-- a `fold` on a line construction (`fold (through …)`, `fold (perp …)`) with no
-  `moving`, or a `moving` point lying on the fold axis (no side); an axiom-5
-  fold (`fold (map --l1 onto --l2)`) whose `up to` range has no explicit `moving`
-  to anchor it (`moving` is otherwise derived, `BELOCH-CONSTRUCTIONS.md`);
-- a `mark`'s `between`/`at` extent point not lying on the mark's line; an
-  extent that would cross an already-folded (`M`/`V`) crease to reach its
-  endpoint; a `between` extent dangling mid-face at **both** ends in different
-  faces of the same flap (§4.6);
-- reference to an undefined point or crease name; the hint lists the names of
-  that kind in scope, sorted, at most twelve before an ellipsis.
-
----
-
 ## Appendix A — grammar (informal) *(since v0.0)*
 
 The Menhir grammar is authoritative once written; this sketch is a guide.
