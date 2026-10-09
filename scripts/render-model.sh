@@ -46,7 +46,7 @@ lang="$out/language"
 rm -rf "$lang"
 mkdir -p "$lang/docs/reference"
 pages=()
-for page in docs/reference/BELOCH.md docs/reference/BELOCH-NAMES.md docs/reference/BELOCH-WRITES.md docs/reference/BELOCH-CONSTRUCTIONS.md docs/reference/BELOCH-ANNOTATIONS.md docs/reference/BELOCH-GRAMMAR.md; do
+for page in docs/reference/BELOCH.md docs/reference/BELOCH-NAMES.md docs/reference/BELOCH-WRITES.md docs/reference/BELOCH-CONSTRUCTIONS.md docs/reference/BELOCH-ANNOTATIONS.md docs/reference/BELOCH-ERRORS.md docs/reference/BELOCH-GRAMMAR.md; do
   copy="$lang/$page"
   if [ ${#pages[@]} -eq 0 ]; then
     grep -vx '## References' "$page" > "$copy"
