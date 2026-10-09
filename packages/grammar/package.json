@@ -5,6 +5,6 @@
   "type": "commonjs",
   "private": true,
   "scripts": {
-    "generate": "tree-sitter generate && tree-sitter build --wasm && cp tree-sitter-beloch.wasm ../www/src/grammar/tree-sitter-beloch.wasm"
+    "generate": "tree-sitter generate && tree-sitter build --wasm && cp tree-sitter-beloch.wasm ../www/src/grammar/tree-sitter-beloch.wasm && cp queries/highlights.scm ../www/src/grammar/highlights.scm"
   }
 }
