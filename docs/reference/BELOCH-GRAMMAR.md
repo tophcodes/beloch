@@ -53,6 +53,26 @@ free_point := "free" "on" line_operand "from" point_operand [ ( "at" | "by" ) nu
 flap_operand  := point_operand | line_operand | "#[" point_operand+ "]"
 ```
 
+## Names and definitions
+
+[[reference/beloch-names]]. Which kind an export entry keeps across `as`
+is checked after parsing.
+
+```grammar
+bind_stmt    := line_binding
+              | CREASE_NAME "=" line_operand
+              | POINT_NAME "=" line_operand "*" line_operand
+              | POINT_NAME "=" ".[" line_operand+ "]"
+              | POINT_NAME "=" free_point
+def_stmt     := "def" WORD "(" param* ")" "{" body_stmt* "}"
+param        := POINT_NAME | CREASE_NAME
+body_stmt    := annotation* ( write_stmt | bind_stmt | apply_stmt | export_stmt )
+apply_stmt   := [ INSTANCE_NAME "=" ] "apply" WORD "(" arg* ")"
+arg          := point_operand | line_operand
+export_stmt  := "export" [ "{" export_entry+ "}" ] INSTANCE_NAME
+export_entry := ( POINT_NAME | CREASE_NAME ) [ "!" ] [ "as" ( POINT_NAME | CREASE_NAME ) ]
+```
+
 ## Write statements
 
 [[reference/beloch-writes]].
@@ -140,9 +160,4 @@ A rule the grammar refers to and states nowhere yet, with its home.
 ```grammar-external
 point_operand   ; SPECIFICATION.md Appendix A
 line_operand    ; SPECIFICATION.md Appendix A
-bind_stmt       ; SPECIFICATION.md Appendix A
-def_stmt        ; SPECIFICATION.md Appendix A
-apply_stmt      ; SPECIFICATION.md Appendix A
-export_stmt     ; SPECIFICATION.md Appendix A
-export_entry    ; SPECIFICATION.md Appendix A
 ```

@@ -1018,185 +1018,6 @@ record instead of a full crease.
 
 ---
 
-## 5. Naming and program structure *(since v0.0)*
-
-A program is `paper square` followed by statements, executed top to bottom. A
-name must be defined before it is used.
-
-- **Crease statement** — a construction binds a line value, named or anonymous,
-  scoring nothing; `mark`/`fold` (§4.6) act on the paper:
-  ```
-  --d1 = (through .a .c)             ; geometry only — scores nothing
-  mark (through .b .d) as --d2       ; named crease, stays flat
-  mark (map .a onto .c)              ; anonymous crease, stays flat
-  fold (map .a onto .c) (moving .a)  ; fold (valley)
-  ```
-- **Point statement** — binds a derived point:
-  ```
-  .center = --d1 * --d2            ; meet of two creases
-  ```
-- **Flip statement** *(since v0.7-dev)* — turns the sheet over (§4.7):
-  ```
-  flip
-  ```
-
-Derived points and named creases are usable in any later statement. `;` begins a
-line comment.
-
-*(since v0.16-dev)* The binding separator is `=` (was `:` before v0.16-dev; see
-`antipatterns.md`). Non-temp bindings are single-assignment: rebinding a
-non-temp name in the same scope is an error, **except** temp names (§5a.6).
-There is no `:=`.
-
-**Reads and constructions as RHS** *(since v0.16-dev; constructions since v0.21-dev)*: the
-read operators (§4.3, §4.8) and the constructions (§4.1–§4.5c: `map`/`through`/
-`perp`) are all values, usable directly as a binding's right-hand side — none
-of them touch the paper:
-
-```
-.s  = --rs * --cd            ; meet — a read (names an existing crossing)
---e = (through .p1 .p2)      ; a construction — a line value; needs `mark (--e)` or
-                             ; `fold (--e)` to actually score it
-```
-
-**Identifiers** *(since v0.16-dev)* are `[a-zA-Z0-9_]+` — underscore, never
-`-`; kebab-case is reserved so it doesn't foreclose future numeric/arithmetic
-syntax (`repeat n`, ratios) or create whitespace ambiguity next to the `--`
-sigil.
-
-> Concrete syntax (keywords, sigils) is stable as of v0.0 but may still be
-> revised before v1.0.
-
----
-
-## 5a. Defs, instances *(since v0.16-dev)*
-
-Three constructs extend program structure beyond flat top-to-bottom bindings.
-They share **one evaluation path**: `def` never runs (it only records a
-deferred body); `apply` is the *only* execution form — it folds immediately
-and yields a retained instance; `export` only reads from an instance, never
-re-runs anything.
-
-### 5a.1 Temp names: `_`
-
-A name whose identifier starts with `_` (`._mb`, `--_helper`) is a **temp**:
-it may be rebound in the same scope (each rebinding is legal, and the `_`
-marker makes it visible at every use site), and it is invisible from outside
-its scope — not reachable via qualified access (§5a.4), not copied by
-`export` (naming a temp in an export list is an error), and never named in
-FOLD output (§7). A fold bound to a temp crease still physically happens; it
-just appears unnamed in FOLD. This rule is uniform across scopes: root scope
-and `def` bodies both follow it.
-
-### 5a.2 `def`
-
-```
-def petal(.p .q --base) {
-  fold (map .p onto .q) (moving .p)
-  --pq = (through .p .q)
-  .tip = --pq * --base
-}
-```
-
-- Bare identifier, no sigil — a def name is never an operand, so it needs no
-  kind sigil. Def names live in their own namespace; defining the same name
-  twice is an error.
-- Top level only.
-- Parameters are sigil-typed (`.name` point, `--name` crease); the parameter
-  list only changes arity, never the evaluation model. Zero parameters is
-  written `def name() { … }` — the parentheses are always present.
-- **Closed scope.** A body sees exactly its parameters and defs defined
-  textually earlier — nothing else. In particular the corners `.a`–`.d` are
-  **not** visible (their referents are state-dependent after earlier folds);
-  a body that needs a corner takes it as a parameter. Because a body only
-  sees earlier defs, recursion is structurally impossible.
-- Allowed body statements: bindings, fold/construction actions, `flip`,
-  `apply`, `export`. Not allowed inside a body: `def`.
-- The body never runs at `def` time — only `apply` runs it (§5a.3).
-
-### 5a.3 `apply` and instances
-
-```
-$p1 = apply petal(.k1 .k2 --[.k1 .k3])   ; folds now; instance retained
-apply petal(.k2 .k4 --[.k2 .k1])          ; folds now; namespace discarded
-```
-
-- `$name` is the **instance** sigil — its only use. `apply` is the only RHS
-  a `$`-binding accepts; instances cannot be aliased or constructed any
-  other way.
-- Arguments are ordinary point/crease operands (named or inline forms),
-  matched to parameters by position; sigils must agree.
-- A named-crease argument passes the **crease itself** — its material identity,
-  not a snapshot of its line — so the body can meet it (`*`) or fold along it as
-  the sheet evolves. Selected lines (`--[…]` joins, `&` projections) pass
-  as fixed lines *(since v0.19-dev)*.
-- `apply` always executes the body immediately, against the current folded
-  state — a bare `apply name(args)` (no `$name =`) still folds; it just
-  discards the resulting namespace instead of retaining it.
-- The result is an **instance**: a namespace holding every non-temp binding
-  the body created.
-
-### 5a.4 Cross-instance access
-
-Cross-instance access is through `export` (§5a.5) only. The bracket
-member-access operators `.[$inst m]` / `--[$inst m]` are **removed** — the
-`--[…]` and `.[…]` brackets are now the join and meet selectors (§4.3, §4.8),
-which cannot also mean "read a member." To use an instance's members, `export`
-them into the current scope (renaming with `as` where names would collide) and
-then reference the landed names:
-
-```
-export { .tip as .tip1 } $p1
-export { .tip as .tip2 } $p2
-fold (map .tip1 onto .tip2)
-```
-
-`export` only reads from the instance — it never re-runs the body — so it is
-still a pure read of already-folded geometry; naming a **temp** member in an
-export list is an error (temps are never reachable through an instance).
-
-### 5a.5 `export`
-
-```
-export { .tip --pq } $t              ; selective
-export { .tip as .left_tip } $t      ; rename on landing
-export { .s! } $t                    ; intentional shadow
-export $t                            ; all non-temp members
-```
-
-- `export` copies members of an instance into the current scope; it never
-  executes anything.
-- Names in the export list carry their sigils; `as` needs a sigiled landing
-  name.
-- `export $t` (export-all) lands every non-temp member of `$t` and
-  validates **each landed name individually**, exactly like selective
-  export — two export-alls from two applies of the same `def` will collide
-  on every member name unless disambiguated with selective `as`.
-- `!` marks an intentional shadow and is validated both ways: binding an
-  existing name **without** `!` is an error ("name exists, use `!` to
-  shadow"); using `!` when the name does **not** already exist is an error
-  ("nothing to shadow, remove `!`"). Shadow validation applies only to
-  non-temp landing names: exporting onto a temp target (`export { .m as ._t }
-  $i`) rebinds it freely and needs no `!`, since temps are single-scope and
-  rebindable (§5a.1, §5a.6). Temps remain barred as export *sources*.
-
-### 5a.6 Rebinding rules
-
-One invariant, uniform across root scope, `def` bodies, and `export`
-landings: **a name without a `_` prefix is bound at most once per scope.**
-
-| Situation | Result |
-|---|---|
-| non-temp name bound twice in the same scope (root or `def` body) | error |
-| rebinding a corner `.a`–`.d` at root | error |
-| `def` name reused | error |
-| `export` lands an existing name without `!` | error |
-| `export` lands `!` onto a name that doesn't exist | error |
-| `._x = …` (temp) bound more than once | OK — temps are rebindable (§5a.1) |
-| `export` lands onto a temp target (`… as ._x`), with or without `!` | OK — temps rebind freely; no shadow check |
-
----
-
 ## 6. Exactness *(since v0.0)*
 
 All coordinates and line coefficients are **real numbers**; a line is
@@ -1271,7 +1092,7 @@ internal edge is a crease.
   *(since v0.16-dev)* A crease bound inside a retained instance carries its
   **qualified name** — `--pq` bound inside `$p1 = apply …` is named `"p1.pq"`,
   collision-free across repeated `apply`s of the same `def`. `"name"` is
-  `null` for creases bound to a `_`-temp (§5a.1) and for creases produced by a
+  `null` for creases bound to a `_`-temp (`BELOCH-NAMES.md`, Names) and for creases produced by a
   naked (unbound) `apply`. Additive: stock FOLD consumers ignore the field;
   `render/render-svg` uses `"name"` to color/label creases.
 - `beloch:marks` — custom property *(since v0.22-dev)* carrying the
@@ -1364,7 +1185,6 @@ The Menhir grammar is authoritative once written; this sketch is a guide.
 ```grammar
 program       := "paper" sheet stmt*                              ; docs/reference/BELOCH-GRAMMAR.md, "Programs"
 stmt          := crease_stmt | point_stmt | flip_stmt | flatten_stmt
-              | def_stmt | instance_stmt | apply_stmt | export_stmt          ; since v0.16-dev
 crease_stmt   := CREASE_NAME "=" "(" axiom ")"                    ; a read — binds a line value, scores nothing
                | CREASE_NAME "=" line_operand                     ; a read — binds an existing line: name, join, selector, filter or union
                | "mark" item* output                              ; crease flat, an anonymous construction or an existing line as one of the items (item syntax, since v0.27-dev)
@@ -1429,14 +1249,6 @@ flatten_item  := "(" flatten_elem ")"
 flatten_elem  := line_operand [ "mountain" | "valley" ]
 over_flap     := point_operand | "#[" point_operand+ "]"
 
-; since v0.16-dev — §5a
-def_stmt      := "def" ident "(" param* ")" "{" body_stmt* "}"
-param         := POINT_NAME | CREASE_NAME
-body_stmt     := stmt minus ( def_stmt )
-instance_stmt := INSTANCE_NAME "=" "apply" ident "(" operand* ")"
-apply_stmt    := "apply" ident "(" operand* ")"
-export_stmt   := "export" ( "{" export_entry+ "}" )? INSTANCE_NAME
-export_entry  := ( POINT_NAME | CREASE_NAME ) "!"? ( "as" ( POINT_NAME | CREASE_NAME ) )?
 ```
 
 A construction (`through`/`map`/`perp`) is a pure read: it computes a line but
@@ -1500,8 +1312,8 @@ crease coordinates compared exactly (§6). *(v0.16-dev)*
 `=` replaces `:` as the binding separator; read-operator RHS;
 `def`/`apply`/instances with closed-scope bodies; `export` with shadow/rename
 validation (cross-instance access; the earlier bracket member access was
-removed in the v0.20-dev notation cutover, §5a.4);
-the uniform rebinding rule (see §5, §5a). *(v0.17-dev)*
+removed in the v0.20-dev notation cutover, `BELOCH-NAMES.md`);
+the uniform rebinding rule (`BELOCH-NAMES.md`). *(v0.17-dev)*
 crease-segment selection — the `&` filter, projecting a crease name (a
 bundle of segments) to one segment by incidence (ADR 0014). *(v0.18-dev)* fold
 scope — flap-typed `moving` (point/line/`#[...]` anchor operands, ADR 0016),

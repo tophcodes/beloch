@@ -8,6 +8,7 @@ tableOfContents:
 
 The language spans several pages. This page states what a program is and
 the sorts and types a statement works with.
+[[reference/beloch-names]] states names, bindings and definitions,
 [[reference/beloch-writes]] gives the verbs,
 [[reference/beloch-constructions]] the reads a write's axis comes
 from, [[reference/beloch-annotations]] what a program tells its

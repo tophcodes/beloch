@@ -113,6 +113,7 @@ const expectedInventories: Record<string, Record<Tag, number>> = {
   "BELOCH-CONSTRUCTIONS.md": { whole: 0, prelude: 1, frag: 4, construction: 1 },
   "BELOCH-ANNOTATIONS.md": { whole: 1, prelude: 0, frag: 0, construction: 0 },
   "BELOCH-GRAMMAR.md": { whole: 0, prelude: 0, frag: 0, construction: 0 },
+  "BELOCH-NAMES.md": { whole: 0, prelude: 2, frag: 7, construction: 0 },
 };
 
 const languagePages = readdirSync(join(repoRoot, "docs", "reference"))

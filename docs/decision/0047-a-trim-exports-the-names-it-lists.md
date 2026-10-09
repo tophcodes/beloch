@@ -24,7 +24,7 @@ shape cannot give them.
 
 **A trim may list the names it exports.** The list follows the flap
 operand, in braces, with the entries of `export`
-(SPECIFICATION.md §5a.5): a name of the body with its sigil, optionally
+([[reference/beloch-names#exports]]): a name of the body with its sigil, optionally
 `as` a landing name with its sigil.
 
 ```

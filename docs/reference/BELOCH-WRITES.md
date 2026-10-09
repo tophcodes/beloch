@@ -210,7 +210,7 @@ items says what becomes of it, for every verb:
 
 - `as --f` binds it to a new name: `fold (map .a onto .c) (moving .a) as
   --f`, `flatten (--ba \ .a) … as --r`. A name already bound is an error;
-  `as --f!` rebinds it, with the `!` of `SPECIFICATION.md` §5a.6.
+  `as --f!` rebinds it, with the `!` of [[reference/beloch-names#the-rule-of-rebinding]].
 - `into --l` adds it to the crease `--l`: `mark (--l) into --l` draws the
   full line through a reference mark, `fold (--d) (moving .b) (up to .c)
   into --d` folds some layers of a crease marked through all of them and
