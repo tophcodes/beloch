@@ -148,6 +148,7 @@ export default defineConfig({
 							items: [
 								{ label: "Overview", link: "/language/" },
 								{ label: "Names and definitions", link: "/language/names/" },
+								{ label: "Operands", link: "/language/operands/" },
 								{ label: "Write statements", link: "/language/writes/" },
 								{ label: "Constructions", link: "/language/constructions/" },
 								{ label: "Annotations", link: "/language/annotations/" },

@@ -106,8 +106,7 @@ mark (through .a .b)
 | `<l> and <m> lie on one line; a meet needs a single common point` | |
 
 The meet, `--l * --m` and `.[--l --m …]`, is the one paper point its
-operands have in common ([[reference/beloch#reads-and-writes]],
-`SPECIFICATION.md` §4.3). It fails with no common point, with 2 or more,
+operands have in common ([[reference/beloch-operands#points]]). It fails with no common point, with 2 or more,
 and when the operands share a stretch of paper or lie on one boundary
 line; the ambiguous case lists the points in paper coordinates.
 
@@ -136,6 +135,31 @@ mark (perp --bc through .m) as --h    ; through both layers
 .x = --h * --ac
 
 ; expect error "they cross at 2 points"
+```
+
+## Filters
+
+| message | hint |
+|---|---|
+| `no segment of <bundle> matches` | |
+| `<bundle> is ambiguous: <n> segments match` | `add a selector` |
+| `--<name> is a bundle, not a single crease` | `restrict it with & or \` |
+| `--<name> is no longer straight after folding` | `narrow it to one piece with &, e.g. --<name> & .p` |
+| `no crease or edge is incident to all of (<points>)` | |
+| `--[…] is ambiguous: <n> creases/edges match <points>` | `add a constraint` |
+
+Where a slot wants one line, as the axis of a write, a filter must leave
+one piece, a name bound to a bundle needs a filter, and a crease a fold
+has bent needs one too ([[reference/beloch-operands#filters]]). The join
+`--[…]` is the one crease or edge through its points
+([[reference/beloch-operands#lines]]).
+
+```{.bel .frag prelude=diagonals}
+mark (map .a onto .b) as --m
+fold (--bd) (moving .a)       ; bends --m
+fold (--m) (moving .c)
+
+; expect error "no longer straight"
 ```
 
 ## Selection
@@ -228,6 +252,7 @@ its page, beside its syntax and its example:
 - sheets, shapes, units and free points: [[reference/beloch]];
 - bindings, temps, definitions, applications and exports:
   [[reference/beloch-names]];
+- the join, the filters and the flap operand: [[reference/beloch-operands]];
 - the constructions of axioms 5 to 7 and their selection:
   [[reference/beloch-constructions]];
 - the items of a write, and `unfold`, `reverse` and `flatten`:

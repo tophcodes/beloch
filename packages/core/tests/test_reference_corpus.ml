@@ -361,7 +361,8 @@ let expected_inventories =
     ("BELOCH-ANNOTATIONS.md", counts 0 0 0 1);
     ("BELOCH-GRAMMAR.md", counts 0 0 0 0);
     ("BELOCH-NAMES.md", counts 0 7 2 0);
-    ("BELOCH-ERRORS.md", counts 0 9 1 0);
+    ("BELOCH-ERRORS.md", counts 0 10 1 0);
+    ("BELOCH-OPERANDS.md", counts 0 6 2 0);
   ]
 
 let tags = [ "construction"; "frag"; "prelude"; "whole" ]
