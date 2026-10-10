@@ -23,8 +23,12 @@ module.exports = grammar({
     // a binding of a construction takes `(toward …)` and `(moving …)` items
     // after it, as a write does (ADR 0031)
     source_file: $ => repeat(choice(
-      $.write_statement, $.definition_head, $.application, $.construction, $.selection_item, $.anchor_item, $._token,
+      $.write_statement, $.definition_head, $.application, $.construction, $.selection_item, $.anchor_item, $._group, $._token,
     )),
+
+    // a parenthesized operand outside an item, as in `.x = (--h & .m) * --ac`:
+    // a group of tokens, so that its `(` opens no item
+    _group: $ => seq('(', $._operand, ')'),
 
     // `def name(.p --l)`: the head of a definition, whose parameters are
     // points and creases; its body in braces stays a flat run of tokens.

@@ -33,10 +33,31 @@
           },
           {
             "type": "SYMBOL",
+            "name": "_group"
+          },
+          {
+            "type": "SYMBOL",
             "name": "_token"
           }
         ]
       }
+    },
+    "_group": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_operand"
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
     },
     "definition_head": {
       "type": "PREC",
