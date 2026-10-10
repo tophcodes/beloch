@@ -150,7 +150,7 @@ Moved to `BELOCH.md`, "Sheets" (ADR 0046).
 Two kinds of value, distinguished by sigil:
 
 - **Point** — `.name`. The four corners, plus any point derived by a
-  construction (§4.3), or *(since v0.25-dev)* a **free point on a line**
+  construction (`BELOCH-OPERANDS.md`), or *(since v0.25-dev)* a **free point on a line**
   (§4.3a) — a 1-DOF reference point whose position is not load-bearing, but
   whose value is an ordinary exact point like any other (§6).
 - **Crease / line** — `--name`. The geometric value of a fold: an (infinite)
@@ -185,59 +185,6 @@ The fold that places `.x` onto `.y`: the perpendicular bisector of the segment
 **Error** if `.x` and `.y` are the same point.
 
 *(since v0.6-dev: verb is `map … onto …`; was `fold … to …`.)*
-
-### 4.3 Meet — where two lines cross: `*` and `.[…]` *(since v0.0)*
-
-```
---c1 * --c2        ; the meet point   ≡  .[--c1 --c2]
-```
-
-The point where the two creases' **material marks** cross on the sheet. Meet is
-a **read** (§4.10): the operator names existing geometry — a crossing — and
-scores nothing. `*` is the binary sugar; the n-ary form is the bracket `.[l+]`,
-the point incident to *all* the listed lines (concurrent lines → their common
-point), so `--x * --y` ≡ `.[--x --y]`. This is a point *construction*, not a
-fold axiom, in the classic numbering; it is Hull's basic operation O2
-[[hull2020]](#ref-hull2020) §1.5 (O2). A pure value binding (`--l = <construction>`,
-§4.10) has no mark to cross — meet needs **material** operands, so a line used
-only to locate a crossing still has to be `mark`ed (a non-subdividing
-`between`/`at` record, §4.6, is enough; it need not subdivide anything).
-
-The meet is computed in **paper space**: a crease is a scar in the material,
-and two scars cross or miss each other independently of how the sheet happens
-to be folded. There are no table-space point values in the language. Paper is
-opaque, so layers that only overlap on the table show no crossing: no layer
-carries both marks. (`Q2-B` in `docs/notes/antipatterns.md` records the table-space
-rule this avoids.)
-
-The meet is the **intersection of the operands as sets of paper points**,
-defined when it is exactly one point ([def-meet](/model/#def-meet), ADR 0027):
-
-- An operand may lie on **any number of paper lines**. A crease scored through
-  several layers marks a scar and its mirror images; it meets bare, and only
-  the number of common points counts. On the preliminary base `--h * --v` is
-  the paper center.
-- The common point lies **on the marks** of every crease operand (endpoints
-  count). Supporting lines that cross beyond the marks give no common point.
-- A paper-edge operand (a prelude edge `--ab`, or a `--[.a .b]` selection) is
-  a boundary line; it contributes the points of that line on the paper. The
-  same holds for a reference-only boundary crease (one that cut no face).
-- The meet is **fold-state-independent**: folding never moves a mark within
-  the sheet. Only name resolution (the `&` filter) reads the folded state.
-- `.[l+]` with more operands is the one point common to all of them.
-- Narrowing an operand with `&` (§4.8) keeps a meet valid as long as the
-  narrowed operand still holds the crossing, and is needed only to choose
-  among several crossings.
-
-**Errors:**
-
-- **no common point**: the operands are **parallel**, or the lines they lie
-  on cross beyond their marks or off the paper (exact point-in-polygon test;
-  the boundary counts as on the paper);
-- **ambiguous**: two or more common points; the message lists them in paper
-  coordinates, and the hint suggests narrowing an operand with `&`;
-- **overlap**: the operands share a stretch of paper (a segment) or lie on one
-  boundary line.
 
 ### 4.3a Free point on a line — `free on … from … at …` *(since v0.25-dev)*
 
@@ -353,11 +300,8 @@ its flap like any other material; it just never counts as a flap boundary.
 An extent that would have to **cross an already-folded (`M`/`V`) crease** to
 reach its endpoint is an error — it would leave its flap: "the mark's extent
 from `.a` to `.b` crosses a folded crease (it leaves its flap)". A `between`
-whose **both** endpoints dangle mid-face in *different* faces of the same flap —
-spanning an internal (`F`) crease with neither end anchored to a boundary — is
-also an error this slice: "the mark's extent from `.a` to `.b` spans an internal
-crease with both ends mid-face; anchor an endpoint to a boundary or use two
-marks." Anchor one end to a boundary, or split it into two marks, instead.
+whose **both** endpoints dangle mid-face, in one face or in different faces of
+the same flap, records the whole extent as one mark, as above.
 
 **Direction on a record mark.** `mark … (valley|mountain)` (default valley) still
 applies to a record mark exactly as to a subdividing one: the mark is always
@@ -366,7 +310,7 @@ the crease-pattern frame only — the same creasePattern/foldedForm split used
 for subdividing marks (§7).
 
 **Layer selection — `#[...]`.** `mark (<construction>) [extent] (on #[...])` chooses which
-flap the mark is written onto, same resolution as `&`'s `#[...]` (§4.8):
+flap the mark is written onto, same resolution as `&`'s `#[...]` (`BELOCH-OPERANDS.md`):
 the unique flap containing every listed point. Omitted, it defaults to the
 **carrying flap** — the flap holding the extent's own geometry (the material
 the points/line were built from); if that geometry sits on a boundary shared by
@@ -394,13 +338,11 @@ an `F`/`M`/`V` edge.
 
 **Known limits.** Exact-incidence only: a mark endpoint snaps onto an existing
 vertex on exact rational equality, never by tolerance — no fuzzy/"close
-enough" snapping this slice. The "spans an internal crease, both ends
-mid-face" case above is a real gap, not a design choice: anchoring one end to a
-boundary (or writing two marks) always works around it. And a partial mark
+enough" snapping this slice. A partial mark
 does **not** let a scaffold skip creasing entirely — the meet operator (`*` /
-`.[…]`, §4.3) requires a **material** (marked) operand on each side; a pure
+`.[…]`, `BELOCH-OPERANDS.md`) requires a **material** (marked) operand on each side; a pure
 value-bound line (`--l = <construction>`, no `mark`) has no mark to cross (`--l is
-not a physical crease, so it has no material mark to cross`, §4.3). So a line
+not a physical crease, so it has no material mark to cross`, `BELOCH-OPERANDS.md`). So a line
 used only to *locate* a meet point still must be `mark`ed — `between`/`at`
 only controls whether that mark subdivides its flap, not whether it exists.
 Lines that only feed a `fold (map … onto --l)` (never a `*`) can stay pure values,
@@ -416,7 +358,7 @@ since folding a line onto another needs no material crossing.
 | direction | valley/mountain | `mountain` keyword; default valley |
 
 **Anchor.** `moving` takes a **flap operand** (ADR 0016) — a point, a line, or
-`#[...]`, the same three forms `&` (§4.8) resolves by incidence:
+`#[...]`, the same three forms `&` (`BELOCH-OPERANDS.md`) resolves by incidence:
 
 - a **point** — the flap carrying it. No flap contains it → error (`.p is not
   on the paper`); the point sits on a crease shared by several flaps → error
@@ -541,10 +483,10 @@ v0.18-dev)*:
 fold (<crease-operand>) [(moving <flap>)] [(up to <flap>)] [(mountain)]
 ```
 
-Folds along a crease already on the paper (a bundle, §4.8) instead of
+Folds along a crease already on the paper (a bundle, `BELOCH-OPERANDS.md`) instead of
 re-stating the construction that produced it (§4.1–§4.5c). A material
 crease implies no side, so `moving` or `toward` names it. Material resolution is per
-flap, as for any crease reference (§4.8): a crease **bent** under the moving
+flap, as for any crease reference (`BELOCH-OPERANDS.md`): a crease **bent** under the moving
 set is an error ("the crease is bent under the moving flaps", hint "select a
 straight segment with `&` or move fewer flaps") — select a straight segment
 with `--d & ...` instead. `fold` (with no construction) composes with `up to` to
@@ -621,44 +563,6 @@ relative to the original front — i.e. "mountain = turn over, then valley." `fl
 takes no axis: with named points, where the sheet lands is irrelevant, so the
 reflection uses an internal canonical axis (the footprint's vertical centerline).
 A direction argument may be added later when the animation renderer needs it.
-
-### 4.8 Filtering a crease bundle: `&` (and `\`, `[]`) *(since v0.17-dev)*
-
-A crease name is a **bundle**: one crease realized as a set of segments — one per
-layer the crease line crossed, further split by later creases. The segments are
-collinear only in the folded moment of creation; once (un)folding scatters them
-they point every which way in the crease pattern. So a crease name is not a single
-line.
-
-`--l & <constraint>` **filters** the bundle to the segments incident to the
-constraint. At a singleton slot (one that wants exactly one line, ADR 0016) it
-projects to the **one** segment and yields that segment's current supporting line
-(usable anywhere a line operand is; as a fold axis that is its table-space line,
-in a meet (`*`) its material paper-space mark — §4.3). Constraints, by incidence:
-
-- `--l & .p` — the segment the point `.p` lies on.
-- `--l & --a` — the segment whose span contains `--a`'s crossing of `--l`.
-- `--l & #[.a .b …]` — the segment lying on that flap.
-
-Filtering is **incidence**: `&` keeps the segments the constraint is *on*. This is
-distinct from `toward`, which names the side of a fold that stays
-(`BELOCH-CONSTRUCTIONS.md`, Selection). `&` binds tighter than the axiom keywords: `perp --l & --a through .b`
-reads as `perp (--l & --a) through .b`, and that grouping may be written out,
-since a parenthesized operand is that operand *(since v0.28-dev)*.
-
-Chaining conjoins: when one point sits on a crease crossing (two adjacent
-segments share it), pin the unique segment incident to *both* constraints by
-chaining — `--l & .p & --a`. Two related read operators complete the family:
-`\` is the **negated** filter (`--l \ .p` keeps the segments *not* through `.p`
-— e.g. the ray away from a split vertex), and `[a b …]` is the **union** of
-same-typed bundles (`[--x --y] & .p`). At a singleton slot the result must be a
-**single** segment: no match is an error ("no segment of `--l` matches …"); more
-than one is an error asking for a further constraint.
-
-`&` supersedes the earlier `--( --l #(…) )` restrict form (and the `at` operator
-it replaced). `&` *selects* a segment from an existing bundle; *creating* a single
-reference segment is the partial mark `mark (…) (at .p)` (§4.6) — an extent ending
-mid-face lays a non-subdividing record, no separate primitive.
 
 ### 4.9 `flatten` — single-vertex flatten *(since v0.20-dev as `collapse`; renamed v0.23-dev; one-pipeline model v0.23-dev; stayer convention v0.23-dev)*
 
@@ -740,7 +644,7 @@ not an open item list.)
 
 - `flatten_elem`'s `line_operand` must resolve to a material crease — the
   same operand forms `fold` (with no construction) accepts (`--name`, `--name &
-  <constraint>`, §4.8); a paper edge or a non-material selected line is
+  <constraint>`, `BELOCH-OPERANDS.md`); a paper edge or a non-material selected line is
   syntactically a `line_operand` too but errors at resolution (below).
 - A **bare element is unconstrained** — the solver assigns its M/V. This is
   the one deliberate break from `collapse`'s old default (bare meant valley;
@@ -761,8 +665,8 @@ not an open item list.)
 **Resolution.** Each element resolves to **every** material crease segment
 at the shared vertex its operand matches — a through-running crease
 subdivided at O by an earlier fold carries two, and (unlike `fold`'s own
-single-segment resolution, §4.6, §4.8) both become candidate combinations
-rather than an ambiguity error. `&`/`\` (§4.8) still narrow an operand to
+single-segment resolution, §4.6, `BELOCH-OPERANDS.md`) both become candidate combinations
+rather than an ambiguity error. `&`/`\` (`BELOCH-OPERANDS.md`) still narrow an operand to
 one segment when written, but writing them is no longer required to resolve
 a multi-segment crease: the **stayer filter** (State construction, below)
 prunes the combinations that contradict the stayer on its own. A
@@ -904,7 +808,7 @@ flatten (--ba \ .a) (--bb \ .b) (--v \ .m) (toward .d) as --ear
 
 Here `--ba \ .a`/`--bb \ .b`/`--v \ .m` are the rays *away* from `.a`/`.b`/`.m`
 — three given rays (odd), so the pipeline's step 1 adds the emergent fourth.
-`\` and `&` are the shipped filter/drop selectors (§4.8); no new operator is
+`\` and `&` are the shipped filter/drop selectors (`BELOCH-OPERANDS.md`); no new operator is
 needed for the odd case, only the requirement that the ray count be odd. See
 [`packages/core/tests/cases/bases/swivel-rabbit.bel`](../packages/core/tests/cases/bases/swivel-rabbit.bel) for
 a full worked case where the emergent crease is genuinely non-constructible

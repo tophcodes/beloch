@@ -9,6 +9,7 @@ tableOfContents:
 The language spans several pages. This page states what a program is and
 the sorts and types a statement works with.
 [[reference/beloch-names]] states names, bindings and definitions,
+[[reference/beloch-operands]] the operands a statement takes,
 [[reference/beloch-writes]] gives the verbs,
 [[reference/beloch-constructions]] the reads a write's axis comes
 from, [[reference/beloch-annotations]] what a program tells its
@@ -181,17 +182,13 @@ statement* is a verb followed by its arguments; its shape is given under
 **Reads.** Constructions (below), selectors (`#[…]`, `*`, `--[…]`, `free
 on`), and the filter operators (`&`, `\`, `[…]`), which form a Boolean
 algebra on the segments of a bundle: intersection with an incidence
-predicate, difference, union.
+predicate, difference, union ([[reference/beloch-operands]]).
 
-**The meet.** `--x * --y`, and `.[--x --y --z]` for more operands, is the
-one paper point the operands have in common as sets of paper points
-([[reference/model#def-meet|def-meet]]). An operand may lie on several paper lines,
-as a crease scored through several layers does; on the preliminary base
-`--h * --v` is the center of the paper. A paper edge such as `--ab` counts
-as its side of the sheet. The meet is an error when the operands have no
-common point, when they share a stretch of paper, and when they have two or
-more common points; the last message lists the points in paper coordinates,
-and `&` narrows an operand to the pieces that cross at the one meant.
+**The meet and the filters.** The meet `--x * --y` is the one paper point
+its operands have in common, the filters `&`, `\` and `[…]` pick the
+pieces of a crease by incidence, and `--[…]` and `#[…]` select a line and
+a flap by the points on them. All of them stand under
+[[reference/beloch-operands]].
 
 ## Free points
 

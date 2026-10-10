@@ -47,6 +47,7 @@ free_point := "free" "on" line_operand "from" point_operand [ ( "at" | "by" ) nu
 
 ## Operands
 
+[[reference/beloch-operands]]; the type of each slot is under
 [[reference/beloch#parameter-types]].
 
 ```grammar
