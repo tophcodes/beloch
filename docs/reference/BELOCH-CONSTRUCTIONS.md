@@ -336,7 +336,7 @@ fold (map --ac onto --bd) (toward .b) (moving .c)
 
 The bisector of two rational lines is irrational in general, slope
 $\sqrt2 - 1$ for $y = 0$ and $y = x$; equality, parallelism and the paper
-tests stay exact (`SPECIFICATION.md` §6).
+tests stay exact ([[reference/beloch#exactness]]).
 
 ## Axiom 6, a point onto a line through a point
 
