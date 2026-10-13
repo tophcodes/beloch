@@ -218,7 +218,7 @@ added; the order the evaluator runs them in follows the tables.
 | 11 | Kawasaki fails: where the anchor surrounds O on the paper, the reflection composition around O does not close (exact) [@hull2020](#ref-hull2020) ch. 5; elsewhere no combination of the hinges the fan may change closes its paper paths, which surfaces as check 13 | `vertex not flat-foldable (angles)` | |
 | 12 | the leading two elements' folded rays are collinear and no `staying` is given; the convention has no side to anchor | `` collinear leading creases don't pick a stayer `` | `add (staying .p)` |
 | 13 | no realization keeps the stayer still: every candidate × Maekawa pattern died before a stacking closed, the paper-path closure of check 11 included | `no realization keeps the staying flap still` | |
-| 14 | two different segment combinations (`SPECIFICATION.md` §4.9, Resolution) both survive with valid realizations | `` <name> is ambiguous at the vertex `` | `` select a segment with `&` `` |
+| 14 | two different segment combinations ([[reference/beloch-writes#flatten-and-flip]]) both survive with valid realizations | `` <name> is ambiguous at the vertex `` | `` select a segment with `&` `` |
 
 Checks 7 and 9–11 run against a **candidate ray set**: the given rays, plus
 one emergent candidate when the count is odd (Pipeline, below); check 8 is
@@ -289,7 +289,7 @@ line through O, and inserting it as one more ray makes the full `k + 1`-ray
 composition close.
 
 **Admissible stayer sectors.** Every candidate ray set is tried against each
-fan sector that lies inside the stayer region (`SPECIFICATION.md` §4.9, State construction):
+fan sector that lies inside the stayer region ([[reference/model#def-flatten|def-flatten]]):
 normally exactly one, unless the emergent ray itself falls inside the
 leading pair's arc and splits it in two; then both halves are admissible,
 and each is a different physical fold (a mirror world), not a
@@ -299,7 +299,7 @@ exactly 180°) admits no sector at all without `staying` (check 12). With
 the table images of its points (checks 17 to 19). The
 evaluator rotates the ray labeling so the sector under test becomes sector 0
 before the fan construction runs, which is what anchors `T_0 = identity` on
-the stayer (`SPECIFICATION.md` §4.9, State construction).
+the stayer (Sectors, below).
 
 1. **Count rays.** Odd → `Flatten.candidates` generates every geometric
    completion that could close the vertex: it tries every angular gap
@@ -309,15 +309,14 @@ the stayer (`SPECIFICATION.md` §4.9, State construction).
    already-given line: degenerate in direction and not in position, it is
    still a real, non-constructible crease). None found → check 8, under Checks.
    Even → no candidate; the given rays are the whole ray set.
-2. **Enumerate.** Each **segment combination** (`SPECIFICATION.md` §4.9,
-   Resolution: one
+2. **Enumerate.** Each **segment combination** ([[reference/beloch-writes#flatten-and-flip]]: one
    chosen segment per element, when a crease carries more than one at O) is
    tried independently. One guard runs before pattern search: *only when
    the statement has more than one combination to choose from*, another
    element's given ray landing strictly inside the stayer arc kills that
    combination: stayed material cannot carry a
    folding crease. This gate is what makes bare through-crease operands
-   resolve without `&` (`SPECIFICATION.md` §4.9, Resolution): at the fish vertex, the
+   resolve without `&` ([[reference/beloch-writes#flatten-and-flip]]): at the fish vertex, the
    combination that folds `--ray`'s far segment has that ray inside the
    leading pair's arc and dies here; only the near segment remains. A
    single-combination statement has no alternative to fall back on, so a
@@ -376,8 +375,65 @@ the stayer (`SPECIFICATION.md` §4.9, State construction).
      ``, falling back to that, or to `` Maekawa violated by the stated
      assignment `` if no pattern was even tried.
    - \|S\| = 1 → fold it. A `toward` item present is redundant, never an error.
-   - \|S\| > 1 → **selection** (`SPECIFICATION.md` §4.9, Selecting among
-     survivors).
+   - \|S\| > 1 → **selection** (Selection, below).
+
+### Sectors
+
+The faces of the tip are the sectors around O. The isometry of sector $i$
+is the composition of the reflections across the rays that bound sectors
+$0$ to $i$, counter-clockwise from sector 0, and the evaluator rotates the
+ray labeling so that the stayer is sector 0 before the composition runs;
+its isometry is the identity, front face up, by construction, and no
+sector is anchored orientation-reversed.
+
+`Collapse.effective_valley` reads the letter of a ray off one face in the
+stayer-side sector next to that ray. A sector can hold faces of both
+orientations: at the second ear of the fish the stayer sector holds the
+base strip face up and the first ear's folded stack face down on top of
+it, and the first face by array index can be the wrong one and turn a
+hinge constraint around. The face the evaluator takes is the one whose
+table polygon has an edge from O along the ray's own segment, the layer the
+letter is about; among several, the one of lowest rank.
+
+Valid stackings move whole sector blocks relative to one another; a
+sector is never tucked between two layers of another sector's block. That
+covers the rabbit ear and the waterbomb base, and a form that needs one
+sector inside another's stack is out of reach.
+
+### Selection
+
+With more than one realization left, `Flatten_solve` selects in three
+stages, each narrowing the set, and reads `toward` at the first stage that
+needs it:
+
+1. **Position.** Where a realization lies depends on which ray lines it
+   used and never on the letters, so the realizations group into position
+   classes by the centroid of their moved material. `toward .p` keeps the
+   class that maximizes $(c - O) \cdot (p - O)$ for the centroid $c$. Two
+   classes with one value of that product mean that $p$ is collinear with a
+   crease through O: `` `toward` does not pick a side — the point is
+   collinear with a crease through the vertex ``, hint `` aim it off the
+   creases ``.
+2. **Fewest mountains.** Within the class, the realizations with the
+   fewest derived mountains among the rays the program gave stay. An
+   emergent ray on a new line is no such ray and never counts; an emergent
+   ray on the far side of a given line counts, since it is that line. This
+   stage needs no `toward`, and it runs alone when `toward` is absent.
+3. **Rank dipole.** Among those, the realization that maximizes
+   $S(R) = \sum_{\text{faces}} \text{area} \cdot (\text{rank} - \tfrac{n - 1}{2}) \cdot ((c_f - O) \cdot (p - O))$,
+   with $c_f$ the table centroid of the face and $n$ the number of faces:
+   the material toward $p$ comes to lie on top. Mirror realizations score
+   the same value with opposite sign, so any $p$ off the axis decides. A
+   guard runs first: when the set of ray directions is invariant under the
+   reflection across the line through O and $p$, or $p$ is O, the sides are
+   indistinguishable, and the error is the one of stage 1.
+
+Without `toward` only stage 2 runs. One realization left folds; more are
+`` flatten is ambiguous: <n> realizations ``, hint `` add (toward .p) to
+pick the fold direction ``, with the count after stage 2. `Collapse` has a
+single-result contract of its own, `` ambiguous stacking (<k> orders) ``,
+which `flatten` never reaches: it calls `collapse_all` and pools every
+realization; the message survives in the module's own tests.
 
 ## Reverse
 

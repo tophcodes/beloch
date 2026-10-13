@@ -86,314 +86,6 @@ selectors `.[] --[] #[]`), the one write was the keyword `through`);
 
 ## 4. Operations
 
-### 4.9 `flatten` — single-vertex flatten *(since v0.20-dev as `collapse`; renamed v0.23-dev; one-pipeline model v0.23-dev; stayer convention v0.23-dev)*
-
-Every other fold in the language performs one simple fold at a time. Some flat
-end states are not reachable that way: three angle bisectors of a triangle
-meet at the incenter O, and — with the altitude from O added — the vertex is
-flat-foldable (**Rabbit-Ear Theorem**, [[hull2020]](#ref-hull2020) Thm 8.5),
-but no *sequence* of single simple folds reaches that end state; flat-foldable
-and simple-foldable are different classes [demaine2007, §14.1.1]. `flatten`
-jumps straight from the precreased flat sheet to the flat end state of several
-creases folded at once, all meeting at one point — shipped as `collapse`
-(v0.20-dev), renamed `flatten` and generalized (v0.23-dev), then reworked
-into **one solver pipeline** (v0.23-dev).
-
-**One pipeline, no modes.** An earlier revision split `flatten` into a
-*validate* mode (every ray given, only checked) and a *derive* mode (an odd
-ray given, the missing one solved for, a trailing `toward` mandatory to pick
-a side). That split is gone: every `flatten` statement now runs the same
-solve. `()` items state the topology — the rays sharing the vertex — and any
-material facts already known (`mountain`/`valley`, `over`); these are **hard
-constraints** that *filter* the solution space, never pick a winner
-(`staying` — naming the stayer explicitly, State construction below —
-shares the item form and is another such constraint; a redundant one is a
-lint candidate, never an error). The solver fills in the rest — the M/V of every unmarked ray, the one
-emergent ray when the given count is odd (still not constructible by any
-Huzita axiom; it exists only because flat-foldability forces it), and the
-stacking — subject to Maekawa and Kawasaki, which act as the solve's oracle
-rather than separate checks you invoke. If more than one geometrically-valid
-outcome survives, `(toward <point>)` picks among them; omit it when the
-geometry is already unique — a disambiguator present but not needed is
-redundant, never an error (redundancy is lint-territory, not
-error-territory). See the pipeline in `KERNEL.md`, section Fan, for the
-mechanics.
-
-**Scope: one vertex per statement.** Deciding flat-foldability for a sheet
-with many interacting vertices is NP-hard
-([[hull2020]](#ref-hull2020) §6.6, Thm 6.17 — Bern–Hayes); the single-vertex
-case is exactly decidable and already covers rabbit ear, waterbomb/preliminary
-bases, and — later, at boundary vertices — squash-type moves. Multi-vertex
-flatten (e.g. bird base in one step) is deferred (Appendix B).
-
-**Syntax:**
-
-```
-flatten_stmt  := "flatten" flatten_item+ [ "as" CREASE_NAME [ "!" ] | "into" CREASE_NAME ]
-flatten_item  := "(" flatten_elem ")"
-               | "(" over_flap "over" over_flap ")"
-               | "(" "staying" flap_operand ")"
-               | "(" "toward" point_operand ")"
-flatten_elem  := line_operand [ "mountain" | "valley" ]
-over_flap     := point_operand | "#[" point_operand+ "]"
-```
-
-Every item states a constraint on the vertex — a ray, an M/V pin, an `over`
-order, or the `staying` flap (State construction, below) — and *filters*
-the solution space, with one exception: `(toward .p)` *selects* from
-whatever survives, rather than constraining it. It may appear in any
-position among the other items, and at most once; a second occurrence is a
-parse error (`` only one toward item per flatten ``).
-
-Every item is wrapped in parentheses unconditionally, even a bare element,
-because with `and` dropped an unparenthesized item's first token would
-collide with the first token of the *next* statement (a bind `--l =
-…`/`.p = …`) at one token of lookahead (BELOCH-WRITES.md).
-**Element order is semantic**: the first two elements' folded rays fix the
-stayer by convention (State construction, below), so which element is
-written first and which second changes the fold. Every other item — a
-third-or-later element, `over`, `staying`, `toward` — carries no positional
-meaning and may appear in any order, interleaved freely with the leading
-pair:
-
-```
-flatten (--ba & .a) (--bb & .b valley) (--e mountain) (.p over .q) (staying .r) (toward .s)
-```
-
-(`and` survives only as axiom-6's fixed binary joiner, `map … and … onto
-…` — an accepted asymmetry, since that `and` binds a fixed pair of operands,
-not an open item list.)
-
-- `flatten_elem`'s `line_operand` must resolve to a material crease — the
-  same operand forms `fold` (with no construction) accepts (`--name`, `--name &
-  <constraint>`, `BELOCH-OPERANDS.md`); a paper edge or a non-material selected line is
-  syntactically a `line_operand` too but errors at resolution (below).
-- A **bare element is unconstrained** — the solver assigns its M/V. This is
-  the one deliberate break from `collapse`'s old default (bare meant valley;
-  see the design doc's Migration note). `valley` joins `mountain` as an
-  explicit marker, symmetric now that bare implies neither.
-- `over_flap` deliberately excludes bare crease names: that is what makes the
-  first token inside an item's parens classify it unambiguously — a
-  crease-name start is an element, a point/`#[...]` start followed by `over`
-  is a stacking pair, `staying` is keyword-first. `staying`'s own operand is
-  the full `flap_operand` (point, line, or `#[...]`, as `moving` takes,
-  `BELOCH-WRITES.md`); a bare point `.a` is short for `#[.a]`.
-- A duplicate `staying` item in one `flatten` statement is a **parse
-  error** at the second occurrence (`` only one staying item per flatten ``) —
-  at most one per statement.
-- `flatten` is **bindable**: `as --r` names the result (§ Binding,
-  below) exactly like `mark`/`fold`; the name is optional either way.
-
-**Resolution.** Each element resolves to **every** material crease segment
-at the shared vertex its operand matches — a through-running crease
-subdivided at O by an earlier fold carries two, and (unlike `fold`'s own
-single-segment resolution, `BELOCH-WRITES.md`, `BELOCH-OPERANDS.md`) both become candidate combinations
-rather than an ambiguity error. `&`/`\` (`BELOCH-OPERANDS.md`) still narrow an operand to
-one segment when written, but writing them is no longer required to resolve
-a multi-segment crease: the **stayer filter** (State construction, below)
-prunes the combinations that contradict the stayer on its own. A
-combination survives resolution with zero matches only as an error: a bare
-crease name with no material segment errors *"--<name> has no
-material segment"*; a filtered or unioned operand that matches nothing
-errors *"no segment of `<expr>` matches"*. An operand that does not resolve
-to an existing material crease at all (a joined selector like `.a * .b`, or a
-cross-crease union with no single crease to fold along) errors: *"collapse
-folds along existing creases; `<operand>` is not a material crease"* (the
-shipped message text predates the rename — an internal string, not a
-user-facing keyword; every message and hint quoted in this section is
-reproduced verbatim from the evaluator, several still say "collapse" for the same
-reason). `&` stays *required* only where distinct surviving combinations
-still contradict each other after every filter — the error then names the
-element (`` <name> is ambiguous at the vertex ``) and its hint suggests it
-(`` select a segment with `&` ``).
-
-**Checks.** The checks of a `flatten`, with the messages and hints the
-evaluator ships, are listed in `KERNEL.md`, section Fan.
-
-**State construction.** Faces are the sectors around O. Sector *i*'s isometry
-is the composition of reflections across the rays bounding sectors `0..i`, in
-CCW order from a fixed sector 0 — exact, the standard single-vertex fan
-construction. There is **no `moving` item on `flatten`**: instead, sector 0
-is always the **stayer** — the ray labeling is rotated so the stayer sector
-takes position 0 *before* the composition runs (the pipeline, `KERNEL.md`
-section Fan), giving
-`T_0 = identity`, front face up, *by construction*. An orientation-reversing
-anchor is therefore impossible: every face's front/back reads off the stated
-flatten directly, never its mirror.
-
-**Definition.** The stayer is the material that does not move: identity
-isometry, front face up, exactly where it lay before the flatten. Without
-`(staying …)`, its region is the <180° arc at the vertex between the
-*folded rays* of the first two elements (Syntax, above — this is why element
-order is semantic). With `(staying X)`, `X`'s material is the stayer instead
-and element order carries no stayer meaning (a `staying` that merely
-restates what the convention would already pick is accepted silently — a
-lint candidate, never an error: redundancy is not an error, contradiction
-is). Its final **stack position** is a *consequence* of the solved M/V
-pattern, never part of the definition — a rabbit ear stacks everything on
-top of its stayer, but a mountain at the stayer's edge folds the neighbor
-*underneath* it instead.
-
-`effective_valley` reads a crease's M/V parity off a single face
-**representative** in the stayer-side sector adjacent to that ray. A sector
-can be **mixed-orientation** — at the fish's second-ear vertex the stayer
-sector holds both the stationary base strip (face-up) and the first ear's
-already-folded stack (face-down) riding on top of it — so taking the first
-face in the sector by array index can surface the wrong orientation and
-flip a hinge constraint, starving the true stacking chain. The
-representative is instead chosen per ray: the face in the stayer-side
-sector whose table polygon has an edge running from O out along that ray's
-own segment — the layer the crease's M/V letter is actually about — with
-ties (a through-folded multi-layer crease, not in today's corpus) broken
-toward the lowest stacking rank.
-
-The kernel enumerates every stacking consistent with the per-ray hinge
-directions and a layer-collision check (no two layers occupy the same
-space), applies any `over` clauses, then keeps only the stackings
-distinguishable by their overlapping-face order. Exactly one → this
-candidate contributes a single realization; several → each contributes one,
-pooled with every other candidate's — and every admissible stayer sector's
-(the pipeline, `KERNEL.md` section Fan) — into the set `flatten`'s own pipeline decides among
-— the kernel itself never errors ambiguous here.
-
-**v1 enumeration limitation.** Valid stackings only ever move whole
-*sector-blocks* relative to each other — a sector cannot be tucked *between*
-two layers belonging to another sector's block. This covers rabbit ear and
-the waterbomb base; forms that need one sector interleaved inside another's
-stack are a follow-up (Appendix B).
-
-**Clauses.**
-
-- **`<flap> over <flap>`** (repeatable): flap operands are a point or
-  `#[...]` (a point denotes its sector). Orders the two sectors in the final
-  stacking. Redundant `over` — already true in every surviving stacking — is
-  a silent no-op, not an error (a future lint hint, same category as other
-  implied-item lints); `over` that rules out every surviving stacking
-  errors `` contradictory `over` ``.
-- **`(staying <flap>)`**: names the stayer explicitly, overriding the
-  leading-element convention (State construction, above); once given,
-  element order carries no stayer meaning at all. The flap must touch the
-  vertex fan — a flap whose material never reaches O errors `` the staying
-  flap does not touch the vertex ``. At most one per statement; a second is a
-  parse error (`only one staying item per flatten`). A collinear leading
-  pair (opposite rays of one line — both candidate arcs read as exactly
-  180°) leaves the convention with no side to pick, so `staying` is then
-  required, not optional: `` collinear leading creases don't pick a
-  stayer `` (hint `` add (staying <flap>) ``).
-
-**The pipeline.** How the evaluator enumerates candidate fans, Maekawa
-patterns and stackings, and what it reports when none survives, is in
-`KERNEL.md`, section Fan.
-
-**Selecting among survivors (\|S\| > 1).** Exactly three stages, in order,
-each narrowing the deciding set further; `(toward .p)` is read at whichever
-stage first needs it, and is required once any stage does:
-
-1. **Position** (class choice): a realization's placement in the folded
-   state depends only on which ray *lines* were used, never on M/V, so
-   realizations group into *position classes* by their moved-material
-   centroid. `(toward .p)` picks the class maximizing
-   `(centroid(moved faces) − O) · (p − O)`. Two distinct classes tying on
-   that dot product means `p` is collinear with a crease through O —
-   genuinely can't pick a side:
-   `` `toward` does not pick a side — the point is collinear with a crease through the vertex ``,
-   hint `` aim it off the creases ``.
-2. **Min-mountain canon** (within the winning class): keep only the
-   realizations with the fewest derived mountains among the **user-given**
-   creases (a freshly-materialized emergent crease is never a given crease,
-   so it never counts; a collinear-reuse `OppositeRay` emergent does, since
-   it *is* a given crease's own line). This stage is `toward`-independent
-   and, alone, is sometimes already unique, including with `toward`
-   entirely absent (see step 3 below).
-3. **Rank dipole**: if several realizations still remain, maximize the exact
-   `S(R) = Σ_faces area · (rank − (n_faces−1)/2) · ((table_centroid − O) · (p − O))` —
-   "the material lying toward `p` ends up on top." Mirror realizations score
-   ±equal, so any off-axis `p` decides. Guarded first by a symmetry check: if
-   the given rays' direction set is invariant under reflection across the
-   O–`p` line (or `p = O`), the two sides are genuinely indistinguishable and
-   this errors the same way stage 1's tie does.
-
-If `toward` is absent, only stage 2's canon runs (stages 1 and 3 both need
-a point); a surviving singleton folds, otherwise:
-`` flatten is ambiguous: <N> realizations ``, hint
-`` add (toward .p) to pick the fold direction ``,
-`N` being the post-canon count. (`Collapse`'s own single-result contract,
-`` ambiguous stacking (<k> orders) ``, is the kernel-internal building block
-`collapse_all` wraps for a single distinct-signature dedup — unreachable from
-`flatten`, which always calls `collapse_all`, never `collapse`, directly; it
-survives only as an internal string, exercised by the `Collapse` module's own
-tests.)
-
-```
-flatten (--ba \ .a) (--bb \ .b) (--v \ .m) (toward .d) as --ear
-```
-
-Here `--ba \ .a`/`--bb \ .b`/`--v \ .m` are the rays *away* from `.a`/`.b`/`.m`
-— three given rays (odd), so the pipeline's step 1 adds the emergent fourth.
-`\` and `&` are the shipped filter/drop selectors (`BELOCH-OPERANDS.md`); no new operator is
-needed for the odd case, only the requirement that the ray count be odd. See
-[`packages/core/tests/cases/bases/swivel-rabbit.bel`](../packages/core/tests/cases/bases/swivel-rabbit.bel) for
-a full worked case where the emergent crease is genuinely non-constructible
-(the hinges sit at an arbitrary height, not a bisector angle), and
-[`tests/cases/collapse/flatten-opposite-ray-toward-b.bel`](../packages/core/tests/cases/collapse/flatten-opposite-ray-toward-b.bel)
-(with its `-toward-d` sibling) for a vertex where `toward` genuinely picks
-between two *different* end states — same face count and table positions,
-mirrored stacking.
-
-The generative solution-space selector `#{…}` (and `.{…}`/`--{…}`) and the
-`stays <flap>` sugar that would desugar to it are **deferred** — their own
-language-wide design pass, tracked as
-[issue #46](https://github.com/tophcodes/beloch/issues/46); v1 ships only the
-constructed-space ray-naming shown above. Multi-emergent-ray flatten (more
-than one crease forced at once) and the `onto <line>` exact-landing (petal)
-form are deferred alongside it (Appendix B).
-
-**Binding & the tip.** `flatten` **creates** creases, so — like `fold`,
-`mark`, and the axiom folds — it is bindable. With an even given count, the
-bound name resolves to the bundle of given rays the statement acted on. With
-an odd count, the name resolves to the **emergent** crease instead — the
-only construction that names it — so a further meet against it finds the
-point where the emergent crease reaches the paper boundary:
-
-```
-flatten (--ba \ .a) (--bb \ .b) (--v \ .m) (toward .d) as --ear
-.tip  = .[--ear --ab]        ; the emergent crease's tip on the base edge
-```
-
-**Output.** *(since v0.20-dev)* The `edges_assignment` (§7) a `flatten`
-produces is **global-frame** M/V: because a sector's isometry can be
-orientation-reversing, the kernel's parity rule inverts the stated
-mountain/valley on face-down sectors, so the M/V letters in the FOLD output
-can differ, ray by ray, from what was written in source — see the caveat
-comments in the shipped examples.
-
-**Examples.**
-[`packages/core/tests/cases/bases/swivel-rabbit.bel`](../packages/core/tests/cases/bases/swivel-rabbit.bel)
-(n = 3 given + 1 emergent) is the worked case above — its golden FOLD output
-is the regression anchor for the whole selection pipeline: a bare-M/V
-solve whose material-centroid metric must still land on the same right-hand
-swivel every time.
-`tests/test_collapse.ml`'s `test_over_resolves_ambiguity` (n = 8, center
-vertex — both diagonals and both midlines, all M/V pinned; unit-level
-against the shared `Collapse` kernel, not a `.bel` case) shows the
-even-count case: several stackings of the one Maekawa pattern survive
-Kawasaki, and `over`, not `toward`, narrows them to one, since `over`
-operates inside the collapse oracle itself (step 2 of the pipeline), before
-`flatten`'s own selection ever sees more than one candidate.
-[`tests/cases/collapse/flatten-fish-pinned-unique.bel`](../packages/core/tests/cases/collapse/flatten-fish-pinned-unique.bel)
-shows the odd-count case pinned tightly enough that no `toward` is needed
-at all: two of the fish-base vertex's three given rays are pinned explicitly,
-narrowing the Maekawa search until exactly one realization survives before
-selection is ever reached.
-
-See [ADR 0016](../decision/0016-typed-operands-bundle-values-singleton-slots.md)
-(flap operands),
-[ADR 0014](../decision/0014-crease-is-a-bundle-of-segments.md) (crease
-bundles, rays split at a crossing — the same machinery `fold` and `&`
-build on, and what the emergent crease's bundle joins), and ADR 0012/0013
-(the exact real-algebraic kernel the derive math needed no polynomial from,
-per the design doc above — reserved for the deferred multi-emergent case).
-
 ### 4.10 The read/write law — constructions read, `mark`/`fold`/`flatten` write *(since v0.20-dev; completed v0.21-dev; `collapse` renamed `flatten` v0.23-dev)*
 
 One law governs the surface syntax: **an operation that mutates paper state —
@@ -422,7 +114,7 @@ The **reads** are:
   points" is exactly as inert as any other construction until a disposition verb
   acts on it.
 
-The **writes** are the disposition keyword verbs (`BELOCH-WRITES.md`, §4.9):
+The **writes** are the disposition keyword verbs (`BELOCH-WRITES.md`, `BELOCH-WRITES.md`):
 
 - **`mark`** — crease a construction (or an inline line) flat: subdivides the
   sheet, emits FOLD `F`.
@@ -430,7 +122,7 @@ The **writes** are the disposition keyword verbs (`BELOCH-WRITES.md`, §4.9):
   subdivides *and* moves layers, emits FOLD `M`/`V`.
 - **`flatten`** — fold several existing material creases sharing one vertex
   straight to the flat end state, optionally deriving the one crease
-  flat-foldability forces when the given ray set is odd (§4.9).
+  flat-foldability forces when the given ray set is odd (`BELOCH-WRITES.md`).
 
 `@` is retired entirely: it is no longer a marker anywhere in the grammar —
 the verb itself (`mark`/`fold`/`flatten`) carries the write, completing the
@@ -619,7 +311,7 @@ POINT_NAME    := "." ident
 CREASE_NAME   := "--" ident
 INSTANCE_NAME := "$" ident
 
-; since v0.20-dev — §4.9; `@` dropped v0.21-dev; renamed `collapse`→`flatten`,
+; since v0.20-dev — `BELOCH-WRITES.md`; `@` dropped v0.21-dev; renamed `collapse`→`flatten`,
 ; paren-juxtaposition items, bindable v0.23-dev; one-pipeline model,
 ; the `toward` item (was a trailing keyword), `valley` marker v0.23-dev;
 ; stayer convention, `staying` replaces reserved `standing` v0.23-dev;
@@ -706,7 +398,7 @@ scope — flap-typed `moving` (point/line/`#[...]` anchor operands, ADR 0016),
 crease. *(v0.20-dev)* `@collapse` — single-vertex flat collapse: n ≥ 4
 material creases sharing one interior vertex, checked by Kawasaki, Maekawa,
 and layer-order validity, with `over` for stacking ties; `standing` parses
-but is not yet implemented (§4.9); the **notation cutover** — reads become
+but is not yet implemented (`BELOCH-WRITES.md`); the **notation cutover** — reads become
 operators (`*` meet/join, `&` filter, `\` drop, `[]` union, the `.[] --[] #[]`
 selectors), the one write was the keyword `through`, and bracket member access
 retires in favor of `export` (§4.10, design doc). *(v0.21-dev)* the
@@ -718,7 +410,7 @@ reads (joining the v0.20-dev operators); the writes are the keyword verbs
 *(v0.23-dev)* **`flatten` generalizes `collapse`, one solver pipeline** —
 `collapse` is renamed `flatten`; the item list drops `and` for parenthesized
 juxtaposition (`flatten (--a & .p) (--b & .q) …`); `flatten` is bindable
-(§4.9); and, given an odd set of rays sharing a vertex, `flatten` solves for
+(`BELOCH-WRITES.md`); and, given an odd set of rays sharing a vertex, `flatten` solves for
 the one emergent crease flat-foldability forces (the composed reflection of
 an odd ray set is itself a reflection; its axis is the new crease),
 materializes it, and folds the completed set — the swivel rabbit-ear move no
