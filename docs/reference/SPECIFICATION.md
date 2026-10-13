@@ -86,299 +86,6 @@ selectors `.[] --[] #[]`), the one write was the keyword `through`);
 
 ## 4. Operations
 
-### 4.6 Marking and folding: `mark` / `fold` *(since v0.7-dev; `mark`/`fold` verbs since v0.21-dev; partial marks since v0.22-dev)*
-
-A construction (`map`/`through`/`perp`, `BELOCH-CONSTRUCTIONS.md`) is a pure read: it computes a
-line and touches nothing. `--l = (map .a onto .b)` binds a value; on its own it
-scores nothing. Acting on the paper needs one of two disposition keywords
-(§4.10):
-
-- **`mark`** — crease the line and leave the sheet **flat**: subdivides the
-  layers it crosses into flaps, but moves nothing. Emits FOLD `F` — present,
-  not folded (§7) — carrying an M/V *intent* in the crease-pattern frame.
-- **`fold`** — crease the line **and fold it**: subdivides and moves layers.
-  Emits FOLD `M`/`V` in both frames.
-
-```
-mark (map .a onto .b)                     ; crease, stays flat (valley intent)
-mark (through .a .c) as --d               ; named crease, stays flat
-fold (map .a onto .c) (moving .a)         ; fold the flap containing .a, valley
-fold (map .a onto .c) (moving .a) (mountain) ; ... as a mountain
-fold (perp --l through .p) (moving .q)    ; line-construction folds need `moving`
-```
-
-`@` is retired: there is no fold marker distinct from the verb itself.
-
-**`mark`'s extent — full, `between`, `at`** *(since v0.22-dev)*. A `mark`
-statement optionally clips the construction's line before creasing:
-
-```
-mark (<construction>)                        ; full chord (default)
-mark (<construction>) (between .a .b)        ; clip to the segment [.a, .b]
-mark (<construction>) (at .p)                ; a single reference point on the line
-```
-
-`between`/`at` points must already lie **on the mark's line** — off-line is an
-error (`.p is not on the mark's line`). The discriminator for what happens next
-is **boundary-incidence, not which form was written**: an extent that runs
-**boundary-to-boundary** across the flap it lands on — the default full chord,
-or a `between` whose two points both sit on that flap's boundary — **subdivides**
-exactly like before, emitting a standard `F` edge. An extent that **ends
-mid-face** — an `(at .p)` with `.p` interior to a face, or a `between` with one or
-both ends interior — does **not** subdivide: the boundary-reaching part (if any)
-still creases and splits its faces, but the dangling stub from the last boundary
-crossing to the interior endpoint becomes a **non-subdividing record** — a
-pinch or reference crease that **splits no rays** and can dangle mid-face
-without touching the flap graph at all. A record mark still rides folds with
-its flap like any other material; it just never counts as a flap boundary.
-
-An extent that would have to **cross an already-folded (`M`/`V`) crease** to
-reach its endpoint is an error — it would leave its flap: "the mark's extent
-from `.a` to `.b` crosses a folded crease (it leaves its flap)". A `between`
-whose **both** endpoints dangle mid-face, in one face or in different faces of
-the same flap, records the whole extent as one mark, as above.
-
-**Direction on a record mark.** `mark … (valley|mountain)` (default valley) still
-applies to a record mark exactly as to a subdividing one: the mark is always
-`F` in the folded-form frame (nothing has moved), and its M/V **intent** colors
-the crease-pattern frame only — the same creasePattern/foldedForm split used
-for subdividing marks (§7).
-
-**Layer selection — `#[...]`.** `mark (<construction>) [extent] (on #[...])` chooses which
-flap the mark is written onto, same resolution as `&`'s `#[...]` (`BELOCH-OPERANDS.md`):
-the unique flap containing every listed point. Omitted, it defaults to the
-**carrying flap** — the flap holding the extent's own geometry (the material
-the points/line were built from); if that geometry sits on a boundary shared by
-several stacked flaps, it is ambiguous and errors, naming the flap count and
-pointing at `#[...]`.
-
-**Combined bind-and-write.** `mark (<construction>) [extent] [dir] [(on #[...])] as
---l` binds the crease name and marks in one statement, equivalent to the
-two-statement `--l = (<construction>)` *(pure value, §4.10)* followed by `mark
-(--l) [extent] [dir] [(on #[...])]`.
-
-```
-mark (map .a onto .c) (between .a .m) as --p           ; segment record, anchored at .a
-mark (map .a onto .c) (at .m) (mountain) as --p         ; single reference point
-mark (--q) (between .a .b) (on #[.c])                   ; named crease, explicit flap
-```
-
-**FOLD emission.** A subdividing mark (full chord, or a boundary-to-boundary
-`between`) emits exactly as any other `mark` — a standard `F` edge in
-`edges_assignment` (§7). A record mark instead emits into the custom
-`beloch:marks` field (§7) — never a fake display-length edge in the standard
-arrays — and `render-svg`'s crease-pattern view draws it distinctly from live
-creases (a dashed reference line or a short tick), so it is never mistaken for
-an `F`/`M`/`V` edge.
-
-**Known limits.** Exact-incidence only: a mark endpoint snaps onto an existing
-vertex on exact rational equality, never by tolerance — no fuzzy/"close
-enough" snapping this slice. A partial mark
-does **not** let a scaffold skip creasing entirely — the meet operator (`*` /
-`.[…]`, `BELOCH-OPERANDS.md`) requires a **material** (marked) operand on each side; a pure
-value-bound line (`--l = <construction>`, no `mark`) has no mark to cross (`--l is
-not a physical crease, so it has no material mark to cross`, `BELOCH-OPERANDS.md`). So a line
-used only to *locate* a meet point still must be `mark`ed — `between`/`at`
-only controls whether that mark subdivides its flap, not whether it exists.
-Lines that only feed a `fold (map … onto --l)` (never a `*`) can stay pure values,
-since folding a line onto another needs no material crossing.
-
-*(since v0.18-dev)* Every `fold` has four ingredients:
-
-| Ingredient | What | Source |
-| --- | --- | --- |
-| axis | the fold line | a construction, or an existing material crease (`fold (--d)` with no construction, below) |
-| anchor | the deepest flap of the moving prefix | implied on map folds, or `moving` |
-| scope | which flaps move | default: outside-contiguous prefix down to the anchor; or `up to` |
-| direction | valley/mountain | `mountain` keyword; default valley |
-
-**Anchor.** `moving` takes a **flap operand** (ADR 0016) — a point, a line, or
-`#[...]`, the same three forms `&` (`BELOCH-OPERANDS.md`) resolves by incidence:
-
-- a **point** — the flap carrying it. No flap contains it → error (`.p is not
-  on the paper`); the point sits on a crease shared by several flaps → error
-  naming the count, with a hint pointing at `#[...]` (`.p lies on a crease
-  shared by 2 flaps`, hint `name the flap with #[...]`).
-- a **line** — the flap hinged on it. Usually ambiguous, since a hinge has two
-  sides (`--d touches 2 flaps`, hint `add a point, e.g. #[.p]`); resolves only when
-  exactly one flap touches it.
-- **`#[...]`** — explicit incidence constraints: the unique flap containing
-  every listed point (`(moving #[.b .c])`), same resolution rule as `&`'s
-  `#[...]` selector.
-
-**Map folds** (`fold (map .a onto .c)`) imply the anchor from the moved point
-when `moving` is omitted, here `.a`'s flap; `(moving <flap>)` overrides it
-(e.g. `(moving .c)` folds the other side instead). *(since v0.19-dev)* `fold
-(map --l1 onto --l2)` (axiom 5) similarly derives its anchor, from `--l1`'s own
-swinging material (`BELOCH-CONSTRUCTIONS.md`); `moving`
-still overrides it, and is still required when that material straddles the
-axis, or to scope an `up to` range. **Line-construction folds** (`fold
-(through …)`, `fold (perp …)`) and **folding along existing material**
-(below) have no natural anchor at all, so they need `moving`, or `toward`,
-which names the side that stays (`BELOCH-CONSTRUCTIONS.md`, Selection);
-without either the error is "this fold needs `moving .p` to choose the
-side". A line- or `#[...]`-flap anchor that
-straddles the fold axis, or a `moving` point exactly on the axis, is also an
-error (no side to pick); a point anchor disambiguates the side by itself, even
-when its flap straddles the axis.
-
-**Scope.**
-
-- **No `up to`** (default): *(since v0.24-dev)* the moving set is the
-  **outside-contiguous prefix** of the layer order over the crease region —
-  top for valley, bottom for mountain — down to **and including** the
-  flap(s) carrying the anchor operand. The anchor operand is `moving` when
-  present, or the implied source point on a map fold (`fold (map .b onto .o)`
-  → `.b`). It is *not* every layer on the anchor's side: deeper layers below
-  the anchor flap stay. The seed is resolved in **paper space**: the flap(s)
-  whose paper polygon contains the anchor point. A point on a shared paper
-  **edge** (as in the ear fold, where the tip sits on the crease between two
-  flaps) therefore seeds **all** those flaps — the whole contiguous run, so the
-  tip you would physically grab is a valid anchor. But a point interior to a
-  single paper face (a plain corner atop a folded stack) seeds only that one
-  flap; if the layers beneath it must move too, the fold tears (the
-  hinge-closure check below fires) and the fold needs an explicit `up to`. On a
-  single-layer region (e.g. a first fold on flat paper) the prefix is that one
-  flap — identical to the pre-v0.24-dev behavior. The one gap: a bare axiom-5
-  line-onto-line fold with no `moving` and no implied point (the direction comes
-  from `side_override` alone, so there is nothing to anchor a prefix to) still
-  falls back to every layer on the side — and that fallback set is now gated by
-  the same hinge-closure tear check.
-- **`(up to <flap>)`**: the contiguous range of flaps from the anchor through the
-  target flap, **inclusive**, walked in the stack order **over the crease
-  region** (depth may vary along a crease, so the walk compares only the
-  overlapping pieces):
-  ```
-  fold (map .d onto .a)
-  fold (map .c onto .d) (up to .c)   ; up to the anchor itself: exactly one flap moves
-  ```
-  A line target (`(up to --d)`) resolves even though `(moving --d)` alone usually
-  wouldn't: the anchor fixes the walk direction, so the first flap hinged on a
-  segment of `--d` reached from the anchor ends the range (ADR 0016, slot
-  context counts toward uniqueness). A target not reachable by the walk, or
-  not on the anchor's side, is an error.
-
-**Validity — outer-contiguous prefix.** A `fold` statement is a **simple
-fold** [demaine2007, §14.1]: a rigid 180° rotation of the moving layers under
-the crease segment, collision-free throughout the motion. The static shadow of
-that constraint: the moving set must be a **contiguous prefix of the layer
-order in the crease region**, counted from the outside — top for valley,
-bottom for mountain. A **buried anchor** — a stationary flap covering it in the
-crease region — is an error regardless of how the end state looks (its material
-would pierce the covering layer mid-rotation): "a simple fold cannot move a
-buried flap: face *N* covers the anchor in the crease region", hint "include
-the covering flap (anchor the fold there) or fold less". The default scope is
-itself an outer-contiguous prefix by construction (it grows outward from the
-anchor flap), so it satisfies the prefix rule; a genuine tear (the anchor
-flap hinged to a stationary layer off the axis) is caught by the same
-hinge-closure check the `up to` path uses. Construction outside the crease region
-is not checked — full motion validation is out of scope until an animatable
-(3D) viewer needs it.
-
-**Folded state.** The paper is a set of flat **faces** — each a convex polygon
-in paper coordinates plus a rigid isometry placing it on the table — carrying a
-**partial** stacking order: any two faces that overlap on the table are ordered
-above/below, while faces lying apart carry no relation (a sparse per-face poset,
-not a single bottom→top stack). A flat fold (±180°) keeps everything in the table
-plane, so the only "depth" is this per-overlap order. A simple fold reflects every
-layer in the moving set across the crease line (an exact reflection — no
-`sqrt`) and restacks: the moved layers, reversed, go on top (valley) or
-underneath (mountain). The default scope is the outside-contiguous prefix
-down to the anchor flap (see **Scope** above), not every layer on the
-anchor's side; `up to` widens it explicitly when a fold needs to reach
-deeper.
-
-**Derived mountain/valley.** Each crease's assignment is
-`valley XOR (the cutting face is back-up)`, fixed when the fold runs. Because
-stacked layers alternate front/back, one fold through a stack yields the correct
-**alternating** M/V across layers (the accordion). Earlier creases keep their
-assignment (material facts). This XOR rule is exact for a **simple fold** — one
-crease, one pre-fold parity check — and is *equivalent to* the more general
-rule below in that case.
-
-For a **multi-crease move** (`flatten`, §4.9 — several creases folding
-together at one vertex), the folded-form letter of each resulting crease is
-the **derived global-frame M/V** of the finished folded state: the
-mountain/valley assignment determined by the isometric folding map and its
-layer ordering together [hullzakharevich2023, §2.1] — which face is
-orientation-preserved and whether the two faces across the crease are above
-or below each other — the same notion the single-crease XOR is checking, just
-read off the finished state instead of computed per-ray during the fold. (An
-earlier implementation instead adjusted the per-ray XOR by a fan-index parity
-term to approximate this; that adjustment was a bug, not a spec rule, and is
-not carried into the 3D rewrite.) The derived letter is anchored to the
-crease pattern, not to which side of the paper is facing up: `flip` (§4.7)
-negates orientation and layer order together, so the derived M/V is
-unchanged — mountain stays mountain when the model is turned over.
-
-**Folding along existing material** — `fold` with no construction *(since
-v0.18-dev)*:
-
-```
-fold (<crease-operand>) [(moving <flap>)] [(up to <flap>)] [(mountain)]
-```
-
-Folds along a crease already on the paper (a bundle, `BELOCH-OPERANDS.md`) instead of
-re-stating the construction that produced it (`BELOCH-CONSTRUCTIONS.md`). A material
-crease implies no side, so `moving` or `toward` names it. Material resolution is per
-flap, as for any crease reference (`BELOCH-OPERANDS.md`): a crease **bent** under the moving
-set is an error ("the crease is bent under the moving flaps", hint "select a
-straight segment with `&` or move fewer flaps") — select a straight segment
-with `--d & ...` instead. `fold` (with no construction) composes with `up to` to
-crease every layer while folding only some — the motivating case, *crease
-all, fold some*:
-
-```
-mark (map .b onto .a) as --d        ; mark: subdivides ALL layers, stays flat
-fold (--d) (moving .b) (up to .c)   ; fold only flaps .b through .c along it
-```
-
-Non-moving layers keep their flat crease mark (`"F"` in FOLD output, §7, since
-v0.21-dev — was `"U"` before); moving ones fold (their mark upgrades to
-`"M"`/`"V"`).
-
-See [ADR 0016](../decision/0016-typed-operands-bundle-values-singleton-slots.md)
-(typed operands: bundle values vs. singleton slots — the resolution rules
-behind `moving`, `up to`, and `#[...]`) and
-[ADR 0014](../decision/0014-crease-is-a-bundle-of-segments.md) (a crease is a
-bundle of segments — why folding along existing material checks for a bent
-crease and why `&` selection exists).
-
-**Placing the moved flap with `over` / `under`** *(since v0.26-dev)*.
-
-```
-fold (<construction|crease>) [ (moving <flap>) ] ( (over <flap>) | (under <flap>) )
-```
-
-A placed fold reflects the anchor flap's material beyond the axis, as any
-fold does, and inserts the moved block into the stack immediately above
-(`over`) or below (`under`) the target flap instead of on the outside. The
-crease it scores, the material it subdivides and the derived letters are
-unchanged. The moving set is the anchor flap's faces on the moving side,
-closed under coplanar clusters, with no outer-prefix rule: a tuck passes
-through a pocket that opens for it, so the rigid-rotation argument behind
-the prefix rule does not apply; the layer invariants of the end state
-decide. `moving` is optional here as in any fold: a map construction implies it
-from the moved point, and the fold errors when neither is available. The
-target resolves by incidence to a flap that must be stationary and must
-overlap the footprint the block lands on; of its overlapping faces
-the lowest-ranked anchors `under`, the highest-ranked `over`. The fold's
-direction is a consequence of the placement, never stated: `mountain` beside
-`over`/`under` is a parse error (`a placed fold derives its direction`, hint
-`drop mountain`), and so is `up to` (`a placed fold moves the anchor flap only; up
-to is not supported here`).
-
-Errors: `the placement target moves with the fold` (hint `name a stationary
-flap`);
-`` <T>'s flap does not cover where the moved material lands ``; `` placing
-the moved material under <T> would pierce layer <n> `` (`over` likewise).
-
-```
-fold (map .a onto .d)                         ; two layers
-fold (through .m .n) (moving .b) (under .p)   ; the top layer's corner, tucked between
-```
-
-
 ### 4.6a `reverse` — inside and outside reverse folds *(since v0.26-dev)*
 
 Moved to `KERNEL.md`, "Reverse"; the model is
@@ -490,7 +197,7 @@ not an open item list.)
   crease-name start is an element, a point/`#[...]` start followed by `over`
   is a stacking pair, `staying` is keyword-first. `staying`'s own operand is
   the full `flap_operand` (point, line, or `#[...]`, as `moving` takes,
-  §4.6); a bare point `.a` is short for `#[.a]`.
+  `BELOCH-WRITES.md`); a bare point `.a` is short for `#[.a]`.
 - A duplicate `staying` item in one `flatten` statement is a **parse
   error** at the second occurrence (`` only one staying item per flatten ``) —
   at most one per statement.
@@ -500,7 +207,7 @@ not an open item list.)
 **Resolution.** Each element resolves to **every** material crease segment
 at the shared vertex its operand matches — a through-running crease
 subdivided at O by an earlier fold carries two, and (unlike `fold`'s own
-single-segment resolution, §4.6, `BELOCH-OPERANDS.md`) both become candidate combinations
+single-segment resolution, `BELOCH-WRITES.md`, `BELOCH-OPERANDS.md`) both become candidate combinations
 rather than an ambiguity error. `&`/`\` (`BELOCH-OPERANDS.md`) still narrow an operand to
 one segment when written, but writing them is no longer required to resolve
 a multi-segment crease: the **stayer filter** (State construction, below)
@@ -735,7 +442,7 @@ The **reads** are:
   points" is exactly as inert as any other construction until a disposition verb
   acts on it.
 
-The **writes** are the disposition keyword verbs (§4.6, §4.9):
+The **writes** are the disposition keyword verbs (`BELOCH-WRITES.md`, §4.9):
 
 - **`mark`** — crease a construction (or an inline line) flat: subdivides the
   sheet, emits FOLD `F`.
@@ -752,7 +459,7 @@ notation cutover begun in v0.20-dev.
 Point-locating landmark constructions (a bisector foot, a reference apex) are
 currently scored as full `mark (through …) as …` creases, an interim that adds
 real geometry and moves the golden. The short-reference alternative is the
-partial mark `mark (…) (at .p)` (§4.6), whose mid-face extent lays a non-subdividing
+partial mark `mark (…) (at .p)` (`BELOCH-WRITES.md`), whose mid-face extent lays a non-subdividing
 record instead of a full crease.
 
 ---
@@ -815,7 +522,7 @@ internal edge is a crease.
   *in the output only*; internal values stay exact).
 - `edges_vertices` — `[v0, v1]` index pairs.
 - `edges_assignment` ([[foldformat]](#ref-foldformat) §"Edge information") — `"B"`
-  for paper-boundary edges, **derived `"M"`/`"V"`** for folded creases (§4.6),
+  for paper-boundary edges, **derived `"M"`/`"V"`** for folded creases (`BELOCH-WRITES.md`),
   and *(since v0.21-dev)* `"F"` — present but not folded — for a `mark`ed
   crease (a crease line with no fold yet); its M/V *intent* still lives in the
   crease-pattern frame. `"U"` is never emitted: Beloch always knows a crease's
@@ -835,7 +542,7 @@ internal edge is a crease.
   naked (unbound) `apply`. Additive: stock FOLD consumers ignore the field;
   `render/render-svg` uses `"name"` to color/label creases.
 - `beloch:marks` — custom property *(since v0.22-dev)* carrying the
-  **non-subdividing record marks** (§4.6) that a `between`/`at` extent ending
+  **non-subdividing record marks** (`BELOCH-WRITES.md`) that a `between`/`at` extent ending
   mid-face produces — reference/pinch creases that are not part of
   `edges_vertices`/`edges_assignment` at all. A list of `{"kind": "seg", "a",
   "b", "line", "intent", "crease_id"}` (a dangling segment, exact paper
@@ -952,7 +659,7 @@ over_flap     := point_operand | "#[" point_operand+ "]"
 A construction (`through`/`map`/`perp`) is a pure read: it computes a line but
 touches nothing (§4.10). `mark` creases it flat; `fold` creases and folds it:
 its items state `(moving …)` to anchor the fold, `(up to …)` to scope it,
-`(mountain)` to set its direction (§4.6). Either verb, given a `line_operand`
+`(mountain)` to set its direction (`BELOCH-WRITES.md`). Either verb, given a `line_operand`
 item instead of a construction, acts on an existing material crease instead of
 computing a new line. `flip` turns the whole sheet over (§4.7) and takes no
 item. *(since v0.7-dev)* Any operand may be an **inline read** (§4.10): `--x
@@ -1050,7 +757,7 @@ entirely — and the fan labeling is anchored on it before layer solving
 runs, rather than derived from the solved stack afterward.
 *(v0.26-dev)* **layer placement**: `fold … over/under <flap>` inserts the
 moved flap between layers, and the **`reverse`** verb folds inside and
-outside reverse folds as two placed half-folds with derived letters (§4.6,
+outside reverse folds as two placed half-folds with derived letters (`BELOCH-WRITES.md`,
 §4.6a).
 
 ---

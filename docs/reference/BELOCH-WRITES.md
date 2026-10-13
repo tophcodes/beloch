@@ -25,10 +25,108 @@ whose tip the fan moves; without it the anchor is the topmost flap there
 where they lie and need no rays. `on` names a flap by incidence for both
 writes: the flap a `mark` scores, and the flap a `flatten` folds.
 
-The blocks below follow in one group per verb, each a complete program that
-this page evaluates. `fold`, `unfold` and `reverse` take several blocks each,
-because a second form needs a sheet of its own, and the last block of the
-group carries `flatten` with `flip`.
+A head that does not belong to the verb is an error naming the verb and
+the item (`` fold takes no (between) item ``), and an item type given
+twice is an error at the second occurrence (`` only one moving item per
+fold ``). Each section below states one verb, with complete programs that
+this page evaluates; a prelude block is a sheet that several of them start
+from.
+
+```{.bel .frag}
+fold (map .a onto .c) (moving .a) (moving .c)
+
+; expect error "only one moving item per fold"
+```
+
+## `mark`
+
+`mark` scores its line and moves nothing. The crease reads `F` in the
+output, and a `(mountain)` or `(valley)` item records the intent the crease
+pattern draws, which is no part of the state
+([[reference/model#def-mark|def-mark]], [[reference/fold]]). Without `on`, a
+`mark` scores every layer under its line or its extent, one piece per
+layer; `(on …)` confines it to one flap ([[decision/0036]], [[decision/0039]]).
+
+**Extent.** The extent of a mark is its whole line, the stretch
+`(between .p .q)` or the point `(at .p)`; each point lies on the mark's
+line (`` .p is not on the mark's line ``), and `between` takes two points
+apart (`` the mark's extent needs two distinct points ``). An extent that
+runs from boundary to boundary of its flap subdivides the flap; one that
+ends inside a face subdivides nothing and dangles there as a record, which
+later reads select and later folds carry like any material
+([[decision/0033]]). A record is written to `beloch:marks` in the output,
+and the crease pattern draws it apart from the creases
+([[reference/fold]]). The extent lies on the paper
+(`` the mark's extent is not on the paper ``), and with `on` it stays on
+the named flap: an extent that would cross a folded crease to reach its
+endpoint is an error (`` the mark's extent from .p to .q crosses a folded
+crease (it leaves its flap) ``). A point of the extent that lies on a
+crease several flaps share needs `on` with a second point to settle the
+flap (`` .m lies on a crease shared by 2 flaps ``, hint `` name the flap
+with #[...] ``).
+
+A line bound by `=` has no material until a `mark` scores it, and the meet
+reads material only ([[reference/beloch-operands#points]]): a line that
+serves to locate a point is marked, with `(at …)` where it is to subdivide
+nothing, and a line that only feeds a construction stays a value.
+
+```{.bel .prelude name=midline}
+paper square
+mark (through .a .c) as --ac
+.m = free on --da from .a at 1/2
+.o = free on --ac from .a at 1/2
+```
+
+```{.bel .frag prelude=midline}
+mark    (through .b .d)
+mark    (map --ab onto --cd) (between .m .o) (mountain)
+
+; assert faces = 1
+```
+
+```{.bel .prelude name=triangle}
+paper square
+fold (map .a onto .c) as --bd
+```
+
+```{.bel .frag prelude=triangle}
+.r = free on --bc from .b at 1/2
+.m = free on --bd from .b at 1/2             ; on the hinge, under both layers
+mark (perp --bc through .r) (at .r) (on .m)
+
+; expect error "lies on a crease shared by 2 flaps"
+```
+
+```{.bel .frag prelude=triangle}
+.r = free on --bc from .b at 1/2
+.m = free on --bd from .b at 1/2
+mark (perp --bc through .r) (at .r) (on #[.m .c])   ; the layer that holds .c
+
+; assert faces = 2
+```
+
+## `fold`
+
+A `fold` has four parts ([[reference/model#def-fold|def-fold]]):
+
+| part | item | what it is |
+|---|---|---|
+| axis | a construction, or a crease | the line the paper turns about |
+| side | `moving`, `toward`, or derived | the side of the axis that folds over |
+| depth | `up to` | the deepest flap that moves; without it, every layer on the side |
+| placement | `mountain`, `over`, `under` | where the moved block lands: on top, underneath, or beside a flap |
+
+**Side.** `moving` takes a flap operand and names the side of the axis
+its image lies on, nothing more ([[reference/beloch-operands#flaps]]).
+`(map .p onto .q)` and `(map .p onto --l …)` derive the side from the
+point they move, and `(map --l onto --m)` from the material of `--l` that
+swings ([[reference/beloch-constructions#axiom-5-a-line-onto-a-line]]); a
+written `moving` overrides the derived side. A fold along
+`(through …)`, along `(perp …)` or along an existing crease derives none
+and needs `moving` or `toward` (`` this fold needs `moving .p` to choose
+the side ``). A point on the axis names no side (`` moving .p names no
+side of the fold line of <construction> ``), and a flap that straddles the
+axis names none without a point.
 
 ```{.bel .prelude name=sheet}
 paper square
@@ -55,17 +153,76 @@ fold    (map .c onto .b) (up to .d)                ; the depth needs no moving
 ; assert faces = 2
 ```
 
-`moving` names the side that folds over and nothing more: a `fold` takes
-every layer under its line on that side, and so does a placed fold.
-`(up to …)` narrows it to the flap it names, the layers outward of that
-flap, and every layer joined to those by a crease away from the fold line,
-which the paper could not leave behind without tearing
+**Depth.** `moving` names the side that folds over and nothing more: a
+`fold` takes every layer under its line on that side, and so does a
+placed fold. `(up to …)` narrows it to the flap it names, the layers
+outward of that flap, and every layer joined to those by a crease away
+from the fold line, which the paper could not leave behind without tearing
 ([[reference/model#def-fold|def-fold]]). For a fold placed `over` or `under` a flap,
 the layers outward of the `up to` flap end at that flap: the fold takes
 every layer between the two, hinged to the `up to` flap or not, and the
-target and the layers beyond it stay. A `mark` without `on` scores every layer
-under its line or its extent, one piece per layer; `(on …)` confines it to
-one flap ([[reference/model#def-mark|def-mark]]).
+target and the layers beyond it stay. The depth is a flap, so its point
+settles one flap: a point on a crease that several flaps share is an
+error (`` .s lies on a crease shared by 2 flaps ``, hint `` name the flap
+with #[...] ``), and a crease as the depth needs `moving` to walk inward
+from (`` `up to` a crease needs `moving` to walk inward from ``, hint
+`` name the flap with a point instead ``).
+
+```{.bel .prelude name=half}
+paper square
+fold (map .b onto .a) as --d
+```
+
+```{.bel .frag prelude=half}
+.s = --d * --ab                        ; on the hinge, under both layers
+fold (map .a onto .s) (moving .a) (up to .s)
+
+; expect error "lies on a crease shared by 2 flaps"
+```
+
+**Placement.** The moved block lands on top of the paper it folded from,
+or underneath with `(mountain)`. `(over <flap>)` and `(under <flap>)`
+slide it into the stack beside a flap that stays
+([[decision/0052]]): the target lies where the block lands, and the block
+goes right above or right below it. The direction of a placed fold follows
+from the placement, so `(mountain)` beside it is an error (`` a placed
+fold derives its direction ``, hint `` drop mountain ``). The target
+stays (`` the placement target moves with the fold ``, hint `` name a
+stationary flap ``) and covers the landing (`` .p's flap does not cover
+where the moved material lands ``), and a block that would have to pass
+through a layer on its way is refused (`` placing the moved material
+under .p would pierce another layer ``). The letter of the crease a fold
+scores follows from the state it leaves
+([[reference/model#def-letter|def-letter]]): a fold through a stack reads
+valley on a face-up layer and mountain on a face-down one, and `flip`
+changes no letter.
+
+```{.bel .frag prelude=sheet}
+fold (map .a onto .d) (moving .a)
+fold (through .m .n) (moving .b) (under .p)      ; without (up to .b) the whole layer would go
+
+; expect error "would pierce another layer"
+```
+
+**Along an existing crease.** `fold (--d)` folds along a crease the
+program has scored, without restating its construction. The crease has to
+lie on one line under the layers the fold reaches (`` the crease is bent
+under the moving flaps ``, hint `` select a straight segment with `&` or
+move fewer flaps ``, [[reference/beloch-operands#filters]]), and it is
+one crease: a union is refused (`` fold folds along one existing crease; a
+union spans several ``). With `up to` and `into`, a crease marked through
+every layer folds some of them and keeps its name (The output clause,
+below).
+
+```{.bel .frag}
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+fold ([--ac --bd]) (moving .a)
+
+; expect error "a union spans several"
+```
+
+## `unfold`
 
 `unfold` turns layers back over a crease that every one of them lies
 beside, and opens the folded hinges on it between the layers that turn and
@@ -119,10 +276,13 @@ fold (--q) (moving .b)
 ; expect error "write unfold"
 ```
 
-```{.bel .prelude name=triangle}
-paper square
-fold (map .a onto .c) as --bd
-```
+## `reverse`
+
+`reverse` runs an inside or an outside reverse fold: the tip a line cuts
+off a folded edge turns through its spine, as two placed folds over one
+line ([[reference/model#def-reverse|def-reverse]], [[decision/0043]]). It reads its axis
+from a construction the way `fold` does, the tip the axis cuts off implies
+the side, and `(outside)` asks for the outside reverse fold.
 
 ```{.bel .frag prelude=triangle}
 reverse (map .b onto .c)
@@ -133,49 +293,11 @@ reverse (map .d onto .c)
 ; assert faces = 6
 ```
 
-```{.bel .prelude name=half}
-paper square
-fold (map .b onto .a) as --d
-```
-
 ```{.bel .frag prelude=half}
 reverse (map .a onto .d) (outside)
 
 ; assert .a = .d
 ; assert faces = 4
-```
-
-```{.bel .prelude name=midline}
-paper square
-mark (through .a .c) as --ac
-.m = free on --da from .a at 1/2
-.o = free on --ac from .a at 1/2
-```
-
-```{.bel .frag prelude=midline}
-mark    (through .b .d)
-mark    (map --ab onto --cd) (between .m .o) (mountain)
-
-; assert faces = 1
-```
-
-```{.bel .prelude name=prelim}
-paper square
-mark (through .a .c) as --ac
-mark (through .b .d) as --bd
-mark (map --ab onto --cd) as --h
-mark (map --da onto --bc) as --v
-.q = free on --ab from .a at 1/4
-.r = free on --ab from .b at 1/4
-```
-
-```{.bel .frag prelude=prelim}
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d)
-        (.q over .r) (staying .a) (toward .q)
-flip
-
-; assert steps = 2
-; assert faces = 6
 ```
 
 A tip of several layers can open in more than one place
@@ -205,6 +327,34 @@ reverse (map .a onto .d) (--e & .q valley)
 ; assert faces = 8
 ```
 
+## `flatten` and `flip`
+
+`flatten` folds the rays around one vertex in one move, each ray a piece
+of a marked crease selected with `&`, and takes the items stated at the
+top of this page ([[reference/model#def-flatten|def-flatten]]). `flip` turns
+the sheet over and takes no item ([[reference/model#def-flip|def-flip]]).
+
+```{.bel .prelude name=prelim}
+paper square
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+mark (map --ab onto --cd) as --h
+mark (map --da onto --bc) as --v
+.q = free on --ab from .a at 1/4
+.r = free on --ab from .b at 1/4
+```
+
+```{.bel .frag prelude=prelim}
+flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d)
+        (.q over .r) (staying .a) (toward .q)
+flip
+
+; assert steps = 2
+; assert faces = 6
+```
+
+## The output clause
+
 The crease a write scores is its one output, and the clause after the
 items says what becomes of it, for every verb:
 
@@ -224,8 +374,22 @@ visible at its binding: `--l = (map .a onto .c)` is a line with no
 material, `fold (map .a onto .c) as --l` is a crease. A value bound by `=`
 is a snapshot and takes no `into`; a new value is a new binding.
 
-A head that does not belong to the verb is an error naming the verb and
-the item; an item type given twice is an error at the second occurrence.
+`into` takes a crease the program has scored: a name no statement bound
+(`` --zz is not bound ``, hint `` write as --zz to name a new crease ``), a
+line bound by `=` (`` into needs a crease; --l is a line ``), a selection
+from other creases (`` into needs a crease of its own; --s is a selection
+from others ``) and a paper edge (`` into needs a scored crease; --ab is a
+paper edge ``) are errors, and so is new material off every segment of the
+crease (`` the material this scores lies on no segment of --ac ``, hint
+`` name it with as instead ``).
+
+```{.bel .frag}
+mark (through .a .c) as --ac
+mark (through .b .d) into --ac
+
+; expect error "lies on no segment of --ac"
+```
+
 `mountain` is a value of the placement type, so `(mountain)` beside `(over
 …)` puts two values in one slot; the placement item has already fixed the
 direction, and the error says so: `a placed fold derives its direction`,

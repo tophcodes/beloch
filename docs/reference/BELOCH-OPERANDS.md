@@ -179,8 +179,7 @@ whose faces hold every listed point
 ([[reference/model#def-selector|def-selector]]). It stands at the slots of
 type flap, `moving`, `up to`, `on` and the target of `over` and `under`,
 and in the filter `--l & #[…]`. The point and the line form, and their
-errors, stand with the anchor of a fold (`SPECIFICATION.md` §4.6,
-"Anchor"). `#[…]` is an error when its points lie on different flaps
+errors, stand with the depth of a fold ([[reference/beloch-writes#fold]]). `#[…]` is an error when its points lie on different flaps
 (`` those points aren't all on one flap ``) and when they all lie on a
 crease that several flaps share (`` ambiguous flap ``, hint `` add
 another point ``); a second point off the crease settles it.
