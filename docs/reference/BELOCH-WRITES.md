@@ -329,9 +329,110 @@ reverse (map .a onto .d) (--e & .q valley)
 
 ## `flatten` and `flip`
 
-`flatten` folds the rays around one vertex in one move, each ray a piece
-of a marked crease selected with `&`, and takes the items stated at the
-top of this page ([[reference/model#def-flatten|def-flatten]]).
+`flatten` folds the rays around one vertex in one move
+([[reference/model#def-flatten|def-flatten]]). Some flat states are out of
+reach of one simple fold at a time: the three angle bisectors of a
+triangle with the altitude from their meeting point fold flat, the rabbit
+ear [@hull2020, Thm. 8.5], and no sequence of single folds reaches that
+state [@demaine2007, §14.1.1]. A statement folds one vertex; deciding
+flat-foldability for a sheet of many vertices is NP-hard
+[@hull2020, §6.6].
+
+**Items.** A *ray* item names a piece of a marked crease at the vertex,
+`(--l)` or `(--l & .p)`, with `mountain` or `valley` after it where the
+program fixes its letter; a bare ray is left to the solver. `(.p over .q)`
+orders two sectors in the result, `(staying <flap>)` names the stayer,
+the wedge that keeps its place, `(on <flap>)` names the anchor, and
+`(toward .p)` selects among the states that remain. Every item but
+`toward` is a constraint that narrows the set of states; `toward` picks
+one of them. `staying` and `toward` stand at most once (`` only one
+staying item per flatten ``, `` only one toward item per flatten ``), and
+an item that rules nothing out is no error.
+
+**The stayer.** Without `staying`, the stayer is the wedge of less than a
+half-turn between the folded rays of the first two ray items, so the
+order of those two is part of the fold; the other items stand in any
+order. Two leading rays on one line leave no such wedge
+(`` collinear leading creases don't pick a stayer ``, hint `` add
+(staying .p) ``). With `staying`, the stayer is the one wedge whose
+closure holds every named point, and the order of the rays says nothing
+(`` <point> does not lie on the anchor ``, hint `` name a point on the
+flap the fan folds ``; `` no sector of the fan holds every staying
+point ``; `` the staying points lie in more than one sector ``, hint
+`` add a point inside the sector that stays ``).
+
+**Resolution.** A ray item resolves to every piece of its crease at the
+vertex: a crease an earlier fold split at the vertex carries two, and
+both are tried, with the states that keep the stayer still deciding
+between them. `&` narrows a ray to one piece where both combinations
+leave states (`` <name> is ambiguous at the vertex ``, hint `` select a
+segment with `&` ``). A ray with no material (`` --<name> has no material
+segment ``, `` no segment of <expr> matches ``) and an operand that is no
+marked crease (`` collapse folds along existing creases; <operand> is not
+a material crease ``) are errors. The checks a flatten runs, with every
+message, stand in the kernel's tables ([[reference/kernel#fan]]).
+
+**Selection.** Where several states remain, `toward .p` selects in three
+steps ([[reference/model#open-flatten-selection|open-flatten-selection]]): the
+states whose moved material lies toward `.p`, among them those with the
+fewest mountains on the rays the program gave, among those the one whose material
+toward `.p` lies on top. A point on the line of a crease through the
+vertex names no side (`` `toward` does not pick a side — the point is
+collinear with a crease through the vertex ``, hint `` aim it off the
+creases ``). Without `toward`, only the mountain count runs, and more than
+one state left is an error (`` flatten is ambiguous: <n> realizations ``,
+hint `` add (toward .p) to pick the fold direction ``); states that hold
+different wedges still are one too (`` flatten is ambiguous: its
+candidates hold different sectors still ``, hint `` add (staying .p) with
+.p in the sector that stays ``). An `over` no state satisfies is
+`` contradictory `over` ``.
+
+**The crease.** With an even number of rays the crease a flatten scores
+is the bundle of the rays the program gave; with an odd number it is the emergent
+ray, the one crease no construction names, so a meet against the bound
+name finds where it reaches the edge. The letters in the output are those
+of the state ([[reference/model#def-letter|def-letter]]).
+
+```{.bel .prelude name=ear}
+paper square
+mark (through .a .c) as --diag
+mark (map --ab onto --diag) as --ea
+mark (map --ab onto --bc) as --eb
+mark (map --bc onto --diag) as --ec
+```
+
+```{.bel .frag prelude=ear}
+flatten (--ea) (--ec) (--eb) (toward .a) as --ear   ; three rays: the fourth emerges
+.t = --ear * --ab                                   ; where the ear reaches the edge
+
+; assert --ear is mountain
+```
+
+```{.bel .frag prelude=ear}
+flatten (--ea) (--ec) (--eb)
+
+; expect error "flatten is ambiguous"
+```
+
+```{.bel .frag prelude=ear}
+flatten (--ea) (--ec) (--eb) (toward .b)      ; .b lies on the line of --eb
+
+; expect error "does not pick a side"
+```
+
+```{.bel .frag prelude=ear}
+flatten (--eb & .b) (--ea & .a) (--ec & .c) (staying .d) (toward .a) as --ear
+
+; assert --ear is mountain
+```
+
+```{.bel .frag}
+mark (through .a .c) as --d1
+mark (through .b .d) as --d2
+flatten (--d1 & .a) (--d1 & .c) (--d2 & .b mountain) (--d2 & .d)
+
+; expect error "collinear leading creases"
+```
 
 `flip` turns the whole sheet over and takes no item
 ([[reference/model#def-flip|def-flip]]): every face changes between face up
