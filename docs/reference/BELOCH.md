@@ -178,6 +178,11 @@ read is an error.
 **Sorts.** Point, line, flap, and bundle (a set of crease segments), the
 value sorts of the model's section on values; each a value computed in the
 current state and carried in paper coordinates, so it survives later folds.
+A point is named with `.`, a line or a crease with `--`
+([[reference/beloch-names#names]]): the corners of the sheet are points, and
+so is every meet and every free point; a construction yields a line, and a
+write yields a crease. Every value is exact, whatever construction made it
+(`SPECIFICATION.md` §6).
 
 **Writes.** The operations of the model's section on operations, named by
 the verbs `mark`, `fold`, `unfold`, `reverse`, `flatten` and `flip`. Each is a

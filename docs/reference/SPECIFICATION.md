@@ -84,28 +84,6 @@ selectors `.[] --[] #[]`), the one write was the keyword `through`);
 
 ---
 
-## 2. The paper *(since v0.0)*
-
-Moved to `BELOCH.md`, "Sheets" (ADR 0046).
-
----
-
-## 3. Values *(since v0.0)*
-
-Two kinds of value, distinguished by sigil:
-
-- **Point** — `.name`. The four corners, plus any point derived by a
-  construction (`BELOCH-OPERANDS.md`), or *(since v0.25-dev)* a **free point on a line**
-  (§4.3a) — a 1-DOF reference point whose position is not load-bearing, but
-  whose value is an ordinary exact point like any other (§6).
-- **Crease / line** — `--name`. The geometric value of a fold: an (infinite)
-  line. On output it appears as the edges of the folded state's faces (§7);
-  `mark`/`fold` (§4.6) act on the paper with it.
-
-All geometry is exact (§6).
-
----
-
 ## 4. Operations
 
 ### 4.1 Axiom 1 — line through two points *(since v0.0)*
