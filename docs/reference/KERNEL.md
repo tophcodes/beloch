@@ -460,6 +460,16 @@ vertex of every face lies on the line or on one side of it.
 | `fold takes no direction on moving: …` | `drop it; a fold places its layers with (mountain)` |
 | `every layer lies on one side of this line, …, write unfold` (from `fold`) | `unfold (…) (moving .p) turns the layers of .p over the line` |
 
+## Flip
+
+`Fold_state.flip` realizes [[reference/model#def-flip|def-flip]] with the
+reflection across the vertical line through the middle of the footprint,
+the table polygons of all faces taken together, and reverses the face
+array and the rank with it. Which line it reflects across is immaterial
+for the state up to a motion of the table ([[reference/model#lem-flip|lem-flip]]);
+the output enumerates faces by index, so the reversed array is what a
+reader of the file sees.
+
 ## Annotations
 
 An annotation never changes the geometry ([[decision/0029]]), and the kernel holds to

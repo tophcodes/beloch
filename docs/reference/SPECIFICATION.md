@@ -86,26 +86,6 @@ selectors `.[] --[] #[]`), the one write was the keyword `through`);
 
 ## 4. Operations
 
-### 4.6a `reverse` — inside and outside reverse folds *(since v0.26-dev)*
-
-Moved to `KERNEL.md`, "Reverse"; the model is
-[def-reverse](/model/#def-reverse) (ADR 0043), the syntax `BELOCH-WRITES.md`.
-
-### 4.7 `flip` — turn the sheet over *(since v0.7-dev)*
-
-```
-flip
-```
-
-Turns the whole sheet over: every face's orientation inverts and the stacking
-order reverses — every above/below relation negates, so a face previously at the
-bottom of its overlap column becomes reachable on top. Because
-orientation inverts, a *subsequent* valley command is derived as a **mountain**
-relative to the original front — i.e. "mountain = turn over, then valley." `flip`
-takes no axis: with named points, where the sheet lands is irrelevant, so the
-reflection uses an internal canonical axis (the footprint's vertical centerline).
-A direction argument may be added later when the animation renderer needs it.
-
 ### 4.9 `flatten` — single-vertex flatten *(since v0.20-dev as `collapse`; renamed v0.23-dev; one-pipeline model v0.23-dev; stayer convention v0.23-dev)*
 
 Every other fold in the language performs one simple fold at a time. Some flat
@@ -661,7 +641,7 @@ touches nothing (§4.10). `mark` creases it flat; `fold` creases and folds it:
 its items state `(moving …)` to anchor the fold, `(up to …)` to scope it,
 `(mountain)` to set its direction (`BELOCH-WRITES.md`). Either verb, given a `line_operand`
 item instead of a construction, acts on an existing material crease instead of
-computing a new line. `flip` turns the whole sheet over (§4.7) and takes no
+computing a new line. `flip` turns the whole sheet over (`BELOCH-WRITES.md`) and takes no
 item. *(since v0.7-dev)* Any operand may be an **inline read** (§4.10): `--x
 * --y` (or `.[--x --y]`) is the point where two lines meet; `.a * .b` (or
 `--[.a .b]`) is the existing crease/edge through two points; `--l & c` /
@@ -758,7 +738,7 @@ runs, rather than derived from the solved stack afterward.
 *(v0.26-dev)* **layer placement**: `fold … over/under <flap>` inserts the
 moved flap between layers, and the **`reverse`** verb folds inside and
 outside reverse folds as two placed half-folds with derived letters (`BELOCH-WRITES.md`,
-§4.6a).
+`BELOCH-WRITES.md`).
 
 ---
 
