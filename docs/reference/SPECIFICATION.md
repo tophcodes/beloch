@@ -1093,19 +1093,6 @@ axiom         := "through" point_operand point_operand          ; axiom 1 — a 
                | "map" point_operand "onto" line_operand
                      "and" point_operand "onto" line_operand    ; axiom 7
 flap_operand  := point_operand | line_operand | "#[" point_operand+ "]"              ; since v0.18-dev
-point_operand := POINT_NAME                                      ; named
-               | "(" line_operand "*" line_operand ")"           ; meet (binary), as an operand: parenthesized — bare only at a binding's RHS (point_stmt, above)
-               | ".[" line_operand+ "]"                          ; meet (n-ary): the point on all listed lines
-               | "(" point_operand ")"                           ; grouping (since v0.28-dev)
-line_operand  := CREASE_NAME                                     ; named crease, or a prelude edge (--ab --bc --cd --da)
-               | point_operand "*" point_operand                 ; join (binary), as an operand: bare, unlike the meet direction above — the existing crease/edge through two points, a read
-               | "(" line_operand ")"                            ; grouping (since v0.28-dev)
-               | "--[" constraint+ "]"                           ; join / line selector: crease/edge segments incident to all constraints
-               | line_operand "&" constraint                     ; filter to incident segments (since v0.17-dev)
-               | line_operand "\" constraint                     ; drop incident segments
-               | "[" line_operand+ "]"                           ; union of same-typed bundles
-
-constraint    := point_operand | CREASE_NAME | "#[" point_operand+ "]"  ; a bare crease name, not a general line_operand
 POINT_NAME    := "." ident
 CREASE_NAME   := "--" ident
 INSTANCE_NAME := "$" ident

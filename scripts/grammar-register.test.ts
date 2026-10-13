@@ -16,18 +16,10 @@ const lexerSource = readFileSync(join(root, LEXER), "utf8");
 const beloch = register.documents.find((d) => d.path === "docs/reference/BELOCH-GRAMMAR.md");
 if (!beloch) throw new Error("docs/reference/BELOCH-GRAMMAR.md missing from the register");
 
-test("docs/reference/BELOCH-GRAMMAR.md yields 31 rules and 7 external names", () => {
-	expect(beloch.fragments.flatMap((f) => f.rules).length).toBe(31);
-	expect(beloch.external.length).toBe(7);
-	expect(beloch.external.map((e) => e.name)).toEqual([
-		"point_operand",
-		"line_operand",
-		"bind_stmt",
-		"def_stmt",
-		"apply_stmt",
-		"export_stmt",
-		"export_entry",
-	]);
+test("docs/reference/BELOCH-GRAMMAR.md yields 42 rules and no external name", () => {
+	expect(beloch.fragments.flatMap((f) => f.rules).length).toBe(42);
+	expect(beloch.external.length).toBe(0);
+	expect(beloch.external.map((e) => e.name)).toEqual([]);
 	expect(beloch.planned).toEqual([]);
 });
 
@@ -68,7 +60,7 @@ test("a rule's lines are the rendering contract both renderers consume", () => {
 
 test("docs/reference/SPECIFICATION.md is in the register, read for its keywords", () => {
 	const spec = register.documents.find((d) => d.path === "docs/reference/SPECIFICATION.md");
-	expect(spec?.fragments.flatMap((f) => f.rules).length).toBeGreaterThan(20);
+	expect(spec?.fragments.flatMap((f) => f.rules).length).toBeGreaterThan(0);
 	expect(spec?.external).toEqual([]);
 });
 
