@@ -86,97 +86,9 @@ selectors `.[] --[] #[]`), the one write was the keyword `through`);
 
 ## 4. Operations
 
-### 4.1 Axiom 1 — line through two points *(since v0.0)*
-
-```
-through .x .y
-```
-
-The unique fold line passing through points `.x` and `.y`
-[[justin1986]](#ref-justin1986), [[hull2020]](#ref-hull2020) §1.5 (O1).
-**Error** if `.x` and `.y` are the same point (no unique line).
-
-### 4.2 Axiom 2 — fold one point onto another *(since v0.0)*
-
-```
-map .x onto .y
-```
-
-The fold that places `.x` onto `.y`: the perpendicular bisector of the segment
-`x–y` [[justin1986]](#ref-justin1986),
-[[hull2020]](#ref-hull2020) §1.5 (O3 in Hull's numbering; see `BELOCH-CONSTRUCTIONS.md`, Axiom numbering).
-**Error** if `.x` and `.y` are the same point.
-
-*(since v0.6-dev: verb is `map … onto …`; was `fold … to …`.)*
-
-### 4.3a Free point on a line — `free on … from … at …` *(since v0.25-dev)*
-
-Moved to `BELOCH.md`, "Free points".
-
-### 4.4 Axiom 3 — perpendicular through a point *(since v0.2)*
-
-```
-perp --l through .p
-```
-
-The fold line through point `.p`, perpendicular to crease `--l`
-[[justin1986]](#ref-justin1986) §8.1 (operation ③), [[hull2020]](#ref-hull2020)
-§1.5 (O5 in Hull's numbering; see `BELOCH-CONSTRUCTIONS.md`, Axiom numbering). This is the first axiom taking a **crease**
-as an operand.
-
-**On the number of solutions.** Operation ③ admits *two* fold lines exactly when
-`.p` lies **on** `--l`: the perpendicular through `.p`, and `--l` itself (a
-reflection maps a line onto itself either across a perpendicular or across the
-line itself; both pass through `.p` only when `.p ∈ --l`). The second is the
-**trivial, identity-like** solution — re-creasing the existing line, producing no
-new geometry. Beloch always returns the **perpendicular**: it is unique and is
-the meaningful construction. We deliberately ignore the trivial solution,
-assuming the program wants the meaningful variant. Consequently `perp` has **no
-geometric precondition and never errors** (beyond undefined-name errors).
-
-### 4.5 Axiom 5 — fold one line onto another *(since v0.3-dev)*
-
-Moved to `BELOCH-CONSTRUCTIONS.md`, "Axiom 5, a line onto a line"; the
-selection among its candidates is under "Selection" there (ADR 0031).
-
-### 4.5a Axiom 4 — project a point onto a line *(since v0.4-dev)*
-
-```
-map .p onto --l1 perp --l2
-```
-
-The fold that places point `.p` onto line `--l1` with a crease **perpendicular
-to** `--l2`. Equivalently, `.p` is moved **parallel to** `--l2` until it lands on
-`--l1` — the *projection of `.p` onto `--l1` parallel to `--l2`*
-[[justin1986]](#ref-justin1986) §8.1 (operation ④). At most **one** solution, so
-there is nothing to select; `toward` still names the side that stays
-(`BELOCH-CONSTRUCTIONS.md`, Selection).
-
-**Numbering.** This is classic Justin **axiom 4**, which is Wikipedia's
-Huzita-Hatori **O7** — *not* Wikipedia's O4 (that is Beloch's axiom 3,
-perpendicular-through-a-point). See `BELOCH-CONSTRUCTIONS.md`, Axiom numbering and `antipatterns.md`.
-
-**Errors:** `--l1` and `--l2` are **parallel** — no fold exists (zero solutions;
-or, when `.p` lies on `--l1`, infinitely many — forbidden either way). When `.p`
-already lies on `--l1` and the lines are not parallel, the crease is the
-perpendicular to `--l2` through `.p` (one solution).
-
-The result stays in ℚ — no square roots
-[[justin1986]](#ref-justin1986) §8.2(a).
-
-### 4.5b Axiom 6 — fold a point onto a line, crease through a fixed point *(since v0.8-dev)*
-
-Moved to `BELOCH-CONSTRUCTIONS.md`, "Axiom 6, a point onto a line through a
-point" (ADR 0031).
-
-### 4.5c Axiom 7 — cubic Beloch fold (two points, two lines) *(since v0.9-dev)*
-
-Moved to `BELOCH-CONSTRUCTIONS.md`, "Axiom 7, two points onto two lines"
-(ADR 0031).
-
 ### 4.6 Marking and folding: `mark` / `fold` *(since v0.7-dev; `mark`/`fold` verbs since v0.21-dev; partial marks since v0.22-dev)*
 
-A construction (`map`/`through`/`perp`, §4.1–§4.5c) is a pure read: it computes a
+A construction (`map`/`through`/`perp`, `BELOCH-CONSTRUCTIONS.md`) is a pure read: it computes a
 line and touches nothing. `--l = (map .a onto .b)` binds a value; on its own it
 scores nothing. Acting on the paper needs one of two disposition keywords
 (§4.10):
@@ -407,7 +319,7 @@ fold (<crease-operand>) [(moving <flap>)] [(up to <flap>)] [(mountain)]
 ```
 
 Folds along a crease already on the paper (a bundle, `BELOCH-OPERANDS.md`) instead of
-re-stating the construction that produced it (§4.1–§4.5c). A material
+re-stating the construction that produced it (`BELOCH-CONSTRUCTIONS.md`). A material
 crease implies no side, so `moving` or `toward` names it. Material resolution is per
 flap, as for any crease reference (`BELOCH-OPERANDS.md`): a crease **bent** under the moving
 set is an error ("the crease is bent under the moving flaps", hint "select a
@@ -816,7 +728,7 @@ The **reads** are:
   `--[.a .b]` (or its `.a * .b` sugar) resolves to a **real** crease or paper
   edge through the two points, never conjuring a "sight-line."
 - the **constructions** — `map … onto …`, `through … …`, `perp … through …`
-  (§4.1–§4.5c) — which compute a line without touching the paper. `--l = map
+  (`BELOCH-CONSTRUCTIONS.md`) — which compute a line without touching the paper. `--l = map
   .a onto .b` binds a value; on its own it scores nothing. *(since v0.21-dev)*
   `through` (Huzita axiom 1) joins this side too: it used to be the sole
   write, but it is no reflection, only a description — "the line through two

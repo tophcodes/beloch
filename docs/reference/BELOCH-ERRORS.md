@@ -85,8 +85,9 @@ mark (through .a .x)
 Axiom 1, `through <p> <q>`, and axiom 2, `map <p> onto <q>`, take two
 points that lie apart. The points are compared where they lie in the
 current state, so the error meets the same name written twice, and two
-material points a fold has brought together (`SPECIFICATION.md` §4.1 and
-§4.2):
+material points a fold has brought together
+([[reference/beloch-constructions#axiom-1-the-line-through-two-points|axiom 1]],
+[[reference/beloch-constructions#axiom-2-a-point-onto-a-point|axiom 2]]):
 
 ```{.bel .frag}
 fold (map .b onto .a) (moving .b)

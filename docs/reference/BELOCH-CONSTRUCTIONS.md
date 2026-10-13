@@ -209,6 +209,92 @@ suggestion, and a selection that ends with no candidate has none. A
 suggestion is checked for its own statement only; a later statement that
 fails with it reports that failure where it happens.
 
+## Axiom 1, the line through two points
+
+`(through .p .q)` is the line through `.p` and `.q` [@justin1986, §8.1,
+operation ①], [@hull2020, §1.5]: one line, and nothing to select. Its one
+error is two points at one place, the same name written twice or two
+material points a fold has brought together
+([[reference/beloch-errors#two-points-at-one-place]]).
+
+```{.bel .frag}
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+.o = --ac * --bd
+
+; assert .o = (1/2, 1/2)
+```
+
+## Axiom 2, a point onto a point
+
+`(map .p onto .q)` folds `.p` onto `.q`: the perpendicular bisector of the
+two [@justin1986, §8.1, operation ②], [@hull2020, §1.5]. One line, and
+the fold it carries derives its moving flap from `.p`
+([[reference/beloch-writes]]). Its error is the same as for axiom 1.
+
+```{.bel .frag}
+mark (map .a onto .c) as --f
+mark (through .a .c) as --ac
+.o = --f * --ac
+
+; assert .o = (1/2, 1/2)
+```
+
+## Axiom 3, the perpendicular through a point
+
+`(perp --l through .p)` is the line through `.p` perpendicular to `--l`
+[@justin1986, §8.1, operation ③], [@hull2020, §1.5], the first axiom
+that takes a line as an operand. Justin's operation ③ admits two folds
+when `.p` lies on `--l`, the perpendicular and `--l` itself, which scores
+the line again and makes nothing; Beloch takes the perpendicular in
+every case, so the construction has no error of its own.
+
+```{.bel .frag}
+mark (through .a .c) as --ac
+mark (perp --ac through .b) as --p
+.o = --p * --ac
+
+; assert .o = (1/2, 1/2)
+```
+
+```{.bel .frag}
+mark (through .a .c) as --ac
+.o = free on --ac from .a at 1/2
+mark (perp --ac through .o) as --p    ; .o lies on --ac
+.x = --p * --ab
+
+; assert .x = (1, 0)
+```
+
+## Axiom 4, a point onto a line along another
+
+`(map .p onto --l perp --m)` folds `.p` onto `--l` with a crease
+perpendicular to `--m`: `.p` moves parallel to `--m` until it lands on
+`--l` [@justin1986, §8.1, operation ④], [@hull2020, §1.5]. At most one
+line, so there is nothing to select, and `toward` still names the side
+that stays (Selection, above). When `.p` lies on `--l` already, the
+crease is the perpendicular to `--m` through `.p`. The result stays
+rational [@justin1986, §8.2(a)]. Its error is `--l` parallel to `--m`,
+`` map .p onto --l perp --m: lines are parallel, no fold exists ``, which
+covers the case of no landing and the case of `.p` on `--l` with every
+perpendicular a fold.
+
+```{.bel .frag}
+mark (map .a onto --bc perp --ab) as --v   ; .a moves along --ab onto --bc
+.x = --v * --ab
+
+; assert .x = (1/2, 0)
+```
+
+```{.bel .frag}
+mark (through .a .c) as --ac
+.m = free on --ab from .a at 1/2
+mark (map .m onto --ab perp --ac) as --p  ; .m lies on --ab already
+.x = --p * --da
+
+; assert .x = (0, 1/2)
+```
+
 ## Axiom 5, a line onto a line
 
 `(map --l1 onto --l2)` folds `--l1` onto `--l2` along an angle bisector

@@ -357,7 +357,7 @@ let expected_inventories =
   [
     ("BELOCH.md", counts 0 0 0 0);
     ("BELOCH-WRITES.md", counts 0 13 7 0);
-    ("BELOCH-CONSTRUCTIONS.md", counts 1 4 1 0);
+    ("BELOCH-CONSTRUCTIONS.md", counts 1 10 1 0);
     ("BELOCH-ANNOTATIONS.md", counts 0 0 0 1);
     ("BELOCH-GRAMMAR.md", counts 0 0 0 0);
     ("BELOCH-NAMES.md", counts 0 7 2 0);
