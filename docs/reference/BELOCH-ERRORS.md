@@ -197,7 +197,7 @@ their line: `moving` or `toward` names it, and a `moving` point on the
 axis names none. A fold whose `up to` names a crease walks inward from
 its moving flap, and the axiom 5 fold `fold (map --l onto --m)` derives
 no `moving` from its construction, so it needs one written
-([[reference/beloch-writes]], `SPECIFICATION.md` §4.6).
+([[reference/beloch-writes#fold]]).
 
 ```{.bel .frag}
 fold (through .a .c)
@@ -226,8 +226,7 @@ takes two points apart. An extent is written onto one flap when `on`
 names it, and it stays on that flap: an extent that would cross a folded
 crease to reach its endpoint is an error. Without `on`, the mark writes a
 piece onto every flap under the extent, each clipped to its flap, and no
-extent crosses a crease ([[decision/0036]], [[reference/beloch-writes]],
-`SPECIFICATION.md` §4.6).
+extent crosses a crease ([[decision/0036]], [[reference/beloch-writes#mark]]).
 
 ```{.bel .frag}
 mark (through .a .c) (between .a .b)
