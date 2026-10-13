@@ -162,11 +162,13 @@ does not load files yet, so these two rules wait for the import
 
 ## Reads and writes
 
-One law organizes the surface syntax (`SPECIFICATION.md` §4.10): an
+One law organizes the surface syntax ([[decision/0011]]): an
 operation that changes the state is a keyword verb, sequenced in program
 order; an operation that only computes something from the current state is
 an operator, a bracket, or a construction, and may appear anywhere a value
-is needed.
+is needed. Finding where two creases cross and describing a line cost the
+folder nothing; making a crease costs a fold, and the notation keeps the
+two apart.
 
 In the terms of the model, the writes are the partial functions from states
 to states ([[reference/model#def-write|def-write]]), and the reads are functions from
@@ -182,7 +184,7 @@ A point is named with `.`, a line or a crease with `--`
 ([[reference/beloch-names#names]]): the corners of the sheet are points, and
 so is every meet and every free point; a construction yields a line, and a
 write yields a crease. Every value is exact, whatever construction made it
-(`SPECIFICATION.md` §6).
+(Exactness, below).
 
 **Writes.** The operations of the model's section on operations, named by
 the verbs `mark`, `fold`, `unfold`, `reverse`, `flatten` and `flip`. Each is a
@@ -276,3 +278,27 @@ segments are collinear ([[decision/0014]]) and is an error once a fold has bent 
 A line stands nowhere a crease is wanted: it has no material until a
 `mark` scores it. The check needs no geometry, so a program's sorts can be
 verified before it is evaluated.
+
+## Exactness
+
+Every geometric decision is exact. An implementation decides each
+predicate, equality of points and of lines, parallelism, incidence,
+orientation and whether a point lies on the paper, as over the real
+numbers: no tolerance, no sampling. The decisions are what a reader of the
+output sees, since they fix which vertices are one, which layer a face
+lies in and what lies on the paper, so two implementations that agree on
+the predicates of a program write the same FOLD graph.
+
+The rule binds the decisions and leaves the representation of numbers
+free. Exact arithmetic over the real algebraic numbers is one way to meet
+it ([[decision/0012]], [[decision/0013]]); interval arithmetic with an exact
+fallback where an interval leaves a predicate open is another. The
+constructions bound how irrational a coordinate gets: axioms 1 to 4 keep
+rational inputs rational, axiom 5 brings square roots, extensions of
+degree 2 over the field so far [@hull2020, §3.2], and axiom 7 brings cube
+roots, while axioms 1 to 6 stay in the tower of square roots
+([[reference/beloch-constructions#axiom-numbering]]).
+
+The output is the one inexact step: the coordinates in a FOLD file are
+decimals, rounded at serialization alone, and no decision is taken on a
+rounded value ([[reference/fold]]).
