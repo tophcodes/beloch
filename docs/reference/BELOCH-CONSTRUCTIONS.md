@@ -76,6 +76,39 @@ alignment on a virtual point (Alperin and Lang's `AL10`) is written, is not
 decided and waits for the first two-fold construction the kernel can solve.
 :::
 
+## Axiom numbering
+
+The axioms carry the numbers of Justin's table [@justin1986, §8.1], which
+orders the seven operations by algebraic power: the number of an axiom is
+the rung of the number ladder its construction needs ([[decision/0012]]).
+Two other schemes are in use and line up with neither Justin's nor each
+other; the table maps them.
+
+| Beloch, Justin | the fold | degree | solutions | Huzita-Hatori | Hull [@hull2020, §1.5] |
+|:---:|---|:---:|:---:|:---:|:---:|
+| 1 | the line through two points | 1 | 1 | 1 | O1 |
+| 2 | one point onto another | 1 | 1 | 2 | O3 |
+| 3 | the perpendicular through a point | 1 | 1 or 2 | 4 | O5 |
+| 4 | a point onto a line, perpendicular to another line | 1 | 0 or 1 | 7 | O8 |
+| 5 | one line onto another | 2 | 1 or 2 | 3 | O4 |
+| 6 | a point onto a line, through a point | 2 | 0 to 2 | 5 | O6 |
+| 7 | two points each onto a line, the Beloch fold | 3 | 0 to 3 | 6 | O7 |
+| | the meet of two lines, no fold | | | | O2 |
+
+- Huzita-Hatori, the numbering Wikipedia uses, numbers the cubic fold 6.
+  Beloch numbers it 7, and "axiom 7" on these pages is the Beloch fold.
+- Hull inserts the meet of two lines as his O2 and orders 3, 4 and 5
+  differently, so point onto point is axiom 2 here and Hull's O3, and the
+  angle bisector is axiom 5 here and Hull's O4.
+- Axioms 1 to 4 have degree 1 and stay in the rationals; axiom 5 is the
+  first that needs a square root, and axiom 7 the first that needs a cube
+  root. In Justin's account axioms 1 to 4 give the dyadic rationals, 1 to 5
+  the field  1 to 6 the ruler-and-compass field  and 1 to 7 the
+  larger 0@justin1986, §8.1].
+
+The clashes with the other two schemes are also recorded in
+[[notes/antipatterns]].
+
 ## Selection
 
 Axioms 5, 6 and 7 leave finitely many candidate lines, usually more than

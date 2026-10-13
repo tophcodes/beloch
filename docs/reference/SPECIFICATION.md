@@ -84,61 +84,6 @@ selectors `.[] --[] #[]`), the one write was the keyword `through`);
 
 ---
 
-## 1. Overview *(since v0.0)*
-
-Beloch is a declarative language for origami. A `.bel` program is **evaluated**
-(not compiled to an executable) into a data artifact describing a paper state,
-emitted as FOLD. See [ADR 0007](../decision/0007-evaluator-not-compiler.md).
-
-The language is built on the Huzita-Justin fold axioms
-[[justin1986]](#ref-justin1986), using them as primitive operations. *(since
-v0.7-dev)* It is an **action model**: a program is an imperative sequence of
-marking/folding actions on a stateful sheet (§4.6). The axioms (`map`,
-`through`, `perp`) locate *where* a crease could go — a pure read; `mark` and
-`fold` actually act on the paper (§4.10). A program evaluates to a folded
-state, emitted as a dual-frame FOLD file — the flat **crease pattern** and the
-**folded form** (§7). The flat crease pattern (a program with no `fold`
-actions) is the special case.
-See [ADR 0011](../decision/0011-action-model.md).
-
-### A note on axiom numbering
-
-Beloch uses the **classic Huzita-Justin numbering** [[justin1986]](#ref-justin1986)
-§8.1 — the numbering used by most origami-*math* references. It is chosen
-deliberately: Justin ordered the seven axioms **by algebraic power**, so the
-axiom number is also the rung on the number-kernel ladder (ℚ → √ → ∛; see §3).
-Two rival schemes exist and **do not** line up with ours; the table below is the
-authoritative cross-map so they are never re-conflated.
-
-| Beloch / Justin | The fold | Degree | Sols | Huzita-Hatori (Wikipedia) | Hull §1.5 |
-|:---:|---|:---:|:---:|:---:|:---:|
-| **①** | line through two points | 1 | 1 | 1 | O1 |
-| **②** | one point onto another (⟂ bisector) | 1 | 1 | 2 | O3 |
-| **③** | perpendicular through a point | 1 | 1,2 | 4 | O5 |
-| **④** | project a point onto a line (∥ another) | 1 | 0,1 | 7 | O8 |
-| **⑤** | one line onto another (angle bisector) | 2 | 1,2 | 3 | O4 |
-| **⑥** | point onto line, crease through a point | 2 | 0,1,2 | 5 | O6 |
-| **⑦** | two points each onto a line (cubic Beloch fold) | 3 | 0,1,2,3 | 6 | O7 |
-| — | *locate line ∩ line (not a fold)* | — | — | — | O2 |
-
-Three traps this table defuses:
-
-- **The Wikipedia clash.** Huzita-Hatori numbers the **cubic fold as axiom 6**;
-  Beloch numbers it **7**. Anyone cross-referencing Wikipedia will trip here.
-  When this spec says "axiom 7" it means the cubic Beloch fold — Wikipedia's O6.
-- **Hull's shift.** Hull inserts a non-fold ("locate the intersection of two
-  lines") as his **O2** and reorders 3/4/5, so his numbering matches *neither*
-  other scheme. When this spec writes "axiom 2" it means point-onto-point =
-  Hull's **O3**, and the angle bisector is **axiom 5** (Hull's O4), *not* axiom 3.
-- **Degree, not position, drives the kernel.** Axioms ①–④ are degree 1 and stay
-  in ℚ; **⑤** (bisector) is the first to require square roots (leaves ℚ); **⑦** is
-  the first to require cube roots. Justin's own §8.1: ①–④ give dyadic rationals,
-  ①–⑤ the field K₁, ①–⑥ = ruler-and-compass (K₂), ①–⑦ the larger K₃.
-
-This discrepancy set is also recorded in [antipatterns.md](../notes/antipatterns.md).
-
----
-
 ## 2. The paper *(since v0.0)*
 
 Moved to `BELOCH.md`, "Sheets" (ADR 0046).
@@ -181,7 +126,7 @@ map .x onto .y
 
 The fold that places `.x` onto `.y`: the perpendicular bisector of the segment
 `x–y` [[justin1986]](#ref-justin1986),
-[[hull2020]](#ref-hull2020) §1.5 (O3 in Hull's numbering; see §1).
+[[hull2020]](#ref-hull2020) §1.5 (O3 in Hull's numbering; see `BELOCH-CONSTRUCTIONS.md`, Axiom numbering).
 **Error** if `.x` and `.y` are the same point.
 
 *(since v0.6-dev: verb is `map … onto …`; was `fold … to …`.)*
@@ -198,7 +143,7 @@ perp --l through .p
 
 The fold line through point `.p`, perpendicular to crease `--l`
 [[justin1986]](#ref-justin1986) §8.1 (operation ③), [[hull2020]](#ref-hull2020)
-§1.5 (O5 in Hull's numbering; see §1). This is the first axiom taking a **crease**
+§1.5 (O5 in Hull's numbering; see `BELOCH-CONSTRUCTIONS.md`, Axiom numbering). This is the first axiom taking a **crease**
 as an operand.
 
 **On the number of solutions.** Operation ③ admits *two* fold lines exactly when
@@ -231,7 +176,7 @@ there is nothing to select; `toward` still names the side that stays
 
 **Numbering.** This is classic Justin **axiom 4**, which is Wikipedia's
 Huzita-Hatori **O7** — *not* Wikipedia's O4 (that is Beloch's axiom 3,
-perpendicular-through-a-point). See §1 and `antipatterns.md`.
+perpendicular-through-a-point). See `BELOCH-CONSTRUCTIONS.md`, Axiom numbering and `antipatterns.md`.
 
 **Errors:** `--l1` and `--l2` are **parallel** — no fold exists (zero solutions;
 or, when `.p` lies on `--l1`, infinitely many — forbidden either way). When `.p`

@@ -28,6 +28,13 @@ state ([[reference/model#def-flat-state|def-flat-state]]) and either produces th
 one or fails with a reason. The program's meaning is the finite sequence of
 states it passes through; its result is the last state.
 
+`beloch fold` evaluates a program and writes the path it took as one FOLD
+document: the crease pattern and the folded state after every step
+([[reference/fold]], [[decision/0007]]). The constructions of the axioms
+locate where a crease could go and change nothing; the verbs `mark` and
+`fold` act on the sheet ([[decision/0011]]), the law stated under Reads and
+writes below.
+
 ## Sheets
 
 A program opens its sheet with `paper`, followed by the sheet: the square,
