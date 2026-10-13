@@ -331,8 +331,18 @@ reverse (map .a onto .d) (--e & .q valley)
 
 `flatten` folds the rays around one vertex in one move, each ray a piece
 of a marked crease selected with `&`, and takes the items stated at the
-top of this page ([[reference/model#def-flatten|def-flatten]]). `flip` turns
-the sheet over and takes no item ([[reference/model#def-flip|def-flip]]).
+top of this page ([[reference/model#def-flatten|def-flatten]]).
+
+`flip` turns the whole sheet over and takes no item
+([[reference/model#def-flip|def-flip]]): every face changes between face up
+and face down, and the stack reverses, so the layer at the bottom of a
+pile is on top afterwards. Every hinge keeps its angle and its letter
+([[reference/model#lem-flip|lem-flip]]); a fold that follows lands on what was
+the back, and its crease reads mountain against the front where the same
+fold before the flip would read valley. `flip` takes no axis: where the
+sheet comes to lie on the table is settled up to a motion of the table,
+and the kernel reflects it across a line of its own
+([[reference/kernel#flip]]).
 
 ```{.bel .prelude name=prelim}
 paper square
