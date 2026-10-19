@@ -94,7 +94,7 @@ crane path needs such a state.
 The model's state does not remember how it was reached. The kernel keeps the
 history for output: the FOLD file carries one frame per statement in
 `file_frames`, and per edge the statement that scored it in `beloch:edges` and
-`beloch:source_line` (`SPECIFICATION.md` §7). No operation reads this record.
+`beloch:source_line` ([[reference/fold]]). No operation reads this record.
 
 ## Selection
 
