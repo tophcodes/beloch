@@ -10,8 +10,8 @@ tableOfContents:
 [@foldformat], extended with fields under the `beloch:` prefix as FOLD's
 custom-property rule allows. FOLD is the exchange format the origami tools
 read ([[decision/0029]]); the extension carries what the model and the language know
-and FOLD has no field for. `SPECIFICATION.md` §7 is the field-level contract;
-this document explains what the file represents.
+and FOLD has no field for. This document is the contract of the file: what
+it represents, and which fields it carries.
 
 The output refers to the model by statement ids and to the kernel by module.
 Neither refers back.
@@ -21,11 +21,16 @@ Neither refers back.
 The model's meaning of a program is the sequence of states it passes through
 (`BELOCH.md`, "A program is a path"). The file records that sequence: the
 top-level dictionary is frame 0, the flat sheet with every crease drawn on it
-in paper coordinates, and `file_frames` holds one `foldedForm` frame per
-statement that moved the paper, each a flat folded state
-([[reference/model#def-flat-state|def-flat-state]]) in table coordinates. A reader that
-wants only the result takes the last frame; a reader that wants the diagram
-sequence takes them all.
+in paper coordinates, and `file_frames` holds the `foldedForm` frames: first
+the flat sheet before any statement, then one frame per statement that
+moved the paper, each a flat folded state
+([[reference/model#def-flat-state|def-flat-state]]) in table coordinates. A
+program that folds nothing has the one baseline frame. Frame 0 is the
+crease pattern of the final state, whatever the number of frames, and each
+folded frame carries its own vertices, edges and faces: an earlier state
+has fewer faces than the final crease pattern and cannot share its
+indices. A reader that wants only the result takes the last frame; a
+reader that wants the diagram sequence takes them all.
 
 A program with several sheets (the sheet-as-value design) keeps this shape: a
 frame holds every sheet as its own connected component of the planar graph,
@@ -40,8 +45,10 @@ file is a record of the run, and no operation of the language reads it.
 Each frame uses the FOLD vocabulary for what FOLD can express:
 
 - `vertices_coords`, `edges_vertices`, `faces_vertices`: the planar graph of
-  the faces of the state, vertices deduplicated by coordinate. Frame 0 is in
-  paper coordinates, every other frame in table coordinates.
+  the faces of the state, vertices deduplicated by coordinate and each face
+  listed counter-clockwise. Frame 0 is in paper coordinates, every other
+  frame in table coordinates; a program with no crease has the one face of
+  the sheet.
 - `edges_assignment`: `B` for the sheet boundary, `M` and `V` for folded
   creases with the letter derived from the state, `F` for a marked crease that
   has not folded, and `J` for a join edge: a flat edge that only divides a
@@ -63,8 +70,11 @@ Each frame uses the FOLD vocabulary for what FOLD can express:
 - `faceOrders`: the layer relation $\lambda$ as FOLD encodes it, one triple
   per pair of overlapping faces with the sign taken relative to the second
   face's normal. Pairs that do not overlap are absent, as in the model.
+- `file_spec` and `file_creator`: the FOLD version the file follows and
+  `beloch` with its version.
 - `frame_classes`, `frame_parent`, `frame_inherit`: FOLD's frame bookkeeping;
-  every folded frame is a child of frame 0 without inheritance.
+  frame 0 is a `creasePattern`, every other frame a `foldedForm` that is a
+  child of frame 0 without inheritance.
 - `file_author`: the text of the program's `@author` annotation
   (`BELOCH-ANNOTATIONS.md`), absent when the program has none.
 - `frame_unit`: the unit the program's file declares (`BELOCH.md`,
@@ -81,7 +91,11 @@ What the language knows about a state and FOLD cannot say:
 - `beloch:edges`: per crease edge, the statement that scored it as an index
   into `beloch:statements` (`statement`) together with its source span, its
   construction (which axiom or verb), the names of the points and lines it
-  was built from, and the crease's name if it has one. Consumers join on the
+  was built from, and the crease's name if it has one: the fields `axiom`,
+  `sources`, `span`, `statement`, `name` and `crease_id`. A crease bound
+  inside a kept instance carries its qualified name, `"p1.d"` for `--d`
+  bound inside `$p1 = apply …`; `name` is null for a temp and for a crease
+  of an application that kept no instance. Consumers join on the
   index; two statements may share a source line, so the span alone leaves
   the join ambiguous. This is the attribution the model calls provenance
   ([[decision/0019]]).
@@ -146,9 +160,18 @@ What the language knows about a state and FOLD cannot say:
   ([#81](https://github.com/tophcodes/beloch/issues/81)).
 - `beloch:marks`: reference marks that subdivide no face (`mark … at`,
   `mark … between` ending mid-face), which are creases in the language and no
-  edges in the graph.
-- `beloch:free`: every free point (`free on … from … at …`) with its
-  parameter, so a renderer can offer it as a slider.
+  edges in the graph. An entry is `{"kind": "seg", "a", "b", "line",
+  "intent", "crease_id"}` for a dangling segment with its ends in paper
+  coordinates, or `{"kind": "point", "p", "line", "intent", "crease_id"}`
+  for a point; `line` is the mark's line, for the direction a renderer
+  draws a tick in, and `intent` the letter the program wrote beside the
+  mark.
+- `beloch:free`: every free point (`free on … from … at …`), keyed by its
+  name, qualified inside a kept instance as in `beloch:edges`. An entry is
+  `{"t", "endpoints", "source_line"}`: `t` is the exact rational as a
+  string, `"1/4"`, so a reader recovers it exactly, and `endpoints` the two
+  ends of the range in paper coordinates, rounded like `vertices_coords`,
+  so a renderer can offer the point as a slider.
 - `beloch:faces_matrix`: each face's isometry as a matrix, the restriction of
   $f$ to that face, so a renderer can interpolate between frames without
   re-deriving it.
