@@ -326,13 +326,13 @@ test("a line along a crease draws each layer once", async () => {
 //   fold (map .m onto .a)
 //   .e = free on --da from .a at 1/2
 //   --k = (perp --da through .e)
-test("a turn on a crease the program names carries that name, and a turn on an unnamed crease none", async () => {
+test("a turn on a crease the program names carries that name, and a turn on an unnamed crease the line that scored it", async () => {
   const scene = parseFold(await Bun.file(new URL("./fixtures/side-named.fold", import.meta.url)).text());
   const { turns } = sideSection(scene, "k");
-  // one turn on --d, two on the unnamed second crease
-  expect(turns.map((u) => u.crease).sort()).toEqual(["d", null, null]);
+  // one turn on --d, two on the unnamed second crease, scored on line 5
+  expect(turns.map((u) => u.crease).sort()).toEqual(["--d", "@5", "@5"]);
   const svg = renderSide(scene, { along: "k" }).toString();
-  expect([...svg.matchAll(/data-kind="crease-name" data-name="([^"]+)"/g)].map((m) => m[1])).toEqual(["--d"]);
+  expect([...svg.matchAll(/data-kind="crease-name" data-name="([^"]+)"/g)].map((m) => m[1]).sort()).toEqual(["--d", "@5"]);
 });
 
 test.each(["side-preliminary-1", "side-preliminary-2", "side-preliminary-3", "side-reverse", "side-cupboard", "side-named"])(

@@ -415,6 +415,12 @@ function highlightNames(value: string | undefined): string[] {
 function colorCaption(caption: any[], highlight: string[]) {
 	if (highlight.length === 0) return;
 	const index = new Map(highlight.map((name, i) => [name, i]));
+	// The point a flap is named by, `#[.p]`, takes the flap's color where the
+	// caption writes `.p`, as the drawing does.
+	highlight.forEach((name, i) => {
+		const m = /^#\[\s*(\.\S+)\s*\]$/.exec(name);
+		if (m && !index.has(m[1]!)) index.set(m[1]!, i);
+	});
 	visit({ type: "root", children: caption } as any, "inlineCode", (node: any) => {
 		const i = index.get(node.value);
 		if (i === undefined) return;

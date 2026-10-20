@@ -12,8 +12,8 @@
 // the pattern with every crease the program makes, and the parts are numbered
 // by their order on the paper along the cut. Two programs that leave the same
 // paper under the cut number it alike, whatever order they score their
-// creases in. A folded hinge on a crease the program names carries that
-// name at its turn; other hinges carry none.
+// creases in. A folded hinge carries the name of its crease at its turn, or
+// the line of the statement that scored a crease the program never named.
 import type { FoldScene, Vec2 } from "@beloch/scene";
 import { pickStep, SceneError } from "@beloch/scene";
 import { createDoc, el, SvgDoc } from "./svgdoc";
@@ -23,7 +23,7 @@ import type { Theme } from "./theme";
 import { clipLineToPoly } from "./geometry";
 import { resolveIsometry } from "./isometry";
 import { sceneLayout } from "./layout";
-import { renderScene } from "./render-scene";
+import { highlightFaceColors, renderScene } from "./render-scene";
 import { renderFolded } from "./render-folded";
 import type { RenderOptions } from "./render-cp";
 
@@ -174,8 +174,17 @@ export function sideSection(scene: FoldScene, along: string, stepLabel?: string,
       .find(({ t: s }) => s !== undefined && endsAt(p, s) && endsAt(q, s));
     if (hit) hinges.push({ p: i, q: j, t: hit.t!, folded: away(p, hit.t!) === away(q, hit.t!), edge: hit.k });
   }));
-  // the name of the crease each edge of the frame lies on, where it has one
-  const creaseOf = new Map(frame.edgesVertices.map(([i, j], e) => [edgeKey(i, j), frame.edgesProvenance[e]?.name ?? null]));
+  // what a turn is written as: the name of the crease the edge lies on, or
+  // the line of the statement that scored an unnamed crease, as the crease
+  // pattern writes it, so that every folded hinge of the section can be found
+  // in the program
+  const creaseOf = new Map(frame.edgesVertices.map(([i, j], e) => {
+    const prov = frame.edgesProvenance[e];
+    if (!prov) return [edgeKey(i, j), null];
+    if (prov.name) return [edgeKey(i, j), `--${prov.name}`];
+    const line = prov.statement === null ? null : scene.statements[prov.statement]?.sourceLine ?? null;
+    return [edgeKey(i, j), line === null ? null : `@${line}`];
+  }));
 
   // strips: the pieces joined by flat hinges
   const parent = pieces.map((_, i) => i);
@@ -286,6 +295,14 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
   const { strips, turns, points, ends, view } = sideSection(scene, opts.along, opts.step, opts.farSide);
   const theme: Theme = { ...DEFAULT_THEME, ...opts.theme };
   const color = (name: number) => theme.highlightPalette[(name - 1) % theme.highlightPalette.length]!.stroke;
+  // With flaps highlighted, a part takes the color of its flap and every other
+  // part goes gray, so the section tells the flaps apart the way the crease
+  // pattern beside it does; without, the parts take the palette by number.
+  const litFaces = highlightFaceColors(scene, opts.highlight ?? [], theme);
+  const faceOfPart = new Map<Part, number>();
+  for (const s of strips) for (const p of s.pieces) for (const r of p.parts) faceOfPart.set(r, p.face);
+  const partColor = (r: Part) =>
+    litFaces === null ? color(r.name) : litFaces.get(faceOfPart.get(r)!)?.stroke ?? theme.flat;
   const halo = { stroke: theme.background, "stroke-width": 4, "paint-order": "stroke" };
   // A turn is a half circle on the place of its hinge along the line, from
   // the end of one strip to the end of the other, bulging out past them; its
@@ -298,7 +315,7 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
   // the crease names of the turns at one place on one side, one per crease,
   // and the room they take
   const namesAt = (us: Turn[]) => [...new Set(us.map((v) => v.crease).filter((c): c is string => c !== null))];
-  const nameW = (c: string) => (c.length + 2) * CHAR;
+  const nameW = (c: string) => c.length * CHAR;
   const named = (us: Turn[]) => Math.max(0, ...namesAt(us).map((c) => nameW(c) + 4));
   type Group = { t: number; o: 1 | -1; us: Turn[] };
   const groups: Group[] = [];
@@ -389,7 +406,7 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
   // each stops short of the place, so a gap stands between them
   const meets = (s: Strip, t: number) => strips.some((o) => o !== s && o.level === s.level &&
     (Math.abs(o.t0 - t) < EPS || Math.abs(o.t1 - t) < EPS));
-  const numbers: { name: number; level: number; x: number; end: number }[] = [];
+  const numbers: { name: number; level: number; x: number; end: number; color: string }[] = [];
   for (const s of strips) {
     const parts = s.pieces.flatMap((p) => p.parts).sort((p, q) => p.t0 - q.t0);
     for (const r of parts) {
@@ -401,10 +418,10 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
       nodes.push(el("line", {
         "data-kind": "layer", "data-name": r.name, "data-level": s.level,
         x1: x0, y1: y(s.level), x2: x1, y2: y(s.level),
-        stroke: color(r.name), "stroke-width": 3, "stroke-linecap": "round",
+        stroke: partColor(r), "stroke-width": 3, "stroke-linecap": "round",
       }));
       // at the start of the part, clear of the points and names over its middle
-      numbers.push({ name: r.name, level: s.level, x: x0 + 6, end: x1 });
+      numbers.push({ name: r.name, level: s.level, x: x0 + 6, end: x1, color: partColor(r) });
       if (Math.abs(r.t0 - s.t0) > EPS) {
         nodes.push(el("line", {
           "data-kind": "seam", x1: x0, y1: y(s.level) - 5, x2: x0, y2: y(s.level) + 5,
@@ -426,7 +443,7 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
     }
     nodes.push(el("text", {
       "data-kind": "layer-name", "data-name": m.name, x: m.x, y: y(m.level) - 7, "text-anchor": "start",
-      "font-size": 13, "font-weight": 600, fill: color(m.name),
+      "font-size": 13, "font-weight": 600, fill: m.color,
     }, [], String(m.name)));
   });
   for (const g of groups) {
@@ -452,7 +469,7 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
       const top = g.us.filter((v) => v.crease === c).sort((u, v) => radius(v) - radius(u))[0]!;
       const [lo, hi] = span(top);
       const w = nameW(c);
-      creaseNames.push({ name: `--${c}`, x: g.o === 1 ? foot(g) + out + 4 : foot(g) - out - 4 - w, y: (y(lo) + y(hi)) / 2 + 4, w });
+      creaseNames.push({ name: c, x: g.o === 1 ? foot(g) + out + 4 : foot(g) - out - 4 - w, y: (y(lo) + y(hi)) / 2 + 4, w });
     }
   }
   const placed: { x: number; y: number; w: number }[] = [];
@@ -507,7 +524,7 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
       creases: true, marks: true, points: true, lines: true, faces: "outline",
     },
     markOverlay: { marks: write ? write.keptMarks : [] },
-    labels: opts.labels,
+    labels: opts.labels, highlight: opts.highlight,
     theme: { lineStyle: colorLineStyle, ...opts.theme },
   }).node();
   const marks: SvgNode[] = [];
@@ -516,11 +533,11 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
     marks.push(el("line", {
       "data-kind": "piece", "data-name": r.name,
       x1: lay.tx(ax), y1: lay.ty(ay), x2: lay.tx(bx), y2: lay.ty(by),
-      stroke: color(r.name), "stroke-width": 5, "stroke-linecap": "round",
+      stroke: partColor(r), "stroke-width": 5, "stroke-linecap": "round",
     }));
     marks.push(el("text", {
       "data-kind": "piece-name", x: (lay.tx(ax) + lay.tx(bx)) / 2, y: (lay.ty(ay) + lay.ty(by)) / 2 - 8,
-      "text-anchor": "middle", "font-size": 15, "font-weight": 600, fill: color(r.name), ...halo,
+      "text-anchor": "middle", "font-size": 15, "font-weight": 600, fill: partColor(r), ...halo,
     }, [], String(r.name)));
   }
   // the point where it is on the paper, named; the paper points of the other

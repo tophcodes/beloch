@@ -37,13 +37,14 @@ if (viewFlag !== undefined && !["cp", "folded", "candidates", "op", "stages", "s
 const flip = args.includes("--flip");
 const hidden = (flagVal("--hidden") || "hide") as "dashed" | "hide";
 const labelsFlag = flagVal("--labels"); // undefined = show none
+const highlightFlag = flagVal("--highlight"); // undefined = none
 const legend = args.includes("--legend");
 const step = flagVal("--step");
 const formatFlag = flagVal("--format"); // "svg"|"png", overrides outPath extension
 const widthFlag = flagVal("--width"); // PNG output width in px; default = doc width
 const FLAGS = new Set([
-  "--title", "--view", "--hidden", "--labels", "--step", "--format", "--width", "--statement",
-  "--source", "--stage", "--along",
+  "--title", "--view", "--hidden", "--labels", "--highlight", "--step", "--format", "--width",
+  "--statement", "--source", "--stage", "--along",
 ]);
 const SWITCHES = new Set(["--flip", "--legend", "--checks", "--far-side", "--plain"]);
 // An option this CLI does not know would otherwise read as a positional, and
@@ -63,6 +64,13 @@ const format = formatFlag ?? (outPath?.endsWith(".png") ? "png" : "svg");
 // points/lines, even if also drawn elsewhere (a crease, a paper corner).
 const labels = labelsFlag !== undefined
   ? labelsFlag.split(",").map((s) => s.trim()).filter(Boolean)
+  : undefined;
+
+// the entities a drawing emphasizes, comma-separated: a point, a crease or a
+// flap by its selector, `--highlight "#[.f],#[.e],--s"`; a flap takes the
+// color of its position in the list, so two flaps stay apart.
+const highlight = highlightFlag !== undefined
+  ? highlightFlag.split(",").map((s) => s.trim()).filter(Boolean)
   : undefined;
 
 // the program the trace's spans point into, for the stages view
@@ -85,7 +93,7 @@ try {
   // (dots: "annotated" draws the dots of written names alone), and no
   // backdrop, so the page the drawing sits on shows through.
   const opts = {
-    title, labels, legend,
+    title, labels, legend, highlight,
     ...(args.includes("--plain")
       ? { annotate: [] as string[], dots: "annotated" as const, theme: { background: "none" } }
       : {}),

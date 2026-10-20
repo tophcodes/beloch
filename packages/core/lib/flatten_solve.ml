@@ -3,12 +3,12 @@
 
 open Ctx
 
-let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
-    ~(bind_out : Ctx.crease_val -> unit)
-    ~(elems : Ast.collapse_elem list)
-    ~(overs : (Ast.flap_arg * Ast.flap_arg) list)
-    ~(staying_opt : Ast.point_operand list option) ~(on_opt : Ast.flap_arg option)
-    ~(toward_opt : Ast.point_operand option) (span : Error.span) : unit =
+type elem_cand = int * Geom.point * Geom.point * Ast.mv_constraint
+
+(* The candidate segments of every ray item of a `flatten`, resolved from
+   its operands. *)
+let resolve_elems (ctx : Ctx.ctx) ~(elems : Ast.collapse_elem list)
+    (span : Error.span) : elem_cand list list =
   (* materialize every collapse crease FIRST (a mark subdivides on
      segment-selection), so all of them cross and the shared collapse
      vertex is fully formed before any ray is selected. Selecting rays
@@ -63,13 +63,13 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
             fail_not_material el ())
     | _ -> fail_not_material el ()
   in
-  let elem_cands = List.map resolve_elem_candidates elems in
-  let elem_of (fcid, fea, feb, valley) =
-    { Collapse.cid = fcid; ea = fea; eb = feb; valley }
-  in
-  (* vertex O: the point shared by >= 1 candidate segment of EVERY element,
-     off the sheet's raw edge on the paper (generalizes
-     [Collapse.common_vertex] to the per-element candidate lists). *)
+  List.map resolve_elem_candidates elems
+
+(* vertex O: the point shared by >= 1 candidate segment of EVERY element,
+   off the sheet's raw edge on the paper (generalizes
+   [Collapse.common_vertex] to the per-element candidate lists). *)
+let vertex_of (ctx : Ctx.ctx) ~(elem_cands : elem_cand list list)
+    (span : Error.span) : Geom.point =
   let interior_pt (p : Geom.point) =
     let cids =
       List.concat_map
@@ -81,26 +81,42 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     in
     Collapse.interior_vertex !(ctx.state) cids p
   in
-  let o =
-    let shared_by_all p =
-      List.for_all
-        (fun cands ->
-          List.exists
-            (fun (_, a, b, _) ->
-              Geom.point_equal a p || Geom.point_equal b p)
-            cands)
-        elem_cands
-    in
-    let endpoints =
-      List.concat_map (fun (_, a, b, _) -> [ a; b ]) (List.hd elem_cands)
-    in
-    match
-      List.find_opt
-        (fun p -> shared_by_all p && interior_pt p)
-        endpoints
-    with
-    | Some o -> o
-    | None -> Error.fail span Collapse.e_no_vertex
+  let shared_by_all p =
+    List.for_all
+      (fun cands ->
+        List.exists
+          (fun (_, a, b, _) ->
+            Geom.point_equal a p || Geom.point_equal b p)
+          cands)
+      elem_cands
+  in
+  let endpoints =
+    List.concat_map (fun (_, a, b, _) -> [ a; b ]) (List.hd elem_cands)
+  in
+  match
+    List.find_opt
+      (fun p -> shared_by_all p && interior_pt p)
+      endpoints
+  with
+  | Some o -> o
+  | None -> Error.fail span Collapse.e_no_vertex
+
+(* The fan on resolved operands (docs/reference/KERNEL.md, Fan): the
+   candidate segments of every element, the vertex [o] they share, the
+   `over` constraints as face pairs, the anchor as paper polygons, the
+   stayer and the `toward` point, a paper point. [verb] names the write in
+   its messages and in the crease records; [elem_names] names the elements
+   as the program wrote them, for the message that blames one. Returns the
+   emergent crease when one was scored; the caller binds the output clause
+   and pushes the frame. *)
+let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
+    ~(verb : string) ~(elem_cands : elem_cand list list) ~(o : Geom.point)
+    ~(elem_names : string list) ~(over : (int * int) list)
+    ~(anchor : Geom.point array list option)
+    ~(staying : Collapse.stayer option) ~(toward : Geom.point option)
+    (span : Error.span) : (int * Geom.line) option =
+  let elem_of (fcid, fea, feb, valley) =
+    { Collapse.cid = fcid; ea = fea; eb = feb; valley }
   in
   (* keep only the candidate segments that end at O; every
      element has >= 1 such by O's construction. *)
@@ -142,64 +158,11 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
           xs
   in
   let combos = product elem_cands_at_o in
-  let over =
-    List.map
-      (fun (u, l) -> (Resolve.resolve_sector_face ctx u span, Resolve.resolve_sector_face ctx l span))
-      overs
-  in
-  (* the anchor flap `on` names, as paper polygons: the odd case scores the
-     emergent ray into a copy of the state, whose faces the kernel finds
-     inside these. The flap must lie under the vertex. *)
-  let anchor =
-    match on_opt with
-    | None -> None
-    | Some fa ->
-        let st = !(ctx.state) in
-        let faces = Resolve.resolve_flap_cluster ctx fa span in
-        let under =
-          List.exists
-            (fun f ->
-              Geom.in_convex_polygon (Fold_state.table_polygon_ccw st f) o)
-            faces
-        in
-        if not under then
-          Error.fail span "the on flap does not lie under the vertex"
-        else Some (List.map (fun f -> (Fold_state.faces st).(f)) faces)
-  in
-  (* explicit staying (ADR 0048): points on the anchor, whose table images
-     name the one sector that stays; ray order carries no stayer meaning
-     then. The sector itself is checked per candidate fan by the kernel. *)
-  let staying_stayer =
-    match staying_opt with
-    | None -> None
-    | Some pos ->
-        let st = !(ctx.state) in
-        let on_anchor = Collapse.anchor_faces st o anchor in
-        let faces = Fold_state.faces st in
-        let images =
-          List.map
-            (fun po ->
-              let pp = Resolve.resolve_point ctx po in
-              let held = ref false in
-              Array.iteri
-                (fun i f ->
-                  if on_anchor.(i) && Geom.in_convex_polygon f pp then
-                    held := true)
-                faces;
-              if not !held then
-                Error.fail ~hint:"name a point on the flap the fan folds" span
-                  (Printf.sprintf "%s does not lie on the anchor"
-                     (Resolve.fstr (Ast.FlapPoint po)));
-              Fold_state.table_position st pp)
-            pos
-        in
-        Some (Collapse.Points images)
-  in
-  let n_given = List.length elems in
+  let n_given = List.length elem_cands in
   let odd = n_given mod 2 = 1 in
   let prov : State.provenance option =
     Some
-      { State.axiom = "flatten"; sources = []; span; name = None;
+      { State.axiom = verb; sources = []; span; name = None;
         stmt = Ctx.stmt_index ctx }
   in
   (* the layers under the fan (def-flatten's C): the faces of the state
@@ -316,7 +279,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
      has no alternative and the pre-2026-07-17 convention behavior stands.
      Absent under [staying]: the convention carries no meaning then. *)
   let leading_arc_ok combo =
-    match (staying_opt, combo) with
+    match (staying, combo) with
     | Some _, _ -> true
     | None, e1 :: e2 :: rest ->
         let f1 = far_of_combo_elem e1 and f2 = far_of_combo_elem e2 in
@@ -514,19 +477,19 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
      combination is dropped (contributes nothing) when the leading-arc filter
      rejects it. *)
   let multiseg =
-    let rec find els cands =
-      match (els, cands) with
-      | el :: es, cs :: cr ->
-          if List.length cs > 1 then Resolve.lstr el.Ast.cline else find es cr
+    let rec find names cands =
+      match (names, cands) with
+      | name :: es, cs :: cr ->
+          if List.length cs > 1 then name else find es cr
       | _ -> "--?"
     in
-    find elems elem_cands_at_o
+    find elem_names elem_cands_at_o
   in
   let combo_runs =
     List.map
       (fun combo ->
         let stayer =
-          match staying_stayer with
+          match staying with
           | Some s -> s
           | None -> arc_stayer combo
         in
@@ -606,7 +569,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     | Some (_, check_axis), Some (_, line) -> check_axis line
     | Some _, None ->
         Error.fail ~hint:"drop into" span
-          "flatten with an even ray count scores no new crease"
+          (verb ^ " with an even ray count scores no new crease")
     | None, _ -> ());
     ctx.state := st;
     emergent_bind := emergent
@@ -678,7 +641,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
          List.length stayers > 1 ->
       trace None;
       Error.fail ~hint:"add (staying .p) with .p in the sector that stays" span
-        "flatten is ambiguous: its candidates hold different sectors still"
+        (verb ^ " is ambiguous: its candidates hold different sectors still")
   | many ->
       (* |deciding| > 1: three-stage selection, derived empirically against
          the fish mirror pair and the swivel golden:
@@ -748,22 +711,25 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         kept
       in
       let commit = land_realization in
-      (match toward_opt with
+      (match toward with
       | None -> (
           (* no class to pick without (toward); the min-mountain canon
              is toward-independent, so it may still single out THE
              least-forced realization: only a post-canon surplus is a
              genuine ambiguity (spec: "no (toward) while |S| > 1 after
-             stage 2"). *)
+             stage 2"). A verb without a `toward` item gets no hint. *)
           match min_mountain_filter many with
           | [ r ] -> commit r
           | kept ->
-              Error.fail ~hint:"add (toward .p) to pick the fold direction"
-                span
-                (Printf.sprintf "flatten is ambiguous: %d realizations"
+              let hint =
+                if verb = "flatten" then
+                  Some "add (toward .p) to pick the fold direction"
+                else None
+              in
+              Error.fail ?hint span
+                (Printf.sprintf "%s is ambiguous: %d realizations" verb
                    (List.length kept)))
-      | Some toward_po ->
-          let toward_pt = Resolve.resolve_point ctx toward_po in
+      | Some toward_pt ->
           let st_pre = !(ctx.state) in
           (* stage 1: moved-material centroid per realization; a pure
              function of table placement, shared within a class. *)
@@ -906,13 +872,84 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   with Error.Beloch_error _ as e ->
     trace None;
     raise e);
+  !emergent_bind
+
+let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
+    ~(bind_out : Ctx.crease_val -> unit)
+    ~(elems : Ast.collapse_elem list)
+    ~(overs : (Ast.flap_arg * Ast.flap_arg) list)
+    ~(staying_opt : Ast.point_operand list option) ~(on_opt : Ast.flap_arg option)
+    ~(toward_opt : Ast.point_operand option) (span : Error.span) : unit =
+  let elem_cands = resolve_elems ctx ~elems span in
+  let o = vertex_of ctx ~elem_cands span in
+  let over =
+    List.map
+      (fun (u, l) -> (Resolve.resolve_sector_face ctx u span, Resolve.resolve_sector_face ctx l span))
+      overs
+  in
+  (* the anchor flap `on` names, as paper polygons: the odd case scores the
+     emergent ray into a copy of the state, whose faces the kernel finds
+     inside these. The flap must lie under the vertex. *)
+  let anchor =
+    match on_opt with
+    | None -> None
+    | Some fa ->
+        let st = !(ctx.state) in
+        let faces = Resolve.resolve_flap_cluster ctx fa span in
+        let under =
+          List.exists
+            (fun f ->
+              Geom.in_convex_polygon (Fold_state.table_polygon_ccw st f) o)
+            faces
+        in
+        if not under then
+          Error.fail span "the on flap does not lie under the vertex"
+        else Some (List.map (fun f -> (Fold_state.faces st).(f)) faces)
+  in
+  (* explicit staying (ADR 0048): points on the anchor, whose table images
+     name the one sector that stays; ray order carries no stayer meaning
+     then. The sector itself is checked per candidate fan by the kernel. *)
+  let staying =
+    match staying_opt with
+    | None -> None
+    | Some pos ->
+        let st = !(ctx.state) in
+        let on_anchor = Collapse.anchor_faces st o anchor in
+        let faces = Fold_state.faces st in
+        let images =
+          List.map
+            (fun po ->
+              let pp = Resolve.resolve_point ctx po in
+              let held = ref false in
+              Array.iteri
+                (fun i f ->
+                  if on_anchor.(i) && Geom.in_convex_polygon f pp then
+                    held := true)
+                faces;
+              if not !held then
+                Error.fail ~hint:"name a point on the flap the fan folds" span
+                  (Printf.sprintf "%s does not lie on the anchor"
+                     (Resolve.fstr (Ast.FlapPoint po)));
+              Fold_state.table_position st pp)
+            pos
+        in
+        Some (Collapse.Points images)
+  in
+  let toward = Option.map (Resolve.resolve_point ctx) toward_opt in
+  let elem_names =
+    List.map (fun (el : Ast.collapse_elem) -> Resolve.lstr el.Ast.cline) elems
+  in
+  let emergent =
+    solve ctx ~into ~verb:"flatten" ~elem_cands ~o ~elem_names ~over ~anchor
+      ~staying ~toward span
+  in
   (* run the output clause's binding step: with no emergent ray materialized
      it takes a selectable bundle of the given rays; with one it takes the
      EMERGENT crease (the newly-completed vertex's own crease, not the rays
      that produced it), so a meet-point selector against the name
      (e.g. `.[--ear --ab]`) finds the emergent crease's tip. *)
   bind_out
-    (match !emergent_bind with
+    (match emergent with
     | Some (ecid, line) ->
         (* `into` keeps the named crease's id: a freshly materialized
            emergent already carries it, and an emergent that reuses an

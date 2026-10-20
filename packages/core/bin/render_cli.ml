@@ -72,6 +72,11 @@ labels (named points/lines):
                             (comma-separated). Draws exactly what's named,
                             even a point on a paper corner or a line that's
                             also a crease. Default: no overlay.
+  --highlight x,y,z         emphasize these entities in color: a point, a
+                            crease, or a flap by its selector, as in
+                            --highlight "#[.f],#[.e],--s" (comma-separated).
+                            A flap is the one the final state has at the
+                            point; two flaps take two colors.
 
 display options:
   --legend                  show the M/V/B/U crease-type legend in the crease

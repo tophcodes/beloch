@@ -18,6 +18,7 @@ val fold : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
 val reverse : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
 val unfold : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
 val flatten : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
+val squash : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
 val flip : Ast.raw_item list -> Ast.output -> Error.span -> Ast.stmt
 (** Walk the items into the slots of the verb, left to right, and build the
     statement. Each fails at the offending item's span: a head the verb does

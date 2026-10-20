@@ -88,7 +88,7 @@ let toward_inside (span : Error.span) : 'a =
 
 %token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD MOVING MOUNTAIN VALLEY FLIP RPAREN AND UP TO FOLD_KW
 %token DEF APPLY EXPORT AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
-%token FLATTEN OVER STAYING MARK BETWEEN AT UNDER REVERSE OUTSIDE UNFOLD DOWN
+%token FLATTEN SQUASH OVER STAYING MARK BETWEEN AT UNDER REVERSE OUTSIDE UNFOLD DOWN
 %token FREE ON FROM ALIGN HEADING INTO
 %token BY SHAPE TRIM UNIT
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN  (* --[ / .[ : the line/point select openers *)
@@ -227,6 +227,7 @@ body_stmt:
   | REVERSE items output { Items.reverse $2 $3 $loc }
   | UNFOLD  items output { Items.unfold  $2 $3 $loc }
   | FLATTEN items output { Items.flatten $2 $3 $loc }
+  | SQUASH  items output { Items.squash  $2 $3 $loc }
   | FLIP    items output { Items.flip    $2 $3 $loc }
   | POINT EQ point_expr  { Point ($1, $3, $loc) }
   | INSTANCE EQ APPLY IDENT LPAREN args RPAREN { Apply (Some $1, $4, $6, $loc) }
@@ -256,6 +257,8 @@ item:
 item_body:
   | construction_body                   { Ast.RiConstruction ($1, $loc) }
   | line_operand mv_opt                 { Ast.RiLine ($1, $2, $loc) }
+  | line_operand ONTO align_object      { Ast.RiAlignment ($1, $3, $loc) }
+  | line_operand ONTO crease_object     { Ast.RiAlignment ($1, AoLine $3, $loc) }
   | MOVING flap_arg                     { Ast.RiMoving ($2, $loc) }
   | MOVING flap_arg UP                  { Ast.RiMovingDir ($2, true, $loc) }
   | MOVING flap_arg DOWN                { Ast.RiMovingDir ($2, false, $loc) }

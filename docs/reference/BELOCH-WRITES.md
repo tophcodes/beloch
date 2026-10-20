@@ -327,6 +327,85 @@ reverse (map .a onto .d) (--e & .q valley)
 ; assert faces = 8
 ```
 
+## `squash`
+
+`squash` opens a flap of two layers hinged at a folded edge, its *spine*,
+and presses it flat so that the spine lands on a target
+([[reference/model#def-squash|def-squash]], [[decision/0038]]). It is a fan at
+the *vertex*, the end of the spine inside the paper: the spine opens, each
+layer of the flap folds along its piece of the axis, and the layer of the
+flap that the target line crosses folds along the target's crease.
+
+**Items.** `squash` takes one item, a bare alignment: a line on the spine
+onto its target, a line or a point, written without `map` or `align`,
+`(--h onto --ac)` or `(--h & --da onto .p)`. The write completes the
+alignment with the fold line through the vertex: the axis is the bisector
+of the spine's line and the target's line through that point. A
+construction in its place is refused (`` squash completes the alignment
+with the fold line through the vertex; it takes no construction ``), and
+so is every other head: the spine names the flap the squash folds, and
+no item selects among its states.
+
+**Resolution.** The spine is found by incidence: among the folded hinges
+on the named line, the one whose one end lies inside the paper and whose
+target lies on the flap's side of the spine's line. The anchor is the
+flap of the upper layer at that hinge, and its sector beyond the target
+line, away from the spine, stays. The target line carries the crease the
+flap's layer folds along: with a line as target, that line's own crease;
+with a point, the crease through the vertex and the point, which has to
+exist (`` no crease lies on the line from the vertex through <p> ``, hint
+`` mark it first ``). Several flaps with a spine on the line that the
+target admits make the squash ambiguous (`` squash is ambiguous: <n>
+flaps have a spine on <l> that lands on <target> ``), and the hint names
+the items that keep one: the spine's line filtered by a line through its
+far end. A spine with both ends inside the paper has two vertices, and
+which one the squash takes is not decided (`` both ends of the spine on
+<l> lie inside the paper; which one is the vertex is not decided ``,
+[[decision/0038]]). The crease the write scores is the axis, one crease with a piece on each
+layer of the flap; a filter by flap, `--s & #[.p]`, picks the piece on the
+layer of `.p`. The checks the fan
+runs after that stand in the kernel's tables ([[reference/kernel#fan]]).
+
+The preliminary base, its front flap on the side of `--da` squashed onto
+the center line, by a line and by a point on it:
+
+```{.bel .prelude name=squash-base}
+paper square
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+mark (map --ab onto --cd) as --h
+mark (map --da onto --bc) as --v
+.q = free on --ab from .a at 1/4
+.r = free on --ab from .b at 1/4
+.f = free on --da from .a at 1/4
+flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+```
+
+```{.bel .frag prelude=squash-base}
+squash (--h & --da onto --ac) as --s
+
+; assert faces = 10
+; assert .f = (1, 3/4)
+```
+
+```{.bel .frag prelude=squash-base}
+.m = free on --ac from .a at 1/4
+squash (--h & --da onto .m)
+
+; assert faces = 10
+; assert .f = (1, 3/4)
+```
+
+On the base the spines of the front flap and of the back flap on that
+side, `--h & --da` and `--h & --bc`, lie on one table edge, and both land
+on `--ac`:
+
+```{.bel .frag prelude=squash-base}
+squash (--h onto --ac)
+
+; expect error "squash is ambiguous: 2 flaps"
+```
+
 ## `flatten` and `flip`
 
 `flatten` folds the rays around one vertex in one move

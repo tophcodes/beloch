@@ -148,8 +148,16 @@ function leftOf(poly: Vec2[], o: Vec2, p: Vec2): Vec2[] {
 // The sector between two rays from `o`, counter-clockwise from `a` to `b`, on
 // the faces of a state. A sector of a flat-foldable vertex is narrower than a
 // half turn, so it is the intersection of two half-planes.
+// The paper in the sector from the ray o→a counter-clockwise to the ray o→b.
+// Up to a half-turn that is the wedge left of both rays; beyond it, the part
+// left of o→a and the part right of o→a that is left of b→o, two pieces that
+// share no area.
 function sectorOnFaces(o: Vec2, a: Vec2, b: Vec2, faces: Vec2[][]): Region {
-  return faces.map((f) => leftOf(leftOf(f, o, a), b, o)).filter((p) => p.length >= 3);
+  const cross = (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const pieces = cross >= 0
+    ? faces.map((f) => leftOf(leftOf(f, o, a), b, o))
+    : faces.flatMap((f) => [leftOf(f, o, a), leftOf(leftOf(f, a, o), b, o)]);
+  return pieces.filter((p) => p.length >= 3);
 }
 
 // The detail of one candidate on the state before it: a reverse fold's spine,

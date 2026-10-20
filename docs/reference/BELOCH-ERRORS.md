@@ -255,9 +255,9 @@ its page, beside its syntax and its example:
 - the join, the filters and the flap operand: [[reference/beloch-operands]];
 - the constructions of axioms 5 to 7 and their selection:
   [[reference/beloch-constructions]];
-- the items of a write, and `unfold`, `reverse` and `flatten`:
-  [[reference/beloch-writes]]; the checks of `flatten`, `reverse` and
-  `unfold`, with the message and hint each ships, stand in the kernel's
+- the items of a write, and `unfold`, `reverse`, `flatten` and `squash`:
+  [[reference/beloch-writes]]; the checks of `flatten`, `squash`, `reverse`
+  and `unfold`, with the message and hint each ships, stand in the kernel's
   tables ([[reference/kernel#fan]], [[reference/kernel#reverse]],
   [[reference/kernel#unfold]]);
 - annotations: [[reference/beloch-annotations]].

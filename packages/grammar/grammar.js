@@ -3,7 +3,7 @@
  *
  * Deliberately error-tolerant: alongside the lexical tokens the real
  * evaluator recognizes (see lib/lexer.ml, lib/parser.mly), it structures
- * write statements (`mark`/`fold`/`unfold`/`reverse`/`flatten`/`flip`) into one named
+ * write statements (`mark`/`fold`/`unfold`/`reverse`/`flatten`/`squash`/`flip`) into one named
  * node per item type, matching the union-of-heads shape of `lib/parser.mly`'s
  * `item_body`: every head is accepted under every verb, so a head the verb
  * rejects still parses into a named node and the diagnostic comes from the
@@ -39,7 +39,7 @@ module.exports = grammar({
     definition_head: $ => prec(1, seq('def', $.identifier, '(', repeat(choice($.point, $.crease)), ')')),
     application: $ => prec(1, seq('apply', $.identifier, '(', optional($._operand), ')')),
 
-    // the six writes: a verb, its items in any order, its output clause.
+    // the seven writes: a verb, its items in any order, its output clause.
     // Each alternative is right-associative on its own repeat so that a
     // trailing `as`/`into`/`(` is always shifted into the same statement
     // rather than read as the start of the next top-level thing (a bare
@@ -51,6 +51,7 @@ module.exports = grammar({
       prec.right(seq('unfold',  repeat($._axis_item), optional($.output_clause))),
       prec.right(seq('reverse', repeat($._axis_item), optional($.output_clause))),
       prec.right(seq('flatten', repeat($._ray_item),  optional($.output_clause))),
+      prec.right(seq('squash',  repeat($._axis_item), optional($.output_clause))),
       prec.right(seq('flip',    repeat($._axis_item), optional($.output_clause))),
     ),
 
@@ -75,6 +76,7 @@ module.exports = grammar({
       $.extent_item,
       $.layer_item,
       $.order_item,
+      $.alignment_item,
       $.stayer_item,
       $.selection_item,
     ),
@@ -90,6 +92,7 @@ module.exports = grammar({
       $.extent_item,
       $.layer_item,
       $.order_item,
+      $.alignment_item,
       $.stayer_item,
       $.selection_item,
     ),
@@ -131,6 +134,10 @@ module.exports = grammar({
 
     // `(.q over .r)`
     order_item: $ => seq('(', $._operand, 'over', $._operand, ')'),
+
+    // `(--h onto --ac)`, the bare alignment of squash: a line of the spine
+    // onto its target
+    alignment_item: $ => seq('(', $._operand, 'onto', $._operand, ')'),
 
     // `(staying .a)`
     stayer_item: $ => seq('(', 'staying', $._operand, ')'),
@@ -223,7 +230,7 @@ module.exports = grammar({
     text: _ => token(seq('"', repeat(choice(/[^"\\\n]/, /\\["\\]/)), '"')),
 
     // clause words and axiom names outside a write statement, see
-    // lib/lexer.ml. The six verbs (mark, fold, unfold, reverse, flatten, flip) are
+    // lib/lexer.ml. The seven verbs (mark, fold, unfold, reverse, flatten, squash, flip) are
     // anonymous tokens under write_statement instead, since a bare verb
     // word is never valid outside one.
     keyword: _ => choice(

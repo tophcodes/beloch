@@ -30,6 +30,7 @@ let head_of (it : raw_item) : string =
   | RiOrder _ -> "order"
   | RiStaying _ -> "staying"
   | RiSelection _ -> "toward"
+  | RiAlignment _ -> "alignment"
 
 let span_of (it : raw_item) : Error.span =
   match it with
@@ -45,6 +46,7 @@ let span_of (it : raw_item) : Error.span =
   | RiExtent (_, sp)
   | RiOrder (_, _, sp)
   | RiStaying (_, sp)
+  | RiAlignment (_, _, sp)
   | RiSelection (_, sp) ->
       sp
 
@@ -278,6 +280,28 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
     items;
   if !rays = [] then Error.fail span "flatten needs at least one ray item";
   Flatten (out, List.rev !rays, List.rev !overs, !staying, !on, !toward, span)
+
+(* `squash` takes one bare alignment, the line of its spine onto its target
+   (ADR 0038), and nothing else: the spine names the anchor (ADR 0040). *)
+let squash (items : raw_item list) (out : output) (span : Error.span) : stmt =
+  let verb = "squash" in
+  let alignment = ref None in
+  List.iter
+    (fun it ->
+      match it with
+      | RiAlignment (spine, target, sp) ->
+          slot verb "alignment" alignment sp (spine, target)
+      | RiConstruction (_, sp) ->
+          Error.fail ~hint:"write (--l onto --m) without map or align" sp
+            "squash completes the alignment with the fold line through the \
+             vertex; it takes no construction"
+      | it -> refuse verb it)
+    items;
+  match !alignment with
+  | Some (spine, target) -> Squash (out, spine, target, span)
+  | None ->
+      Error.fail span
+        "squash needs its alignment item: (--l onto --m) or (--l onto .p)"
 
 let flip (items : raw_item list) (out : output) (span : Error.span) : stmt =
   (match items with

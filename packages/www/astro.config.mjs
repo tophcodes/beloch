@@ -15,6 +15,7 @@ import rehypeCitation from 'rehype-citation/node/rehype-citation.mjs';
 import rehypeCitePost from './src/lib/rehype-cite-post.ts';
 import { headSyncScript } from "./src/lib/paper-schemes.ts";
 import { notePopupScript } from "./src/lib/note-popups.ts";
+import { figureLightboxScript } from "./src/lib/figure-lightbox.ts";
 import { DESCRIPTION } from "./src/lib/description.ts";
 
 // Anchor repo root to this file's location (packages/www/astro.config.mjs → two levels up).
@@ -211,6 +212,12 @@ export default defineConfig({
 					tag: "script",
 					attrs: { defer: true },
 					content: notePopupScript(),
+				},
+				// a figure's drawing opened large, zoomed and panned (figure-lightbox.ts)
+				{
+					tag: "script",
+					attrs: { defer: true },
+					content: figureLightboxScript(),
 				},
 			],
 		}),
