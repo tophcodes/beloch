@@ -524,7 +524,7 @@ export function renderSide(scene: FoldScene, opts: SideOptions): SvgDoc {
       creases: true, marks: true, points: true, lines: true, faces: "outline",
     },
     markOverlay: { marks: write ? write.keptMarks : [] },
-    labels: opts.labels,
+    labels: opts.labels, highlight: opts.highlight,
     theme: { lineStyle: colorLineStyle, ...opts.theme },
   }).node();
   const marks: SvgNode[] = [];

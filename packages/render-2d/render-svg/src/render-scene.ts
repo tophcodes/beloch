@@ -164,6 +164,16 @@ export function renderScene(scene: FoldScene, opts: SceneOptions): SvgDoc {
   const colorOf = new Map<string, HighlightColor>(
     highlight.map((h, i) => [h, palette[i % palette.length]!]),
   );
+  // A flap named by one point, `#[.p]`, draws that point in the flap's color
+  // as well, so the name a caption uses for the flap can be found in the
+  // drawing; a point the caller highlights on its own keeps its own color.
+  for (const h of highlight) {
+    if (!h.startsWith("#[")) continue;
+    const names = h.slice(2, -1).trim().split(/\s+/).filter(Boolean);
+    if (names.length !== 1 || !names[0]!.startsWith(".") || colorOf.has(names[0]!)) continue;
+    selection.push(names[0]!);
+    colorOf.set(names[0]!, colorOf.get(h)!);
+  }
   const highlightFaces = flapFaces(scene, colorOf);
   // A crease the overlay draws, highlighted or picked with `labels`, is named
   // by the overlay, so its own label is left out.
