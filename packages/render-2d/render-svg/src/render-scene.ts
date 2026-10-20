@@ -99,6 +99,22 @@ function flapFaces(
   return faces;
 }
 
+// The faces of the flaps a highlight names, each in the color of its selector,
+// or null when the highlight names no flap: what a view that draws faces
+// apart, such as the section, colors its pieces by.
+export function highlightFaceColors(
+  scene: FoldScene,
+  highlight: string[],
+  theme: Theme,
+): Map<number, HighlightColor> | null {
+  if (!highlight.some((h) => h.startsWith("#["))) return null;
+  const palette = theme.highlightPalette;
+  const colorOf = new Map<string, HighlightColor>(
+    highlight.map((h, i) => [h, palette[i % palette.length]!]),
+  );
+  return flapFaces(scene, colorOf);
+}
+
 // The names a drawing carries, placed so that two of them cannot land on each
 // other and written in the color of the thing each one names. Every branch
 // collects its anchors and ends here, which is what keeps a crease's name and
