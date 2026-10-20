@@ -1386,6 +1386,28 @@ let test_samurai_helmet_tuck () =
   Alcotest.(check bool) "the tucked corner lies on the back layer" true
     (on_back <> [] && List.for_all (( = ) Fold_state.Above) on_back)
 
+(* The jumping frog folds as far as step 16 in seventeen writes, seven of
+   which fold. The marks of steps 1 and 3 stay flat across the body, so
+   faces they join make one flap (def-flap): the flaps are the components
+   of the faces joined by hinges of angle 0. *)
+let test_jumping_frog_flaps () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"jumping-frog.bel" (read_example "jumping-frog.bel"))
+  in
+  let st = fd.Eval.state in
+  Alcotest.(check int) "one frame per folding write" 7
+    (List.length fd.Eval.frames);
+  let n = Array.length (Fold_state.faces st) in
+  let parent = Array.init n Fun.id in
+  let rec find i = if parent.(i) = i then i else find parent.(i) in
+  Array.iter
+    (fun (h : Fold_state.hinge) ->
+      if Num.equal h.angle Num.zero then parent.(find h.fa) <- find h.fb)
+    (Fold_state.hinges st);
+  let flaps = List.length (List.filter (fun i -> find i = i) (List.init n Fun.id)) in
+  Alcotest.(check int) "flaps" 34 flaps
+
 let () =
   Alcotest.run "beloch-e2e"
     [
@@ -1403,6 +1425,8 @@ let () =
             test_penguin_flaps;
           Alcotest.test_case "the samurai helmet tucks its back corner inside" `Quick
             test_samurai_helmet_tuck;
+          Alcotest.test_case "the jumping frog folds to 34 flaps" `Quick
+            test_jumping_frog_flaps;
           Alcotest.test_case "diagonals four faces" `Quick
             test_e2e_diagonals_four_faces;
           Alcotest.test_case "perp end-to-end" `Quick test_e2e_perp;
