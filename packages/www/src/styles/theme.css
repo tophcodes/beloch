@@ -708,3 +708,54 @@ mobile-starlight-toc > nav {
 .sl-markdown-content :is(.stmt-definition, .stmt-condition) .stmt-label {
   color: var(--bel-ui-accent);
 }
+
+/* A figure's drawing opened large (figure-lightbox.ts): the view is a button,
+   the overlay holds a copy of the SVG that the script scales and moves, and a
+   bar at the bottom carries zoom out, fit, zoom in and close. */
+.figure-view { cursor: zoom-in; border-radius: var(--bel-radius-card); }
+.figure-view:focus-visible { outline: 2px solid var(--bel-ui-accent); outline-offset: 2px; }
+.figure-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  background: light-dark(rgba(251, 250, 247, 0.96), rgba(19, 17, 15, 0.96));
+  cursor: grab;
+  touch-action: none;
+}
+.figure-lightbox-stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  line-height: 0;
+}
+.figure-lightbox-stage svg { display: block; background: white; border-radius: var(--bel-radius-card); box-shadow: var(--bel-shadow-overlay); }
+.figure-lightbox-bar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bel-ui-surface);
+  border: 1px solid var(--bel-ui-divider);
+  border-radius: var(--bel-radius-card);
+  box-shadow: var(--bel-shadow-overlay);
+  cursor: default;
+}
+.figure-lightbox-bar button {
+  min-width: 2.2rem;
+  height: 2.2rem;
+  padding: 0 0.6rem;
+  font: 600 var(--bel-text-md) var(--bel-font-mono);
+  color: var(--bel-ui-text);
+  background: transparent;
+  border: 0;
+  border-radius: var(--bel-radius-control);
+  cursor: pointer;
+}
+.figure-lightbox-bar button:hover { background: var(--bel-ui-quiet); }
+.figure-lightbox-bar button:focus-visible { outline: 2px solid var(--bel-ui-accent); outline-offset: 1px; }
+body.figure-lightbox-open { overflow: hidden; }
