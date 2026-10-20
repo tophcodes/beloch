@@ -12,7 +12,7 @@
 (punct) @punct
 (flap_bracket) @punct
 
-(write_statement ["mark" "fold" "unfold" "reverse" "flatten" "flip"] @keyword)
+(write_statement ["mark" "fold" "unfold" "reverse" "flatten" "squash" "flip"] @keyword)
 ["(" ")" "[" "]"] @punct
 (construction    ["align" "map" "through" "perp" "onto" "and"] @construction)
 (alignment       ["onto" "through" "perp" "heading"] @alignment)
@@ -26,6 +26,7 @@
 (layer_item      "on" @layer)
 (flatten_element ["mountain" "valley"] @ray)
 (order_item      "over" @order)
+(alignment_item  "onto" @alignment)
 (stayer_item     "staying" @stayer)
 (selection_item  "toward" @selection)
 (output_clause   ["as" "into" "!"] @output)

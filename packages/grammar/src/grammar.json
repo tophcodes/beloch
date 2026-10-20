@@ -308,6 +308,38 @@
             "members": [
               {
                 "type": "STRING",
+                "value": "squash"
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_axis_item"
+                }
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "output_clause"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "PREC_RIGHT",
+          "value": 0,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
                 "value": "flip"
               },
               {
@@ -426,6 +458,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "alignment_item"
+        },
+        {
+          "type": "SYMBOL",
           "name": "stayer_item"
         },
         {
@@ -476,6 +512,10 @@
         {
           "type": "SYMBOL",
           "name": "order_item"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "alignment_item"
         },
         {
           "type": "SYMBOL",
@@ -776,6 +816,31 @@
         {
           "type": "STRING",
           "value": "over"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_operand"
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
+    },
+    "alignment_item": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_operand"
+        },
+        {
+          "type": "STRING",
+          "value": "onto"
         },
         {
           "type": "SYMBOL",

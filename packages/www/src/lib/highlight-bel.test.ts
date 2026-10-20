@@ -67,6 +67,7 @@ test("no token in a program covering every head word renders unclassified", asyn
     "@yr:hold .a \"Hold it.\" 2",
     "mark (perp --l through .p)",
     "flatten (--l valley) (moving [.a .b])",
+    "squash (--h & --da onto --ac) as --s",
     "; a trailing comment",
   ].join("\n");
   const html = await highlightBel(src);
