@@ -1386,6 +1386,30 @@ let test_samurai_helmet_tuck () =
   Alcotest.(check bool) "the tucked corner lies on the back layer" true
     (on_back <> [] && List.for_all (( = ) Fold_state.Above) on_back)
 
+(* The traditional frog folds up to its eighth step, and seven of its writes
+   move the paper: the collapse, four squashes and two turns. Each squash
+   opens one folded edge and each turn folds one of them again, which leaves
+   two flat hinges among the 16 faces, so the faces make 14 flaps
+   (def-flap). *)
+let test_traditional_frog_flaps () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"traditional-frog.bel"
+         (read_example "traditional-frog.bel"))
+  in
+  let st = fd.Eval.state in
+  Alcotest.(check int) "one frame per write that moves the paper" 7
+    (List.length fd.Eval.frames);
+  let n = Array.length (Fold_state.faces st) in
+  let parent = Array.init n Fun.id in
+  let rec find i = if parent.(i) = i then i else find parent.(i) in
+  Array.iter
+    (fun (h : Fold_state.hinge) ->
+      if Num.equal h.angle Num.zero then parent.(find h.fa) <- find h.fb)
+    (Fold_state.hinges st);
+  let flaps = List.length (List.filter (fun i -> find i = i) (List.init n Fun.id)) in
+  Alcotest.(check int) "flaps" 14 flaps
+
 let () =
   Alcotest.run "beloch-e2e"
     [
@@ -1403,6 +1427,8 @@ let () =
             test_penguin_flaps;
           Alcotest.test_case "the samurai helmet tucks its back corner inside" `Quick
             test_samurai_helmet_tuck;
+          Alcotest.test_case "the traditional frog folds to 14 flaps" `Quick
+            test_traditional_frog_flaps;
           Alcotest.test_case "diagonals four faces" `Quick
             test_e2e_diagonals_four_faces;
           Alcotest.test_case "perp end-to-end" `Quick test_e2e_perp;
