@@ -255,8 +255,8 @@ let unfold (items : raw_item list) (out : output) (span : Error.span) : stmt =
 let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
   let verb = "flatten" in
   (* rays and orders are accumulated reversed and restored, so that the ray
-     order the first two rays' stayer convention reads (SPECIFICATION.md
-     §4.9) is source order *)
+     order the first two rays' stayer convention reads
+     (docs/reference/BELOCH-WRITES.md, flatten) is source order *)
   let rays = ref [] and overs = ref [] and staying = ref None and toward = ref None in
   let on = ref None in
   List.iter

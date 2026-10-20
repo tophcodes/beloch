@@ -260,7 +260,7 @@ already face-granular and unchanged.
 
 - [[decision/0014]] (a crease is a bundle of segments: why faces stay fine-grained)
 - [[decision/0016]] (typed operands: the flap operand type this ADR redefines)
-- [[reference/specification]] §4.6 (`@` / `@fold` / `moving` / `up to`), §4.8 (`at`)
+- [[reference/beloch-writes]] (`moving`, `up to`), [[reference/beloch-operands]] (the filters)
 - `packages/core/tests/cases/bases/rabbit-ear.bel` (the repro for both findings)
 - `lib/fold_state.ml` (`flap_of_points` :352, `select_scope` :385,
   `type assign`, `subdivide`); `lib/eval.ml` (`resolve_flap_face`,

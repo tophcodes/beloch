@@ -106,7 +106,7 @@ and `line` as partial from a state and a bundle to a table line.
 ## Consequences
 
 - The model, the language reference and the core rename together.
-  [[reference/specification]] carries `<motion>` as a syntax category in about ten
+  The language reference carried `<motion>` as a syntax category in about ten
   places, so the rename is a documentation change before it is a code change.
 - A glossary entry can now disagree with the definition that owns it: a
   signature naming a sort the model does not define, or a kind that contradicts

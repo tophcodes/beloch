@@ -58,12 +58,6 @@ test("a rule's lines are the rendering contract both renderers consume", () => {
 	]);
 });
 
-test("docs/reference/SPECIFICATION.md is in the register, read for its keywords", () => {
-	const spec = register.documents.find((d) => d.path === "docs/reference/SPECIFICATION.md");
-	expect(spec?.fragments.flatMap((f) => f.rules).length).toBeGreaterThan(0);
-	expect(spec?.external).toEqual([]);
-});
-
 test("the lexer's keyword table is read from its sedlex branches", () => {
 	const lexed = lexerKeywords(lexerSource);
 	expect(lexed.has("paper")).toBe(true);

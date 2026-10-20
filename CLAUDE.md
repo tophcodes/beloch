@@ -7,9 +7,7 @@ before proposing anything structural. Design journal in `docs/notes/`, dead ends
 `docs/notes/antipatterns.md`. The contracts live in `docs/reference/`: `MODEL.md` what a
 program means, `BELOCH.md` the language, `FOLD.md` the output. Beside them,
 binding no other implementation: `KERNEL.md` what `packages/core` realizes,
-`CLI.md` the `beloch` command. `SPECIFICATION.md` is being dissolved into
-`BELOCH.md` and `KERNEL.md` (ADR 0032): add nothing to it, and move a section
-you have to touch.
+`CLI.md` the `beloch` command.
 
 ## Where work goes
 

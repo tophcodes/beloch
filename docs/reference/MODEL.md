@@ -7,7 +7,7 @@ tableOfContents:
 ---
 
 This document defines what a Beloch program talks about: the set of states,
-the values a program can name, and the operations on both. `SPECIFICATION.md`
+the values a program can name, and the operations on both. `BELOCH.md`
 says how the language is written; this document says what it means. How the
 kernel realizes it is the subject of `KERNEL.md`, which refers to the
 statements here by their ids; this document does not refer back.

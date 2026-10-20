@@ -47,9 +47,8 @@ export type Resolved = { url: string; text: string; document: Document; anchor: 
 const DOCS = "docs";
 const CONTENT = join("packages", "www", "src", "content", "docs");
 
-// Files the check does not read: SPECIFICATION.md is being dissolved (ADR
-// 0032) and carries citation keys in double brackets.
-const UNCHECKED = new Set([join(DOCS, "reference", "SPECIFICATION.md")]);
+// Files the check does not read.
+const UNCHECKED = new Set<string>([]);
 
 function walk(dir: string): string[] {
 	const out: string[] = [];

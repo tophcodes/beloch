@@ -21,11 +21,6 @@ The reference implementation is documented beside them and binds nothing:
 - **`CLI.md`**: the `beloch` command, and beside it `CLI-STAGES.md`, the
   stages view of `beloch render`.
 
-`SPECIFICATION.md` is the previous single specification and is being
-dissolved into these documents in the order [[decision/0032]] gives. A section
-that has moved is gone from it; a section still there is authoritative for
-the surface syntax until it moves, never for the meaning.
-
 Division of artifacts:
 
 - **`docs/reference/`**: *what* the language is, and how the reference implementation
