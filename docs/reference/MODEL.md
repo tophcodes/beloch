@@ -1659,6 +1659,48 @@ they belong in the model as named selections, or the language should ask for
 a constraint instead when several states remain, is not decided.
 :::
 
+::: {.definition #def-squash name="squash" uses="def-write def-flatten def-flap def-letter" defines="term-vertex"}
+The write `squash` takes a *spine* $s$: a folded hinge of the state with
+one end inside the sheet and on no raw edge, the *vertex* $O$, and a
+target: a line through $f(O)$ on the table, or a table point. Let $\Phi$
+be the flap of the upper face at $s$ and $H$ the side of the table line
+of $s$ on which $\Phi$ lies. The target has to lie in $H$: a point as it
+stands, a line by its ray from $f(O)$ into $H$. The *axis* is the line
+through $f(O)$ that reflects the far end of $s$ onto the target's ray, one
+of the two bisectors of the lines of $s$ and of the target. The value of
+the write is the value of `flatten` ([#def-flatten]) at $f(O)$ with anchor
+$\Phi$, the rays on the lines of $s$, of the axis and of the target, the
+stayer the wedge of $\Phi$ beyond the target's line away from $s$, and no
+letter: $s$ opens, each layer of the tip folds along its piece of the
+axis, and the hinge of $\Phi$ on the target's line folds. It is undefined
+when $\Phi$ has no hinge on the target's line, and when both ends of $s$
+lie inside the sheet ([[decision/0038]]).
+:::
+
+::: {.term #term-vertex name="vertex"}
+The end of a squash's spine inside the paper, where the other folded
+hinges of its flap meet; the point of the squash's fan.
+:::
+
+A squash is the step a diagram gives with one word and an arrow: the
+flap stands up, opens, and comes down flat with its spine on the target.
+On the preliminary base the flap's two layers lie on each other mirrored
+at the spine, so the axis is one line on the table and two creases on
+the paper, one per layer, and the half of the front face beyond the
+center line keeps its place.
+
+::: {.figure #fig-squash caption="The squash of the front flap of the preliminary base on the side of `--da`: its spine on `--h` opens and lands on `--ac`; the axis `--s` through the closed corner folds each layer of the flap, and the other half of the front face stays." views="cp folded"}
+paper square
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+mark (map --ab onto --cd) as --h
+mark (map --da onto --bc) as --v
+.q = free on --ab from .a at 1/4
+.r = free on --ab from .b at 1/4
+flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+squash (--h & --da onto --ac) as --s
+:::
+
 ## 6. Programs
 
 To be written: a program as a finite sequence of states.

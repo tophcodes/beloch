@@ -129,8 +129,9 @@ hints `extend --x to (x, y)`.
 
 ## Fan
 
-`Flatten_solve.run` reads the rays of a `flatten` from material creases,
-scores them on the layers under the fan, and `Collapse` folds the tip of
+`Flatten_solve.run` reads the rays of a `flatten` from material creases and
+hands them to `Flatten_solve.solve`, which scores them on the layers under
+the fan; `Collapse` folds the tip of
 [[reference/model#def-flatten|def-flatten]] on the scored state. The layers under
 the fan are the faces whose table image meets the anchor's in positive
 area. `Fold_state.subdivide_fan` scores each ray along its half-line from
@@ -196,6 +197,46 @@ between two such layers: on a book fold with the rays marked on both
 layers, the upper corner folds in between the upper and the lower layer.
 One ceiling remains: the pieces of the stayer's wedge the tip hangs from
 rank as one block, so a tip hinged to two of them cannot land between them.
+
+### Squash
+
+`Squash.eval` folds a `squash` through the same solver
+([[reference/model#def-squash|def-squash]]). It reads the folded hinges on the
+spine's crease with `Resolve.bundle_segments`, keeps the one whose one paper
+end lies on no raw edge (`Fold_state.on_raw_edge`) and whose target lies on
+the flap's side of the spine's line, and takes the flap of the upper face at
+that hinge as the anchor. The axis is the one of the two angle bisectors of
+the spine's line and the target's line (`Geom.angle_bisectors`) that
+reflects the spine's far end onto the target's ray. The kernel scores the
+axis with `Fold_state.subdivide` as a half-line from the vertex, once on
+the anchor's layer and once on the layer under it: two creases on one table
+ray, so that the fan has four elements, the spine, the two pieces of the
+axis and the target's crease on the anchor's layer, and an even count seeks
+no emergent ray. The stayer is a point of the anchor's material beyond the
+target's line, away from the spine. With a target point, the target's
+crease is the one named crease whose paper line passes through the vertex
+and the target on the anchor's layer, materialized for the fan. Once the fan has folded, the two pieces
+become one crease, the one the output clause binds: `--s` is the whole axis,
+and a filter by flap, `--s & #[.p]`, picks its piece on one layer. The trace records the fan as that of a `flatten`,
+and the checks of the fan report with `squash` in place of `flatten`.
+
+| message | hint |
+|---|---|
+| `<l> has no material segment` | |
+| `the spine of a squash lies on one crease; <l> names several` | |
+| `no folded edge lies on <l>; a squash opens a spine` | |
+| `both ends of the spine on <l> lie inside the paper; which one is the vertex is not decided` | |
+| `the spine on <l> runs from edge to edge; a squash needs a vertex` | |
+| `<target> does not reach the vertex (x, y) of the spine` | |
+| `<target> lies on the spine's line` | |
+| `<target> lies beyond the spine; the flap cannot reach it` | |
+| `squash is ambiguous: <n> flaps have a spine on <l> that lands on <target>` | `name the flap by its spine: (<l> & --e onto <target>) or …` |
+| `the target of a squash is one crease; <target> names several` | |
+| `no crease lies on the line from the vertex through <p>` | `mark it first` |
+| `several creases lie on the line from the vertex through <p>` | |
+| `no segment of <target> runs on the flap from the vertex to where the spine lands` | `mark it first` |
+| `the flap has no material beyond <target>; nothing holds the squash` | |
+| `the axis of the squash does not cross the flap` | |
 
 ### Checks
 

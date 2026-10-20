@@ -187,7 +187,8 @@ write yields a crease. Every value is exact, whatever construction made it
 (Exactness, below).
 
 **Writes.** The operations of the model's section on operations, named by
-the verbs `mark`, `fold`, `unfold`, `reverse`, `flatten` and `flip`. Each is a
+the verbs `mark`, `fold`, `unfold`, `reverse`, `flatten`, `squash` and `flip`.
+Each is a
 partial function on states with its own domain; the domain is the
 language's notion of a safe operation, and the model states it. A *write
 statement* is a verb followed by its arguments; its shape is given under
@@ -265,6 +266,7 @@ placement a menu of four entries.
 | number | a number, or inside a shape one of its parameters | the side of `square`, `at` and `by` of `free on`, the values that open a shape |
 | placement | top, bottom, over a flap, under a flap ([[reference/model#def-reflection\|def-reflection]]) | `fold` |
 | kind | inside, outside ([[reference/model#def-reverse\|def-reverse]]) | `reverse` |
+| alignment | a line on the spine onto a line or a point, which the write completes with the fold line through the vertex ([[reference/model#def-squash\|def-squash]]) | `squash` |
 | extent | the whole line, between two points, at a point ([[reference/model#def-mark\|def-mark]]) | `mark` |
 | intent | mountain, valley; the direction the crease pattern draws, no part of the state | `mark` |
 | letter | mountain, valley as a constraint on a ray, or on a hinge of the spine ([[reference/model#def-letter\|def-letter]]) | `flatten`, `reverse` |

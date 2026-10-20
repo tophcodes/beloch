@@ -92,9 +92,10 @@ export_entry := ( POINT_NAME | CREASE_NAME ) [ "!" ] [ "as" ( POINT_NAME | CREAS
 
 ```grammar
 write_stmt := verb item* [ "as" CREASE_NAME [ "!" ] | "into" CREASE_NAME ]
-verb       := "mark" | "fold" | "unfold" | "reverse" | "flatten" | "flip"
+verb       := "mark" | "fold" | "unfold" | "reverse" | "flatten" | "squash" | "flip"
 item       := "(" item_body ")"
 item_body  := fold_item | unfold_item | reverse_item | mark_item | flatten_item
+            | squash_item
 ```
 
 ```grammar
@@ -122,6 +123,7 @@ flatten_item := line_operand [ "mountain" | "valley" ]
               | "staying" point_operand+
               | "on" flap_operand
               | "toward" point_operand
+squash_item  := line_operand "onto" ( point_operand | line_operand )
 side_item    := [ toward_subject ] "toward" ( point_operand | line_operand )
               | "moving" flap_operand
 axis         := construction_body | line_operand
