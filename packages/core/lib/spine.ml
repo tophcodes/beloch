@@ -22,6 +22,7 @@ let span_of_stmt : Ast.stmt -> Error.span = function
   | Ast.Def (_, _, _, sp)
   | Ast.Apply (_, _, _, sp)
   | Ast.Export (_, _, sp)
+  | Ast.Squash (_, _, _, sp)
   | Ast.Flatten (_, _, _, _, _, _, sp) -> sp
 
 (* collapse every run of whitespace to a single space and trim: so

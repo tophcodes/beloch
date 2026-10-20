@@ -244,6 +244,7 @@ let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
   | Ast.Fold (out, m, fs, span) -> Action.eval_fold ctx out m fs span
   | Ast.Reverse (out, m, rs, span) -> Action.eval_reverse ctx out m rs span
   | Ast.Unfold (lo, fs, span) -> Action.eval_unfold ctx lo fs span
+  | Ast.Squash (out, spine, target, span) -> Squash.eval ctx out spine target span
   | Ast.Point (n, Ast.PsExpr po, span) ->
       bind_point ctx n span (Resolve.resolve_point ctx po)
   | Ast.Point (n, Ast.PsFree { line; anchor; pos; span }, _) ->

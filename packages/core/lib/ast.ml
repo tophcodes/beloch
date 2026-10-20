@@ -201,6 +201,10 @@ type raw_item =
   | RiOrder of flap_arg * flap_arg * Error.span
   | RiStaying of point_operand list * Error.span
   | RiSelection of toward_item * Error.span
+  | RiAlignment of line_operand * align_object * Error.span
+      (* (--l onto --m) or (--l onto .p): the bare alignment of `squash`, a
+         line of the spine onto its target, which the write completes with
+         the fold line through the vertex (ADR 0038) *)
 
 (* One argument of an annotation (docs/reference/BELOCH-ANNOTATIONS.md): any read the
    language has, a text in double quotes, a number, or a bare word. *)
@@ -257,6 +261,10 @@ type stmt =
          Apply (None, …) = naked apply *)
   | Export of export_entry list option * string * Error.span
       (* None = export-all; the string is the instance name *)
+  | Squash of output * line_operand * align_object * Error.span
+      (* squash (--l onto <target>) [as --n | into --n]: the flap whose
+         spine lies on --l opens and its spine lands on the target, a line
+         or a point; a fan at the spine's vertex (ADR 0038, ADR 0044) *)
   | Flatten of output * collapse_elem list * (flap_arg * flap_arg) list
                 * point_operand list option * flap_arg option * point_operand option
                 * Error.span

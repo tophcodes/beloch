@@ -1,0 +1,20 @@
+@author "Claude (Anthropic)"
+
+; The line from the vertex through .n carries no crease, so the squash has
+; no hinge to fold the flap's layer along.
+
+paper square
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+mark (map --ab onto --cd) as --h
+mark (map --da onto --bc) as --v
+.q = free on --ab from .a at 1/4
+.r = free on --ab from .b at 1/4
+.z = free on --cd from .c at 1/4
+.e = free on --da from .d at 1/4
+.f = free on --da from .a at 1/4
+flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+.n = free on --ab from .a at 1/8
+squash (--h & --da onto .n)
+
+; expect error "no crease lies on the line from the vertex through .n"

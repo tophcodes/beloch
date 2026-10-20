@@ -1318,6 +1318,14 @@ let flip (g : t) : t =
 let add_mark (g : t) (m : mark) : t =
   { g with marks = Array.append g.marks [| m |] }
 
+(* Every hinge and mark of crease [from] becomes one of crease [into]: the two
+   are one crease from here on. Ids carry no invariant of the state, so this
+   is a plain record update. *)
+let merge_crease (g : t) ~(from : int) ~(into : int) : t =
+  { g with
+    hinges = Array.map (fun h -> if h.crease_id = from then { h with crease_id = into } else h) g.hinges;
+    marks = Array.map (fun m -> if m.mcrease_id = from then { m with mcrease_id = into } else m) g.marks }
+
 (* {1 Selectors} *)
 
 (* Face ids sharing a hinge with face [i]. *)

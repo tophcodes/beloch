@@ -183,6 +183,9 @@ let stmt_shape (s : Ast.stmt) : string =
            (List.map (fun (u, l) -> fastr u ^ ">" ^ fastr l) overs))
         (optstr (fun ps -> String.concat " " (List.map pstr ps)) staying)
         (optstr pstr toward)
+  | Ast.Squash (out, spine, target, _) ->
+      Printf.sprintf "squash %s %s onto %s" (outstr out) (lstr spine)
+        (match target with Ast.AoPoint p -> pstr p | Ast.AoLine l -> lstr l)
   | Ast.Flip _ -> "flip"
   | Ast.Point (n, _, _) -> "point ." ^ n
   | Ast.Def (n, _, _, _) -> "def " ^ n
@@ -965,12 +968,33 @@ let test_fold_placed () =
      place=under .p"
     (shape1 "fold (through .m .n) (moving .b) (under .p)")
 
+let test_squash_items () =
+  Alcotest.(check string)
+    "a spine onto a line"
+    "squash as --s --h onto --ac"
+    (shape1 "squash (--h onto --ac) as --s");
+  Alcotest.(check string)
+    "a spine onto a point"
+    "squash anon --h onto .p"
+    (shape1 "squash (--h onto .p)");
+  match parse1 "squash (--h & --da onto --ac)" with
+  | Ast.Squash (_, Ast.LFilter _, Ast.AoLine _, _) -> ()
+  | _ -> Alcotest.fail "a filtered spine onto a crease"
+
 (* ---- Item classification errors ---- *)
 
 let test_err_head_the_verb_does_not_take () =
   expect_error "fold takes no (outside) item" (fun () ->
       parse_stmts ~filename:"t.bel"
         "paper square\nfold (map .a onto .c) (outside)\n")
+
+let test_err_squash_takes_a_bare_alignment () =
+  expect_error "squash completes the alignment" (fun () ->
+      parse_stmts ~filename:"t.bel" "paper square\nsquash (map --h onto --ac)\n");
+  expect_error "squash takes no (toward) item" (fun () ->
+      parse_stmts ~filename:"t.bel" "paper square\nsquash (--h onto --ac) (toward .a)\n");
+  expect_error "squash needs its alignment item" (fun () ->
+      parse_stmts ~filename:"t.bel" "paper square\nsquash\n")
 
 let test_err_items_on_flip () =
   expect_error "flip takes no items" (fun () ->
@@ -1220,6 +1244,9 @@ let () =
           Alcotest.test_case "placed fold takes up to" `Quick
             test_placed_fold_takes_up_to;
           Alcotest.test_case "a clause on flip" `Quick test_err_clause_on_flip;
+          Alcotest.test_case "squash items" `Quick test_squash_items;
+          Alcotest.test_case "squash takes a bare alignment" `Quick
+            test_err_squash_takes_a_bare_alignment;
         ] );
       ( "export",
         [

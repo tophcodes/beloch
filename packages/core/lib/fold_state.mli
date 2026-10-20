@@ -425,6 +425,11 @@ val add_mark : t -> mark -> t
 (** Append a paper-space mark. Marks carry no invariants, so this is a plain
     record update: no re-validation through [make]. *)
 
+val merge_crease : t -> from:int -> into:int -> t
+(** The hinges and marks of crease [from] carried over to crease [into], so
+    that the two are one crease: the axis of a squash, scored on each layer
+    of its flap under an id of its own while the fan is solved. *)
+
 (** {1 Selectors} *)
 
 val neighbors : t -> int -> int list
