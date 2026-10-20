@@ -370,11 +370,29 @@ let fan ~pre ~post ~point:o ~rays ~emergent =
   in
   let n = Array.length ends in
   let k = Num.of_int 1000 in
-  let probe (a : Geom.point) (b : Geom.point) =
-    let off u v = Num.div (Num.add (Num.sub u o.Geom.x) (Num.sub v o.Geom.x)) k in
-    let offy u v = Num.div (Num.add (Num.sub u o.Geom.y) (Num.sub v o.Geom.y)) k in
-    { Geom.x = Num.add o.Geom.x (off a.Geom.x b.Geom.x);
-      y = Num.add o.Geom.y (offy a.Geom.y b.Geom.y) }
+  (* points just off [o] inside the sector from [a] counter-clockwise to
+     [b]: along the sum of the two directions, or against it where the
+     sector is wider than a half-turn and square to [a] where it is one,
+     and just inside each of the two rays, since a wide sector at a corner
+     of the folded paper holds paper near one ray and none in the middle *)
+  let probes (a : Geom.point) (b : Geom.point) =
+    let ax = Num.sub a.Geom.x o.Geom.x and ay = Num.sub a.Geom.y o.Geom.y in
+    let bx = Num.sub b.Geom.x o.Geom.x and by = Num.sub b.Geom.y o.Geom.y in
+    let cross = Num.sub (Num.mul ax by) (Num.mul ay bx) in
+    let dot = Num.add (Num.mul ax bx) (Num.mul ay by) in
+    let mid =
+      match Num.sign cross with
+      | 0 when Num.sign dot < 0 -> (Num.neg ay, ax)
+      | s when s < 0 -> (Num.neg (Num.add ax bx), Num.neg (Num.add ay by))
+      | _ -> (Num.add ax bx, Num.add ay by)
+    in
+    let turn = Num.of_int 16 in
+    let near_a = (Num.sub ax (Num.div ay turn), Num.add ay (Num.div ax turn)) in
+    let near_b = (Num.add bx (Num.div by turn), Num.sub by (Num.div bx turn)) in
+    List.map
+      (fun (dx, dy) ->
+        { Geom.x = Num.add o.Geom.x (Num.div dx k); y = Num.add o.Geom.y (Num.div dy k) })
+      [ mid; near_a; near_b ]
   in
   let stays p =
     match Fold_state.paper_preimages pre p with
@@ -386,7 +404,7 @@ let fan ~pre ~post ~point:o ~rays ~emergent =
   in
   let sectors = List.init n (fun i -> (ends.(i), ends.((i + 1) mod n))) in
   let stayer =
-    match List.find_opt (fun (a, b) -> stays (probe a b)) sectors with
+    match List.find_opt (fun (a, b) -> List.exists stays (probes a b)) sectors with
     | Some s -> s
     | None -> List.hd sectors
   in
