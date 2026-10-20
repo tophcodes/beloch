@@ -82,5 +82,5 @@ bundle model itself. Full design:
 - Implementation is mostly additive: `fold_state` edges already carry `crease_id`
   + endpoints, so `at` is a query over the existing subdivision; `pinch` is a
   narrowed `subdivide` plus a display flag on the edge.
-- The spec ([[reference/specification]]) is extended only when the implementing slice
+- The language reference ([[reference/beloch]]) is extended only when the implementing slice
   lands; until then this feature sits in Appendix B.
