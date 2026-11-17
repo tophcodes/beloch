@@ -88,7 +88,7 @@ let toward_inside (span : Error.span) : 'a =
 
 %token PAPER SQUARE THROUGH MAP ONTO EQ EOF PERP TOWARD MOVING MOUNTAIN VALLEY FLIP RPAREN AND UP TO FOLD_KW
 %token DEF APPLY EXPORT AS BANG LBRACE RBRACE LPAREN RBRACKET AMP BACKSLASH STAR LBRACKET FLAP_BRACKET
-%token FLATTEN SQUASH OVER STAYING MARK BETWEEN AT UNDER REVERSE OUTSIDE UNFOLD DOWN
+%token FLATTEN FAN SQUASH OVER STAYING MARK BETWEEN AT UNDER REVERSE OUTSIDE UNFOLD DOWN
 %token FREE ON FROM ALIGN HEADING INTO
 %token BY SHAPE TRIM UNIT
 %token LINE_MEMBER_OPEN POINT_MEMBER_OPEN  (* --[ / .[ : the line/point select openers *)
@@ -208,6 +208,7 @@ annot_arg:
   | IDENT                            { { av = AvWord $1; av_span = $loc } }
   | UP                               { { av = AvWord "up"; av_span = $loc } }
   | DOWN                             { { av = AvWord "down"; av_span = $loc } }
+  | FAN                              { { av = AvWord "fan"; av_span = $loc } }
 
 body_stmt:
   (* value binding: pure geometry, no material *)
@@ -279,6 +280,13 @@ item_body:
       { Ast.RiSelection ({ target = $3; subject = Some (AoPoint $1) }, $loc) }
   | line_operand TOWARD toward_target
       { Ast.RiSelection ({ target = $3; subject = Some (AoLine $1) }, $loc) }
+  | FAN items fan_as                    { Ast.RiFan (None, $2, $3, $loc) }
+  | FAN AT point_operand items fan_as   { Ast.RiFan (Some $3, $4, $5, $loc) }
+
+(* the name `(fan … as .p)` binds to the vertex (ADR 0055) *)
+fan_as:
+  |          { None }
+  | AS POINT { Some ($2, $loc($2)) }
 
 (* what a `toward` names: a point, or a line whose side it lies on *)
 toward_target:

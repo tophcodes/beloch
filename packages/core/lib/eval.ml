@@ -270,6 +270,15 @@ let rec eval_stmt (ctx : Ctx.ctx) (stmt : Ast.stmt) : unit =
       in
       Flatten_solve.run ctx ~into ~bind_out ~elems ~overs ~staying_opt ~on_opt
         ~toward_opt span
+  | Ast.FlattenFans (out, fans, overs, staying_opt, on_opt, toward_opt, span) ->
+      let cid, check_axis, bind_out = Action.crease_id_for ctx out ~fresh:(fun () -> -1) in
+      let into =
+        match out with
+        | Ast.Into _ -> Some (cid, check_axis)
+        | Ast.Anonymous | Ast.Named _ -> None
+      in
+      Flatten_fans.run ctx ~into ~bind_out ~fans ~overs ~staying_opt ~on_opt
+        ~toward_opt span
 
 and eval_apply (ctx : Ctx.ctx) (bind_opt : string option) (defname : string)
     (args : Ast.arg list) (span : Error.span) : unit =

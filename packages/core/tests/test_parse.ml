@@ -183,6 +183,25 @@ let stmt_shape (s : Ast.stmt) : string =
            (List.map (fun (u, l) -> fastr u ^ ">" ^ fastr l) overs))
         (optstr (fun ps -> String.concat " " (List.map pstr ps)) staying)
         (optstr pstr toward)
+  | Ast.FlattenFans (out, fans, overs, staying, _, toward, _) ->
+      Printf.sprintf "flatten %s fans=[%s] overs=[%s] staying=%s toward=%s"
+        (outstr out)
+        (String.concat " "
+           (List.map
+              (fun (f : Ast.fan) ->
+                Printf.sprintf "{at=%s rays=[%s] as=%s}"
+                  (optstr pstr f.Ast.fan_at)
+                  (String.concat " "
+                     (List.map
+                        (fun (r : Ast.fan_ray) ->
+                          mstr r.Ast.fray ^ ":" ^ mvstr r.Ast.fdir)
+                        f.Ast.fan_rays))
+                  (optstr (fun (n, _) -> "." ^ n) f.Ast.fan_as))
+              fans))
+        (String.concat " "
+           (List.map (fun (u, l) -> fastr u ^ ">" ^ fastr l) overs))
+        (optstr (fun ps -> String.concat " " (List.map pstr ps)) staying)
+        (optstr pstr toward)
   | Ast.Squash (out, spine, target, _) ->
       Printf.sprintf "squash %s %s onto %s" (outstr out) (lstr spine)
         (match target with Ast.AoPoint p -> pstr p | Ast.AoLine l -> lstr l)
@@ -718,6 +737,30 @@ let test_parse_flatten_toward_item () =
      overs=[] staying=- toward=.s"
     (shape1 "flatten (--a & .p) (--b & .q valley) (--c & .r mountain) (toward .s)")
 
+(* ADR 0055: fan items, with a construction as a ray, `at` and `as` *)
+let test_parse_flatten_fan_items () =
+  Alcotest.(check string)
+    "two fans beside the statement's own items"
+    "flatten as --pf fans=[{at=- rays=[line{--h & .sr}:free \
+     construction{.sr onto --mid; through .a}:free] as=.r} \
+     {at=.q rays=[line{--v}:mountain] as=-}] overs=[] staying=.o toward=-"
+    (shape1
+       "flatten (fan (--h & .sr) (map .sr onto --mid through .a) as .r)\n\
+       \        (fan at .q (--v mountain)) (staying .o) as --pf")
+
+let test_parse_flatten_fan_errors () =
+  let fails msg src =
+    expect_error msg (fun () -> parse_stmts ~filename:"t.bel" ("paper square\n" ^ src ^ "\n"))
+  in
+  fails "a flatten takes ray items or fan items, not both"
+    "flatten (--a) (fan (--b) (--c))";
+  fails "a fan takes rays only, not a (staying) item"
+    "flatten (fan (--b) (staying .o))";
+  fails "a fan needs at least one ray" "flatten (fan as .p)";
+  fails "a fan names its vertex with at or binds it with as, not both"
+    "flatten (fan at .p (--b) as .q)"
+
+
 let test_parse_flatten_double_staying_rejected () =
   let src = "paper square\nflatten (--a) (staying .p) (staying .q)\n" in
   expect_error "only one staying item per flatten" (fun () ->
@@ -1178,6 +1221,10 @@ let () =
             test_parse_flatten_followed_by_stmt;
           Alcotest.test_case "flatten toward item" `Quick
             test_parse_flatten_toward_item;
+          Alcotest.test_case "flatten fan items" `Quick
+            test_parse_flatten_fan_items;
+          Alcotest.test_case "flatten fan item errors" `Quick
+            test_parse_flatten_fan_errors;
           Alcotest.test_case "flatten double staying rejected" `Quick
             test_parse_flatten_double_staying_rejected;
           Alcotest.test_case "flatten double toward rejected" `Quick
