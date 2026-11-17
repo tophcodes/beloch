@@ -96,6 +96,7 @@ and program_token (buf : Sedlexing.lexbuf) : token =
   | "apply" -> APPLY
   | "export" -> EXPORT
   | "flatten" -> FLATTEN
+  | "fan" -> FAN
   | "squash" -> SQUASH
   | "over" -> OVER
   | "under" -> UNDER

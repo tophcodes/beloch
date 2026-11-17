@@ -25,6 +25,7 @@
 (extent_item     ["between" "at"] @extent)
 (layer_item      "on" @layer)
 (flatten_element ["mountain" "valley"] @ray)
+(fan_item        ["fan" "at" "as"] @ray)
 (order_item      "over" @order)
 (alignment_item  "onto" @alignment)
 (stayer_item     "staying" @stayer)

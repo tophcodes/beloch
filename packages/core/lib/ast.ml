@@ -176,6 +176,20 @@ type markable =
   | MConstruction of construction   (* a fresh crease line *)
   | MLine of line_operand     (* an existing material crease or bound value *)
 
+(* A ray of a fan item (ADR 0055): a line the program has scored, or a
+   construction the statement scores before it folds, with the letter the
+   program fixes for it. *)
+type fan_ray = { fray : markable; fdir : mv_constraint; fspan : Error.span }
+
+(* `(fan [at .p] ray+ [as .p])`: the rays of one vertex of a `flatten`, with
+   the point the vertex has to lie on or the name it binds (ADR 0055) *)
+type fan = {
+  fan_at : point_operand option;
+  fan_rays : fan_ray list;
+  fan_as : (string * Error.span) option;
+  fan_span : Error.span;
+}
+
 (* The clause after a write's items, naming what becomes of the one crease
    the write scores (BELOCH-WRITES.md). *)
 type output =
@@ -205,6 +219,10 @@ type raw_item =
       (* (--l onto --m) or (--l onto .p): the bare alignment of `squash`, a
          line of the spine onto its target, which the write completes with
          the fold line through the vertex (ADR 0038) *)
+  | RiFan of point_operand option * raw_item list * (string * Error.span) option
+             * Error.span
+      (* (fan [at .p] <items> [as .p]): the rays of one vertex of `flatten`,
+         classified by Items like the items of a write (ADR 0055) *)
 
 (* One argument of an annotation (docs/reference/BELOCH-ANNOTATIONS.md): any read the
    language has, a text in double quotes, a number, or a bare word. *)
@@ -282,6 +300,12 @@ type stmt =
          class, min-mountain canon, centered-rank dipole). an `as` output
          binds the name to the emergent crease (when one was materialized) or the
          given-ray bundle. *)
+  | FlattenFans of output * fan list * (flap_arg * flap_arg) list
+                   * point_operand list option * flap_arg option
+                   * point_operand option * Error.span
+      (* flatten <fan items> <items>: the fans fold in one motion (ADR 0055);
+         the over pairs, staying, on and toward apply to the whole
+         statement, as for [Flatten] *)
 
 (* The sheet a `paper` line opens: the square of a side (1 when none is
    given), or a shape with one number per parameter. *)

@@ -433,8 +433,8 @@ let push_bind (ctx : ctx) (sp : Error.span) = push_entry ctx SBind sp
 (* The axis a statement would have moved, read off its syntax: the entry a
    statement that failed before logging itself gets. *)
 let kind_of_stmt : Ast.stmt -> stmt_kind = function
-  | Ast.Fold _ | Ast.Reverse _ | Ast.Unfold _ | Ast.Flatten _ | Ast.Squash _
-  | Ast.Flip _ ->
+  | Ast.Fold _ | Ast.Reverse _ | Ast.Unfold _ | Ast.Flatten _ | Ast.FlattenFans _
+  | Ast.Squash _ | Ast.Flip _ ->
       SFold
   | Ast.Mark _ -> SMark
   | Ast.Apply (_, defname, _, _) -> SApply defname

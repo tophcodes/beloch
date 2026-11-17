@@ -1155,7 +1155,15 @@ let column (st : Fold_state.t) (t : Geom.point) : (Geom.point * bool) list =
   let rank = Fold_state.rank st in
   List.init n Fun.id
   |> List.filter (fun i ->
-         Geom.in_convex_polygon (Fold_state.table_polygon_ccw st i) t)
+         (* the faces over [t]: a face whose edge runs through [t] only
+            touches the faces beside it there *)
+         let p = Fold_state.table_polygon_ccw st i in
+         let k = Array.length p in
+         Geom.in_convex_polygon p t
+         && not
+              (List.exists
+                 (fun j -> Geom.on_segment (p.(j), p.((j + 1) mod k)) t)
+                 (List.init k Fun.id)))
   |> List.sort (fun i j -> compare rank.(i) rank.(j))
   |> List.map (fun i ->
          let inv = Isometry.inverse (Fold_state.face_iso2 st i) in
@@ -1237,6 +1245,39 @@ let test_e2e_flatten_scores_under_fan () =
   same_state
     (run (read_case "collapse/flatten-waterbomb-emergent-on-top-layer.bel"))
     (run (drop " (--v \\ --ab mountain)" both))
+
+(* The petal fold as one flatten of two fans (ADR 0055) folds the state that
+   two reverse folds and a valley fold reach. *)
+let petal_by_steps =
+  "paper square\n\
+   fold (map .a onto .c) as --bd\n\
+   reverse (map .b onto .c) as --h\n\
+   reverse (map .d onto .c) as --v\n\
+   .o = --h * --v\n\
+   --mid = (through .c .o)\n\
+   .sr = --ab * --h\n\
+   reverse (map .sr onto --mid through .a) as --kr\n\
+   .sl = --da * --v\n\
+   reverse (map .sl onto --mid through .a) as --kl\n\
+   fold (perp --mid through .sr) (moving .a) (up to #[.a .o]) as --pf\n"
+
+let test_e2e_flatten_petal_two_fans () =
+  let run src =
+    (Eval.eval_folded (Beloch.parse ~filename:"t.bel" src)).Eval.state
+  in
+  same_state
+    (run (read_case "collapse/flatten-petal-two-fans.bel"))
+    (run petal_by_steps)
+
+(* The bird base by two petal folds (ADR 0055) is the bird base by four
+   reverse folds with both flaps folded up. *)
+let test_e2e_bird_base_two_petals () =
+  let run name =
+    (Eval.eval_folded (Beloch.parse ~filename:name (read_case name))).Eval.state
+  in
+  same_state
+    (run "bases/bird-base-two-petals.bel")
+    (run "bases/bird-base-petal.bel")
 
 (* ---- Sheets (docs/reference/BELOCH.md, "Sheets"; docs/reference/FOLD.md, `frame_unit`) ---- *)
 
@@ -1489,6 +1530,10 @@ let () =
             "flatten scores its rays under the fan: top-layer marks fold \
              as both-layer marks"
             `Quick test_e2e_flatten_scores_under_fan;
+          Alcotest.test_case "flatten: the petal fold as two fans" `Quick
+            test_e2e_flatten_petal_two_fans;
+          Alcotest.test_case "flatten: the bird base by two petal folds" `Quick
+            test_e2e_bird_base_two_petals;
         ] );
       ( "emit_folded",
         [

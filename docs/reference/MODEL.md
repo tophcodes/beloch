@@ -1563,6 +1563,28 @@ that set is empty, when its states differ in their stayer, or when
 $\sigma$ leaves more than one. The crease the write
 scores is the bundle of the hinges on the given rays when $k$ is even and
 the bundle of the hinges on the emergent ray when $k$ is odd.
+
+`flatten` also takes a finite set of table points $O_1, \ldots, O_m$,
+$m \ge 2$, each with its rays, and folds them in one motion
+([[decision/0055]]). A ray of $O_i$ runs from $O_i$ to the edge of the
+image of $\Phi$, or to another vertex $O_j$; the segment $O_i O_j$ is then a
+ray of both. For $m = 2$, when neither vertex has a ray on that segment, it
+is added to both, and the write scores it. A *region* is a set of table
+points that lie in one wedge around every $O_i$; a face lies in a region
+when its interior does. The stayer is the region whose closure holds
+$f(p_1), \ldots, f(p_j)$ among the regions that hold a piece of $\Phi$;
+the program names it. The tip $T$ is the least set of pieces that contains
+the pieces of $\Phi$ outside the stayer and the pieces joined to a piece of
+$T$ by a hinge that was there before the write, in the same region; a ray
+joins no pieces. Each ray is scored on a face of $C$ exactly where it parts
+a piece of $T$ from a piece outside $T$ or from a piece of $T$ in another
+region, so a layer that the tip leaves in place keeps its faces whole.
+Motions, candidate states and letters are as above, with the regions in
+place of the wedges. The order of two faces outside $T$ that one lay above
+in every column stays as it was. Among the candidate states, those whose
+faces lie inside the convex hull of the state before the write are kept
+where there are any ([[decision/0056]]), and the rest of $\sigma$ is the fewest mountains on
+the rays the program names.
 :::
 
 ::: {.term #term-fan name="fan, ray"}

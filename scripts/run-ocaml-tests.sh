@@ -43,6 +43,14 @@ awk '
 
 grep -vE '^\s*(#|$)' "$baseline" | sort > "$expected"
 
+# A suite that raises before alcotest runs prints no result line, so the
+# count above misses it; its runtime prints "Fatal error:" instead.
+if grep -q '^Fatal error:' "$log"; then
+  echo "A suite stopped before it reported a result:"
+  grep -B3 '^Fatal error:' "$log"
+  exit 1
+fi
+
 if diff -u "$expected" "$actual" > /dev/null; then
   if [ -s "$actual" ]; then
     echo "OK: only the failures recorded in $baseline"

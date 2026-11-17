@@ -1,0 +1,33 @@
+@author "Claude (Anthropic)"
+
+; The petal fold on the front flap of the preliminary base, as two fans in
+; one statement (ADR 0055). Each fan gives the half of its side edge that
+; opens and the crease that brings its side corner onto the center line; the
+; statement binds the vertex of each fan and the crease between the two
+; vertices, which the kernel derives.
+;
+; The state is the one that two reverse folds and a valley fold reach:
+; `reverse (map .sr onto --mid through .a)`, the same with `.sl`, then
+; `fold (perp --mid through .sr) (moving .a) (up to #[.a .o])`.
+
+paper square
+
+fold (map .a onto .c) as --bd
+reverse (map .b onto .c) as --h
+reverse (map .d onto .c) as --v
+
+.o = --h * --v
+--mid = (through .c .o)
+.sr = --ab * --h
+.sl = --da * --v
+
+flatten (fan (--h & .sr) (map .sr onto --mid through .a) as .r)
+        (fan (--v & .sl) (map .sl onto --mid through .a) as .l)
+        (on #[.a]) (staying .o) as --pf
+
+; assert steps = 4
+; assert faces = 11
+; assert .sr = .sl
+; assert .b = (1, 1)
+; assert .d = .b
+; assert .o = (1/2, 1/2)

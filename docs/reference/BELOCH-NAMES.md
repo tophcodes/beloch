@@ -116,7 +116,7 @@ apply corner(.c .o)
 apply corner(.d .o)
 
 ; assert steps = 4
-; assert faces = 8
+; assert faces = 5
 ; assert .a = .o
 ```
 
@@ -161,7 +161,7 @@ export { --c as --ca } $a
 export { --c as --cb } $b
 .e = --ca * --cb                   ; the point where the two creases meet
 
-; assert faces = 6
+; assert faces = 3
 ; assert .e = (1/2, 0)
 ```
 
@@ -206,18 +206,17 @@ from the instance and runs nothing, so the geometry it lands is the
 geometry the application left.
 
 ```{.bel .frag prelude=center}
-def corner(.p .o) {
+def corner(.p .o --l) {
   fold (map .p onto .o) (moving .p) as --c
-  .x = --c * --h                       ; where the crease meets --h
+  .x = --c * --l                       ; where the crease meets --l
   .t = free on --c from .x             ; a point on the crease
 }
 
-$a = apply corner(.a .o)
+$a = apply corner(.a .o --h)
 export { .t --c } $a                   ; selective: these two names
 export { .t as .left } $a              ; renamed on landing
-export $a                              ; every member: .p .o .x .t --c
 
-; assert faces = 3
+; assert faces = 2
 ```
 
 - An entry names a member with its sigil. `as` lands it under another name
@@ -245,7 +244,7 @@ export $a                              ; every member: .p .o .x .t --c
 
 ```{.bel .frag prelude=lines}
 def midpoint(.p .q) {
-  --pq = (through .p .q)
+  mark (through .p .q) as --pq
   .m = free on --pq from .p
 }
 def diagonal(.p .q) {

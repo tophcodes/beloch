@@ -483,6 +483,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "fan_item"
+        },
+        {
+          "type": "SYMBOL",
           "name": "anchor_item"
         },
         {
@@ -573,6 +577,81 @@
             {
               "type": "SYMBOL",
               "name": "_mv"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
+    },
+    "fan_item": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "STRING",
+          "value": "fan"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "at"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "point"
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "construction"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "flatten_element"
+              }
+            ]
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "as"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "point"
+                }
+              ]
             },
             {
               "type": "BLANK"

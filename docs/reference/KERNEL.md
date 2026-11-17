@@ -198,6 +198,49 @@ layers, the upper corner folds in between the upper and the lower layer.
 One ceiling remains: the pieces of the stayer's wedge the tip hangs from
 rank as one block, so a tip hinged to two of them cannot land between them.
 
+### Fans
+
+`Flatten_fans.run` folds a `flatten` of several fan items
+([[decision/0055]]). It resolves each ray item to a line: a line operand to
+its material segments, a construction to the line `Axiom.select` keeps,
+under a fresh crease id. A fan with `at` has its vertex at the table
+position of that point; a fan without it, at the one point every ray item
+passes through. The rays are the halves of those
+lines from the vertex: of a segment through the vertex the halves that
+hold every point a `&` keeps, of a construction the halves along which a
+face lies. For two fans whose rays leave the segment between their
+vertices out, the statement adds it to both under one crease id, the
+crease the output clause binds.
+
+The faces are sorted into regions, one per combination of wedges around
+the vertices, with `Collapse.sector_of_poly_opt` per vertex; a face a ray
+runs through belongs to none. The statement scores every ray on every
+layer under the fans, reads the tip off that state, and scores each ray
+again on the state before the flatten, on the faces where a hinge of the
+first scoring on that ray parts a face of the tip from a face that stays,
+or two faces of the tip in different regions. The tip grows from the
+anchor's faces outside the stayer's region over the hinges the state had
+before the flatten, within one region. On the petal fold this scores the
+crease between the vertices on the top layer alone and the kite creases on
+the top layer and the one below it, the state that two reverse folds and a
+valley fold reach.
+
+`Collapse.geoms_of` takes the regions as its sectors and finds the motions
+as for one fan. With `prune` it adds three things to the stacking, which a
+fan of several vertices needs: units that stay keep their order wherever
+every face of one lay above every face of the other, overlapping or not;
+`Collapse.linear_extensions` skips an order that differs from one it keeps
+only in two adjacent units with no overlapping faces; and it drops an
+order as soon as the units placed so far break a taco-tortilla or
+taco-taco condition among units of distinct faces, the conditions
+`Fold_state.make` checks later. The letters of a fan run through Maekawa's
+parity only where the anchor surrounds its vertex. Of the states, those
+inside the convex hull of the state before the flatten are kept where
+there are any ([[decision/0056]]), then those with the fewest mountains on the rays the
+program gave. Two ceilings remain: the rays are half-lines, so a ray
+scored past the far end of its segment would cut a face beyond it, and a
+statement derives a crease between vertices only for two fans.
+
 ### Squash
 
 `Squash.eval` folds a `squash` through the same solver

@@ -356,7 +356,7 @@ let expected_inventories =
   in
   [
     ("BELOCH.md", counts 0 0 0 0);
-    ("BELOCH-WRITES.md", counts 0 28 9 0);
+    ("BELOCH-WRITES.md", counts 0 29 9 0);
     ("BELOCH-CONSTRUCTIONS.md", counts 1 10 1 0);
     ("BELOCH-ANNOTATIONS.md", counts 0 0 0 1);
     ("BELOCH-GRAMMAR.md", counts 0 0 0 0);
@@ -381,13 +381,15 @@ let block_cases (blocks : block list) =
 let is_language_page f = String.starts_with ~prefix:"BELOCH" f && Filename.check_suffix f ".md"
 
 (* One suite per page; a prelude resolves within its page. *)
+let reference_dir = "docs/reference"
+
 let language_suites () =
-  Sys.readdir (Filename.concat source_root "spec")
+  Sys.readdir (Filename.concat source_root reference_dir)
   |> Array.to_list
   |> List.filter is_language_page
   |> List.sort compare
   |> List.map (fun f ->
-         let blocks = extract_blocks (read (Filename.concat source_root (Filename.concat "spec" f))) in
+         let blocks = extract_blocks (read (Filename.concat source_root (Filename.concat reference_dir f))) in
          let inventory_case =
            Alcotest.test_case "block inventory matches the constant" `Quick (fun () ->
                match List.assoc_opt f expected_inventories with
