@@ -513,6 +513,53 @@ flatten (--d1 & .a) (--d1 & .c) (--d2 & .b mountain) (--d2 & .d)
 ; expect error "collinear leading creases"
 ```
 
+**Fans.** A flatten folds several vertices in one move when its rays
+stand in fan items ([[decision/0055]]). A fan item holds the rays of one
+vertex: `(fan at .p ray+)` names a point the program has bound, and the
+statement fails when the rays do not meet at it (`` the rays of the fan do
+not meet at <point> ``); `(fan ray+ as .p)` binds the point where they
+meet. A ray is a line operand, with a letter where the program fixes one,
+or a construction, which the statement scores on the layers that move.
+`&` narrows a line to the half that holds the point it names. The items
+`on`, `staying` and `over` stand beside the fans and apply to the whole
+statement; `staying` is required (`` a flatten with several fans needs a
+staying item ``), and `toward` is refused (`` a flatten with several fans
+takes no toward item ``). A statement takes ray items or fan items (`` a
+flatten takes ray items or fan items, not both ``), and at least two fan
+items.
+
+The crease between the two vertices is a ray of both fans. Where neither
+fan names it, the statement scores it, and the output clause binds it;
+a crease one fan names and the other does not is an error (`` a crease
+between two vertices is a ray of both fans ``). A layer moves when it
+belongs to the anchor and lies outside the region that stays, or when a
+crease that was there before the statement joins it to a layer that
+moves, within one region; the regions are what the rays of all fans cut
+the table into. Each ray is scored on the layers where it parts a moving
+piece from a piece that stays or from a moving piece of another region.
+Of the states the fans fold to, those that keep the paper inside the
+outline it started from are kept where there are any; a petal reaches
+past the outline of the base it is folded from, so the outline does not
+remove its states. Among those, the states with the fewest mountains on
+the rays the program gave are kept, and more than one state left is an
+error (`` flatten is ambiguous: <n> realizations ``).
+
+```{.bel .frag}
+fold (map .a onto .c) as --bd
+reverse (map .b onto .c) as --h
+reverse (map .d onto .c) as --v
+.o = --h * --v
+--mid = (through .c .o)
+.sr = --ab * --h
+.sl = --da * --v
+flatten (fan (--h & .sr) (map .sr onto --mid through .a) as .r)
+        (fan (--v & .sl) (map .sl onto --mid through .a) as .l)
+        (on #[.a]) (staying .o) as --pf     ; the petal fold
+
+; assert faces = 11
+; assert --pf is mountain
+```
+
 `flip` turns the whole sheet over and takes no item
 ([[reference/model#def-flip|def-flip]]): every face changes between face up
 and face down, and the stack reverses, so the layer at the bottom of a
