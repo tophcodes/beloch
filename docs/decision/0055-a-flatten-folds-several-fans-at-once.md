@@ -68,11 +68,21 @@ of its two halves at the vertex, or to one piece where the layers need
 different letters. This states what the kernel does for one fan.
 
 **A crease between two vertices is a ray of both fans.** A program that
-names it writes it in both fans, and the statement fails when the two
-mentions are not the same pieces. Where a fan has an odd number of rays the
-kernel derives the missing one, as it does for one fan. When the derived
-rays of two fans lie on one line between their vertices they are one crease,
-and the output clause binds it.
+names it writes it in both fans, and the statement fails when one fan
+names it and the other does not. Where neither of two fans names it, the
+statement scores the segment between their vertices as one crease on both,
+and the output clause binds it; the statement then keeps the states whose
+motions close. A fan does not derive its missing ray from its own rays, as
+one fan with an odd number of rays does: at a vertex on a folded edge the
+rays close around the paper point of the vertex, where the layers on both
+sides of the edge meet, and the table shows them folded onto one side. In
+the petal fold each fan gives two rays and the crease between the vertices
+is the third.
+
+**The statement names the region that stays.** `staying` is required: the
+order of the rays picks no region when the rays belong to several
+vertices. `toward` is not taken, and a statement has at least two fan
+items; one vertex is written with ray items.
 
 ## Alternatives considered
 
@@ -109,10 +119,11 @@ and the output clause binds it.
   across the changing hinges on a path from a face that stays
   [hull2020, Def. 6.5].
 - A fan with more than one ray missing stays out of reach
-  (tophcodes/beloch#265), and so does a statement whose fans derive creases
-  that are not one line.
+  (tophcodes/beloch#265), and so does a statement of more than two fans
+  that leaves a crease between two vertices unnamed: which pairs of
+  vertices share a crease is open until the sink needs it.
 - The petal fold and step 17 of the jumping frog are one statement each.
   The bird base by two petal folds must give the state of the bird base by
-  reverse folds, which `packages/core/tests/cases/collapse` checks.
+  reverse folds, which `packages/core/tests/cases/bases` checks.
 - Each fan repeats a crease it shares with its neighbor. On a sink with
   many vertices an item that names the ring once may follow.
