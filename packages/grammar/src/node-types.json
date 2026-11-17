@@ -403,6 +403,29 @@
     }
   },
   {
+    "type": "fan_item",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "construction",
+          "named": true
+        },
+        {
+          "type": "flatten_element",
+          "named": true
+        },
+        {
+          "type": "point",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "flatten_element",
     "named": true,
     "fields": {},
@@ -849,6 +872,10 @@
           "named": true
         },
         {
+          "type": "fan_item",
+          "named": true
+        },
+        {
           "type": "flatten_element",
           "named": true
         },
@@ -978,6 +1005,10 @@
   },
   {
     "type": "export",
+    "named": false
+  },
+  {
+    "type": "fan",
     "named": false
   },
   {

@@ -84,6 +84,7 @@ module.exports = grammar({
     _ray_item: $ => choice(
       $.construction,
       $.flatten_element,
+      $.fan_item,
       $.anchor_item,
       $.depth_item,
       $.placement_item,
@@ -104,6 +105,12 @@ module.exports = grammar({
     // the same shape under flatten, where each ray can carry its own pin:
     // `(--l)`, `(--l mountain)`
     flatten_element: $ => seq('(', $._operand, optional($._mv), ')'),
+
+    // `(fan (--h & .sr) (map .sr onto --mid through .a) as .r)`, `(fan at .p (--l) …)`:
+    // the rays of one vertex of a flatten (ADR 0055)
+    fan_item: $ => seq('(', 'fan', optional(seq('at', $.point)),
+      repeat1(choice($.construction, $.flatten_element)),
+      optional(seq('as', $.point)), ')'),
 
     _mv: _ => choice('mountain', 'valley'),
 
