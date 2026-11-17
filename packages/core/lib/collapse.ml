@@ -179,11 +179,18 @@ let interior_vertex (g : Fold_state.t) (cids : int list) (o : Geom.point) :
 (* A stacking is a rank array over sectors: rank.(s) = height (0 = bottom). The
    hinge constraints are pairs (hi, lo): sector hi must be Above sector lo. We
    enumerate linear extensions bottom→top, pruning against those pairs. *)
-let linear_extensions (n : int) (constraints : (int * int) list) :
+(* [indep u v] marks two units whose order no face pair reads: an order that
+   places such a pair adjacent with the higher index below is skipped, so
+   one order per class of orders that differ only in such pairs is kept.
+   [fits height s] is false where placing [s] above the units [height]
+   places (-1 for a unit not placed yet) breaks a condition every
+   completion breaks too. *)
+let linear_extensions ?indep ?fits (n : int) (constraints : (int * int) list) :
     int array list =
   let results = ref [] in
   let placed = Array.make n false in
   let order = Array.make n (-1) in
+  let height = Array.make n (-1) in
   let can_append s =
     (* s goes strictly above every already-placed sector *)
     List.for_all
@@ -203,10 +210,18 @@ let linear_extensions (n : int) (constraints : (int * int) list) :
     end
     else
       for s = 0 to n - 1 do
-        if (not placed.(s)) && can_append s then begin
+        if (not placed.(s)) && can_append s
+           && (match indep with
+              | Some ind when depth > 0 ->
+                  let p = order.(depth - 1) in
+                  not (p > s && ind p s)
+              | _ -> true)
+           && (match fits with Some f -> f height s | None -> true) then begin
           placed.(s) <- true;
           order.(depth) <- s;
+          height.(s) <- depth;
           go (depth + 1);
+          height.(s) <- -1;
           placed.(s) <- false
         end
       done
@@ -532,6 +547,18 @@ type pipeline = {
    once per vertex, sector and hinge choice and reuses it across every
    pattern; [overlaps], placement-derived as well, is memoized the first time
    a pattern needs it. *)
+(* The conditions of [Fold_state.make] a stacking can test as it places
+   units: per pair of units whether their faces overlap after the fold,
+   (a, b, c) where unit c holds a face whose interior crosses a folded hinge
+   between units a and b, so c lies above both or below both, and
+   (a, b, c, d) where the folded hinges between a and b and between c and d
+   lie on one line and overlap, so the pairs do not interleave. *)
+type prune = {
+  ov : bool array array;
+  between : (int * int * int) list;
+  quads : (int * int * int * int) list;
+}
+
 type sector_geom = {
   sg_g : Fold_state.t;
   sg_faces : Geom.point array array;
@@ -550,6 +577,10 @@ type sector_geom = {
   sg_marks : Fold_state.mark array;
   sg_new_hinges : Fold_state.hinge array;
   mutable sg_overlaps : (int * int) list option;
+  sg_prune : prune option;
+      (* what the stacking reads off the placements before it ranks; [Some]
+         asks it to skip orders that differ in units no face pair reads and
+         orders that break a non-crossing condition *)
 }
 
 (* The tip of the fan (ADR 0037) on rays rotated so that sector 0 is the
@@ -726,15 +757,337 @@ let stacking_units (g : Fold_state.t) ~(n : int) ~(sec : int array)
    both. *)
 type role = Keep | Fold | Try
 
-(* The ways the fan folds on rays rotated so that sector 0 is the stayer,
-   one per choice for the [Try] hinges whose motions close. The motion of a
-   face is the product of the reflections across the changing hinges on a
-   path to it from a face that stays [hull2020, Def. 6.5]; a choice whose
-   paths disagree does not close [hull2020, Thm. 6.6]. An element names
-   every hinge of its crease on its ray, in every layer. The choices are
-   enumerated whole, so the work doubles with every [Try] hinge; a fan in
-   the corpus has a handful at most. A search that propagates each choice
-   along the paths would prune the rest. *)
+(* The ways a fan folds once its sectors, its tip and the roles of its
+   hinges are fixed, one per choice for the [Try] hinges whose motions
+   close. [sec] gives per face its sector, 0 for the stayer and -1 for a
+   face that stays across a ray; [n] counts the sectors. [names] gives per
+   hinge the element that names it, and [side k a b] orders the faces [a]
+   and [b] of a hinge element [k] names as (the face on the clockwise side
+   of its ray, the face across), or is [None] when it cannot tell. The
+   motion of a face is the product of the reflections across the changing
+   hinges on a path to it from a face that stays [hull2020, Def. 6.5]; a
+   choice whose paths disagree does not close [hull2020, Thm. 6.6]. The
+   choices are enumerated whole, so the work doubles with every [Try]
+   hinge; a fan in the corpus has a handful at most. A search that
+   propagates each choice along the paths would prune the rest. *)
+let geoms_of ?(prune = false) (g : Fold_state.t) ~(n : int) ~(sec : int array)
+    ~(tip : bool array) ~(names : int option array) ~(role : role array)
+    ~(nelem : int) ~(side : int -> int -> int -> (int * int) option)
+    ~(faces : Geom.point array array) ~(nf : int) :
+    (sector_geom list, string) result =
+  let g_rank = Fold_state.rank g in
+  let old_hinges = Fold_state.hinges g in
+  let nh = Array.length old_hinges in
+  let touches_tip (h : Fold_state.hinge) =
+    tip.(h.Fold_state.fa) || tip.(h.Fold_state.fb)
+  in
+  let tries = List.filter (fun i -> role.(i) = Try) (List.init nh Fun.id) in
+  let hinge_line i =
+    let ta, tb = Fold_state.hinge_table_segment g i in
+    Geom.line_through ta tb
+  in
+  let adj = Array.make nf [] in
+  Array.iteri
+    (fun i (h : Fold_state.hinge) ->
+      adj.(h.Fold_state.fa) <- i :: adj.(h.Fold_state.fa);
+      adj.(h.Fold_state.fb) <- i :: adj.(h.Fold_state.fb))
+    old_hinges;
+  let same_iso a b = is_identity (Isometry.compose (Isometry.inverse a) b) in
+  (* the motion of every face under one choice, or None when two paths to a
+     face disagree; the faces outside the tip stay *)
+  let motions_of (change : bool array) : Isometry.t array option =
+    let m = Array.make nf None in
+    let queue = Queue.create () in
+    Array.iteri
+      (fun i t ->
+        if not t then begin
+          m.(i) <- Some Isometry.identity;
+          Queue.add i queue
+        end)
+      tip;
+    let ok = ref true in
+    while !ok && not (Queue.is_empty queue) do
+      let a = Queue.pop queue in
+      let ma = Option.get m.(a) in
+      List.iter
+        (fun hi ->
+          if !ok then begin
+            let h = old_hinges.(hi) in
+            let b = if h.Fold_state.fa = a then h.Fold_state.fb else h.Fold_state.fa in
+            let mb =
+              if change.(hi) then
+                Isometry.compose ma (Isometry.reflect_across_line (hinge_line hi))
+              else ma
+            in
+            match m.(b) with
+            | None ->
+                m.(b) <- Some mb;
+                Queue.add b queue
+            | Some x -> if not (same_iso x mb) then ok := false
+          end)
+        adj.(a)
+    done;
+    if !ok && Array.for_all Option.is_some m then Some (Array.map Option.get m)
+    else None
+  in
+  (* Under [prune], what the stacking can read off the placements before it
+     ranks: which units hold two faces that overlap after the fold, and the
+     non-crossing conditions [Fold_state.make] checks, stated over units
+     where the faces they name lie in distinct units. *)
+  let prune_of nu (unit : int array) (motion : Isometry.t array)
+      (new_hinges : Fold_state.hinge array) : prune option =
+    if not prune then None
+    else
+      let place i = Isometry.compose motion.(i) (Fold_state.face_iso2 g i) in
+      let placed =
+        Array.init nf (fun i ->
+            let p = Array.map (Isometry.apply_point (place i)) faces.(i) in
+            if Num.sign (Geom.signed_area p) < 0 then
+              let k = Array.length p in
+              Array.init k (fun j -> p.(k - 1 - j))
+            else p)
+      in
+      let ov = Array.make_matrix nu nu false in
+      for i = 0 to nf - 1 do
+        for j = i + 1 to nf - 1 do
+          let u = unit.(i) and v = unit.(j) in
+          if u <> v && Geom.convex_overlap placed.(i) placed.(j) then begin
+            ov.(u).(v) <- true;
+            ov.(v).(u) <- true
+          end
+        done
+      done;
+      (* the folded hinges after the fold, with their crease on the table *)
+      let folded =
+        List.filter_map
+          (fun k ->
+            let h = new_hinges.(k) in
+            if Num.sign h.Fold_state.angle = 0 then None
+            else
+              let pa, pb = Fold_state.hinge_segment g k in
+              let iso = place h.Fold_state.fa in
+              Some
+                ( h.Fold_state.fa,
+                  h.Fold_state.fb,
+                  (Isometry.apply_point iso pa, Isometry.apply_point iso pb) ))
+          (List.init (Array.length new_hinges) Fun.id)
+      in
+      let mid (p : Geom.point) (q : Geom.point) =
+        { Geom.x = Num.div (Num.add p.Geom.x q.Geom.x) (Num.of_int 2);
+          y = Num.div (Num.add p.Geom.y q.Geom.y) (Num.of_int 2) }
+      in
+      let strictly_inside poly p =
+        let k = Array.length poly in
+        Geom.in_convex_polygon poly p
+        && not
+             (List.exists
+                (fun j -> Geom.on_segment (poly.(j), poly.((j + 1) mod k)) p)
+                (List.init k Fun.id))
+      in
+      (* the part of the crease (s, t) a face's interior holds, if any *)
+      let crosses (s, t) c =
+        match Geom.clip_line_to_convex (Geom.line_through s t) placed.(c) with
+        | None -> false
+        | Some (p, q) ->
+            let param = Geom.seg_param (s, t) in
+            let lo a b = if Num.compare a b < 0 then a else b
+            and hi a b = if Num.compare a b > 0 then a else b in
+            let tp = param p and tq = param q in
+            let a = hi Num.zero (lo tp tq) and b = lo Num.one (hi tp tq) in
+            Num.compare a b < 0
+            &&
+            let at u =
+              { Geom.x = Num.add s.Geom.x (Num.mul u (Num.sub t.Geom.x s.Geom.x));
+                y = Num.add s.Geom.y (Num.mul u (Num.sub t.Geom.y s.Geom.y)) }
+            in
+            strictly_inside placed.(c) (mid (at a) (at b))
+      in
+      let between =
+        List.concat_map
+          (fun (a, b, seg) ->
+            let ua = unit.(a) and ub = unit.(b) in
+            if ua = ub then []
+            else
+              List.filter_map
+                (fun c ->
+                  let uc = unit.(c) in
+                  if uc <> ua && uc <> ub && crosses seg c then Some (ua, ub, uc)
+                  else None)
+                (List.init nf Fun.id))
+          folded
+        |> List.sort_uniq compare
+      in
+      let overlap_on_line (s, t) (s', t') =
+        let l = Geom.line_through s t in
+        Geom.side_of_line l s' = 0
+        && Geom.side_of_line l t' = 0
+        &&
+        let param = Geom.seg_param (s, t) in
+        let a = param s' and b = param t' in
+        let lo = if Num.compare a b < 0 then a else b
+        and hi = if Num.compare a b > 0 then a else b in
+        Num.compare lo Num.one < 0 && Num.compare hi Num.zero > 0
+      in
+      let quads =
+        let arr = Array.of_list folded in
+        let acc = ref [] in
+        Array.iteri
+          (fun i (a, b, s1) ->
+            Array.iteri
+              (fun j (c, d, s2) ->
+                let us = [ unit.(a); unit.(b); unit.(c); unit.(d) ] in
+                if
+                  j > i
+                  && List.length (List.sort_uniq compare us) = 4
+                  && overlap_on_line s1 s2
+                then
+                  acc := (unit.(a), unit.(b), unit.(c), unit.(d)) :: !acc)
+              arr)
+          arr;
+        List.sort_uniq compare !acc
+      in
+      Some { ov; between; quads }
+  in
+  let build (change : bool array) (motion : Isometry.t array) :
+      sector_geom =
+    (* A wedge's first motion keeps the wedge's number, so a fan on one sheet
+       ranks the units it ranked with one motion per wedge; a further motion
+       in a wedge takes a number past the wedges. *)
+    let first = Array.make n None in
+    let extra = ref [] and next = ref n in
+    let tip_unit =
+      Array.init nf (fun i ->
+          if not tip.(i) then -1
+          else
+            let s = sec.(i) in
+            match first.(s) with
+            | None ->
+                first.(s) <- Some motion.(i);
+                s
+            | Some m0 when same_iso m0 motion.(i) -> s
+            | Some _ -> (
+                match
+                  List.find_opt
+                    (fun (s', m', _) -> s' = s && same_iso m' motion.(i))
+                    !extra
+                with
+                | Some (_, _, id) -> id
+                | None ->
+                    let id = !next in
+                    incr next;
+                    extra := (s, motion.(i), id) :: !extra;
+                    id))
+    in
+    let nt = !next in
+    let unit, nu, stat_cons = stacking_units g ~n:nt ~sec ~tip ~tip_unit in
+    (* Under [prune], the units that stay keep their order wherever every
+       face of one lay above every face of the other, overlapping or not:
+       two flaps side by side that one folded hinge wraps stay wrapped. *)
+    let stat_cons =
+      if not prune then stat_cons
+      else
+        let stays u = u = 0 || u >= nt in
+        let extra = ref [] in
+        for u = 0 to nu - 1 do
+          for v = 0 to nu - 1 do
+            if u <> v && stays u && stays v then begin
+              let above = ref true and any = ref false in
+              for i = 0 to nf - 1 do
+                for j = 0 to nf - 1 do
+                  if unit.(i) = u && unit.(j) = v then begin
+                    any := true;
+                    if g_rank.(i) < g_rank.(j) then above := false
+                  end
+                done
+              done;
+              if !any && !above && not (List.mem (u, v) stat_cons) then
+                extra := (u, v) :: !extra
+            end
+          done
+        done;
+        stat_cons @ List.rev !extra
+    in
+    let opened i =
+      change.(i) && Num.sign old_hinges.(i).Fold_state.angle <> 0
+    in
+    (* The letter of an element holds at its hinge whose face on the
+       clockwise side of the ray lies lowest; the other hinges it names take
+       whatever letter the stacking gives them. A hinge that opens has no
+       letter. *)
+    let letters =
+      List.filter_map
+        (fun k ->
+          let best = ref None in
+          Array.iteri
+            (fun i (h : Fold_state.hinge) ->
+              if names.(i) = Some k && touches_tip h && not (opened i) then begin
+                let a = h.Fold_state.fa and b = h.Fold_state.fb in
+                match (side k a b, !best) with
+                | Some (fl, _), Some (bl, _) when g_rank.(fl) >= g_rank.(bl) -> ()
+                | Some s, _ -> best := Some s
+                | None, _ -> ()
+              end)
+            old_hinges;
+          match !best with
+          | Some (fl, fo) when unit.(fl) <> unit.(fo) ->
+              let down =
+                Isometry.det_sign
+                  (Isometry.compose motion.(fl) (Fold_state.face_iso2 g fl))
+                < 0
+              in
+              Some (k, unit.(fl), unit.(fo), down)
+          | _ -> None)
+        (List.init nelem Fun.id)
+    in
+    let root =
+      let found = ref (-1) in
+      for i = 0 to nf - 1 do
+        if !found < 0 && unit.(i) = 0 then found := i
+      done;
+      if !found < 0 then
+        invalid_arg
+          "Collapse.mk_sector_geoms: stayer sector 0 holds no face \
+           (unreachable, every sector holds a face)";
+      !found
+    in
+    let new_hinges =
+      Array.mapi
+        (fun i (h : Fold_state.hinge) ->
+          if change.(i) then
+            { h with
+              Fold_state.angle =
+                (if Num.sign h.Fold_state.angle = 0 then Num.one else Num.zero)
+            }
+          else h)
+        old_hinges
+    in
+    { sg_g = g; sg_faces = faces; sg_nf = nf; sg_nt = nt; sg_motion = motion;
+      sg_unit = unit; sg_nu = nu; sg_stat_cons = stat_cons;
+      sg_letters = letters; sg_g_rank = g_rank; sg_root = root;
+      sg_marks = Fold_state.marks g; sg_new_hinges = new_hinges;
+      sg_overlaps = None; sg_prune = prune_of nu unit motion new_hinges }
+  in
+  let geoms =
+    List.filter_map
+      (fun mask ->
+        let change = Array.map (fun r -> r = Fold) role in
+        List.iteri
+          (fun bit i -> if mask land (1 lsl bit) <> 0 then change.(i) <- true)
+          tries;
+        match motions_of change with
+        | Some motion
+          when Array.exists2
+                 (fun t m -> t && not (is_identity m))
+                 tip motion ->
+            Some (build change motion)
+        | _ -> None)
+      (List.init (1 lsl List.length tries) Fun.id)
+  in
+  if geoms = [] then Error e_kawasaki else Ok geoms
+
+(* The ways the fan folds on rays rotated so that sector 0 is the stayer
+   ([geoms_of]). An element names every hinge of its crease on its ray, in
+   every layer. *)
 let mk_sector_geoms (g : Fold_state.t) ~(o : Geom.point)
     ~(rays : (Geom.point * elem) array) ~(es : elem array)
     ~(faces : Geom.point array array) ~(nf : int) ~(anchor : bool array) :
@@ -748,7 +1101,6 @@ let mk_sector_geoms (g : Fold_state.t) ~(o : Geom.point)
   if not (Array.exists Fun.id tip) then Error e_anchor_stays
   else if Array.exists2 (fun t s -> t && s < 0) tip sec then Error e_unaligned
   else
-  let g_rank = Fold_state.rank g in
   let old_hinges = Fold_state.hinges g in
   let nh = Array.length old_hinges in
   let touches_tip (h : Fold_state.hinge) =
@@ -807,170 +1159,13 @@ let mk_sector_geoms (g : Fold_state.t) ~(o : Geom.point)
           | Some _ when Num.sign h.Fold_state.angle = 0 -> Fold
           | _ -> Try)
   in
-  let tries = List.filter (fun i -> role.(i) = Try) (List.init nh Fun.id) in
-  let hinge_line i =
-    let ta, tb = Fold_state.hinge_table_segment g i in
-    Geom.line_through ta tb
-  in
-  let adj = Array.make nf [] in
-  Array.iteri
-    (fun i (h : Fold_state.hinge) ->
-      adj.(h.Fold_state.fa) <- i :: adj.(h.Fold_state.fa);
-      adj.(h.Fold_state.fb) <- i :: adj.(h.Fold_state.fb))
-    old_hinges;
-  let same_iso a b = is_identity (Isometry.compose (Isometry.inverse a) b) in
-  (* the motion of every face under one choice, or None when two paths to a
-     face disagree; the faces outside the tip stay *)
-  let motions_of (change : bool array) : Isometry.t array option =
-    let m = Array.make nf None in
-    let queue = Queue.create () in
-    Array.iteri
-      (fun i t ->
-        if not t then begin
-          m.(i) <- Some Isometry.identity;
-          Queue.add i queue
-        end)
-      tip;
-    let ok = ref true in
-    while !ok && not (Queue.is_empty queue) do
-      let a = Queue.pop queue in
-      let ma = Option.get m.(a) in
-      List.iter
-        (fun hi ->
-          if !ok then begin
-            let h = old_hinges.(hi) in
-            let b = if h.Fold_state.fa = a then h.Fold_state.fb else h.Fold_state.fa in
-            let mb =
-              if change.(hi) then
-                Isometry.compose ma (Isometry.reflect_across_line (hinge_line hi))
-              else ma
-            in
-            match m.(b) with
-            | None ->
-                m.(b) <- Some mb;
-                Queue.add b queue
-            | Some x -> if not (same_iso x mb) then ok := false
-          end)
-        adj.(a)
-    done;
-    if !ok && Array.for_all Option.is_some m then Some (Array.map Option.get m)
-    else None
-  in
-  let build (change : bool array) (motion : Isometry.t array) :
-      sector_geom =
-    (* A wedge's first motion keeps the wedge's number, so a fan on one sheet
-       ranks the units it ranked with one motion per wedge; a further motion
-       in a wedge takes a number past the wedges. *)
-    let first = Array.make n None in
-    let extra = ref [] and next = ref n in
-    let tip_unit =
-      Array.init nf (fun i ->
-          if not tip.(i) then -1
-          else
-            let s = sec.(i) in
-            match first.(s) with
-            | None ->
-                first.(s) <- Some motion.(i);
-                s
-            | Some m0 when same_iso m0 motion.(i) -> s
-            | Some _ -> (
-                match
-                  List.find_opt
-                    (fun (s', m', _) -> s' = s && same_iso m' motion.(i))
-                    !extra
-                with
-                | Some (_, _, id) -> id
-                | None ->
-                    let id = !next in
-                    incr next;
-                    extra := (s, motion.(i), id) :: !extra;
-                    id))
-    in
-    let nt = !next in
-    let unit, nu, stat_cons = stacking_units g ~n:nt ~sec ~tip ~tip_unit in
-    let opened i =
-      change.(i) && Num.sign old_hinges.(i).Fold_state.angle <> 0
-    in
-    (* The letter of an element holds at its hinge whose face on the
-       clockwise side of the ray lies lowest; the other hinges it names take
-       whatever letter the stacking gives them. A hinge that opens has no
-       letter. *)
-    let letters =
-      List.filter_map
-        (fun k ->
-          let l = (elem_ray.(k) - 1 + n) mod n in
-          let best = ref None in
-          Array.iteri
-            (fun i (h : Fold_state.hinge) ->
-              if names.(i) = Some k && touches_tip h && not (opened i) then begin
-                let a = h.Fold_state.fa and b = h.Fold_state.fb in
-                let side =
-                  if sec.(a) = l then Some (a, b)
-                  else if sec.(b) = l then Some (b, a)
-                  else None
-                in
-                match (side, !best) with
-                | Some (fl, _), Some (bl, _) when g_rank.(fl) >= g_rank.(bl) -> ()
-                | Some s, _ -> best := Some s
-                | None, _ -> ()
-              end)
-            old_hinges;
-          match !best with
-          | Some (fl, fo) when unit.(fl) <> unit.(fo) ->
-              let down =
-                Isometry.det_sign
-                  (Isometry.compose motion.(fl) (Fold_state.face_iso2 g fl))
-                < 0
-              in
-              Some (k, unit.(fl), unit.(fo), down)
-          | _ -> None)
-        (List.init (Array.length es) Fun.id)
-    in
-    let root =
-      let found = ref (-1) in
-      for i = 0 to nf - 1 do
-        if !found < 0 && unit.(i) = 0 then found := i
-      done;
-      if !found < 0 then
-        invalid_arg
-          "Collapse.mk_sector_geoms: stayer sector 0 holds no face \
-           (unreachable, every sector holds a face)";
-      !found
-    in
-    let new_hinges =
-      Array.mapi
-        (fun i (h : Fold_state.hinge) ->
-          if change.(i) then
-            { h with
-              Fold_state.angle =
-                (if Num.sign h.Fold_state.angle = 0 then Num.one else Num.zero)
-            }
-          else h)
-        old_hinges
-    in
-    { sg_g = g; sg_faces = faces; sg_nf = nf; sg_nt = nt; sg_motion = motion;
-      sg_unit = unit; sg_nu = nu; sg_stat_cons = stat_cons;
-      sg_letters = letters; sg_g_rank = g_rank; sg_root = root;
-      sg_marks = Fold_state.marks g; sg_new_hinges = new_hinges;
-      sg_overlaps = None }
-  in
-  let geoms =
-    List.filter_map
-      (fun mask ->
-        let change = Array.map (fun r -> r = Fold) role in
-        List.iteri
-          (fun bit i -> if mask land (1 lsl bit) <> 0 then change.(i) <- true)
-          tries;
-        match motions_of change with
-        | Some motion
-          when Array.exists2
-                 (fun t m -> t && not (is_identity m))
-                 tip motion ->
-            Some (build change motion)
-        | _ -> None)
-      (List.init (1 lsl List.length tries) Fun.id)
-  in
-  if geoms = [] then Error e_kawasaki else Ok geoms
+  geoms_of g ~n ~sec ~tip ~names ~role ~nelem:(Array.length es)
+    ~side:(fun k a b ->
+      let l = (elem_ray.(k) - 1 + n) mod n in
+      if sec.(a) = l then Some (a, b)
+      else if sec.(b) = l then Some (b, a)
+      else None)
+    ~faces ~nf
 
 (* The valley-dependent half: given one [sector_geom] and the letter of each
    element, enumerate the layer stackings and dedup them by overlap
@@ -989,7 +1184,46 @@ let pipeline_solve (sg : sector_geom) ~(valley : bool array)
       sg.sg_letters
   in
   let stackings =
-    linear_extensions sg.sg_nu (constraints @ sg.sg_stat_cons)
+    let cons = constraints @ sg.sg_stat_cons in
+    let indep =
+      Option.map
+        (fun p u v ->
+          (not p.ov.(u).(v))
+          && (not (List.exists (fun (a, b) -> (a = u && b = v) || (a = v && b = u)) cons))
+          && not
+                (List.exists
+                   (fun (a, b) ->
+                     let ua = sec.(a) and ub = sec.(b) in
+                     (ua = u && ub = v) || (ua = v && ub = u))
+                   over))
+        sg.sg_prune
+    in
+    (* [s] goes above every unit placed so far *)
+    let fits =
+      Option.map
+        (fun p (height : int array) s ->
+          let top = Array.length height in
+          let h u = if u = s then top else height.(u) in
+          List.for_all
+            (fun (a, b, c) ->
+              if s <> a && s <> b then true
+              else
+                let other = if s = a then b else a in
+                not (height.(other) >= 0 && height.(c) > height.(other)))
+            p.between
+          && List.for_all
+               (fun (a, b, c, d) ->
+                 if not (List.mem s [ a; b; c; d ]) then true
+                 else if List.exists (fun u -> u <> s && height.(u) < 0) [ a; b; c; d ]
+                 then true
+                 else
+                   let lo = min (h a) (h b) and hi = max (h a) (h b) in
+                   let inside u = h u > lo && h u < hi in
+                   inside c = inside d)
+               p.quads)
+        sg.sg_prune
+    in
+    linear_extensions ?indep ?fits sg.sg_nu cons
   in
   (* total face rank from a sector stacking: sort by (srank.(sector),
      intra-sector order), tiebreak by index (never fires). *)

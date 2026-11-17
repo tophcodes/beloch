@@ -1,0 +1,39 @@
+@author "Claude (Anthropic)"
+
+; The bird base by two petal folds, each one flatten of two fans
+; (ADR 0055): the front flap of the preliminary base, then the back flap.
+; Each fan opens the half of a folded side edge toward its side corner and
+; folds the kite crease that brings the corner onto the center line; the
+; crease between the two vertices of each statement is derived. The state
+; is the one bird-base-petal.bel reaches by four reverse folds and two
+; valley folds.
+
+paper square
+
+fold (map .a onto .c) as --bd           ; triangle
+reverse (map .b onto .c) as --h         ; preliminary base
+reverse (map .d onto .c) as --v
+
+.o = --h * --v                          ; apex O, the paper center
+--mid = (through .c .o)                 ; center line of the base
+
+.sr = --ab * --h
+.sl = --da * --v
+.br = --bc * --h
+.bl = --cd * --v
+
+flatten (fan (--h & .sr) (map .sr onto --mid through .a))
+        (fan (--v & .sl) (map .sl onto --mid through .a))
+        (on #[.a]) (staying .o) as --pf                                         ; front petal
+flatten (fan (--h & .br) (map .br onto --mid through .c))
+        (fan (--v & .bl) (map .bl onto --mid through .c))
+        (on #[.c]) (staying .o) as --pb                                         ; back petal
+
+; assert steps = 5
+; assert faces = 16
+
+; the legs stay at the open end, the petals meet past the center
+; assert .b = (1, 1)
+; assert .d = .b
+; assert .a = .c
+; assert .o = (1/2, 1/2)
