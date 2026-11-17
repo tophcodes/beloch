@@ -1583,7 +1583,7 @@ Motions, candidate states and letters are as above, with the regions in
 place of the wedges. The order of two faces outside $T$ that one lay above
 in every column stays as it was. Among the candidate states, those whose
 faces lie inside the convex hull of the state before the write are kept
-where there are any, and the rest of $\sigma$ is the fewest mountains on
+where there are any ([[decision/0056]]), and the rest of $\sigma$ is the fewest mountains on
 the rays the program names.
 :::
 

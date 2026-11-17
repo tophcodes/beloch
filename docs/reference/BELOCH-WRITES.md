@@ -540,7 +540,7 @@ piece from a piece that stays or from a moving piece of another region.
 Of the states the fans fold to, those that keep the paper inside the
 outline it started from are kept where there are any; a petal reaches
 past the outline of the base it is folded from, so the outline does not
-remove its states. Among those, the states with the fewest mountains on
+remove its states ([[decision/0056]]). Among those, the states with the fewest mountains on
 the rays the program gave are kept, and more than one state left is an
 error (`` flatten is ambiguous: <n> realizations ``).
 

@@ -236,7 +236,7 @@ taco-taco condition among units of distinct faces, the conditions
 `Fold_state.make` checks later. The letters of a fan run through Maekawa's
 parity only where the anchor surrounds its vertex. Of the states, those
 inside the convex hull of the state before the flatten are kept where
-there are any, then those with the fewest mountains on the rays the
+there are any ([[decision/0056]]), then those with the fewest mountains on the rays the
 program gave. Two ceilings remain: the rays are half-lines, so a ray
 scored past the far end of its segment would cut a face beyond it, and a
 statement derives a crease between vertices only for two fans.
