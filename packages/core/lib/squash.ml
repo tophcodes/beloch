@@ -348,13 +348,17 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
   let far_of (s : Fold_state.crease_segment) =
     if Geom.point_equal s.Fold_state.ta o then s.Fold_state.tb else s.Fold_state.ta
   in
-  let cand cid (s : Fold_state.crease_segment) : Flatten_solve.elem_cand =
-    (cid, s.Fold_state.ta, s.Fold_state.tb, Ast.MvFree)
+  let cand ?(letter = Ast.MvFree) cid (s : Fold_state.crease_segment) :
+      Flatten_solve.elem_cand =
+    (cid, s.Fold_state.ta, s.Fold_state.tb, letter)
   in
+  (* the two pieces of the axis are the flanks of the opened spine, and a
+     squash folds both as valleys (ADR 0061): each element carries the
+     letter as a letter item of `flatten` carries it *)
   let axis_elem cid =
     match List.filter at_o (Fold_state.crease_segments st2 cid) with
     | [] -> Error.fail span "the axis of the squash does not cross the flap"
-    | segs -> List.map (cand cid) segs
+    | segs -> List.map (cand ~letter:Ast.MvValley cid) segs
   in
   let in_anchor = within anchor_polys st2 in
   let target_elem =
