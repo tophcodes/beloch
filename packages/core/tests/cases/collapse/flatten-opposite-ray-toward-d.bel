@@ -15,6 +15,6 @@ mark (through .a .c) as --ray
 
 mark (map --ab onto --diag) as --l1
 mark (map --da onto --diag) as --l2
-flatten (--l1) (--l2) (--ray) (toward .d)
+flatten (--l1 valley) (--l2 valley) (--ray & .a valley) (staying .c) (toward .d)
 
 ; assert faces = 6

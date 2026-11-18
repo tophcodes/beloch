@@ -14,7 +14,7 @@ mark (map --da onto --cd) (toward .f) (on #[.a]) as --dg
 mark (perp --dg through .o) (on #[.a]) as --pp
 mark (perp --ab through .o) (on #[.a]) as --v
 .z = free on --bc from .b at 1/4
-flatten (--dg & .a valley) (--pp & --da) (--v & --ab) (staying .z) as --e
+flatten (--dg & .a valley) (--pp & --da valley) (--v & --ab) (staying .z) as --e
 
 ; assert .d = (0, 1)
 ; assert faces = 8

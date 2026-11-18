@@ -34,10 +34,10 @@ mark (through .a .c) as --ray
 
 mark (map --ab onto --diag) as --l1
 mark (map --da onto --diag) as --l2
-flatten (--l1) (--l2) (--ray) (toward .d)
+flatten (--l1 valley) (--l2 valley) (--ray & .a valley) (staying .c) (toward .d)
 
 mark (map --cd onto --diag) as --l3
 mark (map --bc onto --diag) as --l4
-flatten (--l3) (--l4) (--ray) (toward .d)
+flatten (--l3 valley) (--l4) (--ray & .c valley) (staying .[--l1 --l2]) (toward .d)
 
 ; assert faces = 12
