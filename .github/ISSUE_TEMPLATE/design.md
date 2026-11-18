@@ -14,4 +14,4 @@ Follow-up to #n and ADR NNNN.
 <!-- One line per question, each answerable on its own. -->
 - 
 
-<!-- Whether the answer belongs in an ADR of its own, and why. -->
+<!-- Whether the answer needs a record of its own, and which kind: a BEP when it decides what a program means, an ADR when it decides how Beloch is built (ADR 0062). -->
