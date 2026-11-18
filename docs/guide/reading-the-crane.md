@@ -1,14 +1,14 @@
 ---
 title: Reading the crane
-description: The traditional crane as a Beloch program, read section by section. Introduces fans, joins, mountain folds, perpendiculars, letters on a reverse fold, filters and free points where the crane first needs them.
+description: The traditional crane as a Beloch program, read section by section. Introduces squash folds, fans, joins, mountain folds, perpendiculars, letters on a reverse fold, filters and free points where the crane first needs them.
 tableOfContents:
   minHeadingLevel: 2
   maxHeadingLevel: 2
 ---
 
 This page reads a whole model: the traditional crane, folded flat. It
-reaches the bird base the way most folders learned it, by two petal folds,
-and then places the neck, the tail and the head where Ida's crane program
+folds the preliminary base by two squash folds and the bird base by two
+petal folds, the way most folders learned them, and then places the neck, the tail and the head where Ida's crane program
 places them [@ida2020, Fig. 7.19]. It assumes
 [[guide/first-folds]], and it adds the rest of what the crane
 needs where it first appears. The full program is
@@ -22,17 +22,35 @@ three-dimensional, which the language does not model.
 
 ## The base and its center line
 
-The program starts where the first page ended: the preliminary base, with
-the center of the paper named `.o`.
+The first page folded the preliminary base with two reverse folds. The
+crane folds the same base the way Randlett teaches it
+[@randlett1961art, p. 69]: the square is folded in half twice, and each of
+the two flaps is opened and pressed flat. That move is a *squash fold*.
 
 ::: {.figure #fig-crane-base caption="The preliminary base. `--mid` runs from the loose corners at `.c` to the closed tip `.o`." views="cp folded" highlight=".o --mid"}
 paper square
+fold (map .d onto .b) as --ac
 fold (map .a onto .c) as --bd
-reverse (map .b onto .c) as --h
-reverse (map .d onto .c) as --v
-.o = --h * --v
+squash (--ac & --ab onto --bd) as --s1
+flip
+squash (--ac & --bc onto --bd) as --s2
+flip
+.o = --ac * --bd
 --mid = (through .c .o)
 :::
+
+The two folds leave a triangle four layers thick. Its top two layers are
+one flap, joined along a folded edge that lies on the first crease,
+`--ac`. `squash` takes one item, which says where that edge goes:
+`--ac & --ab` is the piece of `--ac` that reaches the edge `--ab`, the
+folded edge of the top flap, and `onto --bd` is the line it lands on. The
+flap opens, the folded edge comes down flat on `--bd`, and each of the two
+layers folds once more to let it. `as --s1` names that new crease.
+
+`flip` turns the model over. The second squash does the same to the other
+flap, whose folded edge is the piece of `--ac` that reaches `--bc`, and the
+second `flip` turns the model back. The center of the paper gets the name
+`.o`.
 
 On the table the base is a small square. The four corners of the sheet lie
 together at one of its corners, `.c`, the *loose corners*. The center of the
@@ -49,19 +67,22 @@ there are four: `.sr` and `.sl` on the front, right and left, `.br` and
 `.bl` on the back.
 
 ::: {.figure #fig-crane-sides caption="The four side corners. On the sheet each is the middle of an edge." views="cp folded" highlight=".sr .sl .br .bl" after="fig-crane-base"}
-.sr = --ab * --h
-.sl = --da * --v
-.br = --bc * --h
-.bl = --cd * --v
+.sr = --ab * --s1
+.sl = --da * --s1
+.br = --bc * --s2
+.bl = --cd * --s2
 :::
 
-`.sr = --ab * --h` finds a side corner as a crossing on the unfolded sheet.
-[[guide/first-folds#points-from-creases|First folds]] showed that `--h`
-left two scars, one of them running from the center down to the bottom
-edge. That scar meets the bottom edge `--ab` at $(1/2, 0)$, the middle of
-the bottom edge, and on the base this spot is the right side corner of the
-front layer. `.sl`, `.br` and `.bl` are the other three the same way, each
-where an edge of the sheet meets a scar of `--h` or `--v`.
+`.sr = --ab * --s1` finds a side corner as a crossing on the unfolded
+sheet. [[guide/first-folds#points-from-creases|First folds]] showed that a
+crease folded through two layers leaves a scar in each. The squash folded
+`--s1` through both layers of its flap, so it left two: one runs from the
+center down to the bottom edge, the other from the center to the left
+edge. The first meets the bottom edge `--ab` at $(1/2, 0)$, the middle of
+that edge, and on the base this spot is the right side corner of the front
+layer. `.sl` is where the other scar meets the left edge `--da`, and `.br`
+and `.bl` are the two spots where the scars of `--s2` meet `--bc` and
+`--cd`.
 
 ## The bird base
 
@@ -78,11 +99,11 @@ writes the petal fold as the one move it is: one `flatten` that folds both
 points together.
 
 ::: {.figure #fig-crane-bird caption="The bird base. `--pf` is the crease the front flap is lifted on, `--pb` the one on the back." views="cp folded" highlight="--pf --pb .e1 .e2" after="fig-crane-sides"}
-flatten (fan (--h & .sr) (map .sr onto --mid through .a) as .e1)
-        (fan (--v & .sl) (map .sl onto --mid through .a) as .e2)
+flatten (fan (--s1 & .sr) (map .sr onto --mid through .a) as .e1)
+        (fan (--s1 & .sl) (map .sl onto --mid through .a) as .e2)
         (on #[.a]) (staying .o) as --pf
-flatten (fan (--h & .br) (map .br onto --mid through .c) as .e3)
-        (fan (--v & .bl) (map .bl onto --mid through .c) as .e4)
+flatten (fan (--s2 & .br) (map .br onto --mid through .c) as .e3)
+        (fan (--s2 & .bl) (map .bl onto --mid through .c) as .e4)
         (on #[.c]) (staying .o) as --pb
 :::
 
@@ -90,8 +111,9 @@ On the first page `flatten` took the rays of one vertex. Here each
 `(fan …)` item holds the rays of one vertex, and the statement folds its
 two fans in one move.
 
-The first fan has two rays. `--h & .sr` is the half of the folded side edge
-that runs out to the side corner `.sr`; in the petal fold it opens.
+The first fan has two rays. `--s1 & .sr` is the piece of the squash crease
+that runs out to the side corner `.sr`, a folded side edge of the front
+flap; in the petal fold it opens.
 `(map .sr onto --mid through .a)` is the axiom that folds a point onto a
 line with a fold line through a second point: it is the crease that brings
 the side corner onto the center line, and it runs from the loose corners.
