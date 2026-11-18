@@ -123,6 +123,7 @@ flatten_item := line_operand [ "mountain" | "valley" ]
               | "staying" point_operand+
               | "on" flap_operand
               | "toward" point_operand
+              | "emergent" "beside" point_operand
               | "fan" [ "at" point_operand ] fan_ray+ [ "as" POINT_NAME ]
 fan_ray      := "(" ( construction_body | line_operand ) [ "mountain" | "valley" ] ")"
 squash_item  := line_operand "onto" ( point_operand | line_operand )

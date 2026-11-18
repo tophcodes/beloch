@@ -330,7 +330,7 @@ let test_flatten_staying_accepted () =
           mark (map .a onto .d) as --h\n\
           mark (map .a onto .b) as --v\n\
           flatten (--h & #[.b] mountain) (--v & #[.c]) (--h & #[.d] \
-          mountain) (--v & #[.a] mountain) (staying .a) (toward .c)\n")
+          mountain) (--v & #[.a] mountain) (staying .a)\n")
   in
   Alcotest.(check int) "vertex flatten with staying leaves 4 sector faces" 4
     (Array.length (Fold_state.faces fd.Eval.state))
@@ -1863,7 +1863,7 @@ let test_output_into_flatten_emergent () =
   let fd =
     folded
       (ear_prelude
-     ^ "flatten (--ea & .a valley) (--ec & .c) (--eb & .b valley) (staying .d) (toward .a)\n\
+     ^ "flatten (--ea & .a valley) (--ec & .c) (--eb & .b valley) (staying .d) (emergent beside .a)\n\
        \        into --spine\n")
   in
   let cid = List.assoc "spine" fd.Eval.named_line_cids in
@@ -1886,7 +1886,7 @@ let test_output_into_flatten_off_the_line () =
         (folded
            (ear_prelude
           ^ "flatten (--ea & .a valley) (--ec & .c) (--eb & .b valley) (staying .d)\n\
-            \        (toward .a) into --diag\n")))
+            \        (emergent beside .a) into --diag\n")))
 
 (* An even ray count closes the vertex on its own, so the flatten scores no
    new crease and `into` has nothing to add. *)

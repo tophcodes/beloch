@@ -214,6 +214,9 @@ type raw_item =
   | RiExtent of extent * Error.span            (* (between …) / (at …) *)
   | RiOrder of flap_arg * flap_arg * Error.span
   | RiStaying of point_operand list * Error.span
+  | RiEmergent of point_operand * Error.span
+      (* (emergent beside .p): the emergent ray of an odd fan lies in a
+         wedge of the given rays that holds .p (BEP-0078) *)
   | RiSelection of toward_item * Error.span
   | RiAlignment of line_operand * align_object * Error.span
       (* (--l onto --m) or (--l onto .p): the bare alignment of `squash`, a
@@ -285,7 +288,7 @@ type stmt =
          or a point; a fan at the spine's vertex (BEP-0038, BEP-0044) *)
   | Flatten of output * collapse_elem list * (flap_arg * flap_arg) list
                 * point_operand list option * flap_arg option * point_operand option
-                * Error.span
+                * point_operand option * Error.span
       (* flatten <items>: single-vertex multi-crease fold, ONE solver
          pipeline (spec §4.9). elements = the given rays, each with an
          [mv_constraint] (MvFree = solver-assigned; mountain/valley = hard
@@ -296,8 +299,10 @@ type stmt =
          (Flatten.candidates). The realization space (candidate × Maekawa
          M/V pattern × stacking, via Collapse.collapse_all) is filtered by
          the hard constraints; the `(toward .p)` item (the [point_operand]
-         option) selects among survivors by the three-stage rule (position
-         class, min-mountain canon, centered-rank dipole). an `as` output
+         option) selects among survivors by the two-stage rule (position
+         class, centered-rank dipole); the `(emergent beside .p)` item (the
+         last [point_operand] option) keeps the states whose emergent ray
+         lies in a wedge that holds .p. an `as` output
          binds the name to the emergent crease (when one was materialized) or the
          given-ray bundle. *)
   | FlattenFans of output * fan list * (flap_arg * flap_arg) list

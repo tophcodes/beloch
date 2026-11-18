@@ -20,6 +20,7 @@ val solve :
   anchor:Geom.point array list option ->
   staying:Collapse.stayer option ->
   toward:Geom.point option ->
+  emergent:(Geom.point * string) option ->
   Error.span ->
   (int * Geom.line) option
 (** The fan at [o] on resolved operands: one candidate list per element,
@@ -46,6 +47,7 @@ val run :
   (** [on_opt] names the anchor flap, whose tip the flatten moves; [None]
       takes the topmost flap under the vertex (BEP-0040). *)
   toward_opt:Ast.point_operand option ->
+  emergent_opt:Ast.point_operand option ->
   Error.span ->
   unit
 (** A `flatten` statement: resolves its items and runs [solve]. *)

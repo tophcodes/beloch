@@ -114,6 +114,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     ~(elem_names : string list) ~(over : (int * int) list)
     ~(anchor : Geom.point array list option)
     ~(staying : Collapse.stayer option) ~(toward : Geom.point option)
+    ~(emergent : (Geom.point * string) option)
     (span : Error.span) : (int * Geom.line) option =
   let elem_of (fcid, fea, feb, valley) =
     { Collapse.cid = fcid; ea = fea; eb = feb; valley }
@@ -514,6 +515,48 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       (fun (combo, r, e) -> (combo, List.filter (fun x -> List.memq x ranked) r, e))
       combo_runs
   in
+  (* `(emergent beside .p)`: the states whose emergent ray lies in a wedge of
+     the given rays whose closure holds .p, a condition on the set
+     (BEP-0078) *)
+  let combo_runs =
+    match emergent with
+    | None -> combo_runs
+    | Some _ when not odd ->
+        Error.fail ~hint:"drop the emergent item" span
+          (verb ^ " with an even ray count has no emergent ray")
+    | Some (p, _) when Geom.point_equal p o ->
+        Error.fail ~hint:"name a point off the vertex" span
+          "the point of the emergent item lies on the vertex"
+    | Some (p, name) ->
+        let same a b = Geom.ccw_compare ~center:o a b = 0 in
+        let beside (_, _, (rays, eseg), _) =
+          match eseg with
+          | None -> false
+          | Some (_, far) ->
+              let fars =
+                Array.of_list
+                  (List.sort (Geom.ccw_compare ~center:o) (List.map snd rays))
+              in
+              let k = Array.length fars in
+              List.exists
+                (fun i ->
+                  let lo = fars.(i) and hi = fars.((i + 1) mod k) in
+                  Flatten.in_gap o lo hi far
+                  && (Flatten.in_gap o lo hi p || same p lo || same p hi))
+                (List.init k Fun.id)
+        in
+        let kept =
+          List.map (fun (c, r, e) -> (c, List.filter beside r, e)) combo_runs
+        in
+        if
+          List.exists (fun (_, r, _) -> r <> []) combo_runs
+          && List.for_all (fun (_, r, _) -> r = []) kept
+        then
+          Error.fail ~hint:"name a point in a wedge the emergent ray can split"
+            span
+            (Printf.sprintf "no state has its emergent ray beside %s" name)
+        else kept
+  in
   let surviving = List.filter (fun (_, r, _) -> r <> []) combo_runs in
   (* the candidate states and the stage of the selection that removed each
      (docs/reference/FOLD.md, "The trace"), recorded once, when a state lands or the
@@ -858,7 +901,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     ~(elems : Ast.collapse_elem list)
     ~(overs : (Ast.flap_arg * Ast.flap_arg) list)
     ~(staying_opt : Ast.point_operand list option) ~(on_opt : Ast.flap_arg option)
-    ~(toward_opt : Ast.point_operand option) (span : Error.span) : unit =
+    ~(toward_opt : Ast.point_operand option)
+    ~(emergent_opt : Ast.point_operand option) (span : Error.span) : unit =
   let elem_cands = resolve_elems ctx ~elems span in
   let o = vertex_of ctx ~elem_cands span in
   let over =
@@ -915,12 +959,17 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         Some (Collapse.Points images)
   in
   let toward = Option.map (Resolve.resolve_point ctx) toward_opt in
+  let emergent =
+    Option.map
+      (fun po -> (Resolve.table_of ctx po, Resolve.fstr (Ast.FlapPoint po)))
+      emergent_opt
+  in
   let elem_names =
     List.map (fun (el : Ast.collapse_elem) -> Resolve.lstr el.Ast.cline) elems
   in
   let emergent =
     solve ctx ~into ~verb:"flatten" ~elem_cands ~o ~elem_names ~over ~anchor
-      ~staying ~toward span
+      ~staying ~toward ~emergent span
   in
   (* run the output clause's binding step: with no emergent ray materialized
      it takes a selectable bundle of the given rays; with one it takes the

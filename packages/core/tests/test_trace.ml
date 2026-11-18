@@ -399,7 +399,7 @@ let test_flatten_odd () =
     fold_traced
       "paper square\nmark (map .a onto .c) as --diag\nmark (through .a .c) as --ray\n\
        mark (map --ab onto --diag) as --l1\nmark (map --da onto --diag) as --l2\n\
-       flatten (--l1 valley) (--l2 valley) (--ray & .a valley) (staying .c) (toward .d)\n"
+       flatten (--l1 valley) (--l2 valley) (--ray & .a valley) (staying .c) (emergent beside .d)\n"
   in
   Alcotest.(check bool) "the program succeeds" false failed;
   let cs = candidates (only_write json) in

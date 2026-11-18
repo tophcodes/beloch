@@ -536,6 +536,12 @@ the stayer (Sectors, below).
 
    - S holds the realizations of `LineNew` and `OppositeRay` candidates
      alike; the tag ranks none of them ([[BEP-0061]]).
+   - `(emergent beside .p)` keeps the realizations whose emergent ray
+     lies in a wedge of the given rays, sorted counter-clockwise around O,
+     that holds the table point of `.p` or has it on a bounding ray
+     ([[BEP-0078]]). It runs after the outline, and leaving no realization
+     where there were some is `` no state has its emergent ray beside
+     <point> ``.
    - \|S\| = 0 → infeasible, checked in priority order: whichever of
      `` collapse through unaligned layers ``, `` the anchor flap has no
      material outside the staying sector ``, `` collinear leading creases

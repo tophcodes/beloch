@@ -29,6 +29,7 @@ let head_of (it : raw_item) : string =
   | RiExtent (_, _) -> "at"
   | RiOrder _ -> "order"
   | RiStaying _ -> "staying"
+  | RiEmergent _ -> "emergent"
   | RiSelection _ -> "toward"
   | RiAlignment _ -> "alignment"
   | RiFan _ -> "fan"
@@ -47,6 +48,7 @@ let span_of (it : raw_item) : Error.span =
   | RiExtent (_, sp)
   | RiOrder (_, _, sp)
   | RiStaying (_, sp)
+  | RiEmergent (_, sp)
   | RiAlignment (_, _, sp)
   | RiSelection (_, sp)
   | RiFan (_, _, _, sp) ->
@@ -288,10 +290,11 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
      order the first two rays' stayer convention reads
      (docs/reference/BELOCH-WRITES.md, flatten) is source order *)
   let rays = ref [] and overs = ref [] and staying = ref None and toward = ref None in
-  let on = ref None and fans = ref [] in
+  let on = ref None and fans = ref [] and emergent = ref None in
   List.iter
     (fun it ->
       match it with
+      | RiEmergent (p, sp) -> slot verb "emergent" emergent sp (p, sp)
       | RiLine (lo, mv, _) -> rays := { cline = lo; cdir = mv } :: !rays
       | RiFan (at, its, bind, sp) -> fans := fan at its bind sp :: !fans
       | RiOrder (u, l, _) -> overs := (u, l) :: !overs
@@ -312,8 +315,16 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
   | _ :: _, _ :: _ ->
       Error.fail ~hint:"move the rays into a fan item" span
         "a flatten takes ray items or fan items, not both"
-  | rays, [] -> Flatten (out, List.rev rays, List.rev !overs, !staying, !on, !toward, span)
+  | rays, [] ->
+      Flatten
+        ( out, List.rev rays, List.rev !overs, !staying, !on, !toward,
+          Option.map fst !emergent, span )
   | [], fans ->
+      Option.iter
+        (fun (_, sp) ->
+          Error.fail ~hint:"drop the emergent item" sp
+            "a flatten with several fans has no emergent ray")
+        !emergent;
       FlattenFans (out, List.rev fans, List.rev !overs, !staying, !on, !toward, span)
 
 (* `squash` takes one bare alignment, the line of its spine onto its target

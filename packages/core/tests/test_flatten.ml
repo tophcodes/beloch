@@ -82,9 +82,8 @@ let test_flatten_unbound_still_parses () =
 (* ONE pipeline for both parities: an ODD ray
    count adds an emergent-ray candidate ([Flatten.candidates]); the solver
    enumerates Maekawa-consistent M/V patterns ([Flatten.mv_patterns]) through
-   [Collapse.collapse_all] and `{toward}` selects among the pooled
-   realizations by the three-stage rule (position class, min-mountain canon,
-   rank dipole). *)
+   [Collapse.collapse_all]; the items are conditions on the pooled
+   realizations, and one left is the result. *)
 
 (* `\` (Drop) must be accepted inside a flatten item exactly like `&` (Keep):
    both are ordinary [line_operand] [LFilter] productions, not new grammar;
@@ -99,7 +98,7 @@ let test_flatten_item_accepts_backslash_filter () =
        #[.a] mountain)\n"
   in
   match List.rev prog.Ast.p_stmts with
-  | Ast.Flatten (Ast.Anonymous, elems, [], None, None, None, _) :: _ ->
+  | Ast.Flatten (Ast.Anonymous, elems, [], None, None, None, None, _) :: _ ->
       Alcotest.(check int) "4 elements" 4 (List.length elems)
   | _ -> Alcotest.fail "expected --h \\ #[.b] to parse as a flatten item"
 
@@ -190,7 +189,7 @@ let rabbit_ear_derive_src =
    mark (map --ab onto --am) as --ba\n\
    mark (map --ab onto --bm) as --bb\n\
    flatten (--ba \\ .a valley) (--bb \\ .b valley) (--v \\ .m) (staying .c .d)\n\
-   \        (toward .d) as --ear\n"
+   \        (emergent beside .a) as --ear\n"
 
 let test_flatten_derive_e2e () =
   let fd =
@@ -266,18 +265,12 @@ let test_flatten_tip () =
       Alcotest.(check (float 0.001)) "tip lands near y=0.059" 0.0590169944
         (Num.to_float p.Geom.y)
 
-(* The fish-base vertex: O = incenter of triangle [abd] on the ac-diagonal; the
-   true 4th ray is the diagonal's CONTINUATION O→c: collinear with the
-   a-ray, an OPPOSITE-RAY completion. `(staying .c)` keeps the sector the
-   ear folds onto, and the letters on `--l1` and the diagonal leave states
-   in ONE position class (placements depend only on ray LINES). The
-   selection then works purely on STACKING: the rank-dipole stage of
-   `toward` picks the one laying the toward-side material on top. `{toward .b}` and `{toward .d}` therefore
-   produce the two MIRROR realizations: same placements (every paper point
-   lands at the same table position!) but mirrored layer order, which is the
-   spec's whole point. The difference is observable in [Fold_state.order], not in
-   table positions. *)
-let fish_base_src toward =
+(* The fish-base vertex: O = incenter of triangle [abd] on the ac-diagonal.
+   `(staying .c)` keeps the sector the ear folds onto, and the letters on
+   `--l1` and the diagonal leave two states; `(emergent beside .b)` and
+   `(emergent beside .d)` keep one each, the two MIRROR realizations. The
+   difference is observable in [Fold_state.order]. *)
+let fish_base_src side =
   Printf.sprintf
     "paper square\n\
      mark (map .a onto .c) as --diag\n\
@@ -285,32 +278,33 @@ let fish_base_src toward =
      mark (map --ab onto --diag) as --l1\n\
      mark (map --da onto --diag) as --l2\n\
      flatten (--l1 & .b valley) (--l2 & .d) (--ray & .a valley) (staying .c)\n\
-     \        (toward %s)\n" toward
+     \        (emergent beside %s)\n" side
 
 let test_flatten_derive_opposite_ray_fish_base () =
-  let result toward =
+  let result side =
     let fd =
-      Eval.eval_folded (Beloch.parse ~filename:"t.bel" (fish_base_src toward))
+      Eval.eval_folded (Beloch.parse ~filename:"t.bel" (fish_base_src side))
     in
     (Array.length (Fold_state.faces fd.Eval.state), Fold_state.order fd.Eval.state)
   in
   let nf_b, order_b = result ".b" in
   let nf_d, order_d = result ".d" in
-  Alcotest.(check int) "fish-base toward .b folds (6 faces)" 6 nf_b;
-  Alcotest.(check int) "fish-base toward .d folds the same face count" 6 nf_d;
+  Alcotest.(check int) "fish-base beside .b folds (6 faces)" 6 nf_b;
+  Alcotest.(check int) "fish-base beside .d folds the same face count" 6 nf_d;
   Alcotest.(check bool)
-    "toward .b and toward .d pick DIFFERENT realizations (mirror stackings)"
+    "beside .b and beside .d pick DIFFERENT realizations (mirror stackings)"
     false (order_b = order_d)
 
-(* toward ON the vertex's reflective symmetry axis (fish: the ac-diagonal,
-   the given-ray direction set is invariant under reflection across it, b↔d)
-   cannot pick a side: the two flaps are indistinguishable there.
-   The explicit symmetry guard (rule doc §Ties) must reject with
-   [e_toward_ambiguous] rather than let the dipole's arbitrary null-direction
-   produce a strict-but-meaningless argmax. *)
-let test_flatten_fish_toward_on_axis_ambiguous () =
-  expect_error "does not pick a side" (fun () ->
-      Eval.eval_folded (Beloch.parse ~filename:"t.bel" (fish_base_src ".c")))
+(* `(emergent beside .p)` is a condition: on the rabbit ear the emergent ray
+   lies beside .a, so a point in the wedge of the stayer leaves no state
+   (BEP-0078) *)
+let test_flatten_emergent_beside_no_state () =
+  let src =
+    Str.global_replace (Str.regexp_string "(emergent beside .a)")
+      "(emergent beside .d)" rabbit_ear_derive_src
+  in
+  expect_error "no state has its emergent ray beside .d" (fun () ->
+      Eval.eval_folded (Beloch.parse ~filename:"t.bel" src))
 
 (* Unit test of the same-DIRECTION genuine-filter: the PLUS vertex
    O = (1/2,1/2) with given rays right (1,1/2), up (1/2,1), down (1/2,0).
@@ -319,7 +313,7 @@ let test_flatten_fish_toward_on_axis_ambiguous () =
    ("extend a line already drawn"); the direction filter must keep it. No
    line-new candidate exists at all here, so [candidates] returns exactly one
    entry, tagged `OppositeRay`. (Feasibility is not [Flatten]'s job:
-   [candidates] is a pure generator, so `feasible`-before-`toward` has no
+   [candidates] is a pure generator, so feasibility has no
    Flatten-module-level unit test; the evaluation-level fish-base
    test below covers it, where the two LineNew candidates fail via
    `Collapse.collapse_all` returning `Error` for every pattern.) *)
@@ -367,7 +361,7 @@ let swivel_rabbit_src =
    mark (through .a .[--bc --lowerh]) as --ba\n\
    mark (through .b .[--da --lowerh]) as --bb\n\
    flatten (--ba \\ .a valley) (--bb \\ .b) (--v \\ .m valley) (staying .c .d)\n\
-   \        (toward .c) as --ear\n"
+   \        (emergent beside .b) as --ear\n"
 
 let test_flatten_derive_in_bounds () =
   let fd =
@@ -470,7 +464,7 @@ let test_flatten_mv_patterns_beyond_maekawa () =
    FOLDED hinge's crease (a taco), the sheet must stay on one side of the
    taco's mouth: one face lying between [taco.fa] and [taco.fb] and the other
    outside means paper passes through paper. Fixture: the two-ear fish base
-   with BOTH ears {toward .d}; before the flat-hinge taco-tortilla check this
+   with BOTH ears {emergent beside .d}; before the flat-hinge taco-tortilla check this
    emitted a ghost state (second wing seated under the stationary strip, its
    ear above it: physically impossible, spotted on the render). *)
 let test_flatten_no_flat_hinge_splits_taco () =
@@ -481,11 +475,11 @@ let test_flatten_no_flat_hinge_splits_taco () =
      mark (map --ab onto --diag) as --l1\n\
      mark (map --da onto --diag) as --l2\n\
      flatten (--l1 & .b valley) (--l2 & .d valley) (--ray & .a valley) (staying .c)\n\
-     \        (toward .d)\n\
+     \        (emergent beside .d)\n\
      mark (map --cd onto --diag) as --l3\n\
      mark (map --bc onto --diag) as --l4\n\
      flatten (--l3 & .d valley) (--l4 & .b) (--ray & .c valley)\n\
-     \        (staying .[--l1 --l2]) (toward .d)\n"
+     \        (staying .[--l1 --l2]) (emergent beside .d)\n"
   in
   let fd = Eval.eval_folded (Beloch.parse ~filename:"t.bel" src) in
   let st = fd.Eval.state in
@@ -554,8 +548,8 @@ let () =
             `Quick test_flatten_tip;
           Alcotest.test_case "derive opposite-ray fallback folds fish-base"
             `Quick test_flatten_derive_opposite_ray_fish_base;
-          Alcotest.test_case "fish: toward on the symmetry axis is ambiguous"
-            `Quick test_flatten_fish_toward_on_axis_ambiguous;
+          Alcotest.test_case "emergent beside a point no state has"
+            `Quick test_flatten_emergent_beside_no_state;
           Alcotest.test_case "derive unit: opposite ray is a candidate (plus)"
             `Quick test_flatten_derive_opposite_ray_unit;
           Alcotest.test_case "derive in-paper fold accepted (swivel-rabbit)"

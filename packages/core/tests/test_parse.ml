@@ -171,7 +171,7 @@ let stmt_shape (s : Ast.stmt) : string =
       Printf.sprintf "reverse %s %s moving=%s outside=%b%s" (outstr out) (mstr m)
         (optstr fastr rs.Ast.rmoving)
         rs.Ast.outside (sidestr rs.Ast.rtoward None)
-  | Ast.Flatten (out, elems, overs, staying, _, toward, _) ->
+  | Ast.Flatten (out, elems, overs, staying, _, toward, _, _) ->
       Printf.sprintf "flatten %s rays=[%s] overs=[%s] staying=%s toward=%s"
         (outstr out)
         (String.concat " "
@@ -725,7 +725,7 @@ let test_parse_flatten_followed_by_stmt () =
       "paper square\nflatten (--a) (--b mountain)\n.x = --a * --b\n"
   in
   match prog with
-  | [ Ast.Flatten (Ast.Anonymous, [ _; _ ], [], None, None, None, _); Ast.Point ("x", _, _) ]
+  | [ Ast.Flatten (Ast.Anonymous, [ _; _ ], [], None, None, None, None, _); Ast.Point ("x", _, _) ]
     ->
       ()
   | _ -> Alcotest.fail "expected Flatten then Point"
