@@ -23,6 +23,10 @@ and gen = {
          search over [mu], so a generator carries it and computes it at most
          once. Derived from [mu], [lo], [hi]; only [mk_gen] and
          [field_upgrade] build a generator. *)
+  box : (float * float) Lazy.t;
+      (* two floats enclosing the root, from its isolating interval narrowed
+         below 2^-60; [box] of a [Field] value reads it, so a generator
+         narrows its interval at most once *)
 }
 
 let zero : t = Rat Q.zero
@@ -63,8 +67,82 @@ let isolate_gen (mu : Poly.t) (lo : Q.t) (hi : Q.t) : Qqbar.t =
   | [ r ] -> r
   | _ -> invalid_arg "Num: generator interval does not isolate a root"
 
+(* ---- Float boxes ----
+
+   A box is a pair of floats (lo, hi) with lo <= x <= hi for the exact value
+   x it encloses. Floats round to nearest, and a rounded result is one of
+   the two floats adjacent to the exact result, so stepping a computed lower
+   end one float down ([Float.pred]) and a computed upper end one float up
+   ([Float.succ]) puts each on the far side of the exact value. That
+   one-ulp margin stands in for directed rounding, which OCaml does not
+   offer. An operation that meets an infinity minus an infinity, or zero
+   times an infinity, yields a NaN end; every comparison with NaN is false,
+   so a caller that decides only on strict comparisons of box ends never
+   decides on such a box. *)
+
+let box_add ((a, b) : float * float) ((c, d) : float * float) : float * float =
+  (Float.pred (a +. c), Float.succ (b +. d))
+
+let box_neg ((a, b) : float * float) : float * float = (-.b, -.a)
+let box_sub x y = box_add x (box_neg y)
+
+(* The product of two intervals has its extremes at products of ends; the
+   NaN-propagating [Float.min] and [Float.max] keep a NaN product visible. *)
+let box_mul ((a, b) : float * float) ((c, d) : float * float) : float * float =
+  let p1 = a *. c and p2 = a *. d and p3 = b *. c and p4 = b *. d in
+  ( Float.pred (Float.min (Float.min p1 p2) (Float.min p3 p4)),
+    Float.succ (Float.max (Float.max p1 p2) (Float.max p3 p4)) )
+
+(* A box around a rational. A numerator and denominator of at most 53 bits
+   are exact as floats, so their quotient is rounded once and its two
+   neighbors enclose the rational; an integer is its own box. Otherwise
+   [Q.to_float]'s result is checked against the rational exactly ([Q.of_float]
+   is exact) and stepped outward until it lies on the right side; after four
+   steps the side is left open. *)
+let box_of_q (q : Q.t) : float * float =
+  let n = Q.num q and d = Q.den q in
+  if Z.numbits n <= 53 && Z.numbits d <= 53 then
+    let f = Z.to_float n /. Z.to_float d in
+    if Z.equal d Z.one then (f, f) else (Float.pred f, Float.succ f)
+  else
+    let f = Q.to_float q in
+    if not (Float.is_finite f) then (Float.neg_infinity, Float.infinity)
+    else
+      let rec down x k =
+        if k = 0 then Float.neg_infinity
+        else if Q.leq (Q.of_float x) q then x
+        else down (Float.pred x) (k - 1)
+      in
+      let rec up x k =
+        if k = 0 then Float.infinity
+        else if Q.geq (Q.of_float x) q then x
+        else up (Float.succ x) (k - 1)
+      in
+      (down f 4, up f 4)
+
+(* A box around the root of [mu] isolated in (lo, hi): bisect the interval,
+   keeping the half where [mu] changes sign, until it is narrower than
+   2^-60 or after 200 steps, then round its ends outward. The ends of an
+   isolating interval are not roots, so the sign test at [lo] is never zero;
+   a midpoint where [mu] vanishes is the root, and its box is the
+   midpoint's. *)
+let gen_box (mu : Poly.t) (lo : Q.t) (hi : Q.t) : float * float =
+  let width = Q.make Z.one (Z.shift_left Z.one 60) in
+  let rec go lo hi k =
+    if k = 0 || Q.lt (Q.sub hi lo) width then
+      (fst (box_of_q lo), snd (box_of_q hi))
+    else
+      let m = Q.div (Q.add lo hi) two_q in
+      let sm = Poly.sign_at mu m in
+      if sm = 0 then box_of_q m
+      else if Poly.sign_at mu lo * sm < 0 then go lo m (k - 1)
+      else go m hi (k - 1)
+  in
+  go lo hi 200
+
 let mk_gen ~(mu : Poly.t) ~(lo : Q.t) ~(hi : Q.t) : gen =
-  { mu; lo; hi; alpha = lazy (isolate_gen mu lo hi) }
+  { mu; lo; hi; alpha = lazy (isolate_gen mu lo hi);
+    box = lazy (gen_box mu lo hi) }
 
 let qq_of_gen (g : gen) : Qqbar.t = Lazy.force g.alpha
 
@@ -218,7 +296,8 @@ let field_upgrade (x : t) : t =
           && Poly.sign_at mu hi <> 0
         then
           Field
-            { gen = { mu; lo; hi; alpha = Lazy.from_val q };
+            { gen = { mu; lo; hi; alpha = Lazy.from_val q;
+                      box = lazy (gen_box mu lo hi) };
               coords = Poly.of_list [ Q.zero; Q.one ] }
         else go (2 * prec)
       in
@@ -238,6 +317,24 @@ let poly_interval (p : Poly.t) (lo : Q.t) (hi : Q.t) : Q.t * Q.t =
     acc := iadd (imul !acc (lo, hi)) (p.(i), p.(i))
   done;
   !acc
+
+(* Two floats enclosing [x]: a rational by [box_of_q], a [Field] value by
+   Horner's rule over its generator's box, a qqbar value by FLINT's
+   certified enclosure at 64 bits. *)
+let box (x : t) : float * float =
+  match x with
+  | Rat q -> box_of_q q
+  | Field { gen; coords } ->
+      let a = Lazy.force gen.box in
+      let d = Poly.degree coords in
+      let acc = ref (box_of_q coords.(d)) in
+      for i = d - 1 downto 0 do
+        acc := box_add (box_mul !acc a) (box_of_q coords.(i))
+      done;
+      !acc
+  | Qq q ->
+      let lo, hi = Qqbar.enclosure q ~prec:64 in
+      (fst (box_of_q lo), snd (box_of_q hi))
 
 let sign (x : t) : int =
   match x with

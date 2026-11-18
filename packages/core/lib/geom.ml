@@ -344,8 +344,9 @@ let on_segment ((a, b) : segment) (p : point) : bool =
 
 (* Two convex polygons share positive area? Separating-axis test over the edge
    normals of both: separated (no positive overlap) iff some axis's projections
-   are disjoint or merely touching. *)
-let convex_overlap (p : point array) (q : point array) : bool =
+   are disjoint or merely touching. Exact throughout; [convex_overlap] asks it
+   when the float boxes do not decide. *)
+let convex_overlap_exact (p : point array) (q : point array) : bool =
   let normals poly =
     let n = Array.length poly in
     List.init n (fun i ->
@@ -367,6 +368,53 @@ let convex_overlap (p : point array) (q : point array) : bool =
     Num.compare ahi blo <= 0 || Num.compare bhi alo <= 0
   in
   not (List.exists separated (normals p @ normals q))
+
+(* The separating-axis test of [convex_overlap_exact] on float boxes of the
+   coordinates ([Num.box]): every quantity it computes is a box around the
+   exact quantity of the exact test on the same axis. [Some false] when on
+   some axis one projection's upper box lies strictly below the other's
+   lower box (the exact test finds that axis separating); [Some true] when
+   on every axis each projection's upper box lies strictly above the other's
+   lower box (the exact test finds no separating axis); [None] otherwise, so
+   polygons that touch, where an exact difference is zero, are never
+   decided here. *)
+let convex_overlap_boxes (p : point array) (q : point array) : bool option =
+  let boxes poly = Array.map (fun v -> (Num.box v.x, Num.box v.y)) poly in
+  let bp = boxes p and bq = boxes q in
+  let normals poly =
+    let n = Array.length poly in
+    List.init n (fun i ->
+        let ax, ay = poly.(i) and bx, by = poly.((i + 1) mod n) in
+        (Num.box_sub ay by, Num.box_sub bx ax))
+  in
+  (* boxes around the least and the greatest projection *)
+  let project poly (nx, ny) =
+    let v (x, y) = Num.box_add (Num.box_mul nx x) (Num.box_mul ny y) in
+    let lo = ref (v poly.(0)) and hi = ref (v poly.(0)) in
+    for i = 1 to Array.length poly - 1 do
+      let a, b = v poly.(i) in
+      lo := (Float.min (fst !lo) a, Float.min (snd !lo) b);
+      hi := (Float.max (fst !hi) a, Float.max (snd !hi) b)
+    done;
+    (!lo, !hi)
+  in
+  let verdict axis =
+    let alo, ahi = project bp axis and blo, bhi = project bq axis in
+    if snd ahi < fst blo || snd bhi < fst alo then `Separated
+    else if fst ahi > snd blo && fst bhi > snd alo then `Overlapping
+    else `Unknown
+  in
+  let vs = List.map verdict (normals bp @ normals bq) in
+  if List.mem `Separated vs then Some false
+  else if List.for_all (fun v -> v = `Overlapping) vs then Some true
+  else None
+
+(* Two convex polygons share positive area? The answer of
+   [convex_overlap_exact], from the float boxes where they decide it. *)
+let convex_overlap (p : point array) (q : point array) : bool =
+  match convex_overlap_boxes p q with
+  | Some b -> b
+  | None -> convex_overlap_exact p q
 
 (* Does segment [pa]-[pb] pass through the *interior* of convex CCW [poly]? True
    iff the portion of the segment inside [poly] has positive length and its
