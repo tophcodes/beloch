@@ -61,6 +61,13 @@ let fresh_crease_id () =
   incr next_id;
   id
 
+(* The most classes of undecided sides a placed fold searches; the search
+   validates 2^k stackings for k classes. Ceiling: a fold beyond it fails
+   with [Too_many_undecided]. The upgrade is to propagate the taco-taco
+   condition and the flat-hinge form of taco-tortilla before the search, as
+   the taco-tortilla condition is now, so that fewer classes stay open. *)
+let max_undecided = 10
+
 type violation =
   | Bad_index of string
   | Bad_rank
@@ -71,6 +78,9 @@ type violation =
   | Hinge_not_closed of int
   | Taco_tortilla of { tortilla : int; hinge : int }
   | Taco_taco of int * int
+  | Several_stackings of int
+  | Too_many_undecided of int
+  | Layer_cycle
 
 let violation_to_string = function
   | Bad_index s -> "fold graph: index out of range: " ^ s
@@ -95,6 +105,20 @@ let violation_to_string = function
       Printf.sprintf
         "layer ordering: creases of hinges %d and %d cross — taco-taco violation"
         i j
+  | Several_stackings n ->
+      Printf.sprintf
+        "layer ordering: the moved layers fold flat in %d stackings; nothing \
+         in the state decides on which side of them some layers they land on \
+         lie"
+        n
+  | Too_many_undecided k ->
+      Printf.sprintf
+        "layer ordering: the moved layers land on %d groups of layers whose \
+         side nothing decides; the kernel searches at most %d"
+        k max_undecided
+  | Layer_cycle ->
+      "layer ordering: the sides of the moved layers form a cycle that no \
+       stack holds"
 
 (* 3D half-turn about a 2D line embedded in z = 0. *)
 let half_turn3_of_line (l : Geom.line) : I3.t =
@@ -957,14 +981,348 @@ let insert_after anchor xs lst =
 let insert_before anchor xs lst =
   List.concat_map (fun e -> if e = anchor then xs @ [ e ] else [ e ]) lst
 
-(* Simple flat fold as a graph transformation: cut each block's parents along
-   [axis], give the cut hinges angle 1, toggle existing on-axis hinges with
-   exactly one moving side (D8), restack by splicing each block's movers in at
-   its placement. Placements are derived; nothing composes isometries onto
-   faces. *)
-let fold_blocks ?crease_id ~(blocks : (bool array * placement) list) (g : t)
+(* The part of convex CCW [p] inside convex CCW [q]: [p] clipped to the
+   inner side of every edge of [q], [||] when no area remains. *)
+let clip_convex (p : Geom.point array) (q : Geom.point array) : Geom.point array =
+  let n = Array.length q in
+  let k = Num.of_int n in
+  let sum f = Array.fold_left (fun a v -> Num.add a (f v)) Num.zero q in
+  let inner =
+    { Geom.x = Num.div (sum (fun v -> v.Geom.x)) k;
+      y = Num.div (sum (fun v -> v.Geom.y)) k }
+  in
+  let acc = ref p in
+  for i = 0 to n - 1 do
+    if Array.length !acc > 0 then begin
+      let l = Geom.line_through q.(i) q.((i + 1) mod n) in
+      acc := Geom.clip_convex_halfplane l (Geom.side_of_line l inner) !acc
+    end
+  done;
+  !acc
+
+(* Exact geometric answers a placed fold computes, kept across the openings
+   of one reverse fold. An answer is keyed on the faces and creases it reads,
+   each named by its parent and whether it moved, and it is reused only where
+   each of them has, in the state at hand, exactly the table polygon or table
+   segment it had when the answer was computed: [sh_poly] and [sh_seg] hold
+   those, and a face or crease that differs is answered afresh. *)
+type shared = {
+  sh_poly : (int * bool, Geom.point array) Hashtbl.t;
+  sh_seg : ((int * bool) * (int * bool), Geom.point * Geom.point) Hashtbl.t;
+  sh_overlap : ((int * bool) * (int * bool), bool) Hashtbl.t;
+  sh_crosses : ((int * bool) * (int * bool) * (int * bool), bool) Hashtbl.t;
+  sh_collinear :
+    (((int * bool) * (int * bool)) * ((int * bool) * (int * bool)), bool) Hashtbl.t;
+  sh_in_region : ((int * bool) * (int * bool) * (int * bool), bool) Hashtbl.t;
+}
+
+let new_shared () =
+  { sh_poly = Hashtbl.create 128; sh_seg = Hashtbl.create 256;
+    sh_overlap = Hashtbl.create 512; sh_crosses = Hashtbl.create 512;
+    sh_collinear = Hashtbl.create 1024; sh_in_region = Hashtbl.create 256 }
+
+(* [p] and [q] are the same polygon, vertex by vertex *)
+let same_polygon (p : Geom.point array) (q : Geom.point array) : bool =
+  Array.length p = Array.length q && Array.for_all2 Geom.point_equal p q
+
+let same_segment ((a, b) : Geom.point * Geom.point) ((c, d) : Geom.point * Geom.point) =
+  Geom.point_equal a c && Geom.point_equal b d
+
+(* The stackings of a fold whose blocks all lie [Over] or [Under] an anchor,
+   given the folded geometry [geo]. [anchors.(b)] holds block [b]'s anchor
+   faces, the block lying directly on each, and whether it lies over them;
+   [splice] is the order the rank gave, kept wherever the layer order leaves
+   a pair free.
+
+   The sides of a stationary face and a moved face that overlap are what
+   the fold decides; every other overlapping pair keeps the order it had:
+   two stationary faces their parents' order, two moved faces of one block
+   the reverse of it, and of two blocks the one listed first lies below.
+   Three conditions decide sides, each read only where the faces overlap:
+
+   - the placement: the block lies directly over (under) its anchors, so an
+     anchor is below (above) every moved face of the block it overlaps;
+   - the anchor: where a stationary face, an anchor and a moved face of the
+     block share a region of the table, the face lies on the side of the
+     moved face that it lies on of the anchor. This is the order condition
+     (MODEL cond-order) in that region, with nothing between the block and
+     the anchor;
+   - one sheet: a face that covers the interior of a hinge's crease lies on
+     the same side of both faces of the hinge. For a folded hinge, the new
+     ones on the axis among them, this is the taco-tortilla condition
+     (MODEL cond-taco-tortilla); for a flat hinge, the two faces are one
+     uncreased region, whose order with a face over it is one value
+     (MODEL def-flat-state, the paragraph after the definition).
+
+   A side two conditions decide differently makes the fold invalid. The
+   sides nothing decides fall into classes that turn together; every
+   combination of classes is stacked and validated against [geo], and each
+   valid one is a stacking of the fold. The stack is a topological sort of
+   the overlapping pairs, ties by [splice], so a block need not stay one
+   run where the sides part it. *)
+let placed_stackings ~(shared : shared) ~(g : t) ~(geo : geometry)
+    ~(parent : int array) ~(moved : bool array) ~(block_of : int array)
+    ~(anchors : (int list * bool) array) ~(splice : int list) :
+    (t list, violation) result =
+  match geo.g_placed with
+  | Error v -> Error v
+  | Ok p -> (
+      let n = Array.length parent in
+      let name i = (parent.(i), moved.(i)) in
+      (* the face has the table polygon the shared answers about it read *)
+      let kept =
+        Array.init n (fun i ->
+            match Hashtbl.find_opt shared.sh_poly (name i) with
+            | Some q -> same_polygon q p.p_ccw_tps.(i)
+            | None ->
+                Hashtbl.replace shared.sh_poly (name i) p.p_ccw_tps.(i);
+                true)
+      in
+      let hinge_name h =
+        let a = name geo.g_hinges.(h).fa and b = name geo.g_hinges.(h).fb in
+        if a < b then (a, b) else (b, a)
+      in
+      let hinge_names = Array.init (Array.length geo.g_hinges) hinge_name in
+      let kept_seg =
+        Array.init (Array.length geo.g_hinges) (fun h ->
+            match Hashtbl.find_opt shared.sh_seg hinge_names.(h) with
+            | Some s -> same_segment s p.p_tsegs.(h)
+            | None ->
+                Hashtbl.replace shared.sh_seg hinge_names.(h) p.p_tsegs.(h);
+                true)
+      in
+      (* [f ()] through [table] under [key] where [ok] *)
+      let cached table ok key f =
+        if not ok then f ()
+        else
+          match Hashtbl.find_opt table key with
+          | Some b -> b
+          | None ->
+              let b = f () in
+              Hashtbl.replace table key b;
+              b
+      in
+      let overlap i j =
+        let key = if name i < name j then (name i, name j) else (name j, name i) in
+        cached shared.sh_overlap (kept.(i) && kept.(j)) key (fun () ->
+            Geom.convex_overlap p.p_ccw_tps.(i) p.p_ccw_tps.(j))
+      in
+      let crosses h c =
+        memo p.p_crosses h c (fun () ->
+            let a, b = hinge_names.(h) in
+            cached shared.sh_crosses (kept_seg.(h) && kept.(c)) (a, b, name c) (fun () ->
+                Geom.segment_crosses_interior p.p_tsegs.(h) p.p_ccw_tps.(c)))
+      in
+      (* The crossings and collinear overlaps another opening answered
+         serve the checks of [with_rank]; its answers serve the next. *)
+      let exchange () =
+        Array.iteri
+          (fun h row ->
+            if kept_seg.(h) then
+              let a, b = hinge_names.(h) in
+              Array.iteri
+                (fun c v ->
+                  if kept.(c) then
+                    let key = (a, b, name c) in
+                    match v with
+                    | Some r -> Hashtbl.replace shared.sh_crosses key r
+                    | None -> row.(c) <- Hashtbl.find_opt shared.sh_crosses key)
+                row)
+          p.p_crosses;
+        Array.iteri
+          (fun i row ->
+            if kept_seg.(i) then
+              Array.iteri
+                (fun j v ->
+                  if kept_seg.(j) then
+                    let key = (hinge_names.(i), hinge_names.(j)) in
+                    match v with
+                    | Some r -> Hashtbl.replace shared.sh_collinear key r
+                    | None -> row.(j) <- Hashtbl.find_opt shared.sh_collinear key)
+                row)
+          p.p_overlaps
+      in
+      exchange ();
+      (* [i] above [j], for an overlapping pair the fold does not decide *)
+      let kept_above i j =
+        if moved.(i) then
+          if block_of.(i) = block_of.(j) then g.rank.(parent.(i)) < g.rank.(parent.(j))
+          else block_of.(i) > block_of.(j)
+        else g.rank.(parent.(i)) > g.rank.(parent.(j))
+      in
+      (* "[x] above [y]" as a literal over the (stationary, moved) pairs *)
+      let lit x y =
+        if moved.(x) = moved.(y) then Layer_sides.Known (kept_above x y)
+        else if moved.(y) then Layer_sides.Side ((x, y), false)
+        else Layer_sides.Side ((y, x), true)
+      in
+      let all = List.init n Fun.id in
+      let stat = List.filter (fun i -> not moved.(i)) all in
+      let movers = List.filter (fun i -> moved.(i)) all in
+      let pairs =
+        List.concat_map
+          (fun m -> List.filter_map (fun s -> if overlap s m then Some (s, m) else None) stat)
+          movers
+      in
+      let uf = Layer_sides.create () in
+      let ( let* ) = Result.bind in
+      (* two anchors that put one face on two sides of a moved face lying
+         directly on both form a cycle across regions *)
+      let fix pr above =
+        Layer_sides.relate uf (Layer_sides.Side (pr, false)) (Known above) ~why:Layer_cycle
+      in
+      (* whether [s], the anchor [a] and the moved face [m] share a region of
+         positive area: asked only where the three pairs overlap, then [m]
+         clipped to [a] and the result against [s], exactly *)
+      let in_region s m a =
+        cached shared.sh_in_region (kept.(s) && kept.(m) && kept.(a))
+          (name s, name m, name a) (fun () ->
+            overlap s a && overlap m a
+            &&
+            let r = clip_convex p.p_ccw_tps.(m) p.p_ccw_tps.(a) in
+            Array.length r >= 3
+            && Num.sign (Geom.signed_area r) <> 0
+            && Geom.convex_overlap p.p_ccw_tps.(s) r)
+      in
+      let seeded =
+        List.fold_left
+          (fun acc ((s, m) as pr) ->
+            let* () = acc in
+            let on, over = anchors.(block_of.(m)) in
+            if List.mem s on then fix pr (not over)
+            else
+              List.fold_left
+                (fun acc a ->
+                  let* () = acc in
+                  if in_region s m a then fix pr (kept_above s a) else Ok ())
+                (Ok ()) on)
+          (Ok ()) pairs
+      in
+      let adj = Array.make n [] in
+      Array.iteri
+        (fun hi (h : hinge) ->
+          adj.(h.fa) <- (hi, h.fb) :: adj.(h.fa);
+          adj.(h.fb) <- (hi, h.fa) :: adj.(h.fb))
+        geo.g_hinges;
+      let rec propagate = function
+        | [] -> Ok ()
+        | (s, m) :: rest ->
+            let side = lit s m in
+            let* () =
+              List.fold_left
+                (fun acc (hi, s') ->
+                  let* () = acc in
+                  if s' <> m && crosses hi m then
+                    Layer_sides.relate uf side (lit s' m)
+                      ~why:(Taco_tortilla { tortilla = m; hinge = hi })
+                  else Ok ())
+                (Ok ()) adj.(s)
+            in
+            let* () =
+              List.fold_left
+                (fun acc (hi, m') ->
+                  let* () = acc in
+                  if m' <> s && crosses hi s then
+                    Layer_sides.relate uf side (lit s m')
+                      ~why:(Taco_tortilla { tortilla = s; hinge = hi })
+                  else Ok ())
+                (Ok ()) adj.(m)
+            in
+            propagate rest
+      in
+      match Result.bind seeded (fun () -> propagate pairs) with
+      | Error v -> Error v
+      | Ok () ->
+          let decided, free = Layer_sides.classes uf pairs in
+          let k = List.length free in
+          if k > max_undecided then Error (Too_many_undecided k)
+          else begin
+            let priority = Array.make n 0 in
+            List.iteri (fun pos i -> priority.(i) <- pos) splice;
+            let side_edge ((s, m), above) = if above then (m, s) else (s, m) in
+            let by_old_rank l =
+              List.sort (fun i j -> compare g.rank.(parent.(i)) g.rank.(parent.(j))) l
+            in
+            let rec chain acc = function
+              | a :: (b :: _ as rest) -> chain ((a, b) :: acc) rest
+              | _ -> acc
+            in
+            (* The orders the fold keeps, at two strengths. [tight] keeps
+               every stationary face in its old order, each block in the
+               reverse of it and the blocks in their listed order, whether
+               two faces overlap or not; it needs no overlap test. [loose]
+               keeps only the overlapping pairs, the stationary faces the
+               block lands on tested against every stationary face. A stack
+               that satisfies [tight] satisfies [loose], so the two give the
+               same pairs wherever [tight] has no cycle. *)
+            let tight =
+              lazy
+                (chain [] (by_old_rank stat)
+                @ chain []
+                    (List.concat
+                       (List.init (Array.length anchors) (fun b ->
+                            List.rev
+                              (by_old_rank (List.filter (fun m -> block_of.(m) = b) movers))))))
+            in
+            let loose =
+              lazy
+                (let lands = Array.make n false in
+                 List.iter (fun (s, _) -> lands.(s) <- true) pairs;
+                 let kept = ref (chain [] (by_old_rank (List.filter (fun i -> not lands.(i)) stat))) in
+                 let keep i j = kept := (if kept_above i j then (j, i) else (i, j)) :: !kept in
+                 List.iter
+                   (fun l ->
+                     if lands.(l) then
+                       List.iter
+                         (fun s -> if s <> l && (s > l || not lands.(s)) && overlap l s then keep l s)
+                         stat)
+                   stat;
+                 let rec mover_pairs = function
+                   | m :: rest ->
+                       List.iter (fun m' -> if overlap m m' then keep m m') rest;
+                       mover_pairs rest
+                   | [] -> ()
+                 in
+                 mover_pairs movers;
+                 !kept)
+            in
+            let stack sides =
+              let fits = List.for_all (fun ((s, m), above) -> (priority.(s) > priority.(m)) = above) sides in
+              if fits && List.for_all (fun (lo, hi) -> priority.(lo) < priority.(hi)) (Lazy.force tight)
+              then Some priority
+              else
+                let edges kept = List.rev_append (List.rev_map side_edge sides) kept in
+                match Layer_sides.topo_rank ~n ~edges:(edges (Lazy.force tight)) ~priority with
+                | Some r -> Some r
+                | None -> Layer_sides.topo_rank ~n ~edges:(edges (Lazy.force loose)) ~priority
+            in
+            let found = ref [] and first_error = ref None in
+            for mask = 0 to (1 lsl k) - 1 do
+              let sides =
+                List.fold_left
+                  (fun (acc, bit) cls ->
+                    let on = mask land (1 lsl bit) <> 0 in
+                    (List.fold_left (fun acc (pr, v) -> (pr, v = on) :: acc) acc cls, bit + 1))
+                  (decided, 0) free
+                |> fst
+              in
+              match stack sides with
+              | None -> ()
+              | Some rank -> (
+                  match with_rank ~marks:g.marks geo ~rank with
+                  | Ok g' -> found := g' :: !found
+                  | Error v -> if !first_error = None then first_error := Some v)
+            done;
+            exchange ();
+            match (List.rev !found, !first_error) with
+            | [], Some v -> Error v
+            | [], None -> Error Layer_cycle
+            | gs, _ -> Ok gs
+          end)
+
+let fold_blocks_gen ?crease_id ~(shared : shared) ?anchor_sets ~(blocks : (bool array * placement) list) (g : t)
     ~(axis : Geom.line) ~(move_side : int) ~(prov : State.provenance option) :
-    (t, violation) result =
+    (t list, violation) result =
   let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
   let nb = List.length blocks in
   let block_of_parent fi =
@@ -1123,8 +1481,6 @@ let fold_blocks ?crease_id ~(blocks : (bool array * placement) list) (g : t)
       stat_children
       (List.mapi (fun b blk -> (b, blk)) blocks)
   in
-  let rank' = Array.make n' 0 in
-  List.iteri (fun h i -> rank'.(i) <- h) order;
   (* 5. root + base: prefer a stationary child (its parent's placement is
      unchanged); if everything moved, reflect the base across the axis *)
   let root', base' =
@@ -1142,9 +1498,52 @@ let fold_blocks ?crease_id ~(blocks : (bool array * placement) list) (g : t)
       else (0, I3.compose (half_turn3_of_line axis) g.isos.(parent.(0)))
     end
   in
-  make ~base:base' ~marks:g.marks ~faces:faces'
-    ~hinges:(Array.of_list (new_hinges @ carried))
-    ~root:root' ~rank:rank' ()
+  let placed_only =
+    List.for_all
+      (fun (_, place) -> match place with Over _ | Under _ -> true | _ -> false)
+      blocks
+  in
+  match
+    geometry ~base:base' ~faces:faces'
+      ~hinges:(Array.of_list (new_hinges @ carried)) ~root:root' ()
+  with
+  | Error v -> Error v
+  | Ok geo when not placed_only -> (
+      let rank' = Array.make n' 0 in
+      List.iteri (fun h i -> rank'.(i) <- h) order;
+      match with_rank ~marks:g.marks geo ~rank:rank' with
+      | Ok g' -> Ok [ g' ]
+      | Error v -> Error v)
+  | Ok geo ->
+      (* per block, the stationary children of its anchor parents, and
+         whether it lies over them *)
+      let anchors =
+        Array.of_list
+          (List.mapi
+             (fun b (_, place) ->
+               let named, over =
+                 match place with
+                 | Over p -> (p, true)
+                 | Under p -> (p, false)
+                 | Top | Bottom -> assert false
+               in
+               let parents =
+                 match anchor_sets with Some sets -> List.nth sets b | None -> [ named ]
+               in
+               (List.map stationary_child_of parents, over))
+             blocks)
+      in
+      placed_stackings ~shared ~g ~geo ~parent ~moved:moved_flag ~block_of:block_of_child
+        ~anchors ~splice:order
+
+let fold_blocks_all ?crease_id ~blocks g ~axis ~move_side ~prov =
+  fold_blocks_gen ?crease_id ~shared:(new_shared ()) ~blocks g ~axis ~move_side ~prov
+
+let fold_blocks ?crease_id ~blocks g ~axis ~move_side ~prov =
+  match fold_blocks_all ?crease_id ~blocks g ~axis ~move_side ~prov with
+  | Ok [ g' ] -> Ok g'
+  | Ok gs -> Error (Several_stackings (List.length gs))
+  | Error v -> Error v
 
 let fold ?crease_id ?moving_parents (g : t) ~(axis : Geom.line)
     ~(move_side : int) ~(valley : bool) ~(prov : State.provenance option) : t =
@@ -1221,6 +1620,20 @@ let reverse_attempts ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
     let table = table_polygon g fi in
     Array.length (Geom.clip_convex_halfplane axis (-move_side) table) >= 3
   in
+  let shared = new_shared () in
+  (* [i] below [j], for two faces of the tip that overlap; the rank answers
+     only for overlapping faces (rem-linear-extension) *)
+  let ov = Hashtbl.create 64 in
+  let overlap i j =
+    let key = if i < j then (i, j) else (j, i) in
+    match Hashtbl.find_opt ov key with
+    | Some b -> b
+    | None ->
+        let b = Geom.convex_overlap (table_polygon_ccw g i) (table_polygon_ccw g j) in
+        Hashtbl.replace ov key b;
+        b
+  in
+  let below_overlapping i j = g.rank.(i) < g.rank.(j) && overlap i j in
   (* the layers of the tip, bottom to top *)
   let layers =
     List.filter (fun i -> tip.(i)) (List.init n Fun.id)
@@ -1266,35 +1679,50 @@ let reverse_attempts ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
         bodies; outcome }
     in
     let blo = body lower and bup = body upper in
-    if blo = [] || bup = [] then tried (Some (blo, bup)) No_body
+    if blo = [] || bup = [] then [ tried (Some (blo, bup)) No_body ]
     else
       let lo l = List.fold_left (fun a i -> min a g.rank.(i)) max_int l in
       let hi l = List.fold_left (fun a i -> max a g.rank.(i)) min_int l in
-      if not (hi blo < lo bup) then tried (Some (blo, bup)) Interleaved
+      if not (hi blo < lo bup) then [ tried (Some (blo, bup)) Interleaved ]
       else
-        let topmost l =
-          List.fold_left
-            (fun a i -> if g.rank.(i) > g.rank.(a) then i else a)
-            (List.hd l) l
-        in
-        let bottommost l =
-          List.fold_left
-            (fun a i -> if g.rank.(i) < g.rank.(a) then i else a)
-            (List.hd l) l
-        in
-        (* each block is reflected as a whole and keeps its place against
-           the other, so every hinge across the opening turns *)
-        let blocks =
-          if inside then
-            [ (lower, Over (topmost blo)); (upper, Under (bottommost bup)) ]
-          else [ (lower, Bottom); (upper, Top) ]
-        in
-        tried (Some (blo, bup))
-          (match fold_blocks ~crease_id:cid ~blocks g ~axis ~move_side ~prov with
-          | Ok g' -> Reversed g'
-          | Error v -> Crossing v)
+      (* the layers of a body that no layer of it overlaps from the side
+         facing the opening: the block lies directly on each of them. The
+         rank picks the one the splice and the trace name; the sides read
+         all of them. *)
+      let outermost l toward_opening =
+        List.filter
+          (fun i ->
+            not
+              (List.exists
+                 (fun j ->
+                   if toward_opening then below_overlapping i j
+                   else below_overlapping j i)
+                 l))
+          l
+      in
+      let named tops toward_opening =
+        List.fold_left
+          (fun a i ->
+            if (if toward_opening then g.rank.(i) > g.rank.(a) else g.rank.(i) < g.rank.(a))
+            then i else a)
+          (List.hd tops) tops
+      in
+      let tops_lo = outermost blo true and tops_up = outermost bup false in
+      (* each block is reflected as a whole and keeps its place against
+         the other, so every hinge across the opening turns *)
+      let blocks, anchor_sets =
+        if inside then
+          ( [ (lower, Over (named tops_lo true)); (upper, Under (named tops_up false)) ],
+            Some [ tops_lo; tops_up ] )
+        else ([ (lower, Bottom); (upper, Top) ], None)
+      in
+      match
+        fold_blocks_gen ~crease_id:cid ~shared ?anchor_sets ~blocks g ~axis ~move_side ~prov
+      with
+      | Ok gs -> List.map (fun g' -> tried (Some (blo, bup)) (Reversed g')) gs
+      | Error v -> [ tried (Some (blo, bup)) (Crossing v) ]
   in
-  List.map attempt openings
+  List.concat_map attempt openings
 
 let reverse_letter (g : t) (a : spine_attempt) (hi : int) : assign =
   let l = mv g hi in

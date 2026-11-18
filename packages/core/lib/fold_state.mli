@@ -79,6 +79,20 @@ type violation =
           interleave in the stack [hullzakharevich2023 §2.1]
           @see <https://belochlang.org/model/#cond-taco-taco>
             realizes the taco-taco condition *)
+  | Several_stackings of int
+      (** a fold that places a block next to a face folds flat in [n] > 1
+          stackings: nothing decides on which side of the block some face it
+          lands on lies
+          @see <https://belochlang.org/model/#rem-linear-extension>
+            realizes the linear-extension remark *)
+  | Too_many_undecided of int
+      (** the block lands on more classes of faces whose side nothing
+          decides than the kernel searches *)
+  | Layer_cycle
+      (** the sides a placed block takes form a cycle across regions, which
+          a rank cannot hold
+          @see <https://belochlang.org/model/#rem-linear-extension>
+            realizes the linear-extension remark *)
 
 val violation_to_string : violation -> string
 
@@ -316,6 +330,26 @@ type placement =
     stationary child to anchor on (any non-block parent, or a block parent
     the axis cuts). *)
 
+val fold_blocks_all :
+  ?crease_id:int ->
+  blocks:(bool array * placement) list ->
+  t ->
+  axis:Geom.line ->
+  move_side:int ->
+  prov:State.provenance option ->
+  (t list, violation) result
+(** [fold_blocks] with every stacking the fold has. When every block lies
+    [Over] or [Under] a face, the fold decides on which side of the block
+    each stationary face it lands on lies: from the placement, from the
+    anchor where the face, the anchor and the block share a region, and
+    from the faces over the creases of either. The sides nothing decides
+    are searched, and each combination that passes {!with_rank} is one
+    stacking. The rank of each is a topological sort of the overlapping
+    pairs, ties by the rank the splice gives, so a block can come apart in
+    the rank. The list is not empty. [Error v] is a [Taco_tortilla] where
+    the conditions put a face on both sides, [Too_many_undecided], or the
+    violation of the first combination tried when none passes. *)
+
 val fold_blocks :
   ?crease_id:int ->
   blocks:(bool array * placement) list ->
@@ -330,12 +364,15 @@ val fold_blocks :
     re-attached, on-axis hinges with exactly one moving side toggled). Rank:
     stationary faces keep their relative order; each block's movers, in
     reversed parent-rank order (a half-turn reverses a stack), are spliced in
-    as one contiguous run at the block's placement. Two blocks aimed at the
-    same gap from opposite sides each stay next to their own face. A block
+    as one contiguous run at the block's placement; where every block lies
+    [Over] or [Under] a face, the stacking is the one {!fold_blocks_all}
+    finds, and the splice only breaks ties. Two blocks aimed at the same gap
+    from opposite sides each stay next to their own face. A block
     mask marks PARENT faces; a parent in no block is stationary even where
     it crosses the axis. Block masks must be disjoint: a parent claimed by
     several blocks goes to the first. [Error v] is the resulting state's invariant
-    violation ([Taco_taco]/[Taco_tortilla] reject an impossible insertion).
+    violation ([Taco_taco]/[Taco_tortilla] reject an impossible insertion),
+    or [Several_stackings] where {!fold_blocks_all} finds several.
     [Invalid_argument] if an [Over]/[Under] face has no stationary child
     (a block parent lying entirely on the moving side). A block parent cut
     by the axis keeps its stationary remainder as that child, so a flap can
@@ -411,11 +448,12 @@ val reverse :
     the axis. It cuts the tip into a lower and an upper block, each with at
     least one parent cut by the axis (its hinge layers), whose hinge layers
     must occupy two separate rank ranges. Each opening yields a candidate
-    {!fold_blocks} with the two blocks. Inside: the lower block [Over] the
-    lower body's topmost layer and the upper block [Under] the upper body's
-    bottommost layer; outside: [Bottom] and [Top]. Every hinge across the
-    opening keeps the order of its faces and so turns; every other hinge of
-    the tip keeps its letter. Candidates that agree on every overlapping pair
+    {!fold_blocks_all} with the two blocks, one per stacking. Inside: the
+    lower block [Over] the outermost layers of the lower body and the upper
+    block [Under] those of the upper body; outside: [Bottom] and [Top]. Every
+    hinge across the opening keeps the order of its faces and so turns;
+    every other hinge of the
+    tip keeps its letter. Candidates that agree on every overlapping pair
     are one state, ranked by the candidate that keeps the tip closest to its
     hinge layers; exactly one state is the result. [tip] must contain only
     parents with a piece on the moving side (the caller builds it so). It is
