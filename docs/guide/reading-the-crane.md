@@ -99,11 +99,11 @@ writes the petal fold as the one move it is: one `flatten` that folds both
 points together.
 
 ::: {.figure #fig-crane-bird caption="The bird base. `--pf` is the crease the front flap is lifted on, `--pb` the one on the back." views="cp folded" highlight="--pf --pb .e1 .e2" after="fig-crane-sides"}
-flatten (fan (--s1 & .sr) (map .sr onto --mid through .a) as .e1)
-        (fan (--s1 & .sl) (map .sl onto --mid through .a) as .e2)
+flatten (fan (--s1 & .sr) (map .sr onto --mid through .a valley) as .e1)
+        (fan (--s1 & .sl) (map .sl onto --mid through .a valley) as .e2)
         (on #[.a]) (staying .o) as --pf
-flatten (fan (--s2 & .br) (map .br onto --mid through .c) as .e3)
-        (fan (--s2 & .bl) (map .bl onto --mid through .c) as .e4)
+flatten (fan (--s2 & .br) (map .br onto --mid through .c valley) as .e3)
+        (fan (--s2 & .bl) (map .bl onto --mid through .c valley) as .e4)
         (on #[.c]) (staying .o) as --pb
 :::
 
@@ -114,9 +114,12 @@ two fans in one move.
 The first fan has two rays. `--s1 & .sr` is the piece of the squash crease
 that runs out to the side corner `.sr`, a folded side edge of the front
 flap; in the petal fold it opens.
-`(map .sr onto --mid through .a)` is the axiom that folds a point onto a
-line with a fold line through a second point: it is the crease that brings
-the side corner onto the center line, and it runs from the loose corners.
+`(map .sr onto --mid through .a valley)` is the axiom that folds a point
+onto a line with a fold line through a second point: it is the crease that
+brings the side corner onto the center line, and it runs from the loose
+corners. It folds as a valley, so the side edges fold in under the flap
+that is lifted; without the letter the two creases could fold either way,
+and the statement would leave four results.
 The two rays meet at one point of the side edge, and `as .e1` gives that
 point a name. The second fan does the same on the left and names `.e2`.
 
@@ -214,7 +217,7 @@ reverse (through .hp .ht) (moving .b) as --head
 
 `free on --bd & .b from .b at 1/4` names a spot a quarter of the way along
 the piece of `--bd` that touches `.b`, counted from `.b`, measured on the
-paper. As in the collapse on the first page, `free` records that the
+paper. As on the first page, `free` records that the
 position was a choice and follows from no construction; the program folds
 with the point like with any other. Two such points pin down the line of
 the head fold: `.hp` here, and `.ht` from the section on the legs.

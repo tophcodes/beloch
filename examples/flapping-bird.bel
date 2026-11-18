@@ -28,16 +28,16 @@ mark (map --bc onto --da) as --hi               ; F4
 ; the preliminary base, the face at .d held down: the diagonal through .a
 ; and .c folds, the one through .b and .d stays flat at the middle of the
 ; flaps of .b in front and .d behind
-flatten (--ac & .a mountain) (--ac & .c) (--fg & .f) (--fg & .g) (--hi & .h) (--hi & .i) (staying .d)    ; F5
+flatten (--ac & .a mountain) (--ac & .c) (--fg & .f valley) (--fg & .g) (--hi & .h) (--hi & .i valley) (staying .d)    ; F5
 
 ; the petal folds: each fan folds the side corner onto the center line,
 ; and binds Fisher's point where the kite crease meets the midline
 --mid = (through .e .b)
-flatten (fan (--fg & .f) (map .f onto --mid through .b) as .j)
-        (fan (--hi & .h) (map .h onto --mid through .b) as .k)
+flatten (fan (--fg & .f) (map .f onto --mid through .b valley) as .j)
+        (fan (--hi & .h) (map .h onto --mid through .b valley) as .k)
         (on #[.b]) (staying .e) as --pf          ; F6, F7, F11, F16-F18
-flatten (fan (--fg & .g) (map .g onto --mid through .d) as .l)
-        (fan (--hi & .i) (map .i onto --mid through .d) as .m)
+flatten (fan (--fg & .g) (map .g onto --mid through .d valley) as .l)
+        (fan (--hi & .i) (map .i onto --mid through .d valley) as .m)
         (on #[.d]) (staying .e) as --pb          ; F8-F10, F12-F15
 
 ; the head's two points, read while the leg of .a is still straight: 2/5
