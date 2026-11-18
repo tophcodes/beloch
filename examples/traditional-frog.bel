@@ -1,0 +1,145 @@
+@author "Claude (Anthropic)"
+@design traditional
+@source "[tanfrog]"
+
+; The traditional frog after the 19 steps of Kelly Tan's diagram
+; [tanfrog], https://origami.me/traditional-frog/. Steps 1 to 5 fold the
+; preliminary base, steps 6 to 12 turn it into the frog base by four squash
+; folds and four petal folds, steps 13 to 18 narrow the four legs and
+; reverse-fold them, and step 19 folds the head down.
+;
+; The program stops at the frog base, after step 12. The legs of steps 13
+; to 19 are not folded yet (tophcodes/beloch#323).
+;
+; Smith writes the frog base in OIL from the preliminary base
+; [smith1975oil, §5.4, p. 34]: one fold instruction per squash and three per
+; petal fold. This program writes a squash as one statement and a petal
+; fold as one application of `petal`.
+
+paper square
+
+; steps 9 and 10 on one squashed flap: --s is the crease of its squash, --e
+; the paper edge whose middle .m the squash laid on the center line, .l and
+; .r the corners at the ends of --e, .o the closed point. The flap is two
+; layers deep at its sides: the top layer, which holds .m, and under it the
+; layer hinged to it along --s at each side.
+def petal(--s --e .l .r .m .o) {
+  .ql = free on --e from .l at 1/8              ; a point in each lower layer
+  .qr = free on --e from .r at 1/8
+  .wl = (--s & #[.ql]) * --e                    ; the ends of the flap's sides
+  .wr = (--s & #[.qr]) * --e
+  --mid = (through .o .l)
+
+  ; step 9: each bottom edge onto the center line and back, through both
+  ; layers of the flap
+  fold (map .wl onto --mid through .l) (moving .wl) (up to .ql) as --kl
+  unfold (--kl) (moving .wl) (up to .ql)
+  fold (map .wr onto --mid through .r) (moving .wr) (up to .qr) as --kr
+  unfold (--kr) (moving .wr) (up to .qr)
+
+  ; step 10: the petal fold, one fan at each point where a kite crease
+  ; meets a side of the flap. The kite crease folds in the lower layer
+  ; only; the top layer folds along the creases from that point to .m and
+  ; along the crease between the two points, which the statement scores,
+  ; and lifts .m in front. The top layer shows the back of the paper, so
+  ; the creases to .m, which the diagram draws as mountains, read valley.
+  .vl = (--kl & #[.ql]) * --s
+  .vr = (--kr & #[.qr]) * --s
+  mark (through .vl .m) (on #[.m]) as --ml
+  mark (through .vr .m) (on #[.m]) as --mr
+  flatten (fan at .vl (--s & .wl) (--kl & .l) (--ml valley))
+          (fan at .vr (--s & .wr) (--kr & .r) (--mr))
+}
+
+; steps 1 to 3 crease the square in half both ways and along both
+; diagonals. Step 2 turns the paper over and step 4 turns it back, so the
+; program turns nothing: the square keeps the side up that step 1 starts
+; with.
+mark (map --da onto --bc) as --v                 ; step 1: in half and unfold
+mark (map --ab onto --cd) as --h                 ; step 2: in half the other way
+mark (through .a .c) as --ac                     ; step 3: one diagonal
+mark (through .b .d) as --bd                     ; step 3: the other diagonal
+
+; step 5: collapse into the preliminary base. All four corners meet at the
+; open end, the paper center .o is the closed point, and the letters on
+; three of its creases pick the state with the quarter of --ab in front.
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)   ; step 5
+
+.o = --h * --v
+.ml = --v * --cd                                 ; the side corners
+.mr = --v * --ab
+.x6 = --h * --da                                 ; the ends of the folded edges
+.x7 = --h * --bc                                 ; that steps 6 and 7 open
+
+; points a quarter in from a corner that name the half of a squash a turn
+; in step 8 moves
+.k = free on --bc from .b at 1/4
+.e = free on --da from .d at 1/4
+
+; step 6: squash the front flap whose folded edge is --h & --da onto the
+; center line --ac.
+squash (--h & --da onto --ac) as --s1            ; step 6
+
+; step 7: the model turned over, the same squash on the flap of the other
+; side, whose folded edge is --h & --bc.
+flip                                             ; step 7
+squash (--h & --bc onto --ac) as --s2            ; step 7
+
+; step 8, seen from the back: turn the half of the squash of step 7 that
+; lies on the side of .k over to the other side, which uncovers the flap
+; whose folded edge is --v & --ab, and squash that flap. Then, the model
+; turned over, the same on the front: the half of the squash of step 6 on
+; the side of .e over, and a squash of the flap whose folded edge is
+; --v & --cd. Each turn runs along hinges the squash left and folds no new
+; crease.
+fold (--h & --bc) (moving .k) (up to .k)         ; step 8
+squash (--v & --ab onto --bd) as --s3            ; step 8
+flip                                             ; step 8
+fold (--h & --da) (moving .e) (up to .e)         ; step 8
+squash (--v & --cd onto --bd) as --s4            ; step 8
+
+; steps 9 and 10 on the front flap, the squash of --v & --cd, and step 11
+; on the back flap, the squash of --v & --ab
+apply petal(--s4 --cd .d .c .ml .o)              ; steps 9 and 10
+flip                                             ; step 11
+apply petal(--s3 --ab .a .b .mr .o)              ; step 11
+
+; points on the other halves of the squashes of steps 6 and 7, which the
+; turns of step 12 move
+.t1 = free on --da from .a at 3/8
+.t2 = free on --bc from .c at 3/8
+
+; step 12: turn the top two flaps on the right over to the left, which
+; opens the hinge the matching turn of step 8 folded, lays the squash of
+; step 6 flat in front and folds the petal on top in half along its
+; center line. Then the petal fold on that squash, and the same on the
+; back for the squash of step 7.
+fold (--h & --da) (moving .t1) (up to .t1)       ; step 12
+apply petal(--s1 --da .a .d .x6 .o)              ; step 12
+flip                                             ; step 12
+fold (--h & --bc) (moving .t2) (up to .t2)       ; step 12
+apply petal(--s2 --bc .c .b .x7 .o)              ; step 12
+
+; the base stands with its closed point up, as the diagram draws it from
+; step 6 on
+@orient .o up
+
+; every write but a mark makes one step
+; assert steps = 33
+
+; the four petal folds and their creases cut the paper into 48 faces
+; assert faces = 48
+
+; the outline is the frog base: the closed point .o and the four paper
+; corners at the open end
+; assert .o = (1/2, 1/2)
+; assert .a = (1, 1)
+; assert .b = .a
+; assert .c = .a
+; assert .d = .a
+
+; each petal fold lifts the middle of a paper edge to one point of the
+; center line between .o and the corners. Its coordinates carry sqrt(2).
+; assert .ml = .x6
+; assert .mr = .x6
+; assert .x7 = .x6

@@ -20,6 +20,7 @@ programs=(
   examples/penguin.bel
   examples/samurai-helmet.bel
   examples/flapping-bird.bel
+  examples/traditional-frog.bel
 )
 
 out=.
