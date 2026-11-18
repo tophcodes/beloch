@@ -1186,8 +1186,8 @@ let subdivide_fan ?(only = fun _ -> true) (g : t) ~(o : Geom.point)
   in
   let g, parent = split_faces g ~prov ~cut_of:cut_wedges in
   let only = Array.map only parent in
-  (* 2. every other face the half-line of a ray crosses is cut along it, as
-     [subdivide] cuts it: plus child first *)
+  (* 2. every other face a ray crosses between O and its point is cut along
+     it, as [subdivide] cuts it: plus child first *)
   let g, _ =
     List.fold_left
       (fun (g, only) (cid, axis, p) ->
@@ -1198,7 +1198,9 @@ let subdivide_fan ?(only = fun _ -> true) (g : t) ~(o : Geom.point)
             match Geom.clip_line_to_convex axis (table_polygon_ccw g fi) with
             | Some (a, b)
               when Num.sign (dot (dir a) (dir p)) >= 0
-                   && Num.sign (dot (dir b) (dir p)) >= 0 -> (
+                   && Num.sign (dot (dir b) (dir p)) >= 0
+                   && Num.compare (dot (dir a) (dir p)) (dot (dir p) (dir p)) <= 0
+                   && Num.compare (dot (dir b) (dir p)) (dot (dir p) (dir p)) <= 0 -> (
                 let part s =
                   let sub = Geom.clip_convex_halfplane axis s table in
                   if Array.length sub >= 3 then Some sub else None
@@ -1216,6 +1218,183 @@ let subdivide_fan ?(only = fun _ -> true) (g : t) ~(o : Geom.point)
       (g, only) rays
   in
   g
+
+(* Cut faces along several table segments at once. [segments i] gives the
+   segments that score face [i], each with its crease id; a face it gives
+   none for stays whole. The face's edges and the segments form a planar
+   graph, split wherever two of them meet, and the cells of that graph are
+   the children: each is traced by turning clockwise at every node, so it
+   lies to the left of the edges it is traced along. A face stays whole
+   when a segment leaves it, when a cell is not convex, or when a segment
+   ends inside a cell. *)
+let subdivide_segments (g : t)
+    ~(segments : int -> (int * (Geom.point * Geom.point)) list)
+    ~(prov : State.provenance option) : t =
+  let cut_of fi =
+    match segments fi with
+    | [] -> None
+    | segs -> (
+        let ccw = table_polygon_ccw g fi in
+        let n = Array.length ccw in
+        let inside p = Geom.in_convex_polygon ccw p in
+        if not (List.for_all (fun (_, (a, b)) -> inside a && inside b) segs) then
+          None
+        else
+          (* the carriers: the face's edges, then the segments *)
+          let carriers =
+            List.init n (fun i -> (None, (ccw.(i), ccw.((i + 1) mod n))))
+            @ List.map (fun (cid, seg) -> (Some cid, seg)) segs
+          in
+          let nodes = ref [] in
+          let add p =
+            if not (List.exists (Geom.point_equal p) !nodes) then
+              nodes := p :: !nodes
+          in
+          List.iter
+            (fun (_, (a, b)) ->
+              add a;
+              add b)
+            carriers;
+          List.iter
+            (fun (_, s1) ->
+              List.iter
+                (fun (_, s2) ->
+                  match Geom.segment_intersection s1 s2 with
+                  | Some r -> add r
+                  | None -> ())
+                carriers)
+            carriers;
+          let nodes = Array.of_list (List.rev !nodes) in
+          let m = Array.length nodes in
+          (* the edges of the graph: each carrier between consecutive nodes *)
+          let edges = Hashtbl.create 64 in
+          List.iter
+            (fun (cid, (a, b)) ->
+              let on =
+                List.filter
+                  (fun i -> Geom.on_segment (a, b) nodes.(i))
+                  (List.init m Fun.id)
+                |> List.sort (fun i j ->
+                       Num.compare
+                         (Geom.seg_param (a, b) nodes.(i))
+                         (Geom.seg_param (a, b) nodes.(j)))
+              in
+              let rec link = function
+                | u :: (v :: _ as rest) ->
+                    if not (Hashtbl.mem edges (u, v)) then begin
+                      Hashtbl.replace edges (u, v) cid;
+                      Hashtbl.replace edges (v, u) cid
+                    end;
+                    link rest
+                | _ -> ()
+              in
+              link on)
+            carriers;
+          let out = Array.make m [] in
+          Hashtbl.iter (fun (u, v) _ -> out.(u) <- v :: out.(u)) edges;
+          let out =
+            Array.mapi
+              (fun u vs ->
+                List.sort
+                  (fun a b -> Geom.ccw_compare ~center:nodes.(u) nodes.(a) nodes.(b))
+                  vs
+                |> Array.of_list)
+              out
+          in
+          (* the edge after (u, v) around the cell to its left *)
+          let next (u, v) =
+            let o = out.(v) in
+            let k = Array.length o in
+            let i = ref 0 in
+            Array.iteri (fun j w -> if w = u then i := j) o;
+            (v, o.((!i - 1 + k) mod k))
+          in
+          let cell_of = Hashtbl.create 64 in
+          let cells = ref [] in
+          Hashtbl.iter
+            (fun e _ ->
+              if not (Hashtbl.mem cell_of e) then begin
+                let id = List.length !cells in
+                let rec walk e acc =
+                  Hashtbl.replace cell_of e id;
+                  let e' = next e in
+                  if Hashtbl.mem cell_of e' then List.rev (fst e :: acc)
+                  else walk e' (fst e :: acc)
+                in
+                cells := (id, walk e []) :: !cells
+              end)
+            edges;
+          let poly ns = Array.of_list (List.map (fun i -> nodes.(i)) ns) in
+          (* a cell without the nodes that lie on a straight side *)
+          let corners ns =
+            let a = Array.of_list ns in
+            let k = Array.length a in
+            List.filteri
+              (fun i _ ->
+                let p = nodes.(a.((i - 1 + k) mod k))
+                and q = nodes.(a.(i))
+                and r = nodes.(a.((i + 1) mod k)) in
+                Geom.side_of_line (Geom.line_through p r) q <> 0)
+              ns
+          in
+          let convex ns =
+            let a = poly ns in
+            let k = Array.length a in
+            k >= 3
+            && List.length (List.sort_uniq compare ns) = k
+            && Array.for_all Fun.id
+                 (Array.init k (fun i ->
+                      Num.sign
+                        (Geom.signed_area
+                           [| a.(i); a.((i + 1) mod k); a.((i + 2) mod k) |])
+                      > 0))
+          in
+          (* the cell traced around the outside has negative area *)
+          let inner =
+            List.filter
+              (fun (_, ns) -> Num.sign (Geom.signed_area (poly ns)) > 0)
+              (List.rev !cells)
+          in
+          let inner = List.map (fun (id, ns) -> (id, corners ns)) inner in
+          if
+            List.length inner < 2
+            || List.length inner <> List.length !cells - 1
+            || not (List.for_all (fun (_, ns) -> convex ns) inner)
+          then None
+          else
+            let inv = Isometry.inverse (face_iso2 g fi) in
+            let back = Isometry.apply_point inv in
+            let turn = Num.sign (Geom.signed_area g.faces.(fi)) in
+            let child ns =
+              let c = Array.map back (poly ns) in
+              if Num.sign (Geom.signed_area c) = turn then c
+              else
+                let k = Array.length c in
+                Array.init k (fun i -> c.(k - 1 - i))
+            in
+            let slot id =
+              let rec go i = function
+                | [] -> -1
+                | (id', _) :: rest -> if id' = id then i else go (i + 1) rest
+              in
+              go 0 inner
+            in
+            let hinges =
+              Hashtbl.fold
+                (fun (u, v) cid acc ->
+                  match cid with
+                  | Some cid when u < v ->
+                      let a = slot (Hashtbl.find cell_of (u, v))
+                      and b = slot (Hashtbl.find cell_of (v, u)) in
+                      if a < 0 || b < 0 || a = b then acc
+                      else (a, b, (back nodes.(u), back nodes.(v)), cid) :: acc
+                  | _ -> acc)
+                edges []
+              |> List.sort compare
+            in
+            Some (List.map (fun (_, ns) -> child ns) inner, hinges))
+  in
+  fst (split_faces g ~prov ~cut_of)
 
 let subdivide_paper ?crease_id (g : t) (paper_axis : Geom.line)
     ~(prov : State.provenance option) : t =

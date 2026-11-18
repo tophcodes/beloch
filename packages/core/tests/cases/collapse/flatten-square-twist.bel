@@ -1,0 +1,62 @@
+@author "Claude (Anthropic)"
+
+; The square twist [hull2020, §6.5, Fig. 6.12] as one flatten of four fans.
+; The square in the middle of the sheet stays. A pleat leaves each of its
+; sides, between a valley and a mountain crease that start at two corners of
+; the square and run to the edge of the sheet. Folded flat, the four faces
+; between the pleats lie in a cycle: each one over the next around the
+; square.
+;
+; Every crease is a marked segment, and each fan takes the segments that
+; start at its vertex as its rays. A side of the square is a ray of the fans
+; at both its ends. The two diagonals are marked to place the corners of the
+; square; they stay unfolded.
+
+paper square
+
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+.p1 = free on --ac from .a at 3/8
+.p3 = free on --ac from .c at 3/8
+.p2 = free on --bd from .b at 3/8
+.p4 = free on --bd from .d at 3/8
+.o = free on --ac from .a at 1/2
+
+.e1 = free on --da from .a at 3/16
+.f1 = free on --da from .a at 1/16
+.e2 = free on --ab from .b at 3/16
+.f2 = free on --ab from .b at 1/16
+.e3 = free on --bc from .c at 3/16
+.f3 = free on --bc from .c at 1/16
+.e4 = free on --cd from .d at 3/16
+.f4 = free on --cd from .d at 1/16
+
+mark (through .p1 .p2) (between .p1 .p2) as --s1
+mark (through .p2 .p3) (between .p2 .p3) as --s2
+mark (through .p3 .p4) (between .p3 .p4) as --s3
+mark (through .p4 .p1) (between .p4 .p1) as --s4
+mark (through .p1 .e1) (between .p1 .e1) as --k1
+mark (through .p2 .f1) (between .p2 .f1) as --m1
+mark (through .p2 .e2) (between .p2 .e2) as --k2
+mark (through .p3 .f2) (between .p3 .f2) as --m2
+mark (through .p3 .e3) (between .p3 .e3) as --k3
+mark (through .p4 .f3) (between .p4 .f3) as --m3
+mark (through .p4 .e4) (between .p4 .e4) as --k4
+mark (through .p1 .f4) (between .p1 .f4) as --m4
+
+flatten (fan (--s4 valley) (--s1 valley) (--k1 valley) (--m4 mountain))
+        (fan (--s1 valley) (--s2 valley) (--k2 valley) (--m1 mountain))
+        (fan (--s2 valley) (--s3 valley) (--k3 valley) (--m2 mountain))
+        (fan (--s3 valley) (--s4 valley) (--k4 valley) (--m3 mountain))
+        (staying .o)
+
+; assert .p1 = (3/8, 3/8)
+; assert .p3 = (5/8, 5/8)
+; assert .o = (1/2, 1/2)
+; assert --s1 is valley
+; assert --s3 is valley
+; assert --k1 is valley
+; assert --m1 is mountain
+; assert --k3 is valley
+; assert --m3 is mountain
+; assert faces = 9
