@@ -373,7 +373,7 @@ let test_flatten_all_layers_ok () =
   Alcotest.(check int) "vertex flatten leaves 4 sector faces" 4
     (Array.length (Fold_state.faces fd.Eval.state))
 
-(* A fan moves its tip (ADR 0037). On a book fold a four-ray vertex near the
+(* A fan moves its tip (BEP-0037). On a book fold a four-ray vertex near the
    corner, scored on one layer, folds that layer's corner and leaves the
    other corner flat where it lies. [layer] is the flap the rays are marked
    on and the anchor of the flatten; [edge] is that layer's raw edge. *)
@@ -916,7 +916,7 @@ let test_eval_unknown_point_in_scope_capped () =
        ^ "mark (through .q .a)\n"))
 
 (* a moved mark that falls short of the point it would carry names the
-   place it has to reach, and hints at extending it there (ADR 0033) *)
+   place it has to reach, and hints at extending it there (BEP-0033) *)
 let test_eval_short_mark_hint () =
   expect_error_hint
     "--pinch does not reach (1/2, 0.866), the point of its line that lands on .d"
@@ -1225,7 +1225,7 @@ let test_eval_up_to_crease_target () =
   Alcotest.(check int) "5 faces (top flap only)" 5
     (Array.length (Fold_state.faces fd.Eval.state))
 
-(* moving --d: a hinge has two sides → multi-match error. Under ADR 0017,
+(* moving --d: a hinge has two sides → multi-match error. Under BEP-0017,
    --d's two faces must be DIFFERENT flaps (different coplanar
    clusters) to be ambiguous: a bare precrease alone no longer suffices,
    since both faces would still be one still-flat flap. Fold ON --d's own
@@ -1262,7 +1262,7 @@ let test_eval_moving_flap_straddle_dissolves () =
    filter drops the −22.5° candidate (it only touches corner .a); .d lands at
    (√2⁄2, √2⁄2) via the 67.5° crease *)
 (* A square folded in half twice in the same direction, then its lower half
-   reversed along the horizontal middle (ADR 0043). The tip opens in two
+   reversed along the horizontal middle (BEP-0043). The tip opens in two
    places: between its two inner layers, where both hinges on the spine's
    line turn, and below its outermost layer, where the outer one turns
    alone. A letter on the inner hinge of --e, through .q, picks one. The
@@ -1345,7 +1345,7 @@ let test_ax5_straddle_moving_unique () =
 
 (* .d agrees with .b under both candidates, and both land the part of --ac
    that folds over on the segment from the center to .b: toward .b lies as
-   near to one landing as to the other (ADR 0031) *)
+   near to one landing as to the other (BEP-0031) *)
 let test_ax5_straddle_moving_both () =
   expect_error "lies as near" (fun () ->
       eval_src
@@ -1583,7 +1583,7 @@ let test_resume_equals_full () =
   let resumed = fold_str (Eval.eval_program ~resume suffix) in
   Alcotest.(check string) "resumed FOLD == full FOLD" full resumed
 
-(* ---- Recognition, sorts and the output clause (ADR 0031) ---- *)
+(* ---- Recognition, sorts and the output clause (BEP-0031) ---- *)
 
 let folded src = Eval.eval_folded (Beloch.parse ~filename:"t.bel" src)
 
@@ -1955,7 +1955,7 @@ let test_sort_crease_where_a_line_is_wanted () =
   Alcotest.(check bool) "--e was scored" true (mem_assoc4 "e" fd.Eval.named_lines);
   Alcotest.(check bool) "--f was scored" true (mem_assoc4 "f" fd.Eval.named_lines)
 
-(* ---- every layer under the axis (ADR 0036) ---- *)
+(* ---- every layer under the axis (BEP-0036) ---- *)
 
 (* The book: the sheet folded in half, .a on top of .d. *)
 let book =
@@ -2102,7 +2102,7 @@ let test_mark_partial_every_layer () =
     [ (0., 0.); (0., 1.) ] points
 
 
-(* ---- unfold (ADR 0053) ---- *)
+(* ---- unfold (BEP-0053) ---- *)
 
 let two_folds =
   "paper square\n\

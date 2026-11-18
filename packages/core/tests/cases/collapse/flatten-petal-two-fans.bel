@@ -1,7 +1,7 @@
 @author "Claude (Anthropic)"
 
 ; The petal fold on the front flap of the preliminary base, as two fans in
-; one statement (ADR 0055). Each fan gives the half of its side edge that
+; one statement (BEP-0055). Each fan gives the half of its side edge that
 ; opens and the crease that brings its side corner onto the center line; the
 ; statement binds the vertex of each fan and the crease between the two
 ; vertices, which the kernel derives.

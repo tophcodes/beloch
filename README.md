@@ -119,7 +119,7 @@ is one.
 Both rest on the language: a program is a finite sequence of constructions and
 folds, with no loops, no recursion (a `def` sees only earlier `def`s) and no
 host language
-([decision 0009](docs/decision/0009-relationship-to-rabbit-ear.md)). Every program
+([ADR-0009](records/adr/ADR-0009-relationship-to-rabbit-ear.md)). Every program
 terminates, its statements are its folding sequence, and every crease in the
 FOLD output names the statement and the construction that made it.
 
@@ -136,7 +136,7 @@ FOLD output names the statement and the construction that made it.
   operations is a draft, and two of its lemmas, among them that a fold
   introduces no crossing, have pending proofs.
 - **Not yet:** Yoshizawa-Randlett folding diagrams, 3D states
-  ([decision 0015](docs/decision/0015-flat-folded-states-only.md)), and
+  ([BEP-0015](records/bep/BEP-0015-flat-folded-states-only.md)), and
   measurements on programs longer than a few dozen statements.
 
 ## Running it

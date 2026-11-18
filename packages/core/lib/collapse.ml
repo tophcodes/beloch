@@ -3,7 +3,7 @@
     (rabbit ear [hull2020, Thm 8.5]). Skips the 3D intermediate entirely:
     checks the end state exists (Kawasaki and Maekawa where the anchor
     surrounds O, the closure of the paper paths everywhere), moves each face
-    by the creases on its paper path (ADR 0044), enumerates valid layer
+    by the creases on its paper path (BEP-0044), enumerates valid layer
     orders. *)
 
 type elem = { cid : int; ea : Geom.point; eb : Geom.point; valley : bool }
@@ -29,7 +29,7 @@ let e_staying_none = "no sector of the fan holds every staying point"
 let e_staying_several = "the staying points lie in more than one sector"
 let e_staying_off_anchor = "the staying sector holds no material of the anchor"
 
-(* the hint that goes with an error string above, where it has one (ADR 0028) *)
+(* the hint that goes with an error string above, where it has one (ADR-0028) *)
 let hint_of (m : string) : string option =
   if m = e_count then Some "use `fold` for n = 2"
   else if m = e_stayer_collinear then Some "add (staying .p)"
@@ -42,7 +42,7 @@ let hint_of (m : string) : string option =
    east origin. [Arc (pa, pb)] = the far tips of the two leading elements'
    folded rays; the stayer region is the <π CCW arc between them. [Faces fs] =
    the pre-collapse face indices carrying the stayed material. [Points ps] =
-   the table images of the points of `staying` (ADR 0048): the stayer is the
+   the table images of the points of `staying` (BEP-0048): the stayer is the
    one sector whose closed wedge holds all of them. *)
 type stayer =
   | Arc of Geom.point * Geom.point
@@ -215,7 +215,7 @@ let sector_of_poly (o : Geom.point) (rays : (Geom.point * 'a) array)
    runs through it: a layer the fan crosses without its rays scored on it.
    A sector no wider than a half-turn is convex and holds the polygon iff it
    holds every vertex. A wider one, which a fan has when its rays all lie in
-   one half-plane (ADR 0044), holds it iff no vertex lies strictly inside the
+   one half-plane (BEP-0044), holds it iff no vertex lies strictly inside the
    opposite cone. That test can miss an edge that crosses the cone between
    two vertices; the layers of the tip are scored along every ray, so only a
    stationary layer can have such an edge, and it only feeds the stacking of
@@ -327,7 +327,7 @@ let admissible_sectors ~(stayer : stayer) (o : Geom.point)
 
 (* the sectors a run of the pipeline takes as stayer: [admissible_sectors],
    held to exactly one sector carrying material of the anchor under [Points]
-   (ADR 0048) *)
+   (BEP-0048) *)
 let stayer_sectors ~(stayer : stayer) ~(anchor : bool array) (o : Geom.point)
     (rays : (Geom.point * 'a) array) (sec_orig : int array) (nf : int) :
     (int list, string) result =
@@ -346,7 +346,7 @@ let stayer_sectors ~(stayer : stayer) ~(anchor : bool array) (o : Geom.point)
       | _, [] -> Error e_stayer_dead
       | _ -> Ok sectors)
 
-(* The faces of the anchor flap (ADR 0040). [Some polys]: the faces lying in
+(* The faces of the anchor flap (BEP-0040). [Some polys]: the faces lying in
    those paper polygons, the faces of the flap `on` names before the state was
    scored further. [None]: the flap of a face under the table point [o] that
    no other face under [o] lies above. *)
@@ -383,7 +383,7 @@ let anchor_faces (g : Fold_state.t) (o : Geom.point)
    under [o] lies inside the sheet and on no folded hinge. Only there do the
    rays close a loop on the paper around one point, and Kawasaki's and
    Maekawa's conditions at [o] apply; elsewhere [Fold_state.make] checks
-   that the paper paths close (ADR 0044). *)
+   that the paper paths close (BEP-0044). *)
 let surrounded (g : Fold_state.t) (o : Geom.point) (anchor : bool array) :
     bool =
   let nf = Array.length anchor in
@@ -413,7 +413,7 @@ let surrounded (g : Fold_state.t) (o : Geom.point) (anchor : bool array) :
 (* The rays of the fan, one per direction from [o] in CCW order, each with
    the first element pointing that way. Elements of different creases that
    point the same way are one ray, their hinges lying in different layers
-   (ADR 0044); the same crease twice in one direction is a duplicate ray. *)
+   (BEP-0044); the same crease twice in one direction is a duplicate ray. *)
 let rays_of (o : Geom.point) (es : elem list) :
     ((Geom.point * elem) array, string) result =
   let sorted = sort_ccw o es in
@@ -482,7 +482,7 @@ type sector_geom = {
          before the fold; every layer order of the fan is searched on it *)
 }
 
-(* The tip of the fan (ADR 0037) on rays rotated so that sector 0 is the
+(* The tip of the fan (BEP-0037) on rays rotated so that sector 0 is the
    stayer: the candidates are the faces outside the stayer's wedge, and the
    tip is the least set of candidates that holds the anchor's candidates and
    is closed under hinges of any angle between candidates. *)
@@ -510,7 +510,7 @@ let tip_of (g : Fold_state.t) ~(sec : int array) ~(anchor : bool array) :
   done;
   tip
 
-(* How a hinge takes part in the fan (ADR 0044). [Keep]: off the fan's rays
+(* How a hinge takes part in the fan (BEP-0044). [Keep]: off the fan's rays
    or away from the tip, it keeps its angle. [Fold]: a flat hinge an element
    names folds. [Try]: a folded hinge an element names keeps or opens, and a
    hinge on a ray that no element names keeps or changes; the write tries
@@ -824,7 +824,7 @@ let pipeline_solve (sg : sector_geom) ~(valley : bool array)
           | l -> Ok l))
 
 (* The convex hull of every table polygon of [g]: the outline a collapse of
-   [g] keeps its realizations within (ADR 0046). The last hull is kept,
+   [g] keeps its realizations within (BEP-0046). The last hull is kept,
    since every realization of one collapse is tested against the same [g]. *)
 let hull_cache : (Fold_state.t * Geom.point array) option ref = ref None
 
@@ -980,7 +980,7 @@ let collapse_all_patterns ?anchor ?sectors:only (g : Fold_state.t)
               (List.concat_map (runs_of_sector g ~valley ~over) sgs))
         patterns
 
-(* The tip of the fan on [g] for each admissible stayer sector (ADR 0037):
+(* The tip of the fan on [g] for each admissible stayer sector (BEP-0037):
    the sector, as [collapse_all_patterns ~sectors] takes it, and per face of
    [g] whether the tip holds it. Empty when the fan fails before its tip is
    defined; solving it then reports that failure. *)

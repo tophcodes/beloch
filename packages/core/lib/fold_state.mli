@@ -510,7 +510,7 @@ val reverse :
   prov:State.provenance option ->
   (t, reverse_failure) result
 (** Reverse fold of the material [tip] (a mask over PARENT faces) across the
-    TABLE-space [axis] (ADR 0043). An opening parts the tip into a lower and
+    TABLE-space [axis] (BEP-0043). An opening parts the tip into a lower and
     an upper half where every hinge joining the two is folded and lies on
     one table line that reaches beyond the axis, and no face of the upper
     half lies below a face of the lower half it overlaps; the openings depend
@@ -672,10 +672,10 @@ val select_scope :
     judged between those pieces (depth may vary along the crease). The
     moving set is closed under both the outer-prefix rule and cohesion (a
     candidate in the same coplanar cluster as a moving face must move too:
-    ADR 0017), and under every hinge off the axis, folded or flat, which
-    cannot be torn ({!close_off_axis}). The anchor takes no part in the moving set (ADR 0036); it is
+    BEP-0017), and under every hinge off the axis, folded or flat, which
+    cannot be torn ({!close_off_axis}). The anchor takes no part in the moving set (BEP-0036); it is
     only where a [TargetHinged] walk starts, and that walk fails without one.
-    Errors are user-facing messages with an optional hint (ADR 0028); the
+    Errors are user-facing messages with an optional hint (ADR-0028); the
     caller attaches the span. *)
 
 val default_scope :
@@ -688,7 +688,7 @@ val default_scope :
 (** The outside-contiguous prefix of layers down to and including the [seed]
     faces that have a piece on [move_side], closed under cohesion. "Outside"
     is top for valley, bottom for mountain. A fold without [up to] seeds it
-    with every face, so every layer on the moving side moves (ADR 0036). A
+    with every face, so every layer on the moving side moves (BEP-0036). A
     moving set short of every layer still needs {!scoped_fold_hinge_closed}:
     a strict subset can tear. *)
 
@@ -719,7 +719,7 @@ val mark_chords : t -> int -> (Geom.point * Geom.point) list
     test that a marked line physically reaches a crossing. *)
 
 val mark_material_segments : t -> int -> (Geom.point * Geom.point) list
-(** The bundle of mark [cid] on the table (ADR 0033): every [MSeg] extent
+(** The bundle of mark [cid] on the table (BEP-0033): every [MSeg] extent
     cut into one table piece per face it crosses, and every [MPoint] as a
     segment of length zero at its table position. *)
 

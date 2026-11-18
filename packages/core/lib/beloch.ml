@@ -3,8 +3,8 @@
     The library is intentionally empty until the minimal core (v0.0) is
     specified in [docs/reference/10-core-v0.md]: one square of paper, axiom 1 only, a
     crease-line type, output to FOLD-extended. See
-    [docs/decision/0003-restart-from-minimal-core.md] and
-    [docs/decision/0007-evaluator-not-compiler.md]. *)
+    [records/adr/ADR-0003-restart-from-minimal-core.md] and
+    [records/adr/ADR-0007-evaluator-not-compiler.md]. *)
 
 let version = Version.version
 
@@ -58,6 +58,10 @@ let fold_traced ~(filename : string) (src : string) :
       (`Assoc (kv @ [ ("beloch:error", error) ]), Some f)
   | json, Some f -> (json, Some f)
 
+(* The library is wrapped and this file is its main module, so dune exposes
+   to the tests and the CLI only what is re-exported here: a new
+   lib/<mod>.ml needs a line below, and code outside the library reaches it
+   as [Beloch.Mod]. *)
 module Num = Num
 module Error = Error
 module Geom = Geom

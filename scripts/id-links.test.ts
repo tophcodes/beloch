@@ -37,16 +37,18 @@ const model = indexDocument(
 );
 
 const adr = indexDocument(
-	["---", 'id: "0032"', 'title: "The specification binds"', "---", "", "# 0032: The specification binds", "", "## Context"].join("\n"),
-	"docs/decision/0032-the-specification-binds-every-implementation.md",
+	["---", "id: ADR-0032", 'title: "The specification binds"', "---", "", "# ADR-0032: The specification binds", "", "## Context"].join("\n"),
+	"records/adr/ADR-0032-the-specification-binds-every-implementation.md",
 	null,
 );
 
 const index: Index = { site: "https://belochlang.org", repository: "https://github.com/tophcodes/beloch/blob/main", documents: { [model.id]: model, [adr.id]: adr } };
 
-test("a document's id is its kind and case-folded stem; a decision's is its number", () => {
+test("a page's id is its kind and case-folded stem; a record's is its kind and number", () => {
 	expect(model.id).toBe("reference/model");
-	expect(adr.id).toBe("decision/0032");
+	expect(adr.id).toBe("ADR-0032");
+	expect(indexDocument("# BEP-0037: Which layers a fan moves\n", "records/bep/archive/BEP-0037-which-layers-a-fan-moves.md", null).id).toBe("BEP-0037");
+	expect(indexDocument("# Day\n", "records/notes/2026-06-28.md", null).id).toBe("notes/2026-06-28");
 });
 
 test("headings get the site's slugs, blocks their ids, and a fence hides its lines", () => {
@@ -61,7 +63,7 @@ test("headings get the site's slugs, blocks their ids, and a fence hides its lin
 test("the title comes from the front matter, else from the first heading", () => {
 	expect(model.title).toBe("Model");
 	expect(adr.title).toBe("The specification binds");
-	expect(indexDocument("# Dead ends\n\ntext", "docs/notes/antipatterns.md", null).title).toBe("Dead ends");
+	expect(indexDocument("# Dead ends\n\ntext", "records/notes/2026-06-28.md", null).title).toBe("Dead ends");
 });
 
 test("slug drops punctuation and numbers repeats", () => {
@@ -73,17 +75,17 @@ test("slug drops punctuation and numbers repeats", () => {
 test("findLinks reads targets and texts outside code, with line numbers", () => {
 	const links = findLinks(
 		[
-			"See [[decision/0032]] and [[reference/model#def-sheet|the sheet]].",
-			"Code keeps `[[decision/0001]]` and ``[[x]] with `backtick` ``.",
+			"See [[ADR-0032]] and [[reference/model#def-sheet|the sheet]].",
+			"Code keeps `[[ADR-0001]]` and ``[[x]] with `backtick` ``.",
 			"```",
-			"[[decision/0002]]",
+			"[[BEP-0002]]",
 			"```",
 			"[[notes/2026-06-28]]",
 			"| a | [[reference/model#def-sheet\\|in a cell]] |",
 		].join("\n"),
 	);
 	expect(links).toEqual([
-		{ raw: "[[decision/0032]]", target: "decision/0032", text: null, line: 1 },
+		{ raw: "[[ADR-0032]]", target: "ADR-0032", text: null, line: 1 },
 		{ raw: "[[reference/model#def-sheet|the sheet]]", target: "reference/model#def-sheet", text: "the sheet", line: 1 },
 		{ raw: "[[notes/2026-06-28]]", target: "notes/2026-06-28", text: null, line: 6 },
 		{ raw: "[[reference/model#def-sheet\\|in a cell]]", target: "reference/model#def-sheet", text: "in a cell", line: 7 },
@@ -93,7 +95,9 @@ test("findLinks reads targets and texts outside code, with line numbers", () => 
 test("parseTarget folds case and splits the anchor", () => {
 	expect(parseTarget("Reference/MODEL#def-sheet")).toEqual({ id: "reference/model", anchor: "def-sheet" });
 	expect(parseTarget("hull2020")).toBeNull();
-	expect(parseTarget("decision/0032 and more")).toBeNull();
+	expect(parseTarget("bep-0037#rule")).toEqual({ id: "BEP-0037", anchor: "rule" });
+	expect(parseTarget("ADR-0032 and more")).toBeNull();
+	expect(parseTarget("decision/0032")).toEqual({ id: "decision/0032", anchor: null });
 });
 
 test("resolve gives the site page, the anchor and the default text", () => {
@@ -108,35 +112,36 @@ test("resolve gives the site page, the anchor and the default text", () => {
 	});
 });
 
-test("a decision resolves to its file in the repository, named by number", () => {
-	expect(resolve(index, { target: "decision/0032", text: null })).toMatchObject({
-		url: "https://github.com/tophcodes/beloch/blob/main/docs/decision/0032-the-specification-binds-every-implementation.md",
-		text: "ADR 0032",
+test("a record resolves to its file in the repository, named by its id", () => {
+	expect(resolve(index, { target: "ADR-0032", text: null })).toMatchObject({
+		url: "https://github.com/tophcodes/beloch/blob/main/records/adr/ADR-0032-the-specification-binds-every-implementation.md",
+		text: "ADR-0032",
 	});
 });
 
 test("an unknown document, anchor or form is an error naming what is missing", () => {
-	expect(resolve(index, { target: "decision/9999", text: null })).toEqual({
-		error: "[[decision/9999]] names no document; there is no decision/9999 under docs/",
+	expect(resolve(index, { target: "ADR-9999", text: null })).toEqual({
+		error: "[[ADR-9999]] names no document; there is no ADR-9999 under docs/ or records/",
 	});
 	expect(resolve(index, { target: "reference/model#def-nothing", text: null })).toEqual({
 		error: "[[reference/model#def-nothing]] names no anchor; docs/reference/MODEL.md has no #def-nothing",
 	});
 	expect(resolve(index, { target: "hull2020", text: null })).toEqual({
-		error: "[[hull2020]] is no id; a link names kind/stem, with #anchor after it",
+		error: "[[hull2020]] is no id; a link names kind/stem or a record such as ADR-0032, with #anchor after it",
 	});
 });
 
-test("the repository's index serves the reference pages and lists every decision", () => {
+test("the repository's index serves the reference pages and lists every record", () => {
 	const idx = buildIndex(root);
 	expect(idx.documents["reference/model"]?.site).toBe("/model/");
 	expect(idx.documents["reference/beloch-writes"]?.site).toBe("/language/writes/");
 	expect(idx.documents["reference/fold"]?.site).toBe("/output/");
 	expect(idx.documents["guide/first-folds"]?.site).toBe("/guide/first-folds/");
-	expect(idx.documents["decision/0032"]?.site).toBeNull();
-	expect(idx.documents["decision/0021"]?.path).toContain("archive/");
+	expect(idx.documents["ADR-0032"]?.site).toBeNull();
+	expect(idx.documents["ADR-0021"]?.path).toContain("archive/");
+	expect(idx.documents["BEP-0037"]?.path).toMatch(/^records\/bep\/BEP-0037-/);
 });
 
-test("every id link under docs/ resolves", () => {
+test("every id link under docs/ and records/ resolves", () => {
 	expect(checkDocuments(root)).toEqual([]);
 });

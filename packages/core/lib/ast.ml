@@ -48,7 +48,7 @@ type arg = APoint of point_operand | ALine of line_operand
 
 (* A construction, the read of sort line a write's axis comes from: the set
    of alignments that together determine the fold line, with its `heading`
-   (ADR 0031). The seven prose spellings desugar to this record at parse
+   (BEP-0031). The seven prose spellings desugar to this record at parse
    time; [Axiom.classify] recognizes the alignment set as one of the seven
    axioms where a solver is needed. *)
 type align_object = AoPoint of point_operand | AoLine of line_operand
@@ -74,7 +74,7 @@ and construction = {
 }
 
 (* What a `toward` item names: the side of each candidate that holds the
-   point, or the side the line lies on (ADR 0031). *)
+   point, or the side the line lies on (BEP-0031). *)
 type toward = TowardPoint of point_operand | TowardLine of line_operand
 
 (* `(toward .u)`, or `(x toward .u)` naming the object of the construction
@@ -90,7 +90,7 @@ type extent =
   | Between of point_operand * point_operand
   | At of point_operand
 
-(* A flap-typed operand slot (ADR 0016). A point is sugar for "the flap
+(* A flap-typed operand slot (BEP-0016). A point is sugar for "the flap
    carrying the point"; a line for "the flap hinged on the crease/segment"
    (usually a multi-match for `moving`, resolvable for `up to`); #(…) lists
    explicit incidence constraints. *)
@@ -105,7 +105,7 @@ type place_dir = PlaceOver | PlaceUnder
 
 (* The items of a write, a binding or a mark that name the side of the
    construction's line that stays and the side that folds over; they select
-   among its candidates as they do in a fold (ADR 0031). *)
+   among its candidates as they do in a fold (BEP-0031). *)
 type sides = {
   s_toward : toward_item option;
   s_moving : flap_arg option;
@@ -129,7 +129,7 @@ type fold_spec = {
 }
 
 (* reverse <markable> [moving <flap>] [outside] [(<crease> <letter>)…]: the
-   tip beyond the line opens between two of its layers (ADR 0043), its two
+   tip beyond the line opens between two of its layers (BEP-0043), its two
    blocks reflected, each placed next to its own hinge layer (inside) or on
    the far outside (outside). A letter on a hinge of the spine's line keeps
    the openings that give the hinge that letter. *)
@@ -176,13 +176,13 @@ type markable =
   | MConstruction of construction   (* a fresh crease line *)
   | MLine of line_operand     (* an existing material crease or bound value *)
 
-(* A ray of a fan item (ADR 0055): a line the program has scored, or a
+(* A ray of a fan item (BEP-0055): a line the program has scored, or a
    construction the statement scores before it folds, with the letter the
    program fixes for it. *)
 type fan_ray = { fray : markable; fdir : mv_constraint; fspan : Error.span }
 
 (* `(fan [at .p] ray+ [as .p])`: the rays of one vertex of a `flatten`, with
-   the point the vertex has to lie on or the name it binds (ADR 0055) *)
+   the point the vertex has to lie on or the name it binds (BEP-0055) *)
 type fan = {
   fan_at : point_operand option;
   fan_rays : fan_ray list;
@@ -205,7 +205,7 @@ type raw_item =
   | RiMoving of flap_arg * Error.span
   | RiMovingDir of flap_arg * bool * Error.span
       (* (moving <flap> up|down): true for up; the direction of the moving
-         set of `unfold` (ADR 0053) *)
+         set of `unfold` (BEP-0053) *)
   | RiUpTo of flap_arg * Error.span
   | RiLetter of mv_constraint * Error.span     (* (mountain) / (valley) *)
   | RiPlace of place_dir * flap_arg * Error.span
@@ -218,11 +218,11 @@ type raw_item =
   | RiAlignment of line_operand * align_object * Error.span
       (* (--l onto --m) or (--l onto .p): the bare alignment of `squash`, a
          line of the spine onto its target, which the write completes with
-         the fold line through the vertex (ADR 0038) *)
+         the fold line through the vertex (BEP-0038) *)
   | RiFan of point_operand option * raw_item list * (string * Error.span) option
              * Error.span
       (* (fan [at .p] <items> [as .p]): the rays of one vertex of `flatten`,
-         classified by Items like the items of a write (ADR 0055) *)
+         classified by Items like the items of a write (BEP-0055) *)
 
 (* One argument of an annotation (docs/reference/BELOCH-ANNOTATIONS.md): any read the
    language has, a text in double quotes, a number, or a bare word. *)
@@ -238,7 +238,7 @@ type annot_value =
 type annot_arg = { av : annot_value; av_span : Error.span }
 
 (* `@key [args]` or `@ns:key [args]`, one line. It belongs to the statement that
-   follows it and never changes the geometry (ADR 0029). *)
+   follows it and never changes the geometry (BEP-0029). *)
 type annotation = {
   a_ns : string option;
   a_key : string;
@@ -266,7 +266,7 @@ type stmt =
   | Unfold of line_operand * fold_spec * Error.span
       (* unfold (--l) [(moving … [up|down])][(up to …)][(toward …)]: the
          selected layers turn across the line, opening the folded hinges on
-         it between them and the layers that stay (ADR 0053); [place] is
+         it between them and the layers that stay (BEP-0053); [place] is
          always [None] *)
   | BindBundle of string * line_operand * Error.span
       (* --x = <bundle expr>: name a crease bundle (union/filter of existing
@@ -282,7 +282,7 @@ type stmt =
   | Squash of output * line_operand * align_object * Error.span
       (* squash (--l onto <target>) [as --n | into --n]: the flap whose
          spine lies on --l opens and its spine lands on the target, a line
-         or a point; a fan at the spine's vertex (ADR 0038, ADR 0044) *)
+         or a point; a fan at the spine's vertex (BEP-0038, BEP-0044) *)
   | Flatten of output * collapse_elem list * (flap_arg * flap_arg) list
                 * point_operand list option * flap_arg option * point_operand option
                 * Error.span
@@ -290,8 +290,8 @@ type stmt =
          pipeline (spec §4.9). elements = the given rays, each with an
          [mv_constraint] (MvFree = solver-assigned; mountain/valley = hard
          pin); over-pairs = (upper flap, lower flap) stacking constraints;
-         staying = the points of the sector that stays (ADR 0048); on = the anchor flap, whose tip moves
-         (ADR 0037, ADR 0040). An odd ray count
+         staying = the points of the sector that stays (BEP-0048); on = the anchor flap, whose tip moves
+         (BEP-0037, BEP-0040). An odd ray count
          makes the emergent completing ray part of the solution space
          (Flatten.candidates). The realization space (candidate × Maekawa
          M/V pattern × stacking, via Collapse.collapse_all) is filtered by
@@ -303,7 +303,7 @@ type stmt =
   | FlattenFans of output * fan list * (flap_arg * flap_arg) list
                    * point_operand list option * flap_arg option
                    * point_operand option * Error.span
-      (* flatten <fan items> <items>: the fans fold in one motion (ADR 0055);
+      (* flatten <fan items> <items>: the fans fold in one motion (BEP-0055);
          the over pairs, staying, on and toward apply to the whole
          statement, as for [Flatten] *)
 
@@ -314,7 +314,7 @@ type sheet =
   | SShape of string * number list * Error.span
 
 (* `shape name(params) { paper …; … trim to <flap> }`: a program on one
-   sheet, cut down to one of its flaps (ADR 0046). *)
+   sheet, cut down to one of its flaps (BEP-0046). *)
 type shape_def = {
   sd_name : string;
   sd_name_span : Error.span;
@@ -324,7 +324,7 @@ type shape_def = {
   sd_trim : flap_arg * Error.span;
   sd_exports : export_entry list option;
       (* `trim to … { … }`: the names that reach the trimmed sheet, every
-         name on the flap when [None] (ADR 0047) *)
+         name on the flap when [None] (BEP-0047) *)
   sd_span : Error.span;
 }
 

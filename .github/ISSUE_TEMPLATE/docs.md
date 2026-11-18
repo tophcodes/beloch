@@ -4,8 +4,8 @@ about: Pages, figures, reference text
 labels: kind:docs
 ---
 
-<!-- Where this comes from: the issues and the ADR it follows. "No ADR" if none applies. -->
-Follow-up to #n and ADR NNNN.
+<!-- Where this comes from: the issues and the record it follows. "No record" if none applies. -->
+Follow-up to #n and ADR-NNNN or BEP-NNNN.
 
 <!-- What a reader finds today, and what they lack. -->
 

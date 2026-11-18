@@ -1,6 +1,6 @@
 // Lighting the entities a command names, on the drawing that is up.
 //
-// A crease is a bundle (ADR-0014): every segment sharing its id lights at
+// A crease is a bundle (BEP-0014): every segment sharing its id lights at
 // once, across flaps and layers, rather than the one under the cursor. A paper
 // boundary carries no id, so its lines are found by geometry instead.
 import type { FoldScene, Frame, InspectSegment } from "@beloch/scene";

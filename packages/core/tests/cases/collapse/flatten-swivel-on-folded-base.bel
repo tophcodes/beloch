@@ -2,7 +2,7 @@
 
 ; The fan of flatten-squash-on-folded-base.bel with --s a mountain, --t a
 ; valley and the center line --ac & .a a valley: the two valleys lie apart,
-; and the rays fold a swivel fold (ADR 0061). These letters leave 2 states,
+; and the rays fold a swivel fold (BEP-0061). These letters leave 2 states,
 ; which differ in the side of two faces against two others. No item of the
 ; fan picks between them, so the statement is ambiguous.
 

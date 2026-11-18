@@ -89,7 +89,7 @@ let direction_of (mv : mv_constraint) : direction =
 (* ---- the side items, shared by every statement over a construction ---- *)
 
 (* `(toward …)` and `(moving …)` name the side that stays and the side that
-   folds over (ADR 0031). *)
+   folds over (BEP-0031). *)
 let side_item (verb : string) ~(toward : (toward_item * Error.span) option ref)
     ~(moving : (flap_arg * Error.span) option ref) (it : raw_item) : bool =
   match it with
@@ -207,7 +207,7 @@ let reverse (items : raw_item list) (out : output) (span : Error.span) : stmt =
          rletters = List.rev !letters; rspans = sd.s_spans }),
       span )
 
-(* `unfold` opens hinges that are already there (ADR 0053): its axis is a line
+(* `unfold` opens hinges that are already there (BEP-0053): its axis is a line
    the program has, and it scores no crease, so it takes no construction and
    no output clause. Its items are those of `fold` without a placement beside
    the stack. *)
@@ -257,7 +257,7 @@ let unfold (items : raw_item list) (out : output) (span : Error.span) : stmt =
       span )
 
 (* A fan item takes rays: a line with an optional letter, or a construction
-   (ADR 0055). *)
+   (BEP-0055). *)
 let fan (at : point_operand option) (items : raw_item list)
     (bind : (string * Error.span) option) (span : Error.span) : fan =
   (match (at, bind) with
@@ -313,7 +313,7 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
       FlattenFans (out, List.rev fans, List.rev !overs, !staying, !on, !toward, span)
 
 (* `squash` takes one bare alignment, the line of its spine onto its target
-   (ADR 0038), and nothing else: the spine names the anchor (ADR 0040). *)
+   (BEP-0038), and nothing else: the spine names the anchor (BEP-0040). *)
 let squash (items : raw_item list) (out : output) (span : Error.span) : stmt =
   let verb = "squash" in
   let alignment = ref None in

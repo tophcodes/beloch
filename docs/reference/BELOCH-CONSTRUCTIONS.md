@@ -52,7 +52,7 @@ error naming its alignments.
 
 A construction holds what determines the line: its alignments and its
 `heading`. What determines the fold, `toward`, `moving` and the placement,
-are items of the statement that reads the construction ([[decision/0031]]). A
+are items of the statement that reads the construction ([[BEP-0031]]). A
 binding takes the side items as a write does, `--k = (map --v onto --h)
 (toward .b)`, so a bound line is selected the way a fold along it would
 be. A construction inside an expression takes no selection; it is bound
@@ -80,7 +80,7 @@ decided and waits for the first two-fold construction the kernel can solve.
 
 The axioms carry the numbers of Justin's table [@justin1986, §8.1], which
 orders the seven operations by algebraic power: the number of an axiom is
-the rung of the number ladder its construction needs ([[decision/0012]]).
+the rung of the number ladder its construction needs ([[ADR-0012]]).
 Two other schemes are in use and line up with neither Justin's nor each
 other; the table maps them.
 
@@ -97,17 +97,17 @@ other; the table maps them.
 
 - Huzita-Hatori, the numbering Wikipedia uses, numbers the cubic fold 6.
   Beloch numbers it 7, and "axiom 7" on these pages is the Beloch fold.
+- Ida's Eos and Orikoto use the Huzita-Hatori order [@ida2020, Table B.1]:
+  his O6 is axiom 7 here and his O7 is axiom 4. Translate before comparing
+  an Eos construction with a program.
 - Hull inserts the meet of two lines as his O2 and orders 3, 4 and 5
   differently, so point onto point is axiom 2 here and Hull's O3, and the
   angle bisector is axiom 5 here and Hull's O4.
 - Axioms 1 to 4 have degree 1 and stay in the rationals; axiom 5 is the
   first that needs a square root, and axiom 7 the first that needs a cube
   root. In Justin's account axioms 1 to 4 give the dyadic rationals, 1 to 5
-  the field  1 to 6 the ruler-and-compass field  and 1 to 7 the
-  larger 0@justin1986, §8.1].
-
-The clashes with the other two schemes are also recorded in
-[[notes/antipatterns]].
+  the field $K_1$, 1 to 6 the ruler-and-compass field $K_2$, and 1 to 7 the
+  larger $K_3$ [@justin1986, §8.1].
 
 ## Selection
 

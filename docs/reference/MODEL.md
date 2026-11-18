@@ -891,7 +891,7 @@ of its own.
 [#def-construction] puts its alignments on one sought line, which is where
 the seven Huzita-Justin axioms live. The same alignments distributed over two
 lines sought at once give the 489 two-fold axioms [@alperin2006, §3, §4],
-which `packages/multifold` ([[decision/0020]]) enumerates. A candidate is then a pair
+which `packages/multifold` ([[ADR-0020]]) enumerates. A candidate is then a pair
 of lines, a selection keeps one pair, and a write takes two axes and moves
 them together, so the definitions of candidate, selection and write all widen
 by the same step. Which of them the language will carry, and whether a
@@ -1487,7 +1487,7 @@ mountains. For a face-down $A'$ exchange the letters. $\square$
 
 ::: {.definition #def-flatten name="flatten" uses="def-write def-flap def-score def-reflection def-letter def-noncrossing def-selection" defines="term-fan term-sector term-stayer term-emergent"}
 The write `flatten` takes a point $O$ of the projective table: a table
-point, or a point at infinity, one for each direction ([[decision/0041]]). It takes
+point, or a point at infinity, one for each direction ([[BEP-0041]]). It takes
 an *anchor*: a flap $\Phi$ whose image meets the rays, a finite set of
 *rays*: segments of creases on lines through $O$, from $O$ where $O$ lies on
 the image of $\Phi$ and from the edge of that image where it does not, to
@@ -1502,7 +1502,7 @@ The closure condition below applies only where $\Phi$ surrounds $O$ on the
 paper: the paper point of $\Phi$ under $O$ lies inside the sheet and on no
 folded hinge. A fan whose vertex lies on the edge, on a folded edge, off
 the paper or at infinity has no condition at its vertex and no emergent
-ray; only the closure of its paper paths below applies ([[decision/0044]]).
+ray; only the closure of its paper paths below applies ([[BEP-0044]]).
 
 - If $k$ is even, the composition $\rho_1 \circ \cdots \circ \rho_k$ must be
   the identity; this is Kawasaki's condition that the alternating sum of the
@@ -1566,7 +1566,7 @@ the bundle of the hinges on the emergent ray when $k$ is odd.
 
 `flatten` also takes a finite set of table points $O_1, \ldots, O_m$,
 $m \ge 2$, each with its rays, and folds them in one motion
-([[decision/0055]]). A ray of $O_i$ runs from $O_i$ to the edge of the
+([[BEP-0055]]). A ray of $O_i$ runs from $O_i$ to the edge of the
 image of $\Phi$, or to another vertex $O_j$; the segment $O_i O_j$ is then a
 ray of both. For $m = 2$, when neither vertex has a ray on that segment, it
 is added to both, and the write scores it. A *region* is a set of table
@@ -1583,7 +1583,7 @@ Motions, candidate states and letters are as above, with the regions in
 place of the wedges. The order of two faces outside $T$ that one lay above
 in every column stays as it was. Among the candidate states, those whose
 faces lie inside the convex hull of the state before the write are kept
-where there are any ([[decision/0056]]), and the rest of $\sigma$ is the fewest mountains on
+where there are any ([[BEP-0056]]), and the rest of $\sigma$ is the fewest mountains on
 the rays the program names.
 :::
 
@@ -1593,7 +1593,7 @@ The segments from one vertex along which a flatten folds at once.
 
 ::: {.term #term-sector name="sector"}
 A piece of the tip between the hinges on the rays of a fan. It moves by the
-creases on its paper path from the stayer ([[decision/0044]]).
+creases on its paper path from the stayer ([[BEP-0044]]).
 :::
 
 ::: {.term #term-stayer name="stayer"}
@@ -1696,7 +1696,7 @@ stayer the wedge of $\Phi$ beyond the target's line away from $s$, and no
 letter: $s$ opens, each layer of the tip folds along its piece of the
 axis, and the hinge of $\Phi$ on the target's line folds. It is undefined
 when $\Phi$ has no hinge on the target's line, and when both ends of $s$
-lie inside the sheet ([[decision/0038]]).
+lie inside the sheet ([[BEP-0038]]).
 :::
 
 ::: {.term #term-vertex name="vertex"}

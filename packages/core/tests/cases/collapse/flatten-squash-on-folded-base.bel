@@ -1,19 +1,19 @@
 @author "Claude (Anthropic)"
 
 ; The squash of one flap of the folded preliminary base, written as a fan at
-; the base's closed corner (ADR 0044). The flap's spine --h & --da opens, and
+; the base's closed corner (BEP-0044). The flap's spine --h & --da opens, and
 ; --s and --t, one on each layer of the flap, lie on one ray of the table.
 ; The center line --ac & .a folds in the layer under the flap. The tip does
 ; not surround the corner, so the fan has no Kawasaki condition there; each
 ; piece moves by the creases on its paper path, and the piece of the top
 ; layer under the axis turns by a quarter of a right angle about the corner
 ; while the piece of the second layer beside it is reflected across the axis.
-; The pieces land where the squash of ADR 0038, folded from the flat sheet,
+; The pieces land where the squash of BEP-0038, folded from the flat sheet,
 ; puts them.
 ;
 ; The four rays fold flat in 8 states. The letters valley on --s and --t
 ; select the squash among them, with --ac & .a a mountain under the flap
-; (ADR 0061). Each letter alone leaves several states: 3 with --s, 4 with
+; (BEP-0061). Each letter alone leaves several states: 3 with --s, 4 with
 ; --t. With --s a mountain the rays fold a swivel fold
 ; (flatten-swivel-on-folded-base.bel).
 

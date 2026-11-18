@@ -80,7 +80,7 @@ let rectangle_in (rel : string) : string =
   in
   String.sub src i (close i - i + 1)
 
-(* the language page and ADR 0047 state the rectangle of the library, ADR
+(* the language page and BEP-0047 state the rectangle of the library, ADR
    0046 the one before its export list, and each evaluates *)
 let test_documented_rectangle () =
   let library = rectangle_in "packages/core/stdlib/shapes.bel" in
@@ -99,8 +99,8 @@ let test_documented_rectangle () =
         (corners json))
     [
       ("docs/reference/BELOCH.md", true);
-      ("docs/decision/0046-a-sheet-is-a-square-or-a-flap-cut-from-one.md", false);
-      ("docs/decision/0047-a-trim-exports-the-names-it-lists.md", true);
+      ("records/bep/BEP-0046-a-sheet-is-a-square-or-a-flap-cut-from-one.md", false);
+      ("records/bep/BEP-0047-a-trim-exports-the-names-it-lists.md", true);
     ]
 
 let () =

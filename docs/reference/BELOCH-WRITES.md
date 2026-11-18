@@ -45,7 +45,7 @@ output, and a `(mountain)` or `(valley)` item records the intent the crease
 pattern draws, which is no part of the state
 ([[reference/model#def-mark|def-mark]], [[reference/fold]]). Without `on`, a
 `mark` scores every layer under its line or its extent, one piece per
-layer; `(on …)` confines it to one flap ([[decision/0036]], [[decision/0039]]).
+layer; `(on …)` confines it to one flap ([[BEP-0036]], [[BEP-0039]]).
 
 **Extent.** The extent of a mark is its whole line, the stretch
 `(between .p .q)` or the point `(at .p)`; each point lies on the mark's
@@ -54,7 +54,7 @@ apart (`` the mark's extent needs two distinct points ``). An extent that
 runs from boundary to boundary of its flap subdivides the flap; one that
 ends inside a face subdivides nothing and dangles there as a record, which
 later reads select and later folds carry like any material
-([[decision/0033]]). A record is written to `beloch:marks` in the output,
+([[BEP-0033]]). A record is written to `beloch:marks` in the output,
 and the crease pattern draws it apart from the creases
 ([[reference/fold]]). The extent lies on the paper
 (`` the mark's extent is not on the paper ``), and with `on` it stays on
@@ -183,7 +183,7 @@ fold (map .a onto .s) (moving .a) (up to .s)
 **Placement.** The moved block lands on top of the paper it folded from,
 or underneath with `(mountain)`. `(over <flap>)` and `(under <flap>)`
 slide it into the stack beside a flap that stays
-([[decision/0052]]): the target lies where the block lands, and the block
+([[BEP-0052]]): the target lies where the block lands, and the block
 goes right above or right below it. The direction of a placed fold follows
 from the placement, so `(mountain)` beside it is an error (`` a placed
 fold derives its direction ``, hint `` drop mountain ``). The target
@@ -280,7 +280,7 @@ fold (--q) (moving .b)
 
 `reverse` runs an inside or an outside reverse fold: the tip a line cuts
 off a folded edge turns through its spine, as two placed folds over one
-line ([[reference/model#def-reverse|def-reverse]], [[decision/0043]]). It reads its axis
+line ([[reference/model#def-reverse|def-reverse]], [[BEP-0043]]). It reads its axis
 from a construction the way `fold` does, the tip the axis cuts off implies
 the side, and `(outside)` asks for the outside reverse fold.
 
@@ -331,13 +331,13 @@ reverse (map .a onto .d) (--e & .q valley)
 
 `squash` opens a flap of two layers hinged at a folded edge, its *spine*,
 and presses it flat so that the spine lands on a target
-([[reference/model#def-squash|def-squash]], [[decision/0038]]). It is a fan at
+([[reference/model#def-squash|def-squash]], [[BEP-0038]]). It is a fan at
 the *vertex*, the end of the spine inside the paper: the spine opens, each
 layer of the flap folds along its piece of the axis, and the layer of the
 flap that the target line crosses folds along the target's crease. The
 two pieces of the axis are the flanks of the opened spine, and the squash
 folds both as valleys: of the states the fan folds flat in, the write
-keeps those with both flanks valleys ([[decision/0061]]). The swivel fold
+keeps those with both flanks valleys ([[BEP-0061]]). The swivel fold
 on the same creases, with one flank a mountain, is a `flatten` with
 letters.
 
@@ -366,7 +366,7 @@ the items that keep one: the spine's line filtered by a line through its
 far end. A spine with both ends inside the paper has two vertices, and
 which one the squash takes is not decided (`` both ends of the spine on
 <l> lie inside the paper; which one is the vertex is not decided ``,
-[[decision/0038]]). The crease the write scores is the axis, one crease with a piece on each
+[[BEP-0038]]). The crease the write scores is the axis, one crease with a piece on each
 layer of the flap; a filter by flap, `--s & #[.p]`, picks the piece on the
 layer of `.p`. The checks the fan
 runs after that stand in the kernel's tables ([[reference/kernel#fan]]).
@@ -519,7 +519,7 @@ flatten (--d1 & .a) (--d1 & .c) (--d2 & .b mountain) (--d2 & .d)
 ```
 
 **Fans.** A flatten folds several vertices in one move when its rays
-stand in fan items ([[decision/0055]]). A fan item holds the rays of one
+stand in fan items ([[BEP-0055]]). A fan item holds the rays of one
 vertex: `(fan at .p ray+)` names a point the program has bound, and the
 statement fails when the rays do not meet at it (`` the rays of the fan do
 not meet at <point> ``); `(fan ray+ as .p)` binds the point where they
@@ -548,7 +548,7 @@ piece from a piece that stays or from a moving piece of another region.
 Of the states the fans fold to, those that keep the paper inside the
 outline it started from are kept where there are any; a petal reaches
 past the outline of the base it is folded from, so the outline does not
-remove its states ([[decision/0056]]). Among those, the states with the fewest mountains on
+remove its states ([[BEP-0056]]). Among those, the states with the fewest mountains on
 the rays the program gave are kept, and more than one state left is an
 error (`` flatten is ambiguous: <n> realizations ``).
 
