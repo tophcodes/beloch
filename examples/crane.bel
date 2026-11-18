@@ -1,37 +1,48 @@
 @author "Claude (Anthropic)"
 @design traditional
+@source "[randlett1961art, p. 69]"
 @source "[ida2020, Fig. 7.19]"
 
-; The traditional crane, flat. The bird base is folded by two petal folds,
-; each one flatten of two fans (BEP-0055); it is the state Ida's steps 2-10
-; reach by reverse folds [ida2020, Fig. 7.19]. Her steps 11-17 follow. Her
+; The traditional crane, flat. The preliminary base is folded as Randlett
+; folds it, by two squash folds [randlett1961art, p. 69]; the first is held
+; by the layers its flap is hinged to (BEP-0057). The bird base is folded
+; by two petal folds, each one flatten of two fans (BEP-0055); it is the
+; state Ida's steps 2-10 reach by reverse folds [ida2020, Fig. 7.19]. Her
+; steps 11-17 follow. Her
 ; steps 18 and 19 open the wings, which is 3D and out of scope (BEP-0015).
 ; Checked against her figures in records/notes/2026-09-25-crane-oracle.md.
 
 paper square
 
-fold (map .a onto .c) as --bd           ; triangle
-reverse (map .b onto .c) as --h         ; preliminary base
-reverse (map .d onto .c) as --v
+fold (map .d onto .b) as --ac           ; triangle
+fold (map .a onto .c) as --bd           ; in half again
 
-.o = --h * --v                          ; the paper center
+; the preliminary base: the top flap squashed, the model turned over, the
+; other flap squashed, and the model turned back. Each squash opens the
+; folded edge on --ac and lays it on --bd.
+squash (--ac & --ab onto --bd) as --s1
+flip
+squash (--ac & --bc onto --bd) as --s2
+flip
+
+.o = --ac * --bd                        ; the paper center
 --mid = (through .c .o)                 ; center line of the base
 
-.sr = --ab * --h                        ; the four side corners
-.sl = --da * --v
-.br = --bc * --h
-.bl = --cd * --v
+.sr = --ab * --s1                       ; the four side corners
+.sl = --da * --s1
+.br = --bc * --s2
+.bl = --cd * --s2
 
 ; the bird base: each petal fold opens the two halves of the side edges
 ; toward the side corners, brings the corners onto the center line and lifts
 ; the flap between them past the paper center. The legs .b and .d stay at
 ; the apex. Each fan binds the point where its kite crease meets the crease
 ; between the two fans.
-flatten (fan (--h & .sr) (map .sr onto --mid through .a) as .e1)
-        (fan (--v & .sl) (map .sl onto --mid through .a) as .e2)
+flatten (fan (--s1 & .sr) (map .sr onto --mid through .a) as .e1)
+        (fan (--s1 & .sl) (map .sl onto --mid through .a) as .e2)
         (on #[.a]) (staying .o) as --pf
-flatten (fan (--h & .br) (map .br onto --mid through .c) as .e3)
-        (fan (--v & .bl) (map .bl onto --mid through .c) as .e4)
+flatten (fan (--s2 & .br) (map .br onto --mid through .c) as .e3)
+        (fan (--s2 & .bl) (map .bl onto --mid through .c) as .e4)
         (on #[.c]) (staying .o) as --pb
 
 ; the head will bend toward a point on the edge of the front petal, read
@@ -71,8 +82,8 @@ reverse (through .hp .ht) (moving .b) as --head
 ; the finished crane stands on its center line, the wing tip .c up
 @orient .o .c up
 
-; assert steps = 12
-; assert faces = 60
+; assert steps = 15
+; assert faces = 64
 
 ; the two wings lie together at the far end, the paper center stays put
 ; assert .a = .c

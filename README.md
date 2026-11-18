@@ -26,9 +26,9 @@ patterns and folded states from that file, and other FOLD tools can open it.
 | --- | --- |
 | ![crane.bel as a crease pattern](examples/crane-cp.svg) | ![crane.bel folded flat](examples/crane-folded.svg) |
 
-The traditional crane, flat, in 22 statements:
-[`examples/crane.bel`](examples/crane.bel). It folds the bird base by two petal
-folds and then follows steps 11 to 17 of Ida's
+The traditional crane, flat, in 27 statements:
+[`examples/crane.bel`](examples/crane.bel). It folds the preliminary base by
+two squash folds and the bird base by two petal folds, and then follows steps 11 to 17 of Ida's
 crane program
 ([Ida 2020](https://doi.org/10.1007/978-3-319-59189-6), Fig. 7.19); her last
 two steps open the wings in 3D, which Beloch does not model yet. The native
@@ -54,22 +54,24 @@ longer matches its program.
 ```
 paper square
 
-fold (map .a onto .c) as --bd           ; triangle: corner a onto corner c
-reverse (map .b onto .c) as --h         ; corner b tucked inside, onto c
-reverse (map .d onto .c) as --v         ; corner d likewise
+fold (map .d onto .b) as --ac           ; triangle: corner d onto corner b
+fold (map .a onto .c) as --bd           ; in half again: corner a onto corner c
+squash (--ac & --ab onto --bd) as --s1  ; the top flap opened and pressed flat
 ```
 
 These are the first three statements of the crane
-([`examples/crane.bel`](examples/crane.bel)); they fold the preliminary base.
+([`examples/crane.bel`](examples/crane.bel)); a second squash on the other
+side completes the preliminary base.
 `paper square` gives the unit square with corners `.a` `.b` `.c` `.d`
 counter-clockwise from the origin. A name with a dot is a point, a name with
 two dashes is a crease. `(map .a onto .c)` is the fold line that carries one
 point onto another, one of the seven Huzita-Justin axioms; `as --bd` names the
 crease so later statements can use it.
 
-Five verbs write to the paper. `mark` scores a crease and moves nothing,
-`fold` folds along it, `reverse` makes an inside or outside reverse fold,
-`flip` turns the paper over, and `flatten` folds a vertex flat along several
+Seven verbs write to the paper. `mark` scores a crease and moves nothing,
+`fold` folds along it, `unfold` turns layers back over it, `reverse` makes
+an inside or outside reverse fold, `squash` opens a flap and presses it
+flat, `flip` turns the paper over, and `flatten` folds a vertex flat along several
 rays at once; given an odd number of them, it derives the one ray that is
 missing. The evaluator works out where every layer goes and which creases end
 up mountain or valley. The full grammar is in [`docs/reference/BELOCH-GRAMMAR.md`](docs/reference/BELOCH-GRAMMAR.md)
