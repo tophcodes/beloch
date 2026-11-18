@@ -15,6 +15,7 @@
 (write_statement ["mark" "fold" "unfold" "reverse" "flatten" "squash" "flip"] @keyword)
 ["(" ")" "[" "]"] @punct
 (construction    ["align" "map" "through" "perp" "onto" "and"] @construction)
+(fan_construction ["align" "map" "through" "perp" "onto" "and"] @construction)
 (alignment       ["onto" "through" "perp" "heading"] @alignment)
 (anchor_item     ["moving" "up" "down"] @anchor)
 (depth_item      ["up" "to"] @depth)
@@ -25,6 +26,7 @@
 (extent_item     ["between" "at"] @extent)
 (layer_item      "on" @layer)
 (flatten_element ["mountain" "valley"] @ray)
+(fan_construction ["mountain" "valley"] @ray)
 (fan_item        ["fan" "at" "as"] @ray)
 (order_item      "over" @order)
 (alignment_item  "onto" @alignment)
