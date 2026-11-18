@@ -65,5 +65,8 @@ The elegant `Ext` tower is **retired**: one representation for all irrationals.
   `Rat` fast-path keeps the common case free.
 - The public `Num` interface is unchanged (plus `real_roots`), so the geometry
   core migrated without API churn.
-- `to_float` stays the only float, output-only.
+- `to_float` feeds the output. A float computation may stand in front of an
+  exact one as a filter, to save time, where its answer is shown to equal
+  the exact answer in every case. Where that cannot be shown, the kernel
+  computes exactly.
 - Unblocks axiom 7 (Justin ⑦) with no further kernel change.
