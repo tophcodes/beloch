@@ -1488,7 +1488,8 @@ mountains. For a face-down $A'$ exchange the letters. $\square$
 ::: {.definition #def-flatten name="flatten" uses="def-write def-flap def-score def-reflection def-letter def-noncrossing def-selection" defines="term-fan term-sector term-stayer term-emergent"}
 The write `flatten` takes a point $O$ of the projective table: a table
 point, or a point at infinity, one for each direction ([[BEP-0041]]). It takes
-an *anchor*: a flap $\Phi$ whose image meets the rays, a finite set of
+an *anchor* $\Phi$: a flap, or the union of several flaps
+([[BEP-0076]]), whose image meets the rays, a finite set of
 *rays*: segments of creases on lines through $O$, from $O$ where $O$ lies on
 the image of $\Phi$ and from the edge of that image where it does not, to
 the other edge, no two of one crease in one direction, a set of

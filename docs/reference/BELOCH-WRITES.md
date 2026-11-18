@@ -446,7 +446,8 @@ flat-foldability for a sheet of many vertices is NP-hard
 `(--l)` or `(--l & .p)`, with `mountain` or `valley` after it where the
 program fixes its letter; a bare ray is left to the solver. `(.p over .q)`
 orders two sectors in the result, `(staying <flap>)` names the stayer,
-the wedge that keeps its place, `(on <flap>)` names the anchor, and
+the wedge that keeps its place, `(on <flap>+)` names the anchor, one
+flap or several whose union it is ([[BEP-0076]]), and
 `(toward .p)` selects among the states that remain. Every item but
 `toward` is a constraint that narrows the set of states; `toward` picks
 one of them. `staying` and `toward` stand at most once (`` only one
