@@ -109,8 +109,15 @@ module.exports = grammar({
     // `(fan (--h & .sr) (map .sr onto --mid through .a) as .r)`, `(fan at .p (--l) …)`:
     // the rays of one vertex of a flatten (BEP-0055)
     fan_item: $ => seq('(', 'fan', optional(seq('at', $.point)),
-      repeat1(choice($.construction, $.flatten_element)),
+      repeat1(choice($.construction, $.fan_construction, $.flatten_element)),
       optional(seq('as', $.point)), ')'),
+
+    // a construction ray of a fan with its letter:
+    // `(map .sr onto --mid through .a valley)`
+    fan_construction: $ => prec(1, seq('(', choice(
+      seq('align', repeat($.crease), repeat1($.alignment)),
+      $._prose_axiom,
+    ), $._mv, ')')),
 
     _mv: _ => choice('mountain', 'valley'),
 

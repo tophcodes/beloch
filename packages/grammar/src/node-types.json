@@ -403,6 +403,57 @@
     }
   },
   {
+    "type": "fan_construction",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "alignment",
+          "named": true
+        },
+        {
+          "type": "crease",
+          "named": true
+        },
+        {
+          "type": "crease_bracket",
+          "named": true
+        },
+        {
+          "type": "flap_bracket",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "instance",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "operator",
+          "named": true
+        },
+        {
+          "type": "point",
+          "named": true
+        },
+        {
+          "type": "point_bracket",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "fan_item",
     "named": true,
     "fields": {},
@@ -412,6 +463,10 @@
       "types": [
         {
           "type": "construction",
+          "named": true
+        },
+        {
+          "type": "fan_construction",
           "named": true
         },
         {
