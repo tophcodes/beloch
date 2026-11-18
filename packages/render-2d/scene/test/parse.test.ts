@@ -199,14 +199,14 @@ test("parse surfaces inspect and edge crease id", () => {
     "beloch:inspect": {
       creases: { "4": { name: "h", axiom: "axiom2", sources: ["--h"], span: "x:2:1",
         segments: [{ faces: [0, 1], paper: [[0, 0.5], [1, 0.5]], table: [[0, 0.5], [1, 0.5]], assignment: "V" }] } },
-      faces: { "0": { vertices: [[0, 0], [1, 0], [1, 1], [0, 1]], flap: 0, rank: 1 } },
+      faces: { "0": { vertices: [[0, 0], [1, 0], [1, 1], [0, 1]], flap: 0 } },
       points: { a: { face: 0, flap: 0 } },
     },
   };
 
   const scene = parseFold(fold as any);
   expect(scene.inspect?.creases["4"]!.segments[0]!.assignment).toBe("V");
-  expect(scene.inspect?.faces["0"]!.rank).toBe(1);
+  expect(scene.inspect?.faces["0"]!.flap).toBe(0);
   expect(scene.cp.edgesProvenance[0]?.creaseId).toBe(4);
 });
 
@@ -245,7 +245,7 @@ test("parse surfaces inspect.edges", () => {
     vertices_coords: [[0, 0], [1, 0]], edges_vertices: [[0, 1]],
     edges_assignment: ["B"], faces_vertices: [],
     "beloch:inspect": {
-      creases: {}, faces: { "0": { vertices: [[0, 0], [1, 0], [1, 1], [0, 1]], flap: 0, rank: 0 } },
+      creases: {}, faces: { "0": { vertices: [[0, 0], [1, 0], [1, 1], [0, 1]], flap: 0 } },
       points: {},
       edges: {
         ab: { name: "ab", assignment: "B",

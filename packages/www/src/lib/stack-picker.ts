@@ -1,7 +1,7 @@
 // Folded-view stack picker: when several
 // `beloch:inspect` crease segments coincide in the folded projection (the
-// same bundle stacked across layers), order them by layer rank so the panel
-// lists top-of-stack first, and let a picked row's SVG line(s) be found by
+// same bundle stacked across layers), order them by the frame's `faceOrders`
+// so the panel lists top-of-stack first, and let a picked row's SVG line(s) be found by
 // geometry. There is NO `data-seg` attribute, so a
 // segment can only be re-identified by matching its `table` endpoints
 // against the rendered `<line>`'s x1/y1/x2/y2, in the SAME (rendered SVG
@@ -9,17 +9,27 @@
 // testable (see stack-picker.test.ts); the caller (Playground.astro) does
 // the coordinate transform via `@beloch/render-svg`'s `makeLayout` and the
 // actual DOM query/class toggling.
-import type { Inspect, InspectSegment, Vec2 } from "@beloch/scene";
+import type { FaceOrder, InspectSegment, Vec2 } from "@beloch/scene";
 
-// A segment's layer identity = the higher of its two bounding faces' rank
-// (Fold_state.rank — stacking order, higher = closer to viewer). `insp.faces`
-// is keyed by string index; a face absent from it (shouldn't happen for a
-// valid scene) falls back to 0 rather than throwing.
-export function segRank(insp: Inspect, s: InspectSegment): number {
-  return Math.max(
-    insp.faces[String(s.faces[0])]?.rank ?? 0,
-    insp.faces[String(s.faces[1])]?.rank ?? 0,
-  );
+// Orders two segments, top of stack first (negative: `a` comes first). Each
+// segment lies on two faces. `a` is above `b` when a face of `a` is above a
+// face of `b` in `faceOrders`, which relates only faces that overlap; it is
+// below when the reverse holds. Segments with no such pair, or with both
+// directions, compare equal, so a stable sort keeps their existing order.
+// The sign of a `[f, g, s]` triple is keyed to g's normal (as in
+// `linearExtension` and the renderers): f is above g iff `(s > 0) === faceUp[g]`.
+export function stackOrder(
+  faceOrders: FaceOrder[],
+  faceUp: boolean[],
+): (a: InspectSegment, b: InspectSegment) => number {
+  const above = new Set<string>();
+  for (const [f, g, s] of faceOrders) {
+    if (s === 0) continue;
+    above.add((s > 0) === faceUp[g] ? `${f},${g}` : `${g},${f}`);
+  }
+  const over = (a: InspectSegment, b: InspectSegment): boolean =>
+    a.faces.some((f) => b.faces.some((g) => above.has(`${f},${g}`)));
+  return (a, b) => Number(over(b, a)) - Number(over(a, b));
 }
 
 const near = (a: Vec2, b: Vec2, eps: number): boolean =>

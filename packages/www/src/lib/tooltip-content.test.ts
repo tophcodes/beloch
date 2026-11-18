@@ -1,5 +1,6 @@
 import { test, expect } from "bun:test";
 import type { Inspect, InspectSegment } from "@beloch/scene";
+import { stackOrder } from "./stack-picker";
 import { hoverSummary, segmentRows, edgeSegmentRows } from "./tooltip-content";
 
 function seg(faces: number[], assignment = "M"): InspectSegment {
@@ -59,11 +60,11 @@ test("hoverSummary returns null for a crease id absent from insp.creases", () =>
   expect(hoverSummary({ kind: "crease", creaseId: "9" }, insp)).toBeNull();
 });
 
-test("hoverSummary for a face shows flap and rank", () => {
-  const insp = fakeInsp({ faces: { "2": { vertices: [], flap: 1, rank: 3 } } });
+test("hoverSummary for a face shows flap", () => {
+  const insp = fakeInsp({ faces: { "2": { vertices: [], flap: 1 } } });
   expect(hoverSummary({ kind: "face", index: "2" }, insp)).toEqual({
     title: "face 2",
-    detail: "flap 1 · rank 3",
+    detail: "flap 1",
   });
 });
 
@@ -86,38 +87,36 @@ test("hoverSummary for an unnamed vertex shows a bare index and no detail", () =
   });
 });
 
-test("segmentRows lists every segment of the bundle in array order when sortByRank is false", () => {
+test("segmentRows lists every segment of the bundle in array order when order is null", () => {
   const insp = fakeInsp({
-    faces: { "0": { vertices: [], flap: 0, rank: 1 }, "1": { vertices: [], flap: 0, rank: 5 } },
     creases: {
       "3": { name: "a", axiom: null, sources: [], span: null, segments: [seg([0, 1], "M"), seg([0, 0], "V")] },
     },
   });
-  const rows = segmentRows(insp, "3", false);
+  const rows = segmentRows(insp, "3", null);
   expect(rows.map((r) => r.index)).toEqual([0, 1]);
-  expect(rows[0]).toEqual({ index: 0, faceL: 0, faceR: 1, assignment: "M", rank: 5 });
+  expect(rows[0]).toEqual({ index: 0, faceL: 0, faceR: 1, assignment: "M" });
 });
 
-test("segmentRows sorts by segRank descending when sortByRank is true", () => {
+test("segmentRows sorts by the given order, top of stack first", () => {
   const insp = fakeInsp({
-    faces: { "0": { vertices: [], flap: 0, rank: 1 }, "1": { vertices: [], flap: 0, rank: 5 } },
     creases: {
       "3": {
         name: "a",
         axiom: null,
         sources: [],
         span: null,
-        segments: [seg([0, 0], "V"), seg([0, 1], "M")], // rank 1 then rank 5
+        segments: [seg([0, 0], "V"), seg([1, 1], "M")],
       },
     },
   });
-  const rows = segmentRows(insp, "3", true);
-  expect(rows.map((r) => r.index)).toEqual([1, 0]); // rank 5 first
-  expect(rows.map((r) => r.rank)).toEqual([5, 1]);
+  // face 1 above face 0 (both face up): [1, 0, +1]
+  const rows = segmentRows(insp, "3", stackOrder([[1, 0, 1]], [true, true]));
+  expect(rows.map((r) => r.index)).toEqual([1, 0]);
 });
 
 test("segmentRows returns an empty array for a crease id absent from insp.creases", () => {
-  expect(segmentRows(fakeInsp(), "9", true)).toEqual([]);
+  expect(segmentRows(fakeInsp(), "9", null)).toEqual([]);
 });
 
 test("edgeSegmentRows lists every segment of the edge bundle, one face each", () => {
