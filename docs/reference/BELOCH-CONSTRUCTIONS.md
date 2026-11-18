@@ -97,6 +97,9 @@ other; the table maps them.
 
 - Huzita-Hatori, the numbering Wikipedia uses, numbers the cubic fold 6.
   Beloch numbers it 7, and "axiom 7" on these pages is the Beloch fold.
+- Ida's Eos and Orikoto use the Huzita-Hatori order [@ida2020, Table B.1]:
+  his O6 is axiom 7 here and his O7 is axiom 4. Translate before comparing
+  an Eos construction with a program.
 - Hull inserts the meet of two lines as his O2 and orders 3, 4 and 5
   differently, so point onto point is axiom 2 here and Hull's O3, and the
   angle bisector is axiom 5 here and Hull's O4.
@@ -105,9 +108,6 @@ other; the table maps them.
   root. In Justin's account axioms 1 to 4 give the dyadic rationals, 1 to 5
   the field  1 to 6 the ruler-and-compass field  and 1 to 7 the
   larger 0@justin1986, §8.1].
-
-The clashes with the other two schemes are also recorded in
-[[notes/antipatterns]].
 
 ## Selection
 

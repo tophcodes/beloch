@@ -22,7 +22,7 @@ name a later page can point back to, and hints that only one medium
 understands, such as where a YR diagram turns the model over. The author
 knows these things, and today the program has no place to say them.
 
-The fused `step` construct ([[notes/antipatterns]]) shows the risk on the
+The fused `step` construct ([[BEP-0071]]) shows the risk on the
 language side: display grouping and scoping were one construct and came apart
 under pressure. Whatever marks a step for a diagram must group and do nothing
 else.

@@ -122,7 +122,7 @@ from memory.
   [ida2020, Fig. 7.19]. Fisher takes edges plus a held face. Beloch has motion
   × disposition × extent; the open question is whether `fold <motion> …` with a
   scope that crosses a folded edge is enough, or whether the reverse needs its
-  own verb or a `flatten` item. [[notes/ideas]] and Appendix B list named
+  own verb or a `flatten` item. `notes/ideas.md` and Appendix B list named
   maneuvers as sugar over `unfold` plus layer selection; the Eos route makes
   the reverse fold the first sugar to land, before `unfold`.
 - **Exactness.** The bird-base reverse folds carry $\sqrt{2}$ coordinates

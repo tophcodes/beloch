@@ -58,6 +58,10 @@ let fold_traced ~(filename : string) (src : string) :
       (`Assoc (kv @ [ ("beloch:error", error) ]), Some f)
   | json, Some f -> (json, Some f)
 
+(* The library is wrapped and this file is its main module, so dune exposes
+   to the tests and the CLI only what is re-exported here: a new
+   lib/<mod>.ml needs a line below, and code outside the library reaches it
+   as [Beloch.Mod]. *)
 module Num = Num
 module Error = Error
 module Geom = Geom
