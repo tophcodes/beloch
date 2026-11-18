@@ -1,12 +1,13 @@
 @author "Claude (Anthropic)"
 
-; Element order is semantic (design 2026-07-17). The convention-ordered
-; incenter rabbit ear (--ea .a)(--ec .c) leading — whose <180 arc is the big
-; stayer sector — folds cleanly (flatten-rabbit-ear-toward-a.bel). Reorder the
-; SAME three creases so the leading pair is (--eb .b)(--ea .a): now the
-; conventional arc is a small folding sector, the ear is anchored on material
-; that must move, and no seating keeps the flap in the sheet. Reordering the
-; items — nothing else — flips a valid fold into an error.
+; Element order is semantic. The convention-ordered incenter rabbit ear,
+; (--ea .a)(--ec .c) leading, whose arc below a half-turn is the big stayer
+; sector, folds cleanly (flatten-rabbit-ear-toward-a.bel). Reorder the same
+; three creases so that the leading pair is (--eb .b)(--ea .a): the arc is
+; now a small folding sector, and the ear is anchored on material that has
+; to move. Every state reaches past the sheet, so the outline ranks none
+; above another (BEP-0058), and both segments of --ea fold. Reordering the
+; items, and nothing else, turns a fold into an error.
 
 paper square
 
@@ -17,4 +18,4 @@ mark (map --bc onto --diag) as --ec
 
 flatten (--eb & .b) (--ea) (--ec) (toward .a)
 
-; expect error "off the paper"
+; expect error "--ea is ambiguous at the vertex"

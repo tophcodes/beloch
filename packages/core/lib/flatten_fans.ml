@@ -687,11 +687,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         (Resolve.resolve_sector_face ctx u span, Resolve.resolve_sector_face ctx l span))
       overs
   in
-  (* every realization of every pattern, each with whether it keeps the
-     paper inside the outline of the state before the flatten. The outline
-     ranks the realizations here instead of removing them: a petal reaches
-     past the outline of the base it is folded from (BEP-0056). *)
-  let hull = Collapse.table_hull st in
+  (* every realization of every pattern; the outline of the state before
+     the flatten ranks them below (BEP-0058) *)
   let results =
     List.map
       (fun pat ->
@@ -703,8 +700,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                 (fun sg ->
                   match Collapse.pipeline_solve sg ~valley:(Array.of_list pat) ~over with
                   | Error e -> Error e
-                  | Ok states ->
-                      Ok (List.map (fun s -> (s, Collapse.in_bounds hull s)) states))
+                  | Ok states -> Ok states)
                 sgs
             in
             match List.concat_map (function Ok l -> l | Error _ -> []) runs with
@@ -729,16 +725,13 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         match res with
         | Ok sts ->
             List.fold_left
-              (fun acc ((s, _) as r) ->
-                if List.exists (fun (s', _) -> same_state s s') acc then acc else acc @ [ r ])
+              (fun acc s ->
+                if List.exists (same_state s) acc then acc else acc @ [ s ])
               acc sts
         | Error _ -> acc)
       [] results
   in
-  let states =
-    let inside = List.filter snd all in
-    List.map fst (if inside <> [] then inside else all)
-  in
+  let states = Collapse.rank_by_outline st ~state:Fun.id all in
   let errors = List.filter_map (function Error e -> Some e | Ok _ -> None) results in
   (* fewest mountains on the creases the program gave, as for one fan *)
   let given_cids =
@@ -799,8 +792,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       let pick =
         List.find_opt
           (fun e -> List.mem e errors)
-          [ Collapse.e_out_of_paper; Collapse.e_contra; Collapse.e_unaligned;
-            Collapse.e_anchor_stays ]
+          [ Collapse.e_contra; Collapse.e_unaligned; Collapse.e_anchor_stays ]
       in
       Error.fail span
         (match pick with
