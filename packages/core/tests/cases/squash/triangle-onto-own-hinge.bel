@@ -1,0 +1,23 @@
+@author "Claude (Anthropic)"
+
+; The first squash of the preliminary fold [randlett1961art, p. 69]: a
+; square folded in half along --bd and again along --ac, then the top flap
+; squashed. The flap ends at its target --ac, so the two layers it is hinged
+; to on that line hold it (BEP-0057). Its lower layer folds in half along
+; the axis, and its upper layer turns over --ac and folds along the axis
+; there: a square whose half lies beyond the triangle.
+
+paper square
+fold (map .a onto .c) as --bd
+fold (map .b onto .d) as --ac
+squash (--bd & --bc onto --ac) as --s1
+.m = --bc * --s1
+.n = --ab * --s1
+
+; assert steps = 3
+; assert faces = 6
+; assert .b = (1, 1)
+; assert .a = .b
+; assert .d = (0, 1)
+; assert .m = (1, 1/2)
+; assert .n = (1/2, 1)
