@@ -152,9 +152,13 @@ layers of the body: one becomes the neck, the other the tail.
 
 ::: {.figure #fig-crane-neck caption="The neck and the tail, each reversed about a line square to its narrowed edge." views="cp folded" highlight="--neck --tail" after="fig-crane-legs"}
 .pn = free on --n1 & #[.sr .b] from .b at 1/4
-reverse (perp --n1 through .sr) (moving .b) (--n1 & .pn mountain) as --neck
+.qn = free on --n3 & #[.br .b] from .b at 1/4
+reverse (perp --n1 through .sr) (moving .b)
+  (--n1 & .pn mountain) (--n3 & .qn mountain) as --neck
 .pt = free on --n2 & #[.sl .d] from .d at 1/4
-reverse (perp --n2 through .sr) (moving .d) (--n2 & .pt mountain) as --tail
+.qt = free on --n4 & #[.bl .d] from .d at 1/4
+reverse (perp --n2 through .sr) (moving .d)
+  (--n2 & .pt mountain) (--n4 & .qt mountain) as --tail
 :::
 
 `(perp --n1 through .sr)` is the axiom for the line through a point, square
@@ -163,17 +167,20 @@ to another line. A perpendicular moves nothing by itself, so unlike a
 `(moving .b)`: the tip of the leg that becomes the neck.
 
 A narrowed leg is eight layers thick, and a reverse fold has to open it
-somewhere. This leg opens at two places: in the middle, with four layers on
-each side, which is where a folder opens it, and between its top two layers
-and the six beneath them. Without a third item the statement stops with
-`the tip opens at 2 places`.
+somewhere. This leg opens at three places: in the middle, with four layers
+on each side, which is where a folder opens it, between its top two layers
+and the six beneath them, and between its bottom two layers and the six
+above them. Without further items the statement stops with
+`the tip opens at 3 places`.
 
-The third item chooses. `--n1` has more than one piece by now;
+Two letter items choose. `--n1` has more than one piece by now;
 `--n1 & #[.sr .b]` is the piece
 on the flap that holds `.sr` and `.b`, and `.pn` is a point on that piece.
-Each opening leaves the piece with a different letter, and
-`(--n1 & .pn mountain)` keeps the opening that makes it a mountain: the one
-in the middle. The tail is chosen the same way.
+Each opening leaves the piece with a letter, and
+`(--n1 & .pn mountain)` keeps the openings that make it a mountain. Two of
+the three do, so `(--n3 & .qn mountain)` says the same of the narrowing
+crease on the back of the leg, and the opening in the middle is left. The
+tail is chosen the same way.
 
 ## The head
 

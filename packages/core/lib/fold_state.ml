@@ -71,6 +71,7 @@ type violation =
   | Hinge_not_closed of int
   | Taco_tortilla of { tortilla : int; hinge : int }
   | Taco_taco of int * int
+  | Stack_undetermined of int
 
 let violation_to_string = function
   | Bad_index s -> "fold graph: index out of range: " ^ s
@@ -95,6 +96,11 @@ let violation_to_string = function
       Printf.sprintf
         "layer ordering: creases of hinges %d and %d cross — taco-taco violation"
         i j
+  | Stack_undetermined n ->
+      Printf.sprintf
+        "layer ordering: the moved layers land on layers that nothing orders \
+         against them; %d stackings fold flat"
+        n
 
 (* 3D half-turn about a 2D line embedded in z = 0. *)
 let half_turn3_of_line (l : Geom.line) : I3.t =
@@ -878,9 +884,9 @@ let insert_before anchor xs lst =
    exactly one moving side (D8), restack by splicing each block's movers in at
    its placement. Placements are derived; nothing composes isometries onto
    faces. *)
-let fold_blocks ?crease_id ~(blocks : (bool array * placement) list) (g : t)
+let fold_blocks_all ?crease_id ~(blocks : (bool array * placement) list) (g : t)
     ~(axis : Geom.line) ~(move_side : int) ~(prov : State.provenance option) :
-    (t, violation) result =
+    (t list, violation) result =
   let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
   let nb = List.length blocks in
   let block_of_parent fi =
@@ -1027,7 +1033,7 @@ let fold_blocks ?crease_id ~(blocks : (bool array * placement) list) (g : t)
           (Printf.sprintf
              "Fold_state.fold_blocks: placement face %d has no stationary child" p)
   in
-  let order =
+  let splice stationary =
     List.fold_left
       (fun acc (b, (_, place)) ->
         let xs = block_children b in
@@ -1036,11 +1042,9 @@ let fold_blocks ?crease_id ~(blocks : (bool array * placement) list) (g : t)
         | Bottom -> xs @ acc
         | Over p -> insert_after (stationary_child_of p) xs acc
         | Under p -> insert_before (stationary_child_of p) xs acc)
-      stat_children
+      stationary
       (List.mapi (fun b blk -> (b, blk)) blocks)
   in
-  let rank' = Array.make n' 0 in
-  List.iteri (fun h i -> rank'.(i) <- h) order;
   (* 5. root + base: prefer a stationary child (its parent's placement is
      unchanged); if everything moved, reflect the base across the axis *)
   let root', base' =
@@ -1058,9 +1062,156 @@ let fold_blocks ?crease_id ~(blocks : (bool array * placement) list) (g : t)
       else (0, I3.compose (half_turn3_of_line axis) g.isos.(parent.(0)))
     end
   in
-  make ~base:base' ~marks:g.marks ~faces:faces'
-    ~hinges:(Array.of_list (new_hinges @ carried))
-    ~root:root' ~rank:rank' ()
+  let hinges' = Array.of_list (new_hinges @ carried) in
+  let build order =
+    let rank' = Array.make n' 0 in
+    List.iteri (fun h i -> rank'.(i) <- h) order;
+    make ~base:base' ~marks:g.marks ~faces:faces' ~hinges:hinges' ~root:root'
+      ~rank:rank' ()
+  in
+  let default = build (splice stat_children) in
+  (* 6. A block placed [Over]/[Under] a face lies next to that face. A
+     stationary face the block lands on is above the block when it is above
+     the anchor and below it when it is below the anchor, through any chain
+     of overlapping faces. Where no chain joins it to the anchor, the state
+     before the fold fixes no order between the two, and the rank holds an
+     arbitrary one (rem-linear-extension). Each such face is tried on both
+     sides of the block, and every stacking that folds flat is a state of
+     this fold. Ceiling: more than 12 such faces are left at the order the
+     rank holds, since the search doubles with each; a pairwise layer
+     relation (issue 72) removes the rank and this bound with it. *)
+  let anchors =
+    List.concat
+      (List.mapi
+         (fun b (_, place) ->
+           match place with
+           | Over p | Under p -> [ (b, stationary_child_of p) ]
+           | Top | Bottom -> [])
+         blocks)
+  in
+  let alternatives =
+    if anchors = [] then []
+    else
+      let isos', seen =
+        derive_isos ~faces:faces' ~hinges:hinges' ~root:root' ~base:base'
+      in
+      if Array.exists not seen then []
+      else begin
+        let tp = Array.init n' (project faces' isos') in
+        let stat = Array.of_list stat_children in
+        let ns = Array.length stat in
+        let prank i = g.rank.(parent.(stat.(i))) in
+        (* under.(i).(j): stationary [i] lies below stationary [j], which it
+           overlaps *)
+        let under =
+          Array.init ns (fun i ->
+              Array.init ns (fun j ->
+                  i <> j
+                  && prank i < prank j
+                  && Geom.convex_overlap tp.(stat.(i)) tp.(stat.(j))))
+        in
+        let reach from up =
+          let seen = Array.make ns false in
+          let rec go i =
+            for j = 0 to ns - 1 do
+              if (not seen.(j)) && if up then under.(i).(j) else under.(j).(i)
+              then begin
+                seen.(j) <- true;
+                go j
+              end
+            done
+          in
+          go from;
+          seen
+        in
+        let index_of c =
+          let r = ref (-1) in
+          Array.iteri (fun i s -> if s = c then r := i) stat;
+          !r
+        in
+        (* (face, anchor), as indices into [stat] *)
+        let free =
+          List.concat_map
+            (fun (b, a) ->
+              let ai = index_of a in
+              let up = reach ai true and down = reach ai false in
+              let movers = block_children b in
+              List.filter
+                (fun (i, _) ->
+                  i <> ai
+                  && (not up.(i))
+                  && (not down.(i))
+                  && List.exists
+                       (fun m -> Geom.convex_overlap tp.(stat.(i)) tp.(m))
+                       movers)
+                (List.init ns (fun i -> (i, ai))))
+            anchors
+        in
+        let k = List.length free in
+        if k = 0 || k > 12 then []
+        else begin
+          (* the stationary faces in an order that keeps every [under] pair
+             and every pair of [extra], earliest in the rank first *)
+          let sorted extra =
+            let before = Array.map Array.copy under in
+            List.iter (fun (x, y) -> before.(x).(y) <- true) extra;
+            let placed = Array.make ns false in
+            let out = ref [] in
+            try
+              for _ = 1 to ns do
+                let pick = ref (-1) in
+                for j = 0 to ns - 1 do
+                  if !pick < 0 && not placed.(j) then begin
+                    let blocked = ref false in
+                    for i = 0 to ns - 1 do
+                      if (not placed.(i)) && before.(i).(j) then blocked := true
+                    done;
+                    if not !blocked then pick := j
+                  end
+                done;
+                if !pick < 0 then raise Exit;
+                placed.(!pick) <- true;
+                out := stat.(!pick) :: !out
+              done;
+              Some (List.rev !out)
+            with Exit -> None
+          in
+          let default_mask =
+            List.fold_left
+              (fun (m, bit) (i, ai) -> ((if i < ai then m lor bit else m), bit lsl 1))
+              (0, 1) free
+            |> fst
+          in
+          List.filter_map
+            (fun mask ->
+              if mask = default_mask then None
+              else
+                let extra =
+                  List.mapi
+                    (fun bit (i, ai) ->
+                      if mask land (1 lsl bit) <> 0 then (i, ai) else (ai, i))
+                    free
+                in
+                match sorted extra with
+                | None -> None
+                | Some stationary -> (
+                    match build (splice stationary) with
+                    | Ok g' -> Some g'
+                    | Error _ -> None))
+            (List.init (1 lsl k) Fun.id)
+        end
+      end
+  in
+  match (default, alternatives) with
+  | Ok g', alts -> Ok (g' :: alts)
+  | Error v, [] -> Error v
+  | Error _, alts -> Ok alts
+
+let fold_blocks ?crease_id ~blocks g ~axis ~move_side ~prov =
+  match fold_blocks_all ?crease_id ~blocks g ~axis ~move_side ~prov with
+  | Ok [ g' ] -> Ok g'
+  | Ok gs -> Error (Stack_undetermined (List.length gs))
+  | Error v -> Error v
 
 let fold ?crease_id ?moving_parents (g : t) ~(axis : Geom.line)
     ~(move_side : int) ~(valley : bool) ~(prov : State.provenance option) : t =
@@ -1182,11 +1333,11 @@ let reverse_attempts ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
         bodies; outcome }
     in
     let blo = body lower and bup = body upper in
-    if blo = [] || bup = [] then tried (Some (blo, bup)) No_body
+    if blo = [] || bup = [] then [ tried (Some (blo, bup)) No_body ]
     else
       let lo l = List.fold_left (fun a i -> min a g.rank.(i)) max_int l in
       let hi l = List.fold_left (fun a i -> max a g.rank.(i)) min_int l in
-      if not (hi blo < lo bup) then tried (Some (blo, bup)) Interleaved
+      if not (hi blo < lo bup) then [ tried (Some (blo, bup)) Interleaved ]
       else
         let topmost l =
           List.fold_left
@@ -1205,12 +1356,12 @@ let reverse_attempts ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
             [ (lower, Over (topmost blo)); (upper, Under (bottommost bup)) ]
           else [ (lower, Bottom); (upper, Top) ]
         in
-        tried (Some (blo, bup))
-          (match fold_blocks ~crease_id:cid ~blocks g ~axis ~move_side ~prov with
-          | Ok g' -> Reversed g'
-          | Error v -> Crossing v)
+        (* one attempt per stacking the two blocks fold flat in *)
+        match fold_blocks_all ~crease_id:cid ~blocks g ~axis ~move_side ~prov with
+        | Ok gs -> List.map (fun g' -> tried (Some (blo, bup)) (Reversed g')) gs
+        | Error v -> [ tried (Some (blo, bup)) (Crossing v) ]
   in
-  List.map attempt openings
+  List.concat_map attempt openings
 
 let reverse_letter (g : t) (a : spine_attempt) (hi : int) : assign =
   let l = mv g hi in

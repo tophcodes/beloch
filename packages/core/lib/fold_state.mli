@@ -79,6 +79,12 @@ type violation =
           interleave in the stack [hullzakharevich2023 §2.1]
           @see <https://belochlang.org/model/#cond-taco-taco>
             realizes the taco-taco condition *)
+  | Stack_undetermined of int
+      (** a block placed next to a face lands on [n] > 1 stackings that fold
+          flat: the state before the fold orders some face it lands on
+          neither above nor below that face
+          @see <https://belochlang.org/model/#rem-linear-extension>
+            realizes the linear-extension remark *)
 
 val violation_to_string : violation -> string
 
@@ -288,6 +294,23 @@ type placement =
     a parent face of the state being folded; that face must keep a
     stationary child to anchor on (any non-block parent, or a block parent
     the axis cuts). *)
+
+val fold_blocks_all :
+  ?crease_id:int ->
+  blocks:(bool array * placement) list ->
+  t ->
+  axis:Geom.line ->
+  move_side:int ->
+  prov:State.provenance option ->
+  (t list, violation) result
+(** [fold_blocks], with every stacking the fold has. A block placed [Over]
+    or [Under] a face is above every stationary face that is above that
+    face and below every one below it, through any chain of overlapping
+    faces. A stationary face the block lands on that no chain joins to the
+    anchor is tried on both sides of the block, and each stacking that
+    passes the checks of {!make} is one state of the list. The list is not
+    empty; [Error v] is the violation of the stacking the rank gives when
+    none passes. *)
 
 val fold_blocks :
   ?crease_id:int ->

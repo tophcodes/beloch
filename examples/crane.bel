@@ -50,13 +50,17 @@ fold (map --[.e4 .d] onto --mid) (moving .e4) (up to #[.e4 .d .o]) (mountain) as
 
 ; neck and tail: each leg reversed about the perpendicular to its own
 ; narrowed edge through the point where the side corners landed. These are
-; Ida's rays for steps 15 and 16 exactly. A narrowed leg opens at two
-; places; the letter on its narrowing crease keeps the opening between its
-; two halves.
+; Ida's rays for steps 15 and 16 exactly. A narrowed leg opens at three
+; places; a letter on its front and on its back narrowing crease keeps the
+; opening in the middle.
 .pn = free on --n1 & #[.sr .b] from .b at 1/4
-reverse (perp --n1 through .sr) (moving .b) (--n1 & .pn mountain) as --neck
+.qn = free on --n3 & #[.br .b] from .b at 1/4
+reverse (perp --n1 through .sr) (moving .b)
+  (--n1 & .pn mountain) (--n3 & .qn mountain) as --neck
 .pt = free on --n2 & #[.sl .d] from .d at 1/4
-reverse (perp --n2 through .sr) (moving .d) (--n2 & .pt mountain) as --tail
+.qt = free on --n4 & #[.bl .d] from .d at 1/4
+reverse (perp --n2 through .sr) (moving .d)
+  (--n2 & .pt mountain) (--n4 & .qt mountain) as --tail
 
 ; head: a free choice in folding practice, so two free points carry it.
 ; .hp is where the head bends, .ht, bound above, sets its angle. Ida's ray
