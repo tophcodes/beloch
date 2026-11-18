@@ -355,7 +355,10 @@ no item selects among its states.
 on the named line, the one whose one end lies inside the paper and whose
 target lies on the flap's side of the spine's line. The anchor is the
 flap of the upper layer at that hinge, and its sector beyond the target
-line, away from the spine, stays. The target line carries the crease the
+line, away from the spine, stays. A flap that ends at the target line has
+no such sector: the layers it is hinged to on that line stay, both layers
+of the flap move, and each of those hinges keeps its fold or opens,
+whichever folds flat ([[BEP-0057]]). The target line carries the crease the
 flap's layer folds along: with a line as target, that line's own crease;
 with a point, the crease through the vertex and the point, which has to
 exist (`` no crease lies on the line from the vertex through <p> ``, hint
@@ -409,6 +412,21 @@ on `--ac`:
 squash (--h onto --ac)
 
 ; expect error "squash is ambiguous: 2 flaps"
+```
+
+A square folded in half twice, and its top flap squashed, the first squash
+of the preliminary fold [@randlett1961art, p. 69]. The flap ends at
+`--ac`. Its lower layer folds in half; its upper layer turns over `--ac`,
+so half of the square it opens into lies beyond the triangle:
+
+```{.bel .frag}
+fold (map .a onto .c) as --bd
+fold (map .b onto .d) as --ac
+squash (--bd & --bc onto --ac) as --s
+
+; assert faces = 6
+; assert .b = (1, 1)
+; assert .a = .b
 ```
 
 ## `flatten` and `flip`
@@ -548,7 +566,7 @@ piece from a piece that stays or from a moving piece of another region.
 Of the states the fans fold to, those that keep the paper inside the
 outline it started from are kept where there are any; a petal reaches
 past the outline of the base it is folded from, so the outline does not
-remove its states ([[BEP-0056]]). Among those, the states with the fewest mountains on
+remove its states ([[BEP-0058]]). Among those, the states with the fewest mountains on
 the rays the program gave are kept, and more than one state left is an
 error (`` flatten is ambiguous: <n> realizations ``).
 

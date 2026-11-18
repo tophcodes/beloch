@@ -2,8 +2,9 @@
 id: BEP-0056
 title: "The outline ranks the states of several fans"
 date: 2026-11-17
-status: accepted
+status: superseded
 issue: tophcodes/beloch#16
+superseded-by: BEP-0058
 ---
 
 # BEP-0056: The outline ranks the states of several fans

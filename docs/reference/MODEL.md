@@ -1557,9 +1557,12 @@ a reverse fold does ([#def-reverse]). Such a hinge *stays* when it keeps
 its angle and its letter, *turns* when it keeps its angle and takes the
 other letter, and *opens* when it changes, as the spine of a squash does.
 
-The value of the write is the one candidate state $\sigma$ selects from the
-set of all candidate states of all candidate fans; it is undefined when
-that set is empty, when its states differ in their stayer, or when
+Of all candidate states of all candidate fans, those whose faces lie on
+the table inside the convex hull of the state before the write are kept
+where there are any, and all of them where there are none
+([[BEP-0058]]). The value of the write is the one candidate state $\sigma$
+selects from that set; it is undefined when
+the set is empty, when its states differ in their stayer, or when
 $\sigma$ leaves more than one. The crease the write
 scores is the bundle of the hinges on the given rays when $k$ is even and
 the bundle of the hinges on the emergent ray when $k$ is odd.
@@ -1581,10 +1584,9 @@ a piece of $T$ from a piece outside $T$ or from a piece of $T$ in another
 region, so a layer that the tip leaves in place keeps its faces whole.
 Motions, candidate states and letters are as above, with the regions in
 place of the wedges. The order of two faces outside $T$ that one lay above
-in every column stays as it was. Among the candidate states, those whose
-faces lie inside the convex hull of the state before the write are kept
-where there are any ([[BEP-0056]]), and the rest of $\sigma$ is the fewest mountains on
-the rays the program names.
+in every column stays as it was. The convex hull of the state before the
+write ranks the candidate states as above, and the rest of $\sigma$ is the
+fewest mountains on the rays the program names.
 :::
 
 ::: {.term #term-fan name="fan, ray"}
@@ -1697,6 +1699,14 @@ letter: $s$ opens, each layer of the tip folds along its piece of the
 axis, and the hinge of $\Phi$ on the target's line folds. It is undefined
 when $\Phi$ has no hinge on the target's line, and when both ends of $s$
 lie inside the sheet ([[BEP-0038]]).
+
+Where no part of $\Phi$ lies beyond the target's line, $\Phi$ ends at
+hinges on that line, and the faces those hinges join to $\Phi$ and to the
+flap $\Phi'$ of the lower face at $s$ are the stayer ([[BEP-0057]]). The
+tip is every piece of $\Phi$ and of $\Phi'$. $s$ opens, each of the two
+flaps folds along its piece of the axis, and each hinge on the target's
+line between the tip and the stayer changes or keeps; each choice is a
+candidate fan, with motions and candidate states as in [#def-flatten].
 :::
 
 ::: {.term #term-vertex name="vertex"}
@@ -1709,7 +1719,10 @@ flap stands up, opens, and comes down flat with its spine on the target.
 On the preliminary base the flap's two layers lie on each other mirrored
 at the spine, so the axis is one line on the table and two creases on
 the paper, one per layer, and the half of the front face beyond the
-center line keeps its place.
+center line keeps its place. On a square folded in half twice the flap
+ends at the center line: the layers it is hinged to there keep their
+place, the lower layer of the flap folds in half, and the upper layer
+turns over the center line as it folds.
 
 ::: {.figure #fig-squash caption="The squash of the front flap of the preliminary base on the side of `--da`: its spine on `--h` opens and lands on `--ac`; the axis `--s` through the closed corner folds each layer of the flap, and the other half of the front face stays." views="cp folded"}
 paper square
