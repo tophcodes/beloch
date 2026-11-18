@@ -10,19 +10,12 @@
     Choosing among them is [Flatten_solve]'s job: it enumerates every
     Maekawa-consistent M/V pattern ([mv_patterns], pure and unit-testable) over
     each candidate's full ray set, tries each via [Collapse.collapse_all], pools
-    the results, and disambiguates by `(toward)`'s moved-material-centroid
-    score. Feasibility-filtering and `toward`-selection
-    belong there rather than here because they need [Collapse.collapse_all] and
+    the results, and keeps the states the items leave. Feasibility-filtering
+    and the items belong there rather than here because they need [Collapse.collapse_all] and
     [Ast.mv_constraint], neither of which this module should depend on beyond
     the generator's own geometry. *)
 
 let e_infeasible = "vertex not flat-foldable toward that side"
-
-let e_toward_ambiguous =
-  "`toward` does not pick a side — the point is collinear with a crease through \
-   the vertex"
-
-let e_toward_ambiguous_hint = "aim it off the creases"
 
 (* The +1-eigenvector direction of a reflection's linear part. A reflection
    fixing the origin is a symmetric orthogonal matrix (m01 = m10), so either
@@ -53,7 +46,7 @@ let in_gap (o : Geom.point) (lo : Geom.point) (hi : Geom.point) (q : Geom.point)
    constructible by any Huzita axiom": a completion that only re-uses a
    given line's far side is the degenerate, `OppositeRay` case; a completion
    on a new line is `LineNew`). No feasibility check and no
-   [toward] selection: both are the caller's job now, over the pooled
+   item: both are the caller's job, over the pooled
    realizations of every (candidate x M/V pattern). *)
 let candidates (o : Geom.point) ~(fixed : (Geom.point * Collapse.elem) list) :
     (Geom.line * Geom.point * [ `LineNew | `OppositeRay ]) list =

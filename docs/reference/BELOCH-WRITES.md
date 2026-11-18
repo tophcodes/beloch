@@ -16,9 +16,8 @@ delimited on both sides and classified by its head.
 (`def`, `on`, `export`); no item uses braces. The side items name the side
 of the axis that stays, `toward`, and the side that folds over, `moving`,
 and select among the candidates of a construction by them
-([[reference/beloch-constructions#selection]]). The `toward` item of `flatten` selects among
-states rather than among lines
-([[reference/model#open-flatten-selection|open-flatten-selection]]). The `on` item of
+([[reference/beloch-constructions#selection]]). `flatten` takes no side
+item: its items are conditions on its states ([[BEP-0061]]). The `on` item of
 `flatten` names its anchor, the flap anywhere in the stack under the vertex
 whose tip the fan moves; without it the anchor is the topmost flap there
 ([[reference/model#def-flatten|def-flatten]]). The other layers under the vertex stay
@@ -447,13 +446,13 @@ flat-foldability for a sheet of many vertices is NP-hard
 program fixes its letter; a bare ray is left to the solver. `(.p over .q)`
 orders two sectors in the result, `(staying <flap>)` names the stayer,
 the wedge that keeps its place, `(on <flap>)` names the anchor,
-`(emergent beside .p)` names where the emergent ray of an odd fan lies,
-and `(toward .p)` selects among the states that remain. Every item but
-`toward` is a constraint that narrows the set of states; `toward` picks
-one of them. `staying`, `emergent` and `toward` stand at most once (``
-only one staying item per flatten ``, `` only one emergent item per
-flatten ``, `` only one toward item per flatten ``), and an item that
-rules nothing out is no error.
+and `(emergent beside .p)` names where the emergent ray of an odd fan
+lies. Every item is a condition that narrows the set of states. `staying`
+and `emergent` stand at most once (`` only one staying item per flatten
+``, `` only one emergent item per flatten ``), an item that rules nothing
+out is no error, and `toward` is refused (`` flatten takes no (toward)
+item: an item is a condition (BEP-0061) ``, hint `` name the side of the
+emergent ray with (emergent beside .p), or give letters ``).
 
 **The emergent ray.** `(emergent beside .p)` keeps the states whose
 emergent ray lies in a wedge of the given rays that holds the table point
@@ -493,15 +492,9 @@ a material crease ``) are errors. The checks a flatten runs, with every
 message, stand in the kernel's tables ([[reference/kernel#fan]]).
 
 **Selection.** The value of a flatten is the one state its rays,
-letters, `over` items and stayer leave ([[BEP-0061]]). Where several
-remain, `toward .p` selects in two steps
-([[reference/model#open-flatten-selection|open-flatten-selection]]): the
-states whose moved material lies toward `.p`, among them the one whose
-material toward `.p` lies on top. A point on the line of a crease through the
-vertex names no side (`` `toward` does not pick a side — the point is
-collinear with a crease through the vertex ``, hint `` aim it off the
-creases ``). Without `toward`, more than one state left is an error
-(`` flatten is ambiguous: <n> realizations ``). Its hint names the items
+letters, `over` items, stayer and emergent item leave ([[BEP-0061]],
+[[BEP-0078]]). More than one state left is an error (`` flatten is
+ambiguous: <n> realizations ``). Its hint names the items
 that would leave one state: for up to four states, for each state the
 letter of one ray that no other state shares, or the letters of two rays
 where one does not part it from the rest (`` each of these keeps one
@@ -580,8 +573,7 @@ vertex to the other end, also where it lies inside a face and cuts none;
 the statement scores it. The items
 `on`, `staying` and `over` stand beside the fans and apply to the whole
 statement; `staying` is required (`` a flatten with several fans needs a
-staying item ``), and `toward` is refused (`` a flatten with several fans
-takes no toward item ``). A statement takes ray items or fan items (`` a
+staying item ``). A statement takes ray items or fan items (`` a
 flatten takes ray items or fan items, not both ``), and at least two fan
 items.
 

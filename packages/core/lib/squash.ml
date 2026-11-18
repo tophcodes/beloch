@@ -523,7 +523,7 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
            ~o ~elem_names:[ spine_str; "the axis"; "the axis"; target_str ]
            ~over:[] ~anchor:(Some anchor_polys)
            ~staying:(Some (Collapse.Points [ stayer ]))
-           ~toward:None ~emergent:None span)
+           ~emergent:None span)
   | None ->
       own_hinges ctx st2 ~o ~f ~f' ~target_line ~spine_cid:c.cid ~cid_a ~cid_b
         ~in_flap:(fun i -> in_anchor i || in_lower i)

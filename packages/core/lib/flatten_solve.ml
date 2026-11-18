@@ -104,7 +104,7 @@ let vertex_of (ctx : Ctx.ctx) ~(elem_cands : elem_cand list list)
 (* The fan on resolved operands (docs/reference/KERNEL.md, Fan): the
    candidate segments of every element, the vertex [o] they share, the
    `over` constraints as face pairs, the anchor as paper polygons, the
-   stayer and the `toward` point, a paper point. [verb] names the write in
+   stayer and the emergent item, a table point and its name. [verb] names the write in
    its messages and in the crease records; [elem_names] names the elements
    as the program wrote them, for the message that blames one. Returns the
    emergent crease when one was scored; the caller binds the output clause
@@ -113,7 +113,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     ~(verb : string) ~(elem_cands : elem_cand list list) ~(o : Geom.point)
     ~(elem_names : string list) ~(over : (int * int) list)
     ~(anchor : Geom.point array list option)
-    ~(staying : Collapse.stayer option) ~(toward : Geom.point option)
+    ~(staying : Collapse.stayer option)
     ~(emergent : (Geom.point * string) option)
     (span : Error.span) : (int * Geom.line) option =
   let elem_of (fcid, fea, feb, valley) =
@@ -558,18 +558,9 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         else kept
   in
   let surviving = List.filter (fun (_, r, _) -> r <> []) combo_runs in
-  (* the candidate states and the stage of the selection that removed each
-     (docs/reference/FOLD.md, "The trace"), recorded once, when a state lands or the
-     statement fails *)
+  (* the candidate states (docs/reference/FOLD.md, "The trace"), recorded
+     once, when a state lands or the statement fails *)
   let candidates = List.concat_map (fun (_, r, _) -> r) surviving in
-  let removed = ref [] in
-  let remove why ~kept rs =
-    List.iter
-      (fun r ->
-        if not (List.memq r kept || List.mem_assq r !removed) then
-          removed := (r, why) :: !removed)
-      rs
-  in
   let traced = ref false in
   let trace chosen =
     if not !traced then begin
@@ -579,7 +570,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
            (fun ((st, _, (rays, emergent), _) as r) ->
              { Trace.state = Some st;
                detail = Trace.fan ~pre:!(ctx.state) ~post:st ~point:o ~rays ~emergent;
-               removed = List.assq_opt r !removed;
+               removed = None;
                chosen = (match chosen with Some c -> c == r | None -> false) })
            candidates)
     end
@@ -592,16 +583,9 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       Error.fail ~hint:"select a segment with `&`" span
         (Printf.sprintf "%s is ambiguous at the vertex" multiseg)
   | _ -> ());
-  (* the winning combination (or the leading one when none survive, so the
-     selection code's [given_fars] are well-defined for the error-reporting
-     path). *)
+  (* the winning combination, or the leading one when none survive *)
   let winner_combo =
     match surviving with (c, _, _) :: _ -> c | [] -> List.hd combos
-  in
-  let given_fars =
-    List.map
-      (fun (a, b, c, _) -> Collapse.far_of o (elem_of (a, b, c, true)))
-      winner_combo
   in
   let realizations =
     match surviving with (_, r, _) :: _ -> r | [] -> []
@@ -694,203 +678,24 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       Error.fail ~hint:"add (staying .p) with .p in the sector that stays" span
         (verb ^ " is ambiguous: its candidates hold different sectors still")
   | many ->
-      (* |deciding| > 1: without (toward) the statement is ambiguous;
-         with it, two stages pick a state:
-         1. POSITION stage: placements depend only on ray LINES, so
-            realizations group into position classes by moved-material
-            centroid; (toward) picks the class by centroid dot.
-         2. DIPOLE stage: if several remain, maximize
-            {m S(R) = Σ_faces area · height ·
-            ((table_centroid − O)·(toward − O)) }, the height of a face
-            being the number of faces it lies above less the number it
-            lies below: "the material lying
-            toward p ends up on top." Mirror realizations score ±equal,
-            so any off-axis toward decides; toward ON a reflective
-            symmetry axis of the given rays is guarded explicitly. *)
-      let paper_centroid_area (poly : Geom.point array) :
-          Geom.point * Num.t =
-        let n = Array.length poly in
-        let a2 = ref Num.zero and cx = ref Num.zero and cy = ref Num.zero in
-        for i = 0 to n - 1 do
-          let p = poly.(i) and q = poly.((i + 1) mod n) in
-          let cross =
-            Num.sub (Num.mul p.Geom.x q.Geom.y) (Num.mul q.Geom.x p.Geom.y)
-          in
-          a2 := Num.add !a2 cross;
-          cx := Num.add !cx (Num.mul (Num.add p.Geom.x q.Geom.x) cross);
-          cy := Num.add !cy (Num.mul (Num.add p.Geom.y q.Geom.y) cross)
-        done;
-        let area = Num.div !a2 (Num.of_int 2) in
-        let denom = Num.mul (Num.of_int 3) !a2 in
-        ({ Geom.x = Num.div !cx denom; y = Num.div !cy denom }, area)
-      in
-      let commit = land_realization in
-      (match toward with
-      | None -> (
-          (* without (toward) nothing picks among the states; the hint
-             names the items that would (BEP-0061). A verb that wrote the
-             rays itself gets no hint. *)
-          if verb = "flatten" then
-            let names =
-              List.map2
-                (fun name (_, _, _, dir) ->
-                  if dir = Ast.MvFree then Some (Flatten.ray_item name) else None)
-                elem_names winner_combo
-            in
-            let message, hint =
-              Flatten.suggest ~verb ~items:names ~letters:(fun (_, _, _, l) -> l) many
-            in
-            Error.fail ~hint span message
-          else
-            Error.fail span
-              (Printf.sprintf "%s is ambiguous: %d realizations" verb
-                 (List.length many)))
-      | Some toward_pt ->
-          let st_pre = !(ctx.state) in
-          (* stage 1: moved-material centroid per realization; a pure
-             function of table placement, shared within a class. *)
-          let centroid_of (st_post, _, _, _) : Geom.point =
-            let faces = Fold_state.faces st_post in
-            let nf = Array.length faces in
-            let sx = ref Num.zero and sy = ref Num.zero and sa = ref Num.zero in
-            for f = 0 to nf - 1 do
-              let c_f, a_f = paper_centroid_area faces.(f) in
-              let pre_pos = Fold_state.table_position st_pre c_f in
-              let post_pos =
-                Isometry.apply_point (Fold_state.face_iso2 st_post f) c_f
-              in
-              if not (Geom.point_equal pre_pos post_pos) then begin
-                sx := Num.add !sx (Num.mul a_f post_pos.Geom.x);
-                sy := Num.add !sy (Num.mul a_f post_pos.Geom.y);
-                sa := Num.add !sa a_f
-              end
-            done;
-            if Num.sign !sa = 0 then
-              invalid_arg
-                "Flatten: a completed collapse moved no material \
-                 (unreachable)"
-            else { Geom.x = Num.div !sx !sa; y = Num.div !sy !sa }
-          in
-          let dot_toward (p : Geom.point) : Num.t =
-            Num.add
-              (Num.mul (Num.sub p.Geom.x o.Geom.x)
-                 (Num.sub toward_pt.Geom.x o.Geom.x))
-              (Num.mul (Num.sub p.Geom.y o.Geom.y)
-                 (Num.sub toward_pt.Geom.y o.Geom.y))
-          in
-          let by_centroid = List.map (fun r -> (centroid_of r, r)) many in
-          let distinct_centroids =
-            List.fold_left
-              (fun acc (c, _) ->
-                if List.exists (Geom.point_equal c) acc then acc else c :: acc)
-              [] by_centroid
-          in
-          let class_scored =
-            List.map (fun c -> (dot_toward c, c)) distinct_centroids
-            |> List.sort (fun (d1, _) (d2, _) -> Num.compare d2 d1)
-          in
-          let winning_centroid =
-            match class_scored with
-            | (d0, _) :: (d1, _) :: _ when Num.compare d0 d1 = 0 ->
-                remove Trace.By_toward
-                  ~kept:
-                    (List.filter_map
-                       (fun (c, r) ->
-                         if Num.compare (dot_toward c) d0 = 0 then Some r
-                         else None)
-                       by_centroid)
-                  many;
-                (* two DISTINCT position classes tie: toward is
-                   collinear with a crease through O (the classes are
-                   mirror-symmetric about it) *)
-                Error.fail ~hint:Flatten.e_toward_ambiguous_hint span
-                  Flatten.e_toward_ambiguous
-            | (_, c) :: _ -> c
-            | [] -> assert false (* [many] is non-empty here *)
-          in
-          let winners =
-            List.filter_map
-              (fun (c, r) ->
-                if Geom.point_equal c winning_centroid then Some r else None)
-              by_centroid
-          in
-          remove Trace.By_toward ~kept:winners many;
-          (match winners with
-          | [] -> assert false (* [many] is non-empty, so a class wins *)
-          | [ r ] -> commit r
-          | kept ->
-              (* stage 2, but first the symmetry-axis guard (rule doc
-                 §Ties): the dipole's null direction is NOT the
-                 geometric mirror axis, so an on-axis toward would get
-                 a strict-but-arbitrary [argmax]; if the given-ray
-                 direction set is invariant under reflection across the
-                 O-toward line, the sides are
-                 indistinguishable. *)
-              let on_symmetry_axis =
-                Geom.point_equal toward_pt o
-                ||
-                let axis = Geom.line_through o toward_pt in
-                let refl = Isometry.reflect_across_line axis in
-                List.for_all
-                  (fun far ->
-                    let rf = Isometry.apply_point refl far in
-                    List.exists
-                      (fun g -> Geom.ccw_compare ~center:o rf g = 0)
-                      given_fars)
-                  given_fars
-              in
-              if on_symmetry_axis then
-                Error.fail ~hint:Flatten.e_toward_ambiguous_hint span
-                  Flatten.e_toward_ambiguous
-              else
-                let dipole (st, _, _, _) : Num.t =
-                  let faces = Fold_state.faces st in
-                  let nf = Array.length faces in
-                  (* the faces a face lies above, less those it lies below *)
-                  let height f =
-                    let h = ref 0 in
-                    for g = 0 to nf - 1 do
-                      match Fold_state.rel st f g with
-                      | Fold_state.Above -> incr h
-                      | Fold_state.Below -> decr h
-                      | Fold_state.Apart -> ()
-                    done;
-                    !h
-                  in
-                  let acc = ref Num.zero in
-                  for f = 0 to nf - 1 do
-                    let pc, a_f = paper_centroid_area faces.(f) in
-                    let a_f = if Num.sign a_f < 0 then Num.neg a_f else a_f in
-                    let tc =
-                      Isometry.apply_point (Fold_state.face_iso2 st f) pc
-                    in
-                    acc :=
-                      Num.add !acc
-                        (Num.mul a_f
-                           (Num.mul
-                              (Num.of_int (height f))
-                              (dot_toward tc)))
-                  done;
-                  !acc
-                in
-                let scored =
-                  List.map (fun r -> (dipole r, r)) kept
-                  |> List.sort (fun (d1, _) (d2, _) -> Num.compare d2 d1)
-                in
-                (match scored with
-                | (d0, _) :: (d1, _) :: _ when Num.compare d0 d1 = 0 ->
-                    remove Trace.By_top
-                      ~kept:
-                        (List.filter_map
-                           (fun (d, r) -> if Num.compare d d0 = 0 then Some r else None)
-                           scored)
-                      kept;
-                    Error.fail ~hint:Flatten.e_toward_ambiguous_hint span
-                  Flatten.e_toward_ambiguous
-                | (_, r) :: _ ->
-                    remove Trace.By_top ~kept:[ r ] kept;
-                    commit r
-                | [] -> assert false (* [kept] has >= 2 elements *))))
+      (* more than one state left: the hint names the items that would
+         leave one (BEP-0061). A verb that wrote the rays itself gets no
+         hint. *)
+      if verb = "flatten" then
+        let names =
+          List.map2
+            (fun name (_, _, _, dir) ->
+              if dir = Ast.MvFree then Some (Flatten.ray_item name) else None)
+            elem_names winner_combo
+        in
+        let message, hint =
+          Flatten.suggest ~verb ~items:names ~letters:(fun (_, _, _, l) -> l) many
+        in
+        Error.fail ~hint span message
+      else
+        Error.fail span
+          (Printf.sprintf "%s is ambiguous: %d realizations" verb
+             (List.length many))
   with Error.Beloch_error _ as e ->
     trace None;
     raise e);
@@ -901,7 +706,6 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     ~(elems : Ast.collapse_elem list)
     ~(overs : (Ast.flap_arg * Ast.flap_arg) list)
     ~(staying_opt : Ast.point_operand list option) ~(on_opt : Ast.flap_arg option)
-    ~(toward_opt : Ast.point_operand option)
     ~(emergent_opt : Ast.point_operand option) (span : Error.span) : unit =
   let elem_cands = resolve_elems ctx ~elems span in
   let o = vertex_of ctx ~elem_cands span in
@@ -958,7 +762,6 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
         in
         Some (Collapse.Points images)
   in
-  let toward = Option.map (Resolve.resolve_point ctx) toward_opt in
   let emergent =
     Option.map
       (fun po -> (Resolve.table_of ctx po, Resolve.fstr (Ast.FlapPoint po)))
@@ -969,7 +772,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   in
   let emergent =
     solve ctx ~into ~verb:"flatten" ~elem_cands ~o ~elem_names ~over ~anchor
-      ~staying ~toward ~emergent span
+      ~staying ~emergent span
   in
   (* run the output clause's binding step: with no emergent ray materialized
      it takes a selectable bundle of the given rays; with one it takes the

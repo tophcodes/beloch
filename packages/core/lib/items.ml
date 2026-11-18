@@ -289,7 +289,7 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
   (* rays and orders are accumulated reversed and restored, so that the ray
      order the first two rays' stayer convention reads
      (docs/reference/BELOCH-WRITES.md, flatten) is source order *)
-  let rays = ref [] and overs = ref [] and staying = ref None and toward = ref None in
+  let rays = ref [] and overs = ref [] and staying = ref None in
   let on = ref None and fans = ref [] and emergent = ref None in
   List.iter
     (fun it ->
@@ -300,14 +300,10 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
       | RiOrder (u, l, _) -> overs := (u, l) :: !overs
       | RiStaying (ps, sp) -> slot verb "staying" staying sp ps
       | RiOn (fa, sp) -> slot verb "on" on sp fa
-      | RiSelection ({ target = TowardPoint p; subject = None }, sp) ->
-          slot verb "toward" toward sp p
-      | RiSelection ({ subject = Some _; _ }, sp) ->
-          Error.fail ~hint:"write (toward .p)" sp
-            "the toward of flatten names no object"
-      | RiSelection ({ target = TowardLine _; _ }, sp) ->
-          Error.fail ~hint:"name a point" sp
-            "the toward of flatten takes a point, not a line"
+      | RiSelection (_, sp) ->
+          Error.fail
+            ~hint:"name the side of the emergent ray with (emergent beside .p), or give letters"
+            sp "flatten takes no (toward) item: an item is a condition (BEP-0061)"
       | it -> refuse verb it)
     items;
   match (!rays, !fans) with
@@ -317,15 +313,14 @@ let flatten (items : raw_item list) (out : output) (span : Error.span) : stmt =
         "a flatten takes ray items or fan items, not both"
   | rays, [] ->
       Flatten
-        ( out, List.rev rays, List.rev !overs, !staying, !on, !toward,
-          Option.map fst !emergent, span )
+        (out, List.rev rays, List.rev !overs, !staying, !on, Option.map fst !emergent, span)
   | [], fans ->
       Option.iter
         (fun (_, sp) ->
           Error.fail ~hint:"drop the emergent item" sp
             "a flatten with several fans has no emergent ray")
         !emergent;
-      FlattenFans (out, List.rev fans, List.rev !overs, !staying, !on, !toward, span)
+      FlattenFans (out, List.rev fans, List.rev !overs, !staying, !on, span)
 
 (* `squash` takes one bare alignment, the line of its spine onto its target
    (BEP-0038), and nothing else: the spine names the anchor (BEP-0040). *)

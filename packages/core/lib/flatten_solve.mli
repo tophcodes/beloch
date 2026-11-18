@@ -19,14 +19,14 @@ val solve :
   over:(int * int) list ->
   anchor:Geom.point array list option ->
   staying:Collapse.stayer option ->
-  toward:Geom.point option ->
   emergent:(Geom.point * string) option ->
   Error.span ->
   (int * Geom.line) option
 (** The fan at [o] on resolved operands: one candidate list per element,
     the `over` constraints as face pairs, the anchor flap as paper polygons
     ([None]: the topmost flap under [o]), the stayer ([None]: the wedge
-    between the first two elements) and the `toward` point, a paper point.
+    between the first two elements) and the emergent item: a table point
+    and its name.
     [verb] names the write in messages and crease records, [elem_names] the
     elements as the program wrote them. Leaves the chosen state in the
     context and records the trace; returns the emergent crease where one
@@ -46,7 +46,6 @@ val run :
   on_opt:Ast.flap_arg option ->
   (** [on_opt] names the anchor flap, whose tip the flatten moves; [None]
       takes the topmost flap under the vertex (BEP-0040). *)
-  toward_opt:Ast.point_operand option ->
   emergent_opt:Ast.point_operand option ->
   Error.span ->
   unit

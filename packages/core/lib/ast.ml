@@ -287,7 +287,7 @@ type stmt =
          spine lies on --l opens and its spine lands on the target, a line
          or a point; a fan at the spine's vertex (BEP-0038, BEP-0044) *)
   | Flatten of output * collapse_elem list * (flap_arg * flap_arg) list
-                * point_operand list option * flap_arg option * point_operand option
+                * point_operand list option * flap_arg option
                 * point_operand option * Error.span
       (* flatten <items>: single-vertex multi-crease fold, ONE solver
          pipeline (spec §4.9). elements = the given rays, each with an
@@ -298,18 +298,17 @@ type stmt =
          makes the emergent completing ray part of the solution space
          (Flatten.candidates). The realization space (candidate × Maekawa
          M/V pattern × stacking, via Collapse.collapse_all) is filtered by
-         the hard constraints; the `(toward .p)` item (the [point_operand]
-         option) selects among survivors by the two-stage rule (position
-         class, centered-rank dipole); the `(emergent beside .p)` item (the
-         last [point_operand] option) keeps the states whose emergent ray
-         lies in a wedge that holds .p. an `as` output
+         the hard constraints, the `(emergent beside .p)` item (the
+         [point_operand] option) among them: it keeps the states whose
+         emergent ray lies in a wedge that holds .p. One state left is the
+         result (BEP-0061, BEP-0078). an `as` output
          binds the name to the emergent crease (when one was materialized) or the
          given-ray bundle. *)
   | FlattenFans of output * fan list * (flap_arg * flap_arg) list
                    * point_operand list option * flap_arg option
-                   * point_operand option * Error.span
+                   * Error.span
       (* flatten <fan items> <items>: the fans fold in one motion (BEP-0055);
-         the over pairs, staying, on and toward apply to the whole
+         the over pairs, staying and on apply to the whole
          statement, as for [Flatten] *)
 
 (* The sheet a `paper` line opens: the square of a side (1 when none is

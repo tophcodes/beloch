@@ -171,8 +171,8 @@ let stmt_shape (s : Ast.stmt) : string =
       Printf.sprintf "reverse %s %s moving=%s outside=%b%s" (outstr out) (mstr m)
         (optstr fastr rs.Ast.rmoving)
         rs.Ast.outside (sidestr rs.Ast.rtoward None)
-  | Ast.Flatten (out, elems, overs, staying, _, toward, _, _) ->
-      Printf.sprintf "flatten %s rays=[%s] overs=[%s] staying=%s toward=%s"
+  | Ast.Flatten (out, elems, overs, staying, _, emergent, _) ->
+      Printf.sprintf "flatten %s rays=[%s] overs=[%s] staying=%s emergent=%s"
         (outstr out)
         (String.concat " "
            (List.map
@@ -182,9 +182,9 @@ let stmt_shape (s : Ast.stmt) : string =
         (String.concat " "
            (List.map (fun (u, l) -> fastr u ^ ">" ^ fastr l) overs))
         (optstr (fun ps -> String.concat " " (List.map pstr ps)) staying)
-        (optstr pstr toward)
-  | Ast.FlattenFans (out, fans, overs, staying, _, toward, _) ->
-      Printf.sprintf "flatten %s fans=[%s] overs=[%s] staying=%s toward=%s"
+        (optstr pstr emergent)
+  | Ast.FlattenFans (out, fans, overs, staying, _, _) ->
+      Printf.sprintf "flatten %s fans=[%s] overs=[%s] staying=%s"
         (outstr out)
         (String.concat " "
            (List.map
@@ -201,7 +201,6 @@ let stmt_shape (s : Ast.stmt) : string =
         (String.concat " "
            (List.map (fun (u, l) -> fastr u ^ ">" ^ fastr l) overs))
         (optstr (fun ps -> String.concat " " (List.map pstr ps)) staying)
-        (optstr pstr toward)
   | Ast.Squash (out, spine, target, _) ->
       Printf.sprintf "squash %s %s onto %s" (outstr out) (lstr spine)
         (match target with Ast.AoPoint p -> pstr p | Ast.AoLine l -> lstr l)
@@ -546,8 +545,8 @@ let reference_writes =
     "mark    (map --ab onto --cd) (on #[.c]) (between .a .m) (mountain)";
     "mark    (map .a onto .c) (between .a .m) as --p";
     "mark    (--p) into --p";
-    "flatten (--h & --bc) (--v & --cd) (.q over .r) (staying .a) (toward .q)";
-    "flatten (--ea) (--ec) (--eb) (toward .a) as --ear";
+    "flatten (--h & --bc) (--v & --cd) (.q over .r) (staying .a)";
+    "flatten (--ea) (--ec) (--eb) (emergent beside .a) as --ear";
     "flatten (--ba \\ .a) (--bc \\ .c) as --r";
     "flip";
     "--l = (map --a onto --b) (toward .p)";
@@ -706,14 +705,14 @@ let test_parse_flatten_basic () =
   Alcotest.(check string)
     "four rays, the last pinned"
     "flatten anon rays=[--a:free --b:free --c:free --e:mountain] overs=[] \
-     staying=- toward=-"
+     staying=- emergent=-"
     (shape1 "flatten (--a) (--b) (--c) (--e mountain)")
 
 let test_parse_flatten_over_staying () =
   Alcotest.(check string)
     "filtered rays, an order and a stayer"
     "flatten anon rays=[--a & .a:free --e & .o & --ab:mountain] overs=[.b>.d] \
-     staying=.m toward=-"
+     staying=.m emergent=-"
     (shape1
        "flatten (--a & .a) (--e & .o & --ab mountain) (.b over .d) (staying .m)")
 
@@ -725,17 +724,20 @@ let test_parse_flatten_followed_by_stmt () =
       "paper square\nflatten (--a) (--b mountain)\n.x = --a * --b\n"
   in
   match prog with
-  | [ Ast.Flatten (Ast.Anonymous, [ _; _ ], [], None, None, None, None, _); Ast.Point ("x", _, _) ]
+  | [ Ast.Flatten (Ast.Anonymous, [ _; _ ], [], None, None, None, _); Ast.Point ("x", _, _) ]
     ->
       ()
   | _ -> Alcotest.fail "expected Flatten then Point"
 
 let test_parse_flatten_toward_item () =
   Alcotest.(check string)
-    "toward is an item like the others"
+    "the emergent item is an item like the others"
     "flatten anon rays=[--a & .p:free --b & .q:valley --c & .r:mountain] \
-     overs=[] staying=- toward=.s"
-    (shape1 "flatten (--a & .p) (--b & .q valley) (--c & .r mountain) (toward .s)")
+     overs=[] staying=- emergent=.s"
+    (shape1 "flatten (--a & .p) (--b & .q valley) (--c & .r mountain) (emergent beside .s)");
+  expect_error_hint "flatten takes no (toward) item"
+    "name the side of the emergent ray with (emergent beside .p), or give letters"
+    (fun () -> parse_stmts ~filename:"t.bel" "paper square\nflatten (--a) (--b) (--c) (toward .s)\n")
 
 (* BEP-0055: fan items, with a construction as a ray, `at` and `as` *)
 let test_parse_flatten_fan_items () =
@@ -743,7 +745,7 @@ let test_parse_flatten_fan_items () =
     "two fans beside the statement's own items"
     "flatten as --pf fans=[{at=- rays=[line{--h & .sr}:free \
      construction{.sr onto --mid; through .a}:free] as=.r} \
-     {at=.q rays=[line{--v}:mountain] as=-}] overs=[] staying=.o toward=-"
+     {at=.q rays=[line{--v}:mountain] as=-}] overs=[] staying=.o"
     (shape1
        "flatten (fan (--h & .sr) (map .sr onto --mid through .a) as .r)\n\
        \        (fan at .q (--v mountain)) (staying .o) as --pf")
@@ -756,7 +758,7 @@ let test_parse_flatten_fan_construction_letter () =
      construction{.sr onto --mid; through .a}:valley] as=-} \
      {at=- rays=[line{--v}:free construction{.sl onto --mid; through .a}:mountain] \
      as=-}] \
-     overs=[] staying=.o toward=-"
+     overs=[] staying=.o"
     (shape1
        "flatten (fan (--h & .sr) (map .sr onto --mid through .a valley))\n\
        \        (fan (--v) (map .sl onto --mid through .a mountain)) (staying .o)")
@@ -792,20 +794,20 @@ let test_parse_flatten_double_staying_rejected () =
         second_staying start.Lexing.pos_cnum
 
 let test_parse_flatten_double_toward_rejected () =
-  expect_error "only one toward item per flatten" (fun () ->
+  expect_error "only one emergent item per flatten" (fun () ->
       parse_stmts ~filename:"t.bel"
-        "paper square\nflatten (--a) (toward .p) (toward .q)\n")
+        "paper square\nflatten (--a) (emergent beside .p) (emergent beside .q)\n")
 
 let test_parse_flatten_brace_item_retired () =
-  (* braces are blocks, never items: `{toward .s}` is gone with the rest of
+  (* braces are blocks, never items: `{staying .s}` is gone with the rest of
      the brace items *)
   expect_error "syntax error" (fun () ->
-      parse_stmts ~filename:"t.bel" "paper square\nflatten (--a) {toward .c}\n")
+      parse_stmts ~filename:"t.bel" "paper square\nflatten (--a) {staying .c}\n")
 
 let test_parse_flatten_trailing_toward_rejected () =
   expect_error "syntax error" (fun () ->
       parse_stmts ~filename:"t.bel"
-        "paper square\nflatten (--a) (--b) toward .c\n")
+        "paper square\nflatten (--a) (--b) emergent beside .c\n")
 
 (* ---- Items stand in any order (Acceptance 2) ---- *)
 
@@ -852,7 +854,7 @@ let test_items_any_order_reverse () =
 let test_items_any_order_flatten () =
   (* the ray items keep source order; everything else moves freely *)
   let rays = "(--h & --bc) (--v & --cd)" in
-  let others = [ "(.q over .r)"; "(staying .a)"; "(toward .q)" ] in
+  let others = [ "(.q over .r)"; "(staying .a)"; "(emergent beside .q)" ] in
   List.iter
     (fun order ->
       Alcotest.(check string)
@@ -1003,8 +1005,8 @@ let test_output_clause_forms () =
   Alcotest.(check string)
     "flatten scores under a name"
     "flatten as --ear rays=[--ea:free --ec:free --eb:free] overs=[] staying=- \
-     toward=.a"
-    (shape1 "flatten (--ea) (--ec) (--eb) (toward .a) as --ear")
+     emergent=.a"
+    (shape1 "flatten (--ea) (--ec) (--eb) (emergent beside .a) as --ear")
 
 let test_mark_items () =
   Alcotest.(check string)
@@ -1067,9 +1069,9 @@ let test_err_second_extent () =
         "paper square\nmark (--l) (between .a .b) (at .m)\n")
 
 let test_err_second_selection () =
-  expect_error "only one toward item per flatten" (fun () ->
+  expect_error "only one staying item per flatten" (fun () ->
       parse_stmts ~filename:"t.bel"
-        "paper square\nflatten (--a) (--b) (toward .p) (toward .q)\n")
+        "paper square\nflatten (--a) (--b) (staying .p) (staying .q)\n")
 
 let test_err_second_staying () =
   expect_error "only one staying item per flatten" (fun () ->
@@ -1237,7 +1239,7 @@ let () =
             test_parse_flatten_over_staying;
           Alcotest.test_case "flatten followed by stmt" `Quick
             test_parse_flatten_followed_by_stmt;
-          Alcotest.test_case "flatten toward item" `Quick
+          Alcotest.test_case "flatten emergent item, no toward" `Quick
             test_parse_flatten_toward_item;
           Alcotest.test_case "flatten fan items" `Quick
             test_parse_flatten_fan_items;
@@ -1247,11 +1249,11 @@ let () =
             test_parse_flatten_fan_errors;
           Alcotest.test_case "flatten double staying rejected" `Quick
             test_parse_flatten_double_staying_rejected;
-          Alcotest.test_case "flatten double toward rejected" `Quick
+          Alcotest.test_case "flatten double emergent rejected" `Quick
             test_parse_flatten_double_toward_rejected;
           Alcotest.test_case "flatten brace item retired" `Quick
             test_parse_flatten_brace_item_retired;
-          Alcotest.test_case "flatten trailing toward rejected" `Quick
+          Alcotest.test_case "flatten trailing emergent rejected" `Quick
             test_parse_flatten_trailing_toward_rejected;
         ] );
       ( "items",

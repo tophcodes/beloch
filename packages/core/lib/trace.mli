@@ -13,7 +13,6 @@ type removal =
   | By_bodies  (** a block of the tip has no body *)
   | By_interleaved  (** the bodies of the two blocks are not separated *)
   | By_crossing  (** the reflection violates a non-crossing condition *)
-  | By_top  (** less of the material toward the point on top *)
 
 type segment = Geom.point * Geom.point
 

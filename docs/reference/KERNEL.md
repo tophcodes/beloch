@@ -416,9 +416,8 @@ candidate whose leading pair admits no stayer sector, and it is also the
 fallback the evaluator reports once every candidate and every Maekawa
 pattern has been tried and none produced a live realization (\|S\| = 0,
 under Pipeline). Check 14 runs once every segment combination has been
-attempted in full, before `toward` selection is ever reached: a genuine
-contradiction between combinations, distinct from the geometric/M/V
-selection stages that follow it.
+attempted in full: a genuine contradiction between combinations, distinct
+from an ambiguity among the states of one combination.
 
 Two checks concern the anchor. They are numbered after the others so that
 the numbers above keep their meaning.
@@ -527,9 +526,7 @@ the stayer (Sectors, below).
    combination independently produced a non-empty realization pool, the
    statement stops here: `` <name> is ambiguous at the vertex; select a
    segment with `&` ``, naming the element that had the multiple segments.
-   Only a single winning combination's pool ever reaches selection:
-   `toward` never resolves a segment-choice contradiction, only a fold
-   direction.
+   Only a single winning combination's pool is decided on.
 4. **Decide by \|S\|** (S = every surviving realization of the winning
    combination, pooled across candidates and, per candidate, across every
    admissible stayer sector):
@@ -553,8 +550,8 @@ the stayer (Sectors, below).
      failure: the first that isn't `` assignment forces self-intersection
      ``, falling back to that, or to `` Maekawa violated by the stated
      assignment `` if no pattern was even tried.
-   - \|S\| = 1 → fold it. A `toward` item present is redundant, never an error.
-   - \|S\| > 1 → **selection** (Selection, below).
+   - \|S\| = 1 → fold it.
+   - \|S\| > 1 → an error with a hint (Ambiguity, below).
 
 ### Sectors
 
@@ -577,31 +574,10 @@ holds at each hinge whose face on the clockwise side of the ray lies above no
 such face of another hinge the element names; the other hinges take the
 letter the layer order gives them.
 
-### Selection
+### Ambiguity
 
-With more than one realization left and a `toward` item, `Flatten_solve`
-selects in two stages, each narrowing the set:
-
-1. **Position.** Where a realization lies depends on which ray lines it
-   used and never on the letters, so the realizations group into position
-   classes by the centroid of their moved material. `toward .p` keeps the
-   class that maximizes $(c - O) \cdot (p - O)$ for the centroid $c$. Two
-   classes with one value of that product mean that $p$ is collinear with a
-   crease through O: `` `toward` does not pick a side — the point is
-   collinear with a crease through the vertex ``, hint `` aim it off the
-   creases ``.
-2. **Dipole.** Within the class, the realization that maximizes
-   $S(R) = \sum_{\text{faces}} \text{area} \cdot h_f \cdot ((c_f - O) \cdot (p - O))$,
-   with $c_f$ the table centroid of the face and $h_f$ the number of faces
-   it lies above less the number of faces it lies below
-   ([[BEP-0060]]): the material toward $p$ comes to lie on top. Mirror realizations score
-   the same value with opposite sign, so any $p$ off the axis decides. A
-   guard runs first: when the set of ray directions is invariant under the
-   reflection across the line through O and $p$, or $p$ is O, the sides are
-   indistinguishable, and the error is the one of stage 1.
-
-Without `toward` no stage runs: more than one realization is
-`` flatten is ambiguous: <n> realizations ``. `Flatten.suggest` writes its
+More than one realization is `` flatten is ambiguous: <n>
+realizations ``. `Flatten.suggest` writes its
 hint from the pattern each realization came from, the letter of every
 given ray: for up to four realizations an item per realization, a letter no
 other realization shares or two that together part it, and above four the

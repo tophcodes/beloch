@@ -271,7 +271,7 @@ placement a menu of four entries.
 | intent | mountain, valley; the direction the crease pattern draws, no part of the state | `mark` |
 | letter | mountain, valley as a constraint on a ray, or on a hinge of the spine ([[reference/model#def-letter\|def-letter]]) | `flatten`, `reverse` |
 | order | one sector over another | `flatten` |
-| selection | `toward` a point or a line, the side that stays; `moving` a flap, the side that folds over; `heading` a line, the direction of the crease ([[reference/model#def-selection\|def-selection]]) | `toward` and `moving`: `mark`, `fold`, `reverse` and a binding over a construction; `toward` a point and `moving` a flap with `up` or `down`, the layers that stay and the layers that turn: `unfold`; `toward` a point: `flatten`; `heading`: `align` |
+| selection | `toward` a point or a line, the side that stays; `moving` a flap, the side that folds over; `heading` a line, the direction of the crease ([[reference/model#def-selection\|def-selection]]) | `toward` and `moving`: `mark`, `fold`, `reverse` and a binding over a construction; `toward` a point and `moving` a flap with `up` or `down`, the layers that stay and the layers that turn: `unfold`; `heading`: `align` |
 
 Line and crease are two sorts under one sigil, and the binding tells them
 apart: `--l = …` is a line, `… as --l` is a crease. A crease stands where a

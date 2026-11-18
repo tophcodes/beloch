@@ -252,13 +252,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     ~(bind_out : Ctx.crease_val -> unit) ~(fans : Ast.fan list)
     ~(overs : (Ast.flap_arg * Ast.flap_arg) list)
     ~(staying_opt : Ast.point_operand list option)
-    ~(on_opt : Ast.flap_arg option) ~(toward_opt : Ast.point_operand option)
-    (span : Error.span) : unit =
-  (match toward_opt with
-  | Some _ ->
-      Error.fail ~hint:"drop the toward item" span
-        "a flatten with several fans takes no toward item"
-  | None -> ());
+    ~(on_opt : Ast.flap_arg option) (span : Error.span) : unit =
   let fans = Array.of_list fans in
   let m = Array.length fans in
   if m < 2 then
