@@ -1429,6 +1429,29 @@ let test_penguin_flaps () =
   let flaps = List.length (List.filter (fun i -> find i = i) (List.init n Fun.id)) in
   Alcotest.(check int) "flaps" 14 flaps
 
+(* The flapping bird folds to its last flat state in six writes; its four
+   marks write no frame. The diagonal through .b and .d lies flat in the
+   middle of the petals, so faces join into flaps across its pieces
+   (def-flap): the flaps are the components of the faces joined by hinges
+   of angle 0. *)
+let test_flapping_bird_flaps () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"flapping-bird.bel" (read_example "flapping-bird.bel"))
+  in
+  let st = fd.Eval.state in
+  Alcotest.(check int) "one frame per write but the marks" 6
+    (List.length fd.Eval.frames);
+  let n = Array.length (Fold_state.faces st) in
+  let parent = Array.init n Fun.id in
+  let rec find i = if parent.(i) = i then i else find parent.(i) in
+  Array.iter
+    (fun (h : Fold_state.hinge) ->
+      if Num.equal h.angle Num.zero then parent.(find h.fa) <- find h.fb)
+    (Fold_state.hinges st);
+  let flaps = List.length (List.filter (fun i -> find i = i) (List.init n Fun.id)) in
+  Alcotest.(check int) "flaps" 24 flaps
+
 (* The samurai helmet folds to its last flat state in ten writes; its last
    write tucks the bottom corner of the back layer between the front and the
    back layer. The flaps are counted as for the cicada. The tuck is checked
@@ -1546,6 +1569,8 @@ let () =
             test_cicada_flaps;
           Alcotest.test_case "the penguin folds to 14 flaps" `Quick
             test_penguin_flaps;
+          Alcotest.test_case "the flapping bird folds to 24 flaps" `Quick
+            test_flapping_bird_flaps;
           Alcotest.test_case "the samurai helmet tucks its back corner inside" `Quick
             test_samurai_helmet_tuck;
           Alcotest.test_case "diagonals four faces" `Quick

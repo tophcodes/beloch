@@ -1,0 +1,75 @@
+@author "Claude (Anthropic)"
+@design traditional
+@source "[fisher1994, §4.2]"
+
+; The traditional flapping bird, after the program Fisher writes for it in
+; his Origami Language [fisher1994, §4.2]. The points carry his letters, and
+; the comment at each statement names the statements of his it stands for,
+; F1 to F24 in the order he writes them. He writes 24 statements. This
+; program writes 21: 10 writes, 10 bindings and the paper. A petal fold is
+; one statement here; he spends six on each and notes that a predefined
+; one would cut his program to six statements. His precreases and the
+; unfolds after them have no statement here, since a flat state needs no
+; precrease, and neither do his two turns over, since an item names the
+; back flap.
+
+paper square
+
+mark (through .b .d) as --bd                    ; F1
+mark (through .a .c) as --ac                    ; F2
+mark (map --cd onto --ab) as --fg               ; F3
+mark (map --bc onto --da) as --hi               ; F4
+.e = --ac * --bd                                ; F2, e
+.f = --bc * --fg                                ; F3, f
+.g = --da * --fg                                ; F3, g
+.h = --ab * --hi                                ; F4, h
+.i = --cd * --hi                                ; F4, i
+
+; the preliminary base, the face at .d held down: the diagonal through .a
+; and .c folds, the one through .b and .d stays flat at the middle of the
+; flaps of .b in front and .d behind
+flatten (--ac & .a mountain) (--ac & .c) (--fg & .f) (--fg & .g) (--hi & .h) (--hi & .i) (staying .d)    ; F5
+
+; the petal folds: each fan folds the side corner onto the center line,
+; and binds Fisher's point where the kite crease meets the midline
+--mid = (through .e .b)
+flatten (fan (--fg & .f) (map .f onto --mid through .b) as .j)
+        (fan (--hi & .h) (map .h onto --mid through .b) as .k)
+        (on #[.b]) (staying .e) as --pf          ; F6, F7, F11, F16-F18
+flatten (fan (--fg & .g) (map .g onto --mid through .d) as .l)
+        (fan (--hi & .i) (map .i onto --mid through .d) as .m)
+        (on #[.d]) (staying .e) as --pb          ; F8-F10, F12-F15
+
+; the head's two points, read while the leg of .a is still straight: 2/5
+; of the way from .a to y, where the line of F11 crosses the leg's inner
+; edge, is 1/5 from .a, and 1/3 of the way from .a to n is 4/15 of a-k
+.r = free on --ac & .a from .a by 1/5           ; F23, r
+.s = free on --[.a .k] from .a at 4/15          ; F23, s
+
+; neck and tail: each leg reversed up along the line from the side corners
+; to the point 4/5 of the way along its outer edge
+.n = free on --[.a .k] from .a at 4/5           ; F19, n
+reverse (through .h .n) (moving .a) as --neck   ; F19, F20
+.p = free on --[.c .j] from .c at 4/5           ; F21, p
+reverse (through .f .p) (moving .c) as --tail   ; F21, F22
+
+reverse (through .r .s) (moving .a) as --head   ; F23, F24
+
+; the bird stands on its side corners with the wings up
+@orient .h .b up
+
+; assert steps = 6
+; assert faces = 28
+
+; the four side corners meet on the center line, the two wing tips at the
+; top of it, and the paper center stays put
+; assert .f = .g
+; assert .f = .h
+; assert .f = .i
+; assert .b = .d
+; assert .e = (1/2, 1/2)
+
+; the kite points of the two petal folds meet in pairs, one pair on each
+; side of the center line
+; assert .j = .m
+; assert .k = .l
