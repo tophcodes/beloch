@@ -38,7 +38,8 @@ let two_q = Q.of_int 2
 (* generators are equal iff their (irreducible) μ and isolating interval match.
    Distinct roots of the same μ have distinct intervals, so are never merged. *)
 let same_gen (a : gen) (b : gen) : bool =
-  Q.equal a.lo b.lo && Q.equal a.hi b.hi
+  a == b
+  || Q.equal a.lo b.lo && Q.equal a.hi b.hi
   && Array.length a.mu = Array.length b.mu
   && Array.for_all2 Q.equal a.mu b.mu
 
