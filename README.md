@@ -26,8 +26,9 @@ patterns and folded states from that file, and other FOLD tools can open it.
 | --- | --- |
 | ![crane.bel as a crease pattern](examples/crane-cp.svg) | ![crane.bel folded flat](examples/crane-folded.svg) |
 
-The traditional crane, flat, in 28 statements:
-[`examples/crane.bel`](examples/crane.bel). It follows steps 2 to 17 of Ida's
+The traditional crane, flat, in 22 statements:
+[`examples/crane.bel`](examples/crane.bel). It folds the bird base by two petal
+folds and then follows steps 11 to 17 of Ida's
 crane program
 ([Ida 2020](https://doi.org/10.1007/978-3-319-59189-6), Fig. 7.19); her last
 two steps open the wings in 3D, which Beloch does not model yet. The native
