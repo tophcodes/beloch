@@ -541,6 +541,83 @@ let test_flip_leaves_derived_assignment_unchanged () =
     "flip does not change the derived collapse assignment (adjudicated 2026-07-16)"
     true (plain = flipped)
 
+(* -- a fan of several vertices whose layers lie in a cycle ----------------- *)
+
+(* a point given in sixteenths of the sheet's side *)
+let tw x y = pt (Num.of_q (Q.of_ints x 16)) (Num.of_q (Q.of_ints y 16))
+
+(* The square twist [hull2020, §6.5, Fig. 6.12] from the flat sheet. Face 0
+   is the central square, faces 1 to 4 the pleats on its sides, faces 5 to 8
+   the corner faces between two pleats. Hinges 0 to 3 are the sides of the
+   square, hinges 4 to 7 the crease of each pleat that leaves the square
+   clockwise, hinges 8 to 11 the other one. The square stays, every hinge
+   folds, and each hinge is its own element. With the sides and hinges 8 to
+   11 as valleys and hinges 4 to 7 as mountains the fan folds flat in one
+   state, and its four corner faces lie in a cycle. *)
+let test_square_twist () =
+  let faces =
+    [| [| tw 6 6; tw 10 6; tw 10 10; tw 6 10 |];
+       [| tw 10 6; tw 6 6; tw 0 3; tw 0 1 |];
+       [| tw 10 10; tw 10 6; tw 13 0; tw 15 0 |];
+       [| tw 6 10; tw 10 10; tw 16 13; tw 16 15 |];
+       [| tw 6 6; tw 6 10; tw 3 16; tw 1 16 |];
+       [| tw 10 6; tw 0 1; tw 0 0; tw 13 0 |];
+       [| tw 10 10; tw 15 0; tw 16 0; tw 16 13 |];
+       [| tw 6 10; tw 16 15; tw 16 16; tw 3 16 |];
+       [| tw 6 6; tw 1 16; tw 0 16; tw 0 3 |] |]
+  in
+  let h cid fa fb p r =
+    { Fold_state.fa; fb; line = Geom.line_through p r; angle = Num.zero;
+      crease_id = cid; prov = None }
+  in
+  let hinges =
+    [| h 0 0 1 (tw 6 6) (tw 10 6);
+       h 1 0 2 (tw 10 6) (tw 10 10);
+       h 2 0 3 (tw 10 10) (tw 6 10);
+       h 3 0 4 (tw 6 10) (tw 6 6);
+       h 4 1 5 (tw 10 6) (tw 0 1);
+       h 5 2 6 (tw 10 10) (tw 15 0);
+       h 6 3 7 (tw 6 10) (tw 16 15);
+       h 7 4 8 (tw 6 6) (tw 1 16);
+       h 8 5 2 (tw 10 6) (tw 13 0);
+       h 9 6 3 (tw 10 10) (tw 16 13);
+       h 10 7 4 (tw 6 10) (tw 3 16);
+       h 11 8 1 (tw 6 6) (tw 0 3) |]
+  in
+  let g = Fold_state.flat ~hinges faces in
+  let nf = Array.length faces in
+  let sgs =
+    Collapse.geoms_of g ~sec:(Array.init nf Fun.id)
+      ~tip:(Array.init nf (fun i -> i > 0))
+      ~names:(Array.init 12 Option.some)
+      ~role:(Array.make 12 Collapse.Fold) ~nelem:12
+      ~side:(fun _ a b -> Some (a, b))
+      ~faces ~nf
+  in
+  let valley = Array.init 12 (fun k -> k < 4 || k >= 8) in
+  match sgs with
+  | Error e -> Alcotest.failf "the twist does not close: %s" e
+  | Ok [ sg ] -> (
+      match Collapse.pipeline_solve sg ~valley ~over:[] with
+      | Error e -> Alcotest.failf "the twist does not fold flat: %s" e
+      | Ok states ->
+          Alcotest.(check int) "one state" 1 (List.length states);
+          let st = List.hd states in
+          List.iter
+            (fun (i, j) ->
+              Alcotest.(check bool)
+                (Printf.sprintf "corner face %d lies above corner face %d" i j)
+                true (Fold_state.above st i j))
+            [ (6, 5); (7, 6); (8, 7); (5, 8) ];
+          Array.iteri
+            (fun k v ->
+              Alcotest.(check bool)
+                (Printf.sprintf "hinge %d has its letter" k)
+                true
+                (Fold_state.mv st k = if v then Fold_state.V else Fold_state.M))
+            valley)
+  | Ok l -> Alcotest.failf "%d ways to fold, expected one" (List.length l)
+
 let () =
   Alcotest.run "collapse"
     [
@@ -599,4 +676,7 @@ let () =
           Alcotest.test_case "derived mv matches declared (no prior flip)"
             `Quick test_derived_mv_matches_declared;
         ] );
+      ( "cycle",
+        [ Alcotest.test_case "the square twist folds from the flat sheet" `Quick
+            test_square_twist ] );
     ]

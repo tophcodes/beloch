@@ -1868,7 +1868,7 @@ let tw x y : Geom.point =
    corner face overlaps its two neighbors and lies over one and under the
    other, around the square: a cycle. No stacking of the faces gives that
    order, and [with_order] builds the state [hull2020, §6.5, Fig. 6.12]. *)
-let test_with_order_square_twist () =
+let twist_geometry () =
   let faces =
     [| [| tw 6 6; tw 10 6; tw 10 10; tw 6 10 |];
        [| tw 10 6; tw 6 6; tw 0 3; tw 0 1 |];
@@ -1895,7 +1895,10 @@ let test_with_order_square_twist () =
        h 7 4 (tw 6 10) (tw 3 16);
        h 8 1 (tw 6 6) (tw 0 3) |]
   in
-  let geo = geometry_of ~faces ~hinges () in
+  geometry_of ~faces ~hinges ()
+
+let test_with_order_square_twist () =
+  let geo = twist_geometry () in
   (* the 28 overlapping pairs; the four corner faces 5 to 8 overlap their
      neighbors, and 5 and 7, 6 and 8 lie apart *)
   let above =
@@ -1926,6 +1929,29 @@ let test_with_order_square_twist () =
         (match Fold_state.with_rank geo ~rank:(Array.init 9 Fun.id) with
         | Error _ -> true
         | Ok g' -> not (Fold_state.same_order g g'))
+
+(* The search finds the square twist from the letters of its creases alone:
+   the sides of the square as valleys, and of each pleat's two creases the
+   one that leaves the square clockwise as a mountain. The one face of each
+   hinge lies above the other, and every other side is left open. *)
+let test_orders_square_twist () =
+  let geo = twist_geometry () in
+  let fixed =
+    [ (1, 0); (2, 0); (3, 0); (4, 0);
+      (5, 1); (6, 2); (7, 3); (8, 4);
+      (2, 5); (3, 6); (4, 7); (1, 8) ]
+  in
+  match Fold_state.orders geo ~kept:(fun _ _ -> None) ~fixed with
+  | Error v -> Alcotest.failf "square twist: %s" (Fold_state.violation_to_string v)
+  | Ok states ->
+      Alcotest.(check int) "one state" 1 (List.length states);
+      let g = List.hd states in
+      List.iter
+        (fun (i, j) ->
+          Alcotest.(check bool)
+            (Printf.sprintf "corner face %d lies above corner face %d" i j)
+            true (Fold_state.above g i j))
+        [ (6, 5); (7, 6); (8, 7); (5, 8) ]
 
 let () =
   Alcotest.run "fold_graph"
@@ -1995,7 +2021,9 @@ let () =
         [ Alcotest.test_case "round trip" `Quick test_with_order_round_trip;
           Alcotest.test_case "bad order" `Quick test_with_order_bad_order;
           Alcotest.test_case "layer cycle" `Quick test_with_order_layer_cycle;
-          Alcotest.test_case "square twist" `Quick test_with_order_square_twist ] );
+          Alcotest.test_case "square twist" `Quick test_with_order_square_twist;
+          Alcotest.test_case "the search finds the square twist" `Quick
+            test_orders_square_twist ] );
       ( "task1-metadata",
         [ Alcotest.test_case "metadata carried" `Quick test_metadata_carried;
           Alcotest.test_case "mv total" `Quick test_mv_total;

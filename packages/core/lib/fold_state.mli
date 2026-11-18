@@ -173,6 +173,21 @@ val with_order :
     @see <https://belochlang.org/model/#def-flat-state> realizes the layer order
     @see <https://belochlang.org/model/#def-noncrossing> realizes the non-crossing conditions *)
 
+val orders :
+  ?marks:mark array ->
+  geometry ->
+  kept:(int -> int -> bool option) ->
+  fixed:(int * int) list ->
+  (t list, violation) result
+(** Every state of a [geometry] whose layer order keeps the sides [kept]
+    gives, puts [i] above [j] for each pair [(i, j)] of [fixed], and
+    satisfies the conditions [with_order] checks. [kept i j] is asked for two
+    overlapping faces [i] < [j]: [Some up] says that [i] lies above [j] iff
+    [up], [None] leaves the side to the search. A pair of [fixed] names two
+    faces that overlap. The list is empty when no layer order satisfies all
+    of this; [Error] is a violation the geometry holds.
+    @see <https://belochlang.org/model/#def-noncrossing> realizes the non-crossing conditions *)
+
 val faces : t -> face array
 val hinges : t -> hinge array
 val root : t -> int

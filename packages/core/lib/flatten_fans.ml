@@ -560,7 +560,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     else None
   in
   let sgs =
-    Collapse.geoms_of st ~prune:true ~n:(List.length ids) ~sec ~tip ~names ~role ~nelem:nr
+    Collapse.geoms_of st ~sec ~tip ~names ~role ~nelem:nr
       ~side ~faces ~nf
   in
   (* the letters: free where the program left them, held to Maekawa's
@@ -613,14 +613,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                 (fun sg ->
                   match Collapse.pipeline_solve sg ~valley:(Array.of_list pat) ~over with
                   | Error e -> Error e
-                  | Ok { Collapse.candidate_at; distinct } ->
-                      Ok
-                        (List.filter_map
-                           (fun fr ->
-                             match candidate_at fr with
-                             | Ok s -> Some (s, Collapse.in_bounds hull s)
-                             | Error _ -> None)
-                           distinct))
+                  | Ok states ->
+                      Ok (List.map (fun s -> (s, Collapse.in_bounds hull s)) states))
                 sgs
             in
             match List.concat_map (function Ok l -> l | Error _ -> []) runs with

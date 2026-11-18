@@ -441,8 +441,11 @@ let share_region (p : placed) (i : int) (j : int) (k : int) : bool =
 (* The conditions of a non-crossing order that speak about hinges
    [hull2020 §6.5; hullzakharevich2023 §2.1], over the flat projection. Each
    compares the sides of faces that overlap where they are compared:
-   [between] answers only for a face that overlaps both others. *)
-let check_tacos (geo : geometry) (p : placed) (order : Bytes.t) : unit =
+   [between] answers only for a face that overlaps both others. [order] may
+   leave the side of an overlapping pair open, as [apart]; [decided i j] is
+   false for such a pair, and no condition fails on a side that is open. *)
+let check_tacos ?(decided = fun _ _ -> true) (geo : geometry) (p : placed)
+    (order : Bytes.t) : unit =
   let hinges = geo.g_hinges in
   let n = Array.length geo.g_faces in
   let between = between order n in
@@ -478,6 +481,7 @@ let check_tacos (geo : geometry) (p : placed) (order : Bytes.t) : unit =
         p.p_folded.(i) && p.p_folded.(j)
         && a <> c && a <> d && b <> c && b <> d
         && overlaps i j
+        && decided a c && decided c b && decided a d && decided d b
         && between a c b <> between a d b
       then raise (V (Taco_taco (i, j)))
     done
@@ -591,6 +595,159 @@ let with_order ?(marks = [||]) (geo : geometry) ~(above : (int * int) list) :
            | Some up -> up
            | None -> raise (V (Bad_order (i, j)))))
   with V v -> Error v
+
+(* Every layer order of [geo] that keeps the sides [kept] gives, puts [i]
+   above [j] for each [(i, j)] of [fixed], and satisfies the conditions of
+   [with_order]. [kept i j], asked for two overlapping faces [i] < [j], is
+   [Some up] where the caller knows the side ([i] above [j] iff [up]) and
+   [None] where the search decides it.
+
+   The search relates the open sides before it tries any: a face that covers
+   part of a hinge's crease lies on one side of both faces of the hinge, the
+   taco-tortilla condition at a folded hinge and one uncreased sheet at a
+   flat one (MODEL cond-taco-tortilla, def-flat-state). The sides this leaves
+   open fall into classes that turn together. The classes are set one after
+   the other, and a partial order that breaks a condition among the sides
+   set so far is given up. Ceiling: the order condition and the taco-taco
+   condition only reject, they set no side, so the work doubles with every
+   class that neither rejects. *)
+let orders ?(marks = [||]) (geo : geometry) ~(kept : int -> int -> bool option)
+    ~(fixed : (int * int) list) : (t list, violation) result =
+  match geo.g_placed with
+  | Error v -> Error v
+  | Ok p -> (
+      let n = Array.length geo.g_faces in
+      let order = Bytes.make (n * n) apart in
+      let set i j up =
+        Bytes.unsafe_set order ((i * n) + j) (if up then above_c else below_c);
+        Bytes.unsafe_set order ((j * n) + i) (if up then below_c else above_c)
+      in
+      let clear i j =
+        Bytes.unsafe_set order ((i * n) + j) apart;
+        Bytes.unsafe_set order ((j * n) + i) apart
+      in
+      let is_open = Array.make_matrix n n false in
+      let pairs = ref [] in
+      for i = n - 1 downto 0 do
+        for j = n - 1 downto i + 1 do
+          if overlap_in p i j then
+            match kept i j with
+            | Some up -> set i j up
+            | None ->
+                is_open.(i).(j) <- true;
+                is_open.(j).(i) <- true;
+                pairs := (i, j) :: !pairs
+        done
+      done;
+      let pairs = !pairs in
+      (* "[x] above [y]" for two overlapping faces *)
+      let lit x y =
+        if is_open.(x).(y) then
+          if x < y then Layer_sides.Side ((x, y), false)
+          else Layer_sides.Side ((y, x), true)
+        else Layer_sides.Known (side_in order n x y > 0)
+      in
+      let uf = Layer_sides.create () in
+      let ( let* ) = Result.bind in
+      let crosses h c =
+        memo p.p_crosses h c (fun () ->
+            Geom.segment_crosses_interior p.p_tsegs.(h) p.p_ccw_tps.(c))
+      in
+      let related =
+        let* () =
+          List.fold_left
+            (fun acc (i, j) ->
+              let* () = acc in
+              if i <> j && overlap_in p i j then
+                Layer_sides.relate uf (lit i j) (Layer_sides.Known true) ~why:()
+              else Error ())
+            (Ok ()) fixed
+        in
+        let acc = ref (Ok ()) in
+        Array.iteri
+          (fun hi (h : hinge) ->
+            for c = 0 to n - 1 do
+              if
+                !acc = Ok () && c <> h.fa && c <> h.fb
+                && (is_open.(c).(h.fa) || is_open.(c).(h.fb))
+                && overlap_in p c h.fa && overlap_in p c h.fb && crosses hi c
+              then acc := Layer_sides.relate uf (lit c h.fa) (lit c h.fb) ~why:()
+            done)
+          geo.g_hinges;
+        !acc
+      in
+      match related with
+      | Error () -> Ok []
+      | Ok () ->
+          let decided, free = Layer_sides.classes uf pairs in
+          List.iter (fun ((i, j), up) -> set i j up) decided;
+          let free = Array.of_list free in
+          let k = Array.length free in
+          let pending = Array.make_matrix n n false in
+          let mark cls b =
+            List.iter
+              (fun ((i, j), _) ->
+                pending.(i).(j) <- b;
+                pending.(j).(i) <- b)
+              cls
+          in
+          Array.iter (fun cls -> mark cls true) free;
+          let is_decided i j = not pending.(i).(j) in
+          (* no three faces that share a region lie in a cycle through the
+             pair [(i, j)] *)
+          let acyclic_at i j =
+            let s = side_in order n i j in
+            let ok = ref true in
+            for c = 0 to n - 1 do
+              if
+                !ok && c <> i && c <> j
+                && side_in order n j c = s
+                && side_in order n c i = s
+                && share_region p i j c
+              then ok := false
+            done;
+            !ok
+          in
+          let tacos_ok () =
+            match check_tacos ~decided:is_decided geo p order with
+            | () -> true
+            | exception V _ -> false
+          in
+          let found = ref [] in
+          let state () =
+            {
+              faces = Array.map Array.copy geo.g_faces;
+              hinges = Array.copy geo.g_hinges;
+              root = geo.g_root;
+              order = Bytes.copy order;
+              base = geo.g_base;
+              marks = Array.copy marks;
+              isos = p.p_isos;
+              segs = p.p_segs;
+              tps = p.p_tps;
+            }
+          in
+          let rec go d =
+            if d = k then found := state () :: !found
+            else
+              List.iter
+                (fun on ->
+                  List.iter (fun ((i, j), v) -> set i j (v = on)) free.(d);
+                  mark free.(d) false;
+                  if
+                    List.for_all (fun ((i, j), _) -> acyclic_at i j) free.(d)
+                    && tacos_ok ()
+                  then go (d + 1);
+                  List.iter (fun ((i, j), _) -> clear i j) free.(d);
+                  mark free.(d) true)
+                [ false; true ]
+          in
+          let start_ok =
+            tacos_ok ()
+            && match check_cycles p order n with () -> true | exception V _ -> false
+          in
+          if start_ok then go 0;
+          Ok (List.rev !found))
 
 (* [?base]/[?marks] are LEADING optional arguments with only labeled
    required arguments after them; OCaml can only erase omitted optional
