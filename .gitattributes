@@ -8,3 +8,6 @@
 packages/www/public/beloch/beloch-eval.js linguist-generated=true
 packages/www/public/beloch/qqbar-wasm.js linguist-generated=true
 packages/www/public/beloch/runtime-manifest.json linguist-generated=true
+
+# the tree-sitter parser, written by `tree-sitter generate` from grammar.js
+packages/grammar/src/** linguist-generated=true
