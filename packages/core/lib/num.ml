@@ -341,6 +341,12 @@ let sign (x : t) : int =
   | Rat q -> Q.sign q
   | Qq q -> Qqbar.sign_re q
   | Field { gen; coords } ->
+      (* the float box decides where it lies clear of zero; a NaN end
+         fails both comparisons and falls through to the exact search *)
+      let blo, bhi = box x in
+      if blo > 0. then 1
+      else if bhi < 0. then -1
+      else
       let rec go lo hi =
         let vlo, vhi = poly_interval coords lo hi in
         if Q.sign vlo > 0 then 1
