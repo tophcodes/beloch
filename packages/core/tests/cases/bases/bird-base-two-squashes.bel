@@ -1,0 +1,39 @@
+@author "Claude (Anthropic)"
+
+; The bird base of the crane: the preliminary base of
+; preliminary-two-squashes.bel [randlett1961art, p. 69], then two petal
+; folds, each one flatten of two fans (BEP-0055). The state is the one
+; bird-base-petal.bel reaches by Ida's steps 2-10 [ida2020, Fig. 7.19],
+; turned a quarter on the table and with --ac scored flat.
+
+paper square
+fold (map .d onto .b) as --ac
+fold (map .a onto .c) as --bd
+squash (--ac & --ab onto --bd) as --s1
+flip
+squash (--ac & --bc onto --bd) as --s2
+flip
+
+.o = --ac * --bd                        ; the paper center
+--mid = (through .c .o)                 ; center line of the base
+
+.sr = --ab * --s1                       ; the four side corners
+.sl = --da * --s1
+.br = --bc * --s2
+.bl = --cd * --s2
+
+flatten (fan (--s1 & .sr) (map .sr onto --mid through .a))
+        (fan (--s1 & .sl) (map .sl onto --mid through .a))
+        (on #[.a]) (staying .o) as --pf                                         ; front petal
+flatten (fan (--s2 & .br) (map .br onto --mid through .c))
+        (fan (--s2 & .bl) (map .bl onto --mid through .c))
+        (on #[.c]) (staying .o) as --pb                                         ; back petal
+
+; assert steps = 8
+; assert faces = 20
+
+; the legs stay at the open end, the petals meet past the center
+; assert .b = (1, 0)
+; assert .d = .b
+; assert .a = .c
+; assert .o = (1/2, 1/2)

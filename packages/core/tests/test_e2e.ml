@@ -1196,29 +1196,27 @@ let test_e2e_preliminary_routes_agree () =
         a b)
     [ (probe 4 5, "upper-left wedge"); (probe 5 4, "lower-right wedge") ]
 
-(* A flatten scores its rays on every layer under the fan (def-flatten), so
-   a fan whose rays are marked on the top layer alone folds the same state as
-   one whose rays are marked on both layers first: same faces, and the same
-   column of layers over every face of either state. *)
-let same_state (a : Fold_state.t) (b : Fold_state.t) =
-  let na = Array.length (Fold_state.faces a)
-  and nb = Array.length (Fold_state.faces b) in
-  Alcotest.(check int) "same face count" na nb;
-  let centroid (p : Geom.point array) =
-    let m = Num.of_int (Array.length p) in
-    let sum get =
-      Array.fold_left (fun acc v -> Num.add acc (get v)) Num.zero p
-    in
-    { Geom.x = Num.div (sum (fun v -> v.Geom.x)) m;
-      y = Num.div (sum (fun v -> v.Geom.y)) m }
-  in
-  let probes st =
-    List.init (Array.length (Fold_state.faces st)) (fun i ->
-        centroid (Fold_state.table_polygon_ccw st i))
-  in
+let centroid (p : Geom.point array) =
+  let m = Num.of_int (Array.length p) in
+  let sum get = Array.fold_left (fun acc v -> Num.add acc (get v)) Num.zero p in
+  { Geom.x = Num.div (sum (fun v -> v.Geom.x)) m;
+    y = Num.div (sum (fun v -> v.Geom.y)) m }
+
+(* Two states are the same state when they share a refinement (def-refinement):
+   over every table point, the same column of layers. [motion] carries [a]'s
+   table onto [b]'s, so states that differ by a rigid motion on the table
+   compare equal; it keeps the table's orientation, since a turnover would
+   also reverse every column. The probes are the centroids of [b]'s faces,
+   so [b] is the finer of the two: a centroid of a coarser face can lie on a
+   flat crease of the finer state, where no face of it lies over the probe. *)
+let same_stacks ?(motion = Isometry.identity) (a : Fold_state.t)
+    (b : Fold_state.t) =
+  Alcotest.(check int) "motion keeps the table's orientation" 1
+    (Isometry.det_sign motion);
+  let back = Isometry.inverse motion in
   List.iter
     (fun t ->
-      let ca = column a t and cb = column b t in
+      let ca = column a (Isometry.apply_point back t) and cb = column b t in
       Alcotest.(check int) "same layer count" (List.length ca) (List.length cb);
       List.iter2
         (fun (pa, ua) (pb, ub) ->
@@ -1226,8 +1224,20 @@ let same_state (a : Fold_state.t) (b : Fold_state.t) =
             "same paper point" true (Geom.point_equal pa pb);
           Alcotest.(check bool) "same orientation" ua ub)
         ca cb)
-    (probes a @ probes b)
+    (List.init (Array.length (Fold_state.faces b)) (fun i ->
+         centroid (Fold_state.table_polygon_ccw b i)))
 
+let same_state (a : Fold_state.t) (b : Fold_state.t) =
+  let na = Array.length (Fold_state.faces a)
+  and nb = Array.length (Fold_state.faces b) in
+  Alcotest.(check int) "same face count" na nb;
+  same_stacks a b;
+  same_stacks b a
+
+(* A flatten scores its rays on every layer under the fan (def-flatten), so
+   a fan whose rays are marked on the top layer alone folds the same state as
+   one whose rays are marked on both layers first: same faces, and the same
+   column of layers over every face of either state. *)
 let test_e2e_flatten_scores_under_fan () =
   let run src =
     (Eval.eval_folded (Beloch.parse ~filename:"t.bel" src)).Eval.state
@@ -1278,6 +1288,23 @@ let test_e2e_bird_base_two_petals () =
   same_state
     (run "bases/bird-base-two-petals.bel")
     (run "bases/bird-base-petal.bel")
+
+(* The crane's bird base: Randlett's preliminary base by two squashes lies a
+   quarter turn from the one Ida reaches by two reverse folds, so Ida's bird
+   base turns a quarter about the paper center, (x, y) to (y, 1 - x), onto
+   the crane's. Then the two routes agree on every column of layers; the
+   crane's carries --ac as a flat crease, so its faces refine Ida's. *)
+let test_e2e_bird_base_routes_agree () =
+  let run name =
+    (Eval.eval_folded (Beloch.parse ~filename:name (read_case name))).Eval.state
+  in
+  let quarter_turn =
+    { Isometry.m00 = Num.zero; m01 = Num.one; m10 = Num.neg Num.one;
+      m11 = Num.zero; tx = Num.zero; ty = Num.one }
+  in
+  let crane = run "bases/bird-base-two-squashes.bel" in
+  same_stacks ~motion:quarter_turn (run "bases/bird-base-petal.bel") crane;
+  same_stacks ~motion:quarter_turn (run "bases/bird-base-two-petals.bel") crane
 
 (* ---- Sheets (docs/reference/BELOCH.md, "Sheets"; docs/reference/FOLD.md, `frame_unit`) ---- *)
 
@@ -1592,6 +1619,9 @@ let () =
             test_e2e_flatten_petal_two_fans;
           Alcotest.test_case "flatten: the bird base by two petal folds" `Quick
             test_e2e_bird_base_two_petals;
+          Alcotest.test_case
+            "the crane's bird base equals Ida's after a quarter turn" `Quick
+            test_e2e_bird_base_routes_agree;
         ] );
       ( "emit_folded",
         [
