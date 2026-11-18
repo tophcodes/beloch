@@ -256,7 +256,7 @@ item:
 
 (* the union of every verb's item bodies; Items holds the per-verb table *)
 item_body:
-  | construction_body                   { Ast.RiConstruction ($1, $loc) }
+  | construction_body mv_opt            { Ast.RiConstruction ($1, $2, $loc) }
   | line_operand mv_opt                 { Ast.RiLine ($1, $2, $loc) }
   | line_operand ONTO align_object      { Ast.RiAlignment ($1, $3, $loc) }
   | line_operand ONTO crease_object     { Ast.RiAlignment ($1, AoLine $3, $loc) }

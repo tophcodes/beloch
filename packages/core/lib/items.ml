@@ -35,7 +35,7 @@ let head_of (it : raw_item) : string =
 
 let span_of (it : raw_item) : Error.span =
   match it with
-  | RiConstruction (_, sp)
+  | RiConstruction (_, _, sp)
   | RiLine (_, _, sp)
   | RiMoving (_, sp)
   | RiMovingDir (_, _, sp)
@@ -59,18 +59,22 @@ let refuse (verb : string) (it : raw_item) : 'a =
 
 (* `(--d mountain)` is a ray item's spelling; under a verb that takes an axis
    the letter has no slot to go to. *)
+let no_letter (mv : mv_constraint) (sp : Error.span) : unit =
+  match mv with
+  | MvFree -> ()
+  | MvMountain | MvValley ->
+      Error.fail ~hint:"write (mountain) as its own item" sp
+        "an axis item takes no mountain or valley"
+
 let axis_item (verb : string) (cell : markable option ref) (it : raw_item) : bool
     =
   match it with
-  | RiConstruction (c, sp) ->
+  | RiConstruction (c, mv, sp) ->
+      no_letter mv sp;
       slot verb "axis" cell sp (MConstruction c);
       true
   | RiLine (lo, mv, sp) ->
-      (match mv with
-      | MvFree -> ()
-      | MvMountain | MvValley ->
-          Error.fail ~hint:"write (mountain) as its own item" sp
-            "an axis item takes no mountain or valley");
+      no_letter mv sp;
       slot verb "axis" cell sp (MLine lo);
       true
   | _ -> false
@@ -218,7 +222,7 @@ let unfold (items : raw_item list) (out : output) (span : Error.span) : stmt =
   List.iter
     (fun it ->
       match it with
-      | RiConstruction (_, sp) ->
+      | RiConstruction (_, _, sp) ->
           Error.fail ~hint:"name the crease the hinges lie on" sp
             "unfold opens hinges on a crease the program already has; it takes \
              a crease, not a construction"
@@ -256,8 +260,8 @@ let unfold (items : raw_item list) (out : output) (span : Error.span) : stmt =
       },
       span )
 
-(* A fan item takes rays: a line with an optional letter, or a construction
-   (BEP-0055). *)
+(* A fan item takes rays: a line or a construction, each with an optional
+   letter (BEP-0055). *)
 let fan (at : point_operand option) (items : raw_item list)
     (bind : (string * Error.span) option) (span : Error.span) : fan =
   (match (at, bind) with
@@ -268,7 +272,7 @@ let fan (at : point_operand option) (items : raw_item list)
   let ray it =
     match it with
     | RiLine (lo, mv, sp) -> { fray = MLine lo; fdir = mv; fspan = sp }
-    | RiConstruction (c, sp) -> { fray = MConstruction c; fdir = MvFree; fspan = sp }
+    | RiConstruction (c, mv, sp) -> { fray = MConstruction c; fdir = mv; fspan = sp }
     | it ->
         Error.fail ~hint:"put it beside the fan, as an item of the flatten"
           (span_of it)
@@ -322,7 +326,7 @@ let squash (items : raw_item list) (out : output) (span : Error.span) : stmt =
       match it with
       | RiAlignment (spine, target, sp) ->
           slot verb "alignment" alignment sp (spine, target)
-      | RiConstruction (_, sp) ->
+      | RiConstruction (_, _, sp) ->
           Error.fail ~hint:"write (--l onto --m) without map or align" sp
             "squash completes the alignment with the fold line through the \
              vertex; it takes no construction"

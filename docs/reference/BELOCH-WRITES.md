@@ -545,8 +545,9 @@ stand in fan items ([[BEP-0055]]). A fan item holds the rays of one
 vertex: `(fan at .p ray+)` names a point the program has bound, and the
 statement fails when the rays do not meet at it (`` the rays of the fan do
 not meet at <point> ``); `(fan ray+ as .p)` binds the point where they
-meet. A ray is a line operand, with a letter where the program fixes one,
-or a construction, which the statement scores on the layers that move.
+meet. A ray is a line operand or a construction, which the statement
+scores on the layers that move, each with a letter where the program fixes
+one: `(map .sr onto --mid through .a valley)`.
 `&` narrows a line to the half that holds the point it names. A crease
 that `mark` recorded between two points is a ray from the end at the
 vertex to the other end, also where it lies inside a face and cuts none;
