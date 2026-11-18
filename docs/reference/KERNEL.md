@@ -52,7 +52,8 @@ every operation builds a candidate and passes it through `make`: no value of
 type `Fold_state.t` exists that is not a legal state. `make` is two steps,
 `Fold_state.geometry` and `Fold_state.with_rank`; a caller that validates
 many layer orders of one set of faces and hinges takes the steps apart and
-derives the placements once. `make` returns
+derives the placements once. `Fold_state.with_order` is the second step for
+a layer order given as pairs (Layer order, below). `make` returns
 `Error violation` for anything outside the definition of the state and its
 non-crossing conditions ([[reference/model#def-noncrossing|def-noncrossing]]); the
 `violation` constructors and the conditions they check are listed under
@@ -77,20 +78,79 @@ and two states equal up to refinement are two different values. Comparisons
 across programs are made pointwise on the folded geometry, as in the test
 that checks the two preliminary-base routes against each other.
 
-## Rank
+## Layer order
 
-The kernel does not store $\lambda$. `Fold_state.rank` is a total order of
-all faces, and `Fold_state.rel` reads *above*/*below* for a pair off the rank
-only when the two table polygons overlap in positive area; otherwise the pair
-is `Apart`. The rank is therefore a linear extension of $\lambda$ in the sense
-of the model's remark on linear extensions
-([[reference/model#rem-linear-extension|rem-linear-extension]]), and two ranks with the
-same restriction to overlapping pairs represent the same state.
+`Fold_state.t` stores $\lambda$ ([[decision/0060]]): for every two faces
+whose table polygons overlap in positive area (`Geom.convex_overlap`;
+touching is no overlap), which of the two lies above. Two faces that do not
+overlap have no entry. `Fold_state.above` and `Fold_state.rel` read one
+pair, `Fold_state.order` lists every pair, and `Fold_state.same_order`
+compares two states pair by pair. No operation reads a height of a face.
 
-Ceiling: a linear extension exists only for acyclic layerings, so states with
-cyclic layering, the square twist among them, cannot be represented. Tracked
-as [issue #83](https://github.com/tophcodes/beloch/issues/83). Nothing on the
-crane path needs such a state.
+Three functions build the layer order of a state:
+
+- `Fold_state.make` and `Fold_state.with_rank` take a stacking, a
+  permutation of the faces from the bottom up, as the input form. They keep
+  the side of every overlapping pair and nothing else of the stacking, so two
+  stackings with the same restriction to overlapping pairs give the same
+  state ([[reference/model#rem-linear-extension|rem-linear-extension]]).
+- `Fold_state.with_order` takes the pairs. It is the only way to build a
+  state whose layers lie in a cycle. A test builds the square twist with it:
+  9 faces, 12 folded hinges and 28 overlapping pairs, in which the four
+  corner faces lie in a cycle. No Beloch program folds the square twist yet.
+
+::: {.include api="Fold_state.with_rank"}
+:::
+
+::: {.include api="Fold_state.with_order"}
+:::
+
+The checks on the pairs are three conditions of the model:
+
+- The order condition ([[reference/model#cond-order|cond-order]]): no three
+  faces whose table polygons share a region of positive area lie in a cycle.
+  Three faces suffice: all faces over one point of the table overlap
+  pairwise, and such an order has a cycle only if it has a cycle of three.
+  The kernel computes the shared region exactly, and only for a triple that
+  lies in a cycle. `with_rank` skips the check, since a stacking holds no
+  cycle.
+- The taco-tortilla condition
+  ([[reference/model#cond-taco-tortilla|cond-taco-tortilla]]), in its form
+  for a face that crosses a folded hinge and in its form for a flat hinge
+  collinear with a folded one.
+- The taco-taco condition
+  ([[reference/model#cond-taco-taco|cond-taco-taco]]).
+
+The taco conditions ask whether a face lies between two others, and the
+kernel answers that only for a face that overlaps both. Two folded hinges on
+one table line whose face pairs open to opposite sides of the line share no
+region, and no condition relates them
+[@hullzakharevich2023, §2.1, "Taco-Taco Property"; @akitaya2016, §2].
+
+A fold computes the pairs of the new state (`Fold_state.fold_blocks`). Two
+staying faces keep their side, and two faces of one moved block exchange
+sides. A block placed `Top` lies above every staying face it lands on, and
+a block placed `Bottom` below them. A block placed `Over` or `Under` faces
+lies directly on each of them, and the three conditions of
+[[decision/0059]] decide its other new pairs. A face that `subdivide` cuts
+passes its sides on to its pieces.
+
+Ceilings of the stacking search of `flatten` (Fan, below): `Collapse`
+searches orders of its units as lists from the bottom up and turns each into
+pairs through `with_rank`. Its starting list is the one `Collapse.stacking`
+derives from the pairs of the state, of the faces free to come next the one
+with the smallest index first. A `flatten` therefore finds no state with a
+cycle, and on a state with a cycle `Collapse.stacking` raises
+`Invalid_argument`. The list also orders faces that do not overlap, by their
+index, and the pruning of the search reads that order
+([[decision/0060]]). Tracked as
+[issue #285](https://github.com/tophcodes/beloch/issues/285).
+
+One more ceiling: `with_order` checks no condition at a hinge of angle 0. A
+list of pairs that puts a face above one face of such a hinge and below the
+other, across the hinge, passes. Every state an operation builds keeps its
+faces on one side of such a hinge. Tracked as
+[issue #284](https://github.com/tophcodes/beloch/issues/284).
 
 ## History
 
@@ -187,19 +247,24 @@ face disagree or nothing moves. Kawasaki's and Maekawa's conditions at the
 vertex run only where the anchor surrounds the vertex on the paper;
 elsewhere `Fold_state.make` checks that the paths close.
 
-The stacking ranks units, as `Collapse.linear_extensions` enumerates them. A
+The stacking orders units in lists from the bottom up, as
+`Collapse.linear_extensions` enumerates them, and turns each list into the
+sides of the overlapping pairs through `Fold_state.with_rank` (Layer order,
+above). Inside a unit, faces lie in the order of the list `Collapse.stacking`
+derives from the state before the flatten, and faces the fan turns over lie
+in the reverse order. A
 unit of the tip holds the faces of one wedge that share one motion; the
 first motion in a wedge keeps the wedge's number, so on one sheet the units
-are the wedges. The stayer's unit holds the faces of the stayer's wedge the
-tip hangs from: every piece of the wedge, joined by flat hinges inside it, that is
+are the wedges. The stayer's unit holds the faces of the stayer's wedge that
+are hinged to the tip: every piece of the wedge, joined by flat hinges inside it, that is
 hinged to a face of the tip, and the whole wedge when none is. Every other
 face the fan leaves in place, inside the stayer's wedge or outside it, is
-ranked in a block of its own, one per piece joined by flat hinges, and keeps
-its order where it overlaps another face that stays. The tip can land
+a unit of its own, one per piece joined by flat hinges, and keeps
+its side where it overlaps another face that stays. The tip can land
 between two such layers: on a book fold with the rays marked on both
 layers, the upper corner folds in between the upper and the lower layer.
-One ceiling remains: the pieces of the stayer's wedge the tip hangs from
-rank as one block, so a tip hinged to two of them cannot land between them.
+One ceiling remains: the pieces of the stayer's wedge that are hinged to the
+tip form one unit, so a tip hinged to two of them cannot land between them.
 
 ### Fans
 
@@ -231,7 +296,8 @@ valley fold reach.
 `Collapse.geoms_of` takes the regions as its sectors and finds the motions
 as for one fan. With `prune` it adds three things to the stacking, which a
 fan of several vertices needs: units that stay keep their order wherever
-every face of one lay above every face of the other, overlapping or not;
+every face of one lay above every face of the other in the list
+`Collapse.stacking` derives, overlapping or not;
 `Collapse.linear_extensions` skips an order that differs from one it keeps
 only in two adjacent units with no overlapping faces; and it drops an
 order as soon as the units placed so far break a taco-tortilla or
@@ -258,7 +324,12 @@ axis with `Fold_state.subdivide` as a half-line from the vertex, once on
 the anchor's layer and once on the layer under it: two creases on one table
 ray, so that the fan has four elements, the spine, the two pieces of the
 axis and the target's crease on the anchor's layer, and an even count seeks
-no emergent ray. The stayer is a point of the anchor's material beyond the
+no emergent ray. The fan passes the two pieces of the axis, the flanks of
+the opened spine, with the letter valley, as a letter item of `flatten`
+passes its letter ([[decision/0061]]). Of the states the fan folds flat in,
+the squash keeps those whose flanks both fold as valleys; with one flank a
+mountain the same creases fold a swivel fold, which the explicit fan reaches
+with letters. The stayer is a point of the anchor's material beyond the
 target's line, away from the spine. With a target point, the target's
 crease is the one named crease whose paper line passes through the vertex
 and the target on the anchor's layer, materialized for the fan. Once the fan has folded, the two pieces
@@ -480,7 +551,8 @@ base strip face up and the first ear's folded stack face down on top of
 it, and the first face by array index can be the wrong one and turn a
 hinge constraint around. The face the evaluator takes is the one whose
 table polygon has an edge from O along the ray's own segment, the layer the
-letter is about; among several, the one of lowest rank.
+letter is about; among several, the lowest in the list `Collapse.stacking`
+derives.
 
 Valid stackings move whole sector blocks relative to one another; a
 sector is never tucked between two layers of another sector's block. That
@@ -506,10 +578,11 @@ needs it:
    emergent ray on a new line is no such ray and never counts; an emergent
    ray on the far side of a given line counts, since it is that line. This
    stage needs no `toward`, and it runs alone when `toward` is absent.
-3. **Rank dipole.** Among those, the realization that maximizes
-   $S(R) = \sum_{\text{faces}} \text{area} \cdot (\text{rank} - \tfrac{n - 1}{2}) \cdot ((c_f - O) \cdot (p - O))$,
-   with $c_f$ the table centroid of the face and $n$ the number of faces:
-   the material toward $p$ comes to lie on top. Mirror realizations score
+3. **Dipole.** Among those, the realization that maximizes
+   $S(R) = \sum_{\text{faces}} \text{area} \cdot h_f \cdot ((c_f - O) \cdot (p - O))$,
+   with $c_f$ the table centroid of the face and $h_f$ the number of faces
+   it lies above less the number of faces it lies below
+   ([[decision/0060]]): the material toward $p$ comes to lie on top. Mirror realizations score
    the same value with opposite sign, so any $p$ off the axis decides. A
    guard runs first: when the set of ray directions is invariant under the
    reflection across the line through O and $p$, or $p$ is O, the sides are
@@ -531,19 +604,25 @@ its own beyond the axis.
 The tip is `Resolve.tip_faces`: the anchor's faces with a piece on the moving
 side, or every such face when there is no anchor, closed under hinges whose
 table segment reaches strictly beyond the axis. The openings are read off
-the rank: the faces of the tip in rank order, and a cut between two
-consecutive ones is an opening where every hinge between two faces of the
-tip that crosses it is folded, all of them lie on one table line, and one
-of them reaches beyond the axis. A cut crossed by a flat hinge is none.
+the pairs of overlapping faces. For each spine line, a table line that
+carries a folded hinge between two faces of the tip reaching beyond the
+axis, the faces of the tip joined by hinges off that line, or by flat
+hinges on it, form groups. Two groups of which each lies below the other,
+directly or through other groups, by a face that lies below an overlapping
+face, merge. A lower half is a set of groups, neither empty nor all, that
+holds every group lying below one of its own; it is an opening where some
+hinge of the tip crosses from it to the rest, and one of the hinges that
+cross reaches beyond the axis. Every hinge that crosses is folded and lies
+on the spine line, so a cut crossed by a flat hinge is none.
 
-Each opening is folded with `Fold_state.fold_blocks`: the lower block over
-the topmost face of its body and the upper block under the bottommost face
-of its body for `inside`, the lower block at the bottom and the upper block
-on top for `outside`. The body of a block is its faces that the axis cuts,
-whose stationary pieces stay. Where one body is empty the opening is
-removed, and where the two bodies' ranks overlap at all, overlapping on the
-table or not, it is removed as interleaved: the kernel's test is stricter
-than the model's.
+Each opening is folded with `Fold_state.fold_blocks`: for `inside`, the
+lower block over the faces of its body that no face of the body overlaps
+from above, and the upper block under the faces of its body that no face
+of the body overlaps from below; for `outside`, the lower block at the
+bottom and the upper block on top. The body of a block is its faces that
+the axis cuts, whose stationary pieces stay. Where one body is empty the
+opening is removed, and where a face of the upper body lies below a face of
+the lower body that it overlaps, it is removed as interleaved.
 
 A letter item names hinges by the segments `&` selects from a crease; the
 hinges of the tip among them are the ones it constrains. An opening keeps
@@ -553,10 +632,8 @@ does. The hinges on the axis are left to the placement.
 
 The states of the kept openings are compared with `Fold_state.rel`: two that
 order every overlapping pair of faces alike are one state
-([[reference/model#def-flat-state|def-flat-state]]). Of one state, the kernel stores
-the rank of the opening that keeps the new hinges on the axis shortest in
-the stack, the sum over them of the rank distance between their two faces;
-ties go to the lowest opening. More than one state fails with a hint that
+([[reference/model#def-flat-state|def-flat-state]]), and the kernel returns
+it. More than one state fails with a hint that
 names one letter item per state: a hinge on the spine's line whose letter
 differs from its letter in every other state, named by its crease and a
 named point that lies on its segment alone, or `.p` with the paper point
@@ -607,8 +684,8 @@ vertex of every face lies on the line or on one side of it.
 
 `Fold_state.flip` realizes [[reference/model#def-flip|def-flip]] with the
 reflection across the vertical line through the middle of the footprint,
-the table polygons of all faces taken together, and reverses the face
-array and the rank with it. Which line it reflects across is immaterial
+the table polygons of all faces taken together, reverses the face array
+and turns every pair of the layer order over. Which line it reflects across is immaterial
 for the state up to a motion of the table ([[reference/model#lem-flip|lem-flip]]);
 the output enumerates faces by index, so the reversed array is what a
 reader of the file sees.
@@ -632,9 +709,12 @@ FOLD documents without `beloch:annotations` and `file_author`.
 
 ## Violations
 
-One constructor per check `Fold_state.make` runs, each carrying the model
-statement it enforces. `Bad_index` and `Bad_line` reject a malformed
-representation and answer to no statement of the model.
+One constructor per check that `Fold_state.make`, `Fold_state.with_rank`
+and `Fold_state.with_order` run, each carrying the model statement it
+enforces. `Bad_index` and `Bad_line` reject a malformed representation and
+answer to no statement of the model. `Bad_rank` rejects a stacking given to
+`make` or `with_rank`, and `Bad_order` the pairs given to `with_order`.
+`Layer_cycle` reports three faces that share a region and lie in a cycle.
 
 ::: {.include api="Fold_state.violation"}
 :::
