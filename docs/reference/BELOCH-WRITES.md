@@ -387,10 +387,8 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-.q = free on --ab from .a at 1/4
-.r = free on --ab from .b at 1/4
 .f = free on --da from .a at 1/4
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
 ```
 
 ```{.bel .frag prelude=squash-base}
@@ -508,7 +506,8 @@ mark (map --bc onto --diag) as --ec
 ```
 
 ```{.bel .frag prelude=ear}
-flatten (--ea) (--ec) (--eb) (toward .a) as --ear   ; three rays: the fourth emerges
+; three rays: the fourth emerges
+flatten (--ea & .a valley) (--ec & .c) (--eb & .b valley) (staying .d) (toward .a) as --ear
 .t = --ear * --ab                                   ; where the ear reaches the edge
 
 ; assert --ear is mountain
@@ -527,7 +526,7 @@ flatten (--ea) (--ec) (--eb) (toward .b)      ; .b lies on the line of --eb
 ```
 
 ```{.bel .frag prelude=ear}
-flatten (--eb & .b) (--ea & .a) (--ec & .c) (staying .d) (toward .a) as --ear
+flatten (--eb & .b valley) (--ea & .a valley) (--ec & .c) (staying .d) (toward .a) as --ear
 
 ; assert --ear is mountain
 ```
@@ -583,8 +582,8 @@ reverse (map .d onto .c) as --v
 --mid = (through .c .o)
 .sr = --ab * --h
 .sl = --da * --v
-flatten (fan (--h & .sr) (map .sr onto --mid through .a) as .r)
-        (fan (--v & .sl) (map .sl onto --mid through .a) as .l)
+flatten (fan (--h & .sr) (map .sr onto --mid through .a valley) as .r)
+        (fan (--v & .sl) (map .sl onto --mid through .a valley) as .l)
         (on #[.a]) (staying .o) as --pf     ; the petal fold
 
 ; assert faces = 11
@@ -608,13 +607,11 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-.q = free on --ab from .a at 1/4
-.r = free on --ab from .b at 1/4
 ```
 
 ```{.bel .frag prelude=prelim}
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d)
-        (.q over .r) (staying .a) (toward .q)
+flatten (--h & --bc) (--v & --cd) (--h & --da valley) (--v & --ab mountain) (--bd & .b)
+        (--bd & .d valley) (staying .a)
 flip
 
 ; assert steps = 2
@@ -699,15 +696,13 @@ mark (through .a .c) as --ac
 mark (map --ab onto --cd) (on #[.c]) (between .m .o) (mountain) as --h
 :::
 
-::: {.figure #fig-lang-flatten caption="One `flatten` collapses six of the eight rays at the paper center into the preliminary base, and the diagonal through `.a` and `.c` stays flat. Each ray item picks a piece of a marked crease with `&`, `(.q over .r)` fixes which quarter comes to the front, and `(toward .q)` chooses one of the flat states the rays allow." views="cp folded" highlight=".a .c"}
+::: {.figure #fig-lang-flatten caption="One `flatten` collapses six of the eight rays at the paper center into the preliminary base, and the diagonal through `.a` and `.c` stays flat. Each ray item picks a piece of a marked crease with `&`, and the letters on three of them leave one of the flat states the rays allow." views="cp folded" highlight=".a .c"}
 paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-.q = free on --ab from .a at 1/4
-.r = free on --ab from .b at 1/4
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
 :::
 
 ::: {.figure #fig-lang-flip caption="`flip` takes no item at all. It turns the sheet over, so the fold that follows is placed on what was the back, and `--g` comes out mountain where the same fold on an unflipped sheet would read valley." views="cp folded" highlight="--g"}

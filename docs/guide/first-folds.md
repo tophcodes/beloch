@@ -196,6 +196,10 @@ fold (map .b onto .a)
 fold (through .p .q) (moving .b) (up to .b)
 :::
 
+`free on --bc from .b at 1/4` is a point a quarter of the way along the
+edge `--bc` from `.b`; `free` records that any spot on that stretch would
+do, and the program uses this one.
+
 A `mark` works the same way: it scores every layer its line crosses, and
 `(on …)` confines it to one.
 
@@ -247,16 +251,14 @@ and the middle lines first, then push the paper together so that all the
 creases around the center fold at once. `flatten` does that. It folds every
 crease through one point, the *vertex*, in a single step.
 
-::: {.figure #fig-guide-flatten caption="The preliminary base in one `flatten`. Six rays around the center fold; the diagonal from `.a` to `.c` stays flat. `(.q over .r)` puts the quarter with `.q` in front of the one with `.r`." views="cp folded" highlight=".q .r"}
+::: {.figure #fig-guide-flatten caption="The preliminary base in one `flatten`. Six rays around the center fold; the diagonal from `.a` to `.c` stays flat. Three letters leave one of the flat results." views="cp folded" highlight=".a .c"}
 paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-.q = free on --ab from .a at 1/4
-.r = free on --ab from .b at 1/4
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab)
-  (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley)
+  (--v & --ab) (--bd & .b mountain) (--bd & .d)
 :::
 
 The four `mark` lines score the creases. The items of `flatten` then name
@@ -270,15 +272,12 @@ lies flat. A ray can be pinned by writing its letter, as in
 `(--h & --bc mountain)`. With an odd number of rays, Beloch adds the one
 that is missing, since a flat vertex needs an even number.
 
-Several flat results can remain, and the other items choose among them.
-`(.q over .r)` says that the paper around `.q` lies over the paper around
-`.r`, and `(toward .q)` picks one of the results that are still left. Both
-need points that lie in one quarter of the sheet and on none of the
-creases through the center. The corners and crossings named so far all lie
-on such a crease. `free on --ab from .a at 1/4`
-is a point a quarter of the way along the bottom edge from `.a`; `free`
-records that any spot on that stretch would do, and the program uses this
-one.
+The six rays fold flat in 18 ways, which differ in their letters and in
+how the layers stack. A `flatten` that leaves more than one result is an
+error, so the program pins three letters: the two rays on the middle lines
+that reach `--cd` and `--da` fold as valleys, and the ray toward `.b` as a
+mountain. Where letters leave more than one result, `(.p over .q)` says that
+the paper around `.p` lies over the paper around `.q`.
 
 A `flatten` can fold several vertices in one statement;
 [[guide/reading-the-crane]] folds the bird base that way. The reference
