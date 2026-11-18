@@ -310,12 +310,9 @@ none of this appears, and every other field is the same with and without it.
   candidate are the assignments in its frame. `removed_by` names the stage
   of the selection
   ([[reference/model#open-flatten-selection|open-flatten-selection]]) that removed
-  it: `"opposite"` for an emergent ray on the far side of a given ray's
-  line, which the selection falls back to only when no emergent ray on a new
-  line closes the vertex, `"toward"` for a state whose moved material lies
-  farther from the `toward` point than another's, `"mountains"` for one with
-  more mountains on the given rays than another, and `"top"` for one that
-  puts less of the material toward the point on top.
+  it: `"toward"` for a state whose moved material lies farther from the
+  `toward` point than another's, and `"top"` for one that puts less of the
+  material toward the point on top.
 - `beloch:error`: present when the program fails, with the `message`, the
   `hint`, the `span` and the `statement` index of the statement that failed.
 

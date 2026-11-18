@@ -736,36 +736,6 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   in
   let states = Collapse.rank_by_outline st ~state:Fun.id all in
   let errors = List.filter_map (function Error e -> Some e | Ok _ -> None) results in
-  (* fewest mountains on the creases the program gave, as for one fan *)
-  let given_cids =
-    Array.to_list rays
-    |> List.filter_map (fun (r : ray) -> if r.derived then None else Some r.cid)
-    |> List.sort_uniq compare
-  in
-  let mountains st =
-    List.length
-      (List.filter
-         (fun cid ->
-           let hs = Fold_state.hinges st in
-           let found = ref false in
-           Array.iteri
-             (fun i (h : Fold_state.hinge) ->
-               if
-                 h.Fold_state.crease_id = cid
-                 && Num.sign h.Fold_state.angle <> 0
-                 && Fold_state.mv st i = Fold_state.M
-               then found := true)
-             hs;
-           !found)
-         given_cids)
-  in
-  let kept =
-    match states with
-    | [] -> []
-    | _ ->
-        let least = List.fold_left (fun acc s -> min acc (mountains s)) max_int states in
-        List.filter (fun s -> mountains s = least) states
-  in
   let segs =
     Array.to_list (Array.map (fun (r : ray) -> (verts.(r.fan), r.far)) rays)
   in
@@ -777,11 +747,11 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
              detail =
                Trace.fan ~pre:pre_st ~post:s ~point:v0 ~rays:segs
                  ~emergent:(Option.map (fun _ -> (verts.(0), verts.(1))) !derived);
-             removed = (if List.memq s kept then None else Some Trace.By_mountains);
+             removed = None;
              chosen = (match chosen with Some c -> c == s | None -> false) })
          states)
   in
-  (match kept with
+  (match states with
   | [ s ] ->
       trace (Some s);
       (match (into, !derived) with

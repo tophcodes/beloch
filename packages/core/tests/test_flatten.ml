@@ -189,7 +189,8 @@ let rabbit_ear_derive_src =
    mark (through .b .m) as --bm\n\
    mark (map --ab onto --am) as --ba\n\
    mark (map --ab onto --bm) as --bb\n\
-   flatten (--ba \\ .a) (--bb \\ .b) (--v \\ .m) (toward .d) as --ear\n"
+   flatten (--ba \\ .a valley) (--bb \\ .b valley) (--v \\ .m) (staying .c .d)\n\
+   \        (toward .d) as --ear\n"
 
 let test_flatten_derive_e2e () =
   let fd =
@@ -267,14 +268,11 @@ let test_flatten_tip () =
 
 (* The fish-base vertex: O = incenter of triangle [abd] on the ac-diagonal; the
    true 4th ray is the diagonal's CONTINUATION O→c: collinear with the
-   a-ray, i.e. a tier-2 OPPOSITE-RAY completion under the two-tier rule. Both
-   tier-1 (line-new) candidates fold a flap off the paper for EVERY Maekawa
-   pattern, so the deciding set is tier-2's pooled realizations: 6 of them,
-   all in ONE position class (placements depend only on ray LINES, verified
-   by instrumentation). The three-stage selection then works purely on
-   STACKING: the min-mountain canon keeps the three 1-given-mountain
-   realizations, and the rank-dipole stage picks the one laying the
-   toward-side material on top. `{toward .b}` and `{toward .d}` therefore
+   a-ray, an OPPOSITE-RAY completion. `(staying .c)` keeps the sector the
+   ear folds onto, and the letters on `--l1` and the diagonal leave states
+   in ONE position class (placements depend only on ray LINES). The
+   selection then works purely on STACKING: the rank-dipole stage of
+   `toward` picks the one laying the toward-side material on top. `{toward .b}` and `{toward .d}` therefore
    produce the two MIRROR realizations: same placements (every paper point
    lands at the same table position!) but mirrored layer order, which is the
    spec's whole point. The difference is observable in [Fold_state.order], not in
@@ -286,7 +284,8 @@ let fish_base_src toward =
      mark (through .a .c) as --ray\n\
      mark (map --ab onto --diag) as --l1\n\
      mark (map --da onto --diag) as --l2\n\
-     flatten (--l1 & .b) (--l2 & .d) (--ray & .a) (toward %s)\n" toward
+     flatten (--l1 & .b valley) (--l2 & .d) (--ray & .a valley) (staying .c)\n\
+     \        (toward %s)\n" toward
 
 let test_flatten_derive_opposite_ray_fish_base () =
   let result toward =
@@ -367,7 +366,8 @@ let swivel_rabbit_src =
    mark (perp --bc through .lowerp) as --lowerh\n\
    mark (through .a .[--bc --lowerh]) as --ba\n\
    mark (through .b .[--da --lowerh]) as --bb\n\
-   flatten (--ba \\ .a) (--bb \\ .b) (--v \\ .m) (toward .c) as --ear\n"
+   flatten (--ba \\ .a valley) (--bb \\ .b) (--v \\ .m valley) (staying .c .d)\n\
+   \        (toward .c) as --ear\n"
 
 let test_flatten_derive_in_bounds () =
   let fd =
@@ -453,10 +453,12 @@ let test_flatten_no_flat_hinge_splits_taco () =
      mark (through .a .c) as --ray\n\
      mark (map --ab onto --diag) as --l1\n\
      mark (map --da onto --diag) as --l2\n\
-     flatten (--l1 & .b) (--l2 & .d) (--ray & .a) (toward .d)\n\
+     flatten (--l1 & .b valley) (--l2 & .d valley) (--ray & .a valley) (staying .c)\n\
+     \        (toward .d)\n\
      mark (map --cd onto --diag) as --l3\n\
      mark (map --bc onto --diag) as --l4\n\
-     flatten (--l3 & .d) (--l4 & .b) (--ray & .c) (toward .d)\n"
+     flatten (--l3 & .d valley) (--l4 & .b) (--ray & .c valley)\n\
+     \        (staying .[--l1 --l2]) (toward .d)\n"
   in
   let fd = Eval.eval_folded (Beloch.parse ~filename:"t.bel" src) in
   let st = fd.Eval.state in

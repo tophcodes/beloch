@@ -308,8 +308,8 @@ valley fold reach.
 and the layer orders as for one fan. The letters of a fan run through Maekawa's
 parity only where the anchor surrounds its vertex. Of the states, those
 inside the convex hull of the state before the flatten are kept where
-there are any (`Collapse.rank_by_outline`, [[BEP-0058]]), then those with the fewest mountains on the rays the
-program gave. One ceiling remains: a statement derives a crease between
+there are any (`Collapse.rank_by_outline`, [[BEP-0058]]); more than one
+state left is an error. One ceiling remains: a statement derives a crease between
 vertices only for two fans; with more, the program names each such crease
 in both fans.
 
@@ -534,10 +534,8 @@ the stayer (Sectors, below).
    combination, pooled across candidates and, per candidate, across every
    admissible stayer sector):
 
-   - **Tier rule** (applied before counting): a `LineNew` realization always
-     outranks an `OppositeRay` one: S is the `LineNew` pool if it is
-     non-empty, the `OppositeRay` pool otherwise. A lone `LineNew` survivor
-     decides even if several `OppositeRay` realizations also close.
+   - S holds the realizations of `LineNew` and `OppositeRay` candidates
+     alike; the tag ranks none of them ([[BEP-0061]]).
    - \|S\| = 0 → infeasible, checked in priority order: whichever of
      `` collapse through unaligned layers ``, `` the anchor flap has no
      material outside the staying sector ``, `` collinear leading creases
@@ -575,9 +573,8 @@ letter the layer order gives them.
 
 ### Selection
 
-With more than one realization left, `Flatten_solve` selects in three
-stages, each narrowing the set, and reads `toward` at the first stage that
-needs it:
+With more than one realization left and a `toward` item, `Flatten_solve`
+selects in two stages, each narrowing the set:
 
 1. **Position.** Where a realization lies depends on which ray lines it
    used and never on the letters, so the realizations group into position
@@ -587,12 +584,7 @@ needs it:
    crease through O: `` `toward` does not pick a side — the point is
    collinear with a crease through the vertex ``, hint `` aim it off the
    creases ``.
-2. **Fewest mountains.** Within the class, the realizations with the
-   fewest derived mountains among the rays the program gave stay. An
-   emergent ray on a new line is no such ray and never counts; an emergent
-   ray on the far side of a given line counts, since it is that line. This
-   stage needs no `toward`, and it runs alone when `toward` is absent.
-3. **Dipole.** Among those, the realization that maximizes
+2. **Dipole.** Within the class, the realization that maximizes
    $S(R) = \sum_{\text{faces}} \text{area} \cdot h_f \cdot ((c_f - O) \cdot (p - O))$,
    with $c_f$ the table centroid of the face and $h_f$ the number of faces
    it lies above less the number of faces it lies below
@@ -602,9 +594,9 @@ needs it:
    reflection across the line through O and $p$, or $p$ is O, the sides are
    indistinguishable, and the error is the one of stage 1.
 
-Without `toward` only stage 2 runs. One realization left folds; more are
+Without `toward` no stage runs: more than one realization is
 `` flatten is ambiguous: <n> realizations ``, hint `` add (toward .p) to
-pick the fold direction ``, with the count after stage 2. `Collapse` has a
+pick the fold direction ``. `Collapse` has a
 single-result contract of its own, `` ambiguous stacking (<k> orders) ``,
 which `flatten` never reaches: it calls `collapse_all` and pools every
 realization; the message survives in the module's own tests.

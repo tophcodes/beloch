@@ -2,15 +2,16 @@
     Given a set of material creases ("rays") sharing one interior vertex O, an
     ODD ray count means one emergent ray is part of the solution space;
     [candidates] generates the geometric completions that could close the vertex
-   : same-direction filter, per-line dedup, two-tier (`LineNew`/`OppositeRay`)
-    preference tag. It does NOT check feasibility or M/V and does NOT pick a
-    winner.
+   : same-direction filter, per-line dedup, and a tag that says whether the
+    completion lies on a new line (`LineNew`) or on the far side of a given
+    one (`OppositeRay`). It does NOT check feasibility or M/V and does NOT
+    pick a winner.
 
     Choosing among them is [Flatten_solve]'s job: it enumerates every
     Maekawa-consistent M/V pattern ([mv_patterns], pure and unit-testable) over
     each candidate's full ray set, tries each via [Collapse.collapse_all], pools
-    the results, and disambiguates by tier then by `(toward)`'s
-    moved-material-centroid score. Feasibility-filtering and `toward`-selection
+    the results, and disambiguates by `(toward)`'s moved-material-centroid
+    score. Feasibility-filtering and `toward`-selection
     belong there rather than here because they need [Collapse.collapse_all] and
     [Ast.mv_constraint], neither of which this module should depend on beyond
     the generator's own geometry. *)
@@ -47,8 +48,8 @@ let in_gap (o : Geom.point) (lo : Geom.point) (hi : Geom.point) (q : Geom.point)
     Geom.ccw_compare ~center:o lo q < 0 || Geom.ccw_compare ~center:o q hi < 0
 
 (* The candidate GENERATOR (spec step 1's odd branch): every geometric
-   completion of the given rays that closes Kawasaki at [o], tagged by the
-   two-tier preference (§4.9: the emergent crease is "not
+   completion of the given rays that closes Kawasaki at [o], tagged by its
+   kind (§4.9: the emergent crease is "not
    constructible by any Huzita axiom": a completion that only re-uses a
    given line's far side is the degenerate, `OppositeRay` case; a completion
    on a new line is `LineNew`). No feasibility check and no
