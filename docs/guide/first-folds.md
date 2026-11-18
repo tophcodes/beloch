@@ -280,8 +280,9 @@ is a point a quarter of the way along the bottom edge from `.a`; `free`
 records that any spot on that stretch would do, and the program uses this
 one.
 
-`flatten` handles one vertex per statement. The reference describes the
-rest under [[reference/beloch-writes]].
+A `flatten` can fold several vertices in one statement;
+[[guide/reading-the-crane]] folds the bird base that way. The reference
+describes the rest under [[reference/beloch-writes]].
 
 ## Points from creases
 

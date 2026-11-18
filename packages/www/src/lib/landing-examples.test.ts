@@ -9,7 +9,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = process.env.BELOCH_REPO_ROOT ?? join(here, "..", "..", "..", "..");
 
 // These two programs are what a first-time visitor sees, so one that stops
-// parsing fails in front of every one of them.
+// parsing fails in front of every one of them. The crane takes about 13 s to
+// evaluate, so the test gets a minute.
 test.each([
   ["landing hero", HERO_SRC],
   ["playground start", PLAYGROUND_SRC],
@@ -17,7 +18,7 @@ test.each([
   const fold = evalBelToFold(src) as { vertices_coords?: unknown[] };
   expect(Array.isArray(fold.vertices_coords)).toBe(true);
   expect(fold.vertices_coords!.length).toBeGreaterThan(0);
-});
+}, 60_000);
 
 // Constraint 1 of the viewer brief: at 1280 by 800 the source and the drawing
 // are both there in full, with no click and no scrolling, and constraint 2
@@ -60,7 +61,7 @@ function stripProvenance(value: unknown): unknown {
 // line instead of a comment block. Comparing evaluated FOLD output (not source
 // text) is what lets the two files differ in comments while still guaranteeing
 // the display copy's statements stay identical in effect to the corpus's.
-// Evaluating the crane twice takes longer than bun's default of 5 s on CI.
+// Evaluating the crane twice takes about 30 s.
 test.each([
   ["landing hero", HERO_SRC, "examples/crane.bel"],
   ["playground start", PLAYGROUND_SRC, "packages/core/tests/cases/bases/bird-base.bel"],
@@ -72,5 +73,5 @@ test.each([
       stripProvenance(evalBelToFold(corpusSrc)),
     );
   },
-  30_000,
+  120_000,
 );

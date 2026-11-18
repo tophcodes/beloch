@@ -2,11 +2,11 @@
 @design traditional
 @source "[ida2020, Fig. 7.19]"
 
-; The traditional crane, flat, by the Eos route [ida2020, Fig. 7.19]: the
-; bird base of packages/core/tests/cases/bases/bird-base.bel (Ida's steps 2-8), then her
-; steps 9-17. Her steps 18 and 19 open the wings, which is 3D and out of
-; scope (ADR 0015). Checked against her figures in
-; docs/notes/2026-09-25-crane-oracle.md.
+; The traditional crane, flat. The bird base is folded by two petal folds,
+; each one flatten of two fans (ADR 0055); it is the state Ida's steps 2-10
+; reach by reverse folds [ida2020, Fig. 7.19]. Her steps 11-17 follow. Her
+; steps 18 and 19 open the wings, which is 3D and out of scope (ADR 0015).
+; Checked against her figures in docs/notes/2026-09-25-crane-oracle.md.
 
 paper square
 
@@ -17,61 +17,66 @@ reverse (map .d onto .c) as --v
 .o = --h * --v                          ; the paper center
 --mid = (through .c .o)                 ; center line of the base
 
-.sr = --ab * --h                        ; the four side corners, reversed onto --mid
-reverse (map .sr onto --mid through .c) as --rsr
+.sr = --ab * --h                        ; the four side corners
 .sl = --da * --v
-reverse (map .sl onto --mid through .c) as --rsl
 .br = --bc * --h
-reverse (map .br onto --mid through .c) as --rbr
 .bl = --cd * --v
-reverse (map .bl onto --mid through .c) as --rbl
 
-; the bird base: front and back flap folded down across the kite's width,
-; which leaves the legs .b and .d at the apex. `up to` names the center face of each
-; flap; the side corners reversed beneath it are hinged to it off the axis and
-; go with it
-fold (perp --mid through .sr) (moving .a) (up to #[.a .o]) as --pf
-fold (perp --mid through .sr) (moving .c) (up to #[.c .o]) (mountain) as --pb
+; the bird base: each petal fold opens the two halves of the side edges
+; toward the side corners, brings the corners onto the center line and lifts
+; the flap between them past the paper center. The legs .b and .d stay at
+; the apex. Each fan binds the point where its kite crease meets the crease
+; between the two fans.
+flatten (fan (--h & .sr) (map .sr onto --mid through .a) as .e1)
+        (fan (--v & .sl) (map .sl onto --mid through .a) as .e2)
+        (on #[.a]) (staying .o) as --pf
+flatten (fan (--h & .br) (map .br onto --mid through .c) as .e3)
+        (fan (--v & .bl) (map .bl onto --mid through .c) as .e4)
+        (on #[.c]) (staying .o) as --pb
+
+; the head will bend toward a point on the edge of the front petal, read
+; here while that edge is still one piece
+.ht = free on .e2 * .a from .a at 1/3
 
 ; narrow the legs: each outer edge onto the center line, front layers as
-; valleys, back layers as mountains. Each `up to` names the face of the leg
-; that holds its anchor, the leg's tip and the paper center; without it the
-; front fold takes the back layers too.
-.e1 = (--rsr & .b) * --pf
-fold (map --rsr & .b onto --mid) (moving .e1) (up to #[.e1 .b .o]) as --n1
-.e2 = (--rsl & .d) * --pf
-fold (map --rsl & .d onto --mid) (moving .e2) (up to #[.e2 .d .o]) as --n2
-.e3 = (--rbr & .b) * --pb
-fold (map --rbr & .b onto --mid) (moving .e3) (up to #[.e3 .b .o]) (mountain) as --n3
-.e4 = (--rbl & .d) * --pb
-fold (map --rbl & .d onto --mid) (moving .e4) (up to #[.e4 .d .o]) (mountain) as --n4
+; valleys, back layers as mountains. The outer edge of a leg is the kite
+; crease from its fan's point to its tip. Each `up to` names the face of the
+; leg that holds its anchor, the leg's tip and the paper center; without it
+; the front fold takes the back layers too.
+fold (map .e1 * .b onto --mid) (moving .e1) (up to #[.e1 .b .o]) as --n1
+fold (map .e2 * .d onto --mid) (moving .e2) (up to #[.e2 .d .o]) as --n2
+fold (map .e3 * .b onto --mid) (moving .e3) (up to #[.e3 .b .o]) (mountain) as --n3
+fold (map .e4 * .d onto --mid) (moving .e4) (up to #[.e4 .d .o]) (mountain) as --n4
 
 ; neck and tail: each leg reversed about the perpendicular to its own
 ; narrowed edge through the point where the side corners landed. These are
-; Ida's rays for steps 15 and 16 exactly.
-reverse (perp --n1 through .sr) (moving .b) as --neck
-reverse (perp --n2 through .sr) (moving .d) as --tail
+; Ida's rays for steps 15 and 16 exactly. A narrowed leg opens at two
+; places; the letter on its narrowing crease keeps the opening between its
+; two halves.
+.pn = free on --n1 & #[.sr .b] from .b at 1/4
+reverse (perp --n1 through .sr) (moving .b) (--n1 & .pn mountain) as --neck
+.pt = free on --n2 & #[.sl .d] from .d at 1/4
+reverse (perp --n2 through .sr) (moving .d) (--n2 & .pt mountain) as --tail
 
 ; head: a free choice in folding practice, so two free points carry it.
-; .hp is where the head bends, .ht sets its angle. Ida's ray for step 17
-; passes within 0.0011 of .ht at 1/2 and bends the neck at 0.2346 of its
-; length from the tip.
+; .hp is where the head bends, .ht, bound above, sets its angle. Ida's ray
+; for step 17 passes within 0.0032 of .ht and bends the neck at 0.2346 of
+; its length from the tip.
 .hp = free on --bd & .b from .b at 1/4
-.ht = free on --rsl & .a from .a at 1/2
 reverse (through .hp .ht) (moving .b) as --head
 
 ; the finished crane stands on its center line, the wing tip .c up
 @orient .o .c up
 
-; assert steps = 16
+; assert steps = 12
 ; assert faces = 60
 
 ; the two wings lie together at the far end, the paper center stays put
 ; assert .a = .c
 ; assert .o = (1/2, 1/2)
 
-; the four side corners and the four narrowing anchors each share one point
-; of the center line
+; the four side corners and the four fan points each share one point of
+; the center line
 ; assert .sr = .sl
 ; assert .sr = .br
 ; assert .sr = .bl
