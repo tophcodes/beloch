@@ -97,7 +97,7 @@ Four functions build the layer order of a state:
 - `Fold_state.with_order` takes the pairs. It is the only way to build a
   state whose layers lie in a cycle. A test builds the square twist with it:
   9 faces, 12 folded hinges and 28 overlapping pairs, in which the four
-  corner faces lie in a cycle. No Beloch program folds the square twist yet.
+  corner faces lie in a cycle.
 - `Fold_state.orders` searches the pairs. The caller gives the side of the
   pairs it knows and the pairs it fixes, and gets every state whose other
   pairs satisfy the conditions below. `flatten` finds its layer orders with
@@ -202,10 +202,11 @@ hands them to `Flatten_solve.solve`, which scores them on the layers under
 the fan; `Collapse` folds the tip of
 [[reference/model#def-flatten|def-flatten]] on the scored state. The layers under
 the fan are the faces whose table image meets the anchor's in positive
-area. `Fold_state.subdivide_fan` scores each ray along its half-line from
-the vertex into the ray's own crease: a face that holds the vertex inside
-it is cut into the wedges between consecutive rays at once, and every other
-face a half-line crosses is cut along it. The pieces carry the flatten as
+area. `Fold_state.subdivide_fan` scores each ray from the vertex to the
+ray's far point into the ray's own crease: a face that holds the vertex
+inside it is cut into the wedges between consecutive rays at once, and
+every other face the ray crosses between those two points is cut along it.
+The pieces carry the flatten as
 the statement that scored them. A program therefore marks the rays on one
 layer, and the flatten carries them onto the others.
 
@@ -263,8 +264,9 @@ the non-crossing conditions. A face of one piece can land between two faces
 of another: on a book fold with the rays marked on both layers, the upper
 corner folds in between the upper and the lower layer. The search reads no
 order of two faces that lie apart, and it finds a state whose layers lie in
-a cycle: a test folds the square twist from the flat sheet through
-`Collapse.geoms_of` and `Collapse.pipeline_solve`.
+a cycle: `packages/core/tests/cases/collapse/flatten-square-twist.bel`
+folds the square twist [@hull2020, §6.5, Fig. 6.12] with one `flatten` of
+four fans.
 
 ### Fans
 
@@ -276,13 +278,22 @@ position of that point; a fan without it, at the one point every ray item
 passes through. The rays are the halves of those
 lines from the vertex: of a segment through the vertex the halves that
 hold every point a `&` keeps, of a construction the halves along which a
-face lies. For two fans whose rays leave the segment between their
+face lies. A crease that `mark` recorded between two points and that cuts
+no face from edge to edge gives its recorded segments, so a ray can start
+at a vertex inside a face and end at the other end of the segment. For two
+fans whose rays leave the segment between their
 vertices out, the statement adds it to both under one crease id, the
 crease the output clause binds.
 
 The faces are sorted into regions, one per combination of wedges around
 the vertices, with `Collapse.sector_of_poly_opt` per vertex; a face a ray
-runs through belongs to none. The statement scores every ray on every
+runs through belongs to none. A ray ends at its far point: a face that only
+the line beyond that point runs through lies in the wedge that holds a
+point inside the face. The statement scores each ray from its vertex to its
+far point. A face that holds two vertices or more inside it is cut along
+all its rays at once (`Fold_state.subdivide_segments`), into the cells its
+edges and the rays enclose, since no single ray cuts such a face from edge
+to edge. The statement scores every ray on every
 layer under the fans, reads the tip off that state, and scores each ray
 again on the state before the flatten, on the faces where a hinge of the
 first scoring on that ray parts a face of the tip from a face that stays,
@@ -298,9 +309,9 @@ and the layer orders as for one fan. The letters of a fan run through Maekawa's
 parity only where the anchor surrounds its vertex. Of the states, those
 inside the convex hull of the state before the flatten are kept where
 there are any ([[decision/0056]]), then those with the fewest mountains on the rays the
-program gave. Two ceilings remain: the rays are half-lines, so a ray
-scored past the far end of its segment would cut a face beyond it, and a
-statement derives a crease between vertices only for two fans.
+program gave. One ceiling remains: a statement derives a crease between
+vertices only for two fans; with more, the program names each such crease
+in both fans.
 
 ### Squash
 
