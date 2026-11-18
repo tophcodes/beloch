@@ -47,9 +47,12 @@ inside the convex hull of every table polygon of the state before the collapse
 
 ## State
 
-`Fold_state.t` is abstract and `Fold_state.make` is its only constructor, so
+`Fold_state.t` is abstract and `Fold_state.make` is its constructor, so
 every operation builds a candidate and passes it through `make`: no value of
-type `Fold_state.t` exists that is not a legal state. `make` returns
+type `Fold_state.t` exists that is not a legal state. `make` is two steps,
+`Fold_state.geometry` and `Fold_state.with_rank`; a caller that validates
+many layer orders of one set of faces and hinges takes the steps apart and
+derives the placements once. `make` returns
 `Error violation` for anything outside the definition of the state and its
 non-crossing conditions ([[reference/model#def-noncrossing|def-noncrossing]]); the
 `violation` constructors and the conditions they check are listed under

@@ -227,8 +227,10 @@ let rank_between (rank : int array) (a : int) (c : int) (b : int) : bool =
 
 exception V of violation
 
-let check_structure ~(faces : face array) ~(hinges : hinge array) ~(root : int)
-    ~(rank : int array) : unit =
+(* The structure checks that read no rank: root and hinge indices, the angle
+   domain and line non-degeneracy, in that order. *)
+let check_hinges ~(faces : face array) ~(hinges : hinge array) ~(root : int) :
+    unit =
   let n = Array.length faces in
   if root < 0 || root >= n then
     raise (V (Bad_index (Printf.sprintf "root %d" root)));
@@ -243,7 +245,10 @@ let check_structure ~(faces : face array) ~(hinges : hinge array) ~(root : int)
       then raise (V (Bad_angle i));
       if Num.sign h.line.Geom.a = 0 && Num.sign h.line.Geom.b = 0 then
         raise (V (Bad_line i)))
-    hinges;
+    hinges
+
+(* [rank] is a permutation of the [n] faces. *)
+let check_rank (n : int) (rank : int array) : unit =
   if Array.length rank <> n then raise (V Bad_rank);
   let hit = Array.make n false in
   Array.iter
@@ -251,69 +256,137 @@ let check_structure ~(faces : face array) ~(hinges : hinge array) ~(root : int)
       if r < 0 || r >= n || hit.(r) then raise (V Bad_rank) else hit.(r) <- true)
     rank
 
-(* [?base]/[?marks] are LEADING optional arguments with only labeled
-   required arguments after them; OCaml can only erase omitted optional
-   arguments when a positional argument follows, so [make] takes a trailing
-   [unit] to anchor that: existing call sites add a trailing [()]. *)
-let make ?(base = I3.identity) ?(marks = [||]) ~(faces : face array)
-    ~(hinges : hinge array) ~(root : int) ~(rank : int array) () :
+(* What [geometry] derives once a face set is connected and its hinges
+   close: per face its placement and flat projection (and that projection
+   counter-clockwise), per hinge its shared paper segment, that segment on
+   the table, and whether it is folded. The two predicate tables hold, per
+   hinge and face, whether the hinge's table segment crosses the face's
+   interior, and per hinge pair whether their table segments lie on one
+   line and overlap; an entry is computed the first time a rank check reads
+   it. *)
+type placed = {
+  p_isos : I3.t array;
+  p_segs : (Geom.point * Geom.point) array;
+  p_tps : Geom.point array array;
+  p_ccw_tps : Geom.point array array;
+  p_tsegs : (Geom.point * Geom.point) array;
+  p_folded : bool array;
+  p_crosses : bool option array array;
+  p_overlaps : bool option array array;
+}
+
+type geometry = {
+  g_faces : face array;
+  g_hinges : hinge array;
+  g_root : int;
+  g_base : I3.t;
+  g_placed : (placed, violation) result;
+      (* [Error] holds the first of connectivity, hinge adjacency and cycle
+         closure that fails; [with_rank] reports it after the rank check, in
+         the order [make] documents *)
+}
+
+(* The placed half of a geometry. Raises the first of connectivity, hinge
+   adjacency and cycle closure that fails. *)
+let place ~(faces : face array) ~(hinges : hinge array) ~(root : int)
+    ~(base : I3.t) : placed =
+  let isos, seen = derive_isos ~faces ~hinges ~root ~base in
+  Array.iteri (fun i s -> if not s then raise (V (Disconnected i))) seen;
+  (* hinge adjacency: each hinge's line must carry a positive-length shared
+     boundary segment between its faces (paper space); the segments feed the
+     non-crossing checks *)
+  let segs =
+    Array.mapi
+      (fun i h ->
+        match hinge_shared_segment faces h with
+        | Some s -> s
+        | None -> raise (V (Hinge_not_shared i)))
+      hinges
+  in
+  (* cycle closure: the BFS fixed a spanning tree; every hinge must agree
+     with the placements: for non-tree (cycle) hinges this is the real
+     tear check. Tree hinges hold by construction in both traversal
+     directions (a fb→fa step assigns iso.(fa) = iso.(fb) ∘ motion⁻¹, which
+     is equivalent to this fa→fb equation), so the uniform check does not
+     depend on motions being involutions. *)
+  Array.iteri
+    (fun i h ->
+      if
+        not
+          (I3.equal isos.(h.fb) (I3.compose isos.(h.fa) (hinge_motion h)))
+      then raise (V (Hinge_not_closed i)))
+    hinges;
+  let n = Array.length faces and m = Array.length hinges in
+  let tps = Array.init n (project faces isos) in
+  let tsegs =
+    Array.mapi
+      (fun i (p, q) ->
+        let place = isos.(hinges.(i).fa) in
+        (to2 (I3.apply_point place (to3 p)), to2 (I3.apply_point place (to3 q))))
+      segs
+  in
+  { p_isos = isos; p_segs = segs; p_tps = tps; p_ccw_tps = Array.map ccw tps;
+    p_tsegs = tsegs;
+    p_folded = Array.map (fun h -> Num.sign h.angle <> 0) hinges;
+    p_crosses = Array.init m (fun _ -> Array.make n None);
+    p_overlaps = Array.init m (fun _ -> Array.make m None) }
+
+let geometry ?(base = I3.identity) ~(faces : face array) ~(hinges : hinge array)
+    ~(root : int) () : (geometry, violation) result =
+  try
+    check_hinges ~faces ~hinges ~root;
+    let faces = Array.map Array.copy faces and hinges = Array.copy hinges in
+    let g_placed =
+      try Ok (place ~faces ~hinges ~root ~base) with V v -> Error v
+    in
+    Ok { g_faces = faces; g_hinges = hinges; g_root = root; g_base = base;
+         g_placed }
+  with V v -> Error v
+
+(* [table.(i).(j)], computed by [f] on first read. *)
+let memo (table : bool option array array) (i : int) (j : int) (f : unit -> bool)
+    : bool =
+  match table.(i).(j) with
+  | Some b -> b
+  | None ->
+      let b = f () in
+      table.(i).(j) <- Some b;
+      b
+
+let with_rank ?(marks = [||]) (geo : geometry) ~(rank : int array) :
     (t, violation) result =
   try
-    check_structure ~faces ~hinges ~root ~rank;
-    let isos, seen = derive_isos ~faces ~hinges ~root ~base in
-    Array.iteri (fun i s -> if not s then raise (V (Disconnected i))) seen;
-    (* hinge adjacency: each hinge's line must carry a positive-length shared
-       boundary segment between its faces (paper space); the segments feed the
-       non-crossing checks *)
-    let segs =
-      Array.mapi
-        (fun i h ->
-          match hinge_shared_segment faces h with
-          | Some s -> s
-          | None -> raise (V (Hinge_not_shared i)))
-        hinges
-    in
-    (* cycle closure: the BFS fixed a spanning tree; every hinge must agree
-       with the placements: for non-tree (cycle) hinges this is the real
-       tear check. Tree hinges hold by construction in both traversal
-       directions (a fb→fa step assigns iso.(fa) = iso.(fb) ∘ motion⁻¹, which
-       is equivalent to this fa→fb equation), so the uniform check does not
-       depend on motions being involutions. *)
-    Array.iteri
-      (fun i h ->
-        if
-          not
-            (I3.equal isos.(h.fb) (I3.compose isos.(h.fa) (hinge_motion h)))
-        then raise (V (Hinge_not_closed i)))
-      hinges;
+    let faces = geo.g_faces and hinges = geo.g_hinges in
+    let n = Array.length faces in
+    check_rank n rank;
+    let p = match geo.g_placed with Ok p -> p | Error v -> raise (V v) in
     (* Non-crossing [hull2020 §6.5; hullzakharevich2023 §2.1] over the flat
        projection. Rank decides every pair, so tortilla-tortilla and stacking
        cycles are unrepresentable; these two residual conditions remain. Rank
        comparison is sound here because each check first establishes geometric
        coincidence (interior crossing / collinear overlap), so the compared
        faces overlap where they are compared. *)
-    let n = Array.length faces in
-    let tps = Array.init n (project faces isos) in
-    let tseg i =
-      let p, q = segs.(i) in
-      let place = isos.(hinges.(i).fa) in
-      (to2 (I3.apply_point place (to3 p)), to2 (I3.apply_point place (to3 q)))
+    let crosses i c =
+      memo p.p_crosses i c (fun () ->
+          Geom.segment_crosses_interior p.p_tsegs.(i) p.p_ccw_tps.(c))
+    in
+    let overlaps i j =
+      memo p.p_overlaps i j (fun () ->
+          Geom.segments_overlap_collinear p.p_tsegs.(i) p.p_tsegs.(j))
     in
     (* taco-tortilla: a folded hinge's faces coincide after the fold (they
        share the crease edge and fold to the same side), forming a taco; no
        face ranked between them may cross the crease's interior *)
     Array.iteri
       (fun i h ->
-        if Num.sign h.angle <> 0 then begin
-          let seg = tseg i in
+        if p.p_folded.(i) then
           for c = 0 to n - 1 do
             if
               c <> h.fa && c <> h.fb
               && rank_between rank h.fa c h.fb
-              && Geom.segment_crosses_interior seg (ccw tps.(c))
+              && crosses i c
             then raise (V (Taco_tortilla { tortilla = c; hinge = i }))
-          done
-        end)
+          done)
       hinges;
     (* taco-taco: two folded hinges over disjoint face pairs whose crease
        segments coincide on the table must not interleave in the stack *)
@@ -323,9 +396,9 @@ let make ?(base = I3.identity) ?(marks = [||]) ~(faces : face array)
         let h1 = hinges.(i) and h2 = hinges.(j) in
         let a = h1.fa and b = h1.fb and c = h2.fa and d = h2.fb in
         if
-          Num.sign h1.angle <> 0 && Num.sign h2.angle <> 0
+          p.p_folded.(i) && p.p_folded.(j)
           && a <> c && a <> d && b <> c && b <> d
-          && Geom.segments_overlap_collinear (tseg i) (tseg j)
+          && overlaps i j
           && rank_between rank a c b <> rank_between rank a d b
         then raise (V (Taco_taco (i, j)))
       done
@@ -346,9 +419,9 @@ let make ?(base = I3.identity) ?(marks = [||]) ~(faces : face array)
         let h1 = hinges.(i) and h2 = hinges.(j) in
         let a = h1.fa and b = h1.fb and c = h2.fa and d = h2.fb in
         if
-          Num.sign h1.angle <> 0 && Num.sign h2.angle = 0 && d >= 0
+          p.p_folded.(i) && (not p.p_folded.(j)) && d >= 0
           && a <> c && a <> d && b <> c && b <> d
-          && Geom.segments_overlap_collinear (tseg i) (tseg j)
+          && overlaps i j
           && (rank_between rank a c b || rank_between rank a d b)
         then raise (V (Taco_tortilla { tortilla = c; hinge = i }))
       done
@@ -357,15 +430,26 @@ let make ?(base = I3.identity) ?(marks = [||]) ~(faces : face array)
       {
         faces = Array.map Array.copy faces;
         hinges = Array.copy hinges;
-        root;
+        root = geo.g_root;
         rank = Array.copy rank;
-        base;
+        base = geo.g_base;
         marks = Array.copy marks;
-        isos;
-        segs;
-        tps;
+        isos = p.p_isos;
+        segs = p.p_segs;
+        tps = p.p_tps;
       }
   with V v -> Error v
+
+(* [?base]/[?marks] are LEADING optional arguments with only labeled
+   required arguments after them; OCaml can only erase omitted optional
+   arguments when a positional argument follows, so [make] takes a trailing
+   [unit] to anchor that: existing call sites add a trailing [()]. *)
+let make ?(base = I3.identity) ?(marks = [||]) ~(faces : face array)
+    ~(hinges : hinge array) ~(root : int) ~(rank : int array) () :
+    (t, violation) result =
+  match geometry ~base ~faces ~hinges ~root () with
+  | Error v -> Error v
+  | Ok geo -> with_rank ~marks geo ~rank
 
 let faces (g : t) : face array = Array.map Array.copy g.faces
 let hinges (g : t) : hinge array = Array.copy g.hinges
