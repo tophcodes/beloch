@@ -259,7 +259,6 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       Error.fail ~hint:"drop the toward item" span
         "a flatten with several fans takes no toward item"
   | None -> ());
-  let pre_st = !(ctx.state) in
   let fans = Array.of_list fans in
   let m = Array.length fans in
   if m < 2 then
@@ -268,6 +267,10 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
        the fan";
   (* the rays of every fan, at its vertex *)
   let ops = Array.map (fun f -> List.map (operand_of ctx) f.Ast.fan_rays) fans in
+  (* read after the operands: a marked crease a ray names is cut into the
+     paper as it resolves, and the anchor, the stayer and the rays index the
+     faces of the state that holds it *)
+  let pre_st = !(ctx.state) in
   let verts = Array.mapi (fun j f -> vertex_of ctx f ops.(j)) fans in
   let given =
     Array.to_list
