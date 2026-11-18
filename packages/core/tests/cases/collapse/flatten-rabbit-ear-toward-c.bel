@@ -20,7 +20,7 @@ mark (map --bc onto --diag) as --ec
 ; Leading pair is (--ea .a)(--ec .c): their <180 arc is the big stayer
 ; sector the ear folds onto; the emergent splits it into the two mirror
 ; worlds (toward) then picks (design 2026-07-17 stayer convention).
-flatten (--ea) (--ec) (--eb) (toward .c) as --ear
+flatten (--ea & .a valley) (--ec & .c) (--eb & .b valley) (staying .d) (toward .c) as --ear
 .t = --ear * --bc
 
 ; assert --ear is mountain

@@ -10,9 +10,9 @@
 ; half again (every face in one 45-degree wedge); the four medians alone give
 ; the quarter fold, which becomes this base only after a squash.
 ;
-; Every named point lies on a crease through the center, so the stacking
-; needs points inside sectors: .q in the a-quarter, .r in the b-quarter.
-; (.q over .r) puts the a-quarter on top of the b-taco, i.e. in front.
+; The six rays fold flat in 18 states. Three letters leave one: the halves of
+; the medians that end on the edges cd and da fold as valleys, the half of the
+; diagonal toward .b as a mountain.
 
 paper square
 
@@ -20,11 +20,9 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-.q = free on --ab from .a at 1/4
-.r = free on --ab from .b at 1/4
 
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab)
-  (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab)
+  (--bd & .b mountain) (--bd & .d)
 
 ; assert steps = 1
 ; assert faces = 6

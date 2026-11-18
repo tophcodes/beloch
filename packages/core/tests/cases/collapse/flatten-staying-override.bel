@@ -17,7 +17,7 @@ mark (map --ab onto --diag) as --ea
 mark (map --ab onto --bc) as --eb
 mark (map --bc onto --diag) as --ec
 
-flatten (--eb & .b) (--ea & .a) (--ec & .c) (staying .d) (toward .a) as --ear
+flatten (--eb & .b valley) (--ea & .a valley) (--ec & .c) (staying .d) (toward .a) as --ear
 .t = --ear * --ab
 
 ; assert --ear is mountain
