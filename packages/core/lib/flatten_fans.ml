@@ -329,6 +329,20 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
       { State.axiom = "flatten"; sources = []; span; name = None;
         stmt = Ctx.stmt_index ctx }
   in
+  (* The record a hinge of crease [cid] carries. A crease the program marked
+     carries the record of the `mark` statement that defined its line, with
+     its name, and this statement's index, as [Resolve.material_cid] gives
+     it; a construction and the derived crease carry this statement's. *)
+  let prov_of (cid : int) : State.provenance option =
+    match
+      Array.find_opt
+        (fun (m : Fold_state.mark) -> m.Fold_state.mcrease_id = cid)
+        (Fold_state.marks pre_st)
+      |> Fun.flip Option.bind (fun (m : Fold_state.mark) -> m.Fold_state.mprov)
+    with
+    | Some pr -> Some { pr with State.stmt = Ctx.stmt_index ctx }
+    | None -> prov
+  in
   (* the anchor flap `on` names, as paper polygons *)
   let anchor =
     match on_opt with
@@ -399,7 +413,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                 (fun j -> Geom.on_segment (poly.(j), poly.((j + 1) mod n)) v)
                 (List.init n Fun.id))
       in
-      Fold_state.subdivide_segments pre_st ~prov ~segments:(fun i ->
+      Fold_state.subdivide_segments pre_st ~crease_prov:prov_of ~prov ~segments:(fun i ->
           let held =
             Array.to_list verts |> List.filter (strictly_inside i) |> List.length
           in
@@ -419,7 +433,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
           Fold_state.subdivide_fan !st ~o:v
             ~rays:[ (r.cid, Geom.line_through v r.far, r.far) ]
             ~only:(fun i -> par.(i) >= 0 && need k par.(i))
-            ~prov)
+            ~prov:(prov_of r.cid))
       rays;
     !st
   in

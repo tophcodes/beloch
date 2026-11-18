@@ -1068,12 +1068,14 @@ let subdivide ?crease_id ?keep_side ?(only = fun _ -> true) (g : t)
    keep the face whole. Returns the new state and the parent of each new
    face. Children follow their parent in the given order, and the new hinges
    precede the carried ones in the order of their faces, as in
-   [split_with_flat_hinges]. *)
-let split_faces (g : t) ~(prov : State.provenance option)
+   [split_with_flat_hinges]. A new hinge of crease [cid] carries
+   [hinge_prov cid], [prov] when it is absent. *)
+let split_faces ?hinge_prov (g : t) ~(prov : State.provenance option)
     ~(cut_of :
        int ->
        (face list * (int * int * (Geom.point * Geom.point) * int) list) option)
     : t * int array =
+  let hinge_prov = Option.value hinge_prov ~default:(fun _ -> prov) in
   let out = ref [] in
   let cuts = ref [] in
   let next = ref 0 in
@@ -1106,7 +1108,7 @@ let split_faces (g : t) ~(prov : State.provenance option)
         List.map
           (fun (i, j, (a, b), cid) ->
             { fa = first + i; fb = first + j; line = Geom.line_through a b;
-              angle = Num.zero; crease_id = cid; prov })
+              angle = Num.zero; crease_id = cid; prov = hinge_prov cid })
           hs)
       (List.rev !cuts)
   in
@@ -1226,9 +1228,10 @@ let subdivide_fan ?(only = fun _ -> true) (g : t) ~(o : Geom.point)
    the children: each is traced by turning clockwise at every node, so it
    lies to the left of the edges it is traced along. A face stays whole
    when a segment leaves it, when a cell is not convex, or when a segment
-   ends inside a cell. *)
+   ends inside a cell. A hinge of crease [cid] carries [crease_prov cid]. *)
 let subdivide_segments (g : t)
     ~(segments : int -> (int * (Geom.point * Geom.point)) list)
+    ~(crease_prov : int -> State.provenance option)
     ~(prov : State.provenance option) : t =
   let cut_of fi =
     match segments fi with
@@ -1394,7 +1397,7 @@ let subdivide_segments (g : t)
             in
             Some (List.map (fun (_, ns) -> child ns) inner, hinges))
   in
-  fst (split_faces g ~prov ~cut_of)
+  fst (split_faces ~hinge_prov:crease_prov g ~prov ~cut_of)
 
 let subdivide_paper ?crease_id (g : t) (paper_axis : Geom.line)
     ~(prov : State.provenance option) : t =

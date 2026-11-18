@@ -1463,6 +1463,28 @@ let test_square_twist_cycle () =
       ("the face at .d lies over the face at .c", d, c);
       ("the face at .a lies over the face at .d", a, d) ]
 
+(* The square twist scores twelve marked segments in one flatten: every
+   crease it folds carries the name of the mark that defined its line. *)
+let test_square_twist_crease_names () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"flatten-square-twist.bel"
+         (read_case "collapse/flatten-square-twist.bel"))
+  in
+  let json = Fold_emit.to_json_folded fd in
+  let open Yojson.Safe.Util in
+  let names =
+    json |> member "beloch:edges" |> to_list
+    |> List.filter_map (function `Null -> None | e -> Some (e |> member "name"))
+  in
+  Alcotest.(check bool) "every crease carries a name" true
+    (not (List.mem `Null names));
+  List.iter
+    (fun n ->
+      Alcotest.(check bool) ("a crease carries name " ^ n) true
+        (List.mem (`String n) names))
+    [ "s1"; "s2"; "s3"; "s4"; "k1"; "k2"; "k3"; "k4"; "m1"; "m2"; "m3"; "m4" ]
+
 let () =
   Alcotest.run "beloch-e2e"
     [
@@ -1590,5 +1612,7 @@ let () =
         ] );
       ( "cycle",
         [ Alcotest.test_case "the square twist program folds into a cycle" `Quick
-            test_square_twist_cycle ] );
+            test_square_twist_cycle;
+          Alcotest.test_case "the square twist names its creases" `Quick
+            test_square_twist_crease_names ] );
     ]

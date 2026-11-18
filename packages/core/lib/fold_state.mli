@@ -350,12 +350,14 @@ val subdivide_fan :
 val subdivide_segments :
   t ->
   segments:(int -> (int * (Geom.point * Geom.point)) list) ->
+  crease_prov:(int -> State.provenance option) ->
   prov:State.provenance option ->
   t
 (** Cut faces along several TABLE segments at once: [segments i] gives the
     segments that score face [i], each with its crease id, and none for a
     face that stays whole. The children of a face are the cells its edges
-    and the segments enclose, joined by flat hinges along the segments. A
+    and the segments enclose, joined by flat hinges along the segments; a
+    hinge of crease [cid] carries [crease_prov cid]. A
     face stays whole when a segment leaves it, when a cell is not convex,
     or when a segment ends inside a cell. Faces that no chain of full cuts
     divides, such as a sheet scored with a pinwheel of creases, are cut this
