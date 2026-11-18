@@ -748,6 +748,19 @@ let test_parse_flatten_fan_items () =
        "flatten (fan (--h & .sr) (map .sr onto --mid through .a) as .r)\n\
        \        (fan at .q (--v mountain)) (staying .o) as --pf")
 
+(* a construction ray of a fan takes a letter as a line ray does *)
+let test_parse_flatten_fan_construction_letter () =
+  Alcotest.(check string)
+    "a valley construction ray"
+    "flatten anon fans=[{at=- rays=[line{--h & .sr}:free \
+     construction{.sr onto --mid; through .a}:valley] as=-} \
+     {at=- rays=[line{--v}:free construction{.sl onto --mid; through .a}:mountain] \
+     as=-}] \
+     overs=[] staying=.o toward=-"
+    (shape1
+       "flatten (fan (--h & .sr) (map .sr onto --mid through .a valley))\n\
+       \        (fan (--v) (map .sl onto --mid through .a mountain)) (staying .o)")
+
 let test_parse_flatten_fan_errors () =
   let fails msg src =
     expect_error msg (fun () -> parse_stmts ~filename:"t.bel" ("paper square\n" ^ src ^ "\n"))
@@ -1076,6 +1089,11 @@ let test_err_letter_on_an_axis_item () =
     "write (mountain) as its own item" (fun () ->
       parse_stmts ~filename:"t.bel" "paper square\nfold (--d mountain) (moving .a)\n")
 
+let test_err_letter_on_an_axis_construction () =
+  expect_error_hint "an axis item takes no mountain or valley"
+    "write (mountain) as its own item" (fun () ->
+      parse_stmts ~filename:"t.bel" "paper square\nfold (map .a onto .c mountain)\n")
+
 let test_err_placed_fold_rejects_mountain () =
   expect_error_hint "a placed fold derives its direction" "drop mountain"
     (fun () ->
@@ -1223,6 +1241,8 @@ let () =
             test_parse_flatten_toward_item;
           Alcotest.test_case "flatten fan items" `Quick
             test_parse_flatten_fan_items;
+          Alcotest.test_case "flatten fan construction letter" `Quick
+            test_parse_flatten_fan_construction_letter;
           Alcotest.test_case "flatten fan item errors" `Quick
             test_parse_flatten_fan_errors;
           Alcotest.test_case "flatten double staying rejected" `Quick
@@ -1286,6 +1306,8 @@ let () =
             test_err_no_ray_item;
           Alcotest.test_case "mountain on an axis item" `Quick
             test_err_letter_on_an_axis_item;
+          Alcotest.test_case "mountain on an axis construction" `Quick
+            test_err_letter_on_an_axis_construction;
           Alcotest.test_case "placed fold rejects mountain" `Quick
             test_err_placed_fold_rejects_mountain;
           Alcotest.test_case "placed fold takes up to" `Quick

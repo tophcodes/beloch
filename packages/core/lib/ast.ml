@@ -200,7 +200,7 @@ type output =
 (* One parenthesized argument of a write, classified by its head only. The
    verb decides what each head means; Items holds that table. *)
 type raw_item =
-  | RiConstruction of construction * Error.span
+  | RiConstruction of construction * mv_constraint * Error.span
   | RiLine of line_operand * mv_constraint * Error.span
   | RiMoving of flap_arg * Error.span
   | RiMovingDir of flap_arg * bool * Error.span
