@@ -358,7 +358,11 @@ flap of the upper layer at that hinge, and its sector beyond the target
 line, away from the spine, stays. A flap that ends at the target line has
 no such sector: the layers it is hinged to on that line stay, both layers
 of the flap move, and each of those hinges keeps its fold or opens,
-whichever folds flat ([[BEP-0057]]). The target line carries the crease the
+whichever folds flat ([[BEP-0057]]). A squash folds toward the viewer:
+where the lower layer of the flap runs on beyond the target line and the
+upper one does not, the flap opens on the far side (`` the squash of <l>
+onto <target> folds from the other side of the model ``, hint `` flip
+first ``). The target line carries the crease the
 flap's layer folds along: with a line as target, that line's own crease;
 with a point, the crease through the vertex and the point, which has to
 exist (`` no crease lies on the line from the vertex through <p> ``, hint

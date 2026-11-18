@@ -86,11 +86,15 @@ let keeping_item (ctx : Ctx.ctx) (span : Error.span) ~(spine_str : string)
    and both pieces of the axis fold as valleys (BEP-0061); each hinge on the
    target line between the flap and a layer that stays keeps its fold or
    opens, and the stacking check decides between them. [f'] is where the
-   far end [f] of the spine lands. *)
+   far end [f] of the spine lands. [other_side] says that the lower layer
+   of the flap has material beyond the target line: seen from the other
+   side that layer is the upper one and holds the squash (BEP-0038), so a
+   squash that finds no single state here names the side. *)
 let own_hinges (ctx : Ctx.ctx) (st : Fold_state.t) ~(o : Geom.point)
     ~(f : Geom.point) ~(f' : Geom.point) ~(target_line : Geom.line)
     ~(spine_cid : int) ~(cid_a : int) ~(cid_b : int) ~(in_flap : int -> bool)
-    ~(target_str : string) (span : Error.span) : unit =
+    ~(other_side : bool) ~(spine_str : string) ~(target_str : string)
+    (span : Error.span) : unit =
   let faces = Fold_state.faces st in
   let nf = Array.length faces in
   let tip = Array.init nf in_flap in
@@ -182,6 +186,10 @@ let own_hinges (ctx : Ctx.ctx) (st : Fold_state.t) ~(o : Geom.point)
        states);
   match states with
   | [ s ] -> ctx.state := s
+  | _ when other_side ->
+      Error.fail ~hint:"flip first" span
+        (Printf.sprintf "the squash of %s onto %s folds from the other side of the model"
+           spine_str target_str)
   | [] -> Error.fail span Collapse.e_selfint
   | many ->
       Error.fail span
@@ -488,12 +496,13 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
   (* the stayer: the sector of the anchor beyond the target line, away from
      the spine, named by a table point inside it; None where the flap ends
      at the target line *)
-  let stayer =
+  let in_lower = within lower_polys st2 in
+  let beyond_target (in_layer : int -> bool) =
     let away = -Geom.side_of_line target_line f in
     let faces2 = Fold_state.faces st2 in
     let rec find i =
       if i >= Array.length faces2 then None
-      else if in_anchor i then
+      else if in_layer i then
         let clip =
           Geom.clip_convex_halfplane target_line away (Fold_state.table_polygon_ccw st2 i)
         in
@@ -504,6 +513,7 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
     in
     find 0
   in
+  let stayer = beyond_target in_anchor in
   let spine_elem = [ cand ~letter:Ast.MvValley c.cid c.seg ] in
   (match stayer with
   | Some stayer ->
@@ -516,8 +526,9 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
            ~toward:None span)
   | None ->
       own_hinges ctx st2 ~o ~f ~f' ~target_line ~spine_cid:c.cid ~cid_a ~cid_b
-        ~in_flap:(fun i -> in_anchor i || within lower_polys st2 i)
-        ~target_str span);
+        ~in_flap:(fun i -> in_anchor i || in_lower i)
+        ~other_side:(beyond_target in_lower <> None)
+        ~spine_str ~target_str span);
   (* one crease on both layers from here on: `--s` is the whole axis, and
      `--s & .p` the piece of it on the layer of `.p` *)
   ctx.state := Fold_state.merge_crease !(ctx.state) ~from:cid_b ~into:cid_a;

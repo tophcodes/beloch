@@ -340,7 +340,10 @@ hinges of the spine and of the axis change, each hinge on the target's
 line between the tip and a face outside it keeps or changes, and
 `Collapse.geoms_of` and `Collapse.pipeline_solve` give the states as for a
 fan. More than one state fails with `` squash is ambiguous: <n>
-realizations ``. The fan passes the spine with the letter valley too: the
+realizations ``. Where the squash finds no single state and the flap of
+the lower face at the spine has material beyond the target's line, it
+fails with the message that names the side: seen from the other side that
+flap is the anchor and its material beyond the line holds the squash. The fan passes the spine with the letter valley too: the
 spine opens and takes no letter, and a free letter would count each state
 once per letter. With a target point, the target's
 crease is the one named crease whose paper line passes through the vertex
@@ -366,6 +369,7 @@ and the checks of the fan report with `squash` in place of `flatten`.
 | `no segment of <target> runs on the flap from the vertex to where the spine lands` | `mark it first` |
 | `the flap has no material beyond <target>; nothing holds the squash` | |
 | `the axis of the squash does not cross the flap` | |
+| `the squash of <l> onto <target> folds from the other side of the model` | `flip first` |
 
 ### Checks
 

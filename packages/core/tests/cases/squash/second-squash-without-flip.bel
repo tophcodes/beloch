@@ -1,0 +1,14 @@
+@author "Claude (Anthropic)"
+
+; The second squash of the preliminary fold written without the flip before
+; it (bases/preliminary-two-squashes.bel). The lower layer of the flap runs
+; flat across --bd into the square of the first squash, so the flap opens
+; on the other side of the model.
+
+paper square
+fold (map .d onto .b) as --ac
+fold (map .a onto .c) as --bd
+squash (--ac & --ab onto --bd) as --s1
+squash (--ac & --bc onto --bd) as --s2
+
+; expect error "folds from the other side of the model"
