@@ -113,6 +113,140 @@ let touching_at_a_vertex =
       in
       (not (Geom.convex_overlap p turned)) && not (Geom.convex_overlap turned p))
 
+(* ---- the float boxes behind [convex_overlap] ---- *)
+
+(* A pair of polygons for the box filter: [p] with a second polygon made from
+   it or drawn on its own, both moved by one translation. *)
+type partner =
+  | Other of Arb.poly  (** an independent polygon *)
+  | Same  (** [p] itself *)
+  | Mirror of int  (** [p] mirrored in edge i: the two touch along it *)
+  | Near of int * int * bool
+      (** the mirror in edge i moved 2^-k along the edge's normal, into [p]
+          (true) or away from it: overlapping or apart by a hair *)
+  | Turned of int  (** the half-turn of [p] about vertex i: touching there *)
+
+(* The translation of both polygons: none, or (t, t) for an irrational t of
+   degree 2 or 4, which puts every coordinate in a [Field] or [Qq]. *)
+type shift = No_shift | Shift of Arb.atom
+
+type box_case = { p : Arb.poly; partner : partner; shift : shift }
+
+let partner_str = function
+  | Other q -> Arb.poly_str q
+  | Same -> "same"
+  | Mirror i -> Printf.sprintf "mirror in edge %d" i
+  | Near (i, k, inward) ->
+      Printf.sprintf "mirror in edge %d moved 2^-%d %s" i k
+        (if inward then "inward" else "outward")
+  | Turned i -> Printf.sprintf "half-turn about vertex %d" i
+
+let box_case_str c =
+  Printf.sprintf "%s ; %s%s" (Arb.poly_str c.p) (partner_str c.partner)
+    (match c.shift with
+    | No_shift -> ""
+    | Shift a -> " ; shifted by " ^ Arb.atom_str a)
+
+let box_case =
+  G.(
+    let* p = Arb.poly
+    and* partner =
+      oneof_weighted
+        [
+          (2, map (fun q -> Other q) Arb.poly);
+          (1, return Same);
+          (2, map (fun i -> Mirror i) (int_range 0 5));
+          ( 3,
+            map3
+              (fun i k inward -> Near (i, k, inward))
+              (int_range 0 5) (int_range 20 70) bool );
+          (1, map (fun i -> Turned i) (int_range 0 5));
+        ]
+    and* shift =
+      oneof_weighted
+        [
+          (2, return No_shift);
+          (1, map (fun a -> Shift a) (oneof_list Arb.[ Sqrt 2; Root2 2; Quartic ]));
+        ]
+    in
+    return { p; partner; shift })
+
+let box_case_value (c : box_case) : Geom.point array * Geom.point array =
+  let p = Arb.poly_value c.p in
+  let k = Array.length p in
+  let mirror i =
+    let a = p.(i mod k) and b = p.((i + 1) mod k) in
+    (reverse (Array.map (Geom.reflect_point (Geom.line_through a b)) p), a, b)
+  in
+  let move (dx, dy) v =
+    Array.map
+      (fun (u : Geom.point) ->
+        { Geom.x = Num.add u.Geom.x dx; y = Num.add u.Geom.y dy })
+      v
+  in
+  let q =
+    match c.partner with
+    | Other q -> Arb.poly_value q
+    | Same -> p
+    | Mirror i ->
+        let m, _, _ = mirror i in
+        m
+    | Near (i, e, inward) ->
+        let m, a, b = mirror i in
+        (* (a.y - b.y, b.x - a.x) points into [p], which is counter-clockwise *)
+        let eps =
+          Num.of_q (Q.make (if inward then Z.one else Z.minus_one)
+                      (Z.shift_left Z.one e))
+        in
+        move
+          ( Num.mul eps (Num.sub a.Geom.y b.Geom.y),
+            Num.mul eps (Num.sub b.Geom.x a.Geom.x) )
+          m
+    | Turned i ->
+        let v = p.(i mod k) and two = Num.of_int 2 in
+        Array.map
+          (fun (u : Geom.point) ->
+            {
+              Geom.x = Num.sub (Num.mul two v.Geom.x) u.Geom.x;
+              y = Num.sub (Num.mul two v.Geom.y) u.Geom.y;
+            })
+          p
+  in
+  match c.shift with
+  | No_shift -> (p, q)
+  | Shift a ->
+      let t = Arb.atom_value a in
+      (move (t, t) p, move (t, t) q)
+
+let filtered_equals_exact =
+  Arb.make ~name:"convex_overlap equals the exact test" ~count:150
+    ~print:box_case_str box_case (fun c ->
+      let p, q = box_case_value c in
+      QCheck2.assume (Arb.proper_poly p && Arb.proper_poly q);
+      let exact = Geom.convex_overlap_exact p q in
+      Geom.convex_overlap p q = exact
+      && (match Geom.convex_overlap_boxes p q with
+         | Some b -> b = exact
+         | None -> true))
+
+(* A coordinate's box has finite ends, each on its side of the exact
+   value. *)
+let box_encloses =
+  Arb.make ~name:"a box encloses its number" ~count:100
+    ~print:box_case_str box_case (fun c ->
+      let p, q = box_case_value c in
+      Array.for_all
+        (fun (v : Geom.point) ->
+          List.for_all
+            (fun x ->
+              let lo, hi = Num.box x in
+              Float.is_finite lo && Float.is_finite hi
+              && lo <= hi
+              && Num.compare (Num.of_q (Q.of_float lo)) x <= 0
+              && Num.compare (Num.of_q (Q.of_float hi)) x >= 0)
+            [ v.Geom.x; v.Geom.y ])
+        (Array.append p q))
+
 (* ---- [clip_convex_halfplane] ---- *)
 
 (* The clipping line: through two generated points, or through a vertex of
@@ -200,6 +334,7 @@ let () =
           touching_along_an_edge;
           touching_at_a_vertex;
         ] );
+      ("float boxes", [ filtered_equals_exact; box_encloses ]);
       ( "clip",
         [ clip_convex; clip_in_halfplane; clip_in_polygon; clip_areas_add_up ]
       );
