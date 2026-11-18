@@ -151,7 +151,7 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b mountain) (--bd & .d)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
 .m = free on --bd from .b at 1/4
 --s = (perp --bd through .m)
 mark (--s) (on #[.a]) as --sm
@@ -201,7 +201,7 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b mountain) (--bd & .d)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
 :::
 
 ::: {.example #ex-half-square name="a square folded in half" uses="def-flat-state lem-hinge-cases"}
@@ -1630,15 +1630,13 @@ the tip is every piece outside the stayer's wedge. Where a face of $T$ is
 hinged to a face in the stayer's wedge off the rays, the paths disagree and
 the write is undefined, as for every reflection.
 
-::: {.figure #fig-flatten caption="The preliminary base by one collapse at the center: six rays fold, the diagonal through `.a` and `.c` stays flat, and the ordering constraint puts the a-quarter in front of the b-taco." views="cp folded" highlight=".a .c"}
+::: {.figure #fig-flatten caption="The preliminary base by one collapse at the center: six rays fold, the diagonal through `.a` and `.c` stays flat, and the letters on three rays leave one of the 18 flat states the six rays fold to." views="cp folded" highlight=".a .c"}
 paper square
 mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-.q = free on --ab from .a at 1/4
-.r = free on --ab from .b at 1/4
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
 :::
 
 ::: {.figure #fig-flatten-op caption="The terms of the collapse in [#fig-flatten]: the vertex at the center, the six rays, and the stayer, the quarter between the rays on `--h` and `--v` that holds the diagonal to `.c`. Every other sector moves by the reflections across the rays between it and the stayer; on the right the state after the collapse." views="op" at="collapse"}
@@ -1647,10 +1645,8 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-.q = free on --ab from .a at 1/4
-.r = free on --ab from .b at 1/4
 @label collapse
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
 :::
 
 ::: {.figure #fig-flatten-states caption="The candidate states of a four-ray vertex, the midline on both sides and the half-diagonals to `.c` and `.b`, each as its crease pattern, mountains red and valleys blue. The sectors are 45°, 135°, 135° and 45°, so opposite sectors sum to 180° and the vertex folds flat. Every state has three rays of one letter and one of the other. The three with three mountains are removed; the three with one mountain each remain, and without `toward` the program fails as ambiguous ([#open-flatten-selection])." views="candidates" at="vertex"}
@@ -1730,9 +1726,7 @@ mark (through .a .c) as --ac
 mark (through .b .d) as --bd
 mark (map --ab onto --cd) as --h
 mark (map --da onto --bc) as --v
-.q = free on --ab from .a at 1/4
-.r = free on --ab from .b at 1/4
-flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
+flatten (--h & --bc) (--v & --cd valley) (--h & --da valley) (--v & --ab) (--bd & .b mountain) (--bd & .d)
 squash (--h & --da onto --ac) as --s
 :::
 
