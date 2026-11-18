@@ -100,8 +100,9 @@ Four functions build the layer order of a state:
   corner faces lie in a cycle.
 - `Fold_state.orders` searches the pairs. The caller gives the side of the
   pairs it knows and the pairs it fixes, and gets every state whose other
-  pairs satisfy the conditions below. `flatten` finds its layer orders with
-  it (Fan, below).
+  pairs satisfy the conditions below. `flatten`, `squash` and `reverse`
+  find their layer orders with it (Fan, below), and so does a fold that
+  places a block `Over` or `Under` faces.
 
 ::: {.include api="Fold_state.with_rank"}
 :::
@@ -135,8 +136,9 @@ A fold computes the pairs of the new state (`Fold_state.fold_blocks`). Two
 staying faces keep their side, and two faces of one moved block exchange
 sides. A block placed `Top` lies above every staying face it lands on, and
 a block placed `Bottom` below them. A block placed `Over` or `Under` faces
-lies directly on each of them, and the three conditions of
-[[BEP-0059]] decide its other new pairs. A face that `subdivide` cuts
+lies directly on each of them; the three conditions of [[BEP-0059]] fix
+the pairs they decide, and `Fold_state.orders` decides the rest. A face
+that `subdivide` cuts
 passes its sides on to its pieces.
 
 `Fold_state.orders` works in two steps. It first relates the sides it has to
@@ -252,11 +254,13 @@ vertex run only where the anchor surrounds the vertex on the paper;
 elsewhere `Fold_state.make` checks that the paths close.
 
 The layer order of the folded fan is a search over the sides of pairs of
-faces (`Fold_state.orders`; Layer order, above). The faces that share one
-motion form a piece, and the faces the fan leaves in place are one piece.
-Two faces of one piece that overlap keep their side, exchanged where the
-motion turns the piece over. The side of two overlapping faces of different
-pieces is open. The letter of an element fixes the side of the two faces at
+faces (`Fold_state.orders`; Layer order, above), whose units the verb
+gives ([[BEP-0077]]). For `flatten` and `squash` the faces that share one
+motion form a unit, a piece, and the faces the fan leaves in place are one
+piece; `reverse` gives the units of its opening (Reverse, below). Two
+faces of one unit that overlap keep their side, exchanged where the motion
+turns the unit over. The side of two overlapping faces of different units
+is open. The letter of an element fixes the side of the two faces at
 a hinge of its crease (Sectors, below), and the search decides the rest by
 the non-crossing conditions. A face of one piece can land between two faces
 of another: on a book fold with the rays marked on both layers, the upper
@@ -607,11 +611,11 @@ single-result contract of its own, `` ambiguous stacking (<k> orders) ``,
 which `flatten` never reaches: it calls `collapse_all` and pools every
 realization; the message survives in the module's own tests.
 
-## Reverse
+### Reverse
 
 `Action.eval_reverse` realizes [[reference/model#def-reverse|def-reverse]] with
-`Fold_state.reverse_attempts`, the state as it stands, and no scoring of
-its own beyond the axis.
+`Reverse.attempts`, the state as it stands, and no scoring of its own
+beyond the axis.
 
 The tip is `Resolve.tip_faces`: the anchor's faces with a piece on the moving
 side, or every such face when there is no anchor, closed under hinges whose
@@ -627,14 +631,33 @@ hinge of the tip crosses from it to the rest, and one of the hinges that
 cross reaches beyond the axis. Every hinge that crosses is folded and lies
 on the spine line, so a cut crossed by a flat hinge is none.
 
-Each opening is folded with `Fold_state.fold_blocks`: for `inside`, the
-lower block over the faces of its body that no face of the body overlaps
-from above, and the upper block under the faces of its body that no face
-of the body overlaps from below; for `outside`, the lower block at the
-bottom and the upper block on top. The body of a block is its faces that
-the axis cuts, whose stationary pieces stay. Where one body is empty the
-opening is removed, and where a face of the upper body lies below a face of
-the lower body that it overlaps, it is removed as interleaved.
+The fan of a reverse fold is built once, for every opening.
+`Fold_state.reverse_fan` cuts each face of the tip that the axis crosses,
+with a flat hinge of the new crease between its two pieces, and
+`Collapse.geoms_of` moves the pieces beyond the axis by the creases on their
+paper paths ([[BEP-0044]]). The cut hinges fold, a hinge that lies on the
+axis between the tip and a face that stays changes, and every other hinge
+keeps its angle, the hinges on the spine's line included. Every piece beyond
+the axis moves by the reflection across it, so one folded state serves
+every opening. The vertex of the fan, where the axis meets the spine's
+line, plays no part in this, and a reverse fold whose axis runs parallel to
+its spine folds the same way.
+
+Each opening is a stacking of that state (`Fold_state.fold_opening`), with
+the faces numbered as a fold of the two blocks numbers them: a block placed
+at the bottom, the faces that stay, the other block. The units of the layer
+search are the faces that stay and each of the two blocks ([[BEP-0077]]):
+two faces of one block keep their side, exchanged since the block turns
+over, and the lower block lies below the upper one. For `inside`, the lower
+block lies over the faces of its body that no face of the body overlaps from
+above, and the upper block under the faces of its body that no face of the
+body overlaps from below; the three conditions of [[BEP-0059]] fix the sides
+they decide, and `Fold_state.orders` decides the rest. For `outside`, the
+lower block lies below every face that stays and the upper block above
+them, and the search only checks the result. The body of a block is its
+faces that the axis cuts, whose stationary pieces stay. Where one body is
+empty the opening is removed, and where a face of the upper body lies below
+a face of the lower body that it overlaps, it is removed as interleaved.
 
 A letter item names hinges by the segments `&` selects from a crease; the
 hinges of the tip among them are the ones it constrains. An opening keeps
