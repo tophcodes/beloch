@@ -79,13 +79,45 @@ let keeping_item (ctx : Ctx.ctx) (span : Error.span) ~(spine_str : string)
       Printf.sprintf "(%s & .p onto %s) with .p at %s" spine_str target_str
         (Resolve.point_str c.f_paper)
 
+(* The states among [states] in which no hinge of [tried] opens that another
+   state keeps folded (BEP-0075). [tried] are hinges of [pre], found in a
+   state by the two faces they join; a state is dropped where another keeps
+   folded every hinge of [tried] it keeps folded, and one more. *)
+let fewest_opened (pre : Fold_state.t) (tried : int list) (states : Fold_state.t list) :
+    Fold_state.t list =
+  let pre_hinges = Fold_state.hinges pre in
+  let folded s =
+    let hs = Fold_state.hinges s in
+    List.filter
+      (fun i ->
+        let h = pre_hinges.(i) in
+        Array.exists
+          (fun (g : Fold_state.hinge) ->
+            ((g.fa = h.fa && g.fb = h.fb) || (g.fa = h.fb && g.fb = h.fa))
+            && Num.sign g.angle <> 0)
+          hs)
+      tried
+  in
+  let kept = List.map (fun s -> (s, folded s)) states in
+  List.filter_map
+    (fun (s, k) ->
+      if
+        List.exists
+          (fun (_, k') ->
+            List.length k' > List.length k && List.for_all (fun i -> List.mem i k') k)
+          kept
+      then None
+      else Some s)
+    kept
+
 (* The squash of a flap that ends at its target line (BEP-0057): the layers
    that hinges on the target line join to the flap hold it. [st] carries the
    axis on both layers of the flap, as the creases [cid_a] and [cid_b];
    [in_flap] holds the pieces of the flap, which all move. The spine opens
    and both pieces of the axis fold as valleys (BEP-0061); each hinge on the
    target line between the flap and a layer that stays keeps its fold or
-   opens, and the stacking check decides between them. [f'] is where the
+   opens, the stacking check decides between them, and of the states left
+   those that keep the most of these hinges folded stay (BEP-0075). [f'] is where the
    far end [f] of the spine lands. [other_side] says that the lower layer
    of the flap has material beyond the target line: seen from the other
    side that layer is the upper one and holds the squash (BEP-0038), so a
@@ -152,7 +184,7 @@ let own_hinges (ctx : Ctx.ctx) (st : Fold_state.t) ~(o : Geom.point)
         | _ -> None)
       ~faces ~nf
   in
-  let states =
+  let candidates =
     match sgs with
     | Error _ -> []
     | Ok sgs ->
@@ -163,6 +195,11 @@ let own_hinges (ctx : Ctx.ctx) (st : Fold_state.t) ~(o : Geom.point)
             | Error _ -> [])
           sgs
         |> Collapse.rank_by_outline st ~state:Fun.id
+  in
+  let states =
+    fewest_opened st
+      (List.filter (fun i -> role.(i) = Collapse.Try) (List.init (Array.length hinges) Fun.id))
+      candidates
   in
   let far_on_target =
     let ta, tb =
@@ -181,9 +218,9 @@ let own_hinges (ctx : Ctx.ctx) (st : Fold_state.t) ~(o : Geom.point)
        (fun s ->
          { Trace.state = Some s;
            detail = Trace.fan ~pre:st ~post:s ~point:o ~rays ~emergent:None;
-           removed = None;
+           removed = (if List.memq s states then None else Some Trace.By_opened);
            chosen = (match chosen with Some c -> c == s | None -> false) })
-       states);
+       candidates);
   match states with
   | [ s ] -> ctx.state := s
   | _ when other_side ->
@@ -515,6 +552,21 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
   in
   let stayer = beyond_target in_anchor in
   let spine_elem = [ cand ~letter:Ast.MvValley c.cid c.seg ] in
+  (* the hinges at the vertex that are no element of the fan: each lies on a
+     ray of the fan and keeps its fold or opens as the fan folds (BEP-0075) *)
+  let tried =
+    let hs = Fold_state.hinges st2 in
+    List.filter
+      (fun i ->
+        let h = hs.(i) in
+        let ta, tb = Fold_state.hinge_table_segment st2 i in
+        let cid = h.Fold_state.crease_id in
+        (Geom.point_equal ta o || Geom.point_equal tb o)
+        && Num.sign h.Fold_state.angle <> 0
+        && cid <> c.cid && cid <> cid_a && cid <> cid_b
+        && not (cid = target_cid && (in_anchor h.Fold_state.fa || in_anchor h.Fold_state.fb)))
+      (List.init (Array.length hs) Fun.id)
+  in
   (match stayer with
   | Some stayer ->
       ignore
@@ -523,7 +575,9 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
            ~o ~elem_names:[ spine_str; "the axis"; "the axis"; target_str ]
            ~over:[] ~anchor:(Some anchor_polys)
            ~staying:(Some (Collapse.Points [ stayer ]))
-           ~toward:None span)
+           ~toward:None
+           ~narrow:(Trace.By_opened, fewest_opened st2 tried)
+           span)
   | None ->
       own_hinges ctx st2 ~o ~f ~f' ~target_line ~spine_cid:c.cid ~cid_a ~cid_b
         ~in_flap:(fun i -> in_anchor i || in_lower i)

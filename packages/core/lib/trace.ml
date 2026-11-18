@@ -11,6 +11,7 @@ type removal =
   | By_opposite
   | By_mountains
   | By_top
+  | By_opened
 
 type segment = Geom.point * Geom.point
 type stage = Paper | Heading | Side | Moved | Landing
@@ -145,7 +146,8 @@ let removal_json = function
         | By_crossing -> "crossing"
         | By_opposite -> "opposite"
         | By_mountains -> "mountains"
-        | By_top -> "top")
+        | By_top -> "top"
+        | By_opened -> "opened")
 
 let stage_name = function
   | Paper -> "paper"

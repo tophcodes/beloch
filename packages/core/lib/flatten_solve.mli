@@ -20,6 +20,7 @@ val solve :
   anchor:Geom.point array list option ->
   staying:Collapse.stayer option ->
   toward:Geom.point option ->
+  ?narrow:Trace.removal * (Fold_state.t list -> Fold_state.t list) ->
   Error.span ->
   (int * Geom.line) option
 (** The fan at [o] on resolved operands: one candidate list per element,
@@ -27,7 +28,10 @@ val solve :
     ([None]: the topmost flap under [o]), the stayer ([None]: the wedge
     between the first two elements) and the `toward` point, a paper point.
     [verb] names the write in messages and crease records, [elem_names] the
-    elements as the program wrote them. Leaves the chosen state in the
+    elements as the program wrote them. [narrow] is a condition the verb
+    adds to the fan: it keeps a subset of the candidate states before the
+    selection stages run, and the trace records the others as removed for
+    its reason. Leaves the chosen state in the
     context and records the trace; returns the emergent crease where one
     was scored. The caller binds the output clause and pushes the frame. *)
 

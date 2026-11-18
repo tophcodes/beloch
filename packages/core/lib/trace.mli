@@ -18,6 +18,9 @@ type removal =
           closes the vertex *)
   | By_mountains  (** more mountains on the given rays than another state *)
   | By_top  (** less of the material toward the point on top *)
+  | By_opened
+      (** a squash opens a hinge on its target line that another state
+          keeps folded *)
 
 type segment = Geom.point * Geom.point
 

@@ -114,6 +114,7 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     ~(elem_names : string list) ~(over : (int * int) list)
     ~(anchor : Geom.point array list option)
     ~(staying : Collapse.stayer option) ~(toward : Geom.point option)
+    ?(narrow : (Trace.removal * (Fold_state.t list -> Fold_state.t list)) option)
     (span : Error.span) : (int * Geom.line) option =
   let elem_of (fcid, fea, feb, valley) =
     { Collapse.cid = fcid; ea = fea; eb = feb; valley }
@@ -566,6 +567,16 @@ let solve (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   let tier1, tier2 = List.partition (fun (_, t, _, _) -> t = `Tier1) realizations in
   let deciding = if tier1 <> [] then tier1 else tier2 in
   if tier1 <> [] then remove Trace.By_opposite ~kept:tier1 tier2;
+  (* the condition a verb adds to the fan, ahead of the selection stages *)
+  let deciding =
+    match narrow with
+    | None -> deciding
+    | Some (why, f) ->
+        let keep = f (List.map (fun (st, _, _, _) -> st) deciding) in
+        let kept = List.filter (fun (st, _, _, _) -> List.memq st keep) deciding in
+        remove why ~kept deciding;
+        kept
+  in
   (* records the emergent crease's (id, line) here so the name (if
      any) binds to it instead of the given rays; None if no candidate
      ray was materialized (even case) or left unbound. *)

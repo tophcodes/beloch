@@ -1,0 +1,42 @@
+@author "Claude (Anthropic)"
+
+; The four squashes of the frog base (BEP-0075). Between them the model
+; turns over, and a half of an earlier squash turns over to uncover the next
+; flap. The last squash folds at the paper center, where hinges of
+; `--bd`, `--h`, `--ac` and `--s2` meet its fan; the squash keeps all of
+; them folded.
+
+paper square
+mark (map --da onto --bc) as --v
+mark (map --ab onto --cd) as --h
+mark (through .a .c) as --ac
+mark (through .b .d) as --bd
+.k = free on --bc from .b at 1/4
+.e = free on --da from .d at 1/4
+flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b mountain) (--bd & .d)
+
+.o = --h * --v
+.ml = --v * --cd
+.mr = --v * --ab
+.x6 = --h * --da
+.x7 = --h * --bc
+
+squash (--h & --da onto --ac) as --s1
+flip
+squash (--h & --bc onto --ac) as --s2
+fold (--h & --bc) (moving .k) (up to .k)
+squash (--v & --ab onto --bd) as --s3
+flip
+fold (--h & --da) (moving .e) (up to .e)
+squash (--v & --cd onto --bd) as --s4
+
+; assert steps = 9
+; assert faces = 16
+; assert .o = (1/2, 1/2)
+; assert .a = (1, 1)
+; assert .b = .a
+; assert .c = .a
+; assert .d = .a
+; assert .ml = .x6
+; assert .mr = .x6
+; assert .x7 = .x6
