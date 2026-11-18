@@ -33,10 +33,10 @@ test("a card names the entity, the line that made it, and that line's text", () 
 });
 
 test("a card with no line to point at says what the summary says", () => {
-  expect(cardContent({ title: "face 2", detail: "flap 0 · rank 1" }, null, "paper square")).toEqual({
+  expect(cardContent({ title: "face 2", detail: "flap 0" }, null, "paper square")).toEqual({
     name: "face 2",
     line: null,
-    text: "flap 0 · rank 1",
+    text: "flap 0",
   });
 });
 

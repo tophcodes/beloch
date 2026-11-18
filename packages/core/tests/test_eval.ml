@@ -413,10 +413,12 @@ let test_flatten_tip_upper_corner () =
   let near_a = { Geom.x = Num.of_q (Q.of_ints 1 100); y = Num.of_q (Q.of_ints 1 100) } in
   let body = { Geom.x = Num.of_q (Q.of_ints 9 10); y = Num.of_q (Q.of_ints 1 10) } in
   Alcotest.(check bool) "the upper corner lands on the upper layer" true
-    ((Fold_state.rank st).(face_at st near_a) > (Fold_state.rank st).(face_at st body));
+    (Fold_state.above st (face_at st near_a) (face_at st body));
   let near_d = { Geom.x = Num.of_q (Q.of_ints 1 100); y = Num.of_q (Q.of_ints 99 100) } in
-  Alcotest.(check int) "the lower corner lies at the bottom of the stack" 0
-    (Fold_state.rank st).(face_at st near_d);
+  Alcotest.(check bool) "the lower corner lies at the bottom of the stack" true
+    (List.for_all
+       (fun j -> Fold_state.rel st (face_at st near_d) j <> Fold_state.Above)
+       (List.init (Array.length (Fold_state.faces st)) Fun.id));
   Alcotest.(check bool) "the lower corner stays" true
     (Geom.point_equal (Fold_state.table_position st (pt 0 1)) (pt 0 1));
   let a = Fold_state.table_position st (pt 0 0) in
@@ -432,8 +434,10 @@ let test_flatten_tip_lower_corner_on () =
   let st = fd.Eval.state in
   let n = Array.length (Fold_state.faces st) in
   let near_a = { Geom.x = Num.of_q (Q.of_ints 1 100); y = Num.of_q (Q.of_ints 1 100) } in
-  Alcotest.(check int) "the upper corner stays on top of the stack" (n - 1)
-    (Fold_state.rank st).(face_at st near_a);
+  Alcotest.(check bool) "the upper corner stays on top of the stack" true
+    (List.for_all
+       (fun j -> Fold_state.rel st (face_at st near_a) j <> Fold_state.Below)
+       (List.init n Fun.id));
   Alcotest.(check bool) "the upper corner stays" true
     (Geom.point_equal (Fold_state.table_position st (pt 0 0)) (pt 0 1));
   let d = Fold_state.table_position st (pt 0 1) in
@@ -442,10 +446,10 @@ let test_flatten_tip_lower_corner_on () =
 
 (* The paper points stacked over table point [p], bottom to top. *)
 let layers_at (st : Fold_state.t) (p : Geom.point) : Geom.point list =
-  let rank = Fold_state.rank st in
   Fold_state.paper_preimages st p
-  |> List.map (fun q -> (rank.(face_at st q), q))
-  |> List.sort (fun (a, _) (b, _) -> compare a b)
+  |> List.map (fun q -> (face_at st q, q))
+  |> List.sort (fun (a, _) (b, _) ->
+         if a = b then 0 else if Fold_state.above st a b then 1 else -1)
   |> List.map snd
 
 (* The issue's book corner with the rays marked on both layers: the upper
@@ -557,7 +561,7 @@ let test_layer_mountain_moved_below () =
     (Fold_state.rel st mv stt = Fold_state.Below)
 
 (* [Fold_state.rel]'s own negation, implemented again here: the core has no
-   standalone sparse-order module; [rel] is derived directly from rank. *)
+   standalone sparse-order module; [rel] reads the state's layer order. *)
 let negate_rel = function
   | Fold_state.Above -> Fold_state.Below
   | Fold_state.Below -> Fold_state.Above
@@ -1960,7 +1964,7 @@ let book =
    .f = --m * --bc\n"
 
 (* A state as text: per face its paper polygon, its table polygon, whether it
-   is face up and its rank, then every hinge's letter. Two programs that
+   is face up and the faces it lies above, then every hinge's letter. Two programs that
    reach one state by the same writes give the same text. *)
 let state_text (st : Fold_state.t) : string =
   let p (pt : Geom.point) =
@@ -1969,10 +1973,14 @@ let state_text (st : Fold_state.t) : string =
   let poly a = String.concat "" (Array.to_list (Array.map p a)) in
   let faces =
     List.init (Array.length (Fold_state.faces st)) (fun i ->
-        Printf.sprintf "%s|%s|%b|%d"
+        Printf.sprintf "%s|%s|%b|%s"
           (poly (Fold_state.faces st).(i))
           (poly (Fold_state.table_polygon st i))
-          (Fold_state.face_up st i) (Fold_state.rank st).(i))
+          (Fold_state.face_up st i)
+          (String.concat ","
+             (List.filter_map
+                (fun (a, b) -> if a = i then Some (string_of_int b) else None)
+                (Fold_state.order st))))
   in
   let hinges =
     List.init (Array.length (Fold_state.hinges st)) (fun i ->

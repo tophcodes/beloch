@@ -313,7 +313,7 @@ of all faces that agrees with $\lambda$ on every overlapping pair is a linear
 extension of $\lambda$, and two linear extensions with the same restriction to
 overlapping pairs describe the same state. A linear extension exists only
 when the *above* relation is acyclic across regions, and flat-foldable states
-violate this: in the square twist the four central faces lie
+violate this: in the square twist the four faces around the central square lie
 over-under-over-under around the twist, so "no linear layer ordering will be
 able to avoid such obstructions", while the fold is flat-foldable
 [@hull2020, sec. 6.5, p. 119]. A representation that stores one linear

@@ -414,13 +414,12 @@ let beloch_references_json (refs : Ctx.reference list) : Yojson.Safe.t =
 
 (* beloch:inspect: [crease_id]-keyed inventory of the final display state:
    each crease's segment bundle (with per-segment M/V/F), each face's flap
-   (coplanar cluster) + stacking rank, and each named point's carrying
+   (coplanar cluster), and each named point's carrying
    face + flap. The playground's entity inspector reads it. *)
 let beloch_inspect_json (state : Fold_state.t)
     (named_points : (string * Geom.point * int * int option) list)
     (named_line_cids : (string * int) list) : Yojson.Safe.t =
   let faces = Fold_state.faces state in
-  let rank = Fold_state.rank state in
   let clusters = Fold_state.coplanar_clusters state in
   let hinges = Fold_state.hinges state in
   (* [crease_id] -> user's variable name. A FOLDED crease's hinge [provenance]
@@ -506,7 +505,6 @@ let beloch_inspect_json (state : Fold_state.t)
                [
                  ("vertices", `List (Array.to_list (Array.map pt_json poly)));
                  ("flap", `Int clusters.(i));
-                 ("rank", `Int rank.(i));
                ] ))
          faces)
   in

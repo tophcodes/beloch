@@ -120,7 +120,6 @@ export interface InspectCrease {
 export interface InspectFace {
   vertices: Vec2[];
   flap: number;
-  rank: number;
 }
 // beloch:inspect.edges — the four paper-boundary bundles (--ab/--bc/--cd/
 // --da), one entry per edge that exists; a crossing crease splits an edge

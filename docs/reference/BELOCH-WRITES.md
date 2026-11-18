@@ -334,7 +334,12 @@ and presses it flat so that the spine lands on a target
 ([[reference/model#def-squash|def-squash]], [[decision/0038]]). It is a fan at
 the *vertex*, the end of the spine inside the paper: the spine opens, each
 layer of the flap folds along its piece of the axis, and the layer of the
-flap that the target line crosses folds along the target's crease.
+flap that the target line crosses folds along the target's crease. The
+two pieces of the axis are the flanks of the opened spine, and the squash
+folds both as valleys: of the states the fan folds flat in, the write
+keeps those with both flanks valleys ([[decision/0061]]). The swivel fold
+on the same creases, with one flank a mountain, is a `flatten` with
+letters.
 
 **Items.** `squash` takes one item, a bare alignment: a line on the spine
 onto its target, a line or a point, written without `map` or `align`,

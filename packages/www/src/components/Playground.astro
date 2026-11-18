@@ -1148,6 +1148,7 @@ const codeLines = code ? code.split("\n").length : 0;
   import {
     colorLineStyle,
     sceneLayout,
+    resolveIsometry,
     DEFAULT_THEME,
     WEB_THEME,
     type Theme,
@@ -1161,7 +1162,7 @@ const codeLines = code ? code.split("\n").length : 0;
   } from "@beloch/runtime";
   import { SCHEMES, STORAGE_KEY, DEFAULT_ID, applyScheme, resolveScheme } from "../lib/paper-schemes";
   import { lookupEntity, type EntityRef } from "../lib/inspect-lookup";
-  import { segMatchesLine } from "../lib/stack-picker";
+  import { segMatchesLine, stackOrder } from "../lib/stack-picker";
   import { hoverSummary, segmentRows, edgeSegmentRows } from "../lib/tooltip-content";
   import { cardContent, cardPlacement } from "../lib/selection-card";
   import { bundleElements } from "../lib/bundle-highlight";
@@ -2007,10 +2008,18 @@ const codeLines = code ? code.split("\n").length : 0;
     // One segment is the whole bundle and needs no rows; several each get one,
     // which is the stack picker.
     function segmentRowsHtml(ref: EntityRef): string {
-      const insp = currentScene()?.inspect;
-      if (!insp) return "";
+      const scene = currentScene();
+      const insp = scene?.inspect;
+      if (!scene || !insp) return "";
+      // beloch:inspect describes the final fold, so its stack order is read
+      // from that step's faceOrders.
+      const last = scene.steps.length - 1;
+      const order = inFoldedView() && last >= 0
+        ? (({ frame, faceUp }) => stackOrder(frame.faceOrders, faceUp))(
+            resolveIsometry(scene, { kind: "step", index: last }))
+        : null;
       const rows =
-        ref.kind === "crease" ? segmentRows(insp, ref.creaseId, inFoldedView())
+        ref.kind === "crease" ? segmentRows(insp, ref.creaseId, order)
         : ref.kind === "edge" ? edgeSegmentRows(insp, ref.name)
         : [];
       if (rows.length < 2) return "";

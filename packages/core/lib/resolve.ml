@@ -1032,18 +1032,18 @@ let placed_fold_plan (ctx : Ctx.ctx) (axis : Geom.line) ~(anchor : Ast.flap_arg 
         Array.length tp >= 3 && List.exists (fun l -> Geom.convex_overlap tp l) landing)
       target_cluster
   in
-  let rank = Fold_state.rank st in
+  (* the block comes to lie directly on every face of the flap it lands on:
+     the faces of one flap lie flat as one piece of paper *)
   match overlapping with
   | [] ->
       Error.fail span
         (Printf.sprintf "%s's flap does not cover where the moved material lands"
            (fstr target))
-  | f :: rest ->
-      let pick better = List.fold_left (fun a b -> if better b a then b else a) f rest in
+  | faces ->
       let placement =
         match dir with
-        | Ast.PlaceUnder -> Fold_state.Under (pick (fun b a -> rank.(b) < rank.(a)))
-        | Ast.PlaceOver -> Fold_state.Over (pick (fun b a -> rank.(b) > rank.(a)))
+        | Ast.PlaceUnder -> Fold_state.Under faces
+        | Ast.PlaceOver -> Fold_state.Over faces
       in
       (move_side, block, placement)
 

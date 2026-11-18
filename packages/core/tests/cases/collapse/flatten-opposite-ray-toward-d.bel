@@ -1,11 +1,11 @@
 @author "Claude (Anthropic)"
 
 ; Same fish-base vertex as flatten-opposite-ray-toward-b.bel (see its comment
-; for the full derivation) — `(toward .d)` picks the position class's other
-; side under the rank-dipole stage, giving the MIRROR realization of that
+; for the full derivation). Under the rank-dipole stage `(toward .d)` picks
+; the position class's other side, the MIRROR realization of that
 ; file: same face count, same table positions, opposite layer order (pinned
 ; by tests/test_flatten.ml's test_flatten_derive_opposite_ray_fish_base,
-; which compares Fold_state.rank between the two toward points; `.bel`
+; which compares Fold_state.order between the two toward points; `.bel`
 ; assertions can't express stacking, so `faces = 6` is what this file pins).
 
 paper square

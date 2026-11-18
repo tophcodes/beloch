@@ -2,14 +2,13 @@
 // selection for the cursor-following tooltip, split from HTML templating
 // (which stays in Playground.astro so `escapeHtml` is applied at the one
 // place user-derived strings — names, sources — get written into innerHTML).
-import type { Inspect } from "@beloch/scene";
+import type { Inspect, InspectSegment } from "@beloch/scene";
 import { type EntityRef, lineOfSpan } from "./inspect-lookup";
-import { segRank } from "./stack-picker";
 
 // The tooltip's un-anchored (hover) content: one title + one detail line,
 // for all three entity kinds. Crease -> name (or id) + the bundle's TRUE
 // segment count (`insp.creases[id].segments.length`, even if fewer are
-// drawn this step under occlusion). Face -> flap/rank. Vertex -> name (+
+// drawn this step under occlusion). Face -> flap. Vertex -> name (+
 // face/flap if known).
 // Returns null when the current scene's `inspect` has nothing for `ref`
 // (e.g. a scene evaluated before `beloch:inspect` was emitted).
@@ -39,7 +38,7 @@ export function hoverSummary(ref: EntityRef, insp: Inspect): HoverSummary | null
   if (ref.kind === "face") {
     const f = insp.faces[ref.index];
     if (!f) return null;
-    return { title: `face ${ref.index}`, detail: `flap ${f.flap} · rank ${f.rank}` };
+    return { title: `face ${ref.index}`, detail: `flap ${f.flap}` };
   }
   // A construction line the paper does not carry: the program named it, and
   // the name is all there is to say about it.
@@ -51,40 +50,40 @@ export function hoverSummary(ref: EntityRef, insp: Inspect): HoverSummary | null
   };
 }
 
-// The anchored tooltip's segment list for one crease bundle. `sortByRank`
+// The anchored tooltip's segment list for one crease bundle. `order`
 // follows the stack picker's rule: the folded view stacks
 // coincident segments at the same projected position, so ordering
-// top-of-stack first (via `segRank`, descending) reads like the physical
+// top-of-stack first (via `stackOrder`) reads like the physical
 // layer order; the CP view has no stacking (segments are spatially
-// separate there), so the caller passes `sortByRank: false` to keep
+// separate there), so the caller passes `null` to keep
 // segment-array order instead.
 export interface SegmentRow {
   index: number;
   faceL: number;
   faceR: number;
   assignment: string;
-  rank: number;
 }
 
-export function segmentRows(insp: Inspect, creaseId: string, sortByRank: boolean): SegmentRow[] {
+export function segmentRows(
+  insp: Inspect,
+  creaseId: string,
+  order: ((a: InspectSegment, b: InspectSegment) => number) | null,
+): SegmentRow[] {
   const c = insp.creases[creaseId];
   if (!c) return [];
-  const rows: SegmentRow[] = c.segments.map((s, i) => ({
-    index: i,
-    faceL: s.faces[0]!,
-    faceR: s.faces[1]!,
-    assignment: s.assignment,
-    rank: segRank(insp, s),
-  }));
-  if (sortByRank) rows.sort((a, b) => b.rank - a.rank);
-  return rows;
+  const idx = c.segments.map((_, i) => i);
+  if (order) idx.sort((i, j) => order(c.segments[i]!, c.segments[j]!));
+  return idx.map((i) => {
+    const s = c.segments[i]!;
+    return { index: i, faceL: s.faces[0]!, faceR: s.faces[1]!, assignment: s.assignment };
+  });
 }
 
 // The anchored tooltip's segment list for one paper-boundary edge bundle
 // has the same shape and purpose as segmentRows above, but a boundary
 // segment borders only ONE face (there's no far side, it's the sheet's
 // edge — see InspectSegment's comment in types.ts), so there's no l|r pair
-// and no stacking rank to speak of; the row is just `face <fi> · B`.
+// and no stacking to speak of; the row is just `face <fi> · B`.
 export interface EdgeSegmentRow {
   index: number;
   face: number;

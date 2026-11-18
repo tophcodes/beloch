@@ -10,6 +10,12 @@
 ; while the piece of the second layer beside it is reflected across the axis.
 ; The pieces land where the squash of ADR 0038, folded from the flat sheet,
 ; puts them.
+;
+; The four rays fold flat in 8 states. The letters valley on --s and --t
+; select the squash among them, with --ac & .a a mountain under the flap
+; (ADR 0061). Each letter alone leaves several states: 3 with --s, 4 with
+; --t. With --s a mountain the rays fold a swivel fold
+; (flatten-swivel-on-folded-base.bel).
 
 paper square
 mark (through .a .c) as --ac
@@ -24,7 +30,7 @@ mark (align (--h onto --bd) (heading --h)) as --t
 .e = free on --da from .d at 1/4
 .f = free on --da from .a at 1/4
 flatten (--h & --bc) (--v & --cd) (--h & --da) (--v & --ab) (--bd & .b) (--bd & .d) (.q over .r) (toward .q)
-flatten (--h & --da) (--s & --da) (--t & --da) (--ac & .a) (on #[.f]) (staying .q)
+flatten (--h & --da) (--s & --da valley) (--t & --da valley) (--ac & .a) (on #[.f]) (staying .q)
 
 ; assert faces = 12
 ; assert .a = (1, 1)

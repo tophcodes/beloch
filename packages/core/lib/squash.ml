@@ -103,7 +103,6 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
            spine_str));
   let st = !(ctx.state) in
   let hs = Fold_state.hinges st in
-  let rank = Fold_state.rank st in
   (* the folded hinges among the segments *)
   let folded =
     List.filter_map
@@ -145,7 +144,7 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
           else (s.Fold_state.tb, s.Fold_state.ta, s.Fold_state.pa)
         in
         let fa, fb = s.Fold_state.faces in
-        let upper, lower = if rank.(fa) > rank.(fb) then (fa, fb) else (fb, fa) in
+        let upper, lower = if Fold_state.above st fa fb then (fa, fb) else (fb, fa) in
         let spine_line = Geom.line_through o f in
         let flap_point = centroid (Fold_state.table_polygon_ccw st upper) in
         let flap_side = Geom.side_of_line spine_line flap_point in
@@ -285,8 +284,7 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
     with
     | Some s ->
         let fa, fb = s.Fold_state.faces in
-        let rank = Fold_state.rank st in
-        if rank.(fa) > rank.(fb) then (fa, fb) else (fb, fa)
+        if Fold_state.above st fa fb then (fa, fb) else (fb, fa)
     | None -> (c.upper, c.lower)
   in
   let polys_of fi =
@@ -348,13 +346,17 @@ let eval (ctx : Ctx.ctx) (out : Ast.output) (spine_lo : Ast.line_operand)
   let far_of (s : Fold_state.crease_segment) =
     if Geom.point_equal s.Fold_state.ta o then s.Fold_state.tb else s.Fold_state.ta
   in
-  let cand cid (s : Fold_state.crease_segment) : Flatten_solve.elem_cand =
-    (cid, s.Fold_state.ta, s.Fold_state.tb, Ast.MvFree)
+  let cand ?(letter = Ast.MvFree) cid (s : Fold_state.crease_segment) :
+      Flatten_solve.elem_cand =
+    (cid, s.Fold_state.ta, s.Fold_state.tb, letter)
   in
+  (* the two pieces of the axis are the flanks of the opened spine, and a
+     squash folds both as valleys (ADR 0061): each element carries the
+     letter as a letter item of `flatten` carries it *)
   let axis_elem cid =
     match List.filter at_o (Fold_state.crease_segments st2 cid) with
     | [] -> Error.fail span "the axis of the squash does not cross the flap"
-    | segs -> List.map (cand cid) segs
+    | segs -> List.map (cand ~letter:Ast.MvValley cid) segs
   in
   let in_anchor = within anchor_polys st2 in
   let target_elem =

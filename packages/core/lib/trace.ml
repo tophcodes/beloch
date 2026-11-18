@@ -314,8 +314,8 @@ let fold_terms st ~axis ~move_side ~moving placement =
     match placement with
     | Fold_state.Top -> Top
     | Fold_state.Bottom -> Bottom
-    | Fold_state.Over fi -> Over (target fi)
-    | Fold_state.Under fi -> Under (target fi)
+    | Fold_state.Over fis -> Over (List.concat_map target fis)
+    | Fold_state.Under fis -> Under (List.concat_map target fis)
   in
   Fold { axis; side = move_side; moving = block; placement }
 

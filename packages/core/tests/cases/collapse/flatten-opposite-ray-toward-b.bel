@@ -1,6 +1,6 @@
 @author "Claude (Anthropic)"
 
-; fish-base vertex: O = incenter of triangle abd, sitting ON the ac-diagonal.
+; fish-base vertex: O = incenter of triangle abd, a point ON the ac-diagonal.
 ; All three given rays are bare, hence unconstrained, so the solution space
 ; covers the M/V pattern and the stacking as well as the emergent ray's
 ; position. The POSITION is
@@ -10,14 +10,13 @@
 ; rank-dipole stage picks among THOSE by which side's material ends up on
 ; top. `(toward .b)` (this file) and its sibling `(toward .d)` therefore
 ; pick the two MIRROR realizations: same face count, same table positions,
-; opposite layer order — not the same fold twice, the whole point of this
-; slice.
+; opposite layer order: two different folds.
 ;
-; `.bel` assertions have no vocabulary for stacking/rank (see
+; `.bel` assertions have no vocabulary for the layer order (see
 ; tests/test_bel_assert.ml's `assertion` type), so `faces = 6` is all this
-; file can pin; the actual DIFFERENCE (this file's rank vs. -toward-d.bel's)
+; file can pin; the DIFFERENCE (this file's layer order vs. -toward-d.bel's)
 ; is pinned by tests/test_flatten.ml's
-; test_flatten_derive_opposite_ray_fish_base, which reads Fold_state.rank
+; test_flatten_derive_opposite_ray_fish_base, which reads Fold_state.order
 ; directly and asserts the two runs disagree.
 
 paper square

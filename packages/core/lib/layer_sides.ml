@@ -66,34 +66,3 @@ let classes (t : t) (pairs : pair list) :
     pairs;
   ( List.rev !decided,
     List.rev_map (fun r -> List.rev (Hashtbl.find free r)) !roots )
-
-let topo_rank ~(n : int) ~(edges : (int * int) list) ~(priority : int array) :
-    int array option =
-  let succ = Array.make n [] and indeg = Array.make n 0 in
-  List.iter
-    (fun (lo, hi) ->
-      succ.(lo) <- hi :: succ.(lo);
-      indeg.(hi) <- indeg.(hi) + 1)
-    edges;
-  let module S = Set.Make (struct
-    type t = int * int
-
-    let compare = compare
-  end) in
-  let ready = ref S.empty in
-  for i = 0 to n - 1 do
-    if indeg.(i) = 0 then ready := S.add (priority.(i), i) !ready
-  done;
-  let rank = Array.make n 0 and next = ref 0 in
-  while not (S.is_empty !ready) do
-    let ((_, i) as e) = S.min_elt !ready in
-    ready := S.remove e !ready;
-    rank.(i) <- !next;
-    incr next;
-    List.iter
-      (fun j ->
-        indeg.(j) <- indeg.(j) - 1;
-        if indeg.(j) = 0 then ready := S.add (priority.(j), j) !ready)
-      succ.(i)
-  done;
-  if !next = n then Some rank else None

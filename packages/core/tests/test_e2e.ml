@@ -586,12 +586,11 @@ let test_inspect_enumerates_crease_segments () =
             (s |> member "faces" |> to_list |> List.length))
         segs)
     creases;
-  (* faces carry rank + flap *)
+  (* faces carry their flap *)
   let faces = inspect |> member "faces" |> to_assoc in
   Alcotest.(check bool) "at least one face" true (faces <> []);
   List.iter
     (fun (_i, f) ->
-      Alcotest.(check bool) "face has rank" true (f |> member "rank" <> `Null);
       Alcotest.(check bool) "face has flap" true (f |> member "flap" <> `Null))
     faces;
   (* points: a corner sits inside a single face → resolves to a unique
@@ -1152,7 +1151,6 @@ let test_e2e_tuck_target_off () =
    compared with one made of eight. *)
 let column (st : Fold_state.t) (t : Geom.point) : (Geom.point * bool) list =
   let n = Array.length (Fold_state.faces st) in
-  let rank = Fold_state.rank st in
   List.init n Fun.id
   |> List.filter (fun i ->
          (* the faces over [t]: a face whose edge runs through [t] only
@@ -1164,7 +1162,9 @@ let column (st : Fold_state.t) (t : Geom.point) : (Geom.point * bool) list =
               (List.exists
                  (fun j -> Geom.on_segment (p.(j), p.((j + 1) mod k)) t)
                  (List.init k Fun.id)))
-  |> List.sort (fun i j -> compare rank.(i) rank.(j))
+  (* the faces over [t] overlap one another there *)
+  |> List.sort (fun i j ->
+         if i = j then 0 else if Fold_state.above st i j then 1 else -1)
   |> List.map (fun i ->
          let inv = Isometry.inverse (Fold_state.face_iso2 st i) in
          (Isometry.apply_point inv t, Fold_state.face_up st i))
