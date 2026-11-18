@@ -1507,9 +1507,10 @@ let same_segment ((a, b) : Geom.point * Geom.point) ((c, d) : Geom.point * Geom.
      (MODEL def-flat-state, the paragraph after the definition).
 
    A side two conditions decide differently makes the fold invalid. The
-   sides nothing decides fall into classes that turn together; every
-   combination of classes is stacked and validated against [geo], and each
-   valid one is a stacking of the fold. *)
+   sides nothing decides fall into classes that turn together; the layer
+   search of a fan ([orders]) sets them, and each state it finds is a
+   stacking of the fold. Where it finds none, the error is the violation of
+   the combination that turns every class one way. *)
 let placed_stackings ~(shared : shared) ~(g : t) ~(geo : geometry)
     ~(parent : int array) ~(moved : bool array) ~(block_of : int array)
     ~(anchors : (int list * bool) array) : (t list, violation) result =
@@ -1697,30 +1698,29 @@ let placed_stackings ~(shared : shared) ~(g : t) ~(geo : geometry)
                 ignore (overlap i j)
               done
             done;
-            let found = ref [] and first_error = ref None in
-            let stat_above = Hashtbl.create ((2 * List.length pairs) + 1) in
-            for mask = 0 to (1 lsl k) - 1 do
-              Hashtbl.reset stat_above;
-              List.iter (fun (pr, v) -> Hashtbl.replace stat_above pr v) decided;
-              List.iteri
-                (fun bit cls ->
-                  let on = mask land (1 lsl bit) <> 0 in
-                  List.iter (fun (pr, v) -> Hashtbl.replace stat_above pr (v = on)) cls)
-                free;
-              let side i j =
-                if moved.(i) = moved.(j) then kept_above i j
-                else if moved.(j) then Hashtbl.find stat_above (i, j)
-                else not (Hashtbl.find stat_above (j, i))
-              in
-              match build ~marks:g.marks ~cycles:true geo ~side with
-              | g' -> found := g' :: !found
-              | exception V v -> if !first_error = None then first_error := Some v
-            done;
+            let kept i j = if moved.(i) = moved.(j) then Some (kept_above i j) else None in
+            let fixed = List.map (fun ((s, m), up) -> if up then (s, m) else (m, s)) decided in
+            let found = orders ~marks:g.marks geo ~kept ~fixed in
             exchange ();
-            match (List.rev !found, !first_error) with
-            | [], Some v -> Error v
-            | [], None -> assert false (* [mask] takes the value 0 *)
-            | gs, _ -> Ok gs
+            match found with
+            | Error v -> Error v
+            | Ok (_ :: _ as gs) -> Ok gs
+            | Ok [] -> (
+                (* the violation of the combination with every open class
+                   turned one way, the first the search tries *)
+                let stat_above = Hashtbl.create ((2 * List.length pairs) + 1) in
+                List.iter (fun (pr, v) -> Hashtbl.replace stat_above pr v) decided;
+                List.iter
+                  (List.iter (fun (pr, v) -> Hashtbl.replace stat_above pr (not v)))
+                  free;
+                let side i j =
+                  if moved.(i) = moved.(j) then kept_above i j
+                  else if moved.(j) then Hashtbl.find stat_above (i, j)
+                  else not (Hashtbl.find stat_above (j, i))
+                in
+                match build ~marks:g.marks ~cycles:true geo ~side with
+                | exception V v -> Error v
+                | _ -> Error Layer_cycle)
           end)
 
 let fold_blocks_gen ?crease_id ~(shared : shared) ~(blocks : (bool array * placement) list) (g : t)
