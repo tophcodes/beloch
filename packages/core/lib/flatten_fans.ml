@@ -613,13 +613,11 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                 (fun sg ->
                   match Collapse.pipeline_solve sg ~valley:(Array.of_list pat) ~over with
                   | Error e -> Error e
-                  | Ok { Collapse.root; candidate_at; distinct } ->
+                  | Ok { Collapse.candidate_at; distinct } ->
                       Ok
                         (List.filter_map
                            (fun fr ->
-                             match
-                               candidate_at ~root ~base:(Fold_state.face_iso st root) fr
-                             with
+                             match candidate_at fr with
                              | Ok s -> Some (s, Collapse.in_bounds hull s)
                              | Error _ -> None)
                            distinct))
