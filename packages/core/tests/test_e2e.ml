@@ -1427,6 +1427,42 @@ let test_samurai_helmet_tuck () =
   Alcotest.(check bool) "the tucked corner lies on the back layer" true
     (on_back <> [] && List.for_all (( = ) Fold_state.Above) on_back)
 
+(* The square twist as a program (tests/cases/collapse/flatten-square-twist.bel)
+   folds into nine faces, and the four faces at the corners of the sheet lie
+   in a cycle: the one at .b over the one at .a, .c over .b, .d over .c and
+   .a over .d [hull2020, §6.5, Fig. 6.12]. The inline assertions state no
+   layer order. *)
+let test_square_twist_cycle () =
+  let fd =
+    Eval.eval_folded
+      (Beloch.parse ~filename:"flatten-square-twist.bel"
+         (read_case "collapse/flatten-square-twist.bel"))
+  in
+  let st = fd.Eval.state in
+  let faces = Fold_state.faces st in
+  Alcotest.(check int) "nine faces" 9 (Array.length faces);
+  let sixteenths x y : Geom.point =
+    { Geom.x = Num.of_q (Q.of_ints x 16); y = Num.of_q (Q.of_ints y 16) }
+  in
+  let face_at p =
+    let found = ref (-1) in
+    Array.iteri
+      (fun i f -> if !found < 0 && Geom.in_convex_polygon f p then found := i)
+      faces;
+    !found
+  in
+  let a = face_at (sixteenths 4 1)
+  and b = face_at (sixteenths 15 4)
+  and c = face_at (sixteenths 12 15)
+  and d = face_at (sixteenths 1 12) in
+  List.iter
+    (fun (name, upper, lower) ->
+      Alcotest.(check bool) name true (Fold_state.above st upper lower))
+    [ ("the face at .b lies over the face at .a", b, a);
+      ("the face at .c lies over the face at .b", c, b);
+      ("the face at .d lies over the face at .c", d, c);
+      ("the face at .a lies over the face at .d", a, d) ]
+
 let () =
   Alcotest.run "beloch-e2e"
     [
@@ -1552,4 +1588,7 @@ let () =
           Alcotest.test_case "beloch:inspect enumerates crease segments" `Quick
             test_inspect_enumerates_crease_segments;
         ] );
+      ( "cycle",
+        [ Alcotest.test_case "the square twist program folds into a cycle" `Quick
+            test_square_twist_cycle ] );
     ]

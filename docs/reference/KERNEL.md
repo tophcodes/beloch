@@ -87,7 +87,7 @@ overlap have no entry. `Fold_state.above` and `Fold_state.rel` read one
 pair, `Fold_state.order` lists every pair, and `Fold_state.same_order`
 compares two states pair by pair. No operation reads a height of a face.
 
-Three functions build the layer order of a state:
+Four functions build the layer order of a state:
 
 - `Fold_state.make` and `Fold_state.with_rank` take a stacking, a
   permutation of the faces from the bottom up, as the input form. They keep
@@ -97,7 +97,11 @@ Three functions build the layer order of a state:
 - `Fold_state.with_order` takes the pairs. It is the only way to build a
   state whose layers lie in a cycle. A test builds the square twist with it:
   9 faces, 12 folded hinges and 28 overlapping pairs, in which the four
-  corner faces lie in a cycle. No Beloch program folds the square twist yet.
+  corner faces lie in a cycle.
+- `Fold_state.orders` searches the pairs. The caller gives the side of the
+  pairs it knows and the pairs it fixes, and gets every state whose other
+  pairs satisfy the conditions below. `flatten` finds its layer orders with
+  it (Fan, below).
 
 ::: {.include api="Fold_state.with_rank"}
 :::
@@ -135,16 +139,17 @@ lies directly on each of them, and the three conditions of
 [[decision/0059]] decide its other new pairs. A face that `subdivide` cuts
 passes its sides on to its pieces.
 
-Ceilings of the stacking search of `flatten` (Fan, below): `Collapse`
-searches orders of its units as lists from the bottom up and turns each into
-pairs through `with_rank`. Its starting list is the one `Collapse.stacking`
-derives from the pairs of the state, of the faces free to come next the one
-with the smallest index first. A `flatten` therefore finds no state with a
-cycle, and on a state with a cycle `Collapse.stacking` raises
-`Invalid_argument`. The list also orders faces that do not overlap, by their
-index, and the pruning of the search reads that order
-([[decision/0060]]). Tracked as
-[issue #285](https://github.com/tophcodes/beloch/issues/285).
+`Fold_state.orders` works in two steps. It first relates the sides it has to
+decide: a face that covers part of a hinge's crease lies on the same side of
+both faces of the hinge. At a folded hinge this is the taco-tortilla
+condition, and at a hinge of angle 0 the two faces are one uncreased sheet
+([[reference/model#def-flat-state|def-flat-state]]). The sides this leaves
+open fall into classes whose members turn together. The search then sets one
+class after the other, to one value and to the other, and gives up a partial
+order as soon as the sides set so far break the order condition or a taco
+condition. One ceiling: the order condition and the taco-taco condition
+reject a partial order and set no side, so the work doubles with every class
+that none of them rejects.
 
 One more ceiling: `with_order` checks no condition at a hinge of angle 0. A
 list of pairs that puts a face above one face of such a hinge and below the
@@ -197,10 +202,11 @@ hands them to `Flatten_solve.solve`, which scores them on the layers under
 the fan; `Collapse` folds the tip of
 [[reference/model#def-flatten|def-flatten]] on the scored state. The layers under
 the fan are the faces whose table image meets the anchor's in positive
-area. `Fold_state.subdivide_fan` scores each ray along its half-line from
-the vertex into the ray's own crease: a face that holds the vertex inside
-it is cut into the wedges between consecutive rays at once, and every other
-face a half-line crosses is cut along it. The pieces carry the flatten as
+area. `Fold_state.subdivide_fan` scores each ray from the vertex to the
+ray's far point into the ray's own crease: a face that holds the vertex
+inside it is cut into the wedges between consecutive rays at once, and
+every other face the ray crosses between those two points is cut along it.
+The pieces carry the flatten as
 the statement that scored them. A program therefore marks the rays on one
 layer, and the flatten carries them onto the others.
 
@@ -247,24 +253,20 @@ face disagree or nothing moves. Kawasaki's and Maekawa's conditions at the
 vertex run only where the anchor surrounds the vertex on the paper;
 elsewhere `Fold_state.make` checks that the paths close.
 
-The stacking orders units in lists from the bottom up, as
-`Collapse.linear_extensions` enumerates them, and turns each list into the
-sides of the overlapping pairs through `Fold_state.with_rank` (Layer order,
-above). Inside a unit, faces lie in the order of the list `Collapse.stacking`
-derives from the state before the flatten, and faces the fan turns over lie
-in the reverse order. A
-unit of the tip holds the faces of one wedge that share one motion; the
-first motion in a wedge keeps the wedge's number, so on one sheet the units
-are the wedges. The stayer's unit holds the faces of the stayer's wedge that
-are hinged to the tip: every piece of the wedge, joined by flat hinges inside it, that is
-hinged to a face of the tip, and the whole wedge when none is. Every other
-face the fan leaves in place, inside the stayer's wedge or outside it, is
-a unit of its own, one per piece joined by flat hinges, and keeps
-its side where it overlaps another face that stays. The tip can land
-between two such layers: on a book fold with the rays marked on both
-layers, the upper corner folds in between the upper and the lower layer.
-One ceiling remains: the pieces of the stayer's wedge that are hinged to the
-tip form one unit, so a tip hinged to two of them cannot land between them.
+The layer order of the folded fan is a search over the sides of pairs of
+faces (`Fold_state.orders`; Layer order, above). The faces that share one
+motion form a piece, and the faces the fan leaves in place are one piece.
+Two faces of one piece that overlap keep their side, exchanged where the
+motion turns the piece over. The side of two overlapping faces of different
+pieces is open. The letter of an element fixes the side of the two faces at
+a hinge of its crease (Sectors, below), and the search decides the rest by
+the non-crossing conditions. A face of one piece can land between two faces
+of another: on a book fold with the rays marked on both layers, the upper
+corner folds in between the upper and the lower layer. The search reads no
+order of two faces that lie apart, and it finds a state whose layers lie in
+a cycle: `packages/core/tests/cases/collapse/flatten-square-twist.bel`
+folds the square twist [@hull2020, §6.5, Fig. 6.12] with one `flatten` of
+four fans.
 
 ### Fans
 
@@ -276,13 +278,22 @@ position of that point; a fan without it, at the one point every ray item
 passes through. The rays are the halves of those
 lines from the vertex: of a segment through the vertex the halves that
 hold every point a `&` keeps, of a construction the halves along which a
-face lies. For two fans whose rays leave the segment between their
+face lies. A crease that `mark` recorded between two points and that cuts
+no face from edge to edge gives its recorded segments, so a ray can start
+at a vertex inside a face and end at the other end of the segment. For two
+fans whose rays leave the segment between their
 vertices out, the statement adds it to both under one crease id, the
 crease the output clause binds.
 
 The faces are sorted into regions, one per combination of wedges around
 the vertices, with `Collapse.sector_of_poly_opt` per vertex; a face a ray
-runs through belongs to none. The statement scores every ray on every
+runs through belongs to none. A ray ends at its far point: a face that only
+the line beyond that point runs through lies in the wedge that holds a
+point inside the face. The statement scores each ray from its vertex to its
+far point. A face that holds two vertices or more inside it is cut along
+all its rays at once (`Fold_state.subdivide_segments`), into the cells its
+edges and the rays enclose, since no single ray cuts such a face from edge
+to edge. The statement scores every ray on every
 layer under the fans, reads the tip off that state, and scores each ray
 again on the state before the flatten, on the faces where a hinge of the
 first scoring on that ray parts a face of the tip from a face that stays,
@@ -294,21 +305,13 @@ the top layer and the one below it, the state that two reverse folds and a
 valley fold reach.
 
 `Collapse.geoms_of` takes the regions as its sectors and finds the motions
-as for one fan. With `prune` it adds three things to the stacking, which a
-fan of several vertices needs: units that stay keep their order wherever
-every face of one lay above every face of the other in the list
-`Collapse.stacking` derives, overlapping or not;
-`Collapse.linear_extensions` skips an order that differs from one it keeps
-only in two adjacent units with no overlapping faces; and it drops an
-order as soon as the units placed so far break a taco-tortilla or
-taco-taco condition among units of distinct faces, the conditions
-`Fold_state.make` checks later. The letters of a fan run through Maekawa's
+and the layer orders as for one fan. The letters of a fan run through Maekawa's
 parity only where the anchor surrounds its vertex. Of the states, those
 inside the convex hull of the state before the flatten are kept where
 there are any ([[decision/0056]]), then those with the fewest mountains on the rays the
-program gave. Two ceilings remain: the rays are half-lines, so a ray
-scored past the far end of its segment would cut a face beyond it, and a
-statement derives a crease between vertices only for two fans.
+program gave. One ceiling remains: a statement derives a crease between
+vertices only for two fans; with more, the program names each such crease
+in both fans.
 
 ### Squash
 
@@ -551,13 +554,10 @@ base strip face up and the first ear's folded stack face down on top of
 it, and the first face by array index can be the wrong one and turn a
 hinge constraint around. The face the evaluator takes is the one whose
 table polygon has an edge from O along the ray's own segment, the layer the
-letter is about; among several, the lowest in the list `Collapse.stacking`
-derives.
-
-Valid stackings move whole sector blocks relative to one another; a
-sector is never tucked between two layers of another sector's block. That
-covers the rabbit ear and the waterbomb base, and a form that needs one
-sector inside another's stack is out of reach.
+letter is about. Where an element names hinges in several layers, its letter
+holds at each hinge whose face on the clockwise side of the ray lies above no
+such face of another hinge the element names; the other hinges take the
+letter the layer order gives them.
 
 ### Selection
 

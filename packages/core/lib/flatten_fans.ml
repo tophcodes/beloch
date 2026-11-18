@@ -69,7 +69,22 @@ let operand_of (ctx : Ctx.ctx) (r : Ast.fan_ray) : operand =
         | Ast.LSelect _ -> ()
       in
       force lo;
+      (* the extent of a mark that cuts no face from edge to edge: the
+         segments the program marked, which the statement scores *)
+      let marked cid =
+        match lo with
+        | Ast.LNamed _ ->
+            let st = !(ctx.state) in
+            List.map
+              (fun (pa, pb) ->
+                { Fold_state.faces = (-1, -1);
+                  ta = Fold_state.table_position st pa;
+                  tb = Fold_state.table_position st pb; pa; pb })
+              (Fold_state.mark_chords st cid)
+        | _ -> []
+      in
       match Resolve.bundle_segments ctx lo with
+      | Some cid, [] when marked cid <> [] -> Segments (cid, marked cid, [])
       | _, [] ->
           Error.fail r.Ast.fspan
             (Printf.sprintf "no segment of %s matches" (Resolve.lstr lo))
@@ -372,7 +387,30 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
   (* score ray [k] on the faces of [st] whose parent before the flatten
      [need k] holds *)
   let score (need : int -> int -> bool) : Fold_state.t =
-    let st = ref pre_st in
+    (* A face that holds two vertices or more inside it is cut along all its
+       rays at once: no ray cuts it from edge to edge alone. *)
+    let joint =
+      let strictly_inside i v =
+        let poly = Fold_state.table_polygon_ccw pre_st i in
+        let n = Array.length poly in
+        Geom.in_convex_polygon poly v
+        && not
+             (List.exists
+                (fun j -> Geom.on_segment (poly.(j), poly.((j + 1) mod n)) v)
+                (List.init n Fun.id))
+      in
+      Fold_state.subdivide_segments pre_st ~prov ~segments:(fun i ->
+          let held =
+            Array.to_list verts |> List.filter (strictly_inside i) |> List.length
+          in
+          if held < 2 then []
+          else
+            Array.to_list rays
+            |> List.mapi (fun k (r : ray) -> (k, r))
+            |> List.filter_map (fun (k, (r : ray)) ->
+                   if need k i then Some (r.cid, (verts.(r.fan), r.far)) else None))
+    in
+    let st = ref joint in
     Array.iteri
       (fun k (r : ray) ->
         let par = parents pre !st in
@@ -392,9 +430,47 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     let wedges =
       Array.mapi
         (fun j v ->
+          let fr = fan_rays.(j) in
+          let n = Array.length fr in
           Array.init (Array.length faces) (fun i ->
-              Collapse.sector_of_poly_opt v fan_rays.(j)
-                (faces.(i), Fold_state.face_iso2 st i)))
+              let w =
+                Collapse.sector_of_poly_opt v fr (faces.(i), Fold_state.face_iso2 st i)
+              in
+              if w >= 0 then w
+              else
+                (* A ray ends at its far point. A face that only the line
+                   beyond that point runs through lies in the wedge of a
+                   point inside it. *)
+                let poly = Fold_state.table_polygon_ccw st i in
+                let crossed =
+                  Array.exists
+                    (fun (r : ray) ->
+                      r.fan = j && Geom.segment_crosses_interior (v, r.far) poly)
+                    rays
+                in
+                if crossed then -1
+                else
+                  let c = centroid poly in
+                  let mid (p : Geom.point) =
+                    { Geom.x = Num.div (Num.add p.Geom.x c.Geom.x) (Num.of_int 2);
+                      y = Num.div (Num.add p.Geom.y c.Geom.y) (Num.of_int 2) }
+                  in
+                  let off_rays p =
+                    (not (Geom.point_equal p v))
+                    && not (Array.exists (fun (q, _) -> same_dir v p q) fr)
+                  in
+                  match
+                    List.find_opt off_rays (c :: List.map mid (Array.to_list poly))
+                  with
+                  | None -> -1
+                  | Some p ->
+                      let found = ref (-1) in
+                      for k = 0 to n - 1 do
+                        let a, _ = fr.(k) and b, _ = fr.((k + 1) mod n) in
+                        if !found < 0 && Collapse.in_closed_sector v a b p then
+                          found := k
+                      done;
+                      !found))
         verts
     in
     let sig_of i = Array.to_list (Array.map (fun w -> w.(i)) wedges) in
@@ -560,7 +636,7 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
     else None
   in
   let sgs =
-    Collapse.geoms_of st ~prune:true ~n:(List.length ids) ~sec ~tip ~names ~role ~nelem:nr
+    Collapse.geoms_of st ~sec ~tip ~names ~role ~nelem:nr
       ~side ~faces ~nf
   in
   (* the letters: free where the program left them, held to Maekawa's
@@ -613,14 +689,8 @@ let run (ctx : Ctx.ctx) ~(into : (int * (Geom.line -> unit)) option)
                 (fun sg ->
                   match Collapse.pipeline_solve sg ~valley:(Array.of_list pat) ~over with
                   | Error e -> Error e
-                  | Ok { Collapse.candidate_at; distinct } ->
-                      Ok
-                        (List.filter_map
-                           (fun fr ->
-                             match candidate_at fr with
-                             | Ok s -> Some (s, Collapse.in_bounds hull s)
-                             | Error _ -> None)
-                           distinct))
+                  | Ok states ->
+                      Ok (List.map (fun s -> (s, Collapse.in_bounds hull s)) states))
                 sgs
             in
             match List.concat_map (function Ok l -> l | Error _ -> []) runs with

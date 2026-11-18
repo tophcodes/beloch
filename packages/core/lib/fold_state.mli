@@ -173,6 +173,21 @@ val with_order :
     @see <https://belochlang.org/model/#def-flat-state> realizes the layer order
     @see <https://belochlang.org/model/#def-noncrossing> realizes the non-crossing conditions *)
 
+val orders :
+  ?marks:mark array ->
+  geometry ->
+  kept:(int -> int -> bool option) ->
+  fixed:(int * int) list ->
+  (t list, violation) result
+(** Every state of a [geometry] whose layer order keeps the sides [kept]
+    gives, puts [i] above [j] for each pair [(i, j)] of [fixed], and
+    satisfies the conditions [with_order] checks. [kept i j] is asked for two
+    overlapping faces [i] < [j]: [Some up] says that [i] lies above [j] iff
+    [up], [None] leaves the side to the search. A pair of [fixed] names two
+    faces that overlap. The list is empty when no layer order satisfies all
+    of this; [Error] is a violation the geometry holds.
+    @see <https://belochlang.org/model/#def-noncrossing> realizes the non-crossing conditions *)
+
 val faces : t -> face array
 val hinges : t -> hinge array
 val root : t -> int
@@ -322,14 +337,29 @@ val subdivide_fan :
   rays:(int * Geom.line * Geom.point) list ->
   prov:State.provenance option ->
   t
-(** Score the half-lines of a fan from the TABLE point [o]: each ray is
-    (crease id, its table line, a table point on it other than [o]), and is
-    scored into its own crease. A face that holds [o] in its interior is cut
+(** Score the rays of a fan from the TABLE point [o]: each ray is
+    (crease id, its table line, the table point on it where it ends), and
+    is scored into its own crease. A face that holds [o] in its interior is cut
     into the wedges between consecutive rays at once, when every wedge is
     narrower than a half-turn or exactly one, and is left whole otherwise;
-    every other face a ray's half-line crosses is cut along it as
-    [subdivide] cuts. Faces the line meets only on the far side of [o] are
-    left whole, and so is every face [only] does not hold for. *)
+    every other face a ray crosses between [o] and its end is cut along it
+    as [subdivide] cuts. Faces the line meets only on the far side of [o]
+    or past the ray's end are left whole, and so is every face [only] does
+    not hold for. *)
+
+val subdivide_segments :
+  t ->
+  segments:(int -> (int * (Geom.point * Geom.point)) list) ->
+  prov:State.provenance option ->
+  t
+(** Cut faces along several TABLE segments at once: [segments i] gives the
+    segments that score face [i], each with its crease id, and none for a
+    face that stays whole. The children of a face are the cells its edges
+    and the segments enclose, joined by flat hinges along the segments. A
+    face stays whole when a segment leaves it, when a cell is not convex,
+    or when a segment ends inside a cell. Faces that no chain of full cuts
+    divides, such as a sheet scored with a pinwheel of creases, are cut this
+    way. *)
 
 val subdivide_paper :
   ?crease_id:int ->

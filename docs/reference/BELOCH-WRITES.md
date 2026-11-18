@@ -525,7 +525,10 @@ statement fails when the rays do not meet at it (`` the rays of the fan do
 not meet at <point> ``); `(fan ray+ as .p)` binds the point where they
 meet. A ray is a line operand, with a letter where the program fixes one,
 or a construction, which the statement scores on the layers that move.
-`&` narrows a line to the half that holds the point it names. The items
+`&` narrows a line to the half that holds the point it names. A crease
+that `mark` recorded between two points is a ray from the end at the
+vertex to the other end, also where it lies inside a face and cuts none;
+the statement scores it. The items
 `on`, `staying` and `over` stand beside the fans and apply to the whole
 statement; `staying` is required (`` a flatten with several fans needs a
 staying item ``), and `toward` is refused (`` a flatten with several fans
