@@ -446,12 +446,28 @@ flat-foldability for a sheet of many vertices is NP-hard
 `(--l)` or `(--l & .p)`, with `mountain` or `valley` after it where the
 program fixes its letter; a bare ray is left to the solver. `(.p over .q)`
 orders two sectors in the result, `(staying <flap>)` names the stayer,
-the wedge that keeps its place, `(on <flap>)` names the anchor, and
-`(toward .p)` selects among the states that remain. Every item but
+the wedge that keeps its place, `(on <flap>)` names the anchor,
+`(emergent beside .p)` names where the emergent ray of an odd fan lies,
+and `(toward .p)` selects among the states that remain. Every item but
 `toward` is a constraint that narrows the set of states; `toward` picks
-one of them. `staying` and `toward` stand at most once (`` only one
-staying item per flatten ``, `` only one toward item per flatten ``), and
-an item that rules nothing out is no error.
+one of them. `staying`, `emergent` and `toward` stand at most once (``
+only one staying item per flatten ``, `` only one emergent item per
+flatten ``, `` only one toward item per flatten ``), and an item that
+rules nothing out is no error.
+
+**The emergent ray.** `(emergent beside .p)` keeps the states whose
+emergent ray lies in a wedge of the given rays that holds the table point
+of `.p`, the two rays that bound the wedge included ([[BEP-0078]]). On a
+rabbit ear the emergent ray lies on one side of the middle ray or on the
+other, and a point on that side names it: `.a` for the ear that ends on
+`--ab`. A point on a given ray lies on the edge of two wedges and names
+neither side. A fan with an even number of rays has no emergent ray (``
+flatten with an even ray count has no emergent ray ``, hint `` drop the
+emergent item ``), a flatten of several fans has none either (`` a
+flatten with several fans has no emergent ray ``), and a point no state
+puts its emergent ray beside is an error (`` no state has its emergent
+ray beside <point> ``, hint `` name a point in a wedge the emergent ray
+can split ``).
 
 **The stayer.** Without `staying`, the stayer is the wedge of less than a
 half-turn between the folded rays of the first two ray items, so the
@@ -518,7 +534,7 @@ mark (map --bc onto --diag) as --ec
 
 ```{.bel .frag prelude=ear}
 ; three rays: the fourth emerges
-flatten (--ea & .a valley) (--ec & .c) (--eb & .b valley) (staying .d) (toward .a) as --ear
+flatten (--ea & .a valley) (--ec & .c) (--eb & .b valley) (staying .d) (emergent beside .a) as --ear
 .t = --ear * --ab                                   ; where the ear reaches the edge
 
 ; assert --ear is mountain
@@ -531,13 +547,13 @@ flatten (--ea) (--ec) (--eb)
 ```
 
 ```{.bel .frag prelude=ear}
-flatten (--ea & .a) (--ec & .c) (--eb & .b) (staying .d) (toward .b)  ; .b on --eb
+flatten (--ea & .a) (--ec & .c) (--eb & .b) (staying .d) (emergent beside .b)  ; .b on --eb
 
-; expect error "does not pick a side"
+; expect error "flatten is ambiguous"
 ```
 
 ```{.bel .frag prelude=ear}
-flatten (--eb & .b valley) (--ea & .a valley) (--ec & .c) (staying .d) (toward .a) as --ear
+flatten (--eb & .b valley) (--ea & .a valley) (--ec & .c) (staying .d) (emergent beside .a) as --ear
 
 ; assert --ear is mountain
 ```

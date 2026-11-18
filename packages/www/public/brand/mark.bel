@@ -27,4 +27,4 @@ mark (through .d .b) as --l2
 
 mark (through .o .mab) as --l3
 
-flatten (--l1 & .a) (--l2 & .b) (--l3 \ .mab) (toward .c) as --ear
+flatten (--l1 & .a) (--l2 & .b) (--l3 \ .mab) (emergent beside .c) as --ear

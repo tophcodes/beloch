@@ -8,7 +8,7 @@ mark (map --ab onto --bc) as --eb
 mark (map --bc onto --diag) as --ec
 
 .o = --ea * --eb
-flatten (--ea & .a valley) (--ec & .c) (--eb & .b valley) (staying .d) (toward .a)
+flatten (--ea & .a valley) (--ec & .c) (--eb & .b valley) (staying .d) (emergent beside .a)
 mark (map .d onto .b) as --l
 
 ; without `up to` the fold takes every layer on the side of .b (BEP-0036)

@@ -1,16 +1,10 @@
 @author "Claude (Anthropic)"
 
 ; fish-base vertex: O = incenter of triangle abd, a point ON the ac-diagonal.
-; All three given rays are bare, hence unconstrained, so the solution space
-; covers the M/V pattern and the stacking as well as the emergent ray's
-; position. The POSITION is
-; forced regardless (the diagonal's OppositeRay continuation O -> c; both
-; line-new candidates fold a flap off the paper for every Maekawa pattern),
-; the min-mountain canon then narrows to 3 patterns, and `(toward)`'s
-; rank-dipole stage picks among THOSE by which side's material ends up on
-; top. `(toward .b)` (this file) and its sibling `(toward .d)` therefore
-; pick the two MIRROR realizations: same face count, same table positions,
-; opposite layer order: two different folds.
+; The letters and (staying .c) leave two states, one with its emergent ray
+; beside .b and one beside .d. `(emergent beside .b)` (this file) and its
+; sibling `(emergent beside .d)` pick the two MIRROR realizations: two
+; different folds.
 ;
 ; `.bel` assertions have no vocabulary for the layer order (see
 ; tests/test_bel_assert.ml's `assertion` type), so `faces = 6` is all this
@@ -26,6 +20,6 @@ mark (through .a .c) as --ray
 
 mark (map --ab onto --diag) as --l1
 mark (map --da onto --diag) as --l2
-flatten (--l1 valley) (--l2 valley) (--ray & .a valley) (staying .c) (toward .b)
+flatten (--l1 valley) (--l2 valley) (--ray & .a valley) (staying .c) (emergent beside .b)
 
 ; assert faces = 6
