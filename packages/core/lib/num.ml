@@ -38,7 +38,8 @@ let two_q = Q.of_int 2
 (* generators are equal iff their (irreducible) μ and isolating interval match.
    Distinct roots of the same μ have distinct intervals, so are never merged. *)
 let same_gen (a : gen) (b : gen) : bool =
-  Q.equal a.lo b.lo && Q.equal a.hi b.hi
+  a == b
+  || Q.equal a.lo b.lo && Q.equal a.hi b.hi
   && Array.length a.mu = Array.length b.mu
   && Array.for_all2 Q.equal a.mu b.mu
 
@@ -341,6 +342,12 @@ let sign (x : t) : int =
   | Rat q -> Q.sign q
   | Qq q -> Qqbar.sign_re q
   | Field { gen; coords } ->
+      (* the float box decides where it lies clear of zero; a NaN end
+         fails both comparisons and falls through to the exact search *)
+      let blo, bhi = box x in
+      if blo > 0. then 1
+      else if bhi < 0. then -1
+      else
       let rec go lo hi =
         let vlo, vhi = poly_interval coords lo hi in
         if Q.sign vlo > 0 then 1
