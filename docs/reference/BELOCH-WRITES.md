@@ -358,7 +358,11 @@ flap of the upper layer at that hinge, and its sector beyond the target
 line, away from the spine, stays. A flap that ends at the target line has
 no such sector: the layers it is hinged to on that line stay, both layers
 of the flap move, and each of those hinges keeps its fold or opens,
-whichever folds flat ([[BEP-0057]]). A squash folds toward the viewer:
+whichever folds flat ([[BEP-0057]]). A hinge of an earlier fold that
+meets the vertex keeps its fold where a flat state keeps it: of the states
+the squash folds flat in, it drops each one that opens such a hinge while
+another state keeps it folded together with every hinge the first keeps
+folded ([[BEP-0075]]). A squash folds toward the viewer:
 where the lower layer of the flap runs on beyond the target line and the
 upper one does not, the flap opens on the far side (`` the squash of <l>
 onto <target> folds from the other side of the model ``, hint `` flip

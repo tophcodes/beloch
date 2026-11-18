@@ -339,7 +339,11 @@ material, `Squash.own_hinges` folds the squash without the solver
 hinges of the spine and of the axis change, each hinge on the target's
 line between the tip and a face outside it keeps or changes, and
 `Collapse.geoms_of` and `Collapse.pipeline_solve` give the states as for a
-fan. More than one state fails with `` squash is ambiguous: <n>
+fan. On both paths `Squash.fewest_opened` then drops each state that opens
+a hinge at the vertex, other than the fan's own, which another state keeps
+folded together with every such hinge the first keeps folded
+([[BEP-0075]]); on the fan's path it reaches `Flatten_solve.solve` as the
+`narrow` condition, which runs before the selection stages. More than one state fails with `` squash is ambiguous: <n>
 realizations ``. Where the squash finds no single state and the flap of
 the lower face at the spine has material beyond the target's line, it
 fails with the message that names the side: seen from the other side that

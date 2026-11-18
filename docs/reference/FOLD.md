@@ -314,8 +314,10 @@ none of this appears, and every other field is the same with and without it.
   line, which the selection falls back to only when no emergent ray on a new
   line closes the vertex, `"toward"` for a state whose moved material lies
   farther from the `toward` point than another's, `"mountains"` for one with
-  more mountains on the given rays than another, and `"top"` for one that
-  puts less of the material toward the point on top.
+  more mountains on the given rays than another, `"top"` for one that
+  puts less of the material toward the point on top, and `"opened"` for a
+  state of a squash that opens a hinge at the vertex which another state
+  keeps folded.
 - `beloch:error`: present when the program fails, with the `message`, the
   `hint`, the `span` and the `statement` index of the statement that failed.
 

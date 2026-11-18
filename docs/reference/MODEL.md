@@ -1707,6 +1707,11 @@ tip is every piece of $\Phi$ and of $\Phi'$. $s$ opens, each of the two
 flaps folds along its piece of the axis, and each hinge on the target's
 line between the tip and the stayer changes or keeps; each choice is a
 candidate fan, with motions and candidate states as in [#def-flatten].
+
+A hinge at $f(O)$ that is no ray of the fan keeps its fold or opens, the
+hinges on the target's line between the tip and the stayer among them. A
+candidate state $S$ is removed where another candidate keeps folded every
+such hinge that $S$ keeps folded, and one more ([[BEP-0075]]).
 :::
 
 ::: {.term #term-vertex name="vertex"}
