@@ -117,19 +117,18 @@ the center line, on the front and on the back. That is four folds, and each
 has to move exactly one layer.
 
 ::: {.figure #fig-crane-legs caption="The legs narrowed. The front edges fold as valleys (`--n1`, `--n2`), the back edges as mountains. `.ht` waits for the head." views="cp folded" highlight="--n1 --n2 .ht" after="fig-crane-bird"}
-.ht = free on .e2 * .a from .a at 1/3
-fold (map .e1 * .b onto --mid) (moving .e1) (up to #[.e1 .b .o]) as --n1
-fold (map .e2 * .d onto --mid) (moving .e2) (up to #[.e2 .d .o]) as --n2
-fold (map .e3 * .b onto --mid) (moving .e3) (up to #[.e3 .b .o]) (mountain) as --n3
-fold (map .e4 * .d onto --mid) (moving .e4) (up to #[.e4 .d .o]) (mountain) as --n4
+.ht = free on --[.e2 .a] from .a at 1/3
+fold (map --[.e1 .b] onto --mid) (moving .e1) (up to #[.e1 .b .o]) as --n1
+fold (map --[.e2 .d] onto --mid) (moving .e2) (up to #[.e2 .d .o]) as --n2
+fold (map --[.e3 .b] onto --mid) (moving .e3) (up to #[.e3 .b .o]) (mountain) as --n3
+fold (map --[.e4 .d] onto --mid) (moving .e4) (up to #[.e4 .d .o]) (mountain) as --n4
 :::
 
-Between two creases `*` gave the point where they cross. Between two points
-it gives the crease that runs through both, the *join*. The petal folds
-left their creases without names, and the join reads them back: `.e1 * .b`
-is the crease from the fan's point `.e1` to the tip `.b`, the outer edge of
-the leg that ends in `.b`. `(map .e1 * .b onto --mid)` folds that edge onto
-the center line.
+The petal folds left their creases without names, and a *join* reads them
+back. `--[.e1 .b]` is the one crease that runs through every point it
+lists: here the crease from the fan's point `.e1` to the tip `.b`, the
+outer edge of the leg that ends in `.b`. `(map --[.e1 .b] onto --mid)`
+folds that edge onto the center line.
 
 Each fold names its side with `(moving .e1)`, a point on the edge it folds
 over. Its `up to` follows the rule of
@@ -141,7 +140,7 @@ them as well. The two back folds name the back layer, and `(mountain)`
 makes them fold away from the viewer, taking that layer and the layers
 beneath it. Seen from the front, their creases are ridges.
 
-The first line of the figure belongs to the head. `.e2 * .a` is the edge
+The first line of the figure belongs to the head. `--[.e2 .a]` is the edge
 of the front petal from `.e2` to the corner `.a`, and `.ht` is a point a
 third of the way along it from `.a`. The narrowing folds cut that edge into
 pieces, so the program reads the point while the edge is whole.

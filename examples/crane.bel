@@ -36,17 +36,17 @@ flatten (fan (--h & .br) (map .br onto --mid through .c) as .e3)
 
 ; the head will bend toward a point on the edge of the front petal, read
 ; here while that edge is still one piece
-.ht = free on .e2 * .a from .a at 1/3
+.ht = free on --[.e2 .a] from .a at 1/3
 
 ; narrow the legs: each outer edge onto the center line, front layers as
 ; valleys, back layers as mountains. The outer edge of a leg is the kite
 ; crease from its fan's point to its tip. Each `up to` names the face of the
 ; leg that holds its anchor, the leg's tip and the paper center; without it
 ; the front fold takes the back layers too.
-fold (map .e1 * .b onto --mid) (moving .e1) (up to #[.e1 .b .o]) as --n1
-fold (map .e2 * .d onto --mid) (moving .e2) (up to #[.e2 .d .o]) as --n2
-fold (map .e3 * .b onto --mid) (moving .e3) (up to #[.e3 .b .o]) (mountain) as --n3
-fold (map .e4 * .d onto --mid) (moving .e4) (up to #[.e4 .d .o]) (mountain) as --n4
+fold (map --[.e1 .b] onto --mid) (moving .e1) (up to #[.e1 .b .o]) as --n1
+fold (map --[.e2 .d] onto --mid) (moving .e2) (up to #[.e2 .d .o]) as --n2
+fold (map --[.e3 .b] onto --mid) (moving .e3) (up to #[.e3 .b .o]) (mountain) as --n3
+fold (map --[.e4 .d] onto --mid) (moving .e4) (up to #[.e4 .d .o]) (mountain) as --n4
 
 ; neck and tail: each leg reversed about the perpendicular to its own
 ; narrowed edge through the point where the side corners landed. These are
