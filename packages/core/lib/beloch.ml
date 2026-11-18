@@ -77,6 +77,7 @@ module State = State
 module Eval = Eval
 module Fold_emit = Fold_emit
 module Collapse = Collapse
+module Reverse = Reverse
 module Flatten = Flatten
 module Poly = Poly
 module Mpoly = Mpoly

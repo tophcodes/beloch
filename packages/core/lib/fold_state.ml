@@ -534,8 +534,9 @@ let check_cycles (p : placed) (order : Bytes.t) (n : int) : unit =
    above [j] iff [side i j]. Raises [V]: a violation the geometry holds,
    then the conditions on hinges, then, with [cycles], the order condition.
    A caller passes [cycles:false] where [side] cannot hold a cycle: it
-   compares heights, or it copies the sides of a state. *)
-let build ?(marks = [||]) ~(cycles : bool) (geo : geometry)
+   compares heights, or it copies the sides of a state, and [tacos:false]
+   where the conditions on hinges hold by construction. *)
+let build ?(marks = [||]) ?(tacos = true) ~(cycles : bool) (geo : geometry)
     ~(side : int -> int -> bool) : t =
   let n = Array.length geo.g_faces in
   let p = match geo.g_placed with Ok p -> p | Error v -> raise (V v) in
@@ -549,7 +550,7 @@ let build ?(marks = [||]) ~(cycles : bool) (geo : geometry)
       end
     done
   done;
-  check_tacos geo p order;
+  if tacos then check_tacos geo p order;
   if cycles then check_cycles p order n;
   {
     faces = Array.map Array.copy geo.g_faces;
@@ -2002,6 +2003,197 @@ let simple_fold (g : t) ~(axis : Geom.line) ~(move_side : int)
     ~(valley : bool) : t =
   fold g ~axis ~move_side ~valley ~prov:None
 
+(* A reverse fold as a fan (BEP-0077). [rf_scored] is [rf_before] with every
+   face of the tip cut along the axis by a flat hinge, its faces in the
+   order [cut_blocks] gives one block, the tip: the stationary faces, then
+   the pieces beyond the axis. The fan changes the hinges [rf_change]
+   marks, and every piece beyond the axis moves by the reflection across
+   it whatever the opening, so every opening is a stacking of one folded
+   state. [rf_origin] holds per hinge the hinge of [rf_before] it carries,
+   -1 for a hinge along the axis. *)
+type reverse_fan = {
+  rf_before : t;
+  rf_scored : t;
+  rf_parent : int array;
+  rf_moved : bool array;
+  rf_uncut : bool array;
+  rf_origin : int array;
+  rf_change : bool array;
+  rf_root : int;
+  rf_scored_geo : geometry;
+  rf_shared : shared;
+}
+
+let reverse_fan ~(cid : int) (g : t) ~(axis : Geom.line) ~(move_side : int)
+    ~(tip : bool array) ~(prov : State.provenance option) :
+    (reverse_fan, violation) result =
+  let stationary, movs, chords, uncut =
+    cut_blocks g ~axis ~move_side ~nb:1
+      ~block_of_parent:(fun fi -> if tip.(fi) then 0 else -1)
+  in
+  let arr = Array.of_list (stationary @ movs.(0)) in
+  let faces' = Array.map fst arr and parent = Array.map snd arr in
+  let n = Array.length arr and n_stay = List.length stationary in
+  let moved = Array.init n (fun k -> k >= n_stay) in
+  let hs = block_hinges g ~axis ~cid ~prov ~faces' ~parent ~moved ~chords in
+  let hinges' = Array.of_list (List.map (fun (h, _, _) -> h) hs) in
+  match block_root g ~parent ~moved with
+  | None -> Error (Disconnected 0) (* no face stays: the tip holds every face *)
+  | Some root -> (
+      match geometry ~base:g.isos.(parent.(root)) ~faces:faces' ~hinges:hinges' ~root () with
+      | Error v -> Error v
+      | Ok geo -> (
+          (* before the fold nothing has moved *)
+          seed_overlaps g geo ~parent ~moved:(Array.make n false) ~uncut;
+          (* Cutting a face of a valid state along a flat hinge breaks no
+             condition on hinges: a face between the two faces of a hinge,
+             or crossing it, has a parent that is so, and a flat hinge on
+             the line of a folded one cuts a parent that crosses that
+             folded hinge. *)
+          match
+            build ~marks:g.marks ~tacos:false ~cycles:false geo ~side:(fun i j ->
+                side g parent.(i) parent.(j) > 0)
+          with
+          | exception V v -> Error v
+          | scored ->
+              Ok
+                { rf_before = g; rf_scored = scored; rf_parent = parent;
+                  rf_moved = moved; rf_uncut = uncut;
+                  rf_origin = Array.of_list (List.map (fun (_, o, _) -> o) hs);
+                  rf_change = Array.of_list (List.map (fun (_, _, c) -> c) hs);
+                  rf_root = root; rf_scored_geo = geo; rf_shared = new_shared () }))
+
+let reverse_scored (rf : reverse_fan) : t = rf.rf_scored
+let reverse_moved (rf : reverse_fan) : bool array = Array.copy rf.rf_moved
+let reverse_changes (rf : reverse_fan) : bool array = Array.copy rf.rf_change
+let reverse_root (rf : reverse_fan) : int = rf.rf_root
+
+(* [geo] with face [face_order.(k)] as face [k] and hinge [hinge_order.(k)]
+   as hinge [k], the answers it has computed carried along. *)
+let permute_geometry (geo : geometry) ~(face_order : int array)
+    ~(hinge_order : int array) : geometry =
+  let pos = Array.make (Array.length face_order) 0 in
+  Array.iteri (fun k f -> pos.(f) <- k) face_order;
+  let pf a = Array.map (fun f -> a.(f)) face_order in
+  let ph a = Array.map (fun h -> a.(h)) hinge_order in
+  let pair (t : bool option array array) =
+    Array.map
+      (fun a -> Array.map (fun b -> t.(min a b).(max a b)) face_order)
+      face_order
+  in
+  {
+    g_faces = pf geo.g_faces;
+    g_hinges =
+      Array.map
+        (fun h ->
+          let x = geo.g_hinges.(h) in
+          { x with fa = pos.(x.fa); fb = pos.(x.fb) })
+        hinge_order;
+    g_root = pos.(geo.g_root);
+    g_base = geo.g_base;
+    g_placed =
+      Result.map
+        (fun p ->
+          { p_isos = pf p.p_isos; p_segs = ph p.p_segs; p_tps = pf p.p_tps;
+            p_ccw_tps = pf p.p_ccw_tps; p_tsegs = ph p.p_tsegs;
+            p_folded = ph p.p_folded;
+            p_crosses =
+              Array.map (fun h -> Array.map (fun f -> p.p_crosses.(h).(f)) face_order) hinge_order;
+            p_overlaps =
+              Array.map (fun h -> Array.map (fun h' -> p.p_overlaps.(h).(h')) hinge_order) hinge_order;
+            p_overlap = pair p.p_overlap })
+        geo.g_placed;
+  }
+
+(* The answers [geo'], [geo] permuted, computed that [geo] has not. *)
+let keep_answers (geo : geometry) (geo' : geometry) ~(face_order : int array)
+    ~(hinge_order : int array) : unit =
+  match (geo.g_placed, geo'.g_placed) with
+  | Ok p, Ok p' ->
+      let fill (t : bool option array array) i j v =
+        if t.(i).(j) = None then t.(i).(j) <- v
+      in
+      Array.iteri
+        (fun k a ->
+          Array.iteri
+            (fun l b ->
+              if p'.p_overlap.(k).(l) <> None then
+                fill p.p_overlap (min a b) (max a b) p'.p_overlap.(k).(l))
+            face_order)
+        face_order;
+      Array.iteri
+        (fun k h ->
+          Array.iteri (fun l f -> fill p.p_crosses h f p'.p_crosses.(k).(l)) face_order;
+          Array.iteri (fun l h' -> fill p.p_overlaps h h' p'.p_overlaps.(k).(l)) hinge_order)
+        hinge_order
+  | _ -> ()
+
+(* The stackings of one opening of a reverse fold, its two [blocks] placed
+   as [fold_blocks] places them, on [geo], the folded state of [rf]. The
+   units of the layer search are the stationary faces and each block; a
+   face keeps its side against a face of its own unit, exchanged where
+   [turned] says the fan turns it over. The states have their faces and
+   hinges in the order [fold_blocks] gives them: the blocks placed
+   [Bottom], the stationary faces, the other blocks, each in the order of
+   [rf_scored]; the hinges along the axis, then the carried hinges by the
+   hinge they carry and their faces. *)
+let fold_opening (rf : reverse_fan) (geo : geometry) ~(turned : bool array)
+    ~(blocks : (bool array * placement) list) : (t list, violation) result =
+  let g = rf.rf_before in
+  let places = List.map snd blocks in
+  let n = Array.length rf.rf_parent in
+  let block_of k = if rf.rf_moved.(k) then block_index blocks rf.rf_parent.(k) else -1 in
+  let rank k =
+    let b = block_of k in
+    if b < 0 then (1, 0) else if List.nth places b = Bottom then (0, b) else (2, b)
+  in
+  let face_order =
+    Array.of_list (List.stable_sort (fun a b -> compare (rank a) (rank b)) (List.init n Fun.id))
+  in
+  let pos = Array.make n 0 in
+  Array.iteri (fun k f -> pos.(f) <- k) face_order;
+  let hs = geo.g_hinges in
+  let along, carried =
+    List.partition (fun h -> rf.rf_origin.(h) < 0) (List.init (Array.length hs) Fun.id)
+  in
+  let key h = (rf.rf_origin.(h), pos.(hs.(h).fa), pos.(hs.(h).fb)) in
+  let hinge_order =
+    Array.of_list (along @ List.stable_sort (fun a b -> compare (key a) (key b)) carried)
+  in
+  (* two faces that both moved or both stayed lie as they did in the cut
+     state, so they overlap as they did there *)
+  (match (rf.rf_scored_geo.g_placed, geo.g_placed) with
+  | Ok ps, Ok p ->
+      for i = 0 to n - 1 do
+        for j = i + 1 to n - 1 do
+          if rf.rf_moved.(i) = rf.rf_moved.(j) && p.p_overlap.(i).(j) = None then
+            p.p_overlap.(i).(j) <- ps.p_overlap.(i).(j)
+        done
+      done
+  | _ -> ());
+  let geo' = permute_geometry geo ~face_order ~hinge_order in
+  let parent = Array.map (fun f -> rf.rf_parent.(f)) face_order in
+  let moved = Array.map (fun f -> rf.rf_moved.(f)) face_order in
+  let unit_of = Array.map block_of face_order in
+  let turned = Array.map (fun f -> turned.(f)) face_order in
+  seed_overlaps g geo' ~parent ~moved ~uncut:rf.rf_uncut;
+  let found =
+    if placed_only places then
+      placed_stackings ~shared:rf.rf_shared ~g ~geo:geo' ~parent ~moved ~block_of:unit_of
+        ~turned ~anchors:(block_anchors ~parent ~moved places)
+    else
+      let side = level_side g ~parent ~unit_of ~turned ~places in
+      match orders ~marks:g.marks geo' ~kept:(fun i j -> Some (side i j)) ~fixed:[] with
+      | Error v -> Error v
+      | Ok (_ :: _ as gs) -> Ok gs
+      | Ok [] -> (
+          match build ~marks:g.marks ~cycles:false geo' ~side with
+          | exception V v -> Error v
+          | _ -> Error Layer_cycle)
+  in
+  keep_answers geo geo' ~face_order ~hinge_order;
+  found
+
 type reverse_failure =
   | No_spine
   | Several_openings of spine_attempt list
@@ -2034,10 +2226,10 @@ let reverse_failure_to_string = function
        fold"
   | Invalid v -> violation_to_string v
 
-let reverse_attempts ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
-    ~(tip : bool array) ~(inside : bool) ~(prov : State.provenance option) :
+let reverse_attempts ~(cid : int) (g : t) ~(axis : Geom.line) ~(move_side : int)
+    ~(tip : bool array) ~(inside : bool)
+    ~(fold : (bool array * placement) list -> (t list, violation) result) :
     spine_attempt list =
-  let cid = match crease_id with Some c -> c | None -> fresh_crease_id () in
   let n = Array.length g.faces in
   let nh = Array.length g.hinges in
   let internal =
@@ -2059,7 +2251,6 @@ let reverse_attempts ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
     let table = table_polygon g fi in
     Array.length (Geom.clip_convex_halfplane axis (-move_side) table) >= 3
   in
-  let shared = new_shared () in
   let tip_faces = List.filter (fun i -> tip.(i)) (List.init n Fun.id) in
   (* [i] below [j], for two faces of the tip that overlap *)
   let below_overlapping i j = side g i j < 0 in
@@ -2221,7 +2412,7 @@ let reverse_attempts ?crease_id (g : t) ~(axis : Geom.line) ~(move_side : int)
         if inside then [ (lower, Over tops_lo); (upper, Under tops_up) ]
         else [ (lower, Bottom); (upper, Top) ]
       in
-      match fold_blocks_gen ~crease_id:cid ~shared ~blocks g ~axis ~move_side ~prov with
+      match fold blocks with
       | Ok gs -> List.map (fun g' -> tried (Some (blo, bup)) (Reversed g')) gs
       | Error v -> [ tried (Some (blo, bup)) (Crossing v) ]
   in
@@ -2265,10 +2456,6 @@ let reverse_of_attempts (attempts : spine_attempt list) :
       with
       | Some e -> Error e
       | None -> Error No_spine)
-
-let reverse ?crease_id g ~axis ~move_side ~tip ~inside ~prov =
-  reverse_of_attempts
-    (reverse_attempts ?crease_id g ~axis ~move_side ~tip ~inside ~prov)
 
 (* Turn the whole sheet over: reflect across the footprint's vertical
    centerline (cosmetic internal axis), reverse the face

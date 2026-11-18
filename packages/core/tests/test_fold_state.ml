@@ -1566,7 +1566,7 @@ let test_fold_blocks_bottom_pierces () =
 
 let reverse_two_layer inside =
   let g = two_layer () in
-  Fold_state.reverse g ~axis:vline_half ~move_side:(-1) ~tip:[| true; true |]
+  Reverse.reverse ~cid:(Fold_state.fresh_crease_id ()) g ~axis:vline_half ~move_side:(-1) ~tip:[| true; true |]
     ~inside ~prov:None
 
 (* [vline_half] (table x=1/2) runs parallel to the spine (table x=1): no part
@@ -1606,7 +1606,7 @@ let hinge_index_on (g : Fold_state.t) (line : Geom.line) (pred : int -> int -> b
 let diag : Geom.line = { Geom.a = q 1; b = q 1; c = three_halves }
 
 let reverse_diag inside =
-  Fold_state.reverse (two_layer ()) ~axis:diag ~move_side:1 ~tip:[| true; true |]
+  Reverse.reverse ~cid:(Fold_state.fresh_crease_id ()) (two_layer ()) ~axis:diag ~move_side:1 ~tip:[| true; true |]
     ~inside ~prov:None
 
 (* children by paper x-range: body-L [0,1], tip-L [1/2,1], tip-R [1,3/2],
@@ -1673,7 +1673,7 @@ let test_reverse_spine_beyond_o () =
 let perp_axis : Geom.line = { Geom.a = q 0; b = q 1; c = half }
 
 let reverse_perp inside =
-  Fold_state.reverse (two_layer ()) ~axis:perp_axis ~move_side:1
+  Reverse.reverse ~cid:(Fold_state.fresh_crease_id ()) (two_layer ()) ~axis:perp_axis ~move_side:1
     ~tip:[| true; true |] ~inside ~prov:None
 
 let perp_children g' =
@@ -1729,7 +1729,7 @@ let test_reverse_no_spine () =
   (* a single flat sheet has no folded hinge to cut *)
   let g = (Fold_state.flat [| Sheet.square_corners Num.one |]) in
   match
-    Fold_state.reverse g ~axis:vline_half ~move_side:(-1) ~tip:[| true |]
+    Reverse.reverse ~cid:(Fold_state.fresh_crease_id ()) g ~axis:vline_half ~move_side:(-1) ~tip:[| true |]
       ~inside:true ~prov:None
   with
   | Error Fold_state.No_spine -> ()
